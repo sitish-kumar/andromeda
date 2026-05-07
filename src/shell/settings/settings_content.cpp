@@ -648,7 +648,8 @@ namespace settings {
           return wrap;
         };
 
-    const auto makeText = [&](const std::string& value, const std::string& placeholder, std::vector<std::string> path) {
+    const auto makeText = [&](const std::string& value, const std::string& placeholder, std::vector<std::string> path,
+                              float width = 0.0f) {
       auto input = std::make_unique<Input>();
       input->setValue(value);
       input->setPlaceholder(placeholder.empty() ? i18n::tr("settings.controls.list.add-entry-placeholder")
@@ -656,7 +657,8 @@ namespace settings {
       input->setFontSize(Style::fontSizeBody * scale);
       input->setControlHeight(Style::controlHeight * scale);
       input->setHorizontalPadding(Style::spaceSm * scale);
-      input->setSize(190.0f * scale, Style::controlHeight * scale);
+      const float inputWidth = (width > 0.0f ? width : 190.0f) * scale;
+      input->setSize(inputWidth, Style::controlHeight * scale);
       input->setOnSubmit([setOverride = ctx.setOverride, path](const std::string& v) { setOverride(path, v); });
       return input;
     };
@@ -1182,7 +1184,7 @@ namespace settings {
               return makeSlider(control.value, control.minValue, control.maxValue, control.step, entry.path,
                                 control.integerValue, control.linkedCommit);
             } else if constexpr (std::is_same_v<T, TextSetting>) {
-              return makeText(control.value, control.placeholder, entry.path);
+              return makeText(control.value, control.placeholder, entry.path, control.width);
             } else if constexpr (std::is_same_v<T, OptionalNumberSetting>) {
               return makeOptionalNumber(control, entry.path);
             } else if constexpr (std::is_same_v<T, ColorSetting>) {
@@ -1250,8 +1252,10 @@ namespace settings {
                           bool integerValue) -> std::unique_ptr<Node> {
           return makeSlider(value, minValue, maxValue, step, std::move(path), integerValue);
         },
-        .makeText = [&](const std::string& value, const std::string& placeholder, std::vector<std::string> path)
-            -> std::unique_ptr<Node> { return makeText(value, placeholder, std::move(path)); },
+        .makeText = [&](const std::string& value, const std::string& placeholder,
+                        std::vector<std::string> path) -> std::unique_ptr<Node> {
+          return makeText(value, placeholder, std::move(path));
+        }, // width not used in search
         .makeColorRolePicker = [&](const ColorRolePickerSetting& setting, std::vector<std::string> path)
             -> std::unique_ptr<Node> { return makeColorRolePicker(setting, std::move(path)); },
         .makeListBlock = [&](Flex& section, const SettingEntry& entry,

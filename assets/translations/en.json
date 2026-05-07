@@ -704,6 +704,7 @@
         "appearance": "Appearance",
         "desktop": "Desktop",
         "dock": "Dock",
+        "hooks": "Hooks",
         "panels": "Panels",
         "notifications": "Notifications",
         "backdrop": "Backdrop",
@@ -727,6 +728,7 @@
         "focus-styling": "Focus Styling",
         "general": "General",
         "grouping": "Grouping",
+        "lifecycle": "Lifecycle",
         "interface": "Interface",
         "launcher": "Launcher",
         "layout": "Layout",
@@ -739,6 +741,7 @@
         "overview": "Overview",
         "pinned-apps": "Pinned Apps",
         "profile": "Profile",
+        "power": "Power",
         "screen-corners": "Screen Corners",
         "security": "Security",
         "shape": "Shape",
@@ -1544,6 +1547,71 @@
         "night-temperature": {
           "label": "Night Temperature",
           "description": "Color temperature at night (Kelvin)"
+        }
+      },
+      "hooks": {
+        "events": {
+          "started": {
+            "label": "On Started",
+            "description": "Command to run after Noctalia starts"
+          },
+          "wallpaper_changed": {
+            "label": "On Wallpaper Changed",
+            "description": "Command to run when the wallpaper changes"
+          },
+          "colors_changed": {
+            "label": "On Colors Changed",
+            "description": "Command to run when the active color palette changes"
+          },
+          "session_locked": {
+            "label": "On Session Locked",
+            "description": "Command to run when the session is locked"
+          },
+          "session_unlocked": {
+            "label": "On Session Unlocked",
+            "description": "Command to run after the session is unlocked"
+          },
+          "logging_out": {
+            "label": "On Logout",
+            "description": "Command to run before logging out"
+          },
+          "rebooting": {
+            "label": "On Reboot",
+            "description": "Command to run before rebooting"
+          },
+          "shutting_down": {
+            "label": "On Shutdown",
+            "description": "Command to run before shutdown"
+          },
+          "wifi_enabled": {
+            "label": "On Wi-Fi Enabled",
+            "description": "Command to run when Wi-Fi is enabled"
+          },
+          "wifi_disabled": {
+            "label": "On Wi-Fi Disabled",
+            "description": "Command to run when Wi-Fi is disabled"
+          },
+          "bluetooth_enabled": {
+            "label": "On Bluetooth Enabled",
+            "description": "Command to run when Bluetooth is enabled"
+          },
+          "bluetooth_disabled": {
+            "label": "On Bluetooth Disabled",
+            "description": "Command to run when Bluetooth is disabled"
+          },
+          "battery_state_changed": {
+            "label": "On Battery State Changed",
+            "description": "Command to run when charging state changes"
+          },
+          "battery_under_threshold": {
+            "label": "On Battery Under Threshold",
+            "description": "Command to run when battery percent drops under the configured threshold"
+          }
+        },
+        "command-placeholder": "shell command or script path",
+        "battery-low-threshold": {
+          "label": "Battery Low Threshold",
+          "description": "Percent threshold for the low-battery hook (0 disables it)"
         }
       },
       "notifications": {

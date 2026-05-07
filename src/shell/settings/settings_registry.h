@@ -59,6 +59,7 @@ namespace settings {
   struct TextSetting {
     std::string value;
     std::string placeholder;
+    float width = 0.0f; // 0 = use default
   };
 
   struct OptionalNumberSetting {
