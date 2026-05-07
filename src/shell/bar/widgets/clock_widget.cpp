@@ -146,6 +146,9 @@ void ClockWidget::doLayout(Renderer& renderer, float containerWidth, float conta
         renderer.measureText(m_lastPrimaryText, primaryFontSize, true, 0.0f, 1, TextAlign::Start);
     const auto secondaryMetrics =
         renderer.measureText(m_lastSecondaryText, secondaryFontSize, false, 0.0f, 1, TextAlign::Start);
+    const float primaryInkWidth = std::max(0.0f, primaryMetrics.inkRight - primaryMetrics.inkLeft);
+    const float secondaryInkWidth = std::max(0.0f, secondaryMetrics.inkRight - secondaryMetrics.inkLeft);
+    width = std::max({width, primaryInkWidth, secondaryInkWidth});
     const float centerX = width * 0.5f;
     const float primaryInkCenterX = (primaryMetrics.inkLeft + primaryMetrics.inkRight) * 0.5f;
     const float secondaryInkCenterX = (secondaryMetrics.inkLeft + secondaryMetrics.inkRight) * 0.5f;
