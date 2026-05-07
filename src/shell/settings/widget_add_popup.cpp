@@ -388,9 +388,12 @@ namespace settings {
     header->setGap(Style::spaceSm * m_scale);
     m_headerRow = header.get();
 
-    header->addChild(makeLabel(i18n::tr("settings.entities.widget.inspector.add-title", "lane",
-                                        laneLabel(m_lanePath.empty() ? "" : m_lanePath.back())),
-                               Style::fontSizeBody * m_scale, colorSpecFromRole(ColorRole::OnSurface), true));
+    const std::string lane = laneLabel(m_lanePath.empty() ? "" : m_lanePath.back());
+    const std::string title =
+        m_createFormVisible
+            ? i18n::tr("settings.entities.widget.inspector.add-instance-title", "widget", m_createLabel, "lane", lane)
+            : i18n::tr("settings.entities.widget.inspector.add-title", "lane", lane);
+    header->addChild(makeLabel(title, Style::fontSizeBody * m_scale, colorSpecFromRole(ColorRole::OnSurface), true));
 
     auto spacer = std::make_unique<Flex>();
     spacer->setFlexGrow(1.0f);
@@ -420,12 +423,12 @@ namespace settings {
 
     auto closeBtn = std::make_unique<Button>();
     closeBtn->setGlyph("close");
-    closeBtn->setVariant(ButtonVariant::Ghost);
+    closeBtn->setVariant(ButtonVariant::Default);
     closeBtn->setGlyphSize(Style::fontSizeBody * m_scale);
     closeBtn->setMinWidth(Style::controlHeightSm * m_scale);
     closeBtn->setMinHeight(Style::controlHeightSm * m_scale);
     closeBtn->setPadding(Style::spaceXs * m_scale);
-    closeBtn->setRadius(Style::radiusSm * m_scale);
+    closeBtn->setRadius(Style::radiusMd * m_scale);
     closeBtn->setOnClick([this]() { DeferredCall::callLater([this]() { close(); }); });
     header->addChild(std::move(closeBtn));
     root->addChild(std::move(header));

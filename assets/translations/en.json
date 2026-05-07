@@ -693,6 +693,7 @@
         "inspector": {
           "edit-title": "Editing widget",
           "add-title": "Add widget to {lane}",
+          "add-instance-title": "Add {widget} widget to {lane}",
           "move-to-lane": "Move to {lane}"
         },
         "detail": {
