@@ -758,9 +758,9 @@ void Application::initUi() {
   m_lockScreen.setSessionHooks([this]() { m_hookManager.fire(HookKind::SessionLocked); },
                                [this]() { m_hookManager.fire(HookKind::SessionUnlocked); });
 
-  m_sessionActionHooks.onLogout = [this]() { m_hookManager.fireBlocking(HookKind::LoggingOut); };
-  m_sessionActionHooks.onReboot = [this]() { m_hookManager.fireBlocking(HookKind::Rebooting); };
-  m_sessionActionHooks.onShutdown = [this]() { m_hookManager.fireBlocking(HookKind::ShuttingDown); };
+  m_sessionActionHooks.onLogout = [this]() { return m_hookManager.fireBlocking(HookKind::LoggingOut); };
+  m_sessionActionHooks.onReboot = [this]() { return m_hookManager.fireBlocking(HookKind::Rebooting); };
+  m_sessionActionHooks.onShutdown = [this]() { return m_hookManager.fireBlocking(HookKind::ShuttingDown); };
 
   m_wayland.setPointerEventCallback([this](const PointerEvent& event) {
     if (m_lockScreen.isActive()) {

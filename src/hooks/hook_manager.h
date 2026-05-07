@@ -16,13 +16,13 @@ public:
   void setBlockingCommandRunner(CommandRunner runner);
   void reload(const HooksConfig& config);
   void fire(HookKind kind) const;
-  void fireBlocking(HookKind kind) const;
+  [[nodiscard]] bool fireBlocking(HookKind kind) const;
   void fire(HookKind kind, std::initializer_list<EnvVar> env) const;
 
   [[nodiscard]] const HooksConfig& config() const noexcept { return m_config; }
 
 private:
-  void fireWithRunner(HookKind kind, const CommandRunner& runner) const;
+  [[nodiscard]] bool fireWithRunner(HookKind kind, const CommandRunner& runner) const;
 
   HooksConfig m_config;
   CommandRunner m_runner;

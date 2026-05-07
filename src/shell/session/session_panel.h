@@ -15,9 +15,9 @@ class Renderer;
 class ConfigService;
 
 struct SessionActionHooks {
-  std::function<void()> onLogout;
-  std::function<void()> onReboot;
-  std::function<void()> onShutdown;
+  std::function<bool()> onLogout;
+  std::function<bool()> onReboot;
+  std::function<bool()> onShutdown;
 };
 
 class SessionPanel : public Panel {
