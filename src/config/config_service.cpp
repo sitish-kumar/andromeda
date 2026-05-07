@@ -1,6 +1,7 @@
 #include "config/config_service.h"
 
 #include "core/build_info.h"
+#include "core/deferred_call.h"
 #include "core/log.h"
 #include "ipc/ipc_service.h"
 #include "notification/notification_manager.h"
@@ -314,9 +315,19 @@ void ConfigService::addReloadCallback(ReloadCallback callback) { m_reloadCallbac
 void ConfigService::setNotificationManager(NotificationManager* manager) {
   m_notificationManager = manager;
   if (m_notificationManager != nullptr && !m_pendingError.empty()) {
-    m_configErrorNotificationId =
-        m_notificationManager->addInternal("Noctalia", "Config parse error", m_pendingError, Urgency::Critical, 0);
+    const std::string pendingError = std::move(m_pendingError);
     m_pendingError.clear();
+    DeferredCall::callLater([this, pendingError]() {
+      if (m_notificationManager == nullptr) {
+        m_pendingError = pendingError;
+        return;
+      }
+      if (m_configErrorNotificationId != 0) {
+        m_notificationManager->close(m_configErrorNotificationId);
+      }
+      m_configErrorNotificationId =
+          m_notificationManager->addInternal("Noctalia", "Config parse error", pendingError, Urgency::Critical, 0);
+    });
   }
 }
 
