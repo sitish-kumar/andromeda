@@ -49,7 +49,6 @@ namespace {
   constexpr Logger kLog("settings");
   constexpr std::int32_t kActionSupportReport = 1;
   constexpr std::int32_t kActionFlattenedConfig = 2;
-  constexpr std::string_view kCreateInstancePrefix = "create-instance:";
 
   constexpr float kWindowWidth = 1080.0f;
   constexpr float kWindowHeight = 600.0f;
@@ -110,27 +109,6 @@ namespace {
       key += ":monitor:" + std::string(selectedMonitorOverride);
     }
     return key;
-  }
-
-  bool isCreateInstanceValue(std::string_view value) { return value.starts_with(kCreateInstancePrefix); }
-
-  std::string createInstanceTypeFromValue(std::string_view value) {
-    if (!isCreateInstanceValue(value)) {
-      return {};
-    }
-    value.remove_prefix(kCreateInstancePrefix.size());
-    return std::string(value);
-  }
-
-  std::string pathKey(const std::vector<std::string>& path) {
-    std::string out;
-    for (const auto& part : path) {
-      if (!out.empty()) {
-        out.push_back('.');
-      }
-      out += part;
-    }
-    return out;
   }
 
   bool isBarWidgetListPath(const std::vector<std::string>& path) {
@@ -197,6 +175,16 @@ float SettingsWindow::uiScale() const {
     return 1.0f;
   }
   return std::max(0.1f, m_config->config().shell.uiScale);
+}
+
+bool SettingsWindow::ownsKeyboardSurface(wl_surface* surface) const noexcept {
+  if (!isOpen() || surface == nullptr || m_surface == nullptr) {
+    return false;
+  }
+  if (surface == m_surface->wlSurface()) {
+    return true;
+  }
+  return m_widgetAddPopup != nullptr && m_widgetAddPopup->wlSurface() == surface;
 }
 
 void SettingsWindow::open() {
@@ -483,8 +471,10 @@ void SettingsWindow::openBarWidgetAddPopup(const std::vector<std::string>& laneP
   }
 
   if (m_widgetAddPopup == nullptr) {
-    m_widgetAddPopup = std::make_unique<settings::WidgetAddPopup>(*m_wayland, *m_renderContext);
-    m_widgetAddPopup->setOnSelect([this](const std::vector<std::string>& selectedLanePath, const std::string& value) {
+    m_widgetAddPopup = std::make_unique<settings::WidgetAddPopup>();
+    m_widgetAddPopup->initialize(*m_wayland, *m_config, *m_renderContext);
+    m_widgetAddPopup->setOnSelect([this](const std::vector<std::string>& selectedLanePath, const std::string& value,
+                                         const std::string& newInstanceType, const std::string& newInstanceId) {
       if (value.empty() || m_config == nullptr) {
         return;
       }
@@ -497,10 +487,11 @@ void SettingsWindow::openBarWidgetAddPopup(const std::vector<std::string>& laneP
       m_renamingWidgetName.clear();
       m_editingWidgetName.clear();
 
-      if (const auto type = createInstanceTypeFromValue(value); !type.empty()) {
-        m_creatingWidgetType = type;
-        m_openWidgetPickerPath = pathKey(selectedLanePath);
-        requestSceneRebuild();
+      if (!newInstanceType.empty() && !newInstanceId.empty()) {
+        laneItems.push_back(newInstanceId);
+        m_creatingWidgetType.clear();
+        m_openWidgetPickerPath.clear();
+        setSettingOverrides({{{"widget", newInstanceId, "type"}, newInstanceType}, {selectedLanePath, laneItems}});
         return;
       }
 
@@ -516,8 +507,8 @@ void SettingsWindow::openBarWidgetAddPopup(const std::vector<std::string>& laneP
     output = m_output;
   }
 
-  m_widgetAddPopup->open(m_surface->xdgSurface(), output, m_wayland->lastInputSerial(), anchorButton, lanePath,
-                         m_config->config(), uiScale(), PopupWindow::AnchorMode::CenterOnAnchor);
+  m_widgetAddPopup->open(m_surface->xdgSurface(), output, m_wayland->lastInputSerial(), anchorButton,
+                         m_surface->wlSurface(), lanePath, m_config->config(), uiScale());
 }
 
 void SettingsWindow::saveSupportReport() {

@@ -17,7 +17,7 @@ sudo dnf install meson gcc-c++ just \
   cairo-devel pango-devel \
   libxkbcommon-devel glib2-devel \
   sdbus-cpp-devel pipewire-devel \
-  pam-devel polkit-devel libcurl-devel libwebp-devel
+  pam-devel polkit-devel libcurl-devel libwebp-devel librsvg2-devel
 ```
 
 ### Arch
@@ -29,7 +29,7 @@ sudo pacman -S meson gcc just \
   cairo pango \
   libxkbcommon glib2 \
   sdbus-cpp libpipewire polkit \
-  pam curl libwebp
+  pam curl libwebp librsvg
 ```
 
 ### Debian / Ubuntu
@@ -43,7 +43,7 @@ sudo apt install meson g++ just \
   libxkbcommon-dev libglib2.0-dev \
   libsdbus-c++-dev libpipewire-0.3-dev \
   libpam0g-dev libpolkit-agent-1-dev libpolkit-gobject-1-dev \
-  libcurl4-openssl-dev libwebp-dev
+  libcurl4-openssl-dev libwebp-dev librsvg2-dev
 ```
 
 Vendored dependencies, with no system package needed: `Wuffs`, `nanosvg`, `tomlplusplus`, `tinyexpr`,

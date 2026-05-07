@@ -30,7 +30,6 @@
 #include "system/distro_info.h"
 #include "time/time_format.h"
 #include "ui/controls/input.h"
-#include "ui/controls/popup_window.h"
 #include "ui/dialogs/color_picker_dialog.h"
 #include "ui/dialogs/file_dialog.h"
 #include "ui/dialogs/glyph_picker_dialog.h"
@@ -403,6 +402,8 @@ void Application::initServices() {
   m_configService.addReloadCallback([this]() { m_idleManager.reload(m_configService.config().idle); });
 
   m_hookManager.setCommandRunner([this](const std::string& command) { return runUserCommand(command); });
+  m_hookManager.setBlockingCommandRunner(
+      [this](const std::string& command) { return runUserCommandBlocking(command); });
   m_hookManager.reload(m_configService.config().hooks);
   m_configService.addReloadCallback([this]() { m_hookManager.reload(m_configService.config().hooks); });
   m_nightLightManager.reload(m_configService.config().nightlight);
@@ -757,9 +758,9 @@ void Application::initUi() {
   m_lockScreen.setSessionHooks([this]() { m_hookManager.fire(HookKind::SessionLocked); },
                                [this]() { m_hookManager.fire(HookKind::SessionUnlocked); });
 
-  m_sessionActionHooks.onLogout = [this]() { m_hookManager.fire(HookKind::LoggingOut); };
-  m_sessionActionHooks.onReboot = [this]() { m_hookManager.fire(HookKind::Rebooting); };
-  m_sessionActionHooks.onShutdown = [this]() { m_hookManager.fire(HookKind::ShuttingDown); };
+  m_sessionActionHooks.onLogout = [this]() { return m_hookManager.fireBlocking(HookKind::LoggingOut); };
+  m_sessionActionHooks.onReboot = [this]() { return m_hookManager.fireBlocking(HookKind::Rebooting); };
+  m_sessionActionHooks.onShutdown = [this]() { return m_hookManager.fireBlocking(HookKind::ShuttingDown); };
 
   m_wayland.setPointerEventCallback([this](const PointerEvent& event) {
     if (m_lockScreen.isActive()) {
@@ -809,11 +810,7 @@ void Application::initUi() {
       m_fileDialogPopup.onKeyboardEvent(event);
       return;
     }
-    if (PopupWindow::dispatchKeyboardEvent(m_wayland.lastKeyboardSurface(), event)) {
-      return;
-    }
-    if (m_settingsWindow.isOpen() && m_settingsWindow.wlSurface() != nullptr &&
-        m_wayland.lastKeyboardSurface() == m_settingsWindow.wlSurface()) {
+    if (m_settingsWindow.ownsKeyboardSurface(m_wayland.lastKeyboardSurface())) {
       m_settingsWindow.onKeyboardEvent(event);
       return;
     }
@@ -1160,6 +1157,26 @@ bool Application::runUserCommand(const std::string& command) {
 
   if (!process::runAsync(command)) {
     kLog.warn("command failed to launch: {}", command);
+    return false;
+  }
+  return true;
+}
+
+bool Application::runUserCommandBlocking(const std::string& command) {
+  constexpr std::string_view prefix = "noctalia:";
+
+  if (command.rfind(prefix, 0) == 0) {
+    const std::string response = m_ipcService.execute(command.substr(prefix.size()));
+    if (response.rfind("error:", 0) == 0) {
+      kLog.warn("IPC command '{}' failed: {}", command, response.substr(0, response.find('\n')));
+      return false;
+    }
+    return true;
+  }
+
+  const auto result = process::runSync(command);
+  if (!result) {
+    kLog.warn("command failed: {} exit_code={} stderr={}", command, result.exitCode, result.err);
     return false;
   }
   return true;

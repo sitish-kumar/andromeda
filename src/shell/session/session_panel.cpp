@@ -17,7 +17,9 @@
 #include <algorithm>
 #include <cstdlib>
 #include <memory>
+#include <string>
 #include <string_view>
+#include <thread>
 #include <utility>
 #include <xkbcommon/xkbcommon-keysyms.h>
 
@@ -114,6 +116,18 @@ namespace {
     }
     kLog.info("lock: lock screen requested");
     return true;
+  }
+
+  void runPowerAction(std::function<bool()> hook, bool (*action)(), std::string_view actionName) {
+    std::thread([hook = std::move(hook), action, actionName = std::string(actionName)]() mutable {
+      if (hook && !hook()) {
+        kLog.warn("{} cancelled because a configured hook failed", actionName);
+        return;
+      }
+      if (!action()) {
+        kLog.warn("{} failed after hooks completed", actionName);
+      }
+    }).detach();
   }
 
 } // namespace
@@ -227,28 +241,13 @@ void SessionPanel::activateSelected() {
 void SessionPanel::invokeAction(ActionId id) {
   switch (id) {
   case ActionId::Logout:
-    if (m_actionHooks.onLogout) {
-      m_actionHooks.onLogout();
-    }
-    if (!doLogout()) {
-      notify::error("Noctalia", i18n::tr("session.errors.logout-title"), i18n::tr("session.errors.logout-body"));
-    }
+    runPowerAction(m_actionHooks.onLogout, doLogout, "logout");
     break;
   case ActionId::Reboot:
-    if (m_actionHooks.onReboot) {
-      m_actionHooks.onReboot();
-    }
-    if (!doReboot()) {
-      notify::error("Noctalia", i18n::tr("session.errors.reboot-title"), i18n::tr("session.errors.reboot-body"));
-    }
+    runPowerAction(m_actionHooks.onReboot, doReboot, "reboot");
     break;
   case ActionId::Shutdown:
-    if (m_actionHooks.onShutdown) {
-      m_actionHooks.onShutdown();
-    }
-    if (!doShutdown()) {
-      notify::error("Noctalia", i18n::tr("session.errors.shutdown-title"), i18n::tr("session.errors.shutdown-body"));
-    }
+    runPowerAction(m_actionHooks.onShutdown, doShutdown, "shutdown");
     break;
   case ActionId::Lock:
     if (!doLock()) {

@@ -12,23 +12,34 @@ namespace {
 
 void HookManager::setCommandRunner(CommandRunner runner) { m_runner = std::move(runner); }
 
+void HookManager::setBlockingCommandRunner(CommandRunner runner) { m_blockingRunner = std::move(runner); }
+
 void HookManager::reload(const HooksConfig& config) { m_config = config; }
 
-void HookManager::fire(HookKind kind) const {
-  if (kind == HookKind::Count || !m_runner) {
-    return;
+void HookManager::fire(HookKind kind) const { (void)fireWithRunner(kind, m_runner); }
+
+bool HookManager::fireBlocking(HookKind kind) const {
+  return fireWithRunner(kind, m_blockingRunner ? m_blockingRunner : m_runner);
+}
+
+bool HookManager::fireWithRunner(HookKind kind, const CommandRunner& runner) const {
+  if (kind == HookKind::Count || !runner) {
+    return false;
   }
   const auto& cmds = m_config.commands[static_cast<std::size_t>(kind)];
   if (cmds.empty()) {
-    return;
+    return true;
   }
   const std::string_view name = hookKindKey(kind);
   kLog.debug("hook '{}' running {} command(s)", name, cmds.size());
+  bool ok = true;
   for (const auto& cmd : cmds) {
-    if (!m_runner(cmd)) {
+    if (!runner(cmd)) {
       kLog.warn("hook '{}' command failed: {}", name, cmd);
+      ok = false;
     }
   }
+  return ok;
 }
 
 void HookManager::fire(HookKind kind, std::initializer_list<EnvVar> env) const {

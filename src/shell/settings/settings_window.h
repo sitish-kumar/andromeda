@@ -41,6 +41,7 @@ public:
   [[nodiscard]] wl_surface* wlSurface() const noexcept {
     return m_surface != nullptr ? m_surface->wlSurface() : nullptr;
   }
+  [[nodiscard]] bool ownsKeyboardSurface(wl_surface* surface) const noexcept;
 
   [[nodiscard]] bool onPointerEvent(const PointerEvent& event);
   void onKeyboardEvent(const KeyboardEvent& event);
