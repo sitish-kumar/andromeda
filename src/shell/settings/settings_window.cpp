@@ -199,6 +199,16 @@ float SettingsWindow::uiScale() const {
   return std::max(0.1f, m_config->config().shell.uiScale);
 }
 
+bool SettingsWindow::ownsKeyboardSurface(wl_surface* surface) const noexcept {
+  if (!isOpen() || surface == nullptr || m_surface == nullptr) {
+    return false;
+  }
+  if (surface == m_surface->wlSurface()) {
+    return true;
+  }
+  return m_widgetAddPopup != nullptr && m_widgetAddPopup->wlSurface() == surface;
+}
+
 void SettingsWindow::open() {
   if (m_wayland == nullptr || m_renderContext == nullptr || !m_wayland->hasXdgShell()) {
     return;
@@ -483,7 +493,8 @@ void SettingsWindow::openBarWidgetAddPopup(const std::vector<std::string>& laneP
   }
 
   if (m_widgetAddPopup == nullptr) {
-    m_widgetAddPopup = std::make_unique<settings::WidgetAddPopup>(*m_wayland, *m_renderContext);
+    m_widgetAddPopup = std::make_unique<settings::WidgetAddPopup>();
+    m_widgetAddPopup->initialize(*m_wayland, *m_config, *m_renderContext);
     m_widgetAddPopup->setOnSelect([this](const std::vector<std::string>& selectedLanePath, const std::string& value) {
       if (value.empty() || m_config == nullptr) {
         return;
@@ -516,8 +527,8 @@ void SettingsWindow::openBarWidgetAddPopup(const std::vector<std::string>& laneP
     output = m_output;
   }
 
-  m_widgetAddPopup->open(m_surface->xdgSurface(), output, m_wayland->lastInputSerial(), anchorButton, lanePath,
-                         m_config->config(), uiScale(), PopupWindow::AnchorMode::CenterOnAnchor);
+  m_widgetAddPopup->open(m_surface->xdgSurface(), output, m_wayland->lastInputSerial(), anchorButton,
+                         m_surface->wlSurface(), lanePath, m_config->config(), uiScale());
 }
 
 void SettingsWindow::saveSupportReport() {

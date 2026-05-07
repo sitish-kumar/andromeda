@@ -18,6 +18,8 @@ class WaylandConnection;
 struct KeyboardEvent;
 struct PointerEvent;
 struct wl_surface;
+struct wl_output;
+struct xdg_surface;
 
 // Shared base for the three xdg_popup-backed dialog popups (GlyphPicker,
 // ColorPicker, FileDialog). Owns the PopupSurface, the scene scaffolding
@@ -62,6 +64,7 @@ protected:
   DialogPopupHost();
 
   // Called once during subclass `initialize` to capture the shared deps.
+  void initializeBase(WaylandConnection& wayland, ConfigService& config, RenderContext& renderContext);
   void initializeBase(WaylandConnection& wayland, ConfigService& config, RenderContext& renderContext,
                       LayerPopupHostRegistry& popupHosts);
 
@@ -71,6 +74,12 @@ protected:
   // query `preferredWidth/Height`). Returns true on success; on failure,
   // automatically calls `destroyPopup()`.
   [[nodiscard]] bool openPopup(std::uint32_t width, std::uint32_t height);
+
+  // Build the PopupSurface as a child of an xdg parent. Uses the same scene/
+  // input/prepareFrame plumbing as openPopup() but bypasses LayerPopupHostRegistry
+  // parent resolution.
+  [[nodiscard]] bool openPopupAsChild(PopupSurfaceConfig config, xdg_surface* parentXdgSurface,
+                                      wl_surface* parentWlSurface, wl_output* output);
 
   // Tear the popup down — endAttachedPopup, invoke `onSheetClose()` hook,
   // reset the scene tree, drop the PopupSurface. Safe to call repeatedly.

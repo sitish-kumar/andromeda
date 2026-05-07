@@ -30,7 +30,6 @@
 #include "system/distro_info.h"
 #include "time/time_format.h"
 #include "ui/controls/input.h"
-#include "ui/controls/popup_window.h"
 #include "ui/dialogs/color_picker_dialog.h"
 #include "ui/dialogs/file_dialog.h"
 #include "ui/dialogs/glyph_picker_dialog.h"
@@ -809,11 +808,7 @@ void Application::initUi() {
       m_fileDialogPopup.onKeyboardEvent(event);
       return;
     }
-    if (PopupWindow::dispatchKeyboardEvent(m_wayland.lastKeyboardSurface(), event)) {
-      return;
-    }
-    if (m_settingsWindow.isOpen() && m_settingsWindow.wlSurface() != nullptr &&
-        m_wayland.lastKeyboardSurface() == m_settingsWindow.wlSurface()) {
+    if (m_settingsWindow.ownsKeyboardSurface(m_wayland.lastKeyboardSurface())) {
       m_settingsWindow.onKeyboardEvent(event);
       return;
     }

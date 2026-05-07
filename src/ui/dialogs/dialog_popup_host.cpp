@@ -34,6 +34,13 @@ DialogPopupHost::~DialogPopupHost() {
   assert(m_surface == nullptr && "subclass must call destroyPopup() in its destructor");
 }
 
+void DialogPopupHost::initializeBase(WaylandConnection& wayland, ConfigService& config, RenderContext& renderContext) {
+  m_wayland = &wayland;
+  m_config = &config;
+  m_renderContext = &renderContext;
+  m_popupHosts = nullptr;
+}
+
 void DialogPopupHost::initializeBase(WaylandConnection& wayland, ConfigService& config, RenderContext& renderContext,
                                      LayerPopupHostRegistry& popupHosts) {
   m_wayland = &wayland;
@@ -69,6 +76,31 @@ bool DialogPopupHost::openPopup(std::uint32_t width, std::uint32_t height) {
   m_popupHosts->beginAttachedPopup(m_parentSurface);
   m_attachedToHost = true;
   if (!m_surface->initialize(parentContext->layerSurface, parentContext->output, popupConfig)) {
+    destroyPopup();
+    return false;
+  }
+  return true;
+}
+
+bool DialogPopupHost::openPopupAsChild(PopupSurfaceConfig config, xdg_surface* parentXdgSurface,
+                                       wl_surface* parentWlSurface, wl_output* output) {
+  if (m_wayland == nullptr || m_renderContext == nullptr || parentXdgSurface == nullptr || parentWlSurface == nullptr) {
+    return false;
+  }
+
+  destroyPopup();
+  m_parentSurface = parentWlSurface;
+
+  auto surface = std::make_unique<PopupSurface>(*m_wayland);
+  surface->setAnimationManager(&m_animations);
+  surface->setRenderContext(m_renderContext);
+  surface->setConfigureCallback([this](std::uint32_t /*w*/, std::uint32_t /*h*/) { requestLayout(); });
+  surface->setPrepareFrameCallback(
+      [this](bool needsUpdate, bool needsLayout) { prepareFrame(needsUpdate, needsLayout); });
+  surface->setDismissedCallback([this]() { cancel(); });
+
+  m_surface = std::move(surface);
+  if (!m_surface->initializeAsChild(parentXdgSurface, output, config)) {
     destroyPopup();
     return false;
   }
