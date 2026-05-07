@@ -13,9 +13,13 @@ class Node;
 class ConfigService;
 class RenderContext;
 class WaylandConnection;
+class Flex;
+class Input;
+class Label;
 struct Config;
 struct KeyboardEvent;
 struct PointerEvent;
+struct wl_surface;
 struct wl_output;
 struct xdg_surface;
 
@@ -23,7 +27,8 @@ namespace settings {
 
   class WidgetAddPopup final : public DialogPopupHost {
   public:
-    using SelectCallback = std::function<void(const std::vector<std::string>& lanePath, const std::string& value)>;
+    using SelectCallback = std::function<void(const std::vector<std::string>& lanePath, const std::string& value,
+                                              const std::string& newInstanceType, const std::string& newInstanceId)>;
 
     WidgetAddPopup() = default;
     ~WidgetAddPopup();
@@ -52,11 +57,41 @@ namespace settings {
     void onSheetClose() override;
 
   private:
-    std::vector<SearchPickerOption> m_options;
+    std::vector<SearchPickerOption> m_normalOptions;
+    std::vector<SearchPickerOption> m_instanceOptions;
     float m_scale = 1.0f;
+    const Config* m_config = nullptr;
     std::vector<std::string> m_lanePath;
     Flex* m_root = nullptr;
+    Flex* m_headerRow = nullptr;
+    Flex* m_body = nullptr;
+    Flex* m_createActions = nullptr;
     SearchPicker* m_searchPicker = nullptr;
+    Label* m_createTitle = nullptr;
+    Input* m_instanceInput = nullptr;
+    bool m_instanceModeEnabled = false;
+    bool m_createFormVisible = false;
+    std::string m_createType;
+    std::string m_createLabel;
+
+    void refreshPickerOptions();
+    void refreshBodyState();
+    void beginCreateFlow(const SearchPickerOption& option);
+    void finishCreateFlow();
+    void reopenForCurrentMode();
+    [[nodiscard]] std::pair<float, float> popupSize() const;
+    [[nodiscard]] std::string suggestedInstanceId(std::string_view type) const;
+    [[nodiscard]] bool canCreateInstanceId(std::string_view id) const;
+
+    xdg_surface* m_parentXdgSurface = nullptr;
+    wl_surface* m_parentWlSurface = nullptr;
+    wl_output* m_output = nullptr;
+    std::uint32_t m_serial = 0;
+    float m_anchorAbsX = 0.0f;
+    float m_anchorAbsY = 0.0f;
+    std::int32_t m_anchorWidth = 1;
+    std::int32_t m_anchorHeight = 1;
+    bool m_internalReopen = false;
     SelectCallback m_onSelect;
     std::function<void()> m_onDismissed;
   };

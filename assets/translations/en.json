@@ -675,6 +675,8 @@
         "picker": {
           "placeholder": "Search widgets...",
           "empty": "No widgets found",
+          "instance-toggle": "New Instance",
+          "instance-description": "New instance for type \"{type}\"",
           "create-label": "New {label} Instance",
           "create-description": "Choose an id for type \"{type}\""
         },
