@@ -30,6 +30,7 @@
 #include "system/distro_info.h"
 #include "time/time_format.h"
 #include "ui/controls/input.h"
+#include "ui/controls/popup_window.h"
 #include "ui/dialogs/color_picker_dialog.h"
 #include "ui/dialogs/file_dialog.h"
 #include "ui/dialogs/glyph_picker_dialog.h"
@@ -594,8 +595,8 @@ void Application::initServices() {
   }
 
   try {
-    m_brightnessService = std::make_unique<BrightnessService>(
-        m_systemBus.get(), m_wayland, m_configService.config().brightness, &m_dependencyService);
+    m_brightnessService =
+        std::make_unique<BrightnessService>(m_systemBus.get(), m_wayland, m_configService.config().brightness);
     m_brightnessService->setChangeCallback([this, shouldRefreshControlCenter]() {
       m_brightnessOsd.onBrightnessChanged(*m_brightnessService);
       m_bar.refresh();
@@ -806,6 +807,9 @@ void Application::initUi() {
     }
     if (m_fileDialogPopup.isOpen()) {
       m_fileDialogPopup.onKeyboardEvent(event);
+      return;
+    }
+    if (PopupWindow::dispatchKeyboardEvent(m_wayland.lastKeyboardSurface(), event)) {
       return;
     }
     if (m_settingsWindow.isOpen() && m_settingsWindow.wlSurface() != nullptr &&

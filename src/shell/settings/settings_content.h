@@ -12,6 +12,7 @@
 
 class Flex;
 class InputArea;
+class Button;
 
 namespace settings {
 
@@ -38,6 +39,7 @@ namespace settings {
     std::function<void()> requestContentRebuild;
     std::function<void()> resetContentScroll;
     std::function<void(InputArea*)> focusArea;
+    std::function<void(const std::vector<std::string>&, Button*)> openBarWidgetAddPopup;
     std::function<void(std::vector<std::string>, ConfigOverrideValue)> setOverride;
     std::function<void(std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>)> setOverrides;
     std::function<void(std::vector<std::string>)> clearOverride;

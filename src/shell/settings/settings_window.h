@@ -4,6 +4,7 @@
 #include "render/scene/input_dispatcher.h"
 #include "render/scene/node.h"
 #include "shell/settings/settings_registry.h"
+#include "shell/settings/widget_add_popup.h"
 #include "ui/controls/context_menu_popup.h"
 #include "ui/controls/scroll_view.h"
 #include "wayland/toplevel_surface.h"
@@ -58,6 +59,7 @@ private:
   void clearStatusMessage();
   void clearTransientSettingsState();
   void openActionsMenu();
+  void openBarWidgetAddPopup(const std::vector<std::string>& lanePath, Button* anchorButton);
   void saveSupportReport();
   void saveFlattenedConfig();
   void setSettingOverride(std::vector<std::string> path, ConfigOverrideValue value);
@@ -87,6 +89,7 @@ private:
   Button* m_actionsMenuButton = nullptr;
   Flex* m_contentContainer = nullptr;
   std::unique_ptr<ContextMenuPopup> m_actionsMenuPopup;
+  std::unique_ptr<settings::WidgetAddPopup> m_widgetAddPopup;
   InputDispatcher m_inputDispatcher;
   AnimationManager m_animations;
   bool m_pointerInside = false;

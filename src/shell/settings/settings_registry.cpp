@@ -222,6 +222,8 @@ namespace settings {
       return "layout-board";
     if (section == "services")
       return "stack-2";
+    if (section == "hooks")
+      return "link";
     if (section == "notifications")
       return "bell";
     if (section == "bar")
@@ -749,6 +751,68 @@ namespace settings {
                                   tr("settings.schema.services.night-temperature.description"),
                                   {"nightlight", "temperature_night"}, std::move(nightSlider), "wlsunset kelvin"));
     }
+
+    // Hooks
+    auto hookGroup = [](HookKind kind) -> std::string {
+      switch (kind) {
+      case HookKind::Started:
+      case HookKind::SessionLocked:
+      case HookKind::SessionUnlocked:
+      case HookKind::LoggingOut:
+      case HookKind::Rebooting:
+      case HookKind::ShuttingDown:
+        return "lifecycle";
+      case HookKind::WallpaperChanged:
+      case HookKind::ColorsChanged:
+        return "theme";
+      case HookKind::WifiEnabled:
+      case HookKind::WifiDisabled:
+      case HookKind::BluetoothEnabled:
+      case HookKind::BluetoothDisabled:
+        return "network";
+      case HookKind::BatteryStateChanged:
+      case HookKind::BatteryUnderThreshold:
+        return "power";
+      case HookKind::Count:
+        break;
+      }
+      return "general";
+    };
+
+    auto hookTags = [](HookKind kind) -> std::string {
+      std::string tags = "hook command script exec event trigger";
+      if (kind == HookKind::BatteryUnderThreshold || kind == HookKind::BatteryStateChanged) {
+        tags += " battery power";
+      }
+      if (kind == HookKind::WallpaperChanged || kind == HookKind::ColorsChanged) {
+        tags += " wallpaper colors theme";
+      }
+      if (kind == HookKind::WifiEnabled || kind == HookKind::WifiDisabled || kind == HookKind::BluetoothEnabled ||
+          kind == HookKind::BluetoothDisabled) {
+        tags += " network wifi bluetooth";
+      }
+      if (kind == HookKind::SessionLocked || kind == HookKind::SessionUnlocked || kind == HookKind::LoggingOut ||
+          kind == HookKind::Rebooting || kind == HookKind::ShuttingDown || kind == HookKind::Started) {
+        tags += " session startup";
+      }
+      return tags;
+    };
+
+    for (const auto& kind : kHookKinds) {
+      const auto index = static_cast<std::size_t>(kind.value);
+      const std::string key(kind.key);
+      const std::string baseKey = "settings.schema.hooks.events." + key;
+      const std::string hookCmd = cfg.hooks.commands[index].empty() ? "" : cfg.hooks.commands[index][0];
+      entries.push_back(makeEntry(
+          "hooks", hookGroup(kind.value), tr(baseKey + ".label"), tr(baseKey + ".description"), {"hooks", key},
+          TextSetting{hookCmd, tr("settings.schema.hooks.command-placeholder"), 320.0f}, hookTags(kind.value)));
+    }
+
+    entries.push_back(makeEntry(
+        "hooks", "power", tr("settings.schema.hooks.battery-low-threshold.label"),
+        tr("settings.schema.hooks.battery-low-threshold.description"), {"hooks", "battery_low_percent_threshold"},
+        SliderSetting{static_cast<float>(cfg.hooks.batteryLowPercentThreshold), 0.0f, 100.0f, 1.0f, true},
+        "battery threshold hook trigger"));
 
     // Notifications
     entries.push_back(makeEntry("notifications", "general", tr("settings.schema.notifications.daemon.label"),

@@ -49,6 +49,7 @@ namespace {
   constexpr Logger kLog("settings");
   constexpr std::int32_t kActionSupportReport = 1;
   constexpr std::int32_t kActionFlattenedConfig = 2;
+  constexpr std::string_view kCreateInstancePrefix = "create-instance:";
 
   constexpr float kWindowWidth = 1080.0f;
   constexpr float kWindowHeight = 600.0f;
@@ -109,6 +110,73 @@ namespace {
       key += ":monitor:" + std::string(selectedMonitorOverride);
     }
     return key;
+  }
+
+  bool isCreateInstanceValue(std::string_view value) { return value.starts_with(kCreateInstancePrefix); }
+
+  std::string createInstanceTypeFromValue(std::string_view value) {
+    if (!isCreateInstanceValue(value)) {
+      return {};
+    }
+    value.remove_prefix(kCreateInstancePrefix.size());
+    return std::string(value);
+  }
+
+  std::string pathKey(const std::vector<std::string>& path) {
+    std::string out;
+    for (const auto& part : path) {
+      if (!out.empty()) {
+        out.push_back('.');
+      }
+      out += part;
+    }
+    return out;
+  }
+
+  bool isBarWidgetListPath(const std::vector<std::string>& path) {
+    if (path.size() < 3 || path.front() != "bar") {
+      return false;
+    }
+    const auto& key = path.back();
+    return key == "start" || key == "center" || key == "end";
+  }
+
+  std::vector<std::string> barWidgetItemsForPath(const Config& cfg, const std::vector<std::string>& path) {
+    if (!isBarWidgetListPath(path) || path.size() < 3) {
+      return {};
+    }
+
+    const auto* bar = settings::findBar(cfg, path[1]);
+    if (bar == nullptr) {
+      return {};
+    }
+
+    const auto& lane = path.back();
+    if (path.size() >= 5 && path[2] == "monitor") {
+      const auto* ovr = settings::findMonitorOverride(*bar, path[3]);
+      if (ovr != nullptr) {
+        if (lane == "start") {
+          return ovr->startWidgets.value_or(bar->startWidgets);
+        }
+        if (lane == "center") {
+          return ovr->centerWidgets.value_or(bar->centerWidgets);
+        }
+        if (lane == "end") {
+          return ovr->endWidgets.value_or(bar->endWidgets);
+        }
+      }
+    }
+
+    if (lane == "start") {
+      return bar->startWidgets;
+    }
+    if (lane == "center") {
+      return bar->centerWidgets;
+    }
+    if (lane == "end") {
+      return bar->endWidgets;
+    }
+    return {};
   }
 
 } // namespace
@@ -216,6 +284,10 @@ void SettingsWindow::destroyWindow() {
   if (m_actionsMenuPopup != nullptr) {
     m_actionsMenuPopup->close();
     m_actionsMenuPopup.reset();
+  }
+  if (m_widgetAddPopup != nullptr) {
+    m_widgetAddPopup->close();
+    m_widgetAddPopup.reset();
   }
   m_sceneRoot.reset();
   m_surface.reset();
@@ -340,6 +412,9 @@ void SettingsWindow::clearTransientSettingsState() {
   m_pendingDeleteMonitorOverrideBarName.clear();
   m_pendingDeleteMonitorOverrideMatch.clear();
   m_pendingResetPageScope.clear();
+  if (m_widgetAddPopup != nullptr && m_widgetAddPopup->isOpen()) {
+    m_widgetAddPopup->close();
+  }
 }
 
 void SettingsWindow::openActionsMenu() {
@@ -399,6 +474,50 @@ void SettingsWindow::openActionsMenu() {
       std::move(entries), 220.0f * scale, 8, static_cast<std::int32_t>(anchorAbsX),
       static_cast<std::int32_t>(anchorAbsY), static_cast<std::int32_t>(m_actionsMenuButton->width()),
       static_cast<std::int32_t>(m_actionsMenuButton->height()), m_surface->xdgSurface(), output);
+}
+
+void SettingsWindow::openBarWidgetAddPopup(const std::vector<std::string>& lanePath, Button* anchorButton) {
+  if (m_wayland == nullptr || m_renderContext == nullptr || m_surface == nullptr || anchorButton == nullptr ||
+      m_surface->xdgSurface() == nullptr || m_config == nullptr) {
+    return;
+  }
+
+  if (m_widgetAddPopup == nullptr) {
+    m_widgetAddPopup = std::make_unique<settings::WidgetAddPopup>(*m_wayland, *m_renderContext);
+    m_widgetAddPopup->setOnSelect([this](const std::vector<std::string>& selectedLanePath, const std::string& value) {
+      if (value.empty() || m_config == nullptr) {
+        return;
+      }
+
+      const Config& activeConfig = m_config->config();
+      auto laneItems = barWidgetItemsForPath(activeConfig, selectedLanePath);
+
+      m_pendingDeleteWidgetName.clear();
+      m_pendingDeleteWidgetSettingPath.clear();
+      m_renamingWidgetName.clear();
+      m_editingWidgetName.clear();
+
+      if (const auto type = createInstanceTypeFromValue(value); !type.empty()) {
+        m_creatingWidgetType = type;
+        m_openWidgetPickerPath = pathKey(selectedLanePath);
+        requestSceneRebuild();
+        return;
+      }
+
+      m_creatingWidgetType.clear();
+      m_openWidgetPickerPath.clear();
+      laneItems.push_back(value);
+      setSettingOverride(selectedLanePath, laneItems);
+    });
+  }
+
+  wl_output* output = m_wayland->lastPointerOutput();
+  if (output == nullptr) {
+    output = m_output;
+  }
+
+  m_widgetAddPopup->open(m_surface->xdgSurface(), output, m_wayland->lastInputSerial(), anchorButton, lanePath,
+                         m_config->config(), uiScale(), PopupWindow::AnchorMode::CenterOnAnchor);
 }
 
 void SettingsWindow::saveSupportReport() {
@@ -898,33 +1017,36 @@ void SettingsWindow::rebuildSettingsContent() {
               },
       });
 
-  settings::addSettingsContentSections(*m_contentContainer, m_settingsRegistry,
-                                       settings::SettingsContentContext{
-                                           .config = cfg,
-                                           .configService = m_config,
-                                           .scale = scale,
-                                           .searchQuery = m_searchQuery,
-                                           .selectedSection = m_selectedSection,
-                                           .selectedBar = selectedBar,
-                                           .selectedMonitorOverride = selectedMonitorOverride,
-                                           .showAdvanced = m_showAdvanced,
-                                           .showOverriddenOnly = m_showOverriddenOnly,
-                                           .openWidgetPickerPath = m_openWidgetPickerPath,
-                                           .openSearchPickerPath = m_openSearchPickerPath,
-                                           .editingWidgetName = m_editingWidgetName,
-                                           .pendingDeleteWidgetName = m_pendingDeleteWidgetName,
-                                           .pendingDeleteWidgetSettingPath = m_pendingDeleteWidgetSettingPath,
-                                           .renamingWidgetName = m_renamingWidgetName,
-                                           .creatingWidgetType = m_creatingWidgetType,
-                                           .requestRebuild = requestRebuild,
-                                           .requestContentRebuild = requestContent,
-                                           .resetContentScroll = [this]() { m_contentScrollState.offset = 0.0f; },
-                                           .focusArea = [this](InputArea* area) { m_inputDispatcher.setFocus(area); },
-                                           .setOverride = setOverride,
-                                           .setOverrides = setOverrides,
-                                           .clearOverride = clearOverride,
-                                           .renameWidgetInstance = renameWidget,
-                                       });
+  settings::addSettingsContentSections(
+      *m_contentContainer, m_settingsRegistry,
+      settings::SettingsContentContext{
+          .config = cfg,
+          .configService = m_config,
+          .scale = scale,
+          .searchQuery = m_searchQuery,
+          .selectedSection = m_selectedSection,
+          .selectedBar = selectedBar,
+          .selectedMonitorOverride = selectedMonitorOverride,
+          .showAdvanced = m_showAdvanced,
+          .showOverriddenOnly = m_showOverriddenOnly,
+          .openWidgetPickerPath = m_openWidgetPickerPath,
+          .openSearchPickerPath = m_openSearchPickerPath,
+          .editingWidgetName = m_editingWidgetName,
+          .pendingDeleteWidgetName = m_pendingDeleteWidgetName,
+          .pendingDeleteWidgetSettingPath = m_pendingDeleteWidgetSettingPath,
+          .renamingWidgetName = m_renamingWidgetName,
+          .creatingWidgetType = m_creatingWidgetType,
+          .requestRebuild = requestRebuild,
+          .requestContentRebuild = requestContent,
+          .resetContentScroll = [this]() { m_contentScrollState.offset = 0.0f; },
+          .focusArea = [this](InputArea* area) { m_inputDispatcher.setFocus(area); },
+          .openBarWidgetAddPopup = [this](const std::vector<std::string>& lanePath,
+                                          Button* anchorButton) { openBarWidgetAddPopup(lanePath, anchorButton); },
+          .setOverride = setOverride,
+          .setOverrides = setOverrides,
+          .clearOverride = clearOverride,
+          .renameWidgetInstance = renameWidget,
+      });
 }
 
 void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
@@ -1315,6 +1437,15 @@ bool SettingsWindow::onPointerEvent(const PointerEvent& event) {
     return false;
   }
 
+  if (m_widgetAddPopup != nullptr && m_widgetAddPopup->onPointerEvent(event)) {
+    return true;
+  }
+  if (m_widgetAddPopup != nullptr && m_widgetAddPopup->isOpen() && event.type == PointerEvent::Type::Button &&
+      event.state == 1) {
+    m_widgetAddPopup->close();
+    return true;
+  }
+
   if (m_actionsMenuPopup != nullptr && m_actionsMenuPopup->onPointerEvent(event)) {
     return true;
   }
@@ -1390,6 +1521,16 @@ void SettingsWindow::onKeyboardEvent(const KeyboardEvent& event) {
   if (!isOpen() || m_config == nullptr) {
     return;
   }
+
+  if (m_widgetAddPopup != nullptr && m_widgetAddPopup->isOpen()) {
+    if (event.pressed && m_config->matchesKeybind(KeybindAction::Cancel, event.sym, event.modifiers)) {
+      m_widgetAddPopup->close();
+      return;
+    }
+    m_widgetAddPopup->onKeyboardEvent(event);
+    return;
+  }
+
   const auto requestRebuild = [this]() {
     if (m_surface != nullptr) {
       m_rebuildRequested = true;
@@ -1443,12 +1584,18 @@ void SettingsWindow::onKeyboardEvent(const KeyboardEvent& event) {
 
 void SettingsWindow::onThemeChanged() {
   if (isOpen()) {
+    if (m_widgetAddPopup != nullptr && m_widgetAddPopup->isOpen()) {
+      m_widgetAddPopup->requestRedraw();
+    }
     m_surface->requestRedraw();
   }
 }
 
 void SettingsWindow::onFontChanged() {
   if (isOpen()) {
+    if (m_widgetAddPopup != nullptr && m_widgetAddPopup->isOpen()) {
+      m_widgetAddPopup->requestLayout();
+    }
     m_surface->requestLayout();
   }
 }

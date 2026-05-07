@@ -10,6 +10,7 @@ public:
   IconResolver();
 
   const std::string& resolve(const std::string& iconName);
+  void invalidateCache();
 
   static bool checkThemeChanged();
   static std::uint64_t themeGeneration();
