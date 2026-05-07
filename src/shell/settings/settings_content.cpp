@@ -1233,6 +1233,7 @@ namespace settings {
         .requestRebuild = ctx.requestRebuild,
         .resetContentScroll = ctx.resetContentScroll,
         .focusArea = ctx.focusArea,
+        .openWidgetAddPopup = ctx.openBarWidgetAddPopup,
         .setOverride = ctx.setOverride,
         .setOverrides = ctx.setOverrides,
         .clearOverride = ctx.clearOverride,

@@ -1921,6 +1921,7 @@ namespace settings {
       if (!inherited) {
         const bool pickerOpenForLane = ctx.openWidgetPickerPath == pickerKey;
         auto addBtn = std::make_unique<Button>();
+        auto* addBtnPtr = addBtn.get();
         addBtn->setText(i18n::tr("settings.entities.widget.add"));
         addBtn->setGlyph("add");
         addBtn->setVariant(pickerOpenForLane ? ButtonVariant::Default : ButtonVariant::Ghost);
@@ -1933,7 +1934,18 @@ namespace settings {
                             &editingWidgetName = ctx.editingWidgetName, &renamingWidgetName = ctx.renamingWidgetName,
                             &pendingDeleteWidgetName = ctx.pendingDeleteWidgetName, pickerKey,
                             &pendingDeleteWidgetSettingPath = ctx.pendingDeleteWidgetSettingPath,
-                            &creatingWidgetType = ctx.creatingWidgetType, requestRebuild = ctx.requestRebuild]() {
+                            &creatingWidgetType = ctx.creatingWidgetType, requestRebuild = ctx.requestRebuild,
+                            openWidgetAddPopup = ctx.openWidgetAddPopup, lanePath, addBtnPtr]() {
+          if (openWidgetAddPopup) {
+            openWidgetPickerPath.clear();
+            editingWidgetName.clear();
+            renamingWidgetName.clear();
+            pendingDeleteWidgetName.clear();
+            pendingDeleteWidgetSettingPath.clear();
+            creatingWidgetType.clear();
+            openWidgetAddPopup(lanePath, addBtnPtr);
+            return;
+          }
           openWidgetPickerPath = openWidgetPickerPath == pickerKey ? std::string{} : pickerKey;
           editingWidgetName.clear();
           renamingWidgetName.clear();
