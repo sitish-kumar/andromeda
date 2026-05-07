@@ -688,6 +688,7 @@ void ConfigService::loadOverridesFromFile() {
   m_defaultWallpaperPath.clear();
   m_monitorWallpaperPaths.clear();
   m_setupWizardCompleted = false;
+  m_overridesParseError.clear();
 
   if (m_overridesPath.empty() || !std::filesystem::exists(m_overridesPath)) {
     return;
@@ -697,13 +698,40 @@ void ConfigService::loadOverridesFromFile() {
   try {
     m_overridesTable = toml::parse_file(m_overridesPath);
   } catch (const toml::parse_error& e) {
-    kLog.warn("parse error in {}: {}", m_overridesPath, e.what());
+    const auto& src = e.source();
+    kLog.warn("parse error in {} at line {}, column {}: {}", m_overridesPath, src.begin.line, src.begin.column,
+              e.description());
+    m_overridesParseError =
+        std::format("{} line {}, column {}: {}", std::filesystem::path(m_overridesPath).filename().string(),
+                    src.begin.line, src.begin.column, e.description());
     m_overridesTable = toml::table{};
     return;
   }
   m_setupWizardCompleted = setupWizardCompletedFrom(m_overridesTable);
   stripInternalState(m_overridesTable);
   extractWallpaperFromOverrides();
+}
+
+void ConfigService::setConfigParseError(std::string parseError) {
+  if (parseError.empty()) {
+    // Dismiss any previous config-error notification.
+    if (m_notificationManager != nullptr && m_configErrorNotificationId != 0) {
+      m_notificationManager->close(m_configErrorNotificationId);
+      m_configErrorNotificationId = 0;
+    }
+    m_pendingError.clear();
+    return;
+  }
+
+  if (m_notificationManager != nullptr) {
+    if (m_configErrorNotificationId != 0) {
+      m_notificationManager->close(m_configErrorNotificationId);
+    }
+    m_configErrorNotificationId =
+        m_notificationManager->addInternal("Noctalia", "Config parse error", parseError, Urgency::Critical, 0);
+  } else {
+    m_pendingError = std::move(parseError);
+  }
 }
 
 void ConfigService::deepMerge(toml::table& base, const toml::table& overlay) {
@@ -857,6 +885,7 @@ void ConfigService::loadAll() {
     });
     m_config.bars.push_back(BarConfig{});
     m_config.controlCenter.shortcuts = defaultControlCenterShortcuts();
+    setConfigParseError(m_overridesParseError);
     return;
   }
 
@@ -868,25 +897,10 @@ void ConfigService::loadAll() {
     kLog.warn("config parse error: {}", semanticError);
   }
 
-  const std::string parseError = !firstError.empty() ? firstError : semanticError;
-  if (parseError.empty()) {
-    // Dismiss any previous config-error notification.
-    if (m_notificationManager != nullptr && m_configErrorNotificationId != 0) {
-      m_notificationManager->close(m_configErrorNotificationId);
-      m_configErrorNotificationId = 0;
-    }
-    m_pendingError.clear();
-  } else {
-    if (m_notificationManager != nullptr) {
-      if (m_configErrorNotificationId != 0) {
-        m_notificationManager->close(m_configErrorNotificationId);
-      }
-      m_configErrorNotificationId =
-          m_notificationManager->addInternal("Noctalia", "Config parse error", parseError, Urgency::Critical, 0);
-    } else {
-      m_pendingError = parseError;
-    }
-  }
+  const std::string parseError = !firstError.empty()              ? firstError
+                                 : !m_overridesParseError.empty() ? m_overridesParseError
+                                                                  : semanticError;
+  setConfigParseError(parseError);
 }
 
 void ConfigService::parseTable(const toml::table& tbl) { parseTableInto(tbl, m_config, true); }

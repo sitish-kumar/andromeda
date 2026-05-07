@@ -97,6 +97,7 @@ private:
   void setupWatch();
   void fireReloadCallbacks();
   void loadOverridesFromFile();
+  void setConfigParseError(std::string parseError);
   bool writeOverridesToFile();
   void extractWallpaperFromOverrides();
 
@@ -116,6 +117,7 @@ private:
   bool m_setupWizardCompleted = false;
   mutable std::unordered_map<std::string, bool> m_effectiveOverrideCache;
 
+  std::string m_overridesParseError;
   std::string m_pendingError; // parse error from initial load, sent as notification once manager is wired up
   uint32_t m_configErrorNotificationId = 0; // ID of the active config-error notification, 0 if none
   NotificationManager* m_notificationManager = nullptr;
