@@ -512,14 +512,14 @@ void TrayMenu::refreshEntries() {
   m_entries = m_tray->menuEntries(m_activeItemId);
   if (!m_entries.empty() && trayDrawerEnabled(m_config)) {
     const bool pinned = activeItemPinned();
-    m_entries.push_back(TrayMenuEntry{
-        .id = kPinToggleEntryId,
-        .label = i18n::tr(pinned ? "tray.menu.unpin" : "tray.menu.pin"),
-        .enabled = true,
-        .visible = true,
-        .separator = false,
-        .hasSubmenu = false,
-    });
+    m_entries.insert(m_entries.begin(), TrayMenuEntry{
+                                            .id = kPinToggleEntryId,
+                                            .label = i18n::tr(pinned ? "tray.menu.unpin" : "tray.menu.pin"),
+                                            .enabled = true,
+                                            .visible = true,
+                                            .separator = false,
+                                            .hasSubmenu = false,
+                                        });
   }
   if (m_entries.empty()) {
     m_entries.push_back(TrayMenuEntry{
