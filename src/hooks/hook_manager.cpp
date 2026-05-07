@@ -12,10 +12,18 @@ namespace {
 
 void HookManager::setCommandRunner(CommandRunner runner) { m_runner = std::move(runner); }
 
+void HookManager::setBlockingCommandRunner(CommandRunner runner) { m_blockingRunner = std::move(runner); }
+
 void HookManager::reload(const HooksConfig& config) { m_config = config; }
 
-void HookManager::fire(HookKind kind) const {
-  if (kind == HookKind::Count || !m_runner) {
+void HookManager::fire(HookKind kind) const { fireWithRunner(kind, m_runner); }
+
+void HookManager::fireBlocking(HookKind kind) const {
+  fireWithRunner(kind, m_blockingRunner ? m_blockingRunner : m_runner);
+}
+
+void HookManager::fireWithRunner(HookKind kind, const CommandRunner& runner) const {
+  if (kind == HookKind::Count || !runner) {
     return;
   }
   const auto& cmds = m_config.commands[static_cast<std::size_t>(kind)];
@@ -25,7 +33,7 @@ void HookManager::fire(HookKind kind) const {
   const std::string_view name = hookKindKey(kind);
   kLog.debug("hook '{}' running {} command(s)", name, cmds.size());
   for (const auto& cmd : cmds) {
-    if (!m_runner(cmd)) {
+    if (!runner(cmd)) {
       kLog.warn("hook '{}' command failed: {}", name, cmd);
     }
   }

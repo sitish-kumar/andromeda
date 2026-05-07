@@ -110,6 +110,7 @@ private:
   void syncNotificationDaemon();
   void syncPolkitAgent();
   bool runUserCommand(const std::string& command);
+  bool runUserCommandBlocking(const std::string& command);
   bool runIdleCommand(const std::string& command);
   void onIconThemeChanged();
   void onUpowerStateChangedForHooks();
