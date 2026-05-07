@@ -5,6 +5,7 @@
 
 #include <functional>
 #include <memory>
+#include <vector>
 
 class Node;
 class PopupSurface;
@@ -47,6 +48,9 @@ public:
   void requestLayout();
   void requestRedraw();
 
+  // Dispatch keyboard events to the popup that currently owns the provided Wayland keyboard surface.
+  [[nodiscard]] static bool dispatchKeyboardEvent(wl_surface* keyboardSurface, const KeyboardEvent& event);
+
   [[nodiscard]] static PopupSurfaceConfig makeConfig(std::int32_t anchorX, std::int32_t anchorY,
                                                      std::int32_t anchorWidth, std::int32_t anchorHeight,
                                                      std::uint32_t width, std::uint32_t height, std::uint32_t serial,
@@ -69,4 +73,6 @@ private:
   ContentBuilder m_contentBuilder;
   SceneReadyCallback m_sceneReadyCallback;
   std::function<void()> m_onDismissed;
+
+  static std::vector<PopupWindow*>& openPopups();
 };

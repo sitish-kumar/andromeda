@@ -18,6 +18,11 @@ namespace {
 
 } // namespace
 
+std::vector<PopupWindow*>& PopupWindow::openPopups() {
+  static std::vector<PopupWindow*> popups;
+  return popups;
+}
+
 PopupWindow::PopupWindow(WaylandConnection& wayland, RenderContext& renderContext)
     : m_wayland(wayland), m_renderContext(renderContext) {}
 
@@ -64,9 +69,17 @@ void PopupWindow::openCommon(PopupSurfaceConfig config, zwlr_layer_surface_v1* p
     const bool needsSceneBuild = self->m_sceneRoot == nullptr ||
                                  static_cast<std::uint32_t>(std::round(self->m_sceneRoot->width())) != width ||
                                  static_cast<std::uint32_t>(std::round(self->m_sceneRoot->height())) != height;
-    if (needsSceneBuild || needsLayout) {
+    if (needsSceneBuild) {
       UiPhaseScope layoutPhase(UiPhase::Layout);
       self->buildScene(width, height);
+      return;
+    }
+
+    if (needsLayout && self->m_sceneRoot != nullptr) {
+      UiPhaseScope layoutPhase(UiPhase::Layout);
+      self->m_sceneRoot->setSize(static_cast<float>(width), static_cast<float>(height));
+      self->m_sceneRoot->layout(self->m_renderContext);
+      self->m_surface->setSceneRoot(self->m_sceneRoot.get());
     }
   });
 
@@ -81,6 +94,7 @@ void PopupWindow::openCommon(PopupSurfaceConfig config, zwlr_layer_surface_v1* p
   }
 
   m_wlSurface = m_surface->wlSurface();
+  openPopups().push_back(this);
 }
 
 void PopupWindow::buildScene(std::uint32_t width, std::uint32_t height) {
@@ -109,6 +123,8 @@ void PopupWindow::buildScene(std::uint32_t width, std::uint32_t height) {
 
 void PopupWindow::close() {
   const bool wasOpen = m_surface != nullptr;
+  auto& popups = openPopups();
+  popups.erase(std::remove(popups.begin(), popups.end(), this), popups.end());
   m_sceneRoot.reset();
   m_surface.reset();
   m_inputDispatcher.setSceneRoot(nullptr);
@@ -207,6 +223,26 @@ void PopupWindow::requestRedraw() {
   if (m_surface != nullptr) {
     m_surface->requestRedraw();
   }
+}
+
+bool PopupWindow::dispatchKeyboardEvent(wl_surface* keyboardSurface, const KeyboardEvent& event) {
+  if (keyboardSurface == nullptr) {
+    return false;
+  }
+
+  auto& popups = openPopups();
+  for (auto it = popups.rbegin(); it != popups.rend(); ++it) {
+    auto* popup = *it;
+    if (popup == nullptr || !popup->isOpen()) {
+      continue;
+    }
+    if (popup->wlSurface() == keyboardSurface) {
+      popup->onKeyboardEvent(event);
+      return true;
+    }
+  }
+
+  return false;
 }
 
 PopupSurfaceConfig PopupWindow::makeConfig(std::int32_t anchorX, std::int32_t anchorY, std::int32_t anchorWidth,
