@@ -37,23 +37,17 @@ namespace {
 
   void hashCombine(std::size_t& seed, std::size_t v) { seed ^= v + 0x9E3779B97F4A7C15ULL + (seed << 12) + (seed >> 4); }
 
-  cairo_scaled_font_t* create_scaled_font(cairo_font_face_t* face, float rasterSize) {
+  // Hinting is disabled for icons: tabler glyphs are monoline strokes with
+  // fractional widths by design. Autohinter snaps each stroke to the nearest
+  // integer pixel, which visibly thins the icons. Grayscale AA without
+  // hinting preserves the intended stroke thickness.
+  cairo_scaled_font_t* create_scaled_font(cairo_font_face_t* face, cairo_font_options_t* fontOptions,
+                                          float rasterSize) {
     cairo_matrix_t fontMatrix;
     cairo_matrix_init_scale(&fontMatrix, rasterSize, rasterSize);
     cairo_matrix_t ctm;
     cairo_matrix_init_identity(&ctm);
-
-    // Disable hinting for icons: tabler glyphs are monoline strokes with
-    // fractional widths by design. Autohinter snaps each stroke to the nearest
-    // integer pixel, which visibly thins the icons. Grayscale AA without
-    // hinting preserves the intended stroke thickness.
-    cairo_font_options_t* fontOptions = cairo_font_options_create();
-    cairo_font_options_set_antialias(fontOptions, CAIRO_ANTIALIAS_GRAY);
-    cairo_font_options_set_hint_style(fontOptions, CAIRO_HINT_STYLE_NONE);
-    cairo_font_options_set_hint_metrics(fontOptions, CAIRO_HINT_METRICS_OFF);
-    cairo_scaled_font_t* scaledFont = cairo_scaled_font_create(face, &fontMatrix, &ctm, fontOptions);
-    cairo_font_options_destroy(fontOptions);
-    return scaledFont;
+    return cairo_scaled_font_create(face, &fontMatrix, &ctm, fontOptions);
   }
 
   CairoGlyphRenderer::TextMetrics metrics_from_extents(const cairo_text_extents_t& extents, float invScale) {
@@ -100,6 +94,11 @@ void CairoGlyphRenderer::initialize(const std::string& fontPath, RenderBackend* 
     throw std::runtime_error("CairoGlyphRenderer: cairo_ft_font_face_create_for_ft_face failed");
   }
 
+  m_fontOptions = cairo_font_options_create();
+  cairo_font_options_set_antialias(m_fontOptions, CAIRO_ANTIALIAS_GRAY);
+  cairo_font_options_set_hint_style(m_fontOptions, CAIRO_HINT_STYLE_NONE);
+  cairo_font_options_set_hint_metrics(m_fontOptions, CAIRO_HINT_METRICS_OFF);
+
   m_cache.max_load_factor(1.0f);
   m_cache.reserve(kMaxCacheEntries + 16);
 }
@@ -114,6 +113,10 @@ void CairoGlyphRenderer::cleanup() {
   m_lru.clear();
   m_cacheBytes = 0;
 
+  if (m_fontOptions != nullptr) {
+    cairo_font_options_destroy(m_fontOptions);
+    m_fontOptions = nullptr;
+  }
   if (m_cairoFace != nullptr) {
     cairo_font_face_destroy(m_cairoFace);
     m_cairoFace = nullptr;
@@ -172,7 +175,7 @@ CairoGlyphRenderer::TextMetrics CairoGlyphRenderer::measureGlyph(char32_t codepo
     return {};
   }
 
-  cairo_scaled_font_t* scaledFont = create_scaled_font(m_cairoFace, rasterSize);
+  cairo_scaled_font_t* scaledFont = create_scaled_font(m_cairoFace, m_fontOptions, rasterSize);
   if (scaledFont == nullptr || cairo_scaled_font_status(scaledFont) != CAIRO_STATUS_SUCCESS) {
     if (scaledFont != nullptr) {
       cairo_scaled_font_destroy(scaledFont);
@@ -212,7 +215,7 @@ CairoGlyphRenderer::CacheEntry* CairoGlyphRenderer::lookupOrRasterize(char32_t c
     return nullptr;
   }
 
-  cairo_scaled_font_t* scaledFont = create_scaled_font(m_cairoFace, rasterSize);
+  cairo_scaled_font_t* scaledFont = create_scaled_font(m_cairoFace, m_fontOptions, rasterSize);
   if (scaledFont == nullptr || cairo_scaled_font_status(scaledFont) != CAIRO_STATUS_SUCCESS) {
     if (scaledFont != nullptr) {
       cairo_scaled_font_destroy(scaledFont);
