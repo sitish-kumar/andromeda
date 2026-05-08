@@ -130,9 +130,10 @@ private:
   void finishRead(bool discard);
   void addToHistory(ClipboardEntry entry);
   void loadPersistedHistory();
-  void persistHistory();
+  bool persistHistory();
   void trimHistoryToBudget();
   [[nodiscard]] bool loadEntryPayload(ClipboardEntry& entry);
+  static void evictPayloadData(ClipboardEntry& entry);
   [[nodiscard]] static std::string stateDirectory();
   [[nodiscard]] static std::string manifestPath();
   [[nodiscard]] static std::string entriesDirectory();
