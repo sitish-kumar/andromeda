@@ -107,7 +107,20 @@ bool HyprlandWorkspaceBackend::connectSocket() {
 
   refreshSnapshot();
   kLog.info("connected to hyprland IPC at {}", m_eventSocketPath);
+  updateConfigProvider();
   return true;
+}
+
+void HyprlandWorkspaceBackend::updateConfigProvider() {
+  m_configLua = false;
+  const auto json = requestJson("j/status");
+  if (!json || !json->is_object()) {
+    return;
+  }
+  std::string configProvider = json->value("configProvider", "");
+  if (configProvider.compare("lua") == 0) {
+    m_configLua = true;
+  }
 }
 
 void HyprlandWorkspaceBackend::setChangeCallback(ChangeCallback callback) { m_changeCallback = std::move(callback); }
@@ -118,7 +131,11 @@ void HyprlandWorkspaceBackend::activate(const std::string& id) {
   }
 
   std::string response;
-  (void)sendRequest(std::format("dispatch workspace {}", id), response);
+  if (m_configLua) {
+    (void)sendRequest(std::format("dispatch hl.dsp.focus({{workspace = {}}})", id), response);
+  } else {
+    (void)sendRequest(std::format("dispatch workspace {}", id), response);
+  }
 }
 
 void HyprlandWorkspaceBackend::activateForOutput(wl_output* /*output*/, const std::string& id) { activate(id); }

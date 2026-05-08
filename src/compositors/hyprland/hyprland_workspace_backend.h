@@ -56,6 +56,7 @@ private:
   };
 
   bool ensureSocketPaths();
+  void updateConfigProvider();
   [[nodiscard]] bool sendRequest(const std::string& request, std::string& response) const;
   [[nodiscard]] std::optional<nlohmann::json> requestJson(const std::string& request) const;
   void refreshSnapshot();
@@ -85,6 +86,7 @@ private:
   int m_eventSocketFd = -1;
   std::string m_requestSocketPath;
   std::string m_eventSocketPath;
+  bool m_configLua;
   std::vector<char> m_readBuffer;
   std::vector<WorkspaceState> m_workspaces;
   std::unordered_map<std::uint64_t, ToplevelState> m_toplevels;
