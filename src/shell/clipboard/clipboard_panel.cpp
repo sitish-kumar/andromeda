@@ -716,6 +716,10 @@ void ClipboardPanel::onClose() {
   m_lastHeight = 0.0f;
   m_pendingScrollToSelected = false;
   m_thumbnailRefreshPending = false;
+
+  if (m_clipboard != nullptr) {
+    m_clipboard->evictAllPayloads();
+  }
 }
 
 InputArea* ClipboardPanel::initialFocusArea() const {
@@ -821,6 +825,9 @@ void ClipboardPanel::rebuildPreview(Renderer& renderer, float width, float heigh
   }
 
   if (m_clipboard != nullptr) {
+    if (m_previewPayloadIndex != static_cast<std::size_t>(-1) && m_previewPayloadIndex != historyIndex) {
+      m_clipboard->evictEntryPayload(m_previewPayloadIndex);
+    }
     (void)m_clipboard->ensureEntryLoaded(historyIndex);
   }
   const auto& loadedEntry = m_clipboard != nullptr ? m_clipboard->history()[historyIndex] : entry;
