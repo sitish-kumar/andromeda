@@ -1,8 +1,10 @@
 #include "shell/clipboard/clipboard_panel.h"
 
 #include "config/config_service.h"
+#include "core/deferred_call.h"
 #include "core/ui_phase.h"
 #include "i18n/i18n.h"
+#include "render/core/async_texture_cache.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
 #include "shell/control_center/tab.h"
@@ -23,6 +25,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <ctime>
 #include <memory>
 #include <optional>
@@ -359,8 +362,9 @@ private:
   std::function<void(std::size_t)> m_onActivate;
 };
 
-ClipboardPanel::ClipboardPanel(ClipboardService* clipboard, ConfigService* config, ThumbnailService* thumbnails)
-    : m_clipboard(clipboard), m_config(config), m_thumbnails(thumbnails) {}
+ClipboardPanel::ClipboardPanel(ClipboardService* clipboard, ConfigService* config, ThumbnailService* thumbnails,
+                               AsyncTextureCache* asyncTextures)
+    : m_clipboard(clipboard), m_config(config), m_thumbnails(thumbnails), m_asyncTextures(asyncTextures) {}
 
 ClipboardPanel::~ClipboardPanel() = default;
 
@@ -720,6 +724,9 @@ void ClipboardPanel::onClose() {
   if (m_clipboard != nullptr) {
     m_clipboard->evictAllPayloads();
   }
+  if (m_asyncTextures != nullptr) {
+    DeferredCall::callLater([asyncTextures = m_asyncTextures]() { asyncTextures->trimUnused(0); });
+  }
 }
 
 InputArea* ClipboardPanel::initialFocusArea() const {
@@ -824,22 +831,28 @@ void ClipboardPanel::rebuildPreview(Renderer& renderer, float width, float heigh
     return;
   }
 
-  if (m_clipboard != nullptr) {
-    if (m_previewPayloadIndex != static_cast<std::size_t>(-1) && m_previewPayloadIndex != historyIndex) {
-      m_clipboard->evictEntryPayload(m_previewPayloadIndex);
-    }
-    (void)m_clipboard->ensureEntryLoaded(historyIndex);
+  if (m_clipboard != nullptr && m_previewPayloadIndex != static_cast<std::size_t>(-1) &&
+      m_previewPayloadIndex != historyIndex) {
+    m_clipboard->evictEntryPayload(m_previewPayloadIndex);
   }
-  const auto& loadedEntry = m_clipboard != nullptr ? m_clipboard->history()[historyIndex] : entry;
 
-  if (loadedEntry.isImage()) {
+  if (entry.isImage()) {
     auto image = std::make_unique<Image>();
-    image->setSize(width, std::min(kPreviewImageHeight, std::max(180.0f, height - Style::spaceMd)));
+    const float imageHeight = std::min(kPreviewImageHeight, std::max(180.0f, height - Style::spaceMd));
+    image->setSize(width, imageHeight);
     image->setFit(ImageFit::Contain);
-    image->setSourceBytes(renderer, loadedEntry.data.data(), loadedEntry.data.size());
+    const int previewTargetSize = static_cast<int>(std::ceil(std::max(width, imageHeight)));
+    image->setAsyncReadyCallback([]() { PanelManager::instance().refresh(); });
+    if (m_asyncTextures != nullptr && !entry.payloadPath.empty()) {
+      (void)image->setSourceFileAsync(renderer, *m_asyncTextures, entry.payloadPath, previewTargetSize);
+    }
     m_previewImage = image.get();
     m_previewContent->addChild(std::move(image));
   } else {
+    if (m_clipboard != nullptr) {
+      (void)m_clipboard->ensureEntryLoaded(historyIndex);
+    }
+    const auto& loadedEntry = m_clipboard != nullptr ? m_clipboard->history()[historyIndex] : entry;
     constexpr std::size_t kMaxPreviewChars = 8000;
     constexpr int kMaxPreviewLines = 200;
 

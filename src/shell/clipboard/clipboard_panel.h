@@ -5,6 +5,8 @@
 #include "shell/panel/panel.h"
 #include "wayland/clipboard_service.h"
 
+class AsyncTextureCache;
+
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -27,7 +29,8 @@ class VirtualGridView;
 
 class ClipboardPanel : public Panel {
 public:
-  ClipboardPanel(ClipboardService* clipboard, ConfigService* config, ThumbnailService* thumbnails);
+  ClipboardPanel(ClipboardService* clipboard, ConfigService* config, ThumbnailService* thumbnails,
+                 AsyncTextureCache* asyncTextures);
   ~ClipboardPanel() override;
   void setActivateCallback(std::function<void(const ClipboardEntry&)> callback);
 
@@ -63,6 +66,7 @@ private:
   std::function<void(const ClipboardEntry&)> m_activateCallback;
   ConfigService* m_config = nullptr;
   ThumbnailService* m_thumbnails = nullptr;
+  AsyncTextureCache* m_asyncTextures = nullptr;
 
   InputArea* m_focusArea = nullptr;
   Flex* m_rootLayout = nullptr;
