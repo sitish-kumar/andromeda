@@ -1103,8 +1103,11 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
     auto canJoinCapsuleGroup = [](const Widget& first, const Widget& next) {
       const auto& firstSpec = first.barCapsuleSpec();
       const auto& nextSpec = next.barCapsuleSpec();
+      const bool sameCapsuleStyle =
+          firstSpec.fill == nextSpec.fill && firstSpec.group == nextSpec.group && firstSpec.border == nextSpec.border &&
+          firstSpec.foreground == nextSpec.foreground && firstSpec.opacity == nextSpec.opacity;
       return firstSpec.enabled && nextSpec.enabled && !first.isAnchor() && !next.isAnchor() &&
-             !firstSpec.group.empty() && firstSpec == nextSpec && first.contentScale() == next.contentScale();
+             !firstSpec.group.empty() && sameCapsuleStyle && first.contentScale() == next.contentScale();
     };
 
     std::size_t index = 0;
@@ -1172,6 +1175,7 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
 
       for (std::size_t memberIndex = index; memberIndex < runEnd; ++memberIndex) {
         auto& member = widgets[memberIndex];
+        run.spec.padding = std::max(run.spec.padding, member->barCapsuleSpec().padding);
         member->setBarCapsuleScene(shellPtr, bgPtr);
         run.widgets.push_back(member.get());
         innerPtr->addChild(member->releaseRoot());
