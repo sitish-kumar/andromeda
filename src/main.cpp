@@ -9,6 +9,7 @@
 #include <clocale>
 #include <cstdio>
 #include <cstring>
+#include <malloc.h>
 #include <stdexcept>
 #include <string>
 
@@ -60,6 +61,7 @@ namespace {
 } // namespace
 
 int main(int argc, char* argv[]) {
+  mallopt(M_ARENA_MAX, 2);
   std::setlocale(LC_ALL, "");
   if (argc >= 2) {
     if (std::strcmp(argv[1], "theme") == 0)
