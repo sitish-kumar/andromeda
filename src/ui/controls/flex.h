@@ -92,9 +92,10 @@ protected:
   LayoutSize measureByLayout(Renderer& renderer, const LayoutConstraints& constraints);
   void arrangeByLayout(Renderer& renderer, const LayoutRect& rect);
 
-private:
+public:
   struct ChildLayout;
 
+private:
   void ensureBackground();
   void applyPalette();
   LayoutSize runLayout(Renderer& renderer, const LayoutConstraints& constraints, bool arrangeChildren);

@@ -48,12 +48,10 @@ namespace clipboard_paste {
 
   } // namespace
 
-  bool pasteEntry(const ClipboardEntry& entry, ClipboardAutoPasteMode mode, VirtualKeyboardService& virtualKeyboard) {
+  bool pasteEntry(bool isImage, ClipboardAutoPasteMode mode, VirtualKeyboardService& virtualKeyboard) {
     if (mode == ClipboardAutoPasteMode::Off) {
       return true;
     }
-
-    const bool isImage = entry.isImage();
     const auto shortcut = virtualPasteShortcutFor(mode, isImage);
     if (shortcut.has_value() && virtualKeyboard.sendPasteShortcut(*shortcut)) {
       return true;

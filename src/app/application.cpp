@@ -827,19 +827,20 @@ void Application::initUi() {
     }
     m_settingsWindow.open();
   });
-  auto clipboardPanel = std::make_unique<ClipboardPanel>(&m_clipboardService, &m_configService, &m_thumbnailService);
+  auto clipboardPanel = std::make_unique<ClipboardPanel>(&m_clipboardService, &m_configService, &m_thumbnailService,
+                                                         &m_asyncTextureCache);
   clipboardPanel->setActivateCallback([this](const ClipboardEntry& entry) {
     m_panelManager.close();
     const ClipboardAutoPasteMode mode = m_configService.config().shell.clipboardAutoPaste;
     if (mode == ClipboardAutoPasteMode::Off) {
       return;
     }
-    const ClipboardEntry selectedEntry = entry;
+    const bool isImage = entry.isImage();
     m_clipboardAutoPasteTimer.stop();
-    m_clipboardAutoPasteTimer.start(std::chrono::milliseconds(Style::animFast + 30), [this, selectedEntry]() {
-      DeferredCall::callLater([this, selectedEntry]() {
+    m_clipboardAutoPasteTimer.start(std::chrono::milliseconds(Style::animFast + 30), [this, isImage]() {
+      DeferredCall::callLater([this, isImage]() {
         const ClipboardAutoPasteMode activeMode = m_configService.config().shell.clipboardAutoPaste;
-        (void)clipboard_paste::pasteEntry(selectedEntry, activeMode, m_virtualKeyboardService);
+        (void)clipboard_paste::pasteEntry(isImage, activeMode, m_virtualKeyboardService);
       });
     });
   });

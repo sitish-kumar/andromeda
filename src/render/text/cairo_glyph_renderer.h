@@ -15,6 +15,7 @@ typedef struct FT_FaceRec_* FT_Face;
 
 // Cairo forwards
 typedef struct _cairo_font_face cairo_font_face_t;
+typedef struct _cairo_font_options cairo_font_options_t;
 
 class RenderBackend;
 class TextureManager;
@@ -87,6 +88,7 @@ private:
   FT_Library m_ftLibrary = nullptr;
   FT_Face m_face = nullptr;
   cairo_font_face_t* m_cairoFace = nullptr;
+  cairo_font_options_t* m_fontOptions = nullptr;
   RenderBackend* m_backend = nullptr;
   TextureManager* m_textureManager = nullptr;
 

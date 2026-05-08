@@ -9,6 +9,7 @@
 #include "ui/style.h"
 
 #include <algorithm>
+#include <deque>
 #include <memory>
 #include <vector>
 
@@ -77,6 +78,43 @@ struct Flex::ChildLayout {
   float main = 0.0f;
   float cross = 0.0f;
 };
+
+namespace {
+
+  // Pool of scratch buffers for Flex::runLayout. Layout can recurse (a Flex
+  // child triggers another runLayout while the parent's items vector is still
+  // live), so we keep a stack indexed by nesting depth. Each call grabs the
+  // slot for its depth and clears it on entry; capacity is preserved across
+  // calls so steady-state layout does no heap allocation for these vectors.
+  // std::deque is used so growing the stack during a recursive call does not
+  // invalidate references held by parent frames.
+  thread_local std::deque<std::vector<Flex::ChildLayout>> tlScratchStack;
+  thread_local std::size_t tlScratchDepth = 0;
+
+  class FlexScratchGuard {
+  public:
+    FlexScratchGuard() {
+      if (tlScratchStack.size() <= tlScratchDepth) {
+        tlScratchStack.emplace_back();
+      }
+      m_slot = &tlScratchStack[tlScratchDepth++];
+      m_slot->clear();
+    }
+    ~FlexScratchGuard() {
+      m_slot->clear();
+      --tlScratchDepth;
+    }
+
+    FlexScratchGuard(const FlexScratchGuard&) = delete;
+    FlexScratchGuard& operator=(const FlexScratchGuard&) = delete;
+
+    [[nodiscard]] std::vector<Flex::ChildLayout>& items() noexcept { return *m_slot; }
+
+  private:
+    std::vector<Flex::ChildLayout>* m_slot;
+  };
+
+} // namespace
 
 Flex::Flex() {
   m_paletteConn = paletteChanged().connect([this] { applyPalette(); });
@@ -378,7 +416,8 @@ LayoutSize Flex::runLayout(Renderer& renderer, const LayoutConstraints& constrai
           ? std::max(0.0f, containerCross - crossPaddingStart(*this, horizontal) - crossPaddingEnd(*this, horizontal))
           : 0.0f;
 
-  std::vector<ChildLayout> items;
+  FlexScratchGuard scratch;
+  auto& items = scratch.items();
   items.reserve(children().size());
   float totalGrow = 0.0f;
   for (auto& child : children()) {

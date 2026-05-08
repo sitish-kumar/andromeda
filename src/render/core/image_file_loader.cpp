@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <stb_image_resize2.h>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wexpansion-to-defined"
 #include <librsvg/rsvg.h>
@@ -164,7 +165,27 @@ std::optional<LoadedImageFile> loadImageFile(const std::string& path, int target
   }
 
   if (auto decoded = decodeRasterImage(fileData.data(), fileData.size(), errorMessage)) {
-    return LoadedImageFile{.rgba = std::move(decoded->pixels), .width = decoded->width, .height = decoded->height};
+    int width = decoded->width;
+    int height = decoded->height;
+    auto pixels = std::move(decoded->pixels);
+
+    const int maxDim = std::max(width, height);
+    if (targetSize > 0 && maxDim > targetSize && width > 0 && height > 0) {
+      const float scale = static_cast<float>(targetSize) / static_cast<float>(maxDim);
+      const int resizedW = std::max(1, static_cast<int>(std::lround(static_cast<float>(width) * scale)));
+      const int resizedH = std::max(1, static_cast<int>(std::lround(static_cast<float>(height) * scale)));
+
+      std::vector<std::uint8_t> resized(static_cast<std::size_t>(resizedW) * static_cast<std::size_t>(resizedH) * 4U);
+      unsigned char* result =
+          stbir_resize_uint8_linear(pixels.data(), width, height, 0, resized.data(), resizedW, resizedH, 0, STBIR_RGBA);
+      if (result != nullptr) {
+        pixels = std::move(resized);
+        width = resizedW;
+        height = resizedH;
+      }
+    }
+
+    return LoadedImageFile{.rgba = std::move(pixels), .width = width, .height = height};
   }
 
   return std::nullopt;

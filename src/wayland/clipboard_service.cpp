@@ -18,6 +18,7 @@
 #include <poll.h>
 #include <ranges>
 #include <sstream>
+#include <stdexcept>
 #include <string_view>
 #include <unistd.h>
 #include <unordered_set>
@@ -409,13 +410,7 @@ void ClipboardService::evictEntryPayload(std::size_t index) {
   if (index >= m_history.size()) {
     return;
   }
-  auto& entry = m_history[index];
-  if (entry.data.empty() || entry.payloadPath.empty()) {
-    return;
-  }
-  entry.data.clear();
-  entry.data.shrink_to_fit();
-  entry.payloadLoaded = false;
+  evictPayloadData(m_history[index]);
 }
 
 void ClipboardService::evictAllPayloads() {
@@ -807,8 +802,16 @@ void ClipboardService::addToHistory(ClipboardEntry entry) {
   }
 
   if (!m_history.empty() && !entry.data.empty()) {
-    const ClipboardEntry& current = m_history.front();
-    const bool samePayload = current.data == entry.data;
+    ClipboardEntry& current = m_history.front();
+    const bool currentWasLoaded = current.payloadLoaded;
+    bool samePayload = false;
+    if (current.byteSize == entry.byteSize) {
+      const bool currentLoaded = current.payloadLoaded || loadEntryPayload(current);
+      samePayload = currentLoaded && current.data == entry.data;
+      if (!currentWasLoaded) {
+        evictPayloadData(current);
+      }
+    }
     const bool sameMime = current.dataMimeType == entry.dataMimeType;
     const bool equivalentText = isTextMimeType(current.dataMimeType) && isTextMimeType(entry.dataMimeType);
     if (samePayload && (sameMime || equivalentText)) {
@@ -826,7 +829,9 @@ void ClipboardService::addToHistory(ClipboardEntry entry) {
   trimHistoryToBudget();
 
   ++m_changeSerial;
-  persistHistory();
+  if (persistHistory()) {
+    evictPayloadData(m_history.front());
+  }
   const std::string latestMime = m_history.front().mimeTypes.empty() ? "" : m_history.front().mimeTypes.front();
   kLog.debug("clipboard history size={} entries={} latest_mime={}", m_historyBytes, m_history.size(), latestMime);
   notifyChanged();
@@ -885,7 +890,7 @@ void ClipboardService::loadPersistedHistory() {
   }
 }
 
-void ClipboardService::persistHistory() {
+bool ClipboardService::persistHistory() {
   namespace fs = std::filesystem;
 
   try {
@@ -906,8 +911,15 @@ void ClipboardService::persistHistory() {
       activePayloadPaths.insert(entry.payloadPath);
       if (entry.payloadLoaded && !entry.data.empty()) {
         std::ofstream payload(entry.payloadPath, std::ios::binary | std::ios::trunc);
+        if (!payload.is_open()) {
+          throw std::runtime_error("failed to open clipboard payload for writing");
+        }
         payload.write(reinterpret_cast<const char*>(entry.data.data()),
                       static_cast<std::streamsize>(entry.data.size()));
+        payload.flush();
+        if (!payload.good()) {
+          throw std::runtime_error("failed to write clipboard payload");
+        }
       }
 
       const auto capturedAtMs =
@@ -929,8 +941,14 @@ void ClipboardService::persistHistory() {
     const fs::path tmpPath = tmp.string() + ".tmp";
     {
       std::ofstream out(tmpPath);
+      if (!out.is_open()) {
+        throw std::runtime_error("failed to open clipboard manifest for writing");
+      }
       out << nlohmann::json{{"entries", entries}}.dump(2);
       out.flush();
+      if (!out.good()) {
+        throw std::runtime_error("failed to write clipboard manifest");
+      }
     }
     fs::rename(tmpPath, manifest);
 
@@ -943,8 +961,10 @@ void ClipboardService::persistHistory() {
         }
       }
     }
+    return true;
   } catch (const std::exception& e) {
     kLog.warn("failed to persist clipboard history: {}", e.what());
+    return false;
   }
 }
 
@@ -976,6 +996,11 @@ bool ClipboardService::loadEntryPayload(ClipboardEntry& entry) {
   entry.data.resize(static_cast<std::size_t>(size));
   file.seekg(0);
   file.read(reinterpret_cast<char*>(entry.data.data()), size);
+  if (!file.good()) {
+    entry.data.clear();
+    entry.data.shrink_to_fit();
+    return false;
+  }
   entry.payloadLoaded = true;
   if (entry.byteSize == 0) {
     entry.byteSize = entry.data.size();
@@ -984,6 +1009,15 @@ bool ClipboardService::loadEntryPayload(ClipboardEntry& entry) {
     entry.textPreview = buildTextPreview(entry.data);
   }
   return true;
+}
+
+void ClipboardService::evictPayloadData(ClipboardEntry& entry) {
+  if (entry.data.empty() || entry.payloadPath.empty()) {
+    return;
+  }
+  entry.data.clear();
+  entry.data.shrink_to_fit();
+  entry.payloadLoaded = false;
 }
 
 std::string ClipboardService::stateDirectory() {
