@@ -56,6 +56,9 @@ Polkit agent support requires development files that provide the `polkit-agent-1
 modules. Some distros ship these in the runtime `polkit` package, while split-package distros use names such as
 `polkit-devel`, `polkit-dev`, or `libpolkit-agent-1-dev` / `libpolkit-gobject-1-dev`.
 
+**Optional:** installing `jemalloc` (Fedora: `jemalloc-devel`, Arch: `jemalloc`, Debian/Ubuntu: `libjemalloc-dev`, Void: `jemalloc`)
+reduces memory fragmentation in long-running sessions. When detected at build time it is used automatically.
+
 Sanitizer runtime packages are only needed for ASan/UBSan builds configured with `just configure asan`.
 
 ## Build
