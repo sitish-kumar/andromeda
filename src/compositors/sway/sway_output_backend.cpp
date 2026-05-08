@@ -46,7 +46,9 @@ SwayOutputBackend::SwayOutputBackend(std::string_view compositorHint) {
   const bool hinted = StringUtils::containsInsensitive(compositorHint, "sway");
   const char* swaySocket = std::getenv("SWAYSOCK");
   const char* i3Socket = std::getenv("I3SOCK");
-  m_enabled = hinted || (swaySocket != nullptr && swaySocket[0] != '\0') || (i3Socket != nullptr && i3Socket[0] != '\0');
+  m_enabled = hinted ||
+              (swaySocket != nullptr && swaySocket[0] != '\0') ||
+              (i3Socket != nullptr && i3Socket[0] != '\0');
 }
 
 bool SwayOutputBackend::isAvailable() const noexcept { return m_enabled; }
