@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <malloc.h>
 #include <string>
 
 PanelManager* PanelManager::s_instance = nullptr;
@@ -684,6 +685,8 @@ void PanelManager::destroyPanel() {
   if (m_wayland != nullptr) {
     m_wayland->stopKeyRepeat();
   }
+
+  malloc_trim(0);
 }
 
 void PanelManager::togglePanel(const std::string& panelId, PanelOpenRequest request) {

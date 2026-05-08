@@ -405,6 +405,25 @@ bool ClipboardService::ensureEntryLoaded(std::size_t index) {
   return loadEntryPayload(m_history[index]);
 }
 
+void ClipboardService::evictEntryPayload(std::size_t index) {
+  if (index >= m_history.size()) {
+    return;
+  }
+  auto& entry = m_history[index];
+  if (entry.data.empty() || entry.payloadPath.empty()) {
+    return;
+  }
+  entry.data.clear();
+  entry.data.shrink_to_fit();
+  entry.payloadLoaded = false;
+}
+
+void ClipboardService::evictAllPayloads() {
+  for (std::size_t i = 0; i < m_history.size(); ++i) {
+    evictEntryPayload(i);
+  }
+}
+
 bool ClipboardService::copyText(std::string text) {
   std::vector<std::uint8_t> data(text.begin(), text.end());
   return copyData({"text/plain;charset=utf-8", "text/plain"}, std::move(data));

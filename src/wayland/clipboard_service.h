@@ -73,6 +73,8 @@ public:
   [[nodiscard]] std::size_t addPollFds(std::vector<pollfd>& fds) const;
 
   bool ensureEntryLoaded(std::size_t index);
+  void evictEntryPayload(std::size_t index);
+  void evictAllPayloads();
   bool copyText(std::string text);
   bool copyEntry(const ClipboardEntry& entry);
   bool promoteEntry(std::size_t index);

@@ -972,6 +972,8 @@ void Application::initUi() {
     m_fileDialogPopup.requestLayout();
   });
 
+  m_configService.addReloadCallback([]() { malloc_trim(0); });
+
   m_timeService.setTickSecondCallback([this]() {
     m_wallpaper.onSecondTick();
     if (m_lockScreen.isActive()) {
