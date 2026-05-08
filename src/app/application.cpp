@@ -834,12 +834,12 @@ void Application::initUi() {
     if (mode == ClipboardAutoPasteMode::Off) {
       return;
     }
-    const ClipboardEntry selectedEntry = entry;
+    const bool isImage = entry.isImage();
     m_clipboardAutoPasteTimer.stop();
-    m_clipboardAutoPasteTimer.start(std::chrono::milliseconds(Style::animFast + 30), [this, selectedEntry]() {
-      DeferredCall::callLater([this, selectedEntry]() {
+    m_clipboardAutoPasteTimer.start(std::chrono::milliseconds(Style::animFast + 30), [this, isImage]() {
+      DeferredCall::callLater([this, isImage]() {
         const ClipboardAutoPasteMode activeMode = m_configService.config().shell.clipboardAutoPaste;
-        (void)clipboard_paste::pasteEntry(selectedEntry, activeMode, m_virtualKeyboardService);
+        (void)clipboard_paste::pasteEntry(isImage, activeMode, m_virtualKeyboardService);
       });
     });
   });
