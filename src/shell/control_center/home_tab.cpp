@@ -1,4 +1,4 @@
-#include "shell/control_center/dashboard_tab.h"
+#include "shell/control_center/home_tab.h"
 
 #include "config/config_service.h"
 #include "core/build_info.h"
@@ -32,18 +32,18 @@ using namespace control_center;
 
 namespace {
 
-  constexpr float kDashboardAvatarScale = 2.6f;
+  constexpr float kHomeAvatarScale = 2.6f;
   // Bottom row: 1 : 1 — equal split so media/clock and shortcuts feel balanced (tweak either value slightly if needed).
-  constexpr float kDashboardMainColumnFlexGrow = 1.66f;
-  constexpr float kDashboardShortcutsFlexGrow = 1.0f;
-  constexpr auto kDashboardRealtimeUpdateInterval = std::chrono::milliseconds(1000);
-  constexpr auto kDashboardMprisPollInterval = std::chrono::milliseconds(1000);
-  constexpr auto kDashboardTransientPositionRegressionWindow = std::chrono::milliseconds(1500);
-  constexpr std::int64_t kDashboardTransientPositionRegressionFloorUs = 5'000'000;
-  constexpr std::int64_t kDashboardTransientPositionRegressionCeilingUs = 1'500'000;
-  constexpr std::int64_t kDashboardTransientPositionRegressionDeltaUs = 5'000'000;
+  constexpr float kHomeMainColumnFlexGrow = 1.66f;
+  constexpr float kHomeShortcutsFlexGrow = 1.0f;
+  constexpr auto kHomeRealtimeUpdateInterval = std::chrono::milliseconds(1000);
+  constexpr auto kHomeMprisPollInterval = std::chrono::milliseconds(1000);
+  constexpr auto kHomeTransientPositionRegressionWindow = std::chrono::milliseconds(1500);
+  constexpr std::int64_t kHomeTransientPositionRegressionFloorUs = 5'000'000;
+  constexpr std::int64_t kHomeTransientPositionRegressionCeilingUs = 1'500'000;
+  constexpr std::int64_t kHomeTransientPositionRegressionDeltaUs = 5'000'000;
 
-  float dashboardAvatarSize(float scale) { return Style::controlHeightLg * kDashboardAvatarScale * scale; }
+  float homeAvatarSize(float scale) { return Style::controlHeightLg * kHomeAvatarScale * scale; }
 
   std::string formatShellTime(const ConfigService* config) {
     const char* format = config != nullptr ? config->config().shell.timeFormat.c_str() : "{:%H:%M}";
@@ -55,18 +55,18 @@ namespace {
     return formatLocalTime(format);
   }
 
-  void applyDashboardCardStyle(Flex& card, float scale) {
+  void applyHomeCardStyle(Flex& card, float scale) {
     applySectionCardStyle(card, scale);
     card.setGap(Style::spaceSm * scale);
   }
 
 } // namespace
 
-DashboardTab::DashboardTab(MprisService* mpris, WeatherService* weather, PipeWireService* audio,
-                           PowerProfilesService* powerProfiles, ConfigService* config, NetworkService* network,
-                           BluetoothService* bluetooth, GammaService* nightLight, noctalia::theme::ThemeService* theme,
-                           NotificationManager* notifications, IdleInhibitor* idleInhibitor,
-                           DependencyService* dependencies, WaylandConnection* wayland, Wallpaper* wallpaper)
+HomeTab::HomeTab(MprisService* mpris, WeatherService* weather, PipeWireService* audio,
+                 PowerProfilesService* powerProfiles, ConfigService* config, NetworkService* network,
+                 BluetoothService* bluetooth, GammaService* nightLight, noctalia::theme::ThemeService* theme,
+                 NotificationManager* notifications, IdleInhibitor* idleInhibitor, DependencyService* dependencies,
+                 WaylandConnection* wayland, Wallpaper* wallpaper)
     : m_mpris(mpris), m_weather(weather), m_config(config), m_wallpaper(wallpaper), m_services{
                                                                                         .network = network,
                                                                                         .bluetooth = bluetooth,
@@ -83,9 +83,9 @@ DashboardTab::DashboardTab(MprisService* mpris, WeatherService* weather, PipeWir
                                                                                         .wayland = wayland,
                                                                                     } {}
 
-DashboardTab::~DashboardTab() = default;
+HomeTab::~HomeTab() = default;
 
-std::unique_ptr<Flex> DashboardTab::create() {
+std::unique_ptr<Flex> HomeTab::create() {
   const float scale = contentScale();
   const std::string displayName = sessionDisplayName();
 
@@ -97,7 +97,7 @@ std::unique_ptr<Flex> DashboardTab::create() {
 
   // --- User card ---
   auto userCard = std::make_unique<Flex>();
-  applyDashboardCardStyle(*userCard, scale);
+  applyHomeCardStyle(*userCard, scale);
   userCard->setFlexGrow(1.0f);
   userCard->setFillHeight(true);
   userCard->setJustify(FlexJustify::Center);
@@ -124,7 +124,7 @@ std::unique_ptr<Flex> DashboardTab::create() {
   userRow->setAlign(FlexAlign::Center);
   userRow->setGap(Style::spaceMd * scale);
 
-  const float avatarSize = dashboardAvatarSize(scale);
+  const float avatarSize = homeAvatarSize(scale);
   auto avatar = std::make_unique<Image>();
   avatar->setRadius(avatarSize * 0.5f);
   avatar->setBorder(colorSpecFromRole(ColorRole::Primary), Style::borderWidth * 3.0f);
@@ -176,12 +176,12 @@ std::unique_ptr<Flex> DashboardTab::create() {
   leftColumn->setAlign(FlexAlign::Stretch);
   leftColumn->setJustify(FlexJustify::Start);
   leftColumn->setGap(Style::spaceSm * scale);
-  leftColumn->setFlexGrow(kDashboardMainColumnFlexGrow);
+  leftColumn->setFlexGrow(kHomeMainColumnFlexGrow);
   leftColumn->setFillWidth(true);
 
   // --- Media (top of left column) ---
   auto mediaCard = std::make_unique<Flex>();
-  applyDashboardCardStyle(*mediaCard, scale);
+  applyHomeCardStyle(*mediaCard, scale);
   mediaCard->setFillWidth(true);
   mediaCard->setFillHeight(true);
   mediaCard->setFlexGrow(1.4f);
@@ -234,13 +234,13 @@ std::unique_ptr<Flex> DashboardTab::create() {
   m_mediaTrack = mediaTrack.get();
 
   auto mediaArtist = std::make_unique<Label>();
-  mediaArtist->setText(i18n::tr("control-center.dashboard.media.no-active-player"));
+  mediaArtist->setText(i18n::tr("control-center.home.media.no-active-player"));
   mediaArtist->setFontSize(Style::fontSizeCaption * scale);
   mediaArtist->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
   m_mediaArtist = mediaArtist.get();
 
   auto mediaStatus = std::make_unique<Label>();
-  mediaStatus->setText(i18n::tr("control-center.dashboard.media.idle"));
+  mediaStatus->setText(i18n::tr("control-center.home.media.idle"));
   mediaStatus->setFontSize(Style::fontSizeCaption * scale);
   mediaStatus->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
   m_mediaStatus = mediaStatus.get();
@@ -261,7 +261,7 @@ std::unique_ptr<Flex> DashboardTab::create() {
 
   // --- Date/Time + Weather (below media) ---
   auto dateTimeCard = std::make_unique<Flex>();
-  applyDashboardCardStyle(*dateTimeCard, scale);
+  applyHomeCardStyle(*dateTimeCard, scale);
   dateTimeCard->setDirection(FlexDirection::Horizontal);
   dateTimeCard->setAlign(FlexAlign::Center);
   dateTimeCard->setJustify(FlexJustify::Center);
@@ -332,7 +332,7 @@ std::unique_ptr<Flex> DashboardTab::create() {
   grid->setStretchItems(true);
   grid->setSquareCells(false);
   grid->setMinCellHeight(0.0f);
-  grid->setFlexGrow(kDashboardShortcutsFlexGrow);
+  grid->setFlexGrow(kHomeShortcutsFlexGrow);
   m_shortcutsGrid = grid.get();
   m_shortcutPads.clear();
 
@@ -356,7 +356,7 @@ std::unique_ptr<Flex> DashboardTab::create() {
     btn->setAlign(FlexAlign::Stretch);
     // Label font only — Button::setFontSize also resizes the glyph. Mini + uiScale keeps tiles closer to other CC rows
     // that use raw fontSizeCaption (no * contentScale), while still scaling with shell.uiScale for consistency inside
-    // Dashboard.
+    // Home.
     btn->label()->setFontSize(Style::fontSizeMini * scale);
     btn->label()->setBaselineMode(LabelBaselineMode::InkCentered);
     btn->label()->setMaxLines(1);
@@ -397,7 +397,7 @@ std::unique_ptr<Flex> DashboardTab::create() {
   return tab;
 }
 
-std::unique_ptr<Flex> DashboardTab::createHeaderActions() {
+std::unique_ptr<Flex> HomeTab::createHeaderActions() {
   const float scale = contentScale();
   auto actions = std::make_unique<Flex>();
   actions->setDirection(FlexDirection::Horizontal);
@@ -431,7 +431,7 @@ std::unique_ptr<Flex> DashboardTab::createHeaderActions() {
   return actions;
 }
 
-void DashboardTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight) {
+void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight) {
   (void)bodyHeight;
   if (m_rootLayout == nullptr) {
     return;
@@ -539,7 +539,7 @@ void DashboardTab::doLayout(Renderer& renderer, float contentWidth, float bodyHe
 
   if (m_userAvatar != nullptr && m_userMain != nullptr) {
     const float scale = contentScale();
-    const float minAvatar = dashboardAvatarSize(scale);
+    const float minAvatar = homeAvatarSize(scale);
     const float desiredAvatar = std::max(minAvatar, m_userMain->height());
     if (std::abs(m_userAvatar->width() - desiredAvatar) > 0.5f) {
       m_userAvatar->setSize(desiredAvatar, desiredAvatar);
@@ -577,7 +577,7 @@ void DashboardTab::doLayout(Renderer& renderer, float contentWidth, float bodyHe
   }
 }
 
-void DashboardTab::layoutWallpaperBackground(Renderer& renderer) {
+void HomeTab::layoutWallpaperBackground(Renderer& renderer) {
   if (m_userCard == nullptr || m_wallpaperBg == nullptr) {
     return;
   }
@@ -608,7 +608,7 @@ void DashboardTab::layoutWallpaperBackground(Renderer& renderer) {
   syncWallpaperBackground(renderer);
 }
 
-void DashboardTab::syncWallpaperBackground(Renderer& renderer) {
+void HomeTab::syncWallpaperBackground(Renderer& renderer) {
   if (m_wallpaperBg == nullptr) {
     return;
   }
@@ -629,7 +629,7 @@ void DashboardTab::syncWallpaperBackground(Renderer& renderer) {
   m_wallpaperBg->setVisible(true);
 }
 
-void DashboardTab::doUpdate(Renderer& renderer) {
+void HomeTab::doUpdate(Renderer& renderer) {
   if (!m_active) {
     m_progressTimer.stop();
     return;
@@ -653,9 +653,9 @@ void DashboardTab::doUpdate(Renderer& renderer) {
   sync(renderer);
 }
 
-void DashboardTab::onFrameTick(float /*deltaMs*/) {}
+void HomeTab::onFrameTick(float /*deltaMs*/) {}
 
-void DashboardTab::setActive(bool active) {
+void HomeTab::setActive(bool active) {
   m_active = active;
   if (!active) {
     m_progressTimer.stop();
@@ -670,7 +670,7 @@ void DashboardTab::setActive(bool active) {
   }
 }
 
-void DashboardTab::onClose() {
+void HomeTab::onClose() {
   m_progressTimer.stop();
   m_rootLayout = nullptr;
   m_bottomRow = nullptr;
@@ -710,7 +710,7 @@ void DashboardTab::onClose() {
   m_shortcutPads.clear();
 }
 
-void DashboardTab::syncScaledFonts() {
+void HomeTab::syncScaledFonts() {
   const float s = contentScale();
   if (m_timeLabel != nullptr) {
     m_timeLabel->setFontSize(Style::fontSizeTitle * 1.7f * s);
@@ -749,7 +749,7 @@ void DashboardTab::syncScaledFonts() {
   }
 }
 
-void DashboardTab::sync(Renderer& renderer) {
+void HomeTab::sync(Renderer& renderer) {
   syncScaledFonts();
   syncShortcuts();
 
@@ -777,27 +777,27 @@ void DashboardTab::sync(Renderer& renderer) {
   if (m_userFacts != nullptr) {
     const auto uptime = systemUptime();
     const std::string uptimeText =
-        uptime.has_value() ? formatDuration(*uptime) : i18n::tr("control-center.dashboard.unknown");
-    m_userFacts->setText(i18n::tr("control-center.dashboard.user-facts", "user", sessionDisplayName(), "host",
-                                  hostName(), "uptime", uptimeText, "version", noctalia::build_info::displayVersion()));
+        uptime.has_value() ? formatDuration(*uptime) : i18n::tr("control-center.home.unknown");
+    m_userFacts->setText(i18n::tr("control-center.home.user-facts", "user", sessionDisplayName(), "host", hostName(),
+                                  "uptime", uptimeText, "version", noctalia::build_info::displayVersion()));
   }
 
   if (m_weatherGlyph != nullptr && m_weatherLine != nullptr) {
     if (m_weather == nullptr || !m_weather->enabled()) {
       m_weatherGlyph->setGlyph("weather-cloud-off");
       m_weatherGlyph->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      m_weatherLine->setText(i18n::tr("control-center.dashboard.weather.disabled"));
+      m_weatherLine->setText(i18n::tr("control-center.home.weather.disabled"));
     } else if (!m_weather->locationConfigured()) {
       m_weatherGlyph->setGlyph("weather-cloud");
       m_weatherGlyph->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      m_weatherLine->setText(i18n::tr("control-center.dashboard.weather.configure-location"));
+      m_weatherLine->setText(i18n::tr("control-center.home.weather.configure-location"));
     } else {
       const auto& snapshot = m_weather->snapshot();
       if (!snapshot.valid) {
         m_weatherGlyph->setGlyph("weather-cloud");
         m_weatherGlyph->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-        m_weatherLine->setText(m_weather->loading() ? i18n::tr("control-center.dashboard.weather.fetching")
-                                                    : i18n::tr("control-center.dashboard.weather.data-unavailable"));
+        m_weatherLine->setText(m_weather->loading() ? i18n::tr("control-center.home.weather.fetching")
+                                                    : i18n::tr("control-center.home.weather.data-unavailable"));
       } else {
         m_weatherGlyph->setGlyph(WeatherService::glyphForCode(snapshot.current.weatherCode, snapshot.current.isDay));
         m_weatherGlyph->setColor(colorSpecFromRole(ColorRole::Primary));
@@ -810,10 +810,10 @@ void DashboardTab::sync(Renderer& renderer) {
 
   if (m_mediaTrack != nullptr && m_mediaArtist != nullptr && m_mediaStatus != nullptr && m_mediaProgress != nullptr) {
     if (m_mpris == nullptr) {
-      m_mediaTrack->setText(i18n::tr("control-center.dashboard.media.playback-unavailable"));
+      m_mediaTrack->setText(i18n::tr("control-center.home.media.playback-unavailable"));
       m_mediaArtist->setText("");
       m_mediaArtist->setVisible(false);
-      m_mediaStatus->setText(i18n::tr("control-center.dashboard.media.unavailable"));
+      m_mediaStatus->setText(i18n::tr("control-center.home.media.unavailable"));
       m_mediaProgress->setText(" ");
       m_mediaProgress->setVisible(false);
       m_mediaStatus->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
@@ -831,10 +831,10 @@ void DashboardTab::sync(Renderer& renderer) {
         m_mediaLastPlaybackStatus.clear();
         m_mediaPositionUs = 0;
         m_mediaPositionSampleAt = {};
-        m_mediaTrack->setText(i18n::tr("control-center.dashboard.media.nothing-playing"));
+        m_mediaTrack->setText(i18n::tr("control-center.home.media.nothing-playing"));
         m_mediaArtist->setText("");
         m_mediaArtist->setVisible(false);
-        m_mediaStatus->setText(i18n::tr("control-center.dashboard.media.idle"));
+        m_mediaStatus->setText(i18n::tr("control-center.home.media.idle"));
         m_mediaProgress->setText(" ");
         m_mediaProgress->setVisible(false);
         m_mediaStatus->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
@@ -844,10 +844,10 @@ void DashboardTab::sync(Renderer& renderer) {
         }
         m_loadedMediaArtUrl.clear();
       } else {
-        m_mediaTrack->setText(active->title.empty() ? i18n::tr("control-center.dashboard.media.unknown-track")
+        m_mediaTrack->setText(active->title.empty() ? i18n::tr("control-center.home.media.unknown-track")
                                                     : active->title);
         const std::string artists = mpris::joinArtists(active->artists);
-        m_mediaArtist->setText(artists.empty() ? i18n::tr("control-center.dashboard.media.unknown-artist") : artists);
+        m_mediaArtist->setText(artists.empty() ? i18n::tr("control-center.home.media.unknown-artist") : artists);
         m_mediaArtist->setVisible(true);
         const std::string trackSignature = std::format("{}\n{}\n{}\n{}\n{}", active->trackId, active->title, artists,
                                                        active->album, active->sourceUrl);
@@ -860,12 +860,12 @@ void DashboardTab::sync(Renderer& renderer) {
               m_mediaPositionBusName == active->busName && m_mediaPositionTrackSignature == trackSignature;
           const bool withinTransientRegressionWindow =
               m_mediaPositionSampleAt != std::chrono::steady_clock::time_point{} &&
-              now - m_mediaPositionSampleAt <= kDashboardTransientPositionRegressionWindow;
+              now - m_mediaPositionSampleAt <= kHomeTransientPositionRegressionWindow;
           const bool preserveDisplayedPosition =
               sameDisplayedTrack && m_mediaLastPlaybackStatus == "Playing" && active->playbackStatus == "Playing" &&
-              m_mediaPositionUs >= kDashboardTransientPositionRegressionFloorUs &&
-              livePositionUs <= kDashboardTransientPositionRegressionCeilingUs &&
-              livePositionUs + kDashboardTransientPositionRegressionDeltaUs < m_mediaPositionUs &&
+              m_mediaPositionUs >= kHomeTransientPositionRegressionFloorUs &&
+              livePositionUs <= kHomeTransientPositionRegressionCeilingUs &&
+              livePositionUs + kHomeTransientPositionRegressionDeltaUs < m_mediaPositionUs &&
               withinTransientRegressionWindow;
           if (preserveDisplayedPosition) {
             livePositionUs = m_mediaPositionUs;
@@ -920,10 +920,10 @@ void DashboardTab::sync(Renderer& renderer) {
         }
         std::string statusText;
         if (active->playbackStatus == "Playing") {
-          statusText = i18n::tr("control-center.dashboard.media.playing");
+          statusText = i18n::tr("control-center.home.media.playing");
           m_mediaStatus->setColor(colorSpecFromRole(ColorRole::Primary));
         } else if (active->playbackStatus == "Paused") {
-          statusText = i18n::tr("control-center.dashboard.media.paused");
+          statusText = i18n::tr("control-center.home.media.paused");
           m_mediaStatus->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
         } else {
           statusText = active->playbackStatus;
@@ -938,7 +938,7 @@ void DashboardTab::sync(Renderer& renderer) {
   }
 }
 
-void DashboardTab::syncShortcuts() {
+void HomeTab::syncShortcuts() {
   for (auto& pad : m_shortcutPads) {
     auto& sc = *pad.shortcut;
     const bool enabled = sc.enabled();

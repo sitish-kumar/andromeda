@@ -26,9 +26,9 @@ ControlCenterPanel::ControlCenterPanel(
   m_config = config;
   m_notificationManager = notifications;
   m_dependencies = dependencies;
-  m_tabs[tabIndex(TabId::Dashboard)] =
-      std::make_unique<DashboardTab>(mpris, weather, audio, powerProfiles, config, network, bluetooth, nightLight,
-                                     theme, notifications, idleInhibitor, dependencies, wayland, wallpaper);
+  m_tabs[tabIndex(TabId::Home)] =
+      std::make_unique<HomeTab>(mpris, weather, audio, powerProfiles, config, network, bluetooth, nightLight, theme,
+                                notifications, idleInhibitor, dependencies, wayland, wallpaper);
   m_tabs[tabIndex(TabId::Media)] =
       std::make_unique<MediaTab>(mpris, httpClient, spectrum, wayland, PanelManager::instance().renderContext());
   m_tabs[tabIndex(TabId::Audio)] =
@@ -127,7 +127,7 @@ void ControlCenterPanel::create() {
   m_contentHeader = header.get();
 
   auto title = std::make_unique<Label>();
-  title->setText(i18n::tr("control-center.tabs.dashboard"));
+  title->setText(i18n::tr("control-center.tabs.home"));
   title->setBold(true);
   title->setFontSize(Style::fontSizeTitle * scale);
   title->setColor(colorSpecFromRole(ColorRole::Primary));
@@ -324,7 +324,7 @@ ControlCenterPanel::TabId ControlCenterPanel::tabFromContext(std::string_view co
       return tab.id;
     }
   }
-  return TabId::Dashboard;
+  return TabId::Home;
 }
 
 std::size_t ControlCenterPanel::tabIndex(TabId id) { return static_cast<std::size_t>(id); }

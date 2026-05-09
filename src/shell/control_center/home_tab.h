@@ -29,14 +29,13 @@ struct ShortcutPad {
   Label* label = nullptr;
 };
 
-class DashboardTab : public Tab {
+class HomeTab : public Tab {
 public:
-  DashboardTab(MprisService* mpris, WeatherService* weather, PipeWireService* audio,
-               PowerProfilesService* powerProfiles, ConfigService* config, NetworkService* network,
-               BluetoothService* bluetooth, GammaService* nightLight, noctalia::theme::ThemeService* theme,
-               NotificationManager* notifications, IdleInhibitor* idleInhibitor, DependencyService* dependencies,
-               WaylandConnection* wayland, Wallpaper* wallpaper = nullptr);
-  ~DashboardTab() override;
+  HomeTab(MprisService* mpris, WeatherService* weather, PipeWireService* audio, PowerProfilesService* powerProfiles,
+          ConfigService* config, NetworkService* network, BluetoothService* bluetooth, GammaService* nightLight,
+          noctalia::theme::ThemeService* theme, NotificationManager* notifications, IdleInhibitor* idleInhibitor,
+          DependencyService* dependencies, WaylandConnection* wayland, Wallpaper* wallpaper = nullptr);
+  ~HomeTab() override;
 
   std::unique_ptr<Flex> create() override;
   std::unique_ptr<Flex> createHeaderActions() override;

@@ -140,7 +140,7 @@
   },
   "control-center": {
     "tabs": {
-      "dashboard": "Dashboard",
+      "home": "Home",
       "media": "Media",
       "audio": "Audio",
       "display": "Display",
@@ -151,7 +151,7 @@
       "calendar": "Calendar",
       "notifications": "Notifications"
     },
-    "dashboard": {
+    "home": {
       "sections": {
         "today": "Today",
         "now-playing": "Now playing",
@@ -742,7 +742,7 @@
         "network": "Network",
         "night-light": "Night Light",
         "osd": "OSD",
-        "dashboard": "Dashboard",
+        "home": "Home",
         "pinned-apps": "Pinned Apps",
         "profile": "Profile",
         "power": "Power",
@@ -1347,9 +1347,9 @@
         }
       },
       "panels": {
-        "dashboard-shortcuts": {
-          "label": "Dashboard Shortcuts",
-          "description": "Choose up to six shortcut buttons for the dashboard tab"
+        "home-shortcuts": {
+          "label": "Home Shortcuts",
+          "description": "Choose up to six shortcut buttons for the home tab"
         },
         "attach-control-center": {
           "label": "Attach to Bar",

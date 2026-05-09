@@ -510,8 +510,8 @@ namespace settings {
 
     // Panels
     entries.push_back(makeEntry(
-        "panels", "control-center", tr("settings.schema.panels.dashboard-shortcuts.label"),
-        tr("settings.schema.panels.dashboard-shortcuts.description"), {"control_center", "shortcuts"},
+        "panels", "control-center", tr("settings.schema.panels.home-shortcuts.label"),
+        tr("settings.schema.panels.home-shortcuts.description"), {"control_center", "shortcuts"},
         ShortcutListSetting{
             .items = cfg.controlCenter.shortcuts, .suggestedOptions = controlCenterShortcutOptions(), .maxItems = 6},
         "quick settings shortcuts toggles wifi bluetooth caffeine night light dnd power media weather clipboard"));
