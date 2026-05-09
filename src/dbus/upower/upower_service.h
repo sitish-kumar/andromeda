@@ -74,12 +74,15 @@ private:
   [[nodiscard]] UPowerDeviceInfo readDeviceInfo(std::string path, sdbus::IProxy& proxy) const;
   [[nodiscard]] const UPowerDeviceInfo* defaultSystemBattery() const noexcept;
   [[nodiscard]] const UPowerDeviceInfo* findDevice(std::string_view selector) const;
+  void refreshDisplayDeviceProxy();
   void emitChangedIfNeeded(bool devicesChanged);
   void rescanDevices();
   void refreshDeviceStates();
 
   SystemBus& m_bus;
   std::unique_ptr<sdbus::IProxy> m_upowerProxy;
+  std::unique_ptr<sdbus::IProxy> m_displayDeviceProxy;
+  std::string m_displayDevicePath;
   std::vector<TrackedDevice> m_devices;
   UPowerState m_state;
   ChangeCallback m_changeCallback;

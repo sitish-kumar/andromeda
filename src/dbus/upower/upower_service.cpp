@@ -185,6 +185,8 @@ UPowerState UPowerService::stateForDevice(std::string_view selector) const {
 }
 
 void UPowerService::rescanDevices() {
+  refreshDisplayDeviceProxy();
+
   std::vector<sdbus::ObjectPath> paths;
   try {
     m_upowerProxy->callMethod("EnumerateDevices").onInterface(k_upowerInterface).storeResultsTo(paths);
@@ -242,6 +244,14 @@ UPowerState UPowerService::readDefaultState() const {
   UPowerState next;
 
   next.onBattery = getPropertyOr<bool>(*m_upowerProxy, k_upowerInterface, "OnBattery", false);
+
+  if (m_displayDeviceProxy != nullptr) {
+    next = readDeviceState(*m_displayDeviceProxy);
+    next.onBattery = getPropertyOr<bool>(*m_upowerProxy, k_upowerInterface, "OnBattery", false);
+    if (next.isPresent) {
+      return next;
+    }
+  }
 
   const auto* device = defaultSystemBattery();
   if (device == nullptr) {
@@ -302,6 +312,47 @@ const UPowerDeviceInfo* UPowerService::findDevice(std::string_view selector) con
     }
   }
   return nullptr;
+}
+
+void UPowerService::refreshDisplayDeviceProxy() {
+  sdbus::ObjectPath path;
+  try {
+    m_upowerProxy->callMethod("GetDisplayDevice").onInterface(k_upowerInterface).storeResultsTo(path);
+  } catch (const sdbus::Error& e) {
+    kLog.warn("GetDisplayDevice failed: {}", e.what());
+    m_displayDeviceProxy.reset();
+    m_displayDevicePath.clear();
+    return;
+  }
+
+  const std::string nextPath(path);
+  if (nextPath.empty() || nextPath == "/") {
+    m_displayDeviceProxy.reset();
+    m_displayDevicePath.clear();
+    return;
+  }
+  if (m_displayDeviceProxy != nullptr && m_displayDevicePath == nextPath) {
+    return;
+  }
+
+  try {
+    auto proxy = sdbus::createProxy(m_bus.connection(), k_upowerBusName, path);
+    proxy->uponSignal("PropertiesChanged")
+        .onInterface(k_propertiesInterface)
+        .call([this](const std::string& interfaceName, const std::map<std::string, sdbus::Variant>& /*changed*/,
+                     const std::vector<std::string>& /*invalidated*/) {
+          if (interfaceName == k_deviceInterface) {
+            refresh();
+          }
+        });
+
+    m_displayDevicePath = nextPath;
+    m_displayDeviceProxy = std::move(proxy);
+  } catch (const sdbus::Error& e) {
+    kLog.warn("failed to track UPower display device {}: {}", nextPath, e.what());
+    m_displayDeviceProxy.reset();
+    m_displayDevicePath.clear();
+  }
 }
 
 void UPowerService::refreshDeviceStates() {
