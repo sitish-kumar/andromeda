@@ -23,7 +23,7 @@ local function cfg(key, default)
 end
 
 local function isProcessRunning()
-    local exitCode = noctalia.runSync("pgrep -f '[g]pu-screen-recorder' >/dev/null 2>&1")
+    local exitCode = noctalia.runSync("ps -eo args= | grep '[g]pu-screen-recorder' | grep -v ' -r ' | grep -q .")
     return exitCode == 0
 end
 
@@ -290,6 +290,12 @@ local function checkProcessState()
             state = "idle"
             noctalia.notify("Replay buffer stopped")
         end
+    elseif state == "idle" then
+        if isReplayProcessRunning() then
+            state = "replaying"
+        elseif isProcessRunning() then
+            state = "recording"
+        end
     end
 end
 
@@ -335,6 +341,13 @@ function update()
     if not checkedAvailability then
         checkedAvailability = true
         isAvailable = checkAvailability()
+        if isAvailable then
+            if isReplayProcessRunning() then
+                state = "replaying"
+            elseif isProcessRunning() then
+                state = "recording"
+            end
+        end
     end
 
     if tickCount % CHECK_TICKS == 0 then
