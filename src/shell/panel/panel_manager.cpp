@@ -606,7 +606,7 @@ void PanelManager::closePanel() {
   m_inputDispatcher.setSceneRoot(nullptr);
   m_closing = true;
 
-  if (m_sceneRoot != nullptr) {
+  if (m_sceneRoot != nullptr && m_activePanel != nullptr && m_activePanel->wantsCloseAnimation()) {
     const std::uint64_t gen = ++m_destroyGeneration;
     if (m_attachedToBar && m_attachedRevealClipNode != nullptr) {
       m_animations.cancelForOwner(m_attachedRevealClipNode);
