@@ -528,7 +528,10 @@ std::unique_ptr<Flex> NetworkTab::createHeaderActions() {
   vpnToggle->setToggleSize(ToggleSize::Small);
   vpnToggle->setScale(scale);
   vpnToggle->setChecked(m_vpnVisible);
-  vpnToggle->setOnChange([this](bool checked) { m_vpnVisible = checked; });
+  vpnToggle->setOnChange([this](bool checked) {
+    m_vpnVisible = checked;
+    PanelManager::instance().refresh();
+  });
   m_vpnToggle = vpnToggle.get();
   row->addChild(std::move(vpnToggle));
   return row;
