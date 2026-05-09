@@ -690,7 +690,9 @@ void NetworkTab::rebuildApList(Renderer& renderer) {
   const auto& aps = m_network != nullptr ? m_network->accessPoints() : std::vector<AccessPointInfo>{};
   const auto& vpns = m_network != nullptr ? m_network->vpnConnections() : std::vector<VpnConnectionInfo>{};
   const std::string nextKey =
-      aps.empty() && vpns.empty() ? std::string("empty") : (apListKey(aps) + "\n---\n" + vpnListKey(vpns));
+      aps.empty() && vpns.empty()
+          ? std::string("empty")
+          : (apListKey(aps) + "\n---\n" + vpnListKey(vpns) + "\nvis:" + (m_vpnVisible ? '1' : '0'));
   if (listWidth == m_lastListWidth && nextKey == m_lastListKey) {
     return;
   }
