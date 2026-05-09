@@ -22,14 +22,41 @@ local function cfg(key, default)
     return barWidget.getConfig(key, default)
 end
 
-local function isProcessRunning()
-    local exitCode = noctalia.runSync("ps -eo args= | grep '[g]pu-screen-recorder' | grep -v ' -r ' | grep -q .")
-    return exitCode == 0
+local function hasToken(args, token)
+    return args:find(token, 1, true) ~= nil
 end
 
-local function isReplayProcessRunning()
-    local exitCode = noctalia.runSync("pgrep -f 'gpu-screen-recorder.*-r ' >/dev/null 2>&1")
-    return exitCode == 0
+local function isGsrProcessArgs(args)
+    if not hasToken(args, "gpu-screen-recorder") and not hasToken(args, "com.dec05eba.gpu_screen_recorder") then
+        return false
+    end
+    return hasToken(args, " -w ") or hasToken(args, " -r ") or hasToken(args, " -o ")
+end
+
+local function isReplayArgs(args)
+    return hasToken(args, " -r ")
+end
+
+local function detectProcessState()
+    local exitCode, stdout = noctalia.runSync("ps -eo args=")
+    if exitCode ~= 0 or stdout == "" then
+        return nil
+    end
+
+    local hasRecording = false
+    for args in (stdout .. "\n"):gmatch("(.-)\n") do
+        if isGsrProcessArgs(args) then
+            if isReplayArgs(args) then
+                return "replaying"
+            end
+            hasRecording = true
+        end
+    end
+
+    if hasRecording then
+        return "recording"
+    end
+    return nil
 end
 
 local function checkAvailability()
@@ -257,10 +284,12 @@ end
 -- ── State polling ────────────────────────────────────────────────────────
 
 local function checkProcessState()
+    local processState = detectProcessState()
+
     if state == "pending" then
         pendingTick = pendingTick + CHECK_TICKS
         if pendingTick >= PENDING_TICKS then
-            if isProcessRunning() then
+            if processState == "recording" then
                 state = "recording"
                 noctalia.notify("Recording started")
             else
@@ -270,7 +299,7 @@ local function checkProcessState()
     elseif state == "replay_pending" then
         pendingTick = pendingTick + CHECK_TICKS
         if pendingTick >= PENDING_TICKS then
-            if isReplayProcessRunning() then
+            if processState == "replaying" then
                 state = "replaying"
                 noctalia.notify("Replay buffer active")
             else
@@ -278,7 +307,7 @@ local function checkProcessState()
             end
         end
     elseif state == "recording" then
-        if not isProcessRunning() then
+        if processState ~= "recording" then
             state = "idle"
             noctalia.notify("Recording saved", outputPath)
             if cfg("copy_to_clipboard", false) and outputPath ~= "" then
@@ -286,15 +315,13 @@ local function checkProcessState()
             end
         end
     elseif state == "replaying" then
-        if not isReplayProcessRunning() then
+        if processState ~= "replaying" then
             state = "idle"
             noctalia.notify("Replay buffer stopped")
         end
     elseif state == "idle" then
-        if isReplayProcessRunning() then
-            state = "replaying"
-        elseif isProcessRunning() then
-            state = "recording"
+        if processState ~= nil then
+            state = processState
         end
     end
 end
@@ -340,13 +367,12 @@ function update()
 
     if not checkedAvailability then
         checkedAvailability = true
-        isAvailable = checkAvailability()
-        if isAvailable then
-            if isReplayProcessRunning() then
-                state = "replaying"
-            elseif isProcessRunning() then
-                state = "recording"
-            end
+        local processState = detectProcessState()
+        if processState ~= nil then
+            isAvailable = true
+            state = processState
+        else
+            isAvailable = checkAvailability()
         end
     end
 
