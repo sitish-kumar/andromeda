@@ -343,14 +343,27 @@ bool NetworkService::deactivateVpnConnection(const VpnConnectionInfo& vpn) {
         if (profilePath != vpn.path || activeState != k_nmActiveConnectionStateActivated) {
           continue;
         }
-        m_nm->callMethod("DeactivateConnection").onInterface(k_nmInterface).withArguments(activePath);
-        kLog.info("deactivated vpn name={} active={}", vpn.name, std::string(activePath));
+        // Async: DeactivateConnection on a system-owned profile is gated by polkit,
+        // and a sync call would freeze the main loop while the polkit agent prompts
+        // (or while polkit waits for an agent to register). Fire-and-forget here.
+        const std::string activePath_str = std::string(activePath);
+        const std::string vpn_name = vpn.name;
+        m_nm->callMethodAsync("DeactivateConnection")
+            .onInterface(k_nmInterface)
+            .withArguments(activePath)
+            .uponReplyInvoke([activePath_str, vpn_name](std::optional<sdbus::Error> err) {
+              if (err.has_value()) {
+                kLog.warn("DeactivateConnection(vpn) failed name={} active={}: {}", vpn_name, activePath_str, err->what());
+              } else {
+                kLog.info("deactivated vpn name={} active={}", vpn_name, activePath_str);
+              }
+            });
         return true;
       } catch (const sdbus::Error&) {
       }
     }
   } catch (const sdbus::Error& e) {
-    kLog.warn("DeactivateConnection(vpn) failed name={} path={} err={}", vpn.name, vpn.path, e.what());
+    kLog.warn("DeactivateConnection(vpn) lookup failed path={}: {}", vpn.path, e.what());
     return false;
   }
   return false;
