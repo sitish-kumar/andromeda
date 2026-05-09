@@ -249,7 +249,6 @@ namespace settings {
     m_lanePath = lanePath;
     m_root = nullptr;
     m_headerRow = nullptr;
-    m_body = nullptr;
     m_createActions = nullptr;
     m_searchPicker = nullptr;
     m_createTitle = nullptr;
@@ -429,16 +428,14 @@ namespace settings {
     header->addChild(std::move(closeBtn));
     root->addChild(std::move(header));
 
-    auto body = std::make_unique<Flex>();
-    body->setDirection(FlexDirection::Vertical);
-    body->setAlign(FlexAlign::Stretch);
-    body->setGap(Style::spaceSm * m_scale);
-    body->setFlexGrow(1.0f);
-    m_body = body.get();
-
     auto picker = std::make_unique<SearchPicker>();
     picker->setPlaceholder(i18n::tr("settings.entities.widget.picker.placeholder"));
     picker->setEmptyText(i18n::tr("settings.entities.widget.picker.empty"));
+    picker->clearFill();
+    picker->clearBorder();
+    picker->setRadius(0.0f);
+    picker->setPadding(0.0f);
+    picker->setFlexGrow(1.0f);
     picker->setOptions(m_normalOptions);
     picker->setOnActivated([this](const SearchPickerOption& option) {
       if (option.value.empty()) {
@@ -455,13 +452,13 @@ namespace settings {
     });
     picker->setOnCancel([this]() { DeferredCall::callLater([this]() { close(); }); });
     m_searchPicker = picker.get();
-    body->addChild(std::move(picker));
+    root->addChild(std::move(picker));
 
     auto createTitle = makeLabel("", Style::fontSizeCaption * m_scale, colorSpecFromRole(ColorRole::OnSurfaceVariant));
     createTitle->setVisible(false);
     createTitle->setParticipatesInLayout(false);
     m_createTitle = createTitle.get();
-    body->addChild(std::move(createTitle));
+    root->addChild(std::move(createTitle));
 
     auto instanceInput = std::make_unique<Input>();
     instanceInput->setPlaceholder(i18n::tr("settings.entities.widget.instance.id-placeholder"));
@@ -478,7 +475,7 @@ namespace settings {
     });
     instanceInput->setOnSubmit([this](const std::string& /*value*/) { finishCreateFlow(); });
     m_instanceInput = instanceInput.get();
-    body->addChild(std::move(instanceInput));
+    root->addChild(std::move(instanceInput));
 
     auto actionRow = std::make_unique<Flex>();
     actionRow->setDirection(FlexDirection::Horizontal);
@@ -515,9 +512,8 @@ namespace settings {
     createBtn->setRadius(Style::radiusSm * m_scale);
     createBtn->setOnClick([this]() { finishCreateFlow(); });
     actionRow->addChild(std::move(createBtn));
-    body->addChild(std::move(actionRow));
+    root->addChild(std::move(actionRow));
 
-    root->addChild(std::move(body));
     contentParent->addChild(std::move(root));
 
     refreshBodyState();
@@ -528,15 +524,7 @@ namespace settings {
       return;
     }
 
-    const float panelPadding = Style::spaceSm * m_scale;
     m_root->setSize(contentWidth, contentHeight);
-
-    if (m_searchPicker != nullptr) {
-      const float pickerWidth = std::max(1.0f, contentWidth - panelPadding * 2.0f);
-      const float pickerHeight = std::max(1.0f, contentHeight - panelPadding * 2.0f - Style::controlHeightSm * m_scale);
-      m_searchPicker->setSize(pickerWidth, pickerHeight);
-    }
-
     m_root->layout(*renderContext());
   }
 
@@ -593,7 +581,6 @@ namespace settings {
     m_lanePath.clear();
     m_root = nullptr;
     m_headerRow = nullptr;
-    m_body = nullptr;
     m_createActions = nullptr;
     m_searchPicker = nullptr;
     m_createTitle = nullptr;

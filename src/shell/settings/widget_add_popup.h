@@ -64,7 +64,6 @@ namespace settings {
     std::vector<std::string> m_lanePath;
     Flex* m_root = nullptr;
     Flex* m_headerRow = nullptr;
-    Flex* m_body = nullptr;
     Flex* m_createActions = nullptr;
     SearchPicker* m_searchPicker = nullptr;
     Label* m_createTitle = nullptr;
