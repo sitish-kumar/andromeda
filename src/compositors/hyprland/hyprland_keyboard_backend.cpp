@@ -3,6 +3,7 @@
 #include "core/process.h"
 #include "util/string_utils.h"
 
+#include <chrono>
 #include <cstdlib>
 #include <json.hpp>
 #include <sys/wait.h>
@@ -10,6 +11,21 @@
 #include <vector>
 
 namespace {
+
+  constexpr auto kCurrentLayoutCacheTtl = std::chrono::seconds(1);
+
+  struct CurrentLayoutCache {
+    std::optional<std::string> value;
+    std::chrono::steady_clock::time_point fetchedAt{};
+    bool valid = false;
+  };
+
+  CurrentLayoutCache& currentLayoutCache() {
+    static CurrentLayoutCache cache;
+    return cache;
+  }
+
+  void invalidateCurrentLayoutCache() { currentLayoutCache() = CurrentLayoutCache{}; }
 
   [[nodiscard]] std::optional<std::string> runAndCapture(const std::vector<std::string>& args) {
     if (args.empty() || args.front().empty()) {
@@ -75,7 +91,11 @@ bool HyprlandKeyboardBackend::cycleLayout() const {
   if (!m_enabled) {
     return false;
   }
-  return process::runSync({"hyprctl", "switchxkblayout", "all", "next"});
+  const bool ok = process::runSync({"hyprctl", "switchxkblayout", "all", "next"});
+  if (ok) {
+    invalidateCurrentLayoutCache();
+  }
+  return ok;
 }
 
 std::optional<KeyboardLayoutState> HyprlandKeyboardBackend::layoutState() const {
@@ -91,16 +111,29 @@ std::optional<std::string> HyprlandKeyboardBackend::currentLayoutName() const {
     return std::nullopt;
   }
 
+  const auto now = std::chrono::steady_clock::now();
+  auto& cache = currentLayoutCache();
+  if (cache.valid && now - cache.fetchedAt < kCurrentLayoutCacheTtl) {
+    return cache.value;
+  }
+
+  auto finish = [&](std::optional<std::string> value) {
+    cache.value = std::move(value);
+    cache.fetchedAt = now;
+    cache.valid = true;
+    return cache.value;
+  };
+
   const auto payload = runAndCapture({"hyprctl", "devices", "-j"});
   if (!payload.has_value() || payload->empty()) {
-    return std::nullopt;
+    return finish(std::nullopt);
   }
 
   try {
     const auto json = nlohmann::json::parse(*payload);
     const auto keyboardsIt = json.find("keyboards");
     if (keyboardsIt == json.end() || !keyboardsIt->is_array()) {
-      return std::nullopt;
+      return finish(std::nullopt);
     }
     for (const auto& keyboard : *keyboardsIt) {
       if (!keyboard.is_object()) {
@@ -111,12 +144,12 @@ std::optional<std::string> HyprlandKeyboardBackend::currentLayoutName() const {
       }
       const std::string layout = keyboard.value("active_keymap", "");
       if (!layout.empty() && layout != "error") {
-        return layout;
+        return finish(layout);
       }
     }
   } catch (const nlohmann::json::exception&) {
-    return std::nullopt;
+    return finish(std::nullopt);
   }
 
-  return std::nullopt;
+  return finish(std::nullopt);
 }

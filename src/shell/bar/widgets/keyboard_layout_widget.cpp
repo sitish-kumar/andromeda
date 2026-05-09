@@ -23,7 +23,6 @@ namespace {
   constexpr Logger kLog("keyboard_layout_widget");
   constexpr auto kRefreshTickInterval = std::chrono::milliseconds(40);
   constexpr int kRefreshBurstAttempts = 8;
-  constexpr auto kIdleProbeInterval = std::chrono::milliseconds(350);
   constexpr std::string_view kUnknownLabel = "--";
   constexpr std::string_view kVerticalStableLabel = "WWW";
 
@@ -327,14 +326,8 @@ void KeyboardLayoutWidget::create() {
 
   setRoot(std::move(area));
 
-  // Keyboard layout changes are not event-pushed for all compositor backends.
-  // Keep a low-frequency idle probe so passive switches are reflected promptly.
-  m_idleRefreshTimer.startRepeating(kIdleProbeInterval, [this]() {
-    if (m_refreshAttemptsRemaining > 0) {
-      return;
-    }
-    requestUpdate();
-  });
+  // The bar's normal second tick refreshes passive compositor-side layout changes.
+  // Click-initiated switches still use the short burst timer below for responsive feedback.
 }
 
 void KeyboardLayoutWidget::doLayout(Renderer& renderer, float containerWidth, float containerHeight) {
