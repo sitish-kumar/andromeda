@@ -315,16 +315,16 @@ bool NetworkService::activateVpnConnection(const VpnConnectionInfo& vpn) {
   try {
     // Async: ActivateConnection can involve polkit/agent interactions, and a
     // synchronous call can stall the main loop while authorization is pending.
-    const std::string vpn_name = vpn.name;
-    const std::string vpn_path = vpn.path;
+    const std::string vpnName = vpn.name;
+    const std::string vpnPath = vpn.path;
     m_nm->callMethodAsync("ActivateConnection")
         .onInterface(k_nmInterface)
-        .withArguments(sdbus::ObjectPath{vpn_path}, sdbus::ObjectPath{"/"}, sdbus::ObjectPath{"/"})
-        .uponReplyInvoke([vpn_name, vpn_path](std::optional<sdbus::Error> err, sdbus::ObjectPath activePath) {
+        .withArguments(sdbus::ObjectPath{vpnPath}, sdbus::ObjectPath{"/"}, sdbus::ObjectPath{"/"})
+        .uponReplyInvoke([vpnName, vpnPath](std::optional<sdbus::Error> err, sdbus::ObjectPath activePath) {
           if (err.has_value()) {
-            kLog.warn("ActivateConnection(vpn) failed name={} path={}: {}", vpn_name, vpn_path, err->what());
+            kLog.warn("ActivateConnection(vpn) failed name={} path={}: {}", vpnName, vpnPath, err->what());
           } else {
-            kLog.info("activating vpn name={} active={}", vpn_name, std::string(activePath));
+            kLog.info("activating vpn name={} active={}", vpnName, std::string(activePath));
           }
         });
     return true;
@@ -354,17 +354,17 @@ bool NetworkService::deactivateVpnConnection(const VpnConnectionInfo& vpn) {
         // Async: DeactivateConnection on a system-owned profile is gated by polkit,
         // and a sync call would freeze the main loop while the polkit agent prompts
         // (or while polkit waits for an agent to register). Fire-and-forget here.
-        const std::string activePath_str = std::string(activePath);
-        const std::string vpn_name = vpn.name;
+        const std::string activePathStr = std::string(activePath);
+        const std::string vpnName = vpn.name;
         m_nm->callMethodAsync("DeactivateConnection")
             .onInterface(k_nmInterface)
-            .withArguments(sdbus::ObjectPath{activePath_str})
-            .uponReplyInvoke([activePath_str, vpn_name](std::optional<sdbus::Error> err) {
+            .withArguments(sdbus::ObjectPath{activePathStr})
+            .uponReplyInvoke([activePathStr, vpnName](std::optional<sdbus::Error> err) {
               if (err.has_value()) {
-                kLog.warn("DeactivateConnection(vpn) failed name={} active={}: {}", vpn_name, activePath_str,
+                kLog.warn("DeactivateConnection(vpn) failed name={} active={}: {}", vpnName, activePathStr,
                           err->what());
               } else {
-                kLog.info("deactivated vpn name={} active={}", vpn_name, activePath_str);
+                kLog.info("deactivated vpn name={} active={}", vpnName, activePathStr);
               }
             });
         return true;
