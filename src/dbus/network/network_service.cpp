@@ -99,6 +99,9 @@ namespace {
 } // namespace
 
 const char* NetworkService::glyphForState(const NetworkState& state) noexcept {
+  if (state.vpnActive) {
+    return "shield-check";
+  }
   if (state.kind == NetworkConnectivity::Wired) {
     return state.connected ? "ethernet" : "ethernet-off";
   }
@@ -924,6 +927,27 @@ NetworkState NetworkService::readState() {
 
   next.wirelessEnabled = getPropertyOr<bool>(*m_nm, k_nmInterface, "WirelessEnabled", false);
   next.scanning = m_scanning;
+  next.vpnActive = false;
+
+  // Check primary connection: detect VPN type and connection state
+  if (m_activeConnection != nullptr) {
+    const auto type =
+        getPropertyOr<std::string>(*m_activeConnection, k_nmActiveConnectionInterface, "Type", std::string{});
+    next.vpnActive = (type == "vpn" || type == "wireguard");
+    const auto state = getPropertyOr<std::uint32_t>(*m_activeConnection, k_nmActiveConnectionInterface, "State", 0U);
+    next.connected = state == k_nmActiveConnectionStateActivated;
+  }
+
+  // Also check if any VPN profile is active (in case it's not the primary connection)
+  if (!next.vpnActive) {
+    for (const auto& vpn : m_vpnConnections) {
+      if (vpn.active) {
+        next.vpnActive = true;
+        next.connected = true;
+        break;
+      }
+    }
+  }
 
   if (m_activeDevice == nullptr) {
     return next;
@@ -935,11 +959,6 @@ NetworkState NetworkService::readState() {
   const auto ip4ConfigPath =
       getPropertyOr<sdbus::ObjectPath>(*m_activeDevice, k_nmDeviceInterface, "Ip4Config", sdbus::ObjectPath{});
   next.ipv4 = firstIpv4FromConfig(m_bus.connection(), ip4ConfigPath);
-
-  if (m_activeConnection != nullptr) {
-    const auto state = getPropertyOr<std::uint32_t>(*m_activeConnection, k_nmActiveConnectionInterface, "State", 0U);
-    next.connected = state == k_nmActiveConnectionStateActivated;
-  }
 
   if (deviceType == k_nmDeviceTypeWifi) {
     next.kind = NetworkConnectivity::Wireless;

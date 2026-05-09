@@ -191,6 +191,7 @@ const std::unordered_map<std::string, char32_t> kIcons = {
     {"ethernet-off", 0xECCD},
     {"ethernet-exclamation", 0xECCE},
     {"ethernet-question", 0xECCF},
+    {"shield-check", 0xEB22},
 
     // Bluetooth devices
     {"bluetooth", 0xEA37},

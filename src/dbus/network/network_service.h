@@ -45,6 +45,7 @@ struct NetworkState {
   bool connected = false;
   bool wirelessEnabled = false;
   bool scanning = false;
+  bool vpnActive = false;          // true if a VPN is the active connection
   std::string ssid;                // Wi-Fi only
   std::string ipv4;                // dotted-quad of first address; empty if none
   std::string interfaceName;       // e.g. "wlan0", "eth0"
