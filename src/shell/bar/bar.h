@@ -14,6 +14,7 @@
 #include <vector>
 
 class ConfigService;
+class CompositorPlatform;
 class FileWatcher;
 class HttpClient;
 class IdleInhibitor;
@@ -32,7 +33,6 @@ class SystemMonitorService;
 class UPowerService;
 class TimeService;
 class TrayService;
-class WaylandConnection;
 class GammaService;
 class WeatherService;
 namespace noctalia::theme {
@@ -45,7 +45,7 @@ class Bar {
 public:
   Bar();
 
-  bool initialize(WaylandConnection& wayland, ConfigService* config, TimeService* timeService,
+  bool initialize(CompositorPlatform& platform, ConfigService* config, TimeService* timeService,
                   NotificationManager* notifications, TrayService* tray, PipeWireService* audio, UPowerService* upower,
                   SystemMonitorService* sysmon, PowerProfilesService* powerProfiles, NetworkService* network,
                   IdleInhibitor* idleInhibitor, MprisService* mpris, PipeWireSpectrum* audioSpectrum,
@@ -105,7 +105,7 @@ private:
   [[nodiscard]] BarInstance* instanceForOutput(wl_output* output) const noexcept;
 
   bool m_forceHidden = false;
-  WaylandConnection* m_wayland = nullptr;
+  CompositorPlatform* m_platform = nullptr;
   ConfigService* m_config = nullptr;
   NotificationManager* m_notifications = nullptr;
   TrayService* m_tray = nullptr;

@@ -1,5 +1,6 @@
 #include "shell/control_center/home_tab.h"
 
+#include "compositors/compositor_platform.h"
 #include "config/config_service.h"
 #include "core/build_info.h"
 #include "dbus/mpris/mpris_art.h"
@@ -66,7 +67,7 @@ HomeTab::HomeTab(MprisService* mpris, WeatherService* weather, PipeWireService* 
                  PowerProfilesService* powerProfiles, ConfigService* config, NetworkService* network,
                  BluetoothService* bluetooth, GammaService* nightLight, noctalia::theme::ThemeService* theme,
                  NotificationManager* notifications, IdleInhibitor* idleInhibitor, DependencyService* dependencies,
-                 WaylandConnection* wayland, Wallpaper* wallpaper)
+                 CompositorPlatform* platform, Wallpaper* wallpaper)
     : m_mpris(mpris), m_weather(weather), m_config(config), m_wallpaper(wallpaper), m_services{
                                                                                         .network = network,
                                                                                         .bluetooth = bluetooth,
@@ -80,7 +81,7 @@ HomeTab::HomeTab(MprisService* mpris, WeatherService* weather, PipeWireService* 
                                                                                         .weather = weather,
                                                                                         .config = config,
                                                                                         .dependencies = dependencies,
-                                                                                        .wayland = wayland,
+                                                                                        .platform = platform,
                                                                                     } {}
 
 HomeTab::~HomeTab() = default;

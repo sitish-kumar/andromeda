@@ -9,7 +9,6 @@
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "util/string_utils.h"
-#include "wayland/wayland_connection.h"
 
 #include <chrono>
 #include <cmath>
@@ -289,9 +288,9 @@ namespace {
 
 } // namespace
 
-KeyboardLayoutWidget::KeyboardLayoutWidget(WaylandConnection& wayland, std::string cycleCommand,
+KeyboardLayoutWidget::KeyboardLayoutWidget(CompositorPlatform& platform, std::string cycleCommand,
                                            DisplayMode displayMode)
-    : m_wayland(wayland), m_cycleCommand(std::move(cycleCommand)), m_displayMode(displayMode) {}
+    : m_platform(platform), m_cycleCommand(std::move(cycleCommand)), m_displayMode(displayMode) {}
 
 void KeyboardLayoutWidget::create() {
   auto area = std::make_unique<InputArea>();
@@ -380,7 +379,7 @@ void KeyboardLayoutWidget::doLayout(Renderer& renderer, float containerWidth, fl
 void KeyboardLayoutWidget::doUpdate(Renderer& renderer) { sync(renderer); }
 
 std::string KeyboardLayoutWidget::resolvedLayoutName() const {
-  const auto state = m_keyboardBackend.layoutState();
+  const auto state = m_platform.keyboardLayoutState();
   if (state.has_value() && state->currentIndex >= 0 && state->currentIndex < static_cast<int>(state->names.size())) {
     const std::string actual = state->names[static_cast<std::size_t>(state->currentIndex)];
     if (!m_pendingLayoutName.empty() && (actual.empty() || actual == m_lastLayoutName)) {
@@ -389,7 +388,7 @@ std::string KeyboardLayoutWidget::resolvedLayoutName() const {
     return actual;
   }
 
-  std::string layoutName = m_keyboardBackend.currentLayoutName().value_or(m_wayland.currentKeyboardLayoutName());
+  std::string layoutName = m_platform.currentKeyboardLayoutName();
   if (!m_pendingLayoutName.empty() && (layoutName.empty() || layoutName == m_lastLayoutName)) {
     return m_pendingLayoutName;
   }
@@ -430,14 +429,14 @@ void KeyboardLayoutWidget::sync(Renderer& renderer) {
   m_label->measure(renderer);
 
   if (auto* node = root(); node != nullptr) {
-    node->setOpacity((m_cycleCommand.empty() && !m_keyboardBackend.isAvailable()) ? 0.85f : 1.0f);
+    node->setOpacity((m_cycleCommand.empty() && !m_platform.hasKeyboardLayoutBackend()) ? 0.85f : 1.0f);
   }
 
   requestRedraw();
 }
 
 void KeyboardLayoutWidget::cycleLayout() {
-  const auto stateBefore = m_keyboardBackend.layoutState();
+  const auto stateBefore = m_platform.keyboardLayoutState();
 
   bool cycled = false;
   if (!m_cycleCommand.empty()) {
@@ -446,8 +445,8 @@ void KeyboardLayoutWidget::cycleLayout() {
       kLog.warn("keyboard_layout: cycle command failed");
       return;
     }
-  } else if (m_keyboardBackend.isAvailable()) {
-    cycled = m_keyboardBackend.cycleLayout();
+  } else if (m_platform.hasKeyboardLayoutBackend()) {
+    cycled = m_platform.cycleKeyboardLayout();
     if (!cycled) {
       kLog.warn("keyboard_layout: compositor backend failed to cycle layout");
       return;

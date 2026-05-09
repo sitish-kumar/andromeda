@@ -1,5 +1,6 @@
 #pragma once
 
+#include "compositors/compositor_platform.h"
 #include "shell/bar/widget.h"
 #include "system/icon_resolver.h"
 
@@ -10,7 +11,6 @@
 class Image;
 class Label;
 class Renderer;
-class WaylandConnection;
 class InputArea;
 
 enum class ActiveWindowTitleScrollMode : std::uint8_t {
@@ -21,7 +21,7 @@ enum class ActiveWindowTitleScrollMode : std::uint8_t {
 
 class ActiveWindowWidget : public Widget {
 public:
-  ActiveWindowWidget(WaylandConnection& connection, float maxWidth, float minWidth, float iconSize,
+  ActiveWindowWidget(CompositorPlatform& platform, float maxWidth, float minWidth, float iconSize,
                      ActiveWindowTitleScrollMode titleScrollMode);
 
   void create() override;
@@ -34,7 +34,7 @@ private:
   [[nodiscard]] std::string resolveIconPath(const std::string& appId);
   void buildDesktopIconIndex();
 
-  WaylandConnection& m_connection;
+  CompositorPlatform& m_platform;
   float m_maxWidth = 260.0f;
   float m_minWidth = 80.0f;
   float m_iconSize = 16.0f;

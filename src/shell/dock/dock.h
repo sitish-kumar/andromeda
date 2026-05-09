@@ -16,6 +16,7 @@
 #include <vector>
 
 class Box;
+class CompositorPlatform;
 class ConfigService;
 class Flex;
 class IpcService;
@@ -24,7 +25,6 @@ class Image;
 class InputArea;
 class Label;
 class RenderContext;
-class WaylandConnection;
 class LayerSurface;
 class Node;
 struct PointerEvent;
@@ -38,7 +38,7 @@ class Dock {
 public:
   Dock();
 
-  bool initialize(WaylandConnection& wayland, ConfigService* config, RenderContext* renderContext);
+  bool initialize(CompositorPlatform& platform, ConfigService* config, RenderContext* renderContext);
   void reload();
   void show();
   void closeAllInstances();
@@ -142,7 +142,7 @@ private:
   // Route a pointer event to an open popup; returns true if consumed.
   bool routePopupEvent(DockPopup* popup, const PointerEvent& event);
 
-  WaylandConnection* m_wayland = nullptr;
+  CompositorPlatform* m_platform = nullptr;
   ConfigService* m_config = nullptr;
   RenderContext* m_renderContext = nullptr;
   DockConfig m_lastDockConfig{};

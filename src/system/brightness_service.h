@@ -7,7 +7,7 @@
 
 class IpcService;
 class SystemBus;
-class WaylandConnection;
+class CompositorPlatform;
 struct BrightnessConfig;
 struct wl_output;
 
@@ -29,7 +29,7 @@ class BrightnessService {
 public:
   using ChangeCallback = std::function<void()>;
 
-  BrightnessService(SystemBus* bus, WaylandConnection& wayland, const BrightnessConfig& config);
+  BrightnessService(SystemBus* bus, CompositorPlatform& platform, const BrightnessConfig& config);
   ~BrightnessService();
 
   BrightnessService(const BrightnessService&) = delete;

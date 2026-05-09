@@ -1,5 +1,6 @@
 #include "shell/bar/widget_factory.h"
 
+#include "compositors/compositor_platform.h"
 #include "config/config_service.h"
 #include "core/log.h"
 #include "dbus/mpris/mpris_service.h"
@@ -75,14 +76,14 @@ namespace {
   }
 } // namespace
 
-WidgetFactory::WidgetFactory(WaylandConnection& wayland, const Config& config, NotificationManager* notifications,
+WidgetFactory::WidgetFactory(CompositorPlatform& platform, const Config& config, NotificationManager* notifications,
                              TrayService* tray, PipeWireService* audio, UPowerService* upower,
                              SystemMonitorService* sysmon, PowerProfilesService* powerProfiles, NetworkService* network,
                              IdleInhibitor* idleInhibitor, MprisService* mpris, PipeWireSpectrum* audioSpectrum,
                              HttpClient* httpClient, WeatherService* weather, GammaService* nightLight,
                              noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth,
                              BrightnessService* brightness, LockKeysService* lockKeys, FileWatcher* fileWatcher)
-    : m_wayland(wayland), m_config(config), m_notifications(notifications), m_tray(tray), m_audio(audio),
+    : m_platform(platform), m_config(config), m_notifications(notifications), m_tray(tray), m_audio(audio),
       m_upower(upower), m_sysmon(sysmon), m_powerProfiles(powerProfiles), m_network(network),
       m_idleInhibitor(idleInhibitor), m_mpris(mpris), m_audioSpectrum(audioSpectrum), m_httpClient(httpClient),
       m_weather(weather), m_nightLight(nightLight), m_themeService(themeService), m_bluetooth(bluetooth),
@@ -109,7 +110,7 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
     const float iconSize =
         static_cast<float>(wc != nullptr ? wc->getDouble("icon_size", Style::fontSizeBody) : Style::fontSizeBody);
     const std::string titleScroll = wc != nullptr ? wc->getString("title_scroll", "none") : std::string("none");
-    auto widget = std::make_unique<ActiveWindowWidget>(m_wayland, maxWidth, minWidth, iconSize,
+    auto widget = std::make_unique<ActiveWindowWidget>(m_platform, maxWidth, minWidth, iconSize,
                                                        parseActiveWindowTitleScrollMode(titleScroll));
     widget->setContentScale(contentScale);
     return widget;
@@ -191,7 +192,7 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
   if (type == "keyboard_layout") {
     const std::string cycleCommand = wc != nullptr ? wc->getString("cycle_command", "") : std::string{};
     const std::string display = wc != nullptr ? wc->getString("display", "short") : std::string("short");
-    auto widget = std::make_unique<KeyboardLayoutWidget>(m_wayland, cycleCommand,
+    auto widget = std::make_unique<KeyboardLayoutWidget>(m_platform, cycleCommand,
                                                          KeyboardLayoutWidget::parseDisplayMode(display));
     widget->setContentScale(contentScale);
     return widget;
@@ -332,7 +333,7 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
 
   if (type == "taskbar") {
     const bool groupByWorkspace = wc != nullptr ? wc->getBool("group_by_workspace", false) : false;
-    auto widget = std::make_unique<TaskbarWidget>(m_wayland, output, groupByWorkspace, barPosition);
+    auto widget = std::make_unique<TaskbarWidget>(m_platform, output, groupByWorkspace, barPosition);
     widget->setContentScale(contentScale);
     return widget;
   }
@@ -399,7 +400,7 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
       displayMode = WorkspacesWidget::DisplayMode::None;
     }
     auto widget =
-        std::make_unique<WorkspacesWidget>(m_wayland, output, displayMode, focusedColor, occupiedColor, emptyColor);
+        std::make_unique<WorkspacesWidget>(m_platform, output, displayMode, focusedColor, occupiedColor, emptyColor);
     widget->setContentScale(contentScale);
     return widget;
   }

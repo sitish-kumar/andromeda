@@ -22,6 +22,7 @@
 #include <unordered_map>
 
 class ConfigService;
+class CompositorPlatform;
 class ContextMenuPopup;
 class Box;
 class IpcService;
@@ -51,7 +52,7 @@ public:
 
   static PanelManager& instance();
 
-  void initialize(WaylandConnection& wayland, ConfigService* config, RenderContext* renderContext);
+  void initialize(CompositorPlatform& platform, ConfigService* config, RenderContext* renderContext);
 
   // Optional: invoked from shell UI (e.g. control center) to spawn the standalone settings toplevel.
   void setOpenSettingsWindowCallback(std::function<void()> callback);
@@ -72,7 +73,7 @@ public:
   void openPanel(const std::string& panelId, PanelOpenRequest request = {});
   void closePanel();
   void togglePanel(const std::string& panelId, PanelOpenRequest request);
-  // IPC-friendly overload: asks WaylandConnection for preferred interactive output.
+  // IPC-friendly overload: asks CompositorPlatform for preferred interactive output.
   void togglePanel(const std::string& panelId);
 
   bool onPointerEvent(const PointerEvent& event);
@@ -88,7 +89,7 @@ public:
   [[nodiscard]] std::optional<LayerPopupParentContext> fallbackPopupParentContext() const noexcept;
 
   [[nodiscard]] RenderContext* renderContext() const noexcept { return m_renderContext; }
-  [[nodiscard]] WaylandConnection* wayland() const noexcept { return m_wayland; }
+  [[nodiscard]] WaylandConnection* wayland() const noexcept;
 
   void setActivePopup(ContextMenuPopup* popup);
   void clearActivePopup();
@@ -143,7 +144,7 @@ private:
   // grows in lock-step with the open/close animation.
   void applyPanelCompositorBlur();
 
-  WaylandConnection* m_wayland = nullptr;
+  CompositorPlatform* m_platform = nullptr;
   ConfigService* m_config = nullptr;
   RenderContext* m_renderContext = nullptr;
   std::function<void()> m_openSettingsWindow;

@@ -7,14 +7,16 @@
 #include <unordered_map>
 #include <vector>
 
-class SwayWorkspaceBackend final : public WorkspaceBackend {
+class SwayWorkspaceBackend final : public WorkspaceBackend,
+                                   public WorkspaceOutputNameResolver,
+                                   public WorkspaceSocketConnector {
 public:
-  using OutputNameResolver = std::function<std::string(wl_output*)>;
+  using OutputNameResolver = WorkspaceOutputNameResolver::Resolver;
 
   explicit SwayWorkspaceBackend(OutputNameResolver outputNameResolver);
 
-  bool connectSocket();
-  void setOutputNameResolver(OutputNameResolver outputNameResolver);
+  bool connectSocket() override;
+  void setOutputNameResolver(OutputNameResolver outputNameResolver) override;
 
   [[nodiscard]] const char* backendName() const override { return "sway-ipc"; }
   [[nodiscard]] bool isAvailable() const noexcept override { return m_socketFd >= 0; }

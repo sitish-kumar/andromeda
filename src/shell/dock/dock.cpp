@@ -1,5 +1,6 @@
 #include "shell/dock/dock.h"
 
+#include "compositors/compositor_platform.h"
 #include "config/config_service.h"
 #include "core/deferred_call.h"
 #include "core/log.h"
@@ -25,7 +26,6 @@
 #include "wayland/layer_surface.h"
 #include "wayland/popup_surface.h"
 #include "wayland/surface.h"
-#include "wayland/wayland_connection.h"
 #include "wayland/wayland_toplevels.h"
 #include "xdg-shell-client-protocol.h"
 
@@ -67,8 +67,8 @@ namespace {
     return {-(contentRight + k), 0.0f};
   }
 
-  std::string currentActiveEntryIdLower(const WaylandConnection& wayland) {
-    if (const auto active = wayland.activeToplevel(); active.has_value()) {
+  std::string currentActiveEntryIdLower(const CompositorPlatform& platform) {
+    if (const auto active = platform.activeToplevel(); active.has_value()) {
       return StringUtils::toLower(app_identity::resolveRunningDesktopEntry(active->appId, desktopEntries()).id);
     }
     return {};
@@ -132,8 +132,8 @@ namespace {
 
 Dock::Dock() = default;
 
-bool Dock::initialize(WaylandConnection& wayland, ConfigService* config, RenderContext* renderContext) {
-  m_wayland = &wayland;
+bool Dock::initialize(CompositorPlatform& platform, ConfigService* config, RenderContext* renderContext) {
+  m_platform = &platform;
   m_config = config;
   m_renderContext = renderContext;
 
@@ -185,7 +185,7 @@ void Dock::reload() {
   m_surfaceMap.clear();
   m_hoveredInstance = nullptr;
 
-  wl_display_roundtrip(m_wayland->display());
+  wl_display_roundtrip(m_platform->display());
   syncInstances();
 }
 
@@ -470,7 +470,7 @@ bool Dock::refreshPinnedAppsIfNeeded() {
 }
 
 void Dock::syncInstances() {
-  const auto& outputs = m_wayland->outputs();
+  const auto& outputs = m_platform->outputs();
 
   // Remove instances for dead outputs.
   std::erase_if(m_instances, [&outputs](const auto& inst) {
@@ -497,7 +497,7 @@ void Dock::createInstance(const WaylandOutput& output) {
   instance->outputName = output.name;
   instance->output = output.output;
   instance->scale = output.scale;
-  instance->activeAppIdLower = currentActiveEntryIdLower(*m_wayland);
+  instance->activeAppIdLower = currentActiveEntryIdLower(*m_platform);
 
   const bool vert = isVertical();
   const auto& shadowConfig = m_config->config().shell.shadow;
@@ -561,7 +561,7 @@ void Dock::createInstance(const WaylandOutput& output) {
       .defaultHeight = surfH,
   };
 
-  instance->surface = std::make_unique<LayerSurface>(*m_wayland, std::move(lsCfg));
+  instance->surface = std::make_unique<LayerSurface>(m_platform->wayland(), std::move(lsCfg));
   instance->surface->setRenderContext(m_renderContext);
 
   auto* inst = instance.get();
@@ -616,13 +616,13 @@ void Dock::prepareFrame(DockInstance& instance, bool needsUpdate, bool needsLayo
 }
 
 bool Dock::syncInstanceModel(DockInstance& instance) {
-  if (m_wayland == nullptr || m_config == nullptr) {
+  if (m_platform == nullptr || m_config == nullptr) {
     return false;
   }
 
   const auto& cfg = m_config->config().dock;
-  const std::string globalActiveIdLower = currentActiveEntryIdLower(*m_wayland);
-  wl_output* const activeOutput = m_wayland->activeToplevelOutput();
+  const std::string globalActiveIdLower = currentActiveEntryIdLower(*m_platform);
+  wl_output* const activeOutput = m_platform->activeToplevelOutput();
   wl_output* filterOutput = currentDockFilterOutput(cfg, instance.output);
   const bool filterOutputChanged = (filterOutput != instance.lastFilterOutput);
   instance.lastFilterOutput = filterOutput;
@@ -633,7 +633,7 @@ bool Dock::syncInstanceModel(DockInstance& instance) {
       (cfg.activeMonitorOnly && activeOutput != instance.output) ? std::string{} : globalActiveIdLower;
   instance.activeAppIdLower = activeIdLower;
 
-  const auto runningIds = cfg.showRunning ? m_wayland->runningAppIds(filterOutput) : std::vector<std::string>{};
+  const auto runningIds = cfg.showRunning ? m_platform->runningAppIds(filterOutput) : std::vector<std::string>{};
   const auto& allEntries = desktopEntries();
   const auto resolvedRunning = app_identity::resolveRunningApps(runningIds, allEntries);
   std::vector<std::string> runningLower;
@@ -783,7 +783,7 @@ void Dock::buildScene(DockInstance& instance) {
     // Wire up InputDispatcher.
     instance.inputDispatcher.setSceneRoot(instance.sceneRoot.get());
     instance.inputDispatcher.setCursorShapeCallback(
-        [this](std::uint32_t serial, std::uint32_t shape) { m_wayland->setCursorShape(serial, shape); });
+        [this](std::uint32_t serial, std::uint32_t shape) { m_platform->setCursorShape(serial, shape); });
 
     // Populate items and wire up palette reactivity.
     rebuildItems(instance);
@@ -942,7 +942,7 @@ void Dock::rebuildItems(DockInstance& instance) {
   instance.lastFilterOutput = filterOutput;
 
   if (cfg.showRunning) {
-    const auto runningIds = m_wayland->runningAppIds(filterOutput);
+    const auto runningIds = m_platform->runningAppIds(filterOutput);
     const auto& allEntries = desktopEntries();
     const auto resolvedRunning = app_identity::resolveRunningApps(runningIds, allEntries);
 
@@ -963,7 +963,7 @@ void Dock::rebuildItems(DockInstance& instance) {
   }
 
   const auto activeIdLower = instance.activeAppIdLower;
-  const auto runningIds = m_wayland->runningAppIds(filterOutput);
+  const auto runningIds = m_platform->runningAppIds(filterOutput);
   const auto resolvedRunning = app_identity::resolveRunningApps(runningIds, desktopEntries());
   std::vector<std::string> runningLower;
   runningLower.reserve(resolvedRunning.size());
@@ -1162,8 +1162,8 @@ void Dock::updateVisuals(DockInstance& instance) {
 
     // Instance-count badge.
     if (item.badge != nullptr && item.badgeLabel != nullptr) {
-      const auto windows = m_wayland->windowsForApp(item.idLower, item.startupWmClassLower,
-                                                    currentDockFilterOutput(cfg, instance.output));
+      const auto windows = m_platform->windowsForApp(item.idLower, item.startupWmClassLower,
+                                                     currentDockFilterOutput(cfg, instance.output));
       const std::size_t count = windows.size();
       if (count != item.instanceCount) {
         item.instanceCount = count;
@@ -1228,8 +1228,8 @@ void Dock::launchEntry(const DesktopEntry& entry) {
 
 void Dock::handleItemClick(DockInstance& instance, DockItemView& item) {
   // Find all windows matching this item's app.
-  auto windows = m_wayland->windowsForApp(item.idLower, item.startupWmClassLower,
-                                          currentDockFilterOutput(m_config->config().dock, instance.output));
+  auto windows = m_platform->windowsForApp(item.idLower, item.startupWmClassLower,
+                                           currentDockFilterOutput(m_config->config().dock, instance.output));
 
   if (windows.empty()) {
     // Nothing running — launch the app.
@@ -1239,7 +1239,7 @@ void Dock::handleItemClick(DockInstance& instance, DockItemView& item) {
 
   if (windows.size() == 1) {
     // Exactly one window: activate it directly.
-    m_wayland->activateToplevel(windows[0].handle);
+    m_platform->activateToplevel(windows[0].handle);
     return;
   }
 
@@ -1252,10 +1252,10 @@ void Dock::handleItemClick(DockInstance& instance, DockItemView& item) {
 static constexpr float kMenuWidth = 240.0f;
 
 void Dock::openWindowPicker(DockInstance& instance, DockItemView& item, std::vector<ToplevelInfo> windows) {
-  if (!m_wayland->hasXdgShell()) {
+  if (!m_platform->hasXdgShell()) {
     // Fallback: activate the first window if we can't show a popup.
     if (!windows.empty()) {
-      m_wayland->activateToplevel(windows[0].handle);
+      m_platform->activateToplevel(windows[0].handle);
     }
     return;
   }
@@ -1316,8 +1316,8 @@ void Dock::openWindowPicker(DockInstance& instance, DockItemView& item, std::vec
 
   const auto sb = shell::surface_shadow::bleed(cfg.shadow, m_config->config().shell.shadow);
   const std::int32_t panelThk = dockThickness();
-  const std::int32_t ptrX = static_cast<std::int32_t>(m_wayland->lastPointerX());
-  const std::int32_t ptrY = static_cast<std::int32_t>(m_wayland->lastPointerY());
+  const std::int32_t ptrX = static_cast<std::int32_t>(m_platform->lastPointerX());
+  const std::int32_t ptrY = static_cast<std::int32_t>(m_platform->lastPointerY());
   const std::int32_t halfCell = cfg.iconSize / 2;
 
   // Anchor rect: pointer-centred on main axis × panel face on cross axis.
@@ -1361,11 +1361,11 @@ void Dock::openWindowPicker(DockInstance& instance, DockItemView& item, std::vec
                               XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y,
       .offsetX = offsetX,
       .offsetY = offsetY,
-      .serial = m_wayland->lastInputSerial(),
+      .serial = m_platform->lastInputSerial(),
       .grab = true,
   };
 
-  menu->surface = std::make_unique<PopupSurface>(*m_wayland);
+  menu->surface = std::make_unique<PopupSurface>(m_platform->wayland());
   menu->surface->setRenderContext(m_renderContext);
 
   auto* menuPtr = menu.get();
@@ -1413,7 +1413,7 @@ void Dock::openWindowPicker(DockInstance& instance, DockItemView& item, std::vec
       auto* handle = (idx < menuPtr->handles.size()) ? menuPtr->handles[idx] : nullptr;
       DeferredCall::callLater([this, handle]() {
         if (handle != nullptr) {
-          m_wayland->activateToplevel(handle);
+          m_platform->activateToplevel(handle);
         }
         closeWindowPicker();
       });
@@ -1425,13 +1425,13 @@ void Dock::openWindowPicker(DockInstance& instance, DockItemView& item, std::vec
     menuPtr->sceneRoot->addChild(std::move(ctrl));
     menuPtr->inputDispatcher.setSceneRoot(menuPtr->sceneRoot.get());
     menuPtr->inputDispatcher.setCursorShapeCallback(
-        [this](std::uint32_t serial, std::uint32_t shape) { m_wayland->setCursorShape(serial, shape); });
+        [this](std::uint32_t serial, std::uint32_t shape) { m_platform->setCursorShape(serial, shape); });
     menuPtr->surface->setSceneRoot(menuPtr->sceneRoot.get());
   });
 
   menu->surface->setDismissedCallback([this]() { closeWindowPicker(); });
 
-  auto* layerSurface = m_wayland->layerSurfaceFor(instance.surface->wlSurface());
+  auto* layerSurface = m_platform->layerSurfaceFor(instance.surface->wlSurface());
   if (layerSurface == nullptr || !menu->surface->initialize(layerSurface, instance.output, popupCfg)) {
     kLog.warn("dock: failed to create window-picker popup");
     return;
@@ -1588,7 +1588,7 @@ void Dock::launchAction(const DesktopAction& action) {
 }
 
 void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
-  if (!m_wayland->hasXdgShell())
+  if (!m_platform->hasXdgShell())
     return;
 
   // Close existing popups before opening the new one.
@@ -1599,8 +1599,8 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
   auto menu = std::make_unique<DockPopup>();
 
   // Collect running windows for "Close" / "Close All" entries.
-  auto windows = m_wayland->windowsForApp(item.idLower, item.startupWmClassLower,
-                                          currentDockFilterOutput(m_config->config().dock, instance.output));
+  auto windows = m_platform->windowsForApp(item.idLower, item.startupWmClassLower,
+                                           currentDockFilterOutput(m_config->config().dock, instance.output));
   for (const auto& w : windows) {
     menu->handles.push_back(w.handle);
   }
@@ -1677,8 +1677,8 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
 
   const auto sb = shell::surface_shadow::bleed(cfg.shadow, m_config->config().shell.shadow);
   const std::int32_t panelThk = dockThickness();
-  const std::int32_t ptrX = static_cast<std::int32_t>(m_wayland->lastPointerX());
-  const std::int32_t ptrY = static_cast<std::int32_t>(m_wayland->lastPointerY());
+  const std::int32_t ptrX = static_cast<std::int32_t>(m_platform->lastPointerX());
+  const std::int32_t ptrY = static_cast<std::int32_t>(m_platform->lastPointerY());
   const std::int32_t halfCell = cfg.iconSize / 2;
 
   // Anchor rect: pointer-centred on main axis × panel face on cross axis.
@@ -1722,11 +1722,11 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
                               XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y,
       .offsetX = offsetX,
       .offsetY = offsetY,
-      .serial = m_wayland->lastInputSerial(),
+      .serial = m_platform->lastInputSerial(),
       .grab = true,
   };
 
-  menu->surface = std::make_unique<PopupSurface>(*m_wayland);
+  menu->surface = std::make_unique<PopupSurface>(m_platform->wayland());
   menu->surface->setRenderContext(m_renderContext);
 
   auto* menuPtr = menu.get();
@@ -1783,10 +1783,10 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
                 launchAction(entryActions[idx]);
               }
             } else if (id == -1 && !closingHandles.empty()) {
-              m_wayland->closeToplevel(closingHandles[0]);
+              m_platform->closeToplevel(closingHandles[0]);
             } else if (id == -2) {
               for (auto* handle : closingHandles) {
-                m_wayland->closeToplevel(handle);
+                m_platform->closeToplevel(handle);
               }
             }
             closeItemMenu();
@@ -1799,13 +1799,13 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
         menuPtr->sceneRoot->addChild(std::move(ctrl));
         menuPtr->inputDispatcher.setSceneRoot(menuPtr->sceneRoot.get());
         menuPtr->inputDispatcher.setCursorShapeCallback(
-            [this](std::uint32_t serial, std::uint32_t shape) { m_wayland->setCursorShape(serial, shape); });
+            [this](std::uint32_t serial, std::uint32_t shape) { m_platform->setCursorShape(serial, shape); });
         menuPtr->surface->setSceneRoot(menuPtr->sceneRoot.get());
       });
 
   menu->surface->setDismissedCallback([this]() { closeItemMenu(); });
 
-  auto* layerSurface = m_wayland->layerSurfaceFor(instance.surface->wlSurface());
+  auto* layerSurface = m_platform->layerSurfaceFor(instance.surface->wlSurface());
   if (layerSurface == nullptr || !menu->surface->initialize(layerSurface, instance.output, popupCfg)) {
     kLog.warn("dock: failed to create item-menu popup");
     return;

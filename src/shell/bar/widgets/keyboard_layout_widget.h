@@ -1,6 +1,6 @@
 #pragma once
 
-#include "compositors/keyboard_backend.h"
+#include "compositors/compositor_platform.h"
 #include "core/timer_manager.h"
 #include "shell/bar/widget.h"
 
@@ -9,13 +9,12 @@
 class Glyph;
 class Label;
 class Renderer;
-class WaylandConnection;
 
 class KeyboardLayoutWidget : public Widget {
 public:
   enum class DisplayMode : std::uint8_t { Short = 0, Full = 1 };
 
-  KeyboardLayoutWidget(WaylandConnection& wayland, std::string cycleCommand, DisplayMode displayMode);
+  KeyboardLayoutWidget(CompositorPlatform& platform, std::string cycleCommand, DisplayMode displayMode);
   static DisplayMode parseDisplayMode(const std::string& value);
   static std::string formatLayoutLabel(const std::string& layoutName, DisplayMode displayMode);
 
@@ -30,8 +29,7 @@ private:
   void scheduleRefreshBurst();
   void cycleLayout();
 
-  WaylandConnection& m_wayland;
-  KeyboardBackend m_keyboardBackend;
+  CompositorPlatform& m_platform;
   std::string m_cycleCommand;
   DisplayMode m_displayMode = DisplayMode::Short;
 

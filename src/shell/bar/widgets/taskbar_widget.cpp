@@ -32,9 +32,9 @@
 #include <unordered_set>
 #include <wayland-client-protocol.h>
 
-TaskbarWidget::TaskbarWidget(WaylandConnection& connection, wl_output* output, bool groupByWorkspace,
+TaskbarWidget::TaskbarWidget(CompositorPlatform& platform, wl_output* output, bool groupByWorkspace,
                              std::string barPosition)
-    : m_connection(connection), m_output(output), m_groupByWorkspace(groupByWorkspace),
+    : m_platform(platform), m_output(output), m_groupByWorkspace(groupByWorkspace),
       m_barPosition(std::move(barPosition)) {
   buildDesktopIconIndex();
 }
@@ -184,11 +184,11 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
           [this, task, areaPtr, handle = task.firstHandle, clickWorkspace](const InputArea::PointerData& data) {
             if (data.button == BTN_LEFT) {
               if (handle != nullptr) {
-                m_connection.activateToplevel(handle);
+                m_platform.activateToplevel(handle);
                 return;
               }
               if (clickWorkspace.has_value()) {
-                m_connection.activateWorkspace(m_output, *clickWorkspace);
+                m_platform.activateWorkspace(m_output, *clickWorkspace);
               }
               return;
             }
@@ -281,7 +281,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
         auto wsCopy = ws.workspace;
         switcher->setOnClick([this, wsCopy](const InputArea::PointerData& data) {
           if (data.button == BTN_LEFT) {
-            m_connection.activateWorkspace(m_output, wsCopy);
+            m_platform.activateWorkspace(m_output, wsCopy);
           }
         });
         groupPtr->addChild(std::move(switcher));
@@ -308,7 +308,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       auto wsForBadge = ws.workspace;
       badgeHit->setOnClick([this, wsForBadge](const InputArea::PointerData& data) {
         if (data.button == BTN_LEFT) {
-          m_connection.activateWorkspace(m_output, wsForBadge);
+          m_platform.activateWorkspace(m_output, wsForBadge);
         }
       });
 
@@ -348,19 +348,19 @@ void TaskbarWidget::updateModels() {
     buildDesktopIconIndex();
   }
 
-  const auto active = m_connection.activeToplevel();
+  const auto active = m_platform.activeToplevel();
   const auto* activeHandle = active.has_value() ? active->handle : nullptr;
 
-  const auto running = m_connection.runningAppIds(m_output);
-  const auto assignmentMode = m_connection.taskbarAssignmentMode();
+  const auto running = m_platform.runningAppIds(m_output);
+  const auto assignmentMode = m_platform.taskbarAssignmentMode();
   const auto resolvedRunning = app_identity::resolveRunningApps(running, desktopEntries());
   std::vector<WorkspaceModel> nextWorkspaces;
   std::unordered_map<std::string, std::vector<std::string>> runningByWorkspace;
   std::vector<WorkspaceWindowAssignment> workspaceAssignments;
 
   if (m_groupByWorkspace) {
-    const auto workspaces = m_connection.workspaces(m_output);
-    const auto displayKeys = m_connection.workspaceDisplayKeys(m_output);
+    const auto workspaces = m_platform.workspaces(m_output);
+    const auto displayKeys = m_platform.workspaceDisplayKeys(m_output);
     nextWorkspaces.reserve(workspaces.size());
     for (std::size_t i = 0; i < workspaces.size(); ++i) {
       WorkspaceModel item{};
@@ -369,8 +369,8 @@ void TaskbarWidget::updateModels() {
       item.label = item.key;
       nextWorkspaces.push_back(std::move(item));
     }
-    runningByWorkspace = m_connection.appIdsByWorkspace(m_output);
-    workspaceAssignments = m_connection.workspaceWindowAssignments(m_output);
+    runningByWorkspace = m_platform.appIdsByWorkspace(m_output);
+    workspaceAssignments = m_platform.workspaceWindowAssignments(m_output);
     std::unordered_map<std::string, std::size_t> workspaceKeyToOrder;
     for (std::size_t i = 0; i < nextWorkspaces.size(); ++i) {
       workspaceKeyToOrder[nextWorkspaces[i].key] = i;
@@ -403,7 +403,7 @@ void TaskbarWidget::updateModels() {
     const std::string nameLower = !run.entry.nameLower.empty() ? run.entry.nameLower : run.runningLower;
     const std::string appId = !run.entry.id.empty() ? run.entry.id : run.runningAppId;
 
-    const auto windows = m_connection.windowsForApp(idLower, startupLower, m_output);
+    const auto windows = m_platform.windowsForApp(idLower, startupLower, m_output);
     for (const auto& window : windows) {
       const auto handleKey = reinterpret_cast<std::uintptr_t>(window.handle);
       if (!processedHandles.insert(handleKey).second) {
@@ -457,7 +457,7 @@ void TaskbarWidget::updateModels() {
         candidates.push_back(std::move(candidate));
       }
 
-      const auto assignedByHandle = m_connection.assignTaskbarWindows(candidates, m_output);
+      const auto assignedByHandle = m_platform.assignTaskbarWindows(candidates, m_output);
       std::vector<bool> representedAssignments(workspaceAssignments.size(), false);
 
       for (auto& task : nextTasks) {
@@ -812,7 +812,7 @@ void TaskbarWidget::updateModels() {
       for (const auto& appId : *list) {
         const std::string appLower = toLower(appId);
         const std::string startupWmClassLower = toLower(appId);
-        const auto windows = m_connection.windowsForApp(appLower, startupWmClassLower, m_output);
+        const auto windows = m_platform.windowsForApp(appLower, startupWmClassLower, m_output);
         if (windows.empty()) {
           continue;
         }
@@ -931,13 +931,13 @@ void TaskbarWidget::openTaskContextMenu(const TaskModel& task, InputArea& area) 
     return;
   }
 
-  wl_surface* pointerSurface = m_connection.lastPointerSurface();
-  auto* layerSurface = m_connection.layerSurfaceFor(pointerSurface);
+  wl_surface* pointerSurface = m_platform.lastPointerSurface();
+  auto* layerSurface = m_platform.layerSurfaceFor(pointerSurface);
   if (layerSurface == nullptr) {
     return;
   }
 
-  const auto windows = m_connection.windowsForApp(task.idLower, task.startupWmClassLower, m_output);
+  const auto windows = m_platform.windowsForApp(task.idLower, task.startupWmClassLower, m_output);
   m_contextMenuHandles.clear();
   m_contextMenuHandles.reserve(windows.size());
   for (const auto& window : windows) {
@@ -998,7 +998,7 @@ void TaskbarWidget::openTaskContextMenu(const TaskModel& task, InputArea& area) 
   }
 
   if (m_contextMenuPopup == nullptr) {
-    m_contextMenuPopup = std::make_unique<ContextMenuPopup>(m_connection, *renderContext);
+    m_contextMenuPopup = std::make_unique<ContextMenuPopup>(m_platform.wayland(), *renderContext);
   }
   m_contextMenuPopup->setOnActivate([this, entryActions](const ContextMenuControlEntry& entry) {
     if (entry.id >= 0) {
@@ -1025,14 +1025,14 @@ void TaskbarWidget::openTaskContextMenu(const TaskModel& task, InputArea& area) 
     }
     if (entry.id == -1) {
       if (m_contextMenuPrimaryHandle != nullptr) {
-        m_connection.closeToplevel(m_contextMenuPrimaryHandle);
+        m_platform.closeToplevel(m_contextMenuPrimaryHandle);
       }
       return;
     }
     if (entry.id == -2) {
       for (auto* handle : m_contextMenuHandles) {
         if (handle != nullptr) {
-          m_connection.closeToplevel(handle);
+          m_platform.closeToplevel(handle);
         }
       }
     }
@@ -1200,5 +1200,5 @@ void TaskbarWidget::activateAdjacentWorkspace(int direction) {
     targetIndex = current - 1;
   }
 
-  m_connection.activateWorkspace(m_output, m_workspaces[targetIndex].workspace);
+  m_platform.activateWorkspace(m_output, m_workspaces[targetIndex].workspace);
 }

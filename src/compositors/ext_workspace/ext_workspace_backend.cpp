@@ -104,7 +104,7 @@ namespace {
 
 } // namespace
 
-void ExtWorkspaceBackend::bind(ext_workspace_manager_v1* manager) {
+void ExtWorkspaceBackend::bindExtWorkspace(ext_workspace_manager_v1* manager) {
   m_manager = manager;
   ext_workspace_manager_v1_add_listener(m_manager, &kManagerListener, this);
 }

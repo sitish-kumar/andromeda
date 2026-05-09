@@ -10,7 +10,6 @@
 #include "ui/controls/label.h"
 #include "ui/palette.h"
 #include "ui/style.h"
-#include "wayland/wayland_connection.h"
 
 #include <algorithm>
 #include <cctype>
@@ -28,9 +27,9 @@ namespace {
 
 } // namespace
 
-ActiveWindowWidget::ActiveWindowWidget(WaylandConnection& connection, float maxWidth, float minWidth, float iconSize,
+ActiveWindowWidget::ActiveWindowWidget(CompositorPlatform& platform, float maxWidth, float minWidth, float iconSize,
                                        ActiveWindowTitleScrollMode titleScrollMode)
-    : m_connection(connection), m_maxWidth(maxWidth), m_minWidth(minWidth), m_iconSize(iconSize),
+    : m_platform(platform), m_maxWidth(maxWidth), m_minWidth(minWidth), m_iconSize(iconSize),
       m_titleScrollMode(titleScrollMode) {
   buildDesktopIconIndex();
 }
@@ -139,7 +138,7 @@ void ActiveWindowWidget::syncState(Renderer& renderer) {
     buildDesktopIconIndex();
   }
 
-  const auto current = m_connection.activeToplevel();
+  const auto current = m_platform.activeToplevel();
 
   std::string identifier;
   std::string title;

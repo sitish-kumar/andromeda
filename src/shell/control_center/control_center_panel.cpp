@@ -1,5 +1,6 @@
 #include "shell/control_center/control_center_panel.h"
 
+#include "compositors/compositor_platform.h"
 #include "config/config_service.h"
 #include "i18n/i18n.h"
 #include "notification/notification_manager.h"
@@ -21,14 +22,15 @@ ControlCenterPanel::ControlCenterPanel(
     PowerProfilesService* powerProfiles, NetworkService* network, NetworkSecretAgent* networkSecrets,
     BluetoothService* bluetooth, BluetoothAgent* bluetoothAgent, BrightnessService* brightness,
     SystemMonitorService* sysmon, GammaService* nightLight, noctalia::theme::ThemeService* theme,
-    IdleInhibitor* idleInhibitor, DependencyService* dependencies, WaylandConnection* wayland, Wallpaper* wallpaper) {
+    IdleInhibitor* idleInhibitor, DependencyService* dependencies, CompositorPlatform* platform, Wallpaper* wallpaper) {
   (void)upower;
+  WaylandConnection* wayland = platform != nullptr ? &platform->wayland() : nullptr;
   m_config = config;
   m_notificationManager = notifications;
   m_dependencies = dependencies;
   m_tabs[tabIndex(TabId::Home)] =
       std::make_unique<HomeTab>(mpris, weather, audio, powerProfiles, config, network, bluetooth, nightLight, theme,
-                                notifications, idleInhibitor, dependencies, wayland, wallpaper);
+                                notifications, idleInhibitor, dependencies, platform, wallpaper);
   m_tabs[tabIndex(TabId::Media)] =
       std::make_unique<MediaTab>(mpris, httpClient, spectrum, wayland, PanelManager::instance().renderContext());
   m_tabs[tabIndex(TabId::Audio)] =

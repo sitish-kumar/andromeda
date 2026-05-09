@@ -8,6 +8,8 @@
 #include <vector>
 
 struct wl_output;
+struct ext_workspace_manager_v1;
+struct zdwl_ipc_manager_v2;
 
 struct Workspace {
   std::string id;
@@ -70,4 +72,30 @@ public:
   [[nodiscard]] virtual short pollEvents() const noexcept { return POLLIN | POLLHUP | POLLERR; }
   [[nodiscard]] virtual int pollTimeoutMs() const noexcept { return -1; }
   virtual void dispatchPoll(short /*revents*/) {}
+};
+
+class ExtWorkspaceProtocolBinder {
+public:
+  virtual ~ExtWorkspaceProtocolBinder() = default;
+  virtual void bindExtWorkspace(ext_workspace_manager_v1* manager) = 0;
+};
+
+class DwlIpcWorkspaceProtocolBinder {
+public:
+  virtual ~DwlIpcWorkspaceProtocolBinder() = default;
+  virtual void bindDwlIpcWorkspace(zdwl_ipc_manager_v2* manager) = 0;
+};
+
+class WorkspaceOutputNameResolver {
+public:
+  using Resolver = std::function<std::string(wl_output*)>;
+
+  virtual ~WorkspaceOutputNameResolver() = default;
+  virtual void setOutputNameResolver(Resolver resolver) = 0;
+};
+
+class WorkspaceSocketConnector {
+public:
+  virtual ~WorkspaceSocketConnector() = default;
+  [[nodiscard]] virtual bool connectSocket() = 0;
 };

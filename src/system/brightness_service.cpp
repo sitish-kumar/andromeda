@@ -1,5 +1,6 @@
 #include "system/brightness_service.h"
 
+#include "compositors/compositor_platform.h"
 #include "config/config_service.h"
 #include "core/log.h"
 #include "core/process.h"
@@ -586,6 +587,7 @@ namespace {
 struct BrightnessService::Impl {
   SystemBus* bus = nullptr;
   WaylandConnection& wayland;
+  CompositorPlatform& platform;
   BrightnessConfig activeConfig;
   ChangeCallback changeCallback;
 
@@ -613,8 +615,8 @@ struct BrightnessService::Impl {
   std::unordered_map<std::string, DdcJob> pendingRefreshes;
   std::queue<WorkerCompletion> completions;
 
-  Impl(SystemBus* systemBus, WaylandConnection& wl, const BrightnessConfig& config)
-      : bus(systemBus), wayland(wl), activeConfig(config) {
+  Impl(SystemBus* systemBus, CompositorPlatform& compositorPlatform, const BrightnessConfig& config)
+      : bus(systemBus), wayland(compositorPlatform.wayland()), platform(compositorPlatform), activeConfig(config) {
     setupPollFds();
     workerThread = std::thread([this]() { workerLoop(); });
   }
@@ -1307,8 +1309,8 @@ struct BrightnessService::Impl {
   }
 };
 
-BrightnessService::BrightnessService(SystemBus* bus, WaylandConnection& wayland, const BrightnessConfig& config)
-    : m_impl(new Impl(bus, wayland, config)) {
+BrightnessService::BrightnessService(SystemBus* bus, CompositorPlatform& platform, const BrightnessConfig& config)
+    : m_impl(new Impl(bus, platform, config)) {
   m_impl->rebuildState(false);
 }
 
@@ -1358,7 +1360,7 @@ void BrightnessService::registerIpc(IpcService& ipc, std::function<void()> onBat
     if (token.empty() || token == "current") {
       wl_output* output = m_impl->wayland.activeToplevelOutput();
       if (output == nullptr) {
-        output = m_impl->wayland.preferredPanelOutput();
+        output = m_impl->platform.preferredInteractiveOutput();
       }
       if (output == nullptr) {
         error = "error: could not resolve the current output\n";

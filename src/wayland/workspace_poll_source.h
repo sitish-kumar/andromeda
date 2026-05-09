@@ -1,21 +1,21 @@
 #pragma once
 
 #include "app/poll_source.h"
-#include "wayland/wayland_connection.h"
+#include "compositors/compositor_platform.h"
 
 class WorkspacePollSource final : public PollSource {
 public:
-  explicit WorkspacePollSource(WaylandConnection& connection) : m_connection(connection) {}
+  explicit WorkspacePollSource(CompositorPlatform& platform) : m_platform(platform) {}
 
-  [[nodiscard]] int pollTimeoutMs() const override { return m_connection.workspacePollTimeoutMs(); }
+  [[nodiscard]] int pollTimeoutMs() const override { return m_platform.workspacePollTimeoutMs(); }
 
   void dispatch(const std::vector<pollfd>& fds, std::size_t startIdx) override {
-    m_connection.dispatchWorkspacePoll(fds, startIdx);
+    m_platform.dispatchWorkspacePoll(fds, startIdx);
   }
 
 protected:
-  void doAddPollFds(std::vector<pollfd>& fds) override { (void)m_connection.addWorkspacePollFds(fds); }
+  void doAddPollFds(std::vector<pollfd>& fds) override { (void)m_platform.addWorkspacePollFds(fds); }
 
 private:
-  WaylandConnection& m_connection;
+  CompositorPlatform& m_platform;
 };

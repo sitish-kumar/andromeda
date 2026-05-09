@@ -18,9 +18,8 @@ public:
   ~WaylandWorkspaces();
 
   void bindExtWorkspace(ext_workspace_manager_v1* manager);
-  void bindMangoWorkspace(zdwl_ipc_manager_v2* manager);
-  void setSwayOutputNameResolver(std::function<std::string(wl_output*)> resolver);
-  void setHyprlandOutputNameResolver(std::function<std::string(wl_output*)> resolver);
+  void bindDwlIpcWorkspace(zdwl_ipc_manager_v2* manager);
+  void setOutputNameResolver(std::function<std::string(wl_output*)> resolver);
   void initialize(std::string_view compositorHint);
   void onOutputAdded(wl_output* output);
   void onOutputRemoved(wl_output* output);
@@ -47,11 +46,17 @@ private:
   void setActiveBackend(WorkspaceBackend* backend);
   void notifyChanged() const;
 
-  std::vector<class OutputBackend*> m_outputBackends;
-  std::unique_ptr<class ExtWorkspaceBackend> m_extBackend;
-  std::unique_ptr<class MangoWorkspaceBackend> m_mangoBackend;
-  std::unique_ptr<class HyprlandWorkspaceBackend> m_hyprlandBackend;
-  std::unique_ptr<class SwayWorkspaceBackend> m_swayBackend;
+  std::vector<std::unique_ptr<WorkspaceBackend>> m_backends;
+  std::vector<class OutputLifecycleObserver*> m_outputObservers;
+  std::vector<WorkspaceOutputNameResolver*> m_outputNameResolvers;
+  ExtWorkspaceProtocolBinder* m_extWorkspaceBinder = nullptr;
+  DwlIpcWorkspaceProtocolBinder* m_dwlIpcWorkspaceBinder = nullptr;
+  WorkspaceBackend* m_extBackend = nullptr;
+  WorkspaceBackend* m_dwlIpcBackend = nullptr;
+  WorkspaceBackend* m_hyprlandBackend = nullptr;
+  WorkspaceBackend* m_swayBackend = nullptr;
+  WorkspaceSocketConnector* m_hyprlandConnector = nullptr;
+  WorkspaceSocketConnector* m_swayConnector = nullptr;
   WorkspaceBackend* m_activeBackend = nullptr;
   ChangeCallback m_changeCallback;
 };

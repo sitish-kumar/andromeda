@@ -1,6 +1,7 @@
 #pragma once
 
 class BluetoothService;
+class CompositorPlatform;
 class ConfigService;
 class DependencyService;
 class IdleInhibitor;
@@ -11,7 +12,6 @@ class NotificationManager;
 class PipeWireService;
 class PowerProfilesService;
 class WeatherService;
-class WaylandConnection;
 
 namespace noctalia::theme {
   class ThemeService;
@@ -30,5 +30,5 @@ struct ShortcutServices {
   WeatherService* weather = nullptr;
   ConfigService* config = nullptr;
   DependencyService* dependencies = nullptr;
-  WaylandConnection* wayland = nullptr;
+  CompositorPlatform* platform = nullptr;
 };

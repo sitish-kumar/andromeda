@@ -7,11 +7,10 @@
 struct wl_array;
 struct ext_workspace_group_handle_v1;
 struct ext_workspace_handle_v1;
-struct ext_workspace_manager_v1;
 
-class ExtWorkspaceBackend final : public WorkspaceBackend {
+class ExtWorkspaceBackend final : public WorkspaceBackend, public ExtWorkspaceProtocolBinder {
 public:
-  void bind(ext_workspace_manager_v1* manager);
+  void bindExtWorkspace(ext_workspace_manager_v1* manager) override;
 
   [[nodiscard]] const char* backendName() const override { return "ext-workspace"; }
   [[nodiscard]] bool isAvailable() const noexcept override { return m_manager != nullptr; }

@@ -1,6 +1,6 @@
 #include "shell/control_center/shortcut_registry.h"
 
-#include "compositors/keyboard_backend.h"
+#include "compositors/compositor_platform.h"
 #include "config/config_service.h"
 #include "dbus/bluetooth/bluetooth_service.h"
 #include "dbus/mpris/mpris_service.h"
@@ -22,6 +22,7 @@
 #include <array>
 #include <cmath>
 #include <format>
+#include <optional>
 #include <vector>
 
 namespace {
@@ -108,10 +109,10 @@ namespace {
 
   class NightlightShortcut final : public Shortcut {
   public:
-    NightlightShortcut(GammaService* svc, WaylandConnection* wayland) : m_svc(svc), m_wayland(wayland) {}
+    NightlightShortcut(GammaService* svc, CompositorPlatform* platform) : m_svc(svc), m_platform(platform) {}
     std::string_view id() const override { return "nightlight"; }
     std::string defaultLabel() const override { return i18n::tr("control-center.shortcuts.nightlight"); }
-    bool enabled() const override { return m_wayland != nullptr && m_wayland->hasGammaControl(); }
+    bool enabled() const override { return m_platform != nullptr && m_platform->hasGammaControl(); }
     std::string displayLabel() const override {
       if (m_svc == nullptr) {
         return defaultLabel();
@@ -158,7 +159,7 @@ namespace {
 
   private:
     GammaService* m_svc;
-    WaylandConnection* m_wayland;
+    CompositorPlatform* m_platform;
   };
 
   class NotificationShortcut final : public Shortcut {
@@ -418,7 +419,8 @@ namespace {
 
   class KeyboardLayoutShortcut final : public Shortcut {
   public:
-    KeyboardLayoutShortcut(WaylandConnection* wayland, ConfigService* config) : m_wayland(wayland), m_config(config) {}
+    KeyboardLayoutShortcut(CompositorPlatform* platform, ConfigService* config)
+        : m_platform(platform), m_config(config) {}
     std::string_view id() const override { return "keyboard_layout"; }
     std::string defaultLabel() const override { return i18n::tr("control-center.shortcuts.keyboard-layout"); }
     std::string displayLabel() const override {
@@ -427,27 +429,28 @@ namespace {
     std::string_view iconOn() const override { return "keyboard"; }
     std::string_view iconOff() const override { return "keyboard"; }
     void onClick() override {
-      (void)m_backend.cycleLayout();
+      if (m_platform != nullptr) {
+        (void)m_platform->cycleKeyboardLayout();
+      }
       PanelManager::instance().refresh();
     }
 
   private:
     [[nodiscard]] std::string resolvedLayoutName() const {
-      const auto state = m_backend.layoutState();
+      const auto state = m_platform != nullptr ? m_platform->keyboardLayoutState() : std::nullopt;
       if (state.has_value() && state->currentIndex >= 0 &&
           state->currentIndex < static_cast<int>(state->names.size())) {
         return state->names[static_cast<std::size_t>(state->currentIndex)];
       }
 
-      if (auto backendName = m_backend.currentLayoutName(); backendName.has_value() && !backendName->empty()) {
-        return *backendName;
+      if (m_platform != nullptr) {
+        return m_platform->currentKeyboardLayoutName();
       }
 
-      return m_wayland != nullptr ? m_wayland->currentKeyboardLayoutName() : std::string{};
+      return {};
     }
 
-    KeyboardBackend m_backend;
-    WaylandConnection* m_wayland = nullptr;
+    CompositorPlatform* m_platform = nullptr;
     ConfigService* m_config = nullptr;
   };
 
@@ -526,7 +529,7 @@ std::unique_ptr<Shortcut> ShortcutRegistry::create(std::string_view type, const 
   if (type == "bluetooth")
     return std::make_unique<BluetoothShortcut>(s.bluetooth);
   if (type == "nightlight")
-    return std::make_unique<NightlightShortcut>(s.nightLight, s.wayland);
+    return std::make_unique<NightlightShortcut>(s.nightLight, s.platform);
   if (type == "notification")
     return std::make_unique<NotificationShortcut>(s.notifications);
   if (type == "dark_mode")
@@ -546,7 +549,7 @@ std::unique_ptr<Shortcut> ShortcutRegistry::create(std::string_view type, const 
   if (type == "sysmon")
     return std::make_unique<SysmonShortcut>();
   if (type == "keyboard_layout")
-    return std::make_unique<KeyboardLayoutShortcut>(s.wayland, s.config);
+    return std::make_unique<KeyboardLayoutShortcut>(s.platform, s.config);
   if (type == "wallpaper")
     return std::make_unique<WallpaperShortcut>();
   if (type == "session")

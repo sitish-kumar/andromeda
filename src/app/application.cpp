@@ -1,8 +1,6 @@
 #include "application.h"
 
 #include "app/poll_source.h"
-#include "compositors/compositor_detect.h"
-#include "compositors/output_backend.h"
 #include "config/config_types.h"
 #include "core/build_info.h"
 #include "core/deferred_call.h"
@@ -242,7 +240,7 @@ void Application::syncPolkitAgent() {
     }
     if (needsInput) {
       if (!m_panelManager.isOpenPanel("polkit")) {
-        wl_output* output = m_wayland.preferredPanelOutput(std::chrono::milliseconds(1200));
+        wl_output* output = m_compositorPlatform.preferredInteractiveOutput(std::chrono::milliseconds(1200));
         m_panelManager.openPanel("polkit", PanelOpenRequest{.output = output});
       } else {
         m_panelManager.refresh();
@@ -350,6 +348,7 @@ void Application::initServices() {
   if (!m_wayland.connect()) {
     throw std::runtime_error("failed to connect to Wayland display");
   }
+  m_compositorPlatform.initialize();
   m_glShared.initialize(m_wayland.display());
   m_sharedTextureCache.initialize(&m_glShared);
   m_asyncTextureCache.initialize(&m_glShared);
@@ -378,7 +377,7 @@ void Application::initServices() {
       m_panelManager.refresh();
     }
   });
-  m_wayland.setWorkspaceChangeCallback([this]() { m_bar.refresh(); });
+  m_compositorPlatform.setWorkspaceChangeCallback([this]() { m_bar.refresh(); });
   m_wayland.setToplevelChangeCallback([this]() {
     m_bar.refresh();
     m_dock.refresh();
@@ -599,8 +598,8 @@ void Application::initServices() {
   }
 
   try {
-    m_brightnessService =
-        std::make_unique<BrightnessService>(m_systemBus.get(), m_wayland, m_configService.config().brightness);
+    m_brightnessService = std::make_unique<BrightnessService>(m_systemBus.get(), m_compositorPlatform,
+                                                              m_configService.config().brightness);
     m_brightnessService->setChangeCallback([this, shouldRefreshControlCenter]() {
       m_brightnessOsd.onBrightnessChanged(*m_brightnessService);
       m_bar.refresh();
@@ -822,7 +821,7 @@ void Application::initUi() {
   });
 
   // Panel manager must be before bar so widgets can access PanelManager::instance()
-  m_panelManager.initialize(m_wayland, &m_configService, &m_renderContext);
+  m_panelManager.initialize(m_compositorPlatform, &m_configService, &m_renderContext);
   m_panelManager.setOpenSettingsWindowCallback([this]() { m_settingsWindow.open(); });
   m_panelManager.setToggleSettingsWindowCallback([this]() {
     if (m_settingsWindow.isOpen()) {
@@ -858,7 +857,7 @@ void Application::initUi() {
                                    m_upowerService.get(), m_powerProfilesService.get(), m_networkService.get(),
                                    m_networkSecretAgent.get(), m_bluetoothService.get(), m_bluetoothAgent.get(),
                                    m_brightnessService.get(), m_systemMonitor.get(), &m_gammaService, &m_themeService,
-                                   &m_idleInhibitor, &m_dependencyService, &m_wayland, &m_wallpaper));
+                                   &m_idleInhibitor, &m_dependencyService, &m_compositorPlatform, &m_wallpaper));
   {
     auto launcherPanel = std::make_unique<LauncherPanel>(&m_configService, &m_asyncTextureCache);
     launcherPanel->addProvider(std::make_unique<AppProvider>(&m_wayland));
@@ -907,7 +906,7 @@ void Application::initUi() {
 
   m_trayMenu.initialize(m_wayland, &m_configService, m_trayService.get(), &m_renderContext);
 
-  m_bar.initialize(m_wayland, &m_configService, &m_timeService, &m_notificationManager, m_trayService.get(),
+  m_bar.initialize(m_compositorPlatform, &m_configService, &m_timeService, &m_notificationManager, m_trayService.get(),
                    m_pipewireService.get(), m_upowerService.get(), m_systemMonitor.get(), m_powerProfilesService.get(),
                    m_networkService.get(), &m_idleInhibitor, m_mprisService.get(), m_pipewireSpectrum.get(),
                    &m_httpClient, &m_weatherService, &m_renderContext, &m_gammaService, &m_themeService,
@@ -937,13 +936,14 @@ void Application::initUi() {
       [this](wl_surface* surface) { m_panelManager.beginAttachedPopup(surface); },
       [this](wl_surface* surface) { m_panelManager.endAttachedPopup(surface); },
       [this]() { return m_panelManager.fallbackPopupParentContext(); });
-  m_layerPopupHosts.registerHost([this](wl_surface* surface) { return m_bar.popupParentContextForSurface(surface); },
-                                 [this](wl_surface* surface) { m_bar.beginAttachedPopup(surface); },
-                                 [this](wl_surface* surface) { m_bar.endAttachedPopup(surface); },
-                                 [this]() {
-                                   return m_bar.preferredPopupParentContext(
-                                       m_wayland.preferredPanelOutput(std::chrono::milliseconds(1200)));
-                                 });
+  m_layerPopupHosts.registerHost(
+      [this](wl_surface* surface) { return m_bar.popupParentContextForSurface(surface); },
+      [this](wl_surface* surface) { m_bar.beginAttachedPopup(surface); },
+      [this](wl_surface* surface) { m_bar.endAttachedPopup(surface); },
+      [this]() {
+        return m_bar.preferredPopupParentContext(
+            m_compositorPlatform.preferredInteractiveOutput(std::chrono::milliseconds(1200)));
+      });
 
   m_colorPickerDialogPopup.initialize(m_wayland, m_configService, m_renderContext, m_layerPopupHosts);
   ColorPickerDialog::setPresenter(&m_colorPickerDialogPopup);
@@ -954,7 +954,7 @@ void Application::initUi() {
   m_fileDialogPopup.initialize(m_wayland, m_configService, m_renderContext, m_layerPopupHosts, m_thumbnailService);
   FileDialog::setPresenter(&m_fileDialogPopup);
 
-  m_dock.initialize(m_wayland, &m_configService, &m_renderContext);
+  m_dock.initialize(m_compositorPlatform, &m_configService, &m_renderContext);
   m_desktopWidgetsController.initialize(m_wayland, &m_configService, m_pipewireSpectrum.get(), &m_weatherService,
                                         &m_renderContext, m_mprisService.get(), &m_httpClient, m_systemMonitor.get());
   m_iconThemePollSource.setChangeCallback([this]() { onIconThemeChanged(); });
@@ -1117,7 +1117,7 @@ void Application::initIpc() {
   m_ipcService.registerHandler(
       "dpms-on",
       [this](const std::string&) -> std::string {
-        if (!compositors::setOutputPower(m_wayland, true)) {
+        if (!m_compositorPlatform.setOutputPower(true)) {
           return "error: failed to execute dpms-on command\n";
         }
         return "ok\n";
@@ -1127,7 +1127,7 @@ void Application::initIpc() {
   m_ipcService.registerHandler(
       "dpms-off",
       [this](const std::string&) -> std::string {
-        if (!compositors::setOutputPower(m_wayland, false)) {
+        if (!m_compositorPlatform.setOutputPower(false)) {
           return "error: failed to execute dpms-off command\n";
         }
         return "ok\n";

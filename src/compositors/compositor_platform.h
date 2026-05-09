@@ -1,0 +1,137 @@
+#pragma once
+
+#include "compositors/keyboard_backend.h"
+#include "compositors/workspace_backend.h"
+#include "wayland/wayland_connection.h"
+
+#include <chrono>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <poll.h>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+struct wl_output;
+struct wl_surface;
+struct ext_workspace_manager_v1;
+struct zdwl_ipc_manager_v2;
+class WaylandWorkspaces;
+
+namespace compositors {
+  class FocusedOutputBackend;
+  class OutputPowerBackend;
+  class WorkspaceMetadataBackend;
+} // namespace compositors
+
+struct WorkspaceWindowAssignment {
+  std::string windowId;
+  std::string workspaceKey;
+  std::string appId;
+  std::string title;
+  std::int32_t x = 0;
+  std::int32_t y = 0;
+};
+
+class CompositorPlatform {
+public:
+  using ChangeCallback = std::function<void()>;
+
+  explicit CompositorPlatform(WaylandConnection& wayland);
+  ~CompositorPlatform();
+
+  CompositorPlatform(const CompositorPlatform&) = delete;
+  CompositorPlatform& operator=(const CompositorPlatform&) = delete;
+
+  void initialize();
+  void cleanup();
+
+  [[nodiscard]] WaylandConnection& wayland() noexcept { return m_wayland; }
+  [[nodiscard]] const WaylandConnection& wayland() const noexcept { return m_wayland; }
+  [[nodiscard]] wl_display* display() const noexcept;
+  [[nodiscard]] bool hasXdgShell() const noexcept;
+  [[nodiscard]] bool hasGammaControl() const noexcept;
+  [[nodiscard]] const std::vector<WaylandOutput>& outputs() const noexcept;
+  [[nodiscard]] const WaylandOutput* findOutputByWl(wl_output* output) const;
+  [[nodiscard]] wl_output* outputForSurface(wl_surface* surface) const noexcept;
+  [[nodiscard]] FocusGrabService* focusGrabService() const noexcept;
+  [[nodiscard]] wl_surface* lastPointerSurface() const noexcept;
+  [[nodiscard]] wl_surface* lastKeyboardSurface() const noexcept;
+  [[nodiscard]] double lastPointerX() const noexcept;
+  [[nodiscard]] double lastPointerY() const noexcept;
+  [[nodiscard]] std::uint32_t lastInputSerial() const noexcept;
+  [[nodiscard]] zwlr_layer_surface_v1* layerSurfaceFor(wl_surface* surface) const noexcept;
+  void stopKeyRepeat();
+  void setCursorShape(std::uint32_t serial, std::uint32_t shape);
+
+  [[nodiscard]] wl_output*
+  preferredInteractiveOutput(std::chrono::milliseconds pointerMaxAge = std::chrono::milliseconds(1200)) const;
+
+  [[nodiscard]] std::optional<ActiveToplevel> activeToplevel() const;
+  [[nodiscard]] wl_output* activeToplevelOutput() const;
+  [[nodiscard]] std::vector<std::string> runningAppIds(wl_output* outputFilter = nullptr) const;
+  [[nodiscard]] std::vector<ToplevelInfo> windowsForApp(const std::string& idLower, const std::string& wmClassLower,
+                                                        wl_output* outputFilter = nullptr) const;
+  void activateToplevel(zwlr_foreign_toplevel_handle_v1* handle);
+  void closeToplevel(zwlr_foreign_toplevel_handle_v1* handle);
+
+  void setWorkspaceChangeCallback(ChangeCallback callback);
+  void activateWorkspace(const std::string& id);
+  void activateWorkspace(wl_output* output, const std::string& id);
+  void activateWorkspace(wl_output* output, const Workspace& workspace);
+  std::size_t addWorkspacePollFds(std::vector<pollfd>& fds) const;
+  [[nodiscard]] int workspacePollTimeoutMs() const noexcept;
+  void dispatchWorkspacePoll(const std::vector<pollfd>& fds, std::size_t startIdx);
+  [[nodiscard]] std::vector<Workspace> workspaces() const;
+  [[nodiscard]] std::vector<Workspace> workspaces(wl_output* output) const;
+  [[nodiscard]] std::unordered_map<std::string, std::vector<std::string>>
+  appIdsByWorkspace(wl_output* outputFilter = nullptr) const;
+  [[nodiscard]] std::vector<std::string> workspaceDisplayKeys(wl_output* outputFilter = nullptr) const;
+  [[nodiscard]] std::vector<WorkspaceWindowAssignment>
+  workspaceWindowAssignments(wl_output* outputFilter = nullptr) const;
+  [[nodiscard]] TaskbarAssignmentMode taskbarAssignmentMode() const noexcept;
+  [[nodiscard]] std::unordered_map<std::uintptr_t, WorkspaceWindow>
+  assignTaskbarWindows(const std::vector<TaskbarWindowCandidate>& windows, wl_output* outputFilter = nullptr) const;
+  [[nodiscard]] const char* workspaceBackendName() const noexcept;
+
+  [[nodiscard]] bool cycleKeyboardLayout() const;
+  [[nodiscard]] bool hasKeyboardLayoutBackend() const noexcept;
+  [[nodiscard]] std::optional<KeyboardLayoutState> keyboardLayoutState() const;
+  [[nodiscard]] std::string currentKeyboardLayoutName() const;
+  [[nodiscard]] std::vector<std::string> keyboardLayoutNames() const;
+
+  [[nodiscard]] bool setOutputPower(bool on) const;
+
+  [[nodiscard]] bool tracksOverviewState() const noexcept;
+  [[nodiscard]] bool hasOverviewState() const noexcept;
+  [[nodiscard]] bool isOverviewOpen() const noexcept;
+
+private:
+  struct WorkspaceModelSnapshot {
+    std::uint32_t outputName = 0;
+    std::vector<Workspace> workspaces;
+    std::vector<WorkspaceWindowAssignment> assignments;
+  };
+
+  void bindExtWorkspace(ext_workspace_manager_v1* manager);
+  void bindDwlIpcWorkspace(zdwl_ipc_manager_v2* manager);
+  void onOutputAdded(wl_output* output);
+  void onOutputRemoved(wl_output* output);
+  [[nodiscard]] wl_output* resolveOutputName(const std::string& outputName) const;
+  [[nodiscard]] std::string connectorNameForOutput(wl_output* output) const;
+  [[nodiscard]] std::vector<WorkspaceModelSnapshot> workspaceModelSnapshot() const;
+  [[nodiscard]] static bool sameWorkspaceModelSnapshot(const std::vector<WorkspaceModelSnapshot>& lhs,
+                                                       const std::vector<WorkspaceModelSnapshot>& rhs);
+
+  WaylandConnection& m_wayland;
+  std::unique_ptr<WaylandWorkspaces> m_workspaces;
+  std::unique_ptr<compositors::WorkspaceMetadataBackend> m_workspaceMetadataBackend;
+  std::vector<std::unique_ptr<compositors::FocusedOutputBackend>> m_focusedOutputBackends;
+  std::unique_ptr<compositors::OutputPowerBackend> m_outputPowerBackend;
+  std::unique_ptr<KeyboardLayoutBackend> m_keyboardLayoutBackend;
+  ChangeCallback m_workspaceChangeCallback;
+  std::vector<WorkspaceModelSnapshot> m_lastWorkspaceModelSnapshot;
+  bool m_initialized = false;
+};

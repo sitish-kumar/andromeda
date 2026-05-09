@@ -8,14 +8,15 @@
 #include <unordered_map>
 #include <vector>
 
-struct zdwl_ipc_manager_v2;
 struct zdwl_ipc_output_v2;
 
-class MangoWorkspaceBackend final : public WorkspaceBackend, public OutputBackend {
+class MangoWorkspaceBackend final : public WorkspaceBackend,
+                                    public OutputLifecycleObserver,
+                                    public DwlIpcWorkspaceProtocolBinder {
 public:
-  void bind(zdwl_ipc_manager_v2* manager);
+  void bindDwlIpcWorkspace(zdwl_ipc_manager_v2* manager) override;
 
-  [[nodiscard]] const char* backendName() const override { return "mango-dwl-ipc"; }
+  [[nodiscard]] const char* backendName() const override { return "dwl-ipc"; }
   [[nodiscard]] bool isAvailable() const noexcept override { return m_manager != nullptr; }
   void setChangeCallback(ChangeCallback callback) override;
   void activate(const std::string& id) override;

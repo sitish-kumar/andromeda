@@ -12,6 +12,7 @@
 
 class Button;
 class Box;
+class CompositorPlatform;
 class ConfigService;
 class DependencyService;
 class Glyph;
@@ -20,7 +21,6 @@ class Image;
 class Label;
 class Shortcut;
 class Wallpaper;
-class WaylandConnection;
 
 struct ShortcutPad {
   std::unique_ptr<Shortcut> shortcut;
@@ -34,7 +34,7 @@ public:
   HomeTab(MprisService* mpris, WeatherService* weather, PipeWireService* audio, PowerProfilesService* powerProfiles,
           ConfigService* config, NetworkService* network, BluetoothService* bluetooth, GammaService* nightLight,
           noctalia::theme::ThemeService* theme, NotificationManager* notifications, IdleInhibitor* idleInhibitor,
-          DependencyService* dependencies, WaylandConnection* wayland, Wallpaper* wallpaper = nullptr);
+          DependencyService* dependencies, CompositorPlatform* platform, Wallpaper* wallpaper = nullptr);
   ~HomeTab() override;
 
   std::unique_ptr<Flex> create() override;

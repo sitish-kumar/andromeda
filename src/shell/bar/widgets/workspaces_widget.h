@@ -1,9 +1,9 @@
 #pragma once
 
+#include "compositors/compositor_platform.h"
 #include "render/animation/animation_manager.h"
 #include "shell/bar/widget.h"
 #include "ui/palette.h"
-#include "wayland/wayland_connection.h"
 
 #include <cstdint>
 #include <optional>
@@ -22,7 +22,7 @@ public:
     Name,
   };
 
-  WorkspacesWidget(WaylandConnection& connection, wl_output* output, DisplayMode displayMode, ColorSpec focusedColor,
+  WorkspacesWidget(CompositorPlatform& platform, wl_output* output, DisplayMode displayMode, ColorSpec focusedColor,
                    ColorSpec occupiedColor, ColorSpec emptyColor);
   ~WorkspacesWidget() override;
 
@@ -66,7 +66,7 @@ private:
   [[nodiscard]] static ColorRole onRoleForFill(ColorRole fill);
   [[nodiscard]] ColorRole emptyWorkspaceTextRole() const;
 
-  WaylandConnection& m_connection;
+  CompositorPlatform& m_platform;
   wl_output* m_output = nullptr;
   DisplayMode m_displayMode = DisplayMode::None;
   Node* m_container = nullptr;

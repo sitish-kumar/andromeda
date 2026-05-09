@@ -78,7 +78,7 @@ namespace {
 
 } // namespace
 
-void MangoWorkspaceBackend::bind(zdwl_ipc_manager_v2* manager) {
+void MangoWorkspaceBackend::bindDwlIpcWorkspace(zdwl_ipc_manager_v2* manager) {
   m_manager = manager;
   zdwl_ipc_manager_v2_add_listener(m_manager, &kManagerListener, this);
   for (const auto& [output, _] : m_outputs) {

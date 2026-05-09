@@ -1,5 +1,6 @@
 #include "shell/bar/bar.h"
 
+#include "compositors/compositor_platform.h"
 #include "config/config_service.h"
 #include "core/log.h"
 #include "core/ui_phase.h"
@@ -495,7 +496,7 @@ namespace {
 
 Bar::Bar() = default;
 
-bool Bar::initialize(WaylandConnection& wayland, ConfigService* config, TimeService* timeService,
+bool Bar::initialize(CompositorPlatform& platform, ConfigService* config, TimeService* timeService,
                      NotificationManager* notifications, TrayService* tray, PipeWireService* audio,
                      UPowerService* upower, SystemMonitorService* sysmon, PowerProfilesService* powerProfiles,
                      NetworkService* network, IdleInhibitor* idleInhibitor, MprisService* mpris,
@@ -503,7 +504,7 @@ bool Bar::initialize(WaylandConnection& wayland, ConfigService* config, TimeServ
                      RenderContext* renderContext, GammaService* nightLight,
                      noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth,
                      BrightnessService* brightness, LockKeysService* lockKeys, FileWatcher* fileWatcher) {
-  m_wayland = &wayland;
+  m_platform = &platform;
   m_config = config;
   m_notifications = notifications;
   m_tray = tray;
@@ -526,7 +527,7 @@ bool Bar::initialize(WaylandConnection& wayland, ConfigService* config, TimeServ
   m_fileWatcher = fileWatcher;
 
   m_widgetFactory = std::make_unique<WidgetFactory>(
-      *m_wayland, m_config->config(), m_notifications, m_tray, m_audio, m_upower, m_sysmon, m_powerProfiles, m_network,
+      *m_platform, m_config->config(), m_notifications, m_tray, m_audio, m_upower, m_sysmon, m_powerProfiles, m_network,
       m_idleInhibitor, m_mpris, m_audioSpectrum, m_httpClient, m_weatherService, m_nightLight, m_themeService,
       m_bluetooth, m_brightness, m_lockKeys, m_fileWatcher);
 
@@ -572,14 +573,14 @@ void Bar::reload() {
   m_lastWidgets = m_config->config().widgets;
   m_lastShadow = m_config->config().shell.shadow;
   m_widgetFactory = std::make_unique<WidgetFactory>(
-      *m_wayland, m_config->config(), m_notifications, m_tray, m_audio, m_upower, m_sysmon, m_powerProfiles, m_network,
+      *m_platform, m_config->config(), m_notifications, m_tray, m_audio, m_upower, m_sysmon, m_powerProfiles, m_network,
       m_idleInhibitor, m_mpris, m_audioSpectrum, m_httpClient, m_weatherService, m_nightLight, m_themeService,
       m_bluetooth, m_brightness, m_lockKeys, m_fileWatcher);
 
   if (recreateForOrder) {
     kLog.info("bar order changed; recreating layer-shell surfaces");
     closeAllInstances();
-    wl_display_roundtrip(m_wayland->display());
+    wl_display_roundtrip(m_platform->display());
     syncInstances();
     return;
   }
@@ -612,7 +613,7 @@ void Bar::reload() {
       return destroy();
     }
 
-    const auto& outputs = m_wayland->outputs();
+    const auto& outputs = m_platform->outputs();
     auto outIt =
         std::find_if(outputs.begin(), outputs.end(), [&inst](const auto& o) { return o.name == inst.outputName; });
     if (outIt == outputs.end()) {
@@ -636,7 +637,7 @@ void Bar::reload() {
     // Drain pending Wayland events for the just-destroyed surfaces before
     // creating new ones. Without this, the roundtrip inside LayerSurface::initialize
     // reads stale closures for dead proxies, which libwayland drops without freeing.
-    wl_display_roundtrip(m_wayland->display());
+    wl_display_roundtrip(m_platform->display());
   }
 
   syncInstances();
@@ -727,11 +728,11 @@ std::optional<LayerPopupParentContext> Bar::preferredPopupParentContext(wl_outpu
 
 std::vector<InputRect> Bar::surfaceRectsForOutput(wl_output* output) const {
   std::vector<InputRect> rects;
-  if (m_wayland == nullptr || output == nullptr) {
+  if (m_platform == nullptr || output == nullptr) {
     return rects;
   }
 
-  const WaylandOutput* wlOutput = m_wayland->findOutputByWl(output);
+  const WaylandOutput* wlOutput = m_platform->findOutputByWl(output);
   if (wlOutput == nullptr) {
     return rects;
   }
@@ -836,8 +837,8 @@ void Bar::endAttachedPopup(wl_surface* surface) {
   if (instance->attachedPopupCount > 0) {
     --instance->attachedPopupCount;
   }
-  if (m_wayland != nullptr) {
-    instance->pointerInside = (m_wayland->lastPointerSurface() == surface);
+  if (m_platform != nullptr) {
+    instance->pointerInside = (m_platform->lastPointerSurface() == surface);
   }
   if (!instance->pointerInside && m_hoveredInstance == instance) {
     m_hoveredInstance = nullptr;
@@ -873,7 +874,7 @@ void Bar::syncInstances() {
   if (m_forceHidden) {
     return;
   }
-  const auto& outputs = m_wayland->outputs();
+  const auto& outputs = m_platform->outputs();
   const auto& bars = m_config->config().bars;
 
   // Remove instances for outputs that no longer exist
@@ -985,7 +986,7 @@ void Bar::createInstance(const WaylandOutput& output, std::size_t barIndex, cons
       .defaultHeight = surfH,
   };
 
-  instance->surface = std::make_unique<LayerSurface>(*m_wayland, std::move(surfaceConfig));
+  instance->surface = std::make_unique<LayerSurface>(m_platform->wayland(), std::move(surfaceConfig));
   instance->surface->setRenderContext(m_renderContext);
 
   auto* inst = instance.get();
@@ -1082,8 +1083,8 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
         if (anchorSurfaceY.has_value()) {
           anchorY = *anchorSurfaceY;
         }
-        if (m_wayland != nullptr && inst->output != nullptr) {
-          if (const auto* out = m_wayland->findOutputByWl(inst->output);
+        if (m_platform != nullptr && inst->output != nullptr) {
+          if (const auto* out = m_platform->findOutputByWl(inst->output);
               out != nullptr && out->logicalWidth > 0 && out->logicalHeight > 0) {
             const auto [surfaceX, surfaceY] = surfaceOriginForOutputLocal(*inst, *out);
             anchorX += surfaceX;
@@ -1481,7 +1482,7 @@ void Bar::buildScene(BarInstance& instance, std::uint32_t width, std::uint32_t h
     // Wire up InputDispatcher for this instance
     instance.inputDispatcher.setSceneRoot(instance.sceneRoot.get());
     instance.inputDispatcher.setCursorShapeCallback(
-        [this](std::uint32_t serial, std::uint32_t shape) { m_wayland->setCursorShape(serial, shape); });
+        [this](std::uint32_t serial, std::uint32_t shape) { m_platform->setCursorShape(serial, shape); });
 
     if (instance.barConfig.autoHide) {
       instance.slideRoot->setOpacity(1.0f);

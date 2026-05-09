@@ -22,6 +22,7 @@ class BluetoothAgent;
 class BluetoothService;
 class BrightnessService;
 class Button;
+class CompositorPlatform;
 class ConfigService;
 class DependencyService;
 class Flex;
@@ -41,7 +42,6 @@ class SystemMonitorService;
 class UPowerService;
 class Wallpaper;
 class WeatherService;
-class WaylandConnection;
 
 namespace noctalia::theme {
   class ThemeService;
@@ -58,7 +58,7 @@ public:
                      BrightnessService* brightness = nullptr, SystemMonitorService* sysmon = nullptr,
                      GammaService* nightLight = nullptr, noctalia::theme::ThemeService* theme = nullptr,
                      IdleInhibitor* idleInhibitor = nullptr, DependencyService* dependencies = nullptr,
-                     WaylandConnection* wayland = nullptr, Wallpaper* wallpaper = nullptr);
+                     CompositorPlatform* platform = nullptr, Wallpaper* wallpaper = nullptr);
 
   void create() override;
   void onFrameTick(float deltaMs) override;

@@ -2,6 +2,7 @@
 
 #include "app/main_loop.h"
 #include "app/timer_poll_source.h"
+#include "compositors/compositor_platform.h"
 #include "config/config_poll_source.h"
 #include "config/config_service.h"
 #include "core/file_watcher.h"
@@ -120,6 +121,7 @@ private:
   [[nodiscard]] std::vector<PollSource*> buildPollSources();
 
   WaylandConnection m_wayland;
+  CompositorPlatform m_compositorPlatform{m_wayland};
   ClipboardService m_clipboardService;
   VirtualKeyboardService m_virtualKeyboardService;
   ConfigService m_configService;
@@ -199,7 +201,7 @@ private:
   ClipboardPollSource m_clipboardPollSource{m_clipboardService};
   TimerPollSource m_timerPollSource;
   KeyRepeatPollSource m_keyRepeatPollSource{m_wayland};
-  WorkspacePollSource m_workspacePollSource{m_wayland};
+  WorkspacePollSource m_workspacePollSource{m_compositorPlatform};
   LockKeysPollSource m_lockKeysPollSource{m_lockKeysService};
   std::unique_ptr<BrightnessPollSource> m_brightnessPollSource;
   std::unique_ptr<PipeWirePollSource> m_pipewirePollSource;

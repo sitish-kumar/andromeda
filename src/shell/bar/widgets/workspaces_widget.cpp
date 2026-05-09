@@ -27,9 +27,9 @@ namespace {
   constexpr float kWorkspaceAnimDurationMs = static_cast<float>(Style::animNormal);
 } // namespace
 
-WorkspacesWidget::WorkspacesWidget(WaylandConnection& connection, wl_output* output, DisplayMode displayMode,
+WorkspacesWidget::WorkspacesWidget(CompositorPlatform& platform, wl_output* output, DisplayMode displayMode,
                                    ColorSpec focusedColor, ColorSpec occupiedColor, ColorSpec emptyColor)
-    : m_connection(connection), m_output(output), m_displayMode(displayMode), m_focusedColor(std::move(focusedColor)),
+    : m_platform(platform), m_output(output), m_displayMode(displayMode), m_focusedColor(std::move(focusedColor)),
       m_occupiedColor(std::move(occupiedColor)), m_emptyColor(std::move(emptyColor)) {}
 
 void WorkspacesWidget::create() {
@@ -63,7 +63,7 @@ void WorkspacesWidget::doLayout(Renderer& renderer, float containerWidth, float 
 }
 
 void WorkspacesWidget::doUpdate(Renderer& renderer) {
-  auto current = m_connection.workspaces(m_output);
+  auto current = m_platform.workspaces(m_output);
   if (m_cachedState.empty() && current.empty()) {
     return;
   }
@@ -221,7 +221,7 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
     auto wsCopy = ws;
     area->setOnClick([this, wsCopy](const InputArea::PointerData& data) {
       if (data.button == BTN_LEFT) {
-        m_connection.activateWorkspace(m_output, wsCopy);
+        m_platform.activateWorkspace(m_output, wsCopy);
       }
     });
     item.area = static_cast<InputArea*>(m_container->addChild(std::move(area)));
@@ -396,7 +396,7 @@ void WorkspacesWidget::activateAdjacentWorkspace(int direction) {
     }
   }
 
-  m_connection.activateWorkspace(m_output, m_cachedState[targetIndex]);
+  m_platform.activateWorkspace(m_output, m_cachedState[targetIndex]);
 }
 
 std::string WorkspacesWidget::workspaceLabel(const Workspace& workspace, std::size_t displayIndex) const {

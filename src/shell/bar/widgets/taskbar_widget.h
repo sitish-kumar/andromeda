@@ -1,8 +1,8 @@
 #pragma once
 
+#include "compositors/compositor_platform.h"
 #include "shell/bar/widget.h"
 #include "system/icon_resolver.h"
-#include "wayland/wayland_connection.h"
 
 #include <cstdint>
 #include <limits>
@@ -20,7 +20,7 @@ struct PointerEvent;
 
 class TaskbarWidget : public Widget {
 public:
-  TaskbarWidget(WaylandConnection& connection, wl_output* output, bool groupByWorkspace, std::string barPosition);
+  TaskbarWidget(CompositorPlatform& platform, wl_output* output, bool groupByWorkspace, std::string barPosition);
   ~TaskbarWidget() override;
 
   void create() override;
@@ -72,7 +72,7 @@ private:
   void activateAdjacentWorkspace(int direction);
   [[nodiscard]] bool activeWorkspaceIndex(std::size_t& index) const;
 
-  WaylandConnection& m_connection;
+  CompositorPlatform& m_platform;
   wl_output* m_output = nullptr;
   bool m_groupByWorkspace = false;
   std::string m_barPosition;

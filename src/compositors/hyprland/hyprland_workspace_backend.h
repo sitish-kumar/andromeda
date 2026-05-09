@@ -10,14 +10,16 @@
 #include <unordered_map>
 #include <vector>
 
-class HyprlandWorkspaceBackend final : public WorkspaceBackend {
+class HyprlandWorkspaceBackend final : public WorkspaceBackend,
+                                       public WorkspaceOutputNameResolver,
+                                       public WorkspaceSocketConnector {
 public:
-  using OutputNameResolver = std::function<std::string(wl_output*)>;
+  using OutputNameResolver = WorkspaceOutputNameResolver::Resolver;
 
   explicit HyprlandWorkspaceBackend(OutputNameResolver outputNameResolver);
 
-  bool connectSocket();
-  void setOutputNameResolver(OutputNameResolver outputNameResolver);
+  bool connectSocket() override;
+  void setOutputNameResolver(OutputNameResolver outputNameResolver) override;
 
   [[nodiscard]] const char* backendName() const override { return "hyprland-ipc"; }
   [[nodiscard]] bool isAvailable() const noexcept override { return m_eventSocketFd >= 0; }

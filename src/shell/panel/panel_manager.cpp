@@ -1,5 +1,6 @@
 #include "shell/panel/panel_manager.h"
 
+#include "compositors/compositor_platform.h"
 #include "config/config_service.h"
 #include "core/deferred_call.h"
 #include "core/log.h"
@@ -29,7 +30,7 @@ namespace {
   constexpr Logger kLog("panel");
   constexpr std::int32_t kAttachedPanelBarOverlap = 1;
 
-  BarConfig resolvePanelBarConfig(ConfigService* configService, WaylandConnection* wayland, wl_output* output,
+  BarConfig resolvePanelBarConfig(ConfigService* configService, CompositorPlatform* platform, wl_output* output,
                                   std::string_view barName = {}) {
     BarConfig barConfig;
     if (configService == nullptr || configService->config().bars.empty()) {
@@ -51,11 +52,11 @@ namespace {
       barConfig = bars.front();
     }
 
-    if (wayland == nullptr || output == nullptr) {
+    if (platform == nullptr || output == nullptr) {
       return barConfig;
     }
 
-    if (const auto* wlOutput = wayland->findOutputByWl(output); wlOutput != nullptr) {
+    if (const auto* wlOutput = platform->findOutputByWl(output); wlOutput != nullptr) {
       return ConfigService::resolveForOutput(barConfig, *wlOutput);
     }
 
@@ -81,11 +82,15 @@ PanelManager::~PanelManager() {
 
 PanelManager& PanelManager::instance() { return *s_instance; }
 
-void PanelManager::initialize(WaylandConnection& wayland, ConfigService* config, RenderContext* renderContext) {
-  m_wayland = &wayland;
+WaylandConnection* PanelManager::wayland() const noexcept {
+  return m_platform != nullptr ? &m_platform->wayland() : nullptr;
+}
+
+void PanelManager::initialize(CompositorPlatform& platform, ConfigService* config, RenderContext* renderContext) {
+  m_platform = &platform;
   m_config = config;
   m_renderContext = renderContext;
-  m_clickShield.initialize(wayland);
+  m_clickShield.initialize(platform.wayland());
 }
 
 void PanelManager::setOpenSettingsWindowCallback(std::function<void()> callback) {
@@ -167,7 +172,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
 
   const auto panelWidth = static_cast<std::uint32_t>(m_activePanel->preferredWidth());
   const auto panelHeight = static_cast<std::uint32_t>(m_activePanel->preferredHeight());
-  const auto barConfig = resolvePanelBarConfig(m_config, m_wayland, request.output, request.sourceBarName);
+  const auto barConfig = resolvePanelBarConfig(m_config, m_platform, request.output, request.sourceBarName);
   const bool isBottom = barConfig.position == "bottom";
   const bool isLeft = barConfig.position == "left";
   const bool isRight = barConfig.position == "right";
@@ -176,8 +181,8 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
 
   std::int32_t outputWidth = static_cast<std::int32_t>(panelWidth);
   std::int32_t outputHeight = static_cast<std::int32_t>(panelHeight);
-  if (m_wayland != nullptr) {
-    const auto* wlOutput = m_wayland->findOutputByWl(request.output);
+  if (m_platform != nullptr) {
+    const auto* wlOutput = m_platform->findOutputByWl(request.output);
     if (wlOutput != nullptr && wlOutput->width > 0) {
       outputWidth =
           wlOutput->logicalWidth > 0 ? wlOutput->logicalWidth : wlOutput->width / std::max(1, wlOutput->scale);
@@ -428,15 +433,15 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
         // surface also grabs the pointer (any click anywhere reports on this surface), which
         // breaks outside-click dismissal. When the focus_grab protocol is available we drop to
         // OnDemand and let the grab grant keyboard focus to the panel per the spec.
-        .keyboard = (m_wayland != nullptr && m_wayland->focusGrabService() != nullptr &&
-                     m_wayland->focusGrabService()->available())
+        .keyboard = (m_platform != nullptr && m_platform->focusGrabService() != nullptr &&
+                     m_platform->focusGrabService()->available())
                         ? LayerShellKeyboard::OnDemand
                         : LayerShellKeyboard::Exclusive,
         .defaultWidth = surfaceWidth,
         .defaultHeight = surfaceHeight,
     };
 
-    auto layerSurfaceUnique = std::make_unique<LayerSurface>(*m_wayland, std::move(attachedConfig));
+    auto layerSurfaceUnique = std::make_unique<LayerSurface>(m_platform->wayland(), std::move(attachedConfig));
     m_layerSurface = layerSurfaceUnique.get();
     m_surface = std::move(layerSurfaceUnique);
     configureSurfaceCallbacks(*m_surface);
@@ -485,7 +490,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     kLog.warn("panel manager: attached layer-shell failed for \"{}\", falling back to standalone", panelId);
   }
 
-  auto layerSurface = std::make_unique<LayerSurface>(*m_wayland, std::move(surfaceConfig));
+  auto layerSurface = std::make_unique<LayerSurface>(m_platform->wayland(), std::move(surfaceConfig));
   m_layerSurface = layerSurface.get();
   m_surface = std::move(layerSurface);
   m_panelInsetX = 0;
@@ -526,20 +531,20 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
 }
 
 void PanelManager::activateClickShield() {
-  if (m_activePanel == nullptr || m_wayland == nullptr) {
+  if (m_activePanel == nullptr || m_platform == nullptr) {
     return;
   }
   // Hyprland: prefer the native focus-grab path; the shield can't reliably
   // exclude bar surfaces there (input region exclusion isn't honored when
   // keyboard_interactivity is Exclusive, which is what unlocks pointer
   // delivery). Skip the shield and let activateFocusGrab() handle it later.
-  auto* grabService = m_wayland->focusGrabService();
+  auto* grabService = m_platform->focusGrabService();
   if (grabService != nullptr && grabService->available()) {
     return;
   }
   std::vector<wl_output*> outputs;
-  outputs.reserve(m_wayland->outputs().size());
-  for (const auto& wlOutput : m_wayland->outputs()) {
+  outputs.reserve(m_platform->outputs().size());
+  for (const auto& wlOutput : m_platform->outputs()) {
     if (wlOutput.output != nullptr) {
       outputs.push_back(wlOutput.output);
     }
@@ -548,10 +553,10 @@ void PanelManager::activateClickShield() {
 }
 
 void PanelManager::activateFocusGrab() {
-  if (m_wayland == nullptr || m_wlSurface == nullptr) {
+  if (m_platform == nullptr || m_wlSurface == nullptr) {
     return;
   }
-  auto* grabService = m_wayland->focusGrabService();
+  auto* grabService = m_platform->focusGrabService();
   if (grabService == nullptr || !grabService->available()) {
     return;
   }
@@ -583,8 +588,8 @@ void PanelManager::activateFocusGrab() {
 
 void PanelManager::deactivateOutsideClickHandlers() {
   m_clickShield.deactivate();
-  if (m_wayland != nullptr) {
-    if (auto* svc = m_wayland->focusGrabService(); svc != nullptr && svc->popupGrabHost() == this) {
+  if (m_platform != nullptr) {
+    if (auto* svc = m_platform->focusGrabService(); svc != nullptr && svc->popupGrabHost() == this) {
       svc->setPopupGrabHost(nullptr);
     }
   }
@@ -682,8 +687,8 @@ void PanelManager::destroyPanel() {
   m_sourceBarName.clear();
   m_attachedPanelGeometry.reset();
   m_attachedToBar = false;
-  if (m_wayland != nullptr) {
-    m_wayland->stopKeyRepeat();
+  if (m_platform != nullptr) {
+    m_platform->stopKeyRepeat();
   }
 
   malloc_trim(0);
@@ -712,7 +717,8 @@ void PanelManager::togglePanel(const std::string& panelId) {
     closePanel();
     return;
   }
-  wl_output* output = m_wayland != nullptr ? m_wayland->preferredPanelOutput(std::chrono::milliseconds(1200)) : nullptr;
+  wl_output* output =
+      m_platform != nullptr ? m_platform->preferredInteractiveOutput(std::chrono::milliseconds(1200)) : nullptr;
   openPanel(panelId, PanelOpenRequest{.output = output});
 }
 
@@ -915,8 +921,8 @@ void PanelManager::endAttachedPopup(wl_surface* surface) {
   if (m_attachedPopupCount > 0) {
     --m_attachedPopupCount;
   }
-  if (m_wayland != nullptr) {
-    m_pointerInside = (m_wayland->lastPointerSurface() == m_wlSurface);
+  if (m_platform != nullptr) {
+    m_pointerInside = (m_platform->lastPointerSurface() == m_wlSurface);
   }
 }
 
@@ -955,9 +961,9 @@ void PanelManager::onKeyboardEvent(const KeyboardEvent& event) {
   // input is the one the compositor reports as keyboard-focused. For attached panels
   // that's the bar's wl_surface (subsurfaces cannot hold focus directly); for layer
   // surfaces it's the panel's own wl_surface.
-  if (m_wayland != nullptr) {
+  if (m_platform != nullptr) {
     wl_surface* const focusTarget = m_wlSurface;
-    if (focusTarget == nullptr || m_wayland->lastKeyboardSurface() != focusTarget) {
+    if (focusTarget == nullptr || m_platform->lastKeyboardSurface() != focusTarget) {
       return;
     }
   }
@@ -1321,7 +1327,7 @@ void PanelManager::onConfigReloaded() {
   if (!m_activePanel->inheritsBarBackgroundOpacity()) {
     return;
   }
-  const float newOpacity = resolvePanelBarConfig(m_config, m_wayland, m_output, m_sourceBarName).backgroundOpacity;
+  const float newOpacity = resolvePanelBarConfig(m_config, m_platform, m_output, m_sourceBarName).backgroundOpacity;
   if (std::abs(newOpacity - m_attachedBackgroundOpacity) < 0.001f) {
     return;
   }
@@ -1399,7 +1405,7 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
 
     m_inputDispatcher.setSceneRoot(m_sceneRoot.get());
     m_inputDispatcher.setCursorShapeCallback(
-        [this](std::uint32_t serial, std::uint32_t shape) { m_wayland->setCursorShape(serial, shape); });
+        [this](std::uint32_t serial, std::uint32_t shape) { m_platform->setCursorShape(serial, shape); });
 
     if (m_attachedToBar && m_attachedRevealClipNode != nullptr) {
       m_sceneRoot->setOpacity(1.0f);
@@ -1557,7 +1563,7 @@ void PanelManager::registerIpc(IpcService& ipc) {
           const std::string panelId = args.substr(0, sep);
           const std::string_view context = std::string_view(args).substr(sep + 1);
           wl_output* output =
-              m_wayland != nullptr ? m_wayland->preferredPanelOutput(std::chrono::milliseconds(1200)) : nullptr;
+              m_platform != nullptr ? m_platform->preferredInteractiveOutput(std::chrono::milliseconds(1200)) : nullptr;
           togglePanel(panelId, PanelOpenRequest{.output = output, .context = context});
         }
         return "ok\n";

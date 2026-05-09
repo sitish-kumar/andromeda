@@ -7,6 +7,7 @@
 
 struct Config;
 class FileWatcher;
+class CompositorPlatform;
 class NotificationManager;
 class HttpClient;
 class IdleInhibitor;
@@ -24,15 +25,14 @@ class UPowerService;
 class WeatherService;
 struct wl_output;
 class GammaService;
-class WaylandConnection;
 namespace noctalia::theme {
   class ThemeService;
 }
 
 class WidgetFactory {
 public:
-  WidgetFactory(WaylandConnection& wayland, const Config& config, NotificationManager* notifications, TrayService* tray,
-                PipeWireService* audio, UPowerService* upower, SystemMonitorService* sysmon,
+  WidgetFactory(CompositorPlatform& platform, const Config& config, NotificationManager* notifications,
+                TrayService* tray, PipeWireService* audio, UPowerService* upower, SystemMonitorService* sysmon,
                 PowerProfilesService* powerProfiles, NetworkService* network, IdleInhibitor* idleInhibitor,
                 MprisService* mpris, PipeWireSpectrum* audioSpectrum, HttpClient* httpClient, WeatherService* weather,
                 GammaService* nightLight, noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth,
@@ -43,7 +43,7 @@ public:
                                                const std::string& barPosition = "top") const;
 
 private:
-  WaylandConnection& m_wayland;
+  CompositorPlatform& m_platform;
   const Config& m_config;
   NotificationManager* m_notifications;
   TrayService* m_tray;
