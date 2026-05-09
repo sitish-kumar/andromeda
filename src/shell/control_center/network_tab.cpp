@@ -202,7 +202,7 @@ namespace {
       clearBorder();
 
       auto kind = std::make_unique<Label>();
-      kind->setText("VPN");
+      kind->setText(i18n::tr("control-center.network.vpn"));
       kind->setCaptionStyle();
       kind->setFontSize(Style::fontSizeCaption * scale);
       kind->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
@@ -517,6 +517,20 @@ std::unique_ptr<Flex> NetworkTab::createHeaderActions() {
   });
   m_rescanButton = rescan.get();
   row->addChild(std::move(rescan));
+
+  auto vpnLabel = std::make_unique<Label>();
+  vpnLabel->setText(i18n::tr("control-center.network.vpns"));
+  vpnLabel->setFontSize(Style::fontSizeCaption * scale);
+  vpnLabel->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+  row->addChild(std::move(vpnLabel));
+
+  auto vpnToggle = std::make_unique<Toggle>();
+  vpnToggle->setToggleSize(ToggleSize::Small);
+  vpnToggle->setScale(scale);
+  vpnToggle->setChecked(m_vpnVisible);
+  vpnToggle->setOnChange([this](bool checked) { m_vpnVisible = checked; });
+  m_vpnToggle = vpnToggle.get();
+  row->addChild(std::move(vpnToggle));
   return row;
 }
 
@@ -553,6 +567,7 @@ void NetworkTab::onClose() {
   m_list = nullptr;
   m_rescanButton = nullptr;
   m_wifiToggle = nullptr;
+  m_vpnToggle = nullptr;
   m_disconnectRow = nullptr;
   m_disconnectButton = nullptr;
   m_scanSpinner = nullptr;
@@ -692,7 +707,7 @@ void NetworkTab::rebuildApList(Renderer& renderer) {
     empty->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
     m_list->addChild(std::move(empty));
   } else {
-    if (!vpns.empty()) {
+    if (m_vpnVisible && !vpns.empty()) {
       auto section = std::make_unique<Label>();
       section->setText(i18n::tr("control-center.network.vpns"));
       section->setCaptionStyle();
@@ -717,6 +732,15 @@ void NetworkTab::rebuildApList(Renderer& renderer) {
             });
         m_list->addChild(std::move(row));
       }
+    }
+
+    if (!aps.empty()) {
+      auto section = std::make_unique<Label>();
+      section->setText(i18n::tr("control-center.network.wireless"));
+      section->setCaptionStyle();
+      section->setFontSize(Style::fontSizeCaption * contentScale());
+      section->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+      m_list->addChild(std::move(section));
     }
 
     for (const auto& ap : aps) {
