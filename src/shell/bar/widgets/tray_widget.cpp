@@ -350,6 +350,20 @@ void TrayWidget::syncState(Renderer& renderer) {
   for (const auto& item : next_items) {
     stillPresent[item.id] = true;
 
+    auto hashVec = [](const std::vector<std::uint8_t>& vec) -> std::size_t {
+      if (vec.empty()) {
+        return 0;
+      }
+      return std::hash<std::string_view>{}(std::string_view(reinterpret_cast<const char*>(vec.data()), vec.size()));
+    };
+    const std::size_t currentHash = hashVec(item.iconArgb32) ^ (hashVec(item.attentionArgb32) << 1);
+
+    if (!m_initialPixmaps.contains(item.id)) {
+      m_initialPixmaps[item.id] = currentHash;
+    } else if (m_initialPixmaps[item.id] != currentHash) {
+      m_preferPixmap[item.id] = true;
+    }
+
     const auto prevIt = previousById.find(item.id);
     if (prevIt == previousById.end() || prevIt->second == nullptr) {
       continue;
@@ -362,7 +376,10 @@ void TrayWidget::syncState(Renderer& renderer) {
         prev.attentionIconName != item.attentionIconName || prev.iconThemePath != item.iconThemePath ||
         prev.needsAttention != item.needsAttention || prev.status != item.status ||
         prev.overlayWidth != item.overlayWidth || prev.overlayHeight != item.overlayHeight ||
-        prev.overlayArgb32 != item.overlayArgb32) {
+        prev.overlayArgb32 != item.overlayArgb32 || prev.iconWidth != item.iconWidth ||
+        prev.iconHeight != item.iconHeight || prev.iconArgb32 != item.iconArgb32 ||
+        prev.attentionWidth != item.attentionWidth || prev.attentionHeight != item.attentionHeight ||
+        prev.attentionArgb32 != item.attentionArgb32) {
       kLog.debug("tray widget invalidate icon cache id={} icon='{}'->'{}' overlay='{}'->'{}' attention='{}'->'{}' "
                  "status={}=>{}",
                  item.id, prev.iconName, item.iconName, prev.overlayIconName, item.overlayIconName,
@@ -373,6 +390,20 @@ void TrayWidget::syncState(Renderer& renderer) {
   for (auto it = m_preferredIconPaths.begin(); it != m_preferredIconPaths.end();) {
     if (!stillPresent.contains(it->first)) {
       it = m_preferredIconPaths.erase(it);
+    } else {
+      ++it;
+    }
+  }
+  for (auto it = m_initialPixmaps.begin(); it != m_initialPixmaps.end();) {
+    if (!stillPresent.contains(it->first)) {
+      it = m_initialPixmaps.erase(it);
+    } else {
+      ++it;
+    }
+  }
+  for (auto it = m_preferPixmap.begin(); it != m_preferPixmap.end();) {
+    if (!stillPresent.contains(it->first)) {
+      it = m_preferPixmap.erase(it);
     } else {
       ++it;
     }
@@ -777,13 +808,24 @@ void TrayWidget::buildDesktopIconIndex() {
 }
 
 std::string TrayWidget::resolveIconPath(const TrayItemInfo& item) {
+  if (const auto it = m_preferPixmap.find(item.id); it != m_preferPixmap.end() && it->second) {
+    kLog.debug("tray widget resolve id={} source=dynamic-pixmap", item.id);
+    return {};
+  }
+
   if (const auto it = m_preferredIconPaths.find(item.id); it != m_preferredIconPaths.end() && !it->second.empty()) {
     kLog.debug("tray widget resolve id={} source=cached path={}", item.id, it->second);
     return it->second;
   }
 
-  const std::string preferred =
-      item.needsAttention && !item.attentionIconName.empty() ? item.attentionIconName : item.iconName;
+  std::string preferred;
+  if (item.needsAttention && !item.attentionIconName.empty()) {
+    preferred = item.attentionIconName;
+  } else if (item.needsAttention && !item.attentionArgb32.empty()) {
+    preferred = "";
+  } else {
+    preferred = item.iconName;
+  }
 
   if (const auto themed = resolveFromTrayThemePath(item.iconThemePath, preferred); !themed.empty()) {
     kLog.debug("tray widget resolve id={} source=theme-path variant='{}' path={}", item.id, preferred, themed);
@@ -847,7 +889,8 @@ std::string TrayWidget::resolveIconPath(const TrayItemInfo& item) {
   // When an explicit tray IconName is provided, treat it as authoritative.
   // Falling back to generic app-id/title mappings can hide stateful icon
   // changes (e.g. indicator on/off variants) behind a constant app icon.
-  if (preferred.empty()) {
+  const bool hasTargetPixmap = item.needsAttention ? !item.attentionArgb32.empty() : !item.iconArgb32.empty();
+  if (preferred.empty() && !hasTargetPixmap) {
     candidates.emplace_back("itemName", &item.itemName);
     candidates.emplace_back("title", &item.title);
     candidates.emplace_back("objectPath", &item.objectPath);
