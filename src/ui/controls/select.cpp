@@ -638,7 +638,7 @@ void Select::applyVisualState() {
 
   m_triggerLabel->setColor(triggerText);
   m_triggerGlyph->setColor(triggerText);
-  m_triggerGlyph->setGlyph(m_openUpward ? "chevron-up" : "chevron-down");
+  m_triggerGlyph->setGlyph(m_open ? "chevron-up" : "chevron-down");
 
   m_triggerBackground->setStyle(RoundedRectStyle{
       .fill = triggerBg,
