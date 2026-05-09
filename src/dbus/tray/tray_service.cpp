@@ -122,12 +122,9 @@ namespace {
   using IconPixmapStruct = sdbus::Struct<std::int32_t, std::int32_t, std::vector<std::uint8_t>>;
   using DbusMenuLayout =
       sdbus::Struct<std::int32_t, std::map<std::string, sdbus::Variant>, std::vector<sdbus::Variant>>;
+  using DbusMenuItemProperties = sdbus::Struct<std::int32_t, std::map<std::string, sdbus::Variant>>;
 
-  TrayMenuEntry decodeMenuEntry(const DbusMenuLayout& entryLayout) {
-    TrayMenuEntry out;
-    out.id = std::get<0>(entryLayout);
-    const auto& props = std::get<1>(entryLayout);
-
+  void applyMenuEntryProperties(TrayMenuEntry& out, const std::map<std::string, sdbus::Variant>& props) {
     if (const auto it = props.find("label"); it != props.end()) {
       try {
         out.label = stripMnemonicUnderscores(it->second.get<std::string>());
@@ -158,8 +155,72 @@ namespace {
       } catch (const sdbus::Error&) {
       }
     }
+  }
+
+  TrayMenuEntry decodeMenuEntry(const DbusMenuLayout& entryLayout) {
+    TrayMenuEntry out;
+    out.id = std::get<0>(entryLayout);
+    applyMenuEntryProperties(out, std::get<1>(entryLayout));
 
     return out;
+  }
+
+  bool displayableMenuEntry(const TrayMenuEntry& entry) {
+    if (entry.id <= 0 || !entry.visible) {
+      return false;
+    }
+    if (entry.label.empty() && !entry.separator) {
+      return false;
+    }
+    return true;
+  }
+
+  std::vector<std::int32_t> int32ListFromVariant(const sdbus::Variant& value) {
+    try {
+      return value.get<std::vector<std::int32_t>>();
+    } catch (const sdbus::Error&) {
+    }
+
+    try {
+      const auto unsignedValues = value.get<std::vector<std::uint32_t>>();
+      std::vector<std::int32_t> out;
+      out.reserve(unsignedValues.size());
+      for (const auto entry : unsignedValues) {
+        out.push_back(static_cast<std::int32_t>(entry));
+      }
+      return out;
+    } catch (const sdbus::Error&) {
+    }
+
+    try {
+      const auto variants = value.get<std::vector<sdbus::Variant>>();
+      std::vector<std::int32_t> out;
+      out.reserve(variants.size());
+      for (const auto& variant : variants) {
+        try {
+          out.push_back(variant.get<std::int32_t>());
+          continue;
+        } catch (const sdbus::Error&) {
+        }
+        try {
+          out.push_back(static_cast<std::int32_t>(variant.get<std::uint32_t>()));
+        } catch (const sdbus::Error&) {
+        }
+      }
+      return out;
+    } catch (const sdbus::Error&) {
+    }
+
+    return {};
+  }
+
+  std::vector<std::int32_t> childIdsFromLayoutProperties(const DbusMenuLayout& layout) {
+    const auto& props = std::get<1>(layout);
+    const auto it = props.find("children");
+    if (it == props.end()) {
+      return {};
+    }
+    return int32ListFromVariant(it->second);
   }
 
   std::vector<IconPixmapTuple> iconPixmapsFromVariant(const sdbus::Variant& value) {
@@ -380,10 +441,7 @@ namespace {
         const auto child = childValue.get<DbusMenuLayout>();
         auto entry = decodeMenuEntry(child);
         ingestLayoutNode(child, entriesByParent);
-        if (entry.id <= 0 || !entry.visible) {
-          continue;
-        }
-        if (entry.label.empty() && !entry.separator) {
+        if (!displayableMenuEntry(entry)) {
           continue;
         }
         entries.push_back(std::move(entry));
@@ -394,6 +452,50 @@ namespace {
   }
 
 } // namespace
+
+bool TrayService::fetchMenuProperties(const std::string& itemId, const std::vector<std::int32_t>& entryIds,
+                                      std::vector<TrayMenuEntry>& outEntries) {
+  if (entryIds.empty()) {
+    return false;
+  }
+
+  auto cacheIt = m_menuCache.find(itemId);
+  if (cacheIt == m_menuCache.end() || cacheIt->second.proxy == nullptr) {
+    return false;
+  }
+
+  try {
+    std::vector<DbusMenuItemProperties> properties;
+    cacheIt->second.proxy->callMethod("GetGroupProperties")
+        .onInterface(k_menu_interface)
+        .withTimeout(std::chrono::milliseconds(1000))
+        .withArguments(entryIds, std::vector<std::string>{})
+        .storeResultsTo(properties);
+
+    std::unordered_map<std::int32_t, std::map<std::string, sdbus::Variant>> propertiesById;
+    propertiesById.reserve(properties.size());
+    for (const auto& itemProperties : properties) {
+      propertiesById.emplace(std::get<0>(itemProperties), std::get<1>(itemProperties));
+    }
+
+    outEntries.clear();
+    outEntries.reserve(entryIds.size());
+    for (const auto entryId : entryIds) {
+      TrayMenuEntry entry;
+      entry.id = entryId;
+      if (const auto propsIt = propertiesById.find(entryId); propsIt != propertiesById.end()) {
+        applyMenuEntryProperties(entry, propsIt->second);
+      }
+      if (displayableMenuEntry(entry)) {
+        outEntries.push_back(std::move(entry));
+      }
+    }
+    return !outEntries.empty();
+  } catch (const sdbus::Error& e) {
+    kLog.debug("GetGroupProperties failed id={} entries={} err={}", itemId, entryIds.size(), e.what());
+    return false;
+  }
+}
 
 bool TrayService::fetchMenuSubtree(const std::string& itemId, std::int32_t parentId) {
   auto cacheIt = m_menuCache.find(itemId);
@@ -430,6 +532,20 @@ bool TrayService::fetchMenuSubtree(const std::string& itemId, std::int32_t paren
 
     cache.revision = revision;
     ingestLayoutNode(layout, cache.entriesByParent);
+
+    auto entriesIt = cache.entriesByParent.find(parentId);
+    if (entriesIt == cache.entriesByParent.end() || entriesIt->second.empty()) {
+      const auto childIds = childIdsFromLayoutProperties(layout);
+      if (!childIds.empty()) {
+        std::vector<TrayMenuEntry> propertyEntries;
+        if (fetchMenuProperties(itemId, childIds, propertyEntries)) {
+          kLog.debug("dbusmenu children-property fallback id={} parentId={} children={} entries={}", itemId, parentId,
+                     childIds.size(), propertyEntries.size());
+          cache.entriesByParent[parentId] = std::move(propertyEntries);
+        }
+      }
+    }
+
     if (parentId == 0) {
       cache.rootLoaded = true;
     }

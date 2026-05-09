@@ -97,6 +97,8 @@ private:
   void refreshItemMetadata(const std::string& itemId);
   void ensureMenuCache(const std::string& itemId, const std::string& busName, const std::string& menuPath);
   void dropMenuCache(const std::string& itemId);
+  bool fetchMenuProperties(const std::string& itemId, const std::vector<std::int32_t>& entryIds,
+                           std::vector<TrayMenuEntry>& outEntries);
   bool fetchMenuSubtree(const std::string& itemId, std::int32_t parentId);
   void sendMenuEvent(const std::string& itemId, std::int32_t entryId, const std::string& eventName);
   [[nodiscard]] bool ensureItemProxy(const std::string& itemId);
