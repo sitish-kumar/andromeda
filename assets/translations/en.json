@@ -845,17 +845,6 @@
         "ram": "RAM",
         "temp": "Temperature"
       },
-      "categories": {
-        "custom": "Custom",
-        "info": "Info",
-        "input": "Input",
-        "layout": "Layout",
-        "media": "Media",
-        "shell": "Shell",
-        "system": "System",
-        "time": "Time",
-        "window": "Window"
-      },
       "types": {
         "active-window": "Active Window",
         "audio-visualizer": "Audio Visualizer",

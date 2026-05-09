@@ -22,7 +22,6 @@ namespace settings {
     std::string value;
     std::string label;
     std::string description = {};
-    std::string category = {};
   };
 
   struct SelectSetting {

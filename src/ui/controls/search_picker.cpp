@@ -22,16 +22,6 @@ namespace {
   constexpr float kDefaultWidth = 320.0f;
   constexpr float kDefaultHeight = 360.0f;
 
-  std::string detailText(const SearchPickerOption& option) {
-    if (!option.description.empty() && !option.category.empty()) {
-      return option.category + " - " + option.description;
-    }
-    if (!option.description.empty()) {
-      return option.description;
-    }
-    return option.category;
-  }
-
 } // namespace
 
 SearchPicker::SearchPicker() {
@@ -217,7 +207,7 @@ void SearchPicker::rebuildRows() {
     auto row = std::make_unique<Flex>();
     row->setDirection(FlexDirection::Vertical);
     row->setAlign(FlexAlign::Stretch);
-    const std::string detail = detailText(option);
+    const auto& detail = option.description;
     row->setGap(detail.empty() ? 0.0f : 1.0f);
     row->setPadding(Style::spaceXs, Style::spaceSm);
     row->setRadius(Style::radiusSm);
@@ -227,6 +217,7 @@ void SearchPicker::rebuildRows() {
     auto title = std::make_unique<Label>();
     title->setText(option.label);
     title->setFontSize(Style::fontSizeBody);
+    title->setBold(!detail.empty());
     auto* titlePtr = static_cast<Label*>(row->addChild(std::move(title)));
 
     Label* detailPtr = nullptr;
@@ -340,6 +331,6 @@ void SearchPicker::applyRowStates() {
 }
 
 double SearchPicker::matchScore(const SearchPickerOption& option, std::string_view query) const {
-  const std::string haystack = option.label + " " + option.value + " " + option.description + " " + option.category;
+  const std::string haystack = option.label + " " + option.value + " " + option.description;
   return FuzzyMatch::score(query, haystack);
 }

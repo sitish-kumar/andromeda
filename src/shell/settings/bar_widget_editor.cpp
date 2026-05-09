@@ -235,11 +235,8 @@ namespace settings {
       const auto entries = widgetPickerEntries(cfg);
       options.reserve(entries.size() * 2);
       for (const auto& entry : entries) {
-        options.push_back(SearchPickerOption{.value = entry.value,
-                                             .label = entry.label,
-                                             .description = entry.description,
-                                             .category = entry.category,
-                                             .enabled = true});
+        options.push_back(SearchPickerOption{
+            .value = entry.value, .label = entry.label, .description = entry.description, .enabled = true});
         if (entry.kind != WidgetReferenceKind::BuiltIn) {
           continue;
         }
@@ -251,7 +248,6 @@ namespace settings {
             .value = std::string(kCreateInstancePrefix) + entry.value,
             .label = i18n::tr("settings.entities.widget.picker.create-label", "label", entry.label),
             .description = i18n::tr("settings.entities.widget.picker.create-description", "type", entry.value),
-            .category = i18n::tr("settings.entities.widget.kinds.new-instance"),
             .enabled = true,
         });
       }

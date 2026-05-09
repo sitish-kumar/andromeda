@@ -211,11 +211,8 @@ namespace settings {
     instanceOptions.reserve(pickerEntries.size());
 
     for (const auto& entry : pickerEntries) {
-      normalOptions.push_back(SearchPickerOption{.value = entry.value,
-                                                 .label = entry.label,
-                                                 .description = entry.description,
-                                                 .category = entry.category,
-                                                 .enabled = true});
+      normalOptions.push_back(SearchPickerOption{
+          .value = entry.value, .label = entry.label, .description = entry.description, .enabled = true});
 
       if (entry.kind != WidgetReferenceKind::BuiltIn) {
         continue;
@@ -228,7 +225,6 @@ namespace settings {
             .value = entry.value,
             .label = entry.label,
             .description = i18n::tr("settings.entities.widget.picker.instance-description", "type", entry.value),
-            .category = {},
             .enabled = true,
         });
         break;

@@ -95,11 +95,8 @@ namespace settings {
       std::vector<SearchPickerOption> out;
       out.reserve(options.size());
       for (const auto& opt : options) {
-        out.push_back(SearchPickerOption{.value = opt.value,
-                                         .label = opt.label,
-                                         .description = opt.description,
-                                         .category = opt.category,
-                                         .enabled = true});
+        out.push_back(SearchPickerOption{
+            .value = opt.value, .label = opt.label, .description = opt.description, .enabled = true});
       }
       return out;
     }

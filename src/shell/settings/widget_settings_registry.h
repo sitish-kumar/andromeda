@@ -19,7 +19,6 @@ namespace settings {
   struct WidgetTypeSpec {
     std::string_view type;
     std::string_view labelKey;
-    std::string_view categoryKey;
     bool supportsMultipleInstances = true;
     bool visibleInPicker = true;
   };
@@ -35,7 +34,6 @@ namespace settings {
     std::string value;
     std::string label;
     std::string description;
-    std::string category;
     WidgetReferenceKind kind = WidgetReferenceKind::Unknown;
   };
 
