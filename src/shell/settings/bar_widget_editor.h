@@ -21,6 +21,7 @@ namespace settings {
     float scale = 1.0f;
     bool showAdvanced = false;
     bool showOverriddenOnly = false;
+    std::vector<SelectOption> batteryDeviceOptions;
     std::string& openWidgetPickerPath;
     std::string& editingWidgetName;
     std::string& pendingDeleteWidgetName;

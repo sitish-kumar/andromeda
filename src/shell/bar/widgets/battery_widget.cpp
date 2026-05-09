@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include <string>
+#include <utility>
 
 namespace {
 
@@ -38,7 +39,8 @@ namespace {
 
 } // namespace
 
-BatteryWidget::BatteryWidget(UPowerService* upower) : m_upower(upower) {}
+BatteryWidget::BatteryWidget(UPowerService* upower, std::string deviceSelector)
+    : m_upower(upower), m_deviceSelector(std::move(deviceSelector)) {}
 
 void BatteryWidget::create() {
   auto container = std::make_unique<Node>();
@@ -90,7 +92,7 @@ void BatteryWidget::syncState(Renderer& renderer) {
     return;
   }
 
-  const auto& s = m_upower->state();
+  const auto s = m_upower->stateForDevice(m_deviceSelector);
 
   if (s.percentage == m_lastPct && s.state == m_lastState && s.isPresent == m_lastPresent &&
       m_isVertical == m_lastVertical) {

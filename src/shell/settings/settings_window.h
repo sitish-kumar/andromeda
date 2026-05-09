@@ -21,6 +21,7 @@ class ConfigService;
 class DependencyService;
 class Flex;
 class RenderContext;
+class UPowerService;
 class WaylandConnection;
 struct KeyboardEvent;
 struct PointerEvent;
@@ -33,7 +34,7 @@ public:
   ~SettingsWindow();
 
   void initialize(WaylandConnection& wayland, ConfigService* config, RenderContext* renderContext,
-                  DependencyService* dependencies);
+                  DependencyService* dependencies, UPowerService* upower);
 
   void open();
   void openToBarWidget(std::string barName, std::string widgetName);
@@ -84,6 +85,7 @@ private:
   ConfigService* m_config = nullptr;
   RenderContext* m_renderContext = nullptr;
   DependencyService* m_dependencies = nullptr;
+  UPowerService* m_upower = nullptr;
 
   std::unique_ptr<ToplevelSurface> m_surface;
   std::unique_ptr<Node> m_sceneRoot;

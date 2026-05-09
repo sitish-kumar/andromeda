@@ -27,6 +27,7 @@ namespace settings {
     const BarMonitorOverride* selectedMonitorOverride = nullptr;
     bool showAdvanced = false;
     bool showOverriddenOnly = false;
+    std::vector<SelectOption> batteryDeviceOptions;
 
     std::string& openWidgetPickerPath;
     std::string& openSearchPickerPath;

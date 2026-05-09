@@ -3,12 +3,14 @@
 #include "dbus/upower/upower_service.h"
 #include "shell/bar/widget.h"
 
+#include <string>
+
 class Glyph;
 class Label;
 
 class BatteryWidget : public Widget {
 public:
-  explicit BatteryWidget(UPowerService* upower);
+  BatteryWidget(UPowerService* upower, std::string deviceSelector = "auto");
 
   void create() override;
 
@@ -18,6 +20,7 @@ private:
   void syncState(Renderer& renderer);
 
   UPowerService* m_upower = nullptr;
+  std::string m_deviceSelector = "auto";
   Glyph* m_glyph = nullptr;
   Label* m_label = nullptr;
   double m_lastPct = -1.0;

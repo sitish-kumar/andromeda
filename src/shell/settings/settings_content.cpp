@@ -1223,6 +1223,7 @@ namespace settings {
         .scale = scale,
         .showAdvanced = ctx.showAdvanced,
         .showOverriddenOnly = ctx.showOverriddenOnly,
+        .batteryDeviceOptions = ctx.batteryDeviceOptions,
         .openWidgetPickerPath = ctx.openWidgetPickerPath,
         .editingWidgetName = ctx.editingWidgetName,
         .pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,

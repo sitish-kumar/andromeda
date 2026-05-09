@@ -5,6 +5,7 @@
 #include "core/deferred_call.h"
 #include "core/log.h"
 #include "core/ui_phase.h"
+#include "dbus/upower/upower_service.h"
 #include "i18n/i18n.h"
 #include "render/render_context.h"
 #include "shell/settings/settings_content.h"
@@ -29,6 +30,7 @@
 #include "ui/dialogs/file_dialog.h"
 #include "ui/palette.h"
 #include "ui/style.h"
+#include "util/string_utils.h"
 #include "wayland/toplevel_surface.h"
 #include "wayland/wayland_connection.h"
 
@@ -157,16 +159,61 @@ namespace {
     return {};
   }
 
+  std::string upowerDeviceLabel(const UPowerDeviceInfo& device) {
+    const std::string nativeName =
+        !device.nativePath.empty() ? StringUtils::pathTail(device.nativePath) : StringUtils::pathTail(device.path);
+
+    std::string label;
+    if (!device.vendor.empty() && !device.model.empty()) {
+      label = device.vendor + " " + device.model;
+    } else if (!device.model.empty()) {
+      label = device.model;
+    } else if (!device.vendor.empty()) {
+      label = device.vendor;
+    } else {
+      label = nativeName;
+    }
+
+    if (!nativeName.empty() && label != nativeName) {
+      label += " (" + nativeName + ")";
+    }
+    return label;
+  }
+
+  std::vector<settings::SelectOption> upowerBatteryDeviceOptions(UPowerService* upower) {
+    std::vector<settings::SelectOption> options;
+    options.push_back(settings::SelectOption{.value = "auto", .label = i18n::tr("common.states.auto")});
+    if (upower == nullptr) {
+      return options;
+    }
+
+    const auto devices = upower->batteryDevices();
+    options.reserve(devices.size() + 1);
+    for (const auto& device : devices) {
+      std::string description = device.path;
+      if (!device.nativePath.empty() && device.nativePath != device.path) {
+        description = device.nativePath + " - " + device.path;
+      }
+      options.push_back(settings::SelectOption{
+          .value = device.path,
+          .label = upowerDeviceLabel(device),
+          .description = std::move(description),
+      });
+    }
+    return options;
+  }
+
 } // namespace
 
 SettingsWindow::~SettingsWindow() = default;
 
 void SettingsWindow::initialize(WaylandConnection& wayland, ConfigService* config, RenderContext* renderContext,
-                                DependencyService* dependencies) {
+                                DependencyService* dependencies, UPowerService* upower) {
   m_wayland = &wayland;
   m_config = config;
   m_renderContext = renderContext;
   m_dependencies = dependencies;
+  m_upower = upower;
   m_showAdvanced = m_config != nullptr ? m_config->config().shell.settingsShowAdvanced : false;
 }
 
@@ -1084,6 +1131,7 @@ void SettingsWindow::rebuildSettingsContent() {
               },
       });
 
+  const auto batteryDeviceOptions = upowerBatteryDeviceOptions(m_upower);
   settings::addSettingsContentSections(
       *m_contentContainer, m_settingsRegistry,
       settings::SettingsContentContext{
@@ -1096,6 +1144,7 @@ void SettingsWindow::rebuildSettingsContent() {
           .selectedMonitorOverride = selectedMonitorOverride,
           .showAdvanced = m_showAdvanced,
           .showOverriddenOnly = m_showOverriddenOnly,
+          .batteryDeviceOptions = batteryDeviceOptions,
           .openWidgetPickerPath = m_openWidgetPickerPath,
           .openSearchPickerPath = m_openSearchPickerPath,
           .editingWidgetName = m_editingWidgetName,

@@ -337,6 +337,8 @@ namespace settings {
       add(boolSpec("show_when_idle", false));
       add(colorRoleSpec("low_color", "primary"));
       add(colorRoleSpec("high_color", "primary"));
+    } else if (type == "battery") {
+      add(selectSpec("device", "auto", {{"auto", "common.states.auto"}}));
     } else if (type == "bluetooth") {
       add(boolSpec("show_label", false));
     } else if (type == "brightness") {

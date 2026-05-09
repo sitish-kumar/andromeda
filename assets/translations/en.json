@@ -953,7 +953,7 @@
         },
         "device": {
           "label": "Device",
-          "description": "Audio stream to control"
+          "description": "Device to monitor or control"
         },
         "display": {
           "label": "Display",

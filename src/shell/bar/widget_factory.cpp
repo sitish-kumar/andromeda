@@ -131,7 +131,8 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
   }
 
   if (type == "battery") {
-    auto widget = std::make_unique<BatteryWidget>(m_upower);
+    const std::string deviceSelector = wc != nullptr ? wc->getString("device", "auto") : std::string("auto");
+    auto widget = std::make_unique<BatteryWidget>(m_upower, deviceSelector);
     widget->setContentScale(contentScale);
     return widget;
   }

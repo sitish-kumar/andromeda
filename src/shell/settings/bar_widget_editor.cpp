@@ -664,6 +664,29 @@ namespace settings {
       return options;
     }
 
+    SelectSetting batteryDeviceSelectSetting(const BarWidgetEditorContext& ctx, std::string selectedValue) {
+      if (selectedValue.empty()) {
+        selectedValue = "auto";
+      }
+
+      std::vector<SelectOption> options = ctx.batteryDeviceOptions;
+      if (options.empty()) {
+        options.push_back(SelectOption{.value = "auto", .label = i18n::tr("common.states.auto")});
+      }
+
+      const auto hasSelected = std::any_of(options.begin(), options.end(), [&selectedValue](const SelectOption& opt) {
+        return opt.value == selectedValue;
+      });
+      if (!selectedValue.empty() && !hasSelected) {
+        options.push_back(SelectOption{
+            .value = selectedValue,
+            .label = i18n::tr("settings.controls.select.unknown-value", "value", selectedValue),
+        });
+      }
+
+      return SelectSetting{std::move(options), std::move(selectedValue)};
+    }
+
     void addRawWidgetSettings(Flex& panel, std::string_view widgetName, const std::vector<WidgetSettingSpec>& specs,
                               std::size_t& visibleSpecs, const BarWidgetEditorContext& ctx) {
       if (!ctx.showAdvanced) {
@@ -987,12 +1010,18 @@ namespace settings {
           ctx.makeListBlock(*panel, entry, ListSetting{.items = settingValueAsStringList(value)});
           break;
         case WidgetSettingValueType::Select: {
-          std::vector<SelectOption> options;
-          options.reserve(spec.options.size());
-          for (const auto& option : spec.options) {
-            options.push_back(SelectOption{std::string(option.value), i18n::tr(option.labelKey)});
+          SelectSetting selectSetting;
+          const std::string selectedValue = settingValueAsString(value);
+          if (widgetType == "battery" && spec.key == "device") {
+            selectSetting = batteryDeviceSelectSetting(ctx, selectedValue);
+          } else {
+            std::vector<SelectOption> options;
+            options.reserve(spec.options.size());
+            for (const auto& option : spec.options) {
+              options.push_back(SelectOption{std::string(option.value), i18n::tr(option.labelKey)});
+            }
+            selectSetting = SelectSetting{std::move(options), selectedValue};
           }
-          SelectSetting selectSetting{std::move(options), settingValueAsString(value)};
           selectSetting.segmented = spec.segmented;
           ctx.makeRow(*panel, entry, ctx.makeSelect(std::move(selectSetting), path));
           break;

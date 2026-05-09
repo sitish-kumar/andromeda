@@ -525,6 +525,7 @@ void Application::initServices() {
       m_upowerService->setChangeCallback([this]() {
         onUpowerStateChangedForHooks();
         m_bar.refresh();
+        m_settingsWindow.onExternalOptionsChanged();
       });
     } catch (const std::exception& e) {
       kLog.warn("upower disabled: {}", e.what());
@@ -754,7 +755,8 @@ void Application::initUi() {
   m_renderContext.setTextFontFamily(m_configService.config().shell.fontFamily);
   m_wallpaper.initialize(m_wayland, &m_configService, &m_renderContext, &m_sharedTextureCache);
   m_backdrop.initialize(m_wayland, &m_configService, &m_sharedTextureCache, &m_glShared);
-  m_settingsWindow.initialize(m_wayland, &m_configService, &m_renderContext, &m_dependencyService);
+  m_settingsWindow.initialize(m_wayland, &m_configService, &m_renderContext, &m_dependencyService,
+                              m_upowerService.get());
   m_settingsWindow.setOpenDesktopWidgetEditor([this]() { m_desktopWidgetsController.toggleEdit(); });
   m_lockScreen.initialize(m_wayland, &m_renderContext, &m_configService, &m_sharedTextureCache);
   m_lockScreen.setSessionHooks([this]() { m_hookManager.fire(HookKind::SessionLocked); },

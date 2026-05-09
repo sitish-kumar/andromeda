@@ -26,6 +26,14 @@ namespace StringUtils {
     return out;
   }
 
+  [[nodiscard]] inline std::string pathTail(std::string_view path) {
+    const auto slash = path.find_last_of('/');
+    if (slash == std::string_view::npos || slash + 1 >= path.size()) {
+      return std::string(path);
+    }
+    return std::string(path.substr(slash + 1));
+  }
+
   inline void toLowerInPlace(std::string& s) {
     std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
   }
