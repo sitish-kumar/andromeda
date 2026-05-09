@@ -313,12 +313,20 @@ bool NetworkService::activateVpnConnection(const VpnConnectionInfo& vpn) {
     return false;
   }
   try {
-    sdbus::ObjectPath activePath;
-    m_nm->callMethod("ActivateConnection")
+    // Async: ActivateConnection can involve polkit/agent interactions, and a
+    // synchronous call can stall the main loop while authorization is pending.
+    const std::string vpn_name = vpn.name;
+    const std::string vpn_path = vpn.path;
+    m_nm->callMethodAsync("ActivateConnection")
         .onInterface(k_nmInterface)
-        .withArguments(sdbus::ObjectPath{vpn.path}, sdbus::ObjectPath{"/"}, sdbus::ObjectPath{"/"})
-        .storeResultsTo(activePath);
-    kLog.info("activating vpn name={} active={}", vpn.name, std::string(activePath));
+        .withArguments(sdbus::ObjectPath{vpn_path}, sdbus::ObjectPath{"/"}, sdbus::ObjectPath{"/"})
+        .uponReplyInvoke([vpn_name, vpn_path](std::optional<sdbus::Error> err, sdbus::ObjectPath activePath) {
+          if (err.has_value()) {
+            kLog.warn("ActivateConnection(vpn) failed name={} path={}: {}", vpn_name, vpn_path, err->what());
+          } else {
+            kLog.info("activating vpn name={} active={}", vpn_name, std::string(activePath));
+          }
+        });
     return true;
   } catch (const sdbus::Error& e) {
     kLog.warn("ActivateConnection(vpn) failed name={} path={} err={}", vpn.name, vpn.path, e.what());
