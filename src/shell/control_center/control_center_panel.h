@@ -32,7 +32,7 @@ class Label;
 class MprisService;
 class NetworkSecretAgent;
 class NetworkService;
-class NightLightManager;
+class GammaService;
 class NotificationManager;
 class PipeWireService;
 class PipeWireSpectrum;
@@ -56,7 +56,7 @@ public:
                      NetworkService* network = nullptr, NetworkSecretAgent* networkSecrets = nullptr,
                      BluetoothService* bluetooth = nullptr, BluetoothAgent* bluetoothAgent = nullptr,
                      BrightnessService* brightness = nullptr, SystemMonitorService* sysmon = nullptr,
-                     NightLightManager* nightLight = nullptr, noctalia::theme::ThemeService* theme = nullptr,
+                     GammaService* nightLight = nullptr, noctalia::theme::ThemeService* theme = nullptr,
                      IdleInhibitor* idleInhibitor = nullptr, DependencyService* dependencies = nullptr,
                      WaylandConnection* wayland = nullptr, Wallpaper* wallpaper = nullptr);
 

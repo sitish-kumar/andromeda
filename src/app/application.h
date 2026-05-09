@@ -63,10 +63,10 @@
 #include "system/brightness_service.h"
 #include "system/dependency_service.h"
 #include "system/desktop_entry_poll_source.h"
+#include "system/gamma_service.h"
 #include "system/icon_theme_poll_source.h"
 #include "system/lock_keys_poll_source.h"
 #include "system/lock_keys_service.h"
-#include "system/night_light_manager.h"
 #include "system/system_monitor_service.h"
 #include "system/telemetry_service.h"
 #include "system/weather_poll_source.h"
@@ -139,7 +139,7 @@ private:
   IdleManager m_idleManager;
   HookManager m_hookManager;
   DependencyService m_dependencyService;
-  NightLightManager m_nightLightManager;
+  GammaService m_gammaService;
   std::unique_ptr<MprisService> m_mprisService;
   std::unique_ptr<PowerProfilesService> m_powerProfilesService;
   std::unique_ptr<NetworkService> m_networkService;

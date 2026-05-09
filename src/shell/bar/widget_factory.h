@@ -23,7 +23,7 @@ class SystemMonitorService;
 class UPowerService;
 class WeatherService;
 struct wl_output;
-class NightLightManager;
+class GammaService;
 class WaylandConnection;
 namespace noctalia::theme {
   class ThemeService;
@@ -35,7 +35,7 @@ public:
                 PipeWireService* audio, UPowerService* upower, SystemMonitorService* sysmon,
                 PowerProfilesService* powerProfiles, NetworkService* network, IdleInhibitor* idleInhibitor,
                 MprisService* mpris, PipeWireSpectrum* audioSpectrum, HttpClient* httpClient, WeatherService* weather,
-                NightLightManager* nightLight, noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth,
+                GammaService* nightLight, noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth,
                 BrightnessService* brightness, LockKeysService* lockKeys, FileWatcher* fileWatcher = nullptr);
   ~WidgetFactory();
 
@@ -57,7 +57,7 @@ private:
   PipeWireSpectrum* m_audioSpectrum;
   HttpClient* m_httpClient;
   WeatherService* m_weather;
-  NightLightManager* m_nightLight;
+  GammaService* m_nightLight;
   noctalia::theme::ThemeService* m_themeService;
   BluetoothService* m_bluetooth;
   BrightnessService* m_brightness;

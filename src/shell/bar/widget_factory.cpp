@@ -79,7 +79,7 @@ WidgetFactory::WidgetFactory(WaylandConnection& wayland, const Config& config, N
                              TrayService* tray, PipeWireService* audio, UPowerService* upower,
                              SystemMonitorService* sysmon, PowerProfilesService* powerProfiles, NetworkService* network,
                              IdleInhibitor* idleInhibitor, MprisService* mpris, PipeWireSpectrum* audioSpectrum,
-                             HttpClient* httpClient, WeatherService* weather, NightLightManager* nightLight,
+                             HttpClient* httpClient, WeatherService* weather, GammaService* nightLight,
                              noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth,
                              BrightnessService* brightness, LockKeysService* lockKeys, FileWatcher* fileWatcher)
     : m_wayland(wayland), m_config(config), m_notifications(notifications), m_tray(tray), m_audio(audio),

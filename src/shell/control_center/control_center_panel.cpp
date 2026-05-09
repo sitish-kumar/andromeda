@@ -20,7 +20,7 @@ ControlCenterPanel::ControlCenterPanel(
     HttpClient* httpClient, WeatherService* weather, PipeWireSpectrum* spectrum, UPowerService* upower,
     PowerProfilesService* powerProfiles, NetworkService* network, NetworkSecretAgent* networkSecrets,
     BluetoothService* bluetooth, BluetoothAgent* bluetoothAgent, BrightnessService* brightness,
-    SystemMonitorService* sysmon, NightLightManager* nightLight, noctalia::theme::ThemeService* theme,
+    SystemMonitorService* sysmon, GammaService* nightLight, noctalia::theme::ThemeService* theme,
     IdleInhibitor* idleInhibitor, DependencyService* dependencies, WaylandConnection* wayland, Wallpaper* wallpaper) {
   (void)upower;
   m_config = config;

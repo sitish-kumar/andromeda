@@ -466,7 +466,7 @@ struct KeybindsConfig {
 };
 
 struct NightLightConfig {
-  // wlsunset requires day > night with at least this much headroom, in Kelvin.
+  // Day temperature must be higher than night temperature by at least this much.
   static constexpr std::int32_t kTemperatureMin = 1000;
   static constexpr std::int32_t kTemperatureMax = 10000;
   static constexpr std::int32_t kTemperatureGap = 100;

@@ -285,6 +285,8 @@ foreach _p : [
     'protocols/wlr-data-control-unstable-v1.xml'],
   ['hyprland-focus-grab-v1',
     'protocols/hyprland-focus-grab-v1.xml'],
+  ['wlr-gamma-control-unstable-v1',
+    'protocols/wlr-gamma-control-unstable-v1.xml'],
 ]
   _name = _p[0]
   _xml  = _p[1]
@@ -528,7 +530,7 @@ _noctalia_sources = files(
   'src/system/hardware_info.cpp',
   'src/system/icon_resolver.cpp',
   'src/system/internal_app_metadata.cpp',
-  'src/system/night_light_manager.cpp',
+  'src/system/gamma_service.cpp',
   'src/system/system_monitor_service.cpp',
   'src/system/weather_service.cpp',
   'src/time/time_format.cpp',

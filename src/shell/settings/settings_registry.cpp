@@ -668,20 +668,18 @@ namespace settings {
                                 {"brightness", "enable_ddcutil"},
                                 ToggleSetting{.checked = cfg.brightness.enableDdcutil, .enabled = env.ddcutilAvailable},
                                 "monitor ddcutil"));
-    if (!env.wlsunsetAvailable) {
-      // Show only the master toggle in a disabled state so users can discover the feature
-      // and learn the dependency requirement. The remaining settings are hidden until wlsunset is installed.
+    if (!env.gammaControlAvailable) {
       entries.push_back(makeEntry("services", "night-light", tr("settings.schema.services.night-light.label"),
-                                  tr("settings.schema.services.night-light.requires-wlsunset"),
+                                  tr("settings.schema.services.night-light.requires-gamma-control"),
                                   {"nightlight", "enabled"},
-                                  ToggleSetting{.checked = cfg.nightlight.enabled, .enabled = false}, "wlsunset"));
+                                  ToggleSetting{.checked = cfg.nightlight.enabled, .enabled = false}, "nightlight"));
     } else {
       entries.push_back(makeEntry("services", "night-light", tr("settings.schema.services.night-light.label"),
                                   tr("settings.schema.services.night-light.description"), {"nightlight", "enabled"},
-                                  ToggleSetting{cfg.nightlight.enabled}, "wlsunset"));
+                                  ToggleSetting{cfg.nightlight.enabled}, "nightlight"));
       entries.push_back(makeEntry("services", "night-light", tr("settings.schema.services.force-night-light.label"),
                                   tr("settings.schema.services.force-night-light.description"), {"nightlight", "force"},
-                                  ToggleSetting{cfg.nightlight.force}, "wlsunset"));
+                                  ToggleSetting{cfg.nightlight.force}, "nightlight"));
       entries.push_back(makeEntry("services", "night-light", tr("settings.schema.services.use-weather-location.label"),
                                   tr("settings.schema.services.use-weather-location.description"),
                                   {"nightlight", "use_weather_location"},
@@ -731,7 +729,7 @@ namespace settings {
       };
       entries.push_back(makeEntry("services", "night-light", tr("settings.schema.services.day-temperature.label"),
                                   tr("settings.schema.services.day-temperature.description"),
-                                  {"nightlight", "temperature_day"}, std::move(daySlider), "wlsunset kelvin"));
+                                  {"nightlight", "temperature_day"}, std::move(daySlider), "nightlight kelvin"));
 
       SliderSetting nightSlider{static_cast<float>(cfg.nightlight.nightTemperature), tempMin, tempMax, tempStep, true};
       nightSlider.linkedCommit = [curDay = cfg.nightlight.dayTemperature](double v) {
@@ -754,7 +752,7 @@ namespace settings {
       };
       entries.push_back(makeEntry("services", "night-light", tr("settings.schema.services.night-temperature.label"),
                                   tr("settings.schema.services.night-temperature.description"),
-                                  {"nightlight", "temperature_night"}, std::move(nightSlider), "wlsunset kelvin"));
+                                  {"nightlight", "temperature_night"}, std::move(nightSlider), "nightlight kelvin"));
     }
 
     // Hooks

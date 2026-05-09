@@ -2,7 +2,7 @@
 
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
-#include "system/night_light_manager.h"
+#include "system/gamma_service.h"
 #include "ui/controls/glyph.h"
 #include "ui/palette.h"
 #include "ui/style.h"
@@ -21,7 +21,7 @@ namespace {
 
 } // namespace
 
-NightLightWidget::NightLightWidget(NightLightManager* nightLight) : m_nightLight(nightLight) {}
+NightLightWidget::NightLightWidget(GammaService* nightLight) : m_nightLight(nightLight) {}
 
 void NightLightWidget::create() {
   auto area = std::make_unique<InputArea>();

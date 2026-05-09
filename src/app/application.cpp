@@ -117,7 +117,8 @@ namespace {
 
 } // namespace
 
-Application::Application() : m_lockKeysService(m_wayland), m_weatherService(m_configService, m_httpClient) {
+Application::Application()
+    : m_lockKeysService(m_wayland), m_gammaService(m_wayland), m_weatherService(m_configService, m_httpClient) {
   m_notificationManager.loadPersistedHistory();
   notify::setInstance(&m_notificationManager);
   LockScreen::setInstance(&m_lockScreen);
@@ -363,6 +364,7 @@ void Application::initServices() {
     if (m_brightnessService != nullptr) {
       m_brightnessService->onOutputsChanged();
     }
+    m_gammaService.onOutputsChanged();
     m_wallpaper.onOutputChange();
     m_backdrop.onOutputChange();
     m_bar.onOutputChange();
@@ -406,14 +408,14 @@ void Application::initServices() {
       [this](const std::string& command) { return runUserCommandBlocking(command); });
   m_hookManager.reload(m_configService.config().hooks);
   m_configService.addReloadCallback([this]() { m_hookManager.reload(m_configService.config().hooks); });
-  m_nightLightManager.reload(m_configService.config().nightlight);
-  m_nightLightManager.setChangeCallback([this, shouldRefreshControlCenter]() {
+  m_gammaService.reload(m_configService.config().nightlight);
+  m_gammaService.setChangeCallback([this, shouldRefreshControlCenter]() {
     m_bar.refresh();
     if (shouldRefreshControlCenter()) {
       m_panelManager.refresh();
     }
   });
-  m_configService.addReloadCallback([this]() { m_nightLightManager.reload(m_configService.config().nightlight); });
+  m_configService.addReloadCallback([this]() { m_gammaService.reload(m_configService.config().nightlight); });
 
   // Register all wallpaper consumers in the single-callback slot.
   m_configService.setWallpaperChangeCallback([this]() {
@@ -714,16 +716,16 @@ void Application::initServices() {
   m_weatherService.initialize();
   if (m_weatherService.hasData()) {
     const WeatherSnapshot& snapshot = m_weatherService.snapshot();
-    m_nightLightManager.setWeatherCoordinates(snapshot.latitude, snapshot.longitude);
+    m_gammaService.setWeatherCoordinates(snapshot.latitude, snapshot.longitude);
   } else {
-    m_nightLightManager.setWeatherCoordinates(std::nullopt, std::nullopt);
+    m_gammaService.setWeatherCoordinates(std::nullopt, std::nullopt);
   }
   m_weatherService.addChangeCallback([this, shouldRefreshControlCenter]() {
     if (m_weatherService.hasData()) {
       const WeatherSnapshot& snapshot = m_weatherService.snapshot();
-      m_nightLightManager.setWeatherCoordinates(snapshot.latitude, snapshot.longitude);
+      m_gammaService.setWeatherCoordinates(snapshot.latitude, snapshot.longitude);
     } else {
-      m_nightLightManager.setWeatherCoordinates(std::nullopt, std::nullopt);
+      m_gammaService.setWeatherCoordinates(std::nullopt, std::nullopt);
     }
     m_bar.refresh();
     m_desktopWidgetsController.requestLayout();
@@ -853,8 +855,8 @@ void Application::initUi() {
                                    &m_configService, &m_httpClient, &m_weatherService, m_pipewireSpectrum.get(),
                                    m_upowerService.get(), m_powerProfilesService.get(), m_networkService.get(),
                                    m_networkSecretAgent.get(), m_bluetoothService.get(), m_bluetoothAgent.get(),
-                                   m_brightnessService.get(), m_systemMonitor.get(), &m_nightLightManager,
-                                   &m_themeService, &m_idleInhibitor, &m_dependencyService, &m_wayland, &m_wallpaper));
+                                   m_brightnessService.get(), m_systemMonitor.get(), &m_gammaService, &m_themeService,
+                                   &m_idleInhibitor, &m_dependencyService, &m_wayland, &m_wallpaper));
   {
     auto launcherPanel = std::make_unique<LauncherPanel>(&m_configService, &m_asyncTextureCache);
     launcherPanel->addProvider(std::make_unique<AppProvider>(&m_wayland));
@@ -906,7 +908,7 @@ void Application::initUi() {
   m_bar.initialize(m_wayland, &m_configService, &m_timeService, &m_notificationManager, m_trayService.get(),
                    m_pipewireService.get(), m_upowerService.get(), m_systemMonitor.get(), m_powerProfilesService.get(),
                    m_networkService.get(), &m_idleInhibitor, m_mprisService.get(), m_pipewireSpectrum.get(),
-                   &m_httpClient, &m_weatherService, &m_renderContext, &m_nightLightManager, &m_themeService,
+                   &m_httpClient, &m_weatherService, &m_renderContext, &m_gammaService, &m_themeService,
                    m_bluetoothService.get(), m_brightnessService.get(), kLockKeysEnabled ? &m_lockKeysService : nullptr,
                    &m_fileWatcher);
   m_bar.setOpenWidgetSettingsCallback([this](std::string barName, std::string widgetName) {
@@ -1140,7 +1142,7 @@ void Application::initIpc() {
   m_lockScreen.registerIpc(m_ipcService);
   m_panelManager.registerIpc(m_ipcService);
   m_idleInhibitor.registerIpc(m_ipcService);
-  m_nightLightManager.registerIpc(m_ipcService);
+  m_gammaService.registerIpc(m_ipcService);
   m_themeService.registerIpc(m_ipcService);
   m_dock.registerIpc(m_ipcService);
   m_wallpaper.registerIpc(m_ipcService);

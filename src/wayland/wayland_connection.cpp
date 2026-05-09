@@ -21,6 +21,7 @@
 #include "wayland/virtual_keyboard_service.h"
 #include "wlr-data-control-unstable-v1-client-protocol.h"
 #include "wlr-foreign-toplevel-management-unstable-v1-client-protocol.h"
+#include "wlr-gamma-control-unstable-v1-client-protocol.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include "xdg-activation-v1-client-protocol.h"
 #include "xdg-output-unstable-v1-client-protocol.h"
@@ -53,6 +54,7 @@ namespace {
   constexpr std::uint32_t kViewporterVersion = 1;
   constexpr std::uint32_t kOutputVersion = 4;
   constexpr std::uint32_t kVirtualKeyboardManagerVersion = 1;
+  constexpr std::uint32_t kGammaControlManagerVersion = 1;
 
   const wl_registry_listener kRegistryListener = {
       .global = &WaylandConnection::handleGlobal,
@@ -629,6 +631,9 @@ bool WaylandConnection::hasXdgActivation() const noexcept { return m_xdgActivati
 bool WaylandConnection::hasFractionalScale() const noexcept {
   return m_fractionalScaleManager != nullptr && m_viewporter != nullptr;
 }
+bool WaylandConnection::hasGammaControl() const noexcept { return m_gammaControlManager != nullptr; }
+
+zwlr_gamma_control_manager_v1* WaylandConnection::gammaControlManager() const noexcept { return m_gammaControlManager; }
 
 std::string WaylandConnection::requestActivationToken(wl_surface* surface) const {
   if (m_xdgActivation == nullptr || m_display == nullptr) {
@@ -926,6 +931,13 @@ void WaylandConnection::bindGlobal(wl_registry* registry, std::uint32_t name, co
     return;
   }
 
+  if (interfaceName == zwlr_gamma_control_manager_v1_interface.name) {
+    const auto bindVersion = std::min(version, kGammaControlManagerVersion);
+    m_gammaControlManager = static_cast<zwlr_gamma_control_manager_v1*>(
+        wl_registry_bind(registry, name, &zwlr_gamma_control_manager_v1_interface, bindVersion));
+    return;
+  }
+
   if (interfaceName == wl_output_interface.name) {
     const auto bindVersion = std::min(version, kOutputVersion);
     auto* output = static_cast<wl_output*>(wl_registry_bind(registry, name, &wl_output_interface, bindVersion));
@@ -1037,6 +1049,11 @@ void WaylandConnection::cleanup() {
     m_hyprlandFocusGrabManager = nullptr;
   }
 
+  if (m_gammaControlManager != nullptr) {
+    zwlr_gamma_control_manager_v1_destroy(m_gammaControlManager);
+    m_gammaControlManager = nullptr;
+  }
+
   if (m_viewporter != nullptr) {
     wp_viewporter_destroy(m_viewporter);
     m_viewporter = nullptr;
@@ -1109,11 +1126,12 @@ void WaylandConnection::cleanup() {
 void WaylandConnection::logStartupSummary() const {
   kLog.info(
       "connected compositor={} shm={} layer-shell={} xdg-shell={} xdg-output={} ext-workspace={} mango-workspace={} "
-      "session-lock={} fractional-scale={} outputs={} workspace-backend={}",
+      "session-lock={} fractional-scale={} gamma-control={} outputs={} workspace-backend={}",
       m_compositor != nullptr ? "yes" : "no", m_shm != nullptr ? "yes" : "no", hasLayerShell() ? "yes" : "no",
       hasXdgShell() ? "yes" : "no", hasXdgOutputManager() ? "yes" : "no", hasExtWorkspaceManager() ? "yes" : "no",
       hasMangoWorkspaceManager() ? "yes" : "no", hasSessionLockManager() ? "yes" : "no",
-      hasFractionalScale() ? "yes" : "no", m_outputs.size(), m_workspacesHandler.backendName());
+      hasFractionalScale() ? "yes" : "no", hasGammaControl() ? "yes" : "no", m_outputs.size(),
+      m_workspacesHandler.backendName());
 
   for (const auto& output : m_outputs) {
     kLog.info("output {} global={} scale={} mode={}x{} desc=\"{}\"", output.connectorName, output.name, output.scale,

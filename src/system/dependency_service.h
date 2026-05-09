@@ -10,7 +10,6 @@ public:
 
   [[nodiscard]] bool has(std::string_view name) const;
   [[nodiscard]] bool hasDdcutil() const { return has("ddcutil"); }
-  [[nodiscard]] bool hasWlsunset() const { return has("wlsunset"); }
 
   void rescan();
 

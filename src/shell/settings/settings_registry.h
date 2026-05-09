@@ -123,7 +123,7 @@ namespace settings {
   struct RegistryEnvironment {
     bool niriBackdropSupported = false;         // hide the [backdrop] section when false
     bool ddcutilAvailable = false;              // disable ddcutil toggle when ddcutil is not on PATH
-    bool wlsunsetAvailable = false;             // hide night-light entries when wlsunset is not on PATH
+    bool gammaControlAvailable = false;         // hide night-light entries when gamma control is unavailable
     std::vector<SelectOption> availableOutputs; // monitor selectors available on this machine
     std::vector<SelectOption> communityPalettes;
     std::vector<SelectOption> communityTemplates;

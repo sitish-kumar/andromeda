@@ -54,10 +54,9 @@ namespace {
 
 OverviewTab::OverviewTab(MprisService* mpris, WeatherService* weather, PipeWireService* audio,
                          PowerProfilesService* powerProfiles, ConfigService* config, NetworkService* network,
-                         BluetoothService* bluetooth, NightLightManager* nightLight,
-                         noctalia::theme::ThemeService* theme, NotificationManager* notifications,
-                         IdleInhibitor* idleInhibitor, DependencyService* dependencies, WaylandConnection* wayland,
-                         Wallpaper* wallpaper)
+                         BluetoothService* bluetooth, GammaService* nightLight, noctalia::theme::ThemeService* theme,
+                         NotificationManager* notifications, IdleInhibitor* idleInhibitor,
+                         DependencyService* dependencies, WaylandConnection* wayland, Wallpaper* wallpaper)
     : m_mpris(mpris), m_weather(weather), m_config(config), m_wallpaper(wallpaper), m_services{
                                                                                         .network = network,
                                                                                         .bluetooth = bluetooth,

@@ -37,6 +37,7 @@ struct zwlr_foreign_toplevel_handle_v1;
 struct zdwl_ipc_manager_v2;
 struct zwp_virtual_keyboard_manager_v1;
 struct hyprland_focus_grab_manager_v1;
+struct zwlr_gamma_control_manager_v1;
 struct wp_fractional_scale_manager_v1;
 struct wp_viewporter;
 class ClipboardService;
@@ -117,7 +118,9 @@ public:
   [[nodiscard]] bool hasIdleNotifier() const noexcept;
   [[nodiscard]] bool hasIdleInhibitManager() const noexcept;
   [[nodiscard]] bool hasFractionalScale() const noexcept;
+  [[nodiscard]] bool hasGammaControl() const noexcept;
   [[nodiscard]] bool hasBackgroundEffectBlur() const noexcept;
+  [[nodiscard]] zwlr_gamma_control_manager_v1* gammaControlManager() const noexcept;
   [[nodiscard]] ext_background_effect_manager_v1* backgroundEffectManager() const noexcept;
   [[nodiscard]] wp_fractional_scale_manager_v1* fractionalScaleManager() const noexcept;
   [[nodiscard]] hyprland_focus_grab_manager_v1* hyprlandFocusGrabManager() const noexcept;
@@ -223,6 +226,7 @@ private:
   ext_background_effect_manager_v1* m_backgroundEffectManager = nullptr;
   wp_fractional_scale_manager_v1* m_fractionalScaleManager = nullptr;
   hyprland_focus_grab_manager_v1* m_hyprlandFocusGrabManager = nullptr;
+  zwlr_gamma_control_manager_v1* m_gammaControlManager = nullptr;
   std::unique_ptr<FocusGrabService> m_focusGrabService;
   wp_viewporter* m_viewporter = nullptr;
   bool m_backgroundEffectBlurSupported = false;

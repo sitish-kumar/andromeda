@@ -13,8 +13,7 @@
 #include "shell/bar/widgets/keyboard_layout_widget.h"
 #include "shell/control_center/shortcut_services.h"
 #include "shell/panel/panel_manager.h"
-#include "system/dependency_service.h"
-#include "system/night_light_manager.h"
+#include "system/gamma_service.h"
 #include "system/weather_service.h"
 #include "theme/theme_service.h"
 #include "wayland/wayland_connection.h"
@@ -109,10 +108,10 @@ namespace {
 
   class NightlightShortcut final : public Shortcut {
   public:
-    NightlightShortcut(NightLightManager* svc, DependencyService* deps) : m_svc(svc), m_deps(deps) {}
+    NightlightShortcut(GammaService* svc, WaylandConnection* wayland) : m_svc(svc), m_wayland(wayland) {}
     std::string_view id() const override { return "nightlight"; }
     std::string defaultLabel() const override { return i18n::tr("control-center.shortcuts.nightlight"); }
-    bool enabled() const override { return m_deps != nullptr && m_deps->hasWlsunset(); }
+    bool enabled() const override { return m_wayland != nullptr && m_wayland->hasGammaControl(); }
     std::string displayLabel() const override {
       if (m_svc == nullptr) {
         return defaultLabel();
@@ -128,7 +127,7 @@ namespace {
         return i18n::tr("control-center.shortcuts.nightlight-states.scheduled-night");
       }
       // Scheduled but in the day phase: surface that the click "took" even
-      // though wlsunset is intentionally not running yet.
+      // though the service is in day phase.
       return i18n::tr("control-center.shortcuts.nightlight-states.scheduled-day");
     }
     std::string_view iconOn() const override {
@@ -158,8 +157,8 @@ namespace {
     }
 
   private:
-    NightLightManager* m_svc;
-    DependencyService* m_deps;
+    GammaService* m_svc;
+    WaylandConnection* m_wayland;
   };
 
   class NotificationShortcut final : public Shortcut {
@@ -527,7 +526,7 @@ std::unique_ptr<Shortcut> ShortcutRegistry::create(std::string_view type, const 
   if (type == "bluetooth")
     return std::make_unique<BluetoothShortcut>(s.bluetooth);
   if (type == "nightlight")
-    return std::make_unique<NightlightShortcut>(s.nightLight, s.dependencies);
+    return std::make_unique<NightlightShortcut>(s.nightLight, s.wayland);
   if (type == "notification")
     return std::make_unique<NotificationShortcut>(s.notifications);
   if (type == "dark_mode")

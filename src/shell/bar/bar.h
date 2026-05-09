@@ -33,7 +33,7 @@ class UPowerService;
 class TimeService;
 class TrayService;
 class WaylandConnection;
-class NightLightManager;
+class GammaService;
 class WeatherService;
 namespace noctalia::theme {
   class ThemeService;
@@ -50,9 +50,8 @@ public:
                   SystemMonitorService* sysmon, PowerProfilesService* powerProfiles, NetworkService* network,
                   IdleInhibitor* idleInhibitor, MprisService* mpris, PipeWireSpectrum* audioSpectrum,
                   HttpClient* httpClient, WeatherService* weatherService, RenderContext* renderContext,
-                  NightLightManager* nightLight, noctalia::theme::ThemeService* themeService,
-                  BluetoothService* bluetooth, BrightnessService* brightness, LockKeysService* lockKeys,
-                  FileWatcher* fileWatcher = nullptr);
+                  GammaService* nightLight, noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth,
+                  BrightnessService* brightness, LockKeysService* lockKeys, FileWatcher* fileWatcher = nullptr);
   void reload();
   void closeAllInstances();
   void show();
@@ -121,7 +120,7 @@ private:
   HttpClient* m_httpClient = nullptr;
   WeatherService* m_weatherService = nullptr;
   RenderContext* m_renderContext = nullptr;
-  NightLightManager* m_nightLight = nullptr;
+  GammaService* m_nightLight = nullptr;
   noctalia::theme::ThemeService* m_themeService = nullptr;
   BluetoothService* m_bluetooth = nullptr;
   BrightnessService* m_brightness = nullptr;

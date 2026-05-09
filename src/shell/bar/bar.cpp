@@ -11,7 +11,7 @@
 #include "shell/bar/widget.h"
 #include "shell/panel/panel_manager.h"
 #include "shell/surface_shadow.h"
-#include "system/night_light_manager.h"
+#include "system/gamma_service.h"
 #include "system/system_monitor_service.h"
 #include "system/weather_service.h"
 #include "theme/theme_service.h"
@@ -500,7 +500,7 @@ bool Bar::initialize(WaylandConnection& wayland, ConfigService* config, TimeServ
                      UPowerService* upower, SystemMonitorService* sysmon, PowerProfilesService* powerProfiles,
                      NetworkService* network, IdleInhibitor* idleInhibitor, MprisService* mpris,
                      PipeWireSpectrum* audioSpectrum, HttpClient* httpClient, WeatherService* weatherService,
-                     RenderContext* renderContext, NightLightManager* nightLight,
+                     RenderContext* renderContext, GammaService* nightLight,
                      noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth,
                      BrightnessService* brightness, LockKeysService* lockKeys, FileWatcher* fileWatcher) {
   m_wayland = &wayland;

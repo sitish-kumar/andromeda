@@ -32,10 +32,9 @@ struct ShortcutPad {
 class OverviewTab : public Tab {
 public:
   OverviewTab(MprisService* mpris, WeatherService* weather, PipeWireService* audio, PowerProfilesService* powerProfiles,
-              ConfigService* config, NetworkService* network, BluetoothService* bluetooth,
-              NightLightManager* nightLight, noctalia::theme::ThemeService* theme, NotificationManager* notifications,
-              IdleInhibitor* idleInhibitor, DependencyService* dependencies, WaylandConnection* wayland,
-              Wallpaper* wallpaper = nullptr);
+              ConfigService* config, NetworkService* network, BluetoothService* bluetooth, GammaService* nightLight,
+              noctalia::theme::ThemeService* theme, NotificationManager* notifications, IdleInhibitor* idleInhibitor,
+              DependencyService* dependencies, WaylandConnection* wayland, Wallpaper* wallpaper = nullptr);
   ~OverviewTab() override;
 
   std::unique_ptr<Flex> create() override;
