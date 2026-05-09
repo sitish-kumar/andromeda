@@ -421,7 +421,7 @@ bool TrayService::fetchMenuSubtree(const std::string& itemId, std::int32_t paren
     std::uint32_t revision = 0;
     DbusMenuLayout layout{};
     // depth=-1 asks for the full subtree in one call so we don't round-trip
-    // per submenu. Matches quickshell's behavior; dbusmenu spec allows it.
+    // per submenu, dbusmenu spec allows it.
     cache.proxy->callMethod("GetLayout")
         .onInterface(k_menu_interface)
         .withTimeout(std::chrono::milliseconds(2000))
