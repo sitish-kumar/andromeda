@@ -692,23 +692,6 @@ void NetworkTab::rebuildApList(Renderer& renderer) {
     empty->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
     m_list->addChild(std::move(empty));
   } else {
-    for (const auto& ap : aps) {
-      const bool saved = m_network != nullptr && m_network->hasSavedConnection(ap.ssid);
-      auto row = std::make_unique<AccessPointRow>(
-          contentScale(), ap, saved,
-          [this](const AccessPointInfo& clicked) {
-            if (m_network != nullptr) {
-              m_network->activateAccessPoint(clicked);
-            }
-          },
-          [this](const AccessPointInfo& clicked) {
-            if (m_network != nullptr) {
-              m_network->forgetSsid(clicked.ssid);
-            }
-            PanelManager::instance().refresh();
-          });
-      m_list->addChild(std::move(row));
-    }
     if (!vpns.empty()) {
       auto section = std::make_unique<Label>();
       section->setText(i18n::tr("control-center.network.vpns"));
@@ -734,6 +717,24 @@ void NetworkTab::rebuildApList(Renderer& renderer) {
             });
         m_list->addChild(std::move(row));
       }
+    }
+
+    for (const auto& ap : aps) {
+      const bool saved = m_network != nullptr && m_network->hasSavedConnection(ap.ssid);
+      auto row = std::make_unique<AccessPointRow>(
+          contentScale(), ap, saved,
+          [this](const AccessPointInfo& clicked) {
+            if (m_network != nullptr) {
+              m_network->activateAccessPoint(clicked);
+            }
+          },
+          [this](const AccessPointInfo& clicked) {
+            if (m_network != nullptr) {
+              m_network->forgetSsid(clicked.ssid);
+            }
+            PanelManager::instance().refresh();
+          });
+      m_list->addChild(std::move(row));
     }
   }
   m_list->layout(renderer);
