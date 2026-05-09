@@ -34,6 +34,7 @@ private:
   void showPasswordPrompt(const NetworkSecretAgent::SecretRequest& request);
   void clearPasswordPrompt();
   [[nodiscard]] std::string apListKey(const std::vector<AccessPointInfo>& aps) const;
+  [[nodiscard]] std::string vpnListKey(const std::vector<VpnConnectionInfo>& vpns) const;
 
   NetworkService* m_network = nullptr;
   NetworkSecretAgent* m_secrets = nullptr;
@@ -53,9 +54,11 @@ private:
 
   Button* m_rescanButton = nullptr;
   Toggle* m_wifiToggle = nullptr;
+  Toggle* m_vpnToggle = nullptr;
   Flex* m_disconnectRow = nullptr;
   Button* m_disconnectButton = nullptr;
   Spinner* m_scanSpinner = nullptr;
+  bool m_vpnVisible = true;
 
   std::string m_lastListKey;
   float m_lastListWidth = -1.0f;

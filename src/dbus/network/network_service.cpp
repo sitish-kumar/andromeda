@@ -9,6 +9,7 @@
 #include <map>
 #include <sdbus-c++/IProxy.h>
 #include <sdbus-c++/Types.h>
+#include <set>
 #include <vector>
 
 namespace {
@@ -98,6 +99,9 @@ namespace {
 } // namespace
 
 const char* NetworkService::glyphForState(const NetworkState& state) noexcept {
+  if (state.vpnActive) {
+    return "shield-check";
+  }
   if (state.kind == NetworkConnectivity::Wired) {
     return state.connected ? "ethernet" : "ethernet-off";
   }
@@ -197,18 +201,21 @@ void NetworkService::setChangeCallback(ChangeCallback callback) { m_changeCallba
 
 void NetworkService::refresh() {
   const auto previousAps = m_accessPoints;
+  const auto previousVpns = m_vpnConnections;
   const auto previousSaved = m_savedSsids;
   refreshAccessPoints();
+  refreshVpnConnections();
   refreshSavedConnections();
   NetworkState next = readState();
   const bool apsChanged = previousAps != m_accessPoints;
+  const bool vpnsChanged = previousVpns != m_vpnConnections;
   const bool savedChanged = previousSaved != m_savedSsids;
   const bool stateChanged = next != m_state;
   const bool wirelessEnabledChanged = next.wirelessEnabled != m_state.wirelessEnabled;
   const NetworkChangeOrigin origin =
       wirelessEnabledChanged ? consumeWirelessEnabledChangeOrigin(next.wirelessEnabled) : NetworkChangeOrigin::External;
   m_state = std::move(next);
-  if ((stateChanged || apsChanged || savedChanged) && m_changeCallback) {
+  if ((stateChanged || apsChanged || vpnsChanged || savedChanged) && m_changeCallback) {
     m_changeCallback(m_state, origin);
   }
 }
@@ -299,6 +306,76 @@ bool NetworkService::activateAccessPoint(const AccessPointInfo& ap) {
     kLog.warn("AddAndActivateConnection failed ssid={} err={}", ap.ssid, e.what());
     return false;
   }
+}
+
+bool NetworkService::activateVpnConnection(const VpnConnectionInfo& vpn) {
+  if (vpn.path.empty()) {
+    return false;
+  }
+  try {
+    // Async: ActivateConnection can involve polkit/agent interactions, and a
+    // synchronous call can stall the main loop while authorization is pending.
+    const std::string vpnName = vpn.name;
+    const std::string vpnPath = vpn.path;
+    m_nm->callMethodAsync("ActivateConnection")
+        .onInterface(k_nmInterface)
+        .withArguments(sdbus::ObjectPath{vpnPath}, sdbus::ObjectPath{"/"}, sdbus::ObjectPath{"/"})
+        .uponReplyInvoke([vpnName, vpnPath](std::optional<sdbus::Error> err, sdbus::ObjectPath activePath) {
+          if (err.has_value()) {
+            kLog.warn("ActivateConnection(vpn) failed name={} path={}: {}", vpnName, vpnPath, err->what());
+          } else {
+            kLog.info("activating vpn name={} active={}", vpnName, std::string(activePath));
+          }
+        });
+    return true;
+  } catch (const sdbus::Error& e) {
+    kLog.warn("ActivateConnection(vpn) failed name={} path={} err={}", vpn.name, vpn.path, e.what());
+    return false;
+  }
+}
+
+bool NetworkService::deactivateVpnConnection(const VpnConnectionInfo& vpn) {
+  if (vpn.path.empty()) {
+    return false;
+  }
+  try {
+    std::vector<sdbus::ObjectPath> activeConnections;
+    const sdbus::Variant activeVar = m_nm->getProperty("ActiveConnections").onInterface(k_nmInterface);
+    activeConnections = activeVar.get<std::vector<sdbus::ObjectPath>>();
+    for (const auto& activePath : activeConnections) {
+      try {
+        auto active = sdbus::createProxy(m_bus.connection(), k_nmBusName, activePath);
+        const auto profilePath =
+            getPropertyOr<sdbus::ObjectPath>(*active, k_nmActiveConnectionInterface, "Connection", sdbus::ObjectPath{});
+        const auto activeState = getPropertyOr<std::uint32_t>(*active, k_nmActiveConnectionInterface, "State", 0U);
+        if (profilePath != vpn.path || activeState != k_nmActiveConnectionStateActivated) {
+          continue;
+        }
+        // Async: DeactivateConnection on a system-owned profile is gated by polkit,
+        // and a sync call would freeze the main loop while the polkit agent prompts
+        // (or while polkit waits for an agent to register). Fire-and-forget here.
+        const std::string activePathStr = std::string(activePath);
+        const std::string vpnName = vpn.name;
+        m_nm->callMethodAsync("DeactivateConnection")
+            .onInterface(k_nmInterface)
+            .withArguments(sdbus::ObjectPath{activePathStr})
+            .uponReplyInvoke([activePathStr, vpnName](std::optional<sdbus::Error> err) {
+              if (err.has_value()) {
+                kLog.warn("DeactivateConnection(vpn) failed name={} active={}: {}", vpnName, activePathStr,
+                          err->what());
+              } else {
+                kLog.info("deactivated vpn name={} active={}", vpnName, activePathStr);
+              }
+            });
+        return true;
+      } catch (const sdbus::Error&) {
+      }
+    }
+  } catch (const sdbus::Error& e) {
+    kLog.warn("DeactivateConnection(vpn) lookup failed path={}: {}", vpn.path, e.what());
+    return false;
+  }
+  return false;
 }
 
 void NetworkService::setWirelessEnabled(bool enabled) {
@@ -515,6 +592,102 @@ void NetworkService::refreshSavedConnections() {
   std::ranges::sort(next);
   next.erase(std::unique(next.begin(), next.end()), next.end());
   m_savedSsids = std::move(next);
+}
+
+void NetworkService::refreshVpnConnections() {
+  std::vector<VpnConnectionInfo> next;
+  std::set<std::string> vpnProfilePaths;
+  try {
+    auto settings = sdbus::createProxy(m_bus.connection(), k_nmBusName, k_nmSettingsObjectPath);
+    std::vector<sdbus::ObjectPath> connectionPaths;
+    settings->callMethod("ListConnections").onInterface(k_nmSettingsInterface).storeResultsTo(connectionPaths);
+    for (const auto& connectionPath : connectionPaths) {
+      try {
+        auto connection = sdbus::createProxy(m_bus.connection(), k_nmBusName, connectionPath);
+        std::map<std::string, std::map<std::string, sdbus::Variant>> cfg;
+        connection->callMethod("GetSettings").onInterface(k_nmSettingsConnectionInterface).storeResultsTo(cfg);
+        auto connIt = cfg.find("connection");
+        if (connIt == cfg.end()) {
+          continue;
+        }
+        auto typeIt = connIt->second.find("type");
+        if (typeIt == connIt->second.end()) {
+          continue;
+        }
+        std::string type;
+        try {
+          type = typeIt->second.get<std::string>();
+        } catch (const sdbus::Error&) {
+          continue;
+        }
+
+        const bool hasVpnSection = cfg.contains("vpn");
+        const bool vpnLikeType = type == "vpn" || type == "wireguard";
+        if (!vpnLikeType && !hasVpnSection) {
+          continue;
+        }
+
+        VpnConnectionInfo info;
+        info.path = std::string(connectionPath);
+        auto idIt = connIt->second.find("id");
+        if (idIt != connIt->second.end()) {
+          try {
+            info.name = idIt->second.get<std::string>();
+          } catch (const sdbus::Error&) {
+          }
+        }
+        if (info.name.empty()) {
+          info.name = info.path;
+        }
+        info.active = false;
+        vpnProfilePaths.insert(info.path);
+        next.push_back(std::move(info));
+      } catch (const sdbus::Error&) {
+      }
+    }
+  } catch (const sdbus::Error& e) {
+    kLog.debug("refreshVpnConnections: {}", e.what());
+  }
+
+  if (!next.empty()) {
+    try {
+      std::vector<sdbus::ObjectPath> activeConnections;
+      const sdbus::Variant activeVar = m_nm->getProperty("ActiveConnections").onInterface(k_nmInterface);
+      activeConnections = activeVar.get<std::vector<sdbus::ObjectPath>>();
+      for (const auto& activePath : activeConnections) {
+        try {
+          auto active = sdbus::createProxy(m_bus.connection(), k_nmBusName, activePath);
+          const auto state = getPropertyOr<std::uint32_t>(*active, k_nmActiveConnectionInterface, "State", 0U);
+          if (state != k_nmActiveConnectionStateActivated) {
+            continue;
+          }
+          const auto profilePath = getPropertyOr<sdbus::ObjectPath>(*active, k_nmActiveConnectionInterface,
+                                                                    "Connection", sdbus::ObjectPath{});
+          const std::string profilePathStr = std::string(profilePath);
+          if (!vpnProfilePaths.contains(profilePathStr)) {
+            continue;
+          }
+          for (auto& vpn : next) {
+            if (vpn.path == profilePathStr) {
+              vpn.active = true;
+              break;
+            }
+          }
+        } catch (const sdbus::Error&) {
+        }
+      }
+    } catch (const sdbus::Error& e) {
+      kLog.debug("refreshVpnConnections active list: {}", e.what());
+    }
+  }
+
+  std::ranges::sort(next, [](const VpnConnectionInfo& a, const VpnConnectionInfo& b) {
+    if (a.active != b.active) {
+      return a.active;
+    }
+    return a.name < b.name;
+  });
+  m_vpnConnections = std::move(next);
 }
 
 void NetworkService::ensureWifiDeviceSubscribed(const std::string& devicePath) {
@@ -776,6 +949,27 @@ NetworkState NetworkService::readState() {
 
   next.wirelessEnabled = getPropertyOr<bool>(*m_nm, k_nmInterface, "WirelessEnabled", false);
   next.scanning = m_scanning;
+  next.vpnActive = false;
+
+  // Check primary connection: detect VPN type and connection state
+  if (m_activeConnection != nullptr) {
+    const auto type =
+        getPropertyOr<std::string>(*m_activeConnection, k_nmActiveConnectionInterface, "Type", std::string{});
+    next.vpnActive = (type == "vpn" || type == "wireguard");
+    const auto state = getPropertyOr<std::uint32_t>(*m_activeConnection, k_nmActiveConnectionInterface, "State", 0U);
+    next.connected = state == k_nmActiveConnectionStateActivated;
+  }
+
+  // Also check if any VPN profile is active (in case it's not the primary connection)
+  if (!next.vpnActive) {
+    for (const auto& vpn : m_vpnConnections) {
+      if (vpn.active) {
+        next.vpnActive = true;
+        next.connected = true;
+        break;
+      }
+    }
+  }
 
   if (m_activeDevice == nullptr) {
     return next;
@@ -787,11 +981,6 @@ NetworkState NetworkService::readState() {
   const auto ip4ConfigPath =
       getPropertyOr<sdbus::ObjectPath>(*m_activeDevice, k_nmDeviceInterface, "Ip4Config", sdbus::ObjectPath{});
   next.ipv4 = firstIpv4FromConfig(m_bus.connection(), ip4ConfigPath);
-
-  if (m_activeConnection != nullptr) {
-    const auto state = getPropertyOr<std::uint32_t>(*m_activeConnection, k_nmActiveConnectionInterface, "State", 0U);
-    next.connected = state == k_nmActiveConnectionStateActivated;
-  }
 
   if (deviceType == k_nmDeviceTypeWifi) {
     next.kind = NetworkConnectivity::Wireless;

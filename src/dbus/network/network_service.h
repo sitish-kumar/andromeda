@@ -25,6 +25,14 @@ struct AccessPointInfo {
   bool operator==(const AccessPointInfo&) const = default;
 };
 
+struct VpnConnectionInfo {
+  std::string path; // NM Settings.Connection object path
+  std::string name;
+  bool active = false;
+
+  bool operator==(const VpnConnectionInfo&) const = default;
+};
+
 enum class NetworkConnectivity {
   Unknown = 0,
   None = 1,
@@ -37,6 +45,7 @@ struct NetworkState {
   bool connected = false;
   bool wirelessEnabled = false;
   bool scanning = false;
+  bool vpnActive = false;          // true if a VPN is the active connection
   std::string ssid;                // Wi-Fi only
   std::string ipv4;                // dotted-quad of first address; empty if none
   std::string interfaceName;       // e.g. "wlan0", "eth0"
@@ -65,6 +74,7 @@ public:
 
   [[nodiscard]] const NetworkState& state() const noexcept { return m_state; }
   [[nodiscard]] const std::vector<AccessPointInfo>& accessPoints() const noexcept { return m_accessPoints; }
+  [[nodiscard]] const std::vector<VpnConnectionInfo>& vpnConnections() const noexcept { return m_vpnConnections; }
   [[nodiscard]] static const char* glyphForState(const NetworkState& state) noexcept;
   [[nodiscard]] static const char* wifiGlyphForState(const NetworkState& state) noexcept;
   [[nodiscard]] static const char* wifiGlyphForSignal(std::uint8_t signal) noexcept;
@@ -78,6 +88,10 @@ public:
   // have no saved secrets, the activation will fail asynchronously (slice 3
   // handles that via a SecretAgent).
   bool activateAccessPoint(const AccessPointInfo& ap);
+
+  // Activate / deactivate a saved VPN connection profile.
+  bool activateVpnConnection(const VpnConnectionInfo& vpn);
+  bool deactivateVpnConnection(const VpnConnectionInfo& vpn);
 
   // Enable / disable the Wi-Fi radio.
   void setWirelessEnabled(bool enabled);
@@ -94,6 +108,7 @@ public:
 private:
   void refreshAccessPoints();
   void refreshSavedConnections();
+  void refreshVpnConnections();
   void rebindActiveConnection();
   void rebindActiveDevice(const std::string& devicePath);
   void rebindActiveAccessPoint(const std::string& apPath);
@@ -113,6 +128,7 @@ private:
   std::string m_activeApPath;
   NetworkState m_state;
   std::vector<AccessPointInfo> m_accessPoints;
+  std::vector<VpnConnectionInfo> m_vpnConnections;
   std::vector<std::string> m_savedSsids;
   bool m_scanning = false;
   std::int64_t m_scanBaselineLastScan = 0;

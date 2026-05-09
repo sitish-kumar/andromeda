@@ -237,6 +237,9 @@
       "wifi": "Wi-Fi",
       "password-prompt": "Enter password",
       "password-prompt-for": "Enter password for {ssid}",
+      "vpn": "VPN",
+      "vpns": "VPNs",
+      "wireless": "Wireless",
       "unavailable-title": "NetworkManager unavailable",
       "unavailable-detail": "Install and enable NetworkManager to manage networks from here.",
       "no-networks": "No networks in range"
