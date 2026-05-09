@@ -350,10 +350,11 @@ bool NetworkService::deactivateVpnConnection(const VpnConnectionInfo& vpn) {
         const std::string vpn_name = vpn.name;
         m_nm->callMethodAsync("DeactivateConnection")
             .onInterface(k_nmInterface)
-            .withArguments(activePath)
+            .withArguments(sdbus::ObjectPath{activePath_str})
             .uponReplyInvoke([activePath_str, vpn_name](std::optional<sdbus::Error> err) {
               if (err.has_value()) {
-                kLog.warn("DeactivateConnection(vpn) failed name={} active={}: {}", vpn_name, activePath_str, err->what());
+                kLog.warn("DeactivateConnection(vpn) failed name={} active={}: {}", vpn_name, activePath_str,
+                          err->what());
               } else {
                 kLog.info("deactivated vpn name={} active={}", vpn_name, activePath_str);
               }
