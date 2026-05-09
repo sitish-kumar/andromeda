@@ -75,6 +75,36 @@ namespace {
     return DeviceBucket::Available;
   }
 
+  int signalPercentFromRssi(std::int16_t rssi) {
+    constexpr int kWeakRssi = -100;
+    constexpr int kStrongRssi = -40;
+    constexpr int kRange = kStrongRssi - kWeakRssi;
+    const int clamped = std::clamp(static_cast<int>(rssi), kWeakRssi, kStrongRssi);
+    return ((clamped - kWeakRssi) * 100 + kRange / 2) / kRange;
+  }
+
+  std::unique_ptr<Flex> makeMetricPill(const char* glyphName, std::string text, float scale) {
+    auto pill = std::make_unique<Flex>();
+    pill->setDirection(FlexDirection::Horizontal);
+    pill->setAlign(FlexAlign::Center);
+    pill->setGap(Style::spaceXs * 0.5f * scale);
+
+    auto glyph = std::make_unique<Glyph>();
+    glyph->setGlyph(glyphName);
+    glyph->setGlyphSize(Style::fontSizeCaption * scale);
+    glyph->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+    pill->addChild(std::move(glyph));
+
+    auto label = std::make_unique<Label>();
+    label->setText(std::move(text));
+    label->setCaptionStyle();
+    label->setFontSize(Style::fontSizeCaption * scale);
+    label->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+    pill->addChild(std::move(label));
+
+    return pill;
+  }
+
   class BluetoothDeviceRow : public Flex {
   public:
     BluetoothDeviceRow(BluetoothDeviceInfo device, BluetoothService* service, float scale)
@@ -103,20 +133,21 @@ namespace {
       m_title = alias.get();
       addChild(std::move(alias));
 
+      auto metrics = std::make_unique<Flex>();
+      metrics->setDirection(FlexDirection::Horizontal);
+      metrics->setAlign(FlexAlign::Center);
+      metrics->setGap(Style::spaceSm * scale);
+
       if (m_device.hasBattery) {
-        auto battery = std::make_unique<Label>();
-        battery->setText(std::to_string(static_cast<int>(m_device.batteryPercent)) + "%");
-        battery->setCaptionStyle();
-        battery->setFontSize(Style::fontSizeCaption * scale);
-        battery->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-        addChild(std::move(battery));
-      } else if (m_device.hasRssi && bucketFor(m_device) == DeviceBucket::Available) {
-        auto rssi = std::make_unique<Label>();
-        rssi->setText(std::to_string(static_cast<int>(m_device.rssi)) + " dBm");
-        rssi->setCaptionStyle();
-        rssi->setFontSize(Style::fontSizeCaption * scale);
-        rssi->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-        addChild(std::move(rssi));
+        metrics->addChild(
+            makeMetricPill("battery", std::to_string(static_cast<int>(m_device.batteryPercent)) + "%", scale));
+      }
+      if (m_device.hasRssi && bucketFor(m_device) == DeviceBucket::Available) {
+        metrics->addChild(
+            makeMetricPill("antenna-bars-5", std::to_string(signalPercentFromRssi(m_device.rssi)) + "%", scale));
+      }
+      if (!metrics->children().empty()) {
+        addChild(std::move(metrics));
       }
 
       if (m_device.paired) {
