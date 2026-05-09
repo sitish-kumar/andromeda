@@ -6,6 +6,7 @@
 #include <sdbus-c++/sdbus-c++.h>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 class SessionBus;
@@ -39,10 +40,15 @@ struct TrayItemInfo {
 struct TrayMenuEntry {
   std::int32_t id = 0;
   std::string label;
+  std::string iconName;
+  std::vector<std::uint8_t> iconData;
   bool enabled = true;
   bool visible = true;
   bool separator = false;
   bool hasSubmenu = false;
+  bool checkmark = false;
+  bool radio = false;
+  std::int32_t toggleState = -1;
 
   bool operator==(const TrayMenuEntry&) const = default;
 };
@@ -80,9 +86,13 @@ public:
 private:
   struct MenuCache {
     std::unique_ptr<sdbus::IProxy> proxy;
-    // Decoded children per parent-id. parentId=0 is the root menu.
-    std::unordered_map<std::int32_t, std::vector<TrayMenuEntry>> entriesByParent;
+    std::unordered_map<std::int32_t, TrayMenuEntry> entriesById;
+    // Decoded child ids per parent-id. parentId=0 is the root menu.
+    std::unordered_map<std::int32_t, std::vector<std::int32_t>> childrenByParent;
+    std::unordered_set<std::int32_t> loadedParents;
+    std::unordered_set<std::int32_t> loadingParents;
     std::uint32_t revision = 0;
+    std::uint64_t generation = 0;
     bool rootLoaded = false;
   };
 
@@ -99,7 +109,8 @@ private:
   void dropMenuCache(const std::string& itemId);
   bool fetchMenuProperties(const std::string& itemId, const std::vector<std::int32_t>& entryIds,
                            std::vector<TrayMenuEntry>& outEntries);
-  bool fetchMenuSubtree(const std::string& itemId, std::int32_t parentId);
+  void requestMenuSubtree(const std::string& itemId, std::int32_t parentId, bool force = false);
+  void requestMenuLayoutAfterAboutToShow(const std::string& itemId, std::int32_t parentId, std::uint64_t generation);
   void sendMenuEvent(const std::string& itemId, std::int32_t entryId, const std::string& eventName);
   [[nodiscard]] bool ensureItemProxy(const std::string& itemId);
   [[nodiscard]] bool hasServiceOwner(const std::string& serviceName) const;

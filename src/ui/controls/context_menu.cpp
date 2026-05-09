@@ -23,6 +23,18 @@ namespace {
 
   ColorSpec disabledItemColor() { return colorSpecFromRole(ColorRole::OnSurface, 0.55f); }
 
+  bool hasToggle(const ContextMenuControlEntry& entry) { return entry.checkmark || entry.radio; }
+
+  std::string toggleGlyphName(const ContextMenuControlEntry& entry) {
+    if (entry.toggleState == 2) {
+      return "minus";
+    }
+    if (entry.radio) {
+      return entry.toggleState == 1 ? "circle-dot" : "circle";
+    }
+    return entry.toggleState == 1 ? "check" : "";
+  }
+
 } // namespace
 
 ContextMenuControl::ContextMenuControl() : Node(NodeType::Base) {}
@@ -123,6 +135,7 @@ void ContextMenuControl::rebuildRows(Renderer& renderer) {
 
     Box* rowBgPtr = nullptr;
     Label* labelPtr = nullptr;
+    Glyph* togglePtr = nullptr;
     Glyph* chevronPtr = nullptr;
 
     const float rowCenterY = currentY + rowHeight * 0.5f;
@@ -148,14 +161,27 @@ void ContextMenuControl::rebuildRows(Renderer& renderer) {
       rowBg->setFrameSize(rowWidth, rowHeight);
       rowBgPtr = static_cast<Box*>(row->addChild(std::move(rowBg)));
 
+      const bool toggleVisible = hasToggle(entry);
+      const float toggleSlot = toggleVisible ? 22.0f : 0.0f;
+      const std::string toggleGlyph = toggleGlyphName(entry);
+      if (!toggleGlyph.empty()) {
+        auto glyph = std::make_unique<Glyph>();
+        glyph->setGlyph(toggleGlyph);
+        glyph->setGlyphSize(Style::fontSizeBody - 1.0f);
+        glyph->setColor(entry.enabled ? enabledItemColor() : disabledItemColor());
+        glyph->measure(renderer);
+        glyph->setPosition(8.0f, (rowHeight - glyph->height()) * 0.5f);
+        togglePtr = static_cast<Glyph*>(row->addChild(std::move(glyph)));
+      }
+
       std::string labelText = entry.label;
       auto label = std::make_unique<Label>();
       label->setText(labelText);
       label->setFontSize(Style::fontSizeBody);
       label->setColor(entry.enabled ? enabledItemColor() : disabledItemColor());
-      label->setMaxWidth(entry.hasSubmenu ? (rowWidth - 30.0f) : (rowWidth - 16.0f));
+      label->setMaxWidth(entry.hasSubmenu ? (rowWidth - 30.0f - toggleSlot) : (rowWidth - 16.0f - toggleSlot));
       label->measure(renderer);
-      label->setPosition(8.0f, (rowHeight - label->height()) * 0.5f);
+      label->setPosition(8.0f + toggleSlot, (rowHeight - label->height()) * 0.5f);
       labelPtr = static_cast<Label*>(row->addChild(std::move(label)));
 
       if (entry.hasSubmenu) {
@@ -188,13 +214,17 @@ void ContextMenuControl::rebuildRows(Renderer& renderer) {
     }
 
     if (rowBgPtr != nullptr && labelPtr != nullptr) {
-      const auto applyRowState = [rowBgPtr, labelPtr, chevronPtr, interactive, separator](bool highlighted) {
+      const auto applyRowState = [rowBgPtr, labelPtr, togglePtr, chevronPtr, interactive, separator](bool highlighted) {
         rowBgPtr->setFill(highlighted ? colorSpecFromRole(ColorRole::Hover) : clearColorSpec());
         if (separator) {
           labelPtr->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
         } else {
           labelPtr->setColor(highlighted ? colorSpecFromRole(ColorRole::OnHover)
                                          : (interactive ? enabledItemColor() : disabledItemColor()));
+        }
+        if (togglePtr != nullptr) {
+          togglePtr->setColor(highlighted ? colorSpecFromRole(ColorRole::OnHover)
+                                          : (interactive ? enabledItemColor() : disabledItemColor()));
         }
         if (chevronPtr != nullptr) {
           chevronPtr->setColor(highlighted ? colorSpecFromRole(ColorRole::OnHover)

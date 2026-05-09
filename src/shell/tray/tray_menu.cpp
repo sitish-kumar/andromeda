@@ -288,7 +288,16 @@ void TrayMenu::onTrayChanged() {
     close();
     return;
   }
+  resizeMainSurfaceToEntries();
   rebuildScenes();
+
+  if (m_pendingSubmenuParentEntryId != 0 && m_submenuInstance == nullptr) {
+    const auto parentId = m_pendingSubmenuParentEntryId;
+    const auto rowCenterY = m_pendingSubmenuRowCenterY;
+    m_pendingSubmenuParentEntryId = 0;
+    m_pendingSubmenuRowCenterY = 0.0f;
+    openSubmenu(parentId, rowCenterY);
+  }
 }
 
 void TrayMenu::toggleForItem(const std::string& itemId) {
@@ -515,6 +524,8 @@ void TrayMenu::refreshEntries() {
     m_entries.insert(m_entries.begin(), TrayMenuEntry{
                                             .id = kPinToggleEntryId,
                                             .label = i18n::tr(pinned ? "tray.menu.unpin" : "tray.menu.pin"),
+                                            .iconName = {},
+                                            .iconData = {},
                                             .enabled = true,
                                             .visible = true,
                                             .separator = false,
@@ -525,6 +536,8 @@ void TrayMenu::refreshEntries() {
     m_entries.push_back(TrayMenuEntry{
         .id = -1,
         .label = i18n::tr("tray.menu.empty"),
+        .iconName = {},
+        .iconData = {},
         .enabled = false,
         .visible = true,
         .separator = false,
@@ -561,6 +574,20 @@ void TrayMenu::scheduleEntryRetry(int attempt) {
     }
     kLog.debug("tray menu recovered (attempt {}) for id={}", attempt + 1, capturedItemId);
     m_entries = std::move(fresh);
+    if (!m_entries.empty() && trayDrawerEnabled(m_config)) {
+      const bool pinned = activeItemPinned();
+      m_entries.insert(m_entries.begin(), TrayMenuEntry{
+                                              .id = kPinToggleEntryId,
+                                              .label = i18n::tr(pinned ? "tray.menu.unpin" : "tray.menu.pin"),
+                                              .iconName = {},
+                                              .iconData = {},
+                                              .enabled = true,
+                                              .visible = true,
+                                              .separator = false,
+                                              .hasSubmenu = false,
+                                          });
+    }
+    resizeMainSurfaceToEntries();
     rebuildScenes();
   });
 }
@@ -575,6 +602,9 @@ uint32_t TrayMenu::submenuHeightPx() const {
         .enabled = entry.enabled,
         .separator = entry.separator,
         .hasSubmenu = entry.hasSubmenu,
+        .checkmark = entry.checkmark,
+        .radio = entry.radio,
+        .toggleState = entry.toggleState,
     });
   }
   return static_cast<uint32_t>(ContextMenuControl::preferredHeight(entries, visibleEntryLimit(entries.size())));
@@ -590,6 +620,9 @@ uint32_t TrayMenu::surfaceHeightPx() const {
         .enabled = entry.enabled,
         .separator = entry.separator,
         .hasSubmenu = entry.hasSubmenu,
+        .checkmark = entry.checkmark,
+        .radio = entry.radio,
+        .toggleState = entry.toggleState,
     });
   }
   return static_cast<uint32_t>(ContextMenuControl::preferredHeight(entries, visibleEntryLimit(entries.size())));
@@ -709,6 +742,26 @@ void TrayMenu::ensureSurface() {
   });
 }
 
+void TrayMenu::resizeMainSurfaceToEntries() {
+  if (m_instance == nullptr || m_instance->surface == nullptr) {
+    return;
+  }
+
+  const auto desiredWidth = static_cast<std::uint32_t>(kSurfaceWidth);
+  const auto desiredHeight = surfaceHeightPx();
+  if (desiredHeight == 0) {
+    return;
+  }
+  if (m_instance->surface->width() == desiredWidth && m_instance->surface->height() == desiredHeight) {
+    return;
+  }
+
+  closeSubmenu();
+  if (!m_instance->surface->resize(desiredWidth, desiredHeight)) {
+    m_instance->surface->requestLayout();
+  }
+}
+
 void TrayMenu::destroySurface() {
   if (m_instance != nullptr) {
     m_instance->inputDispatcher.setSceneRoot(nullptr);
@@ -769,6 +822,9 @@ void TrayMenu::buildScene(MenuInstance& inst, uint32_t width, uint32_t height) {
         .enabled = entry.enabled,
         .separator = entry.separator,
         .hasSubmenu = entry.hasSubmenu,
+        .checkmark = entry.checkmark,
+        .radio = entry.radio,
+        .toggleState = entry.toggleState,
     });
   }
 
@@ -910,6 +966,8 @@ void TrayMenu::closeSubmenu() {
   m_submenuInstance.reset();
   m_submenuEntries.clear();
   m_submenuParentEntryId = 0;
+  m_pendingSubmenuParentEntryId = 0;
+  m_pendingSubmenuRowCenterY = 0.0f;
 }
 
 void TrayMenu::openSubmenu(std::int32_t parentEntryId, float rowCenterY) {
@@ -921,8 +979,12 @@ void TrayMenu::openSubmenu(std::int32_t parentEntryId, float rowCenterY) {
 
   m_submenuEntries = m_tray->menuEntriesForParent(m_activeItemId, parentEntryId);
   if (m_submenuEntries.empty()) {
+    m_pendingSubmenuParentEntryId = parentEntryId;
+    m_pendingSubmenuRowCenterY = rowCenterY;
     return;
   }
+  m_pendingSubmenuParentEntryId = 0;
+  m_pendingSubmenuRowCenterY = 0.0f;
   m_submenuParentEntryId = parentEntryId;
   // Signal the server that this submenu is being opened. Matches the opened/closed
   // pairing we do for the root menu.
@@ -1028,6 +1090,9 @@ void TrayMenu::buildSubmenuScene(MenuInstance& inst, uint32_t width, uint32_t he
         .enabled = entry.enabled,
         .separator = entry.separator,
         .hasSubmenu = entry.hasSubmenu,
+        .checkmark = entry.checkmark,
+        .radio = entry.radio,
+        .toggleState = entry.toggleState,
     });
   }
 

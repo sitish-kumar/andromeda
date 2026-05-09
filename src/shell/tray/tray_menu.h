@@ -53,6 +53,7 @@ private:
   [[nodiscard]] uint32_t submenuHeightPx() const;
   [[nodiscard]] bool ownsSurface(wl_surface* surface) const;
   void ensureSurface();
+  void resizeMainSurfaceToEntries();
   void destroySurface();
   void rebuildScenes();
   void prepareMainMenuFrame(MenuInstance& inst, bool needsUpdate, bool needsLayout);
@@ -79,6 +80,8 @@ private:
 
   std::vector<TrayMenuEntry> m_submenuEntries;
   std::int32_t m_submenuParentEntryId = 0;
+  std::int32_t m_pendingSubmenuParentEntryId = 0;
+  float m_pendingSubmenuRowCenterY = 0.0f;
   std::unique_ptr<MenuInstance> m_submenuInstance;
 
   // Hyprland-only: keeps the popup surfaces in the focus whitelist so motion

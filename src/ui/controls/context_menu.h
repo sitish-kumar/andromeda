@@ -20,6 +20,9 @@ struct ContextMenuControlEntry {
   bool enabled = true;
   bool separator = false;
   bool hasSubmenu = false;
+  bool checkmark = false;
+  bool radio = false;
+  std::int32_t toggleState = -1;
 };
 
 class ContextMenuControl : public Node {

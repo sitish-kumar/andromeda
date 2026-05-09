@@ -5,9 +5,11 @@
 #include "dbus/session_bus.h"
 #include "util/string_utils.h"
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdint>
+#include <optional>
 #include <string_view>
 
 namespace {
@@ -124,43 +126,147 @@ namespace {
       sdbus::Struct<std::int32_t, std::map<std::string, sdbus::Variant>, std::vector<sdbus::Variant>>;
   using DbusMenuItemProperties = sdbus::Struct<std::int32_t, std::map<std::string, sdbus::Variant>>;
 
-  void applyMenuEntryProperties(TrayMenuEntry& out, const std::map<std::string, sdbus::Variant>& props) {
+  std::optional<std::string> stringFromVariant(const sdbus::Variant& value) {
+    try {
+      return value.get<std::string>();
+    } catch (const sdbus::Error&) {
+    }
+    return std::nullopt;
+  }
+
+  std::optional<bool> boolFromVariant(const sdbus::Variant& value) {
+    try {
+      return value.get<bool>();
+    } catch (const sdbus::Error&) {
+    }
+    return std::nullopt;
+  }
+
+  std::optional<std::int32_t> int32FromVariant(const sdbus::Variant& value) {
+    try {
+      return value.get<std::int32_t>();
+    } catch (const sdbus::Error&) {
+    }
+    try {
+      return static_cast<std::int32_t>(value.get<std::uint32_t>());
+    } catch (const sdbus::Error&) {
+    }
+    return std::nullopt;
+  }
+
+  std::vector<std::uint8_t> bytesFromVariant(const sdbus::Variant& value) {
+    try {
+      return value.get<std::vector<std::uint8_t>>();
+    } catch (const sdbus::Error&) {
+    }
+    return {};
+  }
+
+  void resetMenuEntryProperty(TrayMenuEntry& out, std::string_view property) {
+    if (property == "label") {
+      out.label.clear();
+    } else if (property == "icon-name") {
+      out.iconName.clear();
+    } else if (property == "icon-data") {
+      out.iconData.clear();
+    } else if (property == "enabled") {
+      out.enabled = true;
+    } else if (property == "visible") {
+      out.visible = true;
+    } else if (property == "type") {
+      out.separator = false;
+    } else if (property == "children-display") {
+      out.hasSubmenu = false;
+    } else if (property == "toggle-type") {
+      out.checkmark = false;
+      out.radio = false;
+    } else if (property == "toggle-state") {
+      out.toggleState = -1;
+    }
+  }
+
+  bool propertyRemoved(const std::vector<std::string>& removed, std::string_view property) {
+    return std::ranges::any_of(removed, [property](const std::string& value) { return value == property; });
+  }
+
+  void applyMenuEntryProperties(TrayMenuEntry& out, const std::map<std::string, sdbus::Variant>& props,
+                                bool resetMissing = false, const std::vector<std::string>& removed = {}) {
     if (const auto it = props.find("label"); it != props.end()) {
-      try {
-        out.label = stripMnemonicUnderscores(it->second.get<std::string>());
-      } catch (const sdbus::Error&) {
+      if (const auto value = stringFromVariant(it->second); value.has_value()) {
+        out.label = stripMnemonicUnderscores(*value);
       }
+    } else if (resetMissing || propertyRemoved(removed, "label")) {
+      resetMenuEntryProperty(out, "label");
     }
+
+    if (const auto it = props.find("icon-name"); it != props.end()) {
+      if (const auto value = stringFromVariant(it->second); value.has_value()) {
+        out.iconName = *value;
+      }
+    } else if (resetMissing || propertyRemoved(removed, "icon-name")) {
+      resetMenuEntryProperty(out, "icon-name");
+    }
+
+    if (const auto it = props.find("icon-data"); it != props.end()) {
+      out.iconData = bytesFromVariant(it->second);
+    } else if (resetMissing || propertyRemoved(removed, "icon-data")) {
+      resetMenuEntryProperty(out, "icon-data");
+    }
+
     if (const auto it = props.find("enabled"); it != props.end()) {
-      try {
-        out.enabled = it->second.get<bool>();
-      } catch (const sdbus::Error&) {
+      if (const auto value = boolFromVariant(it->second); value.has_value()) {
+        out.enabled = *value;
       }
+    } else if (resetMissing || propertyRemoved(removed, "enabled")) {
+      resetMenuEntryProperty(out, "enabled");
     }
+
     if (const auto it = props.find("visible"); it != props.end()) {
-      try {
-        out.visible = it->second.get<bool>();
-      } catch (const sdbus::Error&) {
+      if (const auto value = boolFromVariant(it->second); value.has_value()) {
+        out.visible = *value;
       }
+    } else if (resetMissing || propertyRemoved(removed, "visible")) {
+      resetMenuEntryProperty(out, "visible");
     }
+
     if (const auto it = props.find("type"); it != props.end()) {
-      try {
-        out.separator = (it->second.get<std::string>() == "separator");
-      } catch (const sdbus::Error&) {
+      if (const auto value = stringFromVariant(it->second); value.has_value()) {
+        out.separator = (*value == "separator");
       }
+    } else if (resetMissing || propertyRemoved(removed, "type")) {
+      resetMenuEntryProperty(out, "type");
     }
+
     if (const auto it = props.find("children-display"); it != props.end()) {
-      try {
-        out.hasSubmenu = (it->second.get<std::string>() == "submenu");
-      } catch (const sdbus::Error&) {
+      if (const auto value = stringFromVariant(it->second); value.has_value()) {
+        out.hasSubmenu = (*value == "submenu");
       }
+    } else if (resetMissing || propertyRemoved(removed, "children-display")) {
+      resetMenuEntryProperty(out, "children-display");
+    }
+
+    if (const auto it = props.find("toggle-type"); it != props.end()) {
+      if (const auto value = stringFromVariant(it->second); value.has_value()) {
+        out.checkmark = (*value == "checkmark");
+        out.radio = (*value == "radio");
+      }
+    } else if (resetMissing || propertyRemoved(removed, "toggle-type")) {
+      resetMenuEntryProperty(out, "toggle-type");
+    }
+
+    if (const auto it = props.find("toggle-state"); it != props.end()) {
+      if (const auto value = int32FromVariant(it->second); value.has_value()) {
+        out.toggleState = *value;
+      }
+    } else if (resetMissing || propertyRemoved(removed, "toggle-state")) {
+      resetMenuEntryProperty(out, "toggle-state");
     }
   }
 
   TrayMenuEntry decodeMenuEntry(const DbusMenuLayout& entryLayout) {
     TrayMenuEntry out;
     out.id = std::get<0>(entryLayout);
-    applyMenuEntryProperties(out, std::get<1>(entryLayout));
+    applyMenuEntryProperties(out, std::get<1>(entryLayout), true);
 
     return out;
   }
@@ -169,7 +275,8 @@ namespace {
     if (entry.id <= 0 || !entry.visible) {
       return false;
     }
-    if (entry.label.empty() && !entry.separator) {
+    if (entry.label.empty() && !entry.separator && !entry.hasSubmenu && entry.iconName.empty() &&
+        entry.iconData.empty()) {
       return false;
     }
     return true;
@@ -425,30 +532,51 @@ std::vector<TrayItemInfo> TrayService::items() const {
 
 namespace {
 
-  // Recursively decode a DbusMenuLayout into the cache. Each layout node contributes
-  // a `std::vector<TrayMenuEntry>` keyed by its id into entriesByParent. Invisible
-  // entries are skipped from display but we still recurse so their own children
-  // (if any) are reachable from the cache.
-  void ingestLayoutNode(const DbusMenuLayout& node,
-                        std::unordered_map<std::int32_t, std::vector<TrayMenuEntry>>& entriesByParent) {
+  // Recursively decode a DbusMenuLayout into retained item + child-id maps.
+  // Visibility is applied when entries are read for display, not while storing,
+  // so later ItemsPropertiesUpdated patches can reveal previously hidden rows.
+  void ingestLayoutNode(const DbusMenuLayout& node, std::unordered_map<std::int32_t, TrayMenuEntry>& entriesById,
+                        std::unordered_map<std::int32_t, std::vector<std::int32_t>>& childrenByParent) {
     const auto nodeId = std::get<0>(node);
     const auto& children = std::get<2>(node);
 
-    std::vector<TrayMenuEntry> entries;
-    entries.reserve(children.size());
+    std::vector<std::int32_t> childIds;
+    childIds.reserve(children.size());
     for (const auto& childValue : children) {
       try {
         const auto child = childValue.get<DbusMenuLayout>();
         auto entry = decodeMenuEntry(child);
-        ingestLayoutNode(child, entriesByParent);
-        if (!displayableMenuEntry(entry)) {
-          continue;
+        const auto entryId = entry.id;
+        if (entryId > 0) {
+          entriesById[entryId] = std::move(entry);
+          childIds.push_back(entryId);
         }
-        entries.push_back(std::move(entry));
+        ingestLayoutNode(child, entriesById, childrenByParent);
       } catch (const sdbus::Error&) {
       }
     }
-    entriesByParent[nodeId] = std::move(entries);
+    childrenByParent[nodeId] = std::move(childIds);
+  }
+
+  std::vector<TrayMenuEntry>
+  entriesForParent(const std::unordered_map<std::int32_t, TrayMenuEntry>& entriesById,
+                   const std::unordered_map<std::int32_t, std::vector<std::int32_t>>& childrenByParent,
+                   std::int32_t parentId) {
+    std::vector<TrayMenuEntry> out;
+    const auto childrenIt = childrenByParent.find(parentId);
+    if (childrenIt == childrenByParent.end()) {
+      return out;
+    }
+
+    out.reserve(childrenIt->second.size());
+    for (const auto childId : childrenIt->second) {
+      const auto entryIt = entriesById.find(childId);
+      if (entryIt == entriesById.end() || !displayableMenuEntry(entryIt->second)) {
+        continue;
+      }
+      out.push_back(entryIt->second);
+    }
+    return out;
   }
 
 } // namespace
@@ -463,10 +591,11 @@ bool TrayService::fetchMenuProperties(const std::string& itemId, const std::vect
   if (cacheIt == m_menuCache.end() || cacheIt->second.proxy == nullptr) {
     return false;
   }
+  auto& cache = cacheIt->second;
 
   try {
     std::vector<DbusMenuItemProperties> properties;
-    cacheIt->second.proxy->callMethod("GetGroupProperties")
+    cache.proxy->callMethod("GetGroupProperties")
         .onInterface(k_menu_interface)
         .withTimeout(std::chrono::milliseconds(1000))
         .withArguments(entryIds, std::vector<std::string>{})
@@ -484,8 +613,9 @@ bool TrayService::fetchMenuProperties(const std::string& itemId, const std::vect
       TrayMenuEntry entry;
       entry.id = entryId;
       if (const auto propsIt = propertiesById.find(entryId); propsIt != propertiesById.end()) {
-        applyMenuEntryProperties(entry, propsIt->second);
+        applyMenuEntryProperties(entry, propsIt->second, true);
       }
+      cache.entriesById[entryId] = entry;
       if (displayableMenuEntry(entry)) {
         outEntries.push_back(std::move(entry));
       }
@@ -497,62 +627,104 @@ bool TrayService::fetchMenuProperties(const std::string& itemId, const std::vect
   }
 }
 
-bool TrayService::fetchMenuSubtree(const std::string& itemId, std::int32_t parentId) {
+void TrayService::requestMenuSubtree(const std::string& itemId, std::int32_t parentId, bool force) {
   auto cacheIt = m_menuCache.find(itemId);
   if (cacheIt == m_menuCache.end() || cacheIt->second.proxy == nullptr) {
-    return false;
+    return;
   }
   auto& cache = cacheIt->second;
 
-  // AboutToShow lets the server populate or refresh this subtree. Failures are
-  // non-fatal — not every app implements it, and some Electron versions throw
-  // on it even when GetLayout would succeed.
+  if (!force && cache.loadedParents.contains(parentId)) {
+    return;
+  }
+  if (cache.loadingParents.contains(parentId)) {
+    return;
+  }
+
+  cache.loadingParents.insert(parentId);
+  const auto generation = cache.generation;
+
   try {
-    bool needsUpdate = false;
-    cache.proxy->callMethod("AboutToShow")
+    cache.proxy->callMethodAsync("AboutToShow")
         .onInterface(k_menu_interface)
         .withTimeout(std::chrono::milliseconds(500))
         .withArguments(parentId)
-        .storeResultsTo(needsUpdate);
-    (void)needsUpdate;
+        .uponReplyInvoke([this, itemId, parentId, generation](std::optional<sdbus::Error> error, bool /*needsUpdate*/) {
+          if (error.has_value()) {
+            kLog.debug("AboutToShow async failed id={} parentId={} err={}", itemId, parentId, error->what());
+          }
+          requestMenuLayoutAfterAboutToShow(itemId, parentId, generation);
+        });
   } catch (const sdbus::Error& e) {
-    kLog.debug("AboutToShow failed id={} parentId={} err={}", itemId, parentId, e.what());
+    cache.loadingParents.erase(parentId);
+    kLog.debug("AboutToShow async setup failed id={} parentId={} err={}", itemId, parentId, e.what());
+  }
+}
+
+void TrayService::requestMenuLayoutAfterAboutToShow(const std::string& itemId, std::int32_t parentId,
+                                                    std::uint64_t generation) {
+  auto cacheIt = m_menuCache.find(itemId);
+  if (cacheIt == m_menuCache.end() || cacheIt->second.proxy == nullptr) {
+    return;
+  }
+  auto& cache = cacheIt->second;
+  if (cache.generation != generation) {
+    return;
   }
 
   try {
-    std::uint32_t revision = 0;
-    DbusMenuLayout layout{};
-    // depth=-1 asks for the full subtree in one call so we don't round-trip
-    // per submenu, dbusmenu spec allows it.
-    cache.proxy->callMethod("GetLayout")
+    cache.proxy->callMethodAsync("GetLayout")
         .onInterface(k_menu_interface)
         .withTimeout(std::chrono::milliseconds(2000))
         .withArguments(parentId, static_cast<std::int32_t>(-1), std::vector<std::string>{})
-        .storeResultsTo(revision, layout);
+        .uponReplyInvoke([this, itemId, parentId, generation](std::optional<sdbus::Error> error, std::uint32_t revision,
+                                                              DbusMenuLayout layout) {
+          auto replyCacheIt = m_menuCache.find(itemId);
+          if (replyCacheIt == m_menuCache.end() || replyCacheIt->second.proxy == nullptr) {
+            return;
+          }
+          auto& replyCache = replyCacheIt->second;
+          if (replyCache.generation != generation) {
+            return;
+          }
 
-    cache.revision = revision;
-    ingestLayoutNode(layout, cache.entriesByParent);
+          const auto before = entriesForParent(replyCache.entriesById, replyCache.childrenByParent, parentId);
+          replyCache.loadingParents.erase(parentId);
 
-    auto entriesIt = cache.entriesByParent.find(parentId);
-    if (entriesIt == cache.entriesByParent.end() || entriesIt->second.empty()) {
-      const auto childIds = childIdsFromLayoutProperties(layout);
-      if (!childIds.empty()) {
-        std::vector<TrayMenuEntry> propertyEntries;
-        if (fetchMenuProperties(itemId, childIds, propertyEntries)) {
-          kLog.debug("dbusmenu children-property fallback id={} parentId={} children={} entries={}", itemId, parentId,
-                     childIds.size(), propertyEntries.size());
-          cache.entriesByParent[parentId] = std::move(propertyEntries);
-        }
-      }
-    }
+          if (error.has_value()) {
+            kLog.debug("GetLayout async failed id={} parentId={} err={}", itemId, parentId, error->what());
+            return;
+          }
 
-    if (parentId == 0) {
-      cache.rootLoaded = true;
-    }
-    return true;
+          replyCache.revision = revision;
+          ingestLayoutNode(layout, replyCache.entriesById, replyCache.childrenByParent);
+
+          auto after = entriesForParent(replyCache.entriesById, replyCache.childrenByParent, parentId);
+          if (after.empty()) {
+            const auto childIds = childIdsFromLayoutProperties(layout);
+            if (!childIds.empty()) {
+              replyCache.childrenByParent[parentId] = childIds;
+              std::vector<TrayMenuEntry> propertyEntries;
+              if (fetchMenuProperties(itemId, childIds, propertyEntries)) {
+                kLog.debug("dbusmenu children-property fallback id={} parentId={} children={} entries={}", itemId,
+                           parentId, childIds.size(), propertyEntries.size());
+                after = entriesForParent(replyCache.entriesById, replyCache.childrenByParent, parentId);
+              }
+            }
+          }
+
+          replyCache.loadedParents.insert(parentId);
+          if (parentId == 0) {
+            replyCache.rootLoaded = true;
+          }
+
+          if (before != after || !after.empty()) {
+            emitChanged();
+          }
+        });
   } catch (const sdbus::Error& e) {
-    kLog.debug("GetLayout failed id={} parentId={} err={}", itemId, parentId, e.what());
-    return false;
+    cache.loadingParents.erase(parentId);
+    kLog.debug("GetLayout async setup failed id={} parentId={} err={}", itemId, parentId, e.what());
   }
 }
 
@@ -579,22 +751,14 @@ std::vector<TrayMenuEntry> TrayService::menuEntries(const std::string& itemId) {
   }
 
   if (!cacheIt->second.rootLoaded) {
-    if (!fetchMenuSubtree(itemId, 0)) {
-      return {};
-    }
+    requestMenuSubtree(itemId, 0);
   }
 
-  auto rootIt = cacheIt->second.entriesByParent.find(0);
-  if (rootIt == cacheIt->second.entriesByParent.end() || rootIt->second.empty()) {
-    if (!fetchMenuSubtree(itemId, 0)) {
-      return {};
-    }
-    rootIt = cacheIt->second.entriesByParent.find(0);
-    if (rootIt == cacheIt->second.entriesByParent.end()) {
-      return {};
-    }
+  auto entries = entriesForParent(cacheIt->second.entriesById, cacheIt->second.childrenByParent, 0);
+  if (entries.empty() && !cacheIt->second.loadingParents.contains(0)) {
+    requestMenuSubtree(itemId, 0, true);
   }
-  return rootIt->second;
+  return entries;
 }
 
 std::vector<TrayMenuEntry> TrayService::menuEntriesForParent(const std::string& itemId, std::int32_t parentId) {
@@ -610,19 +774,18 @@ std::vector<TrayMenuEntry> TrayService::menuEntriesForParent(const std::string& 
   }
 
   auto& cache = cacheIt->second;
-  if (const auto it = cache.entriesByParent.find(parentId); it != cache.entriesByParent.end()) {
-    return it->second;
+  auto entries = entriesForParent(cache.entriesById, cache.childrenByParent, parentId);
+  if (!entries.empty()) {
+    return entries;
   }
 
   // Parent's children weren't populated by the recursive root fetch (some apps
-  // populate submenus lazily on AboutToShow). Fetch the subtree now.
-  if (!fetchMenuSubtree(itemId, parentId)) {
-    return {};
+  // populate submenus lazily on AboutToShow). Request the subtree and let the
+  // tray menu refresh when the async reply arrives.
+  if (!cache.loadingParents.contains(parentId)) {
+    requestMenuSubtree(itemId, parentId, true);
   }
-  if (const auto it = cache.entriesByParent.find(parentId); it != cache.entriesByParent.end()) {
-    return it->second;
-  }
-  return {};
+  return entries;
 }
 
 void TrayService::ensureMenuCache(const std::string& itemId, const std::string& busName, const std::string& menuPath) {
@@ -644,32 +807,66 @@ void TrayService::ensureMenuCache(const std::string& itemId, const std::string& 
         .onInterface(k_menu_interface)
         .call([this, itemId](std::uint32_t revision, std::int32_t parent) {
           if (auto it = m_menuCache.find(itemId); it != m_menuCache.end()) {
-            it->second.entriesByParent.clear();
+            it->second.entriesById.clear();
+            it->second.childrenByParent.clear();
+            it->second.loadedParents.clear();
+            it->second.loadingParents.clear();
             it->second.rootLoaded = false;
             it->second.revision = revision;
+            ++it->second.generation;
           }
           kLog.debug("LayoutUpdated id={} rev={} parent={}", itemId, revision, parent);
           emitChanged();
         });
 
     // ItemsPropertiesUpdated(updated, removed): fine-grained property changes.
-    // We invalidate wholesale rather than trying to patch individual entries —
-    // the cost is one extra GetLayout on next open, and it keeps the code path
-    // simple and correct. Signature matches the dbusmenu spec (a(ia{sv}) + a(ias)).
+    // Patch retained rows in place. This keeps checked/radio/visible state in
+    // sync without forcing another GetLayout round-trip for every state change.
+    // Signature matches the dbusmenu spec (a(ia{sv}) + a(ias)).
     using PropertiesUpdate = std::vector<sdbus::Struct<std::int32_t, std::map<std::string, sdbus::Variant>>>;
     using PropertiesRemoved = std::vector<sdbus::Struct<std::int32_t, std::vector<std::string>>>;
     proxy->uponSignal("ItemsPropertiesUpdated")
         .onInterface(k_menu_interface)
-        .call([this, itemId](const PropertiesUpdate& /*updated*/, const PropertiesRemoved& /*removed*/) {
-          if (auto it = m_menuCache.find(itemId); it != m_menuCache.end()) {
-            it->second.entriesByParent.clear();
-            it->second.rootLoaded = false;
+        .call([this, itemId](const PropertiesUpdate& updated, const PropertiesRemoved& removed) {
+          auto it = m_menuCache.find(itemId);
+          if (it == m_menuCache.end()) {
+            return;
           }
-          emitChanged();
+
+          bool changed = false;
+          for (const auto& itemProperties : updated) {
+            const auto entryId = std::get<0>(itemProperties);
+            if (entryId <= 0) {
+              continue;
+            }
+            auto& entry = it->second.entriesById[entryId];
+            if (entry.id == 0) {
+              entry.id = entryId;
+            }
+            const auto before = entry;
+            applyMenuEntryProperties(entry, std::get<1>(itemProperties), false);
+            changed = changed || before != entry;
+          }
+
+          for (const auto& removedProperties : removed) {
+            const auto entryId = std::get<0>(removedProperties);
+            auto entryIt = it->second.entriesById.find(entryId);
+            if (entryIt == it->second.entriesById.end()) {
+              continue;
+            }
+            const auto before = entryIt->second;
+            applyMenuEntryProperties(entryIt->second, {}, false, std::get<1>(removedProperties));
+            changed = changed || before != entryIt->second;
+          }
+
+          if (changed) {
+            emitChanged();
+          }
         });
 
     MenuCache cache;
     cache.proxy = std::move(proxy);
+    cache.generation = 1;
     m_menuCache[itemId] = std::move(cache);
     kLog.debug("menuCache: persistent proxy + signals for id={}", itemId);
   } catch (const sdbus::Error& e) {

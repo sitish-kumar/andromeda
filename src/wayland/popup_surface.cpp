@@ -25,6 +25,26 @@ namespace {
       .repositioned = &PopupSurface::handlePopupRepositioned,
   };
 
+  xdg_positioner* createPositioner(xdg_wm_base* wmBase, const PopupSurfaceConfig& config) {
+    if (wmBase == nullptr) {
+      return nullptr;
+    }
+
+    xdg_positioner* positioner = xdg_wm_base_create_positioner(wmBase);
+    if (positioner == nullptr) {
+      return nullptr;
+    }
+
+    xdg_positioner_set_size(positioner, static_cast<std::int32_t>(config.width),
+                            static_cast<std::int32_t>(config.height));
+    xdg_positioner_set_anchor_rect(positioner, config.anchorX, config.anchorY, config.anchorWidth, config.anchorHeight);
+    xdg_positioner_set_anchor(positioner, config.anchor);
+    xdg_positioner_set_gravity(positioner, config.gravity);
+    xdg_positioner_set_constraint_adjustment(positioner, config.constraintAdjustment);
+    xdg_positioner_set_offset(positioner, config.offsetX, config.offsetY);
+    return positioner;
+  }
+
 } // namespace
 
 PopupSurface::PopupSurface(WaylandConnection& connection) : Surface(connection) {}
@@ -99,21 +119,12 @@ bool PopupSurface::initialize(zwlr_layer_surface_v1* parentLayerSurface, wl_outp
   }
   xdg_surface_add_listener(m_xdgSurface, &kXdgSurfaceListener, this);
 
-  xdg_positioner* positioner = xdg_wm_base_create_positioner(m_connection.xdgWmBase());
+  xdg_positioner* positioner = createPositioner(m_connection.xdgWmBase(), m_config);
   if (positioner == nullptr) {
     destroyRoleObjects();
     destroySurface();
     return false;
   }
-
-  xdg_positioner_set_size(positioner, static_cast<std::int32_t>(m_config.width),
-                          static_cast<std::int32_t>(m_config.height));
-  xdg_positioner_set_anchor_rect(positioner, m_config.anchorX, m_config.anchorY, m_config.anchorWidth,
-                                 m_config.anchorHeight);
-  xdg_positioner_set_anchor(positioner, m_config.anchor);
-  xdg_positioner_set_gravity(positioner, m_config.gravity);
-  xdg_positioner_set_constraint_adjustment(positioner, m_config.constraintAdjustment);
-  xdg_positioner_set_offset(positioner, m_config.offsetX, m_config.offsetY);
 
   m_popup = xdg_surface_get_popup(m_xdgSurface, nullptr, positioner);
   xdg_positioner_destroy(positioner);
@@ -145,6 +156,41 @@ bool PopupSurface::initialize(zwlr_layer_surface_v1* parentLayerSurface, wl_outp
 }
 
 void PopupSurface::setDismissedCallback(std::function<void()> callback) { m_dismissedCallback = std::move(callback); }
+
+bool PopupSurface::resize(std::uint32_t width, std::uint32_t height) {
+  if (m_surface == nullptr || m_popup == nullptr) {
+    return false;
+  }
+
+  width = std::max(width, 1u);
+  height = std::max(height, 1u);
+  if (m_config.width == width && m_config.height == height && Surface::width() == width &&
+      Surface::height() == height) {
+    return true;
+  }
+
+  m_config.width = width;
+  m_config.height = height;
+  m_pendingWidth = width;
+  m_pendingHeight = height;
+
+  // Update our render target immediately so async menu hydration does not leave
+  // the next frame clipped to the placeholder popup size while waiting for the
+  // compositor's reposition configure.
+  Surface::onConfigure(width, height);
+
+  if (xdg_popup_get_version(m_popup) >= XDG_POPUP_REPOSITION_SINCE_VERSION) {
+    xdg_positioner* positioner = createPositioner(m_connection.xdgWmBase(), m_config);
+    if (positioner != nullptr) {
+      xdg_popup_reposition(m_popup, positioner, ++m_repositionToken);
+      xdg_positioner_destroy(positioner);
+    }
+  }
+
+  wl_surface_commit(m_surface);
+  wl_display_flush(m_connection.display());
+  return true;
+}
 
 void PopupSurface::handleXdgSurfaceConfigure(void* data, xdg_surface* surface, std::uint32_t serial) {
   auto* self = static_cast<PopupSurface*>(data);
@@ -211,21 +257,12 @@ bool PopupSurface::initializeAsChild(xdg_surface* parentXdgSurface, wl_output* o
   }
   xdg_surface_add_listener(m_xdgSurface, &kXdgSurfaceListener, this);
 
-  xdg_positioner* positioner = xdg_wm_base_create_positioner(m_connection.xdgWmBase());
+  xdg_positioner* positioner = createPositioner(m_connection.xdgWmBase(), m_config);
   if (positioner == nullptr) {
     destroyRoleObjects();
     destroySurface();
     return false;
   }
-
-  xdg_positioner_set_size(positioner, static_cast<std::int32_t>(m_config.width),
-                          static_cast<std::int32_t>(m_config.height));
-  xdg_positioner_set_anchor_rect(positioner, m_config.anchorX, m_config.anchorY, m_config.anchorWidth,
-                                 m_config.anchorHeight);
-  xdg_positioner_set_anchor(positioner, m_config.anchor);
-  xdg_positioner_set_gravity(positioner, m_config.gravity);
-  xdg_positioner_set_constraint_adjustment(positioner, m_config.constraintAdjustment);
-  xdg_positioner_set_offset(positioner, m_config.offsetX, m_config.offsetY);
 
   // popup-of-popup: pass the parent xdg_surface directly
   m_popup = xdg_surface_get_popup(m_xdgSurface, parentXdgSurface, positioner);
