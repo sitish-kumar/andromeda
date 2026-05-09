@@ -1,14 +1,10 @@
 #include "system/dependency_service.h"
 
-#include "core/log.h"
 #include "core/process.h"
 
 #include <array>
-#include <string>
 
 namespace {
-
-  constexpr Logger kLog("dependencies");
 
   // Optional CLI tools the shell knows about. Adding a new tracked tool is one line.
   constexpr std::array<const char*, 1> kTrackedTools = {
@@ -27,19 +23,8 @@ bool DependencyService::has(std::string_view name) const {
 void DependencyService::rescan() {
   m_present.clear();
 
-  std::string missing;
   for (const char* name : kTrackedTools) {
     const bool present = process::commandExists(name);
     m_present.emplace(name, present);
-    if (!present) {
-      if (!missing.empty()) {
-        missing += ", ";
-      }
-      missing += name;
-    }
-  }
-
-  if (!missing.empty()) {
-    kLog.info("optional CLI tools not found: {}", missing);
   }
 }
