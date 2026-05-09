@@ -20,6 +20,7 @@ NotificationWidget::NotificationWidget(NotificationManager* manager, wl_output* 
 
 void NotificationWidget::create() {
   auto area = std::make_unique<InputArea>();
+  area->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
   area->setOnClick([this](const InputArea::PointerData& data) {
     if (data.button == BTN_RIGHT) {
       if (m_manager != nullptr) {

@@ -162,7 +162,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
   auto createTaskTile = [&](const TaskModel& task) {
     auto area = std::make_unique<InputArea>();
     area->setFrameSize(tileSize, tileSize);
-    area->setAcceptedButtons(BTN_LEFT | BTN_RIGHT);
+    area->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
     area->setOnAxisHandler(workspaceAxisHandler);
 
     const WorkspaceModel* taskWorkspace = nullptr;
@@ -276,7 +276,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
         auto switcher = std::make_unique<InputArea>();
         switcher->setFrameSize(groupWidth, groupHeight);
         switcher->setPosition(0.0f, 0.0f);
-        switcher->setAcceptedButtons(BTN_LEFT);
+        switcher->setAcceptedButtons(InputArea::buttonMask(BTN_LEFT));
         switcher->setOnAxisHandler(workspaceAxisHandler);
         auto wsCopy = ws.workspace;
         switcher->setOnClick([this, wsCopy](const InputArea::PointerData& data) {
@@ -303,7 +303,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       auto badgeHit = std::make_unique<InputArea>();
       badgeHit->setFrameSize(badgeWidth, badgeBase);
       badgeHit->setPosition(badgeLeft, badgeTop);
-      badgeHit->setAcceptedButtons(BTN_LEFT);
+      badgeHit->setAcceptedButtons(InputArea::buttonMask(BTN_LEFT));
       badgeHit->setOnAxisHandler(workspaceAxisHandler);
       auto wsForBadge = ws.workspace;
       badgeHit->setOnClick([this, wsForBadge](const InputArea::PointerData& data) {

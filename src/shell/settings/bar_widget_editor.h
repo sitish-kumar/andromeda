@@ -30,6 +30,7 @@ namespace settings {
 
     std::function<void()> requestRebuild;
     std::function<void()> resetContentScroll;
+    std::function<void(Node*)> setScrollTarget;
     std::function<void(InputArea*)> focusArea;
     std::function<void(const std::vector<std::string>&, Button*)> openWidgetAddPopup;
     std::function<void(std::vector<std::string>, ConfigOverrideValue)> setOverride;

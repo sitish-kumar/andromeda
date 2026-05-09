@@ -1234,6 +1234,7 @@ namespace settings {
         .creatingWidgetType = ctx.creatingWidgetType,
         .requestRebuild = ctx.requestRebuild,
         .resetContentScroll = ctx.resetContentScroll,
+        .setScrollTarget = ctx.setScrollTarget,
         .focusArea = ctx.focusArea,
         .openWidgetAddPopup = ctx.openBarWidgetAddPopup,
         .setOverride = ctx.setOverride,

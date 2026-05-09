@@ -588,6 +588,11 @@ namespace settings {
                                 tr("settings.schema.shell.password-style.description"), {"shell", "password_style"},
                                 asSegmented(enumSelect(kPasswordMaskStyles, cfg.shell.passwordMaskStyle)),
                                 "polkit lock mask"));
+    entries.push_back(makeEntry(
+        "shell", "behavior", tr("settings.schema.shell.middle-click-opens-widget-settings.label"),
+        tr("settings.schema.shell.middle-click-opens-widget-settings.description"),
+        {"shell", "middle_click_opens_widget_settings"}, ToggleSetting{cfg.shell.middleClickOpensWidgetSettings},
+        "bar widget settings middle click configure"));
     entries.push_back(makeEntry("shell", "location", tr("settings.schema.shell.show-location.label"),
                                 tr("settings.schema.shell.show-location.description"), {"shell", "show_location"},
                                 ToggleSetting{cfg.shell.showLocation}, "weather"));

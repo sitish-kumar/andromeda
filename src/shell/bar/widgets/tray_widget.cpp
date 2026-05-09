@@ -616,6 +616,7 @@ void TrayWidget::rebuild(Renderer& renderer) {
     area->setSize(itemSize, itemSize);
     iconNode->setPosition(std::round((itemSize - iconW) * 0.5f), std::round((itemSize - iconH) * 0.5f));
     auto itemId = item.id;
+    area->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
     area->setOnClick([this, itemId](const InputArea::PointerData& data) {
       if (m_tray == nullptr) {
         return;
@@ -627,8 +628,6 @@ void TrayWidget::rebuild(Renderer& renderer) {
         }
       } else if (data.button == BTN_RIGHT) {
         m_tray->requestMenuToggle(itemId);
-      } else if (data.button == BTN_MIDDLE) {
-        (void)m_tray->openContextMenu(itemId);
       }
     });
     area->addChild(std::move(iconNode));

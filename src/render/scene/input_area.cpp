@@ -2,6 +2,13 @@
 
 #include "cursor-shape-v1-client-protocol.h"
 
+namespace {
+
+  constexpr std::uint32_t kMouseButtonBase = BTN_MOUSE;
+  constexpr std::uint32_t kMaxTrackedMouseButtons = 32;
+
+} // namespace
+
 InputArea::InputArea() : Node(NodeType::Base) {}
 
 InputArea::~InputArea() {
@@ -11,6 +18,25 @@ InputArea::~InputArea() {
 }
 
 void InputArea::setDestroyCallback(DestroyCallback callback) { m_destroyCallback = std::move(callback); }
+
+std::uint32_t InputArea::buttonMask(std::uint32_t button) noexcept {
+  if (button < kMouseButtonBase) {
+    return 0;
+  }
+  const std::uint32_t index = button - kMouseButtonBase;
+  if (index >= kMaxTrackedMouseButtons) {
+    return 0;
+  }
+  return 1u << index;
+}
+
+std::uint32_t InputArea::buttonMask(std::initializer_list<std::uint32_t> buttons) noexcept {
+  std::uint32_t mask = 0;
+  for (const auto button : buttons) {
+    mask |= buttonMask(button);
+  }
+  return mask;
+}
 
 void InputArea::setOnEnter(PointerCallback callback) { m_onEnter = std::move(callback); }
 void InputArea::setOnLeave(VoidCallback callback) { m_onLeave = std::move(callback); }
@@ -32,6 +58,9 @@ void InputArea::setOnClick(PointerCallback callback) {
 
 void InputArea::setCursorShape(std::uint32_t shape) { m_cursorShape = shape; }
 void InputArea::setAcceptedButtons(std::uint32_t mask) { m_acceptedButtons = mask; }
+bool InputArea::acceptsButton(std::uint32_t button) const noexcept {
+  return (m_acceptedButtons & buttonMask(button)) != 0;
+}
 void InputArea::setPropagateEvents(bool propagate) { m_propagateEvents = propagate; }
 void InputArea::setEnabled(bool enabled) { m_enabled = enabled; }
 void InputArea::setFocusable(bool focusable) { m_focusable = focusable; }

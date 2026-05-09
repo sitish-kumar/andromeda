@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <initializer_list>
 #include <linux/input-event-codes.h>
 
 class InputArea : public Node {
@@ -45,6 +46,9 @@ public:
   InputArea();
   ~InputArea() override;
 
+  [[nodiscard]] static std::uint32_t buttonMask(std::uint32_t button) noexcept;
+  [[nodiscard]] static std::uint32_t buttonMask(std::initializer_list<std::uint32_t> buttons) noexcept;
+
   // InputArea is a transparent hit-test wrapper with no layout semantics of its
   // own; its internal layout hook forwards to visible children so callers can
   // use it as a clickable container without manually re-laying children.
@@ -73,6 +77,7 @@ public:
 
   void setAcceptedButtons(std::uint32_t mask);
   [[nodiscard]] std::uint32_t acceptedButtons() const noexcept { return m_acceptedButtons; }
+  [[nodiscard]] bool acceptsButton(std::uint32_t button) const noexcept;
 
   void setPropagateEvents(bool propagate);
   [[nodiscard]] bool propagateEvents() const noexcept { return m_propagateEvents; }
@@ -114,7 +119,7 @@ private:
   VoidCallback m_onFocusLoss;
 
   std::uint32_t m_cursorShape = 0;
-  std::uint32_t m_acceptedButtons = BTN_LEFT;
+  std::uint32_t m_acceptedButtons = buttonMask(BTN_LEFT);
   bool m_propagateEvents = false;
   bool m_enabled = true;
   bool m_hovered = false;

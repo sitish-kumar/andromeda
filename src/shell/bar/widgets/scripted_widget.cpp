@@ -61,7 +61,7 @@ void ScriptedWidget::create() {
   m_host = std::make_unique<LuauHost>();
 
   auto area = std::make_unique<InputArea>();
-  area->setAcceptedButtons(BTN_LEFT | BTN_RIGHT | BTN_MIDDLE);
+  area->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT, BTN_MIDDLE}));
   area->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
   area->setOnClick([this](const InputArea::PointerData& data) {
     if (!m_host)

@@ -16,7 +16,7 @@
 
 WallpaperTile::WallpaperTile(float cellWidth, float cellHeight, float contentScale)
     : m_cellWidth(cellWidth), m_cellHeight(cellHeight), m_contentScale(contentScale) {
-  setAcceptedButtons(BTN_LEFT);
+  setAcceptedButtons(InputArea::buttonMask(BTN_LEFT));
   setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
   setOnClick([this](const InputArea::PointerData&) {
     if (m_hasEntry && m_onClick) {

@@ -377,6 +377,7 @@ struct ShellConfig {
   AnimationConfig animation;
   std::string avatarPath;
   bool settingsShowAdvanced = false;
+  bool middleClickOpensWidgetSettings = true;
   bool showLocation = true;
   ClipboardAutoPasteMode clipboardAutoPaste = ClipboardAutoPasteMode::Auto;
   ShadowConfig shadow;

@@ -25,7 +25,7 @@ NightLightWidget::NightLightWidget(NightLightManager* nightLight) : m_nightLight
 
 void NightLightWidget::create() {
   auto area = std::make_unique<InputArea>();
-  area->setAcceptedButtons(BTN_LEFT | BTN_RIGHT);
+  area->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
   area->setOnClick([this](const InputArea::PointerData& data) {
     if (m_nightLight == nullptr) {
       return;

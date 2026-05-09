@@ -7,7 +7,9 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string>
 #include <string_view>
+#include <utility>
 
 class AnimationManager;
 class Box;
@@ -54,6 +56,8 @@ public:
   void setPanelToggleCallback(PanelToggleCallback callback);
   void setContentScale(float scale) noexcept { m_contentScale = scale; }
   [[nodiscard]] float contentScale() const noexcept { return m_contentScale; }
+  void setConfigName(std::string name) { m_configName = std::move(name); }
+  [[nodiscard]] std::string_view configName() const noexcept { return m_configName; }
   void setAnchor(bool anchor) noexcept { m_anchor = anchor; }
   [[nodiscard]] bool isAnchor() const noexcept { return m_anchor; }
 
@@ -86,6 +90,7 @@ protected:
   virtual void doUpdate(Renderer& renderer) { (void)renderer; }
 
   float m_contentScale = 1.0f;
+  std::string m_configName;
   bool m_anchor = false;
   AnimationManager* m_animations = nullptr;
   UpdateCallback m_updateCallback;

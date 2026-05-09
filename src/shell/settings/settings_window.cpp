@@ -254,6 +254,26 @@ void SettingsWindow::open() {
   m_lastSceneHeight = 0;
 }
 
+void SettingsWindow::openToBarWidget(std::string barName, std::string widgetName) {
+  clearTransientSettingsState();
+  clearStatusMessage();
+  m_searchQuery.clear();
+  m_selectedSection = "bar";
+  m_selectedBarName = std::move(barName);
+  m_selectedMonitorOverride.clear();
+  m_editingWidgetName = std::move(widgetName);
+  m_contentScrollState.offset = 0.0f;
+  m_scrollToPendingContentTarget = true;
+  m_pendingContentScrollTarget = nullptr;
+  m_sidebarScrollState.offset = 0.0f;
+
+  const bool wasOpen = isOpen();
+  open();
+  if (wasOpen && isOpen()) {
+    requestSceneRebuild();
+  }
+}
+
 void SettingsWindow::close() {
   if (!isOpen()) {
     return;
@@ -268,6 +288,7 @@ void SettingsWindow::destroyWindow() {
   }
   m_mainContainer = nullptr;
   m_contentContainer = nullptr;
+  m_contentScrollView = nullptr;
   m_actionsMenuButton = nullptr;
   if (m_actionsMenuPopup != nullptr) {
     m_actionsMenuPopup->close();
@@ -287,6 +308,8 @@ void SettingsWindow::destroyWindow() {
   m_rebuildRequested = false;
   m_contentRebuildRequested = false;
   m_focusSearchOnRebuild = false;
+  m_scrollToPendingContentTarget = false;
+  m_pendingContentScrollTarget = nullptr;
   m_statusMessage.clear();
   m_statusIsError = false;
   m_creatingBarName.clear();
@@ -347,6 +370,7 @@ void SettingsWindow::prepareFrame(bool /*needsUpdate*/, bool needsLayout) {
       m_contentRebuildRequested = false;
     }
     m_sceneRoot->layout(*m_renderContext);
+    applyPendingContentScrollTarget(Style::spaceMd * uiScale());
     m_lastSceneWidth = width;
     m_lastSceneHeight = height;
   }
@@ -375,6 +399,57 @@ void SettingsWindow::requestContentRebuild() {
     }
     m_surface->requestLayout();
   });
+}
+
+void SettingsWindow::applyPendingContentScrollTarget(float margin) {
+  if (!m_scrollToPendingContentTarget) {
+    return;
+  }
+
+  auto clearPending = [this]() {
+    m_scrollToPendingContentTarget = false;
+    m_pendingContentScrollTarget = nullptr;
+  };
+
+  if (m_contentScrollView == nullptr || m_contentScrollView->content() == nullptr ||
+      m_pendingContentScrollTarget == nullptr) {
+    clearPending();
+    return;
+  }
+
+  const float viewportHeight =
+      std::max(0.0f, m_contentScrollView->height() - m_contentScrollView->viewportPaddingV() * 2.0f);
+  if (viewportHeight <= 0.0f) {
+    clearPending();
+    return;
+  }
+
+  float targetX = 0.0f;
+  float targetY = 0.0f;
+  float contentX = 0.0f;
+  float contentY = 0.0f;
+  Node::absolutePosition(m_pendingContentScrollTarget, targetX, targetY);
+  Node::absolutePosition(m_contentScrollView->content(), contentX, contentY);
+  (void)targetX;
+  (void)contentX;
+
+  const float targetTop = std::max(0.0f, targetY - contentY - margin);
+  const float targetBottom = targetY - contentY + m_pendingContentScrollTarget->height() + margin;
+  const float currentTop = m_contentScrollView->scrollOffset();
+  const float currentBottom = currentTop + viewportHeight;
+
+  float desiredOffset = currentTop;
+  if (targetBottom - targetTop >= viewportHeight) {
+    desiredOffset = targetTop;
+  } else if (targetTop < currentTop) {
+    desiredOffset = targetTop;
+  } else if (targetBottom > currentBottom) {
+    desiredOffset = targetBottom - viewportHeight;
+  }
+
+  m_contentScrollView->setScrollOffset(desiredOffset);
+  m_contentScrollState.offset = m_contentScrollView->scrollOffset();
+  clearPending();
 }
 
 void SettingsWindow::clearStatusMessage() {
@@ -945,6 +1020,7 @@ void SettingsWindow::rebuildSettingsContent() {
     return;
   }
 
+  m_pendingContentScrollTarget = nullptr;
   while (!m_contentContainer->children().empty()) {
     m_contentContainer->removeChild(m_contentContainer->children().back().get());
   }
@@ -1030,6 +1106,7 @@ void SettingsWindow::rebuildSettingsContent() {
           .requestRebuild = requestRebuild,
           .requestContentRebuild = requestContent,
           .resetContentScroll = [this]() { m_contentScrollState.offset = 0.0f; },
+          .setScrollTarget = [this](Node* target) { m_pendingContentScrollTarget = target; },
           .focusArea = [this](InputArea* area) { m_inputDispatcher.setFocus(area); },
           .openBarWidgetAddPopup = [this](const std::vector<std::string>& lanePath,
                                           Button* anchorButton) { openBarWidgetAddPopup(lanePath, anchorButton); },
@@ -1050,6 +1127,7 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
   const float h = static_cast<float>(height);
   const float scale = uiScale();
   m_actionsMenuButton = nullptr;
+  m_contentScrollView = nullptr;
   const Config fallbackCfg{};
   const Config& cfg = m_config != nullptr ? m_config->config() : fallbackCfg;
   const auto availableBars = settings::barNames(cfg);
@@ -1396,6 +1474,7 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
   scroll->setViewportPaddingV(Style::spaceSm * scale);
   scroll->clearFill();
   scroll->clearBorder();
+  m_contentScrollView = scroll.get();
   auto* content = scroll->content();
   m_contentContainer = content;
   content->setDirection(FlexDirection::Vertical);
@@ -1415,6 +1494,7 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
 
   main->setSize(w, h);
   main->layout(*m_renderContext);
+  applyPendingContentScrollTarget(Style::spaceMd * scale);
   m_mainContainer = static_cast<Flex*>(m_sceneRoot->addChild(std::move(main)));
 
   m_inputDispatcher.setSceneRoot(m_sceneRoot.get());

@@ -36,6 +36,7 @@ public:
                   DependencyService* dependencies);
 
   void open();
+  void openToBarWidget(std::string barName, std::string widgetName);
   void close();
   [[nodiscard]] bool isOpen() const noexcept { return m_surface != nullptr && m_surface->isRunning(); }
   [[nodiscard]] wl_surface* wlSurface() const noexcept {
@@ -57,6 +58,7 @@ private:
   void rebuildSettingsContent();
   void requestSceneRebuild();
   void requestContentRebuild();
+  void applyPendingContentScrollTarget(float margin);
   void clearStatusMessage();
   void clearTransientSettingsState();
   void openActionsMenu();
@@ -89,6 +91,7 @@ private:
   Box* m_panelBackground = nullptr; // Window-sized background panel inside m_sceneRoot
   Button* m_actionsMenuButton = nullptr;
   Flex* m_contentContainer = nullptr;
+  ScrollView* m_contentScrollView = nullptr;
   std::unique_ptr<ContextMenuPopup> m_actionsMenuPopup;
   std::unique_ptr<settings::WidgetAddPopup> m_widgetAddPopup;
   InputDispatcher m_inputDispatcher;
@@ -104,6 +107,8 @@ private:
   bool m_rebuildRequested = false;
   bool m_contentRebuildRequested = false;
   bool m_focusSearchOnRebuild = false;
+  bool m_scrollToPendingContentTarget = false;
+  Node* m_pendingContentScrollTarget = nullptr;
   std::string m_searchQuery;
   std::string m_openWidgetPickerPath;
   std::string m_openSearchPickerPath;

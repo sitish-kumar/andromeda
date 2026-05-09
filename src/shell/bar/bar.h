@@ -63,6 +63,7 @@ public:
   void refresh();
   void requestLayout();
   void setAutoHideSuppressionCallback(std::function<bool()> callback);
+  void setOpenWidgetSettingsCallback(std::function<void(std::string, std::string)> callback);
   // Requests a redraw on every bar surface without re-running widget update/layout.
   // Intended for reactive restyling (palette changes) where the scene graph has
   // already been mutated in place and only a repaint is needed.
@@ -139,4 +140,5 @@ private:
   std::unordered_map<wl_surface*, BarInstance*> m_surfaceMap;
   BarInstance* m_hoveredInstance = nullptr;
   std::function<bool()> m_autoHideSuppressionCallback;
+  std::function<void(std::string, std::string)> m_openWidgetSettingsCallback;
 };

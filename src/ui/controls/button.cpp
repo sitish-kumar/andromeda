@@ -168,7 +168,7 @@ Button::Button() {
     }
     if (data.button == BTN_RIGHT && m_onRightClick) {
       m_onRightClick();
-    } else if (m_onClick) {
+    } else if (data.button == BTN_LEFT && m_onClick) {
       m_onClick();
     }
   });
@@ -228,7 +228,8 @@ void Button::setOnClick(std::function<void()> callback) {
 void Button::setOnRightClick(std::function<void()> callback) {
   m_onRightClick = std::move(callback);
   if (m_inputArea != nullptr) {
-    m_inputArea->setAcceptedButtons(BTN_LEFT | BTN_RIGHT);
+    m_inputArea->setAcceptedButtons(m_onRightClick ? InputArea::buttonMask({BTN_LEFT, BTN_RIGHT})
+                                                   : InputArea::buttonMask(BTN_LEFT));
   }
   refreshInputAreaEnabled();
 }
@@ -329,7 +330,8 @@ void Button::refreshInputAreaEnabled() {
   if (m_inputArea != nullptr) {
     m_inputArea->setEnabled(m_enabled && (static_cast<bool>(m_onClick) || static_cast<bool>(m_onMotion) ||
                                           static_cast<bool>(m_onPointerMotion) || static_cast<bool>(m_onPress) ||
-                                          static_cast<bool>(m_onEnter) || static_cast<bool>(m_onLeave)));
+                                          static_cast<bool>(m_onEnter) || static_cast<bool>(m_onLeave) ||
+                                          static_cast<bool>(m_onRightClick)));
   }
 }
 

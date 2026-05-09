@@ -1253,6 +1253,9 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     if (auto v = (*shellTbl)["settings_show_advanced"].value<bool>()) {
       shell.settingsShowAdvanced = *v;
     }
+    if (auto v = (*shellTbl)["middle_click_opens_widget_settings"].value<bool>()) {
+      shell.middleClickOpensWidgetSettings = *v;
+    }
     if (auto v = (*shellTbl)["show_location"].value<bool>()) {
       shell.showLocation = *v;
     }

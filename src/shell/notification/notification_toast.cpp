@@ -1484,7 +1484,7 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
   auto viewport = std::make_unique<InputArea>();
   viewport->setSize(kCardWidth, cardHeight);
   viewport->setClipChildren(true);
-  viewport->setAcceptedButtons(BTN_LEFT | BTN_RIGHT);
+  viewport->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
   // Right-clicking anywhere dismisses the card, while the visual (X) keeps its
   // familiar left-click close affordance without adding a nested hover target.
   viewport->setOnClick([this, id = entry.notificationId](const InputArea::PointerData& data) {

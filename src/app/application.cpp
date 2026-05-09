@@ -909,6 +909,12 @@ void Application::initUi() {
                    &m_httpClient, &m_weatherService, &m_renderContext, &m_nightLightManager, &m_themeService,
                    m_bluetoothService.get(), m_brightnessService.get(), kLockKeysEnabled ? &m_lockKeysService : nullptr,
                    &m_fileWatcher);
+  m_bar.setOpenWidgetSettingsCallback([this](std::string barName, std::string widgetName) {
+    if (m_panelManager.isOpen()) {
+      m_panelManager.closePanel();
+    }
+    m_settingsWindow.openToBarWidget(std::move(barName), std::move(widgetName));
+  });
   m_panelManager.setAttachedPanelGeometryCallback(
       [this](wl_output* output, std::optional<AttachedPanelGeometry> geometry) {
         m_bar.setAttachedPanelGeometry(output, geometry);

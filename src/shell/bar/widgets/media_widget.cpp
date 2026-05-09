@@ -33,7 +33,7 @@ MediaWidget::MediaWidget(MprisService* mpris, HttpClient* httpClient, wl_output*
 
 void MediaWidget::create() {
   auto area = std::make_unique<InputArea>();
-  area->setAcceptedButtons(BTN_LEFT | BTN_RIGHT);
+  area->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
   area->setOnEnter([this](const InputArea::PointerData&) {
     applyTitleScrollMode(m_label != nullptr && m_label->visible());
     this->requestUpdate();

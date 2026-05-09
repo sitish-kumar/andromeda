@@ -1068,7 +1068,7 @@ void Dock::rebuildItems(DockInstance& instance) {
           instPtr->sceneRoot->markPaintDirty();
       }
     });
-    areaNode->setAcceptedButtons(BTN_LEFT | BTN_RIGHT);
+    areaNode->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
     areaNode->setOnClick([itemPtr, instPtr, this](const InputArea::PointerData& d) {
       if (d.button == BTN_LEFT) {
         handleItemClick(*instPtr, *itemPtr);

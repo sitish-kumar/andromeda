@@ -1040,6 +1040,9 @@ namespace settings {
       const bool hasEdit = !ctx.editingWidgetName.empty();
 
       auto inspector = std::make_unique<Flex>();
+      if (ctx.setScrollTarget) {
+        ctx.setScrollTarget(inspector.get());
+      }
       inspector->setDirection(FlexDirection::Vertical);
       inspector->setAlign(FlexAlign::Stretch);
       inspector->setGap(Style::spaceSm * ctx.scale);

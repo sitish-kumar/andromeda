@@ -17,6 +17,16 @@ namespace {
     return false;
   }
 
+  InputArea* inputAreaAcceptingButton(InputArea* area, std::uint32_t button) {
+    for (Node* node = area; node != nullptr; node = node->parent()) {
+      auto* candidate = dynamic_cast<InputArea*>(node);
+      if (candidate != nullptr && candidate->enabled() && candidate->acceptsButton(button)) {
+        return candidate;
+      }
+    }
+    return nullptr;
+  }
+
 } // namespace
 
 void InputDispatcher::setSceneRoot(Node* root) {
@@ -77,12 +87,12 @@ bool InputDispatcher::pointerButton(float x, float y, std::uint32_t button, bool
 
   pruneDetachedAreas();
 
-  InputArea* target = m_capturedArea != nullptr ? m_capturedArea : m_hoveredArea;
+  InputArea* target = m_capturedArea != nullptr ? m_capturedArea : inputAreaAcceptingButton(m_hoveredArea, button);
 
   // Press with no hover target: subtree may have been rebuilt (same global coords, new InputArea*).
   if (target == nullptr && m_capturedArea == nullptr && pressed && m_hasPointerPosition) {
     updateHover(x, y, m_lastSerial);
-    target = m_hoveredArea;
+    target = inputAreaAcceptingButton(m_hoveredArea, button);
   }
 
   if (target != nullptr) {
@@ -92,6 +102,7 @@ bool InputDispatcher::pointerButton(float x, float y, std::uint32_t button, bool
     target->dispatchPress(localX, localY, button, pressed);
     if (pressed) {
       m_capturedArea = target;
+      trackArea(target);
       if (target->focusable()) {
         setFocus(target);
       }

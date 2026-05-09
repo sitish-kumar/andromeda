@@ -1259,6 +1259,10 @@
           "label": "Password Style",
           "description": "Visual style for password input masking"
         },
+        "middle-click-opens-widget-settings": {
+          "label": "Middle Click Opens Widget Settings",
+          "description": "Open a bar widget's settings from the bar with middle click"
+        },
         "show-location": {
           "label": "Show Location",
           "description": "Show location name in weather widgets"

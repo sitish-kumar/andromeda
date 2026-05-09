@@ -45,6 +45,40 @@ namespace {
     return localX >= 0.0f && localX < node->width() && localY >= 0.0f && localY < node->height();
   }
 
+  Widget* widgetAtPoint(const std::vector<std::unique_ptr<Widget>>& widgets, float sceneX, float sceneY) {
+    for (auto it = widgets.rbegin(); it != widgets.rend(); ++it) {
+      auto* widget = it->get();
+      if (widget == nullptr || widget->root() == nullptr || !widget->root()->visible()) {
+        continue;
+      }
+      if (pointInsideNode(widget->root(), sceneX, sceneY)) {
+        return widget;
+      }
+    }
+    for (auto it = widgets.rbegin(); it != widgets.rend(); ++it) {
+      auto* widget = it->get();
+      auto* root = widget != nullptr ? widget->root() : nullptr;
+      auto* bounds = widget != nullptr ? widget->layoutBoundsNode() : nullptr;
+      if (root == nullptr || bounds == nullptr || bounds == root || root->parent() != bounds || !bounds->visible()) {
+        continue;
+      }
+      if (pointInsideNode(bounds, sceneX, sceneY)) {
+        return widget;
+      }
+    }
+    return nullptr;
+  }
+
+  Widget* widgetAtPoint(const BarInstance& instance, float sceneX, float sceneY) {
+    if (auto* widget = widgetAtPoint(instance.endWidgets, sceneX, sceneY); widget != nullptr) {
+      return widget;
+    }
+    if (auto* widget = widgetAtPoint(instance.centerWidgets, sceneX, sceneY); widget != nullptr) {
+      return widget;
+    }
+    return widgetAtPoint(instance.startWidgets, sceneX, sceneY);
+  }
+
   std::pair<float, float> surfaceOriginForOutputLocal(const BarInstance& instance, const WaylandOutput& outputInfo) {
     if (instance.surface == nullptr) {
       return {0.0f, 0.0f};
@@ -647,6 +681,10 @@ void Bar::setAutoHideSuppressionCallback(std::function<bool()> callback) {
   m_autoHideSuppressionCallback = std::move(callback);
 }
 
+void Bar::setOpenWidgetSettingsCallback(std::function<void(std::string, std::string)> callback) {
+  m_openWidgetSettingsCallback = std::move(callback);
+}
+
 bool Bar::isRunning() const noexcept {
   if (m_forceHidden) {
     return true; // hidden but still alive — do not exit the main loop
@@ -984,6 +1022,7 @@ void Bar::populateWidgets(BarInstance& instance) {
       auto widget =
           m_widgetFactory->create(name, instance.output, instance.barConfig.scale, instance.barConfig.position);
       if (widget != nullptr) {
+        widget->setConfigName(name);
         const WidgetConfig* wcPtr = nullptr;
         if (auto it = widgetConfigs.find(name); it != widgetConfigs.end()) {
           wcPtr = &it->second;
@@ -1671,6 +1710,15 @@ bool Bar::onPointerEvent(const PointerEvent& event) {
       if (instance != nullptr && routeWidgetPopups(*instance)) {
         return true;
       }
+    }
+  }
+
+  if (targetInstance != nullptr && event.type == PointerEvent::Type::Button && event.button == BTN_MIDDLE &&
+      event.state == 1 && m_config != nullptr && m_config->config().shell.middleClickOpensWidgetSettings) {
+    auto* widget = widgetAtPoint(*targetInstance, static_cast<float>(event.sx), static_cast<float>(event.sy));
+    if (widget != nullptr && !widget->configName().empty() && m_openWidgetSettingsCallback) {
+      m_openWidgetSettingsCallback(targetInstance->barConfig.name, std::string(widget->configName()));
+      return true;
     }
   }
 
