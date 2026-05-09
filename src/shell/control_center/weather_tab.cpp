@@ -4,6 +4,7 @@
 #include "i18n/i18n.h"
 #include "render/scene/effect_node.h"
 #include "system/weather_service.h"
+#include "time/time_format.h"
 #include "ui/controls/flex.h"
 #include "ui/controls/glyph.h"
 #include "ui/controls/label.h"
@@ -24,15 +25,6 @@ namespace {
   constexpr EffectType kTestEffect = EffectType::None;
 
   constexpr float kCurrentGlyphSize = Style::controlHeightLg * 2.2f;
-
-  std::string formatIsoClock(std::string_view isoTime) {
-    const auto pos = isoTime.find('T');
-    const std::size_t start = pos == std::string_view::npos ? 0 : pos + 1;
-    if (isoTime.size() >= start + 5) {
-      return std::string(isoTime.substr(start, 5));
-    }
-    return std::string(isoTime);
-  }
 
   std::string windDirectionLabel(int degrees) {
     static constexpr std::array<const char*, 8> kDirs = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
@@ -662,12 +654,16 @@ void WeatherTab::sync(Renderer& renderer) {
                                      windDirectionLabel(snapshot.current.windDirectionDeg)));
   }
   if (m_sunriseLabel != nullptr) {
-    m_sunriseLabel->setText(!snapshot.forecastDays.empty() ? formatIsoClock(snapshot.forecastDays.front().sunriseIso)
-                                                           : std::string("--"));
+    const auto& fmt = m_config->config().shell.timeFormat;
+    m_sunriseLabel->setText(!snapshot.forecastDays.empty()
+                                ? formatIsoTime(snapshot.forecastDays.front().sunriseIso, fmt.c_str())
+                                : std::string("--"));
   }
   if (m_sunsetLabel != nullptr) {
-    m_sunsetLabel->setText(!snapshot.forecastDays.empty() ? formatIsoClock(snapshot.forecastDays.front().sunsetIso)
-                                                          : std::string("--"));
+    const auto& fmt = m_config->config().shell.timeFormat;
+    m_sunsetLabel->setText(!snapshot.forecastDays.empty()
+                               ? formatIsoTime(snapshot.forecastDays.front().sunsetIso, fmt.c_str())
+                               : std::string("--"));
   }
   auto unit = m_weather->displayTemperatureUnit();
   if (m_tempMaxLabel != nullptr) {

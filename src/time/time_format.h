@@ -24,5 +24,8 @@ std::string formatTimeAgo(std::chrono::system_clock::time_point tp);
 // numeric specifiers such as "%-I".
 [[nodiscard]] std::string formatLocalTime(const char* fmt);
 
+// Formats an ISO 8601 time string (e.g. "2026-05-09T06:23") using the given format.
+[[nodiscard]] std::string formatIsoTime(std::string_view isoTime, const char* fmt);
+
 // Formats a filesystem modification time as "YYYY-MM-DD HH:MM".
 [[nodiscard]] std::string formatFileTime(const std::filesystem::file_time_type& time);

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <cstdio>
 #include <ctime>
 #include <format>
 #include <langinfo.h>
@@ -154,6 +155,41 @@ std::string formatLocalTime(const char* fmt) {
   }
 
   const auto local = current_zone()->to_local(now);
+  try {
+    return std::vformat(std::locale(""), normalizedFmt, std::make_format_args(local));
+  } catch (...) {
+    return normalizedFmt;
+  }
+}
+
+std::string formatIsoTime(std::string_view isoTime, const char* fmt) {
+  std::tm tm{};
+  int year = 0;
+  int month = 0;
+  int day = 0;
+  int hour = 0;
+  int minute = 0;
+  if (std::sscanf(std::string(isoTime).c_str(), "%d-%d-%dT%d:%d", &year, &month, &day, &hour, &minute) < 5) {
+    return std::string(isoTime);
+  }
+  tm.tm_year = year - 1900;
+  tm.tm_mon = month - 1;
+  tm.tm_mday = day;
+  tm.tm_hour = hour;
+  tm.tm_min = minute;
+  tm.tm_isdst = -1;
+  mktime(&tm);
+
+  const std::string normalizedFmt = normalizeFormatEscapes(fmt);
+  if (auto compat = formatStrftimeCompat(normalizedFmt, tm)) {
+    return *compat;
+  }
+
+  using namespace std::chrono;
+  const auto tp = sys_days{std::chrono::year{year} / std::chrono::month{static_cast<unsigned>(month)} /
+                           std::chrono::day{static_cast<unsigned>(day)}} +
+                  hours{hour} + minutes{minute};
+  const auto local = local_seconds{tp.time_since_epoch()};
   try {
     return std::vformat(std::locale(""), normalizedFmt, std::make_format_args(local));
   } catch (...) {
