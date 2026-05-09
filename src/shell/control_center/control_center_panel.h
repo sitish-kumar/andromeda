@@ -3,11 +3,11 @@
 #include "shell/control_center/audio_tab.h"
 #include "shell/control_center/bluetooth_tab.h"
 #include "shell/control_center/calendar_tab.h"
+#include "shell/control_center/dashboard_tab.h"
 #include "shell/control_center/display_tab.h"
 #include "shell/control_center/media_tab.h"
 #include "shell/control_center/network_tab.h"
 #include "shell/control_center/notifications_tab.h"
-#include "shell/control_center/overview_tab.h"
 #include "shell/control_center/system_tab.h"
 #include "shell/control_center/tab.h"
 #include "shell/control_center/weather_tab.h"
@@ -80,7 +80,7 @@ private:
   void doUpdate(Renderer& renderer) override;
 
   enum class TabId : std::uint8_t {
-    Overview,
+    Dashboard,
     Media,
     Audio,
     Display,
@@ -102,7 +102,7 @@ private:
 
   static constexpr std::size_t kTabCount = static_cast<std::size_t>(TabId::Count);
   static constexpr std::array<TabMeta, kTabCount> kTabs{{
-      {TabId::Overview, "overview", "control-center.tabs.overview", "person"},
+      {TabId::Dashboard, "dashboard", "control-center.tabs.dashboard", "home"},
       {TabId::Media, "media", "control-center.tabs.media", "disc-filled"},
       {TabId::Audio, "audio", "control-center.tabs.audio", "device-speaker"},
       {TabId::Display, "display", "control-center.tabs.display", "device-desktop"},
@@ -134,7 +134,7 @@ private:
   std::array<Button*, kTabCount> m_tabButtons{};
   std::array<Flex*, kTabCount> m_tabContainers{};
   std::array<Flex*, kTabCount> m_tabHeaderActions{};
-  TabId m_activeTab = TabId::Overview;
+  TabId m_activeTab = TabId::Dashboard;
   ConfigService* m_config = nullptr;
   NotificationManager* m_notificationManager = nullptr;
   DependencyService* m_dependencies = nullptr;

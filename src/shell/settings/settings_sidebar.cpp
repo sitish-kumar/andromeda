@@ -141,7 +141,7 @@ namespace settings {
       const bool barSelected =
           showActiveTab && *selectedSection == "bar" && *selectedBarName == barName && selectedMonitorOverride->empty();
       auto navItem = std::make_unique<Button>();
-      navItem->setGlyph("bar");
+      navItem->setGlyph(sectionGlyph("bar"));
       navItem->setText(i18n::tr("settings.entities.bar.label", "name", barName));
       applyPrimaryNavStyle(*navItem, scale, barSelected);
       navItem->setOnClick([selectedSection, selectedBarName, selectedMonitorOverride, scroll, barName, searchActive,

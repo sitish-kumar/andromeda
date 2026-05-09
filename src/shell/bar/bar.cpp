@@ -1743,7 +1743,7 @@ bool Bar::onPointerEvent(const PointerEvent& event) {
           panelManager.closePanel();
         } else {
           panelManager.openPanel("control-center", PanelOpenRequest{.output = targetInstance->output,
-                                                                    .context = "overview",
+                                                                    .context = "dashboard",
                                                                     .sourceBarName = targetInstance->barConfig.name});
         }
         return true;
@@ -1824,7 +1824,7 @@ bool Bar::onPointerEvent(const PointerEvent& event) {
         } else {
           panelManager.openPanel("control-center",
                                  PanelOpenRequest{.output = m_hoveredInstance->output,
-                                                  .context = "overview",
+                                                  .context = "dashboard",
                                                   .sourceBarName = m_hoveredInstance->barConfig.name});
         }
         consumed = true;

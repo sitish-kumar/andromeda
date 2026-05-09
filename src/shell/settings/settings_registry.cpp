@@ -211,9 +211,9 @@ namespace settings {
     if (section == "shell")
       return "app-window";
     if (section == "dock")
-      return "layout-bottombar";
+      return "layout-bottombar-inactive";
     if (section == "panels")
-      return "layout-dashboard";
+      return "layout-bottombar";
     if (section == "backdrop")
       return "niri";
     if (section == "wallpaper")
@@ -227,33 +227,9 @@ namespace settings {
     if (section == "notifications")
       return "bell";
     if (section == "bar")
-      return "bar";
+      return "crop-3-2";
     return "settings";
   }
-
-  // V4 REF.
-  // "settings-general": "adjustments-horizontal",
-  // "settings-bar": "crop-16-9",
-  // "settings-user-interface": "layout-board",
-  // "settings-control-center": "adjustments-horizontal",
-  // "settings-dock": "layout-bottombar",
-  // "settings-launcher": "rocket",
-  // "settings-audio": "device-speaker",
-  // "settings-display": "device-desktop",
-  // "settings-network": "circles-relation",
-  // "settings-brightness": "brightness-up",
-  // "settings-location": "world-pin",
-  // "settings-color-scheme": "palette",
-  // "settings-wallpaper": "paint",
-  // "settings-wallpaper-selector": "library-photo",
-  // "settings-hooks": "link",
-  // "settings-notifications": "bell",
-  // "settings-osd": "picture-in-picture",
-  // "settings-about": "info-square-rounded",
-  // "settings-idle": "moon",
-  // "settings-lock-screen": "lock",
-  // "settings-session-menu": "power",
-  // "settings-system-monitor": "activity",
 
   std::vector<SettingEntry> buildSettingsRegistry(const Config& cfg, const BarConfig* selectedBar,
                                                   const BarMonitorOverride* selectedMonitorOverride,
@@ -407,7 +383,7 @@ namespace settings {
                                 {"wallpaper", "automation", "recursive"},
                                 ToggleSetting{cfg.wallpaper.automation.recursive}, "subdirectories", true));
 
-    // Backdrop (niri-only: surface tracks niri overview state)
+    // Backdrop (niri-only)
     if (env.niriBackdropSupported) {
       entries.push_back(makeEntry("backdrop", "general", tr("settings.schema.shared.enabled.label"),
                                   tr("settings.schema.backdrop.enabled.description"), {"backdrop", "enabled"},
@@ -534,8 +510,8 @@ namespace settings {
 
     // Panels
     entries.push_back(makeEntry(
-        "panels", "control-center", tr("settings.schema.panels.overview-shortcuts.label"),
-        tr("settings.schema.panels.overview-shortcuts.description"), {"control_center", "shortcuts"},
+        "panels", "control-center", tr("settings.schema.panels.dashboard-shortcuts.label"),
+        tr("settings.schema.panels.dashboard-shortcuts.description"), {"control_center", "shortcuts"},
         ShortcutListSetting{
             .items = cfg.controlCenter.shortcuts, .suggestedOptions = controlCenterShortcutOptions(), .maxItems = 6},
         "quick settings shortcuts toggles wifi bluetooth caffeine night light dnd power media weather clipboard"));

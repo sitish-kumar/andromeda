@@ -16,7 +16,7 @@ ControlCenterWidget::ControlCenterWidget(wl_output* output, std::string barGlyph
 void ControlCenterWidget::create() {
   auto area = std::make_unique<InputArea>();
   area->setOnClick(
-      [this](const InputArea::PointerData& /*data*/) { requestPanelToggle("control-center", "overview"); });
+      [this](const InputArea::PointerData& /*data*/) { requestPanelToggle("control-center", "dashboard"); });
 
   if (!m_logoPath.empty()) {
     auto image = std::make_unique<Image>();

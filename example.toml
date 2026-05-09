@@ -230,7 +230,7 @@ enabled = false
 
 # ── Control Center ────────────────────────────────────────────────────────────
 
-# Shortcut buttons shown at the bottom of the overview tab (up to 6).
+# Shortcut buttons shown on the right side of the dashboard (up to 6).
 # [[control_center.shortcuts]]
 # type = "wifi"
 # [[control_center.shortcuts]]
