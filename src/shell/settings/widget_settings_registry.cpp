@@ -324,7 +324,7 @@ namespace settings {
           it != cfg.widgets.end() && !it->second.type.empty() && it->second.type != name) {
         return WidgetReferenceInfo{
             .title = std::string(name),
-            .detail = tr("settings.entities.widget.detail.type", "type", it->second.type),
+            .detail = it->second.type,
             .badge = tr("settings.entities.widget.kinds.named"),
             .kind = WidgetReferenceKind::Named,
         };
@@ -340,8 +340,7 @@ namespace settings {
     if (const auto it = cfg.widgets.find(std::string(name)); it != cfg.widgets.end()) {
       return WidgetReferenceInfo{
           .title = widgetInstanceDisplayLabel(name),
-          .detail = it->second.type.empty() ? tr("settings.entities.widget.detail.custom")
-                                            : tr("settings.entities.widget.detail.type", "type", it->second.type),
+          .detail = it->second.type.empty() ? tr("settings.entities.widget.detail.custom") : it->second.type,
           .badge = tr("settings.entities.widget.kinds.named"),
           .kind = WidgetReferenceKind::Named,
       };
@@ -372,8 +371,7 @@ namespace settings {
         continue;
       }
       addPickerEntry(entries, seen, name, widgetInstanceDisplayLabel(name),
-                     widget.type.empty() ? tr("settings.entities.widget.detail.custom")
-                                         : tr("settings.entities.widget.detail.type", "type", widget.type),
+                     widget.type.empty() ? tr("settings.entities.widget.detail.custom") : widget.type,
                      tr("settings.entities.widget.kinds.named"), WidgetReferenceKind::Named);
     }
 

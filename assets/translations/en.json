@@ -697,8 +697,7 @@
           "move-to-lane": "Move to {lane}"
         },
         "detail": {
-          "custom": "custom widget",
-          "type": "type: {type}"
+          "custom": "custom widget"
         }
       }
     },
@@ -723,6 +722,7 @@
         "behavior": "Behavior",
         "brightness": "Brightness",
         "built-in": "Built-in",
+        "capsules": "Capsules",
         "clipboard": "Clipboard",
         "community": "Community",
         "control-center": "Control Center:",

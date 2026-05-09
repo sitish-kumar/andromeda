@@ -1711,8 +1711,10 @@ namespace settings {
         }
         item->addChild(std::move(itemTop));
 
-        item->addChild(makeLabel(info.detail, Style::fontSizeCaption * ctx.scale,
-                                 colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+        if (info.kind != WidgetReferenceKind::BuiltIn && !info.detail.empty()) {
+          item->addChild(makeLabel(info.detail, Style::fontSizeCaption * ctx.scale,
+                                   colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+        }
         if (!capsuleGroup.empty()) {
           auto groupRow = std::make_unique<Flex>();
           groupRow->setDirection(FlexDirection::Horizontal);
