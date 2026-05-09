@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 
-class Button;
 class Node;
 class ConfigService;
 class RenderContext;
@@ -38,8 +37,9 @@ namespace settings {
     void setOnSelect(SelectCallback callback);
     void setOnDismissed(std::function<void()> callback);
 
-    void open(xdg_surface* parentXdgSurface, wl_output* output, std::uint32_t serial, Button* anchorButton,
-              wl_surface* parentWlSurface, const std::vector<std::string>& lanePath, const Config& config, float scale);
+    void open(xdg_surface* parentXdgSurface, wl_output* output, std::uint32_t serial, wl_surface* parentWlSurface,
+              std::uint32_t parentWidth, std::uint32_t parentHeight, const std::vector<std::string>& lanePath,
+              const Config& config, float scale);
     void close();
 
     [[nodiscard]] bool isOpen() const noexcept;
@@ -86,10 +86,8 @@ namespace settings {
     wl_surface* m_parentWlSurface = nullptr;
     wl_output* m_output = nullptr;
     std::uint32_t m_serial = 0;
-    float m_anchorAbsX = 0.0f;
-    float m_anchorAbsY = 0.0f;
-    std::int32_t m_anchorWidth = 1;
-    std::int32_t m_anchorHeight = 1;
+    std::uint32_t m_parentWidth = 0;
+    std::uint32_t m_parentHeight = 0;
     bool m_internalReopen = false;
     SelectCallback m_onSelect;
     std::function<void()> m_onDismissed;

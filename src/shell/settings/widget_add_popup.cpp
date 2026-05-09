@@ -156,33 +156,24 @@ namespace settings {
       return std::string(text.substr(start, end - start));
     }
 
-    PopupSurfaceConfig makePopupConfig(std::int32_t anchorX, std::int32_t anchorY, std::int32_t anchorWidth,
-                                       std::int32_t anchorHeight, std::uint32_t width, std::uint32_t height,
-                                       std::uint32_t serial, std::int32_t offsetX = 0, std::int32_t offsetY = 0,
-                                       bool grab = true) {
-      PopupSurfaceConfig cfg{
-          .anchorX = anchorX,
-          .anchorY = anchorY,
-          .anchorWidth = std::max(1, anchorWidth),
-          .anchorHeight = std::max(1, anchorHeight),
+    PopupSurfaceConfig centeredPopupConfig(std::uint32_t parentWidth, std::uint32_t parentHeight, std::uint32_t width,
+                                           std::uint32_t height, std::uint32_t serial) {
+      return PopupSurfaceConfig{
+          .anchorX = static_cast<std::int32_t>(parentWidth / 2),
+          .anchorY = static_cast<std::int32_t>(parentHeight / 2),
+          .anchorWidth = 1,
+          .anchorHeight = 1,
           .width = std::max<std::uint32_t>(1, width),
           .height = std::max<std::uint32_t>(1, height),
-          .anchor = XDG_POSITIONER_ANCHOR_BOTTOM,
-          .gravity = XDG_POSITIONER_GRAVITY_BOTTOM,
+          .anchor = XDG_POSITIONER_ANCHOR_NONE,
+          .gravity = XDG_POSITIONER_GRAVITY_NONE,
           .constraintAdjustment =
-              XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y |
-              XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y,
-          .offsetX = offsetX,
-          .offsetY = offsetY,
+              XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y,
+          .offsetX = 0,
+          .offsetY = 0,
           .serial = serial,
-          .grab = grab,
+          .grab = true,
       };
-
-      cfg.anchorX += cfg.anchorWidth / 2;
-      cfg.anchorY += cfg.anchorHeight / 2;
-      cfg.anchorWidth = 1;
-      cfg.anchorHeight = 1;
-      return cfg;
     }
 
   } // namespace
@@ -198,9 +189,9 @@ namespace settings {
   void WidgetAddPopup::setOnDismissed(std::function<void()> callback) { m_onDismissed = std::move(callback); }
 
   void WidgetAddPopup::open(xdg_surface* parentXdgSurface, wl_output* output, std::uint32_t serial,
-                            Button* anchorButton, wl_surface* parentWlSurface, const std::vector<std::string>& lanePath,
-                            const Config& config, float scale) {
-    if (parentXdgSurface == nullptr || parentWlSurface == nullptr || anchorButton == nullptr) {
+                            wl_surface* parentWlSurface, std::uint32_t parentWidth, std::uint32_t parentHeight,
+                            const std::vector<std::string>& lanePath, const Config& config, float scale) {
+    if (parentXdgSurface == nullptr || parentWlSurface == nullptr) {
       return;
     }
 
@@ -262,10 +253,8 @@ namespace settings {
     m_parentWlSurface = parentWlSurface;
     m_output = output;
     m_serial = serial;
-
-    Node::absolutePosition(anchorButton, m_anchorAbsX, m_anchorAbsY);
-    m_anchorWidth = std::max(1, static_cast<std::int32_t>(anchorButton->width()));
-    m_anchorHeight = std::max(1, static_cast<std::int32_t>(anchorButton->height()));
+    m_parentWidth = parentWidth;
+    m_parentHeight = parentHeight;
 
     reopenForCurrentMode();
   }
@@ -541,10 +530,9 @@ namespace settings {
     }
 
     const auto [panelWidth, panelHeight] = popupSize();
-    const auto cfg = makePopupConfig(
-        static_cast<std::int32_t>(m_anchorAbsX), static_cast<std::int32_t>(m_anchorAbsY), m_anchorWidth, m_anchorHeight,
-        static_cast<std::uint32_t>(std::max(1.0f, panelWidth)), static_cast<std::uint32_t>(std::max(1.0f, panelHeight)),
-        m_serial, 0, static_cast<std::int32_t>(Style::spaceXs * m_scale), true);
+    const auto cfg =
+        centeredPopupConfig(m_parentWidth, m_parentHeight, static_cast<std::uint32_t>(std::max(1.0f, panelWidth)),
+                            static_cast<std::uint32_t>(std::max(1.0f, panelHeight)), m_serial);
 
     m_internalReopen = true;
     const bool opened = openPopupAsChild(cfg, m_parentXdgSurface, m_parentWlSurface, m_output);
@@ -574,10 +562,8 @@ namespace settings {
     m_parentWlSurface = nullptr;
     m_output = nullptr;
     m_serial = 0;
-    m_anchorAbsX = 0.0f;
-    m_anchorAbsY = 0.0f;
-    m_anchorWidth = 1;
-    m_anchorHeight = 1;
+    m_parentWidth = 0;
+    m_parentHeight = 0;
     m_lanePath.clear();
     m_root = nullptr;
     m_headerRow = nullptr;

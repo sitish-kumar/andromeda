@@ -276,6 +276,21 @@ namespace settings {
                                   tr("settings.schema.appearance.community-palette.description"),
                                   {"theme", "community_palette"}, std::move(communityPaletteControl),
                                   "community palette colors"));
+    } else if (cfg.theme.source == ThemeSource::Custom) {
+      SettingControl customPaletteControl = TextSetting{cfg.theme.customPalette, ""};
+      if (!env.customPalettes.empty()) {
+        customPaletteControl = SearchPickerSetting{
+            .options = env.customPalettes,
+            .selectedValue = cfg.theme.customPalette,
+            .placeholder = tr("settings.schema.appearance.custom-palette.search-placeholder"),
+            .emptyText = tr("ui.controls.search-picker.empty"),
+            .preferredHeight = 240.0f,
+        };
+      }
+      entries.push_back(makeEntry("appearance", "theme", tr("settings.schema.appearance.custom-palette.label"),
+                                  tr("settings.schema.appearance.custom-palette.description"),
+                                  {"theme", "custom_palette"}, std::move(customPaletteControl),
+                                  "custom palette colors"));
     }
     entries.push_back(makeEntry("appearance", "interface", tr("settings.schema.appearance.ui-scale.label"),
                                 tr("settings.schema.appearance.ui-scale.description"), {"shell", "ui_scale"},

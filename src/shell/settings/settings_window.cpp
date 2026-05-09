@@ -15,6 +15,7 @@
 #include "system/dependency_service.h"
 #include "theme/community_palettes.h"
 #include "theme/community_templates.h"
+#include "theme/custom_palettes.h"
 #include "ui/controls/box.h"
 #include "ui/controls/button.h"
 #include "ui/controls/context_menu.h"
@@ -231,7 +232,10 @@ bool SettingsWindow::ownsKeyboardSurface(wl_surface* surface) const noexcept {
   if (surface == m_surface->wlSurface()) {
     return true;
   }
-  return m_widgetAddPopup != nullptr && m_widgetAddPopup->wlSurface() == surface;
+  if (m_widgetAddPopup != nullptr && m_widgetAddPopup->wlSurface() == surface) {
+    return true;
+  }
+  return m_searchPickerPopup != nullptr && m_searchPickerPopup->wlSurface() == surface;
 }
 
 void SettingsWindow::open() {
@@ -344,6 +348,10 @@ void SettingsWindow::destroyWindow() {
   if (m_widgetAddPopup != nullptr) {
     m_widgetAddPopup->close();
     m_widgetAddPopup.reset();
+  }
+  if (m_searchPickerPopup != nullptr) {
+    m_searchPickerPopup->close();
+    m_searchPickerPopup.reset();
   }
   m_sceneRoot.reset();
   m_surface.reset();
@@ -506,7 +514,7 @@ void SettingsWindow::clearStatusMessage() {
 
 void SettingsWindow::clearTransientSettingsState() {
   m_openWidgetPickerPath.clear();
-  m_openSearchPickerPath.clear();
+
   m_editingWidgetName.clear();
   m_renamingWidgetName.clear();
   m_pendingDeleteWidgetName.clear();
@@ -524,6 +532,9 @@ void SettingsWindow::clearTransientSettingsState() {
   m_pendingResetPageScope.clear();
   if (m_widgetAddPopup != nullptr && m_widgetAddPopup->isOpen()) {
     m_widgetAddPopup->close();
+  }
+  if (m_searchPickerPopup != nullptr && m_searchPickerPopup->isOpen()) {
+    m_searchPickerPopup->close();
   }
 }
 
@@ -586,8 +597,8 @@ void SettingsWindow::openActionsMenu() {
       static_cast<std::int32_t>(m_actionsMenuButton->height()), m_surface->xdgSurface(), output);
 }
 
-void SettingsWindow::openBarWidgetAddPopup(const std::vector<std::string>& lanePath, Button* anchorButton) {
-  if (m_wayland == nullptr || m_renderContext == nullptr || m_surface == nullptr || anchorButton == nullptr ||
+void SettingsWindow::openBarWidgetAddPopup(const std::vector<std::string>& lanePath) {
+  if (m_wayland == nullptr || m_renderContext == nullptr || m_surface == nullptr ||
       m_surface->xdgSurface() == nullptr || m_config == nullptr) {
     return;
   }
@@ -629,8 +640,44 @@ void SettingsWindow::openBarWidgetAddPopup(const std::vector<std::string>& laneP
     output = m_output;
   }
 
-  m_widgetAddPopup->open(m_surface->xdgSurface(), output, m_wayland->lastInputSerial(), anchorButton,
-                         m_surface->wlSurface(), lanePath, m_config->config(), uiScale());
+  m_widgetAddPopup->open(m_surface->xdgSurface(), output, m_wayland->lastInputSerial(), m_surface->wlSurface(),
+                         m_surface->width(), m_surface->height(), lanePath, m_config->config(), uiScale());
+}
+
+void SettingsWindow::openSearchPickerPopup(const std::string& title, const std::vector<settings::SelectOption>& options,
+                                           const std::string& selectedValue, const std::string& placeholder,
+                                           const std::string& emptyText, const std::vector<std::string>& settingPath) {
+  if (m_wayland == nullptr || m_renderContext == nullptr || m_surface == nullptr ||
+      m_surface->xdgSurface() == nullptr || m_config == nullptr || options.empty()) {
+    return;
+  }
+
+  if (m_searchPickerPopup == nullptr) {
+    m_searchPickerPopup = std::make_unique<settings::SearchPickerPopup>();
+    m_searchPickerPopup->initialize(*m_wayland, *m_config, *m_renderContext);
+  }
+
+  m_searchPickerPopup->setOnSelect([this, settingPath, selectedValue](const std::string& value) {
+    if (value != selectedValue) {
+      setSettingOverride(settingPath, value);
+    }
+  });
+
+  std::vector<SearchPickerOption> pickerOptions;
+  pickerOptions.reserve(options.size());
+  for (const auto& opt : options) {
+    pickerOptions.push_back(
+        SearchPickerOption{.value = opt.value, .label = opt.label, .description = opt.description, .enabled = true});
+  }
+
+  wl_output* output = m_wayland->lastPointerOutput();
+  if (output == nullptr) {
+    output = m_output;
+  }
+
+  m_searchPickerPopup->open(m_surface->xdgSurface(), output, m_wayland->lastInputSerial(), m_surface->wlSurface(),
+                            m_surface->width(), m_surface->height(), title, pickerOptions, selectedValue, placeholder,
+                            emptyText, uiScale());
 }
 
 void SettingsWindow::saveSupportReport() {
@@ -1146,7 +1193,6 @@ void SettingsWindow::rebuildSettingsContent() {
           .showOverriddenOnly = m_showOverriddenOnly,
           .batteryDeviceOptions = batteryDeviceOptions,
           .openWidgetPickerPath = m_openWidgetPickerPath,
-          .openSearchPickerPath = m_openSearchPickerPath,
           .editingWidgetName = m_editingWidgetName,
           .pendingDeleteWidgetName = m_pendingDeleteWidgetName,
           .pendingDeleteWidgetSettingPath = m_pendingDeleteWidgetSettingPath,
@@ -1157,8 +1203,14 @@ void SettingsWindow::rebuildSettingsContent() {
           .resetContentScroll = [this]() { m_contentScrollState.offset = 0.0f; },
           .setScrollTarget = [this](Node* target) { m_pendingContentScrollTarget = target; },
           .focusArea = [this](InputArea* area) { m_inputDispatcher.setFocus(area); },
-          .openBarWidgetAddPopup = [this](const std::vector<std::string>& lanePath,
-                                          Button* anchorButton) { openBarWidgetAddPopup(lanePath, anchorButton); },
+          .openBarWidgetAddPopup =
+              [this](const std::vector<std::string>& lanePath) { openBarWidgetAddPopup(lanePath); },
+          .openSearchPickerPopup =
+              [this](const std::string& title, const std::vector<settings::SelectOption>& options,
+                     const std::string& selectedValue, const std::string& placeholder, const std::string& emptyText,
+                     const std::vector<std::string>& settingPath) {
+                openSearchPickerPopup(title, options, selectedValue, placeholder, emptyText, settingPath);
+              },
           .setOverride = setOverride,
           .setOverrides = setOverrides,
           .clearOverride = clearOverride,
@@ -1199,6 +1251,9 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
   env.gammaControlAvailable = (m_wayland != nullptr && m_wayland->hasGammaControl());
   for (const auto& paletteInfo : noctalia::theme::availableCommunityPalettes()) {
     env.communityPalettes.push_back(settings::SelectOption{paletteInfo.name, paletteInfo.name});
+  }
+  for (const auto& p : noctalia::theme::availableCustomPalettes()) {
+    env.customPalettes.push_back(settings::SelectOption{p.name, p.name});
   }
   for (const auto& t : noctalia::theme::CommunityTemplateService::availableTemplates()) {
     env.communityTemplates.push_back(settings::SelectOption{t.id, t.displayName});
@@ -1368,7 +1423,7 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
     const bool searchActiveChanged = wasSearchActive != !m_searchQuery.empty();
     const bool hadPendingReset = !m_pendingResetPageScope.empty();
     m_pendingResetPageScope.clear();
-    m_openSearchPickerPath.clear();
+
     if (hadPendingReset || searchActiveChanged) {
       m_focusSearchOnRebuild = true;
       requestSceneRebuild();
@@ -1565,6 +1620,14 @@ bool SettingsWindow::onPointerEvent(const PointerEvent& event) {
     m_widgetAddPopup->close();
     return true;
   }
+  if (m_searchPickerPopup != nullptr && m_searchPickerPopup->onPointerEvent(event)) {
+    return true;
+  }
+  if (m_searchPickerPopup != nullptr && m_searchPickerPopup->isOpen() && event.type == PointerEvent::Type::Button &&
+      event.state == 1) {
+    m_searchPickerPopup->close();
+    return true;
+  }
 
   if (m_actionsMenuPopup != nullptr && m_actionsMenuPopup->onPointerEvent(event)) {
     return true;
@@ -1648,6 +1711,15 @@ void SettingsWindow::onKeyboardEvent(const KeyboardEvent& event) {
       return;
     }
     m_widgetAddPopup->onKeyboardEvent(event);
+    return;
+  }
+
+  if (m_searchPickerPopup != nullptr && m_searchPickerPopup->isOpen()) {
+    if (event.pressed && m_config->matchesKeybind(KeybindAction::Cancel, event.sym, event.modifiers)) {
+      m_searchPickerPopup->close();
+      return;
+    }
+    m_searchPickerPopup->onKeyboardEvent(event);
     return;
   }
 

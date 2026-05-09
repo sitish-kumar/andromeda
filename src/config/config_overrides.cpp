@@ -327,7 +327,7 @@ namespace {
 
   bool themeConfigEqual(const ThemeConfig& a, const ThemeConfig& b) {
     return a.source == b.source && a.builtinPalette == b.builtinPalette && a.communityPalette == b.communityPalette &&
-           a.wallpaperScheme == b.wallpaperScheme && a.mode == b.mode &&
+           a.customPalette == b.customPalette && a.wallpaperScheme == b.wallpaperScheme && a.mode == b.mode &&
            a.templates.enableBuiltinTemplates == b.templates.enableBuiltinTemplates &&
            a.templates.builtinIds == b.templates.builtinIds &&
            a.templates.enableCommunityTemplates == b.templates.enableCommunityTemplates &&

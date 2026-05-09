@@ -769,7 +769,8 @@
         "source": {
           "built-in": "Built-in",
           "wallpaper": "Wallpaper",
-          "community": "Community"
+          "community": "Community",
+          "custom": "Custom"
         }
       },
       "clipboard": {
@@ -1167,6 +1168,11 @@
           "label": "Community Palette",
           "description": "Choose a palette from the community catalog",
           "search-placeholder": "Search palettes..."
+        },
+        "custom-palette": {
+          "label": "Custom Palette",
+          "description": "Choose a palette from ~/.config/noctalia/palettes/",
+          "search-placeholder": "Search custom palettes..."
         },
         "ui-scale": {
           "label": "UI Scale",

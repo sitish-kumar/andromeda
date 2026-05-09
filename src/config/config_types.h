@@ -549,12 +549,14 @@ enum class ThemeSource : std::uint8_t {
   Builtin = 0,
   Wallpaper = 1,
   Community = 2,
+  Custom = 3,
 };
 
 constexpr EnumOption<ThemeSource> kThemeSources[] = {
     {ThemeSource::Builtin, "builtin", "settings.options.theme.source.built-in"},
     {ThemeSource::Wallpaper, "wallpaper", "settings.options.theme.source.wallpaper"},
     {ThemeSource::Community, "community", "settings.options.theme.source.community"},
+    {ThemeSource::Custom, "custom", "settings.options.theme.source.custom"},
 };
 
 enum class ThemeMode : std::uint8_t {
@@ -584,6 +586,7 @@ struct ThemeConfig {
   ThemeSource source = ThemeSource::Builtin;
   std::string builtinPalette = "Noctalia";
   std::string communityPalette = "Oxocarbon";
+  std::string customPalette;
   std::string wallpaperScheme = "m3-content";
   ThemeMode mode = ThemeMode::Dark;
   TemplatesConfig templates;

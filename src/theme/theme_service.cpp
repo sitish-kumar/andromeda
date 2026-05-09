@@ -7,6 +7,7 @@
 #include "net/http_client.h"
 #include "theme/builtin_palettes.h"
 #include "theme/community_palettes.h"
+#include "theme/custom_palettes.h"
 #include "theme/fixed_palette.h"
 #include "theme/image_loader.h"
 #include "theme/palette_generator.h"
@@ -373,7 +374,17 @@ namespace noctalia::theme {
   void ThemeService::resolveAndSet(bool animate) {
     const auto& cfg = m_config.config().theme;
     std::optional<ResolvedTheme> resolved;
-    if (cfg.source == ThemeSource::Wallpaper) {
+    if (cfg.source == ThemeSource::Custom && !cfg.customPalette.empty()) {
+      const auto path = customPalettePath(cfg.customPalette);
+      if (std::filesystem::exists(path)) {
+        if (auto parsed = parseCommunityPaletteJson(path)) {
+          resolved = makeResolvedFromParsed(*parsed, cfg);
+        }
+      }
+      if (!resolved.has_value()) {
+        kLog.warn("custom palette '{}' not found or invalid; falling back to builtin", cfg.customPalette);
+      }
+    } else if (cfg.source == ThemeSource::Wallpaper) {
       resolved = resolveWallpaper(cfg, m_config.getDefaultWallpaperPath());
     } else if (cfg.source == ThemeSource::Community && !cfg.communityPalette.empty()) {
       const auto cachePath = communityPaletteCachePath(cfg.communityPalette);

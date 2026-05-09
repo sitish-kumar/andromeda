@@ -1286,6 +1286,9 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     if (auto v = (*themeTbl)["community_palette"].value<std::string>()) {
       theme.communityPalette = *v;
     }
+    if (auto v = (*themeTbl)["custom_palette"].value<std::string>()) {
+      theme.customPalette = *v;
+    }
     if (auto v = (*themeTbl)["wallpaper_scheme"].value<std::string>())
       theme.wallpaperScheme = *v;
     if (auto v = (*themeTbl)["mode"].value<std::string>()) {

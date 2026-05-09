@@ -126,6 +126,7 @@ namespace settings {
     bool gammaControlAvailable = false;         // hide night-light entries when gamma control is unavailable
     std::vector<SelectOption> availableOutputs; // monitor selectors available on this machine
     std::vector<SelectOption> communityPalettes;
+    std::vector<SelectOption> customPalettes;
     std::vector<SelectOption> communityTemplates;
   };
 
