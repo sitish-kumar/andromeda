@@ -187,6 +187,120 @@ namespace {
     Signal<>::ScopedConnection m_paletteConn;
   };
 
+  class VpnConnectionRow : public Flex {
+  public:
+    VpnConnectionRow(float scale, VpnConnectionInfo vpn, std::function<void(const VpnConnectionInfo&)> onActivate,
+                     std::function<void(const VpnConnectionInfo&)> onDeactivate)
+        : m_vpn(std::move(vpn)), m_onActivate(std::move(onActivate)), m_onDeactivate(std::move(onDeactivate)) {
+      setDirection(FlexDirection::Horizontal);
+      setAlign(FlexAlign::Center);
+      setGap(Style::spaceSm * scale);
+      setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
+      setMinHeight(kRowMinHeight * scale);
+      setRadius(Style::radiusMd * scale);
+      setFill(colorSpecFromRole(ColorRole::Surface));
+      clearBorder();
+
+      auto kind = std::make_unique<Label>();
+      kind->setText("VPN");
+      kind->setCaptionStyle();
+      kind->setFontSize(Style::fontSizeCaption * scale);
+      kind->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+      addChild(std::move(kind));
+
+      auto name = std::make_unique<Label>();
+      name->setText(m_vpn.name);
+      name->setBold(m_vpn.active);
+      name->setFontSize(Style::fontSizeBody * scale);
+      name->setColor(colorSpecFromRole(ColorRole::OnSurface));
+      name->setFlexGrow(1.0f);
+      m_title = name.get();
+      addChild(std::move(name));
+
+      auto action = std::make_unique<Button>();
+      action->setVariant(m_vpn.active ? ButtonVariant::Destructive : ButtonVariant::Default);
+      action->setText(i18n::tr(m_vpn.active ? "control-center.network.disconnect" : "control-center.network.connect"));
+      action->setOnClick([this]() { triggerAction(); });
+      m_actionButton = static_cast<Button*>(addChild(std::move(action)));
+
+      auto area = std::make_unique<InputArea>();
+      area->setPropagateEvents(true);
+      area->setOnEnter([this](const InputArea::PointerData& /*data*/) { applyState(); });
+      area->setOnLeave([this]() { applyState(); });
+      area->setOnPress([this](const InputArea::PointerData& /*data*/) { applyState(); });
+      area->setOnClick([this](const InputArea::PointerData& /*data*/) { triggerAction(); });
+      m_inputArea = static_cast<InputArea*>(addChild(std::move(area)));
+
+      applyState();
+      m_paletteConn = paletteChanged().connect([this] { applyState(); });
+    }
+
+    void doLayout(Renderer& renderer) override {
+      if (m_inputArea == nullptr) {
+        return;
+      }
+      m_inputArea->setVisible(false);
+      Flex::doLayout(renderer);
+      m_inputArea->setVisible(true);
+      m_inputArea->setPosition(0.0f, 0.0f);
+      m_inputArea->setSize(width(), height());
+      if (m_actionButton != nullptr) {
+        const float areaWidth = std::max(0.0f, m_actionButton->x() - gap());
+        m_inputArea->setSize(areaWidth, height());
+      }
+      applyState();
+    }
+
+    LayoutSize doMeasure(Renderer& renderer, const LayoutConstraints& constraints) override {
+      return measureByLayout(renderer, constraints);
+    }
+
+    void doArrange(Renderer& renderer, const LayoutRect& rect) override { arrangeByLayout(renderer, rect); }
+
+  private:
+    void triggerAction() {
+      if (m_vpn.active) {
+        if (m_onDeactivate) {
+          m_onDeactivate(m_vpn);
+        }
+      } else {
+        if (m_onActivate) {
+          m_onActivate(m_vpn);
+        }
+      }
+    }
+
+    void applyState() {
+      const bool hov = m_inputArea != nullptr && m_inputArea->hovered();
+      const bool pressed = m_inputArea != nullptr && m_inputArea->pressed();
+      if (pressed) {
+        setFill(colorSpecFromRole(ColorRole::Primary));
+        setBorder(colorSpecFromRole(ColorRole::Primary), Style::borderWidth);
+        if (m_title != nullptr) {
+          m_title->setColor(colorSpecFromRole(ColorRole::OnPrimary));
+        }
+        return;
+      }
+      setFill(colorSpecFromRole(m_vpn.active ? ColorRole::SurfaceVariant : ColorRole::Surface));
+      if (hov) {
+        setBorder(colorSpecFromRole(ColorRole::Primary), Style::borderWidth);
+      } else {
+        clearBorder();
+      }
+      if (m_title != nullptr) {
+        m_title->setColor(colorSpecFromRole(ColorRole::OnSurface));
+      }
+    }
+
+    VpnConnectionInfo m_vpn;
+    std::function<void(const VpnConnectionInfo&)> m_onActivate;
+    std::function<void(const VpnConnectionInfo&)> m_onDeactivate;
+    Label* m_title = nullptr;
+    Button* m_actionButton = nullptr;
+    InputArea* m_inputArea = nullptr;
+    Signal<>::ScopedConnection m_paletteConn;
+  };
+
 } // namespace
 
 NetworkTab::NetworkTab(NetworkService* network, NetworkSecretAgent* secrets) : m_network(network), m_secrets(secrets) {
@@ -532,6 +646,19 @@ std::string NetworkTab::apListKey(const std::vector<AccessPointInfo>& aps) const
   return key;
 }
 
+std::string NetworkTab::vpnListKey(const std::vector<VpnConnectionInfo>& vpns) const {
+  std::string key;
+  for (const auto& vpn : vpns) {
+    key += vpn.path;
+    key.push_back(':');
+    key += vpn.name;
+    key.push_back(':');
+    key += vpn.active ? '1' : '0';
+    key.push_back('\n');
+  }
+  return key;
+}
+
 void NetworkTab::rebuildApList(Renderer& renderer) {
   uiAssertNotRendering("NetworkTab::rebuildApList");
   if (m_list == nullptr || m_listScroll == nullptr) {
@@ -543,7 +670,9 @@ void NetworkTab::rebuildApList(Renderer& renderer) {
   }
 
   const auto& aps = m_network != nullptr ? m_network->accessPoints() : std::vector<AccessPointInfo>{};
-  const std::string nextKey = aps.empty() ? std::string("empty") : apListKey(aps);
+  const auto& vpns = m_network != nullptr ? m_network->vpnConnections() : std::vector<VpnConnectionInfo>{};
+  const std::string nextKey =
+      aps.empty() && vpns.empty() ? std::string("empty") : (apListKey(aps) + "\n---\n" + vpnListKey(vpns));
   if (listWidth == m_lastListWidth && nextKey == m_lastListKey) {
     return;
   }
@@ -554,7 +683,7 @@ void NetworkTab::rebuildApList(Renderer& renderer) {
     m_list->removeChild(m_list->children().front().get());
   }
 
-  if (aps.empty()) {
+  if (aps.empty() && vpns.empty()) {
     auto empty = std::make_unique<Label>();
     empty->setText(m_network != nullptr ? i18n::tr("control-center.network.no-networks")
                                         : i18n::tr("control-center.network.unavailable-title"));
@@ -579,6 +708,32 @@ void NetworkTab::rebuildApList(Renderer& renderer) {
             PanelManager::instance().refresh();
           });
       m_list->addChild(std::move(row));
+    }
+    if (!vpns.empty()) {
+      auto section = std::make_unique<Label>();
+      section->setText(i18n::tr("control-center.network.vpns"));
+      section->setCaptionStyle();
+      section->setFontSize(Style::fontSizeCaption * contentScale());
+      section->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+      m_list->addChild(std::move(section));
+
+      for (const auto& vpn : vpns) {
+        auto row = std::make_unique<VpnConnectionRow>(
+            contentScale(), vpn,
+            [this](const VpnConnectionInfo& clicked) {
+              if (m_network != nullptr) {
+                m_network->activateVpnConnection(clicked);
+              }
+              PanelManager::instance().refresh();
+            },
+            [this](const VpnConnectionInfo& clicked) {
+              if (m_network != nullptr) {
+                m_network->deactivateVpnConnection(clicked);
+              }
+              PanelManager::instance().refresh();
+            });
+        m_list->addChild(std::move(row));
+      }
     }
   }
   m_list->layout(renderer);

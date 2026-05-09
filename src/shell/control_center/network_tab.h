@@ -34,6 +34,7 @@ private:
   void showPasswordPrompt(const NetworkSecretAgent::SecretRequest& request);
   void clearPasswordPrompt();
   [[nodiscard]] std::string apListKey(const std::vector<AccessPointInfo>& aps) const;
+  [[nodiscard]] std::string vpnListKey(const std::vector<VpnConnectionInfo>& vpns) const;
 
   NetworkService* m_network = nullptr;
   NetworkSecretAgent* m_secrets = nullptr;
