@@ -45,6 +45,16 @@ namespace {
 
   float dashboardAvatarSize(float scale) { return Style::controlHeightLg * kDashboardAvatarScale * scale; }
 
+  std::string formatShellTime(const ConfigService* config) {
+    const char* format = config != nullptr ? config->config().shell.timeFormat.c_str() : "{:%H:%M}";
+    return formatLocalTime(format);
+  }
+
+  std::string formatShellDate(const ConfigService* config) {
+    const char* format = config != nullptr ? config->config().shell.dateFormat.c_str() : "%A, %x";
+    return formatLocalTime(format);
+  }
+
   void applyDashboardCardStyle(Flex& card, float scale) {
     applySectionCardStyle(card, scale);
     card.setGap(Style::spaceSm * scale);
@@ -262,7 +272,7 @@ std::unique_ptr<Flex> DashboardTab::create() {
   m_dateTimeCard = dateTimeCard.get();
 
   auto timeLabel = std::make_unique<Label>();
-  timeLabel->setText(formatLocalTime("{:%H:%M}"));
+  timeLabel->setText(formatShellTime(m_config));
   timeLabel->setBold(true);
   timeLabel->setFontSize(Style::fontSizeTitle * 1.7f * scale);
   timeLabel->setColor(colorSpecFromRole(ColorRole::Primary));
@@ -276,7 +286,7 @@ std::unique_ptr<Flex> DashboardTab::create() {
   dateTimeRight->setGap(Style::spaceXs * 0.5f * scale);
 
   auto dateLabel = std::make_unique<Label>();
-  dateLabel->setText(formatCurrentDate());
+  dateLabel->setText(formatShellDate(m_config));
   dateLabel->setFontSize(Style::fontSizeBody * 0.9f * scale);
   dateLabel->setColor(colorSpecFromRole(ColorRole::OnSurface));
   m_dateLabel = dateLabel.get();
@@ -744,10 +754,10 @@ void DashboardTab::sync(Renderer& renderer) {
   syncShortcuts();
 
   if (m_timeLabel != nullptr) {
-    m_timeLabel->setText(formatLocalTime("{:%H:%M}"));
+    m_timeLabel->setText(formatShellTime(m_config));
   }
   if (m_dateLabel != nullptr) {
-    m_dateLabel->setText(formatCurrentDate());
+    m_dateLabel->setText(formatShellDate(m_config));
   }
 
   syncWallpaperBackground(renderer);

@@ -34,7 +34,7 @@ ControlCenterPanel::ControlCenterPanel(
   m_tabs[tabIndex(TabId::Audio)] =
       std::make_unique<AudioTab>(audio, mpris, config, wayland, PanelManager::instance().renderContext());
   m_tabs[tabIndex(TabId::Weather)] = std::make_unique<WeatherTab>(weather, config);
-  m_tabs[tabIndex(TabId::Calendar)] = std::make_unique<CalendarTab>();
+  m_tabs[tabIndex(TabId::Calendar)] = std::make_unique<CalendarTab>(config);
   m_tabs[tabIndex(TabId::Notifications)] = std::make_unique<NotificationsTab>(notifications);
   m_tabs[tabIndex(TabId::Network)] = std::make_unique<NetworkTab>(network, networkSecrets);
   m_tabs[tabIndex(TabId::Bluetooth)] = std::make_unique<BluetoothTab>(bluetooth, bluetoothAgent);

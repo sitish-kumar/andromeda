@@ -285,10 +285,11 @@ namespace {
 
   bool shellConfigEqual(const ShellConfig& a, const ShellConfig& b) {
     return nearlyEqual(a.uiScale, b.uiScale) && a.fontFamily == b.fontFamily && a.lang == b.lang &&
-           a.offlineMode == b.offlineMode && a.telemetryEnabled == b.telemetryEnabled &&
-           a.polkitAgent == b.polkitAgent && a.passwordMaskStyle == b.passwordMaskStyle &&
-           a.animation.enabled == b.animation.enabled && nearlyEqual(a.animation.speed, b.animation.speed) &&
-           a.avatarPath == b.avatarPath && a.settingsShowAdvanced == b.settingsShowAdvanced &&
+           a.timeFormat == b.timeFormat && a.dateFormat == b.dateFormat && a.offlineMode == b.offlineMode &&
+           a.telemetryEnabled == b.telemetryEnabled && a.polkitAgent == b.polkitAgent &&
+           a.passwordMaskStyle == b.passwordMaskStyle && a.animation.enabled == b.animation.enabled &&
+           nearlyEqual(a.animation.speed, b.animation.speed) && a.avatarPath == b.avatarPath &&
+           a.settingsShowAdvanced == b.settingsShowAdvanced &&
            a.middleClickOpensWidgetSettings == b.middleClickOpensWidgetSettings && a.showLocation == b.showLocation &&
            a.clipboardAutoPaste == b.clipboardAutoPaste && a.shadow.blur == b.shadow.blur &&
            a.shadow.offsetX == b.shadow.offsetX && a.shadow.offsetY == b.shadow.offsetY &&

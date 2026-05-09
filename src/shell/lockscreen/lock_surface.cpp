@@ -37,9 +37,13 @@ namespace {
     return tryParseHexColor(path.substr(kPrefix.size()), out);
   }
 
+  const char* shellTimeFormat(const ConfigService* config) {
+    return config != nullptr ? config->config().shell.timeFormat.c_str() : "{:%H:%M}";
+  }
+
 } // namespace
 
-LockSurface::LockSurface(WaylandConnection& connection) : Surface(connection) {
+LockSurface::LockSurface(WaylandConnection& connection, ConfigService* config) : Surface(connection), m_config(config) {
   auto wallpaper = std::make_unique<WallpaperNode>();
   m_wallpaper = static_cast<WallpaperNode*>(m_root.addChild(std::move(wallpaper)));
   m_wallpaper->setZIndex(0);
@@ -254,7 +258,7 @@ void LockSurface::onPointerEvent(const PointerEvent& event) {
 }
 
 void LockSurface::onSecondTick() {
-  const auto text = formatLocalTime("{:%H:%M}");
+  const auto text = formatLocalTime(shellTimeFormat(m_config));
   if (m_clock != nullptr && m_clock->text() != text) {
     requestUpdate();
   }
@@ -405,4 +409,4 @@ void LockSurface::applyWallpaperTexture() {
   m_wallpaperDirty = false;
 }
 
-void LockSurface::updateClockText() { m_clock->setText(formatLocalTime("{:%H:%M}")); }
+void LockSurface::updateClockText() { m_clock->setText(formatLocalTime(shellTimeFormat(m_config))); }

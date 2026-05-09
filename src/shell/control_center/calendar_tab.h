@@ -5,18 +5,23 @@
 #include <limits>
 
 class Button;
+class ConfigService;
 class InputArea;
 class Label;
 
 class CalendarTab : public Tab {
 public:
+  explicit CalendarTab(ConfigService* config = nullptr);
+
   std::unique_ptr<Flex> create() override;
   void onClose() override;
 
 private:
   void doLayout(Renderer& renderer, float contentWidth, float bodyHeight) override;
+  void doUpdate(Renderer& renderer) override;
   void rebuild();
 
+  ConfigService* m_config = nullptr;
   Flex* m_rootLayout = nullptr;
   InputArea* m_calendarArea = nullptr;
   Flex* m_card = nullptr;

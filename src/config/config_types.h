@@ -370,6 +370,8 @@ struct ShellConfig {
   float uiScale = 1.0f;
   std::string fontFamily = "sans-serif";
   std::string lang; // empty = auto-detect from $LC_ALL/$LC_MESSAGES/$LANG
+  std::string timeFormat = "{:%H:%M}";
+  std::string dateFormat = "%A, %x";
   bool offlineMode = false;
   bool telemetryEnabled = false;
   bool polkitAgent = false;

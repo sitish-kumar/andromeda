@@ -1,5 +1,6 @@
 #include "shell/control_center/calendar_tab.h"
 
+#include "config/config_service.h"
 #include "core/ui_phase.h"
 #include "i18n/i18n.h"
 #include "render/core/renderer.h"
@@ -84,7 +85,14 @@ namespace {
     return state;
   }
 
+  std::string formatShellDate(const ConfigService* config) {
+    const char* format = config != nullptr ? config->config().shell.dateFormat.c_str() : "%A, %x";
+    return formatLocalTime(format);
+  }
+
 } // namespace
+
+CalendarTab::CalendarTab(ConfigService* config) : m_config(config) {}
 
 std::unique_ptr<Flex> CalendarTab::create() {
   const float scale = contentScale();
@@ -159,7 +167,7 @@ std::unique_ptr<Flex> CalendarTab::create() {
   monthWrap->addChild(std::move(month));
 
   auto monthSub = std::make_unique<Label>();
-  monthSub->setText(i18n::tr("control-center.calendar.today"));
+  monthSub->setText(formatShellDate(m_config));
   monthSub->setCaptionStyle();
   monthSub->setFontSize(Style::fontSizeCaption * scale);
   monthSub->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
@@ -257,6 +265,13 @@ void CalendarTab::doLayout(Renderer& renderer, float contentWidth, float bodyHei
   m_rootLayout->layout(renderer);
 }
 
+void CalendarTab::doUpdate(Renderer& renderer) {
+  (void)renderer;
+  if (m_monthSubLabel != nullptr) {
+    m_monthSubLabel->setText(formatShellDate(m_config));
+  }
+}
+
 void CalendarTab::onClose() {
   m_rootLayout = nullptr;
   m_calendarArea = nullptr;
@@ -328,7 +343,7 @@ void CalendarTab::rebuild() {
   m_monthLabel->setText(monthName(month) + " " + std::to_string(year));
   m_monthLabel->setMaxWidth(monthWidth);
   if (m_monthSubLabel != nullptr) {
-    m_monthSubLabel->setText(formatCurrentDate());
+    m_monthSubLabel->setText(formatShellDate(m_config));
     m_monthSubLabel->setMaxWidth(monthWidth);
   }
 

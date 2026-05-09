@@ -27,7 +27,7 @@ struct PointerEvent;
 
 class LockSurface : public Surface {
 public:
-  explicit LockSurface(WaylandConnection& connection);
+  explicit LockSurface(WaylandConnection& connection, ConfigService* config = nullptr);
   ~LockSurface() override;
 
   using Surface::initialize;
@@ -61,6 +61,7 @@ private:
 
   ext_session_lock_surface_v1* m_lockSurface = nullptr;
   wl_output* m_output = nullptr;
+  ConfigService* m_config = nullptr;
   Node m_root;
   WallpaperNode* m_wallpaper = nullptr;
   Box* m_backdrop = nullptr;

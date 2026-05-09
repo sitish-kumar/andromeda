@@ -329,7 +329,7 @@ void LockScreen::syncInstances() {
 }
 
 void LockScreen::createInstance(const WaylandOutput& output) {
-  auto surface = std::make_unique<LockSurface>(*m_wayland);
+  auto surface = std::make_unique<LockSurface>(*m_wayland, m_configService);
   surface->setRenderContext(m_renderContext);
   surface->setTextureCache(m_textureCache);
   surface->setLockedState(m_locked);

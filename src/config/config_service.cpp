@@ -1181,6 +1181,12 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     if (auto v = (*shellTbl)["lang"].value<std::string>()) {
       shell.lang = *v;
     }
+    if (auto v = (*shellTbl)["time_format"].value<std::string>()) {
+      shell.timeFormat = *v;
+    }
+    if (auto v = (*shellTbl)["date_format"].value<std::string>()) {
+      shell.dateFormat = *v;
+    }
     if (auto v = (*shellTbl)["offline_mode"].value<bool>()) {
       shell.offlineMode = *v;
     }

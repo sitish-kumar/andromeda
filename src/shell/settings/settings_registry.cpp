@@ -569,6 +569,12 @@ namespace settings {
         tr("settings.schema.shell.middle-click-opens-widget-settings.description"),
         {"shell", "middle_click_opens_widget_settings"}, ToggleSetting{cfg.shell.middleClickOpensWidgetSettings},
         "bar widget settings middle click configure"));
+    entries.push_back(makeEntry("shell", "formats", tr("settings.schema.shell.time-format.label"),
+                                tr("settings.schema.shell.time-format.description"), {"shell", "time_format"},
+                                TextSetting{cfg.shell.timeFormat, "{:%H:%M}"}, "clock time format strftime chrono"));
+    entries.push_back(makeEntry("shell", "formats", tr("settings.schema.shell.date-format.label"),
+                                tr("settings.schema.shell.date-format.description"), {"shell", "date_format"},
+                                TextSetting{cfg.shell.dateFormat, "%A, %x"}, "calendar date format strftime chrono"));
     entries.push_back(makeEntry("shell", "location", tr("settings.schema.shell.show-location.label"),
                                 tr("settings.schema.shell.show-location.description"), {"shell", "show_location"},
                                 ToggleSetting{cfg.shell.showLocation}, "weather"));

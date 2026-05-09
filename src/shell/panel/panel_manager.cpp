@@ -1309,6 +1309,9 @@ void PanelManager::onConfigReloaded() {
   // Re-apply compositor blur for any open panel — covers both attached and layer-shell
   // panels reacting to shell.panel.background_blur changes.
   applyPanelCompositorBlur();
+  if (m_surface != nullptr) {
+    m_surface->requestUpdate();
+  }
 
   // The remaining work is bar-config-driven and only applies to attached panels.
   if (!isAttachedOpen() || m_output == nullptr) {

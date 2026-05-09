@@ -201,8 +201,8 @@
       "nightlight": "Night Light",
       "nightlight-states": {
         "off": "Night Light",
-        "scheduled-day": "Scheduled — day",
-        "scheduled-night": "Night Light",
+        "scheduled-day": "Scheduled",
+        "scheduled-night": "Running",
         "forced": "Always on"
       },
       "notification": "DND",
@@ -729,6 +729,7 @@
         "directories": "Directories",
         "effects": "Effects",
         "focus-styling": "Focus Styling",
+        "formats": "Formats",
         "general": "General",
         "grouping": "Grouping",
         "lifecycle": "Lifecycle",
@@ -1251,6 +1252,14 @@
         "middle-click-opens-widget-settings": {
           "label": "Middle Click Opens Widget Settings",
           "description": "Open a bar widget's settings from the bar with middle click"
+        },
+        "time-format": {
+          "label": "Time Format",
+          "description": "Default time format for shell UI without its own setting"
+        },
+        "date-format": {
+          "label": "Date Format",
+          "description": "Default date format for shell UI without its own setting"
         },
         "show-location": {
           "label": "Show Location",
