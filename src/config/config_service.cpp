@@ -1492,6 +1492,8 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       dock.activeOpacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
     if (auto v = (*dockTbl)["inactive_opacity"].value<double>())
       dock.inactiveOpacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
+    if (auto v = (*dockTbl)["show_dots"].value<bool>())
+      dock.showDots = *v;
     if (auto v = (*dockTbl)["show_instance_count"].value<bool>())
       dock.showInstanceCount = *v;
     if (auto* arr = (*dockTbl)["pinned"].as_array())

@@ -232,6 +232,7 @@ struct DockConfig {
   float inactiveScale = 0.85f;     // non-focused app icon scale
   float activeOpacity = 1.0f;      // focused app icon opacity
   float inactiveOpacity = 0.85f;   // non-focused app icon opacity
+  bool showDots = false;           // show optional running window dots beside app icons
   bool showInstanceCount = true;   // show a badge with count when app has >1 window
   std::vector<std::string> pinned; // desktop entry IDs to always show
 

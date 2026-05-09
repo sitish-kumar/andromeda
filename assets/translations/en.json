@@ -1289,7 +1289,11 @@
         },
         "show-running": {
           "label": "Show Running",
-          "description": "Show indicators for running applications"
+          "description": "Show running applications that are not pinned"
+        },
+        "show-dots": {
+          "label": "Show Dots",
+          "description": "Show running window dots beside dock icons"
         },
         "show-instance-count": {
           "label": "Show Instance Count",

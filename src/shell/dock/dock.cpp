@@ -41,6 +41,9 @@ namespace {
   constexpr float kBadgeSizeRatio = 0.30f; // fraction of icon size
   constexpr float kBadgeMinSize = 16.0f;   // minimum diameter in px
   constexpr float kBadgeFontRatio = 0.72f; // font size relative to badge diameter
+  constexpr float kDotSizeRatio = 0.09f;
+  constexpr float kDotMinSize = 4.0f;
+  constexpr float kDotGap = 3.0f;
 
   // Thin strip (px) kept in the input region when auto-hide is in the hidden
   // state, so the pointer can re-trigger show on approach to the screen edge.
@@ -1022,6 +1025,29 @@ void Dock::rebuildItems(DockInstance& instance) {
       item.iconGlyph = static_cast<Glyph*>(areaNode->addChild(std::move(glyph)));
     }
 
+    if (cfg.showDots) {
+      const float dot = std::max(kDotMinSize, std::round(iSize * kDotSizeRatio));
+      const bool verticalDots = cfg.position == "left" || cfg.position == "right";
+
+      for (std::size_t dotIndex = 0; dotIndex < item.dotIndicators.size(); ++dotIndex) {
+        auto dotNode = std::make_unique<Box>();
+        dotNode->setRadius(dot * 0.5f);
+        dotNode->setSize(dot, dot);
+        dotNode->setFill(colorSpecFromRole(ColorRole::Secondary));
+        dotNode->setVisible(false);
+
+        if (verticalDots) {
+          const float x = cfg.position == "left" ? std::round(cellMain - dot - 1.0f) : 1.0f;
+          dotNode->setPosition(x, std::round((cellMain - dot) * 0.5f));
+        } else {
+          const float y = cfg.position == "bottom" ? 1.0f : std::round(cellMain - dot - 1.0f);
+          dotNode->setPosition(std::round((cellMain - dot) * 0.5f), y);
+        }
+
+        item.dotIndicators[dotIndex] = static_cast<Box*>(areaNode->addChild(std::move(dotNode)));
+      }
+    }
+
     // Instance-count badge — top-right corner of the icon, initially hidden.
     if (cfg.showInstanceCount) {
       const float bd = std::max(kBadgeMinSize, iSize * kBadgeSizeRatio);
@@ -1159,27 +1185,62 @@ void Dock::updateVisuals(DockInstance& instance) {
       }
     }
 
-    // Instance-count badge.
-    if (item.badge != nullptr && item.badgeLabel != nullptr) {
+    const bool needsWindowCount = cfg.showDots || item.badge != nullptr;
+    std::size_t count = 0;
+    if (needsWindowCount) {
       const auto windows = m_platform->windowsForApp(item.idLower, item.startupWmClassLower,
                                                      currentDockFilterOutput(cfg, instance.output));
-      const std::size_t count = windows.size();
-      if (count != item.instanceCount) {
-        item.instanceCount = count;
-        const bool show = (count >= 2);
-        item.badge->setVisible(show);
-        item.badgeLabel->setVisible(show);
-        if (show) {
-          const std::string label = (count > 9) ? "9+" : std::to_string(count);
-          item.badgeLabel->setText(label);
-          item.badgeLabel->setColor(colorSpecFromRole(ColorRole::OnPrimary));
-          item.badge->setFill(colorSpecFromRole(ColorRole::Primary));
-          if (m_renderContext != nullptr) {
-            const float bd = std::max(kBadgeMinSize, static_cast<float>(cfg.iconSize) * kBadgeSizeRatio);
-            item.badgeLabel->measure(*m_renderContext);
-            item.badgeLabel->setPosition(std::round((bd - item.badgeLabel->width()) * 0.5f),
-                                         std::round((bd - item.badgeLabel->height()) * 0.5f));
+      count = windows.size();
+      item.instanceCount = count;
+    }
+
+    if (cfg.showDots) {
+      const std::size_t dotCount = item.running ? std::min<std::size_t>(std::max<std::size_t>(count, 1), 3) : 0;
+      const float iSize = static_cast<float>(cfg.iconSize);
+      constexpr float kCellPad = 6.0f;
+      const float cellMain = iSize + 2.0f * kCellPad;
+      const float dot = std::max(kDotMinSize, std::round(iSize * kDotSizeRatio));
+      const float groupLength =
+          dotCount == 0 ? dot : dot * static_cast<float>(dotCount) + kDotGap * static_cast<float>(dotCount - 1);
+      const float groupStart = std::round((cellMain - groupLength) * 0.5f);
+      const bool verticalDots = cfg.position == "left" || cfg.position == "right";
+
+      for (std::size_t dotIndex = 0; dotIndex < item.dotIndicators.size(); ++dotIndex) {
+        if (item.dotIndicators[dotIndex] == nullptr) {
+          continue;
+        }
+        Box* dotNode = item.dotIndicators[dotIndex];
+        const bool visible = dotIndex < dotCount;
+        dotNode->setVisible(visible);
+        dotNode->setFill(colorSpecFromRole(ColorRole::Secondary));
+        if (visible) {
+          const float main = groupStart + static_cast<float>(dotIndex) * (dot + kDotGap);
+          if (verticalDots) {
+            const float x = cfg.position == "left" ? std::round(cellMain - dot - 1.0f) : 1.0f;
+            dotNode->setPosition(x, main);
+          } else {
+            const float y = cfg.position == "bottom" ? 1.0f : std::round(cellMain - dot - 1.0f);
+            dotNode->setPosition(main, y);
           }
+        }
+      }
+    }
+
+    // Instance-count badge.
+    if (item.badge != nullptr && item.badgeLabel != nullptr) {
+      const bool show = count >= 2;
+      item.badge->setVisible(show);
+      item.badgeLabel->setVisible(show);
+      if (show) {
+        const std::string label = (count > 9) ? "9+" : std::to_string(count);
+        item.badgeLabel->setText(label);
+        item.badgeLabel->setColor(colorSpecFromRole(ColorRole::OnPrimary));
+        item.badge->setFill(colorSpecFromRole(ColorRole::Primary));
+        if (m_renderContext != nullptr) {
+          const float bd = std::max(kBadgeMinSize, static_cast<float>(cfg.iconSize) * kBadgeSizeRatio);
+          item.badgeLabel->measure(*m_renderContext);
+          item.badgeLabel->setPosition(std::round((bd - item.badgeLabel->width()) * 0.5f),
+                                       std::round((bd - item.badgeLabel->height()) * 0.5f));
         }
       }
     }
