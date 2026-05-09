@@ -49,6 +49,8 @@ private:
   std::vector<std::string> m_hiddenItems;
   std::vector<std::string> m_pinnedItems;
   std::vector<Image*> m_loadedImages;
+  std::unordered_map<std::string, std::size_t> m_initialPixmaps;
+  std::unordered_map<std::string, bool> m_preferPixmap;
   float m_contentHeight = 0.0f;
   bool m_isVertical = false;
   bool m_rebuildPending = true;

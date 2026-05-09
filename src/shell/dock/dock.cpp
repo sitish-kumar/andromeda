@@ -171,7 +171,6 @@ void Dock::reload() {
   const auto& cfg = m_config->config().dock;
   m_lastDockConfig = cfg;
   m_lastShadow = m_config->config().shell.shadow;
-  m_lastPinnedConfig = cfg.pinned;
   m_lastBarLayerStack = barLayerStackSignature(m_config->config());
 
   if (!cfg.enabled) {
