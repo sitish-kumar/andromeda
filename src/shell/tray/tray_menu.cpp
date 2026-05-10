@@ -106,39 +106,7 @@ namespace {
       return false;
     }
     const auto normalizedToken = toLower(token);
-    auto fieldMatches = [&](std::string_view tokenValue, std::string_view value) {
-      for (const auto& variant : identifierVariants(value)) {
-        if (variant == tokenValue) {
-          return true;
-        }
-      }
-      return false;
-    };
 
-    // Typed token matching (preferred for new pins).
-    if (normalizedToken.rfind("item:", 0) == 0) {
-      const auto value = normalizedToken.substr(5);
-      return fieldMatches(value, item.itemName) || fieldMatches(value, item.id) || fieldMatches(value, item.objectPath);
-    }
-    if (normalizedToken.rfind("icon:", 0) == 0) {
-      const auto value = normalizedToken.substr(5);
-      const auto iconVariants = identifierVariants(item.iconName);
-      const auto attentionVariants = identifierVariants(item.attentionIconName);
-      return std::ranges::find(iconVariants, value) != iconVariants.end() ||
-             std::ranges::find(attentionVariants, value) != attentionVariants.end();
-    }
-    if (normalizedToken.rfind("title:", 0) == 0) {
-      const auto value = normalizedToken.substr(6);
-      const auto titleVariants = identifierVariants(item.title);
-      return std::ranges::find(titleVariants, value) != titleVariants.end();
-    }
-    if (normalizedToken.rfind("bus:", 0) == 0) {
-      const auto value = normalizedToken.substr(4);
-      const auto busVariants = identifierVariants(item.busName);
-      return std::ranges::find(busVariants, value) != busVariants.end();
-    }
-
-    // Backward-compatible matching for existing untyped pins.
     std::vector<std::string> candidates;
     auto appendVariants = [&candidates](std::string_view text) {
       for (const auto& variant : identifierVariants(text)) {
@@ -150,6 +118,7 @@ namespace {
     appendVariants(item.id);
     appendVariants(item.busName);
     appendVariants(item.itemName);
+    appendVariants(item.processName);
     appendVariants(item.title);
     appendVariants(item.objectPath);
     appendVariants(item.iconName);
@@ -922,28 +891,30 @@ bool TrayMenu::toggleActiveItemPinned() {
     std::erase_if(pinned, [&](const std::string& token) { return tokenMatchesItem(token, *item); });
   } else {
     std::string token;
-    // Persist typed stable tokens; avoid transient :1.xxx ids.
+    // Persist stable human-readable tokens; avoid transient :1.xxx ids.
     if (!looksGenericStatusItemName(item->itemName)) {
-      token = "item:" + item->itemName;
+      token = item->itemName;
     } else if (!item->iconName.empty()) {
-      token = "icon:" + item->iconName;
+      token = item->iconName;
     } else if (!item->overlayIconName.empty()) {
-      token = "icon:" + item->overlayIconName;
+      token = item->overlayIconName;
     } else if (!item->attentionIconName.empty()) {
-      token = "icon:" + item->attentionIconName;
+      token = item->attentionIconName;
     } else if (!looksGenericStatusItemName(item->title)) {
-      token = "title:" + item->title;
+      token = item->title;
+    } else if (!looksGenericStatusItemName(item->processName)) {
+      token = item->processName;
     } else if (const auto objectToken = lastPathSegment(item->objectPath);
                !objectToken.empty() && !looksGenericStatusItemName(objectToken) && !isUniqueBusName(objectToken)) {
-      token = "item:" + objectToken;
+      token = objectToken;
     } else if (const auto idToken = lastPathSegment(item->id);
                !idToken.empty() && !looksGenericStatusItemName(idToken) && !isUniqueBusName(idToken)) {
-      token = "item:" + idToken;
+      token = idToken;
     } else if (!isUniqueBusName(item->busName)) {
-      token = "bus:" + item->busName;
+      token = item->busName;
     }
     if (token.empty()) {
-      token = "item:" + item->id;
+      token = item->id;
     }
     pinned.push_back(token);
   }

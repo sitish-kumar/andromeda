@@ -7,8 +7,11 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <optional>
 #include <string_view>
 
@@ -36,6 +39,40 @@ namespace {
   bool starts_with_slash(std::string_view value) { return !value.empty() && value.front() == '/'; }
 
   bool looks_like_dbus_name(std::string_view value) { return !value.empty() && value != "__path_only__"; }
+
+  std::string trim(std::string value) {
+    while (!value.empty() && std::isspace(static_cast<unsigned char>(value.back())) != 0) {
+      value.pop_back();
+    }
+    std::size_t first = 0;
+    while (first < value.size() && std::isspace(static_cast<unsigned char>(value[first])) != 0) {
+      ++first;
+    }
+    if (first > 0) {
+      value.erase(0, first);
+    }
+    return value;
+  }
+
+  std::string processNameForPid(std::uint32_t pid) {
+    if (pid == 0) {
+      return {};
+    }
+
+    const std::filesystem::path procDir = std::filesystem::path("/proc") / std::to_string(pid);
+    std::error_code ec;
+    const auto exe = std::filesystem::read_symlink(procDir / "exe", ec);
+    if (!ec && !exe.empty()) {
+      return exe.filename().string();
+    }
+
+    std::ifstream comm(procDir / "comm");
+    std::string name;
+    if (std::getline(comm, name)) {
+      return trim(std::move(name));
+    }
+    return {};
+  }
 
   std::vector<std::string> path_name_hints(std::string_view objectPath) {
     std::vector<std::string> hints;
@@ -1151,6 +1188,24 @@ bool TrayService::hasServiceOwner(const std::string& serviceName) const {
   }
 }
 
+std::string TrayService::processNameForBusName(const std::string& busName) const {
+  if (busName.empty() || m_dbusProxy == nullptr || !looks_like_dbus_name(busName)) {
+    return {};
+  }
+
+  try {
+    std::uint32_t pid = 0;
+    m_dbusProxy->callMethod("GetConnectionUnixProcessID")
+        .onInterface(k_dbus_interface)
+        .withTimeout(std::chrono::milliseconds(200))
+        .withArguments(busName)
+        .storeResultsTo(pid);
+    return processNameForPid(pid);
+  } catch (const sdbus::Error&) {
+    return {};
+  }
+}
+
 std::string TrayService::busNameFromItemId(const std::string& itemId) {
   if (itemId.empty()) {
     return {};
@@ -1194,6 +1249,7 @@ void TrayService::registerOrRefreshItem(const std::string& busName, const std::s
                                 .attentionIconName = {},
                                 .menuObjectPath = {},
                                 .itemName = {},
+                                .processName = processNameForBusName(busName),
                                 .title = {},
                                 .status = {},
                                 .iconArgb32 = {},

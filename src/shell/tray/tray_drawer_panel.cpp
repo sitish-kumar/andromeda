@@ -101,25 +101,11 @@ std::size_t TrayDrawerPanel::visibleItemCount() const {
     if (token.empty()) {
       return false;
     }
-    if (token.rfind("item:", 0) == 0) {
-      const auto value = token.substr(5);
-      return hasVariant(value, item.itemName) || hasVariant(value, item.id) || hasVariant(value, item.objectPath);
-    }
-    if (token.rfind("icon:", 0) == 0) {
-      const auto value = token.substr(5);
-      return hasVariant(value, item.iconName) || hasVariant(value, item.overlayIconName) ||
-             hasVariant(value, item.attentionIconName);
-    }
-    if (token.rfind("title:", 0) == 0) {
-      return hasVariant(token.substr(6), item.title);
-    }
-    if (token.rfind("bus:", 0) == 0) {
-      return hasVariant(token.substr(4), item.busName);
-    }
     const auto lowered = toLower(std::string(token));
     return hasVariant(lowered, item.id) || hasVariant(lowered, item.busName) || hasVariant(lowered, item.itemName) ||
-           hasVariant(lowered, item.objectPath) || hasVariant(lowered, item.iconName) ||
-           hasVariant(lowered, item.overlayIconName) || hasVariant(lowered, item.attentionIconName);
+           hasVariant(lowered, item.processName) || hasVariant(lowered, item.objectPath) ||
+           hasVariant(lowered, item.iconName) || hasVariant(lowered, item.overlayIconName) ||
+           hasVariant(lowered, item.attentionIconName);
   };
   std::size_t visible = 0;
   for (const auto& item : m_tray->items()) {
