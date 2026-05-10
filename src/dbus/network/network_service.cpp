@@ -756,9 +756,9 @@ void NetworkService::refreshVpnConnections(std::function<void()> onComplete) {
                           .onInterface(k_propertiesInterface)
                           .withArguments(k_nmActiveConnectionInterface)
                           .uponReplyInvoke([active, activeState,
-                                            onActiveComplete](std::optional<sdbus::Error> err,
+                                            onActiveComplete](std::optional<sdbus::Error> getAllErr,
                                                               std::map<std::string, sdbus::Variant> properties) {
-                            if (!err.has_value()) {
+                            if (!getAllErr.has_value()) {
                               std::uint32_t state = 0U;
                               if (auto stateIt = properties.find("State"); stateIt != properties.end()) {
                                 try {
@@ -794,7 +794,7 @@ void NetworkService::refreshVpnConnections(std::function<void()> onComplete) {
                   std::shared_ptr<sdbus::IProxy>(sdbus::createProxy(m_bus.connection(), k_nmBusName, connectionPath));
               connection->callMethodAsync("GetSettings")
                   .onInterface(k_nmSettingsConnectionInterface)
-                  .uponReplyInvoke([this, connection, opState, connectionPath,
+                  .uponReplyInvoke([this, connection, opState, connectionPath, markActiveAndFinalize,
                                     onComplete](std::optional<sdbus::Error> getErr,
                                                 std::map<std::string, std::map<std::string, sdbus::Variant>> cfg) {
                     if (!getErr.has_value()) {
