@@ -30,6 +30,7 @@ namespace {
   constexpr float kMenuTopGap = Style::spaceXs;
   constexpr float kHorizontalPadding = Style::spaceMd;
   constexpr float kGlyphSize = 14.0f;
+  constexpr float kPlaceholderAlpha = 0.68f;
   constexpr std::int32_t kOpenSelectZIndex = 100;
   constexpr std::size_t kMaxVisibleOptions = 6;
   constexpr auto kTypeaheadTimeout = std::chrono::milliseconds(800);
@@ -622,8 +623,8 @@ void Select::applyVisualState() {
 
   Color triggerBg = resolved(ColorRole::SurfaceVariant);
   Color triggerBorder = resolved(ColorRole::Outline);
-  ColorSpec triggerText =
-      selectedText().empty() ? colorSpecFromRole(ColorRole::OnSurfaceVariant) : colorSpecFromRole(ColorRole::OnSurface);
+  ColorSpec triggerText = selectedText().empty() ? colorSpecFromRole(ColorRole::OnSurfaceVariant, kPlaceholderAlpha)
+                                                 : colorSpecFromRole(ColorRole::OnSurface);
 
   if (!m_enabled) {
     triggerBg = resolved(ColorRole::SurfaceVariant, 0.75f);

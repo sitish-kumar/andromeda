@@ -65,6 +65,8 @@ namespace {
   constexpr auto kCursorBlinkInterval = std::chrono::milliseconds(530);
   constexpr auto kCursorBlinkResumeDelay = std::chrono::milliseconds(650);
   constexpr float kTextInnerInset = 3.0f;
+  constexpr float kPlaceholderAlpha = 0.68f;
+  constexpr float kPrimaryPlaceholderAlpha = 0.50f;
   constexpr float kPasswordGlyphScale = 0.82f;
   constexpr auto kDoubleClickThreshold = std::chrono::milliseconds(400);
   constexpr float kDoubleClickDistance = 6.0f;
@@ -749,17 +751,21 @@ void Input::applyVisualState() {
     cursorStyleEmb.radius = 1.0f;
     m_cursor->setStyle(cursorStyleEmb);
 
+    const bool showingPlaceholder = m_value.empty() && !m_placeholder.empty();
     if (m_invalid) {
       m_label->setColor(colorSpecFromRole(ColorRole::Error));
-    } else if ((m_value.empty() && !m_placeholder.empty()) || readOnly) {
+    } else if (showingPlaceholder) {
+      m_label->setColor(colorSpecFromRole(ColorRole::OnPrimary, kPrimaryPlaceholderAlpha));
+    } else if (readOnly) {
       m_label->setColor(colorSpecFromRole(ColorRole::OnPrimary, 0.65f));
     } else {
       m_label->setColor(colorSpecFromRole(ColorRole::OnPrimary));
     }
     const Color passwordGlyphEmb =
         m_invalid ? resolved(ColorRole::Error)
-                  : (((m_value.empty() && !m_placeholder.empty()) || readOnly) ? resolved(ColorRole::OnPrimary, 0.65f)
-                                                                               : resolved(ColorRole::OnPrimary));
+                  : (showingPlaceholder
+                         ? resolved(ColorRole::OnPrimary, kPrimaryPlaceholderAlpha)
+                         : (readOnly ? resolved(ColorRole::OnPrimary, 0.65f) : resolved(ColorRole::OnPrimary)));
     for (auto* glyph : m_passwordGlyphs) {
       glyph->setColor(passwordGlyphEmb);
     }
@@ -781,12 +787,14 @@ void Input::applyVisualState() {
   cursorStyle.radius = 1.0f;
   m_cursor->setStyle(cursorStyle);
 
-  const ColorRole textRole =
-      m_invalid ? ColorRole::Error
-                : (((m_value.empty() && !m_placeholder.empty()) || readOnly) ? ColorRole::OnSurfaceVariant
-                                                                             : ColorRole::OnSurface);
-  m_label->setColor(colorSpecFromRole(textRole));
-  const Color passwordGlyphColor = colorForRole(textRole);
+  const bool showingPlaceholder = m_value.empty() && !m_placeholder.empty();
+  const ColorSpec textColor =
+      m_invalid ? colorSpecFromRole(ColorRole::Error)
+                : (showingPlaceholder ? colorSpecFromRole(ColorRole::OnSurfaceVariant, kPlaceholderAlpha)
+                                      : (readOnly ? colorSpecFromRole(ColorRole::OnSurfaceVariant)
+                                                  : colorSpecFromRole(ColorRole::OnSurface)));
+  m_label->setColor(textColor);
+  const Color passwordGlyphColor = resolveColorSpec(textColor);
   for (auto* glyph : m_passwordGlyphs) {
     glyph->setColor(passwordGlyphColor);
   }
