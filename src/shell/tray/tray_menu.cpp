@@ -323,10 +323,6 @@ void TrayMenu::toggleForItem(const std::string& itemId) {
   }
 
   m_activeItemId = itemId;
-  if (m_tray != nullptr) {
-    m_tray->primeMenuForOpen(itemId);
-    m_tray->notifyMenuOpened(m_activeItemId);
-  }
   refreshEntries();
 
   m_visible = true;
@@ -334,6 +330,14 @@ void TrayMenu::toggleForItem(const std::string& itemId) {
   if (m_instance == nullptr || m_instance->surface == nullptr) {
     close();
     return;
+  }
+
+  // Notify the dbusmenu server the root menu is being opened. Well-behaved
+  // servers (including Electron) rely on paired opened/closed events to reset
+  // internal state — skipping them causes their handlers to desync after many
+  // open/close cycles, eventually returning errors on every GetLayout.
+  if (m_tray != nullptr) {
+    m_tray->notifyMenuOpened(m_activeItemId);
   }
 
   rebuildScenes();
@@ -973,7 +977,6 @@ void TrayMenu::openSubmenu(std::int32_t parentEntryId, float rowCenterY) {
     return;
   }
 
-  m_tray->notifyMenuOpened(m_activeItemId, parentEntryId);
   m_submenuEntries = m_tray->menuEntriesForParent(m_activeItemId, parentEntryId);
   if (m_submenuEntries.empty()) {
     m_pendingSubmenuParentEntryId = parentEntryId;
@@ -983,6 +986,9 @@ void TrayMenu::openSubmenu(std::int32_t parentEntryId, float rowCenterY) {
   m_pendingSubmenuParentEntryId = 0;
   m_pendingSubmenuRowCenterY = 0.0f;
   m_submenuParentEntryId = parentEntryId;
+  // Signal the server that this submenu is being opened. Matches the opened/closed
+  // pairing we do for the root menu.
+  m_tray->notifyMenuOpened(m_activeItemId, parentEntryId);
 
   // Anchor rect is in the main popup's coordinate space (0,0 = top-left of main popup surface)
   const auto mainWidth = static_cast<std::int32_t>(m_instance->surface->width());

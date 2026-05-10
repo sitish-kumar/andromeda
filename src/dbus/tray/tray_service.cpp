@@ -275,8 +275,10 @@ namespace {
     if (entry.id <= 0 || !entry.visible) {
       return false;
     }
-    // Keep rows whose labels (and icons) arrive only after ItemsPropertiesUpdated — the old Quickshell path
-    // would still materialize these ids while the layout was filling in.
+    if (entry.label.empty() && !entry.separator && !entry.hasSubmenu && entry.iconName.empty() &&
+        entry.iconData.empty()) {
+      return false;
+    }
     return true;
   }
 
@@ -897,20 +899,6 @@ void TrayService::notifyMenuOpened(const std::string& itemId, std::int32_t entry
 
 void TrayService::notifyMenuClosed(const std::string& itemId, std::int32_t entryId) {
   sendMenuEvent(itemId, entryId, "closed");
-}
-
-void TrayService::primeMenuForOpen(const std::string& itemId) {
-  if (!ensureItemProxy(itemId)) {
-    return;
-  }
-  const auto itemIt = m_items.find(itemId);
-  if (itemIt == m_items.end()) {
-    return;
-  }
-  if (itemIt->second.busName.empty() || itemIt->second.menuObjectPath.empty()) {
-    return;
-  }
-  ensureMenuCache(itemId, itemIt->second.busName, itemIt->second.menuObjectPath);
 }
 
 bool TrayService::activateMenuEntry(const std::string& itemId, std::int32_t entryId) {

@@ -79,8 +79,6 @@ public:
   // open/close cycles.
   void notifyMenuOpened(const std::string& itemId, std::int32_t entryId = 0);
   void notifyMenuClosed(const std::string& itemId, std::int32_t entryId = 0);
-  /// Ensures the dbusmenu proxy exists so notifyMenuOpened runs before the first menuEntries fetch.
-  void primeMenuForOpen(const std::string& itemId);
   [[nodiscard]] std::vector<std::string> registeredItems() const;
   [[nodiscard]] bool activateItem(const std::string& itemId, std::int32_t x = 0, std::int32_t y = 0);
   [[nodiscard]] bool openContextMenu(const std::string& itemId, std::int32_t x = 0, std::int32_t y = 0);
