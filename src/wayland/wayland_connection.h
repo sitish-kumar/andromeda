@@ -10,6 +10,7 @@
 #include <optional>
 #include <poll.h>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -131,6 +132,8 @@ public:
   void activateSurface(wl_surface* surface);
 
   [[nodiscard]] std::optional<ActiveToplevel> activeToplevel() const;
+  [[nodiscard]] std::optional<ActiveToplevel>
+  matchToplevelByTitleAndAppId(std::string_view title, std::string_view appId, wl_output* preferredOutput) const;
   [[nodiscard]] wl_output* activeToplevelOutput() const;
   [[nodiscard]] std::vector<std::string> runningAppIds(wl_output* outputFilter = nullptr) const;
   [[nodiscard]] std::vector<ToplevelInfo> windowsForApp(const std::string& idLower, const std::string& wmClassLower,

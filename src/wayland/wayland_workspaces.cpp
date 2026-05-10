@@ -218,6 +218,14 @@ wl_output* WaylandWorkspaces::dwlIpcSelectedOutput() const {
   return static_cast<MangoWorkspaceBackend*>(m_dwlIpcBackend)->ipcSelectedOutput();
 }
 
+std::optional<std::pair<std::string, std::string>>
+WaylandWorkspaces::dwlIpcFocusedClientOnOutput(wl_output* output) const {
+  if (m_dwlIpcBackend == nullptr || !m_dwlIpcBackend->isAvailable()) {
+    return std::nullopt;
+  }
+  return static_cast<const MangoWorkspaceBackend*>(m_dwlIpcBackend)->ipcFocusedClientForOutput(output);
+}
+
 void WaylandWorkspaces::setActiveBackend(WorkspaceBackend* backend) {
   m_activeBackend = backend;
   kLog.info("workspace backend={}", backendName());

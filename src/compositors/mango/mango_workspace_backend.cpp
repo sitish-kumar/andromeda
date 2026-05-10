@@ -5,7 +5,9 @@
 
 #include <algorithm>
 #include <charconv>
+#include <optional>
 #include <string>
+#include <utility>
 
 namespace {
 
@@ -36,8 +38,15 @@ namespace {
   }
 
   void outputLayout(void* /*data*/, zdwl_ipc_output_v2* /*output*/, uint32_t /*layout*/) {}
-  void outputTitle(void* /*data*/, zdwl_ipc_output_v2* /*output*/, const char* /*title*/) {}
-  void outputAppId(void* /*data*/, zdwl_ipc_output_v2* /*output*/, const char* /*appid*/) {}
+
+  void outputTitle(void* data, zdwl_ipc_output_v2* output, const char* title) {
+    static_cast<MangoWorkspaceBackend*>(data)->onOutputTitle(output, title);
+  }
+
+  void outputAppId(void* data, zdwl_ipc_output_v2* output, const char* appId) {
+    static_cast<MangoWorkspaceBackend*>(data)->onOutputAppId(output, appId);
+  }
+
   void outputLayoutSymbol(void* /*data*/, zdwl_ipc_output_v2* /*output*/, const char* /*layout*/) {}
 
   void outputFrame(void* data, zdwl_ipc_output_v2* output) {
@@ -160,7 +169,9 @@ void MangoWorkspaceBackend::cleanup() {
 }
 
 void MangoWorkspaceBackend::onOutputAdded(wl_output* output) {
-  m_outputs.try_emplace(output, OutputState{.output = output, .handle = nullptr, .active = false, .tags = {}});
+  OutputState state;
+  state.output = output;
+  m_outputs.try_emplace(output, std::move(state));
   ensureOutputBound(output);
 }
 
@@ -193,10 +204,32 @@ void MangoWorkspaceBackend::onOutputActive(zdwl_ipc_output_v2* handle, std::uint
   }
   auto state = m_outputs.find(it->second);
   if (state != m_outputs.end()) {
-    // Double-buffer like noctalia-qs: dwl commits ipc state on frame; applying active immediately can leave
-    // multiple outputs marked active if the compositor updates selection across outputs in one dispatch.
     state->second.hasPendingIpcActive = true;
     state->second.pendingIpcActive = active != 0;
+  }
+}
+
+void MangoWorkspaceBackend::onOutputTitle(zdwl_ipc_output_v2* handle, const char* title) {
+  const auto it = m_outputByHandle.find(handle);
+  if (it == m_outputByHandle.end()) {
+    return;
+  }
+  auto state = m_outputs.find(it->second);
+  if (state != m_outputs.end()) {
+    state->second.hasPendingTitle = true;
+    state->second.pendingTitle = title != nullptr ? title : "";
+  }
+}
+
+void MangoWorkspaceBackend::onOutputAppId(zdwl_ipc_output_v2* handle, const char* appId) {
+  const auto it = m_outputByHandle.find(handle);
+  if (it == m_outputByHandle.end()) {
+    return;
+  }
+  auto state = m_outputs.find(it->second);
+  if (state != m_outputs.end()) {
+    state->second.hasPendingAppId = true;
+    state->second.pendingAppId = appId != nullptr ? appId : "";
   }
 }
 
@@ -251,6 +284,14 @@ void MangoWorkspaceBackend::onOutputFrame(zdwl_ipc_output_v2* handle) {
           st.active = false;
         }
         st.hasPendingIpcActive = false;
+      }
+      if (st.hasPendingTitle) {
+        st.dwlTitle = std::move(st.pendingTitle);
+        st.hasPendingTitle = false;
+      }
+      if (st.hasPendingAppId) {
+        st.dwlAppId = std::move(st.pendingAppId);
+        st.hasPendingAppId = false;
       }
       kLog.debug("frame output={} total_tags={} snapshot={}", static_cast<const void*>(st.output), m_tagCount,
                  summarizeTags(st));
@@ -368,4 +409,16 @@ wl_output* MangoWorkspaceBackend::ipcSelectedOutput() const {
     }
   }
   return nullptr;
+}
+
+std::optional<std::pair<std::string, std::string>>
+MangoWorkspaceBackend::ipcFocusedClientForOutput(wl_output* output) const {
+  if (output == nullptr) {
+    return std::nullopt;
+  }
+  const auto it = m_outputs.find(output);
+  if (it == m_outputs.end()) {
+    return std::nullopt;
+  }
+  return std::pair<std::string, std::string>{it->second.dwlTitle, it->second.dwlAppId};
 }

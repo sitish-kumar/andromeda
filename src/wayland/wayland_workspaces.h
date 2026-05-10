@@ -3,8 +3,11 @@
 #include "compositors/workspace_backend.h"
 
 #include <memory>
+#include <optional>
+#include <string>
 #include <string_view>
 #include <unordered_map>
+#include <utility>
 
 struct wl_output;
 struct ext_workspace_manager_v1;
@@ -42,8 +45,9 @@ public:
   [[nodiscard]] std::vector<Workspace> all() const;
   [[nodiscard]] std::vector<Workspace> forOutput(wl_output* output) const;
 
-  /// dwl-ipc selected output (zdwl active bit), or nullptr if ipc is not bound or no output is active yet.
   [[nodiscard]] wl_output* dwlIpcSelectedOutput() const;
+
+  [[nodiscard]] std::optional<std::pair<std::string, std::string>> dwlIpcFocusedClientOnOutput(wl_output* output) const;
 
 private:
   void setActiveBackend(WorkspaceBackend* backend);

@@ -323,8 +323,6 @@ void CompositorPlatform::setCursorShape(std::uint32_t serial, std::uint32_t shap
 }
 
 wl_output* CompositorPlatform::preferredInteractiveOutput(std::chrono::milliseconds pointerMaxAge) const {
-  // Mango/dwl: zdwl_ipc_output_v2.active (committed on frame) tracks the compositor-selected monitor, which
-  // follows the cursor even when keyboard focus stays on a client in another tag/output.
   if (compositors::detect() == compositors::CompositorKind::Mango && m_workspaces != nullptr) {
     if (wl_output* ipc = m_workspaces->dwlIpcSelectedOutput(); ipc != nullptr) {
       return ipc;
@@ -360,7 +358,30 @@ wl_output* CompositorPlatform::preferredInteractiveOutput(std::chrono::milliseco
   return !outputs.empty() ? outputs.front().output : nullptr;
 }
 
-std::optional<ActiveToplevel> CompositorPlatform::activeToplevel() const { return m_wayland.activeToplevel(); }
+std::optional<ActiveToplevel> CompositorPlatform::activeToplevel() const {
+  if (compositors::detect() == compositors::CompositorKind::Mango && m_workspaces != nullptr) {
+    wl_output* const selected = m_workspaces->dwlIpcSelectedOutput();
+    if (selected != nullptr) {
+      const auto hints = m_workspaces->dwlIpcFocusedClientOnOutput(selected);
+      if (hints.has_value()) {
+        const auto& [dwlTitle, dwlAppId] = *hints;
+        if (dwlTitle.empty() && dwlAppId.empty()) {
+          return std::nullopt;
+        }
+        if (auto matched = m_wayland.matchToplevelByTitleAndAppId(dwlTitle, dwlAppId, selected); matched.has_value()) {
+          return matched;
+        }
+        return ActiveToplevel{
+            .title = dwlTitle,
+            .appId = dwlAppId,
+            .identifier = dwlAppId + ":" + dwlTitle,
+            .handle = nullptr,
+        };
+      }
+    }
+  }
+  return m_wayland.activeToplevel();
+}
 
 wl_output* CompositorPlatform::activeToplevelOutput() const { return m_wayland.activeToplevelOutput(); }
 

@@ -328,6 +328,13 @@ void WaylandConnection::setCursorShape(std::uint32_t serial, std::uint32_t shape
 }
 
 std::optional<ActiveToplevel> WaylandConnection::activeToplevel() const { return m_toplevelsHandler.current(); }
+
+std::optional<ActiveToplevel> WaylandConnection::matchToplevelByTitleAndAppId(std::string_view title,
+                                                                              std::string_view appId,
+                                                                              wl_output* preferredOutput) const {
+  return m_toplevelsHandler.matchByTitleAndAppId(title, appId, preferredOutput);
+}
+
 wl_output* WaylandConnection::activeToplevelOutput() const { return m_toplevelsHandler.currentOutput(); }
 std::vector<std::string> WaylandConnection::runningAppIds(wl_output* outputFilter) const {
   return m_toplevelsHandler.allAppIds(outputFilter);

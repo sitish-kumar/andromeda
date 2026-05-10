@@ -5,7 +5,9 @@
 
 #include <cstddef>
 #include <optional>
+#include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 struct zdwl_ipc_output_v2;
@@ -32,12 +34,15 @@ public:
   void onTagCount(std::uint32_t amount);
   void onLayoutAnnounced(const char* name);
   void onOutputActive(zdwl_ipc_output_v2* handle, std::uint32_t active);
+  void onOutputTitle(zdwl_ipc_output_v2* handle, const char* title);
+  void onOutputAppId(zdwl_ipc_output_v2* handle, const char* appId);
   void onOutputTag(zdwl_ipc_output_v2* handle, std::uint32_t tag, std::uint32_t state, std::uint32_t clients,
                    std::uint32_t focused);
   void onOutputFrame(zdwl_ipc_output_v2* handle);
 
-  /// zdwl_ipc_output_v2.active after frame application — the compositor-selected monitor (cursor output).
   [[nodiscard]] wl_output* ipcSelectedOutput() const;
+
+  [[nodiscard]] std::optional<std::pair<std::string, std::string>> ipcFocusedClientForOutput(wl_output* output) const;
 
 private:
   struct TagInfo {
@@ -52,6 +57,12 @@ private:
     bool active = false;
     bool pendingIpcActive = false;
     bool hasPendingIpcActive = false;
+    std::string dwlTitle;
+    std::string dwlAppId;
+    bool hasPendingTitle = false;
+    std::string pendingTitle;
+    bool hasPendingAppId = false;
+    std::string pendingAppId;
     std::vector<TagInfo> tags;
   };
 

@@ -115,6 +115,35 @@ std::optional<ActiveToplevel> WaylandToplevels::current() const {
   };
 }
 
+std::optional<ActiveToplevel> WaylandToplevels::matchByTitleAndAppId(std::string_view title, std::string_view appId,
+                                                                     wl_output* preferredOutput) const {
+  std::optional<ActiveToplevel> best;
+  std::uint64_t bestScore = 0;
+
+  for (const auto& [handle, state] : m_handles) {
+    if (state.title != title || state.appId != appId) {
+      continue;
+    }
+    std::uint64_t score = state.generation;
+    if (preferredOutput != nullptr && state.output == preferredOutput) {
+      score += (1ull << 62);
+    }
+    if (state.activated) {
+      score += (1ull << 61);
+    }
+    if (!best.has_value() || score > bestScore) {
+      best = ActiveToplevel{
+          .title = state.title,
+          .appId = state.appId,
+          .identifier = state.appId + ":" + state.title,
+          .handle = handle,
+      };
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
 void WaylandToplevels::onToplevelCreated(zwlr_foreign_toplevel_handle_v1* handle) {
   if (handle == nullptr) {
     return;
