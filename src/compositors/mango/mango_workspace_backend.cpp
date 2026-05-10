@@ -193,7 +193,10 @@ void MangoWorkspaceBackend::onOutputActive(zdwl_ipc_output_v2* handle, std::uint
   }
   auto state = m_outputs.find(it->second);
   if (state != m_outputs.end()) {
-    state->second.active = active != 0;
+    // Double-buffer like noctalia-qs: dwl commits ipc state on frame; applying active immediately can leave
+    // multiple outputs marked active if the compositor updates selection across outputs in one dispatch.
+    state->second.hasPendingIpcActive = true;
+    state->second.pendingIpcActive = active != 0;
   }
 }
 
@@ -237,8 +240,20 @@ void MangoWorkspaceBackend::onOutputFrame(zdwl_ipc_output_v2* handle) {
   if (it != m_outputByHandle.end()) {
     const auto stateIt = m_outputs.find(it->second);
     if (stateIt != m_outputs.end()) {
-      kLog.debug("frame output={} total_tags={} snapshot={}", static_cast<const void*>(stateIt->second.output),
-                 m_tagCount, summarizeTags(stateIt->second));
+      auto& st = stateIt->second;
+      if (st.hasPendingIpcActive) {
+        if (st.pendingIpcActive) {
+          for (auto& [_, other] : m_outputs) {
+            other.active = false;
+          }
+          st.active = true;
+        } else {
+          st.active = false;
+        }
+        st.hasPendingIpcActive = false;
+      }
+      kLog.debug("frame output={} total_tags={} snapshot={}", static_cast<const void*>(st.output), m_tagCount,
+                 summarizeTags(st));
     }
   }
   notifyChanged();
@@ -344,4 +359,13 @@ void MangoWorkspaceBackend::notifyChanged() {
   if (m_changeCallback) {
     m_changeCallback();
   }
+}
+
+wl_output* MangoWorkspaceBackend::ipcSelectedOutput() const {
+  for (const auto& [_, state] : m_outputs) {
+    if (state.active) {
+      return state.output;
+    }
+  }
+  return nullptr;
 }

@@ -211,6 +211,13 @@ std::vector<Workspace> WaylandWorkspaces::forOutput(wl_output* output) const {
   return m_activeBackend != nullptr ? m_activeBackend->forOutput(output) : std::vector<Workspace>{};
 }
 
+wl_output* WaylandWorkspaces::dwlIpcSelectedOutput() const {
+  if (m_dwlIpcBackend == nullptr || !m_dwlIpcBackend->isAvailable()) {
+    return nullptr;
+  }
+  return static_cast<MangoWorkspaceBackend*>(m_dwlIpcBackend)->ipcSelectedOutput();
+}
+
 void WaylandWorkspaces::setActiveBackend(WorkspaceBackend* backend) {
   m_activeBackend = backend;
   kLog.info("workspace backend={}", backendName());

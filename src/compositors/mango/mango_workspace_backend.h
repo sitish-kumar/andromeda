@@ -36,6 +36,9 @@ public:
                    std::uint32_t focused);
   void onOutputFrame(zdwl_ipc_output_v2* handle);
 
+  /// zdwl_ipc_output_v2.active after frame application — the compositor-selected monitor (cursor output).
+  [[nodiscard]] wl_output* ipcSelectedOutput() const;
+
 private:
   struct TagInfo {
     bool active = false;
@@ -47,6 +50,8 @@ private:
     wl_output* output = nullptr;
     zdwl_ipc_output_v2* handle = nullptr;
     bool active = false;
+    bool pendingIpcActive = false;
+    bool hasPendingIpcActive = false;
     std::vector<TagInfo> tags;
   };
 

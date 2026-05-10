@@ -42,6 +42,9 @@ public:
   [[nodiscard]] std::vector<Workspace> all() const;
   [[nodiscard]] std::vector<Workspace> forOutput(wl_output* output) const;
 
+  /// dwl-ipc selected output (zdwl active bit), or nullptr if ipc is not bound or no output is active yet.
+  [[nodiscard]] wl_output* dwlIpcSelectedOutput() const;
+
 private:
   void setActiveBackend(WorkspaceBackend* backend);
   void notifyChanged() const;

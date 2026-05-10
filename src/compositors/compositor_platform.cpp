@@ -323,6 +323,14 @@ void CompositorPlatform::setCursorShape(std::uint32_t serial, std::uint32_t shap
 }
 
 wl_output* CompositorPlatform::preferredInteractiveOutput(std::chrono::milliseconds pointerMaxAge) const {
+  // Mango/dwl: zdwl_ipc_output_v2.active (committed on frame) tracks the compositor-selected monitor, which
+  // follows the cursor even when keyboard focus stays on a client in another tag/output.
+  if (compositors::detect() == compositors::CompositorKind::Mango && m_workspaces != nullptr) {
+    if (wl_output* ipc = m_workspaces->dwlIpcSelectedOutput(); ipc != nullptr) {
+      return ipc;
+    }
+  }
+
   for (const auto& backend : m_focusedOutputBackends) {
     if (backend == nullptr) {
       continue;
