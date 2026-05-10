@@ -338,129 +338,125 @@ std::unique_ptr<Flex> MediaTab::create() {
       }
       (void)m_mpris->previousActive();
       PanelManager::instance().refresh();
-      }
+    });
   });
-});
-m_prevButton = previous.get();
-controls->addChild(std::move(previous));
+  m_prevButton = previous.get();
+  controls->addChild(std::move(previous));
 
-auto playPause = std::make_unique<Button>();
-playPause->setGlyph("media-play");
-playPause->setVariant(ButtonVariant::Accent);
-playPause->setMinWidth(kMediaPlayPauseHeight* scale);
-playPause->setMinHeight(kMediaPlayPauseHeight* scale);
-playPause->setPadding(Style::spaceSm* scale, Style::spaceSm* scale);
-playPause->setRadius(Style::radiusLg* scale);
-playPause->setOnClick([this]() {
+  auto playPause = std::make_unique<Button>();
+  playPause->setGlyph("media-play");
+  playPause->setVariant(ButtonVariant::Accent);
+  playPause->setMinWidth(kMediaPlayPauseHeight * scale);
+  playPause->setMinHeight(kMediaPlayPauseHeight * scale);
+  playPause->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
+  playPause->setRadius(Style::radiusLg * scale);
+  playPause->setOnClick([this]() {
     DeferredCall::callLater([this]() {
-    if (!m_alive || m_mpris == nullptr) {
-      return;
-    }
-    (void)m_mpris->playPauseActive();
-    PanelManager::instance().refresh();
-      }
-});
-});
-m_playPauseButton = playPause.get();
-controls->addChild(std::move(playPause));
-
-auto next = std::make_unique<Button>();
-next->setGlyph("media-next");
-next->setVariant(ButtonVariant::Ghost);
-next->setMinWidth(kMediaControlsHeight* scale);
-next->setMinHeight(kMediaControlsHeight* scale);
-next->setPadding(Style::spaceSm* scale, Style::spaceSm* scale);
-next->setRadius(Style::radiusLg* scale);
-next->setOnClick([this]() {
-    DeferredCall::callLater([this]() {
-    if (!m_alive || m_mpris == nullptr) {
-      return;
-    }
-    (void)m_mpris->nextActive();
-    PanelManager::instance().refresh();
-      }
-});
-});
-m_nextButton = next.get();
-controls->addChild(std::move(next));
-
-auto shuffle = std::make_unique<Button>();
-shuffle->setGlyph("shuffle");
-shuffle->setVariant(ButtonVariant::Ghost);
-shuffle->setMinWidth(kMediaControlsHeight* scale);
-shuffle->setMinHeight(kMediaControlsHeight* scale);
-shuffle->setPadding(Style::spaceSm* scale, Style::spaceSm* scale);
-shuffle->setRadius(Style::radiusLg* scale);
-shuffle->setOnClick([this]() {
-    DeferredCall::callLater([this]() {
-    if (!m_alive || m_mpris == nullptr) {
-      return;
-    }
-    const bool enabled = m_mpris->shuffleActive().value_or(false);
-    (void)m_mpris->setShuffleActive(!enabled);
-    PanelManager::instance().refresh();
-      }
-});
-});
-m_shuffleButton = shuffle.get();
-controls->addChild(std::move(shuffle));
-
-controlsRow->addChild(std::move(controls));
-mediaStack->addChild(std::move(controlsRow));
-
-nowCard->addChild(std::move(mediaStack));
-mediaColumn->addChild(std::move(nowCard));
-
-auto visualizerColumn = std::make_unique<Flex>();
-visualizerColumn->setDirection(FlexDirection::Vertical);
-visualizerColumn->setAlign(FlexAlign::Stretch);
-visualizerColumn->setGap(Style::spaceSm* scale);
-visualizerColumn->setFlexGrow(2.0f);
-applySectionCardStyle(*visualizerColumn, scale);
-visualizerColumn->setClipChildren(true);
-m_visualizerColumn = visualizerColumn.get();
-
-auto visualizerBody = std::make_unique<Flex>();
-visualizerBody->setDirection(FlexDirection::Horizontal);
-visualizerBody->setAlign(FlexAlign::Stretch);
-visualizerBody->setJustify(FlexJustify::Start);
-visualizerBody->setFillWidth(true);
-visualizerBody->setFlexGrow(1.0f);
-m_visualizerBody = visualizerBody.get();
-
-auto visualizerSpectrum = std::make_unique<AudioSpectrum>();
-visualizerSpectrum->setGradient(colorForRole(ColorRole::Secondary), colorForRole(ColorRole::Tertiary));
-visualizerSpectrum->setOrientation(AudioSpectrumOrientation::Vertical);
-visualizerSpectrum->setMirrored(true);
-visualizerSpectrum->setCentered(true);
-visualizerSpectrum->setFlexGrow(1.0f);
-m_visualizerSpectrum = visualizerSpectrum.get();
-visualizerBody->addChild(std::move(visualizerSpectrum));
-visualizerColumn->addChild(std::move(visualizerBody));
-tab->addChild(std::move(mediaColumn));
-tab->addChild(std::move(visualizerColumn));
-
-if (m_wayland != nullptr && m_renderContext != nullptr) {
-  m_playerMenuPopup = std::make_unique<ContextMenuPopup>(*m_wayland, *m_renderContext);
-  m_playerMenuPopup->setOnActivate([this](const ContextMenuControlEntry& entry) {
-    DeferredCall::callLater([this, entry]() {
       if (!m_alive || m_mpris == nullptr) {
         return;
       }
-      if (entry.id == 0) {
-        m_mpris->clearPinnedPlayerPreference();
-      } else {
-        const std::size_t idx = static_cast<std::size_t>(entry.id - 1);
-        if (idx < m_playerBusNames.size()) {
-          m_mpris->setPinnedPlayerPreference(m_playerBusNames[idx]);
-        }
-      }
+      (void)m_mpris->playPauseActive();
       PanelManager::instance().refresh();
     });
   });
-}
+  m_playPauseButton = playPause.get();
+  controls->addChild(std::move(playPause));
 
-return tab;
+  auto next = std::make_unique<Button>();
+  next->setGlyph("media-next");
+  next->setVariant(ButtonVariant::Ghost);
+  next->setMinWidth(kMediaControlsHeight * scale);
+  next->setMinHeight(kMediaControlsHeight * scale);
+  next->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
+  next->setRadius(Style::radiusLg * scale);
+  next->setOnClick([this]() {
+    DeferredCall::callLater([this]() {
+      if (!m_alive || m_mpris == nullptr) {
+        return;
+      }
+      (void)m_mpris->nextActive();
+      PanelManager::instance().refresh();
+    });
+  });
+  m_nextButton = next.get();
+  controls->addChild(std::move(next));
+
+  auto shuffle = std::make_unique<Button>();
+  shuffle->setGlyph("shuffle");
+  shuffle->setVariant(ButtonVariant::Ghost);
+  shuffle->setMinWidth(kMediaControlsHeight * scale);
+  shuffle->setMinHeight(kMediaControlsHeight * scale);
+  shuffle->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
+  shuffle->setRadius(Style::radiusLg * scale);
+  shuffle->setOnClick([this]() {
+    DeferredCall::callLater([this]() {
+      if (!m_alive || m_mpris == nullptr) {
+        return;
+      }
+      const bool enabled = m_mpris->shuffleActive().value_or(false);
+      (void)m_mpris->setShuffleActive(!enabled);
+      PanelManager::instance().refresh();
+    });
+  });
+  m_shuffleButton = shuffle.get();
+  controls->addChild(std::move(shuffle));
+
+  controlsRow->addChild(std::move(controls));
+  mediaStack->addChild(std::move(controlsRow));
+
+  nowCard->addChild(std::move(mediaStack));
+  mediaColumn->addChild(std::move(nowCard));
+
+  auto visualizerColumn = std::make_unique<Flex>();
+  visualizerColumn->setDirection(FlexDirection::Vertical);
+  visualizerColumn->setAlign(FlexAlign::Stretch);
+  visualizerColumn->setGap(Style::spaceSm * scale);
+  visualizerColumn->setFlexGrow(2.0f);
+  applySectionCardStyle(*visualizerColumn, scale);
+  visualizerColumn->setClipChildren(true);
+  m_visualizerColumn = visualizerColumn.get();
+
+  auto visualizerBody = std::make_unique<Flex>();
+  visualizerBody->setDirection(FlexDirection::Horizontal);
+  visualizerBody->setAlign(FlexAlign::Stretch);
+  visualizerBody->setJustify(FlexJustify::Start);
+  visualizerBody->setFillWidth(true);
+  visualizerBody->setFlexGrow(1.0f);
+  m_visualizerBody = visualizerBody.get();
+
+  auto visualizerSpectrum = std::make_unique<AudioSpectrum>();
+  visualizerSpectrum->setGradient(colorForRole(ColorRole::Secondary), colorForRole(ColorRole::Tertiary));
+  visualizerSpectrum->setOrientation(AudioSpectrumOrientation::Vertical);
+  visualizerSpectrum->setMirrored(true);
+  visualizerSpectrum->setCentered(true);
+  visualizerSpectrum->setFlexGrow(1.0f);
+  m_visualizerSpectrum = visualizerSpectrum.get();
+  visualizerBody->addChild(std::move(visualizerSpectrum));
+  visualizerColumn->addChild(std::move(visualizerBody));
+  tab->addChild(std::move(mediaColumn));
+  tab->addChild(std::move(visualizerColumn));
+
+  if (m_wayland != nullptr && m_renderContext != nullptr) {
+    m_playerMenuPopup = std::make_unique<ContextMenuPopup>(*m_wayland, *m_renderContext);
+    m_playerMenuPopup->setOnActivate([this](const ContextMenuControlEntry& entry) {
+      DeferredCall::callLater([this, entry]() {
+        if (!m_alive || m_mpris == nullptr) {
+          return;
+        }
+        if (entry.id == 0) {
+          m_mpris->clearPinnedPlayerPreference();
+        } else {
+          const std::size_t idx = static_cast<std::size_t>(entry.id - 1);
+          if (idx < m_playerBusNames.size()) {
+            m_mpris->setPinnedPlayerPreference(m_playerBusNames[idx]);
+          }
+        }
+        PanelManager::instance().refresh();
+      });
+    });
+  }
+
+  return tab;
 }
 
 void MediaTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight) {
