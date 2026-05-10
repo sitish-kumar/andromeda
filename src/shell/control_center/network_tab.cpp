@@ -11,6 +11,7 @@
 #include "ui/controls/input.h"
 #include "ui/controls/label.h"
 #include "ui/controls/scroll_view.h"
+#include "ui/controls/separator.h"
 #include "ui/controls/spinner.h"
 #include "ui/controls/toggle.h"
 #include "ui/palette.h"
@@ -42,14 +43,8 @@ namespace {
                                : i18n::tr("control-center.network.wifi-off");
     }
     std::string out;
-    if (!s.interfaceName.empty()) {
-      out = s.interfaceName;
-    }
     if (!s.ipv4.empty()) {
-      if (!out.empty()) {
-        out += "  •  ";
-      }
-      out += s.ipv4;
+      out = s.ipv4;
     }
     if (s.kind == NetworkConnectivity::Wireless && s.signalStrength > 0) {
       if (!out.empty()) {
@@ -201,13 +196,6 @@ namespace {
       setFill(colorSpecFromRole(ColorRole::Surface));
       clearBorder();
 
-      auto kind = std::make_unique<Label>();
-      kind->setText(i18n::tr("control-center.network.vpn"));
-      kind->setCaptionStyle();
-      kind->setFontSize(Style::fontSizeCaption * scale);
-      kind->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      addChild(std::move(kind));
-
       auto name = std::make_unique<Label>();
       name->setText(m_vpn.name);
       name->setBold(m_vpn.active);
@@ -333,25 +321,26 @@ std::unique_ptr<Flex> NetworkTab::create() {
   m_currentCard = currentCard.get();
   addTitle(*currentCard, i18n::tr("control-center.network.current-connection"), scale);
 
+  auto connRow = std::make_unique<Flex>();
+  connRow->setDirection(FlexDirection::Horizontal);
+  connRow->setAlign(FlexAlign::Center);
+  connRow->setGap(Style::spaceSm * scale);
+  m_disconnectRow = connRow.get();
+
   auto title = std::make_unique<Label>();
   title->setBold(true);
-  title->setFontSize(Style::fontSizeTitle * scale);
+  title->setFontSize(Style::fontSizeBody * scale);
   title->setColor(colorSpecFromRole(ColorRole::OnSurface));
   m_currentTitle = title.get();
-  currentCard->addChild(std::move(title));
+  connRow->addChild(std::move(title));
 
   auto detail = std::make_unique<Label>();
   detail->setCaptionStyle();
   detail->setFontSize(Style::fontSizeCaption * scale);
   detail->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+  detail->setFlexGrow(1.0f);
   m_currentDetail = detail.get();
-  currentCard->addChild(std::move(detail));
-
-  auto disconnectRow = std::make_unique<Flex>();
-  disconnectRow->setDirection(FlexDirection::Horizontal);
-  disconnectRow->setAlign(FlexAlign::Center);
-  disconnectRow->setJustify(FlexJustify::End);
-  m_disconnectRow = disconnectRow.get();
+  connRow->addChild(std::move(detail));
 
   auto disconnect = std::make_unique<Button>();
   disconnect->setVariant(ButtonVariant::Destructive);
@@ -363,8 +352,8 @@ std::unique_ptr<Flex> NetworkTab::create() {
     PanelManager::instance().refresh();
   });
   m_disconnectButton = disconnect.get();
-  disconnectRow->addChild(std::move(disconnect));
-  currentCard->addChild(std::move(disconnectRow));
+  connRow->addChild(std::move(disconnect));
+  currentCard->addChild(std::move(connRow));
 
   tab->addChild(std::move(currentCard));
 
@@ -471,71 +460,7 @@ std::unique_ptr<Flex> NetworkTab::create() {
   return tab;
 }
 
-std::unique_ptr<Flex> NetworkTab::createHeaderActions() {
-  const float scale = contentScale();
-  auto row = std::make_unique<Flex>();
-  row->setDirection(FlexDirection::Horizontal);
-  row->setAlign(FlexAlign::Center);
-  row->setGap(Style::spaceSm * scale);
-  row->setMinHeight(Style::controlHeightSm * scale);
-
-  auto wifiLabel = std::make_unique<Label>();
-  wifiLabel->setText(i18n::tr("control-center.network.wifi"));
-  wifiLabel->setFontSize(Style::fontSizeCaption * scale);
-  wifiLabel->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-  row->addChild(std::move(wifiLabel));
-
-  auto wifiToggle = std::make_unique<Toggle>();
-  wifiToggle->setToggleSize(ToggleSize::Small);
-  wifiToggle->setScale(scale);
-  wifiToggle->setOnChange([this](bool checked) {
-    if (m_network != nullptr) {
-      m_network->setWirelessEnabled(checked);
-    }
-  });
-  m_wifiToggle = wifiToggle.get();
-  row->addChild(std::move(wifiToggle));
-
-  auto spinner = std::make_unique<Spinner>();
-  spinner->setSpinnerSize(Style::fontSizeBody * scale);
-  spinner->setColor(colorSpecFromRole(ColorRole::Primary));
-  m_scanSpinner = spinner.get();
-  row->addChild(std::move(spinner));
-
-  auto rescan = std::make_unique<Button>();
-  rescan->setVariant(ButtonVariant::Default);
-  rescan->setGlyph("refresh");
-  rescan->setGlyphSize(Style::fontSizeBody * scale);
-  rescan->setMinWidth(Style::controlHeightSm * scale);
-  rescan->setMinHeight(Style::controlHeightSm * scale);
-  rescan->setPadding(Style::spaceXs * scale);
-  rescan->setRadius(Style::radiusMd * scale);
-  rescan->setOnClick([this]() {
-    if (m_network != nullptr) {
-      m_network->requestScan();
-    }
-  });
-  m_rescanButton = rescan.get();
-  row->addChild(std::move(rescan));
-
-  auto vpnLabel = std::make_unique<Label>();
-  vpnLabel->setText(i18n::tr("control-center.network.vpns"));
-  vpnLabel->setFontSize(Style::fontSizeCaption * scale);
-  vpnLabel->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-  row->addChild(std::move(vpnLabel));
-
-  auto vpnToggle = std::make_unique<Toggle>();
-  vpnToggle->setToggleSize(ToggleSize::Small);
-  vpnToggle->setScale(scale);
-  vpnToggle->setChecked(m_vpnVisible);
-  vpnToggle->setOnChange([this](bool checked) {
-    m_vpnVisible = checked;
-    PanelManager::instance().refresh();
-  });
-  m_vpnToggle = vpnToggle.get();
-  row->addChild(std::move(vpnToggle));
-  return row;
-}
+std::unique_ptr<Flex> NetworkTab::createHeaderActions() { return nullptr; }
 
 void NetworkTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight) {
   if (m_rootLayout == nullptr) {
@@ -570,10 +495,9 @@ void NetworkTab::onClose() {
   m_list = nullptr;
   m_rescanButton = nullptr;
   m_wifiToggle = nullptr;
-  m_vpnToggle = nullptr;
+  m_scanSpinner = nullptr;
   m_disconnectRow = nullptr;
   m_disconnectButton = nullptr;
-  m_scanSpinner = nullptr;
   m_lastListKey.clear();
   m_lastListWidth = -1.0f;
 }
@@ -689,81 +613,165 @@ void NetworkTab::rebuildApList(Renderer& renderer) {
 
   const auto& aps = m_network != nullptr ? m_network->accessPoints() : std::vector<AccessPointInfo>{};
   const auto& vpns = m_network != nullptr ? m_network->vpnConnections() : std::vector<VpnConnectionInfo>{};
-  const std::string nextKey =
-      aps.empty() && vpns.empty()
-          ? std::string("empty")
-          : (apListKey(aps) + "\n---\n" + vpnListKey(vpns) + "\nvis:" + (m_vpnVisible ? '1' : '0'));
+  const bool wirelessEnabled = m_network != nullptr && m_network->state().wirelessEnabled;
+  const bool scanning = m_network != nullptr && m_network->state().scanning;
+  const std::string nextKey = apListKey(aps) + "\n---\n" + vpnListKey(vpns) + "\nvis:" + (m_vpnVisible ? '1' : '0') +
+                              "\nwifi:" + (wirelessEnabled ? '1' : '0') + "\nscan:" + (scanning ? '1' : '0');
   if (listWidth == m_lastListWidth && nextKey == m_lastListKey) {
     return;
   }
   m_lastListWidth = listWidth;
   m_lastListKey = nextKey;
+  const float scale = contentScale();
+
+  m_wifiToggle = nullptr;
+  m_scanSpinner = nullptr;
+  m_rescanButton = nullptr;
 
   while (!m_list->children().empty()) {
     m_list->removeChild(m_list->children().front().get());
   }
 
-  if (aps.empty() && vpns.empty()) {
+  if (m_network == nullptr) {
     auto empty = std::make_unique<Label>();
-    empty->setText(m_network != nullptr ? i18n::tr("control-center.network.no-networks")
-                                        : i18n::tr("control-center.network.unavailable-title"));
+    empty->setText(i18n::tr("control-center.network.unavailable-title"));
     empty->setCaptionStyle();
-    empty->setFontSize(Style::fontSizeCaption * contentScale());
+    empty->setFontSize(Style::fontSizeCaption * scale);
     empty->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
     m_list->addChild(std::move(empty));
   } else {
-    if (m_vpnVisible && !vpns.empty()) {
-      auto section = std::make_unique<Label>();
-      section->setText(i18n::tr("control-center.network.vpns"));
-      section->setCaptionStyle();
-      section->setFontSize(Style::fontSizeCaption * contentScale());
-      section->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      m_list->addChild(std::move(section));
+    if (!vpns.empty()) {
+      auto vpnHeader = std::make_unique<Flex>();
+      vpnHeader->setDirection(FlexDirection::Horizontal);
+      vpnHeader->setAlign(FlexAlign::Center);
+      vpnHeader->setGap(Style::spaceSm * scale);
+      vpnHeader->setMinHeight(Style::controlHeightSm * scale);
 
-      for (const auto& vpn : vpns) {
-        auto row = std::make_unique<VpnConnectionRow>(
-            contentScale(), vpn,
-            [this](const VpnConnectionInfo& clicked) {
+      auto vpnLabel = std::make_unique<Label>();
+      vpnLabel->setText(i18n::tr("control-center.network.vpns"));
+      vpnLabel->setCaptionStyle();
+      vpnLabel->setFontSize(Style::fontSizeCaption * scale);
+      vpnLabel->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+      vpnLabel->setFlexGrow(1.0f);
+      vpnHeader->addChild(std::move(vpnLabel));
+
+      auto vpnToggle = std::make_unique<Toggle>();
+      vpnToggle->setToggleSize(ToggleSize::Small);
+      vpnToggle->setScale(scale);
+      vpnToggle->setChecked(m_vpnVisible);
+      vpnToggle->setOnChange([this](bool checked) {
+        m_vpnVisible = checked;
+        PanelManager::instance().refresh();
+      });
+      vpnHeader->addChild(std::move(vpnToggle));
+      m_list->addChild(std::move(vpnHeader));
+
+      if (m_vpnVisible) {
+        for (const auto& vpn : vpns) {
+          auto row = std::make_unique<VpnConnectionRow>(
+              scale, vpn,
+              [this](const VpnConnectionInfo& clicked) {
+                if (m_network != nullptr) {
+                  m_network->activateVpnConnection(clicked);
+                }
+                PanelManager::instance().refresh();
+              },
+              [this](const VpnConnectionInfo& clicked) {
+                if (m_network != nullptr) {
+                  m_network->deactivateVpnConnection(clicked);
+                }
+                PanelManager::instance().refresh();
+              });
+          m_list->addChild(std::move(row));
+        }
+      }
+    }
+
+    if (!vpns.empty()) {
+      m_list->addChild(std::make_unique<Separator>());
+    }
+
+    {
+      auto wifiHeader = std::make_unique<Flex>();
+      wifiHeader->setDirection(FlexDirection::Horizontal);
+      wifiHeader->setAlign(FlexAlign::Center);
+      wifiHeader->setGap(Style::spaceSm * scale);
+      wifiHeader->setMinHeight(Style::controlHeightSm * scale);
+      wifiHeader->setMaxHeight(Style::controlHeightSm * scale);
+
+      auto wifiLabel = std::make_unique<Label>();
+      wifiLabel->setText(i18n::tr("control-center.network.wireless"));
+      wifiLabel->setCaptionStyle();
+      wifiLabel->setFontSize(Style::fontSizeCaption * scale);
+      wifiLabel->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+      wifiLabel->setFlexGrow(1.0f);
+      wifiHeader->addChild(std::move(wifiLabel));
+
+      auto spinner = std::make_unique<Spinner>();
+      spinner->setSpinnerSize(Style::fontSizeCaption * scale);
+      spinner->setColor(colorSpecFromRole(ColorRole::Primary));
+      m_scanSpinner = spinner.get();
+      wifiHeader->addChild(std::move(spinner));
+
+      auto rescan = std::make_unique<Button>();
+      rescan->setVariant(ButtonVariant::Ghost);
+      rescan->setGlyph("refresh");
+      rescan->setGlyphSize(Style::fontSizeCaption * scale);
+      rescan->setPadding(Style::spaceXs * scale);
+      rescan->setRadius(Style::radiusSm * scale);
+      rescan->setOnClick([this]() {
+        if (m_network != nullptr) {
+          m_network->requestScan();
+        }
+      });
+      m_rescanButton = rescan.get();
+      wifiHeader->addChild(std::move(rescan));
+
+      auto wifiToggle = std::make_unique<Toggle>();
+      wifiToggle->setToggleSize(ToggleSize::Small);
+      wifiToggle->setScale(scale);
+      wifiToggle->setOnChange([this](bool checked) {
+        if (m_network != nullptr) {
+          m_network->setWirelessEnabled(checked);
+        }
+      });
+      m_wifiToggle = wifiToggle.get();
+      wifiHeader->addChild(std::move(wifiToggle));
+      m_list->addChild(std::move(wifiHeader));
+
+      const auto& s = m_network->state();
+      m_wifiToggle->setChecked(s.wirelessEnabled);
+      m_scanSpinner->setVisible(s.scanning);
+      if (s.scanning) {
+        m_scanSpinner->start();
+      }
+    }
+
+    if (aps.empty()) {
+      auto empty = std::make_unique<Label>();
+      empty->setText(i18n::tr("control-center.network.no-networks"));
+      empty->setCaptionStyle();
+      empty->setFontSize(Style::fontSizeCaption * scale);
+      empty->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+      m_list->addChild(std::move(empty));
+    } else {
+      for (const auto& ap : aps) {
+        const bool saved = m_network != nullptr && m_network->hasSavedConnection(ap.ssid);
+        auto row = std::make_unique<AccessPointRow>(
+            scale, ap, saved,
+            [this](const AccessPointInfo& clicked) {
               if (m_network != nullptr) {
-                m_network->activateVpnConnection(clicked);
+                m_network->activateAccessPoint(clicked);
               }
-              PanelManager::instance().refresh();
             },
-            [this](const VpnConnectionInfo& clicked) {
+            [this](const AccessPointInfo& clicked) {
               if (m_network != nullptr) {
-                m_network->deactivateVpnConnection(clicked);
+                m_network->forgetSsid(clicked.ssid);
               }
               PanelManager::instance().refresh();
             });
         m_list->addChild(std::move(row));
       }
-    }
-
-    if (!aps.empty()) {
-      auto section = std::make_unique<Label>();
-      section->setText(i18n::tr("control-center.network.wireless"));
-      section->setCaptionStyle();
-      section->setFontSize(Style::fontSizeCaption * contentScale());
-      section->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      m_list->addChild(std::move(section));
-    }
-
-    for (const auto& ap : aps) {
-      const bool saved = m_network != nullptr && m_network->hasSavedConnection(ap.ssid);
-      auto row = std::make_unique<AccessPointRow>(
-          contentScale(), ap, saved,
-          [this](const AccessPointInfo& clicked) {
-            if (m_network != nullptr) {
-              m_network->activateAccessPoint(clicked);
-            }
-          },
-          [this](const AccessPointInfo& clicked) {
-            if (m_network != nullptr) {
-              m_network->forgetSsid(clicked.ssid);
-            }
-            PanelManager::instance().refresh();
-          });
-      m_list->addChild(std::move(row));
     }
   }
   m_list->layout(renderer);
