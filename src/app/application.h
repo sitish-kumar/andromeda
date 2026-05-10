@@ -91,6 +91,7 @@
 #include "wayland/workspace_poll_source.h"
 
 #include <atomic>
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -99,7 +100,7 @@ public:
   Application();
   ~Application();
 
-  void run();
+  void run(std::function<void()> startupReadyCallback = {});
 
   // Public for signal handler
   static std::atomic<bool> s_shutdownRequested;
