@@ -13,19 +13,22 @@
 #include <unordered_map>
 #include <vector>
 
+namespace compositors::niri {
+  class NiriRuntime;
+} // namespace compositors::niri
+
 class NiriWorkspaceBackend {
 public:
   using ChangeCallback = std::function<void()>;
 
-  explicit NiriWorkspaceBackend(std::string_view compositorHint);
+  explicit NiriWorkspaceBackend(compositors::niri::NiriRuntime& runtime);
   ~NiriWorkspaceBackend();
 
   NiriWorkspaceBackend(const NiriWorkspaceBackend&) = delete;
   NiriWorkspaceBackend& operator=(const NiriWorkspaceBackend&) = delete;
 
   void setChangeCallback(ChangeCallback callback);
-  [[nodiscard]] bool isEnabled() const noexcept { return m_enabled; }
-  [[nodiscard]] bool canTrackOverviewState() const noexcept { return m_enabled && m_socketPath.has_value(); }
+  [[nodiscard]] bool canTrackOverviewState() const noexcept;
   [[nodiscard]] bool hasOverviewState() const noexcept { return m_overviewKnown; }
   [[nodiscard]] bool isOverviewOpen() const noexcept { return m_overviewOpen; }
   [[nodiscard]] int pollFd() const noexcept { return m_socketFd; }
@@ -83,9 +86,8 @@ private:
   void recomputeOccupancy();
   void notifyChanged() const;
 
-  bool m_enabled = false;
+  compositors::niri::NiriRuntime& m_runtime;
   int m_socketFd = -1;
-  std::optional<std::string> m_socketPath;
   std::vector<char> m_readBuffer;
   std::unordered_map<std::uint64_t, WindowState> m_windows;
   std::unordered_map<std::uint64_t, std::size_t> m_occupancy;

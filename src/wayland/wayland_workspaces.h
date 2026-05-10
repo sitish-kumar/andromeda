@@ -5,7 +5,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <unordered_map>
 #include <utility>
 
@@ -13,17 +12,21 @@ struct wl_output;
 struct ext_workspace_manager_v1;
 struct zdwl_ipc_manager_v2;
 
+namespace compositors {
+  class CompositorRuntimeRegistry;
+} // namespace compositors
+
 class WaylandWorkspaces {
 public:
   using ChangeCallback = std::function<void()>;
 
-  WaylandWorkspaces();
+  explicit WaylandWorkspaces(compositors::CompositorRuntimeRegistry& runtimeRegistry);
   ~WaylandWorkspaces();
 
   void bindExtWorkspace(ext_workspace_manager_v1* manager);
   void bindDwlIpcWorkspace(zdwl_ipc_manager_v2* manager);
   void setOutputNameResolver(std::function<std::string(wl_output*)> resolver);
-  void initialize(std::string_view compositorHint);
+  void initialize();
   void onOutputAdded(wl_output* output);
   void onOutputRemoved(wl_output* output);
   void setChangeCallback(ChangeCallback callback);

@@ -4,11 +4,14 @@
 
 #include <optional>
 #include <string>
-#include <string_view>
+
+namespace compositors::niri {
+  class NiriRuntime;
+} // namespace compositors::niri
 
 class NiriKeyboardBackend {
 public:
-  explicit NiriKeyboardBackend(std::string_view compositorHint);
+  explicit NiriKeyboardBackend(compositors::niri::NiriRuntime& runtime);
 
   [[nodiscard]] bool isAvailable() const noexcept;
   [[nodiscard]] bool cycleLayout() const;
@@ -16,5 +19,5 @@ public:
   [[nodiscard]] std::optional<std::string> currentLayoutName() const;
 
 private:
-  bool m_enabled = false;
+  compositors::niri::NiriRuntime& m_runtime;
 };

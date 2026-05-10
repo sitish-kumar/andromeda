@@ -6,7 +6,6 @@
 
 #include <array>
 #include <cstdio>
-#include <cstdlib>
 #include <json.hpp>
 #include <optional>
 #include <string>
@@ -92,19 +91,7 @@ namespace {
 
 } // namespace
 
-NiriOutputBackend::NiriOutputBackend(std::string_view compositorHint) {
-  const bool hinted = StringUtils::containsInsensitive(compositorHint, "niri");
-  const char* niriSocket = std::getenv("NIRI_SOCKET");
-  m_enabled = hinted || (niriSocket != nullptr && niriSocket[0] != '\0');
-}
-
-bool NiriOutputBackend::isAvailable() const noexcept { return m_enabled; }
-
 std::optional<std::string> NiriOutputBackend::focusedOutputName() const {
-  if (!m_enabled) {
-    return std::nullopt;
-  }
-
   // niri changed flags over time; support both forms.
   if (auto parsed = parseFocusedOutputName(readCommand("niri msg --json focused-output 2>/dev/null"));
       parsed.has_value()) {

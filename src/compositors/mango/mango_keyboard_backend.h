@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <unordered_map>
 
 struct wl_display;
@@ -17,7 +16,7 @@ struct zdwl_ipc_output_v2;
 
 class MangoKeyboardBackend {
 public:
-  explicit MangoKeyboardBackend(std::string_view compositorHint);
+  MangoKeyboardBackend();
   ~MangoKeyboardBackend();
 
   MangoKeyboardBackend(const MangoKeyboardBackend&) = delete;
@@ -61,7 +60,6 @@ private:
   void releaseOutput(wl_output* output);
   [[nodiscard]] const OutputState* preferredOutputState() const;
 
-  bool m_enabled = false;
   mutable bool m_initialized = false;
   mutable bool m_failed = false;
   mutable wl_display* m_display = nullptr;

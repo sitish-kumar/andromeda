@@ -7,8 +7,13 @@
 #include <json.hpp>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
+
+namespace compositors::hyprland {
+  class HyprlandRuntime;
+} // namespace compositors::hyprland
 
 class HyprlandWorkspaceBackend final : public WorkspaceBackend,
                                        public WorkspaceOutputNameResolver,
@@ -16,7 +21,7 @@ class HyprlandWorkspaceBackend final : public WorkspaceBackend,
 public:
   using OutputNameResolver = WorkspaceOutputNameResolver::Resolver;
 
-  explicit HyprlandWorkspaceBackend(OutputNameResolver outputNameResolver);
+  HyprlandWorkspaceBackend(OutputNameResolver outputNameResolver, compositors::hyprland::HyprlandRuntime& runtime);
 
   bool connectSocket() override;
   void setOutputNameResolver(OutputNameResolver outputNameResolver) override;
@@ -57,9 +62,7 @@ private:
     std::int32_t y = 0;
   };
 
-  bool ensureSocketPaths();
   void updateConfigProvider();
-  [[nodiscard]] bool sendRequest(const std::string& request, std::string& response) const;
   [[nodiscard]] std::optional<nlohmann::json> requestJson(const std::string& request) const;
   void refreshSnapshot();
   void refreshWorkspaces();
@@ -85,15 +88,13 @@ private:
   [[nodiscard]] static Workspace toWorkspace(const WorkspaceState& state);
 
   OutputNameResolver m_outputNameResolver;
+  compositors::hyprland::HyprlandRuntime& m_runtime;
   int m_eventSocketFd = -1;
-  std::string m_requestSocketPath;
-  std::string m_eventSocketPath;
   bool m_configLua;
   std::vector<char> m_readBuffer;
   std::vector<WorkspaceState> m_workspaces;
   std::unordered_map<std::uint64_t, ToplevelState> m_toplevels;
   std::unordered_map<std::string, std::string> m_activeWorkspaceByMonitor;
-  std::string m_focusedMonitor;
   std::size_t m_nextOrdinal = 0;
   ChangeCallback m_changeCallback;
 };

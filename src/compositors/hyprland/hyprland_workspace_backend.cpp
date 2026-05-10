@@ -1,5 +1,6 @@
 #include "compositors/hyprland/hyprland_workspace_backend.h"
 
+#include "compositors/hyprland/hyprland_runtime.h"
 #include "core/log.h"
 
 #include <algorithm>
@@ -8,7 +9,6 @@
 #include <charconv>
 #include <cstring>
 #include <fcntl.h>
-#include <filesystem>
 #include <format>
 #include <string_view>
 #include <sys/socket.h>
@@ -36,44 +36,17 @@ namespace {
 
 } // namespace
 
-HyprlandWorkspaceBackend::HyprlandWorkspaceBackend(OutputNameResolver outputNameResolver)
-    : m_outputNameResolver(std::move(outputNameResolver)) {}
+HyprlandWorkspaceBackend::HyprlandWorkspaceBackend(OutputNameResolver outputNameResolver,
+                                                   compositors::hyprland::HyprlandRuntime& runtime)
+    : m_outputNameResolver(std::move(outputNameResolver)), m_runtime(runtime) {}
 
 void HyprlandWorkspaceBackend::setOutputNameResolver(OutputNameResolver outputNameResolver) {
   m_outputNameResolver = std::move(outputNameResolver);
 }
 
-bool HyprlandWorkspaceBackend::ensureSocketPaths() {
-  if (!m_requestSocketPath.empty() && !m_eventSocketPath.empty()) {
-    return true;
-  }
-
-  const char* signature = std::getenv("HYPRLAND_INSTANCE_SIGNATURE");
-  if (signature == nullptr || signature[0] == '\0') {
-    return false;
-  }
-
-  std::string hyprDir;
-  const char* runtimeDir = std::getenv("XDG_RUNTIME_DIR");
-  if (runtimeDir != nullptr && runtimeDir[0] != '\0') {
-    hyprDir = std::string(runtimeDir) + "/hypr/" + signature;
-  }
-
-  if (hyprDir.empty() || !std::filesystem::is_directory(hyprDir)) {
-    hyprDir = std::string("/tmp/hypr/") + signature;
-  }
-
-  if (!std::filesystem::is_directory(hyprDir)) {
-    return false;
-  }
-
-  m_requestSocketPath = hyprDir + "/.socket.sock";
-  m_eventSocketPath = hyprDir + "/.socket2.sock";
-  return true;
-}
-
 bool HyprlandWorkspaceBackend::connectSocket() {
-  if (!ensureSocketPaths()) {
+  const auto& eventSocketPath = m_runtime.eventSocketPath();
+  if (eventSocketPath.empty()) {
     return false;
   }
 
@@ -87,15 +60,15 @@ bool HyprlandWorkspaceBackend::connectSocket() {
 
   sockaddr_un addr{};
   addr.sun_family = AF_UNIX;
-  if (m_eventSocketPath.size() >= sizeof(addr.sun_path)) {
+  if (eventSocketPath.size() >= sizeof(addr.sun_path)) {
     kLog.warn("hyprland IPC socket path too long");
     cleanup();
     return false;
   }
-  std::memcpy(addr.sun_path, m_eventSocketPath.c_str(), m_eventSocketPath.size() + 1);
+  std::memcpy(addr.sun_path, eventSocketPath.c_str(), eventSocketPath.size() + 1);
 
   if (::connect(m_eventSocketFd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
-    kLog.warn("failed to connect to hyprland IPC {}: {}", m_eventSocketPath, std::strerror(errno));
+    kLog.warn("failed to connect to hyprland IPC {}: {}", eventSocketPath, std::strerror(errno));
     cleanup();
     return false;
   }
@@ -106,7 +79,7 @@ bool HyprlandWorkspaceBackend::connectSocket() {
   }
 
   refreshSnapshot();
-  kLog.info("connected to hyprland IPC at {}", m_eventSocketPath);
+  kLog.info("connected to hyprland IPC at {}", eventSocketPath);
   updateConfigProvider();
   return true;
 }
@@ -126,15 +99,14 @@ void HyprlandWorkspaceBackend::updateConfigProvider() {
 void HyprlandWorkspaceBackend::setChangeCallback(ChangeCallback callback) { m_changeCallback = std::move(callback); }
 
 void HyprlandWorkspaceBackend::activate(const std::string& id) {
-  if (id.empty() || !ensureSocketPaths()) {
+  if (id.empty() || !m_runtime.available()) {
     return;
   }
 
-  std::string response;
   if (m_configLua) {
-    (void)sendRequest(std::format("dispatch hl.dsp.focus({{workspace = {}}})", id), response);
+    (void)m_runtime.request(std::format("dispatch hl.dsp.focus({{workspace = {}}})", id));
   } else {
-    (void)sendRequest(std::format("dispatch workspace {}", id), response);
+    (void)m_runtime.request(std::format("dispatch workspace {}", id));
   }
 }
 
@@ -303,7 +275,6 @@ void HyprlandWorkspaceBackend::cleanup() {
   m_workspaces.clear();
   m_toplevels.clear();
   m_activeWorkspaceByMonitor.clear();
-  m_focusedMonitor.clear();
   m_nextOrdinal = 0;
 }
 
@@ -324,74 +295,13 @@ void HyprlandWorkspaceBackend::dispatchPoll(short revents) {
   }
 }
 
-bool HyprlandWorkspaceBackend::sendRequest(const std::string& request, std::string& response) const {
-  if (m_requestSocketPath.empty()) {
-    return false;
-  }
-
-  const int fd = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
-  if (fd < 0) {
-    return false;
-  }
-
-  sockaddr_un addr{};
-  addr.sun_family = AF_UNIX;
-  if (m_requestSocketPath.size() >= sizeof(addr.sun_path)) {
-    ::close(fd);
-    return false;
-  }
-  std::memcpy(addr.sun_path, m_requestSocketPath.c_str(), m_requestSocketPath.size() + 1);
-
-  if (::connect(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
-    ::close(fd);
-    return false;
-  }
-
-  std::size_t offset = 0;
-  while (offset < request.size()) {
-    const ssize_t written = ::send(fd, request.data() + offset, request.size() - offset, MSG_NOSIGNAL);
-    if (written < 0) {
-      if (errno == EINTR) {
-        continue;
-      }
-      ::close(fd);
-      return false;
-    }
-    offset += static_cast<std::size_t>(written);
-  }
-
-  ::shutdown(fd, SHUT_WR);
-
-  std::string out;
-  char buffer[4096];
-  while (true) {
-    const ssize_t n = ::recv(fd, buffer, sizeof(buffer), 0);
-    if (n > 0) {
-      out.append(buffer, buffer + n);
-      continue;
-    }
-    if (n == 0) {
-      break;
-    }
-    if (errno == EINTR) {
-      continue;
-    }
-    ::close(fd);
-    return false;
-  }
-
-  ::close(fd);
-  response = std::move(out);
-  return true;
-}
-
 std::optional<nlohmann::json> HyprlandWorkspaceBackend::requestJson(const std::string& request) const {
-  std::string response;
-  if (!sendRequest(request, response) || response.empty()) {
+  const auto response = m_runtime.request(request);
+  if (!response.has_value() || response->empty()) {
     return std::nullopt;
   }
   try {
-    return nlohmann::json::parse(response);
+    return nlohmann::json::parse(*response);
   } catch (const nlohmann::json::exception& e) {
     kLog.warn("failed to parse hyprland response for {}: {}", request, e.what());
     return std::nullopt;
@@ -466,10 +376,6 @@ void HyprlandWorkspaceBackend::refreshMonitors() {
     const std::string monitorName = item.value("name", "");
     if (monitorName.empty()) {
       continue;
-    }
-
-    if (const auto it = item.find("focused"); it != item.end() && it->is_boolean() && it->get<bool>()) {
-      m_focusedMonitor = monitorName;
     }
 
     std::string activeWorkspace;
@@ -824,23 +730,20 @@ void HyprlandWorkspaceBackend::handleEvent(std::string_view line) {
 }
 
 void HyprlandWorkspaceBackend::handleFocusedMonitor(std::string_view monitorName, std::string_view workspaceName) {
-  if (monitorName.empty()) {
+  if (monitorName.empty() || workspaceName.empty()) {
     return;
   }
-  m_focusedMonitor = std::string(monitorName);
-  if (!workspaceName.empty()) {
-    m_activeWorkspaceByMonitor[m_focusedMonitor] = std::string(workspaceName);
-    clearUrgentForWorkspace(workspaceName);
-  }
+  m_activeWorkspaceByMonitor[std::string(monitorName)] = std::string(workspaceName);
+  clearUrgentForWorkspace(workspaceName);
   recomputeWorkspaceFlags();
   notifyChanged();
 }
 
 void HyprlandWorkspaceBackend::handleWorkspaceActivated(std::string_view workspaceName) {
-  if (m_focusedMonitor.empty() || workspaceName.empty()) {
+  if (workspaceName.empty()) {
     return;
   }
-  m_activeWorkspaceByMonitor[m_focusedMonitor] = std::string(workspaceName);
+  refreshMonitors();
   clearUrgentForWorkspace(workspaceName);
   recomputeWorkspaceFlags();
   notifyChanged();

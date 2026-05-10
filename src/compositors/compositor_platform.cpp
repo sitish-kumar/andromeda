@@ -1,6 +1,7 @@
 #include "compositors/compositor_platform.h"
 
 #include "compositors/compositor_detect.h"
+#include "compositors/compositor_runtime.h"
 #include "compositors/ext_workspace/ext_workspace_output_backend.h"
 #include "compositors/hyprland/hyprland_keyboard_backend.h"
 #include "compositors/hyprland/hyprland_output_backend.h"
@@ -15,9 +16,9 @@
 #include "wayland/wayland_workspaces.h"
 
 #include <algorithm>
+#include <functional>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <utility>
 
 namespace compositors {
@@ -67,12 +68,12 @@ namespace {
 
   template <typename BackendT> class FocusedOutputAdapter final : public compositors::FocusedOutputBackend {
   public:
-    explicit FocusedOutputAdapter(std::string_view compositorHint) : m_backend(compositorHint) {}
+    FocusedOutputAdapter() = default;
+
+    template <typename... Args>
+    explicit FocusedOutputAdapter(Args&&... args) : m_backend(std::forward<Args>(args)...) {}
 
     [[nodiscard]] std::optional<std::string> focusedOutputName() const override {
-      if (!m_backend.isAvailable()) {
-        return std::nullopt;
-      }
       return m_backend.focusedOutputName();
     }
 
@@ -82,7 +83,10 @@ namespace {
 
   template <typename BackendT> class KeyboardLayoutBackendAdapter final : public KeyboardLayoutBackend {
   public:
-    explicit KeyboardLayoutBackendAdapter(std::string_view compositorHint) : m_backend(compositorHint) {}
+    KeyboardLayoutBackendAdapter() = default;
+
+    template <typename... Args>
+    explicit KeyboardLayoutBackendAdapter(Args&&... args) : m_backend(std::forward<Args>(args)...) {}
 
     [[nodiscard]] bool isAvailable() const noexcept override { return m_backend.isAvailable(); }
     [[nodiscard]] bool cycleLayout() const override { return m_backend.cycleLayout(); }
@@ -125,21 +129,21 @@ namespace {
 
   class LambdaOutputPowerBackend final : public compositors::OutputPowerBackend {
   public:
-    using Callback = bool (*)(WaylandConnection&, bool);
+    using Callback = std::function<bool(WaylandConnection&, bool)>;
 
-    explicit LambdaOutputPowerBackend(Callback callback) : m_callback(callback) {}
+    explicit LambdaOutputPowerBackend(Callback callback) : m_callback(std::move(callback)) {}
 
     [[nodiscard]] bool setOutputPower(WaylandConnection& wayland, bool on) const override {
-      return m_callback != nullptr && m_callback(wayland, on);
+      return m_callback && m_callback(wayland, on);
     }
 
   private:
-    Callback m_callback = nullptr;
+    Callback m_callback;
   };
 
   class NiriWorkspaceMetadataBackend final : public compositors::WorkspaceMetadataBackend {
   public:
-    explicit NiriWorkspaceMetadataBackend(std::string_view compositorHint) : m_backend(compositorHint) {}
+    explicit NiriWorkspaceMetadataBackend(compositors::niri::NiriRuntime& runtime) : m_backend(runtime) {}
 
     void setChangeCallback(ChangeCallback callback) override { m_backend.setChangeCallback(std::move(callback)); }
     [[nodiscard]] int pollFd() const noexcept override { return m_backend.pollFd(); }
@@ -176,10 +180,6 @@ namespace {
     return compositors::niri::setOutputPower(on);
   }
 
-  [[nodiscard]] bool setSwayOutputPower(WaylandConnection& /*wayland*/, bool on) {
-    return compositors::sway::setOutputPower(on);
-  }
-
   [[nodiscard]] bool setMangoOutputPower(WaylandConnection& wayland, bool on) {
     return compositors::mango::setOutputPower(wayland, on);
   }
@@ -188,14 +188,19 @@ namespace {
     return compositors::ext_workspace::setOutputPower(on);
   }
 
-  [[nodiscard]] std::unique_ptr<compositors::OutputPowerBackend> createOutputPowerBackend() {
+  [[nodiscard]] std::unique_ptr<compositors::OutputPowerBackend>
+  createOutputPowerBackend(compositors::CompositorRuntimeRegistry& runtimeRegistry) {
     switch (compositors::detect()) {
     case compositors::CompositorKind::Hyprland:
       return std::make_unique<LambdaOutputPowerBackend>(&setHyprlandOutputPower);
     case compositors::CompositorKind::Niri:
       return std::make_unique<LambdaOutputPowerBackend>(&setNiriOutputPower);
     case compositors::CompositorKind::Sway:
-      return std::make_unique<LambdaOutputPowerBackend>(&setSwayOutputPower);
+      return std::make_unique<LambdaOutputPowerBackend>(
+          [&runtime = runtimeRegistry.sway()](WaylandConnection& wayland, bool on) {
+            (void)wayland;
+            return compositors::sway::setOutputPower(runtime, on);
+          });
     case compositors::CompositorKind::Mango:
       return std::make_unique<LambdaOutputPowerBackend>(&setMangoOutputPower);
     case compositors::CompositorKind::Unknown:
@@ -204,11 +209,27 @@ namespace {
     return nullptr;
   }
 
+  [[nodiscard]] std::unique_ptr<compositors::FocusedOutputBackend>
+  createFocusedOutputBackend(compositors::CompositorRuntimeRegistry& runtimeRegistry) {
+    switch (compositors::detect()) {
+    case compositors::CompositorKind::Hyprland:
+      return std::make_unique<FocusedOutputAdapter<HyprlandOutputBackend>>(runtimeRegistry.hyprland());
+    case compositors::CompositorKind::Niri:
+      return std::make_unique<FocusedOutputAdapter<NiriOutputBackend>>();
+    case compositors::CompositorKind::Sway:
+      return std::make_unique<FocusedOutputAdapter<SwayOutputBackend>>(runtimeRegistry.sway());
+    case compositors::CompositorKind::Mango:
+    case compositors::CompositorKind::Unknown:
+      break;
+    }
+    return nullptr;
+  }
+
   [[nodiscard]] std::unique_ptr<compositors::WorkspaceMetadataBackend>
-  createWorkspaceMetadataBackend(std::string_view compositorHint) {
+  createWorkspaceMetadataBackend(compositors::CompositorRuntimeRegistry& runtimeRegistry) {
     switch (compositors::detect()) {
     case compositors::CompositorKind::Niri:
-      return std::make_unique<NiriWorkspaceMetadataBackend>(compositorHint);
+      return std::make_unique<NiriWorkspaceMetadataBackend>(runtimeRegistry.niri());
     case compositors::CompositorKind::Hyprland:
     case compositors::CompositorKind::Sway:
     case compositors::CompositorKind::Mango:
@@ -218,16 +239,17 @@ namespace {
     return nullptr;
   }
 
-  [[nodiscard]] std::unique_ptr<KeyboardLayoutBackend> createKeyboardLayoutBackend(std::string_view compositorHint) {
+  [[nodiscard]] std::unique_ptr<KeyboardLayoutBackend>
+  createKeyboardLayoutBackend(compositors::CompositorRuntimeRegistry& runtimeRegistry) {
     switch (compositors::detect()) {
     case compositors::CompositorKind::Niri:
-      return std::make_unique<KeyboardLayoutBackendAdapter<NiriKeyboardBackend>>(compositorHint);
+      return std::make_unique<KeyboardLayoutBackendAdapter<NiriKeyboardBackend>>(runtimeRegistry.niri());
     case compositors::CompositorKind::Hyprland:
-      return std::make_unique<KeyboardLayoutBackendAdapter<HyprlandKeyboardBackend>>(compositorHint);
+      return std::make_unique<KeyboardLayoutBackendAdapter<HyprlandKeyboardBackend>>(runtimeRegistry.hyprland());
     case compositors::CompositorKind::Mango:
-      return std::make_unique<KeyboardLayoutBackendAdapter<MangoKeyboardBackend>>(compositorHint);
+      return std::make_unique<KeyboardLayoutBackendAdapter<MangoKeyboardBackend>>();
     case compositors::CompositorKind::Sway:
-      return std::make_unique<KeyboardLayoutBackendAdapter<SwayKeyboardBackend>>(compositorHint);
+      return std::make_unique<KeyboardLayoutBackendAdapter<SwayKeyboardBackend>>(runtimeRegistry.sway());
     case compositors::CompositorKind::Unknown:
       break;
     }
@@ -237,14 +259,14 @@ namespace {
 } // namespace
 
 CompositorPlatform::CompositorPlatform(WaylandConnection& wayland)
-    : m_wayland(wayland), m_workspaces(std::make_unique<WaylandWorkspaces>()) {
-  const std::string compositorHint(compositors::envHint());
-
-  m_workspaceMetadataBackend = createWorkspaceMetadataBackend(compositorHint);
-  m_focusedOutputBackends.push_back(std::make_unique<FocusedOutputAdapter<NiriOutputBackend>>(compositorHint));
-  m_focusedOutputBackends.push_back(std::make_unique<FocusedOutputAdapter<SwayOutputBackend>>(compositorHint));
-  m_outputPowerBackend = createOutputPowerBackend();
-  m_keyboardLayoutBackend = createKeyboardLayoutBackend(compositorHint);
+    : m_wayland(wayland), m_runtimeRegistry(std::make_unique<compositors::CompositorRuntimeRegistry>()),
+      m_workspaces(std::make_unique<WaylandWorkspaces>(*m_runtimeRegistry)) {
+  m_workspaceMetadataBackend = createWorkspaceMetadataBackend(*m_runtimeRegistry);
+  if (auto focusedOutputBackend = createFocusedOutputBackend(*m_runtimeRegistry); focusedOutputBackend != nullptr) {
+    m_focusedOutputBackends.push_back(std::move(focusedOutputBackend));
+  }
+  m_outputPowerBackend = createOutputPowerBackend(*m_runtimeRegistry);
+  m_keyboardLayoutBackend = createKeyboardLayoutBackend(*m_runtimeRegistry);
 
   m_workspaces->setOutputNameResolver([this](wl_output* output) { return connectorNameForOutput(output); });
 
@@ -266,7 +288,7 @@ void CompositorPlatform::initialize() {
   }
   m_initialized = true;
 
-  m_workspaces->initialize(compositors::envHint());
+  m_workspaces->initialize();
   for (const auto& output : m_wayland.outputs()) {
     if (output.output != nullptr) {
       m_workspaces->onOutputAdded(output.output);

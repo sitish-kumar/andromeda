@@ -1,11 +1,12 @@
 #include "compositors/sway/sway_output_backend.h"
 
+#include "compositors/sway/sway_runtime.h"
 #include "core/log.h"
 #include "core/process.h"
 #include "util/string_utils.h"
 
-#include <cstdlib>
 #include <json.hpp>
+#include <string_view>
 
 namespace {
 
@@ -42,24 +43,12 @@ namespace {
 
 } // namespace
 
-SwayOutputBackend::SwayOutputBackend(std::string_view compositorHint) {
-  const bool hinted = StringUtils::containsInsensitive(compositorHint, "sway");
-  const char* swaySocket = std::getenv("SWAYSOCK");
-  const char* i3Socket = std::getenv("I3SOCK");
-  m_enabled =
-      hinted || (swaySocket != nullptr && swaySocket[0] != '\0') || (i3Socket != nullptr && i3Socket[0] != '\0');
-}
-
-bool SwayOutputBackend::isAvailable() const noexcept { return m_enabled; }
+SwayOutputBackend::SwayOutputBackend(compositors::sway::SwayRuntime& runtime) : m_runtime(runtime) {}
 
 std::optional<std::string> SwayOutputBackend::focusedOutputName() const {
-  if (!m_enabled) {
+  const auto& msgCommand = m_runtime.outputCommand();
+  if (msgCommand.empty()) {
     return std::nullopt;
-  }
-
-  const char* msgCommand = process::commandExists("scrollmsg") ? "scrollmsg" : "swaymsg";
-  if (!process::commandExists(msgCommand)) {
-    msgCommand = "i3-msg";
   }
 
   const auto result = process::runSync({msgCommand, "-t", "get_outputs", "-r"});
@@ -72,10 +61,10 @@ std::optional<std::string> SwayOutputBackend::focusedOutputName() const {
 
 namespace compositors::sway {
 
-  bool setOutputPower(bool on) {
-    const char* msgCommand = process::commandExists("scrollmsg") ? "scrollmsg" : "swaymsg";
-    if (!process::commandExists(msgCommand)) {
-      msgCommand = "i3-msg";
+  bool setOutputPower(const SwayRuntime& runtime, bool on) {
+    const auto& msgCommand = runtime.outputCommand();
+    if (msgCommand.empty()) {
+      return false;
     }
     return process::runAsync({msgCommand, "output", "*", "dpms", on ? "on" : "off"});
   }

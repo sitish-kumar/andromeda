@@ -1,12 +1,13 @@
 #include "wayland/wayland_workspaces.h"
 
+#include "compositors/compositor_detect.h"
+#include "compositors/compositor_runtime.h"
 #include "compositors/ext_workspace/ext_workspace_backend.h"
 #include "compositors/hyprland/hyprland_workspace_backend.h"
 #include "compositors/mango/mango_workspace_backend.h"
 #include "compositors/output_backend.h"
 #include "compositors/sway/sway_workspace_backend.h"
 #include "core/log.h"
-#include "util/string_utils.h"
 
 #include <string>
 
@@ -16,7 +17,7 @@ namespace {
 
 } // namespace
 
-WaylandWorkspaces::WaylandWorkspaces() {
+WaylandWorkspaces::WaylandWorkspaces(compositors::CompositorRuntimeRegistry& runtimeRegistry) {
   auto extBackend = std::make_unique<ExtWorkspaceBackend>();
   m_extWorkspaceBinder = extBackend.get();
   m_extBackend = extBackend.get();
@@ -28,14 +29,15 @@ WaylandWorkspaces::WaylandWorkspaces() {
   m_outputObservers.push_back(dwlIpcBackend.get());
   m_backends.push_back(std::move(dwlIpcBackend));
 
-  auto hyprlandBackend =
-      std::make_unique<HyprlandWorkspaceBackend>([](wl_output* /*output*/) { return std::string{}; });
+  auto hyprlandBackend = std::make_unique<HyprlandWorkspaceBackend>([](wl_output* /*output*/) { return std::string{}; },
+                                                                    runtimeRegistry.hyprland());
   m_hyprlandBackend = hyprlandBackend.get();
   m_hyprlandConnector = hyprlandBackend.get();
   m_outputNameResolvers.push_back(hyprlandBackend.get());
   m_backends.push_back(std::move(hyprlandBackend));
 
-  auto swayBackend = std::make_unique<SwayWorkspaceBackend>([](wl_output* /*output*/) { return std::string{}; });
+  auto swayBackend = std::make_unique<SwayWorkspaceBackend>([](wl_output* /*output*/) { return std::string{}; },
+                                                            runtimeRegistry.sway());
   m_swayBackend = swayBackend.get();
   m_swayConnector = swayBackend.get();
   m_outputNameResolvers.push_back(swayBackend.get());
@@ -64,30 +66,33 @@ void WaylandWorkspaces::setOutputNameResolver(std::function<std::string(wl_outpu
   }
 }
 
-void WaylandWorkspaces::initialize(std::string_view compositorHint) {
+void WaylandWorkspaces::initialize() {
   auto availableOrConnected = [](WorkspaceBackend* backend, WorkspaceSocketConnector* connector = nullptr) {
     return backend != nullptr && (backend->isAvailable() || (connector != nullptr && connector->connectSocket()));
   };
 
-  if (StringUtils::containsInsensitive(compositorHint, "hyprland") ||
-      StringUtils::containsInsensitive(compositorHint, "hypr")) {
+  switch (compositors::detect()) {
+  case compositors::CompositorKind::Hyprland:
     if (availableOrConnected(m_hyprlandBackend, m_hyprlandConnector)) {
       setActiveBackend(m_hyprlandBackend);
       return;
     }
-  }
-  if (StringUtils::containsInsensitive(compositorHint, "mango") ||
-      StringUtils::containsInsensitive(compositorHint, "dwl")) {
+    break;
+  case compositors::CompositorKind::Mango:
     if (availableOrConnected(m_dwlIpcBackend)) {
       setActiveBackend(m_dwlIpcBackend);
       return;
     }
-  }
-  if (StringUtils::containsInsensitive(compositorHint, "sway")) {
+    break;
+  case compositors::CompositorKind::Sway:
     if (availableOrConnected(m_swayBackend, m_swayConnector)) {
       setActiveBackend(m_swayBackend);
       return;
     }
+    break;
+  case compositors::CompositorKind::Niri:
+  case compositors::CompositorKind::Unknown:
+    break;
   }
 
   if (availableOrConnected(m_extBackend)) {

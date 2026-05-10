@@ -1,7 +1,7 @@
 #include "compositors/niri/niri_workspace_backend.h"
 
+#include "compositors/niri/niri_runtime.h"
 #include "core/log.h"
-#include "util/string_utils.h"
 
 #include <algorithm>
 #include <array>
@@ -101,14 +101,8 @@ namespace {
 
 } // namespace
 
-NiriWorkspaceBackend::NiriWorkspaceBackend(std::string_view compositorHint) {
-  const char* socketPath = std::getenv("NIRI_SOCKET");
-  if (socketPath != nullptr && socketPath[0] != '\0') {
-    m_socketPath = std::string(socketPath);
-  }
-
-  m_enabled = StringUtils::containsInsensitive(compositorHint, "niri") || m_socketPath.has_value();
-  if (m_enabled) {
+NiriWorkspaceBackend::NiriWorkspaceBackend(compositors::niri::NiriRuntime& runtime) : m_runtime(runtime) {
+  if (m_runtime.available()) {
     connectIfNeeded();
   }
 }
@@ -117,8 +111,10 @@ NiriWorkspaceBackend::~NiriWorkspaceBackend() { cleanup(); }
 
 void NiriWorkspaceBackend::setChangeCallback(ChangeCallback callback) { m_changeCallback = std::move(callback); }
 
+bool NiriWorkspaceBackend::canTrackOverviewState() const noexcept { return m_runtime.available(); }
+
 int NiriWorkspaceBackend::pollTimeoutMs() const noexcept {
-  if (!m_enabled || m_socketFd >= 0 || !m_socketPath.has_value()) {
+  if (m_socketFd >= 0 || !m_runtime.available()) {
     return -1;
   }
 
@@ -132,7 +128,7 @@ int NiriWorkspaceBackend::pollTimeoutMs() const noexcept {
 }
 
 void NiriWorkspaceBackend::dispatchPoll(short revents) {
-  if (!m_enabled) {
+  if (!m_runtime.available()) {
     return;
   }
 
@@ -152,7 +148,7 @@ void NiriWorkspaceBackend::dispatchPoll(short revents) {
 }
 
 void NiriWorkspaceBackend::apply(std::vector<Workspace>& workspaces, const std::string& outputName) const {
-  if (!m_enabled || workspaces.empty() || m_workspaces.empty()) {
+  if (!m_runtime.available() || workspaces.empty() || m_workspaces.empty()) {
     return;
   }
 
@@ -333,7 +329,8 @@ void NiriWorkspaceBackend::cleanup() {
 }
 
 void NiriWorkspaceBackend::connectIfNeeded() {
-  if (!m_enabled || m_socketFd >= 0 || !m_socketPath.has_value()) {
+  const auto& socketPath = m_runtime.socketPath();
+  if (m_socketFd >= 0 || socketPath.empty()) {
     return;
   }
 
@@ -350,13 +347,13 @@ void NiriWorkspaceBackend::connectIfNeeded() {
 
   sockaddr_un addr{};
   addr.sun_family = AF_UNIX;
-  if (m_socketPath->size() >= sizeof(addr.sun_path)) {
+  if (socketPath.size() >= sizeof(addr.sun_path)) {
     kLog.warn("niri socket path too long");
     ::close(fd);
     scheduleReconnect();
     return;
   }
-  std::memcpy(addr.sun_path, m_socketPath->c_str(), m_socketPath->size() + 1);
+  std::memcpy(addr.sun_path, socketPath.c_str(), socketPath.size() + 1);
 
   if (::connect(fd, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)) < 0) {
     ::close(fd);

@@ -1,10 +1,9 @@
 #include "compositors/sway/sway_keyboard_backend.h"
 
+#include "compositors/sway/sway_runtime.h"
 #include "core/process.h"
-#include "util/string_utils.h"
 
 #include <chrono>
-#include <cstdlib>
 #include <json.hpp>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -78,20 +77,15 @@ namespace {
 
 } // namespace
 
-SwayKeyboardBackend::SwayKeyboardBackend(std::string_view compositorHint) {
-  const bool hinted = StringUtils::containsInsensitive(compositorHint, "sway");
-  const char* swaySock = std::getenv("SWAYSOCK");
-  m_enabled = hinted || (swaySock != nullptr && swaySock[0] != '\0');
-  m_msgCommand = process::commandExists("swaymsg") ? "swaymsg" : "i3-msg";
-}
+SwayKeyboardBackend::SwayKeyboardBackend(compositors::sway::SwayRuntime& runtime) : m_runtime(runtime) {}
 
-bool SwayKeyboardBackend::isAvailable() const noexcept { return m_enabled && !m_msgCommand.empty(); }
+bool SwayKeyboardBackend::isAvailable() const noexcept { return m_runtime.hasMsgCommand(); }
 
 bool SwayKeyboardBackend::cycleLayout() const {
   if (!isAvailable()) {
     return false;
   }
-  const bool ok = process::runSync({m_msgCommand, "input", "type:keyboard", "xkb_switch_layout", "next"});
+  const bool ok = process::runSync({m_runtime.msgCommand(), "input", "type:keyboard", "xkb_switch_layout", "next"});
   if (ok) {
     invalidateCurrentLayoutCache();
   }
@@ -124,7 +118,7 @@ std::optional<std::string> SwayKeyboardBackend::currentLayoutName() const {
     return cache.value;
   };
 
-  const auto payload = runAndCapture({m_msgCommand, "-t", "get_inputs", "--raw"});
+  const auto payload = runAndCapture({m_runtime.msgCommand(), "-t", "get_inputs", "--raw"});
   if (!payload.has_value() || payload->empty()) {
     return finish(std::nullopt);
   }

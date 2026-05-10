@@ -2,21 +2,23 @@
 
 #include <optional>
 #include <string>
-#include <string_view>
+
+namespace compositors::sway {
+  class SwayRuntime;
+} // namespace compositors::sway
 
 class SwayOutputBackend {
 public:
-  explicit SwayOutputBackend(std::string_view compositorHint);
+  explicit SwayOutputBackend(compositors::sway::SwayRuntime& runtime);
 
-  [[nodiscard]] bool isAvailable() const noexcept;
   [[nodiscard]] std::optional<std::string> focusedOutputName() const;
 
 private:
-  bool m_enabled = false;
+  compositors::sway::SwayRuntime& m_runtime;
 };
 
 namespace compositors::sway {
 
-  [[nodiscard]] bool setOutputPower(bool on);
+  [[nodiscard]] bool setOutputPower(const SwayRuntime& runtime, bool on);
 
 } // namespace compositors::sway

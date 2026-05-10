@@ -21,6 +21,7 @@ struct zdwl_ipc_manager_v2;
 class WaylandWorkspaces;
 
 namespace compositors {
+  class CompositorRuntimeRegistry;
   class FocusedOutputBackend;
   class OutputPowerBackend;
   class WorkspaceMetadataBackend;
@@ -130,6 +131,7 @@ private:
                                                        const std::vector<WorkspaceModelSnapshot>& rhs);
 
   WaylandConnection& m_wayland;
+  std::unique_ptr<compositors::CompositorRuntimeRegistry> m_runtimeRegistry;
   std::unique_ptr<WaylandWorkspaces> m_workspaces;
   std::unique_ptr<compositors::WorkspaceMetadataBackend> m_workspaceMetadataBackend;
   std::vector<std::unique_ptr<compositors::FocusedOutputBackend>> m_focusedOutputBackends;

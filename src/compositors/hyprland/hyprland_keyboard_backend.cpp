@@ -1,14 +1,12 @@
 #include "compositors/hyprland/hyprland_keyboard_backend.h"
 
+#include "compositors/hyprland/hyprland_runtime.h"
 #include "core/log.h"
-#include "util/string_utils.h"
 
 #include <algorithm>
 #include <cerrno>
-#include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
-#include <filesystem>
 #include <string_view>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -20,24 +18,14 @@ namespace {
 
 } // namespace
 
-HyprlandKeyboardBackend::HyprlandKeyboardBackend(std::string_view compositorHint) {
-  const bool hinted = StringUtils::containsInsensitive(compositorHint, "hyprland") ||
-                      StringUtils::containsInsensitive(compositorHint, "hypr");
-  const char* signature = std::getenv("HYPRLAND_INSTANCE_SIGNATURE");
-  m_enabled = hinted || (signature != nullptr && signature[0] != '\0');
-}
+HyprlandKeyboardBackend::HyprlandKeyboardBackend(compositors::hyprland::HyprlandRuntime& runtime)
+    : m_runtime(runtime) {}
 
 HyprlandKeyboardBackend::~HyprlandKeyboardBackend() { cleanup(); }
 
-bool HyprlandKeyboardBackend::isAvailable() const noexcept { return m_enabled; }
+bool HyprlandKeyboardBackend::isAvailable() const noexcept { return m_runtime.available(); }
 
-bool HyprlandKeyboardBackend::cycleLayout() const {
-  if (!m_enabled || m_requestSocketPath.empty()) {
-    return false;
-  }
-  std::string response;
-  return sendRequest("switchxkblayout all next", response);
-}
+bool HyprlandKeyboardBackend::cycleLayout() const { return m_runtime.request("switchxkblayout all next").has_value(); }
 
 std::optional<KeyboardLayoutState> HyprlandKeyboardBackend::layoutState() const {
   const auto current = currentLayoutName();
@@ -48,14 +36,15 @@ std::optional<KeyboardLayoutState> HyprlandKeyboardBackend::layoutState() const 
 }
 
 std::optional<std::string> HyprlandKeyboardBackend::currentLayoutName() const {
-  if (!m_enabled || m_currentLayoutName.empty()) {
+  if (m_currentLayoutName.empty()) {
     return std::nullopt;
   }
   return m_currentLayoutName;
 }
 
 bool HyprlandKeyboardBackend::connectSocket() {
-  if (!m_enabled || !ensureSocketPaths()) {
+  const auto& eventSocketPath = m_runtime.eventSocketPath();
+  if (eventSocketPath.empty()) {
     return false;
   }
 
@@ -69,15 +58,15 @@ bool HyprlandKeyboardBackend::connectSocket() {
 
   sockaddr_un addr{};
   addr.sun_family = AF_UNIX;
-  if (m_eventSocketPath.size() >= sizeof(addr.sun_path)) {
+  if (eventSocketPath.size() >= sizeof(addr.sun_path)) {
     kLog.warn("hyprland keyboard IPC socket path too long");
     cleanup();
     return false;
   }
-  std::memcpy(addr.sun_path, m_eventSocketPath.c_str(), m_eventSocketPath.size() + 1);
+  std::memcpy(addr.sun_path, eventSocketPath.c_str(), eventSocketPath.size() + 1);
 
   if (::connect(m_eventSocketFd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
-    kLog.warn("failed to connect to hyprland keyboard IPC {}: {}", m_eventSocketPath, std::strerror(errno));
+    kLog.warn("failed to connect to hyprland keyboard IPC {}: {}", eventSocketPath, std::strerror(errno));
     cleanup();
     return false;
   }
@@ -88,7 +77,7 @@ bool HyprlandKeyboardBackend::connectSocket() {
   }
 
   seedLayoutFromDevices();
-  kLog.info("connected to hyprland keyboard IPC at {}", m_eventSocketPath);
+  kLog.info("connected to hyprland keyboard IPC at {}", eventSocketPath);
   return true;
 }
 
@@ -121,103 +110,13 @@ void HyprlandKeyboardBackend::cleanup() {
   m_mainKeyboardName.clear();
 }
 
-bool HyprlandKeyboardBackend::ensureSocketPaths() {
-  if (!m_requestSocketPath.empty() && !m_eventSocketPath.empty()) {
-    return true;
-  }
-
-  const char* signature = std::getenv("HYPRLAND_INSTANCE_SIGNATURE");
-  if (signature == nullptr || signature[0] == '\0') {
-    return false;
-  }
-
-  std::string hyprDir;
-  const char* runtimeDir = std::getenv("XDG_RUNTIME_DIR");
-  if (runtimeDir != nullptr && runtimeDir[0] != '\0') {
-    hyprDir = std::string(runtimeDir) + "/hypr/" + signature;
-  }
-
-  if (hyprDir.empty() || !std::filesystem::is_directory(hyprDir)) {
-    hyprDir = std::string("/tmp/hypr/") + signature;
-  }
-
-  if (!std::filesystem::is_directory(hyprDir)) {
-    return false;
-  }
-
-  m_requestSocketPath = hyprDir + "/.socket.sock";
-  m_eventSocketPath = hyprDir + "/.socket2.sock";
-  return true;
-}
-
-bool HyprlandKeyboardBackend::sendRequest(const std::string& request, std::string& response) const {
-  if (m_requestSocketPath.empty()) {
-    return false;
-  }
-
-  const int fd = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
-  if (fd < 0) {
-    return false;
-  }
-
-  sockaddr_un addr{};
-  addr.sun_family = AF_UNIX;
-  if (m_requestSocketPath.size() >= sizeof(addr.sun_path)) {
-    ::close(fd);
-    return false;
-  }
-  std::memcpy(addr.sun_path, m_requestSocketPath.c_str(), m_requestSocketPath.size() + 1);
-
-  if (::connect(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
-    ::close(fd);
-    return false;
-  }
-
-  std::size_t offset = 0;
-  while (offset < request.size()) {
-    const ssize_t written = ::send(fd, request.data() + offset, request.size() - offset, MSG_NOSIGNAL);
-    if (written < 0) {
-      if (errno == EINTR) {
-        continue;
-      }
-      ::close(fd);
-      return false;
-    }
-    offset += static_cast<std::size_t>(written);
-  }
-
-  ::shutdown(fd, SHUT_WR);
-
-  std::string out;
-  char buffer[4096];
-  while (true) {
-    const ssize_t n = ::recv(fd, buffer, sizeof(buffer), 0);
-    if (n > 0) {
-      out.append(buffer, buffer + n);
-      continue;
-    }
-    if (n == 0) {
-      break;
-    }
-    if (errno == EINTR) {
-      continue;
-    }
-    ::close(fd);
-    return false;
-  }
-
-  ::close(fd);
-  response = std::move(out);
-  return true;
-}
-
 std::optional<nlohmann::json> HyprlandKeyboardBackend::requestJson(const std::string& request) const {
-  std::string response;
-  if (!sendRequest(request, response) || response.empty()) {
+  const auto response = m_runtime.request(request);
+  if (!response.has_value() || response->empty()) {
     return std::nullopt;
   }
   try {
-    return nlohmann::json::parse(response);
+    return nlohmann::json::parse(*response);
   } catch (const nlohmann::json::exception& e) {
     kLog.warn("failed to parse hyprland response for {}: {}", request, e.what());
     return std::nullopt;

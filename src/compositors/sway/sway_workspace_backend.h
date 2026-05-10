@@ -7,13 +7,17 @@
 #include <unordered_map>
 #include <vector>
 
+namespace compositors::sway {
+  class SwayRuntime;
+} // namespace compositors::sway
+
 class SwayWorkspaceBackend final : public WorkspaceBackend,
                                    public WorkspaceOutputNameResolver,
                                    public WorkspaceSocketConnector {
 public:
   using OutputNameResolver = WorkspaceOutputNameResolver::Resolver;
 
-  explicit SwayWorkspaceBackend(OutputNameResolver outputNameResolver);
+  SwayWorkspaceBackend(OutputNameResolver outputNameResolver, compositors::sway::SwayRuntime& runtime);
 
   bool connectSocket() override;
   void setOutputNameResolver(OutputNameResolver outputNameResolver) override;
@@ -63,6 +67,7 @@ private:
   [[nodiscard]] static std::string quoteCommandArg(const std::string& value);
 
   OutputNameResolver m_outputNameResolver;
+  compositors::sway::SwayRuntime& m_runtime;
   int m_socketFd = -1;
   std::vector<char> m_readBuffer;
   std::vector<SwayWorkspace> m_workspaces;

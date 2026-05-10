@@ -4,11 +4,14 @@
 
 #include <optional>
 #include <string>
-#include <string_view>
+
+namespace compositors::sway {
+  class SwayRuntime;
+} // namespace compositors::sway
 
 class SwayKeyboardBackend {
 public:
-  explicit SwayKeyboardBackend(std::string_view compositorHint);
+  explicit SwayKeyboardBackend(compositors::sway::SwayRuntime& runtime);
 
   [[nodiscard]] bool isAvailable() const noexcept;
   [[nodiscard]] bool cycleLayout() const;
@@ -16,6 +19,5 @@ public:
   [[nodiscard]] std::optional<std::string> currentLayoutName() const;
 
 private:
-  bool m_enabled = false;
-  std::string m_msgCommand;
+  compositors::sway::SwayRuntime& m_runtime;
 };

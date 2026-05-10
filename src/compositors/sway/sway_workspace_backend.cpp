@@ -1,10 +1,10 @@
 #include "compositors/sway/sway_workspace_backend.h"
 
+#include "compositors/sway/sway_runtime.h"
 #include "core/log.h"
 
 #include <arpa/inet.h>
 #include <cerrno>
-#include <cstdlib>
 #include <cstring>
 #include <format>
 #include <json.hpp>
@@ -203,16 +203,6 @@ namespace {
     }
   }
 
-  std::string socketPathFromEnv() {
-    if (const char* swaySock = std::getenv("SWAYSOCK"); swaySock != nullptr && swaySock[0] != '\0') {
-      return swaySock;
-    }
-    if (const char* i3Sock = std::getenv("I3SOCK"); i3Sock != nullptr && i3Sock[0] != '\0') {
-      return i3Sock;
-    }
-    return {};
-  }
-
   std::string toLowerCopy(std::string value) {
     std::transform(value.begin(), value.end(), value.begin(),
                    [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
@@ -232,15 +222,16 @@ namespace {
 
 } // namespace
 
-SwayWorkspaceBackend::SwayWorkspaceBackend(OutputNameResolver outputNameResolver)
-    : m_outputNameResolver(std::move(outputNameResolver)) {}
+SwayWorkspaceBackend::SwayWorkspaceBackend(OutputNameResolver outputNameResolver,
+                                           compositors::sway::SwayRuntime& runtime)
+    : m_outputNameResolver(std::move(outputNameResolver)), m_runtime(runtime) {}
 
 void SwayWorkspaceBackend::setOutputNameResolver(OutputNameResolver outputNameResolver) {
   m_outputNameResolver = std::move(outputNameResolver);
 }
 
 bool SwayWorkspaceBackend::connectSocket() {
-  const std::string path = socketPathFromEnv();
+  const std::string& path = m_runtime.socketPath();
   if (path.empty()) {
     return false;
   }

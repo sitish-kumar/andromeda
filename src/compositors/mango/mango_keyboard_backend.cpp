@@ -2,12 +2,10 @@
 
 #include "core/process.h"
 #include "dwl-ipc-unstable-v2-client-protocol.h"
-#include "util/string_utils.h"
 #include "wayland-client-core.h"
 #include "wayland-client-protocol.h"
 
 #include <algorithm>
-#include <cstdlib>
 
 namespace {
 
@@ -91,22 +89,13 @@ namespace {
 
 } // namespace
 
-MangoKeyboardBackend::MangoKeyboardBackend(std::string_view compositorHint) {
-  const char* currentDesktop = std::getenv("XDG_CURRENT_DESKTOP");
-  m_enabled = StringUtils::containsInsensitive(compositorHint, "mango") ||
-              StringUtils::containsInsensitive(compositorHint, "dwl") ||
-              (currentDesktop != nullptr && StringUtils::containsInsensitive(currentDesktop, "mango"));
-}
+MangoKeyboardBackend::MangoKeyboardBackend() = default;
 
 MangoKeyboardBackend::~MangoKeyboardBackend() { cleanup(); }
 
 bool MangoKeyboardBackend::isAvailable() const noexcept { return syncState() && preferredOutputState() != nullptr; }
 
 bool MangoKeyboardBackend::cycleLayout() const {
-  if (!m_enabled) {
-    return false;
-  }
-
   if (process::commandExists("mmsg")) {
     const bool ok = process::runSync({"mmsg", "-s", "-d", "switch_keyboard_layout"});
     if (ok) {
@@ -155,7 +144,7 @@ std::optional<std::string> MangoKeyboardBackend::currentLayoutName() const {
 }
 
 void MangoKeyboardBackend::ensureConnected() const {
-  if (m_initialized || m_failed || !m_enabled) {
+  if (m_initialized || m_failed) {
     return;
   }
 

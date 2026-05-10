@@ -9,11 +9,15 @@
 #include <string_view>
 #include <vector>
 
+namespace compositors::hyprland {
+  class HyprlandRuntime;
+} // namespace compositors::hyprland
+
 class HyprlandKeyboardBackend {
 public:
   using ChangeCallback = std::function<void()>;
 
-  explicit HyprlandKeyboardBackend(std::string_view compositorHint);
+  explicit HyprlandKeyboardBackend(compositors::hyprland::HyprlandRuntime& runtime);
   ~HyprlandKeyboardBackend();
 
   HyprlandKeyboardBackend(const HyprlandKeyboardBackend&) = delete;
@@ -31,18 +35,14 @@ public:
   void cleanup();
 
 private:
-  bool ensureSocketPaths();
-  [[nodiscard]] bool sendRequest(const std::string& request, std::string& response) const;
   [[nodiscard]] std::optional<nlohmann::json> requestJson(const std::string& request) const;
   void seedLayoutFromDevices();
   void readSocket();
   void parseMessages();
   void handleEvent(std::string_view line);
 
-  bool m_enabled = false;
+  compositors::hyprland::HyprlandRuntime& m_runtime;
   int m_eventSocketFd = -1;
-  std::string m_requestSocketPath;
-  std::string m_eventSocketPath;
   std::string m_currentLayoutName;
   std::string m_mainKeyboardName;
   std::vector<char> m_readBuffer;
