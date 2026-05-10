@@ -246,6 +246,17 @@ namespace settings {
                                       {"right", "settings.options.edge.right"}},
                                      selected));
     };
+    const auto launcherPositionSelect = [](std::string_view selected) {
+      return asSegmented(plainSelect({{"none", "settings.options.dock-launcher-position.none"},
+                                      {"start", "settings.options.dock-launcher-position.start"},
+                                      {"end", "settings.options.dock-launcher-position.end"}},
+                                     selected));
+    };
+    const auto launcherIconSelect = [](std::string_view selected) {
+      return asSegmented(plainSelect({{"dots", "settings.options.dock-launcher-icon.dots"},
+                                      {"search", "settings.options.dock-launcher-icon.search"}},
+                                     selected));
+    };
     std::vector<SettingEntry> entries;
 
     // Appearance
@@ -479,6 +490,12 @@ namespace settings {
                                 tr("settings.schema.dock.show-instance-count.description"),
                                 {"dock", "show_instance_count"}, ToggleSetting{cfg.dock.showInstanceCount},
                                 "badge windows"));
+    entries.push_back(makeEntry("dock", "behavior", tr("settings.schema.dock.launcher-position.label"),
+                                tr("settings.schema.dock.launcher-position.description"), {"dock", "launcher_position"},
+                                launcherPositionSelect(cfg.dock.launcherPosition), "launcher apps grid"));
+    entries.push_back(makeEntry("dock", "behavior", tr("settings.schema.dock.launcher-icon.label"),
+                                tr("settings.schema.dock.launcher-icon.description"), {"dock", "launcher_icon"},
+                                launcherIconSelect(cfg.dock.launcherIcon), "launcher apps search grid"));
     entries.push_back(makeEntry("dock", "layout", tr("settings.schema.shared.position.label"),
                                 tr("settings.schema.dock.position.description"), {"dock", "position"},
                                 positionSelect(cfg.dock.position), "edge"));
