@@ -43,6 +43,10 @@ namespace settings {
 
   } // namespace
 
+  constexpr float kPanelWidth = 640.0f;
+  constexpr float kInitialPanelHeight = 360.0f;
+  constexpr float kParentMargin = 48.0f;
+
   SessionActionsEditorPopup::~SessionActionsEditorPopup() { destroyPopup(); }
 
   void SessionActionsEditorPopup::initialize(WaylandConnection& wayland, ConfigService& config,
@@ -68,9 +72,11 @@ namespace settings {
     m_removeAction = std::move(removeAction);
     m_populateSheetBody = std::move(populateSheetBody);
     m_root = nullptr;
+    m_parentWidth = parentWidth;
+    m_parentHeight = parentHeight;
 
-    const float panelWidth = 640.0f * m_scale;
-    const float panelHeight = 420.0f * m_scale;
+    const float panelWidth = kPanelWidth * m_scale;
+    const float panelHeight = kInitialPanelHeight * m_scale;
     const auto cfg =
         centeredPopupConfig(parentWidth, parentHeight, static_cast<std::uint32_t>(std::max(1.0f, panelWidth)),
                             static_cast<std::uint32_t>(std::max(1.0f, panelHeight)), serial);
@@ -172,6 +178,18 @@ namespace settings {
     Renderer& renderer = *renderContext();
 
     const LayoutSize pref = m_root->measure(renderer, LayoutConstraints::available(contentWidth, 1.0e6f));
+    const float outerPadding = computePadding(uiScale()) * 2.0f;
+    const float desiredOuterHeight = std::ceil(pref.height + outerPadding);
+    const float maxOuterHeight =
+        m_parentHeight > 0 ? std::max(1.0f, static_cast<float>(m_parentHeight) - (kParentMargin * m_scale)) : 1.0e6f;
+    const std::uint32_t nextHeight =
+        static_cast<std::uint32_t>(std::max(1.0f, std::min(desiredOuterHeight, maxOuterHeight)));
+    const std::uint32_t nextWidth = static_cast<std::uint32_t>(std::max(1.0f, std::ceil(kPanelWidth * m_scale)));
+    if (m_surface->height() != nextHeight || m_surface->width() != nextWidth) {
+      m_surface->resize(nextWidth, nextHeight);
+      return;
+    }
+
     const float sheetH = std::max(1.0f, std::min(pref.height, contentHeight));
 
     m_root->setSize(contentWidth, sheetH);
@@ -187,6 +205,8 @@ namespace settings {
     m_removeAction = nullptr;
     m_populateSheetBody = nullptr;
     m_root = nullptr;
+    m_parentWidth = 0;
+    m_parentHeight = 0;
   }
 
 } // namespace settings

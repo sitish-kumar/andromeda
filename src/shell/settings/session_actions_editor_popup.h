@@ -48,6 +48,8 @@ namespace settings {
     std::function<void(Flex&)> m_populateSheetBody;
 
     Flex* m_root = nullptr;
+    std::uint32_t m_parentWidth = 0;
+    std::uint32_t m_parentHeight = 0;
   };
 
 } // namespace settings
