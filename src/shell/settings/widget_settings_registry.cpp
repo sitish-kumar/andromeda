@@ -388,6 +388,7 @@ namespace settings {
       add(boolSpec("show_label", true));
     } else if (type == "taskbar") {
       add(boolSpec("group_by_workspace", false));
+      add(boolSpec("show_all_outputs", false));
     } else if (type == "tray") {
       add(stringListSpec("hidden"));
       add(stringListSpec("pinned"));

@@ -333,7 +333,8 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
 
   if (type == "taskbar") {
     const bool groupByWorkspace = wc != nullptr ? wc->getBool("group_by_workspace", false) : false;
-    auto widget = std::make_unique<TaskbarWidget>(m_platform, output, groupByWorkspace, barPosition);
+    const bool showAllOutputs = wc != nullptr ? wc->getBool("show_all_outputs", false) : false;
+    auto widget = std::make_unique<TaskbarWidget>(m_platform, output, groupByWorkspace, showAllOutputs, barPosition);
     widget->setContentScale(contentScale);
     return widget;
   }

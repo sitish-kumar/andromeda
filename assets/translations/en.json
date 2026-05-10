@@ -992,6 +992,10 @@
           "label": "Group by Workspace",
           "description": "Group taskbar icons into workspace capsules when compositor data is available"
         },
+        "show_all_outputs": {
+          "label": "Show All Monitors",
+          "description": "List windows from every display on this taskbar. Grouped capsules add a short monitor index (tag·1, tag·2, …) when multiple outputs are present."
+        },
         "height": {
           "label": "Height",
           "description": "Widget height in pixels"

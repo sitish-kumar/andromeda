@@ -33,8 +33,8 @@
 #include <wayland-client-protocol.h>
 
 TaskbarWidget::TaskbarWidget(CompositorPlatform& platform, wl_output* output, bool groupByWorkspace,
-                             std::string barPosition)
-    : m_platform(platform), m_output(output), m_groupByWorkspace(groupByWorkspace),
+                             bool showAllOutputs, std::string barPosition)
+    : m_platform(platform), m_output(output), m_groupByWorkspace(groupByWorkspace), m_showAllOutputs(showAllOutputs),
       m_barPosition(std::move(barPosition)) {
   buildDesktopIconIndex();
 }
@@ -177,25 +177,26 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     }
     const std::optional<Workspace> clickWorkspace =
         taskWorkspace != nullptr ? std::optional<Workspace>(taskWorkspace->workspace) : std::nullopt;
+    wl_output* const taskWsHost = taskWorkspace != nullptr ? workspaceHostOutput(*taskWorkspace) : m_output;
 
     if (task.firstHandle != nullptr || clickWorkspace.has_value()) {
       auto* areaPtr = area.get();
-      area->setOnClick(
-          [this, task, areaPtr, handle = task.firstHandle, clickWorkspace](const InputArea::PointerData& data) {
-            if (data.button == BTN_LEFT) {
-              if (handle != nullptr) {
-                m_platform.activateToplevel(handle);
-                return;
-              }
-              if (clickWorkspace.has_value()) {
-                m_platform.activateWorkspace(m_output, *clickWorkspace);
-              }
-              return;
-            }
-            if (data.button == BTN_RIGHT && areaPtr != nullptr && handle != nullptr) {
-              openTaskContextMenu(task, *areaPtr);
-            }
-          });
+      area->setOnClick([this, task, areaPtr, handle = task.firstHandle, clickWorkspace,
+                        taskWsHost](const InputArea::PointerData& data) {
+        if (data.button == BTN_LEFT) {
+          if (handle != nullptr) {
+            m_platform.activateToplevel(handle);
+            return;
+          }
+          if (clickWorkspace.has_value()) {
+            m_platform.activateWorkspace(taskWsHost, *clickWorkspace);
+          }
+          return;
+        }
+        if (data.button == BTN_RIGHT && areaPtr != nullptr && handle != nullptr) {
+          openTaskContextMenu(task, *areaPtr);
+        }
+      });
     } else {
       area->setEnabled(false);
     }
@@ -279,9 +280,10 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
         switcher->setAcceptedButtons(InputArea::buttonMask(BTN_LEFT));
         switcher->setOnAxisHandler(workspaceAxisHandler);
         auto wsCopy = ws.workspace;
-        switcher->setOnClick([this, wsCopy](const InputArea::PointerData& data) {
+        wl_output* const wsHost = workspaceHostOutput(ws);
+        switcher->setOnClick([this, wsCopy, wsHost](const InputArea::PointerData& data) {
           if (data.button == BTN_LEFT) {
-            m_platform.activateWorkspace(m_output, wsCopy);
+            m_platform.activateWorkspace(wsHost, wsCopy);
           }
         });
         groupPtr->addChild(std::move(switcher));
@@ -306,9 +308,10 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       badgeHit->setAcceptedButtons(InputArea::buttonMask(BTN_LEFT));
       badgeHit->setOnAxisHandler(workspaceAxisHandler);
       auto wsForBadge = ws.workspace;
-      badgeHit->setOnClick([this, wsForBadge](const InputArea::PointerData& data) {
+      wl_output* const badgeHost = workspaceHostOutput(ws);
+      badgeHit->setOnClick([this, wsForBadge, badgeHost](const InputArea::PointerData& data) {
         if (data.button == BTN_LEFT) {
-          m_platform.activateWorkspace(m_output, wsForBadge);
+          m_platform.activateWorkspace(badgeHost, wsForBadge);
         }
       });
 
@@ -351,7 +354,8 @@ void TaskbarWidget::updateModels() {
   const auto active = m_platform.activeToplevel();
   const auto* activeHandle = active.has_value() ? active->handle : nullptr;
 
-  const auto running = m_platform.runningAppIds(m_output);
+  wl_output* const topFilter = toplevelOutputFilter();
+  const auto running = m_platform.runningAppIds(topFilter);
   const auto assignmentMode = m_platform.taskbarAssignmentMode();
   const auto resolvedRunning = app_identity::resolveRunningApps(running, desktopEntries());
   std::vector<WorkspaceModel> nextWorkspaces;
@@ -359,18 +363,73 @@ void TaskbarWidget::updateModels() {
   std::vector<WorkspaceWindowAssignment> workspaceAssignments;
 
   if (m_groupByWorkspace) {
-    const auto workspaces = m_platform.workspaces(m_output);
-    const auto displayKeys = m_platform.workspaceDisplayKeys(m_output);
-    nextWorkspaces.reserve(workspaces.size());
-    for (std::size_t i = 0; i < workspaces.size(); ++i) {
-      WorkspaceModel item{};
-      item.workspace = workspaces[i];
-      item.key = i < displayKeys.size() && !displayKeys[i].empty() ? displayKeys[i] : workspaceLabel(item.workspace, i);
-      item.label = item.key;
-      nextWorkspaces.push_back(std::move(item));
+    nextWorkspaces.reserve(32);
+    std::unordered_map<wl_output*, int> monitorOrdinal;
+    int nextOrdinal = 1;
+    for (const auto& wo : m_platform.outputs()) {
+      if (wo.output == nullptr) {
+        continue;
+      }
+      if (!m_showAllOutputs && wo.output != m_output) {
+        continue;
+      }
+      monitorOrdinal.emplace(wo.output, nextOrdinal++);
     }
-    runningByWorkspace = m_platform.appIdsByWorkspace(m_output);
-    workspaceAssignments = m_platform.workspaceWindowAssignments(m_output);
+
+    for (const auto& wo : m_platform.outputs()) {
+      if (wo.output == nullptr) {
+        continue;
+      }
+      if (!m_showAllOutputs && wo.output != m_output) {
+        continue;
+      }
+      const auto workspaces = m_platform.workspaces(wo.output);
+      const auto displayKeys = m_platform.workspaceDisplayKeys(wo.output);
+      const std::string keyPrefix = workspaceKeyPrefixForOutput(wo.output);
+      nextWorkspaces.reserve(nextWorkspaces.size() + workspaces.size());
+      for (std::size_t i = 0; i < workspaces.size(); ++i) {
+        WorkspaceModel item{};
+        item.workspace = workspaces[i];
+        item.hostOutput = wo.output;
+        const std::string baseKey =
+            i < displayKeys.size() && !displayKeys[i].empty() ? displayKeys[i] : workspaceLabel(item.workspace, i);
+        item.key = keyPrefix + baseKey;
+        if (useMultiOutputWorkspaceKeys()) {
+          const auto ordIt = monitorOrdinal.find(wo.output);
+          if (ordIt != monitorOrdinal.end()) {
+            item.label = baseKey + "\u00B7" + std::to_string(ordIt->second);
+          } else {
+            item.label = baseKey;
+          }
+        } else {
+          item.label = baseKey;
+        }
+        nextWorkspaces.push_back(std::move(item));
+      }
+    }
+
+    if (m_showAllOutputs) {
+      for (const auto& wo : m_platform.outputs()) {
+        if (wo.output == nullptr) {
+          continue;
+        }
+        const std::string prefix = workspaceKeyPrefixForOutput(wo.output);
+        const auto perApps = m_platform.appIdsByWorkspace(wo.output);
+        for (const auto& [wsKey, apps] : perApps) {
+          auto& bucket = runningByWorkspace[prefix + wsKey];
+          bucket.insert(bucket.end(), apps.begin(), apps.end());
+        }
+        auto perAssign = m_platform.workspaceWindowAssignments(wo.output);
+        for (auto& row : perAssign) {
+          row.workspaceKey = prefix + row.workspaceKey;
+          workspaceAssignments.push_back(std::move(row));
+        }
+      }
+    } else {
+      runningByWorkspace = m_platform.appIdsByWorkspace(m_output);
+      workspaceAssignments = m_platform.workspaceWindowAssignments(m_output);
+    }
+
     std::unordered_map<std::string, std::size_t> workspaceKeyToOrder;
     for (std::size_t i = 0; i < nextWorkspaces.size(); ++i) {
       workspaceKeyToOrder[nextWorkspaces[i].key] = i;
@@ -403,7 +462,7 @@ void TaskbarWidget::updateModels() {
     const std::string nameLower = !run.entry.nameLower.empty() ? run.entry.nameLower : run.runningLower;
     const std::string appId = !run.entry.id.empty() ? run.entry.id : run.runningAppId;
 
-    const auto windows = m_platform.windowsForApp(idLower, startupLower, m_output);
+    const auto windows = m_platform.windowsForApp(idLower, startupLower, topFilter);
     for (const auto& window : windows) {
       const auto handleKey = reinterpret_cast<std::uintptr_t>(window.handle);
       if (!processedHandles.insert(handleKey).second) {
@@ -457,7 +516,25 @@ void TaskbarWidget::updateModels() {
         candidates.push_back(std::move(candidate));
       }
 
-      const auto assignedByHandle = m_platform.assignTaskbarWindows(candidates, m_output);
+      std::unordered_map<std::uintptr_t, WorkspaceWindow> assignedByHandle;
+      if (m_showAllOutputs) {
+        for (const auto& wo : m_platform.outputs()) {
+          if (wo.output == nullptr) {
+            continue;
+          }
+          const auto part = m_platform.assignTaskbarWindows(candidates, wo.output);
+          const std::string prefix = workspaceKeyPrefixForOutput(wo.output);
+          for (const auto& [handleKey, assigned] : part) {
+            WorkspaceWindow copy = assigned;
+            if (!prefix.empty()) {
+              copy.workspaceKey = prefix + copy.workspaceKey;
+            }
+            assignedByHandle[handleKey] = std::move(copy);
+          }
+        }
+      } else {
+        assignedByHandle = m_platform.assignTaskbarWindows(candidates, m_output);
+      }
       std::vector<bool> representedAssignments(workspaceAssignments.size(), false);
 
       for (auto& task : nextTasks) {
@@ -812,7 +889,7 @@ void TaskbarWidget::updateModels() {
       for (const auto& appId : *list) {
         const std::string appLower = toLower(appId);
         const std::string startupWmClassLower = toLower(appId);
-        const auto windows = m_platform.windowsForApp(appLower, startupWmClassLower, m_output);
+        const auto windows = m_platform.windowsForApp(appLower, startupWmClassLower, topFilter);
         if (windows.empty()) {
           continue;
         }
@@ -832,18 +909,35 @@ void TaskbarWidget::updateModels() {
 
   if (m_groupByWorkspace && !nextWorkspaces.empty() &&
       assignmentMode != TaskbarAssignmentMode::WorkspaceOccurrenceTitle) {
-    std::string activeWorkspaceKey;
-    for (const auto& workspace : nextWorkspaces) {
-      if (workspace.workspace.active) {
-        activeWorkspaceKey = workspace.key;
+    wl_output* activeOut = m_platform.activeToplevelOutput();
+    if (activeOut != nullptr) {
+      for (auto& task : nextTasks) {
+        if (!task.active) {
+          continue;
+        }
+        for (const auto& wsm : nextWorkspaces) {
+          if (workspaceHostOutput(wsm) != activeOut || !wsm.workspace.active) {
+            continue;
+          }
+          task.workspaceKey = wsm.key;
+          break;
+        }
         break;
       }
-    }
-    if (!activeWorkspaceKey.empty()) {
-      for (auto& task : nextTasks) {
-        if (task.active) {
-          task.workspaceKey = activeWorkspaceKey;
+    } else {
+      std::string activeWorkspaceKey;
+      for (const auto& workspace : nextWorkspaces) {
+        if (workspace.workspace.active) {
+          activeWorkspaceKey = workspace.key;
           break;
+        }
+      }
+      if (!activeWorkspaceKey.empty()) {
+        for (auto& task : nextTasks) {
+          if (task.active) {
+            task.workspaceKey = activeWorkspaceKey;
+            break;
+          }
         }
       }
     }
@@ -937,7 +1031,7 @@ void TaskbarWidget::openTaskContextMenu(const TaskModel& task, InputArea& area) 
     return;
   }
 
-  const auto windows = m_platform.windowsForApp(task.idLower, task.startupWmClassLower, m_output);
+  const auto windows = m_platform.windowsForApp(task.idLower, task.startupWmClassLower, toplevelOutputFilter());
   m_contextMenuHandles.clear();
   m_contextMenuHandles.reserve(windows.size());
   for (const auto& window : windows) {
@@ -1121,7 +1215,8 @@ bool TaskbarWidget::modelsEqual(const std::vector<TaskModel>& tasks,
     const auto& a = workspaces[i].workspace;
     const auto& b = m_workspaces[i].workspace;
     if (a.id != b.id || a.name != b.name || a.active != b.active || a.urgent != b.urgent || a.occupied != b.occupied ||
-        workspaces[i].key != m_workspaces[i].key || workspaces[i].label != m_workspaces[i].label) {
+        workspaces[i].key != m_workspaces[i].key || workspaces[i].label != m_workspaces[i].label ||
+        workspaces[i].hostOutput != m_workspaces[i].hostOutput) {
       return false;
     }
   }
@@ -1200,5 +1295,39 @@ void TaskbarWidget::activateAdjacentWorkspace(int direction) {
     targetIndex = current - 1;
   }
 
-  m_platform.activateWorkspace(m_output, m_workspaces[targetIndex].workspace);
+  const auto& targetWs = m_workspaces[targetIndex];
+  m_platform.activateWorkspace(workspaceHostOutput(targetWs), targetWs.workspace);
+}
+
+wl_output* TaskbarWidget::toplevelOutputFilter() const noexcept { return m_showAllOutputs ? nullptr : m_output; }
+
+bool TaskbarWidget::useMultiOutputWorkspaceKeys() const noexcept {
+  if (!m_showAllOutputs) {
+    return false;
+  }
+  std::size_t n = 0;
+  for (const auto& wo : m_platform.outputs()) {
+    if (wo.output != nullptr) {
+      ++n;
+    }
+  }
+  return n > 1;
+}
+
+std::string TaskbarWidget::workspaceKeyPrefixForOutput(wl_output* out) const {
+  if (!useMultiOutputWorkspaceKeys()) {
+    return {};
+  }
+  std::string connector;
+  if (const auto* info = m_platform.findOutputByWl(out); info != nullptr) {
+    connector = info->connectorName;
+  }
+  if (!connector.empty()) {
+    return connector + '\x1e';
+  }
+  return "display\x1e";
+}
+
+wl_output* TaskbarWidget::workspaceHostOutput(const WorkspaceModel& model) const noexcept {
+  return model.hostOutput != nullptr ? model.hostOutput : m_output;
 }

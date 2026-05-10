@@ -20,7 +20,8 @@ struct PointerEvent;
 
 class TaskbarWidget : public Widget {
 public:
-  TaskbarWidget(CompositorPlatform& platform, wl_output* output, bool groupByWorkspace, std::string barPosition);
+  TaskbarWidget(CompositorPlatform& platform, wl_output* output, bool groupByWorkspace, bool showAllOutputs,
+                std::string barPosition);
   ~TaskbarWidget() override;
 
   void create() override;
@@ -48,6 +49,7 @@ private:
     Workspace workspace;
     std::string key;
     std::string label;
+    wl_output* hostOutput = nullptr;
   };
 
   struct PendingWorkspaceTransition {
@@ -71,10 +73,15 @@ private:
   void openTaskContextMenu(const TaskModel& task, InputArea& area);
   void activateAdjacentWorkspace(int direction);
   [[nodiscard]] bool activeWorkspaceIndex(std::size_t& index) const;
+  [[nodiscard]] wl_output* toplevelOutputFilter() const noexcept;
+  [[nodiscard]] bool useMultiOutputWorkspaceKeys() const noexcept;
+  [[nodiscard]] std::string workspaceKeyPrefixForOutput(wl_output* out) const;
+  [[nodiscard]] wl_output* workspaceHostOutput(const WorkspaceModel& model) const noexcept;
 
   CompositorPlatform& m_platform;
   wl_output* m_output = nullptr;
   bool m_groupByWorkspace = false;
+  bool m_showAllOutputs = false;
   std::string m_barPosition;
   bool m_rebuildPending = true;
   bool m_vertical = false;
