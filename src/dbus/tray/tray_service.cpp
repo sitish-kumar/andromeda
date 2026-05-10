@@ -319,6 +319,14 @@ namespace {
     return true;
   }
 
+  const std::vector<std::string>& requestedMenuProperties() {
+    static const std::vector<std::string> kRequestedMenuProperties = {
+        "label",    "enabled",     "visible",      "type",      "children-display",
+        "children", "toggle-type", "toggle-state", "icon-name", "icon-data",
+    };
+    return kRequestedMenuProperties;
+  }
+
   std::vector<std::int32_t> int32ListFromVariant(const sdbus::Variant& value) {
     try {
       return value.get<std::vector<std::int32_t>>();
@@ -635,7 +643,7 @@ bool TrayService::fetchMenuProperties(const std::string& itemId, const std::vect
     cache.proxy->callMethod("GetGroupProperties")
         .onInterface(k_menu_interface)
         .withTimeout(std::chrono::milliseconds(1000))
-        .withArguments(entryIds, std::vector<std::string>{})
+        .withArguments(entryIds, requestedMenuProperties())
         .storeResultsTo(properties);
 
     std::unordered_map<std::int32_t, std::map<std::string, sdbus::Variant>> propertiesById;
@@ -678,8 +686,21 @@ void TrayService::requestMenuSubtree(const std::string& itemId, std::int32_t par
     return;
   }
 
+  const auto now = std::chrono::steady_clock::now();
+  if (const auto retryIt = cache.nextRetryAt.find(parentId);
+      retryIt != cache.nextRetryAt.end() && now < retryIt->second) {
+    return;
+  }
+
   cache.loadingParents.insert(parentId);
   const auto generation = cache.generation;
+
+  // Root menus for some indicators never reply to AboutToShow but still serve GetLayout.
+  // Skip AboutToShow at root to avoid NoReply stalls and request storms.
+  if (parentId == 0) {
+    requestMenuLayoutAfterAboutToShow(itemId, parentId, generation);
+    return;
+  }
 
   try {
     cache.proxy->callMethodAsync("AboutToShow")
@@ -713,7 +734,7 @@ void TrayService::requestMenuLayoutAfterAboutToShow(const std::string& itemId, s
     cache.proxy->callMethodAsync("GetLayout")
         .onInterface(k_menu_interface)
         .withTimeout(std::chrono::milliseconds(2000))
-        .withArguments(parentId, static_cast<std::int32_t>(-1), std::vector<std::string>{})
+        .withArguments(parentId, static_cast<std::int32_t>(-1), requestedMenuProperties())
         .uponReplyInvoke([this, itemId, parentId, generation](std::optional<sdbus::Error> error, std::uint32_t revision,
                                                               DbusMenuLayout layout) {
           auto replyCacheIt = m_menuCache.find(itemId);
@@ -729,12 +750,30 @@ void TrayService::requestMenuLayoutAfterAboutToShow(const std::string& itemId, s
           replyCache.loadingParents.erase(parentId);
 
           if (error.has_value()) {
+            const std::string_view errText = error->what();
+            const bool noReply = errText.find("NoReply") != std::string_view::npos;
+            std::uint8_t& streak = replyCache.failureStreak[parentId];
+            streak = static_cast<std::uint8_t>(std::min<int>(6, static_cast<int>(streak) + 1));
+            const int exponent = std::min<int>(4, static_cast<int>(streak));
+            const auto backoff = std::chrono::milliseconds(250 * (1 << exponent));
+            replyCache.nextRetryAt[parentId] = std::chrono::steady_clock::now() + backoff;
             kLog.debug("GetLayout async failed id={} parentId={} err={}", itemId, parentId, error->what());
             return;
           }
 
+          replyCache.failureStreak.erase(parentId);
+          replyCache.nextRetryAt.erase(parentId);
+
           replyCache.revision = revision;
           ingestLayoutNode(layout, replyCache.entriesById, replyCache.childrenByParent);
+
+          const auto layoutRootId = std::get<0>(layout);
+          if (layoutRootId != parentId) {
+            if (const auto rootChildrenIt = replyCache.childrenByParent.find(layoutRootId);
+                rootChildrenIt != replyCache.childrenByParent.end()) {
+              replyCache.childrenByParent[parentId] = rootChildrenIt->second;
+            }
+          }
 
           auto after = entriesForParent(replyCache.entriesById, replyCache.childrenByParent, parentId);
           if (after.empty()) {
@@ -921,17 +960,30 @@ void TrayService::sendMenuEvent(const std::string& itemId, std::int32_t entryId,
   const auto timestamp = static_cast<std::uint32_t>(
       std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
   try {
-    it->second.proxy->callMethod("Event")
+    it->second.proxy->callMethodAsync("Event")
         .onInterface(k_menu_interface)
         .withTimeout(std::chrono::milliseconds(500))
-        .withArguments(entryId, eventName, sdbus::Variant{std::int32_t{0}}, timestamp);
+        .withArguments(entryId, eventName, sdbus::Variant{std::int32_t{0}}, timestamp)
+        .uponReplyInvoke([itemId, entryId, eventName](std::optional<sdbus::Error> error) {
+          if (error.has_value()) {
+            kLog.debug("dbusmenu Event failed id={} entryId={} event={} err={}", itemId, entryId, eventName,
+                       error->what());
+          }
+        });
   } catch (const sdbus::Error& e) {
-    kLog.debug("dbusmenu Event failed id={} entryId={} event={} err={}", itemId, entryId, eventName, e.what());
+    kLog.debug("dbusmenu Event dispatch failed id={} entryId={} event={} err={}", itemId, entryId, eventName, e.what());
   }
 }
 
 void TrayService::notifyMenuOpened(const std::string& itemId, std::int32_t entryId) {
   sendMenuEvent(itemId, entryId, "opened");
+
+  // Some dbusmenu providers populate rows only after they observe "opened".
+  // Force a subtree refresh so the menu can hydrate without requiring reopen.
+  if (const auto itemIt = m_items.find(itemId); itemIt != m_items.end()) {
+    ensureMenuCache(itemId, itemIt->second.busName, itemIt->second.menuObjectPath);
+    requestMenuSubtree(itemId, entryId, true);
+  }
 }
 
 void TrayService::notifyMenuClosed(const std::string& itemId, std::int32_t entryId) {
@@ -946,12 +998,18 @@ bool TrayService::activateMenuEntry(const std::string& itemId, std::int32_t entr
   const auto timestamp = static_cast<std::uint32_t>(
       std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
   try {
-    it->second.proxy->callMethod("Event")
+    it->second.proxy->callMethodAsync("Event")
         .onInterface(k_menu_interface)
-        .withArguments(entryId, std::string("clicked"), sdbus::Variant{std::int32_t{0}}, timestamp);
+        .withTimeout(std::chrono::milliseconds(1000))
+        .withArguments(entryId, std::string("clicked"), sdbus::Variant{std::int32_t{0}}, timestamp)
+        .uponReplyInvoke([itemId, entryId](std::optional<sdbus::Error> error) {
+          if (error.has_value()) {
+            kLog.debug("dbusmenu clicked failed id={} entryId={} err={}", itemId, entryId, error->what());
+          }
+        });
     return true;
   } catch (const sdbus::Error& e) {
-    kLog.debug("dbusmenu clicked failed id={} entryId={} err={}", itemId, entryId, e.what());
+    kLog.debug("dbusmenu clicked dispatch failed id={} entryId={} err={}", itemId, entryId, e.what());
     return false;
   }
 }
@@ -976,10 +1034,18 @@ bool TrayService::activateItem(const std::string& itemId, std::int32_t x, std::i
   }
 
   try {
-    it->second->callMethod("Activate").onInterface(k_item_interface).withArguments(x, y);
+    it->second->callMethodAsync("Activate")
+        .onInterface(k_item_interface)
+        .withTimeout(std::chrono::milliseconds(1000))
+        .withArguments(x, y)
+        .uponReplyInvoke([itemId](std::optional<sdbus::Error> error) {
+          if (error.has_value()) {
+            kLog.debug("activate failed id={} err={}", itemId, error->what());
+          }
+        });
     return true;
   } catch (const sdbus::Error& e) {
-    kLog.debug("activate failed id={} err={}", itemId, e.what());
+    kLog.debug("activate dispatch failed id={} err={}", itemId, e.what());
     return false;
   }
 }
@@ -994,10 +1060,18 @@ bool TrayService::openContextMenu(const std::string& itemId, std::int32_t x, std
   }
 
   try {
-    it->second->callMethod("ContextMenu").onInterface(k_item_interface).withArguments(x, y);
+    it->second->callMethodAsync("ContextMenu")
+        .onInterface(k_item_interface)
+        .withTimeout(std::chrono::milliseconds(1000))
+        .withArguments(x, y)
+        .uponReplyInvoke([itemId](std::optional<sdbus::Error> error) {
+          if (error.has_value()) {
+            kLog.debug("context menu failed id={} err={}", itemId, error->what());
+          }
+        });
     return true;
   } catch (const sdbus::Error& e) {
-    kLog.debug("context menu failed id={} err={}", itemId, e.what());
+    kLog.debug("context menu dispatch failed id={} err={}", itemId, e.what());
     return false;
   }
 }
@@ -1344,7 +1418,18 @@ bool TrayService::ensureItemProxy(const std::string& itemId) {
 
   const auto hints = path_name_hints(itemIt->second.objectPath);
 
+  // Path-only fallback probing is synchronous; keep it tightly bounded to avoid
+  // long compositor stalls when many bus names are present.
+  constexpr std::size_t kMaxProbeAttempts = 16;
+  constexpr auto kProbeTimeout = std::chrono::milliseconds(80);
+  std::size_t probeAttempts = 0;
+
   auto tryCandidate = [&](const std::string& candidate) -> bool {
+    if (probeAttempts >= kMaxProbeAttempts) {
+      return false;
+    }
+    ++probeAttempts;
+
     if (!looks_like_dbus_name(candidate)) {
       return false;
     }
@@ -1354,7 +1439,7 @@ bool TrayService::ensureItemProxy(const std::string& itemId) {
       std::map<std::string, sdbus::Variant> props;
       probe->callMethod("GetAll")
           .onInterface("org.freedesktop.DBus.Properties")
-          .withTimeout(std::chrono::milliseconds(500))
+          .withTimeout(kProbeTimeout)
           .withArguments(k_item_interface)
           .storeResultsTo(props);
 
@@ -1412,7 +1497,13 @@ bool TrayService::ensureItemProxy(const std::string& itemId) {
   };
 
   for (const auto& hint : hints) {
+    if (probeAttempts >= kMaxProbeAttempts) {
+      break;
+    }
     for (const auto& candidate : names) {
+      if (probeAttempts >= kMaxProbeAttempts) {
+        break;
+      }
       if (StringUtils::toLower(candidate).find(hint) != std::string::npos && tryCandidate(candidate)) {
         return true;
       }
@@ -1423,12 +1514,16 @@ bool TrayService::ensureItemProxy(const std::string& itemId) {
   // D-Bus service auto-activation which blocks for hundreds of ms per candidate.
   // Unique names represent currently-running processes and respond immediately.
   for (const auto& candidate : names) {
+    if (probeAttempts >= kMaxProbeAttempts) {
+      break;
+    }
     if (!candidate.empty() && candidate[0] == ':' && tryCandidate(candidate)) {
       return true;
     }
   }
 
-  kLog.debug("could not resolve bus name for path-only tray item path={}", itemIt->second.objectPath);
+  kLog.debug("could not resolve bus name for path-only tray item path={} probes={}", itemIt->second.objectPath,
+             probeAttempts);
   return false;
 }
 

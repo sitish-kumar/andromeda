@@ -90,6 +90,8 @@ private:
     std::unordered_map<std::int32_t, TrayMenuEntry> entriesById;
     // Decoded child ids per parent-id. parentId=0 is the root menu.
     std::unordered_map<std::int32_t, std::vector<std::int32_t>> childrenByParent;
+    std::unordered_map<std::int32_t, std::chrono::steady_clock::time_point> nextRetryAt;
+    std::unordered_map<std::int32_t, std::uint8_t> failureStreak;
     std::unordered_set<std::int32_t> loadedParents;
     std::unordered_set<std::int32_t> loadingParents;
     std::uint32_t revision = 0;

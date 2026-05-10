@@ -292,6 +292,13 @@ void TrayMenu::toggleForItem(const std::string& itemId) {
   }
 
   m_activeItemId = itemId;
+
+  // Some dbusmenu servers only materialize menu rows after receiving "opened".
+  // Emit this before the first fetch so we don't render a persistent empty menu.
+  if (m_tray != nullptr) {
+    m_tray->notifyMenuOpened(m_activeItemId);
+  }
+
   refreshEntries();
 
   m_visible = true;
@@ -299,14 +306,6 @@ void TrayMenu::toggleForItem(const std::string& itemId) {
   if (m_instance == nullptr || m_instance->surface == nullptr) {
     close();
     return;
-  }
-
-  // Notify the dbusmenu server the root menu is being opened. Well-behaved
-  // servers (including Electron) rely on paired opened/closed events to reset
-  // internal state — skipping them causes their handlers to desync after many
-  // open/close cycles, eventually returning errors on every GetLayout.
-  if (m_tray != nullptr) {
-    m_tray->notifyMenuOpened(m_activeItemId);
   }
 
   rebuildScenes();
