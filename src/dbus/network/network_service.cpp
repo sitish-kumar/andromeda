@@ -36,6 +36,7 @@ namespace {
   constexpr std::uint32_t k_nmDeviceTypeWifi = 2;
 
   // NMActiveConnectionState
+  constexpr std::uint32_t k_nmActiveConnectionStateActivating = 1;
   constexpr std::uint32_t k_nmActiveConnectionStateActivated = 2;
 
   template <typename T>
@@ -320,12 +321,13 @@ bool NetworkService::activateVpnConnection(const VpnConnectionInfo& vpn) {
     m_nm->callMethodAsync("ActivateConnection")
         .onInterface(k_nmInterface)
         .withArguments(sdbus::ObjectPath{vpnPath}, sdbus::ObjectPath{"/"}, sdbus::ObjectPath{"/"})
-        .uponReplyInvoke([vpnName, vpnPath](std::optional<sdbus::Error> err, sdbus::ObjectPath activePath) {
+        .uponReplyInvoke([this, vpnName, vpnPath](std::optional<sdbus::Error> err, sdbus::ObjectPath activePath) {
           if (err.has_value()) {
             kLog.warn("ActivateConnection(vpn) failed name={} path={}: {}", vpnName, vpnPath, err->what());
           } else {
             kLog.info("activating vpn name={} active={}", vpnName, std::string(activePath));
           }
+          refresh();
         });
     return true;
   } catch (const sdbus::Error& e) {
@@ -658,7 +660,7 @@ void NetworkService::refreshVpnConnections() {
         try {
           auto active = sdbus::createProxy(m_bus.connection(), k_nmBusName, activePath);
           const auto state = getPropertyOr<std::uint32_t>(*active, k_nmActiveConnectionInterface, "State", 0U);
-          if (state != k_nmActiveConnectionStateActivated) {
+          if (state != k_nmActiveConnectionStateActivating && state != k_nmActiveConnectionStateActivated) {
             continue;
           }
           const auto profilePath = getPropertyOr<sdbus::ObjectPath>(*active, k_nmActiveConnectionInterface,
