@@ -22,6 +22,16 @@ namespace {
   bool needsCpuTemp(DesktopSysmonStat stat) { return stat == DesktopSysmonStat::CpuTemp; }
   bool needsGpuTemp(DesktopSysmonStat stat) { return stat == DesktopSysmonStat::GpuTemp; }
 
+  [[nodiscard]] std::string formatNetSpeed(double bytesPerSec) {
+    if (bytesPerSec < 1024.0)
+      return std::format("{:.0f}B", bytesPerSec);
+    if (bytesPerSec < 1024.0 * 1024.0)
+      return std::format("{:.0f}K", bytesPerSec / 1024.0);
+    if (bytesPerSec < 1024.0 * 1024.0 * 1024.0)
+      return std::format("{:.1f}M", bytesPerSec / (1024.0 * 1024.0));
+    return std::format("{:.1f}G", bytesPerSec / (1024.0 * 1024.0 * 1024.0));
+  }
+
 } // namespace
 
 DesktopSysmonWidget::DesktopSysmonWidget(SystemMonitorService* monitor, DesktopSysmonStat stat,
@@ -226,6 +236,16 @@ double DesktopSysmonWidget::normalizedFromStats(DesktopSysmonStat stat, const Sy
       return static_cast<double>(stats.swapUsedMb) / static_cast<double>(stats.swapTotalMb);
     }
     return 0.0;
+
+  case DesktopSysmonStat::NetRx:
+    if (stats.netRxBytesPerSec > tempMax)
+      tempMax = stats.netRxBytesPerSec;
+    return tempMax > 0.0 ? std::clamp(stats.netRxBytesPerSec / tempMax, 0.0, 1.0) : 0.0;
+
+  case DesktopSysmonStat::NetTx:
+    if (stats.netTxBytesPerSec > tempMax)
+      tempMax = stats.netTxBytesPerSec;
+    return tempMax > 0.0 ? std::clamp(stats.netTxBytesPerSec / tempMax, 0.0, 1.0) : 0.0;
   }
 
   return 0.0;
@@ -263,6 +283,12 @@ std::string DesktopSysmonWidget::formatValueFor(DesktopSysmonStat stat) const {
                          100.0 * static_cast<double>(stats.swapUsedMb) / static_cast<double>(stats.swapTotalMb));
     }
     return "--";
+
+  case DesktopSysmonStat::NetRx:
+    return formatNetSpeed(stats.netRxBytesPerSec);
+
+  case DesktopSysmonStat::NetTx:
+    return formatNetSpeed(stats.netTxBytesPerSec);
   }
 
   return "--";
@@ -358,6 +384,10 @@ const char* DesktopSysmonWidget::glyphName(DesktopSysmonStat stat) {
     return "memory";
   case DesktopSysmonStat::SwapPct:
     return "storage";
+  case DesktopSysmonStat::NetRx:
+    return "download";
+  case DesktopSysmonStat::NetTx:
+    return "upload";
   }
   return "cpu-usage";
 }

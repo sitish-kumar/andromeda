@@ -181,6 +181,10 @@ DesktopWidgetFactory::create(const std::string& type,
         return DesktopSysmonStat::RamPct;
       if (s == "swap_pct")
         return DesktopSysmonStat::SwapPct;
+      if (s == "net_rx")
+        return DesktopSysmonStat::NetRx;
+      if (s == "net_tx")
+        return DesktopSysmonStat::NetTx;
       return DesktopSysmonStat::CpuUsage;
     };
     const DesktopSysmonStat stat = parseStat(getStringSetting(settings, "stat", "cpu_usage"));

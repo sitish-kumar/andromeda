@@ -314,6 +314,10 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
       stat = SysmonStat::SwapPct;
     } else if (statStr == "disk_pct") {
       stat = SysmonStat::DiskPct;
+    } else if (statStr == "net_rx") {
+      stat = SysmonStat::NetRx;
+    } else if (statStr == "net_tx") {
+      stat = SysmonStat::NetTx;
     }
     const std::string display = wc != nullptr ? wc->getString("display", "gauge") : std::string("gauge");
     SysmonDisplayMode displayMode = SysmonDisplayMode::Gauge;

@@ -35,6 +35,16 @@ namespace {
   bool needsCpuTemp(SysmonStat stat) { return stat == SysmonStat::CpuTemp; }
   bool needsGpuTemp(SysmonStat stat) { return stat == SysmonStat::GpuTemp; }
 
+  [[nodiscard]] std::string formatNetSpeed(double bytesPerSec) {
+    if (bytesPerSec < 1024.0)
+      return std::format("{:.0f}B", bytesPerSec);
+    if (bytesPerSec < 1024.0 * 1024.0)
+      return std::format("{:.0f}K", bytesPerSec / 1024.0);
+    if (bytesPerSec < 1024.0 * 1024.0 * 1024.0)
+      return std::format("{:.1f}M", bytesPerSec / (1024.0 * 1024.0));
+    return std::format("{:.1f}G", bytesPerSec / (1024.0 * 1024.0 * 1024.0));
+  }
+
 } // namespace
 
 SysmonWidget::SysmonWidget(SystemMonitorService* monitor, wl_output* output, SysmonStat stat, std::string diskPath,
@@ -451,6 +461,18 @@ double SysmonWidget::normalizedFromStats(SysmonStat stat, const SystemStats& sta
     }
     return 0.0;
 
+  case SysmonStat::NetRx: {
+    if (stats.netRxBytesPerSec > tempMax)
+      tempMax = stats.netRxBytesPerSec;
+    return tempMax > 0.0 ? std::clamp(stats.netRxBytesPerSec / tempMax, 0.0, 1.0) : 0.0;
+  }
+
+  case SysmonStat::NetTx: {
+    if (stats.netTxBytesPerSec > tempMax)
+      tempMax = stats.netTxBytesPerSec;
+    return tempMax > 0.0 ? std::clamp(stats.netTxBytesPerSec / tempMax, 0.0, 1.0) : 0.0;
+  }
+
   case SysmonStat::DiskPct:
     return 0.0;
   }
@@ -512,6 +534,12 @@ std::string SysmonWidget::formatValue() const {
     }
     return "--";
 
+  case SysmonStat::NetRx:
+    return formatNetSpeed(stats.netRxBytesPerSec);
+
+  case SysmonStat::NetTx:
+    return formatNetSpeed(stats.netTxBytesPerSec);
+
   case SysmonStat::DiskPct:
     break; // handled above
   }
@@ -533,6 +561,10 @@ const char* SysmonWidget::glyphName(SysmonStat stat) {
   case SysmonStat::SwapPct:
   case SysmonStat::DiskPct:
     return "storage";
+  case SysmonStat::NetRx:
+    return "download";
+  case SysmonStat::NetTx:
+    return "upload";
   }
   return "cpu-usage";
 }

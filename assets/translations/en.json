@@ -925,6 +925,8 @@
         "id": "ID",
         "input": "Input",
         "name": "Name",
+        "net-rx": "Network RX",
+        "net-tx": "Network TX",
         "none": "None",
         "on-hover": "On Hover",
         "output": "Output",
