@@ -54,6 +54,7 @@ private:
     std::optional<double> latitude;
     std::optional<double> longitude;
   };
+  [[nodiscard]] bool hasWeatherCoordinates() const;
   [[nodiscard]] GeoCoordinates scheduleCoordinates() const;
 
   [[nodiscard]] bool isManualMode() const;

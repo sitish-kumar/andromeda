@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -67,6 +68,11 @@ struct WeatherSnapshot {
   std::chrono::system_clock::time_point fetchedAt{};
 };
 
+struct WeatherCoordinates {
+  double latitude = 0.0;
+  double longitude = 0.0;
+};
+
 class WeatherService {
 public:
   using ChangeCallback = std::function<void()>;
@@ -85,6 +91,7 @@ public:
   [[nodiscard]] bool locationConfigured() const noexcept;
   [[nodiscard]] bool loading() const noexcept { return m_loading; }
   [[nodiscard]] bool hasData() const noexcept { return m_snapshot.valid; }
+  [[nodiscard]] std::optional<WeatherCoordinates> resolvedCoordinates() const noexcept;
   [[nodiscard]] const std::string& error() const noexcept { return m_error; }
   [[nodiscard]] const WeatherSnapshot& snapshot() const noexcept { return m_snapshot; }
   [[nodiscard]] bool useImperial() const noexcept;

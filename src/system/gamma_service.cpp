@@ -122,8 +122,12 @@ bool GammaService::effectiveForce() const {
   return m_config.force;
 }
 
+bool GammaService::hasWeatherCoordinates() const {
+  return m_weatherLatitude.has_value() && m_weatherLongitude.has_value();
+}
+
 GammaService::GeoCoordinates GammaService::scheduleCoordinates() const {
-  if (m_config.useWeatherLocation) {
+  if (m_config.useWeatherLocation && hasWeatherCoordinates()) {
     return GeoCoordinates{.latitude = m_weatherLatitude, .longitude = m_weatherLongitude};
   }
 
@@ -138,8 +142,8 @@ GammaService::GeoCoordinates GammaService::scheduleCoordinates() const {
 }
 
 bool GammaService::isManualMode() const {
-  return !effectiveForce() && !m_config.useWeatherLocation && normalizedClock(m_config.startTime).has_value() &&
-         normalizedClock(m_config.stopTime).has_value();
+  return !effectiveForce() && (!m_config.useWeatherLocation || !hasWeatherCoordinates()) &&
+         normalizedClock(m_config.startTime).has_value() && normalizedClock(m_config.stopTime).has_value();
 }
 
 bool GammaService::isManualNightPhase() const {
@@ -212,61 +216,45 @@ GammaService::SolarTimes GammaService::computeSolarTimes(double lat, double lon)
   std::tm local{};
   ::localtime_r(&t, &local);
 
-  const int year = local.tm_year + 1900;
-  const int month = local.tm_mon + 1;
-  const int day = local.tm_mday;
-
-  const double a = std::floor((14.0 - month) / 12.0);
-  const double y = year + 4800.0 - a;
-  const double m = month + 12.0 * a - 3.0;
-  const double jd = day + std::floor((153.0 * m + 2.0) / 5.0) + 365.0 * y + std::floor(y / 4.0) -
-                    std::floor(y / 100.0) + std::floor(y / 400.0) - 32045.0;
-  const double n = jd - 2451545.0 + 0.5 - lon / 360.0;
-
   constexpr double kPi = std::numbers::pi;
+  const double dayOfYear = static_cast<double>(local.tm_yday + 1);
+  const double fractionalYear = 2.0 * kPi / 365.0 * (dayOfYear - 1.0);
 
-  const double meanAnomaly = std::fmod(357.5291 + 0.98560028 * n, 360.0);
-  const double mRad = meanAnomaly * kPi / 180.0;
+  const double equationOfTime =
+      229.18 * (0.000075 + 0.001868 * std::cos(fractionalYear) - 0.032077 * std::sin(fractionalYear) -
+                0.014615 * std::cos(2.0 * fractionalYear) - 0.040849 * std::sin(2.0 * fractionalYear));
+  const double declination = 0.006918 - 0.399912 * std::cos(fractionalYear) + 0.070257 * std::sin(fractionalYear) -
+                             0.006758 * std::cos(2.0 * fractionalYear) + 0.000907 * std::sin(2.0 * fractionalYear) -
+                             0.002697 * std::cos(3.0 * fractionalYear) + 0.00148 * std::sin(3.0 * fractionalYear);
 
-  const double center = 1.9148 * std::sin(mRad) + 0.0200 * std::sin(2.0 * mRad) + 0.0003 * std::sin(3.0 * mRad);
-
-  const double eclipticLon = std::fmod(meanAnomaly + center + 180.0 + 102.9372, 360.0);
-  const double lambdaRad = eclipticLon * kPi / 180.0;
-
-  const double sinDec = std::sin(lambdaRad) * std::sin(23.4397 * kPi / 180.0);
-  const double cosDec = std::cos(std::asin(sinDec));
-
+  constexpr double kSunriseZenith = 90.833 * kPi / 180.0;
   const double latRad = lat * kPi / 180.0;
-  const double cosW0 = (std::sin(-0.8333 * kPi / 180.0) - std::sin(latRad) * sinDec) / (std::cos(latRad) * cosDec);
+  const double hourAngleArg =
+      std::cos(kSunriseZenith) / (std::cos(latRad) * std::cos(declination)) - std::tan(latRad) * std::tan(declination);
 
-  if (cosW0 < -1.0) {
+  if (hourAngleArg > 1.0) {
     return SolarTimes{.sunriseMinutes = 0, .sunsetMinutes = 0};
   }
-  if (cosW0 > 1.0) {
+  if (hourAngleArg < -1.0) {
     return SolarTimes{.sunriseMinutes = 0, .sunsetMinutes = 1440};
   }
 
-  const double w0 = std::acos(cosW0) * 180.0 / kPi;
+  const double hourAngleDeg = std::acos(std::clamp(hourAngleArg, -1.0, 1.0)) * 180.0 / kPi;
+  const double timeZoneOffsetMin = static_cast<double>(local.tm_gmtoff) / 60.0;
+  const double solarNoonMin = 720.0 - 4.0 * lon - equationOfTime + timeZoneOffsetMin;
 
-  const double jTransit = 2451545.0 + n + 0.0053 * std::sin(mRad) - 0.0069 * std::sin(2.0 * lambdaRad);
-  const double jRise = jTransit - w0 / 360.0;
-  const double jSet = jTransit + w0 / 360.0;
-
-  const double utcOffsetDays = static_cast<double>(local.tm_gmtoff) / 86400.0;
-  const double jdMidnightLocal = std::floor(jd) - 0.5 + utcOffsetDays;
-
-  auto toMinutes = [&](double jEvent) -> int {
-    double frac = (jEvent - jdMidnightLocal) * 1440.0;
-    frac = std::fmod(frac, 1440.0);
-    if (frac < 0.0) {
-      frac += 1440.0;
+  auto normalizeMinutes = [](double minutes) -> int {
+    int rounded = static_cast<int>(std::round(minutes));
+    rounded %= 1440;
+    if (rounded < 0) {
+      rounded += 1440;
     }
-    return static_cast<int>(std::round(frac));
+    return rounded;
   };
 
   return SolarTimes{
-      .sunriseMinutes = toMinutes(jRise),
-      .sunsetMinutes = toMinutes(jSet),
+      .sunriseMinutes = normalizeMinutes(solarNoonMin - hourAngleDeg * 4.0),
+      .sunsetMinutes = normalizeMinutes(solarNoonMin + hourAngleDeg * 4.0),
   };
 }
 
@@ -585,8 +573,8 @@ int GammaService::targetTemperature() const {
     } else if (!m_config.useWeatherLocation) {
       kLog.warn("no schedule: set start_time/stop_time or latitude/longitude, or enable weather location");
     } else {
-      kLog.warn("no schedule: set start_time/stop_time, disable weather location and set latitude/longitude, or enable "
-                "weather");
+      kLog.warn("no schedule: configure weather location or disable weather location and set start_time/stop_time or "
+                "latitude/longitude");
     }
     return -1;
   }

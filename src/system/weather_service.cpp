@@ -279,6 +279,13 @@ bool WeatherService::locationConfigured() const noexcept {
   return m_activeConfig.autoLocate || !m_activeConfig.address.empty();
 }
 
+std::optional<WeatherCoordinates> WeatherService::resolvedCoordinates() const noexcept {
+  if (!hasResolvedLocation()) {
+    return std::nullopt;
+  }
+  return WeatherCoordinates{.latitude = m_resolvedLatitude, .longitude = m_resolvedLongitude};
+}
+
 bool WeatherService::useImperial() const noexcept { return m_activeConfig.unit == "imperial"; }
 
 double WeatherService::displayTemperature(double celsius) const noexcept {

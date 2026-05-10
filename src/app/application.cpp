@@ -742,16 +742,19 @@ void Application::initServices() {
   }
 
   m_weatherService.initialize();
-  if (m_weatherService.hasData()) {
-    const WeatherSnapshot& snapshot = m_weatherService.snapshot();
-    m_gammaService.setWeatherCoordinates(snapshot.latitude, snapshot.longitude);
-  } else {
-    m_gammaService.setWeatherCoordinates(std::nullopt, std::nullopt);
-  }
+  auto syncNightLightWeatherCoordinates = [this]() {
+    const auto coords = m_weatherService.resolvedCoordinates();
+    if (coords.has_value()) {
+      m_gammaService.setWeatherCoordinates(coords->latitude, coords->longitude);
+    } else {
+      m_gammaService.setWeatherCoordinates(std::nullopt, std::nullopt);
+    }
+  };
+  syncNightLightWeatherCoordinates();
   m_weatherService.addChangeCallback([this, shouldRefreshControlCenter]() {
-    if (m_weatherService.hasData()) {
-      const WeatherSnapshot& snapshot = m_weatherService.snapshot();
-      m_gammaService.setWeatherCoordinates(snapshot.latitude, snapshot.longitude);
+    const auto coords = m_weatherService.resolvedCoordinates();
+    if (coords.has_value()) {
+      m_gammaService.setWeatherCoordinates(coords->latitude, coords->longitude);
     } else {
       m_gammaService.setWeatherCoordinates(std::nullopt, std::nullopt);
     }

@@ -497,8 +497,8 @@ struct NightLightConfig {
 
   bool enabled = false;
   bool force = false;
-  bool useWeatherLocation = true; // use WeatherService coordinates instead of manual schedule/location
-  std::string startTime;          // HH:MM sunset (night start), used when use_weather_location is false
+  bool useWeatherLocation = true; // prefer WeatherService coordinates; fall back to manual schedule/location if absent
+  std::string startTime;          // HH:MM sunset (night start), used for manual/fallback schedule
   std::string stopTime;           // HH:MM sunrise (day start)
   std::optional<double> latitude;
   std::optional<double> longitude;

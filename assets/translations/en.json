@@ -1585,7 +1585,8 @@
         },
         "use-weather-location": {
           "label": "Use Weather Location",
-          "description": "Use weather service location for sunrise/sunset instead of a manual schedule"
+          "description": "Use weather service location for sunrise/sunset instead of a manual schedule",
+          "requires-weather-location": "Enable weather auto-locate or set a weather address before relying on weather location"
         },
         "night-light-start-time": {
           "label": "Start Time",

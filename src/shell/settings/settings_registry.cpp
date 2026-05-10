@@ -689,9 +689,13 @@ namespace settings {
       entries.push_back(makeEntry("services", "night-light", tr("settings.schema.services.force-night-light.label"),
                                   tr("settings.schema.services.force-night-light.description"), {"nightlight", "force"},
                                   ToggleSetting{cfg.nightlight.force}, "nightlight"));
+      const bool weatherLocationConfigured =
+          cfg.weather.enabled && (cfg.weather.autoLocate || !cfg.weather.address.empty());
+      const std::string weatherLocationSubtitle =
+          weatherLocationConfigured ? tr("settings.schema.services.use-weather-location.description")
+                                    : tr("settings.schema.services.use-weather-location.requires-weather-location");
       entries.push_back(makeEntry("services", "night-light", tr("settings.schema.services.use-weather-location.label"),
-                                  tr("settings.schema.services.use-weather-location.description"),
-                                  {"nightlight", "use_weather_location"},
+                                  weatherLocationSubtitle, {"nightlight", "use_weather_location"},
                                   ToggleSetting{cfg.nightlight.useWeatherLocation}, "location"));
       const SettingVisibility weatherLocationOff{{"nightlight", "use_weather_location"}, {"false"}};
       {
@@ -699,7 +703,9 @@ namespace settings {
             makeEntry("services", "night-light", tr("settings.schema.services.night-light-start-time.label"),
                       tr("settings.schema.services.night-light-start-time.description"), {"nightlight", "start_time"},
                       TextSetting{cfg.nightlight.startTime, "20:30"}, "time schedule sunset");
-        e.visibleWhen = weatherLocationOff;
+        if (weatherLocationConfigured) {
+          e.visibleWhen = weatherLocationOff;
+        }
         entries.push_back(std::move(e));
       }
       {
@@ -707,7 +713,9 @@ namespace settings {
             makeEntry("services", "night-light", tr("settings.schema.services.night-light-stop-time.label"),
                       tr("settings.schema.services.night-light-stop-time.description"), {"nightlight", "stop_time"},
                       TextSetting{cfg.nightlight.stopTime, "07:30"}, "time schedule sunrise");
-        e.visibleWhen = weatherLocationOff;
+        if (weatherLocationConfigured) {
+          e.visibleWhen = weatherLocationOff;
+        }
         entries.push_back(std::move(e));
       }
       {
@@ -715,7 +723,9 @@ namespace settings {
                            tr("settings.schema.services.latitude.description"), {"nightlight", "latitude"},
                            OptionalNumberSetting{cfg.nightlight.latitude, -90.0, 90.0, "52.5200"},
                            "coordinate location sunrise sunset", true);
-        e.visibleWhen = weatherLocationOff;
+        if (weatherLocationConfigured) {
+          e.visibleWhen = weatherLocationOff;
+        }
         entries.push_back(std::move(e));
       }
       {
@@ -723,7 +733,9 @@ namespace settings {
                            tr("settings.schema.services.longitude.description"), {"nightlight", "longitude"},
                            OptionalNumberSetting{cfg.nightlight.longitude, -180.0, 180.0, "13.4050"},
                            "coordinate location sunrise sunset", true);
-        e.visibleWhen = weatherLocationOff;
+        if (weatherLocationConfigured) {
+          e.visibleWhen = weatherLocationOff;
+        }
         entries.push_back(std::move(e));
       }
       // Both sliders span the same range; the day > night invariant is enforced at commit time
