@@ -6,11 +6,17 @@
 #include "ipc/ipc_client.h"
 #include "theme/cli.h"
 
+#include <array>
+#include <cerrno>
 #include <clocale>
+#include <cstddef>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <fcntl.h>
 #include <stdexcept>
 #include <string>
+#include <unistd.h>
 
 #ifdef __GLIBC__
 #if __has_include(<jemalloc/jemalloc.h>)
@@ -23,18 +29,112 @@
 
 namespace {
 
+  enum class SpawnResult { Parent, Error };
+
+  constexpr const char* kDaemonPipeEnv = "NOCTALIA_DAEMON_PIPE_FD";
+  int g_daemonPipe = -1;
+
+  void closeFd(int& fd) {
+    if (fd == -1) {
+      return;
+    }
+    (void)::close(fd);
+    fd = -1;
+  }
+
+  bool writeAll(int fd, const void* data, std::size_t size) {
+    const char* bytes = static_cast<const char*>(data);
+    while (size > 0) {
+      const ssize_t written = ::write(fd, bytes, size);
+      if (written < 0) {
+        if (errno == EINTR) {
+          continue;
+        }
+        return false;
+      }
+      if (written == 0) {
+        return false;
+      }
+      bytes += written;
+      size -= static_cast<std::size_t>(written);
+    }
+    return true;
+  }
+
+  bool readAll(int fd, void* data, std::size_t size) {
+    char* bytes = static_cast<char*>(data);
+    while (size > 0) {
+      const ssize_t received = ::read(fd, bytes, size);
+      if (received < 0) {
+        if (errno == EINTR) {
+          continue;
+        }
+        return false;
+      }
+      if (received == 0) {
+        return false;
+      }
+      bytes += received;
+      size -= static_cast<std::size_t>(received);
+    }
+    return true;
+  }
+
+  bool redirectStdioToNull() {
+    int fd = ::open("/dev/null", O_RDWR);
+    if (fd == -1) {
+      std::perror("open(\"/dev/null\")");
+      return false;
+    }
+
+    bool ok = true;
+    if (::dup2(fd, STDIN_FILENO) == -1) {
+      std::perror("dup2(stdin)");
+      ok = false;
+    }
+    if (::dup2(fd, STDOUT_FILENO) == -1) {
+      std::perror("dup2(stdout)");
+      ok = false;
+    }
+    if (::dup2(fd, STDERR_FILENO) == -1) {
+      std::perror("dup2(stderr)");
+      ok = false;
+    }
+
+    if (fd > STDERR_FILENO) {
+      (void)::close(fd);
+    }
+    return ok;
+  }
+
+  void completeDaemonStartup(int code) {
+    if (g_daemonPipe == -1) {
+      return;
+    }
+
+    const int result = code;
+    if (!writeAll(g_daemonPipe, &result, sizeof(result))) {
+      std::fprintf(stderr, "error: failed to notify daemon parent: %s\n", std::strerror(errno));
+    }
+    closeFd(g_daemonPipe);
+    if (code == 0 && !redirectStdioToNull()) {
+      std::fprintf(stderr, "error: failed to redirect daemon stdio\n");
+    }
+  }
+
   int runTopLevelFlag(const char* flag) {
-    if (std::strcmp(flag, "--version") == 0) {
+    if (std::strcmp(flag, "--version") == 0 || std::strcmp(flag, "-v") == 0) {
       const std::string version = noctalia::build_info::displayVersion();
       std::printf("noctalia %s\n", version.c_str());
       return 0;
     }
-    if (std::strcmp(flag, "--help") == 0) {
+    if (std::strcmp(flag, "--help") == 0 || std::strcmp(flag, "-h") == 0) {
       std::puts("Usage: noctalia [OPTIONS]\n"
                 "\n"
                 "Options:\n"
-                "  --help     Show this help message\n"
-                "  --version  Show version information\n"
+                "  -h, --help       Show this help message\n"
+                "  -v, --version    Show version information\n"
+                "  -d, --daemon     Run in background\n"
                 "\n"
                 "Subcommands:\n"
                 "  msg <command>    Send a command to the running instance\n"
@@ -51,16 +151,90 @@ namespace {
     return -1;
   }
 
+  bool takeDaemonPipeFromEnv() {
+    const char* value = std::getenv(kDaemonPipeEnv);
+    if (value == nullptr || value[0] == '\0') {
+      return false;
+    }
+
+    errno = 0;
+    char* end = nullptr;
+    const long fd = std::strtol(value, &end, 10);
+    (void)::unsetenv(kDaemonPipeEnv);
+    if (errno != 0 || end == value || *end != '\0' || fd < 0) {
+      std::fprintf(stderr, "error: invalid %s value: %s\n", kDaemonPipeEnv, value);
+      return false;
+    }
+
+    g_daemonPipe = static_cast<int>(fd);
+    return true;
+  }
+
+  SpawnResult daemonize(pid_t* outPid, int* parentPipe, char* const argv[]) {
+    auto pipeFds = std::array<int, 2>{-1, -1};
+    if (::pipe(pipeFds.data()) == -1) {
+      std::perror("pipe");
+      return SpawnResult::Error;
+    }
+
+    pid_t pid = ::fork();
+    if (pid < 0) {
+      std::perror("fork");
+      closeFd(pipeFds[0]);
+      closeFd(pipeFds[1]);
+      return SpawnResult::Error;
+    }
+
+    if (pid > 0) {
+      if (outPid)
+        *outPid = pid;
+      if (parentPipe)
+        *parentPipe = pipeFds[0];
+      closeFd(pipeFds[1]);
+      return SpawnResult::Parent;
+    }
+
+    closeFd(pipeFds[0]);
+    // Match v4's early daemon boundary, but exec before shell startup so GLib,
+    // D-Bus, and polkit start from a normal process image rather than a raw
+    // post-fork child.
+    if (::setsid() == -1) {
+      std::perror("setsid");
+      const int daemonResult = 1;
+      (void)writeAll(pipeFds[1], &daemonResult, sizeof(daemonResult));
+      closeFd(pipeFds[1]);
+      _exit(1);
+    }
+
+    const std::string pipeFd = std::to_string(pipeFds[1]);
+    if (::setenv(kDaemonPipeEnv, pipeFd.c_str(), 1) == -1) {
+      std::perror("setenv");
+      const int daemonResult = 1;
+      (void)writeAll(pipeFds[1], &daemonResult, sizeof(daemonResult));
+      closeFd(pipeFds[1]);
+      _exit(1);
+    }
+
+    ::execvp(argv[0], argv);
+    std::perror("execvp");
+    const int daemonResult = 1;
+    (void)writeAll(pipeFds[1], &daemonResult, sizeof(daemonResult));
+    closeFd(pipeFds[1]);
+    _exit(1);
+  }
+
   int runShell() {
     if (IpcClient::isRunning()) {
       std::fputs("error: noctalia is already running\n", stderr);
+      completeDaemonStartup(1);
       return 1;
     }
     try {
       Application app;
-      app.run();
+      app.run([]() { completeDaemonStartup(0); });
     } catch (const std::exception& e) {
       logError("fatal: {}", e.what());
+      completeDaemonStartup(1);
       return 1;
     }
     return 0;
@@ -79,6 +253,23 @@ int main(int argc, char* argv[]) {
 #endif
 
   std::setlocale(LC_ALL, "");
+
+  const bool isDaemonChild = takeDaemonPipeFromEnv();
+  bool shouldDaemonize = false;
+
+  for (int i = 1; i < argc; ++i) {
+    if (std::strcmp(argv[i], "--daemon") == 0 || std::strcmp(argv[i], "--daemonize") == 0 ||
+        std::strcmp(argv[i], "-d") == 0) {
+      shouldDaemonize = true;
+      for (int j = i; j < argc - 1; ++j) {
+        argv[j] = argv[j + 1];
+      }
+      --argc;
+      argv[argc] = nullptr;
+      break;
+    }
+  }
+
   if (argc >= 2) {
     if (std::strcmp(argv[1], "theme") == 0)
       return noctalia::theme::runCli(argc, argv);
@@ -89,9 +280,37 @@ int main(int argc, char* argv[]) {
   }
 
   for (int i = 1; i < argc; ++i) {
-    const int rc = runTopLevelFlag(argv[i]);
-    if (rc >= 0)
-      return rc;
+    if (argv[i][0] == '-') {
+      const int rc = runTopLevelFlag(argv[i]);
+      if (rc >= 0)
+        return rc;
+
+      std::fprintf(stderr, "error: unknown option: %s\n", argv[i]);
+      return 1;
+    }
+  }
+
+  if (shouldDaemonize && !isDaemonChild) {
+    pid_t pid = -1;
+    int parentPipe = -1;
+    SpawnResult result = daemonize(&pid, &parentPipe, argv);
+
+    if (result == SpawnResult::Error) {
+      return 1;
+    }
+    if (result == SpawnResult::Parent) {
+      int daemonResult = 1;
+      const bool receivedResult = readAll(parentPipe, &daemonResult, sizeof(daemonResult));
+      closeFd(parentPipe);
+      if (!receivedResult) {
+        std::fputs("error: failed to wait for daemon startup\n", stderr);
+        return 1;
+      }
+      if (daemonResult == 0) {
+        std::printf("noctalia started [pid: %d]\n", pid);
+      }
+      return daemonResult;
+    }
   }
 
   return runShell();
