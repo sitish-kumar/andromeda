@@ -210,6 +210,12 @@ NetworkService::~NetworkService() = default;
 void NetworkService::setChangeCallback(ChangeCallback callback) { m_changeCallback = std::move(callback); }
 
 void NetworkService::refresh() {
+  if (m_refreshInFlight) {
+    m_refreshQueued = true;
+    return;
+  }
+  m_refreshInFlight = true;
+
   auto pending = std::make_shared<PendingRefresh>();
   pending->capturedAps = m_accessPoints;
   pending->capturedVpns = m_vpnConnections;
@@ -228,6 +234,14 @@ void NetworkService::refresh() {
     m_state = std::move(next);
     if ((stateChanged || apsChanged || vpnsChanged || savedChanged) && m_changeCallback) {
       m_changeCallback(m_state, origin);
+    }
+    // Break the self-reference cycle: pending->onAllComplete captures pending.
+    pending->onAllComplete = {};
+
+    m_refreshInFlight = false;
+    if (m_refreshQueued) {
+      m_refreshQueued = false;
+      refresh();
     }
   };
 
@@ -683,6 +697,97 @@ void NetworkService::refreshVpnConnections(std::function<void()> onComplete) {
               std::make_pair(std::make_pair(std::vector<VpnConnectionInfo>{}, std::set<std::string>{}),
                              static_cast<int>(connectionPaths.size())));
 
+          auto finalize = [this, opState, onComplete]() {
+            std::ranges::sort(opState->first.first, [](const VpnConnectionInfo& a, const VpnConnectionInfo& b) {
+              if (a.active != b.active) {
+                return a.active;
+              }
+              return a.name < b.name;
+            });
+            m_vpnConnections = std::move(opState->first.first);
+            if (onComplete)
+              onComplete();
+          };
+
+          auto markActiveAndFinalize = [this, opState, finalize]() {
+            m_nm->callMethodAsync("Get")
+                .onInterface(k_propertiesInterface)
+                .withArguments(k_nmInterface, "ActiveConnections")
+                .uponReplyInvoke([this, opState, finalize](std::optional<sdbus::Error> activeListErr,
+                                                           sdbus::Variant activeListValue) {
+                  if (activeListErr.has_value()) {
+                    kLog.debug("refreshVpnConnections active list failed: {}", activeListErr->what());
+                    finalize();
+                    return;
+                  }
+
+                  std::vector<sdbus::ObjectPath> activePaths;
+                  try {
+                    activePaths = activeListValue.get<std::vector<sdbus::ObjectPath>>();
+                  } catch (const sdbus::Error&) {
+                    finalize();
+                    return;
+                  }
+
+                  if (activePaths.empty()) {
+                    finalize();
+                    return;
+                  }
+
+                  auto activeState = std::make_shared<std::pair<std::set<std::string>, std::atomic<int>>>(
+                      std::make_pair(std::set<std::string>{}, static_cast<int>(activePaths.size())));
+
+                  auto onActiveComplete = [opState, activeState, finalize]() {
+                    if (--activeState->second == 0) {
+                      for (auto& vpn : opState->first.first) {
+                        if (activeState->first.contains(vpn.path)) {
+                          vpn.active = true;
+                        }
+                      }
+                      finalize();
+                    }
+                  };
+
+                  for (const auto& activePath : activePaths) {
+                    try {
+                      auto active = std::shared_ptr<sdbus::IProxy>(
+                          sdbus::createProxy(m_bus.connection(), k_nmBusName, activePath));
+                      active->callMethodAsync("GetAll")
+                          .onInterface(k_propertiesInterface)
+                          .withArguments(k_nmActiveConnectionInterface)
+                          .uponReplyInvoke([active, activeState,
+                                            onActiveComplete](std::optional<sdbus::Error> err,
+                                                              std::map<std::string, sdbus::Variant> properties) {
+                            if (!err.has_value()) {
+                              std::uint32_t state = 0U;
+                              if (auto stateIt = properties.find("State"); stateIt != properties.end()) {
+                                try {
+                                  state = stateIt->second.get<std::uint32_t>();
+                                } catch (const sdbus::Error&) {
+                                  state = 0U;
+                                }
+                              }
+
+                              if (state == k_nmActiveConnectionStateActivating ||
+                                  state == k_nmActiveConnectionStateActivated) {
+                                if (auto connIt = properties.find("Connection"); connIt != properties.end()) {
+                                  try {
+                                    const auto profilePath = connIt->second.get<sdbus::ObjectPath>();
+                                    activeState->first.insert(std::string(profilePath));
+                                  } catch (const sdbus::Error&) {
+                                  }
+                                }
+                              }
+                            }
+                            onActiveComplete();
+                          });
+                    } catch (const sdbus::Error&) {
+                      onActiveComplete();
+                    }
+                  }
+                });
+          };
+
           for (const auto& connectionPath : connectionPaths) {
             try {
               auto connection =
@@ -724,62 +829,12 @@ void NetworkService::refreshVpnConnections(std::function<void()> onComplete) {
                       }
                     }
                     if (--opState->second == 0) {
-                      // Mark active VPNs
-                      try {
-                        std::vector<sdbus::ObjectPath> activeConnections;
-                        const sdbus::Variant activeVar =
-                            m_nm->getProperty("ActiveConnections").onInterface(k_nmInterface);
-                        activeConnections = activeVar.get<std::vector<sdbus::ObjectPath>>();
-                        for (const auto& activePath : activeConnections) {
-                          try {
-                            auto active = sdbus::createProxy(m_bus.connection(), k_nmBusName, activePath);
-                            const auto state =
-                                getPropertyOr<std::uint32_t>(*active, k_nmActiveConnectionInterface, "State", 0U);
-                            if (state != k_nmActiveConnectionStateActivating &&
-                                state != k_nmActiveConnectionStateActivated) {
-                              continue;
-                            }
-                            const auto profilePath = getPropertyOr<sdbus::ObjectPath>(
-                                *active, k_nmActiveConnectionInterface, "Connection", sdbus::ObjectPath{});
-                            const std::string profilePathStr = std::string(profilePath);
-                            if (!opState->first.second.contains(profilePathStr)) {
-                              continue;
-                            }
-                            for (auto& vpn : opState->first.first) {
-                              if (vpn.path == profilePathStr) {
-                                vpn.active = true;
-                                break;
-                              }
-                            }
-                          } catch (const sdbus::Error&) {
-                          }
-                        }
-                      } catch (const sdbus::Error& e) {
-                        kLog.debug("refreshVpnConnections active list: {}", e.what());
-                      }
-                      std::ranges::sort(opState->first.first,
-                                        [](const VpnConnectionInfo& a, const VpnConnectionInfo& b) {
-                                          if (a.active != b.active) {
-                                            return a.active;
-                                          }
-                                          return a.name < b.name;
-                                        });
-                      m_vpnConnections = std::move(opState->first.first);
-                      if (onComplete)
-                        onComplete();
+                      markActiveAndFinalize();
                     }
                   });
             } catch (const sdbus::Error&) {
               if (--opState->second == 0) {
-                std::ranges::sort(opState->first.first, [](const VpnConnectionInfo& a, const VpnConnectionInfo& b) {
-                  if (a.active != b.active) {
-                    return a.active;
-                  }
-                  return a.name < b.name;
-                });
-                m_vpnConnections = std::move(opState->first.first);
-                if (onComplete)
-                  onComplete();
+                markActiveAndFinalize();
               }
             }
           }
@@ -912,28 +967,41 @@ void NetworkService::refreshAccessPoints(std::function<void()> onComplete) {
                                       info.path = apPath;
                                       info.devicePath = devicePath;
                                       info.active = !activeApPath.empty() && apPath == activeApPath;
-                                      try {
-                                        const auto ssidBytes = properties.at("Ssid").get<std::vector<std::uint8_t>>();
-                                        info.ssid.assign(ssidBytes.begin(), ssidBytes.end());
-                                      } catch (const sdbus::Error&) {
+                                      if (auto ssidIt = properties.find("Ssid"); ssidIt != properties.end()) {
+                                        try {
+                                          const auto ssidBytes = ssidIt->second.get<std::vector<std::uint8_t>>();
+                                          info.ssid.assign(ssidBytes.begin(), ssidBytes.end());
+                                        } catch (const sdbus::Error&) {
+                                        }
                                       }
-                                      try {
-                                        info.strength = properties.at("Strength").get<std::uint8_t>();
-                                      } catch (const sdbus::Error&) {
+                                      if (auto strengthIt = properties.find("Strength");
+                                          strengthIt != properties.end()) {
+                                        try {
+                                          info.strength = strengthIt->second.get<std::uint8_t>();
+                                        } catch (const sdbus::Error&) {
+                                        }
                                       }
                                       const auto wpaFlags = [&properties]() {
-                                        try {
-                                          return properties.at("WpaFlags").get<std::uint32_t>();
-                                        } catch (const sdbus::Error&) {
-                                          return 0U;
+                                        if (auto wpaFlagsIt = properties.find("WpaFlags");
+                                            wpaFlagsIt != properties.end()) {
+                                          try {
+                                            return wpaFlagsIt->second.get<std::uint32_t>();
+                                          } catch (const sdbus::Error&) {
+                                            return 0U;
+                                          }
                                         }
+                                        return 0U;
                                       }();
                                       const auto rsnFlags = [&properties]() {
-                                        try {
-                                          return properties.at("RsnFlags").get<std::uint32_t>();
-                                        } catch (const sdbus::Error&) {
-                                          return 0U;
+                                        if (auto rsnFlagsIt = properties.find("RsnFlags");
+                                            rsnFlagsIt != properties.end()) {
+                                          try {
+                                            return rsnFlagsIt->second.get<std::uint32_t>();
+                                          } catch (const sdbus::Error&) {
+                                            return 0U;
+                                          }
                                         }
+                                        return 0U;
                                       }();
                                       info.secured =
                                           (wpaFlags != k_nm80211ApSecNone) || (rsnFlags != k_nm80211ApSecNone);

@@ -131,6 +131,8 @@ private:
   std::vector<AccessPointInfo> m_accessPoints;
   std::vector<VpnConnectionInfo> m_vpnConnections;
   std::vector<std::string> m_savedSsids;
+  bool m_refreshInFlight = false;
+  bool m_refreshQueued = false;
   bool m_scanning = false;
   std::int64_t m_scanBaselineLastScan = 0;
   std::optional<bool> m_pendingLocalWirelessEnabled;
