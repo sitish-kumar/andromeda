@@ -12,15 +12,13 @@
 #include <stdexcept>
 #include <string>
 
-#ifdef __has_include
+#ifdef __GLIBC__
 #if __has_include(<jemalloc/jemalloc.h>)
 #include <jemalloc/jemalloc.h>
 #define HAS_JEMALLOC 1
-#endif
-#endif
-
-#ifndef HAS_JEMALLOC
+#else
 #include <malloc.h>
+#endif
 #endif
 
 namespace {
@@ -75,9 +73,11 @@ const char* malloc_conf = "narenas:2,dirty_decay_ms:1000,muzzy_decay_ms:5000,tca
 #endif
 
 int main(int argc, char* argv[]) {
-#ifndef HAS_JEMALLOC
+
+#if defined(__GLIBC__) && !defined(HAS_JEMALLOC)
   mallopt(M_ARENA_MAX, 2);
 #endif
+
   std::setlocale(LC_ALL, "");
   if (argc >= 2) {
     if (std::strcmp(argv[1], "theme") == 0)
