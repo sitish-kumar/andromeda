@@ -54,20 +54,6 @@ namespace {
     return loop_status == "None" || loop_status == "Track" || loop_status == "Playlist";
   }
 
-  template <typename T>
-  T get_property_or(sdbus::IProxy& proxy, std::string_view interface_name, std::string_view property_name, T fallback) {
-    try {
-      const sdbus::Variant value = proxy.getProperty(property_name).onInterface(interface_name);
-      return value.get<T>();
-    } catch (const sdbus::Error&) {
-      return fallback;
-    }
-  }
-
-  std::map<std::string, sdbus::Variant> get_metadata_or(sdbus::IProxy& proxy) {
-    return get_property_or(proxy, k_mpris_player_interface, "Metadata", std::map<std::string, sdbus::Variant>{});
-  }
-
   std::string get_string_from_variant(const std::map<std::string, sdbus::Variant>& values, std::string_view key) {
     const auto it = values.find(std::string{key});
     if (it == values.end()) {
@@ -671,6 +657,49 @@ void MprisService::registerIpc(IpcService& ipc) {
         return "error: invalid media action (use next, previous, toggle)\n";
       },
       "media <next|previous|toggle>", "Control active media playback");
+}
+
+auto MprisService::makeAsyncReplyHandler(std::string op, std::string busName) {
+  const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+  return [this, aliveGuard, op = std::move(op), busName = std::move(busName)](std::optional<sdbus::Error> err) {
+    if (aliveGuard.expired()) {
+      return;
+    }
+    if (err.has_value()) {
+      kLog.warn("{} failed name={} err={}", op, busName, err->what());
+      return;
+    }
+
+    DeferredCall::callLater([this, aliveGuard, busName]() {
+      if (aliveGuard.expired()) {
+        return;
+      }
+      addOrRefreshPlayer(busName);
+    });
+  };
+}
+
+auto MprisService::makeAsyncReplyHandler(std::string op, std::string busName, std::string_view method) {
+  const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+  return [this, aliveGuard, op = std::move(op), busName = std::move(busName),
+          method = std::string(method)](std::optional<sdbus::Error> err) {
+    if (aliveGuard.expired()) {
+      return;
+    }
+    if (err.has_value()) {
+      kLog.warn("{} failed name={} method={} err={}", op, busName, method, err->what());
+      return;
+    }
+
+    kLog.debug("{} name={} method={}", op, busName, method);
+
+    DeferredCall::callLater([this, aliveGuard, busName]() {
+      if (aliveGuard.expired()) {
+        return;
+      }
+      addOrRefreshPlayer(busName);
+    });
+  };
 }
 
 bool MprisService::playPause(const std::string& busName) {
@@ -1316,23 +1345,56 @@ void MprisService::registerBusSignals() {
 }
 
 void MprisService::discoverPlayers() {
-  std::vector<std::string> names;
   try {
-    m_dbusProxy->callMethod("ListNames").onInterface(k_dbus_interface).storeResultsTo(names);
+    const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+    m_dbusProxy->callMethodAsync("ListNames")
+        .onInterface(k_dbus_interface)
+        .uponReplyInvoke([this, aliveGuard](std::optional<sdbus::Error> err, std::vector<std::string> names) {
+          if (aliveGuard.expired()) {
+            return;
+          }
+          if (err.has_value()) {
+            kLog.warn("discover players failed err={}", err->what());
+            scheduleRecoveryDiscovery();
+            return;
+          }
+
+          m_pendingDiscoveryBusNames.clear();
+          for (const auto& name : names) {
+            if (is_mpris_bus_name(name)) {
+              m_pendingDiscoveryBusNames.push_back(name);
+            }
+          }
+          scheduleDiscoveryDrain();
+        });
   } catch (const sdbus::Error& e) {
     kLog.warn("discover players failed err={}", e.what());
     scheduleRecoveryDiscovery();
     return;
   }
+}
 
-  for (const auto& name : names) {
-    if (is_mpris_bus_name(name)) {
-      // kLog.debug("discover found mpris bus={}", name);
-      addOrRefreshPlayer(name);
-    }
+void MprisService::scheduleDiscoveryDrain() {
+  if (m_discoveryDrainScheduled || m_pendingDiscoveryBusNames.empty()) {
+    return;
   }
 
-  // kLog.debug("discover players listed={} cached_after={}", names.size(), m_players.size());
+  m_discoveryDrainScheduled = true;
+  const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+  DeferredCall::callLater([this, aliveGuard]() {
+    m_discoveryDrainScheduled = false;
+    if (aliveGuard.expired() || m_pendingDiscoveryBusNames.empty()) {
+      return;
+    }
+
+    const std::string busName = std::move(m_pendingDiscoveryBusNames.front());
+    m_pendingDiscoveryBusNames.pop_front();
+    addOrRefreshPlayer(busName);
+
+    if (!m_pendingDiscoveryBusNames.empty()) {
+      scheduleDiscoveryDrain();
+    }
+  });
 }
 
 void MprisService::scheduleStartupRediscovery() {
@@ -1340,7 +1402,11 @@ void MprisService::scheduleStartupRediscovery() {
     return;
   }
 
-  DeferredCall::callLater([this]() {
+  const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+  DeferredCall::callLater([this, aliveGuard]() {
+    if (aliveGuard.expired()) {
+      return;
+    }
     discoverPlayers();
     --m_startupRediscoveryPassesRemaining;
     if (m_startupRediscoveryPassesRemaining > 0) {
@@ -1355,7 +1421,11 @@ void MprisService::scheduleRecoveryDiscovery() {
   }
 
   m_recoveryDiscoveryScheduled = true;
-  DeferredCall::callLater([this]() {
+  const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+  DeferredCall::callLater([this, aliveGuard]() {
+    if (aliveGuard.expired()) {
+      return;
+    }
     m_recoveryDiscoveryScheduled = false;
     discoverPlayers();
   });
@@ -1458,225 +1528,283 @@ void MprisService::addOrRefreshPlayer(const std::string& busName) {
     });
   }
 
+  const bool hadPositionSignal = m_pendingPositionSignalRefresh[busName];
+  m_pendingPositionSignalRefresh[busName] = false;
+
+  const std::weak_ptr<void> aliveGuard = m_aliveGuard;
   try {
-    const bool hadPositionSignal = m_pendingPositionSignalRefresh[busName];
-    m_pendingPositionSignalRefresh[busName] = false;
-    const MprisPlayerInfo info = readPlayerInfo(*proxyIt->second, busName);
-    const auto now = std::chrono::steady_clock::now();
-    // kLog.debug(
-    //     "queried player name={} identity=\"{}\" status=\"{}\" title=\"{}\" artist=\"{}\" track_id=\"{}\"
-    //     art_url=\"{}\"", info.busName, info.identity, info.playbackStatus, info.title, primary_artist(info.artists),
-    //     info.trackId, info.artUrl);
-    if (info.artUrl.empty()) {
-      const auto metadata = get_metadata_or(*proxyIt->second);
-      // kLog.debug("queried player missing art url name={} metadata_keys=[{}]", info.busName, joinKeys(metadata));
-    }
-    if (info.playbackStatus == "Playing") {
-      m_lastActivePlayer = busName;
-      m_lastPlayingUpdate[busName] = now;
-    }
-    if (hasStrongNowPlayingMetadata(info)) {
-      m_lastStrongMetadataUpdate[busName] = now;
-    }
-
-    const auto existing = m_players.find(busName);
-    if (existing == m_players.end()) {
-      MprisPlayerInfo initial = info;
-      if (!hadPositionSignal) {
-        initial.positionUs = 0;
-      }
-      m_logicalTrackSignatures[busName] = logicalTrackSignature(initial);
-      m_positionOffsetsUs[busName] = 0;
-      m_lastLogicalTrackChangeAt[busName] = now;
-      m_lastPositionSampleAt[busName] = now;
-      m_hasAuthoritativePositionSample[busName] = false;
-      m_previousTrackRawPositionUs.erase(busName);
-      m_pendingPositionCandidateUs.erase(busName);
-      m_pendingPositionCandidateMatches.erase(busName);
-      m_pendingPositionCandidateAt.erase(busName);
-      // kLog.debug("added player name={} identity=\"{}\" status={} title=\"{}\" artist=\"{}\" art_url=\"{}\"",
-      //            info.busName, info.identity, info.playbackStatus, info.title, primary_artist(info.artists),
-      //            info.artUrl);
-      m_players.emplace(busName, std::move(initial));
-      emitPlayersChanged();
-      syncSignals(previousActive);
-      if (m_changeCallback) {
-        m_changeCallback();
-      }
-
-      if (info.playbackStatus != "Stopped" || info.positionUs > 0) {
-        DeferredCall::callLater([this, busName]() { refreshPlayerPosition(busName, true); });
-        auto& timerId = m_positionResyncTimers[busName];
-        timerId = TimerManager::instance().start(timerId, k_position_retry_interval,
-                                                 [this, busName]() { refreshPlayerPosition(busName, true); });
-      }
-      return;
-    }
-
-    if (existing->second != info) {
-      const MprisPlayerInfo previous_info = existing->second;
-
-      MprisPlayerInfo merged = info;
-      if (merged.artUrl.empty() && !previous_info.artUrl.empty()) {
-        merged.artUrl = previous_info.artUrl;
-      }
-
-      const bool incomingSnapshotEmpty = merged.playbackStatus.empty() && merged.trackId.empty() &&
-                                         merged.title.empty() && merged.artists.empty() && merged.album.empty() &&
-                                         merged.sourceUrl.empty() && merged.artUrl.empty() && merged.lengthUs == 0;
-      if (incomingSnapshotEmpty) {
-        merged = previous_info;
-      }
-
-      const bool previousStrong = hasStrongNowPlayingMetadata(previous_info) || !previous_info.artUrl.empty();
-      const bool incomingWeak = !hasStrongNowPlayingMetadata(info);
-      const auto strongIt = m_lastStrongMetadataUpdate.find(busName);
-      const bool withinStabilizeWindow =
-          strongIt != m_lastStrongMetadataUpdate.end() && now - strongIt->second < k_metadata_stabilize_window;
-      const auto seekCommandIt = m_lastSeekCommandAt.find(busName);
-      const bool recentLocalSeek =
-          seekCommandIt != m_lastSeekCommandAt.end() && now - seekCommandIt->second <= k_seek_pause_grace_window;
-
-      if (merged.playbackStatus == "Playing" && previousStrong && incomingWeak && withinStabilizeWindow &&
-          recentLocalSeek) {
-        const std::string incomingArtUrl = info.artUrl;
-        const std::string incomingSourceUrl = info.sourceUrl;
-        merged.trackId = previous_info.trackId;
-        merged.title = previous_info.title;
-        merged.artists = previous_info.artists;
-        merged.album = previous_info.album;
-        merged.sourceUrl = previous_info.sourceUrl;
-        merged.artUrl = previous_info.artUrl;
-        if (!incomingArtUrl.empty()) {
-          merged.artUrl = incomingArtUrl;
-        }
-        if (!incomingSourceUrl.empty()) {
-          merged.sourceUrl = incomingSourceUrl;
-        }
-      }
-
-      const std::string newSignature = logicalTrackSignature(merged);
-      const auto signatureIt = m_logicalTrackSignatures.find(busName);
-      const std::string previousSignature =
-          signatureIt != m_logicalTrackSignatures.end() ? signatureIt->second : logicalTrackSignature(previous_info);
-
-      auto offsetIt = m_positionOffsetsUs.find(busName);
-      if (offsetIt == m_positionOffsetsUs.end()) {
-        offsetIt = m_positionOffsetsUs.emplace(busName, 0).first;
-      }
-
-      const bool previousPositionAuthoritative =
-          m_hasAuthoritativePositionSample.contains(busName) && m_hasAuthoritativePositionSample.at(busName);
-
-      const bool logicalTrackChanged = !newSignature.empty() && previousSignature != newSignature;
-      const bool playbackStatusChanged = previous_info.playbackStatus != merged.playbackStatus;
-
-      if (previousPositionAuthoritative && !logicalTrackChanged && !hadPositionSignal &&
-          previous_info.playbackStatus == "Playing" && merged.playbackStatus == "Paused" && previous_info.canSeek) {
-        m_recentNoSignalPauseAt[busName] = now;
-      } else if (merged.playbackStatus != "Paused") {
-        m_recentNoSignalPauseAt.erase(busName);
-      }
-
-      bool preservedNormalizedPosition = false;
-      if (previousPositionAuthoritative && !logicalTrackChanged && !hadPositionSignal &&
-          previous_info.playbackStatus != "Stopped" && merged.playbackStatus != "Stopped" &&
-          previous_info.positionUs != merged.positionUs) {
-        bool preservePreviousPosition = playbackStatusChanged;
-        if (!preservePreviousPosition) {
-          const auto sampleIt = m_lastPositionSampleAt.find(busName);
-          const std::int64_t elapsedSinceSampleUs =
-              sampleIt != m_lastPositionSampleAt.end()
-                  ? std::chrono::duration_cast<std::chrono::microseconds>(now - sampleIt->second).count()
-                  : 0;
-          const std::int64_t rawDeltaUs = std::llabs(merged.positionUs - previous_info.positionUs);
-          const std::int64_t maxReasonableDeltaUs = std::max<std::int64_t>(5'000'000, elapsedSinceSampleUs + 2'000'000);
-          preservePreviousPosition = rawDeltaUs > maxReasonableDeltaUs;
-          if (!preservePreviousPosition && previous_info.playbackStatus == "Paused" &&
-              merged.playbackStatus == "Paused") {
-            preservePreviousPosition = !recentLocalSeek && rawDeltaUs < k_paused_same_track_position_jump_tolerance_us;
+    proxyIt->second->callMethodAsync("GetAll")
+        .onInterface(k_properties_interface)
+        .withArguments(std::string{k_mpris_root_interface})
+        .uponReplyInvoke([this, aliveGuard, busName, hadPositionSignal, previousActive](
+                             std::optional<sdbus::Error> rootErr, std::map<std::string, sdbus::Variant> rootProps) {
+          if (aliveGuard.expired()) {
+            return;
           }
-        }
 
-        if (preservePreviousPosition) {
-          merged.positionUs = previous_info.positionUs;
-          preservedNormalizedPosition = true;
-        }
-      }
-      if (previousPositionAuthoritative && !logicalTrackChanged && !hadPositionSignal && merged.positionUs == 0 &&
-          previous_info.positionUs > 0 && previous_info.playbackStatus != "Stopped" &&
-          merged.playbackStatus != "Stopped") {
-        merged.positionUs = previous_info.positionUs;
-        preservedNormalizedPosition = true;
-      }
-      if (logicalTrackChanged) {
-        const std::int64_t previousOffset = offsetIt->second;
-        const std::int64_t previousNormalized = std::max<std::int64_t>(0, previous_info.positionUs - previousOffset);
-        const std::int64_t previousRawPositionUs = std::max<std::int64_t>(0, previous_info.positionUs + previousOffset);
-        m_previousTrackRawPositionUs[busName] = previousRawPositionUs;
-        offsetIt->second = 0;
-        const bool looksLikePreviousTrackContinuation =
-            merged.positionUs > 5'000'000 && previousNormalized > 5'000'000 &&
-            std::llabs(merged.positionUs - previousRawPositionUs) <= k_previous_track_continuation_slack_us;
-        if (looksLikePreviousTrackContinuation) {
-          offsetIt->second = merged.positionUs;
-        }
+          auto proxyLookup = m_playerProxies.find(busName);
+          if (proxyLookup == m_playerProxies.end()) {
+            return;
+          }
 
-        m_lastLogicalTrackChangeAt[busName] = now;
-        m_hasAuthoritativePositionSample[busName] = false;
-        m_recentNoSignalPauseAt.erase(busName);
-        m_lastPositionSampleAt[busName] = now;
-        m_pendingPositionCandidateUs.erase(busName);
-        m_pendingPositionCandidateMatches.erase(busName);
-        m_pendingPositionCandidateAt.erase(busName);
-      }
+          try {
+            proxyLookup->second->callMethodAsync("GetAll")
+                .onInterface(k_properties_interface)
+                .withArguments(std::string{k_mpris_player_interface})
+                .uponReplyInvoke([this, aliveGuard, busName, hadPositionSignal, previousActive, rootErr,
+                                  rootProps = std::move(rootProps)](std::optional<sdbus::Error> playerErr,
+                                                                    std::map<std::string, sdbus::Variant> playerProps) {
+                  if (aliveGuard.expired()) {
+                    return;
+                  }
 
-      if (!preservedNormalizedPosition) {
-        const std::int64_t offsetUs = offsetIt->second;
-        merged.positionUs = std::max<std::int64_t>(0, merged.positionUs - offsetUs);
-      }
-      m_logicalTrackSignatures[busName] = newSignature;
-      if (hadPositionSignal) {
-        m_hasAuthoritativePositionSample[busName] = true;
-      }
-      if (previous_info.positionUs != merged.positionUs || previous_info.playbackStatus != merged.playbackStatus) {
-        m_lastPositionSampleAt[busName] = now;
-      }
+                  std::map<std::string, sdbus::Variant> effectiveRootProps;
+                  if (!rootErr.has_value()) {
+                    effectiveRootProps = rootProps;
+                  }
 
-      existing->second = merged;
-      // kLog.debug("updated player name={} status={} title=\"{}\" artist=\"{}\" art_url=\"{}\"", merged.busName,
-      //            merged.playbackStatus, merged.title, primary_artist(merged.artists), merged.artUrl);
+                  std::map<std::string, sdbus::Variant> effectivePlayerProps;
+                  if (!playerErr.has_value()) {
+                    effectivePlayerProps = playerProps;
+                  }
 
-      const bool trackChanged = previous_info.title != merged.title || previous_info.album != merged.album ||
-                                previous_info.artists != merged.artists || previous_info.artUrl != merged.artUrl ||
-                                previous_info.sourceUrl != merged.sourceUrl ||
-                                previous_info.trackId != merged.trackId || previous_info.lengthUs != merged.lengthUs;
-      const bool significantChanged =
-          trackChanged || previous_info.identity != merged.identity ||
-          previous_info.playbackStatus != merged.playbackStatus || previous_info.loopStatus != merged.loopStatus ||
-          previous_info.shuffle != merged.shuffle || previous_info.canGoPrevious != merged.canGoPrevious ||
-          previous_info.canGoNext != merged.canGoNext || previous_info.canPlay != merged.canPlay ||
-          previous_info.canPause != merged.canPause || previous_info.canSeek != merged.canSeek;
-
-      if (trackChanged || previous_info.playbackStatus != merged.playbackStatus) {
-        DeferredCall::callLater([this, busName]() { refreshPlayerPosition(busName, true); });
-        auto& timerId = m_positionResyncTimers[busName];
-        timerId = TimerManager::instance().start(timerId, k_position_retry_interval,
-                                                 [this, busName]() { refreshPlayerPosition(busName, true); });
-      }
-
-      if (trackChanged) {
-        emitTrackChanged(merged);
-      }
-
-      syncSignals(previousActive);
-      if (significantChanged && m_changeCallback) {
-        m_changeCallback();
-      }
-    }
+                  const MprisPlayerInfo info =
+                      readPlayerInfoFromProperties(busName, effectiveRootProps, effectivePlayerProps);
+                  applyPlayerSnapshot(busName, info, hadPositionSignal, previousActive);
+                });
+          } catch (const sdbus::Error& e) {
+            kLog.warn("player query failed name={} err={}", busName, e.what());
+            scheduleRecoveryDiscovery();
+          }
+        });
   } catch (const sdbus::Error& e) {
     kLog.warn("player query failed name={} err={}", busName, e.what());
     scheduleRecoveryDiscovery();
+  }
+}
+
+void MprisService::applyPlayerSnapshot(const std::string& busName, const MprisPlayerInfo& info, bool hadPositionSignal,
+                                       const std::optional<MprisPlayerInfo>& previousActive) {
+  const auto now = std::chrono::steady_clock::now();
+  if (info.playbackStatus == "Playing") {
+    m_lastActivePlayer = busName;
+    m_lastPlayingUpdate[busName] = now;
+  }
+  if (hasStrongNowPlayingMetadata(info)) {
+    m_lastStrongMetadataUpdate[busName] = now;
+  }
+
+  const auto existing = m_players.find(busName);
+  if (existing == m_players.end()) {
+    MprisPlayerInfo initial = info;
+    if (!hadPositionSignal) {
+      initial.positionUs = 0;
+    }
+    m_logicalTrackSignatures[busName] = logicalTrackSignature(initial);
+    m_positionOffsetsUs[busName] = 0;
+    m_lastLogicalTrackChangeAt[busName] = now;
+    m_lastPositionSampleAt[busName] = now;
+    m_hasAuthoritativePositionSample[busName] = false;
+    m_previousTrackRawPositionUs.erase(busName);
+    m_pendingPositionCandidateUs.erase(busName);
+    m_pendingPositionCandidateMatches.erase(busName);
+    m_pendingPositionCandidateAt.erase(busName);
+    m_players.emplace(busName, std::move(initial));
+    emitPlayersChanged();
+    syncSignals(previousActive);
+    if (m_changeCallback) {
+      m_changeCallback();
+    }
+
+    if (info.playbackStatus != "Stopped" || info.positionUs > 0) {
+      const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+      DeferredCall::callLater([this, aliveGuard, busName]() {
+        if (aliveGuard.expired()) {
+          return;
+        }
+        refreshPlayerPosition(busName, true);
+      });
+      auto& timerId = m_positionResyncTimers[busName];
+      const std::weak_ptr<void> timerAliveGuard = m_aliveGuard;
+      timerId = TimerManager::instance().start(timerId, k_position_retry_interval, [this, timerAliveGuard, busName]() {
+        if (timerAliveGuard.expired()) {
+          return;
+        }
+        refreshPlayerPosition(busName, true);
+      });
+    }
+    return;
+  }
+
+  if (existing->second != info) {
+    const MprisPlayerInfo previous_info = existing->second;
+
+    MprisPlayerInfo merged = info;
+    if (merged.artUrl.empty() && !previous_info.artUrl.empty()) {
+      merged.artUrl = previous_info.artUrl;
+    }
+
+    const bool incomingSnapshotEmpty = merged.playbackStatus.empty() && merged.trackId.empty() &&
+                                       merged.title.empty() && merged.artists.empty() && merged.album.empty() &&
+                                       merged.sourceUrl.empty() && merged.artUrl.empty() && merged.lengthUs == 0;
+    if (incomingSnapshotEmpty) {
+      merged = previous_info;
+    }
+
+    const bool previousStrong = hasStrongNowPlayingMetadata(previous_info) || !previous_info.artUrl.empty();
+    const bool incomingWeak = !hasStrongNowPlayingMetadata(info);
+    const auto strongIt = m_lastStrongMetadataUpdate.find(busName);
+    const bool withinStabilizeWindow =
+        strongIt != m_lastStrongMetadataUpdate.end() && now - strongIt->second < k_metadata_stabilize_window;
+    const auto seekCommandIt = m_lastSeekCommandAt.find(busName);
+    const bool recentLocalSeek =
+        seekCommandIt != m_lastSeekCommandAt.end() && now - seekCommandIt->second <= k_seek_pause_grace_window;
+
+    if (merged.playbackStatus == "Playing" && previousStrong && incomingWeak && withinStabilizeWindow &&
+        recentLocalSeek) {
+      const std::string incomingArtUrl = info.artUrl;
+      const std::string incomingSourceUrl = info.sourceUrl;
+      merged.trackId = previous_info.trackId;
+      merged.title = previous_info.title;
+      merged.artists = previous_info.artists;
+      merged.album = previous_info.album;
+      merged.sourceUrl = previous_info.sourceUrl;
+      merged.artUrl = previous_info.artUrl;
+      if (!incomingArtUrl.empty()) {
+        merged.artUrl = incomingArtUrl;
+      }
+      if (!incomingSourceUrl.empty()) {
+        merged.sourceUrl = incomingSourceUrl;
+      }
+    }
+
+    const std::string newSignature = logicalTrackSignature(merged);
+    const auto signatureIt = m_logicalTrackSignatures.find(busName);
+    const std::string previousSignature =
+        signatureIt != m_logicalTrackSignatures.end() ? signatureIt->second : logicalTrackSignature(previous_info);
+
+    auto offsetIt = m_positionOffsetsUs.find(busName);
+    if (offsetIt == m_positionOffsetsUs.end()) {
+      offsetIt = m_positionOffsetsUs.emplace(busName, 0).first;
+    }
+
+    const bool previousPositionAuthoritative =
+        m_hasAuthoritativePositionSample.contains(busName) && m_hasAuthoritativePositionSample.at(busName);
+
+    const bool logicalTrackChanged = !newSignature.empty() && previousSignature != newSignature;
+    const bool playbackStatusChanged = previous_info.playbackStatus != merged.playbackStatus;
+
+    if (previousPositionAuthoritative && !logicalTrackChanged && !hadPositionSignal &&
+        previous_info.playbackStatus == "Playing" && merged.playbackStatus == "Paused" && previous_info.canSeek) {
+      m_recentNoSignalPauseAt[busName] = now;
+    } else if (merged.playbackStatus != "Paused") {
+      m_recentNoSignalPauseAt.erase(busName);
+    }
+
+    bool preservedNormalizedPosition = false;
+    if (previousPositionAuthoritative && !logicalTrackChanged && !hadPositionSignal &&
+        previous_info.playbackStatus != "Stopped" && merged.playbackStatus != "Stopped" &&
+        previous_info.positionUs != merged.positionUs) {
+      bool preservePreviousPosition = playbackStatusChanged;
+      if (!preservePreviousPosition) {
+        const auto sampleIt = m_lastPositionSampleAt.find(busName);
+        const std::int64_t elapsedSinceSampleUs =
+            sampleIt != m_lastPositionSampleAt.end()
+                ? std::chrono::duration_cast<std::chrono::microseconds>(now - sampleIt->second).count()
+                : 0;
+        const std::int64_t rawDeltaUs = std::llabs(merged.positionUs - previous_info.positionUs);
+        const std::int64_t maxReasonableDeltaUs = std::max<std::int64_t>(5'000'000, elapsedSinceSampleUs + 2'000'000);
+        preservePreviousPosition = rawDeltaUs > maxReasonableDeltaUs;
+        if (!preservePreviousPosition && previous_info.playbackStatus == "Paused" &&
+            merged.playbackStatus == "Paused") {
+          preservePreviousPosition = !recentLocalSeek && rawDeltaUs < k_paused_same_track_position_jump_tolerance_us;
+        }
+      }
+
+      if (preservePreviousPosition) {
+        merged.positionUs = previous_info.positionUs;
+        preservedNormalizedPosition = true;
+      }
+    }
+    if (previousPositionAuthoritative && !logicalTrackChanged && !hadPositionSignal && merged.positionUs == 0 &&
+        previous_info.positionUs > 0 && previous_info.playbackStatus != "Stopped" &&
+        merged.playbackStatus != "Stopped") {
+      merged.positionUs = previous_info.positionUs;
+      preservedNormalizedPosition = true;
+    }
+    if (logicalTrackChanged) {
+      const std::int64_t previousOffset = offsetIt->second;
+      const std::int64_t previousNormalized = std::max<std::int64_t>(0, previous_info.positionUs - previousOffset);
+      const std::int64_t previousRawPositionUs = std::max<std::int64_t>(0, previous_info.positionUs + previousOffset);
+      m_previousTrackRawPositionUs[busName] = previousRawPositionUs;
+      offsetIt->second = 0;
+      const bool looksLikePreviousTrackContinuation =
+          merged.positionUs > 5'000'000 && previousNormalized > 5'000'000 &&
+          std::llabs(merged.positionUs - previousRawPositionUs) <= k_previous_track_continuation_slack_us;
+      if (looksLikePreviousTrackContinuation) {
+        offsetIt->second = merged.positionUs;
+      }
+
+      m_lastLogicalTrackChangeAt[busName] = now;
+      m_hasAuthoritativePositionSample[busName] = false;
+      m_recentNoSignalPauseAt.erase(busName);
+      m_lastPositionSampleAt[busName] = now;
+      m_pendingPositionCandidateUs.erase(busName);
+      m_pendingPositionCandidateMatches.erase(busName);
+      m_pendingPositionCandidateAt.erase(busName);
+    }
+
+    if (!preservedNormalizedPosition) {
+      const std::int64_t offsetUs = offsetIt->second;
+      merged.positionUs = std::max<std::int64_t>(0, merged.positionUs - offsetUs);
+    }
+    m_logicalTrackSignatures[busName] = newSignature;
+    if (hadPositionSignal) {
+      m_hasAuthoritativePositionSample[busName] = true;
+    }
+    if (previous_info.positionUs != merged.positionUs || previous_info.playbackStatus != merged.playbackStatus) {
+      m_lastPositionSampleAt[busName] = now;
+    }
+
+    existing->second = merged;
+
+    const bool trackChanged = previous_info.title != merged.title || previous_info.album != merged.album ||
+                              previous_info.artists != merged.artists || previous_info.artUrl != merged.artUrl ||
+                              previous_info.sourceUrl != merged.sourceUrl || previous_info.trackId != merged.trackId ||
+                              previous_info.lengthUs != merged.lengthUs;
+    const bool significantChanged =
+        trackChanged || previous_info.identity != merged.identity ||
+        previous_info.playbackStatus != merged.playbackStatus || previous_info.loopStatus != merged.loopStatus ||
+        previous_info.shuffle != merged.shuffle || previous_info.canGoPrevious != merged.canGoPrevious ||
+        previous_info.canGoNext != merged.canGoNext || previous_info.canPlay != merged.canPlay ||
+        previous_info.canPause != merged.canPause || previous_info.canSeek != merged.canSeek;
+
+    if (trackChanged || previous_info.playbackStatus != merged.playbackStatus) {
+      const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+      DeferredCall::callLater([this, aliveGuard, busName]() {
+        if (aliveGuard.expired()) {
+          return;
+        }
+        refreshPlayerPosition(busName, true);
+      });
+      auto& timerId = m_positionResyncTimers[busName];
+      const std::weak_ptr<void> timerAliveGuard = m_aliveGuard;
+      timerId = TimerManager::instance().start(timerId, k_position_retry_interval, [this, timerAliveGuard, busName]() {
+        if (timerAliveGuard.expired()) {
+          return;
+        }
+        refreshPlayerPosition(busName, true);
+      });
+    }
+
+    if (trackChanged) {
+      emitTrackChanged(merged);
+    }
+
+    syncSignals(previousActive);
+    if (significantChanged && m_changeCallback) {
+      m_changeCallback();
+    }
   }
 }
 
@@ -1804,27 +1932,6 @@ bool MprisService::isBlacklisted(const MprisPlayerInfo& player) const {
   }
 
   return false;
-}
-
-std::function<void(std::optional<sdbus::Error> err)>
-MprisService::makeAsyncReplyHandler(std::string op, std::string busName, std::optional<std::string> method) {
-  return [this, op = std::move(op), busName = std::move(busName),
-          method = std::move(method)](std::optional<sdbus::Error> err) {
-    if (err.has_value()) {
-      if (method.has_value()) {
-        kLog.warn("{} failed name={} method={} err={}", op, busName, *method, err->what());
-      } else {
-        kLog.warn("{} failed name={} err={}", op, busName, err->what());
-      }
-      return;
-    }
-
-    if (method.has_value()) {
-      kLog.debug("{} name={} method={}", op, busName, *method);
-    }
-
-    DeferredCall::callLater([this, busName]() { addOrRefreshPlayer(busName); });
-  };
 }
 
 bool MprisService::callPlayerMethod(const std::string& busName, const char* methodName) {
@@ -2170,23 +2277,10 @@ std::tuple<bool, std::string, std::vector<std::string>> MprisService::onGetPlaye
   return {true, *m_pinnedPlayerPreference, m_preferredPlayers};
 }
 
-MprisPlayerInfo MprisService::readPlayerInfo(sdbus::IProxy& proxy, const std::string& busName) const {
-  std::map<std::string, sdbus::Variant> rootProps;
-  std::map<std::string, sdbus::Variant> playerProps;
-
-  try {
-    for (auto& [k, v] : proxy.getAllProperties().onInterface(k_mpris_root_interface)) {
-      rootProps.emplace(std::string(k), std::move(v));
-    }
-  } catch (const sdbus::Error&) {
-  }
-  try {
-    for (auto& [k, v] : proxy.getAllProperties().onInterface(k_mpris_player_interface)) {
-      playerProps.emplace(std::string(k), std::move(v));
-    }
-  } catch (const sdbus::Error&) {
-  }
-
+MprisPlayerInfo
+MprisService::readPlayerInfoFromProperties(const std::string& busName,
+                                           const std::map<std::string, sdbus::Variant>& rootProps,
+                                           const std::map<std::string, sdbus::Variant>& playerProps) const {
   auto metadata = get_variant_map_from_props(playerProps, "Metadata");
 
   return MprisPlayerInfo{
@@ -2211,4 +2305,24 @@ MprisPlayerInfo MprisService::readPlayerInfo(sdbus::IProxy& proxy, const std::st
       .canGoPrevious = get_bool_from_props(playerProps, "CanGoPrevious"),
       .canSeek = get_bool_from_props(playerProps, "CanSeek"),
   };
+}
+
+MprisPlayerInfo MprisService::readPlayerInfo(sdbus::IProxy& proxy, const std::string& busName) const {
+  std::map<std::string, sdbus::Variant> rootProps;
+  std::map<std::string, sdbus::Variant> playerProps;
+
+  try {
+    for (auto& [k, v] : proxy.getAllProperties().onInterface(k_mpris_root_interface)) {
+      rootProps.emplace(std::string(k), std::move(v));
+    }
+  } catch (const sdbus::Error&) {
+  }
+  try {
+    for (auto& [k, v] : proxy.getAllProperties().onInterface(k_mpris_player_interface)) {
+      playerProps.emplace(std::string(k), std::move(v));
+    }
+  } catch (const sdbus::Error&) {
+  }
+
+  return readPlayerInfoFromProperties(busName, rootProps, playerProps);
 }

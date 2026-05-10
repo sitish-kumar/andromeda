@@ -2,7 +2,9 @@
 
 #include <chrono>
 #include <cstdint>
+#include <deque>
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -14,6 +16,7 @@ namespace sdbus {
   class Error;
   class IObject;
   class IProxy;
+  class Variant;
 } // namespace sdbus
 
 class SessionBus;
@@ -99,18 +102,24 @@ private:
   void syncSignals(const std::optional<MprisPlayerInfo>& previousActive);
   void registerBusSignals();
   void discoverPlayers();
+  void scheduleDiscoveryDrain();
   void scheduleStartupRediscovery();
   void scheduleRecoveryDiscovery();
   void addOrRefreshPlayer(const std::string& busName);
+  void applyPlayerSnapshot(const std::string& busName, const MprisPlayerInfo& info, bool hadPositionSignal,
+                           const std::optional<MprisPlayerInfo>& previousActive);
   void refreshPlayerPosition(const std::string& busName, bool notifyChange);
   void removePlayer(const std::string& busName);
+  [[nodiscard]] MprisPlayerInfo
+  readPlayerInfoFromProperties(const std::string& busName, const std::map<std::string, sdbus::Variant>& rootProps,
+                               const std::map<std::string, sdbus::Variant>& playerProps) const;
   [[nodiscard]] MprisPlayerInfo readPlayerInfo(sdbus::IProxy& proxy, const std::string& busName) const;
   [[nodiscard]] MprisPlayerInfo projectedPlayerInfo(const MprisPlayerInfo& player) const;
   [[nodiscard]] std::int64_t projectedPositionUs(const MprisPlayerInfo& player) const;
   [[nodiscard]] std::optional<std::string> chooseActivePlayer() const;
   [[nodiscard]] bool isBlacklisted(const MprisPlayerInfo& player) const;
-  std::function<void(std::optional<sdbus::Error> err)>
-  makeAsyncReplyHandler(std::string op, std::string busName, std::optional<std::string> method = std::nullopt);
+  auto makeAsyncReplyHandler(std::string op, std::string busName);
+  auto makeAsyncReplyHandler(std::string op, std::string busName, std::string_view method);
   [[nodiscard]] bool callPlayerMethod(const std::string& busName, const char* methodName);
   [[nodiscard]] bool canInvoke(const MprisPlayerInfo& player, const char* methodName) const;
 
@@ -144,6 +153,7 @@ private:
   [[nodiscard]] std::tuple<bool, std::string, std::vector<std::string>> onGetPlayerPreferences() const;
 
   SessionBus& m_bus;
+  std::shared_ptr<void> m_aliveGuard = std::make_shared<int>(0);
   std::unique_ptr<sdbus::IObject> m_controlObject;
   std::unique_ptr<sdbus::IProxy> m_dbusProxy;
   std::unordered_map<std::string, std::unique_ptr<sdbus::IProxy>> m_playerProxies;
@@ -164,6 +174,7 @@ private:
   std::unordered_map<std::string, std::chrono::steady_clock::time_point> m_lastPropertiesUpdate;
   std::unordered_map<std::string, std::chrono::steady_clock::time_point> m_lastPlayingUpdate;
   std::unordered_map<std::string, std::chrono::steady_clock::time_point> m_lastStrongMetadataUpdate;
+  std::deque<std::string> m_pendingDiscoveryBusNames;
   std::string m_lastActivePlayer;
   std::string m_lastEmittedActivePlayer;
   std::optional<std::string> m_pinnedPlayerPreference;
@@ -172,4 +183,5 @@ private:
   std::function<void()> m_changeCallback;
   int m_startupRediscoveryPassesRemaining = 4;
   bool m_recoveryDiscoveryScheduled = false;
+  bool m_discoveryDrainScheduled = false;
 };

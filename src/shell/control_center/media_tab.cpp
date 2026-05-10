@@ -72,11 +72,7 @@ MediaTab::MediaTab(MprisService* mpris, HttpClient* httpClient, PipeWireSpectrum
     : m_mpris(mpris), m_httpClient(httpClient), m_spectrum(spectrum), m_wayland(wayland),
       m_renderContext(renderContext) {}
 
-MediaTab::~MediaTab() {
-  // Signal to any pending DeferredCall callbacks that this object is being destroyed.
-  // This prevents use-after-free if callbacks run after destruction.
-  m_alive = false;
-}
+MediaTab::~MediaTab() { m_aliveGuard.reset(); }
 
 void MediaTab::openPlayerMenu() {
   if (m_playerMenuPopup == nullptr || m_mpris == nullptr || m_playerMenuButton == nullptr) {
@@ -275,9 +271,10 @@ std::unique_ptr<Flex> MediaTab::create() {
     m_pendingSeekBusName = seekBusName;
     m_pendingSeekUs = targetUs;
     m_pendingSeekUntil = now + std::chrono::milliseconds(3000);
+    const std::weak_ptr<void> aliveGuard = m_aliveGuard;
 
-    DeferredCall::callLater([this, seekBusName, targetUs]() {
-      if (!m_alive || m_mpris == nullptr) {
+    DeferredCall::callLater([this, aliveGuard, seekBusName, targetUs]() {
+      if (aliveGuard.expired() || m_mpris == nullptr) {
         return;
       }
       if (!seekBusName.empty()) {
@@ -311,8 +308,9 @@ std::unique_ptr<Flex> MediaTab::create() {
   repeat->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
   repeat->setRadius(Style::radiusLg * scale);
   repeat->setOnClick([this]() {
-    DeferredCall::callLater([this]() {
-      if (!m_alive || m_mpris == nullptr) {
+    const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+    DeferredCall::callLater([this, aliveGuard]() {
+      if (aliveGuard.expired() || m_mpris == nullptr) {
         return;
       }
       const auto current = m_mpris->loopStatusActive().value_or("None");
@@ -332,8 +330,9 @@ std::unique_ptr<Flex> MediaTab::create() {
   previous->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
   previous->setRadius(Style::radiusLg * scale);
   previous->setOnClick([this]() {
-    DeferredCall::callLater([this]() {
-      if (!m_alive || m_mpris == nullptr) {
+    const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+    DeferredCall::callLater([this, aliveGuard]() {
+      if (aliveGuard.expired() || m_mpris == nullptr) {
         return;
       }
       (void)m_mpris->previousActive();
@@ -351,8 +350,9 @@ std::unique_ptr<Flex> MediaTab::create() {
   playPause->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
   playPause->setRadius(Style::radiusLg * scale);
   playPause->setOnClick([this]() {
-    DeferredCall::callLater([this]() {
-      if (!m_alive || m_mpris == nullptr) {
+    const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+    DeferredCall::callLater([this, aliveGuard]() {
+      if (aliveGuard.expired() || m_mpris == nullptr) {
         return;
       }
       (void)m_mpris->playPauseActive();
@@ -370,8 +370,9 @@ std::unique_ptr<Flex> MediaTab::create() {
   next->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
   next->setRadius(Style::radiusLg * scale);
   next->setOnClick([this]() {
-    DeferredCall::callLater([this]() {
-      if (!m_alive || m_mpris == nullptr) {
+    const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+    DeferredCall::callLater([this, aliveGuard]() {
+      if (aliveGuard.expired() || m_mpris == nullptr) {
         return;
       }
       (void)m_mpris->nextActive();
@@ -389,8 +390,9 @@ std::unique_ptr<Flex> MediaTab::create() {
   shuffle->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
   shuffle->setRadius(Style::radiusLg * scale);
   shuffle->setOnClick([this]() {
-    DeferredCall::callLater([this]() {
-      if (!m_alive || m_mpris == nullptr) {
+    const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+    DeferredCall::callLater([this, aliveGuard]() {
+      if (aliveGuard.expired() || m_mpris == nullptr) {
         return;
       }
       const bool enabled = m_mpris->shuffleActive().value_or(false);
@@ -439,8 +441,9 @@ std::unique_ptr<Flex> MediaTab::create() {
   if (m_wayland != nullptr && m_renderContext != nullptr) {
     m_playerMenuPopup = std::make_unique<ContextMenuPopup>(*m_wayland, *m_renderContext);
     m_playerMenuPopup->setOnActivate([this](const ContextMenuControlEntry& entry) {
-      DeferredCall::callLater([this, entry]() {
-        if (!m_alive || m_mpris == nullptr) {
+      const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+      DeferredCall::callLater([this, aliveGuard, entry]() {
+        if (aliveGuard.expired() || m_mpris == nullptr) {
           return;
         }
         if (entry.id == 0) {
@@ -626,8 +629,9 @@ void MediaTab::setActive(bool active) {
     // Pull a fresh snapshot (including Position) when the tab opens so the
     // progress slider starts at the current playback position.
     m_positionSampleAt = {};
-    DeferredCall::callLater([this]() {
-      if (!m_alive || m_mpris == nullptr) {
+    const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+    DeferredCall::callLater([this, aliveGuard]() {
+      if (aliveGuard.expired() || m_mpris == nullptr) {
         return;
       }
       m_mpris->refreshPlayers();
@@ -706,8 +710,9 @@ void MediaTab::refresh(Renderer& renderer) {
     if (shouldRetryMpris) {
       m_lastMprisRefreshAttempt = now;
       kLog.debug("media tab retrying mpris discovery players={} active={}", players.size(), active.has_value());
-      DeferredCall::callLater([this]() {
-        if (!m_alive || m_mpris == nullptr) {
+      const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+      DeferredCall::callLater([this, aliveGuard]() {
+        if (aliveGuard.expired() || m_mpris == nullptr) {
           return;
         }
         m_mpris->refreshPlayers();
