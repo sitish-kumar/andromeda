@@ -1279,7 +1279,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
   if (auto* themeTbl = tbl["theme"].as_table()) {
     auto& theme = config.theme;
     if (auto v = (*themeTbl)["source"].value<std::string>()) {
-      if (auto parsed = enumFromKey(kThemeSources, *v)) {
+      if (auto parsed = enumFromKey(kPaletteSources, *v)) {
         theme.source = *parsed;
       }
     }

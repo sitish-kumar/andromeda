@@ -14,7 +14,7 @@ class Renderer;
 class Select;
 class Toggle;
 class WaylandConnection;
-enum class ThemeSource : std::uint8_t;
+enum class PaletteSource : std::uint8_t;
 
 class SetupWizardPanel : public Panel {
 public:
@@ -48,7 +48,7 @@ private:
   Label* m_themeOptionLabel = nullptr;
   Select* m_themeOptionSelect = nullptr;
   Label* m_wallpaperLabel = nullptr;
-  ThemeSource m_themeSource{};
+  PaletteSource m_paletteSource{};
   bool m_configuringThemeOptionSelect = false;
   std::string m_builtinPalette;
   std::string m_wallpaperDir;

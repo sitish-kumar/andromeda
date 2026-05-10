@@ -38,7 +38,7 @@ namespace {
     std::string_view value;
   };
 
-  constexpr SelectOption kSetupThemeSources[] = {
+  constexpr SelectOption kSetupPaletteSources[] = {
       {"settings.options.theme.source.built-in", "builtin"},
       {"settings.options.theme.source.wallpaper", "wallpaper"},
   };
@@ -55,7 +55,7 @@ namespace {
       {"theme.scheme.muted", "muted"},
   };
 
-  constexpr std::string_view kDefaultThemeSource = "builtin";
+  constexpr std::string_view kDefaultPaletteSource = "builtin";
   constexpr std::string_view kDefaultBuiltinPalette = "Noctalia";
 
   std::unique_ptr<Label> makeLabel(std::string_view text, float fontSize, const ColorSpec& color, bool bold = false) {
@@ -302,28 +302,28 @@ void SetupWizardPanel::create() {
     // Theme source row
     {
       auto row = makeRow(scale);
-      auto label = makeLabel(i18n::tr("settings.schema.appearance.theme-source.label"), Style::fontSizeBody * scale,
+      auto label = makeLabel(i18n::tr("settings.schema.appearance.palette-source.label"), Style::fontSizeBody * scale,
                              colorSpecFromRole(ColorRole::OnSurface));
       label->setFlexGrow(1.0f);
       row->addChild(std::move(label));
 
       auto select = std::make_unique<Select>();
-      select->setOptions(labelsFromOptions(kSetupThemeSources));
-      m_themeSource = ThemeSource::Builtin;
+      select->setOptions(labelsFromOptions(kSetupPaletteSources));
+      m_paletteSource = PaletteSource::Builtin;
       m_builtinPalette = std::string(kDefaultBuiltinPalette);
-      m_config->setOverride({"theme", "source"}, std::string(kDefaultThemeSource));
+      m_config->setOverride({"theme", "source"}, std::string(kDefaultPaletteSource));
       m_config->setOverride({"theme", "builtin"}, m_builtinPalette);
-      select->setSelectedIndex(selectedOptionIndex(kSetupThemeSources, kDefaultThemeSource));
+      select->setSelectedIndex(selectedOptionIndex(kSetupPaletteSources, kDefaultPaletteSource));
       select->setFontSize(Style::fontSizeBody * scale);
       select->setControlHeight(Style::controlHeight * scale);
       select->setHorizontalPadding(Style::spaceMd * scale);
       select->setMinWidth(220.0f * scale);
       select->setOnSelectionChanged([this](std::size_t index, std::string_view /*label*/) {
-        if (index >= std::size(kSetupThemeSources)) {
+        if (index >= std::size(kSetupPaletteSources)) {
           return;
         }
-        const std::string source(kSetupThemeSources[index].value);
-        m_themeSource = source == "wallpaper" ? ThemeSource::Wallpaper : ThemeSource::Builtin;
+        const std::string source(kSetupPaletteSources[index].value);
+        m_paletteSource = source == "wallpaper" ? PaletteSource::Wallpaper : PaletteSource::Builtin;
         m_config->setOverride({"theme", "source"}, source);
         configureThemeOptionSelect();
       });
@@ -407,7 +407,7 @@ void SetupWizardPanel::configureThemeOptionSelect() {
   m_themeOptionSelect->setOnSelectionChanged(nullptr);
 
   const auto& cfg = m_config->config();
-  if (m_themeSource == ThemeSource::Wallpaper) {
+  if (m_paletteSource == PaletteSource::Wallpaper) {
     m_themeOptionLabel->setText(i18n::tr("setup-wizard.wallpaper-scheme"));
     m_themeOptionSelect->setOptions(labelsFromOptions(kWallpaperSchemes));
     m_themeOptionSelect->setSelectedIndex(selectedOptionIndex(kWallpaperSchemes, cfg.theme.wallpaperScheme));
@@ -440,8 +440,8 @@ void SetupWizardPanel::commit() {
   if (m_telemetryToggle != nullptr) {
     m_config->setOverride({"shell", "telemetry_enabled"}, m_telemetryToggle->checked());
   }
-  if (m_themeSource == ThemeSource::Builtin) {
-    m_config->setOverride({"theme", "source"}, std::string(kDefaultThemeSource));
+  if (m_paletteSource == PaletteSource::Builtin) {
+    m_config->setOverride({"theme", "source"}, std::string(kDefaultPaletteSource));
     m_config->setOverride({"theme", "builtin"},
                           m_builtinPalette.empty() ? std::string(kDefaultBuiltinPalette) : m_builtinPalette);
   }

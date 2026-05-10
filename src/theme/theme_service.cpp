@@ -267,7 +267,7 @@ namespace noctalia::theme {
   void ThemeService::onConfigReload() { resolveAndSet(/*animate=*/true); }
 
   void ThemeService::onWallpaperChange() {
-    if (m_config.config().theme.source == ThemeSource::Wallpaper) {
+    if (m_config.config().theme.source == PaletteSource::Wallpaper) {
       resolveAndSet(/*animate=*/true);
     }
   }
@@ -374,7 +374,7 @@ namespace noctalia::theme {
   void ThemeService::resolveAndSet(bool animate) {
     const auto& cfg = m_config.config().theme;
     std::optional<ResolvedTheme> resolved;
-    if (cfg.source == ThemeSource::Custom && !cfg.customPalette.empty()) {
+    if (cfg.source == PaletteSource::Custom && !cfg.customPalette.empty()) {
       const auto path = customPalettePath(cfg.customPalette);
       if (std::filesystem::exists(path)) {
         if (auto parsed = parseCommunityPaletteJson(path)) {
@@ -384,9 +384,9 @@ namespace noctalia::theme {
       if (!resolved.has_value()) {
         kLog.warn("custom palette '{}' not found or invalid; falling back to builtin", cfg.customPalette);
       }
-    } else if (cfg.source == ThemeSource::Wallpaper) {
+    } else if (cfg.source == PaletteSource::Wallpaper) {
       resolved = resolveWallpaper(cfg, m_config.getDefaultWallpaperPath());
-    } else if (cfg.source == ThemeSource::Community && !cfg.communityPalette.empty()) {
+    } else if (cfg.source == PaletteSource::Community && !cfg.communityPalette.empty()) {
       const auto cachePath = communityPaletteCachePath(cfg.communityPalette);
       if (std::filesystem::exists(cachePath)) {
         if (auto parsed = parseCommunityPaletteJson(cachePath)) {

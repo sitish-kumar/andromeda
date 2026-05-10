@@ -1156,13 +1156,13 @@
           "label": "Theme Mode",
           "description": "Choose dark, light, or auto based on time of day"
         },
-        "theme-source": {
-          "label": "Theme Source",
+        "palette-source": {
+          "label": "Palette Source",
           "description": "Where to derive the color palette from"
         },
-        "theme-palette": {
-          "label": "Theme Palette",
-          "description": "Choose the bundled palette used for built-in themes"
+        "builtin-palette": {
+          "label": "Builtin Palette",
+          "description": "Choose a palette from the bundled catalog"
         },
         "wallpaper-generation-scheme": {
           "label": "Wallpaper Generation Scheme",

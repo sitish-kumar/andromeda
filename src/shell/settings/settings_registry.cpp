@@ -248,20 +248,20 @@ namespace settings {
     entries.push_back(makeEntry("appearance", "theme", tr("settings.schema.appearance.theme-mode.label"),
                                 tr("settings.schema.appearance.theme-mode.description"), {"theme", "mode"},
                                 asSegmented(enumSelect(kThemeModes, cfg.theme.mode)), "dark light auto colors"));
-    entries.push_back(makeEntry("appearance", "theme", tr("settings.schema.appearance.theme-source.label"),
-                                tr("settings.schema.appearance.theme-source.description"), {"theme", "source"},
-                                asSegmented(enumSelect(kThemeSources, cfg.theme.source)), "palette colors"));
-    if (cfg.theme.source == ThemeSource::Builtin) {
-      entries.push_back(makeEntry("appearance", "theme", tr("settings.schema.appearance.theme-palette.label"),
-                                  tr("settings.schema.appearance.theme-palette.description"), {"theme", "builtin"},
+    entries.push_back(makeEntry("appearance", "theme", tr("settings.schema.appearance.palette-source.label"),
+                                tr("settings.schema.appearance.palette-source.description"), {"theme", "source"},
+                                asSegmented(enumSelect(kPaletteSources, cfg.theme.source)), "palette colors"));
+    if (cfg.theme.source == PaletteSource::Builtin) {
+      entries.push_back(makeEntry("appearance", "theme", tr("settings.schema.appearance.builtin-palette.label"),
+                                  tr("settings.schema.appearance.builtin-palette.description"), {"theme", "builtin"},
                                   builtinPaletteSelect(cfg.theme.builtinPalette), "builtin palette colors"));
-    } else if (cfg.theme.source == ThemeSource::Wallpaper) {
+    } else if (cfg.theme.source == PaletteSource::Wallpaper) {
       entries.push_back(makeEntry("appearance", "theme",
                                   tr("settings.schema.appearance.wallpaper-generation-scheme.label"),
                                   tr("settings.schema.appearance.wallpaper-generation-scheme.description"),
                                   {"theme", "wallpaper_scheme"}, wallpaperSchemeSelect(cfg.theme.wallpaperScheme),
                                   "wallpaper palette generator scheme material you m3 colors"));
-    } else if (cfg.theme.source == ThemeSource::Community) {
+    } else if (cfg.theme.source == PaletteSource::Community) {
       SettingControl communityPaletteControl = TextSetting{cfg.theme.communityPalette, "Oxocarbon"};
       if (!env.communityPalettes.empty()) {
         communityPaletteControl = SearchPickerSetting{
@@ -276,7 +276,7 @@ namespace settings {
                                   tr("settings.schema.appearance.community-palette.description"),
                                   {"theme", "community_palette"}, std::move(communityPaletteControl),
                                   "community palette colors"));
-    } else if (cfg.theme.source == ThemeSource::Custom) {
+    } else if (cfg.theme.source == PaletteSource::Custom) {
       SettingControl customPaletteControl = TextSetting{cfg.theme.customPalette, ""};
       if (!env.customPalettes.empty()) {
         customPaletteControl = SearchPickerSetting{
