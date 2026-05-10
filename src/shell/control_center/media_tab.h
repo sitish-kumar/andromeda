@@ -43,6 +43,10 @@ private:
 
   void openPlayerMenu();
 
+  // Guard flag to detect use-after-free in deferred callbacks.
+  // Set to false in destructor so pending DeferredCall callbacks can safely check if this object is alive.
+  bool m_alive = true;
+
   MprisService* m_mpris = nullptr;
   HttpClient* m_httpClient = nullptr;
   PipeWireSpectrum* m_spectrum = nullptr;

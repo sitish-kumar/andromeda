@@ -745,11 +745,7 @@ bool MprisService::seek(const std::string& busName, int64_t offsetUs) {
     proxyIt->second->callMethodAsync("Seek")
         .onInterface(k_mpris_player_interface)
         .withArguments(offsetUs)
-        .uponReplyInvoke([busName](std::optional<sdbus::Error> err) {
-          if (err.has_value()) {
-            kLog.warn("seek failed name={} err={}", busName, err->what());
-          }
-        });
+        .uponReplyInvoke(makeAsyncReplyHandler("seek", busName));
     m_lastSeekCommandAt[busName] = std::chrono::steady_clock::now();
     return true;
   } catch (const sdbus::Error& e) {
@@ -777,9 +773,12 @@ bool MprisService::setPosition(const std::string& busName, int64_t positionUs) {
     return false;
   }
 
-  auto fallback_seek = [&]() {
-    const int64_t currentPositionUs = it->second.positionUs;
+  // Capture needed values by value for fallback_seek, not iterator references.
+  // This makes it safe even if control flow changes or seek() becomes async.
+  const int64_t currentPositionUs = it->second.positionUs;
+  const bool preferRelativeSeek = it->second.trackId.empty() || busName.find("spotify") != std::string::npos;
 
+  auto fallback_seek = [this, busName, currentPositionUs, positionUs]() {
     const int64_t offsetUs = positionUs - currentPositionUs;
     if (offsetUs == 0) {
       return true;
@@ -787,7 +786,6 @@ bool MprisService::setPosition(const std::string& busName, int64_t positionUs) {
     return seek(busName, offsetUs);
   };
 
-  const bool preferRelativeSeek = it->second.trackId.empty() || busName.find("spotify") != std::string::npos;
   if (preferRelativeSeek) {
     // Some players don't expose track_id consistently; emulate absolute position with Seek.
     kLog.debug("mpris set-position using relative Seek fallback for {}", busName);
@@ -798,11 +796,7 @@ bool MprisService::setPosition(const std::string& busName, int64_t positionUs) {
     proxyIt->second->callMethodAsync("SetPosition")
         .onInterface(k_mpris_player_interface)
         .withArguments(sdbus::ObjectPath{it->second.trackId}, positionUs)
-        .uponReplyInvoke([busName](std::optional<sdbus::Error> err) {
-          if (err.has_value()) {
-            kLog.warn("set-position failed name={} err={}", busName, err->what());
-          }
-        });
+        .uponReplyInvoke(makeAsyncReplyHandler("set-position", busName));
     m_lastSeekCommandAt[busName] = std::chrono::steady_clock::now();
     return true;
   } catch (const sdbus::Error& e) {
@@ -820,6 +814,10 @@ bool MprisService::setPositionActive(int64_t positionUs) {
 }
 
 bool MprisService::setVolume(const std::string& busName, double volume) {
+  if (!std::isfinite(volume) || volume < 0.0) {
+    return false;
+  }
+
   const auto it = m_players.find(busName);
   if (it == m_players.end()) {
     return false;
@@ -834,11 +832,7 @@ bool MprisService::setVolume(const std::string& busName, double volume) {
     proxyIt->second->callMethodAsync("Set")
         .onInterface(k_properties_interface)
         .withArguments(std::string{k_mpris_player_interface}, std::string{"Volume"}, sdbus::Variant{volume})
-        .uponReplyInvoke([busName](std::optional<sdbus::Error> err) {
-          if (err.has_value()) {
-            kLog.warn("set-volume failed name={} err={}", busName, err->what());
-          }
-        });
+        .uponReplyInvoke(makeAsyncReplyHandler("set-volume", busName));
     return true;
   } catch (const sdbus::Error& e) {
     kLog.warn("set-volume dispatch failed name={} err={}", busName, e.what());
@@ -869,11 +863,7 @@ bool MprisService::setShuffle(const std::string& busName, bool shuffle) {
     proxyIt->second->callMethodAsync("Set")
         .onInterface(k_properties_interface)
         .withArguments(std::string{k_mpris_player_interface}, std::string{"Shuffle"}, sdbus::Variant{shuffle})
-        .uponReplyInvoke([busName](std::optional<sdbus::Error> err) {
-          if (err.has_value()) {
-            kLog.warn("set-shuffle failed name={} err={}", busName, err->what());
-          }
-        });
+        .uponReplyInvoke(makeAsyncReplyHandler("set-shuffle", busName));
     return true;
   } catch (const sdbus::Error& e) {
     kLog.warn("set-shuffle dispatch failed name={} err={}", busName, e.what());
@@ -890,6 +880,10 @@ bool MprisService::setShuffleActive(bool shuffle) {
 }
 
 bool MprisService::setLoopStatus(const std::string& busName, std::string loopStatus) {
+  if (!is_valid_loop_status(loopStatus)) {
+    return false;
+  }
+
   const auto it = m_players.find(busName);
   if (it == m_players.end()) {
     return false;
@@ -905,11 +899,7 @@ bool MprisService::setLoopStatus(const std::string& busName, std::string loopSta
         .onInterface(k_properties_interface)
         .withArguments(std::string{k_mpris_player_interface}, std::string{"LoopStatus"},
                        sdbus::Variant{std::move(loopStatus)})
-        .uponReplyInvoke([busName](std::optional<sdbus::Error> err) {
-          if (err.has_value()) {
-            kLog.warn("set-loop-status failed name={} err={}", busName, err->what());
-          }
-        });
+        .uponReplyInvoke(makeAsyncReplyHandler("set-loop-status", busName));
     return true;
   } catch (const sdbus::Error& e) {
     kLog.warn("set-loop-status dispatch failed name={} err={}", busName, e.what());
@@ -1816,25 +1806,42 @@ bool MprisService::isBlacklisted(const MprisPlayerInfo& player) const {
   return false;
 }
 
+std::function<void(std::optional<sdbus::Error> err)>
+MprisService::makeAsyncReplyHandler(std::string op, std::string busName, std::optional<std::string> method) {
+  return [this, op = std::move(op), busName = std::move(busName),
+          method = std::move(method)](std::optional<sdbus::Error> err) {
+    if (err.has_value()) {
+      if (method.has_value()) {
+        kLog.warn("{} failed name={} method={} err={}", op, busName, *method, err->what());
+      } else {
+        kLog.warn("{} failed name={} err={}", op, busName, err->what());
+      }
+      return;
+    }
+
+    if (method.has_value()) {
+      kLog.debug("{} name={} method={}", op, busName, *method);
+    }
+
+    DeferredCall::callLater([this, busName]() { addOrRefreshPlayer(busName); });
+  };
+}
+
 bool MprisService::callPlayerMethod(const std::string& busName, const char* methodName) {
   const auto it = m_playerProxies.find(busName);
   if (it == m_playerProxies.end()) {
     return false;
   }
 
+  const std::string method{methodName}; // Capture as owned string, not dangling pointer
+
   try {
-    it->second->callMethodAsync(methodName)
+    it->second->callMethodAsync(method.c_str())
         .onInterface(k_mpris_player_interface)
-        .uponReplyInvoke([busName, methodName](std::optional<sdbus::Error> err) {
-          if (err.has_value()) {
-            kLog.warn("control failed name={} method={} err={}", busName, methodName, err->what());
-            return;
-          }
-          kLog.debug("control name={} method={}", busName, methodName);
-        });
+        .uponReplyInvoke(makeAsyncReplyHandler("control", busName, method));
     return true;
   } catch (const sdbus::Error& e) {
-    kLog.warn("control dispatch failed name={} method={} err={}", busName, methodName, e.what());
+    kLog.warn("control dispatch failed name={} method={} err={}", busName, method, e.what());
     return false;
   }
 }

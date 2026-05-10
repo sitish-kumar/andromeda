@@ -108,6 +108,8 @@ private:
   [[nodiscard]] std::int64_t projectedPositionUs(const MprisPlayerInfo& player) const;
   [[nodiscard]] std::optional<std::string> chooseActivePlayer() const;
   [[nodiscard]] bool isBlacklisted(const MprisPlayerInfo& player) const;
+  std::function<void(std::optional<sdbus::Error> err)>
+  makeAsyncReplyHandler(std::string op, std::string busName, std::optional<std::string> method = std::nullopt);
   [[nodiscard]] bool callPlayerMethod(const std::string& busName, const char* methodName);
   [[nodiscard]] bool canInvoke(const MprisPlayerInfo& player, const char* methodName) const;
 
