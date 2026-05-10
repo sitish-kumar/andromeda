@@ -51,9 +51,18 @@ namespace settings {
     std::function<void(std::vector<std::string>)> clearOverride;
     std::function<void(std::string, std::string, std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>)>
         renameWidgetInstance;
+
+    std::function<void(std::size_t)> openSessionActionEntryEditor;
+
+    // When set (session action entry popup), called after commits instead of requestRebuild.
+    std::function<void()> afterSessionActionsCommit;
+    std::function<void()> closeHostedEditor;
   };
 
   std::size_t addSettingsContentSections(Flex& content, const std::vector<SettingEntry>& registry,
                                          SettingsContentContext ctx);
+
+  void buildSessionActionEntryDetailContent(Flex& parent, SettingsContentContext& ctx, SessionPanelActionConfig& row,
+                                            const std::function<void()>& persist);
 
 } // namespace settings

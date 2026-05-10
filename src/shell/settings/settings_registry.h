@@ -82,6 +82,10 @@ namespace settings {
     std::size_t maxItems = 0;
   };
 
+  struct SessionPanelActionsSetting {
+    std::vector<SessionPanelActionConfig> items;
+  };
+
   struct ColorSetting {
     std::string hex; // current resolved value as #RRGGBB; empty when unset
     bool unset = true;
@@ -105,8 +109,8 @@ namespace settings {
   };
 
   using SettingControl = std::variant<ToggleSetting, SelectSetting, SliderSetting, TextSetting, OptionalNumberSetting,
-                                      ListSetting, ShortcutListSetting, ColorSetting, MultiSelectSetting, ButtonSetting,
-                                      ColorRolePickerSetting, SearchPickerSetting>;
+                                      ListSetting, ShortcutListSetting, SessionPanelActionsSetting, ColorSetting,
+                                      MultiSelectSetting, ButtonSetting, ColorRolePickerSetting, SearchPickerSetting>;
 
   struct SettingEntry {
     std::string section;

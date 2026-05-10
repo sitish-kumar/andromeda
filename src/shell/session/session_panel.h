@@ -1,15 +1,18 @@
 #pragma once
 
+#include "config/config_types.h"
 #include "shell/panel/panel.h"
 #include "ui/style.h"
 
-#include <array>
 #include <cmath>
 #include <functional>
 #include <optional>
+#include <string>
+#include <vector>
 
 class Button;
 class Flex;
+class GridView;
 class InputArea;
 class Renderer;
 class ConfigService;
@@ -22,14 +25,6 @@ struct SessionActionHooks {
 
 class SessionPanel : public Panel {
 public:
-  enum class ActionId : std::size_t {
-    Logout = 0,
-    Reboot = 1,
-    Shutdown = 2,
-    Lock = 3,
-    Count = 4,
-  };
-
   explicit SessionPanel(ConfigService* config, SessionActionHooks actionHooks = {})
       : m_config(config), m_actionHooks(std::move(actionHooks)) {}
 
@@ -37,10 +32,8 @@ public:
   void onOpen(std::string_view context) override;
   void onClose() override;
 
-  [[nodiscard]] float preferredWidth() const override { return scaled(680.0f); }
-  [[nodiscard]] float preferredHeight() const override {
-    return std::ceil(scaled(kActionButtonMinHeight + Style::panelPadding * 2.0f));
-  }
+  [[nodiscard]] float preferredWidth() const override;
+  [[nodiscard]] float preferredHeight() const override;
   [[nodiscard]] bool centeredHorizontally() const override { return true; }
   [[nodiscard]] bool centeredVertically() const override { return true; }
   [[nodiscard]] bool hasDecoration() const override { return true; }
@@ -50,6 +43,9 @@ public:
 
 private:
   static constexpr float kActionButtonMinHeight = 112.0f;
+  static constexpr float kButtonMinWidth = 152.0f;
+  static constexpr float kPanelMinWidth = 680.0f;
+  static constexpr std::size_t kMaxColumns = 5;
 
   void doLayout(Renderer& renderer, float width, float height) override;
   void doUpdate(Renderer& renderer) override;
@@ -57,13 +53,18 @@ private:
   bool handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers);
   void updateSelectionVisuals();
   void activateMouse();
-  void invokeAction(ActionId id);
-  [[nodiscard]] Button* createActionButton(ActionId id, float scale);
+  void invokeEntry(const SessionPanelActionConfig& cfg);
+  [[nodiscard]] std::vector<SessionPanelActionConfig> effectiveActions() const;
+  [[nodiscard]] std::function<bool()> hookFor(const std::string& action) const;
+  [[nodiscard]] Button* createActionButton(const SessionPanelActionConfig& cfg, float scale);
+  [[nodiscard]] std::size_t entryCountForLayout() const;
+  [[nodiscard]] std::size_t visibleColumnCount() const;
+  [[nodiscard]] std::size_t visibleRowCount() const;
 
-  Flex* m_rootLayout = nullptr;
+  GridView* m_rootLayout = nullptr;
   InputArea* m_focusArea = nullptr;
-  std::array<ActionId, static_cast<std::size_t>(ActionId::Count)> m_actionOrder{};
-  std::array<Button*, static_cast<std::size_t>(ActionId::Count)> m_actionButtons{};
+  std::vector<SessionPanelActionConfig> m_visibleEntries;
+  std::vector<Button*> m_visibleButtons;
   std::optional<std::size_t> m_selectedIndex;
   bool m_mouseActive = false;
   ConfigService* m_config = nullptr;

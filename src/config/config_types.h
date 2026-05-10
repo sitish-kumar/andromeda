@@ -103,11 +103,31 @@ struct ShortcutConfig {
   bool operator==(const ShortcutConfig&) const = default;
 };
 
+struct SessionPanelActionConfig {
+  // "lock" | "logout" | "reboot" | "shutdown" | "command"
+  std::string action;
+  bool enabled = true;
+  // When set, runs via `process::runAsync` (shell string) instead of the built-in handler.
+  std::optional<std::string> command;
+  std::optional<std::string> label;
+  std::optional<std::string> glyph;
+  bool destructive = false;
+
+  bool operator==(const SessionPanelActionConfig&) const = default;
+};
+
+struct ShellSessionConfig {
+  std::vector<SessionPanelActionConfig> actions;
+
+  bool operator==(const ShellSessionConfig&) const = default;
+};
+
 [[nodiscard]] std::vector<ShortcutConfig> defaultControlCenterShortcuts();
+[[nodiscard]] std::vector<SessionPanelActionConfig> defaultSessionPanelActions();
 
 using WidgetSettingValue = std::variant<bool, std::int64_t, double, std::string, std::vector<std::string>>;
-using ConfigOverrideValue =
-    std::variant<bool, std::int64_t, double, std::string, std::vector<std::string>, std::vector<ShortcutConfig>>;
+using ConfigOverrideValue = std::variant<bool, std::int64_t, double, std::string, std::vector<std::string>,
+                                         std::vector<ShortcutConfig>, std::vector<SessionPanelActionConfig>>;
 
 // Optional rounded “capsule” behind a bar widget (see `[widget.*] capsule_*` in CONFIG.md).
 // Corner shape (pill), border width, and edge softness are fixed in the shell code; padding is configurable.
@@ -387,6 +407,7 @@ struct ShellConfig {
   PanelConfig panel;
   ScreenCornersConfig screenCorners;
   MprisConfig mpris;
+  ShellSessionConfig session;
 };
 
 struct WeatherConfig {

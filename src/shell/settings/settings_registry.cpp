@@ -546,6 +546,11 @@ namespace settings {
                                 tr("settings.schema.panels.attach-wallpaper.description"),
                                 {"shell", "panel", "attach_wallpaper"}, ToggleSetting{cfg.shell.panel.attachWallpaper},
                                 "attach bar panel"));
+    entries.push_back(makeEntry("panels", "session-panel", tr("settings.schema.panels.session-actions.label"),
+                                tr("settings.schema.panels.session-actions.description"),
+                                {"shell", "session", "actions"},
+                                SessionPanelActionsSetting{.items = cfg.shell.session.actions},
+                                "session panel power menu logout reboot shutdown lock command actions order"));
 
     // Desktop
     entries.push_back(makeEntry("desktop", "widgets", tr("settings.schema.desktop.widgets.label"),

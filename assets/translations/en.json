@@ -6,7 +6,8 @@
     },
     "actions": {
       "cancel": "Cancel",
-      "apply": "Apply"
+      "apply": "Apply",
+      "remove": "Remove"
     }
   },
   "clipboard": {
@@ -404,7 +405,8 @@
       "lock": "Lock",
       "logout": "Log Out",
       "reboot": "Reboot",
-      "shutdown": "Shut Down"
+      "shutdown": "Shut Down",
+      "custom": "Custom"
     },
     "errors": {
       "logout-title": "Logout unavailable",
@@ -587,6 +589,32 @@
         "add-entry-placeholder": "Add entry…"
       }
     },
+    "session-actions": {
+      "entry-heading": "Menu item {n}",
+      "icon-label": "Icon",
+      "kind-section-label": "Behavior",
+      "glyph-picker-title": "Session menu icon",
+      "clear-glyph": "Clear",
+      "enabled": "Shown",
+      "show-in-menu": "Show",
+      "command-label": "Shell command",
+      "command-placeholder": "Optional bash command, leave empty for built-in behavior",
+      "label-field": "Label",
+      "label-placeholder": "Optional button text",
+      "glyph-field": "Glyph",
+      "glyph-placeholder": "Optional icon id",
+      "destructive-label": "Warn style",
+      "move-up": "Up",
+      "move-down": "Down",
+      "add": "Add action",
+      "kind": {
+        "lock": "Lock",
+        "logout": "Log out",
+        "reboot": "Reboot",
+        "shutdown": "Shut down",
+        "command": "Custom command"
+      }
+    },
     "dialogs": {
       "color-picker": {
         "title": "Pick a Color"
@@ -764,7 +792,8 @@
         "weather": "Weather",
         "wallpaper": "Wallpaper",
         "widget-list": "Widget List",
-        "widgets": "Widgets"
+        "widgets": "Widgets",
+        "session-panel": "Session Menu"
       }
     },
     "options": {
@@ -1388,6 +1417,12 @@
         "attach-wallpaper": {
           "label": "Attach to Bar",
           "description": "Attach the Wallpaper panel to the bar when a suitable bar is available"
+        },
+        "session-actions": {
+          "label": "Entries",
+          "description": "Power menu entries, order, custom commands, and icons.",
+          "configure": "Configure…",
+          "entry-settings": "Details…"
         }
       },
       "backdrop": {

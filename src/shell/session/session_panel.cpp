@@ -12,7 +12,9 @@
 #include "shell/panel/panel_manager.h"
 #include "ui/controls/button.h"
 #include "ui/controls/flex.h"
+#include "ui/controls/grid_view.h"
 #include "ui/style.h"
+#include "util/string_utils.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -26,20 +28,6 @@
 namespace {
 
   constexpr Logger kLog("session");
-
-  struct ActionSpec {
-    SessionPanel::ActionId id;
-    const char* labelKey;
-    const char* glyph;
-    ButtonVariant variant;
-  };
-
-  constexpr std::array<ActionSpec, 4> kActionSpecs{{
-      {SessionPanel::ActionId::Lock, "session.actions.lock", "lock", ButtonVariant::Default},
-      {SessionPanel::ActionId::Logout, "session.actions.logout", "logout", ButtonVariant::Default},
-      {SessionPanel::ActionId::Reboot, "session.actions.reboot", "reboot", ButtonVariant::Default},
-      {SessionPanel::ActionId::Shutdown, "session.actions.shutdown", "shutdown", ButtonVariant::Destructive},
-  }};
 
   [[nodiscard]] const char* valueOrUnset(const char* value) {
     return value != nullptr && value[0] != '\0' ? value : "<unset>";
@@ -130,16 +118,157 @@ namespace {
     }).detach();
   }
 
+  void runShellCommand(std::function<bool()> hook, std::string command, std::string_view actionName) {
+    std::thread([hook = std::move(hook), command = std::move(command), actionName = std::string(actionName)]() mutable {
+      if (hook && !hook()) {
+        kLog.warn("{} cancelled because a configured hook failed", actionName);
+        return;
+      }
+      if (!process::runAsync(command)) {
+        kLog.warn("{}: command failed", actionName);
+      }
+    }).detach();
+  }
+
+  [[nodiscard]] bool isKnownAction(std::string_view action) {
+    return action == "lock" || action == "logout" || action == "reboot" || action == "shutdown" || action == "command";
+  }
+
+  [[nodiscard]] const char* labelKeyForAction(std::string_view action) {
+    if (action == "lock") {
+      return "session.actions.lock";
+    }
+    if (action == "logout") {
+      return "session.actions.logout";
+    }
+    if (action == "reboot") {
+      return "session.actions.reboot";
+    }
+    if (action == "shutdown") {
+      return "session.actions.shutdown";
+    }
+    return "session.actions.custom";
+  }
+
+  [[nodiscard]] const char* defaultGlyphForAction(std::string_view action) {
+    if (action == "lock") {
+      return "lock";
+    }
+    if (action == "logout") {
+      return "logout";
+    }
+    if (action == "reboot") {
+      return "reboot";
+    }
+    if (action == "shutdown") {
+      return "shutdown";
+    }
+    return "terminal";
+  }
+
+  [[nodiscard]] ButtonVariant variantFor(const SessionPanelActionConfig& cfg) {
+    if (cfg.destructive) {
+      return ButtonVariant::Destructive;
+    }
+    if (cfg.action == "shutdown" && !cfg.command.has_value()) {
+      return ButtonVariant::Destructive;
+    }
+    return ButtonVariant::Default;
+  }
+
 } // namespace
+
+std::vector<SessionPanelActionConfig> SessionPanel::effectiveActions() const {
+  std::vector<SessionPanelActionConfig> src;
+  if (m_config != nullptr) {
+    src = m_config->config().shell.session.actions;
+  }
+  if (src.empty()) {
+    src = defaultSessionPanelActions();
+  }
+
+  std::vector<SessionPanelActionConfig> out;
+  out.reserve(src.size());
+  for (const auto& row : src) {
+    if (!row.enabled) {
+      continue;
+    }
+    if (!isKnownAction(row.action)) {
+      kLog.warn("session panel: skipping unknown action \"{}\"", row.action);
+      continue;
+    }
+    if (row.action == "command" && (!row.command.has_value() || StringUtils::trim(*row.command).empty())) {
+      kLog.warn("session panel: skipping \"command\" entry with no command");
+      continue;
+    }
+    out.push_back(row);
+  }
+  return out;
+}
+
+std::function<bool()> SessionPanel::hookFor(const std::string& action) const {
+  if (action == "logout") {
+    return m_actionHooks.onLogout;
+  }
+  if (action == "reboot") {
+    return m_actionHooks.onReboot;
+  }
+  if (action == "shutdown") {
+    return m_actionHooks.onShutdown;
+  }
+  return {};
+}
+
+float SessionPanel::preferredWidth() const {
+  const std::size_t n = visibleColumnCount();
+  const float gap = Style::spaceSm;
+  const float w = kButtonMinWidth * static_cast<float>(n) + gap * static_cast<float>(n > 1 ? n - 1 : 0) +
+                  Style::panelPadding * 2.0f;
+  return scaled(std::max(kPanelMinWidth, w));
+}
+
+float SessionPanel::preferredHeight() const {
+  const std::size_t rows = visibleRowCount();
+  const float gap = Style::spaceSm;
+  const float h = kActionButtonMinHeight * static_cast<float>(rows) +
+                  gap * static_cast<float>(rows > 1 ? rows - 1 : 0) + Style::panelPadding * 2.0f;
+  return std::ceil(scaled(h));
+}
+
+std::size_t SessionPanel::entryCountForLayout() const {
+  if (!m_visibleEntries.empty()) {
+    return m_visibleEntries.size();
+  }
+  return effectiveActions().size();
+}
+
+std::size_t SessionPanel::visibleColumnCount() const {
+  const std::size_t n = std::max<std::size_t>(1, entryCountForLayout());
+  if (n <= kMaxColumns) {
+    return n;
+  }
+  return std::min<std::size_t>(kMaxColumns, (n + 1) / 2);
+}
+
+std::size_t SessionPanel::visibleRowCount() const {
+  const std::size_t n = std::max<std::size_t>(1, entryCountForLayout());
+  const std::size_t columns = visibleColumnCount();
+  return (n + columns - 1) / columns;
+}
 
 void SessionPanel::create() {
   const float scale = contentScale();
+  m_visibleEntries = effectiveActions();
+  const std::size_t columns = visibleColumnCount();
 
-  auto rootLayout = std::make_unique<Flex>();
-  rootLayout->setDirection(FlexDirection::Horizontal);
-  rootLayout->setAlign(FlexAlign::Stretch);
-  rootLayout->setGap(Style::spaceSm * scale);
-  rootLayout->setJustify(FlexJustify::Start);
+  auto rootLayout = std::make_unique<GridView>();
+  rootLayout->setColumns(columns);
+  rootLayout->setColumnGap(Style::spaceSm * scale);
+  rootLayout->setRowGap(Style::spaceSm * scale);
+  rootLayout->setStretchItems(true);
+  rootLayout->setUniformCellSize(true);
+  rootLayout->setMinCellWidth(kButtonMinWidth * scale);
+  rootLayout->setMinCellHeight(kActionButtonMinHeight * scale);
   m_rootLayout = rootLayout.get();
 
   auto focusArea = std::make_unique<InputArea>();
@@ -152,13 +281,15 @@ void SessionPanel::create() {
   });
   m_focusArea = static_cast<InputArea*>(rootLayout->addChild(std::move(focusArea)));
 
-  for (const auto& spec : kActionSpecs) {
-    const std::size_t visualIndex = rootLayout->children().size() - (m_focusArea != nullptr ? 1U : 0U);
-    if (auto* button = createActionButton(spec.id, scale); button != nullptr) {
-      m_actionOrder[visualIndex] = spec.id;
-      rootLayout->addChild(std::unique_ptr<Button>(button));
+  m_visibleButtons.clear();
+  m_visibleButtons.reserve(m_visibleEntries.size());
+  for (const auto& cfg : m_visibleEntries) {
+    if (Button* b = createActionButton(cfg, scale); b != nullptr) {
+      m_visibleButtons.push_back(b);
+      rootLayout->addChild(std::unique_ptr<Button>(b));
     }
   }
+
   setRoot(std::move(rootLayout));
 
   if (m_animations != nullptr) {
@@ -168,17 +299,13 @@ void SessionPanel::create() {
   updateSelectionVisuals();
 }
 
-Button* SessionPanel::createActionButton(ActionId id, float scale) {
-  const auto* spec = std::find_if(kActionSpecs.begin(), kActionSpecs.end(),
-                                  [id](const ActionSpec& candidate) { return candidate.id == id; });
-  if (spec == kActionSpecs.end()) {
-    return nullptr;
-  }
-
+Button* SessionPanel::createActionButton(const SessionPanelActionConfig& cfg, float scale) {
   auto button = std::make_unique<Button>();
-  button->setText(i18n::tr(spec->labelKey));
-  button->setGlyph(spec->glyph);
-  button->setVariant(spec->variant);
+  const std::string labelText =
+      cfg.label.has_value() && !cfg.label->empty() ? *cfg.label : i18n::tr(labelKeyForAction(cfg.action));
+  button->setText(labelText);
+  button->setGlyph(cfg.glyph.has_value() && !cfg.glyph->empty() ? *cfg.glyph : defaultGlyphForAction(cfg.action));
+  button->setVariant(variantFor(cfg));
   button->setDirection(FlexDirection::Vertical);
   button->setAlign(FlexAlign::Center);
   button->setJustify(FlexJustify::Center);
@@ -188,19 +315,18 @@ Button* SessionPanel::createActionButton(ActionId id, float scale) {
   button->setGlyphSize(28.0f * scale);
   button->setPadding(Style::spaceMd * scale, Style::spaceLg * scale);
   button->setRadius(Style::radiusLg * scale);
-  button->setMinWidth(152.0f * scale);
+  button->setMinWidth(kButtonMinWidth * scale);
   button->setMinHeight(kActionButtonMinHeight * scale);
   button->setFlexGrow(1.0f);
 
-  button->setOnClick([this, id]() {
+  SessionPanelActionConfig cfgCopy = cfg;
+  button->setOnClick([this, cfgCopy]() {
     PanelManager::instance().close();
-    invokeAction(id);
+    invokeEntry(cfgCopy);
   });
   button->setOnMotion([this]() { activateMouse(); });
   button->setHoverSuppressed(!m_mouseActive);
 
-  auto* raw = button.get();
-  m_actionButtons[static_cast<std::size_t>(id)] = raw;
   return button.release();
 }
 
@@ -217,7 +343,7 @@ void SessionPanel::activateMouse() {
     return;
   }
   m_mouseActive = true;
-  for (Button* button : m_actionButtons) {
+  for (Button* button : m_visibleButtons) {
     if (button != nullptr) {
       button->setHoverSuppressed(false);
     }
@@ -226,41 +352,63 @@ void SessionPanel::activateMouse() {
 }
 
 void SessionPanel::activateSelected() {
-  if (!m_selectedIndex.has_value() || *m_selectedIndex >= static_cast<std::size_t>(ActionId::Count)) {
+  if (!m_selectedIndex.has_value() || m_visibleButtons.empty()) {
     return;
   }
-
-  const ActionId selectedAction = m_actionOrder[*m_selectedIndex];
-  if (Button* button = m_actionButtons[static_cast<std::size_t>(selectedAction)];
-      button != nullptr && button->enabled()) {
+  const std::size_t i = *m_selectedIndex;
+  if (i >= m_visibleButtons.size() || i >= m_visibleEntries.size()) {
+    return;
+  }
+  Button* button = m_visibleButtons[i];
+  if (button != nullptr && button->enabled()) {
     PanelManager::instance().close();
-    invokeAction(selectedAction);
+    invokeEntry(m_visibleEntries[i]);
   }
 }
 
-void SessionPanel::invokeAction(ActionId id) {
-  switch (id) {
-  case ActionId::Logout:
+void SessionPanel::invokeEntry(const SessionPanelActionConfig& cfg) {
+  if (cfg.command.has_value()) {
+    const std::string cmd = StringUtils::trim(*cfg.command);
+    if (!cmd.empty()) {
+      std::function<bool()> hook;
+      if (cfg.action == "logout" || cfg.action == "reboot" || cfg.action == "shutdown") {
+        hook = hookFor(cfg.action);
+      }
+      runShellCommand(std::move(hook), cmd, cfg.action);
+      return;
+    }
+  }
+
+  if (cfg.action == "command") {
+    kLog.warn("session panel: custom action missing command");
+    return;
+  }
+
+  if (cfg.action == "logout") {
     runPowerAction(m_actionHooks.onLogout, doLogout, "logout");
-    break;
-  case ActionId::Reboot:
+    return;
+  }
+  if (cfg.action == "reboot") {
     runPowerAction(m_actionHooks.onReboot, doReboot, "reboot");
-    break;
-  case ActionId::Shutdown:
+    return;
+  }
+  if (cfg.action == "shutdown") {
     runPowerAction(m_actionHooks.onShutdown, doShutdown, "shutdown");
-    break;
-  case ActionId::Lock:
+    return;
+  }
+  if (cfg.action == "lock") {
     if (!doLock()) {
       notify::error("Noctalia", i18n::tr("session.errors.lock-title"), i18n::tr("session.errors.lock-body"));
     }
-    break;
-  case ActionId::Count:
-    break;
+    return;
   }
 }
 
 bool SessionPanel::handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers) {
-  const std::size_t lastIndex = static_cast<std::size_t>(ActionId::Count) - 1;
+  if (m_visibleButtons.empty()) {
+    return false;
+  }
+  const std::size_t lastIndex = m_visibleButtons.size() - 1;
 
   if (m_config != nullptr && m_config->matchesKeybind(KeybindAction::Left, sym, modifiers)) {
     if (!m_selectedIndex.has_value()) {
@@ -300,6 +448,36 @@ bool SessionPanel::handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers) {
     return true;
   }
 
+  if (m_config != nullptr && m_config->matchesKeybind(KeybindAction::Up, sym, modifiers)) {
+    const std::size_t columns = visibleColumnCount();
+    if (!m_selectedIndex.has_value()) {
+      m_selectedIndex = lastIndex;
+    } else if (*m_selectedIndex >= columns) {
+      *m_selectedIndex -= columns;
+    }
+    updateSelectionVisuals();
+    if (root() != nullptr) {
+      root()->markPaintDirty();
+    }
+    PanelManager::instance().refresh();
+    return true;
+  }
+
+  if (m_config != nullptr && m_config->matchesKeybind(KeybindAction::Down, sym, modifiers)) {
+    const std::size_t columns = visibleColumnCount();
+    if (!m_selectedIndex.has_value()) {
+      m_selectedIndex = 0;
+    } else if (*m_selectedIndex + columns <= lastIndex) {
+      *m_selectedIndex += columns;
+    }
+    updateSelectionVisuals();
+    if (root() != nullptr) {
+      root()->markPaintDirty();
+    }
+    PanelManager::instance().refresh();
+    return true;
+  }
+
   if ((m_config != nullptr && m_config->matchesKeybind(KeybindAction::Validate, sym, modifiers)) ||
       sym == XKB_KEY_space) {
     activateSelected();
@@ -310,9 +488,8 @@ bool SessionPanel::handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers) {
 }
 
 void SessionPanel::updateSelectionVisuals() {
-  for (std::size_t i = 0; i < m_actionOrder.size(); ++i) {
-    const ActionId actionId = m_actionOrder[i];
-    Button* button = m_actionButtons[static_cast<std::size_t>(actionId)];
+  for (std::size_t i = 0; i < m_visibleButtons.size(); ++i) {
+    Button* button = m_visibleButtons[i];
     if (button == nullptr) {
       continue;
     }
@@ -328,7 +505,7 @@ void SessionPanel::doLayout(Renderer& renderer, float width, float height) {
   m_rootLayout->setSize(width, height);
   m_rootLayout->layout(renderer);
 
-  for (Button* button : m_actionButtons) {
+  for (Button* button : m_visibleButtons) {
     if (button != nullptr) {
       button->updateInputArea();
     }
@@ -340,7 +517,7 @@ void SessionPanel::doUpdate(Renderer& /*renderer*/) {}
 void SessionPanel::onClose() {
   m_rootLayout = nullptr;
   m_focusArea = nullptr;
-  m_actionOrder.fill(ActionId::Logout);
-  m_actionButtons.fill(nullptr);
+  m_visibleEntries.clear();
+  m_visibleButtons.clear();
   clearReleasedRoot();
 }

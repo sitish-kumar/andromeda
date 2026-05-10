@@ -298,7 +298,8 @@ namespace {
            a.panel.attachLauncher == b.panel.attachLauncher && a.panel.attachClipboard == b.panel.attachClipboard &&
            a.panel.attachControlCenter == b.panel.attachControlCenter &&
            a.panel.attachWallpaper == b.panel.attachWallpaper && a.screenCorners.enabled == b.screenCorners.enabled &&
-           a.screenCorners.size == b.screenCorners.size && a.mpris.blacklist == b.mpris.blacklist;
+           a.screenCorners.size == b.screenCorners.size && a.mpris.blacklist == b.mpris.blacklist &&
+           a.session.actions == b.session.actions;
   }
 
   bool notificationConfigEqual(const NotificationConfig& a, const NotificationConfig& b) {
@@ -383,6 +384,30 @@ namespace {
               toml::table shortcut;
               shortcut.insert_or_assign("type", item.type);
               array.push_back(std::move(shortcut));
+            }
+            table.insert_or_assign(key, std::move(array));
+          } else if constexpr (std::is_same_v<T, std::vector<SessionPanelActionConfig>>) {
+            toml::array array;
+            for (const auto& item : concrete) {
+              if (item.action.empty()) {
+                continue;
+              }
+              toml::table row;
+              row.insert_or_assign("action", item.action);
+              row.insert_or_assign("enabled", item.enabled);
+              if (item.command.has_value() && !item.command->empty()) {
+                row.insert_or_assign("command", *item.command);
+              }
+              if (item.label.has_value() && !item.label->empty()) {
+                row.insert_or_assign("label", *item.label);
+              }
+              if (item.glyph.has_value() && !item.glyph->empty()) {
+                row.insert_or_assign("glyph", *item.glyph);
+              }
+              if (item.destructive) {
+                row.insert_or_assign("destructive", true);
+              }
+              array.push_back(std::move(row));
             }
             table.insert_or_assign(key, std::move(array));
           } else {
@@ -613,6 +638,7 @@ std::optional<Config> ConfigService::configForOverrides(const toml::table& overr
     });
     parsed.bars.push_back(BarConfig{});
     parsed.controlCenter.shortcuts = defaultControlCenterShortcuts();
+    parsed.shell.session.actions = defaultSessionPanelActions();
     return parsed;
   }
 

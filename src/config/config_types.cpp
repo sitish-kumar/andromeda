@@ -38,6 +38,15 @@ std::vector<ShortcutConfig> defaultControlCenterShortcuts() {
   };
 }
 
+std::vector<SessionPanelActionConfig> defaultSessionPanelActions() {
+  return {
+      SessionPanelActionConfig{"lock", true, std::nullopt, std::nullopt, std::nullopt, false},
+      SessionPanelActionConfig{"logout", true, std::nullopt, std::nullopt, std::nullopt, false},
+      SessionPanelActionConfig{"reboot", true, std::nullopt, std::nullopt, std::nullopt, false},
+      SessionPanelActionConfig{"shutdown", true, std::nullopt, std::nullopt, std::nullopt, true},
+  };
+}
+
 std::string WidgetConfig::getString(const std::string& key, const std::string& fallback) const {
   auto it = settings.find(key);
   if (it == settings.end()) {

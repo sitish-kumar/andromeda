@@ -1,5 +1,6 @@
 #include "shell/settings/settings_content.h"
 
+#include "config/config_types.h"
 #include "i18n/i18n.h"
 #include "render/core/color.h"
 #include "shell/settings/bar_widget_editor.h"
@@ -17,6 +18,7 @@
 #include "ui/controls/slider.h"
 #include "ui/controls/toggle.h"
 #include "ui/dialogs/color_picker_dialog.h"
+#include "ui/dialogs/glyph_picker_dialog.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "util/string_utils.h"
@@ -77,6 +79,22 @@ namespace settings {
         labels.push_back(opt.label);
       }
       return labels;
+    }
+
+    const char* sessionActionDefaultGlyphName(std::string_view action) {
+      if (action == "lock") {
+        return "lock";
+      }
+      if (action == "logout") {
+        return "logout";
+      }
+      if (action == "reboot") {
+        return "reboot";
+      }
+      if (action == "shutdown") {
+        return "shutdown";
+      }
+      return "terminal";
     }
 
     bool isBlankInput(std::string_view text) { return StringUtils::trim(text).empty(); }
@@ -326,6 +344,237 @@ namespace settings {
       return overrides;
     }
 
+    std::string sessionActionRowSummary(const std::vector<SelectOption>& kindOptions,
+                                        const SessionPanelActionConfig& row) {
+      if (row.label.has_value() && !row.label->empty()) {
+        return *row.label;
+      }
+      return optionLabel(kindOptions, row.action);
+    }
+
+    void buildSessionActionEntryDetailContentImpl(Flex& section, SettingsContentContext& ctx,
+                                                  SessionPanelActionConfig& row, const std::function<void()>& persist,
+                                                  const std::function<void()>& closeHostedEditor) {
+      const float scale = ctx.scale;
+      const std::vector<SelectOption> kindOptions = {
+          {"lock", i18n::tr("settings.session-actions.kind.lock"), {}},
+          {"logout", i18n::tr("settings.session-actions.kind.logout"), {}},
+          {"reboot", i18n::tr("settings.session-actions.kind.reboot"), {}},
+          {"shutdown", i18n::tr("settings.session-actions.kind.shutdown"), {}},
+          {"command", i18n::tr("settings.session-actions.kind.command"), {}},
+      };
+
+      const float iconSq = Style::controlHeight * scale;
+      const float iconGlyphSize = Style::fontSizeBody * scale;
+
+      auto body = std::make_unique<Flex>();
+      body->setDirection(FlexDirection::Horizontal);
+      body->setAlign(FlexAlign::Start);
+      body->setGap(Style::spaceMd * scale);
+      body->setFillWidth(true);
+
+      auto iconCol = std::make_unique<Flex>();
+      iconCol->setDirection(FlexDirection::Vertical);
+      iconCol->setAlign(FlexAlign::Stretch);
+      iconCol->setGap(Style::spaceSm * scale);
+      iconCol->addChild(makeLabel(i18n::tr("settings.session-actions.icon-label"), Style::fontSizeCaption * scale,
+                                  colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+
+      auto glyphBtnRow = std::make_unique<Flex>();
+      glyphBtnRow->setDirection(FlexDirection::Horizontal);
+      glyphBtnRow->setAlign(FlexAlign::Center);
+      glyphBtnRow->setGap(Style::spaceXs * scale);
+
+      const std::string previewGlyph = [&] {
+        if (row.glyph.has_value() && !row.glyph->empty()) {
+          return *row.glyph;
+        }
+        return std::string(sessionActionDefaultGlyphName(row.action));
+      }();
+
+      auto glyphPickBtn = std::make_unique<Button>();
+      glyphPickBtn->setVariant(ButtonVariant::Outline);
+      glyphPickBtn->setText("");
+      glyphPickBtn->setGlyph(previewGlyph);
+      glyphPickBtn->setGlyphSize(iconGlyphSize);
+      glyphPickBtn->setMinWidth(iconSq);
+      glyphPickBtn->setMaxWidth(iconSq);
+      glyphPickBtn->setMinHeight(iconSq);
+      glyphPickBtn->setMaxHeight(iconSq);
+      glyphPickBtn->setPadding(0.0f, 0.0f);
+      glyphPickBtn->setRadius(Style::radiusMd * scale);
+      glyphPickBtn->setOnClick([&row, persist]() {
+        GlyphPickerDialogOptions options;
+        options.title = i18n::tr("settings.session-actions.glyph-picker-title");
+        if (row.glyph.has_value() && !row.glyph->empty()) {
+          options.initialGlyph = *row.glyph;
+        }
+        (void)GlyphPickerDialog::open(std::move(options), [&row, persist](std::optional<GlyphPickerResult> result) {
+          if (!result.has_value()) {
+            return;
+          }
+          row.glyph = result->name;
+          persist();
+        });
+      });
+      glyphBtnRow->addChild(std::move(glyphPickBtn));
+
+      if (row.glyph.has_value() && !row.glyph->empty()) {
+        auto clearG = std::make_unique<Button>();
+        clearG->setVariant(ButtonVariant::Ghost);
+        clearG->setText(i18n::tr("settings.session-actions.clear-glyph"));
+        clearG->setFontSize(Style::fontSizeCaption * scale);
+        clearG->setMinHeight(iconSq);
+        clearG->setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
+        clearG->setRadius(Style::radiusSm * scale);
+        clearG->setOnClick([&row, persist]() {
+          row.glyph = std::nullopt;
+          persist();
+        });
+        glyphBtnRow->addChild(std::move(clearG));
+      }
+
+      iconCol->addChild(std::move(glyphBtnRow));
+      body->addChild(std::move(iconCol));
+
+      auto fields = std::make_unique<Flex>();
+      fields->setDirection(FlexDirection::Vertical);
+      fields->setAlign(FlexAlign::Stretch);
+      fields->setGap(Style::spaceSm * scale);
+      fields->setFlexGrow(1.0f);
+
+      fields->addChild(makeLabel(i18n::tr("settings.session-actions.kind-section-label"),
+                                 Style::fontSizeCaption * scale, colorSpecFromRole(ColorRole::OnSurfaceVariant),
+                                 false));
+      auto kindSelect = std::make_unique<Select>();
+      kindSelect->setOptions(optionLabels(kindOptions));
+      if (const auto ki = optionIndex(kindOptions, row.action)) {
+        kindSelect->setSelectedIndex(*ki);
+      } else {
+        kindSelect->clearSelection();
+      }
+      kindSelect->setFontSize(Style::fontSizeBody * scale);
+      kindSelect->setControlHeight(Style::controlHeight * scale);
+      kindSelect->setGlyphSize(Style::fontSizeBody * scale);
+      kindSelect->setFillWidth(true);
+      kindSelect->setOnSelectionChanged([&row, kindOptions, persist](std::size_t index, std::string_view /*label*/) {
+        if (index < kindOptions.size()) {
+          row.action = kindOptions[index].value;
+          persist();
+        }
+      });
+      fields->addChild(std::move(kindSelect));
+
+      auto labelBlock = std::make_unique<Flex>();
+      labelBlock->setDirection(FlexDirection::Vertical);
+      labelBlock->setAlign(FlexAlign::Stretch);
+      labelBlock->setGap(Style::spaceXs * scale);
+      labelBlock->setFlexGrow(1.0f);
+      labelBlock->addChild(makeLabel(i18n::tr("settings.session-actions.label-field"), Style::fontSizeCaption * scale,
+                                     colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+      auto labelIn = std::make_unique<Input>();
+      labelIn->setValue(row.label.value_or(""));
+      labelIn->setPlaceholder(i18n::tr("settings.session-actions.label-placeholder"));
+      labelIn->setFontSize(Style::fontSizeBody * scale);
+      labelIn->setControlHeight(Style::controlHeight * scale);
+      labelIn->setHorizontalPadding(Style::spaceSm * scale);
+      labelIn->setMinLayoutWidth(200.0f * scale);
+      auto* labelPtr = labelIn.get();
+      const auto commitLabel = [&row, persist, labelPtr]() {
+        const std::string t = StringUtils::trim(labelPtr->value());
+        if (t.empty()) {
+          row.label = std::nullopt;
+        } else {
+          row.label = t;
+        }
+        labelPtr->setInvalid(false);
+        persist();
+      };
+      labelIn->setOnChange([labelPtr](const std::string& /*t*/) { labelPtr->setInvalid(false); });
+      labelIn->setOnSubmit([commitLabel](const std::string& /*text*/) { commitLabel(); });
+      labelIn->setOnFocusLoss(commitLabel);
+      labelBlock->addChild(std::move(labelIn));
+      fields->addChild(std::move(labelBlock));
+
+      auto cmdBlock = std::make_unique<Flex>();
+      cmdBlock->setDirection(FlexDirection::Vertical);
+      cmdBlock->setAlign(FlexAlign::Stretch);
+      cmdBlock->setGap(Style::spaceXs * scale);
+      cmdBlock->setFlexGrow(1.0f);
+      cmdBlock->addChild(makeLabel(i18n::tr("settings.session-actions.command-label"), Style::fontSizeCaption * scale,
+                                   colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+      auto cmdIn = std::make_unique<Input>();
+      cmdIn->setValue(row.command.value_or(""));
+      cmdIn->setPlaceholder(i18n::tr("settings.session-actions.command-placeholder"));
+      cmdIn->setFontSize(Style::fontSizeBody * scale);
+      cmdIn->setControlHeight(Style::controlHeight * scale);
+      cmdIn->setHorizontalPadding(Style::spaceSm * scale);
+      cmdIn->setMinLayoutWidth(280.0f * scale);
+      auto* cmdPtr = cmdIn.get();
+      const auto commitCommand = [&row, persist, cmdPtr]() {
+        const std::string t = StringUtils::trim(cmdPtr->value());
+        if (t.empty()) {
+          row.command = std::nullopt;
+        } else {
+          row.command = t;
+        }
+        cmdPtr->setInvalid(false);
+        persist();
+      };
+      cmdIn->setOnChange([cmdPtr](const std::string& /*t*/) { cmdPtr->setInvalid(false); });
+      cmdIn->setOnSubmit([commitCommand](const std::string& /*text*/) { commitCommand(); });
+      cmdIn->setOnFocusLoss(commitCommand);
+      cmdBlock->addChild(std::move(cmdIn));
+      fields->addChild(std::move(cmdBlock));
+
+      auto destGrp = std::make_unique<Flex>();
+      destGrp->setDirection(FlexDirection::Horizontal);
+      destGrp->setAlign(FlexAlign::Center);
+      destGrp->setGap(Style::spaceXs * scale);
+      destGrp->addChild(makeLabel(i18n::tr("settings.session-actions.destructive-label"),
+                                  Style::fontSizeCaption * scale, colorSpecFromRole(ColorRole::OnSurfaceVariant),
+                                  false));
+      auto destToggle = std::make_unique<Toggle>();
+      destToggle->setScale(scale);
+      destToggle->setChecked(row.destructive);
+      destToggle->setOnChange([&row, persist](bool v) {
+        row.destructive = v;
+        persist();
+      });
+      destGrp->addChild(std::move(destToggle));
+      fields->addChild(std::move(destGrp));
+
+      body->addChild(std::move(fields));
+      section.addChild(std::move(body));
+
+      auto actions = std::make_unique<Flex>();
+      actions->setDirection(FlexDirection::Horizontal);
+      actions->setAlign(FlexAlign::Center);
+      actions->setGap(Style::spaceSm * scale);
+      actions->setFillWidth(true);
+
+      auto applyBtn = std::make_unique<Button>();
+      applyBtn->setGlyph("check");
+      applyBtn->setText(i18n::tr("common.actions.apply"));
+      applyBtn->setVariant(ButtonVariant::Default);
+      applyBtn->setFontSize(Style::fontSizeBody * scale);
+      applyBtn->setGlyphSize(Style::fontSizeBody * scale);
+      applyBtn->setMinHeight(Style::controlHeight * scale);
+      applyBtn->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
+      applyBtn->setRadius(Style::radiusMd * scale);
+      applyBtn->setFlexGrow(1.0f);
+      applyBtn->setOnClick([commitLabel, commitCommand, closeHostedEditor]() {
+        commitLabel();
+        commitCommand();
+        if (closeHostedEditor) {
+          closeHostedEditor();
+        }
+      });
+      actions->addChild(std::move(applyBtn));
+
+      section.addChild(std::move(actions));
+    }
+
   } // namespace
 
   std::size_t addSettingsContentSections(Flex& content, const std::vector<SettingEntry>& registry,
@@ -337,7 +586,7 @@ namespace settings {
       return i18n::tr("settings.navigation.sections." + std::string(section));
     };
 
-    const auto groupLabel = [](std::string_view group) {
+    const auto groupLabel = [](std::string_view group) -> std::string {
       return i18n::tr("settings.navigation.groups." + std::string(group));
     };
 
@@ -1028,6 +1277,174 @@ namespace settings {
       section.addChild(std::move(block));
     };
 
+    const auto makeSessionActionsInlineBlock = [&](Flex& section, const SettingEntry& entry,
+                                                   const SessionPanelActionsSetting& sa) {
+      const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
+
+      auto block = std::make_unique<Flex>();
+      block->setDirection(FlexDirection::Vertical);
+      block->setAlign(FlexAlign::Stretch);
+      block->setGap(Style::spaceSm * scale);
+      block->setPadding(2.0f * scale, 0.0f);
+
+      auto titleRow = std::make_unique<Flex>();
+      titleRow->setDirection(FlexDirection::Horizontal);
+      titleRow->setAlign(FlexAlign::Center);
+      titleRow->setGap(Style::spaceSm * scale);
+      titleRow->addChild(
+          makeLabel(entry.title, Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::OnSurface), true));
+      if (overridden) {
+        auto badge = std::make_unique<Flex>();
+        badge->setAlign(FlexAlign::Center);
+        badge->setPadding(1.0f * scale, Style::spaceXs * scale);
+        badge->setRadius(Style::radiusSm * scale);
+        badge->setFill(colorSpecFromRole(ColorRole::Primary, 0.15f));
+        badge->addChild(makeLabel(i18n::tr("settings.badges.override"), Style::fontSizeCaption * scale,
+                                  colorSpecFromRole(ColorRole::Primary), true));
+        titleRow->addChild(std::move(badge));
+      }
+      if (overridden) {
+        titleRow->addChild(makeResetButton(entry.path));
+      }
+      block->addChild(std::move(titleRow));
+
+      if (!entry.subtitle.empty()) {
+        block->addChild(makeLabel(entry.subtitle, Style::fontSizeCaption * scale,
+                                  colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+      }
+
+      const std::vector<SelectOption> kindOptions = {
+          {"lock", i18n::tr("settings.session-actions.kind.lock"), {}},
+          {"logout", i18n::tr("settings.session-actions.kind.logout"), {}},
+          {"reboot", i18n::tr("settings.session-actions.kind.reboot"), {}},
+          {"shutdown", i18n::tr("settings.session-actions.kind.shutdown"), {}},
+          {"command", i18n::tr("settings.session-actions.kind.command"), {}},
+      };
+
+      auto state = std::make_shared<std::vector<SessionPanelActionConfig>>(sa.items);
+      const auto commit = [setOverride = ctx.setOverride, path = entry.path, state, req = ctx.requestContentRebuild]() {
+        setOverride(path, *state);
+        req();
+      };
+
+      const float iconBtnH = Style::controlHeight * scale;
+
+      for (std::size_t idx = 0; idx < state->size(); ++idx) {
+        if (idx > 0) {
+          auto sep = std::make_unique<Separator>();
+          sep->setColor(colorSpecFromRole(ColorRole::Outline, 0.35f));
+          block->addChild(std::move(sep));
+        }
+
+        auto row = std::make_unique<Flex>();
+        row->setDirection(FlexDirection::Horizontal);
+        row->setAlign(FlexAlign::Center);
+        row->setJustify(FlexJustify::SpaceBetween);
+        row->setGap(Style::spaceSm * scale);
+        row->setMinHeight(Style::controlHeight * scale);
+
+        auto summary = std::make_unique<Label>();
+        summary->setText(sessionActionRowSummary(kindOptions, (*state)[idx]));
+        summary->setFontSize(Style::fontSizeBody * scale);
+        summary->setColor(colorSpecFromRole(ColorRole::OnSurface));
+        summary->setFlexGrow(1.0f);
+        row->addChild(std::move(summary));
+
+        auto reorder = std::make_unique<Flex>();
+        reorder->setDirection(FlexDirection::Horizontal);
+        reorder->setAlign(FlexAlign::Center);
+        reorder->setGap(Style::spaceXs * scale);
+
+        auto upBtn = std::make_unique<Button>();
+        upBtn->setGlyph("chevron-up");
+        upBtn->setVariant(ButtonVariant::Ghost);
+        upBtn->setGlyphSize(Style::fontSizeBody * scale);
+        upBtn->setMinWidth(Style::controlHeightSm * scale);
+        upBtn->setMinHeight(iconBtnH);
+        upBtn->setPadding(Style::spaceXs * scale);
+        upBtn->setRadius(Style::radiusMd * scale);
+        upBtn->setEnabled(idx > 0);
+        upBtn->setOnClick([state, rowIndex = idx, commit]() {
+          if (rowIndex == 0 || rowIndex >= state->size()) {
+            return;
+          }
+          std::swap((*state)[rowIndex - 1], (*state)[rowIndex]);
+          commit();
+        });
+        reorder->addChild(std::move(upBtn));
+
+        auto downBtn = std::make_unique<Button>();
+        downBtn->setGlyph("chevron-down");
+        downBtn->setVariant(ButtonVariant::Ghost);
+        downBtn->setGlyphSize(Style::fontSizeBody * scale);
+        downBtn->setMinWidth(Style::controlHeightSm * scale);
+        downBtn->setMinHeight(iconBtnH);
+        downBtn->setPadding(Style::spaceXs * scale);
+        downBtn->setRadius(Style::radiusMd * scale);
+        downBtn->setEnabled(idx + 1 < state->size());
+        downBtn->setOnClick([state, rowIndex = idx, commit]() {
+          if (rowIndex + 1 >= state->size()) {
+            return;
+          }
+          std::swap((*state)[rowIndex + 1], (*state)[rowIndex]);
+          commit();
+        });
+        reorder->addChild(std::move(downBtn));
+        row->addChild(std::move(reorder));
+
+        auto showGrp = std::make_unique<Flex>();
+        showGrp->setDirection(FlexDirection::Horizontal);
+        showGrp->setAlign(FlexAlign::Center);
+        showGrp->setGap(Style::spaceXs * scale);
+        showGrp->addChild(makeLabel(i18n::tr("settings.session-actions.show-in-menu"), Style::fontSizeCaption * scale,
+                                    colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+        auto showToggle = std::make_unique<Toggle>();
+        showToggle->setScale(scale);
+        showToggle->setChecked((*state)[idx].enabled);
+        showToggle->setOnChange([state, rowIndex = idx, commit](bool v) {
+          (*state)[rowIndex].enabled = v;
+          commit();
+        });
+        showGrp->addChild(std::move(showToggle));
+        row->addChild(std::move(showGrp));
+
+        auto entrySettings = std::make_unique<Button>();
+        entrySettings->setGlyph("settings");
+        entrySettings->setVariant(ButtonVariant::Ghost);
+        entrySettings->setGlyphSize(Style::fontSizeCaption * scale);
+        entrySettings->setMinWidth(Style::controlHeightSm * scale);
+        entrySettings->setMinHeight(Style::controlHeightSm * scale);
+        entrySettings->setPadding(Style::spaceXs * scale);
+        entrySettings->setRadius(Style::radiusSm * scale);
+        entrySettings->setOnClick([openEntry = ctx.openSessionActionEntryEditor, rowIndex = idx]() {
+          if (openEntry) {
+            openEntry(rowIndex);
+          }
+        });
+        row->addChild(std::move(entrySettings));
+
+        block->addChild(std::move(row));
+      }
+
+      auto addBtn = std::make_unique<Button>();
+      addBtn->setGlyph("add");
+      addBtn->setText(i18n::tr("settings.session-actions.add"));
+      addBtn->setVariant(ButtonVariant::Default);
+      addBtn->setFontSize(Style::fontSizeBody * scale);
+      addBtn->setGlyphSize(Style::fontSizeBody * scale);
+      addBtn->setMinHeight(Style::controlHeight * scale);
+      addBtn->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
+      addBtn->setRadius(Style::radiusMd * scale);
+      addBtn->setOnClick([state, commit]() {
+        state->push_back(SessionPanelActionConfig{"command", true, "notify-send 'Noctalia' 'Custom session entry'",
+                                                  std::nullopt, std::nullopt, false});
+        commit();
+      });
+      block->addChild(std::move(addBtn));
+
+      section.addChild(std::move(block));
+    };
+
     const auto makeControl = [&](const SettingEntry& entry) -> std::unique_ptr<Node> {
       return std::visit(
           [&](const auto& control) -> std::unique_ptr<Node> {
@@ -1052,6 +1469,8 @@ namespace settings {
             } else if constexpr (std::is_same_v<T, ListSetting>) {
               return nullptr;
             } else if constexpr (std::is_same_v<T, ShortcutListSetting>) {
+              return nullptr;
+            } else if constexpr (std::is_same_v<T, SessionPanelActionsSetting>) {
               return nullptr;
             } else if constexpr (std::is_same_v<T, ButtonSetting>) {
               auto button = std::make_unique<Button>();
@@ -1163,6 +1582,8 @@ namespace settings {
           }
         } else if (const auto* shortcuts = std::get_if<ShortcutListSetting>(&entry.control)) {
           makeShortcutListBlock(*activeSection, entry, *shortcuts);
+        } else if (const auto* sessionActs = std::get_if<SessionPanelActionsSetting>(&entry.control)) {
+          makeSessionActionsInlineBlock(*activeSection, entry, *sessionActs);
         } else if (const auto* picker = std::get_if<SearchPickerSetting>(&entry.control)) {
           makeRow(*activeSection, entry, makeSearchPickerButton(entry, *picker));
         } else if (const auto* multi = std::get_if<MultiSelectSetting>(&entry.control)) {
@@ -1199,6 +1620,11 @@ namespace settings {
     }
 
     return visibleEntries;
+  }
+
+  void buildSessionActionEntryDetailContent(Flex& parent, SettingsContentContext& ctx, SessionPanelActionConfig& row,
+                                            const std::function<void()>& persist) {
+    buildSessionActionEntryDetailContentImpl(parent, ctx, row, persist, ctx.closeHostedEditor);
   }
 
 } // namespace settings

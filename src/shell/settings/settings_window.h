@@ -4,6 +4,7 @@
 #include "render/scene/input_dispatcher.h"
 #include "render/scene/node.h"
 #include "shell/settings/search_picker_popup.h"
+#include "shell/settings/session_actions_editor_popup.h"
 #include "shell/settings/settings_registry.h"
 #include "shell/settings/widget_add_popup.h"
 #include "ui/controls/context_menu_popup.h"
@@ -68,6 +69,7 @@ private:
   void openSearchPickerPopup(const std::string& title, const std::vector<settings::SelectOption>& options,
                              const std::string& selectedValue, const std::string& placeholder,
                              const std::string& emptyText, const std::vector<std::string>& settingPath);
+  void openSessionActionEntryEditor(std::size_t index);
   void saveSupportReport();
   void saveFlattenedConfig();
   void setSettingOverride(std::vector<std::string> path, ConfigOverrideValue value);
@@ -101,6 +103,7 @@ private:
   std::unique_ptr<ContextMenuPopup> m_actionsMenuPopup;
   std::unique_ptr<settings::WidgetAddPopup> m_widgetAddPopup;
   std::unique_ptr<settings::SearchPickerPopup> m_searchPickerPopup;
+  std::unique_ptr<settings::SessionActionsEditorPopup> m_sessionActionsEditorPopup;
   InputDispatcher m_inputDispatcher;
   AnimationManager m_animations;
   bool m_pointerInside = false;

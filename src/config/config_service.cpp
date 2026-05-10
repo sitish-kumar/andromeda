@@ -885,6 +885,7 @@ void ConfigService::loadAll() {
     });
     m_config.bars.push_back(BarConfig{});
     m_config.controlCenter.shortcuts = defaultControlCenterShortcuts();
+    m_config.shell.session.actions = defaultSessionPanelActions();
     setConfigParseError(m_overridesParseError);
     return;
   }
@@ -1272,6 +1273,59 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     }
     if (auto v = (*shellTbl)["clipboard_image_action_command"].value<std::string>()) {
       shell.clipboardImageActionCommand = *v;
+    }
+
+    bool sessionActionsKeyPresent = false;
+    if (const auto* sessionTbl = (*shellTbl)["session"].as_table()) {
+      if (sessionTbl->contains("actions")) {
+        sessionActionsKeyPresent = true;
+        shell.session.actions.clear();
+        if (const auto* actionsArr = (*sessionTbl)["actions"].as_array()) {
+          for (const auto& entry : *actionsArr) {
+            auto* entryTbl = entry.as_table();
+            if (entryTbl == nullptr) {
+              continue;
+            }
+            SessionPanelActionConfig row{};
+            if (auto v = (*entryTbl)["action"].value<std::string>()) {
+              row.action = StringUtils::toLower(StringUtils::trim(*v));
+            }
+            if (row.action.empty()) {
+              continue;
+            }
+            if (auto v = (*entryTbl)["enabled"].value<bool>()) {
+              row.enabled = *v;
+            }
+            if (const auto* cmdNode = entryTbl->get("command")) {
+              if (auto s = cmdNode->value<std::string>()) {
+                row.command = StringUtils::trim(*s);
+                if (row.command->empty()) {
+                  row.command = std::nullopt;
+                }
+              }
+            }
+            if (auto v = (*entryTbl)["label"].value<std::string>()) {
+              row.label = StringUtils::trim(*v);
+              if (row.label->empty()) {
+                row.label = std::nullopt;
+              }
+            }
+            if (auto v = (*entryTbl)["glyph"].value<std::string>()) {
+              row.glyph = StringUtils::trim(*v);
+              if (row.glyph->empty()) {
+                row.glyph = std::nullopt;
+              }
+            }
+            if (auto v = (*entryTbl)["destructive"].value<bool>()) {
+              row.destructive = *v;
+            }
+            shell.session.actions.push_back(std::move(row));
+          }
+        }
+      }
+    }
+    if (!sessionActionsKeyPresent && shell.session.actions.empty()) {
+      shell.session.actions = defaultSessionPanelActions();
     }
   }
 
