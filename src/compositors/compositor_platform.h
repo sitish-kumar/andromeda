@@ -102,6 +102,10 @@ public:
   [[nodiscard]] std::string currentKeyboardLayoutName() const;
   [[nodiscard]] std::vector<std::string> keyboardLayoutNames() const;
 
+  void setKeyboardLayoutChangeCallback(ChangeCallback callback);
+  void addKeyboardLayoutPollFds(std::vector<pollfd>& fds) const;
+  void dispatchKeyboardLayoutPoll(const std::vector<pollfd>& fds, std::size_t startIdx);
+
   [[nodiscard]] bool setOutputPower(bool on) const;
 
   [[nodiscard]] bool tracksOverviewState() const noexcept;
@@ -132,6 +136,7 @@ private:
   std::unique_ptr<compositors::OutputPowerBackend> m_outputPowerBackend;
   std::unique_ptr<KeyboardLayoutBackend> m_keyboardLayoutBackend;
   ChangeCallback m_workspaceChangeCallback;
+  ChangeCallback m_keyboardLayoutChangeCallback;
   std::vector<WorkspaceModelSnapshot> m_lastWorkspaceModelSnapshot;
   bool m_initialized = false;
 };

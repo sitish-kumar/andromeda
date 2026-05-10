@@ -91,6 +91,34 @@ namespace {
       return m_backend.currentLayoutName();
     }
 
+    bool connectSocket() override {
+      if constexpr (requires { m_backend.connectSocket(); }) {
+        return m_backend.connectSocket();
+      }
+      return false;
+    }
+    void setChangeCallback(ChangeCallback callback) override {
+      if constexpr (requires { m_backend.setChangeCallback(std::move(callback)); }) {
+        m_backend.setChangeCallback(std::move(callback));
+      }
+    }
+    [[nodiscard]] int pollFd() const noexcept override {
+      if constexpr (requires { m_backend.pollFd(); }) {
+        return m_backend.pollFd();
+      }
+      return -1;
+    }
+    void dispatchPoll(short revents) override {
+      if constexpr (requires { m_backend.dispatchPoll(revents); }) {
+        m_backend.dispatchPoll(revents);
+      }
+    }
+    void cleanup() override {
+      if constexpr (requires { m_backend.cleanup(); }) {
+        m_backend.cleanup();
+      }
+    }
+
   private:
     BackendT m_backend;
   };
@@ -530,6 +558,27 @@ std::vector<std::string> CompositorPlatform::keyboardLayoutNames() const {
     }
   }
   return m_wayland.keyboardLayoutNames();
+}
+
+void CompositorPlatform::setKeyboardLayoutChangeCallback(ChangeCallback callback) {
+  m_keyboardLayoutChangeCallback = std::move(callback);
+  if (m_keyboardLayoutBackend != nullptr) {
+    m_keyboardLayoutBackend->setChangeCallback(m_keyboardLayoutChangeCallback);
+    m_keyboardLayoutBackend->connectSocket();
+  }
+}
+
+void CompositorPlatform::addKeyboardLayoutPollFds(std::vector<pollfd>& fds) const {
+  if (m_keyboardLayoutBackend != nullptr && m_keyboardLayoutBackend->pollFd() >= 0) {
+    fds.push_back(
+        {.fd = m_keyboardLayoutBackend->pollFd(), .events = m_keyboardLayoutBackend->pollEvents(), .revents = 0});
+  }
+}
+
+void CompositorPlatform::dispatchKeyboardLayoutPoll(const std::vector<pollfd>& fds, std::size_t startIdx) {
+  if (m_keyboardLayoutBackend != nullptr && m_keyboardLayoutBackend->pollFd() >= 0 && startIdx < fds.size()) {
+    m_keyboardLayoutBackend->dispatchPoll(fds[startIdx].revents);
+  }
 }
 
 bool CompositorPlatform::setOutputPower(bool on) const {

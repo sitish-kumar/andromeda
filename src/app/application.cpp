@@ -380,6 +380,7 @@ void Application::initServices() {
     }
   });
   m_compositorPlatform.setWorkspaceChangeCallback([this]() { m_bar.refresh(); });
+  m_compositorPlatform.setKeyboardLayoutChangeCallback([this]() { m_bar.refresh(); });
   m_wayland.setToplevelChangeCallback([this]() {
     m_bar.refresh();
     m_dock.refresh();
@@ -1302,6 +1303,7 @@ std::vector<PollSource*> Application::currentPollSources() {
   sources.push_back(&m_timerPollSource);
   sources.push_back(&m_keyRepeatPollSource);
   sources.push_back(&m_workspacePollSource);
+  sources.push_back(&m_keyboardLayoutPollSource);
   if constexpr (kLockKeysEnabled) {
     sources.push_back(&m_lockKeysPollSource);
   }
