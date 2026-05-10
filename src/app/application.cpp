@@ -268,7 +268,9 @@ void Application::run() {
   runStartupPhase("telemetry enqueue",
                   [this]() { m_telemetryService.maybeSend(m_configService, m_httpClient, m_wayland); });
 
+#ifdef __GLIBC__
   runStartupPhase("malloc_trim", []() { malloc_trim(0); });
+#endif
 
   m_trayInitTimer.start(std::chrono::milliseconds(500), [this]() { startTrayService(); });
   m_polkitInitTimer.start(std::chrono::milliseconds(0), [this]() { syncPolkitAgent(); });
@@ -986,8 +988,6 @@ void Application::initUi() {
     m_glyphPickerDialogPopup.requestLayout();
     m_fileDialogPopup.requestLayout();
   });
-
-  m_configService.addReloadCallback([]() { malloc_trim(0); });
 
   m_timeService.setTickSecondCallback([this]() {
     m_wallpaper.onSecondTick();

@@ -690,8 +690,6 @@ void PanelManager::destroyPanel() {
   if (m_platform != nullptr) {
     m_platform->stopKeyRepeat();
   }
-
-  malloc_trim(0);
 }
 
 void PanelManager::togglePanel(const std::string& panelId, PanelOpenRequest request) {
