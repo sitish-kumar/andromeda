@@ -276,16 +276,23 @@ namespace settings {
   }
 
   std::vector<WidgetSettingSpec> commonWidgetSettingSpecs() {
+    const WidgetSettingVisibility capsuleOn{"capsule", {"true"}};
+    auto capsuleGroup = stringSpec("capsule_group");
+    capsuleGroup.visibleWhen = capsuleOn;
+    auto capsuleFill = colorRoleSpec("capsule_fill", "surface_variant");
+    capsuleFill.visibleWhen = capsuleOn;
+    auto capsuleBorder = colorRoleSpec("capsule_border", {}, true);
+    capsuleBorder.visibleWhen = capsuleOn;
+    auto capsuleForeground = colorRoleSpec("capsule_foreground", {}, true);
+    capsuleForeground.visibleWhen = capsuleOn;
+    auto capsulePadding = doubleSpec("capsule_padding", static_cast<double>(Style::barCapsulePadding), 0.0, 48.0, 1.0);
+    capsulePadding.visibleWhen = capsuleOn;
+    auto capsuleOpacity = doubleSpec("capsule_opacity", 1.0, 0.0, 1.0, 0.01);
+    capsuleOpacity.visibleWhen = capsuleOn;
     return {
-        boolSpec("anchor", false, true),
-        colorRoleSpec("color", {}, true),
-        boolSpec("capsule", false),
-        stringSpec("capsule_group"),
-        colorRoleSpec("capsule_fill", "surface_variant"),
-        colorRoleSpec("capsule_border", {}, true),
-        colorRoleSpec("capsule_foreground", {}, true),
-        doubleSpec("capsule_padding", static_cast<double>(Style::barCapsulePadding), 0.0, 48.0, 1.0),
-        doubleSpec("capsule_opacity", 1.0, 0.0, 1.0, 0.01),
+        boolSpec("anchor", false, true), colorRoleSpec("color", {}, true), boolSpec("capsule", false),
+        std::move(capsuleGroup),         std::move(capsuleFill),           std::move(capsuleBorder),
+        std::move(capsuleForeground),    std::move(capsulePadding),        std::move(capsuleOpacity),
     };
   }
 
@@ -299,8 +306,9 @@ namespace settings {
     };
     const std::vector<WidgetSettingSelectOption> sysmonStats = {
         {"cpu_usage", "settings.widgets.options.cpu-usage"},   {"cpu_temp", "settings.widgets.options.cpu-temp"},
-        {"ram_used", "settings.widgets.options.ram-used"},     {"ram_pct", "settings.widgets.options.ram-percent"},
-        {"swap_pct", "settings.widgets.options.swap-percent"}, {"disk_pct", "settings.widgets.options.disk-percent"},
+        {"gpu_temp", "settings.widgets.options.gpu-temp"},     {"ram_used", "settings.widgets.options.ram-used"},
+        {"ram_pct", "settings.widgets.options.ram-percent"},   {"swap_pct", "settings.widgets.options.swap-percent"},
+        {"disk_pct", "settings.widgets.options.disk-percent"},
     };
     const std::vector<WidgetSettingSelectOption> sysmonDisplay = {
         {"gauge", "settings.widgets.options.gauge"},
@@ -383,7 +391,11 @@ namespace settings {
       add(doubleSpec("length", 8.0, 0.0, 400.0, 1.0));
     } else if (type == "sysmon") {
       add(selectSpec("stat", "cpu_usage", sysmonStats));
-      add(stringSpec("path", "/"));
+      {
+        auto path = stringSpec("path", "/");
+        path.visibleWhen = WidgetSettingVisibility{"stat", {"disk_pct"}};
+        add(std::move(path));
+      }
       add(segmentedSpec("display", "gauge", sysmonDisplay));
       add(boolSpec("show_label", true));
     } else if (type == "taskbar") {
@@ -393,7 +405,11 @@ namespace settings {
       add(stringListSpec("hidden"));
       add(stringListSpec("pinned"));
       add(boolSpec("drawer", false));
-      add(intSpec("drawer_columns", 3, 1.0, 5.0, 1.0));
+      {
+        auto cols = intSpec("drawer_columns", 3, 1.0, 5.0, 1.0);
+        cols.visibleWhen = WidgetSettingVisibility{"drawer", {"true"}};
+        add(std::move(cols));
+      }
     } else if (type == "volume") {
       add(segmentedSpec("device", "output", volumeDeviceOptions));
       add(boolSpec("show_label", true));

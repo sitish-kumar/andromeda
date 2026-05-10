@@ -566,6 +566,47 @@ namespace settings {
       return spec.defaultValue;
     }
 
+    std::string settingCurrentString(const Config& cfg, std::string_view widgetName, const std::string& key,
+                                     const std::vector<WidgetSettingSpec>& allSpecs) {
+      if (const auto it = cfg.widgets.find(std::string(widgetName)); it != cfg.widgets.end()) {
+        if (const auto settingIt = it->second.settings.find(key); settingIt != it->second.settings.end()) {
+          if (const auto* s = std::get_if<std::string>(&settingIt->second)) {
+            return *s;
+          }
+          if (const auto* b = std::get_if<bool>(&settingIt->second)) {
+            return *b ? "true" : "false";
+          }
+        }
+      }
+      for (const auto& s : allSpecs) {
+        if (s.key == key) {
+          if (const auto* str = std::get_if<std::string>(&s.defaultValue)) {
+            return *str;
+          }
+          if (const auto* b = std::get_if<bool>(&s.defaultValue)) {
+            return *b ? "true" : "false";
+          }
+          break;
+        }
+      }
+      return {};
+    }
+
+    bool isSettingVisible(const Config& cfg, std::string_view widgetName, const WidgetSettingSpec& spec,
+                          const std::vector<WidgetSettingSpec>& allSpecs) {
+      if (!spec.visibleWhen.has_value()) {
+        return true;
+      }
+      const auto& cond = *spec.visibleWhen;
+      const auto currentValue = settingCurrentString(cfg, widgetName, cond.key, allSpecs);
+      for (const auto& v : cond.values) {
+        if (v == currentValue) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     bool settingValueAsBool(const WidgetSettingValue& value) {
       if (const auto* v = std::get_if<bool>(&value)) {
         return *v;
@@ -871,6 +912,9 @@ namespace settings {
         if (spec.key == "capsule_group" && managedCapsuleGroups.empty()) {
           continue;
         }
+        if (!isSettingVisible(ctx.config, widgetName, spec, specs)) {
+          continue;
+        }
         if (spec.advanced && !ctx.showAdvanced) {
           continue;
         }
@@ -895,6 +939,7 @@ namespace settings {
             .control = TextSetting{},
             .advanced = spec.advanced,
             .searchText = {},
+            .visibleWhen = std::nullopt,
         };
 
         switch (spec.valueType) {
@@ -1164,15 +1209,18 @@ namespace settings {
           inspector->addChild(std::move(groupRow));
         }
 
-        if (!currentLaneInherited && !currentLaneKey.empty()) {
-          auto moveRow = std::make_unique<Flex>();
-          moveRow->setDirection(FlexDirection::Horizontal);
-          moveRow->setAlign(FlexAlign::Center);
-          moveRow->setGap(Style::spaceXs * ctx.scale);
+        const bool pendingDelete = guiManaged && ctx.pendingDeleteWidgetName == widgetName;
+        const bool renaming = guiManaged && ctx.renamingWidgetName == widgetName;
 
-          auto moveSpacer = std::make_unique<Flex>();
-          moveSpacer->setFlexGrow(1.0f);
-          moveRow->addChild(std::move(moveSpacer));
+        if (!pendingDelete && !renaming && !currentLaneInherited && !currentLaneKey.empty()) {
+          auto actionRow = std::make_unique<Flex>();
+          actionRow->setDirection(FlexDirection::Horizontal);
+          actionRow->setAlign(FlexAlign::Center);
+          actionRow->setGap(Style::spaceXs * ctx.scale);
+
+          auto actionSpacer = std::make_unique<Flex>();
+          actionSpacer->setFlexGrow(1.0f);
+          actionRow->addChild(std::move(actionSpacer));
 
           for (const auto targetLane : kLaneKeys) {
             if (targetLane == currentLaneKey) {
@@ -1200,16 +1248,47 @@ namespace settings {
               targetItems.push_back(widgetName);
               setOverrides({{sourcePath, sourceItems}, {targetPath, targetItems}});
             });
-            moveRow->addChild(std::move(moveBtn));
+            actionRow->addChild(std::move(moveBtn));
           }
 
-          inspector->addChild(std::move(moveRow));
+          if (guiManaged) {
+            auto renameBtn = std::make_unique<Button>();
+            renameBtn->setText(i18n::tr("settings.entities.widget.instance.rename"));
+            renameBtn->setVariant(ButtonVariant::Ghost);
+            renameBtn->setFontSize(Style::fontSizeCaption * ctx.scale);
+            renameBtn->setMinHeight(Style::controlHeightSm * ctx.scale);
+            renameBtn->setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
+            renameBtn->setRadius(Style::radiusSm * ctx.scale);
+            renameBtn->setOnClick(
+                [&renamingWidgetName = ctx.renamingWidgetName, widgetName, requestRebuild = ctx.requestRebuild]() {
+                  renamingWidgetName = widgetName;
+                  requestRebuild();
+                });
+            actionRow->addChild(std::move(renameBtn));
+
+            auto deleteBtn = std::make_unique<Button>();
+            deleteBtn->setGlyph("trash");
+            deleteBtn->setText(i18n::tr("settings.entities.widget.instance.delete"));
+            deleteBtn->setVariant(ButtonVariant::Ghost);
+            deleteBtn->setFontSize(Style::fontSizeCaption * ctx.scale);
+            deleteBtn->setGlyphSize(Style::fontSizeCaption * ctx.scale);
+            deleteBtn->setMinHeight(Style::controlHeightSm * ctx.scale);
+            deleteBtn->setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
+            deleteBtn->setRadius(Style::radiusSm * ctx.scale);
+            deleteBtn->setOnClick([&pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,
+                                   &renamingWidgetName = ctx.renamingWidgetName, widgetName,
+                                   requestRebuild = ctx.requestRebuild]() {
+              pendingDeleteWidgetName = widgetName;
+              renamingWidgetName.clear();
+              requestRebuild();
+            });
+            actionRow->addChild(std::move(deleteBtn));
+          }
+
+          inspector->addChild(std::move(actionRow));
         }
 
         addWidgetSettingsPanel(*inspector, widgetName, managedCapsuleGroupOptions(ctx.config, currentLanePath), ctx);
-
-        const bool pendingDelete = guiManaged && ctx.pendingDeleteWidgetName == widgetName;
-        const bool renaming = guiManaged && ctx.renamingWidgetName == widgetName;
 
         if (renaming) {
           auto renameRow = std::make_unique<Flex>();
@@ -1339,57 +1418,6 @@ namespace settings {
 
           confirmPanel->addChild(std::move(confirmRow));
           inspector->addChild(std::move(confirmPanel));
-        } else if (guiManaged && !currentLaneInherited && !currentLaneKey.empty()) {
-          auto actionRow = std::make_unique<Flex>();
-          actionRow->setDirection(FlexDirection::Horizontal);
-          actionRow->setAlign(FlexAlign::Center);
-          actionRow->setGap(Style::spaceXs * ctx.scale);
-
-          auto actionSpacer = std::make_unique<Flex>();
-          actionSpacer->setFlexGrow(1.0f);
-          actionRow->addChild(std::move(actionSpacer));
-
-          if (guiManaged && !renaming) {
-            auto renameBtn = std::make_unique<Button>();
-            renameBtn->setText(i18n::tr("settings.entities.widget.instance.rename"));
-            renameBtn->setVariant(ButtonVariant::Ghost);
-            renameBtn->setFontSize(Style::fontSizeCaption * ctx.scale);
-            renameBtn->setMinHeight(Style::controlHeightSm * ctx.scale);
-            renameBtn->setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-            renameBtn->setRadius(Style::radiusSm * ctx.scale);
-            renameBtn->setOnClick(
-                [&renamingWidgetName = ctx.renamingWidgetName, widgetName, requestRebuild = ctx.requestRebuild]() {
-                  renamingWidgetName = widgetName;
-                  requestRebuild();
-                });
-            actionRow->addChild(std::move(renameBtn));
-          }
-
-          if (guiManaged) {
-            auto deleteBtn = std::make_unique<Button>();
-            deleteBtn->setGlyph("trash");
-            deleteBtn->setText(i18n::tr("settings.entities.widget.instance.delete"));
-            deleteBtn->setVariant(ButtonVariant::Ghost);
-            deleteBtn->setFontSize(Style::fontSizeCaption * ctx.scale);
-            deleteBtn->setGlyphSize(Style::fontSizeCaption * ctx.scale);
-            deleteBtn->setMinHeight(Style::controlHeightSm * ctx.scale);
-            deleteBtn->setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-            deleteBtn->setRadius(Style::radiusSm * ctx.scale);
-            deleteBtn->setOnClick([&pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,
-                                   &renamingWidgetName = ctx.renamingWidgetName, widgetName,
-                                   requestRebuild = ctx.requestRebuild]() {
-              pendingDeleteWidgetName = widgetName;
-              renamingWidgetName.clear();
-              requestRebuild();
-            });
-            actionRow->addChild(std::move(deleteBtn));
-          }
-
-          if (actionRow->children().empty()) {
-            // nothing to add — leave inspector without action row
-          } else {
-            inspector->addChild(std::move(actionRow));
-          }
         }
       } else {
         std::string targetLaneKey;

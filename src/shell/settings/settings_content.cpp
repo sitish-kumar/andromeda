@@ -1532,11 +1532,38 @@ namespace settings {
                              const ListSetting& list) { makeListBlock(section, entry, list); },
     };
 
+    auto isEntryVisible = [&](const SettingEntry& e) -> bool {
+      if (!e.visibleWhen.has_value()) {
+        return true;
+      }
+      const auto& cond = *e.visibleWhen;
+      for (const auto& other : registry) {
+        if (other.path == cond.path) {
+          std::string currentValue;
+          if (const auto* toggle = std::get_if<ToggleSetting>(&other.control)) {
+            currentValue = toggle->checked ? "true" : "false";
+          } else if (const auto* select = std::get_if<SelectSetting>(&other.control)) {
+            currentValue = select->selectedValue;
+          }
+          for (const auto& v : cond.values) {
+            if (v == currentValue) {
+              return true;
+            }
+          }
+          return false;
+        }
+      }
+      return true;
+    };
+
     for (const auto& entry : registry) {
       if (ctx.searchQuery.empty() && !ctx.selectedSection.empty() && entry.section != ctx.selectedSection) {
         continue;
       }
       if (!ctx.showAdvanced && entry.advanced) {
+        continue;
+      }
+      if (!isEntryVisible(entry)) {
         continue;
       }
       if (ctx.showOverriddenOnly && ctx.configService != nullptr &&

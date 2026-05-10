@@ -21,6 +21,7 @@ struct SystemStats {
   std::uint64_t swapUsedMb{0};
   std::uint64_t swapTotalMb{0};
   std::optional<double> cpuTempC;
+  std::optional<double> gpuTempC;
   double netRxBytesPerSec{0.0};
   double netTxBytesPerSec{0.0};
   double loadAvg1{0.0};
@@ -45,6 +46,8 @@ public:
 
   void retainCpuTemp();
   void releaseCpuTemp();
+  void retainGpuTemp();
+  void releaseGpuTemp();
   void retainDiskPath(const std::string& path);
   void releaseDiskPath(const std::string& path);
   [[nodiscard]] float diskUsagePercent(const std::string& path) const;
@@ -75,6 +78,7 @@ private:
   };
   [[nodiscard]] static std::optional<MemData> readMemoryKb();
   [[nodiscard]] static std::optional<double> readCpuTempCelsius();
+  [[nodiscard]] static std::optional<double> readGpuTempCelsius();
   [[nodiscard]] static float readDiskUsagePercent(const std::string& path);
 
   struct NetIfaceBytes {
@@ -86,6 +90,7 @@ private:
 
   std::atomic<bool> m_running{false};
   std::atomic<int> m_cpuTempRefs{0};
+  std::atomic<int> m_gpuTempRefs{0};
   std::thread m_thread;
   std::mutex m_wakeMutex;
   std::condition_variable m_wakeCv;

@@ -1470,6 +1470,7 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
         .control = settings::ButtonSetting{i18n::tr("settings.schema.desktop.widgets-editor.button"),
                                            m_openDesktopWidgetEditor},
         .searchText = "desktop widgets editor edit",
+        .visibleWhen = std::nullopt,
     };
     m_settingsRegistry.insert(it, std::move(btn));
   }

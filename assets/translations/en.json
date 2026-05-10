@@ -917,6 +917,7 @@
         "always": "Always",
         "cpu-temp": "CPU Temperature",
         "cpu-usage": "CPU Usage",
+        "gpu-temp": "GPU Temperature",
         "disk-percent": "Disk Percent",
         "full": "Full",
         "gauge": "Gauge",

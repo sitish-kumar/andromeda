@@ -52,6 +52,11 @@ namespace settings {
     std::string_view labelKey;
   };
 
+  struct WidgetSettingVisibility {
+    std::string key;
+    std::vector<std::string> values;
+  };
+
   struct WidgetSettingSpec {
     std::string key;
     std::string labelKey;
@@ -64,6 +69,7 @@ namespace settings {
     std::vector<WidgetSettingSelectOption> options;
     bool advanced = false;
     bool segmented = false; // applies when valueType == Select
+    std::optional<WidgetSettingVisibility> visibleWhen;
   };
 
   [[nodiscard]] const std::vector<WidgetTypeSpec>& widgetTypeSpecs();

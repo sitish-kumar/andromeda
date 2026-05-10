@@ -33,6 +33,7 @@ namespace {
   constexpr auto kInitialSampleRetryDelay = std::chrono::milliseconds(250);
 
   bool needsCpuTemp(SysmonStat stat) { return stat == SysmonStat::CpuTemp; }
+  bool needsGpuTemp(SysmonStat stat) { return stat == SysmonStat::GpuTemp; }
 
 } // namespace
 
@@ -44,6 +45,9 @@ SysmonWidget::SysmonWidget(SystemMonitorService* monitor, wl_output* output, Sys
     if (needsCpuTemp(m_stat)) {
       m_monitor->retainCpuTemp();
     }
+    if (needsGpuTemp(m_stat)) {
+      m_monitor->retainGpuTemp();
+    }
     if (m_stat == SysmonStat::DiskPct && !m_diskPath.empty()) {
       m_monitor->retainDiskPath(m_diskPath);
     }
@@ -54,6 +58,9 @@ SysmonWidget::~SysmonWidget() {
   if (m_monitor != nullptr) {
     if (needsCpuTemp(m_stat)) {
       m_monitor->releaseCpuTemp();
+    }
+    if (needsGpuTemp(m_stat)) {
+      m_monitor->releaseGpuTemp();
     }
     if (m_stat == SysmonStat::DiskPct && !m_diskPath.empty()) {
       m_monitor->releaseDiskPath(m_diskPath);
@@ -412,6 +419,23 @@ double SysmonWidget::normalizedFromStats(SysmonStat stat, const SystemStats& sta
     }
     return 0.0;
 
+  case SysmonStat::GpuTemp:
+    if (stats.gpuTempC.has_value()) {
+      const double temp = *stats.gpuTempC;
+      if (temp < tempMin) {
+        tempMin = temp;
+      }
+      if (temp > tempMax) {
+        tempMax = temp;
+      }
+      const double range = tempMax - tempMin;
+      if (range <= 0.0) {
+        return 0.5;
+      }
+      return std::clamp((temp - tempMin) / range, 0.0, 1.0);
+    }
+    return 0.0;
+
   case SysmonStat::RamUsed:
     if (stats.ramTotalMb > 0) {
       return static_cast<double>(stats.ramUsedMb) / static_cast<double>(stats.ramTotalMb);
@@ -466,6 +490,12 @@ std::string SysmonWidget::formatValue() const {
     }
     return "--";
 
+  case SysmonStat::GpuTemp:
+    if (stats.gpuTempC.has_value()) {
+      return std::format("{:.0f}°C", *stats.gpuTempC);
+    }
+    return "--";
+
   case SysmonStat::RamUsed:
     if (stats.ramUsedMb >= 1024) {
       return std::format("{:.1f}G", static_cast<double>(stats.ramUsedMb) / 1024.0);
@@ -495,6 +525,8 @@ const char* SysmonWidget::glyphName(SysmonStat stat) {
     return "cpu-usage";
   case SysmonStat::CpuTemp:
     return "cpu-temperature";
+  case SysmonStat::GpuTemp:
+    return "temperature";
   case SysmonStat::RamUsed:
   case SysmonStat::RamPct:
     return "memory";

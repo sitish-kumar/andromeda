@@ -112,6 +112,11 @@ namespace settings {
                                       ListSetting, ShortcutListSetting, SessionPanelActionsSetting, ColorSetting,
                                       MultiSelectSetting, ButtonSetting, ColorRolePickerSetting, SearchPickerSetting>;
 
+  struct SettingVisibility {
+    std::vector<std::string> path;
+    std::vector<std::string> values;
+  };
+
   struct SettingEntry {
     std::string section;
     std::string group;
@@ -121,6 +126,7 @@ namespace settings {
     SettingControl control;
     bool advanced = false;
     std::string searchText;
+    std::optional<SettingVisibility> visibleWhen;
   };
 
   // Runtime conditions that gate optional sections (e.g. compositor-specific features).

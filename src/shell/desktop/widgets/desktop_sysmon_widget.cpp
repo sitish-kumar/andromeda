@@ -20,6 +20,7 @@ namespace {
   const auto kSampleInterval = std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::seconds(1));
 
   bool needsCpuTemp(DesktopSysmonStat stat) { return stat == DesktopSysmonStat::CpuTemp; }
+  bool needsGpuTemp(DesktopSysmonStat stat) { return stat == DesktopSysmonStat::GpuTemp; }
 
 } // namespace
 
@@ -31,8 +32,12 @@ DesktopSysmonWidget::DesktopSysmonWidget(SystemMonitorService* monitor, DesktopS
   if (m_monitor != nullptr) {
     if (needsCpuTemp(m_stat))
       m_monitor->retainCpuTemp();
+    if (needsGpuTemp(m_stat))
+      m_monitor->retainGpuTemp();
     if (m_stat2.has_value() && needsCpuTemp(*m_stat2))
       m_monitor->retainCpuTemp();
+    if (m_stat2.has_value() && needsGpuTemp(*m_stat2))
+      m_monitor->retainGpuTemp();
   }
 }
 
@@ -40,8 +45,12 @@ DesktopSysmonWidget::~DesktopSysmonWidget() {
   if (m_monitor != nullptr) {
     if (needsCpuTemp(m_stat))
       m_monitor->releaseCpuTemp();
+    if (needsGpuTemp(m_stat))
+      m_monitor->releaseGpuTemp();
     if (m_stat2.has_value() && needsCpuTemp(*m_stat2))
       m_monitor->releaseCpuTemp();
+    if (m_stat2.has_value() && needsGpuTemp(*m_stat2))
+      m_monitor->releaseGpuTemp();
   }
 }
 
@@ -195,6 +204,20 @@ double DesktopSysmonWidget::normalizedFromStats(DesktopSysmonStat stat, const Sy
     }
     return 0.0;
 
+  case DesktopSysmonStat::GpuTemp:
+    if (stats.gpuTempC.has_value()) {
+      const double temp = *stats.gpuTempC;
+      if (temp < tempMin)
+        tempMin = temp;
+      if (temp > tempMax)
+        tempMax = temp;
+      const double range = tempMax - tempMin;
+      if (range <= 0.0)
+        return 0.5;
+      return std::clamp((temp - tempMin) / range, 0.0, 1.0);
+    }
+    return 0.0;
+
   case DesktopSysmonStat::RamPct:
     return stats.ramUsagePercent / 100.0;
 
@@ -222,6 +245,12 @@ std::string DesktopSysmonWidget::formatValueFor(DesktopSysmonStat stat) const {
   case DesktopSysmonStat::CpuTemp:
     if (stats.cpuTempC.has_value()) {
       return std::format("{:.0f}°C", *stats.cpuTempC);
+    }
+    return "--";
+
+  case DesktopSysmonStat::GpuTemp:
+    if (stats.gpuTempC.has_value()) {
+      return std::format("{:.0f}°C", *stats.gpuTempC);
     }
     return "--";
 
@@ -323,6 +352,8 @@ const char* DesktopSysmonWidget::glyphName(DesktopSysmonStat stat) {
     return "cpu-usage";
   case DesktopSysmonStat::CpuTemp:
     return "cpu-temperature";
+  case DesktopSysmonStat::GpuTemp:
+    return "temperature";
   case DesktopSysmonStat::RamPct:
     return "memory";
   case DesktopSysmonStat::SwapPct:

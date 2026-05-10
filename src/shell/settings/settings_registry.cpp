@@ -158,6 +158,7 @@ namespace settings {
           .control = std::move(control),
           .advanced = advanced,
           .searchText = lower(searchText),
+          .visibleWhen = std::nullopt,
       };
     }
 
@@ -942,28 +943,52 @@ namespace settings {
       entries.push_back(makeEntry(section, "capsules", tr("settings.schema.bar.widget-capsules.label"),
                                   tr("settings.schema.bar.widget-capsules.description"), path("capsule"),
                                   ToggleSetting{selectedBar->widgetCapsuleDefault}, "pill"));
-      entries.push_back(makeEntry(section, "capsules", tr("settings.schema.bar.capsule-groups.label"),
-                                  tr("settings.schema.bar.capsule-groups.description"), path("capsule_groups"),
-                                  ListSetting{.items = selectedBar->widgetCapsuleGroups}, "grouped capsules"));
-      entries.push_back(makeEntry(section, "capsules", tr("settings.schema.bar.capsule-fill.label"),
-                                  tr("settings.schema.bar.capsule-fill.description"), path("capsule_fill"),
-                                  colorRolePicker(selectedBar->widgetCapsuleFill), "color role pill", true));
-      entries.push_back(makeEntry(section, "capsules", tr("settings.schema.bar.capsule-foreground.label"),
-                                  tr("settings.schema.bar.capsule-foreground.description"), path("capsule_foreground"),
-                                  optionalColorRolePicker(selectedBar->widgetCapsuleForeground),
-                                  "color role foreground pill", true));
-      entries.push_back(makeEntry(section, "capsules", tr("settings.schema.bar.capsule-border.label"),
-                                  tr("settings.schema.bar.capsule-border.description"), path("capsule_border"),
-                                  capsuleBorderRolePicker(selectedBar->widgetCapsuleBorder), "color role pill outline",
-                                  true));
-      entries.push_back(makeEntry(section, "capsules", tr("settings.schema.bar.capsule-padding.label"),
-                                  tr("settings.schema.bar.capsule-padding.description"), path("capsule_padding"),
-                                  SliderSetting{selectedBar->widgetCapsulePadding, 0.0f, 48.0f, 1.0f, false},
-                                  "pill inset", true));
-      entries.push_back(makeEntry(section, "capsules", tr("settings.schema.bar.capsule-opacity.label"),
-                                  tr("settings.schema.bar.capsule-opacity.description"), path("capsule_opacity"),
-                                  SliderSetting{selectedBar->widgetCapsuleOpacity, 0.0f, 1.0f, 0.01f, false},
-                                  "pill alpha", true));
+      const SettingVisibility capsuleOn{path("capsule"), {"true"}};
+      {
+        auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-groups.label"),
+                           tr("settings.schema.bar.capsule-groups.description"), path("capsule_groups"),
+                           ListSetting{.items = selectedBar->widgetCapsuleGroups}, "grouped capsules");
+        e.visibleWhen = capsuleOn;
+        entries.push_back(std::move(e));
+      }
+      {
+        auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-fill.label"),
+                           tr("settings.schema.bar.capsule-fill.description"), path("capsule_fill"),
+                           colorRolePicker(selectedBar->widgetCapsuleFill), "color role pill", true);
+        e.visibleWhen = capsuleOn;
+        entries.push_back(std::move(e));
+      }
+      {
+        auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-foreground.label"),
+                           tr("settings.schema.bar.capsule-foreground.description"), path("capsule_foreground"),
+                           optionalColorRolePicker(selectedBar->widgetCapsuleForeground), "color role foreground pill",
+                           true);
+        e.visibleWhen = capsuleOn;
+        entries.push_back(std::move(e));
+      }
+      {
+        auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-border.label"),
+                           tr("settings.schema.bar.capsule-border.description"), path("capsule_border"),
+                           capsuleBorderRolePicker(selectedBar->widgetCapsuleBorder), "color role pill outline", true);
+        e.visibleWhen = capsuleOn;
+        entries.push_back(std::move(e));
+      }
+      {
+        auto e =
+            makeEntry(section, "capsules", tr("settings.schema.bar.capsule-padding.label"),
+                      tr("settings.schema.bar.capsule-padding.description"), path("capsule_padding"),
+                      SliderSetting{selectedBar->widgetCapsulePadding, 0.0f, 48.0f, 1.0f, false}, "pill inset", true);
+        e.visibleWhen = capsuleOn;
+        entries.push_back(std::move(e));
+      }
+      {
+        auto e =
+            makeEntry(section, "capsules", tr("settings.schema.bar.capsule-opacity.label"),
+                      tr("settings.schema.bar.capsule-opacity.description"), path("capsule_opacity"),
+                      SliderSetting{selectedBar->widgetCapsuleOpacity, 0.0f, 1.0f, 0.01f, false}, "pill alpha", true);
+        e.visibleWhen = capsuleOn;
+        entries.push_back(std::move(e));
+      }
       entries.push_back(makeEntry(section, "widget-list", tr("settings.schema.bar.start-widgets.label"),
                                   tr("settings.schema.bar.start-widgets.description"), path("start"),
                                   ListSetting{.items = selectedBar->startWidgets}, "left"));
@@ -1071,37 +1096,62 @@ namespace settings {
       entries.push_back(makeEntry(section, "capsules", tr("settings.schema.bar.widget-capsules.label"),
                                   tr("settings.schema.bar.widget-capsules.description"), mpath("capsule"),
                                   ToggleSetting{ovr.widgetCapsuleDefault.value_or(bar.widgetCapsuleDefault)}, "pill"));
-      entries.push_back(makeEntry(section, "capsules", tr("settings.schema.bar.capsule-groups.label"),
-                                  tr("settings.schema.bar.capsule-groups.description"), mpath("capsule_groups"),
-                                  ListSetting{.items = ovr.widgetCapsuleGroups.value_or(bar.widgetCapsuleGroups)},
-                                  "grouped capsules"));
-      entries.push_back(makeEntry(section, "capsules", tr("settings.schema.bar.capsule-fill.label"),
-                                  tr("settings.schema.bar.capsule-fill.description"), mpath("capsule_fill"),
-                                  colorRolePicker(ovr.widgetCapsuleFill.value_or(bar.widgetCapsuleFill)),
-                                  "color role pill", true));
-      entries.push_back(
-          makeEntry(section, "capsules", tr("settings.schema.bar.capsule-foreground.label"),
-                    tr("settings.schema.bar.capsule-foreground.description"), mpath("capsule_foreground"),
-                    optionalColorRolePicker(ovr.widgetCapsuleForeground.has_value() ? ovr.widgetCapsuleForeground
-                                                                                    : bar.widgetCapsuleForeground),
-                    "color role foreground pill", true));
-      entries.push_back(makeEntry(
-          section, "capsules", tr("settings.schema.bar.capsule-border.label"),
-          tr("settings.schema.bar.capsule-border.description"), mpath("capsule_border"),
-          capsuleBorderRolePicker(ovr.widgetCapsuleBorderSpecified ? ovr.widgetCapsuleBorder : bar.widgetCapsuleBorder),
-          "color role pill outline", true));
-      entries.push_back(
-          makeEntry(section, "capsules", tr("settings.schema.bar.capsule-padding.label"),
-                    tr("settings.schema.bar.capsule-padding.description"), mpath("capsule_padding"),
-                    SliderSetting{static_cast<float>(ovr.widgetCapsulePadding.value_or(bar.widgetCapsulePadding)), 0.0f,
-                                  48.0f, 1.0f, false},
-                    "pill inset", true));
-      entries.push_back(
-          makeEntry(section, "capsules", tr("settings.schema.bar.capsule-opacity.label"),
-                    tr("settings.schema.bar.capsule-opacity.description"), mpath("capsule_opacity"),
-                    SliderSetting{static_cast<float>(ovr.widgetCapsuleOpacity.value_or(bar.widgetCapsuleOpacity)), 0.0f,
-                                  1.0f, 0.01f, false},
-                    "pill alpha", true));
+      const SettingVisibility mCapsuleOn{mpath("capsule"), {"true"}};
+      {
+        auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-groups.label"),
+                           tr("settings.schema.bar.capsule-groups.description"), mpath("capsule_groups"),
+                           ListSetting{.items = ovr.widgetCapsuleGroups.value_or(bar.widgetCapsuleGroups)},
+                           "grouped capsules");
+        e.visibleWhen = mCapsuleOn;
+        entries.push_back(std::move(e));
+      }
+      {
+        auto e =
+            makeEntry(section, "capsules", tr("settings.schema.bar.capsule-fill.label"),
+                      tr("settings.schema.bar.capsule-fill.description"), mpath("capsule_fill"),
+                      colorRolePicker(ovr.widgetCapsuleFill.value_or(bar.widgetCapsuleFill)), "color role pill", true);
+        e.visibleWhen = mCapsuleOn;
+        entries.push_back(std::move(e));
+      }
+      {
+        auto e =
+            makeEntry(section, "capsules", tr("settings.schema.bar.capsule-foreground.label"),
+                      tr("settings.schema.bar.capsule-foreground.description"), mpath("capsule_foreground"),
+                      optionalColorRolePicker(ovr.widgetCapsuleForeground.has_value() ? ovr.widgetCapsuleForeground
+                                                                                      : bar.widgetCapsuleForeground),
+                      "color role foreground pill", true);
+        e.visibleWhen = mCapsuleOn;
+        entries.push_back(std::move(e));
+      }
+      {
+        auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-border.label"),
+                           tr("settings.schema.bar.capsule-border.description"), mpath("capsule_border"),
+                           capsuleBorderRolePicker(ovr.widgetCapsuleBorderSpecified ? ovr.widgetCapsuleBorder
+                                                                                    : bar.widgetCapsuleBorder),
+                           "color role pill outline", true);
+        e.visibleWhen = mCapsuleOn;
+        entries.push_back(std::move(e));
+      }
+      {
+        auto e =
+            makeEntry(section, "capsules", tr("settings.schema.bar.capsule-padding.label"),
+                      tr("settings.schema.bar.capsule-padding.description"), mpath("capsule_padding"),
+                      SliderSetting{static_cast<float>(ovr.widgetCapsulePadding.value_or(bar.widgetCapsulePadding)),
+                                    0.0f, 48.0f, 1.0f, false},
+                      "pill inset", true);
+        e.visibleWhen = mCapsuleOn;
+        entries.push_back(std::move(e));
+      }
+      {
+        auto e =
+            makeEntry(section, "capsules", tr("settings.schema.bar.capsule-opacity.label"),
+                      tr("settings.schema.bar.capsule-opacity.description"), mpath("capsule_opacity"),
+                      SliderSetting{static_cast<float>(ovr.widgetCapsuleOpacity.value_or(bar.widgetCapsuleOpacity)),
+                                    0.0f, 1.0f, 0.01f, false},
+                      "pill alpha", true);
+        e.visibleWhen = mCapsuleOn;
+        entries.push_back(std::move(e));
+      }
       entries.push_back(makeEntry(section, "widget-list", tr("settings.schema.bar.start-widgets.label"),
                                   tr("settings.schema.bar.start-widgets.description"), mpath("start"),
                                   ListSetting{.items = ovr.startWidgets.value_or(bar.startWidgets)}, "left"));

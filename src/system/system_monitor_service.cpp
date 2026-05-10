@@ -105,6 +105,47 @@ namespace {
            t.find("soc") != std::string::npos || t.find("package") != std::string::npos;
   }
 
+  int scoreGpuHwmonSensor(const std::string& hwmon_name, const std::string& label) {
+    const std::string name = toLower(hwmon_name);
+    const std::string lbl = toLower(label);
+
+    if (name.find("nvidia") != std::string::npos) {
+      return -1;
+    }
+
+    int score = 0;
+    if (name == "amdgpu") {
+      score += 20;
+    } else if (name == "i915" || name == "xe") {
+      score += 20;
+    } else if (name == "nouveau") {
+      score += 10;
+    } else {
+      return -1;
+    }
+
+    if (lbl.find("junction") != std::string::npos || lbl.find("edge") != std::string::npos) {
+      score += 30;
+    } else if (lbl.find("gpu") != std::string::npos || lbl.find("mem") != std::string::npos) {
+      score += 25;
+    }
+
+    return score;
+  }
+
+  bool isGpuHwmonAwake(const std::filesystem::path& hwmonPath) {
+    namespace fs = std::filesystem;
+    const auto deviceLink = hwmonPath / "device";
+    if (!fs::exists(deviceLink)) {
+      return true;
+    }
+    const auto status = readSmallTextFile(deviceLink / "power" / "runtime_status");
+    if (!status.has_value()) {
+      return true;
+    }
+    return *status == "active";
+  }
+
   constexpr Logger kLog("sysmon");
 
 } // namespace
@@ -142,6 +183,10 @@ std::vector<SystemStats> SystemMonitorService::history(int windowSize) const {
 void SystemMonitorService::retainCpuTemp() { m_cpuTempRefs.fetch_add(1, std::memory_order_relaxed); }
 
 void SystemMonitorService::releaseCpuTemp() { m_cpuTempRefs.fetch_sub(1, std::memory_order_relaxed); }
+
+void SystemMonitorService::retainGpuTemp() { m_gpuTempRefs.fetch_add(1, std::memory_order_relaxed); }
+
+void SystemMonitorService::releaseGpuTemp() { m_gpuTempRefs.fetch_sub(1, std::memory_order_relaxed); }
 
 void SystemMonitorService::retainDiskPath(const std::string& path) {
   const float initialPercent = isRunning() ? readDiskUsagePercent(path) : 0.0f;
@@ -212,6 +257,7 @@ void SystemMonitorService::samplingLoop() {
     next.sampledAt = std::chrono::steady_clock::now();
     std::vector<std::string> diskPaths;
     std::optional<double> previousCpuTemp;
+    std::optional<double> previousGpuTemp;
 
     const auto currentCpu = readCpuTotals();
     if (prevCpu.has_value() && currentCpu.has_value()) {
@@ -266,6 +312,7 @@ void SystemMonitorService::samplingLoop() {
     {
       std::lock_guard lock{m_statsMutex};
       previousCpuTemp = m_latest.cpuTempC;
+      previousGpuTemp = m_latest.gpuTempC;
       diskPaths.reserve(m_diskHistories.size());
       for (const auto& [path, disk] : m_diskHistories) {
         if (disk.refs > 0) {
@@ -279,6 +326,13 @@ void SystemMonitorService::samplingLoop() {
     }
     if (!next.cpuTempC.has_value()) {
       next.cpuTempC = previousCpuTemp.value_or(40.0);
+    }
+
+    if (m_gpuTempRefs.load(std::memory_order_relaxed) > 0) {
+      next.gpuTempC = readGpuTempCelsius();
+    }
+    if (!next.gpuTempC.has_value()) {
+      next.gpuTempC = previousGpuTemp;
     }
 
     std::vector<std::pair<std::string, float>> diskPercents;
@@ -471,6 +525,60 @@ std::optional<double> SystemMonitorService::readCpuTempCelsius() {
   }
 
   return fallback_temp;
+}
+
+std::optional<double> SystemMonitorService::readGpuTempCelsius() {
+  namespace fs = std::filesystem;
+
+  const fs::path hwmon_root{"/sys/class/hwmon"};
+  if (!fs::exists(hwmon_root) || !fs::is_directory(hwmon_root)) {
+    return std::nullopt;
+  }
+
+  int bestScore = -1;
+  std::optional<double> best_temp;
+
+  for (const auto& hwmon_entry : fs::directory_iterator{hwmon_root}) {
+    if (!hwmon_entry.is_directory()) {
+      continue;
+    }
+
+    const std::string hwmonName = readSmallTextFile(hwmon_entry.path() / "name").value_or("");
+    const int nameScore = scoreGpuHwmonSensor(hwmonName, "");
+    if (nameScore < 0) {
+      continue;
+    }
+
+    if (!isGpuHwmonAwake(hwmon_entry.path())) {
+      continue;
+    }
+
+    for (const auto& file_entry : fs::directory_iterator{hwmon_entry.path()}) {
+      if (!file_entry.is_regular_file()) {
+        continue;
+      }
+
+      const std::string fileName = file_entry.path().filename().string();
+      if (!fileName.starts_with("temp") || !fileName.ends_with("_input")) {
+        continue;
+      }
+
+      const std::string base = fileName.substr(0, fileName.size() - 6);
+      const std::string label = readSmallTextFile(hwmon_entry.path() / (base + "_label")).value_or("");
+      const auto tempC = readTempInputCelsius(file_entry.path());
+      if (!tempC.has_value()) {
+        continue;
+      }
+
+      const int score = scoreGpuHwmonSensor(hwmonName, label);
+      if (score > bestScore) {
+        bestScore = score;
+        best_temp = *tempC;
+      }
+    }
+  }
+
+  return best_temp;
 }
 
 float SystemMonitorService::readDiskUsagePercent(const std::string& path) {

@@ -175,6 +175,8 @@ DesktopWidgetFactory::create(const std::string& type,
     auto parseStat = [](const std::string& s) -> DesktopSysmonStat {
       if (s == "cpu_temp")
         return DesktopSysmonStat::CpuTemp;
+      if (s == "gpu_temp")
+        return DesktopSysmonStat::GpuTemp;
       if (s == "ram_pct")
         return DesktopSysmonStat::RamPct;
       if (s == "swap_pct")

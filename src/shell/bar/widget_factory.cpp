@@ -304,6 +304,8 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
     SysmonStat stat = SysmonStat::CpuUsage;
     if (statStr == "cpu_temp") {
       stat = SysmonStat::CpuTemp;
+    } else if (statStr == "gpu_temp") {
+      stat = SysmonStat::GpuTemp;
     } else if (statStr == "ram_used") {
       stat = SysmonStat::RamUsed;
     } else if (statStr == "ram_pct") {
