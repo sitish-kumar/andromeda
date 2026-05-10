@@ -595,8 +595,6 @@
       "kind-section-label": "Behavior",
       "glyph-picker-title": "Session menu icon",
       "clear-glyph": "Clear",
-      "enabled": "Shown",
-      "show-in-menu": "Show",
       "command-label": "Shell command",
       "command-placeholder": "Optional bash command, leave empty for built-in behavior",
       "label-field": "Label",

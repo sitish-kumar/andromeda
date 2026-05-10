@@ -1392,22 +1392,6 @@ namespace settings {
         reorder->addChild(std::move(downBtn));
         row->addChild(std::move(reorder));
 
-        auto showGrp = std::make_unique<Flex>();
-        showGrp->setDirection(FlexDirection::Horizontal);
-        showGrp->setAlign(FlexAlign::Center);
-        showGrp->setGap(Style::spaceSm * scale);
-        showGrp->addChild(makeLabel(i18n::tr("settings.session-actions.show-in-menu"), Style::fontSizeCaption * scale,
-                                    colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
-        auto showToggle = std::make_unique<Toggle>();
-        showToggle->setScale(scale);
-        showToggle->setChecked((*state)[idx].enabled);
-        showToggle->setOnChange([state, rowIndex = idx, commit](bool v) {
-          (*state)[rowIndex].enabled = v;
-          commit();
-        });
-        showGrp->addChild(std::move(showToggle));
-        row->addChild(std::move(showGrp));
-
         auto entrySettings = std::make_unique<Button>();
         entrySettings->setGlyph("settings");
         entrySettings->setVariant(ButtonVariant::Ghost);
@@ -1422,6 +1406,15 @@ namespace settings {
           }
         });
         row->addChild(std::move(entrySettings));
+
+        auto enabledToggle = std::make_unique<Toggle>();
+        enabledToggle->setScale(scale);
+        enabledToggle->setChecked((*state)[idx].enabled);
+        enabledToggle->setOnChange([state, rowIndex = idx, commit](bool v) {
+          (*state)[rowIndex].enabled = v;
+          commit();
+        });
+        row->addChild(std::move(enabledToggle));
 
         block->addChild(std::move(row));
       }

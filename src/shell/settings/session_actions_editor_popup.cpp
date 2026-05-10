@@ -43,8 +43,8 @@ namespace settings {
 
   } // namespace
 
-  constexpr float kPanelWidth = 640.0f;
-  constexpr float kInitialPanelHeight = 360.0f;
+  constexpr float kPopupWidth = 640.0f;
+  constexpr float kInitialPopupHeight = 360.0f;
   constexpr float kParentMargin = 48.0f;
 
   SessionActionsEditorPopup::~SessionActionsEditorPopup() { destroyPopup(); }
@@ -75,11 +75,11 @@ namespace settings {
     m_parentWidth = parentWidth;
     m_parentHeight = parentHeight;
 
-    const float panelWidth = kPanelWidth * m_scale;
-    const float panelHeight = kInitialPanelHeight * m_scale;
+    const float popupWidth = kPopupWidth * m_scale;
+    const float popupHeight = kInitialPopupHeight * m_scale;
     const auto cfg =
-        centeredPopupConfig(parentWidth, parentHeight, static_cast<std::uint32_t>(std::max(1.0f, panelWidth)),
-                            static_cast<std::uint32_t>(std::max(1.0f, panelHeight)), serial);
+        centeredPopupConfig(parentWidth, parentHeight, static_cast<std::uint32_t>(std::max(1.0f, popupWidth)),
+                            static_cast<std::uint32_t>(std::max(1.0f, popupHeight)), serial);
 
     if (!openPopupAsChild(cfg, parentXdgSurface, parentWlSurface, output)) {
       close();
@@ -102,14 +102,14 @@ namespace settings {
 
   void SessionActionsEditorPopup::populateContent(Node* contentParent, std::uint32_t /*width*/,
                                                   std::uint32_t /*height*/) {
-    const float panelPadding = Style::spaceSm * m_scale;
-    const float panelGap = Style::spaceSm * m_scale;
+    const float popupPadding = Style::spaceSm * m_scale;
+    const float popupGap = Style::spaceSm * m_scale;
 
     auto root = std::make_unique<Flex>();
     root->setDirection(FlexDirection::Vertical);
     root->setAlign(FlexAlign::Stretch);
-    root->setGap(panelGap);
-    root->setPadding(panelPadding);
+    root->setGap(popupGap);
+    root->setPadding(popupPadding);
     m_root = root.get();
 
     auto header = std::make_unique<Flex>();
@@ -184,7 +184,7 @@ namespace settings {
         m_parentHeight > 0 ? std::max(1.0f, static_cast<float>(m_parentHeight) - (kParentMargin * m_scale)) : 1.0e6f;
     const std::uint32_t nextHeight =
         static_cast<std::uint32_t>(std::max(1.0f, std::min(desiredOuterHeight, maxOuterHeight)));
-    const std::uint32_t nextWidth = static_cast<std::uint32_t>(std::max(1.0f, std::ceil(kPanelWidth * m_scale)));
+    const std::uint32_t nextWidth = static_cast<std::uint32_t>(std::max(1.0f, std::ceil(kPopupWidth * m_scale)));
     if (m_surface->height() != nextHeight || m_surface->width() != nextWidth) {
       m_surface->resize(nextWidth, nextHeight);
       return;
