@@ -11,6 +11,7 @@
 #include <vector>
 
 namespace sdbus {
+  class Error;
   class IObject;
   class IProxy;
 } // namespace sdbus
