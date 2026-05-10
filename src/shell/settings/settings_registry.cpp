@@ -597,6 +597,12 @@ namespace settings {
                                 tr("settings.schema.shell.clipboard-auto-paste.description"),
                                 {"shell", "clipboard_auto_paste"},
                                 enumSelect(kClipboardAutoPasteModes, cfg.shell.clipboardAutoPaste), "clipboard paste"));
+    entries.push_back(makeEntry("shell", "clipboard", tr("settings.schema.shell.clipboard-image-action.label"),
+                                tr("settings.schema.shell.clipboard-image-action.description"),
+                                {"shell", "clipboard_image_action_command"},
+                                TextSetting{cfg.shell.clipboardImageActionCommand,
+                                            tr("settings.schema.shell.clipboard-image-action.placeholder"), 320.0f},
+                                "clipboard image action annotation editor external gimp satty gradia"));
     entries.push_back(makeEntry("shell", "osd", tr("settings.schema.shell.osd-position.label"),
                                 tr("settings.schema.shell.osd-position.description"), {"osd", "position"},
                                 plainSelect({{"top_right", "settings.options.screen-position.top-right"},

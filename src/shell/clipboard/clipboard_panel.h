@@ -52,9 +52,11 @@ private:
   void doUpdate(Renderer& renderer) override;
   void schedulePreviewPayloadRefresh(bool debounced);
   void updateListState();
+  void updatePreviewActions();
   void rebuildPreview(Renderer& renderer, float width, float height);
   void selectIndex(std::size_t index);
   void activateSelected();
+  void runImageAction();
   bool handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers);
   void scrollToSelected();
   void deleteSelectedEntry();
@@ -85,6 +87,7 @@ private:
   Flex* m_previewHeaderRow = nullptr;
   Label* m_previewTitle = nullptr;
   Label* m_previewMeta = nullptr;
+  Button* m_imageActionButton = nullptr;
   Button* m_copyButton = nullptr;
   Button* m_deleteEntryButton = nullptr;
   ScrollView* m_previewScrollView = nullptr;

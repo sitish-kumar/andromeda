@@ -1270,6 +1270,9 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
         shell.clipboardAutoPaste = *parsed;
       }
     }
+    if (auto v = (*shellTbl)["clipboard_image_action_command"].value<std::string>()) {
+      shell.clipboardImageActionCommand = *v;
+    }
   }
 
   // Parse [theme]

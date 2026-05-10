@@ -382,6 +382,7 @@ struct ShellConfig {
   bool middleClickOpensWidgetSettings = true;
   bool showLocation = true;
   ClipboardAutoPasteMode clipboardAutoPaste = ClipboardAutoPasteMode::Auto;
+  std::string clipboardImageActionCommand;
   ShadowConfig shadow;
   PanelConfig panel;
   ScreenCornersConfig screenCorners;

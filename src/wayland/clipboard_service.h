@@ -6,6 +6,7 @@
 #include <deque>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <poll.h>
 #include <string>
 #include <string_view>
@@ -73,6 +74,7 @@ public:
   [[nodiscard]] std::size_t addPollFds(std::vector<pollfd>& fds) const;
 
   bool ensureEntryLoaded(std::size_t index);
+  [[nodiscard]] std::optional<std::string> exportEntryForExternalTool(std::size_t index);
   void evictEntryPayload(std::size_t index);
   void evictAllPayloads();
   bool copyText(std::string text);

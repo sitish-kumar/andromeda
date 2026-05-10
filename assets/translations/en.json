@@ -21,7 +21,8 @@
       "text-title": "Text Clipboard Entry",
       "loading": "Loading preview...",
       "empty-text-payload": "(empty text payload)",
-      "truncated": "… truncated"
+      "truncated": "… truncated",
+      "image-action": "Open image action"
     },
     "empty": {
       "history-title": "Clipboard history is empty",
@@ -1277,6 +1278,11 @@
         "clipboard-auto-paste": {
           "label": "Clipboard Auto-Paste",
           "description": "Automatically paste clipboard selections"
+        },
+        "clipboard-image-action": {
+          "label": "Image Action Command",
+          "description": "Command to run from image clipboard entries. Use {path} for an exported image file; use {stdin} or omit {path} to pipe the image to stdin.",
+          "placeholder": "gimp {path} or satty -f -"
         },
         "osd-position": {
           "label": "OSD Position",

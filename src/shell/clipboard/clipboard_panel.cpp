@@ -2,6 +2,8 @@
 
 #include "config/config_service.h"
 #include "core/deferred_call.h"
+#include "core/log.h"
+#include "core/process.h"
 #include "core/ui_phase.h"
 #include "i18n/i18n.h"
 #include "render/core/async_texture_cache.h"
@@ -43,6 +45,61 @@ namespace {
   constexpr std::size_t kListOverscanRows = 3;
   constexpr auto kPreviewPayloadDebounceInterval = std::chrono::milliseconds(75);
   constexpr auto kFilterDebounceInterval = std::chrono::milliseconds(120);
+  constexpr Logger kLog("clipboard");
+
+  std::string trim(std::string_view text) {
+    const auto first = text.find_first_not_of(" \t\r\n");
+    if (first == std::string_view::npos) {
+      return {};
+    }
+    const auto last = text.find_last_not_of(" \t\r\n");
+    return std::string(text.substr(first, last - first + 1));
+  }
+
+  std::string shellQuote(std::string_view text) {
+    std::string quoted;
+    quoted.reserve(text.size() + 2);
+    quoted.push_back('\'');
+    for (char ch : text) {
+      if (ch == '\'') {
+        quoted += "'\\''";
+      } else {
+        quoted.push_back(ch);
+      }
+    }
+    quoted.push_back('\'');
+    return quoted;
+  }
+
+  void replaceAll(std::string& text, std::string_view needle, std::string_view replacement) {
+    if (needle.empty()) {
+      return;
+    }
+
+    std::size_t pos = 0;
+    while ((pos = text.find(needle, pos)) != std::string::npos) {
+      text.replace(pos, needle.size(), replacement);
+      pos += replacement.size();
+    }
+  }
+
+  std::string buildImageActionCommand(std::string command, std::string_view imagePath) {
+    const bool hasPathPlaceholder = command.find("{path}") != std::string::npos;
+    const bool hasStdinPlaceholder = command.find("{stdin}") != std::string::npos;
+    const std::string quotedPath = shellQuote(imagePath);
+
+    if (hasPathPlaceholder) {
+      replaceAll(command, "{path}", quotedPath);
+    }
+    if (hasStdinPlaceholder) {
+      replaceAll(command, "{stdin}", "-");
+    }
+
+    if (!hasPathPlaceholder || hasStdinPlaceholder) {
+      return "cat -- " + quotedPath + " | " + command;
+    }
+    return command;
+  }
 
   std::string collapseWhitespace(std::string_view text) {
     std::string out;
@@ -506,6 +563,20 @@ void ClipboardPanel::create() {
   previewActions->setAlign(FlexAlign::Center);
   previewActions->setGap(Style::spaceXs * scale);
 
+  auto imageActionButton = std::make_unique<Button>();
+  imageActionButton->setGlyph("photo-edit");
+  imageActionButton->setVariant(ButtonVariant::Secondary);
+  imageActionButton->setGlyphSize(Style::fontSizeBody * scale);
+  imageActionButton->setMinWidth(Style::controlHeightSm * scale);
+  imageActionButton->setMinHeight(Style::controlHeightSm * scale);
+  imageActionButton->setPadding(Style::spaceXs * scale);
+  imageActionButton->setRadius(Style::radiusMd * scale);
+  imageActionButton->setVisible(false);
+  imageActionButton->setParticipatesInLayout(false);
+  imageActionButton->setOnClick([this]() { runImageAction(); });
+  m_imageActionButton = imageActionButton.get();
+  previewActions->addChild(std::move(imageActionButton));
+
   auto copyButton = std::make_unique<Button>();
   copyButton->setGlyph("copy");
   copyButton->setVariant(ButtonVariant::Secondary);
@@ -632,6 +703,8 @@ void ClipboardPanel::doUpdate(Renderer& renderer) {
     }
   }
 
+  updatePreviewActions();
+
   if (m_clipboard == nullptr || m_lastWidth <= 0.0f) {
     return;
   }
@@ -706,6 +779,7 @@ void ClipboardPanel::onClose() {
   m_previewHeaderRow = nullptr;
   m_previewTitle = nullptr;
   m_previewMeta = nullptr;
+  m_imageActionButton = nullptr;
   m_copyButton = nullptr;
   m_deleteEntryButton = nullptr;
   m_previewScrollView = nullptr;
@@ -785,11 +859,32 @@ void ClipboardPanel::updateListState() {
   }
 }
 
+void ClipboardPanel::updatePreviewActions() {
+  if (m_imageActionButton == nullptr) {
+    return;
+  }
+
+  bool showImageAction = false;
+  if (m_clipboard != nullptr && m_config != nullptr &&
+      !trim(m_config->config().shell.clipboardImageActionCommand).empty()) {
+    const std::size_t historyIndex = selectedHistoryIndex();
+    const auto& history = m_clipboard->history();
+    showImageAction = historyIndex != static_cast<std::size_t>(-1) && historyIndex < history.size() &&
+                      history[historyIndex].isImage();
+  }
+
+  m_imageActionButton->setVisible(showImageAction);
+  m_imageActionButton->setParticipatesInLayout(showImageAction);
+  m_imageActionButton->setEnabled(showImageAction);
+}
+
 void ClipboardPanel::rebuildPreview(Renderer& renderer, float width, float height) {
   uiAssertNotRendering("ClipboardPanel::rebuildPreview");
   if (m_previewContent == nullptr || m_previewTitle == nullptr || m_previewMeta == nullptr) {
     return;
   }
+
+  updatePreviewActions();
 
   while (!m_previewContent->children().empty()) {
     m_previewContent->removeChild(m_previewContent->children().front().get());
@@ -1011,6 +1106,38 @@ void ClipboardPanel::deleteSelectedEntry() {
   schedulePreviewPayloadRefresh(false);
   m_pendingScrollToSelected = true;
   PanelManager::instance().refresh();
+}
+
+void ClipboardPanel::runImageAction() {
+  if (m_clipboard == nullptr || m_config == nullptr) {
+    return;
+  }
+
+  const std::string configuredCommand = trim(m_config->config().shell.clipboardImageActionCommand);
+  if (configuredCommand.empty()) {
+    return;
+  }
+
+  const std::size_t historyIndex = selectedHistoryIndex();
+  if (historyIndex == static_cast<std::size_t>(-1)) {
+    return;
+  }
+
+  const auto& history = m_clipboard->history();
+  if (historyIndex >= history.size() || !history[historyIndex].isImage()) {
+    return;
+  }
+
+  const std::optional<std::string> exportedPath = m_clipboard->exportEntryForExternalTool(historyIndex);
+  if (!exportedPath.has_value()) {
+    kLog.warn("clipboard image action failed: selected image could not be exported");
+    return;
+  }
+
+  const std::string command = buildImageActionCommand(configuredCommand, *exportedPath);
+  if (!process::runAsync(command)) {
+    kLog.warn("clipboard image action failed to launch: {}", configuredCommand);
+  }
 }
 
 void ClipboardPanel::activateSelected() {

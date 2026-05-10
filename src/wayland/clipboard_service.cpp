@@ -46,6 +46,43 @@ namespace {
   constexpr Logger kLog("clipboard");
   std::uint64_t gStorageCounter = 0;
 
+  std::string extensionForImageMimeType(std::string_view mimeType) {
+    if (mimeType == "image/png")
+      return ".png";
+    if (mimeType == "image/jpeg" || mimeType == "image/jpg")
+      return ".jpg";
+    if (mimeType == "image/webp")
+      return ".webp";
+    if (mimeType == "image/gif")
+      return ".gif";
+    if (mimeType == "image/bmp")
+      return ".bmp";
+    if (mimeType == "image/tiff")
+      return ".tiff";
+    if (mimeType == "image/svg+xml")
+      return ".svg";
+    if (mimeType == "image/avif")
+      return ".avif";
+    if (mimeType == "image/heic")
+      return ".heic";
+    return ".img";
+  }
+
+  std::string exportExtensionForEntry(const ClipboardEntry& entry) {
+    std::string extension = extensionForImageMimeType(entry.dataMimeType);
+    if (extension != ".img") {
+      return extension;
+    }
+
+    for (const auto& mimeType : entry.mimeTypes) {
+      extension = extensionForImageMimeType(mimeType);
+      if (extension != ".img") {
+        return extension;
+      }
+    }
+    return extension;
+  }
+
   void closeFd(int& fd) {
     if (fd >= 0) {
       close(fd);
@@ -404,6 +441,55 @@ bool ClipboardService::ensureEntryLoaded(std::size_t index) {
     return false;
   }
   return loadEntryPayload(m_history[index]);
+}
+
+std::optional<std::string> ClipboardService::exportEntryForExternalTool(std::size_t index) {
+  namespace fs = std::filesystem;
+
+  if (index >= m_history.size()) {
+    return std::nullopt;
+  }
+
+  ClipboardEntry& entry = m_history[index];
+  if (!entry.isImage()) {
+    return std::nullopt;
+  }
+
+  const bool wasLoaded = entry.payloadLoaded;
+  if (!loadEntryPayload(entry)) {
+    return std::nullopt;
+  }
+
+  try {
+    if (entry.storageId.empty()) {
+      entry.storageId = generateStorageId();
+    }
+
+    const fs::path exportDir = fs::path(stateDirectory()) / "exports";
+    fs::create_directories(exportDir);
+    const fs::path exportPath = exportDir / (entry.storageId + exportExtensionForEntry(entry));
+
+    std::ofstream out(exportPath, std::ios::binary | std::ios::trunc);
+    if (!out.is_open()) {
+      throw std::runtime_error("failed to open exported clipboard image for writing");
+    }
+    out.write(reinterpret_cast<const char*>(entry.data.data()), static_cast<std::streamsize>(entry.data.size()));
+    out.flush();
+    if (!out.good()) {
+      throw std::runtime_error("failed to write exported clipboard image");
+    }
+
+    if (!wasLoaded) {
+      evictPayloadData(entry);
+    }
+    return exportPath.string();
+  } catch (const std::exception& e) {
+    if (!wasLoaded) {
+      evictPayloadData(entry);
+    }
+    kLog.warn("failed to export clipboard image: {}", e.what());
+    return std::nullopt;
+  }
 }
 
 void ClipboardService::evictEntryPayload(std::size_t index) {
