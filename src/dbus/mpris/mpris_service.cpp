@@ -389,186 +389,187 @@ std::optional<MprisPlayerInfo> MprisService::activePlayer() const {
 
 void MprisService::refreshPlayerPosition(const std::string& busName, bool notifyChange) {
   const auto proxyIt = m_playerProxies.find(busName);
-  const auto playerIt = m_players.find(busName);
-  if (proxyIt == m_playerProxies.end() || playerIt == m_players.end()) {
+  if (proxyIt == m_playerProxies.end() || !m_players.contains(busName)) {
     return;
   }
 
+  const std::weak_ptr<void> aliveGuard = m_aliveGuard;
   try {
-    const auto now = std::chrono::steady_clock::now();
-    const auto seekCommandIt = m_lastSeekCommandAt.find(busName);
-    const bool recentLocalSeek =
-        seekCommandIt != m_lastSeekCommandAt.end() && now - seekCommandIt->second <= k_seek_pause_grace_window;
-    const auto rawPositionUs =
-        proxyIt->second->getProperty("Position").onInterface(k_mpris_player_interface).get<int64_t>();
-    auto offsetIt = m_positionOffsetsUs.find(busName);
-    std::int64_t offsetUs = offsetIt != m_positionOffsetsUs.end() ? offsetIt->second : 0;
-    std::int64_t normalizedUs = std::max<std::int64_t>(0, rawPositionUs - offsetUs);
-    const bool hadAuthoritativeSample =
-        m_hasAuthoritativePositionSample.contains(busName) && m_hasAuthoritativePositionSample.at(busName);
-    const auto trackChangeIt = m_lastLogicalTrackChangeAt.find(busName);
-    const bool guardingRecentTrackChange = trackChangeIt != m_lastLogicalTrackChangeAt.end() &&
-                                           now - trackChangeIt->second < k_recent_track_change_guard_window;
-    const std::int64_t elapsedSinceTrackChangeUs =
-        trackChangeIt != m_lastLogicalTrackChangeAt.end()
-            ? std::chrono::duration_cast<std::chrono::microseconds>(now - trackChangeIt->second).count()
-            : 0;
-    const std::int64_t maxPlausibleTrackPositionUs =
-        elapsedSinceTrackChangeUs +
-        std::chrono::duration_cast<std::chrono::microseconds>(k_recent_track_change_slack).count();
-    const auto previousTrackRawIt = m_previousTrackRawPositionUs.find(busName);
-    const bool hasPreviousTrackContext = previousTrackRawIt != m_previousTrackRawPositionUs.end();
-    const bool looksLikePreviousTrackContinuation =
-        hasPreviousTrackContext &&
-        std::llabs(rawPositionUs - previousTrackRawIt->second) <= k_previous_track_continuation_slack_us;
+    proxyIt->second->callMethodAsync("Get")
+        .onInterface(k_properties_interface)
+        .withArguments(std::string{k_mpris_player_interface}, std::string{"Position"})
+        .uponReplyInvoke(
+            [this, aliveGuard, busName, notifyChange](std::optional<sdbus::Error> err, sdbus::Variant value) {
+              if (aliveGuard.expired()) {
+                return;
+              }
+              if (err.has_value()) {
+                kLog.warn("position refresh failed name={} err={}", busName, err->what());
+                return;
+              }
+              const auto rawPositionUs = value.get<int64_t>();
+              DeferredCall::callLater([this, aliveGuard, busName, notifyChange, rawPositionUs]() {
+                if (aliveGuard.expired()) {
+                  return;
+                }
+                applyPositionSample(busName, rawPositionUs, notifyChange);
+              });
+            });
+  } catch (const sdbus::Error& e) {
+    kLog.warn("position refresh dispatch failed name={} err={}", busName, e.what());
+  }
+}
 
-    if (offsetUs > 0 && !hasPreviousTrackContext && rawPositionUs + k_stale_rebase_clear_slack_us < offsetUs) {
-      offsetIt->second = 0;
-      offsetUs = 0;
-      normalizedUs = rawPositionUs;
-    }
+void MprisService::applyPositionSample(const std::string& busName, int64_t rawPositionUs, bool notifyChange) {
+  const auto playerIt = m_players.find(busName);
+  if (playerIt == m_players.end()) {
+    return;
+  }
 
-    if (!hadAuthoritativeSample && trackChangeIt != m_lastLogicalTrackChangeAt.end() && offsetUs > 0 &&
-        rawPositionUs + k_stale_rebase_clear_slack_us < offsetUs) {
-      offsetIt->second = 0;
-      offsetUs = 0;
-      normalizedUs = rawPositionUs;
-    }
+  const auto now = std::chrono::steady_clock::now();
+  const auto seekCommandIt = m_lastSeekCommandAt.find(busName);
+  const bool recentLocalSeek =
+      seekCommandIt != m_lastSeekCommandAt.end() && now - seekCommandIt->second <= k_seek_pause_grace_window;
+  auto offsetIt = m_positionOffsetsUs.find(busName);
+  std::int64_t offsetUs = offsetIt != m_positionOffsetsUs.end() ? offsetIt->second : 0;
+  std::int64_t normalizedUs = std::max<std::int64_t>(0, rawPositionUs - offsetUs);
+  const bool hadAuthoritativeSample =
+      m_hasAuthoritativePositionSample.contains(busName) && m_hasAuthoritativePositionSample.at(busName);
+  const auto trackChangeIt = m_lastLogicalTrackChangeAt.find(busName);
+  const bool guardingRecentTrackChange = trackChangeIt != m_lastLogicalTrackChangeAt.end() &&
+                                         now - trackChangeIt->second < k_recent_track_change_guard_window;
+  const std::int64_t elapsedSinceTrackChangeUs =
+      trackChangeIt != m_lastLogicalTrackChangeAt.end()
+          ? std::chrono::duration_cast<std::chrono::microseconds>(now - trackChangeIt->second).count()
+          : 0;
+  const std::int64_t maxPlausibleTrackPositionUs =
+      elapsedSinceTrackChangeUs +
+      std::chrono::duration_cast<std::chrono::microseconds>(k_recent_track_change_slack).count();
+  const auto previousTrackRawIt = m_previousTrackRawPositionUs.find(busName);
+  const bool hasPreviousTrackContext = previousTrackRawIt != m_previousTrackRawPositionUs.end();
+  const bool looksLikePreviousTrackContinuation =
+      hasPreviousTrackContext &&
+      std::llabs(rawPositionUs - previousTrackRawIt->second) <= k_previous_track_continuation_slack_us;
 
-    if (!hadAuthoritativeSample && trackChangeIt != m_lastLogicalTrackChangeAt.end() &&
-        playerIt->second.playbackStatus != "Stopped" && rawPositionUs > 5'000'000 &&
-        normalizedUs > maxPlausibleTrackPositionUs && looksLikePreviousTrackContinuation) {
-      offsetIt->second = rawPositionUs;
-      if (playerIt->second.positionUs != 0) {
-        playerIt->second.positionUs = 0;
-        if (notifyChange && m_changeCallback) {
-          m_changeCallback();
-        }
-      }
-      if (playerIt->second.playbackStatus != "Stopped") {
-        auto& timerId = m_positionResyncTimers[busName];
-        timerId = TimerManager::instance().start(timerId, k_position_retry_interval,
-                                                 [this, busName]() { refreshPlayerPosition(busName, true); });
-      }
-      return;
-    }
+  if (offsetUs > 0 && !hasPreviousTrackContext && rawPositionUs + k_stale_rebase_clear_slack_us < offsetUs) {
+    offsetIt->second = 0;
+    offsetUs = 0;
+    normalizedUs = rawPositionUs;
+  }
 
-    bool authoritativeSample = false;
-    if (normalizedUs > 0) {
-      if (guardingRecentTrackChange) {
-        authoritativeSample = normalizedUs <= maxPlausibleTrackPositionUs;
-      } else {
-        authoritativeSample = true;
-      }
-    } else if (playerIt->second.playbackStatus != "Playing") {
-      authoritativeSample = hadAuthoritativeSample;
-    }
+  if (!hadAuthoritativeSample && trackChangeIt != m_lastLogicalTrackChangeAt.end() && offsetUs > 0 &&
+      rawPositionUs + k_stale_rebase_clear_slack_us < offsetUs) {
+    offsetIt->second = 0;
+    offsetUs = 0;
+    normalizedUs = rawPositionUs;
+  }
 
-    if (!authoritativeSample && !hadAuthoritativeSample && trackChangeIt != m_lastLogicalTrackChangeAt.end() &&
-        playerIt->second.playbackStatus != "Stopped" && normalizedUs > maxPlausibleTrackPositionUs &&
-        rawPositionUs > 5'000'000 && hasPreviousTrackContext && !looksLikePreviousTrackContinuation) {
-      authoritativeSample = true;
-    }
-
-    if (!m_pendingPositionSignalRefresh[busName] && normalizedUs == 0 && playerIt->second.positionUs > 0 &&
-        playerIt->second.playbackStatus != "Stopped") {
-      return;
-    }
-
-    if (hadAuthoritativeSample && playerIt->second.playbackStatus == "Paused" && normalizedUs > 0) {
-      const auto pauseIt = m_recentNoSignalPauseAt.find(busName);
-      const bool recoveringRecentPause =
-          pauseIt != m_recentNoSignalPauseAt.end() && now - pauseIt->second <= k_no_signal_pause_recovery_window;
-      const std::int64_t pausedJumpUs = std::llabs(normalizedUs - playerIt->second.positionUs);
-      if (recoveringRecentPause) {
-        if (recentLocalSeek) {
-          // A paused seek can legitimately jump without implying playback resumed.
-        } else if (pausedJumpUs < k_pause_recovery_min_jump_us) {
-          return;
-        } else {
-          playerIt->second.playbackStatus = "Playing";
-          m_recentNoSignalPauseAt.erase(pauseIt);
-        }
-      } else if (!recentLocalSeek && pausedJumpUs < k_paused_same_track_position_jump_tolerance_us) {
-        return;
-      }
-    }
-
-    if (!hadAuthoritativeSample && !authoritativeSample && normalizedUs > 0) {
-      const auto candidateIt = m_pendingPositionCandidateUs.find(busName);
-      const auto candidateAtIt = m_pendingPositionCandidateAt.find(busName);
-      const bool candidateFresh = candidateAtIt != m_pendingPositionCandidateAt.end() &&
-                                  now - candidateAtIt->second <= k_position_candidate_match_window;
-      bool candidateMatches = candidateIt != m_pendingPositionCandidateUs.end() && candidateFresh &&
-                              std::llabs(candidateIt->second - normalizedUs) <= k_position_candidate_tolerance_us;
-
-      if (candidateMatches && playerIt->second.playbackStatus == "Playing") {
-        const auto elapsedSinceCandidateUs =
-            std::chrono::duration_cast<std::chrono::microseconds>(now - candidateAtIt->second).count();
-        const std::int64_t progressUs = normalizedUs - candidateIt->second;
-        const std::int64_t maxExpectedProgressUs =
-            elapsedSinceCandidateUs +
-            std::chrono::duration_cast<std::chrono::microseconds>(k_recent_track_change_slack).count();
-        candidateMatches = progressUs >= k_position_candidate_min_progress_us && progressUs <= maxExpectedProgressUs;
-      }
-
-      if (!candidateMatches) {
-        m_pendingPositionCandidateUs[busName] = normalizedUs;
-        m_pendingPositionCandidateMatches[busName] = 0;
-        m_pendingPositionCandidateAt[busName] = now;
-        if (playerIt->second.playbackStatus == "Playing") {
-          auto& timerId = m_positionResyncTimers[busName];
-          timerId = TimerManager::instance().start(timerId, k_position_candidate_retry_interval,
-                                                   [this, busName]() { refreshPlayerPosition(busName, true); });
-        }
-        return;
-      }
-
-      if (guardingRecentTrackChange && playerIt->second.playbackStatus == "Playing") {
-        int& matchCount = m_pendingPositionCandidateMatches[busName];
-        ++matchCount;
-        if (matchCount < 2) {
-          m_pendingPositionCandidateUs[busName] = normalizedUs;
-          m_pendingPositionCandidateAt[busName] = now;
-          auto& timerId = m_positionResyncTimers[busName];
-          timerId = TimerManager::instance().start(timerId, k_position_candidate_retry_interval,
-                                                   [this, busName]() { refreshPlayerPosition(busName, true); });
-          return;
-        }
-      }
-
-      authoritativeSample = true;
-    }
-
-    if (!authoritativeSample) {
-      const bool hasAuthoritativeSample =
-          m_hasAuthoritativePositionSample.contains(busName) && m_hasAuthoritativePositionSample.at(busName);
-      if (playerIt->second.playbackStatus == "Playing" && !hasAuthoritativeSample) {
-        auto& timerId = m_positionResyncTimers[busName];
-        timerId = TimerManager::instance().start(timerId, k_position_retry_interval,
-                                                 [this, busName]() { refreshPlayerPosition(busName, true); });
-      }
-      return;
-    }
-
-    if (playerIt->second.positionUs != normalizedUs) {
-      playerIt->second.positionUs = normalizedUs;
-      m_lastPositionSampleAt[busName] = now;
-      m_hasAuthoritativePositionSample[busName] = true;
-      m_pendingPositionCandidateUs.erase(busName);
-      m_pendingPositionCandidateMatches.erase(busName);
-      m_pendingPositionCandidateAt.erase(busName);
+  if (!hadAuthoritativeSample && trackChangeIt != m_lastLogicalTrackChangeAt.end() &&
+      playerIt->second.playbackStatus != "Stopped" && rawPositionUs > 5'000'000 &&
+      normalizedUs > maxPlausibleTrackPositionUs && looksLikePreviousTrackContinuation) {
+    offsetIt->second = rawPositionUs;
+    if (playerIt->second.positionUs != 0) {
+      playerIt->second.positionUs = 0;
       if (notifyChange && m_changeCallback) {
         m_changeCallback();
       }
+    }
+    if (playerIt->second.playbackStatus != "Stopped") {
+      auto& timerId = m_positionResyncTimers[busName];
+      timerId = TimerManager::instance().start(timerId, k_position_retry_interval,
+                                               [this, busName]() { refreshPlayerPosition(busName, true); });
+    }
+    return;
+  }
+
+  bool authoritativeSample = false;
+  if (normalizedUs > 0) {
+    if (guardingRecentTrackChange) {
+      authoritativeSample = normalizedUs <= maxPlausibleTrackPositionUs;
     } else {
-      m_lastPositionSampleAt[busName] = now;
-      m_hasAuthoritativePositionSample[busName] = true;
-      m_pendingPositionCandidateUs.erase(busName);
-      m_pendingPositionCandidateMatches.erase(busName);
-      m_pendingPositionCandidateAt.erase(busName);
+      authoritativeSample = true;
+    }
+  } else if (playerIt->second.playbackStatus != "Playing") {
+    authoritativeSample = hadAuthoritativeSample;
+  }
+
+  if (!authoritativeSample && !hadAuthoritativeSample && trackChangeIt != m_lastLogicalTrackChangeAt.end() &&
+      playerIt->second.playbackStatus != "Stopped" && normalizedUs > maxPlausibleTrackPositionUs &&
+      rawPositionUs > 5'000'000 && hasPreviousTrackContext && !looksLikePreviousTrackContinuation) {
+    authoritativeSample = true;
+  }
+
+  if (!m_pendingPositionSignalRefresh[busName] && normalizedUs == 0 && playerIt->second.positionUs > 0 &&
+      playerIt->second.playbackStatus != "Stopped") {
+    return;
+  }
+
+  if (hadAuthoritativeSample && playerIt->second.playbackStatus == "Paused" && normalizedUs > 0) {
+    const auto pauseIt = m_recentNoSignalPauseAt.find(busName);
+    const bool recoveringRecentPause =
+        pauseIt != m_recentNoSignalPauseAt.end() && now - pauseIt->second <= k_no_signal_pause_recovery_window;
+    const std::int64_t pausedJumpUs = std::llabs(normalizedUs - playerIt->second.positionUs);
+    if (recoveringRecentPause) {
+      if (recentLocalSeek) {
+        // A paused seek can legitimately jump without implying playback resumed.
+      } else if (pausedJumpUs < k_pause_recovery_min_jump_us) {
+        return;
+      } else {
+        playerIt->second.playbackStatus = "Playing";
+        m_recentNoSignalPauseAt.erase(pauseIt);
+      }
+    } else if (!recentLocalSeek && pausedJumpUs < k_paused_same_track_position_jump_tolerance_us) {
+      return;
+    }
+  }
+
+  if (!hadAuthoritativeSample && !authoritativeSample && normalizedUs > 0) {
+    const auto candidateIt = m_pendingPositionCandidateUs.find(busName);
+    const auto candidateAtIt = m_pendingPositionCandidateAt.find(busName);
+    const bool candidateFresh = candidateAtIt != m_pendingPositionCandidateAt.end() &&
+                                now - candidateAtIt->second <= k_position_candidate_match_window;
+    bool candidateMatches = candidateIt != m_pendingPositionCandidateUs.end() && candidateFresh &&
+                            std::llabs(candidateIt->second - normalizedUs) <= k_position_candidate_tolerance_us;
+
+    if (candidateMatches && playerIt->second.playbackStatus == "Playing") {
+      const auto elapsedSinceCandidateUs =
+          std::chrono::duration_cast<std::chrono::microseconds>(now - candidateAtIt->second).count();
+      const std::int64_t progressUs = normalizedUs - candidateIt->second;
+      const std::int64_t maxExpectedProgressUs =
+          elapsedSinceCandidateUs +
+          std::chrono::duration_cast<std::chrono::microseconds>(k_recent_track_change_slack).count();
+      candidateMatches = progressUs >= k_position_candidate_min_progress_us && progressUs <= maxExpectedProgressUs;
     }
 
+    if (!candidateMatches) {
+      m_pendingPositionCandidateUs[busName] = normalizedUs;
+      m_pendingPositionCandidateMatches[busName] = 0;
+      m_pendingPositionCandidateAt[busName] = now;
+      if (playerIt->second.playbackStatus == "Playing") {
+        auto& timerId = m_positionResyncTimers[busName];
+        timerId = TimerManager::instance().start(timerId, k_position_candidate_retry_interval,
+                                                 [this, busName]() { refreshPlayerPosition(busName, true); });
+      }
+      return;
+    }
+
+    if (guardingRecentTrackChange && playerIt->second.playbackStatus == "Playing") {
+      int& matchCount = m_pendingPositionCandidateMatches[busName];
+      ++matchCount;
+      if (matchCount < 2) {
+        m_pendingPositionCandidateUs[busName] = normalizedUs;
+        m_pendingPositionCandidateAt[busName] = now;
+        auto& timerId = m_positionResyncTimers[busName];
+        timerId = TimerManager::instance().start(timerId, k_position_candidate_retry_interval,
+                                                 [this, busName]() { refreshPlayerPosition(busName, true); });
+        return;
+      }
+    }
+
+    authoritativeSample = true;
+  }
+
+  if (!authoritativeSample) {
     const bool hasAuthoritativeSample =
         m_hasAuthoritativePositionSample.contains(busName) && m_hasAuthoritativePositionSample.at(busName);
     if (playerIt->second.playbackStatus == "Playing" && !hasAuthoritativeSample) {
@@ -576,8 +577,33 @@ void MprisService::refreshPlayerPosition(const std::string& busName, bool notify
       timerId = TimerManager::instance().start(timerId, k_position_retry_interval,
                                                [this, busName]() { refreshPlayerPosition(busName, true); });
     }
-  } catch (const sdbus::Error& e) {
-    kLog.warn("position refresh failed name={} err={}", busName, e.what());
+    return;
+  }
+
+  if (playerIt->second.positionUs != normalizedUs) {
+    playerIt->second.positionUs = normalizedUs;
+    m_lastPositionSampleAt[busName] = now;
+    m_hasAuthoritativePositionSample[busName] = true;
+    m_pendingPositionCandidateUs.erase(busName);
+    m_pendingPositionCandidateMatches.erase(busName);
+    m_pendingPositionCandidateAt.erase(busName);
+    if (notifyChange && m_changeCallback) {
+      m_changeCallback();
+    }
+  } else {
+    m_lastPositionSampleAt[busName] = now;
+    m_hasAuthoritativePositionSample[busName] = true;
+    m_pendingPositionCandidateUs.erase(busName);
+    m_pendingPositionCandidateMatches.erase(busName);
+    m_pendingPositionCandidateAt.erase(busName);
+  }
+
+  const bool hasAuthoritativeSample =
+      m_hasAuthoritativePositionSample.contains(busName) && m_hasAuthoritativePositionSample.at(busName);
+  if (playerIt->second.playbackStatus == "Playing" && !hasAuthoritativeSample) {
+    auto& timerId = m_positionResyncTimers[busName];
+    timerId = TimerManager::instance().start(timerId, k_position_retry_interval,
+                                             [this, busName]() { refreshPlayerPosition(busName, true); });
   }
 }
 
@@ -659,7 +685,8 @@ void MprisService::registerIpc(IpcService& ipc) {
       "media <next|previous|toggle>", "Control active media playback");
 }
 
-auto MprisService::makeAsyncReplyHandler(std::string op, std::string busName) {
+std::function<void(std::optional<sdbus::Error>)> MprisService::makeAsyncReplyHandler(std::string op,
+                                                                                     std::string busName) {
   const std::weak_ptr<void> aliveGuard = m_aliveGuard;
   return [this, aliveGuard, op = std::move(op), busName = std::move(busName)](std::optional<sdbus::Error> err) {
     if (aliveGuard.expired()) {
@@ -679,7 +706,8 @@ auto MprisService::makeAsyncReplyHandler(std::string op, std::string busName) {
   };
 }
 
-auto MprisService::makeAsyncReplyHandler(std::string op, std::string busName, std::string_view method) {
+std::function<void(std::optional<sdbus::Error>)>
+MprisService::makeAsyncReplyHandler(std::string op, std::string busName, std::string_view method) {
   const std::weak_ptr<void> aliveGuard = m_aliveGuard;
   return [this, aliveGuard, op = std::move(op), busName = std::move(busName),
           method = std::string(method)](std::optional<sdbus::Error> err) {
@@ -1558,13 +1586,24 @@ void MprisService::addOrRefreshPlayer(const std::string& busName) {
                     return;
                   }
 
+                  const bool rootFailed = rootErr.has_value();
+                  const bool playerFailed = playerErr.has_value();
+
+                  // If both interfaces failed for a player we've never seen before, we'd produce a phantom
+                  // entry with all-empty fields. Bail out and let recovery rediscover it instead.
+                  if (rootFailed && playerFailed && !m_players.contains(busName)) {
+                    kLog.warn("player hydration failed (both interfaces) name={}", busName);
+                    scheduleRecoveryDiscovery();
+                    return;
+                  }
+
                   std::map<std::string, sdbus::Variant> effectiveRootProps;
-                  if (!rootErr.has_value()) {
+                  if (!rootFailed) {
                     effectiveRootProps = rootProps;
                   }
 
                   std::map<std::string, sdbus::Variant> effectivePlayerProps;
-                  if (!playerErr.has_value()) {
+                  if (!playerFailed) {
                     effectivePlayerProps = playerProps;
                   }
 
@@ -2305,24 +2344,4 @@ MprisService::readPlayerInfoFromProperties(const std::string& busName,
       .canGoPrevious = get_bool_from_props(playerProps, "CanGoPrevious"),
       .canSeek = get_bool_from_props(playerProps, "CanSeek"),
   };
-}
-
-MprisPlayerInfo MprisService::readPlayerInfo(sdbus::IProxy& proxy, const std::string& busName) const {
-  std::map<std::string, sdbus::Variant> rootProps;
-  std::map<std::string, sdbus::Variant> playerProps;
-
-  try {
-    for (auto& [k, v] : proxy.getAllProperties().onInterface(k_mpris_root_interface)) {
-      rootProps.emplace(std::string(k), std::move(v));
-    }
-  } catch (const sdbus::Error&) {
-  }
-  try {
-    for (auto& [k, v] : proxy.getAllProperties().onInterface(k_mpris_player_interface)) {
-      playerProps.emplace(std::string(k), std::move(v));
-    }
-  } catch (const sdbus::Error&) {
-  }
-
-  return readPlayerInfoFromProperties(busName, rootProps, playerProps);
 }

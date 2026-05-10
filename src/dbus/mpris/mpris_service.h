@@ -109,17 +109,18 @@ private:
   void applyPlayerSnapshot(const std::string& busName, const MprisPlayerInfo& info, bool hadPositionSignal,
                            const std::optional<MprisPlayerInfo>& previousActive);
   void refreshPlayerPosition(const std::string& busName, bool notifyChange);
+  void applyPositionSample(const std::string& busName, int64_t rawPositionUs, bool notifyChange);
   void removePlayer(const std::string& busName);
   [[nodiscard]] MprisPlayerInfo
   readPlayerInfoFromProperties(const std::string& busName, const std::map<std::string, sdbus::Variant>& rootProps,
                                const std::map<std::string, sdbus::Variant>& playerProps) const;
-  [[nodiscard]] MprisPlayerInfo readPlayerInfo(sdbus::IProxy& proxy, const std::string& busName) const;
   [[nodiscard]] MprisPlayerInfo projectedPlayerInfo(const MprisPlayerInfo& player) const;
   [[nodiscard]] std::int64_t projectedPositionUs(const MprisPlayerInfo& player) const;
   [[nodiscard]] std::optional<std::string> chooseActivePlayer() const;
   [[nodiscard]] bool isBlacklisted(const MprisPlayerInfo& player) const;
-  auto makeAsyncReplyHandler(std::string op, std::string busName);
-  auto makeAsyncReplyHandler(std::string op, std::string busName, std::string_view method);
+  std::function<void(std::optional<sdbus::Error>)> makeAsyncReplyHandler(std::string op, std::string busName);
+  std::function<void(std::optional<sdbus::Error>)> makeAsyncReplyHandler(std::string op, std::string busName,
+                                                                         std::string_view method);
   [[nodiscard]] bool callPlayerMethod(const std::string& busName, const char* methodName);
   [[nodiscard]] bool canInvoke(const MprisPlayerInfo& player, const char* methodName) const;
 
