@@ -44,6 +44,7 @@
 #include <stdexcept>
 #include <string_view>
 #include <thread>
+#include <utility>
 
 std::atomic<bool> Application::s_shutdownRequested{false};
 
@@ -51,6 +52,7 @@ namespace {
 
   constexpr Logger kLog("app");
   constexpr bool kLockKeysEnabled = true;
+  constexpr std::string_view kPolkitAuthorityBusName = "org.freedesktop.PolicyKit1";
 
   template <typename Factory>
   auto makeWithStartupBackoff(std::string_view label, Factory&& factory) -> decltype(factory()) {
@@ -216,12 +218,28 @@ void Application::syncPolkitAgent() {
     return;
   }
 
+  try {
+    if (!m_systemBus->nameHasOwner(kPolkitAuthorityBusName)) {
+      kLog.warn("polkit agent disabled: {} is not running", kPolkitAuthorityBusName);
+      m_polkitPollSource.reset();
+      m_polkitAgent.reset();
+      return;
+    }
+  } catch (const std::exception& e) {
+    kLog.warn("polkit agent disabled: failed to query {} owner: {}", kPolkitAuthorityBusName, e.what());
+    m_polkitPollSource.reset();
+    m_polkitAgent.reset();
+    return;
+  }
+
   m_polkitAgent = std::make_unique<PolkitAgent>(*m_systemBus);
   m_polkitAgent->setReadyCallback([this](bool ok, const std::string& error) {
     if (!ok) {
       kLog.warn("polkit agent disabled: {}", error);
-      m_polkitPollSource.reset();
-      m_polkitAgent.reset();
+      DeferredCall::callLater([this]() {
+        m_polkitPollSource.reset();
+        m_polkitAgent.reset();
+      });
       return;
     }
     kLog.info("polkit authentication agent active");
@@ -253,7 +271,7 @@ void Application::syncPolkitAgent() {
   m_polkitAgent->start();
 }
 
-void Application::run() {
+void Application::run(std::function<void()> startupReadyCallback) {
   initLogFile();
   kLog.info("noctalia {}", noctalia::build_info::displayVersion());
   runStartupPhase("initServices", [this]() { initServices(); });
@@ -273,9 +291,12 @@ void Application::run() {
 #endif
 
   m_trayInitTimer.start(std::chrono::milliseconds(500), [this]() { startTrayService(); });
-  m_polkitInitTimer.start(std::chrono::milliseconds(0), [this]() { syncPolkitAgent(); });
+  m_polkitInitTimer.start(std::chrono::milliseconds(1000), [this]() { syncPolkitAgent(); });
 
   m_mainLoop = std::make_unique<MainLoop>(m_wayland, m_bar, [this]() { return currentPollSources(); });
+  if (startupReadyCallback) {
+    startupReadyCallback();
+  }
   m_mainLoop->run();
   kLog.info("shutdown");
 }

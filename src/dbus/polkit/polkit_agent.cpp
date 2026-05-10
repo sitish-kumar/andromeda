@@ -11,11 +11,13 @@
 #include <glib-object.h>
 #include <glib.h>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <poll.h>
 #include <pwd.h>
 #include <string>
 #include <sys/types.h>
+#include <thread>
 #include <unistd.h>
 #include <utility>
 #include <vector>
@@ -253,6 +255,13 @@ struct PolkitAgent::Impl {
   PolkitAgentSession* session = nullptr;
   GMainContext* context = nullptr;
   GCancellable* registerCancellable = nullptr;
+  std::thread registerThread;
+  mutable std::mutex registerMutex;
+  gpointer pendingRegistrationHandle = nullptr;
+  bool registrationComplete = false;
+  bool registrationOk = false;
+  bool registrationShutdown = false;
+  std::string registrationError;
   bool starting = false;
   bool registered = false;
   std::unique_ptr<InternalAuthRequest> pending;
@@ -280,8 +289,21 @@ struct PolkitAgent::Impl {
     clearPending("PolkitAgent is being destroyed", true);
     if (registerCancellable != nullptr) {
       g_cancellable_cancel(registerCancellable);
+    }
+    {
+      std::lock_guard lock(registerMutex);
+      registrationShutdown = true;
+    }
+    if (registerThread.joinable()) {
+      registerThread.join();
+    }
+    if (registerCancellable != nullptr) {
       g_object_unref(registerCancellable);
       registerCancellable = nullptr;
+    }
+    if (pendingRegistrationHandle != nullptr) {
+      polkit_agent_listener_unregister(pendingRegistrationHandle);
+      pendingRegistrationHandle = nullptr;
     }
     if (listener != nullptr) {
       listener->owner = nullptr;
@@ -305,51 +327,133 @@ struct PolkitAgent::Impl {
       return;
     }
     starting = true;
+
+    // Prefer the session id exported by the user's login/session manager. The
+    // process lookup path below is asynchronous in API shape, but it still can
+    // enter GLib's global worker pool before returning.
+    const char* sessionId = std::getenv("XDG_SESSION_ID");
     registerCancellable = g_cancellable_new();
+    if (sessionId != nullptr && sessionId[0] != '\0') {
+      PolkitSubject* subject = polkit_unix_session_new(sessionId);
+      beginRegisterSubject(subject, nullptr);
+      return;
+    }
+
     polkit_unix_session_new_for_process(::getpid(), registerCancellable, &Impl::sessionReadyTrampoline, this);
   }
 
   void onSessionReady(GObject* /*source*/, GAsyncResult* result) {
     starting = false;
     GError* error = nullptr;
-    PolkitSubject* subject = polkit_unix_session_new_for_process_finish(result, &error);
+
+    PolkitSubject* pidSubject = polkit_unix_session_new_for_process_finish(result, &error);
 
     // If we were cancelled (destruction), bail out without touching members
     // beyond the cancellable cleanup that the destructor already handled.
     if (error != nullptr && g_error_matches(error, G_IO_ERROR, G_IO_ERROR_CANCELLED)) {
       g_clear_error(&error);
-      if (subject != nullptr) {
-        g_object_unref(subject);
+      if (pidSubject != nullptr) {
+        g_object_unref(pidSubject);
       }
       return;
     }
 
+    beginRegisterSubject(pidSubject, error);
+  }
+
+  void beginRegisterSubject(PolkitSubject* subject, GError* error) {
+    if (subject == nullptr || error != nullptr) {
+      std::string message = error != nullptr ? error->message : "failed to create polkit session subject";
+      g_clear_error(&error);
+      if (subject != nullptr) {
+        g_object_unref(subject);
+      }
+      setRegistrationResult(nullptr, false, std::move(message));
+      return;
+    }
+
+    registerThread = std::thread([this, subject]() {
+      GError* registerError = nullptr;
+      gpointer handle =
+          polkit_agent_listener_register(POLKIT_AGENT_LISTENER(listener), POLKIT_AGENT_REGISTER_FLAGS_NONE, subject,
+                                         k_agentObjectPath, registerCancellable, &registerError);
+      g_object_unref(subject);
+
+      std::string message;
+      if (registerError != nullptr) {
+        message = registerError->message;
+        g_clear_error(&registerError);
+      } else if (handle == nullptr) {
+        message = "polkit listener registration returned no handle";
+      }
+
+      setRegistrationResult(handle, handle != nullptr && message.empty(), std::move(message));
+    });
+  }
+
+  void setRegistrationResult(gpointer handle, bool ok, std::string error) {
+    bool shouldUnregister = false;
+    {
+      std::lock_guard lock(registerMutex);
+      if (registrationShutdown) {
+        shouldUnregister = handle != nullptr;
+      } else {
+        pendingRegistrationHandle = handle;
+        registrationOk = ok;
+        registrationError = std::move(error);
+        registrationComplete = true;
+      }
+    }
+
+    if (shouldUnregister) {
+      polkit_agent_listener_unregister(handle);
+    }
+  }
+
+  bool registrationReady() const {
+    std::lock_guard lock(registerMutex);
+    return registrationComplete;
+  }
+
+  void finishRegistrationIfReady() {
+    gpointer handle = nullptr;
+    bool ok = false;
+    std::string error;
+    {
+      std::lock_guard lock(registerMutex);
+      if (!registrationComplete) {
+        return;
+      }
+      handle = pendingRegistrationHandle;
+      pendingRegistrationHandle = nullptr;
+      ok = registrationOk;
+      error = std::move(registrationError);
+      registrationComplete = false;
+      registrationOk = false;
+    }
+
+    if (registerThread.joinable()) {
+      registerThread.join();
+    }
     if (registerCancellable != nullptr) {
       g_object_unref(registerCancellable);
       registerCancellable = nullptr;
     }
 
-    if (subject == nullptr || error != nullptr) {
-      std::string message = error != nullptr ? error->message : "failed to create polkit session subject";
-      g_clear_error(&error);
+    starting = false;
+    if (!ok) {
+      if (handle != nullptr) {
+        polkit_agent_listener_unregister(handle);
+      }
       if (readyCallback) {
-        readyCallback(false, message);
+        readyCallback(false, error.empty() ? "polkit listener registration failed" : error);
       }
       return;
     }
-
-    listener->registration_handle = polkit_agent_listener_register(
-        POLKIT_AGENT_LISTENER(listener), POLKIT_AGENT_REGISTER_FLAGS_NONE, subject, k_agentObjectPath, nullptr, &error);
-    g_object_unref(subject);
-
-    if (error != nullptr) {
-      std::string message = error->message;
-      g_clear_error(&error);
-      if (readyCallback) {
-        readyCallback(false, message);
-      }
-      return;
+    if (listener->registration_handle != nullptr) {
+      polkit_agent_listener_unregister(listener->registration_handle);
     }
+    listener->registration_handle = handle;
     if (listener->registration_handle == nullptr) {
       if (readyCallback) {
         readyCallback(false, "polkit listener registration returned no handle");
@@ -575,9 +679,18 @@ struct PolkitAgent::Impl {
     g_main_context_release(context);
   }
 
-  int pollTimeoutMs() const { return glibPollTimeoutMs; }
+  int pollTimeoutMs() const {
+    if (registrationReady()) {
+      return 0;
+    }
+    if (starting) {
+      return glibPollTimeoutMs < 0 ? 100 : std::min(glibPollTimeoutMs, 100);
+    }
+    return glibPollTimeoutMs;
+  }
 
   void dispatch(const std::vector<pollfd>& fds, std::size_t startIdx) {
+    finishRegistrationIfReady();
     if (!g_main_context_acquire(context)) {
       return;
     }
@@ -603,6 +716,7 @@ struct PolkitAgent::Impl {
     while (g_main_context_pending(context)) {
       g_main_context_iteration(context, FALSE);
     }
+    finishRegistrationIfReady();
   }
 
   PolkitRequest pendingRequest() const {

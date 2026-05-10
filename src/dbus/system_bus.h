@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <sdbus-c++/sdbus-c++.h>
+#include <string_view>
 
 class SystemBus {
 public:
@@ -9,6 +10,7 @@ public:
 
   [[nodiscard]] sdbus::IConnection& connection() noexcept { return *m_connection; }
   [[nodiscard]] sdbus::IConnection::PollData getPollData() const;
+  [[nodiscard]] bool nameHasOwner(std::string_view name) const;
   void processPendingEvents();
 
 private:
