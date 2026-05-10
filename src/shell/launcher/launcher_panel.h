@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+class ContextMenuPopup;
 class Flex;
 class Glyph;
 class Image;
@@ -53,6 +54,7 @@ private:
   void activateSelected();
   bool handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers);
   void applyEmptyState();
+  void openAppActionsMenu(std::size_t index, float anchorX, float anchorY);
 
   std::vector<std::unique_ptr<LauncherProvider>> m_providers;
   std::vector<LauncherResult> m_results;
@@ -70,4 +72,5 @@ private:
   std::size_t m_selectedIndex = 0;
   ConfigService* m_config = nullptr;
   AsyncTextureCache* m_asyncTextures = nullptr;
+  std::unique_ptr<ContextMenuPopup> m_actionsMenu;
 };

@@ -40,6 +40,10 @@ public:
   // Optional: respond to an activation gesture (click). The grid still
   // updates its own selection state and fires onSelectionChanged.
   virtual void onActivate(std::size_t /*index*/) {}
+
+  // Optional: secondary button press (e.g. context menu). Anchor coordinates are in the panel scene graph
+  // (surface-local).
+  virtual void onSecondaryActivate(std::size_t /*index*/, float /*anchorX*/, float /*anchorY*/) {}
 };
 
 class VirtualGridView : public Flex {
@@ -83,6 +87,7 @@ private:
   void onPointerMotion(float localX, float localY);
   void onPointerLeave();
   void onPointerPress(float localX, float localY);
+  void onSecondaryPointerPress(float localX, float localY);
   [[nodiscard]] std::optional<std::size_t> indexAt(float localX, float localY) const noexcept;
 
   ScrollView* m_scroll = nullptr;

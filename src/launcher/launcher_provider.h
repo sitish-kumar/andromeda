@@ -13,6 +13,8 @@ struct LauncherResult {
   std::string iconName;
   std::string iconPath;
   std::string actionText;
+  // When launching an application via AppProvider, matches DesktopAction::id (primary Exec leaves this empty).
+  std::string desktopActionId;
   double score = 0.0;
 };
 

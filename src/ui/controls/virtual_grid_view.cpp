@@ -60,14 +60,19 @@ VirtualGridView::VirtualGridView() {
 
   auto inputArea = std::make_unique<InputArea>();
   inputArea->setZIndex(50);
+  inputArea->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
   inputArea->setOnEnter([this](const InputArea::PointerData& data) { onPointerEnter(data.localX, data.localY); });
   inputArea->setOnMotion([this](const InputArea::PointerData& data) { onPointerMotion(data.localX, data.localY); });
   inputArea->setOnLeave([this]() { onPointerLeave(); });
   inputArea->setOnPress([this](const InputArea::PointerData& data) {
-    if (!data.pressed || data.button != BTN_LEFT) {
+    if (!data.pressed) {
       return;
     }
-    onPointerPress(data.localX, data.localY);
+    if (data.button == BTN_LEFT) {
+      onPointerPress(data.localX, data.localY);
+    } else if (data.button == BTN_RIGHT) {
+      onSecondaryPointerPress(data.localX, data.localY);
+    }
   });
   m_inputArea = static_cast<InputArea*>(m_canvas->addChild(std::move(inputArea)));
 }
@@ -386,6 +391,22 @@ void VirtualGridView::onPointerPress(float localX, float localY) {
   setSelectedIndex(idx);
   if (m_adapter != nullptr) {
     m_adapter->onActivate(*idx);
+  }
+}
+
+void VirtualGridView::onSecondaryPointerPress(float localX, float localY) {
+  const auto idx = indexAt(localX, localY);
+  if (!idx.has_value()) {
+    return;
+  }
+  setSelectedIndex(idx);
+  if (m_adapter != nullptr) {
+    float wx = 0.0f;
+    float wy = 0.0f;
+    Node::absolutePosition(m_inputArea, wx, wy);
+    wx += localX;
+    wy += localY;
+    m_adapter->onSecondaryActivate(*idx, wx, wy);
   }
 }
 

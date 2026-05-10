@@ -6,9 +6,12 @@
 #include "i18n/i18n.h"
 #include "render/core/async_texture_cache.h"
 #include "render/core/renderer.h"
+#include "render/render_context.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
 #include "shell/panel/panel_manager.h"
+#include "system/desktop_entry.h"
+#include "ui/controls/context_menu_popup.h"
 #include "ui/controls/flex.h"
 #include "ui/controls/glyph.h"
 #include "ui/controls/image.h"
@@ -19,9 +22,11 @@
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "util/fuzzy_match.h"
+#include "wayland/wayland_connection.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <xkbcommon/xkbcommon-keysyms.h>
@@ -230,12 +235,14 @@ namespace {
 class LauncherResultAdapter final : public VirtualGridAdapter {
 public:
   using ActivateCallback = std::function<void(std::size_t)>;
+  using SecondaryActivateCallback = std::function<void(std::size_t, float, float)>;
 
   LauncherResultAdapter(float scale, AsyncTextureCache* cache) : m_scale(scale), m_cache(cache) {}
 
   void setResults(const std::vector<LauncherResult>* results) { m_results = results; }
   void setRenderer(Renderer* renderer) { m_renderer = renderer; }
   void setOnActivate(ActivateCallback callback) { m_onActivate = std::move(callback); }
+  void setOnSecondaryActivate(SecondaryActivateCallback callback) { m_onSecondaryActivate = std::move(callback); }
 
   [[nodiscard]] std::size_t itemCount() const override { return m_results == nullptr ? 0u : m_results->size(); }
 
@@ -257,12 +264,19 @@ public:
     }
   }
 
+  void onSecondaryActivate(std::size_t index, float anchorX, float anchorY) override {
+    if (m_onSecondaryActivate) {
+      m_onSecondaryActivate(index, anchorX, anchorY);
+    }
+  }
+
 private:
   float m_scale;
   AsyncTextureCache* m_cache = nullptr;
   Renderer* m_renderer = nullptr;
   const std::vector<LauncherResult>* m_results = nullptr;
   ActivateCallback m_onActivate;
+  SecondaryActivateCallback m_onSecondaryActivate;
 };
 
 LauncherPanel::LauncherPanel(ConfigService* config, AsyncTextureCache* asyncTextures)
@@ -308,6 +322,8 @@ void LauncherPanel::create() {
   m_adapter = std::make_unique<LauncherResultAdapter>(scale, m_asyncTextures);
   m_adapter->setResults(&m_results);
   m_adapter->setOnActivate([this](std::size_t index) { activateAt(index); });
+  m_adapter->setOnSecondaryActivate(
+      [this](std::size_t index, float ax, float ay) { openAppActionsMenu(index, ax, ay); });
 
   auto grid = std::make_unique<VirtualGridView>();
   grid->setColumns(1);
@@ -370,6 +386,10 @@ void LauncherPanel::onOpen(std::string_view context) {
 }
 
 void LauncherPanel::onClose() {
+  if (m_actionsMenu != nullptr && m_actionsMenu->isOpen()) {
+    m_actionsMenu->close();
+  }
+
   if (m_asyncTextures != nullptr) {
     DeferredCall::callLater([asyncTextures = m_asyncTextures]() { asyncTextures->trimUnused(0); });
   }
@@ -528,6 +548,106 @@ void LauncherPanel::applyEmptyState() {
     m_emptyLabel->setText(m_query.empty() ? i18n::tr("launcher.empty.type-to-search")
                                           : i18n::tr("launcher.empty.no-results"));
   }
+}
+
+void LauncherPanel::openAppActionsMenu(std::size_t index, float anchorX, float anchorY) {
+  if (index >= m_results.size()) {
+    return;
+  }
+  const LauncherResult& base = m_results[index];
+
+  const DesktopEntry* match = nullptr;
+  for (const auto& e : desktopEntries()) {
+    if (e.path == base.id) {
+      match = &e;
+      break;
+    }
+  }
+  if (match == nullptr || match->actions.empty()) {
+    return;
+  }
+
+  WaylandConnection* wl = PanelManager::instance().wayland();
+  RenderContext* rc = PanelManager::instance().renderContext();
+  if (wl == nullptr || rc == nullptr) {
+    return;
+  }
+
+  const auto parentCtx = PanelManager::instance().fallbackPopupParentContext();
+  if (!parentCtx.has_value()) {
+    return;
+  }
+
+  if (m_actionsMenu == nullptr) {
+    m_actionsMenu = std::make_unique<ContextMenuPopup>(*wl, *rc);
+  }
+
+  std::vector<DesktopAction> actionsCopy = match->actions;
+
+  std::vector<ContextMenuControlEntry> entries;
+  entries.reserve(actionsCopy.size() + 1);
+  entries.push_back(ContextMenuControlEntry{
+      .id = -1,
+      .label = i18n::tr("launcher.context-menu.open"),
+      .enabled = true,
+      .separator = false,
+      .hasSubmenu = false,
+  });
+  for (std::int32_t i = 0; i < static_cast<std::int32_t>(actionsCopy.size()); ++i) {
+    entries.push_back(ContextMenuControlEntry{
+        .id = i,
+        .label = actionsCopy[static_cast<std::size_t>(i)].name,
+        .enabled = true,
+        .separator = false,
+        .hasSubmenu = false,
+    });
+  }
+
+  const float scale = contentScale();
+  constexpr float kMenuWidth = 240.0f;
+  const float menuWidth = kMenuWidth * scale;
+
+  PanelManager::instance().beginAttachedPopup(parentCtx->surface);
+  PanelManager::instance().setActivePopup(m_actionsMenu.get());
+
+  m_actionsMenu->setOnDismissed([parentSurface = parentCtx->surface]() {
+    PanelManager::instance().clearActivePopup();
+    PanelManager::instance().endAttachedPopup(parentSurface);
+  });
+
+  m_actionsMenu->setOnActivate(
+      [this, base, actionsCopy = std::move(actionsCopy)](const ContextMenuControlEntry& entry) {
+        LauncherResult result = base;
+        result.desktopActionId.clear();
+        if (entry.id >= 0 && entry.id < static_cast<std::int32_t>(actionsCopy.size())) {
+          result.desktopActionId = actionsCopy[static_cast<std::size_t>(entry.id)].id;
+        } else if (entry.id != -1) {
+          return;
+        }
+
+        for (auto& provider : m_providers) {
+          if (provider->name() != std::string_view(result.providerName)) {
+            continue;
+          }
+          if (!provider->activate(result)) {
+            return;
+          }
+          if (provider->trackUsage()) {
+            m_usageTracker.record(provider->name(), result.id);
+          }
+          PanelManager::instance().closePanel();
+          return;
+        }
+      });
+
+  const float inset = std::round(std::max(4.0f, Style::spaceXs * scale));
+  const std::int32_t ax = static_cast<std::int32_t>(std::round(anchorX - inset));
+  const std::int32_t ay = static_cast<std::int32_t>(std::round(anchorY - inset));
+  const std::int32_t aw = static_cast<std::int32_t>(std::round(inset * 2.0f));
+  const std::int32_t ah = static_cast<std::int32_t>(std::round(inset * 2.0f));
+
+  m_actionsMenu->open(std::move(entries), menuWidth, 12, ax, ay, std::max(1, aw), std::max(1, ah),
+                      parentCtx->layerSurface, parentCtx->output);
 }
 
 void LauncherPanel::activateAt(std::size_t index) {

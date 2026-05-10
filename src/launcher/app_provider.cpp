@@ -336,14 +336,31 @@ bool AppProvider::activate(const LauncherResult& result) {
   refreshEntriesIfNeeded();
 
   for (const auto& entry : m_entries) {
-    if (entry.path == result.id) {
-      std::string token;
-      if (m_wayland != nullptr && m_wayland->hasXdgActivation()) {
-        token = m_wayland->requestActivationToken(nullptr);
-      }
-      launchCommand(entry.exec, entry.terminal, token);
-      return true;
+    if (entry.path != result.id) {
+      continue;
     }
+
+    std::string execLine = entry.exec;
+    if (!result.desktopActionId.empty()) {
+      const DesktopAction* chosen = nullptr;
+      for (const auto& action : entry.actions) {
+        if (action.id == result.desktopActionId) {
+          chosen = &action;
+          break;
+        }
+      }
+      if (chosen == nullptr || chosen->exec.empty()) {
+        return false;
+      }
+      execLine = chosen->exec;
+    }
+
+    std::string token;
+    if (m_wayland != nullptr && m_wayland->hasXdgActivation()) {
+      token = m_wayland->requestActivationToken(nullptr);
+    }
+    launchCommand(execLine, entry.terminal, token);
+    return true;
   }
   return false;
 }
