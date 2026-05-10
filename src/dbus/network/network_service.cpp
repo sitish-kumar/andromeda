@@ -62,41 +62,6 @@ namespace {
     return std::string(buf);
   }
 
-  std::string firstIpv4FromConfig(sdbus::IConnection& conn, const std::string& ip4ConfigPath) {
-    if (ip4ConfigPath.empty() || ip4ConfigPath == "/") {
-      return {};
-    }
-    try {
-      auto proxy = sdbus::createProxy(conn, k_nmBusName, sdbus::ObjectPath{ip4ConfigPath});
-      // Prefer "AddressData" (vector<dict<string,variant>>) since "Addresses" is deprecated.
-      try {
-        const sdbus::Variant value = proxy->getProperty("AddressData").onInterface(k_nmIp4ConfigInterface);
-        const auto data = value.get<std::vector<std::map<std::string, sdbus::Variant>>>();
-        for (const auto& entry : data) {
-          auto it = entry.find("address");
-          if (it != entry.end()) {
-            try {
-              return it->second.get<std::string>();
-            } catch (const sdbus::Error&) {
-            }
-          }
-        }
-      } catch (const sdbus::Error&) {
-      }
-      // Fallback: legacy Addresses (vector<vector<uint32>> — addr, prefix, gateway).
-      try {
-        const sdbus::Variant value = proxy->getProperty("Addresses").onInterface(k_nmIp4ConfigInterface);
-        const auto data = value.get<std::vector<std::vector<std::uint32_t>>>();
-        if (!data.empty() && !data.front().empty()) {
-          return ipv4FromUint(data.front().front());
-        }
-      } catch (const sdbus::Error&) {
-      }
-    } catch (const sdbus::Error&) {
-    }
-    return {};
-  }
-
   // Tracks in-flight async refresh operations so we only emit state changes after all complete.
   struct PendingRefresh {
     std::vector<AccessPointInfo> capturedAps;
