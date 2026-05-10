@@ -109,6 +109,7 @@ private:
   void refreshAccessPoints(std::function<void()> onComplete);
   void refreshSavedConnections(std::function<void()> onComplete);
   void refreshVpnConnections(std::function<void()> onComplete);
+  void finishSavedConnections(std::vector<std::string>& ssids, std::function<void()> onComplete);
   void finishRefreshAccessPoints(std::vector<AccessPointInfo>& aps, std::function<void()> onComplete);
   void rebindActiveConnection();
   void rebindActiveDevice(const std::string& devicePath);
