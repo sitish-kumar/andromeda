@@ -533,7 +533,6 @@ void Application::initServices() {
 
     try {
       m_networkService = std::make_unique<NetworkService>(*m_systemBus);
-      m_prevWirelessEnabledForEvents = m_networkService->state().wirelessEnabled;
       m_networkService->setChangeCallback(
           [this, shouldRefreshControlCenter](const NetworkState& state, NetworkChangeOrigin origin) {
             onNetworkStateChangedForEvents(state, origin);
@@ -542,6 +541,9 @@ void Application::initServices() {
               m_panelManager.refresh();
             }
           });
+      if (m_networkService->hasStateSnapshot()) {
+        m_prevWirelessEnabledForEvents = m_networkService->state().wirelessEnabled;
+      }
       kLog.info("network service active");
     } catch (const std::exception& e) {
       kLog.warn("network service disabled: {}", e.what());
@@ -559,7 +561,6 @@ void Application::initServices() {
 
     try {
       m_bluetoothService = std::make_unique<BluetoothService>(*m_systemBus);
-      m_prevBluetoothPoweredForEvents = m_bluetoothService->state().powered;
       auto refreshBluetoothUi = [this, shouldRefreshControlCenter]() {
         m_bar.refresh();
         if (shouldRefreshControlCenter()) {
@@ -573,6 +574,9 @@ void Application::initServices() {
           });
       m_bluetoothService->setDevicesCallback(
           [refreshBluetoothUi](const std::vector<BluetoothDeviceInfo>& /*devices*/) { refreshBluetoothUi(); });
+      if (m_bluetoothService->hasStateSnapshot()) {
+        m_prevBluetoothPoweredForEvents = m_bluetoothService->state().powered;
+      }
       kLog.info("bluetooth service active");
     } catch (const std::exception& e) {
       kLog.warn("bluetooth service disabled: {}", e.what());

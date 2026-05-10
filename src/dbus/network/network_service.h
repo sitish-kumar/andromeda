@@ -73,6 +73,7 @@ public:
   void refresh();
 
   [[nodiscard]] const NetworkState& state() const noexcept { return m_state; }
+  [[nodiscard]] bool hasStateSnapshot() const noexcept { return m_hasStateSnapshot; }
   [[nodiscard]] const std::vector<AccessPointInfo>& accessPoints() const noexcept { return m_accessPoints; }
   [[nodiscard]] const std::vector<VpnConnectionInfo>& vpnConnections() const noexcept { return m_vpnConnections; }
   [[nodiscard]] static const char* glyphForState(const NetworkState& state) noexcept;
@@ -138,5 +139,6 @@ private:
   bool m_scanning = false;
   std::int64_t m_scanBaselineLastScan = 0;
   std::optional<bool> m_pendingLocalWirelessEnabled;
+  bool m_hasStateSnapshot = false;
   ChangeCallback m_changeCallback;
 };

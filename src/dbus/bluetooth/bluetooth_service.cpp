@@ -458,6 +458,7 @@ void BluetoothService::refresh() {
         const BluetoothStateChangeOrigin origin = previous.powered != m_state.powered
                                                       ? consumePoweredChangeOrigin(m_state.powered)
                                                       : BluetoothStateChangeOrigin::External;
+        m_hasStateSnapshot = true;
         emitState(origin);
         emitDevices();
       });

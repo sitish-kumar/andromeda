@@ -227,12 +227,14 @@ void NetworkService::refresh() {
       const bool vpnsChanged = pending->capturedVpns != m_vpnConnections;
       const bool savedChanged = pending->capturedSaved != m_savedSsids;
       const bool stateChanged = next != m_state;
+      const bool firstSnapshot = !m_hasStateSnapshot;
       const bool wirelessEnabledChanged = next.wirelessEnabled != m_state.wirelessEnabled;
       const NetworkChangeOrigin origin = wirelessEnabledChanged
                                              ? consumeWirelessEnabledChangeOrigin(next.wirelessEnabled)
                                              : NetworkChangeOrigin::External;
       m_state = std::move(next);
-      if ((stateChanged || apsChanged || vpnsChanged || savedChanged) && m_changeCallback) {
+      m_hasStateSnapshot = true;
+      if ((firstSnapshot || stateChanged || apsChanged || vpnsChanged || savedChanged) && m_changeCallback) {
         m_changeCallback(m_state, origin);
       }
       // Break the self-reference cycle: pending->onAllComplete captures pending.

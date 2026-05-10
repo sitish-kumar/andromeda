@@ -79,6 +79,7 @@ public:
   void refresh();
 
   [[nodiscard]] const BluetoothState& state() const noexcept { return m_state; }
+  [[nodiscard]] bool hasStateSnapshot() const noexcept { return m_hasStateSnapshot; }
   [[nodiscard]] const std::vector<BluetoothDeviceInfo>& devices() const noexcept { return m_devices; }
 
   void setPowered(bool enabled);
@@ -108,6 +109,7 @@ private:
   BluetoothState m_state;
   std::vector<BluetoothDeviceInfo> m_devices;
   std::optional<bool> m_pendingLocalPowered;
+  bool m_hasStateSnapshot = false;
   StateCallback m_stateCallback;
   DevicesCallback m_devicesCallback;
 };
