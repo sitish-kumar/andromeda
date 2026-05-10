@@ -21,6 +21,7 @@ struct TrayItemInfo {
   std::string attentionIconName;
   std::string menuObjectPath;
   std::string itemName;
+  std::string processName;
   std::string title;
   std::string status;
   std::vector<std::uint8_t> iconArgb32;
@@ -114,6 +115,7 @@ private:
   void sendMenuEvent(const std::string& itemId, std::int32_t entryId, const std::string& eventName);
   [[nodiscard]] bool ensureItemProxy(const std::string& itemId);
   [[nodiscard]] bool hasServiceOwner(const std::string& serviceName) const;
+  [[nodiscard]] std::string processNameForBusName(const std::string& busName) const;
   void removeItemsForBusName(const std::string& busName);
   void emitChanged();
 

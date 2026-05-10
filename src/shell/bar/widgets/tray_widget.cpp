@@ -193,14 +193,6 @@ TrayWidget::TrayWidget(TrayService* tray, std::vector<std::string> hiddenItems, 
     std::vector<std::string> normalized;
     normalized.reserve(tokens.size());
     for (const auto& token : tokens) {
-      const auto lowerToken = toLower(token);
-      if (lowerToken.rfind("item:", 0) == 0 || lowerToken.rfind("icon:", 0) == 0 ||
-          lowerToken.rfind("title:", 0) == 0 || lowerToken.rfind("bus:", 0) == 0) {
-        if (std::ranges::find(normalized, lowerToken) == normalized.end()) {
-          normalized.push_back(lowerToken);
-        }
-        continue;
-      }
       for (const auto& variant : identifierVariants(token)) {
         if (std::ranges::find(normalized, variant) == normalized.end()) {
           normalized.push_back(variant);
@@ -710,6 +702,7 @@ bool TrayWidget::isHiddenItem(const TrayItemInfo& item) const {
   appendVariants(item.busName);
   appendVariants(item.objectPath);
   appendVariants(item.itemName);
+  appendVariants(item.processName);
   appendVariants(item.title);
   appendVariants(item.iconName);
   appendVariants(item.attentionIconName);
@@ -728,41 +721,6 @@ bool TrayWidget::isPinnedItem(const TrayItemInfo& item) const {
     return false;
   }
 
-  auto hasVariant = [](std::string_view token, std::string_view value) {
-    const auto variants = identifierVariants(value);
-    return std::ranges::find(variants, token) != variants.end();
-  };
-
-  for (const auto& needle : m_pinnedItems) {
-    if (needle.rfind("item:", 0) == 0) {
-      const auto value = needle.substr(5);
-      if (hasVariant(value, item.itemName) || hasVariant(value, item.id) || hasVariant(value, item.objectPath)) {
-        return true;
-      }
-      continue;
-    }
-    if (needle.rfind("icon:", 0) == 0) {
-      const auto value = needle.substr(5);
-      if (hasVariant(value, item.iconName) || hasVariant(value, item.overlayIconName) ||
-          hasVariant(value, item.attentionIconName)) {
-        return true;
-      }
-      continue;
-    }
-    if (needle.rfind("title:", 0) == 0) {
-      if (hasVariant(needle.substr(6), item.title)) {
-        return true;
-      }
-      continue;
-    }
-    if (needle.rfind("bus:", 0) == 0) {
-      if (hasVariant(needle.substr(4), item.busName)) {
-        return true;
-      }
-      continue;
-    }
-  }
-
   std::vector<std::string> candidates;
   auto appendVariants = [&candidates](std::string_view text) {
     for (const auto& variant : identifierVariants(text)) {
@@ -775,6 +733,7 @@ bool TrayWidget::isPinnedItem(const TrayItemInfo& item) const {
   appendVariants(item.id);
   appendVariants(item.busName);
   appendVariants(item.itemName);
+  appendVariants(item.processName);
   appendVariants(item.title);
   appendVariants(item.objectPath);
   appendVariants(item.iconName);
@@ -892,6 +851,7 @@ std::string TrayWidget::resolveIconPath(const TrayItemInfo& item) {
   const bool hasTargetPixmap = item.needsAttention ? !item.attentionArgb32.empty() : !item.iconArgb32.empty();
   if (preferred.empty() && !hasTargetPixmap) {
     candidates.emplace_back("itemName", &item.itemName);
+    candidates.emplace_back("processName", &item.processName);
     candidates.emplace_back("title", &item.title);
     candidates.emplace_back("objectPath", &item.objectPath);
     candidates.emplace_back("busName", &stableBusName);
