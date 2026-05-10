@@ -97,6 +97,15 @@ namespace {
     return {};
   }
 
+  // Tracks in-flight async refresh operations so we only emit state changes after all complete.
+  struct PendingRefresh {
+    std::vector<AccessPointInfo> capturedAps;
+    std::vector<VpnConnectionInfo> capturedVpns;
+    std::vector<std::string> capturedSaved;
+    std::atomic<int> pendingOps{0};
+    std::function<void()> onAllComplete;
+  };
+
 } // namespace
 
 const char* NetworkService::glyphForState(const NetworkState& state) noexcept {
@@ -201,24 +210,37 @@ NetworkService::~NetworkService() = default;
 void NetworkService::setChangeCallback(ChangeCallback callback) { m_changeCallback = std::move(callback); }
 
 void NetworkService::refresh() {
-  const auto previousAps = m_accessPoints;
-  const auto previousVpns = m_vpnConnections;
-  const auto previousSaved = m_savedSsids;
-  refreshAccessPoints();
-  refreshVpnConnections();
-  refreshSavedConnections();
-  NetworkState next = readState();
-  const bool apsChanged = previousAps != m_accessPoints;
-  const bool vpnsChanged = previousVpns != m_vpnConnections;
-  const bool savedChanged = previousSaved != m_savedSsids;
-  const bool stateChanged = next != m_state;
-  const bool wirelessEnabledChanged = next.wirelessEnabled != m_state.wirelessEnabled;
-  const NetworkChangeOrigin origin =
-      wirelessEnabledChanged ? consumeWirelessEnabledChangeOrigin(next.wirelessEnabled) : NetworkChangeOrigin::External;
-  m_state = std::move(next);
-  if ((stateChanged || apsChanged || vpnsChanged || savedChanged) && m_changeCallback) {
-    m_changeCallback(m_state, origin);
-  }
+  auto pending = std::make_shared<PendingRefresh>();
+  pending->capturedAps = m_accessPoints;
+  pending->capturedVpns = m_vpnConnections;
+  pending->capturedSaved = m_savedSsids;
+  pending->pendingOps = 3;
+
+  pending->onAllComplete = [this, pending]() {
+    NetworkState next = readState();
+    const bool apsChanged = pending->capturedAps != m_accessPoints;
+    const bool vpnsChanged = pending->capturedVpns != m_vpnConnections;
+    const bool savedChanged = pending->capturedSaved != m_savedSsids;
+    const bool stateChanged = next != m_state;
+    const bool wirelessEnabledChanged = next.wirelessEnabled != m_state.wirelessEnabled;
+    const NetworkChangeOrigin origin =
+        wirelessEnabledChanged ? consumeWirelessEnabledChangeOrigin(next.wirelessEnabled)
+                               : NetworkChangeOrigin::External;
+    m_state = std::move(next);
+    if ((stateChanged || apsChanged || vpnsChanged || savedChanged) && m_changeCallback) {
+      m_changeCallback(m_state, origin);
+    }
+  };
+
+  auto onOpComplete = [pending]() {
+    if (--pending->pendingOps == 0) {
+      pending->onAllComplete();
+    }
+  };
+
+  refreshAccessPoints(onOpComplete);
+  refreshVpnConnections(onOpComplete);
+  refreshSavedConnections(onOpComplete);
 }
 
 void NetworkService::requestScan() {
@@ -558,138 +580,220 @@ bool NetworkService::hasSavedConnection(const std::string& ssid) const {
   return std::find(m_savedSsids.begin(), m_savedSsids.end(), ssid) != m_savedSsids.end();
 }
 
-void NetworkService::refreshSavedConnections() {
-  std::vector<std::string> next;
+void NetworkService::refreshSavedConnections(std::function<void()> onComplete) {
   try {
-    auto settings = sdbus::createProxy(m_bus.connection(), k_nmBusName, k_nmSettingsObjectPath);
-    std::vector<sdbus::ObjectPath> connectionPaths;
-    settings->callMethod("ListConnections").onInterface(k_nmSettingsInterface).storeResultsTo(connectionPaths);
-    for (const auto& connectionPath : connectionPaths) {
-      try {
-        auto connection = sdbus::createProxy(m_bus.connection(), k_nmBusName, connectionPath);
-        std::map<std::string, std::map<std::string, sdbus::Variant>> cfg;
-        connection->callMethod("GetSettings").onInterface(k_nmSettingsConnectionInterface).storeResultsTo(cfg);
-        auto wifiIt = cfg.find("802-11-wireless");
-        if (wifiIt == cfg.end()) {
-          continue;
-        }
-        auto ssidIt = wifiIt->second.find("ssid");
-        if (ssidIt == wifiIt->second.end()) {
-          continue;
-        }
-        try {
-          const auto bytes = ssidIt->second.get<std::vector<std::uint8_t>>();
-          std::string ssid(bytes.begin(), bytes.end());
-          if (!ssid.empty()) {
-            next.push_back(std::move(ssid));
+    auto settings =
+        std::shared_ptr<sdbus::IProxy>(sdbus::createProxy(m_bus.connection(), k_nmBusName, k_nmSettingsObjectPath));
+    settings->callMethodAsync("ListConnections")
+        .onInterface(k_nmSettingsInterface)
+        .uponReplyInvoke([this, settings, onComplete](std::optional<sdbus::Error> err,
+                                                      std::vector<sdbus::ObjectPath> connectionPaths) {
+          if (err.has_value()) {
+            kLog.debug("refreshSavedConnections ListConnections failed: {}", err->what());
+            if (onComplete)
+              onComplete();
+            return;
           }
-        } catch (const sdbus::Error&) {
-        }
-      } catch (const sdbus::Error&) {
-      }
-    }
-  } catch (const sdbus::Error& e) {
-    kLog.debug("refreshSavedConnections: {}", e.what());
-  }
-  std::ranges::sort(next);
-  next.erase(std::unique(next.begin(), next.end()), next.end());
-  m_savedSsids = std::move(next);
-}
 
-void NetworkService::refreshVpnConnections() {
-  std::vector<VpnConnectionInfo> next;
-  std::set<std::string> vpnProfilePaths;
-  try {
-    auto settings = sdbus::createProxy(m_bus.connection(), k_nmBusName, k_nmSettingsObjectPath);
-    std::vector<sdbus::ObjectPath> connectionPaths;
-    settings->callMethod("ListConnections").onInterface(k_nmSettingsInterface).storeResultsTo(connectionPaths);
-    for (const auto& connectionPath : connectionPaths) {
-      try {
-        auto connection = sdbus::createProxy(m_bus.connection(), k_nmBusName, connectionPath);
-        std::map<std::string, std::map<std::string, sdbus::Variant>> cfg;
-        connection->callMethod("GetSettings").onInterface(k_nmSettingsConnectionInterface).storeResultsTo(cfg);
-        auto connIt = cfg.find("connection");
-        if (connIt == cfg.end()) {
-          continue;
-        }
-        auto typeIt = connIt->second.find("type");
-        if (typeIt == connIt->second.end()) {
-          continue;
-        }
-        std::string type;
-        try {
-          type = typeIt->second.get<std::string>();
-        } catch (const sdbus::Error&) {
-          continue;
-        }
-
-        const bool hasVpnSection = cfg.contains("vpn");
-        const bool vpnLikeType = type == "vpn" || type == "wireguard";
-        if (!vpnLikeType && !hasVpnSection) {
-          continue;
-        }
-
-        VpnConnectionInfo info;
-        info.path = std::string(connectionPath);
-        auto idIt = connIt->second.find("id");
-        if (idIt != connIt->second.end()) {
-          try {
-            info.name = idIt->second.get<std::string>();
-          } catch (const sdbus::Error&) {
+          if (connectionPaths.empty()) {
+            m_savedSsids.clear();
+            if (onComplete)
+              onComplete();
+            return;
           }
-        }
-        if (info.name.empty()) {
-          info.name = info.path;
-        }
-        info.active = false;
-        vpnProfilePaths.insert(info.path);
-        next.push_back(std::move(info));
-      } catch (const sdbus::Error&) {
-      }
-    }
-  } catch (const sdbus::Error& e) {
-    kLog.debug("refreshVpnConnections: {}", e.what());
-  }
 
-  if (!next.empty()) {
-    try {
-      std::vector<sdbus::ObjectPath> activeConnections;
-      const sdbus::Variant activeVar = m_nm->getProperty("ActiveConnections").onInterface(k_nmInterface);
-      activeConnections = activeVar.get<std::vector<sdbus::ObjectPath>>();
-      for (const auto& activePath : activeConnections) {
-        try {
-          auto active = sdbus::createProxy(m_bus.connection(), k_nmBusName, activePath);
-          const auto state = getPropertyOr<std::uint32_t>(*active, k_nmActiveConnectionInterface, "State", 0U);
-          if (state != k_nmActiveConnectionStateActivating && state != k_nmActiveConnectionStateActivated) {
-            continue;
-          }
-          const auto profilePath = getPropertyOr<sdbus::ObjectPath>(*active, k_nmActiveConnectionInterface,
-                                                                    "Connection", sdbus::ObjectPath{});
-          const std::string profilePathStr = std::string(profilePath);
-          if (!vpnProfilePaths.contains(profilePathStr)) {
-            continue;
-          }
-          for (auto& vpn : next) {
-            if (vpn.path == profilePathStr) {
-              vpn.active = true;
-              break;
+          auto opState = std::make_shared<std::pair<std::vector<std::string>, std::atomic<int>>>(
+              std::make_pair(std::vector<std::string>{}, static_cast<int>(connectionPaths.size())));
+
+          for (const auto& connectionPath : connectionPaths) {
+            try {
+              auto connection = std::shared_ptr<sdbus::IProxy>(
+                  sdbus::createProxy(m_bus.connection(), k_nmBusName, connectionPath));
+              connection->callMethodAsync("GetSettings")
+                  .onInterface(k_nmSettingsConnectionInterface)
+                  .uponReplyInvoke([this, connection, opState, onComplete](
+                      std::optional<sdbus::Error> settingsErr,
+                      std::map<std::string, std::map<std::string, sdbus::Variant>> cfg) {
+                    if (!settingsErr.has_value()) {
+                      auto wifiIt = cfg.find("802-11-wireless");
+                      if (wifiIt != cfg.end()) {
+                        auto ssidIt = wifiIt->second.find("ssid");
+                        if (ssidIt != wifiIt->second.end()) {
+                          try {
+                            const auto bytes = ssidIt->second.get<std::vector<std::uint8_t>>();
+                            std::string ssid(bytes.begin(), bytes.end());
+                            if (!ssid.empty()) {
+                              opState->first.push_back(std::move(ssid));
+                            }
+                          } catch (const sdbus::Error&) {
+                          }
+                        }
+                      }
+                    }
+                    if (--opState->second == 0) {
+                      std::ranges::sort(opState->first);
+                      opState->first.erase(std::unique(opState->first.begin(), opState->first.end()),
+                                           opState->first.end());
+                      m_savedSsids = std::move(opState->first);
+                      if (onComplete)
+                        onComplete();
+                    }
+                  });
+            } catch (const sdbus::Error&) {
+              if (--opState->second == 0) {
+                std::ranges::sort(opState->first);
+                opState->first.erase(std::unique(opState->first.begin(), opState->first.end()),
+                                     opState->first.end());
+                m_savedSsids = std::move(opState->first);
+                if (onComplete)
+                  onComplete();
+              }
             }
           }
-        } catch (const sdbus::Error&) {
-        }
-      }
-    } catch (const sdbus::Error& e) {
-      kLog.debug("refreshVpnConnections active list: {}", e.what());
-    }
+        });
+  } catch (const sdbus::Error& e) {
+    kLog.debug("refreshSavedConnections: {}", e.what());
+    if (onComplete)
+      onComplete();
   }
+}
 
-  std::ranges::sort(next, [](const VpnConnectionInfo& a, const VpnConnectionInfo& b) {
-    if (a.active != b.active) {
-      return a.active;
-    }
-    return a.name < b.name;
-  });
-  m_vpnConnections = std::move(next);
+void NetworkService::refreshVpnConnections(std::function<void()> onComplete) {
+  try {
+    auto settings =
+        std::shared_ptr<sdbus::IProxy>(sdbus::createProxy(m_bus.connection(), k_nmBusName, k_nmSettingsObjectPath));
+    settings->callMethodAsync("ListConnections")
+        .onInterface(k_nmSettingsInterface)
+        .uponReplyInvoke([this, settings, onComplete](std::optional<sdbus::Error> err,
+                                                      std::vector<sdbus::ObjectPath> connectionPaths) {
+          if (err.has_value()) {
+            kLog.debug("refreshVpnConnections ListConnections failed: {}", err->what());
+            if (onComplete)
+              onComplete();
+            return;
+          }
+
+          if (connectionPaths.empty()) {
+            m_vpnConnections.clear();
+            if (onComplete)
+              onComplete();
+            return;
+          }
+
+          auto opState = std::make_shared<std::pair<
+              std::pair<std::vector<VpnConnectionInfo>, std::set<std::string>>,
+              std::atomic<int>>>(std::make_pair(
+              std::make_pair(std::vector<VpnConnectionInfo>{}, std::set<std::string>{}),
+              static_cast<int>(connectionPaths.size())));
+
+          for (const auto& connectionPath : connectionPaths) {
+            try {
+              auto connection = std::shared_ptr<sdbus::IProxy>(
+                  sdbus::createProxy(m_bus.connection(), k_nmBusName, connectionPath));
+              connection->callMethodAsync("GetSettings")
+                  .onInterface(k_nmSettingsConnectionInterface)
+                  .uponReplyInvoke([this, connection, opState, connectionPath, onComplete](
+                      std::optional<sdbus::Error> getErr,
+                      std::map<std::string, std::map<std::string, sdbus::Variant>> cfg) {
+                    if (!getErr.has_value()) {
+                      auto connIt = cfg.find("connection");
+                      if (connIt != cfg.end()) {
+                        auto typeIt = connIt->second.find("type");
+                        if (typeIt != connIt->second.end()) {
+                          try {
+                            const auto type = typeIt->second.get<std::string>();
+                            const bool hasVpnSection = cfg.contains("vpn");
+                            const bool vpnLikeType = type == "vpn" || type == "wireguard";
+                            if (vpnLikeType || hasVpnSection) {
+                              VpnConnectionInfo info;
+                              info.path = std::string(connectionPath);
+                              auto idIt = connIt->second.find("id");
+                              if (idIt != connIt->second.end()) {
+                                try {
+                                  info.name = idIt->second.get<std::string>();
+                                } catch (const sdbus::Error&) {
+                                }
+                              }
+                              if (info.name.empty()) {
+                                info.name = info.path;
+                              }
+                              info.active = false;
+                              opState->first.second.insert(info.path);
+                              opState->first.first.push_back(std::move(info));
+                            }
+                          } catch (const sdbus::Error&) {
+                          }
+                        }
+                      }
+                    }
+                    if (--opState->second == 0) {
+                      // Mark active VPNs
+                      try {
+                        std::vector<sdbus::ObjectPath> activeConnections;
+                        const sdbus::Variant activeVar =
+                            m_nm->getProperty("ActiveConnections").onInterface(k_nmInterface);
+                        activeConnections = activeVar.get<std::vector<sdbus::ObjectPath>>();
+                        for (const auto& activePath : activeConnections) {
+                          try {
+                            auto active = sdbus::createProxy(m_bus.connection(), k_nmBusName, activePath);
+                            const auto state =
+                                getPropertyOr<std::uint32_t>(*active, k_nmActiveConnectionInterface, "State", 0U);
+                            if (state != k_nmActiveConnectionStateActivating &&
+                                state != k_nmActiveConnectionStateActivated) {
+                              continue;
+                            }
+                            const auto profilePath =
+                                getPropertyOr<sdbus::ObjectPath>(*active, k_nmActiveConnectionInterface,
+                                                                 "Connection", sdbus::ObjectPath{});
+                            const std::string profilePathStr = std::string(profilePath);
+                            if (!opState->first.second.contains(profilePathStr)) {
+                              continue;
+                            }
+                            for (auto& vpn : opState->first.first) {
+                              if (vpn.path == profilePathStr) {
+                                vpn.active = true;
+                                break;
+                              }
+                            }
+                          } catch (const sdbus::Error&) {
+                          }
+                        }
+                      } catch (const sdbus::Error& e) {
+                        kLog.debug("refreshVpnConnections active list: {}", e.what());
+                      }
+                      std::ranges::sort(opState->first.first,
+                                        [](const VpnConnectionInfo& a, const VpnConnectionInfo& b) {
+                                          if (a.active != b.active) {
+                                            return a.active;
+                                          }
+                                          return a.name < b.name;
+                                        });
+                      m_vpnConnections = std::move(opState->first.first);
+                      if (onComplete)
+                        onComplete();
+                    }
+                  });
+            } catch (const sdbus::Error&) {
+              if (--opState->second == 0) {
+                std::ranges::sort(opState->first.first,
+                                  [](const VpnConnectionInfo& a, const VpnConnectionInfo& b) {
+                                    if (a.active != b.active) {
+                                      return a.active;
+                                    }
+                                    return a.name < b.name;
+                                  });
+                m_vpnConnections = std::move(opState->first.first);
+                if (onComplete)
+                  onComplete();
+              }
+            }
+          }
+        });
+  } catch (const sdbus::Error& e) {
+    kLog.debug("refreshVpnConnections: {}", e.what());
+    if (onComplete)
+      onComplete();
+  }
 }
 
 void NetworkService::ensureWifiDeviceSubscribed(const std::string& devicePath) {
@@ -727,64 +831,170 @@ void NetworkService::ensureWifiDeviceSubscribed(const std::string& devicePath) {
   }
 }
 
-void NetworkService::refreshAccessPoints() {
-  std::vector<AccessPointInfo> next;
+void NetworkService::refreshAccessPoints(std::function<void()> onComplete) {
   try {
-    std::vector<sdbus::ObjectPath> devices;
-    m_nm->callMethod("GetDevices").onInterface(k_nmInterface).storeResultsTo(devices);
-    for (const auto& devicePath : devices) {
-      try {
-        auto device = sdbus::createProxy(m_bus.connection(), k_nmBusName, devicePath);
-        const auto deviceType = getPropertyOr<std::uint32_t>(*device, k_nmDeviceInterface, "DeviceType", 0U);
-        if (deviceType != k_nmDeviceTypeWifi) {
-          continue;
-        }
-        ensureWifiDeviceSubscribed(devicePath);
-        std::string activeApPath;
-        try {
-          const sdbus::Variant value =
-              device->getProperty("ActiveAccessPoint").onInterface(k_nmDeviceWirelessInterface);
-          activeApPath = value.get<sdbus::ObjectPath>();
-        } catch (const sdbus::Error&) {
-        }
-
-        const sdbus::Variant apListVar = device->getProperty("AccessPoints").onInterface(k_nmDeviceWirelessInterface);
-        const auto apPaths = apListVar.get<std::vector<sdbus::ObjectPath>>();
-        for (const auto& apPath : apPaths) {
-          try {
-            auto ap = sdbus::createProxy(m_bus.connection(), k_nmBusName, apPath);
-            AccessPointInfo info;
-            info.path = apPath;
-            info.devicePath = devicePath;
-            info.active = !activeApPath.empty() && apPath == activeApPath;
-            try {
-              const sdbus::Variant ssidVar = ap->getProperty("Ssid").onInterface(k_nmAccessPointInterface);
-              const auto ssidBytes = ssidVar.get<std::vector<std::uint8_t>>();
-              info.ssid.assign(ssidBytes.begin(), ssidBytes.end());
-            } catch (const sdbus::Error&) {
-            }
-            info.strength = getPropertyOr<std::uint8_t>(*ap, k_nmAccessPointInterface, "Strength", std::uint8_t{0});
-            const auto wpaFlags = getPropertyOr<std::uint32_t>(*ap, k_nmAccessPointInterface, "WpaFlags", 0U);
-            const auto rsnFlags = getPropertyOr<std::uint32_t>(*ap, k_nmAccessPointInterface, "RsnFlags", 0U);
-            info.secured = (wpaFlags != k_nm80211ApSecNone) || (rsnFlags != k_nm80211ApSecNone);
-            if (info.ssid.empty()) {
-              continue; // skip hidden networks for now
-            }
-            next.push_back(std::move(info));
-          } catch (const sdbus::Error&) {
+    m_nm->callMethodAsync("GetDevices")
+        .onInterface(k_nmInterface)
+        .uponReplyInvoke([this, onComplete](std::optional<sdbus::Error> err,
+                                            std::vector<sdbus::ObjectPath> devices) {
+          if (err.has_value()) {
+            kLog.debug("refreshAccessPoints GetDevices failed: {}", err->what());
+            if (onComplete)
+              onComplete();
+            return;
           }
-        }
-      } catch (const sdbus::Error&) {
-      }
-    }
+
+          if (devices.empty()) {
+            m_accessPoints.clear();
+            if (onComplete)
+              onComplete();
+            return;
+          }
+
+          // One slot per device; non-WiFi devices decrement immediately without contributing APs.
+          const int totalDevices = static_cast<int>(devices.size());
+          auto deviceState =
+              std::make_shared<std::pair<std::vector<AccessPointInfo>, std::atomic<int>>>(
+                  std::make_pair(std::vector<AccessPointInfo>{}, totalDevices));
+
+          for (const auto& devicePath : devices) {
+            try {
+              auto device = std::shared_ptr<sdbus::IProxy>(
+                  sdbus::createProxy(m_bus.connection(), k_nmBusName, devicePath));
+              // GetAll on DBus.Properties with the wireless interface arg: succeeds only for
+              // WiFi devices and also gives us ActiveAccessPoint — no sync reads needed.
+              device->callMethodAsync("GetAll")
+                  .onInterface(k_propertiesInterface)
+                  .withArguments(k_nmDeviceWirelessInterface)
+                  .uponReplyInvoke([this, device, deviceState, devicePath, onComplete](
+                      std::optional<sdbus::Error> wifiErr,
+                      std::map<std::string, sdbus::Variant> wifiProps) {
+                    if (wifiErr.has_value()) {
+                      // Not a WiFi device — just decrement and possibly finish.
+                      if (--deviceState->second == 0) {
+                        finishRefreshAccessPoints(deviceState->first, onComplete);
+                      }
+                      return;
+                    }
+
+                    // WiFi device confirmed. Subscribe for scan/state signals.
+                    ensureWifiDeviceSubscribed(devicePath);
+
+                    std::string activeApPath;
+                    if (auto it = wifiProps.find("ActiveAccessPoint"); it != wifiProps.end()) {
+                      try {
+                        activeApPath = it->second.get<sdbus::ObjectPath>();
+                      } catch (const sdbus::Error&) {
+                      }
+                    }
+
+                    device->callMethodAsync("GetAccessPoints")
+                        .onInterface(k_nmDeviceWirelessInterface)
+                        .uponReplyInvoke([this, device, deviceState, devicePath, activeApPath, onComplete](
+                            std::optional<sdbus::Error> apErr,
+                            std::vector<sdbus::ObjectPath> apPaths) {
+                          if (apErr.has_value() || apPaths.empty()) {
+                            if (--deviceState->second == 0) {
+                              finishRefreshAccessPoints(deviceState->first, onComplete);
+                            }
+                            return;
+                          }
+
+                          const int pendingAps = static_cast<int>(apPaths.size());
+                          auto apState =
+                              std::make_shared<std::pair<std::vector<AccessPointInfo>, std::atomic<int>>>(
+                                  std::make_pair(std::vector<AccessPointInfo>{}, pendingAps));
+
+                          for (const auto& apPath : apPaths) {
+                            try {
+                              auto ap = std::shared_ptr<sdbus::IProxy>(
+                                  sdbus::createProxy(m_bus.connection(), k_nmBusName, apPath));
+                              ap->callMethodAsync("GetAll")
+                                  .onInterface(k_propertiesInterface)
+                                  .withArguments(k_nmAccessPointInterface)
+                                  .uponReplyInvoke(
+                                      [this, ap, deviceState, apState, devicePath, activeApPath, apPath,
+                                       onComplete](std::optional<sdbus::Error> propErr,
+                                                   std::map<std::string, sdbus::Variant> properties) {
+                                        if (!propErr.has_value()) {
+                                          AccessPointInfo info;
+                                          info.path = apPath;
+                                          info.devicePath = devicePath;
+                                          info.active =
+                                              !activeApPath.empty() && apPath == activeApPath;
+                                          try {
+                                            const auto ssidBytes =
+                                                properties.at("Ssid").get<std::vector<std::uint8_t>>();
+                                            info.ssid.assign(ssidBytes.begin(), ssidBytes.end());
+                                          } catch (const sdbus::Error&) {
+                                          }
+                                          try {
+                                            info.strength =
+                                                properties.at("Strength").get<std::uint8_t>();
+                                          } catch (const sdbus::Error&) {
+                                          }
+                                          const auto wpaFlags = [&properties]() {
+                                            try {
+                                              return properties.at("WpaFlags").get<std::uint32_t>();
+                                            } catch (const sdbus::Error&) {
+                                              return 0U;
+                                            }
+                                          }();
+                                          const auto rsnFlags = [&properties]() {
+                                            try {
+                                              return properties.at("RsnFlags").get<std::uint32_t>();
+                                            } catch (const sdbus::Error&) {
+                                              return 0U;
+                                            }
+                                          }();
+                                          info.secured = (wpaFlags != k_nm80211ApSecNone) ||
+                                                         (rsnFlags != k_nm80211ApSecNone);
+                                          if (!info.ssid.empty()) {
+                                            apState->first.push_back(std::move(info));
+                                          }
+                                        }
+                                        if (--apState->second == 0) {
+                                          for (auto& apInfo : apState->first) {
+                                            deviceState->first.push_back(std::move(apInfo));
+                                          }
+                                          if (--deviceState->second == 0) {
+                                            finishRefreshAccessPoints(deviceState->first, onComplete);
+                                          }
+                                        }
+                                      });
+                            } catch (const sdbus::Error&) {
+                              if (--apState->second == 0) {
+                                for (auto& apInfo : apState->first) {
+                                  deviceState->first.push_back(std::move(apInfo));
+                                }
+                                if (--deviceState->second == 0) {
+                                  finishRefreshAccessPoints(deviceState->first, onComplete);
+                                }
+                              }
+                            }
+                          }
+                        });
+                  });
+            } catch (const sdbus::Error&) {
+              if (--deviceState->second == 0) {
+                finishRefreshAccessPoints(deviceState->first, onComplete);
+              }
+            }
+          }
+        });
   } catch (const sdbus::Error& e) {
     kLog.debug("refreshAccessPoints: {}", e.what());
+    if (onComplete)
+      onComplete();
   }
+}
 
+void NetworkService::finishRefreshAccessPoints(std::vector<AccessPointInfo>& aps,
+                                               std::function<void()> onComplete) {
   // Deduplicate by SSID, keeping the strongest (and marking active if any entry is active).
   std::vector<AccessPointInfo> deduped;
-  deduped.reserve(next.size());
-  for (auto& ap : next) {
+  deduped.reserve(aps.size());
+  for (auto& ap : aps) {
     auto it = std::find_if(deduped.begin(), deduped.end(),
                            [&](const AccessPointInfo& other) { return other.ssid == ap.ssid; });
     if (it == deduped.end()) {
@@ -809,6 +1019,8 @@ void NetworkService::refreshAccessPoints() {
   });
 
   m_accessPoints = std::move(deduped);
+  if (onComplete)
+    onComplete();
 }
 
 void NetworkService::rebindActiveConnection() {

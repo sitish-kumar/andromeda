@@ -106,9 +106,10 @@ public:
   [[nodiscard]] bool hasSavedConnection(const std::string& ssid) const;
 
 private:
-  void refreshAccessPoints();
-  void refreshSavedConnections();
-  void refreshVpnConnections();
+  void refreshAccessPoints(std::function<void()> onComplete);
+  void refreshSavedConnections(std::function<void()> onComplete);
+  void refreshVpnConnections(std::function<void()> onComplete);
+  void finishRefreshAccessPoints(std::vector<AccessPointInfo>& aps, std::function<void()> onComplete);
   void rebindActiveConnection();
   void rebindActiveDevice(const std::string& devicePath);
   void rebindActiveAccessPoint(const std::string& apPath);
