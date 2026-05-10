@@ -106,8 +106,7 @@ private:
   void scheduleStartupRediscovery();
   void scheduleRecoveryDiscovery();
   void addOrRefreshPlayer(const std::string& busName);
-  void applyPlayerSnapshot(const std::string& busName, const MprisPlayerInfo& info, bool hadPositionSignal,
-                           const std::optional<MprisPlayerInfo>& previousActive);
+  void applyPlayerSnapshot(const std::string& busName, const MprisPlayerInfo& info, bool hadPositionSignal);
   void refreshPlayerPosition(const std::string& busName, bool notifyChange);
   void applyPositionSample(const std::string& busName, int64_t rawPositionUs, bool notifyChange);
   void removePlayer(const std::string& busName);
