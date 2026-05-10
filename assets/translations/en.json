@@ -1585,23 +1585,23 @@
         },
         "use-weather-location": {
           "label": "Use Weather Location",
-          "description": "Use weather service location for sunrise/sunset"
+          "description": "Use weather service location for sunrise/sunset instead of a manual schedule"
         },
         "night-light-start-time": {
           "label": "Start Time",
-          "description": "Night light start time in HH:MM"
+          "description": "Manual night light start time in HH:MM when weather location is off"
         },
         "night-light-stop-time": {
           "label": "Stop Time",
-          "description": "Night light stop time in HH:MM"
+          "description": "Manual night light stop time in HH:MM when weather location is off"
         },
         "latitude": {
           "label": "Latitude",
-          "description": "Manual sunrise/sunset latitude when fixed times are unset"
+          "description": "Manual sunrise/sunset latitude when weather location is off and fixed times are unset"
         },
         "longitude": {
           "label": "Longitude",
-          "description": "Manual sunrise/sunset longitude when fixed times are unset"
+          "description": "Manual sunrise/sunset longitude when weather location is off and fixed times are unset"
         },
         "day-temperature": {
           "label": "Day Temperature",

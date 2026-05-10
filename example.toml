@@ -142,12 +142,12 @@ enable_ddcutil = false
 [nightlight]
 enabled              = false
 force                = false
-use_weather_location = true
+use_weather_location = true          # use weather coordinates instead of manual schedule/location
 temperature_day      = 6500         # Kelvin
 temperature_night    = 4000         # Kelvin
-# start_time = "20:30"              # HH:MM — explicit schedule takes priority over geolocation
+# start_time = "20:30"              # HH:MM — used when use_weather_location = false
 # stop_time  = "07:30"
-# latitude   = 52.5200
+# latitude   = 52.5200              # fallback when use_weather_location = false and start/stop are unset
 # longitude  = 13.4050
 
 # ── Idle ──────────────────────────────────────────────────────────────────────

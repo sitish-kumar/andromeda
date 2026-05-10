@@ -122,8 +122,23 @@ bool GammaService::effectiveForce() const {
   return m_config.force;
 }
 
+GammaService::GeoCoordinates GammaService::scheduleCoordinates() const {
+  if (m_config.useWeatherLocation) {
+    return GeoCoordinates{.latitude = m_weatherLatitude, .longitude = m_weatherLongitude};
+  }
+
+  if (m_config.latitude.has_value() || m_config.longitude.has_value()) {
+    if (m_config.latitude.has_value() && m_config.longitude.has_value()) {
+      return GeoCoordinates{.latitude = m_config.latitude, .longitude = m_config.longitude};
+    }
+    return GeoCoordinates{};
+  }
+
+  return GeoCoordinates{};
+}
+
 bool GammaService::isManualMode() const {
-  return !effectiveForce() && normalizedClock(m_config.startTime).has_value() &&
+  return !effectiveForce() && !m_config.useWeatherLocation && normalizedClock(m_config.startTime).has_value() &&
          normalizedClock(m_config.stopTime).has_value();
 }
 
@@ -256,13 +271,12 @@ GammaService::SolarTimes GammaService::computeSolarTimes(double lat, double lon)
 }
 
 bool GammaService::isGeoNightPhase() const {
-  const auto lat = m_config.latitude.has_value() ? m_config.latitude : m_weatherLatitude;
-  const auto lon = m_config.longitude.has_value() ? m_config.longitude : m_weatherLongitude;
-  if (!lat.has_value() || !lon.has_value()) {
+  const auto coords = scheduleCoordinates();
+  if (!coords.latitude.has_value() || !coords.longitude.has_value()) {
     return false;
   }
 
-  const auto times = computeSolarTimes(*lat, *lon);
+  const auto times = computeSolarTimes(*coords.latitude, *coords.longitude);
   if (times.sunriseMinutes == 0 && times.sunsetMinutes == 0) {
     return true;
   }
@@ -285,13 +299,12 @@ bool GammaService::isGeoNightPhase() const {
 }
 
 std::chrono::milliseconds GammaService::msUntilNextGeoBoundary() const {
-  const auto lat = m_config.latitude.has_value() ? m_config.latitude : m_weatherLatitude;
-  const auto lon = m_config.longitude.has_value() ? m_config.longitude : m_weatherLongitude;
-  if (!lat.has_value() || !lon.has_value()) {
+  const auto coords = scheduleCoordinates();
+  if (!coords.latitude.has_value() || !coords.longitude.has_value()) {
     return std::chrono::milliseconds(3600000);
   }
 
-  const auto times = computeSolarTimes(*lat, *lon);
+  const auto times = computeSolarTimes(*coords.latitude, *coords.longitude);
   if (times.sunriseMinutes == 0 && (times.sunsetMinutes == 0 || times.sunsetMinutes == 1440)) {
     return std::chrono::milliseconds(3600000);
   }
@@ -565,13 +578,15 @@ int GammaService::targetTemperature() const {
   }
 
   // Geo mode — need coordinates.
-  const auto lat = m_config.latitude.has_value() ? m_config.latitude : m_weatherLatitude;
-  const auto lon = m_config.longitude.has_value() ? m_config.longitude : m_weatherLongitude;
-  if (!lat.has_value() || !lon.has_value()) {
-    if (m_config.latitude.has_value() || m_config.longitude.has_value()) {
+  const auto coords = scheduleCoordinates();
+  if (!coords.latitude.has_value() || !coords.longitude.has_value()) {
+    if (!m_config.useWeatherLocation && (m_config.latitude.has_value() || m_config.longitude.has_value())) {
       kLog.warn("need both latitude and longitude when overriding location mode");
+    } else if (!m_config.useWeatherLocation) {
+      kLog.warn("no schedule: set start_time/stop_time or latitude/longitude, or enable weather location");
     } else {
-      kLog.warn("no schedule: set start_time/stop_time or latitude/longitude, or enable weather");
+      kLog.warn("no schedule: set start_time/stop_time, disable weather location and set latitude/longitude, or enable "
+                "weather");
     }
     return -1;
   }

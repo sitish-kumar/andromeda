@@ -49,6 +49,13 @@ private:
   [[nodiscard]] bool effectiveConfiguredEnabled() const;
   [[nodiscard]] bool effectiveEnabled() const;
   [[nodiscard]] bool effectiveForce() const;
+
+  struct GeoCoordinates {
+    std::optional<double> latitude;
+    std::optional<double> longitude;
+  };
+  [[nodiscard]] GeoCoordinates scheduleCoordinates() const;
+
   [[nodiscard]] bool isManualMode() const;
   [[nodiscard]] bool isManualNightPhase() const;
   [[nodiscard]] std::chrono::milliseconds msUntilNextManualBoundary() const;
