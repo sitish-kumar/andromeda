@@ -442,23 +442,25 @@ void BluetoothService::refresh() {
   if (m_impl == nullptr || m_impl->root == nullptr) {
     return;
   }
-  try {
-    ManagedObjects objects;
-    m_impl->root->callMethod("GetManagedObjects").onInterface(k_objectManagerInterface).storeResultsTo(objects);
-    const BluetoothState previous = m_state;
-    m_devices.clear();
-    m_state = BluetoothState{};
-    m_impl->adapterPath.clear();
-    m_impl->adapter.reset();
-    m_impl->seedFromManagedObjects(objects);
-    const BluetoothStateChangeOrigin origin = previous.powered != m_state.powered
-                                                  ? consumePoweredChangeOrigin(m_state.powered)
-                                                  : BluetoothStateChangeOrigin::External;
-    emitState(origin);
-    emitDevices();
-  } catch (const sdbus::Error& e) {
-    kLog.debug("GetManagedObjects failed: {}", e.what());
-  }
+  m_impl->root->callMethodAsync("GetManagedObjects")
+      .onInterface(k_objectManagerInterface)
+      .uponReplyInvoke([this](std::optional<sdbus::Error> err, ManagedObjects objects) {
+        if (err.has_value()) {
+          kLog.debug("GetManagedObjects failed: {}", err->what());
+          return;
+        }
+        const BluetoothState previous = m_state;
+        m_devices.clear();
+        m_state = BluetoothState{};
+        m_impl->adapterPath.clear();
+        m_impl->adapter.reset();
+        m_impl->seedFromManagedObjects(objects);
+        const BluetoothStateChangeOrigin origin = previous.powered != m_state.powered
+                                                      ? consumePoweredChangeOrigin(m_state.powered)
+                                                      : BluetoothStateChangeOrigin::External;
+        emitState(origin);
+        emitDevices();
+      });
 }
 
 void BluetoothService::setPowered(bool enabled) {
@@ -470,10 +472,9 @@ void BluetoothService::setPowered(bool enabled) {
   }
   try {
     if (!enabled && m_state.discovering) {
-      try {
-        m_impl->adapter->callMethod("StopDiscovery").onInterface(k_adapterInterface);
-      } catch (const sdbus::Error&) {
-      }
+      m_impl->adapter->callMethodAsync("StopDiscovery")
+          .onInterface(k_adapterInterface)
+          .uponReplyInvoke([](std::optional<sdbus::Error>) {});
     }
     m_impl->adapter->setProperty("Powered").onInterface(k_adapterInterface).toValue(enabled);
   } catch (const sdbus::Error& e) {
@@ -511,9 +512,15 @@ void BluetoothService::startDiscovery() {
     return;
   }
   try {
-    m_impl->adapter->callMethod("StartDiscovery").onInterface(k_adapterInterface);
+    m_impl->adapter->callMethodAsync("StartDiscovery")
+        .onInterface(k_adapterInterface)
+        .uponReplyInvoke([](std::optional<sdbus::Error> err) {
+          if (err.has_value()) {
+            kLog.warn("StartDiscovery failed: {}", err->what());
+          }
+        });
   } catch (const sdbus::Error& e) {
-    kLog.warn("StartDiscovery failed: {}", e.what());
+    kLog.warn("StartDiscovery dispatch failed: {}", e.what());
   }
 }
 
@@ -522,9 +529,15 @@ void BluetoothService::stopDiscovery() {
     return;
   }
   try {
-    m_impl->adapter->callMethod("StopDiscovery").onInterface(k_adapterInterface);
+    m_impl->adapter->callMethodAsync("StopDiscovery")
+        .onInterface(k_adapterInterface)
+        .uponReplyInvoke([](std::optional<sdbus::Error> err) {
+          if (err.has_value()) {
+            kLog.debug("StopDiscovery failed: {}", err->what());
+          }
+        });
   } catch (const sdbus::Error& e) {
-    kLog.debug("StopDiscovery failed: {}", e.what());
+    kLog.debug("StopDiscovery dispatch failed: {}", e.what());
   }
 }
 
@@ -538,10 +551,20 @@ bool BluetoothService::connect(const std::string& devicePath) {
     emitDevices();
   }
   try {
-    proxy->callMethod("Connect").onInterface(k_deviceInterface);
+    proxy->callMethodAsync("Connect")
+        .onInterface(k_deviceInterface)
+        .uponReplyInvoke([this, devicePath](std::optional<sdbus::Error> err) {
+          if (err.has_value()) {
+            kLog.warn("Device.Connect failed {}: {}", devicePath, err->what());
+            if (auto* dev = findDevice(devicePath)) {
+              dev->connecting = false;
+              emitDevices();
+            }
+          }
+        });
     return true;
   } catch (const sdbus::Error& e) {
-    kLog.warn("Device.Connect failed {}: {}", devicePath, e.what());
+    kLog.warn("Device.Connect dispatch failed {}: {}", devicePath, e.what());
     if (auto* dev = findDevice(devicePath)) {
       dev->connecting = false;
       emitDevices();
@@ -556,10 +579,16 @@ bool BluetoothService::disconnectDevice(const std::string& devicePath) {
     return false;
   }
   try {
-    proxy->callMethod("Disconnect").onInterface(k_deviceInterface);
+    proxy->callMethodAsync("Disconnect")
+        .onInterface(k_deviceInterface)
+        .uponReplyInvoke([devicePath](std::optional<sdbus::Error> err) {
+          if (err.has_value()) {
+            kLog.warn("Device.Disconnect failed {}: {}", devicePath, err->what());
+          }
+        });
     return true;
   } catch (const sdbus::Error& e) {
-    kLog.warn("Device.Disconnect failed {}: {}", devicePath, e.what());
+    kLog.warn("Device.Disconnect dispatch failed {}: {}", devicePath, e.what());
     return false;
   }
 }
@@ -574,10 +603,20 @@ bool BluetoothService::pair(const std::string& devicePath) {
     emitDevices();
   }
   try {
-    proxy->callMethod("Pair").onInterface(k_deviceInterface);
+    proxy->callMethodAsync("Pair")
+        .onInterface(k_deviceInterface)
+        .uponReplyInvoke([this, devicePath](std::optional<sdbus::Error> err) {
+          if (err.has_value()) {
+            kLog.warn("Device.Pair failed {}: {}", devicePath, err->what());
+            if (auto* dev = findDevice(devicePath)) {
+              dev->connecting = false;
+              emitDevices();
+            }
+          }
+        });
     return true;
   } catch (const sdbus::Error& e) {
-    kLog.warn("Device.Pair failed {}: {}", devicePath, e.what());
+    kLog.warn("Device.Pair dispatch failed {}: {}", devicePath, e.what());
     if (auto* dev = findDevice(devicePath)) {
       dev->connecting = false;
       emitDevices();
@@ -592,10 +631,16 @@ bool BluetoothService::cancelPair(const std::string& devicePath) {
     return false;
   }
   try {
-    proxy->callMethod("CancelPairing").onInterface(k_deviceInterface);
+    proxy->callMethodAsync("CancelPairing")
+        .onInterface(k_deviceInterface)
+        .uponReplyInvoke([devicePath](std::optional<sdbus::Error> err) {
+          if (err.has_value()) {
+            kLog.debug("CancelPairing failed {}: {}", devicePath, err->what());
+          }
+        });
     return true;
   } catch (const sdbus::Error& e) {
-    kLog.debug("CancelPairing failed {}: {}", devicePath, e.what());
+    kLog.debug("CancelPairing dispatch failed {}: {}", devicePath, e.what());
     return false;
   }
 }
@@ -617,11 +662,16 @@ void BluetoothService::forget(const std::string& devicePath) {
     return;
   }
   try {
-    m_impl->adapter->callMethod("RemoveDevice")
+    m_impl->adapter->callMethodAsync("RemoveDevice")
         .onInterface(k_adapterInterface)
-        .withArguments(sdbus::ObjectPath{devicePath});
+        .withArguments(sdbus::ObjectPath{devicePath})
+        .uponReplyInvoke([devicePath](std::optional<sdbus::Error> err) {
+          if (err.has_value()) {
+            kLog.warn("RemoveDevice failed {}: {}", devicePath, err->what());
+          }
+        });
   } catch (const sdbus::Error& e) {
-    kLog.warn("RemoveDevice failed {}: {}", devicePath, e.what());
+    kLog.warn("RemoveDevice dispatch failed {}: {}", devicePath, e.what());
   }
 }
 
