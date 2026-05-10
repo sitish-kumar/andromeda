@@ -466,8 +466,7 @@ void WeatherService::handleLocationResponse(const std::filesystem::path& path, b
     m_error = autoLocated ? i18n::tr("weather.errors.ip-geolocation-failed")
                           : i18n::tr("weather.errors.address-lookup-failed");
     if (canFetchWeatherAfterLocationFailure(autoLocated)) {
-      kLog.warn("{}; fetching weather using last resolved location {} ({}, {})", m_error, m_resolvedLocationName,
-                m_resolvedLatitude, m_resolvedLongitude);
+      kLog.warn("{}; fetching weather using last resolved weather location", m_error);
       startWeatherFetch();
       return;
     }
@@ -495,14 +494,13 @@ void WeatherService::handleLocationResponse(const std::filesystem::path& path, b
       m_resolvedLocationName = autoLocated ? i18n::tr("weather.locations.current") : m_activeConfig.address;
     }
 
-    kLog.info("location resolved: {} ({}, {})", m_resolvedLocationName, m_resolvedLatitude, m_resolvedLongitude);
+    kLog.info("weather location resolved");
     startWeatherFetch();
   } catch (const std::exception& e) {
     m_loading = false;
     m_error = autoLocated ? i18n::tr("weather.errors.parse-ip-geolocation") : i18n::tr("weather.errors.parse-geocode");
     if (canFetchWeatherAfterLocationFailure(autoLocated)) {
-      kLog.warn("{}: {}; fetching weather using last resolved location {} ({}, {})", m_error, e.what(),
-                m_resolvedLocationName, m_resolvedLatitude, m_resolvedLongitude);
+      kLog.warn("{}: {}; fetching weather using last resolved weather location", m_error, e.what());
       startWeatherFetch();
       return;
     }
@@ -727,7 +725,7 @@ void WeatherService::loadCache() {
     m_locationResolved = true;
     m_nextRefreshAt = m_snapshot.fetchedAt + std::chrono::minutes(std::max(5, m_activeConfig.refreshMinutes));
 
-    kLog.info("loaded cached weather for {} from {}", m_snapshot.locationName, path.string());
+    kLog.info("loaded cached weather data");
   } catch (const std::exception& e) {
     kLog.warn("failed to load weather cache: {}", e.what());
   }

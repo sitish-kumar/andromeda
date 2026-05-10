@@ -19,6 +19,17 @@ namespace {
     return std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - start).count();
   }
 
+  std::string urlForLog(std::string_view url) {
+    const std::size_t redactedPos = url.find_first_of("?#");
+    if (redactedPos != std::string_view::npos) {
+      const char suffix = url[redactedPos] == '?' ? '?' : '#';
+      return std::string(url.substr(0, redactedPos)) + suffix +
+             (suffix == '?' ? "<query redacted>" : "<fragment redacted>");
+    }
+
+    return std::string(url);
+  }
+
   void deferFailure(HttpClient::CompletionCallback cb) {
     if (!cb) {
       return;
@@ -80,7 +91,7 @@ bool HttpClient::hasActiveTransfers() const { return !m_transfers.empty() || !m_
 
 void HttpClient::download(std::string_view url, const std::filesystem::path& destPath, CompletionCallback cb) {
   if (m_offlineMode) {
-    kLog.warn("download skipped in offline mode url={}", url);
+    kLog.warn("download skipped in offline mode url={}", urlForLog(url));
     deferFailure(std::move(cb));
     return;
   }
@@ -98,7 +109,7 @@ void HttpClient::download(std::string_view url, const std::filesystem::path& des
 
   FILE* f = std::fopen(tempPath.c_str(), "wb");
   if (f == nullptr) {
-    kLog.warn("download failed to open temp file {} for url={}", tempPath.string(), url);
+    kLog.warn("download failed to open temp file {} for url={}", tempPath.string(), urlForLog(url));
     deferFailure(std::move(cb));
     return;
   }
@@ -107,7 +118,7 @@ void HttpClient::download(std::string_view url, const std::filesystem::path& des
   if (easy == nullptr) {
     std::fclose(f);
     std::filesystem::remove(tempPath);
-    kLog.warn("download failed to create curl handle url={}", url);
+    kLog.warn("download failed to create curl handle url={}", urlForLog(url));
     deferFailure(std::move(cb));
     return;
   }
@@ -138,7 +149,7 @@ void HttpClient::download(std::string_view url, const std::filesystem::path& des
       std::fclose(failedTransfer.file);
     }
     std::filesystem::remove(failedTransfer.tempPath);
-    kLog.warn("download failed to add curl handle url={} error={}", urlStr, curl_multi_strerror(addResult));
+    kLog.warn("download failed to add curl handle url={} error={}", urlForLog(urlStr), curl_multi_strerror(addResult));
     deferFailures(std::move(failedTransfer.callbacks));
     return;
   }
@@ -148,14 +159,14 @@ void HttpClient::download(std::string_view url, const std::filesystem::path& des
 
 void HttpClient::post(std::string_view url, std::string body, std::string_view contentType, CompletionCallback cb) {
   if (m_offlineMode) {
-    kLog.warn("post skipped in offline mode url={}", url);
+    kLog.warn("post skipped in offline mode url={}", urlForLog(url));
     deferFailure(std::move(cb));
     return;
   }
 
   CURL* easy = curl_easy_init();
   if (easy == nullptr) {
-    kLog.warn("post failed to create curl handle url={}", url);
+    kLog.warn("post failed to create curl handle url={}", urlForLog(url));
     deferFailure(std::move(cb));
     return;
   }
@@ -190,7 +201,7 @@ void HttpClient::post(std::string_view url, std::string body, std::string_view c
     if (failedPost.headers != nullptr) {
       curl_slist_free_all(failedPost.headers);
     }
-    kLog.warn("post failed to add curl handle url={} error={}", urlStr, curl_multi_strerror(addResult));
+    kLog.warn("post failed to add curl handle url={} error={}", urlForLog(urlStr), curl_multi_strerror(addResult));
     deferFailure(std::move(failedPost.callback));
     return;
   }
@@ -320,8 +331,8 @@ void HttpClient::finishTransfer(CURL* easy, CURLcode result) {
     }
   } else {
     const char* detail = transfer.errorBuffer[0] != '\0' ? transfer.errorBuffer.data() : curl_easy_strerror(result);
-    kLog.warn("download failed url={} curl={} http={} error={}", transfer.url, static_cast<int>(result), responseCode,
-              detail);
+    kLog.warn("download failed url={} curl={} http={} error={}", urlForLog(transfer.url), static_cast<int>(result),
+              responseCode, detail);
     std::filesystem::remove(transfer.tempPath);
   }
 
@@ -354,7 +365,8 @@ void HttpClient::finishPostTransfer(CURL* easy, CURLcode result) {
   const bool success = result == CURLE_OK;
   if (!success) {
     const char* detail = post.errorBuffer[0] != '\0' ? post.errorBuffer.data() : curl_easy_strerror(result);
-    kLog.warn("post failed url={} curl={} http={} error={}", post.url, static_cast<int>(result), responseCode, detail);
+    kLog.warn("post failed url={} curl={} http={} error={}", urlForLog(post.url), static_cast<int>(result),
+              responseCode, detail);
   }
 
   if (post.callback) {
