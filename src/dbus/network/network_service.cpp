@@ -76,6 +76,14 @@ namespace {
     int pending = 0;
   };
 
+  void finalizeSavedConnections(std::shared_ptr<SavedConnectionsState> savedState, std::vector<std::string>& savedSsids,
+                                std::function<void()> onComplete) {
+    std::ranges::sort(savedState->ssids);
+    savedState->ssids.erase(std::unique(savedState->ssids.begin(), savedState->ssids.end()), savedState->ssids.end());
+    savedSsids = std::move(savedState->ssids);
+    onComplete();
+  }
+
   struct VpnRefreshState {
     std::vector<VpnConnectionInfo> vpns;
     std::set<std::string> vpnPaths;
@@ -620,15 +628,13 @@ void NetworkService::refreshSavedConnections(std::function<void()> onComplete) {
           }
           if (err.has_value()) {
             kLog.debug("refreshSavedConnections ListConnections failed: {}", err->what());
-            if (onComplete)
-              onComplete();
+            onComplete();
             return;
           }
 
           if (connectionPaths.empty()) {
             m_savedSsids.clear();
-            if (onComplete)
-              onComplete();
+            onComplete();
             return;
           }
 
@@ -664,30 +670,19 @@ void NetworkService::refreshSavedConnections(std::function<void()> onComplete) {
                       }
                     }
                     if (--savedState->pending == 0) {
-                      std::ranges::sort(savedState->ssids);
-                      savedState->ssids.erase(std::unique(savedState->ssids.begin(), savedState->ssids.end()),
-                                              savedState->ssids.end());
-                      m_savedSsids = std::move(savedState->ssids);
-                      if (onComplete)
-                        onComplete();
+                      finalizeSavedConnections(savedState, m_savedSsids, onComplete);
                     }
                   });
             } catch (const sdbus::Error&) {
               if (--savedState->pending == 0) {
-                std::ranges::sort(savedState->ssids);
-                savedState->ssids.erase(std::unique(savedState->ssids.begin(), savedState->ssids.end()),
-                                        savedState->ssids.end());
-                m_savedSsids = std::move(savedState->ssids);
-                if (onComplete)
-                  onComplete();
+                finalizeSavedConnections(savedState, m_savedSsids, onComplete);
               }
             }
           }
         });
   } catch (const sdbus::Error& e) {
     kLog.debug("refreshSavedConnections: {}", e.what());
-    if (onComplete)
-      onComplete();
+    onComplete();
   }
 }
 
@@ -705,15 +700,13 @@ void NetworkService::refreshVpnConnections(std::function<void()> onComplete) {
           }
           if (err.has_value()) {
             kLog.debug("refreshVpnConnections ListConnections failed: {}", err->what());
-            if (onComplete)
-              onComplete();
+            onComplete();
             return;
           }
 
           if (connectionPaths.empty()) {
             m_vpnConnections.clear();
-            if (onComplete)
-              onComplete();
+            onComplete();
             return;
           }
 
@@ -731,8 +724,7 @@ void NetworkService::refreshVpnConnections(std::function<void()> onComplete) {
               return a.name < b.name;
             });
             m_vpnConnections = std::move(vpnState->vpns);
-            if (onComplete)
-              onComplete();
+            onComplete();
           };
 
           auto markActiveAndFinalize = [this, lifetimeToken, vpnState, finalize]() {
@@ -882,8 +874,7 @@ void NetworkService::refreshVpnConnections(std::function<void()> onComplete) {
         });
   } catch (const sdbus::Error& e) {
     kLog.debug("refreshVpnConnections: {}", e.what());
-    if (onComplete)
-      onComplete();
+    onComplete();
   }
 }
 
@@ -934,15 +925,13 @@ void NetworkService::refreshAccessPoints(std::function<void()> onComplete) {
               }
               if (err.has_value()) {
                 kLog.debug("refreshAccessPoints GetDevices failed: {}", err->what());
-                if (onComplete)
-                  onComplete();
+                onComplete();
                 return;
               }
 
               if (devices.empty()) {
                 m_accessPoints.clear();
-                if (onComplete)
-                  onComplete();
+                onComplete();
                 return;
               }
 
@@ -1096,8 +1085,7 @@ void NetworkService::refreshAccessPoints(std::function<void()> onComplete) {
             });
   } catch (const sdbus::Error& e) {
     kLog.debug("refreshAccessPoints: {}", e.what());
-    if (onComplete)
-      onComplete();
+    onComplete();
   }
 }
 
@@ -1130,8 +1118,7 @@ void NetworkService::finishRefreshAccessPoints(std::vector<AccessPointInfo>& aps
   });
 
   m_accessPoints = std::move(deduped);
-  if (onComplete)
-    onComplete();
+  onComplete();
 }
 
 void NetworkService::rebindActiveConnection() {
@@ -1294,9 +1281,7 @@ void NetworkService::readStateAsync(std::function<void(NetworkState)> onComplete
       next->vpnActive = true;
       next->connected = true;
     }
-    if (onComplete) {
-      onComplete(std::move(*next));
-    }
+    onComplete(std::move(*next));
   };
 
   auto readActiveAccessPoint = [this, lifetimeToken, next, finish, activeApPath]() {
@@ -1340,7 +1325,7 @@ void NetworkService::readStateAsync(std::function<void(NetworkState)> onComplete
 
   auto readDeviceState = [this, lifetimeToken, next, finish, readActiveAccessPoint, activeDevicePath]() {
     if (activeDevicePath.empty() || activeDevicePath == "/") {
-      readActiveAccessPoint();
+      finish();
       return;
     }
 
@@ -1533,9 +1518,6 @@ void NetworkService::readStateAsync(std::function<void(NetworkState)> onComplete
           readActiveConnectionState();
         });
   } catch (const sdbus::Error&) {
-    if (!next->vpnActive) {
-      next->vpnActive = false;
-    }
     readActiveConnectionState();
   }
 }
