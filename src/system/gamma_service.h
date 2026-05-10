@@ -6,10 +6,10 @@
 #include <chrono>
 #include <cstdint>
 #include <functional>
+#include <list>
 #include <optional>
 #include <string>
 #include <string_view>
-#include <vector>
 
 class IpcService;
 class WaylandConnection;
@@ -102,12 +102,13 @@ private:
   std::optional<double> m_weatherLongitude;
   ChangeCallback m_changeCallback;
 
-  std::vector<OutputGamma> m_outputs;
+  std::list<OutputGamma> m_outputs;
 
   int m_currentKelvin = -1;
   int m_targetKelvin = -1;
   int m_transitionFromKelvin = -1;
   float m_transitionProgress = 0.0f;
+  std::chrono::steady_clock::time_point m_transitionStart{};
   Timer m_transitionTimer;
 
   bool m_restoreAfterTransition = false;

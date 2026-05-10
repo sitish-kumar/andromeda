@@ -15,14 +15,13 @@
 #include <string>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <vector>
 
 namespace {
 
   constexpr Logger kLog("gamma");
 
   constexpr float kTransitionDurationMs = 1500.0f;
-  constexpr int kTransitionIntervalMs = 33;
+  constexpr int kTransitionIntervalMs = 100;
 
   int timeToMinutes(std::string_view hhmm) {
     return (hhmm[0] - '0') * 600 + (hhmm[1] - '0') * 60 + (hhmm[3] - '0') * 10 + (hhmm[4] - '0');
@@ -510,18 +509,25 @@ void GammaService::startTransition(int fromKelvin, int toKelvin) {
   m_transitionFromKelvin = fromKelvin;
   m_targetKelvin = toKelvin;
   m_transitionProgress = 0.0f;
+  m_transitionStart = std::chrono::steady_clock::now();
   m_transitionTimer.startRepeating(std::chrono::milliseconds(kTransitionIntervalMs), [this]() { tickTransition(); });
 }
 
 void GammaService::tickTransition() {
-  m_transitionProgress =
-      std::min(1.0f, m_transitionProgress + static_cast<float>(kTransitionIntervalMs) / kTransitionDurationMs);
+  const auto elapsed = std::chrono::steady_clock::now() - m_transitionStart;
+  m_transitionProgress = std::min(1.0f, static_cast<float>(std::chrono::duration<double, std::milli>(elapsed).count()) /
+                                            kTransitionDurationMs);
   const int interpolated = static_cast<int>(
       std::lerp(static_cast<float>(m_transitionFromKelvin), static_cast<float>(m_targetKelvin), m_transitionProgress));
-  applyGammaToAll(interpolated);
-  m_currentKelvin = interpolated;
+  if (interpolated != m_currentKelvin) {
+    applyGammaToAll(interpolated);
+    m_currentKelvin = interpolated;
+  }
   if (m_transitionProgress >= 1.0f) {
     m_transitionTimer.stop();
+    if (m_currentKelvin != m_targetKelvin) {
+      applyGammaToAll(m_targetKelvin);
+    }
     m_currentKelvin = m_targetKelvin;
     if (m_restoreAfterTransition) {
       restoreAll();
