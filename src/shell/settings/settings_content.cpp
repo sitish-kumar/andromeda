@@ -1395,7 +1395,7 @@ namespace settings {
         auto showGrp = std::make_unique<Flex>();
         showGrp->setDirection(FlexDirection::Horizontal);
         showGrp->setAlign(FlexAlign::Center);
-        showGrp->setGap(Style::spaceXs * scale);
+        showGrp->setGap(Style::spaceSm * scale);
         showGrp->addChild(makeLabel(i18n::tr("settings.session-actions.show-in-menu"), Style::fontSizeCaption * scale,
                                     colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
         auto showToggle = std::make_unique<Toggle>();
