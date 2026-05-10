@@ -742,12 +742,18 @@ bool MprisService::seek(const std::string& busName, int64_t offsetUs) {
   }
 
   try {
-    proxyIt->second->callMethod("Seek").onInterface(k_mpris_player_interface).withArguments(offsetUs);
+    proxyIt->second->callMethodAsync("Seek")
+        .onInterface(k_mpris_player_interface)
+        .withArguments(offsetUs)
+        .uponReplyInvoke([busName](std::optional<sdbus::Error> err) {
+          if (err.has_value()) {
+            kLog.warn("seek failed name={} err={}", busName, err->what());
+          }
+        });
     m_lastSeekCommandAt[busName] = std::chrono::steady_clock::now();
-    addOrRefreshPlayer(busName);
     return true;
   } catch (const sdbus::Error& e) {
-    kLog.warn("seek failed name={} err={}", busName, e.what());
+    kLog.warn("seek dispatch failed name={} err={}", busName, e.what());
     return false;
   }
 }
@@ -772,14 +778,7 @@ bool MprisService::setPosition(const std::string& busName, int64_t positionUs) {
   }
 
   auto fallback_seek = [&]() {
-    int64_t currentPositionUs = it->second.positionUs;
-    try {
-      const sdbus::Variant positionValue =
-          proxyIt->second->getProperty("Position").onInterface(k_mpris_player_interface);
-      currentPositionUs = positionValue.get<int64_t>();
-    } catch (const sdbus::Error& e) {
-      kLog.warn("position refresh failed name={} err={}, using cached value", busName, e.what());
-    }
+    const int64_t currentPositionUs = it->second.positionUs;
 
     const int64_t offsetUs = positionUs - currentPositionUs;
     if (offsetUs == 0) {
@@ -796,14 +795,18 @@ bool MprisService::setPosition(const std::string& busName, int64_t positionUs) {
   }
 
   try {
-    proxyIt->second->callMethod("SetPosition")
+    proxyIt->second->callMethodAsync("SetPosition")
         .onInterface(k_mpris_player_interface)
-        .withArguments(sdbus::ObjectPath{it->second.trackId}, positionUs);
+        .withArguments(sdbus::ObjectPath{it->second.trackId}, positionUs)
+        .uponReplyInvoke([busName](std::optional<sdbus::Error> err) {
+          if (err.has_value()) {
+            kLog.warn("set-position failed name={} err={}", busName, err->what());
+          }
+        });
     m_lastSeekCommandAt[busName] = std::chrono::steady_clock::now();
-    addOrRefreshPlayer(busName);
     return true;
   } catch (const sdbus::Error& e) {
-    kLog.warn("set-position failed name={} err={}, falling back to Seek", busName, e.what());
+    kLog.warn("set-position dispatch failed name={} err={}, falling back to Seek", busName, e.what());
     return fallback_seek();
   }
 }
@@ -828,11 +831,17 @@ bool MprisService::setVolume(const std::string& busName, double volume) {
   }
 
   try {
-    proxyIt->second->setProperty("Volume").onInterface(k_mpris_player_interface).toValue(volume);
-    addOrRefreshPlayer(busName);
+    proxyIt->second->callMethodAsync("Set")
+        .onInterface(k_properties_interface)
+        .withArguments(std::string{k_mpris_player_interface}, std::string{"Volume"}, sdbus::Variant{volume})
+        .uponReplyInvoke([busName](std::optional<sdbus::Error> err) {
+          if (err.has_value()) {
+            kLog.warn("set-volume failed name={} err={}", busName, err->what());
+          }
+        });
     return true;
   } catch (const sdbus::Error& e) {
-    kLog.warn("set-volume failed name={} err={}", busName, e.what());
+    kLog.warn("set-volume dispatch failed name={} err={}", busName, e.what());
     return false;
   }
 }
@@ -857,11 +866,17 @@ bool MprisService::setShuffle(const std::string& busName, bool shuffle) {
   }
 
   try {
-    proxyIt->second->setProperty("Shuffle").onInterface(k_mpris_player_interface).toValue(shuffle);
-    addOrRefreshPlayer(busName);
+    proxyIt->second->callMethodAsync("Set")
+        .onInterface(k_properties_interface)
+        .withArguments(std::string{k_mpris_player_interface}, std::string{"Shuffle"}, sdbus::Variant{shuffle})
+        .uponReplyInvoke([busName](std::optional<sdbus::Error> err) {
+          if (err.has_value()) {
+            kLog.warn("set-shuffle failed name={} err={}", busName, err->what());
+          }
+        });
     return true;
   } catch (const sdbus::Error& e) {
-    kLog.warn("set-shuffle failed name={} err={}", busName, e.what());
+    kLog.warn("set-shuffle dispatch failed name={} err={}", busName, e.what());
     return false;
   }
 }
@@ -886,11 +901,18 @@ bool MprisService::setLoopStatus(const std::string& busName, std::string loopSta
   }
 
   try {
-    proxyIt->second->setProperty("LoopStatus").onInterface(k_mpris_player_interface).toValue(std::move(loopStatus));
-    addOrRefreshPlayer(busName);
+    proxyIt->second->callMethodAsync("Set")
+        .onInterface(k_properties_interface)
+        .withArguments(std::string{k_mpris_player_interface}, std::string{"LoopStatus"},
+                       sdbus::Variant{std::move(loopStatus)})
+        .uponReplyInvoke([busName](std::optional<sdbus::Error> err) {
+          if (err.has_value()) {
+            kLog.warn("set-loop-status failed name={} err={}", busName, err->what());
+          }
+        });
     return true;
   } catch (const sdbus::Error& e) {
-    kLog.warn("set-loop-status failed name={} err={}", busName, e.what());
+    kLog.warn("set-loop-status dispatch failed name={} err={}", busName, e.what());
     return false;
   }
 }
@@ -1801,12 +1823,18 @@ bool MprisService::callPlayerMethod(const std::string& busName, const char* meth
   }
 
   try {
-    it->second->callMethod(methodName).onInterface(k_mpris_player_interface);
-    addOrRefreshPlayer(busName);
-    kLog.debug("control name={} method={}", busName, methodName);
+    it->second->callMethodAsync(methodName)
+        .onInterface(k_mpris_player_interface)
+        .uponReplyInvoke([busName, methodName](std::optional<sdbus::Error> err) {
+          if (err.has_value()) {
+            kLog.warn("control failed name={} method={} err={}", busName, methodName, err->what());
+            return;
+          }
+          kLog.debug("control name={} method={}", busName, methodName);
+        });
     return true;
   } catch (const sdbus::Error& e) {
-    kLog.warn("control failed name={} method={} err={}", busName, methodName, e.what());
+    kLog.warn("control dispatch failed name={} method={} err={}", busName, methodName, e.what());
     return false;
   }
 }

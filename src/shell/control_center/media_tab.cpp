@@ -1,5 +1,6 @@
 #include "shell/control_center/media_tab.h"
 
+#include "core/deferred_call.h"
 #include "core/log.h"
 #include "dbus/mpris/mpris_art.h"
 #include "dbus/mpris/mpris_service.h"
@@ -271,16 +272,17 @@ std::unique_ptr<Flex> MediaTab::create() {
     m_pendingSeekUs = targetUs;
     m_pendingSeekUntil = now + std::chrono::milliseconds(3000);
 
-    bool seekIssued = false;
-    if (!seekBusName.empty()) {
-      seekIssued = m_mpris->setPosition(seekBusName, targetUs);
-    } else {
-      seekIssued = m_mpris->setPositionActive(targetUs);
-    }
-    if (!seekIssued) {
-      // Keep the thumb stable briefly even if transport seek dispatch races.
-      m_pendingSeekUntil = now + std::chrono::milliseconds(750);
-    }
+    DeferredCall::callLater([this, seekBusName, targetUs]() {
+      if (m_mpris == nullptr) {
+        return;
+      }
+      if (!seekBusName.empty()) {
+        (void)m_mpris->setPosition(seekBusName, targetUs);
+      } else {
+        (void)m_mpris->setPositionActive(targetUs);
+      }
+      PanelManager::instance().refresh();
+    });
   });
   m_progressSlider = progress.get();
   mediaStack->addChild(std::move(progress));
@@ -305,13 +307,15 @@ std::unique_ptr<Flex> MediaTab::create() {
   repeat->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
   repeat->setRadius(Style::radiusLg * scale);
   repeat->setOnClick([this]() {
-    if (m_mpris == nullptr) {
-      return;
-    }
-    const auto current = m_mpris->loopStatusActive().value_or("None");
-    const std::string next = current == "None" ? "Playlist" : (current == "Playlist" ? "Track" : "None");
-    m_mpris->setLoopStatusActive(next);
-    PanelManager::instance().refresh();
+    DeferredCall::callLater([this]() {
+      if (m_mpris == nullptr) {
+        return;
+      }
+      const auto current = m_mpris->loopStatusActive().value_or("None");
+      const std::string next = current == "None" ? "Playlist" : (current == "Playlist" ? "Track" : "None");
+      (void)m_mpris->setLoopStatusActive(next);
+      PanelManager::instance().refresh();
+    });
   });
   m_repeatButton = repeat.get();
   controls->addChild(std::move(repeat));
@@ -324,10 +328,12 @@ std::unique_ptr<Flex> MediaTab::create() {
   previous->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
   previous->setRadius(Style::radiusLg * scale);
   previous->setOnClick([this]() {
-    if (m_mpris != nullptr) {
-      m_mpris->previousActive();
-      PanelManager::instance().refresh();
-    }
+    DeferredCall::callLater([this]() {
+      if (m_mpris != nullptr) {
+        (void)m_mpris->previousActive();
+        PanelManager::instance().refresh();
+      }
+    });
   });
   m_prevButton = previous.get();
   controls->addChild(std::move(previous));
@@ -340,10 +346,12 @@ std::unique_ptr<Flex> MediaTab::create() {
   playPause->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
   playPause->setRadius(Style::radiusLg * scale);
   playPause->setOnClick([this]() {
-    if (m_mpris != nullptr) {
-      m_mpris->playPauseActive();
-      PanelManager::instance().refresh();
-    }
+    DeferredCall::callLater([this]() {
+      if (m_mpris != nullptr) {
+        (void)m_mpris->playPauseActive();
+        PanelManager::instance().refresh();
+      }
+    });
   });
   m_playPauseButton = playPause.get();
   controls->addChild(std::move(playPause));
@@ -356,10 +364,12 @@ std::unique_ptr<Flex> MediaTab::create() {
   next->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
   next->setRadius(Style::radiusLg * scale);
   next->setOnClick([this]() {
-    if (m_mpris != nullptr) {
-      m_mpris->nextActive();
-      PanelManager::instance().refresh();
-    }
+    DeferredCall::callLater([this]() {
+      if (m_mpris != nullptr) {
+        (void)m_mpris->nextActive();
+        PanelManager::instance().refresh();
+      }
+    });
   });
   m_nextButton = next.get();
   controls->addChild(std::move(next));
@@ -372,11 +382,13 @@ std::unique_ptr<Flex> MediaTab::create() {
   shuffle->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
   shuffle->setRadius(Style::radiusLg * scale);
   shuffle->setOnClick([this]() {
-    if (m_mpris != nullptr) {
-      const bool enabled = m_mpris->shuffleActive().value_or(false);
-      m_mpris->setShuffleActive(!enabled);
-      PanelManager::instance().refresh();
-    }
+    DeferredCall::callLater([this]() {
+      if (m_mpris != nullptr) {
+        const bool enabled = m_mpris->shuffleActive().value_or(false);
+        (void)m_mpris->setShuffleActive(!enabled);
+        PanelManager::instance().refresh();
+      }
+    });
   });
   m_shuffleButton = shuffle.get();
   controls->addChild(std::move(shuffle));
@@ -419,17 +431,20 @@ std::unique_ptr<Flex> MediaTab::create() {
   if (m_wayland != nullptr && m_renderContext != nullptr) {
     m_playerMenuPopup = std::make_unique<ContextMenuPopup>(*m_wayland, *m_renderContext);
     m_playerMenuPopup->setOnActivate([this](const ContextMenuControlEntry& entry) {
-      if (m_mpris == nullptr) {
-        return;
-      }
-      if (entry.id == 0) {
-        m_mpris->clearPinnedPlayerPreference();
-      } else {
-        const std::size_t idx = static_cast<std::size_t>(entry.id - 1);
-        if (idx < m_playerBusNames.size()) {
-          m_mpris->setPinnedPlayerPreference(m_playerBusNames[idx]);
+      DeferredCall::callLater([this, entry]() {
+        if (m_mpris == nullptr) {
+          return;
         }
-      }
+        if (entry.id == 0) {
+          m_mpris->clearPinnedPlayerPreference();
+        } else {
+          const std::size_t idx = static_cast<std::size_t>(entry.id - 1);
+          if (idx < m_playerBusNames.size()) {
+            m_mpris->setPinnedPlayerPreference(m_playerBusNames[idx]);
+          }
+        }
+        PanelManager::instance().refresh();
+      });
     });
   }
 
@@ -603,7 +618,14 @@ void MediaTab::setActive(bool active) {
     // Pull a fresh snapshot (including Position) when the tab opens so the
     // progress slider starts at the current playback position.
     m_positionSampleAt = {};
-    m_mpris->refreshPlayers();
+    DeferredCall::callLater([this]() {
+      if (m_mpris == nullptr) {
+        return;
+      }
+      m_mpris->refreshPlayers();
+      PanelManager::instance().requestUpdateOnly();
+      PanelManager::instance().requestRedraw();
+    });
     m_lastMprisRefreshAttempt = std::chrono::steady_clock::now();
   }
 }
@@ -676,11 +698,14 @@ void MediaTab::refresh(Renderer& renderer) {
     if (shouldRetryMpris) {
       m_lastMprisRefreshAttempt = now;
       kLog.debug("media tab retrying mpris discovery players={} active={}", players.size(), active.has_value());
-      m_mpris->refreshPlayers();
-      players = m_mpris->listPlayers();
-      active = m_mpris->activePlayer();
-      kLog.debug("media tab refresh after retry players={} active={} active_bus=\"{}\"", players.size(),
-                 active.has_value(), active.has_value() ? active->busName : std::string{});
+      DeferredCall::callLater([this]() {
+        if (m_mpris == nullptr) {
+          return;
+        }
+        m_mpris->refreshPlayers();
+        PanelManager::instance().requestUpdateOnly();
+        PanelManager::instance().requestRedraw();
+      });
     }
   }
 
