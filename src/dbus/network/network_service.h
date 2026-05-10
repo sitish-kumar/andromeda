@@ -106,14 +106,15 @@ public:
   [[nodiscard]] bool hasSavedConnection(const std::string& ssid) const;
 
 private:
-  void refreshAccessPoints();
-  void refreshSavedConnections();
-  void refreshVpnConnections();
+  void refreshAccessPoints(std::function<void()> onComplete);
+  void refreshSavedConnections(std::function<void()> onComplete);
+  void refreshVpnConnections(std::function<void()> onComplete);
+  void finishRefreshAccessPoints(std::vector<AccessPointInfo>& aps, std::function<void()> onComplete);
   void rebindActiveConnection();
   void rebindActiveDevice(const std::string& devicePath);
   void rebindActiveAccessPoint(const std::string& apPath);
   void ensureWifiDeviceSubscribed(const std::string& devicePath);
-  [[nodiscard]] NetworkState readState();
+  void readStateAsync(std::function<void(NetworkState)> onComplete);
   [[nodiscard]] NetworkChangeOrigin consumeWirelessEnabledChangeOrigin(bool enabled);
   void emitChangedIfNeeded(NetworkState next);
 
@@ -130,6 +131,9 @@ private:
   std::vector<AccessPointInfo> m_accessPoints;
   std::vector<VpnConnectionInfo> m_vpnConnections;
   std::vector<std::string> m_savedSsids;
+  std::shared_ptr<int> m_lifetimeToken;
+  bool m_refreshInFlight = false;
+  bool m_refreshQueued = false;
   bool m_scanning = false;
   std::int64_t m_scanBaselineLastScan = 0;
   std::optional<bool> m_pendingLocalWirelessEnabled;
