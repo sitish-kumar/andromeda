@@ -85,8 +85,7 @@ void Spinner::startLoop() {
 }
 
 void Spinner::updateGeometry() {
-  const float boxHeight = std::max(m_spinnerSize, Style::controlHeight);
-  setSize(m_spinnerSize, boxHeight);
+  setSize(m_spinnerSize, m_spinnerSize);
   m_spinnerNode->setFrameSize(m_spinnerSize, m_spinnerSize);
-  m_spinnerNode->setPosition(0.0f, std::round((boxHeight - m_spinnerSize) * 0.5f));
+  m_spinnerNode->setPosition(0.0f, 0.0f);
 }

@@ -468,16 +468,16 @@ void NetworkTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeig
   }
   m_rootLayout->setSize(contentWidth, bodyHeight);
   m_rootLayout->layout(renderer);
-  syncCurrentCard();
   syncPasswordCard();
   rebuildApList(renderer);
+  syncCurrentCard();
   m_rootLayout->layout(renderer);
 }
 
 void NetworkTab::doUpdate(Renderer& renderer) {
-  syncCurrentCard();
   syncPasswordCard();
   rebuildApList(renderer);
+  syncCurrentCard();
 }
 
 void NetworkTab::onClose() {
