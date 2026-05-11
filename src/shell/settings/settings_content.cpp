@@ -25,14 +25,12 @@
 #include "util/string_utils.h"
 
 #include <algorithm>
-#include <charconv>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <format>
 #include <functional>
 #include <limits>
-#include <locale>
 #include <memory>
 #include <optional>
 #include <string>
@@ -100,68 +98,26 @@ namespace settings {
 
     bool isBlankInput(std::string_view text) { return StringUtils::trim(text).empty(); }
 
-    const std::string& localeDecimalSeparator() {
-      static const std::string separator = [] {
-        try {
-          const std::locale userLocale("");
-          const char decimalPoint = std::use_facet<std::numpunct<char>>(userLocale).decimal_point();
-          return std::string(1, decimalPoint);
-        } catch (...) {
-          return std::string(".");
-        }
-      }();
-      return separator;
-    }
-
-    std::string formatSliderValue(float value, bool integerValue, char decimalSeparator = '\0') {
+    std::string formatSliderValue(float value, bool integerValue) {
       if (integerValue) {
         return std::format("{}", static_cast<int>(std::lround(value)));
       }
-      std::string formatted = std::format("{:.2f}", value);
-      const std::string decimalSep =
-          decimalSeparator == '\0' ? localeDecimalSeparator() : std::string(1, decimalSeparator);
-      if (decimalSep != ".") {
-        std::size_t dotPos = formatted.find('.');
-        if (dotPos != std::string::npos) {
-          formatted.replace(dotPos, 1, decimalSep);
-        }
-      }
-      return formatted;
+      return StringUtils::formatFixedDotDecimal(value, 2);
     }
 
-    template <typename T> std::optional<T> parseDecimalInput(std::string_view text) {
-      const std::string trimmed = StringUtils::trim(text);
-      if (trimmed.empty()) {
-        return std::nullopt;
-      }
-
-      std::string normalized = trimmed;
-      std::replace(normalized.begin(), normalized.end(), ',', '.');
-
-      T value{};
-      const char* begin = normalized.data();
-      const char* end = begin + normalized.size();
-      const auto [ptr, ec] = std::from_chars(begin, end, value, std::chars_format::general);
-      if (ec != std::errc{} || ptr != end || !std::isfinite(value)) {
-        return std::nullopt;
-      }
-      if constexpr (std::is_same_v<T, float>) {
-        if (value > std::numeric_limits<float>::max() || value < -std::numeric_limits<float>::max()) {
-          return std::nullopt;
-        }
-      }
-      return value;
+    template <typename T> std::optional<T> parseDotDecimalInput(std::string_view text) {
+      return StringUtils::parseDotDecimal<T>(text);
     }
 
     std::optional<float> parseFloatInput(std::string_view text) {
-      const auto parsed = parseDecimalInput<double>(text);
+      const auto parsed = parseDotDecimalInput<double>(text);
       if (!parsed.has_value()) {
         return std::nullopt;
       }
       return static_cast<float>(*parsed);
     }
 
-    std::optional<double> parseDoubleInput(std::string_view text) { return parseDecimalInput<double>(text); }
+    std::optional<double> parseDoubleInput(std::string_view text) { return parseDotDecimalInput<double>(text); }
 
     bool isMonitorOverrideSettingPath(const std::vector<std::string>& path) {
       return path.size() >= 5 && path[0] == "bar" && path[2] == "monitor";
@@ -1073,9 +1029,7 @@ namespace settings {
                 valueInputPtr->setInvalid(false);
                 sliderPtr->setValue(v);
                 if (!integerValue) {
-                  const std::string trimmed = StringUtils::trim(text);
-                  const char preferredSeparator = trimmed.find(',') != std::string::npos ? ',' : '.';
-                  valueInputPtr->setValue(formatSliderValue(sliderPtr->value(), false, preferredSeparator));
+                  valueInputPtr->setValue(formatSliderValue(sliderPtr->value(), false));
                 }
                 commit(static_cast<double>(v));
               });
