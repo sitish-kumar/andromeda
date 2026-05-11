@@ -17,7 +17,7 @@ ColorSpec Widget::widgetForegroundOr(const ColorSpec& fallback) const noexcept {
     return *m_widgetForeground;
   }
   const auto& spec = m_barCapsuleSpec;
-  if (spec.enabled && spec.foreground.has_value() && shouldShowBarCapsule()) {
+  if (spec.enabled && spec.foreground.has_value()) {
     return *spec.foreground;
   }
   return fallback;

@@ -73,8 +73,8 @@ public:
   // Whether the bar should paint the decorative capsule for this frame (spec enabled + visible ink).
   [[nodiscard]] virtual bool shouldShowBarCapsule() const;
 
-  // Resolved icon + primary label color: `[widget.*] color` when set, else `capsule_foreground` when the capsule is
-  // visible, else `fallback` (e.g. colorSpecFromRole(OnSurface)).
+  // Resolved icon + primary label color: `[widget.*] color` when set, else `capsule_foreground` when capsule styling is
+  // enabled, else `fallback` (e.g. colorSpecFromRole(OnSurface)).
   [[nodiscard]] ColorSpec widgetForegroundOr(const ColorSpec& fallback) const noexcept;
 
 protected:
