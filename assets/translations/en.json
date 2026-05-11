@@ -2,6 +2,8 @@
   "common": {
     "states": {
       "auto": "Auto",
+      "custom": "Custom",
+      "inherit": "Inherit",
       "off": "Off"
     },
     "actions": {
@@ -977,6 +979,10 @@
           "label": "Capsule Padding",
           "description": "Inner padding inside the capsule"
         },
+        "capsule_radius": {
+          "label": "Capsule Radius",
+          "description": "Corner radius for this widget capsule; leave blank for automatic pill shape"
+        },
         "color": {
           "label": "Color",
           "description": "Color role for widget foreground"
@@ -1760,6 +1766,10 @@
         "capsule-padding": {
           "label": "Capsule Padding",
           "description": "Padding inside widget capsules"
+        },
+        "capsule-radius": {
+          "label": "Capsule Radius",
+          "description": "Default widget capsule corner radius; leave blank for automatic pill shape"
         },
         "capsule-opacity": {
           "label": "Capsule Opacity",

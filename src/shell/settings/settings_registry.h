@@ -68,6 +68,16 @@ namespace settings {
     std::string placeholder;
   };
 
+  struct OptionalStepperSetting {
+    std::optional<int> value;
+    int minValue = 0;
+    int maxValue = 100;
+    int step = 1;
+    int fallbackValue = 0;
+    std::string unsetLabel;
+    std::string customLabel;
+  };
+
   struct ListSetting {
     std::vector<std::string> items;
     // When non-empty, the add UI presents a Select limited to these options (minus already-added values)
@@ -108,9 +118,10 @@ namespace settings {
     bool allowNone = false;
   };
 
-  using SettingControl = std::variant<ToggleSetting, SelectSetting, SliderSetting, TextSetting, OptionalNumberSetting,
-                                      ListSetting, ShortcutListSetting, SessionPanelActionsSetting, ColorSetting,
-                                      MultiSelectSetting, ButtonSetting, ColorRolePickerSetting, SearchPickerSetting>;
+  using SettingControl =
+      std::variant<ToggleSetting, SelectSetting, SliderSetting, TextSetting, OptionalNumberSetting,
+                   OptionalStepperSetting, ListSetting, ShortcutListSetting, SessionPanelActionsSetting, ColorSetting,
+                   MultiSelectSetting, ButtonSetting, ColorRolePickerSetting, SearchPickerSetting>;
 
   struct SettingVisibility {
     std::vector<std::string> path;

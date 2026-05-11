@@ -123,6 +123,7 @@ namespace {
            optionalColorSpecEqual(a.widgetCapsuleForeground, b.widgetCapsuleForeground) &&
            optionalColorSpecEqual(a.widgetColor, b.widgetColor) && a.widgetCapsuleGroups == b.widgetCapsuleGroups &&
            nearlyEqual(a.widgetCapsulePadding, b.widgetCapsulePadding) &&
+           optionalDoubleEqual(a.widgetCapsuleRadius, b.widgetCapsuleRadius) &&
            nearlyEqual(a.widgetCapsuleOpacity, b.widgetCapsuleOpacity) &&
            a.widgetCapsuleBorderSpecified == b.widgetCapsuleBorderSpecified &&
            optionalColorSpecEqual(a.widgetCapsuleBorder, b.widgetCapsuleBorder);
@@ -219,6 +220,9 @@ namespace {
     }
     if (ovr.widgetCapsulePadding) {
       resolved.widgetCapsulePadding = std::clamp(static_cast<float>(*ovr.widgetCapsulePadding), 0.0f, 48.0f);
+    }
+    if (ovr.widgetCapsuleRadius) {
+      resolved.widgetCapsuleRadius = std::clamp(*ovr.widgetCapsuleRadius, 0.0, 80.0);
     }
     if (ovr.widgetCapsuleOpacity) {
       resolved.widgetCapsuleOpacity = std::clamp(static_cast<float>(*ovr.widgetCapsuleOpacity), 0.0f, 1.0f);

@@ -38,6 +38,14 @@ namespace {
   constexpr float kAutoHideSlideExtraPx = 16.0f;
   constexpr std::int32_t kAutoHideTriggerRegionPx = 4;
 
+  float resolvedCapsuleRadius(const WidgetBarCapsuleSpec& spec, float scale, float width, float height) noexcept {
+    const float maxRadius = std::max(0.0f, std::min(width, height) * 0.5f);
+    if (!spec.radius.has_value()) {
+      return maxRadius;
+    }
+    return std::clamp(*spec.radius * scale, 0.0f, maxRadius);
+  }
+
   bool pointInsideNode(const Node* node, float sceneX, float sceneY) {
     if (node == nullptr) {
       return false;
@@ -468,7 +476,7 @@ namespace {
         bg->setPosition(0.0f, 0.0f);
         bg->setSize(shellW, shellH);
         content->setPosition(contentX, contentY);
-        bg->setRadius(std::min(shellW, shellH) * 0.5f);
+        bg->setRadius(resolvedCapsuleRadius(run.spec, scale, shellW, shellH));
       }
     };
     finalizeCapsules(instance.startCapsuleRuns);
@@ -1217,9 +1225,10 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
     auto canJoinCapsuleGroup = [](const Widget& first, const Widget& next) {
       const auto& firstSpec = first.barCapsuleSpec();
       const auto& nextSpec = next.barCapsuleSpec();
-      const bool sameCapsuleStyle =
-          firstSpec.fill == nextSpec.fill && firstSpec.group == nextSpec.group && firstSpec.border == nextSpec.border &&
-          firstSpec.foreground == nextSpec.foreground && firstSpec.opacity == nextSpec.opacity;
+      const bool sameCapsuleStyle = firstSpec.fill == nextSpec.fill && firstSpec.group == nextSpec.group &&
+                                    firstSpec.border == nextSpec.border &&
+                                    firstSpec.foreground == nextSpec.foreground &&
+                                    firstSpec.radius == nextSpec.radius && firstSpec.opacity == nextSpec.opacity;
       return firstSpec.enabled && nextSpec.enabled && !first.isAnchor() && !next.isAnchor() &&
              !firstSpec.group.empty() && sameCapsuleStyle && first.contentScale() == next.contentScale();
     };

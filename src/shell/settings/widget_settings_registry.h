@@ -41,6 +41,7 @@ namespace settings {
     Bool,
     Int,
     Double,
+    OptionalDouble,
     String,
     StringList,
     Select,

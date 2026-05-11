@@ -190,6 +190,7 @@ reserve_space      = true
 attach_panels      = true
 capsule            = false
 # capsule_fill     = "surface_variant"
+# capsule_radius   = 8.0            # omit/blank in Settings for automatic pill radius
 # capsule_opacity  = 1.0
 # capsule_border   = "outline"      # uncomment for a border on all widgets
 

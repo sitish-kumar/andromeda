@@ -25,6 +25,7 @@
 #include <filesystem>
 #include <format>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -634,6 +635,50 @@ namespace settings {
       return 0.0;
     }
 
+    std::optional<double> widgetSettingOptionalDouble(const Config& cfg, std::string_view widgetName,
+                                                      const std::string& key) {
+      if (const auto it = cfg.widgets.find(std::string(widgetName)); it != cfg.widgets.end()) {
+        if (const auto settingIt = it->second.settings.find(key); settingIt != it->second.settings.end()) {
+          if (const auto* v = std::get_if<double>(&settingIt->second)) {
+            return *v;
+          }
+          if (const auto* v = std::get_if<std::int64_t>(&settingIt->second)) {
+            return static_cast<double>(*v);
+          }
+        }
+      }
+      return std::nullopt;
+    }
+
+    std::optional<int> widgetSettingOptionalStepperValue(const Config& cfg, std::string_view widgetName,
+                                                         const std::string& key) {
+      const auto value = widgetSettingOptionalDouble(cfg, widgetName, key);
+      if (!value.has_value()) {
+        return std::nullopt;
+      }
+      return std::clamp(static_cast<int>(std::lround(*value)), 0, 80);
+    }
+
+    int inheritedCapsuleRadiusForLane(const Config& cfg, const std::vector<std::string>& lanePath) {
+      if (lanePath.size() < 2 || lanePath[0] != "bar") {
+        return 8;
+      }
+      const BarConfig* bar = findBar(cfg, lanePath[1]);
+      if (bar == nullptr) {
+        return 8;
+      }
+      if (isMonitorWidgetListPath(lanePath) && lanePath.size() >= 4) {
+        if (const auto* ovr = findMonitorOverride(*bar, lanePath[3]);
+            ovr != nullptr && ovr->widgetCapsuleRadius.has_value()) {
+          return std::clamp(static_cast<int>(std::lround(*ovr->widgetCapsuleRadius)), 0, 80);
+        }
+      }
+      if (bar->widgetCapsuleRadius.has_value()) {
+        return std::clamp(static_cast<int>(std::lround(*bar->widgetCapsuleRadius)), 0, 80);
+      }
+      return 8;
+    }
+
     std::string settingValueAsString(const WidgetSettingValue& value) {
       if (const auto* v = std::get_if<std::string>(&value)) {
         return *v;
@@ -872,7 +917,7 @@ namespace settings {
       ++visibleSpecs;
     }
 
-    void addWidgetSettingsPanel(Flex& item, std::string widgetName,
+    void addWidgetSettingsPanel(Flex& item, std::string widgetName, const std::vector<std::string>& lanePath,
                                 const std::vector<SelectOption>& managedCapsuleGroups,
                                 const BarWidgetEditorContext& ctx) {
       const auto widgetType = widgetTypeForReference(ctx.config, widgetName);
@@ -960,6 +1005,20 @@ namespace settings {
           ctx.makeRow(*panel, entry,
                       ctx.makeSlider(static_cast<float>(settingValueAsDouble(value)), minValue, maxValue,
                                      static_cast<float>(spec.step), path, false));
+          break;
+        }
+        case WidgetSettingValueType::OptionalDouble: {
+          ctx.makeRow(
+              *panel, entry,
+              ctx.makeOptionalStepper(
+                  OptionalStepperSetting{.value = widgetSettingOptionalStepperValue(ctx.config, widgetName, spec.key),
+                                         .minValue = static_cast<int>(std::lround(spec.minValue.value_or(0.0))),
+                                         .maxValue = static_cast<int>(std::lround(spec.maxValue.value_or(80.0))),
+                                         .step = static_cast<int>(std::max(1.0, spec.step)),
+                                         .fallbackValue = inheritedCapsuleRadiusForLane(ctx.config, lanePath),
+                                         .unsetLabel = i18n::tr("common.states.inherit"),
+                                         .customLabel = i18n::tr("common.states.custom")},
+                  path));
           break;
         }
         case WidgetSettingValueType::String: {
@@ -1288,7 +1347,8 @@ namespace settings {
           inspector->addChild(std::move(actionRow));
         }
 
-        addWidgetSettingsPanel(*inspector, widgetName, managedCapsuleGroupOptions(ctx.config, currentLanePath), ctx);
+        addWidgetSettingsPanel(*inspector, widgetName, currentLanePath,
+                               managedCapsuleGroupOptions(ctx.config, currentLanePath), ctx);
 
         if (renaming) {
           auto renameRow = std::make_unique<Flex>();

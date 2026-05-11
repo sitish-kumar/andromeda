@@ -16,6 +16,7 @@
 #include "ui/controls/select.h"
 #include "ui/controls/separator.h"
 #include "ui/controls/slider.h"
+#include "ui/controls/stepper.h"
 #include "ui/controls/toggle.h"
 #include "ui/dialogs/color_picker_dialog.h"
 #include "ui/dialogs/glyph_picker_dialog.h"
@@ -250,6 +251,9 @@ namespace settings {
       }
       if (key == "capsule_padding") {
         return override->widgetCapsulePadding.has_value();
+      }
+      if (key == "capsule_radius") {
+        return override->widgetCapsuleRadius.has_value();
       }
       if (key == "capsule_opacity") {
         return override->widgetCapsuleOpacity.has_value();
@@ -920,6 +924,49 @@ namespace settings {
       return input;
     };
 
+    const auto makeOptionalStepper = [&](const OptionalStepperSetting& setting, std::vector<std::string> path) {
+      auto wrap = std::make_unique<Flex>();
+      wrap->setDirection(FlexDirection::Horizontal);
+      wrap->setAlign(FlexAlign::Center);
+      wrap->setGap(Style::spaceSm * scale);
+
+      const int minValue = std::min(setting.minValue, setting.maxValue);
+      const int maxValue = std::max(setting.minValue, setting.maxValue);
+      const int currentValue = std::clamp(setting.value.value_or(setting.fallbackValue), minValue, maxValue);
+
+      auto segmented = std::make_unique<Segmented>();
+      segmented->setScale(scale);
+      segmented->addOption(setting.unsetLabel);
+      segmented->addOption(setting.customLabel);
+      segmented->setSelectedIndex(setting.value.has_value() ? 1 : 0);
+      segmented->setOnChange([configService = ctx.configService, clearOverride = ctx.clearOverride,
+                              requestRebuild = ctx.requestRebuild, setOverride = ctx.setOverride, path,
+                              currentValue](std::size_t index) {
+        if (index == 0) {
+          if (configService != nullptr && configService->hasOverride(path)) {
+            clearOverride(path);
+          } else if (requestRebuild) {
+            requestRebuild();
+          }
+          return;
+        }
+        setOverride(path, static_cast<double>(currentValue));
+      });
+
+      auto stepper = std::make_unique<Stepper>();
+      stepper->setScale(scale);
+      stepper->setRange(minValue, maxValue);
+      stepper->setStep(setting.step);
+      stepper->setValue(currentValue);
+      stepper->setEnabled(setting.value.has_value());
+      stepper->setOnValueCommitted(
+          [setOverride = ctx.setOverride, path](int value) { setOverride(path, static_cast<double>(value)); });
+
+      wrap->addChild(std::move(segmented));
+      wrap->addChild(std::move(stepper));
+      return wrap;
+    };
+
     const auto makeColor = [&](const ColorSetting& setting, std::vector<std::string> path) {
       auto wrap = std::make_unique<Flex>();
       wrap->setDirection(FlexDirection::Horizontal);
@@ -1453,6 +1500,8 @@ namespace settings {
               return makeText(control.value, control.placeholder, entry.path, control.width);
             } else if constexpr (std::is_same_v<T, OptionalNumberSetting>) {
               return makeOptionalNumber(control, entry.path);
+            } else if constexpr (std::is_same_v<T, OptionalStepperSetting>) {
+              return makeOptionalStepper(control, entry.path);
             } else if constexpr (std::is_same_v<T, ColorSetting>) {
               return makeColor(control, entry.path);
             } else if constexpr (std::is_same_v<T, SearchPickerSetting>) {
@@ -1522,6 +1571,10 @@ namespace settings {
                           bool integerValue) -> std::unique_ptr<Node> {
           return makeSlider(value, minValue, maxValue, step, std::move(path), integerValue);
         },
+        .makeOptionalNumber = [&](const OptionalNumberSetting& setting, std::vector<std::string> path)
+            -> std::unique_ptr<Node> { return makeOptionalNumber(setting, std::move(path)); },
+        .makeOptionalStepper = [&](const OptionalStepperSetting& setting, std::vector<std::string> path)
+            -> std::unique_ptr<Node> { return makeOptionalStepper(setting, std::move(path)); },
         .makeText = [&](const std::string& value, const std::string& placeholder,
                         std::vector<std::string> path) -> std::unique_ptr<Node> {
           return makeText(value, placeholder, std::move(path));

@@ -603,6 +603,9 @@ BarConfig ConfigService::resolveForOutput(const BarConfig& base, const WaylandOu
     if (ovr.widgetCapsulePadding) {
       resolved.widgetCapsulePadding = std::clamp(static_cast<float>(*ovr.widgetCapsulePadding), 0.0f, 48.0f);
     }
+    if (ovr.widgetCapsuleRadius) {
+      resolved.widgetCapsuleRadius = std::clamp(*ovr.widgetCapsuleRadius, 0.0, 80.0);
+    }
     if (ovr.widgetCapsuleOpacity) {
       resolved.widgetCapsuleOpacity = std::clamp(static_cast<float>(*ovr.widgetCapsuleOpacity), 0.0f, 1.0f);
     }
@@ -981,6 +984,9 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       if (auto v = (*barTbl)["capsule_padding"].value<double>()) {
         bar.widgetCapsulePadding = std::clamp(static_cast<float>(*v), 0.0f, 48.0f);
       }
+      if (auto v = (*barTbl)["capsule_radius"].value<double>()) {
+        bar.widgetCapsuleRadius = std::clamp(*v, 0.0, 80.0);
+      }
       if (auto v = (*barTbl)["capsule_opacity"].value<double>()) {
         bar.widgetCapsuleOpacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
       }
@@ -1067,10 +1073,13 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
             ovr.widgetCapsuleForeground = colorSpecFromConfigString(*fgStr);
           }
           if (auto v = (*monTbl)["capsule_padding"].value<double>()) {
-            ovr.widgetCapsulePadding = *v;
+            ovr.widgetCapsulePadding = std::clamp(*v, 0.0, 48.0);
+          }
+          if (auto v = (*monTbl)["capsule_radius"].value<double>()) {
+            ovr.widgetCapsuleRadius = std::clamp(*v, 0.0, 80.0);
           }
           if (auto v = (*monTbl)["capsule_opacity"].value<double>()) {
-            ovr.widgetCapsuleOpacity = *v;
+            ovr.widgetCapsuleOpacity = std::clamp(*v, 0.0, 1.0);
           }
           if (monTbl->contains("capsule_border")) {
             ovr.widgetCapsuleBorderSpecified = true;

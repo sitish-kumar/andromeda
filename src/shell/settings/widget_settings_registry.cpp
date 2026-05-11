@@ -90,6 +90,14 @@ namespace settings {
       return spec;
     }
 
+    WidgetSettingSpec optionalDoubleSpec(std::string_view key, double minValue, double maxValue,
+                                         bool advanced = false) {
+      auto spec = baseSpec(key, WidgetSettingValueType::OptionalDouble, 0.0, advanced);
+      spec.minValue = minValue;
+      spec.maxValue = maxValue;
+      return spec;
+    }
+
     WidgetSettingSpec stringSpec(std::string_view key, std::string defaultValue = {}, bool advanced = false) {
       return baseSpec(key, WidgetSettingValueType::String, std::move(defaultValue), advanced);
     }
@@ -287,12 +295,15 @@ namespace settings {
     capsuleForeground.visibleWhen = capsuleOn;
     auto capsulePadding = doubleSpec("capsule_padding", static_cast<double>(Style::barCapsulePadding), 0.0, 48.0, 1.0);
     capsulePadding.visibleWhen = capsuleOn;
+    auto capsuleRadius = optionalDoubleSpec("capsule_radius", 0.0, 80.0);
+    capsuleRadius.visibleWhen = capsuleOn;
     auto capsuleOpacity = doubleSpec("capsule_opacity", 1.0, 0.0, 1.0, 0.01);
     capsuleOpacity.visibleWhen = capsuleOn;
     return {
         boolSpec("anchor", false, true), colorRoleSpec("color", {}, true), boolSpec("capsule", false),
         std::move(capsuleGroup),         std::move(capsuleFill),           std::move(capsuleBorder),
-        std::move(capsuleForeground),    std::move(capsulePadding),        std::move(capsuleOpacity),
+        std::move(capsuleForeground),    std::move(capsulePadding),        std::move(capsuleRadius),
+        std::move(capsuleOpacity),
     };
   }
 

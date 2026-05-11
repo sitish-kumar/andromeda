@@ -46,6 +46,7 @@ struct BarMonitorOverride {
   std::optional<ColorSpec> widgetColor;
   std::optional<std::vector<std::string>> widgetCapsuleGroups;
   std::optional<double> widgetCapsulePadding;
+  std::optional<double> widgetCapsuleRadius;
   std::optional<double> widgetCapsuleOpacity;
 
   bool operator==(const BarMonitorOverride&) const = default;
@@ -88,6 +89,8 @@ struct BarConfig {
   std::vector<std::string> widgetCapsuleGroups;
   // Inner padding between capsule edge and widget content (logical px), multiplied by widget content scale on the bar.
   float widgetCapsulePadding = Style::barCapsulePadding;
+  // Capsule corner radius in logical pixels before content-scale; unset means automatic pill radius.
+  std::optional<double> widgetCapsuleRadius;
   // Capsule background opacity multiplier (0.0–1.0).
   float widgetCapsuleOpacity = 1.0f;
   // True when `capsule_border` appears under `[bar.*]` (empty value = no outline for widgets that inherit border).
@@ -130,7 +133,7 @@ using ConfigOverrideValue = std::variant<bool, std::int64_t, double, std::string
                                          std::vector<ShortcutConfig>, std::vector<SessionPanelActionConfig>>;
 
 // Optional rounded “capsule” behind a bar widget (see `[widget.*] capsule_*` in CONFIG.md).
-// Corner shape (pill), border width, and edge softness are fixed in the shell code; padding is configurable.
+// Corner shape, border width, and edge softness are fixed in the shell code; padding/radius are configurable.
 struct WidgetBarCapsuleSpec {
   bool enabled = false;
   ColorSpec fill = colorSpecFromRole(ColorRole::SurfaceVariant);
@@ -142,6 +145,8 @@ struct WidgetBarCapsuleSpec {
   std::optional<ColorSpec> foreground;
   // Inner padding in logical pixels before content-scale (see `capsule_padding` / bar default).
   float padding = Style::barCapsulePadding;
+  // Corner radius in logical pixels before content-scale; unset means automatic pill radius.
+  std::optional<float> radius;
   // Capsule background opacity multiplier (0.0–1.0).
   float opacity = 1.0f;
 
