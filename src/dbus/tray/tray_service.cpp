@@ -341,6 +341,12 @@ namespace {
     return true;
   }
 
+  const std::vector<std::string>& requestedMenuProperties() {
+    // Per dbusmenu protocol, an empty property list means "all available properties".
+    static const std::vector<std::string> kRequestedMenuProperties = {};
+    return kRequestedMenuProperties;
+  }
+
   std::vector<std::int32_t> int32ListFromVariant(const sdbus::Variant& value) {
     try {
       return value.get<std::vector<std::int32_t>>();
@@ -657,8 +663,7 @@ bool TrayService::fetchMenuProperties(const std::string& itemId, const std::vect
     cache.proxy->callMethod("GetGroupProperties")
         .onInterface(k_menu_interface)
         .withTimeout(std::chrono::milliseconds(1000))
-        // Per dbusmenu protocol, an empty property list means "all available properties".
-        .withArguments(entryIds, std::vector<std::string>{})
+        .withArguments(entryIds, requestedMenuProperties())
         .storeResultsTo(properties);
 
     std::unordered_map<std::int32_t, std::map<std::string, sdbus::Variant>> propertiesById;
@@ -772,8 +777,7 @@ void TrayService::requestMenuLayoutAfterAboutToShow(const std::string& itemId, s
     cache.proxy->callMethodAsync("GetLayout")
         .onInterface(k_menu_interface)
         .withTimeout(std::chrono::milliseconds(2000))
-        // Per dbusmenu protocol, an empty property list means "all available properties".
-        .withArguments(parentId, static_cast<std::int32_t>(-1), std::vector<std::string>{})
+        .withArguments(parentId, static_cast<std::int32_t>(-1), requestedMenuProperties())
         .uponReplyInvoke([this, itemId, parentId, generation](std::optional<sdbus::Error> error, std::uint32_t revision,
                                                               DbusMenuLayout layout) {
           auto replyCacheIt = m_menuCache.find(itemId);
