@@ -29,6 +29,7 @@
 #include <cctype>
 #include <cmath>
 #include <linux/input-event-codes.h>
+#include <optional>
 #include <wayland-client-core.h>
 
 namespace {
@@ -137,7 +138,8 @@ namespace {
   }
 
   constexpr Logger kLog("bar");
-  constexpr std::string_view kScriptedWidgetIpcUsage = "scripted-widget <widget-name> <target> <event> [payload]";
+  constexpr std::string_view kScriptedWidgetIpcUsage =
+      "scripted-widget <widget-name> <target[:bar-name]> <event> [payload]";
 
   struct ScriptedWidgetIpcCounts {
     int matched = 0;
@@ -145,6 +147,17 @@ namespace {
     int missingHost = 0;
     int missingCallback = 0;
     int failed = 0;
+  };
+
+  struct ScriptedWidgetIpcTarget {
+    std::string outputSelector;
+    std::string barName;
+    bool hasBarName = false;
+    bool allOutputs = false;
+  };
+
+  struct ScriptedWidgetIpcCandidate {
+    ScriptedWidget* widget = nullptr;
   };
 
   bool takeIpcWord(std::string_view& text, std::string& word) {
@@ -159,6 +172,23 @@ namespace {
     word.assign(text.substr(0, end));
     text.remove_prefix(end);
     return true;
+  }
+
+  std::optional<ScriptedWidgetIpcTarget> parseScriptedWidgetIpcTarget(std::string_view raw) {
+    ScriptedWidgetIpcTarget target;
+    const std::size_t separator = raw.find(':');
+    if (separator == std::string_view::npos) {
+      target.outputSelector = std::string(raw);
+    } else {
+      target.outputSelector = std::string(raw.substr(0, separator));
+      target.barName = std::string(raw.substr(separator + 1));
+      target.hasBarName = true;
+    }
+    if (target.outputSelector.empty() || (target.hasBarName && target.barName.empty())) {
+      return std::nullopt;
+    }
+    target.allOutputs = target.outputSelector == "all";
+    return target;
   }
 
   void recordScriptedWidgetIpcResult(ScriptedWidgetIpcCounts& counts, ScriptedWidget::IpcDispatchResult result) {
@@ -1933,56 +1963,55 @@ std::string Bar::dispatchScriptedWidgetIpc(std::string_view args) {
 
   const std::string payload(StringUtils::trimLeftView(args));
 
-  auto dispatchWidget = [&](Widget* widget, ScriptedWidgetIpcCounts& counts) -> bool {
+  const auto parsedTarget = parseScriptedWidgetIpcTarget(target);
+  if (!parsedTarget.has_value()) {
+    return std::string("error: usage: ") + std::string(kScriptedWidgetIpcUsage) + "\n";
+  }
+
+  auto collectWidget = [&](Widget* widget, std::vector<ScriptedWidgetIpcCandidate>& candidates) {
     if (widget == nullptr || widget->configName() != std::string_view(widgetName)) {
-      return false;
+      return;
     }
     auto* scripted = dynamic_cast<ScriptedWidget*>(widget);
-    if (scripted == nullptr) {
-      return false;
+    if (scripted != nullptr) {
+      candidates.push_back({.widget = scripted});
     }
-    recordScriptedWidgetIpcResult(counts, scripted->dispatchIpcEvent(event, payload));
-    return true;
   };
 
-  auto dispatchGroup = [&](std::vector<std::unique_ptr<Widget>>& widgets, ScriptedWidgetIpcCounts& counts,
-                           bool firstOnly) -> bool {
+  auto collectGroup = [&](std::vector<std::unique_ptr<Widget>>& widgets,
+                          std::vector<ScriptedWidgetIpcCandidate>& candidates) {
     for (auto& widget : widgets) {
-      if (dispatchWidget(widget.get(), counts) && firstOnly) {
-        return true;
-      }
+      collectWidget(widget.get(), candidates);
     }
-    return false;
   };
 
-  auto dispatchInstance = [&](BarInstance& instance, ScriptedWidgetIpcCounts& counts, bool firstOnly) -> bool {
-    if (dispatchGroup(instance.startWidgets, counts, firstOnly)) {
-      return true;
+  auto collectInstance = [&](BarInstance& instance, std::vector<ScriptedWidgetIpcCandidate>& candidates) {
+    if (parsedTarget->hasBarName && instance.barConfig.name != parsedTarget->barName) {
+      return;
     }
-    if (dispatchGroup(instance.centerWidgets, counts, firstOnly)) {
-      return true;
-    }
-    return dispatchGroup(instance.endWidgets, counts, firstOnly);
+    collectGroup(instance.startWidgets, candidates);
+    collectGroup(instance.centerWidgets, candidates);
+    collectGroup(instance.endWidgets, candidates);
   };
 
-  ScriptedWidgetIpcCounts counts;
+  std::vector<ScriptedWidgetIpcCandidate> candidates;
 
-  if (target == "all") {
+  if (parsedTarget->allOutputs) {
     for (const auto& instance : m_instances) {
       if (instance != nullptr) {
-        (void)dispatchInstance(*instance, counts, false);
+        collectInstance(*instance, candidates);
       }
     }
   } else {
     wl_output* output = nullptr;
 
-    if (target == "focused") {
+    if (parsedTarget->outputSelector == "focused") {
       output = m_platform != nullptr ? m_platform->preferredInteractiveOutput() : nullptr;
     } else {
       std::vector<wl_output*> matches;
       if (m_platform != nullptr) {
         for (const auto& candidate : m_platform->outputs()) {
-          if (candidate.output != nullptr && outputMatchesSelector(target, candidate)) {
+          if (candidate.output != nullptr && outputMatchesSelector(parsedTarget->outputSelector, candidate)) {
             matches.push_back(candidate.output);
           }
         }
@@ -1997,10 +2026,27 @@ std::string Bar::dispatchScriptedWidgetIpc(std::string_view args) {
 
     if (output != nullptr) {
       for (const auto& instance : m_instances) {
-        if (instance != nullptr && instance->output == output && dispatchInstance(*instance, counts, true)) {
-          break;
+        if (instance != nullptr && instance->output == output) {
+          collectInstance(*instance, candidates);
         }
       }
+    }
+  }
+
+  if (candidates.empty()) {
+    return "error: no scripted widget instance matched '" + widgetName + "' on target '" + target + "'\n";
+  }
+
+  if (!parsedTarget->allOutputs && candidates.size() > 1) {
+    return "error: target '" + target +
+           "' matched multiple scripted widget instances; use '<target>:<bar-name>' "
+           "or 'all'\n";
+  }
+
+  ScriptedWidgetIpcCounts counts;
+  for (const auto& candidate : candidates) {
+    if (candidate.widget != nullptr) {
+      recordScriptedWidgetIpcResult(counts, candidate.widget->dispatchIpcEvent(event, payload));
     }
   }
 
@@ -2012,9 +2058,6 @@ std::string Bar::dispatchScriptedWidgetIpc(std::string_view args) {
   }
   if (counts.handled > 0) {
     return "ok: dispatched " + std::to_string(counts.handled) + "\n";
-  }
-  if (counts.matched == 0) {
-    return "error: no scripted widget instance matched '" + widgetName + "' on target '" + target + "'\n";
   }
   if (counts.missingHost > 0) {
     return "error: matched scripted widget is not ready\n";
