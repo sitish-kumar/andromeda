@@ -806,13 +806,13 @@ void Application::initUi() {
     }
     if (m_trayMenu.onPointerEvent(event))
       return;
-    if (m_settingsWindow.onPointerEvent(event))
-      return;
     if (m_colorPickerDialogPopup.onPointerEvent(event))
       return;
     if (m_glyphPickerDialogPopup.onPointerEvent(event))
       return;
     if (m_fileDialogPopup.onPointerEvent(event))
+      return;
+    if (m_settingsWindow.onPointerEvent(event))
       return;
     if (m_bar.onPointerEvent(event))
       return;
@@ -975,6 +975,8 @@ void Application::initUi() {
         return m_bar.preferredPopupParentContext(
             m_compositorPlatform.preferredInteractiveOutput(std::chrono::milliseconds(1200)));
       });
+  m_layerPopupHosts.registerHost(
+      [this](wl_surface* surface) { return m_settingsWindow.popupParentContextForSurface(surface); });
 
   m_colorPickerDialogPopup.initialize(m_wayland, m_configService, m_renderContext, m_layerPopupHosts);
   ColorPickerDialog::setPresenter(&m_colorPickerDialogPopup);

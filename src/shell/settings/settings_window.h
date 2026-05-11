@@ -9,10 +9,12 @@
 #include "shell/settings/widget_add_popup.h"
 #include "ui/controls/context_menu_popup.h"
 #include "ui/controls/scroll_view.h"
+#include "ui/dialogs/layer_popup_host.h"
 #include "wayland/toplevel_surface.h"
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -46,6 +48,7 @@ public:
     return m_surface != nullptr ? m_surface->wlSurface() : nullptr;
   }
   [[nodiscard]] bool ownsKeyboardSurface(wl_surface* surface) const noexcept;
+  [[nodiscard]] std::optional<LayerPopupParentContext> popupParentContextForSurface(wl_surface* surface) const;
 
   [[nodiscard]] bool onPointerEvent(const PointerEvent& event);
   void onKeyboardEvent(const KeyboardEvent& event);

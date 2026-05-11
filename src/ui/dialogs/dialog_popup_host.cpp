@@ -75,7 +75,11 @@ bool DialogPopupHost::openPopup(std::uint32_t width, std::uint32_t height) {
   m_surface = std::move(surface);
   m_popupHosts->beginAttachedPopup(m_parentSurface);
   m_attachedToHost = true;
-  if (!m_surface->initialize(parentContext->layerSurface, parentContext->output, popupConfig)) {
+  const bool initialized =
+      parentContext->xdgSurface != nullptr
+          ? m_surface->initializeAsChild(parentContext->xdgSurface, parentContext->output, popupConfig)
+          : m_surface->initialize(parentContext->layerSurface, parentContext->output, popupConfig);
+  if (!initialized) {
     destroyPopup();
     return false;
   }
@@ -267,6 +271,14 @@ void DialogPopupHost::requestUpdateOnly() {
 wl_surface* DialogPopupHost::wlSurface() const noexcept {
   return m_surface != nullptr ? m_surface->wlSurface() : nullptr;
 }
+
+xdg_surface* DialogPopupHost::xdgSurface() const noexcept {
+  return m_surface != nullptr ? m_surface->xdgSurface() : nullptr;
+}
+
+std::uint32_t DialogPopupHost::width() const noexcept { return m_surface != nullptr ? m_surface->width() : 0; }
+
+std::uint32_t DialogPopupHost::height() const noexcept { return m_surface != nullptr ? m_surface->height() : 0; }
 
 void DialogPopupHost::cancel() {
   if (m_surface == nullptr) {

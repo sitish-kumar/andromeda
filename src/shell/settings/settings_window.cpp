@@ -264,6 +264,48 @@ bool SettingsWindow::ownsKeyboardSurface(wl_surface* surface) const noexcept {
   return m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->wlSurface() == surface;
 }
 
+std::optional<LayerPopupParentContext> SettingsWindow::popupParentContextForSurface(wl_surface* surface) const {
+  if (!isOpen() || surface == nullptr || m_surface == nullptr) {
+    return std::nullopt;
+  }
+
+  const auto makeContext = [this](wl_surface* wlSurface, xdg_surface* xdgSurface, std::uint32_t width,
+                                  std::uint32_t height) -> std::optional<LayerPopupParentContext> {
+    if (wlSurface == nullptr || xdgSurface == nullptr) {
+      return std::nullopt;
+    }
+    wl_output* output = m_wayland != nullptr ? m_wayland->outputForSurface(wlSurface) : nullptr;
+    if (output == nullptr) {
+      output = m_output;
+    }
+    return LayerPopupParentContext{
+        .surface = wlSurface,
+        .layerSurface = nullptr,
+        .xdgSurface = xdgSurface,
+        .output = output,
+        .width = width,
+        .height = height,
+    };
+  };
+
+  if (surface == m_surface->wlSurface()) {
+    return makeContext(m_surface->wlSurface(), m_surface->xdgSurface(), m_surface->width(), m_surface->height());
+  }
+  if (m_widgetAddPopup != nullptr && surface == m_widgetAddPopup->wlSurface()) {
+    return makeContext(m_widgetAddPopup->wlSurface(), m_widgetAddPopup->xdgSurface(), m_widgetAddPopup->width(),
+                       m_widgetAddPopup->height());
+  }
+  if (m_searchPickerPopup != nullptr && surface == m_searchPickerPopup->wlSurface()) {
+    return makeContext(m_searchPickerPopup->wlSurface(), m_searchPickerPopup->xdgSurface(),
+                       m_searchPickerPopup->width(), m_searchPickerPopup->height());
+  }
+  if (m_sessionActionsEditorPopup != nullptr && surface == m_sessionActionsEditorPopup->wlSurface()) {
+    return makeContext(m_sessionActionsEditorPopup->wlSurface(), m_sessionActionsEditorPopup->xdgSurface(),
+                       m_sessionActionsEditorPopup->width(), m_sessionActionsEditorPopup->height());
+  }
+  return std::nullopt;
+}
+
 void SettingsWindow::open() {
   if (m_wayland == nullptr || m_renderContext == nullptr || !m_wayland->hasXdgShell()) {
     return;

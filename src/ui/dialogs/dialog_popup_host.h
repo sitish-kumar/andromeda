@@ -59,6 +59,9 @@ public:
 
   [[nodiscard]] bool isOpen() const noexcept { return m_surface != nullptr; }
   [[nodiscard]] wl_surface* wlSurface() const noexcept;
+  [[nodiscard]] xdg_surface* xdgSurface() const noexcept;
+  [[nodiscard]] std::uint32_t width() const noexcept;
+  [[nodiscard]] std::uint32_t height() const noexcept;
 
 protected:
   DialogPopupHost();
