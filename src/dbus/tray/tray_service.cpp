@@ -341,12 +341,6 @@ namespace {
     return true;
   }
 
-  const std::vector<std::string>& requestedMenuProperties() {
-    // Per dbusmenu protocol, an empty property list means "all available properties".
-    static const std::vector<std::string> kRequestedMenuProperties = {};
-    return kRequestedMenuProperties;
-  }
-
   std::vector<std::int32_t> int32ListFromVariant(const sdbus::Variant& value) {
     try {
       return value.get<std::vector<std::int32_t>>();
@@ -663,7 +657,8 @@ bool TrayService::fetchMenuProperties(const std::string& itemId, const std::vect
     cache.proxy->callMethod("GetGroupProperties")
         .onInterface(k_menu_interface)
         .withTimeout(std::chrono::milliseconds(1000))
-        .withArguments(entryIds, requestedMenuProperties())
+        // Per dbusmenu protocol, an empty property list means "all available properties".
+        .withArguments(entryIds, std::vector<std::string>{})
         .storeResultsTo(properties);
 
     std::unordered_map<std::int32_t, std::map<std::string, sdbus::Variant>> propertiesById;
@@ -777,7 +772,8 @@ void TrayService::requestMenuLayoutAfterAboutToShow(const std::string& itemId, s
     cache.proxy->callMethodAsync("GetLayout")
         .onInterface(k_menu_interface)
         .withTimeout(std::chrono::milliseconds(2000))
-        .withArguments(parentId, static_cast<std::int32_t>(-1), requestedMenuProperties())
+        // Per dbusmenu protocol, an empty property list means "all available properties".
+        .withArguments(parentId, static_cast<std::int32_t>(-1), std::vector<std::string>{})
         .uponReplyInvoke([this, itemId, parentId, generation](std::optional<sdbus::Error> error, std::uint32_t revision,
                                                               DbusMenuLayout layout) {
           auto replyCacheIt = m_menuCache.find(itemId);
@@ -965,6 +961,8 @@ void TrayService::ensureMenuCache(const std::string& itemId, const std::string& 
               cache.rootLoaded = false;
               // Allow a fresh root AboutToShow after provider-side resets.
               cache.rootAboutToShowPrimed = false;
+              // Bump generation to discard any in-flight GetLayout replies captured before this invalidation.
+              ++cache.generation;
 
               if (hadVisibleRootEntries) {
                 kLog.debug("LayoutUpdated root soft-invalidated without emit id={} rev={} parent={}", itemId, revision,
@@ -978,6 +976,8 @@ void TrayService::ensureMenuCache(const std::string& itemId, const std::string& 
               cache.loadingParents.erase(parent);
               cache.nextRetryAt.erase(parent);
               cache.failureStreak.erase(parent);
+              // Bump generation to discard any in-flight GetLayout replies captured before this invalidation.
+              ++cache.generation;
             }
           }
           kLog.debug("LayoutUpdated id={} rev={} parent={}", itemId, revision, parent);
