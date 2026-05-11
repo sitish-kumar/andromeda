@@ -43,7 +43,6 @@
 #include <optional>
 #include <stdexcept>
 #include <string_view>
-#include <thread>
 #include <utility>
 
 std::atomic<bool> Application::s_shutdownRequested{false};
@@ -54,39 +53,12 @@ namespace {
   constexpr bool kLockKeysEnabled = true;
   constexpr std::string_view kPolkitAuthorityBusName = "org.freedesktop.PolicyKit1";
 
-  template <typename Factory>
-  auto makeWithStartupBackoff(std::string_view label, Factory&& factory) -> decltype(factory()) {
-    using namespace std::chrono_literals;
-
-    constexpr int kAttempts = 7;
-    auto delay = 50ms;
-    int failedAttempts = 0;
-
-    for (int attempt = 1; attempt <= kAttempts; ++attempt) {
-      try {
-        auto value = factory();
-        if (failedAttempts > 0) {
-          kLog.info("{} init succeeded after {} retr{}", label, failedAttempts, failedAttempts == 1 ? "y" : "ies");
-        }
-        return value;
-      } catch (const std::exception& e) {
-        if (attempt == kAttempts) {
-          throw;
-        }
-
-        failedAttempts = attempt;
-        kLog.warn("{} init attempt {}/{} failed: {}; retrying in {}ms", label, attempt, kAttempts, e.what(),
-                  delay.count());
-        std::this_thread::sleep_for(delay);
-        delay *= 2;
-      }
-    }
-
-    throw std::runtime_error(std::string(label) + " init failed");
-  }
-
   float elapsedSince(std::chrono::steady_clock::time_point start) {
     return std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - start).count();
+  }
+
+  bool weatherLocationConfiguredForNightLight(const WeatherConfig& weather) {
+    return weather.enabled && (weather.autoLocate || !weather.address.empty());
   }
 
   template <typename Fn> void runStartupPhase(std::string_view label, Fn&& fn) {
@@ -167,32 +139,44 @@ void Application::syncNotificationDaemon() {
   if (m_bus == nullptr) {
     m_notificationPollSource.setDbusService(nullptr);
     m_notificationDbus.reset();
+    m_notificationDaemonEnabled.reset();
+    m_notificationDaemonInitFailed = false;
     return;
   }
 
-  if (!m_configService.config().notification.enableDaemon) {
+  const bool enabled = m_configService.config().notification.enableDaemon;
+  const bool enabledChanged = !m_notificationDaemonEnabled.has_value() || *m_notificationDaemonEnabled != enabled;
+  m_notificationDaemonEnabled = enabled;
+
+  if (!enabled) {
     if (m_notificationDbus != nullptr) {
       kLog.info("notification daemon disabled by config");
     }
     m_notificationPollSource.setDbusService(nullptr);
     m_notificationDbus.reset();
+    m_notificationDaemonInitFailed = false;
     return;
   }
 
   if (m_notificationDbus != nullptr) {
+    m_notificationDaemonInitFailed = false;
+    return;
+  }
+
+  if (m_notificationDaemonInitFailed && !enabledChanged) {
     return;
   }
 
   try {
-    m_notificationDbus = makeWithStartupBackoff("notification service", [this]() {
-      return std::make_unique<NotificationService>(*m_bus, m_notificationManager);
-    });
+    m_notificationDbus = std::make_unique<NotificationService>(*m_bus, m_notificationManager);
     m_notificationPollSource.setDbusService(m_notificationDbus.get());
+    m_notificationDaemonInitFailed = false;
     kLog.info("listening on org.freedesktop.Notifications");
   } catch (const std::exception& e) {
     kLog.warn("notifications disabled: {}", e.what());
     m_notificationDbus.reset();
     m_notificationPollSource.setDbusService(nullptr);
+    m_notificationDaemonInitFailed = true;
     m_notificationManager.addInternal("Noctalia", i18n::tr("notifications.internal.dbus-disabled"), e.what(),
                                       Urgency::Low);
   }
@@ -431,6 +415,11 @@ void Application::initServices() {
       [this](const std::string& command) { return runUserCommandBlocking(command); });
   m_hookManager.reload(m_configService.config().hooks);
   m_configService.addReloadCallback([this]() { m_hookManager.reload(m_configService.config().hooks); });
+  auto syncNightLightWeatherConfig = [this]() {
+    m_gammaService.setWeatherLocationConfigured(
+        weatherLocationConfiguredForNightLight(m_configService.config().weather));
+  };
+  syncNightLightWeatherConfig();
   m_gammaService.reload(m_configService.config().nightlight);
   m_gammaService.setChangeCallback([this, shouldRefreshControlCenter]() {
     m_bar.refresh();
@@ -438,7 +427,10 @@ void Application::initServices() {
       m_panelManager.refresh();
     }
   });
-  m_configService.addReloadCallback([this]() { m_gammaService.reload(m_configService.config().nightlight); });
+  m_configService.addReloadCallback([this, syncNightLightWeatherConfig]() {
+    syncNightLightWeatherConfig();
+    m_gammaService.reload(m_configService.config().nightlight);
+  });
 
   // Register all wallpaper consumers in the single-callback slot.
   m_configService.setWallpaperChangeCallback([this]() {
@@ -515,7 +507,7 @@ void Application::initServices() {
   }
 
   try {
-    m_systemBus = makeWithStartupBackoff("system dbus", []() { return std::make_unique<SystemBus>(); });
+    m_systemBus = std::make_unique<SystemBus>();
     kLog.info("connected to system bus");
   } catch (const std::exception& e) {
     kLog.warn("system dbus disabled: {}", e.what());
@@ -687,7 +679,7 @@ void Application::initServices() {
   }
 
   try {
-    m_bus = makeWithStartupBackoff("session dbus", []() { return std::make_unique<SessionBus>(); });
+    m_bus = std::make_unique<SessionBus>();
     kLog.info("connected to session bus");
   } catch (const std::exception& e) {
     kLog.warn("dbus disabled: {}", e.what());
@@ -697,8 +689,7 @@ void Application::initServices() {
 
   if (m_bus != nullptr) {
     try {
-      m_debugService = makeWithStartupBackoff(
-          "debug service", [this]() { return std::make_unique<DebugService>(*m_bus, m_notificationManager); });
+      m_debugService = std::make_unique<DebugService>(*m_bus, m_notificationManager);
       kLog.info("debug service active on dev.noctalia.Debug");
     } catch (const std::exception& e) {
       kLog.warn("debug service disabled: {}", e.what());
@@ -706,8 +697,7 @@ void Application::initServices() {
     }
 
     try {
-      m_mprisService =
-          makeWithStartupBackoff("mpris service", [this]() { return std::make_unique<MprisService>(*m_bus); });
+      m_mprisService = std::make_unique<MprisService>(*m_bus);
       auto applyMprisConfig = [this]() {
         if (m_mprisService == nullptr) {
           return;
@@ -743,6 +733,7 @@ void Application::initServices() {
 
   m_weatherService.initialize();
   auto syncNightLightWeatherCoordinates = [this]() {
+    m_gammaService.setWeatherLocationConfigured(m_weatherService.enabled() && m_weatherService.locationConfigured());
     const auto coords = m_weatherService.resolvedCoordinates();
     if (coords.has_value()) {
       m_gammaService.setWeatherCoordinates(coords->latitude, coords->longitude);
@@ -752,6 +743,7 @@ void Application::initServices() {
   };
   syncNightLightWeatherCoordinates();
   m_weatherService.addChangeCallback([this, shouldRefreshControlCenter]() {
+    m_gammaService.setWeatherLocationConfigured(m_weatherService.enabled() && m_weatherService.locationConfigured());
     const auto coords = m_weatherService.resolvedCoordinates();
     if (coords.has_value()) {
       m_gammaService.setWeatherCoordinates(coords->latitude, coords->longitude);

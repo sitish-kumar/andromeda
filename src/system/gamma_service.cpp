@@ -58,6 +58,14 @@ void GammaService::setEnabled(bool enabled) {
 
 void GammaService::toggleEnabled() { setEnabled(!enabled()); }
 
+void GammaService::setWeatherLocationConfigured(bool configured) {
+  if (m_weatherLocationConfigured == configured) {
+    return;
+  }
+  m_weatherLocationConfigured = configured;
+  apply();
+}
+
 void GammaService::setWeatherCoordinates(std::optional<double> latitude, std::optional<double> longitude) {
   if (latitude.has_value() && !std::isfinite(*latitude)) {
     latitude.reset();
@@ -565,13 +573,15 @@ int GammaService::targetTemperature() const {
     return isManualNightPhase() ? nightTemp : dayTemp;
   }
 
-  // Geo mode — need coordinates.
+  // Geo mode - need coordinates.
   const auto coords = scheduleCoordinates();
   if (!coords.latitude.has_value() || !coords.longitude.has_value()) {
     if (!m_config.useWeatherLocation && (m_config.latitude.has_value() || m_config.longitude.has_value())) {
       kLog.warn("need both latitude and longitude when overriding location mode");
     } else if (!m_config.useWeatherLocation) {
       kLog.warn("no schedule: set start_time/stop_time or latitude/longitude, or enable weather location");
+    } else if (m_weatherLocationConfigured) {
+      kLog.debug("night light schedule waiting for weather location");
     } else {
       kLog.warn("no schedule: configure weather location or disable weather location and set start_time/stop_time or "
                 "latitude/longitude");
@@ -594,10 +604,16 @@ void GammaService::apply() {
     return;
   }
 
-  if (effectiveEnabled() && isManualMode()) {
+  const bool manualMode = isManualMode();
+  if (effectiveEnabled() && manualMode) {
     scheduleManualTimer();
-  } else if (effectiveEnabled() && !effectiveForce() && !isManualMode()) {
-    scheduleGeoTimer();
+  } else if (effectiveEnabled() && !effectiveForce()) {
+    const auto coords = scheduleCoordinates();
+    if (coords.latitude.has_value() && coords.longitude.has_value()) {
+      scheduleGeoTimer();
+    } else {
+      m_scheduleTimer.stop();
+    }
   } else {
     m_scheduleTimer.stop();
   }
