@@ -247,22 +247,22 @@ struct DockConfig {
   std::int32_t padding = 8;        // inner padding around the icon row
   std::int32_t itemSpacing = 6;    // gap between items
   float backgroundOpacity = 0.88f;
-  std::int32_t radius = 16;              // dock background corner radius
-  std::int32_t marginEnds = 0;           // inset from each end of the dock along its main axis
-  std::int32_t marginEdge = 8;           // distance from the nearest screen edge (floats the dock when > 0)
-  bool shadow = true;                    // use the global shell shadow
-  bool showRunning = true;               // also show running apps not in pinned list
-  bool autoHide = false;                 // fade out when not hovered (overlay mode)
-  bool reserveSpace = false;             // keep compositor exclusive zone even while auto-hidden
-  float activeScale = 1.0f;              // focused app icon scale
-  float inactiveScale = 0.85f;           // non-focused app icon scale
-  float activeOpacity = 1.0f;            // focused app icon opacity
-  float inactiveOpacity = 0.85f;         // non-focused app icon opacity
-  bool showDots = false;                 // show optional running window dots beside app icons
-  bool showInstanceCount = true;         // show a badge with count when app has >1 window
-  std::string launcherPosition = "none"; // none | start | end
-  std::string launcherIcon = "dots";     // dots | search
-  std::vector<std::string> pinned;       // desktop entry IDs to always show
+  std::int32_t radius = 16;               // dock background corner radius
+  std::int32_t marginEnds = 0;            // inset from each end of the dock along its main axis
+  std::int32_t marginEdge = 8;            // distance from the nearest screen edge (floats the dock when > 0)
+  bool shadow = true;                     // use the global shell shadow
+  bool showRunning = true;                // also show running apps not in pinned list
+  bool autoHide = false;                  // fade out when not hovered (overlay mode)
+  bool reserveSpace = false;              // keep compositor exclusive zone even while auto-hidden
+  float activeScale = 1.0f;               // focused app icon scale
+  float inactiveScale = 0.85f;            // non-focused app icon scale
+  float activeOpacity = 1.0f;             // focused app icon opacity
+  float inactiveOpacity = 0.85f;          // non-focused app icon opacity
+  bool showDots = false;                  // show optional running window dots beside app icons
+  bool showInstanceCount = true;          // show a badge with count when app has >1 window
+  std::string launcherPosition = "none";  // none | start | end
+  std::string launcherIcon = "grid-dots"; // Tabler glyph name
+  std::vector<std::string> pinned;        // desktop entry IDs to always show
 
   bool operator==(const DockConfig&) const = default;
 };

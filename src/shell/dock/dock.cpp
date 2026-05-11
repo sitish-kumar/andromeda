@@ -135,7 +135,7 @@ namespace {
   }
 
   std::string_view dockLauncherIconGlyph(const DockConfig& cfg) {
-    return cfg.launcherIcon == "search" ? "search" : "grid-dots";
+    return cfg.launcherIcon.empty() ? "grid-dots" : std::string_view{cfg.launcherIcon};
   }
 
 } // namespace
@@ -1303,7 +1303,9 @@ std::unique_ptr<InputArea> Dock::createLauncherButton(DockInstance& instance) {
   areaNode->addChild(std::move(bg));
 
   auto glyph = std::make_unique<Glyph>();
-  glyph->setGlyph(dockLauncherIconGlyph(cfg));
+  if (!glyph->setGlyph(dockLauncherIconGlyph(cfg))) {
+    glyph->setGlyph("grid-dots");
+  }
   glyph->setGlyphSize(iSize * 0.8f);
   glyph->setColor(colorSpecFromRole(ColorRole::OnSurface));
   glyph->setSize(iSize, iSize);

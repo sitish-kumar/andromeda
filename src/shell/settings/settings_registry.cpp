@@ -252,11 +252,6 @@ namespace settings {
                                       {"end", "settings.options.dock-launcher-position.end"}},
                                      selected));
     };
-    const auto launcherIconSelect = [](std::string_view selected) {
-      return asSegmented(plainSelect({{"dots", "settings.options.dock-launcher-icon.dots"},
-                                      {"search", "settings.options.dock-launcher-icon.search"}},
-                                     selected));
-    };
     std::vector<SettingEntry> entries;
 
     // Appearance
@@ -495,7 +490,7 @@ namespace settings {
                                 launcherPositionSelect(cfg.dock.launcherPosition), "launcher apps grid"));
     entries.push_back(makeEntry("dock", "behavior", tr("settings.schema.dock.launcher-icon.label"),
                                 tr("settings.schema.dock.launcher-icon.description"), {"dock", "launcher_icon"},
-                                launcherIconSelect(cfg.dock.launcherIcon), "launcher apps search grid"));
+                                TextSetting{cfg.dock.launcherIcon, "grid-dots"}, "launcher apps icon glyph"));
     entries.push_back(makeEntry("dock", "layout", tr("settings.schema.shared.position.label"),
                                 tr("settings.schema.dock.position.description"), {"dock", "position"},
                                 positionSelect(cfg.dock.position), "edge"));

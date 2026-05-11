@@ -841,10 +841,6 @@
         "start": "Start",
         "end": "End"
       },
-      "dock-launcher-icon": {
-        "dots": "Dots",
-        "search": "Search"
-      },
       "layer": {
         "top": "Top",
         "overlay": "Overlay"
@@ -1373,7 +1369,7 @@
         },
         "launcher-icon": {
           "label": "Launcher Icon",
-          "description": "Icon shown on the dock launcher button"
+          "description": "Tabler icon shown on the dock launcher button"
         },
         "active-icon-scale": {
           "label": "Active Icon Scale",
