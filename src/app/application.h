@@ -152,6 +152,8 @@ private:
   std::unique_ptr<BluetoothAgent> m_bluetoothAgent;
   std::unique_ptr<PolkitAgent> m_polkitAgent;
   std::unique_ptr<UPowerService> m_upowerService;
+  std::optional<bool> m_notificationDaemonEnabled;
+  bool m_notificationDaemonInitFailed = false;
   std::optional<UPowerState> m_prevUpowerForHooks;
   std::optional<bool> m_prevWirelessEnabledForEvents;
   std::optional<bool> m_prevBluetoothPoweredForEvents;
