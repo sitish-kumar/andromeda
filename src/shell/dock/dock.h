@@ -114,6 +114,7 @@ private:
   void resizeSurface(DockInstance& instance);
   void updateVisuals(DockInstance& instance);
   void applyPanelPalette(DockInstance& instance);
+  std::unique_ptr<InputArea> createLauncherButton(DockInstance& instance);
   void launchEntry(const DesktopEntry& entry);
   void launchAction(const DesktopAction& action);
   void handleItemClick(DockInstance& instance, DockItemView& item);

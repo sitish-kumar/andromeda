@@ -167,6 +167,10 @@ namespace settings {
       return path.size() >= 5 && path[0] == "bar" && path[2] == "monitor";
     }
 
+    bool isDockLauncherIconPath(const std::vector<std::string>& path) {
+      return path.size() == 2 && path[0] == "dock" && path[1] == "launcher_icon";
+    }
+
     bool monitorOverrideHasExplicitValue(const Config& cfg, const std::vector<std::string>& path) {
       if (!isMonitorOverrideSettingPath(path)) {
         return false;
@@ -1097,6 +1101,37 @@ namespace settings {
       return input;
     };
 
+    const auto makeGlyphText = [&](const TextSetting& setting, std::vector<std::string> path) -> std::unique_ptr<Node> {
+      auto wrap = std::make_unique<Flex>();
+      wrap->setDirection(FlexDirection::Horizontal);
+      wrap->setAlign(FlexAlign::Center);
+      wrap->setGap(Style::spaceSm * scale);
+      wrap->addChild(makeText(setting.value, setting.placeholder, path, setting.width));
+
+      auto pickerButton = std::make_unique<Button>();
+      pickerButton->setVariant(ButtonVariant::Secondary);
+      pickerButton->setGlyph("apps");
+      pickerButton->setGlyphSize(Style::fontSizeBody * scale);
+      pickerButton->setMinHeight(Style::controlHeight * scale);
+      pickerButton->setMinWidth(Style::controlHeight * scale);
+      pickerButton->setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
+      pickerButton->setRadius(Style::radiusMd * scale);
+      pickerButton->setOnClick([setOverride = ctx.setOverride, path, currentValue = setting.value]() {
+        GlyphPickerDialogOptions options;
+        if (!currentValue.empty()) {
+          options.initialGlyph = currentValue;
+        }
+        (void)GlyphPickerDialog::open(std::move(options), [setOverride, path](std::optional<GlyphPickerResult> result) {
+          if (!result.has_value()) {
+            return;
+          }
+          setOverride(path, result->name);
+        });
+      });
+      wrap->addChild(std::move(pickerButton));
+      return wrap;
+    };
+
     const auto makeOptionalNumber = [&](const OptionalNumberSetting& setting, std::vector<std::string> path) {
       auto input = std::make_unique<Input>();
       input->setValue(setting.value.has_value() ? std::format("{}", *setting.value) : "");
@@ -1848,6 +1883,9 @@ namespace settings {
               return makeSlider(control.value, control.minValue, control.maxValue, control.step, entry.path,
                                 control.integerValue, control.linkedCommit);
             } else if constexpr (std::is_same_v<T, TextSetting>) {
+              if (isDockLauncherIconPath(entry.path)) {
+                return makeGlyphText(control, entry.path);
+              }
               return makeText(control.value, control.placeholder, entry.path, control.width);
             } else if constexpr (std::is_same_v<T, OptionalNumberSetting>) {
               return makeOptionalNumber(control, entry.path);

@@ -1559,6 +1559,15 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       dock.showDots = *v;
     if (auto v = (*dockTbl)["show_instance_count"].value<bool>())
       dock.showInstanceCount = *v;
+    if (auto v = (*dockTbl)["launcher_position"].value<std::string>()) {
+      if (*v == "none" || *v == "start" || *v == "end") {
+        dock.launcherPosition = *v;
+      } else {
+        kLog.warn("invalid dock.launcher_position '{}'; expected none, start, or end", *v);
+      }
+    }
+    if (auto v = (*dockTbl)["launcher_icon"].value<std::string>())
+      dock.launcherIcon = *v;
     if (auto* arr = (*dockTbl)["pinned"].as_array())
       dock.pinned = readStringArray(*arr);
   }

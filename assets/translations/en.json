@@ -856,6 +856,11 @@
         "left": "Left",
         "right": "Right"
       },
+      "dock-launcher-position": {
+        "none": "None",
+        "start": "Start",
+        "end": "End"
+      },
       "layer": {
         "top": "Top",
         "overlay": "Overlay"
@@ -1377,6 +1382,14 @@
         "show-instance-count": {
           "label": "Show Instance Count",
           "description": "Show a badge with the number of open instances"
+        },
+        "launcher-position": {
+          "label": "Launcher Button",
+          "description": "Show a launcher button at the start or end of the dock"
+        },
+        "launcher-icon": {
+          "label": "Launcher Icon",
+          "description": "Tabler icon shown on the dock launcher button"
         },
         "active-icon-scale": {
           "label": "Active Icon Scale",
