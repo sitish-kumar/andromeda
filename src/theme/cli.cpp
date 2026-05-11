@@ -4,6 +4,7 @@
 #include "core/toml.h"
 #include "theme/builtin_templates.h"
 #include "theme/color.h"
+#include "theme/community_templates.h"
 #include "theme/fixed_palette.h"
 #include "theme/image_loader.h"
 #include "theme/json_output.h"
@@ -29,6 +30,7 @@ namespace noctalia::theme {
   namespace {
 
     constexpr const char* kHelpText = "Usage: noctalia theme <image> [options]\n"
+                                      "       noctalia theme --list-templates [-c <file>]\n"
                                       "\n"
                                       "Generate a color palette from an image. Material You and custom\n"
                                       "schemes produce very different results.\n"
@@ -53,12 +55,172 @@ namespace noctalia::theme {
                                       "  -r <in:out>       Render a template file to an output path\n"
                                       "  -c <file>         Process a TOML template config file\n"
                                       "  --builtin-config  Process the shipped built-in template catalog\n"
-                                      "  --list-builtins   List built-in templates from the shipped catalog\n"
+                                      "  --list-templates  List built-in, cached community, and user templates\n"
+                                      "                    Use -c <file> to include a specific template config\n"
                                       "  --default-mode    Template default mode: dark or light";
 
     std::filesystem::path builtinTemplateConfigPath() { return paths::assetPath("templates/builtin.toml"); }
 
     using TokenMap = std::unordered_map<std::string, uint32_t>;
+
+    struct TemplateListEntry {
+      std::string id;
+      std::string category;
+      std::string name;
+    };
+
+    std::string templateNameOrId(const std::string& id, const std::string& name) { return name.empty() ? id : name; }
+
+    void sortTemplateList(std::vector<TemplateListEntry>& entries) {
+      std::sort(entries.begin(), entries.end(), [](const TemplateListEntry& lhs, const TemplateListEntry& rhs) {
+        return std::tie(lhs.category, lhs.id, lhs.name) < std::tie(rhs.category, rhs.id, rhs.name);
+      });
+    }
+
+    std::vector<TemplateListEntry> loadBuiltinTemplateList(std::string& err) {
+      std::vector<TemplateListEntry> out;
+      const auto builtins = noctalia::theme::loadBuiltinTemplateInfo(&err);
+      out.reserve(builtins.size());
+      for (const auto& builtin : builtins) {
+        out.push_back(TemplateListEntry{
+            .id = builtin.id,
+            .category = builtin.category,
+            .name = templateNameOrId(builtin.id, builtin.name),
+        });
+      }
+      sortTemplateList(out);
+      return out;
+    }
+
+    std::vector<TemplateListEntry> loadCommunityTemplateList() {
+      std::vector<TemplateListEntry> out;
+      const auto community = CommunityTemplateService::availableTemplates();
+      out.reserve(community.size());
+      for (const auto& entry : community) {
+        out.push_back(TemplateListEntry{
+            .id = entry.id,
+            .category = entry.category,
+            .name = templateNameOrId(entry.id, entry.displayName),
+        });
+      }
+      sortTemplateList(out);
+      return out;
+    }
+
+    std::unordered_map<std::string, TemplateListEntry> loadTemplateCatalog(const toml::table& root) {
+      std::unordered_map<std::string, TemplateListEntry> out;
+      const toml::table* catalog = root["catalog"].as_table();
+      if (catalog == nullptr)
+        return out;
+
+      for (const auto& [idNode, node] : *catalog) {
+        const auto id = std::string(idNode.str());
+        TemplateListEntry entry{.id = id, .category = {}, .name = id};
+        if (const toml::table* info = node.as_table()) {
+          if (const auto name = info->get_as<std::string>("name"))
+            entry.name = name->get();
+          if (const auto category = info->get_as<std::string>("category"))
+            entry.category = category->get();
+        }
+        out[id] = std::move(entry);
+      }
+      return out;
+    }
+
+    std::vector<TemplateListEntry> loadTemplateConfigList(const std::filesystem::path& path, bool required,
+                                                          std::string& err) {
+      std::error_code ec;
+      if (!std::filesystem::exists(path, ec)) {
+        if (required)
+          err = "file does not exist";
+        return {};
+      }
+
+      toml::table root;
+      try {
+        root = toml::parse_file(path.string());
+      } catch (const toml::parse_error& e) {
+        err = e.description();
+        return {};
+      }
+
+      std::vector<TemplateListEntry> out;
+      const toml::table* templates = root["templates"].as_table();
+      if (templates == nullptr)
+        return out;
+
+      const auto catalog = loadTemplateCatalog(root);
+      out.reserve(templates->size());
+      for (const auto& [idNode, node] : *templates) {
+        if (node.as_table() == nullptr)
+          continue;
+        const auto id = std::string(idNode.str());
+        auto catalogIt = catalog.find(id);
+        if (catalogIt != catalog.end()) {
+          out.push_back(catalogIt->second);
+        } else {
+          out.push_back(TemplateListEntry{.id = id, .category = {}, .name = id});
+        }
+      }
+      sortTemplateList(out);
+      return out;
+    }
+
+    void printTemplateListGroup(const char* title, const std::vector<TemplateListEntry>& entries, bool& firstGroup) {
+      if (entries.empty())
+        return;
+
+      if (!firstGroup)
+        std::putchar('\n');
+      firstGroup = false;
+      std::printf("%s\n", title);
+
+      std::size_t idWidth = std::strlen("ID");
+      std::size_t categoryWidth = std::strlen("Category");
+      for (const auto& entry : entries) {
+        idWidth = std::max(idWidth, entry.id.size());
+        categoryWidth = std::max(categoryWidth, entry.category.empty() ? std::size_t{1} : entry.category.size());
+      }
+
+      const auto idColumn = static_cast<int>(idWidth);
+      const auto categoryColumn = static_cast<int>(categoryWidth);
+      std::printf("  %-*s  %-*s  %s\n", idColumn, "ID", categoryColumn, "Category", "Name");
+      for (const auto& entry : entries) {
+        const std::string category = entry.category.empty() ? "-" : entry.category;
+        std::printf("  %-*s  %-*s  %s\n", idColumn, entry.id.c_str(), categoryColumn, category.c_str(),
+                    entry.name.c_str());
+      }
+    }
+
+    int listTemplates(const char* configPath) {
+      std::string err;
+      const auto builtins = loadBuiltinTemplateList(err);
+      if (!err.empty()) {
+        std::fprintf(stderr, "error: failed to load built-in templates: %s\n", err.c_str());
+        return 1;
+      }
+
+      const auto community = loadCommunityTemplateList();
+      const bool explicitConfig = configPath != nullptr;
+      const std::string userConfig = explicitConfig ? configPath : ThemeConfig::TemplatesConfig{}.userConfig;
+      const std::filesystem::path userConfigPath = FileUtils::expandUserPath(userConfig);
+      std::string userErr;
+      const auto userTemplates = loadTemplateConfigList(userConfigPath, explicitConfig, userErr);
+      if (!userErr.empty()) {
+        std::fprintf(stderr, "%s: failed to load template config %s: %s\n", explicitConfig ? "error" : "warning",
+                     userConfigPath.string().c_str(), userErr.c_str());
+        if (explicitConfig)
+          return 1;
+      }
+
+      bool firstGroup = true;
+      printTemplateListGroup("Built-in templates", builtins, firstGroup);
+      printTemplateListGroup("Community templates (cached)", community, firstGroup);
+      printTemplateListGroup("User templates", userTemplates, firstGroup);
+      if (firstGroup)
+        std::puts("No templates found.");
+      return 0;
+    }
 
     std::optional<Color> loadHexColor(const nlohmann::json& src, const char* key) {
       if (!src.contains(key) || !src[key].is_string())
@@ -217,7 +379,7 @@ namespace noctalia::theme {
     const char* configPath = nullptr;
     std::string builtinConfigPathStorage;
     bool builtinConfig = false;
-    bool listBuiltins = false;
+    bool listTemplatesRequested = false;
     std::string defaultMode = "dark";
     std::vector<std::string> renderSpecs;
 
@@ -263,8 +425,8 @@ namespace noctalia::theme {
         builtinConfig = true;
         continue;
       }
-      if (std::strcmp(a, "--list-builtins") == 0) {
-        listBuiltins = true;
+      if (std::strcmp(a, "--list-templates") == 0) {
+        listTemplatesRequested = true;
         continue;
       }
       if (std::strcmp(a, "--default-mode") == 0 && i + 1 < argc) {
@@ -279,21 +441,8 @@ namespace noctalia::theme {
       return 1;
     }
 
-    if (listBuiltins) {
-      std::string err;
-      const auto builtins = noctalia::theme::loadBuiltinTemplateInfo(&err);
-      if (!err.empty()) {
-        std::fprintf(stderr, "error: failed to load built-in templates: %s\n", err.c_str());
-        return 1;
-      }
-      for (const auto& builtin : builtins) {
-        if (builtin.category.empty())
-          std::printf("%s\t%s\n", builtin.id.c_str(), builtin.name.c_str());
-        else
-          std::printf("%s\t%s\t%s\n", builtin.id.c_str(), builtin.category.c_str(), builtin.name.c_str());
-      }
-      return 0;
-    }
+    if (listTemplatesRequested)
+      return listTemplates(configPath);
 
     if (builtinConfig) {
       if (configPath != nullptr) {
