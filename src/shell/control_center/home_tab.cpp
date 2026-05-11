@@ -43,6 +43,7 @@ namespace {
   constexpr std::int64_t kHomeTransientPositionRegressionFloorUs = 5'000'000;
   constexpr std::int64_t kHomeTransientPositionRegressionCeilingUs = 1'500'000;
   constexpr std::int64_t kHomeTransientPositionRegressionDeltaUs = 5'000'000;
+  constexpr int kHomeMediaArtLayoutPassLimit = 4;
 
   float homeAvatarSize(float scale) { return Style::controlHeightLg * kHomeAvatarScale * scale; }
 
@@ -503,24 +504,9 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
     m_weatherLine->setMaxLines(2);
   }
   // Grow the album art square to fill the media card height so the row feels balanced
-  // when the card flex-grows. Done before label maxWidth so the text wrap width matches
-  // the final art size on the very first frame.
-  if (m_mediaCard != nullptr && m_mediaArt != nullptr && m_mediaArtSlot != nullptr) {
-    const float scale = contentScale();
-    const float minArt = Style::controlHeightLg * 1.22f * scale;
-    const float maxArt = Style::controlHeightLg * 2.6f * scale;
-    const float available =
-        std::max(0.0f, m_mediaCard->height() - m_mediaCard->paddingTop() - m_mediaCard->paddingBottom());
-    const float desired = std::clamp(available, minArt, maxArt);
-    if (std::abs(m_mediaArtSlot->width() - desired) > 0.5f) {
-      m_mediaArtSlot->setSize(desired, desired);
-      m_mediaArt->setSize(desired, desired);
-      m_mediaArt->setRadius(Style::radiusLg * scale);
-      if (m_mediaArtFallback != nullptr) {
-        m_mediaArtFallback->setGlyphSize(desired * 0.55f);
-      }
-    }
-  }
+  // when the card flex-grows. A later bottom-row min-height pass can change the card
+  // height, so this runs again after that final layout pass below.
+  resizeMediaArtToCard();
 
   // Labels auto-wrap to mediaText's assigned width via Flex stretch propagation.
   for (Label* label : {m_mediaArtist, m_mediaStatus, m_mediaProgress}) {
@@ -571,11 +557,46 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
     }
   }
 
-  m_rootLayout->layout(renderer);
+  bool artSizeChanged = false;
+  for (int pass = 0; pass < kHomeMediaArtLayoutPassLimit; ++pass) {
+    m_rootLayout->layout(renderer);
+    artSizeChanged = resizeMediaArtToCard();
+    if (!artSizeChanged) {
+      break;
+    }
+  }
+  if (artSizeChanged) {
+    // Keep the final tree consistent even if an unusual layout combination hits the pass cap.
+    m_rootLayout->layout(renderer);
+  }
   layoutWallpaperBackground(renderer);
   if (m_weatherGlyph != nullptr) {
     m_weatherGlyph->measure(renderer);
   }
+}
+
+bool HomeTab::resizeMediaArtToCard() {
+  if (m_mediaCard == nullptr || m_mediaArt == nullptr || m_mediaArtSlot == nullptr) {
+    return false;
+  }
+
+  const float scale = contentScale();
+  const float minArt = Style::controlHeightLg * 1.22f * scale;
+  const float maxArt = Style::controlHeightLg * 2.6f * scale;
+  const float available =
+      std::max(0.0f, m_mediaCard->height() - m_mediaCard->paddingTop() - m_mediaCard->paddingBottom());
+  const float desired = std::clamp(available, minArt, maxArt);
+  if (std::abs(m_mediaArtSlot->width() - desired) <= 0.5f) {
+    return false;
+  }
+
+  m_mediaArtSlot->setSize(desired, desired);
+  m_mediaArt->setSize(desired, desired);
+  m_mediaArt->setRadius(Style::radiusLg * scale);
+  if (m_mediaArtFallback != nullptr) {
+    m_mediaArtFallback->setGlyphSize(desired * 0.55f);
+  }
+  return true;
 }
 
 void HomeTab::layoutWallpaperBackground(Renderer& renderer) {

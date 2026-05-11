@@ -51,6 +51,7 @@ private:
   void sync(Renderer& renderer);
   void syncScaledFonts();
   void syncShortcuts();
+  bool resizeMediaArtToCard();
 
   MprisService* m_mpris = nullptr;
   WeatherService* m_weather = nullptr;
