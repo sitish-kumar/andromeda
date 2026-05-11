@@ -595,7 +595,7 @@
       "entry-heading": "Menu item {n}",
       "icon-label": "Icon",
       "kind-section-label": "Behavior",
-      "glyph-picker-title": "Session menu icon",
+      "glyph-picker-title": "Action icon",
       "clear-glyph": "Clear",
       "command-label": "Shell command",
       "command-placeholder": "Optional bash command, leave empty for built-in behavior",
@@ -793,7 +793,7 @@
         "wallpaper": "Wallpaper",
         "widget-list": "Widget List",
         "widgets": "Widgets",
-        "session-panel": "Session Menu"
+        "session-panel": "Session"
       }
     },
     "options": {

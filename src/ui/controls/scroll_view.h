@@ -6,7 +6,6 @@
 #include "ui/style.h"
 
 #include <functional>
-#include <optional>
 
 class InputArea;
 class RectNode;
@@ -68,7 +67,7 @@ private:
   std::function<void(float)> m_onScrollChanged;
   ColorSpec m_backgroundFill = clearColorSpec();
   ColorSpec m_backgroundBorder = clearColorSpec();
-  ColorSpec m_scrollbarTrackColor = colorSpecFromRole(ColorRole::Outline, 0.45f);
+  ColorSpec m_scrollbarTrackColor = colorSpecFromRole(ColorRole::Outline, 0.5f);
   ColorSpec m_scrollbarThumbColor = colorSpecFromRole(ColorRole::Primary);
   Signal<>::ScopedConnection m_paletteConn;
 

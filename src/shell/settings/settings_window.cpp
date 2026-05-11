@@ -1805,7 +1805,6 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
   body->addChild(std::move(sidebar));
 
   auto separator = std::make_unique<Separator>();
-  separator->setColor(colorSpecFromRole(ColorRole::Outline, 0.35f));
   body->addChild(std::move(separator));
 
   auto scroll = std::make_unique<ScrollView>();

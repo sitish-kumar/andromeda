@@ -1331,7 +1331,7 @@ namespace settings {
       auto block = std::make_unique<Flex>();
       block->setDirection(FlexDirection::Vertical);
       block->setAlign(FlexAlign::Stretch);
-      block->setGap(Style::spaceSm * scale);
+      block->setGap(Style::spaceXs * scale);
       block->setPadding(2.0f * scale, 0.0f);
 
       auto titleRow = std::make_unique<Flex>();
@@ -1377,18 +1377,12 @@ namespace settings {
       const float iconBtnH = Style::controlHeight * scale;
 
       for (std::size_t idx = 0; idx < state->size(); ++idx) {
-        if (idx > 0) {
-          auto sep = std::make_unique<Separator>();
-          sep->setColor(colorSpecFromRole(ColorRole::Outline, 0.35f));
-          block->addChild(std::move(sep));
-        }
-
         auto row = std::make_unique<Flex>();
         row->setDirection(FlexDirection::Horizontal);
         row->setAlign(FlexAlign::Center);
         row->setJustify(FlexJustify::SpaceBetween);
         row->setGap(Style::spaceSm * scale);
-        row->setMinHeight(Style::controlHeight * scale);
+        row->setMinHeight(Style::controlHeightSm * scale);
 
         auto summary = std::make_unique<Label>();
         summary->setText(sessionActionRowSummary(kindOptions, (*state)[idx]));

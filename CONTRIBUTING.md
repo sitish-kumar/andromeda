@@ -138,7 +138,7 @@ src/
     osd/          On-screen display (volume, brightness, ...)
     overview/     Workspace overview
     panel/        Panel base and manager
-    session/      Session menu (logout, reboot, ...)
+    session/      Session panel (logout, reboot, ...)
     tray/         System tray (StatusNotifierItem)
     wallpaper/    Wallpaper surface and instance
     widget/       Widget base and factory

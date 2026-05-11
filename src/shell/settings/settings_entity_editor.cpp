@@ -156,7 +156,7 @@ namespace settings {
           confirmPanel->setPadding(Style::spaceSm * ctx.scale);
           confirmPanel->setRadius(Style::radiusSm * ctx.scale);
           confirmPanel->setFill(colorSpecFromRole(ColorRole::Error, 0.10f));
-          confirmPanel->setBorder(colorSpecFromRole(ColorRole::Error, 0.35f), Style::borderWidth);
+          confirmPanel->setBorder(colorSpecFromRole(ColorRole::Error, 0.5f), Style::borderWidth);
 
           confirmPanel->addChild(
               makeLabel(i18n::tr("settings.entities.monitor-override.delete-confirm-title", "name", match),
@@ -348,7 +348,7 @@ namespace settings {
           confirmPanel->setPadding(Style::spaceSm * ctx.scale);
           confirmPanel->setRadius(Style::radiusSm * ctx.scale);
           confirmPanel->setFill(colorSpecFromRole(ColorRole::Error, 0.10f));
-          confirmPanel->setBorder(colorSpecFromRole(ColorRole::Error, 0.35f), Style::borderWidth);
+          confirmPanel->setBorder(colorSpecFromRole(ColorRole::Error, 0.5f), Style::borderWidth);
 
           confirmPanel->addChild(makeLabel(i18n::tr("settings.entities.bar.delete-confirm-title", "name", barName),
                                            Style::fontSizeBody * ctx.scale, colorSpecFromRole(ColorRole::Error), true));

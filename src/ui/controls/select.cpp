@@ -25,11 +25,8 @@ namespace {
 
   constexpr float kDefaultWidth = 220.0f;
   constexpr float kMinWidth = 160.0f;
-  constexpr float kTriggerHeight = Style::controlHeight;
   constexpr float kOptionHeight = Style::controlHeight;
   constexpr float kMenuTopGap = Style::spaceXs;
-  constexpr float kHorizontalPadding = Style::spaceMd;
-  constexpr float kGlyphSize = 14.0f;
   constexpr float kPlaceholderAlpha = 0.68f;
   constexpr std::int32_t kOpenSelectZIndex = 100;
   constexpr std::size_t kMaxVisibleOptions = 6;

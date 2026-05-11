@@ -1185,7 +1185,7 @@ namespace settings {
       inspector->setPadding(Style::spaceMd * ctx.scale);
       inspector->setRadius(Style::radiusMd * ctx.scale);
       inspector->setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
-      inspector->setBorder(colorSpecFromRole(ColorRole::Outline, 0.35f), Style::borderWidth);
+      inspector->setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
 
       if (hasEdit) {
         const std::string widgetName = ctx.editingWidgetName;
@@ -1427,7 +1427,7 @@ namespace settings {
           confirmPanel->setPadding(Style::spaceSm * ctx.scale);
           confirmPanel->setRadius(Style::radiusSm * ctx.scale);
           confirmPanel->setFill(colorSpecFromRole(ColorRole::Error, 0.10f));
-          confirmPanel->setBorder(colorSpecFromRole(ColorRole::Error, 0.35f), Style::borderWidth);
+          confirmPanel->setBorder(colorSpecFromRole(ColorRole::Error, 0.5f), Style::borderWidth);
 
           confirmPanel->addChild(
               makeLabel(i18n::tr("settings.entities.widget.instance.delete-confirm-title", "name", widgetName),
@@ -1722,7 +1722,7 @@ namespace settings {
       lane->setPadding(Style::spaceSm * ctx.scale);
       lane->setRadius(Style::radiusMd * ctx.scale);
       lane->setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.45f));
-      lane->setBorder(colorSpecFromRole(ColorRole::Outline, 0.35f), Style::borderWidth);
+      lane->setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
       lane->setFlexGrow(1.0f);
       lane->setMinWidth(160.0f * ctx.scale);
       auto* lanePtr = lane.get();
