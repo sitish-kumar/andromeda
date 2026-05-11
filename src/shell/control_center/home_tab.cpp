@@ -907,8 +907,8 @@ void HomeTab::sync(Renderer& renderer) {
             }
             bool loaded = false;
             if (!artPath.empty()) {
-              loaded =
-                  m_mediaArt->setSourceFile(renderer, artPath, static_cast<int>(std::round(m_mediaArt->width())), true);
+              const int decodeSize = static_cast<int>(std::round(Style::controlHeightLg * 2.6f * contentScale()));
+              loaded = m_mediaArt->setSourceFile(renderer, artPath, decodeSize, true);
               if (!loaded) {
                 m_mediaArt->clear(renderer);
               }
