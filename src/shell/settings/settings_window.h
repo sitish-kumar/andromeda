@@ -95,8 +95,9 @@ private:
 
   std::unique_ptr<ToplevelSurface> m_surface;
   std::unique_ptr<Node> m_sceneRoot;
-  Flex* m_mainContainer = nullptr;  // Outer Flex inside m_sceneRoot, sized to the window
-  Box* m_panelBackground = nullptr; // Window-sized background panel inside m_sceneRoot
+  Flex* m_mainContainer = nullptr; // Outer Flex inside m_sceneRoot, sized to the window
+  Box* m_panelBackground = nullptr;
+  Node* m_headerRow = nullptr;
   Button* m_actionsMenuButton = nullptr;
   Flex* m_contentContainer = nullptr;
   ScrollView* m_contentScrollView = nullptr;

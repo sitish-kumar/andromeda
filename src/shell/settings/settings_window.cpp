@@ -40,6 +40,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <linux/input-event-codes.h>
 #include <memory>
 #include <optional>
 #include <string>
@@ -363,6 +364,7 @@ void SettingsWindow::destroyWindow() {
     m_surface->setSceneRoot(nullptr);
   }
   m_mainContainer = nullptr;
+  m_headerRow = nullptr;
   m_contentContainer = nullptr;
   m_contentScrollView = nullptr;
   m_actionsMenuButton = nullptr;
@@ -1503,6 +1505,7 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
 
   m_inputDispatcher.setSceneRoot(nullptr);
   m_mainContainer = nullptr;
+  m_headerRow = nullptr;
   m_panelBackground = nullptr;
   m_contentContainer = nullptr;
   m_sceneRoot = std::make_unique<Node>();
@@ -1573,7 +1576,7 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
   closeBtn->setOnClick([this]() { close(); });
   header->addChild(std::move(closeBtn));
 
-  main->addChild(centeredRow(std::move(header)));
+  m_headerRow = main->addChild(centeredRow(std::move(header)));
 
   const auto requestRebuild = [this]() { requestSceneRebuild(); };
   const auto clearStatus = [this]() { clearStatusMessage(); };
@@ -1860,6 +1863,16 @@ bool SettingsWindow::onPointerEvent(const PointerEvent& event) {
     if (onThis || m_pointerInside) {
       if (onThis) {
         m_pointerInside = true;
+      }
+      if (pressed && event.button == BTN_LEFT && m_headerRow != nullptr && m_inputDispatcher.hoveredArea() == nullptr) {
+        float hx = 0.0f;
+        float hy = 0.0f;
+        Node::absolutePosition(m_headerRow, hx, hy);
+        if (static_cast<float>(event.sy) < hy + m_headerRow->height()) {
+          m_surface->beginMove(event.serial);
+          consumed = true;
+          break;
+        }
       }
       if (pressed) {
         Select::handleGlobalPointerPress(m_inputDispatcher.hoveredArea());
