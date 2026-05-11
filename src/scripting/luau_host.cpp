@@ -173,6 +173,24 @@ bool LuauHost::callGlobalWithBool(const char* name, bool value) {
   return true;
 }
 
+bool LuauHost::callGlobalWithStrings(const char* name, std::string_view first, std::string_view second) {
+  lua_getglobal(m_T, name);
+  if (!lua_isfunction(m_T, -1)) {
+    lua_pop(m_T, 1);
+    return false;
+  }
+  lua_pushlstring(m_T, first.data(), first.size());
+  lua_pushlstring(m_T, second.data(), second.size());
+  int rc = lua_pcall(m_T, 2, 0, 0);
+  if (rc != 0) {
+    const char* err = lua_tostring(m_T, -1);
+    log.error("call to '{}' failed: {}", name, err ? err : "(no error)");
+    lua_pop(m_T, 1);
+    return false;
+  }
+  return true;
+}
+
 std::optional<std::string> LuauHost::callGlobalReturningString(const char* name) {
   lua_getglobal(m_T, name);
   if (!lua_isfunction(m_T, -1)) {

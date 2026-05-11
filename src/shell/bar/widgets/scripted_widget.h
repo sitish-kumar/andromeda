@@ -21,6 +21,13 @@ class LuauHost;
 
 class ScriptedWidget : public Widget {
 public:
+  enum class IpcDispatchResult {
+    Handled,
+    MissingHost,
+    MissingCallback,
+    Failed,
+  };
+
   explicit ScriptedWidget(std::string scriptPath, const WidgetConfig* config = nullptr,
                           FileWatcher* fileWatcher = nullptr);
   ~ScriptedWidget() override;
@@ -33,6 +40,7 @@ public:
   void luaSetGlyphColor(std::string_view role);
   void luaSetVisible(bool visible);
   void luaSetUpdateInterval(float ms);
+  [[nodiscard]] IpcDispatchResult dispatchIpcEvent(std::string_view event, std::string_view payload);
   [[nodiscard]] bool isVertical() const { return m_isVertical; }
 
   [[nodiscard]] const std::unordered_map<std::string, WidgetSettingValue>& settings() const { return m_settings; }

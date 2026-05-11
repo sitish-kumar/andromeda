@@ -10,6 +10,7 @@
 #include "ipc/ipc_service.h"
 #include "render/render_context.h"
 #include "shell/bar/widget.h"
+#include "shell/bar/widgets/scripted_widget.h"
 #include "shell/panel/panel_manager.h"
 #include "shell/surface_shadow.h"
 #include "system/gamma_service.h"
@@ -21,9 +22,11 @@
 #include "ui/controls/flex.h"
 #include "ui/palette.h"
 #include "ui/style.h"
+#include "util/string_utils.h"
 #include "wayland/wayland_connection.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <linux/input-event-codes.h>
 #include <wayland-client-core.h>
@@ -134,6 +137,47 @@ namespace {
   }
 
   constexpr Logger kLog("bar");
+  constexpr std::string_view kScriptedWidgetIpcUsage = "scripted-widget <widget-name> <target> <event> [payload]";
+
+  struct ScriptedWidgetIpcCounts {
+    int matched = 0;
+    int handled = 0;
+    int missingHost = 0;
+    int missingCallback = 0;
+    int failed = 0;
+  };
+
+  bool takeIpcWord(std::string_view& text, std::string& word) {
+    text = StringUtils::trimLeftView(text);
+    if (text.empty()) {
+      return false;
+    }
+    std::size_t end = 0;
+    while (end < text.size() && std::isspace(static_cast<unsigned char>(text[end])) == 0) {
+      ++end;
+    }
+    word.assign(text.substr(0, end));
+    text.remove_prefix(end);
+    return true;
+  }
+
+  void recordScriptedWidgetIpcResult(ScriptedWidgetIpcCounts& counts, ScriptedWidget::IpcDispatchResult result) {
+    ++counts.matched;
+    switch (result) {
+    case ScriptedWidget::IpcDispatchResult::Handled:
+      ++counts.handled;
+      break;
+    case ScriptedWidget::IpcDispatchResult::MissingHost:
+      ++counts.missingHost;
+      break;
+    case ScriptedWidget::IpcDispatchResult::MissingCallback:
+      ++counts.missingCallback;
+      break;
+    case ScriptedWidget::IpcDispatchResult::Failed:
+      ++counts.failed;
+      break;
+    }
+  }
 
   ColorSpec withOpacity(const ColorSpec& color, float opacity) {
     ColorSpec out = color;
@@ -1879,6 +1923,108 @@ BarInstance* Bar::instanceForOutput(wl_output* output) const noexcept {
   return nullptr;
 }
 
+std::string Bar::dispatchScriptedWidgetIpc(std::string_view args) {
+  std::string widgetName;
+  std::string target;
+  std::string event;
+  if (!takeIpcWord(args, widgetName) || !takeIpcWord(args, target) || !takeIpcWord(args, event)) {
+    return std::string("error: usage: ") + std::string(kScriptedWidgetIpcUsage) + "\n";
+  }
+
+  const std::string payload(StringUtils::trimLeftView(args));
+
+  auto dispatchWidget = [&](Widget* widget, ScriptedWidgetIpcCounts& counts) -> bool {
+    if (widget == nullptr || widget->configName() != std::string_view(widgetName)) {
+      return false;
+    }
+    auto* scripted = dynamic_cast<ScriptedWidget*>(widget);
+    if (scripted == nullptr) {
+      return false;
+    }
+    recordScriptedWidgetIpcResult(counts, scripted->dispatchIpcEvent(event, payload));
+    return true;
+  };
+
+  auto dispatchGroup = [&](std::vector<std::unique_ptr<Widget>>& widgets, ScriptedWidgetIpcCounts& counts,
+                           bool firstOnly) -> bool {
+    for (auto& widget : widgets) {
+      if (dispatchWidget(widget.get(), counts) && firstOnly) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  auto dispatchInstance = [&](BarInstance& instance, ScriptedWidgetIpcCounts& counts, bool firstOnly) -> bool {
+    if (dispatchGroup(instance.startWidgets, counts, firstOnly)) {
+      return true;
+    }
+    if (dispatchGroup(instance.centerWidgets, counts, firstOnly)) {
+      return true;
+    }
+    return dispatchGroup(instance.endWidgets, counts, firstOnly);
+  };
+
+  ScriptedWidgetIpcCounts counts;
+
+  if (target == "all") {
+    for (const auto& instance : m_instances) {
+      if (instance != nullptr) {
+        (void)dispatchInstance(*instance, counts, false);
+      }
+    }
+  } else {
+    wl_output* output = nullptr;
+
+    if (target == "focused") {
+      output = m_platform != nullptr ? m_platform->preferredInteractiveOutput() : nullptr;
+    } else {
+      std::vector<wl_output*> matches;
+      if (m_platform != nullptr) {
+        for (const auto& candidate : m_platform->outputs()) {
+          if (candidate.output != nullptr && outputMatchesSelector(target, candidate)) {
+            matches.push_back(candidate.output);
+          }
+        }
+      }
+      if (matches.size() > 1) {
+        return "error: target '" + target + "' matched multiple outputs; use a connector name or 'all'\n";
+      }
+      if (!matches.empty()) {
+        output = matches.front();
+      }
+    }
+
+    if (output != nullptr) {
+      for (const auto& instance : m_instances) {
+        if (instance != nullptr && instance->output == output && dispatchInstance(*instance, counts, true)) {
+          break;
+        }
+      }
+    }
+  }
+
+  if (counts.failed > 0) {
+    if (counts.handled > 0) {
+      return "error: dispatched " + std::to_string(counts.handled) + ", failed " + std::to_string(counts.failed) + "\n";
+    }
+    return "error: scripted widget onIpc callback failed\n";
+  }
+  if (counts.handled > 0) {
+    return "ok: dispatched " + std::to_string(counts.handled) + "\n";
+  }
+  if (counts.matched == 0) {
+    return "error: no scripted widget instance matched '" + widgetName + "' on target '" + target + "'\n";
+  }
+  if (counts.missingHost > 0) {
+    return "error: matched scripted widget is not ready\n";
+  }
+  if (counts.missingCallback > 0) {
+    return "error: matched scripted widget has no onIpc callback\n";
+  }
+  return "error: no scripted widget instance matched '" + widgetName + "' on target '" + target + "'\n";
+}
+
 void Bar::registerIpc(IpcService& ipc) {
   ipc.registerHandler(
       "bar-show",
@@ -1903,4 +2049,8 @@ void Bar::registerIpc(IpcService& ipc) {
         return "ok\n";
       },
       "bar-toggle", "Toggle bar visibility");
+
+  ipc.registerHandler(
+      "scripted-widget", [this](const std::string& args) -> std::string { return dispatchScriptedWidgetIpc(args); },
+      std::string(kScriptedWidgetIpcUsage), "Dispatch an event to a scripted bar widget");
 }

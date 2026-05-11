@@ -218,6 +218,20 @@ void ScriptedWidget::luaSetVisible(bool visible) {
   m_dirty = true;
 }
 
+ScriptedWidget::IpcDispatchResult ScriptedWidget::dispatchIpcEvent(std::string_view event, std::string_view payload) {
+  if (!m_host) {
+    return IpcDispatchResult::MissingHost;
+  }
+  if (!m_host->hasGlobal("onIpc")) {
+    return IpcDispatchResult::MissingCallback;
+  }
+  if (!m_host->callGlobalWithStrings("onIpc", event, payload)) {
+    return IpcDispatchResult::Failed;
+  }
+  requestUpdate();
+  return IpcDispatchResult::Handled;
+}
+
 void ScriptedWidget::startUpdateTimer() {
   m_updateTimer.startRepeating(std::chrono::milliseconds(m_updateIntervalMs), [this] {
     m_dirty = false;

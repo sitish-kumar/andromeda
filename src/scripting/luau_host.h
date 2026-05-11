@@ -27,6 +27,7 @@ public:
 
   bool callGlobal(const char* name);
   bool callGlobalWithBool(const char* name, bool value);
+  bool callGlobalWithStrings(const char* name, std::string_view first, std::string_view second);
   bool hasGlobal(const char* name);
   std::optional<std::string> callGlobalReturningString(const char* name);
 
