@@ -1195,7 +1195,7 @@ void Dock::updateVisuals(DockInstance& instance) {
     }
 
     if (cfg.showDots) {
-      const std::size_t dotCount = item.running ? std::min<std::size_t>(std::max<std::size_t>(count, 1), 3) : 0;
+      const std::size_t dotCount = std::min<std::size_t>(count, 3);
       const float iSize = static_cast<float>(cfg.iconSize);
       constexpr float kCellPad = 6.0f;
       const float cellMain = iSize + 2.0f * kCellPad;
