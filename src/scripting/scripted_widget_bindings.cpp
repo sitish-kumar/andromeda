@@ -4,6 +4,7 @@
 #include "lualib.h"
 #include "shell/bar/widgets/scripted_widget.h"
 
+#include <string_view>
 #include <variant>
 
 namespace {
@@ -15,6 +16,13 @@ namespace {
     auto* w = static_cast<ScriptedWidget*>(lua_touserdata(L, -1));
     lua_pop(L, 1);
     return w;
+  }
+
+  std::string_view optionalStringArg(lua_State* L, int index) {
+    if (lua_gettop(L) < index || lua_isnil(L, index)) {
+      return {};
+    }
+    return luaL_checkstring(L, index);
   }
 
   int luau_setText(lua_State* L) {
@@ -34,14 +42,14 @@ namespace {
   int luau_setColor(lua_State* L) {
     const char* role = luaL_checkstring(L, 1);
     if (auto* w = getWidget(L))
-      w->luaSetColor(role);
+      w->luaSetColor(role, optionalStringArg(L, 2));
     return 0;
   }
 
   int luau_setGlyphColor(lua_State* L) {
     const char* role = luaL_checkstring(L, 1);
     if (auto* w = getWidget(L))
-      w->luaSetGlyphColor(role);
+      w->luaSetGlyphColor(role, optionalStringArg(L, 2));
     return 0;
   }
 

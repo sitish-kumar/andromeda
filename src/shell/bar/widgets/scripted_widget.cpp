@@ -45,6 +45,7 @@ namespace {
     ss << f.rdbuf();
     return ss.str();
   }
+
 } // namespace
 
 ScriptedWidget::ScriptedWidget(std::string scriptPath, const WidgetConfig* config, FileWatcher* fileWatcher)
@@ -142,18 +143,14 @@ void ScriptedWidget::doLayout(Renderer& renderer, float containerWidth, float co
   if (!m_flex)
     return;
 
-  auto textColor = m_textColorRole ? colorSpecFromRole(*m_textColorRole)
-                                   : widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface));
-  m_label->setColor(textColor);
+  m_label->setColor(resolveScriptColor(m_textColor));
   m_label->setVisible(!m_label->text().empty());
   if (m_label->visible()) {
     m_label->measure(renderer);
   }
 
   if (m_glyphVisible) {
-    auto glyphColor = m_glyphColorRole ? colorSpecFromRole(*m_glyphColorRole)
-                                       : widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface));
-    m_glyph->setColor(glyphColor);
+    m_glyph->setColor(resolveScriptColor(m_glyphColor));
     m_glyph->measure(renderer);
   }
 
@@ -189,18 +186,24 @@ void ScriptedWidget::luaSetGlyph(std::string_view name) {
   m_dirty |= changed;
 }
 
-void ScriptedWidget::luaSetColor(std::string_view role) {
-  auto parsed = colorRoleFromToken(role);
-  if (parsed != m_textColorRole) {
-    m_textColorRole = parsed;
+void ScriptedWidget::luaSetColor(std::string_view role, std::string_view mode) {
+  ScriptColorState next{.role = colorRoleFromToken(role), .mode = scriptColorModeFromToken(mode)};
+  if (!next.role.has_value()) {
+    next.mode = ScriptColorMode::Auto;
+  }
+  if (next != m_textColor) {
+    m_textColor = next;
     m_dirty = true;
   }
 }
 
-void ScriptedWidget::luaSetGlyphColor(std::string_view role) {
-  auto parsed = colorRoleFromToken(role);
-  if (parsed != m_glyphColorRole) {
-    m_glyphColorRole = parsed;
+void ScriptedWidget::luaSetGlyphColor(std::string_view role, std::string_view mode) {
+  ScriptColorState next{.role = colorRoleFromToken(role), .mode = scriptColorModeFromToken(mode)};
+  if (!next.role.has_value()) {
+    next.mode = ScriptColorMode::Auto;
+  }
+  if (next != m_glyphColor) {
+    m_glyphColor = next;
     m_dirty = true;
   }
 }
@@ -232,6 +235,24 @@ ScriptedWidget::IpcDispatchResult ScriptedWidget::dispatchIpcEvent(std::string_v
   return IpcDispatchResult::Handled;
 }
 
+ColorSpec ScriptedWidget::resolveScriptColor(const ScriptColorState& state) const noexcept {
+  if (m_widgetForeground.has_value()) {
+    return *m_widgetForeground;
+  }
+  const ColorSpec fallback = colorSpecFromRole(ColorRole::OnSurface);
+  if (!state.role.has_value()) {
+    return widgetForegroundOr(fallback);
+  }
+  if (state.mode == ScriptColorMode::Script || *state.role != ColorRole::OnSurface) {
+    return colorSpecFromRole(*state.role);
+  }
+  return widgetForegroundOr(fallback);
+}
+
+ScriptedWidget::ScriptColorMode ScriptedWidget::scriptColorModeFromToken(std::string_view token) noexcept {
+  return token == "script" ? ScriptColorMode::Script : ScriptColorMode::Auto;
+}
+
 void ScriptedWidget::startUpdateTimer() {
   m_updateTimer.startRepeating(std::chrono::milliseconds(m_updateIntervalMs), [this] {
     m_dirty = false;
@@ -258,8 +279,8 @@ void ScriptedWidget::teardownScriptWatch() {
 void ScriptedWidget::reloadScript() {
   m_updateTimer.stop();
   m_glyphVisible = false;
-  m_textColorRole = std::nullopt;
-  m_glyphColorRole = std::nullopt;
+  m_textColor = {};
+  m_glyphColor = {};
   m_updateIntervalMs = 250;
   if (m_glyph)
     m_glyph->setVisible(false);

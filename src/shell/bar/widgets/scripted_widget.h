@@ -36,8 +36,8 @@ public:
 
   void luaSetText(std::string_view text);
   void luaSetGlyph(std::string_view name);
-  void luaSetColor(std::string_view role);
-  void luaSetGlyphColor(std::string_view role);
+  void luaSetColor(std::string_view role, std::string_view mode);
+  void luaSetGlyphColor(std::string_view role, std::string_view mode);
   void luaSetVisible(bool visible);
   void luaSetUpdateInterval(float ms);
   [[nodiscard]] IpcDispatchResult dispatchIpcEvent(std::string_view event, std::string_view payload);
@@ -46,8 +46,23 @@ public:
   [[nodiscard]] const std::unordered_map<std::string, WidgetSettingValue>& settings() const { return m_settings; }
 
 private:
+  enum class ScriptColorMode {
+    Auto,
+    Script,
+  };
+
+  struct ScriptColorState {
+    std::optional<ColorRole> role;
+    ScriptColorMode mode = ScriptColorMode::Auto;
+
+    bool operator==(const ScriptColorState&) const = default;
+  };
+
   void doLayout(Renderer& renderer, float containerWidth, float containerHeight) override;
   void doUpdate(Renderer& renderer) override;
+
+  [[nodiscard]] ColorSpec resolveScriptColor(const ScriptColorState& state) const noexcept;
+  [[nodiscard]] static ScriptColorMode scriptColorModeFromToken(std::string_view token) noexcept;
 
   void reloadScript();
   void setupScriptWatch();
@@ -65,8 +80,8 @@ private:
   Flex* m_flex = nullptr;
   Glyph* m_glyph = nullptr;
   Label* m_label = nullptr;
-  std::optional<ColorRole> m_textColorRole;
-  std::optional<ColorRole> m_glyphColorRole;
+  ScriptColorState m_textColor;
+  ScriptColorState m_glyphColor;
   int m_updateIntervalMs = 250;
   bool m_dirty = false;
   bool m_isVertical = false;
