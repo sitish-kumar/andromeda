@@ -8,15 +8,16 @@
 #include "i18n/i18n.h"
 #include "render/render_context.h"
 #include "shell/panel/panel_manager.h"
+#include "shell/tray/tray_identifier.h"
 #include "ui/controls/context_menu.h"
 #include "ui/style.h"
+#include "util/string_utils.h"
 #include "wayland/layer_surface.h"
 #include "wayland/wayland_connection.h"
 #include "wayland/wayland_seat.h"
 #include "xdg-shell-client-protocol.h"
 
 #include <algorithm>
-#include <cctype>
 #include <optional>
 #include <string>
 
@@ -81,55 +82,13 @@ namespace {
     return out;
   }
 
-  std::string toLower(std::string_view value) {
-    std::string out(value);
-    std::transform(out.begin(), out.end(), out.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    return out;
-  }
-
-  std::vector<std::string> identifierVariants(std::string_view value) {
-    std::vector<std::string> out;
-    if (value.empty()) {
-      return out;
-    }
-    auto pushUnique = [&out](std::string candidate) {
-      if (candidate.empty()) {
-        return;
-      }
-      if (std::ranges::find(out, candidate) == out.end()) {
-        out.push_back(std::move(candidate));
-      }
-    };
-
-    std::string base(value);
-    pushUnique(base);
-    pushUnique(toLower(base));
-
-    if (const auto slash = base.find_last_of('/'); slash != std::string::npos && slash + 1 < base.size()) {
-      base = base.substr(slash + 1);
-      pushUnique(base);
-      pushUnique(toLower(base));
-    }
-
-    std::string dashed = base;
-    std::replace(dashed.begin(), dashed.end(), '_', '-');
-    pushUnique(dashed);
-    pushUnique(toLower(dashed));
-
-    std::string underscored = base;
-    std::replace(underscored.begin(), underscored.end(), '-', '_');
-    pushUnique(underscored);
-    pushUnique(toLower(underscored));
-
-    return out;
-  }
+  using tray::identifierVariants;
 
   bool tokenMatchesItem(std::string_view token, const TrayItemInfo& item) {
     if (token.empty()) {
       return false;
     }
-    const auto normalizedToken = toLower(token);
+    const auto normalizedToken = StringUtils::toLower(token);
 
     std::vector<std::string> candidates;
     auto appendVariants = [&candidates](std::string_view text) {
@@ -157,7 +116,7 @@ namespace {
     if (value.empty()) {
       return true;
     }
-    const auto lower = toLower(value);
+    const auto lower = StringUtils::toLower(value);
     return lower.find("status_icon") != std::string::npos || lower.find("statusnotifieritem") != std::string::npos ||
            lower.find("statusnotifier") != std::string::npos || lower.find("status-notifier") != std::string::npos ||
            lower.find("status notifier") != std::string::npos;

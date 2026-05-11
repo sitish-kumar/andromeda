@@ -23,6 +23,7 @@
 #include "ui/controls/virtual_grid_view.h"
 #include "ui/palette.h"
 #include "ui/style.h"
+#include "util/string_utils.h"
 #include "wayland/clipboard_service.h"
 
 #include <algorithm>
@@ -47,30 +48,6 @@ namespace {
   constexpr auto kFilterDebounceInterval = std::chrono::milliseconds(120);
   constexpr Logger kLog("clipboard");
 
-  std::string trim(std::string_view text) {
-    const auto first = text.find_first_not_of(" \t\r\n");
-    if (first == std::string_view::npos) {
-      return {};
-    }
-    const auto last = text.find_last_not_of(" \t\r\n");
-    return std::string(text.substr(first, last - first + 1));
-  }
-
-  std::string shellQuote(std::string_view text) {
-    std::string quoted;
-    quoted.reserve(text.size() + 2);
-    quoted.push_back('\'');
-    for (char ch : text) {
-      if (ch == '\'') {
-        quoted += "'\\''";
-      } else {
-        quoted.push_back(ch);
-      }
-    }
-    quoted.push_back('\'');
-    return quoted;
-  }
-
   void replaceAll(std::string& text, std::string_view needle, std::string_view replacement) {
     if (needle.empty()) {
       return;
@@ -86,7 +63,7 @@ namespace {
   std::string buildImageActionCommand(std::string command, std::string_view imagePath) {
     const bool hasPathPlaceholder = command.find("{path}") != std::string::npos;
     const bool hasStdinPlaceholder = command.find("{stdin}") != std::string::npos;
-    const std::string quotedPath = shellQuote(imagePath);
+    const std::string quotedPath = StringUtils::shellQuote(imagePath);
 
     if (hasPathPlaceholder) {
       replaceAll(command, "{path}", quotedPath);
@@ -866,7 +843,7 @@ void ClipboardPanel::updatePreviewActions() {
 
   bool showImageAction = false;
   if (m_clipboard != nullptr && m_config != nullptr &&
-      !trim(m_config->config().shell.clipboardImageActionCommand).empty()) {
+      !StringUtils::trim(m_config->config().shell.clipboardImageActionCommand).empty()) {
     const std::size_t historyIndex = selectedHistoryIndex();
     const auto& history = m_clipboard->history();
     showImageAction = historyIndex != static_cast<std::size_t>(-1) && historyIndex < history.size() &&
@@ -1113,7 +1090,7 @@ void ClipboardPanel::runImageAction() {
     return;
   }
 
-  const std::string configuredCommand = trim(m_config->config().shell.clipboardImageActionCommand);
+  const std::string configuredCommand = StringUtils::trim(m_config->config().shell.clipboardImageActionCommand);
   if (configuredCommand.empty()) {
     return;
   }

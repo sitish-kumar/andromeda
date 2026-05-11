@@ -23,9 +23,9 @@
 #include "ui/controls/scroll_view.h"
 #include "ui/controls/slider.h"
 #include "ui/palette.h"
+#include "util/string_utils.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <cstddef>
 #include <memory>
@@ -230,29 +230,7 @@ namespace {
     return value;
   }
 
-  std::string trimAsciiWhitespaceCopy(std::string_view s) {
-    std::size_t i = 0;
-    std::size_t j = s.size();
-    while (i < j && std::isspace(static_cast<unsigned char>(s[i])) != 0) {
-      ++i;
-    }
-    while (j > i && std::isspace(static_cast<unsigned char>(s[j - 1])) != 0) {
-      --j;
-    }
-    return std::string(s.substr(i, j - i));
-  }
-
-  [[nodiscard]] bool isBlankSearchKey(std::string_view s) {
-    if (s.empty()) {
-      return true;
-    }
-    for (unsigned char c : s) {
-      if (std::isspace(c) == 0) {
-        return false;
-      }
-    }
-    return true;
-  }
+  [[nodiscard]] bool isBlankSearchKey(std::string_view s) { return StringUtils::isBlank(s); }
 
   bool isDesktopTokenDelimiter(unsigned char c) { return c == '-' || c == '_' || c == '.' || std::isspace(c) != 0; }
 
@@ -436,7 +414,7 @@ namespace {
   }
 
   const DesktopEntry* findDesktopEntryByTerm(std::string_view term) {
-    const std::string trimmed = trimAsciiWhitespaceCopy(term);
+    const std::string trimmed = StringUtils::trim(term);
     if (trimmed.empty()) {
       return nullptr;
     }
@@ -460,7 +438,7 @@ namespace {
 
   DesktopEntryMatch lookupDesktopEntryForProgramStream(const AudioNode& node, std::string_view resolvedBeforeDesktop) {
     DesktopEntryMatch out;
-    const std::string binary = lowerIdentifier(trimAsciiWhitespaceCopy(node.applicationBinary));
+    const std::string binary = lowerIdentifier(StringUtils::trim(node.applicationBinary));
     // Wine/Proton streams report wine64-preloader etc.; matching desktop entries by that binary (or
     // the shared Icon=wine) incorrectly picks unrelated apps (e.g. Protontricks) before app/node name.
     if (!binary.empty() && !looksLikeRuntimeLauncher(node.applicationBinary)) {
@@ -471,7 +449,7 @@ namespace {
         return out;
       }
     }
-    const std::string appId = lowerIdentifier(trimAsciiWhitespaceCopy(node.applicationId));
+    const std::string appId = lowerIdentifier(StringUtils::trim(node.applicationId));
     if (!appId.empty()) {
       if (const DesktopEntry* entry = findDesktopEntryByTerm(appId)) {
         out.entry = entry;
@@ -480,7 +458,7 @@ namespace {
         return out;
       }
     }
-    const std::string appName = lowerIdentifier(trimAsciiWhitespaceCopy(node.applicationName));
+    const std::string appName = lowerIdentifier(StringUtils::trim(node.applicationName));
     if (!appName.empty() && !isGenericAudioLabel(appName) && !looksLikeRuntimeLauncher(appName)) {
       if (const DesktopEntry* entry = findDesktopEntryByTerm(appName)) {
         out.entry = entry;
@@ -489,7 +467,7 @@ namespace {
         return out;
       }
     }
-    const std::string resolved = lowerIdentifier(trimAsciiWhitespaceCopy(resolvedBeforeDesktop));
+    const std::string resolved = lowerIdentifier(StringUtils::trim(resolvedBeforeDesktop));
     if (!resolved.empty() && !isGenericAudioLabel(resolved) && !looksLikeRuntimeLauncher(resolved)) {
       if (const DesktopEntry* entry = findDesktopEntryByTerm(resolved)) {
         out.entry = entry;
@@ -498,7 +476,7 @@ namespace {
         return out;
       }
     }
-    const std::string nodeName = lowerIdentifier(trimAsciiWhitespaceCopy(node.name));
+    const std::string nodeName = lowerIdentifier(StringUtils::trim(node.name));
     if (!nodeName.empty()) {
       if (const DesktopEntry* entry = findDesktopEntryByTerm(nodeName)) {
         out.entry = entry;

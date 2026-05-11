@@ -14,11 +14,11 @@
 #include "ui/controls/toggle.h"
 #include "ui/palette.h"
 #include "ui/style.h"
+#include "util/string_utils.h"
 #include "wayland/wayland_connection.h"
 #include "xdg-shell-client-protocol.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <cstddef>
 #include <string>
@@ -51,16 +51,10 @@ namespace settings {
       return label;
     }
 
-    std::string toLowerAscii(std::string text) {
-      std::transform(text.begin(), text.end(), text.begin(),
-                     [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
-      return text;
-    }
-
     void sortSearchOptions(std::vector<SearchPickerOption>& options) {
       std::sort(options.begin(), options.end(), [](const SearchPickerOption& a, const SearchPickerOption& b) {
-        const std::string aLabel = toLowerAscii(a.label);
-        const std::string bLabel = toLowerAscii(b.label);
+        const std::string aLabel = StringUtils::toLower(a.label);
+        const std::string bLabel = StringUtils::toLower(b.label);
         if (aLabel == bLabel) {
           return a.value < b.value;
         }

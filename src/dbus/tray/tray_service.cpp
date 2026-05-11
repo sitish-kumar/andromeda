@@ -40,20 +40,6 @@ namespace {
 
   bool looks_like_dbus_name(std::string_view value) { return !value.empty() && value != "__path_only__"; }
 
-  std::string trim(std::string value) {
-    while (!value.empty() && std::isspace(static_cast<unsigned char>(value.back())) != 0) {
-      value.pop_back();
-    }
-    std::size_t first = 0;
-    while (first < value.size() && std::isspace(static_cast<unsigned char>(value[first])) != 0) {
-      ++first;
-    }
-    if (first > 0) {
-      value.erase(0, first);
-    }
-    return value;
-  }
-
   std::string processNameForPid(std::uint32_t pid) {
     if (pid == 0) {
       return {};
@@ -69,7 +55,7 @@ namespace {
     std::ifstream comm(procDir / "comm");
     std::string name;
     if (std::getline(comm, name)) {
-      return trim(std::move(name));
+      return StringUtils::trim(name);
     }
     return {};
   }

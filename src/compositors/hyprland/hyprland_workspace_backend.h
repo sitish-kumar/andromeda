@@ -84,7 +84,6 @@ private:
   [[nodiscard]] static std::optional<std::uint64_t> parseHexAddress(std::string_view value);
   [[nodiscard]] static std::optional<int> parseInt(std::string_view value);
   [[nodiscard]] static std::vector<std::string_view> parseEventArgs(std::string_view data, std::size_t count);
-  [[nodiscard]] static std::string quoteCommandArg(const std::string& value);
   [[nodiscard]] static Workspace toWorkspace(const WorkspaceState& state);
 
   OutputNameResolver m_outputNameResolver;

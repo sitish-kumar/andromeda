@@ -171,11 +171,6 @@ namespace {
            localY < closeTop + kCloseButtonSize;
   }
 
-  bool isBlankText(std::string_view text) {
-    return text.empty() ||
-           std::all_of(text.begin(), text.end(), [](unsigned char ch) { return std::isspace(ch) != 0; });
-  }
-
   float measureActionsFromPairs(RenderContext& rc, const std::vector<std::string>& actions) {
     if (actions.empty()) {
       return 0.0f;
@@ -190,7 +185,7 @@ namespace {
     for (std::size_t i = 0; i + 1 < actions.size() && actionCount < kMaxActionButtons; i += 2) {
       const std::string& actionKey = actions[i];
       std::string actionLabel = actions[i + 1];
-      if (isBlankText(actionLabel)) {
+      if (StringUtils::isBlank(actionLabel)) {
         actionLabel = fallbackActionLabel();
       }
       if (actionKey.empty()) {
@@ -237,7 +232,7 @@ namespace {
 
     ToastGeometry out;
 
-    if (isBlankText(displayBody)) {
+    if (StringUtils::isBlank(displayBody)) {
       Label summaryProbe;
       summaryProbe.setFontSize(kSummaryFontSize);
       summaryProbe.setBold(true);
@@ -490,7 +485,7 @@ void NotificationToast::onNotificationEvent(const Notification& n, NotificationE
             cs.bodyLabel->setMaxLines(std::max(1, bodyLines));
             cs.bodyLabel->setText(bodyLines > 0 ? displayBody : "");
             cs.bodyLabel->measure(*m_renderContext);
-            cs.bodyLabel->setVisible(bodyLines > 0 && !isBlankText(displayBody));
+            cs.bodyLabel->setVisible(bodyLines > 0 && !StringUtils::isBlank(displayBody));
             cs.bodyLabel->setPosition(notificationTextStartX(), bodyTopForSummary(summaryH));
             clampBodyLabelHeight(*cs.bodyLabel, bodyHeight);
           }
@@ -1638,7 +1633,7 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
     for (std::size_t i = 0; i + 1 < entry.actions.size() && actionCount < kMaxActionButtons; i += 2) {
       const std::string actionKey = entry.actions[i];
       std::string actionLabel = entry.actions[i + 1];
-      if (isBlankText(actionLabel)) {
+      if (StringUtils::isBlank(actionLabel)) {
         actionLabel = fallbackActionLabel();
       }
       if (actionKey.empty()) {

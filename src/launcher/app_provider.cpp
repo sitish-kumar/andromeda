@@ -2,6 +2,7 @@
 
 #include "util/file_utils.h"
 #include "util/fuzzy_match.h"
+#include "util/string_utils.h"
 #include "wayland/wayland_connection.h"
 
 #include <algorithm>
@@ -19,13 +20,6 @@ namespace {
 
   constexpr std::size_t kMaxSearchResults = 50;
   constexpr std::string_view kDefaultAppIcon = "application-x-executable";
-
-  std::string toLower(std::string_view s) {
-    std::string result(s);
-    std::transform(result.begin(), result.end(), result.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    return result;
-  }
 
   double scoreEntry(std::string_view pattern, const DesktopEntry& entry) {
     if (pattern.empty()) {
@@ -288,7 +282,7 @@ void AppProvider::refreshEntriesIfNeeded() const {
 
 std::vector<LauncherResult> AppProvider::query(std::string_view text) const {
   refreshEntriesIfNeeded();
-  const std::string normalizedText = toLower(text);
+  const std::string normalizedText = StringUtils::toLower(text);
   const std::string_view pattern = normalizedText;
 
   auto buildResult = [&](const DesktopEntry& entry, double s) {

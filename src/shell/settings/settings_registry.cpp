@@ -5,9 +5,9 @@
 #include "shell/control_center/shortcut_registry.h"
 #include "theme/builtin_palettes.h"
 #include "theme/builtin_templates.h"
+#include "util/string_utils.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <cstddef>
 #include <string>
@@ -145,13 +145,6 @@ namespace settings {
       return out;
     }
 
-    std::string lower(std::string_view value) {
-      std::string out(value);
-      std::transform(out.begin(), out.end(), out.begin(),
-                     [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-      return out;
-    }
-
     SettingEntry makeEntry(std::string section, std::string group, std::string title, std::string subtitle,
                            std::vector<std::string> path, SettingControl control, std::string tags = {},
                            bool advanced = false) {
@@ -167,7 +160,7 @@ namespace settings {
           .path = std::move(path),
           .control = std::move(control),
           .advanced = advanced,
-          .searchText = lower(searchText),
+          .searchText = StringUtils::toLower(searchText),
           .visibleWhen = std::nullopt,
       };
     }
@@ -201,7 +194,7 @@ namespace settings {
     return names;
   }
 
-  std::string normalizedSettingQuery(std::string_view query) { return lower(query); }
+  std::string normalizedSettingQuery(std::string_view query) { return StringUtils::toLower(query); }
 
   bool matchesNormalizedSettingQuery(const SettingEntry& entry, std::string_view normalizedQuery) {
     if (normalizedQuery.empty()) {

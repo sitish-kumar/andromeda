@@ -132,11 +132,6 @@ namespace {
     return std::string{s.substr(0, len)};
   }
 
-  bool isBlankText(std::string_view text) {
-    return text.empty() ||
-           std::all_of(text.begin(), text.end(), [](unsigned char ch) { return std::isspace(ch) != 0; });
-  }
-
   std::vector<std::string> sanitize_actions(const std::vector<std::string>& actions) {
     std::vector<std::string> sanitized;
     sanitized.reserve(actions.size() - (actions.size() % 2));
@@ -149,7 +144,7 @@ namespace {
         continue;
       }
 
-      if (isBlankText(label)) {
+      if (StringUtils::isBlank(label)) {
         label = i18n::tr("notifications.actions.fallback");
       }
 

@@ -838,18 +838,6 @@ std::vector<std::string_view> HyprlandWorkspaceBackend::parseEventArgs(std::stri
   return args;
 }
 
-std::string HyprlandWorkspaceBackend::quoteCommandArg(const std::string& value) {
-  std::string escaped = "\"";
-  for (const char c : value) {
-    if (c == '\\' || c == '"') {
-      escaped.push_back('\\');
-    }
-    escaped.push_back(c);
-  }
-  escaped.push_back('"');
-  return escaped;
-}
-
 Workspace HyprlandWorkspaceBackend::toWorkspace(const WorkspaceState& state) {
   const std::uint32_t coord =
       state.id >= 0 ? static_cast<std::uint32_t>(state.id - 1) : static_cast<std::uint32_t>(state.ordinal);

@@ -2,6 +2,7 @@
 
 #include "compositors/compositor_detect.h"
 #include "i18n/i18n.h"
+#include "util/string_utils.h"
 
 #include <cstdlib>
 #include <filesystem>
@@ -12,14 +13,6 @@
 #include <sys/statvfs.h>
 
 namespace {
-
-  std::string trimWhitespace(std::string s) {
-    while (!s.empty() && (s.back() == ' ' || s.back() == '\t' || s.back() == '\n' || s.back() == '\r')) {
-      s.pop_back();
-    }
-    const auto start = s.find_first_not_of(" \t");
-    return start == std::string::npos ? "" : s.substr(start);
-  }
 
   std::string readCpuModel() {
     std::ifstream file{"/proc/cpuinfo"};
@@ -32,7 +25,7 @@ namespace {
       if (line.starts_with("model name")) {
         const auto colonPos = line.find(':');
         if (colonPos != std::string::npos) {
-          return trimWhitespace(line.substr(colonPos + 1));
+          return StringUtils::trim(line.substr(colonPos + 1));
         }
       }
     }
@@ -61,7 +54,7 @@ namespace {
         if (line.starts_with(vendorId)) {
           const auto nameStart = line.find("  ");
           if (nameStart != std::string::npos) {
-            vendorName = trimWhitespace(line.substr(nameStart));
+            vendorName = StringUtils::trim(line.substr(nameStart));
             inVendor = true;
           }
         }
@@ -73,11 +66,11 @@ namespace {
       }
 
       if (line[0] == '\t' && (line.size() < 2 || line[1] != '\t')) {
-        auto stripped = trimWhitespace(line);
+        auto stripped = StringUtils::trim(line);
         if (stripped.starts_with(deviceId)) {
           const auto nameStart = stripped.find("  ");
           if (nameStart != std::string::npos) {
-            auto deviceName = trimWhitespace(stripped.substr(nameStart));
+            auto deviceName = StringUtils::trim(stripped.substr(nameStart));
             if (!deviceName.empty()) {
               return deviceName;
             }
@@ -99,7 +92,7 @@ namespace {
     }
     std::string line;
     std::getline(file, line);
-    return trimWhitespace(line);
+    return StringUtils::trim(line);
   }
 
   std::string detectGpu() {

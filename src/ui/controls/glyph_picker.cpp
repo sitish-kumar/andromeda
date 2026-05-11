@@ -12,9 +12,9 @@
 #include "ui/controls/virtual_grid_view.h"
 #include "ui/palette.h"
 #include "ui/style.h"
+#include "util/string_utils.h"
 
 #include <algorithm>
-#include <cctype>
 #include <memory>
 #include <unordered_set>
 
@@ -35,13 +35,6 @@ namespace {
     button.setMinHeight(Style::controlHeightSm * scale);
     button.setPadding(Style::spaceXs * scale);
     button.setRadius(Style::radiusMd * scale);
-  }
-
-  std::string toLowerCopy(std::string_view value) {
-    std::string out(value);
-    std::transform(out.begin(), out.end(), out.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    return out;
   }
 
 } // namespace
@@ -136,7 +129,7 @@ public:
       }
       return;
     }
-    const std::string needle = toLowerCopy(filter);
+    const std::string needle = StringUtils::toLower(filter);
     for (std::size_t i = 0; i < m_master.size(); ++i) {
       // Names in the registry are already lowercase; no need to lower each entry.
       if (m_master[i].name.find(needle) != std::string::npos) {

@@ -1,9 +1,9 @@
 #include "system/system_monitor_service.h"
 
 #include "core/log.h"
+#include "util/string_utils.h"
 
 #include <algorithm>
-#include <cctype>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -75,16 +75,10 @@ namespace {
     return static_cast<double>(raw);
   }
 
-  std::string toLower(std::string value) {
-    std::transform(value.begin(), value.end(), value.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    return value;
-  }
-
   int scoreHwmonSensor(const std::string& hwmon_name, const std::string& label) {
     int score = 0;
-    const std::string name = toLower(hwmon_name);
-    const std::string lbl = toLower(label);
+    const std::string name = StringUtils::toLower(hwmon_name);
+    const std::string lbl = StringUtils::toLower(label);
 
     if (name.find("coretemp") != std::string::npos || name.find("k10temp") != std::string::npos ||
         name.find("zenpower") != std::string::npos || name.find("cpu") != std::string::npos) {
@@ -100,14 +94,14 @@ namespace {
   }
 
   bool isCpuThermalZoneType(const std::string& type) {
-    const std::string t = toLower(type);
+    const std::string t = StringUtils::toLower(type);
     return t.find("x86_pkg_temp") != std::string::npos || t.find("cpu") != std::string::npos ||
            t.find("soc") != std::string::npos || t.find("package") != std::string::npos;
   }
 
   int scoreGpuHwmonSensor(const std::string& hwmon_name, const std::string& label) {
-    const std::string name = toLower(hwmon_name);
-    const std::string lbl = toLower(label);
+    const std::string name = StringUtils::toLower(hwmon_name);
+    const std::string lbl = StringUtils::toLower(label);
 
     if (name.find("nvidia") != std::string::npos) {
       return -1;

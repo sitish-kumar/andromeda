@@ -207,19 +207,6 @@ namespace {
     return out;
   }
 
-  [[maybe_unused]] std::string joinStrings(const std::vector<std::string>& values) {
-    std::string out;
-    bool first = true;
-    for (const auto& value : values) {
-      if (!first) {
-        out += ", ";
-      }
-      first = false;
-      out += value;
-    }
-    return out;
-  }
-
   bool hasStrongNowPlayingMetadata(const MprisPlayerInfo& info) {
     // Track IDs/source URLs can exist during transient "loading" states where the
     // user-visible metadata is still placeholder-only (e.g. app identity + logo).

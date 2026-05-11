@@ -8,14 +8,15 @@
 #include "render/scene/node.h"
 #include "render/text/glyph_registry.h"
 #include "shell/panel/panel_manager.h"
+#include "shell/tray/tray_identifier.h"
 #include "ui/controls/flex.h"
 #include "ui/controls/glyph.h"
 #include "ui/controls/image.h"
 #include "ui/palette.h"
 #include "ui/style.h"
+#include "util/string_utils.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <filesystem>
 #include <linux/input-event-codes.h>
@@ -28,106 +29,7 @@ namespace {
 
   constexpr Logger kLog("tray");
 
-  std::string toLower(std::string_view value) {
-    std::string out(value);
-    std::transform(out.begin(), out.end(), out.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    return out;
-  }
-
-  std::vector<std::string> identifierVariants(std::string_view value) {
-    std::vector<std::string> out;
-    if (value.empty()) {
-      return out;
-    }
-
-    auto pushUnique = [&out](std::string candidate) {
-      if (candidate.empty()) {
-        return;
-      }
-      if (std::ranges::find(out, candidate) == out.end()) {
-        out.push_back(std::move(candidate));
-      }
-    };
-
-    std::string base(value);
-    pushUnique(base);
-    pushUnique(toLower(base));
-
-    if (const auto slash = base.find_last_of('/'); slash != std::string::npos && slash + 1 < base.size()) {
-      base = base.substr(slash + 1);
-      pushUnique(base);
-      pushUnique(toLower(base));
-    }
-
-    std::string dashed = base;
-    std::replace(dashed.begin(), dashed.end(), '_', '-');
-    pushUnique(dashed);
-    pushUnique(toLower(dashed));
-
-    std::string underscored = base;
-    std::replace(underscored.begin(), underscored.end(), '-', '_');
-    pushUnique(underscored);
-    pushUnique(toLower(underscored));
-
-    auto pushReducedForms = [&pushUnique](std::string candidate) {
-      if (candidate.empty()) {
-        return;
-      }
-
-      pushUnique(candidate);
-      pushUnique(toLower(candidate));
-
-      bool changed = true;
-      while (changed && !candidate.empty()) {
-        changed = false;
-
-        for (const auto& suffix : {"_client", "-client", ".desktop", "_indicator", "-indicator", "_tray", "-tray",
-                                   "_status", "-status", "_panel", "-panel"}) {
-          if (candidate.size() > std::char_traits<char>::length(suffix) && candidate.ends_with(suffix)) {
-            candidate = candidate.substr(0, candidate.size() - std::char_traits<char>::length(suffix));
-            pushUnique(candidate);
-            pushUnique(toLower(candidate));
-            changed = true;
-            break;
-          }
-        }
-
-        if (changed || candidate.empty()) {
-          continue;
-        }
-
-        const auto separator = candidate.find_last_of("-_");
-        if (separator != std::string::npos && separator + 1 < candidate.size()) {
-          const std::string tail = candidate.substr(separator + 1);
-          const bool numericTail = std::ranges::all_of(tail, [](unsigned char c) { return std::isdigit(c) != 0; });
-          if (numericTail) {
-            candidate = candidate.substr(0, separator);
-            pushUnique(candidate);
-            pushUnique(toLower(candidate));
-            changed = true;
-            continue;
-          }
-        }
-
-        for (const auto& suffix : {"-linux", "_linux"}) {
-          if (candidate.size() > std::char_traits<char>::length(suffix) && candidate.ends_with(suffix)) {
-            candidate = candidate.substr(0, candidate.size() - std::char_traits<char>::length(suffix));
-            pushUnique(candidate);
-            pushUnique(toLower(candidate));
-            changed = true;
-            break;
-          }
-        }
-      }
-    };
-
-    for (const auto& candidate : std::vector<std::string>{base, dashed, underscored}) {
-      pushReducedForms(candidate);
-    }
-
-    return out;
-  }
+  using tray::identifierVariants;
 
   void addIconAlias(std::unordered_map<std::string, std::string>& index, std::string_view key, std::string_view icon) {
     if (key.empty() || icon.empty()) {
@@ -227,7 +129,7 @@ std::string TrayWidget::resolveFromTrayThemePath(std::string_view themePath, std
       }
 
       const fs::path path = it->path();
-      const auto extension = toLower(path.extension().string());
+      const auto extension = StringUtils::toLower(path.extension().string());
       if (extension != ".svg" && extension != ".png") {
         continue;
       }
@@ -570,7 +472,7 @@ void TrayWidget::rebuild(Renderer& renderer) {
         if (const auto it = m_appIcons.find(overlayName); it != m_appIcons.end()) {
           return m_iconResolver.resolve(it->second);
         }
-        const std::string lower = toLower(overlayName);
+        const std::string lower = StringUtils::toLower(overlayName);
         if (const auto it = m_appIcons.find(lower); it != m_appIcons.end()) {
           return m_iconResolver.resolve(it->second);
         }
@@ -803,7 +705,7 @@ std::string TrayWidget::resolveIconPath(const TrayItemInfo& item) {
       }
     }
 
-    const std::string lower = toLower(name);
+    const std::string lower = StringUtils::toLower(name);
     if (const auto it = m_appIcons.find(lower); it != m_appIcons.end()) {
       if (const auto mapped = m_iconResolver.resolve(it->second); !mapped.empty()) {
         return mapped;
@@ -817,7 +719,7 @@ std::string TrayWidget::resolveIconPath(const TrayItemInfo& item) {
           return mapped;
         }
       }
-      const std::string tailLower = toLower(tail);
+      const std::string tailLower = StringUtils::toLower(tail);
       if (const auto it = m_appIcons.find(tailLower); it != m_appIcons.end()) {
         if (const auto mapped = m_iconResolver.resolve(it->second); !mapped.empty()) {
           return mapped;

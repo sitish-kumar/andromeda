@@ -4,6 +4,7 @@
 #include <cctype>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace StringUtils {
 
@@ -152,6 +153,122 @@ namespace StringUtils {
     }
 
     return out;
+  }
+
+  [[nodiscard]] inline std::vector<std::string> splitWhitespace(std::string_view text) {
+    std::vector<std::string> result;
+    std::size_t i = 0;
+    while (i < text.size()) {
+      while (i < text.size() && std::isspace(static_cast<unsigned char>(text[i])) != 0) {
+        ++i;
+      }
+      if (i >= text.size()) {
+        break;
+      }
+      std::size_t start = i;
+      while (i < text.size() && std::isspace(static_cast<unsigned char>(text[i])) == 0) {
+        ++i;
+      }
+      result.emplace_back(text.substr(start, i - start));
+    }
+    return result;
+  }
+
+  [[nodiscard]] inline std::vector<std::string_view> split(std::string_view text, char delimiter) {
+    std::vector<std::string_view> result;
+    std::size_t start = 0;
+    while (start <= text.size()) {
+      std::size_t pos = text.find(delimiter, start);
+      if (pos == std::string_view::npos) {
+        result.push_back(text.substr(start));
+        break;
+      }
+      result.push_back(text.substr(start, pos - start));
+      start = pos + 1;
+    }
+    return result;
+  }
+
+  [[nodiscard]] inline std::string join(const std::vector<std::string>& parts, std::string_view separator) {
+    std::string result;
+    for (std::size_t i = 0; i < parts.size(); ++i) {
+      if (i > 0) {
+        result.append(separator);
+      }
+      result.append(parts[i]);
+    }
+    return result;
+  }
+
+  [[nodiscard]] inline std::string replaceAll(std::string_view input, std::string_view from, std::string_view to) {
+    if (from.empty()) {
+      return std::string(input);
+    }
+    std::string result;
+    result.reserve(input.size());
+    std::size_t pos = 0;
+    while (pos < input.size()) {
+      std::size_t found = input.find(from, pos);
+      if (found == std::string_view::npos) {
+        result.append(input.substr(pos));
+        break;
+      }
+      result.append(input.substr(pos, found - pos));
+      result.append(to);
+      pos = found + from.size();
+    }
+    return result;
+  }
+
+  [[nodiscard]] inline bool isBlank(std::string_view text) {
+    return text.empty() ||
+           std::all_of(text.begin(), text.end(), [](unsigned char ch) { return std::isspace(ch) != 0; });
+  }
+
+  [[nodiscard]] inline std::string shellQuote(std::string_view text) {
+    std::string result = "'";
+    for (char ch : text) {
+      if (ch == '\'') {
+        result += "'\\''";
+      } else {
+        result += ch;
+      }
+    }
+    result += '\'';
+    return result;
+  }
+
+  [[nodiscard]] inline std::string quoteDouble(std::string_view text) {
+    std::string result = "\"";
+    for (char ch : text) {
+      if (ch == '\\' || ch == '"') {
+        result += '\\';
+      }
+      result += ch;
+    }
+    result += '"';
+    return result;
+  }
+
+  [[nodiscard]] inline std::string unquote(std::string_view text) {
+    if (text.size() < 2) {
+      return std::string(text);
+    }
+    char front = text.front();
+    char back = text.back();
+    if ((front == '"' && back == '"') || (front == '\'' && back == '\'')) {
+      text = text.substr(1, text.size() - 2);
+      std::string result;
+      result.reserve(text.size());
+      for (std::size_t i = 0; i < text.size(); ++i) {
+        if (text[i] == '\\' && i + 1 < text.size()) {
+          ++i;
+        }
+        result += text[i];
+      }
+      return result;
+    }
+    return std::string(text);
   }
 
 } // namespace StringUtils

@@ -355,25 +355,14 @@ namespace noctalia::theme {
       return out;
     }
 
-    std::string replaceAll(std::string value, const std::string& from, const std::string& to) {
-      if (from.empty())
-        return value;
-      size_t pos = 0;
-      while ((pos = value.find(from, pos)) != std::string::npos) {
-        value.replace(pos, from.size(), to);
-        pos += to.size();
-      }
-      return value;
-    }
-
     std::string applyReplace(const std::string& value, const std::optional<std::string>& arg) {
       if (!arg)
         return value;
       std::smatch match;
       if (std::regex_match(*arg, match, std::regex(R"REGEX("([^"]*?)"\s*,\s*"([^"]*?)")REGEX")))
-        return replaceAll(value, match[1].str(), match[2].str());
+        return StringUtils::replaceAll(value, match[1].str(), match[2].str());
       if (std::regex_match(*arg, match, std::regex(R"REGEX('([^']*?)'\s*,\s*'([^']*?)')REGEX")))
-        return replaceAll(value, match[1].str(), match[2].str());
+        return StringUtils::replaceAll(value, match[1].str(), match[2].str());
       return value;
     }
 

@@ -1,23 +1,16 @@
 #pragma once
 
+#include "util/string_utils.h"
+
 #include <cmath>
 #include <optional>
-#include <sstream>
 #include <string>
 #include <string_view>
 #include <vector>
 
 namespace noctalia::ipc {
 
-  inline std::vector<std::string> splitWords(std::string_view text) {
-    std::vector<std::string> words;
-    std::istringstream stream{std::string(text)};
-    std::string word;
-    while (stream >> word) {
-      words.push_back(std::move(word));
-    }
-    return words;
-  }
+  inline std::vector<std::string> splitWords(std::string_view text) { return StringUtils::splitWhitespace(text); }
 
   inline std::optional<float> parseNormalizedOrPercent(std::string_view token, float maxPercent = 100.0f) {
     std::string value(token);

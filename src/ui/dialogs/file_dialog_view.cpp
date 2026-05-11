@@ -16,9 +16,9 @@
 #include "ui/dialogs/file_entry_row.h"
 #include "ui/dialogs/file_entry_tile.h"
 #include "ui/style.h"
+#include "util/string_utils.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <cstdlib>
 #include <functional>
@@ -32,15 +32,6 @@ namespace {
   constexpr std::size_t kListRowOverscan = 3;
   constexpr std::size_t kGridRowOverscan = 1;
   constexpr float kGridMinCellWidth = 140.0f;
-
-  std::string lower(std::string_view text) {
-    std::string out;
-    out.reserve(text.size());
-    for (char ch : text) {
-      out.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(ch))));
-    }
-    return out;
-  }
 
   void configureDialogActionButton(Button& button, float scale) {
     button.setMinHeight(Style::controlHeight * scale);
@@ -614,11 +605,11 @@ void FileDialogView::refreshDirectory() {
 
 void FileDialogView::applyFilter(bool resetScroll) {
   const std::filesystem::path preserved = selectedPath();
-  const std::string query = lower(m_filterQuery);
+  const std::string query = StringUtils::toLower(m_filterQuery);
 
   m_visibleEntries.clear();
   for (const auto& entry : m_entries) {
-    if (!query.empty() && lower(entry.name).find(query) == std::string::npos) {
+    if (!query.empty() && StringUtils::toLower(entry.name).find(query) == std::string::npos) {
       continue;
     }
     m_visibleEntries.push_back(entry);
