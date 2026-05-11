@@ -57,6 +57,29 @@ namespace {
 
   std::size_t visibleEntryLimit(std::size_t entryCount) { return std::max<std::size_t>(1, entryCount); }
 
+  // Convert an icon name like "audio-input-microphone-symbolic" to a readable label like "Audio Input Microphone".
+  std::string iconNameToLabel(std::string_view iconName) {
+    // Strip trailing "-symbolic"
+    constexpr std::string_view kSymbolicSuffix = "-symbolic";
+    if (iconName.ends_with(kSymbolicSuffix)) {
+      iconName.remove_suffix(kSymbolicSuffix.size());
+    }
+    std::string out;
+    out.reserve(iconName.size());
+    bool capitaliseNext = true;
+    for (char c : iconName) {
+      if (c == '-') {
+        out.push_back(' ');
+        capitaliseNext = true;
+      } else if (capitaliseNext) {
+        out.push_back(static_cast<char>(std::toupper(static_cast<unsigned char>(c))));
+        capitaliseNext = false;
+      } else {
+        out.push_back(c);
+      }
+    }
+    return out;
+  }
   std::string toLower(std::string_view value) {
     std::string out(value);
     std::transform(out.begin(), out.end(), out.begin(),
@@ -252,11 +275,17 @@ void TrayMenu::onTrayChanged() {
   if (!m_visible) {
     return;
   }
+
+  const auto previousEntries = m_entries;
   refreshEntries();
   if (m_entries.empty()) {
     close();
     return;
   }
+  if (m_entries == previousEntries) {
+    return;
+  }
+
   resizeMainSurfaceToEntries();
   rebuildScenes();
 
@@ -584,7 +613,7 @@ uint32_t TrayMenu::surfaceHeightPx() const {
   for (const auto& entry : m_entries) {
     entries.push_back(ContextMenuControlEntry{
         .id = entry.id,
-        .label = entry.label,
+        .label = entry.label.empty() ? iconNameToLabel(entry.iconName) : entry.label,
         .enabled = entry.enabled,
         .separator = entry.separator,
         .hasSubmenu = entry.hasSubmenu,
@@ -786,7 +815,7 @@ void TrayMenu::buildScene(MenuInstance& inst, uint32_t width, uint32_t height) {
   for (const auto& entry : m_entries) {
     entries.push_back(ContextMenuControlEntry{
         .id = entry.id,
-        .label = entry.label,
+        .label = entry.label.empty() ? iconNameToLabel(entry.iconName) : entry.label,
         .enabled = entry.enabled,
         .separator = entry.separator,
         .hasSubmenu = entry.hasSubmenu,

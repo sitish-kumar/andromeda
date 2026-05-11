@@ -92,11 +92,13 @@ private:
     std::unordered_map<std::int32_t, std::vector<std::int32_t>> childrenByParent;
     std::unordered_map<std::int32_t, std::chrono::steady_clock::time_point> nextRetryAt;
     std::unordered_map<std::int32_t, std::uint8_t> failureStreak;
+    std::unordered_map<std::int32_t, std::uint32_t> lastLayoutUpdatedRevisionByParent;
     std::unordered_set<std::int32_t> loadedParents;
     std::unordered_set<std::int32_t> loadingParents;
     std::uint32_t revision = 0;
     std::uint64_t generation = 0;
     bool rootLoaded = false;
+    bool rootAboutToShowPrimed = false;
   };
 
   void onRegisterStatusNotifierItem(const std::string& serviceOrPath, const std::string& senderBusName);

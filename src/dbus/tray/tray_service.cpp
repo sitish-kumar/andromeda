@@ -191,6 +191,23 @@ namespace {
     return std::nullopt;
   }
 
+  bool hasInt32ChildrenInVariant(const sdbus::Variant& value) {
+    try {
+      return !value.get<std::vector<std::int32_t>>().empty();
+    } catch (const sdbus::Error&) {
+    }
+    try {
+      return !value.get<std::vector<std::uint32_t>>().empty();
+    } catch (const sdbus::Error&) {
+    }
+    try {
+      const auto variants = value.get<std::vector<sdbus::Variant>>();
+      return !variants.empty();
+    } catch (const sdbus::Error&) {
+    }
+    return false;
+  }
+
   std::vector<std::uint8_t> bytesFromVariant(const sdbus::Variant& value) {
     try {
       return value.get<std::vector<std::uint8_t>>();
@@ -282,6 +299,14 @@ namespace {
       resetMenuEntryProperty(out, "children-display");
     }
 
+    // Some providers omit children-display but still populate children ids.
+    // Treat a non-empty children vector as submenu-capable to match qs behavior.
+    if (const auto it = props.find("children"); it != props.end()) {
+      if (hasInt32ChildrenInVariant(it->second)) {
+        out.hasSubmenu = true;
+      }
+    }
+
     if (const auto it = props.find("toggle-type"); it != props.end()) {
       if (const auto value = stringFromVariant(it->second); value.has_value()) {
         out.checkmark = (*value == "checkmark");
@@ -303,7 +328,8 @@ namespace {
   TrayMenuEntry decodeMenuEntry(const DbusMenuLayout& entryLayout) {
     TrayMenuEntry out;
     out.id = std::get<0>(entryLayout);
-    applyMenuEntryProperties(out, std::get<1>(entryLayout), true);
+    const auto& props = std::get<1>(entryLayout);
+    applyMenuEntryProperties(out, props, true);
 
     return out;
   }
@@ -320,10 +346,8 @@ namespace {
   }
 
   const std::vector<std::string>& requestedMenuProperties() {
-    static const std::vector<std::string> kRequestedMenuProperties = {
-        "label",    "enabled",     "visible",      "type",      "children-display",
-        "children", "toggle-type", "toggle-state", "icon-name", "icon-data",
-    };
+    // Per dbusmenu protocol, an empty property list means "all available properties".
+    static const std::vector<std::string> kRequestedMenuProperties = {};
     return kRequestedMenuProperties;
   }
 
@@ -699,6 +723,29 @@ void TrayService::requestMenuSubtree(const std::string& itemId, std::int32_t par
   // Skip AboutToShow at root to avoid NoReply stalls and request storms.
   if (parentId == 0) {
     requestMenuLayoutAfterAboutToShow(itemId, parentId, generation);
+
+    // Run root AboutToShow only once per cache lifetime. Some providers emit
+    // repeated LayoutUpdated storms when this is called every open.
+    if (!cache.rootAboutToShowPrimed) {
+      cache.rootAboutToShowPrimed = true;
+      try {
+        cache.proxy->callMethodAsync("AboutToShow")
+            .onInterface(k_menu_interface)
+            .withTimeout(std::chrono::milliseconds(500))
+            .withArguments(parentId)
+            .uponReplyInvoke(
+                [this, itemId, parentId, generation](std::optional<sdbus::Error> error, bool /*needsUpdate*/) {
+                  if (error.has_value()) {
+                    kLog.debug("root AboutToShow failed id={} parent={} err={}", itemId, parentId, error->what());
+                  } else {
+                    kLog.debug("root AboutToShow ok id={} parent={}", itemId, parentId);
+                    requestMenuLayoutAfterAboutToShow(itemId, parentId, generation);
+                  }
+                });
+      } catch (const sdbus::Error& e) {
+        kLog.debug("root AboutToShow async setup failed id={} parentId={} err={}", itemId, parentId, e.what());
+      }
+    }
     return;
   }
 
@@ -709,7 +756,7 @@ void TrayService::requestMenuSubtree(const std::string& itemId, std::int32_t par
         .withArguments(parentId)
         .uponReplyInvoke([this, itemId, parentId, generation](std::optional<sdbus::Error> error, bool /*needsUpdate*/) {
           if (error.has_value()) {
-            kLog.debug("AboutToShow async failed id={} parentId={} err={}", itemId, parentId, error->what());
+            kLog.debug("AboutToShow failed id={} parent={} err={}", itemId, parentId, error->what());
           }
           requestMenuLayoutAfterAboutToShow(itemId, parentId, generation);
         });
@@ -750,14 +797,13 @@ void TrayService::requestMenuLayoutAfterAboutToShow(const std::string& itemId, s
           replyCache.loadingParents.erase(parentId);
 
           if (error.has_value()) {
-            const std::string_view errText = error->what();
-            const bool noReply = errText.find("NoReply") != std::string_view::npos;
             std::uint8_t& streak = replyCache.failureStreak[parentId];
             streak = static_cast<std::uint8_t>(std::min<int>(6, static_cast<int>(streak) + 1));
             const int exponent = std::min<int>(4, static_cast<int>(streak));
             const auto backoff = std::chrono::milliseconds(250 * (1 << exponent));
             replyCache.nextRetryAt[parentId] = std::chrono::steady_clock::now() + backoff;
-            kLog.debug("GetLayout async failed id={} parentId={} err={}", itemId, parentId, error->what());
+            kLog.debug("GetLayout failed id={} parent={} err={} streak={} backoffMs={}", itemId, parentId,
+                       error->what(), streak, backoff.count());
             return;
           }
 
@@ -777,7 +823,8 @@ void TrayService::requestMenuLayoutAfterAboutToShow(const std::string& itemId, s
 
           auto after = entriesForParent(replyCache.entriesById, replyCache.childrenByParent, parentId);
           if (after.empty()) {
-            const auto childIds = childIdsFromLayoutProperties(layout);
+            const auto layoutChildIds = childIdsFromLayoutProperties(layout);
+            const auto& childIds = layoutChildIds;
             if (!childIds.empty()) {
               replyCache.childrenByParent[parentId] = childIds;
               std::vector<TrayMenuEntry> propertyEntries;
@@ -794,7 +841,7 @@ void TrayService::requestMenuLayoutAfterAboutToShow(const std::string& itemId, s
             replyCache.rootLoaded = true;
           }
 
-          if (before != after || !after.empty()) {
+          if (before != after) {
             emitChanged();
           }
         });
@@ -826,11 +873,14 @@ std::vector<TrayMenuEntry> TrayService::menuEntries(const std::string& itemId) {
     return {};
   }
 
-  if (!cacheIt->second.rootLoaded) {
+  auto entries = entriesForParent(cacheIt->second.entriesById, cacheIt->second.childrenByParent, 0);
+
+  // If we already have root entries, keep showing them even when a provider
+  // emits noisy root invalidations.
+  if (!cacheIt->second.rootLoaded && entries.empty()) {
     requestMenuSubtree(itemId, 0);
   }
 
-  auto entries = entriesForParent(cacheIt->second.entriesById, cacheIt->second.childrenByParent, 0);
   if (entries.empty() && !cacheIt->second.loadingParents.contains(0)) {
     requestMenuSubtree(itemId, 0, true);
   }
@@ -877,19 +927,61 @@ void TrayService::ensureMenuCache(const std::string& itemId, const std::string& 
     auto proxy = sdbus::createProxy(m_bus.connection(), sdbus::ServiceName{busName}, sdbus::ObjectPath{menuPath});
 
     // LayoutUpdated(rev, parent): server is telling us the subtree rooted at
-    // `parent` changed. Invalidate aggressively — menus are small so re-fetch
-    // is cheap — and wake the UI so it refreshes if currently visible.
+    // `parent` changed. Invalidate incrementally to avoid feedback loops where
+    // providers emit many LayoutUpdated signals while we're already loading.
     proxy->uponSignal("LayoutUpdated")
         .onInterface(k_menu_interface)
         .call([this, itemId](std::uint32_t revision, std::int32_t parent) {
           if (auto it = m_menuCache.find(itemId); it != m_menuCache.end()) {
-            it->second.entriesById.clear();
-            it->second.childrenByParent.clear();
-            it->second.loadedParents.clear();
-            it->second.loadingParents.clear();
-            it->second.rootLoaded = false;
-            it->second.revision = revision;
-            ++it->second.generation;
+            auto& cache = it->second;
+
+            if (parent <= 0 && cache.rootLoaded && cache.revision == revision) {
+              kLog.debug("LayoutUpdated root unchanged ignored id={} rev={} parent={}", itemId, revision, parent);
+              return;
+            }
+
+            if (const auto revIt = cache.lastLayoutUpdatedRevisionByParent.find(parent);
+                revIt != cache.lastLayoutUpdatedRevisionByParent.end() && revIt->second == revision) {
+              kLog.debug("LayoutUpdated duplicate ignored id={} rev={} parent={}", itemId, revision, parent);
+              return;
+            }
+            cache.lastLayoutUpdatedRevisionByParent[parent] = revision;
+            cache.revision = revision;
+
+            // While root is loading or not yet established, suppress all
+            // layout-updated churn. The in-flight root fetch will converge us.
+            if (cache.loadingParents.contains(0) || !cache.rootLoaded) {
+              kLog.debug("LayoutUpdated suppressed while root unstable id={} rev={} parent={}", itemId, revision,
+                         parent);
+              return;
+            }
+
+            if (parent <= 0) {
+              const bool hadVisibleRootEntries =
+                  !entriesForParent(cache.entriesById, cache.childrenByParent, 0).empty();
+
+              // Soft-invalidate root: keep current snapshot visible and let the
+              // next normal menu pull refresh it. Avoid force-refresh here,
+              // which can cause redraw loops on noisy providers.
+              cache.loadedParents.erase(0);
+              cache.loadingParents.erase(0);
+              cache.nextRetryAt.erase(0);
+              cache.failureStreak.erase(0);
+              cache.rootLoaded = false;
+
+              if (hadVisibleRootEntries) {
+                kLog.debug("LayoutUpdated root soft-invalidated without emit id={} rev={} parent={}", itemId, revision,
+                           parent);
+                return;
+              }
+            } else {
+              // Invalidate only the changed subtree parent so we don't discard
+              // an otherwise usable root snapshot.
+              cache.loadedParents.erase(parent);
+              cache.loadingParents.erase(parent);
+              cache.nextRetryAt.erase(parent);
+              cache.failureStreak.erase(parent);
+            }
           }
           kLog.debug("LayoutUpdated id={} rev={} parent={}", itemId, revision, parent);
           emitChanged();
@@ -936,6 +1028,11 @@ void TrayService::ensureMenuCache(const std::string& itemId, const std::string& 
           }
 
           if (changed) {
+            if (it->second.loadingParents.contains(0) && !it->second.rootLoaded) {
+              // During initial root hydration, providers can emit many partial
+              // property updates; emitting here causes redraw storms.
+              return;
+            }
             emitChanged();
           }
         });
@@ -979,10 +1076,19 @@ void TrayService::notifyMenuOpened(const std::string& itemId, std::int32_t entry
   sendMenuEvent(itemId, entryId, "opened");
 
   // Some dbusmenu providers populate rows only after they observe "opened".
-  // Force a subtree refresh so the menu can hydrate without requiring reopen.
+  // Refresh conditionally so right-click on already-hydrated roots does not
+  // trigger repeated redraw loops.
   if (const auto itemIt = m_items.find(itemId); itemIt != m_items.end()) {
     ensureMenuCache(itemId, itemIt->second.busName, itemIt->second.menuObjectPath);
-    requestMenuSubtree(itemId, entryId, true);
+    if (entryId == 0) {
+      const auto cacheIt = m_menuCache.find(itemId);
+      if (cacheIt == m_menuCache.end() || cacheIt->second.proxy == nullptr || !cacheIt->second.rootLoaded ||
+          !cacheIt->second.loadedParents.contains(0)) {
+        requestMenuSubtree(itemId, 0, false);
+      }
+    } else {
+      requestMenuSubtree(itemId, entryId, true);
+    }
   }
 }
 
