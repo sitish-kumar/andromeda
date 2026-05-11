@@ -3,9 +3,11 @@
 #include "config/config_service.h"
 
 #include <cstdint>
+#include <initializer_list>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace settings {
@@ -53,9 +55,18 @@ namespace settings {
     std::string_view labelKey;
   };
 
-  struct WidgetSettingVisibility {
+  struct WidgetSettingVisibilityCondition {
     std::string key;
     std::vector<std::string> values;
+  };
+
+  struct WidgetSettingVisibility {
+    std::vector<WidgetSettingVisibilityCondition> any;
+
+    WidgetSettingVisibility() = default;
+    WidgetSettingVisibility(std::string key, std::vector<std::string> values)
+        : any{WidgetSettingVisibilityCondition{std::move(key), std::move(values)}} {}
+    WidgetSettingVisibility(std::initializer_list<WidgetSettingVisibilityCondition> alternatives) : any(alternatives) {}
   };
 
   struct WidgetSettingSpec {

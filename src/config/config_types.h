@@ -168,7 +168,8 @@ struct WidgetConfig {
   bool operator==(const WidgetConfig&) const = default;
 };
 
-// Merges `[bar.*]` capsule defaults with `[widget.*]` overrides (see CONFIG.md).
+// Merges `[bar.*]` capsule defaults with `[widget.*]` overrides (see CONFIG.md). Size/style fields such as
+// `radius` are populated even when `enabled` is false so widgets can reuse capsule styling internally.
 [[nodiscard]] WidgetBarCapsuleSpec resolveWidgetBarCapsuleSpec(const BarConfig& bar, const WidgetConfig* widget);
 
 // Color spec for `[widget.*] color` and other user color strings (same rules as `capsule_fill`).

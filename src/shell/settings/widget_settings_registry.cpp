@@ -413,6 +413,16 @@ namespace settings {
     } else if (type == "taskbar") {
       add(boolSpec("group_by_workspace", false));
       add(boolSpec("show_all_outputs", false));
+      for (auto& spec : specs) {
+        if (spec.key == "capsule_radius") {
+          spec.descriptionKey = "settings.widgets.settings.capsule_radius.taskbar-description";
+          spec.visibleWhen = WidgetSettingVisibility{
+              WidgetSettingVisibilityCondition{"capsule", {"true"}},
+              WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}},
+          };
+          break;
+        }
+      }
     } else if (type == "tray") {
       add(stringListSpec("hidden"));
       add(stringListSpec("pinned"));

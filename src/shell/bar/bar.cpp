@@ -38,14 +38,6 @@ namespace {
   constexpr float kAutoHideSlideExtraPx = 16.0f;
   constexpr std::int32_t kAutoHideTriggerRegionPx = 4;
 
-  float resolvedCapsuleRadius(const WidgetBarCapsuleSpec& spec, float scale, float width, float height) noexcept {
-    const float maxRadius = std::max(0.0f, std::min(width, height) * 0.5f);
-    if (!spec.radius.has_value()) {
-      return maxRadius;
-    }
-    return std::clamp(*spec.radius * scale, 0.0f, maxRadius);
-  }
-
   bool pointInsideNode(const Node* node, float sceneX, float sceneY) {
     if (node == nullptr) {
       return false;
@@ -476,7 +468,9 @@ namespace {
         bg->setPosition(0.0f, 0.0f);
         bg->setSize(shellW, shellH);
         content->setPosition(contentX, contentY);
-        bg->setRadius(resolvedCapsuleRadius(run.spec, scale, shellW, shellH));
+        const Widget* radiusSource = !run.widgets.empty() ? run.widgets.front() : nullptr;
+        bg->setRadius(radiusSource != nullptr ? radiusSource->resolvedBarCapsuleRadius(shellW, shellH)
+                                              : std::max(0.0f, std::min(shellW, shellH) * 0.5f));
       }
     };
     finalizeCapsules(instance.startCapsuleRuns);

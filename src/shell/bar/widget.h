@@ -69,6 +69,7 @@ public:
   [[nodiscard]] Box* barCapsuleBox() const noexcept { return m_capsuleBox; }
   // Outermost node for flex layout / anchor alignment (capsule shell when enabled).
   [[nodiscard]] Node* layoutBoundsNode() const noexcept { return m_capsuleShell != nullptr ? m_capsuleShell : root(); }
+  [[nodiscard]] float resolvedBarCapsuleRadius(float width, float height) const noexcept;
 
   // Whether the bar should paint the decorative capsule for this frame (spec enabled + visible ink).
   [[nodiscard]] virtual bool shouldShowBarCapsule() const;

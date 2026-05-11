@@ -230,7 +230,6 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
   };
 
   if (m_groupByWorkspace && !m_workspaces.empty()) {
-    const float capsuleRadius = Style::radiusLg * m_contentScale;
     const float groupGap = Style::spaceXs * m_contentScale;
     const float groupPadCross = Style::spaceXs * 0.35f * m_contentScale;
     const float groupPadEnd = Style::spaceXs * 0.55f * m_contentScale;
@@ -270,7 +269,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       group->setFrameSize(groupWidth, groupHeight);
       group->setFill(colorSpecFromRole(ColorRole::SurfaceVariant, ws.workspace.active ? 0.52f : 0.18f));
       group->setBorder(colorSpecFromRole(ColorRole::Primary, ws.workspace.active ? 0.65f : 0.16f), Style::borderWidth);
-      group->setRadius(capsuleRadius);
+      group->setRadius(resolvedBarCapsuleRadius(groupWidth, groupHeight));
       auto* groupPtr = static_cast<Box*>(m_taskStrip->addChild(std::move(group)));
 
       if (tasks.empty()) {

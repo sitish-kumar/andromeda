@@ -981,7 +981,8 @@
         },
         "capsule_radius": {
           "label": "Capsule Radius",
-          "description": "Corner radius for this widget capsule; leave blank for automatic pill shape"
+          "description": "Corner radius for this widget capsule; leave blank for automatic pill shape",
+          "taskbar-description": "Corner radius for this widget capsule and taskbar workspace groups; leave blank for automatic pill shape"
         },
         "color": {
           "label": "Color",

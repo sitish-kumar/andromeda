@@ -123,6 +123,26 @@ WidgetBarCapsuleSpec resolveWidgetBarCapsuleSpec(const BarConfig& bar, const Wid
   } else {
     spec.enabled = bar.widgetCapsuleDefault;
   }
+
+  spec.padding = bar.widgetCapsulePadding;
+  if (widget != nullptr && widget->hasSetting("capsule_padding")) {
+    spec.padding = std::clamp(
+        static_cast<float>(widget->getDouble("capsule_padding", static_cast<double>(spec.padding))), 0.0f, 48.0f);
+  }
+  if (bar.widgetCapsuleRadius.has_value()) {
+    spec.radius = std::clamp(static_cast<float>(*bar.widgetCapsuleRadius), 0.0f, 80.0f);
+  }
+  if (widget != nullptr && widget->hasSetting("capsule_radius")) {
+    spec.radius = std::clamp(
+        static_cast<float>(widget->getDouble("capsule_radius", static_cast<double>(spec.radius.value_or(0.0f)))), 0.0f,
+        80.0f);
+  }
+  spec.opacity = bar.widgetCapsuleOpacity;
+  if (widget != nullptr && widget->hasSetting("capsule_opacity")) {
+    spec.opacity = std::clamp(
+        static_cast<float>(widget->getDouble("capsule_opacity", static_cast<double>(spec.opacity))), 0.0f, 1.0f);
+  }
+
   if (!spec.enabled) {
     return spec;
   }
@@ -143,25 +163,6 @@ WidgetBarCapsuleSpec resolveWidgetBarCapsuleSpec(const BarConfig& bar, const Wid
     spec.border = bar.widgetCapsuleBorder;
   } else {
     spec.border = std::nullopt;
-  }
-
-  spec.padding = bar.widgetCapsulePadding;
-  if (widget != nullptr && widget->hasSetting("capsule_padding")) {
-    spec.padding = std::clamp(
-        static_cast<float>(widget->getDouble("capsule_padding", static_cast<double>(spec.padding))), 0.0f, 48.0f);
-  }
-  if (bar.widgetCapsuleRadius.has_value()) {
-    spec.radius = std::clamp(static_cast<float>(*bar.widgetCapsuleRadius), 0.0f, 80.0f);
-  }
-  if (widget != nullptr && widget->hasSetting("capsule_radius")) {
-    spec.radius = std::clamp(
-        static_cast<float>(widget->getDouble("capsule_radius", static_cast<double>(spec.radius.value_or(0.0f)))), 0.0f,
-        80.0f);
-  }
-  spec.opacity = bar.widgetCapsuleOpacity;
-  if (widget != nullptr && widget->hasSetting("capsule_opacity")) {
-    spec.opacity = std::clamp(
-        static_cast<float>(widget->getDouble("capsule_opacity", static_cast<double>(spec.opacity))), 0.0f, 1.0f);
   }
 
   if (widget != nullptr && widget->hasSetting("capsule_foreground")) {

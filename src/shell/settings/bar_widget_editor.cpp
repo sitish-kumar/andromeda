@@ -598,10 +598,17 @@ namespace settings {
       if (!spec.visibleWhen.has_value()) {
         return true;
       }
-      const auto& cond = *spec.visibleWhen;
-      const auto currentValue = settingCurrentString(cfg, widgetName, cond.key, allSpecs);
-      for (const auto& v : cond.values) {
-        if (v == currentValue) {
+      auto matches = [&](const std::string& key, const std::vector<std::string>& values) {
+        const auto currentValue = settingCurrentString(cfg, widgetName, key, allSpecs);
+        for (const auto& v : values) {
+          if (v == currentValue) {
+            return true;
+          }
+        }
+        return false;
+      };
+      for (const auto& condition : spec.visibleWhen->any) {
+        if (matches(condition.key, condition.values)) {
           return true;
         }
       }
