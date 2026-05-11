@@ -7,17 +7,21 @@
 
 namespace StringUtils {
 
-  [[nodiscard]] inline std::string trim(std::string_view s) {
-    std::size_t start = 0;
-    while (start < s.size() && std::isspace(static_cast<unsigned char>(s[start])) != 0) {
-      ++start;
+  [[nodiscard]] inline std::string_view trimLeftView(std::string_view s) {
+    while (!s.empty() && std::isspace(static_cast<unsigned char>(s.front())) != 0) {
+      s.remove_prefix(1);
     }
-    std::size_t end = s.size();
-    while (end > start && std::isspace(static_cast<unsigned char>(s[end - 1])) != 0) {
-      --end;
-    }
-    return std::string(s.substr(start, end - start));
+    return s;
   }
+
+  [[nodiscard]] inline std::string_view trimRightView(std::string_view s) {
+    while (!s.empty() && std::isspace(static_cast<unsigned char>(s.back())) != 0) {
+      s.remove_suffix(1);
+    }
+    return s;
+  }
+
+  [[nodiscard]] inline std::string trim(std::string_view s) { return std::string(trimRightView(trimLeftView(s))); }
 
   [[nodiscard]] inline std::string toLower(std::string_view s) {
     std::string out(s);
