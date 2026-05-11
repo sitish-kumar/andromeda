@@ -192,18 +192,14 @@ namespace {
   }
 
   bool hasInt32ChildrenInVariant(const sdbus::Variant& value) {
-    try {
+    if (value.containsValueOfType<std::vector<std::int32_t>>()) {
       return !value.get<std::vector<std::int32_t>>().empty();
-    } catch (const sdbus::Error&) {
     }
-    try {
+    if (value.containsValueOfType<std::vector<std::uint32_t>>()) {
       return !value.get<std::vector<std::uint32_t>>().empty();
-    } catch (const sdbus::Error&) {
     }
-    try {
-      const auto variants = value.get<std::vector<sdbus::Variant>>();
-      return !variants.empty();
-    } catch (const sdbus::Error&) {
+    if (value.containsValueOfType<std::vector<sdbus::Variant>>()) {
+      return !value.get<std::vector<sdbus::Variant>>().empty();
     }
     return false;
   }
