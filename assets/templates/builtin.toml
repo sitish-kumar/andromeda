@@ -80,10 +80,6 @@ category = "terminal"
 name = "Wezterm"
 category = "terminal"
 
-[catalog.yazi]
-name = "Yazi"
-category = "misc"
-
 [templates.alacritty]
 input_path = "./alacritty/alacritty.toml"
 output_path = "~/.config/alacritty/themes/noctalia.toml"
@@ -181,8 +177,3 @@ post_hook = "bash '{{ config_dir }}/starship/apply.sh'"
 input_path = "./wezterm/wezterm.toml"
 output_path = "~/.config/wezterm/colors/Noctalia.toml"
 post_hook = "bash '{{ config_dir }}/wezterm/apply.sh'"
-
-[templates.yazi]
-input_path = "./yazi/yazi.toml"
-output_path = "~/.config/yazi/flavors/noctalia.yazi/flavor.toml"
-post_hook = "bash '{{ config_dir }}/yazi/apply.sh'"

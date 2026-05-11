@@ -11,6 +11,6 @@ if [ ! -f "$config_file" ]; then
     exit 0
 fi
 
-if ! grep -q 'include ".*noctalia\.kdl"' "$config_file"; then
+if ! grep -Fxq "$include_line" "$config_file"; then
     printf '\n%s\n' "$include_line" >>"$config_file"
 fi
