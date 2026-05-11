@@ -6,6 +6,7 @@
 #include "ui/controls/box.h"
 #include "ui/controls/glyph.h"
 #include "ui/controls/label.h"
+#include "ui/controls/separator.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 
@@ -95,6 +96,7 @@ void ContextMenuControl::doLayout(Renderer& renderer) {
   if (m_needsRebuild) {
     rebuild(renderer);
   }
+  Node::doLayout(renderer);
 }
 
 void ContextMenuControl::rebuild(Renderer& renderer) {
@@ -206,11 +208,11 @@ void ContextMenuControl::rebuildRows(Renderer& renderer) {
       label->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
       labelPtr = static_cast<Label*>(row->addChild(std::move(label)));
 
-      auto separatorLine = std::make_unique<Box>();
-      separatorLine->setFill(colorSpecFromRole(ColorRole::Outline, 0.85f));
-      separatorLine->setFrameSize(rowWidth - 20.0f, 1.0f);
-      separatorLine->setPosition(10.0f, (rowHeight - 1.0f) * 0.5f);
-      row->addChild(std::move(separatorLine));
+      auto sep = std::make_unique<Separator>();
+      sep->setOrientation(SeparatorOrientation::HorizontalRule);
+      sep->setSize(rowWidth, 1.0f);
+      sep->setPosition(0.0f, (rowHeight - 1.0f) * 0.5f);
+      row->addChild(std::move(sep));
     }
 
     if (rowBgPtr != nullptr && labelPtr != nullptr) {
