@@ -72,6 +72,8 @@ public:
   [[nodiscard]] std::vector<TrayItemInfo> items() const;
   [[nodiscard]] std::vector<TrayMenuEntry> menuEntries(const std::string& itemId);
   [[nodiscard]] std::vector<TrayMenuEntry> menuEntriesForParent(const std::string& itemId, std::int32_t parentId);
+  // Returns true if the click event was dispatched to DBus successfully.
+  // This does not imply the remote menu action completed successfully.
   [[nodiscard]] bool activateMenuEntry(const std::string& itemId, std::int32_t entryId);
   // Notify the dbusmenu server that a (sub)menu is being opened/closed. `entryId`
   // is the menu item id: 0 for the root menu, or a submenu parent id otherwise.

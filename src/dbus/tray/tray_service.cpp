@@ -794,7 +794,7 @@ void TrayService::requestMenuLayoutAfterAboutToShow(const std::string& itemId, s
 
           if (error.has_value()) {
             std::uint8_t& streak = replyCache.failureStreak[parentId];
-            streak = static_cast<std::uint8_t>(std::min<int>(6, static_cast<int>(streak) + 1));
+            streak = static_cast<std::uint8_t>(std::min<int>(4, static_cast<int>(streak) + 1));
             const int exponent = std::min<int>(4, static_cast<int>(streak));
             const auto backoff = std::chrono::milliseconds(250 * (1 << exponent));
             replyCache.nextRetryAt[parentId] = std::chrono::steady_clock::now() + backoff;
@@ -820,13 +820,12 @@ void TrayService::requestMenuLayoutAfterAboutToShow(const std::string& itemId, s
           auto after = entriesForParent(replyCache.entriesById, replyCache.childrenByParent, parentId);
           if (after.empty()) {
             const auto layoutChildIds = childIdsFromLayoutProperties(layout);
-            const auto& childIds = layoutChildIds;
-            if (!childIds.empty()) {
-              replyCache.childrenByParent[parentId] = childIds;
+            if (!layoutChildIds.empty()) {
+              replyCache.childrenByParent[parentId] = layoutChildIds;
               std::vector<TrayMenuEntry> propertyEntries;
-              if (fetchMenuProperties(itemId, childIds, propertyEntries)) {
+              if (fetchMenuProperties(itemId, layoutChildIds, propertyEntries)) {
                 kLog.debug("dbusmenu children-property fallback id={} parentId={} children={} entries={}", itemId,
-                           parentId, childIds.size(), propertyEntries.size());
+                           parentId, layoutChildIds.size(), propertyEntries.size());
                 after = entriesForParent(replyCache.entriesById, replyCache.childrenByParent, parentId);
               }
             }
@@ -964,6 +963,8 @@ void TrayService::ensureMenuCache(const std::string& itemId, const std::string& 
               cache.nextRetryAt.erase(0);
               cache.failureStreak.erase(0);
               cache.rootLoaded = false;
+              // Allow a fresh root AboutToShow after provider-side resets.
+              cache.rootAboutToShowPrimed = false;
 
               if (hadVisibleRootEntries) {
                 kLog.debug("LayoutUpdated root soft-invalidated without emit id={} rev={} parent={}", itemId, revision,
@@ -1109,6 +1110,7 @@ bool TrayService::activateMenuEntry(const std::string& itemId, std::int32_t entr
             kLog.debug("dbusmenu clicked failed id={} entryId={} err={}", itemId, entryId, error->what());
           }
         });
+    // Async call: true means dispatch succeeded locally, not remote activation completion.
     return true;
   } catch (const sdbus::Error& e) {
     kLog.debug("dbusmenu clicked dispatch failed id={} entryId={} err={}", itemId, entryId, e.what());

@@ -80,6 +80,7 @@ namespace {
     }
     return out;
   }
+
   std::string toLower(std::string_view value) {
     std::string out(value);
     std::transform(out.begin(), out.end(), out.begin(),
@@ -276,7 +277,7 @@ void TrayMenu::onTrayChanged() {
     return;
   }
 
-  const auto previousEntries = m_entries;
+  auto previousEntries = std::move(m_entries);
   refreshEntries();
   if (m_entries.empty()) {
     close();
