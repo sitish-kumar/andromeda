@@ -356,6 +356,79 @@ namespace settings {
       return optionLabel(kindOptions, row.action);
     }
 
+    std::string sanitizedIdleBehaviorName(std::string_view text) {
+      std::string out = StringUtils::trim(text);
+      for (char& ch : out) {
+        if (ch == '.' || ch == '[' || ch == ']') {
+          ch = '-';
+        }
+      }
+      return out;
+    }
+
+    std::string uniqueIdleBehaviorName(std::string base, const std::vector<IdleBehaviorConfig>& rows,
+                                       std::optional<std::size_t> ignoreIndex = std::nullopt) {
+      base = sanitizedIdleBehaviorName(base);
+      if (base.empty()) {
+        base = "custom";
+      }
+
+      std::unordered_set<std::string> names;
+      for (std::size_t i = 0; i < rows.size(); ++i) {
+        if (ignoreIndex.has_value() && i == *ignoreIndex) {
+          continue;
+        }
+        if (!rows[i].name.empty()) {
+          names.insert(rows[i].name);
+        }
+      }
+
+      if (!names.contains(base)) {
+        return base;
+      }
+      for (int suffix = 2; suffix < 10000; ++suffix) {
+        std::string candidate = std::format("{}-{}", base, suffix);
+        if (!names.contains(candidate)) {
+          return candidate;
+        }
+      }
+      return base;
+    }
+
+    void normalizeIdleBehaviorNames(std::vector<IdleBehaviorConfig>& rows) {
+      std::vector<IdleBehaviorConfig> normalized;
+      normalized.reserve(rows.size());
+      for (auto& row : rows) {
+        row.name = uniqueIdleBehaviorName(row.name, normalized);
+        normalized.push_back(row);
+      }
+      rows = std::move(normalized);
+    }
+
+    std::string idleBehaviorRowSummary(const IdleBehaviorConfig& row) {
+      const auto displayName = [](const IdleBehaviorConfig& behavior) {
+        if (behavior.command == "noctalia:screen-lock" || behavior.name == "lock") {
+          return i18n::tr("settings.idle.behavior.presets.lock");
+        }
+        if (behavior.command == "noctalia:dpms-off" || behavior.name == "screen-off") {
+          return i18n::tr("settings.idle.behavior.presets.monitor-off");
+        }
+        if (behavior.name.empty()) {
+          return i18n::tr("settings.idle.behavior.unnamed");
+        }
+        return behavior.name;
+      };
+
+      const std::string name = displayName(row);
+      if (name.empty()) {
+        return i18n::tr("settings.idle.behavior.unnamed");
+      }
+      if (row.timeoutSeconds <= 0) {
+        return i18n::tr("settings.idle.behavior.summary-disabled-timeout", "name", name);
+      }
+      return i18n::tr("settings.idle.behavior.summary", "name", name, "seconds", std::to_string(row.timeoutSeconds));
+    }
+
     void buildSessionActionEntryDetailContentImpl(Flex& section, SettingsContentContext& ctx,
                                                   SessionPanelActionConfig& row, const std::function<void()>& persist,
                                                   const std::function<void()>& closeHostedEditor) {
@@ -576,6 +649,139 @@ namespace settings {
       });
       actions->addChild(std::move(applyBtn));
 
+      section.addChild(std::move(actions));
+    }
+
+    void buildIdleBehaviorEntryDetailContentImpl(Flex& section, SettingsContentContext& ctx, IdleBehaviorConfig& row,
+                                                 const std::function<void()>& persist,
+                                                 const std::function<void()>& closeHostedEditor) {
+      const float scale = ctx.scale;
+
+      auto body = std::make_unique<Flex>();
+      body->setDirection(FlexDirection::Vertical);
+      body->setAlign(FlexAlign::Stretch);
+      body->setGap(Style::spaceMd * scale);
+
+      auto nameBlock = std::make_unique<Flex>();
+      nameBlock->setDirection(FlexDirection::Vertical);
+      nameBlock->setAlign(FlexAlign::Stretch);
+      nameBlock->setGap(Style::spaceXs * scale);
+      nameBlock->addChild(makeLabel(i18n::tr("settings.idle.behavior.name-label"), Style::fontSizeCaption * scale,
+                                    colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+      auto nameIn = std::make_unique<Input>();
+      nameIn->setValue(row.name);
+      nameIn->setPlaceholder(i18n::tr("settings.idle.behavior.name-placeholder"));
+      nameIn->setFontSize(Style::fontSizeBody * scale);
+      nameIn->setControlHeight(Style::controlHeight * scale);
+      nameIn->setHorizontalPadding(Style::spaceSm * scale);
+      auto* namePtr = nameIn.get();
+      const auto commitName = [&row, persist, namePtr]() {
+        const std::string name = sanitizedIdleBehaviorName(namePtr->value());
+        if (name.empty()) {
+          namePtr->setInvalid(true);
+          return;
+        }
+        row.name = name;
+        namePtr->setInvalid(false);
+        namePtr->setValue(row.name);
+        persist();
+      };
+      nameIn->setOnChange([namePtr](const std::string& /*t*/) { namePtr->setInvalid(false); });
+      nameIn->setOnSubmit([commitName](const std::string& /*text*/) { commitName(); });
+      nameIn->setOnFocusLoss(commitName);
+      nameBlock->addChild(std::move(nameIn));
+      body->addChild(std::move(nameBlock));
+
+      auto timeoutBlock = std::make_unique<Flex>();
+      timeoutBlock->setDirection(FlexDirection::Vertical);
+      timeoutBlock->setAlign(FlexAlign::Stretch);
+      timeoutBlock->setGap(Style::spaceXs * scale);
+      timeoutBlock->addChild(makeLabel(i18n::tr("settings.idle.behavior.timeout-label"), Style::fontSizeCaption * scale,
+                                       colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+      auto timeoutIn = std::make_unique<Input>();
+      timeoutIn->setValue(std::format("{}", row.timeoutSeconds));
+      timeoutIn->setPlaceholder("660");
+      timeoutIn->setFontSize(Style::fontSizeBody * scale);
+      timeoutIn->setControlHeight(Style::controlHeight * scale);
+      timeoutIn->setHorizontalPadding(Style::spaceSm * scale);
+      auto* timeoutPtr = timeoutIn.get();
+      const auto commitTimeout = [&row, persist, timeoutPtr]() {
+        const auto parsed = parseDoubleInput(timeoutPtr->value());
+        if (!parsed.has_value() || *parsed < 0.0 ||
+            *parsed > static_cast<double>(std::numeric_limits<std::int32_t>::max())) {
+          timeoutPtr->setInvalid(true);
+          return;
+        }
+        row.timeoutSeconds = static_cast<std::int32_t>(std::lround(*parsed));
+        timeoutPtr->setInvalid(false);
+        timeoutPtr->setValue(std::format("{}", row.timeoutSeconds));
+        persist();
+      };
+      timeoutIn->setOnChange([timeoutPtr](const std::string& /*t*/) { timeoutPtr->setInvalid(false); });
+      timeoutIn->setOnSubmit([commitTimeout](const std::string& /*text*/) { commitTimeout(); });
+      timeoutIn->setOnFocusLoss(commitTimeout);
+      timeoutBlock->addChild(std::move(timeoutIn));
+      body->addChild(std::move(timeoutBlock));
+
+      const auto addCommandInput = [&](std::string label, std::string placeholder, std::string& target) {
+        auto block = std::make_unique<Flex>();
+        block->setDirection(FlexDirection::Vertical);
+        block->setAlign(FlexAlign::Stretch);
+        block->setGap(Style::spaceXs * scale);
+        block->addChild(
+            makeLabel(label, Style::fontSizeCaption * scale, colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+        auto input = std::make_unique<Input>();
+        input->setValue(target);
+        input->setPlaceholder(placeholder);
+        input->setFontSize(Style::fontSizeBody * scale);
+        input->setControlHeight(Style::controlHeight * scale);
+        input->setHorizontalPadding(Style::spaceSm * scale);
+        auto* inputPtr = input.get();
+        auto* targetPtr = &target;
+        const auto commit = [targetPtr, persist, inputPtr]() {
+          *targetPtr = StringUtils::trim(inputPtr->value());
+          inputPtr->setInvalid(false);
+          inputPtr->setValue(*targetPtr);
+          persist();
+        };
+        input->setOnChange([inputPtr](const std::string& /*t*/) { inputPtr->setInvalid(false); });
+        input->setOnSubmit([commit](const std::string& /*text*/) { commit(); });
+        input->setOnFocusLoss(commit);
+        block->addChild(std::move(input));
+        body->addChild(std::move(block));
+      };
+
+      addCommandInput(i18n::tr("settings.idle.behavior.command-label"),
+                      i18n::tr("settings.idle.behavior.command-placeholder"), row.command);
+      addCommandInput(i18n::tr("settings.idle.behavior.resume-command-label"),
+                      i18n::tr("settings.idle.behavior.resume-command-placeholder"), row.resumeCommand);
+
+      section.addChild(std::move(body));
+
+      auto actions = std::make_unique<Flex>();
+      actions->setDirection(FlexDirection::Horizontal);
+      actions->setAlign(FlexAlign::Center);
+      actions->setGap(Style::spaceSm * scale);
+      actions->setFillWidth(true);
+
+      auto applyBtn = std::make_unique<Button>();
+      applyBtn->setGlyph("check");
+      applyBtn->setText(i18n::tr("common.actions.apply"));
+      applyBtn->setVariant(ButtonVariant::Default);
+      applyBtn->setFontSize(Style::fontSizeBody * scale);
+      applyBtn->setGlyphSize(Style::fontSizeBody * scale);
+      applyBtn->setMinHeight(Style::controlHeight * scale);
+      applyBtn->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
+      applyBtn->setRadius(Style::radiusMd * scale);
+      applyBtn->setFlexGrow(1.0f);
+      applyBtn->setOnClick([commitName, commitTimeout, closeHostedEditor]() {
+        commitName();
+        commitTimeout();
+        if (closeHostedEditor) {
+          closeHostedEditor();
+        }
+      });
+      actions->addChild(std::move(applyBtn));
       section.addChild(std::move(actions));
     }
 
@@ -1479,6 +1685,157 @@ namespace settings {
       section.addChild(std::move(block));
     };
 
+    const auto makeIdleBehaviorsInlineBlock = [&](Flex& section, const SettingEntry& entry,
+                                                  const IdleBehaviorsSetting& idle) {
+      const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
+
+      auto block = std::make_unique<Flex>();
+      block->setDirection(FlexDirection::Vertical);
+      block->setAlign(FlexAlign::Stretch);
+      block->setGap(Style::spaceXs * scale);
+      block->setPadding(2.0f * scale, 0.0f);
+
+      auto titleRow = std::make_unique<Flex>();
+      titleRow->setDirection(FlexDirection::Horizontal);
+      titleRow->setAlign(FlexAlign::Center);
+      titleRow->setGap(Style::spaceSm * scale);
+      titleRow->addChild(
+          makeLabel(entry.title, Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::OnSurface), true));
+      if (overridden) {
+        auto badge = std::make_unique<Flex>();
+        badge->setAlign(FlexAlign::Center);
+        badge->setPadding(1.0f * scale, Style::spaceXs * scale);
+        badge->setRadius(Style::radiusSm * scale);
+        badge->setFill(colorSpecFromRole(ColorRole::Primary, 0.15f));
+        badge->addChild(makeLabel(i18n::tr("settings.badges.override"), Style::fontSizeCaption * scale,
+                                  colorSpecFromRole(ColorRole::Primary), true));
+        titleRow->addChild(std::move(badge));
+        titleRow->addChild(makeResetButton(entry.path));
+      }
+      block->addChild(std::move(titleRow));
+
+      if (!entry.subtitle.empty()) {
+        block->addChild(makeLabel(entry.subtitle, Style::fontSizeCaption * scale,
+                                  colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+      }
+
+      auto state = std::make_shared<std::vector<IdleBehaviorConfig>>(idle.items);
+      normalizeIdleBehaviorNames(*state);
+      const auto commit = [setOverride = ctx.setOverride, path = entry.path, state, req = ctx.requestContentRebuild]() {
+        normalizeIdleBehaviorNames(*state);
+        setOverride(path, *state);
+        req();
+      };
+
+      const float iconBtnH = Style::controlHeight * scale;
+      for (std::size_t idx = 0; idx < state->size(); ++idx) {
+        auto row = std::make_unique<Flex>();
+        row->setDirection(FlexDirection::Horizontal);
+        row->setAlign(FlexAlign::Center);
+        row->setJustify(FlexJustify::SpaceBetween);
+        row->setGap(Style::spaceSm * scale);
+        row->setMinHeight(Style::controlHeightSm * scale);
+
+        auto summary = std::make_unique<Label>();
+        summary->setText(idleBehaviorRowSummary((*state)[idx]));
+        summary->setFontSize(Style::fontSizeBody * scale);
+        summary->setColor(colorSpecFromRole(ColorRole::OnSurface));
+        summary->setFlexGrow(1.0f);
+        row->addChild(std::move(summary));
+
+        auto reorder = std::make_unique<Flex>();
+        reorder->setDirection(FlexDirection::Horizontal);
+        reorder->setAlign(FlexAlign::Center);
+        reorder->setGap(Style::spaceXs * scale);
+
+        auto upBtn = std::make_unique<Button>();
+        upBtn->setGlyph("chevron-up");
+        upBtn->setVariant(ButtonVariant::Ghost);
+        upBtn->setGlyphSize(Style::fontSizeBody * scale);
+        upBtn->setMinWidth(Style::controlHeightSm * scale);
+        upBtn->setMinHeight(iconBtnH);
+        upBtn->setPadding(Style::spaceXs * scale);
+        upBtn->setRadius(Style::radiusMd * scale);
+        upBtn->setEnabled(idx > 0);
+        upBtn->setOnClick([state, rowIndex = idx, commit]() {
+          if (rowIndex == 0 || rowIndex >= state->size()) {
+            return;
+          }
+          std::swap((*state)[rowIndex - 1], (*state)[rowIndex]);
+          commit();
+        });
+        reorder->addChild(std::move(upBtn));
+
+        auto downBtn = std::make_unique<Button>();
+        downBtn->setGlyph("chevron-down");
+        downBtn->setVariant(ButtonVariant::Ghost);
+        downBtn->setGlyphSize(Style::fontSizeBody * scale);
+        downBtn->setMinWidth(Style::controlHeightSm * scale);
+        downBtn->setMinHeight(iconBtnH);
+        downBtn->setPadding(Style::spaceXs * scale);
+        downBtn->setRadius(Style::radiusMd * scale);
+        downBtn->setEnabled(idx + 1 < state->size());
+        downBtn->setOnClick([state, rowIndex = idx, commit]() {
+          if (rowIndex + 1 >= state->size()) {
+            return;
+          }
+          std::swap((*state)[rowIndex + 1], (*state)[rowIndex]);
+          commit();
+        });
+        reorder->addChild(std::move(downBtn));
+        row->addChild(std::move(reorder));
+
+        auto entrySettings = std::make_unique<Button>();
+        entrySettings->setGlyph("settings");
+        entrySettings->setVariant(ButtonVariant::Ghost);
+        entrySettings->setGlyphSize(Style::fontSizeCaption * scale);
+        entrySettings->setMinWidth(Style::controlHeightSm * scale);
+        entrySettings->setMinHeight(Style::controlHeightSm * scale);
+        entrySettings->setPadding(Style::spaceXs * scale);
+        entrySettings->setRadius(Style::radiusSm * scale);
+        entrySettings->setOnClick([openEntry = ctx.openIdleBehaviorEntryEditor, rowIndex = idx]() {
+          if (openEntry) {
+            openEntry(rowIndex);
+          }
+        });
+        row->addChild(std::move(entrySettings));
+
+        auto enabledToggle = std::make_unique<Toggle>();
+        enabledToggle->setScale(scale);
+        enabledToggle->setChecked((*state)[idx].enabled);
+        enabledToggle->setOnChange([state, rowIndex = idx, commit](bool v) {
+          (*state)[rowIndex].enabled = v;
+          commit();
+        });
+        row->addChild(std::move(enabledToggle));
+
+        block->addChild(std::move(row));
+      }
+
+      auto addBtn = std::make_unique<Button>();
+      addBtn->setGlyph("add");
+      addBtn->setText(i18n::tr("settings.idle.behavior.add"));
+      addBtn->setVariant(ButtonVariant::Default);
+      addBtn->setFontSize(Style::fontSizeBody * scale);
+      addBtn->setGlyphSize(Style::fontSizeBody * scale);
+      addBtn->setMinHeight(Style::controlHeight * scale);
+      addBtn->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
+      addBtn->setRadius(Style::radiusMd * scale);
+      addBtn->setOnClick([state, commit]() {
+        state->push_back(IdleBehaviorConfig{
+            .name = uniqueIdleBehaviorName("custom", *state),
+            .enabled = true,
+            .timeoutSeconds = 300,
+            .command = "notify-send 'Idle' 'Going idle'",
+            .resumeCommand = "",
+        });
+        commit();
+      });
+      block->addChild(std::move(addBtn));
+
+      section.addChild(std::move(block));
+    };
+
     const auto makeControl = [&](const SettingEntry& entry) -> std::unique_ptr<Node> {
       return std::visit(
           [&](const auto& control) -> std::unique_ptr<Node> {
@@ -1507,6 +1864,8 @@ namespace settings {
             } else if constexpr (std::is_same_v<T, ShortcutListSetting>) {
               return nullptr;
             } else if constexpr (std::is_same_v<T, SessionPanelActionsSetting>) {
+              return nullptr;
+            } else if constexpr (std::is_same_v<T, IdleBehaviorsSetting>) {
               return nullptr;
             } else if constexpr (std::is_same_v<T, ButtonSetting>) {
               auto button = std::make_unique<Button>();
@@ -1651,6 +2010,8 @@ namespace settings {
           makeShortcutListBlock(*activeSection, entry, *shortcuts);
         } else if (const auto* sessionActs = std::get_if<SessionPanelActionsSetting>(&entry.control)) {
           makeSessionActionsInlineBlock(*activeSection, entry, *sessionActs);
+        } else if (const auto* idle = std::get_if<IdleBehaviorsSetting>(&entry.control)) {
+          makeIdleBehaviorsInlineBlock(*activeSection, entry, *idle);
         } else if (const auto* picker = std::get_if<SearchPickerSetting>(&entry.control)) {
           makeRow(*activeSection, entry, makeSearchPickerButton(entry, *picker));
         } else if (const auto* multi = std::get_if<MultiSelectSetting>(&entry.control)) {
@@ -1692,6 +2053,11 @@ namespace settings {
   void buildSessionActionEntryDetailContent(Flex& parent, SettingsContentContext& ctx, SessionPanelActionConfig& row,
                                             const std::function<void()>& persist) {
     buildSessionActionEntryDetailContentImpl(parent, ctx, row, persist, ctx.closeHostedEditor);
+  }
+
+  void buildIdleBehaviorEntryDetailContent(Flex& parent, SettingsContentContext& ctx, IdleBehaviorConfig& row,
+                                           const std::function<void()>& persist) {
+    buildIdleBehaviorEntryDetailContentImpl(parent, ctx, row, persist, ctx.closeHostedEditor);
   }
 
 } // namespace settings

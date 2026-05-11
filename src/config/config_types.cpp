@@ -47,6 +47,25 @@ std::vector<SessionPanelActionConfig> defaultSessionPanelActions() {
   };
 }
 
+std::vector<IdleBehaviorConfig> defaultIdleBehaviors() {
+  return {
+      IdleBehaviorConfig{
+          .name = "lock",
+          .enabled = false,
+          .timeoutSeconds = 600,
+          .command = "noctalia:screen-lock",
+          .resumeCommand = "",
+      },
+      IdleBehaviorConfig{
+          .name = "screen-off",
+          .enabled = false,
+          .timeoutSeconds = 660,
+          .command = "noctalia:dpms-off",
+          .resumeCommand = "noctalia:dpms-on",
+      },
+  };
+}
+
 std::string WidgetConfig::getString(const std::string& key, const std::string& fallback) const {
   auto it = settings.find(key);
   if (it == settings.end()) {

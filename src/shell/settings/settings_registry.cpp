@@ -218,6 +218,8 @@ namespace settings {
       return "layout-bottombar-inactive";
     if (section == "panels")
       return "layout-bottombar";
+    if (section == "idle")
+      return "coffee";
     if (section == "backdrop")
       return "niri";
     if (section == "wallpaper")
@@ -798,6 +800,12 @@ namespace settings {
                                   tr("settings.schema.services.night-temperature.description"),
                                   {"nightlight", "temperature_night"}, std::move(nightSlider), "nightlight kelvin"));
     }
+
+    // Idle
+    entries.push_back(makeEntry("idle", "behavior", tr("settings.schema.idle.behaviors.label"),
+                                tr("settings.schema.idle.behaviors.description"), {"idle", "behavior"},
+                                IdleBehaviorsSetting{.items = cfg.idle.behaviors},
+                                "idle behavior timeout command resume screen lock dpms caffeine"));
 
     // Hooks
     auto hookGroup = [](HookKind kind) -> std::string {

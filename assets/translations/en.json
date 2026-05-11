@@ -615,6 +615,25 @@
         "command": "Custom command"
       }
     },
+    "idle": {
+      "behavior": {
+        "unnamed": "Unnamed behavior",
+        "summary": "{name} · {seconds}s",
+        "summary-disabled-timeout": "{name} · timeout disabled",
+        "add": "Add behavior",
+        "name-label": "Name",
+        "name-placeholder": "screen-off",
+        "timeout-label": "Timeout seconds",
+        "command-label": "Idle command",
+        "command-placeholder": "noctalia:screen-lock",
+        "resume-command-label": "Resume command",
+        "resume-command-placeholder": "noctalia:dpms-on",
+        "presets": {
+          "lock": "Lock",
+          "monitor-off": "Monitor off"
+        }
+      }
+    },
     "dialogs": {
       "color-picker": {
         "title": "Pick a Color"
@@ -742,6 +761,7 @@
         "desktop": "Desktop",
         "dock": "Dock",
         "hooks": "Hooks",
+        "idle": "Idle",
         "panels": "Panels",
         "notifications": "Notifications",
         "backdrop": "Backdrop",
@@ -1435,6 +1455,12 @@
           "description": "Power menu entries, order, custom commands, and icons.",
           "configure": "Configure…",
           "entry-settings": "Details…"
+        }
+      },
+      "idle": {
+        "behaviors": {
+          "label": "Behaviors",
+          "description": "Named idle actions, timeouts, resume commands, and order."
         }
       },
       "backdrop": {

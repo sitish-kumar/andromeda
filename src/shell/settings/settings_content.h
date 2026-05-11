@@ -53,6 +53,7 @@ namespace settings {
         renameWidgetInstance;
 
     std::function<void(std::size_t)> openSessionActionEntryEditor;
+    std::function<void(std::size_t)> openIdleBehaviorEntryEditor;
 
     // When set (session action entry popup), called after commits instead of requestRebuild.
     std::function<void()> afterSessionActionsCommit;
@@ -64,5 +65,7 @@ namespace settings {
 
   void buildSessionActionEntryDetailContent(Flex& parent, SettingsContentContext& ctx, SessionPanelActionConfig& row,
                                             const std::function<void()>& persist);
+  void buildIdleBehaviorEntryDetailContent(Flex& parent, SettingsContentContext& ctx, IdleBehaviorConfig& row,
+                                           const std::function<void()>& persist);
 
 } // namespace settings

@@ -879,13 +879,7 @@ void ConfigService::loadAll() {
 
   if (files.empty() && m_overridesTable.empty()) {
     kLog.info("no config files found, using defaults");
-    m_config.idle.behaviors.push_back(IdleBehaviorConfig{
-        .name = "lock",
-        .enabled = false,
-        .timeoutSeconds = 660,
-        .command = "noctalia:screen-lock",
-        .resumeCommand = "",
-    });
+    m_config.idle.behaviors = defaultIdleBehaviors();
     m_config.bars.push_back(BarConfig{});
     m_config.controlCenter.shortcuts = defaultControlCenterShortcuts();
     m_config.shell.session.actions = defaultSessionPanelActions();
@@ -1824,6 +1818,9 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
         config.idle.behaviors.push_back(std::move(behavior));
       }
     }
+  }
+  if (config.idle.behaviors.empty()) {
+    config.idle.behaviors = defaultIdleBehaviors();
   }
 
   if (config.bars.empty()) {

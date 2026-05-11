@@ -414,6 +414,24 @@ namespace {
               array.push_back(std::move(row));
             }
             table.insert_or_assign(key, std::move(array));
+          } else if constexpr (std::is_same_v<T, std::vector<IdleBehaviorConfig>>) {
+            toml::table behaviorTable;
+            for (const auto& item : concrete) {
+              if (item.name.empty()) {
+                continue;
+              }
+              toml::table row;
+              row.insert_or_assign("enabled", item.enabled);
+              row.insert_or_assign("timeout", static_cast<std::int64_t>(item.timeoutSeconds));
+              if (!item.command.empty()) {
+                row.insert_or_assign("command", item.command);
+              }
+              if (!item.resumeCommand.empty()) {
+                row.insert_or_assign("resume_command", item.resumeCommand);
+              }
+              behaviorTable.insert_or_assign(item.name, std::move(row));
+            }
+            table.insert_or_assign(key, std::move(behaviorTable));
           } else {
             table.insert_or_assign(key, concrete);
           }
@@ -633,13 +651,7 @@ std::optional<Config> ConfigService::configForOverrides(const toml::table& overr
 
   deepMerge(merged, overrides);
   if (files.empty() && overrides.empty()) {
-    parsed.idle.behaviors.push_back(IdleBehaviorConfig{
-        .name = "lock",
-        .enabled = false,
-        .timeoutSeconds = 660,
-        .command = "noctalia:screen-lock",
-        .resumeCommand = "",
-    });
+    parsed.idle.behaviors = defaultIdleBehaviors();
     parsed.bars.push_back(BarConfig{});
     parsed.controlCenter.shortcuts = defaultControlCenterShortcuts();
     parsed.shell.session.actions = defaultSessionPanelActions();

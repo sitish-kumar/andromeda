@@ -125,12 +125,26 @@ struct ShellSessionConfig {
   bool operator==(const ShellSessionConfig&) const = default;
 };
 
+struct IdleBehaviorConfig {
+  std::string name;
+  bool enabled = true;
+  std::int32_t timeoutSeconds = 0;
+  std::string command;
+  std::string resumeCommand;
+};
+
+struct IdleConfig {
+  std::vector<IdleBehaviorConfig> behaviors;
+};
+
 [[nodiscard]] std::vector<ShortcutConfig> defaultControlCenterShortcuts();
 [[nodiscard]] std::vector<SessionPanelActionConfig> defaultSessionPanelActions();
+[[nodiscard]] std::vector<IdleBehaviorConfig> defaultIdleBehaviors();
 
 using WidgetSettingValue = std::variant<bool, std::int64_t, double, std::string, std::vector<std::string>>;
-using ConfigOverrideValue = std::variant<bool, std::int64_t, double, std::string, std::vector<std::string>,
-                                         std::vector<ShortcutConfig>, std::vector<SessionPanelActionConfig>>;
+using ConfigOverrideValue =
+    std::variant<bool, std::int64_t, double, std::string, std::vector<std::string>, std::vector<ShortcutConfig>,
+                 std::vector<SessionPanelActionConfig>, std::vector<IdleBehaviorConfig>>;
 
 // Optional rounded “capsule” behind a bar widget (see `[widget.*] capsule_*` in CONFIG.md).
 // Corner shape, border width, and edge softness are fixed in the shell code; padding/radius are configurable.
@@ -511,18 +525,6 @@ struct NightLightConfig {
   std::optional<double> longitude;
   std::int32_t dayTemperature = 6500;
   std::int32_t nightTemperature = 4000;
-};
-
-struct IdleBehaviorConfig {
-  std::string name;
-  bool enabled = true;
-  std::int32_t timeoutSeconds = 0;
-  std::string command;
-  std::string resumeCommand;
-};
-
-struct IdleConfig {
-  std::vector<IdleBehaviorConfig> behaviors;
 };
 
 enum class HookKind : std::uint8_t {

@@ -96,6 +96,10 @@ namespace settings {
     std::vector<SessionPanelActionConfig> items;
   };
 
+  struct IdleBehaviorsSetting {
+    std::vector<IdleBehaviorConfig> items;
+  };
+
   struct ColorSetting {
     std::string hex; // current resolved value as #RRGGBB; empty when unset
     bool unset = true;
@@ -118,10 +122,10 @@ namespace settings {
     bool allowNone = false;
   };
 
-  using SettingControl =
-      std::variant<ToggleSetting, SelectSetting, SliderSetting, TextSetting, OptionalNumberSetting,
-                   OptionalStepperSetting, ListSetting, ShortcutListSetting, SessionPanelActionsSetting, ColorSetting,
-                   MultiSelectSetting, ButtonSetting, ColorRolePickerSetting, SearchPickerSetting>;
+  using SettingControl = std::variant<ToggleSetting, SelectSetting, SliderSetting, TextSetting, OptionalNumberSetting,
+                                      OptionalStepperSetting, ListSetting, ShortcutListSetting,
+                                      SessionPanelActionsSetting, IdleBehaviorsSetting, ColorSetting,
+                                      MultiSelectSetting, ButtonSetting, ColorRolePickerSetting, SearchPickerSetting>;
 
   struct SettingVisibility {
     std::vector<std::string> path;

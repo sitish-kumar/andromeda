@@ -39,6 +39,7 @@
 #include <cmath>
 #include <cstdint>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <linux/input-event-codes.h>
 #include <memory>
@@ -102,6 +103,42 @@ namespace {
       return i18n::tr("settings.session-actions.kind.command");
     }
     return row.action;
+  }
+
+  std::string idleBehaviorTitle(const IdleBehaviorConfig& row) {
+    if (row.command == "noctalia:screen-lock" || row.name == "lock") {
+      return i18n::tr("settings.idle.behavior.presets.lock");
+    }
+    if (row.command == "noctalia:dpms-off" || row.name == "screen-off") {
+      return i18n::tr("settings.idle.behavior.presets.monitor-off");
+    }
+    if (!StringUtils::trim(row.name).empty()) {
+      return row.name;
+    }
+    return i18n::tr("settings.idle.behavior.unnamed");
+  }
+
+  void normalizeIdleBehaviorNames(std::vector<IdleBehaviorConfig>& rows) {
+    std::vector<std::string> used;
+    used.reserve(rows.size());
+    for (auto& row : rows) {
+      std::string base = StringUtils::trim(row.name);
+      if (base.empty()) {
+        base = "custom";
+      }
+      for (char& ch : base) {
+        if (ch == '.' || ch == '[' || ch == ']') {
+          ch = '-';
+        }
+      }
+
+      std::string candidate = base;
+      for (int suffix = 2; std::find(used.begin(), used.end(), candidate) != used.end(); ++suffix) {
+        candidate = std::format("{}-{}", base, suffix);
+      }
+      row.name = candidate;
+      used.push_back(row.name);
+    }
   }
 
   bool containsPath(const std::vector<std::vector<std::string>>& paths, const std::vector<std::string>& path) {
@@ -890,6 +927,7 @@ void SettingsWindow::openSessionActionEntryEditor(std::size_t index) {
       .clearOverride = clearOverride,
       .renameWidgetInstance = renameWidget,
       .openSessionActionEntryEditor = {},
+      .openIdleBehaviorEntryEditor = {},
       .afterSessionActionsCommit = {},
       .closeHostedEditor =
           [this]() {
@@ -910,6 +948,145 @@ void SettingsWindow::openSessionActionEntryEditor(std::size_t index) {
                                     m_surface->wlSurface(), m_surface->width(), m_surface->height(), scale, sheetTitle,
                                     removeRow, [ctx, rowState, persist](Flex& body) mutable {
                                       settings::buildSessionActionEntryDetailContent(body, ctx, *rowState, persist);
+                                    });
+}
+
+void SettingsWindow::openIdleBehaviorEntryEditor(std::size_t index) {
+  if (m_wayland == nullptr || m_renderContext == nullptr || m_surface == nullptr ||
+      m_surface->xdgSurface() == nullptr || m_config == nullptr) {
+    return;
+  }
+
+  const Config& cfg = m_config->config();
+  if (index >= cfg.idle.behaviors.size()) {
+    return;
+  }
+
+  if (m_widgetAddPopup != nullptr && m_widgetAddPopup->isOpen()) {
+    m_widgetAddPopup->close();
+  }
+  if (m_searchPickerPopup != nullptr && m_searchPickerPopup->isOpen()) {
+    m_searchPickerPopup->close();
+  }
+
+  if (m_sessionActionsEditorPopup == nullptr) {
+    m_sessionActionsEditorPopup = std::make_unique<settings::SessionActionsEditorPopup>();
+    m_sessionActionsEditorPopup->initialize(*m_wayland, *m_config, *m_renderContext);
+  }
+
+  const float scale = uiScale();
+  const BarConfig* selectedBar = settings::findBar(cfg, m_selectedBarName);
+  const BarMonitorOverride* selectedMonitorOverride = nullptr;
+  if (selectedBar != nullptr && !m_selectedMonitorOverride.empty()) {
+    selectedMonitorOverride = settings::findMonitorOverride(*selectedBar, m_selectedMonitorOverride);
+  }
+
+  const auto requestRebuild = [this]() { requestSceneRebuild(); };
+  const auto requestContent = [this]() { requestContentRebuild(); };
+  const auto setOverride = [this](std::vector<std::string> path, ConfigOverrideValue value) {
+    setSettingOverride(std::move(path), std::move(value));
+  };
+  const auto setOverrides = [this](std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>> overrides) {
+    setSettingOverrides(std::move(overrides));
+  };
+  const auto clearOverride = [this](std::vector<std::string> path) { clearSettingOverride(std::move(path)); };
+  const auto renameWidget =
+      [this](std::string oldName, std::string newName,
+             std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>> referenceOverrides) {
+        renameWidgetInstance(std::move(oldName), std::move(newName), std::move(referenceOverrides));
+      };
+
+  auto rowState = std::make_shared<IdleBehaviorConfig>(cfg.idle.behaviors[index]);
+
+  const auto persist = [this, rowState, index]() {
+    if (m_config == nullptr) {
+      return;
+    }
+    auto next = m_config->config().idle.behaviors;
+    if (index >= next.size()) {
+      return;
+    }
+    next[index] = *rowState;
+    normalizeIdleBehaviorNames(next);
+    *rowState = next[index];
+    setSettingOverride({"idle", "behavior"}, next);
+    requestContentRebuild();
+    if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->isOpen()) {
+      m_sessionActionsEditorPopup->requestLayout();
+    }
+  };
+
+  const auto removeRow = [this, index]() {
+    if (m_config == nullptr) {
+      return;
+    }
+    auto next = m_config->config().idle.behaviors;
+    if (index >= next.size()) {
+      return;
+    }
+    next.erase(next.begin() + static_cast<std::ptrdiff_t>(index));
+    normalizeIdleBehaviorNames(next);
+    setSettingOverride({"idle", "behavior"}, next);
+    if (m_sessionActionsEditorPopup != nullptr) {
+      m_sessionActionsEditorPopup->close();
+    }
+    requestContentRebuild();
+  };
+
+  settings::SettingsContentContext ctx{
+      .config = cfg,
+      .configService = m_config,
+      .scale = scale,
+      .searchQuery = m_searchQuery,
+      .selectedSection = m_selectedSection,
+      .selectedBar = selectedBar,
+      .selectedMonitorOverride = selectedMonitorOverride,
+      .showAdvanced = m_showAdvanced,
+      .showOverriddenOnly = m_showOverriddenOnly,
+      .batteryDeviceOptions = upowerBatteryDeviceOptions(m_upower),
+      .openWidgetPickerPath = m_openWidgetPickerPath,
+      .editingWidgetName = m_editingWidgetName,
+      .pendingDeleteWidgetName = m_pendingDeleteWidgetName,
+      .pendingDeleteWidgetSettingPath = m_pendingDeleteWidgetSettingPath,
+      .renamingWidgetName = m_renamingWidgetName,
+      .creatingWidgetType = m_creatingWidgetType,
+      .requestRebuild = requestRebuild,
+      .requestContentRebuild = requestContent,
+      .resetContentScroll = [this]() { m_contentScrollState.offset = 0.0f; },
+      .setScrollTarget = [this](Node* target) { m_pendingContentScrollTarget = target; },
+      .focusArea = [this](InputArea* area) { m_inputDispatcher.setFocus(area); },
+      .openBarWidgetAddPopup = [this](const std::vector<std::string>& lanePath) { openBarWidgetAddPopup(lanePath); },
+      .openSearchPickerPopup =
+          [this](const std::string& title, const std::vector<settings::SelectOption>& options,
+                 const std::string& selectedValue, const std::string& placeholder, const std::string& emptyText,
+                 const std::vector<std::string>& settingPath) {
+            openSearchPickerPopup(title, options, selectedValue, placeholder, emptyText, settingPath);
+          },
+      .setOverride = setOverride,
+      .setOverrides = setOverrides,
+      .clearOverride = clearOverride,
+      .renameWidgetInstance = renameWidget,
+      .openSessionActionEntryEditor = {},
+      .openIdleBehaviorEntryEditor = {},
+      .afterSessionActionsCommit = {},
+      .closeHostedEditor =
+          [this]() {
+            if (m_sessionActionsEditorPopup != nullptr) {
+              m_sessionActionsEditorPopup->close();
+            }
+          },
+  };
+
+  wl_output* output = m_wayland->lastPointerOutput();
+  if (output == nullptr) {
+    output = m_output;
+  }
+
+  m_sessionActionsEditorPopup->open(m_surface->xdgSurface(), output, m_wayland->lastInputSerial(),
+                                    m_surface->wlSurface(), m_surface->width(), m_surface->height(), scale,
+                                    idleBehaviorTitle(*rowState), removeRow,
+                                    [ctx, rowState, persist](Flex& body) mutable {
+                                      settings::buildIdleBehaviorEntryDetailContent(body, ctx, *rowState, persist);
                                     });
 }
 
@@ -1449,6 +1626,7 @@ void SettingsWindow::rebuildSettingsContent() {
           .clearOverride = clearOverride,
           .renameWidgetInstance = renameWidget,
           .openSessionActionEntryEditor = [this](std::size_t entryIndex) { openSessionActionEntryEditor(entryIndex); },
+          .openIdleBehaviorEntryEditor = [this](std::size_t entryIndex) { openIdleBehaviorEntryEditor(entryIndex); },
           .afterSessionActionsCommit = {},
           .closeHostedEditor = {},
       });

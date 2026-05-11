@@ -73,6 +73,7 @@ private:
                              const std::string& selectedValue, const std::string& placeholder,
                              const std::string& emptyText, const std::vector<std::string>& settingPath);
   void openSessionActionEntryEditor(std::size_t index);
+  void openIdleBehaviorEntryEditor(std::size_t index);
   void saveSupportReport();
   void saveFlattenedConfig();
   void setSettingOverride(std::vector<std::string> path, ConfigOverrideValue value);
