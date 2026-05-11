@@ -183,6 +183,16 @@ namespace {
     return {};
   }
 
+  bool pointInsideNode(const Node* node, float x, float y) {
+    if (node == nullptr) {
+      return false;
+    }
+    float nodeX = 0.0f;
+    float nodeY = 0.0f;
+    Node::absolutePosition(node, nodeX, nodeY);
+    return x >= nodeX && y >= nodeY && x < nodeX + node->width() && y < nodeY + node->height();
+  }
+
   std::string upowerDeviceLabel(const UPowerDeviceInfo& device) {
     const std::string nativeName =
         !device.nativePath.empty() ? StringUtils::pathTail(device.nativePath) : StringUtils::pathTail(device.path);
@@ -1906,15 +1916,12 @@ bool SettingsWindow::onPointerEvent(const PointerEvent& event) {
       if (onThis) {
         m_pointerInside = true;
       }
-      if (pressed && event.button == BTN_LEFT && m_headerRow != nullptr && m_inputDispatcher.hoveredArea() == nullptr) {
-        float hx = 0.0f;
-        float hy = 0.0f;
-        Node::absolutePosition(m_headerRow, hx, hy);
-        if (static_cast<float>(event.sy) < hy + m_headerRow->height()) {
-          m_surface->beginMove(event.serial);
-          consumed = true;
-          break;
-        }
+      m_inputDispatcher.pointerMotion(static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial);
+      if (pressed && event.button == BTN_LEFT && m_inputDispatcher.hoveredArea() == nullptr &&
+          pointInsideNode(m_headerRow, static_cast<float>(event.sx), static_cast<float>(event.sy))) {
+        m_surface->beginMove(event.serial);
+        consumed = true;
+        break;
       }
       if (pressed) {
         Select::handleGlobalPointerPress(m_inputDispatcher.hoveredArea());
