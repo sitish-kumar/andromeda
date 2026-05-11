@@ -965,8 +965,6 @@ void TrayService::ensureMenuCache(const std::string& itemId, const std::string& 
               cache.rootLoaded = false;
               // Allow a fresh root AboutToShow after provider-side resets.
               cache.rootAboutToShowPrimed = false;
-              // Bump generation to discard any in-flight GetLayout replies captured before this invalidation.
-              ++cache.generation;
 
               if (hadVisibleRootEntries) {
                 kLog.debug("LayoutUpdated root soft-invalidated without emit id={} rev={} parent={}", itemId, revision,
@@ -980,8 +978,6 @@ void TrayService::ensureMenuCache(const std::string& itemId, const std::string& 
               cache.loadingParents.erase(parent);
               cache.nextRetryAt.erase(parent);
               cache.failureStreak.erase(parent);
-              // Bump generation to discard any in-flight GetLayout replies captured before this invalidation.
-              ++cache.generation;
             }
           }
           kLog.debug("LayoutUpdated id={} rev={} parent={}", itemId, revision, parent);
