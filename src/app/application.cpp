@@ -89,6 +89,10 @@ namespace {
     return std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - start).count();
   }
 
+  bool weatherLocationConfiguredForNightLight(const WeatherConfig& weather) {
+    return weather.enabled && (weather.autoLocate || !weather.address.empty());
+  }
+
   template <typename Fn> void runStartupPhase(std::string_view label, Fn&& fn) {
     constexpr float kSlowStartupPhaseDebugMs = 50.0f;
     constexpr float kSlowStartupPhaseWarnMs = 1000.0f;
@@ -431,6 +435,11 @@ void Application::initServices() {
       [this](const std::string& command) { return runUserCommandBlocking(command); });
   m_hookManager.reload(m_configService.config().hooks);
   m_configService.addReloadCallback([this]() { m_hookManager.reload(m_configService.config().hooks); });
+  auto syncNightLightWeatherConfig = [this]() {
+    m_gammaService.setWeatherLocationConfigured(
+        weatherLocationConfiguredForNightLight(m_configService.config().weather));
+  };
+  syncNightLightWeatherConfig();
   m_gammaService.reload(m_configService.config().nightlight);
   m_gammaService.setChangeCallback([this, shouldRefreshControlCenter]() {
     m_bar.refresh();
@@ -438,7 +447,10 @@ void Application::initServices() {
       m_panelManager.refresh();
     }
   });
-  m_configService.addReloadCallback([this]() { m_gammaService.reload(m_configService.config().nightlight); });
+  m_configService.addReloadCallback([this, syncNightLightWeatherConfig]() {
+    syncNightLightWeatherConfig();
+    m_gammaService.reload(m_configService.config().nightlight);
+  });
 
   // Register all wallpaper consumers in the single-callback slot.
   m_configService.setWallpaperChangeCallback([this]() {
@@ -743,6 +755,7 @@ void Application::initServices() {
 
   m_weatherService.initialize();
   auto syncNightLightWeatherCoordinates = [this]() {
+    m_gammaService.setWeatherLocationConfigured(m_weatherService.enabled() && m_weatherService.locationConfigured());
     const auto coords = m_weatherService.resolvedCoordinates();
     if (coords.has_value()) {
       m_gammaService.setWeatherCoordinates(coords->latitude, coords->longitude);
@@ -752,6 +765,7 @@ void Application::initServices() {
   };
   syncNightLightWeatherCoordinates();
   m_weatherService.addChangeCallback([this, shouldRefreshControlCenter]() {
+    m_gammaService.setWeatherLocationConfigured(m_weatherService.enabled() && m_weatherService.locationConfigured());
     const auto coords = m_weatherService.resolvedCoordinates();
     if (coords.has_value()) {
       m_gammaService.setWeatherCoordinates(coords->latitude, coords->longitude);
