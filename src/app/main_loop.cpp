@@ -243,6 +243,11 @@ namespace {
       kLog.debug(fmt, std::forward<Args>(args)...);
     }
   }
+
+  [[noreturn]] void throwWaylandFailure(const WaylandConnection& wayland, std::string_view operation,
+                                        int operationErrno) {
+    throw std::runtime_error(std::format("{}: {}", operation, wayland.describeDisplayError(operationErrno)));
+  }
 } // namespace
 
 MainLoop::MainLoop(WaylandConnection& wayland, Bar& bar, PollSourcesProvider sourcesProvider)
@@ -284,7 +289,8 @@ void MainLoop::run() {
     while (wl_display_prepare_read(m_wayland.display()) != 0) {
       opStart = std::chrono::steady_clock::now();
       if (wl_display_dispatch_pending(m_wayland.display()) < 0) {
-        throw std::runtime_error("failed to dispatch pending Wayland events");
+        const int dispatchErrno = errno;
+        throwWaylandFailure(m_wayland, "failed to dispatch pending Wayland events before poll", dispatchErrno);
       }
       const float ms = elapsedSince(opStart);
       logSlowMainLoopOperation(ms, "wl_display_dispatch_pending took {:.1f}ms before poll", ms);
@@ -313,10 +319,11 @@ void MainLoop::run() {
       if (idleProfileEnabled()) {
         ++idleProfile().waylandFlushBlocked;
       }
-      if (errno != EAGAIN) {
+      const int flushErrno = errno;
+      if (flushErrno != EAGAIN) {
         wl_display_cancel_read(m_wayland.display());
         waylandReadPrepared = false;
-        throw std::runtime_error("failed to flush Wayland display");
+        throwWaylandFailure(m_wayland, "failed to flush Wayland display before poll", flushErrno);
       }
       waylandPollEvents |= POLLOUT;
     }
@@ -455,12 +462,13 @@ void MainLoop::run() {
         profile.waylandFlushMs += ms;
       }
       logSlowMainLoopOperation(ms, "wl_display_flush took {:.1f}ms after POLLOUT", ms);
-      if (flushRet < 0 && errno != EAGAIN) {
+      const int flushErrno = errno;
+      if (flushRet < 0 && flushErrno != EAGAIN) {
         if (waylandReadPrepared) {
           wl_display_cancel_read(m_wayland.display());
           waylandReadPrepared = false;
         }
-        throw std::runtime_error("failed to flush Wayland display");
+        throwWaylandFailure(m_wayland, "failed to flush Wayland display after POLLOUT", flushErrno);
       }
     }
 
@@ -470,8 +478,9 @@ void MainLoop::run() {
     if (waylandReadable) {
       opStart = std::chrono::steady_clock::now();
       if (wl_display_read_events(m_wayland.display()) < 0) {
+        const int readErrno = errno;
         waylandReadPrepared = false;
-        throw std::runtime_error("failed to read Wayland events");
+        throwWaylandFailure(m_wayland, "failed to read Wayland events", readErrno);
       }
       ms = elapsedSince(opStart);
       if (idleProfileEnabled()) {
@@ -488,7 +497,8 @@ void MainLoop::run() {
 
     opStart = std::chrono::steady_clock::now();
     if (wl_display_dispatch_pending(m_wayland.display()) < 0) {
-      throw std::runtime_error("failed to dispatch pending Wayland events");
+      const int dispatchErrno = errno;
+      throwWaylandFailure(m_wayland, "failed to dispatch pending Wayland events after poll", dispatchErrno);
     }
     ms = elapsedSince(opStart);
     if (idleProfileEnabled()) {
@@ -576,9 +586,12 @@ void MainLoop::run() {
   m_bar.closeAllInstances();
 
   if (wl_display_dispatch_pending(m_wayland.display()) < 0) {
-    kLog.warn("failed to dispatch pending Wayland events during shutdown");
+    const int dispatchErrno = errno;
+    kLog.warn("failed to dispatch pending Wayland events during shutdown: {}",
+              m_wayland.describeDisplayError(dispatchErrno));
   }
   if (wl_display_flush(m_wayland.display()) < 0) {
-    kLog.warn("failed to flush Wayland display during shutdown");
+    const int flushErrno = errno;
+    kLog.warn("failed to flush Wayland display during shutdown: {}", m_wayland.describeDisplayError(flushErrno));
   }
 }

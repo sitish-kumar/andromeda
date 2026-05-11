@@ -27,6 +27,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cerrno>
 #include <cmath>
 #include <linux/input-event-codes.h>
 #include <optional>
@@ -656,7 +657,11 @@ void Bar::reload() {
   if (recreateForOrder) {
     kLog.info("bar order changed; recreating layer-shell surfaces");
     closeAllInstances();
-    wl_display_roundtrip(m_platform->display());
+    if (wl_display_roundtrip(m_platform->display()) < 0) {
+      const int roundtripErrno = errno;
+      kLog.error("Wayland roundtrip failed after destroying bar surfaces for order change: {}",
+                 m_platform->wayland().describeDisplayError(roundtripErrno));
+    }
     syncInstances();
     return;
   }
@@ -713,7 +718,11 @@ void Bar::reload() {
     // Drain pending Wayland events for the just-destroyed surfaces before
     // creating new ones. Without this, the roundtrip inside LayerSurface::initialize
     // reads stale closures for dead proxies, which libwayland drops without freeing.
-    wl_display_roundtrip(m_platform->display());
+    if (wl_display_roundtrip(m_platform->display()) < 0) {
+      const int roundtripErrno = errno;
+      kLog.error("Wayland roundtrip failed after destroying stale bar surfaces: {}",
+                 m_platform->wayland().describeDisplayError(roundtripErrno));
+    }
   }
 
   syncInstances();

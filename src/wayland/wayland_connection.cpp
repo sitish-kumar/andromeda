@@ -25,6 +25,9 @@
 #include "xdg-shell-client-protocol.h"
 
 #include <algorithm>
+#include <cerrno>
+#include <cstring>
+#include <format>
 #include <stdexcept>
 #include <utility>
 #include <wayland-client.h>
@@ -57,6 +60,14 @@ namespace {
       .global = &WaylandConnection::handleGlobal,
       .global_remove = &WaylandConnection::handleGlobalRemove,
   };
+
+  std::string errnoText(int value) {
+    if (value == 0) {
+      return "none";
+    }
+    const char* text = std::strerror(value);
+    return text != nullptr ? std::string(text) : std::string("unknown");
+  }
 
   void backgroundEffectCapabilities(void* data, ext_background_effect_manager_v1* /*manager*/,
                                     std::uint32_t capabilities) {
@@ -188,13 +199,17 @@ bool WaylandConnection::connect() {
   }
 
   if (wl_display_roundtrip(m_display) < 0) {
+    const int roundtripErrno = errno;
+    const std::string detail = describeDisplayError(roundtripErrno);
     cleanup();
-    throw std::runtime_error("failed during Wayland registry roundtrip");
+    throw std::runtime_error(std::format("failed during Wayland registry roundtrip: {}", detail));
   }
 
   if (wl_display_roundtrip(m_display) < 0) {
+    const int roundtripErrno = errno;
+    const std::string detail = describeDisplayError(roundtripErrno);
     cleanup();
-    throw std::runtime_error("failed during Wayland output discovery roundtrip");
+    throw std::runtime_error(std::format("failed during Wayland output discovery roundtrip: {}", detail));
   }
 
   m_focusGrabService = std::make_unique<FocusGrabService>();
@@ -421,6 +436,31 @@ void WaylandConnection::activateSurface(wl_surface* surface) {
 }
 
 wl_display* WaylandConnection::display() const noexcept { return m_display; }
+
+std::string WaylandConnection::describeDisplayError(int operationErrno) const {
+  if (m_display == nullptr) {
+    if (operationErrno != 0) {
+      return std::format("display=null, operation_errno={} ({})", operationErrno, errnoText(operationErrno));
+    }
+    return "display=null";
+  }
+
+  const int displayError = wl_display_get_error(m_display);
+  std::string detail = std::format("display_error={} ({})", displayError, errnoText(displayError));
+  if (operationErrno != 0 && operationErrno != displayError) {
+    detail += std::format(", operation_errno={} ({})", operationErrno, errnoText(operationErrno));
+  }
+
+  if (displayError == EPROTO) {
+    const wl_interface* interface = nullptr;
+    std::uint32_t objectId = 0;
+    const std::uint32_t code = wl_display_get_protocol_error(m_display, &interface, &objectId);
+    const char* interfaceName = interface != nullptr && interface->name != nullptr ? interface->name : "unknown";
+    detail += std::format(", protocol_error.interface={}, object_id={}, code={}", interfaceName, objectId, code);
+  }
+
+  return detail;
+}
 
 wl_compositor* WaylandConnection::compositor() const noexcept { return m_compositor; }
 

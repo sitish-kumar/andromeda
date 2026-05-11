@@ -29,6 +29,7 @@
 #include "wayland/wayland_toplevels.h"
 #include "xdg-shell-client-protocol.h"
 
+#include <cerrno>
 #include <format>
 #include <optional>
 #include <wayland-client-core.h>
@@ -187,7 +188,11 @@ void Dock::reload() {
   m_surfaceMap.clear();
   m_hoveredInstance = nullptr;
 
-  wl_display_roundtrip(m_platform->display());
+  if (wl_display_roundtrip(m_platform->display()) < 0) {
+    const int roundtripErrno = errno;
+    kLog.error("Wayland roundtrip failed while reloading dock surfaces: {}",
+               m_platform->wayland().describeDisplayError(roundtripErrno));
+  }
   syncInstances();
 }
 

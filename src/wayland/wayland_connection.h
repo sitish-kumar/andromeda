@@ -113,6 +113,7 @@ public:
   [[nodiscard]] FocusGrabService* focusGrabService() const noexcept;
   [[nodiscard]] wp_viewporter* viewporter() const noexcept;
   [[nodiscard]] wl_display* display() const noexcept;
+  [[nodiscard]] std::string describeDisplayError(int operationErrno = 0) const;
   [[nodiscard]] wl_compositor* compositor() const noexcept;
   [[nodiscard]] wl_seat* seat() const noexcept;
   [[nodiscard]] wl_shm* shm() const noexcept;
