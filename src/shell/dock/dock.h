@@ -9,6 +9,7 @@
 #include "ui/signal.h"
 #include "wayland/popup_surface.h"
 
+#include <array>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -58,6 +59,7 @@ private:
     std::string startupWmClassLower;
     InputArea* area = nullptr;
     Box* background = nullptr;
+    std::array<Box*, 3> dotIndicators{};
     Box* badge = nullptr;
     Label* badgeLabel = nullptr;
     Image* iconImage = nullptr;

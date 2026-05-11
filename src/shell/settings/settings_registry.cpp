@@ -472,6 +472,9 @@ namespace settings {
     entries.push_back(makeEntry("dock", "behavior", tr("settings.schema.dock.show-running.label"),
                                 tr("settings.schema.dock.show-running.description"), {"dock", "show_running"},
                                 ToggleSetting{cfg.dock.showRunning}, "windows"));
+    entries.push_back(makeEntry("dock", "behavior", tr("settings.schema.dock.show-dots.label"),
+                                tr("settings.schema.dock.show-dots.description"), {"dock", "show_dots"},
+                                ToggleSetting{cfg.dock.showDots}, "running dots"));
     entries.push_back(makeEntry("dock", "behavior", tr("settings.schema.dock.show-instance-count.label"),
                                 tr("settings.schema.dock.show-instance-count.description"),
                                 {"dock", "show_instance_count"}, ToggleSetting{cfg.dock.showInstanceCount},
