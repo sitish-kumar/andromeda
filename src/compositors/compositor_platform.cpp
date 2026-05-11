@@ -176,10 +176,6 @@ namespace {
     return compositors::hyprland::setOutputPower(on);
   }
 
-  [[nodiscard]] bool setNiriOutputPower(WaylandConnection& /*wayland*/, bool on) {
-    return compositors::niri::setOutputPower(on);
-  }
-
   [[nodiscard]] bool setMangoOutputPower(WaylandConnection& wayland, bool on) {
     return compositors::mango::setOutputPower(wayland, on);
   }
@@ -194,7 +190,10 @@ namespace {
     case compositors::CompositorKind::Hyprland:
       return std::make_unique<LambdaOutputPowerBackend>(&setHyprlandOutputPower);
     case compositors::CompositorKind::Niri:
-      return std::make_unique<LambdaOutputPowerBackend>(&setNiriOutputPower);
+      return std::make_unique<LambdaOutputPowerBackend>(
+          [&runtime = runtimeRegistry.niri()](WaylandConnection& /*wayland*/, bool on) {
+            return compositors::niri::setOutputPower(runtime, on);
+          });
     case compositors::CompositorKind::Sway:
       return std::make_unique<LambdaOutputPowerBackend>(
           [&runtime = runtimeRegistry.sway()](WaylandConnection& wayland, bool on) {
@@ -215,7 +214,7 @@ namespace {
     case compositors::CompositorKind::Hyprland:
       return std::make_unique<FocusedOutputAdapter<HyprlandOutputBackend>>(runtimeRegistry.hyprland());
     case compositors::CompositorKind::Niri:
-      return std::make_unique<FocusedOutputAdapter<NiriOutputBackend>>();
+      return std::make_unique<FocusedOutputAdapter<NiriOutputBackend>>(runtimeRegistry.niri());
     case compositors::CompositorKind::Sway:
       return std::make_unique<FocusedOutputAdapter<SwayOutputBackend>>(runtimeRegistry.sway());
     case compositors::CompositorKind::Mango:

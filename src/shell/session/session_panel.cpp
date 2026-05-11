@@ -1,6 +1,7 @@
 #include "shell/session/session_panel.h"
 
 #include "compositors/compositor_detect.h"
+#include "compositors/niri/niri_runtime.h"
 #include "config/config_service.h"
 #include "core/log.h"
 #include "core/process.h"
@@ -18,6 +19,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <json.hpp>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -49,8 +51,10 @@ namespace {
       return process::launchFirstAvailable({{"hyprctl", "dispatch", "exit"}});
     case compositors::CompositorKind::Sway:
       return process::launchFirstAvailable({{"swaymsg", "exit"}, {"i3-msg", "exit"}});
-    case compositors::CompositorKind::Niri:
-      return process::launchFirstAvailable({{"niri", "msg", "action", "quit", "--skip-confirmation"}});
+    case compositors::CompositorKind::Niri: {
+      compositors::niri::NiriRuntime runtime;
+      return runtime.requestAction(nlohmann::json{{"Quit", nlohmann::json{{"skip_confirmation", true}}}}, true);
+    }
     case compositors::CompositorKind::Mango:
       return process::launchFirstAvailable({{"mmsg", "-q"}});
     case compositors::CompositorKind::Unknown:
