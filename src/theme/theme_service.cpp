@@ -385,7 +385,7 @@ namespace noctalia::theme {
         kLog.warn("custom palette '{}' not found or invalid; falling back to builtin", cfg.customPalette);
       }
     } else if (cfg.source == PaletteSource::Wallpaper) {
-      resolved = resolveWallpaper(cfg, m_config.getDefaultWallpaperPath());
+      resolved = resolveWallpaper(cfg, m_config.getPaletteWallpaperPath());
     } else if (cfg.source == PaletteSource::Community && !cfg.communityPalette.empty()) {
       const auto cachePath = communityPaletteCachePath(cfg.communityPalette);
       if (std::filesystem::exists(cachePath)) {

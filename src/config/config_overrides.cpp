@@ -1060,6 +1060,13 @@ std::string ConfigService::getWallpaperPath(const std::string& connectorName) co
 
 std::string ConfigService::getDefaultWallpaperPath() const { return m_defaultWallpaperPath; }
 
+std::string ConfigService::getPaletteWallpaperPath() const {
+  if (!m_lastWallpaperPath.empty()) {
+    return m_lastWallpaperPath;
+  }
+  return m_defaultWallpaperPath;
+}
+
 void ConfigService::setWallpaperChangeCallback(ChangeCallback callback) {
   m_wallpaperChangeCallback = std::move(callback);
 }
@@ -1083,6 +1090,14 @@ void ConfigService::setWallpaperPath(const std::optional<std::string>& connector
     }
   }
 
+  // Track the most recently applied wallpaper so palette generation still has a usable image
+  // when wallpaper management is only used on a subset of displays (no default path set).
+  const bool lastChanged = (m_lastWallpaperPath != path);
+  if (lastChanged) {
+    m_lastWallpaperPath = path;
+    changed = true;
+  }
+
   if (!changed) {
     return;
   }
@@ -1096,6 +1111,10 @@ void ConfigService::setWallpaperPath(const std::optional<std::string>& connector
   } else {
     auto* defaultTbl = ensureTable(*wallpaperTbl, "default");
     defaultTbl->insert_or_assign("path", path);
+  }
+  if (lastChanged) {
+    auto* lastTbl = ensureTable(*wallpaperTbl, "last");
+    lastTbl->insert_or_assign("path", path);
   }
 
   if (!writeOverridesToFile()) {
@@ -1115,11 +1134,17 @@ void ConfigService::setWallpaperPath(const std::optional<std::string>& connector
 
 void ConfigService::extractWallpaperFromOverrides() {
   m_defaultWallpaperPath.clear();
+  m_lastWallpaperPath.clear();
   m_monitorWallpaperPaths.clear();
 
   if (auto* wpDefault = m_overridesTable["wallpaper"]["default"].as_table()) {
     if (auto v = (*wpDefault)["path"].value<std::string>()) {
       m_defaultWallpaperPath = FileUtils::expandUserPath(*v).string();
+    }
+  }
+  if (auto* wpLast = m_overridesTable["wallpaper"]["last"].as_table()) {
+    if (auto v = (*wpLast)["path"].value<std::string>()) {
+      m_lastWallpaperPath = FileUtils::expandUserPath(*v).string();
     }
   }
   if (auto* monitors = m_overridesTable["wallpaper"]["monitors"].as_table()) {

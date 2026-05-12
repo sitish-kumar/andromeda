@@ -437,11 +437,13 @@ void ConfigService::checkReload() {
     kLog.info("reloading {}", m_overridesPath);
 
     const auto oldDefault = m_defaultWallpaperPath;
+    const auto oldLast = m_lastWallpaperPath;
     const auto oldMonitors = m_monitorWallpaperPaths;
 
     loadOverridesFromFile();
 
-    const bool wallpaperChanged = (oldDefault != m_defaultWallpaperPath || oldMonitors != m_monitorWallpaperPaths);
+    const bool wallpaperChanged = (oldDefault != m_defaultWallpaperPath || oldLast != m_lastWallpaperPath ||
+                                   oldMonitors != m_monitorWallpaperPaths);
     if (wallpaperChanged && m_wallpaperChangeCallback) {
       m_wallpaperChangeCallback();
     }
@@ -620,6 +622,7 @@ void ConfigService::setupWatch() {
 void ConfigService::loadOverridesFromFile() {
   m_overridesTable = toml::table{};
   m_defaultWallpaperPath.clear();
+  m_lastWallpaperPath.clear();
   m_monitorWallpaperPaths.clear();
   m_setupWizardCompleted = false;
   m_overridesParseError.clear();

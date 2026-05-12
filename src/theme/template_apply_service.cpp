@@ -60,7 +60,7 @@ namespace noctalia::theme {
         .palette = palette,
         .templates = theme.templates,
         .defaultMode = std::string(defaultMode),
-        .imagePath = m_config.getDefaultWallpaperPath(),
+        .imagePath = m_config.getPaletteWallpaperPath(),
         .schemeType = schemeTypeFromConfig(theme),
     };
   }
