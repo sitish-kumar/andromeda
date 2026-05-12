@@ -420,6 +420,13 @@ namespace settings {
     } else if (type == "taskbar") {
       add(boolSpec("group_by_workspace", false));
       add(boolSpec("show_all_outputs", false));
+      add(boolSpec("only_active_workspace", false));
+      {
+        auto showWsLabel = boolSpec("show_workspace_label", true);
+        showWsLabel.visibleWhen =
+            WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
+        add(std::move(showWsLabel));
+      }
       for (auto& spec : specs) {
         if (spec.key == "capsule_radius") {
           spec.descriptionKey = "settings.widgets.settings.capsule_radius.taskbar-description";

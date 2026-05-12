@@ -1059,6 +1059,14 @@
           "label": "Show All Monitors",
           "description": "List windows from every display on this taskbar. Grouped capsules add a short monitor index (tag·1, tag·2, …) when multiple outputs are present."
         },
+        "only_active_workspace": {
+          "label": "Only Active Workspace",
+          "description": "Hide windows that are not on a currently active workspace (per monitor). Requires compositor workspace-to-window data; windows without a resolved workspace stay visible."
+        },
+        "show_workspace_label": {
+          "label": "Workspace Capsule Label",
+          "description": "Show the small workspace tag on grouped taskbar capsules. Turn off for icon-only groups."
+        },
         "height": {
           "label": "Height",
           "description": "Widget height in pixels"
