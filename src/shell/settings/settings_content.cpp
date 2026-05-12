@@ -1930,11 +1930,7 @@ namespace settings {
                              const ListSetting& list) { makeListBlock(section, entry, list); },
     };
 
-    auto isEntryVisible = [&](const SettingEntry& e) -> bool {
-      if (!e.visibleWhen.has_value()) {
-        return true;
-      }
-      const auto& cond = *e.visibleWhen;
+    auto visibilityConditionMatches = [&](const SettingVisibilityCondition& cond) -> bool {
       for (const auto& other : registry) {
         if (other.path == cond.path) {
           std::string currentValue;
@@ -1948,6 +1944,18 @@ namespace settings {
               return true;
             }
           }
+          return false;
+        }
+      }
+      return true;
+    };
+
+    auto isEntryVisible = [&](const SettingEntry& e) -> bool {
+      if (!e.visibleWhen.has_value()) {
+        return true;
+      }
+      for (const auto& cond : e.visibleWhen->all) {
+        if (!visibilityConditionMatches(cond)) {
           return false;
         }
       }

@@ -616,9 +616,14 @@ namespace settings {
     entries.push_back(makeEntry("shell", "formats", tr("settings.schema.shell.date-format.label"),
                                 tr("settings.schema.shell.date-format.description"), {"shell", "date_format"},
                                 TextSetting{cfg.shell.dateFormat, "%A, %x"}, "calendar date format strftime chrono"));
-    entries.push_back(makeEntry("shell", "location", tr("settings.schema.shell.show-location.label"),
-                                tr("settings.schema.shell.show-location.description"), {"shell", "show_location"},
-                                ToggleSetting{cfg.shell.showLocation}, "weather"));
+    const SettingVisibility weatherOn{{"weather", "enabled"}, {"true"}};
+    {
+      auto e = makeEntry("shell", "location", tr("settings.schema.shell.show-location.label"),
+                         tr("settings.schema.shell.show-location.description"), {"shell", "show_location"},
+                         ToggleSetting{cfg.shell.showLocation}, "weather");
+      e.visibleWhen = weatherOn;
+      entries.push_back(std::move(e));
+    }
     entries.push_back(makeEntry("shell", "clipboard", tr("settings.schema.shell.clipboard-auto-paste.label"),
                                 tr("settings.schema.shell.clipboard-auto-paste.description"),
                                 {"shell", "clipboard_auto_paste"},
@@ -648,26 +653,46 @@ namespace settings {
     entries.push_back(makeEntry("services", "weather", tr("settings.schema.services.weather.label"),
                                 tr("settings.schema.services.weather.description"), {"weather", "enabled"},
                                 ToggleSetting{cfg.weather.enabled}, "forecast"));
-    entries.push_back(makeEntry("services", "weather", tr("settings.schema.services.weather-location.label"),
-                                tr("settings.schema.services.weather-location.description"), {"weather", "auto_locate"},
-                                ToggleSetting{cfg.weather.autoLocate}, "forecast gps"));
-    entries.push_back(makeEntry("services", "weather", tr("settings.schema.services.weather-unit.label"),
-                                tr("settings.schema.services.weather-unit.description"), {"weather", "unit"},
-                                asSegmented(plainSelect({{"metric", "settings.options.weather.unit.metric"},
-                                                         {"imperial", "settings.options.weather.unit.imperial"}},
-                                                        cfg.weather.unit)),
-                                "temperature"));
-    entries.push_back(makeEntry(
-        "services", "weather", tr("settings.schema.services.weather-address.label"),
-        tr("settings.schema.services.weather-address.description"), {"weather", "address"},
-        TextSetting{cfg.weather.address, tr("settings.schema.services.weather-address.placeholder")}, "location"));
-    entries.push_back(makeEntry("services", "weather", tr("settings.schema.services.weather-effects.label"),
-                                tr("settings.schema.services.weather-effects.description"), {"weather", "effects"},
-                                ToggleSetting{cfg.weather.effects}, "forecast visuals"));
-    entries.push_back(
-        makeEntry("services", "weather", tr("settings.schema.services.weather-refresh-interval.label"),
-                  tr("settings.schema.services.weather-refresh-interval.description"), {"weather", "refresh_minutes"},
-                  SliderSetting{static_cast<float>(cfg.weather.refreshMinutes), 5.0f, 240.0f, 5.0f, true}, "forecast"));
+    {
+      auto e = makeEntry("services", "weather", tr("settings.schema.services.weather-location.label"),
+                         tr("settings.schema.services.weather-location.description"), {"weather", "auto_locate"},
+                         ToggleSetting{cfg.weather.autoLocate}, "forecast gps");
+      e.visibleWhen = weatherOn;
+      entries.push_back(std::move(e));
+    }
+    {
+      auto e = makeEntry("services", "weather", tr("settings.schema.services.weather-unit.label"),
+                         tr("settings.schema.services.weather-unit.description"), {"weather", "unit"},
+                         asSegmented(plainSelect({{"metric", "settings.options.weather.unit.metric"},
+                                                  {"imperial", "settings.options.weather.unit.imperial"}},
+                                                 cfg.weather.unit)),
+                         "temperature");
+      e.visibleWhen = weatherOn;
+      entries.push_back(std::move(e));
+    }
+    {
+      auto e = makeEntry("services", "weather", tr("settings.schema.services.weather-address.label"),
+                         tr("settings.schema.services.weather-address.description"), {"weather", "address"},
+                         TextSetting{cfg.weather.address, tr("settings.schema.services.weather-address.placeholder")},
+                         "location");
+      e.visibleWhen = weatherOn;
+      entries.push_back(std::move(e));
+    }
+    {
+      auto e = makeEntry("services", "weather", tr("settings.schema.services.weather-effects.label"),
+                         tr("settings.schema.services.weather-effects.description"), {"weather", "effects"},
+                         ToggleSetting{cfg.weather.effects}, "forecast visuals");
+      e.visibleWhen = weatherOn;
+      entries.push_back(std::move(e));
+    }
+    {
+      auto e = makeEntry(
+          "services", "weather", tr("settings.schema.services.weather-refresh-interval.label"),
+          tr("settings.schema.services.weather-refresh-interval.description"), {"weather", "refresh_minutes"},
+          SliderSetting{static_cast<float>(cfg.weather.refreshMinutes), 5.0f, 240.0f, 5.0f, true}, "forecast");
+      e.visibleWhen = weatherOn;
+      entries.push_back(std::move(e));
+    }
     entries.push_back(makeEntry("services", "audio", tr("settings.schema.services.audio-overdrive.label"),
                                 tr("settings.schema.services.audio-overdrive.description"),
                                 {"audio", "enable_overdrive"}, ToggleSetting{cfg.audio.enableOverdrive}, "volume"));
@@ -706,26 +731,38 @@ namespace settings {
       entries.push_back(makeEntry("services", "night-light", tr("settings.schema.services.night-light.label"),
                                   tr("settings.schema.services.night-light.description"), {"nightlight", "enabled"},
                                   ToggleSetting{cfg.nightlight.enabled}, "nightlight"));
-      entries.push_back(makeEntry("services", "night-light", tr("settings.schema.services.force-night-light.label"),
-                                  tr("settings.schema.services.force-night-light.description"), {"nightlight", "force"},
-                                  ToggleSetting{cfg.nightlight.force}, "nightlight"));
+      const SettingVisibility nightLightOn{{"nightlight", "enabled"}, {"true"}};
+      {
+        auto e = makeEntry("services", "night-light", tr("settings.schema.services.force-night-light.label"),
+                           tr("settings.schema.services.force-night-light.description"), {"nightlight", "force"},
+                           ToggleSetting{cfg.nightlight.force}, "nightlight");
+        e.visibleWhen = nightLightOn;
+        entries.push_back(std::move(e));
+      }
       const bool weatherLocationConfigured =
           cfg.weather.enabled && (cfg.weather.autoLocate || !cfg.weather.address.empty());
       const std::string weatherLocationSubtitle =
           weatherLocationConfigured ? tr("settings.schema.services.use-weather-location.description")
                                     : tr("settings.schema.services.use-weather-location.requires-weather-location");
-      entries.push_back(makeEntry("services", "night-light", tr("settings.schema.services.use-weather-location.label"),
-                                  weatherLocationSubtitle, {"nightlight", "use_weather_location"},
-                                  ToggleSetting{cfg.nightlight.useWeatherLocation}, "location"));
-      const SettingVisibility weatherLocationOff{{"nightlight", "use_weather_location"}, {"false"}};
+      {
+        auto e = makeEntry("services", "night-light", tr("settings.schema.services.use-weather-location.label"),
+                           weatherLocationSubtitle, {"nightlight", "use_weather_location"},
+                           ToggleSetting{cfg.nightlight.useWeatherLocation}, "location");
+        e.visibleWhen = nightLightOn;
+        entries.push_back(std::move(e));
+      }
+      const SettingVisibility nightLightOnWeatherLocationOff{std::vector<SettingVisibilityCondition>{
+          {{"nightlight", "enabled"}, {"true"}},
+          {{"nightlight", "use_weather_location"}, {"false"}},
+      }};
+      const SettingVisibility& manualNightLightControlsVisible =
+          weatherLocationConfigured ? nightLightOnWeatherLocationOff : nightLightOn;
       {
         auto e =
             makeEntry("services", "night-light", tr("settings.schema.services.night-light-start-time.label"),
                       tr("settings.schema.services.night-light-start-time.description"), {"nightlight", "start_time"},
                       TextSetting{cfg.nightlight.startTime, "20:30"}, "time schedule sunset");
-        if (weatherLocationConfigured) {
-          e.visibleWhen = weatherLocationOff;
-        }
+        e.visibleWhen = manualNightLightControlsVisible;
         entries.push_back(std::move(e));
       }
       {
@@ -733,9 +770,7 @@ namespace settings {
             makeEntry("services", "night-light", tr("settings.schema.services.night-light-stop-time.label"),
                       tr("settings.schema.services.night-light-stop-time.description"), {"nightlight", "stop_time"},
                       TextSetting{cfg.nightlight.stopTime, "07:30"}, "time schedule sunrise");
-        if (weatherLocationConfigured) {
-          e.visibleWhen = weatherLocationOff;
-        }
+        e.visibleWhen = manualNightLightControlsVisible;
         entries.push_back(std::move(e));
       }
       {
@@ -743,9 +778,7 @@ namespace settings {
                            tr("settings.schema.services.latitude.description"), {"nightlight", "latitude"},
                            OptionalNumberSetting{cfg.nightlight.latitude, -90.0, 90.0, "52.5200"},
                            "coordinate location sunrise sunset", true);
-        if (weatherLocationConfigured) {
-          e.visibleWhen = weatherLocationOff;
-        }
+        e.visibleWhen = manualNightLightControlsVisible;
         entries.push_back(std::move(e));
       }
       {
@@ -753,9 +786,7 @@ namespace settings {
                            tr("settings.schema.services.longitude.description"), {"nightlight", "longitude"},
                            OptionalNumberSetting{cfg.nightlight.longitude, -180.0, 180.0, "13.4050"},
                            "coordinate location sunrise sunset", true);
-        if (weatherLocationConfigured) {
-          e.visibleWhen = weatherLocationOff;
-        }
+        e.visibleWhen = manualNightLightControlsVisible;
         entries.push_back(std::move(e));
       }
       // Both sliders span the same range; the day > night invariant is enforced at commit time
@@ -785,9 +816,13 @@ namespace settings {
         }
         return overrides;
       };
-      entries.push_back(makeEntry("services", "night-light", tr("settings.schema.services.day-temperature.label"),
-                                  tr("settings.schema.services.day-temperature.description"),
-                                  {"nightlight", "temperature_day"}, std::move(daySlider), "nightlight kelvin"));
+      {
+        auto e = makeEntry("services", "night-light", tr("settings.schema.services.day-temperature.label"),
+                           tr("settings.schema.services.day-temperature.description"),
+                           {"nightlight", "temperature_day"}, std::move(daySlider), "nightlight kelvin");
+        e.visibleWhen = nightLightOn;
+        entries.push_back(std::move(e));
+      }
 
       SliderSetting nightSlider{static_cast<float>(cfg.nightlight.nightTemperature), tempMin, tempMax, tempStep, true};
       nightSlider.linkedCommit = [curDay = cfg.nightlight.dayTemperature](double v) {
@@ -808,9 +843,13 @@ namespace settings {
         }
         return overrides;
       };
-      entries.push_back(makeEntry("services", "night-light", tr("settings.schema.services.night-temperature.label"),
-                                  tr("settings.schema.services.night-temperature.description"),
-                                  {"nightlight", "temperature_night"}, std::move(nightSlider), "nightlight kelvin"));
+      {
+        auto e = makeEntry("services", "night-light", tr("settings.schema.services.night-temperature.label"),
+                           tr("settings.schema.services.night-temperature.description"),
+                           {"nightlight", "temperature_night"}, std::move(nightSlider), "nightlight kelvin");
+        e.visibleWhen = nightLightOn;
+        entries.push_back(std::move(e));
+      }
     }
 
     // Idle

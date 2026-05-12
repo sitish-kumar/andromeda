@@ -8,6 +8,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -127,9 +128,18 @@ namespace settings {
                                       SessionPanelActionsSetting, IdleBehaviorsSetting, ColorSetting,
                                       MultiSelectSetting, ButtonSetting, ColorRolePickerSetting, SearchPickerSetting>;
 
-  struct SettingVisibility {
+  struct SettingVisibilityCondition {
     std::vector<std::string> path;
     std::vector<std::string> values;
+  };
+
+  struct SettingVisibility {
+    SettingVisibility() = default;
+    SettingVisibility(std::vector<std::string> pathIn, std::vector<std::string> valuesIn)
+        : all{SettingVisibilityCondition{std::move(pathIn), std::move(valuesIn)}} {}
+    explicit SettingVisibility(std::vector<SettingVisibilityCondition> conditions) : all(std::move(conditions)) {}
+
+    std::vector<SettingVisibilityCondition> all;
   };
 
   struct SettingEntry {
