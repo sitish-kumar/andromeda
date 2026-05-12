@@ -1167,6 +1167,14 @@
           "label": "Vertical Format",
           "description": "Optional format used on vertical bars"
         },
+        "warning_color": {
+          "label": "Warning Color",
+          "description": "Color applied when charge is at or below the warning threshold"
+        },
+        "warning_threshold": {
+          "label": "Warning Threshold",
+          "description": "Battery percentage at or below which the widget switches to warning color"
+        },
         "width": {
           "label": "Width",
           "description": "Widget width in pixels"

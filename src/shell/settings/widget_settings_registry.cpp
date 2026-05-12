@@ -359,6 +359,8 @@ namespace settings {
       add(colorRoleSpec("high_color", "primary"));
     } else if (type == "battery") {
       add(selectSpec("device", "auto", {{"auto", "common.states.auto"}}));
+      add(intSpec("warning_threshold", 20, 0.0, 100.0, 1.0));
+      add(colorRoleSpec("warning_color", "error"));
     } else if (type == "bluetooth") {
       add(boolSpec("show_label", false));
     } else if (type == "brightness") {
