@@ -1151,31 +1151,75 @@ void NotificationToast::refreshEntryGeometry(PopupEntry& entry) const {
 }
 
 float NotificationToast::layoutBottomForSurfaceHeight(float surfaceHeight) const {
-  return std::max(kPaddingTop, surfaceHeight - kPaddingBottom);
+  const float edgePadding = isBottomStacking() ? 0.0f : kPaddingBottom;
+  return std::max(kPaddingTop, surfaceHeight - edgePadding);
 }
 
 float NotificationToast::maxPlacementBottom() const {
   float maxSurfaceHeight = 0.0f;
   bool haveSurfaceHeight = false;
-  if (m_wayland != nullptr) {
-    for (const auto& output : m_wayland->outputs()) {
-      if (output.output == nullptr) {
-        continue;
-      }
-      haveSurfaceHeight = true;
-      maxSurfaceHeight = std::max(maxSurfaceHeight, static_cast<float>(surfaceHeightForOutput(output.output)));
-    }
-  }
   for (const auto& inst : m_instances) {
     if (inst != nullptr && inst->surface != nullptr && inst->surface->height() > 0) {
       haveSurfaceHeight = true;
       maxSurfaceHeight = std::max(maxSurfaceHeight, static_cast<float>(inst->surface->height()));
     }
   }
+  if (!haveSurfaceHeight && m_wayland != nullptr) {
+    for (const auto& output : m_wayland->outputs()) {
+      if (output.output == nullptr) {
+        continue;
+      }
+      if (!shouldRenderOnOutput(output)) {
+        continue;
+      }
+      haveSurfaceHeight = true;
+      maxSurfaceHeight = std::max(maxSurfaceHeight, static_cast<float>(surfaceHeightForOutput(output.output)));
+    }
+  }
   if (!haveSurfaceHeight) {
     maxSurfaceHeight = static_cast<float>(kFallbackSurfaceHeight);
   }
   return layoutBottomForSurfaceHeight(maxSurfaceHeight);
+}
+
+void NotificationToast::alignBottomStackToPlacementBottom() {
+  if (!isBottomStacking()) {
+    return;
+  }
+
+  bool havePlacedEntry = false;
+  float stackBottom = 0.0f;
+  for (const auto& entry : m_entries) {
+    if (!hasPlacement(entry)) {
+      continue;
+    }
+    const float entryBottom = entry.y + entry.height;
+    if (!havePlacedEntry || entryBottom > stackBottom) {
+      havePlacedEntry = true;
+      stackBottom = entryBottom;
+    }
+  }
+  if (!havePlacedEntry) {
+    return;
+  }
+
+  const float delta = maxPlacementBottom() - stackBottom;
+  if (std::abs(delta) <= 0.5f) {
+    return;
+  }
+
+  for (auto& entry : m_entries) {
+    if (!hasPlacement(entry)) {
+      continue;
+    }
+    entry.y += delta;
+    if (entry.y < kPaddingTop - 0.5f) {
+      entry.y = kQueuedY;
+      if (entry.rawTimeoutMs > 0 && m_notifications != nullptr) {
+        m_notifications->pauseExpiry(entry.notificationId);
+      }
+    }
+  }
 }
 
 std::optional<float> NotificationToast::findPlacementY(float candidateHeight,
@@ -1274,7 +1318,6 @@ void NotificationToast::ensureSurfaces() {
     if (!shouldRenderOnOutput(output)) {
       continue;
     }
-    const auto surfaceHeight = surfaceHeightForOutput(output.output);
 
     auto existingIt = std::find_if(m_instances.begin(), m_instances.end(), [&output](const auto& inst) {
       return inst != nullptr && inst->output == output.output;
@@ -1282,9 +1325,8 @@ void NotificationToast::ensureSurfaces() {
     if (existingIt != m_instances.end()) {
       auto& inst = *existingIt;
       inst->scale = output.scale;
-      if (inst->surface != nullptr &&
-          (inst->surface->width() != surfaceWidth || inst->surface->height() != surfaceHeight)) {
-        inst->surface->requestSize(surfaceWidth, surfaceHeight);
+      if (inst->surface != nullptr && inst->surface->width() != surfaceWidth) {
+        inst->surface->requestSize(surfaceWidth, 0);
       }
       continue;
     }
@@ -1293,25 +1335,25 @@ void NotificationToast::ensureSurfaces() {
     inst->output = output.output;
     inst->scale = output.scale;
 
-    std::uint32_t anchor = LayerShellAnchor::Top | LayerShellAnchor::Right;
+    std::uint32_t anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom | LayerShellAnchor::Right;
     std::int32_t marginTop = kSurfaceMargin;
     std::int32_t marginRight = kSurfaceMargin;
     std::int32_t marginBottom = kSurfaceMargin;
     std::int32_t marginLeft = kSurfaceMargin;
     if (position == "top_left") {
-      anchor = LayerShellAnchor::Top | LayerShellAnchor::Left;
+      anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom | LayerShellAnchor::Left;
     } else if (position == "top_center") {
-      anchor = LayerShellAnchor::Top;
+      anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom;
       marginLeft = 0;
       marginRight = 0;
     } else if (position == "bottom_left") {
-      anchor = LayerShellAnchor::Bottom | LayerShellAnchor::Left;
+      anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom | LayerShellAnchor::Left;
     } else if (position == "bottom_center") {
-      anchor = LayerShellAnchor::Bottom;
+      anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom;
       marginLeft = 0;
       marginRight = 0;
     } else if (position == "bottom_right") {
-      anchor = LayerShellAnchor::Bottom | LayerShellAnchor::Right;
+      anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom | LayerShellAnchor::Right;
     }
 
     auto surfaceConfig = LayerSurfaceConfig{
@@ -1319,7 +1361,7 @@ void NotificationToast::ensureSurfaces() {
         .layer = layer == "overlay" ? LayerShellLayer::Overlay : LayerShellLayer::Top,
         .anchor = anchor,
         .width = surfaceWidth,
-        .height = surfaceHeight,
+        .height = 0,
         .exclusiveZone = 0,
         .marginTop = marginTop,
         .marginRight = marginRight,
@@ -1327,7 +1369,7 @@ void NotificationToast::ensureSurfaces() {
         .marginLeft = marginLeft,
         .keyboard = LayerShellKeyboard::None,
         .defaultWidth = surfaceWidth,
-        .defaultHeight = surfaceHeight,
+        .defaultHeight = surfaceHeightForOutput(output.output),
     };
 
     inst->surface = std::make_unique<LayerSurface>(*m_wayland, std::move(surfaceConfig));
@@ -1393,6 +1435,7 @@ void NotificationToast::prepareFrame(Instance& inst, bool /*needsUpdate*/, bool 
   // tear down the card scene.
   if (needsRebuild) {
     UiPhaseScope layoutPhase(UiPhase::Layout);
+    alignBottomStackToPlacementBottom();
     buildScene(inst, width, height);
   } else if (needsLayout && inst.surface != nullptr) {
     inst.surface->requestRedraw();
