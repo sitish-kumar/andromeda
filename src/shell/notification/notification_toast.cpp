@@ -1331,6 +1331,7 @@ void NotificationToast::ensureSurfaces() {
     };
 
     inst->surface = std::make_unique<LayerSurface>(*m_wayland, std::move(surfaceConfig));
+    inst->surface->setRenderContext(m_renderContext);
 
     auto* instPtr = inst.get();
     inst->surface->setConfigureCallback(
@@ -1345,7 +1346,6 @@ void NotificationToast::ensureSurfaces() {
       }
     });
     inst->surface->setAnimationManager(&inst->animations);
-    inst->surface->setRenderContext(m_renderContext);
 
     bool ok = inst->surface->initialize(output.output);
     if (!ok) {
