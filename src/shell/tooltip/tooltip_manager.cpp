@@ -206,7 +206,11 @@ TooltipManager::Size TooltipManager::measureContent(const TooltipContent& conten
       maxValW = std::max(maxValW, vm.width);
       rowH = std::max(rowH, std::max(km.bottom - km.top, vm.bottom - vm.top));
     }
-    float contentW = std::min(maxKeyW + kTableColumnGap + maxValW, kMaxContentWidth);
+    float naturalW = maxKeyW + kTableColumnGap + maxValW;
+    float contentW = std::min(naturalW, kMaxContentWidth);
+    if (naturalW > kMaxContentWidth) {
+      maxValW = kMaxContentWidth - maxKeyW - kTableColumnGap;
+    }
     float contentH = static_cast<float>(rows->size()) * rowH + static_cast<float>(rows->size() - 1) * kTableGap;
     auto w = static_cast<std::uint32_t>(std::ceil(contentW + kPadH * 2.0f + kBorder * 2.0f));
     auto h = static_cast<std::uint32_t>(std::ceil(contentH + kPadV * 2.0f + kBorder * 2.0f));
@@ -248,11 +252,20 @@ void TooltipManager::buildScene(const TooltipContent& content, float w, float h)
   }
 
   if (const auto* rows = std::get_if<std::vector<TooltipRow>>(&content)) {
+    const float containerW = w - (kPadH + kBorder) * 2.0f;
+
+    float maxKeyW = 0.0f;
+    for (const auto& row : *rows) {
+      auto km = m_renderContext->measureText(row.key, Style::fontSizeCaption);
+      maxKeyW = std::max(maxKeyW, km.width);
+    }
+    const float valMaxW = std::max(0.0f, containerW - maxKeyW - kTableColumnGap);
+
     auto container = std::make_unique<Flex>();
     container->setDirection(FlexDirection::Vertical);
     container->setGap(kTableGap);
     container->setPosition(kPadH + kBorder, kPadV + kBorder);
-    container->setSize(w - (kPadH + kBorder) * 2.0f, h - (kPadV + kBorder) * 2.0f);
+    container->setSize(containerW, h - (kPadV + kBorder) * 2.0f);
 
     for (const auto& row : *rows) {
       auto rowFlex = std::make_unique<Flex>();
@@ -272,6 +285,7 @@ void TooltipManager::buildScene(const TooltipContent& content, float w, float h)
       valLabel->setFontSize(Style::fontSizeCaption);
       valLabel->setColor(colorSpecFromRole(ColorRole::OnSurface));
       valLabel->setTextAlign(TextAlign::End);
+      valLabel->setMaxWidth(valMaxW);
       valLabel->setText(row.value);
       valLabel->measure(*m_renderContext);
       rowFlex->addChild(std::move(valLabel));
