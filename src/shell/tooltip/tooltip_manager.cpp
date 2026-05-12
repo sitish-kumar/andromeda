@@ -104,6 +104,7 @@ void TooltipManager::showPopup() {
   };
 
   m_surface = std::make_unique<PopupSurface>(*m_wayland);
+  m_surface->setRenderContext(m_renderContext);
   m_surface->setDismissedCallback([this] {
     m_animations.cancelAll();
     m_fadeAnimId = 0;
@@ -119,9 +120,18 @@ void TooltipManager::showPopup() {
     return;
   }
 
+  m_renderContext->syncContentScale(m_surface->renderTarget());
+  const auto [scaledContentW, scaledContentH] = measureContent(m_pendingContent);
+  if (scaledContentW == 0 || scaledContentH == 0) {
+    destroyPopup();
+    return;
+  }
+  if (scaledContentW != contentW || scaledContentH != contentH) {
+    m_surface->resize(scaledContentW, scaledContentH);
+  }
+
   m_surface->setInputRegion({});
   m_surface->setAnimationManager(&m_animations);
-  m_surface->setRenderContext(m_renderContext);
   m_surface->setConfigureCallback([this](std::uint32_t, std::uint32_t) { m_surface->requestLayout(); });
   m_surface->setPrepareFrameCallback([this](bool u, bool l) { prepareFrame(u, l); });
 
@@ -201,7 +211,7 @@ TooltipManager::Size TooltipManager::measureContent(const TooltipContent& conten
     float rowH = 0.0f;
     for (const auto& row : *rows) {
       auto km = m_renderContext->measureText(row.key, Style::fontSizeCaption);
-      auto vm = m_renderContext->measureText(row.value, Style::fontSizeCaption);
+      const auto vm = m_renderContext->measureText(row.value, Style::fontSizeCaption);
       maxKeyW = std::max(maxKeyW, km.width);
       maxValW = std::max(maxValW, vm.width);
       rowH = std::max(rowH, std::max(km.bottom - km.top, vm.bottom - vm.top));
@@ -285,7 +295,10 @@ void TooltipManager::buildScene(const TooltipContent& content, float w, float h)
       valLabel->setFontSize(Style::fontSizeCaption);
       valLabel->setColor(colorSpecFromRole(ColorRole::OnSurface));
       valLabel->setTextAlign(TextAlign::End);
-      valLabel->setMaxWidth(valMaxW);
+      const auto vm = m_renderContext->measureText(row.value, Style::fontSizeCaption);
+      if (vm.width > valMaxW + 0.5f) {
+        valLabel->setMaxWidth(valMaxW);
+      }
       valLabel->setText(row.value);
       valLabel->measure(*m_renderContext);
       rowFlex->addChild(std::move(valLabel));
