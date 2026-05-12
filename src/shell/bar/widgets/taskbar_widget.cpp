@@ -237,6 +237,24 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     const float groupPadEnd = Style::spaceXs * 0.55f * m_contentScale;
     const float badgeBase = std::round(std::max(11.0f, Style::barGlyphSize * 0.72f) * m_contentScale);
     const float badgeFontSize = std::round(Style::fontSizeCaption * 0.72f * m_contentScale);
+
+    float stripPadLeft = 0.0f;
+    float stripPadTop = 0.0f;
+    if (m_showWorkspaceLabel) {
+      float maxBadgeWidth = 0.0f;
+      for (const auto& wsm : m_workspaces) {
+        const auto metrics = renderer.measureText(wsm.label, badgeFontSize, true);
+        const float textW = std::max(0.0f, metrics.right - metrics.left);
+        const float bw = std::round(std::max(badgeBase, textW + (Style::spaceXs * m_contentScale)));
+        maxBadgeWidth = std::max(maxBadgeWidth, bw);
+      }
+      // Workspace pills hang slightly outside the capsule; reserve space inside the bar clip
+      // (see bar content clip) so longer multi-monitor labels are not sheared on the left/top.
+      stripPadLeft = std::ceil(maxBadgeWidth * 0.32f);
+      stripPadTop = std::ceil(badgeBase * 0.22f);
+    }
+    m_taskStrip->setPadding(stripPadTop, 0.0f, 0.0f, stripPadLeft);
+
     for (const auto& ws : m_workspaces) {
       std::vector<const TaskModel*> tasks;
       for (const auto& task : m_tasks) {
@@ -346,6 +364,8 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     }
     return;
   }
+
+  m_taskStrip->setPadding(0.0f, 0.0f, 0.0f, 0.0f);
 
   for (const auto& task : m_tasks) {
     m_taskStrip->addChild(createTaskTile(task));
