@@ -1505,6 +1505,10 @@
         }
       },
       "idle": {
+        "pre-action-fade": {
+          "label": "Idle dim",
+          "description": "Seconds of fullscreen dim before the idle command. Use 0 to disable."
+        },
         "behaviors": {
           "label": "Behaviors",
           "description": "Named idle actions, timeouts, resume commands, and order."

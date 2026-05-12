@@ -379,6 +379,7 @@ void Application::initServices() {
     m_desktopWidgetsController.onOutputChange();
     m_screenCorners.onOutputChange();
     m_lockScreen.onOutputChange();
+    m_idleGraceOverlay.onOutputChange();
   });
   m_clipboardService.setChangeCallback([this]() {
     if (m_panelManager.isOpenPanel("clipboard")) {
@@ -406,11 +407,6 @@ void Application::initServices() {
       m_panelManager.refresh();
     }
   });
-  m_idleManager.initialize(m_wayland);
-  m_idleManager.setCommandRunner([this](const std::string& command) { return runUserCommand(command); });
-  m_idleManager.reload(m_configService.config().idle);
-  m_configService.addReloadCallback([this]() { m_idleManager.reload(m_configService.config().idle); });
-
   m_hookManager.setCommandRunner([this](const std::string& command) { return runUserCommand(command); });
   m_hookManager.setBlockingCommandRunner(
       [this](const std::string& command) { return runUserCommandBlocking(command); });
@@ -913,6 +909,22 @@ void Application::initUi() {
 
   TooltipManager::instance().initialize(m_wayland, &m_renderContext);
   m_osdOverlay.initialize(m_wayland, &m_configService, &m_renderContext);
+  m_idleGraceOverlay.initialize(m_wayland, &m_renderContext);
+  m_idleManager.initialize(
+      m_wayland,
+      [this](const std::string& behaviorName, std::chrono::milliseconds fadeIn, std::function<void()> onFadeComplete) {
+        (void)behaviorName;
+        DeferredCall::callLater([this, fadeIn, done = std::move(onFadeComplete)]() mutable {
+          m_idleGraceOverlay.show(fadeIn, std::move(done));
+        });
+      },
+      [this](bool userCancelled) {
+        (void)userCancelled;
+        DeferredCall::callLater([this]() { m_idleGraceOverlay.hide(); });
+      });
+  m_idleManager.setCommandRunner([this](const std::string& command) { return runUserCommand(command); });
+  m_idleManager.reload(m_configService.config().idle);
+  m_configService.addReloadCallback([this]() { m_idleManager.reload(m_configService.config().idle); });
   m_audioOsd.bindOverlay(m_osdOverlay);
   m_audioOsd.setSoundPlayer(m_soundPlayer.get());
   if (m_pipewireService != nullptr) {

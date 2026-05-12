@@ -135,6 +135,10 @@ struct IdleBehaviorConfig {
 
 struct IdleConfig {
   std::vector<IdleBehaviorConfig> behaviors;
+  /// When > 0, after the compositor reports idle the shell fades a fullscreen overlay (surface color)
+  /// from transparent to opaque over this many seconds, then runs `command`. Compositor activity during
+  /// the fade cancels. When 0, the idle command runs immediately with no overlay.
+  float preActionFadeSeconds = 2.0f;
 };
 
 [[nodiscard]] std::vector<ShortcutConfig> defaultControlCenterShortcuts();

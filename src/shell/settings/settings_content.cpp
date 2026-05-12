@@ -1120,6 +1120,24 @@ namespace settings {
       return input;
     };
 
+    const auto makeStepper = [&](const StepperSetting& setting, std::vector<std::string> path) {
+      const int minValue = std::min(setting.minValue, setting.maxValue);
+      const int maxValue = std::max(setting.minValue, setting.maxValue);
+      const int currentValue = std::clamp(setting.value, minValue, maxValue);
+
+      auto stepper = std::make_unique<Stepper>();
+      stepper->setScale(scale);
+      stepper->setRange(minValue, maxValue);
+      stepper->setStep(setting.step);
+      if (!setting.valueSuffix.empty()) {
+        stepper->setValueSuffix(setting.valueSuffix);
+      }
+      stepper->setValue(currentValue);
+      stepper->setOnValueCommitted(
+          [setOverride = ctx.setOverride, path](int value) { setOverride(path, static_cast<double>(value)); });
+      return stepper;
+    };
+
     const auto makeOptionalStepper = [&](const OptionalStepperSetting& setting, std::vector<std::string> path) {
       auto wrap = std::make_unique<Flex>();
       wrap->setDirection(FlexDirection::Horizontal);
@@ -1984,6 +2002,8 @@ namespace settings {
               return makeOptionalNumber(control, entry.path);
             } else if constexpr (std::is_same_v<T, OptionalStepperSetting>) {
               return makeOptionalStepper(control, entry.path);
+            } else if constexpr (std::is_same_v<T, StepperSetting>) {
+              return makeStepper(control, entry.path);
             } else if constexpr (std::is_same_v<T, ColorSetting>) {
               return makeColor(control, entry.path);
             } else if constexpr (std::is_same_v<T, SearchPickerSetting>) {

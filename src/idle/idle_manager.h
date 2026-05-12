@@ -2,6 +2,7 @@
 
 #include "config/config_service.h"
 
+#include <chrono>
 #include <functional>
 #include <memory>
 #include <string>
@@ -14,6 +15,11 @@ struct ext_idle_notifier_v1;
 class IdleManager {
 public:
   using CommandRunner = std::function<bool(const std::string&)>;
+  /// Starts the pre-action fade overlay; call `onFadeComplete` once every output has finished fading.
+  using GraceBeginCallback = std::function<void(const std::string& behaviorName, std::chrono::milliseconds fadeDuration,
+                                                std::function<void()> onFadeComplete)>;
+  /// `userCancelled` is true when input resumed during the fade before the idle command ran.
+  using GraceEndCallback = std::function<void(bool userCancelled)>;
 
   IdleManager();
   ~IdleManager();
@@ -21,7 +27,7 @@ public:
   IdleManager(const IdleManager&) = delete;
   IdleManager& operator=(const IdleManager&) = delete;
 
-  bool initialize(WaylandConnection& wayland);
+  bool initialize(WaylandConnection& wayland, GraceBeginCallback onBegin, GraceEndCallback onEnd);
   void setCommandRunner(CommandRunner runner);
   void reload(const IdleConfig& config);
   static void handleIdled(void* data, ext_idle_notification_v1* notification);
@@ -40,9 +46,15 @@ private:
   void runBehavior(BehaviorState& behavior);
   void runResumeBehavior(BehaviorState& behavior);
   bool runCommand(const std::string& command) const;
+  void cancelActiveGrace(bool userCancelled);
+  void graceFadeComplete();
 
   WaylandConnection* m_wayland = nullptr;
   ext_idle_notifier_v1* m_notifier = nullptr;
   CommandRunner m_commandRunner;
+  GraceBeginCallback m_onGraceBegin;
+  GraceEndCallback m_onGraceEnd;
+  IdleConfig m_idleConfig;
+  BehaviorState* m_graceBehavior = nullptr;
   std::vector<std::unique_ptr<BehaviorState>> m_behaviors;
 };

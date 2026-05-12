@@ -25,6 +25,7 @@
 #include "dbus/upower/upower_service.h"
 #include "debug/debug_service.h"
 #include "hooks/hook_manager.h"
+#include "idle/idle_grace_overlay.h"
 #include "idle/idle_inhibitor.h"
 #include "idle/idle_manager.h"
 #include "ipc/ipc_poll_source.h"
@@ -141,6 +142,7 @@ private:
   std::unique_ptr<DebugService> m_debugService;
   IdleInhibitor m_idleInhibitor;
   IdleManager m_idleManager;
+  IdleGraceOverlay m_idleGraceOverlay;
   HookManager m_hookManager;
   DependencyService m_dependencyService;
   GammaService m_gammaService;

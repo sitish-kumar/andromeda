@@ -326,10 +326,11 @@ namespace {
   }
 
   bool idleConfigEqual(const IdleConfig& a, const IdleConfig& b) {
-    return vectorEqual(a.behaviors, b.behaviors, [](const IdleBehaviorConfig& lhs, const IdleBehaviorConfig& rhs) {
-      return lhs.name == rhs.name && lhs.enabled == rhs.enabled && lhs.timeoutSeconds == rhs.timeoutSeconds &&
-             lhs.command == rhs.command && lhs.resumeCommand == rhs.resumeCommand;
-    });
+    return nearlyEqual(a.preActionFadeSeconds, b.preActionFadeSeconds) &&
+           vectorEqual(a.behaviors, b.behaviors, [](const IdleBehaviorConfig& lhs, const IdleBehaviorConfig& rhs) {
+             return lhs.name == rhs.name && lhs.enabled == rhs.enabled && lhs.timeoutSeconds == rhs.timeoutSeconds &&
+                    lhs.command == rhs.command && lhs.resumeCommand == rhs.resumeCommand;
+           });
   }
 
   bool themeConfigEqual(const ThemeConfig& a, const ThemeConfig& b) {

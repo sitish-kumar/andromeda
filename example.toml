@@ -152,6 +152,12 @@ temperature_night    = 4000         # Kelvin
 
 # ── Idle ──────────────────────────────────────────────────────────────────────
 
+# Optional `[idle]` keys:
+#   pre_action_fade_seconds — fade a fullscreen surface-color overlay in over this many seconds, then run `command`.
+#                             Use 0 for immediate commands with no overlay. Input during the fade cancels.
+# [idle]
+# pre_action_fade_seconds = 2.0
+
 [idle.behavior.lock]
 timeout = 600
 command = "noctalia:screen-lock"

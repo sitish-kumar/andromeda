@@ -1733,8 +1733,12 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     config.controlCenter.shortcuts = defaultControlCenterShortcuts();
   }
 
-  // Parse [idle.behavior.*]
+  // Parse [idle] and [idle.behavior.*]
   if (auto* idleTbl = tbl["idle"].as_table()) {
+    if (auto v = (*idleTbl)["pre_action_fade_seconds"].value<double>()) {
+      const double d = *v;
+      config.idle.preActionFadeSeconds = static_cast<float>(std::clamp(d, 0.0, 120.0));
+    }
     if (auto* behaviorTbl = (*idleTbl)["behavior"].as_table()) {
       for (const auto& [name, node] : *behaviorTbl) {
         auto* entryTbl = node.as_table();

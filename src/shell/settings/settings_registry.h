@@ -79,6 +79,16 @@ namespace settings {
     std::string customLabel;
   };
 
+  /// Integer stepper (always has a value; no unset/custom segmented UI).
+  struct StepperSetting {
+    int value = 0;
+    int minValue = 0;
+    int maxValue = 100;
+    int step = 1;
+    /// Appended to the value display (e.g. `"s"` → `5s`). Empty = plain number.
+    std::string valueSuffix = {};
+  };
+
   struct ListSetting {
     std::vector<std::string> items;
     // When non-empty, the add UI presents a Select limited to these options (minus already-added values)
@@ -128,10 +138,11 @@ namespace settings {
     bool allowNone = false;
   };
 
-  using SettingControl = std::variant<ToggleSetting, SelectSetting, SliderSetting, TextSetting, OptionalNumberSetting,
-                                      OptionalStepperSetting, ListSetting, ShortcutListSetting, KeybindListSetting,
-                                      SessionPanelActionsSetting, IdleBehaviorsSetting, ColorSetting,
-                                      MultiSelectSetting, ButtonSetting, ColorRolePickerSetting, SearchPickerSetting>;
+  using SettingControl =
+      std::variant<ToggleSetting, SelectSetting, SliderSetting, TextSetting, OptionalNumberSetting,
+                   OptionalStepperSetting, StepperSetting, ListSetting, ShortcutListSetting, KeybindListSetting,
+                   SessionPanelActionsSetting, IdleBehaviorsSetting, ColorSetting, MultiSelectSetting, ButtonSetting,
+                   ColorRolePickerSetting, SearchPickerSetting>;
 
   struct SettingVisibilityCondition {
     std::vector<std::string> path;

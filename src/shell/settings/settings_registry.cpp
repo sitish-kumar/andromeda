@@ -879,6 +879,15 @@ namespace settings {
     }
 
     // Idle
+    entries.push_back(makeEntry(
+        "idle", "general", tr("settings.schema.idle.pre-action-fade.label"),
+        tr("settings.schema.idle.pre-action-fade.description"), {"idle", "pre_action_fade_seconds"},
+        StepperSetting{.value = static_cast<int>(std::lround(std::clamp(cfg.idle.preActionFadeSeconds, 0.0f, 30.0f))),
+                       .minValue = 0,
+                       .maxValue = 30,
+                       .step = 1,
+                       .valueSuffix = "s"},
+        "idle fade dim seconds overlay"));
     entries.push_back(makeEntry("idle", "behavior", tr("settings.schema.idle.behaviors.label"),
                                 tr("settings.schema.idle.behaviors.description"), {"idle", "behavior"},
                                 IdleBehaviorsSetting{.items = cfg.idle.behaviors},
