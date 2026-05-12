@@ -142,5 +142,22 @@ void BluetoothWidget::syncState(Renderer& renderer) {
     m_label->measure(renderer);
   }
 
+  if (rootNode != nullptr) {
+    if (numConnected > 0) {
+      std::string tip;
+      for (const auto& d : devices) {
+        if (d.connected) {
+          if (!tip.empty()) {
+            tip += '\n';
+          }
+          tip += d.alias;
+        }
+      }
+      static_cast<InputArea*>(rootNode)->setTooltip(std::move(tip));
+    } else {
+      static_cast<InputArea*>(rootNode)->clearTooltip();
+    }
+  }
+
   requestRedraw();
 }
