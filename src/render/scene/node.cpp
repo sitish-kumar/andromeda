@@ -128,6 +128,12 @@ void Node::arrange(Renderer& renderer, const LayoutRect& rect) {
   m_sizeAssignedByLayout = true;
 }
 
+bool Node::containsScenePoint(float sceneX, float sceneY) const {
+  float localX = 0.0f;
+  float localY = 0.0f;
+  return pointInsideNode(this, sceneX, sceneY, localX, localY);
+}
+
 void Node::doLayout(Renderer& renderer) {
   for (auto& child : m_children) {
     if (child->visible()) {

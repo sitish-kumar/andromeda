@@ -32,6 +32,10 @@ struct PointerEvent;
 struct wl_output;
 struct wl_surface;
 
+namespace settings {
+  struct SettingsContentContext;
+} // namespace settings
+
 // Standalone xdg-toplevel settings UI (same binary as the shell; shares RenderContext).
 class SettingsWindow {
 public:
@@ -62,6 +66,18 @@ private:
   void prepareFrame(bool needsUpdate, bool needsLayout);
   void buildScene(std::uint32_t width, std::uint32_t height);
   void rebuildSettingsContent();
+  [[nodiscard]] settings::RegistryEnvironment buildRegistryEnvironment() const;
+  void syncSelectedBarState(const Config& cfg, const std::vector<std::string>& availableBars);
+  [[nodiscard]] std::unique_ptr<Flex> buildHeaderRow(float scale);
+  [[nodiscard]] std::unique_ptr<Flex> buildFilterRow(float scale, const std::string& resetPageScope,
+                                                     std::vector<std::vector<std::string>> resetPagePaths);
+  [[nodiscard]] std::unique_ptr<Flex> buildStatusRow(float scale);
+  [[nodiscard]] std::unique_ptr<Flex> buildBody(float scale, const Config& cfg,
+                                                const std::vector<std::string>& sections,
+                                                const std::vector<std::string>& availableBars);
+  [[nodiscard]] std::vector<settings::SelectOption> batteryDeviceOptions() const;
+  [[nodiscard]] settings::SettingsContentContext makeContentContext(const Config& cfg, const BarConfig* selectedBar,
+                                                                    const BarMonitorOverride* selectedMonitorOverride);
   void requestSceneRebuild();
   void requestContentRebuild();
   void applyPendingContentScrollTarget(float margin);
@@ -80,6 +96,8 @@ private:
   void setSettingOverrides(std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>> overrides);
   void clearSettingOverride(std::vector<std::string> path);
   void clearSettingOverrides(std::vector<std::vector<std::string>> paths);
+  void markSettingsWriteSuccess(bool requestRebuild = true);
+  void markSettingsWriteError(std::string message);
   void renameWidgetInstance(std::string oldName, std::string newName,
                             std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>> referenceOverrides);
   void createBar(std::string name);

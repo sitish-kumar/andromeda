@@ -119,6 +119,7 @@ public:
   void layout(Renderer& renderer);
   [[nodiscard]] LayoutSize measure(Renderer& renderer, const LayoutConstraints& constraints);
   void arrange(Renderer& renderer, const LayoutRect& rect);
+  [[nodiscard]] bool containsScenePoint(float sceneX, float sceneY) const;
 
   void setUserData(void* data) noexcept { m_userData = data; }
   [[nodiscard]] void* userData() const noexcept { return m_userData; }
