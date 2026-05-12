@@ -90,7 +90,8 @@ namespace {
     return std::format("{:.1f} / {:.1f} GB", usedGb, totalGb);
   }
 
-  Flex* makeInfoCard(Flex& parent, const std::string& title, float scale, Label** outLines, int lineCount) {
+  Flex* makeInfoCard(Flex& parent, const std::string& title, float scale, Label** outLines, int lineCount,
+                     const char* const* glyphs) {
     auto card = std::make_unique<Flex>();
     applySectionCardStyle(*card, scale);
     card->setFlexGrow(1.0f);
@@ -99,12 +100,26 @@ namespace {
     addTitle(*card, title, scale);
 
     for (int i = 0; i < lineCount; ++i) {
+      auto row = std::make_unique<Flex>();
+      row->setDirection(FlexDirection::Horizontal);
+      row->setAlign(FlexAlign::Center);
+      row->setGap(Style::spaceXs * scale);
+
+      auto icon = std::make_unique<Glyph>();
+      icon->setGlyph(glyphs[i]);
+      icon->setGlyphSize(Style::fontSizeMini * scale);
+      icon->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+      row->addChild(std::move(icon));
+
       auto label = std::make_unique<Label>();
       label->setFontSize(Style::fontSizeMini * scale);
       label->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
       label->setMaxLines(1);
+      label->setFlexGrow(1.0f);
       outLines[i] = label.get();
-      card->addChild(std::move(label));
+      row->addChild(std::move(label));
+
+      card->addChild(std::move(row));
     }
 
     auto* ptr = card.get();
@@ -231,9 +246,14 @@ std::unique_ptr<Flex> SystemTab::create() {
     row->setDirection(FlexDirection::Horizontal);
     row->setAlign(FlexAlign::Stretch);
     row->setGap(Style::spaceSm * sc);
-    makeInfoCard(*row, i18n::tr("control-center.system.titles.system"), sc, m_systemLines, kSystemLines)
+    static constexpr const char* kSystemGlyphs[] = {"device-desktop", "layout-board", "cpu-usage",
+                                                    "video",          "app-window",   "clock"};
+    makeInfoCard(*row, i18n::tr("control-center.system.titles.system"), sc, m_systemLines, kSystemLines, kSystemGlyphs)
         ->setFlexGrow(2.0f);
-    makeInfoCard(*row, i18n::tr("control-center.system.titles.resources"), sc, m_resourcesLines, kResourcesLines);
+
+    static constexpr const char* kResourcesGlyphs[] = {"activity", "memory", "storage"};
+    makeInfoCard(*row, i18n::tr("control-center.system.titles.resources"), sc, m_resourcesLines, kResourcesLines,
+                 kResourcesGlyphs);
 
     tab->addChild(std::move(row));
   }
