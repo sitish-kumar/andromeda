@@ -36,12 +36,15 @@ const std::unordered_map<std::string, char32_t> kIcons = {
     {"person", 0xEB4D},            // user
     {"folder-open", 0xFAF7},
     {"download", 0xEA96},
+    {"upload", 0xEB47},
     {"search", 0xEB1C},
     {"apps", 0xEBB6},
     {"app-window", 0xEFE6},
+    {"grid-dots", 0xEABA},
     {"question-mark", 0xEC9D},
     {"info", 0xF028},              // file-description
     {"eye", 0xEA9A},
+    {"eye-off", 0xECF0},
     {"pin", 0xEC9C},
     {"unpin", 0xED5F},             // pinned-off
     {"image", 0xEB0A},             // photo
@@ -65,10 +68,13 @@ const std::unordered_map<std::string, char32_t> kIcons = {
     {"calculator", 0xEB80},
     {"copy", 0xEA7A},
     {"photo", 0xEB0A},
+    {"photo-edit", 0xF360},
     {"file-text", 0xEAA2},
     {"home", 0xEAC1},
     {"hourglass-empty", 0XF146},
     {"clipboard", 0XEA6f},
+    {"terminal", 0xEBDC},
+    {"link", 0xEADE},
 
     // Toast / warnings
     {"toast-notice", 0xEA67},      // circle-check
@@ -137,6 +143,7 @@ const std::unordered_map<std::string, char32_t> kIcons = {
     {"bell-off", 0xECE9},
 
     // Caffeine (idle inhibitor)
+    {"coffee", 0xEF0E},
     {"caffeine-on", 0x10009},     // mug-filled
     {"caffeine-off", 0xEAFB},    // mug
 
@@ -158,6 +165,7 @@ const std::unordered_map<std::string, char32_t> kIcons = {
     {"square-filled", 0xFC40},     // square-filled
     {"arrow-left", 0xEA19},        // arrow-left
     {"arrow-back", 0xEA0c},        // arrow-back
+    {"arrow-big-up", 0xEDDD},
     {"list", 0xEB6B},              // list
     {"layout-grid", 0XEDBA},       // layout-grid
     {"sort-ascending", 0xEB26},    // sort-ascending
