@@ -781,7 +781,6 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   auto gridSizeSelect = std::make_unique<Select>();
   gridSizeSelect->setOptions({"8", "16", "24", "32", "64"});
   gridSizeSelect->setControlHeight(Style::controlHeightSm);
-  gridSizeSelect->setSize(60.0f, Style::controlHeightSm);
   const std::array<std::int32_t, 5> gridSizes{8, 16, 24, 32, 64};
   std::size_t selectedGridIndex = 1;
   for (std::size_t i = 0; i < gridSizes.size(); ++i) {

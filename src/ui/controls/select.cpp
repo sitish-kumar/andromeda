@@ -23,8 +23,7 @@
 
 namespace {
 
-  constexpr float kDefaultWidth = 220.0f;
-  constexpr float kMinWidth = 160.0f;
+  constexpr float kMinWidth = 80.0f;
   constexpr float kOptionHeight = Style::controlHeight;
   constexpr float kMenuTopGap = Style::spaceXs;
   constexpr float kPlaceholderAlpha = 0.68f;
@@ -271,7 +270,7 @@ void Select::doLayout(Renderer& renderer) {
   const float indicatorInset = hasIndicators ? (indicatorSize + Style::spaceSm) : 0.0f;
 
   float contentWidth = widestLabel + m_horizontalPadding * 2.0f + m_glyphSize + Style::spaceXs + indicatorInset;
-  float dropdownWidth = m_fixedWidth > 0.0f ? m_fixedWidth : std::max({kDefaultWidth, kMinWidth, contentWidth});
+  float dropdownWidth = m_fixedWidth > 0.0f ? m_fixedWidth : std::max(kMinWidth, contentWidth);
 
   const float viewportHeight = menuViewportHeight();
   setSize(dropdownWidth, m_controlHeight);

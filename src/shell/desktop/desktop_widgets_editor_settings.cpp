@@ -26,7 +26,6 @@
 namespace {
 
   constexpr float kInspectorWidth = 340.0f;
-  constexpr float kInspectorMaxHeight = 600.0f;
   constexpr float kSettingRowHeight = 34.0f;
   constexpr float kLabelWidth = 100.0f;
   constexpr float kDefaultAspectRatio = 240.0f / 96.0f;
@@ -446,7 +445,6 @@ void DesktopWidgetsEditor::buildInspector(OverlaySurface& surface, Node& root,
   panel->addChild(std::move(handle));
 
   auto scrollView = std::make_unique<ScrollView>();
-  scrollView->setMaxHeight(kInspectorMaxHeight);
   scrollView->setSize(kInspectorWidth, 0.0f);
 
   auto* content = scrollView->content();

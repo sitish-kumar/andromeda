@@ -55,7 +55,7 @@ namespace {
   constexpr std::uint32_t kModShift = 1u << 0;
   constexpr std::uint32_t kModCtrl = 1u << 1;
 
-  constexpr float kDefaultWidth = 200.0f;
+  constexpr float kMinWidth = 48.0f;
   constexpr float kCursorWidth = 1.25f;
   constexpr float kCursorPadV = 4.0f;
   constexpr float kCursorMinHeight = 14.0f;
@@ -193,7 +193,7 @@ Input::Input() {
   });
   area->setOnMotion([this](const InputArea::PointerData& data) {
     if (m_inputArea != nullptr && m_inputArea->pressed()) {
-      const float widthPx = width() > 0.0f ? width() : kDefaultWidth;
+      const float widthPx = width() > 0.0f ? width() : kMinWidth;
       const float edgePx = std::max(12.0f, m_horizontalPadding);
       const float scrollNudge = std::max(4.0f, textViewportWidth() * 0.02f);
       bool handledByEdgeScroll = false;
@@ -453,7 +453,7 @@ void Input::clearSelection() {
 
 void Input::doLayout(Renderer& renderer) {
   const float minFromHint = m_minLayoutWidth > 0.0f ? m_minLayoutWidth : 0.0f;
-  const float wBase = width() > 0.0f ? width() : (minFromHint > 0.0f ? minFromHint : kDefaultWidth);
+  const float wBase = width() > 0.0f ? width() : (minFromHint > 0.0f ? minFromHint : kMinWidth);
   const float w = std::max(wBase, minFromHint);
   const float h = m_controlHeight;
   setSize(w, h);
@@ -1025,7 +1025,7 @@ void Input::syncPasswordGlyphNodes(std::size_t count) {
 }
 
 float Input::textViewportWidth() const noexcept {
-  const float w = width() > 0.0f ? width() : kDefaultWidth;
+  const float w = width() > 0.0f ? width() : kMinWidth;
   const float textInset = m_horizontalPadding + kTextInnerInset;
   const float rightInset = clearButtonVisible() ? clearButtonTextReserveWidth() : textInset;
   return std::max(0.0f, w - textInset - rightInset);
