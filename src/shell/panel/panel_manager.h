@@ -24,6 +24,7 @@
 class ConfigService;
 class CompositorPlatform;
 class ContextMenuPopup;
+class SelectDropdownPopup;
 class Box;
 class IpcService;
 class Renderer;
@@ -197,5 +198,6 @@ private:
   bool m_attachedToBar = false;
   std::size_t m_attachedPopupCount = 0;
   ContextMenuPopup* m_activePopup = nullptr;
+  std::unique_ptr<SelectDropdownPopup> m_selectPopup;
   std::uint64_t m_destroyGeneration = 0; // invalidates stale deferred destroyPanel calls
 };

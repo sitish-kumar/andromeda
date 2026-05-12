@@ -6,6 +6,7 @@
 #include "render/scene/node.h"
 #include "shell/desktop/desktop_widget_factory.h"
 #include "shell/desktop/desktop_widgets_controller.h"
+#include "ui/controls/select_dropdown_popup.h"
 #include "wayland/layer_surface.h"
 
 #include <array>
@@ -108,6 +109,7 @@ private:
     float inspectorX = 0.0f;
     float inspectorY = 0.0f;
     bool inspectorPositionInitialized = false;
+    std::unique_ptr<SelectDropdownPopup> selectPopup;
     bool pointerInside = false;
   };
 

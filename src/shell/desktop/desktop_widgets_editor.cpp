@@ -17,6 +17,7 @@
 #include "ui/controls/glyph.h"
 #include "ui/controls/label.h"
 #include "ui/controls/select.h"
+#include "ui/controls/select_dropdown_popup.h"
 #include "ui/controls/separator.h"
 #include "ui/dialogs/file_dialog.h"
 #include "ui/palette.h"
@@ -176,7 +177,6 @@ void DesktopWidgetsEditor::open(const DesktopWidgetsSnapshot& snapshot) {
 }
 
 DesktopWidgetsSnapshot DesktopWidgetsEditor::close() {
-  Select::closeAnyOpen();
   m_surfaces.clear();
   m_drag = {};
   m_selectedWidgetId.clear();
@@ -379,6 +379,11 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   auto root = std::make_unique<InputArea>();
   root->setEnabled(false);
   root->setAnimationManager(&surface.animations);
+  if (m_renderContext != nullptr && m_wayland != nullptr) {
+    surface.selectPopup = std::make_unique<SelectDropdownPopup>(*m_wayland, *m_renderContext);
+    surface.selectPopup->setParent(surface.surface->layerSurface(), surface.output);
+    root->setPopupContext(surface.selectPopup.get());
+  }
   root->setFrameSize(static_cast<float>(surface.surface->width()), static_cast<float>(surface.surface->height()));
 
   auto dim = std::make_unique<Box>();
@@ -1304,6 +1309,18 @@ bool DesktopWidgetsEditor::onPointerEvent(const PointerEvent& event) {
     eventSurface = m_wayland->lastPointerSurface();
   }
 
+  for (auto& s : m_surfaces) {
+    if (s->selectPopup != nullptr && s->selectPopup->isSelectDropdownOpen()) {
+      if (s->selectPopup->onPointerEvent(event)) {
+        return true;
+      }
+      if (event.type == PointerEvent::Type::Button && event.state == 1) {
+        s->selectPopup->closeSelectDropdown();
+        return true;
+      }
+    }
+  }
+
   OverlaySurface* surface = findSurface(eventSurface);
   if (surface == nullptr) {
     return false;
@@ -1325,9 +1342,6 @@ bool DesktopWidgetsEditor::onPointerEvent(const PointerEvent& event) {
     surface->inputDispatcher.pointerMotion(static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial);
     break;
   case PointerEvent::Type::Button:
-    if (event.state == 1) {
-      Select::handleGlobalPointerPress(surface->inputDispatcher.hoveredArea());
-    }
     surface->inputDispatcher.pointerButton(static_cast<float>(event.sx), static_cast<float>(event.sy), event.button,
                                            event.state == 1);
     if (event.state == 0 && m_drag.mode != DragMode::None && event.button == BTN_LEFT) {
@@ -1372,6 +1386,13 @@ void DesktopWidgetsEditor::onKeyboardEvent(const KeyboardEvent& event) {
     m_shiftHeld = m_leftShiftHeld || m_rightShiftHeld;
     if (!m_shiftHeld && event.sym != XKB_KEY_Shift_L && event.sym != XKB_KEY_Shift_R) {
       m_shiftHeld = shiftFromMask;
+    }
+  }
+
+  for (auto& surface : m_surfaces) {
+    if (surface->selectPopup != nullptr && surface->selectPopup->isSelectDropdownOpen()) {
+      surface->selectPopup->onKeyboardEvent(event);
+      return;
     }
   }
 

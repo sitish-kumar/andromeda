@@ -18,6 +18,7 @@
 #include "ui/controls/input.h"
 #include "ui/controls/label.h"
 #include "ui/controls/scroll_view.h"
+#include "ui/controls/select_dropdown_popup.h"
 #include "ui/controls/separator.h"
 #include "ui/controls/spacer.h"
 #include "ui/controls/toggle.h"
@@ -701,6 +702,11 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
   m_sceneRoot = std::make_unique<Node>();
   m_sceneRoot->setSize(w, h);
   m_sceneRoot->setAnimationManager(&m_animations);
+  if (m_surface != nullptr && m_renderContext != nullptr && m_wayland != nullptr) {
+    m_selectPopup = std::make_unique<SelectDropdownPopup>(*m_wayland, *m_renderContext);
+    m_selectPopup->setParent(m_surface->xdgSurface(), m_output);
+    m_sceneRoot->setPopupContext(m_selectPopup.get());
+  }
 
   auto bg = std::make_unique<Box>();
   bg->setPanelStyle();

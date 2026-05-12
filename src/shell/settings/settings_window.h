@@ -9,6 +9,7 @@
 #include "shell/settings/widget_add_popup.h"
 #include "ui/controls/context_menu_popup.h"
 #include "ui/controls/scroll_view.h"
+#include "ui/controls/select_dropdown_popup.h"
 #include "ui/dialogs/layer_popup_host.h"
 #include "wayland/toplevel_surface.h"
 
@@ -129,6 +130,7 @@ private:
   std::unique_ptr<settings::SessionActionsEditorPopup> m_sessionActionsEditorPopup;
   InputDispatcher m_inputDispatcher;
   AnimationManager m_animations;
+  std::unique_ptr<SelectDropdownPopup> m_selectPopup;
   bool m_pointerInside = false;
   wl_output* m_output = nullptr;
 

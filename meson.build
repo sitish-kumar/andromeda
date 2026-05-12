@@ -569,6 +569,7 @@ _noctalia_sources = files(
   'src/ui/controls/screen_corner.cpp',
   'src/ui/controls/segmented.cpp',
   'src/ui/controls/select.cpp',
+  'src/ui/controls/select_dropdown_popup.cpp',
   'src/ui/controls/separator.cpp',
   'src/ui/controls/slider.cpp',
   'src/ui/controls/spacer.cpp',

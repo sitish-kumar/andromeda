@@ -13,7 +13,7 @@
 #include "shell/tooltip/tooltip_manager.h"
 #include "ui/controls/box.h"
 #include "ui/controls/context_menu_popup.h"
-#include "ui/controls/select.h"
+#include "ui/controls/select_dropdown_popup.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "wayland/wayland_connection.h"
@@ -668,6 +668,7 @@ void PanelManager::destroyPanel() {
   m_attachedRevealContentNode = nullptr;
   m_panelShadowNode = nullptr;
   m_panelContactShadowNode = nullptr;
+  m_selectPopup.reset();
   m_sceneRoot.reset();
   m_surface.reset();
   m_layerSurface = nullptr;
@@ -724,6 +725,15 @@ void PanelManager::togglePanel(const std::string& panelId) {
 bool PanelManager::onPointerEvent(const PointerEvent& event) {
   if (!isOpen() || m_inTransition) {
     return false;
+  }
+
+  if (m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen()) {
+    if (m_selectPopup->onPointerEvent(event)) {
+      return true;
+    }
+    if (event.type == PointerEvent::Type::Button && event.state == 1) {
+      m_selectPopup->closeSelectDropdown();
+    }
   }
 
   if (m_activePopup != nullptr) {
@@ -786,9 +796,6 @@ bool PanelManager::onPointerEvent(const PointerEvent& event) {
           refresh();
           return true;
         }
-      }
-      if (pressed) {
-        Select::handleGlobalPointerPress(m_inputDispatcher.hoveredArea());
       }
       m_inputDispatcher.pointerButton(static_cast<float>(event.sx), static_cast<float>(event.sy), event.button,
                                       pressed);
@@ -961,10 +968,18 @@ void PanelManager::onKeyboardEvent(const KeyboardEvent& event) {
   // that's the bar's wl_surface (subsurfaces cannot hold focus directly); for layer
   // surfaces it's the panel's own wl_surface.
   if (m_platform != nullptr) {
-    wl_surface* const focusTarget = m_wlSurface;
-    if (focusTarget == nullptr || m_platform->lastKeyboardSurface() != focusTarget) {
+    wl_surface* const kbSurface = m_platform->lastKeyboardSurface();
+    const bool onPanel = (m_wlSurface != nullptr && kbSurface == m_wlSurface);
+    const bool onSelectPopup =
+        (m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen() && kbSurface == m_selectPopup->wlSurface());
+    if (!onPanel && !onSelectPopup) {
       return;
     }
+  }
+
+  if (m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen()) {
+    m_selectPopup->onKeyboardEvent(event);
+    return;
   }
 
   if (event.pressed && m_config != nullptr &&
@@ -1351,6 +1366,11 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
   if (m_sceneRoot == nullptr) {
     m_sceneRoot = std::make_unique<Node>();
     m_sceneRoot->setAnimationManager(&m_animations);
+    if (m_layerSurface != nullptr && m_renderContext != nullptr) {
+      m_selectPopup = std::make_unique<SelectDropdownPopup>(m_platform->wayland(), *m_renderContext);
+      m_selectPopup->setParent(m_layerSurface->layerSurface(), m_output);
+      m_sceneRoot->setPopupContext(m_selectPopup.get());
+    }
     m_sceneRoot->setSize(w, h);
 
     Node* sceneParent = m_sceneRoot.get();

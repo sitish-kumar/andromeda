@@ -10,7 +10,7 @@
 #include "ui/controls/box.h"
 #include "ui/controls/flex.h"
 #include "ui/controls/scroll_view.h"
-#include "ui/controls/select.h"
+#include "ui/controls/select_dropdown_popup.h"
 #include "ui/style.h"
 #include "wayland/toplevel_surface.h"
 #include "wayland/wayland_connection.h"
@@ -65,7 +65,10 @@ bool SettingsWindow::ownsKeyboardSurface(wl_surface* surface) const noexcept {
   if (m_searchPickerPopup != nullptr && m_searchPickerPopup->wlSurface() == surface) {
     return true;
   }
-  return m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->wlSurface() == surface;
+  if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->wlSurface() == surface) {
+    return true;
+  }
+  return m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen() && m_selectPopup->wlSurface() == surface;
 }
 
 std::optional<LayerPopupParentContext> SettingsWindow::popupParentContextForSurface(wl_surface* surface) const {
@@ -394,6 +397,16 @@ bool SettingsWindow::onPointerEvent(const PointerEvent& event) {
     return true;
   }
 
+  if (m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen()) {
+    if (m_selectPopup->onPointerEvent(event)) {
+      return true;
+    }
+    if (event.type == PointerEvent::Type::Button && event.state == 1) {
+      m_selectPopup->closeSelectDropdown();
+      return true;
+    }
+  }
+
   if (m_actionsMenuPopup != nullptr && m_actionsMenuPopup->onPointerEvent(event)) {
     return true;
   }
@@ -441,9 +454,6 @@ bool SettingsWindow::onPointerEvent(const PointerEvent& event) {
         m_surface->beginMove(event.serial);
         consumed = true;
         break;
-      }
-      if (pressed) {
-        Select::handleGlobalPointerPress(m_inputDispatcher.hoveredArea());
       }
       m_inputDispatcher.pointerButton(static_cast<float>(event.sx), static_cast<float>(event.sy), event.button,
                                       pressed);
@@ -504,6 +514,11 @@ void SettingsWindow::onKeyboardEvent(const KeyboardEvent& event) {
     return;
   }
 
+  if (m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen()) {
+    m_selectPopup->onKeyboardEvent(event);
+    return;
+  }
+
   const auto requestRebuild = [this]() {
     if (m_surface != nullptr) {
       m_rebuildRequested = true;
@@ -536,12 +551,6 @@ void SettingsWindow::onKeyboardEvent(const KeyboardEvent& event) {
       m_pendingDeleteMonitorOverrideBarName.clear();
       m_pendingDeleteMonitorOverrideMatch.clear();
       requestRebuild();
-      return;
-    }
-    if (Select::closeAnyOpen()) {
-      if (m_surface != nullptr) {
-        m_surface->requestLayout();
-      }
       return;
     }
   }
