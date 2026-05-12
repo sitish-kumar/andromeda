@@ -54,9 +54,11 @@ public:
     seen.reserve(tabler.size() + aliases.size());
     m_master.reserve(tabler.size() + aliases.size());
 
-    for (const auto& [name, codepoint] : aliases) {
+    for (const auto& [name, target] : aliases) {
       if (seen.insert(name).second) {
-        m_master.push_back({name, codepoint});
+        if (const auto it = tabler.find(std::string(target)); it != tabler.end()) {
+          m_master.push_back({name, it->second});
+        }
       }
     }
     for (const auto& [name, codepoint] : tabler) {
