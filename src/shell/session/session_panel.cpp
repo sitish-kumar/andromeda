@@ -1,6 +1,7 @@
 #include "shell/session/session_panel.h"
 
 #include "compositors/compositor_detect.h"
+#include "compositors/hyprland/hyprland_runtime.h"
 #include "compositors/niri/niri_runtime.h"
 #include "config/config_service.h"
 #include "core/log.h"
@@ -47,8 +48,14 @@ namespace {
     const compositors::CompositorKind compositor = logActionContext("logout");
 
     switch (compositor) {
-    case compositors::CompositorKind::Hyprland:
-      return process::launchFirstAvailable({{"hyprctl", "dispatch", "exit"}});
+    case compositors::CompositorKind::Hyprland: {
+      compositors::hyprland::HyprlandRuntime runtime;
+      if (runtime.configIsLua()) {
+        return (runtime.request("dispatch hl.dsp.exit()") != std::nullopt);
+      } else {
+        return (runtime.request("dispatch exit") != std::nullopt);
+      }
+    }
     case compositors::CompositorKind::Sway:
       return process::launchFirstAvailable({{"swaymsg", "exit"}, {"i3-msg", "exit"}});
     case compositors::CompositorKind::Niri: {

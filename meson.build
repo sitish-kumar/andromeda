@@ -590,6 +590,7 @@ _noctalia_sources = files(
   'src/compositors/ext_workspace/ext_workspace_output_backend.cpp',
   'src/compositors/ext_workspace/ext_workspace_backend.cpp',
   'src/compositors/hyprland/hyprland_runtime.cpp',
+  'src/compositors/hyprland/hyprland_event_handler.cpp',
   'src/compositors/hyprland/hyprland_output_backend.cpp',
   'src/compositors/hyprland/hyprland_workspace_backend.cpp',
   'src/compositors/hyprland/hyprland_keyboard_backend.cpp',
