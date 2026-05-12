@@ -13,6 +13,7 @@
 #include "shell/bar/widgets/scripted_widget.h"
 #include "shell/panel/panel_manager.h"
 #include "shell/surface_shadow.h"
+#include "shell/tooltip/tooltip_manager.h"
 #include "system/gamma_service.h"
 #include "system/system_monitor_service.h"
 #include "system/weather_service.h"
@@ -1569,6 +1570,9 @@ void Bar::buildScene(BarInstance& instance, std::uint32_t width, std::uint32_t h
     instance.inputDispatcher.setSceneRoot(instance.sceneRoot.get());
     instance.inputDispatcher.setCursorShapeCallback(
         [this](std::uint32_t serial, std::uint32_t shape) { m_platform->setCursorShape(serial, shape); });
+    instance.inputDispatcher.setHoverChangeCallback([inst = &instance](InputArea* /*old*/, InputArea* next) {
+      TooltipManager::instance().onHoverChange(next, inst->surface->layerSurface(), inst->output);
+    });
 
     if (instance.barConfig.autoHide) {
       instance.slideRoot->setOpacity(1.0f);

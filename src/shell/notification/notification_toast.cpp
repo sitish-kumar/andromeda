@@ -601,7 +601,7 @@ void NotificationToast::addPopup(const Notification& n) {
   syncEntryVisibility(index);
   revealQueuedEntries();
 
-  kLog.debug("notification toast: showing #{} \"{}\"", n.id, n.summary);
+  kLog.debug("notification toast: showing #{}", n.id);
 }
 
 void NotificationToast::removePopup(uint32_t notificationId) {

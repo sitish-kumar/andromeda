@@ -25,14 +25,12 @@
 #include "util/string_utils.h"
 
 #include <algorithm>
-#include <charconv>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <format>
 #include <functional>
 #include <limits>
-#include <locale>
 #include <memory>
 #include <optional>
 #include <string>
@@ -100,71 +98,33 @@ namespace settings {
 
     bool isBlankInput(std::string_view text) { return StringUtils::trim(text).empty(); }
 
-    const std::string& localeDecimalSeparator() {
-      static const std::string separator = [] {
-        try {
-          const std::locale userLocale("");
-          const char decimalPoint = std::use_facet<std::numpunct<char>>(userLocale).decimal_point();
-          return std::string(1, decimalPoint);
-        } catch (...) {
-          return std::string(".");
-        }
-      }();
-      return separator;
-    }
-
-    std::string formatSliderValue(float value, bool integerValue, char decimalSeparator = '\0') {
+    std::string formatSliderValue(float value, bool integerValue) {
       if (integerValue) {
         return std::format("{}", static_cast<int>(std::lround(value)));
       }
-      std::string formatted = std::format("{:.2f}", value);
-      const std::string decimalSep =
-          decimalSeparator == '\0' ? localeDecimalSeparator() : std::string(1, decimalSeparator);
-      if (decimalSep != ".") {
-        std::size_t dotPos = formatted.find('.');
-        if (dotPos != std::string::npos) {
-          formatted.replace(dotPos, 1, decimalSep);
-        }
-      }
-      return formatted;
+      return StringUtils::formatFixedDotDecimal(value, 2);
     }
 
-    template <typename T> std::optional<T> parseDecimalInput(std::string_view text) {
-      const std::string trimmed = StringUtils::trim(text);
-      if (trimmed.empty()) {
-        return std::nullopt;
-      }
-
-      std::string normalized = trimmed;
-      std::replace(normalized.begin(), normalized.end(), ',', '.');
-
-      T value{};
-      const char* begin = normalized.data();
-      const char* end = begin + normalized.size();
-      const auto [ptr, ec] = std::from_chars(begin, end, value, std::chars_format::general);
-      if (ec != std::errc{} || ptr != end || !std::isfinite(value)) {
-        return std::nullopt;
-      }
-      if constexpr (std::is_same_v<T, float>) {
-        if (value > std::numeric_limits<float>::max() || value < -std::numeric_limits<float>::max()) {
-          return std::nullopt;
-        }
-      }
-      return value;
+    template <typename T> std::optional<T> parseDotDecimalInput(std::string_view text) {
+      return StringUtils::parseDotDecimal<T>(text);
     }
 
     std::optional<float> parseFloatInput(std::string_view text) {
-      const auto parsed = parseDecimalInput<double>(text);
+      const auto parsed = parseDotDecimalInput<double>(text);
       if (!parsed.has_value()) {
         return std::nullopt;
       }
       return static_cast<float>(*parsed);
     }
 
-    std::optional<double> parseDoubleInput(std::string_view text) { return parseDecimalInput<double>(text); }
+    std::optional<double> parseDoubleInput(std::string_view text) { return parseDotDecimalInput<double>(text); }
 
     bool isMonitorOverrideSettingPath(const std::vector<std::string>& path) {
       return path.size() >= 5 && path[0] == "bar" && path[2] == "monitor";
+    }
+
+    bool isDockLauncherIconPath(const std::vector<std::string>& path) {
+      return path.size() == 2 && path[0] == "dock" && path[1] == "launcher_icon";
     }
 
     bool monitorOverrideHasExplicitValue(const Config& cfg, const std::vector<std::string>& path) {
@@ -1069,9 +1029,7 @@ namespace settings {
                 valueInputPtr->setInvalid(false);
                 sliderPtr->setValue(v);
                 if (!integerValue) {
-                  const std::string trimmed = StringUtils::trim(text);
-                  const char preferredSeparator = trimmed.find(',') != std::string::npos ? ',' : '.';
-                  valueInputPtr->setValue(formatSliderValue(sliderPtr->value(), false, preferredSeparator));
+                  valueInputPtr->setValue(formatSliderValue(sliderPtr->value(), false));
                 }
                 commit(static_cast<double>(v));
               });
@@ -1095,6 +1053,37 @@ namespace settings {
       input->setSize(inputWidth, Style::controlHeight * scale);
       input->setOnSubmit([setOverride = ctx.setOverride, path](const std::string& v) { setOverride(path, v); });
       return input;
+    };
+
+    const auto makeGlyphText = [&](const TextSetting& setting, std::vector<std::string> path) -> std::unique_ptr<Node> {
+      auto wrap = std::make_unique<Flex>();
+      wrap->setDirection(FlexDirection::Horizontal);
+      wrap->setAlign(FlexAlign::Center);
+      wrap->setGap(Style::spaceSm * scale);
+      wrap->addChild(makeText(setting.value, setting.placeholder, path, setting.width));
+
+      auto pickerButton = std::make_unique<Button>();
+      pickerButton->setVariant(ButtonVariant::Secondary);
+      pickerButton->setGlyph("apps");
+      pickerButton->setGlyphSize(Style::fontSizeBody * scale);
+      pickerButton->setMinHeight(Style::controlHeight * scale);
+      pickerButton->setMinWidth(Style::controlHeight * scale);
+      pickerButton->setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
+      pickerButton->setRadius(Style::radiusMd * scale);
+      pickerButton->setOnClick([setOverride = ctx.setOverride, path, currentValue = setting.value]() {
+        GlyphPickerDialogOptions options;
+        if (!currentValue.empty()) {
+          options.initialGlyph = currentValue;
+        }
+        (void)GlyphPickerDialog::open(std::move(options), [setOverride, path](std::optional<GlyphPickerResult> result) {
+          if (!result.has_value()) {
+            return;
+          }
+          setOverride(path, result->name);
+        });
+      });
+      wrap->addChild(std::move(pickerButton));
+      return wrap;
     };
 
     const auto makeOptionalNumber = [&](const OptionalNumberSetting& setting, std::vector<std::string> path) {
@@ -1848,6 +1837,9 @@ namespace settings {
               return makeSlider(control.value, control.minValue, control.maxValue, control.step, entry.path,
                                 control.integerValue, control.linkedCommit);
             } else if constexpr (std::is_same_v<T, TextSetting>) {
+              if (isDockLauncherIconPath(entry.path)) {
+                return makeGlyphText(control, entry.path);
+              }
               return makeText(control.value, control.placeholder, entry.path, control.width);
             } else if constexpr (std::is_same_v<T, OptionalNumberSetting>) {
               return makeOptionalNumber(control, entry.path);
@@ -1938,11 +1930,7 @@ namespace settings {
                              const ListSetting& list) { makeListBlock(section, entry, list); },
     };
 
-    auto isEntryVisible = [&](const SettingEntry& e) -> bool {
-      if (!e.visibleWhen.has_value()) {
-        return true;
-      }
-      const auto& cond = *e.visibleWhen;
+    auto visibilityConditionMatches = [&](const SettingVisibilityCondition& cond) -> bool {
       for (const auto& other : registry) {
         if (other.path == cond.path) {
           std::string currentValue;
@@ -1956,6 +1944,18 @@ namespace settings {
               return true;
             }
           }
+          return false;
+        }
+      }
+      return true;
+    };
+
+    auto isEntryVisible = [&](const SettingEntry& e) -> bool {
+      if (!e.visibleWhen.has_value()) {
+        return true;
+      }
+      for (const auto& cond : e.visibleWhen->all) {
+        if (!visibilityConditionMatches(cond)) {
           return false;
         }
       }

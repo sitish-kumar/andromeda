@@ -133,7 +133,10 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
 
   if (type == "battery") {
     const std::string deviceSelector = wc != nullptr ? wc->getString("device", "auto") : std::string("auto");
-    auto widget = std::make_unique<BatteryWidget>(m_upower, deviceSelector);
+    const int warningThreshold = static_cast<int>(wc != nullptr ? wc->getInt("warning_threshold", 20) : 20);
+    const ColorSpec warningColor =
+        colorSpecFromConfigString(wc != nullptr ? wc->getString("warning_color", "error") : std::string("error"));
+    auto widget = std::make_unique<BatteryWidget>(m_upower, deviceSelector, warningThreshold, warningColor);
     widget->setContentScale(contentScale);
     return widget;
   }
@@ -326,7 +329,9 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
     else if (display == "graph")
       displayMode = SysmonDisplayMode::Graph;
     const bool showLabel = wc != nullptr ? wc->getBool("show_label", true) : true;
-    auto widget = std::make_unique<SysmonWidget>(m_sysmon, output, stat, std::move(path), displayMode, showLabel);
+    const auto labelMinWidth = static_cast<float>(wc != nullptr ? wc->getDouble("label_min_width", 0.0) : 0.0);
+    auto widget =
+        std::make_unique<SysmonWidget>(m_sysmon, output, stat, std::move(path), displayMode, showLabel, labelMinWidth);
     widget->setContentScale(contentScale);
     return widget;
   }

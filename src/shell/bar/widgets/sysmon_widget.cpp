@@ -35,6 +35,29 @@ namespace {
   bool needsCpuTemp(SysmonStat stat) { return stat == SysmonStat::CpuTemp; }
   bool needsGpuTemp(SysmonStat stat) { return stat == SysmonStat::GpuTemp; }
 
+  const char* statDisplayName(SysmonStat stat) {
+    switch (stat) {
+    case SysmonStat::CpuUsage:
+      return "CPU";
+    case SysmonStat::CpuTemp:
+      return "CPU Temp";
+    case SysmonStat::GpuTemp:
+      return "GPU Temp";
+    case SysmonStat::RamUsed:
+    case SysmonStat::RamPct:
+      return "RAM";
+    case SysmonStat::SwapPct:
+      return "Swap";
+    case SysmonStat::DiskPct:
+      return "Disk";
+    case SysmonStat::NetRx:
+      return "Download";
+    case SysmonStat::NetTx:
+      return "Upload";
+    }
+    return "System";
+  }
+
   [[nodiscard]] std::string formatNetSpeed(double bytesPerSec) {
     if (bytesPerSec < 1024.0)
       return std::format("{:.0f}B", bytesPerSec);
@@ -48,9 +71,9 @@ namespace {
 } // namespace
 
 SysmonWidget::SysmonWidget(SystemMonitorService* monitor, wl_output* output, SysmonStat stat, std::string diskPath,
-                           SysmonDisplayMode displayMode, bool showLabel)
+                           SysmonDisplayMode displayMode, bool showLabel, float labelMinWidth)
     : m_monitor(monitor), m_output(output), m_stat(stat), m_displayMode(displayMode), m_showLabel(showLabel),
-      m_diskPath(std::move(diskPath)) {
+      m_labelMinWidth(labelMinWidth), m_diskPath(std::move(diskPath)) {
   if (m_monitor != nullptr) {
     if (needsCpuTemp(m_stat)) {
       m_monitor->retainCpuTemp();
@@ -118,6 +141,9 @@ void SysmonWidget::create() {
     auto label = std::make_unique<Label>();
     label->setBold(true);
     label->setFontSize(Style::fontSizeBody * m_contentScale);
+    if (m_labelMinWidth > 0.0f) {
+      label->setMinWidth(m_labelMinWidth * m_contentScale);
+    }
     m_label = label.get();
     container->addChild(std::move(label));
   }
@@ -288,11 +314,16 @@ void SysmonWidget::doUpdate(Renderer& renderer) {
     return;
   }
 
+  const std::string value = formatValue();
   if (m_label != nullptr) {
     m_label->setFontSize((m_isVerticalBar ? Style::fontSizeCaption : Style::fontSizeBody) * m_contentScale);
-    if (syncLabelText(formatValue())) {
+    if (syncLabelText(value)) {
       m_label->measure(renderer);
     }
+  }
+
+  if (auto* rootNode = root(); rootNode != nullptr) {
+    static_cast<InputArea*>(rootNode)->setTooltip(std::vector<TooltipRow>{{statDisplayName(m_stat), value}});
   }
 
   if (m_displayMode == SysmonDisplayMode::Gauge) {

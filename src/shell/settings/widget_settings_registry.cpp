@@ -359,6 +359,8 @@ namespace settings {
       add(colorRoleSpec("high_color", "primary"));
     } else if (type == "battery") {
       add(selectSpec("device", "auto", {{"auto", "common.states.auto"}}));
+      add(intSpec("warning_threshold", 20, 0.0, 100.0, 1.0));
+      add(colorRoleSpec("warning_color", "error"));
     } else if (type == "bluetooth") {
       add(boolSpec("show_label", false));
     } else if (type == "brightness") {
@@ -410,6 +412,11 @@ namespace settings {
       }
       add(segmentedSpec("display", "gauge", sysmonDisplay));
       add(boolSpec("show_label", true));
+      {
+        auto minW = doubleSpec("label_min_width", 0.0, 0.0, 200.0, 1.0);
+        minW.visibleWhen = WidgetSettingVisibility{"show_label", {"true"}};
+        add(std::move(minW));
+      }
     } else if (type == "taskbar") {
       add(boolSpec("group_by_workspace", false));
       add(boolSpec("show_all_outputs", false));

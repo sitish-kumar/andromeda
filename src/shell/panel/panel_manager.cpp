@@ -10,6 +10,7 @@
 #include "render/render_context.h"
 #include "shell/control_center/control_center_panel.h"
 #include "shell/surface_shadow.h"
+#include "shell/tooltip/tooltip_manager.h"
 #include "ui/controls/box.h"
 #include "ui/controls/context_menu_popup.h"
 #include "ui/controls/select.h"
@@ -1404,6 +1405,11 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
     m_inputDispatcher.setSceneRoot(m_sceneRoot.get());
     m_inputDispatcher.setCursorShapeCallback(
         [this](std::uint32_t serial, std::uint32_t shape) { m_platform->setCursorShape(serial, shape); });
+    m_inputDispatcher.setHoverChangeCallback([this](InputArea* /*old*/, InputArea* next) {
+      if (m_layerSurface != nullptr) {
+        TooltipManager::instance().onHoverChange(next, m_layerSurface->layerSurface(), m_output);
+      }
+    });
 
     if (m_attachedToBar && m_attachedRevealClipNode != nullptr) {
       m_sceneRoot->setOpacity(1.0f);

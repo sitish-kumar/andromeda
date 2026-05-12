@@ -21,7 +21,7 @@ enum class SysmonDisplayMode { Text, Graph, Gauge };
 class SysmonWidget : public Widget {
 public:
   SysmonWidget(SystemMonitorService* monitor, wl_output* output, SysmonStat stat, std::string diskPath,
-               SysmonDisplayMode displayMode, bool showLabel = true);
+               SysmonDisplayMode displayMode, bool showLabel = true, float labelMinWidth = 0.0f);
   ~SysmonWidget() override;
 
   void create() override;
@@ -48,6 +48,7 @@ private:
   SysmonStat m_stat;
   SysmonDisplayMode m_displayMode;
   bool m_showLabel;
+  float m_labelMinWidth = 0.0f;
   std::string m_diskPath;
   std::string m_lastRawValue;
   bool m_isVerticalBar = false;

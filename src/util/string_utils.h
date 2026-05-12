@@ -1,9 +1,15 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <cctype>
+#include <charconv>
+#include <cmath>
+#include <optional>
 #include <string>
 #include <string_view>
+#include <system_error>
+#include <type_traits>
 #include <vector>
 
 namespace StringUtils {
@@ -23,6 +29,43 @@ namespace StringUtils {
   }
 
   [[nodiscard]] inline std::string trim(std::string_view s) { return std::string(trimRightView(trimLeftView(s))); }
+
+  template <typename T> [[nodiscard]] inline std::optional<T> parseDotDecimal(std::string_view text) {
+    static_assert(std::is_floating_point_v<T>);
+
+    const std::string trimmed = trim(text);
+    if (trimmed.empty()) {
+      return std::nullopt;
+    }
+
+    T value{};
+    const char* begin = trimmed.data();
+    const char* end = begin + trimmed.size();
+    const auto [ptr, ec] = std::from_chars(begin, end, value, std::chars_format::general);
+    if (ec != std::errc{} || ptr != end || !std::isfinite(value)) {
+      return std::nullopt;
+    }
+    return value;
+  }
+
+  [[nodiscard]] inline std::string formatDotDecimal(double value) {
+    std::array<char, 64> buffer{};
+    const auto [ptr, ec] = std::to_chars(buffer.data(), buffer.data() + buffer.size(), value);
+    if (ec != std::errc{}) {
+      return {};
+    }
+    return std::string(buffer.data(), ptr);
+  }
+
+  [[nodiscard]] inline std::string formatFixedDotDecimal(double value, int precision) {
+    std::array<char, 64> buffer{};
+    const auto [ptr, ec] =
+        std::to_chars(buffer.data(), buffer.data() + buffer.size(), value, std::chars_format::fixed, precision);
+    if (ec != std::errc{}) {
+      return {};
+    }
+    return std::string(buffer.data(), ptr);
+  }
 
   [[nodiscard]] inline std::string toLower(std::string_view s) {
     std::string out(s);

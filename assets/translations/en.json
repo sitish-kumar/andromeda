@@ -368,12 +368,13 @@
       "titles": {
         "cpu": "CPU",
         "memory": "Memory",
+        "gpu": "GPU",
         "network": "Network",
-        "load-average": "Load Average",
-        "system-info": "System Info"
+        "system": "System",
+        "resources": "Resources"
       },
       "unknown": "unknown",
-      "info": "Distro - {distro}\nCompositor - {compositor}\nKernel - {kernel}\nUptime - {uptime}\nOS age - {osAge}\nBoard - {board}\nCPU - {cpu}\nGPU - {gpu}\nMemory - {memory}\nDisk - {disk}"
+      "uptime-prefix": "Up {uptime} · {osAge}"
     }
   },
   "auth": {
@@ -856,6 +857,11 @@
         "left": "Left",
         "right": "Right"
       },
+      "dock-launcher-position": {
+        "none": "None",
+        "start": "Start",
+        "end": "End"
+      },
       "layer": {
         "top": "Top",
         "overlay": "Overlay"
@@ -1085,6 +1091,10 @@
           "label": "High Color",
           "description": "Color used for high visualizer values"
         },
+        "label_min_width": {
+          "label": "Label Min Width",
+          "description": "Minimum label width in pixels to prevent resizing"
+        },
         "hot_reload": {
           "label": "Hot Reload",
           "description": "Reload the scripted widget when its source changes"
@@ -1160,6 +1170,14 @@
         "vertical_format": {
           "label": "Vertical Format",
           "description": "Optional format used on vertical bars"
+        },
+        "warning_color": {
+          "label": "Warning Color",
+          "description": "Color applied when charge is at or below the warning threshold"
+        },
+        "warning_threshold": {
+          "label": "Warning Threshold",
+          "description": "Battery percentage at or below which the widget switches to warning color"
         },
         "width": {
           "label": "Width",
@@ -1377,6 +1395,14 @@
         "show-instance-count": {
           "label": "Show Instance Count",
           "description": "Show a badge with the number of open instances"
+        },
+        "launcher-position": {
+          "label": "Launcher Button",
+          "description": "Show a launcher button at the start or end of the dock"
+        },
+        "launcher-icon": {
+          "label": "Launcher Icon",
+          "description": "Tabler icon shown on the dock launcher button"
         },
         "active-icon-scale": {
           "label": "Active Icon Scale",

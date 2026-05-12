@@ -74,7 +74,7 @@ builtin = "Noctalia"                # Ayu | Catppuccin | Dracula | Eldritch | Gr
 
 [theme.templates]
 enable_builtin_templates            = true
-builtin_ids                = []     # opt-in; list ids with: noctalia theme --list-builtins
+builtin_ids                = []     # opt-in; list ids with: noctalia theme --list-templates
 enable_community_templates = true
 community_ids              = []     # fetched from api.noctalia.dev/templates, cached locally
 enable_user_templates      = false
@@ -226,6 +226,8 @@ active_opacity      = 1.0
 inactive_opacity    = 0.85
 show_dots           = false
 show_instance_count = true
+launcher_position   = "none"       # none | start | end
+launcher_icon       = "grid-dots"  # Tabler glyph name
 active_monitor_only = false
 pinned              = []            # e.g. ["firefox", "code", "kitty"]
 

@@ -5,6 +5,7 @@
 #include "core/process.h"
 #include "ipc/ipc_arg_parse.h"
 #include "ipc/ipc_service.h"
+#include "util/string_utils.h"
 
 #include <algorithm>
 #include <charconv>
@@ -174,11 +175,7 @@ namespace {
     if (value.empty()) {
       return std::nullopt;
     }
-    try {
-      return std::stof(value);
-    } catch (...) {
-      return std::nullopt;
-    }
+    return StringUtils::parseDotDecimal<float>(value);
   }
 
   std::optional<bool> parseBool(const std::string& value) {

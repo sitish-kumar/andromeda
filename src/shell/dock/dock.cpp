@@ -11,7 +11,9 @@
 #include "render/render_context.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
+#include "shell/panel/panel_manager.h"
 #include "shell/surface_shadow.h"
+#include "shell/tooltip/tooltip_manager.h"
 #include "system/app_identity.h"
 #include "system/desktop_entry.h"
 #include "ui/controls/box.h"
@@ -128,6 +130,14 @@ namespace {
     if (pos == "right")
       return LayerShellAnchor::Right;
     return LayerShellAnchor::Bottom; // default
+  }
+
+  std::size_t dockLauncherButtonCount(const DockConfig& cfg) {
+    return (cfg.launcherPosition == "start" || cfg.launcherPosition == "end") ? 1U : 0U;
+  }
+
+  std::string_view dockLauncherIconGlyph(const DockConfig& cfg) {
+    return cfg.launcherIcon.empty() ? "grid-dots" : std::string_view{cfg.launcherIcon};
   }
 
 } // namespace
@@ -510,7 +520,7 @@ void Dock::createInstance(const WaylandOutput& output) {
   const auto& shadowConfig = m_config->config().shell.shadow;
   const auto sb = shell::surface_shadow::bleed(cfg.shadow, shadowConfig);
   const bool hiddenOverlayMode = cfg.autoHide && !cfg.reserveSpace;
-  const auto panelW = dockContentSize(cfg.pinned.size());
+  const auto panelW = dockContentSize(cfg.pinned.size() + dockLauncherButtonCount(cfg));
   const auto panelH = dockThickness();
   const auto anchor = positionToAnchor(cfg.position);
   const bool isBottom = (cfg.position == "bottom");
@@ -791,6 +801,9 @@ void Dock::buildScene(DockInstance& instance) {
     instance.inputDispatcher.setSceneRoot(instance.sceneRoot.get());
     instance.inputDispatcher.setCursorShapeCallback(
         [this](std::uint32_t serial, std::uint32_t shape) { m_platform->setCursorShape(serial, shape); });
+    instance.inputDispatcher.setHoverChangeCallback([inst = &instance](InputArea* /*old*/, InputArea* next) {
+      TooltipManager::instance().onHoverChange(next, inst->surface->layerSurface(), inst->output);
+    });
 
     // Populate items and wire up palette reactivity.
     rebuildItems(instance);
@@ -978,6 +991,10 @@ void Dock::rebuildItems(DockInstance& instance) {
     runningLower.push_back(StringUtils::toLower(run.entry.id));
   }
 
+  if (cfg.launcherPosition == "start") {
+    instance.row->addChild(createLauncherButton(instance));
+  }
+
   // Reserve up-front so emplace_back never reallocates while lambdas hold raw pointers.
   instance.items.reserve(itemEntries.size());
 
@@ -1110,6 +1127,10 @@ void Dock::rebuildItems(DockInstance& instance) {
     item.area = static_cast<InputArea*>(instance.row->addChild(std::move(areaNode)));
   }
 
+  if (cfg.launcherPosition == "end") {
+    instance.row->addChild(createLauncherButton(instance));
+  }
+
   instance.modelSerial = m_modelSerial;
 
   // Force surface resize when item count changes.
@@ -1124,7 +1145,7 @@ void Dock::resizeSurface(DockInstance& instance) {
   const auto& cfg = m_config->config().dock;
   const bool vert = isVertical();
   const auto sb = shell::surface_shadow::bleed(cfg.shadow, m_config->config().shell.shadow);
-  const auto panelW = dockContentSize(instance.items.size());
+  const auto panelW = dockContentSize(instance.items.size() + dockLauncherButtonCount(cfg));
   const auto panelH = dockThickness();
   const bool isBottom = (cfg.position == "bottom");
 
@@ -1265,6 +1286,62 @@ bool Dock::matchesRunningApp(const DockItemView& item, const std::vector<std::st
     }
   }
   return false;
+}
+
+std::unique_ptr<InputArea> Dock::createLauncherButton(DockInstance& instance) {
+  const auto& cfg = m_config->config().dock;
+  const bool vert = isVertical();
+  const float iSize = static_cast<float>(cfg.iconSize);
+  constexpr float kCellPad = 6.0f;
+  const float cellMain = iSize + 2.0f * kCellPad;
+  const float cellCross = iSize + 2.0f * kCellPad;
+
+  auto areaNode = std::make_unique<InputArea>();
+  if (!vert) {
+    areaNode->setSize(cellMain, cellCross);
+  } else {
+    areaNode->setSize(cellCross, cellMain);
+  }
+
+  auto bg = std::make_unique<Box>();
+  bg->setSize(cellMain, cellMain);
+  bg->setPosition(0.0f, 0.0f);
+  bg->setRadius(static_cast<float>(cfg.radius));
+  bg->setFill(clearColorSpec());
+  auto* bgPtr = bg.get();
+  areaNode->addChild(std::move(bg));
+
+  auto glyph = std::make_unique<Glyph>();
+  if (!glyph->setGlyph(dockLauncherIconGlyph(cfg))) {
+    glyph->setGlyph("grid-dots");
+  }
+  glyph->setGlyphSize(iSize * 0.8f);
+  glyph->setColor(colorSpecFromRole(ColorRole::OnSurface));
+  glyph->setSize(iSize, iSize);
+  glyph->setPosition(kCellPad, kCellPad);
+  areaNode->addChild(std::move(glyph));
+
+  auto* instPtr = &instance;
+  areaNode->setOnEnter([bgPtr, instPtr](const InputArea::PointerData&) {
+    bgPtr->setFill(colorSpecFromRole(ColorRole::Hover, 0.8f));
+    if (instPtr->sceneRoot != nullptr) {
+      instPtr->sceneRoot->markPaintDirty();
+    }
+  });
+  areaNode->setOnLeave([bgPtr, instPtr]() {
+    bgPtr->setFill(clearColorSpec());
+    if (instPtr->sceneRoot != nullptr) {
+      instPtr->sceneRoot->markPaintDirty();
+    }
+  });
+  areaNode->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT}));
+  areaNode->setOnClick([instPtr](const InputArea::PointerData& d) {
+    if (d.button == BTN_LEFT) {
+      PanelManager::instance().togglePanel("launcher", PanelOpenRequest{.output = instPtr->output});
+    }
+  });
+
+  return areaNode;
 }
 
 void Dock::launchEntry(const DesktopEntry& entry) {

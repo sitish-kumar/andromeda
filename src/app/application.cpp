@@ -23,6 +23,7 @@
 #include "shell/session/session_panel.h"
 #include "shell/setup_wizard/setup_wizard_panel.h"
 #include "shell/test/test_panel.h"
+#include "shell/tooltip/tooltip_manager.h"
 #include "shell/tray/tray_drawer_panel.h"
 #include "shell/wallpaper/panel/wallpaper_panel.h"
 #include "system/distro_info.h"
@@ -910,6 +911,7 @@ void Application::initUi() {
   m_configService.setNotificationManager(&m_notificationManager);
   m_notificationManager.setSoundPlayer(m_soundPlayer.get());
 
+  TooltipManager::instance().initialize(m_wayland, &m_renderContext);
   m_osdOverlay.initialize(m_wayland, &m_configService, &m_renderContext);
   m_audioOsd.bindOverlay(m_osdOverlay);
   m_audioOsd.setSoundPlayer(m_soundPlayer.get());
