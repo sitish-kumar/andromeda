@@ -618,6 +618,7 @@ void TrayMenu::ensureSurface() {
   auto inst = std::make_unique<MenuInstance>();
   inst->output = output;
   inst->surface = std::make_unique<PopupSurface>(*m_wayland);
+  inst->surface->setRenderContext(m_renderContext);
   auto* instPtr = inst.get();
 
   inst->surface->setConfigureCallback(
@@ -626,7 +627,6 @@ void TrayMenu::ensureSurface() {
     prepareMainMenuFrame(*instPtr, needsUpdate, needsLayout);
   });
   inst->surface->setDismissedCallback([this]() { close(); });
-  inst->surface->setRenderContext(m_renderContext);
 
   const auto surfaceWidth = static_cast<uint32_t>(kSurfaceWidth);
   const auto surfaceHeight = surfaceHeightPx();
@@ -968,6 +968,7 @@ void TrayMenu::openSubmenu(std::int32_t parentEntryId, float rowCenterY) {
   auto inst = std::make_unique<MenuInstance>();
   inst->output = m_instance->output;
   inst->surface = std::make_unique<PopupSurface>(*m_wayland);
+  inst->surface->setRenderContext(m_renderContext);
   inst->submenuDirection = subDir;
   auto* instPtr = inst.get();
 
@@ -975,7 +976,6 @@ void TrayMenu::openSubmenu(std::int32_t parentEntryId, float rowCenterY) {
   inst->surface->setPrepareFrameCallback(
       [this, instPtr](bool needsUpdate, bool needsLayout) { prepareSubmenuFrame(*instPtr, needsUpdate, needsLayout); });
   inst->surface->setDismissedCallback([this]() { closeSubmenu(); });
-  inst->surface->setRenderContext(m_renderContext);
 
   auto popupConfig = PopupSurfaceConfig{
       .anchorX = anchorX,

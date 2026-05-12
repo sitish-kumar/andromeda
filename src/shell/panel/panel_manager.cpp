@@ -242,6 +242,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   };
 
   const auto configureSurfaceCallbacks = [this](Surface& surface) {
+    surface.setRenderContext(m_renderContext);
     surface.setConfigureCallback([this](std::uint32_t /*width*/, std::uint32_t /*height*/) {
       if (m_surface != nullptr) {
         m_surface->requestLayout();
@@ -255,7 +256,6 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
       }
     });
     surface.setAnimationManager(&m_animations);
-    surface.setRenderContext(m_renderContext);
   };
 
   const auto resetPanelOpenState = [this]() {

@@ -248,9 +248,10 @@ void DesktopWidgetsEditor::createSurface(const WaylandOutput& output) {
   overlay->surface->setPrepareFrameCallback(
       [this, rawOverlay](bool needsUpdate, bool needsLayout) { prepareFrame(*rawOverlay, needsUpdate, needsLayout); });
   overlay->surface->setFrameTickCallback([this, rawOverlay](float deltaMs) {
-    if (m_renderContext == nullptr) {
+    if (m_renderContext == nullptr || rawOverlay->surface == nullptr) {
       return;
     }
+    m_renderContext->makeCurrent(rawOverlay->surface->renderTarget());
     for (auto& [id, view] : rawOverlay->views) {
       (void)id;
       if (view.widget != nullptr && view.widget->needsFrameTick()) {
@@ -338,9 +339,11 @@ bool DesktopWidgetsEditor::shouldSnap() const {
 }
 
 void DesktopWidgetsEditor::prepareFrame(OverlaySurface& surface, bool needsUpdate, bool needsLayout) {
-  if (m_renderContext == nullptr) {
+  if (m_renderContext == nullptr || surface.surface == nullptr) {
     return;
   }
+
+  m_renderContext->makeCurrent(surface.surface->renderTarget());
 
   if (surface.sceneRoot == nullptr || surface.sceneRebuildRequested) {
     rebuildScene(surface);
