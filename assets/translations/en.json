@@ -1091,6 +1091,10 @@
           "label": "High Color",
           "description": "Color used for high visualizer values"
         },
+        "label_min_width": {
+          "label": "Label Min Width",
+          "description": "Minimum label width in pixels to prevent resizing"
+        },
         "hot_reload": {
           "label": "Hot Reload",
           "description": "Reload the scripted widget when its source changes"

@@ -412,6 +412,11 @@ namespace settings {
       }
       add(segmentedSpec("display", "gauge", sysmonDisplay));
       add(boolSpec("show_label", true));
+      {
+        auto minW = doubleSpec("label_min_width", 0.0, 0.0, 200.0, 1.0);
+        minW.visibleWhen = WidgetSettingVisibility{"show_label", {"true"}};
+        add(std::move(minW));
+      }
     } else if (type == "taskbar") {
       add(boolSpec("group_by_workspace", false));
       add(boolSpec("show_all_outputs", false));
