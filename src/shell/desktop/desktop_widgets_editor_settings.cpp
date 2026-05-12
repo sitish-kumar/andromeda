@@ -122,17 +122,46 @@ namespace {
     return makeRow(labelText, std::move(slider));
   }
 
-  std::unique_ptr<Flex> makeColorButton(std::string_view labelText, const std::string& key, const ColorSpec& fallback,
-                                        const Settings& s, DesktopWidgetsEditor* editor) {
-    auto colorSpec = getColorSpec(s, key, fallback);
-    auto color = resolveColorSpec(colorSpec);
+  std::unique_ptr<Flex> makeColorRoleSelect(std::string_view labelText, const std::string& key,
+                                            const ColorSpec& fallback, const Settings& s,
+                                            DesktopWidgetsEditor* editor) {
+    auto currentSpec = getColorSpec(s, key, fallback);
 
-    auto btn = std::make_unique<Button>();
-    btn->setText(formatRgbHex(color));
-    btn->setVariant(ButtonVariant::Outline);
-    btn->setFlexGrow(1.0f);
-    btn->setOnClick([editor, key, color]() { editor->openColorPicker(key, color); });
-    return makeRow(labelText, std::move(btn));
+    std::vector<std::string> options;
+    std::vector<ColorSpec> indicators;
+    options.reserve(kColorRoleTokens.size() + 1);
+    indicators.reserve(kColorRoleTokens.size() + 1);
+
+    std::size_t selectedIndex = kColorRoleTokens.size(); // default to Custom
+    for (std::size_t i = 0; i < kColorRoleTokens.size(); ++i) {
+      options.emplace_back(kColorRoleTokens[i].token);
+      indicators.push_back(colorSpecFromRole(kColorRoleTokens[i].role));
+      if (currentSpec.role.has_value() && *currentSpec.role == kColorRoleTokens[i].role) {
+        selectedIndex = i;
+      }
+    }
+
+    auto customLabel = currentSpec.role.has_value() ? i18n::tr("desktop-widgets.editor.settings.custom-color")
+                                                    : formatRgbHex(resolveColorSpec(currentSpec));
+    options.push_back(customLabel);
+    indicators.push_back(currentSpec.role.has_value() ? clearColorSpec()
+                                                      : fixedColorSpec(resolveColorSpec(currentSpec)));
+
+    auto select = std::make_unique<Select>();
+    select->setOptions(options);
+    select->setOptionIndicators(std::move(indicators));
+    select->setSelectedIndex(selectedIndex);
+    select->setControlHeight(Style::controlHeightSm);
+    select->setFlexGrow(1.0f);
+    select->setOnSelectionChanged([editor, key, currentSpec](std::size_t index, std::string_view) {
+      if (index < kColorRoleTokens.size()) {
+        editor->applySettingChange(key, std::string(kColorRoleTokens[index].token));
+      } else {
+        auto currentColor = resolveColorSpec(currentSpec);
+        editor->openColorPicker(key, currentColor);
+      }
+    });
+    return makeRow(labelText, std::move(select));
   }
 
   void addClockSettings(Flex& content, const Settings& s, DesktopWidgetsEditor* editor) {
@@ -143,8 +172,8 @@ namespace {
     input->setFlexGrow(1.0f);
     input->setOnChange([editor](const std::string& val) { editor->applySettingChange("format", val); });
     content.addChild(makeRow(i18n::tr("desktop-widgets.editor.settings.format"), std::move(input)));
-    content.addChild(makeColorButton(i18n::tr("desktop-widgets.editor.settings.color"), "color",
-                                     colorSpecFromRole(ColorRole::OnSurface), s, editor));
+    content.addChild(makeColorRoleSelect(i18n::tr("desktop-widgets.editor.settings.color"), "color",
+                                         colorSpecFromRole(ColorRole::OnSurface), s, editor));
     content.addChild(makeToggleRow(i18n::tr("desktop-widgets.editor.settings.shadow"), "shadow", true, s, editor));
   }
 
@@ -154,10 +183,10 @@ namespace {
     content.addChild(makeSliderRow(i18n::tr("desktop-widgets.editor.settings.bands"), "bands", 32.0f, 4.0f, 128.0f,
                                    4.0f, s, editor));
     content.addChild(makeToggleRow(i18n::tr("desktop-widgets.editor.settings.mirrored"), "mirrored", true, s, editor));
-    content.addChild(makeColorButton(i18n::tr("desktop-widgets.editor.settings.low-color"), "low_color",
-                                     colorSpecFromRole(ColorRole::Primary), s, editor));
-    content.addChild(makeColorButton(i18n::tr("desktop-widgets.editor.settings.high-color"), "high_color",
-                                     colorSpecFromRole(ColorRole::Primary), s, editor));
+    content.addChild(makeColorRoleSelect(i18n::tr("desktop-widgets.editor.settings.low-color"), "low_color",
+                                         colorSpecFromRole(ColorRole::Primary), s, editor));
+    content.addChild(makeColorRoleSelect(i18n::tr("desktop-widgets.editor.settings.high-color"), "high_color",
+                                         colorSpecFromRole(ColorRole::Primary), s, editor));
   }
 
   void addStickerSettings(Flex& content, const Settings& s, DesktopWidgetsEditor* editor) {
@@ -182,8 +211,8 @@ namespace {
   }
 
   void addWeatherSettings(Flex& content, const Settings& s, DesktopWidgetsEditor* editor) {
-    content.addChild(makeColorButton(i18n::tr("desktop-widgets.editor.settings.color"), "color",
-                                     colorSpecFromRole(ColorRole::OnSurface), s, editor));
+    content.addChild(makeColorRoleSelect(i18n::tr("desktop-widgets.editor.settings.color"), "color",
+                                         colorSpecFromRole(ColorRole::OnSurface), s, editor));
     content.addChild(makeToggleRow(i18n::tr("desktop-widgets.editor.settings.shadow"), "shadow", true, s, editor));
   }
 
@@ -197,8 +226,8 @@ namespace {
       editor->applySettingChange("layout", std::string(index == 1 ? "vertical" : "horizontal"));
     });
     content.addChild(makeRow(i18n::tr("desktop-widgets.editor.settings.layout"), std::move(segmented)));
-    content.addChild(makeColorButton(i18n::tr("desktop-widgets.editor.settings.color"), "color",
-                                     colorSpecFromRole(ColorRole::OnSurface), s, editor));
+    content.addChild(makeColorRoleSelect(i18n::tr("desktop-widgets.editor.settings.color"), "color",
+                                         colorSpecFromRole(ColorRole::OnSurface), s, editor));
     content.addChild(makeToggleRow(i18n::tr("desktop-widgets.editor.settings.shadow"), "shadow", true, s, editor));
   }
 
@@ -253,10 +282,10 @@ namespace {
     });
     content.addChild(makeRow(i18n::tr("desktop-widgets.editor.settings.stat2"), std::move(stat2Select)));
 
-    content.addChild(makeColorButton(i18n::tr("desktop-widgets.editor.settings.color"), "color",
-                                     colorSpecFromRole(ColorRole::Primary), s, editor));
-    content.addChild(makeColorButton(i18n::tr("desktop-widgets.editor.settings.color2"), "color2",
-                                     colorSpecFromRole(ColorRole::Secondary), s, editor));
+    content.addChild(makeColorRoleSelect(i18n::tr("desktop-widgets.editor.settings.color"), "color",
+                                         colorSpecFromRole(ColorRole::Primary), s, editor));
+    content.addChild(makeColorRoleSelect(i18n::tr("desktop-widgets.editor.settings.color2"), "color2",
+                                         colorSpecFromRole(ColorRole::Secondary), s, editor));
     content.addChild(
         makeToggleRow(i18n::tr("desktop-widgets.editor.settings.show-label"), "show_label", true, s, editor));
     content.addChild(makeToggleRow(i18n::tr("desktop-widgets.editor.settings.shadow"), "shadow", true, s, editor));
@@ -276,8 +305,8 @@ namespace {
 
     content.addChild(
         makeToggleRow(i18n::tr("desktop-widgets.editor.settings.background"), "background", true, s, editor));
-    content.addChild(makeColorButton(i18n::tr("desktop-widgets.editor.settings.background-color"), "background_color",
-                                     colorSpecFromRole(ColorRole::Surface, 0.8f), s, editor));
+    content.addChild(makeColorRoleSelect(i18n::tr("desktop-widgets.editor.settings.background-color"),
+                                         "background_color", colorSpecFromRole(ColorRole::Surface, 0.8f), s, editor));
     content.addChild(makeSliderRow(i18n::tr("desktop-widgets.editor.settings.background-radius"), "background_radius",
                                    12.0f, 0.0f, 32.0f, 1.0f, s, editor));
     content.addChild(makeSliderRow(i18n::tr("desktop-widgets.editor.settings.background-padding"), "background_padding",

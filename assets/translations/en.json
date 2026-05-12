@@ -480,7 +480,8 @@
         "background": "Background",
         "background-color": "Color",
         "background-radius": "Radius",
-        "background-padding": "Padding"
+        "background-padding": "Padding",
+        "custom-color": "Custom…"
       }
     },
     "weather": {
