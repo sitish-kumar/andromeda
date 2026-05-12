@@ -28,7 +28,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cctype>
 #include <cmath>
 #include <filesystem>
 #include <linux/input-event-codes.h>
@@ -998,6 +997,9 @@ void NotificationToast::resumeCountdowns(uint32_t notificationId) {
           }
         },
         state->progressBar);
+    if (inst->surface != nullptr) {
+      inst->surface->requestRedraw();
+    }
   }
 }
 
