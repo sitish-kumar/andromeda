@@ -33,8 +33,12 @@ void InputDispatcher::setSceneRoot(Node* root) {
   if (root != m_sceneRoot) {
     m_capturedArea = nullptr;
     if (m_hoveredArea != nullptr) {
-      m_hoveredArea->dispatchLeave();
+      auto* old = m_hoveredArea;
+      old->dispatchLeave();
       m_hoveredArea = nullptr;
+      if (m_hoverChangeCallback) {
+        m_hoverChangeCallback(old, nullptr);
+      }
     }
   }
   if (root == nullptr) {
@@ -47,6 +51,10 @@ void InputDispatcher::setSceneRoot(Node* root) {
   if (m_sceneRoot != nullptr && m_hasPointerPosition) {
     updateHover(m_lastPointerX, m_lastPointerY, m_lastSerial);
   }
+}
+
+void InputDispatcher::setHoverChangeCallback(HoverChangeCallback callback) {
+  m_hoverChangeCallback = std::move(callback);
 }
 
 void InputDispatcher::setCursorShapeCallback(CursorShapeCallback callback) {
@@ -65,8 +73,12 @@ void InputDispatcher::pointerLeave() {
   m_capturedArea = nullptr;
   m_hasPointerPosition = false;
   if (m_hoveredArea != nullptr) {
-    m_hoveredArea->dispatchLeave();
+    auto* old = m_hoveredArea;
+    old->dispatchLeave();
     m_hoveredArea = nullptr;
+    if (m_hoverChangeCallback) {
+      m_hoverChangeCallback(old, nullptr);
+    }
   }
 }
 
@@ -221,10 +233,14 @@ void InputDispatcher::updateHover(float x, float y, std::uint32_t serial) {
   auto* area = findInputAreaAt(x, y);
 
   if (area != m_hoveredArea) {
-    if (m_hoveredArea != nullptr) {
-      m_hoveredArea->dispatchLeave();
+    auto* old = m_hoveredArea;
+    if (old != nullptr) {
+      old->dispatchLeave();
     }
     m_hoveredArea = area;
+    if (m_hoverChangeCallback) {
+      m_hoverChangeCallback(old, m_hoveredArea);
+    }
     if (m_hoveredArea != nullptr) {
       trackArea(m_hoveredArea);
       float localX = 0.0f;
@@ -247,9 +263,13 @@ bool InputDispatcher::isAttachedToScene(const InputArea* area) const { return no
 void InputDispatcher::pruneDetachedAreas() {
   if (!isAttachedToScene(m_hoveredArea)) {
     if (m_hoveredArea != nullptr) {
-      m_hoveredArea->dispatchLeave();
+      auto* old = m_hoveredArea;
+      old->dispatchLeave();
+      m_hoveredArea = nullptr;
+      if (m_hoverChangeCallback) {
+        m_hoverChangeCallback(old, nullptr);
+      }
     }
-    m_hoveredArea = nullptr;
   }
   if (!isAttachedToScene(m_capturedArea)) {
     m_capturedArea = nullptr;

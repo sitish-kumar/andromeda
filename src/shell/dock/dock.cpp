@@ -13,6 +13,7 @@
 #include "render/scene/node.h"
 #include "shell/panel/panel_manager.h"
 #include "shell/surface_shadow.h"
+#include "shell/tooltip/tooltip_manager.h"
 #include "system/app_identity.h"
 #include "system/desktop_entry.h"
 #include "ui/controls/box.h"
@@ -800,6 +801,9 @@ void Dock::buildScene(DockInstance& instance) {
     instance.inputDispatcher.setSceneRoot(instance.sceneRoot.get());
     instance.inputDispatcher.setCursorShapeCallback(
         [this](std::uint32_t serial, std::uint32_t shape) { m_platform->setCursorShape(serial, shape); });
+    instance.inputDispatcher.setHoverChangeCallback([inst = &instance](InputArea* /*old*/, InputArea* next) {
+      TooltipManager::instance().onHoverChange(next, inst->surface->layerSurface(), inst->output);
+    });
 
     // Populate items and wire up palette reactivity.
     rebuildItems(instance);
