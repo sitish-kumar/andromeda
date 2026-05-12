@@ -17,6 +17,7 @@
 #include "ui/controls/glyph.h"
 #include "ui/controls/label.h"
 #include "ui/controls/select.h"
+#include "ui/controls/separator.h"
 #include "ui/dialogs/file_dialog.h"
 #include "ui/palette.h"
 #include "ui/style.h"
@@ -169,6 +170,7 @@ void DesktopWidgetsEditor::open(const DesktopWidgetsSnapshot& snapshot) {
   m_shiftHeld = false;
   m_leftShiftHeld = false;
   m_rightShiftHeld = false;
+  m_inspectorOpen = false;
   syncSurfaces();
   requestLayout();
 }
@@ -709,7 +711,7 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   toolbar->addChild(std::move(typeSelect));
 
   auto addButton = std::make_unique<Button>();
-  addButton->setText("+");
+  addButton->setGlyph("plus");
   addButton->setVariant(ButtonVariant::Accent);
   addButton->setOnClick([this, outputName = surface.outputName]() {
     deferEditorMutation([this, outputName]() { addWidget(outputName, m_addWidgetType); });
@@ -717,22 +719,34 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   toolbar->addChild(std::move(addButton));
 
   auto backButton = std::make_unique<Button>();
-  backButton->setText(i18n::tr("desktop-widgets.editor.actions.back"));
+  backButton->setGlyph("stack-back");
   backButton->setVariant(ButtonVariant::Outline);
   backButton->setEnabled(canSendSelectedToBack);
   backButton->setOnClick([this]() { deferEditorMutation([this]() { sendSelectedWidgetToBack(); }); });
   toolbar->addChild(std::move(backButton));
 
   auto frontButton = std::make_unique<Button>();
-  frontButton->setText(i18n::tr("desktop-widgets.editor.actions.front"));
+  frontButton->setGlyph("stack-front");
   frontButton->setVariant(ButtonVariant::Outline);
   frontButton->setEnabled(canBringSelectedToFront);
   frontButton->setOnClick([this]() { deferEditorMutation([this]() { bringSelectedWidgetToFront(); }); });
   toolbar->addChild(std::move(frontButton));
 
+  auto settingsButton = std::make_unique<Button>();
+  settingsButton->setGlyph("settings");
+  settingsButton->setVariant(ButtonVariant::Outline);
+  settingsButton->setSelected(m_inspectorOpen);
+  settingsButton->setEnabled(hasSelectedWidget);
+  settingsButton->setOnClick([this]() {
+    deferEditorMutation([this]() {
+      m_inspectorOpen = !m_inspectorOpen;
+      requestLayout();
+    });
+  });
+  toolbar->addChild(std::move(settingsButton));
+
   auto enabledButton = std::make_unique<Button>();
-  enabledButton->setText(selectedWidgetEnabled ? i18n::tr("desktop-widgets.editor.state.enabled")
-                                               : i18n::tr("desktop-widgets.editor.state.disabled"));
+  enabledButton->setGlyph(selectedWidgetEnabled ? "eye" : "eye-off");
   enabledButton->setVariant(ButtonVariant::Outline);
   enabledButton->setSelected(selectedWidgetEnabled);
   enabledButton->setEnabled(hasSelectedWidget);
@@ -740,11 +754,16 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   toolbar->addChild(std::move(enabledButton));
 
   auto deleteButton = std::make_unique<Button>();
-  deleteButton->setText(i18n::tr("desktop-widgets.editor.actions.delete"));
+  deleteButton->setGlyph("trash");
   deleteButton->setVariant(ButtonVariant::Destructive);
   deleteButton->setEnabled(hasSelectedWidget);
   deleteButton->setOnClick([this]() { deferEditorMutation([this]() { removeSelectedWidget(); }); });
   toolbar->addChild(std::move(deleteButton));
+
+  auto toolbarSep = std::make_unique<Separator>();
+  toolbarSep->setOrientation(SeparatorOrientation::VerticalRule);
+  toolbarSep->setSize(Style::borderWidth, Style::controlHeight);
+  toolbar->addChild(std::move(toolbarSep));
 
   auto gridButton = std::make_unique<Button>();
   gridButton->setText(m_snapshot.grid.visible ? i18n::tr("desktop-widgets.editor.state.grid-on")
@@ -762,6 +781,7 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   auto gridSizeSelect = std::make_unique<Select>();
   gridSizeSelect->setOptions({"8", "16", "24", "32", "64"});
   gridSizeSelect->setControlHeight(Style::controlHeightSm);
+  gridSizeSelect->setSize(60.0f, Style::controlHeightSm);
   const std::array<std::int32_t, 5> gridSizes{8, 16, 24, 32, 64};
   std::size_t selectedGridIndex = 1;
   for (std::size_t i = 0; i < gridSizes.size(); ++i) {
@@ -802,6 +822,16 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   }
   clampToolbarPosition(surface, toolbarPtr->width(), toolbarPtr->height());
   toolbarPtr->setPosition(surface.toolbarX, surface.toolbarY);
+
+  if (hasSelectedWidget && m_inspectorOpen) {
+    buildInspector(surface, *root, *selectedWidgetIt);
+  } else {
+    surface.inspector = nullptr;
+    if (!hasSelectedWidget) {
+      surface.inspectorPositionInitialized = false;
+      m_inspectorOpen = false;
+    }
+  }
 
   surface.sceneRoot = std::move(root);
   surface.surface->setSceneRoot(surface.sceneRoot.get());
@@ -1056,6 +1086,35 @@ void DesktopWidgetsEditor::clampToolbarPosition(OverlaySurface& surface, float t
   surface.toolbarY = std::clamp(surface.toolbarY, 0.0f, maxY);
 }
 
+void DesktopWidgetsEditor::startInspectorDrag(const std::string& outputName) {
+  OverlaySurface* surface = findSurface(outputName);
+  if (surface == nullptr || surface->inspector == nullptr) {
+    return;
+  }
+
+  m_drag = {};
+  m_drag.mode = DragMode::InspectorMove;
+  m_drag.startSceneX = m_currentEventSceneX;
+  m_drag.startSceneY = m_currentEventSceneY;
+  m_drag.surfaceOutputName = outputName;
+  m_drag.initialInspectorX = surface->inspectorX;
+  m_drag.initialInspectorY = surface->inspectorY;
+}
+
+void DesktopWidgetsEditor::clampInspectorPosition(OverlaySurface& surface, float inspectorWidth,
+                                                  float inspectorHeight) {
+  if (surface.surface == nullptr) {
+    return;
+  }
+
+  const float maxX = std::max(0.0f, static_cast<float>(surface.surface->width()) - inspectorWidth);
+  const float maxY = std::max(0.0f, static_cast<float>(surface.surface->height()) - inspectorHeight);
+  surface.inspectorX = std::clamp(surface.inspectorX, 0.0f, maxX);
+  surface.inspectorY = std::clamp(surface.inspectorY, 0.0f, maxY);
+}
+
+// buildInspector, applySettingChange, and openColorPicker are in desktop_widgets_editor_settings.cpp
+
 void DesktopWidgetsEditor::deferEditorMutation(std::function<void()> action) {
   DeferredCall::callLater([this, action = std::move(action)]() mutable {
     if (m_open) {
@@ -1132,6 +1191,20 @@ void DesktopWidgetsEditor::updateDrag() {
     surface->toolbarY = m_drag.initialToolbarY + (m_currentEventSceneY - m_drag.startSceneY);
     clampToolbarPosition(*surface, surface->toolbar->width(), surface->toolbar->height());
     surface->toolbar->setPosition(surface->toolbarX, surface->toolbarY);
+    surface->surface->requestRedraw();
+    return;
+  }
+
+  if (m_drag.mode == DragMode::InspectorMove) {
+    OverlaySurface* surface = findSurface(m_drag.surfaceOutputName);
+    if (surface == nullptr || surface->inspector == nullptr) {
+      return;
+    }
+
+    surface->inspectorX = m_drag.initialInspectorX + (m_currentEventSceneX - m_drag.startSceneX);
+    surface->inspectorY = m_drag.initialInspectorY + (m_currentEventSceneY - m_drag.startSceneY);
+    clampInspectorPosition(*surface, surface->inspector->width(), surface->inspector->height());
+    surface->inspector->setPosition(surface->inspectorX, surface->inspectorY);
     surface->surface->requestRedraw();
     return;
   }
@@ -1303,7 +1376,25 @@ void DesktopWidgetsEditor::onKeyboardEvent(const KeyboardEvent& event) {
     }
   }
 
+  InputArea* focused = nullptr;
+  for (auto& surface : m_surfaces) {
+    if (surface->pointerInside) {
+      surface->inputDispatcher.keyEvent(event.sym, event.utf32, event.modifiers, event.pressed, event.preedit);
+      focused = surface->inputDispatcher.focusedArea();
+      break;
+    }
+  }
+
   if (!event.pressed || event.preedit) {
+    return;
+  }
+
+  if (focused != nullptr) {
+    if (event.sym == XKB_KEY_Escape) {
+      for (auto& surface : m_surfaces) {
+        surface->inputDispatcher.setFocus(nullptr);
+      }
+    }
     return;
   }
 

@@ -263,6 +263,7 @@ const std::unordered_map<std::string, char32_t> kIcons = {
     {"color-swatch", 0xEB61},
     {"adjustments-horizontal", 0xEC38},
     {"stack-back", 0xFD26},
+    {"stack-front", 0xFD29},
     {"stack-2", 0xEEF7},
     {"layout-board", 0xEF95},
     {"layout-dashboard", 0xF02C},
