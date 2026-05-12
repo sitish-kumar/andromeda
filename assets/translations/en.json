@@ -368,12 +368,13 @@
       "titles": {
         "cpu": "CPU",
         "memory": "Memory",
+        "gpu": "GPU",
         "network": "Network",
-        "load-average": "Load Average",
-        "system-info": "System Info"
+        "system": "System",
+        "resources": "Resources"
       },
       "unknown": "unknown",
-      "info": "Distro - {distro}\nCompositor - {compositor}\nKernel - {kernel}\nUptime - {uptime}\nOS age - {osAge}\nBoard - {board}\nCPU - {cpu}\nGPU - {gpu}\nMemory - {memory}\nDisk - {disk}"
+      "uptime-prefix": "Up {uptime} · {osAge}"
     }
   },
   "auth": {
