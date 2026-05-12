@@ -645,6 +645,32 @@ namespace settings {
                                             cfg.osd.position),
                                 "hud overlay volume brightness"));
 
+    // Keybinds (lives under Shell)
+    entries.push_back(makeEntry("shell", "keybinds", tr("settings.schema.keybinds.validate.label"),
+                                tr("settings.schema.keybinds.validate.description"), {"keybinds", "validate"},
+                                KeybindListSetting{.items = cfg.keybinds.validate, .maxItems = 4},
+                                "keybind shortcut hotkey enter accept submit confirm"));
+    entries.push_back(makeEntry("shell", "keybinds", tr("settings.schema.keybinds.cancel.label"),
+                                tr("settings.schema.keybinds.cancel.description"), {"keybinds", "cancel"},
+                                KeybindListSetting{.items = cfg.keybinds.cancel, .maxItems = 4},
+                                "keybind shortcut hotkey escape close dismiss"));
+    entries.push_back(makeEntry("shell", "keybinds", tr("settings.schema.keybinds.left.label"),
+                                tr("settings.schema.keybinds.left.description"), {"keybinds", "left"},
+                                KeybindListSetting{.items = cfg.keybinds.left, .maxItems = 4},
+                                "keybind shortcut hotkey arrow move"));
+    entries.push_back(makeEntry("shell", "keybinds", tr("settings.schema.keybinds.right.label"),
+                                tr("settings.schema.keybinds.right.description"), {"keybinds", "right"},
+                                KeybindListSetting{.items = cfg.keybinds.right, .maxItems = 4},
+                                "keybind shortcut hotkey arrow move"));
+    entries.push_back(makeEntry("shell", "keybinds", tr("settings.schema.keybinds.up.label"),
+                                tr("settings.schema.keybinds.up.description"), {"keybinds", "up"},
+                                KeybindListSetting{.items = cfg.keybinds.up, .maxItems = 4},
+                                "keybind shortcut hotkey arrow move"));
+    entries.push_back(makeEntry("shell", "keybinds", tr("settings.schema.keybinds.down.label"),
+                                tr("settings.schema.keybinds.down.description"), {"keybinds", "down"},
+                                KeybindListSetting{.items = cfg.keybinds.down, .maxItems = 4},
+                                "keybind shortcut hotkey arrow move"));
+
     // Services
     entries.push_back(makeEntry("services", "system", tr("settings.schema.services.system-monitor.label"),
                                 tr("settings.schema.services.system-monitor.description"),

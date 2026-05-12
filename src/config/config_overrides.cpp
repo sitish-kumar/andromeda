@@ -433,6 +433,16 @@ namespace {
               behaviorTable.insert_or_assign(item.name, std::move(row));
             }
             table.insert_or_assign(key, std::move(behaviorTable));
+          } else if constexpr (std::is_same_v<T, std::vector<KeyChord>>) {
+            toml::array array;
+            for (const auto& item : concrete) {
+              std::string serialized = keyChordToString(item);
+              if (serialized.empty()) {
+                continue;
+              }
+              array.push_back(std::move(serialized));
+            }
+            table.insert_or_assign(key, std::move(array));
           } else {
             table.insert_or_assign(key, concrete);
           }

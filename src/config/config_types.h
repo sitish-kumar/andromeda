@@ -141,10 +141,31 @@ struct IdleConfig {
 [[nodiscard]] std::vector<SessionPanelActionConfig> defaultSessionPanelActions();
 [[nodiscard]] std::vector<IdleBehaviorConfig> defaultIdleBehaviors();
 
+enum class KeybindAction : std::uint8_t {
+  Validate = 0,
+  Cancel = 1,
+  Left = 2,
+  Right = 3,
+  Up = 4,
+  Down = 5,
+};
+
+struct KeyChord {
+  std::uint32_t sym = 0;       // XKB keysym
+  std::uint32_t modifiers = 0; // KeyMod bitmask
+
+  bool operator==(const KeyChord&) const = default;
+};
+
+// Throws std::runtime_error if spec contains a Super-family modifier.
+[[nodiscard]] std::optional<KeyChord> parseKeyChordSpec(std::string_view spec);
+[[nodiscard]] std::string keyChordToString(const KeyChord& chord);
+[[nodiscard]] std::string keyChordDisplayLabel(const KeyChord& chord);
+
 using WidgetSettingValue = std::variant<bool, std::int64_t, double, std::string, std::vector<std::string>>;
 using ConfigOverrideValue =
     std::variant<bool, std::int64_t, double, std::string, std::vector<std::string>, std::vector<ShortcutConfig>,
-                 std::vector<SessionPanelActionConfig>, std::vector<IdleBehaviorConfig>>;
+                 std::vector<SessionPanelActionConfig>, std::vector<IdleBehaviorConfig>, std::vector<KeyChord>>;
 
 // Optional rounded “capsule” behind a bar widget (see `[widget.*] capsule_*` in CONFIG.md).
 // Corner shape, border width, and edge softness are fixed in the shell code; padding/radius are configurable.
@@ -485,22 +506,6 @@ struct BrightnessConfig {
   std::vector<BrightnessMonitorOverride> monitorOverrides;
 
   bool operator==(const BrightnessConfig&) const = default;
-};
-
-enum class KeybindAction : std::uint8_t {
-  Validate = 0,
-  Cancel = 1,
-  Left = 2,
-  Right = 3,
-  Up = 4,
-  Down = 5,
-};
-
-struct KeyChord {
-  std::uint32_t sym = 0;       // XKB keysym
-  std::uint32_t modifiers = 0; // KeyMod bitmask
-
-  bool operator==(const KeyChord&) const = default;
 };
 
 struct KeybindsConfig {

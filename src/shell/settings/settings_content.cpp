@@ -10,6 +10,7 @@
 #include "ui/controls/flex.h"
 #include "ui/controls/glyph.h"
 #include "ui/controls/input.h"
+#include "ui/controls/keybind_recorder.h"
 #include "ui/controls/label.h"
 #include "ui/controls/list_editor.h"
 #include "ui/controls/segmented.h"
@@ -1435,6 +1436,144 @@ namespace settings {
       section.addChild(std::move(block));
     };
 
+    const auto makeKeybindListBlock = [&](Flex& section, const SettingEntry& entry,
+                                          const KeybindListSetting& keybinds) {
+      const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
+
+      auto block = std::make_unique<Flex>();
+      block->setDirection(FlexDirection::Vertical);
+      block->setAlign(FlexAlign::Stretch);
+      block->setGap(Style::spaceXs * scale);
+      block->setPadding(2.0f * scale, 0.0f);
+      block->setFillWidth(true);
+      block->setFlexGrow(1.0f);
+
+      auto titleRow = std::make_unique<Flex>();
+      titleRow->setDirection(FlexDirection::Horizontal);
+      titleRow->setAlign(FlexAlign::Center);
+      titleRow->setGap(Style::spaceSm * scale);
+      // Reserve the Reset button's height so columns line up even when only some are overridden.
+      titleRow->setMinHeight(Style::controlHeightSm * scale);
+      auto titleLabel =
+          makeLabel(entry.title, Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::OnSurface), true);
+      titleLabel->setMaxLines(2);
+      titleRow->addChild(std::move(titleLabel));
+      if (overridden) {
+        auto badge = std::make_unique<Flex>();
+        badge->setAlign(FlexAlign::Center);
+        badge->setPadding(1.0f * scale, Style::spaceXs * scale);
+        badge->setRadius(Style::radiusSm * scale);
+        badge->setFill(colorSpecFromRole(ColorRole::Primary, 0.15f));
+        badge->addChild(makeLabel(i18n::tr("settings.badges.override"), Style::fontSizeCaption * scale,
+                                  colorSpecFromRole(ColorRole::Primary), true));
+        titleRow->addChild(std::move(badge));
+      }
+      if (overridden) {
+        titleRow->addChild(makeResetButton(entry.path));
+      }
+      block->addChild(std::move(titleRow));
+
+      // Always reserve two caption lines so blocks line up regardless of how their description wraps.
+      auto subtitleBox = std::make_unique<Flex>();
+      subtitleBox->setDirection(FlexDirection::Vertical);
+      subtitleBox->setAlign(FlexAlign::Stretch);
+      subtitleBox->setMinHeight(2.0f * Style::fontSizeCaption * 1.4f * scale);
+      if (!entry.subtitle.empty()) {
+        auto subtitle = makeLabel(entry.subtitle, Style::fontSizeCaption * scale,
+                                  colorSpecFromRole(ColorRole::OnSurfaceVariant), false);
+        subtitle->setMaxLines(2);
+        subtitleBox->addChild(std::move(subtitle));
+      }
+      block->addChild(std::move(subtitleBox));
+
+      auto list = std::make_unique<Flex>();
+      list->setDirection(FlexDirection::Vertical);
+      list->setAlign(FlexAlign::Stretch);
+      list->setGap(Style::spaceXs * scale);
+
+      // An empty list clears the override so defaults take effect again; never persist as "disabled".
+      // If no GUI override exists, request a rebuild so the UI snaps back to the underlying default.
+      const auto commitItems = [configService = ctx.configService, setOverride = ctx.setOverride,
+                                clearOverride = ctx.clearOverride, requestRebuild = ctx.requestRebuild,
+                                path = entry.path](std::vector<KeyChord> items) {
+        if (items.empty()) {
+          if (configService != nullptr && configService->hasOverride(path)) {
+            if (clearOverride) {
+              clearOverride(path);
+            }
+          } else if (requestRebuild) {
+            requestRebuild();
+          }
+          return;
+        }
+        setOverride(path, items);
+      };
+
+      for (std::size_t i = 0; i < keybinds.items.size(); ++i) {
+        auto row = std::make_unique<Flex>();
+        row->setDirection(FlexDirection::Horizontal);
+        row->setAlign(FlexAlign::Center);
+        row->setGap(Style::spaceXs * scale);
+
+        auto recorder = std::make_unique<KeybindRecorder>();
+        recorder->setScale(scale);
+        recorder->setChord(keybinds.items[i]);
+        recorder->setUnsetPlaceholder(i18n::tr("settings.controls.keybind.unset-placeholder"));
+        recorder->setRecordingPlaceholder(i18n::tr("settings.controls.keybind.recording-placeholder"));
+        recorder->setOnCommit([commitItems, items = keybinds.items, i](KeyChord chord) mutable {
+          if (i < items.size()) {
+            items[i] = chord;
+            commitItems(std::move(items));
+          }
+        });
+        row->addChild(std::move(recorder));
+
+        auto removeBtn = std::make_unique<Button>();
+        removeBtn->setGlyph("close");
+        removeBtn->setVariant(ButtonVariant::Ghost);
+        removeBtn->setGlyphSize(Style::fontSizeCaption * scale);
+        removeBtn->setMinWidth(Style::controlHeightSm * scale);
+        removeBtn->setMinHeight(Style::controlHeightSm * scale);
+        removeBtn->setPadding(Style::spaceXs * scale);
+        removeBtn->setRadius(Style::radiusSm * scale);
+        removeBtn->setOnClick([commitItems, items = keybinds.items, i]() mutable {
+          if (i >= items.size()) {
+            return;
+          }
+          items.erase(items.begin() + static_cast<std::ptrdiff_t>(i));
+          commitItems(std::move(items));
+        });
+        row->addChild(std::move(removeBtn));
+
+        list->addChild(std::move(row));
+      }
+
+      const bool canAdd = (keybinds.maxItems == 0 || keybinds.items.size() < keybinds.maxItems);
+      if (canAdd) {
+        // Trailing recorder is UI-only; it only joins the persisted list once a chord is recorded.
+        auto addRow = std::make_unique<Flex>();
+        addRow->setDirection(FlexDirection::Horizontal);
+        addRow->setAlign(FlexAlign::Center);
+        addRow->setGap(Style::spaceXs * scale);
+
+        auto addRecorder = std::make_unique<KeybindRecorder>();
+        addRecorder->setScale(scale);
+        addRecorder->setUnsetPlaceholder(i18n::tr("settings.controls.keybind.add"));
+        addRecorder->setRecordingPlaceholder(i18n::tr("settings.controls.keybind.recording-placeholder"));
+        addRecorder->setOnCommit([commitItems, items = keybinds.items](KeyChord chord) mutable {
+          items.push_back(chord);
+          commitItems(std::move(items));
+        });
+        addRow->addChild(std::move(addRecorder));
+
+        list->addChild(std::move(addRow));
+      }
+
+      block->addChild(std::move(list));
+
+      section.addChild(std::move(block));
+    };
+
     const auto makeShortcutListBlock = [&](Flex& section, const SettingEntry& entry,
                                            const ShortcutListSetting& shortcuts) {
       const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
@@ -1855,6 +1994,8 @@ namespace settings {
               return nullptr;
             } else if constexpr (std::is_same_v<T, ShortcutListSetting>) {
               return nullptr;
+            } else if constexpr (std::is_same_v<T, KeybindListSetting>) {
+              return nullptr;
             } else if constexpr (std::is_same_v<T, SessionPanelActionsSetting>) {
               return nullptr;
             } else if constexpr (std::is_same_v<T, IdleBehaviorsSetting>) {
@@ -1879,6 +2020,10 @@ namespace settings {
     std::string activeSectionKey;
     std::string activeGroupKey;
     Flex* activeSection = nullptr;
+    // Row-major grid state for keybind entries (see KeybindListSetting dispatch below).
+    constexpr std::size_t kKeybindsPerRow = 3;
+    Flex* activeKeybindRow = nullptr;
+    std::size_t activeKeybindRowCount = 0;
     std::size_t visibleEntries = 0;
     const std::string normalizedSearchQuery = normalizedSettingQuery(ctx.searchQuery);
 
@@ -1983,6 +2128,8 @@ namespace settings {
       if (entry.section != activeSectionKey) {
         activeSectionKey = entry.section;
         activeGroupKey.clear();
+        activeKeybindRow = nullptr;
+        activeKeybindRowCount = 0;
         std::string displayTitle;
         if (entry.section == "bar" && ctx.selectedBar != nullptr) {
           displayTitle = i18n::tr("settings.entities.bar.label", "name", ctx.selectedBar->name);
@@ -1998,7 +2145,14 @@ namespace settings {
         if (entry.group != activeGroupKey) {
           const bool isFirstGroup = activeGroupKey.empty();
           activeGroupKey = entry.group;
+          activeKeybindRow = nullptr;
+          activeKeybindRowCount = 0;
           addGroupLabel(*activeSection, groupLabel(entry.group), isFirstGroup);
+        }
+        const bool isKeybindEntry = std::holds_alternative<KeybindListSetting>(entry.control);
+        if (!isKeybindEntry) {
+          activeKeybindRow = nullptr;
+          activeKeybindRowCount = 0;
         }
         if (const auto* list = std::get_if<ListSetting>(&entry.control)) {
           if (isFirstBarWidgetListPath(entry.path)) {
@@ -2008,6 +2162,18 @@ namespace settings {
           }
         } else if (const auto* shortcuts = std::get_if<ShortcutListSetting>(&entry.control)) {
           makeShortcutListBlock(*activeSection, entry, *shortcuts);
+        } else if (const auto* keybindList = std::get_if<KeybindListSetting>(&entry.control)) {
+          if (activeKeybindRow == nullptr || activeKeybindRowCount >= kKeybindsPerRow) {
+            auto row = std::make_unique<Flex>();
+            row->setDirection(FlexDirection::Horizontal);
+            row->setAlign(FlexAlign::Start);
+            row->setGap(Style::spaceMd * scale);
+            row->setFillWidth(true);
+            activeKeybindRow = static_cast<Flex*>(activeSection->addChild(std::move(row)));
+            activeKeybindRowCount = 0;
+          }
+          makeKeybindListBlock(*activeKeybindRow, entry, *keybindList);
+          ++activeKeybindRowCount;
         } else if (const auto* sessionActs = std::get_if<SessionPanelActionsSetting>(&entry.control)) {
           makeSessionActionsInlineBlock(*activeSection, entry, *sessionActs);
         } else if (const auto* idle = std::get_if<IdleBehaviorsSetting>(&entry.control)) {

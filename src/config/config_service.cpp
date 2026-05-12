@@ -63,75 +63,6 @@ namespace {
     }
   }
 
-  std::optional<KeyChord> parseKeyChord(std::string_view rawSpec) {
-    const std::string spec = StringUtils::trim(rawSpec);
-    if (spec.empty()) {
-      return std::nullopt;
-    }
-
-    std::vector<std::string> tokens;
-    std::size_t start = 0;
-    while (start <= spec.size()) {
-      const std::size_t plus = spec.find('+', start);
-      const std::size_t len = (plus == std::string::npos) ? (spec.size() - start) : (plus - start);
-      const std::string token = StringUtils::trim(std::string_view(spec).substr(start, len));
-      if (token.empty()) {
-        return std::nullopt;
-      }
-      tokens.push_back(token);
-      if (plus == std::string::npos) {
-        break;
-      }
-      start = plus + 1;
-    }
-
-    if (tokens.empty()) {
-      return std::nullopt;
-    }
-
-    std::uint32_t modifiers = 0;
-    for (std::size_t i = 0; i + 1 < tokens.size(); ++i) {
-      const std::string mod = StringUtils::toLower(tokens[i]);
-      if (mod == "ctrl" || mod == "control" || mod == "ctl") {
-        modifiers |= KeyMod::Ctrl;
-      } else if (mod == "shift") {
-        modifiers |= KeyMod::Shift;
-      } else if (mod == "alt" || mod == "option") {
-        modifiers |= KeyMod::Alt;
-      } else if (mod == "super" || mod == "meta" || mod == "logo" || mod == "win" || mod == "mod4") {
-        throw std::runtime_error("modifier \"super/windows\" is not allowed");
-      } else {
-        return std::nullopt;
-      }
-    }
-
-    std::string keyName = StringUtils::toLower(tokens.back());
-    if (keyName == "esc") {
-      keyName = "Escape";
-    } else if (keyName == "enter") {
-      keyName = "Return";
-    } else if (keyName == "kp_enter") {
-      keyName = "KP_Enter";
-    } else if (keyName == "space" || keyName == "spacebar") {
-      keyName = "space";
-    } else if (keyName == "left") {
-      keyName = "Left";
-    } else if (keyName == "right") {
-      keyName = "Right";
-    } else if (keyName == "up") {
-      keyName = "Up";
-    } else if (keyName == "down") {
-      keyName = "Down";
-    }
-
-    xkb_keysym_t sym = xkb_keysym_from_name(keyName.c_str(), XKB_KEYSYM_CASE_INSENSITIVE);
-    if (sym == XKB_KEY_NoSymbol) {
-      return std::nullopt;
-    }
-
-    return KeyChord{.sym = static_cast<std::uint32_t>(sym), .modifiers = modifiers};
-  }
-
   const std::vector<KeyChord>& keybindSet(const KeybindsConfig& keybinds, KeybindAction action) {
     switch (action) {
     case KeybindAction::Validate:
@@ -1676,7 +1607,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       if (const auto* node = keybindsTbl->get(key)) {
         if (const auto v = node->value<std::string>()) {
           try {
-            if (const auto chord = parseKeyChord(*v); chord.has_value()) {
+            if (const auto chord = parseKeyChordSpec(*v); chord.has_value()) {
               out.push_back(*chord);
             } else {
               kLog.warn("invalid keybind chord for [{}] {} = \"{}\"", "keybinds", key, *v);
@@ -1690,7 +1621,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
           for (const auto& item : *arr) {
             if (const auto v = item.value<std::string>()) {
               try {
-                if (const auto chord = parseKeyChord(*v); chord.has_value()) {
+                if (const auto chord = parseKeyChordSpec(*v); chord.has_value()) {
                   out.push_back(*chord);
                 } else {
                   kLog.warn("invalid keybind chord for [{}] {} item = \"{}\"", "keybinds", key, *v);

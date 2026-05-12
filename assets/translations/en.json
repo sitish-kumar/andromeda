@@ -533,7 +533,10 @@
       "bluetooth-enabled": "Bluetooth is on",
       "bluetooth-disabled": "Bluetooth is off",
       "session-bus-unavailable": "Session bus unavailable",
-      "mpris-disabled": "MPRIS disabled"
+      "mpris-disabled": "MPRIS disabled",
+      "keybind-app": "Noctalia",
+      "keybind-invalid-title": "Keybind not allowed",
+      "keybind-invalid-super": "The Super/Windows key cannot be used in shell keybinds."
     }
   },
   "system": {
@@ -590,6 +593,11 @@
       },
       "list": {
         "add-entry-placeholder": "Add entry…"
+      },
+      "keybind": {
+        "unset-placeholder": "Click to bind…",
+        "recording-placeholder": "Press a key combination…",
+        "add": "Click to add keybind"
       }
     },
     "session-actions": {
@@ -788,6 +796,7 @@
         "formats": "Formats",
         "general": "General",
         "grouping": "Grouping",
+        "keybinds": "Keybinds",
         "lifecycle": "Lifecycle",
         "interface": "Interface",
         "launcher": "Launcher",
@@ -1499,6 +1508,32 @@
         "behaviors": {
           "label": "Behaviors",
           "description": "Named idle actions, timeouts, resume commands, and order."
+        }
+      },
+      "keybinds": {
+        "validate": {
+          "label": "Confirm",
+          "description": "Confirm selections, submit inputs, or activate the focused item."
+        },
+        "cancel": {
+          "label": "Cancel",
+          "description": "Close popups, dismiss panels, or abort the current operation."
+        },
+        "left": {
+          "label": "Navigate left",
+          "description": "Move focus or selection to the left."
+        },
+        "right": {
+          "label": "Navigate right",
+          "description": "Move focus or selection to the right."
+        },
+        "up": {
+          "label": "Navigate up",
+          "description": "Move focus or selection up one row."
+        },
+        "down": {
+          "label": "Navigate down",
+          "description": "Move focus or selection down one row."
         }
       },
       "backdrop": {

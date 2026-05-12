@@ -3,6 +3,7 @@
 #include "compositors/compositor_platform.h"
 #include "config/config_service.h"
 #include "core/build_info.h"
+#include "core/deferred_call.h"
 #include "dbus/mpris/mpris_art.h"
 #include "dbus/mpris/mpris_service.h"
 #include "i18n/i18n.h"
@@ -43,7 +44,7 @@ namespace {
   constexpr std::int64_t kHomeTransientPositionRegressionFloorUs = 5'000'000;
   constexpr std::int64_t kHomeTransientPositionRegressionCeilingUs = 1'500'000;
   constexpr std::int64_t kHomeTransientPositionRegressionDeltaUs = 5'000'000;
-  constexpr int kHomeMediaArtLayoutPassLimit = 4;
+  constexpr int kHomeMediaArtLayoutPassLimit = 8;
 
   float homeAvatarSize(float scale) { return Style::controlHeightLg * kHomeAvatarScale * scale; }
 
@@ -665,7 +666,9 @@ void HomeTab::doUpdate(Renderer& renderer) {
         if (!m_active) {
           return;
         }
-        PanelManager::instance().requestUpdateOnly();
+        // refresh() schedules update+layout (Surface::requestUpdate); update-only ticks skipped
+        // HomeTab::doLayout so album art never picked up the final media card height.
+        PanelManager::instance().refresh();
         PanelManager::instance().requestRedraw();
       });
     }
@@ -678,6 +681,7 @@ void HomeTab::doUpdate(Renderer& renderer) {
 void HomeTab::onFrameTick(float /*deltaMs*/) {}
 
 void HomeTab::setActive(bool active) {
+  const bool becameActive = active && !m_active;
   m_active = active;
   if (!active) {
     m_progressTimer.stop();
@@ -689,6 +693,26 @@ void HomeTab::setActive(bool active) {
     m_mediaLastPlaybackStatus.clear();
     m_mediaPositionUs = 0;
     m_mediaPositionSampleAt = {};
+    return;
+  }
+
+  if (becameActive) {
+    // Other tabs were laid out while this body was hidden; flex sizes for the media row can be stale.
+    // Defer so the tab container receives its configure size before HomeTab::doLayout runs.
+    DeferredCall::callLater([]() {
+      PanelManager::instance().requestLayout();
+      PanelManager::instance().requestUpdateOnly();
+    });
+    if (m_mpris != nullptr) {
+      DeferredCall::callLater([this]() {
+        if (!m_active || m_mpris == nullptr) {
+          return;
+        }
+        m_mpris->refreshPlayers();
+        PanelManager::instance().requestLayout();
+        PanelManager::instance().requestUpdateOnly();
+      });
+    }
   }
 }
 
@@ -844,6 +868,7 @@ void HomeTab::sync(Renderer& renderer) {
         m_mediaArt->setVisible(false);
       }
       m_loadedMediaArtUrl.clear();
+      PanelManager::instance().requestLayout();
     } else {
       const auto active = m_mpris->activePlayer();
       if (!active.has_value()) {
@@ -865,11 +890,17 @@ void HomeTab::sync(Renderer& renderer) {
           m_mediaArt->setVisible(false);
         }
         m_loadedMediaArtUrl.clear();
+        PanelManager::instance().requestLayout();
       } else {
-        m_mediaTrack->setText(active->title.empty() ? i18n::tr("control-center.home.media.unknown-track")
-                                                    : active->title);
+        const std::string trackText =
+            active->title.empty() ? i18n::tr("control-center.home.media.unknown-track") : active->title;
         const std::string artists = mpris::joinArtists(active->artists);
-        m_mediaArtist->setText(artists.empty() ? i18n::tr("control-center.home.media.unknown-artist") : artists);
+        const std::string artistText = artists.empty() ? i18n::tr("control-center.home.media.unknown-artist") : artists;
+        if (m_mediaTrack->text() != trackText || m_mediaArtist->text() != artistText) {
+          m_mediaTrack->setText(trackText);
+          m_mediaArtist->setText(artistText);
+          PanelManager::instance().requestLayout();
+        }
         m_mediaArtist->setVisible(true);
         const std::string trackSignature = std::format("{}\n{}\n{}\n{}\n{}", active->trackId, active->title, artists,
                                                        active->album, active->sourceUrl);
@@ -938,6 +969,7 @@ void HomeTab::sync(Renderer& renderer) {
             }
             m_mediaArt->setVisible(loaded);
             m_loadedMediaArtUrl = artUrl;
+            PanelManager::instance().requestLayout();
           }
         }
         std::string statusText;
@@ -954,7 +986,10 @@ void HomeTab::sync(Renderer& renderer) {
         if (!progressText.empty()) {
           statusText = std::format("{} · {}", statusText, progressText);
         }
-        m_mediaStatus->setText(statusText);
+        if (m_mediaStatus->text() != statusText) {
+          m_mediaStatus->setText(statusText);
+          PanelManager::instance().requestLayout();
+        }
       }
     }
   }
