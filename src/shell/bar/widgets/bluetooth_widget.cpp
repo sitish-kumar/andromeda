@@ -144,16 +144,14 @@ void BluetoothWidget::syncState(Renderer& renderer) {
 
   if (rootNode != nullptr) {
     if (numConnected > 0) {
-      std::string tip;
+      std::vector<TooltipRow> rows;
       for (const auto& d : devices) {
         if (d.connected) {
-          if (!tip.empty()) {
-            tip += '\n';
-          }
-          tip += d.alias;
+          std::string value = d.hasBattery ? std::to_string(d.batteryPercent) + "%" : "Connected";
+          rows.push_back({d.alias, std::move(value)});
         }
       }
-      static_cast<InputArea*>(rootNode)->setTooltip(std::move(tip));
+      static_cast<InputArea*>(rootNode)->setTooltip(std::move(rows));
     } else {
       static_cast<InputArea*>(rootNode)->clearTooltip();
     }

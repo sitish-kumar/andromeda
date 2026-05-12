@@ -35,6 +35,29 @@ namespace {
   bool needsCpuTemp(SysmonStat stat) { return stat == SysmonStat::CpuTemp; }
   bool needsGpuTemp(SysmonStat stat) { return stat == SysmonStat::GpuTemp; }
 
+  const char* statDisplayName(SysmonStat stat) {
+    switch (stat) {
+    case SysmonStat::CpuUsage:
+      return "CPU";
+    case SysmonStat::CpuTemp:
+      return "CPU Temp";
+    case SysmonStat::GpuTemp:
+      return "GPU Temp";
+    case SysmonStat::RamUsed:
+    case SysmonStat::RamPct:
+      return "RAM";
+    case SysmonStat::SwapPct:
+      return "Swap";
+    case SysmonStat::DiskPct:
+      return "Disk";
+    case SysmonStat::NetRx:
+      return "Download";
+    case SysmonStat::NetTx:
+      return "Upload";
+    }
+    return "System";
+  }
+
   [[nodiscard]] std::string formatNetSpeed(double bytesPerSec) {
     if (bytesPerSec < 1024.0)
       return std::format("{:.0f}B", bytesPerSec);
@@ -288,11 +311,16 @@ void SysmonWidget::doUpdate(Renderer& renderer) {
     return;
   }
 
+  const std::string value = formatValue();
   if (m_label != nullptr) {
     m_label->setFontSize((m_isVerticalBar ? Style::fontSizeCaption : Style::fontSizeBody) * m_contentScale);
-    if (syncLabelText(formatValue())) {
+    if (syncLabelText(value)) {
       m_label->measure(renderer);
     }
+  }
+
+  if (auto* rootNode = root(); rootNode != nullptr) {
+    static_cast<InputArea*>(rootNode)->setTooltip(std::vector<TooltipRow>{{statDisplayName(m_stat), value}});
   }
 
   if (m_displayMode == SysmonDisplayMode::Gauge) {

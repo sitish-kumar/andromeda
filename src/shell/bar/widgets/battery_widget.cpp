@@ -1,6 +1,7 @@
 #include "shell/bar/widgets/battery_widget.h"
 
 #include "render/core/renderer.h"
+#include "render/scene/input_area.h"
 #include "ui/controls/glyph.h"
 #include "ui/controls/label.h"
 #include "ui/palette.h"
@@ -43,7 +44,7 @@ BatteryWidget::BatteryWidget(UPowerService* upower, std::string deviceSelector)
     : m_upower(upower), m_deviceSelector(std::move(deviceSelector)) {}
 
 void BatteryWidget::create() {
-  auto container = std::make_unique<Node>();
+  auto container = std::make_unique<InputArea>();
 
   auto glyph = std::make_unique<Glyph>();
   glyph->setGlyph("battery-4");
@@ -127,6 +128,20 @@ void BatteryWidget::syncState(Renderer& renderer) {
   m_label->setText(m_isVertical ? std::to_string(pct) : std::to_string(pct) + "%");
   m_label->setColor(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)));
   m_label->measure(renderer);
+
+  if (rootNode != nullptr) {
+    std::vector<TooltipRow> rows;
+    for (const auto& dev : m_upower->batteryDevices()) {
+      std::string name = !dev.model.empty() ? dev.model : (!dev.nativePath.empty() ? dev.nativePath : "Battery");
+      int dp = static_cast<int>(std::round(dev.state.percentage));
+      rows.push_back({std::move(name), std::to_string(dp) + "%"});
+    }
+    if (!rows.empty()) {
+      static_cast<InputArea*>(rootNode)->setTooltip(std::move(rows));
+    } else {
+      static_cast<InputArea*>(rootNode)->clearTooltip();
+    }
+  }
 
   requestRedraw();
 }
