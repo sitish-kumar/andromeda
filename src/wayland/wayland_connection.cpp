@@ -539,6 +539,9 @@ void WaylandConnection::handleGlobalRemove(void* data, wl_registry* /*registry*/
     if (self->m_outputRemovedCallback && output.output != nullptr) {
       self->m_outputRemovedCallback(output.output);
     }
+    if (output.xdgOutput != nullptr) {
+      zxdg_output_v1_destroy(output.xdgOutput);
+    }
     if (output.output != nullptr) {
       if (wl_output_get_version(output.output) >= WL_OUTPUT_RELEASE_SINCE_VERSION) {
         wl_output_release(output.output);
