@@ -34,10 +34,10 @@
 
 TaskbarWidget::TaskbarWidget(CompositorPlatform& platform, wl_output* output, bool groupByWorkspace,
                              bool showAllOutputs, bool onlyActiveWorkspace, bool showWorkspaceLabel,
-                             std::string barPosition)
+                             bool hideEmptyWorkspaces, std::string barPosition)
     : m_platform(platform), m_output(output), m_groupByWorkspace(groupByWorkspace), m_showAllOutputs(showAllOutputs),
       m_onlyActiveWorkspace(onlyActiveWorkspace), m_showWorkspaceLabel(showWorkspaceLabel),
-      m_barPosition(std::move(barPosition)) {
+      m_hideEmptyWorkspaces(hideEmptyWorkspaces), m_barPosition(std::move(barPosition)) {
   buildDesktopIconIndex();
 }
 
@@ -1044,6 +1044,20 @@ void TaskbarWidget::updateModels() {
                              nextWorkspaces.end());
       }
     }
+  }
+
+  if (m_groupByWorkspace && m_hideEmptyWorkspaces && !nextWorkspaces.empty()) {
+    const auto workspaceHasTask = [](const WorkspaceModel& wsm, const std::vector<TaskModel>& tasks) {
+      for (const auto& t : tasks) {
+        if (t.workspaceKey == wsm.key || t.workspaceKey == wsm.workspace.id || t.workspaceKey == wsm.workspace.name) {
+          return true;
+        }
+      }
+      return false;
+    };
+    nextWorkspaces.erase(std::remove_if(nextWorkspaces.begin(), nextWorkspaces.end(),
+                                        [&](const WorkspaceModel& wsm) { return !workspaceHasTask(wsm, nextTasks); }),
+                         nextWorkspaces.end());
   }
 
   if (!m_groupByWorkspace) {

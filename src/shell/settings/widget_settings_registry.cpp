@@ -427,6 +427,12 @@ namespace settings {
             WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
         add(std::move(showWsLabel));
       }
+      {
+        auto hideEmpty = boolSpec("hide_empty_workspaces", false);
+        hideEmpty.visibleWhen =
+            WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
+        add(std::move(hideEmpty));
+      }
       for (auto& spec : specs) {
         if (spec.key == "capsule_radius") {
           spec.descriptionKey = "settings.widgets.settings.capsule_radius.taskbar-description";

@@ -347,8 +347,10 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
     const bool showAllOutputs = wc != nullptr ? wc->getBool("show_all_outputs", false) : false;
     const bool onlyActiveWorkspace = wc != nullptr ? wc->getBool("only_active_workspace", false) : false;
     const bool showWorkspaceLabel = wc != nullptr ? wc->getBool("show_workspace_label", true) : true;
-    auto widget = std::make_unique<TaskbarWidget>(m_platform, output, groupByWorkspace, showAllOutputs,
-                                                  onlyActiveWorkspace, showWorkspaceLabel, barPosition);
+    const bool hideEmptyWorkspaces = wc != nullptr ? wc->getBool("hide_empty_workspaces", false) : false;
+    auto widget =
+        std::make_unique<TaskbarWidget>(m_platform, output, groupByWorkspace, showAllOutputs, onlyActiveWorkspace,
+                                        showWorkspaceLabel, hideEmptyWorkspaces, barPosition);
     widget->setContentScale(contentScale);
     return widget;
   }

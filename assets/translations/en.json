@@ -1067,6 +1067,10 @@
           "label": "Workspace Capsule Label",
           "description": "Show the small workspace tag on grouped taskbar capsules. Turn off for icon-only groups."
         },
+        "hide_empty_workspaces": {
+          "label": "Hide Empty Workspaces",
+          "description": "When grouping by workspace, omit capsules that have no running windows in the taskbar list."
+        },
         "height": {
           "label": "Height",
           "description": "Widget height in pixels"
