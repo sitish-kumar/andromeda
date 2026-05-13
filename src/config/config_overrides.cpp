@@ -1,6 +1,8 @@
 #include "config/config_service.h"
 #include "core/log.h"
+#include "theme/scheme.h"
 #include "util/file_utils.h"
+#include "util/string_utils.h"
 
 #include <algorithm>
 #include <cmath>
@@ -586,6 +588,30 @@ void ConfigService::setThemeMode(ThemeMode mode) {
   // Rebuild Config and fan out reload callbacks so ThemeService transitions.
   loadAll();
   fireReloadCallbacks();
+}
+
+bool ConfigService::setThemeWallpaperScheme(std::string_view schemeRaw) {
+  if (m_overridesPath.empty()) {
+    return false;
+  }
+
+  const std::string scheme = StringUtils::trim(std::string(schemeRaw));
+  if (scheme.empty() || !noctalia::theme::schemeFromString(scheme)) {
+    return false;
+  }
+
+  auto* themeTbl = ensureTable(m_overridesTable, "theme");
+  themeTbl->insert_or_assign("wallpaper_scheme", scheme);
+
+  if (!writeOverridesToFile()) {
+    kLog.warn("failed to write {}", m_overridesPath);
+    return false;
+  }
+
+  m_ownOverridesWritePending = true;
+  loadAll();
+  fireReloadCallbacks();
+  return true;
 }
 
 void ConfigService::setDockEnabled(bool enabled) {
