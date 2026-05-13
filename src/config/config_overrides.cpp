@@ -329,7 +329,7 @@ namespace {
     return nearlyEqual(a.preActionFadeSeconds, b.preActionFadeSeconds) &&
            vectorEqual(a.behaviors, b.behaviors, [](const IdleBehaviorConfig& lhs, const IdleBehaviorConfig& rhs) {
              return lhs.name == rhs.name && lhs.enabled == rhs.enabled && lhs.timeoutSeconds == rhs.timeoutSeconds &&
-                    lhs.command == rhs.command && lhs.resumeCommand == rhs.resumeCommand;
+                    lhs.action == rhs.action && lhs.command == rhs.command && lhs.resumeCommand == rhs.resumeCommand;
            });
   }
 
@@ -425,11 +425,17 @@ namespace {
               toml::table row;
               row.insert_or_assign("enabled", item.enabled);
               row.insert_or_assign("timeout", static_cast<std::int64_t>(item.timeoutSeconds));
+              if (!item.action.empty()) {
+                row.insert_or_assign("action", item.action);
+              }
               if (!item.command.empty()) {
                 row.insert_or_assign("command", item.command);
               }
               if (!item.resumeCommand.empty()) {
                 row.insert_or_assign("resume_command", item.resumeCommand);
+              }
+              if (item.action == "suspend") {
+                row.insert_or_assign("lock_before_suspend", item.lockBeforeSuspend);
               }
               behaviorTable.insert_or_assign(item.name, std::move(row));
             }

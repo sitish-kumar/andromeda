@@ -115,6 +115,11 @@ protected:
   [[nodiscard]] PopupSurfaceConfig defaultPopupConfig(const LayerPopupParentContext& parent, std::uint32_t width,
                                                       std::uint32_t height) const;
 
+  /// Snap `m_sceneRoot` / `m_contentNode` to `m_surface` dimensions. `layoutScene` calls this before and after
+  /// `layoutSheet`; subclasses that resize inside `layoutSheet` must call it once after `resize()` before
+  /// laying out sheet nodes so measurements use the updated inner size.
+  void syncSceneGeometryFromSurface();
+
   // ── Hooks ────────────────────────────────────────────────────────
   //
   // Pure virtual:

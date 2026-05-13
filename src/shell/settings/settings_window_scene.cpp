@@ -303,12 +303,14 @@ settings::SettingsContentContext SettingsWindow::makeContentContext(const Config
       .renameWidgetInstance = renameWidget,
       .openSessionActionEntryEditor = [this](std::size_t entryIndex) { openSessionActionEntryEditor(entryIndex); },
       .openIdleBehaviorEntryEditor = [this](std::size_t entryIndex) { openIdleBehaviorEntryEditor(entryIndex); },
+      .openIdleBehaviorCreateEditor = [this]() { openIdleBehaviorCreateEditor(); },
       .registerIdleLiveStatusLabel =
           [this](Label* label) {
             m_idleLiveStatusLabel = label;
             refreshIdleLiveStatusText();
           },
       .afterSessionActionsCommit = {},
+      .afterIdleBehaviorApply = {},
       .closeHostedEditor = {},
   };
 }

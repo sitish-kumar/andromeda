@@ -15,7 +15,8 @@ struct ext_idle_notifier_v1;
 
 class IdleManager {
 public:
-  using CommandRunner = std::function<bool(const std::string&)>;
+  /// `command` is the resolved idle or resume shell / `noctalia:` token for this behavior.
+  using CommandRunner = std::function<bool(const IdleBehaviorConfig& behavior, const std::string& command)>;
   /// Starts the pre-action fade overlay; call `onFadeComplete` once every output has finished fading.
   using GraceBeginCallback = std::function<void(const std::string& behaviorName, std::chrono::milliseconds fadeDuration,
                                                 std::function<void()> onFadeComplete)>;
@@ -34,13 +35,6 @@ public:
   static void handleIdled(void* data, ext_idle_notification_v1* notification);
   static void handleResumed(void* data, ext_idle_notification_v1* notification);
 
-  [[nodiscard]] bool idleNotifierAvailable() const noexcept { return m_notifier != nullptr; }
-  [[nodiscard]] bool graceFadeActive() const noexcept { return m_graceBehavior != nullptr; }
-  [[nodiscard]] std::string_view graceBehaviorName() const noexcept {
-    return m_graceBehavior != nullptr ? std::string_view(m_graceBehavior->config.name) : std::string_view{};
-  }
-  [[nodiscard]] std::size_t registeredBehaviorCount() const noexcept { return m_behaviors.size(); }
-
 private:
   struct BehaviorState {
     IdleManager* owner = nullptr;
@@ -53,7 +47,7 @@ private:
   void createBehavior(const IdleBehaviorConfig& config);
   void runBehavior(BehaviorState& behavior);
   void runResumeBehavior(BehaviorState& behavior);
-  bool runCommand(const std::string& command) const;
+  bool runCommand(const IdleBehaviorConfig& behavior, const std::string& command) const;
   void cancelActiveGrace(bool userCancelled);
   void graceFadeComplete();
 

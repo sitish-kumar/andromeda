@@ -1,6 +1,7 @@
 #include "shell/settings/settings_content.h"
 
 #include "config/config_types.h"
+#include "core/deferred_call.h"
 #include "i18n/i18n.h"
 #include "render/core/color.h"
 #include "shell/settings/bar_widget_editor.h"
@@ -331,7 +332,7 @@ namespace settings {
                                        std::optional<std::size_t> ignoreIndex = std::nullopt) {
       base = sanitizedIdleBehaviorName(base);
       if (base.empty()) {
-        base = "custom";
+        base = "idle-behavior";
       }
 
       std::unordered_set<std::string> names;
@@ -367,20 +368,26 @@ namespace settings {
     }
 
     std::string idleBehaviorRowSummary(const IdleBehaviorConfig& row) {
-      const auto displayName = [](const IdleBehaviorConfig& behavior) {
-        if (behavior.command == "noctalia:screen-lock" || behavior.name == "lock") {
+      IdleBehaviorConfig norm = row;
+      inferIdleBehaviorActionFromLegacyFields(norm);
+
+      const auto displayName = [&]() -> std::string {
+        if (norm.action == "lock") {
           return i18n::tr("settings.idle.behavior.presets.lock");
         }
-        if (behavior.command == "noctalia:dpms-off" || behavior.name == "screen-off") {
+        if (norm.action == "screen_off") {
           return i18n::tr("settings.idle.behavior.presets.monitor-off");
         }
-        if (behavior.name.empty()) {
+        if (norm.action == "suspend") {
+          return i18n::tr("settings.idle.behavior.presets.suspend");
+        }
+        if (row.name.empty()) {
           return i18n::tr("settings.idle.behavior.unnamed");
         }
-        return behavior.name;
+        return row.name;
       };
 
-      const std::string name = displayName(row);
+      const std::string name = displayName();
       if (name.empty()) {
         return i18n::tr("settings.idle.behavior.unnamed");
       }
@@ -618,10 +625,119 @@ namespace settings {
                                                  const std::function<void()>& closeHostedEditor) {
       const float scale = ctx.scale;
 
+      const std::vector<SelectOption> idleActionOptions = {
+          {"lock", i18n::tr("settings.idle.behavior.kind.lock"), {}},
+          {"screen_off", i18n::tr("settings.idle.behavior.kind.screen-off"), {}},
+          {"suspend", i18n::tr("settings.idle.behavior.kind.suspend"), {}},
+          {"command", i18n::tr("settings.idle.behavior.kind.custom"), {}},
+      };
+
+      IdleBehaviorConfig norm = row;
+      inferIdleBehaviorActionFromLegacyFields(norm);
+      const bool showCustomCommands = (norm.action == "command");
+      const bool showSuspendLock = (norm.action == "suspend");
+
       auto body = std::make_unique<Flex>();
       body->setDirection(FlexDirection::Vertical);
       body->setAlign(FlexAlign::Stretch);
       body->setGap(Style::spaceMd * scale);
+
+      auto customCommandsGrp = std::make_unique<Flex>();
+      customCommandsGrp->setDirection(FlexDirection::Vertical);
+      customCommandsGrp->setAlign(FlexAlign::Stretch);
+      customCommandsGrp->setGap(Style::spaceMd * scale);
+      customCommandsGrp->setVisible(showCustomCommands);
+      Flex* customCommandsRaw = customCommandsGrp.get();
+
+      auto suspendLockGrp = std::make_unique<Flex>();
+      suspendLockGrp->setDirection(FlexDirection::Horizontal);
+      suspendLockGrp->setAlign(FlexAlign::Center);
+      suspendLockGrp->setGap(Style::spaceSm * scale);
+      suspendLockGrp->setFillWidth(true);
+      suspendLockGrp->setVisible(showSuspendLock);
+      auto suspendLockLabel = makeLabel(i18n::tr("settings.idle.behavior.lock-before-suspend-label"),
+                                        Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::OnSurface), false);
+      suspendLockLabel->setFlexGrow(1.0f);
+      suspendLockGrp->addChild(std::move(suspendLockLabel));
+      auto suspendLockToggle = std::make_unique<Toggle>();
+      suspendLockToggle->setScale(scale);
+      suspendLockToggle->setChecked(row.lockBeforeSuspend);
+      suspendLockToggle->setOnChange([&row, persist](bool v) {
+        row.lockBeforeSuspend = v;
+        persist();
+      });
+      suspendLockGrp->addChild(std::move(suspendLockToggle));
+      Flex* suspendLockRaw = suspendLockGrp.get();
+
+      const auto addCommandInput = [&](Flex& parent, std::string label, std::string placeholder, std::string& target) {
+        auto block = std::make_unique<Flex>();
+        block->setDirection(FlexDirection::Vertical);
+        block->setAlign(FlexAlign::Stretch);
+        block->setGap(Style::spaceXs * scale);
+        block->addChild(
+            makeLabel(label, Style::fontSizeCaption * scale, colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+        auto input = std::make_unique<Input>();
+        input->setValue(target);
+        input->setPlaceholder(placeholder);
+        input->setFontSize(Style::fontSizeBody * scale);
+        input->setControlHeight(Style::controlHeight * scale);
+        input->setHorizontalPadding(Style::spaceSm * scale);
+        auto* inputPtr = input.get();
+        auto* targetPtr = &target;
+        const auto commit = [targetPtr, persist, inputPtr]() {
+          *targetPtr = StringUtils::trim(inputPtr->value());
+          inputPtr->setInvalid(false);
+          inputPtr->setValue(*targetPtr);
+          persist();
+        };
+        input->setOnChange([inputPtr](const std::string& /*t*/) { inputPtr->setInvalid(false); });
+        input->setOnSubmit([commit](const std::string& /*text*/) { commit(); });
+        input->setOnFocusLoss(commit);
+        block->addChild(std::move(input));
+        parent.addChild(std::move(block));
+      };
+
+      addCommandInput(*customCommandsGrp, i18n::tr("settings.idle.behavior.command-label"),
+                      i18n::tr("settings.idle.behavior.command-placeholder"), row.command);
+      addCommandInput(*customCommandsGrp, i18n::tr("settings.idle.behavior.resume-command-label"),
+                      i18n::tr("settings.idle.behavior.resume-command-placeholder"), row.resumeCommand);
+
+      auto kindBlock = std::make_unique<Flex>();
+      kindBlock->setDirection(FlexDirection::Vertical);
+      kindBlock->setAlign(FlexAlign::Stretch);
+      kindBlock->setGap(Style::spaceXs * scale);
+      kindBlock->addChild(makeLabel(i18n::tr("settings.idle.behavior.kind-section-label"),
+                                    Style::fontSizeCaption * scale, colorSpecFromRole(ColorRole::OnSurfaceVariant),
+                                    false));
+      auto kindSelect = std::make_unique<Select>();
+      kindSelect->setOptions(optionLabels(idleActionOptions));
+      if (const auto ki = optionIndex(idleActionOptions, norm.action)) {
+        kindSelect->setSelectedIndex(*ki);
+      } else {
+        kindSelect->clearSelection();
+      }
+      kindSelect->setFontSize(Style::fontSizeBody * scale);
+      kindSelect->setControlHeight(Style::controlHeight * scale);
+      kindSelect->setGlyphSize(Style::fontSizeBody * scale);
+      kindSelect->setFillWidth(true);
+      kindSelect->setOnSelectionChanged([&row, persist, idleActionOptions, customCommandsRaw,
+                                         suspendLockRaw](std::size_t index, std::string_view /*label*/) {
+        if (index < idleActionOptions.size()) {
+          row.action = idleActionOptions[index].value;
+          if (row.action != "command") {
+            row.command.clear();
+            row.resumeCommand.clear();
+          }
+        }
+        IdleBehaviorConfig n = row;
+        inferIdleBehaviorActionFromLegacyFields(n);
+        customCommandsRaw->setVisible(n.action == "command");
+        suspendLockRaw->setVisible(n.action == "suspend");
+        persist();
+      });
+      kindBlock->addChild(std::move(kindSelect));
+      body->addChild(std::move(kindBlock));
+      body->addChild(std::move(suspendLockGrp));
 
       auto nameBlock = std::make_unique<Flex>();
       nameBlock->setDirection(FlexDirection::Vertical);
@@ -684,38 +800,7 @@ namespace settings {
       timeoutBlock->addChild(std::move(timeoutIn));
       body->addChild(std::move(timeoutBlock));
 
-      const auto addCommandInput = [&](std::string label, std::string placeholder, std::string& target) {
-        auto block = std::make_unique<Flex>();
-        block->setDirection(FlexDirection::Vertical);
-        block->setAlign(FlexAlign::Stretch);
-        block->setGap(Style::spaceXs * scale);
-        block->addChild(
-            makeLabel(label, Style::fontSizeCaption * scale, colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
-        auto input = std::make_unique<Input>();
-        input->setValue(target);
-        input->setPlaceholder(placeholder);
-        input->setFontSize(Style::fontSizeBody * scale);
-        input->setControlHeight(Style::controlHeight * scale);
-        input->setHorizontalPadding(Style::spaceSm * scale);
-        auto* inputPtr = input.get();
-        auto* targetPtr = &target;
-        const auto commit = [targetPtr, persist, inputPtr]() {
-          *targetPtr = StringUtils::trim(inputPtr->value());
-          inputPtr->setInvalid(false);
-          inputPtr->setValue(*targetPtr);
-          persist();
-        };
-        input->setOnChange([inputPtr](const std::string& /*t*/) { inputPtr->setInvalid(false); });
-        input->setOnSubmit([commit](const std::string& /*text*/) { commit(); });
-        input->setOnFocusLoss(commit);
-        block->addChild(std::move(input));
-        body->addChild(std::move(block));
-      };
-
-      addCommandInput(i18n::tr("settings.idle.behavior.command-label"),
-                      i18n::tr("settings.idle.behavior.command-placeholder"), row.command);
-      addCommandInput(i18n::tr("settings.idle.behavior.resume-command-label"),
-                      i18n::tr("settings.idle.behavior.resume-command-placeholder"), row.resumeCommand);
+      body->addChild(std::move(customCommandsGrp));
 
       section.addChild(std::move(body));
 
@@ -735,13 +820,17 @@ namespace settings {
       applyBtn->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
       applyBtn->setRadius(Style::scaledRadiusMd(scale));
       applyBtn->setFlexGrow(1.0f);
-      applyBtn->setOnClick([commitName, commitTimeout, closeHostedEditor]() {
-        commitName();
-        commitTimeout();
-        if (closeHostedEditor) {
-          closeHostedEditor();
-        }
-      });
+      applyBtn->setOnClick(
+          [commitName, commitTimeout, applyHostedEditor = ctx.afterIdleBehaviorApply, closeHostedEditor]() {
+            commitName();
+            commitTimeout();
+            if (applyHostedEditor) {
+              applyHostedEditor();
+            }
+            if (closeHostedEditor) {
+              closeHostedEditor();
+            }
+          });
       actions->addChild(std::move(applyBtn));
       section.addChild(std::move(actions));
     }
@@ -1978,15 +2067,10 @@ namespace settings {
       addBtn->setMinHeight(Style::controlHeight * scale);
       addBtn->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
       addBtn->setRadius(Style::scaledRadiusMd(scale));
-      addBtn->setOnClick([state, commit]() {
-        state->push_back(IdleBehaviorConfig{
-            .name = uniqueIdleBehaviorName("custom", *state),
-            .enabled = true,
-            .timeoutSeconds = 300,
-            .command = "notify-send 'Idle' 'Going idle'",
-            .resumeCommand = "",
-        });
-        commit();
+      addBtn->setOnClick([openCreate = ctx.openIdleBehaviorCreateEditor]() {
+        if (openCreate) {
+          openCreate();
+        }
       });
       block->addChild(std::move(addBtn));
 

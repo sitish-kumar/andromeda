@@ -1,5 +1,6 @@
 #include "idle/idle_manager.h"
 
+#include "config/config_types.h"
 #include "core/deferred_call.h"
 #include "core/log.h"
 #include "ext-idle-notify-v1-client-protocol.h"
@@ -77,7 +78,8 @@ void IdleManager::createBehavior(const IdleBehaviorConfig& config) {
     kLog.debug("idle behavior '{}' disabled by zero timeout", config.name);
     return;
   }
-  if (config.command.empty()) {
+  const ResolvedIdleCommands resolved = resolveIdleBehaviorCommands(config);
+  if (resolved.idleCommand.empty()) {
     kLog.warn("idle behavior '{}' ignored: needs a command", config.name);
     return;
   }
@@ -98,37 +100,30 @@ void IdleManager::createBehavior(const IdleBehaviorConfig& config) {
 }
 
 void IdleManager::runBehavior(BehaviorState& behavior) {
-  const auto& config = behavior.config;
-  if (!runCommand(config.command)) {
-    kLog.warn("idle behavior '{}' command failed", config.name);
+  const ResolvedIdleCommands resolved = resolveIdleBehaviorCommands(behavior.config);
+  if (!runCommand(behavior.config, resolved.idleCommand)) {
+    kLog.warn("idle behavior '{}' command failed", behavior.config.name);
   }
 }
 
 void IdleManager::runResumeBehavior(BehaviorState& behavior) {
-  const auto& config = behavior.config;
-  std::string command = config.resumeCommand;
-
-  // Keep existing screen-off configs safe even before users add resume_command.
-  if (command.empty() && config.command == "noctalia:dpms-off") {
-    command = "noctalia:dpms-on";
-  }
-
-  if (command.empty()) {
+  const ResolvedIdleCommands resolved = resolveIdleBehaviorCommands(behavior.config);
+  if (resolved.resumeCommand.empty()) {
     return;
   }
-  if (!runCommand(command)) {
-    kLog.warn("idle behavior '{}' resume command failed", config.name);
+  if (!runCommand(behavior.config, resolved.resumeCommand)) {
+    kLog.warn("idle behavior '{}' resume command failed", behavior.config.name);
   }
 }
 
-bool IdleManager::runCommand(const std::string& command) const {
+bool IdleManager::runCommand(const IdleBehaviorConfig& behavior, const std::string& command) const {
   if (command.empty()) {
     return true;
   }
   if (!m_commandRunner) {
     return false;
   }
-  return m_commandRunner(command);
+  return m_commandRunner(behavior, command);
 }
 
 void IdleManager::cancelActiveGrace(bool userCancelled) {

@@ -925,7 +925,15 @@ void Application::initUi() {
         (void)userCancelled;
         DeferredCall::callLater([this]() { m_idleGraceOverlay.hide(); });
       });
-  m_idleManager.setCommandRunner([this](const std::string& command) { return runUserCommand(command); });
+  m_idleManager.setCommandRunner([this](const IdleBehaviorConfig& behavior, const std::string& command) -> bool {
+    IdleBehaviorConfig tmp = behavior;
+    inferIdleBehaviorActionFromLegacyFields(tmp);
+    if (tmp.action == "suspend" && behavior.lockBeforeSuspend) {
+      m_lockScreen.runAfterSessionLocked([this]() { (void)runUserCommand("noctalia:suspend"); });
+      return true;
+    }
+    return runUserCommand(command);
+  });
   m_idleManager.reload(m_configService.config().idle);
   m_configService.addReloadCallback([this]() { m_idleManager.reload(m_configService.config().idle); });
   m_audioOsd.bindOverlay(m_osdOverlay);
@@ -1174,6 +1182,16 @@ void Application::initIpc() {
         return "ok\n";
       },
       "dpms-off", "Turn monitors off");
+
+  m_ipcService.registerHandler(
+      "suspend",
+      [](const std::string&) -> std::string {
+        if (!process::launchFirstAvailable({{"systemctl", "suspend"}, {"loginctl", "suspend"}})) {
+          return "error: failed to suspend\n";
+        }
+        return "ok\n";
+      },
+      "suspend", "Suspend the system");
 
   if (m_brightnessService != nullptr) {
     m_brightnessService->registerIpc(m_ipcService,

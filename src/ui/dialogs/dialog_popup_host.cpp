@@ -347,27 +347,45 @@ void DialogPopupHost::buildScene(std::uint32_t width, std::uint32_t height) {
   syncPointerStateFromCurrentPosition();
 }
 
-void DialogPopupHost::layoutScene(float width, float height) {
-  if (m_sceneRoot == nullptr) {
+void DialogPopupHost::syncSceneGeometryFromSurface() {
+  if (m_sceneRoot == nullptr || m_surface == nullptr) {
     return;
   }
-
-  m_sceneRoot->setSize(width, height);
+  const float surfW = static_cast<float>(m_surface->width());
+  const float surfH = static_cast<float>(m_surface->height());
+  if (surfW <= 0.0f || surfH <= 0.0f) {
+    return;
+  }
+  m_sceneRoot->setSize(surfW, surfH);
   if (m_bgNode != nullptr) {
     m_bgNode->setPosition(0.0f, 0.0f);
-    m_bgNode->setSize(width, height);
+    m_bgNode->setSize(surfW, surfH);
   }
-
   const float padding = computePadding(uiScale());
-  const float contentWidth = width - padding * 2.0f;
-  const float contentHeight = height - padding * 2.0f;
-
-  layoutSheet(contentWidth, contentHeight);
-
+  const float contentWidth = surfW - padding * 2.0f;
+  const float contentHeight = surfH - padding * 2.0f;
   if (m_contentNode != nullptr) {
     m_contentNode->setPosition(padding, padding);
     m_contentNode->setSize(contentWidth, contentHeight);
   }
+}
+
+void DialogPopupHost::layoutScene(float width, float height) {
+  (void)width;
+  (void)height;
+  if (m_sceneRoot == nullptr || m_surface == nullptr) {
+    return;
+  }
+
+  syncSceneGeometryFromSurface();
+
+  const float padding = computePadding(uiScale());
+  float contentWidth = static_cast<float>(m_surface->width()) - padding * 2.0f;
+  float contentHeight = static_cast<float>(m_surface->height()) - padding * 2.0f;
+
+  layoutSheet(contentWidth, contentHeight);
+
+  syncSceneGeometryFromSurface();
 }
 
 bool DialogPopupHost::mapPointerEvent(const PointerEvent& event, float& localX, float& localY) const noexcept {

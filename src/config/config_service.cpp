@@ -1758,12 +1758,20 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
         if (auto v = (*entryTbl)["timeout"].value<int64_t>()) {
           behavior.timeoutSeconds = static_cast<std::int32_t>(*v);
         }
+        if (auto v = (*entryTbl)["action"].value<std::string>()) {
+          behavior.action = StringUtils::trim(*v);
+        }
         if (auto v = (*entryTbl)["command"].value<std::string>()) {
           behavior.command = *v;
         }
         if (auto v = (*entryTbl)["resume_command"].value<std::string>()) {
           behavior.resumeCommand = *v;
         }
+        if (auto v = (*entryTbl)["lock_before_suspend"].value<bool>()) {
+          behavior.lockBeforeSuspend = *v;
+        }
+
+        inferIdleBehaviorActionFromLegacyFields(behavior);
 
         config.idle.behaviors.push_back(std::move(behavior));
       }

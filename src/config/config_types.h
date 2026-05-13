@@ -129,8 +129,14 @@ struct IdleBehaviorConfig {
   std::string name;
   bool enabled = true;
   std::int32_t timeoutSeconds = 0;
+  /// lock | screen_off | suspend | command (custom shell strings)
+  std::string action;
   std::string command;
   std::string resumeCommand;
+  /// When `action` is `suspend`, lock the session before running suspend so lock surfaces are ready (recommended).
+  bool lockBeforeSuspend = true;
+
+  bool operator==(const IdleBehaviorConfig&) const = default;
 };
 
 struct IdleConfig {
@@ -144,6 +150,14 @@ struct IdleConfig {
 [[nodiscard]] std::vector<ShortcutConfig> defaultControlCenterShortcuts();
 [[nodiscard]] std::vector<SessionPanelActionConfig> defaultSessionPanelActions();
 [[nodiscard]] std::vector<IdleBehaviorConfig> defaultIdleBehaviors();
+
+struct ResolvedIdleCommands {
+  std::string idleCommand;
+  std::string resumeCommand;
+};
+
+void inferIdleBehaviorActionFromLegacyFields(IdleBehaviorConfig& behavior);
+[[nodiscard]] ResolvedIdleCommands resolveIdleBehaviorCommands(const IdleBehaviorConfig& behavior);
 
 enum class KeybindAction : std::uint8_t {
   Validate = 0,

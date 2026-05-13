@@ -58,17 +58,64 @@ std::vector<IdleBehaviorConfig> defaultIdleBehaviors() {
           .name = "lock",
           .enabled = false,
           .timeoutSeconds = 600,
-          .command = "noctalia:screen-lock",
+          .action = "lock",
+          .command = "",
           .resumeCommand = "",
       },
       IdleBehaviorConfig{
           .name = "screen-off",
           .enabled = false,
           .timeoutSeconds = 660,
-          .command = "noctalia:dpms-off",
-          .resumeCommand = "noctalia:dpms-on",
+          .action = "screen_off",
+          .command = "",
+          .resumeCommand = "",
+      },
+      IdleBehaviorConfig{
+          .name = "suspend",
+          .enabled = false,
+          .timeoutSeconds = 900,
+          .action = "suspend",
+          .command = "",
+          .resumeCommand = "",
+          .lockBeforeSuspend = true,
       },
   };
+}
+
+void inferIdleBehaviorActionFromLegacyFields(IdleBehaviorConfig& behavior) {
+  if (!behavior.action.empty()) {
+    return;
+  }
+  if (behavior.command == "noctalia:screen-lock") {
+    behavior.action = "lock";
+    return;
+  }
+  if (behavior.command == "noctalia:dpms-off") {
+    behavior.action = "screen_off";
+    return;
+  }
+  if (behavior.command == "noctalia:suspend") {
+    behavior.action = "suspend";
+    return;
+  }
+  behavior.action = "command";
+}
+
+ResolvedIdleCommands resolveIdleBehaviorCommands(const IdleBehaviorConfig& behavior) {
+  IdleBehaviorConfig tmp = behavior;
+  inferIdleBehaviorActionFromLegacyFields(tmp);
+  const std::string& act = tmp.action;
+
+  if (act == "lock") {
+    return {"noctalia:screen-lock", ""};
+  }
+  if (act == "screen_off") {
+    return {"noctalia:dpms-off", "noctalia:dpms-on"};
+  }
+  if (act == "suspend") {
+    return {"noctalia:suspend", ""};
+  }
+  return {behavior.command, behavior.resumeCommand};
 }
 
 std::string WidgetConfig::getString(const std::string& key, const std::string& fallback) const {

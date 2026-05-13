@@ -94,6 +94,7 @@ private:
                              const std::string& emptyText, const std::vector<std::string>& settingPath);
   void openSessionActionEntryEditor(std::size_t index);
   void openIdleBehaviorEntryEditor(std::size_t index);
+  void openIdleBehaviorCreateEditor();
   void refreshIdleLiveStatusText();
   void saveSupportReport();
   void saveFlattenedConfig();

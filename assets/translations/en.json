@@ -669,16 +669,25 @@
         "summary": "{name} · {seconds}s",
         "summary-disabled-timeout": "{name} · timeout disabled",
         "add": "Add behavior",
+        "kind-section-label": "Action",
+        "kind": {
+          "lock": "Lock session",
+          "screen-off": "Turn off displays",
+          "suspend": "Suspend system",
+          "custom": "Custom commands"
+        },
         "name-label": "Name",
-        "name-placeholder": "screen-off",
+        "name-placeholder": "idle-behavior",
         "timeout-label": "Timeout seconds",
         "command-label": "Idle command",
-        "command-placeholder": "noctalia:screen-lock",
+        "command-placeholder": "notify-send \"Idle\"",
         "resume-command-label": "Resume command",
         "resume-command-placeholder": "noctalia:dpms-on",
+        "lock-before-suspend-label": "Lock before suspend",
         "presets": {
           "lock": "Lock",
-          "monitor-off": "Monitor off"
+          "monitor-off": "Monitor off",
+          "suspend": "Suspend"
         }
       }
     },
@@ -1555,7 +1564,7 @@
         },
         "behaviors": {
           "label": "Behaviors",
-          "description": "Named idle actions, timeouts, resume commands, and order."
+          "description": "Named idle actions with presets (lock, displays off, suspend) or custom commands, timeouts, resume pairing, and order."
         }
       },
       "keybinds": {

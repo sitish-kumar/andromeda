@@ -70,6 +70,9 @@ bool SettingsWindow::ownsKeyboardSurface(wl_surface* surface) const noexcept {
   if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->wlSurface() == surface) {
     return true;
   }
+  if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->ownsSelectDropdownSurface(surface)) {
+    return true;
+  }
   return m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen() && m_selectPopup->wlSurface() == surface;
 }
 
@@ -109,6 +112,10 @@ std::optional<LayerPopupParentContext> SettingsWindow::popupParentContextForSurf
                        m_searchPickerPopup->width(), m_searchPickerPopup->height());
   }
   if (m_sessionActionsEditorPopup != nullptr && surface == m_sessionActionsEditorPopup->wlSurface()) {
+    return makeContext(m_sessionActionsEditorPopup->wlSurface(), m_sessionActionsEditorPopup->xdgSurface(),
+                       m_sessionActionsEditorPopup->width(), m_sessionActionsEditorPopup->height());
+  }
+  if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->ownsSelectDropdownSurface(surface)) {
     return makeContext(m_sessionActionsEditorPopup->wlSurface(), m_sessionActionsEditorPopup->xdgSurface(),
                        m_sessionActionsEditorPopup->width(), m_sessionActionsEditorPopup->height());
   }
@@ -509,6 +516,10 @@ void SettingsWindow::onKeyboardEvent(const KeyboardEvent& event) {
   }
 
   if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->isOpen()) {
+    if (m_sessionActionsEditorPopup->isSelectDropdownOpen()) {
+      m_sessionActionsEditorPopup->onKeyboardEvent(event);
+      return;
+    }
     if (event.pressed && m_config->matchesKeybind(KeybindAction::Cancel, event.sym, event.modifiers)) {
       m_sessionActionsEditorPopup->close();
       return;

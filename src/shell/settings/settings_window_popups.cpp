@@ -1,4 +1,5 @@
 #include "config/config_service.h"
+#include "config/config_types.h"
 #include "core/deferred_call.h"
 #include "i18n/i18n.h"
 #include "render/render_context.h"
@@ -53,11 +54,16 @@ namespace {
   }
 
   std::string idleBehaviorTitle(const IdleBehaviorConfig& row) {
-    if (row.command == "noctalia:screen-lock" || row.name == "lock") {
+    IdleBehaviorConfig norm = row;
+    inferIdleBehaviorActionFromLegacyFields(norm);
+    if (norm.action == "lock") {
       return i18n::tr("settings.idle.behavior.presets.lock");
     }
-    if (row.command == "noctalia:dpms-off" || row.name == "screen-off") {
+    if (norm.action == "screen_off") {
       return i18n::tr("settings.idle.behavior.presets.monitor-off");
+    }
+    if (norm.action == "suspend") {
+      return i18n::tr("settings.idle.behavior.presets.suspend");
     }
     if (!StringUtils::trim(row.name).empty()) {
       return row.name;
@@ -71,7 +77,7 @@ namespace {
     for (auto& row : rows) {
       std::string base = StringUtils::trim(row.name);
       if (base.empty()) {
-        base = "custom";
+        base = "idle-behavior";
       }
       for (char& ch : base) {
         if (ch == '.' || ch == '[' || ch == ']') {
@@ -314,7 +320,6 @@ void SettingsWindow::openSessionActionEntryEditor(std::size_t index) {
     m_sessionActionsEditorPopup = std::make_unique<settings::SessionActionsEditorPopup>();
     m_sessionActionsEditorPopup->initialize(*m_wayland, *m_config, *m_renderContext);
   }
-
   const float scale = uiScale();
   const BarConfig* selectedBar = settings::findBar(cfg, m_selectedBarName);
   const BarMonitorOverride* selectedMonitorOverride = nullptr;
@@ -385,6 +390,12 @@ void SettingsWindow::openIdleBehaviorEntryEditor(std::size_t index) {
     return;
   }
 
+  // Closing the previous hosted editor can commit focused fields via focus-loss callbacks.
+  // Do it before reading cfg/rowState so the new editor is built from the latest config.
+  if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->isOpen()) {
+    m_sessionActionsEditorPopup->close();
+  }
+
   const Config& cfg = m_config->config();
   if (index >= cfg.idle.behaviors.size()) {
     return;
@@ -401,7 +412,6 @@ void SettingsWindow::openIdleBehaviorEntryEditor(std::size_t index) {
     m_sessionActionsEditorPopup = std::make_unique<settings::SessionActionsEditorPopup>();
     m_sessionActionsEditorPopup->initialize(*m_wayland, *m_config, *m_renderContext);
   }
-
   const float scale = uiScale();
   const BarConfig* selectedBar = settings::findBar(cfg, m_selectedBarName);
   const BarMonitorOverride* selectedMonitorOverride = nullptr;
@@ -410,18 +420,28 @@ void SettingsWindow::openIdleBehaviorEntryEditor(std::size_t index) {
   }
 
   auto rowState = std::make_shared<IdleBehaviorConfig>(cfg.idle.behaviors[index]);
+  auto rowKey = std::make_shared<std::string>(rowState->name);
+  inferIdleBehaviorActionFromLegacyFields(*rowState);
 
-  const auto persist = [this, rowState, index]() {
+  const auto persist = [this, rowState, rowKey, index]() {
     if (m_config == nullptr) {
       return;
     }
+    inferIdleBehaviorActionFromLegacyFields(*rowState);
     auto next = m_config->config().idle.behaviors;
-    if (index >= next.size()) {
+    auto target = std::find_if(next.begin(), next.end(),
+                               [rowKey](const IdleBehaviorConfig& behavior) { return behavior.name == *rowKey; });
+    if (target == next.end() && index < next.size()) {
+      target = next.begin() + static_cast<std::ptrdiff_t>(index);
+    }
+    if (target == next.end()) {
       return;
     }
-    next[index] = *rowState;
+    const auto targetIndex = static_cast<std::size_t>(std::distance(next.begin(), target));
+    next[targetIndex] = *rowState;
     normalizeIdleBehaviorNames(next);
-    *rowState = next[index];
+    *rowState = next[targetIndex];
+    *rowKey = rowState->name;
     setSettingOverride({"idle", "behavior"}, next);
     requestContentRebuild();
     if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->isOpen()) {
@@ -465,6 +485,83 @@ void SettingsWindow::openIdleBehaviorEntryEditor(std::size_t index) {
                                     idleBehaviorTitle(*rowState), removeRow,
                                     [ctx, rowState, persist](Flex& body) mutable {
                                       settings::buildIdleBehaviorEntryDetailContent(body, ctx, *rowState, persist);
+                                    });
+}
+
+void SettingsWindow::openIdleBehaviorCreateEditor() {
+  if (m_wayland == nullptr || m_renderContext == nullptr || m_surface == nullptr ||
+      m_surface->xdgSurface() == nullptr || m_config == nullptr) {
+    return;
+  }
+
+  if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->isOpen()) {
+    m_sessionActionsEditorPopup->close();
+  }
+  if (m_widgetAddPopup != nullptr && m_widgetAddPopup->isOpen()) {
+    m_widgetAddPopup->close();
+  }
+  if (m_searchPickerPopup != nullptr && m_searchPickerPopup->isOpen()) {
+    m_searchPickerPopup->close();
+  }
+
+  if (m_sessionActionsEditorPopup == nullptr) {
+    m_sessionActionsEditorPopup = std::make_unique<settings::SessionActionsEditorPopup>();
+    m_sessionActionsEditorPopup->initialize(*m_wayland, *m_config, *m_renderContext);
+  }
+
+  const Config& cfg = m_config->config();
+  const float scale = uiScale();
+  const BarConfig* selectedBar = settings::findBar(cfg, m_selectedBarName);
+  const BarMonitorOverride* selectedMonitorOverride = nullptr;
+  if (selectedBar != nullptr && !m_selectedMonitorOverride.empty()) {
+    selectedMonitorOverride = settings::findMonitorOverride(*selectedBar, m_selectedMonitorOverride);
+  }
+
+  auto rowState = std::make_shared<IdleBehaviorConfig>(IdleBehaviorConfig{
+      .name = "idle-behavior",
+      .enabled = false,
+      .timeoutSeconds = 600,
+      .action = "command",
+      .command = "",
+      .resumeCommand = "",
+  });
+
+  const auto persistDraft = [this]() {
+    if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->isOpen()) {
+      m_sessionActionsEditorPopup->requestLayout();
+    }
+  };
+
+  auto ctx = makeContentContext(cfg, selectedBar, selectedMonitorOverride);
+  ctx.openSessionActionEntryEditor = {};
+  ctx.openIdleBehaviorEntryEditor = {};
+  ctx.afterIdleBehaviorApply = [this, rowState]() {
+    if (m_config == nullptr) {
+      return;
+    }
+    inferIdleBehaviorActionFromLegacyFields(*rowState);
+    auto next = m_config->config().idle.behaviors;
+    next.push_back(*rowState);
+    normalizeIdleBehaviorNames(next);
+    setSettingOverride({"idle", "behavior"}, next);
+    requestContentRebuild();
+  };
+  ctx.closeHostedEditor = [this]() {
+    if (m_sessionActionsEditorPopup != nullptr) {
+      m_sessionActionsEditorPopup->close();
+    }
+  };
+
+  wl_output* output = m_wayland->lastPointerOutput();
+  if (output == nullptr) {
+    output = m_output;
+  }
+
+  m_sessionActionsEditorPopup->open(m_surface->xdgSurface(), output, m_wayland->lastInputSerial(),
+                                    m_surface->wlSurface(), m_surface->width(), m_surface->height(), scale,
+                                    idleBehaviorTitle(*rowState), nullptr,
+                                    [ctx, rowState, persistDraft](Flex& body) mutable {
+                                      settings::buildIdleBehaviorEntryDetailContent(body, ctx, *rowState, persistDraft);
                                     });
 }
 

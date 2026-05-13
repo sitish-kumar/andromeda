@@ -892,10 +892,11 @@ namespace settings {
                        .step = 1,
                        .valueSuffix = "s"},
         "idle fade dim seconds overlay"));
-    entries.push_back(makeEntry("idle", "behavior", tr("settings.schema.idle.behaviors.label"),
-                                tr("settings.schema.idle.behaviors.description"), {"idle", "behavior"},
-                                IdleBehaviorsSetting{.items = cfg.idle.behaviors},
-                                "idle behavior timeout command resume screen lock dpms caffeine"));
+    entries.push_back(
+        makeEntry("idle", "behavior", tr("settings.schema.idle.behaviors.label"),
+                  tr("settings.schema.idle.behaviors.description"), {"idle", "behavior"},
+                  IdleBehaviorsSetting{.items = cfg.idle.behaviors},
+                  "idle behavior timeout command resume screen lock dpms suspend lock_before_suspend caffeine"));
 
     // Hooks
     auto hookGroup = [](HookKind kind) -> std::string {
