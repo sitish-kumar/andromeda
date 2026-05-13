@@ -139,6 +139,7 @@ namespace settings {
   struct ButtonSetting {
     std::string label;
     std::function<void()> action;
+    std::string glyph;
   };
 
   struct ColorRolePickerSetting {

@@ -2274,6 +2274,10 @@ namespace settings {
             } else if constexpr (std::is_same_v<T, ButtonSetting>) {
               auto button = std::make_unique<Button>();
               button->setVariant(ButtonVariant::Outline);
+              if (!control.glyph.empty()) {
+                button->setGlyph(control.glyph);
+                button->setGlyphSize(Style::fontSizeBody * scale);
+              }
               button->setText(control.label);
               button->setFontSize(Style::fontSizeBody * scale);
               button->setMinHeight(Style::controlHeight * scale);

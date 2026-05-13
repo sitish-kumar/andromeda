@@ -1635,6 +1635,11 @@
         }
       },
       "wallpaper": {
+        "panel": {
+          "label": "Wallpaper Panel",
+          "description": "Open the wallpaper picker panel",
+          "button": "Open Panel"
+        },
         "fill-mode": {
           "label": "Fill Mode",
           "description": "How wallpapers fit the screen"
