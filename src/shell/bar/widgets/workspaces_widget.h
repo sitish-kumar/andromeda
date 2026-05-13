@@ -61,11 +61,10 @@ private:
     float currentWidth = 0.0f;
   };
 
-  [[nodiscard]] ColorRole workspaceFillRole(const Workspace& workspace) const;
-  [[nodiscard]] ColorRole workspaceTextRole(const Workspace& workspace) const;
-  [[nodiscard]] float workspaceFillAlpha(const Workspace& workspace) const;
+  [[nodiscard]] ColorSpec workspaceFillColor(const Workspace& workspace) const;
+  [[nodiscard]] ColorSpec workspaceTextColor(const Workspace& workspace) const;
   [[nodiscard]] static ColorRole onRoleForFill(ColorRole fill);
-  [[nodiscard]] ColorRole emptyWorkspaceTextRole() const;
+  [[nodiscard]] static ColorSpec readableColorForFill(const ColorSpec& fill);
 
   CompositorPlatform& m_platform;
   wl_output* m_output = nullptr;

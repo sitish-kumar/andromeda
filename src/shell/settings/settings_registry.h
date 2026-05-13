@@ -145,6 +145,7 @@ namespace settings {
     std::vector<ColorRole> roles;
     std::string selectedValue;
     bool allowNone = false;
+    bool allowCustomColor = false;
   };
 
   using SettingControl =

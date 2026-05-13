@@ -472,16 +472,19 @@ namespace settings {
       {
         auto focusedColor = colorRoleSpec("focused_color", "primary");
         focusedColor.options = workspaceColorRoles;
+        focusedColor.allowCustomColor = true;
         add(std::move(focusedColor));
       }
       {
         auto occupiedColor = colorRoleSpec("occupied_color", "secondary");
         occupiedColor.options = workspaceColorRoles;
+        occupiedColor.allowCustomColor = true;
         add(std::move(occupiedColor));
       }
       {
         auto emptyColor = colorRoleSpec("empty_color", "secondary");
         emptyColor.options = workspaceColorRoles;
+        emptyColor.allowCustomColor = true;
         add(std::move(emptyColor));
       }
     }
