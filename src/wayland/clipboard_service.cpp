@@ -2,13 +2,13 @@
 
 #include "core/log.h"
 #include "ext-data-control-v1-client-protocol.h"
+#include "util/file_utils.h"
 #include "wlr-data-control-unstable-v1-client-protocol.h"
 
 #include <algorithm>
 #include <array>
 #include <cerrno>
 #include <chrono>
-#include <cstdlib>
 #include <fcntl.h>
 #include <filesystem>
 #include <fstream>
@@ -1107,13 +1107,9 @@ void ClipboardService::evictPayloadData(ClipboardEntry& entry) {
 }
 
 std::string ClipboardService::stateDirectory() {
-  const char* stateHome = std::getenv("XDG_STATE_HOME");
-  if (stateHome != nullptr && stateHome[0] != '\0') {
-    return std::string(stateHome) + "/noctalia/clipboard";
-  }
-  const char* home = std::getenv("HOME");
-  if (home != nullptr && home[0] != '\0') {
-    return std::string(home) + "/.local/state/noctalia/clipboard";
+  const std::string dir = FileUtils::stateDir();
+  if (!dir.empty()) {
+    return dir + "/clipboard";
   }
   return "/tmp/noctalia-clipboard";
 }

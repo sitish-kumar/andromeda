@@ -120,13 +120,20 @@ See [CONTRIBUTING.md](CONTRIBUTING.md#runtime-assets) for the full runtime asset
 
 Noctalia has two configuration layers:
 
-- Declarative user config lives in `$XDG_CONFIG_HOME/noctalia/` or `~/.config/noctalia/`.
+- Declarative user config lives in `$NOCTALIA_CONFIG_HOME/noctalia/`, `$XDG_CONFIG_HOME/noctalia/`, or
+  `~/.config/noctalia/`.
   Noctalia reads every `*.toml` file in that directory, sorted alphabetically, and deep-merges them into one config.
   A single `config.toml` is the simplest setup, but splitting config into files such as `bar.toml`, `theme.toml`,
   or `widgets.toml` is also supported.
-- GUI-managed overrides live in `$XDG_STATE_HOME/noctalia/settings.toml` or
-  `~/.local/state/noctalia/settings.toml`. This file is written by Noctalia itself for settings changed through the
-  UI, IPC-backed controls, setup flows, and other runtime actions that need persistence.
+- GUI-managed overrides live in `$NOCTALIA_STATE_HOME/noctalia/settings.toml`,
+  `$XDG_STATE_HOME/noctalia/settings.toml`, or `~/.local/state/noctalia/settings.toml`. This file is written by
+  Noctalia itself for settings changed through the UI, IPC-backed controls, setup flows, and other runtime actions
+  that need persistence.
+
+`NOCTALIA_CONFIG_HOME` and `NOCTALIA_STATE_HOME` are Noctalia-specific overrides with the same "home root" semantics
+as the XDG variables. For example, `NOCTALIA_CONFIG_HOME=/tmp/profile` loads config from
+`/tmp/profile/noctalia/`. Prefer these variables over overriding `XDG_CONFIG_HOME` when launching Noctalia from a
+session, because applications started through Noctalia's launcher inherit the shell environment.
 
 Load order is built-in defaults first, then declarative config files, then `settings.toml`.
 Because the state file is applied last, GUI overrides win over matching values in `config.toml`.
