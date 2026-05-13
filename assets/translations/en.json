@@ -955,7 +955,8 @@
         }
       },
       "theme-role": {
-        "default": "Default"
+        "default": "Default",
+        "custom": "Custom…"
       },
       "border": {
         "none": "No Border"
@@ -1095,15 +1096,15 @@
         },
         "focused_color": {
           "label": "Focused Color",
-          "description": "Color role used for the focused workspace"
+          "description": "Color role or hex color used for the focused workspace"
         },
         "occupied_color": {
           "label": "Occupied Color",
-          "description": "Color role used for occupied workspaces"
+          "description": "Color role or hex color used for occupied workspaces"
         },
         "empty_color": {
           "label": "Empty Color",
-          "description": "Color role used for empty workspaces"
+          "description": "Color role or hex color used for empty workspaces"
         },
         "format": {
           "label": "Format",

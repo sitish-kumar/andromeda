@@ -1141,6 +1141,7 @@ namespace settings {
           ColorRolePickerSetting pickerSetting;
           pickerSetting.selectedValue = settingValueAsString(value);
           pickerSetting.allowNone = spec.advanced;
+          pickerSetting.allowCustomColor = spec.allowCustomColor;
           if (!spec.options.empty()) {
             for (const auto& option : spec.options) {
               if (const auto role = colorRoleFromToken(option.value); role.has_value()) {
