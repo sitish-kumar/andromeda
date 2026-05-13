@@ -222,7 +222,7 @@ void MediaWidget::syncState(Renderer& renderer) {
         m_httpClient->download(m_lastArtUrl, cached, [this, url = m_lastArtUrl](bool success) {
           m_pendingArtDownloads.erase(url);
           if (success && url == m_lastArtUrl) {
-            requestRedraw();
+            requestUpdate();
           }
         });
       }

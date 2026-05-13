@@ -29,8 +29,8 @@ ControlCenterPanel::ControlCenterPanel(
   m_notificationManager = notifications;
   m_dependencies = dependencies;
   m_tabs[tabIndex(TabId::Home)] =
-      std::make_unique<HomeTab>(mpris, weather, audio, powerProfiles, config, network, bluetooth, nightLight, theme,
-                                notifications, idleInhibitor, dependencies, platform, wallpaper);
+      std::make_unique<HomeTab>(mpris, httpClient, weather, audio, powerProfiles, config, network, bluetooth,
+                                nightLight, theme, notifications, idleInhibitor, dependencies, platform, wallpaper);
   m_tabs[tabIndex(TabId::Media)] =
       std::make_unique<MediaTab>(mpris, httpClient, spectrum, wayland, PanelManager::instance().renderContext());
   m_tabs[tabIndex(TabId::Audio)] =

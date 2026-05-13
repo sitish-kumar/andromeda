@@ -7,6 +7,7 @@
 #include "dbus/mpris/mpris_art.h"
 #include "dbus/mpris/mpris_service.h"
 #include "i18n/i18n.h"
+#include "net/http_client.h"
 #include "shell/control_center/shortcut_registry.h"
 #include "shell/panel/panel_manager.h"
 #include "shell/wallpaper/wallpaper.h"
@@ -70,26 +71,27 @@ namespace {
 
 } // namespace
 
-HomeTab::HomeTab(MprisService* mpris, WeatherService* weather, PipeWireService* audio,
+HomeTab::HomeTab(MprisService* mpris, HttpClient* httpClient, WeatherService* weather, PipeWireService* audio,
                  PowerProfilesService* powerProfiles, ConfigService* config, NetworkService* network,
                  BluetoothService* bluetooth, GammaService* nightLight, noctalia::theme::ThemeService* theme,
                  NotificationManager* notifications, IdleInhibitor* idleInhibitor, DependencyService* dependencies,
                  CompositorPlatform* platform, Wallpaper* wallpaper)
-    : m_mpris(mpris), m_weather(weather), m_config(config), m_wallpaper(wallpaper), m_services{
-                                                                                        .network = network,
-                                                                                        .bluetooth = bluetooth,
-                                                                                        .nightLight = nightLight,
-                                                                                        .theme = theme,
-                                                                                        .notifications = notifications,
-                                                                                        .idleInhibitor = idleInhibitor,
-                                                                                        .audio = audio,
-                                                                                        .powerProfiles = powerProfiles,
-                                                                                        .mpris = mpris,
-                                                                                        .weather = weather,
-                                                                                        .config = config,
-                                                                                        .dependencies = dependencies,
-                                                                                        .platform = platform,
-                                                                                    } {}
+    : m_mpris(mpris), m_httpClient(httpClient), m_weather(weather), m_config(config), m_wallpaper(wallpaper),
+      m_services{
+          .network = network,
+          .bluetooth = bluetooth,
+          .nightLight = nightLight,
+          .theme = theme,
+          .notifications = notifications,
+          .idleInhibitor = idleInhibitor,
+          .audio = audio,
+          .powerProfiles = powerProfiles,
+          .mpris = mpris,
+          .weather = weather,
+          .config = config,
+          .dependencies = dependencies,
+          .platform = platform,
+      } {}
 
 HomeTab::~HomeTab() = default;
 
@@ -1025,13 +1027,24 @@ void HomeTab::sync(Renderer& renderer) {
         m_mediaProgress->setVisible(false);
         if (m_mediaArt != nullptr) {
           const std::string artUrl = mpris::effectiveArtUrl(*active);
-          if (artUrl != m_loadedMediaArtUrl) {
+          const bool artRetry = !artUrl.empty() && !m_mediaArt->hasImage();
+          if (artUrl != m_loadedMediaArtUrl || artRetry) {
             std::string artPath = mpris::normalizeArtPath(artUrl);
             if (artPath.empty() && mpris::isRemoteArtUrl(artUrl)) {
               const auto cached = mpris::artCachePath(artUrl);
               std::error_code ec;
               if (std::filesystem::exists(cached, ec) && std::filesystem::file_size(cached, ec) > 0) {
                 artPath = cached.string();
+              } else if (m_httpClient != nullptr && m_pendingArtDownloads.find(artUrl) == m_pendingArtDownloads.end()) {
+                std::filesystem::create_directories(cached.parent_path(), ec);
+                m_pendingArtDownloads.insert(artUrl);
+                m_httpClient->download(artUrl, cached, [this, url = artUrl](bool success) {
+                  m_pendingArtDownloads.erase(url);
+                  if (success) {
+                    m_loadedMediaArtUrl.clear();
+                    PanelManager::instance().refresh();
+                  }
+                });
               }
             }
             bool loaded = false;
@@ -1045,7 +1058,7 @@ void HomeTab::sync(Renderer& renderer) {
               m_mediaArt->clear(renderer);
             }
             m_mediaArt->setVisible(loaded);
-            m_loadedMediaArtUrl = artUrl;
+            m_loadedMediaArtUrl = loaded ? artUrl : std::string{};
             PanelManager::instance().requestLayout();
           }
         }

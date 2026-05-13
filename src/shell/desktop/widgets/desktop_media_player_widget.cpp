@@ -273,8 +273,9 @@ void DesktopMediaPlayerWidget::sync(Renderer& renderer) {
         m_pendingArtDownloads.insert(m_lastArtUrl);
         m_httpClient->download(m_lastArtUrl, cached, [this, url = m_lastArtUrl](bool success) {
           m_pendingArtDownloads.erase(url);
-          if (success && url == m_lastArtUrl)
-            requestRedraw();
+          if (success && url == m_lastArtUrl) {
+            requestUpdate();
+          }
         });
       }
     }
