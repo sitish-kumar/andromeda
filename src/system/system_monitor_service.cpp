@@ -75,9 +75,9 @@ namespace {
     return static_cast<double>(raw);
   }
 
-  int scoreHwmonSensor(const std::string& hwmon_name, const std::string& label) {
+  int scoreHwmonSensor(const std::string& hwmonName, const std::string& label) {
     int score = 0;
-    const std::string name = StringUtils::toLower(hwmon_name);
+    const std::string name = StringUtils::toLower(hwmonName);
     const std::string lbl = StringUtils::toLower(label);
 
     if (name.find("coretemp") != std::string::npos || name.find("k10temp") != std::string::npos ||
@@ -85,12 +85,25 @@ namespace {
       score += 20;
     }
 
-    if (lbl.find("package") != std::string::npos || lbl.find("tctl") != std::string::npos ||
-        lbl.find("tdie") != std::string::npos || lbl.find("cpu") != std::string::npos) {
-      score += 30;
+    // AMD k10temp exposes Tctl first, but Tctl is a fan-control value. Prefer
+    // physical die/CCD readings when the kernel provides them.
+    if (lbl.find("tdie") != std::string::npos) {
+      score += 80;
+    } else if (lbl.find("tccd") != std::string::npos) {
+      score += 70;
+    } else if (lbl.find("package") != std::string::npos) {
+      score += 60;
+    } else if (lbl.find("cpu") != std::string::npos) {
+      score += 50;
+    } else if (lbl.find("tctl") != std::string::npos) {
+      score += 40;
     }
 
     return score;
+  }
+
+  bool isBetterHwmonSensor(int score, double tempC, int bestScore, const std::optional<double>& bestTemp) {
+    return score > bestScore || (score == bestScore && (!bestTemp.has_value() || tempC > *bestTemp));
   }
 
   bool isCpuThermalZoneType(const std::string& type) {
@@ -474,7 +487,10 @@ std::optional<double> SystemMonitorService::readCpuTempCelsius() {
         }
 
         const int score = scoreHwmonSensor(hwmonName, label);
-        if (score > bestScore) {
+        if (score <= 0) {
+          continue;
+        }
+        if (isBetterHwmonSensor(score, *tempC, bestScore, best_temp)) {
           bestScore = score;
           best_temp = *tempC;
         }
