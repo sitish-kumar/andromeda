@@ -34,6 +34,7 @@
 #include "ui/dialogs/glyph_picker_dialog.h"
 #include "ui/style.h"
 #include "util/file_utils.h"
+#include "util/string_utils.h"
 
 #include <algorithm>
 #include <chrono>
@@ -1217,6 +1218,36 @@ void Application::initIpc() {
         return "ok\n";
       },
       "suspend", "Suspend the system");
+
+  m_ipcService.registerHandler(
+      "power-set",
+      [this](const std::string& args) -> std::string {
+        if (m_powerProfilesService == nullptr) {
+          return "error: power profiles unavailable\n";
+        }
+        const std::string profile = StringUtils::trim(args);
+        if (profile.empty()) {
+          return "error: profile required (power-set <profile>); typical values: performance, balanced, "
+                 "power-saver\n";
+        }
+        const auto& available = m_powerProfilesService->profiles();
+        if (!available.empty()) {
+          if (std::find(available.begin(), available.end(), profile) == available.end()) {
+            std::string suffix = "; available:";
+            for (std::size_t i = 0; i < available.size(); ++i) {
+              suffix.push_back(' ');
+              suffix += available[i];
+            }
+            suffix.push_back('\n');
+            return "error: unknown profile \"" + profile + "\"" + suffix;
+          }
+        }
+        if (!m_powerProfilesService->setActiveProfile(profile)) {
+          return "error: failed to set power profile\n";
+        }
+        return "ok\n";
+      },
+      "power-set <profile>", "Set the UPower power profile (e.g. performance, balanced, power-saver)");
 
   if (m_brightnessService != nullptr) {
     m_brightnessService->registerIpc(m_ipcService,
