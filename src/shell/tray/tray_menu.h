@@ -5,6 +5,7 @@
 #include "render/scene/input_dispatcher.h"
 #include "render/scene/node.h"
 #include "ui/controls/context_menu.h"
+#include "ui/controls/scroll_view.h"
 #include "wayland/hyprland/focus_grab_service.h"
 #include "wayland/popup_surface.h"
 
@@ -45,6 +46,7 @@ private:
     wl_surface* wlSurface = nullptr;
     bool pointerInside = false;
     ContextSubmenuDirection submenuDirection = ContextSubmenuDirection::Right;
+    ScrollViewState scrollState;
   };
 
   void refreshEntries();

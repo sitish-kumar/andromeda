@@ -10,6 +10,7 @@
 #include "shell/panel/panel_manager.h"
 #include "shell/tray/tray_identifier.h"
 #include "ui/controls/context_menu.h"
+#include "ui/controls/scroll_view.h"
 #include "ui/style.h"
 #include "util/string_utils.h"
 #include "wayland/layer_surface.h"
@@ -26,6 +27,8 @@ namespace {
   constexpr Logger kLog("tray");
 
   constexpr float kMenuWidth = 246.0f;
+  constexpr std::size_t kTrayMenuVisibleItems = 20;
+  constexpr float kScrollGutter = 14.0f;
   constexpr std::int32_t kPinToggleEntryId = -2147000000;
 
   constexpr float kSurfaceWidth = kMenuWidth;
@@ -56,7 +59,9 @@ namespace {
     return it->second.getBool("drawer", false);
   }
 
-  std::size_t visibleEntryLimit(std::size_t entryCount) { return std::max<std::size_t>(1, entryCount); }
+  std::size_t visibleEntryLimit(std::size_t entryCount) {
+    return std::max<std::size_t>(1, std::min<std::size_t>(entryCount, kTrayMenuVisibleItems));
+  }
 
   // Convert an icon name like "audio-input-microphone-symbolic" to a readable label like "Audio Input Microphone".
   std::string iconNameToLabel(std::string_view iconName) {
@@ -384,6 +389,13 @@ bool TrayMenu::onPointerEvent(const PointerEvent& event) {
       }
       break;
     case PointerEvent::Type::Axis:
+      if (onSub || sub->pointerInside) {
+        if (onSub)
+          sub->pointerInside = true;
+        subConsumed = sub->inputDispatcher.pointerAxis(static_cast<float>(event.sx), static_cast<float>(event.sy),
+                                                       event.axis, event.axisSource, event.axisValue,
+                                                       event.axisDiscrete, event.axisValue120, event.axisLines);
+      }
       break;
     }
 
@@ -442,6 +454,14 @@ bool TrayMenu::onPointerEvent(const PointerEvent& event) {
     }
     break;
   case PointerEvent::Type::Axis:
+    if (onThisSurface || inst->pointerInside) {
+      if (onThisSurface) {
+        inst->pointerInside = true;
+      }
+      consumed = inst->inputDispatcher.pointerAxis(static_cast<float>(event.sx), static_cast<float>(event.sy),
+                                                   event.axis, event.axisSource, event.axisValue, event.axisDiscrete,
+                                                   event.axisValue120, event.axisLines);
+    }
     break;
   }
 
@@ -785,9 +805,21 @@ void TrayMenu::buildScene(MenuInstance& inst, uint32_t width, uint32_t height) {
     });
   }
 
+  const bool useScrollbar = entries.size() > kTrayMenuVisibleItems;
+  const float menuWidth = std::max(1.0f, w - (useScrollbar ? kScrollGutter : 0.0f));
+
+  auto scrollView = std::make_unique<ScrollView>();
+  scrollView->setSize(w, h);
+  scrollView->setViewportPaddingH(0.0f);
+  scrollView->setViewportPaddingV(0.0f);
+  scrollView->clearFill();
+  scrollView->clearBorder();
+  scrollView->setRadius(0.0f);
+  scrollView->bindState(&inst.scrollState);
+
   auto menu = std::make_unique<ContextMenuControl>();
-  menu->setMenuWidth(w);
-  menu->setMaxVisible(visibleEntryLimit(m_entries.size()));
+  menu->setMenuWidth(menuWidth);
+  menu->setMaxVisible(std::max<std::size_t>(1, entries.size()));
   menu->setSubmenuDirection(inst.submenuDirection);
   menu->setEntries(std::move(entries));
   menu->setRedrawCallback([&inst]() {
@@ -817,10 +849,9 @@ void TrayMenu::buildScene(MenuInstance& inst, uint32_t width, uint32_t height) {
   });
   menu->setOnSubmenuOpen(
       [this](const ContextMenuControlEntry& entry, float rowCenterY) { openSubmenu(entry.id, rowCenterY); });
-  menu->setPosition(0.0f, 0.0f);
-  menu->setSize(w, h);
-  menu->layout(*m_renderContext);
-  inst.sceneRoot->addChild(std::move(menu));
+  scrollView->content()->addChild(std::move(menu));
+  scrollView->layout(*m_renderContext);
+  inst.sceneRoot->addChild(std::move(scrollView));
 
   inst.inputDispatcher.setSceneRoot(inst.sceneRoot.get());
   inst.inputDispatcher.setCursorShapeCallback(
@@ -951,6 +982,7 @@ void TrayMenu::openSubmenu(std::int32_t parentEntryId, float rowCenterY) {
 
   // Anchor rect is in the main popup's coordinate space (0,0 = top-left of main popup surface)
   const auto mainWidth = static_cast<std::int32_t>(m_instance->surface->width());
+  const auto mainX = m_instance->surface->configuredX();
   const auto rowTop = static_cast<std::int32_t>(rowCenterY - Style::controlHeightSm * 0.5f);
   const auto rowH = static_cast<std::int32_t>(Style::controlHeightSm);
   constexpr std::int32_t kSubGap = 4;
@@ -958,7 +990,23 @@ void TrayMenu::openSubmenu(std::int32_t parentEntryId, float rowCenterY) {
   const auto surfaceWidth = static_cast<uint32_t>(kSurfaceWidth);
   const auto surfaceHeight = submenuHeightPx();
 
-  const bool isRight = (m_instance->submenuDirection == ContextSubmenuDirection::Right);
+  const auto* wlOutput = m_wayland->findOutputByWl(m_instance->output);
+  const std::int32_t outputWidth = (wlOutput != nullptr && wlOutput->logicalWidth > 0)
+                                       ? wlOutput->logicalWidth
+                                       : static_cast<std::int32_t>(surfaceWidth);
+
+  bool isRight = (m_instance->submenuDirection == ContextSubmenuDirection::Right);
+  const std::int32_t submenuExtent = static_cast<std::int32_t>(surfaceWidth) + kSubGap;
+  if (isRight) {
+    if (mainX + mainWidth + submenuExtent > outputWidth) {
+      isRight = false;
+    }
+  } else {
+    if (mainX - submenuExtent < 0) {
+      isRight = true;
+    }
+  }
+
   const std::int32_t anchorX = isRight ? mainWidth : 0;
   const std::uint32_t anchor = isRight ? XDG_POSITIONER_ANCHOR_TOP_RIGHT : XDG_POSITIONER_ANCHOR_TOP_LEFT;
   const std::uint32_t gravity = isRight ? XDG_POSITIONER_GRAVITY_BOTTOM_RIGHT : XDG_POSITIONER_GRAVITY_BOTTOM_LEFT;
@@ -1055,9 +1103,21 @@ void TrayMenu::buildSubmenuScene(MenuInstance& inst, uint32_t width, uint32_t he
     });
   }
 
+  const bool useScrollbar = entries.size() > kTrayMenuVisibleItems;
+  const float menuWidth = std::max(1.0f, w - (useScrollbar ? kScrollGutter : 0.0f));
+
+  auto scrollView = std::make_unique<ScrollView>();
+  scrollView->setSize(w, h);
+  scrollView->setViewportPaddingH(0.0f);
+  scrollView->setViewportPaddingV(0.0f);
+  scrollView->clearFill();
+  scrollView->clearBorder();
+  scrollView->setRadius(0.0f);
+  scrollView->bindState(&inst.scrollState);
+
   auto menu = std::make_unique<ContextMenuControl>();
-  menu->setMenuWidth(w);
-  menu->setMaxVisible(visibleEntryLimit(m_submenuEntries.size()));
+  menu->setMenuWidth(menuWidth);
+  menu->setMaxVisible(std::max<std::size_t>(1, entries.size()));
   menu->setSubmenuDirection(inst.submenuDirection);
   menu->setEntries(std::move(entries));
   menu->setRedrawCallback([&inst]() {
@@ -1077,10 +1137,9 @@ void TrayMenu::buildSubmenuScene(MenuInstance& inst, uint32_t width, uint32_t he
       closeTrayDrawerPanelIfOpen();
     });
   });
-  menu->setPosition(0.0f, 0.0f);
-  menu->setSize(w, h);
-  menu->layout(*m_renderContext);
-  inst.sceneRoot->addChild(std::move(menu));
+  scrollView->content()->addChild(std::move(menu));
+  scrollView->layout(*m_renderContext);
+  inst.sceneRoot->addChild(std::move(scrollView));
 
   inst.inputDispatcher.setSceneRoot(inst.sceneRoot.get());
   inst.inputDispatcher.setCursorShapeCallback(
