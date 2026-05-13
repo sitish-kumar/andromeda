@@ -46,6 +46,18 @@ sudo apt install meson g++ just \
   libcurl4-openssl-dev libwebp-dev librsvg2-dev
 ```
 
+### AerynOS
+```sh
+sudo moss it meson g++ just \
+  wayland-devel wayland-protocols-devel \
+  mesa-libegl-devel mesa-libgl-devel \
+  freetype-devel fontconfig-devel \
+  cairo-devel pango-devel \
+  libxkbcommon-devel glib2-devel \
+  sdbus-cpp-devel pipewire-devel \
+  linux-pam-devel polkit-devel curl-devel libwebp-devel librsvg-devel extra-cmake-modules
+```
+
 Vendored dependencies, with no system package needed: `Wuffs`, `nanosvg`, `tomlplusplus`, `tinyexpr`,
 `nlohmann/json`, `Luau`, `dr_wav`, `fzy`, `stb_image_resize2`, and Material Color Utilities.
 
