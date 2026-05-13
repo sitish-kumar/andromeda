@@ -58,7 +58,7 @@ sudo moss it meson g++ just \
   linux-pam-devel polkit-devel curl-devel libwebp-devel librsvg-devel extra-cmake-modules
 ```
 
-Vendored dependencies, with no system package needed: `Wuffs`, `nanosvg`, `tomlplusplus`, `tinyexpr`,
+Vendored dependencies, with no system package needed: `Wuffs`, `tomlplusplus`, `tinyexpr`,
 `nlohmann/json`, `Luau`, `dr_wav`, `fzy`, `stb_image_resize2`, and Material Color Utilities.
 
 System packages required beyond the Wayland/GL stack: `libwebp` handles WebP decoding and thumbnail encoding. Wuffs
