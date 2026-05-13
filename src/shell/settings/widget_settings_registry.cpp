@@ -125,6 +125,15 @@ namespace settings {
       return spec;
     }
 
+    const std::vector<WidgetSettingSelectOption> kAccentColorRoleOptions = {
+        {"on_surface", ""}, {"primary", ""}, {"secondary", ""}, {"tertiary", ""}, {"error", ""},
+    };
+
+    void applyAccentColorRolePicker(WidgetSettingSpec& spec) {
+      spec.options = kAccentColorRoleOptions;
+      spec.allowCustomColor = true;
+    }
+
     std::string widgetInstanceDisplayLabel(std::string_view name) {
       if (name == "cpu") {
         return tr("settings.widgets.instances.cpu");
@@ -285,14 +294,27 @@ namespace settings {
 
   std::vector<WidgetSettingSpec> commonWidgetSettingSpecs() {
     const WidgetSettingVisibility capsuleOn{"capsule", {"true"}};
+
+    auto anchor = boolSpec("anchor", false, true);
+    auto widgetColor = colorRoleSpec("color", {}, true);
+    applyAccentColorRolePicker(widgetColor);
+
+    auto capsuleToggle = boolSpec("capsule", false);
     auto capsuleGroup = stringSpec("capsule_group");
     capsuleGroup.visibleWhen = capsuleOn;
-    auto capsuleFill = colorRoleSpec("capsule_fill", "surface_variant");
+
+    auto capsuleFill = colorRoleSpec("capsule_fill", "", true);
     capsuleFill.visibleWhen = capsuleOn;
+    applyAccentColorRolePicker(capsuleFill);
+
     auto capsuleBorder = colorRoleSpec("capsule_border", {}, true);
     capsuleBorder.visibleWhen = capsuleOn;
+    applyAccentColorRolePicker(capsuleBorder);
+
     auto capsuleForeground = colorRoleSpec("capsule_foreground", {}, true);
     capsuleForeground.visibleWhen = capsuleOn;
+    applyAccentColorRolePicker(capsuleForeground);
+
     auto capsulePadding = doubleSpec("capsule_padding", static_cast<double>(Style::barCapsulePadding), 0.0, 48.0, 1.0);
     capsulePadding.visibleWhen = capsuleOn;
     auto capsuleRadius = optionalDoubleSpec("capsule_radius", 0.0, 80.0);
@@ -300,10 +322,9 @@ namespace settings {
     auto capsuleOpacity = doubleSpec("capsule_opacity", 1.0, 0.0, 1.0, 0.01);
     capsuleOpacity.visibleWhen = capsuleOn;
     return {
-        boolSpec("anchor", false, true), colorRoleSpec("color", {}, true), boolSpec("capsule", false),
-        std::move(capsuleRadius),        std::move(capsuleGroup),          std::move(capsuleFill),
-        std::move(capsuleBorder),        std::move(capsuleForeground),     std::move(capsulePadding),
-        std::move(capsuleOpacity),
+        std::move(anchor),         std::move(widgetColor),    std::move(capsuleToggle), std::move(capsuleRadius),
+        std::move(capsuleGroup),   std::move(capsuleFill),    std::move(capsuleBorder), std::move(capsuleForeground),
+        std::move(capsulePadding), std::move(capsuleOpacity),
     };
   }
 
@@ -341,10 +362,6 @@ namespace settings {
         {"output", "settings.widgets.options.output"},
         {"input", "settings.widgets.options.input"},
     };
-    const std::vector<WidgetSettingSelectOption> workspaceColorRoles = {
-        {"on_surface", ""}, {"primary", ""}, {"secondary", ""}, {"tertiary", ""}, {"error", ""},
-    };
-
     if (type == "active_window") {
       add(doubleSpec("min_length", 80.0, 0.0, 800.0, 1.0));
       add(doubleSpec("max_length", 260.0, 40.0, 800.0, 1.0));
@@ -355,12 +372,24 @@ namespace settings {
       add(intSpec("bands", 16, 2.0, 128.0, 1.0));
       add(boolSpec("mirrored", true));
       add(boolSpec("show_when_idle", false));
-      add(colorRoleSpec("low_color", "primary"));
-      add(colorRoleSpec("high_color", "primary"));
+      {
+        auto low = colorRoleSpec("low_color", "primary");
+        applyAccentColorRolePicker(low);
+        add(std::move(low));
+      }
+      {
+        auto high = colorRoleSpec("high_color", "primary");
+        applyAccentColorRolePicker(high);
+        add(std::move(high));
+      }
     } else if (type == "battery") {
       add(selectSpec("device", "auto", {{"auto", "common.states.auto"}}));
       add(intSpec("warning_threshold", 20, 0.0, 100.0, 1.0));
-      add(colorRoleSpec("warning_color", "error"));
+      {
+        auto warn = colorRoleSpec("warning_color", "error");
+        applyAccentColorRolePicker(warn);
+        add(std::move(warn));
+      }
     } else if (type == "bluetooth") {
       add(boolSpec("show_label", false));
     } else if (type == "brightness") {
@@ -471,20 +500,17 @@ namespace settings {
       add(segmentedSpec("display", "id", workspaceDisplay));
       {
         auto focusedColor = colorRoleSpec("focused_color", "primary");
-        focusedColor.options = workspaceColorRoles;
-        focusedColor.allowCustomColor = true;
+        applyAccentColorRolePicker(focusedColor);
         add(std::move(focusedColor));
       }
       {
         auto occupiedColor = colorRoleSpec("occupied_color", "secondary");
-        occupiedColor.options = workspaceColorRoles;
-        occupiedColor.allowCustomColor = true;
+        applyAccentColorRolePicker(occupiedColor);
         add(std::move(occupiedColor));
       }
       {
         auto emptyColor = colorRoleSpec("empty_color", "secondary");
-        emptyColor.options = workspaceColorRoles;
-        emptyColor.allowCustomColor = true;
+        applyAccentColorRolePicker(emptyColor);
         add(std::move(emptyColor));
       }
     }

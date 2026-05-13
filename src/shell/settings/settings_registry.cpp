@@ -103,7 +103,9 @@ namespace settings {
       if (color.role.has_value()) {
         return std::string(colorRoleToken(*color.role));
       }
-      return {};
+      Color rgb = color.fixed;
+      rgb.a = 1.0f;
+      return formatRgbHex(rgb);
     }
 
     std::string optionalColorRoleValue(const std::optional<ColorSpec>& color) {
@@ -113,25 +115,24 @@ namespace settings {
       return {};
     }
 
-    std::vector<ColorRole> allColorRoles() {
-      std::vector<ColorRole> roles;
-      roles.reserve(kColorRoleTokens.size());
-      for (const auto& token : kColorRoleTokens) {
-        roles.push_back(token.role);
+    const std::vector<ColorRole>& barAccentColorRoles() {
+      static const std::vector<ColorRole> kRoles = {ColorRole::OnSurface, ColorRole::Primary, ColorRole::Secondary,
+                                                    ColorRole::Tertiary, ColorRole::Error};
+      return kRoles;
+    }
+
+    ColorRolePickerSetting barOptionalAccentColorRolePicker(const std::optional<ColorSpec>& selected) {
+      return ColorRolePickerSetting{barAccentColorRoles(), optionalColorRoleValue(selected), true, true};
+    }
+
+    ColorRolePickerSetting barCapsuleFillColorRolePicker(const ColorSpec& selected) {
+      std::string selectedValue = colorRoleValue(selected);
+      // Capsule fill defaults to surface_variant in config. Since the picker intentionally
+      // does not expose surface_variant as a standalone option, map it to "Default".
+      if (selectedValue == "surface_variant") {
+        selectedValue.clear();
       }
-      return roles;
-    }
-
-    ColorRolePickerSetting colorRolePicker(const ColorSpec& selected) {
-      return ColorRolePickerSetting{allColorRoles(), colorRoleValue(selected)};
-    }
-
-    ColorRolePickerSetting optionalColorRolePicker(const std::optional<ColorSpec>& selected) {
-      return ColorRolePickerSetting{allColorRoles(), optionalColorRoleValue(selected), true};
-    }
-
-    ColorRolePickerSetting capsuleBorderRolePicker(const std::optional<ColorSpec>& selected) {
-      return ColorRolePickerSetting{allColorRoles(), optionalColorRoleValue(selected), true};
+      return ColorRolePickerSetting{barAccentColorRoles(), std::move(selectedValue), true, true};
     }
 
     std::string pathText(const std::vector<std::string>& path) {
@@ -1129,7 +1130,8 @@ namespace settings {
                     SliderSetting{static_cast<float>(selectedBar->widgetSpacing), 0.0f, 32.0f, 1.0f, true}, "gap"));
       entries.push_back(makeEntry(section, "widgets", tr("settings.schema.bar.widget-color.label"),
                                   tr("settings.schema.bar.widget-color.description"), path("color"),
-                                  optionalColorRolePicker(selectedBar->widgetColor), "color role foreground", true));
+                                  barOptionalAccentColorRolePicker(selectedBar->widgetColor), "color role foreground",
+                                  true));
       entries.push_back(makeEntry(section, "capsules", tr("settings.schema.bar.widget-capsules.label"),
                                   tr("settings.schema.bar.widget-capsules.description"), path("capsule"),
                                   ToggleSetting{selectedBar->widgetCapsuleDefault}, "pill"));
@@ -1158,22 +1160,23 @@ namespace settings {
       {
         auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-fill.label"),
                            tr("settings.schema.bar.capsule-fill.description"), path("capsule_fill"),
-                           colorRolePicker(selectedBar->widgetCapsuleFill), "color role pill", true);
+                           barCapsuleFillColorRolePicker(selectedBar->widgetCapsuleFill), "color role pill", true);
         e.visibleWhen = capsuleOn;
         entries.push_back(std::move(e));
       }
       {
         auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-foreground.label"),
                            tr("settings.schema.bar.capsule-foreground.description"), path("capsule_foreground"),
-                           optionalColorRolePicker(selectedBar->widgetCapsuleForeground), "color role foreground pill",
-                           true);
+                           barOptionalAccentColorRolePicker(selectedBar->widgetCapsuleForeground),
+                           "color role foreground pill", true);
         e.visibleWhen = capsuleOn;
         entries.push_back(std::move(e));
       }
       {
         auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-border.label"),
                            tr("settings.schema.bar.capsule-border.description"), path("capsule_border"),
-                           capsuleBorderRolePicker(selectedBar->widgetCapsuleBorder), "color role pill outline", true);
+                           barOptionalAccentColorRolePicker(selectedBar->widgetCapsuleBorder),
+                           "color role pill outline", true);
         e.visibleWhen = capsuleOn;
         entries.push_back(std::move(e));
       }
@@ -1295,7 +1298,7 @@ namespace settings {
       entries.push_back(
           makeEntry(section, "widgets", tr("settings.schema.bar.widget-color.label"),
                     tr("settings.schema.bar.widget-color.description"), mpath("color"),
-                    optionalColorRolePicker(ovr.widgetColor.has_value() ? ovr.widgetColor : bar.widgetColor),
+                    barOptionalAccentColorRolePicker(ovr.widgetColor.has_value() ? ovr.widgetColor : bar.widgetColor),
                     "color role foreground", true));
       entries.push_back(makeEntry(section, "capsules", tr("settings.schema.bar.widget-capsules.label"),
                                   tr("settings.schema.bar.widget-capsules.description"), mpath("capsule"),
@@ -1323,28 +1326,28 @@ namespace settings {
         entries.push_back(std::move(e));
       }
       {
-        auto e =
-            makeEntry(section, "capsules", tr("settings.schema.bar.capsule-fill.label"),
-                      tr("settings.schema.bar.capsule-fill.description"), mpath("capsule_fill"),
-                      colorRolePicker(ovr.widgetCapsuleFill.value_or(bar.widgetCapsuleFill)), "color role pill", true);
+        auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-fill.label"),
+                           tr("settings.schema.bar.capsule-fill.description"), mpath("capsule_fill"),
+                           barCapsuleFillColorRolePicker(ovr.widgetCapsuleFill.value_or(bar.widgetCapsuleFill)),
+                           "color role pill", true);
         e.visibleWhen = mCapsuleOn;
         entries.push_back(std::move(e));
       }
       {
-        auto e =
-            makeEntry(section, "capsules", tr("settings.schema.bar.capsule-foreground.label"),
-                      tr("settings.schema.bar.capsule-foreground.description"), mpath("capsule_foreground"),
-                      optionalColorRolePicker(ovr.widgetCapsuleForeground.has_value() ? ovr.widgetCapsuleForeground
-                                                                                      : bar.widgetCapsuleForeground),
-                      "color role foreground pill", true);
+        auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-foreground.label"),
+                           tr("settings.schema.bar.capsule-foreground.description"), mpath("capsule_foreground"),
+                           barOptionalAccentColorRolePicker(ovr.widgetCapsuleForeground.has_value()
+                                                                ? ovr.widgetCapsuleForeground
+                                                                : bar.widgetCapsuleForeground),
+                           "color role foreground pill", true);
         e.visibleWhen = mCapsuleOn;
         entries.push_back(std::move(e));
       }
       {
         auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-border.label"),
                            tr("settings.schema.bar.capsule-border.description"), mpath("capsule_border"),
-                           capsuleBorderRolePicker(ovr.widgetCapsuleBorderSpecified ? ovr.widgetCapsuleBorder
-                                                                                    : bar.widgetCapsuleBorder),
+                           barOptionalAccentColorRolePicker(ovr.widgetCapsuleBorderSpecified ? ovr.widgetCapsuleBorder
+                                                                                             : bar.widgetCapsuleBorder),
                            "color role pill outline", true);
         e.visibleWhen = mCapsuleOn;
         entries.push_back(std::move(e));
