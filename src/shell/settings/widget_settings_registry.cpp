@@ -126,7 +126,8 @@ namespace settings {
     }
 
     const std::vector<WidgetSettingSelectOption> kAccentColorRoleOptions = {
-        {"on_surface", ""}, {"primary", ""}, {"secondary", ""}, {"tertiary", ""}, {"error", ""},
+        {"on_surface", ""},   {"primary", ""},  {"on_primary", ""},  {"secondary", ""},
+        {"on_secondary", ""}, {"tertiary", ""}, {"on_tertiary", ""}, {"error", ""},
     };
 
     void applyAccentColorRolePicker(WidgetSettingSpec& spec) {

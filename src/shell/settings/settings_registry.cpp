@@ -116,8 +116,9 @@ namespace settings {
     }
 
     const std::vector<ColorRole>& barAccentColorRoles() {
-      static const std::vector<ColorRole> kRoles = {ColorRole::OnSurface, ColorRole::Primary, ColorRole::Secondary,
-                                                    ColorRole::Tertiary, ColorRole::Error};
+      static const std::vector<ColorRole> kRoles = {ColorRole::OnSurface,  ColorRole::Primary,     ColorRole::OnPrimary,
+                                                    ColorRole::Secondary,  ColorRole::OnSecondary, ColorRole::Tertiary,
+                                                    ColorRole::OnTertiary, ColorRole::Error};
       return kRoles;
     }
 
