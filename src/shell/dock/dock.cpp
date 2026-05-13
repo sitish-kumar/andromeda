@@ -140,6 +140,15 @@ namespace {
     return cfg.launcherIcon.empty() ? "grid-dots" : std::string_view{cfg.launcherIcon};
   }
 
+  Radii dockCornerRadii(const DockConfig& cfg) {
+    return Radii{
+        static_cast<float>(cfg.radiusTopLeft),
+        static_cast<float>(cfg.radiusTopRight),
+        static_cast<float>(cfg.radiusBottomRight),
+        static_cast<float>(cfg.radiusBottomLeft),
+    };
+  }
+
 } // namespace
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -725,7 +734,8 @@ void Dock::applyDockCompositorBlur(DockInstance& instance) {
   const int py = static_cast<int>(std::lround(absY));
   const int pw = static_cast<int>(std::lround(instance.panel->width()));
   const int ph = static_cast<int>(std::lround(instance.panel->height()));
-  auto blurStrips = Surface::tessellateRoundedRect(px, py, pw, ph, static_cast<float>(cfg.radius));
+  const Radii radii = dockCornerRadii(cfg);
+  auto blurStrips = Surface::tessellateRoundedRect(px, py, pw, ph, radii.tl, radii.tr, radii.br, radii.bl);
   instance.surface->setBlurRegion(blurStrips);
 }
 
@@ -765,8 +775,7 @@ void Dock::buildScene(DockInstance& instance) {
     panelH = h - bleedU - bleedD;
   }
 
-  const Radii radii{static_cast<float>(cfg.radius), static_cast<float>(cfg.radius), static_cast<float>(cfg.radius),
-                    static_cast<float>(cfg.radius)};
+  const Radii radii = dockCornerRadii(cfg);
 
   if (instance.sceneRoot == nullptr) {
     instance.sceneRoot = std::make_unique<Node>();
@@ -786,7 +795,7 @@ void Dock::buildScene(DockInstance& instance) {
 
     // Panel background
     auto panel = std::make_unique<Box>();
-    panel->setRadius(static_cast<float>(cfg.radius));
+    panel->setRadii(radii);
     instance.panel = static_cast<Box*>(instance.slideRoot->addChild(std::move(panel)));
 
     // Item row

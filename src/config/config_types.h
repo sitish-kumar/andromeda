@@ -320,6 +320,10 @@ struct DockConfig {
   std::int32_t itemSpacing = 6;    // gap between items
   float backgroundOpacity = 0.88f;
   std::int32_t radius = 16;               // dock background corner radius
+  std::int32_t radiusTopLeft = 16;        // dock background top-left corner radius
+  std::int32_t radiusTopRight = 16;       // dock background top-right corner radius
+  std::int32_t radiusBottomLeft = 16;     // dock background bottom-left corner radius
+  std::int32_t radiusBottomRight = 16;    // dock background bottom-right corner radius
   std::int32_t marginEnds = 0;            // inset from each end of the dock along its main axis
   std::int32_t marginEdge = 8;            // distance from the nearest screen edge (floats the dock when > 0)
   bool shadow = true;                     // use the global shell shadow

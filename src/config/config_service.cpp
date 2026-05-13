@@ -1474,8 +1474,22 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       dock.itemSpacing = std::clamp(static_cast<std::int32_t>(*v), 0, 100);
     if (auto v = (*dockTbl)["background_opacity"].value<double>())
       dock.backgroundOpacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
-    if (auto v = (*dockTbl)["radius"].value<int64_t>())
-      dock.radius = std::clamp(static_cast<std::int32_t>(*v), 0, 500);
+    if (auto v = (*dockTbl)["radius"].value<int64_t>()) {
+      const auto r = std::clamp(static_cast<std::int32_t>(*v), 0, 500);
+      dock.radius = r;
+      dock.radiusTopLeft = r;
+      dock.radiusTopRight = r;
+      dock.radiusBottomLeft = r;
+      dock.radiusBottomRight = r;
+    }
+    if (auto v = (*dockTbl)["radius_top_left"].value<int64_t>())
+      dock.radiusTopLeft = std::clamp(static_cast<std::int32_t>(*v), 0, 500);
+    if (auto v = (*dockTbl)["radius_top_right"].value<int64_t>())
+      dock.radiusTopRight = std::clamp(static_cast<std::int32_t>(*v), 0, 500);
+    if (auto v = (*dockTbl)["radius_bottom_left"].value<int64_t>())
+      dock.radiusBottomLeft = std::clamp(static_cast<std::int32_t>(*v), 0, 500);
+    if (auto v = (*dockTbl)["radius_bottom_right"].value<int64_t>())
+      dock.radiusBottomRight = std::clamp(static_cast<std::int32_t>(*v), 0, 500);
     if (auto v = (*dockTbl)["margin_ends"].value<int64_t>())
       dock.marginEnds = std::clamp(static_cast<std::int32_t>(*v), 0, 500);
     if (auto v = (*dockTbl)["margin_edge"].value<int64_t>())
