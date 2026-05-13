@@ -554,7 +554,11 @@ std::unique_ptr<Shortcut> ShortcutRegistry::create(std::string_view type, const 
     return std::make_unique<WallpaperShortcut>();
   if (type == "session")
     return std::make_unique<SessionShortcut>();
-  if (type == "clipboard")
+  if (type == "clipboard") {
+    if (s.config != nullptr && !s.config->config().shell.clipboardEnabled) {
+      return nullptr;
+    }
     return std::make_unique<ClipboardShortcut>();
+  }
   return nullptr;
 }

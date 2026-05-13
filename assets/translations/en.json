@@ -1436,6 +1436,10 @@
           "label": "Show Location",
           "description": "Show location name in weather widgets"
         },
+        "clipboard-enabled": {
+          "label": "Clipboard",
+          "description": "Enable clipboard history, the clipboard panel, and copy/paste integration"
+        },
         "clipboard-auto-paste": {
           "label": "Clipboard Auto-Paste",
           "description": "Automatically paste clipboard selections"

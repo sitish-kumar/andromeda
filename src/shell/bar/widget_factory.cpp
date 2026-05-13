@@ -164,6 +164,9 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
   }
 
   if (type == "clipboard") {
+    if (!m_config.shell.clipboardEnabled) {
+      return nullptr;
+    }
     auto barGlyph = wc != nullptr ? wc->getString("glyph", "clipboard") : std::string{"clipboard"};
     if (barGlyph.empty()) {
       barGlyph = "clipboard";

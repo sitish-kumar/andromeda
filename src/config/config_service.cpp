@@ -1207,6 +1207,9 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     if (auto v = (*shellTbl)["show_location"].value<bool>()) {
       shell.showLocation = *v;
     }
+    if (auto v = (*shellTbl)["clipboard_enabled"].value<bool>()) {
+      shell.clipboardEnabled = *v;
+    }
     if (auto v = (*shellTbl)["clipboard_auto_paste"].value<std::string>()) {
       if (auto parsed = enumFromKey(kClipboardAutoPasteModes, *v)) {
         shell.clipboardAutoPaste = *parsed;

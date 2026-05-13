@@ -113,6 +113,7 @@ private:
   void startTrayService();
   void syncNotificationDaemon();
   void syncPolkitAgent();
+  void syncClipboardService();
   bool runUserCommand(const std::string& command);
   bool runUserCommandBlocking(const std::string& command);
   bool runIdleAction(const IdleActionRequest& action);

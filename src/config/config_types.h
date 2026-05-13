@@ -483,6 +483,8 @@ struct ShellConfig {
   bool settingsShowAdvanced = false;
   bool middleClickOpensWidgetSettings = true;
   bool showLocation = true;
+  /// When false, disables Wayland clipboard integration (history panel, data-control binding, Input paste/copy hooks).
+  bool clipboardEnabled = true;
   ClipboardAutoPasteMode clipboardAutoPaste = ClipboardAutoPasteMode::Auto;
   std::string clipboardImageActionCommand;
   ShadowConfig shadow;

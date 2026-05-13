@@ -256,6 +256,33 @@ void Application::syncPolkitAgent() {
   m_polkitAgent->start();
 }
 
+void Application::syncClipboardService() {
+  const bool enabled = m_configService.config().shell.clipboardEnabled;
+  const auto shouldRefreshControlCenter = [this]() { return m_panelManager.isOpenPanel("control-center"); };
+
+  if (!enabled) {
+    m_clipboardService.cleanup();
+    m_wayland.setClipboardService(nullptr);
+    Input::setClipboardService(nullptr);
+    if (m_panelManager.isOpenPanel("clipboard")) {
+      m_panelManager.close();
+    }
+    kLog.info("clipboard integration disabled by config");
+    m_bar.refresh();
+    if (shouldRefreshControlCenter()) {
+      m_panelManager.refresh();
+    }
+    return;
+  }
+
+  m_wayland.setClipboardService(&m_clipboardService);
+  Input::setClipboardService(&m_clipboardService);
+  m_bar.refresh();
+  if (shouldRefreshControlCenter()) {
+    m_panelManager.refresh();
+  }
+}
+
 void Application::run(std::function<void()> startupReadyCallback) {
   initLogFile();
   kLog.info("noctalia {}", noctalia::build_info::displayVersion());
@@ -313,6 +340,7 @@ void Application::initServices() {
   m_configService.addReloadCallback(applyPasswordMaskStyle);
   m_configService.addReloadCallback(
       [this]() { m_httpClient.setOfflineMode(m_configService.config().shell.offlineMode); });
+  m_configService.addReloadCallback([this]() { syncClipboardService(); });
   m_communityPaletteService.setReadyCallback([this]() { m_settingsWindow.onExternalOptionsChanged(); });
   m_communityPaletteService.sync();
   m_configService.addReloadCallback([this]() { m_communityPaletteService.sync(); });
@@ -363,9 +391,7 @@ void Application::initServices() {
   m_glShared.initialize(m_wayland.display());
   m_sharedTextureCache.initialize(&m_glShared);
   m_asyncTextureCache.initialize(&m_glShared);
-  m_wayland.setClipboardService(&m_clipboardService);
   m_wayland.setVirtualKeyboardService(&m_virtualKeyboardService);
-  Input::setClipboardService(&m_clipboardService);
   Input::setValidateKeyMatcher([this](std::uint32_t sym, std::uint32_t modifiers) {
     return m_configService.matchesKeybind(KeybindAction::Validate, sym, modifiers);
   });
@@ -872,6 +898,7 @@ void Application::initUi() {
     });
   });
   m_panelManager.registerPanel("clipboard", std::move(clipboardPanel));
+  syncClipboardService();
   m_panelManager.registerPanel("session", std::make_unique<SessionPanel>(&m_configService, m_sessionActionHooks));
   m_panelManager.registerPanel("test", std::make_unique<TestPanel>());
   m_panelManager.registerPanel("control-center",

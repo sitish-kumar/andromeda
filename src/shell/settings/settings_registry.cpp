@@ -655,18 +655,31 @@ namespace settings {
       e.visibleWhen = weatherOn;
       entries.push_back(std::move(e));
     }
-    entries.push_back(makeEntry("shell", "clipboard", tr("settings.schema.shell.clipboard-auto-paste.label"),
-                                tr("settings.schema.shell.clipboard-auto-paste.description"),
-                                {"shell", "clipboard_auto_paste"},
-                                enumSelect(kClipboardAutoPasteModes, cfg.shell.clipboardAutoPaste), "clipboard paste"));
-    entries.push_back(makeEntry(
-        "shell", "clipboard", tr("settings.schema.shell.clipboard-image-action.label"),
-        tr("settings.schema.shell.clipboard-image-action.description"), {"shell", "clipboard_image_action_command"},
-        TextSetting{.value = cfg.shell.clipboardImageActionCommand,
-                    .placeholder = tr("settings.schema.shell.clipboard-image-action.placeholder"),
-                    .width = 320.0f,
-                    .browseFileExtensions = {}},
-        "clipboard image action annotation editor external gimp satty gradia"));
+    const SettingVisibility clipboardOn{{"shell", "clipboard_enabled"}, {"true"}};
+    entries.push_back(makeEntry("shell", "clipboard", tr("settings.schema.shell.clipboard-enabled.label"),
+                                tr("settings.schema.shell.clipboard-enabled.description"),
+                                {"shell", "clipboard_enabled"}, ToggleSetting{cfg.shell.clipboardEnabled},
+                                "clipboard history paste copy"));
+    {
+      auto e =
+          makeEntry("shell", "clipboard", tr("settings.schema.shell.clipboard-auto-paste.label"),
+                    tr("settings.schema.shell.clipboard-auto-paste.description"), {"shell", "clipboard_auto_paste"},
+                    enumSelect(kClipboardAutoPasteModes, cfg.shell.clipboardAutoPaste), "clipboard paste");
+      e.visibleWhen = clipboardOn;
+      entries.push_back(std::move(e));
+    }
+    {
+      auto e = makeEntry("shell", "clipboard", tr("settings.schema.shell.clipboard-image-action.label"),
+                         tr("settings.schema.shell.clipboard-image-action.description"),
+                         {"shell", "clipboard_image_action_command"},
+                         TextSetting{.value = cfg.shell.clipboardImageActionCommand,
+                                     .placeholder = tr("settings.schema.shell.clipboard-image-action.placeholder"),
+                                     .width = 320.0f,
+                                     .browseFileExtensions = {}},
+                         "clipboard image action annotation editor external gimp satty gradia");
+      e.visibleWhen = clipboardOn;
+      entries.push_back(std::move(e));
+    }
     entries.push_back(makeEntry("shell", "osd", tr("settings.schema.shell.osd-position.label"),
                                 tr("settings.schema.shell.osd-position.description"), {"osd", "position"},
                                 plainSelect({{"top_right", "settings.options.screen-position.top-right"},
