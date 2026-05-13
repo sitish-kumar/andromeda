@@ -136,6 +136,7 @@ private:
   std::unique_ptr<compositors::WorkspaceMetadataBackend> m_workspaceMetadataBackend;
   std::vector<std::unique_ptr<compositors::FocusedOutputBackend>> m_focusedOutputBackends;
   std::unique_ptr<compositors::OutputPowerBackend> m_outputPowerBackend;
+  mutable std::optional<bool> m_lastRequestedOutputPowerState;
   std::unique_ptr<KeyboardLayoutBackend> m_keyboardLayoutBackend;
   ChangeCallback m_workspaceChangeCallback;
   ChangeCallback m_keyboardLayoutChangeCallback;

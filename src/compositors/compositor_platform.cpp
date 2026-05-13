@@ -33,6 +33,7 @@ namespace compositors {
   public:
     virtual ~OutputPowerBackend() = default;
     [[nodiscard]] virtual bool setOutputPower(WaylandConnection& wayland, bool on) const = 0;
+    [[nodiscard]] virtual bool isPerOutputTargeted() const noexcept { return false; }
   };
 
   class WorkspaceMetadataBackend {
@@ -131,14 +132,17 @@ namespace {
   public:
     using Callback = std::function<bool(WaylandConnection&, bool)>;
 
-    explicit LambdaOutputPowerBackend(Callback callback) : m_callback(std::move(callback)) {}
+    explicit LambdaOutputPowerBackend(Callback callback, bool perOutputTargeted = false)
+        : m_callback(std::move(callback)), m_perOutputTargeted(perOutputTargeted) {}
 
     [[nodiscard]] bool setOutputPower(WaylandConnection& wayland, bool on) const override {
       return m_callback && m_callback(wayland, on);
     }
+    [[nodiscard]] bool isPerOutputTargeted() const noexcept override { return m_perOutputTargeted; }
 
   private:
     Callback m_callback;
+    bool m_perOutputTargeted = false;
   };
 
   class NiriWorkspaceMetadataBackend final : public compositors::WorkspaceMetadataBackend {
@@ -200,7 +204,7 @@ namespace {
             return compositors::sway::setOutputPower(runtime, on);
           });
     case compositors::CompositorKind::Mango:
-      return std::make_unique<LambdaOutputPowerBackend>(&setMangoOutputPower);
+      return std::make_unique<LambdaOutputPowerBackend>(&setMangoOutputPower, true);
     case compositors::CompositorKind::Unknown:
       return std::make_unique<LambdaOutputPowerBackend>(&setGenericOutputPower);
     }
@@ -631,7 +635,13 @@ void CompositorPlatform::dispatchKeyboardLayoutPoll(const std::vector<pollfd>& f
 }
 
 bool CompositorPlatform::setOutputPower(bool on) const {
-  return m_outputPowerBackend != nullptr && m_outputPowerBackend->setOutputPower(m_wayland, on);
+  if (m_outputPowerBackend == nullptr) {
+    return false;
+  }
+  if (m_outputPowerBackend->isPerOutputTargeted()) {
+    m_lastRequestedOutputPowerState = on;
+  }
+  return m_outputPowerBackend->setOutputPower(m_wayland, on);
 }
 
 bool CompositorPlatform::tracksOverviewState() const noexcept {
@@ -664,6 +674,10 @@ void CompositorPlatform::bindDwlIpcWorkspace(zdwl_ipc_manager_v2* manager) {
 void CompositorPlatform::onOutputAdded(wl_output* output) {
   if (m_workspaces != nullptr) {
     m_workspaces->onOutputAdded(output);
+  }
+  if (m_outputPowerBackend != nullptr && m_outputPowerBackend->isPerOutputTargeted() &&
+      m_lastRequestedOutputPowerState.has_value()) {
+    (void)m_outputPowerBackend->setOutputPower(m_wayland, *m_lastRequestedOutputPowerState);
   }
 }
 
