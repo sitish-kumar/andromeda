@@ -314,4 +314,13 @@ namespace StringUtils {
     return std::string(text);
   }
 
+  [[nodiscard]] inline std::string snakeToKebab(std::string_view s) {
+    std::string result;
+    result.reserve(s.size());
+    for (char c : s) {
+      result += (c == '_') ? '-' : c;
+    }
+    return result;
+  }
+
 } // namespace StringUtils

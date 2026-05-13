@@ -2,6 +2,7 @@
 #include "i18n/i18n.h"
 #include "render/render_context.h"
 #include "render/scene/input_area.h"
+#include "shell/desktop/desktop_widget_settings_registry.h"
 #include "shell/desktop/desktop_widgets_editor.h"
 #include "ui/controls/button.h"
 #include "ui/controls/flex.h"
@@ -20,7 +21,6 @@
 #include "ui/style.h"
 #include "wayland/layer_surface.h"
 
-#include <array>
 #include <linux/input-event-codes.h>
 
 namespace {
@@ -28,7 +28,6 @@ namespace {
   constexpr float kInspectorWidth = 340.0f;
   constexpr float kSettingRowHeight = 34.0f;
   constexpr float kLabelWidth = 100.0f;
-  constexpr float kDefaultAspectRatio = 240.0f / 96.0f;
 
   using Settings = std::unordered_map<std::string, WidgetSettingValue>;
 
@@ -164,134 +163,153 @@ namespace {
     return makeRow(labelText, std::move(select));
   }
 
-  void addClockSettings(Flex& content, const Settings& s, DesktopWidgetsEditor* editor) {
+  std::unique_ptr<Flex> makeInputRow(std::string_view labelText, const std::string& key, const std::string& value,
+                                     const std::string& placeholder, DesktopWidgetsEditor* editor) {
     auto input = std::make_unique<Input>();
-    input->setValue(getStr(s, "format", "{:%H:%M}"));
-    input->setPlaceholder("{:%H:%M}");
+    input->setValue(value);
+    input->setPlaceholder(placeholder);
     input->setControlHeight(Style::controlHeightSm);
     input->setFlexGrow(1.0f);
-    input->setOnChange([editor](const std::string& val) { editor->applySettingChange("format", val); });
-    content.addChild(makeRow(i18n::tr("desktop-widgets.editor.settings.format"), std::move(input)));
-    content.addChild(makeColorRoleSelect(i18n::tr("desktop-widgets.editor.settings.color"), "color",
-                                         colorSpecFromRole(ColorRole::OnSurface), s, editor));
-    content.addChild(makeToggleRow(i18n::tr("desktop-widgets.editor.settings.shadow"), "shadow", true, s, editor));
+    input->setOnChange([editor, key](const std::string& val) { editor->applySettingChange(key, val); });
+    return makeRow(labelText, std::move(input));
   }
 
-  void addAudioVisualizerSettings(Flex& content, const Settings& s, DesktopWidgetsEditor* editor) {
-    content.addChild(makeSliderRow(i18n::tr("desktop-widgets.editor.settings.aspect-ratio"), "aspect_ratio",
-                                   kDefaultAspectRatio, 0.5f, 6.0f, 0.1f, s, editor));
-    content.addChild(makeSliderRow(i18n::tr("desktop-widgets.editor.settings.bands"), "bands", 32.0f, 4.0f, 128.0f,
-                                   4.0f, s, editor));
-    content.addChild(makeToggleRow(i18n::tr("desktop-widgets.editor.settings.mirrored"), "mirrored", true, s, editor));
-    content.addChild(makeColorRoleSelect(i18n::tr("desktop-widgets.editor.settings.low-color"), "low_color",
-                                         colorSpecFromRole(ColorRole::Primary), s, editor));
-    content.addChild(makeColorRoleSelect(i18n::tr("desktop-widgets.editor.settings.high-color"), "high_color",
-                                         colorSpecFromRole(ColorRole::Primary), s, editor));
-  }
-
-  void addStickerSettings(Flex& content, const Settings& s, DesktopWidgetsEditor* editor) {
+  std::unique_ptr<Flex> makeFilePickerRow(std::string_view labelText, const std::string& key,
+                                          DesktopWidgetsEditor* editor) {
     auto changeBtn = std::make_unique<Button>();
     changeBtn->setText(i18n::tr("desktop-widgets.editor.settings.change-image"));
     changeBtn->setVariant(ButtonVariant::Outline);
     changeBtn->setFlexGrow(1.0f);
-    changeBtn->setOnClick([editor]() {
+    changeBtn->setOnClick([editor, key]() {
       FileDialogOptions options;
       options.mode = FileDialogMode::Open;
       options.title = i18n::tr("desktop-widgets.editor.dialogs.select-sticker-image");
       options.extensions = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif"};
-      (void)FileDialog::open(std::move(options), [editor](std::optional<std::filesystem::path> result) {
+      (void)FileDialog::open(std::move(options), [editor, key](std::optional<std::filesystem::path> result) {
         if (result) {
-          editor->applySettingChange("image_path", result->string());
+          editor->applySettingChange(key, result->string());
         }
       });
     });
-    content.addChild(makeRow(i18n::tr("desktop-widgets.editor.settings.image-path"), std::move(changeBtn)));
-    content.addChild(makeSliderRow(i18n::tr("desktop-widgets.editor.settings.opacity"), "opacity", 1.0f, 0.0f, 1.0f,
-                                   0.01f, s, editor));
+    return makeRow(labelText, std::move(changeBtn));
   }
 
-  void addWeatherSettings(Flex& content, const Settings& s, DesktopWidgetsEditor* editor) {
-    content.addChild(makeColorRoleSelect(i18n::tr("desktop-widgets.editor.settings.color"), "color",
-                                         colorSpecFromRole(ColorRole::OnSurface), s, editor));
-    content.addChild(makeToggleRow(i18n::tr("desktop-widgets.editor.settings.shadow"), "shadow", true, s, editor));
+  std::unique_ptr<Flex> makeSelectRow(std::string_view labelText, const std::string& key,
+                                      const std::vector<settings::WidgetSettingSelectOption>& options,
+                                      const std::string& currentValue, DesktopWidgetsEditor* editor) {
+    std::vector<std::string> labels;
+    std::vector<std::string> values;
+    labels.reserve(options.size());
+    values.reserve(options.size());
+    std::size_t selectedIndex = 0;
+
+    for (std::size_t i = 0; i < options.size(); ++i) {
+      labels.push_back(i18n::tr(options[i].labelKey));
+      values.emplace_back(options[i].value);
+      if (options[i].value == currentValue) {
+        selectedIndex = i;
+      }
+    }
+
+    auto select = std::make_unique<Select>();
+    select->setOptions(labels);
+    select->setSelectedIndex(selectedIndex);
+    select->setControlHeight(Style::controlHeightSm);
+    select->setFlexGrow(1.0f);
+    select->setOnSelectionChanged([editor, key, values = std::move(values)](std::size_t index, std::string_view) {
+      if (index < values.size()) {
+        editor->applySettingChange(key, values[index]);
+      }
+    });
+    return makeRow(labelText, std::move(select));
   }
 
-  void addMediaPlayerSettings(Flex& content, const Settings& s, DesktopWidgetsEditor* editor) {
+  std::unique_ptr<Flex> makeSegmentedRow(std::string_view labelText, const std::string& key,
+                                         const std::vector<settings::WidgetSettingSelectOption>& options,
+                                         const std::string& currentValue, DesktopWidgetsEditor* editor) {
+    std::vector<std::string> values;
+    values.reserve(options.size());
+    std::size_t selectedIndex = 0;
+
     auto segmented = std::make_unique<Segmented>();
-    segmented->addOption(i18n::tr("desktop-widgets.editor.settings.horizontal"));
-    segmented->addOption(i18n::tr("desktop-widgets.editor.settings.vertical"));
-    segmented->setSelectedIndex(getStr(s, "layout", "horizontal") == "vertical" ? 1 : 0);
+    for (std::size_t i = 0; i < options.size(); ++i) {
+      segmented->addOption(i18n::tr(options[i].labelKey));
+      values.emplace_back(options[i].value);
+      if (options[i].value == currentValue) {
+        selectedIndex = i;
+      }
+    }
+    segmented->setSelectedIndex(selectedIndex);
     segmented->setFlexGrow(1.0f);
-    segmented->setOnChange([editor](std::size_t index) {
-      editor->applySettingChange("layout", std::string(index == 1 ? "vertical" : "horizontal"));
+    segmented->setOnChange([editor, key, values = std::move(values)](std::size_t index) {
+      if (index < values.size()) {
+        editor->applySettingChange(key, values[index]);
+      }
     });
-    content.addChild(makeRow(i18n::tr("desktop-widgets.editor.settings.layout"), std::move(segmented)));
-    content.addChild(makeColorRoleSelect(i18n::tr("desktop-widgets.editor.settings.color"), "color",
-                                         colorSpecFromRole(ColorRole::OnSurface), s, editor));
-    content.addChild(makeToggleRow(i18n::tr("desktop-widgets.editor.settings.shadow"), "shadow", true, s, editor));
+    return makeRow(labelText, std::move(segmented));
   }
 
-  void addSysmonSettings(Flex& content, const Settings& s, DesktopWidgetsEditor* editor) {
-    const std::vector<std::string> statOptions = {
-        i18n::tr("desktop-widgets.editor.settings.stat-cpu-usage"),
-        i18n::tr("desktop-widgets.editor.settings.stat-cpu-temp"),
-        i18n::tr("desktop-widgets.editor.settings.stat-gpu-temp"),
-        i18n::tr("desktop-widgets.editor.settings.stat-ram-pct"),
-        i18n::tr("desktop-widgets.editor.settings.stat-swap-pct"),
-        i18n::tr("desktop-widgets.editor.settings.stat-net-rx"),
-        i18n::tr("desktop-widgets.editor.settings.stat-net-tx"),
-    };
-    const std::array<const char*, 7> statKeys = {"cpu_usage", "cpu_temp", "gpu_temp", "ram_pct",
-                                                 "swap_pct",  "net_rx",   "net_tx"};
+  void addSpecSettings(Flex& content, const std::vector<settings::WidgetSettingSpec>& specs, const Settings& s,
+                       DesktopWidgetsEditor* editor) {
+    for (const auto& spec : specs) {
+      const auto label = i18n::tr(spec.labelKey);
 
-    auto statToIndex = [&](const std::string& val) -> std::size_t {
-      for (std::size_t i = 0; i < statKeys.size(); ++i) {
-        if (val == statKeys[i]) {
-          return i;
+      switch (spec.valueType) {
+      case settings::WidgetSettingValueType::Bool: {
+        const auto* defVal = std::get_if<bool>(&spec.defaultValue);
+        content.addChild(makeToggleRow(label, spec.key, defVal != nullptr ? *defVal : false, s, editor));
+        break;
+      }
+
+      case settings::WidgetSettingValueType::Double: {
+        const auto* defVal = std::get_if<double>(&spec.defaultValue);
+        const float fallback = defVal != nullptr ? static_cast<float>(*defVal) : 0.0f;
+        const float minVal = spec.minValue.has_value() ? static_cast<float>(*spec.minValue) : 0.0f;
+        const float maxVal = spec.maxValue.has_value() ? static_cast<float>(*spec.maxValue) : 1.0f;
+        content.addChild(
+            makeSliderRow(label, spec.key, fallback, minVal, maxVal, static_cast<float>(spec.step), s, editor));
+        break;
+      }
+
+      case settings::WidgetSettingValueType::String: {
+        const auto* defVal = std::get_if<std::string>(&spec.defaultValue);
+        const std::string fallback = defVal != nullptr ? *defVal : std::string{};
+        if (spec.key == "image_path") {
+          content.addChild(makeFilePickerRow(label, spec.key, editor));
+        } else {
+          content.addChild(makeInputRow(label, spec.key, getStr(s, spec.key, fallback), fallback, editor));
         }
+        break;
       }
-      return 0;
-    };
 
-    auto statSelect = std::make_unique<Select>();
-    statSelect->setOptions(statOptions);
-    statSelect->setSelectedIndex(statToIndex(getStr(s, "stat", "cpu_usage")));
-    statSelect->setControlHeight(Style::controlHeightSm);
-    statSelect->setFlexGrow(1.0f);
-    statSelect->setOnSelectionChanged([editor, statKeys](std::size_t index, std::string_view) {
-      if (index < statKeys.size()) {
-        editor->applySettingChange("stat", std::string(statKeys[index]));
+      case settings::WidgetSettingValueType::Select: {
+        const auto* defVal = std::get_if<std::string>(&spec.defaultValue);
+        const std::string fallback = defVal != nullptr ? *defVal : std::string{};
+        const std::string currentValue = getStr(s, spec.key, fallback);
+        if (spec.segmented) {
+          content.addChild(makeSegmentedRow(label, spec.key, spec.options, currentValue, editor));
+        } else {
+          content.addChild(makeSelectRow(label, spec.key, spec.options, currentValue, editor));
+        }
+        break;
       }
-    });
-    content.addChild(makeRow(i18n::tr("desktop-widgets.editor.settings.stat"), std::move(statSelect)));
 
-    auto stat2Options = statOptions;
-    stat2Options.insert(stat2Options.begin(), i18n::tr("desktop-widgets.editor.settings.stat-none"));
-    auto stat2Select = std::make_unique<Select>();
-    stat2Select->setOptions(stat2Options);
-    const auto stat2Str = getStr(s, "stat2");
-    stat2Select->setSelectedIndex(stat2Str.empty() ? 0 : (statToIndex(stat2Str) + 1));
-    stat2Select->setControlHeight(Style::controlHeightSm);
-    stat2Select->setFlexGrow(1.0f);
-    stat2Select->setOnSelectionChanged([editor, statKeys](std::size_t index, std::string_view) {
-      if (index == 0) {
-        editor->applySettingChange("stat2", std::string());
-      } else if (index - 1 < statKeys.size()) {
-        editor->applySettingChange("stat2", std::string(statKeys[index - 1]));
+      case settings::WidgetSettingValueType::ColorRole: {
+        const auto* defVal = std::get_if<std::string>(&spec.defaultValue);
+        const std::string token = defVal != nullptr ? *defVal : std::string{};
+        const ColorSpec fallback =
+            token.empty() ? colorSpecFromRole(ColorRole::OnSurface) : colorSpecFromConfigString(token);
+        content.addChild(makeColorRoleSelect(label, spec.key, fallback, s, editor));
+        break;
       }
-    });
-    content.addChild(makeRow(i18n::tr("desktop-widgets.editor.settings.stat2"), std::move(stat2Select)));
 
-    content.addChild(makeColorRoleSelect(i18n::tr("desktop-widgets.editor.settings.color"), "color",
-                                         colorSpecFromRole(ColorRole::Primary), s, editor));
-    content.addChild(makeColorRoleSelect(i18n::tr("desktop-widgets.editor.settings.color2"), "color2",
-                                         colorSpecFromRole(ColorRole::Secondary), s, editor));
-    content.addChild(
-        makeToggleRow(i18n::tr("desktop-widgets.editor.settings.show-label"), "show_label", true, s, editor));
-    content.addChild(makeToggleRow(i18n::tr("desktop-widgets.editor.settings.shadow"), "shadow", true, s, editor));
+      default:
+        break;
+      }
+    }
   }
 
-  void addBackgroundSettings(Flex& content, const Settings& s, DesktopWidgetsEditor* editor) {
+  void addBackgroundSection(Flex& content, const Settings& s, DesktopWidgetsEditor* editor) {
     auto sep = std::make_unique<Separator>();
     sep->setOrientation(SeparatorOrientation::HorizontalRule);
     content.addChild(std::move(sep));
@@ -303,31 +321,7 @@ namespace {
     heading->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
     content.addChild(std::move(heading));
 
-    content.addChild(
-        makeToggleRow(i18n::tr("desktop-widgets.editor.settings.background"), "background", true, s, editor));
-    content.addChild(makeColorRoleSelect(i18n::tr("desktop-widgets.editor.settings.background-color"),
-                                         "background_color", colorSpecFromRole(ColorRole::Surface, 0.8f), s, editor));
-    content.addChild(makeSliderRow(i18n::tr("desktop-widgets.editor.settings.background-radius"), "background_radius",
-                                   12.0f, 0.0f, 32.0f, 1.0f, s, editor));
-    content.addChild(makeSliderRow(i18n::tr("desktop-widgets.editor.settings.background-padding"), "background_padding",
-                                   10.0f, 0.0f, 32.0f, 1.0f, s, editor));
-  }
-
-  void addWidgetTypeSettings(Flex& content, const DesktopWidgetState& state, DesktopWidgetsEditor* editor) {
-    const auto& s = state.settings;
-    if (state.type == "clock") {
-      addClockSettings(content, s, editor);
-    } else if (state.type == "audio_visualizer") {
-      addAudioVisualizerSettings(content, s, editor);
-    } else if (state.type == "sticker") {
-      addStickerSettings(content, s, editor);
-    } else if (state.type == "weather") {
-      addWeatherSettings(content, s, editor);
-    } else if (state.type == "media_player") {
-      addMediaPlayerSettings(content, s, editor);
-    } else if (state.type == "sysmon") {
-      addSysmonSettings(content, s, editor);
-    }
+    addSpecSettings(content, desktop_settings::commonDesktopWidgetSettingSpecs(), s, editor);
   }
 
 } // namespace
@@ -481,8 +475,9 @@ void DesktopWidgetsEditor::buildInspector(OverlaySurface& surface, Node& root,
   content->setGap(Style::spaceXs);
   content->setPadding(Style::spaceSm, Style::spaceMd);
 
-  addWidgetTypeSettings(*content, selectedState, this);
-  addBackgroundSettings(*content, selectedState.settings, this);
+  addSpecSettings(*content, desktop_settings::desktopWidgetSettingSpecs(selectedState.type), selectedState.settings,
+                  this);
+  addBackgroundSection(*content, selectedState.settings, this);
 
   panel->addChild(std::move(scrollView));
 

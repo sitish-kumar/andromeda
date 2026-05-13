@@ -10,6 +10,7 @@
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
 #include "shell/desktop/desktop_widget_layout.h"
+#include "shell/desktop/desktop_widget_settings_registry.h"
 #include "time/time_format.h"
 #include "ui/controls/box.h"
 #include "ui/controls/button.h"
@@ -51,10 +52,6 @@ namespace {
   constexpr float kMaxScale = 8.0f;
   constexpr float kDisabledWidgetOpacity = 0.25f;
   constexpr float kRotationSnap = static_cast<float>(M_PI) / 12.0f;
-  constexpr std::array<const char*, 6> kWidgetTypeLabelKeys{
-      "desktop-widgets.editor.types.clock",        "desktop-widgets.editor.types.audio-visualizer",
-      "desktop-widgets.editor.types.sticker",      "desktop-widgets.editor.types.weather",
-      "desktop-widgets.editor.types.media-player", "desktop-widgets.editor.types.system-monitor"};
   constexpr std::string_view kDesktopWidgetIdPrefix = "desktop-widget-";
   constexpr std::size_t kScaleCornerCount = 4;
 
@@ -680,37 +677,25 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   const bool canSendSelectedToBack = hasSelectedWidget && selectedWidgetIt != m_snapshot.widgets.begin();
   const bool canBringSelectedToFront = hasSelectedWidget && std::next(selectedWidgetIt) != m_snapshot.widgets.end();
 
+  const auto& typeSpecs = desktop_settings::desktopWidgetTypeSpecs();
+  std::vector<std::string> typeLabels;
+  typeLabels.reserve(typeSpecs.size());
+  std::size_t selectedTypeIndex = 0;
+  for (std::size_t i = 0; i < typeSpecs.size(); ++i) {
+    typeLabels.push_back(i18n::tr(typeSpecs[i].labelKey));
+    if (typeSpecs[i].type == m_addWidgetType) {
+      selectedTypeIndex = i;
+    }
+  }
+
   auto typeSelect = std::make_unique<Select>();
-  typeSelect->setOptions({i18n::tr(kWidgetTypeLabelKeys[0]), i18n::tr(kWidgetTypeLabelKeys[1]),
-                          i18n::tr(kWidgetTypeLabelKeys[2]), i18n::tr(kWidgetTypeLabelKeys[3]),
-                          i18n::tr(kWidgetTypeLabelKeys[4]), i18n::tr(kWidgetTypeLabelKeys[5])});
-  typeSelect->setSelectedIndex(m_addWidgetType == "audio_visualizer" ? 1
-                               : m_addWidgetType == "sticker"        ? 2
-                               : m_addWidgetType == "weather"        ? 3
-                               : m_addWidgetType == "media_player"   ? 4
-                               : m_addWidgetType == "sysmon"         ? 5
-                                                                     : 0);
+  typeSelect->setOptions(typeLabels);
+  typeSelect->setSelectedIndex(selectedTypeIndex);
   typeSelect->setControlHeight(Style::controlHeightSm);
-  typeSelect->setOnSelectionChanged([this](std::size_t index, std::string_view /*text*/) {
-    switch (index) {
-    case 1:
-      m_addWidgetType = "audio_visualizer";
-      break;
-    case 2:
-      m_addWidgetType = "sticker";
-      break;
-    case 3:
-      m_addWidgetType = "weather";
-      break;
-    case 4:
-      m_addWidgetType = "media_player";
-      break;
-    case 5:
-      m_addWidgetType = "sysmon";
-      break;
-    default:
-      m_addWidgetType = "clock";
-      break;
+  typeSelect->setMinWidth(160.0f);
+  typeSelect->setOnSelectionChanged([this, &typeSpecs](std::size_t index, std::string_view) {
+    if (index < typeSpecs.size()) {
+      m_addWidgetType = std::string(typeSpecs[index].type);
     }
   });
   toolbar->addChild(std::move(typeSelect));

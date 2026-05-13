@@ -9,6 +9,7 @@
 #include "ui/style.h"
 
 #include <algorithm>
+#include <cmath>
 #include <format>
 #include <vector>
 
@@ -140,21 +141,22 @@ void DesktopSysmonWidget::doLayout(Renderer& renderer) {
   const float totalW = kBaseWidth * scale;
   const float chartH = kBaseHeight * scale;
 
-  const float headerH = m_glyph->height();
   float headerW = m_glyph->width();
+  float headerH = m_glyph->height();
 
   if (m_label != nullptr) {
     m_label->setFontSize(fontSize);
     m_label->setColor(colorForRole(ColorRole::OnSurface));
     m_label->measure(renderer);
     headerW += gap + m_label->width();
+    headerH = std::max(headerH, m_label->height());
   }
 
   const float contentW = std::max(totalW, headerW);
-  m_glyph->setPosition(0.0f, 0.0f);
+  m_glyph->setPosition(0.0f, std::round((headerH - m_glyph->height()) * 0.5f));
 
   if (m_label != nullptr) {
-    m_label->setPosition(m_glyph->width() + gap, 0.0f);
+    m_label->setPosition(m_glyph->width() + gap, std::round((headerH - m_label->height()) * 0.5f));
   }
 
   const float chartY = headerH + gap;

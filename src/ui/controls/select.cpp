@@ -21,7 +21,6 @@
 
 namespace {
 
-  constexpr float kMinWidth = 80.0f;
   constexpr float kMaxVisibleOptions = 6;
   constexpr float kPlaceholderAlpha = 0.68f;
 
@@ -30,6 +29,7 @@ namespace {
 } // namespace
 
 Select::Select() {
+  setMinWidth(80.0f);
   m_placeholder = i18n::tr("ui.controls.select.placeholder");
 
   auto triggerBackground = std::make_unique<RectNode>();
@@ -208,7 +208,7 @@ void Select::doLayout(Renderer& renderer) {
 
   float contentWidth =
       m_triggerLabel->width() + m_horizontalPadding * 2.0f + m_glyphSize + Style::spaceXs + indicatorInset;
-  float dropdownWidth = m_fixedWidth > 0.0f ? m_fixedWidth : std::max(kMinWidth, contentWidth);
+  float dropdownWidth = m_fixedWidth > 0.0f ? m_fixedWidth : std::max(minWidth(), contentWidth);
 
   setSize(dropdownWidth, m_controlHeight);
 
@@ -348,7 +348,7 @@ void Select::openPopupDropdown() {
   const float triggerHeight = absBottom - absTop;
 
   // Compute menu width: match trigger width, but also consider widest option label
-  float menuWidth = std::max(kMinWidth, triggerWidth);
+  float menuWidth = std::max(minWidth(), triggerWidth);
 
   SelectPopupContext::DropdownRequest request{
       .anchorX = static_cast<std::int32_t>(std::round(absLeft)),
