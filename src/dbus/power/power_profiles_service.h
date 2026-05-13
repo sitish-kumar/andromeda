@@ -7,6 +7,7 @@
 #include <vector>
 
 class SystemBus;
+class IpcService;
 
 namespace sdbus {
   class IProxy;
@@ -36,6 +37,8 @@ public:
   [[nodiscard]] const std::vector<std::string>& profiles() const noexcept { return m_state.profiles; }
 
   [[nodiscard]] bool setActiveProfile(std::string_view profile);
+
+  void registerIpc(IpcService& ipc);
 
 private:
   [[nodiscard]] PowerProfilesState readState() const;

@@ -3,6 +3,8 @@
 #include "core/log.h"
 #include "dbus/system_bus.h"
 #include "i18n/i18n.h"
+#include "ipc/ipc_service.h"
+#include "util/string_utils.h"
 
 #include <algorithm>
 #include <map>
@@ -140,4 +142,33 @@ void PowerProfilesService::emitChangedIfNeeded(const PowerProfilesState& next) {
   if (m_changeCallback) {
     m_changeCallback(m_state);
   }
+}
+
+void PowerProfilesService::registerIpc(IpcService& ipc) {
+  ipc.registerHandler(
+      "power-set",
+      [this](const std::string& args) -> std::string {
+        const std::string profile = StringUtils::trim(args);
+        if (profile.empty()) {
+          return "error: profile required (power-set <profile>); typical values: performance, balanced, "
+                 "power-saver\n";
+        }
+        const auto& available = profiles();
+        if (!available.empty()) {
+          if (std::find(available.begin(), available.end(), profile) == available.end()) {
+            std::string suffix = "; available:";
+            for (std::size_t i = 0; i < available.size(); ++i) {
+              suffix.push_back(' ');
+              suffix += available[i];
+            }
+            suffix.push_back('\n');
+            return "error: unknown profile \"" + profile + "\"" + suffix;
+          }
+        }
+        if (!setActiveProfile(profile)) {
+          return "error: failed to set power profile\n";
+        }
+        return "ok\n";
+      },
+      "power-set <profile>", "Set the UPower power profile (e.g. performance, balanced, power-saver)");
 }
