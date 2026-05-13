@@ -279,6 +279,8 @@ namespace {
 
       auto iconSlot = std::make_unique<Box>();
       iconSlot->setSize(kHistoryIconSize * scale, kHistoryIconSize * scale);
+      iconSlot->setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
+      iconSlot->setRadius(kHistoryIconRadius * scale);
       m_iconSlot = static_cast<Box*>(m_leftCluster->addChild(std::move(iconSlot)));
 
       auto image = std::make_unique<Image>();
