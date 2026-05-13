@@ -111,9 +111,18 @@ namespace {
   }
 
   void outputName(void* data, wl_output* wlOut, const char* name) {
-    auto* out = static_cast<WaylandConnection*>(data)->findOutputByWl(wlOut);
+    auto* self = static_cast<WaylandConnection*>(data);
+    auto* out = self->findOutputByWl(wlOut);
     if (out != nullptr && name != nullptr) {
-      out->connectorName = name;
+      const std::string nextName = name;
+      if (out->connectorName == nextName) {
+        return;
+      }
+      out->connectorName = nextName;
+
+      if (out->done) {
+        self->notifyOutputReady(wlOut);
+      }
     }
   }
 
