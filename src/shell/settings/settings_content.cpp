@@ -746,6 +746,17 @@ namespace settings {
       section.addChild(std::move(actions));
     }
 
+    void addIdleLiveStatusPanel(Flex& section, SettingsContentContext& ctx, float scale) {
+      auto line = std::make_unique<Label>();
+      line->setFontSize(Style::fontSizeBody * scale);
+      line->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+      line->setText("");
+      if (ctx.registerIdleLiveStatusLabel) {
+        ctx.registerIdleLiveStatusLabel(line.get());
+      }
+      section.addChild(std::move(line));
+    }
+
   } // namespace
 
   std::size_t addSettingsContentSections(Flex& content, const std::vector<SettingEntry>& registry,
@@ -2160,6 +2171,9 @@ namespace settings {
           displayTitle = sectionLabel(entry.section);
         }
         activeSection = makeSection(displayTitle, entry.section);
+        if (entry.section == "idle") {
+          addIdleLiveStatusPanel(*activeSection, ctx, scale);
+        }
       }
       if (activeSection != nullptr) {
         if (entry.group != activeGroupKey) {

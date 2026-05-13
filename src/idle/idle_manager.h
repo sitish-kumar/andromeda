@@ -6,6 +6,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 class WaylandConnection;
@@ -32,6 +33,13 @@ public:
   void reload(const IdleConfig& config);
   static void handleIdled(void* data, ext_idle_notification_v1* notification);
   static void handleResumed(void* data, ext_idle_notification_v1* notification);
+
+  [[nodiscard]] bool idleNotifierAvailable() const noexcept { return m_notifier != nullptr; }
+  [[nodiscard]] bool graceFadeActive() const noexcept { return m_graceBehavior != nullptr; }
+  [[nodiscard]] std::string_view graceBehaviorName() const noexcept {
+    return m_graceBehavior != nullptr ? std::string_view(m_graceBehavior->config.name) : std::string_view{};
+  }
+  [[nodiscard]] std::size_t registeredBehaviorCount() const noexcept { return m_behaviors.size(); }
 
 private:
   struct BehaviorState {

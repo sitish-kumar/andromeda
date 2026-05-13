@@ -9,6 +9,7 @@
 #include "system/dependency_service.h"
 #include "ui/controls/box.h"
 #include "ui/controls/flex.h"
+#include "ui/controls/label.h"
 #include "ui/controls/scroll_view.h"
 #include "ui/controls/select_dropdown_popup.h"
 #include "ui/style.h"
@@ -20,6 +21,7 @@
 #include <cstdint>
 #include <linux/input-event-codes.h>
 #include <optional>
+#include <string>
 #include <utility>
 
 namespace {
@@ -212,6 +214,7 @@ void SettingsWindow::destroyWindow() {
     m_inputDispatcher.setSceneRoot(nullptr);
     m_surface->setSceneRoot(nullptr);
   }
+  m_idleLiveStatusLabel = nullptr;
   m_mainContainer = nullptr;
   m_headerRow = nullptr;
   m_contentContainer = nullptr;
@@ -589,3 +592,27 @@ void SettingsWindow::onFontChanged() {
 }
 
 void SettingsWindow::onExternalOptionsChanged() { requestSceneRebuild(); }
+
+void SettingsWindow::refreshIdleLiveStatusText() {
+  if (m_idleLiveStatusLabel == nullptr || m_wayland == nullptr) {
+    return;
+  }
+
+  const double idleSec = m_wayland->userIdleSeconds();
+  const auto sec = static_cast<std::int64_t>(std::floor(idleSec));
+
+  if (sec == 1) {
+    m_idleLiveStatusLabel->setText(i18n::tr("settings.idle.live-status.idle-for-one"));
+  } else {
+    m_idleLiveStatusLabel->setText(
+        i18n::tr("settings.idle.live-status.idle-for-seconds", "seconds", std::to_string(sec)));
+  }
+}
+
+void SettingsWindow::onSecondTick() {
+  if (m_idleLiveStatusLabel == nullptr || m_surface == nullptr) {
+    return;
+  }
+  refreshIdleLiveStatusText();
+  m_surface->requestRedraw();
+}

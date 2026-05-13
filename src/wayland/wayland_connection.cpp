@@ -303,6 +303,8 @@ std::vector<std::string> WaylandConnection::keyboardLayoutNames() const { return
 WaylandSeat::LockKeysState WaylandConnection::keyboardLockKeysState() const { return m_seatHandler.lockKeysState(); }
 std::uint32_t WaylandConnection::lastInputSerial() const noexcept { return m_seatHandler.lastSerial(); }
 
+double WaylandConnection::userIdleSeconds() const noexcept { return m_seatHandler.userIdleSeconds(); }
+
 bool WaylandConnection::hasFreshPointerOutput(std::chrono::milliseconds maxAge) const noexcept {
   if (m_lastPointerOutput == nullptr || m_lastPointerOutputAt.time_since_epoch().count() == 0) {
     return false;

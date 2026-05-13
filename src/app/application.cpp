@@ -1034,6 +1034,7 @@ void Application::initUi() {
     } else {
       m_bar.onSecondTick();
       m_desktopWidgetsController.onSecondTick();
+      m_settingsWindow.onSecondTick();
     }
   });
 

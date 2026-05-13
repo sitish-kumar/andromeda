@@ -13,6 +13,7 @@
 class Flex;
 class InputArea;
 class Button;
+class Label;
 class Node;
 
 namespace settings {
@@ -54,6 +55,8 @@ namespace settings {
 
     std::function<void(std::size_t)> openSessionActionEntryEditor;
     std::function<void(std::size_t)> openIdleBehaviorEntryEditor;
+
+    std::function<void(Label*)> registerIdleLiveStatusLabel;
 
     // When set (session action entry popup), called after commits instead of requestRebuild.
     std::function<void()> afterSessionActionsCommit;

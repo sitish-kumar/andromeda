@@ -660,6 +660,10 @@
       }
     },
     "idle": {
+      "live-status": {
+        "idle-for-one": "Idle for 1 second",
+        "idle-for-seconds": "Idle for {seconds} seconds"
+      },
       "behavior": {
         "unnamed": "Unnamed behavior",
         "summary": "{name} · {seconds}s",

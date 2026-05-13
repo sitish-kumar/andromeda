@@ -25,6 +25,7 @@ class Button;
 class ConfigService;
 class DependencyService;
 class Flex;
+class Label;
 class RenderContext;
 class UPowerService;
 class WaylandConnection;
@@ -62,6 +63,8 @@ public:
   void onExternalOptionsChanged();
   void setOpenDesktopWidgetEditor(std::function<void()> callback) { m_openDesktopWidgetEditor = std::move(callback); }
 
+  void onSecondTick();
+
 private:
   void destroyWindow();
   void prepareFrame(bool needsUpdate, bool needsLayout);
@@ -91,6 +94,7 @@ private:
                              const std::string& emptyText, const std::vector<std::string>& settingPath);
   void openSessionActionEntryEditor(std::size_t index);
   void openIdleBehaviorEntryEditor(std::size_t index);
+  void refreshIdleLiveStatusText();
   void saveSupportReport();
   void saveFlattenedConfig();
   void setSettingOverride(std::vector<std::string> path, ConfigOverrideValue value);
@@ -115,6 +119,7 @@ private:
   RenderContext* m_renderContext = nullptr;
   DependencyService* m_dependencies = nullptr;
   UPowerService* m_upower = nullptr;
+  Label* m_idleLiveStatusLabel = nullptr;
 
   std::unique_ptr<ToplevelSurface> m_surface;
   std::unique_ptr<Node> m_sceneRoot;

@@ -303,6 +303,11 @@ settings::SettingsContentContext SettingsWindow::makeContentContext(const Config
       .renameWidgetInstance = renameWidget,
       .openSessionActionEntryEditor = [this](std::size_t entryIndex) { openSessionActionEntryEditor(entryIndex); },
       .openIdleBehaviorEntryEditor = [this](std::size_t entryIndex) { openIdleBehaviorEntryEditor(entryIndex); },
+      .registerIdleLiveStatusLabel =
+          [this](Label* label) {
+            m_idleLiveStatusLabel = label;
+            refreshIdleLiveStatusText();
+          },
       .afterSessionActionsCommit = {},
       .closeHostedEditor = {},
   };
@@ -315,6 +320,7 @@ void SettingsWindow::rebuildSettingsContent() {
   }
 
   m_pendingContentScrollTarget = nullptr;
+  m_idleLiveStatusLabel = nullptr;
   while (!m_contentContainer->children().empty()) {
     m_contentContainer->removeChild(m_contentContainer->children().back().get());
   }
