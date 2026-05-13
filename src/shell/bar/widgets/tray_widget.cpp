@@ -414,6 +414,9 @@ void TrayWidget::rebuild(Renderer& renderer) {
       image->setFit(ImageFit::Contain);
       image->setSize(iconSize, iconSize);
       if (image->setSourceFile(renderer, iconPath, iconRequestSize, true)) {
+        if (isSymbolicIconPath(iconPath)) {
+          image->setTint(resolveColorSpec(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface))));
+        }
         iconW = iconSize;
         iconH = iconSize;
         kLog.debug("tray widget image load ok id={} path={} size={}x{} tex={} ptr={}", item.id, iconPath,
@@ -669,9 +672,15 @@ void TrayWidget::buildDesktopIconIndex() {
 }
 
 std::string TrayWidget::resolveIconPath(const TrayItemInfo& item) {
+  const bool hasNamedIcon = item.needsAttention ? !item.attentionIconName.empty() : !item.iconName.empty();
   if (const auto it = m_preferPixmap.find(item.id); it != m_preferPixmap.end() && it->second) {
-    kLog.debug("tray widget resolve id={} source=dynamic-pixmap", item.id);
-    return {};
+    // Some indicators publish pixmaps late (after startup) that are monochrome
+    // or stale. Keep using named-icon resolution when available.
+    if (!hasNamedIcon) {
+      kLog.debug("tray widget resolve id={} source=dynamic-pixmap", item.id);
+      return {};
+    }
+    kLog.debug("tray widget resolve id={} source=named-icon-over-pixmap", item.id);
   }
 
   if (const auto it = m_preferredIconPaths.find(item.id); it != m_preferredIconPaths.end() && !it->second.empty()) {
@@ -747,12 +756,11 @@ std::string TrayWidget::resolveIconPath(const TrayItemInfo& item) {
   std::vector<std::pair<const char*, const std::string*>> candidates;
   candidates.reserve(12);
   candidates.emplace_back("preferred", &preferred);
-  // Prefer explicit tray IconName first, but still try metadata-derived
-  // candidates if that only yields symbolic/no result. Some items expose a
-  // symbolic tray name while a full-color app icon is discoverable via stable
-  // app identifiers.
+  // When an explicit tray IconName is provided, treat it as authoritative.
+  // Falling back to generic app-id/title mappings can hide stateful icon
+  // changes (e.g. indicator on/off variants) behind a constant app icon.
   const bool hasTargetPixmap = item.needsAttention ? !item.attentionArgb32.empty() : !item.iconArgb32.empty();
-  if (!hasTargetPixmap) {
+  if (preferred.empty() && !hasTargetPixmap) {
     candidates.emplace_back("itemName", &item.itemName);
     candidates.emplace_back("processName", &item.processName);
     candidates.emplace_back("title", &item.title);
