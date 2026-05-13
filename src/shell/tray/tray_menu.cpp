@@ -991,8 +991,9 @@ void TrayMenu::openSubmenu(std::int32_t parentEntryId, float rowCenterY) {
   const auto surfaceHeight = submenuHeightPx();
 
   const auto* wlOutput = m_wayland->findOutputByWl(m_instance->output);
-  const std::int32_t outputWidth =
-      (wlOutput != nullptr && wlOutput->logicalWidth > 0) ? wlOutput->logicalWidth : static_cast<std::int32_t>(surfaceWidth);
+  const std::int32_t outputWidth = (wlOutput != nullptr && wlOutput->logicalWidth > 0)
+                                       ? wlOutput->logicalWidth
+                                       : static_cast<std::int32_t>(surfaceWidth);
 
   bool isRight = (m_instance->submenuDirection == ContextSubmenuDirection::Right);
   const std::int32_t submenuExtent = static_cast<std::int32_t>(surfaceWidth) + kSubGap;
