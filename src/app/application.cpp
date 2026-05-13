@@ -544,13 +544,26 @@ void Application::initServices() {
   if (m_systemBus != nullptr) {
     try {
       m_powerProfilesService = std::make_unique<PowerProfilesService>(*m_systemBus);
-      m_powerProfilesService->setChangeCallback(
-          [this, shouldRefreshControlCenter](const PowerProfilesState& /*state*/) {
-            m_bar.refresh();
-            if (shouldRefreshControlCenter()) {
-              m_panelManager.refresh();
-            }
-          });
+      m_powerProfilesService->setChangeCallback([this, shouldRefreshControlCenter](const PowerProfilesState& state) {
+        m_bar.refresh();
+        if (shouldRefreshControlCenter()) {
+          m_panelManager.refresh();
+        }
+
+        const std::string& active = state.activeProfile;
+        if (active.empty()) {
+          return;
+        }
+        if (m_prevPowerProfileActiveForNotification.has_value() && *m_prevPowerProfileActiveForNotification != active) {
+          std::string glyphIconSpec("noctalia-glyph:");
+          glyphIconSpec.append(profileGlyphName(active));
+          m_notificationManager.addInternal(
+              i18n::tr("notifications.internal.power-profiles"), i18n::tr("notifications.internal.power-profile-title"),
+              i18n::tr("notifications.internal.power-profile-body", "profile", profileLabel(active)), Urgency::Normal,
+              kDefaultNotificationTimeout, std::move(glyphIconSpec));
+        }
+        m_prevPowerProfileActiveForNotification = active;
+      });
       if (!m_powerProfilesService->activeProfile().empty()) {
         kLog.info("power profiles active profile: {}", m_powerProfilesService->activeProfile());
       } else {

@@ -60,7 +60,7 @@ void PowerProfilesWidget::syncState(Renderer& renderer) {
   m_available = available;
   m_lastProfile = profile;
 
-  m_glyph->setGlyph(glyphForProfile(profile));
+  m_glyph->setGlyph(profileGlyphName(profile));
   m_glyph->setColor(m_available ? widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface))
                                 : colorSpecFromRole(ColorRole::OnSurfaceVariant));
   m_glyph->measure(renderer);
@@ -93,14 +93,4 @@ void PowerProfilesWidget::cycleProfile() {
     it = profiles.begin();
   }
   (void)m_powerProfiles->setActiveProfile(*it);
-}
-
-const char* PowerProfilesWidget::glyphForProfile(std::string_view profile) {
-  if (profile == "performance") {
-    return "performance";
-  }
-  if (profile == "power-saver") {
-    return "powersaver";
-  }
-  return "balanced";
 }

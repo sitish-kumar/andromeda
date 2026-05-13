@@ -14,6 +14,7 @@ namespace sdbus {
 }
 
 [[nodiscard]] std::string profileLabel(std::string_view profile);
+[[nodiscard]] std::string_view profileGlyphName(std::string_view profile);
 
 struct PowerProfilesState {
   std::string activeProfile;

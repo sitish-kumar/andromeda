@@ -292,16 +292,6 @@ namespace {
     PipeWireService* m_svc;
   };
 
-  const char* powerProfileIcon(std::string_view profile) {
-    if (profile == "performance") {
-      return "performance";
-    }
-    if (profile == "power-saver") {
-      return "powersaver";
-    }
-    return "balanced";
-  }
-
   const WidgetConfig* findKeyboardLayoutWidgetConfig(const Config& config) {
     auto resolve = [&config](const std::string& name) -> const WidgetConfig* {
       const auto it = config.widgets.find(name);
@@ -356,7 +346,7 @@ namespace {
       return defaultLabel();
     }
     std::string_view iconOn() const override {
-      return powerProfileIcon(m_svc != nullptr ? m_svc->activeProfile() : "");
+      return profileGlyphName(m_svc != nullptr ? m_svc->activeProfile() : "");
     }
     std::string_view iconOff() const override { return "balanced"; }
     bool isToggle() const override { return true; }

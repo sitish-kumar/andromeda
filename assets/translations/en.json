@@ -571,7 +571,10 @@
       "mpris-disabled": "MPRIS disabled",
       "keybind-app": "Noctalia",
       "keybind-invalid-title": "Keybind not allowed",
-      "keybind-invalid-super": "The Super/Windows key cannot be used in shell keybinds."
+      "keybind-invalid-super": "The Super/Windows key cannot be used in shell keybinds.",
+      "power-profiles": "Power profiles",
+      "power-profile-title": "Power mode",
+      "power-profile-body": "Switched to: {profile}"
     }
   },
   "system": {

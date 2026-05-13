@@ -160,6 +160,7 @@ private:
   std::optional<UPowerState> m_prevUpowerForHooks;
   std::optional<bool> m_prevWirelessEnabledForEvents;
   std::optional<bool> m_prevBluetoothPoweredForEvents;
+  std::optional<std::string> m_prevPowerProfileActiveForNotification;
   SessionActionHooks m_sessionActionHooks;
   std::unique_ptr<BrightnessService> m_brightnessService;
   std::unique_ptr<TrayService> m_trayService;

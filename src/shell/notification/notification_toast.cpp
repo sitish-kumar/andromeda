@@ -54,6 +54,7 @@ namespace {
   constexpr float kNotificationIconSize = 42.0f;
   constexpr float kNotificationIconRadius = 10.0f;
   constexpr float kNotificationIconGlyphSize = 24.0f;
+  constexpr std::string_view kNoctaliaGlyphIconPrefix = "noctalia-glyph:";
   constexpr float kIconTextGap = Style::spaceSm;
   constexpr float kActionGap = Style::spaceXs;
   constexpr float kActionRowGap = Style::spaceSm;
@@ -1580,44 +1581,66 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
   iconSlot->setPosition(kCardInnerPad, std::round((cardHeight - kNotificationIconSize) * 0.5f));
 
   bool iconAssigned = false;
-  const std::string iconPath = resolveNotificationIconPath(entry);
-  if (!iconPath.empty()) {
-    auto appIcon = std::make_unique<Image>();
-    appIcon->setSize(kNotificationIconSize, kNotificationIconSize);
-    appIcon->setPosition(0.0f, 0.0f);
-    appIcon->setRadius(kNotificationIconRadius);
-    appIcon->setFit(ImageFit::Cover);
-    if (appIcon->setSourceFile(*m_renderContext, iconPath, static_cast<int>(std::round(kNotificationIconSize)))) {
-      *outAppIcon = iconSlot->addChild(std::move(appIcon));
-      iconAssigned = true;
-    } else {
-      kLog.warn("notification toast: failed to load icon image for #{} from '{}'", entry.notificationId, iconPath);
+  if (entry.icon.has_value()) {
+    const std::string& rawIcon = *entry.icon;
+    if (rawIcon.size() > kNoctaliaGlyphIconPrefix.size() &&
+        std::string_view(rawIcon.data(), kNoctaliaGlyphIconPrefix.size()) == kNoctaliaGlyphIconPrefix) {
+      const std::string_view glyphName(rawIcon.data() + kNoctaliaGlyphIconPrefix.size(),
+                                       rawIcon.size() - kNoctaliaGlyphIconPrefix.size());
+      if (!glyphName.empty()) {
+        auto glyphIcon = std::make_unique<Glyph>();
+        glyphIcon->setGlyph(glyphName);
+        glyphIcon->setGlyphSize(kNotificationIconGlyphSize);
+        glyphIcon->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+        glyphIcon->measure(*m_renderContext);
+        glyphIcon->setPosition(std::round((kNotificationIconSize - glyphIcon->width()) * 0.5f),
+                               std::round((kNotificationIconSize - glyphIcon->height()) * 0.5f));
+        *outAppIcon = iconSlot->addChild(std::move(glyphIcon));
+        iconAssigned = true;
+      }
     }
-  } else if (entry.imageData.has_value()) {
-    const auto& image = *entry.imageData;
-    if (image.width > 0 && image.height > 0 && !image.data.empty()) {
+  }
+  if (!iconAssigned) {
+    const std::string iconPath = resolveNotificationIconPath(entry);
+    if (!iconPath.empty()) {
       auto appIcon = std::make_unique<Image>();
       appIcon->setSize(kNotificationIconSize, kNotificationIconSize);
       appIcon->setPosition(0.0f, 0.0f);
       appIcon->setRadius(kNotificationIconRadius);
       appIcon->setFit(ImageFit::Cover);
-      const bool validImageMetadata = image.bitsPerSample == 8 && ((image.channels == 4 && image.hasAlpha) ||
-                                                                   (image.channels == 3 && !image.hasAlpha));
-      const PixmapFormat format = image.channels == 3 ? PixmapFormat::RGB : PixmapFormat::RGBA;
-      if (validImageMetadata && appIcon->setSourceRaw(*m_renderContext, image.data.data(), image.data.size(),
-                                                      image.width, image.height, image.rowStride, format, true)) {
+      if (appIcon->setSourceFile(*m_renderContext, iconPath, static_cast<int>(std::round(kNotificationIconSize)))) {
         *outAppIcon = iconSlot->addChild(std::move(appIcon));
         iconAssigned = true;
-      } else if (!validImageMetadata) {
-        kLog.warn("notification toast: unsupported image-data avatar metadata for #{} (alpha={}, bits={}, channels={})",
-                  entry.notificationId, image.hasAlpha, image.bitsPerSample, image.channels);
       } else {
-        kLog.warn("notification toast: failed to load image-data avatar for #{} ({}x{}, bytes={})",
-                  entry.notificationId, image.width, image.height, image.data.size());
+        kLog.warn("notification toast: failed to load icon image for #{} from '{}'", entry.notificationId, iconPath);
       }
-    } else {
-      kLog.warn("notification toast: invalid image-data avatar for #{} ({}x{}, bytes={})", entry.notificationId,
-                image.width, image.height, image.data.size());
+    } else if (entry.imageData.has_value()) {
+      const auto& image = *entry.imageData;
+      if (image.width > 0 && image.height > 0 && !image.data.empty()) {
+        auto appIcon = std::make_unique<Image>();
+        appIcon->setSize(kNotificationIconSize, kNotificationIconSize);
+        appIcon->setPosition(0.0f, 0.0f);
+        appIcon->setRadius(kNotificationIconRadius);
+        appIcon->setFit(ImageFit::Cover);
+        const bool validImageMetadata = image.bitsPerSample == 8 && ((image.channels == 4 && image.hasAlpha) ||
+                                                                     (image.channels == 3 && !image.hasAlpha));
+        const PixmapFormat format = image.channels == 3 ? PixmapFormat::RGB : PixmapFormat::RGBA;
+        if (validImageMetadata && appIcon->setSourceRaw(*m_renderContext, image.data.data(), image.data.size(),
+                                                        image.width, image.height, image.rowStride, format, true)) {
+          *outAppIcon = iconSlot->addChild(std::move(appIcon));
+          iconAssigned = true;
+        } else if (!validImageMetadata) {
+          kLog.warn(
+              "notification toast: unsupported image-data avatar metadata for #{} (alpha={}, bits={}, channels={})",
+              entry.notificationId, image.hasAlpha, image.bitsPerSample, image.channels);
+        } else {
+          kLog.warn("notification toast: failed to load image-data avatar for #{} ({}x{}, bytes={})",
+                    entry.notificationId, image.width, image.height, image.data.size());
+        }
+      } else {
+        kLog.warn("notification toast: invalid image-data avatar for #{} ({}x{}, bytes={})", entry.notificationId,
+                  image.width, image.height, image.data.size());
+      }
     }
   }
 
@@ -1839,6 +1862,10 @@ bool NotificationToast::onPointerEvent(const PointerEvent& event) {
 
 std::string NotificationToast::resolveNotificationIconPath(const PopupEntry& entry) {
   if (!entry.icon.has_value() || entry.icon->empty()) {
+    return {};
+  }
+  if (entry.icon->size() > kNoctaliaGlyphIconPrefix.size() &&
+      std::string_view(entry.icon->data(), kNoctaliaGlyphIconPrefix.size()) == kNoctaliaGlyphIconPrefix) {
     return {};
   }
 

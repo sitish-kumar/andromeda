@@ -71,6 +71,16 @@ namespace {
 
 } // namespace
 
+std::string_view profileGlyphName(std::string_view profile) {
+  if (profile == "performance") {
+    return "performance";
+  }
+  if (profile == "power-saver") {
+    return "powersaver";
+  }
+  return "balanced";
+}
+
 PowerProfilesService::PowerProfilesService(SystemBus& bus) : m_bus(bus) {
   m_proxy = sdbus::createProxy(m_bus.connection(), k_powerProfilesBusName, k_powerProfilesObjectPath);
 
