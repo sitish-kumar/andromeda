@@ -344,6 +344,9 @@ void LockScreen::syncInstances() {
   std::erase_if(m_instances, [&](Instance& instance) {
     const bool exists = std::any_of(outputs.begin(), outputs.end(),
                                     [&](const WaylandOutput& output) { return output.name == instance.outputName; });
+    if (!exists && instance.surface != nullptr && instance.surface->wlSurface() == m_pointerSurface) {
+      m_pointerSurface = nullptr;
+    }
     return !exists;
   });
 

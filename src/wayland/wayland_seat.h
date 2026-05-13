@@ -78,6 +78,7 @@ public:
   void setPointerEventCallback(PointerEventCallback callback);
   void setKeyboardEventCallback(KeyboardEventCallback callback);
   void setCursorShape(std::uint32_t serial, std::uint32_t shape);
+  void forgetSurface(wl_surface* surface) noexcept;
   void cleanup();
 
   [[nodiscard]] std::uint32_t lastSerial() const noexcept { return m_lastSerial; }

@@ -267,6 +267,7 @@ void WaylandConnection::registerLayerSurface(wl_surface* surface, zwlr_layer_sur
 
 void WaylandConnection::unregisterSurface(wl_surface* surface) {
   if (surface != nullptr) {
+    m_seatHandler.forgetSurface(surface);
     m_surfaceOutputMap.erase(surface);
     m_layerSurfaceMap.erase(surface);
     if (m_lastPointerOutput != nullptr) {

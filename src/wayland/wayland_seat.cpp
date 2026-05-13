@@ -80,6 +80,21 @@ void WaylandSeat::setCursorShape(std::uint32_t serial, std::uint32_t shape) {
   wp_cursor_shape_device_v1_set_shape(m_cursorShapeDevice, serial, shape);
 }
 
+void WaylandSeat::forgetSurface(wl_surface* surface) noexcept {
+  if (surface == nullptr) {
+    return;
+  }
+  if (m_lastPointerSurface == surface) {
+    m_lastPointerSurface = nullptr;
+    m_hasPointerPosition = false;
+  }
+  if (m_lastKeyboardSurface == surface) {
+    m_lastKeyboardSurface = nullptr;
+    m_repeatActive = false;
+  }
+  std::erase_if(m_pendingPointerEvents, [surface](const PointerEvent& event) { return event.surface == surface; });
+}
+
 void WaylandSeat::cleanup() {
   if (m_cursorShapeDevice != nullptr) {
     wp_cursor_shape_device_v1_destroy(m_cursorShapeDevice);
