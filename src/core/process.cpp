@@ -12,6 +12,22 @@
 
 namespace {
 
+  void writePipeOrIgnore(int fd, const void* data, size_t len) {
+    auto p = reinterpret_cast<const char*>(data);
+    size_t remaining = len;
+    while (remaining > 0) {
+      const ssize_t n = ::write(fd, p, remaining);
+      if (n > 0) {
+        p += static_cast<size_t>(n);
+        remaining -= static_cast<size_t>(n);
+      } else if (n == 0) {
+        return;
+      } else if (errno != EINTR) {
+        return;
+      }
+    }
+  }
+
   void attachStdioToDevNull() {
     const int devnull = ::open("/dev/null", O_RDWR);
     if (devnull >= 0) {
@@ -26,10 +42,6 @@ namespace {
 
   // Double-fork + setsid so the exec'd process is not a direct child of the caller (matches
   // launcher app activation). Parent reaps the short-lived intermediate child.
-  //
-  // If reportPid is non-null, a pipe returns the grandchild pid to the parent before waitpid on
-  // the intermediate (so we never wait on the intermediate while the grandchild has not yet run).
-  // activationToken: if non-empty, set XDG_ACTIVATION_TOKEN and DESKTOP_STARTUP_ID before exec.
   bool doubleForkExecDetached(const std::vector<std::string>& args, pid_t* reportPid,
                               const std::string& activationToken) {
     int reportPipe[2] = {-1, -1};
@@ -78,7 +90,7 @@ namespace {
     if (::setsid() < 0) {
       if (needPid) {
         const pid_t err = -1;
-        (void)::write(reportPipe[1], &err, sizeof(err));
+        writePipeOrIgnore(reportPipe[1], &err, sizeof(err));
         ::close(reportPipe[1]);
       }
       ::_exit(1);
@@ -88,7 +100,7 @@ namespace {
     if (worker < 0) {
       if (needPid) {
         const pid_t err = -1;
-        (void)::write(reportPipe[1], &err, sizeof(err));
+        writePipeOrIgnore(reportPipe[1], &err, sizeof(err));
         ::close(reportPipe[1]);
       }
       ::_exit(1);
@@ -103,7 +115,7 @@ namespace {
     // Grandchild
     if (needPid) {
       const pid_t self = ::getpid();
-      (void)::write(reportPipe[1], &self, sizeof(self));
+      writePipeOrIgnore(reportPipe[1], &self, sizeof(self));
       ::close(reportPipe[1]);
     }
 
