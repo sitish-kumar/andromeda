@@ -1038,7 +1038,7 @@ namespace settings {
             wrap->addChild(std::move(textNode));
 
             auto pickerButton = std::make_unique<Button>();
-            pickerButton->setVariant(ButtonVariant::Secondary);
+            pickerButton->setVariant(ButtonVariant::Outline);
             pickerButton->setGlyph("apps");
             pickerButton->setGlyphSize(Style::fontSizeBody * ctx.scale);
             pickerButton->setMinHeight(Style::controlHeight * ctx.scale);
@@ -1077,7 +1077,7 @@ namespace settings {
             wrap->addChild(std::move(textNode));
 
             auto pickerButton = std::make_unique<Button>();
-            pickerButton->setVariant(ButtonVariant::Secondary);
+            pickerButton->setVariant(ButtonVariant::Outline);
             pickerButton->setGlyph("photo");
             pickerButton->setGlyphSize(Style::fontSizeBody * ctx.scale);
             pickerButton->setMinHeight(Style::controlHeight * ctx.scale);

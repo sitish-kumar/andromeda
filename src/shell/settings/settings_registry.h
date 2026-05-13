@@ -56,10 +56,19 @@ namespace settings {
         linkedCommit;
   };
 
+  enum class TextSettingBrowseMode : std::uint8_t {
+    None = 0,
+    SelectFolder,
+    OpenFile,
+  };
+
   struct TextSetting {
     std::string value;
     std::string placeholder;
     float width = 0.0f; // 0 = use default
+    TextSettingBrowseMode browseMode = TextSettingBrowseMode::None;
+    /// When browseMode == OpenFile, optional filter (e.g. `{".wav", ".ogg"}`); empty allows any file.
+    std::vector<std::string> browseFileExtensions;
   };
 
   struct OptionalNumberSetting {

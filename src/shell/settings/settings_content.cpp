@@ -21,6 +21,7 @@
 #include "ui/controls/stepper.h"
 #include "ui/controls/toggle.h"
 #include "ui/dialogs/color_picker_dialog.h"
+#include "ui/dialogs/file_dialog.h"
 #include "ui/dialogs/glyph_picker_dialog.h"
 #include "ui/palette.h"
 #include "ui/style.h"
@@ -30,6 +31,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <format>
 #include <functional>
 #include <limits>
@@ -1161,6 +1163,80 @@ namespace settings {
       return input;
     };
 
+    const auto makeTextWithPathBrowse = [&](const TextSetting& setting, const std::vector<std::string>& path) {
+      auto wrap = std::make_unique<Flex>();
+      wrap->setDirection(FlexDirection::Horizontal);
+      wrap->setAlign(FlexAlign::Center);
+      wrap->setGap(Style::spaceSm * scale);
+
+      auto input = std::make_unique<Input>();
+      input->setValue(setting.value);
+      input->setPlaceholder(setting.placeholder.empty() ? i18n::tr("settings.controls.list.add-entry-placeholder")
+                                                        : setting.placeholder);
+      input->setFontSize(Style::fontSizeBody * scale);
+      input->setControlHeight(Style::controlHeight * scale);
+      input->setHorizontalPadding(Style::spaceSm * scale);
+      const float inputWidth = (setting.width > 0.0f ? setting.width : 280.0f) * scale;
+      input->setSize(inputWidth, Style::controlHeight * scale);
+      auto* inputPtr = input.get();
+      input->setOnSubmit([setOverride = ctx.setOverride, path](const std::string& v) { setOverride(path, v); });
+      wrap->addChild(std::move(input));
+
+      const bool selectFolder = setting.browseMode == TextSettingBrowseMode::SelectFolder;
+      auto browse = std::make_unique<Button>();
+      browse->setVariant(ButtonVariant::Outline);
+      browse->setGlyph(selectFolder ? "folder" : "file-text");
+      browse->setGlyphSize(Style::fontSizeBody * scale);
+      browse->setMinHeight(Style::controlHeight * scale);
+      browse->setMinWidth(Style::controlHeight * scale);
+      browse->setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
+      browse->setRadius(Style::scaledRadiusMd(scale));
+      browse->setOnClick(
+          [setOverride = ctx.setOverride, path, inputPtr, selectFolder, exts = setting.browseFileExtensions]() {
+            FileDialogOptions options;
+            options.mode = selectFolder ? FileDialogMode::SelectFolder : FileDialogMode::Open;
+            options.defaultViewMode = FileDialogViewMode::List;
+            options.title = selectFolder ? i18n::tr("settings.controls.path-browse.folder-title")
+                                         : i18n::tr("settings.controls.path-browse.file-title");
+            if (!selectFolder) {
+              options.extensions = exts;
+            }
+            const std::string cur = inputPtr->value();
+            if (!cur.empty()) {
+              std::filesystem::path p(cur);
+              std::error_code ec;
+              if (selectFolder) {
+                if (std::filesystem::exists(p, ec) && std::filesystem::is_directory(p, ec)) {
+                  options.startDirectory = p;
+                } else if (p.has_parent_path()) {
+                  const auto parent = p.parent_path();
+                  if (std::filesystem::exists(parent, ec)) {
+                    options.startDirectory = parent;
+                  }
+                }
+              } else {
+                if (std::filesystem::exists(p, ec) && std::filesystem::is_regular_file(p, ec)) {
+                  options.startDirectory = p.parent_path();
+                  options.defaultFilename = p.filename().string();
+                } else if (p.has_parent_path() && std::filesystem::exists(p.parent_path(), ec)) {
+                  options.startDirectory = p.parent_path();
+                }
+              }
+            }
+            (void)FileDialog::open(std::move(options),
+                                   [setOverride, path, inputPtr](std::optional<std::filesystem::path> picked) {
+                                     if (!picked.has_value()) {
+                                       return;
+                                     }
+                                     const std::string s = picked->string();
+                                     inputPtr->setValue(s);
+                                     setOverride(path, s);
+                                   });
+          });
+      wrap->addChild(std::move(browse));
+      return wrap;
+    };
+
     const auto makeGlyphText = [&](const TextSetting& setting, std::vector<std::string> path) -> std::unique_ptr<Node> {
       auto wrap = std::make_unique<Flex>();
       wrap->setDirection(FlexDirection::Horizontal);
@@ -1169,7 +1245,7 @@ namespace settings {
       wrap->addChild(makeText(setting.value, setting.placeholder, path, setting.width));
 
       auto pickerButton = std::make_unique<Button>();
-      pickerButton->setVariant(ButtonVariant::Secondary);
+      pickerButton->setVariant(ButtonVariant::Outline);
       pickerButton->setGlyph("apps");
       pickerButton->setGlyphSize(Style::fontSizeBody * scale);
       pickerButton->setMinHeight(Style::controlHeight * scale);
@@ -2096,6 +2172,9 @@ namespace settings {
             } else if constexpr (std::is_same_v<T, TextSetting>) {
               if (isDockLauncherIconPath(entry.path)) {
                 return makeGlyphText(control, entry.path);
+              }
+              if (control.browseMode != TextSettingBrowseMode::None) {
+                return makeTextWithPathBrowse(control, entry.path);
               }
               return makeText(control.value, control.placeholder, entry.path, control.width);
             } else if constexpr (std::is_same_v<T, OptionalNumberSetting>) {

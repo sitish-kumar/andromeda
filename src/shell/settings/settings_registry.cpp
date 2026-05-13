@@ -274,7 +274,8 @@ namespace settings {
                                   {"theme", "wallpaper_scheme"}, wallpaperSchemeSelect(cfg.theme.wallpaperScheme),
                                   "wallpaper palette generator scheme material you m3 colors"));
     } else if (cfg.theme.source == PaletteSource::Community) {
-      SettingControl communityPaletteControl = TextSetting{cfg.theme.communityPalette, "Oxocarbon"};
+      SettingControl communityPaletteControl =
+          TextSetting{.value = cfg.theme.communityPalette, .placeholder = "Oxocarbon", .browseFileExtensions = {}};
       if (!env.communityPalettes.empty()) {
         communityPaletteControl = SearchPickerSetting{
             .options = env.communityPalettes,
@@ -289,7 +290,8 @@ namespace settings {
                                   {"theme", "community_palette"}, std::move(communityPaletteControl),
                                   "community palette colors"));
     } else if (cfg.theme.source == PaletteSource::Custom) {
-      SettingControl customPaletteControl = TextSetting{cfg.theme.customPalette, ""};
+      SettingControl customPaletteControl =
+          TextSetting{.value = cfg.theme.customPalette, .placeholder = "", .browseFileExtensions = {}};
       if (!env.customPalettes.empty()) {
         customPaletteControl = SearchPickerSetting{
             .options = env.customPalettes,
@@ -311,9 +313,11 @@ namespace settings {
         makeEntry("appearance", "interface", tr("settings.schema.appearance.corner-roundness.label"),
                   tr("settings.schema.appearance.corner-roundness.description"), {"shell", "corner_radius_scale"},
                   SliderSetting{cfg.shell.cornerRadiusScale, 0.0f, 2.0f, 0.05f, false}, "rounded corners radius"));
-    entries.push_back(makeEntry("appearance", "interface", tr("settings.schema.appearance.font-family.label"),
-                                tr("settings.schema.appearance.font-family.description"), {"shell", "font_family"},
-                                TextSetting{cfg.shell.fontFamily, "sans-serif"}, "typeface"));
+    entries.push_back(
+        makeEntry("appearance", "interface", tr("settings.schema.appearance.font-family.label"),
+                  tr("settings.schema.appearance.font-family.description"), {"shell", "font_family"},
+                  TextSetting{.value = cfg.shell.fontFamily, .placeholder = "sans-serif", .browseFileExtensions = {}},
+                  "typeface"));
     entries.push_back(makeEntry("appearance", "interface", tr("settings.schema.appearance.language.label"),
                                 tr("settings.schema.appearance.language.description"), {"shell", "lang"},
                                 languageSelect(cfg.shell.lang), "locale translation", true));
@@ -361,17 +365,27 @@ namespace settings {
     }
     entries.push_back(makeEntry("wallpaper", "directories", tr("settings.schema.wallpaper.directory.label"),
                                 tr("settings.schema.wallpaper.directory.description"), {"wallpaper", "directory"},
-                                TextSetting{cfg.wallpaper.directory, "~/Pictures/Wallpapers"}, "folder path"));
-    entries.push_back(makeEntry(
-        "wallpaper", "directories", tr("settings.schema.wallpaper.directory-light.label"),
-        tr("settings.schema.wallpaper.directory-light.description"), {"wallpaper", "directory_light"},
-        TextSetting{cfg.wallpaper.directoryLight, tr("settings.schema.wallpaper.directory-light.placeholder")},
-        "folder path light theme", true));
-    entries.push_back(
-        makeEntry("wallpaper", "directories", tr("settings.schema.wallpaper.directory-dark.label"),
-                  tr("settings.schema.wallpaper.directory-dark.description"), {"wallpaper", "directory_dark"},
-                  TextSetting{cfg.wallpaper.directoryDark, tr("settings.schema.wallpaper.directory-dark.placeholder")},
-                  "folder path dark theme", true));
+                                TextSetting{.value = cfg.wallpaper.directory,
+                                            .placeholder = "~/Pictures/Wallpapers",
+                                            .browseMode = TextSettingBrowseMode::SelectFolder,
+                                            .browseFileExtensions = {}},
+                                "folder path"));
+    entries.push_back(makeEntry("wallpaper", "directories", tr("settings.schema.wallpaper.directory-light.label"),
+                                tr("settings.schema.wallpaper.directory-light.description"),
+                                {"wallpaper", "directory_light"},
+                                TextSetting{.value = cfg.wallpaper.directoryLight,
+                                            .placeholder = tr("settings.schema.wallpaper.directory-light.placeholder"),
+                                            .browseMode = TextSettingBrowseMode::SelectFolder,
+                                            .browseFileExtensions = {}},
+                                "folder path light theme", true));
+    entries.push_back(makeEntry("wallpaper", "directories", tr("settings.schema.wallpaper.directory-dark.label"),
+                                tr("settings.schema.wallpaper.directory-dark.description"),
+                                {"wallpaper", "directory_dark"},
+                                TextSetting{.value = cfg.wallpaper.directoryDark,
+                                            .placeholder = tr("settings.schema.wallpaper.directory-dark.placeholder"),
+                                            .browseMode = TextSettingBrowseMode::SelectFolder,
+                                            .browseFileExtensions = {}},
+                                "folder path dark theme", true));
     {
       MultiSelectSetting transitions;
       transitions.options.reserve(std::size(kWallpaperTransitions));
@@ -464,7 +478,10 @@ namespace settings {
     entries.push_back(makeEntry("templates", "user", tr("settings.schema.templates.user-config.label"),
                                 tr("settings.schema.templates.user-config.description"),
                                 {"theme", "templates", "user_config"},
-                                TextSetting{cfg.theme.templates.userConfig, "~/.config/noctalia/user-templates.toml"},
+                                TextSetting{.value = cfg.theme.templates.userConfig,
+                                            .placeholder = "~/.config/noctalia/user-templates.toml",
+                                            .browseMode = TextSettingBrowseMode::OpenFile,
+                                            .browseFileExtensions = {".toml"}},
                                 "theme templates path file", true));
 
     // Dock
@@ -494,9 +511,11 @@ namespace settings {
     entries.push_back(makeEntry("dock", "behavior", tr("settings.schema.dock.launcher-position.label"),
                                 tr("settings.schema.dock.launcher-position.description"), {"dock", "launcher_position"},
                                 launcherPositionSelect(cfg.dock.launcherPosition), "launcher apps grid"));
-    entries.push_back(makeEntry("dock", "behavior", tr("settings.schema.dock.launcher-icon.label"),
-                                tr("settings.schema.dock.launcher-icon.description"), {"dock", "launcher_icon"},
-                                TextSetting{cfg.dock.launcherIcon, "grid-dots"}, "launcher apps icon glyph"));
+    entries.push_back(
+        makeEntry("dock", "behavior", tr("settings.schema.dock.launcher-icon.label"),
+                  tr("settings.schema.dock.launcher-icon.description"), {"dock", "launcher_icon"},
+                  TextSetting{.value = cfg.dock.launcherIcon, .placeholder = "grid-dots", .browseFileExtensions = {}},
+                  "launcher apps icon glyph"));
     entries.push_back(makeEntry("dock", "layout", tr("settings.schema.shared.position.label"),
                                 tr("settings.schema.dock.position.description"), {"dock", "position"},
                                 positionSelect(cfg.dock.position), "edge"));
@@ -592,10 +611,14 @@ namespace settings {
                   "screen corners radius"));
 
     // Shell
-    entries.push_back(makeEntry("shell", "profile", tr("settings.schema.shell.avatar-path.label"),
-                                tr("settings.schema.shell.avatar-path.description"), {"shell", "avatar_path"},
-                                TextSetting{cfg.shell.avatarPath, tr("settings.schema.shell.avatar-path.placeholder")},
-                                "image picture"));
+    entries.push_back(
+        makeEntry("shell", "profile", tr("settings.schema.shell.avatar-path.label"),
+                  tr("settings.schema.shell.avatar-path.description"), {"shell", "avatar_path"},
+                  TextSetting{.value = cfg.shell.avatarPath,
+                              .placeholder = tr("settings.schema.shell.avatar-path.placeholder"),
+                              .browseMode = TextSettingBrowseMode::OpenFile,
+                              .browseFileExtensions = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".bmp", ".gif"}},
+                  "image picture"));
     entries.push_back(makeEntry("shell", "network", tr("settings.schema.shell.offline-mode.label"),
                                 tr("settings.schema.shell.offline-mode.description"), {"shell", "offline_mode"},
                                 ToggleSetting{cfg.shell.offlineMode}, "network http fetch download"));
@@ -614,12 +637,16 @@ namespace settings {
         tr("settings.schema.shell.middle-click-opens-widget-settings.description"),
         {"shell", "middle_click_opens_widget_settings"}, ToggleSetting{cfg.shell.middleClickOpensWidgetSettings},
         "bar widget settings middle click configure"));
-    entries.push_back(makeEntry("shell", "formats", tr("settings.schema.shell.time-format.label"),
-                                tr("settings.schema.shell.time-format.description"), {"shell", "time_format"},
-                                TextSetting{cfg.shell.timeFormat, "{:%H:%M}"}, "clock time format strftime chrono"));
-    entries.push_back(makeEntry("shell", "formats", tr("settings.schema.shell.date-format.label"),
-                                tr("settings.schema.shell.date-format.description"), {"shell", "date_format"},
-                                TextSetting{cfg.shell.dateFormat, "%A, %x"}, "calendar date format strftime chrono"));
+    entries.push_back(
+        makeEntry("shell", "formats", tr("settings.schema.shell.time-format.label"),
+                  tr("settings.schema.shell.time-format.description"), {"shell", "time_format"},
+                  TextSetting{.value = cfg.shell.timeFormat, .placeholder = "{:%H:%M}", .browseFileExtensions = {}},
+                  "clock time format strftime chrono"));
+    entries.push_back(
+        makeEntry("shell", "formats", tr("settings.schema.shell.date-format.label"),
+                  tr("settings.schema.shell.date-format.description"), {"shell", "date_format"},
+                  TextSetting{.value = cfg.shell.dateFormat, .placeholder = "%A, %x", .browseFileExtensions = {}},
+                  "calendar date format strftime chrono"));
     const SettingVisibility weatherOn{{"weather", "enabled"}, {"true"}};
     {
       auto e = makeEntry("shell", "location", tr("settings.schema.shell.show-location.label"),
@@ -632,12 +659,14 @@ namespace settings {
                                 tr("settings.schema.shell.clipboard-auto-paste.description"),
                                 {"shell", "clipboard_auto_paste"},
                                 enumSelect(kClipboardAutoPasteModes, cfg.shell.clipboardAutoPaste), "clipboard paste"));
-    entries.push_back(makeEntry("shell", "clipboard", tr("settings.schema.shell.clipboard-image-action.label"),
-                                tr("settings.schema.shell.clipboard-image-action.description"),
-                                {"shell", "clipboard_image_action_command"},
-                                TextSetting{cfg.shell.clipboardImageActionCommand,
-                                            tr("settings.schema.shell.clipboard-image-action.placeholder"), 320.0f},
-                                "clipboard image action annotation editor external gimp satty gradia"));
+    entries.push_back(makeEntry(
+        "shell", "clipboard", tr("settings.schema.shell.clipboard-image-action.label"),
+        tr("settings.schema.shell.clipboard-image-action.description"), {"shell", "clipboard_image_action_command"},
+        TextSetting{.value = cfg.shell.clipboardImageActionCommand,
+                    .placeholder = tr("settings.schema.shell.clipboard-image-action.placeholder"),
+                    .width = 320.0f,
+                    .browseFileExtensions = {}},
+        "clipboard image action annotation editor external gimp satty gradia"));
     entries.push_back(makeEntry("shell", "osd", tr("settings.schema.shell.osd-position.label"),
                                 tr("settings.schema.shell.osd-position.description"), {"osd", "position"},
                                 plainSelect({{"top_right", "settings.options.screen-position.top-right"},
@@ -703,7 +732,9 @@ namespace settings {
     {
       auto e = makeEntry("services", "weather", tr("settings.schema.services.weather-address.label"),
                          tr("settings.schema.services.weather-address.description"), {"weather", "address"},
-                         TextSetting{cfg.weather.address, tr("settings.schema.services.weather-address.placeholder")},
+                         TextSetting{.value = cfg.weather.address,
+                                     .placeholder = tr("settings.schema.services.weather-address.placeholder"),
+                                     .browseFileExtensions = {}},
                          "location");
       e.visibleWhen = weatherOn;
       entries.push_back(std::move(e));
@@ -735,12 +766,18 @@ namespace settings {
     entries.push_back(makeEntry(
         "services", "audio", tr("settings.schema.services.volume-change-sound.label"),
         tr("settings.schema.services.volume-change-sound.description"), {"audio", "volume_change_sound"},
-        TextSetting{cfg.audio.volumeChangeSound, tr("settings.schema.services.volume-change-sound.placeholder")},
+        TextSetting{.value = cfg.audio.volumeChangeSound,
+                    .placeholder = tr("settings.schema.services.volume-change-sound.placeholder"),
+                    .browseMode = TextSettingBrowseMode::OpenFile,
+                    .browseFileExtensions = {".wav", ".ogg", ".oga", ".mp3", ".flac", ".opus", ".m4a", ".aac"}},
         "sound path file", true));
     entries.push_back(makeEntry(
         "services", "audio", tr("settings.schema.services.notification-sound.label"),
         tr("settings.schema.services.notification-sound.description"), {"audio", "notification_sound"},
-        TextSetting{cfg.audio.notificationSound, tr("settings.schema.services.notification-sound.placeholder")},
+        TextSetting{.value = cfg.audio.notificationSound,
+                    .placeholder = tr("settings.schema.services.notification-sound.placeholder"),
+                    .browseMode = TextSettingBrowseMode::OpenFile,
+                    .browseFileExtensions = {".wav", ".ogg", ".oga", ".mp3", ".flac", ".opus", ".m4a", ".aac"}},
         "sound path file", true));
     entries.push_back(makeEntry("services", "media", tr("settings.schema.services.mpris-blacklist.label"),
                                 tr("settings.schema.services.mpris-blacklist.description"),
@@ -788,10 +825,11 @@ namespace settings {
       const SettingVisibility& manualNightLightControlsVisible =
           weatherLocationConfigured ? nightLightOnWeatherLocationOff : nightLightOn;
       {
-        auto e =
-            makeEntry("services", "night-light", tr("settings.schema.services.night-light-start-time.label"),
-                      tr("settings.schema.services.night-light-start-time.description"), {"nightlight", "start_time"},
-                      TextSetting{cfg.nightlight.startTime, "20:30"}, "time schedule sunset");
+        auto e = makeEntry(
+            "services", "night-light", tr("settings.schema.services.night-light-start-time.label"),
+            tr("settings.schema.services.night-light-start-time.description"), {"nightlight", "start_time"},
+            TextSetting{.value = cfg.nightlight.startTime, .placeholder = "20:30", .browseFileExtensions = {}},
+            "time schedule sunset");
         e.visibleWhen = manualNightLightControlsVisible;
         entries.push_back(std::move(e));
       }
@@ -799,7 +837,8 @@ namespace settings {
         auto e =
             makeEntry("services", "night-light", tr("settings.schema.services.night-light-stop-time.label"),
                       tr("settings.schema.services.night-light-stop-time.description"), {"nightlight", "stop_time"},
-                      TextSetting{cfg.nightlight.stopTime, "07:30"}, "time schedule sunrise");
+                      TextSetting{.value = cfg.nightlight.stopTime, .placeholder = "07:30", .browseFileExtensions = {}},
+                      "time schedule sunrise");
         e.visibleWhen = manualNightLightControlsVisible;
         entries.push_back(std::move(e));
       }
@@ -949,9 +988,13 @@ namespace settings {
       const std::string key(kind.key);
       const std::string baseKey = "settings.schema.hooks.events." + key;
       const std::string hookCmd = cfg.hooks.commands[index].empty() ? "" : cfg.hooks.commands[index][0];
-      entries.push_back(makeEntry(
-          "hooks", hookGroup(kind.value), tr(baseKey + ".label"), tr(baseKey + ".description"), {"hooks", key},
-          TextSetting{hookCmd, tr("settings.schema.hooks.command-placeholder"), 320.0f}, hookTags(kind.value)));
+      entries.push_back(makeEntry("hooks", hookGroup(kind.value), tr(baseKey + ".label"), tr(baseKey + ".description"),
+                                  {"hooks", key},
+                                  TextSetting{.value = hookCmd,
+                                              .placeholder = tr("settings.schema.hooks.command-placeholder"),
+                                              .width = 320.0f,
+                                              .browseFileExtensions = {}},
+                                  hookTags(kind.value)));
     }
 
     entries.push_back(makeEntry(

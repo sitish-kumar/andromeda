@@ -629,6 +629,10 @@
       "list": {
         "add-entry-placeholder": "Add entry…"
       },
+      "path-browse": {
+        "folder-title": "Choose folder",
+        "file-title": "Choose file"
+      },
       "keybind": {
         "unset-placeholder": "Click to bind…",
         "recording-placeholder": "Press a key combination…",
