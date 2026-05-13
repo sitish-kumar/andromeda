@@ -982,6 +982,7 @@ void TrayMenu::openSubmenu(std::int32_t parentEntryId, float rowCenterY) {
 
   // Anchor rect is in the main popup's coordinate space (0,0 = top-left of main popup surface)
   const auto mainWidth = static_cast<std::int32_t>(m_instance->surface->width());
+  const auto mainX = m_instance->surface->configuredX();
   const auto rowTop = static_cast<std::int32_t>(rowCenterY - Style::controlHeightSm * 0.5f);
   const auto rowH = static_cast<std::int32_t>(Style::controlHeightSm);
   constexpr std::int32_t kSubGap = 4;
@@ -989,7 +990,22 @@ void TrayMenu::openSubmenu(std::int32_t parentEntryId, float rowCenterY) {
   const auto surfaceWidth = static_cast<uint32_t>(kSurfaceWidth);
   const auto surfaceHeight = submenuHeightPx();
 
-  const bool isRight = (m_instance->submenuDirection == ContextSubmenuDirection::Right);
+  const auto* wlOutput = m_wayland->findOutputByWl(m_instance->output);
+  const std::int32_t outputWidth =
+      (wlOutput != nullptr && wlOutput->logicalWidth > 0) ? wlOutput->logicalWidth : static_cast<std::int32_t>(surfaceWidth);
+
+  bool isRight = (m_instance->submenuDirection == ContextSubmenuDirection::Right);
+  const std::int32_t submenuExtent = static_cast<std::int32_t>(surfaceWidth) + kSubGap;
+  if (isRight) {
+    if (mainX + mainWidth + submenuExtent > outputWidth) {
+      isRight = false;
+    }
+  } else {
+    if (mainX - submenuExtent < 0) {
+      isRight = true;
+    }
+  }
+
   const std::int32_t anchorX = isRight ? mainWidth : 0;
   const std::uint32_t anchor = isRight ? XDG_POSITIONER_ANCHOR_TOP_RIGHT : XDG_POSITIONER_ANCHOR_TOP_LEFT;
   const std::uint32_t gravity = isRight ? XDG_POSITIONER_GRAVITY_BOTTOM_RIGHT : XDG_POSITIONER_GRAVITY_BOTTOM_LEFT;
