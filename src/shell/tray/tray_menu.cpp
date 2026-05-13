@@ -10,6 +10,7 @@
 #include "shell/panel/panel_manager.h"
 #include "shell/tray/tray_identifier.h"
 #include "ui/controls/context_menu.h"
+#include "ui/controls/scroll_view.h"
 #include "ui/style.h"
 #include "util/string_utils.h"
 #include "wayland/layer_surface.h"
@@ -26,6 +27,8 @@ namespace {
   constexpr Logger kLog("tray");
 
   constexpr float kMenuWidth = 246.0f;
+  constexpr std::size_t kTrayMenuVisibleItems = 20;
+  constexpr float kScrollGutter = 14.0f;
   constexpr std::int32_t kPinToggleEntryId = -2147000000;
 
   constexpr float kSurfaceWidth = kMenuWidth;
@@ -56,7 +59,9 @@ namespace {
     return it->second.getBool("drawer", false);
   }
 
-  std::size_t visibleEntryLimit(std::size_t entryCount) { return std::max<std::size_t>(1, entryCount); }
+  std::size_t visibleEntryLimit(std::size_t entryCount) {
+    return std::max<std::size_t>(1, std::min<std::size_t>(entryCount, kTrayMenuVisibleItems));
+  }
 
   // Convert an icon name like "audio-input-microphone-symbolic" to a readable label like "Audio Input Microphone".
   std::string iconNameToLabel(std::string_view iconName) {
@@ -785,9 +790,21 @@ void TrayMenu::buildScene(MenuInstance& inst, uint32_t width, uint32_t height) {
     });
   }
 
+  const bool useScrollbar = entries.size() > kTrayMenuVisibleItems;
+  const float menuWidth = std::max(1.0f, w - (useScrollbar ? kScrollGutter : 0.0f));
+
+  auto scrollView = std::make_unique<ScrollView>();
+  scrollView->setSize(w, h);
+  scrollView->setViewportPaddingH(0.0f);
+  scrollView->setViewportPaddingV(0.0f);
+  scrollView->clearFill();
+  scrollView->clearBorder();
+  scrollView->setRadius(0.0f);
+  scrollView->bindState(&inst.scrollState);
+
   auto menu = std::make_unique<ContextMenuControl>();
-  menu->setMenuWidth(w);
-  menu->setMaxVisible(visibleEntryLimit(m_entries.size()));
+  menu->setMenuWidth(menuWidth);
+  menu->setMaxVisible(std::max<std::size_t>(1, entries.size()));
   menu->setSubmenuDirection(inst.submenuDirection);
   menu->setEntries(std::move(entries));
   menu->setRedrawCallback([&inst]() {
@@ -817,10 +834,9 @@ void TrayMenu::buildScene(MenuInstance& inst, uint32_t width, uint32_t height) {
   });
   menu->setOnSubmenuOpen(
       [this](const ContextMenuControlEntry& entry, float rowCenterY) { openSubmenu(entry.id, rowCenterY); });
-  menu->setPosition(0.0f, 0.0f);
-  menu->setSize(w, h);
-  menu->layout(*m_renderContext);
-  inst.sceneRoot->addChild(std::move(menu));
+  scrollView->content()->addChild(std::move(menu));
+  scrollView->layout(*m_renderContext);
+  inst.sceneRoot->addChild(std::move(scrollView));
 
   inst.inputDispatcher.setSceneRoot(inst.sceneRoot.get());
   inst.inputDispatcher.setCursorShapeCallback(
@@ -1055,9 +1071,21 @@ void TrayMenu::buildSubmenuScene(MenuInstance& inst, uint32_t width, uint32_t he
     });
   }
 
+  const bool useScrollbar = entries.size() > kTrayMenuVisibleItems;
+  const float menuWidth = std::max(1.0f, w - (useScrollbar ? kScrollGutter : 0.0f));
+
+  auto scrollView = std::make_unique<ScrollView>();
+  scrollView->setSize(w, h);
+  scrollView->setViewportPaddingH(0.0f);
+  scrollView->setViewportPaddingV(0.0f);
+  scrollView->clearFill();
+  scrollView->clearBorder();
+  scrollView->setRadius(0.0f);
+  scrollView->bindState(&inst.scrollState);
+
   auto menu = std::make_unique<ContextMenuControl>();
-  menu->setMenuWidth(w);
-  menu->setMaxVisible(visibleEntryLimit(m_submenuEntries.size()));
+  menu->setMenuWidth(menuWidth);
+  menu->setMaxVisible(std::max<std::size_t>(1, entries.size()));
   menu->setSubmenuDirection(inst.submenuDirection);
   menu->setEntries(std::move(entries));
   menu->setRedrawCallback([&inst]() {
@@ -1077,10 +1105,9 @@ void TrayMenu::buildSubmenuScene(MenuInstance& inst, uint32_t width, uint32_t he
       closeTrayDrawerPanelIfOpen();
     });
   });
-  menu->setPosition(0.0f, 0.0f);
-  menu->setSize(w, h);
-  menu->layout(*m_renderContext);
-  inst.sceneRoot->addChild(std::move(menu));
+  scrollView->content()->addChild(std::move(menu));
+  scrollView->layout(*m_renderContext);
+  inst.sceneRoot->addChild(std::move(scrollView));
 
   inst.inputDispatcher.setSceneRoot(inst.sceneRoot.get());
   inst.inputDispatcher.setCursorShapeCallback(
