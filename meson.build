@@ -715,3 +715,18 @@ executable('noctalia',
 install_subdir('assets',
   install_dir: get_option('datadir') / 'noctalia',
 )
+
+notification_history_utf8_test = executable('notification_history_utf8_test',
+  sources: files(
+    'tests/notification_history_utf8_test.cpp',
+    'src/core/log.cpp',
+    'src/notification/notification_history_store.cpp',
+    'src/render/core/image_decoder.cpp',
+  ),
+  dependencies: [
+    libwebp_dep,
+  ],
+  include_directories: _noctalia_inc,
+)
+
+test('notification_history_utf8', notification_history_utf8_test)

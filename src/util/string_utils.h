@@ -149,6 +149,18 @@ namespace StringUtils {
     return std::string(text);
   }
 
+  [[nodiscard]] inline std::string truncateUtf8(std::string_view text, std::size_t maxBytes) {
+    if (text.size() <= maxBytes) {
+      return std::string(text);
+    }
+
+    std::size_t end = maxBytes;
+    while (end > 0 && end < text.size() && (static_cast<unsigned char>(text[end]) & 0xC0U) == 0x80U) {
+      --end;
+    }
+    return std::string(text.substr(0, end));
+  }
+
   // Strip HTML/Pango tags and unescape XML entities.
   [[nodiscard]] inline std::string sanitizeMarkup(std::string_view s) {
     std::string out;
