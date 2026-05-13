@@ -1074,6 +1074,20 @@ namespace settings {
                                   ToggleSetting{selectedBar->widgetCapsuleDefault}, "pill"));
       const SettingVisibility capsuleOn{path("capsule"), {"true"}};
       {
+        auto e =
+            makeEntry(section, "capsules", tr("settings.schema.bar.capsule-radius.label"),
+                      tr("settings.schema.bar.capsule-radius.description"), path("capsule_radius"),
+                      OptionalStepperSetting{.value = radiusStepperValue(selectedBar->widgetCapsuleRadius),
+                                             .minValue = 0,
+                                             .maxValue = 80,
+                                             .step = 1,
+                                             .fallbackValue = radiusStepperFallback(selectedBar->widgetCapsuleRadius),
+                                             .unsetLabel = tr("common.states.auto"),
+                                             .customLabel = tr("common.states.custom")},
+                      "pill rounded radius", true);
+        entries.push_back(std::move(e));
+      }
+      {
         auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-groups.label"),
                            tr("settings.schema.bar.capsule-groups.description"), path("capsule_groups"),
                            ListSetting{.items = selectedBar->widgetCapsuleGroups}, "grouped capsules");
@@ -1107,21 +1121,6 @@ namespace settings {
             makeEntry(section, "capsules", tr("settings.schema.bar.capsule-padding.label"),
                       tr("settings.schema.bar.capsule-padding.description"), path("capsule_padding"),
                       SliderSetting{selectedBar->widgetCapsulePadding, 0.0f, 48.0f, 1.0f, false}, "pill inset", true);
-        e.visibleWhen = capsuleOn;
-        entries.push_back(std::move(e));
-      }
-      {
-        auto e =
-            makeEntry(section, "capsules", tr("settings.schema.bar.capsule-radius.label"),
-                      tr("settings.schema.bar.capsule-radius.description"), path("capsule_radius"),
-                      OptionalStepperSetting{.value = radiusStepperValue(selectedBar->widgetCapsuleRadius),
-                                             .minValue = 0,
-                                             .maxValue = 80,
-                                             .step = 1,
-                                             .fallbackValue = radiusStepperFallback(selectedBar->widgetCapsuleRadius),
-                                             .unsetLabel = tr("common.states.auto"),
-                                             .customLabel = tr("common.states.custom")},
-                      "pill rounded radius", true);
         e.visibleWhen = capsuleOn;
         entries.push_back(std::move(e));
       }
@@ -1242,6 +1241,19 @@ namespace settings {
                                   ToggleSetting{ovr.widgetCapsuleDefault.value_or(bar.widgetCapsuleDefault)}, "pill"));
       const SettingVisibility mCapsuleOn{mpath("capsule"), {"true"}};
       {
+        auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-radius.label"),
+                           tr("settings.schema.bar.capsule-radius.description"), mpath("capsule_radius"),
+                           OptionalStepperSetting{.value = radiusStepperValue(ovr.widgetCapsuleRadius),
+                                                  .minValue = 0,
+                                                  .maxValue = 80,
+                                                  .step = 1,
+                                                  .fallbackValue = radiusStepperFallback(bar.widgetCapsuleRadius),
+                                                  .unsetLabel = tr("common.states.inherit"),
+                                                  .customLabel = tr("common.states.custom")},
+                           "pill rounded radius", true);
+        entries.push_back(std::move(e));
+      }
+      {
         auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-groups.label"),
                            tr("settings.schema.bar.capsule-groups.description"), mpath("capsule_groups"),
                            ListSetting{.items = ovr.widgetCapsuleGroups.value_or(bar.widgetCapsuleGroups)},
@@ -1283,20 +1295,6 @@ namespace settings {
                       SliderSetting{static_cast<float>(ovr.widgetCapsulePadding.value_or(bar.widgetCapsulePadding)),
                                     0.0f, 48.0f, 1.0f, false},
                       "pill inset", true);
-        e.visibleWhen = mCapsuleOn;
-        entries.push_back(std::move(e));
-      }
-      {
-        auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-radius.label"),
-                           tr("settings.schema.bar.capsule-radius.description"), mpath("capsule_radius"),
-                           OptionalStepperSetting{.value = radiusStepperValue(ovr.widgetCapsuleRadius),
-                                                  .minValue = 0,
-                                                  .maxValue = 80,
-                                                  .step = 1,
-                                                  .fallbackValue = radiusStepperFallback(bar.widgetCapsuleRadius),
-                                                  .unsetLabel = tr("common.states.inherit"),
-                                                  .customLabel = tr("common.states.custom")},
-                           "pill rounded radius", true);
         e.visibleWhen = mCapsuleOn;
         entries.push_back(std::move(e));
       }

@@ -301,8 +301,8 @@ namespace settings {
     capsuleOpacity.visibleWhen = capsuleOn;
     return {
         boolSpec("anchor", false, true), colorRoleSpec("color", {}, true), boolSpec("capsule", false),
-        std::move(capsuleGroup),         std::move(capsuleFill),           std::move(capsuleBorder),
-        std::move(capsuleForeground),    std::move(capsulePadding),        std::move(capsuleRadius),
+        std::move(capsuleRadius),        std::move(capsuleGroup),          std::move(capsuleFill),
+        std::move(capsuleBorder),        std::move(capsuleForeground),     std::move(capsulePadding),
         std::move(capsuleOpacity),
     };
   }
@@ -461,6 +461,13 @@ namespace settings {
       add(doubleSpec("max_length", 160.0, 40.0, 800.0, 1.0));
       add(boolSpec("show_condition", true));
     } else if (type == "workspaces") {
+      for (auto& spec : specs) {
+        if (spec.key == "capsule_radius") {
+          spec.descriptionKey = "settings.widgets.settings.capsule_radius.workspaces-description";
+          spec.visibleWhen.reset();
+          break;
+        }
+      }
       add(segmentedSpec("display", "id", workspaceDisplay));
       {
         auto focusedColor = colorRoleSpec("focused_color", "primary");

@@ -200,7 +200,9 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
     item.activeWidth = activeWidth;
     auto indicator = std::make_unique<Box>();
     indicator->clearBorder();
-    indicator->setRadius(indicatorHeight * 0.5f);
+    const float indicatorW = m_isVertical ? indicatorHeight : w;
+    const float indicatorH = m_isVertical ? w : indicatorHeight;
+    indicator->setRadius(workspacePillRadius(indicatorW, indicatorH));
     indicator->setFrameSize(w, indicatorHeight);
     const bool isEmpty = !ws.active && !ws.urgent && !ws.occupied;
     indicator->setFill(colorSpecFromRole(workspaceFillRole(ws), workspaceFillAlpha(ws)));
@@ -357,8 +359,12 @@ void WorkspacesWidget::applyItemLayout(std::size_t i) {
   if (it.indicator != nullptr) {
     const float itemW = m_isVertical ? m_indicatorHeight : it.currentWidth;
     const float itemH = m_isVertical ? it.currentWidth : m_indicatorHeight;
-    it.indicator->setRadius(std::min(itemW, itemH) * 0.5f);
+    it.indicator->setRadius(workspacePillRadius(itemW, itemH));
   }
+}
+
+float WorkspacesWidget::workspacePillRadius(float width, float height) const noexcept {
+  return resolvedBarCapsuleRadius(width, height);
 }
 
 WorkspacesWidget::~WorkspacesWidget() { cancelAnimation(); }

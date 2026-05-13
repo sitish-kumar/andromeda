@@ -37,6 +37,7 @@ private:
   void startAnimation();
   void cancelAnimation();
   void applyItemLayout(std::size_t i);
+  [[nodiscard]] float workspacePillRadius(float width, float height) const noexcept;
   [[nodiscard]] std::optional<std::size_t> activeWorkspaceIndex() const;
   void activateAdjacentWorkspace(int direction);
 
