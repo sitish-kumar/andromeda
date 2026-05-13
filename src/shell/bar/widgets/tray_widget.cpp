@@ -745,13 +745,14 @@ std::string TrayWidget::resolveIconPath(const TrayItemInfo& item) {
                                        : (isUniqueBusName(item.busName) ? item.objectPath : item.id);
 
   std::vector<std::pair<const char*, const std::string*>> candidates;
-  candidates.reserve(6);
+  candidates.reserve(12);
   candidates.emplace_back("preferred", &preferred);
-  // When an explicit tray IconName is provided, treat it as authoritative.
-  // Falling back to generic app-id/title mappings can hide stateful icon
-  // changes (e.g. indicator on/off variants) behind a constant app icon.
+  // Prefer explicit tray IconName first, but still try metadata-derived
+  // candidates if that only yields symbolic/no result. Some items expose a
+  // symbolic tray name while a full-color app icon is discoverable via stable
+  // app identifiers.
   const bool hasTargetPixmap = item.needsAttention ? !item.attentionArgb32.empty() : !item.iconArgb32.empty();
-  if (preferred.empty() && !hasTargetPixmap) {
+  if (!hasTargetPixmap) {
     candidates.emplace_back("itemName", &item.itemName);
     candidates.emplace_back("processName", &item.processName);
     candidates.emplace_back("title", &item.title);
