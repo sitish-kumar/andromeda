@@ -1,5 +1,6 @@
 #include "core/process.h"
 
+#include <cerrno>
 #include <csignal>
 #include <cstdlib>
 #include <cstring>
@@ -11,18 +12,7 @@
 
 namespace {
 
-  // Forks, redirects child stdio to /dev/null, and execvp the given args.
-  // Returns the child pid in the parent, or -1 on fork failure.
-  // Never returns in the child.
-  pid_t forkExecDetached(const std::vector<std::string>& args) {
-    const pid_t pid = ::fork();
-    if (pid != 0) {
-      return pid;
-    }
-
-    // Child
-    ::setsid();
-
+  void attachStdioToDevNull() {
     const int devnull = ::open("/dev/null", O_RDWR);
     if (devnull >= 0) {
       ::dup2(devnull, STDIN_FILENO);
@@ -32,6 +22,97 @@ namespace {
         ::close(devnull);
       }
     }
+  }
+
+  // Double-fork + setsid so the exec'd process is not a direct child of the caller (matches
+  // launcher app activation). Parent reaps the short-lived intermediate child.
+  //
+  // If reportPid is non-null, a pipe returns the grandchild pid to the parent before waitpid on
+  // the intermediate (so we never wait on the intermediate while the grandchild has not yet run).
+  // activationToken: if non-empty, set XDG_ACTIVATION_TOKEN and DESKTOP_STARTUP_ID before exec.
+  bool doubleForkExecDetached(const std::vector<std::string>& args, pid_t* reportPid,
+                              const std::string& activationToken) {
+    int reportPipe[2] = {-1, -1};
+    const bool needPid = reportPid != nullptr;
+    if (needPid && ::pipe(reportPipe) != 0) {
+      return false;
+    }
+
+    const pid_t intermediate = ::fork();
+    if (intermediate < 0) {
+      if (needPid) {
+        ::close(reportPipe[0]);
+        ::close(reportPipe[1]);
+      }
+      return false;
+    }
+
+    if (intermediate > 0) {
+      // Parent: read grandchild pid first (intermediate may exit before the grandchild writes).
+      if (needPid) {
+        ::close(reportPipe[1]);
+        pid_t reported = -1;
+        const auto n = ::read(reportPipe[0], &reported, sizeof(reported));
+        ::close(reportPipe[0]);
+        int status = 0;
+        while (::waitpid(intermediate, &status, 0) < 0 && errno == EINTR) {
+        }
+        const bool ok = WIFEXITED(status) && WEXITSTATUS(status) == 0 && n == sizeof(reported) && reported > 0;
+        if (ok) {
+          *reportPid = reported;
+        }
+        return ok;
+      }
+
+      int status = 0;
+      while (::waitpid(intermediate, &status, 0) < 0 && errno == EINTR) {
+      }
+      return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+    }
+
+    // Intermediate child: new session, then fork again so the grandchild reparents away.
+    if (needPid) {
+      ::close(reportPipe[0]);
+    }
+
+    if (::setsid() < 0) {
+      if (needPid) {
+        const pid_t err = -1;
+        (void)::write(reportPipe[1], &err, sizeof(err));
+        ::close(reportPipe[1]);
+      }
+      ::_exit(1);
+    }
+
+    const pid_t worker = ::fork();
+    if (worker < 0) {
+      if (needPid) {
+        const pid_t err = -1;
+        (void)::write(reportPipe[1], &err, sizeof(err));
+        ::close(reportPipe[1]);
+      }
+      ::_exit(1);
+    }
+    if (worker > 0) {
+      if (needPid) {
+        ::close(reportPipe[1]);
+      }
+      ::_exit(0);
+    }
+
+    // Grandchild
+    if (needPid) {
+      const pid_t self = ::getpid();
+      (void)::write(reportPipe[1], &self, sizeof(self));
+      ::close(reportPipe[1]);
+    }
+
+    if (!activationToken.empty()) {
+      ::setenv("XDG_ACTIVATION_TOKEN", activationToken.c_str(), 1);
+      ::setenv("DESKTOP_STARTUP_ID", activationToken.c_str(), 1);
+    }
+
+    attachStdioToDevNull();
 
     std::vector<char*> argv;
     argv.reserve(args.size() + 1);
@@ -81,11 +162,11 @@ namespace process {
     return false;
   }
 
-  bool runAsync(const std::vector<std::string>& args) {
+  bool runAsync(const std::vector<std::string>& args, const std::string& activationToken) {
     if (args.empty() || args.front().empty()) {
       return false;
     }
-    return forkExecDetached(args) > 0;
+    return doubleForkExecDetached(args, nullptr, activationToken);
   }
 
   bool runAsync(std::initializer_list<const char*> args) {
@@ -97,25 +178,25 @@ namespace process {
       }
       command.emplace_back(arg);
     }
-    return runAsync(command);
+    return runAsync(command, {});
   }
 
   bool runAsync(const std::string& command) {
     if (command.empty()) {
       return false;
     }
-    return runAsync(std::vector<std::string>{"/bin/sh", "-lc", command});
+    return runAsync(std::vector<std::string>{"/bin/sh", "-lc", command}, {});
   }
 
   std::optional<int> launchDetachedTracked(const std::vector<std::string>& args) {
     if (args.empty() || args.front().empty()) {
       return std::nullopt;
     }
-    const pid_t pid = forkExecDetached(args);
-    if (pid < 0) {
+    pid_t reported = -1;
+    if (!doubleForkExecDetached(args, &reported, {})) {
       return std::nullopt;
     }
-    return static_cast<int>(pid);
+    return static_cast<int>(reported);
   }
 
   std::optional<int> launchDetachedTracked(std::initializer_list<const char*> args) {
