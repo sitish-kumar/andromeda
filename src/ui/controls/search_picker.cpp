@@ -41,8 +41,7 @@ namespace {
 
     void bind(const SearchPickerOption& option, bool highlighted, bool selected, bool hovered) {
       const bool hasDetail = !option.description.empty();
-      setGap(hasDetail ? 1.0f : 0.0f);
-      setMinHeight(hasDetail ? Style::controlHeightLg : Style::controlHeight);
+      setJustify(FlexJustify::Center);
       setFill(highlighted || hovered ? colorSpecFromRole(ColorRole::Primary)
                                      : (selected ? colorSpecFromRole(ColorRole::Primary, 0.16f) : clearColorSpec()));
 
@@ -55,6 +54,7 @@ namespace {
       }
       if (m_detail != nullptr) {
         m_detail->setVisible(hasDetail);
+        m_detail->setParticipatesInLayout(hasDetail);
         m_detail->setText(option.description);
         m_detail->setColor(highlighted || hovered
                                ? colorSpecFromRole(ColorRole::OnPrimary, 0.78f)
