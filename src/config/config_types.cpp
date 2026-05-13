@@ -105,15 +105,16 @@ ResolvedIdleCommands resolveIdleBehaviorCommands(const IdleBehaviorConfig& behav
   IdleBehaviorConfig tmp = behavior;
   inferIdleBehaviorActionFromLegacyFields(tmp);
   const std::string& act = tmp.action;
+  const auto resume = [&tmp](std::string fallback) { return tmp.resumeCommand.empty() ? fallback : tmp.resumeCommand; };
 
   if (act == "lock") {
-    return {"noctalia:screen-lock", ""};
+    return {"noctalia:screen-lock", resume("")};
   }
   if (act == "screen_off") {
-    return {"noctalia:dpms-off", "noctalia:dpms-on"};
+    return {"noctalia:dpms-off", resume("noctalia:dpms-on")};
   }
   if (act == "suspend") {
-    return {"noctalia:suspend", ""};
+    return {"noctalia:suspend", resume("")};
   }
   return {behavior.command, behavior.resumeCommand};
 }

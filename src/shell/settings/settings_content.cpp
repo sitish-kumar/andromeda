@@ -699,7 +699,12 @@ namespace settings {
 
       addCommandInput(*customCommandsGrp, i18n::tr("settings.idle.behavior.command-label"),
                       i18n::tr("settings.idle.behavior.command-placeholder"), row.command);
-      addCommandInput(*customCommandsGrp, i18n::tr("settings.idle.behavior.resume-command-label"),
+
+      auto resumeCommandGrp = std::make_unique<Flex>();
+      resumeCommandGrp->setDirection(FlexDirection::Vertical);
+      resumeCommandGrp->setAlign(FlexAlign::Stretch);
+      resumeCommandGrp->setGap(Style::spaceMd * scale);
+      addCommandInput(*resumeCommandGrp, i18n::tr("settings.idle.behavior.resume-command-label"),
                       i18n::tr("settings.idle.behavior.resume-command-placeholder"), row.resumeCommand);
 
       auto kindBlock = std::make_unique<Flex>();
@@ -726,7 +731,6 @@ namespace settings {
           row.action = idleActionOptions[index].value;
           if (row.action != "command") {
             row.command.clear();
-            row.resumeCommand.clear();
           }
         }
         IdleBehaviorConfig n = row;
@@ -801,6 +805,7 @@ namespace settings {
       body->addChild(std::move(timeoutBlock));
 
       body->addChild(std::move(customCommandsGrp));
+      body->addChild(std::move(resumeCommandGrp));
 
       section.addChild(std::move(body));
 
