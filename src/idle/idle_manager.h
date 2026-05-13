@@ -57,6 +57,8 @@ private:
   bool runAction(const IdleBehaviorConfig& behavior, const IdleActionRequest& action) const;
   void cancelActiveGrace(bool userCancelled);
   void graceFadeComplete();
+  void joinActiveGrace(BehaviorState& behavior);
+  [[nodiscard]] bool hasActiveGrace() const noexcept { return !m_graceBehaviors.empty(); }
 
   WaylandConnection* m_wayland = nullptr;
   ext_idle_notifier_v1* m_notifier = nullptr;
@@ -64,6 +66,7 @@ private:
   GraceBeginCallback m_onGraceBegin;
   GraceEndCallback m_onGraceEnd;
   IdleConfig m_idleConfig;
-  BehaviorState* m_graceBehavior = nullptr;
+  std::vector<BehaviorState*> m_graceBehaviors;
+  std::uint64_t m_graceGeneration = 0;
   std::vector<std::unique_ptr<BehaviorState>> m_behaviors;
 };

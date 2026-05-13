@@ -128,28 +128,46 @@ bool IdleManager::runAction(const IdleBehaviorConfig& behavior, const IdleAction
 }
 
 void IdleManager::cancelActiveGrace(bool userCancelled) {
-  if (m_graceBehavior == nullptr) {
+  if (!hasActiveGrace()) {
     return;
   }
-  m_graceBehavior->phase = BehaviorPhase::Waiting;
-  m_graceBehavior = nullptr;
+  for (auto* behavior : m_graceBehaviors) {
+    if (behavior != nullptr) {
+      behavior->phase = BehaviorPhase::Waiting;
+    }
+  }
+  m_graceBehaviors.clear();
+  ++m_graceGeneration;
   if (m_onGraceEnd) {
     m_onGraceEnd(userCancelled);
   }
 }
 
 void IdleManager::graceFadeComplete() {
-  if (m_graceBehavior == nullptr) {
+  if (!hasActiveGrace()) {
     return;
   }
-  BehaviorState* behavior = m_graceBehavior;
-  m_graceBehavior = nullptr;
+  auto behaviors = std::move(m_graceBehaviors);
+  m_graceBehaviors.clear();
   if (m_onGraceEnd) {
     m_onGraceEnd(false);
   }
-  behavior->phase = BehaviorPhase::Idled;
-  kLog.info("idle behavior '{}' triggered after pre-action fade", behavior->config.name);
-  runBehavior(*behavior);
+  for (auto* behavior : behaviors) {
+    if (behavior == nullptr || behavior->phase != BehaviorPhase::Fading) {
+      continue;
+    }
+    behavior->phase = BehaviorPhase::Idled;
+    kLog.info("idle behavior '{}' triggered after pre-action fade", behavior->config.name);
+    runBehavior(*behavior);
+  }
+}
+
+void IdleManager::joinActiveGrace(BehaviorState& behavior) {
+  if (std::find(m_graceBehaviors.begin(), m_graceBehaviors.end(), &behavior) != m_graceBehaviors.end()) {
+    return;
+  }
+  behavior.phase = BehaviorPhase::Fading;
+  m_graceBehaviors.push_back(&behavior);
 }
 
 void IdleManager::handleIdled(void* data, ext_idle_notification_v1* /*notification*/) {
@@ -163,29 +181,23 @@ void IdleManager::handleIdled(void* data, ext_idle_notification_v1* /*notificati
 
   IdleManager& self = *behavior->owner;
 
-  if (self.m_graceBehavior != nullptr && self.m_graceBehavior != behavior) {
-    BehaviorState* pending = self.m_graceBehavior;
-    self.m_graceBehavior = nullptr;
-    if (self.m_onGraceEnd) {
-      self.m_onGraceEnd(false);
-    }
-    pending->phase = BehaviorPhase::Idled;
-    kLog.info("idle behavior '{}' triggered (superseded pending pre-action fade)", pending->config.name);
-    self.runBehavior(*pending);
-  }
-
   const float fadeSec = self.m_idleConfig.preActionFadeSeconds;
   if (fadeSec > 0.0005f) {
     assert(self.m_onGraceBegin);
-    self.m_graceBehavior = behavior;
+    if (self.hasActiveGrace()) {
+      self.joinActiveGrace(*behavior);
+      kLog.info("idle behavior '{}' joined active pre-action fade", behavior->config.name);
+      return;
+    }
+
     const int fadeMs = static_cast<int>(std::lround(static_cast<double>(fadeSec) * 1000.0));
     const auto fade = std::chrono::milliseconds(std::clamp(fadeMs, 1, 600000));
     kLog.info("idle behavior '{}' pre-action fade {}ms", behavior->config.name, fade.count());
-    behavior->phase = BehaviorPhase::Fading;
-    BehaviorState* b = behavior;
-    self.m_onGraceBegin(behavior->config.name, fade, [ptr = &self, b]() {
-      DeferredCall::callLater([ptr, b]() {
-        if (ptr->m_graceBehavior != b) {
+    self.joinActiveGrace(*behavior);
+    const std::uint64_t generation = ++self.m_graceGeneration;
+    self.m_onGraceBegin(behavior->config.name, fade, [ptr = &self, generation]() {
+      DeferredCall::callLater([ptr, generation]() {
+        if (ptr->m_graceGeneration != generation || !ptr->hasActiveGrace()) {
           return;
         }
         ptr->graceFadeComplete();
@@ -206,13 +218,9 @@ void IdleManager::handleResumed(void* data, ext_idle_notification_v1* /*notifica
   }
 
   IdleManager& self = *behavior->owner;
-  if (behavior == self.m_graceBehavior && behavior->phase == BehaviorPhase::Fading) {
-    self.m_graceBehavior = nullptr;
-    behavior->phase = BehaviorPhase::Waiting;
+  if (behavior->phase == BehaviorPhase::Fading) {
     kLog.info("idle behavior '{}' pre-action fade cancelled (user active)", behavior->config.name);
-    if (self.m_onGraceEnd) {
-      self.m_onGraceEnd(true);
-    }
+    self.cancelActiveGrace(true);
     return;
   }
 
