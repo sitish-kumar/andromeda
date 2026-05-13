@@ -23,6 +23,7 @@
 #include <string_view>
 #include <sys/inotify.h>
 #include <unistd.h>
+#include <unordered_map>
 #include <vector>
 #include <xkbcommon/xkbcommon.h>
 
@@ -1774,6 +1775,41 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
         inferIdleBehaviorActionFromLegacyFields(behavior);
 
         config.idle.behaviors.push_back(std::move(behavior));
+      }
+    }
+    if (auto* orderArr = (*idleTbl)["behavior_order"].as_array();
+        orderArr != nullptr && !config.idle.behaviors.empty()) {
+      std::vector<std::string> orderedNames;
+      orderedNames.reserve(orderArr->size());
+      for (const auto& item : *orderArr) {
+        if (auto name = item.value<std::string>(); name.has_value() && !name->empty()) {
+          orderedNames.push_back(*name);
+        }
+      }
+
+      if (!orderedNames.empty()) {
+        std::unordered_map<std::string, IdleBehaviorConfig> byName;
+        byName.reserve(config.idle.behaviors.size());
+        for (auto& behavior : config.idle.behaviors) {
+          byName.insert_or_assign(behavior.name, std::move(behavior));
+        }
+
+        std::vector<IdleBehaviorConfig> ordered;
+        ordered.reserve(byName.size());
+        for (const auto& name : orderedNames) {
+          auto it = byName.find(name);
+          if (it == byName.end()) {
+            continue;
+          }
+          ordered.push_back(std::move(it->second));
+          byName.erase(it);
+        }
+        for (auto& [name, behavior] : byName) {
+          (void)name;
+          ordered.push_back(std::move(behavior));
+        }
+
+        config.idle.behaviors = std::move(ordered);
       }
     }
   }

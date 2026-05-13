@@ -418,6 +418,7 @@ namespace {
             table.insert_or_assign(key, std::move(array));
           } else if constexpr (std::is_same_v<T, std::vector<IdleBehaviorConfig>>) {
             toml::table behaviorTable;
+            toml::array behaviorOrder;
             for (const auto& item : concrete) {
               if (item.name.empty()) {
                 continue;
@@ -438,8 +439,14 @@ namespace {
                 row.insert_or_assign("lock_before_suspend", item.lockBeforeSuspend);
               }
               behaviorTable.insert_or_assign(item.name, std::move(row));
+              behaviorOrder.push_back(item.name);
             }
             table.insert_or_assign(key, std::move(behaviorTable));
+            // Preserve user-defined behavior list order (table iteration order is not
+            // a reliable ordering source after round-trips).
+            if (key == "behavior") {
+              table.insert_or_assign("behavior_order", std::move(behaviorOrder));
+            }
           } else if constexpr (std::is_same_v<T, std::vector<KeyChord>>) {
             toml::array array;
             for (const auto& item : concrete) {
@@ -956,6 +963,9 @@ bool ConfigService::setOverride(const std::vector<std::string>& path, ConfigOver
   insertOverrideValue(*table, path.back(), value);
   if (!overridePathEffectiveInTable(path, m_overridesTable)) {
     eraseOverridePath(m_overridesTable, path, overridePreserveDepthForPath(path));
+    if (path.size() == 2 && path[0] == "idle" && path[1] == "behavior") {
+      eraseOverridePath(m_overridesTable, {"idle", "behavior_order"}, overridePreserveDepthForPath(path));
+    }
   }
 
   if (!writeOverridesToFile()) {
@@ -977,6 +987,9 @@ bool ConfigService::clearOverride(const std::vector<std::string>& path) {
 
   if (!eraseOverridePath(m_overridesTable, path, overridePreserveDepthForPath(path))) {
     return false;
+  }
+  if (path.size() == 2 && path[0] == "idle" && path[1] == "behavior") {
+    eraseOverridePath(m_overridesTable, {"idle", "behavior_order"}, overridePreserveDepthForPath(path));
   }
 
   if (!writeOverridesToFile()) {
