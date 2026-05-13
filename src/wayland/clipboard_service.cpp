@@ -43,6 +43,21 @@ namespace {
       std::string_view{"image/jpeg"},
   };
 
+  constexpr std::array kPasswordHintMimeTypes = {
+      std::string_view{"x-kde-passwordManagerHint"},
+  };
+
+  [[nodiscard]] bool selectionAdvertisesPasswordHint(const std::vector<std::string>& mimeTypes) {
+    for (const std::string& advertised : mimeTypes) {
+      for (const std::string_view hint : kPasswordHintMimeTypes) {
+        if (advertised == hint) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   constexpr Logger kLog("clipboard");
   std::uint64_t gStorageCounter = 0;
 
@@ -801,6 +816,11 @@ bool ClipboardService::startReceive(void* offer) {
 
   const OfferState* state = findOffer(offer);
   if (state == nullptr) {
+    return false;
+  }
+
+  if (selectionAdvertisesPasswordHint(state->mimeTypes)) {
+    kLog.debug("ignoring clipboard selection: password-hint MIME advertised");
     return false;
   }
 
