@@ -880,6 +880,10 @@ void Application::initUi() {
     }
     m_settingsWindow.open();
   });
+  m_settingsWindow.setOpenWallpaperPanel([this]() {
+    wl_output* output = m_compositorPlatform.preferredInteractiveOutput(std::chrono::milliseconds(1200));
+    m_panelManager.openPanel("wallpaper", PanelOpenRequest{.output = output});
+  });
   auto clipboardPanel = std::make_unique<ClipboardPanel>(&m_clipboardService, &m_configService, &m_thumbnailService,
                                                          &m_asyncTextureCache);
   clipboardPanel->setActivateCallback([this](const ClipboardEntry& entry) {

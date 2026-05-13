@@ -62,6 +62,7 @@ public:
   void onFontChanged();
   void onExternalOptionsChanged();
   void setOpenDesktopWidgetEditor(std::function<void()> callback) { m_openDesktopWidgetEditor = std::move(callback); }
+  void setOpenWallpaperPanel(std::function<void()> callback) { m_openWallpaperPanel = std::move(callback); }
 
   void onSecondTick();
 
@@ -175,4 +176,5 @@ private:
   bool m_showOverriddenOnly = false;
   bool m_statusIsError = false;
   std::function<void()> m_openDesktopWidgetEditor;
+  std::function<void()> m_openWallpaperPanel;
 };

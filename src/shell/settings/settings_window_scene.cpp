@@ -717,6 +717,26 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
   m_settingsRegistry =
       settings::buildSettingsRegistry(cfg, selectedBar, selectedMonitorOverride, buildRegistryEnvironment());
 
+  if (m_openWallpaperPanel) {
+    auto it = std::find_if(m_settingsRegistry.begin(), m_settingsRegistry.end(), [](const settings::SettingEntry& e) {
+      return e.section == "wallpaper" && e.group == "general" &&
+             e.path == std::vector<std::string>{"wallpaper", "fill_mode"};
+    });
+    settings::SettingEntry btn{
+        .section = "wallpaper",
+        .group = "general",
+        .title = i18n::tr("settings.schema.wallpaper.panel.label"),
+        .subtitle = i18n::tr("settings.schema.wallpaper.panel.description"),
+        .path = {},
+        .control = settings::ButtonSetting{.label = i18n::tr("settings.schema.wallpaper.panel.button"),
+                                           .action = m_openWallpaperPanel,
+                                           .glyph = "wallpaper-selector"},
+        .searchText = "wallpaper panel open selector browse",
+        .visibleWhen = std::nullopt,
+    };
+    m_settingsRegistry.insert(it, std::move(btn));
+  }
+
   if (m_openDesktopWidgetEditor) {
     auto it = std::find_if(m_settingsRegistry.begin(), m_settingsRegistry.end(), [](const settings::SettingEntry& e) {
       return e.section == "desktop" && e.group == "widgets";
@@ -730,8 +750,9 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
         .title = i18n::tr("settings.schema.desktop.widgets-editor.label"),
         .subtitle = i18n::tr("settings.schema.desktop.widgets-editor.description"),
         .path = {},
-        .control = settings::ButtonSetting{i18n::tr("settings.schema.desktop.widgets-editor.button"),
-                                           m_openDesktopWidgetEditor},
+        .control = settings::ButtonSetting{.label = i18n::tr("settings.schema.desktop.widgets-editor.button"),
+                                           .action = m_openDesktopWidgetEditor,
+                                           .glyph = {}},
         .searchText = "desktop widgets editor edit",
         .visibleWhen = std::nullopt,
     };
