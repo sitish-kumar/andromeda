@@ -616,12 +616,9 @@ void NotificationsTab::doLayout(Renderer& renderer, float contentWidth, float bo
 }
 
 void NotificationsTab::doUpdate(Renderer& renderer) {
-  (void)renderer;
-  // `refreshDataSnapshot` calls `VirtualListView::notifyDataChanged` when needed, which already
-  // marks layout dirty. Do not run `layout()` here: this runs in the Update phase while the panel
-  // surface may still have `m_inPrepareFrame` set, so layout invalidation from nodes is suppressed
-  // and nested layout during Update is the wrong phase boundary anyway.
-  refreshDataSnapshot();
+  if (refreshDataSnapshot() && m_root != nullptr) {
+    m_root->layout(renderer);
+  }
 }
 
 void NotificationsTab::onClose() {
