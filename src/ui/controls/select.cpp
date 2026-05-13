@@ -294,7 +294,7 @@ void Select::applyVisualState() {
       .fill = triggerBg,
       .border = triggerBorder,
       .fillMode = FillMode::Solid,
-      .radius = Style::radiusMd,
+      .radius = Style::scaledRadiusMd(),
       .softness = 1.0f,
       .borderWidth = Style::borderWidth,
   });

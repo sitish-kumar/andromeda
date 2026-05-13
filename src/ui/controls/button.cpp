@@ -133,7 +133,7 @@ Button::Button() {
   setAlign(FlexAlign::Center);
   setMinHeight(Style::controlHeightSm);
   setPadding(Style::spaceSm);
-  setRadius(Style::radiusMd);
+  setRadius(Style::scaledRadiusMd());
 
   auto area = std::make_unique<InputArea>();
   area->setOnEnter([this](const InputArea::PointerData& /*data*/) {

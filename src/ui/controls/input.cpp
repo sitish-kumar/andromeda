@@ -730,7 +730,7 @@ void Input::applyVisualState() {
         .fill = fill,
         .border = border,
         .fillMode = FillMode::Solid,
-        .radius = Style::radiusMd,
+        .radius = Style::scaledRadiusMd(),
         .softness = 1.0f,
         .borderWidth = Style::borderWidth,
     });

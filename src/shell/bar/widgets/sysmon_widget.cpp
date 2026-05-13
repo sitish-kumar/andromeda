@@ -117,7 +117,7 @@ void SysmonWidget::create() {
     auto chartBg = std::make_unique<Box>();
     RoundedRectStyle bgStyle;
     bgStyle.fill = colorForRole(ColorRole::SurfaceVariant);
-    bgStyle.radius = Style::radiusSm;
+    bgStyle.radius = Style::scaledRadiusSm();
     bgStyle.softness = 0.5f;
     chartBg->setStyle(bgStyle);
     m_chartBg = static_cast<Box*>(container->addChild(std::move(chartBg)));

@@ -440,7 +440,7 @@ namespace settings {
       glyphPickBtn->setMinHeight(iconSq);
       glyphPickBtn->setMaxHeight(iconSq);
       glyphPickBtn->setPadding(0.0f, 0.0f);
-      glyphPickBtn->setRadius(Style::radiusMd * scale);
+      glyphPickBtn->setRadius(Style::scaledRadiusMd(scale));
       glyphPickBtn->setOnClick([&row, persist]() {
         GlyphPickerDialogOptions options;
         options.title = i18n::tr("settings.session-actions.glyph-picker-title");
@@ -464,7 +464,7 @@ namespace settings {
         clearG->setFontSize(Style::fontSizeCaption * scale);
         clearG->setMinHeight(iconSq);
         clearG->setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-        clearG->setRadius(Style::radiusSm * scale);
+        clearG->setRadius(Style::scaledRadiusSm(scale));
         clearG->setOnClick([&row, persist]() {
           row.glyph = std::nullopt;
           persist();
@@ -599,7 +599,7 @@ namespace settings {
       applyBtn->setGlyphSize(Style::fontSizeBody * scale);
       applyBtn->setMinHeight(Style::controlHeight * scale);
       applyBtn->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-      applyBtn->setRadius(Style::radiusMd * scale);
+      applyBtn->setRadius(Style::scaledRadiusMd(scale));
       applyBtn->setFlexGrow(1.0f);
       applyBtn->setOnClick([commitLabel, commitCommand, closeHostedEditor]() {
         commitLabel();
@@ -733,7 +733,7 @@ namespace settings {
       applyBtn->setGlyphSize(Style::fontSizeBody * scale);
       applyBtn->setMinHeight(Style::controlHeight * scale);
       applyBtn->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-      applyBtn->setRadius(Style::radiusMd * scale);
+      applyBtn->setRadius(Style::scaledRadiusMd(scale));
       applyBtn->setFlexGrow(1.0f);
       applyBtn->setOnClick([commitName, commitTimeout, closeHostedEditor]() {
         commitName();
@@ -815,7 +815,7 @@ namespace settings {
       reset->setFontSize(Style::fontSizeCaption * scale);
       reset->setMinHeight(Style::controlHeightSm * scale);
       reset->setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-      reset->setRadius(Style::radiusMd * scale);
+      reset->setRadius(Style::scaledRadiusMd(scale));
       reset->setOnClick([clearOverride = ctx.clearOverride, path]() { clearOverride(path); });
       return reset;
     };
@@ -853,7 +853,7 @@ namespace settings {
         auto badge = std::make_unique<Flex>();
         badge->setAlign(FlexAlign::Center);
         badge->setPadding(0, Style::spaceXs * scale);
-        badge->setRadius(Style::radiusSm * scale);
+        badge->setRadius(Style::scaledRadiusSm(scale));
         badge->setFill(fill);
         badge->addChild(makeLabel(label, Style::fontSizeCaption * scale, color, true));
         return badge;
@@ -1070,7 +1070,7 @@ namespace settings {
       pickerButton->setMinHeight(Style::controlHeight * scale);
       pickerButton->setMinWidth(Style::controlHeight * scale);
       pickerButton->setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-      pickerButton->setRadius(Style::radiusMd * scale);
+      pickerButton->setRadius(Style::scaledRadiusMd(scale));
       pickerButton->setOnClick([setOverride = ctx.setOverride, path, currentValue = setting.value]() {
         GlyphPickerDialogOptions options;
         if (!currentValue.empty()) {
@@ -1190,7 +1190,7 @@ namespace settings {
       const float swatchSize = Style::controlHeight * scale;
       auto swatch = std::make_unique<Box>();
       swatch->setSize(swatchSize, swatchSize);
-      swatch->setRadius(Style::radiusSm * scale);
+      swatch->setRadius(Style::scaledRadiusSm(scale));
       swatch->setBorder(colorSpecFromRole(ColorRole::Outline), 1.0f);
       Color initialColor;
       const bool hasColor = !setting.unset && tryParseHexColor(setting.hex, initialColor);
@@ -1206,7 +1206,7 @@ namespace settings {
       button->setFontSize(Style::fontSizeBody * scale);
       button->setMinHeight(Style::controlHeight * scale);
       button->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-      button->setRadius(Style::radiusMd * scale);
+      button->setRadius(Style::scaledRadiusMd(scale));
       const std::optional<Color> initialOpt = hasColor ? std::optional<Color>{initialColor} : std::nullopt;
       const std::string title = i18n::tr("settings.dialogs.color-picker.title");
       button->setOnClick([setOverride = ctx.setOverride, path, initialOpt, title]() {
@@ -1270,7 +1270,7 @@ namespace settings {
       button->setMinWidth(190.0f * scale);
       button->setMinHeight(Style::controlHeight * scale);
       button->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-      button->setRadius(Style::radiusMd * scale);
+      button->setRadius(Style::scaledRadiusMd(scale));
       button->setOnClick([openPopup = ctx.openSearchPickerPopup, title = entry.title, options = setting.options,
                           selectedValue = setting.selectedValue, placeholder = setting.placeholder,
                           emptyText = setting.emptyText, path = entry.path]() {
@@ -1300,7 +1300,7 @@ namespace settings {
         auto badge = std::make_unique<Flex>();
         badge->setAlign(FlexAlign::Center);
         badge->setPadding(1.0f * scale, Style::spaceXs * scale);
-        badge->setRadius(Style::radiusSm * scale);
+        badge->setRadius(Style::scaledRadiusSm(scale));
         badge->setFill(colorSpecFromRole(ColorRole::Primary, 0.15f));
         badge->addChild(makeLabel(i18n::tr("settings.badges.override"), Style::fontSizeCaption * scale,
                                   colorSpecFromRole(ColorRole::Primary), true));
@@ -1392,7 +1392,7 @@ namespace settings {
         auto badge = std::make_unique<Flex>();
         badge->setAlign(FlexAlign::Center);
         badge->setPadding(1.0f * scale, Style::spaceXs * scale);
-        badge->setRadius(Style::radiusSm * scale);
+        badge->setRadius(Style::scaledRadiusSm(scale));
         badge->setFill(colorSpecFromRole(ColorRole::Primary, 0.15f));
         badge->addChild(makeLabel(i18n::tr("settings.badges.override"), Style::fontSizeCaption * scale,
                                   colorSpecFromRole(ColorRole::Primary), true));
@@ -1480,7 +1480,7 @@ namespace settings {
         auto badge = std::make_unique<Flex>();
         badge->setAlign(FlexAlign::Center);
         badge->setPadding(1.0f * scale, Style::spaceXs * scale);
-        badge->setRadius(Style::radiusSm * scale);
+        badge->setRadius(Style::scaledRadiusSm(scale));
         badge->setFill(colorSpecFromRole(ColorRole::Primary, 0.15f));
         badge->addChild(makeLabel(i18n::tr("settings.badges.override"), Style::fontSizeCaption * scale,
                                   colorSpecFromRole(ColorRole::Primary), true));
@@ -1553,7 +1553,7 @@ namespace settings {
         removeBtn->setMinWidth(Style::controlHeightSm * scale);
         removeBtn->setMinHeight(Style::controlHeightSm * scale);
         removeBtn->setPadding(Style::spaceXs * scale);
-        removeBtn->setRadius(Style::radiusSm * scale);
+        removeBtn->setRadius(Style::scaledRadiusSm(scale));
         removeBtn->setOnClick([commitItems, items = keybinds.items, i]() mutable {
           if (i >= items.size()) {
             return;
@@ -1612,7 +1612,7 @@ namespace settings {
         auto badge = std::make_unique<Flex>();
         badge->setAlign(FlexAlign::Center);
         badge->setPadding(1.0f * scale, Style::spaceXs * scale);
-        badge->setRadius(Style::radiusSm * scale);
+        badge->setRadius(Style::scaledRadiusSm(scale));
         badge->setFill(colorSpecFromRole(ColorRole::Primary, 0.15f));
         badge->addChild(makeLabel(i18n::tr("settings.badges.override"), Style::fontSizeCaption * scale,
                                   colorSpecFromRole(ColorRole::Primary), true));
@@ -1696,7 +1696,7 @@ namespace settings {
         auto badge = std::make_unique<Flex>();
         badge->setAlign(FlexAlign::Center);
         badge->setPadding(1.0f * scale, Style::spaceXs * scale);
-        badge->setRadius(Style::radiusSm * scale);
+        badge->setRadius(Style::scaledRadiusSm(scale));
         badge->setFill(colorSpecFromRole(ColorRole::Primary, 0.15f));
         badge->addChild(makeLabel(i18n::tr("settings.badges.override"), Style::fontSizeCaption * scale,
                                   colorSpecFromRole(ColorRole::Primary), true));
@@ -1755,7 +1755,7 @@ namespace settings {
         upBtn->setMinWidth(Style::controlHeightSm * scale);
         upBtn->setMinHeight(iconBtnH);
         upBtn->setPadding(Style::spaceXs * scale);
-        upBtn->setRadius(Style::radiusMd * scale);
+        upBtn->setRadius(Style::scaledRadiusMd(scale));
         upBtn->setEnabled(idx > 0);
         upBtn->setOnClick([state, rowIndex = idx, commit]() {
           if (rowIndex == 0 || rowIndex >= state->size()) {
@@ -1773,7 +1773,7 @@ namespace settings {
         downBtn->setMinWidth(Style::controlHeightSm * scale);
         downBtn->setMinHeight(iconBtnH);
         downBtn->setPadding(Style::spaceXs * scale);
-        downBtn->setRadius(Style::radiusMd * scale);
+        downBtn->setRadius(Style::scaledRadiusMd(scale));
         downBtn->setEnabled(idx + 1 < state->size());
         downBtn->setOnClick([state, rowIndex = idx, commit]() {
           if (rowIndex + 1 >= state->size()) {
@@ -1792,7 +1792,7 @@ namespace settings {
         entrySettings->setMinWidth(Style::controlHeightSm * scale);
         entrySettings->setMinHeight(Style::controlHeightSm * scale);
         entrySettings->setPadding(Style::spaceXs * scale);
-        entrySettings->setRadius(Style::radiusSm * scale);
+        entrySettings->setRadius(Style::scaledRadiusSm(scale));
         entrySettings->setOnClick([openEntry = ctx.openSessionActionEntryEditor, rowIndex = idx]() {
           if (openEntry) {
             openEntry(rowIndex);
@@ -1820,7 +1820,7 @@ namespace settings {
       addBtn->setGlyphSize(Style::fontSizeBody * scale);
       addBtn->setMinHeight(Style::controlHeight * scale);
       addBtn->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-      addBtn->setRadius(Style::radiusMd * scale);
+      addBtn->setRadius(Style::scaledRadiusMd(scale));
       addBtn->setOnClick([state, commit]() {
         state->push_back(SessionPanelActionConfig{"command", true, "notify-send 'Noctalia' 'Custom session entry'",
                                                   std::nullopt, std::nullopt, false});
@@ -1851,7 +1851,7 @@ namespace settings {
         auto badge = std::make_unique<Flex>();
         badge->setAlign(FlexAlign::Center);
         badge->setPadding(1.0f * scale, Style::spaceXs * scale);
-        badge->setRadius(Style::radiusSm * scale);
+        badge->setRadius(Style::scaledRadiusSm(scale));
         badge->setFill(colorSpecFromRole(ColorRole::Primary, 0.15f));
         badge->addChild(makeLabel(i18n::tr("settings.badges.override"), Style::fontSizeCaption * scale,
                                   colorSpecFromRole(ColorRole::Primary), true));
@@ -1901,7 +1901,7 @@ namespace settings {
         upBtn->setMinWidth(Style::controlHeightSm * scale);
         upBtn->setMinHeight(iconBtnH);
         upBtn->setPadding(Style::spaceXs * scale);
-        upBtn->setRadius(Style::radiusMd * scale);
+        upBtn->setRadius(Style::scaledRadiusMd(scale));
         upBtn->setEnabled(idx > 0);
         upBtn->setOnClick([state, rowIndex = idx, commit]() {
           if (rowIndex == 0 || rowIndex >= state->size()) {
@@ -1919,7 +1919,7 @@ namespace settings {
         downBtn->setMinWidth(Style::controlHeightSm * scale);
         downBtn->setMinHeight(iconBtnH);
         downBtn->setPadding(Style::spaceXs * scale);
-        downBtn->setRadius(Style::radiusMd * scale);
+        downBtn->setRadius(Style::scaledRadiusMd(scale));
         downBtn->setEnabled(idx + 1 < state->size());
         downBtn->setOnClick([state, rowIndex = idx, commit]() {
           if (rowIndex + 1 >= state->size()) {
@@ -1938,7 +1938,7 @@ namespace settings {
         entrySettings->setMinWidth(Style::controlHeightSm * scale);
         entrySettings->setMinHeight(Style::controlHeightSm * scale);
         entrySettings->setPadding(Style::spaceXs * scale);
-        entrySettings->setRadius(Style::radiusSm * scale);
+        entrySettings->setRadius(Style::scaledRadiusSm(scale));
         entrySettings->setOnClick([openEntry = ctx.openIdleBehaviorEntryEditor, rowIndex = idx]() {
           if (openEntry) {
             openEntry(rowIndex);
@@ -1966,7 +1966,7 @@ namespace settings {
       addBtn->setGlyphSize(Style::fontSizeBody * scale);
       addBtn->setMinHeight(Style::controlHeight * scale);
       addBtn->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-      addBtn->setRadius(Style::radiusMd * scale);
+      addBtn->setRadius(Style::scaledRadiusMd(scale));
       addBtn->setOnClick([state, commit]() {
         state->push_back(IdleBehaviorConfig{
             .name = uniqueIdleBehaviorName("custom", *state),
@@ -2027,7 +2027,7 @@ namespace settings {
               button->setFontSize(Style::fontSizeBody * scale);
               button->setMinHeight(Style::controlHeight * scale);
               button->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-              button->setRadius(Style::radiusMd * scale);
+              button->setRadius(Style::scaledRadiusMd(scale));
               button->setOnClick(control.action);
               return button;
             } else if constexpr (std::is_same_v<T, ColorRolePickerSetting>) {
@@ -2218,7 +2218,7 @@ namespace settings {
       emptyState->setPadding((Style::spaceLg + Style::spaceMd) * scale);
       emptyState->setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.24f));
       emptyState->setBorder(colorSpecFromRole(ColorRole::Outline, 0.28f), Style::borderWidth);
-      emptyState->setRadius(Style::radiusMd * scale);
+      emptyState->setRadius(Style::scaledRadiusMd(scale));
       emptyState->addChild(makeLabel(i18n::tr("settings.window.no-results"), Style::fontSizeBody * scale,
                                      colorSpecFromRole(ColorRole::OnSurface), true));
       emptyState->addChild(makeLabel(i18n::tr("settings.window.no-results-hint"), Style::fontSizeCaption * scale,

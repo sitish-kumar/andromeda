@@ -245,7 +245,7 @@ void TooltipManager::buildScene(const TooltipContent& content, float w, float h)
   auto bg = std::make_unique<Box>();
   bg->setFill(colorSpecFromRole(ColorRole::Surface));
   bg->setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), kBorder);
-  bg->setRadius(Style::radiusMd);
+  bg->setRadius(Style::scaledRadiusMd());
   bg->setSize(w, h);
   m_sceneRoot->addChild(std::move(bg));
 

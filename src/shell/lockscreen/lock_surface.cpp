@@ -354,7 +354,7 @@ void LockSurface::layoutScene(std::uint32_t width, std::uint32_t height) {
       .fill = colorForRole(ColorRole::SurfaceVariant, 0.88f),
       .border = colorForRole(ColorRole::Outline, 0.95f),
       .fillMode = FillMode::Solid,
-      .radius = Style::radiusXl,
+      .radius = Style::scaledRadiusXl(),
       .softness = 1.0f,
       .borderWidth = Style::borderWidth,
   });

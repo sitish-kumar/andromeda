@@ -114,7 +114,7 @@ namespace {
       setGap(Style::spaceSm * scale);
       setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
       setMinHeight(kRowMinHeight * scale);
-      setRadius(Style::radiusMd * scale);
+      setRadius(Style::scaledRadiusMd(scale));
       setFill(colorSpecFromRole(ColorRole::Surface));
       clearBorder();
 
@@ -620,7 +620,7 @@ void BluetoothTab::rebuildDeviceList(Renderer& renderer) {
     rescan->setGlyphSize(Style::fontSizeCaption * scale);
     rescan->setMinHeight(Style::fontSizeCaption * scale);
     rescan->setPadding(Style::spaceXs * scale);
-    rescan->setRadius(Style::radiusSm * scale);
+    rescan->setRadius(Style::scaledRadiusSm(scale));
     rescan->setEnabled(s.adapterPresent && s.powered);
     rescan->setOnClick([this]() {
       if (m_service == nullptr) {

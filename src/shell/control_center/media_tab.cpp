@@ -213,7 +213,7 @@ std::unique_ptr<Flex> MediaTab::create() {
   m_artworkRow = artworkRow.get();
 
   auto artwork = std::make_unique<Image>();
-  artwork->setRadius(Style::radiusXl * scale);
+  artwork->setRadius(Style::scaledRadiusXl(scale));
   artwork->setFit(ImageFit::Contain);
   artwork->setSize(kArtworkSize * scale, kArtworkSize * scale);
   m_artwork = artwork.get();
@@ -306,7 +306,7 @@ std::unique_ptr<Flex> MediaTab::create() {
   repeat->setMinWidth(kMediaControlsHeight * scale);
   repeat->setMinHeight(kMediaControlsHeight * scale);
   repeat->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
-  repeat->setRadius(Style::radiusLg * scale);
+  repeat->setRadius(Style::scaledRadiusLg(scale));
   repeat->setOnClick([this]() {
     const std::weak_ptr<void> aliveGuard = m_aliveGuard;
     DeferredCall::callLater([this, aliveGuard]() {
@@ -328,7 +328,7 @@ std::unique_ptr<Flex> MediaTab::create() {
   previous->setMinWidth(kMediaControlsHeight * scale);
   previous->setMinHeight(kMediaControlsHeight * scale);
   previous->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
-  previous->setRadius(Style::radiusLg * scale);
+  previous->setRadius(Style::scaledRadiusLg(scale));
   previous->setOnClick([this]() {
     const std::weak_ptr<void> aliveGuard = m_aliveGuard;
     DeferredCall::callLater([this, aliveGuard]() {
@@ -348,7 +348,7 @@ std::unique_ptr<Flex> MediaTab::create() {
   playPause->setMinWidth(kMediaPlayPauseHeight * scale);
   playPause->setMinHeight(kMediaPlayPauseHeight * scale);
   playPause->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
-  playPause->setRadius(Style::radiusLg * scale);
+  playPause->setRadius(Style::scaledRadiusLg(scale));
   playPause->setOnClick([this]() {
     const std::weak_ptr<void> aliveGuard = m_aliveGuard;
     DeferredCall::callLater([this, aliveGuard]() {
@@ -368,7 +368,7 @@ std::unique_ptr<Flex> MediaTab::create() {
   next->setMinWidth(kMediaControlsHeight * scale);
   next->setMinHeight(kMediaControlsHeight * scale);
   next->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
-  next->setRadius(Style::radiusLg * scale);
+  next->setRadius(Style::scaledRadiusLg(scale));
   next->setOnClick([this]() {
     const std::weak_ptr<void> aliveGuard = m_aliveGuard;
     DeferredCall::callLater([this, aliveGuard]() {
@@ -388,7 +388,7 @@ std::unique_ptr<Flex> MediaTab::create() {
   shuffle->setMinWidth(kMediaControlsHeight * scale);
   shuffle->setMinHeight(kMediaControlsHeight * scale);
   shuffle->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
-  shuffle->setRadius(Style::radiusLg * scale);
+  shuffle->setRadius(Style::scaledRadiusLg(scale));
   shuffle->setOnClick([this]() {
     const std::weak_ptr<void> aliveGuard = m_aliveGuard;
     DeferredCall::callLater([this, aliveGuard]() {
@@ -495,7 +495,7 @@ void MediaTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight
         button->setMinHeight(sideButtonSize);
         button->setGlyphSize(sideGlyphSize);
         button->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
-        button->setRadius(Style::radiusLg * scale);
+        button->setRadius(Style::scaledRadiusLg(scale));
       }
     }
     if (m_playPauseButton != nullptr) {
@@ -503,7 +503,7 @@ void MediaTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight
       m_playPauseButton->setMinHeight(playPauseButtonSize);
       m_playPauseButton->setGlyphSize(playPauseGlyphSize);
       m_playPauseButton->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
-      m_playPauseButton->setRadius(Style::radiusLg * scale);
+      m_playPauseButton->setRadius(Style::scaledRadiusLg(scale));
     }
   }
 
@@ -540,7 +540,7 @@ void MediaTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight
       }
     }
     m_artwork->setSize(targetWidth, targetHeight);
-    m_artwork->setRadius(Style::radiusXl * scale);
+    m_artwork->setRadius(Style::scaledRadiusXl(scale));
     m_mediaStack->layout(renderer);
   }
 

@@ -376,7 +376,7 @@ namespace {
       button->setMinWidth(kNotificationActionButtonSize * scale);
       button->setMinHeight(kNotificationActionButtonSize * scale);
       button->setPadding(Style::spaceXs * scale);
-      button->setRadius(Style::radiusMd * scale);
+      button->setRadius(Style::scaledRadiusMd(scale));
       return button;
     }
 

@@ -75,7 +75,7 @@ std::unique_ptr<Flex> WeatherTab::create() {
   effectNode->setParticipatesInLayout(false);
   effectNode->setZIndex(-1);
   effectNode->setVisible(false);
-  effectNode->setRadius(Style::radiusXl * scale);
+  effectNode->setRadius(Style::scaledRadiusXl(scale));
   m_effectNode = static_cast<EffectNode*>(currentCard->addChild(std::move(effectNode)));
 
   auto currentGlyph = std::make_unique<Glyph>();
@@ -742,7 +742,7 @@ void WeatherTab::sync(Renderer& renderer) {
     }
     m_effectNode->setEffectType(m_activeEffect);
     m_effectNode->setBgColor(colorForRole(ColorRole::Surface));
-    m_effectNode->setRadius(Style::radiusXl * contentScale());
+    m_effectNode->setRadius(Style::scaledRadiusXl(contentScale()));
     m_effectNode->setVisible(m_activeEffect != EffectType::None);
   }
 }

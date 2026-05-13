@@ -297,6 +297,7 @@ void Application::initServices() {
     motion.setSpeed(m_configService.config().shell.animation.speed);
     motion.setEnabled(m_configService.config().shell.animation.enabled);
   };
+  auto applyStyleConfig = [this]() { Style::setCornerRadiusScale(m_configService.config().shell.cornerRadiusScale); };
   auto applyPasswordMaskStyle = [this]() {
     const auto style = m_configService.config().shell.passwordMaskStyle == PasswordMaskStyle::RandomIcons
                            ? Input::PasswordMaskStyle::RandomIcons
@@ -304,9 +305,11 @@ void Application::initServices() {
     Input::setPasswordMaskStyle(style);
   };
   applyMotionConfig();
+  applyStyleConfig();
   applyPasswordMaskStyle();
   m_httpClient.setOfflineMode(m_configService.config().shell.offlineMode);
   m_configService.addReloadCallback(applyMotionConfig);
+  m_configService.addReloadCallback(applyStyleConfig);
   m_configService.addReloadCallback(applyPasswordMaskStyle);
   m_configService.addReloadCallback(
       [this]() { m_httpClient.setOfflineMode(m_configService.config().shell.offlineMode); });

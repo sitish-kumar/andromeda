@@ -389,7 +389,7 @@ std::unique_ptr<Flex> SettingsWindow::buildHeaderRow(float scale) {
   actionsMenuBtn->setMinWidth(Style::controlHeightSm * scale);
   actionsMenuBtn->setMinHeight(Style::controlHeightSm * scale);
   actionsMenuBtn->setPadding(Style::spaceXs * scale);
-  actionsMenuBtn->setRadius(Style::radiusMd * scale);
+  actionsMenuBtn->setRadius(Style::scaledRadiusMd(scale));
   actionsMenuBtn->setOnClick([this]() { openActionsMenu(); });
   m_actionsMenuButton = actionsMenuBtn.get();
   header->addChild(std::move(actionsMenuBtn));
@@ -401,7 +401,7 @@ std::unique_ptr<Flex> SettingsWindow::buildHeaderRow(float scale) {
   closeBtn->setMinWidth(Style::controlHeightSm * scale);
   closeBtn->setMinHeight(Style::controlHeightSm * scale);
   closeBtn->setPadding(Style::spaceXs * scale);
-  closeBtn->setRadius(Style::radiusMd * scale);
+  closeBtn->setRadius(Style::scaledRadiusMd(scale));
   closeBtn->setOnClick([this]() { close(); });
   header->addChild(std::move(closeBtn));
 
@@ -498,7 +498,7 @@ std::unique_ptr<Flex> SettingsWindow::buildFilterRow(float scale, const std::str
     resetPageBtn->setFontSize(Style::fontSizeCaption * scale);
     resetPageBtn->setMinHeight(Style::controlHeightSm * scale);
     resetPageBtn->setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-    resetPageBtn->setRadius(Style::radiusMd * scale);
+    resetPageBtn->setRadius(Style::scaledRadiusMd(scale));
     resetPageBtn->setOnClick([this, resetPageScope, resetPagePaths = std::move(resetPagePaths), requestRebuild,
                               clearOverrides, pendingReset]() mutable {
       if (!pendingReset) {
@@ -532,7 +532,7 @@ std::unique_ptr<Flex> SettingsWindow::buildStatusRow(float scale) {
   status->setAlign(FlexAlign::Center);
   status->setGap(Style::spaceSm * scale);
   status->setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-  status->setRadius(Style::radiusMd * scale);
+  status->setRadius(Style::scaledRadiusMd(scale));
   status->setFill(colorSpecFromRole(m_statusIsError ? ColorRole::Error : ColorRole::Secondary, 0.14f));
   status->setBorder(colorSpecFromRole(m_statusIsError ? ColorRole::Error : ColorRole::Secondary, 0.45f),
                     Style::borderWidth);
@@ -549,7 +549,7 @@ std::unique_ptr<Flex> SettingsWindow::buildStatusRow(float scale) {
   dismiss->setMinWidth(Style::controlHeightSm * scale);
   dismiss->setMinHeight(Style::controlHeightSm * scale);
   dismiss->setPadding(Style::spaceXs * scale);
-  dismiss->setRadius(Style::radiusSm * scale);
+  dismiss->setRadius(Style::scaledRadiusSm(scale));
   dismiss->setOnClick([clearStatus, requestRebuild]() {
     clearStatus();
     requestRebuild();

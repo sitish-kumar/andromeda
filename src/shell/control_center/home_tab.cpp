@@ -109,7 +109,7 @@ std::unique_ptr<Flex> HomeTab::create() {
   {
     auto wpBg = std::make_unique<Image>();
     wpBg->setFit(ImageFit::Cover);
-    wpBg->setRadius(std::max(0.0f, Style::radiusXl * scale - Style::borderWidth));
+    wpBg->setRadius(std::max(0.0f, Style::scaledRadiusXl(scale) - Style::borderWidth));
     wpBg->setParticipatesInLayout(false);
     wpBg->setZIndex(-1);
     m_wallpaperBg = wpBg.get();
@@ -214,7 +214,7 @@ std::unique_ptr<Flex> HomeTab::create() {
 
   auto mediaArt = std::make_unique<Image>();
   mediaArt->setSize(artSize, artSize);
-  mediaArt->setRadius(Style::radiusLg * scale);
+  mediaArt->setRadius(Style::scaledRadiusLg(scale));
   mediaArt->setFit(ImageFit::Cover);
   mediaArt->setParticipatesInLayout(false);
   mediaArt->setZIndex(1);
@@ -368,7 +368,7 @@ std::unique_ptr<Flex> HomeTab::create() {
     btn->setGap(Style::spaceXs * scale);
     btn->setMinHeight(0.0f);
     btn->setPadding(Style::spaceSm * scale);
-    btn->setRadius(Style::radiusLg * scale);
+    btn->setRadius(Style::scaledRadiusLg(scale));
     btn->setVariant(isActive ? ButtonVariant::Accent : ButtonVariant::Outline);
     btn->setEnabled(enabled);
 
@@ -414,7 +414,7 @@ std::unique_ptr<Flex> HomeTab::createHeaderActions() {
   settingsBtn->setMinWidth(Style::controlHeightSm * scale);
   settingsBtn->setMinHeight(Style::controlHeightSm * scale);
   settingsBtn->setPadding(Style::spaceXs * scale);
-  settingsBtn->setRadius(Style::radiusMd * scale);
+  settingsBtn->setRadius(Style::scaledRadiusMd(scale));
   settingsBtn->setOnClick([]() { PanelManager::instance().openSettingsWindow(); });
   m_settingsButton = settingsBtn.get();
   actions->addChild(std::move(settingsBtn));
@@ -426,7 +426,7 @@ std::unique_ptr<Flex> HomeTab::createHeaderActions() {
   sessionBtn->setMinWidth(Style::controlHeightSm * scale);
   sessionBtn->setMinHeight(Style::controlHeightSm * scale);
   sessionBtn->setPadding(Style::spaceXs * scale);
-  sessionBtn->setRadius(Style::radiusMd * scale);
+  sessionBtn->setRadius(Style::scaledRadiusMd(scale));
   sessionBtn->setOnClick([]() { PanelManager::instance().togglePanel("session"); });
   m_sessionButton = sessionBtn.get();
   actions->addChild(std::move(sessionBtn));
@@ -593,7 +593,7 @@ bool HomeTab::resizeMediaArtToCard() {
 
   m_mediaArtSlot->setSize(desired, desired);
   m_mediaArt->setSize(desired, desired);
-  m_mediaArt->setRadius(Style::radiusLg * scale);
+  m_mediaArt->setRadius(Style::scaledRadiusLg(scale));
   if (m_mediaArtFallback != nullptr) {
     m_mediaArtFallback->setGlyphSize(desired * 0.55f);
   }
@@ -612,7 +612,7 @@ void HomeTab::layoutWallpaperBackground(Renderer& renderer) {
   m_wallpaperBg->setSize(cw, ch);
 
   if (m_wallpaperGradient != nullptr) {
-    const float radius = std::max(0.0f, Style::radiusXl * contentScale() - bw);
+    const float radius = std::max(0.0f, Style::scaledRadiusXl(contentScale()) - bw);
     m_wallpaperGradient->setPosition(bw, bw);
     m_wallpaperGradient->setFrameSize(cw, ch);
     const Color surface = colorForRole(ColorRole::Surface);

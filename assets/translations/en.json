@@ -1321,6 +1321,10 @@
           "label": "UI Scale",
           "description": "Scale the entire interface up or down"
         },
+        "corner-roundness": {
+          "label": "Corner Roundness",
+          "description": "Scale corner radius across shell UI containers and controls"
+        },
         "animations": {
           "label": "Animations",
           "description": "Enable or disable UI animations"

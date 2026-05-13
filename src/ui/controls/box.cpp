@@ -129,7 +129,7 @@ void Box::setPanelStyle() {
   m_style.fillMode = FillMode::Solid;
   m_style.corners = {};
   m_style.logicalInset = {};
-  m_style.radius = Style::radiusXl;
+  m_style.radius = Style::scaledRadiusXl();
   m_style.softness = 1.0f;
   syncStyle();
 }
@@ -137,7 +137,7 @@ void Box::setPanelStyle() {
 void Box::setCardStyle(float scale) {
   setFill(colorSpecFromRole(ColorRole::Surface));
   setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
-  setRadius(Style::radiusXl * scale);
+  setRadius(Style::scaledRadiusXl(scale));
 }
 
 void Box::syncStyle() { m_rect->setStyle(m_style); }

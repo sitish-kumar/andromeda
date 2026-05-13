@@ -290,7 +290,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     const bool barIsVertical = barIsLeft || barIsRight;
 
     const float scale = m_activePanel->contentScale();
-    const float cornerRadius = Style::radiusXl * scale;
+    const float cornerRadius = Style::scaledRadiusXl(scale);
     const auto& shadowConfig = m_config->config().shell.shadow;
     const auto shadowBleed = shell::surface_shadow::bleed(true, shadowConfig);
     const auto cornerOutset = static_cast<std::int32_t>(std::ceil(cornerRadius));
@@ -1232,7 +1232,7 @@ void PanelManager::applyPanelCompositorBlur() {
     }
   }
 
-  const float radius = Style::radiusXl * m_activePanel->contentScale();
+  const float radius = Style::scaledRadiusXl(m_activePanel->contentScale());
   const CornerShapes corners = m_attachedToBar ? attached_panel::cornerShapes(m_attachedBarPosition) : CornerShapes{};
   const RectInsets logicalInset =
       m_attachedToBar ? attached_panel::logicalInset(m_attachedBarPosition, radius) : RectInsets{};
@@ -1273,7 +1273,7 @@ void PanelManager::applyAttachedDecorationStyle() {
     return;
   }
   const float scale = m_activePanel->contentScale();
-  const float radius = Style::radiusXl * scale;
+  const float radius = Style::scaledRadiusXl(scale);
 
   if (m_bgNode != nullptr) {
     auto* bg = static_cast<Box*>(m_bgNode);
@@ -1395,7 +1395,7 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
       auto bg = std::make_unique<Box>();
       bg->setPanelStyle();
       if (m_attachedToBar) {
-        const float radius = Style::radiusXl * m_activePanel->contentScale();
+        const float radius = Style::scaledRadiusXl(m_activePanel->contentScale());
         bg->clearBorder();
         bg->setCornerShapes(attached_panel::cornerShapes(m_attachedBarPosition));
         bg->setLogicalInset(attached_panel::logicalInset(m_attachedBarPosition, radius));
@@ -1464,7 +1464,7 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
   const float panelY = static_cast<float>(m_panelInsetY);
   const float panelW = m_panelVisualWidth > 0 ? static_cast<float>(m_panelVisualWidth) : w;
   const float panelH = m_panelVisualHeight > 0 ? static_cast<float>(m_panelVisualHeight) : h;
-  const float attachedRadius = m_attachedToBar ? Style::radiusXl * m_activePanel->contentScale() : 0.0f;
+  const float attachedRadius = m_attachedToBar ? Style::scaledRadiusXl(m_activePanel->contentScale()) : 0.0f;
   const bool barIsVertical = m_attachedToBar && (m_attachedBarPosition == "left" || m_attachedBarPosition == "right");
   // The bg extends past the body along the bar's CROSS axis to host the concave-corner notches.
   const float bgX = barIsVertical ? panelX : panelX - attachedRadius;

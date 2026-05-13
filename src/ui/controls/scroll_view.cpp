@@ -45,7 +45,7 @@ ScrollView::ScrollView() {
       .fill = clearColor(),
       .border = clearColor(),
       .fillMode = FillMode::Solid,
-      .radius = Style::radiusMd,
+      .radius = Style::scaledRadiusMd(),
       .softness = 1.0f,
       .borderWidth = 0,
   });
@@ -193,7 +193,7 @@ void ScrollView::setSoftness(float softness) {
 void ScrollView::setCardStyle(float scale) {
   setFill(colorSpecFromRole(ColorRole::Surface));
   setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
-  setRadius(Style::radiusXl * scale);
+  setRadius(Style::scaledRadiusXl(scale));
   setViewportPaddingH(Style::cardPadding * scale);
   setViewportPaddingV(Style::cardPadding * scale);
 }

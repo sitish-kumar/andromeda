@@ -422,7 +422,7 @@ void DesktopWidgetsEditor::buildInspector(OverlaySurface& surface, Node& root,
   panel->setGap(0.0f);
   panel->setFill(colorSpecFromRole(ColorRole::Surface, 0.94f));
   panel->setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
-  panel->setRadius(Style::radiusXl);
+  panel->setRadius(Style::scaledRadiusXl());
   panel->setZIndex(201);
   panel->setMinWidth(kInspectorWidth);
   panel->setMaxWidth(kInspectorWidth);
@@ -434,7 +434,7 @@ void DesktopWidgetsEditor::buildInspector(OverlaySurface& surface, Node& root,
   handle->setGap(Style::spaceXs);
   handle->setPadding(Style::spaceXs, Style::spaceMd);
   handle->setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.85f));
-  handle->setRadius(Style::radiusLg);
+  handle->setRadius(Style::scaledRadiusLg());
   handle->setMinHeight(Style::controlHeightSm);
   handle->setFillWidth(true);
 

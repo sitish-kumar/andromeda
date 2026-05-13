@@ -82,7 +82,7 @@ private:
   float m_viewportHeight = 0.0f;
   float m_viewportWidth = 0.0f;
   float m_backgroundBorderWidth = 0.0f;
-  float m_backgroundRadius = Style::radiusMd;
+  float m_backgroundRadius = Style::scaledRadiusMd();
   float m_backgroundSoftness = 1.0f;
   bool m_scrollbarShown = false;
   bool m_showScrollbar = true;

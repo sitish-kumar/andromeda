@@ -77,7 +77,7 @@ void ControlCenterPanel::create() {
   sidebar->setPadding(Style::spaceSm * scale);
   sidebar->setFillHeight(true);
   sidebar->setFill(colorSpecFromRole(ColorRole::Surface));
-  sidebar->setRadius(Style::radiusXl * scale);
+  sidebar->setRadius(Style::scaledRadiusXl(scale));
   m_sidebar = sidebar.get();
 
   for (const auto& tab : kTabs) {
@@ -92,7 +92,7 @@ void ControlCenterPanel::create() {
     button->setContentAlign(ButtonContentAlign::Start);
     button->setMinHeight(Style::controlHeight * scale);
     button->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-    button->setRadius(Style::radiusLg * scale);
+    button->setRadius(Style::scaledRadiusLg(scale));
     button->setOnClick([this, id = tab.id]() {
       selectTab(id);
       PanelManager::instance().refresh();
@@ -159,7 +159,7 @@ void ControlCenterPanel::create() {
   closeButton->setMinWidth(Style::controlHeightSm * scale);
   closeButton->setMinHeight(Style::controlHeightSm * scale);
   closeButton->setPadding(Style::spaceXs * scale);
-  closeButton->setRadius(Style::radiusMd * scale);
+  closeButton->setRadius(Style::scaledRadiusMd(scale));
   closeButton->setOnClick([]() { PanelManager::instance().close(); });
   m_closeButton = closeButton.get();
   m_contentHeaderActions->addChild(std::move(closeButton));

@@ -33,7 +33,7 @@ SearchPicker::SearchPicker() {
   setPadding(Style::spaceSm);
   setFill(colorSpecFromRole(ColorRole::Surface));
   setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
-  setRadius(Style::radiusMd);
+  setRadius(Style::scaledRadiusMd());
   setSize(kDefaultWidth, kDefaultHeight);
 
   auto input = std::make_unique<Input>();
@@ -210,7 +210,7 @@ void SearchPicker::rebuildRows() {
     const auto& detail = option.description;
     row->setGap(detail.empty() ? 0.0f : 1.0f);
     row->setPadding(Style::spaceXs, Style::spaceSm);
-    row->setRadius(Style::radiusSm);
+    row->setRadius(Style::scaledRadiusSm());
     row->setMinHeight(detail.empty() ? Style::controlHeight : Style::controlHeightLg);
     row->setFillWidth(true);
 

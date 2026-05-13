@@ -133,7 +133,7 @@ void WallpaperPanel::create() {
     button->setMinWidth(Style::controlHeightSm * scale);
     button->setMinHeight(Style::controlHeightSm * scale);
     button->setPadding(Style::spaceXs * scale);
-    button->setRadius(Style::radiusMd * scale);
+    button->setRadius(Style::scaledRadiusMd(scale));
   };
 
   auto root = std::make_unique<Flex>();
@@ -142,7 +142,7 @@ void WallpaperPanel::create() {
   root->setGap(Style::spaceSm * scale);
   root->setPadding(Style::spaceMd * scale);
   root->setFill(colorSpecFromRole(ColorRole::Surface));
-  root->setRadius(Style::radiusXl * scale);
+  root->setRadius(Style::scaledRadiusXl(scale));
   m_rootLayout = root.get();
 
   auto header = std::make_unique<Flex>();

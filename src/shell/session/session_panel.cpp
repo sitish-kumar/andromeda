@@ -318,7 +318,7 @@ Button* SessionPanel::createActionButton(const SessionPanelActionConfig& cfg, fl
   button->setFontSize((Style::fontSizeBody + 1.0f) * scale);
   button->setGlyphSize(28.0f * scale);
   button->setPadding(Style::spaceMd * scale, Style::spaceLg * scale);
-  button->setRadius(Style::radiusLg * scale);
+  button->setRadius(Style::scaledRadiusLg(scale));
   button->setMinWidth(kButtonMinWidth * scale);
   button->setMinHeight(kActionButtonMinHeight * scale);
   button->setFlexGrow(1.0f);

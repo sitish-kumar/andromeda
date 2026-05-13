@@ -225,7 +225,7 @@ void SetupWizardPanel::create() {
       button->setGlyphSize(Style::fontSizeBody * scale);
       button->setMinHeight(Style::controlHeight * scale);
       button->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-      button->setRadius(Style::radiusMd * scale);
+      button->setRadius(Style::scaledRadiusMd(scale));
       button->setMinWidth(112.0f * scale);
       button->setOnClick([this]() {
         FileDialogOptions options;
@@ -377,7 +377,7 @@ void SetupWizardPanel::create() {
     button->setGlyphSize(Style::fontSizeBody * scale);
     button->setMinHeight(Style::controlHeight * scale);
     button->setPadding(Style::spaceSm * scale, Style::spaceLg * scale);
-    button->setRadius(Style::radiusMd * scale);
+    button->setRadius(Style::scaledRadiusMd(scale));
     button->setMinWidth(132.0f * scale);
     button->setOnClick([this]() { commit(); });
     footer->addChild(std::move(button));

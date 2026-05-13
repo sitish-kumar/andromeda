@@ -188,7 +188,7 @@ void SelectDropdownPopup::buildScene(const DropdownRequest& request) {
       .fill = resolved(ColorRole::SurfaceVariant),
       .border = resolved(ColorRole::Outline),
       .fillMode = FillMode::Solid,
-      .radius = Style::radiusMd,
+      .radius = Style::scaledRadiusMd(),
       .softness = 1.0f,
       .borderWidth = Style::borderWidth,
   });
@@ -315,7 +315,7 @@ void SelectDropdownPopup::applyHoverVisuals() {
           .fill = bgColor,
           .border = bgColor,
           .fillMode = FillMode::Solid,
-          .radius = Style::radiusSm,
+          .radius = Style::scaledRadiusSm(),
           .softness = 1.0f,
           .borderWidth = 0.0f,
       });

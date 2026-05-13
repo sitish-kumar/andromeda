@@ -65,7 +65,7 @@ namespace {
       setGap(Style::spaceSm * scale);
       setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
       setMinHeight(kRowMinHeight * scale);
-      setRadius(Style::radiusMd * scale);
+      setRadius(Style::scaledRadiusMd(scale));
       setFill(colorSpecFromRole(ColorRole::Surface));
       clearBorder();
 
@@ -192,7 +192,7 @@ namespace {
       setGap(Style::spaceSm * scale);
       setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
       setMinHeight(kRowMinHeight * scale);
-      setRadius(Style::radiusMd * scale);
+      setRadius(Style::scaledRadiusMd(scale));
       setFill(colorSpecFromRole(ColorRole::Surface));
       clearBorder();
 
@@ -395,7 +395,7 @@ std::unique_ptr<Flex> NetworkTab::create() {
   revealButton->setMinWidth(Style::controlHeightSm * scale);
   revealButton->setMinHeight(Style::controlHeightSm * scale);
   revealButton->setPadding(Style::spaceXs * scale);
-  revealButton->setRadius(Style::radiusMd * scale);
+  revealButton->setRadius(Style::scaledRadiusMd(scale));
   revealButton->setOnClick([this]() {
     if (m_passwordInput == nullptr) {
       return;
@@ -718,7 +718,7 @@ void NetworkTab::rebuildApList(Renderer& renderer) {
       rescan->setGlyph("refresh");
       rescan->setGlyphSize(Style::fontSizeCaption * scale);
       rescan->setPadding(Style::spaceXs * scale);
-      rescan->setRadius(Style::radiusSm * scale);
+      rescan->setRadius(Style::scaledRadiusSm(scale));
       rescan->setOnClick([this]() {
         if (m_network != nullptr) {
           m_network->requestScan();

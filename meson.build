@@ -579,6 +579,7 @@ _noctalia_sources = files(
   'src/ui/controls/virtual_grid_view.cpp',
   'src/ui/controls/virtual_list_view.cpp',
   'src/ui/palette.cpp',
+  'src/ui/style.cpp',
   'src/util/fuzzy_match.cpp',
   'src/wayland/clipboard_service.cpp',
   'src/wayland/virtual_keyboard_service.cpp',

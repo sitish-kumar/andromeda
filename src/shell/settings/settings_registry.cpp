@@ -307,6 +307,10 @@ namespace settings {
     entries.push_back(makeEntry("appearance", "interface", tr("settings.schema.appearance.ui-scale.label"),
                                 tr("settings.schema.appearance.ui-scale.description"), {"shell", "ui_scale"},
                                 SliderSetting{cfg.shell.uiScale, 0.5f, 2.5f, 0.05f, false}, "size"));
+    entries.push_back(
+        makeEntry("appearance", "interface", tr("settings.schema.appearance.corner-roundness.label"),
+                  tr("settings.schema.appearance.corner-roundness.description"), {"shell", "corner_radius_scale"},
+                  SliderSetting{cfg.shell.cornerRadiusScale, 0.0f, 2.0f, 0.05f, false}, "rounded corners radius"));
     entries.push_back(makeEntry("appearance", "interface", tr("settings.schema.appearance.font-family.label"),
                                 tr("settings.schema.appearance.font-family.description"), {"shell", "font_family"},
                                 TextSetting{cfg.shell.fontFamily, "sans-serif"}, "typeface"));

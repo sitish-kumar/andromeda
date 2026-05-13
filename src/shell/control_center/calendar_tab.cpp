@@ -405,7 +405,7 @@ void CalendarTab::rebuild() {
     dayButton->setMinWidth(dayButtonSize);
     dayButton->setMinHeight(dayButtonSize);
     dayButton->setSize(dayButtonSize, dayButtonSize);
-    dayButton->setRadius(Style::radiusMd * scale);
+    dayButton->setRadius(Style::scaledRadiusMd(scale));
     dayButton->setFontSize(Style::fontSizeBody * scale);
     dayButton->setText("");
 

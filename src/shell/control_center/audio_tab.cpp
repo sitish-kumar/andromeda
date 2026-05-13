@@ -722,7 +722,7 @@ namespace {
       setGap(Style::spaceSm * scale);
       setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
       setMinHeight(Style::controlHeightLg * scale);
-      setRadius(Style::radiusMd * scale);
+      setRadius(Style::scaledRadiusMd(scale));
       setFill(colorSpecFromRole(ColorRole::Surface));
       clearBorder();
 
@@ -838,7 +838,7 @@ namespace {
       setGap(Style::spaceXs * scale);
       setPadding(Style::spaceXs * scale, Style::spaceMd * scale);
       setMinHeight((Style::controlHeightLg + Style::spaceXs) * scale);
-      setRadius(Style::radiusMd * scale);
+      setRadius(Style::scaledRadiusMd(scale));
       setFill(colorSpecFromRole(ColorRole::Surface));
       clearBorder();
 
@@ -854,7 +854,7 @@ namespace {
 
       auto icon = std::make_unique<Image>();
       icon->setFit(ImageFit::Contain);
-      icon->setRadius(Style::radiusMd * scale);
+      icon->setRadius(Style::scaledRadiusMd(scale));
       icon->setSize(m_iconSize, m_iconSize);
       icon->setVisible(false);
       m_icon = icon.get();
@@ -937,7 +937,7 @@ namespace {
       mute->setMinWidth(Style::controlHeightSm * scale);
       mute->setMinHeight(Style::controlHeightSm * scale);
       mute->setPadding(Style::spaceXs * scale);
-      mute->setRadius(Style::radiusMd * scale);
+      mute->setRadius(Style::scaledRadiusMd(scale));
       mute->setOnClick([this]() {
         if (m_audio == nullptr) {
           return;
@@ -1166,7 +1166,7 @@ namespace {
     card->setAlign(FlexAlign::Start);
     card->setGap(Style::spaceXs * scale);
     card->setPadding(Style::spaceMd * scale);
-    card->setRadius(Style::radiusMd * scale);
+    card->setRadius(Style::scaledRadiusMd(scale));
     card->setFill(colorSpecFromRole(ColorRole::Surface));
     card->clearBorder();
 
@@ -1333,7 +1333,7 @@ std::unique_ptr<Flex> AudioTab::create() {
   outputMenuButton->setVariant(ButtonVariant::Ghost);
   outputMenuButton->setGlyphSize(Style::fontSizeCaption * scale);
   outputMenuButton->setPadding(Style::spaceXs * scale);
-  outputMenuButton->setRadius(Style::radiusMd * scale);
+  outputMenuButton->setRadius(Style::scaledRadiusMd(scale));
   outputMenuButton->setEnabled(false);
   outputMenuButton->setOnClick([this]() {
     const bool wasOpen = m_deviceMenuPopup != nullptr && m_deviceMenuPopup->isOpen();
@@ -1398,7 +1398,7 @@ std::unique_ptr<Flex> AudioTab::create() {
   outputMuteButton->setMinWidth(Style::controlHeightSm * scale);
   outputMuteButton->setMinHeight(Style::controlHeightSm * scale);
   outputMuteButton->setPadding(Style::spaceXs * scale);
-  outputMuteButton->setRadius(Style::radiusMd * scale);
+  outputMuteButton->setRadius(Style::scaledRadiusMd(scale));
   outputMuteButton->setOnClick([this]() {
     if (m_audio == nullptr) {
       return;
@@ -1437,7 +1437,7 @@ std::unique_ptr<Flex> AudioTab::create() {
   inputMenuButton->setVariant(ButtonVariant::Ghost);
   inputMenuButton->setGlyphSize(Style::fontSizeCaption * scale);
   inputMenuButton->setPadding(Style::spaceXs * scale);
-  inputMenuButton->setRadius(Style::radiusMd * scale);
+  inputMenuButton->setRadius(Style::scaledRadiusMd(scale));
   inputMenuButton->setEnabled(false);
   inputMenuButton->setOnClick([this]() {
     const bool wasOpen = m_deviceMenuPopup != nullptr && m_deviceMenuPopup->isOpen();
@@ -1502,7 +1502,7 @@ std::unique_ptr<Flex> AudioTab::create() {
   inputMuteButton->setMinWidth(Style::controlHeightSm * scale);
   inputMuteButton->setMinHeight(Style::controlHeightSm * scale);
   inputMuteButton->setPadding(Style::spaceXs * scale);
-  inputMuteButton->setRadius(Style::radiusMd * scale);
+  inputMuteButton->setRadius(Style::scaledRadiusMd(scale));
   inputMuteButton->setOnClick([this]() {
     if (m_audio == nullptr) {
       return;

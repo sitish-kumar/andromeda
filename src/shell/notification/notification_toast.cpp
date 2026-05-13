@@ -1500,7 +1500,7 @@ void NotificationToast::updateInputRegion(Instance& inst) const {
     const int rw = std::max(1, static_cast<int>(std::ceil(card.cardNode->width())));
     const int rh = std::max(1, static_cast<int>(std::ceil(card.cardNode->height())));
     rects.push_back({rx, ry, rw, rh});
-    auto strips = Surface::tessellateRoundedRect(rx, ry, rw, rh, Style::radiusXl);
+    auto strips = Surface::tessellateRoundedRect(rx, ry, rw, rh, Style::scaledRadiusXl());
     blurRects.insert(blurRects.end(), strips.begin(), strips.end());
   }
 
@@ -1550,7 +1550,7 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
   // Background
   auto bg = std::make_unique<Box>();
   bg->setCardStyle();
-  bg->setRadius(Style::radiusXl);
+  bg->setRadius(Style::scaledRadiusXl());
   if (isCritical) {
     // Keep critical toasts readable: surface background + urgent border.
     bg->setFill(colorSpecFromRole(ColorRole::Surface, bgAlpha));

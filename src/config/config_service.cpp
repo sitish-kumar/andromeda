@@ -1110,6 +1110,9 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     if (auto v = (*shellTbl)["ui_scale"].value<double>()) {
       shell.uiScale = std::clamp(static_cast<float>(*v), 0.5f, 4.0f);
     }
+    if (auto v = (*shellTbl)["corner_radius_scale"].value<double>()) {
+      shell.cornerRadiusScale = std::clamp(static_cast<float>(*v), 0.0f, 2.0f);
+    }
     if (auto v = (*shellTbl)["font_family"].value<std::string>()) {
       shell.fontFamily = StringUtils::trim(*v);
       if (shell.fontFamily.empty()) {
