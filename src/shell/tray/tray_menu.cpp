@@ -389,6 +389,13 @@ bool TrayMenu::onPointerEvent(const PointerEvent& event) {
       }
       break;
     case PointerEvent::Type::Axis:
+      if (onSub || sub->pointerInside) {
+        if (onSub)
+          sub->pointerInside = true;
+        subConsumed = sub->inputDispatcher.pointerAxis(static_cast<float>(event.sx), static_cast<float>(event.sy),
+                                                       event.axis, event.axisSource, event.axisValue,
+                                                       event.axisDiscrete, event.axisValue120, event.axisLines);
+      }
       break;
     }
 
@@ -447,6 +454,14 @@ bool TrayMenu::onPointerEvent(const PointerEvent& event) {
     }
     break;
   case PointerEvent::Type::Axis:
+    if (onThisSurface || inst->pointerInside) {
+      if (onThisSurface) {
+        inst->pointerInside = true;
+      }
+      consumed = inst->inputDispatcher.pointerAxis(static_cast<float>(event.sx), static_cast<float>(event.sy),
+                                                   event.axis, event.axisSource, event.axisValue, event.axisDiscrete,
+                                                   event.axisValue120, event.axisLines);
+    }
     break;
   }
 
