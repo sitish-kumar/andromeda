@@ -18,7 +18,6 @@
 #include "theme/theme_service.h"
 #include "wayland/wayland_connection.h"
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <format>
@@ -357,17 +356,7 @@ namespace {
       if (m_svc == nullptr) {
         return;
       }
-      const auto& profiles = m_svc->profiles();
-      if (profiles.empty()) {
-        return;
-      }
-      const auto& current = m_svc->activeProfile();
-      auto it = std::find(profiles.begin(), profiles.end(), current);
-      std::size_t nextIdx = 0;
-      if (it != profiles.end()) {
-        nextIdx = (static_cast<std::size_t>(std::distance(profiles.begin(), it)) + 1) % profiles.size();
-      }
-      (void)m_svc->setActiveProfile(profiles[nextIdx]);
+      (void)m_svc->cycleActiveProfile();
     }
     void onRightClick() override { openTab("system"); }
 

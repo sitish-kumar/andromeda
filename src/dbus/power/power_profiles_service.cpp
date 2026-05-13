@@ -128,6 +128,23 @@ bool PowerProfilesService::setActiveProfile(std::string_view profile) {
   }
 }
 
+bool PowerProfilesService::cycleActiveProfile() {
+  const auto& profs = profiles();
+  if (profs.empty()) {
+    return false;
+  }
+  const std::string& current = activeProfile();
+  auto it = std::find(profs.begin(), profs.end(), current);
+  if (it == profs.end()) {
+    return setActiveProfile(profs.front());
+  }
+  ++it;
+  if (it == profs.end()) {
+    it = profs.begin();
+  }
+  return setActiveProfile(*it);
+}
+
 PowerProfilesState PowerProfilesService::readState() const {
   PowerProfilesState next;
   next.activeProfile = getPropertyOr<std::string>(*m_proxy, "ActiveProfile", "");
@@ -181,4 +198,16 @@ void PowerProfilesService::registerIpc(IpcService& ipc) {
         return "ok\n";
       },
       "power-set <profile>", "Set the UPower power profile (e.g. performance, balanced, power-saver)");
+  ipc.registerHandler(
+      "power-cycle",
+      [this](const std::string& args) -> std::string {
+        if (!StringUtils::trim(args).empty()) {
+          return "error: power-cycle takes no arguments\n";
+        }
+        if (!cycleActiveProfile()) {
+          return "error: could not cycle power profile (no profiles from UPower or set failed)\n";
+        }
+        return "ok\n";
+      },
+      "power-cycle", "Switch to the next power profile in UPower's ordered list (wraps)");
 }

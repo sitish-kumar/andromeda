@@ -38,6 +38,8 @@ public:
   [[nodiscard]] const std::vector<std::string>& profiles() const noexcept { return m_state.profiles; }
 
   [[nodiscard]] bool setActiveProfile(std::string_view profile);
+  /// Advance to the next profile in the service's ordered list (wraps). Fails if no profiles are known.
+  [[nodiscard]] bool cycleActiveProfile();
 
   void registerIpc(IpcService& ipc);
 

@@ -8,7 +8,6 @@
 #include "ui/palette.h"
 #include "ui/style.h"
 
-#include <algorithm>
 #include <memory>
 
 PowerProfilesWidget::PowerProfilesWidget(PowerProfilesService* powerProfiles) : m_powerProfiles(powerProfiles) {}
@@ -75,22 +74,5 @@ void PowerProfilesWidget::cycleProfile() {
   if (m_powerProfiles == nullptr) {
     return;
   }
-
-  const auto& profiles = m_powerProfiles->profiles();
-  if (profiles.empty()) {
-    return;
-  }
-
-  const auto current = m_powerProfiles->activeProfile();
-  auto it = std::find(profiles.begin(), profiles.end(), current);
-  if (it == profiles.end()) {
-    (void)m_powerProfiles->setActiveProfile(profiles.front());
-    return;
-  }
-
-  ++it;
-  if (it == profiles.end()) {
-    it = profiles.begin();
-  }
-  (void)m_powerProfiles->setActiveProfile(*it);
+  (void)m_powerProfiles->cycleActiveProfile();
 }
