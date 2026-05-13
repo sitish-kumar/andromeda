@@ -47,6 +47,7 @@ private:
   void doLayout(Renderer& renderer, float contentWidth, float bodyHeight) override;
   void doUpdate(Renderer& renderer) override;
   void layoutWallpaperBackground(Renderer& renderer);
+  void layoutCardButton(Renderer& renderer, Flex* card, Button* button);
   void syncWallpaperBackground(Renderer& renderer);
   void sync(Renderer& renderer);
   void syncScaledFonts();
@@ -76,6 +77,9 @@ private:
   Label* m_userFacts = nullptr;
   Button* m_settingsButton = nullptr;
   Button* m_sessionButton = nullptr;
+  Button* m_wallpaperButton = nullptr;
+  Button* m_mediaButton = nullptr;
+  Button* m_weatherButton = nullptr;
   std::string m_loadedAvatarPath;
 
   Image* m_wallpaperBg = nullptr;

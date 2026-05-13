@@ -28,6 +28,7 @@
 #include <format>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <system_error>
 
 using namespace control_center;
@@ -47,6 +48,10 @@ namespace {
   constexpr int kHomeMediaArtLayoutPassLimit = 8;
 
   float homeAvatarSize(float scale) { return Style::controlHeightLg * kHomeAvatarScale * scale; }
+
+  void openControlCenterTab(std::string_view tab) {
+    PanelManager::instance().togglePanel("control-center", PanelOpenRequest{.context = tab});
+  }
 
   std::string formatShellTime(const ConfigService* config) {
     const char* format = config != nullptr ? config->config().shell.timeFormat.c_str() : "{:%H:%M}";
@@ -165,6 +170,21 @@ std::unique_ptr<Flex> HomeTab::create() {
 
   userRow->addChild(std::move(userMain));
   userCard->addChild(std::move(userRow));
+
+  auto wallpaperBtn = std::make_unique<Button>();
+  wallpaperBtn->setGlyph("wallpaper-selector");
+  wallpaperBtn->setVariant(ButtonVariant::Ghost);
+  wallpaperBtn->setGlyphSize(Style::fontSizeBody * scale);
+  wallpaperBtn->setMinWidth(Style::controlHeightSm * scale);
+  wallpaperBtn->setMinHeight(Style::controlHeightSm * scale);
+  wallpaperBtn->setPadding(Style::spaceXs * scale);
+  wallpaperBtn->setRadius(Style::scaledRadiusMd(scale));
+  wallpaperBtn->setParticipatesInLayout(false);
+  wallpaperBtn->setZIndex(2);
+  wallpaperBtn->setOnClick([]() { PanelManager::instance().togglePanel("wallpaper"); });
+  m_wallpaperButton = wallpaperBtn.get();
+  userCard->addChild(std::move(wallpaperBtn));
+
   tab->addChild(std::move(userCard));
 
   auto bottomRow = std::make_unique<Flex>();
@@ -262,6 +282,20 @@ std::unique_ptr<Flex> HomeTab::create() {
   mediaContent->addChild(std::move(mediaText));
   mediaCard->addChild(std::move(mediaContent));
 
+  auto mediaBtn = std::make_unique<Button>();
+  mediaBtn->setGlyph("disc-filled");
+  mediaBtn->setVariant(ButtonVariant::Ghost);
+  mediaBtn->setGlyphSize(Style::fontSizeBody * scale);
+  mediaBtn->setMinWidth(Style::controlHeightSm * scale);
+  mediaBtn->setMinHeight(Style::controlHeightSm * scale);
+  mediaBtn->setPadding(Style::spaceXs * scale);
+  mediaBtn->setRadius(Style::scaledRadiusMd(scale));
+  mediaBtn->setParticipatesInLayout(false);
+  mediaBtn->setZIndex(2);
+  mediaBtn->setOnClick([]() { openControlCenterTab("media"); });
+  m_mediaButton = mediaBtn.get();
+  mediaCard->addChild(std::move(mediaBtn));
+
   // --- Date/Time + Weather (below media) ---
   auto dateTimeCard = std::make_unique<Flex>();
   applyHomeCardStyle(*dateTimeCard, scale);
@@ -316,6 +350,20 @@ std::unique_ptr<Flex> HomeTab::create() {
   weatherRow->addChild(std::move(wLine));
   dateTimeRight->addChild(std::move(weatherRow));
   dateTimeCard->addChild(std::move(dateTimeRight));
+
+  auto weatherBtn = std::make_unique<Button>();
+  weatherBtn->setGlyph("weather-cloud-sun");
+  weatherBtn->setVariant(ButtonVariant::Ghost);
+  weatherBtn->setGlyphSize(Style::fontSizeBody * scale);
+  weatherBtn->setMinWidth(Style::controlHeightSm * scale);
+  weatherBtn->setMinHeight(Style::controlHeightSm * scale);
+  weatherBtn->setPadding(Style::spaceXs * scale);
+  weatherBtn->setRadius(Style::scaledRadiusMd(scale));
+  weatherBtn->setParticipatesInLayout(false);
+  weatherBtn->setZIndex(2);
+  weatherBtn->setOnClick([]() { openControlCenterTab("weather"); });
+  m_weatherButton = weatherBtn.get();
+  dateTimeCard->addChild(std::move(weatherBtn));
 
   leftColumn->addChild(std::move(mediaCard));
   leftColumn->addChild(std::move(dateTimeCard));
@@ -571,6 +619,9 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
     m_rootLayout->layout(renderer);
   }
   layoutWallpaperBackground(renderer);
+  layoutCardButton(renderer, m_userCard, m_wallpaperButton);
+  layoutCardButton(renderer, m_mediaCard, m_mediaButton);
+  layoutCardButton(renderer, m_dateTimeCard, m_weatherButton);
   if (m_weatherGlyph != nullptr) {
     m_weatherGlyph->measure(renderer);
   }
@@ -650,6 +701,20 @@ void HomeTab::syncWallpaperBackground(Renderer& renderer) {
 
   m_wallpaperBg->setExternalTexture(renderer, source);
   m_wallpaperBg->setVisible(true);
+}
+
+void HomeTab::layoutCardButton(Renderer& renderer, Flex* card, Button* button) {
+  if (card == nullptr || button == nullptr) {
+    return;
+  }
+
+  const float scale = contentScale();
+  button->setGlyphSize(Style::fontSizeBody * scale);
+  button->layout(renderer);
+
+  const float x = std::max(0.0f, card->width() - card->paddingRight() - button->width());
+  const float y = std::max(0.0f, card->height() - card->paddingBottom() - button->height());
+  button->setPosition(x, y);
 }
 
 void HomeTab::doUpdate(Renderer& renderer) {
@@ -733,6 +798,9 @@ void HomeTab::onClose() {
   m_userFacts = nullptr;
   m_settingsButton = nullptr;
   m_sessionButton = nullptr;
+  m_wallpaperButton = nullptr;
+  m_mediaButton = nullptr;
+  m_weatherButton = nullptr;
   m_loadedAvatarPath.clear();
   m_wallpaperBg = nullptr;
   m_wallpaperGradient = nullptr;
@@ -772,6 +840,15 @@ void HomeTab::syncScaledFonts() {
   }
   if (m_userFacts != nullptr) {
     m_userFacts->setFontSize(Style::fontSizeCaption * s);
+  }
+  if (m_wallpaperButton != nullptr) {
+    m_wallpaperButton->setGlyphSize(Style::fontSizeBody * s);
+  }
+  if (m_mediaButton != nullptr) {
+    m_mediaButton->setGlyphSize(Style::fontSizeBody * s);
+  }
+  if (m_weatherButton != nullptr) {
+    m_weatherButton->setGlyphSize(Style::fontSizeBody * s);
   }
   if (m_mediaTrack != nullptr) {
     m_mediaTrack->setFontSize(Style::fontSizeBody * 0.95f * s);
