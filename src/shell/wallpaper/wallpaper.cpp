@@ -9,6 +9,8 @@
 #include "render/render_context.h"
 #include "ui/controls/box.h"
 #include "ui/palette.h"
+#include "util/file_utils.h"
+#include "util/string_utils.h"
 #include "wayland/wayland_connection.h"
 
 #include <algorithm>
@@ -355,6 +357,80 @@ void Wallpaper::registerIpc(IpcService& ipc) {
         return "ok\n";
       },
       "wallpaper-random", "Switch to a random wallpaper immediately");
+  ipc.registerHandler(
+      "wallpaper-set",
+      [this](const std::string& args) -> std::string {
+        if (m_config == nullptr) {
+          return "error: wallpaper service not initialized\n";
+        }
+        const auto tokens = StringUtils::splitWhitespace(StringUtils::trim(args));
+        if (tokens.empty()) {
+          return "error: path required (wallpaper-set [<connector>] <path>)\n";
+        }
+        std::optional<std::string> outputConnector;
+        std::string path;
+        if (tokens.size() == 1) {
+          path = tokens[0];
+        } else {
+          outputConnector = tokens[0];
+          std::string joined = tokens[1];
+          for (std::size_t i = 2; i < tokens.size(); ++i) {
+            joined.push_back(' ');
+            joined += tokens[i];
+          }
+          path = std::move(joined);
+        }
+        if (path.empty()) {
+          return "error: path required (wallpaper-set [<connector>] <path>)\n";
+        }
+        std::string resolved = path;
+        if (!path.starts_with("color:")) {
+          resolved = FileUtils::expandUserPath(path).string();
+          std::error_code ec;
+          if (!std::filesystem::exists(resolved, ec)) {
+            return "error: path does not exist\n";
+          }
+        }
+
+        if (outputConnector.has_value()) {
+          if (m_wayland != nullptr) {
+            const auto& outputs = m_wayland->outputs();
+            const bool found = std::any_of(outputs.begin(), outputs.end(), [&](const WaylandOutput& out) {
+              return !out.connectorName.empty() && out.connectorName == *outputConnector;
+            });
+            if (!found) {
+              std::vector<std::string> known;
+              for (const auto& out : outputs) {
+                if (!out.connectorName.empty()) {
+                  known.push_back(out.connectorName);
+                }
+              }
+              const std::string suffix =
+                  known.empty() ? std::string() : std::string("; known: ") + StringUtils::join(known, ", ");
+              return "error: unknown output \"" + *outputConnector + "\"" + suffix + "\n";
+            }
+          }
+          m_config->setWallpaperPath(*outputConnector, resolved);
+          return "ok\n";
+        }
+
+        // Match wallpaper panel "All monitors": per-output overrides win over default in
+        // getWallpaperPath(), so set every connected output plus default or the image never updates.
+        ConfigService::WallpaperBatch batch(*m_config);
+        if (m_wayland != nullptr) {
+          for (const auto& out : m_wayland->outputs()) {
+            if (!out.connectorName.empty()) {
+              m_config->setWallpaperPath(out.connectorName, resolved);
+            }
+          }
+        }
+        m_config->setWallpaperPath(std::nullopt, resolved);
+        return "ok\n";
+      },
+      "wallpaper-set [<connector>] <path>",
+      "Set wallpaper (persisted). One argument: all outputs and default. Two or more: first token is "
+      "the output connector (e.g. DP-1), remainder is the path (spaces allowed). Image paths use ~ "
+      "expansion; color:#RRGGBB / color:#RRGGBBAA for solid color.");
 }
 
 void Wallpaper::syncInstances() {

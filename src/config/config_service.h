@@ -65,6 +65,8 @@ public:
 
   // Persist a theme-mode override to settings.toml and trigger the reload pipeline.
   void setThemeMode(ThemeMode mode);
+  // Persist `[theme].wallpaper_scheme` (palette-from-wallpaper generation) and reload. Returns false if unknown.
+  [[nodiscard]] bool setThemeWallpaperScheme(std::string_view scheme);
   // Persist dock enabled override to settings.toml and trigger the reload pipeline.
   void setDockEnabled(bool enabled);
   bool markSetupWizardCompleted();
