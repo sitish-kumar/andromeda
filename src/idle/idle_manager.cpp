@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <utility>
 
 namespace {
 
@@ -36,7 +37,7 @@ bool IdleManager::initialize(WaylandConnection& wayland, GraceBeginCallback onBe
   return true;
 }
 
-void IdleManager::setCommandRunner(CommandRunner runner) { m_commandRunner = std::move(runner); }
+void IdleManager::setActionRunner(ActionRunner runner) { m_actionRunner = std::move(runner); }
 
 void IdleManager::reload(const IdleConfig& config) {
   clearBehaviors();
@@ -78,9 +79,9 @@ void IdleManager::createBehavior(const IdleBehaviorConfig& config) {
     kLog.debug("idle behavior '{}' disabled by zero timeout", config.name);
     return;
   }
-  const ResolvedIdleCommands resolved = resolveIdleBehaviorCommands(config);
-  if (resolved.idleCommand.empty()) {
-    kLog.warn("idle behavior '{}' ignored: needs a command", config.name);
+  const ResolvedIdleBehavior resolved = resolveIdleBehaviorActions(config);
+  if (resolved.idleAction.kind == IdleActionKind::None) {
+    kLog.warn("idle behavior '{}' ignored: needs an action", config.name);
     return;
   }
 
@@ -100,36 +101,37 @@ void IdleManager::createBehavior(const IdleBehaviorConfig& config) {
 }
 
 void IdleManager::runBehavior(BehaviorState& behavior) {
-  const ResolvedIdleCommands resolved = resolveIdleBehaviorCommands(behavior.config);
-  if (!runCommand(behavior.config, resolved.idleCommand)) {
-    kLog.warn("idle behavior '{}' command failed", behavior.config.name);
+  const ResolvedIdleBehavior resolved = resolveIdleBehaviorActions(behavior.config);
+  if (!runAction(behavior.config, resolved.idleAction)) {
+    kLog.warn("idle behavior '{}' action failed", behavior.config.name);
   }
 }
 
 void IdleManager::runResumeBehavior(BehaviorState& behavior) {
-  const ResolvedIdleCommands resolved = resolveIdleBehaviorCommands(behavior.config);
-  if (resolved.resumeCommand.empty()) {
+  const ResolvedIdleBehavior resolved = resolveIdleBehaviorActions(behavior.config);
+  if (resolved.resumeAction.kind == IdleActionKind::None) {
     return;
   }
-  if (!runCommand(behavior.config, resolved.resumeCommand)) {
-    kLog.warn("idle behavior '{}' resume command failed", behavior.config.name);
+  if (!runAction(behavior.config, resolved.resumeAction)) {
+    kLog.warn("idle behavior '{}' resume action failed", behavior.config.name);
   }
 }
 
-bool IdleManager::runCommand(const IdleBehaviorConfig& behavior, const std::string& command) const {
-  if (command.empty()) {
+bool IdleManager::runAction(const IdleBehaviorConfig& behavior, const IdleActionRequest& action) const {
+  if (action.kind == IdleActionKind::None) {
     return true;
   }
-  if (!m_commandRunner) {
+  if (!m_actionRunner) {
     return false;
   }
-  return m_commandRunner(behavior, command);
+  return m_actionRunner(behavior, action);
 }
 
 void IdleManager::cancelActiveGrace(bool userCancelled) {
   if (m_graceBehavior == nullptr) {
     return;
   }
+  m_graceBehavior->phase = BehaviorPhase::Waiting;
   m_graceBehavior = nullptr;
   if (m_onGraceEnd) {
     m_onGraceEnd(userCancelled);
@@ -145,7 +147,7 @@ void IdleManager::graceFadeComplete() {
   if (m_onGraceEnd) {
     m_onGraceEnd(false);
   }
-  behavior->idled = true;
+  behavior->phase = BehaviorPhase::Idled;
   kLog.info("idle behavior '{}' triggered after pre-action fade", behavior->config.name);
   runBehavior(*behavior);
 }
@@ -155,7 +157,7 @@ void IdleManager::handleIdled(void* data, ext_idle_notification_v1* /*notificati
   if (behavior == nullptr || behavior->owner == nullptr) {
     return;
   }
-  if (behavior->idled) {
+  if (behavior->phase != BehaviorPhase::Waiting) {
     return;
   }
 
@@ -167,7 +169,7 @@ void IdleManager::handleIdled(void* data, ext_idle_notification_v1* /*notificati
     if (self.m_onGraceEnd) {
       self.m_onGraceEnd(false);
     }
-    pending->idled = true;
+    pending->phase = BehaviorPhase::Idled;
     kLog.info("idle behavior '{}' triggered (superseded pending pre-action fade)", pending->config.name);
     self.runBehavior(*pending);
   }
@@ -179,6 +181,7 @@ void IdleManager::handleIdled(void* data, ext_idle_notification_v1* /*notificati
     const int fadeMs = static_cast<int>(std::lround(static_cast<double>(fadeSec) * 1000.0));
     const auto fade = std::chrono::milliseconds(std::clamp(fadeMs, 1, 600000));
     kLog.info("idle behavior '{}' pre-action fade {}ms", behavior->config.name, fade.count());
+    behavior->phase = BehaviorPhase::Fading;
     BehaviorState* b = behavior;
     self.m_onGraceBegin(behavior->config.name, fade, [ptr = &self, b]() {
       DeferredCall::callLater([ptr, b]() {
@@ -191,7 +194,7 @@ void IdleManager::handleIdled(void* data, ext_idle_notification_v1* /*notificati
     return;
   }
 
-  behavior->idled = true;
+  behavior->phase = BehaviorPhase::Idled;
   kLog.info("idle behavior '{}' triggered", behavior->config.name);
   self.runBehavior(*behavior);
 }
@@ -203,8 +206,9 @@ void IdleManager::handleResumed(void* data, ext_idle_notification_v1* /*notifica
   }
 
   IdleManager& self = *behavior->owner;
-  if (behavior == self.m_graceBehavior && !behavior->idled) {
+  if (behavior == self.m_graceBehavior && behavior->phase == BehaviorPhase::Fading) {
     self.m_graceBehavior = nullptr;
+    behavior->phase = BehaviorPhase::Waiting;
     kLog.info("idle behavior '{}' pre-action fade cancelled (user active)", behavior->config.name);
     if (self.m_onGraceEnd) {
       self.m_onGraceEnd(true);
@@ -212,11 +216,11 @@ void IdleManager::handleResumed(void* data, ext_idle_notification_v1* /*notifica
     return;
   }
 
-  if (!behavior->idled) {
+  if (behavior->phase != BehaviorPhase::Idled) {
     return;
   }
 
-  behavior->idled = false;
+  behavior->phase = BehaviorPhase::Waiting;
   kLog.info("idle behavior '{}' resumed", behavior->config.name);
   self.runResumeBehavior(*behavior);
 }

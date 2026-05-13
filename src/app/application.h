@@ -115,7 +115,7 @@ private:
   void syncPolkitAgent();
   bool runUserCommand(const std::string& command);
   bool runUserCommandBlocking(const std::string& command);
-  bool runIdleCommand(const std::string& command);
+  bool runIdleAction(const IdleActionRequest& action);
   void onIconThemeChanged();
   void onUpowerStateChangedForHooks();
   void onNetworkStateChangedForEvents(const NetworkState& state, NetworkChangeOrigin origin);

@@ -10,10 +10,20 @@
 #include <cctype>
 #include <cstddef>
 #include <stdexcept>
+#include <utility>
 #include <xkbcommon/xkbcommon.h>
 
 namespace {
   constexpr Logger kLog("config");
+
+  IdleActionRequest commandIdleAction(std::string command) {
+    if (command.empty()) {
+      return {};
+    }
+    return IdleActionRequest{.kind = IdleActionKind::Command, .command = std::move(command)};
+  }
+
+  IdleActionRequest idleAction(IdleActionKind kind) { return IdleActionRequest{.kind = kind, .command = {}}; }
 
   ColorSpec parseColorSpecString(const std::string& raw) {
     const std::string trimmed = StringUtils::trim(raw);
@@ -101,22 +111,38 @@ void inferIdleBehaviorActionFromLegacyFields(IdleBehaviorConfig& behavior) {
   behavior.action = "command";
 }
 
-ResolvedIdleCommands resolveIdleBehaviorCommands(const IdleBehaviorConfig& behavior) {
+ResolvedIdleBehavior resolveIdleBehaviorActions(const IdleBehaviorConfig& behavior) {
   IdleBehaviorConfig tmp = behavior;
   inferIdleBehaviorActionFromLegacyFields(tmp);
   const std::string& act = tmp.action;
-  const auto resume = [&tmp](std::string fallback) { return tmp.resumeCommand.empty() ? fallback : tmp.resumeCommand; };
+  const auto resume = [&tmp](IdleActionRequest fallback) {
+    return tmp.resumeCommand.empty() ? std::move(fallback) : commandIdleAction(tmp.resumeCommand);
+  };
 
   if (act == "lock") {
-    return {"noctalia:screen-lock", resume("")};
+    return {
+        .idleAction = idleAction(IdleActionKind::Lock),
+        .resumeAction = resume({}),
+    };
   }
   if (act == "screen_off") {
-    return {"noctalia:dpms-off", resume("noctalia:dpms-on")};
+    return {
+        .idleAction = idleAction(IdleActionKind::ScreenOff),
+        .resumeAction = resume(idleAction(IdleActionKind::ScreenOn)),
+    };
   }
   if (act == "suspend") {
-    return {"noctalia:suspend", resume("")};
+    return {
+        .idleAction = IdleActionRequest{.kind = IdleActionKind::Suspend,
+                                        .command = {},
+                                        .lockBeforeSuspend = tmp.lockBeforeSuspend},
+        .resumeAction = resume({}),
+    };
   }
-  return {behavior.command, behavior.resumeCommand};
+  return {
+      .idleAction = commandIdleAction(behavior.command),
+      .resumeAction = commandIdleAction(behavior.resumeCommand),
+  };
 }
 
 std::string WidgetConfig::getString(const std::string& key, const std::string& fallback) const {

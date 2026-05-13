@@ -926,15 +926,8 @@ void Application::initUi() {
         (void)userCancelled;
         DeferredCall::callLater([this]() { m_idleGraceOverlay.hide(); });
       });
-  m_idleManager.setCommandRunner([this](const IdleBehaviorConfig& behavior, const std::string& command) -> bool {
-    IdleBehaviorConfig tmp = behavior;
-    inferIdleBehaviorActionFromLegacyFields(tmp);
-    if (tmp.action == "suspend" && behavior.lockBeforeSuspend) {
-      m_lockScreen.runAfterSessionLocked([this]() { (void)runUserCommand("noctalia:suspend"); });
-      return true;
-    }
-    return runUserCommand(command);
-  });
+  m_idleManager.setActionRunner([this](const IdleBehaviorConfig& /*behavior*/,
+                                       const IdleActionRequest& action) -> bool { return runIdleAction(action); });
   m_idleManager.reload(m_configService.config().idle);
   m_configService.addReloadCallback([this]() { m_idleManager.reload(m_configService.config().idle); });
   m_audioOsd.bindOverlay(m_osdOverlay);
@@ -1255,7 +1248,27 @@ bool Application::runUserCommandBlocking(const std::string& command) {
   return true;
 }
 
-bool Application::runIdleCommand(const std::string& command) { return runUserCommand(command); }
+bool Application::runIdleAction(const IdleActionRequest& action) {
+  switch (action.kind) {
+  case IdleActionKind::None:
+    return true;
+  case IdleActionKind::Command:
+    return runUserCommand(action.command);
+  case IdleActionKind::Lock:
+    return runUserCommand("noctalia:screen-lock");
+  case IdleActionKind::ScreenOff:
+    return runUserCommand("noctalia:dpms-off");
+  case IdleActionKind::ScreenOn:
+    return runUserCommand("noctalia:dpms-on");
+  case IdleActionKind::Suspend:
+    if (action.lockBeforeSuspend) {
+      m_lockScreen.runAfterSessionLocked([this]() { (void)runUserCommand("noctalia:suspend"); });
+      return true;
+    }
+    return runUserCommand("noctalia:suspend");
+  }
+  return false;
+}
 
 void Application::onIconThemeChanged() {
   kLog.info("system icon theme changed; refreshing icon consumers");

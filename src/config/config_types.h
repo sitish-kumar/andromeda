@@ -151,13 +151,32 @@ struct IdleConfig {
 [[nodiscard]] std::vector<SessionPanelActionConfig> defaultSessionPanelActions();
 [[nodiscard]] std::vector<IdleBehaviorConfig> defaultIdleBehaviors();
 
-struct ResolvedIdleCommands {
-  std::string idleCommand;
-  std::string resumeCommand;
+enum class IdleActionKind : std::uint8_t {
+  None = 0,
+  Command,
+  Lock,
+  ScreenOff,
+  ScreenOn,
+  Suspend,
+};
+
+struct IdleActionRequest {
+  IdleActionKind kind = IdleActionKind::None;
+  std::string command;
+  bool lockBeforeSuspend = true;
+
+  bool operator==(const IdleActionRequest&) const = default;
+};
+
+struct ResolvedIdleBehavior {
+  IdleActionRequest idleAction;
+  IdleActionRequest resumeAction;
+
+  bool operator==(const ResolvedIdleBehavior&) const = default;
 };
 
 void inferIdleBehaviorActionFromLegacyFields(IdleBehaviorConfig& behavior);
-[[nodiscard]] ResolvedIdleCommands resolveIdleBehaviorCommands(const IdleBehaviorConfig& behavior);
+[[nodiscard]] ResolvedIdleBehavior resolveIdleBehaviorActions(const IdleBehaviorConfig& behavior);
 
 enum class KeybindAction : std::uint8_t {
   Validate = 0,
