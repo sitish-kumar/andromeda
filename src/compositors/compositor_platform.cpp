@@ -172,10 +172,6 @@ namespace {
     NiriWorkspaceBackend m_backend;
   };
 
-  [[nodiscard]] bool setHyprlandOutputPower(WaylandConnection& /*wayland*/, bool on) {
-    return compositors::hyprland::setOutputPower(on);
-  }
-
   [[nodiscard]] bool setMangoOutputPower(WaylandConnection& wayland, bool on) {
     return compositors::mango::setOutputPower(wayland, on);
   }
@@ -188,7 +184,10 @@ namespace {
   createOutputPowerBackend(compositors::CompositorRuntimeRegistry& runtimeRegistry) {
     switch (compositors::detect()) {
     case compositors::CompositorKind::Hyprland:
-      return std::make_unique<LambdaOutputPowerBackend>(&setHyprlandOutputPower);
+      return std::make_unique<LambdaOutputPowerBackend>(
+          [&runtime = runtimeRegistry.hyprland()](WaylandConnection& /*wayland*/, bool on) {
+            return compositors::hyprland::setOutputPower(runtime, on);
+          });
     case compositors::CompositorKind::Niri:
       return std::make_unique<LambdaOutputPowerBackend>(
           [&runtime = runtimeRegistry.niri()](WaylandConnection& /*wayland*/, bool on) {
