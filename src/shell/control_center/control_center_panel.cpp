@@ -2,6 +2,7 @@
 
 #include "compositors/compositor_platform.h"
 #include "config/config_service.h"
+#include "core/deferred_call.h"
 #include "i18n/i18n.h"
 #include "notification/notification_manager.h"
 #include "render/core/renderer.h"
@@ -290,9 +291,6 @@ bool ControlCenterPanel::deferPointerRelayout() const { return deferExternalRefr
 
 void ControlCenterPanel::selectTab(TabId tab) {
   m_activeTab = tab;
-  if (tab == TabId::Notifications && m_notificationManager != nullptr) {
-    m_notificationManager->markNotificationHistorySeen();
-  }
   for (const auto& meta : kTabs) {
     const std::size_t idx = tabIndex(meta.id);
     if (m_tabContainers[idx] != nullptr) {
@@ -317,6 +315,21 @@ void ControlCenterPanel::selectTab(TabId tab) {
   }
   if (m_contentHeaderActions != nullptr) {
     m_contentHeaderActions->setVisible(true);
+  }
+
+  // `markNotificationHistorySeen` invokes Application's notification state callback (bar refresh +
+  // panel refresh). Running that synchronously from `selectTab` meant it could fire during
+  // `PanelManager::buildScene`'s `onOpen` pass before tab visibility/`setActive` finished, and while
+  // the panel surface was still in `prepareFrame` — the only control-center tab that did this.
+  // Defer so the first open reveal animation is not disturbed; `markNotificationHistorySeen` no-ops
+  // when there is nothing to clear.
+  if (tab == TabId::Notifications && m_notificationManager != nullptr) {
+    NotificationManager* notifications = m_notificationManager;
+    DeferredCall::callLater([notifications]() {
+      if (notifications != nullptr) {
+        notifications->markNotificationHistorySeen();
+      }
+    });
   }
 }
 
