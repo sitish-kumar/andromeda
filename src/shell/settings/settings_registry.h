@@ -189,6 +189,7 @@ namespace settings {
     std::vector<SelectOption> communityPalettes;
     std::vector<SelectOption> customPalettes;
     std::vector<SelectOption> communityTemplates;
+    std::vector<SelectOption> fontFamilies;
   };
 
   [[nodiscard]] const BarConfig* findBar(const Config& cfg, std::string_view name);

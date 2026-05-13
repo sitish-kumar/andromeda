@@ -1,5 +1,6 @@
 #include "compositors/compositor_detect.h"
 #include "config/config_service.h"
+#include "core/process.h"
 #include "core/ui_phase.h"
 #include "dbus/upower/upower_service.h"
 #include "i18n/i18n.h"
@@ -34,6 +35,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -151,6 +153,65 @@ namespace {
     return options;
   }
 
+  std::vector<settings::SelectOption> discoverFontFamilyOptions() {
+    std::vector<settings::SelectOption> options;
+    if (!process::commandExists("fc-list")) {
+      return options;
+    }
+
+    const auto result = process::runSync({"fc-list", ":", "family"});
+    if (!result) {
+      return options;
+    }
+
+    std::unordered_set<std::string> seen;
+    seen.reserve(4096);
+
+    std::size_t lineStart = 0;
+    while (lineStart <= result.out.size()) {
+      const std::size_t lineEnd = result.out.find('\n', lineStart);
+      const std::string_view line = lineEnd == std::string::npos
+                                        ? std::string_view(result.out).substr(lineStart)
+                                        : std::string_view(result.out).substr(lineStart, lineEnd - lineStart);
+
+      std::size_t tokenStart = 0;
+      while (tokenStart <= line.size()) {
+        const std::size_t tokenEnd = line.find(',', tokenStart);
+        const std::string_view token =
+            tokenEnd == std::string::npos ? line.substr(tokenStart) : line.substr(tokenStart, tokenEnd - tokenStart);
+        const std::string family = StringUtils::trim(std::string(token));
+        if (!family.empty()) {
+          seen.insert(family);
+        }
+        if (tokenEnd == std::string::npos) {
+          break;
+        }
+        tokenStart = tokenEnd + 1;
+      }
+
+      if (lineEnd == std::string::npos) {
+        break;
+      }
+      lineStart = lineEnd + 1;
+    }
+
+    std::vector<std::string> sortedFamilies;
+    sortedFamilies.reserve(seen.size());
+    for (const auto& family : seen) {
+      sortedFamilies.push_back(family);
+    }
+    std::sort(sortedFamilies.begin(), sortedFamilies.end(), [](const std::string& a, const std::string& b) {
+      return StringUtils::toLower(a) < StringUtils::toLower(b);
+    });
+
+    options.reserve(sortedFamilies.size());
+    for (const auto& family : sortedFamilies) {
+      options.push_back(settings::SelectOption{family, family});
+    }
+
+    return options;
+  }
+
 } // namespace
 
 void SettingsWindow::applyPendingContentScrollTarget(float margin) {
@@ -218,6 +279,8 @@ settings::RegistryEnvironment SettingsWindow::buildRegistryEnvironment() const {
   for (const auto& t : noctalia::theme::CommunityTemplateService::availableTemplates()) {
     env.communityTemplates.push_back(settings::SelectOption{t.id, t.displayName});
   }
+  static const std::vector<settings::SelectOption> kFontFamilies = discoverFontFamilyOptions();
+  env.fontFamilies = kFontFamilies;
   if (m_wayland != nullptr) {
     for (const auto& output : m_wayland->outputs()) {
       if (output.output == nullptr || output.connectorName.empty()) {

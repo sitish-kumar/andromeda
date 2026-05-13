@@ -314,11 +314,22 @@ namespace settings {
         makeEntry("appearance", "interface", tr("settings.schema.appearance.corner-roundness.label"),
                   tr("settings.schema.appearance.corner-roundness.description"), {"shell", "corner_radius_scale"},
                   SliderSetting{cfg.shell.cornerRadiusScale, 0.0f, 2.0f, 0.05f, false}, "rounded corners radius"));
-    entries.push_back(
-        makeEntry("appearance", "interface", tr("settings.schema.appearance.font-family.label"),
-                  tr("settings.schema.appearance.font-family.description"), {"shell", "font_family"},
-                  TextSetting{.value = cfg.shell.fontFamily, .placeholder = "sans-serif", .browseFileExtensions = {}},
-                  "typeface"));
+    {
+      SettingControl fontFamilyControl =
+          TextSetting{.value = cfg.shell.fontFamily, .placeholder = "sans-serif", .browseFileExtensions = {}};
+      if (!env.fontFamilies.empty()) {
+        fontFamilyControl = SearchPickerSetting{
+            .options = env.fontFamilies,
+            .selectedValue = cfg.shell.fontFamily,
+            .placeholder = "sans-serif",
+            .emptyText = tr("ui.controls.search-picker.empty"),
+            .preferredHeight = 280.0f,
+        };
+      }
+      entries.push_back(makeEntry("appearance", "interface", tr("settings.schema.appearance.font-family.label"),
+                                  tr("settings.schema.appearance.font-family.description"), {"shell", "font_family"},
+                                  std::move(fontFamilyControl), "typeface"));
+    }
     entries.push_back(makeEntry("appearance", "interface", tr("settings.schema.appearance.language.label"),
                                 tr("settings.schema.appearance.language.description"), {"shell", "lang"},
                                 languageSelect(cfg.shell.lang), "locale translation", true));
