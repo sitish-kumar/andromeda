@@ -340,26 +340,40 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     const std::int32_t barBottom =
         barIsVertical ? std::max(barTop, outputHeight - mEnds) : barTop + barConfig.thickness;
 
-    // Panel body rect in screen coords. For attached panels, place along the bar
-    // main axis using request anchor when provided, else center fallback.
-    // Keep 1 px bar overlap so concave corners read as merged with the bar edge.
+    // Place panel along bar main axis using click anchor or center fallback.
+    // Inset from bar ends = max(bar corner radius, panel corner radius) so the
+    // concave cutout stays within the bar's visible rect.
+    const auto computeTotalInset = [&](float barR) -> std::int32_t {
+      return static_cast<std::int32_t>(std::ceil(std::max(barR, cornerRadius)));
+    };
+    // Bar corner radii at the attachment edge.
+    const float barRStart =
+        static_cast<float>(barIsVertical ? (barIsLeft ? barConfig.radiusTopRight : barConfig.radiusTopLeft)
+                                         : (barIsBottom ? barConfig.radiusTopLeft : barConfig.radiusBottomLeft));
+    const float barREnd =
+        static_cast<float>(barIsVertical ? (barIsLeft ? barConfig.radiusBottomRight : barConfig.radiusBottomLeft)
+                                         : (barIsBottom ? barConfig.radiusTopRight : barConfig.radiusBottomRight));
+    const auto totalStartInset = computeTotalInset(barRStart);
+    const auto totalEndInset = computeTotalInset(barREnd);
     std::int32_t visualX = 0;
     std::int32_t visualY = 0;
-    const bool useAnchorForAttached = request.hasExplicitAnchor;
+    const bool useAnchorForAttached = request.hasAnchorPosition;
     if (barIsVertical) {
+      const auto minY = barTop + totalStartInset;
+      const auto maxY = std::max(minY, barBottom - static_cast<std::int32_t>(panelHeight) - totalEndInset);
       const auto centeredY = barTop + (barBottom - barTop - static_cast<std::int32_t>(panelHeight)) / 2;
       const auto desiredY =
           static_cast<std::int32_t>(std::lround(request.anchorY - static_cast<float>(panelHeight) * 0.5f));
-      const auto maxY = std::max(barTop, barBottom - static_cast<std::int32_t>(panelHeight));
-      visualY = useAnchorForAttached ? std::clamp(desiredY, barTop, maxY) : centeredY;
+      visualY = useAnchorForAttached ? std::clamp(desiredY, minY, maxY) : centeredY;
       visualX = barIsLeft ? barRight - kAttachedPanelBarOverlap
                           : barLeft - static_cast<std::int32_t>(panelWidth) + kAttachedPanelBarOverlap;
     } else {
+      const auto minX = barLeft + totalStartInset;
+      const auto maxX = std::max(minX, barRight - static_cast<std::int32_t>(panelWidth) - totalEndInset);
       const auto centeredX = barLeft + (barRight - barLeft - static_cast<std::int32_t>(panelWidth)) / 2;
       const auto desiredX =
           static_cast<std::int32_t>(std::lround(request.anchorX - static_cast<float>(panelWidth) * 0.5f));
-      const auto maxX = std::max(barLeft, barRight - static_cast<std::int32_t>(panelWidth));
-      visualX = useAnchorForAttached ? std::clamp(desiredX, barLeft, maxX) : centeredX;
+      visualX = useAnchorForAttached ? std::clamp(desiredX, minX, maxX) : centeredX;
       visualY = barIsBottom ? barTop - static_cast<std::int32_t>(panelHeight) + kAttachedPanelBarOverlap
                             : barBottom - kAttachedPanelBarOverlap;
     }

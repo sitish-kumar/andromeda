@@ -39,6 +39,7 @@ struct PanelOpenRequest {
   float anchorX = 0.0f;
   float anchorY = 0.0f;
   bool hasExplicitAnchor = false;
+  bool hasAnchorPosition = false;
   std::string_view context = {};
   std::string_view sourceBarName = {};
 };

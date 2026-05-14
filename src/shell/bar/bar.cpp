@@ -1183,6 +1183,7 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
                              .anchorX = anchorX,
                              .anchorY = anchorY,
                              .hasExplicitAnchor = anchorSurfaceX.has_value() || anchorSurfaceY.has_value(),
+                             .hasAnchorPosition = true,
                              .context = context,
                              .sourceBarName = inst->barConfig.name});
       });
@@ -1833,7 +1834,20 @@ bool Bar::onPointerEvent(const PointerEvent& event) {
         if (panelManager.isOpenPanel("control-center")) {
           panelManager.closePanel();
         } else {
+          float anchorX = static_cast<float>(event.sx);
+          float anchorY = static_cast<float>(event.sy);
+          if (m_platform != nullptr && targetInstance->output != nullptr) {
+            if (const auto* out = m_platform->findOutputByWl(targetInstance->output);
+                out != nullptr && out->logicalWidth > 0 && out->logicalHeight > 0) {
+              const auto [surfaceX, surfaceY] = surfaceOriginForOutputLocal(*targetInstance, *out);
+              anchorX += surfaceX;
+              anchorY += surfaceY;
+            }
+          }
           panelManager.openPanel("control-center", PanelOpenRequest{.output = targetInstance->output,
+                                                                    .anchorX = anchorX,
+                                                                    .anchorY = anchorY,
+                                                                    .hasAnchorPosition = true,
                                                                     .context = "home",
                                                                     .sourceBarName = targetInstance->barConfig.name});
         }
@@ -1913,8 +1927,21 @@ bool Bar::onPointerEvent(const PointerEvent& event) {
         if (panelManager.isOpenPanel("control-center")) {
           panelManager.closePanel();
         } else {
+          float anchorX = sx;
+          float anchorY = sy;
+          if (m_platform != nullptr && m_hoveredInstance->output != nullptr) {
+            if (const auto* out = m_platform->findOutputByWl(m_hoveredInstance->output);
+                out != nullptr && out->logicalWidth > 0 && out->logicalHeight > 0) {
+              const auto [surfaceX, surfaceY] = surfaceOriginForOutputLocal(*m_hoveredInstance, *out);
+              anchorX += surfaceX;
+              anchorY += surfaceY;
+            }
+          }
           panelManager.openPanel("control-center",
                                  PanelOpenRequest{.output = m_hoveredInstance->output,
+                                                  .anchorX = anchorX,
+                                                  .anchorY = anchorY,
+                                                  .hasAnchorPosition = true,
                                                   .context = "home",
                                                   .sourceBarName = m_hoveredInstance->barConfig.name});
         }
