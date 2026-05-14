@@ -54,6 +54,7 @@ pipewire_dep        = dependency('libpipewire-0.3', include_type: 'system')
 curl_dep            = dependency('libcurl')
 pam_dep             = cc.find_library('pam')
 jemalloc_dep        = dependency('jemalloc', required: false)
+dl_dep              = cpp.find_library('dl', required: false)
 
 egl_dep = dependency('egl', required: false)
 gles2_dep = dependency('glesv2', required: false)
@@ -701,7 +702,7 @@ executable('noctalia',
     stb_dep,
     libwebp_dep,
     luau_dep,
-  ] + (jemalloc_dep.found() ? [jemalloc_dep] : []),
+  ] + (jemalloc_dep.found() ? [jemalloc_dep] : []) + (dl_dep.found() ? [dl_dep] : []),
   include_directories: _noctalia_inc,
   cpp_args: [
     '-Wall', '-Wextra', '-Wpedantic', '-Wconversion', '-Wshadow',

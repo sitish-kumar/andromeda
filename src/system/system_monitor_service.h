@@ -5,6 +5,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstdint>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
@@ -54,6 +55,8 @@ public:
   [[nodiscard]] std::vector<float> diskHistory(const std::string& path, int windowSize = kHistorySize) const;
 
 private:
+  struct NvidiaNvmlReader;
+
   struct DiskHistory {
     int refs = 0;
     float latestPercent = 0.0f;
@@ -78,7 +81,7 @@ private:
   };
   [[nodiscard]] static std::optional<MemData> readMemoryKb();
   [[nodiscard]] static std::optional<double> readCpuTempCelsius();
-  [[nodiscard]] static std::optional<double> readGpuTempCelsius();
+  [[nodiscard]] std::optional<double> readGpuTempCelsius();
   [[nodiscard]] static float readDiskUsagePercent(const std::string& path);
 
   struct NetIfaceBytes {
@@ -101,4 +104,5 @@ private:
   int m_historyHead = 0;
   std::unordered_map<std::string, DiskHistory> m_diskHistories;
   std::unordered_map<std::string, NetIfaceBytes> m_prevNetBytes;
+  std::unique_ptr<NvidiaNvmlReader> m_nvidiaNvmlReader;
 };
