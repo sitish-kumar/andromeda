@@ -61,6 +61,7 @@ void ControlCenterPanel::create() {
 
   for (auto& tab : m_tabs) {
     tab->setContentScale(scale);
+    tab->setPanelCardOpacity(panelCardOpacity());
   }
 
   auto rootLayout = std::make_unique<Flex>();
@@ -76,7 +77,7 @@ void ControlCenterPanel::create() {
   sidebar->setGap(Style::spaceXs * scale);
   sidebar->setPadding(Style::spaceSm * scale);
   sidebar->setFillHeight(true);
-  sidebar->setFill(colorSpecFromRole(ColorRole::Surface));
+  sidebar->setFill(colorSpecFromRole(ColorRole::SurfaceVariant, panelCardOpacity()));
   sidebar->setRadius(Style::scaledRadiusXl(scale));
   m_sidebar = sidebar.get();
 
@@ -190,6 +191,17 @@ void ControlCenterPanel::create() {
   }
 
   selectTab(m_activeTab);
+}
+
+void ControlCenterPanel::onPanelCardOpacityChanged(float opacity) {
+  for (auto& tab : m_tabs) {
+    if (tab != nullptr) {
+      tab->setPanelCardOpacity(opacity);
+    }
+  }
+  if (m_sidebar != nullptr) {
+    m_sidebar->setFill(colorSpecFromRole(ColorRole::SurfaceVariant, opacity));
+  }
 }
 
 void ControlCenterPanel::doLayout(Renderer& renderer, float width, float height) {

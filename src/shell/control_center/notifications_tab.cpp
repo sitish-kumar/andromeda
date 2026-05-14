@@ -147,7 +147,9 @@ namespace {
     return ColorRole::OnSurfaceVariant;
   }
 
-  void applyNotificationCardStyle(Flex& card, float scale) { applySectionCardStyle(card, scale); }
+  void applyNotificationCardStyle(Flex& card, float scale, float fillOpacity) {
+    applySectionCardStyle(card, scale, fillOpacity);
+  }
 
   std::string relativeMetaLine(const Notification& n) {
     if (n.receivedWallClock.has_value()) {
@@ -304,8 +306,8 @@ namespace {
 
   class NotificationHistoryRow final : public Flex {
   public:
-    explicit NotificationHistoryRow(float scale) : m_scale(scale) {
-      applyNotificationCardStyle(*this, scale);
+    explicit NotificationHistoryRow(float scale, float fillOpacity) : m_scale(scale) {
+      applyNotificationCardStyle(*this, scale, fillOpacity);
       setFillWidth(true);
 
       auto header = std::make_unique<Flex>();
@@ -557,7 +559,8 @@ namespace {
 
 class NotificationHistoryAdapter final : public VirtualListAdapter {
 public:
-  NotificationHistoryAdapter(NotificationsTab& owner, float scale) : m_owner(owner), m_scale(scale) {}
+  NotificationHistoryAdapter(NotificationsTab& owner, float scale, float fillOpacity)
+      : m_owner(owner), m_scale(scale), m_fillOpacity(fillOpacity) {}
 
   [[nodiscard]] std::size_t itemCount() const override { return m_owner.m_filtered.size(); }
 
@@ -587,7 +590,7 @@ public:
   }
 
   [[nodiscard]] std::unique_ptr<Node> createItem() override {
-    return std::make_unique<NotificationHistoryRow>(m_scale);
+    return std::make_unique<NotificationHistoryRow>(m_scale, m_fillOpacity);
   }
 
   void bindItem(Renderer& renderer, Node& item, std::size_t index, float width, bool /*hovered*/) override {
@@ -609,6 +612,7 @@ public:
 private:
   NotificationsTab& m_owner;
   float m_scale = 1.0f;
+  float m_fillOpacity = 1.0f;
 };
 
 NotificationsTab::NotificationsTab(NotificationManager* notifications) : m_notifications(notifications) {}
@@ -643,7 +647,7 @@ std::unique_ptr<Flex> NotificationsTab::create() {
   m_filter = filter.get();
   tab->addChild(std::move(filter));
 
-  m_adapter = std::make_unique<NotificationHistoryAdapter>(*this, scale);
+  m_adapter = std::make_unique<NotificationHistoryAdapter>(*this, scale, panelCardOpacity());
 
   auto list = std::make_unique<VirtualListView>();
   list->setFlexGrow(1.0f);
@@ -655,7 +659,7 @@ std::unique_ptr<Flex> NotificationsTab::create() {
   m_list = static_cast<VirtualListView*>(tab->addChild(std::move(list)));
 
   auto empty = std::make_unique<Flex>();
-  applyNotificationCardStyle(*empty, scale);
+  applyNotificationCardStyle(*empty, scale, panelCardOpacity());
   empty->setAlign(FlexAlign::Center);
   empty->setGap(Style::spaceSm * scale);
   empty->setPadding(Style::spaceLg * scale, Style::spaceMd * scale);

@@ -412,6 +412,22 @@ constexpr EnumOption<PasswordMaskStyle> kPasswordMaskStyles[] = {
     {PasswordMaskStyle::RandomIcons, "random", "settings.options.shell.password-style.random-icons"},
 };
 
+enum class PanelTransparencyMode : std::uint8_t {
+  Solid = 0,
+  Soft = 1,
+  Glass = 2,
+};
+
+constexpr EnumOption<PanelTransparencyMode> kPanelTransparencyModes[] = {
+    {PanelTransparencyMode::Solid, "solid", "settings.options.shell.panel-transparency.solid"},
+    {PanelTransparencyMode::Soft, "soft", "settings.options.shell.panel-transparency.soft"},
+    {PanelTransparencyMode::Glass, "glass", "settings.options.shell.panel-transparency.glass"},
+};
+
+[[nodiscard]] float panelCardOpacityForTransparencyMode(PanelTransparencyMode mode,
+                                                        float panelBackgroundOpacity) noexcept;
+[[nodiscard]] float detachedPanelBackgroundOpacityForTransparencyMode(PanelTransparencyMode mode) noexcept;
+
 constexpr EnumOption<WallpaperFillMode> kWallpaperFillModes[] = {
     {WallpaperFillMode::Center, "center", "settings.options.wallpaper.fill.center"},
     {WallpaperFillMode::Crop, "crop", "settings.options.wallpaper.fill.crop"},
@@ -451,6 +467,7 @@ struct ShellConfig {
 
   struct PanelConfig {
     bool backgroundBlur = true; // request compositor blur behind panels via ext-background-effect-v1
+    PanelTransparencyMode transparencyMode = PanelTransparencyMode::Solid;
     bool attachLauncher = false;
     bool attachClipboard = false;
     bool attachControlCenter = true;

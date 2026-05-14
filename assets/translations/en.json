@@ -906,6 +906,11 @@
         "password-style": {
           "filled-circles": "Filled Circles",
           "random-icons": "Random Icons"
+        },
+        "panel-transparency": {
+          "solid": "Solid",
+          "soft": "Soft",
+          "glass": "Glass"
         }
       },
       "screen-position": {
@@ -1544,6 +1549,10 @@
         }
       },
       "panels": {
+        "transparency-mode": {
+          "label": "Transparency",
+          "description": "Panel glass style, including detached panel opacity and card translucency"
+        },
         "home-shortcuts": {
           "label": "Home Shortcuts",
           "description": "Choose up to six shortcut buttons for the home tab"

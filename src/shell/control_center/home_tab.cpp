@@ -64,9 +64,51 @@ namespace {
     return formatLocalTime(format);
   }
 
-  void applyHomeCardStyle(Flex& card, float scale) {
-    applySectionCardStyle(card, scale);
+  void applyHomeCardStyle(Flex& card, float scale, float fillOpacity) {
+    applySectionCardStyle(card, scale, fillOpacity);
     card.setGap(Style::spaceSm * scale);
+  }
+
+  Button::ButtonPalette inactiveShortcutPalette(float fillOpacity) {
+    constexpr float kDisabledAlpha = 0.55f;
+    const float opacity = std::clamp(fillOpacity, 0.0f, 1.0f);
+    return Button::ButtonPalette{
+        .borderWidth = Style::borderWidth,
+        .normal =
+            Button::ButtonStateColors{
+                .bg = colorSpecFromRole(ColorRole::SurfaceVariant, opacity),
+                .border = colorSpecFromRole(ColorRole::Outline, 0.5f),
+                .label = colorSpecFromRole(ColorRole::OnSurface),
+            },
+        .hover =
+            Button::ButtonStateColors{
+                .bg = colorSpecFromRole(ColorRole::Hover, std::max(opacity, 0.78f)),
+                .border = clearColorSpec(),
+                .label = colorSpecFromRole(ColorRole::OnHover),
+            },
+        .pressed =
+            Button::ButtonStateColors{
+                .bg = colorSpecFromRole(ColorRole::Primary),
+                .border = colorSpecFromRole(ColorRole::Primary),
+                .label = colorSpecFromRole(ColorRole::OnPrimary),
+            },
+        .disabled =
+            Button::ButtonStateColors{
+                .bg = colorSpecFromRole(ColorRole::SurfaceVariant, opacity * kDisabledAlpha),
+                .border = colorSpecFromRole(ColorRole::Outline, 0.5f * kDisabledAlpha),
+                .label = colorSpecFromRole(ColorRole::OnSurface, kDisabledAlpha),
+            },
+    };
+  }
+
+  void applyShortcutButtonStyle(Button& button, bool enabled, bool active, float fillOpacity) {
+    if (enabled && active) {
+      button.setVariant(ButtonVariant::Accent);
+    } else {
+      button.setVariant(ButtonVariant::Outline);
+      button.setCustomPalette(inactiveShortcutPalette(fillOpacity));
+    }
+    button.setEnabled(enabled);
   }
 
 } // namespace
@@ -107,7 +149,7 @@ std::unique_ptr<Flex> HomeTab::create() {
 
   // --- User card ---
   auto userCard = std::make_unique<Flex>();
-  applyHomeCardStyle(*userCard, scale);
+  applyHomeCardStyle(*userCard, scale, panelCardOpacity());
   userCard->setFlexGrow(1.0f);
   userCard->setFillHeight(true);
   userCard->setJustify(FlexJustify::Center);
@@ -206,7 +248,7 @@ std::unique_ptr<Flex> HomeTab::create() {
 
   // --- Media (top of left column) ---
   auto mediaCard = std::make_unique<Flex>();
-  applyHomeCardStyle(*mediaCard, scale);
+  applyHomeCardStyle(*mediaCard, scale, panelCardOpacity());
   mediaCard->setFillWidth(true);
   mediaCard->setFillHeight(true);
   mediaCard->setFlexGrow(1.4f);
@@ -300,7 +342,7 @@ std::unique_ptr<Flex> HomeTab::create() {
 
   // --- Date/Time + Weather (below media) ---
   auto dateTimeCard = std::make_unique<Flex>();
-  applyHomeCardStyle(*dateTimeCard, scale);
+  applyHomeCardStyle(*dateTimeCard, scale, panelCardOpacity());
   dateTimeCard->setDirection(FlexDirection::Horizontal);
   dateTimeCard->setAlign(FlexAlign::Center);
   dateTimeCard->setJustify(FlexJustify::Center);
@@ -419,8 +461,7 @@ std::unique_ptr<Flex> HomeTab::create() {
     btn->setMinHeight(0.0f);
     btn->setPadding(Style::spaceSm * scale);
     btn->setRadius(Style::scaledRadiusLg(scale));
-    btn->setVariant(isActive ? ButtonVariant::Accent : ButtonVariant::Outline);
-    btn->setEnabled(enabled);
+    applyShortcutButtonStyle(*btn, enabled, isActive, panelCardOpacity());
 
     const std::size_t padIdx = m_shortcutPads.size();
     btn->setOnClick([this, padIdx]() {
@@ -1092,8 +1133,7 @@ void HomeTab::syncShortcuts() {
     const bool on = sc.isToggle() && sc.active();
 
     if (pad.button != nullptr) {
-      pad.button->setEnabled(enabled);
-      pad.button->setVariant((enabled && on) ? ButtonVariant::Accent : ButtonVariant::Outline);
+      applyShortcutButtonStyle(*pad.button, enabled, on, panelCardOpacity());
     }
     if (pad.glyph != nullptr) {
       pad.glyph->setGlyph(sc.displayIcon());

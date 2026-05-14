@@ -598,6 +598,11 @@ namespace settings {
                                 ListSetting{.items = cfg.dock.pinned}, "favorites"));
 
     // Panels
+    entries.push_back(makeEntry("panels", "effects", tr("settings.schema.panels.transparency-mode.label"),
+                                tr("settings.schema.panels.transparency-mode.description"),
+                                {"shell", "panel", "transparency_mode"},
+                                asSegmented(enumSelect(kPanelTransparencyModes, cfg.shell.panel.transparencyMode)),
+                                "glass opacity alpha translucent cards blur"));
     entries.push_back(makeEntry(
         "panels", "control-center", tr("settings.schema.panels.home-shortcuts.label"),
         tr("settings.schema.panels.home-shortcuts.description"), {"control_center", "shortcuts"},

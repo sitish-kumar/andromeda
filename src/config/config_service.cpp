@@ -1169,6 +1169,11 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       if (auto v = (*panelTbl)["background_blur"].value<bool>()) {
         shell.panel.backgroundBlur = *v;
       }
+      if (auto v = (*panelTbl)["transparency_mode"].value<std::string>()) {
+        if (auto parsed = enumFromKey(kPanelTransparencyModes, StringUtils::trim(*v))) {
+          shell.panel.transparencyMode = *parsed;
+        }
+      }
       if (auto v = (*panelTbl)["attach_launcher"].value<bool>()) {
         shell.panel.attachLauncher = *v;
       }

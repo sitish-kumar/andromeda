@@ -71,6 +71,18 @@ namespace {
     return std::max(0.1f, configService->config().shell.uiScale);
   }
 
+  float resolvePanelCardOpacity(ConfigService* configService, float panelBackgroundOpacity) {
+    const auto mode =
+        configService != nullptr ? configService->config().shell.panel.transparencyMode : PanelTransparencyMode::Solid;
+    return panelCardOpacityForTransparencyMode(mode, panelBackgroundOpacity);
+  }
+
+  float resolveDetachedPanelBackgroundOpacity(ConfigService* configService) {
+    const auto mode =
+        configService != nullptr ? configService->config().shell.panel.transparencyMode : PanelTransparencyMode::Solid;
+    return detachedPanelBackgroundOpacityForTransparencyMode(mode);
+  }
+
 } // namespace
 
 PanelManager::PanelManager() { s_instance = this; }
@@ -1329,6 +1341,12 @@ void PanelManager::onConfigReloaded() {
   // Re-apply compositor blur for any open panel — covers both attached and layer-shell
   // panels reacting to shell.panel.background_blur changes.
   applyPanelCompositorBlur();
+  const float panelBackgroundOpacity =
+      m_attachedToBar ? m_attachedBackgroundOpacity : resolveDetachedPanelBackgroundOpacity(m_config);
+  m_activePanel->setPanelCardOpacity(resolvePanelCardOpacity(m_config, panelBackgroundOpacity));
+  if (!m_attachedToBar && m_bgNode != nullptr) {
+    static_cast<Box*>(m_bgNode)->setFill(colorSpecFromRole(ColorRole::Surface, panelBackgroundOpacity));
+  }
   if (m_surface != nullptr) {
     m_surface->requestUpdate();
   }
@@ -1346,6 +1364,7 @@ void PanelManager::onConfigReloaded() {
     return;
   }
   m_attachedBackgroundOpacity = newOpacity;
+  m_activePanel->setPanelCardOpacity(resolvePanelCardOpacity(m_config, m_attachedBackgroundOpacity));
   applyAttachedDecorationStyle();
   if (m_surface != nullptr) {
     m_surface->requestRedraw();
@@ -1401,6 +1420,8 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
         bg->setLogicalInset(attached_panel::logicalInset(m_attachedBarPosition, radius));
         bg->setRadii(Radii{radius, radius, radius, radius});
         // Fill (opacity-dependent) is applied via applyAttachedDecorationStyle() below.
+      } else {
+        bg->setFill(colorSpecFromRole(ColorRole::Surface, resolveDetachedPanelBackgroundOpacity(m_config)));
       }
       m_bgNode = sceneParent->addChild(std::move(bg));
     }
@@ -1414,6 +1435,9 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
     auto contentWrapper = std::make_unique<Node>();
     m_contentNode = contentWrapper.get();
     m_activePanel->setAnimationManager(&m_animations);
+    const float panelBackgroundOpacity =
+        m_attachedToBar ? m_attachedBackgroundOpacity : resolveDetachedPanelBackgroundOpacity(m_config);
+    m_activePanel->setPanelCardOpacity(resolvePanelCardOpacity(m_config, panelBackgroundOpacity));
     m_activePanel->create();
     m_activePanel->onOpen(m_pendingOpenContext);
     m_pendingOpenContext.clear();

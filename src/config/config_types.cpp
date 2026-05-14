@@ -92,6 +92,31 @@ std::vector<IdleBehaviorConfig> defaultIdleBehaviors() {
   };
 }
 
+float panelCardOpacityForTransparencyMode(PanelTransparencyMode mode, float panelBackgroundOpacity) noexcept {
+  const float backgroundOpacity = std::clamp(panelBackgroundOpacity, 0.0f, 1.0f);
+  switch (mode) {
+  case PanelTransparencyMode::Solid:
+    return 1.0f;
+  case PanelTransparencyMode::Soft:
+    return std::clamp(backgroundOpacity + 0.10f, 0.78f, 0.88f);
+  case PanelTransparencyMode::Glass:
+    return std::clamp(backgroundOpacity + 0.02f, 0.58f, 0.70f);
+  }
+  return 1.0f;
+}
+
+float detachedPanelBackgroundOpacityForTransparencyMode(PanelTransparencyMode mode) noexcept {
+  switch (mode) {
+  case PanelTransparencyMode::Solid:
+    return 1.0f;
+  case PanelTransparencyMode::Soft:
+    return 0.90f;
+  case PanelTransparencyMode::Glass:
+    return 0.72f;
+  }
+  return 1.0f;
+}
+
 void inferIdleBehaviorActionFromLegacyFields(IdleBehaviorConfig& behavior) {
   if (!behavior.action.empty()) {
     return;

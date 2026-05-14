@@ -105,13 +105,13 @@ namespace {
     return 0;
   }
 
-  std::unique_ptr<Flex> makeCard(float scale) {
+  std::unique_ptr<Flex> makeCard(float scale, float fillOpacity) {
     auto card = std::make_unique<Flex>();
     card->setDirection(FlexDirection::Vertical);
     card->setAlign(FlexAlign::Stretch);
     card->setGap(Style::spaceMd * scale);
     card->setPadding(Style::spaceMd * scale, Style::spaceLg * scale);
-    card->setCardStyle(scale);
+    card->setCardStyle(scale, fillOpacity);
     return card;
   }
 
@@ -174,7 +174,7 @@ void SetupWizardPanel::create() {
 
   // Telemetry
   {
-    auto card = makeCard(scale);
+    auto card = makeCard(scale, panelCardOpacity());
 
     auto row = makeRow(scale);
     {
@@ -200,7 +200,7 @@ void SetupWizardPanel::create() {
 
   // Wallpaper
   {
-    auto card = makeCard(scale);
+    auto card = makeCard(scale, panelCardOpacity());
 
     auto row = makeRow(scale);
     {
@@ -264,7 +264,7 @@ void SetupWizardPanel::create() {
 
   // Theme
   {
-    auto card = makeCard(scale);
+    auto card = makeCard(scale, panelCardOpacity());
 
     // Mode row
     {

@@ -141,8 +141,6 @@ void WallpaperPanel::create() {
   root->setAlign(FlexAlign::Stretch);
   root->setGap(Style::spaceSm * scale);
   root->setPadding(Style::spaceMd * scale);
-  root->setFill(colorSpecFromRole(ColorRole::Surface));
-  root->setRadius(Style::scaledRadiusXl(scale));
   m_rootLayout = root.get();
 
   auto header = std::make_unique<Flex>();

@@ -1310,7 +1310,7 @@ std::unique_ptr<Flex> AudioTab::create() {
   m_volumeColumn = volumeRow.get();
 
   auto outputVolumeCard = std::make_unique<Flex>();
-  applySectionCardStyle(*outputVolumeCard, scale);
+  applySectionCardStyle(*outputVolumeCard, scale, panelCardOpacity());
   outputVolumeCard->setFlexGrow(1.0f);
   m_outputVolumeCard = outputVolumeCard.get();
 
@@ -1414,7 +1414,7 @@ std::unique_ptr<Flex> AudioTab::create() {
   volumeRow->addChild(std::move(outputVolumeCard));
 
   auto inputVolumeCard = std::make_unique<Flex>();
-  applySectionCardStyle(*inputVolumeCard, scale);
+  applySectionCardStyle(*inputVolumeCard, scale, panelCardOpacity());
   inputVolumeCard->setFlexGrow(1.0f);
   m_inputVolumeCard = inputVolumeCard.get();
 
@@ -1520,7 +1520,7 @@ std::unique_ptr<Flex> AudioTab::create() {
   tab->addChild(std::move(volumeRow));
 
   auto programCard = std::make_unique<Flex>();
-  applySectionCardStyle(*programCard, scale);
+  applySectionCardStyle(*programCard, scale, panelCardOpacity());
   programCard->setFlexGrow(1.0f);
   m_programCard = programCard.get();
 

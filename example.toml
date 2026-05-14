@@ -35,6 +35,7 @@ alpha    = 0.55                     # multiplied by each component's background 
 
 [shell.panel]
 background_blur       = true        # request compositor blur behind panels
+transparency_mode     = "solid"     # solid | soft | glass; controls detached panel opacity and card translucency
 attach_launcher       = false       # attach launcher to the bar when a suitable bar is available
 attach_clipboard      = false       # attach clipboard history to the bar when a suitable bar is available
 attach_control_center = true        # attach Control Center to the bar when a suitable bar is available

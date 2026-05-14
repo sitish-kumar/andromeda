@@ -317,7 +317,7 @@ std::unique_ptr<Flex> NetworkTab::create() {
   m_rootLayout = tab.get();
 
   auto currentCard = std::make_unique<Flex>();
-  applySectionCardStyle(*currentCard, scale);
+  applySectionCardStyle(*currentCard, scale, panelCardOpacity());
   m_currentCard = currentCard.get();
   addTitle(*currentCard, i18n::tr("control-center.network.current-connection"), scale);
 
@@ -358,7 +358,7 @@ std::unique_ptr<Flex> NetworkTab::create() {
   tab->addChild(std::move(currentCard));
 
   auto passwordCard = std::make_unique<Flex>();
-  applySectionCardStyle(*passwordCard, scale);
+  applySectionCardStyle(*passwordCard, scale, panelCardOpacity());
   passwordCard->setVisible(false);
   m_passwordCard = passwordCard.get();
 
@@ -437,7 +437,7 @@ std::unique_ptr<Flex> NetworkTab::create() {
   tab->addChild(std::move(passwordCard));
 
   auto listCard = std::make_unique<Flex>();
-  applySectionCardStyle(*listCard, scale);
+  applySectionCardStyle(*listCard, scale, panelCardOpacity());
   listCard->setFlexGrow(1.0f);
   m_listCard = listCard.get();
   addTitle(*listCard, i18n::tr("control-center.network.available-networks"), scale);
