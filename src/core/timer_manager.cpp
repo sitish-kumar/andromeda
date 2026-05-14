@@ -7,54 +7,15 @@
 #include <unordered_set>
 #include <vector>
 
-#if defined(__linux__)
-#include <time.h>
-#endif
-
 namespace {
-
-  // Linux: CLOCK_BOOTTIME advances across S3. FreeBSD: not wired here; callers remap to steady.
-  std::int64_t boottimeNowNanoseconds() {
-#if defined(__linux__)
-    timespec ts{};
-    if (clock_gettime(CLOCK_BOOTTIME, &ts) == 0) {
-      return static_cast<std::int64_t>(ts.tv_sec) * 1000000000LL + ts.tv_nsec;
-    }
-#endif
-    return 0;
-  }
 
   struct TimerEntry {
     TimerManager::TimerId id = 0;
-    TimerDeadline deadlineKind = TimerDeadline::SteadyMonotonic;
-    std::chrono::steady_clock::time_point steadyDue{};
-    std::int64_t boottimeDueNs = 0;
+    std::chrono::steady_clock::time_point dueAt{};
     std::chrono::milliseconds interval{0};
     std::function<void()> callback;
     bool repeating = false;
   };
-
-  [[nodiscard]] bool entryIsDue(const TimerEntry& entry, std::chrono::steady_clock::time_point steadyNow) {
-    if (entry.deadlineKind == TimerDeadline::SteadyMonotonic) {
-      return entry.steadyDue <= steadyNow;
-    }
-    return entry.boottimeDueNs <= boottimeNowNanoseconds();
-  }
-
-  [[nodiscard]] std::int64_t entryRemainingMs(const TimerEntry& entry,
-                                              std::chrono::steady_clock::time_point steadyNow) {
-    if (entry.deadlineKind == TimerDeadline::SteadyMonotonic) {
-      if (entry.steadyDue <= steadyNow) {
-        return 0;
-      }
-      return std::chrono::ceil<std::chrono::milliseconds>(entry.steadyDue - steadyNow).count();
-    }
-    const std::int64_t btNow = boottimeNowNanoseconds();
-    if (entry.boottimeDueNs <= btNow) {
-      return 0;
-    }
-    return (entry.boottimeDueNs - btNow + 999999LL) / 1000000LL;
-  }
 
   std::unordered_map<TimerManager::TimerId, TimerEntry>& timerEntries() {
     static std::unordered_map<TimerManager::TimerId, TimerEntry> entries;
@@ -84,7 +45,7 @@ TimerManager& TimerManager::instance() {
 }
 
 TimerManager::TimerId TimerManager::start(TimerId existingId, std::chrono::milliseconds delay,
-                                          std::function<void()> callback, bool repeating, TimerDeadline deadline) {
+                                          std::function<void()> callback, bool repeating) {
   if (existingId != 0) {
     cancel(existingId);
   }
@@ -93,36 +54,14 @@ TimerManager::TimerId TimerManager::start(TimerId existingId, std::chrono::milli
     return 0;
   }
 
-  TimerDeadline effectiveDeadline = deadline;
-#if !defined(__linux__)
-#if !defined(__FreeBSD__)
-#error "noctalia-shell: unsupported platform (expected Linux or FreeBSD)"
-#endif
-  // FreeBSD: IncludesSystemSleep not implemented (no CLOCK_BOOTTIME path); keep steady deadlines.
-  if (deadline == TimerDeadline::IncludesSystemSleep) {
-    effectiveDeadline = TimerDeadline::SteadyMonotonic;
-  }
-#endif
-
-  const auto nonNegative = std::max(delay, std::chrono::milliseconds(0));
-
-  TimerEntry entry;
-  entry.id = 0; // filled below
-  entry.deadlineKind = effectiveDeadline;
-  entry.interval = nonNegative;
-  entry.callback = std::move(callback);
-  entry.repeating = repeating;
-
-  if (effectiveDeadline == TimerDeadline::SteadyMonotonic) {
-    entry.steadyDue = std::chrono::steady_clock::now() + nonNegative;
-  } else {
-    const auto delayNs = std::chrono::duration_cast<std::chrono::nanoseconds>(nonNegative).count();
-    entry.boottimeDueNs = boottimeNowNanoseconds() + delayNs;
-  }
-
   const TimerId id = nextTimerId()++;
-  entry.id = id;
-  timerEntries()[id] = std::move(entry);
+  timerEntries()[id] = TimerEntry{
+      .id = id,
+      .dueAt = std::chrono::steady_clock::now() + std::max(delay, std::chrono::milliseconds(0)),
+      .interval = std::max(delay, std::chrono::milliseconds(0)),
+      .callback = std::move(callback),
+      .repeating = repeating,
+  };
   return id;
 }
 
@@ -155,18 +94,19 @@ int TimerManager::pollTimeoutMs() const {
     return -1;
   }
 
-  const auto steadyNow = std::chrono::steady_clock::now();
-  std::int64_t bestMs = std::numeric_limits<std::int64_t>::max();
+  const auto now = std::chrono::steady_clock::now();
+  auto nextDue = std::chrono::steady_clock::time_point::max();
   for (const auto& [id, entry] : timerEntries()) {
     (void)id;
-    bestMs = std::min(bestMs, entryRemainingMs(entry, steadyNow));
+    nextDue = std::min(nextDue, entry.dueAt);
   }
 
-  if (bestMs <= 0) {
+  if (nextDue <= now) {
     return 0;
   }
 
-  return static_cast<int>(std::min<std::int64_t>(bestMs, std::numeric_limits<int>::max()));
+  const auto remaining = std::chrono::ceil<std::chrono::milliseconds>(nextDue - now).count();
+  return static_cast<int>(std::min<std::int64_t>(remaining, std::numeric_limits<int>::max()));
 }
 
 void TimerManager::tick() {
@@ -174,12 +114,12 @@ void TimerManager::tick() {
     return;
   }
 
-  const auto steadyNow = std::chrono::steady_clock::now();
+  const auto now = std::chrono::steady_clock::now();
   std::vector<TimerEntry> dueEntries;
   dueEntries.reserve(timerEntries().size());
 
   for (auto it = timerEntries().begin(); it != timerEntries().end();) {
-    if (!entryIsDue(it->second, steadyNow)) {
+    if (it->second.dueAt > now) {
       ++it;
       continue;
     }
@@ -201,13 +141,8 @@ void TimerManager::tick() {
     }
 
     if (entry.repeating && entry.id != 0 && !canceledTimerIds().contains(entry.id)) {
-      TimerEntry next = entry;
-      if (next.deadlineKind == TimerDeadline::SteadyMonotonic) {
-        next.steadyDue = std::chrono::steady_clock::now() + next.interval;
-      } else {
-        const auto intervalNs = std::chrono::duration_cast<std::chrono::nanoseconds>(next.interval).count();
-        next.boottimeDueNs = boottimeNowNanoseconds() + intervalNs;
-      }
+      auto next = entry;
+      next.dueAt = std::chrono::steady_clock::now() + next.interval;
       timerEntries()[entry.id] = std::move(next);
     }
 
@@ -231,12 +166,12 @@ Timer& Timer::operator=(Timer&& other) noexcept {
   return *this;
 }
 
-void Timer::start(std::chrono::milliseconds delay, std::function<void()> callback, TimerDeadline deadline) {
-  m_id = TimerManager::instance().start(m_id, delay, std::move(callback), false, deadline);
+void Timer::start(std::chrono::milliseconds delay, std::function<void()> callback) {
+  m_id = TimerManager::instance().start(m_id, delay, std::move(callback), false);
 }
 
-void Timer::startRepeating(std::chrono::milliseconds interval, std::function<void()> callback, TimerDeadline deadline) {
-  m_id = TimerManager::instance().start(m_id, interval, std::move(callback), true, deadline);
+void Timer::startRepeating(std::chrono::milliseconds interval, std::function<void()> callback) {
+  m_id = TimerManager::instance().start(m_id, interval, std::move(callback), true);
 }
 
 void Timer::stop() {

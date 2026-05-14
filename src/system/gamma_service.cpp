@@ -200,15 +200,12 @@ void GammaService::scheduleManualTimer() {
       std::min(boundaryDelay, std::chrono::duration_cast<std::chrono::milliseconds>(kScheduleRecheckInterval));
   kLog.debug("manual schedule: next phase boundary in {}s, recheck in {}s", boundaryDelay.count() / 1000,
              delay.count() / 1000);
-  m_scheduleTimer.start(
-      delay,
-      [this, boundaryTimer = delay == boundaryDelay]() {
-        if (boundaryTimer) {
-          kLog.info("manual schedule: phase boundary reached");
-        }
-        apply();
-      },
-      TimerDeadline::IncludesSystemSleep);
+  m_scheduleTimer.start(delay, [this, boundaryTimer = delay == boundaryDelay]() {
+    if (boundaryTimer) {
+      kLog.info("manual schedule: phase boundary reached");
+    }
+    apply();
+  });
 }
 
 std::optional<std::string> GammaService::normalizedClock(std::string_view value) const {
@@ -339,15 +336,12 @@ void GammaService::scheduleGeoTimer() {
       std::min(boundaryDelay, std::chrono::duration_cast<std::chrono::milliseconds>(kScheduleRecheckInterval));
   kLog.debug("geo schedule: next phase boundary in {}s, recheck in {}s", boundaryDelay.count() / 1000,
              delay.count() / 1000);
-  m_scheduleTimer.start(
-      delay,
-      [this, boundaryTimer = delay == boundaryDelay]() {
-        if (boundaryTimer) {
-          kLog.info("geo schedule: phase boundary reached");
-        }
-        apply();
-      },
-      TimerDeadline::IncludesSystemSleep);
+  m_scheduleTimer.start(delay, [this, boundaryTimer = delay == boundaryDelay]() {
+    if (boundaryTimer) {
+      kLog.info("geo schedule: phase boundary reached");
+    }
+    apply();
+  });
 }
 
 bool GammaService::isNightPhase() const {
