@@ -54,6 +54,26 @@ float SettingsWindow::uiScale() const {
   return std::max(0.1f, m_config->config().shell.uiScale);
 }
 
+bool SettingsWindow::headerDragRegionContains(float sceneX, float sceneY) const {
+  if (m_sceneRoot == nullptr || m_headerRow == nullptr) {
+    return false;
+  }
+
+  float left = 0.0f;
+  float top = 0.0f;
+  float right = 0.0f;
+  float bottom = 0.0f;
+  Node::transformedBounds(m_headerRow, left, top, right, bottom);
+
+  const float sceneWidth = m_sceneRoot->width();
+  const float sceneHeight = m_sceneRoot->height();
+  const float dragLeft = std::min(0.0f, left);
+  const float dragTop = std::min(0.0f, top);
+  const float dragRight = std::max(sceneWidth, right);
+  const float dragBottom = std::clamp(bottom, 0.0f, sceneHeight);
+  return sceneX >= dragLeft && sceneX < dragRight && sceneY >= dragTop && sceneY < dragBottom;
+}
+
 bool SettingsWindow::ownsKeyboardSurface(wl_surface* surface) const noexcept {
   if (!isOpen() || surface == nullptr || m_surface == nullptr) {
     return false;
@@ -459,8 +479,8 @@ bool SettingsWindow::onPointerEvent(const PointerEvent& event) {
         m_pointerInside = true;
       }
       m_inputDispatcher.pointerMotion(static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial);
-      if (pressed && event.button == BTN_LEFT && m_inputDispatcher.hoveredArea() == nullptr && m_headerRow != nullptr &&
-          m_headerRow->containsScenePoint(static_cast<float>(event.sx), static_cast<float>(event.sy))) {
+      if (pressed && event.button == BTN_LEFT && m_inputDispatcher.hoveredArea() == nullptr &&
+          headerDragRegionContains(static_cast<float>(event.sx), static_cast<float>(event.sy))) {
         m_surface->beginMove(event.serial);
         consumed = true;
         break;
