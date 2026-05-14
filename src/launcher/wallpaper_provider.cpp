@@ -1,6 +1,7 @@
 #include "launcher/wallpaper_provider.h"
 
 #include "config/config_service.h"
+#include "config/config_types.h"
 #include "util/fuzzy_match.h"
 #include "util/string_utils.h"
 #include "wayland/wayland_connection.h"
@@ -29,13 +30,7 @@ namespace {
   }
 
   std::filesystem::path wallpaperDirectory(const WallpaperConfig& wallpaper, ThemeMode mode) {
-    if (mode == ThemeMode::Light && !wallpaper.directoryLight.empty()) {
-      return wallpaper.directoryLight;
-    }
-    if (mode == ThemeMode::Dark && !wallpaper.directoryDark.empty()) {
-      return wallpaper.directoryDark;
-    }
-    return wallpaper.directory;
+    return wallpaperBrowseDirectoryForMonitor(wallpaper, mode, "");
   }
 
   std::vector<WallpaperCandidate> collectWallpapers(const std::filesystem::path& directory) {

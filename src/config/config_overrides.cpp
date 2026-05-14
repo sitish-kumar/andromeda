@@ -272,6 +272,7 @@ namespace {
            a.transitions == b.transitions && nearlyEqual(a.transitionDurationMs, b.transitionDurationMs) &&
            nearlyEqual(a.edgeSmoothness, b.edgeSmoothness) && a.directory == b.directory &&
            a.directoryLight == b.directoryLight && a.directoryDark == b.directoryDark &&
+           a.separateLightDarkWallpaperDirectories == b.separateLightDarkWallpaperDirectories &&
            a.automation.enabled == b.automation.enabled &&
            a.automation.intervalMinutes == b.automation.intervalMinutes && a.automation.order == b.automation.order &&
            a.automation.recursive == b.automation.recursive &&

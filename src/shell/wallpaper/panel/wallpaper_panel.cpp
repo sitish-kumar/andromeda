@@ -1,6 +1,7 @@
 #include "shell/wallpaper/panel/wallpaper_panel.h"
 
 #include "config/config_service.h"
+#include "config/config_types.h"
 #include "core/log.h"
 #include "core/ui_phase.h"
 #include "i18n/i18n.h"
@@ -479,17 +480,9 @@ std::filesystem::path WallpaperPanel::rootDirectoryForSelection() const {
   if (m_config == nullptr || m_selectedMonitorIndex >= m_monitorChoices.size()) {
     return {};
   }
-  const auto& wp = m_config->config().wallpaper;
+  const auto& cfg = m_config->config();
   const auto& choice = m_monitorChoices[m_selectedMonitorIndex];
-  if (choice.connector.empty()) {
-    return wp.directory;
-  }
-  for (const auto& ovr : wp.monitorOverrides) {
-    if (ovr.match == choice.connector && ovr.directory.has_value() && !ovr.directory->empty()) {
-      return *ovr.directory;
-    }
-  }
-  return wp.directory;
+  return wallpaperBrowseDirectoryForMonitor(cfg.wallpaper, cfg.theme.mode, choice.connector);
 }
 
 std::filesystem::path WallpaperPanel::activeDirectoryForSelection() const {

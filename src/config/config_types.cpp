@@ -502,3 +502,37 @@ std::string keyChordDisplayLabel(const KeyChord& chord) {
   appendPart(keyName);
   return out;
 }
+
+std::string wallpaperBrowseDirectoryForMonitor(const WallpaperConfig& wallpaper, ThemeMode themeMode,
+                                               std::string_view monitorConnector) {
+  const auto themedFrom = [&](const std::string& base, const std::string& light,
+                              const std::string& dark) -> std::string {
+    if (!wallpaper.separateLightDarkWallpaperDirectories) {
+      return base;
+    }
+    if (themeMode == ThemeMode::Light && !light.empty()) {
+      return light;
+    }
+    if (themeMode == ThemeMode::Dark && !dark.empty()) {
+      return dark;
+    }
+    return base;
+  };
+
+  if (!monitorConnector.empty()) {
+    for (const auto& ovr : wallpaper.monitorOverrides) {
+      if (ovr.match != monitorConnector) {
+        continue;
+      }
+      if (!ovr.directory.has_value() || ovr.directory->empty()) {
+        break;
+      }
+      const std::string& base = *ovr.directory;
+      const std::string light = ovr.directoryLight.value_or("");
+      const std::string dark = ovr.directoryDark.value_or("");
+      return themedFrom(base, light, dark);
+    }
+  }
+
+  return themedFrom(wallpaper.directory, wallpaper.directoryLight, wallpaper.directoryDark);
+}

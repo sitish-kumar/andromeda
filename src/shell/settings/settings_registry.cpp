@@ -383,6 +383,11 @@ namespace settings {
                                             .browseMode = TextSettingBrowseMode::SelectFolder,
                                             .browseFileExtensions = {}},
                                 "folder path"));
+    entries.push_back(makeEntry("wallpaper", "directories",
+                                tr("settings.schema.wallpaper.separate-light-dark-directories.label"),
+                                tr("settings.schema.wallpaper.separate-light-dark-directories.description"),
+                                {"wallpaper", "separate_light_dark_directories"},
+                                ToggleSetting{cfg.wallpaper.separateLightDarkWallpaperDirectories}, "folder theme"));
     entries.push_back(makeEntry("wallpaper", "directories", tr("settings.schema.wallpaper.directory-light.label"),
                                 tr("settings.schema.wallpaper.directory-light.description"),
                                 {"wallpaper", "directory_light"},

@@ -1,6 +1,7 @@
 #include "shell/wallpaper/wallpaper.h"
 
 #include "config/config_service.h"
+#include "config/config_types.h"
 #include "core/log.h"
 #include "core/random.h"
 #include "ipc/ipc_service.h"
@@ -495,7 +496,8 @@ void Wallpaper::resetAutomationState() {
 }
 
 void Wallpaper::runAutomation(std::int64_t minuteStamp) {
-  const auto& wallpaper = m_config->config().wallpaper;
+  const auto& cfg = m_config->config();
+  const auto& wallpaper = cfg.wallpaper;
   const auto& automation = wallpaper.automation;
   if (!automation.enabled || automation.intervalMinutes <= 0 || m_instances.empty()) {
     return;
@@ -507,7 +509,8 @@ void Wallpaper::runAutomation(std::int64_t minuteStamp) {
   }
 
   std::vector<std::string> candidates;
-  collectWallpaperCandidates(wallpaper.directory, automation.recursive, candidates);
+  collectWallpaperCandidates(wallpaperBrowseDirectoryForMonitor(wallpaper, cfg.theme.mode, ""), automation.recursive,
+                             candidates);
   if (candidates.empty()) {
     return;
   }
@@ -541,9 +544,11 @@ bool Wallpaper::switchToRandomWallpaper() {
     return false;
   }
 
-  const auto& wallpaper = m_config->config().wallpaper;
+  const auto& cfg = m_config->config();
+  const auto& wallpaper = cfg.wallpaper;
   std::vector<std::string> candidates;
-  collectWallpaperCandidates(wallpaper.directory, wallpaper.automation.recursive, candidates);
+  collectWallpaperCandidates(wallpaperBrowseDirectoryForMonitor(wallpaper, cfg.theme.mode, ""),
+                             wallpaper.automation.recursive, candidates);
   if (candidates.empty()) {
     return false;
   }
