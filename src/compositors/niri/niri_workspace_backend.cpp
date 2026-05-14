@@ -22,6 +22,7 @@ namespace {
   constexpr Logger kLog("niri_workspace");
   constexpr auto kReconnectInitial = std::chrono::seconds(2);
   constexpr auto kReconnectMax = std::chrono::seconds(30);
+  constexpr std::size_t kReadBufferMaxBytes = 1024U * 1024U;
   constexpr std::string_view kEventStreamRequest = "\"EventStream\"\n";
 
   [[nodiscard]] bool writeAll(int fd, std::string_view data) {
@@ -422,6 +423,12 @@ void NiriWorkspaceBackend::readSocket() {
     const ssize_t readBytes = ::read(m_socketFd, buffer.data(), buffer.size());
     if (readBytes > 0) {
       m_readBuffer.insert(m_readBuffer.end(), buffer.begin(), buffer.begin() + readBytes);
+      if (m_readBuffer.size() > kReadBufferMaxBytes) {
+        kLog.warn("niri event stream read buffer exceeded {} bytes; reconnecting", kReadBufferMaxBytes);
+        closeSocket(true);
+        m_readBuffer.clear();
+        return;
+      }
       continue;
     }
 
