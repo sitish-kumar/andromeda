@@ -355,8 +355,6 @@ void TrayWidget::rebuild(Renderer& renderer) {
 
   for (auto* image : m_loadedImages) {
     if (image != nullptr) {
-      kLog.debug("tray widget image clear ptr={} path={} tex={}", static_cast<const void*>(image), image->sourcePath(),
-                 image->textureId().value());
       image->clear(renderer);
     }
   }
@@ -443,9 +441,6 @@ void TrayWidget::rebuild(Renderer& renderer) {
     float iconH = iconSize;
 
     if (!iconPath.empty()) {
-      kLog.debug("tray widget rebuild id={} preferred='{}' resolvedPath={}", item.id,
-                 (item.needsAttention && !item.attentionIconName.empty()) ? item.attentionIconName : item.iconName,
-                 iconPath);
       auto image = std::make_unique<Image>();
       image->setFit(ImageFit::Contain);
       image->setSize(iconSize, iconSize);
@@ -468,15 +463,9 @@ void TrayWidget::rebuild(Renderer& renderer) {
         }
         iconW = iconSize;
         iconH = iconSize;
-        kLog.debug("tray widget image load ok id={} path={} size={}x{} tex={} ptr={}", item.id, iconPath,
-                   image->sourceWidth(), image->sourceHeight(), image->textureId().value(),
-                   static_cast<const void*>(image.get()));
-        kLog.debug("tray widget icon id={} source=file path={} size={}x{}", item.id, iconPath, image->sourceWidth(),
-                   image->sourceHeight());
         m_loadedImages.push_back(image.get());
         iconNode = std::move(image);
       } else {
-        kLog.debug("tray widget image load FAILED id={} path={}", item.id, iconPath);
         kLog.debug("tray widget icon id={} source=file path={} failed-to-load", item.id, iconPath);
       }
     }
@@ -497,8 +486,6 @@ void TrayWidget::rebuild(Renderer& renderer) {
                                 true)) {
           iconW = iconSize;
           iconH = iconSize;
-          kLog.debug("tray widget icon id={} source=pixmap size={}x{} (bytes={})", item.id, pixmapW, pixmapH,
-                     pixmap.size());
           m_loadedImages.push_back(image.get());
           iconNode = std::move(image);
         } else {
@@ -539,8 +526,6 @@ void TrayWidget::rebuild(Renderer& renderer) {
         if (overlayImage->setSourceFile(renderer, overlayPath, iconRequestSize, true)) {
           overlayW = iconSize;
           overlayH = iconSize;
-          kLog.debug("tray widget overlay id={} source=file path={} size={}x{}", item.id, overlayPath,
-                     overlayImage->sourceWidth(), overlayImage->sourceHeight());
           m_loadedImages.push_back(overlayImage.get());
           overlayNode = std::move(overlayImage);
         }
@@ -554,8 +539,6 @@ void TrayWidget::rebuild(Renderer& renderer) {
                                        item.overlayWidth, item.overlayHeight, 0, PixmapFormat::ARGB, true)) {
           overlayW = iconSize;
           overlayH = iconSize;
-          kLog.debug("tray widget overlay id={} source=pixmap size={}x{} (bytes={})", item.id, item.overlayWidth,
-                     item.overlayHeight, item.overlayArgb32.size());
           m_loadedImages.push_back(overlayImage.get());
           overlayNode = std::move(overlayImage);
         }
@@ -573,7 +556,6 @@ void TrayWidget::rebuild(Renderer& renderer) {
       iconW = glyph->width();
       iconH = glyph->height();
       iconNode = std::move(glyph);
-      kLog.debug("tray widget icon id={} source=glyph name={}", item.id, fallback);
     }
 
     if (overlayNode != nullptr && iconNode != nullptr) {
@@ -726,14 +708,11 @@ std::string TrayWidget::resolveIconPath(const TrayItemInfo& item) {
     // Some indicators publish pixmaps late (after startup) that are monochrome
     // or stale. Keep using named-icon resolution when available.
     if (!hasNamedIcon) {
-      kLog.debug("tray widget resolve id={} source=dynamic-pixmap", item.id);
       return {};
     }
-    kLog.debug("tray widget resolve id={} source=named-icon-over-pixmap", item.id);
   }
 
   if (const auto it = m_preferredIconPaths.find(item.id); it != m_preferredIconPaths.end() && !it->second.empty()) {
-    kLog.debug("tray widget resolve id={} source=cached path={}", item.id, it->second);
     return it->second;
   }
 
@@ -747,7 +726,6 @@ std::string TrayWidget::resolveIconPath(const TrayItemInfo& item) {
   }
 
   if (const auto themed = resolveFromTrayThemePath(item.iconThemePath, preferred); !themed.empty()) {
-    kLog.debug("tray widget resolve id={} source=theme-path variant='{}' path={}", item.id, preferred, themed);
     m_preferredIconPaths[item.id] = themed;
     return themed;
   }
@@ -818,32 +796,24 @@ std::string TrayWidget::resolveIconPath(const TrayItemInfo& item) {
     candidates.emplace_back("id", &stableItemId);
   }
 
-  for (const auto& [label, candidate] : candidates) {
+  for (const auto& [_, candidate] : candidates) {
     for (const auto& variant : identifierVariants(*candidate)) {
       if (const auto mapped = resolveMapped(variant); !mapped.empty()) {
         if (!isSymbolicIconPath(mapped)) {
-          kLog.debug("tray widget resolve id={} source=mapped label={} variant='{}' path={}", item.id, label, variant,
-                     mapped);
           m_preferredIconPaths[item.id] = mapped;
           return mapped;
         }
         if (symbolicFallback.empty()) {
-          kLog.debug("tray widget resolve id={} source=mapped-symbolic label={} variant='{}' path={}", item.id, label,
-                     variant, mapped);
           symbolicFallback = mapped;
         }
       }
 
       if (const auto direct = resolveDirect(variant); !direct.empty()) {
         if (!isSymbolicIconName(variant) && !isSymbolicIconPath(direct)) {
-          kLog.debug("tray widget resolve id={} source=direct label={} variant='{}' path={}", item.id, label, variant,
-                     direct);
           m_preferredIconPaths[item.id] = direct;
           return direct;
         }
         if (symbolicFallback.empty()) {
-          kLog.debug("tray widget resolve id={} source=direct-symbolic label={} variant='{}' path={}", item.id, label,
-                     variant, direct);
           symbolicFallback = direct;
         }
       }

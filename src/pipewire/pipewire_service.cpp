@@ -797,11 +797,6 @@ void PipeWireService::onNodeParam(std::uint32_t id, std::uint32_t paramId, std::
 
   recomputeEffectiveMute(nd);
 
-  if (isProgramStreamClass(nd.mediaClass)) {
-    kLog.debug("[program-stream] node-param id={} class='{}' volume={:.3f} muted={} channels={}", id, nd.mediaClass,
-               nd.volume, nd.muted, nd.channelCount);
-  }
-
   rebuildState();
 }
 

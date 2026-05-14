@@ -88,7 +88,6 @@ void WorkspacesWidget::doUpdate(Renderer& renderer) {
     return;
   }
 
-  kLog.debug("workspaces widget: state changed (structural={}, {} workspaces)", structuralChange, current.size());
   m_cachedState.clear();
   m_cachedState.reserve(current.size());
   for (const auto& ws : current) {
