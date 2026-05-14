@@ -449,11 +449,7 @@ void PipeWireService::enumDefaultAudioDeviceParams() {
     if (nd == nullptr || nd->proxy == nullptr) {
       continue;
     }
-    const bool defaultSink =
-        nd->mediaClass == "Audio/Sink" && !m_defaultSinkName.empty() && nd->name == m_defaultSinkName;
-    const bool defaultSource =
-        nd->mediaClass == "Audio/Source" && !m_defaultSourceName.empty() && nd->name == m_defaultSourceName;
-    if (!defaultSink && !defaultSource) {
+    if (nd->mediaClass != "Audio/Sink" && nd->mediaClass != "Audio/Source") {
       continue;
     }
     pw_node_enum_params(nd->proxy, 0, SPA_PARAM_Props, 0, UINT32_MAX, nullptr);
@@ -607,10 +603,7 @@ void PipeWireService::onRegistryGlobal(std::uint32_t id, const char* type, std::
 
     m_nodes[id] = std::move(nd);
     NodeData& stored = *m_nodes[id];
-    if (stored.mediaClass == "Audio/Sink" && !m_defaultSinkName.empty() && stored.name == m_defaultSinkName) {
-      m_pendingDefaultAudioDevicePropsEnum = true;
-    } else if (stored.mediaClass == "Audio/Source" && !m_defaultSourceName.empty() &&
-               stored.name == m_defaultSourceName) {
+    if (stored.mediaClass == "Audio/Sink" || stored.mediaClass == "Audio/Source") {
       m_pendingDefaultAudioDevicePropsEnum = true;
     }
     rebuildState();
