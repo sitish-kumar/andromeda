@@ -95,5 +95,6 @@ private:
   bool m_overviewKnown = false;
   bool m_overviewOpen = false;
   std::chrono::steady_clock::time_point m_nextReconnectAt{};
+  std::chrono::seconds m_reconnectBackoff{2};
   ChangeCallback m_changeCallback;
 };

@@ -20,7 +20,8 @@
 namespace {
 
   constexpr Logger kLog("niri_workspace");
-  constexpr auto kReconnectDelay = std::chrono::seconds(2);
+  constexpr auto kReconnectInitial = std::chrono::seconds(2);
+  constexpr auto kReconnectMax = std::chrono::seconds(30);
   constexpr std::string_view kEventStreamRequest = "\"EventStream\"\n";
 
   [[nodiscard]] std::optional<std::uint64_t> jsonUnsigned(const nlohmann::json& json) {
@@ -326,6 +327,7 @@ void NiriWorkspaceBackend::cleanup() {
   m_overviewKnown = false;
   m_overviewOpen = false;
   m_readBuffer.clear();
+  m_reconnectBackoff = kReconnectInitial;
 }
 
 void NiriWorkspaceBackend::connectIfNeeded() {
@@ -375,6 +377,7 @@ void NiriWorkspaceBackend::connectIfNeeded() {
 
   m_socketFd = fd;
   m_nextReconnectAt = {};
+  m_reconnectBackoff = kReconnectInitial;
   m_readBuffer.clear();
   kLog.debug("connected to niri event stream");
 }
@@ -393,7 +396,10 @@ void NiriWorkspaceBackend::closeSocket(bool scheduleReconnectFlag) {
 }
 
 void NiriWorkspaceBackend::scheduleReconnect() {
-  m_nextReconnectAt = std::chrono::steady_clock::now() + kReconnectDelay;
+  const auto now = std::chrono::steady_clock::now();
+  m_nextReconnectAt = now + m_reconnectBackoff;
+  const auto doubled = m_reconnectBackoff * 2;
+  m_reconnectBackoff = std::min(doubled, kReconnectMax);
 }
 
 void NiriWorkspaceBackend::readSocket() {
