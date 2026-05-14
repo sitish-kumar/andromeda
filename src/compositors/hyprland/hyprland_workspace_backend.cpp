@@ -69,10 +69,6 @@ void HyprlandWorkspaceBackend::activate(const std::string& id) {
 void HyprlandWorkspaceBackend::activateForOutput(wl_output* /*output*/, const std::string& id) { activate(id); }
 
 void HyprlandWorkspaceBackend::activateForOutput(wl_output* /*output*/, const Workspace& workspace) {
-  if (!workspace.name.empty()) {
-    activate(workspace.name);
-    return;
-  }
   activate(workspace.id);
 }
 
@@ -154,15 +150,15 @@ HyprlandWorkspaceBackend::appIdsByWorkspace(wl_output* output) const {
   }
 
   std::unordered_map<std::string, std::vector<std::string>> byWorkspace;
-  std::unordered_map<std::string, std::unordered_set<std::string>> seenPerWorkspace;
+  std::unordered_map<int, std::unordered_set<std::string>> seenPerWorkspace;
   for (const auto& [address, toplevel] : m_toplevels) {
-    if (toplevel.workspace.empty() || toplevel.appId.empty()) {
+    if (toplevel.appId.empty()) {
       continue;
     }
     if (!outputName.empty()) {
       bool workspaceOnOutput = false;
       for (const auto& workspace : m_workspaces) {
-        if (workspace.name == toplevel.workspace && workspace.monitor == outputName) {
+        if (workspace.id == toplevel.workspaceId && workspace.monitor == outputName) {
           workspaceOnOutput = true;
           break;
         }
@@ -171,11 +167,11 @@ HyprlandWorkspaceBackend::appIdsByWorkspace(wl_output* output) const {
         continue;
       }
     }
-    auto& seen = seenPerWorkspace[toplevel.workspace];
+    auto& seen = seenPerWorkspace[toplevel.workspaceId];
     if (!seen.insert(toplevel.appId).second) {
       continue;
     }
-    byWorkspace[toplevel.workspace].push_back(toplevel.appId);
+    byWorkspace[std::to_string(toplevel.workspaceId)].push_back(toplevel.appId);
   }
   return byWorkspace;
 }
@@ -186,33 +182,27 @@ std::vector<WorkspaceWindow> HyprlandWorkspaceBackend::workspaceWindows(wl_outpu
     return {};
   }
 
-  std::unordered_map<std::string, std::string> keysByWorkspace;
+  std::unordered_set<int> workspacesOnOutput;
   for (const auto& workspace : m_workspaces) {
     if (!outputName.empty() && workspace.monitor != outputName) {
       continue;
     }
-    if (workspace.id > 0) {
-      keysByWorkspace[workspace.name] = std::to_string(workspace.id);
-    } else if (const auto parsed = parseLeadingNumber(workspace.name); parsed.has_value()) {
-      keysByWorkspace[workspace.name] = std::to_string(*parsed);
-    } else {
-      keysByWorkspace[workspace.name] = workspace.name;
-    }
+    workspacesOnOutput.insert(workspace.id);
   }
 
   std::vector<WorkspaceWindow> result;
   result.reserve(m_toplevels.size());
   for (const auto& [address, toplevel] : m_toplevels) {
-    if (toplevel.workspace.empty() || toplevel.appId.empty()) {
+    if (toplevel.appId.empty()) {
       continue;
     }
-    const auto keyIt = keysByWorkspace.find(toplevel.workspace);
-    if (keyIt == keysByWorkspace.end()) {
+    const auto keyIt = workspacesOnOutput.find(toplevel.workspaceId);
+    if (keyIt == workspacesOnOutput.end()) {
       continue;
     }
     result.push_back(WorkspaceWindow{
         .windowId = std::format("{:x}", address),
-        .workspaceKey = keyIt->second,
+        .workspaceKey = std::to_string(*keyIt),
         .appId = toplevel.appId,
         .title = toplevel.title,
         .x = toplevel.x,
@@ -269,9 +259,6 @@ void HyprlandWorkspaceBackend::refreshWorkspaces() {
     workspace.id = item.value("id", -1);
     workspace.name = item.value("name", "");
     workspace.monitor = item.value("monitor", "");
-    if (workspace.name.empty()) {
-      continue;
-    }
     if (workspace.id >= 0) {
       if (const auto it = ordinalsById.find(workspace.id); it != ordinalsById.end()) {
         workspace.ordinal = it->second;
@@ -295,7 +282,7 @@ void HyprlandWorkspaceBackend::refreshMonitors() {
     return;
   }
 
-  std::unordered_map<std::string, std::string> activeByMonitor;
+  std::unordered_map<std::string, int> activeByMonitor;
   for (const auto& item : *json) {
     if (!item.is_object()) {
       continue;
@@ -305,17 +292,12 @@ void HyprlandWorkspaceBackend::refreshMonitors() {
       continue;
     }
 
-    std::string activeWorkspace;
     const auto activeIt = item.find("activeWorkspace");
     if (activeIt != item.end()) {
-      if (activeIt->is_object()) {
-        activeWorkspace = activeIt->value("name", "");
-      } else if (activeIt->is_string()) {
-        activeWorkspace = activeIt->get<std::string>();
+      const auto idIt = activeIt->find("id");
+      if (idIt != activeIt->end() && idIt->is_number_integer()) {
+        activeByMonitor[monitorName] = idIt->get<int>();
       }
-    }
-    if (!activeWorkspace.empty()) {
-      activeByMonitor[monitorName] = activeWorkspace;
     }
   }
 
@@ -354,9 +336,9 @@ void HyprlandWorkspaceBackend::refreshClients() {
 
     ToplevelState state;
     if (const auto wsIt = item.find("workspace"); wsIt != item.end() && wsIt->is_object()) {
-      state.workspace = wsIt->value("name", "");
+      state.workspaceId = wsIt->value("id", -1);
     } else {
-      state.workspace = item.value("workspace", "");
+      state.workspaceId = -1;
     }
     state.appId = item.value("class", "");
     if (state.appId.empty()) {
@@ -389,26 +371,23 @@ void HyprlandWorkspaceBackend::refreshClients() {
 }
 
 void HyprlandWorkspaceBackend::recomputeWorkspaceFlags() {
-  std::unordered_map<std::string, std::size_t> occupiedCounts;
-  std::unordered_map<std::string, bool> urgentByWorkspace;
+  std::unordered_map<int, std::size_t> occupiedCounts;
+  std::unordered_set<int> urgentByWorkspace;
 
   for (const auto& [_, toplevel] : m_toplevels) {
-    if (toplevel.workspace.empty()) {
-      continue;
-    }
-    ++occupiedCounts[toplevel.workspace];
+    ++occupiedCounts[toplevel.workspaceId];
     if (toplevel.urgent) {
-      urgentByWorkspace[toplevel.workspace] = true;
+      urgentByWorkspace.insert(toplevel.workspaceId);
     }
   }
 
   for (auto& workspace : m_workspaces) {
-    auto occIt = occupiedCounts.find(workspace.name);
+    auto occIt = occupiedCounts.find(workspace.id);
     workspace.occupied = occIt != occupiedCounts.end() && occIt->second > 0;
-    workspace.urgent = urgentByWorkspace.contains(workspace.name);
+    workspace.urgent = urgentByWorkspace.contains(workspace.id);
     if (!workspace.monitor.empty()) {
       const auto activeIt = m_activeWorkspaceByMonitor.find(workspace.monitor);
-      workspace.active = activeIt != m_activeWorkspaceByMonitor.end() && activeIt->second == workspace.name;
+      workspace.active = activeIt != m_activeWorkspaceByMonitor.end() && activeIt->second == workspace.id;
     } else {
       workspace.active = false;
     }
@@ -428,15 +407,23 @@ void HyprlandWorkspaceBackend::handleEvent(std::string_view event, std::string_v
     return;
   }
 
-  if (event == "focusedmon") {
+  if (event == "focusedmonv2") {
     const auto args = parseEventArgs(data, 2);
-    handleFocusedMonitor(args[0], args[1]);
+    const auto id = parseInt(args[1]);
+    if (!id.has_value()) {
+      return;
+    }
+    handleFocusedMonitor(args[0], *id);
     return;
   }
 
   if (event == "workspacev2") {
     const auto args = parseEventArgs(data, 2);
-    handleWorkspaceActivated(args[1]);
+    const auto id = parseInt(args[1]);
+    if (!id.has_value()) {
+      return;
+    }
+    handleWorkspaceActivated(*id);
     return;
   }
 
@@ -467,17 +454,15 @@ void HyprlandWorkspaceBackend::handleEvent(std::string_view event, std::string_v
     const auto args = parseEventArgs(data, 2);
     const auto id = parseInt(args[0]);
     const std::string name(args[1]);
-    if (!id.has_value() && name.empty()) {
+    if (!id.has_value()) {
       return;
     }
     m_workspaces.erase(std::remove_if(m_workspaces.begin(), m_workspaces.end(),
-                                      [&](const WorkspaceState& ws) {
-                                        return (id.has_value() && ws.id == *id) || (!name.empty() && ws.name == name);
-                                      }),
+                                      [&](const WorkspaceState& ws) { return (ws.id == *id); }),
                        m_workspaces.end());
 
     for (auto it = m_toplevels.begin(); it != m_toplevels.end();) {
-      if (!name.empty() && it->second.workspace == name) {
+      if (it->second.workspaceId == *id) {
         it = m_toplevels.erase(it);
       } else {
         ++it;
@@ -506,18 +491,6 @@ void HyprlandWorkspaceBackend::handleEvent(std::string_view event, std::string_v
     const std::string oldName = workspace->name;
     workspace->name = newName;
 
-    for (auto& [_, toplevel] : m_toplevels) {
-      if (toplevel.workspace == oldName) {
-        toplevel.workspace = newName;
-      }
-    }
-
-    for (auto& [monitorName, activeWorkspace] : m_activeWorkspaceByMonitor) {
-      if (activeWorkspace == oldName) {
-        activeWorkspace = newName;
-      }
-    }
-
     recomputeWorkspaceFlags();
     notifyChanged();
     return;
@@ -532,9 +505,6 @@ void HyprlandWorkspaceBackend::handleEvent(std::string_view event, std::string_v
       return;
     }
     auto* workspace = findWorkspaceById(*id);
-    if (workspace == nullptr && !name.empty()) {
-      workspace = findWorkspaceByName(name);
-    }
     if (workspace != nullptr && !monitor.empty()) {
       workspace->monitor = monitor;
       recomputeWorkspaceFlags();
@@ -546,10 +516,19 @@ void HyprlandWorkspaceBackend::handleEvent(std::string_view event, std::string_v
   if (event == "openwindow") {
     const auto args = parseEventArgs(data, 4);
     const auto address = parseHexAddress(args[0]);
-    if (!address.has_value()) {
+    const auto workspaceName = args[1];
+
+    if (!address.has_value() || workspaceName.empty()) {
       return;
     }
-    moveToplevel(*address, args[1]);
+    const auto workspace = findWorkspaceByName(workspaceName);
+    if (workspace == nullptr) {
+      refreshClients();
+      recomputeWorkspaceFlags();
+      notifyChanged();
+      return;
+    }
+    moveToplevel(*address, workspace->id);
     if (auto it = m_toplevels.find(*address); it != m_toplevels.end()) {
       it->second.appId = std::string(args[2]);
       it->second.title = std::string(args[3]);
@@ -575,10 +554,11 @@ void HyprlandWorkspaceBackend::handleEvent(std::string_view event, std::string_v
   if (event == "movewindowv2") {
     const auto args = parseEventArgs(data, 3);
     const auto address = parseHexAddress(args[0]);
-    if (!address.has_value()) {
+    const auto id = parseInt(args[2]);
+    if (!address.has_value() || !id.has_value()) {
       return;
     }
-    moveToplevel(*address, args[2]);
+    moveToplevel(*address, *id);
     refreshClients();
     recomputeWorkspaceFlags();
     notifyChanged();
@@ -593,7 +573,7 @@ void HyprlandWorkspaceBackend::handleEvent(std::string_view event, std::string_v
     }
     auto it = m_toplevels.find(*address);
     if (it == m_toplevels.end()) {
-      m_toplevels.emplace(*address, ToplevelState{.workspace = {}, .appId = {}, .title = {}, .urgent = true});
+      m_toplevels.emplace(*address, ToplevelState{.workspaceId = -1, .appId = {}, .title = {}, .urgent = true});
       refreshClients();
     } else {
       it->second.urgent = true;
@@ -603,40 +583,34 @@ void HyprlandWorkspaceBackend::handleEvent(std::string_view event, std::string_v
   }
 }
 
-void HyprlandWorkspaceBackend::handleFocusedMonitor(std::string_view monitorName, std::string_view workspaceName) {
-  if (monitorName.empty() || workspaceName.empty()) {
+void HyprlandWorkspaceBackend::handleFocusedMonitor(std::string_view monitorName, int workspaceId) {
+  if (monitorName.empty()) {
     return;
   }
-  m_activeWorkspaceByMonitor[std::string(monitorName)] = std::string(workspaceName);
-  clearUrgentForWorkspace(workspaceName);
+  m_activeWorkspaceByMonitor[std::string(monitorName)] = workspaceId;
+  clearUrgentForWorkspace(workspaceId);
   recomputeWorkspaceFlags();
   notifyChanged();
 }
 
-void HyprlandWorkspaceBackend::handleWorkspaceActivated(std::string_view workspaceName) {
-  if (workspaceName.empty()) {
-    return;
-  }
+void HyprlandWorkspaceBackend::handleWorkspaceActivated(int workspaceId) {
   refreshMonitors();
-  clearUrgentForWorkspace(workspaceName);
+  clearUrgentForWorkspace(workspaceId);
   recomputeWorkspaceFlags();
   notifyChanged();
 }
 
-void HyprlandWorkspaceBackend::clearUrgentForWorkspace(std::string_view workspaceName) {
-  if (workspaceName.empty()) {
-    return;
-  }
+void HyprlandWorkspaceBackend::clearUrgentForWorkspace(int workspaceId) {
   for (auto& [_, toplevel] : m_toplevels) {
-    if (toplevel.workspace == workspaceName) {
+    if (toplevel.workspaceId == workspaceId) {
       toplevel.urgent = false;
     }
   }
 }
 
-void HyprlandWorkspaceBackend::moveToplevel(std::uint64_t address, std::string_view workspaceName) {
+void HyprlandWorkspaceBackend::moveToplevel(std::uint64_t address, int workspaceId) {
   auto& toplevel = m_toplevels[address];
-  toplevel.workspace = std::string(workspaceName);
+  toplevel.workspaceId = workspaceId;
 }
 
 HyprlandWorkspaceBackend::WorkspaceState* HyprlandWorkspaceBackend::findWorkspaceById(int id) {
@@ -716,7 +690,7 @@ Workspace HyprlandWorkspaceBackend::toWorkspace(const WorkspaceState& state) {
   const std::uint32_t coord =
       state.id >= 0 ? static_cast<std::uint32_t>(state.id - 1) : static_cast<std::uint32_t>(state.ordinal);
   return Workspace{
-      .id = !state.name.empty() ? state.name : std::to_string(state.id),
+      .id = std::to_string(state.id),
       .name = state.name,
       .coordinates = {coord},
       .active = state.active,
