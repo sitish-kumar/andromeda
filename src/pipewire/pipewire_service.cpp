@@ -359,6 +359,18 @@ namespace {
     }
   }
 
+  // Device ParamRoute updates are per-direction; applying every route's volume to all nodes on the same
+  // device.id merges playback and capture on combo hardware (see deviceRouteIndicatesMuted).
+  [[nodiscard]] bool routeVolumeDirectionMatchesNode(std::string_view mediaClass, std::uint32_t routeDirection) {
+    if (mediaClass == "Audio/Sink") {
+      return routeDirection == SPA_DIRECTION_OUTPUT;
+    }
+    if (mediaClass == "Audio/Source") {
+      return routeDirection == SPA_DIRECTION_INPUT;
+    }
+    return true;
+  }
+
   constexpr Logger kLog("pipewire");
 
   bool isProgramStreamClass(std::string_view mediaClass) { return mediaClass == "Stream/Output/Audio"; }
@@ -891,7 +903,8 @@ void PipeWireService::onNodeParam(std::uint32_t id, std::uint32_t paramId, std::
           }
         }
       }
-      if (routeAvailable != SPA_PARAM_AVAILABILITY_no && routeProps != nullptr) {
+      if (routeAvailable != SPA_PARAM_AVAILABILITY_no && routeProps != nullptr &&
+          routeVolumeDirectionMatchesNode(nd.mediaClass, routeDirection)) {
         ParsedPropsVolumes basis{};
         basis.channelVol = nd.volume;
         basis.scalarVol = nd.volume;
@@ -1060,7 +1073,7 @@ void PipeWireService::onDeviceParam(std::uint32_t id, std::uint32_t paramId, std
     for (auto& [nid, node] : m_nodes) {
       (void)nid;
       if (node != nullptr && node->deviceId == id &&
-          (node->mediaClass == "Audio/Sink" || node->mediaClass == "Audio/Source")) {
+          routeVolumeDirectionMatchesNode(node->mediaClass, routeDirection)) {
         mergeParsedVolumesIntoNode(*node, fromRoute);
       }
     }
