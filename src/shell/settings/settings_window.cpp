@@ -287,6 +287,19 @@ void SettingsWindow::destroyWindow() {
   m_pendingDeleteMonitorOverrideBarName.clear();
   m_pendingDeleteMonitorOverrideMatch.clear();
   m_pendingResetPageScope.clear();
+  m_searchQuery.clear();
+  m_selectedSection.clear();
+  m_selectedBarName.clear();
+  m_selectedMonitorOverride.clear();
+  m_editingWidgetName.clear();
+  m_openWidgetPickerPath.clear();
+  m_pendingDeleteWidgetName.clear();
+  m_pendingDeleteWidgetSettingPath.clear();
+  m_renamingWidgetName.clear();
+  m_creatingWidgetType.clear();
+  m_showOverriddenOnly = false;
+  m_sidebarScrollState = {};
+  m_contentScrollState = {};
 }
 
 void SettingsWindow::prepareFrame(bool /*needsUpdate*/, bool needsLayout) {
