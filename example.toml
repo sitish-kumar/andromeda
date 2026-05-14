@@ -54,9 +54,8 @@ transition          = ["fade", "wipe", "disc", "stripes", "zoom", "honeycomb"]
 transition_duration = 1500          # milliseconds
 edge_smoothness     = 0.3
 directory           = "~/Pictures/Wallpapers"
-# separate_light_dark_directories = false   # when true, use directory_light / directory_dark (see below)
-directory_light     = ""            # optional day-mode directory (used only when separate_light_dark_directories is true)
-directory_dark      = ""            # optional night-mode directory (used only when separate_light_dark_directories is true)
+directory_light     = ""            # optional day-mode directory
+directory_dark      = ""            # optional night-mode directory
 
 [wallpaper.automation]
 enabled                    = false

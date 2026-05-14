@@ -1666,18 +1666,14 @@
           "label": "Wallpaper Directory",
           "description": "Folder containing wallpapers"
         },
-        "separate-light-dark-directories": {
-          "label": "Separate Light & Dark Folders",
-          "description": "Use different wallpaper folders for light and dark theme instead of one shared folder."
-        },
         "directory-light": {
           "label": "Light Mode Directory",
-          "description": "Wallpaper folder used in Light theme mode when separate light/dark folders are enabled",
+          "description": "Wallpaper folder used in Light theme mode",
           "placeholder": "~/Pictures/Wallpapers"
         },
         "directory-dark": {
           "label": "Dark Mode Directory",
-          "description": "Wallpaper folder used in Dark theme mode when separate light/dark folders are enabled",
+          "description": "Wallpaper folder used in Dark theme mode",
           "placeholder": "~/Pictures/Wallpapers"
         },
         "transitions": {

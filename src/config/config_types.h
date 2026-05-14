@@ -301,7 +301,6 @@ struct WallpaperConfig {
   std::string directory;
   std::string directoryLight;
   std::string directoryDark;
-  bool separateLightDarkWallpaperDirectories = false;
   WallpaperAutomationConfig automation;
   std::vector<WallpaperMonitorOverride> monitorOverrides;
 };
@@ -670,13 +669,6 @@ constexpr EnumOption<ThemeMode> kThemeModes[] = {
     {ThemeMode::Light, "light", "settings.options.theme.mode.light"},
     {ThemeMode::Auto, "auto", "common.states.auto"},
 };
-
-// Browse root for wallpaper picker, launcher wallpaper search, and automation. When
-// `separateLightDarkWallpaperDirectories` is false, uses the main `directory` (and per-monitor `directory` when set).
-// When true, uses `directory_light` / `directory_dark` for explicit Light/Dark configured theme mode; Auto uses
-// `directory`. Per-monitor overrides follow the same rule when their `directory` is set.
-[[nodiscard]] std::string wallpaperBrowseDirectoryForMonitor(const WallpaperConfig& wallpaper, ThemeMode themeMode,
-                                                             std::string_view monitorConnector);
 
 struct ThemeConfig {
   struct TemplatesConfig {

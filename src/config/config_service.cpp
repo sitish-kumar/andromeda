@@ -1370,9 +1370,6 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       wp.directoryLight = expandUserPathString(*v);
     if (auto v = (*wpTbl)["directory_dark"].value<std::string>())
       wp.directoryDark = expandUserPathString(*v);
-    if (auto v = (*wpTbl)["separate_light_dark_directories"].value<bool>()) {
-      wp.separateLightDarkWallpaperDirectories = *v;
-    }
     if (auto* automationTbl = (*wpTbl)["automation"].as_table()) {
       if (auto v = (*automationTbl)["enabled"].value<bool>()) {
         wp.automation.enabled = *v;
