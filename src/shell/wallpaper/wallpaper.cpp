@@ -427,10 +427,7 @@ void Wallpaper::registerIpc(IpcService& ipc) {
         m_config->setWallpaperPath(std::nullopt, resolved);
         return "ok\n";
       },
-      "wallpaper-set [<connector>] <path>",
-      "Set wallpaper (persisted). One argument: all outputs and default. Two or more: first token is "
-      "the output connector (e.g. DP-1), remainder is the path (spaces allowed). Image paths use ~ "
-      "expansion; color:#RRGGBB / color:#RRGGBBAA for solid color.");
+      "wallpaper-set [<connector>] <path>", "Set wallpaper for all or a specific output (persisted)");
 }
 
 void Wallpaper::syncInstances() {
