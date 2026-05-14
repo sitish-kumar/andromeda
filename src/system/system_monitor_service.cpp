@@ -272,7 +272,8 @@ namespace {
       if (firstSource.empty()) {
         firstSource = usedPath.string();
       }
-      mergeGpuVram(total, GpuVramReading{.usedBytes = *used, .totalBytes = *available});
+      mergeGpuVram(total,
+                   GpuVramReading{.usedBytes = *used, .totalBytes = *available, .source = {}, .isNvidia = false});
     }
 
     if (deviceCount <= 0 || !hasUsableVram(total)) {
