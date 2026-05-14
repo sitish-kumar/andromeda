@@ -11,6 +11,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <json.hpp>
+#include <limits>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -49,6 +50,24 @@ namespace {
       if (value >= 0) {
         return static_cast<std::uint64_t>(value);
       }
+    }
+    return std::nullopt;
+  }
+
+  [[nodiscard]] std::optional<std::int32_t> jsonInt32(const nlohmann::json& json) {
+    if (json.is_number_integer()) {
+      const auto value = json.get<std::int64_t>();
+      if (value < std::numeric_limits<std::int32_t>::min() || value > std::numeric_limits<std::int32_t>::max()) {
+        return std::nullopt;
+      }
+      return static_cast<std::int32_t>(value);
+    }
+    if (json.is_number_unsigned()) {
+      const auto value = json.get<std::uint64_t>();
+      if (value > static_cast<std::uint64_t>(std::numeric_limits<std::int32_t>::max())) {
+        return std::nullopt;
+      }
+      return static_cast<std::int32_t>(value);
     }
     return std::nullopt;
   }
@@ -645,7 +664,11 @@ bool NiriWorkspaceBackend::handleWindowLayoutsChanged(const nlohmann::json& payl
       continue;
     }
 
-    const auto id = item[0].get<std::uint64_t>();
+    const auto idOpt = jsonUnsigned(item[0]);
+    if (!idOpt.has_value()) {
+      continue;
+    }
+    const std::uint64_t id = *idOpt;
     const auto& layout = item[1];
 
     auto it = m_windows.find(id);
@@ -656,8 +679,13 @@ bool NiriWorkspaceBackend::handleWindowLayoutsChanged(const nlohmann::json& payl
     if (layout.contains("pos_in_scrolling_layout")) {
       const auto& pos = layout["pos_in_scrolling_layout"];
       if (pos.is_array() && pos.size() >= 2) {
-        std::int32_t x = pos[0].get<std::int32_t>();
-        std::int32_t y = pos[1].get<std::int32_t>();
+        const auto xOpt = jsonInt32(pos[0]);
+        const auto yOpt = jsonInt32(pos[1]);
+        if (!xOpt.has_value() || !yOpt.has_value()) {
+          continue;
+        }
+        const std::int32_t x = *xOpt;
+        const std::int32_t y = *yOpt;
         if (it->second.x != x || it->second.y != y) {
           it->second.x = x;
           it->second.y = y;
