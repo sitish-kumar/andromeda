@@ -96,6 +96,52 @@ namespace {
       .param = onNodeParam,
   };
 
+  // default.audio.{sink,source} values are often JSON {"name":"…"} but may be a plain node.name string.
+  std::string extractDefaultMetadataNodeName(std::string_view val) {
+    constexpr std::string_view kNameKey = "\"name\"";
+    const auto namePos = val.find(kNameKey);
+    if (namePos != std::string_view::npos) {
+      const auto colonPos = val.find(':', namePos + kNameKey.size());
+      if (colonPos != std::string_view::npos) {
+        std::size_t i = colonPos + 1;
+        while (i < val.size() && (val[i] == ' ' || val[i] == '\t')) {
+          ++i;
+        }
+        if (i < val.size() && val[i] == '"') {
+          const std::size_t v0 = i + 1;
+          const auto v1 = val.find('"', v0);
+          if (v1 != std::string_view::npos && v1 > v0) {
+            return std::string(val.substr(v0, v1 - v0));
+          }
+        }
+      }
+    }
+
+    std::string_view s = val;
+    while (!s.empty() && (s.front() == ' ' || s.front() == '\t' || s.front() == '\n' || s.front() == '\r')) {
+      s.remove_prefix(1);
+    }
+    while (!s.empty() && (s.back() == ' ' || s.back() == '\t' || s.back() == '\n' || s.back() == '\r')) {
+      s.remove_suffix(1);
+    }
+    if (s.size() >= 2 && s.front() == '"' && s.back() == '"') {
+      s = s.substr(1, s.size() - 2);
+      while (!s.empty() && (s.front() == ' ' || s.front() == '\t')) {
+        s.remove_prefix(1);
+      }
+      while (!s.empty() && (s.back() == ' ' || s.back() == '\t')) {
+        s.remove_suffix(1);
+      }
+    }
+    if (!s.empty()) {
+      const char c = s.front();
+      if (c != '{' && c != '[') {
+        return std::string(s);
+      }
+    }
+    return {};
+  }
+
   // Default sink/source metadata.
   struct MetadataData {
     PipeWireService* service = nullptr;
@@ -108,23 +154,13 @@ namespace {
       return 0;
     }
     auto* md = static_cast<MetadataData*>(data);
-    // Parse the JSON value to extract the name - format is {"name":"sink_name"}
-    std::string val(value);
     if (std::strcmp(key, "default.audio.sink") == 0 || std::strcmp(key, "default.audio.source") == 0) {
-      auto namePos = val.find("\"name\"");
-      if (namePos != std::string::npos) {
-        auto colonPos = val.find(':', namePos);
-        if (colonPos != std::string::npos) {
-          auto firstQuote = val.find('"', colonPos + 1);
-          auto secondQuote = val.find('"', firstQuote + 1);
-          if (firstQuote != std::string::npos && secondQuote != std::string::npos) {
-            std::string name = val.substr(firstQuote + 1, secondQuote - firstQuote - 1);
-            spa_dict_item items[1];
-            items[0] = SPA_DICT_ITEM_INIT(key, name.c_str());
-            spa_dict dict = SPA_DICT_INIT(items, 1);
-            md->service->parseDefaultNodes(&dict);
-          }
-        }
+      const std::string name = extractDefaultMetadataNodeName(std::string_view(value));
+      if (!name.empty()) {
+        spa_dict_item items[1];
+        items[0] = SPA_DICT_ITEM_INIT(key, name.c_str());
+        spa_dict dict = SPA_DICT_INIT(items, 1);
+        md->service->parseDefaultNodes(&dict);
       }
     }
     return 0;
@@ -431,7 +467,7 @@ const AudioNode* PipeWireService::defaultSink() const noexcept {
       return &sink;
     }
   }
-  return m_state.sinks.empty() ? nullptr : &m_state.sinks.front();
+  return nullptr;
 }
 
 const AudioNode* PipeWireService::defaultSource() const noexcept {
@@ -440,7 +476,7 @@ const AudioNode* PipeWireService::defaultSource() const noexcept {
       return &source;
     }
   }
-  return m_state.sources.empty() ? nullptr : &m_state.sources.front();
+  return nullptr;
 }
 
 void PipeWireService::onRegistryGlobal(std::uint32_t id, const char* type, std::uint32_t, const spa_dict* props) {
@@ -591,6 +627,7 @@ void PipeWireService::onRegistryGlobal(std::uint32_t id, const char* type, std::
         auto* md = new MetadataData{this, proxy, new spa_hook{}};
         spa_zero(*md->listener);
         pw_metadata_add_listener(proxy, md->listener, &kMetadataEvents, md);
+        pw_core_sync(md->service->coreHandle(), PW_ID_CORE, 0);
         m_metadataCleanups.push_back([md]() {
           if (md->listener != nullptr) {
             spa_hook_remove(md->listener);
