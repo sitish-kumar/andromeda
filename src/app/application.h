@@ -9,6 +9,7 @@
 #include "core/timer_manager.h"
 #include "dbus/bluetooth/bluetooth_agent.h"
 #include "dbus/bluetooth/bluetooth_service.h"
+#include "dbus/logind/logind_service.h"
 #include "dbus/mpris/mpris_service.h"
 #include "dbus/network/network_secret_agent.h"
 #include "dbus/network/network_service.h"
@@ -139,6 +140,7 @@ private:
   NotificationManager m_notificationManager;
   std::unique_ptr<SessionBus> m_bus;
   std::unique_ptr<SystemBus> m_systemBus;
+  std::unique_ptr<LogindService> m_logindService;
   std::unique_ptr<SystemMonitorService> m_systemMonitor;
   std::unique_ptr<DebugService> m_debugService;
   IdleInhibitor m_idleInhibitor;
