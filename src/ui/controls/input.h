@@ -82,6 +82,9 @@ private:
   void selectWordAtByteOffset(std::size_t offset);
   [[nodiscard]] std::size_t wordStartForByteOffset(std::size_t offset) const;
   [[nodiscard]] std::size_t wordEndForByteOffset(std::size_t offset) const;
+  [[nodiscard]] std::size_t previousWordStartForByteOffset(std::size_t offset) const;
+  [[nodiscard]] std::size_t nextWordStartForByteOffset(std::size_t offset) const;
+  [[nodiscard]] std::size_t nextWordEndForByteOffset(std::size_t offset) const;
   [[nodiscard]] float textViewportWidth() const noexcept;
   [[nodiscard]] bool clearButtonVisible() const noexcept;
   [[nodiscard]] float clearButtonHitWidth() const noexcept;

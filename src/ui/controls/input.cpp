@@ -585,7 +585,8 @@ void Input::handleKey(std::uint32_t sym, std::uint32_t utf32, std::uint32_t modi
   // Ignore keys that produce no text and aren't action keys we handle below
   if (utf32 == 0 && !preedit) {
     const bool navigationOrEdit = sym == XKB_KEY_BackSpace || sym == XKB_KEY_Delete || sym == XKB_KEY_Left ||
-                                  sym == XKB_KEY_Right || sym == XKB_KEY_Home || sym == XKB_KEY_End;
+                                  sym == XKB_KEY_Right || sym == XKB_KEY_Home || sym == XKB_KEY_End ||
+                                  sym == XKB_KEY_Insert;
     if (!navigationOrEdit && !validateMatch) {
       return;
     }
@@ -604,21 +605,26 @@ void Input::handleKey(std::uint32_t sym, std::uint32_t utf32, std::uint32_t modi
     changed = true;
   }
 
+  const bool copyShortcut = ctrl && (sym == XKB_KEY_Insert || sym == 'c' || sym == 'C');
+  const bool cutShortcut =
+      (ctrl && (sym == 'x' || sym == 'X')) || (!ctrl && shift && sym == XKB_KEY_Delete && hasSelection());
+  const bool pasteShortcut = (ctrl && (sym == 'v' || sym == 'V')) || (!ctrl && shift && sym == XKB_KEY_Insert);
+
   if (ctrl && (sym == 'a' || sym == 'A')) {
     // Select all
     m_selectionAnchor = 0;
     m_cursorPos = m_value.size();
-  } else if (ctrl && (sym == 'c' || sym == 'C')) {
+  } else if (copyShortcut) {
     if (g_clipboard != nullptr && hasSelection()) {
       g_clipboard->copyText(m_value.substr(selectionStart(), selectionEnd() - selectionStart()));
     }
-  } else if (ctrl && (sym == 'x' || sym == 'X')) {
+  } else if (cutShortcut) {
     if (g_clipboard != nullptr && hasSelection()) {
       g_clipboard->copyText(m_value.substr(selectionStart(), selectionEnd() - selectionStart()));
       deleteSelection();
       changed = true;
     }
-  } else if (ctrl && (sym == 'v' || sym == 'V')) {
+  } else if (pasteShortcut) {
     if (g_clipboard != nullptr) {
       if (auto text = readClipboardText(); text.has_value()) {
         if (hasSelection()) {
@@ -635,7 +641,7 @@ void Input::handleKey(std::uint32_t sym, std::uint32_t utf32, std::uint32_t modi
       deleteSelection();
       changed = true;
     } else if (m_cursorPos > 0) {
-      const std::size_t prev = prevCharPos(m_value, m_cursorPos);
+      const std::size_t prev = ctrl ? previousWordStartForByteOffset(m_cursorPos) : prevCharPos(m_value, m_cursorPos);
       m_value.erase(prev, m_cursorPos - prev);
       m_cursorPos = prev;
       m_selectionAnchor = prev;
@@ -646,7 +652,7 @@ void Input::handleKey(std::uint32_t sym, std::uint32_t utf32, std::uint32_t modi
       deleteSelection();
       changed = true;
     } else if (m_cursorPos < m_value.size()) {
-      const std::size_t next = nextCharPos(m_value, m_cursorPos);
+      const std::size_t next = ctrl ? nextWordEndForByteOffset(m_cursorPos) : nextCharPos(m_value, m_cursorPos);
       m_value.erase(m_cursorPos, next - m_cursorPos);
       changed = true;
     }
@@ -656,7 +662,7 @@ void Input::handleKey(std::uint32_t sym, std::uint32_t utf32, std::uint32_t modi
       m_cursorPos = selectionStart();
       m_selectionAnchor = m_cursorPos;
     } else {
-      m_cursorPos = prevCharPos(m_value, m_cursorPos);
+      m_cursorPos = ctrl ? previousWordStartForByteOffset(m_cursorPos) : prevCharPos(m_value, m_cursorPos);
       if (!shift) {
         m_selectionAnchor = m_cursorPos;
       }
@@ -667,7 +673,7 @@ void Input::handleKey(std::uint32_t sym, std::uint32_t utf32, std::uint32_t modi
       m_cursorPos = selectionEnd();
       m_selectionAnchor = m_cursorPos;
     } else {
-      m_cursorPos = nextCharPos(m_value, m_cursorPos);
+      m_cursorPos = ctrl ? nextWordStartForByteOffset(m_cursorPos) : nextCharPos(m_value, m_cursorPos);
       if (!shift) {
         m_selectionAnchor = m_cursorPos;
       }
@@ -1006,6 +1012,61 @@ std::size_t Input::wordEndForByteOffset(std::size_t offset) const {
     end = nextCharPos(m_value, end);
   }
   return end;
+}
+
+std::size_t Input::previousWordStartForByteOffset(std::size_t offset) const {
+  if (m_value.empty()) {
+    return 0;
+  }
+
+  std::size_t pos = std::min(offset, m_value.size());
+  while (pos > 0) {
+    const std::size_t prev = prevCharPos(m_value, pos);
+    if (prev == pos || isWordCodepoint(m_value, prev)) {
+      break;
+    }
+    pos = prev;
+  }
+  while (pos > 0) {
+    const std::size_t prev = prevCharPos(m_value, pos);
+    if (prev == pos || !isWordCodepoint(m_value, prev)) {
+      break;
+    }
+    pos = prev;
+  }
+  return pos;
+}
+
+std::size_t Input::nextWordStartForByteOffset(std::size_t offset) const {
+  if (m_value.empty()) {
+    return 0;
+  }
+
+  std::size_t pos = std::min(offset, m_value.size());
+  if (pos < m_value.size() && isWordCodepoint(m_value, pos)) {
+    while (pos < m_value.size() && isWordCodepoint(m_value, pos)) {
+      pos = nextCharPos(m_value, pos);
+    }
+  }
+  while (pos < m_value.size() && !isWordCodepoint(m_value, pos)) {
+    pos = nextCharPos(m_value, pos);
+  }
+  return pos;
+}
+
+std::size_t Input::nextWordEndForByteOffset(std::size_t offset) const {
+  if (m_value.empty()) {
+    return 0;
+  }
+
+  std::size_t pos = std::min(offset, m_value.size());
+  while (pos < m_value.size() && !isWordCodepoint(m_value, pos)) {
+    pos = nextCharPos(m_value, pos);
+  }
+  while (pos < m_value.size() && isWordCodepoint(m_value, pos)) {
+    pos = nextCharPos(m_value, pos);
+  }
+  return pos;
 }
 
 void Input::syncPasswordGlyphNodes(std::size_t count) {
