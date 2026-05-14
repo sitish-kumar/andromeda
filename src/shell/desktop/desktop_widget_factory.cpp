@@ -177,6 +177,8 @@ DesktopWidgetFactory::create(const std::string& type,
         return DesktopSysmonStat::CpuTemp;
       if (s == "gpu_temp")
         return DesktopSysmonStat::GpuTemp;
+      if (s == "gpu_vram")
+        return DesktopSysmonStat::GpuVram;
       if (s == "ram_pct")
         return DesktopSysmonStat::RamPct;
       if (s == "swap_pct")

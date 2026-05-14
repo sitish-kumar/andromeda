@@ -78,6 +78,20 @@ namespace {
     return static_cast<double>(raw);
   }
 
+  std::optional<std::uint64_t> readUint64File(const std::filesystem::path& path) {
+    std::ifstream file{path};
+    if (!file.is_open()) {
+      return std::nullopt;
+    }
+
+    std::uint64_t value = 0;
+    file >> value;
+    if (file.fail()) {
+      return std::nullopt;
+    }
+    return value;
+  }
+
   struct TempSensorReading {
     double tempC = 0.0;
     int score = -1;
@@ -89,6 +103,31 @@ namespace {
     std::optional<TempSensorReading> reading;
     bool foundNvidia = false;
   };
+
+  struct GpuVramReading {
+    std::uint64_t usedBytes = 0;
+    std::uint64_t totalBytes = 0;
+    std::string source;
+    bool isNvidia = false;
+  };
+
+  [[nodiscard]] bool hasUsableVram(const GpuVramReading& reading) {
+    return reading.totalBytes > 0 && reading.usedBytes <= reading.totalBytes;
+  }
+
+  void mergeGpuVram(GpuVramReading& target, const GpuVramReading& source) {
+    if (!hasUsableVram(source)) {
+      return;
+    }
+    target.usedBytes += source.usedBytes;
+    target.totalBytes += source.totalBytes;
+    if (target.source.empty()) {
+      target.source = source.source;
+    } else if (!source.source.empty()) {
+      target.source += " + " + source.source;
+    }
+    target.isNvidia = target.isNvidia || source.isNvidia;
+  }
 
   std::string formatHwmonTempSource(const std::string& hwmonName, const std::string& label,
                                     const std::filesystem::path& inputPath) {
@@ -102,6 +141,10 @@ namespace {
   std::string formatThermalZoneTempSource(const std::string& zoneType, const std::filesystem::path& inputPath) {
     const std::string type = zoneType.empty() ? "unknown" : zoneType;
     return std::format("thermal_zone:{} {}", type, inputPath.string());
+  }
+
+  std::string formatBytesGiB(std::uint64_t bytes) {
+    return std::format("{:.1f} GiB", static_cast<double>(bytes) / (1024.0 * 1024.0 * 1024.0));
   }
 
   int scoreHwmonSensor(const std::string& hwmonName, const std::string& label) {
@@ -178,6 +221,67 @@ namespace {
       return true;
     }
     return *status == "active";
+  }
+
+  bool isDevicePathAwake(const std::filesystem::path& devicePath) {
+    const auto status = readSmallTextFile(devicePath / "power" / "runtime_status");
+    if (!status.has_value()) {
+      return true;
+    }
+    return *status == "active";
+  }
+
+  bool isDrmCardName(const std::string& name) {
+    if (!name.starts_with("card") || name.size() == 4) {
+      return false;
+    }
+    return std::all_of(name.begin() + 4, name.end(), [](char ch) { return ch >= '0' && ch <= '9'; });
+  }
+
+  std::optional<GpuVramReading> readAmdGpuVram() {
+    namespace fs = std::filesystem;
+
+    const fs::path drmRoot{"/sys/class/drm"};
+    if (!fs::exists(drmRoot) || !fs::is_directory(drmRoot)) {
+      return std::nullopt;
+    }
+
+    GpuVramReading total;
+    int deviceCount = 0;
+    std::string firstSource;
+
+    for (const auto& entry : fs::directory_iterator{drmRoot}) {
+      if (!entry.is_directory() || !isDrmCardName(entry.path().filename().string())) {
+        continue;
+      }
+
+      const fs::path devicePath = entry.path() / "device";
+      if (!fs::exists(devicePath) || !isDevicePathAwake(devicePath)) {
+        continue;
+      }
+
+      const fs::path usedPath = devicePath / "mem_info_vram_used";
+      const fs::path totalPath = devicePath / "mem_info_vram_total";
+      const auto used = readUint64File(usedPath);
+      const auto available = readUint64File(totalPath);
+      if (!used.has_value() || !available.has_value() || *available == 0 || *used > *available) {
+        continue;
+      }
+
+      ++deviceCount;
+      if (firstSource.empty()) {
+        firstSource = usedPath.string();
+      }
+      mergeGpuVram(total, GpuVramReading{.usedBytes = *used, .totalBytes = *available});
+    }
+
+    if (deviceCount <= 0 || !hasUsableVram(total)) {
+      return std::nullopt;
+    }
+
+    total.source = deviceCount == 1 ? std::format("amdgpu:{}", firstSource)
+                                    : std::format("amdgpu sysfs ({} devices)", deviceCount);
+    return total;
   }
 
   std::optional<TempSensorReading> readCpuHwmonTempSensor() {
@@ -388,6 +492,13 @@ namespace {
   using NvmlDeviceGetHandleByIndexFn = NvmlReturn (*)(unsigned int, NvmlDevice*);
   using NvmlDeviceGetTemperatureFn = NvmlReturn (*)(NvmlDevice, unsigned int, unsigned int*);
 
+  struct NvmlMemory {
+    unsigned long long total = 0;
+    unsigned long long free = 0;
+    unsigned long long used = 0;
+  };
+  using NvmlDeviceGetMemoryInfoFn = NvmlReturn (*)(NvmlDevice, NvmlMemory*);
+
   template <typename T> bool loadDlsymFunction(void* library, const char* name, T& out) {
     void* symbol = dlsym(library, name);
     if (symbol == nullptr) {
@@ -434,6 +545,26 @@ struct SystemMonitorService::NvidiaNvmlReader {
     return TempSensorReading{.tempC = *bestTemp, .score = 0, .source = source, .isNvidia = true};
   }
 
+  [[nodiscard]] std::optional<GpuVramReading> readGpuVram() {
+    if (!ensureReady() || m_devices.empty()) {
+      return std::nullopt;
+    }
+
+    GpuVramReading total{.source = m_devices.size() == 1 ? std::string{"nvml"}
+                                                         : std::format("nvml ({} devices)", m_devices.size()),
+                         .isNvidia = true};
+    for (const auto& device : m_devices) {
+      NvmlMemory memory{};
+      if (m_getMemoryInfo(device.handle, &memory) != kNvmlSuccess || memory.total == 0 || memory.used > memory.total) {
+        continue;
+      }
+      total.usedBytes += static_cast<std::uint64_t>(memory.used);
+      total.totalBytes += static_cast<std::uint64_t>(memory.total);
+    }
+
+    return hasUsableVram(total) ? std::optional<GpuVramReading>{total} : std::nullopt;
+  }
+
 private:
   struct DeviceRef {
     unsigned int index = 0;
@@ -460,7 +591,8 @@ private:
         !loadDlsymFunction(m_library, "nvmlShutdown", m_shutdown) ||
         !loadDlsymFunction(m_library, "nvmlDeviceGetCount_v2", "nvmlDeviceGetCount", m_getCount) ||
         !loadDlsymFunction(m_library, "nvmlDeviceGetHandleByIndex_v2", "nvmlDeviceGetHandleByIndex", m_getHandle) ||
-        !loadDlsymFunction(m_library, "nvmlDeviceGetTemperature", m_getTemperature)) {
+        !loadDlsymFunction(m_library, "nvmlDeviceGetTemperature", m_getTemperature) ||
+        !loadDlsymFunction(m_library, "nvmlDeviceGetMemoryInfo", m_getMemoryInfo)) {
       close();
       m_state = State::Unavailable;
       return false;
@@ -515,6 +647,7 @@ private:
   NvmlDeviceGetCountFn m_getCount = nullptr;
   NvmlDeviceGetHandleByIndexFn m_getHandle = nullptr;
   NvmlDeviceGetTemperatureFn m_getTemperature = nullptr;
+  NvmlDeviceGetMemoryInfoFn m_getMemoryInfo = nullptr;
 };
 
 SystemMonitorService::SystemMonitorService(bool enabled) {
@@ -554,6 +687,10 @@ void SystemMonitorService::releaseCpuTemp() { m_cpuTempRefs.fetch_sub(1, std::me
 void SystemMonitorService::retainGpuTemp() { m_gpuTempRefs.fetch_add(1, std::memory_order_relaxed); }
 
 void SystemMonitorService::releaseGpuTemp() { m_gpuTempRefs.fetch_sub(1, std::memory_order_relaxed); }
+
+void SystemMonitorService::retainGpuVram() { m_gpuVramRefs.fetch_add(1, std::memory_order_relaxed); }
+
+void SystemMonitorService::releaseGpuVram() { m_gpuVramRefs.fetch_sub(1, std::memory_order_relaxed); }
 
 void SystemMonitorService::retainDiskPath(const std::string& path) {
   const float initialPercent = isRunning() ? readDiskUsagePercent(path) : 0.0f;
@@ -662,6 +799,13 @@ void SystemMonitorService::logDetectedSources() {
   } else {
     kLog.info("detected GPU temperature source: unavailable; {}", gpuDetail);
   }
+
+  if (const auto gpuVram = readGpuVram(); gpuVram.has_value()) {
+    kLog.info("detected GPU VRAM source: {} ({} / {})", gpuVram->source, formatBytesGiB(gpuVram->usedBytes),
+              formatBytesGiB(gpuVram->totalBytes));
+  } else {
+    kLog.info("detected GPU VRAM source: unavailable");
+  }
 }
 
 void SystemMonitorService::samplingLoop() {
@@ -673,6 +817,8 @@ void SystemMonitorService::samplingLoop() {
     std::vector<std::string> diskPaths;
     std::optional<double> previousCpuTemp;
     std::optional<double> previousGpuTemp;
+    std::optional<std::uint64_t> previousGpuVramUsed;
+    std::optional<std::uint64_t> previousGpuVramTotal;
 
     const auto currentCpu = readCpuTotals();
     if (prevCpu.has_value() && currentCpu.has_value()) {
@@ -728,6 +874,8 @@ void SystemMonitorService::samplingLoop() {
       std::lock_guard lock{m_statsMutex};
       previousCpuTemp = m_latest.cpuTempC;
       previousGpuTemp = m_latest.gpuTempC;
+      previousGpuVramUsed = m_latest.gpuVramUsedBytes;
+      previousGpuVramTotal = m_latest.gpuVramTotalBytes;
       diskPaths.reserve(m_diskHistories.size());
       for (const auto& [path, disk] : m_diskHistories) {
         if (disk.refs > 0) {
@@ -748,6 +896,18 @@ void SystemMonitorService::samplingLoop() {
     }
     if (!next.gpuTempC.has_value()) {
       next.gpuTempC = previousGpuTemp;
+    }
+
+    if (m_gpuVramRefs.load(std::memory_order_relaxed) > 0) {
+      const auto gpuVram = readGpuVram();
+      if (gpuVram.has_value()) {
+        next.gpuVramUsedBytes = gpuVram->usedBytes;
+        next.gpuVramTotalBytes = gpuVram->totalBytes;
+      }
+    }
+    if (!next.gpuVramUsedBytes.has_value() || !next.gpuVramTotalBytes.has_value()) {
+      next.gpuVramUsedBytes = previousGpuVramUsed;
+      next.gpuVramTotalBytes = previousGpuVramTotal;
     }
 
     std::vector<std::pair<std::string, float>> diskPercents;
@@ -886,6 +1046,29 @@ std::optional<double> SystemMonitorService::readGpuTempCelsius() {
   }
 
   return best.has_value() ? std::optional<double>{best->tempC} : std::nullopt;
+}
+
+std::optional<SystemMonitorService::GpuVramData> SystemMonitorService::readGpuVram() {
+  std::optional<GpuVramReading> combined = readAmdGpuVram();
+
+  if (!hasInactiveNvidiaPciDisplayDevice()) {
+    if (m_nvidiaNvmlReader == nullptr) {
+      m_nvidiaNvmlReader = std::make_unique<NvidiaNvmlReader>();
+    }
+    const auto nvml = m_nvidiaNvmlReader->readGpuVram();
+    if (nvml.has_value()) {
+      if (combined.has_value()) {
+        mergeGpuVram(*combined, *nvml);
+      } else {
+        combined = nvml;
+      }
+    }
+  }
+
+  if (!combined.has_value() || !hasUsableVram(*combined)) {
+    return std::nullopt;
+  }
+  return GpuVramData{.usedBytes = combined->usedBytes, .totalBytes = combined->totalBytes, .source = combined->source};
 }
 
 float SystemMonitorService::readDiskUsagePercent(const std::string& path) {

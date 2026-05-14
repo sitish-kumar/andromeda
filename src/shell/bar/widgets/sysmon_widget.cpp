@@ -34,6 +34,7 @@ namespace {
 
   bool needsCpuTemp(SysmonStat stat) { return stat == SysmonStat::CpuTemp; }
   bool needsGpuTemp(SysmonStat stat) { return stat == SysmonStat::GpuTemp; }
+  bool needsGpuVram(SysmonStat stat) { return stat == SysmonStat::GpuVram; }
 
   const char* statDisplayName(SysmonStat stat) {
     switch (stat) {
@@ -43,6 +44,8 @@ namespace {
       return "CPU Temp";
     case SysmonStat::GpuTemp:
       return "GPU Temp";
+    case SysmonStat::GpuVram:
+      return "GPU VRAM";
     case SysmonStat::RamUsed:
     case SysmonStat::RamPct:
       return "RAM";
@@ -81,6 +84,9 @@ SysmonWidget::SysmonWidget(SystemMonitorService* monitor, wl_output* output, Sys
     if (needsGpuTemp(m_stat)) {
       m_monitor->retainGpuTemp();
     }
+    if (needsGpuVram(m_stat)) {
+      m_monitor->retainGpuVram();
+    }
     if (m_stat == SysmonStat::DiskPct && !m_diskPath.empty()) {
       m_monitor->retainDiskPath(m_diskPath);
     }
@@ -94,6 +100,9 @@ SysmonWidget::~SysmonWidget() {
     }
     if (needsGpuTemp(m_stat)) {
       m_monitor->releaseGpuTemp();
+    }
+    if (needsGpuVram(m_stat)) {
+      m_monitor->releaseGpuVram();
     }
     if (m_stat == SysmonStat::DiskPct && !m_diskPath.empty()) {
       m_monitor->releaseDiskPath(m_diskPath);
@@ -477,6 +486,12 @@ double SysmonWidget::normalizedFromStats(SysmonStat stat, const SystemStats& sta
     }
     return 0.0;
 
+  case SysmonStat::GpuVram:
+    if (stats.gpuVramUsedBytes.has_value() && stats.gpuVramTotalBytes.has_value() && *stats.gpuVramTotalBytes > 0) {
+      return static_cast<double>(*stats.gpuVramUsedBytes) / static_cast<double>(*stats.gpuVramTotalBytes);
+    }
+    return 0.0;
+
   case SysmonStat::RamUsed:
     if (stats.ramTotalMb > 0) {
       return static_cast<double>(stats.ramUsedMb) / static_cast<double>(stats.ramTotalMb);
@@ -549,6 +564,13 @@ std::string SysmonWidget::formatValue() const {
     }
     return "--";
 
+  case SysmonStat::GpuVram:
+    if (stats.gpuVramUsedBytes.has_value() && stats.gpuVramTotalBytes.has_value() && *stats.gpuVramTotalBytes > 0) {
+      return std::format("{:.0f}%", 100.0 * static_cast<double>(*stats.gpuVramUsedBytes) /
+                                        static_cast<double>(*stats.gpuVramTotalBytes));
+    }
+    return "--";
+
   case SysmonStat::RamUsed:
     if (stats.ramUsedMb >= 1024) {
       return std::format("{:.1f}G", static_cast<double>(stats.ramUsedMb) / 1024.0);
@@ -586,6 +608,8 @@ const char* SysmonWidget::glyphName(SysmonStat stat) {
     return "cpu-temperature";
   case SysmonStat::GpuTemp:
     return "temperature";
+  case SysmonStat::GpuVram:
+    return "memory";
   case SysmonStat::RamUsed:
   case SysmonStat::RamPct:
     return "memory";

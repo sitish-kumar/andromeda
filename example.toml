@@ -107,7 +107,7 @@ position = "top_right"              # top_right | top_left | top_center | bottom
 # ── System Monitor ────────────────────────────────────────────────────────────
 
 [system.monitor]
-enabled = true                      # sample CPU, memory, network, load, temperature, and disk statistics
+enabled = true                      # sample CPU, memory, network, load, temperature, GPU VRAM, and disk statistics
 
 # ── Weather ───────────────────────────────────────────────────────────────────
 

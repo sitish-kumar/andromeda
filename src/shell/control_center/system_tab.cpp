@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <format>
 #include <vector>
 
@@ -90,6 +91,14 @@ namespace {
     return std::format("{:.1f} / {:.1f} GB", usedGb, totalGb);
   }
 
+  std::string formatGpuVramUsed(const SystemStats& stats) {
+    if (!stats.gpuVramUsedBytes.has_value()) {
+      return "--";
+    }
+    const double usedGb = static_cast<double>(*stats.gpuVramUsedBytes) / (1024.0 * 1024.0 * 1024.0);
+    return std::format("{:.1f} GB", usedGb);
+  }
+
   Flex* makeInfoCard(Flex& parent, const std::string& title, float scale, Label** outLines, int lineCount,
                      const char* const* glyphs) {
     auto card = std::make_unique<Flex>();
@@ -133,6 +142,7 @@ SystemTab::SystemTab(SystemMonitorService* monitor) : m_monitor(monitor) {
   if (m_monitor != nullptr) {
     m_monitor->retainCpuTemp();
     m_monitor->retainGpuTemp();
+    m_monitor->retainGpuVram();
   }
 }
 
@@ -140,6 +150,7 @@ SystemTab::~SystemTab() {
   if (m_monitor != nullptr) {
     m_monitor->releaseCpuTemp();
     m_monitor->releaseGpuTemp();
+    m_monitor->releaseGpuVram();
   }
 }
 
@@ -213,6 +224,8 @@ std::unique_ptr<Flex> SystemTab::create() {
       m_gpuCard = card.get();
 
       auto* header = makeHeaderRow(*card, i18n::tr("control-center.system.titles.gpu"), sc);
+      auto* gpuVramGroup = makeIconLabel(*header, "memory", sc, &m_gpuVramIcon);
+      m_gpuVramLabel = makeValueLabel(*gpuVramGroup, sc);
       auto* gpuTempGroup = makeIconLabel(*header, "temperature", sc, &m_gpuTempIcon);
       m_gpuTempLabel = makeValueLabel(*gpuTempGroup, sc);
       m_gpuGraph = addGraph(*card);
@@ -279,6 +292,8 @@ void SystemTab::onClose() {
   m_cpuTempLabel = nullptr;
   m_gpuTempIcon = nullptr;
   m_gpuTempLabel = nullptr;
+  m_gpuVramIcon = nullptr;
+  m_gpuVramLabel = nullptr;
   m_ramIcon = nullptr;
   m_ramLabel = nullptr;
   m_rxIcon = nullptr;
@@ -323,6 +338,7 @@ void SystemTab::onFrameTick(float deltaMs) {
   }
   if (m_gpuGraph != nullptr) {
     m_gpuGraph->setScroll1(m_scrollProgress);
+    m_gpuGraph->setScroll2(m_scrollProgress);
   }
   if (m_netGraph != nullptr) {
     m_netGraph->setScroll1(m_scrollProgress);
@@ -399,7 +415,14 @@ void SystemTab::doUpdate(Renderer& renderer) {
   }
 
   if (m_gpuGraph != nullptr) {
-    m_gpuGraph->setLineColor1(colorForRole(ColorRole::Error));
+    m_gpuGraph->setLineColor1(colorForRole(ColorRole::Secondary));
+    m_gpuGraph->setLineColor2(colorForRole(ColorRole::Error));
+  }
+  if (m_gpuVramIcon != nullptr) {
+    m_gpuVramIcon->setColor(colorSpecFromRole(ColorRole::Secondary));
+  }
+  if (m_gpuVramLabel != nullptr) {
+    m_gpuVramLabel->setColor(colorSpecFromRole(ColorRole::Secondary));
   }
   if (m_gpuTempIcon != nullptr) {
     m_gpuTempIcon->setColor(colorSpecFromRole(ColorRole::Error));
@@ -439,6 +462,7 @@ void SystemTab::doUpdate(Renderer& renderer) {
     }
     if (m_gpuGraph != nullptr) {
       m_gpuGraph->setCount1(0.0f);
+      m_gpuGraph->setCount2(0.0f);
     }
     if (m_netGraph != nullptr) {
       m_netGraph->setCount1(0.0f);
@@ -509,12 +533,19 @@ void SystemTab::updateGraphs(Renderer& renderer) {
     m_ramGraph->setCount1(static_cast<float>(n));
   }
 
-  // GPU temp
+  // GPU: VRAM usage (primary) + temperature (secondary)
   if (m_gpuGraph != nullptr) {
     bool hasGpuTemp = false;
+    bool hasGpuVram = false;
+    std::vector<float> gpuVram(sz);
     std::vector<float> gpuTemp(sz);
     for (int i = 0; i < n; ++i) {
       const auto& s = hist[static_cast<std::size_t>(i)];
+      if (s.gpuVramUsedBytes.has_value() && s.gpuVramTotalBytes.has_value() && *s.gpuVramTotalBytes > 0) {
+        hasGpuVram = true;
+        gpuVram[static_cast<std::size_t>(i)] = static_cast<float>(
+            std::clamp(static_cast<double>(*s.gpuVramUsedBytes) / static_cast<double>(*s.gpuVramTotalBytes), 0.0, 1.0));
+      }
       if (s.gpuTempC.has_value()) {
         hasGpuTemp = true;
         const double t = *s.gpuTempC;
@@ -527,15 +558,24 @@ void SystemTab::updateGraphs(Renderer& renderer) {
             range > 0.0 ? static_cast<float>(std::clamp((t - m_gpuTempMin) / range, 0.0, 1.0)) : 0.5f;
       }
     }
+    if (hasGpuVram) {
+      gpuVram[n] = std::clamp(gpuVram[n - 1] + (gpuVram[n - 1] - gpuVram[n - 2]) * 0.5f, 0.0f, 1.0f);
+    }
     if (hasGpuTemp) {
       gpuTemp[n] = std::clamp(gpuTemp[n - 1] + (gpuTemp[n - 1] - gpuTemp[n - 2]) * 0.5f, 0.0f, 1.0f);
-      m_gpuGraph->setData(renderer.textureManager(), gpuTemp.data(), texSize, nullptr, 0);
-      m_gpuGraph->setCount1(static_cast<float>(n));
+    }
+    if (hasGpuVram || hasGpuTemp) {
+      m_gpuGraph->setData(renderer.textureManager(), hasGpuVram ? gpuVram.data() : nullptr, hasGpuVram ? texSize : 0,
+                          hasGpuTemp ? gpuTemp.data() : nullptr, hasGpuTemp ? texSize : 0);
+      m_gpuGraph->setCount1(hasGpuVram ? static_cast<float>(n) : 0.0f);
+      m_gpuGraph->setCount2(hasGpuTemp ? static_cast<float>(n) : 0.0f);
     } else {
       m_gpuGraph->setCount1(0.0f);
+      m_gpuGraph->setCount2(0.0f);
     }
-    if (hasGpuTemp != m_gpuVisible) {
-      m_gpuVisible = hasGpuTemp;
+    const bool hasGpuData = hasGpuVram || hasGpuTemp;
+    if (hasGpuData != m_gpuVisible) {
+      m_gpuVisible = hasGpuData;
       updateGpuVisibility();
     }
   }
@@ -576,6 +616,7 @@ void SystemTab::updateGraphs(Renderer& renderer) {
   }
   if (m_gpuGraph != nullptr) {
     m_gpuGraph->setScroll1(m_scrollProgress);
+    m_gpuGraph->setScroll2(m_scrollProgress);
   }
   if (m_netGraph != nullptr) {
     m_netGraph->setScroll1(m_scrollProgress);
@@ -605,6 +646,9 @@ void SystemTab::syncLabels() {
     }
     if (m_gpuTempLabel != nullptr) {
       m_gpuTempLabel->setText("--");
+    }
+    if (m_gpuVramLabel != nullptr) {
+      m_gpuVramLabel->setText("--");
     }
     if (m_ramLabel != nullptr) {
       m_ramLabel->setText("--");
@@ -636,6 +680,9 @@ void SystemTab::syncLabels() {
     } else {
       m_gpuTempLabel->setText("--");
     }
+  }
+  if (m_gpuVramLabel != nullptr) {
+    m_gpuVramLabel->setText(formatGpuVramUsed(stats));
   }
   if (m_ramLabel != nullptr) {
     const double usedGb = static_cast<double>(stats.ramUsedMb) / 1024.0;

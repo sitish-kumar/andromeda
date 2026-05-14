@@ -22,6 +22,7 @@ namespace {
 
   bool needsCpuTemp(DesktopSysmonStat stat) { return stat == DesktopSysmonStat::CpuTemp; }
   bool needsGpuTemp(DesktopSysmonStat stat) { return stat == DesktopSysmonStat::GpuTemp; }
+  bool needsGpuVram(DesktopSysmonStat stat) { return stat == DesktopSysmonStat::GpuVram; }
 
   [[nodiscard]] std::string formatNetSpeed(double bytesPerSec) {
     if (bytesPerSec < 1024.0)
@@ -45,10 +46,14 @@ DesktopSysmonWidget::DesktopSysmonWidget(SystemMonitorService* monitor, DesktopS
       m_monitor->retainCpuTemp();
     if (needsGpuTemp(m_stat))
       m_monitor->retainGpuTemp();
+    if (needsGpuVram(m_stat))
+      m_monitor->retainGpuVram();
     if (m_stat2.has_value() && needsCpuTemp(*m_stat2))
       m_monitor->retainCpuTemp();
     if (m_stat2.has_value() && needsGpuTemp(*m_stat2))
       m_monitor->retainGpuTemp();
+    if (m_stat2.has_value() && needsGpuVram(*m_stat2))
+      m_monitor->retainGpuVram();
   }
 }
 
@@ -58,10 +63,14 @@ DesktopSysmonWidget::~DesktopSysmonWidget() {
       m_monitor->releaseCpuTemp();
     if (needsGpuTemp(m_stat))
       m_monitor->releaseGpuTemp();
+    if (needsGpuVram(m_stat))
+      m_monitor->releaseGpuVram();
     if (m_stat2.has_value() && needsCpuTemp(*m_stat2))
       m_monitor->releaseCpuTemp();
     if (m_stat2.has_value() && needsGpuTemp(*m_stat2))
       m_monitor->releaseGpuTemp();
+    if (m_stat2.has_value() && needsGpuVram(*m_stat2))
+      m_monitor->releaseGpuVram();
   }
 }
 
@@ -230,6 +239,12 @@ double DesktopSysmonWidget::normalizedFromStats(DesktopSysmonStat stat, const Sy
     }
     return 0.0;
 
+  case DesktopSysmonStat::GpuVram:
+    if (stats.gpuVramUsedBytes.has_value() && stats.gpuVramTotalBytes.has_value() && *stats.gpuVramTotalBytes > 0) {
+      return static_cast<double>(*stats.gpuVramUsedBytes) / static_cast<double>(*stats.gpuVramTotalBytes);
+    }
+    return 0.0;
+
   case DesktopSysmonStat::RamPct:
     return stats.ramUsagePercent / 100.0;
 
@@ -273,6 +288,13 @@ std::string DesktopSysmonWidget::formatValueFor(DesktopSysmonStat stat) const {
   case DesktopSysmonStat::GpuTemp:
     if (stats.gpuTempC.has_value()) {
       return std::format("{:.0f}°C", *stats.gpuTempC);
+    }
+    return "--";
+
+  case DesktopSysmonStat::GpuVram:
+    if (stats.gpuVramUsedBytes.has_value() && stats.gpuVramTotalBytes.has_value() && *stats.gpuVramTotalBytes > 0) {
+      return std::format("{:.0f}%", 100.0 * static_cast<double>(*stats.gpuVramUsedBytes) /
+                                        static_cast<double>(*stats.gpuVramTotalBytes));
     }
     return "--";
 
@@ -382,6 +404,8 @@ const char* DesktopSysmonWidget::glyphName(DesktopSysmonStat stat) {
     return "cpu-temperature";
   case DesktopSysmonStat::GpuTemp:
     return "temperature";
+  case DesktopSysmonStat::GpuVram:
+    return "memory";
   case DesktopSysmonStat::RamPct:
     return "memory";
   case DesktopSysmonStat::SwapPct:
