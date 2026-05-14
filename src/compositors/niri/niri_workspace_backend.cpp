@@ -430,6 +430,9 @@ void NiriWorkspaceBackend::readSocket() {
       return;
     }
 
+    if (errno == EINTR) {
+      continue;
+    }
     if (errno == EAGAIN || errno == EWOULDBLOCK) {
       break;
     }
