@@ -180,6 +180,9 @@ private:
   bool m_shiftHeld = false;
   bool m_leftShiftHeld = false;
   bool m_rightShiftHeld = false;
+  bool m_altHeld = false;
+  bool m_leftAltHeld = false;
+  bool m_rightAltHeld = false;
   float m_currentEventSceneX = 0.0f;
   float m_currentEventSceneY = 0.0f;
   bool m_inspectorOpen = false;

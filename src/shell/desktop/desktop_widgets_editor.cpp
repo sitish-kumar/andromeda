@@ -169,6 +169,9 @@ void DesktopWidgetsEditor::open(const DesktopWidgetsSnapshot& snapshot) {
   m_shiftHeld = false;
   m_leftShiftHeld = false;
   m_rightShiftHeld = false;
+  m_altHeld = false;
+  m_leftAltHeld = false;
+  m_rightAltHeld = false;
   m_inspectorOpen = false;
   syncSurfaces();
   requestLayout();
@@ -181,6 +184,9 @@ DesktopWidgetsSnapshot DesktopWidgetsEditor::close() {
   m_shiftHeld = false;
   m_leftShiftHeld = false;
   m_rightShiftHeld = false;
+  m_altHeld = false;
+  m_leftAltHeld = false;
+  m_rightAltHeld = false;
   m_open = false;
   return m_snapshot;
 }
@@ -1253,14 +1259,19 @@ void DesktopWidgetsEditor::updateDrag() {
     const float newScale = std::clamp(m_drag.initialState.scale * relativeScale, kMinScale, kMaxScale);
     state->scale = newScale;
 
-    const float scaleRatio = newScale / std::max(0.001f, m_drag.initialState.scale);
-    const float factor = 1.0f - scaleRatio;
-    const float anchorLocalX = -signs.x * halfWidth;
-    const float anchorLocalY = -signs.y * halfHeight;
-    const float cosR = std::cos(m_drag.initialState.rotationRad);
-    const float sinR = std::sin(m_drag.initialState.rotationRad);
-    state->cx = m_drag.initialState.cx + (cosR * anchorLocalX - sinR * anchorLocalY) * factor;
-    state->cy = m_drag.initialState.cy + (sinR * anchorLocalX + cosR * anchorLocalY) * factor;
+    if (!m_altHeld) {
+      const float scaleRatio = newScale / std::max(0.001f, m_drag.initialState.scale);
+      const float factor = 1.0f - scaleRatio;
+      const float anchorLocalX = -signs.x * halfWidth;
+      const float anchorLocalY = -signs.y * halfHeight;
+      const float cosR = std::cos(m_drag.initialState.rotationRad);
+      const float sinR = std::sin(m_drag.initialState.rotationRad);
+      state->cx = m_drag.initialState.cx + (cosR * anchorLocalX - sinR * anchorLocalY) * factor;
+      state->cy = m_drag.initialState.cy + (sinR * anchorLocalX + cosR * anchorLocalY) * factor;
+    } else {
+      state->cx = m_drag.initialState.cx;
+      state->cy = m_drag.initialState.cy;
+    }
   }
 
   float clampWidth = m_drag.intrinsicWidth;
@@ -1395,6 +1406,17 @@ void DesktopWidgetsEditor::onKeyboardEvent(const KeyboardEvent& event) {
     m_shiftHeld = m_leftShiftHeld || m_rightShiftHeld;
     if (!m_shiftHeld && event.sym != XKB_KEY_Shift_L && event.sym != XKB_KEY_Shift_R) {
       m_shiftHeld = shiftFromMask;
+    }
+
+    const bool altFromMask = (event.modifiers & KeyMod::Alt) != 0;
+    if (event.sym == XKB_KEY_Alt_L) {
+      m_leftAltHeld = event.pressed;
+    } else if (event.sym == XKB_KEY_Alt_R) {
+      m_rightAltHeld = event.pressed;
+    }
+    m_altHeld = m_leftAltHeld || m_rightAltHeld;
+    if (!m_altHeld && event.sym != XKB_KEY_Alt_L && event.sym != XKB_KEY_Alt_R) {
+      m_altHeld = altFromMask;
     }
   }
 
