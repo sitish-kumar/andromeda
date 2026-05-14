@@ -106,9 +106,12 @@ namespace {
       if (a == 0) {
         continue;
       }
+      const float lum =
+          (loaded->rgba[i] * 0.299f + loaded->rgba[i + 1] * 0.587f + loaded->rgba[i + 2] * 0.114f) / 255.0f;
       loaded->rgba[i + 0] = rr;
       loaded->rgba[i + 1] = gg;
       loaded->rgba[i + 2] = bb;
+      loaded->rgba[i + 3] = static_cast<std::uint8_t>(std::lround(a * lum));
     }
 
     return loaded;
