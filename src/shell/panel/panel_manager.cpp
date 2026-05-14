@@ -158,7 +158,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     return;
   }
 
-  // If a panel is open (or closing), destroy it immediately — no close animation when switching.
+  // If a panel is open or closing, destroy it immediately with no close animation.
   // Bump the generation first so any in-flight deferred destroyPanel is a no-op.
   if (isOpen() || m_closing) {
     ++m_destroyGeneration;
@@ -178,9 +178,8 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   m_activePanel->setContentScale(resolvePanelContentScale(m_config));
   m_pendingOpenContext = std::string(request.context);
 
-  // Map shields BEFORE the panel surface is created/committed. Within a
-  // single layer, wlroots stacks surfaces by mapping order — the shields
-  // need to be mapped first so the panel ends up on top of them.
+  // Map shields BEFORE the panel surface is created or committed.
+  // Within a single layer, wlroots stacks surfaces by mapping order.
   activateClickShield();
 
   const auto panelWidth = static_cast<std::uint32_t>(m_activePanel->preferredWidth());
@@ -226,9 +225,8 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
                                                   static_cast<std::int32_t>(panelWidth), outputWidth, screenPadding);
   const auto marginTopFromAnchor = clampMargin(request.anchorY - static_cast<float>(panelHeight) * 0.5f,
                                                static_cast<std::int32_t>(panelHeight), outputHeight, screenPadding);
-  // Detached panels with explicit widget-provided anchors should follow that
-  // anchor; otherwise they pick up fixed bar offsets intended for centered
-  // panels and can appear too far from the trigger.
+  // Detached panels with explicit widget-provided anchors should follow that anchor.
+  // Otherwise they pick up fixed bar offsets intended for centered panels.
   const bool useExplicitAnchorForDetached = request.hasExplicitAnchor;
   const auto marginBottomFromAnchor =
       std::max(0, outputHeight - marginTopFromAnchor - static_cast<std::int32_t>(panelHeight));
@@ -307,9 +305,8 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     const auto shadowBleed = shell::surface_shadow::bleed(true, shadowConfig);
     const auto cornerOutset = static_cast<std::int32_t>(std::ceil(cornerRadius));
 
-    // Cross-axis outset wraps the concave-corner overhang and shadow bleed on both sides
-    // perpendicular to the bar. Main-axis bleed extends only away from the bar (panel grows
-    // outward from the bar edge).
+    // Cross-axis outset wraps the concave-corner overhang and shadow bleed.
+    // Main-axis bleed extends only away from the bar edge.
     std::int32_t crossOutsetStart = 0;
     std::int32_t crossOutsetEnd = 0;
     std::int32_t mainBleedAway = 0;
@@ -341,10 +338,9 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
         barIsVertical ? std::max(barTop, outputHeight - mEnds) : barTop + barConfig.thickness;
 
     // Place panel along bar main axis using click anchor or center fallback.
-    // Inset from bar ends = max(bar corner radius, panel corner radius) so the
-    // concave cutout stays within the bar's visible rect.
+    // Inset from bar end equals barR plus panelR for concave cutout nesting.
     const auto computeTotalInset = [&](float barR) -> std::int32_t {
-      return static_cast<std::int32_t>(std::ceil(std::max(barR, cornerRadius)));
+      return static_cast<std::int32_t>(std::ceil(barR + cornerRadius));
     };
     // Bar corner radii at the attachment edge.
     const float barRStart =
@@ -402,10 +398,8 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     m_attachedBarPosition = std::string(barPosition);
     m_attachedToBar = true;
 
-    // Convert panel screen coords to bar-surface-local coords for the shadow exclusion callback.
-    // Bar's surface is bigger than its visible rect (it includes shadow padding), so its origin
-    // sits one shadow bleed inset from the visible bar's top-left. Mirrors the layout in
-    // bar.cpp's bar surface creation (the "mLeft, mTop" anchor offsets).
+    // Convert panel screen coords to bar-surface-local coords for shadow exclusion.
+    // Bar surface origin sits one shadow bleed inset from the visible bar top-left.
     const auto barShadowBleed = shell::surface_shadow::bleed(barConfig.shadow, shadowConfig);
     std::int32_t barSurfaceLocalVisualX = visualX;
     std::int32_t barSurfaceLocalVisualY = visualY;
@@ -421,8 +415,8 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
       barSurfaceLocalVisualY = visualY - barSurfaceOriginY;
     }
 
-    // Geometry passed to the bar for shadow exclusion (bar-surface-local coords). The visible
-    // rect extends past the body by `cornerRadius` on the cross axis to cover concave-corner notches.
+    // Geometry passed to the bar for shadow exclusion in bar-surface-local coords.
+    // Visible rect extends past the body by cornerRadius on the cross axis.
     AttachedPanelGeometry attachedGeometry;
     attachedGeometry.cornerRadius = cornerRadius;
     attachedGeometry.bulgeRadius = cornerRadius;
@@ -439,10 +433,8 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     }
     m_attachedPanelGeometry = attachedGeometry;
 
-    // Layer-shell surface anchored top-left of the output for absolute positioning. The panel
-    // sits on top of the bar in stacking order; the clip-reveal animation hides any pre-reveal
-    // overdraw. exclusive_zone = -1 so the bar's reservation does NOT shift our marginTop —
-    // we compute marginTop directly in screen coords and want the compositor to honor it.
+    // Layer-shell surface anchored top-left of the output for absolute positioning.
+    // exclusive_zone = -1 so the bar reservation does not shift our marginTop.
     auto attachedConfig = LayerSurfaceConfig{
         .nameSpace = "noctalia-panel",
         .layer = m_activePanel->layer(),
@@ -454,12 +446,8 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
         .marginRight = 0,
         .marginBottom = 0,
         .marginLeft = surfaceX,
-        // Default: force exclusive keyboard so panels with text inputs (search field, etc.) work
-        // without a prior click — matches the previous subsurface behavior where the bar
-        // borrowed exclusive focus on the panel's behalf. On Hyprland, Exclusive on a layer
-        // surface also grabs the pointer (any click anywhere reports on this surface), which
-        // breaks outside-click dismissal. When the focus_grab protocol is available we drop to
-        // OnDemand and let the grab grant keyboard focus to the panel per the spec.
+        // Force exclusive keyboard so panels with text inputs work without a prior click.
+        // On Hyprland, Exclusive also grabs the pointer which breaks outside-click dismissal.
         .keyboard = (m_platform != nullptr && m_platform->focusGrabService() != nullptr &&
                      m_platform->focusGrabService()->available())
                         ? LayerShellKeyboard::OnDemand
@@ -485,9 +473,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
       applyPanelCompositorBlur();
       publishAttachedPanelGeometry(m_attachedRevealProgress);
       m_surface->requestRedraw();
-      // Defer the focus grab to the next tick: Hyprland's focus_grab seems to
-      // need the whitelisted surfaces to actually be mapped, which only
-      // happens after the configure round-trip completes.
+      // Defer the focus grab to the next tick after configure round-trip completes.
       const std::uint64_t gen = m_destroyGeneration;
       DeferredCall::callLater([this, gen]() {
         if (m_destroyGeneration == gen) {
@@ -532,8 +518,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   m_attachedToBar = false;
   configureSurfaceCallbacks(*m_surface);
 
-  // Guard against re-entrancy: initialize can process queued Wayland events,
-  // re-entering our event handler before the panel is fully open.
+  // Guard against re-entrancy: initialize can process queued Wayland events.
   m_inTransition = true;
   bool ok = m_layerSurface->initialize(request.output);
   m_inTransition = false;
@@ -547,7 +532,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   m_output = request.output;
   m_wlSurface = m_surface->wlSurface();
   applyPanelCompositorBlur();
-  // Defer the focus grab to the next tick — see attached-path comment above.
+  // Defer the focus grab to the next tick. See attached-path comment above.
   const std::uint64_t gen = m_destroyGeneration;
   DeferredCall::callLater([this, gen]() {
     if (m_destroyGeneration == gen) {
@@ -561,10 +546,8 @@ void PanelManager::activateClickShield() {
   if (m_activePanel == nullptr || m_platform == nullptr) {
     return;
   }
-  // Hyprland: prefer the native focus-grab path; the shield can't reliably
-  // exclude bar surfaces there (input region exclusion isn't honored when
-  // keyboard_interactivity is Exclusive, which is what unlocks pointer
-  // delivery). Skip the shield and let activateFocusGrab() handle it later.
+  // Hyprland: prefer the native focus-grab path. Skip the shield and let
+  // activateFocusGrab handle it later.
   auto* grabService = m_platform->focusGrabService();
   if (grabService != nullptr && grabService->available()) {
     return;
@@ -587,12 +570,8 @@ void PanelManager::activateFocusGrab() {
   if (grabService == nullptr || !grabService->available()) {
     return;
   }
-  // Whitelist the panel + every bar surface. Clicks on whitelisted surfaces
-  // pass through normally so bar widgets can toggle the next panel; clicks
-  // anywhere else clear the grab and we close the panel via the `cleared`
-  // event handler. The panel uses OnDemand keyboard mode on Hyprland (the
-  // focus_grab grants keyboard focus to the panel on its own) so the panel
-  // surface no longer grabs the pointer the way Exclusive does.
+  // Whitelist the panel and every bar surface. Clicks on whitelisted surfaces
+  // pass through normally. Clicks anywhere else clear the grab and close the panel.
   m_focusGrab = grabService->createGrab();
   if (m_focusGrab == nullptr) {
     return;
@@ -630,8 +609,8 @@ void PanelManager::closePanel() {
 
   kLog.debug("panel manager: closing \"{}\"", m_activePanelId);
 
-  // Drop the outside-click handlers as soon as close starts. During the close
-  // animation we want clicks on apps to behave normally, not re-trigger close.
+  // Drop the outside-click handlers as soon as close starts.
+  // During the close animation we want clicks on apps to behave normally.
   deactivateOutsideClickHandlers();
 
   // Disable input during close animation
@@ -678,7 +657,7 @@ void PanelManager::destroyPanel() {
     m_attachedPanelGeometryCallback(m_output, std::nullopt);
   }
   // Defensive: closePanel deactivates first, but destroyPanel can also be
-  // reached directly (e.g. when openPanel preempts an open panel).
+  // reached directly when openPanel preempts an open panel.
   deactivateOutsideClickHandlers();
   m_animations.cancelAll();
   m_closing = false;
@@ -808,7 +787,7 @@ bool PanelManager::onPointerEvent(const PointerEvent& event) {
   case PointerEvent::Type::Button: {
     bool pressed = (event.state == 1);
 
-    // Click outside panel → close
+    // Click outside panel closes it.
     if (pressed && !m_pointerInside) {
       closePanel();
       return false;
@@ -839,8 +818,8 @@ bool PanelManager::onPointerEvent(const PointerEvent& event) {
   }
   }
 
-  // Pointer interactions often only affect visual state. Relayout only when the
-  // scene explicitly accumulated layout invalidation.
+  // Pointer interactions often only affect visual state.
+  // Relayout only when the scene explicitly accumulated layout invalidation.
   if (m_surface != nullptr && m_sceneRoot != nullptr && (m_sceneRoot->paintDirty() || m_sceneRoot->layoutDirty())) {
     if (m_sceneRoot->layoutDirty() && m_activePanel != nullptr && !m_activePanel->deferPointerRelayout()) {
       m_surface->requestLayout();
@@ -983,16 +962,14 @@ std::optional<LayerPopupParentContext> PanelManager::fallbackPopupParentContext(
 }
 
 void PanelManager::onKeyboardEvent(const KeyboardEvent& event) {
-  // m_inTransition means the surface is still initializing. Keyboard events that
-  // arrive during this window must be ignored because the panel is not ready for input yet.
+  // m_inTransition means the surface is still initializing.
+  // Keyboard events during this window must be ignored.
   if (!isOpen() || m_inTransition) {
     return;
   }
 
-  // Gate on compositor focus: route keys only when the surface owning this panel's
-  // input is the one the compositor reports as keyboard-focused. For attached panels
-  // that's the bar's wl_surface (subsurfaces cannot hold focus directly); for layer
-  // surfaces it's the panel's own wl_surface.
+  // Gate on compositor focus: route keys only when the surface owning this panel
+  // input is the one the compositor reports as keyboard-focused.
   if (m_platform != nullptr) {
     wl_surface* const kbSurface = m_platform->lastKeyboardSurface();
     const bool onPanel = (m_wlSurface != nullptr && kbSurface == m_wlSurface);
@@ -1095,15 +1072,12 @@ void PanelManager::applyDetachedReveal(float progress) {
   if (m_attachedToBar || m_sceneRoot == nullptr) {
     return;
   }
-  // Scale the entire scene (background, content, shadow) from 0.95 -> 1.0
-  // around the surface center. Opacity is intentionally not animated because
-  // the compositor blur region (ext-background-effect-v1) is not opacity-aware
-  // and would mismatch a fading content layer.
+  // Scale the entire scene from 0.95 to 1.0 around the surface center.
+  // Opacity is not animated because the compositor blur region is not opacity-aware.
   const float s = 1.0f - 0.05f * (1.0f - m_detachedRevealProgress);
   m_sceneRoot->setScale(s);
-  // Fade only the content layer; the background must stay fully opaque so the
-  // compositor blur region is always covered by an opaque rect (otherwise the
-  // blur would leak through during the animation).
+  // Fade only the content layer. The background must stay fully opaque so the
+  // compositor blur region is always covered by an opaque rect.
   if (m_contentNode != nullptr) {
     m_contentNode->setOpacity(m_detachedRevealProgress);
   }
@@ -1123,15 +1097,8 @@ void PanelManager::publishAttachedPanelGeometry(float revealProgress) {
 
   auto geometry = *m_attachedPanelGeometry;
 
-  // The bar-side concave bulges live at the bg's bar-side edge and only enter the
-  // visible clip during the last `radius / panelMainDim` portion of the animation
-  // (before that, the bg's bar-side edge is still behind the bar). Until they're
-  // visible, the visible panel silhouette is a sharp-edged rectangle on the bar
-  // side, so the cutout's bulge radius and per-side cross-axis extension scale up
-  // linearly only as the bulges slide into view. The away-side convex corners are
-  // visible throughout the animation (they're at the leading edge of the slide),
-  // so cornerRadius is left at its full value — the bar uses cornerRadius for the
-  // away-side corners and bulgeRadius for the bar-side corners.
+  // The bar-side concave bulges only enter the visible clip during the last
+  // portion of the animation. Until then the silhouette is a sharp-edged rectangle.
   const float originalRadius = geometry.cornerRadius;
   const bool vertical = (m_attachedRevealDirection == AttachedRevealDirection::Right ||
                          m_attachedRevealDirection == AttachedRevealDirection::Left);
@@ -1140,14 +1107,8 @@ void PanelManager::publishAttachedPanelGeometry(float revealProgress) {
   const float crossDelta = originalRadius - bulgeRevealAmount;
   geometry.bulgeRadius = bulgeRevealAmount;
 
-  // The away-side convex corners are visible at full radius throughout the animation
-  // (they're at the leading edge of the slide). The rect shader clamps each corner's
-  // radius to min(body_w, body_h)/2 — so when the visible body is shorter than
-  // 2*cornerRadius along the main axis, the convex corners would shrink and shift
-  // inward, no longer matching the visible bg's curve. Extend the body main-axis
-  // dimension toward the bar so it's at least 2*cornerRadius. The extension goes
-  // BAR-WARD into the bar's body area, where the bar covers the cutout's effect on
-  // the shadow underneath (and the cutout's straight bar-side edge stays hidden).
+  // The away-side convex corners are visible at full radius throughout the animation.
+  // Extend the body main-axis dimension toward the bar so it is at least 2*cornerRadius.
   const float minMainDim = 2.0f * originalRadius;
 
   switch (m_attachedRevealDirection) {
@@ -1197,10 +1158,8 @@ void PanelManager::publishAttachedPanelGeometry(float revealProgress) {
 }
 
 void PanelManager::applyPanelCompositorBlur() {
-  // The blur region is submitted on every panel surface (attached subsurface or layer-shell),
-  // but as of niri 26.04 the ext-background-effect-v1 implementation honors regions on
-  // layer-shell / xdg-toplevel surfaces only — subsurfaces are ignored. Attached panels will
-  // start blurring automatically once niri (or another compositor) gains subsurface support.
+  // The blur region is submitted on every panel surface.
+  // As of niri 26.04, subsurfaces are ignored for ext-background-effect-v1.
   if (m_surface == nullptr || m_activePanel == nullptr) {
     return;
   }
@@ -1228,13 +1187,8 @@ void PanelManager::applyPanelCompositorBlur() {
     bw = scaledW;
     bh = scaledH;
   } else {
-    // Mirror the slide that the visible content node performs in applyAttachedReveal:
-    // the full bg shape (body + concave bar-side bulges + convex away-side corners) is
-    // tessellated at the bg's animated position, then strips are clipped to the surface
-    // bounds below — the same clipping the m_attachedRevealClipNode applies to the
-    // visible content. This keeps the blur region in lockstep with what's actually on
-    // screen, so the bar-side concave bulges only contribute blur once the panel's
-    // bar-side edge has slid into view (i.e. near the end of the open animation).
+    // Mirror the slide that the visible content node performs in applyAttachedReveal.
+    // This keeps the blur region in lockstep with what is actually on screen.
     const float progress = std::clamp(m_attachedRevealProgress, 0.0f, 1.0f);
     if (progress < 0.001f) {
       m_surface->clearBlurRegion();
@@ -1352,8 +1306,7 @@ void PanelManager::onConfigReloaded() {
     return;
   }
 
-  // Re-apply compositor blur for any open panel — covers both attached and layer-shell
-  // panels reacting to shell.panel.background_blur changes.
+  // Re-apply compositor blur for any open panel on background_blur changes.
   applyPanelCompositorBlur();
   const float panelBackgroundOpacity =
       m_attachedToBar ? m_attachedBackgroundOpacity : resolveDetachedPanelBackgroundOpacity(m_config);
@@ -1504,7 +1457,7 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
   const float panelH = m_panelVisualHeight > 0 ? static_cast<float>(m_panelVisualHeight) : h;
   const float attachedRadius = m_attachedToBar ? Style::scaledRadiusXl(m_activePanel->contentScale()) : 0.0f;
   const bool barIsVertical = m_attachedToBar && (m_attachedBarPosition == "left" || m_attachedBarPosition == "right");
-  // The bg extends past the body along the bar's CROSS axis to host the concave-corner notches.
+  // The bg extends past the body along the bar cross axis for concave-corner notches.
   const float bgX = barIsVertical ? panelX : panelX - attachedRadius;
   const float bgY = barIsVertical ? panelY - attachedRadius : panelY;
   const float bgW = barIsVertical ? panelW : panelW + attachedRadius * 2.0f;
@@ -1549,9 +1502,8 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
     m_panelContactShadowNode->setSize(contactW, contactH);
   }
 
-  // Re-apply opacity-dependent styling for bg/shadow/contact-shadow. Cheap and ensures
-  // these stay in sync with m_attachedBackgroundOpacity if the bar config changed and
-  // we got here via a buildScene path rather than onConfigReloaded().
+  // Re-apply opacity-dependent styling for bg, shadow, and contact-shadow.
+  // Ensures these stay in sync if the bar config changed.
   if (m_attachedToBar) {
     applyAttachedDecorationStyle();
   }
