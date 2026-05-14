@@ -24,6 +24,21 @@ namespace {
   constexpr auto kReconnectMax = std::chrono::seconds(30);
   constexpr std::string_view kEventStreamRequest = "\"EventStream\"\n";
 
+  [[nodiscard]] bool writeAll(int fd, std::string_view data) {
+    std::size_t offset = 0;
+    while (offset < data.size()) {
+      const ssize_t written = ::write(fd, data.data() + offset, data.size() - offset);
+      if (written <= 0) {
+        if (written < 0 && errno == EINTR) {
+          continue;
+        }
+        return false;
+      }
+      offset += static_cast<std::size_t>(written);
+    }
+    return true;
+  }
+
   [[nodiscard]] std::optional<std::uint64_t> jsonUnsigned(const nlohmann::json& json) {
     if (json.is_number_unsigned()) {
       return json.get<std::uint64_t>();
@@ -363,8 +378,7 @@ void NiriWorkspaceBackend::connectIfNeeded() {
     return;
   }
 
-  const auto written = ::write(fd, kEventStreamRequest.data(), kEventStreamRequest.size());
-  if (written < 0 || static_cast<std::size_t>(written) != kEventStreamRequest.size()) {
+  if (!writeAll(fd, kEventStreamRequest)) {
     ::close(fd);
     scheduleReconnect();
     return;
