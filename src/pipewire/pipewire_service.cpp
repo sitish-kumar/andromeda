@@ -307,6 +307,11 @@ PipeWireService::PipeWireService() {
   while (pw_loop_iterate(loop, 0) > 0) {
   }
 
+  enumDefaultAudioDeviceParams();
+  while (pw_loop_iterate(loop, 0) > 0) {
+  }
+  rebuildState();
+
   kLog.info("connected (version {})", pw_get_library_version());
   const auto* sink = defaultSink();
   if (sink != nullptr) {
@@ -393,6 +398,30 @@ void PipeWireService::dispatch() {
   auto* loop = m_loop;
   // Process all pending events without blocking
   while (pw_loop_iterate(loop, 0) > 0) {
+  }
+  if (m_pendingDefaultAudioDevicePropsEnum) {
+    m_pendingDefaultAudioDevicePropsEnum = false;
+    enumDefaultAudioDeviceParams();
+    while (pw_loop_iterate(loop, 0) > 0) {
+    }
+  }
+}
+
+void PipeWireService::enumDefaultAudioDeviceParams() {
+  for (auto& [id, nd] : m_nodes) {
+    (void)id;
+    if (nd == nullptr || nd->proxy == nullptr) {
+      continue;
+    }
+    const bool defaultSink =
+        nd->mediaClass == "Audio/Sink" && !m_defaultSinkName.empty() && nd->name == m_defaultSinkName;
+    const bool defaultSource =
+        nd->mediaClass == "Audio/Source" && !m_defaultSourceName.empty() && nd->name == m_defaultSourceName;
+    if (!defaultSink && !defaultSource) {
+      continue;
+    }
+    pw_node_enum_params(nd->proxy, 0, SPA_PARAM_Props, 0, UINT32_MAX, nullptr);
+    pw_node_enum_params(nd->proxy, 0, SPA_PARAM_Route, 0, UINT32_MAX, nullptr);
   }
 }
 
@@ -541,6 +570,13 @@ void PipeWireService::onRegistryGlobal(std::uint32_t id, const char* type, std::
     }
 
     m_nodes[id] = std::move(nd);
+    NodeData& stored = *m_nodes[id];
+    if (stored.mediaClass == "Audio/Sink" && !m_defaultSinkName.empty() && stored.name == m_defaultSinkName) {
+      m_pendingDefaultAudioDevicePropsEnum = true;
+    } else if (stored.mediaClass == "Audio/Source" && !m_defaultSourceName.empty() &&
+               stored.name == m_defaultSourceName) {
+      m_pendingDefaultAudioDevicePropsEnum = true;
+    }
     rebuildState();
   }
 
@@ -914,6 +950,7 @@ void PipeWireService::parseDefaultNodes(const spa_dict* props) {
   }
 
   if (changed) {
+    m_pendingDefaultAudioDevicePropsEnum = true;
     rebuildState();
   }
 }

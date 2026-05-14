@@ -162,6 +162,9 @@ public:
   void parseDefaultNodes(const struct spa_dict* props);
 
 private:
+  bool m_pendingDefaultAudioDevicePropsEnum = false;
+  void enumDefaultAudioDeviceParams();
+
   void rebuildState();
   void refreshNodeIdentity(NodeData& nd);
   void applyVolumePropsFromDict(NodeData& nd, const spa_dict* props);
