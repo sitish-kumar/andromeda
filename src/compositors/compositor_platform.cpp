@@ -205,6 +205,7 @@ namespace {
           });
     case compositors::CompositorKind::Mango:
       return std::make_unique<LambdaOutputPowerBackend>(&setMangoOutputPower, true);
+    case compositors::CompositorKind::Labwc:
     case compositors::CompositorKind::Unknown:
       return std::make_unique<LambdaOutputPowerBackend>(&setGenericOutputPower);
     }
@@ -220,6 +221,7 @@ namespace {
       return std::make_unique<FocusedOutputAdapter<NiriOutputBackend>>(runtimeRegistry.niri());
     case compositors::CompositorKind::Sway:
       return std::make_unique<FocusedOutputAdapter<SwayOutputBackend>>(runtimeRegistry.sway());
+    case compositors::CompositorKind::Labwc:
     case compositors::CompositorKind::Mango:
     case compositors::CompositorKind::Unknown:
       break;
@@ -235,6 +237,7 @@ namespace {
     case compositors::CompositorKind::Hyprland:
     case compositors::CompositorKind::Sway:
     case compositors::CompositorKind::Mango:
+    case compositors::CompositorKind::Labwc:
     case compositors::CompositorKind::Unknown:
       break;
     }
@@ -252,6 +255,7 @@ namespace {
       return std::make_unique<KeyboardLayoutBackendAdapter<MangoKeyboardBackend>>();
     case compositors::CompositorKind::Sway:
       return std::make_unique<KeyboardLayoutBackendAdapter<SwayKeyboardBackend>>(runtimeRegistry.sway());
+    case compositors::CompositorKind::Labwc:
     case compositors::CompositorKind::Unknown:
       break;
     }

@@ -19,6 +19,8 @@
 #include "util/string_utils.h"
 
 #include <algorithm>
+#include <cerrno>
+#include <csignal>
 #include <cstdlib>
 #include <json.hpp>
 #include <memory>
@@ -44,6 +46,58 @@ namespace {
     return compositor;
   }
 
+  void logLabwcExitFailure(std::string_view command, const process::RunResult& result) {
+    if (!result.err.empty()) {
+      kLog.warn("logout: {} failed with code {}: {}", command, result.exitCode, result.err);
+    } else if (!result.out.empty()) {
+      kLog.warn("logout: {} failed with code {}: {}", command, result.exitCode, result.out);
+    } else {
+      kLog.warn("logout: {} failed with code {}", command, result.exitCode);
+    }
+  }
+
+  bool terminateLabwcPid() {
+    const char* pidEnv = std::getenv("LABWC_PID");
+    if (pidEnv == nullptr || pidEnv[0] == '\0') {
+      kLog.warn("logout: LABWC_PID is not set");
+      return false;
+    }
+
+    errno = 0;
+    char* end = nullptr;
+    const long pid = std::strtol(pidEnv, &end, 10);
+    if (errno != 0 || end == pidEnv || (end != nullptr && *end != '\0') || pid <= 1) {
+      kLog.warn("logout: LABWC_PID has invalid value \"{}\"", pidEnv);
+      return false;
+    }
+
+    if (::kill(static_cast<pid_t>(pid), SIGTERM) != 0) {
+      kLog.warn("logout: failed to terminate LABWC_PID={}", pidEnv);
+      return false;
+    }
+    return true;
+  }
+
+  bool doLabwcLogout() {
+    if (process::commandExists("labwc")) {
+      const process::RunResult longResult = process::runSync({"labwc", "--exit"});
+      if (longResult) {
+        return true;
+      }
+      logLabwcExitFailure("labwc --exit", longResult);
+
+      const process::RunResult shortResult = process::runSync({"labwc", "-e"});
+      if (shortResult) {
+        return true;
+      }
+      logLabwcExitFailure("labwc -e", shortResult);
+    } else {
+      kLog.warn("logout: labwc executable not found");
+    }
+
+    return terminateLabwcPid();
+  }
+
   bool doLogout() {
     const compositors::CompositorKind compositor = logActionContext("logout");
 
@@ -64,17 +118,22 @@ namespace {
     }
     case compositors::CompositorKind::Mango:
       return process::launchFirstAvailable({{"mmsg", "-q"}});
+    case compositors::CompositorKind::Labwc:
+      if (doLabwcLogout()) {
+        return true;
+      }
+      break;
     case compositors::CompositorKind::Unknown:
       break;
     }
 
-    if (process::launchFirstAvailable({{"systemctl", "--user", "stop", "graphical-session.target"}})) {
-      return true;
-    }
     if (const char* sessionId = std::getenv("XDG_SESSION_ID"); sessionId != nullptr && sessionId[0] != '\0') {
       if (process::launchFirstAvailable({{"loginctl", "terminate-session", sessionId}})) {
         return true;
       }
+    }
+    if (process::launchFirstAvailable({{"systemctl", "--user", "stop", "graphical-session.target"}})) {
+      return true;
     }
     if (const char* user = std::getenv("USER"); user != nullptr && user[0] != '\0') {
       if (process::launchFirstAvailable({{"loginctl", "terminate-user", user}})) {
