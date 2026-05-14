@@ -118,12 +118,19 @@ bool PowerProfilesService::setActiveProfile(std::string_view profile) {
     return false;
   }
 
+  const std::string requested(profile);
+  if (requested != m_state.activeProfile) {
+    m_pendingLocalActiveProfile = requested;
+  }
   try {
-    m_proxy->setProperty("ActiveProfile").onInterface(k_powerProfilesInterface).toValue(std::string(profile));
+    m_proxy->setProperty("ActiveProfile").onInterface(k_powerProfilesInterface).toValue(requested);
     refresh();
     return true;
   } catch (const sdbus::Error& e) {
-    kLog.warn("power profile change failed profile={} err={}", std::string(profile), e.what());
+    if (m_pendingLocalActiveProfile.has_value() && *m_pendingLocalActiveProfile == requested) {
+      m_pendingLocalActiveProfile.reset();
+    }
+    kLog.warn("power profile change failed profile={} err={}", requested, e.what());
     return false;
   }
 }
@@ -160,14 +167,26 @@ PowerProfilesState PowerProfilesService::readState() const {
   return next;
 }
 
+PowerProfilesChangeOrigin PowerProfilesService::consumeActiveProfileChangeOrigin(std::string_view profile) {
+  if (!m_pendingLocalActiveProfile.has_value()) {
+    return PowerProfilesChangeOrigin::External;
+  }
+  const bool matchesLocalRequest = *m_pendingLocalActiveProfile == profile;
+  m_pendingLocalActiveProfile.reset();
+  return matchesLocalRequest ? PowerProfilesChangeOrigin::Noctalia : PowerProfilesChangeOrigin::External;
+}
+
 void PowerProfilesService::emitChangedIfNeeded(const PowerProfilesState& next) {
   if (next == m_state) {
     return;
   }
 
+  const bool activeProfileChanged = next.activeProfile != m_state.activeProfile;
+  const PowerProfilesChangeOrigin origin =
+      activeProfileChanged ? consumeActiveProfileChangeOrigin(next.activeProfile) : PowerProfilesChangeOrigin::External;
   m_state = next;
   if (m_changeCallback) {
-    m_changeCallback(m_state);
+    m_changeCallback(m_state, origin);
   }
 }
 

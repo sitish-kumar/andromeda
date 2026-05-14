@@ -544,7 +544,8 @@ void Application::initServices() {
   if (m_systemBus != nullptr) {
     try {
       m_powerProfilesService = std::make_unique<PowerProfilesService>(*m_systemBus);
-      m_powerProfilesService->setChangeCallback([this, shouldRefreshControlCenter](const PowerProfilesState& state) {
+      m_powerProfilesService->setChangeCallback([this, shouldRefreshControlCenter](const PowerProfilesState& state,
+                                                                                   PowerProfilesChangeOrigin origin) {
         m_bar.refresh();
         if (shouldRefreshControlCenter()) {
           m_panelManager.refresh();
@@ -554,7 +555,8 @@ void Application::initServices() {
         if (active.empty()) {
           return;
         }
-        if (m_prevPowerProfileActiveForNotification.has_value() && *m_prevPowerProfileActiveForNotification != active) {
+        if (m_prevPowerProfileActiveForNotification.has_value() && *m_prevPowerProfileActiveForNotification != active &&
+            origin != PowerProfilesChangeOrigin::Noctalia) {
           std::string glyphIconSpec("noctalia-glyph:");
           glyphIconSpec.append(profileGlyphName(active));
           m_notificationManager.addInternal(
