@@ -188,22 +188,7 @@ void NiriWorkspaceBackend::apply(std::vector<Workspace>& workspaces, const std::
     return;
   }
 
-  std::vector<const WorkspaceState*> candidates;
-  candidates.reserve(m_workspaces.size());
-  for (const auto& [workspaceId, workspace] : m_workspaces) {
-    (void)workspaceId;
-    if (!outputName.empty() && workspace.output != outputName) {
-      continue;
-    }
-    candidates.push_back(&workspace);
-  }
-
-  std::sort(candidates.begin(), candidates.end(), [](const WorkspaceState* lhs, const WorkspaceState* rhs) {
-    if (lhs->idx != rhs->idx) {
-      return lhs->idx < rhs->idx;
-    }
-    return lhs->id < rhs->id;
-  });
+  const std::vector<const WorkspaceState*> candidates = sortedWorkspaceCandidatesForOutput(outputName);
 
   std::vector<const WorkspaceState*> matches(workspaces.size(), nullptr);
   std::unordered_map<std::uint64_t, bool> used;
@@ -267,7 +252,8 @@ void NiriWorkspaceBackend::apply(std::vector<Workspace>& workspaces, const std::
   }
 }
 
-std::vector<std::string> NiriWorkspaceBackend::workspaceKeys(const std::string& outputName) const {
+std::vector<const NiriWorkspaceBackend::WorkspaceState*>
+NiriWorkspaceBackend::sortedWorkspaceCandidatesForOutput(const std::string& outputName) const {
   std::vector<const WorkspaceState*> candidates;
   candidates.reserve(m_workspaces.size());
   for (const auto& [workspaceId, workspace] : m_workspaces) {
@@ -284,6 +270,11 @@ std::vector<std::string> NiriWorkspaceBackend::workspaceKeys(const std::string& 
     }
     return lhs->id < rhs->id;
   });
+  return candidates;
+}
+
+std::vector<std::string> NiriWorkspaceBackend::workspaceKeys(const std::string& outputName) const {
+  const std::vector<const WorkspaceState*> candidates = sortedWorkspaceCandidatesForOutput(outputName);
 
   std::vector<std::string> result;
   result.reserve(candidates.size());

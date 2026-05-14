@@ -83,6 +83,8 @@ private:
   [[nodiscard]] static std::optional<std::uint64_t> parseUnsigned(const std::string& value);
   [[nodiscard]] static std::optional<std::size_t> parseLeadingNumber(const std::string& value);
   [[nodiscard]] static std::string workspaceKey(const WorkspaceState& workspace);
+  [[nodiscard]] std::vector<const WorkspaceState*>
+  sortedWorkspaceCandidatesForOutput(const std::string& outputName) const;
   void recomputeOccupancy();
   void notifyChanged() const;
 
