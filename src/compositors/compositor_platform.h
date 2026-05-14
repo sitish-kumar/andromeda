@@ -24,7 +24,6 @@ namespace compositors {
   class CompositorRuntimeRegistry;
   class FocusedOutputBackend;
   class OutputPowerBackend;
-  class WorkspaceMetadataBackend;
   namespace niri {
     class NiriRuntime;
   }

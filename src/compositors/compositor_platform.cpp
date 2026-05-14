@@ -37,33 +37,6 @@ namespace compositors {
     [[nodiscard]] virtual bool isPerOutputTargeted() const noexcept { return false; }
   };
 
-  class WorkspaceMetadataBackend {
-  public:
-    using ChangeCallback = std::function<void()>;
-
-    virtual ~WorkspaceMetadataBackend() = default;
-    virtual void setChangeCallback(ChangeCallback callback) = 0;
-    [[nodiscard]] virtual int pollFd() const noexcept { return -1; }
-    [[nodiscard]] virtual short pollEvents() const noexcept { return POLLIN | POLLHUP | POLLERR; }
-    [[nodiscard]] virtual int pollTimeoutMs() const noexcept { return -1; }
-    virtual void dispatchPoll(short /*revents*/) {}
-    virtual void apply(std::vector<Workspace>& /*workspaces*/, const std::string& /*outputName*/ = {}) const {}
-    [[nodiscard]] virtual std::vector<std::string> workspaceKeys(const std::string& /*outputName*/ = {}) const {
-      return {};
-    }
-    [[nodiscard]] virtual std::unordered_map<std::string, std::vector<std::string>>
-    appIdsByWorkspace(const std::string& /*outputName*/ = {}) const {
-      return {};
-    }
-    [[nodiscard]] virtual std::vector<WorkspaceWindow> workspaceWindows(const std::string& /*outputName*/ = {}) const {
-      return {};
-    }
-    [[nodiscard]] virtual bool canTrackOverviewState() const noexcept { return false; }
-    [[nodiscard]] virtual bool hasOverviewState() const noexcept { return false; }
-    [[nodiscard]] virtual bool isOverviewOpen() const noexcept { return true; }
-    virtual void cleanup() = 0;
-  };
-
 } // namespace compositors
 
 namespace {
@@ -146,37 +119,6 @@ namespace {
     bool m_perOutputTargeted = false;
   };
 
-  class NiriWorkspaceMetadataBackend final : public compositors::WorkspaceMetadataBackend {
-  public:
-    explicit NiriWorkspaceMetadataBackend(compositors::niri::NiriRuntime& runtime) : m_backend(runtime) {}
-
-    void setChangeCallback(ChangeCallback callback) override { m_backend.setChangeCallback(std::move(callback)); }
-    [[nodiscard]] int pollFd() const noexcept override { return m_backend.pollFd(); }
-    [[nodiscard]] short pollEvents() const noexcept override { return m_backend.pollEvents(); }
-    [[nodiscard]] int pollTimeoutMs() const noexcept override { return m_backend.pollTimeoutMs(); }
-    void dispatchPoll(short revents) override { m_backend.dispatchPoll(revents); }
-    void apply(std::vector<Workspace>& workspaces, const std::string& outputName = {}) const override {
-      m_backend.apply(workspaces, outputName);
-    }
-    [[nodiscard]] std::vector<std::string> workspaceKeys(const std::string& outputName = {}) const override {
-      return m_backend.workspaceKeys(outputName);
-    }
-    [[nodiscard]] std::unordered_map<std::string, std::vector<std::string>>
-    appIdsByWorkspace(const std::string& outputName = {}) const override {
-      return m_backend.appIdsByWorkspace(outputName);
-    }
-    [[nodiscard]] std::vector<WorkspaceWindow> workspaceWindows(const std::string& outputName = {}) const override {
-      return m_backend.workspaceWindows(outputName);
-    }
-    [[nodiscard]] bool canTrackOverviewState() const noexcept override { return m_backend.canTrackOverviewState(); }
-    [[nodiscard]] bool hasOverviewState() const noexcept override { return m_backend.hasOverviewState(); }
-    [[nodiscard]] bool isOverviewOpen() const noexcept override { return m_backend.isOverviewOpen(); }
-    void cleanup() override { m_backend.cleanup(); }
-
-  private:
-    NiriWorkspaceBackend m_backend;
-  };
-
   [[nodiscard]] bool setMangoOutputPower(WaylandConnection& wayland, bool on) {
     return compositors::mango::setOutputPower(wayland, on);
   }
@@ -234,7 +176,7 @@ namespace {
   createWorkspaceMetadataBackend(compositors::CompositorRuntimeRegistry& runtimeRegistry) {
     switch (compositors::detect()) {
     case compositors::CompositorKind::Niri:
-      return std::make_unique<NiriWorkspaceMetadataBackend>(runtimeRegistry.niri());
+      return std::make_unique<NiriWorkspaceBackend>(runtimeRegistry.niri());
     case compositors::CompositorKind::Hyprland:
     case compositors::CompositorKind::Sway:
     case compositors::CompositorKind::Mango:
