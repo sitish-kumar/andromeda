@@ -71,6 +71,7 @@ private:
   void start();
   void stop();
   void samplingLoop();
+  void logDetectedSources();
 
   [[nodiscard]] static std::optional<CpuTotals> readCpuTotals();
   struct MemData {
