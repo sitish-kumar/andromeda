@@ -1250,7 +1250,17 @@ void DesktopWidgetsEditor::updateDrag() {
     const float halfHeight = std::max(1.0f, m_drag.intrinsicHeight * 0.5f);
     const float denominator = halfWidth * halfWidth + halfHeight * halfHeight;
     const float relativeScale = (localX * halfWidth + localY * halfHeight) / std::max(1.0f, denominator);
-    state->scale = std::clamp(m_drag.initialState.scale * relativeScale, kMinScale, kMaxScale);
+    const float newScale = std::clamp(m_drag.initialState.scale * relativeScale, kMinScale, kMaxScale);
+    state->scale = newScale;
+
+    const float scaleRatio = newScale / std::max(0.001f, m_drag.initialState.scale);
+    const float factor = 1.0f - scaleRatio;
+    const float anchorLocalX = -signs.x * halfWidth;
+    const float anchorLocalY = -signs.y * halfHeight;
+    const float cosR = std::cos(m_drag.initialState.rotationRad);
+    const float sinR = std::sin(m_drag.initialState.rotationRad);
+    state->cx = m_drag.initialState.cx + (cosR * anchorLocalX - sinR * anchorLocalY) * factor;
+    state->cy = m_drag.initialState.cy + (sinR * anchorLocalX + cosR * anchorLocalY) * factor;
   }
 
   float clampWidth = m_drag.intrinsicWidth;
