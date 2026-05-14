@@ -9,6 +9,7 @@
 #include "compositors/mango/mango_output_backend.h"
 #include "compositors/niri/niri_keyboard_backend.h"
 #include "compositors/niri/niri_output_backend.h"
+#include "compositors/niri/niri_runtime.h"
 #include "compositors/niri/niri_workspace_backend.h"
 #include "compositors/sway/sway_keyboard_backend.h"
 #include "compositors/sway/sway_output_backend.h"
@@ -313,6 +314,12 @@ void CompositorPlatform::cleanup() {
 }
 
 wl_display* CompositorPlatform::display() const noexcept { return m_wayland.display(); }
+
+compositors::niri::NiriRuntime& CompositorPlatform::niriRuntime() noexcept { return m_runtimeRegistry->niri(); }
+
+const compositors::niri::NiriRuntime& CompositorPlatform::niriRuntime() const noexcept {
+  return m_runtimeRegistry->niri();
+}
 
 bool CompositorPlatform::hasXdgShell() const noexcept { return m_wayland.hasXdgShell(); }
 

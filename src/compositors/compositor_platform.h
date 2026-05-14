@@ -25,6 +25,9 @@ namespace compositors {
   class FocusedOutputBackend;
   class OutputPowerBackend;
   class WorkspaceMetadataBackend;
+  namespace niri {
+    class NiriRuntime;
+  }
 } // namespace compositors
 
 struct WorkspaceWindowAssignment {
@@ -112,6 +115,9 @@ public:
   [[nodiscard]] bool tracksOverviewState() const noexcept;
   [[nodiscard]] bool hasOverviewState() const noexcept;
   [[nodiscard]] bool isOverviewOpen() const noexcept;
+
+  [[nodiscard]] compositors::niri::NiriRuntime& niriRuntime() noexcept;
+  [[nodiscard]] const compositors::niri::NiriRuntime& niriRuntime() const noexcept;
 
 private:
   struct WorkspaceModelSnapshot {

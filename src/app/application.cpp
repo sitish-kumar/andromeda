@@ -933,7 +933,8 @@ void Application::initUi() {
   });
   m_panelManager.registerPanel("clipboard", std::move(clipboardPanel));
   syncClipboardService();
-  m_panelManager.registerPanel("session", std::make_unique<SessionPanel>(&m_configService, m_sessionActionHooks));
+  m_panelManager.registerPanel("session", std::make_unique<SessionPanel>(&m_configService, m_sessionActionHooks,
+                                                                         &m_compositorPlatform.niriRuntime()));
   m_panelManager.registerPanel("test", std::make_unique<TestPanel>());
   m_panelManager.registerPanel("control-center",
                                std::make_unique<ControlCenterPanel>(

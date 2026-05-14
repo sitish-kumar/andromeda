@@ -17,6 +17,10 @@ class InputArea;
 class Renderer;
 class ConfigService;
 
+namespace compositors::niri {
+  class NiriRuntime;
+}
+
 struct SessionActionHooks {
   std::function<bool()> onLogout;
   std::function<bool()> onReboot;
@@ -25,8 +29,9 @@ struct SessionActionHooks {
 
 class SessionPanel : public Panel {
 public:
-  explicit SessionPanel(ConfigService* config, SessionActionHooks actionHooks = {})
-      : m_config(config), m_actionHooks(std::move(actionHooks)) {}
+  explicit SessionPanel(ConfigService* config, SessionActionHooks actionHooks = {},
+                        compositors::niri::NiriRuntime* niriRuntime = nullptr)
+      : m_config(config), m_actionHooks(std::move(actionHooks)), m_niriRuntime(niriRuntime) {}
 
   void create() override;
   void onOpen(std::string_view context) override;
@@ -69,4 +74,5 @@ private:
   bool m_mouseActive = false;
   ConfigService* m_config = nullptr;
   SessionActionHooks m_actionHooks;
+  compositors::niri::NiriRuntime* m_niriRuntime = nullptr;
 };

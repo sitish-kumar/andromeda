@@ -98,7 +98,7 @@ namespace {
     return terminateLabwcPid();
   }
 
-  bool doLogout() {
+  bool doLogout(compositors::niri::NiriRuntime* niriRuntime) {
     const compositors::CompositorKind compositor = logActionContext("logout");
 
     switch (compositor) {
@@ -113,7 +113,8 @@ namespace {
     case compositors::CompositorKind::Sway:
       return process::launchFirstAvailable({{"swaymsg", "exit"}, {"i3-msg", "exit"}});
     case compositors::CompositorKind::Niri: {
-      compositors::niri::NiriRuntime runtime;
+      compositors::niri::NiriRuntime scratch;
+      compositors::niri::NiriRuntime& runtime = niriRuntime != nullptr ? *niriRuntime : scratch;
       return runtime.requestAction(nlohmann::json{{"Quit", nlohmann::json{{"skip_confirmation", true}}}}, true);
     }
     case compositors::CompositorKind::Mango:
@@ -176,8 +177,8 @@ namespace {
     return true;
   }
 
-  void runPowerAction(std::function<bool()> hook, bool (*action)(), std::string_view actionName) {
-    std::thread([hook = std::move(hook), action, actionName = std::string(actionName)]() mutable {
+  void runPowerAction(std::function<bool()> hook, std::function<bool()> action, std::string_view actionName) {
+    std::thread([hook = std::move(hook), action = std::move(action), actionName = std::string(actionName)]() mutable {
       if (hook && !hook()) {
         kLog.warn("{} cancelled because a configured hook failed", actionName);
         return;
@@ -455,15 +456,16 @@ void SessionPanel::invokeEntry(const SessionPanelActionConfig& cfg) {
   }
 
   if (cfg.action == "logout") {
-    runPowerAction(m_actionHooks.onLogout, doLogout, "logout");
+    compositors::niri::NiriRuntime* niri = m_niriRuntime;
+    runPowerAction(m_actionHooks.onLogout, [niri]() { return doLogout(niri); }, "logout");
     return;
   }
   if (cfg.action == "reboot") {
-    runPowerAction(m_actionHooks.onReboot, doReboot, "reboot");
+    runPowerAction(m_actionHooks.onReboot, []() { return doReboot(); }, "reboot");
     return;
   }
   if (cfg.action == "shutdown") {
-    runPowerAction(m_actionHooks.onShutdown, doShutdown, "shutdown");
+    runPowerAction(m_actionHooks.onShutdown, []() { return doShutdown(); }, "shutdown");
     return;
   }
   if (cfg.action == "lock") {
