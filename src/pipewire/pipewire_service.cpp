@@ -277,25 +277,27 @@ namespace {
     if (inner == nullptr) {
       return;
     }
-    std::uint32_t n = 0;
-    std::uint32_t elemSize = 0;
-    std::uint32_t elemType = 0;
-    const void* data = spa_pod_get_array_full(inner, &n, &elemSize, &elemType);
-    if (data != nullptr && n > 0 && elemType == SPA_TYPE_Float && elemSize == sizeof(float)) {
-      const auto* samples = static_cast<const float*>(data);
-      float maxVol = 0.0f;
-      for (std::uint32_t i = 0; i < n; ++i) {
-        const float cubic = samples[i];
-        const float linear = std::cbrt(std::max(0.0f, cubic));
-        if (linear > maxVol) {
-          maxVol = linear;
+    if (spa_pod_is_array(inner)) {
+      const auto* arr = reinterpret_cast<const spa_pod_array*>(inner);
+      const auto n = static_cast<std::uint32_t>(SPA_POD_ARRAY_N_VALUES(arr));
+      const std::uint32_t elemSize = SPA_POD_ARRAY_VALUE_SIZE(arr);
+      const std::uint32_t elemType = SPA_POD_ARRAY_VALUE_TYPE(arr);
+      if (n > 0 && elemType == SPA_TYPE_Float && elemSize == sizeof(float)) {
+        const auto* samples = static_cast<const float*>(SPA_POD_ARRAY_VALUES(arr));
+        float maxVol = 0.0f;
+        for (std::uint32_t i = 0; i < n; ++i) {
+          const float cubic = samples[i];
+          const float linear = std::cbrt(std::max(0.0f, cubic));
+          if (linear > maxVol) {
+            maxVol = linear;
+          }
         }
+        outVolume = maxVol;
+        if (outChannelCount != nullptr) {
+          *outChannelCount = n;
+        }
+        return;
       }
-      outVolume = maxVol;
-      if (outChannelCount != nullptr) {
-        *outChannelCount = n;
-      }
-      return;
     }
     float cubic = 0.0f;
     if (spa_pod_get_float(inner, &cubic) == 0) {
