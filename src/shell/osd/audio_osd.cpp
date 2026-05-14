@@ -109,7 +109,8 @@ void AudioOsd::onAudioStateChanged(const PipeWireService& service) {
       source != nullptr ? static_cast<int>(std::round(std::max(0.0f, source->volume) * 100.0f)) : 0;
   const bool sourceMuted = source != nullptr ? source->muted : false;
 
-  if (std::chrono::steady_clock::now() < m_suppressUntil) {
+  const auto now = std::chrono::steady_clock::now();
+  if (now < m_suppressUntil) {
     m_lastSinkId = sinkId;
     m_lastSinkPercent = sinkPercent;
     m_lastSinkMuted = sinkMuted;
@@ -119,12 +120,21 @@ void AudioOsd::onAudioStateChanged(const PipeWireService& service) {
     return;
   }
 
+  const bool sinkChanged =
+      sink != nullptr && (sinkId != m_lastSinkId || sinkPercent != m_lastSinkPercent || sinkMuted != m_lastSinkMuted);
+  const bool sinkRouteChanged = sink != nullptr && sinkId != m_lastSinkId;
+  const bool sinkDisappeared = sink == nullptr && m_lastSinkId != 0;
+  const bool sourceChanged = source != nullptr && (sourceId != m_lastSourceId || sourcePercent != m_lastSourcePercent ||
+                                                   sourceMuted != m_lastSourceMuted);
+
+  if (sinkRouteChanged || sinkDisappeared) {
+    m_suppressAutoInputOsdUntil = now + std::chrono::milliseconds(400);
+  }
+
   if (m_overlay != nullptr) {
-    if (sink != nullptr &&
-        (sinkId != m_lastSinkId || sinkPercent != m_lastSinkPercent || sinkMuted != m_lastSinkMuted)) {
+    if (sinkChanged) {
       showOutput(sink->id, sink->volume, sinkMuted);
-    } else if (source != nullptr && (sourceId != m_lastSourceId || sourcePercent != m_lastSourcePercent ||
-                                     sourceMuted != m_lastSourceMuted)) {
+    } else if (sourceChanged && now >= m_suppressAutoInputOsdUntil) {
       showInput(source->id, source->volume, sourceMuted);
     }
   }
