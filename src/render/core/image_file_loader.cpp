@@ -16,10 +16,6 @@
 
 namespace {
 
-  bool isLikelySymbolicIconPath(std::string_view path) {
-    return path.find("symbolic") != std::string_view::npos || path.find("/status/") != std::string_view::npos;
-  }
-
   // Convert a cairo ARGB32 image surface (premultiplied BGRA on little-endian)
   // into the non-premultiplied RGBA buffer the rest of the pipeline expects.
   void argb32ToRgba(const unsigned char* src, int srcStride, std::uint8_t* dst, int width, int height) {
@@ -47,7 +43,7 @@ namespace {
   }
 
   std::optional<LoadedImageFile> rasterizeSvg(const std::vector<std::uint8_t>& fileData, int targetSize,
-                                              bool symbolicMonochrome, std::string* errorMessage) {
+                                              std::string* errorMessage) {
     GError* gerror = nullptr;
     RsvgHandle* handle = rsvg_handle_new_from_data(fileData.data(), fileData.size(), &gerror);
     if (handle == nullptr) {
@@ -141,18 +137,6 @@ namespace {
     argb32ToRgba(cairo_image_surface_get_data(surface), cairo_image_surface_get_stride(surface), loaded.rgba.data(),
                  width, height);
 
-    if (symbolicMonochrome) {
-      for (std::size_t i = 0; i + 3 < loaded.rgba.size(); i += 4) {
-        const std::uint8_t a = loaded.rgba[i + 3];
-        if (a == 0) {
-          continue;
-        }
-        loaded.rgba[i + 0] = 255;
-        loaded.rgba[i + 1] = 255;
-        loaded.rgba[i + 2] = 255;
-      }
-    }
-
     cairo_surface_destroy(surface);
     g_object_unref(handle);
     return loaded;
@@ -177,7 +161,7 @@ std::optional<LoadedImageFile> loadImageFile(const std::string& path, int target
   }
 
   if (path.ends_with(".svg") || path.ends_with(".SVG")) {
-    return rasterizeSvg(fileData, targetSize, isLikelySymbolicIconPath(path), errorMessage);
+    return rasterizeSvg(fileData, targetSize, errorMessage);
   }
 
   if (auto decoded = decodeRasterImage(fileData.data(), fileData.size(), errorMessage)) {

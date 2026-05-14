@@ -3,6 +3,7 @@
 #include "core/log.h"
 #include "core/ui_phase.h"
 #include "dbus/tray/tray_service.h"
+#include "render/core/image_file_loader.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
@@ -79,6 +80,38 @@ namespace {
 
   bool isSymbolicIconPath(std::string_view path) {
     return path.find("symbolic") != std::string_view::npos || path.find("/status/") != std::string_view::npos;
+  }
+
+  bool isSvgPath(std::string_view path) { return path.ends_with(".svg") || path.ends_with(".SVG"); }
+
+  std::optional<LoadedImageFile> loadSymbolicTrayIcon(const std::string& path, int targetSize,
+                                                      const Color& symbolicColor) {
+    std::string loadError;
+    auto loaded = loadImageFile(path, targetSize, &loadError);
+    if (!loaded) {
+      kLog.debug("tray widget symbolic icon decode failed path={} error={}", path, loadError);
+      return std::nullopt;
+    }
+
+    auto toByte = [](float channel) -> std::uint8_t {
+      const float clamped = std::clamp(channel, 0.0f, 1.0f);
+      return static_cast<std::uint8_t>(std::lround(clamped * 255.0f));
+    };
+    const std::uint8_t rr = toByte(symbolicColor.r);
+    const std::uint8_t gg = toByte(symbolicColor.g);
+    const std::uint8_t bb = toByte(symbolicColor.b);
+
+    for (std::size_t i = 0; i + 3 < loaded->rgba.size(); i += 4) {
+      const std::uint8_t a = loaded->rgba[i + 3];
+      if (a == 0) {
+        continue;
+      }
+      loaded->rgba[i + 0] = rr;
+      loaded->rgba[i + 1] = gg;
+      loaded->rgba[i + 2] = bb;
+    }
+
+    return loaded;
   }
 
   bool isUniqueBusName(std::string_view value) { return !value.empty() && value.front() == ':'; }
@@ -413,9 +446,22 @@ void TrayWidget::rebuild(Renderer& renderer) {
       auto image = std::make_unique<Image>();
       image->setFit(ImageFit::Contain);
       image->setSize(iconSize, iconSize);
-      if (image->setSourceFile(renderer, iconPath, iconRequestSize, true)) {
-        if (isSymbolicIconPath(iconPath)) {
-          image->setTint(resolveColorSpec(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface))));
+      bool loadedFromFile = false;
+      const bool symbolicPath = isSymbolicIconPath(iconPath);
+      const Color symbolicColor = resolveColorSpec(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)));
+      if (symbolicPath && isSvgPath(iconPath)) {
+        if (auto symbolic = loadSymbolicTrayIcon(iconPath, iconRequestSize, symbolicColor)) {
+          loadedFromFile = image->setSourceRaw(renderer, symbolic->rgba.data(), symbolic->rgba.size(), symbolic->width,
+                                               symbolic->height, 0, PixmapFormat::RGBA, true);
+        }
+      }
+      if (!loadedFromFile) {
+        loadedFromFile = image->setSourceFile(renderer, iconPath, iconRequestSize, true);
+      }
+
+      if (loadedFromFile) {
+        if (symbolicPath && !isSvgPath(iconPath)) {
+          image->setTint(symbolicColor);
         }
         iconW = iconSize;
         iconH = iconSize;
