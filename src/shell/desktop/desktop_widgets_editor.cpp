@@ -60,11 +60,12 @@ namespace {
     float y = 1.0f;
   };
 
-  float snapToGrid(float value, std::int32_t cellSize) {
+  float snapToGrid(float value, std::int32_t cellSize, float origin) {
     if (cellSize <= 0) {
       return value;
     }
-    return std::round(value / static_cast<float>(cellSize)) * static_cast<float>(cellSize);
+    const float cell = static_cast<float>(cellSize);
+    return origin + std::round((value - origin) / cell) * cell;
   }
 
   float normalizeAngle(float radians) {
@@ -410,10 +411,15 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     const float height = root->height();
     const float cell = static_cast<float>(m_snapshot.grid.cellSize);
     const std::int32_t majorInterval = std::max(1, m_snapshot.grid.majorInterval);
+    const float centerX = width * 0.5f;
+    const float centerY = height * 0.5f;
+    const float firstX = centerX - std::floor(centerX / cell) * cell;
+    const float firstY = centerY - std::floor(centerY / cell) * cell;
 
-    for (float x = 0.0f; x <= width; x += cell) {
+    for (float x = firstX; x <= width; x += cell) {
       auto line = std::make_unique<Box>();
-      const bool major = (static_cast<int>(std::lround(x / cell)) % majorInterval) == 0;
+      const int idx = std::abs(static_cast<int>(std::lround((x - centerX) / cell)));
+      const bool major = (idx % majorInterval) == 0;
       line->setFill(colorSpecFromRole(major ? ColorRole::Primary : ColorRole::Outline, major ? 0.18f : 0.08f));
       line->setPosition(x, 0.0f);
       line->setFrameSize(1.0f, height);
@@ -421,9 +427,10 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
       root->addChild(std::move(line));
     }
 
-    for (float y = 0.0f; y <= height; y += cell) {
+    for (float y = firstY; y <= height; y += cell) {
       auto line = std::make_unique<Box>();
-      const bool major = (static_cast<int>(std::lround(y / cell)) % majorInterval) == 0;
+      const int idx = std::abs(static_cast<int>(std::lround((y - centerY) / cell)));
+      const bool major = (idx % majorInterval) == 0;
       line->setFill(colorSpecFromRole(major ? ColorRole::Primary : ColorRole::Outline, major ? 0.18f : 0.08f));
       line->setPosition(0.0f, y);
       line->setFrameSize(width, 1.0f);
@@ -1203,12 +1210,19 @@ void DesktopWidgetsEditor::updateDrag() {
     return;
   }
 
+  float gridOriginX = 0.0f;
+  float gridOriginY = 0.0f;
+  if (const OverlaySurface* dragSurface = findSurface(m_drag.surfaceOutputName)) {
+    gridOriginX = static_cast<float>(dragSurface->surface->width()) * 0.5f;
+    gridOriginY = static_cast<float>(dragSurface->surface->height()) * 0.5f;
+  }
+
   if (m_drag.mode == DragMode::Move) {
     state->cx = m_drag.initialState.cx + (m_currentEventSceneX - m_drag.startSceneX);
     state->cy = m_drag.initialState.cy + (m_currentEventSceneY - m_drag.startSceneY);
     if (shouldSnap()) {
-      state->cx = snapToGrid(state->cx, m_snapshot.grid.cellSize);
-      state->cy = snapToGrid(state->cy, m_snapshot.grid.cellSize);
+      state->cx = snapToGrid(state->cx, m_snapshot.grid.cellSize, gridOriginX);
+      state->cy = snapToGrid(state->cy, m_snapshot.grid.cellSize, gridOriginY);
     }
   } else if (m_drag.mode == DragMode::Rotate) {
     const float startAngle =
@@ -1223,9 +1237,9 @@ void DesktopWidgetsEditor::updateDrag() {
   } else if (m_drag.mode == DragMode::Scale) {
     const CornerSigns signs = cornerSigns(static_cast<std::size_t>(m_drag.scaleCorner));
     const float cornerX =
-        shouldSnap() ? snapToGrid(m_currentEventSceneX, m_snapshot.grid.cellSize) : m_currentEventSceneX;
+        shouldSnap() ? snapToGrid(m_currentEventSceneX, m_snapshot.grid.cellSize, gridOriginX) : m_currentEventSceneX;
     const float cornerY =
-        shouldSnap() ? snapToGrid(m_currentEventSceneY, m_snapshot.grid.cellSize) : m_currentEventSceneY;
+        shouldSnap() ? snapToGrid(m_currentEventSceneY, m_snapshot.grid.cellSize, gridOriginY) : m_currentEventSceneY;
     const float dx = cornerX - m_drag.initialState.cx;
     const float dy = cornerY - m_drag.initialState.cy;
     const float cosTheta = std::cos(-m_drag.initialState.rotationRad);
