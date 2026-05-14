@@ -603,28 +603,60 @@ namespace settings {
                                 {"shell", "panel", "transparency_mode"},
                                 asSegmented(enumSelect(kPanelTransparencyModes, cfg.shell.panel.transparencyMode)),
                                 "glass opacity alpha translucent cards blur"));
+    entries.push_back(makeEntry("panels", "control-center", tr("settings.schema.panels.attach-control-center.label"),
+                                tr("settings.schema.panels.attach-control-center.description"),
+                                {"shell", "panel", "attach_control_center"},
+                                ToggleSetting{cfg.shell.panel.attachControlCenter}, "attach bar panel"));
+    {
+      auto e = makeEntry("panels", "control-center", tr("settings.schema.panels.open-near-click-control-center.label"),
+                         tr("settings.schema.panels.open-near-click-control-center.description"),
+                         {"shell", "panel", "open_near_click_control_center"},
+                         ToggleSetting{cfg.shell.panel.openNearClickControlCenter}, "open near click position anchor");
+      e.visibleWhen = SettingVisibility{{"shell", "panel", "attach_control_center"}, {"true"}};
+      entries.push_back(std::move(e));
+    }
     entries.push_back(makeEntry(
         "panels", "control-center", tr("settings.schema.panels.home-shortcuts.label"),
         tr("settings.schema.panels.home-shortcuts.description"), {"control_center", "shortcuts"},
         ShortcutListSetting{
             .items = cfg.controlCenter.shortcuts, .suggestedOptions = controlCenterShortcutOptions(), .maxItems = 6},
         "quick settings shortcuts toggles wifi bluetooth caffeine night light dnd power media weather clipboard"));
-    entries.push_back(makeEntry("panels", "control-center", tr("settings.schema.panels.attach-control-center.label"),
-                                tr("settings.schema.panels.attach-control-center.description"),
-                                {"shell", "panel", "attach_control_center"},
-                                ToggleSetting{cfg.shell.panel.attachControlCenter}, "attach bar panel"));
     entries.push_back(makeEntry("panels", "launcher", tr("settings.schema.panels.attach-launcher.label"),
                                 tr("settings.schema.panels.attach-launcher.description"),
                                 {"shell", "panel", "attach_launcher"}, ToggleSetting{cfg.shell.panel.attachLauncher},
                                 "attach bar panel"));
+    {
+      auto e = makeEntry("panels", "launcher", tr("settings.schema.panels.open-near-click-launcher.label"),
+                         tr("settings.schema.panels.open-near-click-launcher.description"),
+                         {"shell", "panel", "open_near_click_launcher"},
+                         ToggleSetting{cfg.shell.panel.openNearClickLauncher}, "open near click position anchor");
+      e.visibleWhen = SettingVisibility{{"shell", "panel", "attach_launcher"}, {"true"}};
+      entries.push_back(std::move(e));
+    }
     entries.push_back(makeEntry("panels", "clipboard", tr("settings.schema.panels.attach-clipboard.label"),
                                 tr("settings.schema.panels.attach-clipboard.description"),
                                 {"shell", "panel", "attach_clipboard"}, ToggleSetting{cfg.shell.panel.attachClipboard},
                                 "attach bar panel"));
+    {
+      auto e = makeEntry("panels", "clipboard", tr("settings.schema.panels.open-near-click-clipboard.label"),
+                         tr("settings.schema.panels.open-near-click-clipboard.description"),
+                         {"shell", "panel", "open_near_click_clipboard"},
+                         ToggleSetting{cfg.shell.panel.openNearClickClipboard}, "open near click position anchor");
+      e.visibleWhen = SettingVisibility{{"shell", "panel", "attach_clipboard"}, {"true"}};
+      entries.push_back(std::move(e));
+    }
     entries.push_back(makeEntry("panels", "wallpaper", tr("settings.schema.panels.attach-wallpaper.label"),
                                 tr("settings.schema.panels.attach-wallpaper.description"),
                                 {"shell", "panel", "attach_wallpaper"}, ToggleSetting{cfg.shell.panel.attachWallpaper},
                                 "attach bar panel"));
+    {
+      auto e = makeEntry("panels", "wallpaper", tr("settings.schema.panels.open-near-click-wallpaper.label"),
+                         tr("settings.schema.panels.open-near-click-wallpaper.description"),
+                         {"shell", "panel", "open_near_click_wallpaper"},
+                         ToggleSetting{cfg.shell.panel.openNearClickWallpaper}, "open near click position anchor");
+      e.visibleWhen = SettingVisibility{{"shell", "panel", "attach_wallpaper"}, {"true"}};
+      entries.push_back(std::move(e));
+    }
     entries.push_back(makeEntry("panels", "session-panel", tr("settings.schema.panels.session-actions.label"),
                                 tr("settings.schema.panels.session-actions.description"),
                                 {"shell", "session", "actions"},

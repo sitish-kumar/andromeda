@@ -353,7 +353,19 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     const auto totalEndInset = computeTotalInset(barREnd);
     std::int32_t visualX = 0;
     std::int32_t visualY = 0;
-    const bool useAnchorForAttached = request.hasAnchorPosition;
+    const bool openNearClickEnabled = [&]() {
+      const auto& pc = m_config->config().shell.panel;
+      if (m_activePanelId == "control-center")
+        return pc.openNearClickControlCenter;
+      if (m_activePanelId == "launcher")
+        return pc.openNearClickLauncher;
+      if (m_activePanelId == "clipboard")
+        return pc.openNearClickClipboard;
+      if (m_activePanelId == "wallpaper")
+        return pc.openNearClickWallpaper;
+      return false;
+    }();
+    const bool useAnchorForAttached = request.hasAnchorPosition && openNearClickEnabled;
     if (barIsVertical) {
       const auto minY = barTop + totalStartInset;
       const auto maxY = std::max(minY, barBottom - static_cast<std::int32_t>(panelHeight) - totalEndInset);

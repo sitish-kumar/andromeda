@@ -1573,6 +1573,22 @@
           "label": "Attach to Bar",
           "description": "Attach the Wallpaper panel to the bar when a suitable bar is available"
         },
+        "open-near-click-control-center": {
+          "label": "Open Near Click",
+          "description": "Position the Control Center near the click location on the bar instead of centering it"
+        },
+        "open-near-click-launcher": {
+          "label": "Open Near Click",
+          "description": "Position the Launcher near the click location on the bar instead of centering it"
+        },
+        "open-near-click-clipboard": {
+          "label": "Open Near Click",
+          "description": "Position the Clipboard near the click location on the bar instead of centering it"
+        },
+        "open-near-click-wallpaper": {
+          "label": "Open Near Click",
+          "description": "Position the Wallpaper picker near the click location on the bar instead of centering it"
+        },
         "session-actions": {
           "label": "Entries",
           "description": "Power menu entries, order, custom commands, and icons.",

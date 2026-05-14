@@ -1186,6 +1186,18 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       if (auto v = (*panelTbl)["attach_wallpaper"].value<bool>()) {
         shell.panel.attachWallpaper = *v;
       }
+      if (auto v = (*panelTbl)["open_near_click_control_center"].value<bool>()) {
+        shell.panel.openNearClickControlCenter = *v;
+      }
+      if (auto v = (*panelTbl)["open_near_click_launcher"].value<bool>()) {
+        shell.panel.openNearClickLauncher = *v;
+      }
+      if (auto v = (*panelTbl)["open_near_click_clipboard"].value<bool>()) {
+        shell.panel.openNearClickClipboard = *v;
+      }
+      if (auto v = (*panelTbl)["open_near_click_wallpaper"].value<bool>()) {
+        shell.panel.openNearClickWallpaper = *v;
+      }
     }
     if (const auto* screenCornersTbl = (*shellTbl)["screen_corners"].as_table()) {
       if (auto v = (*screenCornersTbl)["enabled"].value<bool>()) {
