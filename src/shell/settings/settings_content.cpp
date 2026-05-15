@@ -907,11 +907,10 @@ namespace settings {
         groupHeader->setPadding(Style::spaceSm * scale, 0.0f, 0.0f, 0.0f);
         groupHeader->addChild(std::make_unique<Separator>());
         groupHeader->addChild(
-            makeLabel(title, Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::OnSurfaceVariant), true));
+            makeLabel(title, Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::Secondary), true));
         section.addChild(std::move(groupHeader));
       } else {
-        section.addChild(
-            makeLabel(title, Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::OnSurfaceVariant), true));
+        section.addChild(makeLabel(title, Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::Secondary), true));
       }
     };
 

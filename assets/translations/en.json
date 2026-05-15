@@ -1462,11 +1462,11 @@
           "placeholder": "gimp {path} or satty -f -"
         },
         "osd-position": {
-          "label": "OSD Position",
+          "label": "Screen Position",
           "description": "Screen position for OSD popups"
         },
         "osd-lock-keys": {
-          "label": "Lock Keys OSD",
+          "label": "Lock Keys",
           "description": "Show OSD popups for Caps Lock, Num Lock, and Scroll Lock changes"
         }
       },
@@ -1901,7 +1901,7 @@
           "description": "Enable the built-in notification daemon"
         },
         "position": {
-          "label": "Toast Position",
+          "label": "Screen Position",
           "description": "Screen position for notification toasts"
         },
         "layer": {
@@ -1909,7 +1909,7 @@
           "description": "Choose whether toasts use the top or overlay layer"
         },
         "toast-opacity": {
-          "label": "Toast Opacity",
+          "label": "Background Opacity",
           "description": "Background opacity of notification toasts"
         },
         "offset-x": {

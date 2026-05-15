@@ -82,8 +82,7 @@ namespace settings {
       wrap->setGap(Style::spaceXs * scale);
       wrap->setPadding(Style::spaceSm * scale, 0.0f, 0.0f, 0.0f);
       wrap->addChild(std::make_unique<Separator>());
-      wrap->addChild(
-          makeLabel(title, Style::fontSizeCaption * scale, colorSpecFromRole(ColorRole::OnSurfaceVariant), true));
+      wrap->addChild(makeLabel(title, Style::fontSizeCaption * scale, colorSpecFromRole(ColorRole::Secondary), true));
       return wrap;
     }
 
