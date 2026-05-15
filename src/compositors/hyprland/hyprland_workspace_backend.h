@@ -58,7 +58,7 @@ private:
   };
 
   struct ToplevelState {
-    std::string workspace;
+    int workspaceId;
     std::string appId;
     std::string title;
     bool urgent = false;
@@ -73,10 +73,10 @@ private:
   void recomputeWorkspaceFlags();
 
   void handleEvent(std::string_view event, std::string_view data);
-  void handleFocusedMonitor(std::string_view monitorName, std::string_view workspaceName);
-  void handleWorkspaceActivated(std::string_view workspaceName);
-  void clearUrgentForWorkspace(std::string_view workspaceName);
-  void moveToplevel(std::uint64_t address, std::string_view workspaceName);
+  void handleFocusedMonitor(std::string_view monitorName, int workspaceId);
+  void handleWorkspaceActivated(int workspaceId);
+  void clearUrgentForWorkspace(int workspaceId);
+  void moveToplevel(std::uint64_t address, int workspaceId);
 
   [[nodiscard]] WorkspaceState* findWorkspaceById(int id);
   [[nodiscard]] WorkspaceState* findWorkspaceByName(std::string_view name);
@@ -88,7 +88,7 @@ private:
   OutputNameResolver m_outputNameResolver;
   std::vector<WorkspaceState> m_workspaces;
   std::unordered_map<std::uint64_t, ToplevelState> m_toplevels;
-  std::unordered_map<std::string, std::string> m_activeWorkspaceByMonitor;
+  std::unordered_map<std::string, int> m_activeWorkspaceByMonitor;
   std::size_t m_nextOrdinal = 0;
   ChangeCallback m_changeCallback;
 };
