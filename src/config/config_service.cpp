@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
@@ -28,6 +29,14 @@
 #include <xkbcommon/xkbcommon.h>
 
 namespace {
+
+  std::optional<double> finiteDouble(const toml::node_view<const toml::node>& node) {
+    auto v = node.value<double>();
+    if (v && !std::isfinite(*v)) {
+      return std::nullopt;
+    }
+    return v;
+  }
 
   std::string expandUserPathString(const std::string& path) {
     if (path.empty()) {
@@ -862,7 +871,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
         bar.attachPanels = *v;
       if (auto v = (*barTbl)["thickness"].value<int64_t>())
         bar.thickness = std::clamp(static_cast<std::int32_t>(*v), 10, 300);
-      if (auto v = (*barTbl)["background_opacity"].value<double>())
+      if (auto v = finiteDouble((*barTbl)["background_opacity"]))
         bar.backgroundOpacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
       if (auto v = (*barTbl)["radius"].value<int64_t>()) {
         const auto r = std::clamp(static_cast<std::int32_t>(*v), 0, 500);
@@ -892,7 +901,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
         bar.shadow = *v;
       if (auto v = (*barTbl)["contact_shadow"].value<bool>())
         bar.contactShadow = *v;
-      if (auto v = (*barTbl)["scale"].value<double>())
+      if (auto v = finiteDouble((*barTbl)["scale"]))
         bar.scale = std::clamp(static_cast<float>(*v), 0.5f, 4.0f);
       if (auto* n = (*barTbl)["start"].as_array())
         bar.startWidgets = readStringArray(*n);
@@ -910,13 +919,13 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       if (auto fgStr = (*barTbl)["capsule_foreground"].value<std::string>()) {
         bar.widgetCapsuleForeground = colorSpecFromConfigString(*fgStr);
       }
-      if (auto v = (*barTbl)["capsule_padding"].value<double>()) {
+      if (auto v = finiteDouble((*barTbl)["capsule_padding"])) {
         bar.widgetCapsulePadding = std::clamp(static_cast<float>(*v), 0.0f, 48.0f);
       }
-      if (auto v = (*barTbl)["capsule_radius"].value<double>()) {
+      if (auto v = finiteDouble((*barTbl)["capsule_radius"])) {
         bar.widgetCapsuleRadius = std::clamp(*v, 0.0, 80.0);
       }
-      if (auto v = (*barTbl)["capsule_opacity"].value<double>()) {
+      if (auto v = finiteDouble((*barTbl)["capsule_opacity"])) {
         bar.widgetCapsuleOpacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
       }
       if (barTbl->contains("capsule_border")) {
@@ -959,7 +968,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
             ovr.attachPanels = *v;
           if (auto v = (*monTbl)["thickness"].value<int64_t>())
             ovr.thickness = std::clamp(static_cast<std::int32_t>(*v), 10, 300);
-          if (auto v = (*monTbl)["background_opacity"].value<double>())
+          if (auto v = finiteDouble((*monTbl)["background_opacity"]))
             ovr.backgroundOpacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
           if (auto v = (*monTbl)["radius"].value<int64_t>())
             ovr.radius = std::clamp(static_cast<std::int32_t>(*v), 0, 500);
@@ -979,7 +988,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
             ovr.padding = static_cast<std::int32_t>(*v);
           if (auto v = (*monTbl)["widget_spacing"].value<int64_t>())
             ovr.widgetSpacing = static_cast<std::int32_t>(*v);
-          if (auto v = (*monTbl)["scale"].value<double>())
+          if (auto v = finiteDouble((*monTbl)["scale"]))
             ovr.scale = std::clamp(static_cast<float>(*v), 0.5f, 4.0f);
           if (auto v = (*monTbl)["shadow"].value<bool>())
             ovr.shadow = *v;
@@ -1001,13 +1010,13 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
           if (auto fgStr = (*monTbl)["capsule_foreground"].value<std::string>()) {
             ovr.widgetCapsuleForeground = colorSpecFromConfigString(*fgStr);
           }
-          if (auto v = (*monTbl)["capsule_padding"].value<double>()) {
+          if (auto v = finiteDouble((*monTbl)["capsule_padding"])) {
             ovr.widgetCapsulePadding = std::clamp(*v, 0.0, 48.0);
           }
-          if (auto v = (*monTbl)["capsule_radius"].value<double>()) {
+          if (auto v = finiteDouble((*monTbl)["capsule_radius"])) {
             ovr.widgetCapsuleRadius = std::clamp(*v, 0.0, 80.0);
           }
-          if (auto v = (*monTbl)["capsule_opacity"].value<double>()) {
+          if (auto v = finiteDouble((*monTbl)["capsule_opacity"])) {
             ovr.widgetCapsuleOpacity = std::clamp(*v, 0.0, 1.0);
           }
           if (monTbl->contains("capsule_border")) {
@@ -1108,10 +1117,10 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
   // Parse [shell]
   if (auto* shellTbl = tbl["shell"].as_table()) {
     auto& shell = config.shell;
-    if (auto v = (*shellTbl)["ui_scale"].value<double>()) {
+    if (auto v = finiteDouble((*shellTbl)["ui_scale"])) {
       shell.uiScale = std::clamp(static_cast<float>(*v), 0.5f, 4.0f);
     }
-    if (auto v = (*shellTbl)["corner_radius_scale"].value<double>()) {
+    if (auto v = finiteDouble((*shellTbl)["corner_radius_scale"])) {
       shell.cornerRadiusScale = std::clamp(static_cast<float>(*v), 0.0f, 2.0f);
     }
     if (auto v = (*shellTbl)["font_family"].value<std::string>()) {
@@ -1147,7 +1156,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       if (auto enabled = (*animationTbl)["enabled"].value<bool>()) {
         shell.animation.enabled = *enabled;
       }
-      if (auto v = (*animationTbl)["speed"].value<double>()) {
+      if (auto v = finiteDouble((*animationTbl)["speed"])) {
         shell.animation.speed = std::clamp(static_cast<float>(*v), 0.05f, 4.0f);
       }
     }
@@ -1161,7 +1170,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       if (auto v = (*shadowTbl)["offset_y"].value<int64_t>()) {
         shell.shadow.offsetY = std::clamp(static_cast<std::int32_t>(*v), -40, 40);
       }
-      if (auto v = (*shadowTbl)["alpha"].value<double>()) {
+      if (auto v = finiteDouble((*shadowTbl)["alpha"])) {
         shell.shadow.alpha = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
       }
     }
@@ -1372,9 +1381,9 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       if (wp.transitions.empty())
         wp.transitions.push_back(WallpaperTransition::Fade);
     }
-    if (auto v = (*wpTbl)["transition_duration"].value<double>())
+    if (auto v = finiteDouble((*wpTbl)["transition_duration"]))
       wp.transitionDurationMs = std::clamp(static_cast<float>(*v), 100.0f, 30000.0f);
-    if (auto v = (*wpTbl)["edge_smoothness"].value<double>())
+    if (auto v = finiteDouble((*wpTbl)["edge_smoothness"]))
       wp.edgeSmoothness = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
     if (auto v = (*wpTbl)["directory"].value<std::string>())
       wp.directory = expandUserPathString(*v);
@@ -1438,9 +1447,9 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     auto& ov = config.backdrop;
     if (auto v = (*ovTbl)["enabled"].value<bool>())
       ov.enabled = *v;
-    if (auto v = (*ovTbl)["blur_intensity"].value<double>())
+    if (auto v = finiteDouble((*ovTbl)["blur_intensity"]))
       ov.blurIntensity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
-    if (auto v = (*ovTbl)["tint_intensity"].value<double>())
+    if (auto v = finiteDouble((*ovTbl)["tint_intensity"]))
       ov.tintIntensity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
   }
 
@@ -1461,7 +1470,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       notif.position = *v;
     if (auto v = notifTable["layer"].value<std::string>())
       notif.layer = *v;
-    if (auto v = notifTable["background_opacity"].value<double>())
+    if (auto v = finiteDouble(notifTable["background_opacity"]))
       notif.backgroundOpacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
     if (auto v = notifTable["offset_x"].value<int64_t>())
       notif.offsetX = static_cast<int>(*v);
@@ -1495,7 +1504,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       dock.padding = std::clamp(static_cast<std::int32_t>(*v), 0, 100);
     if (auto v = (*dockTbl)["item_spacing"].value<int64_t>())
       dock.itemSpacing = std::clamp(static_cast<std::int32_t>(*v), 0, 100);
-    if (auto v = (*dockTbl)["background_opacity"].value<double>())
+    if (auto v = finiteDouble((*dockTbl)["background_opacity"]))
       dock.backgroundOpacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
     if (auto v = (*dockTbl)["radius"].value<int64_t>()) {
       const auto r = std::clamp(static_cast<std::int32_t>(*v), 0, 500);
@@ -1525,13 +1534,13 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       dock.autoHide = *v;
     if (auto v = (*dockTbl)["reserve_space"].value<bool>())
       dock.reserveSpace = *v;
-    if (auto v = (*dockTbl)["active_scale"].value<double>())
+    if (auto v = finiteDouble((*dockTbl)["active_scale"]))
       dock.activeScale = std::clamp(static_cast<float>(*v), 0.1f, 1.75f);
-    if (auto v = (*dockTbl)["inactive_scale"].value<double>())
+    if (auto v = finiteDouble((*dockTbl)["inactive_scale"]))
       dock.inactiveScale = std::clamp(static_cast<float>(*v), 0.1f, 1.0f);
-    if (auto v = (*dockTbl)["active_opacity"].value<double>())
+    if (auto v = finiteDouble((*dockTbl)["active_opacity"]))
       dock.activeOpacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
-    if (auto v = (*dockTbl)["inactive_opacity"].value<double>())
+    if (auto v = finiteDouble((*dockTbl)["inactive_opacity"]))
       dock.inactiveOpacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
     if (auto v = (*dockTbl)["show_dots"].value<bool>())
       dock.showDots = *v;
@@ -1594,7 +1603,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     if (auto v = (*audioTbl)["enable_sounds"].value<bool>()) {
       audio.enableSounds = *v;
     }
-    if (auto v = (*audioTbl)["sound_volume"].value<double>()) {
+    if (auto v = finiteDouble((*audioTbl)["sound_volume"])) {
       audio.soundVolume = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
     }
     if (auto v = (*audioTbl)["volume_change_sound"].value<std::string>()) {
@@ -1708,10 +1717,10 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     if (auto v = (*nightlightTbl)["stop_time"].value<std::string>()) {
       nightlight.stopTime = *v;
     }
-    if (auto v = (*nightlightTbl)["latitude"].value<double>()) {
+    if (auto v = finiteDouble((*nightlightTbl)["latitude"])) {
       nightlight.latitude = *v;
     }
-    if (auto v = (*nightlightTbl)["longitude"].value<double>()) {
+    if (auto v = finiteDouble((*nightlightTbl)["longitude"])) {
       nightlight.longitude = *v;
     }
     if (auto v = (*nightlightTbl)["temperature_day"].value<int64_t>()) {
@@ -1779,7 +1788,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
 
   // Parse [idle] and [idle.behavior.*]
   if (auto* idleTbl = tbl["idle"].as_table()) {
-    if (auto v = (*idleTbl)["pre_action_fade_seconds"].value<double>()) {
+    if (auto v = finiteDouble((*idleTbl)["pre_action_fade_seconds"])) {
       const double d = *v;
       config.idle.preActionFadeSeconds = static_cast<float>(std::clamp(d, 0.0, 120.0));
     }
