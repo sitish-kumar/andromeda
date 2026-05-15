@@ -923,7 +923,8 @@ void Input::updateInteractiveGeometry() {
 
   const float controlHeight = height() > 0.0f ? height() : m_controlHeight;
   const float maxCursorHeight = std::max(0.0f, controlHeight - kCursorPadV * 2.0f);
-  const float cursorHeight = std::clamp(controlHeight * kCursorHeightRatio, kCursorMinHeight, maxCursorHeight);
+  const float cursorHeight =
+      std::clamp(controlHeight * kCursorHeightRatio, std::min(kCursorMinHeight, maxCursorHeight), maxCursorHeight);
   const float cursorY = std::round((controlHeight - cursorHeight) * 0.5f);
   const float cursorX = stopXForByte(m_cursorPos) - m_scrollOffset + m_contentLeadSlack;
   m_cursor->setPosition(cursorX, cursorY);
