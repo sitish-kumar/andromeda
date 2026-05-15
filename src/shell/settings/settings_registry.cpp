@@ -232,6 +232,8 @@ namespace settings {
       return "stack-2";
     if (section == "hooks")
       return "link";
+    if (section == "popups")
+      return "message-circle";
     if (section == "notifications")
       return "bell";
     if (section == "bar")
@@ -747,7 +749,7 @@ namespace settings {
       e.visibleWhen = clipboardOn;
       entries.push_back(std::move(e));
     }
-    entries.push_back(makeEntry("shell", "osd", tr("settings.schema.shell.osd-position.label"),
+    entries.push_back(makeEntry("popups", "osd", tr("settings.schema.shell.osd-position.label"),
                                 tr("settings.schema.shell.osd-position.description"), {"osd", "position"},
                                 plainSelect({{"top_right", "settings.options.screen-position.top-right"},
                                              {"top_left", "settings.options.screen-position.top-left"},
@@ -757,6 +759,9 @@ namespace settings {
                                              {"bottom_center", "settings.options.screen-position.bottom-center"}},
                                             cfg.osd.position),
                                 "hud overlay volume brightness"));
+    entries.push_back(makeEntry("popups", "osd", tr("settings.schema.shell.osd-lock-keys.label"),
+                                tr("settings.schema.shell.osd-lock-keys.description"), {"osd", "lock_keys"},
+                                ToggleSetting{cfg.osd.lockKeys}, "hud overlay caps num scroll keyboard"));
 
     // Keybinds (lives under Shell)
     entries.push_back(makeEntry("shell", "keybinds", tr("settings.schema.keybinds.validate.label"),
@@ -1083,18 +1088,18 @@ namespace settings {
         SliderSetting{static_cast<float>(cfg.hooks.batteryLowPercentThreshold), 0.0f, 100.0f, 1.0f, true},
         "battery threshold hook trigger"));
 
-    // Notifications
-    entries.push_back(makeEntry("notifications", "general", tr("settings.schema.notifications.daemon.label"),
+    // Popups
+    entries.push_back(makeEntry("popups", "notifications", tr("settings.schema.notifications.daemon.label"),
                                 tr("settings.schema.notifications.daemon.description"),
                                 {"notification", "enable_daemon"}, ToggleSetting{cfg.notification.enableDaemon},
                                 "dbus"));
     entries.push_back(makeEntry(
-        "notifications", "toasts", tr("settings.schema.notifications.layer.label"),
+        "popups", "notifications", tr("settings.schema.notifications.layer.label"),
         tr("settings.schema.notifications.layer.description"), {"notification", "layer"},
         asSegmented(plainSelect({{"top", "settings.options.layer.top"}, {"overlay", "settings.options.layer.overlay"}},
                                 cfg.notification.layer)),
         "toast layer shell z-order"));
-    entries.push_back(makeEntry("notifications", "toasts", tr("settings.schema.notifications.position.label"),
+    entries.push_back(makeEntry("popups", "notifications", tr("settings.schema.notifications.position.label"),
                                 tr("settings.schema.notifications.position.description"), {"notification", "position"},
                                 plainSelect({{"top_right", "settings.options.screen-position.top-right"},
                                              {"top_left", "settings.options.screen-position.top-left"},
@@ -1105,23 +1110,23 @@ namespace settings {
                                             cfg.notification.position),
                                 "toast popup placement anchor"));
     entries.push_back(makeEntry(
-        "notifications", "toasts", tr("settings.schema.notifications.offset-x.label"),
+        "popups", "notifications", tr("settings.schema.notifications.offset-x.label"),
         tr("settings.schema.notifications.offset-x.description"), {"notification", "offset_x"},
         StepperSetting{
             .value = cfg.notification.offsetX, .minValue = 0, .maxValue = 200, .step = 1, .valueSuffix = "px"},
         "offset margin horizontal"));
     entries.push_back(makeEntry(
-        "notifications", "toasts", tr("settings.schema.notifications.offset-y.label"),
+        "popups", "notifications", tr("settings.schema.notifications.offset-y.label"),
         tr("settings.schema.notifications.offset-y.description"), {"notification", "offset_y"},
         StepperSetting{
             .value = cfg.notification.offsetY, .minValue = 0, .maxValue = 200, .step = 1, .valueSuffix = "px"},
         "offset margin vertical"));
-    entries.push_back(makeEntry("notifications", "toasts", tr("settings.schema.notifications.toast-opacity.label"),
+    entries.push_back(makeEntry("popups", "notifications", tr("settings.schema.notifications.toast-opacity.label"),
                                 tr("settings.schema.notifications.toast-opacity.description"),
                                 {"notification", "background_opacity"},
                                 SliderSetting{cfg.notification.backgroundOpacity, 0.0f, 1.0f, 0.01f, false}, "popup"));
     entries.push_back(
-        makeEntry("notifications", "toasts", tr("settings.schema.notifications.monitors.label"),
+        makeEntry("popups", "notifications", tr("settings.schema.notifications.monitors.label"),
                   tr("settings.schema.notifications.monitors.description"), {"notification", "monitors"},
                   ListSetting{.items = cfg.notification.monitors, .suggestedOptions = env.availableOutputs},
                   "monitor output display screen"));

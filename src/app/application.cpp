@@ -62,6 +62,37 @@ namespace {
     return weather.enabled && (weather.autoLocate || !weather.address.empty());
   }
 
+  bool widgetIsLockKeys(std::string_view widgetName, const Config& config) {
+    auto it = config.widgets.find(std::string(widgetName));
+    if (it == config.widgets.end()) {
+      return widgetName == "lock_keys";
+    }
+    return it->second.type == "lock_keys";
+  }
+
+  bool widgetListHasLockKeys(const std::vector<std::string>& widgets, const Config& config) {
+    return std::any_of(widgets.begin(), widgets.end(),
+                       [&config](const std::string& name) { return widgetIsLockKeys(name, config); });
+  }
+
+  bool barMayRender(const BarConfig& bar) {
+    if (bar.enabled) {
+      return true;
+    }
+    return std::any_of(bar.monitorOverrides.begin(), bar.monitorOverrides.end(),
+                       [](const BarMonitorOverride& ovr) { return ovr.enabled.value_or(false); });
+  }
+
+  bool configHasLockKeysWidget(const Config& config) {
+    return std::any_of(config.bars.begin(), config.bars.end(), [&config](const BarConfig& bar) {
+      return barMayRender(bar) &&
+             (widgetListHasLockKeys(bar.startWidgets, config) || widgetListHasLockKeys(bar.centerWidgets, config) ||
+              widgetListHasLockKeys(bar.endWidgets, config));
+    });
+  }
+
+  bool lockKeysConsumersEnabled(const Config& config) { return config.osd.lockKeys || configHasLockKeysWidget(config); }
+
   template <typename Fn> void runStartupPhase(std::string_view label, Fn&& fn) {
     constexpr float kSlowStartupPhaseDebugMs = 50.0f;
     constexpr float kSlowStartupPhaseWarnMs = 1000.0f;
@@ -423,11 +454,18 @@ void Application::initServices() {
     m_dock.refresh();
   });
   if constexpr (kLockKeysEnabled) {
-    m_lockKeysService.refreshNow();
+    if (lockKeysConsumersEnabled(m_configService.config())) {
+      m_lockKeysService.refreshNow();
+    }
     m_lockKeysService.setChangeCallback(
         [this](const WaylandSeat::LockKeysState& previous, const WaylandSeat::LockKeysState& current) {
-          m_lockKeysOsd.onLockKeysChanged(previous, current);
-          m_bar.refresh();
+          const Config& config = m_configService.config();
+          if (config.osd.lockKeys) {
+            m_lockKeysOsd.onLockKeysChanged(previous, current);
+          }
+          if (configHasLockKeysWidget(config)) {
+            m_bar.refresh();
+          }
         });
   }
   m_idleInhibitor.initialize(m_wayland, &m_renderContext);
@@ -1439,7 +1477,9 @@ std::vector<PollSource*> Application::currentPollSources() {
   sources.push_back(&m_workspacePollSource);
   sources.push_back(&m_keyboardLayoutPollSource);
   if constexpr (kLockKeysEnabled) {
-    sources.push_back(&m_lockKeysPollSource);
+    if (lockKeysConsumersEnabled(m_configService.config())) {
+      sources.push_back(&m_lockKeysPollSource);
+    }
   }
   if (m_pipewirePollSource != nullptr) {
     sources.push_back(m_pipewirePollSource.get());

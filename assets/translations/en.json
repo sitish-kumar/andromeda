@@ -829,6 +829,7 @@
         "idle": "Idle",
         "panels": "Panels",
         "notifications": "Notifications",
+        "popups": "Popups",
         "backdrop": "Backdrop",
         "services": "Services",
         "shell": "Shell",
@@ -862,6 +863,7 @@
         "motion": "Motion",
         "network": "Network",
         "night-light": "Night Light",
+        "notifications": "Notifications",
         "osd": "OSD",
         "home": "Home",
         "pinned-apps": "Pinned Apps",
@@ -1462,6 +1464,10 @@
         "osd-position": {
           "label": "OSD Position",
           "description": "Screen position for OSD popups"
+        },
+        "osd-lock-keys": {
+          "label": "Lock Keys OSD",
+          "description": "Show OSD popups for Caps Lock, Num Lock, and Scroll Lock changes"
         }
       },
       "dock": {

@@ -351,6 +351,7 @@ struct DesktopWidgetsConfig {
 
 struct OsdConfig {
   std::string position = "top_right";
+  bool lockKeys = true;
 };
 
 struct NotificationConfig {
