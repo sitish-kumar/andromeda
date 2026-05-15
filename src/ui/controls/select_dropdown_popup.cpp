@@ -307,8 +307,8 @@ void SelectDropdownPopup::applyHoverVisuals() {
   for (std::size_t i = 0; i < m_optionViews.size(); ++i) {
     auto& view = m_optionViews[i];
     const bool isHovered = (i == m_hoveredIndex);
-    const Color bgColor = isHovered ? resolved(ColorRole::Primary) : clearColor();
-    const ColorSpec fg = isHovered ? colorSpecFromRole(ColorRole::OnPrimary) : colorSpecFromRole(ColorRole::OnSurface);
+    const Color bgColor = isHovered ? resolved(ColorRole::Hover) : clearColor();
+    const ColorSpec fg = isHovered ? colorSpecFromRole(ColorRole::OnHover) : colorSpecFromRole(ColorRole::OnSurface);
 
     if (view.background != nullptr) {
       view.background->setStyle(RoundedRectStyle{
