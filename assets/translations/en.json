@@ -1913,12 +1913,12 @@
           "description": "Background opacity of notification toasts"
         },
         "offset-x": {
-          "label": "Horizontal Offset",
-          "description": "Extra horizontal offset from the screen edge"
+          "label": "Horizontal Margin",
+          "description": "Absolute horizontal margin from the screen or bar edge"
         },
         "offset-y": {
-          "label": "Vertical Offset",
-          "description": "Extra vertical offset from the screen edge"
+          "label": "Vertical Margin",
+          "description": "Absolute vertical margin from the screen or bar edge"
         },
         "monitors": {
           "label": "Displays",

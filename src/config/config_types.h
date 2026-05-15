@@ -359,8 +359,8 @@ struct NotificationConfig {
   std::string position = "top_right";
   std::string layer = "top";       // top | overlay
   float backgroundOpacity = 0.97f; // toast card background alpha (0.0–1.0)
-  int offsetX = 0;
-  int offsetY = 0;
+  int offsetX = 20;                // absolute horizontal margin from the screen edge
+  int offsetY = 8;                 // absolute vertical margin from the screen edge
   std::vector<std::string> monitors;
 };
 

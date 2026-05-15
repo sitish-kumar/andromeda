@@ -34,6 +34,7 @@ public:
 
   void initialize(WaylandConnection& wayland, ConfigService* config, NotificationManager* notifications,
                   RenderContext* renderContext, HttpClient* httpClient = nullptr);
+  void onConfigReload();
   void requestLayout();
   void requestRedraw();
 

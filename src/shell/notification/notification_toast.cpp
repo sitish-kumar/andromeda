@@ -46,7 +46,7 @@ namespace {
   constexpr float kPaddingTop = 0.0f;
   constexpr float kPaddingBottom = Style::spaceMd;
   constexpr int kFallbackVisibleCards = 5;
-  constexpr std::int32_t kSurfaceMargin = 8;
+  constexpr std::int32_t kHorizontalRevealPadding = static_cast<std::int32_t>(kPaddingX);
   constexpr float kQueuedY = -1.0f;
   constexpr float kCardInnerPad = Style::spaceMd;
   constexpr float kCloseButtonSize = 20.0f;
@@ -330,6 +330,43 @@ namespace {
 
   bool isLeftPosition(std::string_view position) { return position.ends_with("_left"); }
 
+  std::uint32_t toastSurfaceAnchor(std::string_view position) {
+    if (position.ends_with("_left")) {
+      return LayerShellAnchor::Top | LayerShellAnchor::Bottom | LayerShellAnchor::Left;
+    }
+    if (position.ends_with("_center")) {
+      return LayerShellAnchor::Top | LayerShellAnchor::Bottom;
+    }
+    return LayerShellAnchor::Top | LayerShellAnchor::Bottom | LayerShellAnchor::Right;
+  }
+
+  struct ToastSurfaceMargins {
+    std::int32_t top = 0;
+    std::int32_t right = 0;
+    std::int32_t bottom = 0;
+    std::int32_t left = 0;
+  };
+
+  std::int32_t horizontalLayerMarginFromScreenMargin(int offsetX) {
+    return static_cast<std::int32_t>(offsetX) - kHorizontalRevealPadding;
+  }
+
+  ToastSurfaceMargins toastSurfaceMargins(std::string_view position, int offsetX, int offsetY) {
+    const auto sideMargin = horizontalLayerMarginFromScreenMargin(offsetX);
+    const auto verticalMargin = static_cast<std::int32_t>(offsetY);
+    ToastSurfaceMargins margins{
+        .top = verticalMargin,
+        .right = sideMargin,
+        .bottom = verticalMargin,
+        .left = sideMargin,
+    };
+    if (position.ends_with("_center")) {
+      margins.right = 0;
+      margins.left = 0;
+    }
+    return margins;
+  }
+
   std::filesystem::path remoteIconCachePath(std::string_view url) {
     const std::filesystem::path cacheDir = std::filesystem::path("/tmp") / "noctalia-notification-icons";
     const std::size_t hash = std::hash<std::string_view>{}(url);
@@ -358,6 +395,14 @@ void NotificationToast::initialize(WaylandConnection& wayland, ConfigService* co
 
   m_callbackToken = m_notifications->addEventCallback(
       [this](const Notification& n, NotificationEvent event) { onNotificationEvent(n, event); });
+}
+
+void NotificationToast::onConfigReload() {
+  if (m_entries.empty() && m_instances.empty()) {
+    return;
+  }
+  ensureSurfaces();
+  requestLayout();
 }
 
 void NotificationToast::requestLayout() {
@@ -1280,7 +1325,10 @@ uint32_t NotificationToast::surfaceHeightForOutput(wl_output* output) const {
     if (const auto* wlOutput = m_wayland->findOutputByWl(output); wlOutput != nullptr) {
       const std::int32_t logicalHeight = outputLogicalHeight(*wlOutput);
       if (logicalHeight > 0) {
-        const std::int32_t available = logicalHeight - (kSurfaceMargin * 2);
+        const auto offsetY = m_config != nullptr
+                                 ? static_cast<std::int32_t>(std::max(0, m_config->config().notification.offsetY))
+                                 : std::int32_t{8};
+        const std::int32_t available = logicalHeight - (offsetY * 2);
         return static_cast<uint32_t>(std::max(1, available));
       }
     }
@@ -1292,7 +1340,7 @@ uint32_t NotificationToast::surfaceHeightForOutput(wl_output* output) const {
 // --- Surface lifecycle ---
 
 void NotificationToast::ensureSurfaces() {
-  if (m_wayland == nullptr || m_renderContext == nullptr) {
+  if (m_wayland == nullptr || m_renderContext == nullptr || m_config == nullptr) {
     return;
   }
 
@@ -1300,6 +1348,11 @@ void NotificationToast::ensureSurfaces() {
   const std::string position = notificationPosition();
   const std::string layer = notificationLayer();
   const auto selectedMonitors = notificationMonitors();
+  const auto& notifCfg = m_config->config().notification;
+  const int offX = std::max(0, notifCfg.offsetX);
+  const int offY = std::max(0, notifCfg.offsetY);
+  const std::uint32_t anchor = toastSurfaceAnchor(position);
+  const ToastSurfaceMargins margins = toastSurfaceMargins(position, offX, offY);
   if (!m_instances.empty() &&
       (position != m_lastPosition || layer != m_lastLayer || selectedMonitors != m_lastMonitorSelectors)) {
     for (auto& inst : m_instances) {
@@ -1326,8 +1379,14 @@ void NotificationToast::ensureSurfaces() {
     if (existingIt != m_instances.end()) {
       auto& inst = *existingIt;
       inst->scale = output.scale;
-      if (inst->surface != nullptr && inst->surface->width() != surfaceWidth) {
-        inst->surface->requestSize(surfaceWidth, 0);
+      if (inst->surface != nullptr) {
+        if (inst->surface->marginTop() != margins.top || inst->surface->marginRight() != margins.right ||
+            inst->surface->marginBottom() != margins.bottom || inst->surface->marginLeft() != margins.left) {
+          inst->surface->setMargins(margins.top, margins.right, margins.bottom, margins.left);
+        }
+        if (inst->surface->width() != surfaceWidth) {
+          inst->surface->requestSize(surfaceWidth, 0);
+        }
       }
       continue;
     }
@@ -1336,42 +1395,6 @@ void NotificationToast::ensureSurfaces() {
     inst->output = output.output;
     inst->scale = output.scale;
 
-    const auto& notifCfg = m_config->config().notification;
-    const int offX = notifCfg.offsetX;
-    const int offY = notifCfg.offsetY;
-
-    std::uint32_t anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom | LayerShellAnchor::Right;
-    std::int32_t marginTop = kSurfaceMargin;
-    std::int32_t marginRight = kSurfaceMargin;
-    std::int32_t marginBottom = kSurfaceMargin;
-    std::int32_t marginLeft = kSurfaceMargin;
-    if (position == "top_right") {
-      marginTop += offY;
-      marginRight += offX;
-    } else if (position == "top_left") {
-      anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom | LayerShellAnchor::Left;
-      marginTop += offY;
-      marginLeft += offX;
-    } else if (position == "top_center") {
-      anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom;
-      marginTop += offY;
-      marginLeft = 0;
-      marginRight = 0;
-    } else if (position == "bottom_right") {
-      anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom | LayerShellAnchor::Right;
-      marginBottom += offY;
-      marginRight += offX;
-    } else if (position == "bottom_left") {
-      anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom | LayerShellAnchor::Left;
-      marginBottom += offY;
-      marginLeft += offX;
-    } else if (position == "bottom_center") {
-      anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom;
-      marginBottom += offY;
-      marginLeft = 0;
-      marginRight = 0;
-    }
-
     auto surfaceConfig = LayerSurfaceConfig{
         .nameSpace = "noctalia-notification",
         .layer = layer == "overlay" ? LayerShellLayer::Overlay : LayerShellLayer::Top,
@@ -1379,10 +1402,10 @@ void NotificationToast::ensureSurfaces() {
         .width = surfaceWidth,
         .height = 0,
         .exclusiveZone = 0,
-        .marginTop = marginTop,
-        .marginRight = marginRight,
-        .marginBottom = marginBottom,
-        .marginLeft = marginLeft,
+        .marginTop = margins.top,
+        .marginRight = margins.right,
+        .marginBottom = margins.bottom,
+        .marginLeft = margins.left,
         .keyboard = LayerShellKeyboard::None,
         .defaultWidth = surfaceWidth,
         .defaultHeight = surfaceHeightForOutput(output.output),

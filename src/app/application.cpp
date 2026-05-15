@@ -1008,6 +1008,7 @@ void Application::initUi() {
   }
 
   m_notificationToast.initialize(m_wayland, &m_configService, &m_notificationManager, &m_renderContext, &m_httpClient);
+  m_configService.addReloadCallback([this]() { m_notificationToast.onConfigReload(); });
   m_configService.setNotificationManager(&m_notificationManager);
   m_notificationManager.setSoundPlayer(m_soundPlayer.get());
 
