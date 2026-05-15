@@ -144,9 +144,15 @@ void SetupWizardPanel::create() {
   auto root = std::make_unique<Flex>();
   root->setDirection(FlexDirection::Vertical);
   root->setAlign(FlexAlign::Stretch);
+  root->setJustify(FlexJustify::SpaceBetween);
   root->setGap(Style::spaceLg * scale);
   root->setPadding(24.0f * scale, 28.0f * scale);
   m_root = root.get();
+
+  auto content = std::make_unique<Flex>();
+  content->setDirection(FlexDirection::Vertical);
+  content->setAlign(FlexAlign::Stretch);
+  content->setGap(Style::spaceLg * scale);
 
   // Header
   {
@@ -167,10 +173,10 @@ void SetupWizardPanel::create() {
     copy->addChild(makeLabel(i18n::tr("setup-wizard.subtitle"), Style::fontSizeBody * scale,
                              colorSpecFromRole(ColorRole::OnSurfaceVariant)));
     header->addChild(std::move(copy));
-    root->addChild(std::move(header));
+    content->addChild(std::move(header));
   }
 
-  root->addChild(std::make_unique<Separator>());
+  content->addChild(std::make_unique<Separator>());
 
   // Telemetry
   {
@@ -195,7 +201,7 @@ void SetupWizardPanel::create() {
       row->addChild(std::move(toggle));
     }
     card->addChild(std::move(row));
-    root->addChild(std::move(card));
+    content->addChild(std::move(card));
   }
 
   // Wallpaper
@@ -259,7 +265,7 @@ void SetupWizardPanel::create() {
       row->addChild(std::move(button));
     }
     card->addChild(std::move(row));
-    root->addChild(std::move(card));
+    content->addChild(std::move(card));
   }
 
   // Theme
@@ -351,15 +357,12 @@ void SetupWizardPanel::create() {
       configureThemeOptionSelect();
     }
 
-    root->addChild(std::move(card));
+    content->addChild(std::move(card));
   }
 
+  root->addChild(std::move(content));
+
   // Footer
-  {
-    auto spacer = std::make_unique<Flex>();
-    spacer->setFlexGrow(1.0f);
-    root->addChild(std::move(spacer));
-  }
   {
     auto footer = std::make_unique<Flex>();
     footer->setDirection(FlexDirection::Horizontal);
