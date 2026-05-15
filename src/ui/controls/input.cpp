@@ -73,6 +73,10 @@ namespace {
   constexpr std::size_t kUndoStackLimit = 100;
   constexpr auto kTypingUndoCoalesceWindow = std::chrono::milliseconds(1000);
 
+  float chromeScaleForControlHeight(float controlHeight) noexcept {
+    return std::max(0.1f, controlHeight / Style::controlHeight);
+  }
+
   bool isWordCodepoint(const std::string& text, std::size_t bytePos) {
     if (bytePos >= text.size()) {
       return false;
@@ -781,6 +785,7 @@ void Input::applyVisualState() {
   const bool clearButtonHovered = m_clearButtonArea != nullptr && m_clearButtonArea->hovered();
   const bool inputHovered = (m_inputArea != nullptr && m_inputArea->hovered()) || clearButtonHovered;
   const bool readOnly = isReadOnlyVisual();
+  const float chromeScale = chromeScaleForControlHeight(m_controlHeight);
 
   if (m_frameVisible) {
     m_background->setVisible(true);
@@ -794,7 +799,7 @@ void Input::applyVisualState() {
         .fill = fill,
         .border = border,
         .fillMode = FillMode::Solid,
-        .radius = Style::scaledRadiusMd(),
+        .radius = Style::scaledRadiusMd(chromeScale),
         .softness = 1.0f,
         .borderWidth = Style::borderWidth,
     });
