@@ -197,6 +197,9 @@ namespace settings {
       if (m_selectPopup == nullptr) {
         m_selectPopup = std::make_unique<SelectDropdownPopup>(*wayland(), *renderContext());
       }
+      if (config() != nullptr) {
+        m_selectPopup->setShadowConfig(config()->config().shell.shadow);
+      }
       m_selectPopup->setParent(xdgSurface(), m_parentOutput);
       contentParent->setPopupContext(m_selectPopup.get());
     }

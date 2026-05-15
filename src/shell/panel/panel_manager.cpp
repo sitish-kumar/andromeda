@@ -1366,6 +1366,9 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
     m_sceneRoot->setAnimationManager(&m_animations);
     if (m_layerSurface != nullptr && m_renderContext != nullptr) {
       m_selectPopup = std::make_unique<SelectDropdownPopup>(m_platform->wayland(), *m_renderContext);
+      if (m_config != nullptr) {
+        m_selectPopup->setShadowConfig(m_config->config().shell.shadow);
+      }
       m_selectPopup->setParent(m_layerSurface->layerSurface(), m_output);
       m_sceneRoot->setPopupContext(m_selectPopup.get());
     }

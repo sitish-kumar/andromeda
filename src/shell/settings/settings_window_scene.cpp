@@ -796,6 +796,7 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
   m_sceneRoot->setAnimationManager(&m_animations);
   if (m_surface != nullptr && m_renderContext != nullptr && m_wayland != nullptr) {
     m_selectPopup = std::make_unique<SelectDropdownPopup>(*m_wayland, *m_renderContext);
+    m_selectPopup->setShadowConfig(cfg.shell.shadow);
     m_selectPopup->setParent(m_surface->xdgSurface(), m_output);
     m_sceneRoot->setPopupContext(m_selectPopup.get());
   }

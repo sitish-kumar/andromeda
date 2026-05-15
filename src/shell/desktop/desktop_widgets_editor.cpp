@@ -385,6 +385,9 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   root->setAnimationManager(&surface.animations);
   if (m_renderContext != nullptr && m_wayland != nullptr) {
     surface.selectPopup = std::make_unique<SelectDropdownPopup>(*m_wayland, *m_renderContext);
+    if (m_config != nullptr) {
+      surface.selectPopup->setShadowConfig(m_config->config().shell.shadow);
+    }
     surface.selectPopup->setParent(surface.surface->layerSurface(), surface.output);
     root->setPopupContext(surface.selectPopup.get());
   }

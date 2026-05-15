@@ -1,5 +1,6 @@
 #pragma once
 
+#include "config/config_types.h"
 #include "render/scene/input_dispatcher.h"
 #include "ui/controls/select_popup_context.h"
 
@@ -30,6 +31,7 @@ public:
 
   void setParent(zwlr_layer_surface_v1* layerSurface, wl_output* output);
   void setParent(xdg_surface* xdgSurface, wl_output* output);
+  void setShadowConfig(const ShellConfig::ShadowConfig& shadow);
 
   void openSelectDropdown(const DropdownRequest& request, DropdownCallbacks callbacks) override;
   void closeSelectDropdown() override;
@@ -77,5 +79,6 @@ private:
   float m_viewportHeight = 0.0f;
   float m_totalHeight = 0.0f;
   float m_menuWidth = 0.0f;
+  ShellConfig::ShadowConfig m_shadowConfig;
   bool m_sceneDirty = false;
 };

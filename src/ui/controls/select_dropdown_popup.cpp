@@ -9,6 +9,7 @@
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
 #include "render/scene/rect_node.h"
+#include "shell/surface_shadow.h"
 #include "ui/controls/box.h"
 #include "ui/controls/glyph.h"
 #include "ui/controls/label.h"
@@ -30,8 +31,22 @@ namespace {
 
   constexpr Logger kLog("select-dropdown-popup");
   constexpr float kMenuPadding = Style::spaceXs;
+  constexpr std::int32_t kShadowSafetyPadding = 2;
 
   Color resolved(ColorRole role, float alpha = 1.0f) { return colorForRole(role, alpha); }
+
+  shell::surface_shadow::Bleed shadowInsets(const ShellConfig::ShadowConfig& shadow) {
+    if (!shell::surface_shadow::enabled(true, shadow)) {
+      return {};
+    }
+
+    auto insets = shell::surface_shadow::bleed(true, shadow);
+    insets.left += kShadowSafetyPadding;
+    insets.right += kShadowSafetyPadding;
+    insets.up += kShadowSafetyPadding;
+    insets.down += kShadowSafetyPadding;
+    return insets;
+  }
 
 } // namespace
 
@@ -50,6 +65,16 @@ void SelectDropdownPopup::setParent(xdg_surface* xdgSurface, wl_output* output) 
   m_parentLayerSurface = nullptr;
   m_parentXdgSurface = xdgSurface;
   m_parentOutput = output;
+}
+
+void SelectDropdownPopup::setShadowConfig(const ShellConfig::ShadowConfig& shadow) {
+  if (m_shadowConfig == shadow) {
+    return;
+  }
+  m_shadowConfig = shadow;
+  if (isSelectDropdownOpen()) {
+    closeSelectDropdown();
+  }
 }
 
 void SelectDropdownPopup::openSelectDropdown(const DropdownRequest& request, DropdownCallbacks callbacks) {
@@ -71,6 +96,7 @@ void SelectDropdownPopup::openSelectDropdown(const DropdownRequest& request, Dro
   m_viewportHeight = static_cast<float>(visibleCount) * m_optionHeight + kMenuPadding * 2.0f;
   m_totalHeight = static_cast<float>(m_options.size()) * m_optionHeight;
   m_scrollOffset = 0.0f;
+  const auto shadow = shadowInsets(m_shadowConfig);
 
   if (m_selectedIndex < m_options.size()) {
     const float selectedTop = static_cast<float>(m_selectedIndex) * m_optionHeight;
@@ -81,8 +107,10 @@ void SelectDropdownPopup::openSelectDropdown(const DropdownRequest& request, Dro
     clampScrollOffset();
   }
 
-  const auto popupW = static_cast<std::uint32_t>(std::max(1.0f, m_menuWidth));
-  const auto popupH = static_cast<std::uint32_t>(std::max(1.0f, m_viewportHeight));
+  const auto popupW =
+      static_cast<std::uint32_t>(std::max(1.0f, m_menuWidth + static_cast<float>(shadow.left + shadow.right)));
+  const auto popupH =
+      static_cast<std::uint32_t>(std::max(1.0f, m_viewportHeight + static_cast<float>(shadow.up + shadow.down)));
 
   PopupSurfaceConfig popupCfg{
       .anchorX = request.anchorX,
@@ -96,8 +124,8 @@ void SelectDropdownPopup::openSelectDropdown(const DropdownRequest& request, Dro
       .constraintAdjustment = XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X |
                               XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y |
                               XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y,
-      .offsetX = 0,
-      .offsetY = static_cast<std::int32_t>(Style::spaceXs),
+      .offsetX = static_cast<std::int32_t>(std::lround(static_cast<float>(shadow.right - shadow.left) * 0.5f)),
+      .offsetY = static_cast<std::int32_t>(std::lround(Style::spaceXs - static_cast<float>(shadow.up))),
       .serial = m_wayland.lastInputSerial(),
       .grab = true,
   };
@@ -159,6 +187,13 @@ void SelectDropdownPopup::openSelectDropdown(const DropdownRequest& request, Dro
     return;
   }
 
+  m_surface->setInputRegion({InputRect{
+      .x = shadow.left,
+      .y = shadow.up,
+      .width = static_cast<int>(std::lround(m_menuWidth)),
+      .height = static_cast<int>(std::lround(m_viewportHeight)),
+  }});
+
   m_wlSurface = m_surface->wlSurface();
 }
 
@@ -182,23 +217,38 @@ bool SelectDropdownPopup::isSelectDropdownOpen() const { return m_surface != nul
 void SelectDropdownPopup::buildScene(const DropdownRequest& request) {
   m_sceneRoot = std::make_unique<Node>();
   m_optionViews.clear();
+  const auto shadow = shadowInsets(m_shadowConfig);
+  const float menuX = static_cast<float>(shadow.left);
+  const float menuY = static_cast<float>(shadow.up);
+  const float radius = Style::scaledRadiusMd();
+
+  if (shell::surface_shadow::enabled(true, m_shadowConfig)) {
+    auto shadowNode = std::make_unique<RectNode>();
+    shadowNode->setStyle(shell::surface_shadow::style(
+        m_shadowConfig, 1.0f, shell::surface_shadow::Shape{.radius = Radii{radius, radius, radius, radius}}));
+    shadowNode->setPosition(menuX + static_cast<float>(m_shadowConfig.offsetX),
+                            menuY + static_cast<float>(m_shadowConfig.offsetY));
+    shadowNode->setFrameSize(m_menuWidth, m_viewportHeight);
+    shadowNode->setZIndex(-1);
+    m_sceneRoot->addChild(std::move(shadowNode));
+  }
 
   auto bg = std::make_unique<RectNode>();
   bg->setStyle(RoundedRectStyle{
       .fill = resolved(ColorRole::SurfaceVariant),
       .border = resolved(ColorRole::Outline),
       .fillMode = FillMode::Solid,
-      .radius = Style::scaledRadiusMd(),
+      .radius = radius,
       .softness = 1.0f,
       .borderWidth = Style::borderWidth,
   });
   auto* bgNode = static_cast<RectNode*>(m_sceneRoot->addChild(std::move(bg)));
-  bgNode->setPosition(0.0f, 0.0f);
+  bgNode->setPosition(menuX, menuY);
   bgNode->setFrameSize(m_menuWidth, m_viewportHeight);
 
   auto viewport = std::make_unique<Node>();
   viewport->setClipChildren(true);
-  viewport->setPosition(0.0f, kMenuPadding);
+  viewport->setPosition(menuX, menuY + kMenuPadding);
   viewport->setFrameSize(m_menuWidth, m_viewportHeight - kMenuPadding * 2.0f);
   auto* viewportNode = m_sceneRoot->addChild(std::move(viewport));
 
