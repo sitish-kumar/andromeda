@@ -16,23 +16,7 @@
 #include <unordered_set>
 
 namespace {
-
   constexpr Logger kLog("workspace_hyprland");
-
-  [[nodiscard]] std::optional<std::size_t> parseLeadingNumber(const std::string& value) {
-    if (value.empty() || !std::isdigit(static_cast<unsigned char>(value.front()))) {
-      return std::nullopt;
-    }
-
-    std::size_t parsed = 0;
-    std::size_t index = 0;
-    while (index < value.size() && std::isdigit(static_cast<unsigned char>(value[index]))) {
-      parsed = (parsed * 10) + static_cast<std::size_t>(value[index] - '0');
-      ++index;
-    }
-    return parsed > 0 ? std::optional<std::size_t>(parsed) : std::nullopt;
-  }
-
 } // namespace
 
 HyprlandWorkspaceBackend::HyprlandWorkspaceBackend(OutputNameResolver outputNameResolver,
@@ -76,25 +60,13 @@ std::vector<Workspace> HyprlandWorkspaceBackend::all() const {
   std::vector<const WorkspaceState*> ordered;
   ordered.reserve(m_workspaces.size());
   for (const auto& workspace : m_workspaces) {
-    ordered.push_back(&workspace);
+    if (workspace.id >= 0) {
+      ordered.push_back(&workspace);
+    }
   }
 
-  std::sort(ordered.begin(), ordered.end(), [](const WorkspaceState* a, const WorkspaceState* b) {
-    const bool aHasId = a->id >= 0;
-    const bool bHasId = b->id >= 0;
-    if (aHasId != bHasId) {
-      return aHasId;
-    }
-    if (aHasId && bHasId && a->id != b->id) {
-      return a->id < b->id;
-    }
-    const auto aNum = parseLeadingNumber(a->name);
-    const auto bNum = parseLeadingNumber(b->name);
-    if (aNum.has_value() && bNum.has_value() && aNum != bNum) {
-      return aNum < bNum;
-    }
-    return a->ordinal < b->ordinal;
-  });
+  std::sort(ordered.begin(), ordered.end(),
+            [](const WorkspaceState* a, const WorkspaceState* b) { return a->id < b->id; });
 
   std::vector<Workspace> result;
   result.reserve(ordered.size());
@@ -113,26 +85,14 @@ std::vector<Workspace> HyprlandWorkspaceBackend::forOutput(wl_output* output) co
   std::vector<const WorkspaceState*> ordered;
   for (const auto& workspace : m_workspaces) {
     if (workspace.monitor == outputName) {
-      ordered.push_back(&workspace);
+      if (workspace.id >= 0) {
+        ordered.push_back(&workspace);
+      }
     }
   }
 
-  std::sort(ordered.begin(), ordered.end(), [](const WorkspaceState* a, const WorkspaceState* b) {
-    const bool aHasId = a->id >= 0;
-    const bool bHasId = b->id >= 0;
-    if (aHasId != bHasId) {
-      return aHasId;
-    }
-    if (aHasId && bHasId && a->id != b->id) {
-      return a->id < b->id;
-    }
-    const auto aNum = parseLeadingNumber(a->name);
-    const auto bNum = parseLeadingNumber(b->name);
-    if (aNum.has_value() && bNum.has_value() && aNum != bNum) {
-      return aNum < bNum;
-    }
-    return a->ordinal < b->ordinal;
-  });
+  std::sort(ordered.begin(), ordered.end(),
+            [](const WorkspaceState* a, const WorkspaceState* b) { return a->id < b->id; });
 
   std::vector<Workspace> result;
   result.reserve(ordered.size());
