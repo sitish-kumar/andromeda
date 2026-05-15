@@ -1906,6 +1906,14 @@
           "label": "Toast Opacity",
           "description": "Background opacity of notification toasts"
         },
+        "offset-x": {
+          "label": "Horizontal Offset",
+          "description": "Extra horizontal offset from the screen edge"
+        },
+        "offset-y": {
+          "label": "Vertical Offset",
+          "description": "Extra vertical offset from the screen edge"
+        },
         "monitors": {
           "label": "Displays",
           "description": "Choose which displays show notification toasts; leave empty to show on all displays"

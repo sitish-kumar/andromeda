@@ -1088,6 +1088,12 @@ namespace settings {
                                 tr("settings.schema.notifications.daemon.description"),
                                 {"notification", "enable_daemon"}, ToggleSetting{cfg.notification.enableDaemon},
                                 "dbus"));
+    entries.push_back(makeEntry(
+        "notifications", "toasts", tr("settings.schema.notifications.layer.label"),
+        tr("settings.schema.notifications.layer.description"), {"notification", "layer"},
+        asSegmented(plainSelect({{"top", "settings.options.layer.top"}, {"overlay", "settings.options.layer.overlay"}},
+                                cfg.notification.layer)),
+        "toast layer shell z-order"));
     entries.push_back(makeEntry("notifications", "toasts", tr("settings.schema.notifications.position.label"),
                                 tr("settings.schema.notifications.position.description"), {"notification", "position"},
                                 plainSelect({{"top_right", "settings.options.screen-position.top-right"},
@@ -1099,11 +1105,17 @@ namespace settings {
                                             cfg.notification.position),
                                 "toast popup placement anchor"));
     entries.push_back(makeEntry(
-        "notifications", "toasts", tr("settings.schema.notifications.layer.label"),
-        tr("settings.schema.notifications.layer.description"), {"notification", "layer"},
-        asSegmented(plainSelect({{"top", "settings.options.layer.top"}, {"overlay", "settings.options.layer.overlay"}},
-                                cfg.notification.layer)),
-        "toast layer shell z-order"));
+        "notifications", "toasts", tr("settings.schema.notifications.offset-x.label"),
+        tr("settings.schema.notifications.offset-x.description"), {"notification", "offset_x"},
+        StepperSetting{
+            .value = cfg.notification.offsetX, .minValue = 0, .maxValue = 200, .step = 1, .valueSuffix = "px"},
+        "offset margin horizontal"));
+    entries.push_back(makeEntry(
+        "notifications", "toasts", tr("settings.schema.notifications.offset-y.label"),
+        tr("settings.schema.notifications.offset-y.description"), {"notification", "offset_y"},
+        StepperSetting{
+            .value = cfg.notification.offsetY, .minValue = 0, .maxValue = 200, .step = 1, .valueSuffix = "px"},
+        "offset margin vertical"));
     entries.push_back(makeEntry("notifications", "toasts", tr("settings.schema.notifications.toast-opacity.label"),
                                 tr("settings.schema.notifications.toast-opacity.description"),
                                 {"notification", "background_opacity"},

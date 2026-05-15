@@ -1461,6 +1461,10 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       notif.layer = *v;
     if (auto v = notifTable["background_opacity"].value<double>())
       notif.backgroundOpacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
+    if (auto v = notifTable["offset_x"].value<int64_t>())
+      notif.offsetX = static_cast<int>(*v);
+    if (auto v = notifTable["offset_y"].value<int64_t>())
+      notif.offsetY = static_cast<int>(*v);
     if (const auto* v = notifTable.get("monitors")) {
       notif.monitors = readStringArray(*v);
     }

@@ -896,18 +896,16 @@ void NotificationToast::dismissCardFromInstance(Instance& inst, std::size_t entr
   const float targetY = card->y();
   const uint32_t removingId = (entryIndex < m_entries.size()) ? m_entries[entryIndex].notificationId : 0;
 
-  // Only the first instance drives finishRemoval
-  bool isDriver = (m_instances.size() > 0 && m_instances[0].get() == &inst);
   cs.exitAnimId = inst.animations.animate(
       startReveal, 0.0f, Style::animNormal, Easing::EaseInOutQuad,
       [this, card, content, foreground, targetY](float v) {
         applyCardRevealNodes(card, content, foreground, v, targetY, revealFromLeftEdge());
       },
-      [this, &inst, entryIndex, isDriver, removingId]() {
+      [this, &inst, entryIndex, removingId]() {
         if (entryIndex < inst.cards.size()) {
           inst.cards[entryIndex].exitAnimId = 0;
         }
-        if (isDriver && removingId != 0) {
+        if (removingId != 0) {
           DeferredCall::callLater([this, removingId]() { finishRemoval(removingId); });
         }
       },
@@ -1338,25 +1336,40 @@ void NotificationToast::ensureSurfaces() {
     inst->output = output.output;
     inst->scale = output.scale;
 
+    const auto& notifCfg = m_config->config().notification;
+    const int offX = notifCfg.offsetX;
+    const int offY = notifCfg.offsetY;
+
     std::uint32_t anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom | LayerShellAnchor::Right;
     std::int32_t marginTop = kSurfaceMargin;
     std::int32_t marginRight = kSurfaceMargin;
     std::int32_t marginBottom = kSurfaceMargin;
     std::int32_t marginLeft = kSurfaceMargin;
-    if (position == "top_left") {
+    if (position == "top_right") {
+      marginTop += offY;
+      marginRight += offX;
+    } else if (position == "top_left") {
       anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom | LayerShellAnchor::Left;
+      marginTop += offY;
+      marginLeft += offX;
     } else if (position == "top_center") {
       anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom;
-      marginLeft = 0;
-      marginRight = 0;
-    } else if (position == "bottom_left") {
-      anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom | LayerShellAnchor::Left;
-    } else if (position == "bottom_center") {
-      anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom;
+      marginTop += offY;
       marginLeft = 0;
       marginRight = 0;
     } else if (position == "bottom_right") {
       anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom | LayerShellAnchor::Right;
+      marginBottom += offY;
+      marginRight += offX;
+    } else if (position == "bottom_left") {
+      anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom | LayerShellAnchor::Left;
+      marginBottom += offY;
+      marginLeft += offX;
+    } else if (position == "bottom_center") {
+      anchor = LayerShellAnchor::Top | LayerShellAnchor::Bottom;
+      marginBottom += offY;
+      marginLeft = 0;
+      marginRight = 0;
     }
 
     auto surfaceConfig = LayerSurfaceConfig{

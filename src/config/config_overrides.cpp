@@ -318,7 +318,8 @@ namespace {
 
   bool notificationConfigEqual(const NotificationConfig& a, const NotificationConfig& b) {
     return a.enableDaemon == b.enableDaemon && a.position == b.position && a.layer == b.layer &&
-           nearlyEqual(a.backgroundOpacity, b.backgroundOpacity) && a.monitors == b.monitors;
+           nearlyEqual(a.backgroundOpacity, b.backgroundOpacity) && a.offsetX == b.offsetX && a.offsetY == b.offsetY &&
+           a.monitors == b.monitors;
   }
 
   bool audioConfigEqual(const AudioConfig& a, const AudioConfig& b) {
