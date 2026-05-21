@@ -511,7 +511,7 @@ void Application::initServices() {
   });
   m_compositorPlatform.setWorkspaceChangeCallback([this]() { m_bar.refresh(); });
   m_compositorPlatform.setKeyboardLayoutChangeCallback([this]() { m_bar.refresh(); });
-  m_wayland.setToplevelChangeCallback([this]() {
+  m_compositorPlatform.setToplevelChangeCallback([this]() {
     m_screenTimeService.onFocusChange();
     m_bar.refresh();
     m_dock.refresh();
