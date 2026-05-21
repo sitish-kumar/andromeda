@@ -42,11 +42,7 @@ namespace {
     std::tm tm{};
     tm.tm_mon = month;
     tm.tm_mday = 1;
-    char buf[64];
-    if (std::strftime(buf, sizeof(buf), "%B", &tm) == 0) {
-      return {};
-    }
-    return buf;
+    return formatStrftime("%B", tm);
   }
 
   int daysInMonth(int yearValue, int monthValue) {
@@ -364,9 +360,7 @@ void CalendarTab::rebuild() {
     std::tm tm{};
     tm.tm_wday = (firstDayOfWeek + i) % 7;
     tm.tm_mday = 1;
-    char buf[32];
-    std::strftime(buf, sizeof(buf), "%a", &tm);
-    weekdays[static_cast<std::size_t>(i)] = buf;
+    weekdays[static_cast<std::size_t>(i)] = formatStrftime("%a", tm);
   }
   auto weekdayRow = std::make_unique<GridView>();
   weekdayRow->setColumns(weekdays.size());

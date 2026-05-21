@@ -71,9 +71,7 @@ namespace {
   }
 
   bool looksLikeRuntimeLauncher(std::string_view value) {
-    std::string normalized(value);
-    std::ranges::transform(normalized, normalized.begin(),
-                           [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+    const std::string normalized = StringUtils::toLower(value);
     if (normalized.empty()) {
       return false;
     }
@@ -90,9 +88,7 @@ namespace {
   }
 
   bool isLikelyFallbackStreamLabel(std::string_view value) {
-    std::string normalized(value);
-    std::ranges::transform(normalized, normalized.begin(),
-                           [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+    std::string normalized = StringUtils::toLower(value);
     for (char& ch : normalized) {
       if (std::isspace(static_cast<unsigned char>(ch)) != 0 || ch == '_') {
         ch = '-';
@@ -114,8 +110,7 @@ namespace {
       if (lastSlash != std::string::npos) {
         value = value.substr(lastSlash + 1);
       }
-      std::ranges::transform(value, value.begin(),
-                             [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+      StringUtils::toLowerInPlace(value);
       return value;
     };
 
@@ -225,7 +220,7 @@ namespace {
     if (lastSlash != std::string::npos) {
       value = value.substr(lastSlash + 1);
     }
-    std::ranges::transform(value, value.begin(), [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+    StringUtils::toLowerInPlace(value);
     return value;
   }
 
@@ -282,10 +277,7 @@ namespace {
       }
     }
 
-    std::string tok(s);
-    std::ranges::transform(tok, tok.begin(), [](unsigned char ch) {
-      return static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
-    });
+    std::string tok = StringUtils::toLower(s);
 
     bool allDigit = true;
     for (char c : tok) {
@@ -1080,11 +1072,10 @@ namespace {
           }
         }
 
+        StringUtils::toLowerInPlace(s);
         for (char& c : s) {
           if (c == ' ' || c == '_') {
             c = '-';
-          } else {
-            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
           }
         }
         return s;

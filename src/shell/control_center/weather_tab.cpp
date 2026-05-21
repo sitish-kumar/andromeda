@@ -753,11 +753,7 @@ std::string WeatherTab::todayIso(std::int32_t utcOffsetSeconds) {
   std::tm tm{};
   gmtime_r(&time, &tm);
 
-  char buf[11]{};
-  if (std::strftime(buf, sizeof(buf), "%Y-%m-%d", &tm) == 0) {
-    return {};
-  }
-  return buf;
+  return formatStrftime("%Y-%m-%d", tm);
 }
 
 std::string WeatherTab::weekdayLabel(const std::string& isoDate) {
@@ -773,11 +769,11 @@ std::string WeatherTab::weekdayLabel(const std::string& isoDate) {
     return isoDate;
   }
 
-  char buf[16];
-  if (std::strftime(buf, sizeof(buf), "%A", &tm) == 0) {
+  const std::string weekday = formatStrftime("%A", tm);
+  if (weekday.empty()) {
     return isoDate;
   }
-  return buf;
+  return weekday;
 }
 
 void WeatherTab::hideEffect() {
