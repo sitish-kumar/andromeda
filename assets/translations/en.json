@@ -845,10 +845,10 @@
           "create-description": "Choose a widget id for type \"{type}\""
         },
         "instance": {
-          "create-title": "New named {type} widget",
           "create-save": "Create",
           "rename": "Rename",
           "id-placeholder": "Widget id",
+          "id-description": "Use letters, numbers, underscores, or hyphens only. No spaces; must be unique.",
           "rename-save": "Save",
           "delete": "Delete",
           "delete-confirm-title": "Delete \"{name}\"?",
@@ -857,7 +857,7 @@
         "inspector": {
           "edit-title": "Editing widget",
           "add-title": "Add widget to {lane}",
-          "add-instance-title": "Add {widget} widget to {lane}",
+          "add-instance-title": "Add new named {widget} widget to {lane}",
           "move-to-lane": "Move to {lane}"
         },
         "detail": {
