@@ -1096,6 +1096,69 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     section->addChild(std::move(col));
   }
 
+  // ── Nerd Font / PUA glyph rendering test. These codepoints live in the
+  // ── Unicode Private Use Area and require a Nerd Font for coverage.
+  {
+    auto col = std::make_unique<Flex>();
+    col->setDirection(FlexDirection::Vertical);
+    col->setAlign(FlexAlign::Start);
+    col->setGap(Style::spaceSm * scale);
+    col->setCardStyle(scale, panelCardOpacity());
+    col->setRadius(Style::scaledRadiusLg(scale));
+    col->setPadding(Style::spaceMd * scale);
+
+    auto title = std::make_unique<Label>();
+    title->setText("Nerd Font symbols (requires a Nerd Font installed)");
+    title->setBold(true);
+    title->setFontSize(Style::fontSizeBody * scale);
+    col->addChild(std::move(title));
+
+    struct NerdSpec {
+      const char* codepoint;
+      const char* symbol;
+    };
+    const NerdSpec symbols[] = {
+        {"U+E612 nf-seti-folder", "\xee\x98\x92"}, {"U+E615 nf-seti-home", "\xee\x98\x95"},
+        {"U+F001 nf-fa-music", "\xef\x80\x81"},    {"U+F008 nf-fa-film", "\xef\x80\x88"},
+        {"U+F013 nf-fa-cog", "\xef\x80\x93"},      {"U+F015 nf-fa-home", "\xef\x80\x95"},
+        {"U+F0E0 nf-fa-envelope", "\xef\x83\xa0"}, {"U+F120 nf-fa-terminal", "\xef\x84\xa0"},
+        {"U+F1D3 nf-fa-git", "\xef\x87\x93"},      {"U+F268 nf-fa-chrome", "\xef\x89\xa8"},
+        {"U+F308 nf-linux-tux", "\xef\x8c\x88"},   {"U+F489 nf-oct-terminal", "\xef\x92\x89"},
+    };
+
+    for (const auto& s : symbols) {
+      auto row = std::make_unique<Flex>();
+      row->setDirection(FlexDirection::Horizontal);
+      row->setAlign(FlexAlign::Center);
+      row->setGap(Style::spaceMd * scale);
+
+      auto tag = std::make_unique<Label>();
+      tag->setText(s.codepoint);
+      tag->setFontSize(Style::fontSizeCaption * scale);
+      tag->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+      tag->setMinWidth(200.0f * scale);
+      row->addChild(std::move(tag));
+
+      const float sizes[] = {Style::fontSizeMini, Style::fontSizeBody, Style::fontSizeTitle, Style::fontSizeHeader};
+      for (float fs : sizes) {
+        auto lbl = std::make_unique<Label>();
+        lbl->setText(s.symbol);
+        lbl->setFontSize(fs * scale);
+        lbl->setColor(colorSpecFromRole(ColorRole::OnSurface));
+        row->addChild(std::move(lbl));
+      }
+
+      auto mixed = std::make_unique<Label>();
+      mixed->setText(std::string(s.symbol) + " inline text");
+      mixed->setFontSize(Style::fontSizeBody * scale);
+      row->addChild(std::move(mixed));
+
+      col->addChild(std::move(row));
+    }
+
+    section->addChild(std::move(col));
+  }
+
   // ── Elision and wrapping tests at body font size. Each row is
   // ── identical text inside boxes of decreasing width.
   {
