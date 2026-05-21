@@ -424,7 +424,7 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
     const bool showLabel = wc != nullptr ? wc->getBool("show_label", true) : true;
     const std::string target = wc != nullptr ? wc->getString("device", "output") : std::string("output");
     const auto volumeTarget = target == "input" ? VolumeWidgetTarget::Input : VolumeWidgetTarget::Output;
-    auto widget = std::make_unique<VolumeWidget>(m_audio, output, showLabel, volumeTarget);
+    auto widget = std::make_unique<VolumeWidget>(m_audio, &m_config, output, showLabel, volumeTarget);
     widget->setContentScale(contentScale);
     return widget;
   }
