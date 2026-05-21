@@ -10,7 +10,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
-
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -540,7 +539,7 @@ namespace {
       systemdArgs.push_back("--user");
       systemdArgs.push_back("--slice=app.slice");
       // Only end the service when all subprocesses have exited. Otherwise, apps using a launcher
-      // script, e.g. vscode, would end prematurely when the script exits, and the actual app process 
+      // script, e.g. vscode, would end prematurely when the script exits, and the actual app process
       // is still running.
       systemdArgs.push_back("--property=ExitType=cgroup");
       if (!appName.empty()) {
@@ -552,13 +551,13 @@ namespace {
       if (!workingDir.empty()) {
         systemdArgs.push_back("--working-directory=" + workingDir);
       }
-      if (!activationToken.empty()) {       
+      if (!activationToken.empty()) {
         ::setenv("XDG_ACTIVATION_TOKEN", activationToken.c_str(), 1);
         ::setenv("DESKTOP_STARTUP_ID", activationToken.c_str(), 1);
       }
 
       // App should inherit our environment.
-      char **s = ::environ;
+      char** s = ::environ;
       for (; *s; s++) {
         systemdArgs.push_back("-E");
         systemdArgs.push_back(*s);
