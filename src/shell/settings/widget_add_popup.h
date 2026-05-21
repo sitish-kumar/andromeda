@@ -70,7 +70,7 @@ namespace settings {
     Flex* m_headerRow = nullptr;
     Flex* m_createActions = nullptr;
     SearchPicker* m_searchPicker = nullptr;
-    Label* m_createTitle = nullptr;
+    Label* m_instanceDescription = nullptr;
     Input* m_instanceInput = nullptr;
     bool m_instanceModeEnabled = false;
     bool m_createFormVisible = false;

@@ -235,7 +235,7 @@ namespace settings {
     m_headerRow = nullptr;
     m_createActions = nullptr;
     m_searchPicker = nullptr;
-    m_createTitle = nullptr;
+    m_instanceDescription = nullptr;
     m_instanceInput = nullptr;
     m_instanceModeEnabled = false;
     m_createFormVisible = false;
@@ -281,9 +281,9 @@ namespace settings {
         refreshPickerOptions();
       }
     }
-    if (m_createTitle != nullptr) {
-      m_createTitle->setVisible(m_createFormVisible);
-      m_createTitle->setParticipatesInLayout(m_createFormVisible);
+    if (m_instanceDescription != nullptr) {
+      m_instanceDescription->setVisible(m_createFormVisible);
+      m_instanceDescription->setParticipatesInLayout(m_createFormVisible);
     }
     if (m_instanceInput != nullptr) {
       m_instanceInput->setVisible(m_createFormVisible);
@@ -322,9 +322,6 @@ namespace settings {
     m_createType = option.value;
     m_createLabel = option.label;
     m_createFormVisible = true;
-    if (m_createTitle != nullptr) {
-      m_createTitle->setText(i18n::tr("settings.entities.widget.instance.create-title", "type", m_createType));
-    }
     if (m_instanceInput != nullptr) {
       m_instanceInput->setValue(suggestedInstanceId(m_createType));
       m_instanceInput->setInvalid(false);
@@ -447,11 +444,15 @@ namespace settings {
     m_searchPicker = picker.get();
     root->addChild(std::move(picker));
 
-    auto createTitle = makeLabel("", Style::fontSizeCaption * m_scale, colorSpecFromRole(ColorRole::OnSurfaceVariant));
-    createTitle->setVisible(false);
-    createTitle->setParticipatesInLayout(false);
-    m_createTitle = createTitle.get();
-    root->addChild(std::move(createTitle));
+    auto instanceDescription =
+        makeLabel(i18n::tr("settings.entities.widget.instance.id-description"), Style::fontSizeCaption * m_scale,
+                  colorSpecFromRole(ColorRole::OnSurfaceVariant));
+    instanceDescription->setMaxWidth(320.0f * m_scale);
+    instanceDescription->setMaxLines(2);
+    instanceDescription->setVisible(false);
+    instanceDescription->setParticipatesInLayout(false);
+    m_instanceDescription = instanceDescription.get();
+    root->addChild(std::move(instanceDescription));
 
     auto instanceInput = std::make_unique<Input>();
     instanceInput->setPlaceholder(i18n::tr("settings.entities.widget.instance.id-placeholder"));
@@ -523,7 +524,7 @@ namespace settings {
 
   std::pair<float, float> WidgetAddPopup::popupSize() const {
     if (m_createFormVisible) {
-      return {360.0f * m_scale, 165.0f * m_scale};
+      return {360.0f * m_scale, 190.0f * m_scale};
     }
     return {520.0f * m_scale, 420.0f * m_scale};
   }
@@ -574,7 +575,7 @@ namespace settings {
     m_headerRow = nullptr;
     m_createActions = nullptr;
     m_searchPicker = nullptr;
-    m_createTitle = nullptr;
+    m_instanceDescription = nullptr;
     m_instanceInput = nullptr;
     m_instanceModeEnabled = false;
     m_createFormVisible = false;
