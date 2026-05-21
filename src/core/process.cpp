@@ -438,7 +438,7 @@ namespace {
     return {exitCode, std::move(out), std::move(err), timedOut, outTruncated, errTruncated};
   }
 
-  // Only alphanum, ':' and '_' allowed in systemd unit names
+  // Only alphanum, ':', '_' and '.' allowed in systemd unit names
   std::string escapeSystemdUnitName(const std::string& input) {
     std::string res;
     for (const unsigned char c : input) {
@@ -631,6 +631,9 @@ namespace process {
   void runAsyncAsApp(const std::vector<std::string>& args, const std::string& appName,
                      const std::string& activationToken, const std::string& workingDir) {
 #ifdef __linux__
+    if (args.empty() || args.front().empty()) {
+      return;
+    }
     // Check if we booted with systemd. The same logic as systemd sd_booted()
     int r = access("/run/systemd/system/", F_OK);
     if (r == 0) {
