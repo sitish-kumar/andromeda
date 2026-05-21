@@ -389,46 +389,20 @@ std::optional<ActiveToplevel> WaylandConnection::matchToplevelByTitleAndAppId(st
 wl_output* WaylandConnection::activeToplevelOutput() const { return m_toplevelsHandler.currentOutput(); }
 
 std::vector<std::string> WaylandConnection::runningAppIds(wl_output* outputFilter) const {
-  std::vector<std::string> ids = m_toplevelsHandler.allAppIds(outputFilter);
-  if (!compositors::isHyprland() || !m_extForeignToplevels.isBound()) {
-    return ids;
-  }
-  std::unordered_set<std::string> seen(ids.begin(), ids.end());
-  for (const auto& appId : m_extForeignToplevels.allAppIds()) {
-    if (!appId.empty() && seen.insert(appId).second) {
-      ids.push_back(appId);
-    }
-  }
-  return ids;
+  return m_toplevelsHandler.allAppIds(outputFilter);
 }
 
 std::vector<ToplevelInfo> WaylandConnection::windowsForApp(const std::string& idLower, const std::string& wmClassLower,
                                                            wl_output* outputFilter) const {
-  auto windows = m_toplevelsHandler.windowsForApp(idLower, wmClassLower, outputFilter);
+  return m_toplevelsHandler.windowsForApp(idLower, wmClassLower, outputFilter);
+}
+
+std::vector<ToplevelInfo> WaylandConnection::extWindowsForApp(const std::string& idLower,
+                                                              const std::string& wmClassLower) const {
   if (!compositors::isHyprland() || !m_extForeignToplevels.isBound()) {
-    return windows;
+    return {};
   }
-
-  std::unordered_set<std::uintptr_t> seenKeys;
-  seenKeys.reserve(windows.size());
-  for (const auto& window : windows) {
-    if (window.handle != nullptr) {
-      seenKeys.insert(reinterpret_cast<std::uintptr_t>(window.handle));
-    }
-  }
-
-  for (auto& window : m_extForeignToplevels.windowsForApp(idLower, wmClassLower)) {
-    if (window.extHandle == nullptr) {
-      continue;
-    }
-    const auto key = reinterpret_cast<std::uintptr_t>(window.extHandle);
-    if (seenKeys.contains(key)) {
-      continue;
-    }
-    seenKeys.insert(key);
-    windows.push_back(std::move(window));
-  }
-  return windows;
+  return m_extForeignToplevels.windowsForApp(idLower, wmClassLower);
 }
 
 void WaylandConnection::activateToplevel(zwlr_foreign_toplevel_handle_v1* handle) {

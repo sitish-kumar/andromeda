@@ -6,6 +6,7 @@
 #include "compositors/hyprland/hyprland_keyboard_backend.h"
 #include "compositors/hyprland/hyprland_output_backend.h"
 #include "compositors/hyprland/hyprland_toplevel_mapping.h"
+#include "compositors/hyprland/hyprland_window_id.h"
 #include "compositors/mango/mango_keyboard_backend.h"
 #include "compositors/mango/mango_output_backend.h"
 #include "compositors/niri/niri_keyboard_backend.h"
@@ -21,6 +22,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include <utility>
 
 namespace compositors {
@@ -41,6 +43,41 @@ namespace compositors {
 } // namespace compositors
 
 namespace {
+
+  void appendHyprlandExtOnlyWindows(std::vector<ToplevelInfo>& windows, const std::vector<ToplevelInfo>& extWindows,
+                                    const compositors::hyprland::HyprlandToplevelMapping& mapping) {
+    std::unordered_set<std::string> wlrRepresentedIds;
+    wlrRepresentedIds.reserve(windows.size());
+    for (const auto& window : windows) {
+      if (window.handle == nullptr) {
+        continue;
+      }
+      const auto windowId = mapping.windowIdForWlrHandle(window.handle);
+      if (!windowId.has_value()) {
+        continue;
+      }
+      const auto normalized = compositors::hyprland::normalizeWindowId(*windowId);
+      if (!normalized.empty()) {
+        wlrRepresentedIds.insert(normalized);
+      }
+    }
+
+    for (const auto& extWindow : extWindows) {
+      if (extWindow.extHandle == nullptr) {
+        continue;
+      }
+      const auto windowId = mapping.windowIdForExtHandle(extWindow.extHandle);
+      if (windowId.has_value()) {
+        const auto normalized = compositors::hyprland::normalizeWindowId(*windowId);
+        // Pre-shell windows are often ext-only: mapping may know a wlr handle Hyprland never
+        // exports via zwlr_foreign_toplevel_management, so dedupe only against live wlr results.
+        if (!normalized.empty() && wlrRepresentedIds.contains(normalized)) {
+          continue;
+        }
+      }
+      windows.push_back(extWindow);
+    }
+  }
 
   template <typename BackendT> class FocusedOutputAdapter final : public compositors::FocusedOutputBackend {
   public:
@@ -378,7 +415,14 @@ std::vector<std::string> CompositorPlatform::runningAppIds(wl_output* outputFilt
 
 std::vector<ToplevelInfo> CompositorPlatform::windowsForApp(const std::string& idLower, const std::string& wmClassLower,
                                                             wl_output* outputFilter) const {
-  return m_wayland.windowsForApp(idLower, wmClassLower, outputFilter);
+  auto windows = m_wayland.windowsForApp(idLower, wmClassLower, outputFilter);
+  if (!compositors::isHyprland() || m_hyprlandToplevelMapping == nullptr || !m_hyprlandToplevelMapping->available() ||
+      !m_wayland.hasExtForeignToplevelList()) {
+    return windows;
+  }
+
+  appendHyprlandExtOnlyWindows(windows, m_wayland.extWindowsForApp(idLower, wmClassLower), *m_hyprlandToplevelMapping);
+  return windows;
 }
 
 void CompositorPlatform::activateToplevel(zwlr_foreign_toplevel_handle_v1* handle) {
@@ -454,10 +498,40 @@ CompositorPlatform::toplevelHandleForCompositorWindowId(const std::string_view w
 }
 
 bool CompositorPlatform::isCompositorWindowIdKnown(const std::string_view windowId) const {
-  if (m_hyprlandToplevelMapping == nullptr) {
+  if (m_hyprlandToplevelMapping == nullptr || !m_hyprlandToplevelMapping->available()) {
     return false;
   }
-  return m_hyprlandToplevelMapping->isWindowIdKnown(windowId);
+
+  const auto normalized = compositors::hyprland::normalizeWindowId(windowId);
+  if (normalized.empty()) {
+    return false;
+  }
+
+  if (const auto* wlrHandle = m_hyprlandToplevelMapping->wlrHandleForWindowId(normalized)) {
+    bool live = false;
+    m_wayland.visitWlrToplevelHandles([&](zwlr_foreign_toplevel_handle_v1* handle) {
+      if (handle == wlrHandle) {
+        live = true;
+      }
+    });
+    if (live) {
+      return true;
+    }
+  }
+
+  if (const auto* extHandle = m_hyprlandToplevelMapping->extHandleForWindowId(normalized)) {
+    bool live = false;
+    m_wayland.visitExtToplevelHandles([&](ext_foreign_toplevel_handle_v1* handle) {
+      if (handle == extHandle) {
+        live = true;
+      }
+    });
+    if (live) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 std::optional<std::string> CompositorPlatform::focusedCompositorWindowId() const {
