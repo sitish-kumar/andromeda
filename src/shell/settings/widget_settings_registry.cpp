@@ -638,12 +638,18 @@ namespace settings {
       add(doubleSpec("max_length", 160.0, 40.0, 800.0, 1.0));
       add(boolSpec("show_condition", true));
     } else if (type == "workspaces") {
+      const WidgetSettingVisibility pillStyleOnly{{"minimal", {"false"}}};
       for (auto& spec : specs) {
         if (spec.key == "capsule_radius") {
           spec.descriptionKey = "settings.widgets.settings.capsule_radius.workspaces-description";
-          spec.visibleWhen.reset();
+          spec.visibleWhen = pillStyleOnly;
           break;
         }
+      }
+      {
+        auto minimal = boolSpec("minimal", false);
+        minimal.descriptionKey = "settings.widgets.settings.minimal.workspaces-description";
+        add(std::move(minimal));
       }
       add(segmentedSpec("display", "id", workspaceDisplay));
       {
@@ -659,6 +665,7 @@ namespace settings {
       {
         auto pillScale = doubleSpec("pill_scale", 1.0, 0.1, 1.0, 0.1);
         pillScale.descriptionKey = "settings.widgets.settings.pill_scale.workspaces-description";
+        pillScale.visibleWhen = pillStyleOnly;
         add(std::move(pillScale));
       }
       {

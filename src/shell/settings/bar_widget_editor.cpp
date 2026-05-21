@@ -11,6 +11,7 @@
 #include "ui/controls/input.h"
 #include "ui/controls/label.h"
 #include "ui/controls/separator.h"
+#include "ui/controls/toggle.h"
 #include "ui/dialogs/file_dialog.h"
 #include "ui/dialogs/glyph_picker_dialog.h"
 #include "ui/palette.h"
@@ -652,6 +653,39 @@ namespace settings {
       return options;
     }
 
+    [[nodiscard]] bool workspacesMinimalEnabled(const Config& cfg, std::string_view widgetName,
+                                                const std::vector<WidgetSettingSpec>& allSpecs) {
+      for (const auto& spec : allSpecs) {
+        if (spec.key == "minimal") {
+          return settingValueAsBool(widgetSettingValue(cfg, widgetName, spec));
+        }
+      }
+      return false;
+    }
+
+    SelectSetting workspacesDisplaySelectSetting(const BarWidgetEditorContext& ctx, std::string_view widgetName,
+                                                 const WidgetSettingSpec& displaySpec,
+                                                 const std::vector<WidgetSettingSpec>& allSpecs,
+                                                 std::string selectedValue) {
+      const bool minimal = workspacesMinimalEnabled(ctx.config, widgetName, allSpecs);
+      if (minimal && selectedValue == "none") {
+        selectedValue = "id";
+      }
+
+      std::vector<SelectOption> options;
+      options.reserve(displaySpec.options.size());
+      for (const auto& option : displaySpec.options) {
+        if (minimal && option.value == "none") {
+          continue;
+        }
+        options.push_back(
+            SelectOption{option.value, displaySpec.literalLabels ? option.labelKey : i18n::tr(option.labelKey)});
+      }
+      SelectSetting selectSetting{std::move(options), std::move(selectedValue)};
+      selectSetting.segmented = displaySpec.segmented;
+      return selectSetting;
+    }
+
     SelectSetting batteryDeviceSelectSetting(const BarWidgetEditorContext& ctx, std::string selectedValue) {
       if (selectedValue.empty()) {
         selectedValue = "auto";
@@ -867,7 +901,26 @@ namespace settings {
           if (const auto* defaultBool = std::get_if<bool>(&spec.defaultValue)) {
             clearWhenValue = *defaultBool;
           }
-          ctx.makeRow(*panel, entry, ctx.makeToggle(settingValueAsBool(value), path, clearWhenValue));
+          if (widgetType == "workspaces" && spec.key == "minimal") {
+            auto toggle = std::make_unique<Toggle>();
+            toggle->setScale(ctx.scale);
+            toggle->setChecked(settingValueAsBool(value));
+            toggle->setOnChange([&ctx, setOverride = ctx.setOverride, requestRebuild = ctx.requestRebuild,
+                                 widgetName = std::string(widgetName), path,
+                                 displayPath = widgetSettingPath(std::string(widgetName), "display"),
+                                 specs](bool enabled) {
+              setOverride(path, enabled);
+              if (enabled && settingCurrentString(ctx.config, widgetName, "display", specs) == "none") {
+                setOverride(displayPath, std::string("id"));
+              }
+              if (requestRebuild) {
+                requestRebuild();
+              }
+            });
+            ctx.makeRow(*panel, entry, std::move(toggle));
+          } else {
+            ctx.makeRow(*panel, entry, ctx.makeToggle(settingValueAsBool(value), path, clearWhenValue));
+          }
           break;
         }
         case WidgetSettingValueType::Int: {
@@ -997,6 +1050,8 @@ namespace settings {
           const std::string selectedValue = settingValueAsString(value);
           if (widgetType == "battery" && spec.key == "device") {
             selectSetting = batteryDeviceSelectSetting(ctx, selectedValue);
+          } else if (widgetType == "workspaces" && spec.key == "display") {
+            selectSetting = workspacesDisplaySelectSetting(ctx, widgetName, spec, specs, selectedValue);
           } else {
             std::vector<SelectOption> options;
             options.reserve(spec.options.size());

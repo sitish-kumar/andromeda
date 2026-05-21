@@ -34,10 +34,18 @@ namespace {
 
 WorkspacesWidget::WorkspacesWidget(CompositorPlatform& platform, wl_output* output, DisplayMode displayMode,
                                    ColorSpec focusedColor, ColorSpec occupiedColor, ColorSpec emptyColor,
-                                   std::size_t maxLabelChars, bool hideWhenEmpty, float pillScale)
+                                   std::size_t maxLabelChars, bool hideWhenEmpty, float pillScale, bool minimal)
     : m_platform(platform), m_output(output), m_displayMode(displayMode), m_maxLabelChars(maxLabelChars),
-      m_hideWhenEmpty(hideWhenEmpty), m_pillScale(pillScale), m_focusedColor(std::move(focusedColor)),
-      m_occupiedColor(std::move(occupiedColor)), m_emptyColor(std::move(emptyColor)) {}
+      m_hideWhenEmpty(hideWhenEmpty), m_pillScale(pillScale), m_minimal(minimal),
+      m_focusedColor(std::move(focusedColor)), m_occupiedColor(std::move(occupiedColor)),
+      m_emptyColor(std::move(emptyColor)) {}
+
+WorkspacesWidget::DisplayMode WorkspacesWidget::effectiveDisplayMode() const noexcept {
+  if (m_minimal && m_displayMode == DisplayMode::None) {
+    return DisplayMode::Id;
+  }
+  return m_displayMode;
+}
 
 void WorkspacesWidget::create() {
   auto container = std::make_unique<InputArea>();
@@ -163,7 +171,7 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
   const auto& workspaces = m_cachedState;
   const float gap = kWorkspaceGap * m_contentScale;
   const float labelFontSize = Style::fontSizeMini * m_contentScale;
-  const float indicatorHeight = std::round(kWorkspacePillDefaultHeight * m_contentScale * m_pillScale);
+  const float pillHeight = std::round(kWorkspacePillDefaultHeight * m_contentScale * m_pillScale);
 
   std::vector<std::string> labels;
   labels.reserve(workspaces.size());
@@ -189,7 +197,7 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
   for (std::size_t i = 0; i < workspaces.size(); ++i) {
     auto& slot = slots[i];
     slot.label = labels[i];
-    slot.showLabel = (m_displayMode != DisplayMode::None) && !labels[i].empty();
+    slot.showLabel = (effectiveDisplayMode() != DisplayMode::None) && !labels[i].empty();
 
     // Detect numeric labels (workspace IDs like "1", "10", "11")
     slot.isNumeric = !labels[i].empty() && std::all_of(labels[i].begin(), labels[i].end(), [](char c) {
@@ -205,13 +213,31 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
     }
   }
 
-  const float baseSize = std::round(indicatorHeight);
-  const float padding = baseSize * 0.6f;
+  const float baseSize = std::round(pillHeight);
+  const float padding = m_minimal ? (Style::spaceXs * m_contentScale) : (baseSize * 0.6f);
   constexpr float kActiveFactor = 2.2f;
   constexpr float kInactiveFactor = 1.0f;
 
+  float maxLabelHeight = labelFontSize;
   for (std::size_t i = 0; i < workspaces.size(); ++i) {
     auto& slot = slots[i];
+    if (m_minimal) {
+      const float minWidth = baseSize;
+      if (!slot.showLabel) {
+        slot.inactiveWidth = minWidth;
+        slot.activeWidth = minWidth;
+      } else {
+        const float textBasedWidth = slot.textWidth + padding * 2.0f;
+        slot.inactiveWidth = std::max(minWidth, textBasedWidth);
+        slot.activeWidth = slot.inactiveWidth;
+      }
+      if (slot.showLabel) {
+        const TextMetrics tm = renderer.measureText(slot.label, labelFontSize, true);
+        maxLabelHeight = std::max(maxLabelHeight, tm.bottom - tm.top);
+      }
+      continue;
+    }
+
     const float minWidth = baseSize * kInactiveFactor;
     const float minActiveWidth = baseSize * kActiveFactor;
 
@@ -226,7 +252,7 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
   }
 
   m_gap = gap;
-  m_indicatorHeight = std::round(indicatorHeight);
+  m_indicatorHeight = m_minimal ? std::round(maxLabelHeight + padding) : pillHeight;
 
   for (std::size_t i = 0; i < workspaces.size(); ++i) {
     const auto& ws = workspaces[i];
@@ -243,21 +269,24 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
     item.inactiveWidth = slot.inactiveWidth;
     item.activeWidth = slot.activeWidth;
     item.inkCenterOffset = slot.inkCenterOffset;
-    auto indicator = std::make_unique<Box>();
-    indicator->clearBorder();
-    const float indicatorW = m_isVertical ? m_indicatorHeight : w;
-    const float indicatorH = m_isVertical ? w : m_indicatorHeight;
-    indicator->setRadius(workspacePillRadius(indicatorW, indicatorH));
-    indicator->setFrameSize(w, m_indicatorHeight);
-    indicator->setFill(workspaceFillColor(ws));
-    indicator->clearBorder();
-    item.indicator = static_cast<Box*>(area->addChild(std::move(indicator)));
+
+    if (!m_minimal) {
+      auto indicator = std::make_unique<Box>();
+      indicator->clearBorder();
+      const float indicatorW = m_isVertical ? m_indicatorHeight : w;
+      const float indicatorH = m_isVertical ? w : m_indicatorHeight;
+      indicator->setRadius(workspacePillRadius(indicatorW, indicatorH));
+      indicator->setFrameSize(w, m_indicatorHeight);
+      indicator->setFill(workspaceFillColor(ws));
+      indicator->clearBorder();
+      item.indicator = static_cast<Box*>(area->addChild(std::move(indicator)));
+    }
 
     if (slot.showLabel) {
       auto text = std::make_unique<Label>();
       text->setText(slot.label);
       text->setFontSize(labelFontSize);
-      text->setBold(true);
+      text->setBold(!m_minimal || ws.active);
       text->setColor(workspaceTextColor(ws));
       if (m_isVertical) {
         text->setBaselineMode(LabelBaselineMode::InkCentered);
@@ -335,14 +364,6 @@ void WorkspacesWidget::updateContainerSize() {
 }
 
 void WorkspacesWidget::retarget(Renderer& renderer) {
-  (void)renderer;
-  // Snapshot current positions as "from" values and compute new targets.
-  for (auto& it : m_items) {
-    it.fromX = it.currentX;
-    it.fromWidth = it.currentWidth;
-  }
-  computeTargets();
-
   for (std::size_t i = 0; i < m_items.size(); ++i) {
     auto& it = m_items[i];
     const auto& ws = m_cachedState[i];
@@ -365,9 +386,30 @@ void WorkspacesWidget::retarget(Renderer& renderer) {
     }
     if (it.text != nullptr) {
       it.text->setColor(workspaceTextColor(ws));
+      it.text->setBold(!m_minimal || ws.active);
     }
   }
 
+  if (m_minimal) {
+    computeTargets();
+    for (std::size_t i = 0; i < m_items.size(); ++i) {
+      auto& it = m_items[i];
+      it.currentX = it.targetX;
+      it.currentWidth = it.targetWidth;
+      applyItemLayout(i);
+    }
+    updateContainerSize();
+    if (root() != nullptr) {
+      root()->markPaintDirty();
+    }
+    return;
+  }
+
+  for (auto& it : m_items) {
+    it.fromX = it.currentX;
+    it.fromWidth = it.currentWidth;
+  }
+  computeTargets();
   startAnimation();
 }
 
@@ -438,6 +480,7 @@ void WorkspacesWidget::applyItemLayout(std::size_t i) {
   if (it.indicator != nullptr) {
     const float itemW = m_isVertical ? m_indicatorHeight : it.currentWidth;
     const float itemH = m_isVertical ? it.currentWidth : m_indicatorHeight;
+    it.indicator->setFrameSize(itemW, itemH);
     it.indicator->setRadius(workspacePillRadius(itemW, itemH));
   }
 }
@@ -485,7 +528,8 @@ void WorkspacesWidget::activateAdjacentWorkspace(int direction) {
 }
 
 std::string WorkspacesWidget::workspaceLabel(const Workspace& workspace, std::size_t displayIndex) const {
-  if (m_displayMode == DisplayMode::Id) {
+  const DisplayMode displayMode = effectiveDisplayMode();
+  if (displayMode == DisplayMode::Id) {
     if (workspace.index > 0) {
       return std::to_string(workspace.index);
     }
@@ -494,7 +538,7 @@ std::string WorkspacesWidget::workspaceLabel(const Workspace& workspace, std::si
     }
     return std::to_string(displayIndex + 1);
   }
-  if (m_displayMode == DisplayMode::Name) {
+  if (displayMode == DisplayMode::Name) {
     std::string label = !workspace.name.empty() ? workspace.name : workspace.id;
     // Only truncate non-numeric labels (words like "VESKTOP" → "VE").
     // Numeric labels (workspace IDs like "10", "11") stay as-is.
@@ -550,9 +594,20 @@ ColorSpec WorkspacesWidget::workspaceFillColor(const Workspace& workspace) const
 
 ColorSpec WorkspacesWidget::workspaceTextColor(const Workspace& workspace) const {
   if (workspace.urgent) {
-    return colorSpecFromRole(ColorRole::OnError);
+    return m_minimal ? colorSpecFromRole(ColorRole::Error) : colorSpecFromRole(ColorRole::OnError);
   }
-  return readableColorForFill(workspaceFillColor(workspace));
+  if (!m_minimal) {
+    return readableColorForFill(workspaceFillColor(workspace));
+  }
+  if (workspace.active) {
+    return m_focusedColor;
+  }
+  if (workspace.occupied) {
+    return m_occupiedColor;
+  }
+  ColorSpec color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+  color.alpha *= 0.55f;
+  return color;
 }
 
 ColorRole WorkspacesWidget::onRoleForFill(ColorRole fill) {
