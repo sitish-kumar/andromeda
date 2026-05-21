@@ -232,6 +232,19 @@ namespace {
 
   float notificationTextMaxWidth() { return std::max(0.0f, kCardWidth - notificationTextStartX() - kCardInnerPad); }
 
+  void configureNotificationActionsRow(Flex& row) {
+    row.setDirection(FlexDirection::Horizontal);
+    row.setAlign(FlexAlign::Center);
+    row.setJustify(FlexJustify::End);
+    row.setGap(kActionGap);
+  }
+
+  float layoutNotificationActionsRow(RenderContext& rc, Flex& row) {
+    row.setSize(notificationTextMaxWidth(), 0.0f);
+    row.layout(rc);
+    return row.height() + kActionRowGap;
+  }
+
   bool isCloseButtonHit(float localX, float localY) {
     const float closeLeft = static_cast<float>(kCardWidth) - kCardInnerPad - kCloseButtonSize;
     const float closeTop = kCardInnerPad;
@@ -245,9 +258,7 @@ namespace {
     }
 
     auto actionsRow = std::make_unique<Flex>();
-    actionsRow->setDirection(FlexDirection::Horizontal);
-    actionsRow->setAlign(FlexAlign::Center);
-    actionsRow->setGap(kActionGap);
+    configureNotificationActionsRow(*actionsRow);
 
     int actionCount = 0;
     for (std::size_t i = 0; i + 1 < actions.size() && actionCount < kMaxActionButtons; i += 2) {
@@ -264,6 +275,7 @@ namespace {
       actionButton->setVariant(ButtonVariant::Outline);
       actionButton->setFontSize(Style::fontSizeCaption);
       actionButton->setText(actionLabel);
+      actionButton->setFlexGrow(1.0f);
       actionsRow->addChild(std::move(actionButton));
       ++actionCount;
     }
@@ -272,8 +284,7 @@ namespace {
       return 0.0f;
     }
 
-    actionsRow->layout(rc);
-    return actionsRow->height() + kActionRowGap;
+    return layoutNotificationActionsRow(rc, *actionsRow);
   }
 
   struct ToastGeometry {
@@ -1912,9 +1923,7 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
 
     // Build action buttons row (always visible initially)
     actionsRow = std::make_unique<Flex>();
-    actionsRow->setDirection(FlexDirection::Horizontal);
-    actionsRow->setAlign(FlexAlign::Center);
-    actionsRow->setGap(kActionGap);
+    configureNotificationActionsRow(*actionsRow);
 
     int actionCount = 0;
     for (std::size_t i = 0; i + 1 < entry.actions.size() && actionCount < kMaxActionButtons; i += 2) {
@@ -1931,6 +1940,7 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
       actionButton->setVariant(ButtonVariant::Outline);
       actionButton->setFontSize(Style::fontSizeCaption);
       actionButton->setText(actionLabel);
+      actionButton->setFlexGrow(1.0f);
       actionButton->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
       actionButton->setOnEnter([this, notificationId]() {
         pauseCountdowns(notificationId);
@@ -1977,8 +1987,7 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
     }
 
     if (actionCount > 0) {
-      actionsRow->layout(*m_renderContext);
-      actionsReservedHeight = actionsRow->height() + kActionRowGap;
+      actionsReservedHeight = layoutNotificationActionsRow(*m_renderContext, *actionsRow);
     } else {
       actionsRow.reset();
     }

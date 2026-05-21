@@ -484,10 +484,23 @@ void Button::doLayout(Renderer& renderer) {
   const bool hasVisibleLabel = m_label != nullptr && m_label->visible();
   const bool glyphOnly = m_glyph != nullptr && !hasVisibleLabel;
 
+  const float innerWidth = assignedWidth > 0.0f ? std::max(0.0f, assignedWidth - paddingLeft() - paddingRight()) : 0.0f;
   if (m_label != nullptr) {
+    if (innerWidth > 0.0f) {
+      // Parent flex assigned a width (e.g. notification action buttons). Give the label the
+      // full inner main axis so Pango ellipsizes instead of painting past the button chrome.
+      m_label->setFlexGrow(1.0f);
+      m_label->setMaxWidth(innerWidth);
+    } else {
+      m_label->setFlexGrow(0.0f);
+      m_label->setMaxWidth(0.0f);
+    }
     m_label->measure(renderer);
   }
   if (m_glyph != nullptr) {
+    if (innerWidth > 0.0f) {
+      m_glyph->setFlexGrow(0.0f);
+    }
     m_glyph->measure(renderer);
   }
 
