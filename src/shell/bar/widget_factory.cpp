@@ -398,9 +398,22 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
     }
     const bool hideEmptyWorkspaces = wc != nullptr ? wc->getBool("hide_empty_workspaces", false) : false;
     const bool workspaceGroupCapsule = wc != nullptr ? wc->getBool("workspace_group_capsule", true) : true;
-    auto widget = std::make_unique<TaskbarWidget>(
-        m_platform, output, groupByWorkspace, showAllOutputs, onlyActiveWorkspace, showWorkspaceLabel,
-        workspaceLabelPlacement, hideEmptyWorkspaces, workspaceGroupCapsule, barPosition, m_config.shell.shadow);
+    const ColorSpec focusedColor = wc != nullptr
+                                       ? wc->getColorSpec("focused_color", colorSpecFromRole(ColorRole::Primary),
+                                                          "widget." + name + ".focused_color")
+                                       : colorSpecFromRole(ColorRole::Primary);
+    const ColorSpec occupiedColor = wc != nullptr
+                                        ? wc->getColorSpec("occupied_color", colorSpecFromRole(ColorRole::Secondary),
+                                                           "widget." + name + ".occupied_color")
+                                        : colorSpecFromRole(ColorRole::Secondary);
+    const ColorSpec emptyColor = wc != nullptr
+                                     ? wc->getColorSpec("empty_color", colorSpecFromRole(ColorRole::Secondary),
+                                                        "widget." + name + ".empty_color")
+                                     : colorSpecFromRole(ColorRole::Secondary);
+    auto widget = std::make_unique<TaskbarWidget>(m_platform, output, groupByWorkspace, showAllOutputs,
+                                                  onlyActiveWorkspace, showWorkspaceLabel, workspaceLabelPlacement,
+                                                  hideEmptyWorkspaces, workspaceGroupCapsule, focusedColor,
+                                                  occupiedColor, emptyColor, barPosition, m_config.shell.shadow);
     widget->setContentScale(contentScale);
     return widget;
   }

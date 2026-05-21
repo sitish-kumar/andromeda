@@ -5,6 +5,7 @@
 #include "core/deferred_call.h"
 #include "core/process.h"
 #include "i18n/i18n.h"
+#include "render/core/color.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
 #include "shell/panel/panel_manager.h"
@@ -18,6 +19,7 @@
 #include "ui/controls/glyph.h"
 #include "ui/controls/image.h"
 #include "ui/controls/label.h"
+#include "ui/palette.h"
 #include "ui/style.h"
 #include "util/string_utils.h"
 #include "wayland/wayland_seat.h"
@@ -56,18 +58,18 @@ namespace {
 
   [[nodiscard]] ExternalBadgePosition externalBadgePosition(WorkspaceLabelPlacement placement, bool vertical,
                                                             float groupWidth, float groupHeight, float badgeWidth,
-                                                            float badgeBase) {
+                                                            float badgeHeight, float outlineInset) {
     const float cornerLeft = std::round(badgeWidth * -0.32f);
-    const float cornerTop = std::round(badgeBase * -0.22f);
+    const float cornerTop = std::round(badgeHeight * -0.22f);
     if (placement != WorkspaceLabelPlacement::Centered) {
       return {cornerLeft, cornerTop};
     }
     if (vertical) {
-      // Vertical bar: badge on the pill start edge, centered on the cross (horizontal) axis.
-      return {std::round((groupWidth - badgeWidth) * 0.5f), cornerTop};
+      // Vertical bar: badge straddles the top outline, centered on the pill cross axis.
+      return {centeredOffset(groupWidth, badgeWidth, outlineInset, false), std::round(-badgeHeight * 0.5f)};
     }
-    // Horizontal bar: badge on the left edge, centered on the cross (vertical) axis.
-    return {cornerLeft, std::round((groupHeight - badgeBase) * 0.5f)};
+    // Horizontal bar: badge straddles the left outline, centered on the pill cross axis.
+    return {std::round(-badgeWidth * 0.5f), centeredOffset(groupHeight, badgeHeight, outlineInset, true)};
   }
 
   [[nodiscard]] float fitBadgeFontSize(Renderer& renderer, std::string_view label, float maxWidth, float maxHeight,
@@ -109,13 +111,14 @@ namespace {
 TaskbarWidget::TaskbarWidget(CompositorPlatform& platform, wl_output* output, bool groupByWorkspace,
                              bool showAllOutputs, bool onlyActiveWorkspace, bool showWorkspaceLabel,
                              WorkspaceLabelPlacement workspaceLabelPlacement, bool hideEmptyWorkspaces,
-                             bool workspaceGroupCapsule, std::string barPosition,
-                             ShellConfig::ShadowConfig shadowConfig)
+                             bool workspaceGroupCapsule, ColorSpec focusedColor, ColorSpec occupiedColor,
+                             ColorSpec emptyColor, std::string barPosition, ShellConfig::ShadowConfig shadowConfig)
     : m_platform(platform), m_output(output), m_groupByWorkspace(groupByWorkspace), m_showAllOutputs(showAllOutputs),
       m_onlyActiveWorkspace(onlyActiveWorkspace), m_showWorkspaceLabel(showWorkspaceLabel),
       m_workspaceLabelPlacement(workspaceLabelPlacement), m_hideEmptyWorkspaces(hideEmptyWorkspaces),
-      m_workspaceGroupCapsule(workspaceGroupCapsule), m_barPosition(std::move(barPosition)),
-      m_shadowConfig(std::move(shadowConfig)) {
+      m_workspaceGroupCapsule(workspaceGroupCapsule), m_focusedColor(std::move(focusedColor)),
+      m_occupiedColor(std::move(occupiedColor)), m_emptyColor(std::move(emptyColor)),
+      m_barPosition(std::move(barPosition)), m_shadowConfig(std::move(shadowConfig)) {
   buildDesktopIconIndex();
 }
 
@@ -224,6 +227,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
   const float tilePadding = Style::spaceXs * 0.35f * m_contentScale;
   const float tileSize = std::round(iconSize + tilePadding * 2.0f);
   const float groupBorderInset = Style::borderWidth * m_contentScale;
+  const float groupOutlineInset = m_workspaceGroupCapsule ? groupBorderInset : 0.0f;
   const auto workspaceAxisHandler = [this](const InputArea::PointerData& data) -> bool {
     if (!m_groupByWorkspace) {
       return false;
@@ -338,8 +342,8 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     const auto styleWorkspaceDisc = [this](Box& badge, float width, float height, const Workspace& workspace) {
       badge.setFrameSize(width, height);
       badge.setRadius(resolvedBarCapsuleRadius(width, height));
-      badge.setFill(colorSpecFromRole(workspace.active ? ColorRole::Primary : ColorRole::Surface));
-      badge.setBorder(colorSpecFromRole(ColorRole::Outline, 0.45f), Style::borderWidth);
+      badge.setFill(workspaceFillColor(workspace));
+      badge.clearBorder();
     };
 
     if (externalBadge) {
@@ -379,7 +383,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       badgeText->setText(ws.label);
       badgeText->setBold(true);
       badgeText->setFontSize(badgeFontSize);
-      badgeText->setColor(colorSpecFromRole(ws.workspace.active ? ColorRole::OnPrimary : ColorRole::OnSurface));
+      badgeText->setColor(workspaceTextColor(ws.workspace));
       badgeText->measure(renderer);
       badgeText->setPosition(std::round((tileSize - badgeText->width()) * 0.5f),
                              std::round((tileSize - badgeText->height()) * 0.5f));
@@ -390,7 +394,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     auto addExternalWorkspaceBadge = [&](Box* groupPtr, const WorkspaceModel& ws, float groupWidth, float groupHeight,
                                          const WorkspaceDiscSize& disc, bool emptyWorkspace) {
       const auto badgePos = externalBadgePosition(m_workspaceLabelPlacement, m_vertical, groupWidth, groupHeight,
-                                                  disc.width, disc.height);
+                                                  disc.width, disc.height, groupOutlineInset);
       auto badgeHit = std::make_unique<InputArea>();
       badgeHit->setFrameSize(disc.width, disc.height);
       badgeHit->setPosition(badgePos.left, badgePos.top);
@@ -414,7 +418,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       badgeText->setText(ws.label);
       badgeText->setBold(true);
       badgeText->setFontSize(badgeFontSize);
-      badgeText->setColor(colorSpecFromRole(ws.workspace.active ? ColorRole::OnPrimary : ColorRole::OnSurface));
+      badgeText->setColor(workspaceTextColor(ws.workspace));
       badgeText->measure(renderer);
       badgeText->setPosition(std::round((disc.width - badgeText->width()) * 0.5f),
                              std::round((disc.height - badgeText->height()) * 0.5f));
@@ -478,9 +482,10 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       }
 
       const float groupCross = m_vertical ? groupWidth : groupHeight;
-      const float tileCross =
-          inlineBadge ? centeredOffset(groupCross, tileSize, groupBorderInset, true)
-                      : (m_vertical ? centeredOffset(groupCross, tileSize, groupBorderInset, false) : groupPadCross);
+      const float tileCross = inlineBadge
+                                  ? centeredOffset(groupCross, tileSize, groupOutlineInset, true)
+                                  : (m_vertical ? centeredOffset(groupCross, tileSize, groupOutlineInset, false)
+                                                : centeredOffset(groupCross, tileSize, groupOutlineInset, true));
       const float tileMain = inlineBadge ? groupPadMain : groupPadStart;
 
       auto group = std::make_unique<Box>();
@@ -1672,4 +1677,60 @@ std::string TaskbarWidget::workspaceKeyPrefixForOutput(wl_output* out) const {
 
 wl_output* TaskbarWidget::workspaceHostOutput(const WorkspaceModel& model) const noexcept {
   return model.hostOutput != nullptr ? model.hostOutput : m_output;
+}
+
+ColorSpec TaskbarWidget::workspaceFillColor(const Workspace& workspace) const {
+  if (workspace.active) {
+    return m_focusedColor;
+  }
+  if (workspace.urgent) {
+    return colorSpecFromRole(ColorRole::Error);
+  }
+  if (workspace.occupied) {
+    return m_occupiedColor;
+  }
+  ColorSpec color = m_emptyColor;
+  color.alpha *= 0.55f;
+  return color;
+}
+
+ColorSpec TaskbarWidget::workspaceTextColor(const Workspace& workspace) const {
+  if (workspace.urgent) {
+    return colorSpecFromRole(ColorRole::OnError);
+  }
+  return readableColorForFill(workspaceFillColor(workspace));
+}
+
+ColorRole TaskbarWidget::onRoleForFill(ColorRole fill) {
+  switch (fill) {
+  case ColorRole::Primary:
+    return ColorRole::OnPrimary;
+  case ColorRole::Secondary:
+    return ColorRole::OnSecondary;
+  case ColorRole::Tertiary:
+    return ColorRole::OnTertiary;
+  case ColorRole::Error:
+    return ColorRole::OnError;
+  case ColorRole::Surface:
+  case ColorRole::SurfaceVariant:
+  case ColorRole::Outline:
+  case ColorRole::Shadow:
+  case ColorRole::Hover:
+  case ColorRole::OnPrimary:
+  case ColorRole::OnSecondary:
+  case ColorRole::OnTertiary:
+  case ColorRole::OnError:
+  case ColorRole::OnSurface:
+  case ColorRole::OnSurfaceVariant:
+  case ColorRole::OnHover:
+    return ColorRole::OnSurface;
+  }
+  return ColorRole::OnSurface;
+}
+
+ColorSpec TaskbarWidget::readableColorForFill(const ColorSpec& fill) {
+  if (fill.role.has_value()) {
+    return colorSpecFromRole(onRoleForFill(*fill.role));
+  }
+  return fixedColorSpec(readableTextColorForBackground(resolveColorSpec(fill)));
 }

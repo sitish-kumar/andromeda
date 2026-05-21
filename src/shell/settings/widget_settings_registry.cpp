@@ -617,6 +617,23 @@ namespace settings {
             WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
         add(std::move(groupCapsule));
       }
+      const WidgetSettingVisibility groupedWorkspaceSettings{
+          WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
+      {
+        auto focusedColor = colorSpec("focused_color", "primary");
+        focusedColor.visibleWhen = groupedWorkspaceSettings;
+        add(std::move(focusedColor));
+      }
+      {
+        auto occupiedColor = colorSpec("occupied_color", "secondary");
+        occupiedColor.visibleWhen = groupedWorkspaceSettings;
+        add(std::move(occupiedColor));
+      }
+      {
+        auto emptyColor = colorSpec("empty_color", "secondary");
+        emptyColor.visibleWhen = groupedWorkspaceSettings;
+        add(std::move(emptyColor));
+      }
       for (auto& spec : specs) {
         if (spec.key == "capsule_radius") {
           spec.descriptionKey = "settings.widgets.settings.capsule_radius.taskbar-description";
