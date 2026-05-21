@@ -395,9 +395,10 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
       }
     }
     const bool hideEmptyWorkspaces = wc != nullptr ? wc->getBool("hide_empty_workspaces", false) : false;
-    auto widget = std::make_unique<TaskbarWidget>(m_platform, output, groupByWorkspace, showAllOutputs,
-                                                  onlyActiveWorkspace, showWorkspaceLabel, workspaceLabelPlacement,
-                                                  hideEmptyWorkspaces, barPosition, m_config.shell.shadow);
+    const bool workspaceGroupCapsule = wc != nullptr ? wc->getBool("workspace_group_capsule", true) : true;
+    auto widget = std::make_unique<TaskbarWidget>(
+        m_platform, output, groupByWorkspace, showAllOutputs, onlyActiveWorkspace, showWorkspaceLabel,
+        workspaceLabelPlacement, hideEmptyWorkspaces, workspaceGroupCapsule, barPosition, m_config.shell.shadow);
     widget->setContentScale(contentScale);
     return widget;
   }

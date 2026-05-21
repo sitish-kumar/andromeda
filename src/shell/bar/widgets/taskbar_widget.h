@@ -28,7 +28,8 @@ class TaskbarWidget : public Widget {
 public:
   TaskbarWidget(CompositorPlatform& platform, wl_output* output, bool groupByWorkspace, bool showAllOutputs,
                 bool onlyActiveWorkspace, bool showWorkspaceLabel, WorkspaceLabelPlacement workspaceLabelPlacement,
-                bool hideEmptyWorkspaces, std::string barPosition, ShellConfig::ShadowConfig shadowConfig);
+                bool hideEmptyWorkspaces, bool workspaceGroupCapsule, std::string barPosition,
+                ShellConfig::ShadowConfig shadowConfig);
   ~TaskbarWidget() override;
 
   void create() override;
@@ -93,6 +94,7 @@ private:
   bool m_showWorkspaceLabel = true;
   WorkspaceLabelPlacement m_workspaceLabelPlacement = WorkspaceLabelPlacement::Corner;
   bool m_hideEmptyWorkspaces = false;
+  bool m_workspaceGroupCapsule = true;
   std::string m_barPosition;
   ShellConfig::ShadowConfig m_shadowConfig;
   bool m_rebuildPending = true;

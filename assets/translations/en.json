@@ -1151,9 +1151,9 @@
         },
         "capsule_radius": {
           "label": "Capsule Radius",
-          "description": "Corner radius for this widget capsule; leave blank for automatic pill shape",
-          "taskbar-description": "Corner radius for this widget capsule and taskbar workspace groups; leave blank for automatic pill shape",
-          "workspaces-description": "Corner radius for this widget capsule and workspace pills; leave blank for automatic pill shape"
+          "description": "Corner radius for this widget capsule; leave blank for automatic pill shape, or set 0 for square corners",
+          "taskbar-description": "Corner radius for the widget capsule, workspace disc indicators, and workspace group capsules; leave blank for automatic pill shape, or set 0 for square corners",
+          "workspaces-description": "Corner radius for this widget capsule and workspace pills; leave blank for automatic pill shape, or set 0 for square corners"
         },
         "color": {
           "label": "Color",
@@ -1231,6 +1231,10 @@
         "hide_empty_workspaces": {
           "label": "Hide Empty Workspaces",
           "description": "When grouping by workspace, omit capsules that have no running windows in the taskbar list."
+        },
+        "workspace_group_capsule": {
+          "label": "Workspace Group Capsule",
+          "description": "Draw the background and border around each grouped workspace. Turn off to keep icon grouping and workspace disc labels only."
         },
         "height": {
           "label": "Height",
@@ -2204,7 +2208,7 @@
         },
         "capsule-radius": {
           "label": "Capsule Radius",
-          "description": "Default corner radius for widget capsules, workspace pills, and taskbar workspace groups; leave blank for automatic pill shape"
+          "description": "Default corner radius for widget capsules, workspace pills, and taskbar workspace groups; leave blank for automatic pill shape, or set 0 for square corners"
         },
         "capsule-opacity": {
           "label": "Capsule Opacity",

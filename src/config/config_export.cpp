@@ -259,8 +259,9 @@ namespace config_export {
         resolved.widgetCapsuleGroups = *ovr.widgetCapsuleGroups;
       if (ovr.widgetCapsulePadding)
         resolved.widgetCapsulePadding = static_cast<float>(*ovr.widgetCapsulePadding);
-      if (ovr.widgetCapsuleRadius)
+      if (ovr.widgetCapsuleRadius.has_value()) {
         resolved.widgetCapsuleRadius = *ovr.widgetCapsuleRadius;
+      }
       if (ovr.widgetCapsuleOpacity)
         resolved.widgetCapsuleOpacity = static_cast<float>(*ovr.widgetCapsuleOpacity);
       return resolved;

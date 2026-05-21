@@ -31,11 +31,16 @@
 namespace {
 
   std::optional<double> finiteDouble(const toml::node_view<const toml::node>& node) {
-    auto v = node.value<double>();
-    if (v && !std::isfinite(*v)) {
-      return std::nullopt;
+    if (auto v = node.value<double>()) {
+      if (!std::isfinite(*v)) {
+        return std::nullopt;
+      }
+      return *v;
     }
-    return v;
+    if (auto v = node.value<int64_t>()) {
+      return static_cast<double>(*v);
+    }
+    return std::nullopt;
   }
 
   std::string expandUserPathString(const std::string& path) {
@@ -704,7 +709,7 @@ BarConfig ConfigService::resolveForOutput(const BarConfig& base, const WaylandOu
     if (ovr.widgetCapsulePadding) {
       resolved.widgetCapsulePadding = std::clamp(static_cast<float>(*ovr.widgetCapsulePadding), 0.0f, 48.0f);
     }
-    if (ovr.widgetCapsuleRadius) {
+    if (ovr.widgetCapsuleRadius.has_value()) {
       resolved.widgetCapsuleRadius = std::clamp(*ovr.widgetCapsuleRadius, 0.0, 80.0);
     }
     if (ovr.widgetCapsuleOpacity) {

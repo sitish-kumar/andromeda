@@ -610,13 +610,17 @@ namespace settings {
             WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
         add(std::move(hideEmpty));
       }
+      {
+        auto groupCapsule = boolSpec("workspace_group_capsule", true);
+        groupCapsule.descriptionKey = "settings.widgets.settings.workspace_group_capsule.description";
+        groupCapsule.visibleWhen =
+            WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
+        add(std::move(groupCapsule));
+      }
       for (auto& spec : specs) {
         if (spec.key == "capsule_radius") {
           spec.descriptionKey = "settings.widgets.settings.capsule_radius.taskbar-description";
-          spec.visibleWhen = WidgetSettingVisibility{
-              WidgetSettingVisibilityCondition{"capsule", {"true"}},
-              WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}},
-          };
+          spec.visibleWhen = WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
           break;
         }
       }
@@ -867,11 +871,28 @@ namespace settings {
     if (spec == nullptr) {
       return false;
     }
+    // OptionalDouble unset means inherit/auto, 0 is a valid explicit radius and must persist.
+    if (spec->valueType == WidgetSettingValueType::OptionalDouble) {
+      return false;
+    }
     return configOverrideValueMatchesWidgetSetting(overrideValue, spec->defaultValue);
   }
 
   bool widgetSettingOverrideIsEffective(std::string_view widgetName, std::string_view settingKey,
                                         const Config& withOverride, const Config& withoutOverride) {
+    const auto valueInConfig = [](const Config& cfg, std::string_view name,
+                                  std::string_view key) -> std::optional<WidgetSettingValue> {
+      const auto widgetIt = cfg.widgets.find(std::string(name));
+      if (widgetIt == cfg.widgets.end()) {
+        return std::nullopt;
+      }
+      const auto settingIt = widgetIt->second.settings.find(std::string(key));
+      if (settingIt == widgetIt->second.settings.end()) {
+        return std::nullopt;
+      }
+      return settingIt->second;
+    };
+
     std::string widgetType(widgetName);
     if (const auto withIt = withOverride.widgets.find(std::string(widgetName)); withIt != withOverride.widgets.end()) {
       widgetType = withIt->second.type;
@@ -881,38 +902,24 @@ namespace settings {
     }
 
     const auto* spec = findWidgetSettingSpec(widgetType, settingKey);
+    const auto withValue = valueInConfig(withOverride, widgetName, settingKey);
+    const auto withoutValue = valueInConfig(withoutOverride, widgetName, settingKey);
+    if (!withValue.has_value() && !withoutValue.has_value()) {
+      return false;
+    }
+    if (!withValue.has_value() || !withoutValue.has_value()) {
+      return true;
+    }
+    if (spec != nullptr && spec->valueType == WidgetSettingValueType::OptionalDouble) {
+      return !widgetSettingValuesEqual(*withValue, *withoutValue);
+    }
     if (spec == nullptr) {
-      const auto valueInConfig = [](const Config& cfg, std::string_view name,
-                                    std::string_view key) -> std::optional<WidgetSettingValue> {
-        const auto widgetIt = cfg.widgets.find(std::string(name));
-        if (widgetIt == cfg.widgets.end()) {
-          return std::nullopt;
-        }
-        const auto settingIt = widgetIt->second.settings.find(std::string(key));
-        if (settingIt == widgetIt->second.settings.end()) {
-          return std::nullopt;
-        }
-        return settingIt->second;
-      };
-
-      const auto withValue = valueInConfig(withOverride, widgetName, settingKey);
-      const auto withoutValue = valueInConfig(withoutOverride, widgetName, settingKey);
-      if (!withValue.has_value() && !withoutValue.has_value()) {
-        return false;
-      }
-      if (!withValue.has_value() || !withoutValue.has_value()) {
-        return true;
-      }
       return !widgetSettingValuesEqual(*withValue, *withoutValue);
     }
 
     const auto resolvedValue = [&](const Config& cfg) -> WidgetSettingValue {
-      const auto widgetIt = cfg.widgets.find(std::string(widgetName));
-      if (widgetIt != cfg.widgets.end()) {
-        const auto settingIt = widgetIt->second.settings.find(std::string(settingKey));
-        if (settingIt != widgetIt->second.settings.end()) {
-          return settingIt->second;
-        }
+      if (const auto value = valueInConfig(cfg, widgetName, settingKey); value.has_value()) {
+        return *value;
       }
       return spec->defaultValue;
     };

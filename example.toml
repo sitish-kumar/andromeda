@@ -223,7 +223,7 @@ auto_hide          = false
 reserve_space      = true
 capsule            = false
 # capsule_fill     = "surface_variant"
-# capsule_radius   = 8.0            # omit/blank in Settings for automatic pill radius
+# capsule_radius   = 8.0            # omit/blank in Settings for automatic pill radius; 0.0 = square
 # capsule_opacity  = 1.0
 # capsule_border   = "outline"      # uncomment for a border on all widgets
 
