@@ -9,6 +9,7 @@
 #include "ui/controls/box.h"
 #include "ui/controls/label.h"
 #include "ui/style.h"
+#include "util/string_utils.h"
 
 #include <algorithm>
 #include <cctype>
@@ -179,6 +180,7 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
     bool showLabel = false;
     bool isNumeric = false;
     float textWidth = 0.0f;
+    float inkCenterOffset = 0.0f;
     float inactiveWidth = 0.0f;
     float activeWidth = 0.0f;
   };
@@ -196,7 +198,10 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
 
     if (slot.showLabel) {
       const TextMetrics tm = renderer.measureText(labels[i], labelFontSize, true);
-      slot.textWidth = tm.right - tm.left;
+      slot.textWidth = std::max(tm.right - tm.left, tm.inkRight - tm.inkLeft);
+      const float logicalCenter = (tm.left + tm.right) * 0.5f;
+      const float inkCenter = (tm.inkLeft + tm.inkRight) * 0.5f;
+      slot.inkCenterOffset = inkCenter - logicalCenter;
     }
   }
 
@@ -237,6 +242,7 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
     item.showLabel = slot.showLabel;
     item.inactiveWidth = slot.inactiveWidth;
     item.activeWidth = slot.activeWidth;
+    item.inkCenterOffset = slot.inkCenterOffset;
     auto indicator = std::make_unique<Box>();
     indicator->clearBorder();
     const float indicatorW = m_isVertical ? m_indicatorHeight : w;
@@ -346,6 +352,11 @@ void WorkspacesWidget::retarget(Renderer& renderer) {
       if (it.text != nullptr) {
         it.text->setText(label);
         it.text->measure(renderer);
+        const float fontSize = it.text->fontSize();
+        const TextMetrics tm = renderer.measureText(label, fontSize, true);
+        const float logCenter = (tm.left + tm.right) * 0.5f;
+        const float inkCenter = (tm.inkLeft + tm.inkRight) * 0.5f;
+        it.inkCenterOffset = inkCenter - logCenter;
       }
     }
     if (it.indicator != nullptr) {
@@ -421,7 +432,7 @@ void WorkspacesWidget::applyItemLayout(std::size_t i) {
   if (it.text != nullptr) {
     const float itemW = m_isVertical ? m_indicatorHeight : it.currentWidth;
     const float itemH = m_isVertical ? it.currentWidth : m_indicatorHeight;
-    const float textX = std::round((itemW - it.text->width()) * 0.5f);
+    const float textX = std::round((itemW - it.text->width()) * 0.5f - it.inkCenterOffset);
     it.text->setPosition(std::max(0.0f, textX), (itemH - it.text->height()) * 0.5f);
   }
   if (it.indicator != nullptr) {
@@ -490,8 +501,8 @@ std::string WorkspacesWidget::workspaceLabel(const Workspace& workspace, std::si
     const bool isNumeric = !label.empty() && std::all_of(label.begin(), label.end(), [](char c) {
       return std::isdigit(static_cast<unsigned char>(c));
     });
-    if (!isNumeric && m_maxLabelChars > 0 && label.size() > m_maxLabelChars) {
-      label = label.substr(0, m_maxLabelChars);
+    if (!isNumeric && m_maxLabelChars > 0) {
+      label = StringUtils::truncateUtf8CodePoints(label, m_maxLabelChars);
     }
     return label;
   }

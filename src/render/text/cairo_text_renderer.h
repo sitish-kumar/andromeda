@@ -126,6 +126,7 @@ private:
     int pixelWidth = 0;   // total raster surface pixel width
     int pixelHeight = 0;  // total raster surface pixel height (sum of tiles)
     float baselinePx = 0; // baseline from top of full layout, in raster pixels
+    float inkOffsetX = 0; // raster px from surface left to logical text origin
     TextMetrics metrics;  // logical metrics in logical (unscaled) pixels
     std::size_t bytes = 0;
     bool tinted = false; // true: alpha coverage, tint in shader; false: premul RGBA

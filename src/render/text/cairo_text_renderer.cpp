@@ -448,19 +448,34 @@ void CairoTextRenderer::rasterizeLayout(PangoLayout* layout, const Color& color,
   // logical.width as the surface width and subtract logical.x from each
   // per-line translation below so narrower lines stay centered relative to
   // the widest line within the tight surface.
+  PangoRectangle inkLayout;
   PangoRectangle logicalLayout;
-  pango_layout_get_extents(layout, nullptr, &logicalLayout);
+  pango_layout_get_extents(layout, &inkLayout, &logicalLayout);
   int pxWidth = (logicalLayout.width + PANGO_SCALE - 1) / PANGO_SCALE;
   int pxHeight = (logicalLayout.height + PANGO_SCALE - 1) / PANGO_SCALE;
   const int blockLeftPx = logicalLayout.x / PANGO_SCALE;
+
+  // Expand surface when ink extends beyond logical bounds (e.g. Nerd Font icons).
+  const int extraLeftPx = (std::max(0, logicalLayout.x - inkLayout.x) + PANGO_SCALE - 1) / PANGO_SCALE;
+  const int extraRightPx =
+      (std::max(0, (inkLayout.x + inkLayout.width) - (logicalLayout.x + logicalLayout.width)) + PANGO_SCALE - 1) /
+      PANGO_SCALE;
+  const int extraTopPx = (std::max(0, logicalLayout.y - inkLayout.y) + PANGO_SCALE - 1) / PANGO_SCALE;
+  const int extraBottomPx =
+      (std::max(0, (inkLayout.y + inkLayout.height) - (logicalLayout.y + logicalLayout.height)) + PANGO_SCALE - 1) /
+      PANGO_SCALE;
+  pxWidth += extraLeftPx + extraRightPx;
+  pxHeight += extraTopPx + extraBottomPx;
+  entry.inkOffsetX = static_cast<float>(extraLeftPx);
 
   // Guard against zero-sized surfaces Cairo rejects.
   pxWidth = std::max(1, pxWidth);
   pxHeight = std::max(1, pxHeight);
 
-  // Baseline from top of layout, in raster pixels.
+  // Baseline from top of layout, in raster pixels (shifted by any ink overhang above).
   const int baselinePango = pango_layout_get_baseline(layout);
-  entry.baselinePx = static_cast<float>(baselinePango) / static_cast<float>(PANGO_SCALE);
+  entry.baselinePx =
+      static_cast<float>(baselinePango) / static_cast<float>(PANGO_SCALE) + static_cast<float>(extraTopPx);
 
   if (m_glMaxTextureSize <= 0 && m_backend != nullptr) {
     m_glMaxTextureSize = m_backend->maxTextureSize();
@@ -511,9 +526,9 @@ void CairoTextRenderer::rasterizeLayout(PangoLayout* layout, const Color& color,
     do {
       PangoRectangle logical;
       pango_layout_iter_get_line_extents(iter, nullptr, &logical);
-      const int lineTopPx = logical.y / PANGO_SCALE;
-      const int lineBottomPx = (logical.y + logical.height + PANGO_SCALE - 1) / PANGO_SCALE;
-      const int lineBaselinePx = pango_layout_iter_get_baseline(iter) / PANGO_SCALE;
+      const int lineTopPx = logical.y / PANGO_SCALE + extraTopPx;
+      const int lineBottomPx = (logical.y + logical.height + PANGO_SCALE - 1) / PANGO_SCALE + extraTopPx;
+      const int lineBaselinePx = pango_layout_iter_get_baseline(iter) / PANGO_SCALE + extraTopPx;
 
       // If adding this line would push the current tile past maxTex, close
       // the current tile and start a new one at this line's top.
@@ -583,7 +598,7 @@ void CairoTextRenderer::rasterizeLayout(PangoLayout* layout, const Color& color,
     for (const auto& ls : tilePlan.lines) {
       const double baselineInTile = static_cast<double>(ls.baselinePx - tilePlan.yTopPx);
       cairo_save(cr);
-      cairo_translate(cr, static_cast<double>(ls.xLeftPx - blockLeftPx), baselineInTile);
+      cairo_translate(cr, static_cast<double>(ls.xLeftPx - blockLeftPx + extraLeftPx), baselineInTile);
       pango_cairo_show_layout_line(cr, ls.line);
       cairo_restore(cr);
     }
@@ -755,7 +770,9 @@ void CairoTextRenderer::draw(float surfaceWidth, float surfaceHeight, float x, f
   // Translate the quad so that `baselineY` (local) lines up with the raster
   // surface's baseline row. With baselineY=0 (callers using Label), the surface
   // is shifted up by `baselineLocal`, placing the baseline at local y=0.
-  const Mat3 localTranslation = Mat3::translation(x, baselineY - baselineLocal);
+  // Shift left by inkOffsetX so the logical text origin stays at `x`.
+  const float inkOffX = entry->inkOffsetX * invScale;
+  const Mat3 localTranslation = Mat3::translation(x - inkOffX, baselineY - baselineLocal);
   Mat3 baseWorld = transform * localTranslation;
 
   // Snap the glyph quad's origin to the nearest buffer pixel. Without this,
