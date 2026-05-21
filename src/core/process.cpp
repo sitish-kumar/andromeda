@@ -24,6 +24,7 @@
 #include <unistd.h>
 
 namespace {
+
   constexpr std::chrono::milliseconds kProcessPollInterval{100};
   constexpr std::chrono::milliseconds kProcessCommandLineCacheTtl{250};
 
@@ -534,7 +535,6 @@ namespace {
 #ifdef __linux__
     if (asSystemdService) {
       std::vector<std::string> systemdArgs;
-      systemdArgs.reserve(7 + args.size());
       systemdArgs.push_back("systemd-run");
       systemdArgs.push_back("--user");
       systemdArgs.push_back("--slice=app.slice");
