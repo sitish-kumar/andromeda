@@ -1282,6 +1282,11 @@
           "description": "Maximum number of characters to show for workspace names",
           "workspaces-description": "Maximum characters for workspace name labels"
         },
+        "minimal": {
+          "label": "Minimal Style",
+          "description": "Show workspace id or name labels only, without animated pills",
+          "workspaces-description": "Text-only workspace labels without pill backgrounds or slide animation"
+        },
         "pill_scale": {
           "label": "Pill Scale",
           "description": "Adjust the scale of workspace pills",

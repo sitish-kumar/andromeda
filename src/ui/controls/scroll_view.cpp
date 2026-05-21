@@ -169,6 +169,10 @@ float ScrollView::contentViewportWidth() const noexcept {
   return std::max(0.0f, width() - m_viewportPaddingH * 2.0f - gutter);
 }
 
+float ScrollView::contentViewportHeight() const noexcept {
+  return std::max(0.0f, height() - m_viewportPaddingV * 2.0f);
+}
+
 void ScrollView::applyPalette() {
   if (m_background != nullptr) {
     m_background->setStyle(RoundedRectStyle{
