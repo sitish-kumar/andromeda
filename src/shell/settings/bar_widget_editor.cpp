@@ -905,12 +905,13 @@ namespace settings {
             auto toggle = std::make_unique<Toggle>();
             toggle->setScale(ctx.scale);
             toggle->setChecked(settingValueAsBool(value));
-            toggle->setOnChange([&ctx, setOverride = ctx.setOverride, requestRebuild = ctx.requestRebuild,
-                                 widgetName = std::string(widgetName), path,
+            toggle->setOnChange([configService = ctx.configService, setOverride = ctx.setOverride,
+                                 requestRebuild = ctx.requestRebuild, widgetName = std::string(widgetName), path,
                                  displayPath = widgetSettingPath(std::string(widgetName), "display"),
                                  specs](bool enabled) {
               setOverride(path, enabled);
-              if (enabled && settingCurrentString(ctx.config, widgetName, "display", specs) == "none") {
+              if (enabled && configService != nullptr &&
+                  settingCurrentString(configService->config(), widgetName, "display", specs) == "none") {
                 setOverride(displayPath, std::string("id"));
               }
               if (requestRebuild) {
