@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <iterator>
 #include <string>
 #include <unordered_set>
 #include <utility>
@@ -72,6 +73,15 @@ namespace settings {
 
     std::string widgetGlyph(std::string_view type, const WidgetConfig* config = nullptr) {
       if (config == nullptr) {
+        return defaultWidgetGlyph(type);
+      }
+      if (type == "scripted") {
+        if (const std::string script = config->getString("script", ""); !script.empty()) {
+          if (auto manifest = scripting::manifestForScriptConfig(script);
+              manifest.has_value() && !manifest->icon.empty()) {
+            return manifest->icon;
+          }
+        }
         return defaultWidgetGlyph(type);
       }
       if (type == "clipboard") {
@@ -302,8 +312,17 @@ namespace settings {
     }
 
     if (const auto it = cfg.widgets.find(std::string(name)); it != cfg.widgets.end()) {
+      std::string title = widgetInstanceDisplayLabel(name);
+      if (it->second.type == "scripted") {
+        if (const std::string script = it->second.getString("script", ""); !script.empty()) {
+          if (auto manifest = scripting::manifestForScriptConfig(script);
+              manifest.has_value() && !manifest->label.empty()) {
+            title = manifest->label;
+          }
+        }
+      }
       return WidgetReferenceInfo{
-          .title = widgetInstanceDisplayLabel(name),
+          .title = std::move(title),
           .detail = it->second.type.empty() ? tr("settings.entities.widget.detail.custom") : it->second.type,
           .badge = tr("settings.entities.widget.kinds.named"),
           .kind = WidgetReferenceKind::Named,
@@ -339,9 +358,33 @@ namespace settings {
       if (isBuiltInWidgetType(name)) {
         continue;
       }
-      addPickerEntry(entries, seen, name, widgetInstanceDisplayLabel(name),
+      std::string label = widgetInstanceDisplayLabel(name);
+      if (widget.type == "scripted") {
+        if (const std::string script = widget.getString("script", ""); !script.empty()) {
+          if (auto manifest = scripting::manifestForScriptConfig(script);
+              manifest.has_value() && !manifest->label.empty()) {
+            label = manifest->label;
+          }
+        }
+      }
+      addPickerEntry(entries, seen, name, label,
                      widget.type.empty() ? tr("settings.entities.widget.detail.custom") : widget.type,
                      widgetGlyph(widget.type, &widget), WidgetReferenceKind::Named);
+    }
+
+    // Bundled scripted widgets that declare a Lua manifest appear as one-click presets.
+    for (auto& script : scripting::discoverBundledScriptedWidgets()) {
+      if (!seen.insert(script.id).second) {
+        continue;
+      }
+      entries.push_back(WidgetPickerEntry{
+          .value = script.id,
+          .label = script.manifest.label.empty() ? script.id : script.manifest.label,
+          .description = script.manifest.description,
+          .icon = script.manifest.icon.empty() ? "script" : script.manifest.icon,
+          .script = script.assetScript,
+          .kind = WidgetReferenceKind::Preset,
+      });
     }
 
     for (const auto& bar : cfg.bars) {
@@ -633,6 +676,82 @@ namespace settings {
     }
 
     return specs;
+  }
+
+  std::vector<WidgetSettingSpec> manifestSettingSpecs(const scripting::ScriptWidgetManifest& manifest) {
+    std::vector<WidgetSettingSpec> specs;
+    specs.reserve(manifest.settings.size());
+    for (const auto& field : manifest.settings) {
+      WidgetSettingSpec spec;
+      spec.key = field.key;
+      spec.literalLabel = field.label.empty() ? field.key : field.label;
+      spec.literalDescription = field.description;
+      spec.advanced = field.advanced;
+      spec.minValue = field.minValue;
+      spec.maxValue = field.maxValue;
+      spec.step = field.step;
+
+      switch (field.type) {
+      case scripting::ManifestFieldType::Bool:
+        spec.valueType = WidgetSettingValueType::Bool;
+        spec.defaultValue = field.boolDefault;
+        break;
+      case scripting::ManifestFieldType::Int:
+        spec.valueType = WidgetSettingValueType::Int;
+        spec.defaultValue = static_cast<std::int64_t>(field.numberDefault);
+        break;
+      case scripting::ManifestFieldType::Double:
+        spec.valueType = WidgetSettingValueType::Double;
+        spec.defaultValue = field.numberDefault;
+        break;
+      case scripting::ManifestFieldType::Select:
+        spec.valueType = WidgetSettingValueType::Select;
+        spec.defaultValue = field.stringDefault;
+        spec.literalLabels = true;
+        for (const auto& opt : field.options) {
+          spec.options.push_back(WidgetSettingSelectOption{.value = opt.value, .labelKey = opt.label});
+        }
+        break;
+      case scripting::ManifestFieldType::Color:
+        spec.valueType = WidgetSettingValueType::ColorSpec;
+        spec.defaultValue = field.stringDefault;
+        break;
+      case scripting::ManifestFieldType::String:
+      default:
+        spec.valueType = WidgetSettingValueType::String;
+        spec.defaultValue = field.stringDefault;
+        break;
+      }
+
+      if (field.visibleWhen.has_value()) {
+        spec.visibleWhen = WidgetSettingVisibility{field.visibleWhen->key, field.visibleWhen->values};
+      }
+      specs.push_back(std::move(spec));
+    }
+    return specs;
+  }
+
+  std::vector<WidgetSettingSpec> widgetSettingSpecs(std::string_view type, const WidgetConfig* config) {
+    if (type == "scripted" && config != nullptr) {
+      const std::string script = config->getString("script", "");
+      if (!script.empty()) {
+        if (auto manifest = scripting::manifestForScriptConfig(script); manifest.has_value()) {
+          std::vector<WidgetSettingSpec> specs = commonWidgetSettingSpecs();
+          auto fromManifest = manifestSettingSpecs(*manifest);
+          specs.insert(specs.end(), std::make_move_iterator(fromManifest.begin()),
+                       std::make_move_iterator(fromManifest.end()));
+          // Power users keep the raw scripted knobs, tucked under "advanced".
+          const std::vector<WidgetSettingSelectOption> scriptedScopes = {
+              {.value = "instance", .labelKey = "settings.widgets.options.instance"},
+              {.value = "shared", .labelKey = "settings.widgets.options.shared"},
+          };
+          specs.push_back(selectSpec("scope", "instance", scriptedScopes, true));
+          specs.push_back(boolSpec("hot_reload", false, true));
+          return specs;
+        }
+      }
+    }
+    return widgetSettingSpecs(type);
   }
 
   namespace {

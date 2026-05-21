@@ -200,22 +200,12 @@ namespace settings {
       case WidgetReferenceKind::BuiltIn:
         return colorSpecFromRole(ColorRole::Primary, 0.16f);
       case WidgetReferenceKind::Named:
+      case WidgetReferenceKind::Preset:
         return colorSpecFromRole(ColorRole::Secondary, 0.18f);
       case WidgetReferenceKind::Unknown:
         return colorSpecFromRole(ColorRole::Error, 0.16f);
       }
       return colorSpecFromRole(ColorRole::OnSurfaceVariant, 0.12f);
-    }
-
-    SelectSetting widgetTypeSelect(std::string_view selectedType) {
-      std::vector<SelectOption> options;
-      for (const auto& spec : widgetTypeSpecs()) {
-        if (!spec.visibleInPicker) {
-          continue;
-        }
-        options.push_back(SelectOption{std::string(spec.type), i18n::tr(spec.labelKey)});
-      }
-      return SelectSetting{std::move(options), std::string(selectedType)};
     }
 
     void collectWidgetReferenceNames(const std::vector<std::string>& widgets, std::unordered_set<std::string>& seen) {
@@ -701,6 +691,11 @@ namespace settings {
       for (const auto& spec : specs) {
         knownKeys.insert(spec.key);
       }
+      // `script` is the identity of a scripted widget, not a raw/deletable extra — when a Lua
+      // manifest drives the settings it isn't among the specs, so guard it explicitly.
+      if (widgetIt->second.type == "scripted") {
+        knownKeys.insert("script");
+      }
 
       std::vector<std::string> rawKeys;
       for (const auto& [key, value] : widgetIt->second.settings) {
@@ -791,44 +786,6 @@ namespace settings {
       }
     }
 
-    void addWidgetTypeSettingRow(Flex& panel, std::string_view widgetName, std::string_view widgetType,
-                                 std::size_t& visibleSpecs, const BarWidgetEditorContext& ctx) {
-      if (!isNamedWidgetInstance(ctx.config, widgetName)) {
-        return;
-      }
-
-      auto path = widgetSettingPath(std::string(widgetName), "type");
-      const bool overridden = ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(path);
-      if (ctx.showOverriddenOnly && !overridden) {
-        return;
-      }
-
-      auto row = std::make_unique<Flex>();
-      row->setDirection(FlexDirection::Horizontal);
-      row->setAlign(FlexAlign::Center);
-      row->setJustify(FlexJustify::SpaceBetween);
-      row->setGap(Style::spaceXs * ctx.scale);
-      row->setPadding(2.0f * ctx.scale, 0.0f);
-      row->setMinHeight(Style::controlHeight * ctx.scale);
-
-      auto copy = std::make_unique<Flex>();
-      copy->setDirection(FlexDirection::Vertical);
-      copy->setAlign(FlexAlign::Start);
-      copy->setGap(Style::spaceXs * ctx.scale);
-      copy->setFlexGrow(1.0f);
-      copy->addChild(makeLabel(i18n::tr("settings.widgets.settings.type.label"), Style::fontSizeBody * ctx.scale,
-                               colorSpecFromRole(ColorRole::OnSurface), false));
-      auto detail =
-          makeLabel(i18n::tr("settings.widgets.settings.type.description"), Style::fontSizeCaption * ctx.scale,
-                    colorSpecFromRole(ColorRole::OnSurfaceVariant), false);
-      copy->addChild(std::move(detail));
-      row->addChild(std::move(copy));
-
-      row->addChild(ctx.makeSelect(widgetTypeSelect(widgetType), path));
-      panel.addChild(std::move(row));
-      ++visibleSpecs;
-    }
-
     void addWidgetSettingsPanel(Flex& item, std::string widgetName, const std::vector<std::string>& lanePath,
                                 const std::vector<SelectOption>& managedCapsuleGroups,
                                 const BarWidgetEditorContext& ctx) {
@@ -837,7 +794,9 @@ namespace settings {
         return;
       }
 
-      auto specs = widgetSettingSpecs(widgetType);
+      const auto widgetIt = ctx.config.widgets.find(widgetName);
+      const WidgetConfig* widgetConfig = widgetIt != ctx.config.widgets.end() ? &widgetIt->second : nullptr;
+      auto specs = widgetSettingSpecs(widgetType, widgetConfig);
       if (specs.empty()) {
         return;
       }
@@ -863,7 +822,6 @@ namespace settings {
       panel->addChild(std::move(panelHeader));
 
       std::size_t visibleSpecs = 0;
-      addWidgetTypeSettingRow(*panel, widgetName, widgetType, visibleSpecs, ctx);
       bool groupingHeaderAdded = false;
       for (const auto& spec : specs) {
         if (spec.key == "capsule_group" && managedCapsuleGroups.empty()) {
@@ -890,8 +848,12 @@ namespace settings {
         SettingEntry entry{
             .section = "bar",
             .group = "widget-settings",
-            .title = i18n::tr(spec.labelKey),
-            .subtitle = i18n::tr(spec.descriptionKey),
+            .title = !spec.literalLabel.empty() ? spec.literalLabel
+                     : spec.labelKey.empty()    ? std::string{}
+                                                : i18n::tr(spec.labelKey),
+            .subtitle = !spec.literalDescription.empty() ? spec.literalDescription
+                        : spec.descriptionKey.empty()    ? std::string{}
+                                                         : i18n::tr(spec.descriptionKey),
             .path = path,
             .control = TextSetting{},
             .advanced = spec.advanced,
@@ -1039,7 +1001,8 @@ namespace settings {
             std::vector<SelectOption> options;
             options.reserve(spec.options.size());
             for (const auto& option : spec.options) {
-              options.push_back(SelectOption{std::string(option.value), i18n::tr(option.labelKey)});
+              options.push_back(
+                  SelectOption{option.value, spec.literalLabels ? option.labelKey : i18n::tr(option.labelKey)});
             }
             selectSetting = SelectSetting{std::move(options), selectedValue};
           }

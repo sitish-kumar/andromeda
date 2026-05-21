@@ -179,6 +179,7 @@ namespace settings {
     const auto pickerEntries = widgetPickerEntries(config);
     std::vector<SearchPickerOption> normalOptions;
     std::vector<SearchPickerOption> instanceOptions;
+    std::unordered_map<std::string, std::string> presetScripts;
     normalOptions.reserve(pickerEntries.size());
     instanceOptions.reserve(pickerEntries.size());
 
@@ -190,6 +191,10 @@ namespace settings {
           .enabled = true,
           .icon = entry.icon,
       });
+
+      if (entry.kind == WidgetReferenceKind::Preset && !entry.script.empty()) {
+        presetScripts[entry.value] = entry.script;
+      }
 
       if (entry.kind != WidgetReferenceKind::BuiltIn) {
         continue;
@@ -224,6 +229,7 @@ namespace settings {
     m_config = &config;
     m_normalOptions = std::move(normalOptions);
     m_instanceOptions = std::move(instanceOptions);
+    m_presetScripts = std::move(presetScripts);
     m_lanePath = lanePath;
     m_root = nullptr;
     m_headerRow = nullptr;
@@ -337,7 +343,7 @@ namespace settings {
     }
     m_instanceInput->setInvalid(false);
     if (m_onSelect) {
-      m_onSelect(m_lanePath, id, m_createType, id);
+      m_onSelect(m_lanePath, id, m_createType, id, {});
     }
     DeferredCall::callLater([this]() { close(); });
   }
@@ -417,12 +423,23 @@ namespace settings {
       if (option.value.empty()) {
         return;
       }
+      // Bundled scripted widget (manifest preset): one-click add, no naming form.
+      if (const auto it = m_presetScripts.find(option.value); it != m_presetScripts.end()) {
+        const std::string instanceId = m_config != nullptr && !widgetReferenceNameExists(*m_config, option.value)
+                                           ? option.value
+                                           : suggestedInstanceId(option.value);
+        if (m_onSelect) {
+          m_onSelect(m_lanePath, option.value, "scripted", instanceId, {{"script", it->second}});
+        }
+        DeferredCall::callLater([this]() { close(); });
+        return;
+      }
       if (m_instanceModeEnabled || widgetTypeRequiresNamedConfig(option.value)) {
         beginCreateFlow(option);
         return;
       }
       if (m_onSelect) {
-        m_onSelect(m_lanePath, option.value, {}, {});
+        m_onSelect(m_lanePath, option.value, {}, {}, {});
       }
       DeferredCall::callLater([this]() { close(); });
     });
@@ -544,6 +561,7 @@ namespace settings {
     }
     m_normalOptions.clear();
     m_instanceOptions.clear();
+    m_presetScripts.clear();
     m_config = nullptr;
     m_parentXdgSurface = nullptr;
     m_parentWlSurface = nullptr;
