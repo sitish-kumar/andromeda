@@ -1194,8 +1194,9 @@ void Bar::populateWidgets(BarInstance& instance) {
   const auto& widgetConfigs = m_config->config().widgets;
   auto createWidgets = [&](const std::vector<std::string>& names, std::vector<std::unique_ptr<Widget>>& dest) {
     for (const auto& name : names) {
-      auto widget = m_widgetFactory->create(name, instance.output, instance.barConfig.scale,
-                                            instance.barConfig.position, instance.barConfig.name);
+      auto widget =
+          m_widgetFactory->create(name, instance.output, instance.barConfig.scale, instance.barConfig.position,
+                                  instance.barConfig.name, static_cast<float>(instance.barConfig.widgetSpacing));
       if (widget != nullptr) {
         widget->setConfigName(name);
         const WidgetConfig* wcPtr = nullptr;
@@ -1220,8 +1221,9 @@ void Bar::populateWidgets(BarInstance& instance) {
 
 #ifndef NDEBUG
   // Prepend a red "debug" pill to the end section if running a debug build
-  auto debugWidget = m_widgetFactory->create("debug_indicator", instance.output, instance.barConfig.scale,
-                                             instance.barConfig.position, instance.barConfig.name);
+  auto debugWidget =
+      m_widgetFactory->create("debug_indicator", instance.output, instance.barConfig.scale, instance.barConfig.position,
+                              instance.barConfig.name, static_cast<float>(instance.barConfig.widgetSpacing));
   if (debugWidget != nullptr) {
     debugWidget->setConfigName("debug_indicator");
     debugWidget->create();

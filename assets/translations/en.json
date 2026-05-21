@@ -1248,6 +1248,10 @@
           "label": "Pinned Items",
           "description": "Tray item ids that stay visible in the bar when drawer mode is enabled"
         },
+        "match_adjacent_spacing": {
+          "label": "Match Adjacent Widget Spacing",
+          "description": "Widen gaps between inline tray icons to match the visual spacing of neighboring bar widgets (includes capsule padding)"
+        },
         "drawer": {
           "label": "Use Drawer Panel",
           "description": "Show a tray button in the bar and open items in a panel"

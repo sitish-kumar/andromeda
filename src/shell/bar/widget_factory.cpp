@@ -80,6 +80,7 @@ namespace {
     }
     return MediaTitleScrollMode::None;
   }
+
 } // namespace
 
 WidgetFactory::WidgetFactory(CompositorPlatform& platform, const Config& config, NotificationManager* notifications,
@@ -99,7 +100,8 @@ WidgetFactory::WidgetFactory(CompositorPlatform& platform, const Config& config,
 WidgetFactory::~WidgetFactory() = default;
 
 std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output* output, float contentScale,
-                                              const std::string& barPosition, const std::string& barName) const {
+                                              const std::string& barPosition, const std::string& barName,
+                                              float widgetSpacing) const {
   // Resolve: if name matches a [widget.<name>] entry, use its type + settings.
   // Otherwise treat the name itself as the widget type with default settings.
   const WidgetConfig* wc = nullptr;
@@ -415,8 +417,9 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
     const bool drawer = wc != nullptr ? wc->getBool("drawer", false) : false;
     const std::size_t drawerColumns =
         static_cast<std::size_t>(std::clamp<std::int64_t>(wc != nullptr ? wc->getInt("drawer_columns", 3) : 3, 1, 5));
+    const bool matchAdjacentSpacing = wc != nullptr ? wc->getBool("match_adjacent_spacing", false) : false;
     auto widget = std::make_unique<TrayWidget>(m_tray, hiddenItems, pinnedItems, drawer, std::function<void()>{},
-                                               barPosition, false, drawerColumns);
+                                               barPosition, false, drawerColumns, widgetSpacing, matchAdjacentSpacing);
     widget->setContentScale(contentScale);
     return widget;
   }

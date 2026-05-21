@@ -627,6 +627,7 @@ namespace settings {
     } else if (type == "tray") {
       add(stringListSpec("hidden"));
       add(stringListSpec("pinned"));
+      add(boolSpec("match_adjacent_spacing", false));
       add(boolSpec("drawer", false));
       {
         auto cols = intSpec("drawer_columns", 3, 1.0, 5.0, 1.0);
