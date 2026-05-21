@@ -1509,6 +1509,12 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
                 kLog.warn("unknown shell.session.actions variant \"{}\"", key);
               }
             }
+            if (auto v = (*entryTbl)["shortcut"].value<std::string>()) {
+              const std::string s = StringUtils::trim(*v);
+              if (!s.empty()) {
+                row.shortcut = parseKeyChordSpec(s);
+              }
+            }
             shell.session.actions.push_back(std::move(row));
           }
         }

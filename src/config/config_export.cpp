@@ -127,6 +127,8 @@ namespace config_export {
         item.insert_or_assign("label", action.label.value_or(""));
         item.insert_or_assign("glyph", action.glyph.value_or(""));
         item.insert_or_assign("variant", std::string(enumToKey(kSessionActionButtonVariants, action.variant)));
+        item.insert_or_assign("shortcut",
+                              action.shortcut.has_value() ? keyChordToString(*action.shortcut) : std::string{});
         array.push_back(std::move(item));
       }
       return array;

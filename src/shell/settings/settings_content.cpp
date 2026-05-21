@@ -623,6 +623,47 @@ namespace settings {
       variantBlock->addChild(std::move(variantSelect));
       fields->addChild(std::move(variantBlock));
 
+      auto shortcutBlock = std::make_unique<Flex>();
+      shortcutBlock->setDirection(FlexDirection::Horizontal);
+      shortcutBlock->setAlign(FlexAlign::Center);
+      shortcutBlock->setGap(Style::spaceXs * scale);
+      shortcutBlock->setFlexGrow(1.0f);
+      shortcutBlock->addChild(makeLabel(i18n::tr("settings.session-actions.shortcut-label"),
+                                        Style::fontSizeCaption * scale, colorSpecFromRole(ColorRole::OnSurfaceVariant),
+                                        false));
+
+      auto shortcutRecorder = std::make_unique<KeybindRecorder>();
+      shortcutRecorder->setScale(scale);
+      shortcutRecorder->setModifierPolicy(ModifierPolicy::Optional);
+      shortcutRecorder->setChord(row.shortcut);
+      shortcutRecorder->setUnsetPlaceholder(i18n::tr("settings.controls.keybind.unset-placeholder"));
+      shortcutRecorder->setRecordingPlaceholder(i18n::tr("settings.controls.keybind.recording-placeholder"));
+      shortcutRecorder->setOnCommit([&row, persist](KeyChord chord) {
+        row.shortcut = chord;
+        persist();
+      });
+      auto* shortcutRecorderPtr = shortcutRecorder.get();
+      shortcutBlock->addChild(std::move(shortcutRecorder));
+
+      if (row.shortcut.has_value()) {
+        auto clearBtn = std::make_unique<Button>();
+        clearBtn->setGlyph("close");
+        clearBtn->setVariant(ButtonVariant::Ghost);
+        clearBtn->setGlyphSize(Style::fontSizeCaption * scale);
+        clearBtn->setMinWidth(Style::controlHeightSm * scale);
+        clearBtn->setMinHeight(Style::controlHeightSm * scale);
+        clearBtn->setPadding(Style::spaceXs * scale);
+        clearBtn->setRadius(Style::scaledRadiusSm(scale));
+        clearBtn->setOnClick([&row, persist, shortcutRecorderPtr]() {
+          row.shortcut = std::nullopt;
+          shortcutRecorderPtr->setChord(std::nullopt);
+          persist();
+        });
+        shortcutBlock->addChild(std::move(clearBtn));
+      }
+
+      fields->addChild(std::move(shortcutBlock));
+
       body->addChild(std::move(fields));
       section.addChild(std::move(body));
     }
@@ -1991,7 +2032,8 @@ namespace settings {
       addBtn->setRadius(Style::scaledRadiusMd(scale));
       addBtn->setOnClick([state, commit]() {
         state->push_back(SessionPanelActionConfig{"command", true, "notify-send 'Noctalia' 'Custom session entry'",
-                                                  std::nullopt, std::nullopt, SessionActionButtonVariant::Default});
+                                                  std::nullopt, std::nullopt, SessionActionButtonVariant::Default,
+                                                  std::nullopt});
         commit();
       });
       block->addChild(std::move(addBtn));

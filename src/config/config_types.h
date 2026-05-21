@@ -128,6 +128,7 @@ struct SessionPanelActionConfig {
   std::optional<std::string> label;
   std::optional<std::string> glyph;
   SessionActionButtonVariant variant = SessionActionButtonVariant::Default;
+  std::optional<KeyChord> shortcut;
 
   bool operator==(const SessionPanelActionConfig&) const = default;
 };

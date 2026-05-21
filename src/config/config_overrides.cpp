@@ -1,4 +1,5 @@
 #include "config/config_service.h"
+#include "core/key_chord.h"
 #include "core/log.h"
 #include "shell/settings/widget_settings_registry.h"
 #include "theme/scheme.h"
@@ -501,6 +502,9 @@ namespace {
                 row.insert_or_assign("glyph", *item.glyph);
               }
               row.insert_or_assign("variant", std::string(enumToKey(kSessionActionButtonVariants, item.variant)));
+              if (item.shortcut.has_value()) {
+                row.insert_or_assign("shortcut", keyChordToString(*item.shortcut));
+              }
               array.push_back(std::move(row));
             }
             table.insert_or_assign(key, std::move(array));
