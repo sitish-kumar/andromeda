@@ -539,8 +539,10 @@ namespace {
       systemdArgs.push_back("systemd-run");
       systemdArgs.push_back("--user");
       if (!appName.empty()) {
-        systemdArgs.push_back(
-            std::format("--unit=app-{}@{}.service", escapeSystemdUnitName(appName), StringUtils::generateUuid()));
+        const std::string uuid = StringUtils::generateUuid();
+        if (!uuid.empty()) {
+          systemdArgs.push_back(std::format("--unit=app-{}@{}.service", escapeSystemdUnitName(appName), uuid));
+        }
       }
       if (!workingDir.empty()) {
         systemdArgs.push_back(std::format("--working-directory={}", workingDir));
