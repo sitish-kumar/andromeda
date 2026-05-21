@@ -797,14 +797,14 @@ namespace settings {
 
   } // namespace
 
-  const WidgetSettingSpec* findWidgetSettingSpec(std::string_view widgetType, std::string_view settingKey) {
+  std::optional<WidgetSettingSpec> findWidgetSettingSpec(std::string_view widgetType, std::string_view settingKey) {
     const std::string key(settingKey);
     for (const auto& spec : widgetSettingSpecs(widgetType)) {
       if (spec.key == key) {
-        return &spec;
+        return spec;
       }
     }
-    return nullptr;
+    return std::nullopt;
   }
 
   bool configOverrideValueMatchesWidgetSetting(const ConfigOverrideValue& overrideValue,
@@ -867,8 +867,8 @@ namespace settings {
 
   bool widgetOverrideValueMatchesRegistryDefault(std::string_view widgetType, std::string_view settingKey,
                                                  const ConfigOverrideValue& overrideValue) {
-    const auto* spec = findWidgetSettingSpec(widgetType, settingKey);
-    if (spec == nullptr) {
+    const auto spec = findWidgetSettingSpec(widgetType, settingKey);
+    if (!spec.has_value()) {
       return false;
     }
     // OptionalDouble unset means inherit/auto, 0 is a valid explicit radius and must persist.
@@ -901,7 +901,7 @@ namespace settings {
       widgetType = withoutIt->second.type;
     }
 
-    const auto* spec = findWidgetSettingSpec(widgetType, settingKey);
+    const auto spec = findWidgetSettingSpec(widgetType, settingKey);
     const auto withValue = valueInConfig(withOverride, widgetName, settingKey);
     const auto withoutValue = valueInConfig(withoutOverride, widgetName, settingKey);
     if (!withValue.has_value() && !withoutValue.has_value()) {
@@ -910,18 +910,19 @@ namespace settings {
     if (!withValue.has_value() || !withoutValue.has_value()) {
       return true;
     }
-    if (spec != nullptr && spec->valueType == WidgetSettingValueType::OptionalDouble) {
+    if (spec.has_value() && spec->valueType == WidgetSettingValueType::OptionalDouble) {
       return !widgetSettingValuesEqual(*withValue, *withoutValue);
     }
-    if (spec == nullptr) {
+    if (!spec.has_value()) {
       return !widgetSettingValuesEqual(*withValue, *withoutValue);
     }
 
+    const WidgetSettingValue defaultValue = spec->defaultValue;
     const auto resolvedValue = [&](const Config& cfg) -> WidgetSettingValue {
       if (const auto value = valueInConfig(cfg, widgetName, settingKey); value.has_value()) {
         return *value;
       }
-      return spec->defaultValue;
+      return defaultValue;
     };
 
     return !widgetSettingValuesEqual(resolvedValue(withOverride), resolvedValue(withoutOverride));

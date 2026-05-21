@@ -443,6 +443,15 @@ void KeyboardLayoutWidget::sync(Renderer& renderer) {
     m_label->measure(renderer);
   }
 
+  if (auto* area = static_cast<InputArea*>(root()); area != nullptr) {
+    if (m_hideLabel) {
+      const std::string tooltipText = layoutName.empty() ? layoutLabel : layoutName;
+      area->setTooltip(tooltipText);
+    } else {
+      area->clearTooltip();
+    }
+  }
+
   if (auto* node = root(); node != nullptr) {
     node->setOpacity((m_cycleCommand.empty() && !m_platform.hasKeyboardLayoutBackend()) ? 0.85f : 1.0f);
   }
