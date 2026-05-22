@@ -1607,7 +1607,7 @@
           "description": "Enable clipboard history, the clipboard panel, and copy/paste integration"
         },
         "screen-time-enabled": {
-          "label": "Screen time",
+          "label": "Screen Time",
           "description": "Track per-app usage and show it in Control Center"
         },
         "clipboard-history-max-entries": {
@@ -1751,27 +1751,27 @@
         },
         "compact-control-center": {
           "label": "Compact Sidebar",
-          "description": "Show only icons in the sidebar to make the control center narrower"
+          "description": "Show only icons in the sidebar to make Control Center narrower"
         },
         "placement-launcher": {
           "label": "Placement",
-          "description": "Choose whether Launcher attaches to the bar, floats near it, or opens centered"
+          "description": "Choose whether the launcher attaches to the bar, floats near it, or opens centered"
         },
         "placement-clipboard": {
           "label": "Placement",
-          "description": "Choose whether Clipboard attaches to the bar, floats near it, or opens centered"
+          "description": "Choose whether the clipboard attaches to the bar, floats near it, or opens centered"
         },
         "placement-wallpaper": {
           "label": "Placement",
-          "description": "Choose whether Wallpaper attaches to the bar, floats near it, or opens centered"
+          "description": "Choose whether the wallpaper picker attaches to the bar, floats near it, or opens centered"
         },
         "placement-session": {
           "label": "Placement",
-          "description": "Choose whether Session attaches to the bar, floats near it, or opens centered"
+          "description": "Choose whether the session menu attaches to the bar, floats near it, or opens centered"
         },
         "open-near-click-control-center": {
           "label": "Open Near Click",
-          "description": "Position the control center panel near the bar click instead of centering it along the bar"
+          "description": "Position the Control Center panel near the bar click instead of centering it along the bar"
         },
         "open-near-click-launcher": {
           "label": "Open Near Click",
@@ -1787,7 +1787,7 @@
         },
         "open-near-click-session": {
           "label": "Open Near Click",
-          "description": "Position the session panel near the bar click instead of centering it along the bar"
+          "description": "Position the session menu panel near the bar click instead of centering it along the bar"
         },
         "session-actions": {
           "label": "Entries",
@@ -2015,7 +2015,7 @@
           "placeholder": "/path/to/sound.wav"
         },
         "mpris-blacklist": {
-          "label": "MPRIS player blacklist",
+          "label": "MPRIS Player Blacklist",
           "description": "Players to ignore for media controls and Now Playing"
         },
         "ddcutil": {
