@@ -1,5 +1,6 @@
 #include "shell/bar/widgets/battery_widget.h"
 
+#include "dbus/upower/upower_service.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
 #include "ui/controls/box.h"
@@ -407,10 +408,30 @@ void BatteryWidget::syncState(Renderer& renderer) {
   }
 
   // Tooltip (both modes)
-  if (rootNode != nullptr) {
+  if (rootNode != nullptr) {    
+    const auto& devices = m_upower->batteryDevices();
+    auto sorted = decltype(devices){};
+    int laptopBatteryCount = 0;
+    for (const auto& dev : devices) {
+      if (dev.isLaptopBattery()) {
+        sorted.push_back(dev); ++laptopBatteryCount;
+      }
+    }
+    for (const auto& dev : devices) {
+      if (!dev.isLaptopBattery()) {
+        sorted.push_back(dev);
+      }
+    }
+
     std::vector<TooltipRow> rows;
-    for (const auto& dev : m_upower->batteryDevices()) {
-      std::string name = !dev.model.empty() ? dev.model : (!dev.nativePath.empty() ? dev.nativePath : "Battery");
+    int laptopBatteryIndex = 0;
+    for (const auto& dev : sorted) {
+      std::string name;
+      if (dev.isLaptopBattery()) {
+        name = (laptopBatteryCount > 1) ? ("Battery " + std::to_string(++laptopBatteryIndex)) : "Battery";
+      } else {
+        name = !dev.model.empty() ? dev.model : (!dev.nativePath.empty() ? dev.nativePath : "Unknown Device");
+      }
       int dp = static_cast<int>(std::round(dev.state.percentage));
       rows.push_back({std::move(name), std::to_string(dp) + "%"});
     }

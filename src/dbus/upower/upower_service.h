@@ -48,6 +48,8 @@ struct UPowerDeviceInfo {
   UPowerState state;
 
   bool operator==(const UPowerDeviceInfo&) const = default;
+
+  [[nodiscard]] bool isLaptopBattery() const { return type == 2 && powerSupply; }
 };
 
 class UPowerService {

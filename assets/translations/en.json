@@ -16,7 +16,7 @@
     "title": "Clipboard",
     "filter-placeholder": "Filter clipboard...",
     "entry": {
-      "title": "Clipboard entry",
+      "title": "Clipboard Entry",
       "image": "Image"
     },
     "preview": {
@@ -1798,7 +1798,7 @@
       },
       "idle": {
         "pre-action-fade": {
-          "label": "Idle dim",
+          "label": "Idle Dim",
           "description": "Seconds of fullscreen dim before the idle command; use 0 to disable"
         },
         "behaviors": {
