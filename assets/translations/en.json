@@ -1287,6 +1287,11 @@
           "label": "Hide Label",
           "description": "Hide this widget's text label"
         },
+        "icon_only": {
+          "label": "Icon Only",
+          "description": "Show only an icon without a text label",
+          "active-window-description": "On horizontal bars, show only the active window icon (vertical bars already use the icon only)"
+        },
         "high_color": {
           "label": "High Color",
           "description": "Color used for high visualizer values"

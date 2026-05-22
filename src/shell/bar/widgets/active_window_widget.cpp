@@ -16,9 +16,9 @@
 #include <string_view>
 
 ActiveWindowWidget::ActiveWindowWidget(CompositorPlatform& platform, float maxWidth, float minWidth, float iconSize,
-                                       ActiveWindowTitleScrollMode titleScrollMode)
+                                       ActiveWindowTitleScrollMode titleScrollMode, bool iconOnly)
     : m_platform(platform), m_maxWidth(maxWidth), m_minWidth(minWidth), m_iconSize(iconSize),
-      m_titleScrollMode(titleScrollMode) {
+      m_titleScrollMode(titleScrollMode), m_iconOnly(iconOnly) {
   buildDesktopIconIndex();
 }
 
@@ -80,8 +80,8 @@ void ActiveWindowWidget::doLayout(Renderer& renderer, float containerWidth, floa
     m_icon->setPosition(0.0f, 0.0f);
     rootNode->setSize(m_icon->width(), m_icon->height());
   } else {
-    m_title->setVisible(!m_lastTitle.empty());
-    const bool showTitle = m_title->visible();
+    const bool showTitle = !m_iconOnly && !m_lastTitle.empty();
+    m_title->setVisible(showTitle);
     applyTitleScrollMode(showTitle);
     const float spacing = showTitle ? Style::spaceXs : 0.0f;
     const float labelMaxWidth = showTitle ? std::max(0.0f, maxLength - m_icon->width() - spacing) : 0.0f;

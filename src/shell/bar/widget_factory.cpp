@@ -119,8 +119,9 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
     const float iconSize =
         static_cast<float>(wc != nullptr ? wc->getDouble("icon_size", Style::fontSizeBody) : Style::fontSizeBody);
     const std::string titleScroll = wc != nullptr ? wc->getString("title_scroll", "none") : std::string("none");
+    const bool iconOnly = wc != nullptr ? wc->getBool("icon_only", false) : false;
     auto widget = std::make_unique<ActiveWindowWidget>(m_platform, maxWidth, minWidth, iconSize,
-                                                       parseActiveWindowTitleScrollMode(titleScroll));
+                                                       parseActiveWindowTitleScrollMode(titleScroll), iconOnly);
     widget->setContentScale(contentScale);
     return widget;
   }
