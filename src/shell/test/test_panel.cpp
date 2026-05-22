@@ -1022,8 +1022,8 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     section->addChild(std::move(col));
   }
 
-  // ── Baseline mode test (cap-only ↔ descender swap). Stable mode should pin
-  // ── the baseline; ink-centered mode may shift "Apr" relative to "MAR".
+  // ── Baseline mode test (cap-only ↔ descender swap). Latin optical mode
+  // ── should pin the baseline; ink-centered mode may shift caps vs descenders.
   {
     auto col = std::make_unique<Flex>();
     col->setDirection(FlexDirection::Vertical);
@@ -1034,7 +1034,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setPadding(Style::spaceMd * scale);
 
     auto title = std::make_unique<Label>();
-    title->setText("Baseline mode (stable vs ink-centered)");
+    title->setText("Baseline mode (latin optical vs ink-centered)");
     title->setBold(true);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
@@ -1047,6 +1047,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     auto stable = std::make_unique<Label>();
     stable->setText("MAR 2025");
     stable->setFontSize(Style::fontSizeTitle * scale);
+    stable->setBaselineMode(LabelBaselineMode::LatinOpticalStable);
     m_baselineModeLabel = stable.get();
     row->addChild(std::move(stable));
 
@@ -1073,7 +1074,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     toggleRow->setGap(Style::spaceSm * scale);
 
     auto toggleLabel = std::make_unique<Label>();
-    toggleLabel->setText("first label stable:");
+    toggleLabel->setText("first label latin optical:");
     toggleLabel->setCaptionStyle();
     toggleLabel->setFontSize(Style::fontSizeCaption * scale);
     toggleRow->addChild(std::move(toggleLabel));
@@ -1084,7 +1085,8 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     toggle->setChecked(true);
     toggle->setOnChange([this](bool checked) {
       if (m_baselineModeLabel != nullptr) {
-        m_baselineModeLabel->setBaselineMode(checked ? LabelBaselineMode::Stable : LabelBaselineMode::InkCentered);
+        m_baselineModeLabel->setBaselineMode(checked ? LabelBaselineMode::LatinOpticalStable
+                                                     : LabelBaselineMode::InkCentered);
       }
     });
     m_baselineModeToggle = toggle.get();

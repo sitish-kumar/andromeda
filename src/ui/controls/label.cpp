@@ -14,6 +14,21 @@
 namespace {
 
   constexpr const char* kMarqueeGap = " ";
+  constexpr float kStableOpticalCenterThreshold = 1.0f;
+  // Used only by LatinOpticalStable; other modes keep Pango's script-aware metrics.
+  constexpr const char* kStableBaselineReference = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+  [[nodiscard]] bool isAsciiLatinReferenceText(std::string_view text) {
+    bool hasReferenceChar = false;
+    for (const unsigned char ch : text) {
+      if (ch >= 0x80U) {
+        return false;
+      }
+      hasReferenceChar =
+          hasReferenceChar || (ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z');
+    }
+    return hasReferenceChar;
+  }
 
 } // namespace
 
@@ -433,12 +448,31 @@ LayoutSize Label::measureWithConstraints(Renderer& renderer, const LayoutConstra
   const float inkHeight = std::max(0.0f, metrics.inkBottom - metrics.inkTop);
   if (singleLine && inkHeight > 0.0f) {
     float height = 0.0f;
-    if (m_baselineMode == LabelBaselineMode::Stable) {
-      height = std::round(actualHeight);
-      m_baselineOffset = std::round(-metrics.top + (height - actualHeight) * 0.5f);
-    } else {
+    if (m_baselineMode == LabelBaselineMode::InkCentered) {
       height = std::round(std::max(actualHeight, inkHeight));
       m_baselineOffset = std::round(-metrics.inkTop + (height - inkHeight) * 0.5f);
+    } else {
+      height = std::round(actualHeight);
+      const float logicalCenter = (metrics.top + metrics.bottom) * 0.5f;
+      const float inkCenter = (metrics.inkTop + metrics.inkBottom) * 0.5f;
+      float stableCenter = logicalCenter;
+      bool useStableCenter = false;
+      if (m_baselineMode == LabelBaselineMode::LatinOpticalStable && isAsciiLatinReferenceText(m_plainText) &&
+          inkCenter < logicalCenter - kStableOpticalCenterThreshold) {
+        const auto refMetrics =
+            renderer.measureText(kStableBaselineReference, m_textNode->fontSize(), m_textNode->bold(), 0.0f, 1,
+                                 TextAlign::Start, m_textNode->fontFamily());
+        const float refInkHeight = std::max(0.0f, refMetrics.inkBottom - refMetrics.inkTop);
+        if (refInkHeight > 0.0f) {
+          stableCenter = (refMetrics.inkTop + refMetrics.inkBottom) * 0.5f;
+          useStableCenter = true;
+        }
+      }
+      if (useStableCenter) {
+        m_baselineOffset = std::round(height * 0.5f - stableCenter);
+      } else {
+        m_baselineOffset = std::round(-metrics.top + (height - actualHeight) * 0.5f);
+      }
     }
     float finalWidth = 0.0f;
     if (m_autoScroll) {
@@ -500,7 +534,8 @@ LayoutSize Label::measureWithConstraints(Renderer& renderer, const LayoutConstra
   }
 
   if (overflow && m_autoScroll) {
-    auto gapMetrics = renderer.measureText(kMarqueeGap, m_textNode->fontSize(), m_textNode->bold(), 0.0f, 1, align);
+    auto gapMetrics = renderer.measureText(kMarqueeGap, m_textNode->fontSize(), m_textNode->bold(), 0.0f, 1, align,
+                                           m_textNode->fontFamily());
     m_marqueeLoopPeriod = m_fullTextWidth + gapMetrics.width;
     m_textNode->setText(m_plainText + kMarqueeGap + m_plainText);
   } else {

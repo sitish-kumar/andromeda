@@ -54,6 +54,7 @@ void BrightnessWidget::create() {
 
   auto label = std::make_unique<Label>();
   label->setBold(true);
+  label->setBaselineMode(LabelBaselineMode::LatinOpticalStable);
   label->setFontSize(Style::fontSizeBody * m_contentScale);
   label->setVisible(m_showLabel);
   m_label = label.get();

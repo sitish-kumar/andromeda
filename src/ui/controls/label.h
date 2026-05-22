@@ -13,7 +13,8 @@
 class Renderer;
 
 enum class LabelBaselineMode : std::uint8_t {
-  Stable,
+  StableLogical,
+  LatinOpticalStable,
   InkCentered,
 };
 
@@ -32,10 +33,8 @@ public:
   void setMaxLines(int maxLines);
   void setBold(bool bold);
   void setTextAlign(TextAlign align);
-  // Stable mode is the default for UI labels. It centers single-line text using
-  // Pango's logical line metrics instead of the current string's ink, so
-  // clocks, counters, CJK text, and icon+text rows do not jump when glyphs
-  // change.
+  // StableLogical is the default. LatinOpticalStable is for ASCII Latin/digit
+  // counters whose font metrics leave visible text off-center.
   void setBaselineMode(LabelBaselineMode mode);
   void setShadow(const Color& color, float offsetX, float offsetY);
   void clearShadow();
@@ -100,12 +99,12 @@ private:
   std::uint64_t m_cachedTextMetricsGeneration = 0;
   int m_cachedMaxLines = 0;
   TextAlign m_cachedTextAlign = TextAlign::Start;
-  LabelBaselineMode m_cachedBaselineMode = LabelBaselineMode::Stable;
+  LabelBaselineMode m_cachedBaselineMode = LabelBaselineMode::StableLogical;
   bool m_cachedBold = false;
   bool m_cachedAutoScroll = false;
   bool m_cachedHasConstraintMaxWidth = false;
   bool m_measureCached = false;
-  LabelBaselineMode m_baselineMode = LabelBaselineMode::Stable;
+  LabelBaselineMode m_baselineMode = LabelBaselineMode::StableLogical;
 
   float m_userMaxWidth = 0.0f;
   int m_userMaxLines = 0;
