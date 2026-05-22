@@ -1640,6 +1640,10 @@
         "osd-lock-keys": {
           "label": "Lock Keys",
           "description": "Show OSD popups for Caps Lock, Num Lock, and Scroll Lock changes"
+        },
+        "osd-keyboard-layout": {
+          "label": "Keyboard Layout",
+          "description": "Show an OSD popup when the input keyboard layout changes"
         }
       },
       "dock": {

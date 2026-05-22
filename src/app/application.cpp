@@ -510,7 +510,12 @@ void Application::initServices() {
     }
   });
   m_compositorPlatform.setWorkspaceChangeCallback([this]() { m_bar.refresh(); });
-  m_compositorPlatform.setKeyboardLayoutChangeCallback([this]() { m_bar.refresh(); });
+  m_compositorPlatform.setKeyboardLayoutChangeCallback([this]() {
+    m_bar.refresh();
+    if (m_configService.config().osd.keyboardLayout) {
+      m_keyboardLayoutOsd.onLayoutChanged(m_compositorPlatform);
+    }
+  });
   m_compositorPlatform.setToplevelChangeCallback([this]() {
     m_screenTimeService.onFocusChange();
     m_bar.refresh();
@@ -1154,6 +1159,8 @@ void Application::initUi() {
     m_lockKeysOsd.bindOverlay(m_osdOverlay);
     m_lockKeysOsd.primeFromService(m_lockKeysService);
   }
+  m_keyboardLayoutOsd.bindOverlay(m_osdOverlay);
+  m_keyboardLayoutOsd.prime(m_compositorPlatform);
   m_screenCorners.initialize(m_wayland, &m_configService, &m_renderContext);
   m_screenCorners.onConfigReload();
 
@@ -1253,6 +1260,9 @@ void Application::initUi() {
       m_bar.onSecondTick();
       m_desktopWidgetsController.onSecondTick();
       m_settingsWindow.onSecondTick();
+      if (m_configService.config().osd.keyboardLayout) {
+        m_keyboardLayoutOsd.onLayoutChanged(m_compositorPlatform);
+      }
     }
     m_idleManager.onSecondTick();
   });

@@ -881,6 +881,9 @@ namespace settings {
     entries.push_back(makeEntry("popups", "osd", tr("settings.schema.shell.osd-lock-keys.label"),
                                 tr("settings.schema.shell.osd-lock-keys.description"), {"osd", "lock_keys"},
                                 ToggleSetting{cfg.osd.lockKeys}, "hud overlay caps num scroll keyboard"));
+    entries.push_back(makeEntry("popups", "osd", tr("settings.schema.shell.osd-keyboard-layout.label"),
+                                tr("settings.schema.shell.osd-keyboard-layout.description"), {"osd", "keyboard_layout"},
+                                ToggleSetting{cfg.osd.keyboardLayout}, "hud overlay xkb input language layout switch"));
 
     // Keybinds (lives under Shell)
     entries.push_back(makeEntry("shell", "keybinds", tr("settings.schema.keybinds.validate.label"),

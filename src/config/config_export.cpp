@@ -657,6 +657,7 @@ namespace config_export {
     osd.insert_or_assign("position", config.osd.position);
     osd.insert_or_assign("orientation", config.osd.orientation);
     osd.insert_or_assign("lock_keys", config.osd.lockKeys);
+    osd.insert_or_assign("keyboard_layout", config.osd.keyboardLayout);
     root.insert_or_assign("osd", std::move(osd));
 
     toml::table system;

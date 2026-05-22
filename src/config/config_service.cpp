@@ -1771,6 +1771,8 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       osd.orientation = *v;
     if (auto v = (*osdTbl)["lock_keys"].value<bool>())
       osd.lockKeys = *v;
+    if (auto v = (*osdTbl)["keyboard_layout"].value<bool>())
+      osd.keyboardLayout = *v;
   }
 
   auto parseNotificationTable = [&config](const toml::table& notifTable) {
