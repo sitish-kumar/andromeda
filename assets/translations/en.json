@@ -1274,6 +1274,10 @@
           "label": "Hide When No New",
           "description": "Hide the notifications widget when there are no unread notifications"
         },
+        "hide_when_no_media": {
+          "label": "Hide When No Media",
+          "description": "Hide the media widget when no MPRIS player is active"
+        },
         "hide_when_empty": {
           "label": "Hide When Empty",
           "description": "Hide workspace pills whne there are no open windows",
@@ -1282,6 +1286,11 @@
         "hide_label": {
           "label": "Hide Label",
           "description": "Hide this widget's text label"
+        },
+        "icon_only": {
+          "label": "Icon Only",
+          "description": "Show only an icon without a text label",
+          "active-window-description": "On horizontal bars, show only the active window icon (vertical bars already use the icon only)"
         },
         "high_color": {
           "label": "High Color",

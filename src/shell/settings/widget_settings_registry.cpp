@@ -493,6 +493,11 @@ namespace settings {
       add(doubleSpec("max_length", 260.0, 40.0, 800.0, 1.0));
       add(doubleSpec("icon_size", static_cast<double>(Style::fontSizeBody), 8.0, 64.0, 1.0));
       add(selectSpec("title_scroll", "none", mediaTitleScroll));
+      {
+        auto iconOnly = boolSpec("icon_only", false);
+        iconOnly.descriptionKey = "settings.widgets.settings.icon_only.active-window-description";
+        add(std::move(iconOnly));
+      }
     } else if (type == "audio_visualizer") {
       add(doubleSpec("width", 56.0, 8.0, 400.0, 1.0));
       add(intSpec("bands", 16, 2.0, 128.0, 1.0));
@@ -560,6 +565,7 @@ namespace settings {
       add(doubleSpec("max_length", 220.0, 40.0, 800.0, 1.0));
       add(doubleSpec("art_size", 16.0, 8.0, 96.0, 1.0));
       add(selectSpec("title_scroll", "none", mediaTitleScroll));
+      add(boolSpec("hide_when_no_media", false));
     } else if (type == "network") {
       add(boolSpec("show_label", true));
     } else if (type == "notifications") {
