@@ -400,8 +400,8 @@ CairoTextRenderer::TextMetrics CairoTextRenderer::metricsFromLayout(PangoLayout*
   m.width = width;
   m.left = 0.0f;
   m.right = width;
-  m.top = stableExtents.valid ? std::min(stableExtents.top, inkTop) : -ascent;
-  m.bottom = stableExtents.valid ? std::max(stableExtents.bottom, inkBottom) : descent;
+  m.top = stableExtents.valid ? std::min(stableExtents.top, -ascent) : -ascent;
+  m.bottom = stableExtents.valid ? std::max(stableExtents.bottom, descent) : descent;
   m.inkTop = inkTop;
   m.inkBottom = inkBottom;
   m.inkLeft = inkLeft;
