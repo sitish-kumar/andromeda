@@ -899,9 +899,21 @@ bool Bar::instanceEffectivelyVisible(const BarInstance& instance) const noexcept
   return instance.slideRoot == nullptr || instance.slideRoot->opacity() > 0.5f;
 }
 
+bool Bar::instanceAcceptsPointerInput(const BarInstance& instance) const noexcept {
+  return instance.barConfig.autoHide || !instance.ipcLayoutReleased;
+}
+
 bool Bar::isVisible() const noexcept {
   return std::any_of(m_instances.begin(), m_instances.end(),
                      [this](const auto& inst) { return instanceEffectivelyVisible(*inst); });
+}
+
+void Bar::clearInstancePointerState(BarInstance& instance) {
+  instance.pointerInside = false;
+  instance.inputDispatcher.pointerLeave();
+  if (m_hoveredInstance == &instance) {
+    m_hoveredInstance = nullptr;
+  }
 }
 
 void Bar::setInstanceIpcVisible(BarInstance& instance, bool visible) {
@@ -922,6 +934,10 @@ void Bar::setInstanceIpcVisible(BarInstance& instance, bool visible) {
   // Non-autohide IPC: instant show/hide (no opacity fade — avoids sluggish hide and blur bleed-through).
   instance.animations.cancelForOwner(instance.slideRoot);
   instance.slideRoot->setOpacity(visible ? 1.0f : 0.0f);
+  if (!visible) {
+    clearInstancePointerState(instance);
+  }
+  syncBarAutoHideInputRegion(instance);
   syncBarSurfaceChrome(instance);
   instance.surface->requestRedraw();
 }
@@ -1024,6 +1040,9 @@ std::vector<InputRect> Bar::surfaceRectsForOutput(wl_output* output) const {
     if (instance == nullptr || instance->output != output || instance->surface == nullptr) {
       continue;
     }
+    if (!instanceAcceptsPointerInput(*instance)) {
+      continue;
+    }
     const auto* surface = instance->surface.get();
     const std::uint32_t anchor = surface->anchor();
     const bool aTop = (anchor & LayerShellAnchor::Top) != 0;
@@ -1074,7 +1093,7 @@ std::vector<wl_surface*> Bar::allBarSurfaces() const {
   std::vector<wl_surface*> surfaces;
   surfaces.reserve(m_instances.size());
   for (const auto& instance : m_instances) {
-    if (instance != nullptr && instance->surface != nullptr) {
+    if (instance != nullptr && instance->surface != nullptr && instanceAcceptsPointerInput(*instance)) {
       if (wl_surface* s = instance->surface->wlSurface(); s != nullptr) {
         surfaces.push_back(s);
       }
@@ -1657,6 +1676,10 @@ void Bar::syncBarAutoHideInputRegion(BarInstance& instance) const {
   }
   const int surfW = static_cast<int>(instance.surface->width());
   const int surfH = static_cast<int>(instance.surface->height());
+  if (!instanceAcceptsPointerInput(instance)) {
+    instance.surface->setInputRegion({});
+    return;
+  }
   if (instance.barConfig.autoHide) {
     instance.surface->setInputRegion(barAutoHideSurfaceInputRegion(surfW, surfH));
     return;
@@ -2051,12 +2074,16 @@ bool Bar::onPointerEvent(const PointerEvent& event) {
     return routeGroup(instance.startWidgets) || routeGroup(instance.centerWidgets) || routeGroup(instance.endWidgets);
   };
   if (targetInstance != nullptr) {
+    if (!instanceAcceptsPointerInput(*targetInstance)) {
+      clearInstancePointerState(*targetInstance);
+      return false;
+    }
     if (routeWidgetPopups(*targetInstance)) {
       return true;
     }
   } else {
     for (const auto& instance : m_instances) {
-      if (instance != nullptr && routeWidgetPopups(*instance)) {
+      if (instance != nullptr && instanceAcceptsPointerInput(*instance) && routeWidgetPopups(*instance)) {
         return true;
       }
     }

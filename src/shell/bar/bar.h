@@ -111,6 +111,8 @@ private:
   void syncBarAutoHideInputRegion(BarInstance& instance) const;
   void syncBarExclusiveZone(BarInstance& instance);
   void syncBarSurfaceChrome(BarInstance& instance);
+  void clearInstancePointerState(BarInstance& instance);
+  [[nodiscard]] bool instanceAcceptsPointerInput(const BarInstance& instance) const noexcept;
   [[nodiscard]] bool shouldReserveExclusiveZone(const BarInstance& instance) const noexcept;
   [[nodiscard]] bool barContentVisuallyShown(const BarInstance& instance) const noexcept;
   void revealAutoHideBar(BarInstance& instance);
