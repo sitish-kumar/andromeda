@@ -202,6 +202,10 @@ namespace settings {
   [[nodiscard]] std::string normalizedSettingQuery(std::string_view query);
   [[nodiscard]] bool matchesNormalizedSettingQuery(const SettingEntry& entry, std::string_view normalizedQuery);
   [[nodiscard]] bool matchesSettingQuery(const SettingEntry& entry, std::string_view query);
+  [[nodiscard]] bool isBarMonitorOverrideSettingPath(const std::vector<std::string>& path);
+  [[nodiscard]] bool settingEntryMatchesBarNavigation(const SettingEntry& entry, std::string_view selectedBarName,
+                                                      std::string_view selectedMonitorOverride);
+  [[nodiscard]] std::string barSettingContentSectionKey(const SettingEntry& entry);
   [[nodiscard]] std::string_view sectionGlyph(std::string_view section);
 
 } // namespace settings

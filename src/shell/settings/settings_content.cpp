@@ -2316,8 +2316,18 @@ namespace settings {
       return true;
     };
 
+    const std::string_view selectedBarName =
+        ctx.selectedBar != nullptr ? std::string_view{ctx.selectedBar->name} : std::string_view{};
+    const std::string_view selectedMonitorMatch = ctx.selectedMonitorOverride != nullptr
+                                                      ? std::string_view{ctx.selectedMonitorOverride->match}
+                                                      : std::string_view{};
+
     for (const auto& entry : registry) {
       if (ctx.searchQuery.empty() && !ctx.selectedSection.empty() && entry.section != ctx.selectedSection) {
+        continue;
+      }
+      if (ctx.searchQuery.empty() && ctx.selectedSection == "bar" &&
+          !settingEntryMatchesBarNavigation(entry, selectedBarName, selectedMonitorMatch)) {
         continue;
       }
       if (!ctx.showAdvanced && entry.advanced) {
@@ -2334,16 +2344,17 @@ namespace settings {
         continue;
       }
 
-      if (entry.section != activeSectionKey) {
-        activeSectionKey = entry.section;
+      const std::string contentSectionKey = barSettingContentSectionKey(entry);
+      if (contentSectionKey != activeSectionKey) {
+        activeSectionKey = contentSectionKey;
         activeGroupKey.clear();
         activeKeybindRow = nullptr;
         activeKeybindRowCount = 0;
         std::string displayTitle;
-        if (entry.section == "bar" && ctx.selectedBar != nullptr) {
-          displayTitle = i18n::tr("settings.entities.bar.label", "name", ctx.selectedBar->name);
-          if (ctx.selectedMonitorOverride != nullptr) {
-            displayTitle += " / " + ctx.selectedMonitorOverride->match;
+        if (entry.section == "bar" && entry.path.size() >= 2) {
+          displayTitle = i18n::tr("settings.entities.bar.label", "name", entry.path[1]);
+          if (isBarMonitorOverrideSettingPath(entry.path)) {
+            displayTitle += " / " + entry.path[3];
           }
         } else {
           displayTitle = sectionLabel(entry.section);

@@ -748,13 +748,8 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
   syncSelectedBarState(cfg, availableBars);
 
   const BarConfig* selectedBar = settings::findBar(cfg, m_selectedBarName);
-  const BarMonitorOverride* selectedMonitorOverride = nullptr;
-  if (selectedBar != nullptr && !m_selectedMonitorOverride.empty()) {
-    selectedMonitorOverride = settings::findMonitorOverride(*selectedBar, m_selectedMonitorOverride);
-  }
 
-  m_settingsRegistry =
-      settings::buildSettingsRegistry(cfg, selectedBar, selectedMonitorOverride, buildRegistryEnvironment());
+  m_settingsRegistry = settings::buildSettingsRegistry(cfg, nullptr, nullptr, buildRegistryEnvironment());
 
   if (m_openWallpaperPanel) {
     auto it = std::find_if(m_settingsRegistry.begin(), m_settingsRegistry.end(), [](const settings::SettingEntry& e) {

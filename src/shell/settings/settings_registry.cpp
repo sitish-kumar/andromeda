@@ -212,6 +212,36 @@ namespace settings {
     return matchesNormalizedSettingQuery(entry, normalizedSettingQuery(query));
   }
 
+  bool isBarMonitorOverrideSettingPath(const std::vector<std::string>& path) {
+    return path.size() >= 5 && path[0] == "bar" && path[2] == "monitor";
+  }
+
+  bool settingEntryMatchesBarNavigation(const SettingEntry& entry, std::string_view selectedBarName,
+                                        std::string_view selectedMonitorOverride) {
+    if (entry.section != "bar" || entry.path.size() < 2 || entry.path[0] != "bar") {
+      return true;
+    }
+    if (selectedBarName.empty() || entry.path[1] != selectedBarName) {
+      return false;
+    }
+    const bool monitorEntry = isBarMonitorOverrideSettingPath(entry.path);
+    if (selectedMonitorOverride.empty()) {
+      return !monitorEntry;
+    }
+    return monitorEntry && entry.path[3] == selectedMonitorOverride;
+  }
+
+  std::string barSettingContentSectionKey(const SettingEntry& entry) {
+    if (entry.section != "bar" || entry.path.size() < 2) {
+      return entry.section;
+    }
+    std::string key = "bar:" + entry.path[1];
+    if (isBarMonitorOverrideSettingPath(entry.path)) {
+      key += ":monitor:" + entry.path[3];
+    }
+    return key;
+  }
+
   std::string_view sectionGlyph(std::string_view section) {
     if (section == "appearance")
       return "adjustments-horizontal";
@@ -247,6 +277,8 @@ namespace settings {
   std::vector<SettingEntry> buildSettingsRegistry(const Config& cfg, const BarConfig* selectedBar,
                                                   const BarMonitorOverride* selectedMonitorOverride,
                                                   const RegistryEnvironment& env) {
+    (void)selectedBar;
+    (void)selectedMonitorOverride;
     using i18n::tr;
     const auto positionSelect = [](std::string_view selected) {
       return asSegmented(plainSelect({{"top", "settings.options.edge.top"},
@@ -1276,10 +1308,10 @@ namespace settings {
                   ListSetting{.items = cfg.notification.monitors, .suggestedOptions = env.availableOutputs},
                   "monitor output display screen"));
 
-    // Bar
-    if (selectedBar != nullptr && selectedMonitorOverride == nullptr) {
+    // Bar — register every configured bar so global search can surface settings from all of them.
+    for (const auto& bar : cfg.bars) {
       const std::string section = "bar";
-      const std::vector<std::string> root = {"bar", selectedBar->name};
+      const std::vector<std::string> root = {"bar", bar.name};
       auto path = [&](std::string key) {
         std::vector<std::string> p = root;
         p.push_back(std::move(key));
@@ -1287,336 +1319,329 @@ namespace settings {
       };
       entries.push_back(makeEntry(section, "general", tr("settings.schema.shared.enabled.label"),
                                   tr("settings.schema.bar.enabled.description"), path("enabled"),
-                                  ToggleSetting{selectedBar->enabled}, "visible"));
+                                  ToggleSetting{bar.enabled}, "visible"));
       entries.push_back(makeEntry(section, "general", tr("settings.schema.shared.position.label"),
                                   tr("settings.schema.bar.position.description"), path("position"),
-                                  positionSelect(selectedBar->position), "edge"));
+                                  positionSelect(bar.position), "edge"));
       entries.push_back(makeEntry(section, "general", tr("settings.schema.shared.auto-hide.label"),
                                   tr("settings.schema.bar.auto-hide.description"), path("auto_hide"),
-                                  ToggleSetting{selectedBar->autoHide}, "autohide"));
+                                  ToggleSetting{bar.autoHide}, "autohide"));
       entries.push_back(makeEntry(section, "general", tr("settings.schema.shared.reserve-space.label"),
                                   tr("settings.schema.bar.reserve-space.description"), path("reserve_space"),
-                                  ToggleSetting{selectedBar->reserveSpace}, "exclusive zone"));
+                                  ToggleSetting{bar.reserveSpace}, "exclusive zone"));
       entries.push_back(makeEntry(section, "layout", tr("settings.schema.bar.thickness.label"),
                                   tr("settings.schema.bar.thickness.description"), path("thickness"),
-                                  SliderSetting{static_cast<float>(selectedBar->thickness), 10.0f, 120.0f, 1.0f, true},
+                                  SliderSetting{static_cast<float>(bar.thickness), 10.0f, 120.0f, 1.0f, true},
                                   "height width"));
       entries.push_back(makeEntry(section, "layout", tr("settings.schema.bar.content-scale.label"),
                                   tr("settings.schema.bar.content-scale.description"), path("scale"),
-                                  SliderSetting{selectedBar->scale, 0.5f, 4.0f, 0.05f, false}, "zoom size"));
+                                  SliderSetting{bar.scale, 0.5f, 4.0f, 0.05f, false}, "zoom size"));
       entries.push_back(makeEntry(section, "widgets", tr("settings.schema.bar.font-weight.label"),
                                   tr("settings.schema.bar.font-weight.description"), path("font_weight"),
                                   asSegmented(plainSelect({{"bold", "settings.options.bar.font-weight.bold"},
                                                            {"regular", "settings.options.bar.font-weight.regular"}},
-                                                          selectedBar->fontWeight)),
+                                                          bar.fontWeight)),
                                   "font text weight"));
       entries.push_back(makeEntry(section, "layout", tr("settings.schema.shared.ends-margin.label"),
                                   tr("settings.schema.bar.ends-margin.description"), path("margin_ends"),
-                                  SliderSetting{static_cast<float>(selectedBar->marginEnds), 0.0f, 500.0f, 1.0f, true},
+                                  SliderSetting{static_cast<float>(bar.marginEnds), 0.0f, 500.0f, 1.0f, true},
                                   "gap inset"));
       entries.push_back(makeEntry(section, "layout", tr("settings.schema.shared.edge-margin.label"),
                                   tr("settings.schema.bar.edge-margin.description"), path("margin_edge"),
-                                  SliderSetting{static_cast<float>(selectedBar->marginEdge), 0.0f, 100.0f, 1.0f, true},
+                                  SliderSetting{static_cast<float>(bar.marginEdge), 0.0f, 100.0f, 1.0f, true},
                                   "gap inset"));
       entries.push_back(makeEntry(section, "layout", tr("settings.schema.bar.content-padding.label"),
                                   tr("settings.schema.bar.content-padding.description"), path("padding"),
-                                  SliderSetting{static_cast<float>(selectedBar->padding), 0.0f, 80.0f, 1.0f, true},
-                                  "inset"));
+                                  SliderSetting{static_cast<float>(bar.padding), 0.0f, 80.0f, 1.0f, true}, "inset"));
       entries.push_back(makeEntry(section, "shape", tr("settings.schema.shared.corner-radius.label"),
                                   tr("settings.schema.bar.corner-radius.description"), path("radius"),
-                                  SliderSetting{static_cast<float>(selectedBar->radius), 0.0f, 80.0f, 1.0f, true},
-                                  "rounded"));
-      entries.push_back(
-          makeEntry(section, "shape", tr("settings.schema.shared.corner-top-left.label"),
-                    tr("settings.schema.bar.corner-top-left.description"), path("radius_top_left"),
-                    SliderSetting{static_cast<float>(selectedBar->radiusTopLeft), 0.0f, 80.0f, 1.0f, true},
-                    "rounded corner", true));
-      entries.push_back(
-          makeEntry(section, "shape", tr("settings.schema.shared.corner-top-right.label"),
-                    tr("settings.schema.bar.corner-top-right.description"), path("radius_top_right"),
-                    SliderSetting{static_cast<float>(selectedBar->radiusTopRight), 0.0f, 80.0f, 1.0f, true},
-                    "rounded corner", true));
-      entries.push_back(
-          makeEntry(section, "shape", tr("settings.schema.shared.corner-bottom-left.label"),
-                    tr("settings.schema.bar.corner-bottom-left.description"), path("radius_bottom_left"),
-                    SliderSetting{static_cast<float>(selectedBar->radiusBottomLeft), 0.0f, 80.0f, 1.0f, true},
-                    "rounded corner", true));
-      entries.push_back(
-          makeEntry(section, "shape", tr("settings.schema.shared.corner-bottom-right.label"),
-                    tr("settings.schema.bar.corner-bottom-right.description"), path("radius_bottom_right"),
-                    SliderSetting{static_cast<float>(selectedBar->radiusBottomRight), 0.0f, 80.0f, 1.0f, true},
-                    "rounded corner", true));
+                                  SliderSetting{static_cast<float>(bar.radius), 0.0f, 80.0f, 1.0f, true}, "rounded"));
+      entries.push_back(makeEntry(section, "shape", tr("settings.schema.shared.corner-top-left.label"),
+                                  tr("settings.schema.bar.corner-top-left.description"), path("radius_top_left"),
+                                  SliderSetting{static_cast<float>(bar.radiusTopLeft), 0.0f, 80.0f, 1.0f, true},
+                                  "rounded corner", true));
+      entries.push_back(makeEntry(section, "shape", tr("settings.schema.shared.corner-top-right.label"),
+                                  tr("settings.schema.bar.corner-top-right.description"), path("radius_top_right"),
+                                  SliderSetting{static_cast<float>(bar.radiusTopRight), 0.0f, 80.0f, 1.0f, true},
+                                  "rounded corner", true));
+      entries.push_back(makeEntry(section, "shape", tr("settings.schema.shared.corner-bottom-left.label"),
+                                  tr("settings.schema.bar.corner-bottom-left.description"), path("radius_bottom_left"),
+                                  SliderSetting{static_cast<float>(bar.radiusBottomLeft), 0.0f, 80.0f, 1.0f, true},
+                                  "rounded corner", true));
+      entries.push_back(makeEntry(
+          section, "shape", tr("settings.schema.shared.corner-bottom-right.label"),
+          tr("settings.schema.bar.corner-bottom-right.description"), path("radius_bottom_right"),
+          SliderSetting{static_cast<float>(bar.radiusBottomRight), 0.0f, 80.0f, 1.0f, true}, "rounded corner", true));
       entries.push_back(makeEntry(section, "shape", tr("settings.schema.shared.background-opacity.label"),
                                   tr("settings.schema.bar.background-opacity.description"), path("background_opacity"),
-                                  SliderSetting{selectedBar->backgroundOpacity, 0.0f, 1.0f, 0.01f, false}, "alpha"));
+                                  SliderSetting{bar.backgroundOpacity, 0.0f, 1.0f, 0.01f, false}, "alpha"));
       entries.push_back(makeEntry(section, "shape", tr("settings.schema.bar.border.label"),
                                   tr("settings.schema.bar.border.description"), path("border"),
-                                  colorSpecPicker(selectedBar->border), "outline color", true));
+                                  colorSpecPicker(bar.border), "outline color", true));
       entries.push_back(makeEntry(section, "shape", tr("settings.schema.bar.border-width.label"),
                                   tr("settings.schema.bar.border-width.description"), path("border_width"),
-                                  SliderSetting{selectedBar->borderWidth, 0.0f, 20.0f, 0.5f, false}, "outline stroke",
-                                  true));
+                                  SliderSetting{bar.borderWidth, 0.0f, 20.0f, 0.5f, false}, "outline stroke", true));
       entries.push_back(makeEntry(section, "effects", tr("settings.schema.shared.shadow.label"),
                                   tr("settings.schema.bar.shadow.description"), path("shadow"),
-                                  ToggleSetting{selectedBar->shadow}, "shadow"));
+                                  ToggleSetting{bar.shadow}, "shadow"));
       entries.push_back(makeEntry(section, "effects", tr("settings.schema.shared.contact-shadow.label"),
                                   tr("settings.schema.bar.contact-shadow.description"), path("contact_shadow"),
-                                  ToggleSetting{selectedBar->contactShadow}, "shadow contact panel attached"));
-      entries.push_back(
-          makeEntry(section, "widgets", tr("settings.schema.bar.widget-spacing.label"),
-                    tr("settings.schema.bar.widget-spacing.description"), path("widget_spacing"),
-                    SliderSetting{static_cast<float>(selectedBar->widgetSpacing), 0.0f, 32.0f, 1.0f, true}, "gap"));
+                                  ToggleSetting{bar.contactShadow}, "shadow contact panel attached"));
+      entries.push_back(makeEntry(section, "widgets", tr("settings.schema.bar.widget-spacing.label"),
+                                  tr("settings.schema.bar.widget-spacing.description"), path("widget_spacing"),
+                                  SliderSetting{static_cast<float>(bar.widgetSpacing), 0.0f, 32.0f, 1.0f, true},
+                                  "gap"));
       entries.push_back(makeEntry(section, "widgets", tr("settings.schema.bar.widget-color.label"),
                                   tr("settings.schema.bar.widget-color.description"), path("color"),
-                                  colorSpecPicker(selectedBar->widgetColor, true), "color foreground", true));
+                                  colorSpecPicker(bar.widgetColor, true), "color foreground", true));
       entries.push_back(makeEntry(section, "capsules", tr("settings.schema.bar.widget-capsules.label"),
                                   tr("settings.schema.bar.widget-capsules.description"), path("capsule"),
-                                  ToggleSetting{selectedBar->widgetCapsuleDefault}, "pill"));
+                                  ToggleSetting{bar.widgetCapsuleDefault}, "pill"));
       const SettingVisibility capsuleOn{path("capsule"), {"true"}};
       {
-        auto e =
-            makeEntry(section, "capsules", tr("settings.schema.bar.capsule-radius.label"),
-                      tr("settings.schema.bar.capsule-radius.description"), path("capsule_radius"),
-                      OptionalStepperSetting{.value = radiusStepperValue(selectedBar->widgetCapsuleRadius),
-                                             .minValue = 0,
-                                             .maxValue = 80,
-                                             .step = 1,
-                                             .fallbackValue = radiusStepperFallback(selectedBar->widgetCapsuleRadius),
-                                             .unsetLabel = tr("common.states.auto"),
-                                             .customLabel = tr("common.states.custom")},
-                      "pill rounded radius", true);
-        entries.push_back(std::move(e));
-      }
-      {
-        auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-groups.label"),
-                           tr("settings.schema.bar.capsule-groups.description"), path("capsule_groups"),
-                           ListSetting{.items = selectedBar->widgetCapsuleGroups}, "grouped capsules");
-        e.visibleWhen = capsuleOn;
-        entries.push_back(std::move(e));
-      }
-      {
-        auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-fill.label"),
-                           tr("settings.schema.bar.capsule-fill.description"), path("capsule_fill"),
-                           colorSpecPicker(selectedBar->widgetCapsuleFill), "color pill", true);
-        e.visibleWhen = capsuleOn;
-        entries.push_back(std::move(e));
-      }
-      {
-        auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-foreground.label"),
-                           tr("settings.schema.bar.capsule-foreground.description"), path("capsule_foreground"),
-                           colorSpecPicker(selectedBar->widgetCapsuleForeground, true), "color foreground pill", true);
-        e.visibleWhen = capsuleOn;
-        entries.push_back(std::move(e));
-      }
-      {
-        auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-border.label"),
-                           tr("settings.schema.bar.capsule-border.description"), path("capsule_border"),
-                           colorSpecPicker(selectedBar->widgetCapsuleBorder, true), "color pill outline", true);
-        e.visibleWhen = capsuleOn;
-        entries.push_back(std::move(e));
-      }
-      {
-        auto e =
-            makeEntry(section, "capsules", tr("settings.schema.bar.capsule-padding.label"),
-                      tr("settings.schema.bar.capsule-padding.description"), path("capsule_padding"),
-                      SliderSetting{selectedBar->widgetCapsulePadding, 0.0f, 48.0f, 1.0f, false}, "pill inset", true);
-        e.visibleWhen = capsuleOn;
-        entries.push_back(std::move(e));
-      }
-      {
-        auto e =
-            makeEntry(section, "capsules", tr("settings.schema.bar.capsule-opacity.label"),
-                      tr("settings.schema.bar.capsule-opacity.description"), path("capsule_opacity"),
-                      SliderSetting{selectedBar->widgetCapsuleOpacity, 0.0f, 1.0f, 0.01f, false}, "pill alpha", true);
-        e.visibleWhen = capsuleOn;
-        entries.push_back(std::move(e));
-      }
-      entries.push_back(makeEntry(section, "widget-list", tr("settings.schema.bar.start-widgets.label"),
-                                  tr("settings.schema.bar.start-widgets.description"), path("start"),
-                                  ListSetting{.items = selectedBar->startWidgets}, "left"));
-      entries.push_back(makeEntry(section, "widget-list", tr("settings.schema.bar.center-widgets.label"),
-                                  tr("settings.schema.bar.center-widgets.description"), path("center"),
-                                  ListSetting{.items = selectedBar->centerWidgets}, "middle"));
-      entries.push_back(makeEntry(section, "widget-list", tr("settings.schema.bar.end-widgets.label"),
-                                  tr("settings.schema.bar.end-widgets.description"), path("end"),
-                                  ListSetting{.items = selectedBar->endWidgets}, "right"));
-    }
-
-    // Bar monitor override
-    if (selectedBar != nullptr && selectedMonitorOverride != nullptr) {
-      const auto& ovr = *selectedMonitorOverride;
-      const auto& bar = *selectedBar;
-      const std::string section = "bar";
-      const std::vector<std::string> root = {"bar", bar.name, "monitor", ovr.match};
-      auto mpath = [&](std::string key) {
-        std::vector<std::string> p = root;
-        p.push_back(std::move(key));
-        return p;
-      };
-
-      entries.push_back(makeEntry(section, "general", tr("settings.schema.shared.enabled.label"),
-                                  tr("settings.schema.bar.enabled.description"), mpath("enabled"),
-                                  ToggleSetting{ovr.enabled.value_or(bar.enabled)}, "visible"));
-      entries.push_back(makeEntry(section, "general", tr("settings.schema.shared.auto-hide.label"),
-                                  tr("settings.schema.bar.auto-hide.description"), mpath("auto_hide"),
-                                  ToggleSetting{ovr.autoHide.value_or(bar.autoHide)}, "autohide"));
-      entries.push_back(makeEntry(section, "general", tr("settings.schema.shared.reserve-space.label"),
-                                  tr("settings.schema.bar.reserve-space.description"), mpath("reserve_space"),
-                                  ToggleSetting{ovr.reserveSpace.value_or(bar.reserveSpace)}, "exclusive zone"));
-      entries.push_back(
-          makeEntry(section, "layout", tr("settings.schema.bar.thickness.label"),
-                    tr("settings.schema.bar.thickness.description"), mpath("thickness"),
-                    SliderSetting{static_cast<float>(ovr.thickness.value_or(bar.thickness)), 10.0f, 120.0f, 1.0f, true},
-                    "height width"));
-      entries.push_back(makeEntry(section, "layout", tr("settings.schema.bar.content-scale.label"),
-                                  tr("settings.schema.bar.content-scale.description"), mpath("scale"),
-                                  SliderSetting{ovr.scale.value_or(bar.scale), 0.5f, 4.0f, 0.05f, false}, "zoom size"));
-      entries.push_back(makeEntry(
-          section, "layout", tr("settings.schema.shared.ends-margin.label"),
-          tr("settings.schema.bar.ends-margin.description"), mpath("margin_ends"),
-          SliderSetting{static_cast<float>(ovr.marginEnds.value_or(bar.marginEnds)), 0.0f, 500.0f, 1.0f, true},
-          "gap inset"));
-      entries.push_back(makeEntry(
-          section, "layout", tr("settings.schema.shared.edge-margin.label"),
-          tr("settings.schema.bar.edge-margin.description"), mpath("margin_edge"),
-          SliderSetting{static_cast<float>(ovr.marginEdge.value_or(bar.marginEdge)), 0.0f, 100.0f, 1.0f, true},
-          "gap inset"));
-      entries.push_back(makeEntry(
-          section, "layout", tr("settings.schema.bar.content-padding.label"),
-          tr("settings.schema.bar.content-padding.description"), mpath("padding"),
-          SliderSetting{static_cast<float>(ovr.padding.value_or(bar.padding)), 0.0f, 80.0f, 1.0f, true}, "inset"));
-      entries.push_back(makeEntry(
-          section, "shape", tr("settings.schema.shared.corner-radius.label"),
-          tr("settings.schema.bar.corner-radius.description"), mpath("radius"),
-          SliderSetting{static_cast<float>(ovr.radius.value_or(bar.radius)), 0.0f, 80.0f, 1.0f, true}, "rounded"));
-      entries.push_back(makeEntry(
-          section, "shape", tr("settings.schema.shared.corner-top-left.label"),
-          tr("settings.schema.bar.corner-top-left.description"), mpath("radius_top_left"),
-          SliderSetting{static_cast<float>(ovr.radiusTopLeft.value_or(bar.radiusTopLeft)), 0.0f, 80.0f, 1.0f, true},
-          "rounded corner", true));
-      entries.push_back(makeEntry(
-          section, "shape", tr("settings.schema.shared.corner-top-right.label"),
-          tr("settings.schema.bar.corner-top-right.description"), mpath("radius_top_right"),
-          SliderSetting{static_cast<float>(ovr.radiusTopRight.value_or(bar.radiusTopRight)), 0.0f, 80.0f, 1.0f, true},
-          "rounded corner", true));
-      entries.push_back(makeEntry(section, "shape", tr("settings.schema.shared.corner-bottom-left.label"),
-                                  tr("settings.schema.bar.corner-bottom-left.description"), mpath("radius_bottom_left"),
-                                  SliderSetting{static_cast<float>(ovr.radiusBottomLeft.value_or(bar.radiusBottomLeft)),
-                                                0.0f, 80.0f, 1.0f, true},
-                                  "rounded corner", true));
-      entries.push_back(
-          makeEntry(section, "shape", tr("settings.schema.shared.corner-bottom-right.label"),
-                    tr("settings.schema.bar.corner-bottom-right.description"), mpath("radius_bottom_right"),
-                    SliderSetting{static_cast<float>(ovr.radiusBottomRight.value_or(bar.radiusBottomRight)), 0.0f,
-                                  80.0f, 1.0f, true},
-                    "rounded corner", true));
-      entries.push_back(makeEntry(
-          section, "shape", tr("settings.schema.shared.background-opacity.label"),
-          tr("settings.schema.bar.background-opacity.description"), mpath("background_opacity"),
-          SliderSetting{ovr.backgroundOpacity.value_or(bar.backgroundOpacity), 0.0f, 1.0f, 0.01f, false}, "alpha"));
-      entries.push_back(makeEntry(
-          section, "shape", tr("settings.schema.bar.border.label"), tr("settings.schema.bar.border.description"),
-          mpath("border"), colorSpecPicker(ovr.border, true, tr("common.states.inherit")), "outline color", true));
-      entries.push_back(makeEntry(section, "shape", tr("settings.schema.bar.border-width.label"),
-                                  tr("settings.schema.bar.border-width.description"), mpath("border_width"),
-                                  SliderSetting{ovr.borderWidth.value_or(bar.borderWidth), 0.0f, 20.0f, 0.5f, false},
-                                  "outline stroke", true));
-      entries.push_back(makeEntry(section, "effects", tr("settings.schema.shared.shadow.label"),
-                                  tr("settings.schema.bar.shadow.description"), mpath("shadow"),
-                                  ToggleSetting{ovr.shadow.value_or(bar.shadow)}, "shadow"));
-      entries.push_back(makeEntry(section, "effects", tr("settings.schema.shared.contact-shadow.label"),
-                                  tr("settings.schema.bar.contact-shadow.description"), mpath("contact_shadow"),
-                                  ToggleSetting{ovr.contactShadow.value_or(bar.contactShadow)},
-                                  "shadow contact panel attached"));
-      entries.push_back(makeEntry(
-          section, "widgets", tr("settings.schema.bar.widget-spacing.label"),
-          tr("settings.schema.bar.widget-spacing.description"), mpath("widget_spacing"),
-          SliderSetting{static_cast<float>(ovr.widgetSpacing.value_or(bar.widgetSpacing)), 0.0f, 32.0f, 1.0f, true},
-          "gap"));
-      entries.push_back(makeEntry(section, "widgets", tr("settings.schema.bar.widget-color.label"),
-                                  tr("settings.schema.bar.widget-color.description"), mpath("color"),
-                                  colorSpecPicker(ovr.widgetColor, true, tr("common.states.inherit")),
-                                  "color foreground", true));
-      entries.push_back(makeEntry(section, "capsules", tr("settings.schema.bar.widget-capsules.label"),
-                                  tr("settings.schema.bar.widget-capsules.description"), mpath("capsule"),
-                                  ToggleSetting{ovr.widgetCapsuleDefault.value_or(bar.widgetCapsuleDefault)}, "pill"));
-      const SettingVisibility mCapsuleOn{mpath("capsule"), {"true"}};
-      {
         auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-radius.label"),
-                           tr("settings.schema.bar.capsule-radius.description"), mpath("capsule_radius"),
-                           OptionalStepperSetting{.value = radiusStepperValue(ovr.widgetCapsuleRadius),
+                           tr("settings.schema.bar.capsule-radius.description"), path("capsule_radius"),
+                           OptionalStepperSetting{.value = radiusStepperValue(bar.widgetCapsuleRadius),
                                                   .minValue = 0,
                                                   .maxValue = 80,
                                                   .step = 1,
                                                   .fallbackValue = radiusStepperFallback(bar.widgetCapsuleRadius),
-                                                  .unsetLabel = tr("common.states.inherit"),
+                                                  .unsetLabel = tr("common.states.auto"),
                                                   .customLabel = tr("common.states.custom")},
                            "pill rounded radius", true);
         entries.push_back(std::move(e));
       }
       {
         auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-groups.label"),
-                           tr("settings.schema.bar.capsule-groups.description"), mpath("capsule_groups"),
-                           ListSetting{.items = ovr.widgetCapsuleGroups.value_or(bar.widgetCapsuleGroups)},
-                           "grouped capsules");
-        e.visibleWhen = mCapsuleOn;
+                           tr("settings.schema.bar.capsule-groups.description"), path("capsule_groups"),
+                           ListSetting{.items = bar.widgetCapsuleGroups}, "grouped capsules");
+        e.visibleWhen = capsuleOn;
         entries.push_back(std::move(e));
       }
       {
-        auto e =
-            makeEntry(section, "capsules", tr("settings.schema.bar.capsule-fill.label"),
-                      tr("settings.schema.bar.capsule-fill.description"), mpath("capsule_fill"),
-                      colorSpecPicker(ovr.widgetCapsuleFill, true, tr("common.states.inherit")), "color pill", true);
-        e.visibleWhen = mCapsuleOn;
+        auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-fill.label"),
+                           tr("settings.schema.bar.capsule-fill.description"), path("capsule_fill"),
+                           colorSpecPicker(bar.widgetCapsuleFill), "color pill", true);
+        e.visibleWhen = capsuleOn;
         entries.push_back(std::move(e));
       }
       {
         auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-foreground.label"),
-                           tr("settings.schema.bar.capsule-foreground.description"), mpath("capsule_foreground"),
-                           colorSpecPicker(ovr.widgetCapsuleForeground, true, tr("common.states.inherit")),
-                           "color foreground pill", true);
-        e.visibleWhen = mCapsuleOn;
+                           tr("settings.schema.bar.capsule-foreground.description"), path("capsule_foreground"),
+                           colorSpecPicker(bar.widgetCapsuleForeground, true), "color foreground pill", true);
+        e.visibleWhen = capsuleOn;
         entries.push_back(std::move(e));
       }
       {
-        auto e = makeEntry(
-            section, "capsules", tr("settings.schema.bar.capsule-border.label"),
-            tr("settings.schema.bar.capsule-border.description"), mpath("capsule_border"),
-            colorSpecPicker(ovr.widgetCapsuleBorderSpecified ? ovr.widgetCapsuleBorder : std::optional<ColorSpec>{},
-                            true, tr("common.states.inherit")),
-            "color pill outline", true);
-        e.visibleWhen = mCapsuleOn;
+        auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-border.label"),
+                           tr("settings.schema.bar.capsule-border.description"), path("capsule_border"),
+                           colorSpecPicker(bar.widgetCapsuleBorder, true), "color pill outline", true);
+        e.visibleWhen = capsuleOn;
         entries.push_back(std::move(e));
       }
       {
-        auto e =
-            makeEntry(section, "capsules", tr("settings.schema.bar.capsule-padding.label"),
-                      tr("settings.schema.bar.capsule-padding.description"), mpath("capsule_padding"),
-                      SliderSetting{static_cast<float>(ovr.widgetCapsulePadding.value_or(bar.widgetCapsulePadding)),
-                                    0.0f, 48.0f, 1.0f, false},
-                      "pill inset", true);
-        e.visibleWhen = mCapsuleOn;
+        auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-padding.label"),
+                           tr("settings.schema.bar.capsule-padding.description"), path("capsule_padding"),
+                           SliderSetting{bar.widgetCapsulePadding, 0.0f, 48.0f, 1.0f, false}, "pill inset", true);
+        e.visibleWhen = capsuleOn;
         entries.push_back(std::move(e));
       }
       {
-        auto e =
-            makeEntry(section, "capsules", tr("settings.schema.bar.capsule-opacity.label"),
-                      tr("settings.schema.bar.capsule-opacity.description"), mpath("capsule_opacity"),
-                      SliderSetting{static_cast<float>(ovr.widgetCapsuleOpacity.value_or(bar.widgetCapsuleOpacity)),
-                                    0.0f, 1.0f, 0.01f, false},
-                      "pill alpha", true);
-        e.visibleWhen = mCapsuleOn;
+        auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-opacity.label"),
+                           tr("settings.schema.bar.capsule-opacity.description"), path("capsule_opacity"),
+                           SliderSetting{bar.widgetCapsuleOpacity, 0.0f, 1.0f, 0.01f, false}, "pill alpha", true);
+        e.visibleWhen = capsuleOn;
         entries.push_back(std::move(e));
       }
       entries.push_back(makeEntry(section, "widget-list", tr("settings.schema.bar.start-widgets.label"),
-                                  tr("settings.schema.bar.start-widgets.description"), mpath("start"),
-                                  ListSetting{.items = ovr.startWidgets.value_or(bar.startWidgets)}, "left"));
+                                  tr("settings.schema.bar.start-widgets.description"), path("start"),
+                                  ListSetting{.items = bar.startWidgets}, "left"));
       entries.push_back(makeEntry(section, "widget-list", tr("settings.schema.bar.center-widgets.label"),
-                                  tr("settings.schema.bar.center-widgets.description"), mpath("center"),
-                                  ListSetting{.items = ovr.centerWidgets.value_or(bar.centerWidgets)}, "middle"));
+                                  tr("settings.schema.bar.center-widgets.description"), path("center"),
+                                  ListSetting{.items = bar.centerWidgets}, "middle"));
       entries.push_back(makeEntry(section, "widget-list", tr("settings.schema.bar.end-widgets.label"),
-                                  tr("settings.schema.bar.end-widgets.description"), mpath("end"),
-                                  ListSetting{.items = ovr.endWidgets.value_or(bar.endWidgets)}, "right"));
+                                  tr("settings.schema.bar.end-widgets.description"), path("end"),
+                                  ListSetting{.items = bar.endWidgets}, "right"));
+    }
+
+    // Bar monitor overrides (all bars).
+    for (const auto& bar : cfg.bars) {
+      for (const auto& ovr : bar.monitorOverrides) {
+        const std::string section = "bar";
+        const std::vector<std::string> root = {"bar", bar.name, "monitor", ovr.match};
+        auto mpath = [&](std::string key) {
+          std::vector<std::string> p = root;
+          p.push_back(std::move(key));
+          return p;
+        };
+
+        entries.push_back(makeEntry(section, "general", tr("settings.schema.shared.enabled.label"),
+                                    tr("settings.schema.bar.enabled.description"), mpath("enabled"),
+                                    ToggleSetting{ovr.enabled.value_or(bar.enabled)}, "visible"));
+        entries.push_back(makeEntry(section, "general", tr("settings.schema.shared.auto-hide.label"),
+                                    tr("settings.schema.bar.auto-hide.description"), mpath("auto_hide"),
+                                    ToggleSetting{ovr.autoHide.value_or(bar.autoHide)}, "autohide"));
+        entries.push_back(makeEntry(section, "general", tr("settings.schema.shared.reserve-space.label"),
+                                    tr("settings.schema.bar.reserve-space.description"), mpath("reserve_space"),
+                                    ToggleSetting{ovr.reserveSpace.value_or(bar.reserveSpace)}, "exclusive zone"));
+        entries.push_back(makeEntry(
+            section, "layout", tr("settings.schema.bar.thickness.label"),
+            tr("settings.schema.bar.thickness.description"), mpath("thickness"),
+            SliderSetting{static_cast<float>(ovr.thickness.value_or(bar.thickness)), 10.0f, 120.0f, 1.0f, true},
+            "height width"));
+        entries.push_back(makeEntry(section, "layout", tr("settings.schema.bar.content-scale.label"),
+                                    tr("settings.schema.bar.content-scale.description"), mpath("scale"),
+                                    SliderSetting{ovr.scale.value_or(bar.scale), 0.5f, 4.0f, 0.05f, false},
+                                    "zoom size"));
+        entries.push_back(makeEntry(
+            section, "layout", tr("settings.schema.shared.ends-margin.label"),
+            tr("settings.schema.bar.ends-margin.description"), mpath("margin_ends"),
+            SliderSetting{static_cast<float>(ovr.marginEnds.value_or(bar.marginEnds)), 0.0f, 500.0f, 1.0f, true},
+            "gap inset"));
+        entries.push_back(makeEntry(
+            section, "layout", tr("settings.schema.shared.edge-margin.label"),
+            tr("settings.schema.bar.edge-margin.description"), mpath("margin_edge"),
+            SliderSetting{static_cast<float>(ovr.marginEdge.value_or(bar.marginEdge)), 0.0f, 100.0f, 1.0f, true},
+            "gap inset"));
+        entries.push_back(makeEntry(
+            section, "layout", tr("settings.schema.bar.content-padding.label"),
+            tr("settings.schema.bar.content-padding.description"), mpath("padding"),
+            SliderSetting{static_cast<float>(ovr.padding.value_or(bar.padding)), 0.0f, 80.0f, 1.0f, true}, "inset"));
+        entries.push_back(makeEntry(
+            section, "shape", tr("settings.schema.shared.corner-radius.label"),
+            tr("settings.schema.bar.corner-radius.description"), mpath("radius"),
+            SliderSetting{static_cast<float>(ovr.radius.value_or(bar.radius)), 0.0f, 80.0f, 1.0f, true}, "rounded"));
+        entries.push_back(makeEntry(
+            section, "shape", tr("settings.schema.shared.corner-top-left.label"),
+            tr("settings.schema.bar.corner-top-left.description"), mpath("radius_top_left"),
+            SliderSetting{static_cast<float>(ovr.radiusTopLeft.value_or(bar.radiusTopLeft)), 0.0f, 80.0f, 1.0f, true},
+            "rounded corner", true));
+        entries.push_back(makeEntry(
+            section, "shape", tr("settings.schema.shared.corner-top-right.label"),
+            tr("settings.schema.bar.corner-top-right.description"), mpath("radius_top_right"),
+            SliderSetting{static_cast<float>(ovr.radiusTopRight.value_or(bar.radiusTopRight)), 0.0f, 80.0f, 1.0f, true},
+            "rounded corner", true));
+        entries.push_back(
+            makeEntry(section, "shape", tr("settings.schema.shared.corner-bottom-left.label"),
+                      tr("settings.schema.bar.corner-bottom-left.description"), mpath("radius_bottom_left"),
+                      SliderSetting{static_cast<float>(ovr.radiusBottomLeft.value_or(bar.radiusBottomLeft)), 0.0f,
+                                    80.0f, 1.0f, true},
+                      "rounded corner", true));
+        entries.push_back(
+            makeEntry(section, "shape", tr("settings.schema.shared.corner-bottom-right.label"),
+                      tr("settings.schema.bar.corner-bottom-right.description"), mpath("radius_bottom_right"),
+                      SliderSetting{static_cast<float>(ovr.radiusBottomRight.value_or(bar.radiusBottomRight)), 0.0f,
+                                    80.0f, 1.0f, true},
+                      "rounded corner", true));
+        entries.push_back(makeEntry(
+            section, "shape", tr("settings.schema.shared.background-opacity.label"),
+            tr("settings.schema.bar.background-opacity.description"), mpath("background_opacity"),
+            SliderSetting{ovr.backgroundOpacity.value_or(bar.backgroundOpacity), 0.0f, 1.0f, 0.01f, false}, "alpha"));
+        entries.push_back(makeEntry(
+            section, "shape", tr("settings.schema.bar.border.label"), tr("settings.schema.bar.border.description"),
+            mpath("border"), colorSpecPicker(ovr.border, true, tr("common.states.inherit")), "outline color", true));
+        entries.push_back(makeEntry(section, "shape", tr("settings.schema.bar.border-width.label"),
+                                    tr("settings.schema.bar.border-width.description"), mpath("border_width"),
+                                    SliderSetting{ovr.borderWidth.value_or(bar.borderWidth), 0.0f, 20.0f, 0.5f, false},
+                                    "outline stroke", true));
+        entries.push_back(makeEntry(section, "effects", tr("settings.schema.shared.shadow.label"),
+                                    tr("settings.schema.bar.shadow.description"), mpath("shadow"),
+                                    ToggleSetting{ovr.shadow.value_or(bar.shadow)}, "shadow"));
+        entries.push_back(makeEntry(section, "effects", tr("settings.schema.shared.contact-shadow.label"),
+                                    tr("settings.schema.bar.contact-shadow.description"), mpath("contact_shadow"),
+                                    ToggleSetting{ovr.contactShadow.value_or(bar.contactShadow)},
+                                    "shadow contact panel attached"));
+        entries.push_back(makeEntry(
+            section, "widgets", tr("settings.schema.bar.widget-spacing.label"),
+            tr("settings.schema.bar.widget-spacing.description"), mpath("widget_spacing"),
+            SliderSetting{static_cast<float>(ovr.widgetSpacing.value_or(bar.widgetSpacing)), 0.0f, 32.0f, 1.0f, true},
+            "gap"));
+        entries.push_back(makeEntry(section, "widgets", tr("settings.schema.bar.widget-color.label"),
+                                    tr("settings.schema.bar.widget-color.description"), mpath("color"),
+                                    colorSpecPicker(ovr.widgetColor, true, tr("common.states.inherit")),
+                                    "color foreground", true));
+        entries.push_back(makeEntry(section, "capsules", tr("settings.schema.bar.widget-capsules.label"),
+                                    tr("settings.schema.bar.widget-capsules.description"), mpath("capsule"),
+                                    ToggleSetting{ovr.widgetCapsuleDefault.value_or(bar.widgetCapsuleDefault)},
+                                    "pill"));
+        const SettingVisibility mCapsuleOn{mpath("capsule"), {"true"}};
+        {
+          auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-radius.label"),
+                             tr("settings.schema.bar.capsule-radius.description"), mpath("capsule_radius"),
+                             OptionalStepperSetting{.value = radiusStepperValue(ovr.widgetCapsuleRadius),
+                                                    .minValue = 0,
+                                                    .maxValue = 80,
+                                                    .step = 1,
+                                                    .fallbackValue = radiusStepperFallback(bar.widgetCapsuleRadius),
+                                                    .unsetLabel = tr("common.states.inherit"),
+                                                    .customLabel = tr("common.states.custom")},
+                             "pill rounded radius", true);
+          entries.push_back(std::move(e));
+        }
+        {
+          auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-groups.label"),
+                             tr("settings.schema.bar.capsule-groups.description"), mpath("capsule_groups"),
+                             ListSetting{.items = ovr.widgetCapsuleGroups.value_or(bar.widgetCapsuleGroups)},
+                             "grouped capsules");
+          e.visibleWhen = mCapsuleOn;
+          entries.push_back(std::move(e));
+        }
+        {
+          auto e =
+              makeEntry(section, "capsules", tr("settings.schema.bar.capsule-fill.label"),
+                        tr("settings.schema.bar.capsule-fill.description"), mpath("capsule_fill"),
+                        colorSpecPicker(ovr.widgetCapsuleFill, true, tr("common.states.inherit")), "color pill", true);
+          e.visibleWhen = mCapsuleOn;
+          entries.push_back(std::move(e));
+        }
+        {
+          auto e = makeEntry(section, "capsules", tr("settings.schema.bar.capsule-foreground.label"),
+                             tr("settings.schema.bar.capsule-foreground.description"), mpath("capsule_foreground"),
+                             colorSpecPicker(ovr.widgetCapsuleForeground, true, tr("common.states.inherit")),
+                             "color foreground pill", true);
+          e.visibleWhen = mCapsuleOn;
+          entries.push_back(std::move(e));
+        }
+        {
+          auto e = makeEntry(
+              section, "capsules", tr("settings.schema.bar.capsule-border.label"),
+              tr("settings.schema.bar.capsule-border.description"), mpath("capsule_border"),
+              colorSpecPicker(ovr.widgetCapsuleBorderSpecified ? ovr.widgetCapsuleBorder : std::optional<ColorSpec>{},
+                              true, tr("common.states.inherit")),
+              "color pill outline", true);
+          e.visibleWhen = mCapsuleOn;
+          entries.push_back(std::move(e));
+        }
+        {
+          auto e =
+              makeEntry(section, "capsules", tr("settings.schema.bar.capsule-padding.label"),
+                        tr("settings.schema.bar.capsule-padding.description"), mpath("capsule_padding"),
+                        SliderSetting{static_cast<float>(ovr.widgetCapsulePadding.value_or(bar.widgetCapsulePadding)),
+                                      0.0f, 48.0f, 1.0f, false},
+                        "pill inset", true);
+          e.visibleWhen = mCapsuleOn;
+          entries.push_back(std::move(e));
+        }
+        {
+          auto e =
+              makeEntry(section, "capsules", tr("settings.schema.bar.capsule-opacity.label"),
+                        tr("settings.schema.bar.capsule-opacity.description"), mpath("capsule_opacity"),
+                        SliderSetting{static_cast<float>(ovr.widgetCapsuleOpacity.value_or(bar.widgetCapsuleOpacity)),
+                                      0.0f, 1.0f, 0.01f, false},
+                        "pill alpha", true);
+          e.visibleWhen = mCapsuleOn;
+          entries.push_back(std::move(e));
+        }
+        entries.push_back(makeEntry(section, "widget-list", tr("settings.schema.bar.start-widgets.label"),
+                                    tr("settings.schema.bar.start-widgets.description"), mpath("start"),
+                                    ListSetting{.items = ovr.startWidgets.value_or(bar.startWidgets)}, "left"));
+        entries.push_back(makeEntry(section, "widget-list", tr("settings.schema.bar.center-widgets.label"),
+                                    tr("settings.schema.bar.center-widgets.description"), mpath("center"),
+                                    ListSetting{.items = ovr.centerWidgets.value_or(bar.centerWidgets)}, "middle"));
+        entries.push_back(makeEntry(section, "widget-list", tr("settings.schema.bar.end-widgets.label"),
+                                    tr("settings.schema.bar.end-widgets.description"), mpath("end"),
+                                    ListSetting{.items = ovr.endWidgets.value_or(bar.endWidgets)}, "right"));
+      }
     }
 
     return entries;
