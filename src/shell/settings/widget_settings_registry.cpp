@@ -516,6 +516,8 @@ namespace settings {
       add(selectSpec("display_mode", "icon",
                      {{"icon", "settings.widgets.options.icon"}, {"graphic", "settings.widgets.options.graphic"}}));
       add(boolSpec("show_label", true));
+      add(boolSpec("hide_when_plugged", false));
+      add(boolSpec("hide_when_full", false));
       add(selectSpec("device", "auto", {{"auto", "common.states.auto"}}));
       add(intSpec("warning_threshold", 20, 0.0, 100.0, 1.0));
       {

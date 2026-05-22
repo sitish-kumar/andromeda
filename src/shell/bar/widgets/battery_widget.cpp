@@ -65,9 +65,11 @@ namespace {
 } // namespace
 
 BatteryWidget::BatteryWidget(UPowerService* upower, std::string deviceSelector, int warningThreshold,
-                             ColorSpec warningColor, BatteryDisplayMode displayMode, bool showLabel)
+                             ColorSpec warningColor, BatteryDisplayMode displayMode, bool showLabel,
+                             bool hideWhenPlugged, bool hideWhenFull)
     : m_upower(upower), m_deviceSelector(std::move(deviceSelector)), m_warningThreshold(warningThreshold),
-      m_warningColor(std::move(warningColor)), m_displayMode(displayMode), m_showLabel(showLabel) {}
+      m_warningColor(std::move(warningColor)), m_displayMode(displayMode), m_showLabel(showLabel),
+      m_hideWhenPlugged(hideWhenPlugged), m_hideWhenFull(hideWhenFull) {}
 
 void BatteryWidget::create() {
   auto container = std::make_unique<InputArea>();
@@ -317,22 +319,24 @@ void BatteryWidget::syncState(Renderer& renderer) {
   m_lastPresent = s.isPresent;
   m_lastVertical = m_isVertical;
 
+  const bool isCharging = s.state == BatteryState::Charging || s.state == BatteryState::FullyCharged ||
+                          s.state == BatteryState::PendingCharge;
   auto* rootNode = root();
-  if (!s.isPresent) {
+  if (!s.isPresent || (m_hideWhenPlugged && isCharging) || (m_hideWhenFull && s.state == BatteryState::FullyCharged)) {
     if (rootNode != nullptr) {
       rootNode->setVisible(false);
       rootNode->setSize(0.0f, 0.0f);
+      rootNode->setParticipatesInLayout(false);
     }
     return;
   }
 
   if (rootNode != nullptr) {
     rootNode->setVisible(true);
+    rootNode->setParticipatesInLayout(true);
   }
 
   const int pct = static_cast<int>(std::round(s.percentage));
-  const bool isCharging = s.state == BatteryState::Charging || s.state == BatteryState::FullyCharged ||
-                          s.state == BatteryState::PendingCharge;
   const bool isWarning = m_warningThreshold > 0 && pct <= m_warningThreshold && !isCharging;
   const ColorSpec normalFgColor = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface));
   const ColorSpec fgColor = isWarning ? m_warningColor : normalFgColor;

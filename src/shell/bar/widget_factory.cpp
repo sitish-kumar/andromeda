@@ -153,10 +153,12 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
                                        : colorSpecFromRole(ColorRole::Error);
     const std::string displayModeStr = wc != nullptr ? wc->getString("display_mode", "icon") : std::string("icon");
     const bool showLabel = wc != nullptr ? wc->getBool("show_label", true) : true;
+    const bool hideWhenPlugged = wc != nullptr ? wc->getBool("hide_when_plugged", false) : false;
+    const bool hideWhenFull = wc != nullptr ? wc->getBool("hide_when_full", false) : false;
     const BatteryDisplayMode displayMode =
         displayModeStr == "graphic" ? BatteryDisplayMode::Graphic : BatteryDisplayMode::Icon;
     auto widget = std::make_unique<BatteryWidget>(m_upower, deviceSelector, warningThreshold, warningColor, displayMode,
-                                                  showLabel);
+                                                  showLabel, hideWhenPlugged, hideWhenFull);
     widget->setContentScale(contentScale);
     return widget;
   }

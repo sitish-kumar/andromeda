@@ -1283,6 +1283,13 @@
           "label": "Hide When No New",
           "description": "Hide the notifications widget when there are no unread notifications"
         },
+        "hide_when_plugged": {
+          "label": "Hide When Plugged In",
+          "description": "Hide the battery widget while connected to AC power"
+        },
+        "hide_when_full": {
+          "label": "Hide When Full",
+          "description": "Hide the battery widget when plugged in and fully charged"
         "hide_when_no_media": {
           "label": "Hide When No Media",
           "description": "Hide the media widget when no MPRIS player is active"
