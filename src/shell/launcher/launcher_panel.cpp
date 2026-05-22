@@ -114,7 +114,7 @@ namespace {
 
       auto title = std::make_unique<Label>();
       title->setFontSize(Style::fontSizeBody * scale);
-      title->setBold(true);
+      title->setFontWeight(FontWeight::Bold);
       title->setColor(colorSpecFromRole(ColorRole::OnSurface));
       title->setMaxLines(1);
       m_title = static_cast<Label*>(m_textCol->addChild(std::move(title)));

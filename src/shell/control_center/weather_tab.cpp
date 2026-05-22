@@ -110,7 +110,7 @@ std::unique_ptr<Flex> WeatherTab::create() {
 
   auto temp = std::make_unique<Label>();
   temp->setText("--°C");
-  temp->setBold(true);
+  temp->setFontWeight(FontWeight::Bold);
   temp->setFontSize(Style::fontSizeTitle * 2.35f * scale);
   temp->setColor(colorSpecFromRole(ColorRole::OnSurface));
   temp->setMaxLines(1);
@@ -200,7 +200,7 @@ std::unique_ptr<Flex> WeatherTab::create() {
 
     auto value = std::make_unique<Label>();
     value->setText("--");
-    value->setBold(true);
+    value->setFontWeight(FontWeight::Bold);
     value->setFontSize(Style::fontSizeBody * scale);
     value->setColor(colorSpecFromRole(ColorRole::OnSurface));
     value->setTextAlign(TextAlign::End);
@@ -263,7 +263,7 @@ std::unique_ptr<Flex> WeatherTab::create() {
 
     auto meta = std::make_unique<Label>();
     meta->setText(i18n::tr("control-center.weather.forecast-placeholder.day"));
-    meta->setBold(true);
+    meta->setFontWeight(FontWeight::Bold);
     meta->setFontSize(Style::fontSizeBody * scale);
     meta->setColor(colorSpecFromRole(ColorRole::OnSurface));
     m_dayMetas[i] = meta.get();

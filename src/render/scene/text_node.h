@@ -58,15 +58,6 @@ public:
     markLayoutDirty();
   }
 
-  void setBold(bool bold) {
-    const int fontWeight = bold ? static_cast<int>(FontWeight::Bold) : static_cast<int>(FontWeight::Normal);
-    if (m_fontWeight == fontWeight) {
-      return;
-    }
-    m_fontWeight = fontWeight;
-    markLayoutDirty();
-  }
-
   void setFontWeight(FontWeight fontWeight) {
     const int value = static_cast<int>(fontWeight);
     if (m_fontWeight == value) {

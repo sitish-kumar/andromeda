@@ -33,7 +33,7 @@ namespace {
 
     auto label = std::make_unique<Label>();
     label->setText(title);
-    label->setBold(true);
+    label->setFontWeight(FontWeight::Bold);
     label->setFontSize(Style::fontSizeTitle * scale);
     label->setColor(colorSpecFromRole(ColorRole::OnSurface));
     label->setFlexGrow(1.0f);

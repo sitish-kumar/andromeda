@@ -340,7 +340,7 @@ namespace {
       m_dismiss = static_cast<Button*>(m_headerActions->addChild(makeActionButton("trash", scale)));
 
       auto summary = std::make_unique<Label>();
-      summary->setBold(true);
+      summary->setFontWeight(FontWeight::Bold);
       summary->setFontSize(Style::fontSizeBody * scale);
       m_summary = static_cast<Label*>(addChild(std::move(summary)));
 
@@ -658,7 +658,7 @@ std::unique_ptr<Flex> NotificationsTab::create() {
   m_emptyCard = empty.get();
 
   auto title = std::make_unique<Label>();
-  title->setBold(true);
+  title->setFontWeight(FontWeight::Bold);
   title->setFontSize(Style::fontSizeBody * scale);
   title->setColor(colorSpecFromRole(ColorRole::OnSurface));
   m_emptyTitle = static_cast<Label*>(empty->addChild(std::move(title)));

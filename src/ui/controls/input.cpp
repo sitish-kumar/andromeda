@@ -341,9 +341,9 @@ void Input::setEmbeddedOnSolidPrimary(bool embedded) {
   markPaintDirty();
 }
 
-void Input::setBold(bool bold) {
+void Input::setFontWeight(FontWeight fontWeight) {
   if (m_label != nullptr) {
-    m_label->setBold(bold);
+    m_label->setFontWeight(fontWeight);
   }
   markLayoutDirty();
 }

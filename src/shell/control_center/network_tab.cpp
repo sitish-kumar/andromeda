@@ -78,7 +78,7 @@ namespace {
 
       auto ssid = std::make_unique<Label>();
       ssid->setText(m_ap.ssid);
-      ssid->setBold(m_ap.active);
+      ssid->setFontWeight(m_ap.active ? FontWeight::Bold : FontWeight::Normal);
       ssid->setFontSize(Style::fontSizeBody * scale);
       ssid->setColor(colorSpecFromRole(ColorRole::OnSurface));
       ssid->setFlexGrow(1.0f);
@@ -206,7 +206,7 @@ namespace {
 
       auto name = std::make_unique<Label>();
       name->setText(m_vpn.name);
-      name->setBold(m_vpn.active);
+      name->setFontWeight(m_vpn.active ? FontWeight::Bold : FontWeight::Normal);
       name->setFontSize(Style::fontSizeBody * scale);
       name->setColor(colorSpecFromRole(ColorRole::OnSurface));
       name->setFlexGrow(1.0f);
@@ -350,7 +350,7 @@ std::unique_ptr<Flex> NetworkTab::create() {
   m_currentRow = connRow.get();
 
   auto title = std::make_unique<Label>();
-  title->setBold(true);
+  title->setFontWeight(FontWeight::Bold);
   title->setFontSize(Style::fontSizeBody * scale);
   title->setColor(colorSpecFromRole(ColorRole::OnSurface));
   m_currentTitle = title.get();
@@ -388,7 +388,7 @@ std::unique_ptr<Flex> NetworkTab::create() {
   m_passwordCard = passwordCard.get();
 
   auto passwordTitle = std::make_unique<Label>();
-  passwordTitle->setBold(true);
+  passwordTitle->setFontWeight(FontWeight::Bold);
   passwordTitle->setFontSize(Style::fontSizeBody * scale);
   passwordTitle->setColor(colorSpecFromRole(ColorRole::OnSurface));
   m_passwordTitle = passwordTitle.get();

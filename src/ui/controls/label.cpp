@@ -94,8 +94,6 @@ void Label::setMaxLines(int maxLines) {
   m_measureCached = false;
 }
 
-void Label::setBold(bool bold) { setFontWeight(bold ? FontWeight::Bold : FontWeight::Normal); }
-
 void Label::setFontWeight(FontWeight fontWeight) {
   if (m_textNode->fontWeight() == fontWeight) {
     return;

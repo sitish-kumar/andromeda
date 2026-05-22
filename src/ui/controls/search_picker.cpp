@@ -102,7 +102,7 @@ namespace {
       }
       if (m_title != nullptr) {
         m_title->setText(option.label);
-        m_title->setBold(hasDetail);
+        m_title->setFontWeight(hasDetail ? FontWeight::Bold : FontWeight::Normal);
         m_title->setColor(foreground);
       }
       if (m_detail != nullptr) {

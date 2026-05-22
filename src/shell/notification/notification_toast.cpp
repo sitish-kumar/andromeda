@@ -350,7 +350,7 @@ namespace {
     if (StringUtils::isBlank(displayBody)) {
       Label summaryProbe;
       summaryProbe.setFontSize(kSummaryFontSize);
-      summaryProbe.setBold(true);
+      summaryProbe.setFontWeight(FontWeight::Bold);
       summaryProbe.setMaxWidth(textMaxWidth);
       summaryProbe.setText(displaySummary);
       summaryProbe.setMaxLines(kMaxSummaryLines);
@@ -376,7 +376,7 @@ namespace {
     for (const auto& [sl, bl] : kPreference) {
       Label summaryProbe;
       summaryProbe.setFontSize(kSummaryFontSize);
-      summaryProbe.setBold(true);
+      summaryProbe.setFontWeight(FontWeight::Bold);
       summaryProbe.setMaxWidth(textMaxWidth);
       summaryProbe.setText(displaySummary);
       summaryProbe.setMaxLines(sl);
@@ -404,7 +404,7 @@ namespace {
 
     Label summaryProbe;
     summaryProbe.setFontSize(kSummaryFontSize);
-    summaryProbe.setBold(true);
+    summaryProbe.setFontWeight(FontWeight::Bold);
     summaryProbe.setMaxWidth(textMaxWidth);
     summaryProbe.setText(displaySummary);
     summaryProbe.setMaxLines(1);
@@ -1945,7 +1945,7 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
   summary->setText(displaySummary);
   summary->setFontSize(kSummaryFontSize);
   summary->setColor(colorSpecFromRole(ColorRole::OnSurface));
-  summary->setBold(true);
+  summary->setFontWeight(FontWeight::Bold);
   summary->setMaxWidth(textMaxWidth);
   std::unique_ptr<Flex> actionsRow;
   std::unique_ptr<Flex> inlineReplyRow;

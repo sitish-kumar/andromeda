@@ -1172,7 +1172,7 @@ void Dock::rebuildItems(DockInstance& instance) {
 
       auto labelNode = std::make_unique<Label>();
       labelNode->setFontSize(bd * kBadgeFontRatio);
-      labelNode->setBold(true);
+      labelNode->setFontWeight(FontWeight::Bold);
       labelNode->setMaxLines(1);
       labelNode->setVisible(false);
       item.badgeLabel = static_cast<Label*>(item.badge->addChild(std::move(labelNode)));

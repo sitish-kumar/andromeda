@@ -30,7 +30,6 @@ public:
   void setMinWidth(float minWidth);
   void setMaxWidth(float maxWidth);
   void setMaxLines(int maxLines);
-  void setBold(bool bold);
   void setFontWeight(FontWeight fontWeight);
   void setTextAlign(TextAlign align);
   // StableLogical uses the resolved font line box; InkCentered centers the current glyph ink.

@@ -197,7 +197,7 @@ std::unique_ptr<Flex> HomeTab::create() {
 
   auto userTitle = std::make_unique<Label>();
   userTitle->setText(displayName);
-  userTitle->setBold(true);
+  userTitle->setFontWeight(FontWeight::Bold);
   userTitle->setFontSize(Style::fontSizeTitle * 1.12f * scale);
   userTitle->setColor(colorSpecFromRole(ColorRole::OnSurface));
   userTitle->setShadow(Color{0.0f, 0.0f, 0.0f, 0.42f}, 0.0f, 1.0f * scale);
@@ -353,7 +353,7 @@ std::unique_ptr<Flex> HomeTab::create() {
 
   auto timeLabel = std::make_unique<Label>();
   timeLabel->setText(formatShellTime(m_config));
-  timeLabel->setBold(true);
+  timeLabel->setFontWeight(FontWeight::Bold);
   timeLabel->setFontSize(Style::fontSizeTitle * 1.7f * scale);
   timeLabel->setColor(colorSpecFromRole(ColorRole::Primary));
   m_timeLabel = timeLabel.get();

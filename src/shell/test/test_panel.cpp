@@ -47,7 +47,7 @@ void TestPanel::create() {
 
   auto header = std::make_unique<Label>();
   header->setText("Test");
-  header->setBold(true);
+  header->setFontWeight(FontWeight::Bold);
   header->setFontSize(Style::fontSizeTitle * scale);
   header->setColor(colorSpecFromRole(ColorRole::Primary));
   m_headerLabel = header.get();
@@ -792,7 +792,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
   {
     auto heading = std::make_unique<Label>();
     heading->setText("Text Lab");
-    heading->setBold(true);
+    heading->setFontWeight(FontWeight::Bold);
     heading->setFontSize(Style::fontSizeHeader * scale);
     heading->setColor(colorSpecFromRole(ColorRole::Primary));
     section->addChild(std::move(heading));
@@ -876,7 +876,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
 
     auto title = std::make_unique<Label>();
     title->setText("Size ladder (glyph + text, regular & bold)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -921,7 +921,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
 
       auto bold = std::make_unique<Label>();
       bold->setText(kSample);
-      bold->setBold(true);
+      bold->setFontWeight(FontWeight::Bold);
       bold->setFontSize(s.size * scale);
       row->addChild(std::move(bold));
 
@@ -944,7 +944,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
 
     auto title = std::make_unique<Label>();
     title->setText("Glyph + body text alignment (varying glyph size)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -992,7 +992,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
 
     auto title = std::make_unique<Label>();
     title->setText("Repeat-row jitter probe (identical text repeated)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -1035,7 +1035,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
 
     auto title = std::make_unique<Label>();
     title->setText("Baseline mode (logical vs ink-centered)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -1110,7 +1110,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
 
     auto title = std::make_unique<Label>();
     title->setText("Nerd Font symbols (requires a Nerd Font installed)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -1173,7 +1173,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
 
     auto title = std::make_unique<Label>();
     title->setText("Elision (single line, decreasing maxWidth)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -1230,7 +1230,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
 
     auto title = std::make_unique<Label>();
     title->setText("Text alignment (Start / Center / End × short / medium / long)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -1303,7 +1303,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
 
     auto title = std::make_unique<Label>();
     title->setText("Wrapping (maxWidth=320, maxLines=1..4)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -1349,7 +1349,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
 
     auto title = std::make_unique<Label>();
     title->setText("Bar-style capsules (controlHeight rows, mixed icons)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -1409,7 +1409,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
 
     auto title = std::make_unique<Label>();
     title->setText("Mixed sizes inline (centered cross-axis)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
@@ -1443,7 +1443,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
 
     auto title = std::make_unique<Label>();
     title->setText("Auto-scroll (marquee)");
-    title->setBold(true);
+    title->setFontWeight(FontWeight::Bold);
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 

@@ -487,7 +487,7 @@ std::unique_ptr<Flex> SettingsWindow::buildHeaderRow(float scale) {
 
   auto headerTitle = std::make_unique<Label>();
   headerTitle->setText(i18n::tr("settings.window.title"));
-  headerTitle->setBold(true);
+  headerTitle->setFontWeight(FontWeight::Bold);
   headerTitle->setFontSize(Style::fontSizeTitle * scale);
   headerTitle->setColor(colorSpecFromRole(ColorRole::OnSurface));
   headerTitle->setFlexGrow(1.0f);

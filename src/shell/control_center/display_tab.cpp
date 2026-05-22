@@ -251,7 +251,7 @@ void DisplayTab::rebuildCards(Renderer& /*renderer*/) {
 
     auto nameLabel = std::make_unique<Label>();
     nameLabel->setText(display.label);
-    nameLabel->setBold(true);
+    nameLabel->setFontWeight(FontWeight::Bold);
     nameLabel->setFontSize(Style::fontSizeBody * scale);
     nameLabel->setColor(colorSpecFromRole(ColorRole::OnSurface));
     nameLabel->setFlexGrow(1.0f);

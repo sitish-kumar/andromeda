@@ -113,7 +113,7 @@ void ControlCenterPanel::create() {
     button->setGlyphSize(21.0f * scale);
     button->setGap(Style::spaceSm * scale);
     if (button->label() != nullptr) {
-      button->label()->setBold(true);
+      button->label()->setFontWeight(FontWeight::Bold);
       button->label()->setFontSize(Style::fontSizeBody * scale);
     }
     button->setVariant(ButtonVariant::Tab);
@@ -163,7 +163,7 @@ void ControlCenterPanel::create() {
 
   auto title = std::make_unique<Label>();
   title->setText(i18n::tr("control-center.tabs.home"));
-  title->setBold(true);
+  title->setFontWeight(FontWeight::Bold);
   title->setFontSize(Style::fontSizeTitle * scale);
   title->setColor(colorSpecFromRole(ColorRole::Primary));
   title->setFlexGrow(1.0f);

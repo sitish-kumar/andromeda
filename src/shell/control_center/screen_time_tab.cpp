@@ -71,7 +71,7 @@ namespace {
   Label* makeSectionHeader(Flex& parent, const std::string& text, float scale) {
     auto label = std::make_unique<Label>();
     label->setText(text);
-    label->setBold(true);
+    label->setFontWeight(FontWeight::Bold);
     label->setFontSize(Style::fontSizeCaption * scale);
     label->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
     auto* ptr = label.get();
@@ -176,7 +176,7 @@ std::unique_ptr<Flex> ScreenTimeTab::create() {
   usageCard->addChild(std::move(disabled));
 
   auto total = std::make_unique<Label>();
-  total->setBold(true);
+  total->setFontWeight(FontWeight::Bold);
   total->setFontSize(Style::fontSizeHeader * 1.6f * scale);
   total->setColor(colorSpecFromRole(ColorRole::OnSurface));
   m_totalLabel = total.get();

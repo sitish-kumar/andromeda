@@ -174,7 +174,7 @@ std::unique_ptr<Flex> MediaTab::create() {
 
   auto nowLabel = std::make_unique<Label>();
   nowLabel->setText(i18n::tr("control-center.media.now-playing"));
-  nowLabel->setBold(true);
+  nowLabel->setFontWeight(FontWeight::Bold);
   nowLabel->setFontSize(Style::fontSizeTitle * scale);
   nowLabel->setColor(colorSpecFromRole(ColorRole::OnSurface));
   nowLabel->setFlexGrow(1.0f);
@@ -233,7 +233,7 @@ std::unique_ptr<Flex> MediaTab::create() {
 
   auto title = std::make_unique<Label>();
   title->setText(i18n::tr("control-center.media.nothing-playing"));
-  title->setBold(true);
+  title->setFontWeight(FontWeight::Bold);
   title->setFontSize((Style::fontSizeTitle + Style::spaceXs) * scale);
   title->setColor(colorSpecFromRole(ColorRole::OnSurface));
   m_trackTitle = title.get();
