@@ -855,6 +855,12 @@ void Bar::reevaluateAutoHide() {
         instance->attachedPopupCount > 0) {
       continue;
     }
+    if (m_ipcRevealBlocked) {
+      if (instance->hideOpacity > 0.001f) {
+        startHideFadeOut(*instance);
+      }
+      continue;
+    }
     const bool suppressAutoHide =
         (m_autoHideSuppressionCallback != nullptr) ? m_autoHideSuppressionCallback(*instance) : false;
     if (suppressAutoHide || instance->hideOpacity <= 0.001f) {
@@ -869,11 +875,58 @@ void Bar::setOpenWidgetSettingsCallback(std::function<void(std::string, std::str
 }
 
 bool Bar::isRunning() const noexcept {
-  if (m_forceHidden) {
-    return true; // hidden but still alive — do not exit the main loop
-  }
   return std::any_of(m_instances.begin(), m_instances.end(),
                      [](const auto& inst) { return inst->surface && inst->surface->isRunning(); });
+}
+
+bool Bar::instanceEffectivelyVisible(const BarInstance& instance) const noexcept {
+  if (instance.barConfig.autoHide) {
+    return instance.hideOpacity > 0.5f;
+  }
+  return instance.slideRoot == nullptr || instance.slideRoot->opacity() > 0.5f;
+}
+
+bool Bar::isVisible() const noexcept {
+  if (m_ipcRevealBlocked) {
+    return false;
+  }
+  return std::any_of(m_instances.begin(), m_instances.end(),
+                     [this](const auto& inst) { return instanceEffectivelyVisible(*inst); });
+}
+
+void Bar::setInstanceIpcVisible(BarInstance& instance, bool visible) {
+  if (instance.surface == nullptr) {
+    return;
+  }
+  if (instance.barConfig.autoHide) {
+    if (visible) {
+      revealAutoHideBar(instance);
+    } else {
+      startHideFadeOut(instance);
+    }
+    return;
+  }
+  if (instance.slideRoot == nullptr) {
+    return;
+  }
+  instance.animations.cancelForOwner(instance.slideRoot);
+  const float current = instance.slideRoot->opacity();
+  const float target = visible ? 1.0f : 0.0f;
+  if (std::abs(current - target) < 0.001f) {
+    return;
+  }
+  instance.animations.animate(current, target, Style::animNormal, visible ? Easing::EaseOutCubic : Easing::EaseInQuad,
+                              [slide = instance.slideRoot](float v) { slide->setOpacity(v); });
+  instance.surface->requestRedraw();
+}
+
+void Bar::applyIpcVisibility(bool visible) {
+  for (const auto& instance : m_instances) {
+    if (instance == nullptr) {
+      continue;
+    }
+    setInstanceIpcVisible(*instance, visible);
+  }
 }
 
 std::optional<LayerPopupParentContext> Bar::popupParentContextForSurface(wl_surface* surface) const noexcept {
@@ -1031,6 +1084,10 @@ void Bar::endAttachedPopup(wl_surface* surface) {
   if (instance->attachedPopupCount > 0 || !instance->barConfig.autoHide || instance->pointerInside) {
     return;
   }
+  if (m_ipcRevealBlocked) {
+    startHideFadeOut(*instance);
+    return;
+  }
   const bool suppressAutoHide =
       (m_autoHideSuppressionCallback != nullptr) ? m_autoHideSuppressionCallback(*instance) : false;
   if (!suppressAutoHide) {
@@ -1039,25 +1096,16 @@ void Bar::endAttachedPopup(wl_surface* surface) {
 }
 
 void Bar::show() {
-  if (!m_forceHidden) {
-    return;
-  }
-  m_forceHidden = false;
-  syncInstances();
+  m_ipcRevealBlocked = false;
+  applyIpcVisibility(true);
 }
 
 void Bar::hide() {
-  if (m_forceHidden) {
-    return;
-  }
-  m_forceHidden = true;
-  closeAllInstances();
+  m_ipcRevealBlocked = true;
+  applyIpcVisibility(false);
 }
 
 void Bar::syncInstances() {
-  if (m_forceHidden) {
-    return;
-  }
   const auto& outputs = m_platform->outputs();
   const auto& bars = m_config->config().bars;
 
@@ -2014,7 +2062,7 @@ bool Bar::onPointerEvent(const PointerEvent& event) {
     m_hoveredInstance->pointerInside = true;
     m_hoveredInstance->inputDispatcher.pointerEnter(static_cast<float>(event.sx), static_cast<float>(event.sy),
                                                     event.serial);
-    if (m_hoveredInstance->barConfig.autoHide && m_hoveredInstance->sceneRoot != nullptr) {
+    if (m_hoveredInstance->barConfig.autoHide && m_hoveredInstance->sceneRoot != nullptr && !m_ipcRevealBlocked) {
       revealAutoHideBar(*m_hoveredInstance);
     }
     break;
@@ -2269,10 +2317,14 @@ void Bar::registerIpc(IpcService& ipc) {
   ipc.registerHandler(
       "bar-toggle",
       [this](const std::string&) -> std::string {
-        isVisible() ? hide() : show();
+        if (m_ipcRevealBlocked) {
+          show();
+        } else {
+          hide();
+        }
         return "ok\n";
       },
-      "bar-toggle", "Toggle bar visibility");
+      "bar-toggle", "Toggle bar visibility (participates in auto-hide when enabled)");
 
   ipc.registerHandler(
       "scripted-widget", [this](const std::string& args) -> std::string { return dispatchScriptedWidgetIpc(args); },
