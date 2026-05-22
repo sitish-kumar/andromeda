@@ -1290,6 +1290,7 @@
         "hide_when_full": {
           "label": "Hide When Full",
           "description": "Hide the battery widget when plugged in and fully charged"
+        },
         "hide_when_no_media": {
           "label": "Hide When No Media",
           "description": "Hide the media widget when no MPRIS player is active"
