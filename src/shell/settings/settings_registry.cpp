@@ -679,6 +679,9 @@ namespace settings {
                                 {"shell", "panel", "transparency_mode"},
                                 asSegmented(enumSelect(kPanelTransparencyModes, cfg.shell.panel.transparencyMode)),
                                 "glass opacity alpha translucent cards blur"));
+    entries.push_back(makeEntry("panels", "effects", tr("settings.schema.panels.borders.label"),
+                                tr("settings.schema.panels.borders.description"), {"shell", "panel", "borders"},
+                                ToggleSetting{cfg.shell.panel.borders}, "outline border card"));
     entries.push_back(makeEntry("panels", "control-center", tr("settings.schema.panels.placement-control-center.label"),
                                 tr("settings.schema.panels.placement-control-center.description"),
                                 {"shell", "panel", "control_center_placement"},

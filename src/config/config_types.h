@@ -533,6 +533,7 @@ struct ShellConfig {
   struct PanelConfig {
     bool backgroundBlur = true; // request compositor blur behind panels via ext-background-effect-v1
     PanelTransparencyMode transparencyMode = PanelTransparencyMode::Solid;
+    bool borders = true; // panel shell outline and in-panel section cards
     PanelPlacement launcherPlacement = PanelPlacement::Centered;
     PanelPlacement clipboardPlacement = PanelPlacement::Centered;
     PanelPlacement controlCenterPlacement = PanelPlacement::Attached;

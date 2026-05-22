@@ -95,10 +95,10 @@ namespace {
     return FormatUnits::formatBinaryBytesAsGib(*stats.gpuVramUsedBytes);
   }
 
-  Flex* makeInfoCard(Flex& parent, const std::string& title, float scale, float fillOpacity, Label** outLines,
-                     int lineCount, const char* const* glyphs) {
+  Flex* makeInfoCard(Flex& parent, const std::string& title, float scale, float fillOpacity, bool showBorder,
+                     Label** outLines, int lineCount, const char* const* glyphs) {
     auto card = std::make_unique<Flex>();
-    applySectionCardStyle(*card, scale, fillOpacity);
+    applySectionCardStyle(*card, scale, fillOpacity, showBorder);
     card->setFlexGrow(1.0f);
     card->setGap(Style::spaceXs * scale);
 
@@ -171,7 +171,7 @@ std::unique_ptr<Flex> SystemTab::create() {
     // CPU card
     {
       auto card = std::make_unique<Flex>();
-      applySectionCardStyle(*card, sc, panelCardOpacity());
+      applySectionCardStyle(*card, sc, panelCardOpacity(), panelBordersEnabled());
       card->setFlexGrow(1.0f);
       m_cpuCard = card.get();
 
@@ -188,7 +188,7 @@ std::unique_ptr<Flex> SystemTab::create() {
     // Memory card
     {
       auto card = std::make_unique<Flex>();
-      applySectionCardStyle(*card, sc, panelCardOpacity());
+      applySectionCardStyle(*card, sc, panelCardOpacity(), panelBordersEnabled());
       card->setFlexGrow(1.0f);
       m_ramCard = card.get();
 
@@ -214,7 +214,7 @@ std::unique_ptr<Flex> SystemTab::create() {
     // GPU card
     {
       auto card = std::make_unique<Flex>();
-      applySectionCardStyle(*card, sc, panelCardOpacity());
+      applySectionCardStyle(*card, sc, panelCardOpacity(), panelBordersEnabled());
       card->setFlexGrow(1.0f);
       card->setVisible(false);
       m_gpuCard = card.get();
@@ -232,7 +232,7 @@ std::unique_ptr<Flex> SystemTab::create() {
     // Network card
     {
       auto card = std::make_unique<Flex>();
-      applySectionCardStyle(*card, sc, panelCardOpacity());
+      applySectionCardStyle(*card, sc, panelCardOpacity(), panelBordersEnabled());
       card->setFlexGrow(1.0f);
       m_netCard = card.get();
 
@@ -257,13 +257,13 @@ std::unique_ptr<Flex> SystemTab::create() {
     row->setGap(Style::spaceSm * sc);
     static constexpr const char* kSystemGlyphs[] = {"device-desktop", "layout-board", "cpu-usage",
                                                     "video",          "app-window",   "clock"};
-    makeInfoCard(*row, i18n::tr("control-center.system.titles.system"), sc, panelCardOpacity(), m_systemLines,
-                 kSystemLines, kSystemGlyphs)
+    makeInfoCard(*row, i18n::tr("control-center.system.titles.system"), sc, panelCardOpacity(), panelBordersEnabled(),
+                 m_systemLines, kSystemLines, kSystemGlyphs)
         ->setFlexGrow(2.0f);
 
     static constexpr const char* kResourcesGlyphs[] = {"activity", "memory", "storage"};
-    makeInfoCard(*row, i18n::tr("control-center.system.titles.resources"), sc, panelCardOpacity(), m_resourcesLines,
-                 kResourcesLines, kResourcesGlyphs);
+    makeInfoCard(*row, i18n::tr("control-center.system.titles.resources"), sc, panelCardOpacity(),
+                 panelBordersEnabled(), m_resourcesLines, kResourcesLines, kResourcesGlyphs);
 
     tab->addChild(std::move(row));
   }

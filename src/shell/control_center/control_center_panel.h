@@ -78,6 +78,7 @@ public:
   [[nodiscard]] PanelPlacement panelPlacement() const noexcept override;
 
 private:
+  void onPanelBordersChanged(bool enabled) override;
   void onPanelCardOpacityChanged(float opacity) override;
   void doLayout(Renderer& renderer, float width, float height) override;
   void doUpdate(Renderer& renderer) override;

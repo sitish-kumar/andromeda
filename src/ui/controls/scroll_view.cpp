@@ -136,9 +136,13 @@ void ScrollView::setSoftness(float softness) {
   applyPalette();
 }
 
-void ScrollView::setCardStyle(float scale, float fillOpacity) {
+void ScrollView::setCardStyle(float scale, float fillOpacity, bool showBorder) {
   setFill(colorSpecFromRole(ColorRole::SurfaceVariant, fillOpacity));
-  setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
+  if (showBorder) {
+    setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
+  } else {
+    clearBorder();
+  }
   setRadius(Style::scaledRadiusXl(scale));
   setViewportPaddingH(Style::cardPadding * scale);
   setViewportPaddingV(Style::cardPadding * scale);

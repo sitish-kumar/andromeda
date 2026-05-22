@@ -610,7 +610,7 @@ void ClipboardPanel::create() {
 
   auto previewScroll = std::make_unique<ScrollView>();
   previewScroll->setScrollbarVisible(true);
-  previewScroll->setCardStyle(scale, panelCardOpacity());
+  previewScroll->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
   previewScroll->setFlexGrow(1.0f);
   m_previewScrollView = previewScroll.get();
   m_previewContent = previewScroll->content();
@@ -811,7 +811,7 @@ void ClipboardPanel::onPanelCardOpacityChanged(float opacity) {
     panel_button_style::applyHeaderButtonStyle(*m_closeButton, opacity);
   }
   if (m_previewScrollView != nullptr) {
-    m_previewScrollView->setCardStyle(contentScale(), opacity);
+    m_previewScrollView->setCardStyle(contentScale(), opacity, panelBordersEnabled());
   }
 }
 

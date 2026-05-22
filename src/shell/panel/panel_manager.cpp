@@ -1513,8 +1513,11 @@ void PanelManager::onConfigReloaded() {
   const float panelBackgroundOpacity =
       m_attachedToBar ? m_attachedBackgroundOpacity : resolveDetachedPanelBackgroundOpacity(m_config);
   m_activePanel->setPanelCardOpacity(resolvePanelCardOpacity(m_config, panelBackgroundOpacity));
+  m_activePanel->setPanelBordersEnabled(m_config->config().shell.panel.borders);
   if (!m_attachedToBar && m_bgNode != nullptr) {
-    static_cast<Box*>(m_bgNode)->setFill(colorSpecFromRole(ColorRole::Surface, panelBackgroundOpacity));
+    auto* bg = static_cast<Box*>(m_bgNode);
+    bg->setPanelStyle(m_config->config().shell.panel.borders);
+    bg->setFill(colorSpecFromRole(ColorRole::Surface, panelBackgroundOpacity));
   }
   if (m_surface != nullptr) {
     m_surface->requestUpdate();
@@ -1589,7 +1592,8 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
 
     if (hasDecoration) {
       auto bg = std::make_unique<Box>();
-      bg->setPanelStyle();
+      const bool panelBorders = m_config != nullptr && m_config->config().shell.panel.borders;
+      bg->setPanelStyle(panelBorders);
       if (m_attachedToBar) {
         const float radius = Style::scaledRadiusXl(m_activePanel->contentScale());
         bg->clearBorder();
@@ -1615,6 +1619,7 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
     const float panelBackgroundOpacity =
         m_attachedToBar ? m_attachedBackgroundOpacity : resolveDetachedPanelBackgroundOpacity(m_config);
     m_activePanel->setPanelCardOpacity(resolvePanelCardOpacity(m_config, panelBackgroundOpacity));
+    m_activePanel->setPanelBordersEnabled(m_config->config().shell.panel.borders);
     m_activePanel->create();
     m_activePanel->onOpen(m_pendingOpenContext);
     m_pendingOpenContext.clear();

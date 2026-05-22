@@ -1386,6 +1386,9 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       if (auto v = (*panelTbl)["background_blur"].value<bool>()) {
         shell.panel.backgroundBlur = *v;
       }
+      if (auto v = (*panelTbl)["borders"].value<bool>()) {
+        shell.panel.borders = *v;
+      }
       if (auto v = (*panelTbl)["transparency_mode"].value<std::string>()) {
         if (auto parsed = enumFromKey(kPanelTransparencyModes, StringUtils::trim(*v))) {
           shell.panel.transparencyMode = *parsed;

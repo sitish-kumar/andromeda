@@ -62,7 +62,7 @@ std::unique_ptr<Flex> WeatherTab::create() {
   m_leftColumn = leftColumn.get();
 
   auto currentCard = std::make_unique<Flex>();
-  applySectionCardStyle(*currentCard, scale, panelCardOpacity());
+  applySectionCardStyle(*currentCard, scale, panelCardOpacity(), panelBordersEnabled());
   m_currentCard = currentCard.get();
   currentCard->setDirection(FlexDirection::Horizontal);
   currentCard->setAlign(FlexAlign::Stretch);
@@ -164,7 +164,7 @@ std::unique_ptr<Flex> WeatherTab::create() {
   leftColumn->addChild(std::move(currentCard));
 
   auto detailsCard = std::make_unique<Flex>();
-  applySectionCardStyle(*detailsCard, scale, panelCardOpacity());
+  applySectionCardStyle(*detailsCard, scale, panelCardOpacity(), panelBordersEnabled());
   m_detailsCard = detailsCard.get();
   detailsCard->setPadding(Style::spaceMd * scale, Style::spaceMd * scale, Style::spaceLg * scale,
                           Style::spaceMd * scale);
@@ -224,7 +224,7 @@ std::unique_ptr<Flex> WeatherTab::create() {
   tab->addChild(std::move(leftColumn));
 
   auto forecastColumn = std::make_unique<Flex>();
-  applySectionCardStyle(*forecastColumn, scale, panelCardOpacity());
+  applySectionCardStyle(*forecastColumn, scale, panelCardOpacity(), panelBordersEnabled());
   forecastColumn->setGap(0.0f);
   forecastColumn->setPadding(0.0f, Style::spaceMd * scale);
   forecastColumn->setFlexGrow(2.0f);

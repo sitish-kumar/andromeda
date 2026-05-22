@@ -44,13 +44,13 @@ namespace settings {
       return std::any_of(cfg.bars.begin(), cfg.bars.end(), [name](const BarConfig& bar) { return bar.name == name; });
     }
 
-    Flex* makeSection(Flex& content, std::string_view title, float scale) {
+    Flex* makeSection(Flex& content, std::string_view title, float scale, bool showBorder) {
       auto section = std::make_unique<Flex>();
       section->setDirection(FlexDirection::Vertical);
       section->setAlign(FlexAlign::Stretch);
       section->setGap(Style::spaceSm * scale);
       section->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-      section->setCardStyle(scale);
+      section->setCardStyle(scale, 1.0f, showBorder);
       section->setFill(colorSpecFromRole(ColorRole::Surface));
       section->addChild(makeLabel(title, Style::fontSizeTitle * scale, colorSpecFromRole(ColorRole::OnSurface), true));
 
@@ -69,7 +69,8 @@ namespace settings {
             ctx.pendingDeleteMonitorOverrideBarName == barName && ctx.pendingDeleteMonitorOverrideMatch == match;
         const bool renaming =
             ctx.renamingMonitorOverrideBarName == barName && ctx.renamingMonitorOverrideMatch == match;
-        auto* management = makeSection(content, i18n::tr("settings.entities.monitor-override.management"), ctx.scale);
+        auto* management = makeSection(content, i18n::tr("settings.entities.monitor-override.management"), ctx.scale,
+                                       ctx.config.shell.panel.borders);
 
         if (renaming) {
           auto renameRow = std::make_unique<Flex>();
@@ -276,7 +277,8 @@ namespace settings {
 
         const bool pendingDelete = overrideOnly && ctx.pendingDeleteBarName == barName;
         const bool renaming = overrideOnly && ctx.renamingBarName == barName;
-        auto* management = makeSection(content, i18n::tr("settings.entities.bar.management"), ctx.scale);
+        auto* management = makeSection(content, i18n::tr("settings.entities.bar.management"), ctx.scale,
+                                       ctx.config.shell.panel.borders);
 
         if (renaming) {
           auto renameRow = std::make_unique<Flex>();

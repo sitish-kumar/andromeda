@@ -1763,6 +1763,10 @@
           "label": "Transparency",
           "description": "Panel glass style, including floating/centered panel opacity and card translucency"
         },
+        "borders": {
+          "label": "Borders",
+          "description": "Draw an outline on panels and section cards inside panels"
+        },
         "home-shortcuts": {
           "label": "Home Shortcuts",
           "description": "Choose up to six shortcut buttons for the home tab"

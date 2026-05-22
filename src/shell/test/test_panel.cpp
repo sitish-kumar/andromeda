@@ -632,7 +632,7 @@ void TestPanel::create() {
         tile->setFill(colorSpecFromRole(ColorRole::Primary));
         tile->setBorder(colorSpecFromRole(ColorRole::Primary), Style::borderWidth);
       } else {
-        tile->setCardStyle(scale, panelCardOpacity());
+        tile->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
         tile->setRadius(Style::scaledRadiusMd(scale));
       }
 
@@ -870,7 +870,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
@@ -938,7 +938,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
@@ -986,7 +986,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
@@ -1029,7 +1029,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
@@ -1104,7 +1104,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
@@ -1167,7 +1167,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
@@ -1224,7 +1224,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
@@ -1297,7 +1297,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
@@ -1343,7 +1343,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
@@ -1403,7 +1403,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 
@@ -1437,7 +1437,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     col->setDirection(FlexDirection::Vertical);
     col->setAlign(FlexAlign::Start);
     col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity());
+    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
     col->setRadius(Style::scaledRadiusLg(scale));
     col->setPadding(Style::spaceMd * scale);
 

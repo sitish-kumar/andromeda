@@ -277,7 +277,7 @@ std::unique_ptr<Flex> BluetoothTab::create() {
   m_rootLayout = tab.get();
 
   auto pairingCard = std::make_unique<Flex>();
-  applySectionCardStyle(*pairingCard, scale, panelCardOpacity());
+  applySectionCardStyle(*pairingCard, scale, panelCardOpacity(), panelBordersEnabled());
   pairingCard->setVisible(false);
   m_pairingCard = pairingCard.get();
 
@@ -392,7 +392,7 @@ std::unique_ptr<Flex> BluetoothTab::create() {
   tab->addChild(std::move(pairingCard));
 
   auto listCard = std::make_unique<Flex>();
-  applySectionCardStyle(*listCard, scale, panelCardOpacity());
+  applySectionCardStyle(*listCard, scale, panelCardOpacity(), panelBordersEnabled());
   listCard->setFlexGrow(1.0f);
   m_listCard = listCard.get();
 

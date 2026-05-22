@@ -162,7 +162,7 @@ std::unique_ptr<Flex> ScreenTimeTab::create() {
   content->setGap(Style::spaceLg * scale);
 
   auto usageCard = std::make_unique<Flex>();
-  applySectionCardStyle(*usageCard, scale, panelCardOpacity());
+  applySectionCardStyle(*usageCard, scale, panelCardOpacity(), panelBordersEnabled());
   usageCard->setDirection(FlexDirection::Vertical);
   usageCard->setGap(Style::spaceMd * scale);
   m_usageCard = usageCard.get();

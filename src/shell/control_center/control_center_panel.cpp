@@ -84,6 +84,7 @@ void ControlCenterPanel::create() {
   for (auto& tab : m_tabs) {
     tab->setContentScale(scale);
     tab->setPanelCardOpacity(panelCardOpacity());
+    tab->setPanelBordersEnabled(panelBordersEnabled());
   }
 
   auto rootLayout = std::make_unique<Flex>();
@@ -218,6 +219,14 @@ void ControlCenterPanel::create() {
 
   syncTabVisibility();
   selectTab(m_activeTab);
+}
+
+void ControlCenterPanel::onPanelBordersChanged(bool enabled) {
+  for (auto& tab : m_tabs) {
+    if (tab != nullptr) {
+      tab->setPanelBordersEnabled(enabled);
+    }
+  }
 }
 
 void ControlCenterPanel::onPanelCardOpacityChanged(float opacity) {

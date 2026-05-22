@@ -234,7 +234,7 @@ void DisplayTab::rebuildCards(Renderer& /*renderer*/) {
   for (const auto& display : displays) {
     // Card container
     auto card = std::make_unique<Flex>();
-    applySectionCardStyle(*card, scale, panelCardOpacity());
+    applySectionCardStyle(*card, scale, panelCardOpacity(), panelBordersEnabled());
 
     // Header row: icon + display name
     auto headerRow = std::make_unique<Flex>();
