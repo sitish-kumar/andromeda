@@ -223,6 +223,14 @@ void Node::setFlexGrow(float grow) {
   markLayoutDirty();
 }
 
+void Node::setNoGapAroundMe(bool noGap) {
+  if (m_noGapAroundMe == noGap) {
+    return;
+  }
+  m_noGapAroundMe = noGap;
+  markLayoutDirty();
+}
+
 void Node::setVisible(bool visible) {
   if (m_visible == visible) {
     return;

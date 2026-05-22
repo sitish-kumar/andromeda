@@ -458,7 +458,17 @@ LayoutSize Flex::runLayout(Renderer& renderer, const LayoutConstraints& constrai
     measureItem(item, false, 0.0f);
   }
 
-  const float totalGap = items.size() > 1 ? m_gap * static_cast<float>(items.size() - 1) : 0.0f;
+  int numGaps = 0;
+  {
+    bool skipNextGap = items.empty() || items[0].node->noGapAroundMe();
+    for (size_t i = 1; i < items.size(); ++i) {
+      if (!skipNextGap && !items[i].node->noGapAroundMe()) {
+        numGaps++;
+      }
+      skipNextGap = items[i].node->noGapAroundMe();
+    }
+  }
+  const float totalGap = m_gap * static_cast<float>(numGaps);
 
   if (mainKnown && totalGrow > 0.0f) {
     float fixedMain = mainPaddingStart(*this, horizontal) + mainPaddingEnd(*this, horizontal) + totalGap;
@@ -512,10 +522,9 @@ LayoutSize Flex::runLayout(Renderer& renderer, const LayoutConstraints& constrai
 
     float effectiveGap = m_gap;
     if (m_justify == FlexJustify::SpaceBetween && items.size() > 1) {
-      effectiveGap = std::max(m_gap, (innerMain - arrangedChildrenMain) / static_cast<float>(items.size() - 1));
+      effectiveGap = std::max(m_gap, (innerMain - arrangedChildrenMain) / static_cast<float>(numGaps));
     }
-    const float arrangedContentMain =
-        arrangedChildrenMain + (items.size() > 1 ? effectiveGap * static_cast<float>(items.size() - 1) : 0.0f);
+    const float arrangedContentMain = arrangedChildrenMain + effectiveGap * static_cast<float>(numGaps);
 
     float cursor = mainPaddingStart(*this, horizontal);
     if (m_justify == FlexJustify::Center) {
@@ -525,9 +534,13 @@ LayoutSize Flex::runLayout(Renderer& renderer, const LayoutConstraints& constrai
     }
 
     bool first = true;
+    bool skipNextGap = items.empty() || items.front().node->noGapAroundMe();
     for (auto& item : items) {
       if (!first) {
-        cursor += effectiveGap;
+        if (!skipNextGap && !item.node->noGapAroundMe()) {
+          cursor += effectiveGap;
+        }
+        skipNextGap = item.node->noGapAroundMe();
       }
       first = false;
 

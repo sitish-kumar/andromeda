@@ -44,6 +44,10 @@ public:
   }
   [[nodiscard]] virtual bool reservesMiddleClick() const noexcept { return false; }
 
+  // Widgets like Spacer can override this to indicate that no gaps should be added on either side of them
+  // in the bar, so that they can serve as separators between other widgets without adding extra spacing.
+  [[nodiscard]] virtual bool noGapAroundMe() const noexcept { return false; }
+
   [[nodiscard]] Node* root() const noexcept { return m_root ? m_root.get() : m_rootPtr; }
   [[nodiscard]] float width() const noexcept;
   [[nodiscard]] float height() const noexcept;
