@@ -1350,10 +1350,6 @@ namespace settings {
       entries.push_back(makeEntry(section, "layout", tr("settings.schema.bar.content-scale.label"),
                                   tr("settings.schema.bar.content-scale.description"), path("scale"),
                                   SliderSetting{bar.scale, 0.5f, 4.0f, 0.05f, false}, "zoom size"));
-      entries.push_back(makeEntry(section, "widgets", tr("settings.schema.bar.font-weight.label"),
-                                  tr("settings.schema.bar.font-weight.description"), path("font_weight"),
-                                  SliderSetting{static_cast<float>(bar.fontWeight), 100.0f, 1000.0f, 50.0f, true},
-                                  "font text weight"));
       entries.push_back(makeEntry(section, "layout", tr("settings.schema.shared.ends-margin.label"),
                                   tr("settings.schema.bar.ends-margin.description"), path("margin_ends"),
                                   SliderSetting{static_cast<float>(bar.marginEnds), 0.0f, 500.0f, 1.0f, true},
@@ -1399,6 +1395,25 @@ namespace settings {
       entries.push_back(makeEntry(section, "effects", tr("settings.schema.shared.contact-shadow.label"),
                                   tr("settings.schema.bar.contact-shadow.description"), path("contact_shadow"),
                                   ToggleSetting{bar.contactShadow}, "shadow contact panel attached"));
+      {
+        auto fontWeightSelect = plainSelect({{"100", "settings.options.bar.font-weight.thin"},
+                                             {"200", "settings.options.bar.font-weight.ultra-light"},
+                                             {"300", "settings.options.bar.font-weight.light"},
+                                             {"350", "settings.options.bar.font-weight.semi-light"},
+                                             {"380", "settings.options.bar.font-weight.book"},
+                                             {"400", "settings.options.bar.font-weight.regular"},
+                                             {"500", "settings.options.bar.font-weight.medium"},
+                                             {"600", "settings.options.bar.font-weight.semi-bold"},
+                                             {"700", "settings.options.bar.font-weight.bold"},
+                                             {"800", "settings.options.bar.font-weight.ultra-bold"},
+                                             {"900", "settings.options.bar.font-weight.heavy"},
+                                             {"1000", "settings.options.bar.font-weight.ultra-heavy"}},
+                                            std::to_string(bar.fontWeight));
+        fontWeightSelect.integerValue = true;
+        entries.push_back(makeEntry(section, "widgets", tr("settings.schema.bar.font-weight.label"),
+                                    tr("settings.schema.bar.font-weight.description"), path("font_weight"),
+                                    std::move(fontWeightSelect), "font text weight"));
+      }
       entries.push_back(makeEntry(section, "widgets", tr("settings.schema.bar.widget-spacing.label"),
                                   tr("settings.schema.bar.widget-spacing.description"), path("widget_spacing"),
                                   SliderSetting{static_cast<float>(bar.widgetSpacing), 0.0f, 32.0f, 1.0f, true},

@@ -935,8 +935,18 @@
     "options": {
       "bar": {
         "font-weight": {
+          "thin": "Thin",
+          "ultra-light": "Ultra Light",
+          "light": "Light",
+          "semi-light": "Semi Light",
+          "book": "Book",
+          "regular": "Regular",
+          "medium": "Medium",
+          "semi-bold": "Semi Bold",
           "bold": "Bold",
-          "regular": "Regular"
+          "ultra-bold": "Ultra Bold",
+          "heavy": "Heavy",
+          "ultra-heavy": "Ultra Heavy"
         }
       },
       "theme": {
@@ -2202,7 +2212,7 @@
         },
         "font-weight": {
           "label": "Font Weight",
-          "description": "Use bold or regular weight for bar widget labels"
+          "description": "Font weight for bar widget labels"
         },
         "content-padding": {
           "label": "Content Padding",

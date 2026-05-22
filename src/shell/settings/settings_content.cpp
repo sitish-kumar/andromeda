@@ -1128,9 +1128,14 @@ namespace settings {
           segmented->setSelectedIndex(*index);
         }
         auto options = setting.options;
-        segmented->setOnChange([setOverride = ctx.setOverride, path, options](std::size_t index) {
+        const bool integerValue = setting.integerValue;
+        segmented->setOnChange([setOverride = ctx.setOverride, path, options, integerValue](std::size_t index) {
           if (index < options.size()) {
-            setOverride(path, options[index].value);
+            if (integerValue) {
+              setOverride(path, static_cast<std::int64_t>(std::stoll(options[index].value)));
+            } else {
+              setOverride(path, options[index].value);
+            }
           }
         });
         return segmented;
@@ -1152,9 +1157,10 @@ namespace settings {
       select->setSize(selectWidth * scale, Style::controlHeight * scale);
       auto options = setting.options;
       const bool clearOnEmpty = setting.clearOnEmpty;
+      const bool integerValue = setting.integerValue;
       select->setOnSelectionChanged([configService = ctx.configService, clearOverride = ctx.clearOverride,
                                      setOverride = ctx.setOverride, requestRebuild = ctx.requestRebuild, path, options,
-                                     clearOnEmpty](std::size_t index, std::string_view /*label*/) {
+                                     clearOnEmpty, integerValue](std::size_t index, std::string_view /*label*/) {
         if (index < options.size()) {
           if (clearOnEmpty && options[index].value.empty()) {
             if (configService != nullptr && configService->hasOverride(path)) {
@@ -1164,7 +1170,11 @@ namespace settings {
             }
             return;
           }
-          setOverride(path, options[index].value);
+          if (integerValue) {
+            setOverride(path, static_cast<std::int64_t>(std::stoll(options[index].value)));
+          } else {
+            setOverride(path, options[index].value);
+          }
         }
       });
       return select;
