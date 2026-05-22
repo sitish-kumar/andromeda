@@ -30,6 +30,7 @@ namespace {
 
   constexpr Logger kLog("panel");
   constexpr std::int32_t kAttachedPanelBarOverlap = 1;
+  constexpr std::int32_t kDetachedPanelShadowSafetyPadding = 2;
 
   struct BarVisibleRect {
     std::int32_t left = 0;
@@ -61,6 +62,24 @@ namespace {
         .right = right,
         .bottom = bottom,
     };
+  }
+
+  shell::surface_shadow::Bleed detachedPanelShadowBleed(bool hasDecoration,
+                                                        const ShellConfig::ShadowConfig& shadow) noexcept {
+    auto bleed = shell::surface_shadow::bleed(hasDecoration, shadow);
+    if (shell::surface_shadow::enabled(hasDecoration, shadow)) {
+      bleed.left += kDetachedPanelShadowSafetyPadding;
+      bleed.right += kDetachedPanelShadowSafetyPadding;
+      bleed.up += kDetachedPanelShadowSafetyPadding;
+      bleed.down += kDetachedPanelShadowSafetyPadding;
+    }
+    return bleed;
+  }
+
+  std::uint32_t panelSurfaceExtent(std::uint32_t contentSize, std::int32_t before, std::int32_t after) noexcept {
+    const auto total =
+        static_cast<std::int64_t>(contentSize) + static_cast<std::int64_t>(before) + static_cast<std::int64_t>(after);
+    return static_cast<std::uint32_t>(std::max<std::int64_t>(1, total));
   }
 
   BarConfig resolvePanelBarConfig(ConfigService* configService, CompositorPlatform* platform, wl_output* output,
@@ -319,6 +338,12 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   const bool useCenteredPlacement = activePlacement == PanelPlacement::Centered;
   const bool useFloatingAnchor =
       !useCenteredPlacement && request.hasAnchorPosition && openNearClickEnabledForPanel(m_config, m_activePanelId);
+  const auto detachedShadowBleed =
+      detachedPanelShadowBleed(m_activePanel->hasDecoration(), m_config->config().shell.shadow);
+  const std::uint32_t detachedSurfaceWidth =
+      panelSurfaceExtent(panelWidth, detachedShadowBleed.left, detachedShadowBleed.right);
+  const std::uint32_t detachedSurfaceHeight =
+      panelSurfaceExtent(panelHeight, detachedShadowBleed.up, detachedShadowBleed.down);
   const auto barRect = resolveBarVisibleRect(barConfig, outputWidth, outputHeight);
   const bool multipleBarsOnEdge =
       hasMultipleEnabledBarsOnEdge(m_config, m_platform, request.output, barConfig.position);
@@ -386,20 +411,37 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     }
   }
 
+  if (useCenteredPlacement) {
+    standaloneAnchor = LayerShellAnchor::Top | LayerShellAnchor::Left;
+    standaloneMarginLeft = (outputWidth - static_cast<std::int32_t>(panelWidth)) / 2 - detachedShadowBleed.left;
+    standaloneMarginTop = (outputHeight - static_cast<std::int32_t>(panelHeight)) / 2 - detachedShadowBleed.up;
+  } else {
+    if ((standaloneAnchor & LayerShellAnchor::Left) != 0) {
+      standaloneMarginLeft -= detachedShadowBleed.left;
+    } else if ((standaloneAnchor & LayerShellAnchor::Right) != 0) {
+      standaloneMarginRight -= detachedShadowBleed.right;
+    }
+    if ((standaloneAnchor & LayerShellAnchor::Top) != 0) {
+      standaloneMarginTop -= detachedShadowBleed.up;
+    } else if ((standaloneAnchor & LayerShellAnchor::Bottom) != 0) {
+      standaloneMarginBottom -= detachedShadowBleed.down;
+    }
+  }
+
   auto surfaceConfig = LayerSurfaceConfig{
       .nameSpace = "noctalia-panel",
       .layer = m_activePanel->layer(),
       .anchor = standaloneAnchor,
-      .width = panelWidth,
-      .height = panelHeight,
-      .exclusiveZone = (useCenteredPlacement || useReservedEdgePlacement) ? 0 : -1,
+      .width = detachedSurfaceWidth,
+      .height = detachedSurfaceHeight,
+      .exclusiveZone = useReservedEdgePlacement ? 0 : -1,
       .marginTop = standaloneMarginTop,
       .marginRight = standaloneMarginRight,
       .marginBottom = standaloneMarginBottom,
       .marginLeft = standaloneMarginLeft,
       .keyboard = m_activePanel->keyboardMode(),
-      .defaultWidth = panelWidth,
-      .defaultHeight = panelHeight,
+      .defaultWidth = detachedSurfaceWidth,
+      .defaultHeight = detachedSurfaceHeight,
   };
 
   const auto configureSurfaceCallbacks = [this](Surface& surface) {
@@ -669,8 +711,8 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   auto layerSurface = std::make_unique<LayerSurface>(m_platform->wayland(), std::move(surfaceConfig));
   m_layerSurface = layerSurface.get();
   m_surface = std::move(layerSurface);
-  m_panelInsetX = 0;
-  m_panelInsetY = 0;
+  m_panelInsetX = detachedShadowBleed.left;
+  m_panelInsetY = detachedShadowBleed.up;
   m_panelVisualWidth = panelWidth;
   m_panelVisualHeight = panelHeight;
   m_attachedBackgroundOpacity = 1.0f;
@@ -694,6 +736,8 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
 
   m_output = request.output;
   m_wlSurface = m_surface->wlSurface();
+  m_surface->setInputRegion(
+      {InputRect{m_panelInsetX, m_panelInsetY, static_cast<int>(panelWidth), static_cast<int>(panelHeight)}});
   applyPanelCompositorBlur();
   // Defer the focus grab to the next tick. See attached-path comment above.
   const std::uint64_t gen = m_destroyGeneration;
@@ -1519,6 +1563,13 @@ void PanelManager::onConfigReloaded() {
     bg->setPanelStyle(m_config->config().shell.panel.borders);
     bg->setFill(colorSpecFromRole(ColorRole::Surface, panelBackgroundOpacity));
   }
+  if (!m_attachedToBar && m_panelShadowNode != nullptr) {
+    const auto& shadowConfig = m_config->config().shell.shadow;
+    const float shadowRadius = Style::scaledRadiusXl(m_activePanel->contentScale());
+    m_panelShadowNode->setStyle(shell::surface_shadow::style(
+        shadowConfig, panelBackgroundOpacity,
+        shell::surface_shadow::Shape{.radius = Radii{shadowRadius, shadowRadius, shadowRadius, shadowRadius}}));
+  }
   if (m_surface != nullptr) {
     m_surface->requestUpdate();
   }
@@ -1583,8 +1634,7 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
       sceneParent = m_attachedRevealContentNode;
     }
 
-    if (hasDecoration && m_attachedToBar && m_config != nullptr &&
-        shell::surface_shadow::enabled(true, m_config->config().shell.shadow)) {
+    if (hasDecoration && m_config != nullptr && shell::surface_shadow::enabled(true, m_config->config().shell.shadow)) {
       auto shadow = std::make_unique<Box>();
       m_panelShadowNode = static_cast<Box*>(sceneParent->addChild(std::move(shadow)));
       m_panelShadowNode->setZIndex(-1);
@@ -1682,6 +1732,13 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
     const float shadowOffsetY = static_cast<float>(shadowConfig.offsetY);
     m_panelShadowNode->setPosition(bgX + shadowOffsetX, bgY + shadowOffsetY);
     m_panelShadowNode->setSize(bgW, bgH);
+    if (!m_attachedToBar) {
+      const float shadowRadius = Style::scaledRadiusXl(m_activePanel->contentScale());
+      const float panelBackgroundOpacity = resolveDetachedPanelBackgroundOpacity(m_config);
+      m_panelShadowNode->setStyle(shell::surface_shadow::style(
+          shadowConfig, panelBackgroundOpacity,
+          shell::surface_shadow::Shape{.radius = Radii{shadowRadius, shadowRadius, shadowRadius, shadowRadius}}));
+    }
   }
 
   if (m_bgNode != nullptr) {
