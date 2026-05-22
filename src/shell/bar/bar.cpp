@@ -357,7 +357,8 @@ namespace {
       const int triggerY = isBottom ? std::max(0, surfH - kAutoHideTriggerRegionPx) : 0;
       return InputRect{0, triggerY, surfW, kAutoHideTriggerRegionPx};
     }
-    if (cfg.position == "left") {
+    // Trigger strip stays on the anchored output edge (surface coords)
+    if (cfg.position == "right") {
       return InputRect{std::max(0, surfW - kAutoHideTriggerRegionPx), 0, kAutoHideTriggerRegionPx, surfH};
     }
     return InputRect{0, 0, kAutoHideTriggerRegionPx, surfH};
