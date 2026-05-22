@@ -910,6 +910,15 @@ namespace settings {
 
   } // namespace
 
+  std::unique_ptr<Label> makeSettingSubtitleLabel(std::string_view text, float scale) {
+    auto label = std::make_unique<Label>();
+    label->setText(text);
+    label->setFontSize(Style::fontSizeCaption * scale);
+    label->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+    label->setMaxLines(kSettingDescriptionMaxLines);
+    return label;
+  }
+
   std::size_t addSettingsContentSections(Flex& content, const std::vector<SettingEntry>& registry,
                                          SettingsContentContext ctx) {
     const Config& cfg = ctx.config;
@@ -1065,9 +1074,7 @@ namespace settings {
       copy->addChild(std::move(titleRow));
 
       if (!entry.subtitle.empty()) {
-        auto detail = makeLabel(entry.subtitle, Style::fontSizeCaption * scale,
-                                colorSpecFromRole(ColorRole::OnSurfaceVariant), false);
-        copy->addChild(std::move(detail));
+        copy->addChild(makeSettingSubtitleLabel(entry.subtitle, scale));
       }
 
       row->addChild(std::move(copy));
@@ -1528,8 +1535,7 @@ namespace settings {
       block->addChild(std::move(titleRow));
 
       if (!entry.subtitle.empty()) {
-        block->addChild(makeLabel(entry.subtitle, Style::fontSizeCaption * scale,
-                                  colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+        block->addChild(makeSettingSubtitleLabel(entry.subtitle, scale));
       }
 
       auto checkRow = std::make_unique<Flex>();
@@ -1616,8 +1622,7 @@ namespace settings {
       block->addChild(std::move(titleRow));
 
       if (!entry.subtitle.empty()) {
-        block->addChild(makeLabel(entry.subtitle, Style::fontSizeCaption * scale,
-                                  colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+        block->addChild(makeSettingSubtitleLabel(entry.subtitle, scale));
       }
 
       auto listEditor = std::make_unique<ListEditor>();
@@ -1697,18 +1702,9 @@ namespace settings {
       }
       block->addChild(std::move(titleRow));
 
-      // Always reserve two caption lines so blocks line up regardless of how their description wraps.
-      auto subtitleBox = std::make_unique<Flex>();
-      subtitleBox->setDirection(FlexDirection::Vertical);
-      subtitleBox->setAlign(FlexAlign::Stretch);
-      subtitleBox->setMinHeight(2.0f * Style::fontSizeCaption * 1.4f * scale);
       if (!entry.subtitle.empty()) {
-        auto subtitle = makeLabel(entry.subtitle, Style::fontSizeCaption * scale,
-                                  colorSpecFromRole(ColorRole::OnSurfaceVariant), false);
-        subtitle->setMaxLines(2);
-        subtitleBox->addChild(std::move(subtitle));
+        block->addChild(makeSettingSubtitleLabel(entry.subtitle, scale));
       }
-      block->addChild(std::move(subtitleBox));
 
       auto list = std::make_unique<Flex>();
       list->setDirection(FlexDirection::Vertical);
@@ -1824,8 +1820,7 @@ namespace settings {
       block->addChild(std::move(titleRow));
 
       if (!entry.subtitle.empty()) {
-        block->addChild(makeLabel(entry.subtitle, Style::fontSizeCaption * scale,
-                                  colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+        block->addChild(makeSettingSubtitleLabel(entry.subtitle, scale));
       }
 
       std::vector<std::string> itemTypes;
@@ -1902,8 +1897,7 @@ namespace settings {
       block->addChild(std::move(titleRow));
 
       if (!entry.subtitle.empty()) {
-        block->addChild(makeLabel(entry.subtitle, Style::fontSizeCaption * scale,
-                                  colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+        block->addChild(makeSettingSubtitleLabel(entry.subtitle, scale));
       }
 
       const std::vector<SelectOption> kindOptions = {
@@ -2053,8 +2047,7 @@ namespace settings {
       block->addChild(std::move(titleRow));
 
       if (!entry.subtitle.empty()) {
-        block->addChild(makeLabel(entry.subtitle, Style::fontSizeCaption * scale,
-                                  colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+        block->addChild(makeSettingSubtitleLabel(entry.subtitle, scale));
       }
 
       auto state = std::make_shared<std::vector<IdleBehaviorConfig>>(idle.items);

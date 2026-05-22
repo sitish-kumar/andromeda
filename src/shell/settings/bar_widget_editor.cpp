@@ -3,6 +3,7 @@
 #include "cursor-shape-v1-client-protocol.h"
 #include "i18n/i18n.h"
 #include "render/scene/node.h"
+#include "shell/settings/settings_content.h"
 #include "shell/settings/widget_settings_registry.h"
 #include "ui/controls/box.h"
 #include "ui/controls/button.h"
@@ -756,9 +757,7 @@ namespace settings {
       header->setPadding(Style::spaceXs * ctx.scale, 0.0f);
       header->addChild(makeLabel(i18n::tr("settings.entities.widget.raw.title"), Style::fontSizeCaption * ctx.scale,
                                  colorSpecFromRole(ColorRole::OnSurface), true));
-      header->addChild(makeLabel(i18n::tr("settings.entities.widget.raw.description"),
-                                 Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                                 false));
+      header->addChild(makeSettingSubtitleLabel(i18n::tr("settings.entities.widget.raw.description"), ctx.scale));
       panel.addChild(std::move(header));
 
       for (const auto& key : rawKeys) {
@@ -1438,9 +1437,7 @@ namespace settings {
                                  colorSpecFromRole(ColorRole::OnSurface), false));
     block->addChild(std::move(titleRow));
 
-    block->addChild(makeLabel(i18n::tr("settings.entities.widget.editor.description"),
-                              Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                              false));
+    block->addChild(makeSettingSubtitleLabel(i18n::tr("settings.entities.widget.editor.description"), ctx.scale));
 
     const bool inspectorActive = !ctx.editingWidgetName.empty();
     if (inspectorActive) {
@@ -1584,8 +1581,7 @@ namespace settings {
         item->addChild(std::move(itemTop));
 
         if (info.kind != WidgetReferenceKind::BuiltIn && !info.detail.empty()) {
-          item->addChild(makeLabel(info.detail, Style::fontSizeCaption * ctx.scale,
-                                   colorSpecFromRole(ColorRole::OnSurfaceVariant), false));
+          item->addChild(makeSettingSubtitleLabel(info.detail, ctx.scale));
         }
         if (!capsuleGroup.empty()) {
           auto groupRow = std::make_unique<Flex>();
