@@ -1205,6 +1205,7 @@ void Bar::populateWidgets(BarInstance& instance) {
           widget->setAnchor(wcPtr->getBool("anchor", false));
         }
         widget->setBarCapsuleSpec(resolveWidgetBarCapsuleSpec(instance.barConfig, wcPtr));
+        widget->setLabelBold(barFontWeightIsBold(instance.barConfig.fontWeight));
         if (wcPtr != nullptr && wcPtr->hasSetting("color")) {
           widget->setWidgetForeground(wcPtr->getOptionalColorSpec("color", "widget." + name + ".color"));
         } else if (instance.barConfig.widgetColor.has_value()) {
@@ -1226,6 +1227,7 @@ void Bar::populateWidgets(BarInstance& instance) {
                               instance.barConfig.name, static_cast<float>(instance.barConfig.widgetSpacing));
   if (debugWidget != nullptr) {
     debugWidget->setConfigName("debug_indicator");
+    debugWidget->setLabelBold(barFontWeightIsBold(instance.barConfig.fontWeight));
     debugWidget->create();
     instance.endWidgets.insert(instance.endWidgets.begin(), std::move(debugWidget));
   }

@@ -57,6 +57,8 @@ public:
   void setPanelToggleCallback(PanelToggleCallback callback);
   void setContentScale(float scale) noexcept { m_contentScale = scale; }
   [[nodiscard]] float contentScale() const noexcept { return m_contentScale; }
+  void setLabelBold(bool bold) noexcept { m_labelBold = bold; }
+  [[nodiscard]] bool labelBold() const noexcept { return m_labelBold; }
   void setConfigName(std::string name) { m_configName = std::move(name); }
   [[nodiscard]] std::string_view configName() const noexcept { return m_configName; }
   void setAnchor(bool anchor) noexcept { m_anchor = anchor; }
@@ -92,6 +94,7 @@ protected:
   virtual void doUpdate(Renderer& renderer) { (void)renderer; }
 
   float m_contentScale = 1.0f;
+  bool m_labelBold = true;
   std::string m_configName;
   bool m_anchor = false;
   AnimationManager* m_animations = nullptr;

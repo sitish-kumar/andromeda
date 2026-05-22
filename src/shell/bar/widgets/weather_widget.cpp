@@ -30,7 +30,7 @@ void WeatherWidget::create() {
   area->addChild(std::move(glyph));
 
   auto label = std::make_unique<Label>();
-  label->setBold(true);
+  label->setBold(labelBold());
   label->setBaselineMode(LabelBaselineMode::LatinOpticalStable);
   label->setFontSize(Style::fontSizeBody * m_contentScale);
   label->setMaxWidth(m_maxWidth * m_contentScale);

@@ -1304,6 +1304,12 @@ namespace settings {
       entries.push_back(makeEntry(section, "layout", tr("settings.schema.bar.content-scale.label"),
                                   tr("settings.schema.bar.content-scale.description"), path("scale"),
                                   SliderSetting{selectedBar->scale, 0.5f, 4.0f, 0.05f, false}, "zoom size"));
+      entries.push_back(makeEntry(section, "widgets", tr("settings.schema.bar.font-weight.label"),
+                                  tr("settings.schema.bar.font-weight.description"), path("font_weight"),
+                                  asSegmented(plainSelect({{"bold", "settings.options.bar.font-weight.bold"},
+                                                           {"regular", "settings.options.bar.font-weight.regular"}},
+                                                          selectedBar->fontWeight)),
+                                  "font text weight"));
       entries.push_back(makeEntry(section, "layout", tr("settings.schema.shared.ends-margin.label"),
                                   tr("settings.schema.bar.ends-margin.description"), path("margin_ends"),
                                   SliderSetting{static_cast<float>(selectedBar->marginEnds), 0.0f, 500.0f, 1.0f, true},

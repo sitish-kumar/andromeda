@@ -70,7 +70,7 @@ void ClockWidget::create() {
       [this](const InputArea::PointerData& /*data*/) { requestPanelToggle("control-center", "calendar"); });
 
   auto label = std::make_unique<Label>();
-  label->setBold(true);
+  label->setBold(labelBold());
   label->setTextAlign(TextAlign::Center);
   label->setBaselineMode(LabelBaselineMode::LatinOpticalStable);
   label->setFontSize(Style::fontSizeBody * m_contentScale);
@@ -81,7 +81,7 @@ void ClockWidget::create() {
   area->addChild(std::move(label));
 
   auto secondaryLabel = std::make_unique<Label>();
-  secondaryLabel->setBold(false);
+  secondaryLabel->setBold(labelBold());
   secondaryLabel->setTextAlign(TextAlign::Center);
   secondaryLabel->setBaselineMode(LabelBaselineMode::LatinOpticalStable);
   secondaryLabel->setFontSize(Style::fontSizeBody * m_contentScale * kStackedSecondaryScale);
@@ -113,8 +113,8 @@ void ClockWidget::doLayout(Renderer& renderer, float containerWidth, float conta
   // Horizontal clocks use single-line metrics unless the configured format
   // explicitly contains line breaks.
   m_label->setFontSize(primaryFontSize);
-  m_label->setBold(true);
-  m_secondaryLabel->setBold(true);
+  m_label->setBold(labelBold());
+  m_secondaryLabel->setBold(labelBold());
   m_secondaryLabel->setFontSize(secondaryFontSize);
   m_label->setMaxLines(m_isVertical ? 0 : 1);
   m_label->setMinWidth(0.0f);

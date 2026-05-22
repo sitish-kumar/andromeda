@@ -934,6 +934,12 @@
       }
     },
     "options": {
+      "bar": {
+        "font-weight": {
+          "bold": "Bold",
+          "regular": "Regular"
+        }
+      },
       "theme": {
         "mode": {
           "dark": "Dark",
@@ -2173,6 +2179,10 @@
         "content-scale": {
           "label": "Content Scale",
           "description": "Scale factor for bar content"
+        },
+        "font-weight": {
+          "label": "Font Weight",
+          "description": "Use bold or regular weight for bar widget labels"
         },
         "content-padding": {
           "label": "Content Padding",

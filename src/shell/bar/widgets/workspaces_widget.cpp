@@ -291,7 +291,7 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
       auto text = std::make_unique<Label>();
       text->setText(slot.label);
       text->setFontSize(labelFontSize);
-      text->setBold(!m_minimal || ws.active);
+      text->setBold(labelBold() && (!m_minimal || ws.active));
       text->setColor(workspaceTextColor(ws));
       if (m_isVertical) {
         text->setBaselineMode(LabelBaselineMode::InkCentered);
@@ -379,7 +379,8 @@ void WorkspacesWidget::retarget(Renderer& renderer) {
         it.text->setText(label);
         it.text->measure(renderer);
         const float fontSize = it.text->fontSize();
-        const TextMetrics tm = renderer.measureText(label, fontSize, true);
+        const bool labelIsBold = labelBold() && (!m_minimal || ws.active);
+        const TextMetrics tm = renderer.measureText(label, fontSize, labelIsBold);
         const float logCenter = (tm.left + tm.right) * 0.5f;
         const float inkCenter = (tm.inkLeft + tm.inkRight) * 0.5f;
         it.inkCenterOffset = inkCenter - logCenter;
@@ -394,7 +395,7 @@ void WorkspacesWidget::retarget(Renderer& renderer) {
     }
     if (it.text != nullptr) {
       it.text->setColor(workspaceTextColor(ws));
-      it.text->setBold(!m_minimal || ws.active);
+      it.text->setBold(labelBold() && (!m_minimal || ws.active));
     }
   }
 

@@ -131,8 +131,8 @@ namespace {
            a.radiusTopRight == b.radiusTopRight && a.radiusBottomLeft == b.radiusBottomLeft &&
            a.radiusBottomRight == b.radiusBottomRight && a.marginEnds == b.marginEnds && a.marginEdge == b.marginEdge &&
            a.padding == b.padding && a.widgetSpacing == b.widgetSpacing && a.shadow == b.shadow &&
-           a.contactShadow == b.contactShadow && nearlyEqual(a.scale, b.scale) && a.startWidgets == b.startWidgets &&
-           a.centerWidgets == b.centerWidgets && a.endWidgets == b.endWidgets &&
+           a.contactShadow == b.contactShadow && nearlyEqual(a.scale, b.scale) && a.fontWeight == b.fontWeight &&
+           a.startWidgets == b.startWidgets && a.centerWidgets == b.centerWidgets && a.endWidgets == b.endWidgets &&
            a.widgetCapsuleDefault == b.widgetCapsuleDefault &&
            colorSpecEqual(a.widgetCapsuleFill, b.widgetCapsuleFill) &&
            optionalColorSpecEqual(a.widgetCapsuleForeground, b.widgetCapsuleForeground) &&

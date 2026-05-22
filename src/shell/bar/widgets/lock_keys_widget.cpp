@@ -17,14 +17,14 @@
 
 namespace {
 
-  void configureLabel(Label* label, const std::string& text, bool visible, float contentScale) {
+  void configureLabel(Label* label, const std::string& text, bool visible, float contentScale, bool bold) {
     if (label == nullptr) {
       return;
     }
 
     label->setVisible(visible);
     label->setFontSize(Style::fontSizeBody * contentScale);
-    label->setBold(true);
+    label->setBold(bold);
     label->setText(text);
   }
 
@@ -201,12 +201,12 @@ void LockKeysWidget::sync(Renderer& renderer) {
   const bool full = m_displayMode == DisplayMode::Full;
   configureLabel(m_capsLabel,
                  full ? i18n::tr("bar.widgets.lock-keys.caps") : i18n::tr("bar.widgets.lock-keys.caps-short"),
-                 capsVisible, m_contentScale);
+                 capsVisible, m_contentScale, labelBold());
   configureLabel(m_numLabel, full ? i18n::tr("bar.widgets.lock-keys.num") : i18n::tr("bar.widgets.lock-keys.num-short"),
-                 numVisible, m_contentScale);
+                 numVisible, m_contentScale, labelBold());
   configureLabel(m_scrollLabel,
                  full ? i18n::tr("bar.widgets.lock-keys.scroll") : i18n::tr("bar.widgets.lock-keys.scroll-short"),
-                 scrollVisible, m_contentScale);
+                 scrollVisible, m_contentScale, labelBold());
 
   if (m_capsLabel != nullptr) {
     m_capsLabel->setColor(lockState.capsLock ? colorSpecFromRole(ColorRole::Primary)

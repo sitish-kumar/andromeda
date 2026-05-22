@@ -384,7 +384,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       const float badgeFontSize = fitBadgeFontSize(renderer, ws.label, tileSize, tileSize, m_contentScale);
       auto badgeText = std::make_unique<Label>();
       badgeText->setText(ws.label);
-      badgeText->setBold(true);
+      badgeText->setBold(labelBold());
       badgeText->setFontSize(badgeFontSize);
       badgeText->setColor(workspaceTextColor(ws.workspace));
       badgeText->measure(renderer);
@@ -419,7 +419,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       const float badgeFontSize = fitBadgeFontSize(renderer, ws.label, disc.width, disc.height, m_contentScale);
       auto badgeText = std::make_unique<Label>();
       badgeText->setText(ws.label);
-      badgeText->setBold(true);
+      badgeText->setBold(labelBold());
       badgeText->setFontSize(badgeFontSize);
       badgeText->setColor(workspaceTextColor(ws.workspace));
       badgeText->measure(renderer);
