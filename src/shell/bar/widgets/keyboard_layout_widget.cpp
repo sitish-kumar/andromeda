@@ -354,7 +354,7 @@ void KeyboardLayoutWidget::doLayout(Renderer& renderer, float containerWidth, fl
   m_label->setTextAlign(m_isVertical ? TextAlign::Center : TextAlign::Start);
   if (!m_hideLabel) {
     const float stableLabelWidth =
-        std::round(renderer.measureText(kVerticalStableLabel, m_label->fontSize(), true).width);
+        std::round(renderer.measureText(kVerticalStableLabel, m_label->fontSize(), FontWeight::Bold).width);
     m_label->setMinWidth(m_isVertical ? std::min(containerWidth, stableLabelWidth) : 0.0f);
     m_label->measure(renderer);
   }

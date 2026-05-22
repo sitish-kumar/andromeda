@@ -94,7 +94,7 @@ namespace {
     const float maxTextWidth = maxWidth * 0.82f;
     const float maxTextHeight = maxHeight * 0.82f;
     while (fontSize >= minFontSize) {
-      const auto metrics = renderer.measureText(label, fontSize, true);
+      const auto metrics = renderer.measureText(label, fontSize, FontWeight::Bold);
       const float textWidth = std::max(0.0f, metrics.right - metrics.left);
       const float textHeight = std::max(0.0f, metrics.bottom - metrics.top);
       if (textWidth <= maxTextWidth && textHeight <= maxTextHeight) {
@@ -112,7 +112,7 @@ namespace {
 
   [[nodiscard]] WorkspaceDiscSize measureWorkspaceDiscSize(Renderer& renderer, std::string_view label, float fontSize,
                                                            float minHeight, float scale) {
-    const auto metrics = renderer.measureText(label, fontSize, true);
+    const auto metrics = renderer.measureText(label, fontSize, FontWeight::Bold);
     const float textW = std::max(0.0f, metrics.right - metrics.left);
     const float pad = Style::spaceXs * scale;
     WorkspaceDiscSize size{};

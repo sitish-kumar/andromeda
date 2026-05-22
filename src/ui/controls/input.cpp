@@ -502,7 +502,7 @@ void Input::doLayout(Renderer& renderer) {
     if (!m_value.empty() && m_stopX.size() > 1U) {
       textExtent = m_stopX.back();
     } else if (m_value.empty() && !m_placeholder.empty()) {
-      textExtent = renderer.measureText(m_placeholder, m_fontSize, m_label->bold()).width;
+      textExtent = renderer.measureText(m_placeholder, m_fontSize, m_label->fontWeight()).width;
     }
     if (vw > 0.0f && textExtent > 0.0f && textExtent + 0.5f < vw) {
       m_contentLeadSlack = std::round((vw - textExtent) * 0.5f);

@@ -182,23 +182,23 @@ namespace {
     return !isToday && !isYesterday;
   }
 
-  float measuredTextHeight(Renderer& renderer, std::string_view text, float fontSize, bool bold, float maxWidth,
-                           int maxLines) {
+  float measuredTextHeight(Renderer& renderer, std::string_view text, float fontSize, FontWeight fontWeight,
+                           float maxWidth, int maxLines) {
     if (text.empty()) {
       return 0.0f;
     }
-    const auto bounds = renderer.measureText(text, fontSize, bold, maxWidth, maxLines);
+    const auto bounds = renderer.measureText(text, fontSize, fontWeight, maxWidth, maxLines);
     return std::max(0.0f, bounds.bottom - bounds.top);
   }
 
-  bool canExpandText(Renderer& renderer, std::string_view text, float fontSize, bool bold, float maxWidth,
+  bool canExpandText(Renderer& renderer, std::string_view text, float fontSize, FontWeight fontWeight, float maxWidth,
                      int collapsedMaxLines) {
     if (text.empty()) {
       return false;
     }
 
-    const float collapsedHeight = measuredTextHeight(renderer, text, fontSize, bold, maxWidth, collapsedMaxLines);
-    const float expandedHeight = measuredTextHeight(renderer, text, fontSize, bold, maxWidth, kExpandedMaxLines);
+    const float collapsedHeight = measuredTextHeight(renderer, text, fontSize, fontWeight, maxWidth, collapsedMaxLines);
+    const float expandedHeight = measuredTextHeight(renderer, text, fontSize, fontWeight, maxWidth, kExpandedMaxLines);
     return expandedHeight > collapsedHeight + 0.5f;
   }
 
@@ -226,12 +226,13 @@ namespace {
     const std::string bodyText = StringUtils::trimLeadingBlankLines(entry.notification.body);
     metrics.summaryText = summaryText;
 
-    const bool summaryExpandable = canExpandText(renderer, summaryText, Style::fontSizeBody * scale, true,
+    const bool summaryExpandable = canExpandText(renderer, summaryText, Style::fontSizeBody * scale, FontWeight::Bold,
                                                  metrics.cardTextWidth, kSummaryMaxLines);
     bool bodyLineTruncated = false;
     const std::string collapsedBodyText = StringUtils::truncateByLines(bodyText, kBodyMaxLines, &bodyLineTruncated);
-    const bool bodyExpandable = bodyLineTruncated || canExpandText(renderer, bodyText, Style::fontSizeCaption * scale,
-                                                                   false, metrics.cardTextWidth, kBodyMaxLines);
+    const bool bodyExpandable =
+        bodyLineTruncated || canExpandText(renderer, bodyText, Style::fontSizeCaption * scale, FontWeight::Normal,
+                                           metrics.cardTextWidth, kBodyMaxLines);
     metrics.canExpand = summaryExpandable || bodyExpandable;
     metrics.expanded = metrics.canExpand && expandedRequested;
     metrics.bodyText = metrics.expanded ? bodyText : collapsedBodyText;
@@ -247,16 +248,16 @@ namespace {
 
     metrics.metaLine = entry.notification.appName + " • " + relativeMetaLine(entry.notification);
 
-    const float metaHeight =
-        measuredTextHeight(renderer, metrics.metaLine, Style::fontSizeCaption * scale, false, metrics.metaTextWidth, 0);
+    const float metaHeight = measuredTextHeight(renderer, metrics.metaLine, Style::fontSizeCaption * scale,
+                                                FontWeight::Normal, metrics.metaTextWidth, 0);
     const float headerHeight = std::max({iconPx, actionButtonSize, metaHeight});
     const float summaryHeight =
-        measuredTextHeight(renderer, metrics.summaryText, Style::fontSizeBody * scale, true, metrics.cardTextWidth,
-                           metrics.expanded ? kExpandedMaxLines : kSummaryMaxLines);
+        measuredTextHeight(renderer, metrics.summaryText, Style::fontSizeBody * scale, FontWeight::Bold,
+                           metrics.cardTextWidth, metrics.expanded ? kExpandedMaxLines : kSummaryMaxLines);
     const float bodyHeight =
         metrics.bodyText.empty()
             ? 0.0f
-            : measuredTextHeight(renderer, metrics.bodyText, Style::fontSizeCaption * scale, false,
+            : measuredTextHeight(renderer, metrics.bodyText, Style::fontSizeCaption * scale, FontWeight::Normal,
                                  metrics.cardTextWidth, metrics.expanded ? kExpandedMaxLines : kBodyMaxLines);
 
     const float actionsRowHeight =
