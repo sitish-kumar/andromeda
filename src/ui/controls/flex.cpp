@@ -521,7 +521,7 @@ LayoutSize Flex::runLayout(Renderer& renderer, const LayoutConstraints& constrai
     }
 
     float effectiveGap = m_gap;
-    if (m_justify == FlexJustify::SpaceBetween && items.size() > 1) {
+    if (m_justify == FlexJustify::SpaceBetween && items.size() > 1 && numGaps > 0) {
       effectiveGap = std::max(m_gap, (innerMain - arrangedChildrenMain) / static_cast<float>(numGaps));
     }
     const float arrangedContentMain = arrangedChildrenMain + effectiveGap * static_cast<float>(numGaps);
