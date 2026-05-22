@@ -121,7 +121,10 @@ private:
 
   void selectTab(TabId tab);
   void scheduleMprisRefreshFor(TabId tab);
-  [[nodiscard]] static TabId tabFromContext(std::string_view context);
+  void syncTabVisibility();
+  [[nodiscard]] bool isTabVisible(TabId tab) const;
+  [[nodiscard]] TabId firstVisibleTab() const;
+  [[nodiscard]] TabId tabFromContext(std::string_view context) const;
   [[nodiscard]] static std::size_t tabIndex(TabId id);
 
   // Tab instances (long-lived, survive panel open/close cycles)

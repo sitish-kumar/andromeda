@@ -160,8 +160,7 @@
       "screen-time": "Screen Time"
     },
     "screen-time": {
-      "enabled": "Screen time tracking",
-      "disabled": "Screen time tracking is off. Enable it to record per-app usage.",
+      "disabled": "Screen time tracking is off. Enable it in Settings to record per-app usage.",
       "most-used": "MOST USED",
       "range": {
         "today": "Today",

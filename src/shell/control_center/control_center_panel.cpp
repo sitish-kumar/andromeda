@@ -57,7 +57,7 @@ ControlCenterPanel::ControlCenterPanel(NotificationManager* notifications, PipeW
   m_tabs[tabIndex(TabId::Bluetooth)] = std::make_unique<BluetoothTab>(bluetooth, bluetoothAgent);
   m_tabs[tabIndex(TabId::Display)] = std::make_unique<DisplayTab>(brightness, config);
   m_tabs[tabIndex(TabId::System)] = std::make_unique<SystemTab>(sysmon);
-  m_tabs[tabIndex(TabId::ScreenTime)] = std::make_unique<ScreenTimeTab>(screenTime, config);
+  m_tabs[tabIndex(TabId::ScreenTime)] = std::make_unique<ScreenTimeTab>(screenTime);
   m_tabButtons.fill(nullptr);
   m_tabContainers.fill(nullptr);
   m_tabHeaderActions.fill(nullptr);
@@ -216,6 +216,7 @@ void ControlCenterPanel::create() {
     root()->setAnimationManager(m_animations);
   }
 
+  syncTabVisibility();
   selectTab(m_activeTab);
 }
 
@@ -275,6 +276,11 @@ void ControlCenterPanel::doLayout(Renderer& renderer, float width, float height)
 }
 
 void ControlCenterPanel::doUpdate(Renderer& renderer) {
+  if (!isTabVisible(m_activeTab)) {
+    selectTab(firstVisibleTab());
+  } else {
+    syncTabVisibility();
+  }
   const std::size_t activeIdx = tabIndex(m_activeTab);
   if (m_tabs[activeIdx] != nullptr) {
     m_tabs[activeIdx]->update(renderer);
@@ -330,27 +336,81 @@ bool ControlCenterPanel::deferExternalRefresh() const {
 
 bool ControlCenterPanel::deferPointerRelayout() const { return deferExternalRefresh(); }
 
+bool ControlCenterPanel::isTabVisible(TabId tab) const {
+  if (m_config == nullptr) {
+    switch (tab) {
+    case TabId::ScreenTime:
+      return false;
+    default:
+      return true;
+    }
+  }
+  const auto& cfg = m_config->config();
+  switch (tab) {
+  case TabId::Weather:
+    return cfg.weather.enabled;
+  case TabId::ScreenTime:
+    return cfg.shell.screenTimeEnabled;
+  case TabId::System:
+    return cfg.system.monitor.enabled;
+  default:
+    return true;
+  }
+}
+
+ControlCenterPanel::TabId ControlCenterPanel::firstVisibleTab() const {
+  for (const auto& meta : kTabs) {
+    if (isTabVisible(meta.id)) {
+      return meta.id;
+    }
+  }
+  return TabId::Home;
+}
+
+void ControlCenterPanel::syncTabVisibility() {
+  for (const auto& meta : kTabs) {
+    const std::size_t idx = tabIndex(meta.id);
+    const bool visible = isTabVisible(meta.id);
+    if (m_tabButtons[idx] != nullptr) {
+      m_tabButtons[idx]->setVisible(visible);
+    }
+    if (!visible) {
+      if (m_tabContainers[idx] != nullptr) {
+        m_tabContainers[idx]->setVisible(false);
+      }
+      if (m_tabHeaderActions[idx] != nullptr) {
+        m_tabHeaderActions[idx]->setVisible(false);
+      }
+    }
+  }
+}
+
 void ControlCenterPanel::selectTab(TabId tab) {
+  if (!isTabVisible(tab)) {
+    tab = firstVisibleTab();
+  }
   m_activeTab = tab;
   if (tab == TabId::Notifications && m_notificationManager != nullptr) {
     m_notificationManager->markNotificationHistorySeen();
   }
   for (const auto& meta : kTabs) {
     const std::size_t idx = tabIndex(meta.id);
+    const bool tabEnabled = isTabVisible(meta.id);
     if (m_tabContainers[idx] != nullptr) {
-      m_tabContainers[idx]->setVisible(meta.id == tab);
+      m_tabContainers[idx]->setVisible(tabEnabled && meta.id == tab);
     }
     if (m_tabs[idx] != nullptr) {
-      m_tabs[idx]->setActive(meta.id == tab);
+      m_tabs[idx]->setActive(tabEnabled && meta.id == tab);
     }
     if (m_tabButtons[idx] != nullptr) {
+      m_tabButtons[idx]->setVisible(tabEnabled);
       m_tabButtons[idx]->setVariant(meta.id == tab ? ButtonVariant::TabActive : ButtonVariant::Tab);
     }
     if (meta.id == tab && m_contentTitle != nullptr) {
       m_contentTitle->setText(i18n::tr(meta.titleKey));
     }
     if (m_tabHeaderActions[idx] != nullptr) {
-      m_tabHeaderActions[idx]->setVisible(meta.id == tab);
+      m_tabHeaderActions[idx]->setVisible(tabEnabled && meta.id == tab);
     }
   }
 
@@ -387,10 +447,10 @@ void ControlCenterPanel::scheduleMprisRefreshFor(TabId tab) {
   });
 }
 
-ControlCenterPanel::TabId ControlCenterPanel::tabFromContext(std::string_view context) {
+ControlCenterPanel::TabId ControlCenterPanel::tabFromContext(std::string_view context) const {
   for (const auto& tab : kTabs) {
     if (context == tab.key) {
-      return tab.id;
+      return isTabVisible(tab.id) ? tab.id : firstVisibleTab();
     }
   }
   return TabId::Home;
