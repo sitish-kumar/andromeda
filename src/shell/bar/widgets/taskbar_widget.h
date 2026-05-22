@@ -90,6 +90,7 @@ private:
   [[nodiscard]] ColorSpec workspaceTextColor(const Workspace& workspace) const;
   [[nodiscard]] static ColorSpec readableColorForFill(const ColorSpec& fill);
   [[nodiscard]] static ColorRole onRoleForFill(ColorRole fill);
+  [[nodiscard]] static bool taskInWorkspaceGroup(const TaskModel& task, const WorkspaceModel& ws);
 
   CompositorPlatform& m_platform;
   wl_output* m_output = nullptr;

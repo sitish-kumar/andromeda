@@ -124,6 +124,10 @@ TaskbarWidget::TaskbarWidget(CompositorPlatform& platform, wl_output* output, bo
 
 TaskbarWidget::~TaskbarWidget() = default;
 
+bool TaskbarWidget::taskInWorkspaceGroup(const TaskModel& task, const WorkspaceModel& ws) {
+  return !task.workspaceKey.empty() && task.workspaceKey == ws.key;
+}
+
 void TaskbarWidget::create() {
   auto container = std::make_unique<InputArea>();
   container->setOnAxisHandler([this](const InputArea::PointerData& data) {
@@ -259,8 +263,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     const WorkspaceModel* taskWorkspace = nullptr;
     if (m_groupByWorkspace && !task.workspaceKey.empty()) {
       for (const auto& workspace : m_workspaces) {
-        if (task.workspaceKey == workspace.key || task.workspaceKey == workspace.workspace.id ||
-            task.workspaceKey == workspace.workspace.name) {
+        if (taskInWorkspaceGroup(task, workspace)) {
           taskWorkspace = &workspace;
           break;
         }
@@ -432,8 +435,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     for (const auto& ws : m_workspaces) {
       std::vector<const TaskModel*> tasks;
       for (const auto& task : m_tasks) {
-        if (task.workspaceKey == ws.key || task.workspaceKey == ws.workspace.id ||
-            task.workspaceKey == ws.workspace.name) {
+        if (taskInWorkspaceGroup(task, ws)) {
           tasks.push_back(&task);
         }
       }
@@ -884,6 +886,14 @@ void TaskbarWidget::updateModels() {
           previousWorkspaceWindowByHandle[task.handleKey] = task.workspaceWindowId;
         }
       }
+      for (auto& task : nextTasks) {
+        if (task.workspaceWindowId.empty()) {
+          const auto previousWindow = previousWorkspaceWindowByHandle.find(task.handleKey);
+          if (previousWindow != previousWorkspaceWindowByHandle.end()) {
+            task.workspaceWindowId = previousWindow->second;
+          }
+        }
+      }
       std::unordered_map<std::string, const WorkspaceModel*> workspaceByAnyKey;
       workspaceByAnyKey.reserve(std::max<std::size_t>(m_workspaces.size(), nextWorkspaces.size()) * 3);
       for (const auto& ws : nextWorkspaces) {
@@ -1060,6 +1070,13 @@ void TaskbarWidget::updateModels() {
 
       // Rebuild workspaceOrder from assignment stream order every frame so
       // left/right reorders are reflected even when toplevel `order` is static.
+      std::unordered_set<std::string> currentAssignmentWindowIds;
+      currentAssignmentWindowIds.reserve(workspaceAssignments.size());
+      for (const auto& assignment : workspaceAssignments) {
+        if (!assignment.windowId.empty()) {
+          currentAssignmentWindowIds.insert(assignment.windowId);
+        }
+      }
       for (auto& task : nextTasks) {
         task.workspaceOrder = std::numeric_limits<std::uint64_t>::max();
       }
@@ -1098,6 +1115,9 @@ void TaskbarWidget::updateModels() {
           for (std::size_t i = 0; i < nextTasks.size(); ++i) {
             auto& task = nextTasks[i];
             if (orderClaimed[i] || !appMatches(task)) {
+              continue;
+            }
+            if (!task.workspaceWindowId.empty() && !currentAssignmentWindowIds.contains(task.workspaceWindowId)) {
               continue;
             }
             if (requireWorkspace && task.workspaceKey != assignment.workspaceKey) {
@@ -1274,6 +1294,15 @@ void TaskbarWidget::updateModels() {
     }
   } else {
     m_pendingWorkspaceTransitions.clear();
+    for (auto& task : nextTasks) {
+      if (!task.workspaceKey.empty()) {
+        continue;
+      }
+      const auto previous = previousWorkspaceByHandle.find(task.handleKey);
+      if (previous != previousWorkspaceByHandle.end() && !previous->second.empty()) {
+        task.workspaceKey = previous->second;
+      }
+    }
   }
 
   if (m_onlyActiveWorkspace && !nextWorkspaces.empty()) {
@@ -1302,7 +1331,7 @@ void TaskbarWidget::updateModels() {
   if (m_groupByWorkspace && m_hideEmptyWorkspaces && !nextWorkspaces.empty()) {
     const auto workspaceHasTask = [](const WorkspaceModel& wsm, const std::vector<TaskModel>& tasks) {
       for (const auto& t : tasks) {
-        if (t.workspaceKey == wsm.key || t.workspaceKey == wsm.workspace.id || t.workspaceKey == wsm.workspace.name) {
+        if (taskInWorkspaceGroup(t, wsm)) {
           return true;
         }
       }
