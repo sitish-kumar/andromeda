@@ -21,19 +21,6 @@ namespace {
   static constexpr auto k_deviceInterface = "org.freedesktop.UPower.Device";
   static constexpr auto k_propertiesInterface = "org.freedesktop.DBus.Properties";
 
-  // UPower device types
-  constexpr std::uint32_t k_deviceTypeUnknown = 0;
-  constexpr std::uint32_t k_deviceTypeLinePower = 1;
-  constexpr std::uint32_t k_deviceTypeBattery = 2;
-
-  // UPower battery states
-  constexpr std::uint32_t k_stateCharging = 1;
-  constexpr std::uint32_t k_stateDischarging = 2;
-  constexpr std::uint32_t k_stateEmpty = 3;
-  constexpr std::uint32_t k_stateFullyCharged = 4;
-  constexpr std::uint32_t k_statePendingCharge = 5;
-  constexpr std::uint32_t k_statePendingDischarge = 6;
-
 } // namespace
 
 std::string batteryStateLabel(BatteryState state) {
@@ -68,8 +55,8 @@ namespace {
     }
   }
 
-  bool isBatteryCapableDeviceType(std::uint32_t type) {
-    return type != k_deviceTypeUnknown && type != k_deviceTypeLinePower;
+  bool isBatteryCapableDeviceType(UPowerDeviceType type) {
+    return type != UPowerDeviceType::Unknown && type != UPowerDeviceType::LinePower;
   }
 
   bool isAutoSelector(std::string_view selector) {
@@ -103,22 +90,10 @@ namespace {
   }
 
   BatteryState decodeBatteryState(std::uint32_t raw) {
-    switch (raw) {
-    case k_stateCharging:
-      return BatteryState::Charging;
-    case k_stateDischarging:
-      return BatteryState::Discharging;
-    case k_stateEmpty:
-      return BatteryState::Empty;
-    case k_stateFullyCharged:
-      return BatteryState::FullyCharged;
-    case k_statePendingCharge:
-      return BatteryState::PendingCharge;
-    case k_statePendingDischarge:
-      return BatteryState::PendingDischarge;
-    default:
-      return BatteryState::Unknown;
+    if (raw >= 1 && raw <= 6) {
+      return static_cast<BatteryState>(raw);
     }
+    return BatteryState::Unknown;
   }
 
   constexpr Logger kLog("upower");
@@ -284,7 +259,7 @@ UPowerDeviceInfo UPowerService::readDeviceInfo(std::string path, sdbus::IProxy& 
   info.vendor = getPropertyOr<std::string>(proxy, k_deviceInterface, "Vendor", "");
   info.model = getPropertyOr<std::string>(proxy, k_deviceInterface, "Model", "");
   info.serial = getPropertyOr<std::string>(proxy, k_deviceInterface, "Serial", "");
-  info.type = getPropertyOr<std::uint32_t>(proxy, k_deviceInterface, "Type", 0);
+  info.type = static_cast<UPowerDeviceType>(getPropertyOr<std::uint32_t>(proxy, k_deviceInterface, "Type", 0));
   info.powerSupply = getPropertyOr<bool>(proxy, k_deviceInterface, "PowerSupply", false);
   info.state = readDeviceState(proxy);
   info.isPresent = info.state.isPresent;
@@ -293,7 +268,7 @@ UPowerDeviceInfo UPowerService::readDeviceInfo(std::string path, sdbus::IProxy& 
 
 const UPowerDeviceInfo* UPowerService::defaultSystemBattery() const noexcept {
   for (const auto& device : m_devices) {
-    if (device.info.type == k_deviceTypeBattery && device.info.powerSupply && device.info.isPresent) {
+    if (device.info.isLaptopBattery() && device.info.isPresent) {
       return &device.info;
     }
   }

@@ -409,24 +409,14 @@ void BatteryWidget::syncState(Renderer& renderer) {
 
   // Tooltip (both modes)
   if (rootNode != nullptr) {
-    const auto& devices = m_upower->batteryDevices();
-    auto sorted = decltype(devices){};
-    int laptopBatteryCount = 0;
-    for (const auto& dev : devices) {
-      if (dev.isLaptopBattery()) {
-        sorted.push_back(dev);
-        ++laptopBatteryCount;
-      }
-    }
-    for (const auto& dev : devices) {
-      if (!dev.isLaptopBattery()) {
-        sorted.push_back(dev);
-      }
-    }
+    auto devices = m_upower->batteryDevices();
+    auto laptopEnd = std::stable_partition(devices.begin(), devices.end(),
+                                           [](const UPowerDeviceInfo& d) { return d.isLaptopBattery(); });
+    int laptopBatteryCount = static_cast<int>(laptopEnd - devices.begin());
 
     std::vector<TooltipRow> rows;
     int laptopBatteryIndex = 0;
-    for (const auto& dev : sorted) {
+    for (const auto& dev : devices) {
       std::string name;
       if (dev.isLaptopBattery()) {
         name = (laptopBatteryCount > 1) ? ("Battery " + std::to_string(++laptopBatteryIndex)) : "Battery";
