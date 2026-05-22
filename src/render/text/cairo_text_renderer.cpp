@@ -10,6 +10,7 @@
 #include <cstring>
 #include <fontconfig/fontconfig.h>
 #include <functional>
+#include <hb-ot.h>
 #include <limits>
 #include <pango/pango-attributes.h>
 #include <pango/pango.h>
@@ -100,6 +101,70 @@ namespace {
         return true; // supplemental symbols
     }
     return false;
+  }
+
+  struct VerticalExtents {
+    float top = 0.0f;
+    float bottom = 0.0f;
+    bool valid = false;
+  };
+
+  VerticalExtents clippingExtentsFromFont(PangoFont* font, float unitToLogicalPx) {
+    if (font == nullptr) {
+      return {};
+    }
+
+    hb_font_t* hbFont = pango_font_get_hb_font(font);
+    if (hbFont == nullptr) {
+      return {};
+    }
+
+    hb_position_t ascent = 0;
+    hb_position_t descent = 0;
+    hb_ot_metrics_get_position_with_fallback(hbFont, HB_OT_METRICS_TAG_HORIZONTAL_CLIPPING_ASCENT, &ascent);
+    hb_ot_metrics_get_position_with_fallback(hbFont, HB_OT_METRICS_TAG_HORIZONTAL_CLIPPING_DESCENT, &descent);
+
+    const float top = -static_cast<float>(ascent) * unitToLogicalPx;
+    const float bottom = std::abs(static_cast<float>(descent) * unitToLogicalPx);
+    if (!std::isfinite(top) || !std::isfinite(bottom) || bottom - top <= 0.0f) {
+      return {};
+    }
+
+    return VerticalExtents{.top = top, .bottom = bottom, .valid = true};
+  }
+
+  VerticalExtents clippingExtentsFromSingleLineRuns(PangoLayout* layout, float unitToLogicalPx) {
+    if (layout == nullptr || pango_layout_get_line_count(layout) != 1) {
+      return {};
+    }
+
+    VerticalExtents out;
+    PangoLayoutIter* iter = pango_layout_get_iter(layout);
+    if (iter == nullptr) {
+      return {};
+    }
+
+    do {
+      PangoLayoutRun* run = pango_layout_iter_get_run_readonly(iter);
+      if (run == nullptr || run->item == nullptr || run->item->analysis.font == nullptr) {
+        continue;
+      }
+
+      const VerticalExtents runExtents = clippingExtentsFromFont(run->item->analysis.font, unitToLogicalPx);
+      if (!runExtents.valid) {
+        continue;
+      }
+
+      if (!out.valid) {
+        out = runExtents;
+      } else {
+        out.top = std::min(out.top, runExtents.top);
+        out.bottom = std::max(out.bottom, runExtents.bottom);
+      }
+    } while (pango_layout_iter_next_run(iter));
+
+    pango_layout_iter_free(iter);
+    return out;
   }
 
 } // namespace
@@ -329,13 +394,14 @@ CairoTextRenderer::TextMetrics CairoTextRenderer::metricsFromLayout(PangoLayout*
   const float inkBottom = static_cast<float>(ink.y + ink.height - baselinePango) * pscale * invScale;
   const float inkLeft = static_cast<float>(ink.x) * pscale * invScale;
   const float inkRight = static_cast<float>(ink.x + ink.width) * pscale * invScale;
+  const auto stableExtents = clippingExtentsFromSingleLineRuns(layout, pscale * invScale);
 
   TextMetrics m;
   m.width = width;
   m.left = 0.0f;
   m.right = width;
-  m.top = -ascent;    // above baseline → negative
-  m.bottom = descent; // below baseline → positive
+  m.top = stableExtents.valid ? std::min(stableExtents.top, inkTop) : -ascent;
+  m.bottom = stableExtents.valid ? std::max(stableExtents.bottom, inkBottom) : descent;
   m.inkTop = inkTop;
   m.inkBottom = inkBottom;
   m.inkLeft = inkLeft;
@@ -390,8 +456,8 @@ CairoTextRenderer::TextMetrics CairoTextRenderer::measureFont(float fontSize, bo
   pango_font_description_set_absolute_size(desc, static_cast<double>(rasterSize) * PANGO_SCALE);
 
   PangoFontMetrics* metrics = pango_context_get_metrics(m_pangoContext, desc, pango_language_get_default());
-  pango_font_description_free(desc);
   if (metrics == nullptr) {
+    pango_font_description_free(desc);
     return {};
   }
 
@@ -404,6 +470,18 @@ CairoTextRenderer::TextMetrics CairoTextRenderer::measureFont(float fontSize, bo
   TextMetrics out;
   out.top = -ascent;
   out.bottom = descent;
+
+  PangoFont* font = pango_context_load_font(m_pangoContext, desc);
+  if (font != nullptr) {
+    const auto stableExtents = clippingExtentsFromFont(font, pscale * invScale);
+    if (stableExtents.valid) {
+      out.top = stableExtents.top;
+      out.bottom = stableExtents.bottom;
+    }
+    g_object_unref(font);
+  }
+
+  pango_font_description_free(desc);
   return out;
 }
 

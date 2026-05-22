@@ -32,7 +32,7 @@ public:
   void setMaxLines(int maxLines);
   void setBold(bool bold);
   void setTextAlign(TextAlign align);
-  // StableLogical is the default; InkCentered visually centers the current ink.
+  // StableLogical uses the resolved font line box; InkCentered centers the current glyph ink.
   void setBaselineMode(LabelBaselineMode mode);
   void setShadow(const Color& color, float offsetX, float offsetY);
   void clearShadow();

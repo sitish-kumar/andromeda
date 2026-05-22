@@ -42,6 +42,7 @@ cairo_ft_dep        = dependency('cairo-ft')
 pango_dep           = dependency('pango')
 pangocairo_dep      = dependency('pangocairo')
 pangoft2_dep        = dependency('pangoft2')
+harfbuzz_dep        = dependency('harfbuzz')
 librsvg_dep         = dependency('librsvg-2.0')
 xkbcommon_dep       = dependency('xkbcommon')
 glib_dep            = dependency('glib-2.0')
@@ -721,6 +722,7 @@ executable('noctalia',
     pango_dep,
     pangocairo_dep,
     pangoft2_dep,
+    harfbuzz_dep,
     librsvg_dep,
     xkbcommon_dep,
     glib_dep,
