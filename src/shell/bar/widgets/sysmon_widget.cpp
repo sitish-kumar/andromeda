@@ -138,7 +138,6 @@ void SysmonWidget::create() {
   if (m_displayMode == SysmonDisplayMode::Text || m_showLabel) {
     auto label = std::make_unique<Label>();
     label->setBold(labelBold());
-    label->setBaselineMode(LabelBaselineMode::LatinOpticalStable);
     label->setFontSize(Style::fontSizeBody * m_contentScale);
     if (m_labelMinWidth > 0.0f) {
       label->setMinWidth(m_labelMinWidth * m_contentScale);

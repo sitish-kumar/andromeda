@@ -72,18 +72,13 @@ void ClockWidget::create() {
   auto label = std::make_unique<Label>();
   label->setBold(labelBold());
   label->setTextAlign(TextAlign::Center);
-  label->setBaselineMode(LabelBaselineMode::LatinOpticalStable);
   label->setFontSize(Style::fontSizeBody * m_contentScale);
-  // Clock text changes every minute and month names switch between descender
-  // and descender-less forms (e.g. "Mar" ↔ "Apr"), so anchor the baseline to
-  // a stable ink envelope instead of the current text's ink.
   m_label = label.get();
   area->addChild(std::move(label));
 
   auto secondaryLabel = std::make_unique<Label>();
   secondaryLabel->setBold(labelBold());
   secondaryLabel->setTextAlign(TextAlign::Center);
-  secondaryLabel->setBaselineMode(LabelBaselineMode::LatinOpticalStable);
   secondaryLabel->setFontSize(Style::fontSizeBody * m_contentScale * kStackedSecondaryScale);
   secondaryLabel->setVisible(false);
   m_secondaryLabel = secondaryLabel.get();

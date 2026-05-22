@@ -50,17 +50,14 @@ void LockKeysWidget::create() {
   rootNode->addChild(std::move(glyph));
 
   auto caps = std::make_unique<Label>();
-  caps->setBaselineMode(LabelBaselineMode::LatinOpticalStable);
   m_capsLabel = caps.get();
   rootNode->addChild(std::move(caps));
 
   auto num = std::make_unique<Label>();
-  num->setBaselineMode(LabelBaselineMode::LatinOpticalStable);
   m_numLabel = num.get();
   rootNode->addChild(std::move(num));
 
   auto scroll = std::make_unique<Label>();
-  scroll->setBaselineMode(LabelBaselineMode::LatinOpticalStable);
   m_scrollLabel = scroll.get();
   rootNode->addChild(std::move(scroll));
 
