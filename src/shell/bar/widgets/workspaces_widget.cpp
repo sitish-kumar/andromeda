@@ -189,6 +189,7 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
     bool isNumeric = false;
     float textWidth = 0.0f;
     float inkCenterOffset = 0.0f;
+    float inkVCenterOffset = 0.0f;
     float inactiveWidth = 0.0f;
     float activeWidth = 0.0f;
   };
@@ -209,7 +210,10 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
       slot.textWidth = std::max(tm.right - tm.left, tm.inkRight - tm.inkLeft);
       const float logicalCenter = (tm.left + tm.right) * 0.5f;
       const float inkCenter = (tm.inkLeft + tm.inkRight) * 0.5f;
-      slot.inkCenterOffset = inkCenter - logicalCenter;
+      slot.inkCenterOffset = slot.isNumeric ? 0.0f : (inkCenter - logicalCenter);
+      const float logicalVCenter = (tm.top + tm.bottom) * 0.5f;
+      const float inkVCenter = (tm.inkTop + tm.inkBottom) * 0.5f;
+      slot.inkVCenterOffset = inkVCenter - logicalVCenter;
     }
   }
 
@@ -269,6 +273,7 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
     item.inactiveWidth = slot.inactiveWidth;
     item.activeWidth = slot.activeWidth;
     item.inkCenterOffset = slot.inkCenterOffset;
+    item.inkVCenterOffset = slot.inkVCenterOffset;
 
     if (!m_minimal) {
       auto indicator = std::make_unique<Box>();
@@ -378,6 +383,9 @@ void WorkspacesWidget::retarget(Renderer& renderer) {
         const float logCenter = (tm.left + tm.right) * 0.5f;
         const float inkCenter = (tm.inkLeft + tm.inkRight) * 0.5f;
         it.inkCenterOffset = inkCenter - logCenter;
+        const float logVCenter = (tm.top + tm.bottom) * 0.5f;
+        const float inkVCenter = (tm.inkTop + tm.inkBottom) * 0.5f;
+        it.inkVCenterOffset = inkVCenter - logVCenter;
       }
     }
     if (it.indicator != nullptr) {
@@ -475,7 +483,8 @@ void WorkspacesWidget::applyItemLayout(std::size_t i) {
     const float itemW = m_isVertical ? m_indicatorHeight : it.currentWidth;
     const float itemH = m_isVertical ? it.currentWidth : m_indicatorHeight;
     const float textX = std::round((itemW - it.text->width()) * 0.5f - it.inkCenterOffset);
-    it.text->setPosition(std::max(0.0f, textX), (itemH - it.text->height()) * 0.5f);
+    const float textY = std::round((itemH - it.text->height()) * 0.5f - it.inkVCenterOffset);
+    it.text->setPosition(std::max(0.0f, textX), textY);
   }
   if (it.indicator != nullptr) {
     const float itemW = m_isVertical ? m_indicatorHeight : it.currentWidth;

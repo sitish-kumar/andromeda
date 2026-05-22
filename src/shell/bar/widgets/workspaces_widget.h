@@ -58,6 +58,7 @@ private:
     float inactiveWidth = 0.0f;
     float activeWidth = 0.0f;
     float inkCenterOffset = 0.0f;
+    float inkVCenterOffset = 0.0f;
     float fromX = 0.0f;
     float fromWidth = 0.0f;
     float targetX = 0.0f;
