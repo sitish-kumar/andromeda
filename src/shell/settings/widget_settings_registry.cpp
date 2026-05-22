@@ -560,6 +560,7 @@ namespace settings {
       add(doubleSpec("max_length", 220.0, 40.0, 800.0, 1.0));
       add(doubleSpec("art_size", 16.0, 8.0, 96.0, 1.0));
       add(selectSpec("title_scroll", "none", mediaTitleScroll));
+      add(boolSpec("hide_when_no_media", false));
     } else if (type == "network") {
       add(boolSpec("show_label", true));
     } else if (type == "notifications") {
