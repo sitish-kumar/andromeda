@@ -1289,7 +1289,7 @@
         },
         "hide_when_full": {
           "label": "Hide When Full",
-          "description": "Hide the battery widget when plugged in and fully charged"
+          "description": "Hide the battery widget when fully charged"
         },
         "hide_when_no_media": {
           "label": "Hide When No Media",

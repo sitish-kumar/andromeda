@@ -319,25 +319,24 @@ void BatteryWidget::syncState(Renderer& renderer) {
   m_lastPresent = s.isPresent;
   m_lastVertical = m_isVertical;
 
-  const bool isCharging = s.state == BatteryState::Charging || s.state == BatteryState::FullyCharged ||
-                          s.state == BatteryState::PendingCharge;
+  const bool isPluggedIn = s.state == BatteryState::Charging || s.state == BatteryState::FullyCharged ||
+                           s.state == BatteryState::PendingCharge;
+
+  const bool showWidget =
+      s.isPresent && !(m_hideWhenPlugged && isPluggedIn) && !(m_hideWhenFull && s.state == BatteryState::FullyCharged);
+
   auto* rootNode = root();
-  if (!s.isPresent || (m_hideWhenPlugged && isCharging) || (m_hideWhenFull && s.state == BatteryState::FullyCharged)) {
-    if (rootNode != nullptr) {
-      rootNode->setVisible(false);
-      rootNode->setSize(0.0f, 0.0f);
-      rootNode->setParticipatesInLayout(false);
-    }
+  if (rootNode != nullptr) {
+    rootNode->setVisible(showWidget);
+    rootNode->setParticipatesInLayout(showWidget);
+  }
+
+  if (!showWidget) {
     return;
   }
 
-  if (rootNode != nullptr) {
-    rootNode->setVisible(true);
-    rootNode->setParticipatesInLayout(true);
-  }
-
   const int pct = static_cast<int>(std::round(s.percentage));
-  const bool isWarning = m_warningThreshold > 0 && pct <= m_warningThreshold && !isCharging;
+  const bool isWarning = m_warningThreshold > 0 && pct <= m_warningThreshold && !isPluggedIn;
   const ColorSpec normalFgColor = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface));
   const ColorSpec fgColor = isWarning ? m_warningColor : normalFgColor;
 
