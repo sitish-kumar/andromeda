@@ -408,13 +408,14 @@ void BatteryWidget::syncState(Renderer& renderer) {
   }
 
   // Tooltip (both modes)
-  if (rootNode != nullptr) {    
+  if (rootNode != nullptr) {
     const auto& devices = m_upower->batteryDevices();
     auto sorted = decltype(devices){};
     int laptopBatteryCount = 0;
     for (const auto& dev : devices) {
       if (dev.isLaptopBattery()) {
-        sorted.push_back(dev); ++laptopBatteryCount;
+        sorted.push_back(dev);
+        ++laptopBatteryCount;
       }
     }
     for (const auto& dev : devices) {
