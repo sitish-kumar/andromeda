@@ -1333,9 +1333,13 @@ namespace settings {
       entries.push_back(makeEntry(section, "general", tr("settings.schema.shared.auto-hide.label"),
                                   tr("settings.schema.bar.auto-hide.description"), path("auto_hide"),
                                   ToggleSetting{bar.autoHide}, "autohide"));
-      entries.push_back(makeEntry(section, "general", tr("settings.schema.shared.reserve-space.label"),
-                                  tr("settings.schema.bar.reserve-space.description"), path("reserve_space"),
-                                  ToggleSetting{bar.reserveSpace}, "exclusive zone"));
+      {
+        auto e = makeEntry(section, "general", tr("settings.schema.shared.reserve-space.label"),
+                           tr("settings.schema.bar.reserve-space.description"), path("reserve_space"),
+                           ToggleSetting{bar.reserveSpace}, "exclusive zone");
+        e.visibleWhen = SettingVisibility{path("auto_hide"), {"false"}};
+        entries.push_back(std::move(e));
+      }
       entries.push_back(makeEntry(section, "layout", tr("settings.schema.bar.thickness.label"),
                                   tr("settings.schema.bar.thickness.description"), path("thickness"),
                                   SliderSetting{static_cast<float>(bar.thickness), 10.0f, 120.0f, 1.0f, true},
@@ -1488,9 +1492,13 @@ namespace settings {
         entries.push_back(makeEntry(section, "general", tr("settings.schema.shared.auto-hide.label"),
                                     tr("settings.schema.bar.auto-hide.description"), mpath("auto_hide"),
                                     ToggleSetting{ovr.autoHide.value_or(bar.autoHide)}, "autohide"));
-        entries.push_back(makeEntry(section, "general", tr("settings.schema.shared.reserve-space.label"),
-                                    tr("settings.schema.bar.reserve-space.description"), mpath("reserve_space"),
-                                    ToggleSetting{ovr.reserveSpace.value_or(bar.reserveSpace)}, "exclusive zone"));
+        {
+          auto e = makeEntry(section, "general", tr("settings.schema.shared.reserve-space.label"),
+                             tr("settings.schema.bar.reserve-space.description"), mpath("reserve_space"),
+                             ToggleSetting{ovr.reserveSpace.value_or(bar.reserveSpace)}, "exclusive zone");
+          e.visibleWhen = SettingVisibility{mpath("auto_hide"), {"false"}};
+          entries.push_back(std::move(e));
+        }
         entries.push_back(makeEntry(
             section, "layout", tr("settings.schema.bar.thickness.label"),
             tr("settings.schema.bar.thickness.description"), mpath("thickness"),

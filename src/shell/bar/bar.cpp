@@ -919,18 +919,9 @@ void Bar::setInstanceIpcVisible(BarInstance& instance, bool visible) {
   if (instance.slideRoot == nullptr) {
     return;
   }
+  // Non-autohide IPC: instant show/hide (no opacity fade — avoids sluggish hide and blur bleed-through).
   instance.animations.cancelForOwner(instance.slideRoot);
-  const float current = instance.slideRoot->opacity();
-  const float target = visible ? 1.0f : 0.0f;
-  if (std::abs(current - target) < 0.001f) {
-    syncBarSurfaceChrome(instance);
-    return;
-  }
-  instance.animations.animate(current, target, Style::animNormal, visible ? Easing::EaseOutCubic : Easing::EaseInQuad,
-                              [slide = instance.slideRoot, inst = &instance, this](float v) {
-                                slide->setOpacity(v);
-                                syncBarSurfaceChrome(*inst);
-                              });
+  instance.slideRoot->setOpacity(visible ? 1.0f : 0.0f);
   syncBarSurfaceChrome(instance);
   instance.surface->requestRedraw();
 }
@@ -1734,7 +1725,7 @@ void Bar::applyBarCompositorBlur(BarInstance& instance) const {
 void Bar::startHideFadeOut(BarInstance& instance) {
   const float current = instance.hideOpacity;
   instance.animations.animate(
-      current, 0.0f, Style::animSlow, Easing::EaseInQuad,
+      current, 0.0f, Style::animNormal, Easing::EaseInQuad,
       [this, inst = &instance](float v) {
         inst->hideOpacity = v;
         syncBarSlideLayerTransform(*inst);
