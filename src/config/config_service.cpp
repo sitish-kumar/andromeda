@@ -1769,6 +1769,9 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       osd.position = *v;
     if (auto v = (*osdTbl)["orientation"].value<std::string>())
       osd.orientation = *v;
+    if (auto v = finiteDouble((*osdTbl)["scale"])) {
+      osd.scale = std::clamp(static_cast<float>(*v), 0.5f, 2.5f);
+    }
     if (auto v = (*osdTbl)["lock_keys"].value<bool>())
       osd.lockKeys = *v;
     if (auto v = (*osdTbl)["keyboard_layout"].value<bool>())

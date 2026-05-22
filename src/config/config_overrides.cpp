@@ -398,11 +398,12 @@ namespace {
            nearlyEqual(a.backdrop.tintIntensity, b.backdrop.tintIntensity) && dockConfigEqual(a.dock, b.dock) &&
            desktopWidgetsConfigEqual(a.desktopWidgets, b.desktopWidgets) && shellConfigEqual(a.shell, b.shell) &&
            a.osd.position == b.osd.position && a.osd.orientation == b.osd.orientation &&
-           a.osd.lockKeys == b.osd.lockKeys && a.osd.keyboardLayout == b.osd.keyboardLayout &&
-           notificationConfigEqual(a.notification, b.notification) && a.weather.enabled == b.weather.enabled &&
-           a.weather.autoLocate == b.weather.autoLocate && a.weather.effects == b.weather.effects &&
-           a.weather.address == b.weather.address && a.weather.refreshMinutes == b.weather.refreshMinutes &&
-           a.weather.unit == b.weather.unit && a.system.monitor.enabled == b.system.monitor.enabled &&
+           nearlyEqual(a.osd.scale, b.osd.scale) && a.osd.lockKeys == b.osd.lockKeys &&
+           a.osd.keyboardLayout == b.osd.keyboardLayout && notificationConfigEqual(a.notification, b.notification) &&
+           a.weather.enabled == b.weather.enabled && a.weather.autoLocate == b.weather.autoLocate &&
+           a.weather.effects == b.weather.effects && a.weather.address == b.weather.address &&
+           a.weather.refreshMinutes == b.weather.refreshMinutes && a.weather.unit == b.weather.unit &&
+           a.system.monitor.enabled == b.system.monitor.enabled &&
            a.system.monitor.cpuPollSeconds == b.system.monitor.cpuPollSeconds &&
            a.system.monitor.gpuPollSeconds == b.system.monitor.gpuPollSeconds &&
            a.system.monitor.memoryPollSeconds == b.system.monitor.memoryPollSeconds &&

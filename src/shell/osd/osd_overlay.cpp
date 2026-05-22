@@ -33,7 +33,9 @@ namespace {
     if (config == nullptr) {
       return 1.0f;
     }
-    return std::max(0.1f, config->config().shell.uiScale);
+    const auto& shell = config->config().shell;
+    const auto& osd = config->config().osd;
+    return std::max(0.1f, shell.uiScale * osd.scale);
   }
 
   [[nodiscard]] bool isVerticalOrientation(const std::string& orientation) { return orientation == "vertical"; }

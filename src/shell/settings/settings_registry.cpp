@@ -878,6 +878,10 @@ namespace settings {
                                                          {"vertical", "settings.options.orientation.vertical"}},
                                                         cfg.osd.orientation)),
                                 "hud overlay volume brightness vertical"));
+    entries.push_back(makeEntry("popups", "osd", tr("settings.schema.shell.osd-scale.label"),
+                                tr("settings.schema.shell.osd-scale.description"), {"osd", "scale"},
+                                SliderSetting{cfg.osd.scale, 0.5f, 2.5f, 0.05f, false},
+                                "hud overlay volume brightness size scale multiplier"));
     entries.push_back(makeEntry("popups", "osd", tr("settings.schema.shell.osd-lock-keys.label"),
                                 tr("settings.schema.shell.osd-lock-keys.description"), {"osd", "lock_keys"},
                                 ToggleSetting{cfg.osd.lockKeys}, "hud overlay caps num scroll keyboard"));

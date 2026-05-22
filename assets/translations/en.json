@@ -1637,6 +1637,10 @@
           "label": "Orientation",
           "description": "Layout direction for OSD popups"
         },
+        "osd-scale": {
+          "label": "Size",
+          "description": "Scale OSD popups relative to the shell UI scale (1.0 keeps the default size)"
+        },
         "osd-lock-keys": {
           "label": "Lock Keys",
           "description": "Show OSD popups for Caps Lock, Num Lock, and Scroll Lock changes"
