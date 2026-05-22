@@ -206,7 +206,7 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
     });
 
     if (slot.showLabel) {
-      const TextMetrics tm = renderer.measureText(labels[i], labelFontSize, true);
+      const TextMetrics tm = renderer.measureText(labels[i], labelFontSize, FontWeight::Bold);
       slot.textWidth = std::max(tm.right - tm.left, tm.inkRight - tm.inkLeft);
       const float logicalCenter = (tm.left + tm.right) * 0.5f;
       const float inkCenter = (tm.inkLeft + tm.inkRight) * 0.5f;
@@ -236,7 +236,7 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
         slot.activeWidth = slot.inactiveWidth;
       }
       if (slot.showLabel) {
-        const TextMetrics tm = renderer.measureText(slot.label, labelFontSize, true);
+        const TextMetrics tm = renderer.measureText(slot.label, labelFontSize, FontWeight::Bold);
         maxLabelHeight = std::max(maxLabelHeight, tm.bottom - tm.top);
       }
       continue;
@@ -380,7 +380,8 @@ void WorkspacesWidget::retarget(Renderer& renderer) {
         it.text->measure(renderer);
         const float fontSize = it.text->fontSize();
         const bool labelIsBold = labelBold() && (!m_minimal || ws.active);
-        const TextMetrics tm = renderer.measureText(label, fontSize, labelIsBold);
+        const TextMetrics tm =
+            renderer.measureText(label, fontSize, labelIsBold ? FontWeight::Bold : FontWeight::Normal);
         const float logCenter = (tm.left + tm.right) * 0.5f;
         const float inkCenter = (tm.inkLeft + tm.inkRight) * 0.5f;
         it.inkCenterOffset = inkCenter - logCenter;

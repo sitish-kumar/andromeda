@@ -199,7 +199,8 @@ TooltipManager::Size TooltipManager::measureContent(const TooltipContent& conten
   }
 
   if (const auto* text = std::get_if<std::string>(&content)) {
-    auto metrics = m_renderContext->measureText(*text, Style::fontSizeCaption, false, kMaxContentWidth, kMaxTextLines);
+    auto metrics = m_renderContext->measureText(*text, Style::fontSizeCaption, FontWeight::Normal, kMaxContentWidth,
+                                                kMaxTextLines);
     auto w = static_cast<std::uint32_t>(std::ceil(metrics.width + kPadH * 2.0f + kBorder * 2.0f));
     auto h = static_cast<std::uint32_t>(std::ceil((metrics.bottom - metrics.top) + kPadV * 2.0f + kBorder * 2.0f));
     return {std::max(w, 1u), std::max(h, 1u)};

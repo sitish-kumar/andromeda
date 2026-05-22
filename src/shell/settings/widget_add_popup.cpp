@@ -544,7 +544,7 @@ namespace settings {
     float contentWidth = kCreateMinWidth * m_scale;
     if (m_renderContext != nullptr && !m_createLabel.empty()) {
       const float fontSize = Style::fontSizeBody * m_scale;
-      const TextMetrics titleMetrics = m_renderContext->measureText(instanceFormTitle(), fontSize, true);
+      const TextMetrics titleMetrics = m_renderContext->measureText(instanceFormTitle(), fontSize, FontWeight::Bold);
       const float closeBtn = Style::controlHeightSm * m_scale;
       const float headerGap = Style::spaceSm * m_scale;
       const float rootPadding = Style::spaceSm * m_scale * 2.0f;

@@ -94,11 +94,13 @@ void Label::setMaxLines(int maxLines) {
   m_measureCached = false;
 }
 
-void Label::setBold(bool bold) {
-  if (m_textNode->bold() == bold) {
+void Label::setBold(bool bold) { setFontWeight(bold ? FontWeight::Bold : FontWeight::Normal); }
+
+void Label::setFontWeight(FontWeight fontWeight) {
+  if (m_textNode->fontWeight() == fontWeight) {
     return;
   }
-  m_textNode->setBold(bold);
+  m_textNode->setFontWeight(fontWeight);
   m_measureCached = false;
 }
 
@@ -110,7 +112,7 @@ const Color& Label::color() const noexcept { return m_textNode->color(); }
 
 float Label::maxWidth() const noexcept { return m_userMaxWidth; }
 
-bool Label::bold() const noexcept { return m_textNode->bold(); }
+FontWeight Label::fontWeight() const noexcept { return m_textNode->fontWeight(); }
 
 TextAlign Label::textAlign() const noexcept { return m_textNode->textAlign(); }
 
@@ -394,10 +396,11 @@ LayoutSize Label::measureWithConstraints(Renderer& renderer, const LayoutConstra
       m_autoScroll || (effectiveMaxLines == 1) ||
       (effectiveMaxLines == 0 && configuredMaxWidth <= 0.0f && m_plainText.find('\n') == std::string::npos);
   const TextAlign align = m_textNode->textAlign();
+  const FontWeight fontWeight = m_textNode->fontWeight();
   const float renderScale = renderer.renderScale();
   const std::uint64_t textMetricsGeneration = renderer.textMetricsGeneration();
   if (m_measureCached && m_cachedText == m_plainText && m_cachedFontSize == m_textNode->fontSize() &&
-      m_cachedBold == m_textNode->bold() && m_cachedMaxWidth == m_userMaxWidth && m_cachedMaxLines == m_userMaxLines &&
+      m_cachedFontWeight == fontWeight && m_cachedMaxWidth == m_userMaxWidth && m_cachedMaxLines == m_userMaxLines &&
       m_cachedMinWidth == m_minWidth && m_cachedConstraintMinWidth == constraints.minWidth &&
       m_cachedConstraintMaxWidth == constraints.maxWidth && m_cachedHasConstraintMaxWidth == constraints.hasMaxWidth &&
       m_cachedRenderScale == renderScale && m_cachedTextMetricsGeneration == textMetricsGeneration &&
@@ -422,7 +425,7 @@ LayoutSize Label::measureWithConstraints(Renderer& renderer, const LayoutConstra
     }
   }
 
-  auto metrics = renderer.measureText(m_plainText, m_textNode->fontSize(), m_textNode->bold(), measureMaxWidth,
+  auto metrics = renderer.measureText(m_plainText, m_textNode->fontSize(), fontWeight, measureMaxWidth,
                                       effectiveMaxLines, align, m_textNode->fontFamily());
   const float measuredWidth = measureMaxWidth > 0.0f ? std::min(metrics.width, measureMaxWidth) : metrics.width;
   m_fullTextWidth = m_autoScroll ? measuredWidth : 0.0f;
@@ -500,8 +503,8 @@ LayoutSize Label::measureWithConstraints(Renderer& renderer, const LayoutConstra
   }
 
   if (overflow && m_autoScroll) {
-    auto gapMetrics = renderer.measureText(kMarqueeGap, m_textNode->fontSize(), m_textNode->bold(), 0.0f, 1, align,
-                                           m_textNode->fontFamily());
+    auto gapMetrics =
+        renderer.measureText(kMarqueeGap, m_textNode->fontSize(), fontWeight, 0.0f, 1, align, m_textNode->fontFamily());
     m_marqueeLoopPeriod = m_fullTextWidth + gapMetrics.width;
     m_textNode->setText(m_plainText + kMarqueeGap + m_plainText);
   } else {
@@ -513,7 +516,7 @@ LayoutSize Label::measureWithConstraints(Renderer& renderer, const LayoutConstra
 
   m_cachedText = m_plainText;
   m_cachedFontSize = m_textNode->fontSize();
-  m_cachedBold = m_textNode->bold();
+  m_cachedFontWeight = fontWeight;
   m_cachedMaxWidth = m_userMaxWidth;
   m_cachedMaxLines = m_userMaxLines;
   m_cachedMinWidth = m_minWidth;

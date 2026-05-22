@@ -31,6 +31,7 @@ public:
   void setMaxWidth(float maxWidth);
   void setMaxLines(int maxLines);
   void setBold(bool bold);
+  void setFontWeight(FontWeight fontWeight);
   void setTextAlign(TextAlign align);
   // StableLogical uses the resolved font line box; InkCentered centers the current glyph ink.
   void setBaselineMode(LabelBaselineMode mode);
@@ -51,7 +52,7 @@ public:
   [[nodiscard]] float fontSize() const noexcept;
   [[nodiscard]] const Color& color() const noexcept;
   [[nodiscard]] float maxWidth() const noexcept;
-  [[nodiscard]] bool bold() const noexcept;
+  [[nodiscard]] FontWeight fontWeight() const noexcept;
   [[nodiscard]] TextAlign textAlign() const noexcept;
   [[nodiscard]] LabelBaselineMode baselineMode() const noexcept { return m_baselineMode; }
   [[nodiscard]] float baselineOffset() const noexcept { return m_baselineOffset; }
@@ -98,7 +99,7 @@ private:
   int m_cachedMaxLines = 0;
   TextAlign m_cachedTextAlign = TextAlign::Start;
   LabelBaselineMode m_cachedBaselineMode = LabelBaselineMode::StableLogical;
-  bool m_cachedBold = false;
+  FontWeight m_cachedFontWeight = FontWeight::Normal;
   bool m_cachedAutoScroll = false;
   bool m_cachedHasConstraintMaxWidth = false;
   bool m_measureCached = false;
