@@ -56,6 +56,21 @@ namespace {
     float top = 0.0f;
   };
 
+  [[nodiscard]] float externalBadgeMainOverhang(WorkspaceLabelPlacement placement, float discMain) {
+    if (placement == WorkspaceLabelPlacement::Centered) {
+      return discMain * 0.5f;
+    }
+    return discMain * 0.32f;
+  }
+
+  [[nodiscard]] float externalBadgeCrossOverhang(WorkspaceLabelPlacement placement, bool vertical, float discWidth,
+                                                 float discHeight, float badgeBase) {
+    if (placement == WorkspaceLabelPlacement::Centered) {
+      return vertical ? discWidth * 0.5f : discHeight * 0.5f;
+    }
+    return vertical ? discWidth * 0.32f : badgeBase * 0.22f;
+  }
+
   [[nodiscard]] ExternalBadgePosition externalBadgePosition(WorkspaceLabelPlacement placement, bool vertical,
                                                             float groupWidth, float groupHeight, float badgeWidth,
                                                             float badgeHeight, float outlineInset) {
@@ -350,15 +365,25 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     };
 
     if (externalBadge) {
-      float maxDiscWidth = 0.0f;
+      float maxMainOverhang = 0.0f;
+      float maxCrossOverhang = 0.0f;
       for (const auto& wsm : m_workspaces) {
         const auto disc =
             measureWorkspaceDiscSize(renderer, wsm.label, externalBadgeFontSize, badgeBase, m_contentScale);
-        maxDiscWidth = std::max(maxDiscWidth, disc.width);
+        maxMainOverhang = std::max(
+            maxMainOverhang,
+            std::ceil(externalBadgeMainOverhang(m_workspaceLabelPlacement, m_vertical ? disc.height : disc.width)));
+        maxCrossOverhang =
+            std::max(maxCrossOverhang, std::ceil(externalBadgeCrossOverhang(m_workspaceLabelPlacement, m_vertical,
+                                                                            disc.width, disc.height, badgeBase)));
       }
-      const float stripOverhangH = std::ceil(maxDiscWidth * 0.32f);
-      const float stripOverhangV = std::ceil(badgeBase * 0.22f);
-      m_taskStrip->setPadding(stripOverhangV, stripOverhangH, stripOverhangV, stripOverhangH);
+      const float stripPadMain = maxMainOverhang + groupGap;
+      const float stripPadCross = maxCrossOverhang + groupGap;
+      if (m_vertical) {
+        m_taskStrip->setPadding(stripPadMain, stripPadCross, stripPadMain, stripPadCross);
+      } else {
+        m_taskStrip->setPadding(stripPadCross, stripPadMain, stripPadCross, stripPadMain);
+      }
     } else {
       m_taskStrip->setPadding(0.0f, 0.0f, 0.0f, 0.0f);
     }
@@ -457,7 +482,9 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
 
       float groupPadStart = groupPadMain;
       if (externalBadge) {
-        groupPadStart = std::round(std::max(groupPadMain, disc.width * 0.68f));
+        const float discMain = m_vertical ? disc.height : disc.width;
+        groupPadStart = std::round(
+            std::max(groupPadMain, externalBadgeMainOverhang(m_workspaceLabelPlacement, discMain) + groupGap));
       }
 
       const std::size_t inlineSlotCount =
