@@ -928,8 +928,7 @@ void ClipboardPanel::rebuildPreview(Renderer& renderer, float width, float heigh
   const std::size_t historyIndex = selectedHistoryIndex();
   if (history.empty() || historyIndex == static_cast<std::size_t>(-1)) {
     m_previewTitle->setText(i18n::tr("clipboard.entry.title"));
-    m_previewMeta->setText(history.empty() ? i18n::tr("clipboard.empty.history-message")
-                                           : i18n::tr("clipboard.empty.no-matches-title"));
+    m_previewMeta->setText("");
 
     auto empty = std::make_unique<Label>();
     empty->setText(history.empty() ? i18n::tr("clipboard.empty.history-message")
