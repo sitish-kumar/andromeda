@@ -62,7 +62,7 @@ std::unique_ptr<Flex> WeatherTab::create() {
   m_leftColumn = leftColumn.get();
 
   auto currentCard = std::make_unique<Flex>();
-  applySectionCardStyle(*currentCard, scale, panelCardOpacity());
+  applySectionCardStyle(*currentCard, scale, panelCardOpacity(), panelBordersEnabled());
   m_currentCard = currentCard.get();
   currentCard->setDirection(FlexDirection::Horizontal);
   currentCard->setAlign(FlexAlign::Stretch);
@@ -110,7 +110,7 @@ std::unique_ptr<Flex> WeatherTab::create() {
 
   auto temp = std::make_unique<Label>();
   temp->setText("--°C");
-  temp->setBold(true);
+  temp->setFontWeight(FontWeight::Bold);
   temp->setFontSize(Style::fontSizeTitle * 2.35f * scale);
   temp->setColor(colorSpecFromRole(ColorRole::OnSurface));
   temp->setMaxLines(1);
@@ -164,7 +164,7 @@ std::unique_ptr<Flex> WeatherTab::create() {
   leftColumn->addChild(std::move(currentCard));
 
   auto detailsCard = std::make_unique<Flex>();
-  applySectionCardStyle(*detailsCard, scale, panelCardOpacity());
+  applySectionCardStyle(*detailsCard, scale, panelCardOpacity(), panelBordersEnabled());
   m_detailsCard = detailsCard.get();
   detailsCard->setPadding(Style::spaceMd * scale, Style::spaceMd * scale, Style::spaceLg * scale,
                           Style::spaceMd * scale);
@@ -200,7 +200,7 @@ std::unique_ptr<Flex> WeatherTab::create() {
 
     auto value = std::make_unique<Label>();
     value->setText("--");
-    value->setBold(true);
+    value->setFontWeight(FontWeight::Bold);
     value->setFontSize(Style::fontSizeBody * scale);
     value->setColor(colorSpecFromRole(ColorRole::OnSurface));
     value->setTextAlign(TextAlign::End);
@@ -224,7 +224,7 @@ std::unique_ptr<Flex> WeatherTab::create() {
   tab->addChild(std::move(leftColumn));
 
   auto forecastColumn = std::make_unique<Flex>();
-  applySectionCardStyle(*forecastColumn, scale, panelCardOpacity());
+  applySectionCardStyle(*forecastColumn, scale, panelCardOpacity(), panelBordersEnabled());
   forecastColumn->setGap(0.0f);
   forecastColumn->setPadding(0.0f, Style::spaceMd * scale);
   forecastColumn->setFlexGrow(2.0f);
@@ -263,7 +263,7 @@ std::unique_ptr<Flex> WeatherTab::create() {
 
     auto meta = std::make_unique<Label>();
     meta->setText(i18n::tr("control-center.weather.forecast-placeholder.day"));
-    meta->setBold(true);
+    meta->setFontWeight(FontWeight::Bold);
     meta->setFontSize(Style::fontSizeBody * scale);
     meta->setColor(colorSpecFromRole(ColorRole::OnSurface));
     m_dayMetas[i] = meta.get();

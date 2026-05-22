@@ -168,7 +168,7 @@ namespace config_export {
       table.insert_or_assign("shadow", bar.shadow);
       table.insert_or_assign("contact_shadow", bar.contactShadow);
       table.insert_or_assign("scale", static_cast<double>(bar.scale));
-      table.insert_or_assign("font_weight", bar.fontWeight);
+      table.insert_or_assign("font_weight", static_cast<std::int64_t>(bar.fontWeight));
       table.insert_or_assign("start", stringArray(bar.startWidgets));
       table.insert_or_assign("center", stringArray(bar.centerWidgets));
       table.insert_or_assign("end", stringArray(bar.endWidgets));
@@ -333,6 +333,7 @@ namespace config_export {
       panel.insert_or_assign("background_blur", shell.panel.backgroundBlur);
       panel.insert_or_assign("transparency_mode",
                              std::string(enumToKey(kPanelTransparencyModes, shell.panel.transparencyMode)));
+      panel.insert_or_assign("borders", shell.panel.borders);
       panel.insert_or_assign("launcher_placement",
                              std::string(enumToKey(kPanelPlacements, shell.panel.launcherPlacement)));
       panel.insert_or_assign("clipboard_placement",

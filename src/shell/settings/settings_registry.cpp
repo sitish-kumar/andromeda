@@ -679,6 +679,9 @@ namespace settings {
                                 {"shell", "panel", "transparency_mode"},
                                 asSegmented(enumSelect(kPanelTransparencyModes, cfg.shell.panel.transparencyMode)),
                                 "glass opacity alpha translucent cards blur"));
+    entries.push_back(makeEntry("panels", "effects", tr("settings.schema.panels.borders.label"),
+                                tr("settings.schema.panels.borders.description"), {"shell", "panel", "borders"},
+                                ToggleSetting{cfg.shell.panel.borders}, "outline border card"));
     entries.push_back(makeEntry("panels", "control-center", tr("settings.schema.panels.placement-control-center.label"),
                                 tr("settings.schema.panels.placement-control-center.description"),
                                 {"shell", "panel", "control_center_placement"},
@@ -1333,9 +1336,13 @@ namespace settings {
       entries.push_back(makeEntry(section, "general", tr("settings.schema.shared.auto-hide.label"),
                                   tr("settings.schema.bar.auto-hide.description"), path("auto_hide"),
                                   ToggleSetting{bar.autoHide}, "autohide"));
-      entries.push_back(makeEntry(section, "general", tr("settings.schema.shared.reserve-space.label"),
-                                  tr("settings.schema.bar.reserve-space.description"), path("reserve_space"),
-                                  ToggleSetting{bar.reserveSpace}, "exclusive zone"));
+      {
+        auto e = makeEntry(section, "general", tr("settings.schema.shared.reserve-space.label"),
+                           tr("settings.schema.bar.reserve-space.description"), path("reserve_space"),
+                           ToggleSetting{bar.reserveSpace}, "exclusive zone");
+        e.visibleWhen = SettingVisibility{path("auto_hide"), {"false"}};
+        entries.push_back(std::move(e));
+      }
       entries.push_back(makeEntry(section, "layout", tr("settings.schema.bar.thickness.label"),
                                   tr("settings.schema.bar.thickness.description"), path("thickness"),
                                   SliderSetting{static_cast<float>(bar.thickness), 10.0f, 120.0f, 1.0f, true},
@@ -1343,12 +1350,6 @@ namespace settings {
       entries.push_back(makeEntry(section, "layout", tr("settings.schema.bar.content-scale.label"),
                                   tr("settings.schema.bar.content-scale.description"), path("scale"),
                                   SliderSetting{bar.scale, 0.5f, 4.0f, 0.05f, false}, "zoom size"));
-      entries.push_back(makeEntry(section, "widgets", tr("settings.schema.bar.font-weight.label"),
-                                  tr("settings.schema.bar.font-weight.description"), path("font_weight"),
-                                  asSegmented(plainSelect({{"bold", "settings.options.bar.font-weight.bold"},
-                                                           {"regular", "settings.options.bar.font-weight.regular"}},
-                                                          bar.fontWeight)),
-                                  "font text weight"));
       entries.push_back(makeEntry(section, "layout", tr("settings.schema.shared.ends-margin.label"),
                                   tr("settings.schema.bar.ends-margin.description"), path("margin_ends"),
                                   SliderSetting{static_cast<float>(bar.marginEnds), 0.0f, 500.0f, 1.0f, true},
@@ -1394,6 +1395,25 @@ namespace settings {
       entries.push_back(makeEntry(section, "effects", tr("settings.schema.shared.contact-shadow.label"),
                                   tr("settings.schema.bar.contact-shadow.description"), path("contact_shadow"),
                                   ToggleSetting{bar.contactShadow}, "shadow contact panel attached"));
+      {
+        auto fontWeightSelect = plainSelect({{"100", "settings.options.bar.font-weight.thin"},
+                                             {"200", "settings.options.bar.font-weight.ultra-light"},
+                                             {"300", "settings.options.bar.font-weight.light"},
+                                             {"350", "settings.options.bar.font-weight.semi-light"},
+                                             {"380", "settings.options.bar.font-weight.book"},
+                                             {"400", "settings.options.bar.font-weight.regular"},
+                                             {"500", "settings.options.bar.font-weight.medium"},
+                                             {"600", "settings.options.bar.font-weight.semi-bold"},
+                                             {"700", "settings.options.bar.font-weight.bold"},
+                                             {"800", "settings.options.bar.font-weight.ultra-bold"},
+                                             {"900", "settings.options.bar.font-weight.heavy"},
+                                             {"1000", "settings.options.bar.font-weight.ultra-heavy"}},
+                                            std::to_string(bar.fontWeight));
+        fontWeightSelect.integerValue = true;
+        entries.push_back(makeEntry(section, "widgets", tr("settings.schema.bar.font-weight.label"),
+                                    tr("settings.schema.bar.font-weight.description"), path("font_weight"),
+                                    std::move(fontWeightSelect), "font text weight"));
+      }
       entries.push_back(makeEntry(section, "widgets", tr("settings.schema.bar.widget-spacing.label"),
                                   tr("settings.schema.bar.widget-spacing.description"), path("widget_spacing"),
                                   SliderSetting{static_cast<float>(bar.widgetSpacing), 0.0f, 32.0f, 1.0f, true},
@@ -1488,9 +1508,13 @@ namespace settings {
         entries.push_back(makeEntry(section, "general", tr("settings.schema.shared.auto-hide.label"),
                                     tr("settings.schema.bar.auto-hide.description"), mpath("auto_hide"),
                                     ToggleSetting{ovr.autoHide.value_or(bar.autoHide)}, "autohide"));
-        entries.push_back(makeEntry(section, "general", tr("settings.schema.shared.reserve-space.label"),
-                                    tr("settings.schema.bar.reserve-space.description"), mpath("reserve_space"),
-                                    ToggleSetting{ovr.reserveSpace.value_or(bar.reserveSpace)}, "exclusive zone"));
+        {
+          auto e = makeEntry(section, "general", tr("settings.schema.shared.reserve-space.label"),
+                             tr("settings.schema.bar.reserve-space.description"), mpath("reserve_space"),
+                             ToggleSetting{ovr.reserveSpace.value_or(bar.reserveSpace)}, "exclusive zone");
+          e.visibleWhen = SettingVisibility{mpath("auto_hide"), {"false"}};
+          entries.push_back(std::move(e));
+        }
         entries.push_back(makeEntry(
             section, "layout", tr("settings.schema.bar.thickness.label"),
             tr("settings.schema.bar.thickness.description"), mpath("thickness"),

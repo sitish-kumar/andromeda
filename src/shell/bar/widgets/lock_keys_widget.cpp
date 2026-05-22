@@ -17,14 +17,14 @@
 
 namespace {
 
-  void configureLabel(Label* label, const std::string& text, bool visible, float contentScale, bool bold) {
+  void configureLabel(Label* label, const std::string& text, bool visible, float contentScale, FontWeight fontWeight) {
     if (label == nullptr) {
       return;
     }
 
     label->setVisible(visible);
     label->setFontSize(Style::fontSizeBody * contentScale);
-    label->setBold(bold);
+    label->setFontWeight(fontWeight);
     label->setText(text);
   }
 
@@ -50,17 +50,14 @@ void LockKeysWidget::create() {
   rootNode->addChild(std::move(glyph));
 
   auto caps = std::make_unique<Label>();
-  caps->setBaselineMode(LabelBaselineMode::LatinOpticalStable);
   m_capsLabel = caps.get();
   rootNode->addChild(std::move(caps));
 
   auto num = std::make_unique<Label>();
-  num->setBaselineMode(LabelBaselineMode::LatinOpticalStable);
   m_numLabel = num.get();
   rootNode->addChild(std::move(num));
 
   auto scroll = std::make_unique<Label>();
-  scroll->setBaselineMode(LabelBaselineMode::LatinOpticalStable);
   m_scrollLabel = scroll.get();
   rootNode->addChild(std::move(scroll));
 
@@ -201,12 +198,12 @@ void LockKeysWidget::sync(Renderer& renderer) {
   const bool full = m_displayMode == DisplayMode::Full;
   configureLabel(m_capsLabel,
                  full ? i18n::tr("bar.widgets.lock-keys.caps") : i18n::tr("bar.widgets.lock-keys.caps-short"),
-                 capsVisible, m_contentScale, labelBold());
+                 capsVisible, m_contentScale, labelFontWeight());
   configureLabel(m_numLabel, full ? i18n::tr("bar.widgets.lock-keys.num") : i18n::tr("bar.widgets.lock-keys.num-short"),
-                 numVisible, m_contentScale, labelBold());
+                 numVisible, m_contentScale, labelFontWeight());
   configureLabel(m_scrollLabel,
                  full ? i18n::tr("bar.widgets.lock-keys.scroll") : i18n::tr("bar.widgets.lock-keys.scroll-short"),
-                 scrollVisible, m_contentScale, labelBold());
+                 scrollVisible, m_contentScale, labelFontWeight());
 
   if (m_capsLabel != nullptr) {
     m_capsLabel->setColor(lockState.capsLock ? colorSpecFromRole(ColorRole::Primary)

@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - '**'
+    tags:
+      - '**'
   delete:
   workflow_dispatch:
 
@@ -11,12 +13,28 @@ jobs:
   mirror:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (full mirror)
+      - name: Checkout (full history + all branches)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Fetch all remote branches and tags
+        run: git fetch --all --tags --prune
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.CODEBERG_SSH_KEY }}" > ~/.ssh/codeberg
+          chmod 600 ~/.ssh/codeberg
+          ssh-keyscan codeberg.org >> ~/.ssh/known_hosts
+          cat >> ~/.ssh/config << 'SSHEOF'
+          Host codeberg.org
+            IdentityFile ~/.ssh/codeberg
+            StrictHostKeyChecking yes
+          SSHEOF
+
       - name: Push mirror to Codeberg
         run: |
-          git remote add codeberg https://${{ secrets.CODEBERG_TOKEN }}@codeberg.org/noctalia-dev/noctalia-shell.git
-          git push --mirror codeberg
+          git remote add codeberg git@codeberg.org:noctalia-dev/noctalia-shell.git
+          git push codeberg --prune '+refs/heads/*:refs/heads/*'
+          git push codeberg --prune '+refs/tags/*:refs/tags/*'

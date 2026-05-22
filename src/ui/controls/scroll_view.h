@@ -36,7 +36,7 @@ public:
   void clearBorder();
   void setRadius(float radius);
   void setSoftness(float softness);
-  void setCardStyle(float scale = 1.0f, float fillOpacity = 1.0f);
+  void setCardStyle(float scale = 1.0f, float fillOpacity = 1.0f, bool showBorder = true);
   void bindState(ScrollViewState* state);
   void setOnScrollChanged(std::function<void(float)> callback);
 

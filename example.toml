@@ -38,6 +38,7 @@ alpha    = 0.55                     # multiplied by each component's background 
 [shell.panel]
 background_blur       = true        # request compositor blur behind panels
 transparency_mode     = "solid"     # solid | soft | glass; controls floating/centered opacity and card translucency
+borders               = true      # panel shell outline and in-panel section cards
 launcher_placement       = "centered" # attached | floating | centered
 clipboard_placement      = "centered" # attached | floating | centered
 control_center_placement = "attached" # attached | floating | centered

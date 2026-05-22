@@ -32,6 +32,7 @@ namespace settings {
     std::string selectedValue;
     bool clearOnEmpty = false;
     bool segmented = false;      // render as Segmented pill group instead of dropdown Select
+    bool integerValue = false;   // option values are numeric strings; write as int64_t to config
     float preferredWidth = 0.0f; // 0 = default settings dropdown width
   };
 

@@ -427,7 +427,7 @@ void OsdOverlay::buildScene(Instance& inst, std::uint32_t width, std::uint32_t h
   inst.row->addChild(std::move(glyph));
 
   auto value = std::make_unique<Label>();
-  value->setBold(true);
+  value->setFontWeight(FontWeight::Bold);
   value->setFontSize(valueFontSize(s));
   value->setColor(colorSpecFromRole(ColorRole::OnSurface));
   value->setTextAlign(vertical ? TextAlign::Center : TextAlign::End);

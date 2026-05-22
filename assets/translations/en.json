@@ -160,8 +160,7 @@
       "screen-time": "Screen Time"
     },
     "screen-time": {
-      "enabled": "Screen time tracking",
-      "disabled": "Screen time tracking is off. Enable it to record per-app usage.",
+      "disabled": "Screen time tracking is off. Enable it in Settings to record per-app usage.",
       "most-used": "MOST USED",
       "range": {
         "today": "Today",
@@ -936,8 +935,18 @@
     "options": {
       "bar": {
         "font-weight": {
+          "thin": "Thin",
+          "ultra-light": "Ultra Light",
+          "light": "Light",
+          "semi-light": "Semi Light",
+          "book": "Book",
+          "regular": "Regular",
+          "medium": "Medium",
+          "semi-bold": "Semi Bold",
           "bold": "Bold",
-          "regular": "Regular"
+          "ultra-bold": "Ultra Bold",
+          "heavy": "Heavy",
+          "ultra-heavy": "Ultra Heavy"
         }
       },
       "theme": {
@@ -1281,6 +1290,9 @@
         "hide_when_full": {
           "label": "Hide When Full",
           "description": "Hide the battery widget when plugged in and fully charged"
+        "hide_when_no_media": {
+          "label": "Hide When No Media",
+          "description": "Hide the media widget when no MPRIS player is active"
         },
         "hide_when_empty": {
           "label": "Hide When Empty",
@@ -1290,6 +1302,11 @@
         "hide_label": {
           "label": "Hide Label",
           "description": "Hide this widget's text label"
+        },
+        "icon_only": {
+          "label": "Icon Only",
+          "description": "Show only an icon without a text label",
+          "active-window-description": "On horizontal bars, show only the active window icon (vertical bars already use the icon only)"
         },
         "high_color": {
           "label": "High Color",
@@ -1763,6 +1780,10 @@
           "label": "Transparency",
           "description": "Panel glass style, including floating/centered panel opacity and card translucency"
         },
+        "borders": {
+          "label": "Borders",
+          "description": "Draw an outline on panels and section cards inside panels"
+        },
         "home-shortcuts": {
           "label": "Home Shortcuts",
           "description": "Choose up to six shortcut buttons for the home tab"
@@ -2198,7 +2219,7 @@
         },
         "font-weight": {
           "label": "Font Weight",
-          "description": "Use bold or regular weight for bar widget labels"
+          "description": "Font weight for bar widget labels"
         },
         "content-padding": {
           "label": "Content Padding",
@@ -2266,7 +2287,7 @@
           "description": "Automatically hide the bar when not in use"
         },
         "reserve-space": {
-          "description": "Reserve screen space for the bar"
+          "description": "Push windows away from the bar edge (only when auto-hide is off; auto-hide always overlays)"
         },
         "ends-margin": {
           "description": "Inset from each end of the bar along its main axis"

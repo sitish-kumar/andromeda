@@ -119,8 +119,9 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
     const float iconSize =
         static_cast<float>(wc != nullptr ? wc->getDouble("icon_size", Style::fontSizeBody) : Style::fontSizeBody);
     const std::string titleScroll = wc != nullptr ? wc->getString("title_scroll", "none") : std::string("none");
+    const bool iconOnly = wc != nullptr ? wc->getBool("icon_only", false) : false;
     auto widget = std::make_unique<ActiveWindowWidget>(m_platform, maxWidth, minWidth, iconSize,
-                                                       parseActiveWindowTitleScrollMode(titleScroll));
+                                                       parseActiveWindowTitleScrollMode(titleScroll), iconOnly);
     widget->setContentScale(contentScale);
     return widget;
   }
@@ -272,8 +273,9 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
     const float minWidth = static_cast<float>(wc != nullptr ? wc->getDouble("min_length", 80.0) : 80.0);
     const float artSize = static_cast<float>(wc != nullptr ? wc->getDouble("art_size", 16.0) : 16.0);
     const std::string titleScroll = wc != nullptr ? wc->getString("title_scroll", "none") : std::string("none");
+    const bool hideWhenNoMedia = wc != nullptr ? wc->getBool("hide_when_no_media", false) : false;
     auto widget = std::make_unique<MediaWidget>(m_mpris, m_httpClient, output, maxWidth, minWidth, artSize,
-                                                parseMediaTitleScrollMode(titleScroll));
+                                                parseMediaTitleScrollMode(titleScroll), hideWhenNoMedia);
     widget->setContentScale(contentScale);
     return widget;
   }

@@ -257,9 +257,13 @@ void Flex::setSoftness(float softness) {
   m_background->setStyle(style);
 }
 
-void Flex::setCardStyle(float scale, float fillOpacity) {
+void Flex::setCardStyle(float scale, float fillOpacity, bool showBorder) {
   setFill(colorSpecFromRole(ColorRole::SurfaceVariant, fillOpacity));
-  setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
+  if (showBorder) {
+    setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
+  } else {
+    clearBorder();
+  }
   setRadius(Style::scaledRadiusXl(scale));
   setPadding(Style::cardPadding * scale);
 }

@@ -125,7 +125,7 @@ std::unique_ptr<Flex> CalendarTab::create() {
   m_calendarArea = calendarArea.get();
 
   auto calendarCard = std::make_unique<Flex>();
-  control_center::applySectionCardStyle(*calendarCard, scale, panelCardOpacity());
+  control_center::applySectionCardStyle(*calendarCard, scale, panelCardOpacity(), panelBordersEnabled());
   calendarCard->setGap(Style::spaceMd * scale);
   m_card = calendarCard.get();
 
@@ -164,7 +164,7 @@ std::unique_ptr<Flex> CalendarTab::create() {
   m_monthWrap = monthWrap.get();
 
   auto month = std::make_unique<Label>();
-  month->setBold(true);
+  month->setFontWeight(FontWeight::Bold);
   month->setFontSize((Style::fontSizeTitle + Style::spaceXs) * scale);
   month->setMaxLines(1);
   month->setColor(colorSpecFromRole(ColorRole::OnSurface));
@@ -213,12 +213,12 @@ std::unique_ptr<Flex> CalendarTab::create() {
   tab->addChild(std::move(calendarArea));
 
   auto tasksCard = std::make_unique<Flex>();
-  control_center::applySectionCardStyle(*tasksCard, scale, panelCardOpacity());
+  control_center::applySectionCardStyle(*tasksCard, scale, panelCardOpacity(), panelBordersEnabled());
   tasksCard->setFlexGrow(2.0f);
 
   auto tasksTitle = std::make_unique<Label>();
   tasksTitle->setText(i18n::tr("control-center.calendar.tasks"));
-  tasksTitle->setBold(true);
+  tasksTitle->setFontWeight(FontWeight::Bold);
   tasksTitle->setFontSize(Style::fontSizeTitle * scale);
   tasksTitle->setColor(colorSpecFromRole(ColorRole::OnSurface));
   tasksCard->addChild(std::move(tasksTitle));
@@ -376,7 +376,7 @@ void CalendarTab::rebuild() {
     auto dayLabel = std::make_unique<Label>();
     dayLabel->setText(weekdays[i]);
     dayLabel->setFontSize((Style::fontSizeCaption + 1.0f) * scale);
-    dayLabel->setBold(true);
+    dayLabel->setFontWeight(FontWeight::Bold);
     const int columnWeekday = (firstDayOfWeek + static_cast<int>(i)) % 7;
     const bool weekend = columnWeekday == 0 || columnWeekday == 6;
     dayLabel->setColor(colorSpecFromRole(weekend ? ColorRole::Secondary : ColorRole::OnSurfaceVariant));

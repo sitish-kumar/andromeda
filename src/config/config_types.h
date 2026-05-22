@@ -59,7 +59,7 @@ struct BarConfig {
   std::string position = "top";
   bool enabled = true;
   bool autoHide = false;    // slide out when the pointer leaves; reveal on edge approach
-  bool reserveSpace = true; // reserve compositor exclusive zone for this bar
+  bool reserveSpace = true; // reserve compositor exclusive zone when auto_hide is false
   std::int32_t thickness = Style::barThicknessDefault;
   float backgroundOpacity = 1.0f;
   // Inside outline for the bar background; attached panels inherit the resolved values.
@@ -70,14 +70,14 @@ struct BarConfig {
   std::int32_t radiusTopRight = static_cast<std::int32_t>(Style::radiusXl);
   std::int32_t radiusBottomLeft = static_cast<std::int32_t>(Style::radiusXl);
   std::int32_t radiusBottomRight = static_cast<std::int32_t>(Style::radiusXl);
-  std::int32_t marginEnds = 180;   // inset from each end of the bar along its main axis
-  std::int32_t marginEdge = 10;    // distance from the nearest screen edge (floats the bar when > 0)
-  std::int32_t padding = 14;       // main-axis padding from bar edges to start/end sections
-  std::int32_t widgetSpacing = 6;  // gap between widgets within a section
-  bool shadow = true;              // use the global shell shadow
-  bool contactShadow = false;      // dark gradient between attached panel and bar
-  float scale = 1.0f;              // content scale multiplier for glyphs and text
-  std::string fontWeight = "bold"; // "bold" | "regular" — primary label weight for bar widgets
+  std::int32_t marginEnds = 180;  // inset from each end of the bar along its main axis
+  std::int32_t marginEdge = 10;   // distance from the nearest screen edge (floats the bar when > 0)
+  std::int32_t padding = 14;      // main-axis padding from bar edges to start/end sections
+  std::int32_t widgetSpacing = 6; // gap between widgets within a section
+  bool shadow = true;             // use the global shell shadow
+  bool contactShadow = false;     // dark gradient between attached panel and bar
+  float scale = 1.0f;             // content scale multiplier for glyphs and text
+  int fontWeight = 500;           // primary label weight for bar widgets
   std::vector<std::string> startWidgets = {"launcher", "wallpaper", "workspaces"};
   std::vector<std::string> centerWidgets = {"clock"};
   std::vector<std::string> endWidgets = {"media",   "tray",           "notifications", "clipboard",
@@ -252,8 +252,6 @@ struct WidgetConfig {
 // Merges `[bar.*]` capsule defaults with `[widget.*]` overrides (see CONFIG.md). Size/style fields such as
 // `radius` are populated even when `enabled` is false so widgets can reuse capsule styling internally.
 [[nodiscard]] WidgetBarCapsuleSpec resolveWidgetBarCapsuleSpec(const BarConfig& bar, const WidgetConfig* widget);
-
-[[nodiscard]] bool barFontWeightIsBold(std::string_view fontWeight) noexcept;
 
 // Color spec for user color strings: either a palette color role token or a hex color.
 [[nodiscard]] ColorSpec colorSpecFromConfigString(const std::string& raw, std::string_view context = {});
@@ -533,6 +531,7 @@ struct ShellConfig {
   struct PanelConfig {
     bool backgroundBlur = true; // request compositor blur behind panels via ext-background-effect-v1
     PanelTransparencyMode transparencyMode = PanelTransparencyMode::Solid;
+    bool borders = true; // panel shell outline and in-panel section cards
     PanelPlacement launcherPlacement = PanelPlacement::Centered;
     PanelPlacement clipboardPlacement = PanelPlacement::Centered;
     PanelPlacement controlCenterPlacement = PanelPlacement::Attached;
