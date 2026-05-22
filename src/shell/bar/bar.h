@@ -104,6 +104,8 @@ private:
   void updateWidgets(BarInstance& instance);
   void applyBarCompositorBlur(BarInstance& instance) const;
   void syncBarSlideLayerTransform(BarInstance& instance) const;
+  void syncBarAutoHideInputRegion(BarInstance& instance) const;
+  void revealAutoHideBar(BarInstance& instance);
   void startHideFadeOut(BarInstance& instance);
   static void applyBackgroundPalette(BarInstance& instance);
   [[nodiscard]] std::string dispatchScriptedWidgetIpc(std::string_view args);
