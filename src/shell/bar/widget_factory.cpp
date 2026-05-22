@@ -333,7 +333,7 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
   }
 
   if (type == "spacer") {
-    const auto length = static_cast<float>(wc != nullptr ? wc->getDouble("length", 14.0) : 14.0);
+    const auto length = static_cast<float>(wc != nullptr ? wc->getDouble("length", 20.0) : 20.0);
     auto widget = std::make_unique<SpacerWidget>(length);
     widget->setContentScale(contentScale);
     return widget;

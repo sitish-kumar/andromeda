@@ -573,7 +573,7 @@ namespace settings {
     } else if (type == "settings") {
       add(stringSpec("glyph", "settings"));
     } else if (type == "spacer") {
-      add(doubleSpec("length", 14.0, 0.0, 400.0, 1.0));
+      add(doubleSpec("length", 20.0, 0.0, 400.0, 1.0));
     } else if (type == "sysmon") {
       add(selectSpec("stat", "cpu_usage", sysmonStats));
       {
