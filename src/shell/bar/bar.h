@@ -109,6 +109,10 @@ private:
   void applyBarCompositorBlur(BarInstance& instance) const;
   void syncBarSlideLayerTransform(BarInstance& instance) const;
   void syncBarAutoHideInputRegion(BarInstance& instance) const;
+  void syncBarExclusiveZone(BarInstance& instance);
+  void syncBarSurfaceChrome(BarInstance& instance);
+  [[nodiscard]] bool shouldReserveExclusiveZone(const BarInstance& instance) const noexcept;
+  [[nodiscard]] bool barContentVisuallyShown(const BarInstance& instance) const noexcept;
   void revealAutoHideBar(BarInstance& instance);
   void startHideFadeOut(BarInstance& instance);
   static void applyBackgroundPalette(BarInstance& instance);
@@ -117,8 +121,6 @@ private:
   [[nodiscard]] BarInstance* instanceForOutput(wl_output* output) const noexcept;
   [[nodiscard]] BarInstance* instanceForBar(wl_output* output, std::string_view barName) const noexcept;
 
-  // When true, auto-hide reveal (edge/pointer enter) stays off until bar-show/bar-toggle opens it.
-  bool m_ipcRevealBlocked = false;
   CompositorPlatform* m_platform = nullptr;
   ConfigService* m_config = nullptr;
   NotificationManager* m_notifications = nullptr;

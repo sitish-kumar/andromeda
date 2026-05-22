@@ -2266,7 +2266,7 @@
           "description": "Automatically hide the bar when not in use"
         },
         "reserve-space": {
-          "description": "Reserve screen space for the bar"
+          "description": "Push windows away from the bar edge (only when auto-hide is off; auto-hide always overlays)"
         },
         "ends-margin": {
           "description": "Inset from each end of the bar along its main axis"
