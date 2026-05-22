@@ -637,25 +637,6 @@ namespace process {
     return doubleForkExecDetached(args, nullptr, activationToken, workingDir);
   }
 
-  // We don't have a return code, so we don't wait for the launch mechanism to complete (e.g., systemd-run),
-  // which might take more time than a double-fork-exec and block the UI thread for too long. Launcher/AppProvider
-  // doesn't check if the app launch succeeded, anyway.
-  void runAsyncAsApp(const std::vector<std::string>& args, const std::string& appName,
-                     const std::string& activationToken, const std::string& workingDir) {
-#ifdef __linux__
-    if (args.empty() || args.front().empty()) {
-      return;
-    }
-    // Check if we booted with systemd. The same logic as systemd sd_booted()
-    int r = access("/run/systemd/system/", F_OK);
-    if (r == 0) {
-      (void)doubleForkExecDetached(args, nullptr, activationToken, workingDir, true, appName);
-      return;
-    }
-#endif
-    (void)runAsync(args, activationToken, workingDir);
-  }
-
   bool runAsync(std::initializer_list<const char*> args) {
     const auto command = makeCommand(args);
     return command.has_value() && runAsync(*command, {});
@@ -786,4 +767,30 @@ namespace process {
     return false;
   }
 
+  bool systemdAvailable() {
+#ifdef __linux__
+    // Check if we booted with systemd. The same logic as systemd sd_booted()
+    int r = access("/run/systemd/system/", F_OK);
+    return r == 0;
+#else
+    return false;
+#endif
+  }
+
+  // We don't have a return code, so we don't wait for the launch mechanism to complete (e.g., systemd-run),
+  // which might take more time than a double-fork-exec and block the UI thread for too long. Launcher/AppProvider
+  // doesn't check if the app launch succeeded, anyway.
+  void runAsyncAsSystemdService(const std::vector<std::string>& args, const std::string& appName,
+                                const std::string& activationToken, const std::string& workingDir) {
+#ifdef __linux__
+    if (args.empty() || args.front().empty()) {
+      return;
+    }
+    if (systemdAvailable()) {
+      (void)doubleForkExecDetached(args, nullptr, activationToken, workingDir, true, appName);
+      return;
+    }
+#endif
+    (void)runAsync(args, activationToken, workingDir);
+  }
 } // namespace process
