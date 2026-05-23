@@ -288,6 +288,54 @@ namespace ui {
     return control;
   }
 
+  std::unique_ptr<ScrollView> scrollView(ScrollViewProps props) {
+    auto control = std::make_unique<ScrollView>();
+    if (props.state != nullptr) {
+      control->bindState(props.state);
+    }
+    if (props.scrollbarVisible.has_value()) {
+      control->setScrollbarVisible(*props.scrollbarVisible);
+    }
+    if (props.viewportPaddingH.has_value()) {
+      control->setViewportPaddingH(*props.viewportPaddingH);
+    }
+    if (props.viewportPaddingV.has_value()) {
+      control->setViewportPaddingV(*props.viewportPaddingV);
+    }
+    if (props.fill.has_value()) {
+      control->setFill(*props.fill);
+    }
+    if (props.radius.has_value()) {
+      control->setRadius(*props.radius);
+    }
+    if (props.softness.has_value()) {
+      control->setSoftness(*props.softness);
+    }
+    if (props.minWidth.has_value()) {
+      control->setMinWidth(*props.minWidth);
+    }
+    if (props.minHeight.has_value()) {
+      control->setMinHeight(*props.minHeight);
+    }
+    if (props.fillWidth.has_value()) {
+      control->setFillWidth(*props.fillWidth);
+    }
+    if (props.fillHeight.has_value()) {
+      control->setFillHeight(*props.fillHeight);
+    }
+    if (props.onScrollChanged) {
+      control->setOnScrollChanged(std::move(props.onScrollChanged));
+    }
+    applyNodeProps(*control, props);
+    if (props.configure) {
+      props.configure(*control);
+    }
+    if (props.out != nullptr) {
+      *props.out = control.get();
+    }
+    return control;
+  }
+
   std::unique_ptr<VirtualGridView> virtualGridView(VirtualGridViewProps props) {
     auto control = std::make_unique<VirtualGridView>();
     if (props.columns.has_value()) {

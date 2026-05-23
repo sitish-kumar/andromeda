@@ -8,6 +8,7 @@
 #include "ui/controls/input.h"
 #include "ui/controls/label.h"
 #include "ui/controls/radio_button.h"
+#include "ui/controls/scroll_view.h"
 #include "ui/controls/search_picker.h"
 #include "ui/controls/separator.h"
 #include "ui/controls/spacer.h"
@@ -144,6 +145,28 @@ namespace ui {
     std::function<void(Separator&)> configure = nullptr;
   };
 
+  struct ScrollViewProps {
+    ScrollView** out = nullptr;
+    ScrollViewState* state = nullptr;
+    std::optional<bool> scrollbarVisible = std::nullopt;
+    std::optional<float> viewportPaddingH = std::nullopt;
+    std::optional<float> viewportPaddingV = std::nullopt;
+    std::optional<ColorSpec> fill = std::nullopt;
+    std::optional<float> radius = std::nullopt;
+    std::optional<float> softness = std::nullopt;
+    std::optional<float> minWidth = std::nullopt;
+    std::optional<float> minHeight = std::nullopt;
+    std::optional<bool> fillWidth = std::nullopt;
+    std::optional<bool> fillHeight = std::nullopt;
+    std::optional<float> width = std::nullopt;
+    std::optional<float> height = std::nullopt;
+    std::optional<float> flexGrow = std::nullopt;
+    std::optional<bool> visible = std::nullopt;
+    std::optional<bool> participatesInLayout = std::nullopt;
+    std::function<void(float)> onScrollChanged = nullptr;
+    std::function<void(ScrollView&)> configure = nullptr;
+  };
+
   struct VirtualGridViewProps {
     VirtualGridView** out = nullptr;
     std::optional<std::size_t> columns = std::nullopt;
@@ -217,6 +240,7 @@ namespace ui {
   [[nodiscard]] std::unique_ptr<Button> button(ButtonProps props);
   [[nodiscard]] std::unique_ptr<Label> label(LabelProps props);
   [[nodiscard]] std::unique_ptr<Separator> separator(SeparatorProps props = {});
+  [[nodiscard]] std::unique_ptr<ScrollView> scrollView(ScrollViewProps props = {});
   [[nodiscard]] std::unique_ptr<VirtualGridView> virtualGridView(VirtualGridViewProps props);
   [[nodiscard]] std::unique_ptr<SearchPicker> searchPicker(SearchPickerProps props);
   [[nodiscard]] std::unique_ptr<Toggle> toggle(ToggleProps props);
