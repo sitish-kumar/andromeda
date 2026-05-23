@@ -352,6 +352,7 @@ void Flex::ensureBackground() {
   });
   m_background = static_cast<RectNode*>(addChild(std::move(rect)));
   m_background->setZIndex(-1);
+  m_background->setParticipatesInLayout(false);
   m_background->setFrameSize(width(), height());
   applyPalette();
 }

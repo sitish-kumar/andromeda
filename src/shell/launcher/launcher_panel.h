@@ -20,6 +20,7 @@ class Label;
 class LauncherResultAdapter;
 class Node;
 class Renderer;
+class Segmented;
 class VirtualGridView;
 class ConfigService;
 class AsyncTextureCache;
@@ -53,21 +54,29 @@ private:
   bool handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers);
   void applyEmptyState();
   void openAppActionsMenu(std::size_t index, float anchorX, float anchorY);
+  void rebuildCategoryBar(const std::vector<LauncherCategory>& categories);
+  void setCategoryBarVisible(bool visible);
+  void applyActiveCategory();
 
   std::vector<std::unique_ptr<LauncherProvider>> m_providers;
   std::vector<LauncherResult> m_results;
+  std::vector<LauncherResult> m_allResults;
   UsageTracker m_usageTracker;
   IconResolver m_iconResolver;
 
   Flex* m_container = nullptr;
   Input* m_input = nullptr;
+  Segmented* m_categoryBar = nullptr;
   Flex* m_body = nullptr;
   VirtualGridView* m_grid = nullptr;
   Label* m_emptyLabel = nullptr;
   std::unique_ptr<LauncherResultAdapter> m_adapter;
 
   std::string m_query;
+  std::string m_activeCategory;
+  std::vector<LauncherCategory> m_currentCategories;
   std::size_t m_selectedIndex = 0;
+  bool m_categoryBarVisible = true;
   ConfigService* m_config = nullptr;
   AsyncTextureCache* m_asyncTextures = nullptr;
   std::unique_ptr<ContextMenuPopup> m_actionsMenu;

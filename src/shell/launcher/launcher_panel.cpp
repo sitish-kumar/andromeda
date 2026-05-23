@@ -13,6 +13,7 @@
 #include "render/scene/node.h"
 #include "shell/panel/panel_manager.h"
 #include "system/desktop_entry.h"
+#include "ui/controls/button.h"
 #include "ui/controls/context_menu_popup.h"
 #include "ui/controls/flex.h"
 #include "ui/controls/glyph.h"
@@ -20,6 +21,8 @@
 #include "ui/controls/input.h"
 #include "ui/controls/label.h"
 #include "ui/controls/scroll_view.h"
+#include "ui/controls/segmented.h"
+#include "ui/controls/separator.h"
 #include "ui/controls/virtual_grid_view.h"
 #include "ui/palette.h"
 #include "ui/style.h"
@@ -313,6 +316,15 @@ void LauncherPanel::create() {
   m_input = input.get();
   container->addChild(std::move(input));
 
+  auto categoryBar = std::make_unique<Segmented>();
+  categoryBar->setScale(scale);
+  categoryBar->setCompact(true);
+  categoryBar->setAlign(FlexAlign::Center);
+  categoryBar->setEqualSegmentWidths(true);
+  categoryBar->setVisible(false);
+  categoryBar->setParticipatesInLayout(false);
+  m_categoryBar = static_cast<Segmented*>(container->addChild(std::move(categoryBar)));
+
   auto body = std::make_unique<Flex>();
   body->setDirection(FlexDirection::Vertical);
   body->setAlign(FlexAlign::Stretch);
@@ -374,6 +386,15 @@ void LauncherPanel::doLayout(Renderer& renderer, float width, float height) {
 }
 
 void LauncherPanel::onOpen(std::string_view context) {
+  m_categoryBarVisible = m_config != nullptr && m_config->config().shell.panel.launcherCategories;
+  m_activeCategory.clear();
+  m_currentCategories.clear();
+  if (m_categoryBar != nullptr) {
+    m_categoryBar->clearOptions();
+    m_categoryBar->setVisible(false);
+    m_categoryBar->setParticipatesInLayout(false);
+  }
+
   const std::string initialValue(context);
   if (m_input != nullptr) {
     m_input->setValue(initialValue);
@@ -395,6 +416,9 @@ void LauncherPanel::onClose() {
 
   m_query.clear();
   m_results.clear();
+  m_allResults.clear();
+  m_activeCategory.clear();
+  m_currentCategories.clear();
   m_selectedIndex = 0;
 
   if (m_grid != nullptr) {
@@ -405,6 +429,7 @@ void LauncherPanel::onClose() {
   // The scene tree (and all nodes) is destroyed by PanelManager after onClose().
   m_container = nullptr;
   m_input = nullptr;
+  m_categoryBar = nullptr;
   m_body = nullptr;
   m_grid = nullptr;
   m_emptyLabel = nullptr;
@@ -436,7 +461,7 @@ InputArea* LauncherPanel::initialFocusArea() const { return m_input != nullptr ?
 
 void LauncherPanel::onInputChanged(const std::string& text) {
   m_query = text;
-  m_results.clear();
+  m_allResults.clear();
 
   // Route query to providers
   LauncherProvider* activeProvider = nullptr;
@@ -471,12 +496,15 @@ void LauncherPanel::onInputChanged(const std::string& text) {
     }
   };
 
+  std::vector<LauncherCategory> newCategories;
+
   if (activeProvider != nullptr) {
-    m_results = activeProvider->query(queryText);
-    applyUsageBoost(m_results, *activeProvider);
-    for (auto& result : m_results) {
+    m_allResults = activeProvider->query(queryText);
+    applyUsageBoost(m_allResults, *activeProvider);
+    for (auto& result : m_allResults) {
       result.providerName = activeProvider->name();
     }
+    newCategories = activeProvider->categories();
   } else {
     // Query default providers (empty prefix)
     for (auto& provider : m_providers) {
@@ -486,21 +514,21 @@ void LauncherPanel::onInputChanged(const std::string& text) {
         for (auto& result : results) {
           result.providerName = provider->name();
         }
-        m_results.insert(m_results.end(), std::make_move_iterator(results.begin()),
-                         std::make_move_iterator(results.end()));
+        m_allResults.insert(m_allResults.end(), std::make_move_iterator(results.begin()),
+                            std::make_move_iterator(results.end()));
+        auto providerCats = provider->categories();
+        for (auto& cat : providerCats) {
+          newCategories.push_back(std::move(cat));
+        }
       }
     }
     // Stable sort by score descending — preserves provider order (e.g. alphabetical) for ties
-    std::stable_sort(m_results.begin(), m_results.end(),
+    std::stable_sort(m_allResults.begin(), m_allResults.end(),
                      [](const LauncherResult& a, const LauncherResult& b) { return a.score > b.score; });
   }
 
-  if (!text.empty() && m_results.size() > kMaxResults) {
-    m_results.resize(kMaxResults);
-  }
-
   const int iconTargetSize = static_cast<int>(std::round(kIconSize * contentScale()));
-  for (auto& result : m_results) {
+  for (auto& result : m_allResults) {
     if (result.iconPath.empty() && !result.iconName.empty()) {
       const std::string& resolved = m_iconResolver.resolve(result.iconName, iconTargetSize);
       if (!resolved.empty()) {
@@ -515,6 +543,77 @@ void LauncherPanel::onInputChanged(const std::string& text) {
     }
   }
 
+  bool categoriesChanged = newCategories.size() != m_currentCategories.size();
+  if (!categoriesChanged) {
+    for (std::size_t i = 0; i < newCategories.size(); ++i) {
+      if (newCategories[i].label != m_currentCategories[i].label) {
+        categoriesChanged = true;
+        break;
+      }
+    }
+  }
+  if (categoriesChanged) {
+    m_activeCategory.clear();
+    rebuildCategoryBar(newCategories);
+  }
+
+  applyActiveCategory();
+}
+
+void LauncherPanel::rebuildCategoryBar(const std::vector<LauncherCategory>& categories) {
+  m_currentCategories = categories;
+  if (m_categoryBar == nullptr) {
+    return;
+  }
+  m_categoryBar->clearOptions();
+  if (categories.empty()) {
+    setCategoryBarVisible(false);
+    return;
+  }
+  m_categoryBar->addOption("", "layout-grid");
+  m_categoryBar->setOptionTooltip(0, i18n::tr("launcher.categories.all"));
+  for (std::size_t i = 0; i < categories.size(); ++i) {
+    m_categoryBar->addOption("", categories[i].glyphName);
+    m_categoryBar->setOptionTooltip(i + 1, categories[i].label);
+  }
+  m_categoryBar->setSelectedIndex(0);
+  m_categoryBar->setOnChange([this](std::size_t idx) {
+    if (idx == 0) {
+      m_activeCategory.clear();
+    } else if (idx - 1 < m_currentCategories.size()) {
+      m_activeCategory = m_currentCategories[idx - 1].label;
+    }
+    applyActiveCategory();
+  });
+  setCategoryBarVisible(m_categoryBarVisible);
+}
+
+void LauncherPanel::setCategoryBarVisible(bool visible) {
+  if (m_categoryBar == nullptr) {
+    return;
+  }
+  const bool show = visible && !m_currentCategories.empty();
+  m_categoryBar->setVisible(show);
+  m_categoryBar->setParticipatesInLayout(show);
+  if (m_container != nullptr) {
+    m_container->markLayoutDirty();
+  }
+}
+
+void LauncherPanel::applyActiveCategory() {
+  m_results.clear();
+  if (m_activeCategory.empty()) {
+    m_results = m_allResults;
+  } else {
+    for (const auto& r : m_allResults) {
+      if (r.category == m_activeCategory) {
+        m_results.push_back(r);
+      }
+    }
+  }
+  if (!m_query.empty() && m_results.size() > kMaxResults) {
+    m_results.resize(kMaxResults);
+  }
   m_selectedIndex = 0;
   refreshResults();
 }
@@ -702,6 +801,32 @@ bool LauncherPanel::handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers) {
       m_grid->setSelectedIndex(m_selectedIndex);
     }
   };
+
+  if (KeySymbol::isTab(sym) && !m_currentCategories.empty()) {
+    m_categoryBarVisible = !m_categoryBarVisible;
+    setCategoryBarVisible(m_categoryBarVisible);
+    return true;
+  }
+
+  if (KeybindMatcher::matches(KeybindAction::Left, sym, modifiers)) {
+    if (m_categoryBar != nullptr && m_categoryBar->visible() && m_categoryBar->selectedIndex() > 0) {
+      m_categoryBar->setSelectedIndex(m_categoryBar->selectedIndex() - 1);
+      return true;
+    }
+    return false;
+  }
+
+  if (KeybindMatcher::matches(KeybindAction::Right, sym, modifiers)) {
+    if (m_categoryBar != nullptr && m_categoryBar->visible()) {
+      const std::size_t next = m_categoryBar->selectedIndex() + 1;
+      const std::size_t total = m_currentCategories.size() + 1;
+      if (next < total) {
+        m_categoryBar->setSelectedIndex(next);
+        return true;
+      }
+    }
+    return false;
+  }
 
   if (KeySymbol::isPageUp(sym)) {
     const int stride = m_grid != nullptr ? static_cast<int>(m_grid->pageItemStride()) : 1;

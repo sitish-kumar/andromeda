@@ -4,6 +4,11 @@
 #include <string_view>
 #include <vector>
 
+struct LauncherCategory {
+  std::string label;
+  std::string glyphName;
+};
+
 struct LauncherResult {
   std::string id;
   std::string providerName; // Set by LauncherPanel after query; used for activation dispatch and usage tracking
@@ -15,6 +20,7 @@ struct LauncherResult {
   std::string actionText;
   // When launching an application via AppProvider, matches DesktopAction::id (primary Exec leaves this empty).
   std::string desktopActionId;
+  std::string category;
   double score = 0.0;
 };
 
@@ -28,6 +34,8 @@ public:
   // Return true to opt in to usage-based score boosting. The panel will
   // record each activation and surface frequently used entries higher.
   [[nodiscard]] virtual bool trackUsage() const { return false; }
+
+  [[nodiscard]] virtual std::vector<LauncherCategory> categories() const { return {}; }
 
   virtual void initialize() {}
 

@@ -350,6 +350,7 @@ namespace config_export {
       panel.insert_or_assign("open_near_click_clipboard", shell.panel.openNearClickClipboard);
       panel.insert_or_assign("open_near_click_wallpaper", shell.panel.openNearClickWallpaper);
       panel.insert_or_assign("open_near_click_session", shell.panel.openNearClickSession);
+      panel.insert_or_assign("launcher_categories", shell.panel.launcherCategories);
       table.insert_or_assign("panel", std::move(panel));
 
       toml::table screenCorners;

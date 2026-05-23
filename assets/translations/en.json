@@ -65,6 +65,9 @@
     "context-menu": {
       "open": "Open"
     },
+    "categories": {
+      "all": "All"
+    },
     "empty": {
       "type-to-search": "Type to search...",
       "no-results": "No results found"
@@ -1826,6 +1829,10 @@
         "open-near-click-launcher": {
           "label": "Open Near Click",
           "description": "Position the launcher panel near the bar click instead of centering it along the bar"
+        },
+        "launcher-categories": {
+          "label": "Show Categories",
+          "description": "Display category filters in the launcher. Toggle with Tab while the launcher is open"
         },
         "open-near-click-clipboard": {
           "label": "Open Near Click",

@@ -214,11 +214,59 @@ namespace {
     (void)process::runAsync(args, activationToken, workingDir);
   }
 
+  std::string_view primaryCategory(std::string_view categories) {
+    std::size_t start = 0;
+    while (start < categories.size()) {
+      auto semi = categories.find(';', start);
+      auto token = (semi == std::string_view::npos) ? categories.substr(start) : categories.substr(start, semi - start);
+      if (token == "AudioVideo" || token == "Audio" || token == "Video") {
+        return "Multimedia";
+      }
+      if (token == "Development") {
+        return "Development";
+      }
+      if (token == "Game") {
+        return "Games";
+      }
+      if (token == "Graphics") {
+        return "Graphics";
+      }
+      if (token == "Network") {
+        return "Internet";
+      }
+      if (token == "Office") {
+        return "Office";
+      }
+      if (token == "System") {
+        return "System";
+      }
+      if (token == "Utility" || token == "Settings") {
+        return "Utilities";
+      }
+      if (token == "Education" || token == "Science") {
+        return "Education";
+      }
+      if (semi == std::string_view::npos) {
+        break;
+      }
+      start = semi + 1;
+    }
+    return {};
+  }
+
 } // namespace
 
 AppProvider::AppProvider(WaylandConnection* wayland) : m_wayland(wayland) {}
 
 void AppProvider::initialize() { refreshEntriesIfNeeded(); }
+
+std::vector<LauncherCategory> AppProvider::categories() const {
+  return {
+      {"Internet", "world"},         {"Multimedia", "player-play"}, {"Development", "code"},
+      {"Games", "device-gamepad-2"}, {"Graphics", "photo"},         {"Office", "briefcase"},
+      {"Education", "school"},       {"System", "settings"},        {"Utilities", "tool"},
+  };
+}
 
 void AppProvider::refreshEntriesIfNeeded() const {
   const auto version = desktopEntriesVersion();
@@ -242,6 +290,7 @@ std::vector<LauncherResult> AppProvider::query(std::string_view text) const {
     result.subtitle = entry.genericName.empty() ? entry.comment : entry.genericName;
     result.iconName = entry.icon.empty() ? std::string(kDefaultAppIcon) : entry.icon;
     result.glyphName = "app-window";
+    result.category = std::string(primaryCategory(entry.categories));
     result.score = s;
     return result;
   };

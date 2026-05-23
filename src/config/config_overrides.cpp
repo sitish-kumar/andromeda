@@ -350,6 +350,7 @@ namespace {
            a.panel.openNearClickClipboard == b.panel.openNearClickClipboard &&
            a.panel.openNearClickWallpaper == b.panel.openNearClickWallpaper &&
            a.panel.openNearClickSession == b.panel.openNearClickSession &&
+           a.panel.launcherCategories == b.panel.launcherCategories &&
            a.screenCorners.enabled == b.screenCorners.enabled && a.screenCorners.size == b.screenCorners.size &&
            a.mpris.blacklist == b.mpris.blacklist && a.session.actions == b.session.actions;
   }

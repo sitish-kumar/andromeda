@@ -543,6 +543,7 @@ struct ShellConfig {
     bool openNearClickClipboard = false;
     bool openNearClickWallpaper = false;
     bool openNearClickSession = false;
+    bool launcherCategories = true;
 
     bool operator==(const PanelConfig&) const = default;
   };

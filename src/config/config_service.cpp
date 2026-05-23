@@ -1431,6 +1431,9 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       if (auto v = (*panelTbl)["open_near_click_session"].value<bool>()) {
         shell.panel.openNearClickSession = *v;
       }
+      if (auto v = (*panelTbl)["launcher_categories"].value<bool>()) {
+        shell.panel.launcherCategories = *v;
+      }
     }
     if (const auto* screenCornersTbl = (*shellTbl)["screen_corners"].as_table()) {
       if (auto v = (*screenCornersTbl)["enabled"].value<bool>()) {

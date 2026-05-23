@@ -63,8 +63,7 @@ void Segmented::setScale(float scale) {
   const float fs = effectiveFontSize();
   for (Button* btn : m_buttons) {
     if (btn != nullptr) {
-      btn->setMinHeight(Style::controlHeight * m_scale);
-      btn->setPadding(Style::spaceXs * m_scale, Style::spaceMd * m_scale);
+      applyButtonMetrics(*btn);
       btn->setFontSize(fs);
       btn->setGlyphSize(fs);
     }
@@ -76,6 +75,42 @@ void Segmented::setScale(float scale) {
     }
   }
   refreshVariants();
+  markLayoutDirty();
+}
+
+void Segmented::setCompact(bool compact) {
+  if (m_compact == compact) {
+    return;
+  }
+  m_compact = compact;
+  for (Button* btn : m_buttons) {
+    if (btn != nullptr) {
+      applyButtonMetrics(*btn);
+    }
+  }
+  markLayoutDirty();
+}
+
+void Segmented::setOptionTooltip(std::size_t index, std::string_view text) {
+  if (index < m_buttons.size() && m_buttons[index] != nullptr) {
+    m_buttons[index]->setTooltip(text);
+  }
+}
+
+void Segmented::clearOptions() {
+  for (Button* btn : m_buttons) {
+    if (btn != nullptr) {
+      (void)removeChild(btn);
+    }
+  }
+  for (Separator* sep : m_separators) {
+    if (sep != nullptr) {
+      (void)removeChild(sep);
+    }
+  }
+  m_buttons.clear();
+  m_separators.clear();
+  m_selected = 0;
   markLayoutDirty();
 }
 
@@ -110,15 +145,27 @@ std::unique_ptr<Button> Segmented::makeSegmentButton(std::string_view label, std
     btn->setGlyph(glyph);
     btn->setGlyphSize(effectiveFontSize());
   }
-  btn->setText(label);
-  btn->setFontSize(effectiveFontSize());
-  btn->setMinHeight(Style::controlHeight * m_scale);
-  btn->setPadding(Style::spaceXs * m_scale, Style::spaceMd * m_scale);
+  if (!label.empty()) {
+    btn->setText(label);
+    btn->setFontSize(effectiveFontSize());
+  }
+  applyButtonMetrics(*btn);
   btn->setOnClick([this, index]() { setSelectedIndex(index); });
   btn->setFlexGrow(m_equalSegmentWidths ? 1.0f : 0.0f);
   btn->setContentAlign(ButtonContentAlign::Center);
   btn->setEnabled(m_enabled);
   return btn;
+}
+
+void Segmented::applyButtonMetrics(Button& button) const {
+  if (m_compact) {
+    button.setMinHeight((Style::fontSizeBody + Style::spaceXs * 2.0f) * m_scale);
+    button.setPadding(Style::spaceXs * m_scale, Style::spaceXs * m_scale);
+    return;
+  }
+
+  button.setMinHeight(Style::controlHeight * m_scale);
+  button.setPadding(Style::spaceXs * m_scale, Style::spaceMd * m_scale);
 }
 
 void Segmented::setEqualSegmentWidths(bool equalWidths) {

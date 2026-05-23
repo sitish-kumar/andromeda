@@ -721,6 +721,10 @@ namespace settings {
       e.visibleWhen = SettingVisibility{{"shell", "panel", "launcher_placement"}, {"attached", "floating"}};
       entries.push_back(std::move(e));
     }
+    entries.push_back(makeEntry("panels", "launcher", tr("settings.schema.panels.launcher-categories.label"),
+                                tr("settings.schema.panels.launcher-categories.description"),
+                                {"shell", "panel", "launcher_categories"},
+                                ToggleSetting{cfg.shell.panel.launcherCategories}, "launcher categories filter"));
     entries.push_back(makeEntry("panels", "clipboard", tr("settings.schema.panels.placement-clipboard.label"),
                                 tr("settings.schema.panels.placement-clipboard.description"),
                                 {"shell", "panel", "clipboard_placement"},

@@ -284,6 +284,17 @@ void Button::setBadgeFontSize(float size) {
   m_badgeLabel->setFontSize(size);
 }
 
+void Button::setTooltip(std::string_view text) {
+  if (m_inputArea == nullptr) {
+    return;
+  }
+  if (text.empty()) {
+    m_inputArea->clearTooltip();
+  } else {
+    m_inputArea->setTooltip(std::string(text));
+  }
+}
+
 void Button::ensureBadge() {
   if (m_badge != nullptr) {
     return;
@@ -537,8 +548,11 @@ void Button::doLayout(Renderer& renderer) {
   }
 
   if (glyphOnly && m_contentAlign == ButtonContentAlign::Center) {
-    const float squareSize = std::max(width(), height());
-    setSize(squareSize, squareSize);
+    const bool hasAssignedWidth = assignedWidth > 0.0f;
+    if (!hasAssignedWidth) {
+      const float squareSize = std::max(width(), height());
+      setSize(squareSize, squareSize);
+    }
   }
 
   // After Flex layout the content row is left-anchored inside the padding.
