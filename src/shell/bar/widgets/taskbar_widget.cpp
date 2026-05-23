@@ -71,7 +71,7 @@ namespace {
   }
 
   [[nodiscard]] float externalBadgeTileMainStart(WorkspaceLabelPlacement placement, float discMain, float groupPad,
-                                               float groupGap) {
+                                                 float groupGap) {
     if (placement == WorkspaceLabelPlacement::Centered) {
       return std::round(discMain * 0.5f + groupGap);
     }
@@ -371,11 +371,10 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     if (externalBadge && !m_workspaceGroupCapsule) {
       float maxMainOverhang = 0.0f;
       for (const auto& wsm : m_workspaces) {
-        const auto measuredDisc = measureWorkspaceDiscSize(renderer, wsm.label, externalBadgeFontSize, badgeBase,
-                                                           m_contentScale, fontWeight);
+        const auto measuredDisc =
+            measureWorkspaceDiscSize(renderer, wsm.label, externalBadgeFontSize, badgeBase, m_contentScale, fontWeight);
         const float measuredMain = m_vertical ? measuredDisc.height : measuredDisc.width;
-        maxMainOverhang =
-            std::max(maxMainOverhang, externalBadgeMainOverhang(m_workspaceLabelPlacement, measuredMain));
+        maxMainOverhang = std::max(maxMainOverhang, externalBadgeMainOverhang(m_workspaceLabelPlacement, measuredMain));
       }
       stripGap = std::round(std::max(groupGap, maxMainOverhang + groupGap));
     }
@@ -505,15 +504,12 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       const float mainOverhang = externalBadgeMainOverhang(m_workspaceLabelPlacement, discMain);
       const float crossOverhang = externalBadgeCrossOverhang(m_workspaceLabelPlacement, discCross);
       const float groupOuterLead =
-          externalInsetCapsule
-              ? std::round(std::max(groupPad, mainOverhang + (groupIndex > 0 ? groupGap : 0.0f)))
-              : 0.0f;
+          externalInsetCapsule ? std::round(std::max(groupPad, mainOverhang + (groupIndex > 0 ? groupGap : 0.0f)))
+                               : 0.0f;
       const bool needsOuterCrossLead =
-          externalInsetCapsule &&
-          (m_workspaceLabelPlacement == WorkspaceLabelPlacement::Corner ||
-           (m_workspaceLabelPlacement == WorkspaceLabelPlacement::Centered && m_vertical));
-      const float groupOuterCrossLead =
-          needsOuterCrossLead ? std::round(std::max(groupPadCross, crossOverhang)) : 0.0f;
+          externalInsetCapsule && (m_workspaceLabelPlacement == WorkspaceLabelPlacement::Corner ||
+                                   (m_workspaceLabelPlacement == WorkspaceLabelPlacement::Centered && m_vertical));
+      const float groupOuterCrossLead = needsOuterCrossLead ? std::round(std::max(groupPadCross, crossOverhang)) : 0.0f;
 
       float tileMain = inlineBadge ? groupPadMain : groupPad;
       if (externalBadge) {
@@ -530,8 +526,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
                                    (groupGap * (inlineSlotCount > 1 ? static_cast<float>(inlineSlotCount - 1) : 0.0f))
                              : tileSize)
                       : (tileSize * taskCount) + (groupGap * externalGapCount);
-      const float innerMainTotal =
-          inlineBadge ? (groupPadMain * 2.0f + runLength) : (tileMain + groupPad + runLength);
+      const float innerMainTotal = inlineBadge ? (groupPadMain * 2.0f + runLength) : (tileMain + groupPad + runLength);
       const float innerCrossSize =
           inlineBadge ? std::round(tileSize + (groupPadCross * 2.0f))
                       : (m_vertical ? std::round(tileSize + (groupPadCross * 2.0f)) : std::round(tileSize));
@@ -549,21 +544,19 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       }
       if (emptyWorkspace && !m_showWorkspaceLabel) {
         groupWidth =
-            m_vertical ? std::round(tileSize + (groupPadCross * 2.0f))
-                       : std::round(tileSize + (groupPadMain * 2.0f));
+            m_vertical ? std::round(tileSize + (groupPadCross * 2.0f)) : std::round(tileSize + (groupPadMain * 2.0f));
         groupHeight =
-            m_vertical ? std::round(tileSize + (groupPadMain * 2.0f))
-                       : std::round(tileSize + (groupPadCross * 2.0f));
+            m_vertical ? std::round(tileSize + (groupPadMain * 2.0f)) : std::round(tileSize + (groupPadCross * 2.0f));
       }
 
       const float contentWidth = externalInsetCapsule ? (m_vertical ? innerCrossSize : innerMainTotal) : groupWidth;
       const float contentHeight = externalInsetCapsule ? (m_vertical ? innerMainTotal : innerCrossSize) : groupHeight;
       const float tileCrossExtent = m_vertical ? contentWidth : contentHeight;
       const float inlineGroupCross = inlineBadge ? innerCrossSize : tileCrossExtent;
-      const float tileCross =
-          inlineBadge ? centeredOffset(inlineGroupCross, tileSize, groupOutlineInset, true)
-                      : (m_vertical ? centeredOffset(tileCrossExtent, tileSize, groupOutlineInset, false)
-                                    : centeredOffset(tileCrossExtent, tileSize, groupOutlineInset, true));
+      const float tileCross = inlineBadge
+                                  ? centeredOffset(inlineGroupCross, tileSize, groupOutlineInset, true)
+                                  : (m_vertical ? centeredOffset(tileCrossExtent, tileSize, groupOutlineInset, false)
+                                                : centeredOffset(tileCrossExtent, tileSize, groupOutlineInset, true));
       const float contentOriginMain = externalInsetCapsule ? groupOuterLead : 0.0f;
       const float contentOriginCross = externalInsetCapsule ? groupOuterCrossLead : 0.0f;
 
