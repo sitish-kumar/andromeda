@@ -1325,6 +1325,9 @@ namespace settings {
                                              {"bottom_center", "settings.options.screen-position.bottom-center"}},
                                             cfg.notification.position),
                                 "toast popup placement anchor"));
+    entries.push_back(makeEntry("popups", "notifications", tr("settings.schema.notifications.scale.label"),
+                                tr("settings.schema.notifications.scale.description"), {"notification", "scale"},
+                                SliderSetting{cfg.notification.scale, 0.5f, 2.5f, 0.05f, false}, "toast size scale"));
     entries.push_back(makeEntry(
         "popups", "notifications", tr("settings.schema.notifications.offset-x.label"),
         tr("settings.schema.notifications.offset-x.description"), {"notification", "offset_x"},

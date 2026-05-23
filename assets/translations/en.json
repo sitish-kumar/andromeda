@@ -2205,6 +2205,10 @@
           "label": "Screen Position",
           "description": "Screen position for notification toasts"
         },
+        "scale": {
+          "label": "Size",
+          "description": "Scale notification toasts relative to the shell UI scale"
+        },
         "layer": {
           "label": "Wayland Layer",
           "description": "Choose whether toasts use the top or overlay layer"

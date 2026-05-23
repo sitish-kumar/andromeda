@@ -574,6 +574,7 @@ namespace config_export {
       table.insert_or_assign("enable_daemon", notification.enableDaemon);
       table.insert_or_assign("position", notification.position);
       table.insert_or_assign("layer", notification.layer);
+      table.insert_or_assign("scale", static_cast<double>(notification.scale));
       table.insert_or_assign("background_opacity", static_cast<double>(notification.backgroundOpacity));
       table.insert_or_assign("offset_x", static_cast<std::int64_t>(notification.offsetX));
       table.insert_or_assign("offset_y", static_cast<std::int64_t>(notification.offsetY));

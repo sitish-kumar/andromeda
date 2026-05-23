@@ -396,7 +396,8 @@ struct OsdConfig {
 struct NotificationConfig {
   bool enableDaemon = true;
   std::string position = "top_right";
-  std::string layer = "top";       // top | overlay
+  std::string layer = "top"; // top | overlay
+  float scale = 1.0f;
   float backgroundOpacity = 0.97f; // toast card background alpha (0.0–1.0)
   int offsetX = 20;                // absolute horizontal margin from the screen edge
   int offsetY = 8;                 // absolute vertical margin from the screen edge
