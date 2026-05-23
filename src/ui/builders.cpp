@@ -395,6 +395,30 @@ namespace ui {
     return control;
   }
 
+  std::unique_ptr<RadioButton> radioButton(RadioButtonProps props) {
+    auto control = std::make_unique<RadioButton>();
+    if (props.scale.has_value()) {
+      control->setScale(*props.scale);
+    }
+    if (props.checked.has_value()) {
+      control->setChecked(*props.checked);
+    }
+    if (props.enabled.has_value()) {
+      control->setEnabled(*props.enabled);
+    }
+    if (props.onChange) {
+      control->setOnChange(std::move(props.onChange));
+    }
+    applyNodeProps(*control, props);
+    if (props.configure) {
+      props.configure(*control);
+    }
+    if (props.out != nullptr) {
+      *props.out = control.get();
+    }
+    return control;
+  }
+
   std::unique_ptr<Spacer> spacer() { return std::make_unique<Spacer>(); }
 
 } // namespace ui

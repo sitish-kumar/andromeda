@@ -7,6 +7,7 @@
 #include "ui/controls/flex.h"
 #include "ui/controls/input.h"
 #include "ui/controls/label.h"
+#include "ui/controls/radio_button.h"
 #include "ui/controls/search_picker.h"
 #include "ui/controls/separator.h"
 #include "ui/controls/spacer.h"
@@ -197,6 +198,20 @@ namespace ui {
     std::function<void(Toggle&)> configure = nullptr;
   };
 
+  struct RadioButtonProps {
+    RadioButton** out = nullptr;
+    std::optional<bool> checked = std::nullopt;
+    std::optional<bool> enabled = std::nullopt;
+    std::optional<float> scale = std::nullopt;
+    std::optional<float> width = std::nullopt;
+    std::optional<float> height = std::nullopt;
+    std::optional<float> flexGrow = std::nullopt;
+    std::optional<bool> visible = std::nullopt;
+    std::optional<bool> participatesInLayout = std::nullopt;
+    std::function<void(bool)> onChange = nullptr;
+    std::function<void(RadioButton&)> configure = nullptr;
+  };
+
   [[nodiscard]] std::unique_ptr<Flex> makeFlex(FlexDirection direction, FlexProps props);
   [[nodiscard]] std::unique_ptr<Input> input(InputProps props);
   [[nodiscard]] std::unique_ptr<Button> button(ButtonProps props);
@@ -205,6 +220,7 @@ namespace ui {
   [[nodiscard]] std::unique_ptr<VirtualGridView> virtualGridView(VirtualGridViewProps props);
   [[nodiscard]] std::unique_ptr<SearchPicker> searchPicker(SearchPickerProps props);
   [[nodiscard]] std::unique_ptr<Toggle> toggle(ToggleProps props);
+  [[nodiscard]] std::unique_ptr<RadioButton> radioButton(RadioButtonProps props);
   [[nodiscard]] std::unique_ptr<Spacer> spacer();
 
   template <typename... Children> [[nodiscard]] std::unique_ptr<Flex> row(FlexProps props, Children&&... children) {
