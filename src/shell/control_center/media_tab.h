@@ -90,7 +90,6 @@ private:
   std::string m_pendingSeekBusName;
   std::chrono::steady_clock::time_point m_pendingSeekUntil{};
   std::chrono::steady_clock::time_point m_progressSettleUntil{};
-  bool m_syncingPlayerSelect = false;
   bool m_playerMenuOpen = false;
   std::vector<std::string> m_playerBusNames;
   std::unordered_set<std::string> m_pendingArtDownloads;
