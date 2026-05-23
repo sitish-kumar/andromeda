@@ -43,7 +43,7 @@ namespace {
 
 } // namespace
 
-PolkitPanel::PolkitPanel(ConfigService* config, std::function<PolkitAgent*()> agentProvider)
+PolkitPanel::PolkitPanel(ConfigService* /*config*/, std::function<PolkitAgent*()> agentProvider)
     : m_agentProvider(std::move(agentProvider)) {}
 
 void PolkitPanel::create() {

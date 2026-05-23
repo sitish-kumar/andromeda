@@ -8,7 +8,7 @@
 
 #include <memory>
 
-WallpaperWidget::WallpaperWidget(wl_output* output, std::string barGlyphId) : m_barGlyphId(std::move(barGlyphId)) {}
+WallpaperWidget::WallpaperWidget(wl_output* /*output*/, std::string barGlyphId) : m_barGlyphId(std::move(barGlyphId)) {}
 
 void WallpaperWidget::create() {
   auto area = std::make_unique<InputArea>();

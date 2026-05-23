@@ -26,8 +26,8 @@ namespace {
 
 } // namespace
 
-MediaWidget::MediaWidget(MprisService* mpris, HttpClient* httpClient, wl_output* output, float maxWidth, float minWidth,
-                         float artSize, MediaTitleScrollMode titleScrollMode, bool hideWhenNoMedia)
+MediaWidget::MediaWidget(MprisService* mpris, HttpClient* httpClient, wl_output* /*output*/, float maxWidth,
+                         float minWidth, float artSize, MediaTitleScrollMode titleScrollMode, bool hideWhenNoMedia)
     : m_mpris(mpris), m_httpClient(httpClient), m_maxWidth(maxWidth), m_minWidth(minWidth), m_artSize(artSize),
       m_titleScrollMode(titleScrollMode), m_hideWhenNoMedia(hideWhenNoMedia) {}
 

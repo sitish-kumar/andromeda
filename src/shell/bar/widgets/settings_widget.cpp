@@ -9,7 +9,7 @@
 
 #include <memory>
 
-SettingsWidget::SettingsWidget(wl_output* output, std::string barGlyphId) : m_barGlyphId(std::move(barGlyphId)) {}
+SettingsWidget::SettingsWidget(wl_output* /*output*/, std::string barGlyphId) : m_barGlyphId(std::move(barGlyphId)) {}
 
 void SettingsWidget::create() {
   auto area = std::make_unique<InputArea>();

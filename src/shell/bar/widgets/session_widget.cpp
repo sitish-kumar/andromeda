@@ -8,7 +8,7 @@
 
 #include <memory>
 
-SessionWidget::SessionWidget(wl_output* output, std::string barGlyphId) : m_barGlyphId(std::move(barGlyphId)) {}
+SessionWidget::SessionWidget(wl_output* /*output*/, std::string barGlyphId) : m_barGlyphId(std::move(barGlyphId)) {}
 
 void SessionWidget::create() {
   auto area = std::make_unique<InputArea>();

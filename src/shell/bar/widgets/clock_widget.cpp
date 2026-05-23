@@ -26,7 +26,7 @@ namespace {
   }
 } // namespace
 
-ClockWidget::ClockWidget(wl_output* output, std::string format, std::string verticalFormat)
+ClockWidget::ClockWidget(wl_output* /*output*/, std::string format, std::string verticalFormat)
     : m_format(std::move(format)), m_verticalFormat(std::move(verticalFormat)) {}
 
 std::string ClockWidget::formatTimeText() const {

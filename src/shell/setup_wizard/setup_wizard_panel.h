@@ -18,7 +18,7 @@ enum class PaletteSource : std::uint8_t;
 
 class SetupWizardPanel : public Panel {
 public:
-  SetupWizardPanel(ConfigService* config, WaylandConnection* wayland) : m_config(config) {}
+  SetupWizardPanel(ConfigService* config, WaylandConnection* /*wayland*/) : m_config(config) {}
 
   void create() override;
   void onClose() override;

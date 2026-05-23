@@ -15,7 +15,7 @@ namespace {
   constexpr float kDotBaseSize = 6.0f;
 } // namespace
 
-NotificationWidget::NotificationWidget(NotificationManager* manager, wl_output* output, bool hideWhenNoUnread)
+NotificationWidget::NotificationWidget(NotificationManager* manager, wl_output* /*output*/, bool hideWhenNoUnread)
     : m_manager(manager), m_hideWhenNoUnread(hideWhenNoUnread) {}
 
 void NotificationWidget::create() {

@@ -68,7 +68,7 @@ namespace {
 
 } // namespace
 
-SysmonWidget::SysmonWidget(SystemMonitorService* monitor, wl_output* output, SysmonStat stat, std::string diskPath,
+SysmonWidget::SysmonWidget(SystemMonitorService* monitor, wl_output* /*output*/, SysmonStat stat, std::string diskPath,
                            SysmonDisplayMode displayMode, bool showLabel, float labelMinWidth)
     : m_monitor(monitor), m_stat(stat), m_displayMode(displayMode), m_showLabel(showLabel),
       m_labelMinWidth(labelMinWidth), m_diskPath(std::move(diskPath)) {

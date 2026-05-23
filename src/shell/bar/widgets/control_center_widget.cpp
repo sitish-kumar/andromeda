@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <memory>
 
-ControlCenterWidget::ControlCenterWidget(wl_output* output, std::string barGlyphId, std::string logoPath)
+ControlCenterWidget::ControlCenterWidget(wl_output* /*output*/, std::string barGlyphId, std::string logoPath)
     : m_barGlyphId(std::move(barGlyphId)), m_logoPath(std::move(logoPath)) {}
 
 void ControlCenterWidget::create() {
