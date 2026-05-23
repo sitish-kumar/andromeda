@@ -338,7 +338,8 @@ namespace {
            a.clipboardImageActionCommand == b.clipboardImageActionCommand && a.shadow.blur == b.shadow.blur &&
            a.shadow.offsetX == b.shadow.offsetX && a.shadow.offsetY == b.shadow.offsetY &&
            nearlyEqual(a.shadow.alpha, b.shadow.alpha) && a.panel.backgroundBlur == b.panel.backgroundBlur &&
-           a.panel.borders == b.panel.borders && a.panel.transparencyMode == b.panel.transparencyMode &&
+           a.panel.borders == b.panel.borders && a.panel.shadow == b.panel.shadow &&
+           a.panel.transparencyMode == b.panel.transparencyMode &&
            a.panel.launcherPlacement == b.panel.launcherPlacement &&
            a.panel.clipboardPlacement == b.panel.clipboardPlacement &&
            a.panel.controlCenterPlacement == b.panel.controlCenterPlacement &&

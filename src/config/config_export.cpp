@@ -334,6 +334,7 @@ namespace config_export {
       panel.insert_or_assign("transparency_mode",
                              std::string(enumToKey(kPanelTransparencyModes, shell.panel.transparencyMode)));
       panel.insert_or_assign("borders", shell.panel.borders);
+      panel.insert_or_assign("shadow", shell.panel.shadow);
       panel.insert_or_assign("launcher_placement",
                              std::string(enumToKey(kPanelPlacements, shell.panel.launcherPlacement)));
       panel.insert_or_assign("clipboard_placement",

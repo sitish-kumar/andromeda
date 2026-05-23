@@ -64,8 +64,8 @@ namespace {
     };
   }
 
-  shell::surface_shadow::Bleed detachedPanelShadowBleed(bool hasDecoration,
-                                                        const ShellConfig::ShadowConfig& shadow) noexcept {
+  shell::surface_shadow::Bleed detachedPanelSurfaceBleed(bool hasDecoration,
+                                                         const ShellConfig::ShadowConfig& shadow) noexcept {
     auto bleed = shell::surface_shadow::bleed(hasDecoration, shadow);
     if (shell::surface_shadow::enabled(hasDecoration, shadow)) {
       bleed.left += kDetachedPanelShadowSafetyPadding;
@@ -339,7 +339,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   const bool useFloatingAnchor =
       !useCenteredPlacement && request.hasAnchorPosition && openNearClickEnabledForPanel(m_config, m_activePanelId);
   const auto detachedShadowBleed =
-      detachedPanelShadowBleed(m_activePanel->hasDecoration(), m_config->config().shell.shadow);
+      detachedPanelSurfaceBleed(m_activePanel->hasDecoration(), m_config->config().shell.shadow);
   const std::uint32_t detachedSurfaceWidth =
       panelSurfaceExtent(panelWidth, detachedShadowBleed.left, detachedShadowBleed.right);
   const std::uint32_t detachedSurfaceHeight =
@@ -498,7 +498,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     const float scale = m_activePanel->contentScale();
     const float cornerRadius = Style::scaledRadiusXl(scale);
     const auto& shadowConfig = m_config->config().shell.shadow;
-    const auto shadowBleed = shell::surface_shadow::bleed(true, shadowConfig);
+    const auto shadowBleed = shell::surface_shadow::bleed(m_activePanel->hasDecoration(), shadowConfig);
     const auto cornerOutset = static_cast<std::int32_t>(std::ceil(cornerRadius));
 
     // Cross-axis outset wraps the concave-corner overhang and shadow bleed.
@@ -1508,14 +1508,19 @@ void PanelManager::applyAttachedDecorationStyle() {
 
   if (m_panelShadowNode != nullptr && m_config != nullptr) {
     const auto& shadowConfig = m_config->config().shell.shadow;
-    const RoundedRectStyle shadowStyle =
-        shell::surface_shadow::style(shadowConfig, m_attachedBackgroundOpacity,
-                                     shell::surface_shadow::Shape{
-                                         .corners = attached_panel::cornerShapes(m_attachedBarPosition),
-                                         .logicalInset = attached_panel::logicalInset(m_attachedBarPosition, radius),
-                                         .radius = Radii{radius, radius, radius, radius},
-                                     });
-    m_panelShadowNode->setStyle(shadowStyle);
+    const bool panelShadow =
+        m_config->config().shell.panel.shadow && shell::surface_shadow::enabled(true, shadowConfig);
+    m_panelShadowNode->setVisible(panelShadow);
+    if (panelShadow) {
+      const RoundedRectStyle shadowStyle =
+          shell::surface_shadow::style(shadowConfig, m_attachedBackgroundOpacity,
+                                       shell::surface_shadow::Shape{
+                                           .corners = attached_panel::cornerShapes(m_attachedBarPosition),
+                                           .logicalInset = attached_panel::logicalInset(m_attachedBarPosition, radius),
+                                           .radius = Radii{radius, radius, radius, radius},
+                                       });
+      m_panelShadowNode->setStyle(shadowStyle);
+    }
   }
 
   if (m_panelContactShadowNode != nullptr) {
@@ -1563,12 +1568,17 @@ void PanelManager::onConfigReloaded() {
     bg->setPanelStyle(m_config->config().shell.panel.borders);
     bg->setFill(colorSpecFromRole(ColorRole::Surface, panelBackgroundOpacity));
   }
-  if (!m_attachedToBar && m_panelShadowNode != nullptr) {
+  if (m_panelShadowNode != nullptr) {
     const auto& shadowConfig = m_config->config().shell.shadow;
-    const float shadowRadius = Style::scaledRadiusXl(m_activePanel->contentScale());
-    m_panelShadowNode->setStyle(shell::surface_shadow::style(
-        shadowConfig, panelBackgroundOpacity,
-        shell::surface_shadow::Shape{.radius = Radii{shadowRadius, shadowRadius, shadowRadius, shadowRadius}}));
+    const bool panelShadow =
+        m_config->config().shell.panel.shadow && shell::surface_shadow::enabled(true, shadowConfig);
+    m_panelShadowNode->setVisible(panelShadow);
+    if (!m_attachedToBar && panelShadow) {
+      const float shadowRadius = Style::scaledRadiusXl(m_activePanel->contentScale());
+      m_panelShadowNode->setStyle(shell::surface_shadow::style(
+          shadowConfig, panelBackgroundOpacity,
+          shell::surface_shadow::Shape{.radius = Radii{shadowRadius, shadowRadius, shadowRadius, shadowRadius}}));
+    }
   }
   if (m_surface != nullptr) {
     m_surface->requestUpdate();
@@ -1638,6 +1648,7 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
       auto shadow = std::make_unique<Box>();
       m_panelShadowNode = static_cast<Box*>(sceneParent->addChild(std::move(shadow)));
       m_panelShadowNode->setZIndex(-1);
+      m_panelShadowNode->setVisible(m_config->config().shell.panel.shadow);
     }
 
     if (hasDecoration) {
@@ -1728,11 +1739,14 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
 
   if (m_panelShadowNode != nullptr && m_config != nullptr) {
     const auto& shadowConfig = m_config->config().shell.shadow;
+    const bool panelShadow =
+        m_config->config().shell.panel.shadow && shell::surface_shadow::enabled(true, shadowConfig);
+    m_panelShadowNode->setVisible(panelShadow);
     const float shadowOffsetX = static_cast<float>(shadowConfig.offsetX);
     const float shadowOffsetY = static_cast<float>(shadowConfig.offsetY);
     m_panelShadowNode->setPosition(bgX + shadowOffsetX, bgY + shadowOffsetY);
     m_panelShadowNode->setSize(bgW, bgH);
-    if (!m_attachedToBar) {
+    if (!m_attachedToBar && panelShadow) {
       const float shadowRadius = Style::scaledRadiusXl(m_activePanel->contentScale());
       const float panelBackgroundOpacity = resolveDetachedPanelBackgroundOpacity(m_config);
       m_panelShadowNode->setStyle(shell::surface_shadow::style(

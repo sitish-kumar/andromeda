@@ -1785,6 +1785,9 @@
           "label": "Borders",
           "description": "Draw an outline on panels and section cards inside panels"
         },
+        "shadow": {
+          "description": "Cast the global surface shadow from panel surfaces"
+        },
         "home-shortcuts": {
           "label": "Home Shortcuts",
           "description": "Choose up to six shortcut buttons for the home tab"
