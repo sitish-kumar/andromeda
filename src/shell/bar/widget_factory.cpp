@@ -350,9 +350,11 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
   }
 
   if (type == "spacer") {
-    const double defaultLength = 8.0 + 2.0 * static_cast<double>(widgetSpacing);
-    const auto length = static_cast<float>(wc != nullptr ? wc->getDouble("length", defaultLength) : defaultLength);
-    auto widget = std::make_unique<SpacerWidget>(length);
+    constexpr double kDefaultSpacerLength = 20.0;
+    const auto length =
+        static_cast<float>(wc != nullptr ? wc->getDouble("length", kDefaultSpacerLength) : kDefaultSpacerLength);
+    const bool verticalBar = barPosition == "left" || barPosition == "right";
+    auto widget = std::make_unique<SpacerWidget>(length, verticalBar);
     widget->setContentScale(contentScale);
     return widget;
   }
