@@ -3,6 +3,7 @@
 #include "compositors/compositor_detect.h"
 #include "compositors/hyprland/hyprland_runtime.h"
 #include "compositors/niri/niri_runtime.h"
+#include "compositors/triad/triad_runtime.h"
 #include "config/config_service.h"
 #include "core/keybind_matcher.h"
 #include "core/log.h"
@@ -180,6 +181,10 @@ namespace {
       compositors::niri::NiriRuntime scratch;
       compositors::niri::NiriRuntime& runtime = niriRuntime != nullptr ? *niriRuntime : scratch;
       return runtime.requestAction(nlohmann::json{{"Quit", nlohmann::json{{"skip_confirmation", true}}}}, true);
+    }
+    case compositors::CompositorKind::Triad: {
+      compositors::triad::TriadRuntime runtime;
+      return runtime.requestAction("exit-session");
     }
     case compositors::CompositorKind::Mango:
       return process::launchFirstAvailable({{"mmsg", "-q"}});
