@@ -1,0 +1,145 @@
+#pragma once
+
+#include "render/core/color.h"
+#include "render/core/renderer.h"
+#include "render/scene/node.h"
+#include "ui/controls/button.h"
+#include "ui/controls/flex.h"
+#include "ui/controls/input.h"
+#include "ui/controls/label.h"
+#include "ui/controls/spacer.h"
+#include "ui/palette.h"
+
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+
+namespace ui {
+
+  // out fields receive non-owning pointers into the returned subtree.
+  // They are valid only while that subtree remains alive.
+  struct FlexProps {
+    Flex** out = nullptr;
+    std::optional<FlexAlign> align = std::nullopt;
+    std::optional<FlexJustify> justify = std::nullopt;
+    std::optional<float> gap = std::nullopt;
+    std::optional<float> padding = std::nullopt;
+    std::optional<float> minWidth = std::nullopt;
+    std::optional<float> minHeight = std::nullopt;
+    std::optional<float> maxWidth = std::nullopt;
+    std::optional<float> maxHeight = std::nullopt;
+    std::optional<FlexSizePolicy> widthPolicy = std::nullopt;
+    std::optional<FlexSizePolicy> heightPolicy = std::nullopt;
+    std::optional<bool> fillWidth = std::nullopt;
+    std::optional<bool> fillHeight = std::nullopt;
+    std::optional<bool> clipChildren = std::nullopt;
+    std::optional<float> width = std::nullopt;
+    std::optional<float> height = std::nullopt;
+    std::optional<float> flexGrow = std::nullopt;
+    std::optional<bool> visible = std::nullopt;
+    std::optional<bool> participatesInLayout = std::nullopt;
+    std::function<void(Flex&)> configure = nullptr;
+  };
+
+  struct InputProps {
+    Input** out = nullptr;
+    std::optional<std::string> value = std::nullopt;
+    std::optional<std::string> placeholder = std::nullopt;
+    std::optional<float> fontSize = std::nullopt;
+    std::optional<float> controlHeight = std::nullopt;
+    std::optional<float> horizontalPadding = std::nullopt;
+    std::optional<bool> clearButtonEnabled = std::nullopt;
+    std::optional<bool> passwordMode = std::nullopt;
+    std::optional<bool> invalid = std::nullopt;
+    std::optional<bool> frameVisible = std::nullopt;
+    std::optional<bool> embeddedOnSolidPrimary = std::nullopt;
+    std::optional<FontWeight> fontWeight = std::nullopt;
+    std::optional<float> minLayoutWidth = std::nullopt;
+    std::optional<TextAlign> textAlign = std::nullopt;
+    std::optional<bool> enabled = std::nullopt;
+    std::optional<float> width = std::nullopt;
+    std::optional<float> height = std::nullopt;
+    std::optional<float> flexGrow = std::nullopt;
+    std::optional<bool> visible = std::nullopt;
+    std::optional<bool> participatesInLayout = std::nullopt;
+    std::function<void(const std::string&)> onChange = nullptr;
+    std::function<void(const std::string&)> onSubmit = nullptr;
+    std::function<bool(std::uint32_t, std::uint32_t)> onKeyEvent = nullptr;
+    std::function<void()> onFocusLoss = nullptr;
+    std::function<void(Input&)> configure = nullptr;
+  };
+
+  struct ButtonProps {
+    Button** out = nullptr;
+    std::optional<std::string> text = std::nullopt;
+    std::optional<std::string> glyph = std::nullopt;
+    std::optional<float> fontSize = std::nullopt;
+    std::optional<float> glyphSize = std::nullopt;
+    std::optional<bool> enabled = std::nullopt;
+    std::optional<bool> selected = std::nullopt;
+    std::optional<ButtonContentAlign> contentAlign = std::nullopt;
+    std::optional<ButtonVariant> variant = std::nullopt;
+    std::optional<Button::ButtonPalette> customPalette = std::nullopt;
+    std::optional<std::string> badge = std::nullopt;
+    std::optional<float> badgeFontSize = std::nullopt;
+    std::optional<std::string> tooltip = std::nullopt;
+    std::optional<float> width = std::nullopt;
+    std::optional<float> height = std::nullopt;
+    std::optional<float> flexGrow = std::nullopt;
+    std::optional<bool> visible = std::nullopt;
+    std::optional<bool> participatesInLayout = std::nullopt;
+    std::function<void()> onClick = nullptr;
+    std::function<void()> onRightClick = nullptr;
+    std::function<void(float, float, bool)> onPress = nullptr;
+    std::function<void()> onMotion = nullptr;
+    std::function<void(float, float)> onPointerMotion = nullptr;
+    std::function<void()> onEnter = nullptr;
+    std::function<void()> onLeave = nullptr;
+    std::function<void(Button&)> configure = nullptr;
+  };
+
+  struct LabelProps {
+    Label** out = nullptr;
+    std::optional<std::string> text = std::nullopt;
+    std::optional<float> fontSize = std::nullopt;
+    std::optional<std::string> fontFamily = std::nullopt;
+    std::optional<ColorSpec> color = std::nullopt;
+    std::optional<float> minWidth = std::nullopt;
+    std::optional<float> maxWidth = std::nullopt;
+    std::optional<int> maxLines = std::nullopt;
+    std::optional<FontWeight> fontWeight = std::nullopt;
+    std::optional<TextAlign> textAlign = std::nullopt;
+    std::optional<LabelBaselineMode> baselineMode = std::nullopt;
+    std::optional<bool> autoScroll = std::nullopt;
+    std::optional<float> autoScrollSpeed = std::nullopt;
+    std::optional<bool> autoScrollOnlyWhenHovered = std::nullopt;
+    std::optional<float> width = std::nullopt;
+    std::optional<float> height = std::nullopt;
+    std::optional<float> flexGrow = std::nullopt;
+    std::optional<bool> visible = std::nullopt;
+    std::optional<bool> participatesInLayout = std::nullopt;
+    std::function<void(Label&)> configure = nullptr;
+  };
+
+  [[nodiscard]] std::unique_ptr<Flex> makeFlex(FlexDirection direction, FlexProps props);
+  [[nodiscard]] std::unique_ptr<Input> input(InputProps props);
+  [[nodiscard]] std::unique_ptr<Button> button(ButtonProps props);
+  [[nodiscard]] std::unique_ptr<Label> label(LabelProps props);
+  [[nodiscard]] std::unique_ptr<Spacer> spacer();
+
+  template <typename... Children> [[nodiscard]] std::unique_ptr<Flex> row(FlexProps props, Children&&... children) {
+    auto container = makeFlex(FlexDirection::Horizontal, std::move(props));
+    (container->addChild(std::forward<Children>(children)), ...);
+    return container;
+  }
+
+  template <typename... Children> [[nodiscard]] std::unique_ptr<Flex> column(FlexProps props, Children&&... children) {
+    auto container = makeFlex(FlexDirection::Vertical, std::move(props));
+    (container->addChild(std::forward<Children>(children)), ...);
+    return container;
+  }
+
+} // namespace ui

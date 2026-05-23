@@ -628,6 +628,7 @@ _noctalia_sources = files(
   'src/ui/controls/toggle.cpp',
   'src/ui/controls/virtual_grid_view.cpp',
   'src/ui/controls/virtual_list_view.cpp',
+  'src/ui/builders.cpp',
   'src/ui/palette.cpp',
   'src/ui/popup_chrome.cpp',
   'src/ui/style.cpp',

@@ -1,0 +1,270 @@
+#include "ui/builders.h"
+
+#include <utility>
+
+namespace ui {
+
+  namespace {
+
+    template <typename Control, typename Props> void applyNodeProps(Control& control, const Props& props) {
+      if (props.width.has_value() || props.height.has_value()) {
+        control.setSize(props.width.value_or(control.width()), props.height.value_or(control.height()));
+      }
+      if (props.flexGrow.has_value()) {
+        control.setFlexGrow(*props.flexGrow);
+      }
+      if (props.visible.has_value()) {
+        control.setVisible(*props.visible);
+      }
+      if (props.participatesInLayout.has_value()) {
+        control.setParticipatesInLayout(*props.participatesInLayout);
+      }
+    }
+
+    template <typename Props> void applyFlexProps(Flex& flex, FlexDirection direction, const Props& props) {
+      flex.setDirection(direction);
+      if (props.align.has_value()) {
+        flex.setAlign(*props.align);
+      }
+      if (props.justify.has_value()) {
+        flex.setJustify(*props.justify);
+      }
+      if (props.gap.has_value()) {
+        flex.setGap(*props.gap);
+      }
+      if (props.padding.has_value()) {
+        flex.setPadding(*props.padding);
+      }
+      if (props.minWidth.has_value()) {
+        flex.setMinWidth(*props.minWidth);
+      }
+      if (props.minHeight.has_value()) {
+        flex.setMinHeight(*props.minHeight);
+      }
+      if (props.maxWidth.has_value()) {
+        flex.setMaxWidth(*props.maxWidth);
+      }
+      if (props.maxHeight.has_value()) {
+        flex.setMaxHeight(*props.maxHeight);
+      }
+      if (props.widthPolicy.has_value()) {
+        flex.setWidthPolicy(*props.widthPolicy);
+      }
+      if (props.heightPolicy.has_value()) {
+        flex.setHeightPolicy(*props.heightPolicy);
+      }
+      if (props.fillWidth.has_value()) {
+        flex.setFillWidth(*props.fillWidth);
+      }
+      if (props.fillHeight.has_value()) {
+        flex.setFillHeight(*props.fillHeight);
+      }
+      if (props.clipChildren.has_value()) {
+        flex.setClipChildren(*props.clipChildren);
+      }
+      applyNodeProps(flex, props);
+    }
+
+  } // namespace
+
+  std::unique_ptr<Flex> makeFlex(FlexDirection direction, FlexProps props) {
+    auto flex = std::make_unique<Flex>();
+    applyFlexProps(*flex, direction, props);
+    if (props.configure) {
+      props.configure(*flex);
+    }
+    if (props.out != nullptr) {
+      *props.out = flex.get();
+    }
+    return flex;
+  }
+
+  std::unique_ptr<Input> input(InputProps props) {
+    auto control = std::make_unique<Input>();
+    if (props.value.has_value()) {
+      control->setValue(*props.value);
+    }
+    if (props.placeholder.has_value()) {
+      control->setPlaceholder(*props.placeholder);
+    }
+    if (props.fontSize.has_value()) {
+      control->setFontSize(*props.fontSize);
+    }
+    if (props.controlHeight.has_value()) {
+      control->setControlHeight(*props.controlHeight);
+    }
+    if (props.horizontalPadding.has_value()) {
+      control->setHorizontalPadding(*props.horizontalPadding);
+    }
+    if (props.clearButtonEnabled.has_value()) {
+      control->setClearButtonEnabled(*props.clearButtonEnabled);
+    }
+    if (props.passwordMode.has_value()) {
+      control->setPasswordMode(*props.passwordMode);
+    }
+    if (props.invalid.has_value()) {
+      control->setInvalid(*props.invalid);
+    }
+    if (props.frameVisible.has_value()) {
+      control->setFrameVisible(*props.frameVisible);
+    }
+    if (props.embeddedOnSolidPrimary.has_value()) {
+      control->setEmbeddedOnSolidPrimary(*props.embeddedOnSolidPrimary);
+    }
+    if (props.fontWeight.has_value()) {
+      control->setFontWeight(*props.fontWeight);
+    }
+    if (props.minLayoutWidth.has_value()) {
+      control->setMinLayoutWidth(*props.minLayoutWidth);
+    }
+    if (props.textAlign.has_value()) {
+      control->setTextAlign(*props.textAlign);
+    }
+    if (props.onChange) {
+      control->setOnChange(std::move(props.onChange));
+    }
+    if (props.onSubmit) {
+      control->setOnSubmit(std::move(props.onSubmit));
+    }
+    if (props.onKeyEvent) {
+      control->setOnKeyEvent(std::move(props.onKeyEvent));
+    }
+    if (props.onFocusLoss) {
+      control->setOnFocusLoss(std::move(props.onFocusLoss));
+    }
+    if (props.enabled.has_value()) {
+      control->setEnabled(*props.enabled);
+    }
+    applyNodeProps(*control, props);
+    if (props.configure) {
+      props.configure(*control);
+    }
+    if (props.out != nullptr) {
+      *props.out = control.get();
+    }
+    return control;
+  }
+
+  std::unique_ptr<Button> button(ButtonProps props) {
+    auto control = std::make_unique<Button>();
+    if (props.text.has_value()) {
+      control->setText(*props.text);
+    }
+    if (props.glyph.has_value()) {
+      control->setGlyph(*props.glyph);
+    }
+    if (props.fontSize.has_value()) {
+      control->setFontSize(*props.fontSize);
+    }
+    if (props.glyphSize.has_value()) {
+      control->setGlyphSize(*props.glyphSize);
+    }
+    if (props.enabled.has_value()) {
+      control->setEnabled(*props.enabled);
+    }
+    if (props.selected.has_value()) {
+      control->setSelected(*props.selected);
+    }
+    if (props.contentAlign.has_value()) {
+      control->setContentAlign(*props.contentAlign);
+    }
+    if (props.variant.has_value()) {
+      control->setVariant(*props.variant);
+    }
+    if (props.customPalette.has_value()) {
+      control->setCustomPalette(std::move(*props.customPalette));
+    }
+    if (props.onClick) {
+      control->setOnClick(std::move(props.onClick));
+    }
+    if (props.onRightClick) {
+      control->setOnRightClick(std::move(props.onRightClick));
+    }
+    if (props.onPress) {
+      control->setOnPress(std::move(props.onPress));
+    }
+    if (props.onMotion) {
+      control->setOnMotion(std::move(props.onMotion));
+    }
+    if (props.onPointerMotion) {
+      control->setOnPointerMotion(std::move(props.onPointerMotion));
+    }
+    if (props.onEnter) {
+      control->setOnEnter(std::move(props.onEnter));
+    }
+    if (props.onLeave) {
+      control->setOnLeave(std::move(props.onLeave));
+    }
+    if (props.badge.has_value()) {
+      control->setBadge(*props.badge);
+    }
+    if (props.badgeFontSize.has_value()) {
+      control->setBadgeFontSize(*props.badgeFontSize);
+    }
+    if (props.tooltip.has_value()) {
+      control->setTooltip(*props.tooltip);
+    }
+    applyNodeProps(*control, props);
+    if (props.configure) {
+      props.configure(*control);
+    }
+    if (props.out != nullptr) {
+      *props.out = control.get();
+    }
+    return control;
+  }
+
+  std::unique_ptr<Label> label(LabelProps props) {
+    auto control = std::make_unique<Label>();
+    if (props.text.has_value()) {
+      control->setText(*props.text);
+    }
+    if (props.fontSize.has_value()) {
+      control->setFontSize(*props.fontSize);
+    }
+    if (props.fontFamily.has_value()) {
+      control->setFontFamily(std::move(*props.fontFamily));
+    }
+    if (props.color.has_value()) {
+      control->setColor(*props.color);
+    }
+    if (props.minWidth.has_value()) {
+      control->setMinWidth(*props.minWidth);
+    }
+    if (props.maxWidth.has_value()) {
+      control->setMaxWidth(*props.maxWidth);
+    }
+    if (props.maxLines.has_value()) {
+      control->setMaxLines(*props.maxLines);
+    }
+    if (props.fontWeight.has_value()) {
+      control->setFontWeight(*props.fontWeight);
+    }
+    if (props.textAlign.has_value()) {
+      control->setTextAlign(*props.textAlign);
+    }
+    if (props.baselineMode.has_value()) {
+      control->setBaselineMode(*props.baselineMode);
+    }
+    if (props.autoScroll.has_value()) {
+      control->setAutoScroll(*props.autoScroll);
+    }
+    if (props.autoScrollSpeed.has_value()) {
+      control->setAutoScrollSpeed(*props.autoScrollSpeed);
+    }
+    if (props.autoScrollOnlyWhenHovered.has_value()) {
+      control->setAutoScrollOnlyWhenHovered(*props.autoScrollOnlyWhenHovered);
+    }
+    applyNodeProps(*control, props);
+    if (props.configure) {
+      props.configure(*control);
+    }
+    if (props.out != nullptr) {
+      *props.out = control.get();
+    }
+    return control;
+  }
+
+  std::unique_ptr<Spacer> spacer() { return std::make_unique<Spacer>(); }
+
+} // namespace ui
