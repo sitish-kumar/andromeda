@@ -177,7 +177,8 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
 
   if (type == "bluetooth") {
     const bool showLabel = wc != nullptr ? wc->getBool("show_label", false) : false;
-    auto widget = std::make_unique<BluetoothWidget>(m_bluetooth, output, showLabel);
+    const bool hideWhenNoConnectedDevice = wc != nullptr ? wc->getBool("hide_when_no_connected_device", false) : false;
+    auto widget = std::make_unique<BluetoothWidget>(m_bluetooth, output, showLabel, hideWhenNoConnectedDevice);
     widget->setContentScale(contentScale);
     return widget;
   }

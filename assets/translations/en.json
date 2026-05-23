@@ -1299,6 +1299,10 @@
           "label": "Hide When No Media",
           "description": "Hide the media widget when no MPRIS player is active"
         },
+        "hide_when_no_connected_device": {
+          "label": "Hide When No Connected Device",
+          "description": "Hide the bluetooth widget when no device is connected"
+        },
         "hide_when_empty": {
           "label": "Hide When Empty",
           "description": "Hide workspace pills whne there are no open windows",

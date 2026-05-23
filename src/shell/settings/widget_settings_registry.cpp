@@ -531,6 +531,7 @@ namespace settings {
       }
     } else if (type == "bluetooth") {
       add(boolSpec("show_label", false));
+      add(boolSpec("hide_when_no_connected_device", false));
     } else if (type == "brightness") {
       add(boolSpec("show_label", true));
     } else if (type == "clock") {

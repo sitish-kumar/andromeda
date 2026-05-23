@@ -45,8 +45,10 @@ namespace {
 
 } // namespace
 
-BluetoothWidget::BluetoothWidget(BluetoothService* bluetooth, wl_output* output, bool showLabel)
-    : m_bluetooth(bluetooth), m_output(output), m_showLabel(showLabel) {}
+BluetoothWidget::BluetoothWidget(BluetoothService* bluetooth, wl_output* output, bool showLabel,
+                                 bool hideWhenNoConnectedDevice)
+    : m_bluetooth(bluetooth), m_output(output), m_showLabel(showLabel),
+      m_hideWhenNoConnectedDevice(hideWhenNoConnectedDevice) {}
 
 void BluetoothWidget::create() {
   auto area = std::make_unique<InputArea>();
@@ -96,6 +98,16 @@ void BluetoothWidget::doLayout(Renderer& renderer, float /*containerWidth*/, flo
 
 void BluetoothWidget::doUpdate(Renderer& renderer) { syncState(renderer); }
 
+void BluetoothWidget::syncWidgetVisibility(bool showWidget) {
+  if (Node* rootNode = root(); rootNode != nullptr) {
+    if (rootNode->visible() != showWidget || rootNode->participatesInLayout() != showWidget) {
+      rootNode->setVisible(showWidget);
+      rootNode->setParticipatesInLayout(showWidget);
+      requestUpdate();
+    }
+  }
+}
+
 void BluetoothWidget::syncState(Renderer& renderer) {
   if (m_glyph == nullptr || m_bluetooth == nullptr) {
     return;
@@ -114,18 +126,22 @@ void BluetoothWidget::syncState(Renderer& renderer) {
   m_lastConnectedCount = numConnected;
   m_lastConnectedAlias = alias;
 
-  auto* rootNode = root();
-
-  if (!s.adapterPresent) {
-    if (rootNode != nullptr) {
-      rootNode->setVisible(false);
-      rootNode->setSize(0.0f, 0.0f);
+  const bool hasConnectedDevice = numConnected > 0;
+  const bool showWidget = s.adapterPresent && (!m_hideWhenNoConnectedDevice || hasConnectedDevice);
+  syncWidgetVisibility(showWidget);
+  if (!showWidget) {
+    if (Node* rootNode = root(); rootNode != nullptr) {
+      rootNode->setOpacity(1.0f);
+      if (s.adapterPresent) {
+        static_cast<InputArea*>(rootNode)->clearTooltip();
+      }
     }
     return;
   }
 
+  auto* rootNode = root();
+
   if (rootNode != nullptr) {
-    rootNode->setVisible(true);
     rootNode->setOpacity(s.powered ? 1.0f : 0.55f);
   }
 
