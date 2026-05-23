@@ -831,10 +831,10 @@ namespace settings {
       entries.push_back(std::move(e));
     }
     if (process::systemdAvailable()) {
-      entries.push_back(makeEntry("shell", "launcher", tr("settings.schema.shell.launch-app-as-systemd-service.label"),
-                                  tr("settings.schema.shell.launch-app-as-systemd-service.description"),
-                                  {"shell", "launch_app_as_systemd_service"},
-                                  ToggleSetting{cfg.shell.launchAppAsSystemdService}));
+      entries.push_back(makeEntry(
+          "shell", "launcher", tr("settings.schema.shell.launch-apps-as-systemd-services.label"),
+          tr("settings.schema.shell.launch-apps-as-systemd-services.description"),
+          {"shell", "launch_apps_as_systemd_services"}, ToggleSetting{cfg.shell.launchAppsAsSystemdServices}));
     }
     const SettingVisibility clipboardOn{{"shell", "clipboard_enabled"}, {"true"}};
     entries.push_back(makeEntry("shell", "clipboard", tr("settings.schema.shell.clipboard-enabled.label"),

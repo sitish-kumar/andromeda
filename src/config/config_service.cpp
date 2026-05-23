@@ -1460,8 +1460,8 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     if (auto v = (*shellTbl)["show_location"].value<bool>()) {
       shell.showLocation = *v;
     }
-    if (auto v = (*shellTbl)["launch_app_as_systemd_service"].value<bool>()) {
-      shell.launchAppAsSystemdService = *v;
+    if (auto v = (*shellTbl)["launch_apps_as_systemd_services"].value<bool>()) {
+      shell.launchAppsAsSystemdServices = *v;
     }
     if (auto v = (*shellTbl)["clipboard_enabled"].value<bool>()) {
       shell.clipboardEnabled = *v;

@@ -333,7 +333,7 @@ namespace {
            nearlyEqual(a.animation.speed, b.animation.speed) && a.avatarPath == b.avatarPath &&
            a.settingsShowAdvanced == b.settingsShowAdvanced &&
            a.middleClickOpensWidgetSettings == b.middleClickOpensWidgetSettings && a.showLocation == b.showLocation &&
-           a.launchAppAsSystemdService == b.launchAppAsSystemdService && a.clipboardEnabled == b.clipboardEnabled &&
+           a.launchAppsAsSystemdServices == b.launchAppsAsSystemdServices && a.clipboardEnabled == b.clipboardEnabled &&
            a.clipboardHistoryMaxEntries == b.clipboardHistoryMaxEntries && a.screenTimeEnabled == b.screenTimeEnabled &&
            a.clipboardAutoPaste == b.clipboardAutoPaste &&
            a.clipboardImageActionCommand == b.clipboardImageActionCommand && a.shadow.blur == b.shadow.blur &&

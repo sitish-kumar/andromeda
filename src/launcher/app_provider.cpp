@@ -358,7 +358,7 @@ bool AppProvider::activate(const LauncherResult& result) {
       token = m_wayland->requestActivationToken(nullptr);
     }
     launchCommand(execLine, entry.terminal, token, entry.workingDir, entry.id,
-                  m_config->config().shell.launchAppAsSystemdService);
+                  m_config->config().shell.launchAppsAsSystemdServices);
     return true;
   }
   return false;
