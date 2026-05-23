@@ -1480,7 +1480,9 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
 
     auto addPlainWidget = [&](Widget& widget) {
       widget.setBarCapsuleScene(nullptr, nullptr);
-      section->addChild(widget.releaseRoot());
+      auto node = widget.releaseRoot();
+      node->setNoGapAroundMe(widget.noGapAroundMe());
+      section->addChild(std::move(node));
     };
 
     auto addSingleCapsule = [&](Widget& widget) {
@@ -1511,6 +1513,7 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
           .allowCircularSizing = true,
           .widgets = {&widget},
       });
+      shell->setNoGapAroundMe(widget.noGapAroundMe());
       section->addChild(std::move(shell));
     };
 
@@ -1594,7 +1597,9 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
         run.spec.padding = std::max(run.spec.padding, member->barCapsuleSpec().padding);
         member->setBarCapsuleScene(shellPtr, bgPtr);
         run.widgets.push_back(member.get());
-        innerPtr->addChild(member->releaseRoot());
+        auto node = member->releaseRoot();
+        node->setNoGapAroundMe(member->noGapAroundMe());
+        innerPtr->addChild(std::move(node));
       }
 
       capsuleRuns.push_back(std::move(run));
