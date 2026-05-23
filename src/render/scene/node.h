@@ -91,9 +91,6 @@ public:
   [[nodiscard]] float scale() const noexcept { return m_scale; }
   [[nodiscard]] float opacity() const noexcept { return m_opacity; }
   [[nodiscard]] float flexGrow() const noexcept { return m_flexGrow; }
-  [[nodiscard]] bool noGapAroundMe() const noexcept {
-    return m_noGapAroundMe;
-  } // Prevent parent from adding gaps around me
   [[nodiscard]] bool visible() const noexcept { return m_visible; }
   [[nodiscard]] bool participatesInLayout() const noexcept { return m_participatesInLayout; }
   [[nodiscard]] bool paintDirty() const noexcept { return m_paintDirty; }
@@ -114,7 +111,6 @@ public:
   void setScale(float scale);
   void setOpacity(float opacity);
   void setFlexGrow(float grow);
-  void setNoGapAroundMe(bool noGap);
   void setVisible(bool visible);
   void setParticipatesInLayout(bool participatesInLayout);
   void setClipChildren(bool clipChildren);
@@ -167,7 +163,6 @@ private:
   float m_scale = 1.0f;
   float m_opacity = 1.0f;
   float m_flexGrow = 0.0f;
-  bool m_noGapAroundMe = false;
   bool m_visible = true;
   bool m_participatesInLayout = true;
   bool m_paintDirty = true;

@@ -78,6 +78,7 @@ struct Flex::ChildLayout {
   LayoutSize measured{};
   float main = 0.0f;
   float cross = 0.0f;
+  bool gapExcluded = false;
 };
 
 namespace {
@@ -327,6 +328,15 @@ void Flex::setRowLayout() {
   setJustify(FlexJustify::Start);
 }
 
+void Flex::setChildGapExcluded(Node* child, bool excluded) {
+  if (excluded) {
+    m_gapExcludedChildren.insert(child);
+  } else {
+    m_gapExcludedChildren.erase(child);
+  }
+  markLayoutDirty();
+}
+
 void Flex::ensureBackground() {
   if (m_background != nullptr) {
     return;
@@ -431,6 +441,7 @@ LayoutSize Flex::runLayout(Renderer& renderer, const LayoutConstraints& constrai
     }
     auto& item = items.emplace_back();
     item.node = child.get();
+    item.gapExcluded = m_gapExcludedChildren.count(child.get()) > 0;
     if (child->flexGrow() > 0.0f) {
       totalGrow += child->flexGrow();
     }
@@ -464,12 +475,12 @@ LayoutSize Flex::runLayout(Renderer& renderer, const LayoutConstraints& constrai
 
   int numGaps = 0;
   {
-    bool skipNextGap = items.empty() || items[0].node->noGapAroundMe();
+    bool prevExcluded = items.empty() || items[0].gapExcluded;
     for (size_t i = 1; i < items.size(); ++i) {
-      if (!skipNextGap && !items[i].node->noGapAroundMe()) {
+      if (!prevExcluded && !items[i].gapExcluded) {
         numGaps++;
       }
-      skipNextGap = items[i].node->noGapAroundMe();
+      prevExcluded = items[i].gapExcluded;
     }
   }
   const float totalGap = m_gap * static_cast<float>(numGaps);
@@ -538,13 +549,13 @@ LayoutSize Flex::runLayout(Renderer& renderer, const LayoutConstraints& constrai
     }
 
     bool first = true;
-    bool skipNextGap = items.empty() || items.front().node->noGapAroundMe();
+    bool prevExcluded = items.empty() || items.front().gapExcluded;
     for (auto& item : items) {
       if (!first) {
-        if (!skipNextGap && !item.node->noGapAroundMe()) {
+        if (!prevExcluded && !item.gapExcluded) {
           cursor += effectiveGap;
         }
-        skipNextGap = item.node->noGapAroundMe();
+        prevExcluded = item.gapExcluded;
       }
       first = false;
 

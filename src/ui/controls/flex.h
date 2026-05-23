@@ -4,6 +4,7 @@
 #include "ui/palette.h"
 
 #include <optional>
+#include <unordered_set>
 
 class Renderer;
 class RectNode;
@@ -70,6 +71,7 @@ public:
   void setFillHeight(bool fill);
 
   void setRowLayout();
+  void setChildGapExcluded(Node* child, bool excluded);
 
   [[nodiscard]] FlexDirection direction() const noexcept { return m_direction; }
   [[nodiscard]] float gap() const noexcept { return m_gap; }
@@ -124,4 +126,5 @@ private:
   bool m_sizingFromLayout = false;
   bool m_explicitWidth = false;
   bool m_explicitHeight = false;
+  std::unordered_set<const Node*> m_gapExcludedChildren;
 };
