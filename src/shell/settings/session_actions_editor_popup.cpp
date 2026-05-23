@@ -4,11 +4,8 @@
 #include "core/deferred_call.h"
 #include "render/render_context.h"
 #include "render/scene/node.h"
-#include "ui/controls/button.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/label.h"
+#include "ui/builders.h"
 #include "ui/controls/select_dropdown_popup.h"
-#include "ui/palette.h"
 #include "ui/popup_chrome.h"
 #include "ui/style.h"
 #include "wayland/popup_surface.h"
@@ -129,62 +126,60 @@ namespace settings {
     const float popupPadding = Style::spaceSm * m_scale;
     const float popupGap = Style::spaceSm * m_scale;
 
-    auto root = std::make_unique<Flex>();
-    root->setDirection(FlexDirection::Vertical);
-    root->setAlign(FlexAlign::Stretch);
-    root->setGap(popupGap);
-    root->setPadding(popupPadding);
-    m_root = root.get();
+    auto root = ui::column({
+        .out = &m_root,
+        .align = FlexAlign::Stretch,
+        .gap = popupGap,
+        .padding = popupPadding,
+    });
 
-    auto header = std::make_unique<Flex>();
-    header->setDirection(FlexDirection::Horizontal);
-    header->setAlign(FlexAlign::Center);
-    header->setGap(Style::spaceSm * m_scale);
+    auto header = ui::row({
+        .align = FlexAlign::Center,
+        .gap = Style::spaceSm * m_scale,
+    });
 
-    auto titleLabel = std::make_unique<Label>();
-    titleLabel->setText(m_sheetTitle);
-    titleLabel->setFontSize(Style::fontSizeBody * m_scale);
-    titleLabel->setColor(colorSpecFromRole(ColorRole::OnSurface));
-    titleLabel->setFontWeight(FontWeight::Bold);
-    header->addChild(std::move(titleLabel));
+    header->addChild(ui::label({
+        .text = m_sheetTitle,
+        .fontSize = Style::fontSizeBody * m_scale,
+        .color = colorSpecFromRole(ColorRole::OnSurface),
+        .fontWeight = FontWeight::Bold,
+    }));
+    header->addChild(ui::spacer());
 
-    auto spacer = std::make_unique<Flex>();
-    spacer->setFlexGrow(1.0f);
-    header->addChild(std::move(spacer));
+    const auto configureIconButton = [this](Button& button) {
+      button.setGlyphSize(Style::fontSizeBody * m_scale);
+      button.setMinWidth(Style::controlHeightSm * m_scale);
+      button.setMinHeight(Style::controlHeightSm * m_scale);
+      button.setPadding(Style::spaceXs * m_scale);
+      button.setRadius(Style::scaledRadiusMd(m_scale));
+    };
 
     if (m_removeAction) {
-      auto removeBtn = std::make_unique<Button>();
-      removeBtn->setGlyph("trash");
-      removeBtn->setVariant(ButtonVariant::Destructive);
-      removeBtn->setGlyphSize(Style::fontSizeBody * m_scale);
-      removeBtn->setMinWidth(Style::controlHeightSm * m_scale);
-      removeBtn->setMinHeight(Style::controlHeightSm * m_scale);
-      removeBtn->setPadding(Style::spaceXs * m_scale);
-      removeBtn->setRadius(Style::scaledRadiusMd(m_scale));
-      removeBtn->setOnClick([removeAction = m_removeAction]() {
-        if (removeAction) {
-          DeferredCall::callLater(removeAction);
-        }
-      });
-      header->addChild(std::move(removeBtn));
+      header->addChild(ui::button({
+          .glyph = "trash",
+          .variant = ButtonVariant::Destructive,
+          .onClick =
+              [removeAction = m_removeAction]() {
+                if (removeAction) {
+                  DeferredCall::callLater(removeAction);
+                }
+              },
+          .configure = configureIconButton,
+      }));
     }
 
-    auto closeBtn = std::make_unique<Button>();
-    closeBtn->setGlyph("close");
-    closeBtn->setVariant(ButtonVariant::Default);
-    closeBtn->setGlyphSize(Style::fontSizeBody * m_scale);
-    closeBtn->setMinWidth(Style::controlHeightSm * m_scale);
-    closeBtn->setMinHeight(Style::controlHeightSm * m_scale);
-    closeBtn->setPadding(Style::spaceXs * m_scale);
-    closeBtn->setRadius(Style::scaledRadiusMd(m_scale));
-    closeBtn->setOnClick([this]() { DeferredCall::callLater([this]() { close(); }); });
-    header->addChild(std::move(closeBtn));
+    header->addChild(ui::button({
+        .glyph = "close",
+        .variant = ButtonVariant::Default,
+        .onClick = [this]() { DeferredCall::callLater([this]() { close(); }); },
+        .configure = configureIconButton,
+    }));
     root->addChild(std::move(header));
 
-    auto body = std::make_unique<Flex>();
-    body->setDirection(FlexDirection::Vertical);
-    body->setAlign(FlexAlign::Stretch);
-    body->setGap(Style::spaceMd * m_scale);
+    auto body = ui::column({
+        .align = FlexAlign::Stretch,
+        .gap = Style::spaceMd * m_scale,
+    });
 
     if (m_populateSheetBody) {
       m_populateSheetBody(*body);
