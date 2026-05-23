@@ -277,7 +277,7 @@ std::vector<WorkspaceWindow> TriadWorkspaceBackend::workspaceWindows(const std::
 }
 
 void TriadWorkspaceBackend::focusWindow(const std::string& windowId) {
-  auto parsed = parseWorkspaceIndex(windowId);
+  const auto parsed = parseUnsignedId(windowId);
   if (!parsed.has_value()) {
     return;
   }
@@ -370,7 +370,7 @@ std::vector<std::string> TriadWorkspaceBackend::workspaceKeys(const std::string&
 std::optional<std::string> TriadWorkspaceBackend::focusedWindowId() const {
   for (const auto& [index, workspace] : m_workspaces) {
     (void)index;
-    if (workspace.active && workspace.focusedWindowId.has_value()) {
+    if (workspace.globalActive && workspace.focusedWindowId.has_value()) {
       return std::to_string(*workspace.focusedWindowId);
     }
   }
@@ -563,8 +563,8 @@ bool TriadWorkspaceBackend::applyLayoutState(const nlohmann::json& state) {
       const auto oldIt = m_workspaces.find(index);
       if (oldIt == m_workspaces.end() || oldIt->second.name != workspace.name ||
           oldIt->second.output != workspace.output || oldIt->second.active != workspace.active ||
-          oldIt->second.urgent != workspace.urgent || oldIt->second.occupied != workspace.occupied ||
-          oldIt->second.focusedWindowId != workspace.focusedWindowId) {
+          oldIt->second.globalActive != workspace.globalActive || oldIt->second.urgent != workspace.urgent ||
+          oldIt->second.occupied != workspace.occupied || oldIt->second.focusedWindowId != workspace.focusedWindowId) {
         same = false;
         break;
       }
@@ -645,7 +645,8 @@ std::optional<TriadWorkspaceBackend::WorkspaceState> TriadWorkspaceBackend::pars
   }
   workspace.name = jsonString(json, "name");
   workspace.output = jsonString(json, "output");
-  workspace.active = jsonBool(json, "is_output_visible") || jsonBool(json, "is_active");
+  workspace.active = jsonBool(json, "is_output_visible");
+  workspace.globalActive = jsonBool(json, "is_active");
   workspace.urgent = jsonBool(json, "is_urgent");
   workspace.occupied = jsonBool(json, "occupied");
   if (const auto focusedIt = json.find("focused_window_id"); focusedIt != json.end() && !focusedIt->is_null()) {
@@ -741,7 +742,7 @@ bool TriadWorkspaceBackend::shouldExposeWorkspace(const WorkspaceState& workspac
   if (m_outputNames.contains(workspace.output)) {
     return true;
   }
-  return workspace.active || workspace.occupied || workspace.urgent;
+  return workspace.active || workspace.globalActive || workspace.occupied || workspace.urgent;
 }
 
 std::vector<const TriadWorkspaceBackend::WorkspaceState*>
@@ -765,11 +766,19 @@ TriadWorkspaceBackend::sortedWorkspaces(const std::string& outputName) const {
 }
 
 std::optional<std::uint32_t> TriadWorkspaceBackend::parseWorkspaceIndex(const std::string& id) const {
+  const auto parsed = parseUnsignedId(id);
+  if (!parsed.has_value() || *parsed == 0 || *parsed > std::numeric_limits<std::uint32_t>::max()) {
+    return std::nullopt;
+  }
+  return static_cast<std::uint32_t>(*parsed);
+}
+
+std::optional<std::uint64_t> TriadWorkspaceBackend::parseUnsignedId(const std::string& id) {
   if (id.empty()) {
     return std::nullopt;
   }
 
-  std::uint32_t parsed = 0;
+  std::uint64_t parsed = 0;
   const auto [ptr, ec] = std::from_chars(id.data(), id.data() + id.size(), parsed);
   if (ec != std::errc{} || ptr != id.data() + id.size() || parsed == 0) {
     return std::nullopt;

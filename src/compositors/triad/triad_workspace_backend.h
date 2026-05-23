@@ -67,6 +67,7 @@ private:
     std::string name;
     std::string output;
     bool active = false;
+    bool globalActive = false;
     bool urgent = false;
     bool occupied = false;
     std::optional<std::uint64_t> focusedWindowId;
@@ -103,6 +104,7 @@ private:
   [[nodiscard]] bool shouldExposeWorkspace(const WorkspaceState& workspace, const std::string& outputName = {}) const;
   [[nodiscard]] std::vector<const WorkspaceState*> sortedWorkspaces(const std::string& outputName = {}) const;
   [[nodiscard]] std::optional<std::uint32_t> parseWorkspaceIndex(const std::string& id) const;
+  [[nodiscard]] static std::optional<std::uint64_t> parseUnsignedId(const std::string& id);
   void refreshSnapshot();
   void notifyChanged() const;
   void notifyOverviewChanged() const;
