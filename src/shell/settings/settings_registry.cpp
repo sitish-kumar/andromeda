@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -19,9 +20,21 @@
 namespace settings {
   namespace {
 
+    constexpr int kBarMarginMax = 4096;
+
     SelectSetting asSegmented(SelectSetting setting) {
       setting.segmented = true;
       return setting;
+    }
+
+    StepperSetting barMarginStepper(std::int32_t value) {
+      return StepperSetting{
+          .value = static_cast<int>(value),
+          .minValue = 0,
+          .maxValue = kBarMarginMax,
+          .step = 1,
+          .valueSuffix = "px",
+      };
     }
 
     std::optional<int> radiusStepperValue(const std::optional<double>& value) {
@@ -1368,12 +1381,10 @@ namespace settings {
                                   SliderSetting{bar.scale, 0.5f, 4.0f, 0.05f, false}, "zoom size"));
       entries.push_back(makeEntry(section, "layout", tr("settings.schema.shared.ends-margin.label"),
                                   tr("settings.schema.bar.ends-margin.description"), path("margin_ends"),
-                                  SliderSetting{static_cast<float>(bar.marginEnds), 0.0f, 500.0f, 1.0f, true},
-                                  "gap inset"));
+                                  barMarginStepper(bar.marginEnds), "gap inset"));
       entries.push_back(makeEntry(section, "layout", tr("settings.schema.shared.edge-margin.label"),
                                   tr("settings.schema.bar.edge-margin.description"), path("margin_edge"),
-                                  SliderSetting{static_cast<float>(bar.marginEdge), 0.0f, 100.0f, 1.0f, true},
-                                  "gap inset"));
+                                  barMarginStepper(bar.marginEdge), "gap inset"));
       entries.push_back(makeEntry(section, "layout", tr("settings.schema.bar.content-padding.label"),
                                   tr("settings.schema.bar.content-padding.description"), path("padding"),
                                   SliderSetting{static_cast<float>(bar.padding), 0.0f, 80.0f, 1.0f, true}, "inset"));
@@ -1540,16 +1551,12 @@ namespace settings {
                                     tr("settings.schema.bar.content-scale.description"), mpath("scale"),
                                     SliderSetting{ovr.scale.value_or(bar.scale), 0.5f, 4.0f, 0.05f, false},
                                     "zoom size"));
-        entries.push_back(makeEntry(
-            section, "layout", tr("settings.schema.shared.ends-margin.label"),
-            tr("settings.schema.bar.ends-margin.description"), mpath("margin_ends"),
-            SliderSetting{static_cast<float>(ovr.marginEnds.value_or(bar.marginEnds)), 0.0f, 500.0f, 1.0f, true},
-            "gap inset"));
-        entries.push_back(makeEntry(
-            section, "layout", tr("settings.schema.shared.edge-margin.label"),
-            tr("settings.schema.bar.edge-margin.description"), mpath("margin_edge"),
-            SliderSetting{static_cast<float>(ovr.marginEdge.value_or(bar.marginEdge)), 0.0f, 100.0f, 1.0f, true},
-            "gap inset"));
+        entries.push_back(makeEntry(section, "layout", tr("settings.schema.shared.ends-margin.label"),
+                                    tr("settings.schema.bar.ends-margin.description"), mpath("margin_ends"),
+                                    barMarginStepper(ovr.marginEnds.value_or(bar.marginEnds)), "gap inset"));
+        entries.push_back(makeEntry(section, "layout", tr("settings.schema.shared.edge-margin.label"),
+                                    tr("settings.schema.bar.edge-margin.description"), mpath("margin_edge"),
+                                    barMarginStepper(ovr.marginEdge.value_or(bar.marginEdge)), "gap inset"));
         entries.push_back(makeEntry(
             section, "layout", tr("settings.schema.bar.content-padding.label"),
             tr("settings.schema.bar.content-padding.description"), mpath("padding"),
