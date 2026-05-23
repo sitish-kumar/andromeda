@@ -7,6 +7,7 @@
 #include "ui/controls/flex.h"
 #include "ui/controls/input.h"
 #include "ui/controls/label.h"
+#include "ui/controls/search_picker.h"
 #include "ui/controls/separator.h"
 #include "ui/controls/spacer.h"
 #include "ui/controls/virtual_grid_view.h"
@@ -19,6 +20,7 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace ui {
 
@@ -161,12 +163,30 @@ namespace ui {
     std::function<void(VirtualGridView&)> configure = nullptr;
   };
 
+  struct SearchPickerProps {
+    SearchPicker** out = nullptr;
+    std::optional<std::string> placeholder = std::nullopt;
+    std::optional<std::string> emptyText = std::nullopt;
+    std::optional<std::string> selectedValue = std::nullopt;
+    std::optional<std::vector<SearchPickerOption>> options = std::nullopt;
+    std::optional<bool> enabled = std::nullopt;
+    std::optional<float> width = std::nullopt;
+    std::optional<float> height = std::nullopt;
+    std::optional<float> flexGrow = std::nullopt;
+    std::optional<bool> visible = std::nullopt;
+    std::optional<bool> participatesInLayout = std::nullopt;
+    std::function<void(const SearchPickerOption&)> onActivated = nullptr;
+    std::function<void()> onCancel = nullptr;
+    std::function<void(SearchPicker&)> configure = nullptr;
+  };
+
   [[nodiscard]] std::unique_ptr<Flex> makeFlex(FlexDirection direction, FlexProps props);
   [[nodiscard]] std::unique_ptr<Input> input(InputProps props);
   [[nodiscard]] std::unique_ptr<Button> button(ButtonProps props);
   [[nodiscard]] std::unique_ptr<Label> label(LabelProps props);
   [[nodiscard]] std::unique_ptr<Separator> separator(SeparatorProps props = {});
   [[nodiscard]] std::unique_ptr<VirtualGridView> virtualGridView(VirtualGridViewProps props);
+  [[nodiscard]] std::unique_ptr<SearchPicker> searchPicker(SearchPickerProps props);
   [[nodiscard]] std::unique_ptr<Spacer> spacer();
 
   template <typename... Children> [[nodiscard]] std::unique_ptr<Flex> row(FlexProps props, Children&&... children) {

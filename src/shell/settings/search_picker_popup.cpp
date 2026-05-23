@@ -4,16 +4,14 @@
 #include "render/render_context.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
-#include "ui/controls/button.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/label.h"
-#include "ui/palette.h"
+#include "ui/builders.h"
 #include "ui/style.h"
 #include "wayland/wayland_connection.h"
 #include "xdg-shell-client-protocol.h"
 
 #include <algorithm>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -99,70 +97,69 @@ namespace settings {
   void SearchPickerPopup::populateContent(Node* contentParent, std::uint32_t /*width*/, std::uint32_t /*height*/) {
     const float panelPadding = Style::spaceSm * m_scale;
     const float panelGap = Style::spaceSm * m_scale;
+    const std::optional<std::string> placeholder =
+        m_placeholder.empty() ? std::nullopt : std::optional<std::string>(m_placeholder);
+    const std::optional<std::string> emptyText =
+        m_emptyText.empty() ? std::nullopt : std::optional<std::string>(m_emptyText);
 
-    auto root = std::make_unique<Flex>();
-    root->setDirection(FlexDirection::Vertical);
-    root->setAlign(FlexAlign::Stretch);
-    root->setGap(panelGap);
-    root->setPadding(panelPadding);
-    m_root = root.get();
-
-    auto header = std::make_unique<Flex>();
-    header->setDirection(FlexDirection::Horizontal);
-    header->setAlign(FlexAlign::Center);
-    header->setGap(Style::spaceSm * m_scale);
-
-    auto titleLabel = std::make_unique<Label>();
-    titleLabel->setText(m_title);
-    titleLabel->setFontSize(Style::fontSizeBody * m_scale);
-    titleLabel->setColor(colorSpecFromRole(ColorRole::OnSurface));
-    titleLabel->setFontWeight(FontWeight::Bold);
-    header->addChild(std::move(titleLabel));
-
-    auto spacer = std::make_unique<Flex>();
-    spacer->setFlexGrow(1.0f);
-    header->addChild(std::move(spacer));
-
-    auto closeBtn = std::make_unique<Button>();
-    closeBtn->setGlyph("close");
-    closeBtn->setVariant(ButtonVariant::Default);
-    closeBtn->setGlyphSize(Style::fontSizeBody * m_scale);
-    closeBtn->setMinWidth(Style::controlHeightSm * m_scale);
-    closeBtn->setMinHeight(Style::controlHeightSm * m_scale);
-    closeBtn->setPadding(Style::spaceXs * m_scale);
-    closeBtn->setRadius(Style::scaledRadiusMd(m_scale));
-    closeBtn->setOnClick([this]() { DeferredCall::callLater([this]() { close(); }); });
-    header->addChild(std::move(closeBtn));
-    root->addChild(std::move(header));
-
-    auto picker = std::make_unique<SearchPicker>();
-    if (!m_placeholder.empty()) {
-      picker->setPlaceholder(m_placeholder);
-    }
-    if (!m_emptyText.empty()) {
-      picker->setEmptyText(m_emptyText);
-    }
-    picker->clearFill();
-    picker->clearBorder();
-    picker->setRadius(0.0f);
-    picker->setPadding(0.0f);
-    picker->setFlexGrow(1.0f);
-    picker->setSelectedValue(m_selectedValue);
-    picker->setOptions(m_options);
-    picker->setOnActivated([this](const SearchPickerOption& option) {
-      if (option.value.empty()) {
-        return;
-      }
-      if (m_onSelect) {
-        m_onSelect(option.value);
-      }
-      DeferredCall::callLater([this]() { close(); });
-    });
-    picker->setOnCancel([this]() { DeferredCall::callLater([this]() { close(); }); });
-    m_searchPicker = picker.get();
-    root->addChild(std::move(picker));
-
-    contentParent->addChild(std::move(root));
+    contentParent->addChild(ui::column(
+        {
+            .out = &m_root,
+            .align = FlexAlign::Stretch,
+            .gap = panelGap,
+            .padding = panelPadding,
+        },
+        ui::row(
+            {
+                .align = FlexAlign::Center,
+                .gap = Style::spaceSm * m_scale,
+            },
+            ui::label({
+                .text = m_title,
+                .fontSize = Style::fontSizeBody * m_scale,
+                .color = colorSpecFromRole(ColorRole::OnSurface),
+                .fontWeight = FontWeight::Bold,
+            }),
+            ui::spacer(),
+            ui::button({
+                .glyph = "close",
+                .glyphSize = Style::fontSizeBody * m_scale,
+                .variant = ButtonVariant::Default,
+                .onClick = [this]() { DeferredCall::callLater([this]() { close(); }); },
+                .configure =
+                    [this](Button& button) {
+                      button.setMinWidth(Style::controlHeightSm * m_scale);
+                      button.setMinHeight(Style::controlHeightSm * m_scale);
+                      button.setPadding(Style::spaceXs * m_scale);
+                      button.setRadius(Style::scaledRadiusMd(m_scale));
+                    },
+            })),
+        ui::searchPicker({
+            .out = &m_searchPicker,
+            .placeholder = placeholder,
+            .emptyText = emptyText,
+            .selectedValue = m_selectedValue,
+            .options = m_options,
+            .flexGrow = 1.0f,
+            .onActivated =
+                [this](const SearchPickerOption& option) {
+                  if (option.value.empty()) {
+                    return;
+                  }
+                  if (m_onSelect) {
+                    m_onSelect(option.value);
+                  }
+                  DeferredCall::callLater([this]() { close(); });
+                },
+            .onCancel = [this]() { DeferredCall::callLater([this]() { close(); }); },
+            .configure =
+                [](SearchPicker& picker) {
+                  picker.clearFill();
+                  picker.clearBorder();
+                  picker.setRadius(0.0f);
+                  picker.setPadding(0.0f);
+                },
+        })));
   }
 
   void SearchPickerPopup::layoutSheet(float contentWidth, float contentHeight) {
