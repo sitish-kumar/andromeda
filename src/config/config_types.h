@@ -602,6 +602,9 @@ struct WeatherConfig {
 
 struct SystemConfig {
   struct MonitorConfig {
+    static constexpr float kMinPollSeconds = 1.0f;
+    static constexpr float kMaxPollSeconds = 120.0f;
+
     bool enabled = true;
     float cpuPollSeconds = 2.0f;
     float gpuPollSeconds = 5.0f;

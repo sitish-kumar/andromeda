@@ -952,14 +952,16 @@ namespace settings {
                                 {"system", "monitor", "enabled"}, ToggleSetting{cfg.system.monitor.enabled},
                                 "system monitor cpu ram memory"));
     {
-      constexpr float kPollMin = 0.1f;
-      constexpr float kPollMax = 60.0f;
-      constexpr float kPollStep = 0.1f;
+      constexpr float kPollMin = SystemConfig::MonitorConfig::kMinPollSeconds;
+      constexpr float kPollMax = SystemConfig::MonitorConfig::kMaxPollSeconds;
+      constexpr float kPollStep = 1.0f;
       const auto& mon = cfg.system.monitor;
       auto addPoll = [&](std::string_view labelKey, std::string_view descKey, std::vector<std::string> path,
                          float value) {
-        auto entry = makeEntry("services", "system", tr(labelKey), tr(descKey), std::move(path),
-                               SliderSetting{value, kPollMin, kPollMax, kPollStep, false}, "system monitor", true);
+        const float clampedValue = std::clamp(value, kPollMin, kPollMax);
+        auto entry =
+            makeEntry("services", "system", tr(labelKey), tr(descKey), std::move(path),
+                      SliderSetting{clampedValue, kPollMin, kPollMax, kPollStep, true}, "system monitor", true);
         entry.visibleWhen = monitorOn;
         entries.push_back(std::move(entry));
       };

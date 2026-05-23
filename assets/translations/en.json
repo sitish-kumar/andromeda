@@ -1998,23 +1998,23 @@
           "description": "Sample CPU, memory, network, load, temperature, and disk statistics",
           "cpu-poll": {
             "label": "CPU poll interval",
-            "description": "Seconds between CPU usage, CPU temperature, and load-average samples"
+            "description": "1-120 seconds between CPU usage, CPU temperature, and load-average samples"
           },
           "gpu-poll": {
             "label": "GPU poll interval",
-            "description": "Seconds between GPU temperature and VRAM samples"
+            "description": "1-120 seconds between GPU temperature and VRAM samples"
           },
           "memory-poll": {
             "label": "Memory poll interval",
-            "description": "Seconds between RAM usage samples"
+            "description": "1-120 seconds between RAM usage samples"
           },
           "network-poll": {
             "label": "Network poll interval",
-            "description": "Seconds between network throughput samples"
+            "description": "1-120 seconds between network throughput samples"
           },
           "disk-poll": {
             "label": "Disk poll interval",
-            "description": "Seconds between disk usage and swap usage samples"
+            "description": "1-120 seconds between disk usage and swap usage samples"
           }
         },
         "weather-location": {
