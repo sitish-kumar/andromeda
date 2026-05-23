@@ -1,5 +1,7 @@
 #include "ui/builders.h"
 
+#include "ui/controls/scroll_view.h"
+
 #include <utility>
 
 namespace ui {
@@ -256,6 +258,72 @@ namespace ui {
       control->setAutoScrollOnlyWhenHovered(*props.autoScrollOnlyWhenHovered);
     }
     applyNodeProps(*control, props);
+    if (props.configure) {
+      props.configure(*control);
+    }
+    if (props.out != nullptr) {
+      *props.out = control.get();
+    }
+    return control;
+  }
+
+  std::unique_ptr<Separator> separator(SeparatorProps props) {
+    auto control = std::make_unique<Separator>();
+    if (props.color.has_value()) {
+      control->setColor(*props.color);
+    }
+    if (props.thickness.has_value()) {
+      control->setThickness(*props.thickness);
+    }
+    if (props.orientation.has_value()) {
+      control->setOrientation(*props.orientation);
+    }
+    applyNodeProps(*control, props);
+    if (props.configure) {
+      props.configure(*control);
+    }
+    if (props.out != nullptr) {
+      *props.out = control.get();
+    }
+    return control;
+  }
+
+  std::unique_ptr<VirtualGridView> virtualGridView(VirtualGridViewProps props) {
+    auto control = std::make_unique<VirtualGridView>();
+    if (props.columns.has_value()) {
+      control->setColumns(*props.columns);
+    }
+    if (props.minCellWidth.has_value()) {
+      control->setMinCellWidth(*props.minCellWidth);
+    }
+    if (props.cellHeight.has_value()) {
+      control->setCellHeight(*props.cellHeight);
+    }
+    if (props.squareCells.has_value()) {
+      control->setSquareCells(*props.squareCells);
+    }
+    if (props.columnGap.has_value()) {
+      control->setColumnGap(*props.columnGap);
+    }
+    if (props.rowGap.has_value()) {
+      control->setRowGap(*props.rowGap);
+    }
+    if (props.overscanRows.has_value()) {
+      control->setOverscanRows(*props.overscanRows);
+    }
+    if (props.scrollbarVisible.has_value()) {
+      control->scrollView().setScrollbarVisible(*props.scrollbarVisible);
+    }
+    if (props.scrollCardStyleScale.has_value()) {
+      control->scrollView().setCardStyle(*props.scrollCardStyleScale);
+    }
+    if (props.adapter != nullptr) {
+      control->setAdapter(props.adapter);
+    }
+    applyNodeProps(*control, props);
+    if (props.onSelectionChanged) {
+      control->setOnSelectionChanged(std::move(props.onSelectionChanged));
+    }
     if (props.configure) {
       props.configure(*control);
     }

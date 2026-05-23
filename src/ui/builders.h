@@ -7,9 +7,12 @@
 #include "ui/controls/flex.h"
 #include "ui/controls/input.h"
 #include "ui/controls/label.h"
+#include "ui/controls/separator.h"
 #include "ui/controls/spacer.h"
+#include "ui/controls/virtual_grid_view.h"
 #include "ui/palette.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -124,10 +127,46 @@ namespace ui {
     std::function<void(Label&)> configure = nullptr;
   };
 
+  struct SeparatorProps {
+    Separator** out = nullptr;
+    std::optional<ColorSpec> color = std::nullopt;
+    std::optional<float> thickness = std::nullopt;
+    std::optional<SeparatorOrientation> orientation = std::nullopt;
+    std::optional<float> width = std::nullopt;
+    std::optional<float> height = std::nullopt;
+    std::optional<float> flexGrow = std::nullopt;
+    std::optional<bool> visible = std::nullopt;
+    std::optional<bool> participatesInLayout = std::nullopt;
+    std::function<void(Separator&)> configure = nullptr;
+  };
+
+  struct VirtualGridViewProps {
+    VirtualGridView** out = nullptr;
+    std::optional<std::size_t> columns = std::nullopt;
+    std::optional<float> minCellWidth = std::nullopt;
+    std::optional<float> cellHeight = std::nullopt;
+    std::optional<bool> squareCells = std::nullopt;
+    std::optional<float> columnGap = std::nullopt;
+    std::optional<float> rowGap = std::nullopt;
+    std::optional<std::size_t> overscanRows = std::nullopt;
+    std::optional<bool> scrollbarVisible = std::nullopt;
+    std::optional<float> scrollCardStyleScale = std::nullopt;
+    VirtualGridAdapter* adapter = nullptr;
+    std::optional<float> width = std::nullopt;
+    std::optional<float> height = std::nullopt;
+    std::optional<float> flexGrow = std::nullopt;
+    std::optional<bool> visible = std::nullopt;
+    std::optional<bool> participatesInLayout = std::nullopt;
+    std::function<void(std::optional<std::size_t>)> onSelectionChanged = nullptr;
+    std::function<void(VirtualGridView&)> configure = nullptr;
+  };
+
   [[nodiscard]] std::unique_ptr<Flex> makeFlex(FlexDirection direction, FlexProps props);
   [[nodiscard]] std::unique_ptr<Input> input(InputProps props);
   [[nodiscard]] std::unique_ptr<Button> button(ButtonProps props);
   [[nodiscard]] std::unique_ptr<Label> label(LabelProps props);
+  [[nodiscard]] std::unique_ptr<Separator> separator(SeparatorProps props = {});
+  [[nodiscard]] std::unique_ptr<VirtualGridView> virtualGridView(VirtualGridViewProps props);
   [[nodiscard]] std::unique_ptr<Spacer> spacer();
 
   template <typename... Children> [[nodiscard]] std::unique_ptr<Flex> row(FlexProps props, Children&&... children) {
