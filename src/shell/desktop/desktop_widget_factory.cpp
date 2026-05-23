@@ -191,6 +191,8 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
         return DesktopSysmonStat::CpuTemp;
       if (s == "gpu_temp")
         return DesktopSysmonStat::GpuTemp;
+      if (s == "gpu_usage")
+        return DesktopSysmonStat::GpuUsage;
       if (s == "gpu_vram")
         return DesktopSysmonStat::GpuVram;
       if (s == "ram_pct")

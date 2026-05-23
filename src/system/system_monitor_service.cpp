@@ -524,6 +524,11 @@ namespace {
   using NvmlDeviceGetCountFn = NvmlReturn (*)(unsigned int*);
   using NvmlDeviceGetHandleByIndexFn = NvmlReturn (*)(unsigned int, NvmlDevice*);
   using NvmlDeviceGetTemperatureFn = NvmlReturn (*)(NvmlDevice, unsigned int, unsigned int*);
+  struct NvmlUsage {
+    unsigned int gpu = 0;
+    unsigned int memory = 0;
+  };
+  using NvmlDeviceGetUsageRatesFn = NvmlReturn (*)(NvmlDevice, NvmlUsage*);
 
   struct NvmlMemory {
     unsigned long long total = 0;
@@ -578,6 +583,29 @@ struct SystemMonitorService::NvidiaNvmlReader {
     return TempSensorReading{.tempC = *bestTemp, .score = 0, .source = source, .isNvidia = true};
   }
 
+  [[nodiscard]] std::optional<double> readGpuUsagePercent() {
+    if (!ensureReady() || m_devices.empty()) {
+      return std::nullopt;
+    }
+
+    double totalUsage = 0.0;
+    std::size_t sampledDevices = 0;
+    for (const auto& device : m_devices) {
+      NvmlUsage usage{};
+      if (m_getUsageRates == nullptr || m_getUsageRates(device.handle, &usage) != kNvmlSuccess || usage.gpu > 100U) {
+        continue;
+      }
+      totalUsage += static_cast<double>(usage.gpu);
+      ++sampledDevices;
+    }
+
+    if (sampledDevices == 0) {
+      return std::nullopt;
+    }
+
+    return totalUsage / static_cast<double>(sampledDevices);
+  }
+
   [[nodiscard]] std::optional<GpuVramReading> readGpuVram() {
     if (!ensureReady() || m_devices.empty()) {
       return std::nullopt;
@@ -626,6 +654,7 @@ private:
         !loadDlsymFunction(m_library, "nvmlDeviceGetCount_v2", "nvmlDeviceGetCount", m_getCount) ||
         !loadDlsymFunction(m_library, "nvmlDeviceGetHandleByIndex_v2", "nvmlDeviceGetHandleByIndex", m_getHandle) ||
         !loadDlsymFunction(m_library, "nvmlDeviceGetTemperature", m_getTemperature) ||
+        !loadDlsymFunction(m_library, "nvmlDeviceGetUtilizationRates", m_getUsageRates) ||
         !loadDlsymFunction(m_library, "nvmlDeviceGetMemoryInfo", m_getMemoryInfo)) {
       close();
       m_state = State::Unavailable;
@@ -681,6 +710,7 @@ private:
   NvmlDeviceGetCountFn m_getCount = nullptr;
   NvmlDeviceGetHandleByIndexFn m_getHandle = nullptr;
   NvmlDeviceGetTemperatureFn m_getTemperature = nullptr;
+  NvmlDeviceGetUsageRatesFn m_getUsageRates = nullptr;
   NvmlDeviceGetMemoryInfoFn m_getMemoryInfo = nullptr;
 };
 
@@ -742,6 +772,10 @@ void SystemMonitorService::releaseCpuTemp() { m_cpuTempRefs.fetch_sub(1, std::me
 void SystemMonitorService::retainGpuTemp() { m_gpuTempRefs.fetch_add(1, std::memory_order_relaxed); }
 
 void SystemMonitorService::releaseGpuTemp() { m_gpuTempRefs.fetch_sub(1, std::memory_order_relaxed); }
+
+void SystemMonitorService::retainGpuUsage() { m_gpuUsageRefs.fetch_add(1, std::memory_order_relaxed); }
+
+void SystemMonitorService::releaseGpuUsage() { m_gpuUsageRefs.fetch_sub(1, std::memory_order_relaxed); }
 
 void SystemMonitorService::retainGpuVram() { m_gpuVramRefs.fetch_add(1, std::memory_order_relaxed); }
 
@@ -855,6 +889,12 @@ void SystemMonitorService::logDetectedSources() {
     kLog.info("detected GPU temperature source: {} ({:.0f}C); {}", gpuTemp->source, gpuTemp->tempC, gpuDetail);
   } else {
     kLog.info("detected GPU temperature source: unavailable; {}", gpuDetail);
+  }
+
+  if (const auto gpuUsage = readGpuUsagePercent(); gpuUsage.has_value()) {
+    kLog.info("detected GPU usage source: nvml ({:.0f}%)", *gpuUsage);
+  } else {
+    kLog.info("detected GPU usage source: unavailable");
   }
 
   if (const auto gpuVram = readGpuVram(); gpuVram.has_value()) {
@@ -971,6 +1011,13 @@ void SystemMonitorService::samplingLoop() {
         std::lock_guard lock{m_statsMutex};
         if (gpuTemp.has_value()) {
           m_latest.gpuTempC = gpuTemp;
+        }
+      }
+      if (m_gpuUsageRefs.load(std::memory_order_relaxed) > 0) {
+        const auto gpuUsage = readGpuUsagePercent();
+        std::lock_guard lock{m_statsMutex};
+        if (gpuUsage.has_value()) {
+          m_latest.gpuUsagePercent = gpuUsage;
         }
       }
       if (m_gpuVramRefs.load(std::memory_order_relaxed) > 0) {
@@ -1137,6 +1184,17 @@ std::optional<double> SystemMonitorService::readGpuTempCelsius() {
   }
 
   return best.has_value() ? std::optional<double>{best->tempC} : std::nullopt;
+}
+
+std::optional<double> SystemMonitorService::readGpuUsagePercent() {
+  if (hasInactiveNvidiaPciDisplayDevice()) {
+    return std::nullopt;
+  }
+
+  if (m_nvidiaNvmlReader == nullptr) {
+    m_nvidiaNvmlReader = std::make_unique<NvidiaNvmlReader>();
+  }
+  return m_nvidiaNvmlReader->readGpuUsagePercent();
 }
 
 std::optional<SystemMonitorService::GpuVramData> SystemMonitorService::readGpuVram() {
