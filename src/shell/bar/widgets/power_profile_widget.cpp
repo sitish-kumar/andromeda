@@ -1,4 +1,4 @@
-#include "shell/bar/widgets/power_profiles_widget.h"
+#include "shell/bar/widgets/power_profile_widget.h"
 
 #include "dbus/power/power_profiles_service.h"
 #include "render/core/renderer.h"
@@ -10,9 +10,9 @@
 
 #include <memory>
 
-PowerProfilesWidget::PowerProfilesWidget(PowerProfilesService* powerProfiles) : m_powerProfiles(powerProfiles) {}
+PowerProfileWidget::PowerProfileWidget(PowerProfilesService* powerProfiles) : m_powerProfiles(powerProfiles) {}
 
-void PowerProfilesWidget::create() {
+void PowerProfileWidget::create() {
   auto area = std::make_unique<InputArea>();
   area->setOnClick([this](const InputArea::PointerData& /*data*/) { cycleProfile(); });
   m_area = area.get();
@@ -27,7 +27,7 @@ void PowerProfilesWidget::create() {
   setRoot(std::move(area));
 }
 
-void PowerProfilesWidget::doLayout(Renderer& renderer, float /*containerWidth*/, float /*containerHeight*/) {
+void PowerProfileWidget::doLayout(Renderer& renderer, float /*containerWidth*/, float /*containerHeight*/) {
   auto* rootNode = root();
   if (m_glyph == nullptr || rootNode == nullptr) {
     return;
@@ -42,9 +42,9 @@ void PowerProfilesWidget::doLayout(Renderer& renderer, float /*containerWidth*/,
   rootNode->setSize(m_glyph->width(), m_glyph->height());
 }
 
-void PowerProfilesWidget::doUpdate(Renderer& renderer) { syncState(renderer); }
+void PowerProfileWidget::doUpdate(Renderer& renderer) { syncState(renderer); }
 
-void PowerProfilesWidget::syncState(Renderer& renderer) {
+void PowerProfileWidget::syncState(Renderer& renderer) {
   if (m_glyph == nullptr || m_area == nullptr) {
     return;
   }
@@ -70,7 +70,7 @@ void PowerProfilesWidget::syncState(Renderer& renderer) {
   requestRedraw();
 }
 
-void PowerProfilesWidget::cycleProfile() {
+void PowerProfileWidget::cycleProfile() {
   if (m_powerProfiles == nullptr) {
     return;
   }

@@ -30,7 +30,7 @@
 #include "shell/bar/widgets/network_widget.h"
 #include "shell/bar/widgets/nightlight_widget.h"
 #include "shell/bar/widgets/notification_widget.h"
-#include "shell/bar/widgets/power_profiles_widget.h"
+#include "shell/bar/widgets/power_profile_widget.h"
 #include "shell/bar/widgets/scripted_widget.h"
 #include "shell/bar/widgets/session_widget.h"
 #include "shell/bar/widgets/settings_widget.h"
@@ -313,8 +313,8 @@ std::unique_ptr<Widget> WidgetFactory::create(const std::string& name, wl_output
     return widget;
   }
 
-  if (type == "power_profiles") {
-    auto widget = std::make_unique<PowerProfilesWidget>(m_powerProfiles);
+  if (type == "power_profile") {
+    auto widget = std::make_unique<PowerProfileWidget>(m_powerProfiles);
     widget->setContentScale(contentScale);
     return widget;
   }

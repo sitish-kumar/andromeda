@@ -34,7 +34,7 @@ namespace settings {
         {.type = "network", .labelKey = "settings.widgets.types.network", .glyph = "wifi-off"},
         {.type = "nightlight", .labelKey = "settings.widgets.types.nightlight", .glyph = "nightlight-off"},
         {.type = "notifications", .labelKey = "settings.widgets.types.notifications", .glyph = "bell"},
-        {.type = "power_profiles", .labelKey = "settings.widgets.types.power-profiles", .glyph = "balanced"},
+        {.type = "power_profile", .labelKey = "settings.widgets.types.power-profile", .glyph = "balanced"},
         {.type = "scripted", .labelKey = "settings.widgets.types.scripted", .glyph = "script"},
         {.type = "session", .labelKey = "settings.widgets.types.session", .glyph = "shutdown"},
         {.type = "settings", .labelKey = "settings.widgets.types.settings", .glyph = "settings"},
