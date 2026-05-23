@@ -11,7 +11,7 @@ class Flex;
 
 namespace settings {
 
-  struct SettingsEntityEditorContext {
+  struct SettingsBarManagementContext {
     const Config& config;
     ConfigService* configService = nullptr;
     float scale = 1.0f;
@@ -35,6 +35,6 @@ namespace settings {
     std::function<void(std::string, std::string)> deleteMonitorOverride;
   };
 
-  void addSettingsEntityManagement(Flex& content, SettingsEntityEditorContext ctx);
+  void addSettingsBarManagement(Flex& content, SettingsBarManagementContext ctx);
 
 } // namespace settings

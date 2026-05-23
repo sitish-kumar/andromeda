@@ -517,7 +517,7 @@ _noctalia_sources = files(
   'src/shell/settings/color_spec_picker.cpp',
   'src/shell/settings/config_export_dialog_popup.cpp',
   'src/shell/settings/settings_content.cpp',
-  'src/shell/settings/settings_entity_editor.cpp',
+  'src/shell/settings/settings_bar_management.cpp',
   'src/shell/settings/settings_registry.cpp',
   'src/shell/settings/settings_sidebar.cpp',
   'src/shell/settings/widget_settings_registry.cpp',

@@ -5,8 +5,8 @@
 #include "dbus/upower/upower_service.h"
 #include "i18n/i18n.h"
 #include "render/render_context.h"
+#include "shell/settings/settings_bar_management.h"
 #include "shell/settings/settings_content.h"
-#include "shell/settings/settings_entity_editor.h"
 #include "shell/settings/settings_sidebar.h"
 #include "shell/settings/settings_window.h"
 #include "system/dependency_service.h"
@@ -443,9 +443,9 @@ void SettingsWindow::rebuildSettingsContent() {
   m_contentContainer->setAlign(FlexAlign::Stretch);
   m_contentContainer->setGap(Style::spaceMd * scale);
 
-  settings::addSettingsEntityManagement(
+  settings::addSettingsBarManagement(
       *m_contentContainer,
-      settings::SettingsEntityEditorContext{
+      settings::SettingsBarManagementContext{
           .config = cfg,
           .configService = m_config,
           .scale = scale,
