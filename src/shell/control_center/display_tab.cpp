@@ -63,8 +63,7 @@ namespace {
 
 } // namespace
 
-DisplayTab::DisplayTab(BrightnessService* brightness, ConfigService* config)
-    : m_brightness(brightness), m_config(config) {}
+DisplayTab::DisplayTab(BrightnessService* brightness, ConfigService* config) : m_brightness(brightness) {}
 
 std::unique_ptr<Flex> DisplayTab::create() {
   const float scale = contentScale();

@@ -33,7 +33,6 @@ private:
   void submit();
   bool handleInputKeyEvent(std::uint32_t sym, std::uint32_t modifiers);
 
-  ConfigService* m_config = nullptr;
   std::function<PolkitAgent*()> m_agentProvider;
   Flex* m_rootLayout = nullptr;
   InputArea* m_focusArea = nullptr;

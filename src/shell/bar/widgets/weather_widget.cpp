@@ -15,7 +15,7 @@
 #include <memory>
 
 WeatherWidget::WeatherWidget(WeatherService* weather, wl_output* output, float maxWidth, bool showCondition)
-    : m_weather(weather), m_output(output), m_maxWidth(maxWidth), m_showCondition(showCondition) {}
+    : m_weather(weather), m_maxWidth(maxWidth), m_showCondition(showCondition) {}
 
 void WeatherWidget::create() {
   auto area = std::make_unique<InputArea>();

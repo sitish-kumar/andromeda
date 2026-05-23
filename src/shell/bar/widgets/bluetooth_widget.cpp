@@ -47,8 +47,7 @@ namespace {
 
 BluetoothWidget::BluetoothWidget(BluetoothService* bluetooth, wl_output* output, bool showLabel,
                                  bool hideWhenNoConnectedDevice)
-    : m_bluetooth(bluetooth), m_output(output), m_showLabel(showLabel),
-      m_hideWhenNoConnectedDevice(hideWhenNoConnectedDevice) {}
+    : m_bluetooth(bluetooth), m_showLabel(showLabel), m_hideWhenNoConnectedDevice(hideWhenNoConnectedDevice) {}
 
 void BluetoothWidget::create() {
   auto area = std::make_unique<InputArea>();

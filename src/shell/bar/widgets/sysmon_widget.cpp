@@ -70,7 +70,7 @@ namespace {
 
 SysmonWidget::SysmonWidget(SystemMonitorService* monitor, wl_output* output, SysmonStat stat, std::string diskPath,
                            SysmonDisplayMode displayMode, bool showLabel, float labelMinWidth)
-    : m_monitor(monitor), m_output(output), m_stat(stat), m_displayMode(displayMode), m_showLabel(showLabel),
+    : m_monitor(monitor), m_stat(stat), m_displayMode(displayMode), m_showLabel(showLabel),
       m_labelMinWidth(labelMinWidth), m_diskPath(std::move(diskPath)) {
   if (m_monitor != nullptr) {
     if (needsCpuTemp(m_stat)) {

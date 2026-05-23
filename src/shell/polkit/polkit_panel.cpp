@@ -44,7 +44,7 @@ namespace {
 } // namespace
 
 PolkitPanel::PolkitPanel(ConfigService* config, std::function<PolkitAgent*()> agentProvider)
-    : m_config(config), m_agentProvider(std::move(agentProvider)) {}
+    : m_agentProvider(std::move(agentProvider)) {}
 
 void PolkitPanel::create() {
   const float scale = contentScale();

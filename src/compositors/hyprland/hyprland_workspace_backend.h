@@ -42,8 +42,8 @@ public:
   [[nodiscard]] std::optional<std::string> focusedWindowId() const;
   void focusWindow(const std::string& windowId) override;
   void cleanup() override;
-  void notifyCleanup();
-  void notifyChanged();
+  void notifyCleanup() override;
+  void notifyChanged() override;
   void syncFromCompositor();
 
   [[nodiscard]] int pollFd() const noexcept override;
@@ -76,7 +76,7 @@ private:
   void recomputeWorkspaceFlags();
   void ensureSnapshotFresh() const;
 
-  void handleEvent(std::string_view event, std::string_view data);
+  void handleEvent(std::string_view event, std::string_view data) override;
   void handleFocusedMonitor(std::string_view monitorName, int workspaceId);
   void handleWorkspaceActivated(int workspaceId);
   void clearUrgentForWorkspace(int workspaceId);

@@ -23,7 +23,6 @@ private:
   void syncWidgetVisibility(bool showWidget);
 
   BluetoothService* m_bluetooth = nullptr;
-  wl_output* m_output = nullptr;
   bool m_showLabel = false;
   bool m_hideWhenNoConnectedDevice = false;
   Glyph* m_glyph = nullptr;

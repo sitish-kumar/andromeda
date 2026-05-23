@@ -40,7 +40,6 @@ private:
 
   MprisService* m_mpris = nullptr;
   HttpClient* m_httpClient = nullptr;
-  wl_output* m_output = nullptr;
   float m_maxWidth = 220.0f;
   float m_minWidth = 80.0f;
   float m_artSize = 16.0f;

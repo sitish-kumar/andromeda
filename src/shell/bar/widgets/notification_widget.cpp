@@ -16,7 +16,7 @@ namespace {
 } // namespace
 
 NotificationWidget::NotificationWidget(NotificationManager* manager, wl_output* output, bool hideWhenNoUnread)
-    : m_manager(manager), m_output(output), m_hideWhenNoUnread(hideWhenNoUnread) {}
+    : m_manager(manager), m_hideWhenNoUnread(hideWhenNoUnread) {}
 
 void NotificationWidget::create() {
   auto area = std::make_unique<InputArea>();

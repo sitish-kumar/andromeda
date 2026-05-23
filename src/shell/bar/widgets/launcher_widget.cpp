@@ -11,7 +11,7 @@
 #include <memory>
 
 LauncherWidget::LauncherWidget(wl_output* output, std::string barGlyphId, std::string logoPath)
-    : m_output(output), m_barGlyphId(std::move(barGlyphId)), m_logoPath(std::move(logoPath)) {}
+    : m_barGlyphId(std::move(barGlyphId)), m_logoPath(std::move(logoPath)) {}
 
 void LauncherWidget::create() {
   auto area = std::make_unique<InputArea>();

@@ -18,7 +18,6 @@ private:
   [[nodiscard]] std::string formatTimeText() const;
   void doLayout(Renderer& renderer, float containerWidth, float containerHeight) override;
   void doUpdate(Renderer& renderer) override;
-  wl_output* m_output = nullptr;
   std::string m_format;
   std::string m_verticalFormat;
   bool m_isVertical = false;

@@ -46,7 +46,6 @@ private:
                                                   double& tempMax);
 
   SystemMonitorService* m_monitor;
-  wl_output* m_output;
   SysmonStat m_stat;
   SysmonDisplayMode m_displayMode;
   bool m_showLabel;

@@ -8,7 +8,7 @@
 
 #include <memory>
 
-TestWidget::TestWidget(wl_output* output) : m_output(output) {}
+TestWidget::TestWidget(wl_output* /*output*/) {}
 
 void TestWidget::create() {
   auto area = std::make_unique<InputArea>();

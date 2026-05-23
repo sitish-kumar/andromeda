@@ -36,7 +36,7 @@ namespace {
 
 VolumeWidget::VolumeWidget(PipeWireService* audio, const Config* config, wl_output* output, bool showLabel,
                            VolumeWidgetTarget target)
-    : m_audio(audio), m_config(config), m_output(output), m_showLabel(showLabel), m_target(target) {}
+    : m_audio(audio), m_config(config), m_showLabel(showLabel), m_target(target) {}
 
 void VolumeWidget::create() {
   auto area = std::make_unique<InputArea>();

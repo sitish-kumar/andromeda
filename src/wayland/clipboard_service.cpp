@@ -24,7 +24,6 @@
 
 namespace {
 
-  constexpr std::size_t kDefaultMaxHistoryEntries = 50;
   constexpr std::size_t kMinHistoryMaxEntries = 10;
   constexpr std::size_t kMaxHistoryMaxEntries = 200;
   constexpr std::size_t kMaxHistoryBytes = 64u * 1024u * 1024u;

@@ -11,7 +11,7 @@
 #include <memory>
 
 ControlCenterWidget::ControlCenterWidget(wl_output* output, std::string barGlyphId, std::string logoPath)
-    : m_output(output), m_barGlyphId(std::move(barGlyphId)), m_logoPath(std::move(logoPath)) {}
+    : m_barGlyphId(std::move(barGlyphId)), m_logoPath(std::move(logoPath)) {}
 
 void ControlCenterWidget::create() {
   auto area = std::make_unique<InputArea>();

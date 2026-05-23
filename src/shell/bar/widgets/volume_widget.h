@@ -29,7 +29,6 @@ private:
 
   PipeWireService* m_audio = nullptr;
   const Config* m_config = nullptr;
-  wl_output* m_output = nullptr;
   bool m_showLabel = true;
   VolumeWidgetTarget m_target = VolumeWidgetTarget::Output;
   Glyph* m_glyph = nullptr;

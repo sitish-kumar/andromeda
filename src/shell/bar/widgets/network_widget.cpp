@@ -27,7 +27,7 @@ namespace {
 } // namespace
 
 NetworkWidget::NetworkWidget(INetworkService* network, wl_output* output, bool showLabel)
-    : m_network(network), m_output(output), m_showLabel(showLabel) {}
+    : m_network(network), m_showLabel(showLabel) {}
 
 void NetworkWidget::create() {
   auto area = std::make_unique<InputArea>();
