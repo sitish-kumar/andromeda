@@ -315,6 +315,70 @@ namespace {
     float height = 0.0f;
   };
 
+  struct BarSurfaceSpec {
+    std::int32_t marginTop = 0;
+    std::int32_t marginRight = 0;
+    std::int32_t marginBottom = 0;
+    std::int32_t marginLeft = 0;
+    std::uint32_t surfaceWidth = 0;
+    std::uint32_t surfaceHeight = 0;
+    std::int32_t exclusiveZone = 0;
+  };
+
+  [[nodiscard]] BarSurfaceSpec computeBarSurfaceSpec(const BarConfig& barConfig,
+                                                     const ShellConfig::ShadowConfig& shadowConfig) {
+    const bool vertical = (barConfig.position == "left" || barConfig.position == "right");
+    const bool isBottom = barConfig.position == "bottom";
+    const bool isRight = barConfig.position == "right";
+    const std::int32_t mEnds = barConfig.marginEnds;
+    const std::int32_t mEdge = barConfig.marginEdge;
+    const auto sb = shell::surface_shadow::bleed(barConfig.shadow, shadowConfig);
+    const int edgeGutter = barAutoHideEdgeGutter(barConfig);
+
+    BarSurfaceSpec spec;
+    if (!vertical) {
+      spec.marginLeft = std::max(0, mEnds - sb.left);
+      spec.marginRight = std::max(0, mEnds - sb.right);
+      if (isBottom) {
+        if (edgeGutter > 0) {
+          spec.surfaceHeight = static_cast<std::uint32_t>(sb.up + barConfig.thickness + sb.down + edgeGutter);
+        } else {
+          spec.marginBottom = std::max(0, mEdge - sb.down);
+          spec.surfaceHeight = static_cast<std::uint32_t>(sb.up + barConfig.thickness + std::min(mEdge, sb.down));
+        }
+      } else {
+        if (edgeGutter > 0) {
+          spec.surfaceHeight = static_cast<std::uint32_t>(sb.down + barConfig.thickness + sb.up + edgeGutter);
+        } else {
+          spec.marginTop = std::max(0, mEdge - sb.up);
+          spec.surfaceHeight = static_cast<std::uint32_t>(std::min(mEdge, sb.up) + barConfig.thickness + sb.down);
+        }
+      }
+    } else {
+      spec.marginTop = std::max(0, mEnds - sb.up);
+      spec.marginBottom = std::max(0, mEnds - sb.down);
+      if (isRight) {
+        if (edgeGutter > 0) {
+          spec.surfaceWidth = static_cast<std::uint32_t>(sb.left + barConfig.thickness + sb.right + edgeGutter);
+        } else {
+          spec.marginRight = std::max(0, mEdge - sb.right);
+          spec.surfaceWidth = static_cast<std::uint32_t>(sb.left + barConfig.thickness + std::min(mEdge, sb.right));
+        }
+      } else {
+        if (edgeGutter > 0) {
+          spec.surfaceWidth = static_cast<std::uint32_t>(sb.right + barConfig.thickness + sb.left + edgeGutter);
+        } else {
+          spec.marginLeft = std::max(0, mEdge - sb.left);
+          spec.surfaceWidth = static_cast<std::uint32_t>(std::min(mEdge, sb.left) + barConfig.thickness + sb.right);
+        }
+      }
+    }
+
+    spec.exclusiveZone =
+        (!barConfig.autoHide && barConfig.reserveSpace) ? reservedBarExclusiveZone(barConfig, shadowConfig) : 0;
+    return spec;
+  }
+
   // Returns true when two bar configs would produce an identical layer-shell
   // surface (same anchor, size, exclusive zone, namespace). When true, an
   // existing BarInstance can be retained on reload and only its widget tree
@@ -1256,84 +1320,24 @@ void Bar::createInstance(const WaylandOutput& output, std::size_t barIndex, cons
   instance->barIndex = barIndex;
 
   const auto anchor = positionToAnchor(barConfig.position);
-  const bool vertical = (barConfig.position == "left" || barConfig.position == "right");
-  const bool isBottom = barConfig.position == "bottom";
-  const bool isRight = barConfig.position == "right";
-
-  const std::int32_t mEnds = barConfig.marginEnds;
-  const std::int32_t mEdge = barConfig.marginEdge;
-  const auto sb = shell::surface_shadow::bleed(barConfig.shadow, m_config->config().shell.shadow);
-  const int edgeGutter = barAutoHideEdgeGutter(barConfig);
-
-  // Compositor margins absorb the visual gap where the shadow doesn't reach.
-  // The surface is sized to cover only the bar rect plus its shadow footprint.
-  std::int32_t mLeft = 0, mRight = 0, mTop = 0, mBottom = 0;
-  std::uint32_t surfW = 0, surfH = 0;
-
-  if (!vertical) {
-    // Horizontal bar: ends inset = left/right, edge gap = top/bottom.
-    mLeft = std::max(0, mEnds - sb.left);
-    mRight = std::max(0, mEnds - sb.right);
-    if (isBottom) {
-      if (edgeGutter > 0) {
-        mBottom = 0;
-        surfH = static_cast<std::uint32_t>(sb.up + barConfig.thickness + sb.down + edgeGutter);
-      } else {
-        mBottom = std::max(0, mEdge - sb.down);
-        surfH = static_cast<std::uint32_t>(sb.up + barConfig.thickness + std::min(mEdge, sb.down));
-      }
-    } else {
-      if (edgeGutter > 0) {
-        mTop = 0;
-        surfH = static_cast<std::uint32_t>(sb.down + barConfig.thickness + sb.up + edgeGutter);
-      } else {
-        mTop = std::max(0, mEdge - sb.up);
-        surfH = static_cast<std::uint32_t>(std::min(mEdge, sb.up) + barConfig.thickness + sb.down);
-      }
-    }
-  } else {
-    // Vertical bar: ends inset = top/bottom, edge gap = left/right.
-    mTop = std::max(0, mEnds - sb.up);
-    mBottom = std::max(0, mEnds - sb.down);
-    if (isRight) {
-      if (edgeGutter > 0) {
-        mRight = 0;
-        surfW = static_cast<std::uint32_t>(sb.left + barConfig.thickness + sb.right + edgeGutter);
-      } else {
-        mRight = std::max(0, mEdge - sb.right);
-        surfW = static_cast<std::uint32_t>(sb.left + barConfig.thickness + std::min(mEdge, sb.right));
-      }
-    } else {
-      if (edgeGutter > 0) {
-        mLeft = 0;
-        surfW = static_cast<std::uint32_t>(sb.right + barConfig.thickness + sb.left + edgeGutter);
-      } else {
-        mLeft = std::max(0, mEdge - sb.left);
-        surfW = static_cast<std::uint32_t>(std::min(mEdge, sb.left) + barConfig.thickness + sb.right);
-      }
-    }
-  }
-
-  const bool reserveZone = !barConfig.autoHide && barConfig.reserveSpace;
-  const std::int32_t exclusiveZone =
-      reserveZone ? reservedBarExclusiveZone(barConfig, m_config->config().shell.shadow) : 0;
+  const auto surfaceSpec = computeBarSurfaceSpec(barConfig, m_config->config().shell.shadow);
 
   kLog.info("creating #{} \"{}\" on {} ({}), thickness={} position={} reserve_space={} exclusive_zone={}", barIndex,
             barConfig.name, output.connectorName, output.description, barConfig.thickness, barConfig.position,
-            barConfig.reserveSpace, exclusiveZone);
+            barConfig.reserveSpace, surfaceSpec.exclusiveZone);
 
   auto surfaceConfig = LayerSurfaceConfig{
       .nameSpace = "noctalia-bar-" + barConfig.name,
       .layer = LayerShellLayer::Top,
       .anchor = anchor,
-      .width = surfW,
-      .height = surfH,
-      .exclusiveZone = exclusiveZone,
-      .marginTop = mTop,
-      .marginRight = mRight,
-      .marginBottom = mBottom,
-      .marginLeft = mLeft,
-      .defaultHeight = surfH,
+      .width = surfaceSpec.surfaceWidth,
+      .height = surfaceSpec.surfaceHeight,
+      .exclusiveZone = surfaceSpec.exclusiveZone,
+      .marginTop = surfaceSpec.marginTop,
+      .marginRight = surfaceSpec.marginRight,
+      .marginBottom = surfaceSpec.marginBottom,
+      .marginLeft = surfaceSpec.marginLeft,
+      .defaultHeight = surfaceSpec.surfaceHeight,
   };
 
   instance->surface = std::make_unique<LayerSurface>(m_platform->wayland(), std::move(surfaceConfig));
@@ -2423,6 +2427,143 @@ std::string Bar::dispatchScriptedWidgetIpc(std::string_view args) {
   return "error: no scripted widget instance matched '" + widgetName + "' on target '" + target + "'\n";
 }
 
+std::string Bar::setBarAutoHideIpc(std::string_view args) {
+  if (m_config == nullptr) {
+    return "error: config service not initialized\n";
+  }
+
+  const auto parts = StringUtils::splitWhitespace(StringUtils::trim(args));
+  if (parts.empty() || parts.size() > 3) {
+    return "error: usage: bar-auto-hide-set <on|off|true|false|1|0> [bar-name] [monitor-selector]\n";
+  }
+
+  const std::string value = parts[0];
+  bool enabled = false;
+  if (value == "on" || value == "true" || value == "1") {
+    enabled = true;
+  } else if (value == "off" || value == "false" || value == "0") {
+    enabled = false;
+  } else {
+    return "error: invalid value (use on/off, true/false, 1/0)\n";
+  }
+
+  std::string barName = parts.size() >= 2 ? parts[1] : "default";
+  const bool knownBar = std::any_of(m_config->config().bars.begin(), m_config->config().bars.end(),
+                                    [&](const BarConfig& bar) { return bar.name == barName; });
+  if (!knownBar) {
+    std::vector<std::string> knownBars;
+    knownBars.reserve(m_config->config().bars.size());
+    for (const auto& bar : m_config->config().bars) {
+      knownBars.push_back(bar.name);
+    }
+    const std::string suffix =
+        knownBars.empty() ? std::string() : std::string("; known: ") + StringUtils::join(knownBars, ", ");
+    return "error: unknown bar \"" + barName + "\"" + suffix + "\n";
+  }
+
+  auto applyTransientAutoHide = [this, enabled](BarInstance& instance) {
+    instance.barConfig.autoHide = enabled;
+    instance.ipcLayoutReleased = false;
+    instance.animations.cancelForOwner(instance.slideRoot);
+
+    if (enabled) {
+      const bool suppressAutoHide =
+          (m_autoHideSuppressionCallback != nullptr) ? m_autoHideSuppressionCallback(instance) : false;
+      instance.hideOpacity =
+          (instance.pointerInside || instance.attachedPopupCount > 0 || suppressAutoHide) ? 1.0f : 0.0f;
+      if (instance.slideRoot != nullptr) {
+        instance.slideRoot->setOpacity(1.0f);
+      }
+    } else {
+      instance.hideOpacity = 1.0f;
+      if (instance.slideRoot != nullptr) {
+        instance.slideRoot->setOpacity(1.0f);
+      }
+    }
+
+    syncBarSlideLayerTransform(instance);
+    if (instance.surface != nullptr) {
+      const auto spec = computeBarSurfaceSpec(instance.barConfig, m_config->config().shell.shadow);
+      instance.surface->setMargins(spec.marginTop, spec.marginRight, spec.marginBottom, spec.marginLeft);
+      instance.surface->requestSize(spec.surfaceWidth, spec.surfaceHeight);
+    }
+    syncBarAutoHideInputRegion(instance);
+    syncBarSurfaceChrome(instance);
+    if (instance.surface != nullptr) {
+      instance.surface->requestRedraw();
+    }
+  };
+
+  if (parts.size() < 3) {
+    std::size_t updated = 0;
+    for (const auto& instance : m_instances) {
+      if (instance == nullptr || instance->barConfig.name != barName) {
+        continue;
+      }
+      applyTransientAutoHide(*instance);
+      ++updated;
+    }
+    if (updated == 0) {
+      return "error: no instances matched bar \"" + barName + "\"\n";
+    }
+    return "ok\n";
+  }
+
+  if (m_platform == nullptr) {
+    return "error: bar service not initialized\n";
+  }
+
+  const std::string selector = parts[2];
+  std::vector<std::string> matches;
+  std::vector<std::string> knownOutputs;
+  for (const auto& output : m_platform->outputs()) {
+    if (output.connectorName.empty()) {
+      continue;
+    }
+    knownOutputs.push_back(output.connectorName);
+    if (outputMatchesSelector(selector, output)) {
+      matches.push_back(output.connectorName);
+    }
+  }
+
+  std::sort(knownOutputs.begin(), knownOutputs.end());
+  knownOutputs.erase(std::unique(knownOutputs.begin(), knownOutputs.end()), knownOutputs.end());
+  std::sort(matches.begin(), matches.end());
+  matches.erase(std::unique(matches.begin(), matches.end()), matches.end());
+
+  if (matches.empty()) {
+    std::string error = "error: unknown monitor selector \"" + selector + "\"";
+    if (!knownOutputs.empty()) {
+      error += " (available: " + StringUtils::join(knownOutputs, ", ") + ")";
+    }
+    error += "\n";
+    return error;
+  }
+  if (matches.size() > 1) {
+    return "error: monitor selector \"" + selector +
+           "\" matched multiple outputs: " + StringUtils::join(matches, ", ") + "\n";
+  }
+
+  std::size_t updated = 0;
+  for (const auto& instance : m_instances) {
+    if (instance == nullptr || instance->barConfig.name != barName || instance->output == nullptr) {
+      continue;
+    }
+    const auto it =
+        std::find_if(m_platform->outputs().begin(), m_platform->outputs().end(),
+                     [&instance](const WaylandOutput& output) { return output.output == instance->output; });
+    if (it == m_platform->outputs().end() || it->connectorName != matches.front()) {
+      continue;
+    }
+    applyTransientAutoHide(*instance);
+    ++updated;
+  }
+  if (updated == 0) {
+    return "error: no instances matched bar \"" + barName + "\" on \"" + matches.front() + "\"\n";
+  }
+  return "ok\n";
+}
+
 void Bar::registerIpc(IpcService& ipc) {
   ipc.registerHandler(
       "bar-show",
@@ -2447,6 +2588,10 @@ void Bar::registerIpc(IpcService& ipc) {
         return "ok\n";
       },
       "bar-toggle", "Toggle bar visibility (participates in auto-hide when enabled)");
+
+  ipc.registerHandler(
+      "bar-auto-hide-set", [this](const std::string& args) -> std::string { return setBarAutoHideIpc(args); },
+      "bar-auto-hide-set <on|off|true|false|1|0> [bar-name] [monitor-selector]", "Set auto-hide state for a bar");
 
   ipc.registerHandler(
       "scripted-widget", [this](const std::string& args) -> std::string { return dispatchScriptedWidgetIpc(args); },
