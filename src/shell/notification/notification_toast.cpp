@@ -113,9 +113,71 @@ namespace {
   constexpr int kToastMaxBodyLines = 3;
   constexpr int kMaxToastCardHeight = 320;
 
-  constexpr int kSurfaceWidth = static_cast<int>(kCardWidth + kPaddingX * 2);
-  constexpr int kFallbackSurfaceHeight = static_cast<int>(
-      kMaxToastCardHeight * kFallbackVisibleCards + kGap * (kFallbackVisibleCards - 1) + kPaddingTop + kPaddingBottom);
+  [[nodiscard]] float notificationUiScale(const ConfigService* config) {
+    if (config == nullptr) {
+      return 1.0f;
+    }
+    const auto& shell = config->config().shell;
+    const auto& notification = config->config().notification;
+    return std::max(0.1f, shell.uiScale * notification.scale);
+  }
+
+  [[nodiscard]] float cardWidth(float scale) { return static_cast<float>(kCardWidth) * scale; }
+
+  [[nodiscard]] float cardHeightForEntry(bool hasActions, float scale) {
+    return (hasActions ? static_cast<float>(kCardHeightWithActions) : static_cast<float>(kCardHeightCompact)) * scale;
+  }
+
+  [[nodiscard]] float paddingTop(float scale) { return kPaddingTop * scale; }
+
+  [[nodiscard]] float paddingX(float scale) { return kPaddingX * scale; }
+
+  [[nodiscard]] float paddingBottom(float scale) { return kPaddingBottom * scale; }
+
+  [[nodiscard]] float cardInnerPad(float scale) { return kCardInnerPad * scale; }
+
+  [[nodiscard]] float closeButtonSize(float scale) { return kCloseButtonSize * scale; }
+
+  [[nodiscard]] float notificationIconSize(float scale) { return kNotificationIconSize * scale; }
+
+  [[nodiscard]] float iconTextGap(float scale) { return kIconTextGap * scale; }
+
+  [[nodiscard]] float actionGap(float scale) { return kActionGap * scale; }
+
+  [[nodiscard]] float actionRowGap(float scale) { return kActionRowGap * scale; }
+
+  [[nodiscard]] float progressHeight(float scale) { return static_cast<float>(kProgressHeight) * scale; }
+
+  [[nodiscard]] float progressBottomMargin(float scale) { return kProgressBottomMargin * scale; }
+
+  [[nodiscard]] float bodyBottomGap(float scale) { return kBodyBottomGap * scale; }
+
+  [[nodiscard]] float metaFontSize(float scale) { return kMetaFontSize * scale; }
+
+  [[nodiscard]] float summaryFontSize(float scale) { return kSummaryFontSize * scale; }
+
+  [[nodiscard]] float bodyFontSize(float scale) { return kBodyFontSize * scale; }
+
+  [[nodiscard]] float metaGap(float scale) { return kMetaGap * scale; }
+
+  [[nodiscard]] float summaryBodyGap(float scale) { return kSummaryBodyGap * scale; }
+
+  [[nodiscard]] float maxToastCardHeight(float scale) { return static_cast<float>(kMaxToastCardHeight) * scale; }
+
+  [[nodiscard]] std::uint32_t surfaceWidth(float scale) {
+    return static_cast<std::uint32_t>(
+        std::max(1, static_cast<int>(std::ceil(cardWidth(scale) + paddingX(scale) * 2.0f))));
+  }
+
+  [[nodiscard]] std::uint32_t fallbackSurfaceHeight(float scale) {
+    const float totalHeight = maxToastCardHeight(scale) * kFallbackVisibleCards +
+                              (kGap * scale) * (kFallbackVisibleCards - 1) + paddingBottom(scale);
+    return static_cast<std::uint32_t>(std::max(1, static_cast<int>(std::ceil(totalHeight))));
+  }
+
+  [[nodiscard]] std::int32_t horizontalRevealPadding(float scale) {
+    return static_cast<std::int32_t>(std::lround(paddingX(scale)));
+  }
 
   float contentOpacityForReveal(float reveal) {
     const float v = std::clamp(reveal, 0.0f, 1.0f);
@@ -125,18 +187,19 @@ namespace {
     return std::clamp((v - 0.15f) / 0.85f, 0.0f, 1.0f);
   }
 
-  float contentOffsetForReveal(float reveal) {
-    return std::round(static_cast<float>(kContentSlideOffset) * (1.0f - std::clamp(reveal, 0.0f, 1.0f)));
+  float contentOffsetForReveal(float reveal, float scale) {
+    return std::round(static_cast<float>(kContentSlideOffset) * scale * (1.0f - std::clamp(reveal, 0.0f, 1.0f)));
   }
 
-  float cardRevealFromNode(const Node* cardNode, NotificationToast::RevealDirection direction, float cardHeight) {
+  float cardRevealFromNode(const Node* cardNode, NotificationToast::RevealDirection direction, float cardHeight,
+                           float scale) {
     if (cardNode == nullptr) {
       return 0.0f;
     }
     switch (direction) {
     case NotificationToast::RevealDirection::FromLeft:
     case NotificationToast::RevealDirection::FromRight:
-      return std::clamp(cardNode->width() / static_cast<float>(kCardWidth), 0.0f, 1.0f);
+      return std::clamp(cardNode->width() / cardWidth(scale), 0.0f, 1.0f);
     case NotificationToast::RevealDirection::FromTop:
     case NotificationToast::RevealDirection::FromBottom:
       return cardHeight > 0.0f ? std::clamp(cardNode->height() / cardHeight, 0.0f, 1.0f) : 0.0f;
@@ -155,18 +218,18 @@ namespace {
   }
 
   void applyCardRevealNodes(Node* cardNode, Node* cardContent, Node* cardForeground, float reveal, float y,
-                            NotificationToast::RevealDirection direction, float cardHeight) {
+                            NotificationToast::RevealDirection direction, float cardHeight, float scale) {
     if (cardNode == nullptr || cardContent == nullptr || cardForeground == nullptr) {
       return;
     }
 
     const float clampedReveal = std::clamp(reveal, 0.0f, 1.0f);
-    const float contentSlide = contentOffsetForReveal(clampedReveal);
+    const float contentSlide = contentOffsetForReveal(clampedReveal, scale);
 
     switch (direction) {
     case NotificationToast::RevealDirection::FromLeft: {
-      const float visibleWidth = std::round(static_cast<float>(kCardWidth) * clampedReveal);
-      cardNode->setPosition(kPaddingX, y);
+      const float visibleWidth = std::round(cardWidth(scale) * clampedReveal);
+      cardNode->setPosition(paddingX(scale), y);
       cardNode->setFrameSize(visibleWidth, cardHeight);
       cardContent->setPosition(0.0f, 0.0f);
       cardForeground->setOpacity(contentOpacityForReveal(clampedReveal));
@@ -174,9 +237,9 @@ namespace {
       break;
     }
     case NotificationToast::RevealDirection::FromRight: {
-      const float visibleWidth = std::round(static_cast<float>(kCardWidth) * clampedReveal);
-      const float hiddenWidth = static_cast<float>(kCardWidth) - visibleWidth;
-      cardNode->setPosition(kPaddingX + hiddenWidth, y);
+      const float visibleWidth = std::round(cardWidth(scale) * clampedReveal);
+      const float hiddenWidth = cardWidth(scale) - visibleWidth;
+      cardNode->setPosition(paddingX(scale) + hiddenWidth, y);
       cardNode->setFrameSize(visibleWidth, cardHeight);
       cardContent->setPosition(-hiddenWidth, 0.0f);
       cardForeground->setOpacity(contentOpacityForReveal(clampedReveal));
@@ -185,8 +248,8 @@ namespace {
     }
     case NotificationToast::RevealDirection::FromTop: {
       const float visibleHeight = std::round(cardHeight * clampedReveal);
-      cardNode->setPosition(kPaddingX, y);
-      cardNode->setFrameSize(static_cast<float>(kCardWidth), visibleHeight);
+      cardNode->setPosition(paddingX(scale), y);
+      cardNode->setFrameSize(cardWidth(scale), visibleHeight);
       cardContent->setPosition(0.0f, 0.0f);
       cardForeground->setOpacity(contentOpacityForReveal(clampedReveal));
       cardForeground->setPosition(0.0f, -contentSlide);
@@ -195,18 +258,14 @@ namespace {
     case NotificationToast::RevealDirection::FromBottom: {
       const float visibleHeight = std::round(cardHeight * clampedReveal);
       const float hiddenHeight = cardHeight - visibleHeight;
-      cardNode->setPosition(kPaddingX, y + hiddenHeight);
-      cardNode->setFrameSize(static_cast<float>(kCardWidth), visibleHeight);
+      cardNode->setPosition(paddingX(scale), y + hiddenHeight);
+      cardNode->setFrameSize(cardWidth(scale), visibleHeight);
       cardContent->setPosition(0.0f, -hiddenHeight);
       cardForeground->setOpacity(contentOpacityForReveal(clampedReveal));
       cardForeground->setPosition(0.0f, contentSlide);
       break;
     }
     }
-  }
-
-  float cardHeightForEntry(bool hasActions) {
-    return hasActions ? static_cast<float>(kCardHeightWithActions) : static_cast<float>(kCardHeightCompact);
   }
 
   std::int32_t outputLogicalHeight(const WaylandOutput& output) {
@@ -219,29 +278,35 @@ namespace {
     return 0;
   }
 
-  float bodyTopForSummary(float summaryHeight) {
-    return kCardInnerPad + kCloseButtonSize + kMetaGap + summaryHeight + kSummaryBodyGap;
+  float bodyTopForSummary(float summaryHeight, float scale) {
+    return cardInnerPad(scale) + closeButtonSize(scale) + metaGap(scale) + summaryHeight + summaryBodyGap(scale);
   }
 
-  float availableBodyHeight(float summaryHeight, float actionsReservedHeight, float cardHeight) {
-    const float progressY = cardHeight - kProgressHeight - kProgressBottomMargin;
-    const float availableHeight = progressY - kBodyBottomGap - actionsReservedHeight - bodyTopForSummary(summaryHeight);
+  float availableBodyHeight(float summaryHeight, float actionsReservedHeight, float cardHeight, float scale) {
+    const float progressY = cardHeight - progressHeight(scale) - progressBottomMargin(scale);
+    const float availableHeight =
+        progressY - bodyBottomGap(scale) - actionsReservedHeight - bodyTopForSummary(summaryHeight, scale);
     return availableHeight;
   }
 
-  float notificationTextStartX() { return kCardInnerPad + kNotificationIconSize + kIconTextGap; }
+  float notificationTextStartX(float scale) {
+    return cardInnerPad(scale) + notificationIconSize(scale) + iconTextGap(scale);
+  }
 
-  float notificationTextMaxWidth() { return std::max(0.0f, kCardWidth - notificationTextStartX() - kCardInnerPad); }
+  float notificationTextMaxWidth(float scale) {
+    return std::max(0.0f, cardWidth(scale) - notificationTextStartX(scale) - cardInnerPad(scale));
+  }
 
-  std::unique_ptr<Button> makeNotificationActionButton(std::string_view label) {
+  std::unique_ptr<Button> makeNotificationActionButton(std::string_view label, float scale) {
     auto actionButton = std::make_unique<Button>();
     actionButton->setVariant(ButtonVariant::Outline);
-    actionButton->setFontSize(Style::fontSizeCaption);
+    actionButton->setFontSize(Style::fontSizeCaption * scale);
     actionButton->setText(label);
     return actionButton;
   }
 
-  std::vector<std::unique_ptr<Button>> collectNotificationActionButtons(const std::vector<std::string>& actions) {
+  std::vector<std::unique_ptr<Button>> collectNotificationActionButtons(const std::vector<std::string>& actions,
+                                                                        float scale) {
     std::vector<std::unique_ptr<Button>> buttons;
     buttons.reserve(kMaxActionButtons);
     for (std::size_t i = 0; i + 1 < actions.size() && static_cast<int>(buttons.size()) < kMaxActionButtons; i += 2) {
@@ -253,20 +318,21 @@ namespace {
       if (StringUtils::isBlank(actionLabel)) {
         actionLabel = fallbackActionLabel();
       }
-      buttons.push_back(makeNotificationActionButton(actionLabel));
+      buttons.push_back(makeNotificationActionButton(actionLabel, scale));
     }
     return buttons;
   }
 
-  bool notificationActionsPreferStack(RenderContext& rc, const std::vector<std::unique_ptr<Button>>& buttons) {
+  bool notificationActionsPreferStack(RenderContext& rc, const std::vector<std::unique_ptr<Button>>& buttons,
+                                      float scale) {
     if (buttons.size() < 2) {
       return false;
     }
-    const float rowWidth = notificationTextMaxWidth();
+    const float rowWidth = notificationTextMaxWidth(scale);
     float totalWidth = 0.0f;
     for (std::size_t i = 0; i < buttons.size(); ++i) {
       if (i > 0) {
-        totalWidth += kActionGap;
+        totalWidth += actionGap(scale);
       }
       const LayoutSize measured = buttons[i]->measure(rc, LayoutConstraints{});
       totalWidth += measured.width;
@@ -274,7 +340,7 @@ namespace {
     return totalWidth > rowWidth + 0.5f;
   }
 
-  void configureNotificationActionsRow(Flex& row, bool stacked) {
+  void configureNotificationActionsRow(Flex& row, bool stacked, float scale) {
     if (stacked) {
       row.setDirection(FlexDirection::Vertical);
       row.setAlign(FlexAlign::Start);
@@ -284,13 +350,14 @@ namespace {
       row.setAlign(FlexAlign::Center);
       row.setJustify(FlexJustify::Start);
     }
-    row.setGap(kActionGap);
+    row.setGap(actionGap(scale));
   }
 
-  float layoutNotificationActionsRow(RenderContext& rc, Flex& row, std::vector<std::unique_ptr<Button>>& buttons) {
-    const bool stacked = notificationActionsPreferStack(rc, buttons);
-    configureNotificationActionsRow(row, stacked);
-    const float rowWidth = notificationTextMaxWidth();
+  float layoutNotificationActionsRow(RenderContext& rc, Flex& row, std::vector<std::unique_ptr<Button>>& buttons,
+                                     float scale) {
+    const bool stacked = notificationActionsPreferStack(rc, buttons, scale);
+    configureNotificationActionsRow(row, stacked, scale);
+    const float rowWidth = notificationTextMaxWidth(scale);
     for (auto& button : buttons) {
       if (stacked) {
         button->setMaxWidth(0.0f);
@@ -304,23 +371,23 @@ namespace {
     buttons.clear();
     row.setSize(rowWidth, 0.0f);
     row.layout(rc);
-    return row.height() + kActionRowGap;
+    return row.height() + actionRowGap(scale);
   }
 
-  bool isCloseButtonHit(float localX, float localY) {
-    const float closeLeft = static_cast<float>(kCardWidth) - kCardInnerPad - kCloseButtonSize;
-    const float closeTop = kCardInnerPad;
-    return localX >= closeLeft && localX < closeLeft + kCloseButtonSize && localY >= closeTop &&
-           localY < closeTop + kCloseButtonSize;
+  bool isCloseButtonHit(float localX, float localY, float scale) {
+    const float closeLeft = cardWidth(scale) - cardInnerPad(scale) - closeButtonSize(scale);
+    const float closeTop = cardInnerPad(scale);
+    return localX >= closeLeft && localX < closeLeft + closeButtonSize(scale) && localY >= closeTop &&
+           localY < closeTop + closeButtonSize(scale);
   }
 
-  float measureActionsFromPairs(RenderContext& rc, const std::vector<std::string>& actions) {
-    auto buttons = collectNotificationActionButtons(actions);
+  float measureActionsFromPairs(RenderContext& rc, const std::vector<std::string>& actions, float scale) {
+    auto buttons = collectNotificationActionButtons(actions, scale);
     if (buttons.empty()) {
       return 0.0f;
     }
     auto actionsRow = std::make_unique<Flex>();
-    return layoutNotificationActionsRow(rc, *actionsRow, buttons);
+    return layoutNotificationActionsRow(rc, *actionsRow, buttons, scale);
   }
 
   struct ToastGeometry {
@@ -330,33 +397,33 @@ namespace {
     float cardHeight = 0.0f;
   };
 
-  float requiredToastCardHeight(float summaryHeight, float bodyHeight, float actionsReserved) {
-    const float bodyTop = bodyTopForSummary(summaryHeight);
-    return bodyTop + bodyHeight + kBodyBottomGap + actionsReserved + static_cast<float>(kProgressHeight) +
-           kProgressBottomMargin;
+  float requiredToastCardHeight(float summaryHeight, float bodyHeight, float actionsReserved, float scale) {
+    const float bodyTop = bodyTopForSummary(summaryHeight, scale);
+    return bodyTop + bodyHeight + bodyBottomGap(scale) + actionsReserved + progressHeight(scale) +
+           progressBottomMargin(scale);
   }
 
   ToastGeometry planToastLayout(RenderContext& rc, std::string_view summary, std::string_view body,
-                                const std::vector<std::string>& actions, float floorCardHeight) {
+                                const std::vector<std::string>& actions, float floorCardHeight, float scale) {
     const std::string displaySummary = StringUtils::trimLeadingBlankLines(summary);
     const std::string displayBody = StringUtils::trimLeadingBlankLines(body);
-    const float textMaxWidth = notificationTextMaxWidth();
-    const float actionsReserved = measureActionsFromPairs(rc, actions);
-    const float maxCard = static_cast<float>(kMaxToastCardHeight);
+    const float textMaxWidth = notificationTextMaxWidth(scale);
+    const float actionsReserved = measureActionsFromPairs(rc, actions, scale);
+    const float maxCard = maxToastCardHeight(scale);
     const float floorH = floorCardHeight;
 
     ToastGeometry out;
 
     if (StringUtils::isBlank(displayBody)) {
       Label summaryProbe;
-      summaryProbe.setFontSize(kSummaryFontSize);
+      summaryProbe.setFontSize(summaryFontSize(scale));
       summaryProbe.setFontWeight(FontWeight::Bold);
       summaryProbe.setMaxWidth(textMaxWidth);
       summaryProbe.setText(displaySummary);
       summaryProbe.setMaxLines(kMaxSummaryLines);
       summaryProbe.measure(rc);
       const float sumH = summaryProbe.height();
-      const float required = requiredToastCardHeight(sumH, 0.0f, actionsReserved);
+      const float required = requiredToastCardHeight(sumH, 0.0f, actionsReserved, scale);
       out.summaryLines = kMaxSummaryLines;
       out.bodyLines = 0;
       out.summaryHeightPx = sumH;
@@ -375,7 +442,7 @@ namespace {
 
     for (const auto& [sl, bl] : kPreference) {
       Label summaryProbe;
-      summaryProbe.setFontSize(kSummaryFontSize);
+      summaryProbe.setFontSize(summaryFontSize(scale));
       summaryProbe.setFontWeight(FontWeight::Bold);
       summaryProbe.setMaxWidth(textMaxWidth);
       summaryProbe.setText(displaySummary);
@@ -384,14 +451,14 @@ namespace {
       const float sumH = summaryProbe.height();
 
       Label bodyProbe;
-      bodyProbe.setFontSize(kBodyFontSize);
+      bodyProbe.setFontSize(bodyFontSize(scale));
       bodyProbe.setMaxWidth(textMaxWidth);
       bodyProbe.setText(displayBody);
       bodyProbe.setMaxLines(bl);
       bodyProbe.measure(rc);
       const float bodyH = bodyProbe.height();
 
-      const float required = requiredToastCardHeight(sumH, bodyH, actionsReserved);
+      const float required = requiredToastCardHeight(sumH, bodyH, actionsReserved, scale);
       const float cardH = std::max(floorH, std::ceil(required));
       if (cardH <= maxCard + 0.5f) {
         out.summaryLines = sl;
@@ -403,7 +470,7 @@ namespace {
     }
 
     Label summaryProbe;
-    summaryProbe.setFontSize(kSummaryFontSize);
+    summaryProbe.setFontSize(summaryFontSize(scale));
     summaryProbe.setFontWeight(FontWeight::Bold);
     summaryProbe.setMaxWidth(textMaxWidth);
     summaryProbe.setText(displaySummary);
@@ -411,7 +478,7 @@ namespace {
     summaryProbe.measure(rc);
 
     Label bodyProbe;
-    bodyProbe.setFontSize(kBodyFontSize);
+    bodyProbe.setFontSize(bodyFontSize(scale));
     bodyProbe.setMaxWidth(textMaxWidth);
     bodyProbe.setText(displayBody);
     bodyProbe.setMaxLines(1);
@@ -420,9 +487,9 @@ namespace {
     out.summaryLines = 1;
     out.bodyLines = 1;
     out.summaryHeightPx = summaryProbe.height();
-    out.cardHeight = std::min(
-        maxCard,
-        std::max(floorH, std::ceil(requiredToastCardHeight(out.summaryHeightPx, bodyProbe.height(), actionsReserved))));
+    out.cardHeight =
+        std::min(maxCard, std::max(floorH, std::ceil(requiredToastCardHeight(out.summaryHeightPx, bodyProbe.height(),
+                                                                             actionsReserved, scale))));
     return out;
   }
 
@@ -460,12 +527,12 @@ namespace {
     std::int32_t left = 0;
   };
 
-  std::int32_t horizontalLayerMarginFromScreenMargin(int offsetX) {
-    return static_cast<std::int32_t>(offsetX) - kHorizontalRevealPadding;
+  std::int32_t horizontalLayerMarginFromScreenMargin(int offsetX, float scale) {
+    return static_cast<std::int32_t>(offsetX) - horizontalRevealPadding(scale);
   }
 
-  ToastSurfaceMargins toastSurfaceMargins(std::string_view position, int offsetX, int offsetY) {
-    const auto sideMargin = horizontalLayerMarginFromScreenMargin(offsetX);
+  ToastSurfaceMargins toastSurfaceMargins(std::string_view position, int offsetX, int offsetY, float scale) {
+    const auto sideMargin = horizontalLayerMarginFromScreenMargin(offsetX, scale);
     const auto verticalMargin = static_cast<std::int32_t>(offsetY);
     ToastSurfaceMargins margins{
         .top = verticalMargin,
@@ -515,6 +582,36 @@ void NotificationToast::onConfigReload() {
     return;
   }
   ensureSurfaces();
+  std::vector<bool> wasPlaced(m_entries.size(), false);
+  for (std::size_t i = 0; i < m_entries.size(); ++i) {
+    wasPlaced[i] = hasPlacement(m_entries[i]);
+    if (!m_entries[i].exiting) {
+      refreshEntryGeometry(m_entries[i]);
+    }
+  }
+
+  for (std::size_t i = 0; i < m_entries.size(); ++i) {
+    if (wasPlaced[i]) {
+      m_entries[i].y = kQueuedY;
+    }
+  }
+
+  for (std::size_t i = 0; i < m_entries.size(); ++i) {
+    auto& entry = m_entries[i];
+    if (entry.exiting || !wasPlaced[i]) {
+      continue;
+    }
+    if (const auto placement = findPlacementY(entry.height); placement.has_value()) {
+      entry.y = *placement;
+    } else if (entry.rawTimeoutMs > 0 && m_notifications != nullptr) {
+      m_notifications->pauseExpiry(entry.notificationId);
+    }
+  }
+
+  for (std::size_t i = 0; i < m_entries.size(); ++i) {
+    syncEntryVisibility(i);
+  }
+  revealQueuedEntries();
   requestLayout();
 }
 
@@ -642,7 +739,8 @@ void NotificationToast::onNotificationEvent(const Notification& n, NotificationE
             applyCardReveal(cs, preservedReveal, revealY, m_entries[i].height);
             if (cs.cardForeground != nullptr) {
               cs.cardForeground->setOpacity(preservedContentOpacity);
-              cs.cardForeground->setPosition(contentOffsetForReveal(preservedReveal), 0.0f);
+              cs.cardForeground->setPosition(contentOffsetForReveal(preservedReveal, notificationUiScale(m_config)),
+                                             0.0f);
             }
             if (inst->sceneRoot != nullptr) {
               inst->sceneRoot->addChild(std::unique_ptr<Node>(rebuilt));
@@ -655,8 +753,9 @@ void NotificationToast::onNotificationEvent(const Notification& n, NotificationE
               cs.entryAnimId = inst->animations.animate(
                   preservedReveal, 1.0f, Style::animNormal, Easing::EaseOutCubic,
                   [this, viewport = cs.cardNode, content = cs.cardContent, foreground = cs.cardForeground, targetY,
-                   cardHeight = m_entries[i].height](float v) {
-                    applyCardRevealNodes(viewport, content, foreground, v, targetY, revealDirection(), cardHeight);
+                   cardHeight = m_entries[i].height, scale = notificationUiScale(m_config)](float v) {
+                    applyCardRevealNodes(viewport, content, foreground, v, targetY, revealDirection(), cardHeight,
+                                         scale);
                   },
                   [this, instPtr, id = n.id]() {
                     if (auto* state = findCardState(*instPtr, id); state != nullptr) {
@@ -668,7 +767,8 @@ void NotificationToast::onNotificationEvent(const Notification& n, NotificationE
             regionChanged = true;
           } else if (!layoutChanged) {
             cs.appNameLabel->setText(n.appName);
-            const float actionsReservedHeight = measureActionsFromPairs(*m_renderContext, m_entries[i].actions);
+            const float scale = notificationUiScale(m_config);
+            const float actionsReservedHeight = measureActionsFromPairs(*m_renderContext, m_entries[i].actions, scale);
             PopupEntry& e = m_entries[i];
             const std::string displaySummary = StringUtils::trimLeadingBlankLines(e.summary);
             const std::string displayBody = StringUtils::trimLeadingBlankLines(e.body);
@@ -676,13 +776,13 @@ void NotificationToast::onNotificationEvent(const Notification& n, NotificationE
             cs.summaryLabel->setMaxLines(std::max(1, e.toastSummaryLines));
             cs.summaryLabel->measure(*m_renderContext);
             const float summaryH = cs.summaryLabel->height();
-            const float bodyHeight = availableBodyHeight(summaryH, actionsReservedHeight, cs.cardNode->height());
+            const float bodyHeight = availableBodyHeight(summaryH, actionsReservedHeight, cs.cardNode->height(), scale);
             const int bodyLines = e.toastBodyLines;
             cs.bodyLabel->setMaxLines(std::max(1, bodyLines));
             cs.bodyLabel->setText(bodyLines > 0 ? displayBody : "");
             cs.bodyLabel->measure(*m_renderContext);
             cs.bodyLabel->setVisible(bodyLines > 0 && !StringUtils::isBlank(displayBody));
-            cs.bodyLabel->setPosition(notificationTextStartX(), bodyTopForSummary(summaryH));
+            cs.bodyLabel->setPosition(notificationTextStartX(scale), bodyTopForSummary(summaryH, scale));
             clampBodyLabelHeight(*cs.bodyLabel, bodyHeight);
           }
 
@@ -900,8 +1000,8 @@ void NotificationToast::addCardToInstance(Instance& inst, std::size_t entryIndex
   cs.entryAnimId = inst.animations.animate(
       0.0f, 1.0f, Style::animNormal, Easing::EaseOutCubic,
       [this, viewport = cs.cardNode, content = cs.cardContent, foreground = cs.cardForeground, targetY,
-       cardHeight = entry.height](float v) {
-        applyCardRevealNodes(viewport, content, foreground, v, targetY, revealDirection(), cardHeight);
+       cardHeight = entry.height, scale = notificationUiScale(m_config)](float v) {
+        applyCardRevealNodes(viewport, content, foreground, v, targetY, revealDirection(), cardHeight, scale);
       },
       [this, &inst, id = entry.notificationId]() {
         if (auto* state = findCardState(inst, id); state != nullptr) {
@@ -955,8 +1055,8 @@ void NotificationToast::addCardToInstance(Instance& inst, std::size_t entryIndex
   const bool hasDefaultAction = !entry.actions.empty() && entry.actions.size() >= 2 && entry.actions[0] == "default";
 
   card->setOnEnter([this, closeGlyphPtr, closeColorNormal, closeColorHover, notificationId, progressBarPtr, cardInput,
-                    hasDefaultAction](const InputArea::PointerData& data) {
-    const bool closeHovered = isCloseButtonHit(data.localX, data.localY);
+                    hasDefaultAction, scale = notificationUiScale(m_config)](const InputArea::PointerData& data) {
+    const bool closeHovered = isCloseButtonHit(data.localX, data.localY, scale);
     closeGlyphPtr->setColor(closeHovered ? closeColorHover : closeColorNormal);
     cardInput->setCursorShape((closeHovered || hasDefaultAction) ? WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER
                                                                  : WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
@@ -973,9 +1073,9 @@ void NotificationToast::addCardToInstance(Instance& inst, std::size_t entryIndex
     }
   });
 
-  card->setOnMotion([closeGlyphPtr, closeColorNormal, closeColorHover, cardInput,
-                     hasDefaultAction](const InputArea::PointerData& data) {
-    const bool closeHovered = isCloseButtonHit(data.localX, data.localY);
+  card->setOnMotion([closeGlyphPtr, closeColorNormal, closeColorHover, cardInput, hasDefaultAction,
+                     scale = notificationUiScale(m_config)](const InputArea::PointerData& data) {
+    const bool closeHovered = isCloseButtonHit(data.localX, data.localY, scale);
     closeGlyphPtr->setColor(closeHovered ? closeColorHover : closeColorNormal);
     cardInput->setCursorShape((closeHovered || hasDefaultAction) ? WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER
                                                                  : WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
@@ -1124,8 +1224,8 @@ void NotificationToast::dismissCardFromInstance(Instance& inst, std::size_t entr
 
   cs.exitAnimId = inst.animations.animate(
       startReveal, 0.0f, Style::animNormal, Easing::EaseInOutQuad,
-      [this, card, content, foreground, targetY, cardHeight](float v) {
-        applyCardRevealNodes(card, content, foreground, v, targetY, revealDirection(), cardHeight);
+      [this, card, content, foreground, targetY, cardHeight, scale = notificationUiScale(m_config)](float v) {
+        applyCardRevealNodes(card, content, foreground, v, targetY, revealDirection(), cardHeight, scale);
       },
       [this, &inst, removingId]() {
         if (removingId != 0) {
@@ -1261,6 +1361,7 @@ void NotificationToast::evictOverlappingEntries(std::size_t anchorIndex) {
 
   const float anchorTop = m_entries[anchorIndex].y;
   const float anchorBottom = anchorTop + m_entries[anchorIndex].height;
+  const float layoutGap = kGap * notificationUiScale(m_config);
 
   for (std::size_t i = 0; i < m_entries.size(); ++i) {
     if (i == anchorIndex || m_entries[i].exiting || !hasPlacement(m_entries[i])) {
@@ -1269,7 +1370,8 @@ void NotificationToast::evictOverlappingEntries(std::size_t anchorIndex) {
 
     const float entryTop = m_entries[i].y;
     const float entryBottom = entryTop + m_entries[i].height;
-    const bool separated = (entryBottom + kGap <= anchorTop + 0.5f) || (anchorBottom + kGap <= entryTop + 0.5f);
+    const bool separated =
+        (entryBottom + layoutGap <= anchorTop + 0.5f) || (anchorBottom + layoutGap <= entryTop + 0.5f);
     if (separated) {
       continue;
     }
@@ -1291,6 +1393,7 @@ bool NotificationToast::canKeepPlacement(const PopupEntry& entry, std::optional<
 
   const float top = entry.y;
   const float bottom = entry.y + entry.height;
+  const float layoutGap = kGap * notificationUiScale(m_config);
   for (const auto& other : m_entries) {
     if (!hasPlacement(other)) {
       continue;
@@ -1304,7 +1407,7 @@ bool NotificationToast::canKeepPlacement(const PopupEntry& entry, std::optional<
 
     const float otherTop = other.y;
     const float otherBottom = other.y + other.height;
-    const bool separated = (bottom + kGap <= otherTop + 0.5f) || (otherBottom + kGap <= top + 0.5f);
+    const bool separated = (bottom + layoutGap <= otherTop + 0.5f) || (otherBottom + layoutGap <= top + 0.5f);
     if (!separated) {
       return false;
     }
@@ -1332,7 +1435,7 @@ float NotificationToast::entryHeight(const PopupEntry& entry) const {
   if (entry.height > 0.5f) {
     return entry.height;
   }
-  return cardHeightForEntry(!entry.actions.empty());
+  return cardHeightForEntry(!entry.actions.empty(), notificationUiScale(m_config));
 }
 
 std::string NotificationToast::notificationPosition() const {
@@ -1379,20 +1482,22 @@ void NotificationToast::refreshEntryGeometry(PopupEntry& entry) const {
   if (m_renderContext == nullptr) {
     entry.toastSummaryLines = kMaxSummaryLines;
     entry.toastBodyLines = 0;
-    entry.height = cardHeightForEntry(!entry.actions.empty());
+    entry.height = cardHeightForEntry(!entry.actions.empty(), notificationUiScale(m_config));
     return;
   }
 
+  const float scale = notificationUiScale(m_config);
   const ToastGeometry planned = planToastLayout(*m_renderContext, entry.summary, entry.body, entry.actions,
-                                                cardHeightForEntry(!entry.actions.empty()));
+                                                cardHeightForEntry(!entry.actions.empty(), scale), scale);
   entry.toastSummaryLines = planned.summaryLines;
   entry.toastBodyLines = planned.bodyLines;
   entry.height = planned.cardHeight;
 }
 
 float NotificationToast::layoutBottomForSurfaceHeight(float surfaceHeight) const {
-  const float edgePadding = isBottomStacking() ? 0.0f : kPaddingBottom;
-  return std::max(kPaddingTop, surfaceHeight - edgePadding);
+  const float scale = notificationUiScale(m_config);
+  const float edgePadding = isBottomStacking() ? 0.0f : paddingBottom(scale);
+  return std::max(paddingTop(scale), surfaceHeight - edgePadding);
 }
 
 float NotificationToast::entryOffsetFromPlacementBottom(const PopupEntry& entry) const {
@@ -1431,7 +1536,7 @@ float NotificationToast::maxPlacementBottom() const {
     }
   }
   if (!haveSurfaceHeight) {
-    maxSurfaceHeight = static_cast<float>(kFallbackSurfaceHeight);
+    maxSurfaceHeight = static_cast<float>(fallbackSurfaceHeight(notificationUiScale(m_config)));
   }
   return layoutBottomForSurfaceHeight(maxSurfaceHeight);
 }
@@ -1457,6 +1562,8 @@ void NotificationToast::alignBottomStackToPlacementBottom() {
     return;
   }
 
+  const float scale = notificationUiScale(m_config);
+  const float topPadding = paddingTop(scale);
   const float delta = maxPlacementBottom() - stackBottom;
   if (std::abs(delta) <= 0.5f) {
     return;
@@ -1467,7 +1574,7 @@ void NotificationToast::alignBottomStackToPlacementBottom() {
       continue;
     }
     entry.y += delta;
-    if (entry.y < kPaddingTop - 0.5f) {
+    if (entry.y < topPadding - 0.5f) {
       entry.y = kQueuedY;
       if (entry.rawTimeoutMs > 0 && m_notifications != nullptr) {
         m_notifications->pauseExpiry(entry.notificationId);
@@ -1495,31 +1602,34 @@ std::optional<float> NotificationToast::findPlacementY(float candidateHeight,
     occupied.push_back({entry.y, entry.y + entry.height});
   }
   const float bottom = maxPlacementBottom();
+  const float scale = notificationUiScale(m_config);
+  const float layoutGap = kGap * scale;
+  const float topPadding = paddingTop(scale);
   if (isBottomStacking()) {
     std::sort(occupied.begin(), occupied.end(),
               [](const Interval& a, const Interval& b) { return a.bottom > b.bottom; });
     float cursorBottom = bottom;
     for (const auto& interval : occupied) {
       const float candidateTop = cursorBottom - candidateHeight;
-      if (candidateTop >= interval.bottom + kGap - 0.5f) {
+      if (candidateTop >= interval.bottom + layoutGap - 0.5f) {
         return candidateTop;
       }
-      cursorBottom = std::min(cursorBottom, interval.top - kGap);
+      cursorBottom = std::min(cursorBottom, interval.top - layoutGap);
     }
     const float candidateTop = cursorBottom - candidateHeight;
-    if (candidateTop >= kPaddingTop - 0.5f) {
+    if (candidateTop >= topPadding - 0.5f) {
       return candidateTop;
     }
     return std::nullopt;
   }
 
   std::sort(occupied.begin(), occupied.end(), [](const Interval& a, const Interval& b) { return a.top < b.top; });
-  float cursor = kPaddingTop;
+  float cursor = topPadding;
   for (const auto& interval : occupied) {
-    if (cursor + candidateHeight <= interval.top - kGap + 0.5f) {
+    if (cursor + candidateHeight <= interval.top - layoutGap + 0.5f) {
       return cursor;
     }
-    cursor = std::max(cursor, interval.bottom + kGap);
+    cursor = std::max(cursor, interval.bottom + layoutGap);
   }
 
   if (cursor + candidateHeight <= bottom + 0.5f) {
@@ -1542,7 +1652,7 @@ uint32_t NotificationToast::surfaceHeightForOutput(wl_output* output) const {
     }
   }
 
-  return static_cast<uint32_t>(kFallbackSurfaceHeight);
+  return fallbackSurfaceHeight(notificationUiScale(m_config));
 }
 
 // --- Surface lifecycle ---
@@ -1552,7 +1662,8 @@ void NotificationToast::ensureSurfaces() {
     return;
   }
 
-  const auto surfaceWidth = static_cast<uint32_t>(kSurfaceWidth);
+  const float scale = notificationUiScale(m_config);
+  const auto surfaceWidth = ::surfaceWidth(scale);
   const std::string position = notificationPosition();
   const std::string layer = notificationLayer();
   const auto selectedMonitors = notificationMonitors();
@@ -1560,7 +1671,7 @@ void NotificationToast::ensureSurfaces() {
   const int offX = std::max(0, notifCfg.offsetX);
   const int offY = std::max(0, notifCfg.offsetY);
   const std::uint32_t anchor = toastSurfaceAnchor(position);
-  const ToastSurfaceMargins margins = toastSurfaceMargins(position, offX, offY);
+  const ToastSurfaceMargins margins = toastSurfaceMargins(position, offX, offY, scale);
   if (!m_instances.empty() &&
       (position != m_lastPosition || layer != m_lastLayer || selectedMonitors != m_lastMonitorSelectors)) {
     for (auto& inst : m_instances) {
@@ -1749,7 +1860,7 @@ void NotificationToast::updateInputRegion(Instance& inst) const {
     const int rw = std::max(1, static_cast<int>(std::ceil(card.cardNode->width())));
     const int rh = std::max(1, static_cast<int>(std::ceil(card.cardNode->height())));
     rects.push_back({rx, ry, rw, rh});
-    auto strips = Surface::tessellateRoundedRect(rx, ry, rw, rh, Style::scaledRadiusXl());
+    auto strips = Surface::tessellateRoundedRect(rx, ry, rw, rh, Style::scaledRadiusXl(notificationUiScale(m_config)));
     blurRects.insert(blurRects.end(), strips.begin(), strips.end());
   }
 
@@ -1758,32 +1869,36 @@ void NotificationToast::updateInputRegion(Instance& inst) const {
 }
 
 float NotificationToast::cardReveal(const Instance::CardState& cs, float cardHeight) const {
-  return cardRevealFromNode(cs.cardNode, revealDirection(), cardHeight);
+  return cardRevealFromNode(cs.cardNode, revealDirection(), cardHeight, notificationUiScale(m_config));
 }
 
 void NotificationToast::applyCardReveal(Instance::CardState& cs, float reveal, float y, float cardHeight) const {
-  applyCardRevealNodes(cs.cardNode, cs.cardContent, cs.cardForeground, reveal, y, revealDirection(), cardHeight);
+  applyCardRevealNodes(cs.cardNode, cs.cardContent, cs.cardForeground, reveal, y, revealDirection(), cardHeight,
+                       notificationUiScale(m_config));
 }
 
 InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardContent, Node** outCardForeground,
                                         Label** outAppName, Label** outSummary, Label** outBody, Node** outBg,
                                         Node** outAppIcon, ProgressBar** outProgress, Glyph** outCloseGlyph,
                                         Node** outActionsRow, Node** outInlineReplyRow, Input** outInlineReplyInput) {
+  const float scale = notificationUiScale(m_config);
   const bool hasInlineReply = hasInlineReplyAction(entry.actions);
-  const float cardHeight = entry.height > 0.5f ? entry.height : cardHeightForEntry(!entry.actions.empty());
-  const float innerWidth = kCardWidth - kCardInnerPad * 2;
-  const float progressY = cardHeight - kProgressHeight - kProgressBottomMargin;
+  const float cardHeight = entry.height > 0.5f ? entry.height : cardHeightForEntry(!entry.actions.empty(), scale);
+  const float cardW = cardWidth(scale);
+  const float innerWidth = cardW - cardInnerPad(scale) * 2.0f;
+  const float progressY = cardHeight - progressHeight(scale) - progressBottomMargin(scale);
 
   auto viewport = std::make_unique<InputArea>();
-  viewport->setSize(kCardWidth, cardHeight);
+  viewport->setSize(cardW, cardHeight);
   viewport->setClipChildren(true);
   viewport->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
   // Right-clicking anywhere dismisses the card, while the visual (X) keeps its
   // familiar left-click close affordance without adding a nested hover target.
   viewport->setOnClick([this, id = entry.notificationId,
-                        hasDefaultAction = !entry.actions.empty() && entry.actions.size() >= 2 &&
-                                           entry.actions[0] == "default"](const InputArea::PointerData& data) {
-    if (data.button == BTN_RIGHT || (data.button == BTN_LEFT && isCloseButtonHit(data.localX, data.localY))) {
+                        hasDefaultAction =
+                            !entry.actions.empty() && entry.actions.size() >= 2 && entry.actions[0] == "default",
+                        scale](const InputArea::PointerData& data) {
+    if (data.button == BTN_RIGHT || (data.button == BTN_LEFT && isCloseButtonHit(data.localX, data.localY, scale))) {
       requestClose(id, CloseReason::Dismissed);
     } else if (data.button == BTN_LEFT && hasDefaultAction) {
       if (m_notifications != nullptr) {
@@ -1796,22 +1911,22 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
   viewport->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
 
   auto cardRoot = std::make_unique<Node>();
-  cardRoot->setSize(kCardWidth, cardHeight);
+  cardRoot->setSize(cardW, cardHeight);
   *outCardContent = cardRoot.get();
 
   auto foreground = std::make_unique<Node>();
-  foreground->setSize(kCardWidth, cardHeight);
+  foreground->setSize(cardW, cardHeight);
   *outCardForeground = foreground.get();
 
   const bool isCritical = (entry.urgency == Urgency::Critical);
-  const float textStartX = notificationTextStartX();
-  const float textMaxWidth = notificationTextMaxWidth();
+  const float textStartX = notificationTextStartX(scale);
+  const float textMaxWidth = notificationTextMaxWidth(scale);
   const float bgAlpha = m_config != nullptr ? m_config->config().notification.backgroundOpacity : 0.97f;
 
   // Background
   auto bg = std::make_unique<Box>();
   bg->setCardStyle();
-  bg->setRadius(Style::scaledRadiusXl());
+  bg->setRadius(Style::scaledRadiusXl(scale));
   if (isCritical) {
     // Keep critical toasts readable: surface background + urgent border.
     bg->setFill(colorSpecFromRole(ColorRole::Surface, bgAlpha));
@@ -1820,7 +1935,7 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
     bg->setFill(colorSpecFromRole(ColorRole::Surface, bgAlpha));
     bg->setBorder(colorSpecFromRole(ColorRole::Outline, 0.8f), Style::borderWidth);
   }
-  bg->setSize(kCardWidth, cardHeight);
+  bg->setSize(cardW, cardHeight);
   *outBg = cardRoot->addChild(std::move(bg));
 
   // Header row: app name (left) + close glyph (right), vertically centred via Flex
@@ -1828,17 +1943,17 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
   headerRow->setDirection(FlexDirection::Horizontal);
   headerRow->setJustify(FlexJustify::SpaceBetween);
   headerRow->setAlign(FlexAlign::Center);
-  headerRow->setSize(innerWidth, kCloseButtonSize);
-  headerRow->setPosition(kCardInnerPad, kCardInnerPad);
+  headerRow->setSize(innerWidth, closeButtonSize(scale));
+  headerRow->setPosition(cardInnerPad(scale), cardInnerPad(scale));
 
   auto headerLeft = std::make_unique<Flex>();
   headerLeft->setDirection(FlexDirection::Horizontal);
   headerLeft->setAlign(FlexAlign::Center);
-  headerLeft->setGap(Style::spaceXs);
+  headerLeft->setGap(Style::spaceXs * scale);
 
   auto iconSlot = std::make_unique<Node>();
-  iconSlot->setSize(kNotificationIconSize, kNotificationIconSize);
-  iconSlot->setPosition(kCardInnerPad, std::round((cardHeight - kNotificationIconSize) * 0.5f));
+  iconSlot->setSize(notificationIconSize(scale), notificationIconSize(scale));
+  iconSlot->setPosition(cardInnerPad(scale), std::round((cardHeight - notificationIconSize(scale)) * 0.5f));
 
   bool iconAssigned = false;
   if (entry.icon.has_value()) {
@@ -1850,11 +1965,11 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
       if (!glyphName.empty()) {
         auto glyphIcon = std::make_unique<Glyph>();
         glyphIcon->setGlyph(glyphName);
-        glyphIcon->setGlyphSize(kNotificationIconGlyphSize);
+        glyphIcon->setGlyphSize(kNotificationIconGlyphSize * scale);
         glyphIcon->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
         glyphIcon->measure(*m_renderContext);
-        glyphIcon->setPosition(std::round((kNotificationIconSize - glyphIcon->width()) * 0.5f),
-                               std::round((kNotificationIconSize - glyphIcon->height()) * 0.5f));
+        glyphIcon->setPosition(std::round((notificationIconSize(scale) - glyphIcon->width()) * 0.5f),
+                               std::round((notificationIconSize(scale) - glyphIcon->height()) * 0.5f));
         *outAppIcon = iconSlot->addChild(std::move(glyphIcon));
         iconAssigned = true;
       }
@@ -1864,11 +1979,12 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
     const std::string iconPath = resolveNotificationIconPath(entry);
     if (!iconPath.empty()) {
       auto appIcon = std::make_unique<Image>();
-      appIcon->setSize(kNotificationIconSize, kNotificationIconSize);
+      appIcon->setSize(notificationIconSize(scale), notificationIconSize(scale));
       appIcon->setPosition(0.0f, 0.0f);
-      appIcon->setRadius(notificationIconRadius(kNotificationIconSize));
+      appIcon->setRadius(notificationIconRadius(notificationIconSize(scale), scale));
       appIcon->setFit(ImageFit::Cover);
-      if (appIcon->setSourceFile(*m_renderContext, iconPath, static_cast<int>(std::round(kNotificationIconSize)))) {
+      if (appIcon->setSourceFile(*m_renderContext, iconPath,
+                                 static_cast<int>(std::round(notificationIconSize(scale))))) {
         *outAppIcon = iconSlot->addChild(std::move(appIcon));
         iconAssigned = true;
       } else {
@@ -1878,9 +1994,9 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
       const auto& image = *entry.imageData;
       if (image.width > 0 && image.height > 0 && !image.data.empty()) {
         auto appIcon = std::make_unique<Image>();
-        appIcon->setSize(kNotificationIconSize, kNotificationIconSize);
+        appIcon->setSize(notificationIconSize(scale), notificationIconSize(scale));
         appIcon->setPosition(0.0f, 0.0f);
-        appIcon->setRadius(notificationIconRadius(kNotificationIconSize));
+        appIcon->setRadius(notificationIconRadius(notificationIconSize(scale), scale));
         appIcon->setFit(ImageFit::Cover);
         const bool validImageMetadata = image.bitsPerSample == 8 && ((image.channels == 4 && image.hasAlpha) ||
                                                                      (image.channels == 3 && !image.hasAlpha));
@@ -1907,11 +2023,11 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
   if (!iconAssigned) {
     auto fallback = std::make_unique<Glyph>();
     fallback->setGlyph("bell");
-    fallback->setGlyphSize(kNotificationIconGlyphSize);
+    fallback->setGlyphSize(kNotificationIconGlyphSize * scale);
     fallback->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
     fallback->measure(*m_renderContext);
-    fallback->setPosition(std::round((kNotificationIconSize - fallback->width()) * 0.5f),
-                          std::round((kNotificationIconSize - fallback->height()) * 0.5f));
+    fallback->setPosition(std::round((notificationIconSize(scale) - fallback->width()) * 0.5f),
+                          std::round((notificationIconSize(scale) - fallback->height()) * 0.5f));
     *outAppIcon = iconSlot->addChild(std::move(fallback));
   }
 
@@ -1919,9 +2035,9 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
 
   auto appName = std::make_unique<Label>();
   appName->setText(entry.appName);
-  appName->setFontSize(kMetaFontSize);
+  appName->setFontSize(metaFontSize(scale));
   appName->setColor(colorSpecFromRole(isCritical ? ColorRole::Error : ColorRole::OnSurfaceVariant));
-  appName->setMaxWidth(innerWidth - kCloseButtonSize - Style::spaceXs);
+  appName->setMaxWidth(innerWidth - closeButtonSize(scale) - Style::spaceXs * scale);
   appName->measure(*m_renderContext);
   *outAppName = appName.get();
   headerLeft->addChild(std::move(appName));
@@ -1930,7 +2046,7 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
 
   auto closeGlyph = std::make_unique<Glyph>();
   closeGlyph->setGlyph("close");
-  closeGlyph->setGlyphSize(kCloseGlyphSize);
+  closeGlyph->setGlyphSize(kCloseGlyphSize * scale);
   closeGlyph->setColor(resolveColorSpec(isCritical ? colorSpecFromRole(ColorRole::Error, 0.75f)
                                                    : colorSpecFromRole(ColorRole::OnSurfaceVariant, 0.6f)));
   *outCloseGlyph = static_cast<Glyph*>(headerRow->addChild(std::move(closeGlyph)));
@@ -1943,7 +2059,7 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
   const std::string displaySummary = StringUtils::trimLeadingBlankLines(entry.summary);
   const std::string displayBody = StringUtils::trimLeadingBlankLines(entry.body);
   summary->setText(displaySummary);
-  summary->setFontSize(kSummaryFontSize);
+  summary->setFontSize(summaryFontSize(scale));
   summary->setColor(colorSpecFromRole(ColorRole::OnSurface));
   summary->setFontWeight(FontWeight::Bold);
   summary->setMaxWidth(textMaxWidth);
@@ -1971,7 +2087,7 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
           actionLabel = fallbackActionLabel();
         }
 
-        auto actionButton = makeNotificationActionButton(actionLabel);
+        auto actionButton = makeNotificationActionButton(actionLabel, scale);
         actionButton->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
         actionButton->setOnEnter([this, notificationId]() {
           pauseCountdowns(notificationId);
@@ -2018,7 +2134,7 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
 
       if (!buttons.empty()) {
         actionsRow = std::make_unique<Flex>();
-        actionsReservedHeight = layoutNotificationActionsRow(*m_renderContext, *actionsRow, buttons);
+        actionsReservedHeight = layoutNotificationActionsRow(*m_renderContext, *actionsRow, buttons, scale);
       }
     }
 
@@ -2027,14 +2143,14 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
       inlineReplyRow = std::make_unique<Flex>();
       inlineReplyRow->setDirection(FlexDirection::Horizontal);
       inlineReplyRow->setAlign(FlexAlign::Center);
-      inlineReplyRow->setGap(kInlineReplyGap);
+      inlineReplyRow->setGap(kInlineReplyGap * scale);
       inlineReplyRow->setVisible(false);
 
       inlineReplyInput = std::make_unique<Input>();
       inlineReplyInput->setPlaceholder(inlineReplyPlaceholder(entry.actions));
-      inlineReplyInput->setFontSize(Style::fontSizeCaption);
-      inlineReplyInput->setControlHeight(kInlineReplyInputHeight);
-      inlineReplyInput->setHorizontalPadding(Style::spaceSm);
+      inlineReplyInput->setFontSize(Style::fontSizeCaption * scale);
+      inlineReplyInput->setControlHeight(kInlineReplyInputHeight * scale);
+      inlineReplyInput->setHorizontalPadding(Style::spaceSm * scale);
       inlineReplyInput->setFrameVisible(true);
       inlineReplyInput->setFlexGrow(1.0f);
 
@@ -2099,11 +2215,11 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
       inlineReplySendButton = std::make_unique<Button>();
       inlineReplySendButton->setGlyph("send");
       inlineReplySendButton->setVariant(ButtonVariant::Default);
-      inlineReplySendButton->setGlyphSize(Style::fontSizeBody);
-      inlineReplySendButton->setMinWidth(kInlineReplySendButtonSize);
-      inlineReplySendButton->setMinHeight(kInlineReplySendButtonSize);
-      inlineReplySendButton->setPadding(Style::spaceXs);
-      inlineReplySendButton->setRadius(Style::scaledRadiusMd());
+      inlineReplySendButton->setGlyphSize(Style::fontSizeBody * scale);
+      inlineReplySendButton->setMinWidth(kInlineReplySendButtonSize * scale);
+      inlineReplySendButton->setMinHeight(kInlineReplySendButtonSize * scale);
+      inlineReplySendButton->setPadding(Style::spaceXs * scale);
+      inlineReplySendButton->setRadius(Style::scaledRadiusMd(scale));
       inlineReplySendButton->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
 
       inlineReplyInput->setOnSubmit(
@@ -2122,17 +2238,17 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
 
   summary->setMaxLines(std::max(1, entry.toastSummaryLines));
   summary->measure(*m_renderContext);
-  summary->setPosition(textStartX, kCardInnerPad + kCloseButtonSize + kMetaGap);
+  summary->setPosition(textStartX, cardInnerPad(scale) + closeButtonSize(scale) + metaGap(scale));
   const float summaryMeasuredH = summary->height();
   *outSummary = summary.get();
   foreground->addChild(std::move(summary));
 
   auto body = std::make_unique<Label>();
   body->setText(displayBody);
-  body->setFontSize(kBodyFontSize);
+  body->setFontSize(bodyFontSize(scale));
   body->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
   body->setMaxWidth(textMaxWidth);
-  const float bodyHeight = availableBodyHeight(summaryMeasuredH, actionsReservedHeight, cardHeight);
+  const float bodyHeight = availableBodyHeight(summaryMeasuredH, actionsReservedHeight, cardHeight, scale);
   const int bodyLines = entry.toastBodyLines;
   body->setMaxLines(std::max(1, bodyLines));
   if (bodyLines <= 0) {
@@ -2140,13 +2256,13 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
     body->setVisible(false);
   }
   body->measure(*m_renderContext);
-  body->setPosition(textStartX, bodyTopForSummary(summaryMeasuredH));
+  body->setPosition(textStartX, bodyTopForSummary(summaryMeasuredH, scale));
   clampBodyLabelHeight(*body, bodyHeight);
   *outBody = body.get();
   foreground->addChild(std::move(body));
 
   if (actionsRow != nullptr) {
-    actionsRow->setPosition(textStartX, progressY - actionsRow->height() - kActionRowGap);
+    actionsRow->setPosition(textStartX, progressY - actionsRow->height() - actionRowGap(scale));
     *outActionsRow = actionsRow.get();
     foreground->addChild(std::move(actionsRow));
   } else {
@@ -2154,7 +2270,7 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
   }
 
   if (inlineReplyRow != nullptr) {
-    inlineReplyRow->setPosition(textStartX, progressY - inlineReplyRow->height() - kActionRowGap);
+    inlineReplyRow->setPosition(textStartX, progressY - inlineReplyRow->height() - actionRowGap(scale));
     *outInlineReplyRow = inlineReplyRow.get();
     *outInlineReplyInput = inlineReplyInputPtr;
     foreground->addChild(std::move(inlineReplyRow));
@@ -2167,8 +2283,8 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
   auto progressBar = std::make_unique<ProgressBar>();
   progressBar->setTrackColor(colorSpecFromRole(ColorRole::OnSurfaceVariant, 0.35f));
   progressBar->setFillColor(colorSpecFromRole(isCritical ? ColorRole::Error : ColorRole::Primary));
-  progressBar->setSize(innerWidth, kProgressHeight);
-  progressBar->setPosition(kCardInnerPad, progressY);
+  progressBar->setSize(innerWidth, progressHeight(scale));
+  progressBar->setPosition(cardInnerPad(scale), progressY);
   *outProgress = static_cast<ProgressBar*>(foreground->addChild(std::move(progressBar)));
 
   cardRoot->addChild(std::move(foreground));
@@ -2488,7 +2604,8 @@ std::string NotificationToast::resolveNotificationIconPath(const PopupEntry& ent
     return {};
   }
 
-  const std::string& resolved = m_iconResolver.resolve(localPath, static_cast<int>(std::round(kNotificationIconSize)));
+  const std::string& resolved = m_iconResolver.resolve(
+      localPath, static_cast<int>(std::round(notificationIconSize(notificationUiScale(m_config)))));
   if (!resolved.empty()) {
     return resolved;
   }
