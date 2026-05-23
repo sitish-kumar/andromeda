@@ -54,8 +54,8 @@ private:
   bool handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers);
   void applyEmptyState();
   void openAppActionsMenu(std::size_t index, float anchorX, float anchorY);
-  void rebuildCategoryBar(const std::vector<LauncherCategory>& categories);
-  void setCategoryBarVisible(bool visible);
+  void rebuildCategoryFilter(const std::vector<LauncherCategory>& categories);
+  void setCategoryFilterVisible(bool visible);
   void applyActiveCategory();
 
   std::vector<std::unique_ptr<LauncherProvider>> m_providers;
@@ -66,7 +66,7 @@ private:
 
   Flex* m_container = nullptr;
   Input* m_input = nullptr;
-  Segmented* m_categoryBar = nullptr;
+  Segmented* m_categoryFilter = nullptr;
   Flex* m_body = nullptr;
   VirtualGridView* m_grid = nullptr;
   Label* m_emptyLabel = nullptr;
@@ -76,7 +76,7 @@ private:
   std::string m_activeCategory;
   std::vector<LauncherCategory> m_currentCategories;
   std::size_t m_selectedIndex = 0;
-  bool m_categoryBarVisible = true;
+  bool m_categoryFilterVisible = true;
   ConfigService* m_config = nullptr;
   AsyncTextureCache* m_asyncTextures = nullptr;
   std::unique_ptr<ContextMenuPopup> m_actionsMenu;

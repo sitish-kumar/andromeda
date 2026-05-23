@@ -316,14 +316,14 @@ void LauncherPanel::create() {
   m_input = input.get();
   container->addChild(std::move(input));
 
-  auto categoryBar = std::make_unique<Segmented>();
-  categoryBar->setScale(scale);
-  categoryBar->setCompact(true);
-  categoryBar->setAlign(FlexAlign::Center);
-  categoryBar->setEqualSegmentWidths(true);
-  categoryBar->setVisible(false);
-  categoryBar->setParticipatesInLayout(false);
-  m_categoryBar = static_cast<Segmented*>(container->addChild(std::move(categoryBar)));
+  auto categoryFilter = std::make_unique<Segmented>();
+  categoryFilter->setScale(scale);
+  categoryFilter->setCompact(true);
+  categoryFilter->setAlign(FlexAlign::Center);
+  categoryFilter->setEqualSegmentWidths(true);
+  categoryFilter->setVisible(false);
+  categoryFilter->setParticipatesInLayout(false);
+  m_categoryFilter = static_cast<Segmented*>(container->addChild(std::move(categoryFilter)));
 
   auto body = std::make_unique<Flex>();
   body->setDirection(FlexDirection::Vertical);
@@ -386,13 +386,13 @@ void LauncherPanel::doLayout(Renderer& renderer, float width, float height) {
 }
 
 void LauncherPanel::onOpen(std::string_view context) {
-  m_categoryBarVisible = m_config != nullptr && m_config->config().shell.panel.launcherCategories;
+  m_categoryFilterVisible = m_config != nullptr && m_config->config().shell.panel.launcherCategories;
   m_activeCategory.clear();
   m_currentCategories.clear();
-  if (m_categoryBar != nullptr) {
-    m_categoryBar->clearOptions();
-    m_categoryBar->setVisible(false);
-    m_categoryBar->setParticipatesInLayout(false);
+  if (m_categoryFilter != nullptr) {
+    m_categoryFilter->clearOptions();
+    m_categoryFilter->setVisible(false);
+    m_categoryFilter->setParticipatesInLayout(false);
   }
 
   const std::string initialValue(context);
@@ -429,7 +429,7 @@ void LauncherPanel::onClose() {
   // The scene tree (and all nodes) is destroyed by PanelManager after onClose().
   m_container = nullptr;
   m_input = nullptr;
-  m_categoryBar = nullptr;
+  m_categoryFilter = nullptr;
   m_body = nullptr;
   m_grid = nullptr;
   m_emptyLabel = nullptr;
@@ -554,30 +554,30 @@ void LauncherPanel::onInputChanged(const std::string& text) {
   }
   if (categoriesChanged) {
     m_activeCategory.clear();
-    rebuildCategoryBar(newCategories);
+    rebuildCategoryFilter(newCategories);
   }
 
   applyActiveCategory();
 }
 
-void LauncherPanel::rebuildCategoryBar(const std::vector<LauncherCategory>& categories) {
+void LauncherPanel::rebuildCategoryFilter(const std::vector<LauncherCategory>& categories) {
   m_currentCategories = categories;
-  if (m_categoryBar == nullptr) {
+  if (m_categoryFilter == nullptr) {
     return;
   }
-  m_categoryBar->clearOptions();
+  m_categoryFilter->clearOptions();
   if (categories.empty()) {
-    setCategoryBarVisible(false);
+    setCategoryFilterVisible(false);
     return;
   }
-  m_categoryBar->addOption("", "layout-grid");
-  m_categoryBar->setOptionTooltip(0, i18n::tr("launcher.categories.all"));
+  m_categoryFilter->addOption("", "layout-grid");
+  m_categoryFilter->setOptionTooltip(0, i18n::tr("launcher.categories.all"));
   for (std::size_t i = 0; i < categories.size(); ++i) {
-    m_categoryBar->addOption("", categories[i].glyphName);
-    m_categoryBar->setOptionTooltip(i + 1, categories[i].label);
+    m_categoryFilter->addOption("", categories[i].glyphName);
+    m_categoryFilter->setOptionTooltip(i + 1, categories[i].label);
   }
-  m_categoryBar->setSelectedIndex(0);
-  m_categoryBar->setOnChange([this](std::size_t idx) {
+  m_categoryFilter->setSelectedIndex(0);
+  m_categoryFilter->setOnChange([this](std::size_t idx) {
     if (idx == 0) {
       m_activeCategory.clear();
     } else if (idx - 1 < m_currentCategories.size()) {
@@ -585,16 +585,16 @@ void LauncherPanel::rebuildCategoryBar(const std::vector<LauncherCategory>& cate
     }
     applyActiveCategory();
   });
-  setCategoryBarVisible(m_categoryBarVisible);
+  setCategoryFilterVisible(m_categoryFilterVisible);
 }
 
-void LauncherPanel::setCategoryBarVisible(bool visible) {
-  if (m_categoryBar == nullptr) {
+void LauncherPanel::setCategoryFilterVisible(bool visible) {
+  if (m_categoryFilter == nullptr) {
     return;
   }
   const bool show = visible && !m_currentCategories.empty();
-  m_categoryBar->setVisible(show);
-  m_categoryBar->setParticipatesInLayout(show);
+  m_categoryFilter->setVisible(show);
+  m_categoryFilter->setParticipatesInLayout(show);
   if (m_container != nullptr) {
     m_container->markLayoutDirty();
   }
@@ -803,25 +803,25 @@ bool LauncherPanel::handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers) {
   };
 
   if (KeySymbol::isTab(sym) && !m_currentCategories.empty()) {
-    m_categoryBarVisible = !m_categoryBarVisible;
-    setCategoryBarVisible(m_categoryBarVisible);
+    m_categoryFilterVisible = !m_categoryFilterVisible;
+    setCategoryFilterVisible(m_categoryFilterVisible);
     return true;
   }
 
   if (KeybindMatcher::matches(KeybindAction::Left, sym, modifiers)) {
-    if (m_categoryBar != nullptr && m_categoryBar->visible() && m_categoryBar->selectedIndex() > 0) {
-      m_categoryBar->setSelectedIndex(m_categoryBar->selectedIndex() - 1);
+    if (m_categoryFilter != nullptr && m_categoryFilter->visible() && m_categoryFilter->selectedIndex() > 0) {
+      m_categoryFilter->setSelectedIndex(m_categoryFilter->selectedIndex() - 1);
       return true;
     }
     return false;
   }
 
   if (KeybindMatcher::matches(KeybindAction::Right, sym, modifiers)) {
-    if (m_categoryBar != nullptr && m_categoryBar->visible()) {
-      const std::size_t next = m_categoryBar->selectedIndex() + 1;
+    if (m_categoryFilter != nullptr && m_categoryFilter->visible()) {
+      const std::size_t next = m_categoryFilter->selectedIndex() + 1;
       const std::size_t total = m_currentCategories.size() + 1;
       if (next < total) {
-        m_categoryBar->setSelectedIndex(next);
+        m_categoryFilter->setSelectedIndex(next);
         return true;
       }
     }
