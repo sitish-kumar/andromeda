@@ -306,6 +306,7 @@ namespace config_export {
       table.insert_or_assign("settings_show_advanced", shell.settingsShowAdvanced);
       table.insert_or_assign("middle_click_opens_widget_settings", shell.middleClickOpensWidgetSettings);
       table.insert_or_assign("show_location", shell.showLocation);
+      table.insert_or_assign("launch_app_as_systemd_service", shell.launchAppAsSystemdService);
       table.insert_or_assign("clipboard_enabled", shell.clipboardEnabled);
       table.insert_or_assign("clipboard_history_max_entries",
                              static_cast<std::int64_t>(shell.clipboardHistoryMaxEntries));

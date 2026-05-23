@@ -1,5 +1,6 @@
 #include "shell/settings/settings_registry.h"
 
+#include "core/process.h"
 #include "i18n/i18n.h"
 #include "render/core/color.h"
 #include "shell/control_center/shortcut_registry.h"
@@ -828,6 +829,12 @@ namespace settings {
                          ToggleSetting{cfg.shell.showLocation}, "weather");
       e.visibleWhen = weatherOn;
       entries.push_back(std::move(e));
+    }
+    if (process::systemdAvailable()) {
+      entries.push_back(makeEntry("shell", "launcher", tr("settings.schema.shell.launch-app-as-systemd-service.label"),
+                                  tr("settings.schema.shell.launch-app-as-systemd-service.description"),
+                                  {"shell", "launch_app_as_systemd_service"},
+                                  ToggleSetting{cfg.shell.launchAppAsSystemdService}));
     }
     const SettingVisibility clipboardOn{{"shell", "clipboard_enabled"}, {"true"}};
     entries.push_back(makeEntry("shell", "clipboard", tr("settings.schema.shell.clipboard-enabled.label"),

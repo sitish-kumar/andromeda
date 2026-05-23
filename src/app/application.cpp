@@ -1080,7 +1080,7 @@ void Application::initUi() {
           &m_idleInhibitor, &m_dependencyService, &m_compositorPlatform, &m_wallpaper));
   {
     auto launcherPanel = std::make_unique<LauncherPanel>(&m_configService, &m_asyncTextureCache);
-    launcherPanel->addProvider(std::make_unique<AppProvider>(&m_wayland));
+    launcherPanel->addProvider(std::make_unique<AppProvider>(&m_configService, &m_wayland));
     launcherPanel->addProvider(std::make_unique<WallpaperProvider>(&m_configService, &m_wayland));
     launcherPanel->addProvider(std::make_unique<MathProvider>(&m_clipboardService));
     launcherPanel->addProvider(std::make_unique<EmojiProvider>(&m_clipboardService));

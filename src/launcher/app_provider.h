@@ -6,11 +6,12 @@
 #include <cstdint>
 #include <vector>
 
+class ConfigService;
 class WaylandConnection;
 
 class AppProvider : public LauncherProvider {
 public:
-  explicit AppProvider(WaylandConnection* wayland = nullptr);
+  explicit AppProvider(ConfigService* config, WaylandConnection* wayland = nullptr);
 
   [[nodiscard]] std::string_view prefix() const override { return ""; }
   [[nodiscard]] std::string_view name() const override { return "Applications"; }
@@ -26,6 +27,7 @@ public:
 private:
   void refreshEntriesIfNeeded() const;
 
+  ConfigService* m_config = nullptr;
   WaylandConnection* m_wayland = nullptr;
   mutable std::vector<DesktopEntry> m_entries;
   mutable std::uint64_t m_entriesVersion = 0;

@@ -1640,6 +1640,10 @@
           "label": "Show Location",
           "description": "Show location name in weather widgets"
         },
+        "launch-app-as-systemd-service": {
+          "label": "Launch Apps as Systemd Services",
+          "description": "The launcher panel will start applications as transient systemd services."
+        },
         "clipboard-enabled": {
           "label": "Clipboard",
           "description": "Enable clipboard history, the clipboard panel, and copy/paste integration"

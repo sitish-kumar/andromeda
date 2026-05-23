@@ -1,5 +1,6 @@
 #include "launcher/app_provider.h"
 
+#include "config/config_service.h"
 #include "core/process.h"
 #include "util/file_utils.h"
 #include "util/fuzzy_match.h"
@@ -199,7 +200,7 @@ namespace {
   }
 
   void launchCommand(const std::string& exec, bool terminal, const std::string& activationToken,
-                     const std::string& workingDir) {
+                     const std::string& workingDir, const std::string& appName, bool runAsSystemdService) {
     std::string cleanExec = stripFieldCodes(exec);
     std::vector<std::string> args = terminal ? terminalLaunchArgs(cleanExec) : tokenize(cleanExec);
 
@@ -211,7 +212,11 @@ namespace {
       return;
     }
 
-    (void)process::runAsync(args, activationToken, workingDir);
+    if (runAsSystemdService) {
+      process::runAsyncAsSystemdService(args, appName, activationToken, workingDir);
+    } else {
+      (void)process::runAsync(args, activationToken, workingDir);
+    }
   }
 
   std::string_view primaryCategory(std::string_view categories) {
@@ -256,7 +261,7 @@ namespace {
 
 } // namespace
 
-AppProvider::AppProvider(WaylandConnection* wayland) : m_wayland(wayland) {}
+AppProvider::AppProvider(ConfigService* config, WaylandConnection* wayland) : m_config(config), m_wayland(wayland) {}
 
 void AppProvider::initialize() { refreshEntriesIfNeeded(); }
 
@@ -352,7 +357,8 @@ bool AppProvider::activate(const LauncherResult& result) {
     if (m_wayland != nullptr && m_wayland->hasXdgActivation()) {
       token = m_wayland->requestActivationToken(nullptr);
     }
-    launchCommand(execLine, entry.terminal, token, entry.workingDir);
+    launchCommand(execLine, entry.terminal, token, entry.workingDir, entry.id,
+                  m_config->config().shell.launchAppAsSystemdService);
     return true;
   }
   return false;
