@@ -145,17 +145,18 @@ namespace {
 TaskbarWidget::TaskbarWidget(
     CompositorPlatform& platform, wl_output* output, bool groupByWorkspace, bool showAllOutputs,
     bool onlyActiveWorkspace, bool showWorkspaceLabel, WorkspaceLabelPlacement workspaceLabelPlacement,
-    bool hideEmptyWorkspaces, bool workspaceGroupCapsule, ColorSpec focusedColor, ColorSpec occupiedColor,
-    ColorSpec emptyColor, bool showWindowTitle, float windowTitleMaxWidth, std::string barPosition,
-    ShellConfig::ShadowConfig shadowConfig
+    bool hideEmptyWorkspaces, bool workspaceGroupCapsule, bool showActiveIndicator, ColorSpec focusedColor,
+    ColorSpec occupiedColor, ColorSpec emptyColor, bool showWindowTitle, float windowTitleMaxWidth,
+    std::string barPosition, ShellConfig::ShadowConfig shadowConfig
 )
     : m_platform(platform), m_output(output), m_groupByWorkspace(groupByWorkspace), m_showAllOutputs(showAllOutputs),
       m_onlyActiveWorkspace(onlyActiveWorkspace), m_showWorkspaceLabel(showWorkspaceLabel),
       m_workspaceLabelPlacement(workspaceLabelPlacement), m_hideEmptyWorkspaces(hideEmptyWorkspaces),
-      m_workspaceGroupCapsule(workspaceGroupCapsule), m_focusedColor(std::move(focusedColor)),
-      m_occupiedColor(std::move(occupiedColor)), m_emptyColor(std::move(emptyColor)),
-      m_showWindowTitle(showWindowTitle), m_windowTitleMaxWidth(windowTitleMaxWidth),
-      m_barPosition(std::move(barPosition)), m_shadowConfig(std::move(shadowConfig)) {
+      m_workspaceGroupCapsule(workspaceGroupCapsule), m_showActiveIndicator(showActiveIndicator),
+      m_focusedColor(std::move(focusedColor)), m_occupiedColor(std::move(occupiedColor)),
+      m_emptyColor(std::move(emptyColor)), m_showWindowTitle(showWindowTitle),
+      m_windowTitleMaxWidth(windowTitleMaxWidth), m_barPosition(std::move(barPosition)),
+      m_shadowConfig(std::move(shadowConfig)) {
   // Window title not implemented for vertical bars or workspace grouping.
   if (m_barPosition == "left" || m_barPosition == "right" || m_groupByWorkspace) {
     m_showWindowTitle = false;
@@ -383,7 +384,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       area->addChild(std::move(label));
     }
 
-    if (task.active) {
+    if (task.active && m_showActiveIndicator) {
       const float d = std::max(4.0f, std::round(Style::barGlyphSize * 0.32f * m_contentScale));
       const float bottomInset = 0.25f * m_contentScale;
       if (m_showWindowTitle) {

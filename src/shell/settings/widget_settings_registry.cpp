@@ -683,6 +683,7 @@ namespace settings {
             WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
         add(std::move(groupCapsule));
       }
+      add(boolSpec("show_active_indicator", true));
       const WidgetSettingVisibility groupedWorkspaceSettings{
           WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}
       };

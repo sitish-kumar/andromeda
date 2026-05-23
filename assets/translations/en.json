@@ -1286,6 +1286,10 @@
           "label": "Window Title Max Width",
           "description": "Maximum width in pixels for window titles"
         },
+        "show_active_indicator": {
+          "label": "Active Window Indicator",
+          "description": "Show a small dot below the active window icon in the taskbar."
+        },
         "height": {
           "label": "Height",
           "description": "Widget height in pixels"
