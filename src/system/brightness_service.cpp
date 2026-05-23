@@ -4,7 +4,6 @@
 #include "config/config_service.h"
 #include "core/log.h"
 #include "core/process.h"
-#include "core/timer_manager.h"
 #include "dbus/system_bus.h"
 #include "ipc/ipc_arg_parse.h"
 #include "ipc/ipc_service.h"
@@ -52,7 +51,6 @@ namespace {
   constexpr std::chrono::milliseconds kDdcDetectTimeout{15000};
   constexpr std::chrono::milliseconds kDdcQueryTimeout{10000};
   constexpr std::chrono::milliseconds kDdcSetTimeout{8000};
-  constexpr std::chrono::milliseconds kDdcRefreshInterval{5000};
   constexpr std::chrono::seconds kDdcFailureCooldown{30};
   constexpr int kDdcFailureThreshold = 3;
   enum class RuntimeBackend : std::uint8_t {
@@ -95,6 +93,7 @@ namespace {
     std::string displayId;
     int bus = -1;
     int targetRaw = -1;
+    int maxRaw = 100;
   };
 
   struct WorkerCompletion {
@@ -468,7 +467,10 @@ namespace {
     return args;
   }
 
-  std::vector<std::string> ddcBaseArgs(int bus) { return {"ddcutil", "--noconfig", "--bus", std::to_string(bus)}; }
+  std::vector<std::string> ddcBaseArgs(int bus) {
+    return {"ddcutil", "--noconfig", "--enable-dynamic-sleep", "--sleep-multiplier",
+            "0.1",     "--bus",      std::to_string(bus)};
+  }
 
   std::optional<std::pair<int, int>> queryDdcBrightness(int bus, std::chrono::milliseconds timeout,
                                                         std::string* detailOut) {
@@ -587,8 +589,6 @@ struct BrightnessService::Impl {
   std::uint64_t generation = 0;
   bool warnedMissingDdcutil = false;
 
-  Timer ddcRefreshTimer;
-
   std::mutex workerMutex;
   std::condition_variable workerCv;
   std::thread workerThread;
@@ -606,7 +606,6 @@ struct BrightnessService::Impl {
   }
 
   ~Impl() {
-    ddcRefreshTimer.stop();
     {
       std::lock_guard lock(workerMutex);
       workerStop = true;
@@ -683,7 +682,6 @@ struct BrightnessService::Impl {
     enumerateBacklights();
     rebuildPublic();
     scheduleDdcDetect();
-    updateDdcRefreshTimer();
 
     if (notify && oldPublic != publicDisplays && changeCallback) {
       changeCallback();
@@ -817,18 +815,6 @@ struct BrightnessService::Impl {
     workerCv.notify_all();
   }
 
-  void updateDdcRefreshTimer() {
-    const bool hasDdcDisplays = std::any_of(internals.begin(), internals.end(), [](const DisplayInternal& display) {
-      return display.backend == RuntimeBackend::Ddcutil;
-    });
-    if (!hasDdcDisplays) {
-      ddcRefreshTimer.stop();
-      return;
-    }
-
-    ddcRefreshTimer.startRepeating(kDdcRefreshInterval, [this]() { queueDdcRefreshes(); });
-  }
-
   void rebuildPublic() {
     publicDisplays.clear();
     publicDisplays.reserve(internals.size() + wayland.outputs().size());
@@ -932,6 +918,7 @@ struct BrightnessService::Impl {
         .displayId = display.pub.id,
         .bus = display.ddcBus,
         .targetRaw = static_cast<int>(std::round(value * 100.0f)),
+        .maxRaw = display.maxRaw,
     };
 
     std::lock_guard lock(workerMutex);
@@ -1021,6 +1008,7 @@ struct BrightnessService::Impl {
         completion.displayId = writeJob->displayId;
 
         auto args = ddcBaseArgs(writeJob->bus);
+        args.push_back("--noverify");
         args.push_back("setvcp");
         args.push_back("10");
         args.push_back(std::to_string(std::clamp(writeJob->targetRaw, 0, 100)));
@@ -1029,15 +1017,8 @@ struct BrightnessService::Impl {
         completion.timedOut = result.timedOut;
         completion.detail = result.output;
         completion.success = result.launched && !result.timedOut && result.exitCode == 0;
-
-        std::string readbackDetail;
-        if (const auto brightness = queryDdcBrightness(writeJob->bus, kDdcQueryTimeout, &readbackDetail);
-            brightness.has_value()) {
-          completion.currentRaw = brightness->first;
-          completion.maxRaw = brightness->second;
-        } else if (completion.detail.empty()) {
-          completion.detail = std::move(readbackDetail);
-        }
+        completion.currentRaw = writeJob->targetRaw;
+        completion.maxRaw = writeJob->maxRaw;
 
         enqueueCompletion(std::move(completion));
         continue;
@@ -1121,7 +1102,6 @@ struct BrightnessService::Impl {
 
     if (changed) {
       rebuildPublic();
-      updateDdcRefreshTimer();
       if (changeCallback) {
         changeCallback();
       }
@@ -1323,6 +1303,8 @@ bool BrightnessService::available() const noexcept {
 void BrightnessService::setBrightness(const std::string& displayId, float value) {
   m_impl->setBrightness(displayId, value);
 }
+
+void BrightnessService::requestDdcRefresh() { m_impl->queueDdcRefreshes(); }
 
 void BrightnessService::reload(const BrightnessConfig& config) { m_impl->reload(config); }
 

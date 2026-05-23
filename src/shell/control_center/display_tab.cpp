@@ -92,6 +92,12 @@ std::unique_ptr<Flex> DisplayTab::create() {
   return tab;
 }
 
+void DisplayTab::setActive(bool active) {
+  if (active && m_brightness != nullptr) {
+    m_brightness->requestDdcRefresh();
+  }
+}
+
 void DisplayTab::onClose() {
   flushPendingBrightness(true);
   m_debounceTimer.stop();

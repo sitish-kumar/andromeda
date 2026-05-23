@@ -20,6 +20,7 @@ public:
   DisplayTab(BrightnessService* brightness, ConfigService* config);
 
   std::unique_ptr<Flex> create() override;
+  void setActive(bool active) override;
   void onClose() override;
   [[nodiscard]] bool dragging() const noexcept;
 
