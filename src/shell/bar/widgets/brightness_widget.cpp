@@ -70,7 +70,7 @@ void BrightnessWidget::doLayout(Renderer& renderer, float containerWidth, float 
   m_isVertical = containerHeight > containerWidth;
   syncState(renderer);
   if (!rootNode->visible()) {
-    rootNode->setSize(0.0f, 0.0f);
+    rootNode->setParticipatesInLayout(false);
     return;
   }
 
@@ -111,13 +111,14 @@ void BrightnessWidget::syncState(Renderer& renderer) {
     m_lastBrightness = -1.0f;
     if (rootNode != nullptr) {
       rootNode->setVisible(false);
-      rootNode->setSize(0.0f, 0.0f);
+      rootNode->setParticipatesInLayout(false);
     }
     return;
   }
 
   if (rootNode != nullptr) {
     rootNode->setVisible(true);
+    rootNode->setParticipatesInLayout(true);
   }
 
   const float brightness = display->brightness;

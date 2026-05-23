@@ -52,7 +52,7 @@ void AudioVisualizerWidget::doLayout(Renderer& renderer, float containerWidth, f
   }
   applyVisibility();
   if (!m_visible) {
-    root()->setSize(0.0f, 0.0f);
+    root()->setParticipatesInLayout(false);
     return;
   }
 
@@ -182,11 +182,9 @@ void AudioVisualizerWidget::setVisibilityCollapsed(bool collapsed) {
     return;
   }
   root()->setVisible(!collapsed);
+  root()->setParticipatesInLayout(!collapsed);
   if (m_visualizer != nullptr) {
     m_visualizer->setVisible(!collapsed);
-  }
-  if (collapsed) {
-    root()->setSize(0.0f, 0.0f);
   }
 }
 

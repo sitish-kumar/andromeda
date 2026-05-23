@@ -60,8 +60,8 @@ void ActiveWindowWidget::doLayout(Renderer& renderer, float containerWidth, floa
   syncState(renderer);
 
   rootNode->setVisible(!m_lastEmptyState);
+  rootNode->setParticipatesInLayout(!m_lastEmptyState);
   if (m_lastEmptyState) {
-    rootNode->setSize(0.0f, 0.0f);
     return;
   }
 

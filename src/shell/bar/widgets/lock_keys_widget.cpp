@@ -73,7 +73,7 @@ void LockKeysWidget::doLayout(Renderer& renderer, float containerWidth, float co
   sync(renderer);
 
   if (!root()->visible()) {
-    root()->setSize(0.0f, 0.0f);
+    root()->setParticipatesInLayout(false);
     return;
   }
 
@@ -187,7 +187,9 @@ void LockKeysWidget::sync(Renderer& renderer) {
   m_hasState = true;
 
   if (auto* node = root(); node != nullptr) {
-    node->setVisible(anyVisible || !m_hideWhenOff);
+    const bool show = anyVisible || !m_hideWhenOff;
+    node->setVisible(show);
+    node->setParticipatesInLayout(show);
   }
 
   if (m_glyph != nullptr) {
