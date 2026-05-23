@@ -464,6 +464,13 @@ namespace settings {
         }
         return std::string(sessionActionDefaultGlyphName(row.action));
       }();
+      const auto previewGlyphForRow = [&row]() {
+        if (row.glyph.has_value() && !row.glyph->empty()) {
+          return *row.glyph;
+        }
+        return std::string(sessionActionDefaultGlyphName(row.action));
+      };
+      const auto hasCustomGlyph = [&row]() { return row.glyph.has_value() && !row.glyph->empty(); };
 
       auto glyphPickBtn = std::make_unique<Button>();
       glyphPickBtn->setVariant(ButtonVariant::Outline);
@@ -476,36 +483,47 @@ namespace settings {
       glyphPickBtn->setMaxHeight(iconSq);
       glyphPickBtn->setPadding(0.0f, 0.0f);
       glyphPickBtn->setRadius(Style::scaledRadiusMd(scale));
-      glyphPickBtn->setOnClick([&row, persist]() {
+      Button* glyphPickBtnPtr = glyphPickBtn.get();
+
+      auto clearG = std::make_unique<Button>();
+      clearG->setVariant(ButtonVariant::Ghost);
+      clearG->setText(i18n::tr("settings.session-actions.clear-glyph"));
+      clearG->setFontSize(Style::fontSizeCaption * scale);
+      clearG->setMinHeight(iconSq);
+      clearG->setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
+      clearG->setRadius(Style::scaledRadiusSm(scale));
+      clearG->setVisible(hasCustomGlyph());
+      clearG->setParticipatesInLayout(hasCustomGlyph());
+      Button* clearGlyphBtnPtr = clearG.get();
+
+      glyphPickBtn->setOnClick([&row, persist, glyphPickBtnPtr, clearGlyphBtnPtr]() {
         GlyphPickerDialogOptions options;
         options.title = i18n::tr("settings.session-actions.glyph-picker-title");
         if (row.glyph.has_value() && !row.glyph->empty()) {
           options.initialGlyph = *row.glyph;
         }
-        (void)GlyphPickerDialog::open(std::move(options), [&row, persist](std::optional<GlyphPickerResult> result) {
+        (void)GlyphPickerDialog::open(std::move(options), [&row, persist, glyphPickBtnPtr,
+                                                           clearGlyphBtnPtr](std::optional<GlyphPickerResult> result) {
           if (!result.has_value()) {
             return;
           }
           row.glyph = result->name;
+          glyphPickBtnPtr->setGlyph(result->name);
+          clearGlyphBtnPtr->setVisible(true);
+          clearGlyphBtnPtr->setParticipatesInLayout(true);
           persist();
         });
       });
       glyphBtnRow->addChild(std::move(glyphPickBtn));
 
-      if (row.glyph.has_value() && !row.glyph->empty()) {
-        auto clearG = std::make_unique<Button>();
-        clearG->setVariant(ButtonVariant::Ghost);
-        clearG->setText(i18n::tr("settings.session-actions.clear-glyph"));
-        clearG->setFontSize(Style::fontSizeCaption * scale);
-        clearG->setMinHeight(iconSq);
-        clearG->setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-        clearG->setRadius(Style::scaledRadiusSm(scale));
-        clearG->setOnClick([&row, persist]() {
-          row.glyph = std::nullopt;
-          persist();
-        });
-        glyphBtnRow->addChild(std::move(clearG));
-      }
+      clearG->setOnClick([&row, persist, glyphPickBtnPtr, clearGlyphBtnPtr, previewGlyphForRow]() {
+        row.glyph = std::nullopt;
+        glyphPickBtnPtr->setGlyph(previewGlyphForRow());
+        clearGlyphBtnPtr->setVisible(false);
+        clearGlyphBtnPtr->setParticipatesInLayout(false);
+        persist();
+      });
+      glyphBtnRow->addChild(std::move(clearG));
 
       iconCol->addChild(std::move(glyphBtnRow));
       body->addChild(std::move(iconCol));
@@ -530,9 +548,13 @@ namespace settings {
       kindSelect->setControlHeight(Style::controlHeight * scale);
       kindSelect->setGlyphSize(Style::fontSizeBody * scale);
       kindSelect->setFillWidth(true);
-      kindSelect->setOnSelectionChanged([&row, kindOptions, persist](std::size_t index, std::string_view /*label*/) {
+      kindSelect->setOnSelectionChanged([&row, kindOptions, persist, glyphPickBtnPtr, previewGlyphForRow,
+                                         hasCustomGlyph](std::size_t index, std::string_view /*label*/) {
         if (index < kindOptions.size()) {
           row.action = kindOptions[index].value;
+          if (!hasCustomGlyph()) {
+            glyphPickBtnPtr->setGlyph(previewGlyphForRow());
+          }
           persist();
         }
       });
