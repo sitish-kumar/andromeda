@@ -2,8 +2,7 @@
 
 #include "render/scene/node.h"
 
-SpacerWidget::SpacerWidget(float length, bool verticalBar)
-    : m_fixedLength(length), m_verticalBar(verticalBar) {}
+SpacerWidget::SpacerWidget(float length, bool verticalBar) : m_fixedLength(length), m_verticalBar(verticalBar) {}
 
 void SpacerWidget::create() {
   auto spacer = std::make_unique<Node>();
