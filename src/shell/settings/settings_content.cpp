@@ -726,53 +726,55 @@ namespace settings {
       const bool showCustomCommands = (norm.action == "command");
       const bool showSuspendLock = (norm.action == "suspend");
 
-      auto body = std::make_unique<Flex>();
-      body->setDirection(FlexDirection::Vertical);
-      body->setAlign(FlexAlign::Stretch);
-      body->setGap(Style::spaceMd * scale);
-
-      auto customCommandsGrp = std::make_unique<Flex>();
-      customCommandsGrp->setDirection(FlexDirection::Vertical);
-      customCommandsGrp->setAlign(FlexAlign::Stretch);
-      customCommandsGrp->setGap(Style::spaceMd * scale);
-      customCommandsGrp->setVisible(showCustomCommands);
-      Flex* customCommandsRaw = customCommandsGrp.get();
-
-      auto suspendLockGrp = std::make_unique<Flex>();
-      suspendLockGrp->setDirection(FlexDirection::Horizontal);
-      suspendLockGrp->setAlign(FlexAlign::Center);
-      suspendLockGrp->setGap(Style::spaceSm * scale);
-      suspendLockGrp->setFillWidth(true);
-      suspendLockGrp->setVisible(showSuspendLock);
-      auto suspendLockLabel =
-          makeLabel(i18n::tr("settings.idle.behavior.lock-before-suspend-label"), Style::fontSizeBody * scale,
-                    colorSpecFromRole(ColorRole::OnSurface), FontWeight::Normal);
-      suspendLockLabel->setFlexGrow(1.0f);
-      suspendLockGrp->addChild(std::move(suspendLockLabel));
-      auto suspendLockToggle = std::make_unique<Toggle>();
-      suspendLockToggle->setScale(scale);
-      suspendLockToggle->setChecked(row.lockBeforeSuspend);
-      suspendLockToggle->setOnChange([&row, persist](bool v) {
-        row.lockBeforeSuspend = v;
-        persist();
+      auto body = ui::column({
+          .align = FlexAlign::Stretch,
+          .gap = Style::spaceMd * scale,
       });
-      suspendLockGrp->addChild(std::move(suspendLockToggle));
-      Flex* suspendLockRaw = suspendLockGrp.get();
+
+      Flex* customCommandsRaw = nullptr;
+      auto customCommandsGrp = ui::column({
+          .out = &customCommandsRaw,
+          .align = FlexAlign::Stretch,
+          .gap = Style::spaceMd * scale,
+          .visible = showCustomCommands,
+      });
+
+      Flex* suspendLockRaw = nullptr;
+      auto suspendLockGrp = ui::row({.out = &suspendLockRaw,
+                                     .align = FlexAlign::Center,
+                                     .gap = Style::spaceSm * scale,
+                                     .fillWidth = true,
+                                     .visible = showSuspendLock},
+                                    ui::label({
+                                        .text = i18n::tr("settings.idle.behavior.lock-before-suspend-label"),
+                                        .fontSize = Style::fontSizeBody * scale,
+                                        .color = colorSpecFromRole(ColorRole::OnSurface),
+                                        .fontWeight = FontWeight::Normal,
+                                        .flexGrow = 1.0f,
+                                    }),
+                                    ui::toggle({
+                                        .checked = row.lockBeforeSuspend,
+                                        .scale = scale,
+                                        .onChange =
+                                            [&row, persist](bool v) {
+                                              row.lockBeforeSuspend = v;
+                                              persist();
+                                            },
+                                    }));
 
       const auto addCommandInput = [&](Flex& parent, std::string label, std::string placeholder, std::string& target) {
-        auto block = std::make_unique<Flex>();
-        block->setDirection(FlexDirection::Vertical);
-        block->setAlign(FlexAlign::Stretch);
-        block->setGap(Style::spaceXs * scale);
-        block->addChild(makeLabel(label, Style::fontSizeCaption * scale, colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                                  FontWeight::Normal));
-        auto input = std::make_unique<Input>();
-        input->setValue(target);
-        input->setPlaceholder(placeholder);
-        input->setFontSize(Style::fontSizeBody * scale);
-        input->setControlHeight(Style::controlHeight * scale);
-        input->setHorizontalPadding(Style::spaceSm * scale);
-        auto* inputPtr = input.get();
+        auto block = ui::column({.align = FlexAlign::Stretch, .gap = Style::spaceXs * scale},
+                                makeLabel(label, Style::fontSizeCaption * scale,
+                                          colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal));
+        Input* inputPtr = nullptr;
+        auto input = ui::input({
+            .out = &inputPtr,
+            .value = target,
+            .placeholder = placeholder,
+            .fontSize = Style::fontSizeBody * scale,
+            .controlHeight = Style::controlHeight * scale,
+            .horizontalPadding = Style::spaceSm * scale,
+        });
         auto* targetPtr = &target;
         const auto commit = [targetPtr, persist, inputPtr]() {
           *targetPtr = StringUtils::trim(inputPtr->value());
@@ -790,62 +792,59 @@ namespace settings {
       addCommandInput(*customCommandsGrp, i18n::tr("settings.idle.behavior.command-label"),
                       i18n::tr("settings.idle.behavior.command-placeholder"), row.command);
 
-      auto resumeCommandGrp = std::make_unique<Flex>();
-      resumeCommandGrp->setDirection(FlexDirection::Vertical);
-      resumeCommandGrp->setAlign(FlexAlign::Stretch);
-      resumeCommandGrp->setGap(Style::spaceMd * scale);
+      auto resumeCommandGrp = ui::column({
+          .align = FlexAlign::Stretch,
+          .gap = Style::spaceMd * scale,
+      });
       addCommandInput(*resumeCommandGrp, i18n::tr("settings.idle.behavior.resume-command-label"),
                       i18n::tr("settings.idle.behavior.resume-command-placeholder"), row.resumeCommand);
 
-      auto kindBlock = std::make_unique<Flex>();
-      kindBlock->setDirection(FlexDirection::Vertical);
-      kindBlock->setAlign(FlexAlign::Stretch);
-      kindBlock->setGap(Style::spaceXs * scale);
-      kindBlock->addChild(makeLabel(i18n::tr("settings.idle.behavior.kind-section-label"),
-                                    Style::fontSizeCaption * scale, colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                                    FontWeight::Normal));
-      auto kindSelect = std::make_unique<Select>();
-      kindSelect->setOptions(optionLabels(idleActionOptions));
-      if (const auto ki = optionIndex(idleActionOptions, norm.action)) {
-        kindSelect->setSelectedIndex(*ki);
-      } else {
-        kindSelect->clearSelection();
-      }
-      kindSelect->setFontSize(Style::fontSizeBody * scale);
-      kindSelect->setControlHeight(Style::controlHeight * scale);
-      kindSelect->setGlyphSize(Style::fontSizeBody * scale);
-      kindSelect->setFillWidth(true);
-      kindSelect->setOnSelectionChanged([&row, persist, idleActionOptions, customCommandsRaw,
-                                         suspendLockRaw](std::size_t index, std::string_view /*label*/) {
-        if (index < idleActionOptions.size()) {
-          row.action = idleActionOptions[index].value;
-          if (row.action != "command") {
-            row.command.clear();
-          }
-        }
-        IdleBehaviorConfig n = row;
-        inferIdleBehaviorActionFromLegacyFields(n);
-        customCommandsRaw->setVisible(n.action == "command");
-        suspendLockRaw->setVisible(n.action == "suspend");
-        persist();
+      auto kindBlock =
+          ui::column({.align = FlexAlign::Stretch, .gap = Style::spaceXs * scale},
+                     makeLabel(i18n::tr("settings.idle.behavior.kind-section-label"), Style::fontSizeCaption * scale,
+                               colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal));
+      const auto selectedKindIndex = optionIndex(idleActionOptions, norm.action);
+      auto kindSelect = ui::select({
+          .options = optionLabels(idleActionOptions),
+          .selectedIndex = selectedKindIndex,
+          .clearSelection = !selectedKindIndex.has_value(),
+          .fontSize = Style::fontSizeBody * scale,
+          .controlHeight = Style::controlHeight * scale,
+          .glyphSize = Style::fontSizeBody * scale,
+          .onSelectionChanged =
+              [&row, persist, idleActionOptions, customCommandsRaw, suspendLockRaw](std::size_t index,
+                                                                                    std::string_view /*label*/) {
+                if (index < idleActionOptions.size()) {
+                  row.action = idleActionOptions[index].value;
+                  if (row.action != "command") {
+                    row.command.clear();
+                  }
+                }
+                IdleBehaviorConfig n = row;
+                inferIdleBehaviorActionFromLegacyFields(n);
+                customCommandsRaw->setVisible(n.action == "command");
+                suspendLockRaw->setVisible(n.action == "suspend");
+                persist();
+              },
+          .configure = [](Select& select) { select.setFillWidth(true); },
       });
       kindBlock->addChild(std::move(kindSelect));
       body->addChild(std::move(kindBlock));
       body->addChild(std::move(suspendLockGrp));
 
-      auto nameBlock = std::make_unique<Flex>();
-      nameBlock->setDirection(FlexDirection::Vertical);
-      nameBlock->setAlign(FlexAlign::Stretch);
-      nameBlock->setGap(Style::spaceXs * scale);
-      nameBlock->addChild(makeLabel(i18n::tr("settings.idle.behavior.name-label"), Style::fontSizeCaption * scale,
-                                    colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal));
-      auto nameIn = std::make_unique<Input>();
-      nameIn->setValue(row.name);
-      nameIn->setPlaceholder(i18n::tr("settings.idle.behavior.name-placeholder"));
-      nameIn->setFontSize(Style::fontSizeBody * scale);
-      nameIn->setControlHeight(Style::controlHeight * scale);
-      nameIn->setHorizontalPadding(Style::spaceSm * scale);
-      auto* namePtr = nameIn.get();
+      auto nameBlock =
+          ui::column({.align = FlexAlign::Stretch, .gap = Style::spaceXs * scale},
+                     makeLabel(i18n::tr("settings.idle.behavior.name-label"), Style::fontSizeCaption * scale,
+                               colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal));
+      Input* namePtr = nullptr;
+      auto nameIn = ui::input({
+          .out = &namePtr,
+          .value = row.name,
+          .placeholder = i18n::tr("settings.idle.behavior.name-placeholder"),
+          .fontSize = Style::fontSizeBody * scale,
+          .controlHeight = Style::controlHeight * scale,
+          .horizontalPadding = Style::spaceSm * scale,
+      });
       const auto commitName = [&row, persist, namePtr]() {
         const std::string name = sanitizedIdleBehaviorName(namePtr->value());
         if (name.empty()) {
@@ -863,19 +862,19 @@ namespace settings {
       nameBlock->addChild(std::move(nameIn));
       body->addChild(std::move(nameBlock));
 
-      auto timeoutBlock = std::make_unique<Flex>();
-      timeoutBlock->setDirection(FlexDirection::Vertical);
-      timeoutBlock->setAlign(FlexAlign::Stretch);
-      timeoutBlock->setGap(Style::spaceXs * scale);
-      timeoutBlock->addChild(makeLabel(i18n::tr("settings.idle.behavior.timeout-label"), Style::fontSizeCaption * scale,
-                                       colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal));
-      auto timeoutIn = std::make_unique<Input>();
-      timeoutIn->setValue(std::format("{}", row.timeoutSeconds));
-      timeoutIn->setPlaceholder("660");
-      timeoutIn->setFontSize(Style::fontSizeBody * scale);
-      timeoutIn->setControlHeight(Style::controlHeight * scale);
-      timeoutIn->setHorizontalPadding(Style::spaceSm * scale);
-      auto* timeoutPtr = timeoutIn.get();
+      auto timeoutBlock =
+          ui::column({.align = FlexAlign::Stretch, .gap = Style::spaceXs * scale},
+                     makeLabel(i18n::tr("settings.idle.behavior.timeout-label"), Style::fontSizeCaption * scale,
+                               colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal));
+      Input* timeoutPtr = nullptr;
+      auto timeoutIn = ui::input({
+          .out = &timeoutPtr,
+          .value = std::format("{}", row.timeoutSeconds),
+          .placeholder = "660",
+          .fontSize = Style::fontSizeBody * scale,
+          .controlHeight = Style::controlHeight * scale,
+          .horizontalPadding = Style::spaceSm * scale,
+      });
       const auto commitTimeout = [&row, persist, timeoutPtr]() {
         const auto parsed = parseDoubleInput(timeoutPtr->value());
         if (!parsed.has_value() || *parsed < 0.0 ||
@@ -899,34 +898,33 @@ namespace settings {
 
       section.addChild(std::move(body));
 
-      auto actions = std::make_unique<Flex>();
-      actions->setDirection(FlexDirection::Horizontal);
-      actions->setAlign(FlexAlign::Center);
-      actions->setGap(Style::spaceSm * scale);
-      actions->setFillWidth(true);
-
-      auto applyBtn = std::make_unique<Button>();
-      applyBtn->setGlyph("check");
-      applyBtn->setText(i18n::tr("common.actions.apply"));
-      applyBtn->setVariant(ButtonVariant::Default);
-      applyBtn->setFontSize(Style::fontSizeBody * scale);
-      applyBtn->setGlyphSize(Style::fontSizeBody * scale);
-      applyBtn->setMinHeight(Style::controlHeight * scale);
-      applyBtn->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-      applyBtn->setRadius(Style::scaledRadiusMd(scale));
-      applyBtn->setFlexGrow(1.0f);
-      applyBtn->setOnClick(
-          [commitName, commitTimeout, applyHostedEditor = ctx.afterIdleBehaviorApply, closeHostedEditor]() {
-            commitName();
-            commitTimeout();
-            if (applyHostedEditor) {
-              applyHostedEditor();
-            }
-            if (closeHostedEditor) {
-              closeHostedEditor();
-            }
-          });
-      actions->addChild(std::move(applyBtn));
+      auto actions = ui::row(
+          {.align = FlexAlign::Center, .gap = Style::spaceSm * scale, .fillWidth = true},
+          ui::button({
+              .text = i18n::tr("common.actions.apply"),
+              .glyph = "check",
+              .fontSize = Style::fontSizeBody * scale,
+              .glyphSize = Style::fontSizeBody * scale,
+              .variant = ButtonVariant::Default,
+              .flexGrow = 1.0f,
+              .onClick =
+                  [commitName, commitTimeout, applyHostedEditor = ctx.afterIdleBehaviorApply, closeHostedEditor]() {
+                    commitName();
+                    commitTimeout();
+                    if (applyHostedEditor) {
+                      applyHostedEditor();
+                    }
+                    if (closeHostedEditor) {
+                      closeHostedEditor();
+                    }
+                  },
+              .configure =
+                  [scale](Button& button) {
+                    button.setMinHeight(Style::controlHeight * scale);
+                    button.setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
+                    button.setRadius(Style::scaledRadiusMd(scale));
+                  },
+          }));
       section.addChild(std::move(actions));
     }
 
