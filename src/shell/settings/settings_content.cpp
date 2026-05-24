@@ -8,7 +8,6 @@
 #include "ui/builders.h"
 #include "ui/controls/box.h"
 #include "ui/controls/button.h"
-#include "ui/controls/checkbox.h"
 #include "ui/controls/flex.h"
 #include "ui/controls/glyph.h"
 #include "ui/controls/input.h"
@@ -19,7 +18,6 @@
 #include "ui/controls/select.h"
 #include "ui/controls/separator.h"
 #include "ui/controls/slider.h"
-#include "ui/controls/stepper.h"
 #include "ui/controls/toggle.h"
 #include "ui/dialogs/file_dialog.h"
 #include "ui/dialogs/glyph_picker_dialog.h"
@@ -1457,17 +1455,16 @@ namespace settings {
       const int maxValue = std::max(setting.minValue, setting.maxValue);
       const int currentValue = std::clamp(setting.value, minValue, maxValue);
 
-      auto stepper = std::make_unique<Stepper>();
-      stepper->setScale(scale);
-      stepper->setRange(minValue, maxValue);
-      stepper->setStep(setting.step);
-      if (!setting.valueSuffix.empty()) {
-        stepper->setValueSuffix(setting.valueSuffix);
-      }
-      stepper->setValue(currentValue);
-      stepper->setOnValueCommitted(
-          [setOverride = ctx.setOverride, path](int value) { setOverride(path, static_cast<double>(value)); });
-      return stepper;
+      return ui::stepper({
+          .minValue = minValue,
+          .maxValue = maxValue,
+          .step = setting.step,
+          .value = currentValue,
+          .scale = scale,
+          .valueSuffix = setting.valueSuffix.empty() ? std::nullopt : std::optional<std::string>{setting.valueSuffix},
+          .onValueCommitted = [setOverride = ctx.setOverride,
+                               path](int value) { setOverride(path, static_cast<double>(value)); },
+      });
     };
 
     const auto makeOptionalStepper = [&](const OptionalStepperSetting& setting, std::vector<std::string> path) {
@@ -1501,14 +1498,16 @@ namespace settings {
               },
       });
 
-      auto stepper = std::make_unique<Stepper>();
-      stepper->setScale(scale);
-      stepper->setRange(minValue, maxValue);
-      stepper->setStep(setting.step);
-      stepper->setValue(currentValue);
-      stepper->setEnabled(setting.value.has_value());
-      stepper->setOnValueCommitted(
-          [setOverride = ctx.setOverride, path](int value) { setOverride(path, static_cast<double>(value)); });
+      auto stepper = ui::stepper({
+          .minValue = minValue,
+          .maxValue = maxValue,
+          .step = setting.step,
+          .value = currentValue,
+          .enabled = setting.value.has_value(),
+          .scale = scale,
+          .onValueCommitted = [setOverride = ctx.setOverride,
+                               path](int value) { setOverride(path, static_cast<double>(value)); },
+      });
 
       wrap->addChild(std::move(segmented));
       wrap->addChild(std::move(stepper));
@@ -1627,36 +1626,38 @@ namespace settings {
       for (const auto& option : options) {
         auto item = ui::row({.align = FlexAlign::Center, .gap = Style::spaceXs * scale});
 
-        auto checkbox = std::make_unique<Checkbox>();
-        checkbox->setScale(scale);
         const bool isSelected = std::find(selected.begin(), selected.end(), option.value) != selected.end();
-        checkbox->setChecked(isSelected);
         const std::string optionValue = option.value;
-        checkbox->setOnChange([setOverride = ctx.setOverride, requestRebuild = ctx.requestRebuild, path, options,
-                               selected, optionValue, requireAtLeastOne](bool checked) mutable {
-          auto it = std::find(selected.begin(), selected.end(), optionValue);
-          if (checked) {
-            if (it == selected.end()) {
-              selected.push_back(optionValue);
-            }
-          } else {
-            if (it != selected.end()) {
-              if (requireAtLeastOne && selected.size() <= 1) {
-                requestRebuild();
-                return;
-              }
-              selected.erase(it);
-            }
-          }
-          // Preserve the option order so the override file is stable.
-          std::vector<std::string> ordered;
-          ordered.reserve(selected.size());
-          for (const auto& opt : options) {
-            if (std::find(selected.begin(), selected.end(), opt.value) != selected.end()) {
-              ordered.push_back(opt.value);
-            }
-          }
-          setOverride(path, ordered);
+        auto checkbox = ui::checkbox({
+            .checked = isSelected,
+            .scale = scale,
+            .onChange =
+                [setOverride = ctx.setOverride, requestRebuild = ctx.requestRebuild, path, options, selected,
+                 optionValue, requireAtLeastOne](bool checked) mutable {
+                  auto it = std::find(selected.begin(), selected.end(), optionValue);
+                  if (checked) {
+                    if (it == selected.end()) {
+                      selected.push_back(optionValue);
+                    }
+                  } else {
+                    if (it != selected.end()) {
+                      if (requireAtLeastOne && selected.size() <= 1) {
+                        requestRebuild();
+                        return;
+                      }
+                      selected.erase(it);
+                    }
+                  }
+                  // Preserve the option order so the override file is stable.
+                  std::vector<std::string> ordered;
+                  ordered.reserve(selected.size());
+                  for (const auto& opt : options) {
+                    if (std::find(selected.begin(), selected.end(), opt.value) != selected.end()) {
+                      ordered.push_back(opt.value);
+                    }
+                  }
+                  setOverride(path, ordered);
+                },
         });
         item->addChild(std::move(checkbox));
         item->addChild(makeLabel(option.label, Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::OnSurface),

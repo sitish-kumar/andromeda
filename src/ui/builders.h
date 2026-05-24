@@ -5,6 +5,7 @@
 #include "render/scene/node.h"
 #include "ui/controls/box.h"
 #include "ui/controls/button.h"
+#include "ui/controls/checkbox.h"
 #include "ui/controls/flex.h"
 #include "ui/controls/glyph.h"
 #include "ui/controls/image.h"
@@ -19,6 +20,7 @@
 #include "ui/controls/separator.h"
 #include "ui/controls/slider.h"
 #include "ui/controls/spacer.h"
+#include "ui/controls/stepper.h"
 #include "ui/controls/toggle.h"
 #include "ui/controls/virtual_grid_view.h"
 #include "ui/palette.h"
@@ -339,6 +341,20 @@ namespace ui {
     std::function<void(Toggle&)> configure = nullptr;
   };
 
+  struct CheckboxProps {
+    Checkbox** out = nullptr;
+    std::optional<bool> checked = std::nullopt;
+    std::optional<bool> enabled = std::nullopt;
+    std::optional<float> scale = std::nullopt;
+    std::optional<float> width = std::nullopt;
+    std::optional<float> height = std::nullopt;
+    std::optional<float> flexGrow = std::nullopt;
+    std::optional<bool> visible = std::nullopt;
+    std::optional<bool> participatesInLayout = std::nullopt;
+    std::function<void(bool)> onChange = nullptr;
+    std::function<void(Checkbox&)> configure = nullptr;
+  };
+
   struct RadioButtonProps {
     RadioButton** out = nullptr;
     std::optional<bool> checked = std::nullopt;
@@ -351,6 +367,25 @@ namespace ui {
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(bool)> onChange = nullptr;
     std::function<void(RadioButton&)> configure = nullptr;
+  };
+
+  struct StepperProps {
+    Stepper** out = nullptr;
+    std::optional<int> minValue = std::nullopt;
+    std::optional<int> maxValue = std::nullopt;
+    std::optional<int> step = std::nullopt;
+    std::optional<int> value = std::nullopt;
+    std::optional<bool> enabled = std::nullopt;
+    std::optional<float> scale = std::nullopt;
+    std::optional<std::string> valueSuffix = std::nullopt;
+    std::optional<float> width = std::nullopt;
+    std::optional<float> height = std::nullopt;
+    std::optional<float> flexGrow = std::nullopt;
+    std::optional<bool> visible = std::nullopt;
+    std::optional<bool> participatesInLayout = std::nullopt;
+    std::function<void(int)> onValueChanged = nullptr;
+    std::function<void(int)> onValueCommitted = nullptr;
+    std::function<void(Stepper&)> configure = nullptr;
   };
 
   struct KeybindRecorderProps {
@@ -385,7 +420,9 @@ namespace ui {
   [[nodiscard]] std::unique_ptr<VirtualGridView> virtualGridView(VirtualGridViewProps props);
   [[nodiscard]] std::unique_ptr<SearchPicker> searchPicker(SearchPickerProps props);
   [[nodiscard]] std::unique_ptr<Toggle> toggle(ToggleProps props);
+  [[nodiscard]] std::unique_ptr<Checkbox> checkbox(CheckboxProps props);
   [[nodiscard]] std::unique_ptr<RadioButton> radioButton(RadioButtonProps props);
+  [[nodiscard]] std::unique_ptr<Stepper> stepper(StepperProps props);
   [[nodiscard]] std::unique_ptr<KeybindRecorder> keybindRecorder(KeybindRecorderProps props);
   [[nodiscard]] std::unique_ptr<Spacer> spacer();
 

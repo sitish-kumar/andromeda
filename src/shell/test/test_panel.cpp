@@ -4,9 +4,9 @@
 #include "render/core/color.h"
 #include "render/render_context.h"
 #include "shell/panel/panel_manager.h"
+#include "ui/builders.h"
 #include "ui/controls/box.h"
 #include "ui/controls/button.h"
-#include "ui/controls/checkbox.h"
 #include "ui/controls/flex.h"
 #include "ui/controls/glyph.h"
 #include "ui/controls/grid_tile.h"
@@ -19,7 +19,6 @@
 #include "ui/controls/select.h"
 #include "ui/controls/slider.h"
 #include "ui/controls/spinner.h"
-#include "ui/controls/stepper.h"
 #include "ui/controls/toggle.h"
 #include "ui/dialogs/color_picker_dialog.h"
 #include "ui/dialogs/file_dialog.h"
@@ -349,15 +348,17 @@ void TestPanel::create() {
   }
 
   {
-    auto checkbox = std::make_unique<Checkbox>();
-    checkbox->setScale(scale);
-    checkbox->setChecked(true);
-    checkbox->setOnChange([this](bool checked) {
-      if (m_checkboxValueLabel != nullptr) {
-        m_checkboxValueLabel->setText(checked ? "true" : "false");
-      }
+    auto checkbox = ui::checkbox({
+        .out = &m_checkbox,
+        .checked = true,
+        .scale = scale,
+        .onChange =
+            [this](bool checked) {
+              if (m_checkboxValueLabel != nullptr) {
+                m_checkboxValueLabel->setText(checked ? "true" : "false");
+              }
+            },
     });
-    m_checkbox = checkbox.get();
 
     auto valueLabel = std::make_unique<Label>();
     valueLabel->setText("true");
@@ -439,17 +440,20 @@ void TestPanel::create() {
   }
 
   {
-    auto stepper = std::make_unique<Stepper>();
-    stepper->setScale(scale);
-    stepper->setRange(0, 199);
-    stepper->setStep(1);
-    stepper->setValue(42);
-    stepper->setOnValueChanged([this](int v) {
-      if (m_stepperValueLabel != nullptr) {
-        m_stepperValueLabel->setText("onChange: " + std::to_string(v));
-      }
+    auto stepper = ui::stepper({
+        .out = &m_stepper,
+        .minValue = 0,
+        .maxValue = 199,
+        .step = 1,
+        .value = 42,
+        .scale = scale,
+        .onValueChanged =
+            [this](int v) {
+              if (m_stepperValueLabel != nullptr) {
+                m_stepperValueLabel->setText("onChange: " + std::to_string(v));
+              }
+            },
     });
-    m_stepper = stepper.get();
 
     auto valueLabel = std::make_unique<Label>();
     valueLabel->setText("onChange: 42");

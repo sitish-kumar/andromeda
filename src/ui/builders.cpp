@@ -646,6 +646,30 @@ namespace ui {
     return control;
   }
 
+  std::unique_ptr<Checkbox> checkbox(CheckboxProps props) {
+    auto control = std::make_unique<Checkbox>();
+    if (props.checked.has_value()) {
+      control->setChecked(*props.checked);
+    }
+    if (props.enabled.has_value()) {
+      control->setEnabled(*props.enabled);
+    }
+    if (props.scale.has_value()) {
+      control->setScale(*props.scale);
+    }
+    if (props.onChange) {
+      control->setOnChange(std::move(props.onChange));
+    }
+    applyNodeProps(*control, props);
+    if (props.configure) {
+      props.configure(*control);
+    }
+    if (props.out != nullptr) {
+      *props.out = control.get();
+    }
+    return control;
+  }
+
   std::unique_ptr<RadioButton> radioButton(RadioButtonProps props) {
     auto control = std::make_unique<RadioButton>();
     if (props.scale.has_value()) {
@@ -659,6 +683,42 @@ namespace ui {
     }
     if (props.onChange) {
       control->setOnChange(std::move(props.onChange));
+    }
+    applyNodeProps(*control, props);
+    if (props.configure) {
+      props.configure(*control);
+    }
+    if (props.out != nullptr) {
+      *props.out = control.get();
+    }
+    return control;
+  }
+
+  std::unique_ptr<Stepper> stepper(StepperProps props) {
+    auto control = std::make_unique<Stepper>();
+    if (props.scale.has_value()) {
+      control->setScale(*props.scale);
+    }
+    if (props.minValue.has_value() || props.maxValue.has_value()) {
+      control->setRange(props.minValue.value_or(control->minValue()), props.maxValue.value_or(control->maxValue()));
+    }
+    if (props.step.has_value()) {
+      control->setStep(*props.step);
+    }
+    if (props.valueSuffix.has_value()) {
+      control->setValueSuffix(std::move(*props.valueSuffix));
+    }
+    if (props.value.has_value()) {
+      control->setValue(*props.value);
+    }
+    if (props.enabled.has_value()) {
+      control->setEnabled(*props.enabled);
+    }
+    if (props.onValueChanged) {
+      control->setOnValueChanged(std::move(props.onValueChanged));
+    }
+    if (props.onValueCommitted) {
+      control->setOnValueCommitted(std::move(props.onValueCommitted));
     }
     applyNodeProps(*control, props);
     if (props.configure) {
