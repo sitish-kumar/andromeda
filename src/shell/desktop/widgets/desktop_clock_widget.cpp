@@ -3,7 +3,7 @@
 #include "render/core/renderer.h"
 #include "render/scene/node.h"
 #include "time/time_format.h"
-#include "ui/controls/label.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 
@@ -34,13 +34,13 @@ DesktopClockWidget::DesktopClockWidget(std::string format, ColorSpec color, bool
 void DesktopClockWidget::create() {
   auto rootNode = std::make_unique<Node>();
 
-  auto label = std::make_unique<Label>();
-  label->setFontWeight(FontWeight::Bold);
-  label->setTextAlign(TextAlign::Center);
-  label->setColor(m_color);
-  label->setFontSize(clockFontSize(contentScale()));
-  m_label = label.get();
-
+  auto label = ui::label({
+      .out = &m_label,
+      .fontSize = clockFontSize(contentScale()),
+      .color = m_color,
+      .fontWeight = FontWeight::Bold,
+      .textAlign = TextAlign::Center,
+  });
   rootNode->addChild(std::move(label));
   setRoot(std::move(rootNode));
   applyShadow();

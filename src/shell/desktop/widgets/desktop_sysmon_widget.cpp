@@ -5,8 +5,7 @@
 #include "render/scene/node.h"
 #include "system/format_units.h"
 #include "system/system_monitor_service.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/label.h"
+#include "ui/builders.h"
 #include "ui/style.h"
 
 #include <algorithm>
@@ -66,9 +65,10 @@ DesktopSysmonWidget::~DesktopSysmonWidget() {
 void DesktopSysmonWidget::create() {
   auto rootNode = std::make_unique<Node>();
 
-  auto glyph = std::make_unique<Glyph>();
-  glyph->setGlyph(glyphName(m_stat));
-  m_glyph = glyph.get();
+  auto glyph = ui::glyph({
+      .out = &m_glyph,
+      .glyph = glyphName(m_stat),
+  });
   rootNode->addChild(std::move(glyph));
 
   auto graph = std::make_unique<GraphNode>();
@@ -77,12 +77,13 @@ void DesktopSysmonWidget::create() {
   m_graphNode = static_cast<GraphNode*>(rootNode->addChild(std::move(graph)));
 
   if (m_showLabel) {
-    auto label = std::make_unique<Label>();
-    label->setFontWeight(FontWeight::Bold);
+    auto label = ui::label({
+        .out = &m_label,
+        .fontWeight = FontWeight::Bold,
+    });
     if (m_shadow) {
       label->setShadow(Color{0.0f, 0.0f, 0.0f, 0.5f}, 0.0f, 1.0f);
     }
-    m_label = label.get();
     rootNode->addChild(std::move(label));
   }
 

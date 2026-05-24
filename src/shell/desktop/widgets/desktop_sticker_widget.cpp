@@ -4,7 +4,7 @@
 #include "render/core/image_decoder.h"
 #include "render/core/renderer.h"
 #include "render/scene/node.h"
-#include "ui/controls/image.h"
+#include "ui/builders.h"
 #include "util/file_utils.h"
 
 #include <algorithm>
@@ -46,10 +46,10 @@ void DesktopStickerWidget::create() {
   auto rootNode = std::make_unique<Node>();
   rootNode->setOpacity(m_opacity);
 
-  auto image = std::make_unique<Image>();
-  image->setFit(ImageFit::Contain);
-  m_image = image.get();
-
+  auto image = ui::image({
+      .out = &m_image,
+      .fit = ImageFit::Contain,
+  });
   rootNode->addChild(std::move(image));
   setRoot(std::move(rootNode));
 }

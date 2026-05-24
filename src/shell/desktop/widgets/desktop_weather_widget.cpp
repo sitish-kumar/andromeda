@@ -4,8 +4,7 @@
 #include "render/core/renderer.h"
 #include "render/scene/node.h"
 #include "system/weather_service.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/label.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 
@@ -42,28 +41,31 @@ void DesktopWeatherWidget::create() {
   auto rootNode = std::make_unique<Node>();
   rootNode->setClipChildren(true);
 
-  auto glyph = std::make_unique<Glyph>();
-  glyph->setGlyph("weather-cloud");
-  glyph->setGlyphSize(glyphFontSize(contentScale()));
-  glyph->setColor(m_color);
-  m_glyph = glyph.get();
+  auto glyph = ui::glyph({
+      .out = &m_glyph,
+      .glyph = "weather-cloud",
+      .glyphSize = glyphFontSize(contentScale()),
+      .color = m_color,
+  });
   rootNode->addChild(std::move(glyph));
 
-  auto temperature = std::make_unique<Label>();
-  temperature->setFontWeight(FontWeight::Bold);
-  temperature->setTextAlign(TextAlign::Start);
-  temperature->setFontSize(temperatureFontSize(contentScale()));
-  temperature->setMaxLines(1);
-  temperature->setColor(m_color);
-  m_temperature = temperature.get();
+  auto temperature = ui::label({
+      .out = &m_temperature,
+      .fontSize = temperatureFontSize(contentScale()),
+      .color = m_color,
+      .maxLines = 1,
+      .fontWeight = FontWeight::Bold,
+      .textAlign = TextAlign::Start,
+  });
   rootNode->addChild(std::move(temperature));
 
-  auto condition = std::make_unique<Label>();
-  condition->setTextAlign(TextAlign::Start);
-  condition->setFontSize(conditionFontSize(contentScale()));
-  condition->setMaxLines(1);
-  condition->setColor(m_color);
-  m_condition = condition.get();
+  auto condition = ui::label({
+      .out = &m_condition,
+      .fontSize = conditionFontSize(contentScale()),
+      .color = m_color,
+      .maxLines = 1,
+      .textAlign = TextAlign::Start,
+  });
   rootNode->addChild(std::move(condition));
 
   setRoot(std::move(rootNode));
