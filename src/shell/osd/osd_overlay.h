@@ -41,6 +41,13 @@ public:
   void show(const OsdContent& content);
 
 private:
+  struct SurfaceMargins {
+    std::int32_t top = 0;
+    std::int32_t right = 0;
+    std::int32_t bottom = 0;
+    std::int32_t left = 0;
+  };
+
   struct Instance {
     wl_output* output = nullptr;
     std::int32_t scale = 1;
@@ -65,6 +72,7 @@ private:
     float appliedCornerRadiusScale = -1.0f;
   };
 
+  [[nodiscard]] SurfaceMargins surfaceMarginsForPosition(const std::string& position) const;
   void ensureSurfaces();
   void destroySurfaces();
   void prepareFrame(Instance& inst, bool needsUpdate, bool needsLayout);

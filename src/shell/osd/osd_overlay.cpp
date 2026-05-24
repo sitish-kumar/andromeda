@@ -63,8 +63,12 @@ namespace {
   }
 
   [[nodiscard]] std::uint32_t osdSurfaceWidth(float s, const std::string& orientation) {
-    const float w = cardWidth(s, orientation) + Style::spaceMd * s;
+    const float w = cardWidth(s, orientation) + Style::spaceMd * s * 2.0f;
     return static_cast<std::uint32_t>(std::max(1, static_cast<int>(std::ceil(w))));
+  }
+
+  [[nodiscard]] std::int32_t horizontalLayerMarginFromScreenMargin(int offsetX, float scale) {
+    return static_cast<std::int32_t>(offsetX) - static_cast<std::int32_t>(std::lround(Style::spaceMd * scale));
   }
 
   [[nodiscard]] std::uint32_t osdSurfaceHeight(float s, const std::string& orientation, bool showProgress) {
@@ -86,8 +90,6 @@ namespace {
 
   [[nodiscard]] float slideOffset(float s) { return Style::spaceSm * s; }
 
-  [[nodiscard]] int screenMargin(float s) { return static_cast<int>(std::lround(Style::spaceSm * s)); }
-
   [[nodiscard]] float osdCardRadius(float cw, float ch, float layoutScale) {
     const float maxR = std::min(cw, ch) * 0.5f;
     return std::min(maxR, Style::scaledRadiusXl(layoutScale));
@@ -104,17 +106,7 @@ namespace {
 
   [[nodiscard]] bool isLeftPosition(const std::string& position) { return position.ends_with("_left"); }
 
-  [[nodiscard]] bool isRightPosition(const std::string& position) { return position.ends_with("_right"); }
-
-  float cardBaseXForPosition(const std::string& position, float surfaceWidth, float cardW) {
-    if (isCenterPosition(position) && isLeftPosition(position)) {
-      return 0.0f;
-    }
-    if (isCenterPosition(position) && isRightPosition(position)) {
-      return std::max(0.0f, surfaceWidth - cardW);
-    }
-    return (surfaceWidth - cardW) * 0.5f;
-  }
+  float cardBaseX(float surfaceWidth, float cardW) { return (surfaceWidth - cardW) * 0.5f; }
 
   float cardBaseYForPosition(const std::string& position, float surfaceHeight, float cardH) {
     if (isBottomPosition(position)) {
@@ -191,6 +183,48 @@ void OsdOverlay::show(const OsdContent& content) {
   }
 }
 
+OsdOverlay::SurfaceMargins OsdOverlay::surfaceMarginsForPosition(const std::string& position) const {
+  const int marginH = (m_config != nullptr) ? std::max(0, m_config->config().osd.offsetX) : 0;
+  const int marginV = (m_config != nullptr) ? std::max(0, m_config->config().osd.offsetY) : 0;
+  const float layoutScale = osdUiScale(m_config);
+  const std::int32_t sideMargin = horizontalLayerMarginFromScreenMargin(marginH, layoutScale);
+
+  SurfaceMargins margins{
+      .top = marginV,
+      .right = sideMargin,
+      .bottom = 0,
+      .left = 0,
+  };
+
+  if (position == "top_left") {
+    margins.right = 0;
+    margins.left = sideMargin;
+  } else if (position == "top_center") {
+    margins.right = 0;
+  } else if (position == "bottom_left") {
+    margins.top = 0;
+    margins.right = 0;
+    margins.bottom = marginV;
+    margins.left = sideMargin;
+  } else if (position == "bottom_center") {
+    margins.top = 0;
+    margins.right = 0;
+    margins.bottom = marginV;
+  } else if (position == "bottom_right") {
+    margins.top = 0;
+    margins.bottom = marginV;
+  } else if (position == "center_left") {
+    margins.top = 0;
+    margins.right = 0;
+    margins.left = sideMargin;
+  } else if (position == "center_right") {
+    margins.top = 0;
+    margins.bottom = 0;
+  }
+
+  return margins;
+}
+
 void OsdOverlay::ensureSurfaces() {
   if (m_wayland == nullptr || m_renderContext == nullptr) {
     return;
@@ -217,6 +251,19 @@ void OsdOverlay::ensureSurfaces() {
     destroySurfaces();
   }
 
+  if (!m_instances.empty()) {
+    for (auto& inst : m_instances) {
+      if (inst->surface == nullptr) {
+        continue;
+      }
+      const SurfaceMargins margins = surfaceMarginsForPosition(position);
+      if (inst->surface->marginTop() != margins.top || inst->surface->marginRight() != margins.right ||
+          inst->surface->marginBottom() != margins.bottom || inst->surface->marginLeft() != margins.left) {
+        inst->surface->setMargins(margins.top, margins.right, margins.bottom, margins.left);
+      }
+    }
+  }
+
   if (!m_instances.empty() && m_instances.size() != m_wayland->outputs().size()) {
     destroySurfaces();
   }
@@ -232,51 +279,30 @@ void OsdOverlay::ensureSurfaces() {
 
   const auto surfaceWidth = osdSurfaceWidth(layoutScale, orientation);
   const auto surfaceHeight = osdSurfaceHeight(layoutScale, orientation, showProgress);
-  const int margin = screenMargin(layoutScale);
 
   for (const auto& output : m_wayland->outputs()) {
     auto inst = std::make_unique<Instance>();
     inst->output = output.output;
     inst->scale = output.scale;
     inst->uiLayoutScale = layoutScale;
+    const SurfaceMargins margins = surfaceMarginsForPosition(position);
 
     std::uint32_t anchor = LayerShellAnchor::Top | LayerShellAnchor::Right;
-    std::int32_t marginTop = margin;
-    std::int32_t marginRight = margin;
-    std::int32_t marginBottom = 0;
-    std::int32_t marginLeft = 0;
 
     if (position == "top_left") {
       anchor = LayerShellAnchor::Top | LayerShellAnchor::Left;
-      marginRight = 0;
-      marginLeft = margin;
     } else if (position == "top_center") {
       anchor = LayerShellAnchor::Top;
-      marginRight = 0;
     } else if (position == "bottom_left") {
       anchor = LayerShellAnchor::Bottom | LayerShellAnchor::Left;
-      marginTop = 0;
-      marginRight = 0;
-      marginBottom = margin;
-      marginLeft = margin;
     } else if (position == "bottom_center") {
       anchor = LayerShellAnchor::Bottom;
-      marginTop = 0;
-      marginRight = 0;
-      marginBottom = margin;
     } else if (position == "bottom_right") {
       anchor = LayerShellAnchor::Bottom | LayerShellAnchor::Right;
-      marginTop = 0;
-      marginBottom = margin;
     } else if (position == "center_left") {
       anchor = LayerShellAnchor::Left;
-      marginTop = 0;
-      marginRight = 0;
-      marginLeft = margin;
     } else if (position == "center_right") {
       anchor = LayerShellAnchor::Right;
-      marginTop = 0;
-      marginBottom = 0;
     }
 
     auto surfaceConfig = LayerSurfaceConfig{
@@ -286,10 +312,10 @@ void OsdOverlay::ensureSurfaces() {
         .width = surfaceWidth,
         .height = surfaceHeight,
         .exclusiveZone = 0,
-        .marginTop = marginTop,
-        .marginRight = marginRight,
-        .marginBottom = marginBottom,
-        .marginLeft = marginLeft,
+        .marginTop = margins.top,
+        .marginRight = margins.right,
+        .marginBottom = margins.bottom,
+        .marginLeft = margins.left,
         .keyboard = LayerShellKeyboard::None,
         .defaultWidth = surfaceWidth,
         .defaultHeight = surfaceHeight,
@@ -392,7 +418,7 @@ void OsdOverlay::buildScene(Instance& inst, std::uint32_t width, std::uint32_t h
   inst.sceneRoot->setOpacity(0.0f);
   inst.surface->setSceneRoot(inst.sceneRoot.get());
 
-  const float cardX = cardBaseXForPosition(m_lastPosition, w, cw);
+  const float cardX = cardBaseX(w, cw);
   const float cardY = cardBaseYForPosition(m_lastPosition, h, ch);
 
   auto background = std::make_unique<Box>();
@@ -504,7 +530,7 @@ void OsdOverlay::animateInstance(Instance& inst) {
   const float s = inst.uiLayoutScale;
   const float cw = cardWidth(s, m_lastOrientation);
   const float ch = cardHeight(s, m_lastOrientation, m_lastShowProgress);
-  const float baseX = cardBaseXForPosition(m_lastPosition, inst.sceneRoot->width(), cw);
+  const float baseX = cardBaseX(inst.sceneRoot->width(), cw);
   const float baseY = cardBaseYForPosition(m_lastPosition, inst.sceneRoot->height(), ch);
   const SlideVector slide = cardSlideVectorForPosition(m_lastPosition, slideOffset(s));
   if (!inst.visible) {

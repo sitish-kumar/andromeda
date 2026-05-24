@@ -1677,6 +1677,14 @@
           "label": "Size",
           "description": "Scale OSD popups relative to the shell UI scale (1.0 keeps the default size)"
         },
+        "osd-offset-x": {
+          "label": "Horizontal Margin",
+          "description": "Absolute horizontal margin from the screen edge"
+        },
+        "osd-offset-y": {
+          "label": "Vertical Margin",
+          "description": "Absolute vertical margin from the screen edge"
+        },
         "osd-lock-keys": {
           "label": "Lock Keys",
           "description": "Show OSD popups for Caps Lock, Num Lock, and Scroll Lock changes"

@@ -389,6 +389,8 @@ struct OsdConfig {
   std::string position = "top_right";
   std::string orientation = "horizontal";
   float scale = 1.0f;
+  int offsetX = 20;
+  int offsetY = 8;
   bool lockKeys = true;
   bool keyboardLayout = true;
 };
