@@ -6,10 +6,7 @@
 #include "core/ui_phase.h"
 #include "render/render_context.h"
 #include "render/scene/node.h"
-#include "ui/controls/box.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/label.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "wayland/wayland_connection.h"
@@ -426,16 +423,21 @@ void OsdOverlay::buildScene(Instance& inst, std::uint32_t width, std::uint32_t h
   const float cardX = cardBaseX(w, cw);
   const float cardY = cardBaseYForPosition(m_lastPosition, h, ch);
 
-  auto background = std::make_unique<Box>();
-  background->setCardStyle();
-  background->setFill(colorSpecFromRole(ColorRole::Surface));
-  background->setBorder(colorSpecFromRole(ColorRole::Outline), border);
-  background->setRadius(osdCardRadius(cw, ch, s));
-  background->setSize(cw, ch);
-  background->setPosition(cardX, cardY);
-  background->setZIndex(0);
-  inst.background = background.get();
-  inst.sceneRoot->addChild(std::move(background));
+  inst.sceneRoot->addChild(
+      ui::box({
+          .out = &inst.background,
+          .width = cw,
+          .height = ch,
+          .configure = [cardX, cardY, cw, ch, s, border](Box& box) {
+            box.setCardStyle();
+            box.setFill(colorSpecFromRole(ColorRole::Surface));
+            box.setBorder(colorSpecFromRole(ColorRole::Outline), border);
+            box.setRadius(osdCardRadius(cw, ch, s));
+            box.setPosition(cardX, cardY);
+            box.setZIndex(0);
+          },
+      })
+  );
 
   auto card = std::make_unique<Node>();
   card->setSize(cw, ch);
@@ -443,49 +445,57 @@ void OsdOverlay::buildScene(Instance& inst, std::uint32_t width, std::uint32_t h
   card->setZIndex(1);
   inst.card = card.get();
 
-  auto row = std::make_unique<Flex>();
-  row->setDirection(vertical ? FlexDirection::Vertical : FlexDirection::Horizontal);
-  row->setAlign(FlexAlign::Center);
-  row->setJustify(FlexJustify::Start);
-  row->setGap(gap);
-  row->setSize(cw - pad * 2.0f, vertical ? ch - pad * 2.0f : ch);
-  row->setZIndex(1);
-  inst.row = row.get();
+  const auto rowProps = ui::FlexProps{
+      .out = &inst.row,
+      .align = FlexAlign::Center,
+      .justify = FlexJustify::Start,
+      .gap = gap,
+      .width = cw - pad * 2.0f,
+      .height = vertical ? ch - pad * 2.0f : ch,
+      .configure = [](Flex& flex) { flex.setZIndex(1); },
+  };
+  auto row = ui::flex(vertical ? FlexDirection::Vertical : FlexDirection::Horizontal, rowProps);
 
-  auto glyph = std::make_unique<Glyph>();
-  glyph->setGlyphSize(glyphSize(s));
-  glyph->setColor(colorSpecFromRole(ColorRole::Primary));
-  inst.glyph = glyph.get();
-  inst.glyph->setZIndex(1);
-  inst.row->addChild(std::move(glyph));
+  row->addChild(
+      ui::glyph({
+          .out = &inst.glyph,
+          .glyphSize = glyphSize(s),
+          .color = colorSpecFromRole(ColorRole::Primary),
+          .configure = [](Glyph& glyph) { glyph.setZIndex(1); },
+      })
+  );
 
-  auto value = std::make_unique<Label>();
-  value->setFontWeight(FontWeight::Bold);
-  value->setFontSize(valueFontSize(s));
-  value->setColor(colorSpecFromRole(ColorRole::OnSurface));
-  value->setTextAlign(vertical ? TextAlign::Center : TextAlign::End);
-  value->setMaxWidth(vertical ? cw - pad * 2.0f : 0.0f);
+  auto value = ui::label({
+      .out = &inst.value,
+      .text = "100%",
+      .fontSize = valueFontSize(s),
+      .color = colorSpecFromRole(ColorRole::OnSurface),
+      .maxWidth = vertical ? cw - pad * 2.0f : 0.0f,
+      .fontWeight = FontWeight::Bold,
+      .textAlign = vertical ? TextAlign::Center : TextAlign::End,
+      .configure = [](Label& label) { label.setZIndex(1); },
+  });
   // Reserve enough width for "100%" so the progress bar doesn't shrink at max values.
-  value->setText("100%");
   value->measure(*m_renderContext);
   inst.progressValueMinWidth = value->width();
   value->setMinWidth(vertical ? 0.0f : inst.progressValueMinWidth);
-  value->setZIndex(1);
-  inst.value = value.get();
 
   const float ph = progressHeight(s);
-  auto progress = std::make_unique<ProgressBar>();
-  progress->setTrack(colorSpecFromRole(ColorRole::SurfaceVariant));
-  progress->setFill(colorSpecFromRole(ColorRole::Primary));
-  progress->setOrientation(vertical ? ProgressBarOrientation::Vertical : ProgressBarOrientation::Horizontal);
-  progress->setFlexGrow(1.0f);
-  progress->setSize(vertical ? verticalProgressWidth(s) : 0.0f, vertical ? 0.0f : ph);
-  progress->setRadius(osdProgressRadius(s));
-  inst.progress = progress.get();
-  inst.progress->setZIndex(1);
-  inst.row->addChild(std::move(progress));
-  inst.row->addChild(std::move(value));
-  inst.card->addChild(std::move(row));
+  row->addChild(
+      ui::progressBar({
+          .out = &inst.progress,
+          .fill = colorSpecFromRole(ColorRole::Primary),
+          .track = colorSpecFromRole(ColorRole::SurfaceVariant),
+          .radius = osdProgressRadius(s),
+          .orientation = vertical ? ProgressBarOrientation::Vertical : ProgressBarOrientation::Horizontal,
+          .width = vertical ? verticalProgressWidth(s) : 0.0f,
+          .height = vertical ? 0.0f : ph,
+          .flexGrow = 1.0f,
+          .configure = [](ProgressBar& progress) { progress.setZIndex(1); },
+      })
+  );
+  row->addChild(std::move(value));
+  card->addChild(std::move(row));
 
   inst.sceneRoot->addChild(std::move(card));
 
