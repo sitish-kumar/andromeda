@@ -33,8 +33,6 @@
 
 namespace {
 
-  constexpr float kBodyMaxWidth = 1280.0f;
-
   bool useLightPalettePreview(ThemeMode mode) { return mode == ThemeMode::Light; }
 
   ColorSwatchPreview palettePreviewFromMetadata(const noctalia::theme::AvailablePalette::PreviewMode& metadata) {
@@ -74,9 +72,8 @@ namespace {
     });
   }
 
-  std::unique_ptr<Flex> centeredRow(std::unique_ptr<Flex> child, float scale) {
+  std::unique_ptr<Flex> centeredRow(std::unique_ptr<Flex> child) {
     child->setFlexGrow(1.0f);
-    child->setMaxWidth(kBodyMaxWidth * scale);
     return ui::row(
         {
             .align = FlexAlign::Stretch,
@@ -896,13 +893,13 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
       .height = h,
   });
 
-  m_headerRow = main->addChild(centeredRow(buildHeaderRow(scale), scale));
-  main->addChild(centeredRow(buildFilterRow(scale, resetPageScope, std::move(resetPagePaths)), scale));
+  m_headerRow = main->addChild(centeredRow(buildHeaderRow(scale)));
+  main->addChild(centeredRow(buildFilterRow(scale, resetPageScope, std::move(resetPagePaths))));
   if (auto status = buildStatusRow(scale)) {
-    main->addChild(centeredRow(std::move(status), scale));
+    main->addChild(centeredRow(std::move(status)));
   }
 
-  auto bodyRow = centeredRow(buildBody(scale, cfg, sections, availableBars), scale);
+  auto bodyRow = centeredRow(buildBody(scale, cfg, sections, availableBars));
   bodyRow->setFlexGrow(1.0f);
   main->addChild(std::move(bodyRow));
 

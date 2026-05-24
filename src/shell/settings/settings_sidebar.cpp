@@ -18,7 +18,7 @@
 namespace settings {
   namespace {
 
-    constexpr float kSidebarWidth = 180.0f;
+    constexpr float kSidebarWidth = 200.0f;
 
     std::string normalizedConfigId(std::string_view text) { return StringUtils::trim(text); }
 

@@ -31,7 +31,7 @@ namespace {
 
   constexpr Logger kLog("settings");
 
-  constexpr float kWindowWidth = 1080.0f;
+  constexpr float kWindowWidth = 1280.0f;
   constexpr float kWindowHeight = 600.0f;
   constexpr float kWindowMinWidth = 900.0f;
   constexpr float kWindowMinHeight = 500.0f;
