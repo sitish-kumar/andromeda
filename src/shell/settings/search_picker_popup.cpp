@@ -125,14 +125,11 @@ namespace settings {
                 .glyph = "close",
                 .glyphSize = Style::fontSizeBody * m_scale,
                 .variant = ButtonVariant::Default,
+                .minWidth = Style::controlHeightSm * m_scale,
+                .minHeight = Style::controlHeightSm * m_scale,
+                .padding = Style::spaceXs * m_scale,
+                .radius = Style::scaledRadiusMd(m_scale),
                 .onClick = [this]() { DeferredCall::callLater([this]() { close(); }); },
-                .configure =
-                    [this](Button& button) {
-                      button.setMinWidth(Style::controlHeightSm * m_scale);
-                      button.setMinHeight(Style::controlHeightSm * m_scale);
-                      button.setPadding(Style::spaceXs * m_scale);
-                      button.setRadius(Style::scaledRadiusMd(m_scale));
-                    },
             })),
         ui::searchPicker({
             .out = &m_searchPicker,

@@ -33,13 +33,6 @@ namespace {
   constexpr std::size_t kGridRowOverscan = 1;
   constexpr float kGridMinCellWidth = 140.0f;
 
-  void configureDialogActionButton(Button& button, float scale) {
-    button.setMinHeight(Style::controlHeight * scale);
-    button.setMinWidth(92.0f * scale);
-    button.setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-    button.setRadius(Style::scaledRadiusMd(scale));
-  }
-
 } // namespace
 
 class FileListAdapter final : public VirtualGridAdapter {
@@ -130,18 +123,6 @@ void FileDialogView::create() {
   m_listRowHeight = std::ceil(32.0f * scale);
   m_gridCellSize = kGridMinCellWidth * scale;
 
-  const auto configureIconButton = [scale](Button* button) {
-    if (button == nullptr) {
-      return;
-    }
-    button->setVariant(ButtonVariant::Default);
-    button->setGlyphSize(Style::fontSizeBody * scale);
-    button->setMinWidth(Style::controlHeightSm * scale);
-    button->setMinHeight(Style::controlHeightSm * scale);
-    button->setPadding(Style::spaceXs * scale);
-    button->setRadius(Style::scaledRadiusMd(scale));
-  };
-
   auto root = ui::column({
       .out = &m_rootLayout,
       .align = FlexAlign::Stretch,
@@ -169,8 +150,13 @@ void FileDialogView::create() {
       ui::spacer(),
       ui::button({
           .glyph = "close",
+          .glyphSize = Style::fontSizeBody * scale,
+          .variant = ButtonVariant::Default,
+          .minWidth = Style::controlHeightSm * scale,
+          .minHeight = Style::controlHeightSm * scale,
+          .padding = Style::spaceXs * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick = [this]() { DeferredCall::callLater([this]() { cancelDialog(); }); },
-          .configure = [configureIconButton](Button& button) { configureIconButton(&button); },
       })));
 
   root->addChild(ui::row({
@@ -205,8 +191,13 @@ void FileDialogView::create() {
       ui::button({
           .out = &m_backButton,
           .glyph = "arrow-big-up",
+          .glyphSize = Style::fontSizeBody * scale,
+          .variant = ButtonVariant::Default,
+          .minWidth = Style::controlHeightSm * scale,
+          .minHeight = Style::controlHeightSm * scale,
+          .padding = Style::spaceXs * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick = [this]() { DeferredCall::callLater([this]() { navigateUp(); }); },
-          .configure = [configureIconButton](Button& button) { configureIconButton(&button); },
       }),
       ui::spacer(),
       ui::label({
@@ -216,26 +207,28 @@ void FileDialogView::create() {
       ui::button({
           .out = &m_hiddenToggle,
           .glyph = "eye",
+          .glyphSize = Style::fontSizeBody * scale,
           .variant = ButtonVariant::Tab,
+          .minWidth = Style::controlHeightSm * scale,
+          .minHeight = Style::controlHeightSm * scale,
+          .padding = Style::spaceXs * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick = [this]() { DeferredCall::callLater([this]() { setShowHiddenFiles(!m_showHiddenFiles); }); },
-          .configure = [configureIconButton](Button& button) { configureIconButton(&button); },
       }),
       ui::button({
           .out = &m_viewToggle,
+          .glyphSize = Style::fontSizeBody * scale,
           .variant = ButtonVariant::Default,
+          .minWidth = Style::controlHeightSm * scale,
+          .minHeight = Style::controlHeightSm * scale,
+          .padding = Style::spaceXs * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick =
               [this]() {
                 DeferredCall::callLater(
                     [this]() { setViewMode(m_viewMode == ViewMode::List ? ViewMode::Grid : ViewMode::List); });
               },
-          .configure = [configureIconButton](Button& button) { configureIconButton(&button); },
       })));
-
-  const auto configureHeaderButton = [scale](Button& button) {
-    button.setVariant(ButtonVariant::Ghost);
-    button.setMinHeight(Style::controlHeightSm * scale);
-    button.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-  };
 
   auto listContainer = ui::column({
       .out = &m_listContainer,
@@ -253,31 +246,37 @@ void FileDialogView::create() {
           .out = &m_nameSortButton,
           .text = i18n::tr("ui.dialogs.file.sort.name"),
           .contentAlign = ButtonContentAlign::Start,
+          .variant = ButtonVariant::Ghost,
+          // File-list header sort style.
+          .minHeight = Style::controlHeightSm * scale,
+          .paddingV = Style::spaceXs * scale,
+          .paddingH = Style::spaceSm * scale,
           .flexGrow = 1.0f,
           .onClick = [this]() { DeferredCall::callLater([this]() { setSort(FileDialogSortField::Name); }); },
-          .configure = configureHeaderButton,
       }),
       ui::button({
           .out = &m_sizeSortButton,
           .text = i18n::tr("ui.dialogs.file.sort.size"),
           .contentAlign = ButtonContentAlign::End,
+          .variant = ButtonVariant::Ghost,
+          // File-list header sort style.
+          .minWidth = 96.0f * scale,
+          .minHeight = Style::controlHeightSm * scale,
+          .paddingV = Style::spaceXs * scale,
+          .paddingH = Style::spaceSm * scale,
           .onClick = [this]() { DeferredCall::callLater([this]() { setSort(FileDialogSortField::Size); }); },
-          .configure =
-              [configureHeaderButton, scale](Button& button) {
-                configureHeaderButton(button);
-                button.setMinWidth(96.0f * scale);
-              },
       }),
       ui::button({
           .out = &m_dateSortButton,
           .text = i18n::tr("ui.dialogs.file.sort.date"),
           .contentAlign = ButtonContentAlign::End,
+          .variant = ButtonVariant::Ghost,
+          // File-list header sort style.
+          .minWidth = 152.0f * scale,
+          .minHeight = Style::controlHeightSm * scale,
+          .paddingV = Style::spaceXs * scale,
+          .paddingH = Style::spaceSm * scale,
           .onClick = [this]() { DeferredCall::callLater([this]() { setSort(FileDialogSortField::Modified); }); },
-          .configure =
-              [configureHeaderButton, scale](Button& button) {
-                configureHeaderButton(button);
-                button.setMinWidth(152.0f * scale);
-              },
       })));
 
   listContainer->addChild(ui::separator());
@@ -369,14 +368,24 @@ void FileDialogView::create() {
           .out = &m_cancelButton,
           .text = i18n::tr("common.actions.cancel"),
           .variant = ButtonVariant::Secondary,
+          // Dialog footer action style.
+          .minWidth = 92.0f * scale,
+          .minHeight = Style::controlHeight * scale,
+          .paddingV = Style::spaceSm * scale,
+          .paddingH = Style::spaceMd * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick = [this]() { DeferredCall::callLater([this]() { cancelDialog(); }); },
-          .configure = [scale](Button& button) { configureDialogActionButton(button, scale); },
       }),
       ui::button({
           .out = &m_okButton,
           .variant = ButtonVariant::Primary,
+          // Dialog footer action style.
+          .minWidth = 92.0f * scale,
+          .minHeight = Style::controlHeight * scale,
+          .paddingV = Style::spaceSm * scale,
+          .paddingH = Style::spaceMd * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick = [this]() { DeferredCall::callLater([this]() { submitDialog(); }); },
-          .configure = [scale](Button& button) { configureDialogActionButton(button, scale); },
       })));
   setRoot(std::move(root));
 
@@ -674,12 +683,9 @@ void FileDialogView::rebuildBreadcrumb() {
       .out = &m_homeButton,
       .glyph = "home",
       .variant = ButtonVariant::Ghost,
+      .minHeight = Style::controlHeightSm * scale,
+      .padding = Style::spaceXs * scale,
       .onClick = [this]() { DeferredCall::callLater([this]() { navigateHome(); }); },
-      .configure =
-          [scale](Button& button) {
-            button.setPadding(Style::spaceXs * scale);
-            button.setMinHeight(Style::controlHeightSm * scale);
-          },
   }));
 
   std::filesystem::path partial("/");
@@ -694,8 +700,8 @@ void FileDialogView::rebuildBreadcrumb() {
     m_breadcrumbRow->addChild(ui::button({
         .text = component.string(),
         .variant = ButtonVariant::Ghost,
+        .padding = Style::spaceXs * scale,
         .onClick = [this, target]() { DeferredCall::callLater([this, target]() { navigateInto(target); }); },
-        .configure = [scale](Button& button) { button.setPadding(Style::spaceXs * scale); },
     }));
   }
 }

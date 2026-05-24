@@ -479,15 +479,12 @@ namespace settings {
           .glyph = previewGlyph,
           .glyphSize = iconGlyphSize,
           .variant = ButtonVariant::Outline,
-          .configure =
-              [iconSq, scale](Button& button) {
-                button.setMinWidth(iconSq);
-                button.setMaxWidth(iconSq);
-                button.setMinHeight(iconSq);
-                button.setMaxHeight(iconSq);
-                button.setPadding(0.0f, 0.0f);
-                button.setRadius(Style::scaledRadiusMd(scale));
-              },
+          .minWidth = iconSq,
+          .minHeight = iconSq,
+          .maxWidth = iconSq,
+          .maxHeight = iconSq,
+          .padding = 0.0f,
+          .radius = Style::scaledRadiusMd(scale),
       });
 
       Button* clearGlyphBtnPtr = nullptr;
@@ -496,14 +493,12 @@ namespace settings {
           .text = i18n::tr("settings.session-actions.clear-glyph"),
           .fontSize = Style::fontSizeCaption * scale,
           .variant = ButtonVariant::Ghost,
+          .minHeight = iconSq,
+          .paddingV = Style::spaceXs * scale,
+          .paddingH = Style::spaceSm * scale,
+          .radius = Style::scaledRadiusSm(scale),
           .visible = hasCustomGlyph(),
           .participatesInLayout = hasCustomGlyph(),
-          .configure =
-              [iconSq, scale](Button& button) {
-                button.setMinHeight(iconSq);
-                button.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-                button.setRadius(Style::scaledRadiusSm(scale));
-              },
       });
 
       glyphPickBtn->setOnClick([&row, persist, glyphPickBtnPtr, clearGlyphBtnPtr]() {
@@ -684,18 +679,15 @@ namespace settings {
             .glyph = "close",
             .glyphSize = Style::fontSizeCaption * scale,
             .variant = ButtonVariant::Ghost,
+            .minWidth = Style::controlHeightSm * scale,
+            .minHeight = Style::controlHeightSm * scale,
+            .padding = Style::spaceXs * scale,
+            .radius = Style::scaledRadiusSm(scale),
             .onClick =
                 [&row, persist, shortcutRecorderPtr]() {
                   row.shortcut = std::nullopt;
                   shortcutRecorderPtr->setChord(std::nullopt);
                   persist();
-                },
-            .configure =
-                [scale](Button& button) {
-                  button.setMinWidth(Style::controlHeightSm * scale);
-                  button.setMinHeight(Style::controlHeightSm * scale);
-                  button.setPadding(Style::spaceXs * scale);
-                  button.setRadius(Style::scaledRadiusSm(scale));
                 },
         });
         shortcutBlock->addChild(std::move(clearBtn));
@@ -904,6 +896,10 @@ namespace settings {
               .fontSize = Style::fontSizeBody * scale,
               .glyphSize = Style::fontSizeBody * scale,
               .variant = ButtonVariant::Default,
+              .minHeight = Style::controlHeight * scale,
+              .paddingV = Style::spaceSm * scale,
+              .paddingH = Style::spaceMd * scale,
+              .radius = Style::scaledRadiusMd(scale),
               .flexGrow = 1.0f,
               .onClick =
                   [commitName, commitTimeout, applyHostedEditor = ctx.afterIdleBehaviorApply, closeHostedEditor]() {
@@ -915,12 +911,6 @@ namespace settings {
                     if (closeHostedEditor) {
                       closeHostedEditor();
                     }
-                  },
-              .configure =
-                  [scale](Button& button) {
-                    button.setMinHeight(Style::controlHeight * scale);
-                    button.setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-                    button.setRadius(Style::scaledRadiusMd(scale));
                   },
           }));
       section.addChild(std::move(actions));
@@ -1007,13 +997,11 @@ namespace settings {
           .text = i18n::tr("settings.actions.reset"),
           .fontSize = Style::fontSizeCaption * scale,
           .variant = ButtonVariant::Ghost,
+          .minHeight = Style::controlHeightSm * scale,
+          .paddingV = Style::spaceXs * scale,
+          .paddingH = Style::spaceSm * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick = [clearOverride = ctx.clearOverride, path]() { clearOverride(path); },
-          .configure =
-              [scale](Button& button) {
-                button.setMinHeight(Style::controlHeightSm * scale);
-                button.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-                button.setRadius(Style::scaledRadiusMd(scale));
-              },
       });
     };
 
@@ -1326,6 +1314,11 @@ namespace settings {
           .glyph = selectFolder ? "folder" : "file-text",
           .glyphSize = Style::fontSizeBody * scale,
           .variant = ButtonVariant::Outline,
+          .minWidth = Style::controlHeight * scale,
+          .minHeight = Style::controlHeight * scale,
+          .paddingV = Style::spaceXs * scale,
+          .paddingH = Style::spaceSm * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick =
               [setOverride = ctx.setOverride, path, inputPtr, selectFolder, exts = setting.browseFileExtensions]() {
                 FileDialogOptions options;
@@ -1368,13 +1361,6 @@ namespace settings {
                                          setOverride(path, s);
                                        });
               },
-          .configure =
-              [scale](Button& button) {
-                button.setMinHeight(Style::controlHeight * scale);
-                button.setMinWidth(Style::controlHeight * scale);
-                button.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-                button.setRadius(Style::scaledRadiusMd(scale));
-              },
       });
       wrap->addChild(std::move(browse));
       return wrap;
@@ -1388,6 +1374,11 @@ namespace settings {
           .glyph = "apps",
           .glyphSize = Style::fontSizeBody * scale,
           .variant = ButtonVariant::Outline,
+          .minWidth = Style::controlHeight * scale,
+          .minHeight = Style::controlHeight * scale,
+          .paddingV = Style::spaceXs * scale,
+          .paddingH = Style::spaceSm * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick =
               [setOverride = ctx.setOverride, path, currentValue = setting.value]() {
                 GlyphPickerDialogOptions options;
@@ -1401,13 +1392,6 @@ namespace settings {
                                                 }
                                                 setOverride(path, result->name);
                                               });
-              },
-          .configure =
-              [scale](Button& button) {
-                button.setMinHeight(Style::controlHeight * scale);
-                button.setMinWidth(Style::controlHeight * scale);
-                button.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-                button.setRadius(Style::scaledRadiusMd(scale));
               },
       });
       wrap->addChild(std::move(pickerButton));
@@ -1548,6 +1532,11 @@ namespace settings {
           .glyphSize = Style::fontSizeBody * scale,
           .contentAlign = ButtonContentAlign::Start,
           .variant = ButtonVariant::Outline,
+          .minWidth = 190.0f * scale,
+          .minHeight = Style::controlHeight * scale,
+          .paddingV = Style::spaceSm * scale,
+          .paddingH = Style::spaceMd * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick =
               [openPopup = ctx.openSearchPickerPopup, title = entry.title, options = setting.options,
                selectedValue = setting.selectedValue, placeholder = setting.placeholder, emptyText = setting.emptyText,
@@ -1555,13 +1544,6 @@ namespace settings {
                 if (openPopup) {
                   openPopup(title, options, selectedValue, placeholder, emptyText, path);
                 }
-              },
-          .configure =
-              [scale](Button& button) {
-                button.setMinWidth(190.0f * scale);
-                button.setMinHeight(Style::controlHeight * scale);
-                button.setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-                button.setRadius(Style::scaledRadiusMd(scale));
               },
       });
     };
@@ -1769,6 +1751,10 @@ namespace settings {
             .glyph = "close",
             .glyphSize = Style::fontSizeCaption * scale,
             .variant = ButtonVariant::Ghost,
+            .minWidth = Style::controlHeightSm * scale,
+            .minHeight = Style::controlHeightSm * scale,
+            .padding = Style::spaceXs * scale,
+            .radius = Style::scaledRadiusSm(scale),
             .onClick =
                 [commitItems, items = keybinds.items, i]() mutable {
                   if (i >= items.size()) {
@@ -1776,13 +1762,6 @@ namespace settings {
                   }
                   items.erase(items.begin() + static_cast<std::ptrdiff_t>(i));
                   commitItems(std::move(items));
-                },
-            .configure =
-                [scale](Button& button) {
-                  button.setMinWidth(Style::controlHeightSm * scale);
-                  button.setMinHeight(Style::controlHeightSm * scale);
-                  button.setPadding(Style::spaceXs * scale);
-                  button.setRadius(Style::scaledRadiusSm(scale));
                 },
         });
         row->addChild(std::move(removeBtn));
@@ -1915,6 +1894,10 @@ namespace settings {
             .glyphSize = Style::fontSizeBody * scale,
             .enabled = idx > 0,
             .variant = ButtonVariant::Ghost,
+            .minWidth = Style::controlHeightSm * scale,
+            .minHeight = iconBtnH,
+            .padding = Style::spaceXs * scale,
+            .radius = Style::scaledRadiusMd(scale),
             .onClick =
                 [state, rowIndex = idx, commit]() {
                   if (rowIndex == 0 || rowIndex >= state->size()) {
@@ -1922,13 +1905,6 @@ namespace settings {
                   }
                   std::swap((*state)[rowIndex - 1], (*state)[rowIndex]);
                   commit();
-                },
-            .configure =
-                [iconBtnH, scale](Button& button) {
-                  button.setMinWidth(Style::controlHeightSm * scale);
-                  button.setMinHeight(iconBtnH);
-                  button.setPadding(Style::spaceXs * scale);
-                  button.setRadius(Style::scaledRadiusMd(scale));
                 },
         });
         reorder->addChild(std::move(upBtn));
@@ -1938,6 +1914,10 @@ namespace settings {
             .glyphSize = Style::fontSizeBody * scale,
             .enabled = idx + 1 < state->size(),
             .variant = ButtonVariant::Ghost,
+            .minWidth = Style::controlHeightSm * scale,
+            .minHeight = iconBtnH,
+            .padding = Style::spaceXs * scale,
+            .radius = Style::scaledRadiusMd(scale),
             .onClick =
                 [state, rowIndex = idx, commit]() {
                   if (rowIndex + 1 >= state->size()) {
@@ -1945,13 +1925,6 @@ namespace settings {
                   }
                   std::swap((*state)[rowIndex + 1], (*state)[rowIndex]);
                   commit();
-                },
-            .configure =
-                [iconBtnH, scale](Button& button) {
-                  button.setMinWidth(Style::controlHeightSm * scale);
-                  button.setMinHeight(iconBtnH);
-                  button.setPadding(Style::spaceXs * scale);
-                  button.setRadius(Style::scaledRadiusMd(scale));
                 },
         });
         reorder->addChild(std::move(downBtn));
@@ -1961,18 +1934,15 @@ namespace settings {
             .glyph = "settings",
             .glyphSize = Style::fontSizeCaption * scale,
             .variant = ButtonVariant::Ghost,
+            .minWidth = Style::controlHeightSm * scale,
+            .minHeight = Style::controlHeightSm * scale,
+            .padding = Style::spaceXs * scale,
+            .radius = Style::scaledRadiusSm(scale),
             .onClick =
                 [openEntry = ctx.openSessionActionEntryEditor, rowIndex = idx]() {
                   if (openEntry) {
                     openEntry(rowIndex);
                   }
-                },
-            .configure =
-                [scale](Button& button) {
-                  button.setMinWidth(Style::controlHeightSm * scale);
-                  button.setMinHeight(Style::controlHeightSm * scale);
-                  button.setPadding(Style::spaceXs * scale);
-                  button.setRadius(Style::scaledRadiusSm(scale));
                 },
         });
         row->addChild(std::move(entrySettings));
@@ -1997,18 +1967,16 @@ namespace settings {
           .fontSize = Style::fontSizeBody * scale,
           .glyphSize = Style::fontSizeBody * scale,
           .variant = ButtonVariant::Default,
+          .minHeight = Style::controlHeight * scale,
+          .paddingV = Style::spaceSm * scale,
+          .paddingH = Style::spaceMd * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick =
               [state, commit]() {
                 state->push_back(SessionPanelActionConfig{
                     "command", true, "notify-send 'Noctalia' 'Custom session entry'", std::nullopt, std::nullopt,
                     SessionActionButtonVariant::Default, std::nullopt});
                 commit();
-              },
-          .configure =
-              [scale](Button& button) {
-                button.setMinHeight(Style::controlHeight * scale);
-                button.setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-                button.setRadius(Style::scaledRadiusMd(scale));
               },
       });
       block->addChild(std::move(addBtn));
@@ -2054,6 +2022,10 @@ namespace settings {
             .glyphSize = Style::fontSizeBody * scale,
             .enabled = idx > 0,
             .variant = ButtonVariant::Ghost,
+            .minWidth = Style::controlHeightSm * scale,
+            .minHeight = iconBtnH,
+            .padding = Style::spaceXs * scale,
+            .radius = Style::scaledRadiusMd(scale),
             .onClick =
                 [state, rowIndex = idx, commit]() {
                   if (rowIndex == 0 || rowIndex >= state->size()) {
@@ -2061,13 +2033,6 @@ namespace settings {
                   }
                   std::swap((*state)[rowIndex - 1], (*state)[rowIndex]);
                   commit();
-                },
-            .configure =
-                [iconBtnH, scale](Button& button) {
-                  button.setMinWidth(Style::controlHeightSm * scale);
-                  button.setMinHeight(iconBtnH);
-                  button.setPadding(Style::spaceXs * scale);
-                  button.setRadius(Style::scaledRadiusMd(scale));
                 },
         });
         reorder->addChild(std::move(upBtn));
@@ -2077,6 +2042,10 @@ namespace settings {
             .glyphSize = Style::fontSizeBody * scale,
             .enabled = idx + 1 < state->size(),
             .variant = ButtonVariant::Ghost,
+            .minWidth = Style::controlHeightSm * scale,
+            .minHeight = iconBtnH,
+            .padding = Style::spaceXs * scale,
+            .radius = Style::scaledRadiusMd(scale),
             .onClick =
                 [state, rowIndex = idx, commit]() {
                   if (rowIndex + 1 >= state->size()) {
@@ -2084,13 +2053,6 @@ namespace settings {
                   }
                   std::swap((*state)[rowIndex + 1], (*state)[rowIndex]);
                   commit();
-                },
-            .configure =
-                [iconBtnH, scale](Button& button) {
-                  button.setMinWidth(Style::controlHeightSm * scale);
-                  button.setMinHeight(iconBtnH);
-                  button.setPadding(Style::spaceXs * scale);
-                  button.setRadius(Style::scaledRadiusMd(scale));
                 },
         });
         reorder->addChild(std::move(downBtn));
@@ -2100,18 +2062,15 @@ namespace settings {
             .glyph = "settings",
             .glyphSize = Style::fontSizeCaption * scale,
             .variant = ButtonVariant::Ghost,
+            .minWidth = Style::controlHeightSm * scale,
+            .minHeight = Style::controlHeightSm * scale,
+            .padding = Style::spaceXs * scale,
+            .radius = Style::scaledRadiusSm(scale),
             .onClick =
                 [openEntry = ctx.openIdleBehaviorEntryEditor, rowIndex = idx]() {
                   if (openEntry) {
                     openEntry(rowIndex);
                   }
-                },
-            .configure =
-                [scale](Button& button) {
-                  button.setMinWidth(Style::controlHeightSm * scale);
-                  button.setMinHeight(Style::controlHeightSm * scale);
-                  button.setPadding(Style::spaceXs * scale);
-                  button.setRadius(Style::scaledRadiusSm(scale));
                 },
         });
         row->addChild(std::move(entrySettings));
@@ -2136,17 +2095,15 @@ namespace settings {
           .fontSize = Style::fontSizeBody * scale,
           .glyphSize = Style::fontSizeBody * scale,
           .variant = ButtonVariant::Default,
+          .minHeight = Style::controlHeight * scale,
+          .paddingV = Style::spaceSm * scale,
+          .paddingH = Style::spaceMd * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick =
               [openCreate = ctx.openIdleBehaviorCreateEditor]() {
                 if (openCreate) {
                   openCreate();
                 }
-              },
-          .configure =
-              [scale](Button& button) {
-                button.setMinHeight(Style::controlHeight * scale);
-                button.setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-                button.setRadius(Style::scaledRadiusMd(scale));
               },
       });
       block->addChild(std::move(addBtn));
@@ -2199,13 +2156,11 @@ namespace settings {
                     .text = control.label,
                     .fontSize = Style::fontSizeBody * scale,
                     .variant = ButtonVariant::Outline,
+                    .minHeight = Style::controlHeight * scale,
+                    .paddingV = Style::spaceSm * scale,
+                    .paddingH = Style::spaceMd * scale,
+                    .radius = Style::scaledRadiusMd(scale),
                     .onClick = control.action,
-                    .configure =
-                        [scale](Button& button) {
-                          button.setMinHeight(Style::controlHeight * scale);
-                          button.setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-                          button.setRadius(Style::scaledRadiusMd(scale));
-                        },
                 });
               }
               return ui::button({
@@ -2214,13 +2169,11 @@ namespace settings {
                   .fontSize = Style::fontSizeBody * scale,
                   .glyphSize = Style::fontSizeBody * scale,
                   .variant = ButtonVariant::Outline,
+                  .minHeight = Style::controlHeight * scale,
+                  .paddingV = Style::spaceSm * scale,
+                  .paddingH = Style::spaceMd * scale,
+                  .radius = Style::scaledRadiusMd(scale),
                   .onClick = control.action,
-                  .configure =
-                      [scale](Button& button) {
-                        button.setMinHeight(Style::controlHeight * scale);
-                        button.setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-                        button.setRadius(Style::scaledRadiusMd(scale));
-                      },
               });
             } else if constexpr (std::is_same_v<T, ColorSpecPickerSetting>) {
               return makeColorSpecPicker(control, entry.path);

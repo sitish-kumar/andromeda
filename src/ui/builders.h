@@ -108,9 +108,16 @@ namespace ui {
     std::optional<std::string> tooltip = std::nullopt;
     std::optional<float> minWidth = std::nullopt;
     std::optional<float> minHeight = std::nullopt;
+    std::optional<float> maxWidth = std::nullopt;
+    std::optional<float> maxHeight = std::nullopt;
     std::optional<float> padding = std::nullopt;
     std::optional<float> paddingV = std::nullopt;
     std::optional<float> paddingH = std::nullopt;
+    std::optional<float> paddingTop = std::nullopt;
+    std::optional<float> paddingRight = std::nullopt;
+    std::optional<float> paddingBottom = std::nullopt;
+    std::optional<float> paddingLeft = std::nullopt;
+    std::optional<float> gap = std::nullopt;
     std::optional<float> radius = std::nullopt;
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;

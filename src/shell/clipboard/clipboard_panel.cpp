@@ -138,16 +138,14 @@ namespace {
         .glyph = std::move(glyph),
         .glyphSize = Style::fontSizeBody * scale,
         .variant = variant,
+        // Compact entry action style.
+        .minWidth = Style::controlHeightSm * scale,
+        .minHeight = Style::controlHeightSm * scale,
+        .padding = Style::spaceXs * scale,
+        .radius = Style::scaledRadiusMd(scale),
         .visible = visible,
         .participatesInLayout = participatesInLayout,
         .onClick = std::move(onClick),
-        .configure =
-            [scale](Button& button) {
-              button.setMinWidth(Style::controlHeightSm * scale);
-              button.setMinHeight(Style::controlHeightSm * scale);
-              button.setPadding(Style::spaceXs * scale);
-              button.setRadius(Style::scaledRadiusMd(scale));
-            },
     });
   }
 
@@ -541,9 +539,15 @@ void ClipboardPanel::create() {
       ui::button({
           .out = &m_closeButton,
           .glyph = "close",
+          .glyphSize = Style::fontSizeBody * scale,
+          .minWidth = Style::controlHeightSm * scale,
+          .minHeight = Style::controlHeightSm * scale,
+          .padding = Style::spaceXs * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick = []() { PanelManager::instance().close(); },
+          // Preview header icon style.
           .configure = [scale, opacity = panelCardOpacity()](
-                           Button& button) { panel_button_style::configureHeaderIconButton(button, scale, opacity); },
+                           Button& button) { panel_button_style::applyHeaderButtonStyle(button, opacity); },
       }));
 
   auto previewHeader = ui::row(

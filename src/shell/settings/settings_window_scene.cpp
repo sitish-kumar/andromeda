@@ -489,27 +489,21 @@ std::unique_ptr<Flex> SettingsWindow::buildHeaderRow(float scale) {
           .glyph = "more-vertical",
           .glyphSize = Style::fontSizeBody * scale,
           .variant = ButtonVariant::Ghost,
+          .minWidth = Style::controlHeightSm * scale,
+          .minHeight = Style::controlHeightSm * scale,
+          .padding = Style::spaceXs * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick = [this]() { openActionsMenu(); },
-          .configure =
-              [scale](Button& button) {
-                button.setMinWidth(Style::controlHeightSm * scale);
-                button.setMinHeight(Style::controlHeightSm * scale);
-                button.setPadding(Style::spaceXs * scale);
-                button.setRadius(Style::scaledRadiusMd(scale));
-              },
       }),
       ui::button({
           .glyph = "close",
           .glyphSize = Style::fontSizeBody * scale,
           .variant = ButtonVariant::Default,
+          .minWidth = Style::controlHeightSm * scale,
+          .minHeight = Style::controlHeightSm * scale,
+          .padding = Style::spaceXs * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick = [this]() { close(); },
-          .configure =
-              [scale](Button& button) {
-                button.setMinWidth(Style::controlHeightSm * scale);
-                button.setMinHeight(Style::controlHeightSm * scale);
-                button.setPadding(Style::spaceXs * scale);
-                button.setRadius(Style::scaledRadiusMd(scale));
-              },
       }));
 }
 
@@ -605,6 +599,10 @@ std::unique_ptr<Flex> SettingsWindow::buildFilterRow(float scale, const std::str
         .text = pendingReset ? i18n::tr("settings.window.reset-page-confirm") : i18n::tr("settings.window.reset-page"),
         .fontSize = Style::fontSizeCaption * scale,
         .variant = pendingReset ? ButtonVariant::Destructive : ButtonVariant::Ghost,
+        .minHeight = Style::controlHeightSm * scale,
+        .paddingV = Style::spaceXs * scale,
+        .paddingH = Style::spaceSm * scale,
+        .radius = Style::scaledRadiusMd(scale),
         .onClick =
             [this, resetPageScope, resetPagePaths = std::move(resetPagePaths), requestRebuild, clearOverrides,
              pendingReset]() mutable {
@@ -614,12 +612,6 @@ std::unique_ptr<Flex> SettingsWindow::buildFilterRow(float scale, const std::str
                 return;
               }
               clearOverrides(std::move(resetPagePaths));
-            },
-        .configure =
-            [scale](Button& button) {
-              button.setMinHeight(Style::controlHeightSm * scale);
-              button.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-              button.setRadius(Style::scaledRadiusMd(scale));
             },
     }));
   }
@@ -663,17 +655,14 @@ std::unique_ptr<Flex> SettingsWindow::buildStatusRow(float scale) {
       .glyph = "close",
       .glyphSize = Style::fontSizeCaption * scale,
       .variant = ButtonVariant::Ghost,
+      .minWidth = Style::controlHeightSm * scale,
+      .minHeight = Style::controlHeightSm * scale,
+      .padding = Style::spaceXs * scale,
+      .radius = Style::scaledRadiusSm(scale),
       .onClick =
           [clearStatus, requestRebuild]() {
             clearStatus();
             requestRebuild();
-          },
-      .configure =
-          [scale](Button& button) {
-            button.setMinWidth(Style::controlHeightSm * scale);
-            button.setMinHeight(Style::controlHeightSm * scale);
-            button.setPadding(Style::spaceXs * scale);
-            button.setRadius(Style::scaledRadiusSm(scale));
           },
   }));
 

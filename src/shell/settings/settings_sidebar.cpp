@@ -45,74 +45,51 @@ namespace settings {
       }
     }
 
-    void applyPrimaryNavStyle(Button& button, float scale, bool selected) {
-      button.setVariant(selected ? ButtonVariant::TabActive : ButtonVariant::Tab);
-      button.setContentAlign(ButtonContentAlign::Start);
-      button.setFontSize(Style::fontSizeBody * scale);
-      button.setGlyphSize(21.0f * scale);
-      button.setMinHeight(Style::controlHeight * scale);
-      button.setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-      button.setGap(Style::spaceSm * scale);
-      button.setRadius(Style::scaledRadiusLg(scale));
+    void makeButtonLabelBold(Button& button) {
       if (button.label() != nullptr) {
         button.label()->setFontWeight(FontWeight::Bold);
       }
     }
 
-    void applySecondaryNavStyle(Button& button, float scale, bool selected) {
-      button.setVariant(selected ? ButtonVariant::TabActive : ButtonVariant::Tab);
-      button.setContentAlign(ButtonContentAlign::Start);
-      button.setFontSize(Style::fontSizeCaption * scale);
-      button.setGlyphSize(Style::fontSizeCaption * scale);
-      button.setMinHeight(Style::controlHeightSm * scale);
-      button.setPadding(Style::spaceXs * scale, Style::spaceMd * scale, Style::spaceXs * scale, Style::spaceLg * scale);
-      button.setGap(Style::spaceXs * scale);
-      button.setRadius(Style::scaledRadiusMd(scale));
-    }
-
+    // Primary sidebar nav style: top-level section rows with a bolder label.
     std::unique_ptr<Button> makePrimaryNavButton(std::string_view glyph, std::string text, float scale, bool selected,
                                                  std::function<void()> onClick) {
       return ui::button({
           .text = std::move(text),
           .glyph = std::string(glyph),
+          .fontSize = Style::fontSizeBody * scale,
+          .glyphSize = 21.0f * scale,
+          .contentAlign = ButtonContentAlign::Start,
+          .variant = selected ? ButtonVariant::TabActive : ButtonVariant::Tab,
+          .minHeight = Style::controlHeight * scale,
+          .paddingV = Style::spaceSm * scale,
+          .paddingH = Style::spaceMd * scale,
+          .gap = Style::spaceSm * scale,
+          .radius = Style::scaledRadiusLg(scale),
           .onClick = std::move(onClick),
-          .configure = [scale, selected](Button& button) { applyPrimaryNavStyle(button, scale, selected); },
+          .configure = [](Button& button) { makeButtonLabelBold(button); },
       });
     }
 
+    // Secondary sidebar nav style: indented compact rows for bars and monitors.
     std::unique_ptr<Button> makeSecondaryNavButton(std::string_view glyph, std::string text, float scale, bool selected,
                                                    std::function<void()> onClick) {
       return ui::button({
           .text = std::move(text),
           .glyph = std::string(glyph),
+          .fontSize = Style::fontSizeCaption * scale,
+          .glyphSize = Style::fontSizeCaption * scale,
+          .contentAlign = ButtonContentAlign::Start,
+          .variant = selected ? ButtonVariant::TabActive : ButtonVariant::Tab,
+          .minHeight = Style::controlHeightSm * scale,
+          .paddingTop = Style::spaceXs * scale,
+          .paddingRight = Style::spaceMd * scale,
+          .paddingBottom = Style::spaceXs * scale,
+          .paddingLeft = Style::spaceLg * scale,
+          .gap = Style::spaceXs * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick = std::move(onClick),
-          .configure = [scale, selected](Button& button) { applySecondaryNavStyle(button, scale, selected); },
       });
-    }
-
-    void applySecondaryActionStyle(Button& button, float scale) {
-      button.setVariant(ButtonVariant::Ghost);
-      button.setContentAlign(ButtonContentAlign::Start);
-      button.setFontSize(Style::fontSizeCaption * scale);
-      button.setGlyphSize(Style::fontSizeCaption * scale);
-      button.setMinHeight(Style::controlHeightSm * scale);
-      button.setPadding(Style::spaceXs * scale, Style::spaceMd * scale, Style::spaceXs * scale, Style::spaceLg * scale);
-      button.setGap(Style::spaceXs * scale);
-      button.setRadius(Style::scaledRadiusMd(scale));
-    }
-
-    void applyPrimaryActionStyle(Button& button, float scale) {
-      button.setVariant(ButtonVariant::Ghost);
-      button.setContentAlign(ButtonContentAlign::Start);
-      button.setFontSize(Style::fontSizeBody * scale);
-      button.setGlyphSize(21.0f * scale);
-      button.setMinHeight(Style::controlHeight * scale);
-      button.setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-      button.setGap(Style::spaceSm * scale);
-      button.setRadius(Style::scaledRadiusLg(scale));
-      if (button.label() != nullptr) {
-        button.label()->setFontWeight(FontWeight::Bold);
-      }
     }
 
     std::unique_ptr<Button> makeCreateButton(std::string text, float scale, std::function<void()> onClick) {
@@ -120,13 +97,11 @@ namespace settings {
           .text = std::move(text),
           .fontSize = Style::fontSizeCaption * scale,
           .variant = ButtonVariant::Default,
+          .minHeight = Style::controlHeightSm * scale,
+          .paddingV = Style::spaceXs * scale,
+          .paddingH = Style::spaceSm * scale,
+          .radius = Style::scaledRadiusSm(scale),
           .onClick = std::move(onClick),
-          .configure =
-              [scale](Button& button) {
-                button.setMinHeight(Style::controlHeightSm * scale);
-                button.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-                button.setRadius(Style::scaledRadiusSm(scale));
-              },
       });
     }
 
@@ -135,14 +110,11 @@ namespace settings {
           .glyph = "close",
           .glyphSize = Style::fontSizeCaption * scale,
           .variant = ButtonVariant::Ghost,
+          .minWidth = Style::controlHeightSm * scale,
+          .minHeight = Style::controlHeightSm * scale,
+          .padding = Style::spaceXs * scale,
+          .radius = Style::scaledRadiusSm(scale),
           .onClick = std::move(onClick),
-          .configure =
-              [scale](Button& button) {
-                button.setMinWidth(Style::controlHeightSm * scale);
-                button.setMinHeight(Style::controlHeightSm * scale);
-                button.setPadding(Style::spaceXs * scale);
-                button.setRadius(Style::scaledRadiusSm(scale));
-              },
       });
     }
 
@@ -258,9 +230,21 @@ namespace settings {
         continue;
       }
 
+      // Secondary sidebar action style: same compact indentation as monitor rows.
       sidebar->addChild(ui::button({
           .text = i18n::tr("settings.entities.monitor-override.new"),
           .glyph = "add",
+          .fontSize = Style::fontSizeCaption * scale,
+          .glyphSize = Style::fontSizeCaption * scale,
+          .contentAlign = ButtonContentAlign::Start,
+          .variant = ButtonVariant::Ghost,
+          .minHeight = Style::controlHeightSm * scale,
+          .paddingTop = Style::spaceXs * scale,
+          .paddingRight = Style::spaceMd * scale,
+          .paddingBottom = Style::spaceXs * scale,
+          .paddingLeft = Style::spaceLg * scale,
+          .gap = Style::spaceXs * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick =
               [creatingMonitorOverrideBarName, creatingMonitorOverrideMatch, barName, clearTransientState,
                requestRebuild]() {
@@ -269,7 +253,6 @@ namespace settings {
                 creatingMonitorOverrideMatch->clear();
                 requestRebuild();
               },
-          .configure = [scale](Button& button) { applySecondaryActionStyle(button, scale); },
       }));
 
       if (*creatingMonitorOverrideBarName != barName) {
@@ -336,16 +319,26 @@ namespace settings {
       sidebar->addChild(std::move(createPanel));
     }
 
+    // Primary sidebar action style: same scale as top-level section rows.
     sidebar->addChild(ui::button({
         .text = i18n::tr("settings.entities.bar.new"),
         .glyph = "add",
+        .fontSize = Style::fontSizeBody * scale,
+        .glyphSize = 21.0f * scale,
+        .contentAlign = ButtonContentAlign::Start,
+        .variant = ButtonVariant::Ghost,
+        .minHeight = Style::controlHeight * scale,
+        .paddingV = Style::spaceSm * scale,
+        .paddingH = Style::spaceMd * scale,
+        .gap = Style::spaceSm * scale,
+        .radius = Style::scaledRadiusLg(scale),
         .onClick =
             [creatingBarName, nextBarName, clearTransientState, requestRebuild]() {
               clearTransientState();
               *creatingBarName = nextBarName;
               requestRebuild();
             },
-        .configure = [scale](Button& button) { applyPrimaryActionStyle(button, scale); },
+        .configure = [](Button& button) { makeButtonLabelBold(button); },
     }));
 
     if (!creatingBarName->empty()) {

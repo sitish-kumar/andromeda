@@ -176,13 +176,6 @@ namespace settings {
         .padding = popupPadding,
     });
 
-    const auto configureIconButton = [this](Button& button) {
-      button.setMinWidth(Style::controlHeightSm * m_scale);
-      button.setMinHeight(Style::controlHeightSm * m_scale);
-      button.setPadding(Style::spaceXs * m_scale);
-      button.setRadius(Style::scaledRadiusMd(m_scale));
-    };
-
     root->addChild(ui::row(
         {
             .align = FlexAlign::Center,
@@ -199,8 +192,12 @@ namespace settings {
             .glyph = "close",
             .glyphSize = Style::fontSizeBody * m_scale,
             .variant = ButtonVariant::Default,
+            // Dialog header icon style.
+            .minWidth = Style::controlHeightSm * m_scale,
+            .minHeight = Style::controlHeightSm * m_scale,
+            .padding = Style::spaceXs * m_scale,
+            .radius = Style::scaledRadiusMd(m_scale),
             .onClick = [this]() { DeferredCall::callLater([this]() { close(); }); },
-            .configure = configureIconButton,
         })));
 
     root->addChild(ui::column(
@@ -213,12 +210,6 @@ namespace settings {
         makeOption(ConfigExportMode::FullEffective, i18n::tr("settings.export-config.full-effective-title"),
                    i18n::tr("settings.export-config.full-effective-description"))));
 
-    const auto configureFooterButton = [this](Button& button) {
-      button.setMinHeight(Style::controlHeight * m_scale);
-      button.setPadding(Style::spaceXs * m_scale, Style::spaceMd * m_scale);
-      button.setRadius(Style::scaledRadiusMd(m_scale));
-    };
-
     root->addChild(ui::row(
         {
             .align = FlexAlign::Center,
@@ -229,15 +220,23 @@ namespace settings {
             .text = i18n::tr("common.actions.cancel"),
             .fontSize = Style::fontSizeBody * m_scale,
             .variant = ButtonVariant::Ghost,
+            // Dialog footer action style.
+            .minHeight = Style::controlHeight * m_scale,
+            .paddingV = Style::spaceXs * m_scale,
+            .paddingH = Style::spaceMd * m_scale,
+            .radius = Style::scaledRadiusMd(m_scale),
             .onClick = [this]() { DeferredCall::callLater([this]() { close(); }); },
-            .configure = configureFooterButton,
         }),
         ui::button({
             .text = i18n::tr("settings.export-config.export"),
             .fontSize = Style::fontSizeBody * m_scale,
             .variant = ButtonVariant::Primary,
+            // Dialog footer action style.
+            .minHeight = Style::controlHeight * m_scale,
+            .paddingV = Style::spaceXs * m_scale,
+            .paddingH = Style::spaceMd * m_scale,
+            .radius = Style::scaledRadiusMd(m_scale),
             .onClick = [this]() { DeferredCall::callLater([this]() { accept(); }); },
-            .configure = configureFooterButton,
         })));
 
     contentParent->addChild(std::move(root));

@@ -224,6 +224,11 @@ void SetupWizardPanel::create() {
           .fontSize = Style::fontSizeBody * scale,
           .glyphSize = Style::fontSizeBody * scale,
           .variant = ButtonVariant::Outline,
+          .minWidth = 112.0f * scale,
+          .minHeight = Style::controlHeight * scale,
+          .paddingV = Style::spaceSm * scale,
+          .paddingH = Style::spaceMd * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick =
               [this]() {
                 FileDialogOptions options;
@@ -253,13 +258,6 @@ void SetupWizardPanel::create() {
                   m_config->setOverride({"wallpaper", "directory"}, parentDir);
                   m_config->setWallpaperPath(std::nullopt, fullPath);
                 });
-              },
-          .configure =
-              [scale](Button& button) {
-                button.setMinHeight(Style::controlHeight * scale);
-                button.setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-                button.setRadius(Style::scaledRadiusMd(scale));
-                button.setMinWidth(112.0f * scale);
               },
       }));
     }
@@ -384,14 +382,12 @@ void SetupWizardPanel::create() {
         .fontSize = Style::fontSizeBody * scale,
         .glyphSize = Style::fontSizeBody * scale,
         .variant = ButtonVariant::Primary,
+        .minWidth = 132.0f * scale,
+        .minHeight = Style::controlHeight * scale,
+        .paddingV = Style::spaceSm * scale,
+        .paddingH = Style::spaceLg * scale,
+        .radius = Style::scaledRadiusMd(scale),
         .onClick = [this]() { commit(); },
-        .configure =
-            [scale](Button& button) {
-              button.setMinHeight(Style::controlHeight * scale);
-              button.setPadding(Style::spaceSm * scale, Style::spaceLg * scale);
-              button.setRadius(Style::scaledRadiusMd(scale));
-              button.setMinWidth(132.0f * scale);
-            },
     }));
     root->addChild(std::move(footer));
   }

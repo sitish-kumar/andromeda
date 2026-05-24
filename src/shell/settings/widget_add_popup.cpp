@@ -392,14 +392,11 @@ namespace settings {
         .glyph = "close",
         .glyphSize = Style::fontSizeBody * m_scale,
         .variant = ButtonVariant::Default,
+        .minWidth = Style::controlHeightSm * m_scale,
+        .minHeight = Style::controlHeightSm * m_scale,
+        .padding = Style::spaceXs * m_scale,
+        .radius = Style::scaledRadiusMd(m_scale),
         .onClick = [this]() { DeferredCall::callLater([this]() { close(); }); },
-        .configure =
-            [this](Button& button) {
-              button.setMinWidth(Style::controlHeightSm * m_scale);
-              button.setMinHeight(Style::controlHeightSm * m_scale);
-              button.setPadding(Style::spaceXs * m_scale);
-              button.setRadius(Style::scaledRadiusMd(m_scale));
-            },
     }));
     root->addChild(std::move(header));
 
@@ -472,12 +469,6 @@ namespace settings {
         .onSubmit = [this](const std::string& /*value*/) { finishCreateFlow(); },
     }));
 
-    const auto configureFormButton = [this](Button& button) {
-      button.setMinHeight(Style::controlHeightSm * m_scale);
-      button.setPadding(Style::spaceXs * m_scale, Style::spaceSm * m_scale);
-      button.setRadius(Style::scaledRadiusSm(m_scale));
-    };
-
     root->addChild(ui::row(
         {
             .out = &m_createActions,
@@ -490,6 +481,10 @@ namespace settings {
             .text = i18n::tr("common.actions.cancel"),
             .fontSize = Style::fontSizeCaption * m_scale,
             .variant = ButtonVariant::Ghost,
+            .minHeight = Style::controlHeightSm * m_scale,
+            .paddingV = Style::spaceXs * m_scale,
+            .paddingH = Style::spaceSm * m_scale,
+            .radius = Style::scaledRadiusSm(m_scale),
             .onClick =
                 [this]() {
                   m_createFormVisible = false;
@@ -500,14 +495,16 @@ namespace settings {
                   }
                   reopenForCurrentMode();
                 },
-            .configure = configureFormButton,
         }),
         ui::button({
             .text = i18n::tr("settings.entities.widget.instance.create-save"),
             .fontSize = Style::fontSizeCaption * m_scale,
             .variant = ButtonVariant::Default,
+            .minHeight = Style::controlHeightSm * m_scale,
+            .paddingV = Style::spaceXs * m_scale,
+            .paddingH = Style::spaceSm * m_scale,
+            .radius = Style::scaledRadiusSm(m_scale),
             .onClick = [this]() { finishCreateFlow(); },
-            .configure = configureFormButton,
         })));
 
     contentParent->addChild(std::move(root));

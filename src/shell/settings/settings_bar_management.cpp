@@ -40,12 +40,11 @@ namespace settings {
       props.fontSize = Style::fontSizeCaption * scale;
       props.enabled = enabled;
       props.variant = variant;
+      props.minHeight = Style::controlHeightSm * scale;
+      props.paddingV = Style::spaceXs * scale;
+      props.paddingH = Style::spaceSm * scale;
+      props.radius = Style::scaledRadiusSm(scale);
       props.onClick = std::move(onClick);
-      props.configure = [scale](Button& button) {
-        button.setMinHeight(Style::controlHeightSm * scale);
-        button.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-        button.setRadius(Style::scaledRadiusSm(scale));
-      };
       return ui::button(std::move(props));
     }
 

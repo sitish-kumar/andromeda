@@ -119,13 +119,6 @@ PanelPlacement WallpaperPanel::panelPlacement() const noexcept {
 
 void WallpaperPanel::create() {
   const float scale = contentScale();
-  const auto configureIconButton = [scale](Button& button) {
-    button.setGlyphSize(Style::fontSizeBody * scale);
-    button.setMinWidth(Style::controlHeightSm * scale);
-    button.setMinHeight(Style::controlHeightSm * scale);
-    button.setPadding(Style::spaceXs * scale);
-    button.setRadius(Style::scaledRadiusMd(scale));
-  };
 
   auto root = ui::column({
       .out = &m_rootLayout,
@@ -158,15 +151,21 @@ void WallpaperPanel::create() {
       .maxLines = 1,
   }));
 
-  header->addChild(ui::row(
-      {.align = FlexAlign::Center, .justify = FlexJustify::End, .fillWidth = true, .flexGrow = 1.0f},
-      ui::button({
-          .out = &m_closeButton,
-          .glyph = "close",
-          .onClick = []() { PanelManager::instance().close(); },
-          .configure = [scale, opacity = panelCardOpacity()](
-                           Button& button) { panel_button_style::configureHeaderIconButton(button, scale, opacity); },
-      })));
+  header->addChild(
+      ui::row({.align = FlexAlign::Center, .justify = FlexJustify::End, .fillWidth = true, .flexGrow = 1.0f},
+              ui::button({
+                  .out = &m_closeButton,
+                  .glyph = "close",
+                  .glyphSize = Style::fontSizeBody * scale,
+                  .minWidth = Style::controlHeightSm * scale,
+                  .minHeight = Style::controlHeightSm * scale,
+                  .padding = Style::spaceXs * scale,
+                  .radius = Style::scaledRadiusMd(scale),
+                  .onClick = []() { PanelManager::instance().close(); },
+                  // Header icon button style: compact metrics with a panel-card-aware palette.
+                  .configure = [scale, opacity = panelCardOpacity()](
+                                   Button& button) { panel_button_style::applyHeaderButtonStyle(button, opacity); },
+              })));
 
   root->addChild(std::move(header));
 
@@ -210,9 +209,14 @@ void WallpaperPanel::create() {
   toolbar->addChild(ui::button({
       .out = &m_backButton,
       .glyph = "arrow-big-up",
+      .glyphSize = Style::fontSizeBody * scale,
       .variant = ButtonVariant::Secondary,
+      // Toolbar icon button style.
+      .minWidth = Style::controlHeightSm * scale,
+      .minHeight = Style::controlHeightSm * scale,
+      .padding = Style::spaceXs * scale,
+      .radius = Style::scaledRadiusMd(scale),
       .onClick = [this]() { navigateUp(); },
-      .configure = configureIconButton,
   }));
 
   toolbar->addChild(ui::spacer());
@@ -261,15 +265,26 @@ void WallpaperPanel::create() {
   toolbar->addChild(ui::button({
       .out = &m_colorButton,
       .glyph = "color-picker",
+      .glyphSize = Style::fontSizeBody * scale,
       .variant = ButtonVariant::Default,
+      // Toolbar icon button style.
+      .minWidth = Style::controlHeightSm * scale,
+      .minHeight = Style::controlHeightSm * scale,
+      .padding = Style::spaceXs * scale,
+      .radius = Style::scaledRadiusMd(scale),
       .onClick = [this]() { applyColorWallpaper(); },
-      .configure = configureIconButton,
   }));
 
   toolbar->addChild(ui::button({
       .out = &m_refreshButton,
       .glyph = "refresh",
+      .glyphSize = Style::fontSizeBody * scale,
       .variant = ButtonVariant::Default,
+      // Toolbar icon button style.
+      .minWidth = Style::controlHeightSm * scale,
+      .minHeight = Style::controlHeightSm * scale,
+      .padding = Style::spaceXs * scale,
+      .radius = Style::scaledRadiusMd(scale),
       .onClick =
           [this]() {
             m_scanner.invalidate();
@@ -280,7 +295,6 @@ void WallpaperPanel::create() {
             m_dirty = true;
             PanelManager::instance().refresh();
           },
-      .configure = configureIconButton,
   }));
 
   root->addChild(std::move(toolbar));

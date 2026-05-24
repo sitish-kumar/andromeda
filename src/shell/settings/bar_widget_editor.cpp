@@ -785,6 +785,10 @@ namespace settings {
               .fontSize = Style::fontSizeCaption * ctx.scale,
               .glyphSize = Style::fontSizeCaption * ctx.scale,
               .variant = pendingDelete ? ButtonVariant::Default : ButtonVariant::Ghost,
+              .minWidth = Style::controlHeightSm * ctx.scale,
+              .minHeight = Style::controlHeightSm * ctx.scale,
+              .padding = Style::spaceXs * ctx.scale,
+              .radius = Style::scaledRadiusSm(ctx.scale),
               .onClick =
                   [&pendingDeleteWidgetSettingPath = ctx.pendingDeleteWidgetSettingPath, deleteKey, path,
                    clearOverride = ctx.clearOverride, requestRebuild = ctx.requestRebuild]() {
@@ -796,13 +800,6 @@ namespace settings {
 
                     pendingDeleteWidgetSettingPath.clear();
                     clearOverride(path);
-                  },
-              .configure =
-                  [&ctx](Button& button) {
-                    button.setMinWidth(Style::controlHeightSm * ctx.scale);
-                    button.setMinHeight(Style::controlHeightSm * ctx.scale);
-                    button.setPadding(Style::spaceXs * ctx.scale);
-                    button.setRadius(Style::scaledRadiusSm(ctx.scale));
                   },
           }));
         }
@@ -964,6 +961,11 @@ namespace settings {
                                 .glyph = "apps",
                                 .glyphSize = Style::fontSizeBody * ctx.scale,
                                 .variant = ButtonVariant::Outline,
+                                .minWidth = Style::controlHeight * ctx.scale,
+                                .minHeight = Style::controlHeight * ctx.scale,
+                                .paddingV = Style::spaceXs * ctx.scale,
+                                .paddingH = Style::spaceSm * ctx.scale,
+                                .radius = Style::scaledRadiusMd(ctx.scale),
                                 .onClick =
                                     [setOverride = ctx.setOverride, requestRebuild = ctx.requestRebuild, path,
                                      currentValue = settingValueAsString(value)]() {
@@ -983,13 +985,6 @@ namespace settings {
                                             }
                                           });
                                     },
-                                .configure =
-                                    [&ctx](Button& button) {
-                                      button.setMinHeight(Style::controlHeight * ctx.scale);
-                                      button.setMinWidth(Style::controlHeight * ctx.scale);
-                                      button.setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-                                      button.setRadius(Style::scaledRadiusMd(ctx.scale));
-                                    },
                             })));
           } else if (spec.key == "capsule_group" && !managedCapsuleGroups.empty()) {
             SelectSetting selectSetting{
@@ -1007,6 +1002,11 @@ namespace settings {
                                 .glyph = "photo",
                                 .glyphSize = Style::fontSizeBody * ctx.scale,
                                 .variant = ButtonVariant::Outline,
+                                .minWidth = Style::controlHeight * ctx.scale,
+                                .minHeight = Style::controlHeight * ctx.scale,
+                                .paddingV = Style::spaceXs * ctx.scale,
+                                .paddingH = Style::spaceSm * ctx.scale,
+                                .radius = Style::scaledRadiusMd(ctx.scale),
                                 .onClick =
                                     [setOverride = ctx.setOverride, requestRebuild = ctx.requestRebuild, path,
                                      currentValue = settingValueAsString(value)]() {
@@ -1034,13 +1034,6 @@ namespace settings {
                                                                  requestRebuild();
                                                                }
                                                              });
-                                    },
-                                .configure =
-                                    [&ctx](Button& button) {
-                                      button.setMinHeight(Style::controlHeight * ctx.scale);
-                                      button.setMinWidth(Style::controlHeight * ctx.scale);
-                                      button.setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-                                      button.setRadius(Style::scaledRadiusMd(ctx.scale));
                                     },
                             })));
           } else {
@@ -1173,6 +1166,10 @@ namespace settings {
             .glyph = "close",
             .glyphSize = Style::fontSizeBody * ctx.scale,
             .variant = ButtonVariant::Ghost,
+            .minWidth = Style::controlHeightSm * ctx.scale,
+            .minHeight = Style::controlHeightSm * ctx.scale,
+            .padding = Style::spaceXs * ctx.scale,
+            .radius = Style::scaledRadiusSm(ctx.scale),
             .onClick =
                 [&editingWidgetName = ctx.editingWidgetName, &renamingWidgetName = ctx.renamingWidgetName,
                  &pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,
@@ -1180,13 +1177,6 @@ namespace settings {
                  requestRebuild = ctx.requestRebuild]() {
                   closeInspector(editingWidgetName, renamingWidgetName, pendingDeleteWidgetName,
                                  pendingDeleteWidgetSettingPath, requestRebuild);
-                },
-            .configure =
-                [&ctx](Button& button) {
-                  button.setMinWidth(Style::controlHeightSm * ctx.scale);
-                  button.setMinHeight(Style::controlHeightSm * ctx.scale);
-                  button.setPadding(Style::spaceXs * ctx.scale);
-                  button.setRadius(Style::scaledRadiusSm(ctx.scale));
                 },
         }));
         inspector->addChild(std::move(headerRow));
@@ -1226,6 +1216,10 @@ namespace settings {
                 .text = i18n::tr("settings.entities.widget.inspector.move-to-lane", "lane", laneLabel(targetLane)),
                 .fontSize = Style::fontSizeCaption * ctx.scale,
                 .variant = ButtonVariant::Ghost,
+                .minHeight = Style::controlHeightSm * ctx.scale,
+                .paddingV = Style::spaceXs * ctx.scale,
+                .paddingH = Style::spaceSm * ctx.scale,
+                .radius = Style::scaledRadiusSm(ctx.scale),
                 .onClick =
                     [setOverrides = ctx.setOverrides, sourceItems, sourcePath, targetItems, targetPath,
                      widgetName]() mutable {
@@ -1237,12 +1231,6 @@ namespace settings {
                       targetItems.push_back(widgetName);
                       setOverrides({{sourcePath, sourceItems}, {targetPath, targetItems}});
                     },
-                .configure =
-                    [&ctx](Button& button) {
-                      button.setMinHeight(Style::controlHeightSm * ctx.scale);
-                      button.setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-                      button.setRadius(Style::scaledRadiusSm(ctx.scale));
-                    },
             }));
           }
 
@@ -1251,16 +1239,14 @@ namespace settings {
                 .text = i18n::tr("settings.entities.widget.instance.rename"),
                 .fontSize = Style::fontSizeCaption * ctx.scale,
                 .variant = ButtonVariant::Ghost,
+                .minHeight = Style::controlHeightSm * ctx.scale,
+                .paddingV = Style::spaceXs * ctx.scale,
+                .paddingH = Style::spaceSm * ctx.scale,
+                .radius = Style::scaledRadiusSm(ctx.scale),
                 .onClick =
                     [&renamingWidgetName = ctx.renamingWidgetName, widgetName, requestRebuild = ctx.requestRebuild]() {
                       renamingWidgetName = widgetName;
                       requestRebuild();
-                    },
-                .configure =
-                    [&ctx](Button& button) {
-                      button.setMinHeight(Style::controlHeightSm * ctx.scale);
-                      button.setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-                      button.setRadius(Style::scaledRadiusSm(ctx.scale));
                     },
             }));
 
@@ -1270,18 +1256,16 @@ namespace settings {
                 .fontSize = Style::fontSizeCaption * ctx.scale,
                 .glyphSize = Style::fontSizeCaption * ctx.scale,
                 .variant = ButtonVariant::Ghost,
+                .minHeight = Style::controlHeightSm * ctx.scale,
+                .paddingV = Style::spaceXs * ctx.scale,
+                .paddingH = Style::spaceSm * ctx.scale,
+                .radius = Style::scaledRadiusSm(ctx.scale),
                 .onClick =
                     [&pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,
                      &renamingWidgetName = ctx.renamingWidgetName, widgetName, requestRebuild = ctx.requestRebuild]() {
                       pendingDeleteWidgetName = widgetName;
                       renamingWidgetName.clear();
                       requestRebuild();
-                    },
-                .configure =
-                    [&ctx](Button& button) {
-                      button.setMinHeight(Style::controlHeightSm * ctx.scale);
-                      button.setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-                      button.setRadius(Style::scaledRadiusSm(ctx.scale));
                     },
             }));
           }
@@ -1335,28 +1319,24 @@ namespace settings {
               .text = i18n::tr("settings.entities.widget.instance.rename-save"),
               .fontSize = Style::fontSizeCaption * ctx.scale,
               .variant = ButtonVariant::Default,
+              .minHeight = Style::controlHeightSm * ctx.scale,
+              .paddingV = Style::spaceXs * ctx.scale,
+              .paddingH = Style::spaceSm * ctx.scale,
+              .radius = Style::scaledRadiusSm(ctx.scale),
               .onClick = [doRename, inputPtr]() mutable { doRename(inputPtr->value()); },
-              .configure =
-                  [&ctx](Button& button) {
-                    button.setMinHeight(Style::controlHeightSm * ctx.scale);
-                    button.setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-                    button.setRadius(Style::scaledRadiusSm(ctx.scale));
-                  },
           }));
           renameRow->addChild(ui::button({
               .text = i18n::tr("common.actions.cancel"),
               .fontSize = Style::fontSizeCaption * ctx.scale,
               .variant = ButtonVariant::Ghost,
+              .minHeight = Style::controlHeightSm * ctx.scale,
+              .paddingV = Style::spaceXs * ctx.scale,
+              .paddingH = Style::spaceSm * ctx.scale,
+              .radius = Style::scaledRadiusSm(ctx.scale),
               .onClick =
                   [&renamingWidgetName = ctx.renamingWidgetName, requestRebuild = ctx.requestRebuild]() {
                     renamingWidgetName.clear();
                     requestRebuild();
-                  },
-              .configure =
-                  [&ctx](Button& button) {
-                    button.setMinHeight(Style::controlHeightSm * ctx.scale);
-                    button.setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-                    button.setRadius(Style::scaledRadiusSm(ctx.scale));
                   },
           }));
           inspector->addChild(std::move(renameRow));
@@ -1390,17 +1370,15 @@ namespace settings {
                       .text = i18n::tr("common.actions.cancel"),
                       .fontSize = Style::fontSizeCaption * ctx.scale,
                       .variant = ButtonVariant::Ghost,
+                      .minHeight = Style::controlHeightSm * ctx.scale,
+                      .paddingV = Style::spaceXs * ctx.scale,
+                      .paddingH = Style::spaceSm * ctx.scale,
+                      .radius = Style::scaledRadiusSm(ctx.scale),
                       .onClick =
                           [&pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,
                            requestRebuild = ctx.requestRebuild]() {
                             pendingDeleteWidgetName.clear();
                             requestRebuild();
-                          },
-                      .configure =
-                          [&ctx](Button& button) {
-                            button.setMinHeight(Style::controlHeightSm * ctx.scale);
-                            button.setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-                            button.setRadius(Style::scaledRadiusSm(ctx.scale));
                           },
                   }),
                   ui::button({
@@ -1409,6 +1387,10 @@ namespace settings {
                       .fontSize = Style::fontSizeCaption * ctx.scale,
                       .glyphSize = Style::fontSizeCaption * ctx.scale,
                       .variant = ButtonVariant::Destructive,
+                      .minHeight = Style::controlHeightSm * ctx.scale,
+                      .paddingV = Style::spaceXs * ctx.scale,
+                      .paddingH = Style::spaceSm * ctx.scale,
+                      .radius = Style::scaledRadiusSm(ctx.scale),
                       .onClick =
                           [&editingWidgetName = ctx.editingWidgetName,
                            &pendingDeleteWidgetName = ctx.pendingDeleteWidgetName, config = ctx.config, widgetName,
@@ -1422,12 +1404,6 @@ namespace settings {
                               setOverrides(std::move(referenceRemovals));
                             }
                             clearOverride({"widget", widgetName});
-                          },
-                      .configure =
-                          [&ctx](Button& button) {
-                            button.setMinHeight(Style::controlHeightSm * ctx.scale);
-                            button.setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-                            button.setRadius(Style::scaledRadiusSm(ctx.scale));
                           },
                   })));
           inspector->addChild(std::move(confirmPanel));
@@ -1574,13 +1550,11 @@ namespace settings {
             .text = i18n::tr("settings.entities.widget.lanes.customize"),
             .fontSize = Style::fontSizeCaption * ctx.scale,
             .variant = ButtonVariant::Ghost,
+            .minHeight = Style::controlHeightSm * ctx.scale,
+            .paddingV = Style::spaceXs * ctx.scale,
+            .paddingH = Style::spaceSm * ctx.scale,
+            .radius = Style::scaledRadiusSm(ctx.scale),
             .onClick = [setOverride = ctx.setOverride, items, path]() { setOverride(path, items); },
-            .configure =
-                [&ctx](Button& button) {
-                  button.setMinHeight(Style::controlHeightSm * ctx.scale);
-                  button.setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-                  button.setRadius(Style::scaledRadiusSm(ctx.scale));
-                },
         }));
       }
       if (overridden || (monitorLaneExplicit && hasGuiOverride)) {
@@ -1663,14 +1637,11 @@ namespace settings {
               .glyph = "menu-2",
               .glyphSize = Style::fontSizeCaption * ctx.scale,
               .variant = ButtonVariant::Ghost,
-              .configure =
-                  [&ctx](Button& button) {
-                    button.setMinWidth(Style::controlHeightSm * ctx.scale);
-                    button.setMinHeight(Style::controlHeightSm * ctx.scale);
-                    button.setPadding(Style::spaceXs * ctx.scale);
-                    button.setRadius(Style::scaledRadiusSm(ctx.scale));
-                    button.setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_MOVE);
-                  },
+              .minWidth = Style::controlHeightSm * ctx.scale,
+              .minHeight = Style::controlHeightSm * ctx.scale,
+              .padding = Style::spaceXs * ctx.scale,
+              .radius = Style::scaledRadiusSm(ctx.scale),
+              .configure = [](Button& button) { button.setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_MOVE); },
           });
 
           auto dragState = std::make_shared<LaneWidgetDragState>();
@@ -1785,6 +1756,10 @@ namespace settings {
               .glyph = "settings",
               .glyphSize = Style::fontSizeCaption * ctx.scale,
               .variant = ctx.editingWidgetName == widgetName ? ButtonVariant::Default : ButtonVariant::Ghost,
+              .minWidth = Style::controlHeightSm * ctx.scale,
+              .minHeight = Style::controlHeightSm * ctx.scale,
+              .padding = Style::spaceXs * ctx.scale,
+              .radius = Style::scaledRadiusSm(ctx.scale),
               .onClick =
                   [&editingWidgetName = ctx.editingWidgetName, widgetName,
                    &pendingDeleteWidgetName = ctx.pendingDeleteWidgetName, &renamingWidgetName = ctx.renamingWidgetName,
@@ -1795,13 +1770,6 @@ namespace settings {
                     pendingDeleteWidgetSettingPath.clear();
                     renamingWidgetName.clear();
                     requestRebuild();
-                  },
-              .configure =
-                  [&ctx](Button& button) {
-                    button.setMinWidth(Style::controlHeightSm * ctx.scale);
-                    button.setMinHeight(Style::controlHeightSm * ctx.scale);
-                    button.setPadding(Style::spaceXs * ctx.scale);
-                    button.setRadius(Style::scaledRadiusSm(ctx.scale));
                   },
           }));
         }
@@ -1815,17 +1783,14 @@ namespace settings {
               .glyph = "close",
               .glyphSize = Style::fontSizeCaption * ctx.scale,
               .variant = ButtonVariant::Ghost,
+              .minWidth = Style::controlHeightSm * ctx.scale,
+              .minHeight = Style::controlHeightSm * ctx.scale,
+              .padding = Style::spaceXs * ctx.scale,
+              .radius = Style::scaledRadiusSm(ctx.scale),
               .onClick =
                   [setOverride = ctx.setOverride, items, path, i]() mutable {
                     items.erase(items.begin() + static_cast<std::ptrdiff_t>(i));
                     setOverride(path, items);
-                  },
-              .configure =
-                  [&ctx](Button& button) {
-                    button.setMinWidth(Style::controlHeightSm * ctx.scale);
-                    button.setMinHeight(Style::controlHeightSm * ctx.scale);
-                    button.setPadding(Style::spaceXs * ctx.scale);
-                    button.setRadius(Style::scaledRadiusSm(ctx.scale));
                   },
           }));
         }
@@ -1860,6 +1825,10 @@ namespace settings {
             .fontSize = Style::fontSizeCaption * ctx.scale,
             .glyphSize = Style::fontSizeCaption * ctx.scale,
             .variant = ButtonVariant::Ghost,
+            .minHeight = Style::controlHeightSm * ctx.scale,
+            .paddingV = Style::spaceXs * ctx.scale,
+            .paddingH = Style::spaceSm * ctx.scale,
+            .radius = Style::scaledRadiusSm(ctx.scale),
             .onClick =
                 [&editingWidgetName = ctx.editingWidgetName, &renamingWidgetName = ctx.renamingWidgetName,
                  &pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,
@@ -1872,12 +1841,6 @@ namespace settings {
                   if (openWidgetAddPopup) {
                     openWidgetAddPopup(lanePath);
                   }
-                },
-            .configure =
-                [&ctx](Button& button) {
-                  button.setMinHeight(Style::controlHeightSm * ctx.scale);
-                  button.setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-                  button.setRadius(Style::scaledRadiusSm(ctx.scale));
                 },
         }));
       }

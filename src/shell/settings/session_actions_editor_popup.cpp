@@ -146,33 +146,35 @@ namespace settings {
     }));
     header->addChild(ui::spacer());
 
-    const auto configureIconButton = [this](Button& button) {
-      button.setGlyphSize(Style::fontSizeBody * m_scale);
-      button.setMinWidth(Style::controlHeightSm * m_scale);
-      button.setMinHeight(Style::controlHeightSm * m_scale);
-      button.setPadding(Style::spaceXs * m_scale);
-      button.setRadius(Style::scaledRadiusMd(m_scale));
-    };
-
     if (m_removeAction) {
       header->addChild(ui::button({
           .glyph = "trash",
+          .glyphSize = Style::fontSizeBody * m_scale,
           .variant = ButtonVariant::Destructive,
+          // Sheet header icon style.
+          .minWidth = Style::controlHeightSm * m_scale,
+          .minHeight = Style::controlHeightSm * m_scale,
+          .padding = Style::spaceXs * m_scale,
+          .radius = Style::scaledRadiusMd(m_scale),
           .onClick =
               [removeAction = m_removeAction]() {
                 if (removeAction) {
                   DeferredCall::callLater(removeAction);
                 }
               },
-          .configure = configureIconButton,
       }));
     }
 
     header->addChild(ui::button({
         .glyph = "close",
+        .glyphSize = Style::fontSizeBody * m_scale,
         .variant = ButtonVariant::Default,
+        // Sheet header icon style.
+        .minWidth = Style::controlHeightSm * m_scale,
+        .minHeight = Style::controlHeightSm * m_scale,
+        .padding = Style::spaceXs * m_scale,
+        .radius = Style::scaledRadiusMd(m_scale),
         .onClick = [this]() { DeferredCall::callLater([this]() { close(); }); },
-        .configure = configureIconButton,
     }));
     root->addChild(std::move(header));
 

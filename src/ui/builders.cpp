@@ -215,9 +215,23 @@ namespace ui {
     if (props.minHeight.has_value()) {
       control->setMinHeight(*props.minHeight);
     }
-    if (props.padding.has_value() || props.paddingV.has_value() || props.paddingH.has_value()) {
+    if (props.maxWidth.has_value()) {
+      control->setMaxWidth(*props.maxWidth);
+    }
+    if (props.maxHeight.has_value()) {
+      control->setMaxHeight(*props.maxHeight);
+    }
+    if (props.padding.has_value() || props.paddingV.has_value() || props.paddingH.has_value() ||
+        props.paddingTop.has_value() || props.paddingRight.has_value() || props.paddingBottom.has_value() ||
+        props.paddingLeft.has_value()) {
       const float allPadding = props.padding.value_or(0.0f);
-      control->setPadding(props.paddingV.value_or(allPadding), props.paddingH.value_or(allPadding));
+      const float verticalPadding = props.paddingV.value_or(allPadding);
+      const float horizontalPadding = props.paddingH.value_or(allPadding);
+      control->setPadding(props.paddingTop.value_or(verticalPadding), props.paddingRight.value_or(horizontalPadding),
+                          props.paddingBottom.value_or(verticalPadding), props.paddingLeft.value_or(horizontalPadding));
+    }
+    if (props.gap.has_value()) {
+      control->setGap(*props.gap);
     }
     if (props.radius.has_value()) {
       control->setRadius(*props.radius);
