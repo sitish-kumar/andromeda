@@ -486,7 +486,7 @@ namespace ui {
     std::function<void(ProgressBar&)> configure = nullptr;
   };
 
-  [[nodiscard]] std::unique_ptr<Flex> makeFlex(FlexDirection direction, FlexProps props);
+  [[nodiscard]] std::unique_ptr<Flex> flex(FlexDirection direction, FlexProps props);
   [[nodiscard]] std::unique_ptr<Input> input(InputProps props);
   [[nodiscard]] std::unique_ptr<Button> button(ButtonProps props);
   [[nodiscard]] std::unique_ptr<Label> label(LabelProps props);
@@ -511,13 +511,13 @@ namespace ui {
   [[nodiscard]] std::unique_ptr<Spacer> spacer();
 
   template <typename... Children> [[nodiscard]] std::unique_ptr<Flex> row(FlexProps props, Children&&... children) {
-    auto container = makeFlex(FlexDirection::Horizontal, std::move(props));
+    auto container = flex(FlexDirection::Horizontal, std::move(props));
     (container->addChild(std::forward<Children>(children)), ...);
     return container;
   }
 
   template <typename... Children> [[nodiscard]] std::unique_ptr<Flex> column(FlexProps props, Children&&... children) {
-    auto container = makeFlex(FlexDirection::Vertical, std::move(props));
+    auto container = flex(FlexDirection::Vertical, std::move(props));
     (container->addChild(std::forward<Children>(children)), ...);
     return container;
   }

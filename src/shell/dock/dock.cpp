@@ -170,7 +170,7 @@ namespace {
   }
 
   std::unique_ptr<Flex> makeDockItemRow(const DockConfig& cfg, bool vertical) {
-    return ui::makeFlex(
+    return ui::flex(
         vertical ? FlexDirection::Vertical : FlexDirection::Horizontal,
         {
             .align = FlexAlign::Center,

@@ -387,7 +387,7 @@ namespace {
     if (buttons.empty()) {
       return 0.0f;
     }
-    auto actionsRow = ui::makeFlex(FlexDirection::Horizontal, {});
+    auto actionsRow = ui::row({});
     return layoutNotificationActionsRow(rc, *actionsRow, buttons, scale);
   }
 
@@ -2212,7 +2212,7 @@ InputArea* NotificationToast::buildCard(
       }
 
       if (!buttons.empty()) {
-        actionsRow = ui::makeFlex(FlexDirection::Horizontal, {});
+        actionsRow = ui::row({});
         actionsReservedHeight = layoutNotificationActionsRow(*m_renderContext, *actionsRow, buttons, scale);
       }
     }

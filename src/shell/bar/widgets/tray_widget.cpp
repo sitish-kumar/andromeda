@@ -200,7 +200,7 @@ float TrayWidget::resolvedInlineEntryGap() const {
 }
 
 void TrayWidget::create() {
-  auto container = ui::makeFlex(
+  auto container = ui::flex(
       m_panelGridMode ? FlexDirection::Vertical : FlexDirection::Horizontal,
       {
           .out = &m_container,
