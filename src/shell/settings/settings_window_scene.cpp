@@ -14,7 +14,6 @@
 #include "theme/community_templates.h"
 #include "theme/custom_palettes.h"
 #include "ui/builders.h"
-#include "ui/controls/box.h"
 #include "ui/controls/select_dropdown_popup.h"
 #include "ui/palette.h"
 #include "ui/style.h"
@@ -851,12 +850,17 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
     m_sceneRoot->setPopupContext(m_selectPopup.get());
   }
 
-  auto bg = std::make_unique<Box>();
-  bg->setPanelStyle();
-  bg->setRadius(0.0f);
-  bg->setBorder(clearColor(), 0);
-  bg->setPosition(0.0f, 0.0f);
-  bg->setSize(w, h);
+  auto bg = ui::box({
+      .width = w,
+      .height = h,
+      .configure =
+          [](Box& box) {
+            box.setPanelStyle();
+            box.setRadius(0.0f);
+            box.setBorder(clearColor(), 0);
+            box.setPosition(0.0f, 0.0f);
+          },
+  });
   m_panelBackground = static_cast<Box*>(m_sceneRoot->addChild(std::move(bg)));
 
   auto main = ui::column({

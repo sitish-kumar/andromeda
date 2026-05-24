@@ -6,7 +6,7 @@
 #include "render/render_context.h"
 #include "render/scene/node.h"
 #include "render/scene/rect_node.h"
-#include "ui/controls/box.h"
+#include "ui/builders.h"
 #include "ui/popup_chrome.h"
 #include "ui/style.h"
 #include "wayland/popup_surface.h"
@@ -350,8 +350,10 @@ void DialogPopupHost::buildScene(std::uint32_t width, std::uint32_t height) {
   m_sceneRoot->setAnimationManager(&m_animations);
   m_panelShadow = popup_chrome::addShadow(*m_sceneRoot, m_chrome, popupShadowConfig(m_config), Style::scaledRadiusXl());
 
-  auto bg = std::make_unique<Box>();
-  bg->setPanelStyle(m_config != nullptr && m_config->config().shell.panel.borders);
+  auto bg = ui::box({
+      .configure =
+          [this](Box& box) { box.setPanelStyle(m_config != nullptr && m_config->config().shell.panel.borders); },
+  });
   m_bgNode = static_cast<Box*>(m_sceneRoot->addChild(std::move(bg)));
 
   auto content = std::make_unique<Node>();
