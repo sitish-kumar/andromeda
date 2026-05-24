@@ -567,7 +567,9 @@ bool LuauHost::callWithBudget(const char* name, int args, int results, std::chro
   endBudget();
   if (rc != 0) {
     const char* err = lua_tostring(m_T, -1);
-    kLog.error("call to '{}' failed: {}", name ? name : "(unknown)", err ? err : "(no error)");
+    if (!m_muteErrors) {
+      kLog.error("call to '{}' failed: {}", name ? name : "(unknown)", err ? err : "(no error)");
+    }
     lua_pop(m_T, 1);
     return false;
   }

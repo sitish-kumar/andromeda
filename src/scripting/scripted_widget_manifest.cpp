@@ -49,8 +49,10 @@ namespace scripting {
       // `barWidget.define` aborts the chunk via luaL_error, so run() returning
       // false is the expected, successful path. Success is signalled by
       // context.defineCalled.
+      host.setMuteErrors(true);
       context.beginCall({});
       (void)host.exec(resolvedScript.filename().string(), source);
+      host.setMuteErrors(false);
 
       if (!context.defineCalled) {
         return std::nullopt;
