@@ -14,14 +14,8 @@
 #include "shell/desktop/desktop_widget_layout.h"
 #include "shell/desktop/desktop_widget_settings_registry.h"
 #include "time/time_format.h"
-#include "ui/controls/box.h"
-#include "ui/controls/button.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/label.h"
-#include "ui/controls/select.h"
+#include "ui/builders.h"
 #include "ui/controls/select_dropdown_popup.h"
-#include "ui/controls/separator.h"
 #include "ui/dialogs/file_dialog.h"
 #include "ui/palette.h"
 #include "ui/style.h"
@@ -446,8 +440,9 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   }
   root->setFrameSize(static_cast<float>(surface.surface->width()), static_cast<float>(surface.surface->height()));
 
-  auto dim = std::make_unique<Box>();
-  dim->setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.14f));
+  auto dim = ui::box({
+      .fill = colorSpecFromRole(ColorRole::SurfaceVariant, 0.14f),
+  });
   dim->setPosition(0.0f, 0.0f);
   dim->setFrameSize(root->width(), root->height());
   dim->setZIndex(0);
@@ -479,10 +474,11 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     const float firstY = centerY - std::floor(centerY / cell) * cell;
 
     for (float x = firstX; x <= width; x += cell) {
-      auto line = std::make_unique<Box>();
       const int idx = std::abs(static_cast<int>(std::lround((x - centerX) / cell)));
       const bool major = (idx % majorInterval) == 0;
-      line->setFill(colorSpecFromRole(major ? ColorRole::Primary : ColorRole::Outline, major ? 0.18f : 0.08f));
+      auto line = ui::box({
+          .fill = colorSpecFromRole(major ? ColorRole::Primary : ColorRole::Outline, major ? 0.18f : 0.08f),
+      });
       line->setPosition(x, 0.0f);
       line->setFrameSize(1.0f, height);
       line->setZIndex(2);
@@ -490,10 +486,11 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     }
 
     for (float y = firstY; y <= height; y += cell) {
-      auto line = std::make_unique<Box>();
       const int idx = std::abs(static_cast<int>(std::lround((y - centerY) / cell)));
       const bool major = (idx % majorInterval) == 0;
-      line->setFill(colorSpecFromRole(major ? ColorRole::Primary : ColorRole::Outline, major ? 0.18f : 0.08f));
+      auto line = ui::box({
+          .fill = colorSpecFromRole(major ? ColorRole::Primary : ColorRole::Outline, major ? 0.18f : 0.08f),
+      });
       line->setPosition(0.0f, y);
       line->setFrameSize(width, 1.0f);
       line->setZIndex(2);
@@ -591,17 +588,19 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     selectionFrameTransform->setZIndex(100);
     surface.selectionFrameTransform = selectionFrameTransform.get();
 
-    auto ringShadow = std::make_unique<Box>();
-    ringShadow->setBorder(kShadowColor, 1.0f + kShadowExpand * 2.0f);
-    ringShadow->setFill(clearColorSpec());
-    ringShadow->setRadius(Style::scaledRadiusMd() + kRotatePadding + kShadowExpand);
+    auto ringShadow = ui::box({
+        .fill = clearColorSpec(),
+        .radius = Style::scaledRadiusMd() + kRotatePadding + kShadowExpand,
+        .configure = [](Box& box) { box.setBorder(kShadowColor, 1.0f + kShadowExpand * 2.0f); },
+    });
     surface.rotationRingShadow = ringShadow.get();
     surface.selectionFrameTransform->addChild(std::move(ringShadow));
 
-    auto ring = std::make_unique<Box>();
-    ring->setBorder(colorSpecFromRole(ColorRole::Primary), 1.0f);
-    ring->setFill(clearColorSpec());
-    ring->setRadius(Style::scaledRadiusMd() + kRotatePadding);
+    auto ring = ui::box({
+        .fill = clearColorSpec(),
+        .radius = Style::scaledRadiusMd() + kRotatePadding,
+        .configure = [](Box& box) { box.setBorder(colorSpecFromRole(ColorRole::Primary), 1.0f); },
+    });
     ring->setZIndex(1);
     surface.rotationRing = ring.get();
     surface.selectionFrameTransform->addChild(std::move(ring));
@@ -633,17 +632,19 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     selectionBorderTransform->setHitTestVisible(false);
     surface.selectionBorderTransform = selectionBorderTransform.get();
 
-    auto selectionBorderShadow = std::make_unique<Box>();
-    selectionBorderShadow->setBorder(kShadowColor, kSelectionStroke + kShadowExpand * 2.0f);
-    selectionBorderShadow->setFill(clearColorSpec());
-    selectionBorderShadow->setRadius(Style::scaledRadiusMd() + kShadowExpand);
+    auto selectionBorderShadow = ui::box({
+        .fill = clearColorSpec(),
+        .radius = Style::scaledRadiusMd() + kShadowExpand,
+        .configure = [](Box& box) { box.setBorder(kShadowColor, kSelectionStroke + kShadowExpand * 2.0f); },
+    });
     surface.selectionBorderShadow = selectionBorderShadow.get();
     selectionBorderTransform->addChild(std::move(selectionBorderShadow));
 
-    auto selectionBorder = std::make_unique<Box>();
-    selectionBorder->setBorder(colorSpecFromRole(ColorRole::Primary), kSelectionStroke);
-    selectionBorder->setFill(clearColorSpec());
-    selectionBorder->setRadius(Style::scaledRadiusMd());
+    auto selectionBorder = ui::box({
+        .fill = clearColorSpec(),
+        .radius = Style::scaledRadiusMd(),
+        .configure = [](Box& box) { box.setBorder(colorSpecFromRole(ColorRole::Primary), kSelectionStroke); },
+    });
     selectionBorder->setZIndex(1);
     surface.selectionBorder = selectionBorder.get();
     selectionBorderTransform->addChild(std::move(selectionBorder));
@@ -652,17 +653,19 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     for (std::size_t i = 0; i < kScaleCornerCount; ++i) {
       const ScaleCorner corner = static_cast<ScaleCorner>(i);
 
-      auto scaleHandleShadow = std::make_unique<Box>();
-      scaleHandleShadow->setBorder(kShadowColor, kShadowExpand);
-      scaleHandleShadow->setFill(clearColorSpec());
-      scaleHandleShadow->setRadius(Style::scaledRadiusSm() + kShadowExpand);
+      auto scaleHandleShadow = ui::box({
+          .fill = clearColorSpec(),
+          .radius = Style::scaledRadiusSm() + kShadowExpand,
+          .configure = [](Box& box) { box.setBorder(kShadowColor, kShadowExpand); },
+      });
       scaleHandleShadow->setZIndex(103);
       surface.scaleHandleShadows[i] = scaleHandleShadow.get();
       root->addChild(std::move(scaleHandleShadow));
 
-      auto scaleHandle = std::make_unique<Box>();
-      scaleHandle->setFill(colorSpecFromRole(ColorRole::Primary));
-      scaleHandle->setRadius(Style::scaledRadiusSm());
+      auto scaleHandle = ui::box({
+          .fill = colorSpecFromRole(ColorRole::Primary),
+          .radius = Style::scaledRadiusSm(),
+      });
       scaleHandle->setZIndex(104);
       surface.scaleHandles[i] = scaleHandle.get();
       root->addChild(std::move(scaleHandle));
@@ -691,36 +694,6 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     updateSelectionVisuals(surface);
   }
 
-  auto toolbar = std::make_unique<Flex>();
-  toolbar->setDirection(FlexDirection::Horizontal);
-  toolbar->setAlign(FlexAlign::Center);
-  toolbar->setGap(Style::spaceSm);
-  toolbar->setPadding(Style::spaceSm, Style::spaceMd);
-  toolbar->setFill(colorSpecFromRole(ColorRole::Surface, 0.94f));
-  toolbar->setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
-  toolbar->setRadius(Style::scaledRadiusXl());
-  toolbar->setZIndex(200);
-
-  auto toolbarHandle = std::make_unique<Flex>();
-  toolbarHandle->setDirection(FlexDirection::Horizontal);
-  toolbarHandle->setAlign(FlexAlign::Center);
-  toolbarHandle->setGap(Style::spaceXs);
-  toolbarHandle->setPadding(Style::spaceXs, Style::spaceSm);
-  toolbarHandle->setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.85f));
-  toolbarHandle->setRadius(Style::scaledRadiusLg());
-  toolbarHandle->setMinHeight(Style::controlHeightSm);
-
-  auto handleGlyph = std::make_unique<Glyph>();
-  handleGlyph->setGlyph("menu-2");
-  handleGlyph->setGlyphSize(14.0f);
-  toolbarHandle->addChild(std::move(handleGlyph));
-
-  auto title = std::make_unique<Label>();
-  title->setText(i18n::tr("desktop-widgets.editor.title"));
-  title->setFontWeight(FontWeight::Bold);
-  title->setFontSize(Style::fontSizeBody);
-  toolbarHandle->addChild(std::move(title));
-
   auto toolbarHandleArea = std::make_unique<InputArea>();
   toolbarHandleArea->setParticipatesInLayout(false);
   toolbarHandleArea->setZIndex(1);
@@ -740,10 +713,7 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
       updateDrag();
     }
   });
-  auto* toolbarHandlePtr = toolbarHandle.get();
   auto* toolbarHandleAreaPtr = toolbarHandleArea.get();
-  toolbarHandle->addChild(std::move(toolbarHandleArea));
-  toolbar->addChild(std::move(toolbarHandle));
 
   const auto selectedWidgetIt = std::find_if(m_snapshot.widgets.begin(), m_snapshot.widgets.end(),
                                              [this](const auto& widget) { return widget.id == m_selectedWidgetId; });
@@ -763,89 +733,6 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     }
   }
 
-  auto typeSelect = std::make_unique<Select>();
-  typeSelect->setOptions(typeLabels);
-  typeSelect->setSelectedIndex(selectedTypeIndex);
-  typeSelect->setControlHeight(Style::controlHeightSm);
-  typeSelect->setMinWidth(160.0f);
-  typeSelect->setOnSelectionChanged([this, &typeSpecs](std::size_t index, std::string_view) {
-    if (index < typeSpecs.size()) {
-      m_addWidgetType = std::string(typeSpecs[index].type);
-    }
-  });
-  toolbar->addChild(std::move(typeSelect));
-
-  auto addButton = std::make_unique<Button>();
-  addButton->setGlyph("plus");
-  addButton->setVariant(ButtonVariant::Primary);
-  addButton->setOnClick([this, outputName = surface.outputName]() {
-    deferEditorMutation([this, outputName]() { addWidget(outputName, m_addWidgetType); });
-  });
-  toolbar->addChild(std::move(addButton));
-
-  auto backButton = std::make_unique<Button>();
-  backButton->setGlyph("stack-back");
-  backButton->setVariant(ButtonVariant::Outline);
-  backButton->setEnabled(canSendSelectedToBack);
-  backButton->setOnClick([this]() { deferEditorMutation([this]() { sendSelectedWidgetToBack(); }); });
-  toolbar->addChild(std::move(backButton));
-
-  auto frontButton = std::make_unique<Button>();
-  frontButton->setGlyph("stack-front");
-  frontButton->setVariant(ButtonVariant::Outline);
-  frontButton->setEnabled(canBringSelectedToFront);
-  frontButton->setOnClick([this]() { deferEditorMutation([this]() { bringSelectedWidgetToFront(); }); });
-  toolbar->addChild(std::move(frontButton));
-
-  auto settingsButton = std::make_unique<Button>();
-  settingsButton->setGlyph("settings");
-  settingsButton->setVariant(ButtonVariant::Outline);
-  settingsButton->setSelected(m_inspectorOpen);
-  settingsButton->setEnabled(hasSelectedWidget);
-  settingsButton->setOnClick([this]() {
-    deferEditorMutation([this]() {
-      m_inspectorOpen = !m_inspectorOpen;
-      requestLayout();
-    });
-  });
-  toolbar->addChild(std::move(settingsButton));
-
-  auto enabledButton = std::make_unique<Button>();
-  enabledButton->setGlyph(selectedWidgetEnabled ? "eye" : "eye-off");
-  enabledButton->setVariant(ButtonVariant::Outline);
-  enabledButton->setSelected(selectedWidgetEnabled);
-  enabledButton->setEnabled(hasSelectedWidget);
-  enabledButton->setOnClick([this]() { deferEditorMutation([this]() { toggleSelectedWidgetEnabled(); }); });
-  toolbar->addChild(std::move(enabledButton));
-
-  auto deleteButton = std::make_unique<Button>();
-  deleteButton->setGlyph("trash");
-  deleteButton->setVariant(ButtonVariant::Destructive);
-  deleteButton->setEnabled(hasSelectedWidget);
-  deleteButton->setOnClick([this]() { deferEditorMutation([this]() { removeSelectedWidget(); }); });
-  toolbar->addChild(std::move(deleteButton));
-
-  auto toolbarSep = std::make_unique<Separator>();
-  toolbarSep->setOrientation(SeparatorOrientation::VerticalRule);
-  toolbarSep->setSize(Style::borderWidth, Style::controlHeight);
-  toolbar->addChild(std::move(toolbarSep));
-
-  auto gridButton = std::make_unique<Button>();
-  gridButton->setText(m_snapshot.grid.visible ? i18n::tr("desktop-widgets.editor.state.grid-on")
-                                              : i18n::tr("desktop-widgets.editor.state.grid-off"));
-  gridButton->setVariant(ButtonVariant::Outline);
-  gridButton->setSelected(m_snapshot.grid.visible);
-  gridButton->setOnClick([this]() {
-    deferEditorMutation([this]() {
-      m_snapshot.grid.visible = !m_snapshot.grid.visible;
-      requestLayout();
-    });
-  });
-  toolbar->addChild(std::move(gridButton));
-
-  auto gridSizeSelect = std::make_unique<Select>();
-  gridSizeSelect->setOptions({"8", "16", "24", "32", "64"});
-  gridSizeSelect->setControlHeight(Style::controlHeightSm);
   const std::array<std::int32_t, 5> gridSizes{8, 16, 24, 32, 64};
   std::size_t selectedGridIndex = 1;
   for (std::size_t i = 0; i < gridSizes.size(); ++i) {
@@ -854,25 +741,146 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
       break;
     }
   }
-  gridSizeSelect->setSelectedIndex(selectedGridIndex);
-  gridSizeSelect->setOnSelectionChanged([this](std::size_t /*index*/, std::string_view text) {
-    deferEditorMutation([this, value = std::string(text)]() {
-      try {
-        m_snapshot.grid.cellSize = std::stoi(value);
-        requestLayout();
-      } catch (...) {
-      }
-    });
-  });
-  toolbar->addChild(std::move(gridSizeSelect));
 
-  auto doneButton = std::make_unique<Button>();
-  doneButton->setText(i18n::tr("desktop-widgets.editor.actions.done"));
-  doneButton->setVariant(ButtonVariant::Secondary);
-  doneButton->setOnClick([this]() { requestExit(); });
-  toolbar->addChild(std::move(doneButton));
+  Flex* toolbarPtr = nullptr;
+  Flex* toolbarHandlePtr = nullptr;
+  auto toolbar =
+      ui::row(
+          {
+              .out = &toolbarPtr,
+              .align = FlexAlign::Center,
+              .gap = Style::spaceSm,
+              .configure =
+                  [](Flex& flex) {
+                    flex.setPadding(Style::spaceSm, Style::spaceMd);
+                    flex.setFill(colorSpecFromRole(ColorRole::Surface, 0.94f));
+                    flex.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
+                    flex.setRadius(Style::scaledRadiusXl());
+                    flex.setZIndex(200);
+                  },
+          },
+          ui::row(
+              {
+                  .out = &toolbarHandlePtr,
+                  .align = FlexAlign::Center,
+                  .gap = Style::spaceXs,
+                  .minHeight = Style::controlHeightSm,
+                  .configure =
+                      [](Flex& flex) {
+                        flex.setPadding(Style::spaceXs, Style::spaceSm);
+                        flex.setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.85f));
+                        flex.setRadius(Style::scaledRadiusLg());
+                      },
+              },
+              ui::glyph({
+                  .glyph = "menu-2",
+                  .glyphSize = 14.0f,
+              }),
+              ui::label({
+                  .text = i18n::tr("desktop-widgets.editor.title"),
+                  .fontSize = Style::fontSizeBody,
+                  .fontWeight = FontWeight::Bold,
+              }),
+              std::move(toolbarHandleArea)),
+          ui::select({
+              .options = std::move(typeLabels),
+              .selectedIndex = selectedTypeIndex,
+              .controlHeight = Style::controlHeightSm,
+              .onSelectionChanged =
+                  [this](std::size_t index, std::string_view) {
+                    const auto& specs = desktop_settings::desktopWidgetTypeSpecs();
+                    if (index < specs.size()) {
+                      m_addWidgetType = std::string(specs[index].type);
+                    }
+                  },
+              .configure = [](Select& select) { select.setMinWidth(160.0f); },
+          }),
+          ui::button({
+              .glyph = "plus",
+              .variant = ButtonVariant::Primary,
+              .onClick =
+                  [this, outputName = surface.outputName]() {
+                    deferEditorMutation([this, outputName]() { addWidget(outputName, m_addWidgetType); });
+                  },
+          }),
+          ui::button({
+              .glyph = "stack-back",
+              .enabled = canSendSelectedToBack,
+              .variant = ButtonVariant::Outline,
+              .onClick = [this]() { deferEditorMutation([this]() { sendSelectedWidgetToBack(); }); },
+          }),
+          ui::button({
+              .glyph = "stack-front",
+              .enabled = canBringSelectedToFront,
+              .variant = ButtonVariant::Outline,
+              .onClick = [this]() { deferEditorMutation([this]() { bringSelectedWidgetToFront(); }); },
+          }),
+          ui::button({
+              .glyph = "settings",
+              .enabled = hasSelectedWidget,
+              .selected = m_inspectorOpen,
+              .variant = ButtonVariant::Outline,
+              .onClick =
+                  [this]() {
+                    deferEditorMutation([this]() {
+                      m_inspectorOpen = !m_inspectorOpen;
+                      requestLayout();
+                    });
+                  },
+          }),
+          ui::button({
+              .glyph = selectedWidgetEnabled ? "eye" : "eye-off",
+              .enabled = hasSelectedWidget,
+              .selected = selectedWidgetEnabled,
+              .variant = ButtonVariant::Outline,
+              .onClick = [this]() { deferEditorMutation([this]() { toggleSelectedWidgetEnabled(); }); },
+          }),
+          ui::button({
+              .glyph = "trash",
+              .enabled = hasSelectedWidget,
+              .variant = ButtonVariant::Destructive,
+              .onClick = [this]() { deferEditorMutation([this]() { removeSelectedWidget(); }); },
+          }),
+          ui::separator({
+              .orientation = SeparatorOrientation::VerticalRule,
+              .width = Style::borderWidth,
+              .height = Style::controlHeight,
+          }),
+          ui::button({
+              .text = m_snapshot.grid.visible ? i18n::tr("desktop-widgets.editor.state.grid-on")
+                                              : i18n::tr("desktop-widgets.editor.state.grid-off"),
+              .selected = m_snapshot.grid.visible,
+              .variant = ButtonVariant::Outline,
+              .onClick =
+                  [this]() {
+                    deferEditorMutation([this]() {
+                      m_snapshot.grid.visible = !m_snapshot.grid.visible;
+                      requestLayout();
+                    });
+                  },
+          }),
+          ui::select(
+              {
+                  .options = std::vector<std::string>{"8", "16", "24", "32", "64"},
+                  .selectedIndex = selectedGridIndex,
+                  .controlHeight = Style::controlHeightSm,
+                  .onSelectionChanged =
+                      [this](std::size_t /*index*/, std::string_view text) {
+                        deferEditorMutation([this, value = std::string(text)]() {
+                          try {
+                            m_snapshot.grid.cellSize = std::stoi(value);
+                            requestLayout();
+                          } catch (...) {
+                          }
+                        });
+                      },
+              }),
+          ui::button({
+              .text = i18n::tr("desktop-widgets.editor.actions.done"),
+              .variant = ButtonVariant::Secondary,
+              .onClick = [this]() { requestExit(); },
+          }));
 
-  auto* toolbarPtr = toolbar.get();
   surface.toolbar = toolbarPtr;
   root->addChild(std::move(toolbar));
   toolbarPtr->layout(*m_renderContext);
