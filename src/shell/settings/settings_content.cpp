@@ -1074,7 +1074,7 @@ namespace settings {
     const auto makeOverrideBadge = [&]() {
       return makeStatusBadge(
           i18n::tr("settings.badges.override"), colorSpecFromRole(ColorRole::Primary, 0.15f),
-          colorSpecFromRole(ColorRole::Primary), true
+          colorSpecFromRole(ColorRole::Primary), false
       );
     };
 
