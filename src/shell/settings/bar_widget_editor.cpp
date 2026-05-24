@@ -489,6 +489,9 @@ namespace settings {
           if (const auto* str = std::get_if<std::string>(&s.defaultValue)) {
             return *str;
           }
+          if (const auto* i = std::get_if<std::int64_t>(&s.defaultValue)) {
+            return std::to_string(*i);
+          }
           if (const auto* b = std::get_if<bool>(&s.defaultValue)) {
             return *b ? "true" : "false";
           }
