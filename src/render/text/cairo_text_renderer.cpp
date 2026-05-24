@@ -882,8 +882,8 @@ void CairoTextRenderer::draw(
   //
   // Only snap when the transform is axis-aligned (no rotation/skew). During
   // a rotation animation, snapping causes the translation to jump by whole
-  // buffer pixels between frames, which looks jittery on 1x outputs.
-  if (m_contentScale == 1.0f && isAxisAligned(baseWorld)) {
+  // buffer pixels between frames, which looks jittery.
+  if (isAxisAligned(baseWorld)) {
     baseWorld.m[6] = std::round(baseWorld.m[6]);
     baseWorld.m[7] = std::round(baseWorld.m[7]);
   }
