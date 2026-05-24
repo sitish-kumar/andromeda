@@ -85,9 +85,10 @@ namespace {
     return instanceOutput;
   }
 
-  zwlr_foreign_toplevel_handle_v1* nextActivatableWindowHandle(const std::vector<ToplevelInfo>& windows,
-                                                               zwlr_foreign_toplevel_handle_v1* activeHandle,
-                                                               zwlr_foreign_toplevel_handle_v1* preferredHandle) {
+  zwlr_foreign_toplevel_handle_v1* nextActivatableWindowHandle(
+      const std::vector<ToplevelInfo>& windows, zwlr_foreign_toplevel_handle_v1* activeHandle,
+      zwlr_foreign_toplevel_handle_v1* preferredHandle
+  ) {
     for (std::size_t i = 0; i < windows.size(); ++i) {
       if (windows[i].handle != nullptr && windows[i].handle == activeHandle) {
         for (std::size_t offset = 1; offset <= windows.size(); ++offset) {
@@ -1537,8 +1538,9 @@ void Dock::launchEntry(const DesktopEntry& entry) {
 // ── Private: click handling ───────────────────────────────────────────────────
 
 void Dock::handleItemClick(DockInstance& instance, DockItemView& item) {
-  auto windows = m_platform->windowsForApp(item.idLower, item.startupWmClassLower,
-                                           currentDockFilterOutput(m_config->config().dock, instance.output));
+  auto windows = m_platform->windowsForApp(
+      item.idLower, item.startupWmClassLower, currentDockFilterOutput(m_config->config().dock, instance.output)
+  );
 
   if (windows.empty()) {
     launchEntry(item.entry);
@@ -1726,21 +1728,26 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
 
   for (std::size_t i = 0; i < windows.size(); ++i) {
     const auto& title = windows[i].title.empty() ? item.entry.name : windows[i].title;
-    entries.push_back(ContextMenuControlEntry{
-        .id = kMenuWindowBaseId - static_cast<std::int32_t>(i),
-        .label = title,
-        .enabled = windows[i].handle != nullptr,
-        .separator = false,
-        .hasSubmenu = false,
-    });
+    entries.push_back(
+        ContextMenuControlEntry{
+            .id = kMenuWindowBaseId - static_cast<std::int32_t>(i),
+            .label = title,
+            .enabled = windows[i].handle != nullptr,
+            .separator = false,
+            .hasSubmenu = false,
+        }
+    );
   }
 
   const bool hasWindowEntries = !windows.empty();
   const bool hasActionEntries = !item.entry.actions.empty();
   const bool hasCloseEntries = !menu->handles.empty();
   if (hasWindowEntries && (hasActionEntries || hasCloseEntries)) {
-    entries.push_back(ContextMenuControlEntry{
-        .id = kMenuSeparatorId, .label = {}, .enabled = false, .separator = true, .hasSubmenu = false});
+    entries.push_back(
+        ContextMenuControlEntry{
+            .id = kMenuSeparatorId, .label = {}, .enabled = false, .separator = true, .hasSubmenu = false
+        }
+    );
   }
 
   for (std::int32_t i = 0; i < static_cast<std::int32_t>(item.entry.actions.size()); ++i) {
@@ -1759,21 +1766,32 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
   if (runCount > 0) {
     if (hasActionEntries) {
       // Separator between app actions and window-management entries.
-      entries.push_back(ContextMenuControlEntry{
-          .id = kMenuSeparatorId, .label = {}, .enabled = false, .separator = true, .hasSubmenu = false});
+      entries.push_back(
+          ContextMenuControlEntry{
+              .id = kMenuSeparatorId, .label = {}, .enabled = false, .separator = true, .hasSubmenu = false
+          }
+      );
     }
     if (runCount == 1) {
-      entries.push_back(ContextMenuControlEntry{.id = kMenuCloseId,
-                                                .label = i18n::tr("dock.actions.close"),
-                                                .enabled = true,
-                                                .separator = false,
-                                                .hasSubmenu = false});
+      entries.push_back(
+          ContextMenuControlEntry{
+              .id = kMenuCloseId,
+              .label = i18n::tr("dock.actions.close"),
+              .enabled = true,
+              .separator = false,
+              .hasSubmenu = false
+          }
+      );
     } else {
-      entries.push_back(ContextMenuControlEntry{.id = kMenuCloseAllId,
-                                                .label = i18n::tr("dock.actions.close-all"),
-                                                .enabled = true,
-                                                .separator = false,
-                                                .hasSubmenu = false});
+      entries.push_back(
+          ContextMenuControlEntry{
+              .id = kMenuCloseAllId,
+              .label = i18n::tr("dock.actions.close-all"),
+              .enabled = true,
+              .separator = false,
+              .hasSubmenu = false
+          }
+      );
     }
   }
 
