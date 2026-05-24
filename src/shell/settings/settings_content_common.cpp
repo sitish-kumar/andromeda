@@ -71,9 +71,9 @@ namespace settings {
 
   bool isBlankInput(std::string_view text) { return StringUtils::trim(text).empty(); }
 
-  std::string formatSliderValue(float value, bool integerValue) {
+  std::string formatSliderValue(double value, bool integerValue) {
     if (integerValue) {
-      return std::format("{}", static_cast<int>(std::lround(value)));
+      return std::format("{}", static_cast<int>(std::llround(value)));
     }
     return StringUtils::formatFixedDotDecimal(value, 2);
   }

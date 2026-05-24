@@ -967,26 +967,19 @@ namespace settings {
           break;
         }
         case WidgetSettingValueType::Int: {
-          const auto minValue = static_cast<float>(spec.minValue.value_or(0.0));
-          const auto maxValue = static_cast<float>(spec.maxValue.value_or(100.0));
+          const double minValue = spec.minValue.value_or(0.0);
+          const double maxValue = spec.maxValue.value_or(100.0);
           ctx.makeRow(
               *panel, entry,
-              ctx.makeSlider(
-                  static_cast<float>(settingValueAsInt(value)), minValue, maxValue, static_cast<float>(spec.step), path,
-                  true
-              )
+              ctx.makeSlider(static_cast<double>(settingValueAsInt(value)), minValue, maxValue, spec.step, path, true)
           );
           break;
         }
         case WidgetSettingValueType::Double: {
-          const auto minValue = static_cast<float>(spec.minValue.value_or(0.0));
-          const auto maxValue = static_cast<float>(spec.maxValue.value_or(1.0));
+          const double minValue = spec.minValue.value_or(0.0);
+          const double maxValue = spec.maxValue.value_or(1.0);
           ctx.makeRow(
-              *panel, entry,
-              ctx.makeSlider(
-                  static_cast<float>(settingValueAsDouble(value)), minValue, maxValue, static_cast<float>(spec.step),
-                  path, false
-              )
+              *panel, entry, ctx.makeSlider(settingValueAsDouble(value), minValue, maxValue, spec.step, path, false)
           );
           break;
         }

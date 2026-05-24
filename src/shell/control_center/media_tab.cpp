@@ -266,12 +266,12 @@ std::unique_ptr<Flex> MediaTab::create() {
           .thumbSize = 16.0f * scale,
           .controlHeight = (Style::controlHeight + Style::spaceXs) * scale,
           .onValueChanged =
-              [this](float value) {
+              [this](double value) {
                 if (m_syncingProgress || m_mpris == nullptr) {
                   return;
                 }
                 const auto active = m_mpris->activePlayer();
-                const std::int64_t targetUs = static_cast<std::int64_t>(std::llround(value * 1000000.0f));
+                const std::int64_t targetUs = static_cast<std::int64_t>(std::llround(value * 1000000.0));
                 const auto now = std::chrono::steady_clock::now();
                 m_positionUs = targetUs;
                 m_positionSampleAt = now;
@@ -707,12 +707,12 @@ void MediaTab::clearArt(Renderer& renderer) {
   }
 }
 
-void MediaTab::commitPendingSeek(float valueSeconds) {
+void MediaTab::commitPendingSeek(double valueSeconds) {
   if (m_mpris == nullptr) {
     return;
   }
 
-  const std::int64_t targetUs = static_cast<std::int64_t>(std::llround(valueSeconds * 1000000.0f));
+  const std::int64_t targetUs = static_cast<std::int64_t>(std::llround(valueSeconds * 1000000.0));
   const auto now = std::chrono::steady_clock::now();
   m_positionUs = targetUs;
   m_positionSampleAt = now;
@@ -924,12 +924,12 @@ void MediaTab::refresh(Renderer& renderer) {
     m_syncingProgress = true;
     m_progressSlider->setEnabled(progressEnabled);
     if (trackLengthUs > 0) {
-      m_progressSlider->setRange(0.0f, static_cast<float>(trackLengthUs) / 1000000.0f);
+      m_progressSlider->setRange(0.0, static_cast<double>(trackLengthUs) / 1000000.0);
     }
     if (!m_progressSlider->dragging()) {
-      const float sliderMax = m_progressSlider->maxValue();
-      const float nextValue =
-          sliderMax > 0.0f ? std::clamp(static_cast<float>(displayPositionUs) / 1000000.0f, 0.0f, sliderMax) : 0.0f;
+      const double sliderMax = m_progressSlider->maxValue();
+      const double nextValue =
+          sliderMax > 0.0 ? std::clamp(static_cast<double>(displayPositionUs) / 1000000.0, 0.0, sliderMax) : 0.0;
       m_progressSlider->setValue(nextValue);
     }
     m_syncingProgress = false;

@@ -524,7 +524,7 @@ namespace settings {
     };
 
     const auto makeSlider =
-        [&](float value, float minValue, float maxValue, float step, std::vector<std::string> path,
+        [&](double value, double minValue, double maxValue, double step, std::vector<std::string> path,
             bool integerValue = false,
             std::function<std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>(double)> linkedCommit =
                 {}) {
@@ -553,7 +553,7 @@ namespace settings {
               .controlHeight = Style::controlHeight * scale,
               .width = Style::sliderDefaultWidth * scale,
               .height = Style::controlHeight * scale,
-              .onValueChanged = [valueInputPtr, integerValue](float next) {
+              .onValueChanged = [valueInputPtr, integerValue](double next) {
                 valueInputPtr->setInvalid(false);
                 valueInputPtr->setValue(formatSliderValue(next, integerValue));
               },
@@ -586,19 +586,17 @@ namespace settings {
           const auto commitInputText = [commit, sliderPtr, valueInputPtr, minValue, maxValue,
                                         integerValue](const std::string& text) {
             const auto parsed = parseDoubleInput(text);
-            if (!parsed.has_value()
-                || *parsed < static_cast<double>(minValue)
-                || *parsed > static_cast<double>(maxValue)) {
+            if (!parsed.has_value() || *parsed < minValue || *parsed > maxValue) {
               valueInputPtr->setInvalid(true);
               return;
             }
-            const float v = static_cast<float>(*parsed);
+            const double v = *parsed;
             valueInputPtr->setInvalid(false);
             sliderPtr->setValue(v);
             if (!integerValue) {
               valueInputPtr->setValue(formatSliderValue(sliderPtr->value(), false));
             }
-            commit(static_cast<double>(v));
+            commit(v);
           };
 
           valueInput->setOnChange([valueInputPtr](const std::string& /*text*/) { valueInputPtr->setInvalid(false); });
@@ -1555,7 +1553,7 @@ namespace settings {
         .makeSelect = [&](const SelectSetting& setting, std::vector<std::string> path) -> std::unique_ptr<Node> {
           return makeSelect(setting, std::move(path));
         },
-        .makeSlider = [&](float value, float minValue, float maxValue, float step, std::vector<std::string> path,
+        .makeSlider = [&](double value, double minValue, double maxValue, double step, std::vector<std::string> path,
                           bool integerValue) -> std::unique_ptr<Node> {
           return makeSlider(value, minValue, maxValue, step, std::move(path), integerValue);
         },

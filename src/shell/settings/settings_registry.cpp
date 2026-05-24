@@ -426,17 +426,17 @@ namespace settings {
     entries.push_back(makeEntry(
         "appearance", "effects", tr("settings.schema.shared.shadow-blur.label"),
         tr("settings.schema.appearance.global-shadow-blur.description"), {"shell", "shadow", "blur"},
-        SliderSetting{static_cast<float>(cfg.shell.shadow.blur), 0.0f, 100.0f, 1.0f, true}, "shadow depth"
+        SliderSetting{cfg.shell.shadow.blur, 0.0f, 100.0f, 1.0f, true}, "shadow depth"
     ));
     entries.push_back(makeEntry(
         "appearance", "effects", tr("settings.schema.shared.shadow-x.label"),
         tr("settings.schema.appearance.global-shadow-x.description"), {"shell", "shadow", "offset_x"},
-        SliderSetting{static_cast<float>(cfg.shell.shadow.offsetX), -40.0f, 40.0f, 1.0f, true}, "shadow offset", true
+        SliderSetting{cfg.shell.shadow.offsetX, -40.0f, 40.0f, 1.0f, true}, "shadow offset", true
     ));
     entries.push_back(makeEntry(
         "appearance", "effects", tr("settings.schema.shared.shadow-y.label"),
         tr("settings.schema.appearance.global-shadow-y.description"), {"shell", "shadow", "offset_y"},
-        SliderSetting{static_cast<float>(cfg.shell.shadow.offsetY), -40.0f, 40.0f, 1.0f, true}, "shadow offset", true
+        SliderSetting{cfg.shell.shadow.offsetY, -40.0f, 40.0f, 1.0f, true}, "shadow offset", true
     ));
     entries.push_back(makeEntry(
         "appearance", "effects", tr("settings.schema.shared.shadow-alpha.label"),
@@ -504,7 +504,7 @@ namespace settings {
         continue;
       }
       const std::vector<std::string> root = {"wallpaper", "monitor", connector};
-      auto mpath = [&](std::string key) {
+      auto monitorPath = [&](std::string key) {
         std::vector<std::string> p = root;
         p.push_back(std::move(key));
         return p;
@@ -520,7 +520,7 @@ namespace settings {
       auto perMonOn = SettingVisibility{{"wallpaper", "per_monitor_directories"}, {"true"}};
       {
         auto e = makeEntry(
-            section, "monitors", connector, tr("settings.schema.wallpaper.fill-color.label"), mpath("fill_color"),
+            section, "monitors", connector, tr("settings.schema.wallpaper.fill-color.label"), monitorPath("fill_color"),
             colorSpecPicker(
                 ovr != nullptr ? ovr->fillColor : std::optional<ColorSpec>{}, true, tr("common.states.inherit")
             ),
@@ -530,7 +530,8 @@ namespace settings {
       }
       {
         auto e = makeEntry(
-            section, "monitors", connector, tr("settings.schema.wallpaper.monitor-directory.label"), mpath("directory"),
+            section, "monitors", connector, tr("settings.schema.wallpaper.monitor-directory.label"),
+            monitorPath("directory"),
             TextSetting{
                 .value = ovr != nullptr && ovr->directory.has_value() ? *ovr->directory : "",
                 .placeholder = "~/Pictures/Wallpapers",
@@ -545,7 +546,7 @@ namespace settings {
       {
         auto e = makeEntry(
             section, "monitors", connector, tr("settings.schema.wallpaper.monitor-directory-light.label"),
-            mpath("directory_light"),
+            monitorPath("directory_light"),
             TextSetting{
                 .value = ovr != nullptr && ovr->directoryLight.has_value() ? *ovr->directoryLight : "",
                 .placeholder = tr("settings.schema.wallpaper.monitor-directory-light.placeholder"),
@@ -560,7 +561,7 @@ namespace settings {
       {
         auto e = makeEntry(
             section, "monitors", connector, tr("settings.schema.wallpaper.monitor-directory-dark.label"),
-            mpath("directory_dark"),
+            monitorPath("directory_dark"),
             TextSetting{
                 .value = ovr != nullptr && ovr->directoryDark.has_value() ? *ovr->directoryDark : "",
                 .placeholder = tr("settings.schema.wallpaper.monitor-directory-dark.placeholder"),
@@ -609,8 +610,7 @@ namespace settings {
         "wallpaper", "automation", tr("settings.schema.wallpaper.automation-interval.label"),
         tr("settings.schema.wallpaper.automation-interval.description"),
         {"wallpaper", "automation", "interval_minutes"},
-        SliderSetting{static_cast<float>(cfg.wallpaper.automation.intervalMinutes), 0.0f, 1440.0f, 1.0f, true},
-        "rotate slideshow"
+        SliderSetting{cfg.wallpaper.automation.intervalMinutes, 0.0f, 1440.0f, 1.0f, true}, "rotate slideshow"
     ));
     entries.push_back(makeEntry(
         "wallpaper", "automation", tr("settings.schema.wallpaper.automation-order.label"),
@@ -714,51 +714,51 @@ namespace settings {
     ));
     entries.push_back(makeEntry(
         "dock", "layout", tr("settings.schema.dock.icon-size.label"), tr("settings.schema.dock.icon-size.description"),
-        {"dock", "icon_size"}, SliderSetting{static_cast<float>(cfg.dock.iconSize), 16.0f, 128.0f, 1.0f, true}, "apps"
+        {"dock", "icon_size"}, SliderSetting{cfg.dock.iconSize, 16.0f, 128.0f, 1.0f, true}, "apps"
     ));
     entries.push_back(makeEntry(
         "dock", "layout", tr("settings.schema.shared.padding.label"), tr("settings.schema.dock.padding.description"),
-        {"dock", "padding"}, SliderSetting{static_cast<float>(cfg.dock.padding), 0.0f, 100.0f, 1.0f, true}, "inset"
+        {"dock", "padding"}, SliderSetting{cfg.dock.padding, 0.0f, 100.0f, 1.0f, true}, "inset"
     ));
     entries.push_back(makeEntry(
         "dock", "layout", tr("settings.schema.dock.item-spacing.label"),
         tr("settings.schema.dock.item-spacing.description"), {"dock", "item_spacing"},
-        SliderSetting{static_cast<float>(cfg.dock.itemSpacing), 0.0f, 100.0f, 1.0f, true}, "gap"
+        SliderSetting{cfg.dock.itemSpacing, 0.0f, 100.0f, 1.0f, true}, "gap"
     ));
     entries.push_back(makeEntry(
         "dock", "layout", tr("settings.schema.shared.ends-margin.label"),
         tr("settings.schema.dock.ends-margin.description"), {"dock", "margin_ends"},
-        SliderSetting{static_cast<float>(cfg.dock.marginEnds), 0.0f, 500.0f, 1.0f, true}, "gap inset"
+        SliderSetting{cfg.dock.marginEnds, 0.0f, 500.0f, 1.0f, true}, "gap inset"
     ));
     entries.push_back(makeEntry(
         "dock", "layout", tr("settings.schema.shared.edge-margin.label"),
         tr("settings.schema.dock.edge-margin.description"), {"dock", "margin_edge"},
-        SliderSetting{static_cast<float>(cfg.dock.marginEdge), 0.0f, 100.0f, 1.0f, true}, "gap inset"
+        SliderSetting{cfg.dock.marginEdge, 0.0f, 100.0f, 1.0f, true}, "gap inset"
     ));
     entries.push_back(makeEntry(
         "dock", "shape", tr("settings.schema.shared.corner-radius.label"),
         tr("settings.schema.dock.corner-radius.description"), {"dock", "radius"},
-        SliderSetting{static_cast<float>(cfg.dock.radius), 0.0f, 80.0f, 1.0f, true}, "rounded"
+        SliderSetting{cfg.dock.radius, 0.0f, 80.0f, 1.0f, true}, "rounded"
     ));
     entries.push_back(makeEntry(
         "dock", "shape", tr("settings.schema.shared.corner-top-left.label"),
         tr("settings.schema.dock.corner-top-left.description"), {"dock", "radius_top_left"},
-        SliderSetting{static_cast<float>(cfg.dock.radiusTopLeft), 0.0f, 80.0f, 1.0f, true}, "rounded corner", true
+        SliderSetting{cfg.dock.radiusTopLeft, 0.0f, 80.0f, 1.0f, true}, "rounded corner", true
     ));
     entries.push_back(makeEntry(
         "dock", "shape", tr("settings.schema.shared.corner-top-right.label"),
         tr("settings.schema.dock.corner-top-right.description"), {"dock", "radius_top_right"},
-        SliderSetting{static_cast<float>(cfg.dock.radiusTopRight), 0.0f, 80.0f, 1.0f, true}, "rounded corner", true
+        SliderSetting{cfg.dock.radiusTopRight, 0.0f, 80.0f, 1.0f, true}, "rounded corner", true
     ));
     entries.push_back(makeEntry(
         "dock", "shape", tr("settings.schema.shared.corner-bottom-left.label"),
         tr("settings.schema.dock.corner-bottom-left.description"), {"dock", "radius_bottom_left"},
-        SliderSetting{static_cast<float>(cfg.dock.radiusBottomLeft), 0.0f, 80.0f, 1.0f, true}, "rounded corner", true
+        SliderSetting{cfg.dock.radiusBottomLeft, 0.0f, 80.0f, 1.0f, true}, "rounded corner", true
     ));
     entries.push_back(makeEntry(
         "dock", "shape", tr("settings.schema.shared.corner-bottom-right.label"),
         tr("settings.schema.dock.corner-bottom-right.description"), {"dock", "radius_bottom_right"},
-        SliderSetting{static_cast<float>(cfg.dock.radiusBottomRight), 0.0f, 80.0f, 1.0f, true}, "rounded corner", true
+        SliderSetting{cfg.dock.radiusBottomRight, 0.0f, 80.0f, 1.0f, true}, "rounded corner", true
     ));
     entries.push_back(makeEntry(
         "dock", "shape", tr("settings.schema.shared.background-opacity.label"),
@@ -931,8 +931,7 @@ namespace settings {
     entries.push_back(makeEntry(
         "desktop", "screen-corners", tr("settings.schema.desktop.screen-corners-size.label"),
         tr("settings.schema.desktop.screen-corners-size.description"), {"shell", "screen_corners", "size"},
-        SliderSetting{static_cast<float>(cfg.shell.screenCorners.size), 1.0f, 100.0f, 1.0f, true},
-        "screen corners radius"
+        SliderSetting{cfg.shell.screenCorners.size, 1.0f, 100.0f, 1.0f, true}, "screen corners radius"
     ));
 
     // Shell
@@ -1272,7 +1271,7 @@ namespace settings {
       auto e = makeEntry(
           "services", "weather", tr("settings.schema.services.weather-refresh-interval.label"),
           tr("settings.schema.services.weather-refresh-interval.description"), {"weather", "refresh_minutes"},
-          SliderSetting{static_cast<float>(cfg.weather.refreshMinutes), 5.0f, 240.0f, 5.0f, true}, "forecast"
+          SliderSetting{cfg.weather.refreshMinutes, 5.0f, 240.0f, 5.0f, true}, "forecast"
       );
       e.visibleWhen = weatherOn;
       entries.push_back(std::move(e));
@@ -1410,11 +1409,11 @@ namespace settings {
       }
       // Both sliders span the same range; the day > night invariant is enforced at commit time
       // via SliderSetting::linkedCommit, which pushes the other temperature when needed.
-      const float tempMin = static_cast<float>(NightLightConfig::kTemperatureMin);
-      const float tempMax = static_cast<float>(NightLightConfig::kTemperatureMax);
-      const float tempStep = static_cast<float>(NightLightConfig::kTemperatureGap);
+      const double tempMin = static_cast<double>(NightLightConfig::kTemperatureMin);
+      const double tempMax = static_cast<double>(NightLightConfig::kTemperatureMax);
+      const double tempStep = static_cast<double>(NightLightConfig::kTemperatureGap);
 
-      SliderSetting daySlider{static_cast<float>(cfg.nightlight.dayTemperature), tempMin, tempMax, tempStep, true};
+      SliderSetting daySlider{static_cast<double>(cfg.nightlight.dayTemperature), tempMin, tempMax, tempStep, true};
       daySlider.linkedCommit = [curNight = cfg.nightlight.nightTemperature](double v) {
         std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>> overrides;
         const auto newDay = std::clamp(
@@ -1449,7 +1448,7 @@ namespace settings {
         entries.push_back(std::move(e));
       }
 
-      SliderSetting nightSlider{static_cast<float>(cfg.nightlight.nightTemperature), tempMin, tempMax, tempStep, true};
+      SliderSetting nightSlider{static_cast<double>(cfg.nightlight.nightTemperature), tempMin, tempMax, tempStep, true};
       nightSlider.linkedCommit = [curDay = cfg.nightlight.dayTemperature](double v) {
         std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>> overrides;
         const auto newNight = std::clamp(
@@ -1580,8 +1579,7 @@ namespace settings {
     entries.push_back(makeEntry(
         "hooks", "power", tr("settings.schema.hooks.battery-low-threshold.label"),
         tr("settings.schema.hooks.battery-low-threshold.description"), {"hooks", "battery_low_percent_threshold"},
-        SliderSetting{static_cast<float>(cfg.hooks.batteryLowPercentThreshold), 0.0f, 100.0f, 1.0f, true},
-        "battery threshold hook trigger"
+        SliderSetting{cfg.hooks.batteryLowPercentThreshold, 0.0f, 100.0f, 1.0f, true}, "battery threshold hook trigger"
     ));
 
     // Popups
@@ -1678,7 +1676,7 @@ namespace settings {
       }
       entries.push_back(makeEntry(
           section, "layout", tr("settings.schema.bar.thickness.label"), tr("settings.schema.bar.thickness.description"),
-          path("thickness"), SliderSetting{static_cast<float>(bar.thickness), 10.0f, 120.0f, 1.0f, true}, "height width"
+          path("thickness"), SliderSetting{bar.thickness, 10.0f, 120.0f, 1.0f, true}, "height width"
       ));
       entries.push_back(makeEntry(
           section, "layout", tr("settings.schema.bar.content-scale.label"),
@@ -1698,32 +1696,32 @@ namespace settings {
       entries.push_back(makeEntry(
           section, "layout", tr("settings.schema.bar.content-padding.label"),
           tr("settings.schema.bar.content-padding.description"), path("padding"),
-          SliderSetting{static_cast<float>(bar.padding), 0.0f, 80.0f, 1.0f, true}, "inset"
+          SliderSetting{bar.padding, 0.0f, 80.0f, 1.0f, true}, "inset"
       ));
       entries.push_back(makeEntry(
           section, "shape", tr("settings.schema.shared.corner-radius.label"),
           tr("settings.schema.bar.corner-radius.description"), path("radius"),
-          SliderSetting{static_cast<float>(bar.radius), 0.0f, 80.0f, 1.0f, true}, "rounded"
+          SliderSetting{bar.radius, 0.0f, 80.0f, 1.0f, true}, "rounded"
       ));
       entries.push_back(makeEntry(
           section, "shape", tr("settings.schema.shared.corner-top-left.label"),
           tr("settings.schema.bar.corner-top-left.description"), path("radius_top_left"),
-          SliderSetting{static_cast<float>(bar.radiusTopLeft), 0.0f, 80.0f, 1.0f, true}, "rounded corner", true
+          SliderSetting{bar.radiusTopLeft, 0.0f, 80.0f, 1.0f, true}, "rounded corner", true
       ));
       entries.push_back(makeEntry(
           section, "shape", tr("settings.schema.shared.corner-top-right.label"),
           tr("settings.schema.bar.corner-top-right.description"), path("radius_top_right"),
-          SliderSetting{static_cast<float>(bar.radiusTopRight), 0.0f, 80.0f, 1.0f, true}, "rounded corner", true
+          SliderSetting{bar.radiusTopRight, 0.0f, 80.0f, 1.0f, true}, "rounded corner", true
       ));
       entries.push_back(makeEntry(
           section, "shape", tr("settings.schema.shared.corner-bottom-left.label"),
           tr("settings.schema.bar.corner-bottom-left.description"), path("radius_bottom_left"),
-          SliderSetting{static_cast<float>(bar.radiusBottomLeft), 0.0f, 80.0f, 1.0f, true}, "rounded corner", true
+          SliderSetting{bar.radiusBottomLeft, 0.0f, 80.0f, 1.0f, true}, "rounded corner", true
       ));
       entries.push_back(makeEntry(
           section, "shape", tr("settings.schema.shared.corner-bottom-right.label"),
           tr("settings.schema.bar.corner-bottom-right.description"), path("radius_bottom_right"),
-          SliderSetting{static_cast<float>(bar.radiusBottomRight), 0.0f, 80.0f, 1.0f, true}, "rounded corner", true
+          SliderSetting{bar.radiusBottomRight, 0.0f, 80.0f, 1.0f, true}, "rounded corner", true
       ));
       entries.push_back(makeEntry(
           section, "shape", tr("settings.schema.shared.background-opacity.label"),
@@ -1767,7 +1765,7 @@ namespace settings {
       entries.push_back(makeEntry(
           section, "widgets", tr("settings.schema.bar.widget-spacing.label"),
           tr("settings.schema.bar.widget-spacing.description"), path("widget_spacing"),
-          SliderSetting{static_cast<float>(bar.widgetSpacing), 0.0f, 32.0f, 1.0f, true}, "gap"
+          SliderSetting{bar.widgetSpacing, 0.0f, 32.0f, 1.0f, true}, "gap"
       ));
       entries.push_back(makeEntry(
           section, "widgets", tr("settings.schema.bar.widget-color.label"),
@@ -1872,7 +1870,7 @@ namespace settings {
       for (const auto& ovr : bar.monitorOverrides) {
         const std::string section = "bar";
         const std::vector<std::string> root = {"bar", bar.name, "monitor", ovr.match};
-        auto mpath = [&](std::string key) {
+        auto monitorPath = [&](std::string key) {
           std::vector<std::string> p = root;
           p.push_back(std::move(key));
           return p;
@@ -1880,126 +1878,120 @@ namespace settings {
 
         entries.push_back(makeEntry(
             section, "general", tr("settings.schema.shared.enabled.label"),
-            tr("settings.schema.bar.enabled.description"), mpath("enabled"),
+            tr("settings.schema.bar.enabled.description"), monitorPath("enabled"),
             ToggleSetting{ovr.enabled.value_or(bar.enabled)}, "visible"
         ));
         entries.push_back(makeEntry(
             section, "general", tr("settings.schema.shared.auto-hide.label"),
-            tr("settings.schema.bar.auto-hide.description"), mpath("auto_hide"),
+            tr("settings.schema.bar.auto-hide.description"), monitorPath("auto_hide"),
             ToggleSetting{ovr.autoHide.value_or(bar.autoHide)}, "autohide"
         ));
         {
           auto e = makeEntry(
               section, "general", tr("settings.schema.shared.reserve-space.label"),
-              tr("settings.schema.bar.reserve-space.description"), mpath("reserve_space"),
+              tr("settings.schema.bar.reserve-space.description"), monitorPath("reserve_space"),
               ToggleSetting{ovr.reserveSpace.value_or(bar.reserveSpace)}, "exclusive zone"
           );
-          e.visibleWhen = SettingVisibility{mpath("auto_hide"), {"false"}};
+          e.visibleWhen = SettingVisibility{monitorPath("auto_hide"), {"false"}};
           entries.push_back(std::move(e));
         }
         entries.push_back(makeEntry(
             section, "layout", tr("settings.schema.bar.thickness.label"),
-            tr("settings.schema.bar.thickness.description"), mpath("thickness"),
-            SliderSetting{static_cast<float>(ovr.thickness.value_or(bar.thickness)), 10.0f, 120.0f, 1.0f, true},
-            "height width"
+            tr("settings.schema.bar.thickness.description"), monitorPath("thickness"),
+            SliderSetting{ovr.thickness.value_or(bar.thickness), 10.0f, 120.0f, 1.0f, true}, "height width"
         ));
         entries.push_back(makeEntry(
             section, "layout", tr("settings.schema.bar.content-scale.label"),
-            tr("settings.schema.bar.content-scale.description"), mpath("scale"),
+            tr("settings.schema.bar.content-scale.description"), monitorPath("scale"),
             SliderSetting{ovr.scale.value_or(bar.scale), 0.5f, 4.0f, 0.05f, false}, "zoom size"
         ));
         entries.push_back(makeEntry(
             section, "layout", tr("settings.schema.shared.ends-margin.label"),
-            tr("settings.schema.bar.ends-margin.description"), mpath("margin_ends"),
+            tr("settings.schema.bar.ends-margin.description"), monitorPath("margin_ends"),
             barMarginStepper(ovr.marginEnds.value_or(bar.marginEnds)), "gap inset"
         ));
         entries.push_back(makeEntry(
             section, "layout", tr("settings.schema.shared.edge-margin.label"),
-            tr("settings.schema.bar.edge-margin.description"), mpath("margin_edge"),
+            tr("settings.schema.bar.edge-margin.description"), monitorPath("margin_edge"),
             barMarginStepper(ovr.marginEdge.value_or(bar.marginEdge)), "gap inset"
         ));
         entries.push_back(makeEntry(
             section, "layout", tr("settings.schema.bar.content-padding.label"),
-            tr("settings.schema.bar.content-padding.description"), mpath("padding"),
-            SliderSetting{static_cast<float>(ovr.padding.value_or(bar.padding)), 0.0f, 80.0f, 1.0f, true}, "inset"
+            tr("settings.schema.bar.content-padding.description"), monitorPath("padding"),
+            SliderSetting{ovr.padding.value_or(bar.padding), 0.0f, 80.0f, 1.0f, true}, "inset"
         ));
         entries.push_back(makeEntry(
             section, "shape", tr("settings.schema.shared.corner-radius.label"),
-            tr("settings.schema.bar.corner-radius.description"), mpath("radius"),
-            SliderSetting{static_cast<float>(ovr.radius.value_or(bar.radius)), 0.0f, 80.0f, 1.0f, true}, "rounded"
+            tr("settings.schema.bar.corner-radius.description"), monitorPath("radius"),
+            SliderSetting{ovr.radius.value_or(bar.radius), 0.0f, 80.0f, 1.0f, true}, "rounded"
         ));
         entries.push_back(makeEntry(
             section, "shape", tr("settings.schema.shared.corner-top-left.label"),
-            tr("settings.schema.bar.corner-top-left.description"), mpath("radius_top_left"),
-            SliderSetting{static_cast<float>(ovr.radiusTopLeft.value_or(bar.radiusTopLeft)), 0.0f, 80.0f, 1.0f, true},
-            "rounded corner", true
+            tr("settings.schema.bar.corner-top-left.description"), monitorPath("radius_top_left"),
+            SliderSetting{ovr.radiusTopLeft.value_or(bar.radiusTopLeft), 0.0f, 80.0f, 1.0f, true}, "rounded corner",
+            true
         ));
         entries.push_back(makeEntry(
             section, "shape", tr("settings.schema.shared.corner-top-right.label"),
-            tr("settings.schema.bar.corner-top-right.description"), mpath("radius_top_right"),
-            SliderSetting{static_cast<float>(ovr.radiusTopRight.value_or(bar.radiusTopRight)), 0.0f, 80.0f, 1.0f, true},
-            "rounded corner", true
+            tr("settings.schema.bar.corner-top-right.description"), monitorPath("radius_top_right"),
+            SliderSetting{ovr.radiusTopRight.value_or(bar.radiusTopRight), 0.0f, 80.0f, 1.0f, true}, "rounded corner",
+            true
         ));
         entries.push_back(makeEntry(
             section, "shape", tr("settings.schema.shared.corner-bottom-left.label"),
-            tr("settings.schema.bar.corner-bottom-left.description"), mpath("radius_bottom_left"),
-            SliderSetting{
-                static_cast<float>(ovr.radiusBottomLeft.value_or(bar.radiusBottomLeft)), 0.0f, 80.0f, 1.0f, true
-            },
+            tr("settings.schema.bar.corner-bottom-left.description"), monitorPath("radius_bottom_left"),
+            SliderSetting{ovr.radiusBottomLeft.value_or(bar.radiusBottomLeft), 0.0f, 80.0f, 1.0f, true},
             "rounded corner", true
         ));
         entries.push_back(makeEntry(
             section, "shape", tr("settings.schema.shared.corner-bottom-right.label"),
-            tr("settings.schema.bar.corner-bottom-right.description"), mpath("radius_bottom_right"),
-            SliderSetting{
-                static_cast<float>(ovr.radiusBottomRight.value_or(bar.radiusBottomRight)), 0.0f, 80.0f, 1.0f, true
-            },
+            tr("settings.schema.bar.corner-bottom-right.description"), monitorPath("radius_bottom_right"),
+            SliderSetting{ovr.radiusBottomRight.value_or(bar.radiusBottomRight), 0.0f, 80.0f, 1.0f, true},
             "rounded corner", true
         ));
         entries.push_back(makeEntry(
             section, "shape", tr("settings.schema.shared.background-opacity.label"),
-            tr("settings.schema.bar.background-opacity.description"), mpath("background_opacity"),
+            tr("settings.schema.bar.background-opacity.description"), monitorPath("background_opacity"),
             SliderSetting{ovr.backgroundOpacity.value_or(bar.backgroundOpacity), 0.0f, 1.0f, 0.01f, false}, "alpha"
         ));
         entries.push_back(makeEntry(
             section, "shape", tr("settings.schema.bar.border.label"), tr("settings.schema.bar.border.description"),
-            mpath("border"), colorSpecPicker(ovr.border, true, tr("common.states.inherit")), "outline color", true
+            monitorPath("border"), colorSpecPicker(ovr.border, true, tr("common.states.inherit")), "outline color", true
         ));
         entries.push_back(makeEntry(
             section, "shape", tr("settings.schema.bar.border-width.label"),
-            tr("settings.schema.bar.border-width.description"), mpath("border_width"),
+            tr("settings.schema.bar.border-width.description"), monitorPath("border_width"),
             SliderSetting{ovr.borderWidth.value_or(bar.borderWidth), 0.0f, 20.0f, 0.5f, false}, "outline stroke", true
         ));
         entries.push_back(makeEntry(
             section, "effects", tr("settings.schema.shared.shadow.label"), tr("settings.schema.bar.shadow.description"),
-            mpath("shadow"), ToggleSetting{ovr.shadow.value_or(bar.shadow)}, "shadow"
+            monitorPath("shadow"), ToggleSetting{ovr.shadow.value_or(bar.shadow)}, "shadow"
         ));
         entries.push_back(makeEntry(
             section, "effects", tr("settings.schema.shared.contact-shadow.label"),
-            tr("settings.schema.bar.contact-shadow.description"), mpath("contact_shadow"),
+            tr("settings.schema.bar.contact-shadow.description"), monitorPath("contact_shadow"),
             ToggleSetting{ovr.contactShadow.value_or(bar.contactShadow)}, "shadow contact panel attached"
         ));
         entries.push_back(makeEntry(
             section, "widgets", tr("settings.schema.bar.widget-spacing.label"),
-            tr("settings.schema.bar.widget-spacing.description"), mpath("widget_spacing"),
-            SliderSetting{static_cast<float>(ovr.widgetSpacing.value_or(bar.widgetSpacing)), 0.0f, 32.0f, 1.0f, true},
-            "gap"
+            tr("settings.schema.bar.widget-spacing.description"), monitorPath("widget_spacing"),
+            SliderSetting{ovr.widgetSpacing.value_or(bar.widgetSpacing), 0.0f, 32.0f, 1.0f, true}, "gap"
         ));
         entries.push_back(makeEntry(
             section, "widgets", tr("settings.schema.bar.widget-color.label"),
-            tr("settings.schema.bar.widget-color.description"), mpath("color"),
+            tr("settings.schema.bar.widget-color.description"), monitorPath("color"),
             colorSpecPicker(ovr.widgetColor, true, tr("common.states.inherit")), "color foreground", true
         ));
         entries.push_back(makeEntry(
             section, "capsules", tr("settings.schema.bar.widget-capsules.label"),
-            tr("settings.schema.bar.widget-capsules.description"), mpath("capsule"),
+            tr("settings.schema.bar.widget-capsules.description"), monitorPath("capsule"),
             ToggleSetting{ovr.widgetCapsuleDefault.value_or(bar.widgetCapsuleDefault)}, "pill"
         ));
-        const SettingVisibility mCapsuleOn{mpath("capsule"), {"true"}};
+        const SettingVisibility monitorCapsuleOn{monitorPath("capsule"), {"true"}};
         {
           auto e = makeEntry(
               section, "capsules", tr("settings.schema.bar.capsule-radius.label"),
-              tr("settings.schema.bar.capsule-radius.description"), mpath("capsule_radius"),
+              tr("settings.schema.bar.capsule-radius.description"), monitorPath("capsule_radius"),
               OptionalStepperSetting{
                   .value = radiusStepperValue(ovr.widgetCapsuleRadius),
                   .minValue = 0,
@@ -2016,83 +2008,77 @@ namespace settings {
         {
           auto e = makeEntry(
               section, "capsules", tr("settings.schema.bar.capsule-groups.label"),
-              tr("settings.schema.bar.capsule-groups.description"), mpath("capsule_groups"),
+              tr("settings.schema.bar.capsule-groups.description"), monitorPath("capsule_groups"),
               ListSetting{.items = ovr.widgetCapsuleGroups.value_or(bar.widgetCapsuleGroups)}, "grouped capsules"
           );
-          e.visibleWhen = mCapsuleOn;
+          e.visibleWhen = monitorCapsuleOn;
           entries.push_back(std::move(e));
         }
         {
           auto e = makeEntry(
               section, "capsules", tr("settings.schema.bar.capsule-fill.label"),
-              tr("settings.schema.bar.capsule-fill.description"), mpath("capsule_fill"),
+              tr("settings.schema.bar.capsule-fill.description"), monitorPath("capsule_fill"),
               colorSpecPicker(ovr.widgetCapsuleFill, true, tr("common.states.inherit")), "color pill", true
           );
-          e.visibleWhen = mCapsuleOn;
+          e.visibleWhen = monitorCapsuleOn;
           entries.push_back(std::move(e));
         }
         {
           auto e = makeEntry(
               section, "capsules", tr("settings.schema.bar.capsule-foreground.label"),
-              tr("settings.schema.bar.capsule-foreground.description"), mpath("capsule_foreground"),
+              tr("settings.schema.bar.capsule-foreground.description"), monitorPath("capsule_foreground"),
               colorSpecPicker(ovr.widgetCapsuleForeground, true, tr("common.states.inherit")), "color foreground pill",
               true
           );
-          e.visibleWhen = mCapsuleOn;
+          e.visibleWhen = monitorCapsuleOn;
           entries.push_back(std::move(e));
         }
         {
           auto e = makeEntry(
               section, "capsules", tr("settings.schema.bar.capsule-border.label"),
-              tr("settings.schema.bar.capsule-border.description"), mpath("capsule_border"),
+              tr("settings.schema.bar.capsule-border.description"), monitorPath("capsule_border"),
               colorSpecPicker(
                   ovr.widgetCapsuleBorderSpecified ? ovr.widgetCapsuleBorder : std::optional<ColorSpec>{}, true,
                   tr("common.states.inherit")
               ),
               "color pill outline", true
           );
-          e.visibleWhen = mCapsuleOn;
+          e.visibleWhen = monitorCapsuleOn;
           entries.push_back(std::move(e));
         }
         {
           auto e = makeEntry(
               section, "capsules", tr("settings.schema.bar.capsule-padding.label"),
-              tr("settings.schema.bar.capsule-padding.description"), mpath("capsule_padding"),
-              SliderSetting{
-                  static_cast<float>(ovr.widgetCapsulePadding.value_or(bar.widgetCapsulePadding)), 0.0f, 48.0f, 1.0f,
-                  false
-              },
+              tr("settings.schema.bar.capsule-padding.description"), monitorPath("capsule_padding"),
+              SliderSetting{ovr.widgetCapsulePadding.value_or(bar.widgetCapsulePadding), 0.0f, 48.0f, 1.0f, false},
               "pill inset", true
           );
-          e.visibleWhen = mCapsuleOn;
+          e.visibleWhen = monitorCapsuleOn;
           entries.push_back(std::move(e));
         }
         {
           auto e = makeEntry(
               section, "capsules", tr("settings.schema.bar.capsule-opacity.label"),
-              tr("settings.schema.bar.capsule-opacity.description"), mpath("capsule_opacity"),
-              SliderSetting{
-                  static_cast<float>(ovr.widgetCapsuleOpacity.value_or(bar.widgetCapsuleOpacity)), 0.0f, 1.0f, 0.01f,
-                  false
-              },
+              tr("settings.schema.bar.capsule-opacity.description"), monitorPath("capsule_opacity"),
+              SliderSetting{ovr.widgetCapsuleOpacity.value_or(bar.widgetCapsuleOpacity), 0.0f, 1.0f, 0.01f, false},
               "pill alpha", true
           );
-          e.visibleWhen = mCapsuleOn;
+          e.visibleWhen = monitorCapsuleOn;
           entries.push_back(std::move(e));
         }
         entries.push_back(makeEntry(
             section, "widget-list", tr("settings.schema.bar.start-widgets.label"),
-            tr("settings.schema.bar.start-widgets.description"), mpath("start"),
+            tr("settings.schema.bar.start-widgets.description"), monitorPath("start"),
             ListSetting{.items = ovr.startWidgets.value_or(bar.startWidgets)}, "left"
         ));
         entries.push_back(makeEntry(
             section, "widget-list", tr("settings.schema.bar.center-widgets.label"),
-            tr("settings.schema.bar.center-widgets.description"), mpath("center"),
+            tr("settings.schema.bar.center-widgets.description"), monitorPath("center"),
             ListSetting{.items = ovr.centerWidgets.value_or(bar.centerWidgets)}, "middle"
         ));
         entries.push_back(makeEntry(
             section, "widget-list", tr("settings.schema.bar.end-widgets.label"),
-            tr("settings.schema.bar.end-widgets.description"), mpath("end"),
+            tr("settings.schema.bar.end-widgets.description"), monitorPath("end"),
             ListSetting{.items = ovr.endWidgets.value_or(bar.endWidgets)}, "right"
         ));
       }

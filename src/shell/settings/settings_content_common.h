@@ -23,7 +23,7 @@ namespace settings {
   [[nodiscard]] std::vector<ColorSwatchPreview> optionSwatchPreviews(const std::vector<SelectOption>& options);
 
   [[nodiscard]] bool isBlankInput(std::string_view text);
-  [[nodiscard]] std::string formatSliderValue(float value, bool integerValue);
+  [[nodiscard]] std::string formatSliderValue(double value, bool integerValue);
   [[nodiscard]] std::optional<double> parseDoubleInput(std::string_view text);
 
   [[nodiscard]] std::string

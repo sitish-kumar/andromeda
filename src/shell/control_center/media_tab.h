@@ -43,7 +43,7 @@ private:
   void doUpdate(Renderer& renderer) override;
   void refresh(Renderer& renderer);
   void clearArt(Renderer& renderer);
-  void commitPendingSeek(float valueSeconds);
+  void commitPendingSeek(double valueSeconds);
 
   void openPlayerMenu();
 

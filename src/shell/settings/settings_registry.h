@@ -9,6 +9,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -46,13 +47,21 @@ namespace settings {
 
   struct SliderSetting {
     SliderSetting() = default;
-    SliderSetting(float valueIn, float minValueIn, float maxValueIn, float stepIn, bool integerValueIn)
-        : value(valueIn), minValue(minValueIn), maxValue(maxValueIn), step(stepIn), integerValue(integerValueIn) {}
+    template <
+        typename Value, typename MinValue, typename MaxValue, typename Step,
+        typename = std::enable_if_t<
+            std::is_arithmetic_v<Value>
+            && std::is_arithmetic_v<MinValue>
+            && std::is_arithmetic_v<MaxValue>
+            && std::is_arithmetic_v<Step>>>
+    SliderSetting(Value valueIn, MinValue minValueIn, MaxValue maxValueIn, Step stepIn, bool integerValueIn)
+        : value(static_cast<double>(valueIn)), minValue(static_cast<double>(minValueIn)),
+          maxValue(static_cast<double>(maxValueIn)), step(static_cast<double>(stepIn)), integerValue(integerValueIn) {}
 
-    float value = 0.0f;
-    float minValue = 0.0f;
-    float maxValue = 1.0f;
-    float step = 0.01f;
+    double value = 0.0;
+    double minValue = 0.0;
+    double maxValue = 1.0;
+    double step = 0.01;
     bool integerValue = false;
     // Optional: when set, called with the user's just-committed value and returns extra overrides
     // to commit atomically alongside it. Use for cross-field constraints (e.g. linked sliders).

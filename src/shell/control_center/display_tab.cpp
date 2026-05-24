@@ -297,7 +297,7 @@ void DisplayTab::rebuildCards(Renderer& /*renderer*/) {
         .controlHeight = Style::controlHeight * scale,
         .flexGrow = 1.0f,
         .onValueChanged =
-            [this, displayId](float value) {
+            [this, displayId](double value) {
               if (m_syncingSlider) {
                 return;
               }
@@ -305,12 +305,13 @@ void DisplayTab::rebuildCards(Renderer& /*renderer*/) {
               if (currentDisplay == nullptr || !currentDisplay->controllable) {
                 return;
               }
-              queueBrightness(displayId, value);
+              const float brightness = static_cast<float>(value);
+              queueBrightness(displayId, brightness);
               // Update the value label immediately
               for (auto& c : m_cards) {
                 if (c.displayId == displayId && c.valueLabel != nullptr) {
-                  c.valueLabel->setText(formatBrightnessValue(*currentDisplay, value));
-                  c.lastBrightness = value;
+                  c.valueLabel->setText(formatBrightnessValue(*currentDisplay, brightness));
+                  c.lastBrightness = brightness;
                   break;
                 }
               }

@@ -920,15 +920,15 @@ namespace {
               .wheelAdjustEnabled = true,
               .flexGrow = 1.0f,
               .onValueChanged =
-                  [this](float value) {
+                  [this](double value) {
                     if (m_syncing || m_audio == nullptr) {
                       return;
                     }
                     if (m_valueLabel != nullptr) {
-                      m_valueLabel->setText(std::to_string(static_cast<int>(std::round(value * 100.0f))) + "%");
+                      m_valueLabel->setText(std::to_string(static_cast<int>(std::round(value * 100.0))) + "%");
                     }
                     if (m_onQueueVolume) {
-                      m_onQueueVolume(value);
+                      m_onQueueVolume(static_cast<float>(value));
                     }
                   },
               .onDragEnd =
@@ -1453,15 +1453,15 @@ std::unique_ptr<Flex> AudioTab::create() {
           .wheelAdjustEnabled = true,
           .flexGrow = 1.0f,
           .onValueChanged =
-              [this](float value) {
+              [this](double value) {
                 if (m_syncingOutputSlider || m_audio == nullptr) {
                   return;
                 }
                 m_sinkVolumeDebounceTimer.stop();
-                queueSinkVolume(value);
+                queueSinkVolume(static_cast<float>(value));
                 flushPendingVolumes();
                 if (m_outputValue != nullptr) {
-                  m_outputValue->setText(std::to_string(static_cast<int>(std::round(value * 100.0f))) + "%");
+                  m_outputValue->setText(std::to_string(static_cast<int>(std::round(value * 100.0))) + "%");
                 }
               },
           .onDragEnd =
@@ -1539,15 +1539,15 @@ std::unique_ptr<Flex> AudioTab::create() {
           .wheelAdjustEnabled = true,
           .flexGrow = 1.0f,
           .onValueChanged =
-              [this](float value) {
+              [this](double value) {
                 if (m_syncingInputSlider || m_audio == nullptr) {
                   return;
                 }
                 m_sourceVolumeDebounceTimer.stop();
-                queueSourceVolume(value);
+                queueSourceVolume(static_cast<float>(value));
                 flushPendingVolumes();
                 if (m_inputValue != nullptr) {
-                  m_inputValue->setText(std::to_string(static_cast<int>(std::round(value * 100.0f))) + "%");
+                  m_inputValue->setText(std::to_string(static_cast<int>(std::round(value * 100.0))) + "%");
                 }
               },
           .onDragEnd =

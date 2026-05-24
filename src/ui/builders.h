@@ -247,10 +247,10 @@ namespace ui {
 
   struct SliderProps {
     Slider** out = nullptr;
-    std::optional<float> minValue = std::nullopt;
-    std::optional<float> maxValue = std::nullopt;
-    std::optional<float> step = std::nullopt;
-    std::optional<float> value = std::nullopt;
+    std::optional<double> minValue = std::nullopt;
+    std::optional<double> maxValue = std::nullopt;
+    std::optional<double> step = std::nullopt;
+    std::optional<double> value = std::nullopt;
     std::optional<bool> enabled = std::nullopt;
     std::optional<float> trackHeight = std::nullopt;
     std::optional<float> thumbSize = std::nullopt;
@@ -262,7 +262,7 @@ namespace ui {
     std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
-    std::function<void(float)> onValueChanged = nullptr;
+    std::function<void(double)> onValueChanged = nullptr;
     std::function<void()> onDragEnd = nullptr;
     std::function<void(Slider&)> configure = nullptr;
   };
