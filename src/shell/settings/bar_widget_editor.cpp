@@ -945,20 +945,20 @@ namespace settings {
                 ui::toggle({
                     .checked = settingValueAsBool(value),
                     .scale = ctx.scale,
-                    .onChange
-                    = [configService = ctx.configService, setOverride = ctx.setOverride,
-                       requestRebuild = ctx.requestRebuild, widgetName = std::string(widgetName), path,
-                       displayPath = widgetSettingPath(std::string(widgetName), "display"), specs](bool enabled) {
-                        setOverride(path, enabled);
-                        if (enabled
-                            && configService != nullptr
-                            && settingCurrentString(configService->config(), widgetName, "display", specs) == "none") {
-                          setOverride(displayPath, std::string("id"));
-                        }
-                        if (requestRebuild) {
-                          requestRebuild();
-                        }
-                      },
+                    .onChange = [configService = ctx.configService, setOverride = ctx.setOverride,
+                                 requestRebuild = ctx.requestRebuild, widgetName = std::string(widgetName), path,
+                                 displayPath = widgetSettingPath(std::string(widgetName), "display"),
+                                 specs](bool enabled) {
+                      setOverride(path, enabled);
+                      if (enabled
+                          && configService != nullptr
+                          && settingCurrentString(configService->config(), widgetName, "display", specs) == "none") {
+                        setOverride(displayPath, std::string("id"));
+                      }
+                      if (requestRebuild) {
+                        requestRebuild();
+                      }
+                    },
                 })
             );
           } else {
@@ -1283,8 +1283,8 @@ namespace settings {
           );
         }
 
-        const bool pendingDelete = guiManaged && ctx.pendingDeleteWidgetName == widgetName;
-        const bool renaming = guiManaged && ctx.renamingWidgetName == widgetName;
+        const bool pendingDelete = ctx.pendingDeleteWidgetName == widgetName;
+        const bool renaming = ctx.renamingWidgetName == widgetName;
 
         if (!pendingDelete && !renaming && !currentLaneInherited && !currentLaneKey.empty()) {
           auto actionRow = ui::row({
