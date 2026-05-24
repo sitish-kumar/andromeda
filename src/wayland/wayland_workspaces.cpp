@@ -7,6 +7,7 @@
 #include "compositors/mango/mango_workspace_backend.h"
 #include "compositors/output_backend.h"
 #include "compositors/sway/sway_workspace_backend.h"
+#include "compositors/triad/triad_workspace_backend.h"
 #include "core/log.h"
 
 #include <string>
@@ -42,6 +43,12 @@ WaylandWorkspaces::WaylandWorkspaces(compositors::CompositorRuntimeRegistry& run
   m_swayConnector = swayBackend.get();
   m_outputNameResolvers.push_back(swayBackend.get());
   m_backends.push_back(std::move(swayBackend));
+
+  auto triadBackend = std::make_unique<TriadWorkspaceBackend>(runtimeRegistry.triad());
+  m_triadBackend = triadBackend.get();
+  m_triadConnector = triadBackend.get();
+  m_outputNameResolvers.push_back(triadBackend.get());
+  m_backends.push_back(std::move(triadBackend));
 }
 
 WaylandWorkspaces::~WaylandWorkspaces() = default;
@@ -90,6 +97,13 @@ void WaylandWorkspaces::initialize() {
       return;
     }
     break;
+  case compositors::CompositorKind::Triad:
+    if (m_triadBackend != nullptr && m_triadConnector != nullptr &&
+        (m_triadConnector->connectSocket() || m_triadBackend->isAvailable())) {
+      setActiveBackend(m_triadBackend);
+      return;
+    }
+    break;
   case compositors::CompositorKind::Niri:
   case compositors::CompositorKind::Labwc:
   case compositors::CompositorKind::Unknown:
@@ -110,6 +124,11 @@ void WaylandWorkspaces::initialize() {
   }
   if (availableOrConnected(m_swayBackend, m_swayConnector)) {
     setActiveBackend(m_swayBackend);
+    return;
+  }
+  if (m_triadBackend != nullptr && m_triadConnector != nullptr &&
+      (m_triadConnector->connectSocket() || m_triadBackend->isAvailable())) {
+    setActiveBackend(m_triadBackend);
     return;
   }
 
@@ -219,10 +238,13 @@ void WaylandWorkspaces::focusWindow(const std::string& windowId) const {
 }
 
 std::optional<std::string> WaylandWorkspaces::focusedWindowId() const {
-  if (m_hyprlandBackend == nullptr) {
-    return std::nullopt;
+  if (m_triadBackend != nullptr && m_activeBackend == m_triadBackend) {
+    return static_cast<const TriadWorkspaceBackend*>(m_triadBackend)->focusedWindowId();
   }
-  return static_cast<const HyprlandWorkspaceBackend*>(m_hyprlandBackend)->focusedWindowId();
+  if (m_hyprlandBackend != nullptr) {
+    return static_cast<const HyprlandWorkspaceBackend*>(m_hyprlandBackend)->focusedWindowId();
+  }
+  return std::nullopt;
 }
 
 std::vector<Workspace> WaylandWorkspaces::all() const {
