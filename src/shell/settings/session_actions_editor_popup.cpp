@@ -206,7 +206,7 @@ namespace settings {
       if (config() != nullptr) {
         m_selectPopup->setShadowConfig(config()->config().shell.shadow);
       }
-      m_selectPopup->setParent(xdgSurface(), m_parentOutput);
+      m_selectPopup->setParent(xdgSurface(), wlSurface(), m_parentOutput);
       contentParent->setPopupContext(m_selectPopup.get());
     }
   }

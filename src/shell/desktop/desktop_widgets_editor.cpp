@@ -444,7 +444,7 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     if (m_config != nullptr) {
       surface.selectPopup->setShadowConfig(m_config->config().shell.shadow);
     }
-    surface.selectPopup->setParent(surface.surface->layerSurface(), surface.output);
+    surface.selectPopup->setParent(surface.surface->layerSurface(), surface.surface->wlSurface(), surface.output);
     root->setPopupContext(surface.selectPopup.get());
   }
   root->setFrameSize(static_cast<float>(surface.surface->width()), static_cast<float>(surface.surface->height()));

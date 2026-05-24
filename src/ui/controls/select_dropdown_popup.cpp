@@ -44,15 +44,19 @@ SelectDropdownPopup::SelectDropdownPopup(WaylandConnection& wayland, RenderConte
 
 SelectDropdownPopup::~SelectDropdownPopup() { closeSelectDropdown(); }
 
-void SelectDropdownPopup::setParent(zwlr_layer_surface_v1* layerSurface, wl_output* output) {
+void SelectDropdownPopup::setParent(
+    zwlr_layer_surface_v1* layerSurface, wl_surface* parentWlSurface, wl_output* output
+) {
   m_parentLayerSurface = layerSurface;
   m_parentXdgSurface = nullptr;
+  m_parentWlSurface = parentWlSurface;
   m_parentOutput = output;
 }
 
-void SelectDropdownPopup::setParent(xdg_surface* xdgSurface, wl_output* output) {
+void SelectDropdownPopup::setParent(xdg_surface* xdgSurface, wl_surface* parentWlSurface, wl_output* output) {
   m_parentLayerSurface = nullptr;
   m_parentXdgSurface = xdgSurface;
+  m_parentWlSurface = parentWlSurface;
   m_parentOutput = output;
 }
 
@@ -198,6 +202,7 @@ void SelectDropdownPopup::openSelectDropdown(const DropdownRequest& request, Dro
   popup_chrome::setContentInputRegion(*m_surface, chrome);
 
   m_wlSurface = m_surface->wlSurface();
+  syncPointerStateFromCurrentPosition();
 }
 
 void SelectDropdownPopup::closeSelectDropdown() {
@@ -441,65 +446,83 @@ bool SelectDropdownPopup::onPointerEvent(const PointerEvent& event) {
     return false;
   }
 
-  const bool onPopup = (event.surface != nullptr && event.surface == m_wlSurface);
   const bool captured = m_inputDispatcher.pointerCaptured();
+  float localX = 0.0f;
+  float localY = 0.0f;
+  const bool mapped = mapPointerEvent(event, localX, localY);
+  if (!mapped) {
+    if ((event.type == PointerEvent::Type::Leave && event.surface == m_parentWlSurface)
+        || (event.type == PointerEvent::Type::Motion && event.surface == m_parentWlSurface && m_pointerInside)) {
+      m_pointerInside = false;
+      m_pointerOnSurface = false;
+      if (!captured) {
+        m_inputDispatcher.pointerLeave();
+      }
+    }
+    if (m_surface != nullptr && m_sceneRoot != nullptr && m_surface->isRunning()) {
+      m_surface->requestRedraw();
+    }
+    return false;
+  }
 
   switch (event.type) {
   case PointerEvent::Type::Enter:
-    if (onPopup) {
-      m_pointerInside = true;
-      m_pointerOnSurface = true;
-      m_inputDispatcher.pointerEnter(static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial);
-    } else if (captured) {
-      m_pointerOnSurface = false;
-    }
+    m_pointerInside = true;
+    m_pointerOnSurface = ownsSurface(resolveEventSurface(event));
+    m_inputDispatcher.pointerEnter(localX, localY, event.serial);
     break;
   case PointerEvent::Type::Leave:
-    if (onPopup) {
-      if (captured) {
-        m_pointerOnSurface = false;
-      } else {
-        m_pointerInside = false;
-        m_pointerOnSurface = false;
-        m_inputDispatcher.pointerLeave();
-      }
+    m_pointerInside = false;
+    m_pointerOnSurface = false;
+    if (!captured) {
+      m_inputDispatcher.pointerLeave();
     }
     break;
   case PointerEvent::Type::Motion:
-    if (m_pointerInside) {
-      auto [mx, my] = popupLocalCoords(event.sx, event.sy);
-      m_inputDispatcher.pointerMotion(mx, my, 0);
-      return true;
+    m_pointerOnSurface = ownsSurface(resolveEventSurface(event));
+    if (captured) {
+      m_inputDispatcher.pointerMotion(localX, localY, event.serial);
+    } else if (!m_pointerInside) {
+      m_pointerInside = true;
+      m_inputDispatcher.pointerEnter(localX, localY, event.serial);
+    } else {
+      m_inputDispatcher.pointerMotion(localX, localY, event.serial);
     }
-    break;
+    return true;
   case PointerEvent::Type::Button:
-    if (m_pointerInside) {
-      auto [bx, by] = popupLocalCoords(event.sx, event.sy);
-      const bool pressed = (event.state == 1);
-      m_inputDispatcher.pointerButton(bx, by, event.button, pressed);
-      if (!pressed && !m_pointerOnSurface) {
-        m_pointerInside = false;
-        m_inputDispatcher.pointerLeave();
-      }
-      return true;
+    m_pointerOnSurface = ownsSurface(resolveEventSurface(event));
+    if (captured) {
+      m_inputDispatcher.pointerMotion(localX, localY, event.serial);
+    } else if (!m_pointerInside) {
+      m_pointerInside = true;
+      m_inputDispatcher.pointerEnter(localX, localY, event.serial);
+    } else {
+      m_inputDispatcher.pointerMotion(localX, localY, event.serial);
     }
-    break;
+    m_inputDispatcher.pointerButton(localX, localY, event.button, event.state == 1);
+    return true;
   case PointerEvent::Type::Axis:
-    if (m_pointerInside) {
-      m_inputDispatcher.pointerAxis(
-          static_cast<float>(event.sx), static_cast<float>(event.sy), event.axis, event.axisSource, event.axisValue,
-          event.axisDiscrete, event.axisValue120, event.axisLines
-      );
-      return true;
+    m_pointerOnSurface = ownsSurface(resolveEventSurface(event));
+    if (captured) {
+      m_inputDispatcher.pointerMotion(localX, localY, event.serial);
+    } else if (!m_pointerInside) {
+      m_pointerInside = true;
+      m_inputDispatcher.pointerEnter(localX, localY, event.serial);
+    } else {
+      m_inputDispatcher.pointerMotion(localX, localY, event.serial);
     }
-    break;
+    m_inputDispatcher.pointerAxis(
+        localX, localY, event.axis, event.axisSource, event.axisValue, event.axisDiscrete, event.axisValue120,
+        event.axisLines
+    );
+    return true;
   }
 
   if (m_surface != nullptr && m_sceneRoot != nullptr && m_surface->isRunning()) {
     m_surface->requestRedraw();
   }
 
-  return onPopup;
+  return true;
 }
 
 void SelectDropdownPopup::onKeyboardEvent(const KeyboardEvent& event) {
@@ -559,14 +582,96 @@ void SelectDropdownPopup::handleKey(std::uint32_t sym, std::uint32_t /*utf32*/, 
   }
 }
 
-std::pair<float, float> SelectDropdownPopup::popupLocalCoords(double sx, double sy) const {
-  if (m_pointerOnSurface || m_surface == nullptr) {
-    return {static_cast<float>(sx), static_cast<float>(sy)};
+wl_surface* SelectDropdownPopup::wlSurface() const noexcept { return m_wlSurface; }
+
+bool SelectDropdownPopup::mapPointerEvent(const PointerEvent& event, float& localX, float& localY) const noexcept {
+  if (m_surface == nullptr) {
+    return false;
   }
-  return {
-      static_cast<float>(sx) - static_cast<float>(m_surface->configuredX()),
-      static_cast<float>(sy) - static_cast<float>(m_surface->configuredY())
-  };
+
+  wl_surface* eventSurface = resolveEventSurface(event);
+  if (eventSurface == nullptr) {
+    return false;
+  }
+
+  if (m_inputDispatcher.pointerCaptured() && event.type != PointerEvent::Type::Leave) {
+    if (ownsSurface(eventSurface)) {
+      localX = static_cast<float>(event.sx);
+      localY = static_cast<float>(event.sy);
+      return true;
+    }
+    if (eventSurface == m_parentWlSurface) {
+      localX = static_cast<float>(event.sx) - static_cast<float>(m_surface->configuredX());
+      localY = static_cast<float>(event.sy) - static_cast<float>(m_surface->configuredY());
+      return true;
+    }
+  }
+
+  if (ownsSurface(eventSurface)) {
+    localX = static_cast<float>(event.sx);
+    localY = static_cast<float>(event.sy);
+    return true;
+  }
+
+  if (eventSurface != m_parentWlSurface) {
+    return false;
+  }
+
+  localX = static_cast<float>(event.sx) - static_cast<float>(m_surface->configuredX());
+  localY = static_cast<float>(event.sy) - static_cast<float>(m_surface->configuredY());
+
+  if (event.type == PointerEvent::Type::Leave) {
+    return m_pointerInside || m_inputDispatcher.pointerCaptured();
+  }
+
+  const auto chrome = popup_chrome::computeGeometry(m_menuWidth, m_viewportHeight, m_shadowConfig);
+  const float left = chrome.contentX();
+  const float top = chrome.contentY();
+  const float right = chrome.contentRight();
+  const float bottom = chrome.contentBottom();
+  if (m_inputDispatcher.pointerCaptured()) {
+    return true;
+  }
+  if (event.type == PointerEvent::Type::Button && m_pointerInside) {
+    return true;
+  }
+  return localX >= left && localY >= top && localX < right && localY < bottom;
 }
 
-wl_surface* SelectDropdownPopup::wlSurface() const noexcept { return m_wlSurface; }
+wl_surface* SelectDropdownPopup::resolveEventSurface(const PointerEvent& event) const noexcept {
+  wl_surface* eventSurface = event.surface;
+  if (eventSurface == nullptr && event.type == PointerEvent::Type::Motion) {
+    eventSurface = m_wayland.lastPointerSurface();
+  }
+  return eventSurface;
+}
+
+void SelectDropdownPopup::syncPointerStateFromCurrentPosition() {
+  if (m_surface == nullptr || !m_wayland.hasPointerPosition()) {
+    return;
+  }
+
+  PointerEvent synthetic;
+  synthetic.type = PointerEvent::Type::Motion;
+  synthetic.surface = m_wayland.lastPointerSurface();
+  synthetic.sx = m_wayland.lastPointerX();
+  synthetic.sy = m_wayland.lastPointerY();
+  synthetic.serial = m_wayland.lastInputSerial();
+
+  float localX = 0.0f;
+  float localY = 0.0f;
+  if (!mapPointerEvent(synthetic, localX, localY)) {
+    return;
+  }
+
+  m_pointerInside = true;
+  m_pointerOnSurface = ownsSurface(synthetic.surface);
+  m_inputDispatcher.pointerEnter(localX, localY, synthetic.serial);
+  if (m_surface->isRunning()) {
+    m_surface->requestRedraw();
+  }
+}
+
+bool SelectDropdownPopup::ownsSurface(wl_surface* surface) const noexcept {
+  return m_surface != nullptr && surface != nullptr && surface == m_surface->wlSurface();
+}
