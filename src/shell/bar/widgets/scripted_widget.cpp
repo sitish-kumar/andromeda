@@ -241,6 +241,8 @@ void ScriptedWidget::doLayout(Renderer& renderer, float containerWidth, float co
   if (!m_flex)
     return;
 
+  m_flex->setDirection(m_isVertical ? FlexDirection::Vertical : FlexDirection::Horizontal);
+
   if (m_fontConfigDirty) {
     renderer.notifyFontConfigChanged();
     m_fontConfigDirty = false;
