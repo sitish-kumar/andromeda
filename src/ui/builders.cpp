@@ -15,6 +15,9 @@ namespace ui {
       if (props.flexGrow.has_value()) {
         control.setFlexGrow(*props.flexGrow);
       }
+      if (props.opacity.has_value()) {
+        control.setOpacity(*props.opacity);
+      }
       if (props.visible.has_value()) {
         control.setVisible(*props.visible);
       }
@@ -205,6 +208,19 @@ namespace ui {
     }
     if (props.tooltip.has_value()) {
       control->setTooltip(*props.tooltip);
+    }
+    if (props.minWidth.has_value()) {
+      control->setMinWidth(*props.minWidth);
+    }
+    if (props.minHeight.has_value()) {
+      control->setMinHeight(*props.minHeight);
+    }
+    if (props.padding.has_value() || props.paddingV.has_value() || props.paddingH.has_value()) {
+      const float allPadding = props.padding.value_or(0.0f);
+      control->setPadding(props.paddingV.value_or(allPadding), props.paddingH.value_or(allPadding));
+    }
+    if (props.radius.has_value()) {
+      control->setRadius(*props.radius);
     }
     applyNodeProps(*control, props);
     if (props.configure) {

@@ -57,6 +57,7 @@ namespace ui {
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(Flex&)> configure = nullptr;
@@ -81,6 +82,7 @@ namespace ui {
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(const std::string&)> onChange = nullptr;
@@ -104,9 +106,16 @@ namespace ui {
     std::optional<std::string> badge = std::nullopt;
     std::optional<float> badgeFontSize = std::nullopt;
     std::optional<std::string> tooltip = std::nullopt;
+    std::optional<float> minWidth = std::nullopt;
+    std::optional<float> minHeight = std::nullopt;
+    std::optional<float> padding = std::nullopt;
+    std::optional<float> paddingV = std::nullopt;
+    std::optional<float> paddingH = std::nullopt;
+    std::optional<float> radius = std::nullopt;
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void()> onClick = nullptr;
@@ -137,6 +146,7 @@ namespace ui {
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(Label&)> configure = nullptr;
@@ -153,6 +163,7 @@ namespace ui {
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(Box&)> configure = nullptr;
@@ -167,6 +178,7 @@ namespace ui {
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(Glyph&)> configure = nullptr;
@@ -180,6 +192,7 @@ namespace ui {
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(Image&)> configure = nullptr;
@@ -193,6 +206,7 @@ namespace ui {
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(Separator&)> configure = nullptr;
@@ -214,6 +228,7 @@ namespace ui {
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(std::size_t, std::string_view)> onSelectionChanged = nullptr;
@@ -234,6 +249,7 @@ namespace ui {
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(float)> onValueChanged = nullptr;
@@ -259,6 +275,7 @@ namespace ui {
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(std::size_t)> onChange = nullptr;
@@ -281,6 +298,7 @@ namespace ui {
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(float)> onScrollChanged = nullptr;
@@ -302,6 +320,7 @@ namespace ui {
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(std::optional<std::size_t>)> onSelectionChanged = nullptr;
@@ -318,6 +337,7 @@ namespace ui {
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(const SearchPickerOption&)> onActivated = nullptr;
@@ -335,6 +355,7 @@ namespace ui {
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(bool)> onChange = nullptr;
@@ -349,6 +370,7 @@ namespace ui {
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(bool)> onChange = nullptr;
@@ -363,6 +385,7 @@ namespace ui {
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(bool)> onChange = nullptr;
@@ -381,6 +404,7 @@ namespace ui {
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(int)> onValueChanged = nullptr;
@@ -399,6 +423,7 @@ namespace ui {
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
+    std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
     std::function<void(KeyChord)> onCommit = nullptr;
