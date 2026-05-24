@@ -225,12 +225,15 @@ std::unique_ptr<Flex> SystemTab::create() {
       });
 
       auto* header = makeHeaderRow(*card, i18n::tr("control-center.system.titles.gpu"), sc);
-      auto* gpuUsageGroup = makeIconLabel(*header, "gpu-usage", sc, &m_gpuUsageIcon);
-      m_gpuUsageLabel = makeValueLabel(*gpuUsageGroup, sc);
-      auto* gpuVramGroup = makeIconLabel(*header, "memory", sc, &m_gpuVramIcon);
-      m_gpuVramLabel = makeValueLabel(*gpuVramGroup, sc);
-      auto* gpuTempGroup = makeIconLabel(*header, "temperature", sc, &m_gpuTempIcon);
-      m_gpuTempLabel = makeValueLabel(*gpuTempGroup, sc);
+      m_gpuUsageGroup = makeIconLabel(*header, "gpu-usage", sc, &m_gpuUsageIcon);
+      m_gpuUsageLabel = makeValueLabel(*m_gpuUsageGroup, sc);
+      m_gpuUsageGroup->setVisible(false);
+      m_gpuVramGroup = makeIconLabel(*header, "memory", sc, &m_gpuVramIcon);
+      m_gpuVramLabel = makeValueLabel(*m_gpuVramGroup, sc);
+      m_gpuVramGroup->setVisible(false);
+      m_gpuTempGroup = makeIconLabel(*header, "temperature", sc, &m_gpuTempIcon);
+      m_gpuTempLabel = makeValueLabel(*m_gpuTempGroup, sc);
+      m_gpuTempGroup->setVisible(false);
       m_gpuGraph = addGraph(*card);
 
       row->addChild(std::move(card));
@@ -301,10 +304,13 @@ void SystemTab::onClose() {
   m_cpuPctLabel = nullptr;
   m_cpuTempIcon = nullptr;
   m_cpuTempLabel = nullptr;
+  m_gpuTempGroup = nullptr;
   m_gpuTempIcon = nullptr;
   m_gpuTempLabel = nullptr;
+  m_gpuUsageGroup = nullptr;
   m_gpuUsageIcon = nullptr;
   m_gpuUsageLabel = nullptr;
+  m_gpuVramGroup = nullptr;
   m_gpuVramIcon = nullptr;
   m_gpuVramLabel = nullptr;
   m_ramIcon = nullptr;
@@ -715,22 +721,26 @@ void SystemTab::syncLabels() {
       m_cpuTempLabel->setText("--");
     }
   }
-  if (m_gpuTempLabel != nullptr) {
-    if (stats.gpuTempC.has_value()) {
+  if (m_gpuTempGroup != nullptr) {
+    const bool hasTempData = stats.gpuTempC.has_value();
+    m_gpuTempGroup->setVisible(hasTempData);
+    if (hasTempData && m_gpuTempLabel != nullptr) {
       m_gpuTempLabel->setText(std::format("{:.0f}°C", *stats.gpuTempC));
-    } else {
-      m_gpuTempLabel->setText("--");
     }
   }
-  if (m_gpuUsageLabel != nullptr) {
-    if (stats.gpuUsagePercent.has_value()) {
+  if (m_gpuUsageGroup != nullptr) {
+    const bool hasUsageData = stats.gpuUsagePercent.has_value();
+    m_gpuUsageGroup->setVisible(hasUsageData);
+    if (hasUsageData && m_gpuUsageLabel != nullptr) {
       m_gpuUsageLabel->setText(std::format("{:.0f}%", *stats.gpuUsagePercent));
-    } else {
-      m_gpuUsageLabel->setText("--");
     }
   }
-  if (m_gpuVramLabel != nullptr) {
-    m_gpuVramLabel->setText(formatGpuVramUsed(stats));
+  if (m_gpuVramGroup != nullptr) {
+    const bool hasVramData = stats.gpuVramUsedBytes.has_value();
+    m_gpuVramGroup->setVisible(hasVramData);
+    if (hasVramData && m_gpuVramLabel != nullptr) {
+      m_gpuVramLabel->setText(formatGpuVramUsed(stats));
+    }
   }
   if (m_ramLabel != nullptr) {
     m_ramLabel->setText(

@@ -59,10 +59,13 @@ private:
   Label* m_cpuPctLabel = nullptr;
   Glyph* m_cpuTempIcon = nullptr;
   Label* m_cpuTempLabel = nullptr;
+  Flex* m_gpuTempGroup = nullptr;
   Glyph* m_gpuTempIcon = nullptr;
   Label* m_gpuTempLabel = nullptr;
+  Flex* m_gpuUsageGroup = nullptr;
   Glyph* m_gpuUsageIcon = nullptr;
   Label* m_gpuUsageLabel = nullptr;
+  Flex* m_gpuVramGroup = nullptr;
   Glyph* m_gpuVramIcon = nullptr;
   Label* m_gpuVramLabel = nullptr;
   Glyph* m_ramIcon = nullptr;

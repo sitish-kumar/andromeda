@@ -264,6 +264,57 @@ namespace {
     return std::all_of(name.begin() + 4, name.end(), [](char ch) { return ch >= '0' && ch <= '9'; });
   }
 
+  struct SysfsGpuUsageReading {
+    double percent = 0.0;
+    std::string source;
+  };
+
+  std::optional<SysfsGpuUsageReading> readSysfsGpuUsage() {
+    namespace fs = std::filesystem;
+
+    const fs::path drmRoot{"/sys/class/drm"};
+    if (!fs::exists(drmRoot) || !fs::is_directory(drmRoot)) {
+      return std::nullopt;
+    }
+
+    double totalUsage = 0.0;
+    int deviceCount = 0;
+    std::string firstSource;
+
+    for (const auto& entry : fs::directory_iterator{drmRoot}) {
+      if (!entry.is_directory() || !isDrmCardName(entry.path().filename().string())) {
+        continue;
+      }
+
+      const fs::path devicePath = entry.path() / "device";
+      if (!fs::exists(devicePath) || !isDevicePathAwake(devicePath)) {
+        continue;
+      }
+
+      const fs::path busyPath = devicePath / "gpu_busy_percent";
+      const auto value = readUint64File(busyPath);
+      if (!value.has_value() || *value > 100) {
+        continue;
+      }
+
+      totalUsage += static_cast<double>(*value);
+      ++deviceCount;
+      if (firstSource.empty()) {
+        firstSource = busyPath.string();
+      }
+    }
+
+    if (deviceCount <= 0) {
+      return std::nullopt;
+    }
+
+    return SysfsGpuUsageReading{
+        .percent = totalUsage / static_cast<double>(deviceCount),
+        .source =
+            deviceCount == 1 ? std::format("sysfs:{}", firstSource) : std::format("sysfs ({} devices)", deviceCount),
+    };
+  }
+
   std::optional<GpuVramReading> readAmdGpuVram() {
     namespace fs = std::filesystem;
 
@@ -891,7 +942,9 @@ void SystemMonitorService::logDetectedSources() {
     kLog.info("detected GPU temperature source: unavailable; {}", gpuDetail);
   }
 
-  if (const auto gpuUsage = readGpuUsagePercent(); gpuUsage.has_value()) {
+  if (const auto sysfsUsage = readSysfsGpuUsage(); sysfsUsage.has_value()) {
+    kLog.info("detected GPU usage source: {} ({:.0f}%)", sysfsUsage->source, sysfsUsage->percent);
+  } else if (const auto gpuUsage = readGpuUsagePercent(); gpuUsage.has_value()) {
     kLog.info("detected GPU usage source: nvml ({:.0f}%)", *gpuUsage);
   } else {
     kLog.info("detected GPU usage source: unavailable");
@@ -1187,6 +1240,10 @@ std::optional<double> SystemMonitorService::readGpuTempCelsius() {
 }
 
 std::optional<double> SystemMonitorService::readGpuUsagePercent() {
+  if (const auto sysfs = readSysfsGpuUsage(); sysfs.has_value()) {
+    return sysfs->percent;
+  }
+
   if (hasInactiveNvidiaPciDisplayDevice()) {
     return std::nullopt;
   }
