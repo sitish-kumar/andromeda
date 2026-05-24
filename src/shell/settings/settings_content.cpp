@@ -1567,25 +1567,37 @@ namespace settings {
       });
     };
 
-    const auto makeMultiSelectBlock = [&](Flex& section, const SettingEntry& entry, const MultiSelectSetting& setting) {
-      const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
+    const auto makeCollectionBlock = [&](const SettingEntry& entry, bool overridden, bool reserveTitleHeight = false,
+                                         bool titleMaxTwoLines = false, bool fillWidth = false, bool flexGrow = false) {
+      auto block = ui::column({.align = FlexAlign::Stretch,
+                               .gap = Style::spaceXs * scale,
+                               .configure = [scale, fillWidth, flexGrow](Flex& flex) {
+                                 flex.setPadding(2.0f * scale, 0.0f);
+                                 if (fillWidth) {
+                                   flex.setFillWidth(true);
+                                 }
+                                 if (flexGrow) {
+                                   flex.setFlexGrow(1.0f);
+                                 }
+                               }});
 
-      auto block = std::make_unique<Flex>();
-      block->setDirection(FlexDirection::Vertical);
-      block->setAlign(FlexAlign::Stretch);
-      block->setGap(Style::spaceXs * scale);
-      block->setPadding(2.0f * scale, 0.0f);
-
-      auto titleRow = std::make_unique<Flex>();
-      titleRow->setDirection(FlexDirection::Horizontal);
-      titleRow->setAlign(FlexAlign::Center);
-      titleRow->setGap(Style::spaceSm * scale);
-      titleRow->setFillWidth(true);
-      titleRow->addChild(makeLabel(entry.title, Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::OnSurface),
-                                   FontWeight::Bold));
-      auto titleSpacer = std::make_unique<Flex>();
-      titleSpacer->setFlexGrow(1.0f);
-      titleRow->addChild(std::move(titleSpacer));
+      auto titleRow = ui::row({.align = FlexAlign::Center,
+                               .gap = Style::spaceSm * scale,
+                               .fillWidth = true,
+                               .configure =
+                                   [scale, reserveTitleHeight](Flex& flex) {
+                                     if (reserveTitleHeight) {
+                                       flex.setMinHeight(Style::controlHeightSm * scale);
+                                     }
+                                   }},
+                              ui::label({
+                                  .text = entry.title,
+                                  .fontSize = Style::fontSizeBody * scale,
+                                  .color = colorSpecFromRole(ColorRole::OnSurface),
+                                  .maxLines = titleMaxTwoLines ? std::optional<int>{2} : std::nullopt,
+                                  .fontWeight = FontWeight::Bold,
+                              }),
+                              ui::spacer());
       if (overridden) {
         titleRow->addChild(makeOverrideResetActions(entry.path));
       }
@@ -1594,12 +1606,18 @@ namespace settings {
       if (!entry.subtitle.empty()) {
         block->addChild(makeSettingSubtitleLabel(entry.subtitle, scale));
       }
+      return block;
+    };
 
-      auto checkRow = std::make_unique<Flex>();
-      checkRow->setDirection(FlexDirection::Horizontal);
-      checkRow->setAlign(FlexAlign::Center);
-      checkRow->setGap(Style::spaceMd * scale);
-      checkRow->setPadding(Style::spaceXs * scale, 0.0f);
+    const auto makeMultiSelectBlock = [&](Flex& section, const SettingEntry& entry, const MultiSelectSetting& setting) {
+      const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
+
+      auto block = makeCollectionBlock(entry, overridden);
+
+      auto checkRow =
+          ui::row({.align = FlexAlign::Center, .gap = Style::spaceMd * scale, .configure = [scale](Flex& flex) {
+                     flex.setPadding(Style::spaceXs * scale, 0.0f);
+                   }});
 
       auto options = setting.options;
       auto selected = setting.selectedValues;
@@ -1607,10 +1625,7 @@ namespace settings {
       auto path = entry.path;
 
       for (const auto& option : options) {
-        auto item = std::make_unique<Flex>();
-        item->setDirection(FlexDirection::Horizontal);
-        item->setAlign(FlexAlign::Center);
-        item->setGap(Style::spaceXs * scale);
+        auto item = ui::row({.align = FlexAlign::Center, .gap = Style::spaceXs * scale});
 
         auto checkbox = std::make_unique<Checkbox>();
         checkbox->setScale(scale);
@@ -1657,30 +1672,7 @@ namespace settings {
     const auto makeListBlock = [&](Flex& section, const SettingEntry& entry, const ListSetting& list) {
       const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
 
-      auto block = std::make_unique<Flex>();
-      block->setDirection(FlexDirection::Vertical);
-      block->setAlign(FlexAlign::Stretch);
-      block->setGap(Style::spaceXs * scale);
-      block->setPadding(2.0f * scale, 0.0f);
-
-      auto titleRow = std::make_unique<Flex>();
-      titleRow->setDirection(FlexDirection::Horizontal);
-      titleRow->setAlign(FlexAlign::Center);
-      titleRow->setGap(Style::spaceSm * scale);
-      titleRow->setFillWidth(true);
-      titleRow->addChild(makeLabel(entry.title, Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::OnSurface),
-                                   FontWeight::Bold));
-      auto titleSpacer = std::make_unique<Flex>();
-      titleSpacer->setFlexGrow(1.0f);
-      titleRow->addChild(std::move(titleSpacer));
-      if (overridden) {
-        titleRow->addChild(makeOverrideResetActions(entry.path));
-      }
-      block->addChild(std::move(titleRow));
-
-      if (!entry.subtitle.empty()) {
-        block->addChild(makeSettingSubtitleLabel(entry.subtitle, scale));
-      }
+      auto block = makeCollectionBlock(entry, overridden);
 
       auto listEditor = std::make_unique<ListEditor>();
       listEditor->setScale(scale);
@@ -1732,41 +1724,9 @@ namespace settings {
                                           const KeybindListSetting& keybinds) {
       const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
 
-      auto block = std::make_unique<Flex>();
-      block->setDirection(FlexDirection::Vertical);
-      block->setAlign(FlexAlign::Stretch);
-      block->setGap(Style::spaceXs * scale);
-      block->setPadding(2.0f * scale, 0.0f);
-      block->setFillWidth(true);
-      block->setFlexGrow(1.0f);
+      auto block = makeCollectionBlock(entry, overridden, true, true, true, true);
 
-      auto titleRow = std::make_unique<Flex>();
-      titleRow->setDirection(FlexDirection::Horizontal);
-      titleRow->setAlign(FlexAlign::Center);
-      titleRow->setGap(Style::spaceSm * scale);
-      titleRow->setFillWidth(true);
-      // Reserve the Reset button's height so columns line up even when only some are overridden.
-      titleRow->setMinHeight(Style::controlHeightSm * scale);
-      auto titleLabel = makeLabel(entry.title, Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::OnSurface),
-                                  FontWeight::Bold);
-      titleLabel->setMaxLines(2);
-      titleRow->addChild(std::move(titleLabel));
-      auto titleSpacer = std::make_unique<Flex>();
-      titleSpacer->setFlexGrow(1.0f);
-      titleRow->addChild(std::move(titleSpacer));
-      if (overridden) {
-        titleRow->addChild(makeOverrideResetActions(entry.path));
-      }
-      block->addChild(std::move(titleRow));
-
-      if (!entry.subtitle.empty()) {
-        block->addChild(makeSettingSubtitleLabel(entry.subtitle, scale));
-      }
-
-      auto list = std::make_unique<Flex>();
-      list->setDirection(FlexDirection::Vertical);
-      list->setAlign(FlexAlign::Stretch);
-      list->setGap(Style::spaceXs * scale);
+      auto list = ui::column({.align = FlexAlign::Stretch, .gap = Style::spaceXs * scale});
 
       // An empty list clears the override so defaults take effect again; never persist as "disabled".
       // If no GUI override exists, request a rebuild so the UI snaps back to the underlying default.
@@ -1787,10 +1747,7 @@ namespace settings {
       };
 
       for (std::size_t i = 0; i < keybinds.items.size(); ++i) {
-        auto row = std::make_unique<Flex>();
-        row->setDirection(FlexDirection::Horizontal);
-        row->setAlign(FlexAlign::Center);
-        row->setGap(Style::spaceXs * scale);
+        auto row = ui::row({.align = FlexAlign::Center, .gap = Style::spaceXs * scale});
 
         auto recorder = ui::keybindRecorder({
             .chord = keybinds.items[i],
@@ -1807,20 +1764,25 @@ namespace settings {
         });
         row->addChild(std::move(recorder));
 
-        auto removeBtn = std::make_unique<Button>();
-        removeBtn->setGlyph("close");
-        removeBtn->setVariant(ButtonVariant::Ghost);
-        removeBtn->setGlyphSize(Style::fontSizeCaption * scale);
-        removeBtn->setMinWidth(Style::controlHeightSm * scale);
-        removeBtn->setMinHeight(Style::controlHeightSm * scale);
-        removeBtn->setPadding(Style::spaceXs * scale);
-        removeBtn->setRadius(Style::scaledRadiusSm(scale));
-        removeBtn->setOnClick([commitItems, items = keybinds.items, i]() mutable {
-          if (i >= items.size()) {
-            return;
-          }
-          items.erase(items.begin() + static_cast<std::ptrdiff_t>(i));
-          commitItems(std::move(items));
+        auto removeBtn = ui::button({
+            .glyph = "close",
+            .glyphSize = Style::fontSizeCaption * scale,
+            .variant = ButtonVariant::Ghost,
+            .onClick =
+                [commitItems, items = keybinds.items, i]() mutable {
+                  if (i >= items.size()) {
+                    return;
+                  }
+                  items.erase(items.begin() + static_cast<std::ptrdiff_t>(i));
+                  commitItems(std::move(items));
+                },
+            .configure =
+                [scale](Button& button) {
+                  button.setMinWidth(Style::controlHeightSm * scale);
+                  button.setMinHeight(Style::controlHeightSm * scale);
+                  button.setPadding(Style::spaceXs * scale);
+                  button.setRadius(Style::scaledRadiusSm(scale));
+                },
         });
         row->addChild(std::move(removeBtn));
 
@@ -1830,10 +1792,7 @@ namespace settings {
       const bool canAdd = (keybinds.maxItems == 0 || keybinds.items.size() < keybinds.maxItems);
       if (canAdd) {
         // Trailing recorder is UI-only; it only joins the persisted list once a chord is recorded.
-        auto addRow = std::make_unique<Flex>();
-        addRow->setDirection(FlexDirection::Horizontal);
-        addRow->setAlign(FlexAlign::Center);
-        addRow->setGap(Style::spaceXs * scale);
+        auto addRow = ui::row({.align = FlexAlign::Center, .gap = Style::spaceXs * scale});
 
         auto addRecorder = ui::keybindRecorder({
             .scale = scale,
@@ -1859,30 +1818,7 @@ namespace settings {
                                            const ShortcutListSetting& shortcuts) {
       const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
 
-      auto block = std::make_unique<Flex>();
-      block->setDirection(FlexDirection::Vertical);
-      block->setAlign(FlexAlign::Stretch);
-      block->setGap(Style::spaceXs * scale);
-      block->setPadding(2.0f * scale, 0.0f);
-
-      auto titleRow = std::make_unique<Flex>();
-      titleRow->setDirection(FlexDirection::Horizontal);
-      titleRow->setAlign(FlexAlign::Center);
-      titleRow->setGap(Style::spaceSm * scale);
-      titleRow->setFillWidth(true);
-      titleRow->addChild(makeLabel(entry.title, Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::OnSurface),
-                                   FontWeight::Bold));
-      auto titleSpacer = std::make_unique<Flex>();
-      titleSpacer->setFlexGrow(1.0f);
-      titleRow->addChild(std::move(titleSpacer));
-      if (overridden) {
-        titleRow->addChild(makeOverrideResetActions(entry.path));
-      }
-      block->addChild(std::move(titleRow));
-
-      if (!entry.subtitle.empty()) {
-        block->addChild(makeSettingSubtitleLabel(entry.subtitle, scale));
-      }
+      auto block = makeCollectionBlock(entry, overridden);
 
       std::vector<std::string> itemTypes;
       itemTypes.reserve(shortcuts.items.size());
@@ -1936,30 +1872,7 @@ namespace settings {
                                                    const SessionPanelActionsSetting& sa) {
       const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
 
-      auto block = std::make_unique<Flex>();
-      block->setDirection(FlexDirection::Vertical);
-      block->setAlign(FlexAlign::Stretch);
-      block->setGap(Style::spaceXs * scale);
-      block->setPadding(2.0f * scale, 0.0f);
-
-      auto titleRow = std::make_unique<Flex>();
-      titleRow->setDirection(FlexDirection::Horizontal);
-      titleRow->setAlign(FlexAlign::Center);
-      titleRow->setGap(Style::spaceSm * scale);
-      titleRow->setFillWidth(true);
-      titleRow->addChild(makeLabel(entry.title, Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::OnSurface),
-                                   FontWeight::Bold));
-      auto titleSpacer = std::make_unique<Flex>();
-      titleSpacer->setFlexGrow(1.0f);
-      titleRow->addChild(std::move(titleSpacer));
-      if (overridden) {
-        titleRow->addChild(makeOverrideResetActions(entry.path));
-      }
-      block->addChild(std::move(titleRow));
-
-      if (!entry.subtitle.empty()) {
-        block->addChild(makeSettingSubtitleLabel(entry.subtitle, scale));
-      }
+      auto block = makeCollectionBlock(entry, overridden);
 
       const std::vector<SelectOption> kindOptions = {
           {"lock", i18n::tr("settings.session-actions.kind.lock"), {}},
@@ -1979,103 +1892,123 @@ namespace settings {
       const float iconBtnH = Style::controlHeight * scale;
 
       for (std::size_t idx = 0; idx < state->size(); ++idx) {
-        auto row = std::make_unique<Flex>();
-        row->setDirection(FlexDirection::Horizontal);
-        row->setAlign(FlexAlign::Center);
-        row->setJustify(FlexJustify::SpaceBetween);
-        row->setGap(Style::spaceSm * scale);
-        row->setMinHeight(Style::controlHeightSm * scale);
+        auto row = ui::row({
+            .align = FlexAlign::Center,
+            .justify = FlexJustify::SpaceBetween,
+            .gap = Style::spaceSm * scale,
+            .minHeight = Style::controlHeightSm * scale,
+        });
 
-        auto summary = std::make_unique<Label>();
-        summary->setText(sessionActionRowSummary(kindOptions, (*state)[idx]));
-        summary->setFontSize(Style::fontSizeBody * scale);
-        summary->setColor(colorSpecFromRole(ColorRole::OnSurface));
-        summary->setFlexGrow(1.0f);
+        auto summary = ui::label({
+            .text = sessionActionRowSummary(kindOptions, (*state)[idx]),
+            .fontSize = Style::fontSizeBody * scale,
+            .color = colorSpecFromRole(ColorRole::OnSurface),
+            .flexGrow = 1.0f,
+        });
         row->addChild(std::move(summary));
 
-        auto reorder = std::make_unique<Flex>();
-        reorder->setDirection(FlexDirection::Horizontal);
-        reorder->setAlign(FlexAlign::Center);
-        reorder->setGap(Style::spaceXs * scale);
+        auto reorder = ui::row({.align = FlexAlign::Center, .gap = Style::spaceXs * scale});
 
-        auto upBtn = std::make_unique<Button>();
-        upBtn->setGlyph("chevron-up");
-        upBtn->setVariant(ButtonVariant::Ghost);
-        upBtn->setGlyphSize(Style::fontSizeBody * scale);
-        upBtn->setMinWidth(Style::controlHeightSm * scale);
-        upBtn->setMinHeight(iconBtnH);
-        upBtn->setPadding(Style::spaceXs * scale);
-        upBtn->setRadius(Style::scaledRadiusMd(scale));
-        upBtn->setEnabled(idx > 0);
-        upBtn->setOnClick([state, rowIndex = idx, commit]() {
-          if (rowIndex == 0 || rowIndex >= state->size()) {
-            return;
-          }
-          std::swap((*state)[rowIndex - 1], (*state)[rowIndex]);
-          commit();
+        auto upBtn = ui::button({
+            .glyph = "chevron-up",
+            .glyphSize = Style::fontSizeBody * scale,
+            .enabled = idx > 0,
+            .variant = ButtonVariant::Ghost,
+            .onClick =
+                [state, rowIndex = idx, commit]() {
+                  if (rowIndex == 0 || rowIndex >= state->size()) {
+                    return;
+                  }
+                  std::swap((*state)[rowIndex - 1], (*state)[rowIndex]);
+                  commit();
+                },
+            .configure =
+                [iconBtnH, scale](Button& button) {
+                  button.setMinWidth(Style::controlHeightSm * scale);
+                  button.setMinHeight(iconBtnH);
+                  button.setPadding(Style::spaceXs * scale);
+                  button.setRadius(Style::scaledRadiusMd(scale));
+                },
         });
         reorder->addChild(std::move(upBtn));
 
-        auto downBtn = std::make_unique<Button>();
-        downBtn->setGlyph("chevron-down");
-        downBtn->setVariant(ButtonVariant::Ghost);
-        downBtn->setGlyphSize(Style::fontSizeBody * scale);
-        downBtn->setMinWidth(Style::controlHeightSm * scale);
-        downBtn->setMinHeight(iconBtnH);
-        downBtn->setPadding(Style::spaceXs * scale);
-        downBtn->setRadius(Style::scaledRadiusMd(scale));
-        downBtn->setEnabled(idx + 1 < state->size());
-        downBtn->setOnClick([state, rowIndex = idx, commit]() {
-          if (rowIndex + 1 >= state->size()) {
-            return;
-          }
-          std::swap((*state)[rowIndex + 1], (*state)[rowIndex]);
-          commit();
+        auto downBtn = ui::button({
+            .glyph = "chevron-down",
+            .glyphSize = Style::fontSizeBody * scale,
+            .enabled = idx + 1 < state->size(),
+            .variant = ButtonVariant::Ghost,
+            .onClick =
+                [state, rowIndex = idx, commit]() {
+                  if (rowIndex + 1 >= state->size()) {
+                    return;
+                  }
+                  std::swap((*state)[rowIndex + 1], (*state)[rowIndex]);
+                  commit();
+                },
+            .configure =
+                [iconBtnH, scale](Button& button) {
+                  button.setMinWidth(Style::controlHeightSm * scale);
+                  button.setMinHeight(iconBtnH);
+                  button.setPadding(Style::spaceXs * scale);
+                  button.setRadius(Style::scaledRadiusMd(scale));
+                },
         });
         reorder->addChild(std::move(downBtn));
         row->addChild(std::move(reorder));
 
-        auto entrySettings = std::make_unique<Button>();
-        entrySettings->setGlyph("settings");
-        entrySettings->setVariant(ButtonVariant::Ghost);
-        entrySettings->setGlyphSize(Style::fontSizeCaption * scale);
-        entrySettings->setMinWidth(Style::controlHeightSm * scale);
-        entrySettings->setMinHeight(Style::controlHeightSm * scale);
-        entrySettings->setPadding(Style::spaceXs * scale);
-        entrySettings->setRadius(Style::scaledRadiusSm(scale));
-        entrySettings->setOnClick([openEntry = ctx.openSessionActionEntryEditor, rowIndex = idx]() {
-          if (openEntry) {
-            openEntry(rowIndex);
-          }
+        auto entrySettings = ui::button({
+            .glyph = "settings",
+            .glyphSize = Style::fontSizeCaption * scale,
+            .variant = ButtonVariant::Ghost,
+            .onClick =
+                [openEntry = ctx.openSessionActionEntryEditor, rowIndex = idx]() {
+                  if (openEntry) {
+                    openEntry(rowIndex);
+                  }
+                },
+            .configure =
+                [scale](Button& button) {
+                  button.setMinWidth(Style::controlHeightSm * scale);
+                  button.setMinHeight(Style::controlHeightSm * scale);
+                  button.setPadding(Style::spaceXs * scale);
+                  button.setRadius(Style::scaledRadiusSm(scale));
+                },
         });
         row->addChild(std::move(entrySettings));
 
-        auto enabledToggle = std::make_unique<Toggle>();
-        enabledToggle->setScale(scale);
-        enabledToggle->setChecked((*state)[idx].enabled);
-        enabledToggle->setOnChange([state, rowIndex = idx, commit](bool v) {
-          (*state)[rowIndex].enabled = v;
-          commit();
+        auto enabledToggle = ui::toggle({
+            .checked = (*state)[idx].enabled,
+            .scale = scale,
+            .onChange =
+                [state, rowIndex = idx, commit](bool v) {
+                  (*state)[rowIndex].enabled = v;
+                  commit();
+                },
         });
         row->addChild(std::move(enabledToggle));
 
         block->addChild(std::move(row));
       }
 
-      auto addBtn = std::make_unique<Button>();
-      addBtn->setGlyph("add");
-      addBtn->setText(i18n::tr("settings.session-actions.add"));
-      addBtn->setVariant(ButtonVariant::Default);
-      addBtn->setFontSize(Style::fontSizeBody * scale);
-      addBtn->setGlyphSize(Style::fontSizeBody * scale);
-      addBtn->setMinHeight(Style::controlHeight * scale);
-      addBtn->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-      addBtn->setRadius(Style::scaledRadiusMd(scale));
-      addBtn->setOnClick([state, commit]() {
-        state->push_back(SessionPanelActionConfig{"command", true, "notify-send 'Noctalia' 'Custom session entry'",
-                                                  std::nullopt, std::nullopt, SessionActionButtonVariant::Default,
-                                                  std::nullopt});
-        commit();
+      auto addBtn = ui::button({
+          .text = i18n::tr("settings.session-actions.add"),
+          .glyph = "add",
+          .fontSize = Style::fontSizeBody * scale,
+          .glyphSize = Style::fontSizeBody * scale,
+          .variant = ButtonVariant::Default,
+          .onClick =
+              [state, commit]() {
+                state->push_back(SessionPanelActionConfig{
+                    "command", true, "notify-send 'Noctalia' 'Custom session entry'", std::nullopt, std::nullopt,
+                    SessionActionButtonVariant::Default, std::nullopt});
+                commit();
+              },
+          .configure =
+              [scale](Button& button) {
+                button.setMinHeight(Style::controlHeight * scale);
+                button.setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
+                button.setRadius(Style::scaledRadiusMd(scale));
+              },
       });
       block->addChild(std::move(addBtn));
 
@@ -2086,30 +2019,7 @@ namespace settings {
                                                   const IdleBehaviorsSetting& idle) {
       const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
 
-      auto block = std::make_unique<Flex>();
-      block->setDirection(FlexDirection::Vertical);
-      block->setAlign(FlexAlign::Stretch);
-      block->setGap(Style::spaceXs * scale);
-      block->setPadding(2.0f * scale, 0.0f);
-
-      auto titleRow = std::make_unique<Flex>();
-      titleRow->setDirection(FlexDirection::Horizontal);
-      titleRow->setAlign(FlexAlign::Center);
-      titleRow->setGap(Style::spaceSm * scale);
-      titleRow->setFillWidth(true);
-      titleRow->addChild(makeLabel(entry.title, Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::OnSurface),
-                                   FontWeight::Bold));
-      auto titleSpacer = std::make_unique<Flex>();
-      titleSpacer->setFlexGrow(1.0f);
-      titleRow->addChild(std::move(titleSpacer));
-      if (overridden) {
-        titleRow->addChild(makeOverrideResetActions(entry.path));
-      }
-      block->addChild(std::move(titleRow));
-
-      if (!entry.subtitle.empty()) {
-        block->addChild(makeSettingSubtitleLabel(entry.subtitle, scale));
-      }
+      auto block = makeCollectionBlock(entry, overridden);
 
       auto state = std::make_shared<std::vector<IdleBehaviorConfig>>(idle.items);
       normalizeIdleBehaviorNames(*state);
@@ -2121,102 +2031,122 @@ namespace settings {
 
       const float iconBtnH = Style::controlHeight * scale;
       for (std::size_t idx = 0; idx < state->size(); ++idx) {
-        auto row = std::make_unique<Flex>();
-        row->setDirection(FlexDirection::Horizontal);
-        row->setAlign(FlexAlign::Center);
-        row->setJustify(FlexJustify::SpaceBetween);
-        row->setGap(Style::spaceSm * scale);
-        row->setMinHeight(Style::controlHeightSm * scale);
+        auto row = ui::row({
+            .align = FlexAlign::Center,
+            .justify = FlexJustify::SpaceBetween,
+            .gap = Style::spaceSm * scale,
+            .minHeight = Style::controlHeightSm * scale,
+        });
 
-        auto summary = std::make_unique<Label>();
-        summary->setText(idleBehaviorRowSummary((*state)[idx]));
-        summary->setFontSize(Style::fontSizeBody * scale);
-        summary->setColor(colorSpecFromRole(ColorRole::OnSurface));
-        summary->setFlexGrow(1.0f);
+        auto summary = ui::label({
+            .text = idleBehaviorRowSummary((*state)[idx]),
+            .fontSize = Style::fontSizeBody * scale,
+            .color = colorSpecFromRole(ColorRole::OnSurface),
+            .flexGrow = 1.0f,
+        });
         row->addChild(std::move(summary));
 
-        auto reorder = std::make_unique<Flex>();
-        reorder->setDirection(FlexDirection::Horizontal);
-        reorder->setAlign(FlexAlign::Center);
-        reorder->setGap(Style::spaceXs * scale);
+        auto reorder = ui::row({.align = FlexAlign::Center, .gap = Style::spaceXs * scale});
 
-        auto upBtn = std::make_unique<Button>();
-        upBtn->setGlyph("chevron-up");
-        upBtn->setVariant(ButtonVariant::Ghost);
-        upBtn->setGlyphSize(Style::fontSizeBody * scale);
-        upBtn->setMinWidth(Style::controlHeightSm * scale);
-        upBtn->setMinHeight(iconBtnH);
-        upBtn->setPadding(Style::spaceXs * scale);
-        upBtn->setRadius(Style::scaledRadiusMd(scale));
-        upBtn->setEnabled(idx > 0);
-        upBtn->setOnClick([state, rowIndex = idx, commit]() {
-          if (rowIndex == 0 || rowIndex >= state->size()) {
-            return;
-          }
-          std::swap((*state)[rowIndex - 1], (*state)[rowIndex]);
-          commit();
+        auto upBtn = ui::button({
+            .glyph = "chevron-up",
+            .glyphSize = Style::fontSizeBody * scale,
+            .enabled = idx > 0,
+            .variant = ButtonVariant::Ghost,
+            .onClick =
+                [state, rowIndex = idx, commit]() {
+                  if (rowIndex == 0 || rowIndex >= state->size()) {
+                    return;
+                  }
+                  std::swap((*state)[rowIndex - 1], (*state)[rowIndex]);
+                  commit();
+                },
+            .configure =
+                [iconBtnH, scale](Button& button) {
+                  button.setMinWidth(Style::controlHeightSm * scale);
+                  button.setMinHeight(iconBtnH);
+                  button.setPadding(Style::spaceXs * scale);
+                  button.setRadius(Style::scaledRadiusMd(scale));
+                },
         });
         reorder->addChild(std::move(upBtn));
 
-        auto downBtn = std::make_unique<Button>();
-        downBtn->setGlyph("chevron-down");
-        downBtn->setVariant(ButtonVariant::Ghost);
-        downBtn->setGlyphSize(Style::fontSizeBody * scale);
-        downBtn->setMinWidth(Style::controlHeightSm * scale);
-        downBtn->setMinHeight(iconBtnH);
-        downBtn->setPadding(Style::spaceXs * scale);
-        downBtn->setRadius(Style::scaledRadiusMd(scale));
-        downBtn->setEnabled(idx + 1 < state->size());
-        downBtn->setOnClick([state, rowIndex = idx, commit]() {
-          if (rowIndex + 1 >= state->size()) {
-            return;
-          }
-          std::swap((*state)[rowIndex + 1], (*state)[rowIndex]);
-          commit();
+        auto downBtn = ui::button({
+            .glyph = "chevron-down",
+            .glyphSize = Style::fontSizeBody * scale,
+            .enabled = idx + 1 < state->size(),
+            .variant = ButtonVariant::Ghost,
+            .onClick =
+                [state, rowIndex = idx, commit]() {
+                  if (rowIndex + 1 >= state->size()) {
+                    return;
+                  }
+                  std::swap((*state)[rowIndex + 1], (*state)[rowIndex]);
+                  commit();
+                },
+            .configure =
+                [iconBtnH, scale](Button& button) {
+                  button.setMinWidth(Style::controlHeightSm * scale);
+                  button.setMinHeight(iconBtnH);
+                  button.setPadding(Style::spaceXs * scale);
+                  button.setRadius(Style::scaledRadiusMd(scale));
+                },
         });
         reorder->addChild(std::move(downBtn));
         row->addChild(std::move(reorder));
 
-        auto entrySettings = std::make_unique<Button>();
-        entrySettings->setGlyph("settings");
-        entrySettings->setVariant(ButtonVariant::Ghost);
-        entrySettings->setGlyphSize(Style::fontSizeCaption * scale);
-        entrySettings->setMinWidth(Style::controlHeightSm * scale);
-        entrySettings->setMinHeight(Style::controlHeightSm * scale);
-        entrySettings->setPadding(Style::spaceXs * scale);
-        entrySettings->setRadius(Style::scaledRadiusSm(scale));
-        entrySettings->setOnClick([openEntry = ctx.openIdleBehaviorEntryEditor, rowIndex = idx]() {
-          if (openEntry) {
-            openEntry(rowIndex);
-          }
+        auto entrySettings = ui::button({
+            .glyph = "settings",
+            .glyphSize = Style::fontSizeCaption * scale,
+            .variant = ButtonVariant::Ghost,
+            .onClick =
+                [openEntry = ctx.openIdleBehaviorEntryEditor, rowIndex = idx]() {
+                  if (openEntry) {
+                    openEntry(rowIndex);
+                  }
+                },
+            .configure =
+                [scale](Button& button) {
+                  button.setMinWidth(Style::controlHeightSm * scale);
+                  button.setMinHeight(Style::controlHeightSm * scale);
+                  button.setPadding(Style::spaceXs * scale);
+                  button.setRadius(Style::scaledRadiusSm(scale));
+                },
         });
         row->addChild(std::move(entrySettings));
 
-        auto enabledToggle = std::make_unique<Toggle>();
-        enabledToggle->setScale(scale);
-        enabledToggle->setChecked((*state)[idx].enabled);
-        enabledToggle->setOnChange([state, rowIndex = idx, commit](bool v) {
-          (*state)[rowIndex].enabled = v;
-          commit();
+        auto enabledToggle = ui::toggle({
+            .checked = (*state)[idx].enabled,
+            .scale = scale,
+            .onChange =
+                [state, rowIndex = idx, commit](bool v) {
+                  (*state)[rowIndex].enabled = v;
+                  commit();
+                },
         });
         row->addChild(std::move(enabledToggle));
 
         block->addChild(std::move(row));
       }
 
-      auto addBtn = std::make_unique<Button>();
-      addBtn->setGlyph("add");
-      addBtn->setText(i18n::tr("settings.idle.behavior.add"));
-      addBtn->setVariant(ButtonVariant::Default);
-      addBtn->setFontSize(Style::fontSizeBody * scale);
-      addBtn->setGlyphSize(Style::fontSizeBody * scale);
-      addBtn->setMinHeight(Style::controlHeight * scale);
-      addBtn->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-      addBtn->setRadius(Style::scaledRadiusMd(scale));
-      addBtn->setOnClick([openCreate = ctx.openIdleBehaviorCreateEditor]() {
-        if (openCreate) {
-          openCreate();
-        }
+      auto addBtn = ui::button({
+          .text = i18n::tr("settings.idle.behavior.add"),
+          .glyph = "add",
+          .fontSize = Style::fontSizeBody * scale,
+          .glyphSize = Style::fontSizeBody * scale,
+          .variant = ButtonVariant::Default,
+          .onClick =
+              [openCreate = ctx.openIdleBehaviorCreateEditor]() {
+                if (openCreate) {
+                  openCreate();
+                }
+              },
+          .configure =
+              [scale](Button& button) {
+                button.setMinHeight(Style::controlHeight * scale);
+                button.setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
+                button.setRadius(Style::scaledRadiusMd(scale));
+              },
       });
       block->addChild(std::move(addBtn));
 
@@ -2456,11 +2386,11 @@ namespace settings {
           makeShortcutListBlock(*activeSection, entry, *shortcuts);
         } else if (const auto* keybindList = std::get_if<KeybindListSetting>(&entry.control)) {
           if (activeKeybindRow == nullptr || activeKeybindRowCount >= kKeybindsPerRow) {
-            auto row = std::make_unique<Flex>();
-            row->setDirection(FlexDirection::Horizontal);
-            row->setAlign(FlexAlign::Start);
-            row->setGap(Style::spaceMd * scale);
-            row->setFillWidth(true);
+            auto row = ui::row({
+                .align = FlexAlign::Start,
+                .gap = Style::spaceMd * scale,
+                .fillWidth = true,
+            });
             activeKeybindRow = static_cast<Flex*>(activeSection->addChild(std::move(row)));
             activeKeybindRowCount = 0;
           }
