@@ -13,17 +13,8 @@
 #include "render/scene/node.h"
 #include "shell/panel/panel_manager.h"
 #include "system/desktop_entry.h"
-#include "ui/controls/button.h"
+#include "ui/builders.h"
 #include "ui/controls/context_menu_popup.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/image.h"
-#include "ui/controls/input.h"
-#include "ui/controls/label.h"
-#include "ui/controls/scroll_view.h"
-#include "ui/controls/segmented.h"
-#include "ui/controls/separator.h"
-#include "ui/controls/virtual_grid_view.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "util/fuzzy_match.h"
@@ -74,30 +65,33 @@ namespace {
   public:
     LauncherResultRow(float scale, AsyncTextureCache* asyncTextures)
         : m_scale(scale), m_rowHeight(launcherRowHeight(scale)), m_asyncTextures(asyncTextures) {
-      auto row = std::make_unique<Flex>();
-      row->setDirection(FlexDirection::Horizontal);
-      row->setAlign(FlexAlign::Center);
-      row->setGap(Style::spaceMd * scale);
-      row->setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-      row->setRadius(Style::scaledRadiusMd(scale));
-      m_row = static_cast<Flex*>(addChild(std::move(row)));
+      auto row = ui::row(
+          {.out = &m_row, .align = FlexAlign::Center, .gap = Style::spaceMd * scale, .configure = [scale](Flex& flex) {
+             flex.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
+             flex.setRadius(Style::scaledRadiusMd(scale));
+           }});
+      addChild(std::move(row));
 
-      auto actionLabel = std::make_unique<Label>();
-      actionLabel->setFontSize(kIconSize * scale);
-      actionLabel->setColor(colorSpecFromRole(ColorRole::OnSurface));
-      actionLabel->setVisible(false);
-      m_actionLabel = static_cast<Label*>(m_row->addChild(std::move(actionLabel)));
+      m_row->addChild(ui::label({
+          .out = &m_actionLabel,
+          .fontSize = kIconSize * scale,
+          .color = colorSpecFromRole(ColorRole::OnSurface),
+          .visible = false,
+      }));
 
-      auto image = std::make_unique<Image>();
-      image->setSize(kIconSize * scale, kIconSize * scale);
-      image->setVisible(false);
-      m_image = static_cast<Image*>(m_row->addChild(std::move(image)));
+      m_row->addChild(ui::image({
+          .out = &m_image,
+          .width = kIconSize * scale,
+          .height = kIconSize * scale,
+          .visible = false,
+      }));
 
-      auto glyph = std::make_unique<Glyph>();
-      glyph->setGlyphSize(kIconSize * scale);
-      glyph->setColor(colorSpecFromRole(ColorRole::OnSurface));
-      glyph->setVisible(false);
-      m_glyph = static_cast<Glyph*>(m_row->addChild(std::move(glyph)));
+      m_row->addChild(ui::glyph({
+          .out = &m_glyph,
+          .glyphSize = kIconSize * scale,
+          .color = colorSpecFromRole(ColorRole::OnSurface),
+          .visible = false,
+      }));
 
       m_image->setAsyncReadyCallback([this]() {
         if (m_actionTextVisible || m_iconPath.empty() || m_image == nullptr || m_glyph == nullptr ||
@@ -108,26 +102,27 @@ namespace {
         m_glyph->setVisible(false);
       });
 
-      auto textCol = std::make_unique<Flex>();
-      textCol->setDirection(FlexDirection::Vertical);
-      textCol->setAlign(FlexAlign::Start);
-      textCol->setGap(Style::spaceXs * 0.5f * scale);
-      textCol->setFlexGrow(1.0f);
-      m_textCol = static_cast<Flex*>(m_row->addChild(std::move(textCol)));
-
-      auto title = std::make_unique<Label>();
-      title->setFontSize(Style::fontSizeBody * scale);
-      title->setFontWeight(FontWeight::Bold);
-      title->setColor(colorSpecFromRole(ColorRole::OnSurface));
-      title->setMaxLines(1);
-      m_title = static_cast<Label*>(m_textCol->addChild(std::move(title)));
-
-      auto subtitle = std::make_unique<Label>();
-      subtitle->setCaptionStyle();
-      subtitle->setFontSize(Style::fontSizeCaption * scale);
-      subtitle->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      subtitle->setMaxLines(1);
-      m_subtitle = static_cast<Label*>(m_textCol->addChild(std::move(subtitle)));
+      m_row->addChild(ui::column(
+          {
+              .out = &m_textCol,
+              .align = FlexAlign::Start,
+              .gap = Style::spaceXs * 0.5f * scale,
+              .flexGrow = 1.0f,
+          },
+          ui::label({
+              .out = &m_title,
+              .fontSize = Style::fontSizeBody * scale,
+              .color = colorSpecFromRole(ColorRole::OnSurface),
+              .maxLines = 1,
+              .fontWeight = FontWeight::Bold,
+          }),
+          ui::label({
+              .out = &m_subtitle,
+              .fontSize = Style::fontSizeCaption * scale,
+              .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+              .maxLines = 1,
+              .configure = [](Label& label) { label.setCaptionStyle(); },
+          })));
     }
 
     void bind(Renderer& renderer, const LauncherResult& result, float width, bool selected, bool hovered) {
@@ -299,38 +294,40 @@ void LauncherPanel::addProvider(std::unique_ptr<LauncherProvider> provider) {
 
 void LauncherPanel::create() {
   const float scale = contentScale();
-  auto container = std::make_unique<Flex>();
-  container->setDirection(FlexDirection::Vertical);
-  container->setAlign(FlexAlign::Stretch);
-  container->setGap(Style::spaceSm * scale);
+  auto container = ui::column({
+      .out = &m_container,
+      .align = FlexAlign::Stretch,
+      .gap = Style::spaceSm * scale,
+  });
 
-  auto input = std::make_unique<Input>();
-  input->setPlaceholder(i18n::tr("launcher.search-placeholder"));
-  input->setFontSize(Style::fontSizeBody * scale);
-  input->setControlHeight(Style::controlHeight * scale);
-  input->setHorizontalPadding(Style::spaceMd * scale);
-  input->setClearButtonEnabled(true);
-  input->setOnChange([this](const std::string& text) { onInputChanged(text); });
-  input->setOnSubmit([this](const std::string& /*text*/) { activateSelected(); });
-  input->setOnKeyEvent([this](std::uint32_t sym, std::uint32_t modifiers) { return handleKeyEvent(sym, modifiers); });
-  m_input = input.get();
-  container->addChild(std::move(input));
+  container->addChild(ui::input({
+      .out = &m_input,
+      .placeholder = i18n::tr("launcher.search-placeholder"),
+      .fontSize = Style::fontSizeBody * scale,
+      .controlHeight = Style::controlHeight * scale,
+      .horizontalPadding = Style::spaceMd * scale,
+      .clearButtonEnabled = true,
+      .onChange = [this](const std::string& text) { onInputChanged(text); },
+      .onSubmit = [this](const std::string& /*text*/) { activateSelected(); },
+      .onKeyEvent = [this](std::uint32_t sym, std::uint32_t modifiers) { return handleKeyEvent(sym, modifiers); },
+  }));
 
-  auto categoryFilter = std::make_unique<Segmented>();
-  categoryFilter->setScale(scale);
-  categoryFilter->setCompact(true);
-  categoryFilter->setAlign(FlexAlign::Center);
-  categoryFilter->setEqualSegmentWidths(true);
-  categoryFilter->setVisible(false);
-  categoryFilter->setParticipatesInLayout(false);
-  m_categoryFilter = static_cast<Segmented*>(container->addChild(std::move(categoryFilter)));
+  container->addChild(ui::segmented({
+      .out = &m_categoryFilter,
+      .scale = scale,
+      .compact = true,
+      .equalSegmentWidths = true,
+      .visible = false,
+      .participatesInLayout = false,
+      .configure = [](Segmented& segmented) { segmented.setAlign(FlexAlign::Center); },
+  }));
 
-  auto body = std::make_unique<Flex>();
-  body->setDirection(FlexDirection::Vertical);
-  body->setAlign(FlexAlign::Stretch);
-  body->setFlexGrow(1.0f);
-  body->setFillWidth(true);
-  m_body = body.get();
+  auto body = ui::column({
+      .out = &m_body,
+      .align = FlexAlign::Stretch,
+      .fillWidth = true,
+      .flexGrow = 1.0f,
+  });
 
   m_adapter = std::make_unique<LauncherResultAdapter>(scale, m_asyncTextures);
   m_adapter->setResults(&m_results);
@@ -338,33 +335,35 @@ void LauncherPanel::create() {
   m_adapter->setOnSecondaryActivate(
       [this](std::size_t index, float ax, float ay) { openAppActionsMenu(index, ax, ay); });
 
-  auto grid = std::make_unique<VirtualGridView>();
-  grid->setColumns(1);
-  grid->setSquareCells(false);
-  grid->setCellHeight(launcherRowHeight(scale));
-  grid->setColumnGap(0.0f);
-  grid->setRowGap(0.0f);
-  grid->setOverscanRows(kRowOverscan);
-  grid->setFlexGrow(1.0f);
-  grid->setFillWidth(true);
-  grid->setAdapter(m_adapter.get());
-  grid->setOnSelectionChanged([this](std::optional<std::size_t> idx) {
-    if (idx.has_value() && *idx < m_results.size()) {
-      m_selectedIndex = *idx;
-    }
-  });
-  m_grid = static_cast<VirtualGridView*>(body->addChild(std::move(grid)));
+  body->addChild(ui::virtualGridView({
+      .out = &m_grid,
+      .columns = 1,
+      .cellHeight = launcherRowHeight(scale),
+      .squareCells = false,
+      .columnGap = 0.0f,
+      .rowGap = 0.0f,
+      .overscanRows = kRowOverscan,
+      .adapter = m_adapter.get(),
+      .flexGrow = 1.0f,
+      .onSelectionChanged =
+          [this](std::optional<std::size_t> idx) {
+            if (idx.has_value() && *idx < m_results.size()) {
+              m_selectedIndex = *idx;
+            }
+          },
+      .configure = [](VirtualGridView& grid) { grid.setFillWidth(true); },
+  }));
 
-  auto emptyLabel = std::make_unique<Label>();
-  emptyLabel->setCaptionStyle();
-  emptyLabel->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-  emptyLabel->setVisible(false);
-  emptyLabel->setParticipatesInLayout(false);
-  m_emptyLabel = static_cast<Label*>(body->addChild(std::move(emptyLabel)));
+  body->addChild(ui::label({
+      .out = &m_emptyLabel,
+      .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+      .visible = false,
+      .participatesInLayout = false,
+      .configure = [](Label& label) { label.setCaptionStyle(); },
+  }));
 
   container->addChild(std::move(body));
 
-  m_container = container.get();
   setRoot(std::move(container));
 
   if (m_animations != nullptr) {
