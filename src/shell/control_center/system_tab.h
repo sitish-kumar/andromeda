@@ -61,6 +61,8 @@ private:
   Label* m_cpuTempLabel = nullptr;
   Glyph* m_gpuTempIcon = nullptr;
   Label* m_gpuTempLabel = nullptr;
+  Glyph* m_gpuUsageIcon = nullptr;
+  Label* m_gpuUsageLabel = nullptr;
   Glyph* m_gpuVramIcon = nullptr;
   Label* m_gpuVramLabel = nullptr;
   Glyph* m_ramIcon = nullptr;

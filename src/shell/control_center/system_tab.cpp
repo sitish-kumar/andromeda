@@ -132,6 +132,7 @@ SystemTab::SystemTab(SystemMonitorService* monitor) : m_monitor(monitor) {
   if (m_monitor != nullptr) {
     m_monitor->retainCpuTemp();
     m_monitor->retainGpuTemp();
+    m_monitor->retainGpuUsage();
     m_monitor->retainGpuVram();
   }
 }
@@ -140,6 +141,7 @@ SystemTab::~SystemTab() {
   if (m_monitor != nullptr) {
     m_monitor->releaseCpuTemp();
     m_monitor->releaseGpuTemp();
+    m_monitor->releaseGpuUsage();
     m_monitor->releaseGpuVram();
   }
 }
@@ -223,6 +225,8 @@ std::unique_ptr<Flex> SystemTab::create() {
       });
 
       auto* header = makeHeaderRow(*card, i18n::tr("control-center.system.titles.gpu"), sc);
+      auto* gpuUsageGroup = makeIconLabel(*header, "gpu-usage", sc, &m_gpuUsageIcon);
+      m_gpuUsageLabel = makeValueLabel(*gpuUsageGroup, sc);
       auto* gpuVramGroup = makeIconLabel(*header, "memory", sc, &m_gpuVramIcon);
       m_gpuVramLabel = makeValueLabel(*gpuVramGroup, sc);
       auto* gpuTempGroup = makeIconLabel(*header, "temperature", sc, &m_gpuTempIcon);
@@ -299,6 +303,8 @@ void SystemTab::onClose() {
   m_cpuTempLabel = nullptr;
   m_gpuTempIcon = nullptr;
   m_gpuTempLabel = nullptr;
+  m_gpuUsageIcon = nullptr;
+  m_gpuUsageLabel = nullptr;
   m_gpuVramIcon = nullptr;
   m_gpuVramLabel = nullptr;
   m_ramIcon = nullptr;
@@ -346,6 +352,7 @@ void SystemTab::onFrameTick(float deltaMs) {
   if (m_gpuGraph != nullptr) {
     m_gpuGraph->setScroll1(m_scrollProgress);
     m_gpuGraph->setScroll2(m_scrollProgress);
+    m_gpuGraph->setScroll3(m_scrollProgress);
   }
   if (m_netGraph != nullptr) {
     m_netGraph->setScroll1(m_scrollProgress);
@@ -394,6 +401,8 @@ void SystemTab::doUpdate(Renderer& renderer) {
     return;
   }
 
+  const bool monitorRunning = m_monitor->isRunning();
+
   if (m_cpuGraph != nullptr) {
     m_cpuGraph->setLineColor1(colorForRole(ColorRole::Primary));
     m_cpuGraph->setLineColor2(colorForRole(ColorRole::Error));
@@ -422,8 +431,15 @@ void SystemTab::doUpdate(Renderer& renderer) {
   }
 
   if (m_gpuGraph != nullptr) {
-    m_gpuGraph->setLineColor1(colorForRole(ColorRole::Secondary));
-    m_gpuGraph->setLineColor2(colorForRole(ColorRole::Error));
+    m_gpuGraph->setLineColor1(colorForRole(ColorRole::Primary));
+    m_gpuGraph->setLineColor2(colorForRole(ColorRole::Secondary));
+    m_gpuGraph->setLineColor3(colorForRole(ColorRole::Error));
+  }
+  if (m_gpuUsageIcon != nullptr) {
+    m_gpuUsageIcon->setColor(colorSpecFromRole(ColorRole::Primary));
+  }
+  if (m_gpuUsageLabel != nullptr) {
+    m_gpuUsageLabel->setColor(colorSpecFromRole(ColorRole::Primary));
   }
   if (m_gpuVramIcon != nullptr) {
     m_gpuVramIcon->setColor(colorSpecFromRole(ColorRole::Secondary));
@@ -455,8 +471,6 @@ void SystemTab::doUpdate(Renderer& renderer) {
     m_txLabel->setColor(colorSpecFromRole(ColorRole::Secondary));
   }
 
-  const bool monitorRunning = m_monitor->isRunning();
-
   if (monitorRunning) {
     updateGraphs(renderer);
   } else {
@@ -470,6 +484,7 @@ void SystemTab::doUpdate(Renderer& renderer) {
     if (m_gpuGraph != nullptr) {
       m_gpuGraph->setCount1(0.0f);
       m_gpuGraph->setCount2(0.0f);
+      m_gpuGraph->setCount3(0.0f);
     }
     if (m_netGraph != nullptr) {
       m_netGraph->setCount1(0.0f);
@@ -541,14 +556,20 @@ void SystemTab::updateGraphs(Renderer& renderer) {
     m_ramGraph->setCount1(static_cast<float>(n));
   }
 
-  // GPU: VRAM usage (primary) + temperature (secondary)
+  // GPU: usage (primary) + VRAM (secondary) + temperature (tertiary)
   if (m_gpuGraph != nullptr) {
+    bool hasGpuUsage = false;
     bool hasGpuTemp = false;
     bool hasGpuVram = false;
+    std::vector<float> gpuUsage(sz);
     std::vector<float> gpuVram(sz);
     std::vector<float> gpuTemp(sz);
     for (std::size_t i = 0; i < n; ++i) {
       const auto& s = hist[i];
+      if (s.gpuUsagePercent.has_value()) {
+        hasGpuUsage = true;
+        gpuUsage[i] = static_cast<float>(std::clamp(*s.gpuUsagePercent / 100.0, 0.0, 1.0));
+      }
       if (s.gpuVramUsedBytes.has_value() && s.gpuVramTotalBytes.has_value() && *s.gpuVramTotalBytes > 0) {
         hasGpuVram = true;
         gpuVram[i] = static_cast<float>(
@@ -566,24 +587,30 @@ void SystemTab::updateGraphs(Renderer& renderer) {
         gpuTemp[i] = range > 0.0 ? static_cast<float>(std::clamp((t - m_gpuTempMin) / range, 0.0, 1.0)) : 0.5f;
       }
     }
+    if (hasGpuUsage) {
+      gpuUsage[last] = std::clamp(gpuUsage[prev] + (gpuUsage[prev] - gpuUsage[prev2]) * 0.5f, 0.0f, 1.0f);
+    }
     if (hasGpuVram) {
       gpuVram[last] = std::clamp(gpuVram[prev] + (gpuVram[prev] - gpuVram[prev2]) * 0.5f, 0.0f, 1.0f);
     }
     if (hasGpuTemp) {
       gpuTemp[last] = std::clamp(gpuTemp[prev] + (gpuTemp[prev] - gpuTemp[prev2]) * 0.5f, 0.0f, 1.0f);
     }
-    if (hasGpuVram || hasGpuTemp) {
+    if (hasGpuUsage || hasGpuVram || hasGpuTemp) {
       m_gpuGraph->setData(
-          renderer.textureManager(), hasGpuVram ? gpuVram.data() : nullptr, hasGpuVram ? texSize : 0,
-          hasGpuTemp ? gpuTemp.data() : nullptr, hasGpuTemp ? texSize : 0
+          renderer.textureManager(), hasGpuUsage ? gpuUsage.data() : nullptr, hasGpuUsage ? texSize : 0,
+          hasGpuVram ? gpuVram.data() : nullptr, hasGpuVram ? texSize : 0, hasGpuTemp ? gpuTemp.data() : nullptr,
+          hasGpuTemp ? texSize : 0
       );
-      m_gpuGraph->setCount1(hasGpuVram ? static_cast<float>(n) : 0.0f);
-      m_gpuGraph->setCount2(hasGpuTemp ? static_cast<float>(n) : 0.0f);
+      m_gpuGraph->setCount1(hasGpuUsage ? static_cast<float>(n) : 0.0f);
+      m_gpuGraph->setCount2(hasGpuVram ? static_cast<float>(n) : 0.0f);
+      m_gpuGraph->setCount3(hasGpuTemp ? static_cast<float>(n) : 0.0f);
     } else {
       m_gpuGraph->setCount1(0.0f);
       m_gpuGraph->setCount2(0.0f);
+      m_gpuGraph->setCount3(0.0f);
     }
-    const bool hasGpuData = hasGpuVram || hasGpuTemp;
+    const bool hasGpuData = hasGpuUsage || hasGpuVram || hasGpuTemp;
     if (hasGpuData != m_gpuVisible) {
       m_gpuVisible = hasGpuData;
       updateGpuVisibility();
@@ -627,6 +654,7 @@ void SystemTab::updateGraphs(Renderer& renderer) {
   if (m_gpuGraph != nullptr) {
     m_gpuGraph->setScroll1(m_scrollProgress);
     m_gpuGraph->setScroll2(m_scrollProgress);
+    m_gpuGraph->setScroll3(m_scrollProgress);
   }
   if (m_netGraph != nullptr) {
     m_netGraph->setScroll1(m_scrollProgress);
@@ -656,6 +684,9 @@ void SystemTab::syncLabels() {
     }
     if (m_gpuTempLabel != nullptr) {
       m_gpuTempLabel->setText("--");
+    }
+    if (m_gpuUsageLabel != nullptr) {
+      m_gpuUsageLabel->setText("--");
     }
     if (m_gpuVramLabel != nullptr) {
       m_gpuVramLabel->setText("--");
@@ -689,6 +720,13 @@ void SystemTab::syncLabels() {
       m_gpuTempLabel->setText(std::format("{:.0f}°C", *stats.gpuTempC));
     } else {
       m_gpuTempLabel->setText("--");
+    }
+  }
+  if (m_gpuUsageLabel != nullptr) {
+    if (stats.gpuUsagePercent.has_value()) {
+      m_gpuUsageLabel->setText(std::format("{:.0f}%", *stats.gpuUsagePercent));
+    } else {
+      m_gpuUsageLabel->setText("--");
     }
   }
   if (m_gpuVramLabel != nullptr) {

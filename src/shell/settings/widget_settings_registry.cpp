@@ -115,6 +115,9 @@ namespace settings {
         if (stat == "gpu_temp") {
           return "temperature";
         }
+        if (stat == "gpu_usage") {
+          return "gpu-usage";
+        }
         if (stat == "gpu_vram" || stat == "ram_used" || stat == "ram_pct") {
           return "memory";
         }
@@ -486,10 +489,11 @@ namespace settings {
     };
     const std::vector<WidgetSettingSelectOption> sysmonStats = {
         {"cpu_usage", "settings.widgets.options.cpu-usage"},   {"cpu_temp", "settings.widgets.options.cpu-temp"},
-        {"gpu_temp", "settings.widgets.options.gpu-temp"},     {"gpu_vram", "settings.widgets.options.gpu-vram"},
-        {"ram_used", "settings.widgets.options.ram-used"},     {"ram_pct", "settings.widgets.options.ram-percent"},
-        {"swap_pct", "settings.widgets.options.swap-percent"}, {"disk_pct", "settings.widgets.options.disk-percent"},
-        {"net_rx", "settings.widgets.options.net-rx"},         {"net_tx", "settings.widgets.options.net-tx"},
+        {"gpu_temp", "settings.widgets.options.gpu-temp"},     {"gpu_usage", "settings.widgets.options.gpu-usage"},
+        {"gpu_vram", "settings.widgets.options.gpu-vram"},     {"ram_used", "settings.widgets.options.ram-used"},
+        {"ram_pct", "settings.widgets.options.ram-percent"},   {"swap_pct", "settings.widgets.options.swap-percent"},
+        {"disk_pct", "settings.widgets.options.disk-percent"}, {"net_rx", "settings.widgets.options.net-rx"},
+        {"net_tx", "settings.widgets.options.net-tx"},
     };
     const std::vector<WidgetSettingSelectOption> sysmonDisplay = {
         {"gauge", "settings.widgets.options.gauge"},
