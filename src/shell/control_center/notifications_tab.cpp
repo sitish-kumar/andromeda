@@ -9,15 +9,7 @@
 #include "render/core/texture_manager.h"
 #include "shell/panel/panel_manager.h"
 #include "time/time_format.h"
-#include "ui/controls/box.h"
-#include "ui/controls/button.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/image.h"
-#include "ui/controls/label.h"
-#include "ui/controls/scroll_view.h"
-#include "ui/controls/segmented.h"
-#include "ui/controls/virtual_list_view.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "util/string_utils.h"
@@ -71,21 +63,21 @@ namespace {
     if (actions.empty()) {
       return 0.0f;
     }
-    auto row = std::make_unique<Flex>();
-    row->setDirection(FlexDirection::Horizontal);
-    row->setAlign(FlexAlign::Center);
-    row->setGap(Style::spaceXs * scale);
+    auto row = ui::row({
+        .align = FlexAlign::Center,
+        .gap = Style::spaceXs * scale,
+    });
     int actionCount = 0;
     for (std::size_t i = 0; i + 1 < actions.size() && actionCount < kHistoryMaxActionButtons; i += 2) {
       const std::string& actionKey = actions[i];
       if (actionKey.empty()) {
         continue;
       }
-      auto actionButton = std::make_unique<Button>();
-      actionButton->setVariant(ButtonVariant::Outline);
-      actionButton->setFontSize(Style::fontSizeCaption * scale);
-      actionButton->setText(historyActionLabel(actionKey, actions[i + 1]));
-      row->addChild(std::move(actionButton));
+      row->addChild(ui::button({
+          .text = historyActionLabel(actionKey, actions[i + 1]),
+          .fontSize = Style::fontSizeCaption * scale,
+          .variant = ButtonVariant::Outline,
+      }));
       ++actionCount;
     }
     if (actionCount == 0) {
@@ -295,75 +287,71 @@ namespace {
       applyNotificationCardStyle(*this, scale, fillOpacity, showBorder);
       setFillWidth(true);
 
-      auto header = std::make_unique<Flex>();
-      header->setDirection(FlexDirection::Horizontal);
-      header->setAlign(FlexAlign::Center);
-      header->setJustify(FlexJustify::SpaceBetween);
-      header->setGap(Style::spaceSm * scale);
-      m_header = static_cast<Flex*>(addChild(std::move(header)));
+      m_header = static_cast<Flex*>(addChild(ui::row({
+          .align = FlexAlign::Center,
+          .justify = FlexJustify::SpaceBetween,
+          .gap = Style::spaceSm * scale,
+      })));
 
-      auto leftCluster = std::make_unique<Flex>();
-      leftCluster->setDirection(FlexDirection::Horizontal);
-      leftCluster->setAlign(FlexAlign::Center);
-      leftCluster->setGap(Style::spaceSm * scale);
-      leftCluster->setFlexGrow(1.0f);
-      m_leftCluster = static_cast<Flex*>(m_header->addChild(std::move(leftCluster)));
+      m_leftCluster = static_cast<Flex*>(m_header->addChild(ui::row({
+          .align = FlexAlign::Center,
+          .gap = Style::spaceSm * scale,
+          .flexGrow = 1.0f,
+      })));
 
-      auto iconSlot = std::make_unique<Box>();
-      iconSlot->setSize(kHistoryIconSize * scale, kHistoryIconSize * scale);
-      iconSlot->setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
-      iconSlot->setRadius(notificationIconRadius(kHistoryIconSize, scale));
-      m_iconSlot = static_cast<Box*>(m_leftCluster->addChild(std::move(iconSlot)));
+      m_iconSlot = static_cast<Box*>(m_leftCluster->addChild(ui::box({
+          .fill = colorSpecFromRole(ColorRole::SurfaceVariant),
+          .radius = notificationIconRadius(kHistoryIconSize, scale),
+          .width = kHistoryIconSize * scale,
+          .height = kHistoryIconSize * scale,
+      })));
 
-      auto image = std::make_unique<Image>();
-      image->setVisible(false);
-      m_image = static_cast<Image*>(m_iconSlot->addChild(std::move(image)));
+      m_image = static_cast<Image*>(m_iconSlot->addChild(ui::image({
+          .visible = false,
+      })));
 
-      auto fallback = std::make_unique<Glyph>();
-      fallback->setGlyph("bell");
-      fallback->setVisible(false);
-      m_fallback = static_cast<Glyph*>(m_iconSlot->addChild(std::move(fallback)));
+      m_fallback = static_cast<Glyph*>(m_iconSlot->addChild(ui::glyph({
+          .glyph = "bell",
+          .visible = false,
+      })));
 
-      auto meta = std::make_unique<Label>();
-      meta->setCaptionStyle();
-      meta->setFontSize(Style::fontSizeCaption * scale);
-      meta->setFlexGrow(1.0f);
-      m_meta = static_cast<Label*>(m_leftCluster->addChild(std::move(meta)));
+      m_meta = static_cast<Label*>(m_leftCluster->addChild(ui::label({
+          .fontSize = Style::fontSizeCaption * scale,
+          .flexGrow = 1.0f,
+          .configure = [](Label& label) { label.setCaptionStyle(); },
+      })));
 
-      auto headerActions = std::make_unique<Flex>();
-      headerActions->setDirection(FlexDirection::Horizontal);
-      headerActions->setAlign(FlexAlign::Center);
-      headerActions->setGap(Style::spaceXs * scale);
-      m_headerActions = static_cast<Flex*>(m_header->addChild(std::move(headerActions)));
+      m_headerActions = static_cast<Flex*>(m_header->addChild(ui::row({
+          .align = FlexAlign::Center,
+          .gap = Style::spaceXs * scale,
+      })));
 
       m_expand = static_cast<Button*>(m_headerActions->addChild(makeActionButton("chevron-down", scale)));
       m_dismiss = static_cast<Button*>(m_headerActions->addChild(makeActionButton("trash", scale)));
 
-      auto summary = std::make_unique<Label>();
-      summary->setFontWeight(FontWeight::Bold);
-      summary->setFontSize(Style::fontSizeBody * scale);
-      m_summary = static_cast<Label*>(addChild(std::move(summary)));
+      m_summary = static_cast<Label*>(addChild(ui::label({
+          .fontSize = Style::fontSizeBody * scale,
+          .fontWeight = FontWeight::Bold,
+      })));
 
-      auto body = std::make_unique<Label>();
-      body->setFontSize(Style::fontSizeCaption * scale);
-      body->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      body->setVisible(false);
-      m_body = static_cast<Label*>(addChild(std::move(body)));
+      m_body = static_cast<Label*>(addChild(ui::label({
+          .fontSize = Style::fontSizeCaption * scale,
+          .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+          .visible = false,
+      })));
 
-      auto actionsRow = std::make_unique<Flex>();
-      actionsRow->setDirection(FlexDirection::Horizontal);
-      actionsRow->setAlign(FlexAlign::Center);
-      actionsRow->setGap(Style::spaceXs * scale);
-      actionsRow->setFillWidth(true);
-      actionsRow->setVisible(false);
-      m_actionsRow = static_cast<Flex*>(addChild(std::move(actionsRow)));
+      m_actionsRow = static_cast<Flex*>(addChild(ui::row({
+          .align = FlexAlign::Center,
+          .gap = Style::spaceXs * scale,
+          .fillWidth = true,
+          .visible = false,
+      })));
       for (int i = 0; i < kHistoryMaxActionButtons; ++i) {
-        auto actionButton = std::make_unique<Button>();
-        actionButton->setVariant(ButtonVariant::Outline);
-        actionButton->setFontSize(Style::fontSizeCaption * scale);
-        actionButton->setVisible(false);
-        m_actionButtons[static_cast<std::size_t>(i)] =
-            static_cast<Button*>(m_actionsRow->addChild(std::move(actionButton)));
+        m_actionButtons[static_cast<std::size_t>(i)] = static_cast<Button*>(m_actionsRow->addChild(ui::button({
+            .fontSize = Style::fontSizeCaption * scale,
+            .variant = ButtonVariant::Outline,
+            .visible = false,
+        })));
       }
     }
 
@@ -445,15 +433,15 @@ namespace {
     };
 
     static std::unique_ptr<Button> makeActionButton(std::string_view glyph, float scale) {
-      auto button = std::make_unique<Button>();
-      button->setGlyph(glyph);
-      button->setVariant(ButtonVariant::Ghost);
-      button->setGlyphSize(Style::fontSizeBody * scale);
-      button->setMinWidth(kNotificationActionButtonSize * scale);
-      button->setMinHeight(kNotificationActionButtonSize * scale);
-      button->setPadding(Style::spaceXs * scale);
-      button->setRadius(Style::scaledRadiusMd(scale));
-      return button;
+      return ui::button({
+          .glyph = std::string(glyph),
+          .glyphSize = Style::fontSizeBody * scale,
+          .variant = ButtonVariant::Ghost,
+          .minWidth = kNotificationActionButtonSize * scale,
+          .minHeight = kNotificationActionButtonSize * scale,
+          .padding = Style::spaceXs * scale,
+          .radius = Style::scaledRadiusMd(scale),
+      });
     }
 
     void showFallbackIcon(Renderer& renderer) {
@@ -612,87 +600,96 @@ NotificationsTab::~NotificationsTab() = default;
 
 std::unique_ptr<Flex> NotificationsTab::create() {
   const float scale = contentScale();
-  auto tab = std::make_unique<Flex>();
-  tab->setDirection(FlexDirection::Vertical);
-  tab->setAlign(FlexAlign::Stretch);
-  tab->setGap(Style::spaceSm * scale);
-  m_root = tab.get();
-
-  auto filter = std::make_unique<Segmented>();
-  filter->setScale(scale);
-  filter->setFontSize(Style::fontSizeCaption * scale);
-  filter->addOption(i18n::tr("control-center.notifications.filter.all"));
-  filter->addOption(i18n::tr("control-center.notifications.filter.today"));
-  filter->addOption(i18n::tr("control-center.notifications.filter.yesterday"));
-  filter->addOption(i18n::tr("control-center.notifications.filter.older"));
-  filter->setEqualSegmentWidths(true);
-  filter->setSelectedIndex(m_filterIndex);
-  filter->setOnChange([this](std::size_t idx) {
-    m_filterIndex = idx;
-    m_lastRebuildFilterIndex = static_cast<std::size_t>(-1);
-    if (m_list != nullptr) {
-      m_list->scrollView().setScrollOffset(0.0f);
-    }
-    PanelManager::instance().refresh();
+  auto tab = ui::column({
+      .out = &m_root,
+      .align = FlexAlign::Stretch,
+      .gap = Style::spaceSm * scale,
   });
-  m_filter = filter.get();
-  tab->addChild(std::move(filter));
+
+  tab->addChild(ui::segmented({
+      .out = &m_filter,
+      .options =
+          std::vector<ui::SegmentedOption>{
+              {.label = i18n::tr("control-center.notifications.filter.all")},
+              {.label = i18n::tr("control-center.notifications.filter.today")},
+              {.label = i18n::tr("control-center.notifications.filter.yesterday")},
+              {.label = i18n::tr("control-center.notifications.filter.older")},
+          },
+      .selectedIndex = m_filterIndex,
+      .fontSize = Style::fontSizeCaption * scale,
+      .scale = scale,
+      .equalSegmentWidths = true,
+      .onChange =
+          [this](std::size_t idx) {
+            m_filterIndex = idx;
+            m_lastRebuildFilterIndex = static_cast<std::size_t>(-1);
+            if (m_list != nullptr) {
+              m_list->scrollView().setScrollOffset(0.0f);
+            }
+            PanelManager::instance().refresh();
+          },
+  }));
 
   m_adapter = std::make_unique<NotificationHistoryAdapter>(*this, scale, panelCardOpacity(), panelBordersEnabled());
 
-  auto list = std::make_unique<VirtualListView>();
-  list->setFlexGrow(1.0f);
-  list->setFillWidth(true);
-  list->setFillHeight(true);
-  list->setItemGap(Style::spaceMd * scale);
-  list->setOverscanItems(3);
-  list->setAdapter(m_adapter.get());
-  m_list = static_cast<VirtualListView*>(tab->addChild(std::move(list)));
+  tab->addChild(ui::virtualListView({
+      .out = &m_list,
+      .itemGap = Style::spaceMd * scale,
+      .overscanItems = 3,
+      .adapter = m_adapter.get(),
+      .flexGrow = 1.0f,
+      .configure =
+          [](VirtualListView& list) {
+            list.setFillWidth(true);
+            list.setFillHeight(true);
+          },
+  }));
 
-  auto empty = std::make_unique<Flex>();
-  applyNotificationCardStyle(*empty, scale, panelCardOpacity(), panelBordersEnabled());
-  empty->setAlign(FlexAlign::Center);
-  empty->setGap(Style::spaceSm * scale);
-  empty->setPadding(Style::spaceLg * scale, Style::spaceMd * scale);
-  empty->setVisible(false);
-  m_emptyCard = empty.get();
-
-  auto title = std::make_unique<Label>();
-  title->setFontWeight(FontWeight::Bold);
-  title->setFontSize(Style::fontSizeBody * scale);
-  title->setColor(colorSpecFromRole(ColorRole::OnSurface));
-  m_emptyTitle = static_cast<Label*>(empty->addChild(std::move(title)));
-
-  auto body = std::make_unique<Label>();
-  body->setCaptionStyle();
-  body->setFontSize(Style::fontSizeCaption * scale);
-  body->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-  m_emptyBody = static_cast<Label*>(empty->addChild(std::move(body)));
-
-  tab->addChild(std::move(empty));
+  tab->addChild(ui::column(
+      {
+          .out = &m_emptyCard,
+          .align = FlexAlign::Center,
+          .gap = Style::spaceSm * scale,
+          .visible = false,
+          .configure =
+              [scale, opacity = panelCardOpacity(), borders = panelBordersEnabled()](Flex& empty) {
+                applyNotificationCardStyle(empty, scale, opacity, borders);
+                empty.setPadding(Style::spaceLg * scale, Style::spaceMd * scale);
+              },
+      },
+      ui::label({
+          .out = &m_emptyTitle,
+          .fontSize = Style::fontSizeBody * scale,
+          .color = colorSpecFromRole(ColorRole::OnSurface),
+          .fontWeight = FontWeight::Bold,
+      }),
+      ui::label({
+          .out = &m_emptyBody,
+          .fontSize = Style::fontSizeCaption * scale,
+          .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+          .configure = [](Label& label) { label.setCaptionStyle(); },
+      })));
 
   return tab;
 }
 
 std::unique_ptr<Flex> NotificationsTab::createHeaderActions() {
   const float scale = contentScale();
-  auto actions = std::make_unique<Flex>();
-  actions->setDirection(FlexDirection::Horizontal);
-  actions->setAlign(FlexAlign::Center);
-  actions->setGap(Style::spaceSm * scale);
-
-  auto clearAll = std::make_unique<Button>();
-  clearAll->setGlyph("trash");
-  clearAll->setVariant(ButtonVariant::Destructive);
-  clearAll->setGlyphSize(Style::fontSizeBody * scale);
-  clearAll->setMinWidth(Style::controlHeightSm * scale);
-  clearAll->setMinHeight(Style::controlHeightSm * scale);
-  clearAll->setPadding(Style::spaceXs * scale);
-  clearAll->setOnClick([this]() { clearAllNotifications(); });
-  m_clearAllButton = clearAll.get();
-  actions->addChild(std::move(clearAll));
-
-  return actions;
+  return ui::row(
+      {
+          .align = FlexAlign::Center,
+          .gap = Style::spaceSm * scale,
+      },
+      ui::button({
+          .out = &m_clearAllButton,
+          .glyph = "trash",
+          .glyphSize = Style::fontSizeBody * scale,
+          .variant = ButtonVariant::Destructive,
+          .minWidth = Style::controlHeightSm * scale,
+          .minHeight = Style::controlHeightSm * scale,
+          .padding = Style::spaceXs * scale,
+          .onClick = [this]() { clearAllNotifications(); },
+      }));
 }
 
 void NotificationsTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight) {

@@ -614,6 +614,27 @@ namespace ui {
     return control;
   }
 
+  std::unique_ptr<VirtualListView> virtualListView(VirtualListViewProps props) {
+    auto control = std::make_unique<VirtualListView>();
+    if (props.itemGap.has_value()) {
+      control->setItemGap(*props.itemGap);
+    }
+    if (props.overscanItems.has_value()) {
+      control->setOverscanItems(*props.overscanItems);
+    }
+    if (props.adapter != nullptr) {
+      control->setAdapter(props.adapter);
+    }
+    applyNodeProps(*control, props);
+    if (props.configure) {
+      props.configure(*control);
+    }
+    if (props.out != nullptr) {
+      *props.out = control.get();
+    }
+    return control;
+  }
+
   std::unique_ptr<SearchPicker> searchPicker(SearchPickerProps props) {
     auto control = std::make_unique<SearchPicker>();
     if (props.placeholder.has_value()) {
@@ -782,6 +803,34 @@ namespace ui {
     }
     if (props.onCommit) {
       control->setOnCommit(std::move(props.onCommit));
+    }
+    applyNodeProps(*control, props);
+    if (props.configure) {
+      props.configure(*control);
+    }
+    if (props.out != nullptr) {
+      *props.out = control.get();
+    }
+    return control;
+  }
+
+  std::unique_ptr<Spinner> spinner(SpinnerProps props) {
+    auto control = std::make_unique<Spinner>();
+    if (props.color.has_value()) {
+      control->setColor(*props.color);
+    }
+    if (props.spinnerSize.has_value()) {
+      control->setSpinnerSize(*props.spinnerSize);
+    }
+    if (props.thickness.has_value()) {
+      control->setThickness(*props.thickness);
+    }
+    if (props.spinning.has_value()) {
+      if (*props.spinning) {
+        control->start();
+      } else {
+        control->stop();
+      }
     }
     applyNodeProps(*control, props);
     if (props.configure) {

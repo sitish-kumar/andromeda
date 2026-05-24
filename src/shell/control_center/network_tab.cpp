@@ -7,7 +7,6 @@
 #include "render/scene/input_area.h"
 #include "shell/panel/panel_manager.h"
 #include "ui/builders.h"
-#include "ui/controls/spinner.h"
 #include "ui/palette.h"
 
 #include <algorithm>
@@ -837,11 +836,11 @@ void NetworkTab::rebuildApList(Renderer& renderer) {
                                     .configure = [](Label& label) { label.setCaptionStyle(); },
                                 }));
 
-      auto spinner = std::make_unique<Spinner>();
-      spinner->setSpinnerSize(Style::fontSizeCaption * scale);
-      spinner->setColor(colorSpecFromRole(ColorRole::Primary));
-      m_scanSpinner = spinner.get();
-      wifiHeader->addChild(std::move(spinner));
+      wifiHeader->addChild(ui::spinner({
+          .out = &m_scanSpinner,
+          .color = colorSpecFromRole(ColorRole::Primary),
+          .spinnerSize = Style::fontSizeCaption * scale,
+      }));
 
       wifiHeader->addChild(ui::button({
           .out = &m_rescanButton,
