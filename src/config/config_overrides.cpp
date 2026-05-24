@@ -315,17 +315,6 @@ namespace {
     return path.size() == 3 && path[0] == "widget";
   }
 
-  std::string widgetTypeForOverridePath(const toml::table& overrides, std::string_view widgetName) {
-    if (const auto* widgetTable = overrides.get_as<toml::table>("widget")) {
-      if (const auto* entry = widgetTable->get_as<toml::table>(widgetName)) {
-        if (const auto type = (*entry)["type"].value<std::string>()) {
-          return *type;
-        }
-      }
-    }
-    return std::string(widgetName);
-  }
-
   bool wallpaperMonitorOverrideEqual(const WallpaperMonitorOverride& a, const WallpaperMonitorOverride& b) {
     return a.match == b.match
         && a.enabled == b.enabled
@@ -1293,13 +1282,7 @@ bool ConfigService::setOverrides(std::vector<std::pair<std::vector<std::string>,
   for (const auto& [path, value] : overrides) {
     if (!overridePresenceIsSemantic(path)) {
       bool shouldErase = false;
-      if (isWidgetSettingOverridePath(path)) {
-        const std::string widgetType = widgetTypeForOverridePath(next, path[1]);
-        shouldErase = settings::widgetOverrideValueMatchesRegistryDefault(widgetType, path[2], value)
-            || !overridePathEffectiveInTable(path, next);
-      } else {
-        shouldErase = !overridePathEffectiveInTable(path, next);
-      }
+      shouldErase = !overridePathEffectiveInTable(path, next);
       if (shouldErase) {
         eraseOverridePath(next, path, overridePreserveDepthForPath(path));
         if (path.size() == 2 && path[0] == "idle" && path[1] == "behavior") {
