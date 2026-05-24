@@ -656,8 +656,13 @@ namespace {
     finalizeCapsules(instance.centerCapsuleRuns);
     finalizeCapsules(instance.endCapsuleRuns);
 
-    const float contentMainStart = padding;
-    const float contentMainEnd = std::max(contentMainStart, (isVertical ? barAreaH : barAreaW) - padding);
+    // When bar touches screen edge, put the padding inside the sections, and extend the hit targets of
+    // the first/last widgets to cover the area. So clicking on the screen edge still triggers the widget.
+    const bool screenEdgeClick = instance.barConfig.marginEnds == 0 && padding > 0;
+    const float paddingInsideSection = screenEdgeClick ? padding : 0.0f;
+    const float contentMainStart = screenEdgeClick ? 0.0f : padding;
+    const float contentMainEnd =
+        std::max(contentMainStart, (isVertical ? barAreaH : barAreaW) - (screenEdgeClick ? 0.0f : padding));
     const float contentMainSpan = std::max(0.0f, contentMainEnd - contentMainStart);
 
     auto configureSlot = [&](Node* slot, float mainOffset, float mainSize) {
@@ -675,6 +680,16 @@ namespace {
       section->setJustify(justify);
       section->layout(renderer);
     };
+
+    if (screenEdgeClick) {
+      if (isVertical) {
+        instance.startSection->setPadding(paddingInsideSection, 0.0f, 0.0f, 0.0f);
+        instance.endSection->setPadding(0.0f, 0.0f, paddingInsideSection, 0.0f);
+      } else {
+        instance.startSection->setPadding(0.0f, 0.0f, 0.0f, paddingInsideSection);
+        instance.endSection->setPadding(0.0f, paddingInsideSection, 0.0f, 0.0f);
+      }
+    }
 
     configureSection(instance.startSection, FlexJustify::Start);
     configureSection(instance.centerSection, FlexJustify::Center);
@@ -736,6 +751,28 @@ namespace {
     applyBarWidgetHitTargets(instance.startSection, instance.startSlot, isVertical);
     applyBarWidgetHitTargets(instance.centerSection, instance.centerSlot, isVertical);
     applyBarWidgetHitTargets(instance.endSection, instance.endSlot, isVertical);
+    if (screenEdgeClick) {
+      if (!instance.startSection->children().empty()) {
+        auto node = instance.startSection->children().front().get();
+        auto hitTestOutset = node->hitTestOutset();
+        if (isVertical) {
+          hitTestOutset.top += paddingInsideSection;
+        } else {
+          hitTestOutset.left += paddingInsideSection;
+        }
+        node->setHitTestOutset(hitTestOutset);
+      }
+      if (!instance.endSection->children().empty()) {
+        auto node = instance.endSection->children().back().get();
+        auto hitTestOutset = node->hitTestOutset();
+        if (isVertical) {
+          hitTestOutset.bottom += paddingInsideSection;
+        } else {
+          hitTestOutset.right += paddingInsideSection;
+        }
+        node->setHitTestOutset(hitTestOutset);
+      }
+    }
   }
 
   void tickWidgets(std::vector<std::unique_ptr<Widget>>& widgets, float deltaMs) {
