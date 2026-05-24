@@ -62,9 +62,10 @@ namespace {
 
 } // namespace
 
-BatteryWidget::BatteryWidget(UPowerService* upower, std::string deviceSelector, int warningThreshold,
-                             ColorSpec warningColor, BatteryDisplayMode displayMode, bool showLabel,
-                             bool hideWhenPlugged, bool hideWhenFull)
+BatteryWidget::BatteryWidget(
+    UPowerService* upower, std::string deviceSelector, int warningThreshold, ColorSpec warningColor,
+    BatteryDisplayMode displayMode, bool showLabel, bool hideWhenPlugged, bool hideWhenFull
+)
     : m_upower(upower), m_deviceSelector(std::move(deviceSelector)), m_warningThreshold(warningThreshold),
       m_warningColor(std::move(warningColor)), m_displayMode(displayMode), m_showLabel(showLabel),
       m_hideWhenPlugged(hideWhenPlugged), m_hideWhenFull(hideWhenFull) {}
@@ -83,51 +84,65 @@ void BatteryWidget::create() {
 void BatteryWidget::createGraphicMode() {
   auto* container = static_cast<InputArea*>(root());
 
-  container->addChild(ui::box({
-      .out = &m_bodyBg,
-      .fill = withOpacity(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)), 0.25f),
-  }));
+  container->addChild(
+      ui::box({
+          .out = &m_bodyBg,
+          .fill = withOpacity(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)), 0.25f),
+      })
+  );
 
-  container->addChild(ui::box({
-      .out = &m_fillRect,
-  }));
+  container->addChild(
+      ui::box({
+          .out = &m_fillRect,
+      })
+  );
 
-  container->addChild(ui::box({
-      .out = &m_terminalNub,
-      .fill = withOpacity(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)), 0.25f),
-  }));
+  container->addChild(
+      ui::box({
+          .out = &m_terminalNub,
+          .fill = withOpacity(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)), 0.25f),
+      })
+  );
 
   if (m_showLabel) {
-    container->addChild(ui::label({
-        .out = &m_overlayLabel,
-        .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
-        .fontWeight = labelFontWeight(),
-    }));
+    container->addChild(
+        ui::label({
+            .out = &m_overlayLabel,
+            .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+            .fontWeight = labelFontWeight(),
+        })
+    );
   }
 
-  container->addChild(ui::glyph({
-      .out = &m_overlayGlyph,
-      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
-      .visible = false,
-  }));
+  container->addChild(
+      ui::glyph({
+          .out = &m_overlayGlyph,
+          .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+          .visible = false,
+      })
+  );
 }
 
 void BatteryWidget::createIconMode() {
   auto* container = static_cast<InputArea*>(root());
 
-  container->addChild(ui::glyph({
-      .out = &m_glyph,
-      .glyph = "battery-4",
-      .glyphSize = Style::barGlyphSize * m_contentScale,
-      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
-  }));
+  container->addChild(
+      ui::glyph({
+          .out = &m_glyph,
+          .glyph = "battery-4",
+          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+      })
+  );
 
-  container->addChild(ui::label({
-      .out = &m_label,
-      .fontSize = Style::fontSizeBody * m_contentScale,
-      .fontWeight = labelFontWeight(),
-      .visible = m_showLabel,
-  }));
+  container->addChild(
+      ui::label({
+          .out = &m_label,
+          .fontSize = Style::fontSizeBody * m_contentScale,
+          .fontWeight = labelFontWeight(),
+          .visible = m_showLabel,
+      })
+  );
 }
 
 void BatteryWidget::doLayout(Renderer& renderer, float containerWidth, float containerHeight) {
@@ -202,8 +217,10 @@ void BatteryWidget::layoutGraphicMode(Renderer& renderer) {
     if (showStateGlyphOutside) {
       m_overlayGlyph->setPosition(std::round((rootW - stateW) * 0.5f), graphicH + labelGap + labelH + stateGap);
     } else if (showStateGlyphInside) {
-      m_overlayGlyph->setPosition(bodyX + std::round((bodyH - m_overlayGlyph->width()) * 0.5f),
-                                  bodyY + std::round((bodyW - m_overlayGlyph->height()) * 0.5f));
+      m_overlayGlyph->setPosition(
+          bodyX + std::round((bodyH - m_overlayGlyph->width()) * 0.5f),
+          bodyY + std::round((bodyW - m_overlayGlyph->height()) * 0.5f)
+      );
     }
 
     rootNode->setSize(rootW, graphicH + (showLabel ? labelGap + labelGroupH : 0.0f));
@@ -237,8 +254,10 @@ void BatteryWidget::layoutGraphicMode(Renderer& renderer) {
     if (showStateGlyphOutside) {
       m_overlayGlyph->setPosition(graphicW + labelGap + labelW + stateGap, std::round((rootH - stateH) * 0.5f));
     } else if (showStateGlyphInside) {
-      m_overlayGlyph->setPosition(std::round((bodyW - m_overlayGlyph->width()) * 0.5f),
-                                  bodyY + std::round((bodyH - m_overlayGlyph->height()) * 0.5f));
+      m_overlayGlyph->setPosition(
+          std::round((bodyW - m_overlayGlyph->width()) * 0.5f),
+          bodyY + std::round((bodyH - m_overlayGlyph->height()) * 0.5f)
+      );
     }
 
     rootNode->setSize(graphicW + (showLabel ? labelGap + labelGroupW : 0.0f), rootH);
@@ -362,7 +381,8 @@ void BatteryWidget::syncState(Renderer& renderer) {
             updateFillGeometry();
             requestRedraw();
           },
-          [this]() { m_fillAnim = 0; }, this);
+          [this]() { m_fillAnim = 0; }, this
+      );
       requestFrameTick();
     } else {
       m_animatedPct = newPct;
@@ -412,8 +432,9 @@ void BatteryWidget::syncState(Renderer& renderer) {
   // Tooltip (both modes)
   if (rootNode != nullptr) {
     auto devices = m_upower->batteryDevices();
-    auto laptopEnd = std::stable_partition(devices.begin(), devices.end(),
-                                           [](const UPowerDeviceInfo& d) { return d.isLaptopBattery(); });
+    auto laptopEnd = std::stable_partition(devices.begin(), devices.end(), [](const UPowerDeviceInfo& d) {
+      return d.isLaptopBattery();
+    });
     int laptopBatteryCount = static_cast<int>(laptopEnd - devices.begin());
 
     std::vector<TooltipRow> rows;

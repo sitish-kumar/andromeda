@@ -14,8 +14,10 @@
 #include <cmath>
 #include <string_view>
 
-ActiveWindowWidget::ActiveWindowWidget(CompositorPlatform& platform, float maxWidth, float minWidth, float iconSize,
-                                       ActiveWindowTitleScrollMode titleScrollMode, ActiveWindowDisplayMode displayMode)
+ActiveWindowWidget::ActiveWindowWidget(
+    CompositorPlatform& platform, float maxWidth, float minWidth, float iconSize,
+    ActiveWindowTitleScrollMode titleScrollMode, ActiveWindowDisplayMode displayMode
+)
     : m_platform(platform), m_maxWidth(maxWidth), m_minWidth(minWidth), m_iconSize(iconSize),
       m_titleScrollMode(titleScrollMode), m_displayMode(displayMode) {
   buildDesktopIconIndex();
@@ -33,23 +35,27 @@ void ActiveWindowWidget::create() {
   });
   m_area = rootNode.get();
 
-  rootNode->addChild(ui::image({
-      .out = &m_icon,
-      .fit = ImageFit::Contain,
-      .radius = Style::radiusSm,
-      .width = m_iconSize * m_contentScale,
-      .height = m_iconSize * m_contentScale,
-  }));
+  rootNode->addChild(
+      ui::image({
+          .out = &m_icon,
+          .fit = ImageFit::Contain,
+          .radius = Style::radiusSm,
+          .width = m_iconSize * m_contentScale,
+          .height = m_iconSize * m_contentScale,
+      })
+  );
 
-  rootNode->addChild(ui::label({
-      .out = &m_title,
-      .fontSize = Style::fontSizeBody * m_contentScale,
-      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
-      .maxWidth = m_maxWidth * m_contentScale,
-      .maxLines = 1,
-      .fontWeight = labelFontWeight(),
-      .autoScroll = false,
-  }));
+  rootNode->addChild(
+      ui::label({
+          .out = &m_title,
+          .fontSize = Style::fontSizeBody * m_contentScale,
+          .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+          .maxWidth = m_maxWidth * m_contentScale,
+          .maxLines = 1,
+          .fontWeight = labelFontWeight(),
+          .autoScroll = false,
+      })
+  );
 
   setRoot(std::move(rootNode));
 }

@@ -35,21 +35,25 @@ void NotificationWidget::create() {
     requestPanelToggle("control-center", "notifications");
   });
 
-  area->addChild(ui::glyph({
-      .out = &m_glyph,
-      .glyph = "bell",
-      .glyphSize = Style::barGlyphSize * m_contentScale,
-      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
-  }));
+  area->addChild(
+      ui::glyph({
+          .out = &m_glyph,
+          .glyph = "bell",
+          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+      })
+  );
 
   const float dotSize = kDotBaseSize * m_contentScale;
-  m_dot = area->addChild(ui::box({
-      .fill = colorSpecFromRole(ColorRole::Primary),
-      .radius = dotSize * 0.5f,
-      .width = dotSize,
-      .height = dotSize,
-      .visible = false,
-  }));
+  m_dot = area->addChild(
+      ui::box({
+          .fill = colorSpecFromRole(ColorRole::Primary),
+          .radius = dotSize * 0.5f,
+          .width = dotSize,
+          .height = dotSize,
+          .visible = false,
+      })
+  );
 
   setRoot(std::move(area));
   refreshIndicatorState();

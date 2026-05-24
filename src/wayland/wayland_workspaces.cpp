@@ -30,15 +30,17 @@ WaylandWorkspaces::WaylandWorkspaces(compositors::CompositorRuntimeRegistry& run
   m_outputObservers.push_back(dwlIpcBackend.get());
   m_backends.push_back(std::move(dwlIpcBackend));
 
-  auto hyprlandBackend = std::make_unique<HyprlandWorkspaceBackend>([](wl_output* /*output*/) { return std::string{}; },
-                                                                    runtimeRegistry.hyprland());
+  auto hyprlandBackend = std::make_unique<HyprlandWorkspaceBackend>(
+      [](wl_output* /*output*/) { return std::string{}; }, runtimeRegistry.hyprland()
+  );
   m_hyprlandBackend = hyprlandBackend.get();
   m_hyprlandConnector = hyprlandBackend.get();
   m_outputNameResolvers.push_back(hyprlandBackend.get());
   m_backends.push_back(std::move(hyprlandBackend));
 
-  auto swayBackend = std::make_unique<SwayWorkspaceBackend>([](wl_output* /*output*/) { return std::string{}; },
-                                                            runtimeRegistry.sway());
+  auto swayBackend = std::make_unique<SwayWorkspaceBackend>(
+      [](wl_output* /*output*/) { return std::string{}; }, runtimeRegistry.sway()
+  );
   m_swayBackend = swayBackend.get();
   m_swayConnector = swayBackend.get();
   m_outputNameResolvers.push_back(swayBackend.get());

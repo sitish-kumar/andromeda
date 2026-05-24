@@ -66,23 +66,28 @@ std::string ClockWidget::formatTimeText() const {
 
 void ClockWidget::create() {
   auto area = std::make_unique<InputArea>();
-  area->setOnClick(
-      [this](const InputArea::PointerData& /*data*/) { requestPanelToggle("control-center", "calendar"); });
+  area->setOnClick([this](const InputArea::PointerData& /*data*/) {
+    requestPanelToggle("control-center", "calendar");
+  });
 
-  area->addChild(ui::label({
-      .out = &m_label,
-      .fontSize = Style::fontSizeBody * m_contentScale,
-      .fontWeight = labelFontWeight(),
-      .textAlign = TextAlign::Center,
-  }));
+  area->addChild(
+      ui::label({
+          .out = &m_label,
+          .fontSize = Style::fontSizeBody * m_contentScale,
+          .fontWeight = labelFontWeight(),
+          .textAlign = TextAlign::Center,
+      })
+  );
 
-  area->addChild(ui::label({
-      .out = &m_secondaryLabel,
-      .fontSize = Style::fontSizeBody * m_contentScale * kStackedSecondaryScale,
-      .fontWeight = labelFontWeight(),
-      .textAlign = TextAlign::Center,
-      .visible = false,
-  }));
+  area->addChild(
+      ui::label({
+          .out = &m_secondaryLabel,
+          .fontSize = Style::fontSizeBody * m_contentScale * kStackedSecondaryScale,
+          .fontWeight = labelFontWeight(),
+          .textAlign = TextAlign::Center,
+          .visible = false,
+      })
+  );
 
   setRoot(std::move(area));
 }

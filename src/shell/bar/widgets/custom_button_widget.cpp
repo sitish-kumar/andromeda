@@ -21,9 +21,10 @@ namespace {
   constexpr Logger kLog("custom-button");
 }
 
-CustomButtonWidget::CustomButtonWidget(std::string glyph, std::string label, std::string tooltip, std::string command,
-                                       std::string rightCommand, std::string middleCommand, std::string scrollUpCommand,
-                                       std::string scrollDownCommand)
+CustomButtonWidget::CustomButtonWidget(
+    std::string glyph, std::string label, std::string tooltip, std::string command, std::string rightCommand,
+    std::string middleCommand, std::string scrollUpCommand, std::string scrollDownCommand
+)
     : m_glyphName(std::move(glyph)), m_labelText(std::move(label)), m_tooltip(std::move(tooltip)),
       m_command(std::move(command)), m_rightCommand(std::move(rightCommand)), m_middleCommand(std::move(middleCommand)),
       m_scrollUpCommand(std::move(scrollUpCommand)), m_scrollDownCommand(std::move(scrollDownCommand)) {}
@@ -88,23 +89,27 @@ void CustomButtonWidget::create() {
     area->setTooltip(m_tooltip);
   }
 
-  area->addChild(ui::glyph({
-      .out = &m_glyph,
-      .glyph = m_glyphName,
-      .glyphSize = Style::barGlyphSize * m_contentScale,
-      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
-      .visible = !m_glyphName.empty(),
-  }));
+  area->addChild(
+      ui::glyph({
+          .out = &m_glyph,
+          .glyph = m_glyphName,
+          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+          .visible = !m_glyphName.empty(),
+      })
+  );
 
-  area->addChild(ui::label({
-      .out = &m_label,
-      .text = m_labelText,
-      .fontSize = Style::fontSizeBody * m_contentScale,
-      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
-      .maxLines = 1,
-      .fontWeight = labelFontWeight(),
-      .visible = !m_labelText.empty(),
-  }));
+  area->addChild(
+      ui::label({
+          .out = &m_label,
+          .text = m_labelText,
+          .fontSize = Style::fontSizeBody * m_contentScale,
+          .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+          .maxLines = 1,
+          .fontWeight = labelFontWeight(),
+          .visible = !m_labelText.empty(),
+      })
+  );
 
   m_area = area.get();
   setRoot(std::move(area));

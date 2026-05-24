@@ -15,12 +15,14 @@ void SettingsWidget::create() {
   auto area = std::make_unique<InputArea>();
   area->setOnClick([](const InputArea::PointerData& /*data*/) { PanelManager::instance().openSettingsWindow(); });
 
-  area->addChild(ui::glyph({
-      .out = &m_glyph,
-      .glyph = m_barGlyphId.empty() ? "settings" : m_barGlyphId,
-      .glyphSize = Style::barGlyphSize * m_contentScale,
-      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
-  }));
+  area->addChild(
+      ui::glyph({
+          .out = &m_glyph,
+          .glyph = m_barGlyphId.empty() ? "settings" : m_barGlyphId,
+          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+      })
+  );
 
   setRoot(std::move(area));
 }

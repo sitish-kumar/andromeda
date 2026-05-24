@@ -21,19 +21,23 @@ void WeatherWidget::create() {
   area->setOnClick([this](const InputArea::PointerData& /*data*/) { requestPanelToggle("control-center", "weather"); });
   m_area = area.get();
 
-  area->addChild(ui::glyph({
-      .out = &m_glyph,
-      .glyph = "weather-cloud",
-      .glyphSize = Style::barGlyphSize * m_contentScale,
-      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
-  }));
+  area->addChild(
+      ui::glyph({
+          .out = &m_glyph,
+          .glyph = "weather-cloud",
+          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+      })
+  );
 
-  area->addChild(ui::label({
-      .out = &m_label,
-      .fontSize = Style::fontSizeBody * m_contentScale,
-      .maxWidth = m_maxWidth * m_contentScale,
-      .fontWeight = labelFontWeight(),
-  }));
+  area->addChild(
+      ui::label({
+          .out = &m_label,
+          .fontSize = Style::fontSizeBody * m_contentScale,
+          .maxWidth = m_maxWidth * m_contentScale,
+          .fontWeight = labelFontWeight(),
+      })
+  );
 
   setRoot(std::move(area));
 }

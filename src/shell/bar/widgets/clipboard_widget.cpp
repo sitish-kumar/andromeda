@@ -14,12 +14,14 @@ void ClipboardWidget::create() {
   auto area = std::make_unique<InputArea>();
   area->setOnClick([this](const InputArea::PointerData& /*data*/) { requestPanelToggle("clipboard"); });
 
-  area->addChild(ui::glyph({
-      .out = &m_glyph,
-      .glyph = m_barGlyphId.empty() ? "clipboard" : m_barGlyphId,
-      .glyphSize = Style::barGlyphSize * m_contentScale,
-      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
-  }));
+  area->addChild(
+      ui::glyph({
+          .out = &m_glyph,
+          .glyph = m_barGlyphId.empty() ? "clipboard" : m_barGlyphId,
+          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+      })
+  );
 
   setRoot(std::move(area));
 }

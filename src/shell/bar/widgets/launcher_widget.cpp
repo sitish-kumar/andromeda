@@ -17,17 +17,21 @@ void LauncherWidget::create() {
   area->setOnClick([this](const InputArea::PointerData& /*data*/) { requestPanelToggle("launcher"); });
 
   if (!m_logoPath.empty()) {
-    area->addChild(ui::image({
-        .out = &m_image,
-        .fit = ImageFit::Contain,
-    }));
+    area->addChild(
+        ui::image({
+            .out = &m_image,
+            .fit = ImageFit::Contain,
+        })
+    );
   } else {
-    area->addChild(ui::glyph({
-        .out = &m_glyph,
-        .glyph = m_barGlyphId.empty() ? "video" : m_barGlyphId,
-        .glyphSize = Style::barGlyphSize * m_contentScale,
-        .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
-    }));
+    area->addChild(
+        ui::glyph({
+            .out = &m_glyph,
+            .glyph = m_barGlyphId.empty() ? "video" : m_barGlyphId,
+            .glyphSize = Style::barGlyphSize * m_contentScale,
+            .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+        })
+    );
   }
 
   setRoot(std::move(area));

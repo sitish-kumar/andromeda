@@ -184,15 +184,17 @@ std::vector<Workspace> TriadWorkspaceBackend::all() const {
   const auto workspaces = sortedWorkspaces();
   result.reserve(workspaces.size());
   for (const auto* workspace : workspaces) {
-    result.push_back(Workspace{
-        .id = workspaceKey(*workspace),
-        .name = workspace->name.empty() ? workspaceKey(*workspace) : workspace->name,
-        .coordinates = {workspace->index},
-        .index = workspace->index,
-        .active = workspace->active,
-        .urgent = workspace->urgent,
-        .occupied = workspace->occupied,
-    });
+    result.push_back(
+        Workspace{
+            .id = workspaceKey(*workspace),
+            .name = workspace->name.empty() ? workspaceKey(*workspace) : workspace->name,
+            .coordinates = {workspace->index},
+            .index = workspace->index,
+            .active = workspace->active,
+            .urgent = workspace->urgent,
+            .occupied = workspace->occupied,
+        }
+    );
   }
   return result;
 }
@@ -202,15 +204,17 @@ std::vector<Workspace> TriadWorkspaceBackend::forOutput(wl_output* output) const
   const auto workspaces = sortedWorkspaces(outputNameFor(output));
   result.reserve(workspaces.size());
   for (const auto* workspace : workspaces) {
-    result.push_back(Workspace{
-        .id = workspaceKey(*workspace),
-        .name = workspace->name.empty() ? workspaceKey(*workspace) : workspace->name,
-        .coordinates = {workspace->index},
-        .index = workspace->index,
-        .active = workspace->active,
-        .urgent = workspace->urgent,
-        .occupied = workspace->occupied,
-    });
+    result.push_back(
+        Workspace{
+            .id = workspaceKey(*workspace),
+            .name = workspace->name.empty() ? workspaceKey(*workspace) : workspace->name,
+            .coordinates = {workspace->index},
+            .index = workspace->index,
+            .active = workspace->active,
+            .urgent = workspace->urgent,
+            .occupied = workspace->occupied,
+        }
+    );
   }
   return result;
 }
@@ -264,14 +268,16 @@ std::vector<WorkspaceWindow> TriadWorkspaceBackend::workspaceWindows(const std::
     if (workspaceIt == workspacesByIndex.end()) {
       continue;
     }
-    result.push_back(WorkspaceWindow{
-        .windowId = std::to_string(window.id),
-        .workspaceKey = workspaceKey(*workspaceIt->second),
-        .appId = window.appId,
-        .title = window.title,
-        .x = window.x,
-        .y = window.y,
-    });
+    result.push_back(
+        WorkspaceWindow{
+            .windowId = std::to_string(window.id),
+            .workspaceKey = workspaceKey(*workspaceIt->second),
+            .appId = window.appId,
+            .title = window.title,
+            .x = window.x,
+            .y = window.y,
+        }
+    );
   }
   return result;
 }
@@ -728,8 +734,9 @@ std::string TriadWorkspaceBackend::outputNameFor(wl_output* output) const {
   return output != nullptr && m_outputNameResolver ? m_outputNameResolver(output) : std::string{};
 }
 
-bool TriadWorkspaceBackend::shouldExposeWorkspace(const WorkspaceState& workspace,
-                                                  const std::string& outputName) const {
+bool TriadWorkspaceBackend::shouldExposeWorkspace(
+    const WorkspaceState& workspace, const std::string& outputName
+) const {
   if (!outputName.empty()) {
     return workspace.output == outputName;
   }

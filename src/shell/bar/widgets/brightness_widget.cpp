@@ -44,19 +44,23 @@ void BrightnessWidget::create() {
     m_brightness->setBrightness(display->id, newValue);
   });
 
-  area->addChild(ui::glyph({
-      .out = &m_glyph,
-      .glyph = "brightness-high",
-      .glyphSize = Style::barGlyphSize * m_contentScale,
-      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
-  }));
+  area->addChild(
+      ui::glyph({
+          .out = &m_glyph,
+          .glyph = "brightness-high",
+          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+      })
+  );
 
-  area->addChild(ui::label({
-      .out = &m_label,
-      .fontSize = Style::fontSizeBody * m_contentScale,
-      .fontWeight = labelFontWeight(),
-      .visible = m_showLabel,
-  }));
+  area->addChild(
+      ui::label({
+          .out = &m_label,
+          .fontSize = Style::fontSizeBody * m_contentScale,
+          .fontWeight = labelFontWeight(),
+          .visible = m_showLabel,
+      })
+  );
 
   setRoot(std::move(area));
 }

@@ -32,21 +32,25 @@ void NetworkWidget::create() {
   auto area = std::make_unique<InputArea>();
   area->setOnClick([this](const InputArea::PointerData& /*data*/) { requestPanelToggle("control-center", "network"); });
 
-  area->addChild(ui::glyph({
-      .out = &m_glyph,
-      .glyph = "wifi-off",
-      .glyphSize = Style::barGlyphSize * m_contentScale,
-      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
-  }));
+  area->addChild(
+      ui::glyph({
+          .out = &m_glyph,
+          .glyph = "wifi-off",
+          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+      })
+  );
 
   // Always create the label node: horizontal bars honor m_showLabel, but
   // vertical bars always display a 3-char truncation under the glyph to match
   // volume/brightness.
-  area->addChild(ui::label({
-      .out = &m_label,
-      .fontSize = Style::fontSizeBody * m_contentScale,
-      .fontWeight = labelFontWeight(),
-  }));
+  area->addChild(
+      ui::label({
+          .out = &m_label,
+          .fontSize = Style::fontSizeBody * m_contentScale,
+          .fontWeight = labelFontWeight(),
+      })
+  );
 
   setRoot(std::move(area));
 }
@@ -99,8 +103,10 @@ void NetworkWidget::syncState(Renderer& renderer) {
 
   m_glyph->setGlyph(network_glyphs::glyphForState(s));
   m_glyph->setGlyphSize(Style::barGlyphSize * m_contentScale);
-  m_glyph->setColor(s.connected ? widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface))
-                                : colorSpecFromRole(ColorRole::OnSurfaceVariant));
+  m_glyph->setColor(
+      s.connected ? widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface))
+                  : colorSpecFromRole(ColorRole::OnSurfaceVariant)
+  );
   m_glyph->measure(renderer);
 
   if (m_label != nullptr) {
@@ -113,8 +119,10 @@ void NetworkWidget::syncState(Renderer& renderer) {
       }
       m_label->setFontSize((m_isVertical ? Style::fontSizeCaption : Style::fontSizeBody) * m_contentScale);
       m_label->setText(text);
-      m_label->setColor(s.connected ? widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface))
-                                    : colorSpecFromRole(ColorRole::OnSurfaceVariant));
+      m_label->setColor(
+          s.connected ? widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface))
+                      : colorSpecFromRole(ColorRole::OnSurfaceVariant)
+      );
       m_label->measure(renderer);
     }
   }

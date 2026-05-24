@@ -50,12 +50,14 @@ void NightLightWidget::create() {
   });
   m_area = area.get();
 
-  area->addChild(ui::glyph({
-      .out = &m_glyph,
-      .glyph = "nightlight-off",
-      .glyphSize = Style::barGlyphSize * m_contentScale,
-      .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-  }));
+  area->addChild(
+      ui::glyph({
+          .out = &m_glyph,
+          .glyph = "nightlight-off",
+          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+      })
+  );
 
   setRoot(std::move(area));
 }

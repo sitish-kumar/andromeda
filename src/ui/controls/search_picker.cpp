@@ -34,12 +34,14 @@ namespace {
       preview->setParticipatesInLayout(false);
       m_preview = static_cast<ColorSwatchPreviewStrip*>(addChild(std::move(preview)));
 
-      addChild(ui::glyph({
-          .out = &m_icon,
-          .glyphSize = Style::barGlyphSize,
-          .visible = false,
-          .participatesInLayout = false,
-      }));
+      addChild(
+          ui::glyph({
+              .out = &m_icon,
+              .glyphSize = Style::barGlyphSize,
+              .visible = false,
+              .participatesInLayout = false,
+          })
+      );
 
       auto text = ui::column({
           .out = &m_text,
@@ -47,15 +49,19 @@ namespace {
           .justify = FlexJustify::Center,
           .flexGrow = 1.0f,
       });
-      text->addChild(ui::label({
-          .out = &m_title,
-          .fontSize = Style::fontSizeBody,
-      }));
-      text->addChild(ui::label({
-          .out = &m_detail,
-          .fontSize = Style::fontSizeCaption,
-          .visible = false,
-      }));
+      text->addChild(
+          ui::label({
+              .out = &m_title,
+              .fontSize = Style::fontSizeBody,
+          })
+      );
+      text->addChild(
+          ui::label({
+              .out = &m_detail,
+              .fontSize = Style::fontSizeCaption,
+              .visible = false,
+          })
+      );
       addChild(std::move(text));
     }
 
@@ -134,54 +140,60 @@ SearchPicker::SearchPicker() {
   setRadius(Style::scaledRadiusMd());
   setSize(kDefaultWidth, kDefaultHeight);
 
-  addChild(ui::input({
-      .out = &m_input,
-      .placeholder = i18n::tr("ui.controls.search-picker.placeholder"),
-      .controlHeight = Style::controlHeight,
-      .onChange =
-          [this](const std::string& value) {
-            m_filter = value;
-            applyFilter();
-          },
-      .onKeyEvent =
-          [this](std::uint32_t sym, std::uint32_t modifiers) {
-            if (KeybindMatcher::matches(KeybindAction::Down, sym, modifiers)) {
-              moveHighlight(1);
-              return true;
-            }
-            if (KeybindMatcher::matches(KeybindAction::Up, sym, modifiers)) {
-              moveHighlight(-1);
-              return true;
-            }
-            if (KeybindMatcher::matches(KeybindAction::Validate, sym, modifiers)) {
-              activateHighlighted();
-              return true;
-            }
-            if (KeybindMatcher::matches(KeybindAction::Cancel, sym, modifiers)) {
-              if (m_onCancel) {
-                m_onCancel();
-              }
-              return true;
-            }
-            return false;
-          },
-  }));
+  addChild(
+      ui::input({
+          .out = &m_input,
+          .placeholder = i18n::tr("ui.controls.search-picker.placeholder"),
+          .controlHeight = Style::controlHeight,
+          .onChange =
+              [this](const std::string& value) {
+                m_filter = value;
+                applyFilter();
+              },
+          .onKeyEvent =
+              [this](std::uint32_t sym, std::uint32_t modifiers) {
+                if (KeybindMatcher::matches(KeybindAction::Down, sym, modifiers)) {
+                  moveHighlight(1);
+                  return true;
+                }
+                if (KeybindMatcher::matches(KeybindAction::Up, sym, modifiers)) {
+                  moveHighlight(-1);
+                  return true;
+                }
+                if (KeybindMatcher::matches(KeybindAction::Validate, sym, modifiers)) {
+                  activateHighlighted();
+                  return true;
+                }
+                if (KeybindMatcher::matches(KeybindAction::Cancel, sym, modifiers)) {
+                  if (m_onCancel) {
+                    m_onCancel();
+                  }
+                  return true;
+                }
+                return false;
+              },
+      })
+  );
 
-  addChild(ui::label({
-      .out = &m_emptyLabel,
-      .text = m_emptyText,
-      .fontSize = Style::fontSizeBody,
-      .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-      .visible = false,
-  }));
+  addChild(
+      ui::label({
+          .out = &m_emptyLabel,
+          .text = m_emptyText,
+          .fontSize = Style::fontSizeBody,
+          .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+          .visible = false,
+      })
+  );
 
-  addChild(ui::virtualListView({
-      .out = &m_list,
-      .itemGap = Style::spaceXs,
-      .overscanItems = 4,
-      .adapter = this,
-      .flexGrow = 1.0f,
-  }));
+  addChild(
+      ui::virtualListView({
+          .out = &m_list,
+          .itemGap = Style::spaceXs,
+          .overscanItems = 4,
+          .adapter = this,
+          .flexGrow = 1.0f,
+      })
+  );
 }
 
 void SearchPicker::setOptions(std::vector<SearchPickerOption> options) {
@@ -336,8 +348,9 @@ void SearchPicker::applyFilter() {
   }
 
   if (!query.empty()) {
-    std::stable_sort(scored.begin(), scored.end(),
-                     [](const ScoredOption& lhs, const ScoredOption& rhs) { return lhs.score > rhs.score; });
+    std::stable_sort(scored.begin(), scored.end(), [](const ScoredOption& lhs, const ScoredOption& rhs) {
+      return lhs.score > rhs.score;
+    });
     m_visible.reserve(scored.size());
     for (const auto& item : scored) {
       m_visible.push_back(item.index);

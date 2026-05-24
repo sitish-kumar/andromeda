@@ -104,10 +104,11 @@ namespace {
 
 } // namespace
 
-ScriptedWidget::ScriptedWidget(std::string configName, std::string scriptPath, std::string barName,
-                               std::string outputName, const WidgetConfig* config, FileWatcher* fileWatcher,
-                               CompositorPlatform* platform, ClipboardService* clipboard,
-                               PipeWireSpectrum* audioSpectrum, MprisService* mpris)
+ScriptedWidget::ScriptedWidget(
+    std::string configName, std::string scriptPath, std::string barName, std::string outputName,
+    const WidgetConfig* config, FileWatcher* fileWatcher, CompositorPlatform* platform, ClipboardService* clipboard,
+    PipeWireSpectrum* audioSpectrum, MprisService* mpris
+)
     : m_scriptPath(std::move(scriptPath)), m_widgetConfigName(std::move(configName)), m_barName(std::move(barName)),
       m_outputName(std::move(outputName)), m_fileWatcher(fileWatcher), m_platform(platform), m_clipboard(clipboard),
       m_audioSpectrum(audioSpectrum), m_mpris(mpris), m_timerPhase(nextTimerPhase()) {
@@ -173,18 +174,22 @@ void ScriptedWidget::create() {
       .gap = Style::spaceXs,
   });
 
-  flex->addChild(ui::glyph({
-      .out = &m_glyph,
-      .glyphSize = Style::barGlyphSize * m_contentScale,
-      .visible = false,
-  }));
+  flex->addChild(
+      ui::glyph({
+          .out = &m_glyph,
+          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .visible = false,
+      })
+  );
 
-  flex->addChild(ui::label({
-      .out = &m_label,
-      .fontSize = Style::fontSizeBody * m_contentScale,
-      .fontWeight = labelFontWeight(),
-      .visible = false,
-  }));
+  flex->addChild(
+      ui::label({
+          .out = &m_label,
+          .fontSize = Style::fontSizeBody * m_contentScale,
+          .fontWeight = labelFontWeight(),
+          .visible = false,
+      })
+  );
 
   area->addChild(std::move(flex));
   m_area = area.get();
@@ -207,8 +212,9 @@ void ScriptedWidget::create() {
     m_runtime = std::move(acquired.runtime);
     createdRuntime = acquired.created;
   } else {
-    m_runtime = std::make_shared<scripting::ScriptRuntime>(m_widgetConfigName + ":" + m_barName + ":" + m_outputName,
-                                                           m_settings, m_clipboard);
+    m_runtime = std::make_shared<scripting::ScriptRuntime>(
+        m_widgetConfigName + ":" + m_barName + ":" + m_outputName, m_settings, m_clipboard
+    );
   }
 
   auto alive = std::weak_ptr<bool>(m_alive);
@@ -553,9 +559,10 @@ void ScriptedWidget::handleAudioSpectrumChanged() {
   const auto active = m_mpris != nullptr ? m_mpris->activePlayer() : std::nullopt;
   const bool mprisPlaying = active.has_value() && active->playbackStatus == "Playing";
   const std::string state = std::string(audioActive ? "1" : "0") + "," + (mprisPlaying ? "1" : "0");
-  (void)m_runtime->enqueueCallStrings("onAudioSpectrum",
-                                      joinSpectrumValues(m_audioSpectrum->values(m_audioSpectrumListenerId)), state,
-                                      makeScriptSnapshot());
+  (void)m_runtime->enqueueCallStrings(
+      "onAudioSpectrum", joinSpectrumValues(m_audioSpectrum->values(m_audioSpectrumListenerId)), state,
+      makeScriptSnapshot()
+  );
 }
 
 bool ScriptedWidget::shouldDeferUpdate() const { return m_updateDeferralCallback && m_updateDeferralCallback(); }

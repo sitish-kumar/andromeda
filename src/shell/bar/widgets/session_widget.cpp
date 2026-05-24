@@ -14,12 +14,14 @@ void SessionWidget::create() {
   auto area = std::make_unique<InputArea>();
   area->setOnClick([this](const InputArea::PointerData& /*data*/) { requestPanelToggle("session"); });
 
-  area->addChild(ui::glyph({
-      .out = &m_glyph,
-      .glyph = m_barGlyphId.empty() ? "shutdown" : m_barGlyphId,
-      .glyphSize = Style::barGlyphSize * m_contentScale,
-      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
-  }));
+  area->addChild(
+      ui::glyph({
+          .out = &m_glyph,
+          .glyph = m_barGlyphId.empty() ? "shutdown" : m_barGlyphId,
+          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+      })
+  );
 
   setRoot(std::move(area));
 }

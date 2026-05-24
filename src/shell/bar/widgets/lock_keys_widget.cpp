@@ -29,8 +29,10 @@ namespace {
 
 } // namespace
 
-LockKeysWidget::LockKeysWidget(LockKeysService* lockKeys, bool showCapsLock, bool showNumLock, bool showScrollLock,
-                               bool hideWhenOff, DisplayMode displayMode)
+LockKeysWidget::LockKeysWidget(
+    LockKeysService* lockKeys, bool showCapsLock, bool showNumLock, bool showScrollLock, bool hideWhenOff,
+    DisplayMode displayMode
+)
     : m_lockKeys(lockKeys), m_showCapsLock(showCapsLock), m_showNumLock(showNumLock), m_showScrollLock(showScrollLock),
       m_hideWhenOff(hideWhenOff), m_displayMode(displayMode) {}
 
@@ -41,24 +43,32 @@ LockKeysWidget::DisplayMode LockKeysWidget::parseDisplayMode(const std::string& 
 void LockKeysWidget::create() {
   auto rootNode = std::make_unique<Node>();
 
-  rootNode->addChild(ui::glyph({
-      .out = &m_glyph,
-      .glyph = "lock",
-      .glyphSize = Style::barGlyphSize * m_contentScale,
-      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
-  }));
+  rootNode->addChild(
+      ui::glyph({
+          .out = &m_glyph,
+          .glyph = "lock",
+          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+      })
+  );
 
-  rootNode->addChild(ui::label({
-      .out = &m_capsLabel,
-  }));
+  rootNode->addChild(
+      ui::label({
+          .out = &m_capsLabel,
+      })
+  );
 
-  rootNode->addChild(ui::label({
-      .out = &m_numLabel,
-  }));
+  rootNode->addChild(
+      ui::label({
+          .out = &m_numLabel,
+      })
+  );
 
-  rootNode->addChild(ui::label({
-      .out = &m_scrollLabel,
-  }));
+  rootNode->addChild(
+      ui::label({
+          .out = &m_scrollLabel,
+      })
+  );
 
   setRoot(std::move(rootNode));
 }
@@ -197,26 +207,36 @@ void LockKeysWidget::sync(Renderer& renderer) {
   }
 
   const bool full = m_displayMode == DisplayMode::Full;
-  configureLabel(m_capsLabel,
-                 full ? i18n::tr("bar.widgets.lock-keys.caps") : i18n::tr("bar.widgets.lock-keys.caps-short"),
-                 capsVisible, m_contentScale, labelFontWeight());
-  configureLabel(m_numLabel, full ? i18n::tr("bar.widgets.lock-keys.num") : i18n::tr("bar.widgets.lock-keys.num-short"),
-                 numVisible, m_contentScale, labelFontWeight());
-  configureLabel(m_scrollLabel,
-                 full ? i18n::tr("bar.widgets.lock-keys.scroll") : i18n::tr("bar.widgets.lock-keys.scroll-short"),
-                 scrollVisible, m_contentScale, labelFontWeight());
+  configureLabel(
+      m_capsLabel, full ? i18n::tr("bar.widgets.lock-keys.caps") : i18n::tr("bar.widgets.lock-keys.caps-short"),
+      capsVisible, m_contentScale, labelFontWeight()
+  );
+  configureLabel(
+      m_numLabel, full ? i18n::tr("bar.widgets.lock-keys.num") : i18n::tr("bar.widgets.lock-keys.num-short"),
+      numVisible, m_contentScale, labelFontWeight()
+  );
+  configureLabel(
+      m_scrollLabel, full ? i18n::tr("bar.widgets.lock-keys.scroll") : i18n::tr("bar.widgets.lock-keys.scroll-short"),
+      scrollVisible, m_contentScale, labelFontWeight()
+  );
 
   if (m_capsLabel != nullptr) {
-    m_capsLabel->setColor(lockState.capsLock ? colorSpecFromRole(ColorRole::Primary)
-                                             : widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurfaceVariant)));
+    m_capsLabel->setColor(
+        lockState.capsLock ? colorSpecFromRole(ColorRole::Primary)
+                           : widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurfaceVariant))
+    );
   }
   if (m_numLabel != nullptr) {
-    m_numLabel->setColor(lockState.numLock ? colorSpecFromRole(ColorRole::Primary)
-                                           : widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurfaceVariant)));
+    m_numLabel->setColor(
+        lockState.numLock ? colorSpecFromRole(ColorRole::Primary)
+                          : widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurfaceVariant))
+    );
   }
   if (m_scrollLabel != nullptr) {
-    m_scrollLabel->setColor(lockState.scrollLock ? colorSpecFromRole(ColorRole::Primary)
-                                                 : widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurfaceVariant)));
+    m_scrollLabel->setColor(
+        lockState.scrollLock ? colorSpecFromRole(ColorRole::Primary)
+                             : widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurfaceVariant))
+    );
   }
 
   if (auto* node = root(); node != nullptr) {

@@ -65,8 +65,10 @@ namespace {
     return std::nullopt;
   }
 
-  bool hasSameContent(const Notification& notification, NotificationOrigin origin, const std::string& appName,
-                      const std::string& summary, const std::string& body) {
+  bool hasSameContent(
+      const Notification& notification, NotificationOrigin origin, const std::string& appName,
+      const std::string& summary, const std::string& body
+  ) {
     return notification.origin == origin && notification.appName == appName && notification.summary == summary &&
            notification.body == body;
   }
@@ -98,21 +100,24 @@ void NotificationManager::rebuildHistoryIndex() {
   }
 }
 
-void NotificationManager::upsertHistory(const Notification& notification, bool active,
-                                        std::optional<CloseReason> closeReason) {
+void NotificationManager::upsertHistory(
+    const Notification& notification, bool active, std::optional<CloseReason> closeReason
+) {
   bool seen = false;
   if (const auto it = m_historyIndex.find(notification.id); it != m_historyIndex.end()) {
     seen = m_history[it->second].seen;
     m_history.erase(m_history.begin() + static_cast<std::ptrdiff_t>(it->second));
   }
 
-  m_history.push_back(NotificationHistoryEntry{
-      .notification = notification,
-      .active = active,
-      .seen = seen,
-      .closeReason = closeReason,
-      .eventSerial = ++m_changeSerial,
-  });
+  m_history.push_back(
+      NotificationHistoryEntry{
+          .notification = notification,
+          .active = active,
+          .seen = seen,
+          .closeReason = closeReason,
+          .eventSerial = ++m_changeSerial,
+      }
+  );
 
   constexpr std::size_t kMaxHistoryEntries = 100;
   while (m_history.size() > kMaxHistoryEntries) {
@@ -136,8 +141,9 @@ void NotificationManager::removeEventCallback(int token) {
 }
 
 bool NotificationManager::computeHasUnreadNotificationHistory() const noexcept {
-  return std::any_of(m_history.begin(), m_history.end(),
-                     [](const NotificationHistoryEntry& entry) { return !entry.seen; });
+  return std::any_of(m_history.begin(), m_history.end(), [](const NotificationHistoryEntry& entry) {
+    return !entry.seen;
+  });
 }
 
 void NotificationManager::notifyUnreadStateChangedIfNeeded(bool previousUnreadState) {
@@ -149,20 +155,21 @@ void NotificationManager::notifyUnreadStateChangedIfNeeded(bool previousUnreadSt
   }
 }
 
-uint32_t NotificationManager::addOrReplace(uint32_t replacesId, std::string appName, std::string summary,
-                                           std::string body, Urgency urgency, int32_t timeout,
-                                           NotificationOrigin origin, std::vector<std::string> actions,
-                                           std::optional<std::string> icon,
-                                           std::optional<NotificationImageData> imageData,
-                                           std::optional<std::string> category,
-                                           std::optional<std::string> desktopEntry) {
+uint32_t NotificationManager::addOrReplace(
+    uint32_t replacesId, std::string appName, std::string summary, std::string body, Urgency urgency, int32_t timeout,
+    NotificationOrigin origin, std::vector<std::string> actions, std::optional<std::string> icon,
+    std::optional<NotificationImageData> imageData, std::optional<std::string> category,
+    std::optional<std::string> desktopEntry
+) {
   const auto now = Clock::now();
   const auto wallNow = WallClock::now();
 
   // Never log summary/body — they may contain sensitive user content (e.g. message previews).
   auto logNotification = [](const Notification& n, std::string_view action) {
-    kLog.debug("notification {} #{} origin={} from=\"{}\" urgency={} timeout={}ms", action, n.id, originStr(n.origin),
-               n.appName, urgencyStr(n.urgency), n.timeout);
+    kLog.debug(
+        "notification {} #{} origin={} from=\"{}\" urgency={} timeout={}ms", action, n.id, originStr(n.origin),
+        n.appName, urgencyStr(n.urgency), n.timeout
+    );
   };
 
   if (replacesId != 0) {
@@ -170,9 +177,10 @@ uint32_t NotificationManager::addOrReplace(uint32_t replacesId, std::string appN
       auto& n = m_notifications[it->second];
 
       // Check if anything changed to avoid duplicate events
-      const bool changed = (n.appName != appName || n.summary != summary || n.body != body || n.timeout != timeout ||
-                            n.urgency != urgency || n.origin != origin || n.actions != actions || n.icon != icon ||
-                            n.imageData != imageData || n.category != category || n.desktopEntry != desktopEntry);
+      const bool changed =
+          (n.appName != appName || n.summary != summary || n.body != body || n.timeout != timeout ||
+           n.urgency != urgency || n.origin != origin || n.actions != actions || n.icon != icon ||
+           n.imageData != imageData || n.category != category || n.desktopEntry != desktopEntry);
 
       n.origin = origin;
       n.appName = std::move(appName);
@@ -220,24 +228,26 @@ uint32_t NotificationManager::addOrReplace(uint32_t replacesId, std::string appN
   }
 
   const uint32_t id = m_nextId++;
-  m_notifications.push_back(Notification{
-      .id = id,
-      .origin = origin,
-      .appName = std::move(appName),
-      .summary = std::move(summary),
-      .body = std::move(body),
-      .timeout = timeout,
-      .urgency = urgency,
-      .actions = std::move(actions),
-      .icon = std::move(icon),
-      .imageData = std::move(imageData),
-      .category = std::move(category),
-      .desktopEntry = std::move(desktopEntry),
-      .receivedTime = now,
-      .expiryTime = scheduleExpiry(now, timeout),
-      .receivedWallClock = wallNow,
-      .expiryWallClock = scheduleExpiryWall(wallNow, timeout),
-  });
+  m_notifications.push_back(
+      Notification{
+          .id = id,
+          .origin = origin,
+          .appName = std::move(appName),
+          .summary = std::move(summary),
+          .body = std::move(body),
+          .timeout = timeout,
+          .urgency = urgency,
+          .actions = std::move(actions),
+          .icon = std::move(icon),
+          .imageData = std::move(imageData),
+          .category = std::move(category),
+          .desktopEntry = std::move(desktopEntry),
+          .receivedTime = now,
+          .expiryTime = scheduleExpiry(now, timeout),
+          .receivedWallClock = wallNow,
+          .expiryWallClock = scheduleExpiryWall(wallNow, timeout),
+      }
+  );
   m_idToIndex.emplace(id, m_notifications.size() - 1);
 
   const auto& n = m_notifications.back();
@@ -258,14 +268,15 @@ uint32_t NotificationManager::addOrReplace(uint32_t replacesId, std::string appN
   return n.id;
 }
 
-uint32_t NotificationManager::addInternal(std::string appName, std::string summary, std::string body, Urgency urgency,
-                                          int32_t timeout, std::optional<std::string> icon,
-                                          std::optional<NotificationImageData> imageData,
-                                          std::optional<std::string> category,
-                                          std::optional<std::string> desktopEntry) {
-  return addOrReplace(0, std::move(appName), std::move(summary), std::move(body), urgency, timeout,
-                      NotificationOrigin::Internal, {}, std::move(icon), std::move(imageData), std::move(category),
-                      std::move(desktopEntry));
+uint32_t NotificationManager::addInternal(
+    std::string appName, std::string summary, std::string body, Urgency urgency, int32_t timeout,
+    std::optional<std::string> icon, std::optional<NotificationImageData> imageData,
+    std::optional<std::string> category, std::optional<std::string> desktopEntry
+) {
+  return addOrReplace(
+      0, std::move(appName), std::move(summary), std::move(body), urgency, timeout, NotificationOrigin::Internal, {},
+      std::move(icon), std::move(imageData), std::move(category), std::move(desktopEntry)
+  );
 }
 
 void NotificationManager::setActionInvokeCallback(ActionInvokeCallback callback) {

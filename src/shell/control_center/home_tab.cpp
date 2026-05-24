@@ -86,12 +86,11 @@ namespace {
                 .border = colorSpecFromRole(ColorRole::Primary),
                 .label = colorSpecFromRole(ColorRole::OnPrimary),
             },
-        .disabled =
-            Button::ButtonStateColors{
-                .bg = colorSpecFromRole(ColorRole::SurfaceVariant, opacity * kDisabledAlpha),
-                .border = colorSpecFromRole(ColorRole::Outline, 0.5f * kDisabledAlpha),
-                .label = colorSpecFromRole(ColorRole::OnSurface, kDisabledAlpha),
-            },
+        .disabled = Button::ButtonStateColors{
+            .bg = colorSpecFromRole(ColorRole::SurfaceVariant, opacity * kDisabledAlpha),
+            .border = colorSpecFromRole(ColorRole::Outline, 0.5f * kDisabledAlpha),
+            .label = colorSpecFromRole(ColorRole::OnSurface, kDisabledAlpha),
+        },
     };
   }
 
@@ -107,11 +106,12 @@ namespace {
 
 } // namespace
 
-HomeTab::HomeTab(MprisService* mpris, HttpClient* httpClient, WeatherService* weather, PipeWireService* audio,
-                 PowerProfilesService* powerProfiles, ConfigService* config, INetworkService* network,
-                 BluetoothService* bluetooth, GammaService* nightLight, noctalia::theme::ThemeService* theme,
-                 NotificationManager* notifications, IdleInhibitor* idleInhibitor, DependencyService* dependencies,
-                 CompositorPlatform* platform, Wallpaper* wallpaper)
+HomeTab::HomeTab(
+    MprisService* mpris, HttpClient* httpClient, WeatherService* weather, PipeWireService* audio,
+    PowerProfilesService* powerProfiles, ConfigService* config, INetworkService* network, BluetoothService* bluetooth,
+    GammaService* nightLight, noctalia::theme::ThemeService* theme, NotificationManager* notifications,
+    IdleInhibitor* idleInhibitor, DependencyService* dependencies, CompositorPlatform* platform, Wallpaper* wallpaper
+)
     : m_mpris(mpris), m_httpClient(httpClient), m_weather(weather), m_config(config), m_wallpaper(wallpaper),
       m_services{
           .network = network,
@@ -147,24 +147,29 @@ std::unique_ptr<Flex> HomeTab::create() {
       .justify = FlexJustify::Center,
       .fillHeight = true,
       .flexGrow = 1.0f,
-      .configure = [scale, opacity = panelCardOpacity(),
-                    borders = panelBordersEnabled()](Flex& card) { applyHomeCardStyle(card, scale, opacity, borders); },
+      .configure = [scale, opacity = panelCardOpacity(), borders = panelBordersEnabled()](Flex& card) {
+        applyHomeCardStyle(card, scale, opacity, borders);
+      },
   });
 
   {
-    userCard->addChild(ui::image({
-        .out = &m_wallpaperBg,
-        .fit = ImageFit::Cover,
-        .radius = std::max(0.0f, Style::scaledRadiusXl(scale) - Style::borderWidth),
-        .participatesInLayout = false,
-        .configure = [](Image& image) { image.setZIndex(-1); },
-    }));
+    userCard->addChild(
+        ui::image({
+            .out = &m_wallpaperBg,
+            .fit = ImageFit::Cover,
+            .radius = std::max(0.0f, Style::scaledRadiusXl(scale) - Style::borderWidth),
+            .participatesInLayout = false,
+            .configure = [](Image& image) { image.setZIndex(-1); },
+        })
+    );
 
-    userCard->addChild(ui::box({
-        .out = &m_wallpaperGradient,
-        .participatesInLayout = false,
-        .configure = [](Box& box) { box.setZIndex(-1); },
-    }));
+    userCard->addChild(
+        ui::box({
+            .out = &m_wallpaperGradient,
+            .participatesInLayout = false,
+            .configure = [](Box& box) { box.setZIndex(-1); },
+        })
+    );
   }
 
   const float avatarSize = homeAvatarSize(scale);
@@ -180,45 +185,51 @@ std::unique_ptr<Flex> HomeTab::create() {
           .configure =
               [](Image& image) { image.setBorder(colorSpecFromRole(ColorRole::Primary), Style::borderWidth * 3.0f); },
       }),
-      ui::column({.out = &m_userMain,
-                  .align = FlexAlign::Stretch,
-                  .justify = FlexJustify::Center,
-                  .gap = Style::spaceXs * 0.5f * scale,
-                  .minHeight = avatarSize,
-                  .width = 0.0f,
-                  .height = avatarSize,
-                  .flexGrow = 1.0f},
-                 ui::label({
-                     .text = displayName,
-                     .fontSize = Style::fontSizeTitle * 1.12f * scale,
-                     .color = colorSpecFromRole(ColorRole::OnSurface),
-                     .fontWeight = FontWeight::Bold,
-                     .configure =
-                         [scale](Label& label) { label.setShadow(Color{0.0f, 0.0f, 0.0f, 0.42f}, 0.0f, 1.0f * scale); },
-                 }),
-                 ui::label({
-                     .out = &m_userFacts,
-                     .text = "…",
-                     .fontSize = Style::fontSizeCaption * scale,
-                     .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                     .configure =
-                         [scale](Label& label) { label.setShadow(Color{0.0f, 0.0f, 0.0f, 0.36f}, 0.0f, 1.0f * scale); },
-                 })));
+      ui::column(
+          {.out = &m_userMain,
+           .align = FlexAlign::Stretch,
+           .justify = FlexJustify::Center,
+           .gap = Style::spaceXs * 0.5f * scale,
+           .minHeight = avatarSize,
+           .width = 0.0f,
+           .height = avatarSize,
+           .flexGrow = 1.0f},
+          ui::label({
+              .text = displayName,
+              .fontSize = Style::fontSizeTitle * 1.12f * scale,
+              .color = colorSpecFromRole(ColorRole::OnSurface),
+              .fontWeight = FontWeight::Bold,
+              .configure =
+                  [scale](Label& label) { label.setShadow(Color{0.0f, 0.0f, 0.0f, 0.42f}, 0.0f, 1.0f * scale); },
+          }),
+          ui::label({
+              .out = &m_userFacts,
+              .text = "…",
+              .fontSize = Style::fontSizeCaption * scale,
+              .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+              .configure = [scale](Label& label) {
+                label.setShadow(Color{0.0f, 0.0f, 0.0f, 0.36f}, 0.0f, 1.0f * scale);
+              },
+          })
+      )
+  );
   userCard->addChild(std::move(userRow));
 
-  userCard->addChild(ui::button({
-      .out = &m_wallpaperButton,
-      .glyph = "wallpaper-selector",
-      .glyphSize = Style::fontSizeBody * scale,
-      .variant = ButtonVariant::Ghost,
-      .minWidth = Style::controlHeightSm * scale,
-      .minHeight = Style::controlHeightSm * scale,
-      .padding = Style::spaceXs * scale,
-      .radius = Style::scaledRadiusMd(scale),
-      .participatesInLayout = false,
-      .onClick = []() { PanelManager::instance().togglePanel("wallpaper"); },
-      .configure = [](Button& button) { button.setZIndex(2); },
-  }));
+  userCard->addChild(
+      ui::button({
+          .out = &m_wallpaperButton,
+          .glyph = "wallpaper-selector",
+          .glyphSize = Style::fontSizeBody * scale,
+          .variant = ButtonVariant::Ghost,
+          .minWidth = Style::controlHeightSm * scale,
+          .minHeight = Style::controlHeightSm * scale,
+          .padding = Style::spaceXs * scale,
+          .radius = Style::scaledRadiusMd(scale),
+          .participatesInLayout = false,
+          .onClick = []() { PanelManager::instance().togglePanel("wallpaper"); },
+          .configure = [](Button& button) { button.setZIndex(2); },
+      })
+  );
 
   tab->addChild(std::move(userCard));
 
@@ -245,33 +256,36 @@ std::unique_ptr<Flex> HomeTab::create() {
       .fillWidth = true,
       .fillHeight = true,
       .flexGrow = 1.4f,
-      .configure = [scale, opacity = panelCardOpacity(),
-                    borders = panelBordersEnabled()](Flex& card) { applyHomeCardStyle(card, scale, opacity, borders); },
+      .configure = [scale, opacity = panelCardOpacity(), borders = panelBordersEnabled()](Flex& card) {
+        applyHomeCardStyle(card, scale, opacity, borders);
+      },
   });
 
   const float artSize = Style::controlHeightLg * 1.22f * scale;
   auto mediaContent = ui::row(
       {.align = FlexAlign::Center, .gap = Style::spaceSm * scale},
-      ui::column({.out = &m_mediaArtSlot,
-                  .align = FlexAlign::Center,
-                  .justify = FlexJustify::Center,
-                  .width = artSize,
-                  .height = artSize},
-                 ui::glyph({
-                     .out = &m_mediaArtFallback,
-                     .glyph = "disc-filled",
-                     .glyphSize = artSize * 0.55f,
-                     .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                 }),
-                 ui::image({
-                     .out = &m_mediaArt,
-                     .fit = ImageFit::Cover,
-                     .radius = Style::scaledRadiusLg(scale),
-                     .width = artSize,
-                     .height = artSize,
-                     .participatesInLayout = false,
-                     .configure = [](Image& image) { image.setZIndex(1); },
-                 })),
+      ui::column(
+          {.out = &m_mediaArtSlot,
+           .align = FlexAlign::Center,
+           .justify = FlexJustify::Center,
+           .width = artSize,
+           .height = artSize},
+          ui::glyph({
+              .out = &m_mediaArtFallback,
+              .glyph = "disc-filled",
+              .glyphSize = artSize * 0.55f,
+              .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+          }),
+          ui::image({
+              .out = &m_mediaArt,
+              .fit = ImageFit::Cover,
+              .radius = Style::scaledRadiusLg(scale),
+              .width = artSize,
+              .height = artSize,
+              .participatesInLayout = false,
+              .configure = [](Image& image) { image.setZIndex(1); },
+          })
+      ),
       ui::column(
           {.out = &m_mediaText, .align = FlexAlign::Stretch, .gap = Style::spaceXs * 0.5f * scale, .flexGrow = 1.0f},
           ui::label({
@@ -298,22 +312,26 @@ std::unique_ptr<Flex> HomeTab::create() {
               .fontSize = Style::fontSizeCaption * scale,
               .color = colorSpecFromRole(ColorRole::Secondary),
               .visible = false,
-          })));
+          })
+      )
+  );
   mediaCard->addChild(std::move(mediaContent));
 
-  mediaCard->addChild(ui::button({
-      .out = &m_mediaButton,
-      .glyph = "disc-filled",
-      .glyphSize = Style::fontSizeBody * scale,
-      .variant = ButtonVariant::Ghost,
-      .minWidth = Style::controlHeightSm * scale,
-      .minHeight = Style::controlHeightSm * scale,
-      .padding = Style::spaceXs * scale,
-      .radius = Style::scaledRadiusMd(scale),
-      .participatesInLayout = false,
-      .onClick = []() { openControlCenterTab("media"); },
-      .configure = [](Button& button) { button.setZIndex(2); },
-  }));
+  mediaCard->addChild(
+      ui::button({
+          .out = &m_mediaButton,
+          .glyph = "disc-filled",
+          .glyphSize = Style::fontSizeBody * scale,
+          .variant = ButtonVariant::Ghost,
+          .minWidth = Style::controlHeightSm * scale,
+          .minHeight = Style::controlHeightSm * scale,
+          .padding = Style::spaceXs * scale,
+          .radius = Style::scaledRadiusMd(scale),
+          .participatesInLayout = false,
+          .onClick = []() { openControlCenterTab("media"); },
+          .configure = [](Button& button) { button.setZIndex(2); },
+      })
+  );
 
   // --- Date/Time + Weather (below media) ---
   auto dateTimeCard = ui::row(
@@ -339,40 +357,47 @@ std::unique_ptr<Flex> HomeTab::create() {
           .color = colorSpecFromRole(ColorRole::Primary),
           .fontWeight = FontWeight::Bold,
       }),
-      ui::column({.align = FlexAlign::Start, .justify = FlexJustify::Center, .gap = Style::spaceXs * 0.5f * scale},
-                 ui::label({
-                     .out = &m_dateLabel,
-                     .text = formatShellDate(m_config),
-                     .fontSize = Style::fontSizeBody * 0.9f * scale,
-                     .color = colorSpecFromRole(ColorRole::OnSurface),
-                 }),
-                 ui::row({.align = FlexAlign::Center, .gap = Style::spaceXs * scale},
-                         ui::glyph({
-                             .out = &m_weatherGlyph,
-                             .glyph = "weather-cloud-sun",
-                             .glyphSize = Style::fontSizeCaption * 1.12f * scale,
-                             .color = colorSpecFromRole(ColorRole::Primary),
-                         }),
-                         ui::label({
-                             .out = &m_weatherLine,
-                             .text = "—",
-                             .fontSize = Style::fontSizeCaption * scale,
-                             .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                         }))));
+      ui::column(
+          {.align = FlexAlign::Start, .justify = FlexJustify::Center, .gap = Style::spaceXs * 0.5f * scale},
+          ui::label({
+              .out = &m_dateLabel,
+              .text = formatShellDate(m_config),
+              .fontSize = Style::fontSizeBody * 0.9f * scale,
+              .color = colorSpecFromRole(ColorRole::OnSurface),
+          }),
+          ui::row(
+              {.align = FlexAlign::Center, .gap = Style::spaceXs * scale},
+              ui::glyph({
+                  .out = &m_weatherGlyph,
+                  .glyph = "weather-cloud-sun",
+                  .glyphSize = Style::fontSizeCaption * 1.12f * scale,
+                  .color = colorSpecFromRole(ColorRole::Primary),
+              }),
+              ui::label({
+                  .out = &m_weatherLine,
+                  .text = "—",
+                  .fontSize = Style::fontSizeCaption * scale,
+                  .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+              })
+          )
+      )
+  );
 
-  dateTimeCard->addChild(ui::button({
-      .out = &m_weatherButton,
-      .glyph = "weather-cloud-sun",
-      .glyphSize = Style::fontSizeBody * scale,
-      .variant = ButtonVariant::Ghost,
-      .minWidth = Style::controlHeightSm * scale,
-      .minHeight = Style::controlHeightSm * scale,
-      .padding = Style::spaceXs * scale,
-      .radius = Style::scaledRadiusMd(scale),
-      .participatesInLayout = false,
-      .onClick = []() { openControlCenterTab("weather"); },
-      .configure = [](Button& button) { button.setZIndex(2); },
-  }));
+  dateTimeCard->addChild(
+      ui::button({
+          .out = &m_weatherButton,
+          .glyph = "weather-cloud-sun",
+          .glyphSize = Style::fontSizeBody * scale,
+          .variant = ButtonVariant::Ghost,
+          .minWidth = Style::controlHeightSm * scale,
+          .minHeight = Style::controlHeightSm * scale,
+          .padding = Style::spaceXs * scale,
+          .radius = Style::scaledRadiusMd(scale),
+          .participatesInLayout = false,
+          .onClick = []() { openControlCenterTab("weather"); },
+          .configure = [](Button& button) { button.setZIndex(2); },
+      })
+  );
 
   leftColumn->addChild(std::move(mediaCard));
   leftColumn->addChild(std::move(dateTimeCard));
@@ -473,15 +498,18 @@ std::unique_ptr<Flex> HomeTab::createHeaderActions() {
           .glyph = "settings",
           .onClick = []() { PanelManager::instance().openSettingsWindow(); },
           .configure = [scale, opacity = panelCardOpacity()](
-                           Button& button) { panel_button_style::configureHeaderIconButton(button, scale, opacity); },
+                           Button& button
+                       ) { panel_button_style::configureHeaderIconButton(button, scale, opacity); },
       }),
       ui::button({
           .out = &m_sessionButton,
           .glyph = "shutdown",
           .onClick = []() { PanelManager::instance().togglePanel("session"); },
           .configure = [scale, opacity = panelCardOpacity()](
-                           Button& button) { panel_button_style::configureHeaderIconButton(button, scale, opacity); },
-      }));
+                           Button& button
+                       ) { panel_button_style::configureHeaderIconButton(button, scale, opacity); },
+      })
+  );
 }
 
 void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight) {
@@ -548,9 +576,10 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
     m_dateLabel->setMaxLines(1);
   }
   if (m_weatherLine != nullptr) {
-    const float weatherTextWrap =
-        std::max(1.0f, dateTimeRightWrap - (m_weatherGlyph != nullptr ? m_weatherGlyph->width() : 0.0f) -
-                           Style::spaceXs * contentScale());
+    const float weatherTextWrap = std::max(
+        1.0f, dateTimeRightWrap - (m_weatherGlyph != nullptr ? m_weatherGlyph->width() : 0.0f) -
+                  Style::spaceXs * contentScale()
+    );
     m_weatherLine->setMaxWidth(weatherTextWrap);
     m_weatherLine->setMaxLines(2);
   }
@@ -595,8 +624,9 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
     const float innerGridW = std::max(1.0f, gridW - m_shortcutsGrid->paddingLeft() - m_shortcutsGrid->paddingRight());
     const std::size_t cols = std::max<std::size_t>(1, std::min(m_shortcutsGrid->columns(), m_shortcutPads.size()));
     const std::size_t rows = (m_shortcutPads.size() + cols - 1) / cols;
-    const float cellWidth = std::max(1.0f, (innerGridW - static_cast<float>(cols - 1) * m_shortcutsGrid->columnGap()) /
-                                               static_cast<float>(cols));
+    const float cellWidth = std::max(
+        1.0f, (innerGridW - static_cast<float>(cols - 1) * m_shortcutsGrid->columnGap()) / static_cast<float>(cols)
+    );
     // Cells aim for square but trimmed slightly so the grid stays compact and the bottom row
     // doesn't tower over the user card area.
     const float cellSide = cellWidth * 0.82f;
@@ -671,14 +701,17 @@ void HomeTab::layoutWallpaperBackground(Renderer& renderer) {
     const Color surface = colorForRole(ColorRole::Surface);
     const Color translucentSurface = rgba(surface.r, surface.g, surface.b, surface.a * 0.9f);
     const Color transparentSurface = rgba(surface.r, surface.g, surface.b, 0.0f);
-    m_wallpaperGradient->setStyle(RoundedRectStyle{
-        .fill = surface,
-        .fillMode = FillMode::LinearGradient,
-        .gradientDirection = GradientDirection::Horizontal,
-        .gradientStops = {GradientStop{0.0f, translucentSurface}, GradientStop{0.25f, translucentSurface},
-                          GradientStop{0.9f, transparentSurface}, GradientStop{1.0f, transparentSurface}},
-        .radius = radius,
-    });
+    m_wallpaperGradient->setStyle(
+        RoundedRectStyle{
+            .fill = surface,
+            .fillMode = FillMode::LinearGradient,
+            .gradientDirection = GradientDirection::Horizontal,
+            .gradientStops =
+                {GradientStop{0.0f, translucentSurface}, GradientStop{0.25f, translucentSurface},
+                 GradientStop{0.9f, transparentSurface}, GradientStop{1.0f, transparentSurface}},
+            .radius = radius,
+        }
+    );
   }
 
   syncWallpaperBackground(renderer);
@@ -903,8 +936,12 @@ void HomeTab::sync(Renderer& renderer) {
     const auto uptime = systemUptime();
     const std::string uptimeText =
         uptime.has_value() ? formatDuration(*uptime) : i18n::tr("control-center.home.unknown");
-    m_userFacts->setText(i18n::tr("control-center.home.user-facts", "user", sessionDisplayName(), "host", hostName(),
-                                  "uptime", uptimeText, "version", noctalia::build_info::displayVersion()));
+    m_userFacts->setText(
+        i18n::tr(
+            "control-center.home.user-facts", "user", sessionDisplayName(), "host", hostName(), "uptime", uptimeText,
+            "version", noctalia::build_info::displayVersion()
+        )
+    );
   }
 
   if (m_weatherGlyph != nullptr && m_weatherLine != nullptr) {
@@ -921,14 +958,20 @@ void HomeTab::sync(Renderer& renderer) {
       if (!snapshot.valid) {
         m_weatherGlyph->setGlyph("weather-cloud");
         m_weatherGlyph->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-        m_weatherLine->setText(m_weather->loading() ? i18n::tr("control-center.home.weather.fetching")
-                                                    : i18n::tr("control-center.home.weather.data-unavailable"));
+        m_weatherLine->setText(
+            m_weather->loading() ? i18n::tr("control-center.home.weather.fetching")
+                                 : i18n::tr("control-center.home.weather.data-unavailable")
+        );
       } else {
         m_weatherGlyph->setGlyph(WeatherService::glyphForCode(snapshot.current.weatherCode, snapshot.current.isDay));
         m_weatherGlyph->setColor(colorSpecFromRole(ColorRole::Primary));
         const int t = static_cast<int>(std::lround(m_weather->displayTemperature(snapshot.current.temperatureC)));
-        m_weatherLine->setText(std::format("{}{} · {}", t, m_weather->displayTemperatureUnit(),
-                                           WeatherService::descriptionForCode(snapshot.current.weatherCode)));
+        m_weatherLine->setText(
+            std::format(
+                "{}{} · {}", t, m_weather->displayTemperatureUnit(),
+                WeatherService::descriptionForCode(snapshot.current.weatherCode)
+            )
+        );
       }
     }
   }
@@ -981,8 +1024,9 @@ void HomeTab::sync(Renderer& renderer) {
           PanelManager::instance().requestLayout();
         }
         m_mediaArtist->setVisible(true);
-        const std::string trackSignature = std::format("{}\n{}\n{}\n{}\n{}", active->trackId, active->title, artists,
-                                                       active->album, active->sourceUrl);
+        const std::string trackSignature = std::format(
+            "{}\n{}\n{}\n{}\n{}", active->trackId, active->title, artists, active->album, active->sourceUrl
+        );
         std::string progressText;
         if (active->lengthUs > 0) {
           const auto now = std::chrono::steady_clock::now();

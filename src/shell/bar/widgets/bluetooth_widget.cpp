@@ -44,28 +44,34 @@ namespace {
 
 } // namespace
 
-BluetoothWidget::BluetoothWidget(BluetoothService* bluetooth, wl_output* /*output*/, bool showLabel,
-                                 bool hideWhenNoConnectedDevice)
+BluetoothWidget::BluetoothWidget(
+    BluetoothService* bluetooth, wl_output* /*output*/, bool showLabel, bool hideWhenNoConnectedDevice
+)
     : m_bluetooth(bluetooth), m_showLabel(showLabel), m_hideWhenNoConnectedDevice(hideWhenNoConnectedDevice) {}
 
 void BluetoothWidget::create() {
   auto area = std::make_unique<InputArea>();
-  area->setOnClick(
-      [this](const InputArea::PointerData& /*data*/) { requestPanelToggle("control-center", "bluetooth"); });
+  area->setOnClick([this](const InputArea::PointerData& /*data*/) {
+    requestPanelToggle("control-center", "bluetooth");
+  });
 
-  area->addChild(ui::glyph({
-      .out = &m_glyph,
-      .glyph = "bluetooth",
-      .glyphSize = Style::barGlyphSize * m_contentScale,
-      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
-  }));
+  area->addChild(
+      ui::glyph({
+          .out = &m_glyph,
+          .glyph = "bluetooth",
+          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+      })
+  );
 
   if (m_showLabel) {
-    area->addChild(ui::label({
-        .out = &m_label,
-        .fontSize = Style::fontSizeBody * m_contentScale,
-        .fontWeight = labelFontWeight(),
-    }));
+    area->addChild(
+        ui::label({
+            .out = &m_label,
+            .fontSize = Style::fontSizeBody * m_contentScale,
+            .fontWeight = labelFontWeight(),
+        })
+    );
   }
 
   setRoot(std::move(area));
@@ -145,14 +151,18 @@ void BluetoothWidget::syncState(Renderer& renderer) {
 
   m_glyph->setGlyph(glyphForState(s, numConnected));
   m_glyph->setGlyphSize(Style::barGlyphSize * m_contentScale);
-  m_glyph->setColor(s.powered ? widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface))
-                              : colorSpecFromRole(ColorRole::OnSurfaceVariant));
+  m_glyph->setColor(
+      s.powered ? widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface))
+                : colorSpecFromRole(ColorRole::OnSurfaceVariant)
+  );
   m_glyph->measure(renderer);
 
   if (m_label != nullptr) {
     m_label->setText(alias);
-    m_label->setColor(s.powered ? widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface))
-                                : colorSpecFromRole(ColorRole::OnSurfaceVariant));
+    m_label->setColor(
+        s.powered ? widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface))
+                  : colorSpecFromRole(ColorRole::OnSurfaceVariant)
+    );
     m_label->measure(renderer);
   }
 

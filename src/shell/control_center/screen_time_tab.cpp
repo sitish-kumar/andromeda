@@ -64,13 +64,15 @@ namespace {
 
   Label* makeSectionHeader(Flex& parent, const std::string& text, float scale) {
     Label* ptr = nullptr;
-    parent.addChild(ui::label({
-        .out = &ptr,
-        .text = text,
-        .fontSize = Style::fontSizeCaption * scale,
-        .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-        .fontWeight = FontWeight::Bold,
-    }));
+    parent.addChild(
+        ui::label({
+            .out = &ptr,
+            .text = text,
+            .fontSize = Style::fontSizeCaption * scale,
+            .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+            .fontWeight = FontWeight::Bold,
+        })
+    );
     return ptr;
   }
 
@@ -128,35 +130,35 @@ std::unique_ptr<Flex> ScreenTimeTab::create() {
   });
 
   m_rangeDays = 1;
-  tab->addChild(ui::segmented({
-      .out = &m_rangePicker,
-      .options =
-          std::vector<ui::SegmentedOption>{
-              {.label = i18n::tr("control-center.screen-time.range.today")},
-              {.label = i18n::tr("control-center.screen-time.range.3-days")},
-              {.label = i18n::tr("control-center.screen-time.range.14-days")},
-          },
-      .selectedIndex = 0,
-      .fontSize = Style::fontSizeCaption * scale,
-      .scale = scale,
-      .equalSegmentWidths = true,
-      .onChange =
-          [this](std::size_t idx) {
+  tab->addChild(
+      ui::segmented({
+          .out = &m_rangePicker,
+          .options =
+              std::vector<ui::SegmentedOption>{
+                  {.label = i18n::tr("control-center.screen-time.range.today")},
+                  {.label = i18n::tr("control-center.screen-time.range.3-days")},
+                  {.label = i18n::tr("control-center.screen-time.range.14-days")},
+              },
+          .selectedIndex = 0,
+          .fontSize = Style::fontSizeCaption * scale,
+          .scale = scale,
+          .equalSegmentWidths = true,
+          .onChange = [this](std::size_t idx) {
             static constexpr int kRanges[] = {1, 3, 14};
             m_rangeDays = kRanges[std::min(idx, std::size_t{2})];
             m_lastSnapshotKey.clear();
             PanelManager::instance().refresh();
           },
-  }));
+      })
+  );
 
   auto scroll = ui::scrollView({
       .scrollbarVisible = true,
       .flexGrow = 1.0f,
-      .configure =
-          [](ScrollView& scrollView) {
-            scrollView.clearFill();
-            scrollView.clearBorder();
-          },
+      .configure = [](ScrollView& scrollView) {
+        scrollView.clearFill();
+        scrollView.clearBorder();
+      },
   });
 
   auto* content = scroll->content();
@@ -167,24 +169,29 @@ std::unique_ptr<Flex> ScreenTimeTab::create() {
   auto usageCard = ui::column({
       .out = &m_usageCard,
       .gap = Style::spaceMd * scale,
-      .configure = [scale, opacity = panelCardOpacity(), borders = panelBordersEnabled()](
-                       Flex& card) { applySectionCardStyle(card, scale, opacity, borders); },
+      .configure = [scale, opacity = panelCardOpacity(), borders = panelBordersEnabled()](Flex& card) {
+        applySectionCardStyle(card, scale, opacity, borders);
+      },
   });
 
-  usageCard->addChild(ui::label({
-      .out = &m_disabledLabel,
-      .text = i18n::tr("control-center.screen-time.disabled"),
-      .fontSize = Style::fontSizeBody * scale,
-      .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-      .visible = false,
-  }));
+  usageCard->addChild(
+      ui::label({
+          .out = &m_disabledLabel,
+          .text = i18n::tr("control-center.screen-time.disabled"),
+          .fontSize = Style::fontSizeBody * scale,
+          .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+          .visible = false,
+      })
+  );
 
-  usageCard->addChild(ui::label({
-      .out = &m_totalLabel,
-      .fontSize = Style::fontSizeHeader * 1.6f * scale,
-      .color = colorSpecFromRole(ColorRole::OnSurface),
-      .fontWeight = FontWeight::Bold,
-  }));
+  usageCard->addChild(
+      ui::label({
+          .out = &m_totalLabel,
+          .fontSize = Style::fontSizeHeader * 1.6f * scale,
+          .color = colorSpecFromRole(ColorRole::OnSurface),
+          .fontWeight = FontWeight::Bold,
+      })
+  );
 
   auto chartPlotRow = ui::row({
       .out = &m_chartPlotRow,
@@ -213,18 +220,22 @@ std::unique_ptr<Flex> ScreenTimeTab::create() {
         .visible = false,
     });
 
-    plotColumn->addChild(ui::box({
-        .fill = clearColorSpec(),
-        .width = 1.0f,
-        .height = kChartHeight * scale,
-    }));
+    plotColumn->addChild(
+        ui::box({
+            .fill = clearColorSpec(),
+            .width = 1.0f,
+            .height = kChartHeight * scale,
+        })
+    );
 
-    plotColumn->addChild(ui::box({
-        .out = &m_bucketColumns[bucket].track,
-        .fill = colorSpecFromRole(ColorRole::SurfaceVariant),
-        .participatesInLayout = false,
-        .configure = [](Box& box) { box.setZIndex(-1); },
-    }));
+    plotColumn->addChild(
+        ui::box({
+            .out = &m_bucketColumns[bucket].track,
+            .fill = colorSpecFromRole(ColorRole::SurfaceVariant),
+            .participatesInLayout = false,
+            .configure = [](Box& box) { box.setZIndex(-1); },
+        })
+    );
 
     for (std::size_t series = 0; series < kMaxChartSeries; ++series) {
       auto hitArea = std::make_unique<InputArea>();
@@ -243,17 +254,19 @@ std::unique_ptr<Flex> ScreenTimeTab::create() {
 
     chartPlotRow->addChild(std::move(plotColumn));
 
-    auto labelCell = ui::row({.out = &m_bucketColumns[bucket].labelCell,
-                              .align = FlexAlign::Center,
-                              .justify = FlexJustify::Center,
-                              .flexGrow = 1.0f,
-                              .visible = false},
-                             ui::label({
-                                 .out = &m_bucketColumns[bucket].label,
-                                 .fontSize = Style::fontSizeMini * scale,
-                                 .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                                 .visible = false,
-                             }));
+    auto labelCell = ui::row(
+        {.out = &m_bucketColumns[bucket].labelCell,
+         .align = FlexAlign::Center,
+         .justify = FlexJustify::Center,
+         .flexGrow = 1.0f,
+         .visible = false},
+        ui::label({
+            .out = &m_bucketColumns[bucket].label,
+            .fontSize = Style::fontSizeMini * scale,
+            .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+            .visible = false,
+        })
+    );
     chartLabelRow->addChild(std::move(labelCell));
   }
   usageCard->addChild(std::move(chartPlotRow));
@@ -304,41 +317,47 @@ std::unique_ptr<Flex> ScreenTimeTab::create() {
           .visible = false,
       });
 
-      row->addChild(ui::box({
-          .out = &m_appRows[i].chartSwatch,
-          .radius = kLegendSwatch * scale * 0.5f,
-          .width = kLegendSwatch * scale,
-          .height = kLegendSwatch * scale,
-          .visible = false,
-      }));
+      row->addChild(
+          ui::box({
+              .out = &m_appRows[i].chartSwatch,
+              .radius = kLegendSwatch * scale * 0.5f,
+              .width = kLegendSwatch * scale,
+              .height = kLegendSwatch * scale,
+              .visible = false,
+          })
+      );
 
-      auto iconSlot = ui::row({.out = &m_appRows[i].iconSlot,
-                               .align = FlexAlign::Center,
-                               .justify = FlexJustify::Center,
-                               .width = kAppIconSize * scale,
-                               .height = kAppIconSize * scale},
-                              ui::image({
-                                  .out = &m_appRows[i].icon,
-                                  .fit = ImageFit::Cover,
-                                  .radius = Style::scaledRadiusMd(scale),
-                                  .width = kAppIconSize * scale,
-                                  .height = kAppIconSize * scale,
-                                  .visible = false,
-                                  .participatesInLayout = false,
-                              }),
-                              ui::glyph({
-                                  .out = &m_appRows[i].iconFallback,
-                                  .glyph = "app-window",
-                                  .glyphSize = kAppIconSize * 0.55f * scale,
-                                  .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                                  .participatesInLayout = false,
-                              }));
+      auto iconSlot = ui::row(
+          {.out = &m_appRows[i].iconSlot,
+           .align = FlexAlign::Center,
+           .justify = FlexJustify::Center,
+           .width = kAppIconSize * scale,
+           .height = kAppIconSize * scale},
+          ui::image({
+              .out = &m_appRows[i].icon,
+              .fit = ImageFit::Cover,
+              .radius = Style::scaledRadiusMd(scale),
+              .width = kAppIconSize * scale,
+              .height = kAppIconSize * scale,
+              .visible = false,
+              .participatesInLayout = false,
+          }),
+          ui::glyph({
+              .out = &m_appRows[i].iconFallback,
+              .glyph = "app-window",
+              .glyphSize = kAppIconSize * 0.55f * scale,
+              .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+              .participatesInLayout = false,
+          })
+      );
 
       row->addChild(std::move(iconSlot));
 
-      row->addChild(ui::column(
-          {.align = FlexAlign::Stretch, .gap = Style::spaceXs * scale, .flexGrow = 1.0f},
-          ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * scale},
+      row->addChild(
+          ui::column(
+              {.align = FlexAlign::Stretch, .gap = Style::spaceXs * scale, .flexGrow = 1.0f},
+              ui::row(
+                  {.align = FlexAlign::Center, .gap = Style::spaceSm * scale},
                   ui::label({
                       .out = &m_appRows[i].name,
                       .fontSize = Style::fontSizeBody * scale,
@@ -350,8 +369,10 @@ std::unique_ptr<Flex> ScreenTimeTab::create() {
                       .out = &m_appRows[i].duration,
                       .fontSize = usageDurationFontSize(scale),
                       .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                  })),
-          ui::row({.out = &m_appRows[i].barHost, .align = FlexAlign::Center, .minHeight = kUsageBarHeight * scale},
+                  })
+              ),
+              ui::row(
+                  {.out = &m_appRows[i].barHost, .align = FlexAlign::Center, .minHeight = kUsageBarHeight * scale},
                   ui::box({
                       .out = &m_appRows[i].barTrack,
                       .fill = colorSpecFromRole(ColorRole::SurfaceVariant),
@@ -364,7 +385,10 @@ std::unique_ptr<Flex> ScreenTimeTab::create() {
                       .radius = Style::scaledRadiusSm(scale),
                       .width = 0.0f,
                       .height = kUsageBarHeight * scale,
-                  }))));
+                  })
+              )
+          )
+      );
       cell->addChild(std::move(row));
       gridRowFlex->addChild(std::move(cell));
     }
@@ -372,12 +396,14 @@ std::unique_ptr<Flex> ScreenTimeTab::create() {
     appsGrid->addChild(std::move(gridRowFlex));
   }
 
-  appsGrid->addChild(ui::label({
-      .out = &m_emptyLabel,
-      .text = i18n::tr("control-center.screen-time.empty"),
-      .fontSize = Style::fontSizeBody * scale,
-      .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-  }));
+  appsGrid->addChild(
+      ui::label({
+          .out = &m_emptyLabel,
+          .text = i18n::tr("control-center.screen-time.empty"),
+          .fontSize = Style::fontSizeBody * scale,
+          .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+      })
+  );
 
   mostUsedSection->addChild(std::move(appsGrid));
   content->addChild(std::move(mostUsedSection));
@@ -806,8 +832,9 @@ void ScreenTimeTab::layoutAppRows(Renderer& renderer) {
   }
 }
 
-void ScreenTimeTab::updateIconForRow(Renderer& renderer, AppRowWidgets& widgets, const std::string& appKey,
-                                     float scale) {
+void ScreenTimeTab::updateIconForRow(
+    Renderer& renderer, AppRowWidgets& widgets, const std::string& appKey, float scale
+) {
   const std::string iconPath = resolveIconPath(appKey);
   if (iconPath == widgets.iconPath) {
     return;

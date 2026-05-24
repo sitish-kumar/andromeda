@@ -28,11 +28,13 @@ namespace control_center {
   }
 
   void addBody(Flex& parent, const std::string& text, float scale) {
-    parent.addChild(ui::label({
-        .text = text,
-        .fontSize = Style::fontSizeBody * scale,
-        .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-    }));
+    parent.addChild(
+        ui::label({
+            .text = text,
+            .fontSize = Style::fontSizeBody * scale,
+            .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+        })
+    );
   }
 
 } // namespace control_center

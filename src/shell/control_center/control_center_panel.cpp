@@ -26,27 +26,28 @@ namespace {
   constexpr auto kMprisRefreshMinInterval = std::chrono::milliseconds(750);
 }
 
-ControlCenterPanel::ControlCenterPanel(NotificationManager* notifications, PipeWireService* audio, MprisService* mpris,
-                                       ConfigService* config, HttpClient* httpClient, WeatherService* weather,
-                                       PipeWireSpectrum* spectrum, UPowerService* upower,
-                                       PowerProfilesService* powerProfiles, INetworkService* network,
-                                       NetworkSecretAgent* networkSecrets, BluetoothService* bluetooth,
-                                       BluetoothAgent* bluetoothAgent, BrightnessService* brightness,
-                                       SystemMonitorService* sysmon, ScreenTimeService* screenTime,
-                                       GammaService* nightLight, noctalia::theme::ThemeService* theme,
-                                       IdleInhibitor* idleInhibitor, DependencyService* dependencies,
-                                       CompositorPlatform* platform, Wallpaper* wallpaper) {
+ControlCenterPanel::ControlCenterPanel(
+    NotificationManager* notifications, PipeWireService* audio, MprisService* mpris, ConfigService* config,
+    HttpClient* httpClient, WeatherService* weather, PipeWireSpectrum* spectrum, UPowerService* upower,
+    PowerProfilesService* powerProfiles, INetworkService* network, NetworkSecretAgent* networkSecrets,
+    BluetoothService* bluetooth, BluetoothAgent* bluetoothAgent, BrightnessService* brightness,
+    SystemMonitorService* sysmon, ScreenTimeService* screenTime, GammaService* nightLight,
+    noctalia::theme::ThemeService* theme, IdleInhibitor* idleInhibitor, DependencyService* dependencies,
+    CompositorPlatform* platform, Wallpaper* wallpaper
+) {
   (void)upower;
   WaylandConnection* wayland = platform != nullptr ? &platform->wayland() : nullptr;
   m_config = config;
   m_mpris = mpris;
   m_notificationManager = notifications;
   m_dependencies = dependencies;
-  m_tabs[tabIndex(TabId::Home)] =
-      std::make_unique<HomeTab>(mpris, httpClient, weather, audio, powerProfiles, config, network, bluetooth,
-                                nightLight, theme, notifications, idleInhibitor, dependencies, platform, wallpaper);
-  m_tabs[tabIndex(TabId::Media)] = std::make_unique<MediaTab>(mpris, httpClient, spectrum, config, wayland,
-                                                              PanelManager::instance().renderContext());
+  m_tabs[tabIndex(TabId::Home)] = std::make_unique<HomeTab>(
+      mpris, httpClient, weather, audio, powerProfiles, config, network, bluetooth, nightLight, theme, notifications,
+      idleInhibitor, dependencies, platform, wallpaper
+  );
+  m_tabs[tabIndex(TabId::Media)] = std::make_unique<MediaTab>(
+      mpris, httpClient, spectrum, config, wayland, PanelManager::instance().renderContext()
+  );
   m_tabs[tabIndex(TabId::Audio)] =
       std::make_unique<AudioTab>(audio, mpris, config, wayland, PanelManager::instance().renderContext());
   m_tabs[tabIndex(TabId::Weather)] = std::make_unique<WeatherTab>(weather, config);
@@ -99,40 +100,41 @@ void ControlCenterPanel::create() {
       .gap = Style::spaceXs * scale,
       .padding = Style::spaceSm * scale,
       .fillHeight = true,
-      .configure =
-          [this, scale](Flex& column) {
-            column.setFill(colorSpecFromRole(ColorRole::SurfaceVariant, panelCardOpacity()));
-            column.setRadius(Style::scaledRadiusXl(scale));
-          },
+      .configure = [this, scale](Flex& column) {
+        column.setFill(colorSpecFromRole(ColorRole::SurfaceVariant, panelCardOpacity()));
+        column.setRadius(Style::scaledRadiusXl(scale));
+      },
   });
 
   for (const auto& tab : kTabs) {
-    sidebar->addChild(ui::button({
-        .out = &m_tabButtons[tabIndex(tab.id)],
-        .text = m_compact ? std::optional<std::string>{} : std::optional<std::string>{i18n::tr(tab.titleKey)},
-        .glyph = tab.glyph,
-        .glyphSize = 21.0f * scale,
-        .contentAlign = m_compact ? ButtonContentAlign::Center : ButtonContentAlign::Start,
-        .variant = ButtonVariant::Tab,
-        .minWidth = m_compact ? std::optional<float>{Style::controlHeight * scale} : std::optional<float>{},
-        .minHeight = Style::controlHeight * scale,
-        .paddingV = Style::spaceSm * scale,
-        .paddingH = (m_compact ? Style::spaceSm : Style::spaceMd) * scale,
-        .gap = Style::spaceSm * scale,
-        .radius = Style::scaledRadiusLg(scale),
-        .onClick =
-            [this, id = tab.id]() {
-              selectTab(id);
-              PanelManager::instance().refresh();
-            },
-        .configure =
-            [scale](Button& button) {
-              if (button.label() != nullptr) {
-                button.label()->setFontWeight(FontWeight::Bold);
-                button.label()->setFontSize(Style::fontSizeBody * scale);
-              }
-            },
-    }));
+    sidebar->addChild(
+        ui::button({
+            .out = &m_tabButtons[tabIndex(tab.id)],
+            .text = m_compact ? std::optional<std::string>{} : std::optional<std::string>{i18n::tr(tab.titleKey)},
+            .glyph = tab.glyph,
+            .glyphSize = 21.0f * scale,
+            .contentAlign = m_compact ? ButtonContentAlign::Center : ButtonContentAlign::Start,
+            .variant = ButtonVariant::Tab,
+            .minWidth = m_compact ? std::optional<float>{Style::controlHeight * scale} : std::optional<float>{},
+            .minHeight = Style::controlHeight * scale,
+            .paddingV = Style::spaceSm * scale,
+            .paddingH = (m_compact ? Style::spaceSm : Style::spaceMd) * scale,
+            .gap = Style::spaceSm * scale,
+            .radius = Style::scaledRadiusLg(scale),
+            .onClick =
+                [this, id = tab.id]() {
+                  selectTab(id);
+                  PanelManager::instance().refresh();
+                },
+            .configure =
+                [scale](Button& button) {
+                  if (button.label() != nullptr) {
+                    button.label()->setFontWeight(FontWeight::Bold);
+                    button.label()->setFontSize(Style::fontSizeBody * scale);
+                  }
+                },
+        })
+    );
   }
   rootLayout->addChild(std::move(sidebar));
 
@@ -162,14 +164,16 @@ void ControlCenterPanel::create() {
       .gap = Style::spaceSm * scale,
   });
 
-  header->addChild(ui::label({
-      .out = &m_contentTitle,
-      .text = i18n::tr("control-center.tabs.home"),
-      .fontSize = Style::fontSizeTitle * scale,
-      .color = colorSpecFromRole(ColorRole::Primary),
-      .fontWeight = FontWeight::Bold,
-      .flexGrow = 1.0f,
-  }));
+  header->addChild(
+      ui::label({
+          .out = &m_contentTitle,
+          .text = i18n::tr("control-center.tabs.home"),
+          .fontSize = Style::fontSizeTitle * scale,
+          .color = colorSpecFromRole(ColorRole::Primary),
+          .fontWeight = FontWeight::Bold,
+          .flexGrow = 1.0f,
+      })
+  );
 
   auto headerActions = ui::row({
       .out = &m_contentHeaderActions,
@@ -186,13 +190,16 @@ void ControlCenterPanel::create() {
     }
   }
 
-  m_contentHeaderActions->addChild(ui::button({
-      .out = &m_closeButton,
-      .glyph = "close",
-      .onClick = []() { PanelManager::instance().close(); },
-      .configure = [scale, opacity = panelCardOpacity()](
-                       Button& button) { panel_button_style::configureHeaderIconButton(button, scale, opacity); },
-  }));
+  m_contentHeaderActions->addChild(
+      ui::button({
+          .out = &m_closeButton,
+          .glyph = "close",
+          .onClick = []() { PanelManager::instance().close(); },
+          .configure = [scale, opacity = panelCardOpacity()](
+                           Button& button
+                       ) { panel_button_style::configureHeaderIconButton(button, scale, opacity); },
+      })
+  );
   header->addChild(std::move(headerActions));
 
   content->addChild(std::move(header));

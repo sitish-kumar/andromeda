@@ -227,8 +227,10 @@ namespace ui {
       const float allPadding = props.padding.value_or(0.0f);
       const float verticalPadding = props.paddingV.value_or(allPadding);
       const float horizontalPadding = props.paddingH.value_or(allPadding);
-      control->setPadding(props.paddingTop.value_or(verticalPadding), props.paddingRight.value_or(horizontalPadding),
-                          props.paddingBottom.value_or(verticalPadding), props.paddingLeft.value_or(horizontalPadding));
+      control->setPadding(
+          props.paddingTop.value_or(verticalPadding), props.paddingRight.value_or(horizontalPadding),
+          props.paddingBottom.value_or(verticalPadding), props.paddingLeft.value_or(horizontalPadding)
+      );
     }
     if (props.gap.has_value()) {
       control->setGap(*props.gap);
@@ -300,8 +302,9 @@ namespace ui {
   std::unique_ptr<Box> box(BoxProps props) {
     auto control = std::make_unique<Box>();
     if (props.cardStyleScale.has_value()) {
-      control->setCardStyle(*props.cardStyleScale, props.cardStyleFillOpacity.value_or(1.0f),
-                            props.cardStyleShowBorder.value_or(true));
+      control->setCardStyle(
+          *props.cardStyleScale, props.cardStyleFillOpacity.value_or(1.0f), props.cardStyleShowBorder.value_or(true)
+      );
     }
     if (props.fill.has_value()) {
       control->setFill(*props.fill);

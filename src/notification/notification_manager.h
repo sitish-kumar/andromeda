@@ -52,19 +52,20 @@ public:
   void removeEventCallback(int token);
 
   // Adds a new notification or updates an existing one.
-  uint32_t addOrReplace(uint32_t replacesId, std::string appName, std::string summary, std::string body,
-                        Urgency urgency, int32_t timeout, NotificationOrigin origin = NotificationOrigin::External,
-                        std::vector<std::string> actions = {}, std::optional<std::string> icon = std::nullopt,
-                        std::optional<NotificationImageData> imageData = std::nullopt,
-                        std::optional<std::string> category = std::nullopt,
-                        std::optional<std::string> desktopEntry = std::nullopt);
+  uint32_t addOrReplace(
+      uint32_t replacesId, std::string appName, std::string summary, std::string body, Urgency urgency, int32_t timeout,
+      NotificationOrigin origin = NotificationOrigin::External, std::vector<std::string> actions = {},
+      std::optional<std::string> icon = std::nullopt, std::optional<NotificationImageData> imageData = std::nullopt,
+      std::optional<std::string> category = std::nullopt, std::optional<std::string> desktopEntry = std::nullopt
+  );
 
   // Adds an internal notification to the same store as external notifications.
-  uint32_t addInternal(std::string appName, std::string summary, std::string body, Urgency urgency = Urgency::Normal,
-                       int32_t timeout = kDefaultNotificationTimeout, std::optional<std::string> icon = std::nullopt,
-                       std::optional<NotificationImageData> imageData = std::nullopt,
-                       std::optional<std::string> category = std::nullopt,
-                       std::optional<std::string> desktopEntry = std::nullopt);
+  uint32_t addInternal(
+      std::string appName, std::string summary, std::string body, Urgency urgency = Urgency::Normal,
+      int32_t timeout = kDefaultNotificationTimeout, std::optional<std::string> icon = std::nullopt,
+      std::optional<NotificationImageData> imageData = std::nullopt, std::optional<std::string> category = std::nullopt,
+      std::optional<std::string> desktopEntry = std::nullopt
+  );
 
   void setActionInvokeCallback(ActionInvokeCallback callback);
   void setCloseCallback(CloseCallback callback);

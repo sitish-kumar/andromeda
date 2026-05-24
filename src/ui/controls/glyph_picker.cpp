@@ -53,16 +53,17 @@ public:
         .align = FlexAlign::Center,
         .justify = FlexJustify::Center,
         .padding = 0.0f,
-        .configure =
-            [this](Flex& flex) {
-              flex.setRadius(Style::scaledRadiusMd(m_chromeScale));
-              flex.clearBorder();
-            },
+        .configure = [this](Flex& flex) {
+          flex.setRadius(Style::scaledRadiusMd(m_chromeScale));
+          flex.clearBorder();
+        },
     });
-    tile->addChild(ui::glyph({
-        .out = &glyphRaw,
-        .glyphSize = 28.0f * m_chromeScale,
-    }));
+    tile->addChild(
+        ui::glyph({
+            .out = &glyphRaw,
+            .glyphSize = 28.0f * m_chromeScale,
+        })
+    );
     tile->setUserData(glyphRaw);
     return tile;
   }
@@ -139,91 +140,97 @@ GlyphPicker::GlyphPicker(float chromeScale) : m_chromeScale(std::max(0.1f, chrom
   setGap(Style::spaceMd * m_chromeScale);
   setPadding(Style::spaceSm * m_chromeScale);
 
-  addChild(ui::row(
-      {
-          .align = FlexAlign::Center,
-          .gap = Style::spaceSm * m_chromeScale,
-      },
-      ui::label({
-          .out = &m_title,
-          .text = i18n::tr("ui.dialogs.glyph-picker.title"),
-          .fontSize = Style::fontSizeTitle * m_chromeScale,
-          .color = colorSpecFromRole(ColorRole::Primary),
-          .fontWeight = FontWeight::Bold,
-      }),
-      ui::spacer(),
-      ui::button({
-          .glyph = "close",
-          .glyphSize = Style::fontSizeBody * m_chromeScale,
-          .variant = ButtonVariant::Default,
-          .minWidth = Style::controlHeightSm * m_chromeScale,
-          .minHeight = Style::controlHeightSm * m_chromeScale,
-          .padding = Style::spaceXs * m_chromeScale,
-          .radius = Style::scaledRadiusMd(m_chromeScale),
-          .onClick =
-              [this]() {
+  addChild(
+      ui::row(
+          {
+              .align = FlexAlign::Center,
+              .gap = Style::spaceSm * m_chromeScale,
+          },
+          ui::label({
+              .out = &m_title,
+              .text = i18n::tr("ui.dialogs.glyph-picker.title"),
+              .fontSize = Style::fontSizeTitle * m_chromeScale,
+              .color = colorSpecFromRole(ColorRole::Primary),
+              .fontWeight = FontWeight::Bold,
+          }),
+          ui::spacer(),
+          ui::button({
+              .glyph = "close",
+              .glyphSize = Style::fontSizeBody * m_chromeScale,
+              .variant = ButtonVariant::Default,
+              .minWidth = Style::controlHeightSm * m_chromeScale,
+              .minHeight = Style::controlHeightSm * m_chromeScale,
+              .padding = Style::spaceXs * m_chromeScale,
+              .radius = Style::scaledRadiusMd(m_chromeScale),
+              .onClick = [this]() {
                 if (m_onCancel) {
                   m_onCancel();
                 }
               },
-      })));
+          })
+      )
+  );
 
-  addChild(ui::input({
-      .out = &m_searchInput,
-      .placeholder = i18n::tr("ui.dialogs.glyph-picker.search-placeholder"),
-      .fontSize = Style::fontSizeBody * m_chromeScale,
-      .controlHeight = Style::controlHeight * m_chromeScale,
-      .horizontalPadding = Style::spaceMd * m_chromeScale,
-      .clearButtonEnabled = true,
-      .onChange = [this](const std::string& value) { applyFilter(value); },
-  }));
+  addChild(
+      ui::input({
+          .out = &m_searchInput,
+          .placeholder = i18n::tr("ui.dialogs.glyph-picker.search-placeholder"),
+          .fontSize = Style::fontSizeBody * m_chromeScale,
+          .controlHeight = Style::controlHeight * m_chromeScale,
+          .horizontalPadding = Style::spaceMd * m_chromeScale,
+          .clearButtonEnabled = true,
+          .onChange = [this](const std::string& value) { applyFilter(value); },
+      })
+  );
 
   m_adapter = std::make_unique<GlyphGridAdapter>(m_chromeScale);
 
-  addChild(ui::virtualGridView({
-      .out = &m_grid,
-      .minCellWidth = 56.0f * m_chromeScale,
-      .squareCells = true,
-      .columnGap = Style::spaceXs * m_chromeScale,
-      .rowGap = Style::spaceXs * m_chromeScale,
-      .overscanRows = 2,
-      .adapter = m_adapter.get(),
-      .flexGrow = 1.0f,
-      .onSelectionChanged = [this](std::optional<std::size_t>) { applySelectionToButton(); },
-  }));
+  addChild(
+      ui::virtualGridView({
+          .out = &m_grid,
+          .minCellWidth = 56.0f * m_chromeScale,
+          .squareCells = true,
+          .columnGap = Style::spaceXs * m_chromeScale,
+          .rowGap = Style::spaceXs * m_chromeScale,
+          .overscanRows = 2,
+          .adapter = m_adapter.get(),
+          .flexGrow = 1.0f,
+          .onSelectionChanged = [this](std::optional<std::size_t>) { applySelectionToButton(); },
+      })
+  );
 
-  addChild(ui::row(
-      {
-          .align = FlexAlign::Center,
-          .justify = FlexJustify::End,
-          .gap = Style::spaceSm * m_chromeScale,
-      },
-      ui::button({
-          .text = i18n::tr("common.actions.cancel"),
-          .variant = ButtonVariant::Secondary,
-          .minWidth = 92.0f * m_chromeScale,
-          .minHeight = Style::controlHeight * m_chromeScale,
-          .paddingV = Style::spaceSm * m_chromeScale,
-          .paddingH = Style::spaceMd * m_chromeScale,
-          .radius = Style::scaledRadiusMd(m_chromeScale),
-          .onClick =
-              [this]() {
-                if (m_onCancel) {
-                  m_onCancel();
-                }
-              },
-      }),
-      ui::button({
-          .out = &m_applyButton,
-          .text = i18n::tr("common.actions.apply"),
-          .variant = ButtonVariant::Primary,
-          .minWidth = 92.0f * m_chromeScale,
-          .minHeight = Style::controlHeight * m_chromeScale,
-          .paddingV = Style::spaceSm * m_chromeScale,
-          .paddingH = Style::spaceMd * m_chromeScale,
-          .radius = Style::scaledRadiusMd(m_chromeScale),
-          .onClick =
-              [this]() {
+  addChild(
+      ui::row(
+          {
+              .align = FlexAlign::Center,
+              .justify = FlexJustify::End,
+              .gap = Style::spaceSm * m_chromeScale,
+          },
+          ui::button({
+              .text = i18n::tr("common.actions.cancel"),
+              .variant = ButtonVariant::Secondary,
+              .minWidth = 92.0f * m_chromeScale,
+              .minHeight = Style::controlHeight * m_chromeScale,
+              .paddingV = Style::spaceSm * m_chromeScale,
+              .paddingH = Style::spaceMd * m_chromeScale,
+              .radius = Style::scaledRadiusMd(m_chromeScale),
+              .onClick =
+                  [this]() {
+                    if (m_onCancel) {
+                      m_onCancel();
+                    }
+                  },
+          }),
+          ui::button({
+              .out = &m_applyButton,
+              .text = i18n::tr("common.actions.apply"),
+              .variant = ButtonVariant::Primary,
+              .minWidth = 92.0f * m_chromeScale,
+              .minHeight = Style::controlHeight * m_chromeScale,
+              .paddingV = Style::spaceSm * m_chromeScale,
+              .paddingH = Style::spaceMd * m_chromeScale,
+              .radius = Style::scaledRadiusMd(m_chromeScale),
+              .onClick = [this]() {
                 if (!m_onApply) {
                   return;
                 }
@@ -232,7 +239,9 @@ GlyphPicker::GlyphPicker(float chromeScale) : m_chromeScale(std::max(0.1f, chrom
                   m_onApply(*result);
                 }
               },
-      })));
+          })
+      )
+  );
 
   applySelectionToButton();
 }

@@ -72,13 +72,14 @@ std::unique_ptr<Flex> DisplayTab::create() {
   });
 
   // Empty state (shown when no displays are known)
-  auto emptyState =
-      ui::column({.out = &m_emptyState, .align = FlexAlign::Center, .justify = FlexJustify::Center, .flexGrow = 1.0f},
-                 ui::label({
-                     .text = i18n::tr("control-center.display.no-displays"),
-                     .fontSize = Style::fontSizeBody * scale,
-                     .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                 }));
+  auto emptyState = ui::column(
+      {.out = &m_emptyState, .align = FlexAlign::Center, .justify = FlexJustify::Center, .flexGrow = 1.0f},
+      ui::label({
+          .text = i18n::tr("control-center.display.no-displays"),
+          .fontSize = Style::fontSizeBody * scale,
+          .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+      })
+  );
   tab->addChild(std::move(emptyState));
 
   return tab;
@@ -181,7 +182,8 @@ void DisplayTab::doUpdate(Renderer& renderer) {
                            std::abs(display->brightness - m_lastSentBrightness) > 0.02f;
 
     const float displayedBrightness = std::clamp(
-        isPending ? m_pendingBrightness : (holdState ? m_lastSentBrightness : display->brightness), 0.0f, 1.0f);
+        isPending ? m_pendingBrightness : (holdState ? m_lastSentBrightness : display->brightness), 0.0f, 1.0f
+    );
 
     if (!isDragging &&
         (!card.lastControllable || std::abs(displayedBrightness - card.lastBrightness) >= kBrightnessSyncEpsilon)) {
@@ -232,45 +234,52 @@ void DisplayTab::rebuildCards(Renderer& /*renderer*/) {
   for (const auto& display : displays) {
     // Card container
     auto card = ui::column({
-        .configure = [scale, opacity = panelCardOpacity(), borders = panelBordersEnabled()](
-                         Flex& section) { applySectionCardStyle(section, scale, opacity, borders); },
+        .configure = [scale, opacity = panelCardOpacity(), borders = panelBordersEnabled()](Flex& section) {
+          applySectionCardStyle(section, scale, opacity, borders);
+        },
     });
 
     Glyph* iconPtr = nullptr;
     Label* nameLabelPtr = nullptr;
-    auto headerRow = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * scale},
-                             ui::glyph({
-                                 .out = &iconPtr,
-                                 .glyph = "device-desktop",
-                                 .glyphSize = Style::fontSizeTitle * scale,
-                                 .color = colorSpecFromRole(ColorRole::OnSurface),
-                             }),
-                             ui::label({
-                                 .out = &nameLabelPtr,
-                                 .text = display.label,
-                                 .fontSize = Style::fontSizeBody * scale,
-                                 .color = colorSpecFromRole(ColorRole::OnSurface),
-                                 .fontWeight = FontWeight::Bold,
-                                 .flexGrow = 1.0f,
-                             }));
+    auto headerRow = ui::row(
+        {.align = FlexAlign::Center, .gap = Style::spaceSm * scale},
+        ui::glyph({
+            .out = &iconPtr,
+            .glyph = "device-desktop",
+            .glyphSize = Style::fontSizeTitle * scale,
+            .color = colorSpecFromRole(ColorRole::OnSurface),
+        }),
+        ui::label({
+            .out = &nameLabelPtr,
+            .text = display.label,
+            .fontSize = Style::fontSizeBody * scale,
+            .color = colorSpecFromRole(ColorRole::OnSurface),
+            .fontWeight = FontWeight::Bold,
+            .flexGrow = 1.0f,
+        })
+    );
     card->addChild(std::move(headerRow));
 
     const std::string infoText = formatDisplayInfo(display);
     Label* detailsLabelPtr = nullptr;
-    card->addChild(ui::label({
-        .out = &detailsLabelPtr,
-        .text = infoText,
-        .fontSize = Style::fontSizeCaption * scale,
-        .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-    }));
+    card->addChild(
+        ui::label({
+            .out = &detailsLabelPtr,
+            .text = infoText,
+            .fontSize = Style::fontSizeCaption * scale,
+            .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+        })
+    );
 
     // Slider row: sun icon + slider + percentage
-    auto sliderRow = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * scale},
-                             ui::glyph({
-                                 .glyph = "brightness-low",
-                                 .glyphSize = Style::fontSizeTitle * scale,
-                                 .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                             }));
+    auto sliderRow = ui::row(
+        {.align = FlexAlign::Center, .gap = Style::spaceSm * scale},
+        ui::glyph({
+            .glyph = "brightness-low",
+            .glyphSize = Style::fontSizeTitle * scale,
+            .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+        })
+    );
 
     const std::string displayId = display.id;
     Slider* sliderPtr = nullptr;
@@ -309,36 +318,42 @@ void DisplayTab::rebuildCards(Renderer& /*renderer*/) {
     sliderRow->addChild(std::move(slider));
 
     Label* valueLabelPtr = nullptr;
-    sliderRow->addChild(ui::glyph({
-        .glyph = "brightness-high",
-        .glyphSize = Style::fontSizeTitle * scale,
-        .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-    }));
-    sliderRow->addChild(ui::label({
-        .out = &valueLabelPtr,
-        .text = formatBrightnessValue(display, display.brightness),
-        .fontSize = Style::fontSizeBody * scale,
-        .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-        .minWidth = Style::controlHeightLg * scale,
-    }));
+    sliderRow->addChild(
+        ui::glyph({
+            .glyph = "brightness-high",
+            .glyphSize = Style::fontSizeTitle * scale,
+            .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+        })
+    );
+    sliderRow->addChild(
+        ui::label({
+            .out = &valueLabelPtr,
+            .text = formatBrightnessValue(display, display.brightness),
+            .fontSize = Style::fontSizeBody * scale,
+            .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+            .minWidth = Style::controlHeightLg * scale,
+        })
+    );
 
     card->addChild(std::move(sliderRow));
 
     auto* cardPtr = card.get();
     m_rootLayout->addChild(std::move(card));
 
-    m_cards.push_back(DisplayCard{
-        .displayId = display.id,
-        .card = cardPtr,
-        .nameLabel = nameLabelPtr,
-        .detailsLabel = detailsLabelPtr,
-        .icon = iconPtr,
-        .slider = sliderPtr,
-        .valueLabel = valueLabelPtr,
-        .lastBrightness = display.brightness,
-        .lastControllable = display.controllable,
-        .lastDisplayInfo = infoText,
-    });
+    m_cards.push_back(
+        DisplayCard{
+            .displayId = display.id,
+            .card = cardPtr,
+            .nameLabel = nameLabelPtr,
+            .detailsLabel = detailsLabelPtr,
+            .icon = iconPtr,
+            .slider = sliderPtr,
+            .valueLabel = valueLabelPtr,
+            .lastBrightness = display.brightness,
+            .lastControllable = display.controllable,
+            .lastDisplayInfo = infoText,
+        }
+    );
   }
 }
 

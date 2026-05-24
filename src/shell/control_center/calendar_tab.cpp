@@ -125,8 +125,9 @@ std::unique_ptr<Flex> CalendarTab::create() {
   auto calendarCard = ui::column({
       .out = &m_card,
       .gap = Style::spaceMd * scale,
-      .configure = [scale, opacity = panelCardOpacity(), borders = panelBordersEnabled()](
-                       Flex& card) { control_center::applySectionCardStyle(card, scale, opacity, borders); },
+      .configure = [scale, opacity = panelCardOpacity(), borders = panelBordersEnabled()](Flex& card) {
+        control_center::applySectionCardStyle(card, scale, opacity, borders);
+      },
   });
 
   auto header = ui::row({
@@ -137,53 +138,56 @@ std::unique_ptr<Flex> CalendarTab::create() {
       .minHeight = kCalendarHeaderHeight * scale,
   });
 
-  auto previousSlot = ui::row({.out = &m_previousSlot, .align = FlexAlign::Center, .justify = FlexJustify::Center},
-                              ui::button({
-                                  .out = &m_previousButton,
-                                  .glyph = "chevron-left",
-                                  .variant = ButtonVariant::Ghost,
-                                  .minWidth = kCalendarNavButtonSize * scale,
-                                  .minHeight = kCalendarNavButtonSize * scale,
-                                  .onClick =
-                                      [this]() {
-                                        --m_monthOffset;
-                                        PanelManager::instance().refresh();
-                                      },
-                              }));
+  auto previousSlot = ui::row(
+      {.out = &m_previousSlot, .align = FlexAlign::Center, .justify = FlexJustify::Center},
+      ui::button({
+          .out = &m_previousButton,
+          .glyph = "chevron-left",
+          .variant = ButtonVariant::Ghost,
+          .minWidth = kCalendarNavButtonSize * scale,
+          .minHeight = kCalendarNavButtonSize * scale,
+          .onClick = [this]() {
+            --m_monthOffset;
+            PanelManager::instance().refresh();
+          },
+      })
+  );
   header->addChild(std::move(previousSlot));
 
-  auto monthWrap =
-      ui::column({.out = &m_monthWrap, .align = FlexAlign::Center, .justify = FlexJustify::Center, .flexGrow = 1.0f},
-                 ui::label({
-                     .out = &m_monthLabel,
-                     .fontSize = (Style::fontSizeTitle + Style::spaceXs) * scale,
-                     .color = colorSpecFromRole(ColorRole::OnSurface),
-                     .maxLines = 1,
-                     .fontWeight = FontWeight::Bold,
-                 }),
-                 ui::label({
-                     .out = &m_monthSubLabel,
-                     .text = formatShellDate(m_config),
-                     .fontSize = Style::fontSizeCaption * scale,
-                     .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                     .maxLines = 1,
-                     .configure = [](Label& label) { label.setCaptionStyle(); },
-                 }));
+  auto monthWrap = ui::column(
+      {.out = &m_monthWrap, .align = FlexAlign::Center, .justify = FlexJustify::Center, .flexGrow = 1.0f},
+      ui::label({
+          .out = &m_monthLabel,
+          .fontSize = (Style::fontSizeTitle + Style::spaceXs) * scale,
+          .color = colorSpecFromRole(ColorRole::OnSurface),
+          .maxLines = 1,
+          .fontWeight = FontWeight::Bold,
+      }),
+      ui::label({
+          .out = &m_monthSubLabel,
+          .text = formatShellDate(m_config),
+          .fontSize = Style::fontSizeCaption * scale,
+          .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+          .maxLines = 1,
+          .configure = [](Label& label) { label.setCaptionStyle(); },
+      })
+  );
   header->addChild(std::move(monthWrap));
 
-  auto nextSlot = ui::row({.out = &m_nextSlot, .align = FlexAlign::Center, .justify = FlexJustify::Center},
-                          ui::button({
-                              .out = &m_nextButton,
-                              .glyph = "chevron-right",
-                              .variant = ButtonVariant::Ghost,
-                              .minWidth = kCalendarNavButtonSize * scale,
-                              .minHeight = kCalendarNavButtonSize * scale,
-                              .onClick =
-                                  [this]() {
-                                    ++m_monthOffset;
-                                    PanelManager::instance().refresh();
-                                  },
-                          }));
+  auto nextSlot = ui::row(
+      {.out = &m_nextSlot, .align = FlexAlign::Center, .justify = FlexJustify::Center},
+      ui::button({
+          .out = &m_nextButton,
+          .glyph = "chevron-right",
+          .variant = ButtonVariant::Ghost,
+          .minWidth = kCalendarNavButtonSize * scale,
+          .minHeight = kCalendarNavButtonSize * scale,
+          .onClick = [this]() {
+            ++m_monthOffset;
+            PanelManager::instance().refresh();
+          },
+      })
+  );
   header->addChild(std::move(nextSlot));
 
   calendarCard->addChild(std::move(header));
@@ -201,7 +205,8 @@ std::unique_ptr<Flex> CalendarTab::create() {
   auto tasksCard = ui::column(
       {.flexGrow = 2.0f,
        .configure = [scale, opacity = panelCardOpacity(), borders = panelBordersEnabled()](
-                        Flex& card) { control_center::applySectionCardStyle(card, scale, opacity, borders); }},
+                        Flex& card
+                    ) { control_center::applySectionCardStyle(card, scale, opacity, borders); }},
       ui::label({
           .text = i18n::tr("control-center.calendar.tasks"),
           .fontSize = Style::fontSizeTitle * scale,
@@ -213,7 +218,8 @@ std::unique_ptr<Flex> CalendarTab::create() {
           .fontSize = Style::fontSizeBody * scale,
           .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
           .maxLines = 3,
-      }));
+      })
+  );
 
   tab->addChild(std::move(tasksCard));
 
@@ -304,8 +310,10 @@ void CalendarTab::rebuild() {
   const float gridHeightAvailable =
       std::max(0.0f, innerHeight - kCalendarHeaderHeight * scale - kCalendarGridGap * scale);
   const float weekdayHeight = kCalendarWeekdayRowHeight * scale;
-  const float dayCellHeight = std::clamp((gridHeightAvailable - weekdayHeight - kCalendarGridGap * scale * 6.0f) / 6.0f,
-                                         kCalendarCellSizeMin * scale, kCalendarCellSizeMax * scale);
+  const float dayCellHeight = std::clamp(
+      (gridHeightAvailable - weekdayHeight - kCalendarGridGap * scale * 6.0f) / 6.0f, kCalendarCellSizeMin * scale,
+      kCalendarCellSizeMax * scale
+  );
   const float dayColumnWidth = std::max(0.0f, (innerWidth - kCalendarGridGap * scale * 6.0f) / 7.0f);
   const float dayButtonSize = std::round(std::min({dayCellHeight, dayColumnWidth, kCalendarDayButtonSizeMax * scale}));
 
@@ -360,12 +368,14 @@ void CalendarTab::rebuild() {
 
     const int columnWeekday = (firstDayOfWeek + static_cast<int>(i)) % 7;
     const bool weekend = columnWeekday == 0 || columnWeekday == 6;
-    dayCell->addChild(ui::label({
-        .text = weekdays[i],
-        .fontSize = (Style::fontSizeCaption + 1.0f) * scale,
-        .color = colorSpecFromRole(weekend ? ColorRole::Secondary : ColorRole::OnSurfaceVariant),
-        .fontWeight = FontWeight::Bold,
-    }));
+    dayCell->addChild(
+        ui::label({
+            .text = weekdays[i],
+            .fontSize = (Style::fontSizeCaption + 1.0f) * scale,
+            .color = colorSpecFromRole(weekend ? ColorRole::Secondary : ColorRole::OnSurfaceVariant),
+            .fontWeight = FontWeight::Bold,
+        })
+    );
 
     weekdayRow->addChild(std::move(dayCell));
   }

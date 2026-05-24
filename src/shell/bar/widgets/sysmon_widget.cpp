@@ -66,8 +66,10 @@ namespace {
 
 } // namespace
 
-SysmonWidget::SysmonWidget(SystemMonitorService* monitor, wl_output* /*output*/, SysmonStat stat, std::string diskPath,
-                           SysmonDisplayMode displayMode, bool showLabel, float labelMinWidth)
+SysmonWidget::SysmonWidget(
+    SystemMonitorService* monitor, wl_output* /*output*/, SysmonStat stat, std::string diskPath,
+    SysmonDisplayMode displayMode, bool showLabel, float labelMinWidth
+)
     : m_monitor(monitor), m_stat(stat), m_displayMode(displayMode), m_showLabel(showLabel),
       m_labelMinWidth(labelMinWidth), m_diskPath(std::move(diskPath)) {
   if (m_monitor != nullptr) {
@@ -105,15 +107,18 @@ SysmonWidget::~SysmonWidget() {
 
 void SysmonWidget::create() {
   auto container = std::make_unique<InputArea>();
-  container->setOnClick(
-      [this](const InputArea::PointerData& /*data*/) { requestPanelToggle("control-center", "system"); });
+  container->setOnClick([this](const InputArea::PointerData& /*data*/) {
+    requestPanelToggle("control-center", "system");
+  });
 
-  container->addChild(ui::glyph({
-      .out = &m_glyph,
-      .glyph = glyphName(m_stat),
-      .glyphSize = Style::barGlyphSize * m_contentScale,
-      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
-  }));
+  container->addChild(
+      ui::glyph({
+          .out = &m_glyph,
+          .glyph = glyphName(m_stat),
+          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+      })
+  );
 
   if (m_displayMode == SysmonDisplayMode::Graph) {
     m_chartBg = static_cast<Box*>(container->addChild(ui::box()));
@@ -125,21 +130,25 @@ void SysmonWidget::create() {
   }
 
   if (m_displayMode == SysmonDisplayMode::Gauge) {
-    m_gauge = static_cast<ProgressBar*>(container->addChild(ui::progressBar({
-        .fill = colorSpecFromRole(ColorRole::Primary),
-        .track = colorSpecFromRole(ColorRole::OnSurface, 0.25f),
-        .progress = 0.0f,
-    })));
+    m_gauge = static_cast<ProgressBar*>(container->addChild(
+        ui::progressBar({
+            .fill = colorSpecFromRole(ColorRole::Primary),
+            .track = colorSpecFromRole(ColorRole::OnSurface, 0.25f),
+            .progress = 0.0f,
+        })
+    ));
   }
 
   if (m_displayMode == SysmonDisplayMode::Text || m_showLabel) {
-    container->addChild(ui::label({
-        .out = &m_label,
-        .fontSize = Style::fontSizeBody * m_contentScale,
-        .minWidth =
-            m_labelMinWidth > 0.0f ? std::optional<float>{m_labelMinWidth * m_contentScale} : std::optional<float>{},
-        .fontWeight = labelFontWeight(),
-    }));
+    container->addChild(
+        ui::label({
+            .out = &m_label,
+            .fontSize = Style::fontSizeBody * m_contentScale,
+            .minWidth = m_labelMinWidth > 0.0f ? std::optional<float>{m_labelMinWidth * m_contentScale}
+                                               : std::optional<float>{},
+            .fontWeight = labelFontWeight(),
+        })
+    );
   }
 
   setRoot(std::move(container));
@@ -429,9 +438,13 @@ void SysmonWidget::updateGraph(Renderer& renderer) {
 
   const int n = static_cast<int>(data.size());
   const int texSize = n + 1;
-  data.push_back(std::clamp(data[static_cast<std::size_t>(n - 1)] +
-                                (data[static_cast<std::size_t>(n - 1)] - data[static_cast<std::size_t>(n - 2)]) * 0.5f,
-                            0.0f, 1.0f));
+  data.push_back(
+      std::clamp(
+          data[static_cast<std::size_t>(n - 1)] +
+              (data[static_cast<std::size_t>(n - 1)] - data[static_cast<std::size_t>(n - 2)]) * 0.5f,
+          0.0f, 1.0f
+      )
+  );
 
   m_graphNode->setData(renderer.textureManager(), data.data(), texSize, nullptr, 0);
   m_graphNode->setCount1(static_cast<float>(n));
@@ -576,8 +589,10 @@ std::string SysmonWidget::formatValue() const {
 
   case SysmonStat::GpuVram:
     if (stats.gpuVramUsedBytes.has_value() && stats.gpuVramTotalBytes.has_value() && *stats.gpuVramTotalBytes > 0) {
-      return std::format("{:.0f}%", 100.0 * static_cast<double>(*stats.gpuVramUsedBytes) /
-                                        static_cast<double>(*stats.gpuVramTotalBytes));
+      return std::format(
+          "{:.0f}%",
+          100.0 * static_cast<double>(*stats.gpuVramUsedBytes) / static_cast<double>(*stats.gpuVramTotalBytes)
+      );
     }
     return "--";
 
@@ -589,8 +604,9 @@ std::string SysmonWidget::formatValue() const {
 
   case SysmonStat::SwapPct:
     if (stats.swapTotalMb > 0) {
-      return std::format("{:.0f}%",
-                         100.0 * static_cast<double>(stats.swapUsedMb) / static_cast<double>(stats.swapTotalMb));
+      return std::format(
+          "{:.0f}%", 100.0 * static_cast<double>(stats.swapUsedMb) / static_cast<double>(stats.swapTotalMb)
+      );
     }
     return "--";
 

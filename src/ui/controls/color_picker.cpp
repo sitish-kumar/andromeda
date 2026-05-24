@@ -48,11 +48,13 @@ ColorPicker::ColorPicker() {
   setGap(Style::spaceSm);
   setPadding(0.0f);
 
-  addChild(ui::image({
-      .out = &m_svImage,
-      .fit = ImageFit::Stretch,
-      .configure = [](Image& image) { image.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth); },
-  }));
+  addChild(
+      ui::image({
+          .out = &m_svImage,
+          .fit = ImageFit::Stretch,
+          .configure = [](Image& image) { image.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth); },
+      })
+  );
 
   constexpr int kHueSegments = 36;
   auto hueStrip = ui::row({
@@ -62,12 +64,14 @@ ColorPicker::ColorPicker() {
   });
   for (int i = 0; i < kHueSegments; ++i) {
     const float t = static_cast<float>(i) / static_cast<float>(kHueSegments - 1);
-    hueStrip->addChild(ui::box({
-        .fill = fixedColorSpec(hsv(t, 1.0f, 1.0f)),
-        .radius = 0.0f,
-        .flexGrow = 1.0f,
-        .configure = [](Box& box) { box.clearBorder(); },
-    }));
+    hueStrip->addChild(
+        ui::box({
+            .fill = fixedColorSpec(hsv(t, 1.0f, 1.0f)),
+            .radius = 0.0f,
+            .flexGrow = 1.0f,
+            .configure = [](Box& box) { box.clearBorder(); },
+        })
+    );
   }
   addChild(std::move(hueStrip));
 
@@ -83,20 +87,24 @@ ColorPicker::ColorPicker() {
         .align = FlexAlign::Stretch,
         .gap = Style::spaceXs * 0.5f,
     });
-    col->addChild(ui::label({
-        .text = title,
-        .fontSize = Style::fontSizeCaption,
-        .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-    }));
+    col->addChild(
+        ui::label({
+            .text = title,
+            .fontSize = Style::fontSizeCaption,
+            .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+        })
+    );
     Input* inp = nullptr;
-    col->addChild(ui::input({
-        .out = &inp,
-        .fontSize = Style::fontSizeCaption,
-        .controlHeight = Style::controlHeightSm,
-        .horizontalPadding = Style::spaceSm,
-        .width = w,
-        .height = 0.0f,
-    }));
+    col->addChild(
+        ui::input({
+            .out = &inp,
+            .fontSize = Style::fontSizeCaption,
+            .controlHeight = Style::controlHeightSm,
+            .horizontalPadding = Style::spaceSm,
+            .width = w,
+            .height = 0.0f,
+        })
+    );
     m_fieldsRow->addChild(std::move(col));
     return inp;
   };
@@ -149,28 +157,31 @@ ColorPicker::ColorPicker() {
   });
   m_hueInput = static_cast<InputArea*>(addChild(std::move(hueInput)));
 
-  addChild(ui::box({
-      .out = &m_svThumb,
-      .fill = fixedColorSpec(rgba(0.0f, 0.0f, 0.0f, 0.0f)),
-      .radius = 12.0f,
-      .width = 24.0f,
-      .height = 24.0f,
-      .participatesInLayout = false,
-      .configure =
-          [](Box& box) {
+  addChild(
+      ui::box({
+          .out = &m_svThumb,
+          .fill = fixedColorSpec(rgba(0.0f, 0.0f, 0.0f, 0.0f)),
+          .radius = 12.0f,
+          .width = 24.0f,
+          .height = 24.0f,
+          .participatesInLayout = false,
+          .configure = [](Box& box) {
             box.setZIndex(6);
             box.setBorder(rgba(1.0f, 1.0f, 1.0f, 1.0f), 2.5f);
           },
-  }));
+      })
+  );
 
-  addChild(ui::box({
-      .out = &m_hueThumb,
-      .radius = 10.0f,
-      .width = 20.0f,
-      .height = 20.0f,
-      .participatesInLayout = false,
-      .configure = [](Box& box) { box.setZIndex(6); },
-  }));
+  addChild(
+      ui::box({
+          .out = &m_hueThumb,
+          .radius = 10.0f,
+          .width = 20.0f,
+          .height = 20.0f,
+          .participatesInLayout = false,
+          .configure = [](Box& box) { box.setZIndex(6); },
+      })
+  );
 
   m_svTextureDirty = true;
   updateHueThumbStyle();
@@ -437,76 +448,80 @@ ColorPickerSheet::ColorPickerSheet(float chromeScale) : m_chromeScale(std::max(0
   setGap(Style::spaceMd * m_chromeScale);
   setPadding(Style::spaceSm * m_chromeScale);
 
-  addChild(ui::row(
-      {
-          .align = FlexAlign::Center,
-          .gap = Style::spaceSm * m_chromeScale,
-      },
-      ui::label({
-          .out = &m_title,
-          .text = i18n::tr("ui.dialogs.color-picker.title"),
-          .fontSize = Style::fontSizeTitle * m_chromeScale,
-          .color = colorSpecFromRole(ColorRole::Primary),
-          .fontWeight = FontWeight::Bold,
-      }),
-      ui::spacer(),
-      ui::button({
-          .glyph = "close",
-          .glyphSize = Style::fontSizeBody * m_chromeScale,
-          .variant = ButtonVariant::Default,
-          .minWidth = Style::controlHeightSm * m_chromeScale,
-          .minHeight = Style::controlHeightSm * m_chromeScale,
-          .padding = Style::spaceXs * m_chromeScale,
-          .radius = Style::scaledRadiusMd(m_chromeScale),
-          .onClick =
-              [this]() {
+  addChild(
+      ui::row(
+          {
+              .align = FlexAlign::Center,
+              .gap = Style::spaceSm * m_chromeScale,
+          },
+          ui::label({
+              .out = &m_title,
+              .text = i18n::tr("ui.dialogs.color-picker.title"),
+              .fontSize = Style::fontSizeTitle * m_chromeScale,
+              .color = colorSpecFromRole(ColorRole::Primary),
+              .fontWeight = FontWeight::Bold,
+          }),
+          ui::spacer(),
+          ui::button({
+              .glyph = "close",
+              .glyphSize = Style::fontSizeBody * m_chromeScale,
+              .variant = ButtonVariant::Default,
+              .minWidth = Style::controlHeightSm * m_chromeScale,
+              .minHeight = Style::controlHeightSm * m_chromeScale,
+              .padding = Style::spaceXs * m_chromeScale,
+              .radius = Style::scaledRadiusMd(m_chromeScale),
+              .onClick = [this]() {
                 if (m_onCancel) {
                   m_onCancel();
                 }
               },
-      })));
+          })
+      )
+  );
 
   auto picker = std::make_unique<ColorPicker>();
   picker->setScale(m_chromeScale);
   m_picker = picker.get();
   addChild(std::move(picker));
 
-  addChild(ui::row(
-      {
-          .align = FlexAlign::Center,
-          .justify = FlexJustify::End,
-          .gap = Style::spaceSm * m_chromeScale,
-      },
-      ui::button({
-          .text = i18n::tr("common.actions.cancel"),
-          .variant = ButtonVariant::Secondary,
-          .minWidth = 92.0f * m_chromeScale,
-          .minHeight = Style::controlHeight * m_chromeScale,
-          .paddingV = Style::spaceSm * m_chromeScale,
-          .paddingH = Style::spaceMd * m_chromeScale,
-          .radius = Style::scaledRadiusMd(m_chromeScale),
-          .onClick =
-              [this]() {
-                if (m_onCancel) {
-                  m_onCancel();
-                }
-              },
-      }),
-      ui::button({
-          .text = i18n::tr("common.actions.apply"),
-          .variant = ButtonVariant::Primary,
-          .minWidth = 92.0f * m_chromeScale,
-          .minHeight = Style::controlHeight * m_chromeScale,
-          .paddingV = Style::spaceSm * m_chromeScale,
-          .paddingH = Style::spaceMd * m_chromeScale,
-          .radius = Style::scaledRadiusMd(m_chromeScale),
-          .onClick =
-              [this]() {
+  addChild(
+      ui::row(
+          {
+              .align = FlexAlign::Center,
+              .justify = FlexJustify::End,
+              .gap = Style::spaceSm * m_chromeScale,
+          },
+          ui::button({
+              .text = i18n::tr("common.actions.cancel"),
+              .variant = ButtonVariant::Secondary,
+              .minWidth = 92.0f * m_chromeScale,
+              .minHeight = Style::controlHeight * m_chromeScale,
+              .paddingV = Style::spaceSm * m_chromeScale,
+              .paddingH = Style::spaceMd * m_chromeScale,
+              .radius = Style::scaledRadiusMd(m_chromeScale),
+              .onClick =
+                  [this]() {
+                    if (m_onCancel) {
+                      m_onCancel();
+                    }
+                  },
+          }),
+          ui::button({
+              .text = i18n::tr("common.actions.apply"),
+              .variant = ButtonVariant::Primary,
+              .minWidth = 92.0f * m_chromeScale,
+              .minHeight = Style::controlHeight * m_chromeScale,
+              .paddingV = Style::spaceSm * m_chromeScale,
+              .paddingH = Style::spaceMd * m_chromeScale,
+              .radius = Style::scaledRadiusMd(m_chromeScale),
+              .onClick = [this]() {
                 if (m_picker != nullptr && m_onApply) {
                   m_onApply(m_picker->color());
                 }
               },
-      })));
+          })
+      )
+  );
 }
 
 InputArea* ColorPickerSheet::initialFocusArea() const noexcept {

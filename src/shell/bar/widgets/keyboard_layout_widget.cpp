@@ -287,8 +287,9 @@ namespace {
 
 } // namespace
 
-KeyboardLayoutWidget::KeyboardLayoutWidget(CompositorPlatform& platform, std::string cycleCommand,
-                                           DisplayMode displayMode, bool hideLabel)
+KeyboardLayoutWidget::KeyboardLayoutWidget(
+    CompositorPlatform& platform, std::string cycleCommand, DisplayMode displayMode, bool hideLabel
+)
     : m_platform(platform), m_cycleCommand(std::move(cycleCommand)), m_displayMode(displayMode),
       m_hideLabel(hideLabel) {}
 
@@ -309,19 +310,23 @@ void KeyboardLayoutWidget::create() {
     cycleLayout();
   });
 
-  area->addChild(ui::glyph({
-      .out = &m_glyph,
-      .glyph = "keyboard",
-      .glyphSize = Style::barGlyphSize * m_contentScale,
-      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
-  }));
+  area->addChild(
+      ui::glyph({
+          .out = &m_glyph,
+          .glyph = "keyboard",
+          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+      })
+  );
 
-  area->addChild(ui::label({
-      .out = &m_label,
-      .text = "--",
-      .fontSize = Style::fontSizeBody * m_contentScale,
-      .fontWeight = labelFontWeight(),
-  }));
+  area->addChild(
+      ui::label({
+          .out = &m_label,
+          .text = "--",
+          .fontSize = Style::fontSizeBody * m_contentScale,
+          .fontWeight = labelFontWeight(),
+      })
+  );
 
   setRoot(std::move(area));
 

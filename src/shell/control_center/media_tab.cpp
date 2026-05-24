@@ -66,8 +66,10 @@ namespace {
 
 } // namespace
 
-MediaTab::MediaTab(MprisService* mpris, HttpClient* httpClient, PipeWireSpectrum* spectrum, ConfigService* config,
-                   WaylandConnection* wayland, RenderContext* renderContext)
+MediaTab::MediaTab(
+    MprisService* mpris, HttpClient* httpClient, PipeWireSpectrum* spectrum, ConfigService* config,
+    WaylandConnection* wayland, RenderContext* renderContext
+)
     : m_mpris(mpris), m_httpClient(httpClient), m_spectrum(spectrum), m_config(config), m_wayland(wayland),
       m_renderContext(renderContext) {}
 
@@ -81,11 +83,13 @@ void MediaTab::openPlayerMenu() {
   const auto pinnedBusName = m_mpris->pinnedPlayerPreference();
   std::vector<ContextMenuControlEntry> entries;
   entries.reserve(m_playerBusNames.size() + 1);
-  entries.push_back({.id = 0,
-                     .label = i18n::tr("control-center.media.active-player"),
-                     .enabled = true,
-                     .separator = false,
-                     .hasSubmenu = false});
+  entries.push_back(
+      {.id = 0,
+       .label = i18n::tr("control-center.media.active-player"),
+       .enabled = true,
+       .separator = false,
+       .hasSubmenu = false}
+  );
   for (std::size_t i = 0; i < m_playerBusNames.size(); ++i) {
     const auto& busName = m_playerBusNames[i];
     const bool selected = pinnedBusName.has_value() && busName == *pinnedBusName;
@@ -94,11 +98,13 @@ void MediaTab::openPlayerMenu() {
       identity = it->second.identity;
     }
     const std::string label = (selected ? "• " : "") + (identity.empty() ? busName : identity);
-    entries.push_back({.id = static_cast<std::int32_t>(i + 1),
-                       .label = label,
-                       .enabled = true,
-                       .separator = false,
-                       .hasSubmenu = false});
+    entries.push_back(
+        {.id = static_cast<std::int32_t>(i + 1),
+         .label = label,
+         .enabled = true,
+         .separator = false,
+         .hasSubmenu = false}
+    );
   }
 
   Flex* anchor = m_playerMenuButton->parent() != nullptr ? static_cast<Flex*>(m_playerMenuButton->parent())
@@ -117,8 +123,10 @@ void MediaTab::openPlayerMenu() {
   Node::absolutePosition(anchor, anchorAbsX, anchorAbsY);
 
   const float scale = contentScale();
-  const float menuWidth = std::clamp(kMediaUnit * 6.0f * scale, kMediaUnit * 4.2f * scale,
-                                     m_nowCard != nullptr ? std::max(1.0f, m_nowCard->width()) : 240.0f * scale);
+  const float menuWidth = std::clamp(
+      kMediaUnit * 6.0f * scale, kMediaUnit * 4.2f * scale,
+      m_nowCard != nullptr ? std::max(1.0f, m_nowCard->width()) : 240.0f * scale
+  );
 
   if (m_config != nullptr) {
     m_playerMenuPopup->setShadowConfig(m_config->config().shell.shadow);
@@ -131,9 +139,11 @@ void MediaTab::openPlayerMenu() {
     PanelManager::instance().endAttachedPopup(parentSurface);
   });
 
-  m_playerMenuPopup->open(std::move(entries), menuWidth, 10, static_cast<std::int32_t>(anchorAbsX),
-                          static_cast<std::int32_t>(anchorAbsY), static_cast<std::int32_t>(anchor->width()),
-                          static_cast<std::int32_t>(anchor->height()), parentCtx->layerSurface, parentCtx->output);
+  m_playerMenuPopup->open(
+      std::move(entries), menuWidth, 10, static_cast<std::int32_t>(anchorAbsX), static_cast<std::int32_t>(anchorAbsY),
+      static_cast<std::int32_t>(anchor->width()), static_cast<std::int32_t>(anchor->height()), parentCtx->layerSurface,
+      parentCtx->output
+  );
 
   m_playerMenuOpen = true;
 }
@@ -159,43 +169,45 @@ std::unique_ptr<Flex> MediaTab::create() {
       .gap = Style::spaceMd * scale,
       .minHeight = kMediaNowCardMinHeight * scale,
       .flexGrow = 1.0f,
-      .configure = [scale, opacity = panelCardOpacity(), borders = panelBordersEnabled()](
-                       Flex& card) { applySectionCardStyle(card, scale, opacity, borders); },
+      .configure = [scale, opacity = panelCardOpacity(), borders = panelBordersEnabled()](Flex& card) {
+        applySectionCardStyle(card, scale, opacity, borders);
+      },
   });
 
-  auto nowHeader = ui::row({.align = FlexAlign::Center,
-                            .justify = FlexJustify::SpaceBetween,
-                            .gap = Style::spaceSm * scale,
-                            .minHeight = Style::controlHeightSm * scale},
-                           ui::label({
-                               .text = i18n::tr("control-center.media.now-playing"),
-                               .fontSize = Style::fontSizeTitle * scale,
-                               .color = colorSpecFromRole(ColorRole::OnSurface),
-                               .fontWeight = FontWeight::Bold,
-                               .flexGrow = 1.0f,
-                           }),
-                           ui::button({
-                               .out = &m_playerMenuButton,
-                               .glyph = "headphones",
-                               .glyphSize = Style::fontSizeBody * scale,
-                               .enabled = false,
-                               .variant = ButtonVariant::Ghost,
-                               .minWidth = Style::controlHeightSm * scale,
-                               .minHeight = Style::controlHeightSm * scale,
-                               .padding = Style::spaceXs * scale,
-                               .onClick =
-                                   [this]() {
-                                     if (m_playerBusNames.empty()) {
-                                       return;
-                                     }
-                                     if (m_playerMenuPopup != nullptr && m_playerMenuPopup->isOpen()) {
-                                       m_playerMenuPopup->close();
-                                       PanelManager::instance().clearActivePopup();
-                                     } else {
-                                       openPlayerMenu();
-                                     }
-                                   },
-                           }));
+  auto nowHeader = ui::row(
+      {.align = FlexAlign::Center,
+       .justify = FlexJustify::SpaceBetween,
+       .gap = Style::spaceSm * scale,
+       .minHeight = Style::controlHeightSm * scale},
+      ui::label({
+          .text = i18n::tr("control-center.media.now-playing"),
+          .fontSize = Style::fontSizeTitle * scale,
+          .color = colorSpecFromRole(ColorRole::OnSurface),
+          .fontWeight = FontWeight::Bold,
+          .flexGrow = 1.0f,
+      }),
+      ui::button({
+          .out = &m_playerMenuButton,
+          .glyph = "headphones",
+          .glyphSize = Style::fontSizeBody * scale,
+          .enabled = false,
+          .variant = ButtonVariant::Ghost,
+          .minWidth = Style::controlHeightSm * scale,
+          .minHeight = Style::controlHeightSm * scale,
+          .padding = Style::spaceXs * scale,
+          .onClick = [this]() {
+            if (m_playerBusNames.empty()) {
+              return;
+            }
+            if (m_playerMenuPopup != nullptr && m_playerMenuPopup->isOpen()) {
+              m_playerMenuPopup->close();
+              PanelManager::instance().clearActivePopup();
+            } else {
+              openPlayerMenu();
+            }
+          },
+      })
+  );
   nowCard->addChild(std::move(nowHeader));
 
   auto mediaStack = ui::column({
@@ -213,80 +225,88 @@ std::unique_ptr<Flex> MediaTab::create() {
           .radius = Style::scaledRadiusXl(scale),
           .width = kArtworkSize * scale,
           .height = kArtworkSize * scale,
-      }));
+      })
+  );
   mediaStack->addChild(std::move(artworkRow));
 
-  mediaStack->addChild(ui::column({.align = FlexAlign::Stretch, .gap = Style::spaceSm * scale},
-                                  ui::label({
-                                      .out = &m_trackTitle,
-                                      .text = i18n::tr("control-center.media.nothing-playing"),
-                                      .fontSize = (Style::fontSizeTitle + Style::spaceXs) * scale,
-                                      .color = colorSpecFromRole(ColorRole::OnSurface),
-                                      .fontWeight = FontWeight::Bold,
-                                  }),
-                                  ui::label({
-                                      .out = &m_trackArtist,
-                                      .text = i18n::tr("control-center.media.start-playback"),
-                                      .fontSize = Style::fontSizeBody * scale,
-                                      .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                                  }),
-                                  ui::label({
-                                      .out = &m_trackAlbum,
-                                      .text = "",
-                                      .fontSize = Style::fontSizeCaption * scale,
-                                      .color = colorSpecFromRole(ColorRole::Secondary),
-                                      .visible = false,
-                                      .configure = [](Label& label) { label.setCaptionStyle(); },
-                                  })));
+  mediaStack->addChild(
+      ui::column(
+          {.align = FlexAlign::Stretch, .gap = Style::spaceSm * scale},
+          ui::label({
+              .out = &m_trackTitle,
+              .text = i18n::tr("control-center.media.nothing-playing"),
+              .fontSize = (Style::fontSizeTitle + Style::spaceXs) * scale,
+              .color = colorSpecFromRole(ColorRole::OnSurface),
+              .fontWeight = FontWeight::Bold,
+          }),
+          ui::label({
+              .out = &m_trackArtist,
+              .text = i18n::tr("control-center.media.start-playback"),
+              .fontSize = Style::fontSizeBody * scale,
+              .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+          }),
+          ui::label({
+              .out = &m_trackAlbum,
+              .text = "",
+              .fontSize = Style::fontSizeCaption * scale,
+              .color = colorSpecFromRole(ColorRole::Secondary),
+              .visible = false,
+              .configure = [](Label& label) { label.setCaptionStyle(); },
+          })
+      )
+  );
 
-  mediaStack->addChild(ui::slider({
-      .out = &m_progressSlider,
-      .minValue = 0.0f,
-      .maxValue = 100.0f,
-      .step = 1.0f,
-      .trackHeight = 7.0f * scale,
-      .thumbSize = 16.0f * scale,
-      .controlHeight = (Style::controlHeight + Style::spaceXs) * scale,
-      .onValueChanged =
-          [this](float value) {
-            if (m_syncingProgress || m_mpris == nullptr) {
-              return;
-            }
-            const auto active = m_mpris->activePlayer();
-            const std::int64_t targetUs = static_cast<std::int64_t>(std::llround(value * 1000000.0f));
-            const auto now = std::chrono::steady_clock::now();
-            m_positionUs = targetUs;
-            m_positionSampleAt = now;
-            m_pendingSeekBusName =
-                active.has_value() ? active->busName : (!m_positionBusName.empty() ? m_positionBusName : std::string{});
-            m_pendingSeekUs = targetUs;
-            m_pendingSeekUntil = now + kPendingSeekTimeout;
-            m_progressSettleUntil = now + kProgressSettleHold;
-          },
-      .onDragEnd =
-          [this]() {
-            if (m_syncingProgress || m_mpris == nullptr || m_progressSlider == nullptr) {
-              return;
-            }
-            commitPendingSeek(m_progressSlider->value());
-          },
-  }));
+  mediaStack->addChild(
+      ui::slider({
+          .out = &m_progressSlider,
+          .minValue = 0.0f,
+          .maxValue = 100.0f,
+          .step = 1.0f,
+          .trackHeight = 7.0f * scale,
+          .thumbSize = 16.0f * scale,
+          .controlHeight = (Style::controlHeight + Style::spaceXs) * scale,
+          .onValueChanged =
+              [this](float value) {
+                if (m_syncingProgress || m_mpris == nullptr) {
+                  return;
+                }
+                const auto active = m_mpris->activePlayer();
+                const std::int64_t targetUs = static_cast<std::int64_t>(std::llround(value * 1000000.0f));
+                const auto now = std::chrono::steady_clock::now();
+                m_positionUs = targetUs;
+                m_positionSampleAt = now;
+                m_pendingSeekBusName = active.has_value()
+                                           ? active->busName
+                                           : (!m_positionBusName.empty() ? m_positionBusName : std::string{});
+                m_pendingSeekUs = targetUs;
+                m_pendingSeekUntil = now + kPendingSeekTimeout;
+                m_progressSettleUntil = now + kProgressSettleHold;
+              },
+          .onDragEnd =
+              [this]() {
+                if (m_syncingProgress || m_mpris == nullptr || m_progressSlider == nullptr) {
+                  return;
+                }
+                commitPendingSeek(m_progressSlider->value());
+              },
+      })
+  );
 
   auto controls = ui::row({
       .align = FlexAlign::Center,
       .gap = Style::spaceMd * scale,
   });
 
-  controls->addChild(ui::button({
-      .out = &m_repeatButton,
-      .glyph = "repeat",
-      .variant = ButtonVariant::Ghost,
-      .minWidth = kMediaControlsHeight * scale,
-      .minHeight = kMediaControlsHeight * scale,
-      .padding = Style::spaceSm * scale,
-      .radius = Style::scaledRadiusLg(scale),
-      .onClick =
-          [this]() {
+  controls->addChild(
+      ui::button({
+          .out = &m_repeatButton,
+          .glyph = "repeat",
+          .variant = ButtonVariant::Ghost,
+          .minWidth = kMediaControlsHeight * scale,
+          .minHeight = kMediaControlsHeight * scale,
+          .padding = Style::spaceSm * scale,
+          .radius = Style::scaledRadiusLg(scale),
+          .onClick = [this]() {
             const std::weak_ptr<void> aliveGuard = m_aliveGuard;
             DeferredCall::callLater([this, aliveGuard]() {
               if (aliveGuard.expired() || m_mpris == nullptr) {
@@ -298,18 +318,19 @@ std::unique_ptr<Flex> MediaTab::create() {
               PanelManager::instance().refresh();
             });
           },
-  }));
+      })
+  );
 
-  controls->addChild(ui::button({
-      .out = &m_prevButton,
-      .glyph = "media-prev",
-      .variant = ButtonVariant::Ghost,
-      .minWidth = kMediaControlsHeight * scale,
-      .minHeight = kMediaControlsHeight * scale,
-      .padding = Style::spaceSm * scale,
-      .radius = Style::scaledRadiusLg(scale),
-      .onClick =
-          [this]() {
+  controls->addChild(
+      ui::button({
+          .out = &m_prevButton,
+          .glyph = "media-prev",
+          .variant = ButtonVariant::Ghost,
+          .minWidth = kMediaControlsHeight * scale,
+          .minHeight = kMediaControlsHeight * scale,
+          .padding = Style::spaceSm * scale,
+          .radius = Style::scaledRadiusLg(scale),
+          .onClick = [this]() {
             const std::weak_ptr<void> aliveGuard = m_aliveGuard;
             DeferredCall::callLater([this, aliveGuard]() {
               if (aliveGuard.expired() || m_mpris == nullptr) {
@@ -319,18 +340,19 @@ std::unique_ptr<Flex> MediaTab::create() {
               PanelManager::instance().refresh();
             });
           },
-  }));
+      })
+  );
 
-  controls->addChild(ui::button({
-      .out = &m_playPauseButton,
-      .glyph = "media-play",
-      .variant = ButtonVariant::Primary,
-      .minWidth = kMediaPlayPauseHeight * scale,
-      .minHeight = kMediaPlayPauseHeight * scale,
-      .padding = Style::spaceSm * scale,
-      .radius = Style::scaledRadiusLg(scale),
-      .onClick =
-          [this]() {
+  controls->addChild(
+      ui::button({
+          .out = &m_playPauseButton,
+          .glyph = "media-play",
+          .variant = ButtonVariant::Primary,
+          .minWidth = kMediaPlayPauseHeight * scale,
+          .minHeight = kMediaPlayPauseHeight * scale,
+          .padding = Style::spaceSm * scale,
+          .radius = Style::scaledRadiusLg(scale),
+          .onClick = [this]() {
             const std::weak_ptr<void> aliveGuard = m_aliveGuard;
             DeferredCall::callLater([this, aliveGuard]() {
               if (aliveGuard.expired() || m_mpris == nullptr) {
@@ -340,18 +362,19 @@ std::unique_ptr<Flex> MediaTab::create() {
               PanelManager::instance().refresh();
             });
           },
-  }));
+      })
+  );
 
-  controls->addChild(ui::button({
-      .out = &m_nextButton,
-      .glyph = "media-next",
-      .variant = ButtonVariant::Ghost,
-      .minWidth = kMediaControlsHeight * scale,
-      .minHeight = kMediaControlsHeight * scale,
-      .padding = Style::spaceSm * scale,
-      .radius = Style::scaledRadiusLg(scale),
-      .onClick =
-          [this]() {
+  controls->addChild(
+      ui::button({
+          .out = &m_nextButton,
+          .glyph = "media-next",
+          .variant = ButtonVariant::Ghost,
+          .minWidth = kMediaControlsHeight * scale,
+          .minHeight = kMediaControlsHeight * scale,
+          .padding = Style::spaceSm * scale,
+          .radius = Style::scaledRadiusLg(scale),
+          .onClick = [this]() {
             const std::weak_ptr<void> aliveGuard = m_aliveGuard;
             DeferredCall::callLater([this, aliveGuard]() {
               if (aliveGuard.expired() || m_mpris == nullptr) {
@@ -361,18 +384,19 @@ std::unique_ptr<Flex> MediaTab::create() {
               PanelManager::instance().refresh();
             });
           },
-  }));
+      })
+  );
 
-  controls->addChild(ui::button({
-      .out = &m_shuffleButton,
-      .glyph = "shuffle",
-      .variant = ButtonVariant::Ghost,
-      .minWidth = kMediaControlsHeight * scale,
-      .minHeight = kMediaControlsHeight * scale,
-      .padding = Style::spaceSm * scale,
-      .radius = Style::scaledRadiusLg(scale),
-      .onClick =
-          [this]() {
+  controls->addChild(
+      ui::button({
+          .out = &m_shuffleButton,
+          .glyph = "shuffle",
+          .variant = ButtonVariant::Ghost,
+          .minWidth = kMediaControlsHeight * scale,
+          .minHeight = kMediaControlsHeight * scale,
+          .padding = Style::spaceSm * scale,
+          .radius = Style::scaledRadiusLg(scale),
+          .onClick = [this]() {
             const std::weak_ptr<void> aliveGuard = m_aliveGuard;
             DeferredCall::callLater([this, aliveGuard]() {
               if (aliveGuard.expired() || m_mpris == nullptr) {
@@ -383,7 +407,8 @@ std::unique_ptr<Flex> MediaTab::create() {
               PanelManager::instance().refresh();
             });
           },
-  }));
+      })
+  );
 
   auto controlsRow = ui::row({
       .align = FlexAlign::Center,
@@ -403,8 +428,9 @@ std::unique_ptr<Flex> MediaTab::create() {
       .gap = Style::spaceSm * scale,
       .clipChildren = true,
       .flexGrow = 2.0f,
-      .configure = [scale, opacity = panelCardOpacity(), borders = panelBordersEnabled()](
-                       Flex& column) { applySectionCardStyle(column, scale, opacity, borders); },
+      .configure = [scale, opacity = panelCardOpacity(), borders = panelBordersEnabled()](Flex& column) {
+        applySectionCardStyle(column, scale, opacity, borders);
+      },
   });
 
   auto visualizerBody = ui::row({
@@ -516,9 +542,10 @@ void MediaTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight
   if (m_artwork != nullptr && m_artworkRow != nullptr) {
     const float artWidth =
         std::max(1.0f, m_artworkRow->width() - (m_artworkRow->paddingLeft() + m_artworkRow->paddingRight()));
-    const float artHeight =
-        std::max(kMediaArtworkMinHeight * scale,
-                 m_artworkRow->height() - (m_artworkRow->paddingTop() + m_artworkRow->paddingBottom()));
+    const float artHeight = std::max(
+        kMediaArtworkMinHeight * scale,
+        m_artworkRow->height() - (m_artworkRow->paddingTop() + m_artworkRow->paddingBottom())
+    );
     float targetWidth = artWidth;
     float targetHeight = artHeight;
     if (m_artwork->hasImage()) {
@@ -536,10 +563,12 @@ void MediaTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight
   }
 
   if (m_visualizerBody != nullptr && m_visualizerSpectrum != nullptr) {
-    const float bodyWidth = std::max(0.0f, m_visualizerBody->width() -
-                                               (m_visualizerBody->paddingLeft() + m_visualizerBody->paddingRight()));
+    const float bodyWidth = std::max(
+        0.0f, m_visualizerBody->width() - (m_visualizerBody->paddingLeft() + m_visualizerBody->paddingRight())
+    );
     const float bodyHeightAvail = std::max(
-        0.0f, m_visualizerBody->height() - (m_visualizerBody->paddingTop() + m_visualizerBody->paddingBottom()));
+        0.0f, m_visualizerBody->height() - (m_visualizerBody->paddingTop() + m_visualizerBody->paddingBottom())
+    );
     const float spectrumWidth = std::max(1.0f, bodyWidth);
     const float spectrumHeight = std::max(1.0f, bodyHeightAvail);
     m_visualizerSpectrum->setSize(spectrumWidth, spectrumHeight);
@@ -716,8 +745,10 @@ void MediaTab::refresh(Renderer& renderer) {
   if (m_mpris != nullptr) {
     players = m_mpris->listPlayers();
     active = m_mpris->activePlayer();
-    kLog.debug("media tab refresh initial players={} active={} active_bus=\"{}\"", players.size(), active.has_value(),
-               active.has_value() ? active->busName : std::string{});
+    kLog.debug(
+        "media tab refresh initial players={} active={} active_bus=\"{}\"", players.size(), active.has_value(),
+        active.has_value() ? active->busName : std::string{}
+    );
   }
 
   if (!active.has_value() && m_lastActiveSnapshot.has_value() && now - m_lastActiveSeenAt <= kNoActivePlayerGrace) {
@@ -731,22 +762,26 @@ void MediaTab::refresh(Renderer& renderer) {
     playerBusNames.reserve(players.size());
     std::vector<ContextMenuControlEntry> entries;
     entries.reserve(players.size() + 1);
-    entries.push_back({.id = 0,
-                       .label = i18n::tr("control-center.media.active-player"),
-                       .enabled = true,
-                       .separator = false,
-                       .hasSubmenu = false});
+    entries.push_back(
+        {.id = 0,
+         .label = i18n::tr("control-center.media.active-player"),
+         .enabled = true,
+         .separator = false,
+         .hasSubmenu = false}
+    );
 
     for (std::size_t i = 0; i < players.size(); ++i) {
       const auto& player = players[i];
       playerBusNames.push_back(player.busName);
       const bool selected = pinnedBusName.has_value() && player.busName == *pinnedBusName;
       const std::string label = (selected ? "• " : "") + (player.identity.empty() ? player.busName : player.identity);
-      entries.push_back({.id = static_cast<std::int32_t>(i + 1),
-                         .label = label,
-                         .enabled = true,
-                         .separator = false,
-                         .hasSubmenu = false});
+      entries.push_back(
+          {.id = static_cast<std::int32_t>(i + 1),
+           .label = label,
+           .enabled = true,
+           .separator = false,
+           .hasSubmenu = false}
+      );
     }
 
     m_playerBusNames = std::move(playerBusNames);
@@ -767,8 +802,9 @@ void MediaTab::refresh(Renderer& renderer) {
     const auto& player = *active;
     m_lastActiveSnapshot = player;
     m_lastActiveSeenAt = now;
-    const std::string trackSignature = std::format("{}\n{}\n{}\n{}\n{}", player.trackId, player.title,
-                                                   joinArtists(player.artists), player.album, player.sourceUrl);
+    const std::string trackSignature = std::format(
+        "{}\n{}\n{}\n{}\n{}", player.trackId, player.title, joinArtists(player.artists), player.album, player.sourceUrl
+    );
     std::int64_t livePositionUs = player.positionUs;
     if (player.lengthUs > 0) {
       livePositionUs = std::clamp<std::int64_t>(livePositionUs, 0, player.lengthUs);
