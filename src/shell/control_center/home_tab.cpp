@@ -1092,6 +1092,7 @@ void HomeTab::sync(Renderer& renderer) {
               m_mediaArt->clear(renderer);
             }
             m_mediaArt->setVisible(loaded);
+            m_mediaArtFallback->setVisible(!loaded);
             m_loadedMediaArtUrl = loaded ? artUrl : std::string{};
             PanelManager::instance().requestLayout();
           }
