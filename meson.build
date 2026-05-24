@@ -595,7 +595,6 @@ _noctalia_sources = files(
   'src/ui/controls/button.cpp',
   'src/ui/controls/checkbox.cpp',
   'src/ui/controls/color_picker.cpp',
-  'src/ui/controls/chip.cpp',
   'src/ui/controls/collapsible.cpp',
   'src/ui/controls/context_menu.cpp',
   'src/ui/controls/context_menu_popup.cpp',

@@ -6,7 +6,6 @@
 #include "ui/controls/box.h"
 #include "ui/controls/button.h"
 #include "ui/controls/checkbox.h"
-#include "ui/controls/chip.h"
 #include "ui/controls/flex.h"
 #include "ui/controls/glyph.h"
 #include "ui/controls/image.h"
@@ -470,19 +469,6 @@ namespace ui {
     std::function<void(Spinner&)> configure = nullptr;
   };
 
-  struct ChipProps {
-    Chip** out = nullptr;
-    std::optional<std::string> text = std::nullopt;
-    std::optional<bool> active = std::nullopt;
-    std::optional<float> width = std::nullopt;
-    std::optional<float> height = std::nullopt;
-    std::optional<float> flexGrow = std::nullopt;
-    std::optional<float> opacity = std::nullopt;
-    std::optional<bool> visible = std::nullopt;
-    std::optional<bool> participatesInLayout = std::nullopt;
-    std::function<void(Chip&)> configure = nullptr;
-  };
-
   struct ProgressBarProps {
     ProgressBar** out = nullptr;
     std::optional<ColorSpec> fill = std::nullopt;
@@ -521,7 +507,6 @@ namespace ui {
   [[nodiscard]] std::unique_ptr<Stepper> stepper(StepperProps props);
   [[nodiscard]] std::unique_ptr<KeybindRecorder> keybindRecorder(KeybindRecorderProps props);
   [[nodiscard]] std::unique_ptr<Spinner> spinner(SpinnerProps props = {});
-  [[nodiscard]] std::unique_ptr<Chip> chip(ChipProps props = {});
   [[nodiscard]] std::unique_ptr<ProgressBar> progressBar(ProgressBarProps props = {});
   [[nodiscard]] std::unique_ptr<Spacer> spacer();
 
