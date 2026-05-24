@@ -114,6 +114,48 @@ void DesktopSysmonWidget::onFrameTick(float deltaMs, Renderer& renderer) {
   requestRedraw();
 }
 
+bool DesktopSysmonWidget::applySetting(const std::string& key, const WidgetSettingValue& value,
+                                       const std::unordered_map<std::string, WidgetSettingValue>& allSettings,
+                                       Renderer& renderer) {
+  if (key == "color") {
+    if (const auto* v = std::get_if<std::string>(&value)) {
+      m_lineColor = colorSpecFromConfigString(*v, key);
+      layout(renderer);
+      return true;
+    }
+    return false;
+  }
+  if (key == "color2") {
+    if (const auto* v = std::get_if<std::string>(&value)) {
+      m_lineColor2 = colorSpecFromConfigString(*v, key);
+      layout(renderer);
+      return true;
+    }
+    return false;
+  }
+  if (key == "shadow") {
+    if (const auto* v = std::get_if<bool>(&value)) {
+      m_shadow = *v;
+      const Color shadow{0.0f, 0.0f, 0.0f, 0.5f};
+      if (m_glyph != nullptr) {
+        if (m_shadow)
+          m_glyph->setShadow(shadow, 0.0f, 1.0f);
+        else
+          m_glyph->clearShadow();
+      }
+      if (m_label != nullptr) {
+        if (m_shadow)
+          m_label->setShadow(shadow, 0.0f, 1.0f);
+        else
+          m_label->clearShadow();
+      }
+      return true;
+    }
+    return false;
+  }
+  return DesktopWidget::applySetting(key, value, allSettings, renderer);
+}
+
 void DesktopSysmonWidget::doLayout(Renderer& renderer) {
   if (root() == nullptr || m_glyph == nullptr) {
     return;

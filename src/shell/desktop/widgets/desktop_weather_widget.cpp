@@ -70,6 +70,33 @@ void DesktopWeatherWidget::create() {
   applyShadow();
 }
 
+bool DesktopWeatherWidget::applySetting(const std::string& key, const WidgetSettingValue& value,
+                                        const std::unordered_map<std::string, WidgetSettingValue>& allSettings,
+                                        Renderer& renderer) {
+  if (key == "color") {
+    if (const auto* v = std::get_if<std::string>(&value)) {
+      m_color = colorSpecFromConfigString(*v, key);
+      if (m_glyph != nullptr)
+        m_glyph->setColor(m_color);
+      if (m_temperature != nullptr)
+        m_temperature->setColor(m_color);
+      if (m_condition != nullptr)
+        m_condition->setColor(m_color);
+      return true;
+    }
+    return false;
+  }
+  if (key == "shadow") {
+    if (const auto* v = std::get_if<bool>(&value)) {
+      m_shadow = *v;
+      applyShadow();
+      return true;
+    }
+    return false;
+  }
+  return DesktopWidget::applySetting(key, value, allSettings, renderer);
+}
+
 void DesktopWeatherWidget::doLayout(Renderer& renderer) {
   if (root() == nullptr || m_glyph == nullptr || m_temperature == nullptr || m_condition == nullptr) {
     return;

@@ -50,6 +50,28 @@ bool DesktopClockWidget::wantsSecondTicks() const { return m_showsSeconds; }
 
 std::string DesktopClockWidget::formatText() const { return formatLocalTime(m_format.c_str()); }
 
+bool DesktopClockWidget::applySetting(const std::string& key, const WidgetSettingValue& value,
+                                      const std::unordered_map<std::string, WidgetSettingValue>& allSettings,
+                                      Renderer& renderer) {
+  if (key == "color") {
+    if (const auto* v = std::get_if<std::string>(&value); v != nullptr && m_label != nullptr) {
+      m_color = colorSpecFromConfigString(*v, key);
+      m_label->setColor(m_color);
+      return true;
+    }
+    return false;
+  }
+  if (key == "shadow") {
+    if (const auto* v = std::get_if<bool>(&value)) {
+      m_shadow = *v;
+      applyShadow();
+      return true;
+    }
+    return false;
+  }
+  return DesktopWidget::applySetting(key, value, allSettings, renderer);
+}
+
 void DesktopClockWidget::doLayout(Renderer& renderer) {
   if (m_label == nullptr || root() == nullptr) {
     return;

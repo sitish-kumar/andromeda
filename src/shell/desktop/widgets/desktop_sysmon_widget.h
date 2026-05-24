@@ -24,6 +24,9 @@ public:
   ~DesktopSysmonWidget() override;
 
   void create() override;
+  bool applySetting(const std::string& key, const WidgetSettingValue& value,
+                    const std::unordered_map<std::string, WidgetSettingValue>& allSettings,
+                    Renderer& renderer) override;
   [[nodiscard]] bool needsFrameTick() const override { return true; }
   void onFrameTick(float deltaMs, Renderer& renderer) override;
 

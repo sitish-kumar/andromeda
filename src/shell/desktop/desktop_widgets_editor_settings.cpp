@@ -381,6 +381,15 @@ void DesktopWidgetsEditor::applySettingChange(const std::string& key, WidgetSett
       return;
     }
 
+    if (view.widget != nullptr && view.widget->applySetting(key, value, state->settings, *m_renderContext)) {
+      view.intrinsicWidth = std::max(1.0f, view.widget->intrinsicWidth());
+      view.intrinsicHeight = std::max(1.0f, view.widget->intrinsicHeight());
+      applyViewState(view, *state, false);
+      updateSelectionVisuals(*surface);
+      surface->surface->requestRedraw();
+      return;
+    }
+
     auto newWidget = m_factory->create(state->type, state->settings, widgetContentScale(*state));
     if (newWidget == nullptr) {
       return;

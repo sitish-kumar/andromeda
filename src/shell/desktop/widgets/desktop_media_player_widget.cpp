@@ -107,6 +107,31 @@ void DesktopMediaPlayerWidget::create() {
   applyShadow();
 }
 
+bool DesktopMediaPlayerWidget::applySetting(const std::string& key, const WidgetSettingValue& value,
+                                            const std::unordered_map<std::string, WidgetSettingValue>& allSettings,
+                                            Renderer& renderer) {
+  if (key == "color") {
+    if (const auto* v = std::get_if<std::string>(&value)) {
+      m_color = colorSpecFromConfigString(*v, key);
+      if (m_title != nullptr)
+        m_title->setColor(m_color);
+      if (m_artist != nullptr)
+        m_artist->setColor(m_color);
+      return true;
+    }
+    return false;
+  }
+  if (key == "shadow") {
+    if (const auto* v = std::get_if<bool>(&value)) {
+      m_shadow = *v;
+      applyShadow();
+      return true;
+    }
+    return false;
+  }
+  return DesktopWidget::applySetting(key, value, allSettings, renderer);
+}
+
 void DesktopMediaPlayerWidget::doLayout(Renderer& renderer) {
   if (root() == nullptr || m_artwork == nullptr || m_title == nullptr || m_artist == nullptr || m_controls == nullptr)
     return;

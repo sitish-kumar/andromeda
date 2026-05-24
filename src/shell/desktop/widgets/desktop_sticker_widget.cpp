@@ -54,6 +54,22 @@ void DesktopStickerWidget::create() {
   setRoot(std::move(rootNode));
 }
 
+bool DesktopStickerWidget::applySetting(const std::string& key, const WidgetSettingValue& value,
+                                        const std::unordered_map<std::string, WidgetSettingValue>& allSettings,
+                                        Renderer& renderer) {
+  if (key == "opacity") {
+    if (const auto* v = std::get_if<double>(&value)) {
+      m_opacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
+      if (root() != nullptr) {
+        root()->setOpacity(m_opacity);
+      }
+      return true;
+    }
+    return false;
+  }
+  return DesktopWidget::applySetting(key, value, allSettings, renderer);
+}
+
 void DesktopStickerWidget::doLayout(Renderer& renderer) {
   if (m_image == nullptr || root() == nullptr) {
     return;
