@@ -710,6 +710,9 @@ namespace {
         instance.startSection->setPadding(0.0f, 0.0f, 0.0f, paddingInsideSection);
         instance.endSection->setPadding(0.0f, paddingInsideSection, 0.0f, 0.0f);
       }
+    } else {
+      instance.startSection->setPadding(0.0f);
+      instance.endSection->setPadding(0.0f);
     }
 
     configureSection(instance.startSection, FlexJustify::Start);
