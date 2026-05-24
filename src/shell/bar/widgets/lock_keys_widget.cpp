@@ -4,8 +4,7 @@
 #include "render/core/renderer.h"
 #include "render/scene/node.h"
 #include "system/lock_keys_service.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/label.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "wayland/wayland_seat.h"
@@ -42,24 +41,24 @@ LockKeysWidget::DisplayMode LockKeysWidget::parseDisplayMode(const std::string& 
 void LockKeysWidget::create() {
   auto rootNode = std::make_unique<Node>();
 
-  auto glyph = std::make_unique<Glyph>();
-  glyph->setGlyph("lock");
-  glyph->setGlyphSize(Style::barGlyphSize * m_contentScale);
-  glyph->setColor(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)));
-  m_glyph = glyph.get();
-  rootNode->addChild(std::move(glyph));
+  rootNode->addChild(ui::glyph({
+      .out = &m_glyph,
+      .glyph = "lock",
+      .glyphSize = Style::barGlyphSize * m_contentScale,
+      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+  }));
 
-  auto caps = std::make_unique<Label>();
-  m_capsLabel = caps.get();
-  rootNode->addChild(std::move(caps));
+  rootNode->addChild(ui::label({
+      .out = &m_capsLabel,
+  }));
 
-  auto num = std::make_unique<Label>();
-  m_numLabel = num.get();
-  rootNode->addChild(std::move(num));
+  rootNode->addChild(ui::label({
+      .out = &m_numLabel,
+  }));
 
-  auto scroll = std::make_unique<Label>();
-  m_scrollLabel = scroll.get();
-  rootNode->addChild(std::move(scroll));
+  rootNode->addChild(ui::label({
+      .out = &m_scrollLabel,
+  }));
 
   setRoot(std::move(rootNode));
 }

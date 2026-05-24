@@ -6,16 +6,14 @@
 #include "render/scene/node.h"
 #include "system/format_units.h"
 #include "system/system_monitor_service.h"
-#include "ui/controls/box.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/label.h"
-#include "ui/controls/progress_bar.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 
 #include <algorithm>
 #include <cmath>
 #include <format>
+#include <optional>
 #include <vector>
 
 namespace {
@@ -110,16 +108,15 @@ void SysmonWidget::create() {
   container->setOnClick(
       [this](const InputArea::PointerData& /*data*/) { requestPanelToggle("control-center", "system"); });
 
-  auto glyph = std::make_unique<Glyph>();
-  glyph->setGlyph(glyphName(m_stat));
-  glyph->setGlyphSize(Style::barGlyphSize * m_contentScale);
-  glyph->setColor(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)));
-  m_glyph = glyph.get();
-  container->addChild(std::move(glyph));
+  container->addChild(ui::glyph({
+      .out = &m_glyph,
+      .glyph = glyphName(m_stat),
+      .glyphSize = Style::barGlyphSize * m_contentScale,
+      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+  }));
 
   if (m_displayMode == SysmonDisplayMode::Graph) {
-    auto chartBg = std::make_unique<Box>();
-    m_chartBg = static_cast<Box*>(container->addChild(std::move(chartBg)));
+    m_chartBg = static_cast<Box*>(container->addChild(ui::box()));
 
     auto graph = std::make_unique<GraphNode>();
     graph->setLineWidth(kGraphLineWidth * m_contentScale);
@@ -128,22 +125,21 @@ void SysmonWidget::create() {
   }
 
   if (m_displayMode == SysmonDisplayMode::Gauge) {
-    auto gauge = std::make_unique<ProgressBar>();
-    gauge->setFill(colorSpecFromRole(ColorRole::Primary));
-    gauge->setTrackColor(colorSpecFromRole(ColorRole::OnSurface, 0.25f));
-    gauge->setProgress(0.0f);
-    m_gauge = static_cast<ProgressBar*>(container->addChild(std::move(gauge)));
+    m_gauge = static_cast<ProgressBar*>(container->addChild(ui::progressBar({
+        .fill = colorSpecFromRole(ColorRole::Primary),
+        .track = colorSpecFromRole(ColorRole::OnSurface, 0.25f),
+        .progress = 0.0f,
+    })));
   }
 
   if (m_displayMode == SysmonDisplayMode::Text || m_showLabel) {
-    auto label = std::make_unique<Label>();
-    label->setFontWeight(labelFontWeight());
-    label->setFontSize(Style::fontSizeBody * m_contentScale);
-    if (m_labelMinWidth > 0.0f) {
-      label->setMinWidth(m_labelMinWidth * m_contentScale);
-    }
-    m_label = label.get();
-    container->addChild(std::move(label));
+    container->addChild(ui::label({
+        .out = &m_label,
+        .fontSize = Style::fontSizeBody * m_contentScale,
+        .minWidth =
+            m_labelMinWidth > 0.0f ? std::optional<float>{m_labelMinWidth * m_contentScale} : std::optional<float>{},
+        .fontWeight = labelFontWeight(),
+    }));
   }
 
   setRoot(std::move(container));

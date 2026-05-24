@@ -3,7 +3,7 @@
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
 #include "theme/theme_service.h"
-#include "ui/controls/glyph.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 
@@ -34,12 +34,12 @@ void ThemeModeWidget::create() {
   });
   m_area = area.get();
 
-  auto glyph = std::make_unique<Glyph>();
-  glyph->setGlyph("theme-mode");
-  glyph->setGlyphSize(Style::barGlyphSize * m_contentScale);
-  glyph->setColor(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)));
-  m_glyph = glyph.get();
-  area->addChild(std::move(glyph));
+  area->addChild(ui::glyph({
+      .out = &m_glyph,
+      .glyph = "theme-mode",
+      .glyphSize = Style::barGlyphSize * m_contentScale,
+      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+  }));
 
   setRoot(std::move(area));
 }

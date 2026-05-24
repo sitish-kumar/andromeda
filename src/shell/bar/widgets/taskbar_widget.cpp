@@ -12,13 +12,9 @@
 #include "system/app_identity.h"
 #include "system/desktop_entry.h"
 #include "system/internal_app_metadata.h"
-#include "ui/controls/box.h"
+#include "ui/builders.h"
 #include "ui/controls/context_menu.h"
 #include "ui/controls/context_menu_popup.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/image.h"
-#include "ui/controls/label.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "util/string_utils.h"
@@ -174,18 +170,18 @@ void TaskbarWidget::create() {
     return true;
   });
 
-  auto root = std::make_unique<Flex>();
-  root->setDirection(FlexDirection::Horizontal);
-  root->setAlign(FlexAlign::Center);
-  root->setGap(Style::spaceSm);
+  auto root = ui::row({
+      .out = &m_root,
+      .align = FlexAlign::Center,
+      .gap = Style::spaceSm,
+  });
 
-  auto taskStrip = std::make_unique<Flex>();
-  taskStrip->setDirection(FlexDirection::Horizontal);
-  taskStrip->setAlign(FlexAlign::Center);
-  taskStrip->setGap(Style::spaceSm);
-  m_taskStrip = static_cast<Flex*>(root->addChild(std::move(taskStrip)));
+  root->addChild(ui::row({
+      .out = &m_taskStrip,
+      .align = FlexAlign::Center,
+      .gap = Style::spaceSm,
+  }));
 
-  m_root = root.get();
   container->addChild(std::move(root));
   setRoot(std::move(container));
 }
@@ -325,19 +321,22 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
 
     const bool groupedHorizontalPill = m_groupByWorkspace && !m_vertical;
     if (!task.iconPath.empty()) {
-      auto image = std::make_unique<Image>();
-      image->setFit(ImageFit::Contain);
-      image->setSize(iconSize, iconSize);
       const float iconInsetX = centeredOffset(tileSize, iconSize);
       // Match symmetric pill centering; default odd-pixel bias sits icons ~1px high in grouped capsules.
       const float iconInsetY = centeredOffset(tileSize, iconSize, 0.0f, !groupedHorizontalPill);
+      auto image = ui::image({
+          .fit = ImageFit::Contain,
+          .width = iconSize,
+          .height = iconSize,
+      });
       image->setPosition(iconInsetX, iconInsetY);
       image->setSourceFile(renderer, task.iconPath, static_cast<int>(std::round(48.0f * m_contentScale)), true);
       area->addChild(std::move(image));
     } else {
-      auto glyph = std::make_unique<Glyph>();
-      glyph->setGlyph("apps");
-      glyph->setGlyphSize(iconSize);
+      auto glyph = ui::glyph({
+          .glyph = "apps",
+          .glyphSize = iconSize,
+      });
       glyph->measure(renderer);
       glyph->setPosition(centeredOffset(tileSize, glyph->width()),
                          centeredOffset(tileSize, glyph->height(), 0.0f, !groupedHorizontalPill));
@@ -347,10 +346,12 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     if (task.active) {
       const float d = std::max(4.0f, std::round(Style::barGlyphSize * 0.32f * m_contentScale));
       const float bottomInset = 0.25f * m_contentScale;
-      auto indicator = std::make_unique<Box>();
-      indicator->setFill(colorSpecFromRole(ColorRole::Primary));
-      indicator->setRadius(resolvedBarCapsuleRadius(d, d));
-      indicator->setFrameSize(d, d);
+      auto indicator = ui::box({
+          .fill = colorSpecFromRole(ColorRole::Primary),
+          .radius = resolvedBarCapsuleRadius(d, d),
+          .width = d,
+          .height = d,
+      });
       indicator->setPosition(std::round((tileSize - d) * 0.5f), std::round(tileSize - d - bottomInset));
       area->addChild(std::move(indicator));
     }
@@ -410,18 +411,19 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       const float badgeX = centeredOffset(tileSize, disc.width);
       const float badgeY = centeredOffset(tileSize, disc.height, 0.0f, !groupedHorizontalPill);
 
-      auto badge = std::make_unique<Box>();
+      auto badge = ui::box();
       badge->setPosition(badgeX, badgeY);
       styleWorkspaceDisc(*badge, disc.width, disc.height, ws.workspace);
       auto* badgePtr = static_cast<Box*>(area->addChild(std::move(badge)));
 
       const float badgeFontSize =
           fitBadgeFontSize(renderer, ws.label, disc.width, disc.height, m_contentScale, fontWeight);
-      auto badgeText = std::make_unique<Label>();
-      badgeText->setText(ws.label);
-      badgeText->setFontWeight(fontWeight);
-      badgeText->setFontSize(badgeFontSize);
-      badgeText->setColor(workspaceTextColor(ws.workspace));
+      auto badgeText = ui::label({
+          .text = ws.label,
+          .fontSize = badgeFontSize,
+          .color = workspaceTextColor(ws.workspace),
+          .fontWeight = fontWeight,
+      });
       badgeText->measure(renderer);
       badgeText->setPosition(std::round((disc.width - badgeText->width()) * 0.5f),
                              std::round((disc.height - badgeText->height()) * 0.5f));
@@ -451,18 +453,19 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
         }
       });
 
-      auto badge = std::make_unique<Box>();
+      auto badge = ui::box();
       badge->setPosition(0.0f, 0.0f);
       styleWorkspaceDisc(*badge, disc.width, disc.height, ws.workspace);
       auto* badgePtr = static_cast<Box*>(badgeHit->addChild(std::move(badge)));
 
       const float badgeFontSize =
           fitBadgeFontSize(renderer, ws.label, disc.width, disc.height, m_contentScale, fontWeight);
-      auto badgeText = std::make_unique<Label>();
-      badgeText->setText(ws.label);
-      badgeText->setFontWeight(fontWeight);
-      badgeText->setFontSize(badgeFontSize);
-      badgeText->setColor(workspaceTextColor(ws.workspace));
+      auto badgeText = ui::label({
+          .text = ws.label,
+          .fontSize = badgeFontSize,
+          .color = workspaceTextColor(ws.workspace),
+          .fontWeight = fontWeight,
+      });
       badgeText->measure(renderer);
       badgeText->setPosition(std::round((disc.width - badgeText->width()) * 0.5f),
                              std::round((disc.height - badgeText->height()) * 0.5f));
@@ -560,8 +563,10 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       const float contentOriginMain = externalInsetCapsule ? groupOuterLead : 0.0f;
       const float contentOriginCross = externalInsetCapsule ? groupOuterCrossLead : 0.0f;
 
-      auto group = std::make_unique<Box>();
-      group->setFrameSize(groupWidth, groupHeight);
+      auto group = ui::box({
+          .width = groupWidth,
+          .height = groupHeight,
+      });
       const auto surfaceFill = colorSpecFromRole(ColorRole::SurfaceVariant, ws.workspace.active ? 0.52f : 0.18f);
       const auto borderColor = colorSpecFromRole(ColorRole::Primary, ws.workspace.active ? 0.65f : 0.16f);
       if (m_workspaceGroupCapsule) {
@@ -582,8 +587,10 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
 
       Box* contentPtr = groupPtr;
       if (externalInsetCapsule) {
-        auto inner = std::make_unique<Box>();
-        inner->setFrameSize(contentWidth, contentHeight);
+        auto inner = ui::box({
+            .width = contentWidth,
+            .height = contentHeight,
+        });
         inner->setPosition(m_vertical ? contentOriginCross : contentOriginMain,
                            m_vertical ? contentOriginMain : contentOriginCross);
         inner->setFill(surfaceFill);

@@ -6,8 +6,7 @@
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
-#include "ui/controls/box.h"
-#include "ui/controls/label.h"
+#include "ui/builders.h"
 #include "ui/style.h"
 #include "util/string_utils.h"
 
@@ -286,28 +285,27 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
     item.inkVCenterOffset = slot.inkVCenterOffset;
 
     if (!m_minimal) {
-      auto indicator = std::make_unique<Box>();
-      indicator->clearBorder();
       const float indicatorW = m_isVertical ? m_indicatorHeight : w;
       const float indicatorH = m_isVertical ? w : m_indicatorHeight;
-      indicator->setRadius(workspacePillRadius(indicatorW, indicatorH));
-      indicator->setFrameSize(w, m_indicatorHeight);
-      indicator->setFill(workspaceFillColor(ws));
-      indicator->clearBorder();
-      item.indicator = static_cast<Box*>(area->addChild(std::move(indicator)));
+      item.indicator = static_cast<Box*>(area->addChild(ui::box({
+          .fill = workspaceFillColor(ws),
+          .radius = workspacePillRadius(indicatorW, indicatorH),
+          .width = w,
+          .height = m_indicatorHeight,
+          .configure = [](Box& box) { box.clearBorder(); },
+      })));
     }
 
     if (slot.showLabel) {
-      auto text = std::make_unique<Label>();
-      text->setText(slot.label);
-      text->setFontSize(labelFontSize);
-      text->setFontWeight(workspaceFontWeight(configuredFontWeight, m_minimal, ws.active));
-      text->setColor(workspaceTextColor(ws));
-      if (m_isVertical) {
-        text->setBaselineMode(LabelBaselineMode::InkCentered);
-      }
-      text->measure(renderer);
-      item.text = static_cast<Label*>(area->addChild(std::move(text)));
+      item.text = static_cast<Label*>(area->addChild(ui::label({
+          .text = slot.label,
+          .fontSize = labelFontSize,
+          .color = workspaceTextColor(ws),
+          .fontWeight = workspaceFontWeight(configuredFontWeight, m_minimal, ws.active),
+          .baselineMode = m_isVertical ? std::optional<LabelBaselineMode>{LabelBaselineMode::InkCentered}
+                                       : std::optional<LabelBaselineMode>{},
+      })));
+      item.text->measure(renderer);
     }
 
     auto wsCopy = ws;

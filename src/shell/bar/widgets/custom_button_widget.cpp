@@ -5,8 +5,7 @@
 #include "cursor-shape-v1-client-protocol.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/label.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 
@@ -89,23 +88,23 @@ void CustomButtonWidget::create() {
     area->setTooltip(m_tooltip);
   }
 
-  auto glyph = std::make_unique<Glyph>();
-  glyph->setGlyph(m_glyphName);
-  glyph->setGlyphSize(Style::barGlyphSize * m_contentScale);
-  glyph->setColor(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)));
-  glyph->setVisible(!m_glyphName.empty());
-  m_glyph = glyph.get();
-  area->addChild(std::move(glyph));
+  area->addChild(ui::glyph({
+      .out = &m_glyph,
+      .glyph = m_glyphName,
+      .glyphSize = Style::barGlyphSize * m_contentScale,
+      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+      .visible = !m_glyphName.empty(),
+  }));
 
-  auto label = std::make_unique<Label>();
-  label->setText(m_labelText);
-  label->setFontSize(Style::fontSizeBody * m_contentScale);
-  label->setFontWeight(labelFontWeight());
-  label->setMaxLines(1);
-  label->setColor(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)));
-  label->setVisible(!m_labelText.empty());
-  m_label = label.get();
-  area->addChild(std::move(label));
+  area->addChild(ui::label({
+      .out = &m_label,
+      .text = m_labelText,
+      .fontSize = Style::fontSizeBody * m_contentScale,
+      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+      .maxLines = 1,
+      .fontWeight = labelFontWeight(),
+      .visible = !m_labelText.empty(),
+  }));
 
   m_area = area.get();
   setRoot(std::move(area));

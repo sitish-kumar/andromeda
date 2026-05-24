@@ -842,6 +842,54 @@ namespace ui {
     return control;
   }
 
+  std::unique_ptr<Chip> chip(ChipProps props) {
+    auto control = std::make_unique<Chip>();
+    if (props.text.has_value()) {
+      control->setText(*props.text);
+    }
+    if (props.active.has_value()) {
+      control->setActive(*props.active);
+    }
+    applyNodeProps(*control, props);
+    if (props.configure) {
+      props.configure(*control);
+    }
+    if (props.out != nullptr) {
+      *props.out = control.get();
+    }
+    return control;
+  }
+
+  std::unique_ptr<ProgressBar> progressBar(ProgressBarProps props) {
+    auto control = std::make_unique<ProgressBar>();
+    if (props.fill.has_value()) {
+      control->setFill(*props.fill);
+    }
+    if (props.track.has_value()) {
+      control->setTrack(*props.track);
+    }
+    if (props.radius.has_value()) {
+      control->setRadius(*props.radius);
+    }
+    if (props.softness.has_value()) {
+      control->setSoftness(*props.softness);
+    }
+    if (props.orientation.has_value()) {
+      control->setOrientation(*props.orientation);
+    }
+    if (props.progress.has_value()) {
+      control->setProgress(*props.progress);
+    }
+    applyNodeProps(*control, props);
+    if (props.configure) {
+      props.configure(*control);
+    }
+    if (props.out != nullptr) {
+      *props.out = control.get();
+    }
+    return control;
+  }
+
   std::unique_ptr<Spacer> spacer() { return std::make_unique<Spacer>(); }
 
 } // namespace ui

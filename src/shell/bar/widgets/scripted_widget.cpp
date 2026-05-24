@@ -10,9 +10,7 @@
 #include "pipewire/pipewire_spectrum.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/label.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 
@@ -169,25 +167,24 @@ void ScriptedWidget::create() {
       (void)m_runtime->enqueueCallBool("onHover", false, makeScriptSnapshot());
   });
 
-  auto flex = std::make_unique<Flex>();
-  flex->setDirection(FlexDirection::Horizontal);
-  flex->setAlign(FlexAlign::Center);
-  flex->setGap(Style::spaceXs);
+  auto flex = ui::row({
+      .out = &m_flex,
+      .align = FlexAlign::Center,
+      .gap = Style::spaceXs,
+  });
 
-  auto glyph = std::make_unique<Glyph>();
-  glyph->setGlyphSize(Style::barGlyphSize * m_contentScale);
-  glyph->setVisible(false);
-  m_glyph = glyph.get();
+  flex->addChild(ui::glyph({
+      .out = &m_glyph,
+      .glyphSize = Style::barGlyphSize * m_contentScale,
+      .visible = false,
+  }));
 
-  auto label = std::make_unique<Label>();
-  label->setFontSize(Style::fontSizeBody * m_contentScale);
-  label->setFontWeight(labelFontWeight());
-  label->setVisible(false);
-  m_label = label.get();
-
-  flex->addChild(std::move(glyph));
-  flex->addChild(std::move(label));
-  m_flex = flex.get();
+  flex->addChild(ui::label({
+      .out = &m_label,
+      .fontSize = Style::fontSizeBody * m_contentScale,
+      .fontWeight = labelFontWeight(),
+      .visible = false,
+  }));
 
   area->addChild(std::move(flex));
   m_area = area.get();

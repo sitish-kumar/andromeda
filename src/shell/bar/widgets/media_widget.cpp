@@ -7,9 +7,7 @@
 #include "net/http_client.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/image.h"
-#include "ui/controls/label.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 
@@ -53,30 +51,31 @@ void MediaWidget::create() {
   });
   m_area = area.get();
 
-  auto art = std::make_unique<Image>();
-  art->setRadius((m_artSize * m_contentScale) * 0.5f);
-  art->setFit(ImageFit::Cover);
-  art->setSize(m_artSize * m_contentScale, m_artSize * m_contentScale);
-  m_art = art.get();
-  area->addChild(std::move(art));
+  area->addChild(ui::image({
+      .out = &m_art,
+      .fit = ImageFit::Cover,
+      .radius = (m_artSize * m_contentScale) * 0.5f,
+      .width = m_artSize * m_contentScale,
+      .height = m_artSize * m_contentScale,
+  }));
 
-  auto label = std::make_unique<Label>();
-  label->setFontWeight(labelFontWeight());
-  label->setFontSize(Style::fontSizeBody * m_contentScale);
-  label->setColor(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)));
-  label->setMaxWidth(m_maxWidth * m_contentScale);
-  label->setMaxLines(1);
-  label->setAutoScroll(false);
-  m_label = label.get();
-  area->addChild(std::move(label));
+  area->addChild(ui::label({
+      .out = &m_label,
+      .fontSize = Style::fontSizeBody * m_contentScale,
+      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+      .maxWidth = m_maxWidth * m_contentScale,
+      .maxLines = 1,
+      .fontWeight = labelFontWeight(),
+      .autoScroll = false,
+  }));
 
-  auto emptyGlyph = std::make_unique<Glyph>();
-  emptyGlyph->setGlyph("music-off");
-  emptyGlyph->setGlyphSize(Style::barGlyphSize * m_contentScale);
-  emptyGlyph->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-  emptyGlyph->setVisible(false);
-  m_emptyGlyph = emptyGlyph.get();
-  area->addChild(std::move(emptyGlyph));
+  area->addChild(ui::glyph({
+      .out = &m_emptyGlyph,
+      .glyph = "music-off",
+      .glyphSize = Style::barGlyphSize * m_contentScale,
+      .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+      .visible = false,
+  }));
 
   setRoot(std::move(area));
 }

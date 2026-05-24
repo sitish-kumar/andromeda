@@ -3,9 +3,7 @@
 #include "dbus/upower/upower_service.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
-#include "ui/controls/box.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/label.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 
@@ -85,51 +83,51 @@ void BatteryWidget::create() {
 void BatteryWidget::createGraphicMode() {
   auto* container = static_cast<InputArea*>(root());
 
-  auto bodyBg = std::make_unique<Box>();
-  bodyBg->setFill(withOpacity(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)), 0.25f));
-  m_bodyBg = bodyBg.get();
-  container->addChild(std::move(bodyBg));
+  container->addChild(ui::box({
+      .out = &m_bodyBg,
+      .fill = withOpacity(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)), 0.25f),
+  }));
 
-  auto fillRect = std::make_unique<Box>();
-  m_fillRect = fillRect.get();
-  container->addChild(std::move(fillRect));
+  container->addChild(ui::box({
+      .out = &m_fillRect,
+  }));
 
-  auto terminalNub = std::make_unique<Box>();
-  terminalNub->setFill(withOpacity(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)), 0.25f));
-  m_terminalNub = terminalNub.get();
-  container->addChild(std::move(terminalNub));
+  container->addChild(ui::box({
+      .out = &m_terminalNub,
+      .fill = withOpacity(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)), 0.25f),
+  }));
 
   if (m_showLabel) {
-    auto overlayLabel = std::make_unique<Label>();
-    overlayLabel->setFontWeight(labelFontWeight());
-    overlayLabel->setColor(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)));
-    m_overlayLabel = overlayLabel.get();
-    container->addChild(std::move(overlayLabel));
+    container->addChild(ui::label({
+        .out = &m_overlayLabel,
+        .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+        .fontWeight = labelFontWeight(),
+    }));
   }
 
-  auto overlayGlyph = std::make_unique<Glyph>();
-  overlayGlyph->setColor(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)));
-  overlayGlyph->setVisible(false);
-  m_overlayGlyph = overlayGlyph.get();
-  container->addChild(std::move(overlayGlyph));
+  container->addChild(ui::glyph({
+      .out = &m_overlayGlyph,
+      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+      .visible = false,
+  }));
 }
 
 void BatteryWidget::createIconMode() {
   auto* container = static_cast<InputArea*>(root());
 
-  auto glyph = std::make_unique<Glyph>();
-  glyph->setGlyph("battery-4");
-  glyph->setGlyphSize(Style::barGlyphSize * m_contentScale);
-  glyph->setColor(widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)));
-  m_glyph = glyph.get();
-  container->addChild(std::move(glyph));
+  container->addChild(ui::glyph({
+      .out = &m_glyph,
+      .glyph = "battery-4",
+      .glyphSize = Style::barGlyphSize * m_contentScale,
+      .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
+  }));
 
-  auto label = std::make_unique<Label>();
-  label->setFontWeight(labelFontWeight());
-  label->setFontSize(Style::fontSizeBody * m_contentScale);
-  label->setVisible(m_showLabel);
-  m_label = label.get();
-  container->addChild(std::move(label));
+  container->addChild(ui::label({
+      .out = &m_label,
+      .fontSize = Style::fontSizeBody * m_contentScale,
+      .fontWeight = labelFontWeight(),
+      .visible = m_showLabel,
+  }));
 }
 
 void BatteryWidget::doLayout(Renderer& renderer, float containerWidth, float containerHeight) {
