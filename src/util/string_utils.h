@@ -85,8 +85,8 @@ namespace StringUtils {
 
   [[nodiscard]] inline std::string formatFixedDotDecimal(double value, int precision) {
     std::array<char, 64> buffer{};
-    const auto [ptr, ec]
-        = std::to_chars(buffer.data(), buffer.data() + buffer.size(), value, std::chars_format::fixed, precision);
+    const auto [ptr, ec] =
+        std::to_chars(buffer.data(), buffer.data() + buffer.size(), value, std::chars_format::fixed, precision);
     if (ec != std::errc{}) {
       return {};
     }
@@ -115,8 +115,9 @@ namespace StringUtils {
     std::string encoded;
     encoded.reserve(text.size() * 3);
 
-    auto isUnreserved
-        = [](unsigned char ch) { return std::isalnum(ch) != 0 || ch == '-' || ch == '_' || ch == '.' || ch == '~'; };
+    auto isUnreserved = [](unsigned char ch) {
+      return std::isalnum(ch) != 0 || ch == '-' || ch == '_' || ch == '.' || ch == '~';
+    };
 
     for (char rawCh : text) {
       const auto ch = static_cast<unsigned char>(rawCh);
@@ -159,8 +160,8 @@ namespace StringUtils {
         lineEnd = text.size();
       }
       const std::string_view line = text.substr(start, lineEnd - start);
-      const bool blankLine = line.empty()
-          || std::all_of(line.begin(), line.end(), [](unsigned char ch) { return std::isspace(ch) != 0; });
+      const bool blankLine =
+          line.empty() || std::all_of(line.begin(), line.end(), [](unsigned char ch) { return std::isspace(ch) != 0; });
       if (!blankLine) {
         break;
       }

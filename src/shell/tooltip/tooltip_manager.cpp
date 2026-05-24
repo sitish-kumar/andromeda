@@ -100,8 +100,8 @@ void TooltipManager::showPopup() {
       .height = contentH,
       .anchor = XDG_POSITIONER_ANCHOR_BOTTOM,
       .gravity = XDG_POSITIONER_GRAVITY_BOTTOM,
-      .constraintAdjustment
-      = XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X,
+      .constraintAdjustment =
+          XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X,
       .offsetX = 0,
       .offsetY = static_cast<std::int32_t>(Style::spaceXs),
       .grab = false,

@@ -88,8 +88,8 @@ void PolkitPanel::create() {
           .placeholder = i18n::tr("auth.polkit.password-placeholder"),
           .passwordMode = true,
           .onSubmit = [this](const std::string&) { submit(); },
-          .onKeyEvent
-          = [this](std::uint32_t sym, std::uint32_t modifiers) { return handleInputKeyEvent(sym, modifiers); },
+          .onKeyEvent =
+              [this](std::uint32_t sym, std::uint32_t modifiers) { return handleInputKeyEvent(sym, modifiers); },
       }),
       ui::label({
           .out = &m_supplementaryLabel,

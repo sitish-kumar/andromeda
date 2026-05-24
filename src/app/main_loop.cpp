@@ -569,8 +569,8 @@ void MainLoop::run() {
       }
 
       auto* source = sources[i];
-      const std::vector<PollSource*> latestSources
-          = m_sourcesProvider ? m_sourcesProvider() : std::vector<PollSource*>{};
+      const std::vector<PollSource*> latestSources =
+          m_sourcesProvider ? m_sourcesProvider() : std::vector<PollSource*>{};
       if (std::find(latestSources.begin(), latestSources.end(), source) == latestSources.end()) {
         continue;
       }

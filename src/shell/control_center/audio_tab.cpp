@@ -54,8 +54,8 @@ namespace {
         normalized.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(ch))));
       }
     }
-    static constexpr std::string_view kBad[]
-        = {"audio-src", "audio-source", "audio-sink", "audio-output", "audio-input", "output", "input", "stream"};
+    static constexpr std::string_view kBad[] = {"audio-src",   "audio-source", "audio-sink", "audio-output",
+                                                "audio-input", "output",       "input",      "stream"};
     for (const auto token : kBad) {
       if (normalized == token) {
         return true;
@@ -296,8 +296,8 @@ namespace {
     }
 
     // Spelled-out sequel ordinals (generic English product naming, not title-specific).
-    static constexpr std::string_view kEnglishNumberWords[]
-        = {"two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"};
+    static constexpr std::string_view kEnglishNumberWords[] = {"two",   "three", "four", "five",   "six",   "seven",
+                                                               "eight", "nine",  "ten",  "eleven", "twelve"};
     for (const auto w : kEnglishNumberWords) {
       if (tok == w) {
         return true;
@@ -550,8 +550,8 @@ namespace {
     if (desk.entry == nullptr || desk.matchedVia == nullptr) {
       return;
     }
-    const std::string nextKey
-        = std::to_string(nodeId) + "|" + desk.matchedVia + "|" + desk.normalizedTerm + "|" + desk.entry->id;
+    const std::string nextKey =
+        std::to_string(nodeId) + "|" + desk.matchedVia + "|" + desk.normalizedTerm + "|" + desk.entry->id;
     if (nextKey == lastKey) {
       return;
     }
@@ -1125,8 +1125,8 @@ namespace {
       const std::string candidateIcon = sanitize(node.iconName);
       const std::string candidateId = sanitize(node.applicationId);
       const std::string candidateApp = sanitize(resolvedAppName);
-      const std::string candidateFallback
-          = sanitize(node.applicationBinary.empty() ? node.name : node.applicationBinary);
+      const std::string candidateFallback =
+          sanitize(node.applicationBinary.empty() ? node.name : node.applicationBinary);
       if (!candidateApp.empty()) {
         pushUnique(candidates, candidateApp);
         pushUnique(candidates, candidateApp + ".desktop");
@@ -1260,8 +1260,8 @@ namespace {
   }
 
   std::string widestPercentLabel(float sliderMaxValue) {
-    const std::size_t digits
-        = std::to_string(static_cast<int>(std::round(std::max(0.0f, sliderMaxValue) * 100.0f))).size();
+    const std::size_t digits =
+        std::to_string(static_cast<int>(std::round(std::max(0.0f, sliderMaxValue) * 100.0f))).size();
     return std::string(std::max<std::size_t>(1, digits), '8') + "%";
   }
 
@@ -1859,9 +1859,8 @@ void AudioTab::rebuildProgramVolumes(Renderer& renderer) {
     return key;
   };
 
-  const std::string nextKey
-      = (m_audio != nullptr ? identityKey(m_audio->state().programOutputs)
-                            : std::string{"unavailable_program_outputs"});
+  const std::string nextKey =
+      (m_audio != nullptr ? identityKey(m_audio->state().programOutputs) : std::string{"unavailable_program_outputs"});
 
   if (m_audio != nullptr && nextKey == m_lastProgramListKey && sliderMaxAbs < 0.0001f) {
     return;
@@ -2080,8 +2079,8 @@ void AudioTab::syncValueLabelWidths(Renderer& renderer) {
   const float sliderMax = sliderMaxPercent();
   if (m_syncedPercentLabelMinWidth < 0.0f || std::abs(sliderMax - m_lastSyncedPercentLabelSliderMax) >= 0.0001f) {
     const std::string sampleLabel = widestPercentLabel(sliderMax);
-    const TextMetrics metrics
-        = renderer.measureText(sampleLabel, Style::fontSizeBody * contentScale(), FontWeight::Bold);
+    const TextMetrics metrics =
+        renderer.measureText(sampleLabel, Style::fontSizeBody * contentScale(), FontWeight::Bold);
     m_syncedPercentLabelMinWidth = std::round(metrics.width);
     m_lastSyncedPercentLabelSliderMax = sliderMax;
   }

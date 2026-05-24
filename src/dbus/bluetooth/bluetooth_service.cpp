@@ -709,8 +709,8 @@ void BluetoothService::forget(const std::string& devicePath) {
 }
 
 BluetoothDeviceInfo* BluetoothService::findDevice(const std::string& path) {
-  auto it
-      = std::find_if(m_devices.begin(), m_devices.end(), [&](const BluetoothDeviceInfo& d) { return d.path == path; });
+  auto it =
+      std::find_if(m_devices.begin(), m_devices.end(), [&](const BluetoothDeviceInfo& d) { return d.path == path; });
   return it == m_devices.end() ? nullptr : &*it;
 }
 

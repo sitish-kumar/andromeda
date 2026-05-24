@@ -362,9 +362,8 @@ namespace {
         // Use the sRGB resize: image bytes are sRGB-encoded, so averaging them
         // directly (the _linear variant) darkens and muddies downscaled icons.
         // STBIR_RGBA handles the non-premultiplied alpha correctly.
-        unsigned char* result = stbir_resize_uint8_srgb(
-            pixels.data(), width, height, 0, resized.data(), resizedW, resizedH, 0, STBIR_RGBA
-        );
+        unsigned char* result =
+            stbir_resize_uint8_srgb(pixels.data(), width, height, 0, resized.data(), resizedW, resizedH, 0, STBIR_RGBA);
         if (result != nullptr) {
           pixels = std::move(resized);
           width = resizedW;
@@ -451,8 +450,8 @@ namespace {
     GError* renderError = nullptr;
     if (rsvg_handle_render_document(handle, cr, &viewport, &renderError) == FALSE) {
       if (errorMessage != nullptr) {
-        *errorMessage
-            = std::string("failed to render SVG: ") + (renderError != nullptr ? renderError->message : "unknown");
+        *errorMessage =
+            std::string("failed to render SVG: ") + (renderError != nullptr ? renderError->message : "unknown");
       }
       if (renderError != nullptr) {
         g_error_free(renderError);

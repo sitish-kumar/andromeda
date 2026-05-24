@@ -140,9 +140,8 @@ void AudioSpectrumProgram::draw(
   const int gapCount = std::max(0, barCount - 1);
   const float weightedSlots = static_cast<float>(barCount) + static_cast<float>(gapCount) * kGapToBarRatio;
   const float devicePixel = 1.0f / mainPixelScale;
-  const float barThickness = std::max(
-      devicePixel, std::floor(mainAxisLen / std::max(1.0f, weightedSlots) * mainPixelScale) / mainPixelScale
-  );
+  const float barThickness =
+      std::max(devicePixel, std::floor(mainAxisLen / std::max(1.0f, weightedSlots) * mainPixelScale) / mainPixelScale);
   const float gapThickness = gapCount > 0
       ? std::max(devicePixel, std::floor(barThickness * kGapToBarRatio * mainPixelScale) / mainPixelScale)
       : 0.0f;
@@ -174,8 +173,8 @@ void AudioSpectrumProgram::draw(
       mainStart = std::max(0.0f, mainStart - (mainEnd - mainAxisLen));
       mainEnd = mainAxisLen;
     }
-    float crossStart
-        = snapToPixel(style.centered ? (crossAxisLen - crossSize) * 0.5f : crossAxisLen - crossSize, crossPixelScale);
+    float crossStart =
+        snapToPixel(style.centered ? (crossAxisLen - crossSize) * 0.5f : crossAxisLen - crossSize, crossPixelScale);
     float crossEnd = crossStart + crossSize;
     if (crossStart < 0.0f) {
       crossEnd -= crossStart;

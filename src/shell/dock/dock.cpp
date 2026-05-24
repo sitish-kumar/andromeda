@@ -584,8 +584,8 @@ void Dock::syncInstances() {
 
   // Remove instances for dead outputs or outputs no longer selected.
   std::erase_if(m_instances, [this, &outputs, &outputAllowed](const auto& inst) {
-    const auto it
-        = std::find_if(outputs.begin(), outputs.end(), [&inst](const auto& o) { return o.name == inst->outputName; });
+    const auto it =
+        std::find_if(outputs.begin(), outputs.end(), [&inst](const auto& o) { return o.name == inst->outputName; });
     const bool drop = (it == outputs.end()) || !outputAllowed(*it);
     if (drop) {
       detachInstanceState(*inst);
@@ -752,8 +752,8 @@ bool Dock::syncInstanceModel(DockInstance& instance) {
 
   // When filtering by active monitor, inactive monitors' docks should not
   // highlight the globally-active app — it isn't on them.
-  const std::string activeIdLower
-      = (cfg.activeMonitorOnly && activeOutput != instance.output) ? std::string{} : globalActiveIdLower;
+  const std::string activeIdLower =
+      (cfg.activeMonitorOnly && activeOutput != instance.output) ? std::string{} : globalActiveIdLower;
   instance.activeAppIdLower = activeIdLower;
 
   const auto runningIds = cfg.showRunning ? m_platform->runningAppIds(filterOutput) : std::vector<std::string>{};
@@ -969,9 +969,8 @@ void Dock::buildScene(DockInstance& instance) {
       contentRight = std::max(contentRight, sx + panelW);
       contentBottom = std::max(contentBottom, sy + panelH);
     }
-    const auto hiddenDelta = computeAutoHideHiddenDelta(
-        vert, isBottom, isRight, w, h, contentLeft, contentTop, contentRight, contentBottom
-    );
+    const auto hiddenDelta =
+        computeAutoHideHiddenDelta(vert, isBottom, isRight, w, h, contentLeft, contentTop, contentRight, contentBottom);
     instance.slideHiddenDx = hiddenDelta.first;
     instance.slideHiddenDy = hiddenDelta.second;
   } else {
@@ -1307,8 +1306,8 @@ void Dock::updateVisuals(DockInstance& instance) {
   for (auto& item : instance.items) {
     const float iconScale = item.active ? cfg.activeScale : cfg.inactiveScale;
     const float iconOpacity = item.active ? cfg.activeOpacity : cfg.inactiveOpacity;
-    Node* iconNode
-        = item.iconImage != nullptr ? static_cast<Node*>(item.iconImage) : static_cast<Node*>(item.iconGlyph);
+    Node* iconNode =
+        item.iconImage != nullptr ? static_cast<Node*>(item.iconImage) : static_cast<Node*>(item.iconGlyph);
 
     if (iconNode != nullptr) {
       if (item.visualScale < 0.0f) {
@@ -1362,8 +1361,8 @@ void Dock::updateVisuals(DockInstance& instance) {
       constexpr float kCellPad = 6.0f;
       const float cellMain = iSize + 2.0f * kCellPad;
       const float dot = std::max(kDotMinSize, std::round(iSize * kDotSizeRatio));
-      const float groupLength
-          = dotCount == 0 ? dot : dot * static_cast<float>(dotCount) + kDotGap * static_cast<float>(dotCount - 1);
+      const float groupLength =
+          dotCount == 0 ? dot : dot * static_cast<float>(dotCount) + kDotGap * static_cast<float>(dotCount - 1);
       const float groupStart = std::round((cellMain - groupLength) * 0.5f);
       const bool verticalDots = cfg.position == "left" || cfg.position == "right";
 

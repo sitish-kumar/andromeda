@@ -143,8 +143,8 @@ void GridView::doLayout(Renderer& renderer) {
 
   float stretchedWidth = 0.0f;
   if (hasFixedWidth && m_stretchItems && columns > 0) {
-    const float innerWidth
-        = std::max(0.0f, fixedWidth - m_paddingLeft - m_paddingRight - m_columnGap * static_cast<float>(columns - 1));
+    const float innerWidth =
+        std::max(0.0f, fixedWidth - m_paddingLeft - m_paddingRight - m_columnGap * static_cast<float>(columns - 1));
     stretchedWidth = innerWidth / static_cast<float>(columns);
   }
 
@@ -168,9 +168,8 @@ void GridView::doLayout(Renderer& renderer) {
       );
       const float slotH = innerHeight / static_cast<float>(rows);
       if (hasFixedWidth) {
-        const float innerWidth = std::max(
-            0.0f, fixedWidth - m_paddingLeft - m_paddingRight - m_columnGap * static_cast<float>(columns - 1)
-        );
+        const float innerWidth =
+            std::max(0.0f, fixedWidth - m_paddingLeft - m_paddingRight - m_columnGap * static_cast<float>(columns - 1));
         const float slotW = innerWidth / static_cast<float>(columns);
         uniformWidth = uniformHeight = std::min(slotW, slotH);
       } else {
@@ -179,9 +178,8 @@ void GridView::doLayout(Renderer& renderer) {
       }
     } else {
       if (hasFixedWidth && columns > 0) {
-        const float innerWidth = std::max(
-            0.0f, fixedWidth - m_paddingLeft - m_paddingRight - m_columnGap * static_cast<float>(columns - 1)
-        );
+        const float innerWidth =
+            std::max(0.0f, fixedWidth - m_paddingLeft - m_paddingRight - m_columnGap * static_cast<float>(columns - 1));
         const float slotW = innerWidth / static_cast<float>(columns);
         if (m_stretchItems) {
           uniformWidth = slotW;
@@ -257,8 +255,8 @@ void GridView::doLayout(Renderer& renderer) {
   const float computedWidth = m_paddingLeft + contentWidth + m_paddingRight;
   const float computedHeight = m_paddingTop + contentHeight + m_paddingBottom;
   const bool tightSquare = m_squareCells && m_stretchItems && m_uniformCellSize;
-  const float outW
-      = (tightSquare && m_squareGridShrinkWrap) ? computedWidth : (hasFixedWidth ? fixedWidth : computedWidth);
+  const float outW =
+      (tightSquare && m_squareGridShrinkWrap) ? computedWidth : (hasFixedWidth ? fixedWidth : computedWidth);
   const float outH = hasFixedHeight ? fixedHeight : computedHeight;
   setSize(outW, outH);
 

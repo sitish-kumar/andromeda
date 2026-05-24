@@ -107,8 +107,8 @@ namespace settings {
     }
 
     Color selectedFixedColor;
-    const bool selectedIsFixedColor
-        = options.allowCustomColor && tryParseHexColor(options.selectedValue, selectedFixedColor);
+    const bool selectedIsFixedColor =
+        options.allowCustomColor && tryParseHexColor(options.selectedValue, selectedFixedColor);
     if (options.allowCustomColor) {
       choices.push_back(
           Choice{
@@ -148,36 +148,36 @@ namespace settings {
             ? std::optional<float>(options.controlHeight > 0.0f ? options.controlHeight : Style::controlHeight)
             : std::nullopt,
         .flexGrow = options.flexGrow ? std::optional<float>(1.0f) : std::nullopt,
-        .onSelectionChanged
-        = [choices = std::move(choices), setValue = std::move(setValue), clearValue = std::move(clearValue),
-           initialColor = customInitialColor](std::size_t index, std::string_view /*label*/) mutable {
-            if (index >= choices.size()) {
-              return;
-            }
-            if (choices[index].value == kCustomColorValue) {
-              ColorPickerDialogOptions dialogOptions;
-              dialogOptions.title = i18n::tr("settings.dialogs.color-picker.title");
-              if (initialColor.has_value()) {
-                dialogOptions.initialColor = *initialColor;
-              } else if (const auto last = ColorPickerDialog::lastResult()) {
-                dialogOptions.initialColor = *last;
+        .onSelectionChanged =
+            [choices = std::move(choices), setValue = std::move(setValue), clearValue = std::move(clearValue),
+             initialColor = customInitialColor](std::size_t index, std::string_view /*label*/) mutable {
+              if (index >= choices.size()) {
+                return;
               }
-              (void)ColorPickerDialog::open(std::move(dialogOptions), [setValue](std::optional<Color> result) {
-                if (!result.has_value()) {
-                  return;
+              if (choices[index].value == kCustomColorValue) {
+                ColorPickerDialogOptions dialogOptions;
+                dialogOptions.title = i18n::tr("settings.dialogs.color-picker.title");
+                if (initialColor.has_value()) {
+                  dialogOptions.initialColor = *initialColor;
+                } else if (const auto last = ColorPickerDialog::lastResult()) {
+                  dialogOptions.initialColor = *last;
                 }
-                Color rgb = *result;
-                rgb.a = 1.0f;
-                setValue(formatFixedColorConfigValue(rgb));
-              });
-              return;
-            }
-            if (choices[index].value.empty()) {
-              clearValue();
-              return;
-            }
-            setValue(choices[index].value);
-          },
+                (void)ColorPickerDialog::open(std::move(dialogOptions), [setValue](std::optional<Color> result) {
+                  if (!result.has_value()) {
+                    return;
+                  }
+                  Color rgb = *result;
+                  rgb.a = 1.0f;
+                  setValue(formatFixedColorConfigValue(rgb));
+                });
+                return;
+              }
+              if (choices[index].value.empty()) {
+                clearValue();
+                return;
+              }
+              setValue(choices[index].value);
+            },
     });
 
     return select;

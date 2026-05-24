@@ -178,9 +178,10 @@ namespace {
     }
 
     if (terminal.empty()) {
-      static constexpr std::array<std::string_view, 9> kTerminalCandidates
-          = {"x-terminal-emulator", "ghostty", "kitty", "alacritty", "wezterm", "foot", "konsole",
-             "gnome-terminal",      "xterm"};
+      static constexpr std::array<std::string_view, 9> kTerminalCandidates = {
+          "x-terminal-emulator", "ghostty", "kitty", "alacritty", "wezterm", "foot", "konsole",
+          "gnome-terminal",      "xterm"
+      };
       for (const auto candidate : kTerminalCandidates) {
         if (isExecutableOnPath(candidate)) {
           terminal.emplace_back(candidate);

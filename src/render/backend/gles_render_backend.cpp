@@ -100,8 +100,8 @@ void main() {
       }
 
       if (m_surface == EGL_NO_SURFACE) {
-        m_surface
-            = eglCreateWindowSurface(m_display, m_config, reinterpret_cast<EGLNativeWindowType>(m_window), nullptr);
+        m_surface =
+            eglCreateWindowSurface(m_display, m_config, reinterpret_cast<EGLNativeWindowType>(m_window), nullptr);
         if (m_surface == EGL_NO_SURFACE && !m_createFailureLogged) {
           const EGLint error = eglGetError();
           kLog.warn(

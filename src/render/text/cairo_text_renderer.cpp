@@ -552,12 +552,12 @@ void CairoTextRenderer::rasterizeLayout(PangoLayout* layout, const Color& color,
 
   // Expand surface when ink extends beyond logical bounds (e.g. Nerd Font icons).
   const int extraLeftPx = (std::max(0, logicalLayout.x - inkLayout.x) + PANGO_SCALE - 1) / PANGO_SCALE;
-  const int extraRightPx
-      = (std::max(0, (inkLayout.x + inkLayout.width) - (logicalLayout.x + logicalLayout.width)) + PANGO_SCALE - 1)
+  const int extraRightPx =
+      (std::max(0, (inkLayout.x + inkLayout.width) - (logicalLayout.x + logicalLayout.width)) + PANGO_SCALE - 1)
       / PANGO_SCALE;
   const int extraTopPx = (std::max(0, logicalLayout.y - inkLayout.y) + PANGO_SCALE - 1) / PANGO_SCALE;
-  const int extraBottomPx
-      = (std::max(0, (inkLayout.y + inkLayout.height) - (logicalLayout.y + logicalLayout.height)) + PANGO_SCALE - 1)
+  const int extraBottomPx =
+      (std::max(0, (inkLayout.y + inkLayout.height) - (logicalLayout.y + logicalLayout.height)) + PANGO_SCALE - 1)
       / PANGO_SCALE;
   pxWidth += extraLeftPx + extraRightPx;
   pxHeight += extraTopPx + extraBottomPx;
@@ -569,8 +569,8 @@ void CairoTextRenderer::rasterizeLayout(PangoLayout* layout, const Color& color,
 
   // Baseline from top of layout, in raster pixels (shifted by any ink overhang above).
   const int baselinePango = pango_layout_get_baseline(layout);
-  entry.baselinePx
-      = static_cast<float>(baselinePango) / static_cast<float>(PANGO_SCALE) + static_cast<float>(extraTopPx);
+  entry.baselinePx =
+      static_cast<float>(baselinePango) / static_cast<float>(PANGO_SCALE) + static_cast<float>(extraTopPx);
 
   if (m_glMaxTextureSize <= 0 && m_backend != nullptr) {
     m_glMaxTextureSize = m_backend->maxTextureSize();

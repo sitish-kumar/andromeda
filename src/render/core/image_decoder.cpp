@@ -153,8 +153,8 @@ namespace {
       for (int y = 0; y < height; ++y) {
         const int srcRow = bottomUp ? (height - 1 - y) : y;
         const std::uint8_t* srcLine = pixels + static_cast<std::size_t>(srcRow) * rowStride;
-        std::uint8_t* dstLine
-            = decoded.pixels.data() + static_cast<std::size_t>(y) * static_cast<std::size_t>(width) * 4;
+        std::uint8_t* dstLine =
+            decoded.pixels.data() + static_cast<std::size_t>(y) * static_cast<std::size_t>(width) * 4;
         for (int x = 0; x < width; ++x) {
           dstLine[x * 4 + 0] = srcLine[x * 4 + 2]; // R
           dstLine[x * 4 + 1] = srcLine[x * 4 + 1]; // G
@@ -211,8 +211,8 @@ namespace {
       for (int y = 0; y < height; ++y) {
         const int maskRow = bottomUp ? (height - 1 - y) : y;
         const std::uint8_t* maskLine = andMask + static_cast<std::size_t>(maskRow) * andRowStride;
-        std::uint8_t* dstLine
-            = decoded->pixels.data() + static_cast<std::size_t>(y) * static_cast<std::size_t>(width) * 4;
+        std::uint8_t* dstLine =
+            decoded->pixels.data() + static_cast<std::size_t>(y) * static_cast<std::size_t>(width) * 4;
         for (int x = 0; x < width; ++x) {
           if (maskLine[x / 8] & (0x80 >> (x % 8)))
             dstLine[x * 4 + 3] = 0;
@@ -390,8 +390,8 @@ std::optional<DecodedRasterAnimation> decodeAnimatedGif(
 
   wuffs_base__pixel_buffer pb{};
   {
-    wuffs_base__status st
-        = wuffs_base__pixel_buffer__set_from_slice(&pb, &pixcfg, wuffs_base__make_slice_u8(canvas.data(), canvasBytes));
+    wuffs_base__status st =
+        wuffs_base__pixel_buffer__set_from_slice(&pb, &pixcfg, wuffs_base__make_slice_u8(canvas.data(), canvasBytes));
     if (st.repr != nullptr) {
       return fail(st.repr);
     }
@@ -436,8 +436,8 @@ std::optional<DecodedRasterAnimation> decodeAnimatedGif(
       std::memcpy(previous.data(), canvas.data(), canvasBytes);
     }
 
-    const wuffs_base__pixel_blend blend
-        = fc.overwrite_instead_of_blend() ? WUFFS_BASE__PIXEL_BLEND__SRC : WUFFS_BASE__PIXEL_BLEND__SRC_OVER;
+    const wuffs_base__pixel_blend blend =
+        fc.overwrite_instead_of_blend() ? WUFFS_BASE__PIXEL_BLEND__SRC : WUFFS_BASE__PIXEL_BLEND__SRC_OVER;
 
     wuffs_base__status frameStatus = dec->decode_frame(&pb, &io, blend, workbufSlice, nullptr);
     if (frameStatus.repr != nullptr && frameStatus.repr != wuffs_base__note__end_of_data) {

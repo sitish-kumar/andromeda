@@ -662,8 +662,8 @@ namespace process {
     while (start <= path.size()) {
       const std::size_t end = path.find(':', start);
       const std::string_view dir = end == std::string_view::npos ? path.substr(start) : path.substr(start, end - start);
-      const std::filesystem::path candidate
-          = dir.empty() ? std::filesystem::path(name) : (std::filesystem::path(dir) / name);
+      const std::filesystem::path candidate =
+          dir.empty() ? std::filesystem::path(name) : (std::filesystem::path(dir) / name);
       if (::access(candidate.c_str(), X_OK) == 0) {
         return true;
       }

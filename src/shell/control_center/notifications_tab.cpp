@@ -241,8 +241,8 @@ namespace {
     const float iconColumn = iconPx + Style::spaceSm * scale;
     const float actionButtonSize = kNotificationActionButtonSize * scale;
     const float actionButtonsGap = Style::spaceXs * scale;
-    const float headerActionsWidth
-        = actionButtonSize + (metrics.canExpand ? (actionButtonsGap + actionButtonSize) : 0.0f);
+    const float headerActionsWidth =
+        actionButtonSize + (metrics.canExpand ? (actionButtonsGap + actionButtonSize) : 0.0f);
     const float leftClusterWidth = metrics.cardTextWidth - headerActionsWidth;
     metrics.metaTextWidth = std::max(0.0f, leftClusterWidth - iconColumn);
 
@@ -263,8 +263,8 @@ namespace {
               metrics.expanded ? kExpandedMaxLines : kBodyMaxLines
           );
 
-    const float actionsRowHeight
-        = showHistoryActions ? measureHistoryActionsRowHeight(renderer, entry.notification.actions, scale) : 0.0f;
+    const float actionsRowHeight =
+        showHistoryActions ? measureHistoryActionsRowHeight(renderer, entry.notification.actions, scale) : 0.0f;
 
     const float paddingY = (Style::spaceSm + Style::spaceXs) * scale * 2.0f;
     int visibleSegments = 2;
@@ -393,8 +393,8 @@ namespace {
         IconResolver& iconResolver, std::function<void(uint32_t)> onToggleExpanded,
         std::function<void(uint32_t, bool)> onRemove, const std::function<void(uint32_t, const std::string&)>& onAction
     ) {
-      const NotificationCardMetrics metrics
-          = measureNotificationCard(renderer, entry, m_scale, width, expanded, showHistoryActions);
+      const NotificationCardMetrics metrics =
+          measureNotificationCard(renderer, entry, m_scale, width, expanded, showHistoryActions);
       setMinWidth(width);
       setSize(width, metrics.height);
 
@@ -598,8 +598,8 @@ public:
     }
     const auto& entry = *m_owner.m_filtered[index];
     const bool expanded = m_owner.m_expandedIds.contains(entry.notification.id);
-    const bool showHistoryActions
-        = m_owner.m_notifications != nullptr && m_owner.m_notifications->hasPendingDBusClose(entry.notification.id);
+    const bool showHistoryActions =
+        m_owner.m_notifications != nullptr && m_owner.m_notifications->hasPendingDBusClose(entry.notification.id);
     return measureNotificationCard(renderer, entry, m_scale, width, expanded, showHistoryActions).height;
   }
 
@@ -616,8 +616,8 @@ public:
       return;
     }
     const auto& entry = *m_owner.m_filtered[index];
-    const bool showHistoryActions
-        = m_owner.m_notifications != nullptr && m_owner.m_notifications->hasPendingDBusClose(entry.notification.id);
+    const bool showHistoryActions =
+        m_owner.m_notifications != nullptr && m_owner.m_notifications->hasPendingDBusClose(entry.notification.id);
     row->bind(
         renderer, entry, width, m_owner.m_expandedIds.contains(entry.notification.id), showHistoryActions,
         m_owner.m_iconResolver, [this](uint32_t id) { m_owner.toggleNotificationExpanded(id); },
@@ -856,8 +856,8 @@ bool NotificationsTab::refreshDataSnapshot() {
 
   const std::uint64_t serial = m_notifications != nullptr ? m_notifications->changeSerial() : 0;
   const std::int64_t relativeSlot = currentRelativeTimeSlot();
-  const bool changed
-      = serial != m_lastSerial || relativeSlot != m_lastRelativeTimeSlot || m_filterIndex != m_lastRebuildFilterIndex;
+  const bool changed =
+      serial != m_lastSerial || relativeSlot != m_lastRelativeTimeSlot || m_filterIndex != m_lastRebuildFilterIndex;
   if (!changed) {
     updateEmptyState(hasHistory, !m_filtered.empty());
     return false;

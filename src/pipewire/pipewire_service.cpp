@@ -756,8 +756,8 @@ void PipeWireService::onRegistryGlobal(std::uint32_t id, const char* type, std::
   if (std::strcmp(type, PW_TYPE_INTERFACE_Metadata) == 0) {
     std::string name = dictGet(props, PW_KEY_METADATA_NAME);
     if (name == "default") {
-      auto* proxy
-          = static_cast<pw_metadata*>(pw_registry_bind(m_registry, id, type, PW_VERSION_METADATA, sizeof(void*)));
+      auto* proxy =
+          static_cast<pw_metadata*>(pw_registry_bind(m_registry, id, type, PW_VERSION_METADATA, sizeof(void*)));
       if (proxy != nullptr) {
         m_defaultMetadata = proxy;
         auto* md = new MetadataData{this, proxy, new spa_hook{}};
@@ -1014,8 +1014,8 @@ void PipeWireService::onNodeParam(
     candidateVol = parsed.softVol;
   }
   const bool isAudioDeviceNode = nd.mediaClass == "Audio/Sink" || nd.mediaClass == "Audio/Source";
-  const bool rejectStaleFullScaleProps
-      = isAudioDeviceNode && candidateVol >= 0.0f && candidateVol >= 0.99f && nd.volume < 0.93f;
+  const bool rejectStaleFullScaleProps =
+      isAudioDeviceNode && candidateVol >= 0.0f && candidateVol >= 0.99f && nd.volume < 0.93f;
 
   if (!rejectStaleFullScaleProps) {
     mergeParsedVolumesIntoNode(nd, parsed);
@@ -1610,8 +1610,8 @@ void PipeWireService::emitChanged() {
 
 void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) {
   const auto maxVolume = [&config] { return config.config().audio.enableOverdrive ? 1.5f : 1.0f; };
-  const auto parseVolumeValueError
-      = "error: invalid volume value (use percent like 65 or 65%, or normalized like 0.65)\n";
+  const auto parseVolumeValueError =
+      "error: invalid volume value (use percent like 65 or 65%, or normalized like 0.65)\n";
   const auto parseVolumeStepError = "error: invalid volume step (use percent like 5 or 5%, or normalized like 0.05)\n";
 
   ipc.registerHandler(

@@ -314,8 +314,8 @@ namespace {
 
     return SysfsGpuUsageReading{
         .percent = totalUsage / static_cast<double>(deviceCount),
-        .source
-        = deviceCount == 1 ? std::format("sysfs:{}", firstSource) : std::format("sysfs ({} devices)", deviceCount),
+        .source =
+            deviceCount == 1 ? std::format("sysfs:{}", firstSource) : std::format("sysfs ({} devices)", deviceCount),
     };
   }
 

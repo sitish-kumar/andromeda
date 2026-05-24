@@ -613,8 +613,8 @@ void Input::handleKey(std::uint32_t sym, std::uint32_t utf32, std::uint32_t modi
   }
 
   const bool copyShortcut = ctrl && (KeySymbol::isInsert(sym) || sym == 'c' || sym == 'C');
-  const bool cutShortcut
-      = (ctrl && (sym == 'x' || sym == 'X')) || (!ctrl && shift && KeySymbol::isDelete(sym) && hasSelection());
+  const bool cutShortcut =
+      (ctrl && (sym == 'x' || sym == 'X')) || (!ctrl && shift && KeySymbol::isDelete(sym) && hasSelection());
   const bool pasteShortcut = (ctrl && (sym == 'v' || sym == 'V')) || (!ctrl && shift && KeySymbol::isInsert(sym));
 
   if (undoShortcut) {
@@ -907,8 +907,8 @@ void Input::updateInteractiveGeometry() {
   }
 
   const float previousScrollOffset = m_scrollOffset;
-  const bool shouldRevealCursor
-      = m_inputArea != nullptr && (m_inputArea->focused() || m_inputArea->pressed() || hasSelection());
+  const bool shouldRevealCursor =
+      m_inputArea != nullptr && (m_inputArea->focused() || m_inputArea->pressed() || hasSelection());
   if (shouldRevealCursor) {
     ensureCursorVisible();
   } else {
@@ -920,8 +920,8 @@ void Input::updateInteractiveGeometry() {
 
   const float controlHeight = height() > 0.0f ? height() : m_controlHeight;
   const float maxCursorHeight = std::max(0.0f, controlHeight - kCursorPadV * 2.0f);
-  const float cursorHeight
-      = std::clamp(controlHeight * kCursorHeightRatio, std::min(kCursorMinHeight, maxCursorHeight), maxCursorHeight);
+  const float cursorHeight =
+      std::clamp(controlHeight * kCursorHeightRatio, std::min(kCursorMinHeight, maxCursorHeight), maxCursorHeight);
   const float cursorY = std::round((controlHeight - cursorHeight) * 0.5f);
   const float cursorX = stopXForByte(m_cursorPos) - m_scrollOffset + m_contentLeadSlack;
   m_cursor->setPosition(cursorX, cursorY);

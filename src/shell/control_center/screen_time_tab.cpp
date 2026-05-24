@@ -627,8 +627,8 @@ void ScreenTimeTab::syncContent(Renderer& renderer) {
         continue;
       }
 
-      const float segmentHeight
-          = columnHeight * static_cast<float>(seriesSeconds.count()) / static_cast<float>(bucketChartTotal.count());
+      const float segmentHeight =
+          columnHeight * static_cast<float>(seriesSeconds.count()) / static_cast<float>(bucketChartTotal.count());
       segment->setFill(series.chartColor);
       segment->setVisible(true);
       columnWidgets.segmentHeights[seriesIdx] = std::max(2.0f, segmentHeight);
@@ -681,8 +681,8 @@ void ScreenTimeTab::syncContent(Renderer& renderer) {
     }
     if (widgets.barFill != nullptr) {
       widgets.barFill->setFill(app.chartColor);
-      widgets.barFillRatio
-          = topTotal.count() > 0 ? static_cast<float>(app.total.count()) / static_cast<float>(topTotal.count()) : 0.0f;
+      widgets.barFillRatio =
+          topTotal.count() > 0 ? static_cast<float>(app.total.count()) / static_cast<float>(topTotal.count()) : 0.0f;
     }
 
     updateIconForRow(renderer, widgets, app.appKey, scale);
@@ -760,8 +760,8 @@ void ScreenTimeTab::layoutChart(Renderer& renderer) {
       continue;
     }
     columnWidgets.plotColumn->layout(renderer);
-    const float resolvedColumnWidth
-        = columnWidth > 0.0f ? columnWidth : std::max(1.0f, columnWidgets.plotColumn->width());
+    const float resolvedColumnWidth =
+        columnWidth > 0.0f ? columnWidth : std::max(1.0f, columnWidgets.plotColumn->width());
     const float plotHeight = std::max(chartHeight, columnWidgets.plotColumn->height());
 
     if (columnWidgets.track != nullptr) {
@@ -840,8 +840,8 @@ void ScreenTimeTab::updateIconForRow(
   }
   widgets.iconPath = iconPath;
   const int targetPx = static_cast<int>(std::round(kAppIconSize * scale));
-  const bool hasIcon
-      = !iconPath.empty() && widgets.icon != nullptr && widgets.icon->setSourceFile(renderer, iconPath, targetPx, true);
+  const bool hasIcon =
+      !iconPath.empty() && widgets.icon != nullptr && widgets.icon->setSourceFile(renderer, iconPath, targetPx, true);
   if (widgets.icon != nullptr) {
     widgets.icon->setVisible(hasIcon);
   }

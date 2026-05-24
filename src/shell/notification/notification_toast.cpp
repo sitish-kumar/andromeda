@@ -282,8 +282,8 @@ namespace {
 
   float availableBodyHeight(float summaryHeight, float actionsReservedHeight, float cardHeight, float scale) {
     const float progressY = cardHeight - progressHeight(scale) - progressBottomMargin(scale);
-    const float availableHeight
-        = progressY - bodyBottomGap(scale) - actionsReservedHeight - bodyTopForSummary(summaryHeight, scale);
+    const float availableHeight =
+        progressY - bodyBottomGap(scale) - actionsReservedHeight - bodyTopForSummary(summaryHeight, scale);
     return availableHeight;
   }
 
@@ -1068,8 +1068,8 @@ void NotificationToast::addCardToInstance(Instance& inst, std::size_t entryIndex
   const Color closeColorNormal = resolveColorSpec(
       isCritical ? colorSpecFromRole(ColorRole::Error, 0.75f) : colorSpecFromRole(ColorRole::OnSurfaceVariant, 0.6f)
   );
-  const Color closeColorHover
-      = resolveColorSpec(isCritical ? colorSpecFromRole(ColorRole::Error) : colorSpecFromRole(ColorRole::OnSurface));
+  const Color closeColorHover =
+      resolveColorSpec(isCritical ? colorSpecFromRole(ColorRole::Error) : colorSpecFromRole(ColorRole::OnSurface));
   const int totalDuration = entry.displayDurationMs;
   const uint32_t notificationId = entry.notificationId;
   Glyph* closeGlyphPtr = cs.closeGlyph;
@@ -1129,8 +1129,8 @@ void NotificationToast::addCardToInstance(Instance& inst, std::size_t entryIndex
       }
       return;
     }
-    const int32_t remainingMs
-        = std::max<int32_t>(1, static_cast<int32_t>(std::ceil(static_cast<float>(totalDuration) * remaining)));
+    const int32_t remainingMs =
+        std::max<int32_t>(1, static_cast<int32_t>(std::ceil(static_cast<float>(totalDuration) * remaining)));
     if (m_notifications != nullptr) {
       m_notifications->resumeExpiry(notificationId, remainingMs);
     }
@@ -1399,8 +1399,8 @@ void NotificationToast::evictOverlappingEntries(std::size_t anchorIndex) {
 
     const float entryTop = m_entries[i].y;
     const float entryBottom = entryTop + m_entries[i].height;
-    const bool separated
-        = (entryBottom + layoutGap <= anchorTop + 0.5f) || (anchorBottom + layoutGap <= entryTop + 0.5f);
+    const bool separated =
+        (entryBottom + layoutGap <= anchorTop + 0.5f) || (anchorBottom + layoutGap <= entryTop + 0.5f);
     if (separated) {
       continue;
     }
@@ -1937,8 +1937,8 @@ InputArea* NotificationToast::buildCard(
   // Right-clicking anywhere dismisses the card, while the visual (X) keeps its
   // familiar left-click close affordance without adding a nested hover target.
   viewport->setOnClick([this, id = entry.notificationId,
-                        hasDefaultAction
-                        = !entry.actions.empty() && entry.actions.size() >= 2 && entry.actions[0] == "default",
+                        hasDefaultAction =
+                            !entry.actions.empty() && entry.actions.size() >= 2 && entry.actions[0] == "default",
                         scale](const InputArea::PointerData& data) {
     if (data.button == BTN_RIGHT || (data.button == BTN_LEFT && isCloseButtonHit(data.localX, data.localY, scale))) {
       requestClose(id, CloseReason::Dismissed);
@@ -2189,8 +2189,8 @@ InputArea* NotificationToast::buildCard(
             }
             return;
           }
-          const int32_t remainingMs
-              = std::max<int32_t>(1, static_cast<int32_t>(std::ceil(static_cast<float>(totalDuration) * remaining)));
+          const int32_t remainingMs =
+              std::max<int32_t>(1, static_cast<int32_t>(std::ceil(static_cast<float>(totalDuration) * remaining)));
           if (m_notifications != nullptr) {
             m_notifications->resumeExpiry(notificationId, remainingMs);
           }
@@ -2368,8 +2368,9 @@ InputArea* NotificationToast::buildCard(
           .track = colorSpecFromRole(ColorRole::OnSurfaceVariant, 0.35f),
           .width = innerWidth,
           .height = progressHeight(scale),
-          .configure
-          = [scale, progressY](ProgressBar& progressBar) { progressBar.setPosition(cardInnerPad(scale), progressY); },
+          .configure = [scale, progressY](ProgressBar& progressBar) {
+            progressBar.setPosition(cardInnerPad(scale), progressY);
+          },
       })
   ));
 
@@ -2554,8 +2555,8 @@ bool NotificationToast::onPointerEvent(const PointerEvent& event) {
         continue;
       }
       if (inst->sceneRoot != nullptr) {
-        Node* const hit
-            = Node::hitTest(inst->sceneRoot.get(), static_cast<float>(event.sx), static_cast<float>(event.sy));
+        Node* const hit =
+            Node::hitTest(inst->sceneRoot.get(), static_cast<float>(event.sx), static_cast<float>(event.sy));
         if (!pointerHitsInlineReplyInput(*inst, hit)) {
           clearInlineReplyFocus(*inst);
         }

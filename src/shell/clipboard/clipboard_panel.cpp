@@ -314,8 +314,8 @@ namespace {
         m_image->setSize(thumbPx, thumbPx);
       }
       if (m_title != nullptr && m_meta != nullptr) {
-        const float textWidth
-            = std::max(0.0f, rowW - thumbPx - Style::spaceMd * m_scale - Style::spaceSm * m_scale * 2.0f);
+        const float textWidth =
+            std::max(0.0f, rowW - thumbPx - Style::spaceMd * m_scale - Style::spaceSm * m_scale * 2.0f);
         m_title->setMaxWidth(textWidth);
         m_meta->setMaxWidth(textWidth);
       }
@@ -728,8 +728,8 @@ void ClipboardPanel::doUpdate(Renderer& renderer) {
     }
 
     schedulePreviewPayloadRefresh(false);
-    const float previewWidth
-        = m_previewScrollView != nullptr ? m_previewScrollView->contentViewportWidth() : m_lastWidth;
+    const float previewWidth =
+        m_previewScrollView != nullptr ? m_previewScrollView->contentViewportWidth() : m_lastWidth;
     const float previewHeight = m_previewScrollView != nullptr ? m_previewScrollView->height() : m_lastHeight;
     rebuildPreview(renderer, previewWidth, previewHeight);
   }

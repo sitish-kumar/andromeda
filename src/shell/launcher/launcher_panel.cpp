@@ -169,8 +169,8 @@ namespace {
         m_glyph->setVisible(true);
       }
 
-      const float textWidth
-          = std::max(0.0f, width - kIconSize * m_scale - Style::spaceSm * m_scale * 2.0f - Style::spaceMd * m_scale);
+      const float textWidth =
+          std::max(0.0f, width - kIconSize * m_scale - Style::spaceSm * m_scale * 2.0f - Style::spaceMd * m_scale);
       m_title->setText(result.title);
       m_title->setMaxWidth(textWidth);
 

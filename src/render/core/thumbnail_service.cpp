@@ -133,8 +133,8 @@ namespace {
     const int resizedH = std::max(1, static_cast<int>(std::lround(static_cast<float>(height) * scale)));
 
     std::vector<std::uint8_t> out(static_cast<std::size_t>(resizedW) * static_cast<std::size_t>(resizedH) * 3);
-    unsigned char* result
-        = stbir_resize_uint8_linear(pixels.data(), width, height, 0, out.data(), resizedW, resizedH, 0, STBIR_RGB);
+    unsigned char* result =
+        stbir_resize_uint8_linear(pixels.data(), width, height, 0, out.data(), resizedW, resizedH, 0, STBIR_RGB);
     if (result == nullptr) {
       return false;
     }

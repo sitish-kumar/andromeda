@@ -44,10 +44,10 @@ namespace popup_chrome {
       geometry.bleed.down += kShadowSafetyPadding;
     }
 
-    geometry.surfaceWidth
-        = extentFor(geometry.contentWidth + static_cast<float>(geometry.bleed.left + geometry.bleed.right));
-    geometry.surfaceHeight
-        = extentFor(geometry.contentHeight + static_cast<float>(geometry.bleed.up + geometry.bleed.down));
+    geometry.surfaceWidth =
+        extentFor(geometry.contentWidth + static_cast<float>(geometry.bleed.left + geometry.bleed.right));
+    geometry.surfaceHeight =
+        extentFor(geometry.contentHeight + static_cast<float>(geometry.bleed.up + geometry.bleed.down));
     return geometry;
   }
 

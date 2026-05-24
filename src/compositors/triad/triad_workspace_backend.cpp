@@ -23,8 +23,8 @@ namespace {
   constexpr auto kReconnectInitial = std::chrono::seconds(2);
   constexpr auto kReconnectMax = std::chrono::seconds(30);
   constexpr std::size_t kReadBufferMaxBytes = 1024U * 1024U;
-  constexpr std::string_view kEventStreamRequest
-      = "{\"triad\":{\"version\":1,\"request\":\"event-stream\",\"events\":[\"state\",\"layout\",\"window\"]}}\n";
+  constexpr std::string_view kEventStreamRequest =
+      "{\"triad\":{\"version\":1,\"request\":\"event-stream\",\"events\":[\"state\",\"layout\",\"window\"]}}\n";
 
   [[nodiscard]] bool writeAll(int fd, std::string_view data) {
     std::size_t offset = 0;
@@ -313,8 +313,8 @@ int TriadWorkspaceBackend::pollTimeoutMs() const noexcept {
     return 0;
   }
 
-  const auto remaining
-      = std::chrono::ceil<std::chrono::milliseconds>(m_nextReconnectAt - std::chrono::steady_clock::now()).count();
+  const auto remaining =
+      std::chrono::ceil<std::chrono::milliseconds>(m_nextReconnectAt - std::chrono::steady_clock::now()).count();
   return static_cast<int>(std::max<std::int64_t>(0, remaining));
 }
 

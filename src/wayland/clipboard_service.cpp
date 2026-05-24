@@ -1192,8 +1192,8 @@ bool ClipboardService::persistHistory() {
         }
       }
 
-      const auto capturedAtMs
-          = std::chrono::duration_cast<std::chrono::milliseconds>(entry.capturedAt.time_since_epoch()).count();
+      const auto capturedAtMs =
+          std::chrono::duration_cast<std::chrono::milliseconds>(entry.capturedAt.time_since_epoch()).count();
       entries.push_back({
           {"id", entry.storageId},
           {"payload_path", entry.payloadPath},
@@ -1329,9 +1329,9 @@ std::string ClipboardService::payloadPathForId(std::string_view storageId) {
 }
 
 std::string ClipboardService::generateStorageId() {
-  const auto now
-      = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
-            .count();
+  const auto now =
+      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
+          .count();
   return std::to_string(now) + "-" + std::to_string(++gStorageCounter);
 }
 

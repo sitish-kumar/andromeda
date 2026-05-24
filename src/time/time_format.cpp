@@ -170,8 +170,12 @@ std::string formatIsoTime(std::string_view isoTime, const char* fmt) {
   }
 
   using namespace std::chrono;
-  const auto tp
-      = sys_days{std::chrono::year{year} / std::chrono::month{static_cast<unsigned>(month)} / std::chrono::day{static_cast<unsigned>(day)}}
+  const auto tp =
+      sys_days{
+          std::chrono::year{year}
+          / std::chrono::month{static_cast<unsigned>(month)}
+          / std::chrono::day{static_cast<unsigned>(day)}
+      }
       + hours{hour}
       + minutes{minute};
   const auto local = local_seconds{tp.time_since_epoch()};

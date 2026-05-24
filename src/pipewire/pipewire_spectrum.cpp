@@ -578,11 +578,11 @@ void PipeWireSpectrum::configureListenerState(ListenerState& state, bool resetSt
   const std::int64_t listenerBandCount = std::max(1, state.bandCount);
   for (std::size_t i = 0; i < bandCountSize; ++i) {
     const std::int64_t low = (static_cast<std::int64_t>(i) * analysisBandCount) / listenerBandCount;
-    const std::int64_t high
-        = ((static_cast<std::int64_t>(i + 1) * analysisBandCount) + listenerBandCount - 1) / listenerBandCount - 1;
+    const std::int64_t high =
+        ((static_cast<std::int64_t>(i + 1) * analysisBandCount) + listenerBandCount - 1) / listenerBandCount - 1;
     state.analysisBandLow[i] = std::clamp<int>(static_cast<int>(low), 0, m_analysisBandCount - 1);
-    state.analysisBandHigh[i]
-        = std::clamp<int>(static_cast<int>(high), state.analysisBandLow[i], m_analysisBandCount - 1);
+    state.analysisBandHigh[i] =
+        std::clamp<int>(static_cast<int>(high), state.analysisBandLow[i], m_analysisBandCount - 1);
   }
 
   const bool sizeMismatch = static_cast<int>(state.values.size()) != state.bandCount;
@@ -614,15 +614,15 @@ void PipeWireSpectrum::computeAnalysisBandBins() {
   const int fftBins = kFftSize / 2;
 
   for (std::size_t i = 0; i < analysisBandCountSize; ++i) {
-    const float bandFreqLow
-        = fLow * std::pow(ratio, static_cast<float>(i) / static_cast<float>(std::max(1, m_analysisBandCount)));
-    const float bandFreqHigh
-        = fLow * std::pow(ratio, static_cast<float>(i + 1) / static_cast<float>(std::max(1, m_analysisBandCount)));
+    const float bandFreqLow =
+        fLow * std::pow(ratio, static_cast<float>(i) / static_cast<float>(std::max(1, m_analysisBandCount)));
+    const float bandFreqHigh =
+        fLow * std::pow(ratio, static_cast<float>(i + 1) / static_cast<float>(std::max(1, m_analysisBandCount)));
 
-    int binLow
-        = static_cast<int>(std::ceil(bandFreqLow * static_cast<float>(kFftSize) / static_cast<float>(m_sampleRate)));
-    int binHigh
-        = static_cast<int>(std::floor(bandFreqHigh * static_cast<float>(kFftSize) / static_cast<float>(m_sampleRate)));
+    int binLow =
+        static_cast<int>(std::ceil(bandFreqLow * static_cast<float>(kFftSize) / static_cast<float>(m_sampleRate)));
+    int binHigh =
+        static_cast<int>(std::floor(bandFreqHigh * static_cast<float>(kFftSize) / static_cast<float>(m_sampleRate)));
 
     binLow = std::clamp(binLow, 1, fftBins);
     binHigh = std::clamp(binHigh, binLow, fftBins);

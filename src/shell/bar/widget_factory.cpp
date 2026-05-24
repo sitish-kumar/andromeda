@@ -127,11 +127,11 @@ std::unique_ptr<Widget> WidgetFactory::create(
   if (type == "active_window") {
     const float maxWidth = static_cast<float>(wc != nullptr ? wc->getDouble("max_length", 260.0) : 260.0);
     const float minWidth = static_cast<float>(wc != nullptr ? wc->getDouble("min_length", 80.0) : 80.0);
-    const float iconSize
-        = static_cast<float>(wc != nullptr ? wc->getDouble("icon_size", Style::fontSizeBody) : Style::fontSizeBody);
+    const float iconSize =
+        static_cast<float>(wc != nullptr ? wc->getDouble("icon_size", Style::fontSizeBody) : Style::fontSizeBody);
     const std::string titleScroll = wc != nullptr ? wc->getString("title_scroll", "none") : std::string("none");
-    const std::string displayMode
-        = wc != nullptr ? wc->getString("display", "icon_and_text") : std::string("icon_and_text");
+    const std::string displayMode =
+        wc != nullptr ? wc->getString("display", "icon_and_text") : std::string("icon_and_text");
     auto widget = std::make_unique<ActiveWindowWidget>(
         m_platform, maxWidth, minWidth, iconSize, parseActiveWindowTitleScrollMode(titleScroll),
         parseActiveWindowDisplayMode(displayMode)
@@ -169,8 +169,8 @@ std::unique_ptr<Widget> WidgetFactory::create(
     const bool showLabel = wc != nullptr ? wc->getBool("show_label", true) : true;
     const bool hideWhenPlugged = wc != nullptr ? wc->getBool("hide_when_plugged", false) : false;
     const bool hideWhenFull = wc != nullptr ? wc->getBool("hide_when_full", false) : false;
-    const BatteryDisplayMode displayMode
-        = displayModeStr == "graphic" ? BatteryDisplayMode::Graphic : BatteryDisplayMode::Icon;
+    const BatteryDisplayMode displayMode =
+        displayModeStr == "graphic" ? BatteryDisplayMode::Graphic : BatteryDisplayMode::Icon;
     auto widget = std::make_unique<BatteryWidget>(
         m_upower, deviceSelector, warningThreshold, warningColor, displayMode, showLabel, hideWhenPlugged, hideWhenFull
     );
@@ -361,8 +361,8 @@ std::unique_ptr<Widget> WidgetFactory::create(
 
   if (type == "spacer") {
     constexpr double kDefaultSpacerLength = 20.0;
-    const auto length
-        = static_cast<float>(wc != nullptr ? wc->getDouble("length", kDefaultSpacerLength) : kDefaultSpacerLength);
+    const auto length =
+        static_cast<float>(wc != nullptr ? wc->getDouble("length", kDefaultSpacerLength) : kDefaultSpacerLength);
     const bool verticalBar = barPosition == "left" || barPosition == "right";
     auto widget = std::make_unique<SpacerWidget>(length, verticalBar);
     widget->setContentScale(contentScale);
@@ -402,9 +402,8 @@ std::unique_ptr<Widget> WidgetFactory::create(
       displayMode = SysmonDisplayMode::Graph;
     const bool showLabel = wc != nullptr ? wc->getBool("show_label", true) : true;
     const auto labelMinWidth = static_cast<float>(wc != nullptr ? wc->getDouble("label_min_width", 0.0) : 0.0);
-    auto widget = std::make_unique<SysmonWidget>(
-        m_sysmon, output, stat, std::move(path), displayMode, showLabel, labelMinWidth
-    );
+    auto widget =
+        std::make_unique<SysmonWidget>(m_sysmon, output, stat, std::move(path), displayMode, showLabel, labelMinWidth);
     widget->setContentScale(contentScale);
     return widget;
   }
@@ -461,8 +460,8 @@ std::unique_ptr<Widget> WidgetFactory::create(
     const auto hiddenItems = wc != nullptr ? wc->getStringList("hidden") : std::vector<std::string>{};
     const auto pinnedItems = wc != nullptr ? wc->getStringList("pinned") : std::vector<std::string>{};
     const bool drawer = wc != nullptr ? wc->getBool("drawer", false) : false;
-    const std::size_t drawerColumns
-        = static_cast<std::size_t>(std::clamp<std::int64_t>(wc != nullptr ? wc->getInt("drawer_columns", 3) : 3, 1, 5));
+    const std::size_t drawerColumns =
+        static_cast<std::size_t>(std::clamp<std::int64_t>(wc != nullptr ? wc->getInt("drawer_columns", 3) : 3, 1, 5));
     const bool matchAdjacentSpacing = wc != nullptr ? wc->getBool("match_adjacent_spacing", false) : false;
     auto widget = std::make_unique<TrayWidget>(
         m_tray, hiddenItems, pinnedItems, drawer, std::function<void()>{}, barPosition, false, drawerColumns,

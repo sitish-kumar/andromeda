@@ -179,18 +179,18 @@ uint32_t NotificationManager::addOrReplace(
       auto& n = m_notifications[it->second];
 
       // Check if anything changed to avoid duplicate events
-      const bool changed
-          = (n.appName != appName
-             || n.summary != summary
-             || n.body != body
-             || n.timeout != timeout
-             || n.urgency != urgency
-             || n.origin != origin
-             || n.actions != actions
-             || n.icon != icon
-             || n.imageData != imageData
-             || n.category != category
-             || n.desktopEntry != desktopEntry);
+      const bool changed =
+          (n.appName != appName
+           || n.summary != summary
+           || n.body != body
+           || n.timeout != timeout
+           || n.urgency != urgency
+           || n.origin != origin
+           || n.actions != actions
+           || n.icon != icon
+           || n.imageData != imageData
+           || n.category != category
+           || n.desktopEntry != desktopEntry);
 
       n.origin = origin;
       n.appName = std::move(appName);
@@ -381,8 +381,8 @@ bool NotificationManager::close(uint32_t id, CloseReason reason) {
   const size_t index = it->second;
   const Notification closed = m_notifications[index];
   const bool hadUnreadBefore = computeHasUnreadNotificationHistory();
-  const bool historyHandledUnreadChange
-      = shouldTrackHistory(closed.origin, closed.urgency) && reason == CloseReason::Dismissed;
+  const bool historyHandledUnreadChange =
+      shouldTrackHistory(closed.origin, closed.urgency) && reason == CloseReason::Dismissed;
   const char* reasonStr = (reason == CloseReason::Expired) ? "expired"
       : (reason == CloseReason::Dismissed)                 ? "dismissed"
                                                            : "closed";
@@ -433,8 +433,8 @@ void NotificationManager::removeHistoryEntry(uint32_t id, std::optional<CloseRea
   }
 
   const bool hadUnreadBefore = computeHasUnreadNotificationHistory();
-  const CloseReason reason
-      = dbusCloseReason.value_or(m_history[it->second].closeReason.value_or(CloseReason::Dismissed));
+  const CloseReason reason =
+      dbusCloseReason.value_or(m_history[it->second].closeReason.value_or(CloseReason::Dismissed));
   emitPendingDBusClose(id, reason);
   m_history.erase(m_history.begin() + static_cast<std::ptrdiff_t>(it->second));
   ++m_changeSerial;

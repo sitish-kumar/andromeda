@@ -451,16 +451,16 @@ void MprisService::applyPositionSample(const std::string& busName, int64_t rawPo
 
   const auto now = std::chrono::steady_clock::now();
   const auto seekCommandIt = m_lastSeekCommandAt.find(busName);
-  const bool recentLocalSeek
-      = seekCommandIt != m_lastSeekCommandAt.end() && now - seekCommandIt->second <= kSeekPauseGraceWindow;
+  const bool recentLocalSeek =
+      seekCommandIt != m_lastSeekCommandAt.end() && now - seekCommandIt->second <= kSeekPauseGraceWindow;
   auto offsetIt = m_positionOffsetsUs.find(busName);
   std::int64_t offsetUs = offsetIt != m_positionOffsetsUs.end() ? offsetIt->second : 0;
   std::int64_t normalizedUs = std::max<std::int64_t>(0, rawPositionUs - offsetUs);
-  const bool hadAuthoritativeSample
-      = m_hasAuthoritativePositionSample.contains(busName) && m_hasAuthoritativePositionSample.at(busName);
+  const bool hadAuthoritativeSample =
+      m_hasAuthoritativePositionSample.contains(busName) && m_hasAuthoritativePositionSample.at(busName);
   const auto trackChangeIt = m_lastLogicalTrackChangeAt.find(busName);
-  const bool guardingRecentTrackChange = trackChangeIt != m_lastLogicalTrackChangeAt.end()
-      && now - trackChangeIt->second < kRecentTrackChangeGuardWindow;
+  const bool guardingRecentTrackChange =
+      trackChangeIt != m_lastLogicalTrackChangeAt.end() && now - trackChangeIt->second < kRecentTrackChangeGuardWindow;
   const std::int64_t elapsedSinceTrackChangeUs = trackChangeIt != m_lastLogicalTrackChangeAt.end()
       ? std::chrono::duration_cast<std::chrono::microseconds>(now - trackChangeIt->second).count()
       : 0;
@@ -536,8 +536,8 @@ void MprisService::applyPositionSample(const std::string& busName, int64_t rawPo
 
   if (hadAuthoritativeSample && playerIt->second.playbackStatus == "Paused" && normalizedUs > 0) {
     const auto pauseIt = m_recentNoSignalPauseAt.find(busName);
-    const bool recoveringRecentPause
-        = pauseIt != m_recentNoSignalPauseAt.end() && now - pauseIt->second <= kNoSignalPauseRecoveryWindow;
+    const bool recoveringRecentPause =
+        pauseIt != m_recentNoSignalPauseAt.end() && now - pauseIt->second <= kNoSignalPauseRecoveryWindow;
     const std::int64_t pausedJumpUs = std::llabs(normalizedUs - playerIt->second.positionUs);
     if (recoveringRecentPause) {
       if (recentLocalSeek) {
@@ -563,8 +563,8 @@ void MprisService::applyPositionSample(const std::string& busName, int64_t rawPo
         && std::llabs(candidateIt->second - normalizedUs) <= kPositionCandidateToleranceUs;
 
     if (candidateMatches && playerIt->second.playbackStatus == "Playing") {
-      const auto elapsedSinceCandidateUs
-          = std::chrono::duration_cast<std::chrono::microseconds>(now - candidateAtIt->second).count();
+      const auto elapsedSinceCandidateUs =
+          std::chrono::duration_cast<std::chrono::microseconds>(now - candidateAtIt->second).count();
       const std::int64_t progressUs = normalizedUs - candidateIt->second;
       const std::int64_t maxExpectedProgressUs = elapsedSinceCandidateUs
           + std::chrono::duration_cast<std::chrono::microseconds>(kRecentTrackChangeSlack).count();
@@ -598,8 +598,8 @@ void MprisService::applyPositionSample(const std::string& busName, int64_t rawPo
   }
 
   if (!authoritativeSample) {
-    const bool hasAuthoritativeSample
-        = m_hasAuthoritativePositionSample.contains(busName) && m_hasAuthoritativePositionSample.at(busName);
+    const bool hasAuthoritativeSample =
+        m_hasAuthoritativePositionSample.contains(busName) && m_hasAuthoritativePositionSample.at(busName);
     if (playerIt->second.playbackStatus == "Playing"
         && !hasAuthoritativeSample
         && shouldRetryPropertiesRefresh(busName)) {
@@ -633,8 +633,8 @@ std::int64_t MprisService::projectedPositionUs(const MprisPlayerInfo& player) co
     return 0;
   }
 
-  const bool hasAuthoritativeSample = m_hasAuthoritativePositionSample.contains(player.busName)
-      && m_hasAuthoritativePositionSample.at(player.busName);
+  const bool hasAuthoritativeSample =
+      m_hasAuthoritativePositionSample.contains(player.busName) && m_hasAuthoritativePositionSample.at(player.busName);
   std::int64_t projectedUs = std::max<std::int64_t>(0, player.positionUs);
   if (!hasAuthoritativeSample && player.playbackStatus == "Playing") {
     projectedUs = 0;
@@ -655,9 +655,8 @@ std::int64_t MprisService::projectedPositionUs(const MprisPlayerInfo& player) co
         return projectedUs;
       }
 
-      const auto elapsedUs
-          = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - it->second)
-                .count();
+      const auto elapsedUs =
+          std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - it->second).count();
       if (elapsedUs > 0) {
         projectedUs += elapsedUs;
       }
@@ -1521,9 +1520,8 @@ void MprisService::scheduleRecoveryDiscovery() {
 }
 
 void MprisService::addOrRefreshPlayer(const std::string& busName) {
-  auto [proxyIt, inserted] = m_playerProxies.emplace(
-      busName, sdbus::createProxy(m_bus.connection(), sdbus::ServiceName{busName}, kMprisPath)
-  );
+  auto [proxyIt, inserted] =
+      m_playerProxies.emplace(busName, sdbus::createProxy(m_bus.connection(), sdbus::ServiceName{busName}, kMprisPath));
 
   if (inserted) {
     proxyIt->second->uponSignal("PropertiesChanged")
@@ -1589,11 +1587,11 @@ void MprisService::addOrRefreshPlayer(const std::string& busName) {
 
       if (playerIt->second.playbackStatus == "Paused" && normalizedUs > 0) {
         const auto pauseIt = m_recentNoSignalPauseAt.find(busName);
-        const bool recoveringRecentPause
-            = pauseIt != m_recentNoSignalPauseAt.end() && now - pauseIt->second <= kNoSignalPauseRecoveryWindow;
+        const bool recoveringRecentPause =
+            pauseIt != m_recentNoSignalPauseAt.end() && now - pauseIt->second <= kNoSignalPauseRecoveryWindow;
         const auto seekCommandIt = m_lastSeekCommandAt.find(busName);
-        const bool recentLocalSeek
-            = seekCommandIt != m_lastSeekCommandAt.end() && now - seekCommandIt->second <= kSeekPauseGraceWindow;
+        const bool recentLocalSeek =
+            seekCommandIt != m_lastSeekCommandAt.end() && now - seekCommandIt->second <= kSeekPauseGraceWindow;
         const std::int64_t pausedJumpUs = std::llabs(normalizedUs - previousPosUs);
         if (recoveringRecentPause && !recentLocalSeek && pausedJumpUs >= kPauseRecoveryMinJumpUs) {
           playerIt->second.playbackStatus = "Playing";
@@ -1700,8 +1698,8 @@ void MprisService::addOrRefreshPlayer(const std::string& busName) {
                     effectivePlayerProps = playerProps;
                   }
 
-                  const MprisPlayerInfo info
-                      = readPlayerInfoFromProperties(busName, effectiveRootProps, effectivePlayerProps);
+                  const MprisPlayerInfo info =
+                      readPlayerInfoFromProperties(busName, effectiveRootProps, effectivePlayerProps);
                   applyPlayerSnapshot(busName, info, hadPositionSignal, hadFullRefreshFailure);
                 });
           } catch (const sdbus::Error& e) {
@@ -1794,11 +1792,11 @@ void MprisService::applyPlayerSnapshot(
     const bool previousStrong = hasStrongNowPlayingMetadata(previous_info) || !previous_info.artUrl.empty();
     const bool incomingWeak = !hasStrongNowPlayingMetadata(info);
     const auto strongIt = m_lastStrongMetadataUpdate.find(busName);
-    const bool withinStabilizeWindow
-        = strongIt != m_lastStrongMetadataUpdate.end() && now - strongIt->second < kMetadataStabilizeWindow;
+    const bool withinStabilizeWindow =
+        strongIt != m_lastStrongMetadataUpdate.end() && now - strongIt->second < kMetadataStabilizeWindow;
     const auto seekCommandIt = m_lastSeekCommandAt.find(busName);
-    const bool recentLocalSeek
-        = seekCommandIt != m_lastSeekCommandAt.end() && now - seekCommandIt->second <= kSeekPauseGraceWindow;
+    const bool recentLocalSeek =
+        seekCommandIt != m_lastSeekCommandAt.end() && now - seekCommandIt->second <= kSeekPauseGraceWindow;
 
     if (merged.playbackStatus == "Playing"
         && previousStrong
@@ -1823,16 +1821,16 @@ void MprisService::applyPlayerSnapshot(
 
     const std::string newSignature = logicalTrackSignature(merged);
     const auto signatureIt = m_logicalTrackSignatures.find(busName);
-    const std::string previousSignature
-        = signatureIt != m_logicalTrackSignatures.end() ? signatureIt->second : logicalTrackSignature(previous_info);
+    const std::string previousSignature =
+        signatureIt != m_logicalTrackSignatures.end() ? signatureIt->second : logicalTrackSignature(previous_info);
 
     auto offsetIt = m_positionOffsetsUs.find(busName);
     if (offsetIt == m_positionOffsetsUs.end()) {
       offsetIt = m_positionOffsetsUs.emplace(busName, 0).first;
     }
 
-    const bool previousPositionAuthoritative
-        = m_hasAuthoritativePositionSample.contains(busName) && m_hasAuthoritativePositionSample.at(busName);
+    const bool previousPositionAuthoritative =
+        m_hasAuthoritativePositionSample.contains(busName) && m_hasAuthoritativePositionSample.at(busName);
 
     const bool logicalTrackChanged = !newSignature.empty() && previousSignature != newSignature;
     const bool playbackStatusChanged = previous_info.playbackStatus != merged.playbackStatus;
@@ -2027,8 +2025,8 @@ std::optional<std::string> MprisService::chooseActivePlayer() const {
       continue;
     }
     const auto playingIt = m_lastPlayingUpdate.find(busName);
-    const auto seenAt
-        = playingIt != m_lastPlayingUpdate.end() ? playingIt->second : std::chrono::steady_clock::time_point{};
+    const auto seenAt =
+        playingIt != m_lastPlayingUpdate.end() ? playingIt->second : std::chrono::steady_clock::time_point{};
     if (!mostRecentPlaying.has_value() || seenAt > mostRecentPlayingAt) {
       mostRecentPlaying = busName;
       mostRecentPlayingAt = seenAt;

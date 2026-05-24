@@ -227,8 +227,8 @@ void VirtualGridView::doLayout(Renderer& renderer) {
   const float cellW = columns == 0 ? 0.0f : std::max(0.0f, (viewportW - (columnsF - 1.0f) * m_columnGap) / columnsF);
   const float cellH = m_squareCells ? cellW : m_cellHeight;
   const std::size_t rowCount = (m_itemCount + columns - 1) / columns;
-  const float virtualHeight
-      = rowCount == 0 ? 0.0f : (static_cast<float>(rowCount) * cellH + static_cast<float>(rowCount - 1) * m_rowGap);
+  const float virtualHeight =
+      rowCount == 0 ? 0.0f : (static_cast<float>(rowCount) * cellH + static_cast<float>(rowCount - 1) * m_rowGap);
 
   m_layoutColumns = columns;
   m_cellWidth = cellW;
@@ -265,8 +265,8 @@ void VirtualGridView::doLayout(Renderer& renderer) {
   std::size_t lastRow = 0;
   if (rowStride > 0.0f && rowCount > 0) {
     const long firstRaw = static_cast<long>(std::floor(scrollY / rowStride)) - static_cast<long>(m_overscanRows);
-    const long lastRaw
-        = static_cast<long>(std::ceil((scrollY + viewportH) / rowStride)) + static_cast<long>(m_overscanRows);
+    const long lastRaw =
+        static_cast<long>(std::ceil((scrollY + viewportH) / rowStride)) + static_cast<long>(m_overscanRows);
     firstRow = static_cast<std::size_t>(std::max<long>(0, firstRaw));
     lastRow = static_cast<std::size_t>(std::max<long>(0, std::min<long>(lastRaw, static_cast<long>(rowCount) - 1)));
   }

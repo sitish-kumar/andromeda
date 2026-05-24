@@ -438,8 +438,8 @@ void Wallpaper::registerIpc(IpcService& ipc) {
                   known.push_back(out.connectorName);
                 }
               }
-              const std::string suffix
-                  = known.empty() ? std::string() : std::string("; known: ") + StringUtils::join(known, ", ");
+              const std::string suffix =
+                  known.empty() ? std::string() : std::string("; known: ") + StringUtils::join(known, ", ");
               return "error: unknown output \"" + *outputConnector + "\"" + suffix + "\n";
             }
           }
@@ -559,8 +559,8 @@ void Wallpaper::runAutomation(std::int64_t minuteStamp) {
         }
       }
       std::vector<std::string> candidates;
-      const std::string dir
-          = output != nullptr ? resolveWallpaperDirectory(wallpaper, *output, mode) : wallpaper.directory;
+      const std::string dir =
+          output != nullptr ? resolveWallpaperDirectory(wallpaper, *output, mode) : wallpaper.directory;
       collectWallpaperCandidates(dir, automation.recursive, candidates);
       if (candidates.empty()) {
         continue;
@@ -639,8 +639,8 @@ bool Wallpaper::switchToRandomWallpaper(std::optional<std::string_view> connecto
       }
     }
     std::vector<std::string> candidates;
-    const std::string dir
-        = output != nullptr ? resolveWallpaperDirectory(wallpaper, *output, mode) : wallpaper.directory;
+    const std::string dir =
+        output != nullptr ? resolveWallpaperDirectory(wallpaper, *output, mode) : wallpaper.directory;
     collectWallpaperCandidates(dir, wallpaper.automation.recursive, candidates);
     if (candidates.empty()) {
       return false;
@@ -673,8 +673,8 @@ bool Wallpaper::switchToRandomWallpaper(std::optional<std::string_view> connecto
         }
       }
       std::vector<std::string> candidates;
-      const std::string dir
-          = output != nullptr ? resolveWallpaperDirectory(wallpaper, *output, mode) : wallpaper.directory;
+      const std::string dir =
+          output != nullptr ? resolveWallpaperDirectory(wallpaper, *output, mode) : wallpaper.directory;
       collectWallpaperCandidates(dir, wallpaper.automation.recursive, candidates);
       if (candidates.empty()) {
         continue;
@@ -833,8 +833,8 @@ void Wallpaper::startTransition(WallpaperInstance& instance) {
   }
 
   const auto& transitions = wpConfig.transitions;
-  const auto picked
-      = transitions[static_cast<std::size_t>(std::floor(randomFloat(0.0f, static_cast<float>(transitions.size()))))];
+  const auto picked =
+      transitions[static_cast<std::size_t>(std::floor(randomFloat(0.0f, static_cast<float>(transitions.size()))))];
   instance.activeTransition = picked;
   instance.transitionParams = randomizeParams(picked, wpConfig.edgeSmoothness, aspectRatio);
   instance.transitioning = true;

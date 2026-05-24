@@ -198,8 +198,8 @@ std::chrono::milliseconds GammaService::msUntilNextManualBoundary() const {
 
 void GammaService::scheduleManualTimer() {
   const auto boundaryDelay = msUntilNextManualBoundary();
-  const auto delay
-      = std::min(boundaryDelay, std::chrono::duration_cast<std::chrono::milliseconds>(kScheduleRecheckInterval));
+  const auto delay =
+      std::min(boundaryDelay, std::chrono::duration_cast<std::chrono::milliseconds>(kScheduleRecheckInterval));
   kLog.debug(
       "manual schedule: next phase boundary in {}s, recheck in {}s", boundaryDelay.count() / 1000, delay.count() / 1000
   );
@@ -257,8 +257,8 @@ GammaService::SolarTimes GammaService::computeSolarTimes(double lat, double lon)
 
   constexpr double kSunriseZenith = 90.833 * kPi / 180.0;
   const double latRad = lat * kPi / 180.0;
-  const double hourAngleArg = std::cos(kSunriseZenith) / (std::cos(latRad) * std::cos(declination))
-      - std::tan(latRad) * std::tan(declination);
+  const double hourAngleArg =
+      std::cos(kSunriseZenith) / (std::cos(latRad) * std::cos(declination)) - std::tan(latRad) * std::tan(declination);
 
   if (hourAngleArg > 1.0) {
     return SolarTimes{.sunriseMinutes = 0, .sunsetMinutes = 0};
@@ -344,8 +344,8 @@ std::chrono::milliseconds GammaService::msUntilNextGeoBoundary() const {
 
 void GammaService::scheduleGeoTimer() {
   const auto boundaryDelay = msUntilNextGeoBoundary();
-  const auto delay
-      = std::min(boundaryDelay, std::chrono::duration_cast<std::chrono::milliseconds>(kScheduleRecheckInterval));
+  const auto delay =
+      std::min(boundaryDelay, std::chrono::duration_cast<std::chrono::milliseconds>(kScheduleRecheckInterval));
   kLog.debug(
       "geo schedule: next phase boundary in {}s, recheck in {}s", boundaryDelay.count() / 1000, delay.count() / 1000
   );
@@ -529,8 +529,8 @@ void GammaService::restoreAll() {
 
 void GammaService::startTransition(int fromKelvin, int toKelvin) {
   if (fromKelvin < 0) {
-    const int dayTemp
-        = std::clamp(m_config.dayTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
+    const int dayTemp =
+        std::clamp(m_config.dayTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
     fromKelvin = dayTemp;
     syncOutputs();
     m_currentKelvin = fromKelvin;
@@ -591,10 +591,10 @@ void GammaService::stopTransition() {
 // --- Core state machine ---
 
 int GammaService::targetTemperature() const {
-  const int dayTemp
-      = std::clamp(m_config.dayTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
-  const int nightTemp
-      = std::clamp(m_config.nightTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
+  const int dayTemp =
+      std::clamp(m_config.dayTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
+  const int nightTemp =
+      std::clamp(m_config.nightTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
 
   if (dayTemp <= nightTemp) {
     return -1;
@@ -658,8 +658,8 @@ void GammaService::apply() {
   if (!effectiveEnabled()) {
     m_scheduleTimer.stop();
     if (m_currentKelvin > 0) {
-      const int dayTemp
-          = std::clamp(m_config.dayTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
+      const int dayTemp =
+          std::clamp(m_config.dayTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
       m_restoreAfterTransition = true;
       startTransition(m_currentKelvin, dayTemp);
     } else {
@@ -686,8 +686,8 @@ void GammaService::apply() {
   }
 
   if (target != m_targetKelvin) {
-    const int dayTemp
-        = std::clamp(m_config.dayTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
+    const int dayTemp =
+        std::clamp(m_config.dayTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
     kLog.info(
         "applying {}K (day={}K night={}K force={})", target, dayTemp,
         std::clamp(m_config.nightTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax),

@@ -126,8 +126,8 @@ namespace noctalia::theme {
 
     const std::unordered_set<std::string> kColorArgFilters = {"blend", "harmonize"};
 
-    constexpr std::array<int, 18> kPaletteTones
-        = {0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 90, 95, 98, 99, 100};
+    constexpr std::array<int, 18> kPaletteTones = {0,  5,  10, 15, 20, 25, 30, 35, 40,
+                                                   50, 60, 70, 80, 90, 95, 98, 99, 100};
     constexpr std::array<std::string_view, 2> kTemplateModes = {"dark", "light"};
 
     struct Lab {
@@ -467,8 +467,8 @@ namespace noctalia::theme {
         diff += 360.0;
       double newHue = srcHue;
       if (name == "blend") {
-        const std::optional<std::string> amountArg
-            = match[2].matched ? std::optional<std::string>(match[2].str()) : std::nullopt;
+        const std::optional<std::string> amountArg =
+            match[2].matched ? std::optional<std::string>(match[2].str()) : std::nullopt;
         const double amount = std::clamp(parseNumber(amountArg), 0.0, 1.0);
         newHue = std::fmod(srcHue + diff * amount + 360.0, 360.0);
       } else if (name == "harmonize") {
@@ -484,8 +484,8 @@ namespace noctalia::theme {
     RichColor applyColorFilter(RichColor color, const std::string& name, const std::optional<std::string>& arg) {
       auto [h, s, l] = color.color.toHsl();
       if (name == "grayscale") {
-        const int gray
-            = static_cast<int>(std::lround(0.299 * color.color.r + 0.587 * color.color.g + 0.114 * color.color.b));
+        const int gray =
+            static_cast<int>(std::lround(0.299 * color.color.r + 0.587 * color.color.g + 0.114 * color.color.b));
         color.color = Color(gray, gray, gray);
         return color;
       }
@@ -1143,8 +1143,8 @@ namespace noctalia::theme {
       const std::filesystem::path expanded = FileUtils::expandUserPath(path);
       if (expanded.is_absolute())
         return expanded;
-      const std::filesystem::path base
-          = configPath.has_parent_path() ? configPath.parent_path() : std::filesystem::path{};
+      const std::filesystem::path base =
+          configPath.has_parent_path() ? configPath.parent_path() : std::filesystem::path{};
       return base / expanded;
     }
 
@@ -1380,8 +1380,8 @@ namespace noctalia::theme {
           continue;
         }
 
-        const auto fileResult
-            = EngineImpl(m_themeData, renderOptions).renderFile(effectiveInput, std::filesystem::path(outputPath));
+        const auto fileResult =
+            EngineImpl(m_themeData, renderOptions).renderFile(effectiveInput, std::filesystem::path(outputPath));
         if (!fileResult.success) {
           ok = false;
           continue;

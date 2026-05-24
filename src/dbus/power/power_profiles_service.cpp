@@ -185,8 +185,8 @@ void PowerProfilesService::emitChangedIfNeeded(const PowerProfilesState& next) {
   }
 
   const bool activeProfileChanged = next.activeProfile != m_state.activeProfile;
-  const PowerProfilesChangeOrigin origin = activeProfileChanged ? consumeActiveProfileChangeOrigin(next.activeProfile)
-                                                                : PowerProfilesChangeOrigin::External;
+  const PowerProfilesChangeOrigin origin =
+      activeProfileChanged ? consumeActiveProfileChangeOrigin(next.activeProfile) : PowerProfilesChangeOrigin::External;
   m_state = next;
   if (m_changeCallback) {
     m_changeCallback(m_state, origin);

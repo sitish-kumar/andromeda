@@ -350,10 +350,10 @@ void WeatherTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeig
   }
 
   if (m_currentGlyph != nullptr && m_currentCard != nullptr) {
-    const float cardInnerHeight
-        = std::max(0.0f, m_currentCard->height() - (m_currentCard->paddingTop() + m_currentCard->paddingBottom()));
-    const float desiredGlyph
-        = std::max(Style::controlHeightLg * 1.8f * scale, std::min(kCurrentGlyphSize * scale, cardInnerHeight * 0.8f));
+    const float cardInnerHeight =
+        std::max(0.0f, m_currentCard->height() - (m_currentCard->paddingTop() + m_currentCard->paddingBottom()));
+    const float desiredGlyph =
+        std::max(Style::controlHeightLg * 1.8f * scale, std::min(kCurrentGlyphSize * scale, cardInnerHeight * 0.8f));
     m_currentGlyph->setGlyphSize(desiredGlyph);
   }
 
@@ -664,9 +664,8 @@ void WeatherTab::sync(Renderer& renderer) {
   if (m_windLabel != nullptr) {
     const bool imperial = m_weather->useImperial();
     const double windSpeed = imperial ? snapshot.current.windSpeedKmh * 0.621371 : snapshot.current.windSpeedKmh;
-    const char* windUnit = imperial
-        ? "mph"
-        : (snapshot.currentUnits.windSpeed.empty() ? "km/h" : snapshot.currentUnits.windSpeed.c_str());
+    const char* windUnit =
+        imperial ? "mph" : (snapshot.currentUnits.windSpeed.empty() ? "km/h" : snapshot.currentUnits.windSpeed.c_str());
     m_windLabel->setText(
         std::format(
             "{} {} {}", static_cast<int>(std::lround(windSpeed)), windUnit,
@@ -691,8 +690,8 @@ void WeatherTab::sync(Renderer& renderer) {
   auto unit = m_weather->displayTemperatureUnit();
   if (m_tempMaxLabel != nullptr) {
     if (!snapshot.forecastDays.empty()) {
-      const int temp
-          = static_cast<int>(std::lround(m_weather->displayTemperature(snapshot.forecastDays.front().temperatureMaxC)));
+      const int temp =
+          static_cast<int>(std::lround(m_weather->displayTemperature(snapshot.forecastDays.front().temperatureMaxC)));
       m_tempMaxLabel->setText(std::format("{}{}", temp, unit));
     } else {
       m_tempMaxLabel->setText("--");
@@ -700,8 +699,8 @@ void WeatherTab::sync(Renderer& renderer) {
   }
   if (m_tempMinLabel != nullptr) {
     if (!snapshot.forecastDays.empty()) {
-      const int temp
-          = static_cast<int>(std::lround(m_weather->displayTemperature(snapshot.forecastDays.front().temperatureMinC)));
+      const int temp =
+          static_cast<int>(std::lround(m_weather->displayTemperature(snapshot.forecastDays.front().temperatureMinC)));
       m_tempMinLabel->setText(std::format("{}{}", temp, unit));
     } else {
       m_tempMinLabel->setText("--");
@@ -725,8 +724,8 @@ void WeatherTab::sync(Renderer& renderer) {
     );
   }
 
-  const bool firstForecastIsToday
-      = !snapshot.forecastDays.empty() && snapshot.forecastDays.front().dateIso == todayIso(snapshot.utcOffsetSeconds);
+  const bool firstForecastIsToday =
+      !snapshot.forecastDays.empty() && snapshot.forecastDays.front().dateIso == todayIso(snapshot.utcOffsetSeconds);
   const std::size_t forecastStart = firstForecastIsToday ? 1 : 0;
   const std::size_t visibleForecastCount = forecastStart < snapshot.forecastDays.size()
       ? std::min(kDayCount, snapshot.forecastDays.size() - forecastStart)

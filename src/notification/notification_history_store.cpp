@@ -319,8 +319,8 @@ namespace {
         const int sx = x * w / nw;
         const std::uint8_t* srcPx = rgba.data()
             + (static_cast<std::size_t>(sy) * static_cast<std::size_t>(w) + static_cast<std::size_t>(sx)) * 4;
-        std::uint8_t* dstPx = dst.data()
-            + (static_cast<std::size_t>(y) * static_cast<std::size_t>(nw) + static_cast<std::size_t>(x)) * 4;
+        std::uint8_t* dstPx =
+            dst.data() + (static_cast<std::size_t>(y) * static_cast<std::size_t>(nw) + static_cast<std::size_t>(x)) * 4;
         std::memcpy(dstPx, srcPx, 4);
       }
     }

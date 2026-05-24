@@ -538,8 +538,8 @@ namespace {
 } // namespace
 
 std::vector<SessionPanelActionConfig> SessionPanel::effectiveActions() const {
-  std::vector<SessionPanelActionConfig> src
-      = m_config != nullptr ? m_config->config().shell.session.actions : defaultSessionPanelActions();
+  std::vector<SessionPanelActionConfig> src =
+      m_config != nullptr ? m_config->config().shell.session.actions : defaultSessionPanelActions();
 
   std::vector<SessionPanelActionConfig> out;
   out.reserve(src.size());
@@ -661,8 +661,8 @@ void SessionPanel::create() {
 
 Button* SessionPanel::createActionButton(const SessionPanelActionConfig& cfg, float scale) {
   auto button = std::make_unique<Button>();
-  const std::string labelText
-      = cfg.label.has_value() && !cfg.label->empty() ? *cfg.label : i18n::tr(labelKeyForAction(cfg.action));
+  const std::string labelText =
+      cfg.label.has_value() && !cfg.label->empty() ? *cfg.label : i18n::tr(labelKeyForAction(cfg.action));
   button->setText(labelText);
   if (cfg.shortcut.has_value() && cfg.shortcut->sym != 0) {
     button->setBadge(keyChordDisplayLabel(*cfg.shortcut));

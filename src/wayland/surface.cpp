@@ -856,8 +856,8 @@ void Surface::preparePendingFrame() {
   m_updateRequested = false;
   m_layoutRequested = false;
   ScopedBoolFlag preparing{m_inPrepareFrame};
-  const float callbackMs
-      = elapsedMs([this, needsUpdate, needsLayout] { m_prepareFrameCallback(needsUpdate, needsLayout); });
+  const float callbackMs =
+      elapsedMs([this, needsUpdate, needsLayout] { m_prepareFrameCallback(needsUpdate, needsLayout); });
   recordSurfaceProfileEvent(*this, SurfaceProfileEvent::PrepareCallback, callbackMs);
   logSlowSurfaceOperation(
       callbackMs, "surface prepareFrame callback took {:.1f}ms ({}, {}x{} logical)", callbackMs,

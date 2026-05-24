@@ -106,8 +106,8 @@ namespace {
       if (a == 0) {
         continue;
       }
-      const float lum
-          = (loaded->rgba[i] * 0.299f + loaded->rgba[i + 1] * 0.587f + loaded->rgba[i + 2] * 0.114f) / 255.0f;
+      const float lum =
+          (loaded->rgba[i] * 0.299f + loaded->rgba[i + 1] * 0.587f + loaded->rgba[i + 2] * 0.114f) / 255.0f;
       loaded->rgba[i + 0] = rr;
       loaded->rgba[i + 1] = gg;
       loaded->rgba[i + 2] = bb;
@@ -501,12 +501,12 @@ void TrayWidget::rebuild(Renderer& renderer) {
     }
 
     if (iconNode == nullptr) {
-      const auto& pixmap
-          = item.needsAttention && !item.attentionArgb32.empty() ? item.attentionArgb32 : item.iconArgb32;
-      const std::int32_t pixmapW
-          = item.needsAttention && !item.attentionArgb32.empty() ? item.attentionWidth : item.iconWidth;
-      const std::int32_t pixmapH
-          = item.needsAttention && !item.attentionArgb32.empty() ? item.attentionHeight : item.iconHeight;
+      const auto& pixmap =
+          item.needsAttention && !item.attentionArgb32.empty() ? item.attentionArgb32 : item.iconArgb32;
+      const std::int32_t pixmapW =
+          item.needsAttention && !item.attentionArgb32.empty() ? item.attentionWidth : item.iconWidth;
+      const std::int32_t pixmapH =
+          item.needsAttention && !item.attentionArgb32.empty() ? item.attentionHeight : item.iconHeight;
 
       if (!pixmap.empty() && pixmapW > 0 && pixmapH > 0) {
         auto image = ui::image({
@@ -872,8 +872,8 @@ std::string TrayWidget::resolveIconPath(const TrayItemInfo& item) {
 }
 
 std::string TrayWidget::iconForItem(const TrayItemInfo& item) const {
-  const std::string preferred
-      = item.needsAttention && !item.attentionIconName.empty() ? item.attentionIconName : item.iconName;
+  const std::string preferred =
+      item.needsAttention && !item.attentionIconName.empty() ? item.attentionIconName : item.iconName;
   if (!preferred.empty() && GlyphRegistry::contains(preferred)) {
     return preferred;
   }

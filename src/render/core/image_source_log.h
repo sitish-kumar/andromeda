@@ -44,8 +44,8 @@ namespace ImageSourceLog {
     }
 
     const std::size_t comma = source.find(',');
-    const std::string_view header
-        = source.substr(5, comma == std::string_view::npos ? std::string_view::npos : comma - 5);
+    const std::string_view header =
+        source.substr(5, comma == std::string_view::npos ? std::string_view::npos : comma - 5);
     std::string result = "data:";
     result += header.empty() ? "<no-media-type>" : detail::truncatedWithSize(header, detail::kMaxLoggedDataHeaderBytes);
 

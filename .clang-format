@@ -5,7 +5,7 @@ PointerAlignment: Left
 NamespaceIndentation: All
 AlignAfterOpenBracket: BlockIndent
 AlignOperands: DontAlign
-BreakBeforeBinaryOperators: All
+BreakBeforeBinaryOperators: NonAssignment
 BreakBinaryOperations: RespectPrecedence
 SortIncludes: CaseSensitive
 IncludeBlocks: Regroup

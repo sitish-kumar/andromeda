@@ -137,8 +137,8 @@ namespace settings {
           .height = std::max<std::uint32_t>(1, height),
           .anchor = XDG_POSITIONER_ANCHOR_NONE,
           .gravity = XDG_POSITIONER_GRAVITY_NONE,
-          .constraintAdjustment
-          = XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y,
+          .constraintAdjustment =
+              XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y,
           .offsetX = 0,
           .offsetY = 0,
           .serial = serial,
@@ -427,8 +427,8 @@ namespace settings {
                   }
                   // Bundled scripted widget (manifest preset): one-click add, no naming form.
                   if (const auto it = m_presetScripts.find(option.value); it != m_presetScripts.end()) {
-                    const std::string instanceId
-                        = m_config != nullptr && !widgetReferenceNameExists(*m_config, option.value)
+                    const std::string instanceId =
+                        m_config != nullptr && !widgetReferenceNameExists(*m_config, option.value)
                         ? option.value
                         : suggestedInstanceId(option.value);
                     if (m_onSelect) {

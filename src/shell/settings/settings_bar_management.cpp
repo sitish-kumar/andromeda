@@ -110,10 +110,10 @@ namespace settings {
           )) {
         const std::string barName = ctx.selectedBar->name;
         const std::string match = ctx.selectedMonitorOverride->match;
-        const bool pendingDelete
-            = ctx.pendingDeleteMonitorOverrideBarName == barName && ctx.pendingDeleteMonitorOverrideMatch == match;
-        const bool renaming
-            = ctx.renamingMonitorOverrideBarName == barName && ctx.renamingMonitorOverrideMatch == match;
+        const bool pendingDelete =
+            ctx.pendingDeleteMonitorOverrideBarName == barName && ctx.pendingDeleteMonitorOverrideMatch == match;
+        const bool renaming =
+            ctx.renamingMonitorOverrideBarName == barName && ctx.renamingMonitorOverrideMatch == match;
         auto* management = makeSection(
             content, i18n::tr("settings.entities.monitor-override.management"), ctx.scale,
             ctx.config.shell.panel.borders
@@ -305,23 +305,23 @@ namespace settings {
               .flexGrow = 1.0f,
           });
 
-          auto doRename
-              = [&renamingBarName = ctx.renamingBarName, config = ctx.config, barName, renameBar = ctx.renameBar,
-                 inputPtr, requestRebuild = ctx.requestRebuild](std::string rawName) {
-                  const std::string newName = normalizedConfigId(rawName);
-                  if (newName == barName) {
-                    renamingBarName.clear();
-                    inputPtr->setInvalid(false);
-                    requestRebuild();
-                    return;
-                  }
-                  if (!isValidConfigId(newName) || barNameExists(config, newName)) {
-                    inputPtr->setInvalid(true);
-                    return;
-                  }
-                  inputPtr->setInvalid(false);
-                  renameBar(barName, newName);
-                };
+          auto doRename = [&renamingBarName = ctx.renamingBarName, config = ctx.config, barName,
+                           renameBar = ctx.renameBar, inputPtr,
+                           requestRebuild = ctx.requestRebuild](std::string rawName) {
+            const std::string newName = normalizedConfigId(rawName);
+            if (newName == barName) {
+              renamingBarName.clear();
+              inputPtr->setInvalid(false);
+              requestRebuild();
+              return;
+            }
+            if (!isValidConfigId(newName) || barNameExists(config, newName)) {
+              inputPtr->setInvalid(true);
+              return;
+            }
+            inputPtr->setInvalid(false);
+            renameBar(barName, newName);
+          };
 
           inputPtr->setOnChange([inputPtr](const std::string& /*value*/) { inputPtr->setInvalid(false); });
           inputPtr->setOnSubmit([doRename](const std::string& text) mutable { doRename(text); });

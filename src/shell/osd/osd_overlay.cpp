@@ -233,9 +233,8 @@ void OsdOverlay::ensureSurfaces() {
     return;
   }
 
-  const std::string position = (m_config != nullptr && !m_config->config().osd.position.empty())
-      ? m_config->config().osd.position
-      : "top_right";
+  const std::string position =
+      (m_config != nullptr && !m_config->config().osd.position.empty()) ? m_config->config().osd.position : "top_right";
   const std::string orientation = (m_config != nullptr && !m_config->config().osd.orientation.empty())
       ? m_config->config().osd.orientation
       : "horizontal";

@@ -644,9 +644,8 @@ void TrayMenu::ensureSurface() {
   });
   inst->surface->setDismissedCallback([this]() { close(); });
 
-  const auto chrome = popup_chrome::computeGeometry(
-      kSurfaceWidth, static_cast<float>(surfaceHeightPx()), popupShadowConfig(m_config)
-  );
+  const auto chrome =
+      popup_chrome::computeGeometry(kSurfaceWidth, static_cast<float>(surfaceHeightPx()), popupShadowConfig(m_config));
   PopupPlacement placement{};
   if (const auto bar = resolveTrayBarConfig(m_config, m_wayland, output); bar.has_value()) {
     placement = popupPlacementForBar(*bar, anchorX, anchorY);
@@ -733,9 +732,8 @@ void TrayMenu::resizeMainSurfaceToEntries() {
     return;
   }
 
-  const auto chrome = popup_chrome::computeGeometry(
-      kSurfaceWidth, static_cast<float>(surfaceHeightPx()), popupShadowConfig(m_config)
-  );
+  const auto chrome =
+      popup_chrome::computeGeometry(kSurfaceWidth, static_cast<float>(surfaceHeightPx()), popupShadowConfig(m_config));
   const auto desiredWidth = chrome.surfaceWidth;
   const auto desiredHeight = chrome.surfaceHeight;
   if (m_instance->surface->width() == desiredWidth && m_instance->surface->height() == desiredHeight) {
@@ -881,8 +879,8 @@ std::optional<TrayItemInfo> TrayMenu::activeTrayItem() const {
     return std::nullopt;
   }
   const auto allItems = m_tray->items();
-  const auto it
-      = std::ranges::find_if(allItems, [this](const TrayItemInfo& item) { return item.id == m_activeItemId; });
+  const auto it =
+      std::ranges::find_if(allItems, [this](const TrayItemInfo& item) { return item.id == m_activeItemId; });
   if (it == allItems.end()) {
     return std::nullopt;
   }
@@ -898,8 +896,8 @@ bool TrayMenu::activeItemPinned() const {
     return false;
   }
   const auto cfgIt = m_config->config().widgets.find("tray");
-  const auto pinned
-      = cfgIt != m_config->config().widgets.end() ? cfgIt->second.getStringList("pinned") : std::vector<std::string>{};
+  const auto pinned =
+      cfgIt != m_config->config().widgets.end() ? cfgIt->second.getStringList("pinned") : std::vector<std::string>{};
   for (const auto& token : pinned) {
     if (tray::tokenMatchesItem(token, *item)) {
       return true;
@@ -918,13 +916,13 @@ bool TrayMenu::toggleActiveItemPinned() {
   }
 
   auto cfgIt = m_config->config().widgets.find("tray");
-  std::vector<std::string> pinned
-      = cfgIt != m_config->config().widgets.end() ? cfgIt->second.getStringList("pinned") : std::vector<std::string>{};
+  std::vector<std::string> pinned =
+      cfgIt != m_config->config().widgets.end() ? cfgIt->second.getStringList("pinned") : std::vector<std::string>{};
   std::erase_if(pinned, [](const std::string& token) {
     return tray::looksGenericStatusItemName(token) || tray::isTransientUniqueIdentifier(token);
   });
-  const bool currentlyPinned
-      = std::ranges::any_of(pinned, [&](const std::string& token) { return tray::tokenMatchesItem(token, *item); });
+  const bool currentlyPinned =
+      std::ranges::any_of(pinned, [&](const std::string& token) { return tray::tokenMatchesItem(token, *item); });
 
   if (currentlyPinned) {
     std::erase_if(pinned, [&](const std::string& token) { return tray::tokenMatchesItem(token, *item); });
@@ -1004,9 +1002,8 @@ void TrayMenu::openSubmenu(std::int32_t parentEntryId, float rowCenterY) {
   const auto rowH = static_cast<std::int32_t>(Style::controlHeightSm);
   constexpr std::int32_t kSubGap = 4;
 
-  const auto chrome = popup_chrome::computeGeometry(
-      kSurfaceWidth, static_cast<float>(submenuHeightPx()), popupShadowConfig(m_config)
-  );
+  const auto chrome =
+      popup_chrome::computeGeometry(kSurfaceWidth, static_cast<float>(submenuHeightPx()), popupShadowConfig(m_config));
 
   const auto* wlOutput = m_wayland->findOutputByWl(m_instance->output);
   const std::int32_t outputWidth = (wlOutput != nullptr && wlOutput->logicalWidth > 0)
