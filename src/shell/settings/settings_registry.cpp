@@ -1085,6 +1085,18 @@ namespace settings {
         "hud overlay volume brightness size scale multiplier"
     ));
     entries.push_back(makeEntry(
+        "popups", "osd", tr("settings.schema.shell.osd-offset-x.label"),
+        tr("settings.schema.shell.osd-offset-x.description"), {"osd", "offset_x"},
+        StepperSetting{.value = cfg.osd.offsetX, .minValue = 0, .maxValue = 200, .step = 1, .valueSuffix = "px"},
+        "hud overlay horizontal margin"
+    ));
+    entries.push_back(makeEntry(
+        "popups", "osd", tr("settings.schema.shell.osd-offset-y.label"),
+        tr("settings.schema.shell.osd-offset-y.description"), {"osd", "offset_y"},
+        StepperSetting{.value = cfg.osd.offsetY, .minValue = 0, .maxValue = 200, .step = 1, .valueSuffix = "px"},
+        "hud overlay vertical margin"
+    ));
+    entries.push_back(makeEntry(
         "popups", "osd", tr("settings.schema.shell.osd-lock-keys.label"),
         tr("settings.schema.shell.osd-lock-keys.description"), {"osd", "lock_keys"}, ToggleSetting{cfg.osd.lockKeys},
         "hud overlay caps num scroll keyboard"
