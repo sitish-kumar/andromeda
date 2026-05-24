@@ -1,19 +1,13 @@
 #include "shell/session/session_panel.h"
 
-#include "compositors/compositor_detect.h"
-#include "compositors/hyprland/hyprland_runtime.h"
-#include "compositors/niri/niri_runtime.h"
-#include "compositors/triad/triad_runtime.h"
 #include "config/config_service.h"
 #include "core/keybind_matcher.h"
 #include "core/log.h"
-#include "core/process.h"
 #include "i18n/i18n.h"
-#include "notification/notifications.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
-#include "shell/lockscreen/lock_screen.h"
 #include "shell/panel/panel_manager.h"
+#include "shell/session/session_action_runner.h"
 #include "ui/controls/button.h"
 #include "ui/controls/flex.h"
 #include "ui/controls/grid_view.h"
@@ -22,276 +16,14 @@
 #include "util/string_utils.h"
 
 #include <algorithm>
-#include <cerrno>
-#include <chrono>
-#include <csignal>
-#include <cstdlib>
-#include <json.hpp>
 #include <memory>
 #include <string>
 #include <string_view>
-#include <thread>
 #include <utility>
 
 namespace {
 
   constexpr Logger kLog("session");
-  constexpr std::chrono::milliseconds kPowerCommandTimeout{5000};
-
-  [[nodiscard]] const char* valueOrUnset(const char* value) {
-    return value != nullptr && value[0] != '\0' ? value : "<unset>";
-  }
-
-  compositors::CompositorKind logActionContext(std::string_view action) {
-    const compositors::CompositorKind compositor = compositors::detect();
-    kLog.info(
-        "{} requested: compositor={} env_hint=\"{}\" xdg_session_id={} user={}", action, compositors::name(compositor),
-        compositors::envHint(), valueOrUnset(std::getenv("XDG_SESSION_ID")), valueOrUnset(std::getenv("USER"))
-    );
-    return compositor;
-  }
-
-  void logLabwcExitFailure(std::string_view command, const process::RunResult& result) {
-    if (!result.err.empty()) {
-      kLog.warn("logout: {} failed with code {}: {}", command, result.exitCode, result.err);
-    } else if (!result.out.empty()) {
-      kLog.warn("logout: {} failed with code {}: {}", command, result.exitCode, result.out);
-    } else {
-      kLog.warn("logout: {} failed with code {}", command, result.exitCode);
-    }
-  }
-
-  [[nodiscard]] std::string commandLabel(std::initializer_list<const char*> args) {
-    std::string label;
-    for (const char* arg : args) {
-      if (arg == nullptr) {
-        continue;
-      }
-      if (!label.empty()) {
-        label += ' ';
-      }
-      label += arg;
-    }
-    return label.empty() ? "<empty>" : label;
-  }
-
-  void
-  logSessionCommandFailure(std::string_view action, std::string_view commandLabel, const process::RunResult& result) {
-    if (result.timedOut) {
-      kLog.warn("{}: {} timed out after {}ms", action, commandLabel, kPowerCommandTimeout.count());
-    } else if (!result.err.empty()) {
-      kLog.warn("{}: {} failed with code {}: {}", action, commandLabel, result.exitCode, result.err);
-    } else if (!result.out.empty()) {
-      kLog.warn("{}: {} failed with code {}: {}", action, commandLabel, result.exitCode, result.out);
-    } else {
-      kLog.warn("{}: {} failed with code {}", action, commandLabel, result.exitCode);
-    }
-  }
-
-  [[nodiscard]] bool runCheckedSessionCommand(
-      std::string_view action, std::initializer_list<std::initializer_list<const char*>> commands
-  ) {
-    bool attempted = false;
-    for (const auto& command : commands) {
-      if (command.size() == 0) {
-        continue;
-      }
-      const char* executable = *command.begin();
-      if (executable == nullptr || executable[0] == '\0') {
-        continue;
-      }
-      if (!process::commandExists(executable)) {
-        kLog.debug("{}: {} not found", action, executable);
-        continue;
-      }
-
-      attempted = true;
-      const std::string label = commandLabel(command);
-      const process::RunResult result = process::runSyncWithTimeout(command, kPowerCommandTimeout);
-      if (result) {
-        kLog.info("{}: {} accepted", action, label);
-        return true;
-      }
-      logSessionCommandFailure(action, label, result);
-    }
-
-    if (!attempted) {
-      kLog.warn("{}: no supported command found", action);
-    } else {
-      kLog.warn("{}: all command methods failed", action);
-    }
-    return false;
-  }
-
-  bool terminateLabwcPid() {
-    const char* pidEnv = std::getenv("LABWC_PID");
-    if (pidEnv == nullptr || pidEnv[0] == '\0') {
-      kLog.warn("logout: LABWC_PID is not set");
-      return false;
-    }
-
-    errno = 0;
-    char* end = nullptr;
-    const long pid = std::strtol(pidEnv, &end, 10);
-    if (errno != 0 || end == pidEnv || (end != nullptr && *end != '\0') || pid <= 1) {
-      kLog.warn("logout: LABWC_PID has invalid value \"{}\"", pidEnv);
-      return false;
-    }
-
-    if (::kill(static_cast<pid_t>(pid), SIGTERM) != 0) {
-      kLog.warn("logout: failed to terminate LABWC_PID={}", pidEnv);
-      return false;
-    }
-    return true;
-  }
-
-  bool doLabwcLogout() {
-    if (process::commandExists("labwc")) {
-      const process::RunResult longResult = process::runSync({"labwc", "--exit"});
-      if (longResult) {
-        return true;
-      }
-      logLabwcExitFailure("labwc --exit", longResult);
-
-      const process::RunResult shortResult = process::runSync({"labwc", "-e"});
-      if (shortResult) {
-        return true;
-      }
-      logLabwcExitFailure("labwc -e", shortResult);
-    } else {
-      kLog.warn("logout: labwc executable not found");
-    }
-
-    return terminateLabwcPid();
-  }
-
-  bool doLogout(compositors::niri::NiriRuntime* niriRuntime) {
-    const compositors::CompositorKind compositor = logActionContext("logout");
-
-    switch (compositor) {
-    case compositors::CompositorKind::Hyprland: {
-      compositors::hyprland::HyprlandRuntime runtime;
-      if (runtime.configIsLua()) {
-        return (runtime.request("dispatch hl.dsp.exit()") != std::nullopt);
-      } else {
-        return (runtime.request("dispatch exit") != std::nullopt);
-      }
-    }
-    case compositors::CompositorKind::Sway:
-      return process::launchFirstAvailable({{"swaymsg", "exit"}, {"i3-msg", "exit"}});
-    case compositors::CompositorKind::Niri: {
-      compositors::niri::NiriRuntime scratch;
-      compositors::niri::NiriRuntime& runtime = niriRuntime != nullptr ? *niriRuntime : scratch;
-      return runtime.requestAction(nlohmann::json{{"Quit", nlohmann::json{{"skip_confirmation", true}}}}, true);
-    }
-    case compositors::CompositorKind::Triad: {
-      compositors::triad::TriadRuntime runtime;
-      return runtime.requestAction("exit-session");
-    }
-    case compositors::CompositorKind::Mango:
-      return process::launchFirstAvailable({{"mmsg", "-q"}});
-    case compositors::CompositorKind::Labwc:
-      if (doLabwcLogout()) {
-        return true;
-      }
-      break;
-    case compositors::CompositorKind::Unknown:
-      break;
-    }
-
-    if (const char* sessionId = std::getenv("XDG_SESSION_ID"); sessionId != nullptr && sessionId[0] != '\0') {
-      if (process::launchFirstAvailable({{"loginctl", "terminate-session", sessionId}})) {
-        return true;
-      }
-    }
-    if (process::launchFirstAvailable({{"systemctl", "--user", "stop", "graphical-session.target"}})) {
-      return true;
-    }
-    if (const char* user = std::getenv("USER"); user != nullptr && user[0] != '\0') {
-      if (process::launchFirstAvailable({{"loginctl", "terminate-user", user}})) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  bool doSuspend() {
-    logActionContext("suspend");
-    return runCheckedSessionCommand(
-        "suspend",
-        {
-            {"systemctl", "suspend"},
-            {"loginctl", "suspend"},
-        }
-    );
-  }
-
-  bool doReboot() {
-    logActionContext("reboot");
-    return runCheckedSessionCommand(
-        "reboot",
-        {
-            {"systemctl", "reboot"},
-            {"loginctl", "reboot"},
-            {"reboot"},
-            {"/sbin/reboot"},
-            {"/usr/sbin/reboot"},
-        }
-    );
-  }
-
-  bool doShutdown() {
-    logActionContext("shutdown");
-    return runCheckedSessionCommand(
-        "shutdown",
-        {
-            {"systemctl", "poweroff"},
-            {"loginctl", "poweroff"},
-            {"poweroff"},
-            {"/sbin/poweroff"},
-            {"/usr/sbin/poweroff"},
-        }
-    );
-  }
-
-  bool doLock() {
-    logActionContext("lock");
-    LockScreen* lockScreen = LockScreen::instance();
-    if (lockScreen == nullptr) {
-      kLog.warn("lock: lock screen service unavailable");
-      return false;
-    }
-    if (!lockScreen->lock()) {
-      kLog.warn("lock: lock screen request failed");
-      return false;
-    }
-    kLog.info("lock: lock screen requested");
-    return true;
-  }
-
-  void runPowerAction(std::function<bool()> hook, std::function<bool()> action, std::string_view actionName) {
-    std::thread([hook = std::move(hook), action = std::move(action), actionName = std::string(actionName)]() mutable {
-      if (hook && !hook()) {
-        kLog.warn("{} cancelled because a configured hook failed", actionName);
-        return;
-      }
-      if (!action()) {
-        kLog.warn("{} failed after hooks completed", actionName);
-      }
-    }).detach();
-  }
-
-  void runShellCommand(std::function<bool()> hook, std::string command, std::string_view actionName) {
-    std::thread([hook = std::move(hook), command = std::move(command), actionName = std::string(actionName)]() mutable {
-      if (hook && !hook()) {
-        kLog.warn("{} cancelled because a configured hook failed", actionName);
-        return;
-      }
-      if (!process::runAsync(command)) {
-        kLog.warn("{}: command failed", actionName);
-      }
-    }).detach();
-  }
 
   [[nodiscard]] bool isKnownAction(std::string_view action) {
     return action == "lock"
@@ -560,19 +292,6 @@ std::vector<SessionPanelActionConfig> SessionPanel::effectiveActions() const {
   return out;
 }
 
-std::function<bool()> SessionPanel::hookFor(const std::string& action) const {
-  if (action == "logout") {
-    return m_actionHooks.onLogout;
-  }
-  if (action == "reboot") {
-    return m_actionHooks.onReboot;
-  }
-  if (action == "shutdown") {
-    return m_actionHooks.onShutdown;
-  }
-  return {};
-}
-
 PanelPlacement SessionPanel::panelPlacement() const noexcept {
   return m_config != nullptr ? m_config->config().shell.panel.sessionPlacement : PanelPlacement::Attached;
 }
@@ -741,46 +460,11 @@ void SessionPanel::activateSelected() {
 }
 
 void SessionPanel::invokeEntry(const SessionPanelActionConfig& cfg) {
-  if (cfg.command.has_value()) {
-    const std::string cmd = StringUtils::trim(*cfg.command);
-    if (!cmd.empty()) {
-      std::function<bool()> hook;
-      if (cfg.action == "logout" || cfg.action == "reboot" || cfg.action == "shutdown") {
-        hook = hookFor(cfg.action);
-      }
-      runShellCommand(std::move(hook), cmd, cfg.action);
-      return;
-    }
-  }
-
-  if (cfg.action == "command") {
-    kLog.warn("session panel: custom action missing command");
+  if (m_actionRunner == nullptr) {
+    kLog.warn("session panel: action runner unavailable");
     return;
   }
-
-  if (cfg.action == "logout") {
-    compositors::niri::NiriRuntime* niri = m_niriRuntime;
-    runPowerAction(m_actionHooks.onLogout, [niri]() { return doLogout(niri); }, "logout");
-    return;
-  }
-  if (cfg.action == "suspend") {
-    runPowerAction({}, []() { return doSuspend(); }, "suspend");
-    return;
-  }
-  if (cfg.action == "reboot") {
-    runPowerAction(m_actionHooks.onReboot, []() { return doReboot(); }, "reboot");
-    return;
-  }
-  if (cfg.action == "shutdown") {
-    runPowerAction(m_actionHooks.onShutdown, []() { return doShutdown(); }, "shutdown");
-    return;
-  }
-  if (cfg.action == "lock") {
-    if (!doLock()) {
-      notify::error("Noctalia", i18n::tr("session.errors.lock-title"), i18n::tr("session.errors.lock-body"));
-    }
-    return;
-  }
+  m_actionRunner->invoke(cfg);
 }
 
 bool SessionPanel::handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers) {

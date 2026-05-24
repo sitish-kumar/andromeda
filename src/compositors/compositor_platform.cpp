@@ -5,6 +5,7 @@
 #include "compositors/ext_workspace/ext_workspace_output_backend.h"
 #include "compositors/hyprland/hyprland_keyboard_backend.h"
 #include "compositors/hyprland/hyprland_output_backend.h"
+#include "compositors/hyprland/hyprland_runtime.h"
 #include "compositors/hyprland/hyprland_toplevel_mapping.h"
 #include "compositors/hyprland/hyprland_window_id.h"
 #include "compositors/mango/mango_keyboard_backend.h"
@@ -15,17 +16,25 @@
 #include "compositors/niri/niri_workspace_backend.h"
 #include "compositors/sway/sway_keyboard_backend.h"
 #include "compositors/sway/sway_output_backend.h"
+#include "compositors/sway/sway_runtime.h"
 #include "compositors/triad/triad_keyboard_backend.h"
 #include "compositors/triad/triad_output_backend.h"
 #include "compositors/triad/triad_runtime.h"
 #include "compositors/triad/triad_workspace_backend.h"
+#include "core/log.h"
+#include "core/process.h"
 #include "wayland/wayland_connection.h"
 #include "wayland/wayland_workspaces.h"
 
 #include <algorithm>
+#include <cerrno>
+#include <csignal>
+#include <cstdlib>
 #include <functional>
+#include <json.hpp>
 #include <optional>
 #include <string>
+#include <sys/types.h>
 #include <unordered_set>
 #include <utility>
 
@@ -47,6 +56,88 @@ namespace compositors {
 } // namespace compositors
 
 namespace {
+
+  constexpr Logger kLog("compositor_platform");
+
+  [[nodiscard]] const char* valueOrUnset(const char* value) {
+    return value != nullptr && value[0] != '\0' ? value : "<unset>";
+  }
+
+  void logSessionExitContext(compositors::CompositorKind compositor) {
+    kLog.info(
+        "logout requested: compositor={} env_hint=\"{}\" xdg_session_id={} user={}", compositors::name(compositor),
+        compositors::envHint(), valueOrUnset(std::getenv("XDG_SESSION_ID")), valueOrUnset(std::getenv("USER"))
+    );
+  }
+
+  void logLabwcExitFailure(std::string_view command, const process::RunResult& result) {
+    if (!result.err.empty()) {
+      kLog.warn("logout: {} failed with code {}: {}", command, result.exitCode, result.err);
+    } else if (!result.out.empty()) {
+      kLog.warn("logout: {} failed with code {}: {}", command, result.exitCode, result.out);
+    } else {
+      kLog.warn("logout: {} failed with code {}", command, result.exitCode);
+    }
+  }
+
+  [[nodiscard]] bool terminateLabwcPid() {
+    const char* pidEnv = std::getenv("LABWC_PID");
+    if (pidEnv == nullptr || pidEnv[0] == '\0') {
+      kLog.warn("logout: LABWC_PID is not set");
+      return false;
+    }
+
+    errno = 0;
+    char* end = nullptr;
+    const long pid = std::strtol(pidEnv, &end, 10);
+    if (errno != 0 || end == pidEnv || (end != nullptr && *end != '\0') || pid <= 1) {
+      kLog.warn("logout: LABWC_PID has invalid value \"{}\"", pidEnv);
+      return false;
+    }
+
+    if (::kill(static_cast<pid_t>(pid), SIGTERM) != 0) {
+      kLog.warn("logout: failed to terminate LABWC_PID={}", pidEnv);
+      return false;
+    }
+    return true;
+  }
+
+  [[nodiscard]] bool requestLabwcSessionExit() {
+    if (process::commandExists("labwc")) {
+      const process::RunResult longResult = process::runSync({"labwc", "--exit"});
+      if (longResult) {
+        return true;
+      }
+      logLabwcExitFailure("labwc --exit", longResult);
+
+      const process::RunResult shortResult = process::runSync({"labwc", "-e"});
+      if (shortResult) {
+        return true;
+      }
+      logLabwcExitFailure("labwc -e", shortResult);
+    } else {
+      kLog.warn("logout: labwc executable not found");
+    }
+
+    return terminateLabwcPid();
+  }
+
+  [[nodiscard]] bool requestLoginSessionExit() {
+    if (const char* sessionId = std::getenv("XDG_SESSION_ID"); sessionId != nullptr && sessionId[0] != '\0') {
+      if (process::launchFirstAvailable({{"loginctl", "terminate-session", sessionId}})) {
+        return true;
+      }
+    }
+    if (process::launchFirstAvailable({{"systemctl", "--user", "stop", "graphical-session.target"}})) {
+      return true;
+    }
+    if (const char* user = std::getenv("USER"); user != nullptr && user[0] != '\0') {
+      if (process::launchFirstAvailable({{"loginctl", "terminate-user", user}})) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   void appendHyprlandExtOnlyWindows(
       std::vector<ToplevelInfo>& windows, const std::vector<ToplevelInfo>& extWindows,
@@ -813,6 +904,42 @@ void CompositorPlatform::dispatchKeyboardLayoutPoll(const std::vector<pollfd>& f
   if (m_keyboardLayoutBackend != nullptr && m_keyboardLayoutBackend->pollFd() >= 0 && startIdx < fds.size()) {
     m_keyboardLayoutBackend->dispatchPoll(fds[startIdx].revents);
   }
+}
+
+bool CompositorPlatform::requestSessionExit() const {
+  const compositors::CompositorKind compositor = compositors::detect();
+  logSessionExitContext(compositor);
+
+  switch (compositor) {
+  case compositors::CompositorKind::Hyprland: {
+    auto& runtime = m_runtimeRegistry->hyprland();
+    if (runtime.configIsLua()) {
+      return runtime.request("dispatch hl.dsp.exit()") != std::nullopt;
+    }
+    return runtime.request("dispatch exit") != std::nullopt;
+  }
+  case compositors::CompositorKind::Sway: {
+    const auto& command = m_runtimeRegistry->sway().msgCommand();
+    return !command.empty() && process::runAsync(std::vector<std::string>{command, "exit"});
+  }
+  case compositors::CompositorKind::Niri:
+    return m_runtimeRegistry->niri().requestAction(
+        nlohmann::json{{"Quit", nlohmann::json{{"skip_confirmation", true}}}}, true
+    );
+  case compositors::CompositorKind::Triad:
+    return m_runtimeRegistry->triad().requestAction("exit-session");
+  case compositors::CompositorKind::Mango:
+    return process::launchFirstAvailable({{"mmsg", "-q"}});
+  case compositors::CompositorKind::Labwc:
+    if (requestLabwcSessionExit()) {
+      return true;
+    }
+    break;
+  case compositors::CompositorKind::Unknown:
+    break;
+  }
+
+  return requestLoginSessionExit();
 }
 
 bool CompositorPlatform::setOutputPower(bool on) const {

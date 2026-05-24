@@ -60,6 +60,7 @@
 #include "shell/panel/panel_manager.h"
 #include "shell/polkit/polkit_panel.h"
 #include "shell/screen_corners/screen_corners.h"
+#include "shell/session/session_action_runner.h"
 #include "shell/session/session_panel.h"
 #include "shell/settings/settings_window.h"
 #include "shell/tray/tray_menu.h"
@@ -168,7 +169,6 @@ private:
   std::optional<bool> m_prevWirelessEnabledForEvents;
   std::optional<bool> m_prevBluetoothPoweredForEvents;
   std::optional<std::string> m_prevPowerProfileActiveForEvents;
-  SessionActionHooks m_sessionActionHooks;
   std::unique_ptr<BrightnessService> m_brightnessService;
   std::unique_ptr<TrayService> m_trayService;
   std::unique_ptr<NotificationService> m_notificationDbus;
@@ -188,6 +188,7 @@ private:
   Dock m_dock;
   DesktopWidgetsController m_desktopWidgetsController;
   LockScreen m_lockScreen;
+  SessionActionRunner m_sessionActionRunner{m_compositorPlatform, m_lockScreen};
   PanelManager m_panelManager;
   OverviewLauncherCapture m_overviewLauncherCapture;
   NotificationToast m_notificationToast;

@@ -143,7 +143,6 @@ Application::Application()
     : m_lockKeysService(m_wayland), m_gammaService(m_wayland), m_weatherService(m_configService, m_httpClient) {
   m_notificationManager.loadPersistedHistory();
   notify::setInstance(&m_notificationManager);
-  LockScreen::setInstance(&m_lockScreen);
 
   auto shouldRefreshControlCenter = [this]() { return m_panelManager.isOpenPanel("control-center"); };
 
@@ -181,7 +180,6 @@ Application::~Application() {
   m_notificationManager.flushPersistedHistory();
   m_wayland.setClipboardService(nullptr);
   m_wayland.setVirtualKeyboardService(nullptr);
-  LockScreen::setInstance(nullptr);
   notify::setInstance(nullptr);
 }
 
@@ -996,9 +994,11 @@ void Application::initUi() {
       [this]() { m_hookManager.fire(HookKind::SessionUnlocked); }
   );
 
-  m_sessionActionHooks.onLogout = [this]() { return m_hookManager.fireBlocking(HookKind::LoggingOut); };
-  m_sessionActionHooks.onReboot = [this]() { return m_hookManager.fireBlocking(HookKind::Rebooting); };
-  m_sessionActionHooks.onShutdown = [this]() { return m_hookManager.fireBlocking(HookKind::ShuttingDown); };
+  SessionActionHooks sessionActionHooks;
+  sessionActionHooks.onLogout = [this]() { return m_hookManager.fireBlocking(HookKind::LoggingOut); };
+  sessionActionHooks.onReboot = [this]() { return m_hookManager.fireBlocking(HookKind::Rebooting); };
+  sessionActionHooks.onShutdown = [this]() { return m_hookManager.fireBlocking(HookKind::ShuttingDown); };
+  m_sessionActionRunner.setHooks(std::move(sessionActionHooks));
 
   m_wayland.setPointerEventCallback([this](const PointerEvent& event) {
     if (m_lockScreen.isActive()) {
@@ -1095,10 +1095,7 @@ void Application::initUi() {
   });
   m_panelManager.registerPanel("clipboard", std::move(clipboardPanel));
   syncClipboardService();
-  m_panelManager.registerPanel(
-      "session",
-      std::make_unique<SessionPanel>(&m_configService, m_sessionActionHooks, &m_compositorPlatform.niriRuntime())
-  );
+  m_panelManager.registerPanel("session", std::make_unique<SessionPanel>(&m_configService, m_sessionActionRunner));
   m_panelManager.registerPanel("test", std::make_unique<TestPanel>());
   m_panelManager.registerPanel(
       "control-center",
@@ -1548,17 +1545,16 @@ bool Application::runIdleAction(const IdleActionRequest& action) {
   case IdleActionKind::Command:
     return runUserCommand(action.command);
   case IdleActionKind::Lock:
-    return runUserCommand("noctalia:screen-lock");
+    return m_sessionActionRunner.lock();
   case IdleActionKind::ScreenOff:
-    return runUserCommand("noctalia:dpms-off");
+    return m_compositorPlatform.setOutputPower(false);
   case IdleActionKind::ScreenOn:
-    return runUserCommand("noctalia:dpms-on");
+    return m_compositorPlatform.setOutputPower(true);
   case IdleActionKind::Suspend:
     if (action.lockBeforeSuspend) {
-      m_lockScreen.runAfterSessionLocked([this]() { (void)runUserCommand("noctalia:suspend"); });
-      return true;
+      return m_sessionActionRunner.lockThenSuspendDetached();
     }
-    return runUserCommand("noctalia:suspend");
+    return m_sessionActionRunner.requestSuspendDetached();
   }
   return false;
 }
