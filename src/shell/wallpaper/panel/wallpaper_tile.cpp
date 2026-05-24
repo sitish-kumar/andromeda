@@ -3,10 +3,7 @@
 #include "cursor-shape-v1-client-protocol.h"
 #include "render/core/renderer.h"
 #include "render/core/thumbnail_service.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/image.h"
-#include "ui/controls/label.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 
@@ -42,41 +39,58 @@ WallpaperTile::WallpaperTile(float cellWidth, float cellHeight, float contentSca
   const float frameRadius = Style::scaledRadiusLg(m_contentScale);
   const float outlineWidth = Style::borderWidth * 2.0f;
 
-  auto layout = std::make_unique<Flex>();
-  layout->setDirection(FlexDirection::Vertical);
-  layout->setAlign(FlexAlign::Center);
-  m_layout = static_cast<Flex*>(addChild(std::move(layout)));
+  auto layout = ui::column({
+      .out = &m_layout,
+      .align = FlexAlign::Center,
+  });
+  addChild(std::move(layout));
 
-  auto thumbBox = std::make_unique<Flex>();
-  thumbBox->setDirection(FlexDirection::Vertical);
-  thumbBox->setAlign(FlexAlign::Center);
-  thumbBox->setJustify(FlexJustify::Center);
-  thumbBox->setRadius(frameRadius);
-  m_thumbBox = static_cast<Flex*>(m_layout->addChild(std::move(thumbBox)));
+  m_layout->addChild(
+      ui::column({
+          .out = &m_thumbBox,
+          .align = FlexAlign::Center,
+          .justify = FlexJustify::Center,
+          .configure = [frameRadius](Flex& flex) { flex.setRadius(frameRadius); },
+      })
+  );
 
-  auto image = std::make_unique<Image>();
-  image->setFit(ImageFit::Cover);
-  image->setRadius(frameRadius);
-  image->setBorder(colorSpecFromRole(ColorRole::Outline), outlineWidth);
-  m_thumb = static_cast<Image*>(m_thumbBox->addChild(std::move(image)));
+  m_thumbBox->addChild(
+      ui::image({
+          .out = &m_thumb,
+          .fit = ImageFit::Cover,
+          .radius = frameRadius,
+          .configure = [outlineWidth](Image& image) {
+            image.setBorder(colorSpecFromRole(ColorRole::Outline), outlineWidth);
+          },
+      })
+  );
 
-  auto glyph = std::make_unique<Glyph>();
-  glyph->setGlyph("folder");
-  glyph->setColor(colorSpecFromRole(ColorRole::Primary));
-  glyph->setVisible(false);
-  m_folderGlyph = static_cast<Glyph*>(m_thumbBox->addChild(std::move(glyph)));
+  m_thumbBox->addChild(
+      ui::glyph({
+          .out = &m_folderGlyph,
+          .glyph = "folder",
+          .color = colorSpecFromRole(ColorRole::Primary),
+          .visible = false,
+      })
+  );
 
-  auto loadingGlyph = std::make_unique<Glyph>();
-  loadingGlyph->setGlyph("hourglass-empty");
-  loadingGlyph->setColor(colorSpecFromRole(ColorRole::OnSurface, 0.5f));
-  loadingGlyph->setVisible(false);
-  m_loadingGlyph = static_cast<Glyph*>(m_thumbBox->addChild(std::move(loadingGlyph)));
+  m_thumbBox->addChild(
+      ui::glyph({
+          .out = &m_loadingGlyph,
+          .glyph = "hourglass-empty",
+          .color = colorSpecFromRole(ColorRole::OnSurface, 0.5f),
+          .visible = false,
+      })
+  );
 
-  auto label = std::make_unique<Label>();
-  label->setFontSize(Style::fontSizeCaption * m_contentScale);
-  label->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-  label->setMaxLines(1);
-  m_label = static_cast<Label*>(m_layout->addChild(std::move(label)));
+  m_layout->addChild(
+      ui::label({
+          .out = &m_label,
+          .fontSize = Style::fontSizeCaption * m_contentScale,
+          .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+          .maxLines = 1,
+      })
+  );
 
   setCellSize(cellWidth, cellHeight);
 }

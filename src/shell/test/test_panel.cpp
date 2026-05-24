@@ -4,9 +4,9 @@
 #include "render/core/color.h"
 #include "render/render_context.h"
 #include "shell/panel/panel_manager.h"
+#include "ui/builders.h"
 #include "ui/controls/box.h"
 #include "ui/controls/button.h"
-#include "ui/controls/checkbox.h"
 #include "ui/controls/flex.h"
 #include "ui/controls/glyph.h"
 #include "ui/controls/grid_tile.h"
@@ -19,7 +19,6 @@
 #include "ui/controls/select.h"
 #include "ui/controls/slider.h"
 #include "ui/controls/spinner.h"
-#include "ui/controls/stepper.h"
 #include "ui/controls/toggle.h"
 #include "ui/dialogs/color_picker_dialog.h"
 #include "ui/dialogs/file_dialog.h"
@@ -198,8 +197,9 @@ void TestPanel::create() {
     glyphButton->setGlyphSize(Style::fontSizeBody * scale);
     glyphButton->setVariant(ButtonVariant::Default);
     glyphButton->setMinHeight(Style::controlHeight * scale);
-    glyphButton->setPadding(Style::spaceSm * scale, Style::spaceMd * scale, Style::spaceSm * scale,
-                            Style::spaceMd * scale);
+    glyphButton->setPadding(
+        Style::spaceSm * scale, Style::spaceMd * scale, Style::spaceSm * scale, Style::spaceMd * scale
+    );
     glyphButton->setRadius(Style::scaledRadiusMd(scale));
     glyphButton->setOnClick([]() {});
     m_glyphButton = glyphButton.get();
@@ -349,15 +349,16 @@ void TestPanel::create() {
   }
 
   {
-    auto checkbox = std::make_unique<Checkbox>();
-    checkbox->setScale(scale);
-    checkbox->setChecked(true);
-    checkbox->setOnChange([this](bool checked) {
-      if (m_checkboxValueLabel != nullptr) {
-        m_checkboxValueLabel->setText(checked ? "true" : "false");
-      }
+    auto checkbox = ui::checkbox({
+        .out = &m_checkbox,
+        .checked = true,
+        .scale = scale,
+        .onChange = [this](bool checked) {
+          if (m_checkboxValueLabel != nullptr) {
+            m_checkboxValueLabel->setText(checked ? "true" : "false");
+          }
+        },
     });
-    m_checkbox = checkbox.get();
 
     auto valueLabel = std::make_unique<Label>();
     valueLabel->setText("true");
@@ -439,17 +440,19 @@ void TestPanel::create() {
   }
 
   {
-    auto stepper = std::make_unique<Stepper>();
-    stepper->setScale(scale);
-    stepper->setRange(0, 199);
-    stepper->setStep(1);
-    stepper->setValue(42);
-    stepper->setOnValueChanged([this](int v) {
-      if (m_stepperValueLabel != nullptr) {
-        m_stepperValueLabel->setText("onChange: " + std::to_string(v));
-      }
+    auto stepper = ui::stepper({
+        .out = &m_stepper,
+        .minValue = 0,
+        .maxValue = 199,
+        .step = 1,
+        .value = 42,
+        .scale = scale,
+        .onValueChanged = [this](int v) {
+          if (m_stepperValueLabel != nullptr) {
+            m_stepperValueLabel->setText("onChange: " + std::to_string(v));
+          }
+        },
     });
-    m_stepper = stepper.get();
 
     auto valueLabel = std::make_unique<Label>();
     valueLabel->setText("onChange: 42");
@@ -1084,8 +1087,9 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     toggle->setChecked(false);
     toggle->setOnChange([this](bool checked) {
       if (m_baselineModeLabel != nullptr) {
-        m_baselineModeLabel->setBaselineMode(checked ? LabelBaselineMode::InkCentered
-                                                     : LabelBaselineMode::StableLogical);
+        m_baselineModeLabel->setBaselineMode(
+            checked ? LabelBaselineMode::InkCentered : LabelBaselineMode::StableLogical
+        );
       }
     });
     m_baselineModeToggle = toggle.get();
@@ -1418,8 +1422,9 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     row->setAlign(FlexAlign::Center);
     row->setGap(Style::spaceSm * scale);
 
-    const float sizes[] = {Style::fontSizeMini, Style::fontSizeCaption, Style::fontSizeBody, Style::fontSizeTitle,
-                           Style::fontSizeHeader};
+    const float sizes[] = {
+        Style::fontSizeMini, Style::fontSizeCaption, Style::fontSizeBody, Style::fontSizeTitle, Style::fontSizeHeader
+    };
     for (float fs : sizes) {
       auto lbl = std::make_unique<Label>();
       lbl->setText("Hxg" + std::to_string(static_cast<int>(fs)));
@@ -1559,33 +1564,41 @@ void TestPanel::doLayout(Renderer& renderer, float width, float height) {
 
   if (m_glyph != nullptr && m_glyphBox != nullptr) {
     m_glyph->measure(renderer);
-    m_glyph->setPosition(std::round((m_glyphBox->width() - m_glyph->width()) * 0.5f),
-                         std::round((m_glyphBox->height() - m_glyph->height()) * 0.5f));
+    m_glyph->setPosition(
+        std::round((m_glyphBox->width() - m_glyph->width()) * 0.5f),
+        std::round((m_glyphBox->height() - m_glyph->height()) * 0.5f)
+    );
   }
   if (m_transformStage != nullptr && m_transformDemoBox != nullptr) {
-    m_transformDemoBox->setPosition(std::round((m_transformStage->width() - m_transformDemoBox->width()) * 0.5f),
-                                    std::round((m_transformStage->height() - m_transformDemoBox->height()) * 0.5f));
+    m_transformDemoBox->setPosition(
+        std::round((m_transformStage->width() - m_transformDemoBox->width()) * 0.5f),
+        std::round((m_transformStage->height() - m_transformDemoBox->height()) * 0.5f)
+    );
   }
   if (m_transformDemoBox != nullptr && m_transformDemoButton != nullptr) {
     m_transformDemoButton->layout(renderer);
     m_transformDemoButton->setPosition(
         std::round((m_transformDemoBox->width() - m_transformDemoButton->width()) * 0.5f),
-        std::round((m_transformDemoBox->height() - m_transformDemoButton->height()) * 0.5f));
+        std::round((m_transformDemoBox->height() - m_transformDemoButton->height()) * 0.5f)
+    );
   }
   if (m_transformDemoBox != nullptr && m_transformDemoGlyph != nullptr) {
     m_transformDemoGlyph->measure(renderer);
     m_transformDemoGlyph->setPosition(
-        18.0f * contentScale(), std::round((m_transformDemoBox->height() - m_transformDemoGlyph->height()) * 0.85f));
+        18.0f * contentScale(), std::round((m_transformDemoBox->height() - m_transformDemoGlyph->height()) * 0.85f)
+    );
   }
   if (m_transformDemoBox != nullptr && m_transformBadgeBox != nullptr) {
     m_transformBadgeBox->setPosition(
-        m_transformDemoBox->width() - m_transformBadgeBox->width() - 12.0f * contentScale(), 12.0f * contentScale());
+        m_transformDemoBox->width() - m_transformBadgeBox->width() - 12.0f * contentScale(), 12.0f * contentScale()
+    );
   }
   if (m_transformBadgeBox != nullptr && m_transformBadgeLabel != nullptr) {
     m_transformBadgeLabel->measure(renderer);
     m_transformBadgeLabel->setPosition(
         std::round((m_transformBadgeBox->width() - m_transformBadgeLabel->width()) * 0.5f),
-        std::round((m_transformBadgeBox->height() - m_transformBadgeLabel->height()) * 0.5f) - 1.0f * contentScale());
+        std::round((m_transformBadgeBox->height() - m_transformBadgeLabel->height()) * 0.5f) - 1.0f * contentScale()
+    );
   }
 }
 

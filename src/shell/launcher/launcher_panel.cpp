@@ -13,14 +13,8 @@
 #include "render/scene/node.h"
 #include "shell/panel/panel_manager.h"
 #include "system/desktop_entry.h"
+#include "ui/builders.h"
 #include "ui/controls/context_menu_popup.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/image.h"
-#include "ui/controls/input.h"
-#include "ui/controls/label.h"
-#include "ui/controls/scroll_view.h"
-#include "ui/controls/virtual_grid_view.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "util/fuzzy_match.h"
@@ -71,30 +65,40 @@ namespace {
   public:
     LauncherResultRow(float scale, AsyncTextureCache* asyncTextures)
         : m_scale(scale), m_rowHeight(launcherRowHeight(scale)), m_asyncTextures(asyncTextures) {
-      auto row = std::make_unique<Flex>();
-      row->setDirection(FlexDirection::Horizontal);
-      row->setAlign(FlexAlign::Center);
-      row->setGap(Style::spaceMd * scale);
-      row->setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-      row->setRadius(Style::scaledRadiusMd(scale));
-      m_row = static_cast<Flex*>(addChild(std::move(row)));
+      auto row = ui::row(
+          {.out = &m_row, .align = FlexAlign::Center, .gap = Style::spaceMd * scale, .configure = [scale](Flex& flex) {
+             flex.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
+             flex.setRadius(Style::scaledRadiusMd(scale));
+           }}
+      );
+      addChild(std::move(row));
 
-      auto actionLabel = std::make_unique<Label>();
-      actionLabel->setFontSize(kIconSize * scale);
-      actionLabel->setColor(colorSpecFromRole(ColorRole::OnSurface));
-      actionLabel->setVisible(false);
-      m_actionLabel = static_cast<Label*>(m_row->addChild(std::move(actionLabel)));
+      m_row->addChild(
+          ui::label({
+              .out = &m_actionLabel,
+              .fontSize = kIconSize * scale,
+              .color = colorSpecFromRole(ColorRole::OnSurface),
+              .visible = false,
+          })
+      );
 
-      auto image = std::make_unique<Image>();
-      image->setSize(kIconSize * scale, kIconSize * scale);
-      image->setVisible(false);
-      m_image = static_cast<Image*>(m_row->addChild(std::move(image)));
+      m_row->addChild(
+          ui::image({
+              .out = &m_image,
+              .width = kIconSize * scale,
+              .height = kIconSize * scale,
+              .visible = false,
+          })
+      );
 
-      auto glyph = std::make_unique<Glyph>();
-      glyph->setGlyphSize(kIconSize * scale);
-      glyph->setColor(colorSpecFromRole(ColorRole::OnSurface));
-      glyph->setVisible(false);
-      m_glyph = static_cast<Glyph*>(m_row->addChild(std::move(glyph)));
+      m_row->addChild(
+          ui::glyph({
+              .out = &m_glyph,
+              .glyphSize = kIconSize * scale,
+              .color = colorSpecFromRole(ColorRole::OnSurface),
+              .visible = false,
+          })
+      );
 
       m_image->setAsyncReadyCallback([this]() {
         if (m_actionTextVisible || m_iconPath.empty() || m_image == nullptr || m_glyph == nullptr ||
@@ -105,26 +109,30 @@ namespace {
         m_glyph->setVisible(false);
       });
 
-      auto textCol = std::make_unique<Flex>();
-      textCol->setDirection(FlexDirection::Vertical);
-      textCol->setAlign(FlexAlign::Start);
-      textCol->setGap(Style::spaceXs * 0.5f * scale);
-      textCol->setFlexGrow(1.0f);
-      m_textCol = static_cast<Flex*>(m_row->addChild(std::move(textCol)));
-
-      auto title = std::make_unique<Label>();
-      title->setFontSize(Style::fontSizeBody * scale);
-      title->setFontWeight(FontWeight::Bold);
-      title->setColor(colorSpecFromRole(ColorRole::OnSurface));
-      title->setMaxLines(1);
-      m_title = static_cast<Label*>(m_textCol->addChild(std::move(title)));
-
-      auto subtitle = std::make_unique<Label>();
-      subtitle->setCaptionStyle();
-      subtitle->setFontSize(Style::fontSizeCaption * scale);
-      subtitle->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      subtitle->setMaxLines(1);
-      m_subtitle = static_cast<Label*>(m_textCol->addChild(std::move(subtitle)));
+      m_row->addChild(
+          ui::column(
+              {
+                  .out = &m_textCol,
+                  .align = FlexAlign::Start,
+                  .gap = Style::spaceXs * 0.5f * scale,
+                  .flexGrow = 1.0f,
+              },
+              ui::label({
+                  .out = &m_title,
+                  .fontSize = Style::fontSizeBody * scale,
+                  .color = colorSpecFromRole(ColorRole::OnSurface),
+                  .maxLines = 1,
+                  .fontWeight = FontWeight::Bold,
+              }),
+              ui::label({
+                  .out = &m_subtitle,
+                  .fontSize = Style::fontSizeCaption * scale,
+                  .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+                  .maxLines = 1,
+                  .configure = [](Label& label) { label.setCaptionStyle(); },
+              })
+          )
+      );
     }
 
     void bind(Renderer& renderer, const LauncherResult& result, float width, bool selected, bool hovered) {
@@ -296,63 +304,85 @@ void LauncherPanel::addProvider(std::unique_ptr<LauncherProvider> provider) {
 
 void LauncherPanel::create() {
   const float scale = contentScale();
-  auto container = std::make_unique<Flex>();
-  container->setDirection(FlexDirection::Vertical);
-  container->setAlign(FlexAlign::Stretch);
-  container->setGap(Style::spaceSm * scale);
+  auto container = ui::column({
+      .out = &m_container,
+      .align = FlexAlign::Stretch,
+      .gap = Style::spaceSm * scale,
+  });
 
-  auto input = std::make_unique<Input>();
-  input->setPlaceholder(i18n::tr("launcher.search-placeholder"));
-  input->setFontSize(Style::fontSizeBody * scale);
-  input->setControlHeight(Style::controlHeight * scale);
-  input->setHorizontalPadding(Style::spaceMd * scale);
-  input->setClearButtonEnabled(true);
-  input->setOnChange([this](const std::string& text) { onInputChanged(text); });
-  input->setOnSubmit([this](const std::string& /*text*/) { activateSelected(); });
-  input->setOnKeyEvent([this](std::uint32_t sym, std::uint32_t modifiers) { return handleKeyEvent(sym, modifiers); });
-  m_input = input.get();
-  container->addChild(std::move(input));
+  container->addChild(
+      ui::input({
+          .out = &m_input,
+          .placeholder = i18n::tr("launcher.search-placeholder"),
+          .fontSize = Style::fontSizeBody * scale,
+          .controlHeight = Style::controlHeight * scale,
+          .horizontalPadding = Style::spaceMd * scale,
+          .clearButtonEnabled = true,
+          .onChange = [this](const std::string& text) { onInputChanged(text); },
+          .onSubmit = [this](const std::string& /*text*/) { activateSelected(); },
+          .onKeyEvent = [this](std::uint32_t sym, std::uint32_t modifiers) { return handleKeyEvent(sym, modifiers); },
+      })
+  );
 
-  auto body = std::make_unique<Flex>();
-  body->setDirection(FlexDirection::Vertical);
-  body->setAlign(FlexAlign::Stretch);
-  body->setFlexGrow(1.0f);
-  body->setFillWidth(true);
-  m_body = body.get();
+  container->addChild(
+      ui::segmented({
+          .out = &m_categoryFilter,
+          .scale = scale,
+          .compact = true,
+          .equalSegmentWidths = true,
+          .visible = false,
+          .participatesInLayout = false,
+          .configure = [](Segmented& segmented) { segmented.setAlign(FlexAlign::Center); },
+      })
+  );
+
+  auto body = ui::column({
+      .out = &m_body,
+      .align = FlexAlign::Stretch,
+      .fillWidth = true,
+      .flexGrow = 1.0f,
+  });
 
   m_adapter = std::make_unique<LauncherResultAdapter>(scale, m_asyncTextures);
   m_adapter->setResults(&m_results);
   m_adapter->setOnActivate([this](std::size_t index) { activateAt(index); });
-  m_adapter->setOnSecondaryActivate(
-      [this](std::size_t index, float ax, float ay) { openAppActionsMenu(index, ax, ay); });
-
-  auto grid = std::make_unique<VirtualGridView>();
-  grid->setColumns(1);
-  grid->setSquareCells(false);
-  grid->setCellHeight(launcherRowHeight(scale));
-  grid->setColumnGap(0.0f);
-  grid->setRowGap(0.0f);
-  grid->setOverscanRows(kRowOverscan);
-  grid->setFlexGrow(1.0f);
-  grid->setFillWidth(true);
-  grid->setAdapter(m_adapter.get());
-  grid->setOnSelectionChanged([this](std::optional<std::size_t> idx) {
-    if (idx.has_value() && *idx < m_results.size()) {
-      m_selectedIndex = *idx;
-    }
+  m_adapter->setOnSecondaryActivate([this](std::size_t index, float ax, float ay) {
+    openAppActionsMenu(index, ax, ay);
   });
-  m_grid = static_cast<VirtualGridView*>(body->addChild(std::move(grid)));
 
-  auto emptyLabel = std::make_unique<Label>();
-  emptyLabel->setCaptionStyle();
-  emptyLabel->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-  emptyLabel->setVisible(false);
-  emptyLabel->setParticipatesInLayout(false);
-  m_emptyLabel = static_cast<Label*>(body->addChild(std::move(emptyLabel)));
+  body->addChild(
+      ui::virtualGridView({
+          .out = &m_grid,
+          .columns = 1,
+          .cellHeight = launcherRowHeight(scale),
+          .squareCells = false,
+          .columnGap = 0.0f,
+          .rowGap = 0.0f,
+          .overscanRows = kRowOverscan,
+          .adapter = m_adapter.get(),
+          .flexGrow = 1.0f,
+          .onSelectionChanged =
+              [this](std::optional<std::size_t> idx) {
+                if (idx.has_value() && *idx < m_results.size()) {
+                  m_selectedIndex = *idx;
+                }
+              },
+          .configure = [](VirtualGridView& grid) { grid.setFillWidth(true); },
+      })
+  );
+
+  body->addChild(
+      ui::label({
+          .out = &m_emptyLabel,
+          .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+          .visible = false,
+          .participatesInLayout = false,
+          .configure = [](Label& label) { label.setCaptionStyle(); },
+      })
+  );
 
   container->addChild(std::move(body));
 
-  m_container = container.get();
   setRoot(std::move(container));
 
   if (m_animations != nullptr) {
@@ -374,6 +404,15 @@ void LauncherPanel::doLayout(Renderer& renderer, float width, float height) {
 }
 
 void LauncherPanel::onOpen(std::string_view context) {
+  m_categoryFilterVisible = m_config != nullptr && m_config->config().shell.panel.launcherCategories;
+  m_activeCategory.clear();
+  m_currentCategories.clear();
+  if (m_categoryFilter != nullptr) {
+    m_categoryFilter->clearOptions();
+    m_categoryFilter->setVisible(false);
+    m_categoryFilter->setParticipatesInLayout(false);
+  }
+
   const std::string initialValue(context);
   if (m_input != nullptr) {
     m_input->setValue(initialValue);
@@ -395,6 +434,9 @@ void LauncherPanel::onClose() {
 
   m_query.clear();
   m_results.clear();
+  m_allResults.clear();
+  m_activeCategory.clear();
+  m_currentCategories.clear();
   m_selectedIndex = 0;
 
   if (m_grid != nullptr) {
@@ -405,6 +447,7 @@ void LauncherPanel::onClose() {
   // The scene tree (and all nodes) is destroyed by PanelManager after onClose().
   m_container = nullptr;
   m_input = nullptr;
+  m_categoryFilter = nullptr;
   m_body = nullptr;
   m_grid = nullptr;
   m_emptyLabel = nullptr;
@@ -436,7 +479,7 @@ InputArea* LauncherPanel::initialFocusArea() const { return m_input != nullptr ?
 
 void LauncherPanel::onInputChanged(const std::string& text) {
   m_query = text;
-  m_results.clear();
+  m_allResults.clear();
 
   // Route query to providers
   LauncherProvider* activeProvider = nullptr;
@@ -471,12 +514,15 @@ void LauncherPanel::onInputChanged(const std::string& text) {
     }
   };
 
+  std::vector<LauncherCategory> newCategories;
+
   if (activeProvider != nullptr) {
-    m_results = activeProvider->query(queryText);
-    applyUsageBoost(m_results, *activeProvider);
-    for (auto& result : m_results) {
+    m_allResults = activeProvider->query(queryText);
+    applyUsageBoost(m_allResults, *activeProvider);
+    for (auto& result : m_allResults) {
       result.providerName = activeProvider->name();
     }
+    newCategories = activeProvider->categories();
   } else {
     // Query default providers (empty prefix)
     for (auto& provider : m_providers) {
@@ -486,21 +532,23 @@ void LauncherPanel::onInputChanged(const std::string& text) {
         for (auto& result : results) {
           result.providerName = provider->name();
         }
-        m_results.insert(m_results.end(), std::make_move_iterator(results.begin()),
-                         std::make_move_iterator(results.end()));
+        m_allResults.insert(
+            m_allResults.end(), std::make_move_iterator(results.begin()), std::make_move_iterator(results.end())
+        );
+        auto providerCats = provider->categories();
+        for (auto& cat : providerCats) {
+          newCategories.push_back(std::move(cat));
+        }
       }
     }
     // Stable sort by score descending — preserves provider order (e.g. alphabetical) for ties
-    std::stable_sort(m_results.begin(), m_results.end(),
-                     [](const LauncherResult& a, const LauncherResult& b) { return a.score > b.score; });
-  }
-
-  if (!text.empty() && m_results.size() > kMaxResults) {
-    m_results.resize(kMaxResults);
+    std::stable_sort(m_allResults.begin(), m_allResults.end(), [](const LauncherResult& a, const LauncherResult& b) {
+      return a.score > b.score;
+    });
   }
 
   const int iconTargetSize = static_cast<int>(std::round(kIconSize * contentScale()));
-  for (auto& result : m_results) {
+  for (auto& result : m_allResults) {
     if (result.iconPath.empty() && !result.iconName.empty()) {
       const std::string& resolved = m_iconResolver.resolve(result.iconName, iconTargetSize);
       if (!resolved.empty()) {
@@ -515,6 +563,77 @@ void LauncherPanel::onInputChanged(const std::string& text) {
     }
   }
 
+  bool categoriesChanged = newCategories.size() != m_currentCategories.size();
+  if (!categoriesChanged) {
+    for (std::size_t i = 0; i < newCategories.size(); ++i) {
+      if (newCategories[i].label != m_currentCategories[i].label) {
+        categoriesChanged = true;
+        break;
+      }
+    }
+  }
+  if (categoriesChanged) {
+    m_activeCategory.clear();
+    rebuildCategoryFilter(newCategories);
+  }
+
+  applyActiveCategory();
+}
+
+void LauncherPanel::rebuildCategoryFilter(const std::vector<LauncherCategory>& categories) {
+  m_currentCategories = categories;
+  if (m_categoryFilter == nullptr) {
+    return;
+  }
+  m_categoryFilter->clearOptions();
+  if (categories.empty()) {
+    setCategoryFilterVisible(false);
+    return;
+  }
+  m_categoryFilter->addOption("", "layout-grid");
+  m_categoryFilter->setOptionTooltip(0, i18n::tr("launcher.categories.all"));
+  for (std::size_t i = 0; i < categories.size(); ++i) {
+    m_categoryFilter->addOption("", categories[i].glyphName);
+    m_categoryFilter->setOptionTooltip(i + 1, categories[i].label);
+  }
+  m_categoryFilter->setSelectedIndex(0);
+  m_categoryFilter->setOnChange([this](std::size_t idx) {
+    if (idx == 0) {
+      m_activeCategory.clear();
+    } else if (idx - 1 < m_currentCategories.size()) {
+      m_activeCategory = m_currentCategories[idx - 1].label;
+    }
+    applyActiveCategory();
+  });
+  setCategoryFilterVisible(m_categoryFilterVisible);
+}
+
+void LauncherPanel::setCategoryFilterVisible(bool visible) {
+  if (m_categoryFilter == nullptr) {
+    return;
+  }
+  const bool show = visible && !m_currentCategories.empty();
+  m_categoryFilter->setVisible(show);
+  m_categoryFilter->setParticipatesInLayout(show);
+  if (m_container != nullptr) {
+    m_container->markLayoutDirty();
+  }
+}
+
+void LauncherPanel::applyActiveCategory() {
+  m_results.clear();
+  if (m_activeCategory.empty()) {
+    m_results = m_allResults;
+  } else {
+    for (const auto& r : m_allResults) {
+      if (r.category == m_activeCategory) {
+        m_results.push_back(r);
+      }
+    }
+  }
+  if (!m_query.empty() && m_results.size() > kMaxResults) {
+    m_results.resize(kMaxResults);
+  }
   m_selectedIndex = 0;
   refreshResults();
 }
@@ -545,8 +664,9 @@ void LauncherPanel::applyEmptyState() {
   m_emptyLabel->setVisible(empty);
   m_emptyLabel->setParticipatesInLayout(empty);
   if (empty) {
-    m_emptyLabel->setText(m_query.empty() ? i18n::tr("launcher.empty.type-to-search")
-                                          : i18n::tr("launcher.empty.no-results"));
+    m_emptyLabel->setText(
+        m_query.empty() ? i18n::tr("launcher.empty.type-to-search") : i18n::tr("launcher.empty.no-results")
+    );
   }
 }
 
@@ -586,21 +706,25 @@ void LauncherPanel::openAppActionsMenu(std::size_t index, float anchorX, float a
 
   std::vector<ContextMenuControlEntry> entries;
   entries.reserve(actionsCopy.size() + 1);
-  entries.push_back(ContextMenuControlEntry{
-      .id = -1,
-      .label = i18n::tr("launcher.context-menu.open"),
-      .enabled = true,
-      .separator = false,
-      .hasSubmenu = false,
-  });
+  entries.push_back(
+      ContextMenuControlEntry{
+          .id = -1,
+          .label = i18n::tr("launcher.context-menu.open"),
+          .enabled = true,
+          .separator = false,
+          .hasSubmenu = false,
+      }
+  );
   for (std::int32_t i = 0; i < static_cast<std::int32_t>(actionsCopy.size()); ++i) {
-    entries.push_back(ContextMenuControlEntry{
-        .id = i,
-        .label = actionsCopy[static_cast<std::size_t>(i)].name,
-        .enabled = true,
-        .separator = false,
-        .hasSubmenu = false,
-    });
+    entries.push_back(
+        ContextMenuControlEntry{
+            .id = i,
+            .label = actionsCopy[static_cast<std::size_t>(i)].name,
+            .enabled = true,
+            .separator = false,
+            .hasSubmenu = false,
+        }
+    );
   }
 
   const float scale = contentScale();
@@ -618,30 +742,30 @@ void LauncherPanel::openAppActionsMenu(std::size_t index, float anchorX, float a
     PanelManager::instance().endAttachedPopup(parentSurface);
   });
 
-  m_actionsMenu->setOnActivate(
-      [this, base, actionsCopy = std::move(actionsCopy)](const ContextMenuControlEntry& entry) {
-        LauncherResult result = base;
-        result.desktopActionId.clear();
-        if (entry.id >= 0 && entry.id < static_cast<std::int32_t>(actionsCopy.size())) {
-          result.desktopActionId = actionsCopy[static_cast<std::size_t>(entry.id)].id;
-        } else if (entry.id != -1) {
-          return;
-        }
+  m_actionsMenu->setOnActivate([this, base,
+                                actionsCopy = std::move(actionsCopy)](const ContextMenuControlEntry& entry) {
+    LauncherResult result = base;
+    result.desktopActionId.clear();
+    if (entry.id >= 0 && entry.id < static_cast<std::int32_t>(actionsCopy.size())) {
+      result.desktopActionId = actionsCopy[static_cast<std::size_t>(entry.id)].id;
+    } else if (entry.id != -1) {
+      return;
+    }
 
-        for (auto& provider : m_providers) {
-          if (provider->name() != std::string_view(result.providerName)) {
-            continue;
-          }
-          if (!provider->activate(result)) {
-            return;
-          }
-          if (provider->trackUsage()) {
-            m_usageTracker.record(provider->name(), result.id);
-          }
-          PanelManager::instance().closePanel();
-          return;
-        }
-      });
+    for (auto& provider : m_providers) {
+      if (provider->name() != std::string_view(result.providerName)) {
+        continue;
+      }
+      if (!provider->activate(result)) {
+        return;
+      }
+      if (provider->trackUsage()) {
+        m_usageTracker.record(provider->name(), result.id);
+      }
+      PanelManager::instance().closePanel();
+      return;
+    }
+  });
 
   const float inset = std::round(std::max(4.0f, Style::spaceXs * scale));
   const std::int32_t ax = static_cast<std::int32_t>(std::round(anchorX - inset));
@@ -649,8 +773,10 @@ void LauncherPanel::openAppActionsMenu(std::size_t index, float anchorX, float a
   const std::int32_t aw = static_cast<std::int32_t>(std::round(inset * 2.0f));
   const std::int32_t ah = static_cast<std::int32_t>(std::round(inset * 2.0f));
 
-  m_actionsMenu->open(std::move(entries), menuWidth, 12, ax, ay, std::max(1, aw), std::max(1, ah),
-                      parentCtx->layerSurface, parentCtx->output);
+  m_actionsMenu->open(
+      std::move(entries), menuWidth, 12, ax, ay, std::max(1, aw), std::max(1, ah), parentCtx->layerSurface,
+      parentCtx->output
+  );
 }
 
 void LauncherPanel::activateAt(std::size_t index) {
@@ -702,6 +828,32 @@ bool LauncherPanel::handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers) {
       m_grid->setSelectedIndex(m_selectedIndex);
     }
   };
+
+  if (KeySymbol::isTab(sym) && !m_currentCategories.empty()) {
+    m_categoryFilterVisible = !m_categoryFilterVisible;
+    setCategoryFilterVisible(m_categoryFilterVisible);
+    return true;
+  }
+
+  if (KeybindMatcher::matches(KeybindAction::Left, sym, modifiers)) {
+    if (m_categoryFilter != nullptr && m_categoryFilter->visible() && m_categoryFilter->selectedIndex() > 0) {
+      m_categoryFilter->setSelectedIndex(m_categoryFilter->selectedIndex() - 1);
+      return true;
+    }
+    return false;
+  }
+
+  if (KeybindMatcher::matches(KeybindAction::Right, sym, modifiers)) {
+    if (m_categoryFilter != nullptr && m_categoryFilter->visible()) {
+      const std::size_t next = m_categoryFilter->selectedIndex() + 1;
+      const std::size_t total = m_currentCategories.size() + 1;
+      if (next < total) {
+        m_categoryFilter->setSelectedIndex(next);
+        return true;
+      }
+    }
+    return false;
+  }
 
   if (KeySymbol::isPageUp(sym)) {
     const int stride = m_grid != nullptr ? static_cast<int>(m_grid->pageItemStride()) : 1;

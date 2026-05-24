@@ -1,5 +1,6 @@
 #include "launcher/app_provider.h"
 
+#include "config/config_service.h"
 #include "core/process.h"
 #include "util/file_utils.h"
 #include "util/fuzzy_match.h"
@@ -170,7 +171,8 @@ namespace {
     if (terminal.empty()) {
       static constexpr std::array<std::string_view, 9> kTerminalCandidates = {
           "x-terminal-emulator", "ghostty", "kitty", "alacritty", "wezterm", "foot", "konsole",
-          "gnome-terminal",      "xterm"};
+          "gnome-terminal",      "xterm"
+      };
       for (const auto candidate : kTerminalCandidates) {
         if (isExecutableOnPath(candidate)) {
           terminal.emplace_back(candidate);
@@ -198,8 +200,10 @@ namespace {
     return terminal;
   }
 
-  void launchCommand(const std::string& exec, bool terminal, const std::string& activationToken,
-                     const std::string& workingDir) {
+  void launchCommand(
+      const std::string& exec, bool terminal, const std::string& activationToken, const std::string& workingDir,
+      const std::string& appName, bool runAsSystemdService
+  ) {
     std::string cleanExec = stripFieldCodes(exec);
     std::vector<std::string> args = terminal ? terminalLaunchArgs(cleanExec) : tokenize(cleanExec);
 
@@ -211,14 +215,66 @@ namespace {
       return;
     }
 
-    (void)process::runAsync(args, activationToken, workingDir);
+    if (runAsSystemdService) {
+      process::runAsyncAsSystemdService(args, appName, activationToken, workingDir);
+    } else {
+      (void)process::runAsync(args, activationToken, workingDir);
+    }
+  }
+
+  std::string_view primaryCategory(std::string_view categories) {
+    std::size_t start = 0;
+    while (start < categories.size()) {
+      auto semi = categories.find(';', start);
+      auto token = (semi == std::string_view::npos) ? categories.substr(start) : categories.substr(start, semi - start);
+      if (token == "AudioVideo" || token == "Audio" || token == "Video") {
+        return "Multimedia";
+      }
+      if (token == "Development") {
+        return "Development";
+      }
+      if (token == "Game") {
+        return "Games";
+      }
+      if (token == "Graphics") {
+        return "Graphics";
+      }
+      if (token == "Network") {
+        return "Internet";
+      }
+      if (token == "Office") {
+        return "Office";
+      }
+      if (token == "System") {
+        return "System";
+      }
+      if (token == "Utility" || token == "Settings") {
+        return "Utilities";
+      }
+      if (token == "Education" || token == "Science") {
+        return "Education";
+      }
+      if (semi == std::string_view::npos) {
+        break;
+      }
+      start = semi + 1;
+    }
+    return {};
   }
 
 } // namespace
 
-AppProvider::AppProvider(WaylandConnection* wayland) : m_wayland(wayland) {}
+AppProvider::AppProvider(ConfigService* config, WaylandConnection* wayland) : m_config(config), m_wayland(wayland) {}
 
 void AppProvider::initialize() { refreshEntriesIfNeeded(); }
+
+std::vector<LauncherCategory> AppProvider::categories() const {
+  return {
+      {"Internet", "world"},         {"Multimedia", "player-play"}, {"Development", "code"},
+      {"Games", "device-gamepad-2"}, {"Graphics", "photo"},         {"Office", "briefcase"},
+      {"Education", "school"},       {"System", "settings"},        {"Utilities", "tool"},
+  };
+}
 
 void AppProvider::refreshEntriesIfNeeded() const {
   const auto version = desktopEntriesVersion();
@@ -242,6 +298,7 @@ std::vector<LauncherResult> AppProvider::query(std::string_view text) const {
     result.subtitle = entry.genericName.empty() ? entry.comment : entry.genericName;
     result.iconName = entry.icon.empty() ? std::string(kDefaultAppIcon) : entry.icon;
     result.glyphName = "app-window";
+    result.category = std::string(primaryCategory(entry.categories));
     result.score = s;
     return result;
   };
@@ -303,7 +360,10 @@ bool AppProvider::activate(const LauncherResult& result) {
     if (m_wayland != nullptr && m_wayland->hasXdgActivation()) {
       token = m_wayland->requestActivationToken(nullptr);
     }
-    launchCommand(execLine, entry.terminal, token, entry.workingDir);
+    launchCommand(
+        execLine, entry.terminal, token, entry.workingDir, entry.id,
+        m_config->config().shell.launchAppsAsSystemdServices
+    );
     return true;
   }
   return false;

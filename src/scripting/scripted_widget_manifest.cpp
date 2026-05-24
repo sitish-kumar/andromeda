@@ -49,8 +49,10 @@ namespace scripting {
       // `barWidget.define` aborts the chunk via luaL_error, so run() returning
       // false is the expected, successful path. Success is signalled by
       // context.defineCalled.
+      host.setMuteErrors(true);
       context.beginCall({});
       (void)host.exec(resolvedScript.filename().string(), source);
+      host.setMuteErrors(false);
 
       if (!context.defineCalled) {
         return std::nullopt;
@@ -138,11 +140,13 @@ namespace scripting {
       if (!manifest.has_value() || !manifest->pickable) {
         continue;
       }
-      discovered.push_back(DiscoveredScript{
-          .id = entry.path().stem().string(),
-          .assetScript = "scripts/" + entry.path().filename().string(),
-          .manifest = std::move(*manifest),
-      });
+      discovered.push_back(
+          DiscoveredScript{
+              .id = entry.path().stem().string(),
+              .assetScript = "scripts/" + entry.path().filename().string(),
+              .manifest = std::move(*manifest),
+          }
+      );
     }
     return discovered;
   }

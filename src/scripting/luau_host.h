@@ -49,8 +49,9 @@ public:
   std::optional<std::string> callGlobalReturningString(const char* name);
   bool callGlobalWithBudget(const char* name, std::chrono::milliseconds budget);
   bool callGlobalWithBoolAndBudget(const char* name, bool value, std::chrono::milliseconds budget);
-  bool callGlobalWithStringsAndBudget(const char* name, std::string_view first, std::string_view second,
-                                      std::chrono::milliseconds budget);
+  bool callGlobalWithStringsAndBudget(
+      const char* name, std::string_view first, std::string_view second, std::chrono::milliseconds budget
+  );
   bool callAsyncCommandCallback(int callbackRef, const process::RunResult& result, std::chrono::milliseconds budget);
   bool callAsyncProcessMatchCallback(int callbackRef, bool matched, std::chrono::milliseconds budget);
   [[nodiscard]] bool lastCallTimedOut() const noexcept { return m_lastCallTimedOut; }
@@ -59,6 +60,7 @@ public:
   [[nodiscard]] CompositorPlatform* platform() const noexcept { return m_platform; }
   [[nodiscard]] std::uint64_t hostId() const noexcept { return m_hostId; }
   void setScriptContext(scripting::ScriptedWidgetBindingContext* context) { m_scriptContext = context; }
+  void setMuteErrors(bool mute) { m_muteErrors = mute; }
   void setAsyncCommandResultHandler(AsyncCommandResultHandler handler) {
     m_asyncCommandResultHandler = std::move(handler);
   }
@@ -96,4 +98,5 @@ private:
   std::string m_currentCallName;
   bool m_budgetActive = false;
   bool m_lastCallTimedOut = false;
+  bool m_muteErrors = false;
 };

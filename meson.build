@@ -55,8 +55,24 @@ polkit_gobject_dep  = dependency('polkit-gobject-1')
 pipewire_dep        = dependency('libpipewire-0.3', include_type: 'system')
 curl_dep            = dependency('libcurl')
 pam_dep             = cc.find_library('pam')
-jemalloc_dep        = dependency('jemalloc', required: false)
 dl_dep              = cpp.find_library('dl', required: false)
+
+jemalloc_option = get_option('jemalloc')
+is_glibc = cpp.get_define('__GLIBC__', prefix: '#include <features.h>') != ''
+jemalloc_deps = []
+jemalloc_cpp_args = []
+
+if jemalloc_option.enabled() and not is_glibc
+  error('jemalloc support requires glibc')
+endif
+
+if is_glibc
+  jemalloc_dep = dependency('jemalloc', required: jemalloc_option)
+  if jemalloc_dep.found()
+    jemalloc_deps += [jemalloc_dep]
+    jemalloc_cpp_args += ['-DNOCTALIA_USE_JEMALLOC=1']
+  endif
+endif
 
 egl_dep = dependency('egl', required: false)
 gles2_dep = dependency('glesv2', required: false)
@@ -501,7 +517,7 @@ _noctalia_sources = files(
   'src/shell/settings/color_spec_picker.cpp',
   'src/shell/settings/config_export_dialog_popup.cpp',
   'src/shell/settings/settings_content.cpp',
-  'src/shell/settings/settings_entity_editor.cpp',
+  'src/shell/settings/settings_bar_management.cpp',
   'src/shell/settings/settings_registry.cpp',
   'src/shell/settings/settings_sidebar.cpp',
   'src/shell/settings/widget_settings_registry.cpp',
@@ -542,7 +558,7 @@ _noctalia_sources = files(
   'src/shell/bar/widgets/media_widget.cpp',
   'src/shell/bar/widgets/network_widget.cpp',
   'src/shell/bar/widgets/notification_widget.cpp',
-  'src/shell/bar/widgets/power_profiles_widget.cpp',
+  'src/shell/bar/widgets/power_profile_widget.cpp',
   'src/shell/bar/widgets/scripted_widget.cpp',
   'src/shell/bar/widgets/session_widget.cpp',
   'src/shell/bar/widgets/settings_widget.cpp',
@@ -612,6 +628,7 @@ _noctalia_sources = files(
   'src/ui/controls/toggle.cpp',
   'src/ui/controls/virtual_grid_view.cpp',
   'src/ui/controls/virtual_list_view.cpp',
+  'src/ui/builders.cpp',
   'src/ui/palette.cpp',
   'src/ui/popup_chrome.cpp',
   'src/ui/style.cpp',
@@ -637,6 +654,10 @@ _noctalia_sources = files(
   'src/compositors/niri/niri_output_backend.cpp',
   'src/compositors/niri/niri_keyboard_backend.cpp',
   'src/compositors/niri/niri_workspace_backend.cpp',
+  'src/compositors/triad/triad_runtime.cpp',
+  'src/compositors/triad/triad_output_backend.cpp',
+  'src/compositors/triad/triad_keyboard_backend.cpp',
+  'src/compositors/triad/triad_workspace_backend.cpp',
   'src/compositors/sway/sway_runtime.cpp',
   'src/compositors/sway/sway_keyboard_backend.cpp',
   'src/compositors/sway/sway_output_backend.cpp',
@@ -740,7 +761,7 @@ executable('noctalia',
     stb_dep,
     libwebp_dep,
     luau_dep,
-  ] + (jemalloc_dep.found() ? [jemalloc_dep] : []) + (dl_dep.found() ? [dl_dep] : []),
+  ] + jemalloc_deps + (dl_dep.found() ? [dl_dep] : []),
   include_directories: _noctalia_inc,
   cpp_args: [
     '-Wall', '-Wextra', '-Wpedantic', '-Wconversion', '-Wshadow',
@@ -748,7 +769,7 @@ executable('noctalia',
     '-DNOCTALIA_INSTALL_PREFIX="' + get_option('prefix') + '"',
     '-DNOCTALIA_INSTALL_DATADIR="' + get_option('datadir') + '"',
     '-DNOCTALIA_VERSION="' + meson.project_version() + '"',
-  ],
+  ] + jemalloc_cpp_args,
   install: true,
 )
 

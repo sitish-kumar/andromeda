@@ -28,9 +28,10 @@ namespace {
 
 } // namespace
 
-DesktopAudioVisualizerWidget::DesktopAudioVisualizerWidget(PipeWireSpectrum* spectrum, float aspectRatio, int bands,
-                                                           bool mirrored, ColorSpec lowColor, ColorSpec highColor,
-                                                           bool centered, bool showWhenIdle)
+DesktopAudioVisualizerWidget::DesktopAudioVisualizerWidget(
+    PipeWireSpectrum* spectrum, float aspectRatio, int bands, bool mirrored, ColorSpec lowColor, ColorSpec highColor,
+    bool centered, bool showWhenIdle
+)
     : m_spectrum(spectrum), m_aspectRatio(clampAspectRatio(aspectRatio)), m_bands(std::max(1, bands)),
       m_mirrored(mirrored), m_centered(centered), m_showWhenIdle(showWhenIdle), m_lowColor(lowColor),
       m_highColor(highColor) {}
@@ -62,6 +63,51 @@ void DesktopAudioVisualizerWidget::create() {
   }
 
   setRoot(std::move(rootNode));
+}
+
+bool DesktopAudioVisualizerWidget::applySetting(
+    const std::string& key, const WidgetSettingValue& value,
+    const std::unordered_map<std::string, WidgetSettingValue>& allSettings, Renderer& renderer
+) {
+  if (m_visualizer == nullptr) {
+    return false;
+  }
+  if (key == "low_color" || key == "high_color") {
+    if (const auto* v = std::get_if<std::string>(&value)) {
+      if (key == "low_color") {
+        m_lowColor = colorSpecFromConfigString(*v, key);
+      } else {
+        m_highColor = colorSpecFromConfigString(*v, key);
+      }
+      m_visualizer->setGradient(m_lowColor, m_highColor);
+      return true;
+    }
+    return false;
+  }
+  if (key == "mirrored") {
+    if (const auto* v = std::get_if<bool>(&value)) {
+      m_mirrored = *v;
+      m_visualizer->setMirrored(m_mirrored);
+      return true;
+    }
+    return false;
+  }
+  if (key == "centered") {
+    if (const auto* v = std::get_if<bool>(&value)) {
+      m_centered = *v;
+      m_visualizer->setCentered(m_centered);
+      return true;
+    }
+    return false;
+  }
+  if (key == "show_when_idle") {
+    if (const auto* v = std::get_if<bool>(&value)) {
+      m_showWhenIdle = *v;
+      return true;
+    }
+    return false;
+  }
+  return DesktopWidget::applySetting(key, value, allSettings, renderer);
 }
 
 void DesktopAudioVisualizerWidget::setEditorPreview(bool enabled) noexcept {
@@ -258,6 +304,7 @@ void DesktopAudioVisualizerWidget::startOpacityAnimation(float targetOpacity, bo
         }
         requestLayout();
       },
-      this);
+      this
+  );
   requestFrameTick();
 }

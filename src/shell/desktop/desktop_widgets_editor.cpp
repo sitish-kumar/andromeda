@@ -14,14 +14,8 @@
 #include "shell/desktop/desktop_widget_layout.h"
 #include "shell/desktop/desktop_widget_settings_registry.h"
 #include "time/time_format.h"
-#include "ui/controls/box.h"
-#include "ui/controls/button.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/label.h"
-#include "ui/controls/select.h"
+#include "ui/builders.h"
 #include "ui/controls/select_dropdown_popup.h"
-#include "ui/controls/separator.h"
 #include "ui/dialogs/file_dialog.h"
 #include "ui/palette.h"
 #include "ui/style.h"
@@ -78,8 +72,9 @@ namespace {
     return std::clamp(static_cast<float>(cellSize) * 0.75f, kSnapGuideThresholdMin, kSnapGuideThresholdMax);
   }
 
-  float snapLineToTargets(float value, std::int32_t cellSize, float origin, const std::vector<float>& guideLines,
-                          float guideThreshold) {
+  float snapLineToTargets(
+      float value, std::int32_t cellSize, float origin, const std::vector<float>& guideLines, float guideThreshold
+  ) {
     float bestGuide = value;
     float bestGuideDistance = std::numeric_limits<float>::max();
     for (const float line : guideLines) {
@@ -95,8 +90,10 @@ namespace {
     return snapToGrid(value, cellSize, origin);
   }
 
-  float snapBoundsAxisToTargets(float center, float extent, std::int32_t cellSize, float origin,
-                                const std::vector<float>& guideLines, float guideThreshold) {
+  float snapBoundsAxisToTargets(
+      float center, float extent, std::int32_t cellSize, float origin, const std::vector<float>& guideLines,
+      float guideThreshold
+  ) {
     if (cellSize <= 0) {
       return center;
     }
@@ -197,10 +194,11 @@ namespace {
 
 } // namespace
 
-void DesktopWidgetsEditor::initialize(WaylandConnection& wayland, ConfigService* config,
-                                      PipeWireSpectrum* pipewireSpectrum, const WeatherService* weather,
-                                      RenderContext* renderContext, MprisService* mpris, HttpClient* httpClient,
-                                      SystemMonitorService* sysmon) {
+void DesktopWidgetsEditor::initialize(
+    WaylandConnection& wayland, ConfigService* config, PipeWireSpectrum* pipewireSpectrum,
+    const WeatherService* weather, RenderContext* renderContext, MprisService* mpris, HttpClient* httpClient,
+    SystemMonitorService* sysmon
+) {
   m_wayland = &wayland;
   m_config = config;
   m_renderContext = renderContext;
@@ -268,8 +266,9 @@ void DesktopWidgetsEditor::syncSurfaces() {
       continue;
     }
     const std::string key = desktop_widgets::outputKey(output);
-    const bool exists = std::any_of(m_surfaces.begin(), m_surfaces.end(),
-                                    [&key](const auto& surface) { return surface->outputName == key; });
+    const bool exists = std::any_of(m_surfaces.begin(), m_surfaces.end(), [&key](const auto& surface) {
+      return surface->outputName == key;
+    });
     if (!exists) {
       createSurface(output);
     }
@@ -298,14 +297,17 @@ void DesktopWidgetsEditor::createSurface(const WaylandOutput& output) {
   overlay->surface = std::make_unique<LayerSurface>(*m_wayland, std::move(surfaceConfig));
   overlay->surface->setRenderContext(m_renderContext);
   overlay->surface->setAnimationManager(&overlay->animations);
-  overlay->inputDispatcher.setCursorShapeCallback(
-      [this](std::uint32_t serial, std::uint32_t shape) { m_wayland->setCursorShape(serial, shape); });
+  overlay->inputDispatcher.setCursorShapeCallback([this](std::uint32_t serial, std::uint32_t shape) {
+    m_wayland->setCursorShape(serial, shape);
+  });
 
   auto* rawOverlay = overlay.get();
-  overlay->surface->setConfigureCallback(
-      [rawOverlay](std::uint32_t /*width*/, std::uint32_t /*height*/) { rawOverlay->surface->requestLayout(); });
-  overlay->surface->setPrepareFrameCallback(
-      [this, rawOverlay](bool needsUpdate, bool needsLayout) { prepareFrame(*rawOverlay, needsUpdate, needsLayout); });
+  overlay->surface->setConfigureCallback([rawOverlay](std::uint32_t /*width*/, std::uint32_t /*height*/) {
+    rawOverlay->surface->requestLayout();
+  });
+  overlay->surface->setPrepareFrameCallback([this, rawOverlay](bool needsUpdate, bool needsLayout) {
+    prepareFrame(*rawOverlay, needsUpdate, needsLayout);
+  });
   overlay->surface->setFrameTickCallback([this, rawOverlay](float deltaMs) {
     if (m_renderContext == nullptr || rawOverlay->surface == nullptr) {
       return;
@@ -446,8 +448,9 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   }
   root->setFrameSize(static_cast<float>(surface.surface->width()), static_cast<float>(surface.surface->height()));
 
-  auto dim = std::make_unique<Box>();
-  dim->setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.14f));
+  auto dim = ui::box({
+      .fill = colorSpecFromRole(ColorRole::SurfaceVariant, 0.14f),
+  });
   dim->setPosition(0.0f, 0.0f);
   dim->setFrameSize(root->width(), root->height());
   dim->setZIndex(0);
@@ -479,10 +482,11 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     const float firstY = centerY - std::floor(centerY / cell) * cell;
 
     for (float x = firstX; x <= width; x += cell) {
-      auto line = std::make_unique<Box>();
       const int idx = std::abs(static_cast<int>(std::lround((x - centerX) / cell)));
       const bool major = (idx % majorInterval) == 0;
-      line->setFill(colorSpecFromRole(major ? ColorRole::Primary : ColorRole::Outline, major ? 0.18f : 0.08f));
+      auto line = ui::box({
+          .fill = colorSpecFromRole(major ? ColorRole::Primary : ColorRole::Outline, major ? 0.18f : 0.08f),
+      });
       line->setPosition(x, 0.0f);
       line->setFrameSize(1.0f, height);
       line->setZIndex(2);
@@ -490,10 +494,11 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     }
 
     for (float y = firstY; y <= height; y += cell) {
-      auto line = std::make_unique<Box>();
       const int idx = std::abs(static_cast<int>(std::lround((y - centerY) / cell)));
       const bool major = (idx % majorInterval) == 0;
-      line->setFill(colorSpecFromRole(major ? ColorRole::Primary : ColorRole::Outline, major ? 0.18f : 0.08f));
+      auto line = ui::box({
+          .fill = colorSpecFromRole(major ? ColorRole::Primary : ColorRole::Outline, major ? 0.18f : 0.08f),
+      });
       line->setPosition(0.0f, y);
       line->setFrameSize(width, 1.0f);
       line->setZIndex(2);
@@ -551,8 +556,9 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     view.bodyArea = bodyArea.get();
     view.transformNode = view.bodyArea;
     view.transformNode->setFrameSize(view.intrinsicWidth, view.intrinsicHeight);
-    view.transformNode->setPosition(widgetState.cx - view.intrinsicWidth * 0.5f,
-                                    widgetState.cy - view.intrinsicHeight * 0.5f);
+    view.transformNode->setPosition(
+        widgetState.cx - view.intrinsicWidth * 0.5f, widgetState.cy - view.intrinsicHeight * 0.5f
+    );
     view.transformNode->setRotation(widgetState.rotationRad);
     view.transformNode->setScale(1.0f);
     view.transformNode->setOpacity(widgetState.enabled ? 1.0f : kDisabledWidgetOpacity);
@@ -591,17 +597,19 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     selectionFrameTransform->setZIndex(100);
     surface.selectionFrameTransform = selectionFrameTransform.get();
 
-    auto ringShadow = std::make_unique<Box>();
-    ringShadow->setBorder(kShadowColor, 1.0f + kShadowExpand * 2.0f);
-    ringShadow->setFill(clearColorSpec());
-    ringShadow->setRadius(Style::scaledRadiusMd() + kRotatePadding + kShadowExpand);
+    auto ringShadow = ui::box({
+        .fill = clearColorSpec(),
+        .radius = Style::scaledRadiusMd() + kRotatePadding + kShadowExpand,
+        .configure = [](Box& box) { box.setBorder(kShadowColor, 1.0f + kShadowExpand * 2.0f); },
+    });
     surface.rotationRingShadow = ringShadow.get();
     surface.selectionFrameTransform->addChild(std::move(ringShadow));
 
-    auto ring = std::make_unique<Box>();
-    ring->setBorder(colorSpecFromRole(ColorRole::Primary), 1.0f);
-    ring->setFill(clearColorSpec());
-    ring->setRadius(Style::scaledRadiusMd() + kRotatePadding);
+    auto ring = ui::box({
+        .fill = clearColorSpec(),
+        .radius = Style::scaledRadiusMd() + kRotatePadding,
+        .configure = [](Box& box) { box.setBorder(colorSpecFromRole(ColorRole::Primary), 1.0f); },
+    });
     ring->setZIndex(1);
     surface.rotationRing = ring.get();
     surface.selectionFrameTransform->addChild(std::move(ring));
@@ -633,17 +641,19 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     selectionBorderTransform->setHitTestVisible(false);
     surface.selectionBorderTransform = selectionBorderTransform.get();
 
-    auto selectionBorderShadow = std::make_unique<Box>();
-    selectionBorderShadow->setBorder(kShadowColor, kSelectionStroke + kShadowExpand * 2.0f);
-    selectionBorderShadow->setFill(clearColorSpec());
-    selectionBorderShadow->setRadius(Style::scaledRadiusMd() + kShadowExpand);
+    auto selectionBorderShadow = ui::box({
+        .fill = clearColorSpec(),
+        .radius = Style::scaledRadiusMd() + kShadowExpand,
+        .configure = [](Box& box) { box.setBorder(kShadowColor, kSelectionStroke + kShadowExpand * 2.0f); },
+    });
     surface.selectionBorderShadow = selectionBorderShadow.get();
     selectionBorderTransform->addChild(std::move(selectionBorderShadow));
 
-    auto selectionBorder = std::make_unique<Box>();
-    selectionBorder->setBorder(colorSpecFromRole(ColorRole::Primary), kSelectionStroke);
-    selectionBorder->setFill(clearColorSpec());
-    selectionBorder->setRadius(Style::scaledRadiusMd());
+    auto selectionBorder = ui::box({
+        .fill = clearColorSpec(),
+        .radius = Style::scaledRadiusMd(),
+        .configure = [](Box& box) { box.setBorder(colorSpecFromRole(ColorRole::Primary), kSelectionStroke); },
+    });
     selectionBorder->setZIndex(1);
     surface.selectionBorder = selectionBorder.get();
     selectionBorderTransform->addChild(std::move(selectionBorder));
@@ -652,17 +662,19 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     for (std::size_t i = 0; i < kScaleCornerCount; ++i) {
       const ScaleCorner corner = static_cast<ScaleCorner>(i);
 
-      auto scaleHandleShadow = std::make_unique<Box>();
-      scaleHandleShadow->setBorder(kShadowColor, kShadowExpand);
-      scaleHandleShadow->setFill(clearColorSpec());
-      scaleHandleShadow->setRadius(Style::scaledRadiusSm() + kShadowExpand);
+      auto scaleHandleShadow = ui::box({
+          .fill = clearColorSpec(),
+          .radius = Style::scaledRadiusSm() + kShadowExpand,
+          .configure = [](Box& box) { box.setBorder(kShadowColor, kShadowExpand); },
+      });
       scaleHandleShadow->setZIndex(103);
       surface.scaleHandleShadows[i] = scaleHandleShadow.get();
       root->addChild(std::move(scaleHandleShadow));
 
-      auto scaleHandle = std::make_unique<Box>();
-      scaleHandle->setFill(colorSpecFromRole(ColorRole::Primary));
-      scaleHandle->setRadius(Style::scaledRadiusSm());
+      auto scaleHandle = ui::box({
+          .fill = colorSpecFromRole(ColorRole::Primary),
+          .radius = Style::scaledRadiusSm(),
+      });
       scaleHandle->setZIndex(104);
       surface.scaleHandles[i] = scaleHandle.get();
       root->addChild(std::move(scaleHandle));
@@ -691,36 +703,6 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     updateSelectionVisuals(surface);
   }
 
-  auto toolbar = std::make_unique<Flex>();
-  toolbar->setDirection(FlexDirection::Horizontal);
-  toolbar->setAlign(FlexAlign::Center);
-  toolbar->setGap(Style::spaceSm);
-  toolbar->setPadding(Style::spaceSm, Style::spaceMd);
-  toolbar->setFill(colorSpecFromRole(ColorRole::Surface, 0.94f));
-  toolbar->setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
-  toolbar->setRadius(Style::scaledRadiusXl());
-  toolbar->setZIndex(200);
-
-  auto toolbarHandle = std::make_unique<Flex>();
-  toolbarHandle->setDirection(FlexDirection::Horizontal);
-  toolbarHandle->setAlign(FlexAlign::Center);
-  toolbarHandle->setGap(Style::spaceXs);
-  toolbarHandle->setPadding(Style::spaceXs, Style::spaceSm);
-  toolbarHandle->setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.85f));
-  toolbarHandle->setRadius(Style::scaledRadiusLg());
-  toolbarHandle->setMinHeight(Style::controlHeightSm);
-
-  auto handleGlyph = std::make_unique<Glyph>();
-  handleGlyph->setGlyph("menu-2");
-  handleGlyph->setGlyphSize(14.0f);
-  toolbarHandle->addChild(std::move(handleGlyph));
-
-  auto title = std::make_unique<Label>();
-  title->setText(i18n::tr("desktop-widgets.editor.title"));
-  title->setFontWeight(FontWeight::Bold);
-  title->setFontSize(Style::fontSizeBody);
-  toolbarHandle->addChild(std::move(title));
-
   auto toolbarHandleArea = std::make_unique<InputArea>();
   toolbarHandleArea->setParticipatesInLayout(false);
   toolbarHandleArea->setZIndex(1);
@@ -740,13 +722,12 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
       updateDrag();
     }
   });
-  auto* toolbarHandlePtr = toolbarHandle.get();
   auto* toolbarHandleAreaPtr = toolbarHandleArea.get();
-  toolbarHandle->addChild(std::move(toolbarHandleArea));
-  toolbar->addChild(std::move(toolbarHandle));
 
-  const auto selectedWidgetIt = std::find_if(m_snapshot.widgets.begin(), m_snapshot.widgets.end(),
-                                             [this](const auto& widget) { return widget.id == m_selectedWidgetId; });
+  const auto selectedWidgetIt =
+      std::find_if(m_snapshot.widgets.begin(), m_snapshot.widgets.end(), [this](const auto& widget) {
+        return widget.id == m_selectedWidgetId;
+      });
   const bool hasSelectedWidget = selectedWidgetIt != m_snapshot.widgets.end();
   const bool selectedWidgetEnabled = hasSelectedWidget ? selectedWidgetIt->enabled : false;
   const bool canSendSelectedToBack = hasSelectedWidget && selectedWidgetIt != m_snapshot.widgets.begin();
@@ -763,89 +744,6 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     }
   }
 
-  auto typeSelect = std::make_unique<Select>();
-  typeSelect->setOptions(typeLabels);
-  typeSelect->setSelectedIndex(selectedTypeIndex);
-  typeSelect->setControlHeight(Style::controlHeightSm);
-  typeSelect->setMinWidth(160.0f);
-  typeSelect->setOnSelectionChanged([this, &typeSpecs](std::size_t index, std::string_view) {
-    if (index < typeSpecs.size()) {
-      m_addWidgetType = std::string(typeSpecs[index].type);
-    }
-  });
-  toolbar->addChild(std::move(typeSelect));
-
-  auto addButton = std::make_unique<Button>();
-  addButton->setGlyph("plus");
-  addButton->setVariant(ButtonVariant::Primary);
-  addButton->setOnClick([this, outputName = surface.outputName]() {
-    deferEditorMutation([this, outputName]() { addWidget(outputName, m_addWidgetType); });
-  });
-  toolbar->addChild(std::move(addButton));
-
-  auto backButton = std::make_unique<Button>();
-  backButton->setGlyph("stack-back");
-  backButton->setVariant(ButtonVariant::Outline);
-  backButton->setEnabled(canSendSelectedToBack);
-  backButton->setOnClick([this]() { deferEditorMutation([this]() { sendSelectedWidgetToBack(); }); });
-  toolbar->addChild(std::move(backButton));
-
-  auto frontButton = std::make_unique<Button>();
-  frontButton->setGlyph("stack-front");
-  frontButton->setVariant(ButtonVariant::Outline);
-  frontButton->setEnabled(canBringSelectedToFront);
-  frontButton->setOnClick([this]() { deferEditorMutation([this]() { bringSelectedWidgetToFront(); }); });
-  toolbar->addChild(std::move(frontButton));
-
-  auto settingsButton = std::make_unique<Button>();
-  settingsButton->setGlyph("settings");
-  settingsButton->setVariant(ButtonVariant::Outline);
-  settingsButton->setSelected(m_inspectorOpen);
-  settingsButton->setEnabled(hasSelectedWidget);
-  settingsButton->setOnClick([this]() {
-    deferEditorMutation([this]() {
-      m_inspectorOpen = !m_inspectorOpen;
-      requestLayout();
-    });
-  });
-  toolbar->addChild(std::move(settingsButton));
-
-  auto enabledButton = std::make_unique<Button>();
-  enabledButton->setGlyph(selectedWidgetEnabled ? "eye" : "eye-off");
-  enabledButton->setVariant(ButtonVariant::Outline);
-  enabledButton->setSelected(selectedWidgetEnabled);
-  enabledButton->setEnabled(hasSelectedWidget);
-  enabledButton->setOnClick([this]() { deferEditorMutation([this]() { toggleSelectedWidgetEnabled(); }); });
-  toolbar->addChild(std::move(enabledButton));
-
-  auto deleteButton = std::make_unique<Button>();
-  deleteButton->setGlyph("trash");
-  deleteButton->setVariant(ButtonVariant::Destructive);
-  deleteButton->setEnabled(hasSelectedWidget);
-  deleteButton->setOnClick([this]() { deferEditorMutation([this]() { removeSelectedWidget(); }); });
-  toolbar->addChild(std::move(deleteButton));
-
-  auto toolbarSep = std::make_unique<Separator>();
-  toolbarSep->setOrientation(SeparatorOrientation::VerticalRule);
-  toolbarSep->setSize(Style::borderWidth, Style::controlHeight);
-  toolbar->addChild(std::move(toolbarSep));
-
-  auto gridButton = std::make_unique<Button>();
-  gridButton->setText(m_snapshot.grid.visible ? i18n::tr("desktop-widgets.editor.state.grid-on")
-                                              : i18n::tr("desktop-widgets.editor.state.grid-off"));
-  gridButton->setVariant(ButtonVariant::Outline);
-  gridButton->setSelected(m_snapshot.grid.visible);
-  gridButton->setOnClick([this]() {
-    deferEditorMutation([this]() {
-      m_snapshot.grid.visible = !m_snapshot.grid.visible;
-      requestLayout();
-    });
-  });
-  toolbar->addChild(std::move(gridButton));
-
-  auto gridSizeSelect = std::make_unique<Select>();
-  gridSizeSelect->setOptions({"8", "16", "24", "32", "64"});
-  gridSizeSelect->setControlHeight(Style::controlHeightSm);
   const std::array<std::int32_t, 5> gridSizes{8, 16, 24, 32, 64};
   std::size_t selectedGridIndex = 1;
   for (std::size_t i = 0; i < gridSizes.size(); ++i) {
@@ -854,25 +752,146 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
       break;
     }
   }
-  gridSizeSelect->setSelectedIndex(selectedGridIndex);
-  gridSizeSelect->setOnSelectionChanged([this](std::size_t /*index*/, std::string_view text) {
-    deferEditorMutation([this, value = std::string(text)]() {
-      try {
-        m_snapshot.grid.cellSize = std::stoi(value);
-        requestLayout();
-      } catch (...) {
-      }
-    });
-  });
-  toolbar->addChild(std::move(gridSizeSelect));
 
-  auto doneButton = std::make_unique<Button>();
-  doneButton->setText(i18n::tr("desktop-widgets.editor.actions.done"));
-  doneButton->setVariant(ButtonVariant::Secondary);
-  doneButton->setOnClick([this]() { requestExit(); });
-  toolbar->addChild(std::move(doneButton));
+  Flex* toolbarPtr = nullptr;
+  Flex* toolbarHandlePtr = nullptr;
+  auto toolbar = ui::row(
+      {
+          .out = &toolbarPtr,
+          .align = FlexAlign::Center,
+          .gap = Style::spaceSm,
+          .configure =
+              [](Flex& flex) {
+                flex.setPadding(Style::spaceSm, Style::spaceMd);
+                flex.setFill(colorSpecFromRole(ColorRole::Surface, 0.94f));
+                flex.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
+                flex.setRadius(Style::scaledRadiusXl());
+                flex.setZIndex(200);
+              },
+      },
+      ui::row(
+          {
+              .out = &toolbarHandlePtr,
+              .align = FlexAlign::Center,
+              .gap = Style::spaceXs,
+              .minHeight = Style::controlHeightSm,
+              .configure =
+                  [](Flex& flex) {
+                    flex.setPadding(Style::spaceXs, Style::spaceSm);
+                    flex.setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.85f));
+                    flex.setRadius(Style::scaledRadiusLg());
+                  },
+          },
+          ui::glyph({
+              .glyph = "menu-2",
+              .glyphSize = 14.0f,
+          }),
+          ui::label({
+              .text = i18n::tr("desktop-widgets.editor.title"),
+              .fontSize = Style::fontSizeBody,
+              .fontWeight = FontWeight::Bold,
+          }),
+          std::move(toolbarHandleArea)
+      ),
+      ui::select({
+          .options = std::move(typeLabels),
+          .selectedIndex = selectedTypeIndex,
+          .controlHeight = Style::controlHeightSm,
+          .onSelectionChanged =
+              [this](std::size_t index, std::string_view) {
+                const auto& specs = desktop_settings::desktopWidgetTypeSpecs();
+                if (index < specs.size()) {
+                  m_addWidgetType = std::string(specs[index].type);
+                }
+              },
+          .configure = [](Select& select) { select.setMinWidth(160.0f); },
+      }),
+      ui::button({
+          .glyph = "plus",
+          .variant = ButtonVariant::Primary,
+          .onClick =
+              [this, outputName = surface.outputName]() {
+                deferEditorMutation([this, outputName]() { addWidget(outputName, m_addWidgetType); });
+              },
+      }),
+      ui::button({
+          .glyph = "stack-back",
+          .enabled = canSendSelectedToBack,
+          .variant = ButtonVariant::Outline,
+          .onClick = [this]() { deferEditorMutation([this]() { sendSelectedWidgetToBack(); }); },
+      }),
+      ui::button({
+          .glyph = "stack-front",
+          .enabled = canBringSelectedToFront,
+          .variant = ButtonVariant::Outline,
+          .onClick = [this]() { deferEditorMutation([this]() { bringSelectedWidgetToFront(); }); },
+      }),
+      ui::button({
+          .glyph = "settings",
+          .enabled = hasSelectedWidget,
+          .selected = m_inspectorOpen,
+          .variant = ButtonVariant::Outline,
+          .onClick =
+              [this]() {
+                deferEditorMutation([this]() {
+                  m_inspectorOpen = !m_inspectorOpen;
+                  requestLayout();
+                });
+              },
+      }),
+      ui::button({
+          .glyph = selectedWidgetEnabled ? "eye" : "eye-off",
+          .enabled = hasSelectedWidget,
+          .selected = selectedWidgetEnabled,
+          .variant = ButtonVariant::Outline,
+          .onClick = [this]() { deferEditorMutation([this]() { toggleSelectedWidgetEnabled(); }); },
+      }),
+      ui::button({
+          .glyph = "trash",
+          .enabled = hasSelectedWidget,
+          .variant = ButtonVariant::Destructive,
+          .onClick = [this]() { deferEditorMutation([this]() { removeSelectedWidget(); }); },
+      }),
+      ui::separator({
+          .orientation = SeparatorOrientation::VerticalRule,
+          .width = Style::borderWidth,
+          .height = Style::controlHeight,
+      }),
+      ui::button({
+          .text = m_snapshot.grid.visible ? i18n::tr("desktop-widgets.editor.state.grid-on")
+                                          : i18n::tr("desktop-widgets.editor.state.grid-off"),
+          .selected = m_snapshot.grid.visible,
+          .variant = ButtonVariant::Outline,
+          .onClick =
+              [this]() {
+                deferEditorMutation([this]() {
+                  m_snapshot.grid.visible = !m_snapshot.grid.visible;
+                  requestLayout();
+                });
+              },
+      }),
+      ui::select({
+          .options = std::vector<std::string>{"8", "16", "24", "32", "64"},
+          .selectedIndex = selectedGridIndex,
+          .controlHeight = Style::controlHeightSm,
+          .onSelectionChanged =
+              [this](std::size_t /*index*/, std::string_view text) {
+                deferEditorMutation([this, value = std::string(text)]() {
+                  try {
+                    m_snapshot.grid.cellSize = std::stoi(value);
+                    requestLayout();
+                  } catch (...) {
+                  }
+                });
+              },
+      }),
+      ui::button({
+          .text = i18n::tr("desktop-widgets.editor.actions.done"),
+          .variant = ButtonVariant::Secondary,
+          .onClick = [this]() { requestExit(); },
+      })
+  );
 
-  auto* toolbarPtr = toolbar.get();
   surface.toolbar = toolbarPtr;
   root->addChild(std::move(toolbar));
   toolbarPtr->layout(*m_renderContext);
@@ -968,8 +987,9 @@ void DesktopWidgetsEditor::updateSelectionVisuals(OverlaySurface& surface) {
   }
 }
 
-void DesktopWidgetsEditor::applyViewState(EditorWidgetView& view, const DesktopWidgetState& state,
-                                          bool refreshContent) {
+void DesktopWidgetsEditor::applyViewState(
+    EditorWidgetView& view, const DesktopWidgetState& state, bool refreshContent
+) {
   if (view.widget == nullptr || view.transformNode == nullptr || m_renderContext == nullptr) {
     return;
   }
@@ -1100,8 +1120,9 @@ void DesktopWidgetsEditor::sendSelectedWidgetToBack() {
     return;
   }
 
-  auto it = std::find_if(m_snapshot.widgets.begin(), m_snapshot.widgets.end(),
-                         [this](const auto& widget) { return widget.id == m_selectedWidgetId; });
+  auto it = std::find_if(m_snapshot.widgets.begin(), m_snapshot.widgets.end(), [this](const auto& widget) {
+    return widget.id == m_selectedWidgetId;
+  });
   if (it == m_snapshot.widgets.end() || it == m_snapshot.widgets.begin()) {
     return;
   }
@@ -1115,8 +1136,9 @@ void DesktopWidgetsEditor::bringSelectedWidgetToFront() {
     return;
   }
 
-  auto it = std::find_if(m_snapshot.widgets.begin(), m_snapshot.widgets.end(),
-                         [this](const auto& widget) { return widget.id == m_selectedWidgetId; });
+  auto it = std::find_if(m_snapshot.widgets.begin(), m_snapshot.widgets.end(), [this](const auto& widget) {
+    return widget.id == m_selectedWidgetId;
+  });
   if (it == m_snapshot.widgets.end() || std::next(it) == m_snapshot.widgets.end()) {
     return;
   }
@@ -1166,8 +1188,9 @@ void DesktopWidgetsEditor::startInspectorDrag(const std::string& outputName) {
   m_drag.initialInspectorY = surface->inspectorY;
 }
 
-void DesktopWidgetsEditor::clampInspectorPosition(OverlaySurface& surface, float inspectorWidth,
-                                                  float inspectorHeight) {
+void DesktopWidgetsEditor::clampInspectorPosition(
+    OverlaySurface& surface, float inspectorWidth, float inspectorHeight
+) {
   if (surface.surface == nullptr) {
     return;
   }
@@ -1199,8 +1222,9 @@ void DesktopWidgetsEditor::requestExit() {
   });
 }
 
-void DesktopWidgetsEditor::startDrag(DragMode mode, const std::string& widgetId, bool rebuildOnFinish,
-                                     ScaleCorner scaleCorner) {
+void DesktopWidgetsEditor::startDrag(
+    DragMode mode, const std::string& widgetId, bool rebuildOnFinish, ScaleCorner scaleCorner
+) {
   DesktopWidgetState* state = findWidgetState(widgetId);
   if (state == nullptr) {
     return;
@@ -1299,7 +1323,8 @@ void DesktopWidgetsEditor::updateDrag() {
         continue;
       }
       const WidgetTransformBounds bounds = computeWidgetTransformBounds(
-          otherState->cx, otherState->cy, view.intrinsicWidth, view.intrinsicHeight, 1.0f, otherState->rotationRad);
+          otherState->cx, otherState->cy, view.intrinsicWidth, view.intrinsicHeight, 1.0f, otherState->rotationRad
+      );
       snapLinesX.push_back(bounds.left);
       snapLinesX.push_back(otherState->cx);
       snapLinesX.push_back(bounds.left + bounds.aabbWidth);
@@ -1343,11 +1368,14 @@ void DesktopWidgetsEditor::updateDrag() {
     state->cy = m_drag.initialState.cy + (m_currentEventSceneY - m_drag.startSceneY);
     if (shouldSnap()) {
       const WidgetTransformBounds bounds = computeWidgetTransformBounds(
-          state->cx, state->cy, m_drag.intrinsicWidth, m_drag.intrinsicHeight, 1.0f, state->rotationRad);
-      state->cx = snapBoundsAxisToTargets(state->cx, bounds.aabbWidth, m_snapshot.grid.cellSize, gridOriginX,
-                                          snapLinesX, guideThreshold);
-      state->cy = snapBoundsAxisToTargets(state->cy, bounds.aabbHeight, m_snapshot.grid.cellSize, gridOriginY,
-                                          snapLinesY, guideThreshold);
+          state->cx, state->cy, m_drag.intrinsicWidth, m_drag.intrinsicHeight, 1.0f, state->rotationRad
+      );
+      state->cx = snapBoundsAxisToTargets(
+          state->cx, bounds.aabbWidth, m_snapshot.grid.cellSize, gridOriginX, snapLinesX, guideThreshold
+      );
+      state->cy = snapBoundsAxisToTargets(
+          state->cy, bounds.aabbHeight, m_snapshot.grid.cellSize, gridOriginY, snapLinesY, guideThreshold
+      );
     }
   } else if (m_drag.mode == DragMode::Rotate) {
     const float startAngle =
@@ -1371,9 +1399,10 @@ void DesktopWidgetsEditor::updateDrag() {
     const float localY = (dx * sinTheta + dy * cosTheta) * scaleSigns.y;
     scaleHalfWidth = std::max(1.0f, m_drag.intrinsicWidth * 0.5f);
     scaleHalfHeight = std::max(1.0f, m_drag.intrinsicHeight * 0.5f);
-    const WidgetTransformBounds initialBounds =
-        computeWidgetTransformBounds(m_drag.initialState.cx, m_drag.initialState.cy, m_drag.intrinsicWidth,
-                                     m_drag.intrinsicHeight, 1.0f, m_drag.initialState.rotationRad);
+    const WidgetTransformBounds initialBounds = computeWidgetTransformBounds(
+        m_drag.initialState.cx, m_drag.initialState.cy, m_drag.intrinsicWidth, m_drag.intrinsicHeight, 1.0f,
+        m_drag.initialState.rotationRad
+    );
     scaleInitialAabbWidth = std::max(1.0f, initialBounds.aabbWidth);
     scaleInitialAabbHeight = std::max(1.0f, initialBounds.aabbHeight);
     hasScaleDragGeometry = true;
@@ -1406,16 +1435,18 @@ void DesktopWidgetsEditor::updateDrag() {
 
         if (m_altHeld) {
           const float draggedLine = initialCenter + sign * currentExtent * 0.5f;
-          const float snappedLine =
-              snapLineToTargets(draggedLine, m_snapshot.grid.cellSize, axisX ? gridOriginX : gridOriginY,
-                                axisX ? snapLinesX : snapLinesY, guideThreshold);
+          const float snappedLine = snapLineToTargets(
+              draggedLine, m_snapshot.grid.cellSize, axisX ? gridOriginX : gridOriginY, axisX ? snapLinesX : snapLinesY,
+              guideThreshold
+          );
           targetExtent = std::abs(snappedLine - initialCenter) * 2.0f;
         } else {
           const float anchorLine = initialCenter - sign * initialExtent * 0.5f;
           const float draggedLine = anchorLine + sign * currentExtent;
-          const float snappedLine =
-              snapLineToTargets(draggedLine, m_snapshot.grid.cellSize, axisX ? gridOriginX : gridOriginY,
-                                axisX ? snapLinesX : snapLinesY, guideThreshold);
+          const float snappedLine = snapLineToTargets(
+              draggedLine, m_snapshot.grid.cellSize, axisX ? gridOriginX : gridOriginY, axisX ? snapLinesX : snapLinesY,
+              guideThreshold
+          );
           targetExtent = std::abs(snappedLine - anchorLine);
         }
 
@@ -1446,8 +1477,9 @@ void DesktopWidgetsEditor::updateDrag() {
     if (EditorWidgetView* view = findView(m_drag.widgetId); view != nullptr && view->transformNode != nullptr) {
       view->transformNode->setScale(dragVisualScale);
       view->transformNode->setFrameSize(m_drag.intrinsicWidth, m_drag.intrinsicHeight);
-      view->transformNode->setPosition(state->cx - m_drag.intrinsicWidth * 0.5f,
-                                       state->cy - m_drag.intrinsicHeight * 0.5f);
+      view->transformNode->setPosition(
+          state->cx - m_drag.intrinsicWidth * 0.5f, state->cy - m_drag.intrinsicHeight * 0.5f
+      );
     }
   }
 
@@ -1531,16 +1563,18 @@ bool DesktopWidgetsEditor::onPointerEvent(const PointerEvent& event) {
     surface->inputDispatcher.pointerMotion(static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial);
     break;
   case PointerEvent::Type::Button:
-    surface->inputDispatcher.pointerButton(static_cast<float>(event.sx), static_cast<float>(event.sy), event.button,
-                                           event.state == 1);
+    surface->inputDispatcher.pointerButton(
+        static_cast<float>(event.sx), static_cast<float>(event.sy), event.button, event.state == 1
+    );
     if (event.state == 0 && m_drag.mode != DragMode::None && event.button == BTN_LEFT) {
       finishDrag();
     }
     break;
   case PointerEvent::Type::Axis:
-    surface->inputDispatcher.pointerAxis(static_cast<float>(event.sx), static_cast<float>(event.sy), event.axis,
-                                         event.axisSource, event.axisValue, event.axisDiscrete, event.axisValue120,
-                                         event.axisLines);
+    surface->inputDispatcher.pointerAxis(
+        static_cast<float>(event.sx), static_cast<float>(event.sy), event.axis, event.axisSource, event.axisValue,
+        event.axisDiscrete, event.axisValue120, event.axisLines
+    );
     break;
   }
 
@@ -1649,8 +1683,9 @@ void DesktopWidgetsEditor::onSecondTick() {
   }
 
   const bool minuteBoundary = formatLocalTime("{:%S}") == "00";
-  const bool needsSeconds = std::any_of(m_snapshot.widgets.begin(), m_snapshot.widgets.end(),
-                                        [](const auto& widget) { return formatShowsSeconds(widget); });
+  const bool needsSeconds = std::any_of(m_snapshot.widgets.begin(), m_snapshot.widgets.end(), [](const auto& widget) {
+    return formatShowsSeconds(widget);
+  });
   if (minuteBoundary || needsSeconds) {
     requestLayout();
   }

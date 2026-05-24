@@ -44,6 +44,10 @@ namespace KeySymbol {
 
   [[nodiscard]] inline bool isEnd(std::uint32_t sym) noexcept { return sym == XKB_KEY_End; }
 
+  [[nodiscard]] inline bool isTab(std::uint32_t sym) noexcept {
+    return sym == XKB_KEY_Tab || sym == XKB_KEY_ISO_Left_Tab;
+  }
+
   [[nodiscard]] inline bool isModifier(std::uint32_t sym) noexcept {
     switch (sym) {
     case XKB_KEY_Shift_L:

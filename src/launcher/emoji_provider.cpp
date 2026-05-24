@@ -47,17 +47,32 @@ void EmojiProvider::initialize() {
   }
 }
 
+std::vector<LauncherCategory> EmojiProvider::categories() const {
+  return {
+      {"people", "mood-smile"},
+      {"animals", "paw"},
+      {"food", "apple"},
+      {"travel", "map"},
+      {"activity", "ball-football"},
+      {"objects", "device-floppy"},
+      {"symbols", "at"},
+      {"flags", "flag"},
+      {"nature", "leaf"},
+  };
+}
+
 std::vector<LauncherResult> EmojiProvider::query(std::string_view text) const {
   std::string query = StringUtils::toLower(text);
   if (query.empty()) {
-    // Show first batch when no query
     std::vector<LauncherResult> results;
-    for (std::size_t i = 0; i < m_entries.size() && i < 50; ++i) {
+    results.reserve(m_entries.size());
+    for (std::size_t i = 0; i < m_entries.size(); ++i) {
       const auto& e = m_entries[i];
       LauncherResult r;
       r.id = "emoji-" + e.emoji;
       r.title = e.name;
       r.subtitle = e.category;
+      r.category = e.category;
       r.actionText = e.emoji;
       r.score = static_cast<int>(m_entries.size() - i);
       results.push_back(std::move(r));
@@ -115,6 +130,7 @@ std::vector<LauncherResult> EmojiProvider::query(std::string_view text) const {
     r.id = "emoji-" + e.emoji;
     r.title = e.name;
     r.subtitle = e.category;
+    r.category = e.category;
     r.actionText = e.emoji;
     r.score = scored[i].score;
     results.push_back(std::move(r));

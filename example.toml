@@ -112,6 +112,7 @@ tint_intensity         = 0.3        # 0.0 = no tint, 1.0 = opaque
 [notification]
 enable_daemon      = true
 layer              = "top"          # top | overlay
+scale              = 1.0            # notification size multiplier applied on top of shell.ui_scale
 background_opacity = 0.97
 offset_x           = 20             # absolute horizontal margin from the screen edge
 offset_y           = 8              # absolute vertical margin from the screen edge

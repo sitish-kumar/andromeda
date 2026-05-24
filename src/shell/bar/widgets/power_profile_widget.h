@@ -8,9 +8,9 @@ class Glyph;
 class InputArea;
 class PowerProfilesService;
 
-class PowerProfilesWidget : public Widget {
+class PowerProfileWidget : public Widget {
 public:
-  explicit PowerProfilesWidget(PowerProfilesService* powerProfiles);
+  explicit PowerProfileWidget(PowerProfilesService* powerProfiles);
 
   void create() override;
 

@@ -16,12 +16,8 @@
 #include "shell/tooltip/tooltip_manager.h"
 #include "system/app_identity.h"
 #include "system/desktop_entry.h"
-#include "ui/controls/box.h"
+#include "ui/builders.h"
 #include "ui/controls/context_menu.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/image.h"
-#include "ui/controls/label.h"
 #include "ui/palette.h"
 #include "ui/popup_chrome.h"
 #include "ui/style.h"
@@ -56,9 +52,10 @@ namespace {
 
   // Slide the whole dock chrome (panel ± shadow) completely past the layer buffer edge, same
   // idea as notification toasts driving `reveal` until the full card width has cleared the surface.
-  std::pair<float, float> computeAutoHideHiddenDelta(bool vert, bool isBottom, bool isRight, float w, float h,
-                                                     float contentLeft, float contentTop, float contentRight,
-                                                     float contentBottom) {
+  std::pair<float, float> computeAutoHideHiddenDelta(
+      bool vert, bool isBottom, bool isRight, float w, float h, float contentLeft, float contentTop, float contentRight,
+      float contentBottom
+  ) {
     const float k = kAutoHideSlideExtraPx;
     if (!vert) {
       if (isBottom) {
@@ -119,19 +116,23 @@ namespace {
 
   popup_chrome::Attachment popupAttachmentForDockPosition(bool isBottom, bool isTop, bool isRight) {
     if (isBottom) {
-      return popup_chrome::Attachment{.horizontal = popup_chrome::HorizontalAttachment::Center,
-                                      .vertical = popup_chrome::VerticalAttachment::Bottom};
+      return popup_chrome::Attachment{
+          .horizontal = popup_chrome::HorizontalAttachment::Center, .vertical = popup_chrome::VerticalAttachment::Bottom
+      };
     }
     if (isTop) {
-      return popup_chrome::Attachment{.horizontal = popup_chrome::HorizontalAttachment::Center,
-                                      .vertical = popup_chrome::VerticalAttachment::Top};
+      return popup_chrome::Attachment{
+          .horizontal = popup_chrome::HorizontalAttachment::Center, .vertical = popup_chrome::VerticalAttachment::Top
+      };
     }
     if (isRight) {
-      return popup_chrome::Attachment{.horizontal = popup_chrome::HorizontalAttachment::Right,
-                                      .vertical = popup_chrome::VerticalAttachment::Center};
+      return popup_chrome::Attachment{
+          .horizontal = popup_chrome::HorizontalAttachment::Right, .vertical = popup_chrome::VerticalAttachment::Center
+      };
     }
-    return popup_chrome::Attachment{.horizontal = popup_chrome::HorizontalAttachment::Left,
-                                    .vertical = popup_chrome::VerticalAttachment::Center};
+    return popup_chrome::Attachment{
+        .horizontal = popup_chrome::HorizontalAttachment::Left, .vertical = popup_chrome::VerticalAttachment::Center
+    };
   }
 
   template <typename T> void appendOptionalStackPart(std::string& out, const std::optional<T>& value) {
@@ -144,9 +145,10 @@ namespace {
     signature.reserve(config.bars.size());
 
     for (const auto& bar : config.bars) {
-      std::string item =
-          std::format("{}\x1f{}\x1f{}\x1f{}\x1f{}\x1f{}\x1f{}\x1f{}\x1f{}", bar.name, bar.position, bar.enabled,
-                      bar.autoHide, bar.reserveSpace, bar.thickness, bar.marginEnds, bar.marginEdge, bar.shadow);
+      std::string item = std::format(
+          "{}\x1f{}\x1f{}\x1f{}\x1f{}\x1f{}\x1f{}\x1f{}\x1f{}", bar.name, bar.position, bar.enabled, bar.autoHide,
+          bar.reserveSpace, bar.thickness, bar.marginEnds, bar.marginEdge, bar.shadow
+      );
 
       item.push_back('\x1e');
       for (const auto& override : bar.monitorOverrides) {
@@ -194,6 +196,16 @@ namespace {
         static_cast<float>(cfg.radiusBottomRight),
         static_cast<float>(cfg.radiusBottomLeft),
     };
+  }
+
+  std::unique_ptr<Flex> makeDockItemRow(const DockConfig& cfg, bool vertical) {
+    return ui::makeFlex(
+        vertical ? FlexDirection::Vertical : FlexDirection::Horizontal, {
+                                                                            .align = FlexAlign::Center,
+                                                                            .gap = static_cast<float>(cfg.itemSpacing),
+                                                                            .padding = static_cast<float>(cfg.padding),
+                                                                        }
+    );
   }
 
 } // namespace
@@ -254,8 +266,10 @@ void Dock::reload() {
 
   if (wl_display_roundtrip(m_platform->display()) < 0) {
     const int roundtripErrno = errno;
-    kLog.error("Wayland roundtrip failed while reloading dock surfaces: {}",
-               m_platform->wayland().describeDisplayError(roundtripErrno));
+    kLog.error(
+        "Wayland roundtrip failed while reloading dock surfaces: {}",
+        m_platform->wayland().describeDisplayError(roundtripErrno)
+    );
   }
   syncInstances();
 }
@@ -373,8 +387,9 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
     }
     m_hoveredInstance = it->second;
     m_hoveredInstance->pointerInside = true;
-    m_hoveredInstance->inputDispatcher.pointerEnter(static_cast<float>(event.sx), static_cast<float>(event.sy),
-                                                    event.serial);
+    m_hoveredInstance->inputDispatcher.pointerEnter(
+        static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial
+    );
     // Auto-hide: show the dock when the pointer enters.
     if (m_config->config().dock.autoHide && m_hoveredInstance->sceneRoot != nullptr) {
       if (m_hoveredInstance->hideAnimId != 0) {
@@ -389,7 +404,8 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
             syncDockSlideLayerTransform(*inst);
             applyDockCompositorBlur(*inst);
           },
-          [inst = m_hoveredInstance]() { inst->hideAnimId = 0; });
+          [inst = m_hoveredInstance]() { inst->hideAnimId = 0; }
+      );
       // Restore full input region (full surface so shadow-margin edges don't
       // cause an immediate Leave when triggered from the edge of the strip).
       if (m_hoveredInstance->surface != nullptr) {
@@ -443,19 +459,22 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
         }
         m_hoveredInstance = targetInstance;
         m_hoveredInstance->pointerInside = true;
-        m_hoveredInstance->inputDispatcher.pointerEnter(static_cast<float>(event.sx), static_cast<float>(event.sy),
-                                                        event.serial);
+        m_hoveredInstance->inputDispatcher.pointerEnter(
+            static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial
+        );
       } else {
-        m_hoveredInstance->inputDispatcher.pointerMotion(static_cast<float>(event.sx), static_cast<float>(event.sy),
-                                                         event.serial);
+        m_hoveredInstance->inputDispatcher.pointerMotion(
+            static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial
+        );
       }
     }
 
     if (m_hoveredInstance == nullptr)
       break;
     const bool pressed = (event.state == 1);
-    m_hoveredInstance->inputDispatcher.pointerButton(static_cast<float>(event.sx), static_cast<float>(event.sy),
-                                                     event.button, pressed);
+    m_hoveredInstance->inputDispatcher.pointerButton(
+        static_cast<float>(event.sx), static_cast<float>(event.sy), event.button, pressed
+    );
     break;
   }
   case PointerEvent::Type::Axis:
@@ -562,8 +581,9 @@ void Dock::syncInstances() {
                                     : false;
   const auto outputAllowed = [&](const WaylandOutput& output) {
     if (!selectedMonitors.empty() &&
-        std::none_of(selectedMonitors.begin(), selectedMonitors.end(),
-                     [&output](const std::string& m) { return outputMatchesSelector(m, output); })) {
+        std::none_of(selectedMonitors.begin(), selectedMonitors.end(), [&output](const std::string& m) {
+          return outputMatchesSelector(m, output);
+        })) {
       return false;
     }
     if (hasStaticContent) {
@@ -594,8 +614,9 @@ void Dock::syncInstances() {
       continue;
     if (!outputAllowed(output))
       continue;
-    const bool exists = std::any_of(m_instances.begin(), m_instances.end(),
-                                    [&output](const auto& inst) { return inst->outputName == output.name; });
+    const bool exists = std::any_of(m_instances.begin(), m_instances.end(), [&output](const auto& inst) {
+      return inst->outputName == output.name;
+    });
     if (!exists) {
       createInstance(output);
     }
@@ -604,8 +625,10 @@ void Dock::syncInstances() {
 
 void Dock::createInstance(const WaylandOutput& output) {
   const auto& cfg = m_config->config().dock;
-  kLog.info("creating dock on {} ({}) icon_size={} position={}", output.connectorName, output.description, cfg.iconSize,
-            cfg.position);
+  kLog.info(
+      "creating dock on {} ({}) icon_size={} position={}", output.connectorName, output.description, cfg.iconSize,
+      cfg.position
+  );
 
   auto instance = std::make_unique<DockInstance>();
   instance->outputName = output.name;
@@ -679,10 +702,12 @@ void Dock::createInstance(const WaylandOutput& output) {
   instance->surface->setRenderContext(m_renderContext);
 
   auto* inst = instance.get();
-  instance->surface->setConfigureCallback(
-      [inst](std::uint32_t /*w*/, std::uint32_t /*h*/) { inst->surface->requestLayout(); });
-  instance->surface->setPrepareFrameCallback(
-      [this, inst](bool needsUpdate, bool needsLayout) { prepareFrame(*inst, needsUpdate, needsLayout); });
+  instance->surface->setConfigureCallback([inst](std::uint32_t /*w*/, std::uint32_t /*h*/) {
+    inst->surface->requestLayout();
+  });
+  instance->surface->setPrepareFrameCallback([this, inst](bool needsUpdate, bool needsLayout) {
+    prepareFrame(*inst, needsUpdate, needsLayout);
+  });
   instance->surface->setAnimationManager(&instance->animations);
 
   if (!instance->surface->initialize(output.output)) {
@@ -882,27 +907,24 @@ void Dock::buildScene(DockInstance& instance) {
 
     // Shadow
     if (shell::surface_shadow::enabled(cfg.shadow, shadowConfig)) {
-      auto shadow = std::make_unique<Box>();
-      instance.shadow = static_cast<Box*>(instance.slideRoot->addChild(std::move(shadow)));
+      instance.shadow = static_cast<Box*>(instance.slideRoot->addChild(ui::box()));
     }
 
     // Panel background
-    auto panel = std::make_unique<Box>();
-    panel->setRadii(radii);
-    instance.panel = static_cast<Box*>(instance.slideRoot->addChild(std::move(panel)));
+    instance.panel = static_cast<Box*>(instance.slideRoot->addChild(
+        ui::box({
+            .configure = [radii](Box& box) { box.setRadii(radii); },
+        })
+    ));
 
     // Item row
-    auto row = std::make_unique<Flex>();
-    row->setDirection(vert ? FlexDirection::Vertical : FlexDirection::Horizontal);
-    row->setGap(static_cast<float>(cfg.itemSpacing));
-    row->setAlign(FlexAlign::Center);
-    row->setPadding(static_cast<float>(cfg.padding));
-    instance.row = static_cast<Flex*>(instance.panel->addChild(std::move(row)));
+    instance.row = static_cast<Flex*>(instance.panel->addChild(makeDockItemRow(cfg, vert)));
 
     // Wire up InputDispatcher.
     instance.inputDispatcher.setSceneRoot(instance.sceneRoot.get());
-    instance.inputDispatcher.setCursorShapeCallback(
-        [this](std::uint32_t serial, std::uint32_t shape) { m_platform->setCursorShape(serial, shape); });
+    instance.inputDispatcher.setCursorShapeCallback([this](std::uint32_t serial, std::uint32_t shape) {
+      m_platform->setCursorShape(serial, shape);
+    });
     instance.inputDispatcher.setHoverChangeCallback([inst = &instance](InputArea* /*old*/, InputArea* next) {
       TooltipManager::instance().onHoverChange(next, inst->surface->layerSurface(), inst->output);
     });
@@ -919,7 +941,8 @@ void Dock::buildScene(DockInstance& instance) {
       instance.hideOpacity = 1.0f;
       instance.animations.animate(
           0.0f, 1.0f, Style::animSlow, Easing::EaseOutCubic,
-          [slide = instance.slideRoot](float v) { slide->setOpacity(v); }, {}, instance.slideRoot);
+          [slide = instance.slideRoot](float v) { slide->setOpacity(v); }, {}, instance.slideRoot
+      );
     }
 
     instance.surface->setSceneRoot(instance.sceneRoot.get());
@@ -935,8 +958,9 @@ void Dock::buildScene(DockInstance& instance) {
   if (instance.shadow != nullptr) {
     const float shadowOffsetX = static_cast<float>(shadowConfig.offsetX);
     const float shadowOffsetY = static_cast<float>(shadowConfig.offsetY);
-    const RoundedRectStyle shadowStyle = shell::surface_shadow::style(shadowConfig, cfg.backgroundOpacity,
-                                                                      shell::surface_shadow::Shape{.radius = radii});
+    const RoundedRectStyle shadowStyle = shell::surface_shadow::style(
+        shadowConfig, cfg.backgroundOpacity, shell::surface_shadow::Shape{.radius = radii}
+    );
     instance.shadow->setStyle(shadowStyle);
     instance.shadow->setZIndex(-1);
     instance.shadow->setPosition(panelX + shadowOffsetX, panelY + shadowOffsetY);
@@ -1050,13 +1074,11 @@ void Dock::rebuildItems(DockInstance& instance) {
   instance.items.clear();
 
   // Create a fresh row.
-  auto freshRow = std::make_unique<Flex>();
-  freshRow->setDirection(vert ? FlexDirection::Vertical : FlexDirection::Horizontal);
-  freshRow->setGap(static_cast<float>(cfg.itemSpacing));
-  freshRow->setAlign(FlexAlign::Center);
-  freshRow->setPadding(static_cast<float>(cfg.padding));
-  instance.row = static_cast<Flex*>(instance.panel != nullptr ? instance.panel->addChild(std::move(freshRow))
-                                                              : instance.sceneRoot->addChild(std::move(freshRow)));
+  auto freshRow = makeDockItemRow(cfg, vert);
+  instance.row = static_cast<Flex*>(
+      instance.panel != nullptr ? instance.panel->addChild(std::move(freshRow))
+                                : instance.sceneRoot->addChild(std::move(freshRow))
+  );
 
   // Determine items: pinned + (optionally) running-only apps not in pinned.
   std::vector<DesktopEntry> itemEntries = m_pinnedEntries;
@@ -1120,12 +1142,16 @@ void Dock::rebuildItems(DockInstance& instance) {
     }
 
     // Hover background — fills cell, radius matches dock panel.
-    auto bg = std::make_unique<Box>();
-    bg->setSize(cellMain, cellMain); // square — excludes indicator strip
-    bg->setPosition(0.0f, 0.0f);
-    bg->setRadius(static_cast<float>(cfg.radius));
-    bg->setFill(clearColorSpec());
-    item.background = static_cast<Box*>(areaNode->addChild(std::move(bg)));
+    areaNode->addChild(
+        ui::box({
+            .out = &item.background,
+            .fill = clearColorSpec(),
+            .radius = static_cast<float>(cfg.radius),
+            .width = cellMain,
+            .height = cellMain, // square — excludes indicator strip
+            .configure = [](Box& box) { box.setPosition(0.0f, 0.0f); },
+        })
+    );
 
     // Icon centred inside the padded cell.
     const std::string& iconPath = [&]() -> const std::string& {
@@ -1137,24 +1163,31 @@ void Dock::rebuildItems(DockInstance& instance) {
       }
       return m_iconResolver.resolve("application-x-executable", cfg.iconSize);
     }();
-    auto iconImg = std::make_unique<Image>();
-    if (!iconPath.empty() && m_renderContext != nullptr) {
-      iconImg->setSourceFile(*m_renderContext, iconPath, cfg.iconSize, true);
-    }
-    iconImg->setSize(iSize, iSize);
-    iconImg->setPosition(kCellPad, kCellPad);
+    auto iconImg = ui::image({
+        .width = iSize,
+        .height = iSize,
+        .configure = [this, &iconPath, &cfg, kCellPad](Image& image) {
+          if (!iconPath.empty() && m_renderContext != nullptr) {
+            image.setSourceFile(*m_renderContext, iconPath, cfg.iconSize, true);
+          }
+          image.setPosition(kCellPad, kCellPad);
+        },
+    });
 
     if (iconImg->hasImage()) {
       item.iconImage = static_cast<Image*>(areaNode->addChild(std::move(iconImg)));
     } else {
       // Fallback: Tabler app-window glyph (matches launcher when theme icons are unavailable).
-      auto glyph = std::make_unique<Glyph>();
-      glyph->setGlyph("app-window");
-      glyph->setGlyphSize(iSize);
-      glyph->setColor(colorSpecFromRole(ColorRole::OnSurface));
-      glyph->setSize(iSize, iSize);
-      glyph->setPosition(kCellPad, kCellPad);
-      item.iconGlyph = static_cast<Glyph*>(areaNode->addChild(std::move(glyph)));
+      item.iconGlyph = static_cast<Glyph*>(areaNode->addChild(
+          ui::glyph({
+              .glyph = "app-window",
+              .glyphSize = iSize,
+              .color = colorSpecFromRole(ColorRole::OnSurface),
+              .width = iSize,
+              .height = iSize,
+              .configure = [kCellPad](Glyph& glyph) { glyph.setPosition(kCellPad, kCellPad); },
+          })
+      ));
     }
 
     if (cfg.showDots) {
@@ -1162,21 +1195,24 @@ void Dock::rebuildItems(DockInstance& instance) {
       const bool verticalDots = cfg.position == "left" || cfg.position == "right";
 
       for (std::size_t dotIndex = 0; dotIndex < item.dotIndicators.size(); ++dotIndex) {
-        auto dotNode = std::make_unique<Box>();
-        dotNode->setRadius(dot * 0.5f);
-        dotNode->setSize(dot, dot);
-        dotNode->setFill(colorSpecFromRole(ColorRole::Secondary));
-        dotNode->setVisible(false);
-
-        if (verticalDots) {
-          const float x = cfg.position == "left" ? std::round(cellMain - dot - 1.0f) : 1.0f;
-          dotNode->setPosition(x, std::round((cellMain - dot) * 0.5f));
-        } else {
-          const float y = cfg.position == "bottom" ? 1.0f : std::round(cellMain - dot - 1.0f);
-          dotNode->setPosition(std::round((cellMain - dot) * 0.5f), y);
-        }
-
-        item.dotIndicators[dotIndex] = static_cast<Box*>(areaNode->addChild(std::move(dotNode)));
+        item.dotIndicators[dotIndex] = static_cast<Box*>(areaNode->addChild(
+            ui::box({
+                .fill = colorSpecFromRole(ColorRole::Secondary),
+                .radius = dot * 0.5f,
+                .width = dot,
+                .height = dot,
+                .visible = false,
+                .configure = [verticalDots, position = cfg.position, cellMain, dot](Box& box) {
+                  if (verticalDots) {
+                    const float x = position == "left" ? std::round(cellMain - dot - 1.0f) : 1.0f;
+                    box.setPosition(x, std::round((cellMain - dot) * 0.5f));
+                  } else {
+                    const float y = position == "bottom" ? 1.0f : std::round(cellMain - dot - 1.0f);
+                    box.setPosition(std::round((cellMain - dot) * 0.5f), y);
+                  }
+                },
+            })
+        ));
       }
     }
 
@@ -1186,19 +1222,26 @@ void Dock::rebuildItems(DockInstance& instance) {
       const float badgeX = kCellPad + iSize - bd * 0.55f;
       const float badgeY = kCellPad - bd * 0.45f;
 
-      auto badgeBox = std::make_unique<Box>();
-      badgeBox->setRadius(bd * 0.5f);
-      badgeBox->setSize(bd, bd);
-      badgeBox->setPosition(badgeX, badgeY);
-      badgeBox->setVisible(false);
-      item.badge = static_cast<Box*>(areaNode->addChild(std::move(badgeBox)));
+      areaNode->addChild(
+          ui::box({
+              .out = &item.badge,
+              .radius = bd * 0.5f,
+              .width = bd,
+              .height = bd,
+              .visible = false,
+              .configure = [badgeX, badgeY](Box& box) { box.setPosition(badgeX, badgeY); },
+          })
+      );
 
-      auto labelNode = std::make_unique<Label>();
-      labelNode->setFontSize(bd * kBadgeFontRatio);
-      labelNode->setFontWeight(FontWeight::Bold);
-      labelNode->setMaxLines(1);
-      labelNode->setVisible(false);
-      item.badgeLabel = static_cast<Label*>(item.badge->addChild(std::move(labelNode)));
+      item.badge->addChild(
+          ui::label({
+              .out = &item.badgeLabel,
+              .fontSize = bd * kBadgeFontRatio,
+              .maxLines = 1,
+              .fontWeight = FontWeight::Bold,
+              .visible = false,
+          })
+      );
     }
 
     // Pointer callbacks.
@@ -1301,7 +1344,8 @@ void Dock::updateVisuals(DockInstance& instance) {
               itemPtr->visualScale = value;
               node->setScale(value);
             },
-            [itemPtr = &item] { itemPtr->scaleAnimId = 0; });
+            [itemPtr = &item] { itemPtr->scaleAnimId = 0; }
+        );
       }
 
       if (item.visualOpacity < 0.0f) {
@@ -1317,15 +1361,17 @@ void Dock::updateVisuals(DockInstance& instance) {
               itemPtr->visualOpacity = value;
               node->setOpacity(value);
             },
-            [itemPtr = &item] { itemPtr->opacityAnimId = 0; });
+            [itemPtr = &item] { itemPtr->opacityAnimId = 0; }
+        );
       }
     }
 
     const bool needsWindowCount = cfg.showDots || item.badge != nullptr;
     std::size_t count = 0;
     if (needsWindowCount) {
-      const auto windows = m_platform->windowsForApp(item.idLower, item.startupWmClassLower,
-                                                     currentDockFilterOutput(cfg, instance.output));
+      const auto windows = m_platform->windowsForApp(
+          item.idLower, item.startupWmClassLower, currentDockFilterOutput(cfg, instance.output)
+      );
       count = windows.size();
       item.instanceCount = count;
     }
@@ -1375,8 +1421,9 @@ void Dock::updateVisuals(DockInstance& instance) {
         if (m_renderContext != nullptr) {
           const float bd = std::max(kBadgeMinSize, static_cast<float>(cfg.iconSize) * kBadgeSizeRatio);
           item.badgeLabel->measure(*m_renderContext);
-          item.badgeLabel->setPosition(std::round((bd - item.badgeLabel->width()) * 0.5f),
-                                       std::round((bd - item.badgeLabel->height()) * 0.5f));
+          item.badgeLabel->setPosition(
+              std::round((bd - item.badgeLabel->width()) * 0.5f), std::round((bd - item.badgeLabel->height()) * 0.5f)
+          );
         }
       }
     }
@@ -1415,23 +1462,32 @@ std::unique_ptr<InputArea> Dock::createLauncherButton(DockInstance& instance) {
     areaNode->setSize(cellCross, cellMain);
   }
 
-  auto bg = std::make_unique<Box>();
-  bg->setSize(cellMain, cellMain);
-  bg->setPosition(0.0f, 0.0f);
-  bg->setRadius(static_cast<float>(cfg.radius));
-  bg->setFill(clearColorSpec());
-  auto* bgPtr = bg.get();
-  areaNode->addChild(std::move(bg));
+  Box* bgPtr = nullptr;
+  areaNode->addChild(
+      ui::box({
+          .out = &bgPtr,
+          .fill = clearColorSpec(),
+          .radius = static_cast<float>(cfg.radius),
+          .width = cellMain,
+          .height = cellMain,
+          .configure = [](Box& box) { box.setPosition(0.0f, 0.0f); },
+      })
+  );
 
-  auto glyph = std::make_unique<Glyph>();
-  if (!glyph->setGlyph(dockLauncherIconGlyph(cfg))) {
-    glyph->setGlyph("grid-dots");
-  }
-  glyph->setGlyphSize(glyphSize);
-  glyph->setColor(colorSpecFromRole(ColorRole::OnSurface));
-  glyph->setSize(iSize, iSize);
-  glyph->setPosition(kCellPad, glyphOffsetY);
-  areaNode->addChild(std::move(glyph));
+  areaNode->addChild(
+      ui::glyph({
+          .glyphSize = glyphSize,
+          .color = colorSpecFromRole(ColorRole::OnSurface),
+          .width = iSize,
+          .height = iSize,
+          .configure = [&cfg, kCellPad, glyphOffsetY](Glyph& glyph) {
+            if (!glyph.setGlyph(dockLauncherIconGlyph(cfg))) {
+              glyph.setGlyph("grid-dots");
+            }
+            glyph.setPosition(kCellPad, glyphOffsetY);
+          },
+      })
+  );
 
   auto* instPtr = &instance;
   areaNode->setOnEnter([bgPtr, instPtr](const InputArea::PointerData&) {
@@ -1548,8 +1604,9 @@ bool Dock::routePopupEvent(DockPopup* popup, const PointerEvent& event) {
       // still activate rows even if Enter/Motion ordering is flaky.
       popup->inputDispatcher.pointerMotion(static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial);
       const bool pressed = (event.state == 1);
-      popup->inputDispatcher.pointerButton(static_cast<float>(event.sx), static_cast<float>(event.sy), event.button,
-                                           pressed);
+      popup->inputDispatcher.pointerButton(
+          static_cast<float>(event.sx), static_cast<float>(event.sy), event.button, pressed
+      );
       consumed = true;
     }
     break;
@@ -1602,7 +1659,8 @@ void Dock::startHideFadeOut(DockInstance& inst) {
         } else {
           inst.surface->setInputRegion({InputRect{0, 0, kAutoHideTriggerPx, surfH}});
         }
-      });
+      }
+  );
   if (inst.surface)
     inst.surface->requestRedraw();
 }
@@ -1655,8 +1713,9 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
   auto menu = std::make_unique<DockPopup>();
 
   // Collect running windows for "Close" / "Close All" entries.
-  auto windows = m_platform->windowsForApp(item.idLower, item.startupWmClassLower,
-                                           currentDockFilterOutput(m_config->config().dock, instance.output));
+  auto windows = m_platform->windowsForApp(
+      item.idLower, item.startupWmClassLower, currentDockFilterOutput(m_config->config().dock, instance.output)
+  );
   for (const auto& w : windows) {
     menu->handles.push_back(w.handle);
   }
@@ -1685,13 +1744,15 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
   }
 
   for (std::int32_t i = 0; i < static_cast<std::int32_t>(item.entry.actions.size()); ++i) {
-    entries.push_back(ContextMenuControlEntry{
-        .id = i,
-        .label = item.entry.actions[static_cast<std::size_t>(i)].name,
-        .enabled = true,
-        .separator = false,
-        .hasSubmenu = false,
-    });
+    entries.push_back(
+        ContextMenuControlEntry{
+            .id = i,
+            .label = item.entry.actions[static_cast<std::size_t>(i)].name,
+            .enabled = true,
+            .separator = false,
+            .hasSubmenu = false,
+        }
+    );
   }
 
   const std::size_t runCount = menu->handles.size();
@@ -1815,83 +1876,86 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
   // Capture actions by value — item may be rebuilt before the callback fires.
   auto entryActions = item.entry.actions;
 
-  menu->surface->setConfigureCallback(
-      [menuPtr](std::uint32_t /*w*/, std::uint32_t /*h*/) { menuPtr->surface->requestLayout(); });
-  menu->surface->setPrepareFrameCallback(
-      [this, menuPtr, entries, entryActions](bool /*needsUpdate*/, bool needsLayout) {
-        if (m_renderContext == nullptr || menuPtr->surface == nullptr) {
-          return;
+  menu->surface->setConfigureCallback([menuPtr](std::uint32_t /*w*/, std::uint32_t /*h*/) {
+    menuPtr->surface->requestLayout();
+  });
+  menu->surface->setPrepareFrameCallback([this, menuPtr, entries,
+                                          entryActions](bool /*needsUpdate*/, bool needsLayout) {
+    if (m_renderContext == nullptr || menuPtr->surface == nullptr) {
+      return;
+    }
+
+    const auto width = menuPtr->surface->width();
+    const auto height = menuPtr->surface->height();
+    if (width == 0 || height == 0) {
+      return;
+    }
+
+    m_renderContext->makeCurrent(menuPtr->surface->renderTarget());
+
+    const bool needsSceneBuild = menuPtr->sceneRoot == nullptr ||
+                                 static_cast<std::uint32_t>(std::round(menuPtr->sceneRoot->width())) != width ||
+                                 static_cast<std::uint32_t>(std::round(menuPtr->sceneRoot->height())) != height;
+    if (!needsSceneBuild && !needsLayout) {
+      return;
+    }
+
+    UiPhaseScope layoutPhase(UiPhase::Layout);
+
+    const auto fw = static_cast<float>(width);
+    const auto fh = static_cast<float>(height);
+
+    menuPtr->sceneRoot = std::make_unique<Node>();
+    menuPtr->sceneRoot->setSize(fw, fh);
+    (void)popup_chrome::addShadow(
+        *menuPtr->sceneRoot, menuPtr->chrome, m_config->config().shell.shadow, Style::scaledRadiusLg()
+    );
+
+    auto ctrl = std::make_unique<ContextMenuControl>();
+    ctrl->setMenuWidth(menuPtr->chrome.contentWidth);
+    ctrl->setMaxVisible(entries.size());
+    ctrl->setEntries(entries);
+    ctrl->setRedrawCallback([menuPtr]() {
+      if (menuPtr->surface)
+        menuPtr->surface->requestRedraw();
+    });
+    ctrl->setOnActivate([this, menuPtr, entryActions](const ContextMenuControlEntry& e) {
+      const std::int32_t id = e.id;
+      auto menuHandles = menuPtr->handles;
+      auto closingHandles = menuPtr->handles;
+      DeferredCall::callLater([this, id, entryActions, menuHandles = std::move(menuHandles),
+                               closingHandles = std::move(closingHandles)]() mutable {
+        if (id <= kMenuWindowBaseId) {
+          const auto idx = static_cast<std::size_t>(kMenuWindowBaseId - id);
+          if (idx < menuHandles.size() && menuHandles[idx] != nullptr) {
+            m_platform->activateToplevel(menuHandles[idx]);
+          }
+        } else if (id >= 0) {
+          const auto idx = static_cast<std::size_t>(id);
+          if (idx < entryActions.size()) {
+            launchAction(entryActions[idx]);
+          }
+        } else if (id == kMenuCloseId && !closingHandles.empty()) {
+          m_platform->closeToplevel(closingHandles[0]);
+        } else if (id == kMenuCloseAllId) {
+          for (auto* handle : closingHandles) {
+            m_platform->closeToplevel(handle);
+          }
         }
-
-        const auto width = menuPtr->surface->width();
-        const auto height = menuPtr->surface->height();
-        if (width == 0 || height == 0) {
-          return;
-        }
-
-        m_renderContext->makeCurrent(menuPtr->surface->renderTarget());
-
-        const bool needsSceneBuild = menuPtr->sceneRoot == nullptr ||
-                                     static_cast<std::uint32_t>(std::round(menuPtr->sceneRoot->width())) != width ||
-                                     static_cast<std::uint32_t>(std::round(menuPtr->sceneRoot->height())) != height;
-        if (!needsSceneBuild && !needsLayout) {
-          return;
-        }
-
-        UiPhaseScope layoutPhase(UiPhase::Layout);
-
-        const auto fw = static_cast<float>(width);
-        const auto fh = static_cast<float>(height);
-
-        menuPtr->sceneRoot = std::make_unique<Node>();
-        menuPtr->sceneRoot->setSize(fw, fh);
-        (void)popup_chrome::addShadow(*menuPtr->sceneRoot, menuPtr->chrome, m_config->config().shell.shadow,
-                                      Style::scaledRadiusLg());
-
-        auto ctrl = std::make_unique<ContextMenuControl>();
-        ctrl->setMenuWidth(menuPtr->chrome.contentWidth);
-        ctrl->setMaxVisible(entries.size());
-        ctrl->setEntries(entries);
-        ctrl->setRedrawCallback([menuPtr]() {
-          if (menuPtr->surface)
-            menuPtr->surface->requestRedraw();
-        });
-        ctrl->setOnActivate([this, menuPtr, entryActions](const ContextMenuControlEntry& e) {
-          const std::int32_t id = e.id;
-          auto menuHandles = menuPtr->handles;
-          auto closingHandles = menuPtr->handles;
-          DeferredCall::callLater([this, id, entryActions, menuHandles = std::move(menuHandles),
-                                   closingHandles = std::move(closingHandles)]() mutable {
-            if (id <= kMenuWindowBaseId) {
-              const auto idx = static_cast<std::size_t>(kMenuWindowBaseId - id);
-              if (idx < menuHandles.size() && menuHandles[idx] != nullptr) {
-                m_platform->activateToplevel(menuHandles[idx]);
-              }
-            } else if (id >= 0) {
-              const auto idx = static_cast<std::size_t>(id);
-              if (idx < entryActions.size()) {
-                launchAction(entryActions[idx]);
-              }
-            } else if (id == kMenuCloseId && !closingHandles.empty()) {
-              m_platform->closeToplevel(closingHandles[0]);
-            } else if (id == kMenuCloseAllId) {
-              for (auto* handle : closingHandles) {
-                m_platform->closeToplevel(handle);
-              }
-            }
-            closeItemMenu();
-          });
-        });
-        ctrl->setPosition(menuPtr->chrome.contentX(), menuPtr->chrome.contentY());
-        ctrl->setSize(menuPtr->chrome.contentWidth, menuPtr->chrome.contentHeight);
-        ctrl->layout(*m_renderContext);
-
-        menuPtr->sceneRoot->addChild(std::move(ctrl));
-        menuPtr->inputDispatcher.setSceneRoot(menuPtr->sceneRoot.get());
-        menuPtr->inputDispatcher.setCursorShapeCallback(
-            [this](std::uint32_t serial, std::uint32_t shape) { m_platform->setCursorShape(serial, shape); });
-        menuPtr->surface->setSceneRoot(menuPtr->sceneRoot.get());
+        closeItemMenu();
       });
+    });
+    ctrl->setPosition(menuPtr->chrome.contentX(), menuPtr->chrome.contentY());
+    ctrl->setSize(menuPtr->chrome.contentWidth, menuPtr->chrome.contentHeight);
+    ctrl->layout(*m_renderContext);
+
+    menuPtr->sceneRoot->addChild(std::move(ctrl));
+    menuPtr->inputDispatcher.setSceneRoot(menuPtr->sceneRoot.get());
+    menuPtr->inputDispatcher.setCursorShapeCallback([this](std::uint32_t serial, std::uint32_t shape) {
+      m_platform->setCursorShape(serial, shape);
+    });
+    menuPtr->surface->setSceneRoot(menuPtr->sceneRoot.get());
+  });
 
   menu->surface->setDismissedCallback([this]() { closeItemMenu(); });
 
@@ -1914,7 +1978,8 @@ void Dock::registerIpc(IpcService& ipc) {
           m_config->setDockEnabled(true);
         return "ok\n";
       },
-      "dock-show", "Show the dock (persists override)");
+      "dock-show", "Show the dock (persists override)"
+  );
 
   ipc.registerHandler(
       "dock-hide",
@@ -1923,7 +1988,8 @@ void Dock::registerIpc(IpcService& ipc) {
           m_config->setDockEnabled(false);
         return "ok\n";
       },
-      "dock-hide", "Hide the dock (persists override)");
+      "dock-hide", "Hide the dock (persists override)"
+  );
 
   ipc.registerHandler(
       "dock-toggle",
@@ -1932,7 +1998,8 @@ void Dock::registerIpc(IpcService& ipc) {
           m_config->setDockEnabled(!m_config->config().dock.enabled);
         return "ok\n";
       },
-      "dock-toggle", "Toggle dock visibility (persists override)");
+      "dock-toggle", "Toggle dock visibility (persists override)"
+  );
 
   ipc.registerHandler(
       "dock-reload",
@@ -1940,5 +2007,6 @@ void Dock::registerIpc(IpcService& ipc) {
         reload();
         return "ok\n";
       },
-      "dock-reload", "Reload dock configuration");
+      "dock-reload", "Reload dock configuration"
+  );
 }

@@ -4,11 +4,8 @@
 #include "core/deferred_call.h"
 #include "render/render_context.h"
 #include "render/scene/node.h"
-#include "ui/controls/button.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/label.h"
+#include "ui/builders.h"
 #include "ui/controls/select_dropdown_popup.h"
-#include "ui/palette.h"
 #include "ui/popup_chrome.h"
 #include "ui/style.h"
 #include "wayland/popup_surface.h"
@@ -22,8 +19,10 @@ namespace settings {
 
   namespace {
 
-    PopupSurfaceConfig centeredPopupConfig(std::uint32_t parentWidth, std::uint32_t parentHeight, std::uint32_t width,
-                                           std::uint32_t height, std::uint32_t serial) {
+    PopupSurfaceConfig centeredPopupConfig(
+        std::uint32_t parentWidth, std::uint32_t parentHeight, std::uint32_t width, std::uint32_t height,
+        std::uint32_t serial
+    ) {
       return PopupSurfaceConfig{
           .anchorX = static_cast<std::int32_t>(parentWidth / 2),
           .anchorY = static_cast<std::int32_t>(parentHeight / 2),
@@ -50,16 +49,17 @@ namespace settings {
 
   SessionActionsEditorPopup::~SessionActionsEditorPopup() { destroyPopup(); }
 
-  void SessionActionsEditorPopup::initialize(WaylandConnection& wayland, ConfigService& config,
-                                             RenderContext& renderContext) {
+  void SessionActionsEditorPopup::initialize(
+      WaylandConnection& wayland, ConfigService& config, RenderContext& renderContext
+  ) {
     initializeBase(wayland, config, renderContext);
   }
 
-  void SessionActionsEditorPopup::open(xdg_surface* parentXdgSurface, wl_output* output, std::uint32_t serial,
-                                       wl_surface* parentWlSurface, std::uint32_t parentWidth,
-                                       std::uint32_t parentHeight, float scale, std::string sheetTitle,
-                                       std::function<void()> removeAction,
-                                       std::function<void(Flex& sheetBody)> populateSheetBody) {
+  void SessionActionsEditorPopup::open(
+      xdg_surface* parentXdgSurface, wl_output* output, std::uint32_t serial, wl_surface* parentWlSurface,
+      std::uint32_t parentWidth, std::uint32_t parentHeight, float scale, std::string sheetTitle,
+      std::function<void()> removeAction, std::function<void(Flex& sheetBody)> populateSheetBody
+  ) {
     if (parentXdgSurface == nullptr || parentWlSurface == nullptr) {
       return;
     }
@@ -78,9 +78,10 @@ namespace settings {
 
     const float popupWidth = kPopupWidth * m_scale;
     const float popupHeight = kInitialPopupHeight * m_scale;
-    const auto cfg =
-        centeredPopupConfig(parentWidth, parentHeight, static_cast<std::uint32_t>(std::max(1.0f, popupWidth)),
-                            static_cast<std::uint32_t>(std::max(1.0f, popupHeight)), serial);
+    const auto cfg = centeredPopupConfig(
+        parentWidth, parentHeight, static_cast<std::uint32_t>(std::max(1.0f, popupWidth)),
+        static_cast<std::uint32_t>(std::max(1.0f, popupHeight)), serial
+    );
 
     if (!openPopupAsChild(cfg, parentXdgSurface, parentWlSurface, output)) {
       close();
@@ -124,67 +125,72 @@ namespace settings {
     return m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen();
   }
 
-  void SessionActionsEditorPopup::populateContent(Node* contentParent, std::uint32_t /*width*/,
-                                                  std::uint32_t /*height*/) {
+  void
+  SessionActionsEditorPopup::populateContent(Node* contentParent, std::uint32_t /*width*/, std::uint32_t /*height*/) {
     const float popupPadding = Style::spaceSm * m_scale;
     const float popupGap = Style::spaceSm * m_scale;
 
-    auto root = std::make_unique<Flex>();
-    root->setDirection(FlexDirection::Vertical);
-    root->setAlign(FlexAlign::Stretch);
-    root->setGap(popupGap);
-    root->setPadding(popupPadding);
-    m_root = root.get();
+    auto root = ui::column({
+        .out = &m_root,
+        .align = FlexAlign::Stretch,
+        .gap = popupGap,
+        .padding = popupPadding,
+    });
 
-    auto header = std::make_unique<Flex>();
-    header->setDirection(FlexDirection::Horizontal);
-    header->setAlign(FlexAlign::Center);
-    header->setGap(Style::spaceSm * m_scale);
+    auto header = ui::row({
+        .align = FlexAlign::Center,
+        .gap = Style::spaceSm * m_scale,
+    });
 
-    auto titleLabel = std::make_unique<Label>();
-    titleLabel->setText(m_sheetTitle);
-    titleLabel->setFontSize(Style::fontSizeBody * m_scale);
-    titleLabel->setColor(colorSpecFromRole(ColorRole::OnSurface));
-    titleLabel->setFontWeight(FontWeight::Bold);
-    header->addChild(std::move(titleLabel));
-
-    auto spacer = std::make_unique<Flex>();
-    spacer->setFlexGrow(1.0f);
-    header->addChild(std::move(spacer));
+    header->addChild(
+        ui::label({
+            .text = m_sheetTitle,
+            .fontSize = Style::fontSizeBody * m_scale,
+            .color = colorSpecFromRole(ColorRole::OnSurface),
+            .fontWeight = FontWeight::Bold,
+        })
+    );
+    header->addChild(ui::spacer());
 
     if (m_removeAction) {
-      auto removeBtn = std::make_unique<Button>();
-      removeBtn->setGlyph("trash");
-      removeBtn->setVariant(ButtonVariant::Destructive);
-      removeBtn->setGlyphSize(Style::fontSizeBody * m_scale);
-      removeBtn->setMinWidth(Style::controlHeightSm * m_scale);
-      removeBtn->setMinHeight(Style::controlHeightSm * m_scale);
-      removeBtn->setPadding(Style::spaceXs * m_scale);
-      removeBtn->setRadius(Style::scaledRadiusMd(m_scale));
-      removeBtn->setOnClick([removeAction = m_removeAction]() {
-        if (removeAction) {
-          DeferredCall::callLater(removeAction);
-        }
-      });
-      header->addChild(std::move(removeBtn));
+      header->addChild(
+          ui::button({
+              .glyph = "trash",
+              .glyphSize = Style::fontSizeBody * m_scale,
+              .variant = ButtonVariant::Destructive,
+              // Sheet header icon style.
+              .minWidth = Style::controlHeightSm * m_scale,
+              .minHeight = Style::controlHeightSm * m_scale,
+              .padding = Style::spaceXs * m_scale,
+              .radius = Style::scaledRadiusMd(m_scale),
+              .onClick = [removeAction = m_removeAction]() {
+                if (removeAction) {
+                  DeferredCall::callLater(removeAction);
+                }
+              },
+          })
+      );
     }
 
-    auto closeBtn = std::make_unique<Button>();
-    closeBtn->setGlyph("close");
-    closeBtn->setVariant(ButtonVariant::Default);
-    closeBtn->setGlyphSize(Style::fontSizeBody * m_scale);
-    closeBtn->setMinWidth(Style::controlHeightSm * m_scale);
-    closeBtn->setMinHeight(Style::controlHeightSm * m_scale);
-    closeBtn->setPadding(Style::spaceXs * m_scale);
-    closeBtn->setRadius(Style::scaledRadiusMd(m_scale));
-    closeBtn->setOnClick([this]() { DeferredCall::callLater([this]() { close(); }); });
-    header->addChild(std::move(closeBtn));
+    header->addChild(
+        ui::button({
+            .glyph = "close",
+            .glyphSize = Style::fontSizeBody * m_scale,
+            .variant = ButtonVariant::Default,
+            // Sheet header icon style.
+            .minWidth = Style::controlHeightSm * m_scale,
+            .minHeight = Style::controlHeightSm * m_scale,
+            .padding = Style::spaceXs * m_scale,
+            .radius = Style::scaledRadiusMd(m_scale),
+            .onClick = [this]() { DeferredCall::callLater([this]() { close(); }); },
+        })
+    );
     root->addChild(std::move(header));
 
-    auto body = std::make_unique<Flex>();
-    body->setDirection(FlexDirection::Vertical);
-    body->setAlign(FlexAlign::Stretch);
-    body->setGap(Style::spaceMd * m_scale);
+    auto body = ui::column({
+        .align = FlexAlign::Stretch,
+        .gap = Style::spaceMd * m_scale,
+    });
 
     if (m_populateSheetBody) {
       m_populateSheetBody(*body);

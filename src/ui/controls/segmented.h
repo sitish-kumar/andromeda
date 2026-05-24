@@ -26,6 +26,10 @@ public:
 
   void setOnChange(std::function<void(std::size_t)> callback);
 
+  void setOptionTooltip(std::size_t index, std::string_view text);
+  void setCompact(bool compact);
+  void clearOptions();
+
   void setEnabled(bool enabled);
   [[nodiscard]] bool enabled() const noexcept { return m_enabled; }
 
@@ -34,8 +38,9 @@ public:
 
 private:
   [[nodiscard]] std::unique_ptr<Separator> makeSegmentSeparator();
-  [[nodiscard]] std::unique_ptr<Button> makeSegmentButton(std::string_view label, std::string_view glyph,
-                                                          std::size_t index);
+  [[nodiscard]] std::unique_ptr<Button>
+  makeSegmentButton(std::string_view label, std::string_view glyph, std::size_t index);
+  void applyButtonMetrics(Button& button) const;
   void refreshVariants();
   void applyOuterStyle();
   [[nodiscard]] float effectiveFontSize() const noexcept;
@@ -47,5 +52,6 @@ private:
   float m_fontSize = 0.0f;
   float m_scale = 1.0f;
   bool m_equalSegmentWidths = false;
+  bool m_compact = false;
   bool m_enabled = true;
 };

@@ -1,5 +1,7 @@
 #include "core/process.h"
 
+#include "util/string_utils.h"
+
 #include <algorithm>
 #include <array>
 #include <cerrno>
@@ -9,6 +11,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iterator>
 #include <limits>
@@ -219,8 +222,10 @@ namespace {
     return flags >= 0 && ::fcntl(fd, F_SETFL, flags | O_NONBLOCK) == 0;
   }
 
-  void drainAvailable(int& fd, std::string& out, std::size_t maxBytes = std::numeric_limits<std::size_t>::max(),
-                      bool* truncated = nullptr) {
+  void drainAvailable(
+      int& fd, std::string& out, std::size_t maxBytes = std::numeric_limits<std::size_t>::max(),
+      bool* truncated = nullptr
+  ) {
     if (fd < 0) {
       return;
     }
@@ -321,9 +326,10 @@ namespace {
     return static_cast<int>(bounded.count());
   }
 
-  process::RunResult runSyncProcess(const std::vector<std::string>& args,
-                                    std::optional<std::chrono::milliseconds> timeout,
-                                    std::size_t maxOutputBytes = std::numeric_limits<std::size_t>::max()) {
+  process::RunResult runSyncProcess(
+      const std::vector<std::string>& args, std::optional<std::chrono::milliseconds> timeout,
+      std::size_t maxOutputBytes = std::numeric_limits<std::size_t>::max()
+  ) {
     if (args.empty() || args.front().empty()) {
       return {-1, {}, {}};
     }
@@ -437,8 +443,10 @@ namespace {
 
   // Double-fork + setsid so the exec'd process is not a direct child of the caller (matches
   // launcher app activation). Parent reaps the short-lived intermediate child.
-  bool doubleForkExecDetached(const std::vector<std::string>& args, pid_t* reportPid,
-                              const std::string& activationToken, const std::string& workingDir = {}) {
+  bool doubleForkExecDetached(
+      const std::vector<std::string>& args, pid_t* reportPid, const std::string& activationToken,
+      const std::string& workingDir = {}
+  ) {
     int reportPipe[2] = {-1, -1};
     const bool needPid = reportPid != nullptr;
     if (needPid && ::pipe(reportPipe) != 0) {
@@ -531,6 +539,102 @@ namespace {
     ::_exit(127);
   }
 
+  // Only alphanum, ':', '_' and '.' allowed in systemd unit names
+  std::string escapeSystemdUnitName(const std::string& input) {
+    std::string res;
+    for (const unsigned char c : input) {
+      if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == ':' || c == '_' ||
+          c == '.') {
+        res += c;
+      } else {
+        res += std::format("\\x{:02x}", c);
+      }
+    }
+    return res;
+  }
+
+  void startSystemdService(
+      const std::vector<std::string>& args, const std::string& activationToken, const std::string& workingDir,
+      const std::string& appName
+  ) {
+    const pid_t intermediate = ::fork();
+    if (intermediate < 0) {
+      return;
+    }
+
+    if (intermediate > 0) {
+      // Parent: wait for intermediate to exit (after it forks the grandchild).
+      while (::waitpid(intermediate, nullptr, 0) < 0 && errno == EINTR) {
+      }
+      return;
+    }
+
+    // Intermediate child: fork again and exit, so parent doesn't wait for systemd-run
+
+    const pid_t worker = ::fork();
+    if (worker != 0) {
+      ::_exit(0);
+    }
+
+    // Grandchild
+
+    std::vector<std::string> systemdArgs;
+    systemdArgs.push_back("systemd-run");
+    systemdArgs.push_back("--user");
+    systemdArgs.push_back("--slice=app.slice");
+    // Only end the service when all subprocesses have exited. Otherwise, apps using a launcher
+    // script, e.g. vscode, would end prematurely when the script exits, and the actual app process
+    // is still running.
+    systemdArgs.push_back("--property=ExitType=cgroup");
+
+    // We launch the app as a systemd service instead of a scope so the user can:
+    // 1. Place drop-in files in ~/.config/systemd/user/app-<desktop-id>@.service.d/ to set properties like resource
+    // limits or env vars.
+    // 2. See the app's output and exit code (if it fails) in `systemctl status`.
+    if (!appName.empty()) {
+      const std::string uuid = StringUtils::generateUuid();
+      if (!uuid.empty()) {
+        systemdArgs.push_back(std::format("--unit=app-{}@{}.service", escapeSystemdUnitName(appName), uuid));
+      }
+    }
+    if (!workingDir.empty()) {
+      systemdArgs.push_back("--working-directory=" + workingDir);
+    }
+
+    if (!activationToken.empty()) {
+      ::setenv("XDG_ACTIVATION_TOKEN", activationToken.c_str(), 1);
+      ::setenv("DESKTOP_STARTUP_ID", activationToken.c_str(), 1);
+    }
+
+    // App should inherit our environment.
+    char** s = ::environ;
+    for (; *s; s++) {
+      char c = **s;
+      if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_')) {
+        continue;
+      }
+      std::string name{*s, std::string_view(*s).find('=')};
+      systemdArgs.push_back("-E");
+      systemdArgs.push_back(name);
+    }
+
+    systemdArgs.push_back("--");
+    systemdArgs.insert(systemdArgs.end(), args.begin(), args.end());
+    process::RunResult result = runSyncProcess(systemdArgs, std::nullopt);
+    if (result) {
+      ::_exit(0);
+    }
+
+    // If systemd-run failed, fall back to normal launch. E.g., if systemd-run is not available,
+    // or its version is too old for the switches we used, or the executable is not found.
+    // We'd unnecessarily fail again later in the last case, but seems OK to err on the safe side here.
+
+    // This would be two more unnecessary forks if systemd-run is missing, but seems acceptable for
+    // the fallback path.
+    (void)doubleForkExecDetached(args, nullptr, activationToken, workingDir);
+    ::_exit(0);
+  }
+
 } // namespace
 
 namespace process {
@@ -568,8 +672,8 @@ namespace process {
     return false;
   }
 
-  bool runAsync(const std::vector<std::string>& args, const std::string& activationToken,
-                const std::string& workingDir) {
+  bool
+  runAsync(const std::vector<std::string>& args, const std::string& activationToken, const std::string& workingDir) {
     if (args.empty() || args.front().empty()) {
       return false;
     }
@@ -636,8 +740,9 @@ namespace process {
     return command.has_value() ? runSyncWithTimeout(*command, timeout) : RunResult{-1, {}, {}};
   }
 
-  RunResult runSyncWithTimeoutAndOutputLimit(const std::vector<std::string>& args, std::chrono::milliseconds timeout,
-                                             std::size_t maxOutputBytes) {
+  RunResult runSyncWithTimeoutAndOutputLimit(
+      const std::vector<std::string>& args, std::chrono::milliseconds timeout, std::size_t maxOutputBytes
+  ) {
     return runSyncProcess(args, timeout, maxOutputBytes);
   }
 
@@ -651,8 +756,9 @@ namespace process {
 
     const auto& commandLines = cachedProcessCommandLines();
     return std::any_of(commandLines.begin(), commandLines.end(), [&needles](const auto& commandLine) {
-      return std::all_of(needles.begin(), needles.end(),
-                         [&commandLine](const auto& needle) { return commandLine.find(needle) != std::string::npos; });
+      return std::all_of(needles.begin(), needles.end(), [&commandLine](const auto& needle) {
+        return commandLine.find(needle) != std::string::npos;
+      });
     });
   }
 
@@ -661,8 +767,10 @@ namespace process {
     if (!portal) {
       return false;
     }
-    return cachedProcessMatchesAny({"xdg-desktop-portal-wlr ", "xdg-desktop-portal-hyprland ",
-                                    "xdg-desktop-portal-gnome ", "xdg-desktop-portal-kde "});
+    return cachedProcessMatchesAny(
+        {"xdg-desktop-portal-wlr ", "xdg-desktop-portal-hyprland ", "xdg-desktop-portal-gnome ",
+         "xdg-desktop-portal-kde "}
+    );
   }
 
   bool flatpakAppInstalled(std::string_view appId) {
@@ -706,4 +814,32 @@ namespace process {
     return false;
   }
 
+  bool systemdAvailable() {
+#ifdef __linux__
+    // Check if we booted with systemd. The same logic as systemd sd_booted()
+    int r = access("/run/systemd/system/", F_OK);
+    return r == 0;
+#else
+    return false;
+#endif
+  }
+
+  // We don't have a return code, so we don't wait for the launch mechanism to complete (e.g., systemd-run),
+  // which might take more time than a double-fork-exec and block the UI thread for too long. Launcher/AppProvider
+  // doesn't check if the app launch succeeded, anyway.
+  void runAsyncAsSystemdService(
+      const std::vector<std::string>& args, const std::string& appName, const std::string& activationToken,
+      const std::string& workingDir
+  ) {
+#ifdef __linux__
+    if (args.empty() || args.front().empty()) {
+      return;
+    }
+    if (systemdAvailable()) {
+      (void)startSystemdService(args, activationToken, workingDir, appName);
+      return;
+    }
+#endif
+    (void)runAsync(args, activationToken, workingDir);
+  }
 } // namespace process

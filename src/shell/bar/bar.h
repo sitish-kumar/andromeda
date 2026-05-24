@@ -46,14 +46,15 @@ class Bar {
 public:
   Bar();
 
-  bool initialize(CompositorPlatform& platform, ConfigService* config, TimeService* timeService,
-                  NotificationManager* notifications, TrayService* tray, PipeWireService* audio, UPowerService* upower,
-                  SystemMonitorService* sysmon, PowerProfilesService* powerProfiles, INetworkService* network,
-                  IdleInhibitor* idleInhibitor, MprisService* mpris, PipeWireSpectrum* audioSpectrum,
-                  HttpClient* httpClient, WeatherService* weatherService, RenderContext* renderContext,
-                  GammaService* nightLight, noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth,
-                  BrightnessService* brightness, LockKeysService* lockKeys, ClipboardService* clipboard,
-                  FileWatcher* fileWatcher = nullptr);
+  bool initialize(
+      CompositorPlatform& platform, ConfigService* config, TimeService* timeService, NotificationManager* notifications,
+      TrayService* tray, PipeWireService* audio, UPowerService* upower, SystemMonitorService* sysmon,
+      PowerProfilesService* powerProfiles, INetworkService* network, IdleInhibitor* idleInhibitor, MprisService* mpris,
+      PipeWireSpectrum* audioSpectrum, HttpClient* httpClient, WeatherService* weatherService,
+      RenderContext* renderContext, GammaService* nightLight, noctalia::theme::ThemeService* themeService,
+      BluetoothService* bluetooth, BrightnessService* brightness, LockKeysService* lockKeys,
+      ClipboardService* clipboard, FileWatcher* fileWatcher = nullptr
+  );
   void reload();
   void closeAllInstances();
   void show();
@@ -83,8 +84,8 @@ public:
   // Returns every bar wl_surface across all outputs. Used as the focus-grab
   // whitelist on Hyprland so bar widgets keep receiving clicks.
   [[nodiscard]] std::vector<wl_surface*> allBarSurfaces() const;
-  void setAttachedPanelGeometry(wl_output* output, std::string_view barName,
-                                std::optional<AttachedPanelGeometry> geometry);
+  void
+  setAttachedPanelGeometry(wl_output* output, std::string_view barName, std::optional<AttachedPanelGeometry> geometry);
   void beginAttachedPopup(wl_surface* surface);
   void endAttachedPopup(wl_surface* surface);
 
@@ -119,6 +120,7 @@ private:
   void startHideFadeOut(BarInstance& instance);
   static void applyBackgroundPalette(BarInstance& instance);
   [[nodiscard]] std::string dispatchScriptedWidgetIpc(std::string_view args);
+  [[nodiscard]] std::string setBarAutoHideIpc(std::string_view args);
   [[nodiscard]] BarInstance* instanceForSurface(wl_surface* surface) const noexcept;
   [[nodiscard]] BarInstance* instanceForOutput(wl_output* output) const noexcept;
   [[nodiscard]] BarInstance* instanceForBar(wl_output* output, std::string_view barName) const noexcept;

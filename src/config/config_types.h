@@ -205,9 +205,9 @@ enum class KeybindAction : std::uint8_t {
 [[nodiscard]] std::vector<KeyChord> defaultKeybindSet(KeybindAction action);
 
 using WidgetSettingValue = std::variant<bool, std::int64_t, double, std::string, std::vector<std::string>>;
-using ConfigOverrideValue =
-    std::variant<bool, std::int64_t, double, std::string, std::vector<std::string>, std::vector<ShortcutConfig>,
-                 std::vector<SessionPanelActionConfig>, std::vector<IdleBehaviorConfig>, std::vector<KeyChord>>;
+using ConfigOverrideValue = std::variant<
+    bool, std::int64_t, double, std::string, std::vector<std::string>, std::vector<ShortcutConfig>,
+    std::vector<SessionPanelActionConfig>, std::vector<IdleBehaviorConfig>, std::vector<KeyChord>>;
 
 // Optional rounded “capsule” behind a bar widget (see `[widget.*] capsule_*` in CONFIG.md).
 // Corner shape, border width, and edge softness are fixed in the shell code; padding/radius are configurable.
@@ -235,15 +235,15 @@ struct WidgetConfig {
   std::unordered_map<std::string, WidgetSettingValue> settings;
 
   [[nodiscard]] std::string getString(const std::string& key, const std::string& fallback = {}) const;
-  [[nodiscard]] std::vector<std::string> getStringList(const std::string& key,
-                                                       const std::vector<std::string>& fallback = {}) const;
+  [[nodiscard]] std::vector<std::string>
+  getStringList(const std::string& key, const std::vector<std::string>& fallback = {}) const;
   [[nodiscard]] std::int64_t getInt(const std::string& key, std::int64_t fallback = 0) const;
   [[nodiscard]] double getDouble(const std::string& key, double fallback = 0.0) const;
   [[nodiscard]] bool getBool(const std::string& key, bool fallback = false) const;
-  [[nodiscard]] ColorSpec getColorSpec(const std::string& key, const ColorSpec& fallback,
-                                       std::string_view context = {}) const;
-  [[nodiscard]] std::optional<ColorSpec> getOptionalColorSpec(const std::string& key,
-                                                              std::string_view context = {}) const;
+  [[nodiscard]] ColorSpec
+  getColorSpec(const std::string& key, const ColorSpec& fallback, std::string_view context = {}) const;
+  [[nodiscard]] std::optional<ColorSpec>
+  getOptionalColorSpec(const std::string& key, std::string_view context = {}) const;
   [[nodiscard]] bool hasSetting(const std::string& key) const;
 
   bool operator==(const WidgetConfig&) const = default;
@@ -396,7 +396,8 @@ struct OsdConfig {
 struct NotificationConfig {
   bool enableDaemon = true;
   std::string position = "top_right";
-  std::string layer = "top";       // top | overlay
+  std::string layer = "top"; // top | overlay
+  float scale = 1.0f;
   float backgroundOpacity = 0.97f; // toast card background alpha (0.0–1.0)
   int offsetX = 20;                // absolute horizontal margin from the screen edge
   int offsetY = 8;                 // absolute vertical margin from the screen edge
@@ -475,8 +476,8 @@ constexpr EnumOption<PanelTransparencyMode> kPanelTransparencyModes[] = {
     {PanelTransparencyMode::Glass, "glass", "settings.options.shell.panel-transparency.glass"},
 };
 
-[[nodiscard]] float panelCardOpacityForTransparencyMode(PanelTransparencyMode mode,
-                                                        float panelBackgroundOpacity) noexcept;
+[[nodiscard]] float
+panelCardOpacityForTransparencyMode(PanelTransparencyMode mode, float panelBackgroundOpacity) noexcept;
 [[nodiscard]] float detachedPanelBackgroundOpacityForTransparencyMode(PanelTransparencyMode mode) noexcept;
 
 enum class PanelPlacement : std::uint8_t {
@@ -543,6 +544,7 @@ struct ShellConfig {
     bool openNearClickClipboard = false;
     bool openNearClickWallpaper = false;
     bool openNearClickSession = false;
+    bool launcherCategories = true;
 
     bool operator==(const PanelConfig&) const = default;
   };
@@ -576,6 +578,7 @@ struct ShellConfig {
   bool settingsShowAdvanced = false;
   bool middleClickOpensWidgetSettings = true;
   bool showLocation = true;
+  bool launchAppsAsSystemdServices = false;
   /// When false, disables Wayland clipboard integration (history panel, data-control binding, Input paste/copy hooks).
   bool clipboardEnabled = true;
   /// Maximum unpinned clipboard history entries retained (pinned entries are exempt).

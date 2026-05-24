@@ -71,6 +71,7 @@ public:
   void setCursorShape(std::uint32_t shape);
   void setBadge(std::string_view text);
   void setBadgeFontSize(float size);
+  void setTooltip(std::string_view text);
 
   // Call after layout() to sync InputArea bounds
   void updateInputArea();

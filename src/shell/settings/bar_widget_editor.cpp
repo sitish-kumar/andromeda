@@ -5,14 +5,7 @@
 #include "render/scene/node.h"
 #include "shell/settings/settings_content.h"
 #include "shell/settings/widget_settings_registry.h"
-#include "ui/controls/box.h"
-#include "ui/controls/button.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/input.h"
-#include "ui/controls/label.h"
-#include "ui/controls/separator.h"
-#include "ui/controls/toggle.h"
+#include "ui/builders.h"
 #include "ui/dialogs/file_dialog.h"
 #include "ui/dialogs/glyph_picker_dialog.h"
 #include "ui/palette.h"
@@ -59,39 +52,41 @@ namespace settings {
       std::shared_ptr<std::vector<Flex*>> itemNodes;
     };
 
-    std::unique_ptr<Label> makeLabel(std::string_view text, float fontSize, const ColorSpec& color,
-                                     FontWeight fontWeight = FontWeight::Normal) {
-      auto label = std::make_unique<Label>();
-      label->setText(text);
-      label->setFontSize(fontSize);
-      label->setColor(color);
-      label->setFontWeight(fontWeight);
-      return label;
+    std::unique_ptr<Label> makeLabel(
+        std::string_view text, float fontSize, const ColorSpec& color, FontWeight fontWeight = FontWeight::Normal
+    ) {
+      return ui::label({
+          .text = std::string(text),
+          .fontSize = fontSize,
+          .color = color,
+          .fontWeight = fontWeight,
+      });
     }
 
     std::unique_ptr<Glyph> makeGlyph(std::string_view name, float glyphSize, const ColorSpec& color) {
-      auto glyph = std::make_unique<Glyph>();
-      glyph->setGlyph(name);
-      glyph->setGlyphSize(glyphSize);
-      glyph->setColor(color);
-      return glyph;
+      return ui::glyph({
+          .glyph = std::string(name),
+          .glyphSize = glyphSize,
+          .color = color,
+      });
     }
 
     std::unique_ptr<Node> makeMiniSectionHeader(std::string_view title, float scale) {
-      auto wrap = std::make_unique<Flex>();
-      wrap->setDirection(FlexDirection::Vertical);
-      wrap->setAlign(FlexAlign::Stretch);
-      wrap->setGap(Style::spaceXs * scale);
-      wrap->setPadding(Style::spaceSm * scale, 0.0f, 0.0f, 0.0f);
-      wrap->addChild(std::make_unique<Separator>());
-      wrap->addChild(
-          makeLabel(title, Style::fontSizeCaption * scale, colorSpecFromRole(ColorRole::Secondary), FontWeight::Bold));
-      return wrap;
+      return ui::column(
+          {
+              .align = FlexAlign::Stretch,
+              .gap = Style::spaceXs * scale,
+              .configure = [scale](Flex& flex) { flex.setPadding(Style::spaceSm * scale, 0.0f, 0.0f, 0.0f); },
+          },
+          ui::separator(),
+          makeLabel(title, Style::fontSizeCaption * scale, colorSpecFromRole(ColorRole::Secondary), FontWeight::Bold)
+      );
     }
 
-    void closeInspector(std::string& editingWidgetName, std::string& renamingWidgetName,
-                        std::string& pendingDeleteWidgetName, std::string& pendingDeleteWidgetSettingPath,
-                        const std::function<void()>& requestRebuild) {
+    void closeInspector(
+        std::string& editingWidgetName, std::string& renamingWidgetName, std::string& pendingDeleteWidgetName,
+        std::string& pendingDeleteWidgetSettingPath, const std::function<void()>& requestRebuild
+    ) {
       editingWidgetName.clear();
       renamingWidgetName.clear();
       pendingDeleteWidgetName.clear();
@@ -251,9 +246,10 @@ namespace settings {
       return items.size() != oldSize;
     }
 
-    void appendReferenceRemoval(std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>& overrides,
-                                std::vector<std::string> path, std::vector<std::string> items,
-                                std::string_view widgetName) {
+    void appendReferenceRemoval(
+        std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>& overrides, std::vector<std::string> path,
+        std::vector<std::string> items, std::string_view widgetName
+    ) {
       if (removeWidgetReference(items, widgetName)) {
         overrides.push_back({std::move(path), std::move(items)});
       }
@@ -270,16 +266,19 @@ namespace settings {
         for (const auto& ovr : bar.monitorOverrides) {
           const std::vector<std::string> prefix = {"bar", bar.name, "monitor", ovr.match};
           if (ovr.startWidgets.has_value()) {
-            appendReferenceRemoval(overrides, {prefix[0], prefix[1], prefix[2], prefix[3], "start"}, *ovr.startWidgets,
-                                   widgetName);
+            appendReferenceRemoval(
+                overrides, {prefix[0], prefix[1], prefix[2], prefix[3], "start"}, *ovr.startWidgets, widgetName
+            );
           }
           if (ovr.centerWidgets.has_value()) {
-            appendReferenceRemoval(overrides, {prefix[0], prefix[1], prefix[2], prefix[3], "center"},
-                                   *ovr.centerWidgets, widgetName);
+            appendReferenceRemoval(
+                overrides, {prefix[0], prefix[1], prefix[2], prefix[3], "center"}, *ovr.centerWidgets, widgetName
+            );
           }
           if (ovr.endWidgets.has_value()) {
-            appendReferenceRemoval(overrides, {prefix[0], prefix[1], prefix[2], prefix[3], "end"}, *ovr.endWidgets,
-                                   widgetName);
+            appendReferenceRemoval(
+                overrides, {prefix[0], prefix[1], prefix[2], prefix[3], "end"}, *ovr.endWidgets, widgetName
+            );
           }
         }
       }
@@ -378,13 +377,14 @@ namespace settings {
       return itemNodes.size();
     }
 
-    bool insertionWouldNotMove(std::size_t sourceLaneIndex, std::size_t targetLaneIndex, std::size_t fromIndex,
-                               std::size_t insertionIndex) {
+    bool insertionWouldNotMove(
+        std::size_t sourceLaneIndex, std::size_t targetLaneIndex, std::size_t fromIndex, std::size_t insertionIndex
+    ) {
       return sourceLaneIndex == targetLaneIndex && (insertionIndex == fromIndex || insertionIndex == fromIndex + 1);
     }
 
-    std::optional<std::size_t> laneIndexAtScenePoint(const std::vector<LaneDropTarget>& lanes, float sceneX,
-                                                     float sceneY) {
+    std::optional<std::size_t>
+    laneIndexAtScenePoint(const std::vector<LaneDropTarget>& lanes, float sceneX, float sceneY) {
       for (std::size_t i = 0; i < lanes.size(); ++i) {
         const auto* lane = lanes[i].lane;
         if (lane == nullptr) {
@@ -408,8 +408,9 @@ namespace settings {
       }
     }
 
-    void updateDropIndicator(Box& indicator, const Flex& lane, const std::vector<Flex*>& itemNodes,
-                             std::size_t insertionIndex, float scale) {
+    void updateDropIndicator(
+        Box& indicator, const Flex& lane, const std::vector<Flex*>& itemNodes, std::size_t insertionIndex, float scale
+    ) {
       if (insertionIndex > itemNodes.size()) {
         indicator.setVisible(false);
         return;
@@ -434,8 +435,8 @@ namespace settings {
       indicator.setVisible(true);
     }
 
-    std::vector<std::string> movedWithinLane(std::vector<std::string> items, std::size_t fromIndex,
-                                             std::size_t insertionIndex) {
+    std::vector<std::string>
+    movedWithinLane(std::vector<std::string> items, std::size_t fromIndex, std::size_t insertionIndex) {
       if (fromIndex >= items.size() || insertionIndex > items.size()) {
         return items;
       }
@@ -456,8 +457,8 @@ namespace settings {
       return {"widget", std::move(widgetName), std::move(settingKey)};
     }
 
-    WidgetSettingValue widgetSettingValue(const Config& cfg, std::string_view widgetName,
-                                          const WidgetSettingSpec& spec) {
+    WidgetSettingValue
+    widgetSettingValue(const Config& cfg, std::string_view widgetName, const WidgetSettingSpec& spec) {
       if (const auto it = cfg.widgets.find(std::string(widgetName)); it != cfg.widgets.end()) {
         if (const auto settingIt = it->second.settings.find(spec.key); settingIt != it->second.settings.end()) {
           return settingIt->second;
@@ -466,8 +467,10 @@ namespace settings {
       return spec.defaultValue;
     }
 
-    std::string settingCurrentString(const Config& cfg, std::string_view widgetName, const std::string& key,
-                                     const std::vector<WidgetSettingSpec>& allSpecs) {
+    std::string settingCurrentString(
+        const Config& cfg, std::string_view widgetName, const std::string& key,
+        const std::vector<WidgetSettingSpec>& allSpecs
+    ) {
       if (const auto it = cfg.widgets.find(std::string(widgetName)); it != cfg.widgets.end()) {
         if (const auto settingIt = it->second.settings.find(key); settingIt != it->second.settings.end()) {
           if (const auto* s = std::get_if<std::string>(&settingIt->second)) {
@@ -492,8 +495,10 @@ namespace settings {
       return {};
     }
 
-    bool isSettingVisible(const Config& cfg, std::string_view widgetName, const WidgetSettingSpec& spec,
-                          const std::vector<WidgetSettingSpec>& allSpecs) {
+    bool isSettingVisible(
+        const Config& cfg, std::string_view widgetName, const WidgetSettingSpec& spec,
+        const std::vector<WidgetSettingSpec>& allSpecs
+    ) {
       if (!spec.visibleWhen.has_value()) {
         return true;
       }
@@ -541,8 +546,8 @@ namespace settings {
       return 0.0;
     }
 
-    std::optional<double> widgetSettingOptionalDouble(const Config& cfg, std::string_view widgetName,
-                                                      const std::string& key) {
+    std::optional<double>
+    widgetSettingOptionalDouble(const Config& cfg, std::string_view widgetName, const std::string& key) {
       if (const auto it = cfg.widgets.find(std::string(widgetName)); it != cfg.widgets.end()) {
         if (const auto settingIt = it->second.settings.find(key); settingIt != it->second.settings.end()) {
           if (const auto* v = std::get_if<double>(&settingIt->second)) {
@@ -556,8 +561,8 @@ namespace settings {
       return std::nullopt;
     }
 
-    std::optional<int> widgetSettingOptionalStepperValue(const Config& cfg, std::string_view widgetName,
-                                                         const std::string& key) {
+    std::optional<int>
+    widgetSettingOptionalStepperValue(const Config& cfg, std::string_view widgetName, const std::string& key) {
       const auto value = widgetSettingOptionalDouble(cfg, widgetName, key);
       if (!value.has_value()) {
         return std::nullopt;
@@ -623,7 +628,8 @@ namespace settings {
               return out;
             }
           },
-          value);
+          value
+      );
     }
 
     std::vector<SelectOption> managedCapsuleGroupOptions(const Config& cfg, const std::vector<std::string>& lanePath) {
@@ -656,8 +662,9 @@ namespace settings {
       return options;
     }
 
-    [[nodiscard]] bool workspacesMinimalEnabled(const Config& cfg, std::string_view widgetName,
-                                                const std::vector<WidgetSettingSpec>& allSpecs) {
+    [[nodiscard]] bool workspacesMinimalEnabled(
+        const Config& cfg, std::string_view widgetName, const std::vector<WidgetSettingSpec>& allSpecs
+    ) {
       for (const auto& spec : allSpecs) {
         if (spec.key == "minimal") {
           return settingValueAsBool(widgetSettingValue(cfg, widgetName, spec));
@@ -666,10 +673,10 @@ namespace settings {
       return false;
     }
 
-    SelectSetting workspacesDisplaySelectSetting(const BarWidgetEditorContext& ctx, std::string_view widgetName,
-                                                 const WidgetSettingSpec& displaySpec,
-                                                 const std::vector<WidgetSettingSpec>& allSpecs,
-                                                 std::string selectedValue) {
+    SelectSetting workspacesDisplaySelectSetting(
+        const BarWidgetEditorContext& ctx, std::string_view widgetName, const WidgetSettingSpec& displaySpec,
+        const std::vector<WidgetSettingSpec>& allSpecs, std::string selectedValue
+    ) {
       const bool minimal = workspacesMinimalEnabled(ctx.config, widgetName, allSpecs);
       if (minimal && selectedValue == "none") {
         selectedValue = "id";
@@ -682,7 +689,8 @@ namespace settings {
           continue;
         }
         options.push_back(
-            SelectOption{option.value, displaySpec.literalLabels ? option.labelKey : i18n::tr(option.labelKey)});
+            SelectOption{option.value, displaySpec.literalLabels ? option.labelKey : i18n::tr(option.labelKey)}
+        );
       }
       SelectSetting selectSetting{std::move(options), std::move(selectedValue)};
       selectSetting.segmented = displaySpec.segmented;
@@ -703,17 +711,21 @@ namespace settings {
         return opt.value == selectedValue;
       });
       if (!selectedValue.empty() && !hasSelected) {
-        options.push_back(SelectOption{
-            .value = selectedValue,
-            .label = i18n::tr("settings.controls.select.unknown-value", "value", selectedValue),
-        });
+        options.push_back(
+            SelectOption{
+                .value = selectedValue,
+                .label = i18n::tr("settings.controls.select.unknown-value", "value", selectedValue),
+            }
+        );
       }
 
       return SelectSetting{std::move(options), std::move(selectedValue)};
     }
 
-    void addRawWidgetSettings(Flex& panel, std::string_view widgetName, const std::vector<WidgetSettingSpec>& specs,
-                              std::size_t& visibleSpecs, const BarWidgetEditorContext& ctx) {
+    void addRawWidgetSettings(
+        Flex& panel, std::string_view widgetName, const std::vector<WidgetSettingSpec>& specs,
+        std::size_t& visibleSpecs, const BarWidgetEditorContext& ctx
+    ) {
       if (!ctx.showAdvanced) {
         return;
       }
@@ -752,15 +764,20 @@ namespace settings {
       }
       std::sort(rawKeys.begin(), rawKeys.end());
 
-      auto header = std::make_unique<Flex>();
-      header->setDirection(FlexDirection::Vertical);
-      header->setAlign(FlexAlign::Stretch);
-      header->setGap(1.0f * ctx.scale);
-      header->setPadding(Style::spaceXs * ctx.scale, 0.0f);
-      header->addChild(makeLabel(i18n::tr("settings.entities.widget.raw.title"), Style::fontSizeCaption * ctx.scale,
-                                 colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold));
-      header->addChild(makeSettingSubtitleLabel(i18n::tr("settings.entities.widget.raw.description"), ctx.scale));
-      panel.addChild(std::move(header));
+      panel.addChild(
+          ui::column(
+              {
+                  .align = FlexAlign::Stretch,
+                  .gap = 1.0f * ctx.scale,
+                  .configure = [&ctx](Flex& flex) { flex.setPadding(Style::spaceXs * ctx.scale, 0.0f); },
+              },
+              makeLabel(
+                  i18n::tr("settings.entities.widget.raw.title"), Style::fontSizeCaption * ctx.scale,
+                  colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold
+              ),
+              makeSettingSubtitleLabel(i18n::tr("settings.entities.widget.raw.description"), ctx.scale)
+          )
+      );
 
       for (const auto& key : rawKeys) {
         const auto valueIt = widgetIt->second.settings.find(key);
@@ -772,48 +789,49 @@ namespace settings {
         const bool overridden = ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(path);
         const bool pendingDelete = ctx.pendingDeleteWidgetSettingPath == deleteKey;
 
-        auto row = std::make_unique<Flex>();
-        row->setDirection(FlexDirection::Horizontal);
-        row->setAlign(FlexAlign::Center);
-        row->setGap(Style::spaceSm * ctx.scale);
-        row->setPadding(Style::spaceXs * ctx.scale, 0.0f);
-        row->setMinHeight(Style::controlHeightSm * ctx.scale);
-
-        row->addChild(makeLabel(key, Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurface),
-                                FontWeight::Bold));
-
-        auto spacer = std::make_unique<Flex>();
-        spacer->setFlexGrow(1.0f);
-        row->addChild(std::move(spacer));
-
-        row->addChild(makeLabel(settingValueAsDisplayString(valueIt->second), Style::fontSizeCaption * ctx.scale,
-                                colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal));
+        auto row = ui::row(
+            {
+                .align = FlexAlign::Center,
+                .gap = Style::spaceSm * ctx.scale,
+                .minHeight = Style::controlHeightSm * ctx.scale,
+                .configure = [&ctx](Flex& flex) { flex.setPadding(Style::spaceXs * ctx.scale, 0.0f); },
+            },
+            makeLabel(
+                key, Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold
+            ),
+            ui::spacer(),
+            makeLabel(
+                settingValueAsDisplayString(valueIt->second), Style::fontSizeCaption * ctx.scale,
+                colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal
+            )
+        );
 
         if (overridden) {
-          auto deleteBtn = std::make_unique<Button>();
-          deleteBtn->setGlyph("trash");
-          deleteBtn->setVariant(pendingDelete ? ButtonVariant::Default : ButtonVariant::Ghost);
-          if (pendingDelete) {
-            deleteBtn->setText(i18n::tr("settings.entities.widget.raw.delete"));
-            deleteBtn->setFontSize(Style::fontSizeCaption * ctx.scale);
-          }
-          deleteBtn->setGlyphSize(Style::fontSizeCaption * ctx.scale);
-          deleteBtn->setMinWidth(Style::controlHeightSm * ctx.scale);
-          deleteBtn->setMinHeight(Style::controlHeightSm * ctx.scale);
-          deleteBtn->setPadding(Style::spaceXs * ctx.scale);
-          deleteBtn->setRadius(Style::scaledRadiusSm(ctx.scale));
-          deleteBtn->setOnClick([&pendingDeleteWidgetSettingPath = ctx.pendingDeleteWidgetSettingPath, deleteKey, path,
-                                 clearOverride = ctx.clearOverride, requestRebuild = ctx.requestRebuild]() {
-            if (pendingDeleteWidgetSettingPath != deleteKey) {
-              pendingDeleteWidgetSettingPath = deleteKey;
-              requestRebuild();
-              return;
-            }
+          row->addChild(
+              ui::button({
+                  .text = pendingDelete ? std::optional<std::string>(i18n::tr("settings.entities.widget.raw.delete"))
+                                        : std::nullopt,
+                  .glyph = "trash",
+                  .fontSize = Style::fontSizeCaption * ctx.scale,
+                  .glyphSize = Style::fontSizeCaption * ctx.scale,
+                  .variant = pendingDelete ? ButtonVariant::Default : ButtonVariant::Ghost,
+                  .minWidth = Style::controlHeightSm * ctx.scale,
+                  .minHeight = Style::controlHeightSm * ctx.scale,
+                  .padding = Style::spaceXs * ctx.scale,
+                  .radius = Style::scaledRadiusSm(ctx.scale),
+                  .onClick = [&pendingDeleteWidgetSettingPath = ctx.pendingDeleteWidgetSettingPath, deleteKey, path,
+                              clearOverride = ctx.clearOverride, requestRebuild = ctx.requestRebuild]() {
+                    if (pendingDeleteWidgetSettingPath != deleteKey) {
+                      pendingDeleteWidgetSettingPath = deleteKey;
+                      requestRebuild();
+                      return;
+                    }
 
-            pendingDeleteWidgetSettingPath.clear();
-            clearOverride(path);
-          });
-          row->addChild(std::move(deleteBtn));
+                    pendingDeleteWidgetSettingPath.clear();
+                    clearOverride(path);
+                  },
+              })
+          );
         }
 
         panel.addChild(std::move(row));
@@ -821,9 +839,10 @@ namespace settings {
       }
     }
 
-    void addWidgetSettingsPanel(Flex& item, std::string widgetName, const std::vector<std::string>& lanePath,
-                                const std::vector<SelectOption>& managedCapsuleGroups,
-                                const BarWidgetEditorContext& ctx) {
+    void addWidgetSettingsPanel(
+        Flex& item, std::string widgetName, const std::vector<std::string>& lanePath,
+        const std::vector<SelectOption>& managedCapsuleGroups, const BarWidgetEditorContext& ctx
+    ) {
       const auto widgetType = widgetTypeForReference(ctx.config, widgetName);
       if (widgetType.empty()) {
         return;
@@ -836,25 +855,33 @@ namespace settings {
         return;
       }
 
-      auto panel = std::make_unique<Flex>();
-      panel->setDirection(FlexDirection::Vertical);
-      panel->setAlign(FlexAlign::Stretch);
-      panel->setGap(Style::spaceXs * ctx.scale);
-      panel->setPadding(Style::spaceSm * ctx.scale);
-      panel->setRadius(Style::scaledRadiusSm(ctx.scale));
-      panel->setFill(colorSpecFromRole(ColorRole::Surface));
-      panel->setBorder(colorSpecFromRole(ColorRole::Outline, 0.22f), Style::borderWidth);
-
-      auto panelHeader = std::make_unique<Flex>();
-      panelHeader->setDirection(FlexDirection::Horizontal);
-      panelHeader->setAlign(FlexAlign::Center);
-      panelHeader->setGap(Style::spaceXs * ctx.scale);
-      panelHeader->addChild(makeLabel(i18n::tr("settings.entities.widget.settings.title"),
-                                      Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurface),
-                                      FontWeight::Bold));
-      panelHeader->addChild(makeLabel(widgetType, Style::fontSizeCaption * ctx.scale,
-                                      colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal));
-      panel->addChild(std::move(panelHeader));
+      auto panel = ui::column(
+          {
+              .align = FlexAlign::Stretch,
+              .gap = Style::spaceXs * ctx.scale,
+              .configure =
+                  [&ctx](Flex& flex) {
+                    flex.setPadding(Style::spaceSm * ctx.scale);
+                    flex.setRadius(Style::scaledRadiusSm(ctx.scale));
+                    flex.setFill(colorSpecFromRole(ColorRole::Surface));
+                    flex.setBorder(colorSpecFromRole(ColorRole::Outline, 0.22f), Style::borderWidth);
+                  },
+          },
+          ui::row(
+              {
+                  .align = FlexAlign::Center,
+                  .gap = Style::spaceXs * ctx.scale,
+              },
+              makeLabel(
+                  i18n::tr("settings.entities.widget.settings.title"), Style::fontSizeCaption * ctx.scale,
+                  colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold
+              ),
+              makeLabel(
+                  widgetType, Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurfaceVariant),
+                  FontWeight::Normal
+              )
+          )
+      );
 
       std::size_t visibleSpecs = 0;
       bool groupingHeaderAdded = false;
@@ -903,23 +930,26 @@ namespace settings {
             clearWhenValue = *defaultBool;
           }
           if (widgetType == "workspaces" && spec.key == "minimal") {
-            auto toggle = std::make_unique<Toggle>();
-            toggle->setScale(ctx.scale);
-            toggle->setChecked(settingValueAsBool(value));
-            toggle->setOnChange([configService = ctx.configService, setOverride = ctx.setOverride,
+            ctx.makeRow(
+                *panel, entry,
+                ui::toggle({
+                    .checked = settingValueAsBool(value),
+                    .scale = ctx.scale,
+                    .onChange = [configService = ctx.configService, setOverride = ctx.setOverride,
                                  requestRebuild = ctx.requestRebuild, widgetName = std::string(widgetName), path,
                                  displayPath = widgetSettingPath(std::string(widgetName), "display"),
                                  specs](bool enabled) {
-              setOverride(path, enabled);
-              if (enabled && configService != nullptr &&
-                  settingCurrentString(configService->config(), widgetName, "display", specs) == "none") {
-                setOverride(displayPath, std::string("id"));
-              }
-              if (requestRebuild) {
-                requestRebuild();
-              }
-            });
-            ctx.makeRow(*panel, entry, std::move(toggle));
+                      setOverride(path, enabled);
+                      if (enabled && configService != nullptr &&
+                          settingCurrentString(configService->config(), widgetName, "display", specs) == "none") {
+                        setOverride(displayPath, std::string("id"));
+                      }
+                      if (requestRebuild) {
+                        requestRebuild();
+                      }
+                    },
+                })
+            );
           } else {
             ctx.makeRow(*panel, entry, ctx.makeToggle(settingValueAsBool(value), path, clearWhenValue));
           }
@@ -928,117 +958,140 @@ namespace settings {
         case WidgetSettingValueType::Int: {
           const auto minValue = static_cast<float>(spec.minValue.value_or(0.0));
           const auto maxValue = static_cast<float>(spec.maxValue.value_or(100.0));
-          ctx.makeRow(*panel, entry,
-                      ctx.makeSlider(static_cast<float>(settingValueAsInt(value)), minValue, maxValue,
-                                     static_cast<float>(spec.step), path, true));
+          ctx.makeRow(
+              *panel, entry,
+              ctx.makeSlider(
+                  static_cast<float>(settingValueAsInt(value)), minValue, maxValue, static_cast<float>(spec.step), path,
+                  true
+              )
+          );
           break;
         }
         case WidgetSettingValueType::Double: {
           const auto minValue = static_cast<float>(spec.minValue.value_or(0.0));
           const auto maxValue = static_cast<float>(spec.maxValue.value_or(1.0));
-          ctx.makeRow(*panel, entry,
-                      ctx.makeSlider(static_cast<float>(settingValueAsDouble(value)), minValue, maxValue,
-                                     static_cast<float>(spec.step), path, false));
+          ctx.makeRow(
+              *panel, entry,
+              ctx.makeSlider(
+                  static_cast<float>(settingValueAsDouble(value)), minValue, maxValue, static_cast<float>(spec.step),
+                  path, false
+              )
+          );
           break;
         }
         case WidgetSettingValueType::OptionalDouble: {
           ctx.makeRow(
               *panel, entry,
               ctx.makeOptionalStepper(
-                  OptionalStepperSetting{.value = widgetSettingOptionalStepperValue(ctx.config, widgetName, spec.key),
-                                         .minValue = static_cast<int>(std::lround(spec.minValue.value_or(0.0))),
-                                         .maxValue = static_cast<int>(std::lround(spec.maxValue.value_or(80.0))),
-                                         .step = static_cast<int>(std::max(1.0, spec.step)),
-                                         .fallbackValue = inheritedCapsuleRadiusForLane(ctx.config, lanePath),
-                                         .unsetLabel = i18n::tr("common.states.inherit"),
-                                         .customLabel = i18n::tr("common.states.custom")},
-                  path));
+                  OptionalStepperSetting{
+                      .value = widgetSettingOptionalStepperValue(ctx.config, widgetName, spec.key),
+                      .minValue = static_cast<int>(std::lround(spec.minValue.value_or(0.0))),
+                      .maxValue = static_cast<int>(std::lround(spec.maxValue.value_or(80.0))),
+                      .step = static_cast<int>(std::max(1.0, spec.step)),
+                      .fallbackValue = inheritedCapsuleRadiusForLane(ctx.config, lanePath),
+                      .unsetLabel = i18n::tr("common.states.inherit"),
+                      .customLabel = i18n::tr("common.states.custom")
+                  },
+                  path
+              )
+          );
           break;
         }
         case WidgetSettingValueType::String: {
           auto textNode = ctx.makeText(settingValueAsString(value), {}, path);
           if (spec.key == "glyph") {
-            auto wrap = std::make_unique<Flex>();
-            wrap->setDirection(FlexDirection::Horizontal);
-            wrap->setAlign(FlexAlign::Center);
-            wrap->setGap(Style::spaceSm * ctx.scale);
-            wrap->addChild(std::move(textNode));
-
-            auto pickerButton = std::make_unique<Button>();
-            pickerButton->setVariant(ButtonVariant::Outline);
-            pickerButton->setGlyph("apps");
-            pickerButton->setGlyphSize(Style::fontSizeBody * ctx.scale);
-            pickerButton->setMinHeight(Style::controlHeight * ctx.scale);
-            pickerButton->setMinWidth(Style::controlHeight * ctx.scale);
-            pickerButton->setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-            pickerButton->setRadius(Style::scaledRadiusMd(ctx.scale));
-            pickerButton->setOnClick([setOverride = ctx.setOverride, requestRebuild = ctx.requestRebuild, path,
-                                      currentValue = settingValueAsString(value)]() {
-              GlyphPickerDialogOptions options;
-              if (!currentValue.empty()) {
-                options.initialGlyph = currentValue;
-              }
-              (void)GlyphPickerDialog::open(
-                  std::move(options), [setOverride, requestRebuild, path](std::optional<GlyphPickerResult> result) {
-                    if (!result.has_value()) {
-                      return;
-                    }
-                    setOverride(path, result->name);
-                    if (requestRebuild) {
-                      requestRebuild();
-                    }
-                  });
-            });
-            wrap->addChild(std::move(pickerButton));
-
-            ctx.makeRow(*panel, entry, std::move(wrap));
+            ctx.makeRow(
+                *panel, entry,
+                ui::row(
+                    {
+                        .align = FlexAlign::Center,
+                        .gap = Style::spaceSm * ctx.scale,
+                    },
+                    std::move(textNode),
+                    ui::button({
+                        .glyph = "apps",
+                        .glyphSize = Style::fontSizeBody * ctx.scale,
+                        .variant = ButtonVariant::Outline,
+                        .minWidth = Style::controlHeight * ctx.scale,
+                        .minHeight = Style::controlHeight * ctx.scale,
+                        .paddingV = Style::spaceXs * ctx.scale,
+                        .paddingH = Style::spaceSm * ctx.scale,
+                        .radius = Style::scaledRadiusMd(ctx.scale),
+                        .onClick = [setOverride = ctx.setOverride, requestRebuild = ctx.requestRebuild, path,
+                                    currentValue = settingValueAsString(value)]() {
+                          GlyphPickerDialogOptions options;
+                          if (!currentValue.empty()) {
+                            options.initialGlyph = currentValue;
+                          }
+                          (void)GlyphPickerDialog::open(
+                              std::move(options),
+                              [setOverride, requestRebuild, path](std::optional<GlyphPickerResult> result) {
+                                if (!result.has_value()) {
+                                  return;
+                                }
+                                setOverride(path, result->name);
+                                if (requestRebuild) {
+                                  requestRebuild();
+                                }
+                              }
+                          );
+                        },
+                    })
+                )
+            );
           } else if (spec.key == "capsule_group" && !managedCapsuleGroups.empty()) {
             SelectSetting selectSetting{
-                .options = managedCapsuleGroups, .selectedValue = settingValueAsString(value), .clearOnEmpty = true};
+                .options = managedCapsuleGroups, .selectedValue = settingValueAsString(value), .clearOnEmpty = true
+            };
             ctx.makeRow(*panel, entry, ctx.makeSelect(selectSetting, path));
           } else if (spec.key == "custom_image") {
-            auto wrap = std::make_unique<Flex>();
-            wrap->setDirection(FlexDirection::Horizontal);
-            wrap->setAlign(FlexAlign::Center);
-            wrap->setGap(Style::spaceSm * ctx.scale);
-            wrap->addChild(std::move(textNode));
-
-            auto pickerButton = std::make_unique<Button>();
-            pickerButton->setVariant(ButtonVariant::Outline);
-            pickerButton->setGlyph("photo");
-            pickerButton->setGlyphSize(Style::fontSizeBody * ctx.scale);
-            pickerButton->setMinHeight(Style::controlHeight * ctx.scale);
-            pickerButton->setMinWidth(Style::controlHeight * ctx.scale);
-            pickerButton->setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-            pickerButton->setRadius(Style::scaledRadiusMd(ctx.scale));
-            pickerButton->setOnClick([setOverride = ctx.setOverride, requestRebuild = ctx.requestRebuild, path,
-                                      currentValue = settingValueAsString(value)]() {
-              FileDialogOptions options;
-              options.mode = FileDialogMode::Open;
-              options.defaultViewMode = FileDialogViewMode::Grid;
-              options.title = i18n::tr("settings.widgets.settings.custom_image.dialog-title");
-              options.extensions = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".bmp", ".gif"};
-              if (!currentValue.empty()) {
-                std::filesystem::path current(currentValue);
-                std::error_code ec;
-                if (current.has_parent_path() && std::filesystem::exists(current.parent_path(), ec)) {
-                  options.startDirectory = current.parent_path();
-                }
-              }
-              (void)FileDialog::open(std::move(options),
-                                     [setOverride, requestRebuild, path](std::optional<std::filesystem::path> picked) {
-                                       if (!picked.has_value()) {
-                                         return;
-                                       }
-                                       setOverride(path, picked->string());
-                                       if (requestRebuild) {
-                                         requestRebuild();
-                                       }
-                                     });
-            });
-            wrap->addChild(std::move(pickerButton));
-
-            ctx.makeRow(*panel, entry, std::move(wrap));
+            ctx.makeRow(
+                *panel, entry,
+                ui::row(
+                    {
+                        .align = FlexAlign::Center,
+                        .gap = Style::spaceSm * ctx.scale,
+                    },
+                    std::move(textNode),
+                    ui::button({
+                        .glyph = "photo",
+                        .glyphSize = Style::fontSizeBody * ctx.scale,
+                        .variant = ButtonVariant::Outline,
+                        .minWidth = Style::controlHeight * ctx.scale,
+                        .minHeight = Style::controlHeight * ctx.scale,
+                        .paddingV = Style::spaceXs * ctx.scale,
+                        .paddingH = Style::spaceSm * ctx.scale,
+                        .radius = Style::scaledRadiusMd(ctx.scale),
+                        .onClick = [setOverride = ctx.setOverride, requestRebuild = ctx.requestRebuild, path,
+                                    currentValue = settingValueAsString(value)]() {
+                          FileDialogOptions options;
+                          options.mode = FileDialogMode::Open;
+                          options.defaultViewMode = FileDialogViewMode::Grid;
+                          options.title = i18n::tr("settings.widgets.settings.custom_image.dialog-title");
+                          options.extensions = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".bmp", ".gif"};
+                          if (!currentValue.empty()) {
+                            std::filesystem::path current(currentValue);
+                            std::error_code ec;
+                            if (current.has_parent_path() && std::filesystem::exists(current.parent_path(), ec)) {
+                              options.startDirectory = current.parent_path();
+                            }
+                          }
+                          (void)FileDialog::open(
+                              std::move(options),
+                              [setOverride, requestRebuild, path](std::optional<std::filesystem::path> picked) {
+                                if (!picked.has_value()) {
+                                  return;
+                                }
+                                setOverride(path, picked->string());
+                                if (requestRebuild) {
+                                  requestRebuild();
+                                }
+                              }
+                          );
+                        },
+                    })
+                )
+            );
           } else {
             ctx.makeRow(*panel, entry, std::move(textNode));
           }
@@ -1059,7 +1112,8 @@ namespace settings {
             options.reserve(spec.options.size());
             for (const auto& option : spec.options) {
               options.push_back(
-                  SelectOption{option.value, spec.literalLabels ? option.labelKey : i18n::tr(option.labelKey)});
+                  SelectOption{option.value, spec.literalLabels ? option.labelKey : i18n::tr(option.labelKey)}
+              );
             }
             selectSetting = SelectSetting{std::move(options), selectedValue};
           }
@@ -1082,9 +1136,10 @@ namespace settings {
       addRawWidgetSettings(*panel, widgetName, specs, visibleSpecs, ctx);
 
       if (visibleSpecs == 0) {
-        panel->addChild(makeLabel(i18n::tr("settings.entities.widget.settings.empty"),
-                                  Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                                  FontWeight::Normal));
+        panel->addChild(makeLabel(
+            i18n::tr("settings.entities.widget.settings.empty"), Style::fontSizeCaption * ctx.scale,
+            colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal
+        ));
       }
 
       item.addChild(std::move(panel));
@@ -1097,17 +1152,19 @@ namespace settings {
         return;
       }
 
-      auto inspector = std::make_unique<Flex>();
+      auto inspector = ui::column({
+          .align = FlexAlign::Stretch,
+          .gap = Style::spaceSm * ctx.scale,
+          .configure = [&ctx](Flex& flex) {
+            flex.setPadding(Style::spaceMd * ctx.scale);
+            flex.setRadius(Style::scaledRadiusMd(ctx.scale));
+            flex.setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
+            flex.setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
+          },
+      });
       if (ctx.setScrollTarget) {
         ctx.setScrollTarget(inspector.get());
       }
-      inspector->setDirection(FlexDirection::Vertical);
-      inspector->setAlign(FlexAlign::Stretch);
-      inspector->setGap(Style::spaceSm * ctx.scale);
-      inspector->setPadding(Style::spaceMd * ctx.scale);
-      inspector->setRadius(Style::scaledRadiusMd(ctx.scale));
-      inspector->setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
-      inspector->setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
 
       {
         const std::string widgetName = ctx.editingWidgetName;
@@ -1132,161 +1189,192 @@ namespace settings {
           }
         }
 
-        auto headerRow = std::make_unique<Flex>();
-        headerRow->setDirection(FlexDirection::Horizontal);
-        headerRow->setAlign(FlexAlign::Center);
-        headerRow->setGap(Style::spaceSm * ctx.scale);
-        headerRow->addChild(makeLabel(i18n::tr("settings.entities.widget.inspector.edit-title"),
-                                      Style::fontSizeCaption * ctx.scale,
-                                      colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Bold));
+        auto headerRow = ui::row(
+            {
+                .align = FlexAlign::Center,
+                .gap = Style::spaceSm * ctx.scale,
+            },
+            makeLabel(
+                i18n::tr("settings.entities.widget.inspector.edit-title"), Style::fontSizeCaption * ctx.scale,
+                colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Bold
+            )
+        );
         {
-          auto titleLabel = makeLabel(info.title, Style::fontSizeBody * ctx.scale,
-                                      colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold);
+          auto titleLabel = makeLabel(
+              info.title, Style::fontSizeBody * ctx.scale, colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold
+          );
           titleLabel->setMaxLines(1);
           titleLabel->setFlexGrow(1.0f);
           headerRow->addChild(std::move(titleLabel));
         }
 
-        auto kindBadge = std::make_unique<Flex>();
-        kindBadge->setAlign(FlexAlign::Center);
-        kindBadge->setPadding(0, Style::spaceXs * ctx.scale);
-        kindBadge->setRadius(Style::scaledRadiusSm(ctx.scale));
-        kindBadge->setFill(widgetBadgeColor(info.kind));
-        kindBadge->addChild(makeLabel(info.badge, Style::fontSizeCaption * ctx.scale,
-                                      colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold));
-        headerRow->addChild(std::move(kindBadge));
+        headerRow->addChild(
+            ui::row(
+                {
+                    .align = FlexAlign::Center,
+                    .configure =
+                        [&ctx, &info](Flex& flex) {
+                          flex.setPadding(0, Style::spaceXs * ctx.scale);
+                          flex.setRadius(Style::scaledRadiusSm(ctx.scale));
+                          flex.setFill(widgetBadgeColor(info.kind));
+                        },
+                },
+                makeLabel(
+                    info.badge, Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurface),
+                    FontWeight::Bold
+                )
+            )
+        );
 
-        auto headerSpacer = std::make_unique<Flex>();
-        headerSpacer->setFlexGrow(1.0f);
-        headerRow->addChild(std::move(headerSpacer));
+        headerRow->addChild(ui::spacer());
 
-        auto closeBtn = std::make_unique<Button>();
-        closeBtn->setGlyph("close");
-        closeBtn->setVariant(ButtonVariant::Ghost);
-        closeBtn->setGlyphSize(Style::fontSizeBody * ctx.scale);
-        closeBtn->setMinWidth(Style::controlHeightSm * ctx.scale);
-        closeBtn->setMinHeight(Style::controlHeightSm * ctx.scale);
-        closeBtn->setPadding(Style::spaceXs * ctx.scale);
-        closeBtn->setRadius(Style::scaledRadiusSm(ctx.scale));
-        closeBtn->setOnClick([&editingWidgetName = ctx.editingWidgetName, &renamingWidgetName = ctx.renamingWidgetName,
-                              &pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,
-                              &pendingDeleteWidgetSettingPath = ctx.pendingDeleteWidgetSettingPath,
-                              requestRebuild = ctx.requestRebuild]() {
-          closeInspector(editingWidgetName, renamingWidgetName, pendingDeleteWidgetName, pendingDeleteWidgetSettingPath,
-                         requestRebuild);
-        });
-        headerRow->addChild(std::move(closeBtn));
+        headerRow->addChild(
+            ui::button({
+                .glyph = "close",
+                .glyphSize = Style::fontSizeBody * ctx.scale,
+                .variant = ButtonVariant::Ghost,
+                .minWidth = Style::controlHeightSm * ctx.scale,
+                .minHeight = Style::controlHeightSm * ctx.scale,
+                .padding = Style::spaceXs * ctx.scale,
+                .radius = Style::scaledRadiusSm(ctx.scale),
+                .onClick = [&editingWidgetName = ctx.editingWidgetName, &renamingWidgetName = ctx.renamingWidgetName,
+                            &pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,
+                            &pendingDeleteWidgetSettingPath = ctx.pendingDeleteWidgetSettingPath,
+                            requestRebuild = ctx.requestRebuild]() {
+                  closeInspector(
+                      editingWidgetName, renamingWidgetName, pendingDeleteWidgetName, pendingDeleteWidgetSettingPath,
+                      requestRebuild
+                  );
+                },
+            })
+        );
         inspector->addChild(std::move(headerRow));
 
         if (!capsuleGroup.empty()) {
-          auto groupRow = std::make_unique<Flex>();
-          groupRow->setDirection(FlexDirection::Horizontal);
-          groupRow->setAlign(FlexAlign::Center);
-          groupRow->setGap(Style::spaceXs * ctx.scale);
-          groupRow->addChild(makeGlyph("stack-back", Style::fontSizeCaption * ctx.scale,
-                                       colorSpecFromRole(ColorRole::OnSurfaceVariant)));
-          groupRow->addChild(makeLabel(capsuleGroup, Style::fontSizeCaption * ctx.scale,
-                                       colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal));
-          inspector->addChild(std::move(groupRow));
+          inspector->addChild(
+              ui::row(
+                  {
+                      .align = FlexAlign::Center,
+                      .gap = Style::spaceXs * ctx.scale,
+                  },
+                  makeGlyph(
+                      "stack-back", Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurfaceVariant)
+                  ),
+                  makeLabel(
+                      capsuleGroup, Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurfaceVariant),
+                      FontWeight::Normal
+                  )
+              )
+          );
         }
 
         const bool pendingDelete = guiManaged && ctx.pendingDeleteWidgetName == widgetName;
         const bool renaming = guiManaged && ctx.renamingWidgetName == widgetName;
 
         if (!pendingDelete && !renaming && !currentLaneInherited && !currentLaneKey.empty()) {
-          auto actionRow = std::make_unique<Flex>();
-          actionRow->setDirection(FlexDirection::Horizontal);
-          actionRow->setAlign(FlexAlign::Center);
-          actionRow->setGap(Style::spaceXs * ctx.scale);
+          auto actionRow = ui::row({
+              .align = FlexAlign::Center,
+              .gap = Style::spaceXs * ctx.scale,
+          });
 
-          auto actionSpacer = std::make_unique<Flex>();
-          actionSpacer->setFlexGrow(1.0f);
-          actionRow->addChild(std::move(actionSpacer));
+          actionRow->addChild(ui::spacer());
 
           for (const auto targetLane : kLaneKeys) {
             if (targetLane == currentLaneKey) {
               continue;
             }
-            auto moveBtn = std::make_unique<Button>();
-            moveBtn->setText(
-                i18n::tr("settings.entities.widget.inspector.move-to-lane", "lane", laneLabel(targetLane)));
-            moveBtn->setVariant(ButtonVariant::Ghost);
-            moveBtn->setFontSize(Style::fontSizeCaption * ctx.scale);
-            moveBtn->setMinHeight(Style::controlHeightSm * ctx.scale);
-            moveBtn->setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-            moveBtn->setRadius(Style::scaledRadiusSm(ctx.scale));
             auto sourceItems = currentLaneItems;
             auto sourcePath = currentLanePath;
             auto targetPath = pathWithLastSegment(entry.path, std::string(targetLane));
             auto targetItems = barWidgetItemsForPath(ctx.config, targetPath);
-            moveBtn->setOnClick([setOverrides = ctx.setOverrides, sourceItems, sourcePath, targetItems, targetPath,
-                                 widgetName]() mutable {
-              auto it = std::find(sourceItems.begin(), sourceItems.end(), widgetName);
-              if (it == sourceItems.end()) {
-                return;
-              }
-              sourceItems.erase(it);
-              targetItems.push_back(widgetName);
-              setOverrides({{sourcePath, sourceItems}, {targetPath, targetItems}});
-            });
-            actionRow->addChild(std::move(moveBtn));
+            actionRow->addChild(
+                ui::button({
+                    .text = i18n::tr("settings.entities.widget.inspector.move-to-lane", "lane", laneLabel(targetLane)),
+                    .fontSize = Style::fontSizeCaption * ctx.scale,
+                    .variant = ButtonVariant::Ghost,
+                    .minHeight = Style::controlHeightSm * ctx.scale,
+                    .paddingV = Style::spaceXs * ctx.scale,
+                    .paddingH = Style::spaceSm * ctx.scale,
+                    .radius = Style::scaledRadiusSm(ctx.scale),
+                    .onClick = [setOverrides = ctx.setOverrides, sourceItems, sourcePath, targetItems, targetPath,
+                                widgetName]() mutable {
+                      auto it = std::find(sourceItems.begin(), sourceItems.end(), widgetName);
+                      if (it == sourceItems.end()) {
+                        return;
+                      }
+                      sourceItems.erase(it);
+                      targetItems.push_back(widgetName);
+                      setOverrides({{sourcePath, sourceItems}, {targetPath, targetItems}});
+                    },
+                })
+            );
           }
 
           if (guiManaged) {
-            auto renameBtn = std::make_unique<Button>();
-            renameBtn->setText(i18n::tr("settings.entities.widget.instance.rename"));
-            renameBtn->setVariant(ButtonVariant::Ghost);
-            renameBtn->setFontSize(Style::fontSizeCaption * ctx.scale);
-            renameBtn->setMinHeight(Style::controlHeightSm * ctx.scale);
-            renameBtn->setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-            renameBtn->setRadius(Style::scaledRadiusSm(ctx.scale));
-            renameBtn->setOnClick(
-                [&renamingWidgetName = ctx.renamingWidgetName, widgetName, requestRebuild = ctx.requestRebuild]() {
-                  renamingWidgetName = widgetName;
-                  requestRebuild();
-                });
-            actionRow->addChild(std::move(renameBtn));
+            actionRow->addChild(
+                ui::button({
+                    .text = i18n::tr("settings.entities.widget.instance.rename"),
+                    .fontSize = Style::fontSizeCaption * ctx.scale,
+                    .variant = ButtonVariant::Ghost,
+                    .minHeight = Style::controlHeightSm * ctx.scale,
+                    .paddingV = Style::spaceXs * ctx.scale,
+                    .paddingH = Style::spaceSm * ctx.scale,
+                    .radius = Style::scaledRadiusSm(ctx.scale),
+                    .onClick = [&renamingWidgetName = ctx.renamingWidgetName, widgetName,
+                                requestRebuild = ctx.requestRebuild]() {
+                      renamingWidgetName = widgetName;
+                      requestRebuild();
+                    },
+                })
+            );
 
-            auto deleteBtn = std::make_unique<Button>();
-            deleteBtn->setGlyph("trash");
-            deleteBtn->setText(i18n::tr("settings.entities.widget.instance.delete"));
-            deleteBtn->setVariant(ButtonVariant::Ghost);
-            deleteBtn->setFontSize(Style::fontSizeCaption * ctx.scale);
-            deleteBtn->setGlyphSize(Style::fontSizeCaption * ctx.scale);
-            deleteBtn->setMinHeight(Style::controlHeightSm * ctx.scale);
-            deleteBtn->setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-            deleteBtn->setRadius(Style::scaledRadiusSm(ctx.scale));
-            deleteBtn->setOnClick([&pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,
-                                   &renamingWidgetName = ctx.renamingWidgetName, widgetName,
-                                   requestRebuild = ctx.requestRebuild]() {
-              pendingDeleteWidgetName = widgetName;
-              renamingWidgetName.clear();
-              requestRebuild();
-            });
-            actionRow->addChild(std::move(deleteBtn));
+            actionRow->addChild(
+                ui::button({
+                    .text = i18n::tr("settings.entities.widget.instance.delete"),
+                    .glyph = "trash",
+                    .fontSize = Style::fontSizeCaption * ctx.scale,
+                    .glyphSize = Style::fontSizeCaption * ctx.scale,
+                    .variant = ButtonVariant::Ghost,
+                    .minHeight = Style::controlHeightSm * ctx.scale,
+                    .paddingV = Style::spaceXs * ctx.scale,
+                    .paddingH = Style::spaceSm * ctx.scale,
+                    .radius = Style::scaledRadiusSm(ctx.scale),
+                    .onClick = [&pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,
+                                &renamingWidgetName = ctx.renamingWidgetName, widgetName,
+                                requestRebuild = ctx.requestRebuild]() {
+                      pendingDeleteWidgetName = widgetName;
+                      renamingWidgetName.clear();
+                      requestRebuild();
+                    },
+                })
+            );
           }
 
           inspector->addChild(std::move(actionRow));
         }
 
-        addWidgetSettingsPanel(*inspector, widgetName, currentLanePath,
-                               managedCapsuleGroupOptions(ctx.config, currentLanePath), ctx);
+        addWidgetSettingsPanel(
+            *inspector, widgetName, currentLanePath, managedCapsuleGroupOptions(ctx.config, currentLanePath), ctx
+        );
 
         if (renaming) {
-          auto renameRow = std::make_unique<Flex>();
-          renameRow->setDirection(FlexDirection::Horizontal);
-          renameRow->setAlign(FlexAlign::Center);
-          renameRow->setGap(Style::spaceXs * ctx.scale);
+          auto renameRow = ui::row({
+              .align = FlexAlign::Center,
+              .gap = Style::spaceXs * ctx.scale,
+          });
 
-          auto input = std::make_unique<Input>();
-          input->setValue(widgetName);
-          input->setPlaceholder(i18n::tr("settings.entities.widget.instance.id-placeholder"));
-          input->setFontSize(Style::fontSizeCaption * ctx.scale);
-          input->setControlHeight(Style::controlHeightSm * ctx.scale);
-          input->setHorizontalPadding(Style::spaceXs * ctx.scale);
-          input->setSize(140.0f * ctx.scale, Style::controlHeightSm * ctx.scale);
-          input->setFlexGrow(1.0f);
-          auto* inputPtr = input.get();
+          Input* inputPtr = nullptr;
+          auto input = ui::input({
+              .out = &inputPtr,
+              .value = widgetName,
+              .placeholder = i18n::tr("settings.entities.widget.instance.id-placeholder"),
+              .fontSize = Style::fontSizeCaption * ctx.scale,
+              .controlHeight = Style::controlHeightSm * ctx.scale,
+              .horizontalPadding = Style::spaceXs * ctx.scale,
+              .width = 140.0f * ctx.scale,
+              .height = Style::controlHeightSm * ctx.scale,
+              .flexGrow = 1.0f,
+          });
 
           auto doRename = [&editingWidgetName = ctx.editingWidgetName, &renamingWidgetName = ctx.renamingWidgetName,
                            config = ctx.config, renameWidgetInstance = ctx.renameWidgetInstance, widgetName,
@@ -1307,98 +1395,105 @@ namespace settings {
           input->setOnChange([inputPtr](const std::string& /*text*/) { inputPtr->setInvalid(false); });
           input->setOnSubmit([doRename](const std::string& text) mutable { doRename(text); });
 
-          auto saveBtn = std::make_unique<Button>();
-          saveBtn->setText(i18n::tr("settings.entities.widget.instance.rename-save"));
-          saveBtn->setVariant(ButtonVariant::Default);
-          saveBtn->setFontSize(Style::fontSizeCaption * ctx.scale);
-          saveBtn->setMinHeight(Style::controlHeightSm * ctx.scale);
-          saveBtn->setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-          saveBtn->setRadius(Style::scaledRadiusSm(ctx.scale));
-          saveBtn->setOnClick([doRename, inputPtr]() mutable { doRename(inputPtr->value()); });
-
-          auto cancelBtn = std::make_unique<Button>();
-          cancelBtn->setText(i18n::tr("common.actions.cancel"));
-          cancelBtn->setVariant(ButtonVariant::Ghost);
-          cancelBtn->setFontSize(Style::fontSizeCaption * ctx.scale);
-          cancelBtn->setMinHeight(Style::controlHeightSm * ctx.scale);
-          cancelBtn->setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-          cancelBtn->setRadius(Style::scaledRadiusSm(ctx.scale));
-          cancelBtn->setOnClick([&renamingWidgetName = ctx.renamingWidgetName, requestRebuild = ctx.requestRebuild]() {
-            renamingWidgetName.clear();
-            requestRebuild();
-          });
-
           renameRow->addChild(std::move(input));
-          renameRow->addChild(std::move(saveBtn));
-          renameRow->addChild(std::move(cancelBtn));
+          renameRow->addChild(
+              ui::button({
+                  .text = i18n::tr("settings.entities.widget.instance.rename-save"),
+                  .fontSize = Style::fontSizeCaption * ctx.scale,
+                  .variant = ButtonVariant::Default,
+                  .minHeight = Style::controlHeightSm * ctx.scale,
+                  .paddingV = Style::spaceXs * ctx.scale,
+                  .paddingH = Style::spaceSm * ctx.scale,
+                  .radius = Style::scaledRadiusSm(ctx.scale),
+                  .onClick = [doRename, inputPtr]() mutable { doRename(inputPtr->value()); },
+              })
+          );
+          renameRow->addChild(
+              ui::button({
+                  .text = i18n::tr("common.actions.cancel"),
+                  .fontSize = Style::fontSizeCaption * ctx.scale,
+                  .variant = ButtonVariant::Ghost,
+                  .minHeight = Style::controlHeightSm * ctx.scale,
+                  .paddingV = Style::spaceXs * ctx.scale,
+                  .paddingH = Style::spaceSm * ctx.scale,
+                  .radius = Style::scaledRadiusSm(ctx.scale),
+                  .onClick = [&renamingWidgetName = ctx.renamingWidgetName, requestRebuild = ctx.requestRebuild]() {
+                    renamingWidgetName.clear();
+                    requestRebuild();
+                  },
+              })
+          );
           inspector->addChild(std::move(renameRow));
         }
 
         if (pendingDelete) {
-          auto confirmPanel = std::make_unique<Flex>();
-          confirmPanel->setDirection(FlexDirection::Vertical);
-          confirmPanel->setAlign(FlexAlign::Stretch);
-          confirmPanel->setGap(Style::spaceXs * ctx.scale);
-          confirmPanel->setPadding(Style::spaceSm * ctx.scale);
-          confirmPanel->setRadius(Style::scaledRadiusSm(ctx.scale));
-          confirmPanel->setFill(colorSpecFromRole(ColorRole::Error, 0.10f));
-          confirmPanel->setBorder(colorSpecFromRole(ColorRole::Error, 0.5f), Style::borderWidth);
-
-          confirmPanel->addChild(
-              makeLabel(i18n::tr("settings.entities.widget.instance.delete-confirm-title", "name", widgetName),
-                        Style::fontSizeBody * ctx.scale, colorSpecFromRole(ColorRole::Error), FontWeight::Bold));
-          confirmPanel->addChild(makeLabel(i18n::tr("settings.entities.widget.instance.delete-confirm-desc"),
-                                           Style::fontSizeCaption * ctx.scale,
-                                           colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal));
-
-          auto confirmRow = std::make_unique<Flex>();
-          confirmRow->setDirection(FlexDirection::Horizontal);
-          confirmRow->setAlign(FlexAlign::Center);
-          confirmRow->setGap(Style::spaceSm * ctx.scale);
-
-          auto confirmSpacer = std::make_unique<Flex>();
-          confirmSpacer->setFlexGrow(1.0f);
-          confirmRow->addChild(std::move(confirmSpacer));
-
-          auto cancelBtn = std::make_unique<Button>();
-          cancelBtn->setText(i18n::tr("common.actions.cancel"));
-          cancelBtn->setVariant(ButtonVariant::Ghost);
-          cancelBtn->setFontSize(Style::fontSizeCaption * ctx.scale);
-          cancelBtn->setMinHeight(Style::controlHeightSm * ctx.scale);
-          cancelBtn->setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-          cancelBtn->setRadius(Style::scaledRadiusSm(ctx.scale));
-          cancelBtn->setOnClick(
-              [&pendingDeleteWidgetName = ctx.pendingDeleteWidgetName, requestRebuild = ctx.requestRebuild]() {
-                pendingDeleteWidgetName.clear();
-                requestRebuild();
-              });
-          confirmRow->addChild(std::move(cancelBtn));
-
-          auto confirmBtn = std::make_unique<Button>();
-          confirmBtn->setText(i18n::tr("settings.entities.widget.instance.delete"));
-          confirmBtn->setGlyph("trash");
-          confirmBtn->setVariant(ButtonVariant::Destructive);
-          confirmBtn->setFontSize(Style::fontSizeCaption * ctx.scale);
-          confirmBtn->setGlyphSize(Style::fontSizeCaption * ctx.scale);
-          confirmBtn->setMinHeight(Style::controlHeightSm * ctx.scale);
-          confirmBtn->setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-          confirmBtn->setRadius(Style::scaledRadiusSm(ctx.scale));
-          confirmBtn->setOnClick([&editingWidgetName = ctx.editingWidgetName,
+          auto confirmPanel = ui::column(
+              {
+                  .align = FlexAlign::Stretch,
+                  .gap = Style::spaceXs * ctx.scale,
+                  .configure =
+                      [&ctx](Flex& flex) {
+                        flex.setPadding(Style::spaceSm * ctx.scale);
+                        flex.setRadius(Style::scaledRadiusSm(ctx.scale));
+                        flex.setFill(colorSpecFromRole(ColorRole::Error, 0.10f));
+                        flex.setBorder(colorSpecFromRole(ColorRole::Error, 0.5f), Style::borderWidth);
+                      },
+              },
+              makeLabel(
+                  i18n::tr("settings.entities.widget.instance.delete-confirm-title", "name", widgetName),
+                  Style::fontSizeBody * ctx.scale, colorSpecFromRole(ColorRole::Error), FontWeight::Bold
+              ),
+              makeLabel(
+                  i18n::tr("settings.entities.widget.instance.delete-confirm-desc"), Style::fontSizeCaption * ctx.scale,
+                  colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal
+              ),
+              ui::row(
+                  {
+                      .align = FlexAlign::Center,
+                      .gap = Style::spaceSm * ctx.scale,
+                  },
+                  ui::spacer(),
+                  ui::button({
+                      .text = i18n::tr("common.actions.cancel"),
+                      .fontSize = Style::fontSizeCaption * ctx.scale,
+                      .variant = ButtonVariant::Ghost,
+                      .minHeight = Style::controlHeightSm * ctx.scale,
+                      .paddingV = Style::spaceXs * ctx.scale,
+                      .paddingH = Style::spaceSm * ctx.scale,
+                      .radius = Style::scaledRadiusSm(ctx.scale),
+                      .onClick =
+                          [&pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,
+                           requestRebuild = ctx.requestRebuild]() {
+                            pendingDeleteWidgetName.clear();
+                            requestRebuild();
+                          },
+                  }),
+                  ui::button({
+                      .text = i18n::tr("settings.entities.widget.instance.delete"),
+                      .glyph = "trash",
+                      .fontSize = Style::fontSizeCaption * ctx.scale,
+                      .glyphSize = Style::fontSizeCaption * ctx.scale,
+                      .variant = ButtonVariant::Destructive,
+                      .minHeight = Style::controlHeightSm * ctx.scale,
+                      .paddingV = Style::spaceXs * ctx.scale,
+                      .paddingH = Style::spaceSm * ctx.scale,
+                      .radius = Style::scaledRadiusSm(ctx.scale),
+                      .onClick = [&editingWidgetName = ctx.editingWidgetName,
                                   &pendingDeleteWidgetName = ctx.pendingDeleteWidgetName, config = ctx.config,
                                   widgetName, clearOverride = ctx.clearOverride, setOverrides = ctx.setOverrides]() {
-            pendingDeleteWidgetName.clear();
-            if (editingWidgetName == widgetName) {
-              editingWidgetName.clear();
-            }
-            auto referenceRemovals = widgetReferenceRemovalOverrides(config, widgetName);
-            if (!referenceRemovals.empty()) {
-              setOverrides(std::move(referenceRemovals));
-            }
-            clearOverride({"widget", widgetName});
-          });
-          confirmRow->addChild(std::move(confirmBtn));
-
-          confirmPanel->addChild(std::move(confirmRow));
+                        pendingDeleteWidgetName.clear();
+                        if (editingWidgetName == widgetName) {
+                          editingWidgetName.clear();
+                        }
+                        auto referenceRemovals = widgetReferenceRemovalOverrides(config, widgetName);
+                        if (!referenceRemovals.empty()) {
+                          setOverrides(std::move(referenceRemovals));
+                        }
+                        clearOverride({"widget", widgetName});
+                      },
+                  })
+              )
+          );
           inspector->addChild(std::move(confirmPanel));
         }
       }
@@ -1425,19 +1520,23 @@ namespace settings {
       return;
     }
 
-    auto block = std::make_unique<Flex>();
-    block->setDirection(FlexDirection::Vertical);
-    block->setAlign(FlexAlign::Stretch);
-    block->setGap(Style::spaceSm * ctx.scale);
-    block->setPadding(2.0f * ctx.scale, 0.0f);
-
-    auto titleRow = std::make_unique<Flex>();
-    titleRow->setDirection(FlexDirection::Horizontal);
-    titleRow->setAlign(FlexAlign::Center);
-    titleRow->setGap(Style::spaceSm * ctx.scale);
-    titleRow->addChild(makeLabel(i18n::tr("settings.entities.widget.editor.title"), Style::fontSizeBody * ctx.scale,
-                                 colorSpecFromRole(ColorRole::OnSurface), FontWeight::Normal));
-    block->addChild(std::move(titleRow));
+    auto block = ui::column(
+        {
+            .align = FlexAlign::Stretch,
+            .gap = Style::spaceSm * ctx.scale,
+            .configure = [&ctx](Flex& flex) { flex.setPadding(2.0f * ctx.scale, 0.0f); },
+        },
+        ui::row(
+            {
+                .align = FlexAlign::Center,
+                .gap = Style::spaceSm * ctx.scale,
+            },
+            makeLabel(
+                i18n::tr("settings.entities.widget.editor.title"), Style::fontSizeBody * ctx.scale,
+                colorSpecFromRole(ColorRole::OnSurface), FontWeight::Normal
+            )
+        )
+    );
 
     block->addChild(makeSettingSubtitleLabel(i18n::tr("settings.entities.widget.editor.description"), ctx.scale));
 
@@ -1448,11 +1547,11 @@ namespace settings {
       return;
     }
 
-    auto lanes = std::make_unique<Flex>();
-    lanes->setDirection(FlexDirection::Horizontal);
-    lanes->setAlign(FlexAlign::Stretch);
-    lanes->setGap(Style::spaceSm * ctx.scale);
-    lanes->setFillWidth(true);
+    auto lanes = ui::row({
+        .align = FlexAlign::Stretch,
+        .gap = Style::spaceSm * ctx.scale,
+        .fillWidth = true,
+    });
 
     static constexpr std::string_view kLaneKeys[] = {"start", "center", "end"};
     static constexpr std::size_t kLaneCount = sizeof(kLaneKeys) / sizeof(kLaneKeys[0]);
@@ -1466,77 +1565,107 @@ namespace settings {
       const bool monitorLaneExplicit = monitorWidgetListHasExplicitValue(ctx.config, lanePath);
       const bool inherited = isMonitorWidgetListPath(lanePath) && !monitorLaneExplicit;
 
-      auto lane = std::make_unique<Flex>();
-      lane->setDirection(FlexDirection::Vertical);
-      lane->setAlign(FlexAlign::Stretch);
-      lane->setGap(Style::spaceXs * ctx.scale);
-      lane->setPadding(Style::spaceSm * ctx.scale);
-      lane->setRadius(Style::scaledRadiusMd(ctx.scale));
-      lane->setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.45f));
-      lane->setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
-      lane->setFlexGrow(1.0f);
-      lane->setMinWidth(160.0f * ctx.scale);
+      auto lane = ui::column({
+          .align = FlexAlign::Stretch,
+          .gap = Style::spaceXs * ctx.scale,
+          .minWidth = 160.0f * ctx.scale,
+          .flexGrow = 1.0f,
+          .configure = [&ctx](Flex& flex) {
+            flex.setPadding(Style::spaceSm * ctx.scale);
+            flex.setRadius(Style::scaledRadiusMd(ctx.scale));
+            flex.setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.45f));
+            flex.setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
+          },
+      });
       auto* lanePtr = lane.get();
 
-      auto dropIndicator = std::make_unique<Box>();
-      dropIndicator->setFill(colorSpecFromRole(ColorRole::Primary));
-      dropIndicator->setRadius(std::max(1.0f, 1.5f * ctx.scale));
-      dropIndicator->setVisible(false);
-      dropIndicator->setParticipatesInLayout(false);
-      dropIndicator->setZIndex(10);
+      auto dropIndicator = ui::box({
+          .fill = colorSpecFromRole(ColorRole::Primary),
+          .radius = std::max(1.0f, 1.5f * ctx.scale),
+          .visible = false,
+          .participatesInLayout = false,
+          .configure = [](Box& box) { box.setZIndex(10); },
+      });
       auto* dropIndicatorPtr = dropIndicator.get();
       lane->addChild(std::move(dropIndicator));
 
       auto itemNodes = std::make_shared<std::vector<Flex*>>();
       itemNodes->reserve(laneItems.size());
       const std::size_t laneTargetIndex = laneTargets->size();
-      laneTargets->push_back(LaneDropTarget{.path = lanePath,
-                                            .items = laneItems,
-                                            .lane = lanePtr,
-                                            .indicator = dropIndicatorPtr,
-                                            .itemNodes = itemNodes});
+      laneTargets->push_back(
+          LaneDropTarget{
+              .path = lanePath,
+              .items = laneItems,
+              .lane = lanePtr,
+              .indicator = dropIndicatorPtr,
+              .itemNodes = itemNodes
+          }
+      );
 
-      auto laneHeader = std::make_unique<Flex>();
-      laneHeader->setDirection(FlexDirection::Horizontal);
-      laneHeader->setAlign(FlexAlign::Center);
-      laneHeader->setGap(Style::spaceXs * ctx.scale);
-      laneHeader->addChild(makeLabel(laneLabel(laneKey), Style::fontSizeBody * ctx.scale,
-                                     colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold));
+      auto laneHeader = ui::row(
+          {
+              .align = FlexAlign::Center,
+              .gap = Style::spaceXs * ctx.scale,
+          },
+          makeLabel(
+              laneLabel(laneKey), Style::fontSizeBody * ctx.scale, colorSpecFromRole(ColorRole::OnSurface),
+              FontWeight::Bold
+          )
+      );
       if (overridden) {
-        auto badge = std::make_unique<Flex>();
-        badge->setAlign(FlexAlign::Center);
-        badge->setPadding(0, Style::spaceXs * ctx.scale);
-        badge->setRadius(Style::scaledRadiusSm(ctx.scale));
-        badge->setFill(colorSpecFromRole(ColorRole::Primary, 0.15f));
-        badge->addChild(makeLabel(i18n::tr("settings.badges.override"), Style::fontSizeCaption * ctx.scale,
-                                  colorSpecFromRole(ColorRole::Primary), FontWeight::Bold));
-        laneHeader->addChild(std::move(badge));
+        laneHeader->addChild(
+            ui::row(
+                {
+                    .align = FlexAlign::Center,
+                    .configure =
+                        [&ctx](Flex& flex) {
+                          flex.setPadding(0, Style::spaceXs * ctx.scale);
+                          flex.setRadius(Style::scaledRadiusSm(ctx.scale));
+                          flex.setFill(colorSpecFromRole(ColorRole::Primary, 0.15f));
+                        },
+                },
+                makeLabel(
+                    i18n::tr("settings.badges.override"), Style::fontSizeCaption * ctx.scale,
+                    colorSpecFromRole(ColorRole::Primary), FontWeight::Bold
+                )
+            )
+        );
       }
       if (inherited) {
-        auto badge = std::make_unique<Flex>();
-        badge->setAlign(FlexAlign::Center);
-        badge->setPadding(0, Style::spaceXs * ctx.scale);
-        badge->setRadius(Style::scaledRadiusSm(ctx.scale));
-        badge->setFill(colorSpecFromRole(ColorRole::OnSurfaceVariant, 0.14f));
-        badge->addChild(makeLabel(i18n::tr("settings.badges.inherited"), Style::fontSizeCaption * ctx.scale,
-                                  colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Bold));
-        laneHeader->addChild(std::move(badge));
+        laneHeader->addChild(
+            ui::row(
+                {
+                    .align = FlexAlign::Center,
+                    .configure =
+                        [&ctx](Flex& flex) {
+                          flex.setPadding(0, Style::spaceXs * ctx.scale);
+                          flex.setRadius(Style::scaledRadiusSm(ctx.scale));
+                          flex.setFill(colorSpecFromRole(ColorRole::OnSurfaceVariant, 0.14f));
+                        },
+                },
+                makeLabel(
+                    i18n::tr("settings.badges.inherited"), Style::fontSizeCaption * ctx.scale,
+                    colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Bold
+                )
+            )
+        );
       }
-      auto laneSpacer = std::make_unique<Flex>();
-      laneSpacer->setFlexGrow(1.0f);
-      laneHeader->addChild(std::move(laneSpacer));
+      laneHeader->addChild(ui::spacer());
       if (inherited) {
-        auto customizeBtn = std::make_unique<Button>();
-        customizeBtn->setText(i18n::tr("settings.entities.widget.lanes.customize"));
-        customizeBtn->setVariant(ButtonVariant::Ghost);
-        customizeBtn->setFontSize(Style::fontSizeCaption * ctx.scale);
-        customizeBtn->setMinHeight(Style::controlHeightSm * ctx.scale);
-        customizeBtn->setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-        customizeBtn->setRadius(Style::scaledRadiusSm(ctx.scale));
         auto items = laneItems;
         auto path = lanePath;
-        customizeBtn->setOnClick([setOverride = ctx.setOverride, items, path]() { setOverride(path, items); });
-        laneHeader->addChild(std::move(customizeBtn));
+        laneHeader->addChild(
+            ui::button({
+                .text = i18n::tr("settings.entities.widget.lanes.customize"),
+                .fontSize = Style::fontSizeCaption * ctx.scale,
+                .variant = ButtonVariant::Ghost,
+                .minHeight = Style::controlHeightSm * ctx.scale,
+                .paddingV = Style::spaceXs * ctx.scale,
+                .paddingH = Style::spaceSm * ctx.scale,
+                .radius = Style::scaledRadiusSm(ctx.scale),
+                .onClick = [setOverride = ctx.setOverride, items, path]() { setOverride(path, items); },
+            })
+        );
       }
       if (overridden || (monitorLaneExplicit && hasGuiOverride)) {
         laneHeader->addChild(ctx.makeResetButton(lanePath));
@@ -1546,39 +1675,52 @@ namespace settings {
       for (std::size_t i = 0; i < laneItems.size(); ++i) {
         const auto info = widgetReferenceInfo(ctx.config, laneItems[i]);
         const std::string capsuleGroup = widgetCapsuleGroupName(ctx.config, laneItems[i]);
-        auto item = std::make_unique<Flex>();
-        item->setDirection(FlexDirection::Vertical);
-        item->setAlign(FlexAlign::Stretch);
-        item->setGap(Style::spaceXs * ctx.scale);
-        item->setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-        item->setRadius(Style::scaledRadiusSm(ctx.scale));
-        item->setFill(colorSpecFromRole(ColorRole::Surface, 0.72f));
-        item->setBorder(colorSpecFromRole(ColorRole::Outline, 0.22f), Style::borderWidth);
+        auto item = ui::column({
+            .align = FlexAlign::Stretch,
+            .gap = Style::spaceXs * ctx.scale,
+            .configure = [&ctx](Flex& flex) {
+              flex.setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
+              flex.setRadius(Style::scaledRadiusSm(ctx.scale));
+              flex.setFill(colorSpecFromRole(ColorRole::Surface, 0.72f));
+              flex.setBorder(colorSpecFromRole(ColorRole::Outline, 0.22f), Style::borderWidth);
+            },
+        });
         auto* itemPtr = item.get();
         itemNodes->push_back(itemPtr);
 
-        auto itemTop = std::make_unique<Flex>();
-        itemTop->setDirection(FlexDirection::Horizontal);
-        itemTop->setAlign(FlexAlign::Center);
-        itemTop->setGap(Style::spaceXs * ctx.scale);
+        auto itemTop = ui::row({
+            .align = FlexAlign::Center,
+            .gap = Style::spaceXs * ctx.scale,
+        });
         {
-          auto titleLabel = makeLabel(info.title, Style::fontSizeCaption * ctx.scale,
-                                      colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold);
+          auto titleLabel = makeLabel(
+              info.title, Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold
+          );
           titleLabel->setMaxLines(1);
           titleLabel->setFlexGrow(1.0f);
           itemTop->addChild(std::move(titleLabel));
         }
-        auto kindBadge = std::make_unique<Flex>();
-        kindBadge->setAlign(FlexAlign::Center);
-        kindBadge->setPadding(0, Style::spaceXs * ctx.scale);
-        kindBadge->setRadius(Style::scaledRadiusSm(ctx.scale));
-        kindBadge->setFill(widgetBadgeColor(info.kind));
-        kindBadge->addChild(makeLabel(info.badge, Style::fontSizeCaption * ctx.scale,
-                                      colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold));
-        itemTop->addChild(std::move(kindBadge));
+        itemTop->addChild(
+            ui::row(
+                {
+                    .align = FlexAlign::Center,
+                    .configure =
+                        [&ctx, &info](Flex& flex) {
+                          flex.setPadding(0, Style::spaceXs * ctx.scale);
+                          flex.setRadius(Style::scaledRadiusSm(ctx.scale));
+                          flex.setFill(widgetBadgeColor(info.kind));
+                        },
+                },
+                makeLabel(
+                    info.badge, Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurface),
+                    FontWeight::Bold
+                )
+            )
+        );
         if (!capsuleGroup.empty()) {
-          itemTop->addChild(makeGlyph("stack-back", Style::fontSizeCaption * ctx.scale,
-                                      colorSpecFromRole(ColorRole::OnSurfaceVariant)));
+          itemTop->addChild(makeGlyph(
+              "stack-back", Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurfaceVariant)
+          ));
         }
         item->addChild(std::move(itemTop));
 
@@ -1586,35 +1728,43 @@ namespace settings {
           item->addChild(makeSettingSubtitleLabel(info.detail, ctx.scale));
         }
         if (!capsuleGroup.empty()) {
-          auto groupRow = std::make_unique<Flex>();
-          groupRow->setDirection(FlexDirection::Horizontal);
-          groupRow->setAlign(FlexAlign::Center);
-          groupRow->setGap(Style::spaceXs * ctx.scale);
-          groupRow->addChild(makeGlyph("stack-back", Style::fontSizeCaption * ctx.scale,
-                                       colorSpecFromRole(ColorRole::OnSurfaceVariant)));
-          groupRow->addChild(makeLabel(capsuleGroup, Style::fontSizeCaption * ctx.scale,
-                                       colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal));
-          item->addChild(std::move(groupRow));
+          item->addChild(
+              ui::row(
+                  {
+                      .align = FlexAlign::Center,
+                      .gap = Style::spaceXs * ctx.scale,
+                  },
+                  makeGlyph(
+                      "stack-back", Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurfaceVariant)
+                  ),
+                  makeLabel(
+                      capsuleGroup, Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurfaceVariant),
+                      FontWeight::Normal
+                  )
+              )
+          );
         }
 
-        auto actions = std::make_unique<Flex>();
-        actions->setDirection(FlexDirection::Horizontal);
-        actions->setAlign(FlexAlign::Center);
-        actions->setGap(Style::spaceXs * ctx.scale);
+        auto actions = ui::row({
+            .align = FlexAlign::Center,
+            .gap = Style::spaceXs * ctx.scale,
+        });
 
         const auto widgetName = laneItems[i];
         const bool editableWidget = !widgetTypeForReference(ctx.config, widgetName).empty();
         if (!inherited) {
-          auto dragBtn = std::make_unique<Button>();
-          dragBtn->setGlyph("menu-2");
-          dragBtn->setVariant(ButtonVariant::Ghost);
-          dragBtn->setGlyphSize(Style::fontSizeCaption * ctx.scale);
-          dragBtn->setMinWidth(Style::controlHeightSm * ctx.scale);
-          dragBtn->setMinHeight(Style::controlHeightSm * ctx.scale);
-          dragBtn->setPadding(Style::spaceXs * ctx.scale);
-          dragBtn->setRadius(Style::scaledRadiusSm(ctx.scale));
-          dragBtn->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_MOVE);
-          auto* dragBtnPtr = dragBtn.get();
+          Button* dragBtnPtr = nullptr;
+          auto dragBtn = ui::button({
+              .out = &dragBtnPtr,
+              .glyph = "menu-2",
+              .glyphSize = Style::fontSizeCaption * ctx.scale,
+              .variant = ButtonVariant::Ghost,
+              .minWidth = Style::controlHeightSm * ctx.scale,
+              .minHeight = Style::controlHeightSm * ctx.scale,
+              .padding = Style::spaceXs * ctx.scale,
+              .radius = Style::scaledRadiusSm(ctx.scale),
+              .configure = [](Button& button) { button.setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_MOVE); },
+          });
 
           auto dragState = std::make_shared<LaneWidgetDragState>();
           auto items = laneItems;
@@ -1672,100 +1822,103 @@ namespace settings {
             targetItems.insert(targetItems.begin() + static_cast<std::ptrdiff_t>(insertionIndex), std::move(movedItem));
             setOverrides({{path, sourceItems}, {target.path, targetItems}});
           });
-          dragBtn->setOnPointerMotion(
-              [dragState, dragBtnPtr, laneTargets, laneTargetIndex, i, scale = ctx.scale](float localX, float localY) {
-                if (!dragState->active) {
-                  return;
-                }
-                dragState->lastLocalX = localX;
-                dragState->lastLocalY = localY;
-                if (std::hypot(dragState->lastLocalX - dragState->startLocalX,
-                               dragState->lastLocalY - dragState->startLocalY) >= kDragStartThresholdPx * scale) {
-                  dragState->moved = true;
-                }
-                if (!dragState->moved) {
-                  return;
-                }
+          dragBtn->setOnPointerMotion([dragState, dragBtnPtr, laneTargets, laneTargetIndex, i,
+                                       scale = ctx.scale](float localX, float localY) {
+            if (!dragState->active) {
+              return;
+            }
+            dragState->lastLocalX = localX;
+            dragState->lastLocalY = localY;
+            if (std::hypot(
+                    dragState->lastLocalX - dragState->startLocalX, dragState->lastLocalY - dragState->startLocalY
+                ) >= kDragStartThresholdPx * scale) {
+              dragState->moved = true;
+            }
+            if (!dragState->moved) {
+              return;
+            }
 
-                float dragAbsX = 0.0f;
-                float dragAbsY = 0.0f;
-                Node::absolutePosition(dragBtnPtr, dragAbsX, dragAbsY);
-                const float sceneX = dragAbsX + localX;
-                const float sceneY = dragAbsY + localY;
-                const auto targetLaneIndex = laneIndexAtScenePoint(*laneTargets, sceneX, sceneY);
-                if (!targetLaneIndex.has_value() || *targetLaneIndex >= laneTargets->size()) {
-                  dragState->targetLaneIndex = std::nullopt;
-                  dragState->targetInsertionIndex = std::nullopt;
-                  hideDropIndicators(*laneTargets);
-                  return;
-                }
+            float dragAbsX = 0.0f;
+            float dragAbsY = 0.0f;
+            Node::absolutePosition(dragBtnPtr, dragAbsX, dragAbsY);
+            const float sceneX = dragAbsX + localX;
+            const float sceneY = dragAbsY + localY;
+            const auto targetLaneIndex = laneIndexAtScenePoint(*laneTargets, sceneX, sceneY);
+            if (!targetLaneIndex.has_value() || *targetLaneIndex >= laneTargets->size()) {
+              dragState->targetLaneIndex = std::nullopt;
+              dragState->targetInsertionIndex = std::nullopt;
+              hideDropIndicators(*laneTargets);
+              return;
+            }
 
-                const auto& target = (*laneTargets)[*targetLaneIndex];
-                if (target.itemNodes == nullptr || target.lane == nullptr || target.indicator == nullptr) {
-                  dragState->targetLaneIndex = std::nullopt;
-                  dragState->targetInsertionIndex = std::nullopt;
-                  hideDropIndicators(*laneTargets);
-                  return;
-                }
+            const auto& target = (*laneTargets)[*targetLaneIndex];
+            if (target.itemNodes == nullptr || target.lane == nullptr || target.indicator == nullptr) {
+              dragState->targetLaneIndex = std::nullopt;
+              dragState->targetInsertionIndex = std::nullopt;
+              hideDropIndicators(*laneTargets);
+              return;
+            }
 
-                const std::size_t insertionIndex = insertionIndexForSceneY(sceneY, *target.itemNodes);
-                if (insertionWouldNotMove(laneTargetIndex, *targetLaneIndex, i, insertionIndex)) {
-                  dragState->targetLaneIndex = std::nullopt;
-                  dragState->targetInsertionIndex = std::nullopt;
-                  hideDropIndicators(*laneTargets);
-                  return;
-                }
+            const std::size_t insertionIndex = insertionIndexForSceneY(sceneY, *target.itemNodes);
+            if (insertionWouldNotMove(laneTargetIndex, *targetLaneIndex, i, insertionIndex)) {
+              dragState->targetLaneIndex = std::nullopt;
+              dragState->targetInsertionIndex = std::nullopt;
+              hideDropIndicators(*laneTargets);
+              return;
+            }
 
-                dragState->targetLaneIndex = *targetLaneIndex;
-                dragState->targetInsertionIndex = insertionIndex;
-                hideDropIndicators(*laneTargets);
-                updateDropIndicator(*target.indicator, *target.lane, *target.itemNodes, insertionIndex, scale);
-              });
+            dragState->targetLaneIndex = *targetLaneIndex;
+            dragState->targetInsertionIndex = insertionIndex;
+            hideDropIndicators(*laneTargets);
+            updateDropIndicator(*target.indicator, *target.lane, *target.itemNodes, insertionIndex, scale);
+          });
           actions->addChild(std::move(dragBtn));
         }
         if (editableWidget) {
-          auto editBtn = std::make_unique<Button>();
-          editBtn->setGlyph("settings");
-          editBtn->setVariant(ctx.editingWidgetName == widgetName ? ButtonVariant::Default : ButtonVariant::Ghost);
-          editBtn->setGlyphSize(Style::fontSizeCaption * ctx.scale);
-          editBtn->setMinWidth(Style::controlHeightSm * ctx.scale);
-          editBtn->setMinHeight(Style::controlHeightSm * ctx.scale);
-          editBtn->setPadding(Style::spaceXs * ctx.scale);
-          editBtn->setRadius(Style::scaledRadiusSm(ctx.scale));
-          editBtn->setOnClick([&editingWidgetName = ctx.editingWidgetName, widgetName,
-                               &pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,
-                               &renamingWidgetName = ctx.renamingWidgetName,
-                               &pendingDeleteWidgetSettingPath = ctx.pendingDeleteWidgetSettingPath,
-                               requestRebuild = ctx.requestRebuild]() {
-            editingWidgetName = editingWidgetName == widgetName ? std::string{} : widgetName;
-            pendingDeleteWidgetName.clear();
-            pendingDeleteWidgetSettingPath.clear();
-            renamingWidgetName.clear();
-            requestRebuild();
-          });
-          actions->addChild(std::move(editBtn));
+          actions->addChild(
+              ui::button({
+                  .glyph = "settings",
+                  .glyphSize = Style::fontSizeCaption * ctx.scale,
+                  .variant = ctx.editingWidgetName == widgetName ? ButtonVariant::Default : ButtonVariant::Ghost,
+                  .minWidth = Style::controlHeightSm * ctx.scale,
+                  .minHeight = Style::controlHeightSm * ctx.scale,
+                  .padding = Style::spaceXs * ctx.scale,
+                  .radius = Style::scaledRadiusSm(ctx.scale),
+                  .onClick = [&editingWidgetName = ctx.editingWidgetName, widgetName,
+                              &pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,
+                              &renamingWidgetName = ctx.renamingWidgetName,
+                              &pendingDeleteWidgetSettingPath = ctx.pendingDeleteWidgetSettingPath,
+                              requestRebuild = ctx.requestRebuild]() {
+                    editingWidgetName = editingWidgetName == widgetName ? std::string{} : widgetName;
+                    pendingDeleteWidgetName.clear();
+                    pendingDeleteWidgetSettingPath.clear();
+                    renamingWidgetName.clear();
+                    requestRebuild();
+                  },
+              })
+          );
         }
 
         if (!inherited) {
-          auto actionsSpacer = std::make_unique<Flex>();
-          actionsSpacer->setFlexGrow(1.0f);
-          actions->addChild(std::move(actionsSpacer));
+          actions->addChild(ui::spacer());
 
-          auto removeBtn = std::make_unique<Button>();
-          removeBtn->setGlyph("close");
-          removeBtn->setVariant(ButtonVariant::Ghost);
-          removeBtn->setGlyphSize(Style::fontSizeCaption * ctx.scale);
-          removeBtn->setMinWidth(Style::controlHeightSm * ctx.scale);
-          removeBtn->setMinHeight(Style::controlHeightSm * ctx.scale);
-          removeBtn->setPadding(Style::spaceXs * ctx.scale);
-          removeBtn->setRadius(Style::scaledRadiusSm(ctx.scale));
           auto items = laneItems;
           auto path = lanePath;
-          removeBtn->setOnClick([setOverride = ctx.setOverride, items, path, i]() mutable {
-            items.erase(items.begin() + static_cast<std::ptrdiff_t>(i));
-            setOverride(path, items);
-          });
-          actions->addChild(std::move(removeBtn));
+          actions->addChild(
+              ui::button({
+                  .glyph = "close",
+                  .glyphSize = Style::fontSizeCaption * ctx.scale,
+                  .variant = ButtonVariant::Ghost,
+                  .minWidth = Style::controlHeightSm * ctx.scale,
+                  .minHeight = Style::controlHeightSm * ctx.scale,
+                  .padding = Style::spaceXs * ctx.scale,
+                  .radius = Style::scaledRadiusSm(ctx.scale),
+                  .onClick = [setOverride = ctx.setOverride, items, path, i]() mutable {
+                    items.erase(items.begin() + static_cast<std::ptrdiff_t>(i));
+                    setOverride(path, items);
+                  },
+              })
+          );
         }
 
         item->addChild(std::move(actions));
@@ -1773,46 +1926,57 @@ namespace settings {
       }
 
       if (laneItems.empty() && !inherited) {
-        auto emptyState = std::make_unique<Flex>();
-        emptyState->setDirection(FlexDirection::Vertical);
-        emptyState->setAlign(FlexAlign::Center);
-        emptyState->setGap(2.0f * ctx.scale);
-        emptyState->setPadding(Style::spaceMd * ctx.scale, Style::spaceSm * ctx.scale);
-        emptyState->setRadius(Style::scaledRadiusSm(ctx.scale));
-        emptyState->setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.25f));
-        emptyState->setBorder(colorSpecFromRole(ColorRole::Outline, 0.18f), Style::borderWidth);
-        emptyState->addChild(makeLabel(i18n::tr("settings.entities.widget.lanes.empty"),
-                                       Style::fontSizeCaption * ctx.scale,
-                                       colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Bold));
-        emptyState->addChild(makeLabel(i18n::tr("settings.entities.widget.lanes.empty-hint"),
-                                       Style::fontSizeCaption * ctx.scale,
-                                       colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal));
-        lane->addChild(std::move(emptyState));
+        lane->addChild(
+            ui::column(
+                {
+                    .align = FlexAlign::Center,
+                    .gap = 2.0f * ctx.scale,
+                    .configure =
+                        [&ctx](Flex& flex) {
+                          flex.setPadding(Style::spaceMd * ctx.scale, Style::spaceSm * ctx.scale);
+                          flex.setRadius(Style::scaledRadiusSm(ctx.scale));
+                          flex.setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.25f));
+                          flex.setBorder(colorSpecFromRole(ColorRole::Outline, 0.18f), Style::borderWidth);
+                        },
+                },
+                makeLabel(
+                    i18n::tr("settings.entities.widget.lanes.empty"), Style::fontSizeCaption * ctx.scale,
+                    colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Bold
+                ),
+                makeLabel(
+                    i18n::tr("settings.entities.widget.lanes.empty-hint"), Style::fontSizeCaption * ctx.scale,
+                    colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal
+                )
+            )
+        );
       }
 
       if (!inherited) {
-        auto addBtn = std::make_unique<Button>();
-        addBtn->setText(i18n::tr("settings.entities.widget.add"));
-        addBtn->setGlyph("add");
-        addBtn->setVariant(ButtonVariant::Ghost);
-        addBtn->setGlyphSize(Style::fontSizeCaption * ctx.scale);
-        addBtn->setFontSize(Style::fontSizeCaption * ctx.scale);
-        addBtn->setMinHeight(Style::controlHeightSm * ctx.scale);
-        addBtn->setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-        addBtn->setRadius(Style::scaledRadiusSm(ctx.scale));
-        addBtn->setOnClick([&editingWidgetName = ctx.editingWidgetName, &renamingWidgetName = ctx.renamingWidgetName,
+        lane->addChild(
+            ui::button({
+                .text = i18n::tr("settings.entities.widget.add"),
+                .glyph = "add",
+                .fontSize = Style::fontSizeCaption * ctx.scale,
+                .glyphSize = Style::fontSizeCaption * ctx.scale,
+                .variant = ButtonVariant::Ghost,
+                .minHeight = Style::controlHeightSm * ctx.scale,
+                .paddingV = Style::spaceXs * ctx.scale,
+                .paddingH = Style::spaceSm * ctx.scale,
+                .radius = Style::scaledRadiusSm(ctx.scale),
+                .onClick = [&editingWidgetName = ctx.editingWidgetName, &renamingWidgetName = ctx.renamingWidgetName,
                             &pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,
                             &pendingDeleteWidgetSettingPath = ctx.pendingDeleteWidgetSettingPath,
                             openWidgetAddPopup = ctx.openWidgetAddPopup, lanePath]() {
-          editingWidgetName.clear();
-          renamingWidgetName.clear();
-          pendingDeleteWidgetName.clear();
-          pendingDeleteWidgetSettingPath.clear();
-          if (openWidgetAddPopup) {
-            openWidgetAddPopup(lanePath);
-          }
-        });
-        lane->addChild(std::move(addBtn));
+                  editingWidgetName.clear();
+                  renamingWidgetName.clear();
+                  pendingDeleteWidgetName.clear();
+                  pendingDeleteWidgetSettingPath.clear();
+                  if (openWidgetAddPopup) {
+                    openWidgetAddPopup(lanePath);
+                  }
+                },
+            })
+        );
       }
 
       lanes->addChild(std::move(lane));
