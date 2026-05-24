@@ -12,14 +12,7 @@
 #include "notification/notification_manager.h"
 #include "render/render_context.h"
 #include "render/scene/input_area.h"
-#include "ui/controls/box.h"
-#include "ui/controls/button.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/image.h"
-#include "ui/controls/input.h"
-#include "ui/controls/label.h"
-#include "ui/controls/progress_bar.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "util/string_utils.h"
@@ -298,11 +291,11 @@ namespace {
   }
 
   std::unique_ptr<Button> makeNotificationActionButton(std::string_view label, float scale) {
-    auto actionButton = std::make_unique<Button>();
-    actionButton->setVariant(ButtonVariant::Outline);
-    actionButton->setFontSize(Style::fontSizeCaption * scale);
-    actionButton->setText(label);
-    return actionButton;
+    return ui::button({
+        .text = std::string(label),
+        .fontSize = Style::fontSizeCaption * scale,
+        .variant = ButtonVariant::Outline,
+    });
   }
 
   std::vector<std::unique_ptr<Button>> collectNotificationActionButtons(const std::vector<std::string>& actions,
@@ -386,7 +379,7 @@ namespace {
     if (buttons.empty()) {
       return 0.0f;
     }
-    auto actionsRow = std::make_unique<Flex>();
+    auto actionsRow = ui::makeFlex(FlexDirection::Horizontal, {});
     return layoutNotificationActionsRow(rc, *actionsRow, buttons, scale);
   }
 
@@ -1924,32 +1917,36 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
   const float bgAlpha = m_config != nullptr ? m_config->config().notification.backgroundOpacity : 0.97f;
 
   // Background
-  auto bg = std::make_unique<Box>();
-  bg->setCardStyle();
-  bg->setRadius(Style::scaledRadiusXl(scale));
-  if (isCritical) {
-    // Keep critical toasts readable: surface background + urgent border.
-    bg->setFill(colorSpecFromRole(ColorRole::Surface, bgAlpha));
-    bg->setBorder(colorSpecFromRole(ColorRole::Error, 0.95f), Style::borderWidth * 1.4f);
-  } else {
-    bg->setFill(colorSpecFromRole(ColorRole::Surface, bgAlpha));
-    bg->setBorder(colorSpecFromRole(ColorRole::Outline, 0.8f), Style::borderWidth);
-  }
-  bg->setSize(cardW, cardHeight);
-  *outBg = cardRoot->addChild(std::move(bg));
+  *outBg = cardRoot->addChild(ui::box({
+      .width = cardW,
+      .height = cardHeight,
+      .configure =
+          [isCritical, scale, bgAlpha](Box& box) {
+            box.setCardStyle();
+            box.setRadius(Style::scaledRadiusXl(scale));
+            box.setFill(colorSpecFromRole(ColorRole::Surface, bgAlpha));
+            if (isCritical) {
+              // Keep critical toasts readable: surface background + urgent border.
+              box.setBorder(colorSpecFromRole(ColorRole::Error, 0.95f), Style::borderWidth * 1.4f);
+            } else {
+              box.setBorder(colorSpecFromRole(ColorRole::Outline, 0.8f), Style::borderWidth);
+            }
+          },
+  }));
 
   // Header row: app name (left) + close glyph (right), vertically centred via Flex
-  auto headerRow = std::make_unique<Flex>();
-  headerRow->setDirection(FlexDirection::Horizontal);
-  headerRow->setJustify(FlexJustify::SpaceBetween);
-  headerRow->setAlign(FlexAlign::Center);
-  headerRow->setSize(innerWidth, closeButtonSize(scale));
-  headerRow->setPosition(cardInnerPad(scale), cardInnerPad(scale));
+  auto headerRow = ui::row({
+      .align = FlexAlign::Center,
+      .justify = FlexJustify::SpaceBetween,
+      .width = innerWidth,
+      .height = closeButtonSize(scale),
+      .configure = [scale](Flex& row) { row.setPosition(cardInnerPad(scale), cardInnerPad(scale)); },
+  });
 
-  auto headerLeft = std::make_unique<Flex>();
-  headerLeft->setDirection(FlexDirection::Horizontal);
-  headerLeft->setAlign(FlexAlign::Center);
-  headerLeft->setGap(Style::spaceXs * scale);
+  auto headerLeft = ui::row({
+      .align = FlexAlign::Center,
+      .gap = Style::spaceXs * scale,
+  });
 
   auto iconSlot = std::make_unique<Node>();
   iconSlot->setSize(notificationIconSize(scale), notificationIconSize(scale));
@@ -1963,14 +1960,17 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
       const std::string_view glyphName(rawIcon.data() + kNoctaliaGlyphIconPrefix.size(),
                                        rawIcon.size() - kNoctaliaGlyphIconPrefix.size());
       if (!glyphName.empty()) {
-        auto glyphIcon = std::make_unique<Glyph>();
-        glyphIcon->setGlyph(glyphName);
-        glyphIcon->setGlyphSize(kNotificationIconGlyphSize * scale);
-        glyphIcon->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-        glyphIcon->measure(*m_renderContext);
-        glyphIcon->setPosition(std::round((notificationIconSize(scale) - glyphIcon->width()) * 0.5f),
-                               std::round((notificationIconSize(scale) - glyphIcon->height()) * 0.5f));
-        *outAppIcon = iconSlot->addChild(std::move(glyphIcon));
+        *outAppIcon = iconSlot->addChild(ui::glyph({
+            .glyph = std::string(glyphName),
+            .glyphSize = kNotificationIconGlyphSize * scale,
+            .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+            .configure =
+                [this, scale](Glyph& glyph) {
+                  glyph.measure(*m_renderContext);
+                  glyph.setPosition(std::round((notificationIconSize(scale) - glyph.width()) * 0.5f),
+                                    std::round((notificationIconSize(scale) - glyph.height()) * 0.5f));
+                },
+        }));
         iconAssigned = true;
       }
     }
@@ -1978,11 +1978,13 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
   if (!iconAssigned) {
     const std::string iconPath = resolveNotificationIconPath(entry);
     if (!iconPath.empty()) {
-      auto appIcon = std::make_unique<Image>();
-      appIcon->setSize(notificationIconSize(scale), notificationIconSize(scale));
-      appIcon->setPosition(0.0f, 0.0f);
-      appIcon->setRadius(notificationIconRadius(notificationIconSize(scale), scale));
-      appIcon->setFit(ImageFit::Cover);
+      auto appIcon = ui::image({
+          .fit = ImageFit::Cover,
+          .radius = notificationIconRadius(notificationIconSize(scale), scale),
+          .width = notificationIconSize(scale),
+          .height = notificationIconSize(scale),
+          .configure = [](Image& image) { image.setPosition(0.0f, 0.0f); },
+      });
       if (appIcon->setSourceFile(*m_renderContext, iconPath,
                                  static_cast<int>(std::round(notificationIconSize(scale))))) {
         *outAppIcon = iconSlot->addChild(std::move(appIcon));
@@ -1993,11 +1995,13 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
     } else if (entry.imageData.has_value()) {
       const auto& image = *entry.imageData;
       if (image.width > 0 && image.height > 0 && !image.data.empty()) {
-        auto appIcon = std::make_unique<Image>();
-        appIcon->setSize(notificationIconSize(scale), notificationIconSize(scale));
-        appIcon->setPosition(0.0f, 0.0f);
-        appIcon->setRadius(notificationIconRadius(notificationIconSize(scale), scale));
-        appIcon->setFit(ImageFit::Cover);
+        auto appIcon = ui::image({
+            .fit = ImageFit::Cover,
+            .radius = notificationIconRadius(notificationIconSize(scale), scale),
+            .width = notificationIconSize(scale),
+            .height = notificationIconSize(scale),
+            .configure = [](Image& control) { control.setPosition(0.0f, 0.0f); },
+        });
         const bool validImageMetadata = image.bitsPerSample == 8 && ((image.channels == 4 && image.hasAlpha) ||
                                                                      (image.channels == 3 && !image.hasAlpha));
         const PixmapFormat format = image.channels == 3 ? PixmapFormat::RGB : PixmapFormat::RGBA;
@@ -2021,48 +2025,53 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
   }
 
   if (!iconAssigned) {
-    auto fallback = std::make_unique<Glyph>();
-    fallback->setGlyph("bell");
-    fallback->setGlyphSize(kNotificationIconGlyphSize * scale);
-    fallback->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-    fallback->measure(*m_renderContext);
-    fallback->setPosition(std::round((notificationIconSize(scale) - fallback->width()) * 0.5f),
-                          std::round((notificationIconSize(scale) - fallback->height()) * 0.5f));
-    *outAppIcon = iconSlot->addChild(std::move(fallback));
+    *outAppIcon = iconSlot->addChild(ui::glyph({
+        .glyph = "bell",
+        .glyphSize = kNotificationIconGlyphSize * scale,
+        .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+        .configure =
+            [this, scale](Glyph& glyph) {
+              glyph.measure(*m_renderContext);
+              glyph.setPosition(std::round((notificationIconSize(scale) - glyph.width()) * 0.5f),
+                                std::round((notificationIconSize(scale) - glyph.height()) * 0.5f));
+            },
+    }));
   }
 
   foreground->addChild(std::move(iconSlot));
 
-  auto appName = std::make_unique<Label>();
-  appName->setText(entry.appName);
-  appName->setFontSize(metaFontSize(scale));
-  appName->setColor(colorSpecFromRole(isCritical ? ColorRole::Error : ColorRole::OnSurfaceVariant));
-  appName->setMaxWidth(innerWidth - closeButtonSize(scale) - Style::spaceXs * scale);
+  auto appName = ui::label({
+      .text = entry.appName,
+      .fontSize = metaFontSize(scale),
+      .color = colorSpecFromRole(isCritical ? ColorRole::Error : ColorRole::OnSurfaceVariant),
+      .maxWidth = innerWidth - closeButtonSize(scale) - Style::spaceXs * scale,
+  });
   appName->measure(*m_renderContext);
   *outAppName = appName.get();
   headerLeft->addChild(std::move(appName));
   headerLeft->layout(*m_renderContext);
   headerRow->addChild(std::move(headerLeft));
 
-  auto closeGlyph = std::make_unique<Glyph>();
-  closeGlyph->setGlyph("close");
-  closeGlyph->setGlyphSize(kCloseGlyphSize * scale);
-  closeGlyph->setColor(resolveColorSpec(isCritical ? colorSpecFromRole(ColorRole::Error, 0.75f)
-                                                   : colorSpecFromRole(ColorRole::OnSurfaceVariant, 0.6f)));
-  *outCloseGlyph = static_cast<Glyph*>(headerRow->addChild(std::move(closeGlyph)));
+  *outCloseGlyph = static_cast<Glyph*>(headerRow->addChild(ui::glyph({
+      .glyph = "close",
+      .glyphSize = kCloseGlyphSize * scale,
+      .color = fixedColorSpec(resolveColorSpec(isCritical ? colorSpecFromRole(ColorRole::Error, 0.75f)
+                                                          : colorSpecFromRole(ColorRole::OnSurfaceVariant, 0.6f))),
+  })));
   headerRow->layout(*m_renderContext);
 
   foreground->addChild(std::move(headerRow));
 
   // Summary (bold title) — Pango handles wrap + ellipsize.
-  auto summary = std::make_unique<Label>();
   const std::string displaySummary = StringUtils::trimLeadingBlankLines(entry.summary);
   const std::string displayBody = StringUtils::trimLeadingBlankLines(entry.body);
-  summary->setText(displaySummary);
-  summary->setFontSize(summaryFontSize(scale));
-  summary->setColor(colorSpecFromRole(ColorRole::OnSurface));
-  summary->setFontWeight(FontWeight::Bold);
-  summary->setMaxWidth(textMaxWidth);
+  auto summary = ui::label({
+      .text = displaySummary,
+      .fontSize = summaryFontSize(scale),
+      .color = colorSpecFromRole(ColorRole::OnSurface),
+      .maxWidth = textMaxWidth,
+      .fontWeight = FontWeight::Bold,
+  });
   std::unique_ptr<Flex> actionsRow;
   std::unique_ptr<Flex> inlineReplyRow;
   std::unique_ptr<Input> inlineReplyInput;
@@ -2133,101 +2142,102 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
       }
 
       if (!buttons.empty()) {
-        actionsRow = std::make_unique<Flex>();
+        actionsRow = ui::makeFlex(FlexDirection::Horizontal, {});
         actionsReservedHeight = layoutNotificationActionsRow(*m_renderContext, *actionsRow, buttons, scale);
       }
     }
 
     // Inline reply row (hidden until the user taps Reply).
     if (hasInlineReply) {
-      inlineReplyRow = std::make_unique<Flex>();
-      inlineReplyRow->setDirection(FlexDirection::Horizontal);
-      inlineReplyRow->setAlign(FlexAlign::Center);
-      inlineReplyRow->setGap(kInlineReplyGap * scale);
-      inlineReplyRow->setVisible(false);
-
-      inlineReplyInput = std::make_unique<Input>();
-      inlineReplyInput->setPlaceholder(inlineReplyPlaceholder(entry.actions));
-      inlineReplyInput->setFontSize(Style::fontSizeCaption * scale);
-      inlineReplyInput->setControlHeight(kInlineReplyInputHeight * scale);
-      inlineReplyInput->setHorizontalPadding(Style::spaceSm * scale);
-      inlineReplyInput->setFrameVisible(true);
-      inlineReplyInput->setFlexGrow(1.0f);
-
       const uint32_t replyNotificationId = entry.notificationId;
       const int replyTotalDuration = entry.displayDurationMs;
-      InputArea* const replyInputArea = inlineReplyInput->inputArea();
-      replyInputArea->setOnFocusGain([this, replyNotificationId]() {
-        if (auto* popup = findEntry(replyNotificationId); popup != nullptr) {
-          popup->replyInputFocused = true;
-          for (auto& inst : m_instances) {
-            if (auto* state = findCardState(*inst, replyNotificationId);
-                state != nullptr && state->progressBar != nullptr) {
-              popup->remainingProgress = std::clamp(state->progressBar->progress(), 0.0f, 1.0f);
-              break;
-            }
-          }
-        }
-        pauseCountdowns(replyNotificationId);
-        if (m_notifications != nullptr) {
-          m_notifications->pauseExpiry(replyNotificationId);
-        }
+      inlineReplyRow = ui::row({
+          .align = FlexAlign::Center,
+          .gap = kInlineReplyGap * scale,
+          .visible = false,
       });
-      replyInputArea->setOnFocusLoss([this, replyNotificationId, replyTotalDuration]() {
-        if (auto* popup = findEntry(replyNotificationId); popup != nullptr) {
-          for (auto& inst : m_instances) {
-            if (auto* state = findCardState(*inst, replyNotificationId);
-                state != nullptr && state->progressBar != nullptr) {
-              popup->remainingProgress = std::clamp(state->progressBar->progress(), 0.0f, 1.0f);
-              break;
-            }
-          }
-          popup->replyInputFocused = false;
-        }
-        if (replyTotalDuration < 0) {
-          return;
-        }
-        if (auto* popup = findEntry(replyNotificationId); popup != nullptr && popup->hovered) {
-          return;
-        }
-        const auto* popup = findEntry(replyNotificationId);
-        if (popup == nullptr) {
-          return;
-        }
-        const float remaining = std::clamp(popup->remainingProgress, 0.0f, 1.0f);
-        if (remaining <= 0.0f) {
-          if (m_notifications != nullptr) {
-            m_notifications->resumeExpiry(replyNotificationId, 0);
-          }
-          return;
-        }
-        const int32_t remainingMs =
-            std::max<int32_t>(1, static_cast<int32_t>(std::ceil(static_cast<float>(replyTotalDuration) * remaining)));
-        if (m_notifications != nullptr) {
-          m_notifications->resumeExpiry(replyNotificationId, remainingMs);
-        }
-        resumeCountdowns(replyNotificationId);
+
+      inlineReplyInput = ui::input({
+          .out = &inlineReplyInputPtr,
+          .placeholder = inlineReplyPlaceholder(entry.actions),
+          .fontSize = Style::fontSizeCaption * scale,
+          .controlHeight = kInlineReplyInputHeight * scale,
+          .horizontalPadding = Style::spaceSm * scale,
+          .frameVisible = true,
+          .flexGrow = 1.0f,
+          .onSubmit = [this, id = entry.notificationId](const std::string& text) { submitInlineReply(id, text); },
+          .configure =
+              [this, replyNotificationId, replyTotalDuration](Input& input) {
+                InputArea* const replyInputArea = input.inputArea();
+                replyInputArea->setOnFocusGain([this, replyNotificationId]() {
+                  if (auto* popup = findEntry(replyNotificationId); popup != nullptr) {
+                    popup->replyInputFocused = true;
+                    for (auto& inst : m_instances) {
+                      if (auto* state = findCardState(*inst, replyNotificationId);
+                          state != nullptr && state->progressBar != nullptr) {
+                        popup->remainingProgress = std::clamp(state->progressBar->progress(), 0.0f, 1.0f);
+                        break;
+                      }
+                    }
+                  }
+                  pauseCountdowns(replyNotificationId);
+                  if (m_notifications != nullptr) {
+                    m_notifications->pauseExpiry(replyNotificationId);
+                  }
+                });
+                replyInputArea->setOnFocusLoss([this, replyNotificationId, replyTotalDuration]() {
+                  if (auto* popup = findEntry(replyNotificationId); popup != nullptr) {
+                    for (auto& inst : m_instances) {
+                      if (auto* state = findCardState(*inst, replyNotificationId);
+                          state != nullptr && state->progressBar != nullptr) {
+                        popup->remainingProgress = std::clamp(state->progressBar->progress(), 0.0f, 1.0f);
+                        break;
+                      }
+                    }
+                    popup->replyInputFocused = false;
+                  }
+                  if (replyTotalDuration < 0) {
+                    return;
+                  }
+                  if (auto* popup = findEntry(replyNotificationId); popup != nullptr && popup->hovered) {
+                    return;
+                  }
+                  const auto* popup = findEntry(replyNotificationId);
+                  if (popup == nullptr) {
+                    return;
+                  }
+                  const float remaining = std::clamp(popup->remainingProgress, 0.0f, 1.0f);
+                  if (remaining <= 0.0f) {
+                    if (m_notifications != nullptr) {
+                      m_notifications->resumeExpiry(replyNotificationId, 0);
+                    }
+                    return;
+                  }
+                  const int32_t remainingMs = std::max<int32_t>(
+                      1, static_cast<int32_t>(std::ceil(static_cast<float>(replyTotalDuration) * remaining)));
+                  if (m_notifications != nullptr) {
+                    m_notifications->resumeExpiry(replyNotificationId, remainingMs);
+                  }
+                  resumeCountdowns(replyNotificationId);
+                });
+                // Pointer hover must not restyle the field; only real focus should show the active chrome.
+                replyInputArea->setOnEnter({});
+                replyInputArea->setOnLeave({});
+              },
       });
-      // Pointer hover must not restyle the field; only real focus should show the active chrome.
-      replyInputArea->setOnEnter({});
-      replyInputArea->setOnLeave({});
 
-      inlineReplySendButton = std::make_unique<Button>();
-      inlineReplySendButton->setGlyph("send");
-      inlineReplySendButton->setVariant(ButtonVariant::Default);
-      inlineReplySendButton->setGlyphSize(Style::fontSizeBody * scale);
-      inlineReplySendButton->setMinWidth(kInlineReplySendButtonSize * scale);
-      inlineReplySendButton->setMinHeight(kInlineReplySendButtonSize * scale);
-      inlineReplySendButton->setPadding(Style::spaceXs * scale);
-      inlineReplySendButton->setRadius(Style::scaledRadiusMd(scale));
-      inlineReplySendButton->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
+      inlineReplySendButton = ui::button({
+          .glyph = "send",
+          .glyphSize = Style::fontSizeBody * scale,
+          .variant = ButtonVariant::Default,
+          .minWidth = kInlineReplySendButtonSize * scale,
+          .minHeight = kInlineReplySendButtonSize * scale,
+          .padding = Style::spaceXs * scale,
+          .radius = Style::scaledRadiusMd(scale),
+          .onClick = [this, id = entry.notificationId]() { submitInlineReply(id, {}); },
+          .configure = [](Button& button) { button.setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER); },
+      });
 
-      inlineReplyInput->setOnSubmit(
-          [this, id = entry.notificationId](const std::string& text) { submitInlineReply(id, text); });
-
-      inlineReplySendButton->setOnClick([this, id = entry.notificationId]() { submitInlineReply(id, {}); });
-
-      inlineReplyInputPtr = inlineReplyInput.get();
       inlineReplyRow->setSize(textMaxWidth, 0.0f);
       inlineReplyRow->addChild(std::move(inlineReplyInput));
       inlineReplyRow->addChild(std::move(inlineReplySendButton));
@@ -2243,11 +2253,12 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
   *outSummary = summary.get();
   foreground->addChild(std::move(summary));
 
-  auto body = std::make_unique<Label>();
-  body->setText(displayBody);
-  body->setFontSize(bodyFontSize(scale));
-  body->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-  body->setMaxWidth(textMaxWidth);
+  auto body = ui::label({
+      .text = displayBody,
+      .fontSize = bodyFontSize(scale),
+      .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+      .maxWidth = textMaxWidth,
+  });
   const float bodyHeight = availableBodyHeight(summaryMeasuredH, actionsReservedHeight, cardHeight, scale);
   const int bodyLines = entry.toastBodyLines;
   body->setMaxLines(std::max(1, bodyLines));
@@ -2280,12 +2291,14 @@ InputArea* NotificationToast::buildCard(const PopupEntry& entry, Node** outCardC
   }
 
   // Progress bar (countdown)
-  auto progressBar = std::make_unique<ProgressBar>();
-  progressBar->setTrackColor(colorSpecFromRole(ColorRole::OnSurfaceVariant, 0.35f));
-  progressBar->setFillColor(colorSpecFromRole(isCritical ? ColorRole::Error : ColorRole::Primary));
-  progressBar->setSize(innerWidth, progressHeight(scale));
-  progressBar->setPosition(cardInnerPad(scale), progressY);
-  *outProgress = static_cast<ProgressBar*>(foreground->addChild(std::move(progressBar)));
+  *outProgress = static_cast<ProgressBar*>(foreground->addChild(ui::progressBar({
+      .fill = colorSpecFromRole(isCritical ? ColorRole::Error : ColorRole::Primary),
+      .track = colorSpecFromRole(ColorRole::OnSurfaceVariant, 0.35f),
+      .width = innerWidth,
+      .height = progressHeight(scale),
+      .configure = [scale,
+                    progressY](ProgressBar& progressBar) { progressBar.setPosition(cardInnerPad(scale), progressY); },
+  })));
 
   cardRoot->addChild(std::move(foreground));
   viewport->addChild(std::move(cardRoot));
