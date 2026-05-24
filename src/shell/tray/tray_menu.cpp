@@ -698,6 +698,15 @@ void TrayMenu::ensureSurface() {
     if (svc == nullptr || !svc->available()) {
       return;
     }
+
+    // When the menu is opened from an attached panel (e.g. the tray drawer),
+    // this popup is already enrolled into the panel's existing focus grab.
+    // Creating another grab here would clear the panel grab, dismissing the
+    // parent panel.
+    if (svc->popupGrabHost() != nullptr) {
+      return;
+    }
+
     m_focusGrab = svc->createGrab();
     if (m_focusGrab == nullptr) {
       return;
