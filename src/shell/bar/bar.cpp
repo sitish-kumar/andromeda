@@ -760,12 +760,27 @@ namespace {
       centerSectionOffset = (centerSlotMain - centerNaturalMain) * 0.5f;
     }
     const float centerSlotEnd = centerSlotStart + centerSlotMain;
-    const float startSlotMain = std::max(0.0f, centerSlotStart - contentMainStart);
-    const float endSlotMain = std::max(0.0f, contentMainEnd - centerSlotEnd);
+    float startSlotMain;
+    float endSlotMain;
+    if (!instance.centerWidgets.empty()) {
+      startSlotMain = std::max(0.0f, centerSlotStart - contentMainStart);
+      endSlotMain = std::max(0.0f, contentMainEnd - centerSlotEnd);
+      configureSlot(instance.startSlot, contentMainStart, startSlotMain);
+      configureSlot(instance.centerSlot, centerSlotStart, centerSlotMain);
+      configureSlot(instance.endSlot, centerSlotEnd, endSlotMain);
+    } else {
+      // Allow start/end sections to take the full width if center is empty
+      const float startNaturalMain = isVertical ? instance.startSection->height() : instance.startSection->width();
+      const float endNaturalMain = isVertical ? instance.endSection->height() : instance.endSection->width();
 
-    configureSlot(instance.startSlot, contentMainStart, startSlotMain);
-    configureSlot(instance.centerSlot, centerSlotStart, centerSlotMain);
-    configureSlot(instance.endSlot, centerSlotEnd, endSlotMain);
+      // Prioritize end section, because control center is likely to be there, and we don't
+      // want it to be clipped by a super long start section, so the user loses access to settings.
+      endSlotMain = std::min(endNaturalMain, contentMainSpan);
+      startSlotMain = std::min(startNaturalMain, contentMainSpan - endSlotMain);
+      configureSlot(instance.startSlot, contentMainStart, startSlotMain);
+      configureSlot(instance.centerSlot, contentMainStart + startSlotMain, centerSlotMain);
+      configureSlot(instance.endSlot, contentMainEnd - endSlotMain, endSlotMain);
+    }
 
     if (isVertical) {
       instance.startSection->setPosition((slotCross - instance.startSection->width()) * 0.5f, 0.0f);
