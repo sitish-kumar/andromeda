@@ -378,8 +378,8 @@ std::unordered_map<std::uintptr_t, WorkspaceWindow> SwayWorkspaceBackend::assign
       }
 
       for (const auto& candidateAppId : window.appIds) {
-        const std::string lookupKey =
-            assignmentLookupKey(workspaceKey, StringUtils::toLower(candidateAppId), window.title);
+        const std::string lookupKey
+            = assignmentLookupKey(workspaceKey, StringUtils::toLower(candidateAppId), window.title);
         auto it = windowsByLookupKey.find(lookupKey);
         if (it == windowsByLookupKey.end()) {
           continue;

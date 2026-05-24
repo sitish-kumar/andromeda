@@ -473,8 +473,8 @@ void BluetoothService::refresh() {
         m_impl->adapter.reset();
         m_impl->seedFromManagedObjects(objects);
         const BluetoothStateChangeOrigin origin = previous.powered != m_state.powered
-                                                      ? consumePoweredChangeOrigin(m_state.powered)
-                                                      : BluetoothStateChangeOrigin::External;
+            ? consumePoweredChangeOrigin(m_state.powered)
+            : BluetoothStateChangeOrigin::External;
         m_hasStateSnapshot = true;
         emitState(origin);
         emitDevices();
@@ -709,8 +709,8 @@ void BluetoothService::forget(const std::string& devicePath) {
 }
 
 BluetoothDeviceInfo* BluetoothService::findDevice(const std::string& path) {
-  auto it =
-      std::find_if(m_devices.begin(), m_devices.end(), [&](const BluetoothDeviceInfo& d) { return d.path == path; });
+  auto it
+      = std::find_if(m_devices.begin(), m_devices.end(), [&](const BluetoothDeviceInfo& d) { return d.path == path; });
   return it == m_devices.end() ? nullptr : &*it;
 }
 

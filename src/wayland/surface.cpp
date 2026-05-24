@@ -60,8 +60,10 @@ namespace {
   bool idleProfileEnabled() {
     static const bool enabled = [] {
       const char* value = std::getenv("NOCTALIA_IDLE_PROFILE");
-      return value != nullptr && value[0] != '\0' && std::string_view(value) != "0" &&
-             std::string_view(value) != "false";
+      return value != nullptr
+          && value[0] != '\0'
+          && std::string_view(value) != "0"
+          && std::string_view(value) != "false";
     }();
     return enabled;
   }
@@ -379,8 +381,9 @@ void Surface::resizeRenderTarget() {
   const auto bufferHeight = bufferHeightFor(m_height);
 
   m_renderTarget.setLogicalSize(m_width, m_height);
-  if (m_renderTarget.bufferWidth() == bufferWidth && m_renderTarget.bufferHeight() == bufferHeight &&
-      m_renderTarget.isReady()) {
+  if (m_renderTarget.bufferWidth() == bufferWidth
+      && m_renderTarget.bufferHeight() == bufferHeight
+      && m_renderTarget.isReady()) {
     return;
   }
   m_renderTarget.resize(bufferWidth, bufferHeight);
@@ -853,8 +856,8 @@ void Surface::preparePendingFrame() {
   m_updateRequested = false;
   m_layoutRequested = false;
   ScopedBoolFlag preparing{m_inPrepareFrame};
-  const float callbackMs =
-      elapsedMs([this, needsUpdate, needsLayout] { m_prepareFrameCallback(needsUpdate, needsLayout); });
+  const float callbackMs
+      = elapsedMs([this, needsUpdate, needsLayout] { m_prepareFrameCallback(needsUpdate, needsLayout); });
   recordSurfaceProfileEvent(*this, SurfaceProfileEvent::PrepareCallback, callbackMs);
   logSlowSurfaceOperation(
       callbackMs, "surface prepareFrame callback took {:.1f}ms ({}, {}x{} logical)", callbackMs,
@@ -863,8 +866,12 @@ void Surface::preparePendingFrame() {
 }
 
 void Surface::kickFrameLoop() {
-  if (!m_running || !m_configured || m_frameCallback != nullptr || m_inFrameHandler || m_inPrepareFrame ||
-      m_frameWorkQueued) {
+  if (!m_running
+      || !m_configured
+      || m_frameCallback != nullptr
+      || m_inFrameHandler
+      || m_inPrepareFrame
+      || m_frameWorkQueued) {
     return;
   }
 

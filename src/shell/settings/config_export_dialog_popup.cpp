@@ -37,8 +37,8 @@ namespace settings {
           .height = std::max<std::uint32_t>(1, height),
           .anchor = XDG_POSITIONER_ANCHOR_NONE,
           .gravity = XDG_POSITIONER_GRAVITY_NONE,
-          .constraintAdjustment =
-              XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y,
+          .constraintAdjustment
+          = XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y,
           .offsetX = 0,
           .offsetY = 0,
           .serial = serial,
@@ -275,13 +275,13 @@ namespace settings {
 
     LayoutSize pref = m_root->measure(renderer, LayoutConstraints::available(cw, 1.0e6f));
     const float panelH = std::ceil(pref.height + pad * 2.0f);
-    const ShellConfig::ShadowConfig shadow =
-        config() != nullptr ? config()->config().shell.shadow : ShellConfig::ShadowConfig{};
+    const ShellConfig::ShadowConfig shadow
+        = config() != nullptr ? config()->config().shell.shadow : ShellConfig::ShadowConfig{};
     const auto geo = popup_chrome::computeGeometry(panelW, panelH, shadow);
-    const float maxOuterHeight =
-        m_parentHeight > 0 ? std::max(1.0f, static_cast<float>(m_parentHeight) - (kParentMargin * m_scale)) : 1.0e6f;
-    const std::uint32_t nextHeight =
-        static_cast<std::uint32_t>(std::max(1.0f, std::min(static_cast<float>(geo.surfaceHeight), maxOuterHeight)));
+    const float maxOuterHeight
+        = m_parentHeight > 0 ? std::max(1.0f, static_cast<float>(m_parentHeight) - (kParentMargin * m_scale)) : 1.0e6f;
+    const std::uint32_t nextHeight
+        = static_cast<std::uint32_t>(std::max(1.0f, std::min(static_cast<float>(geo.surfaceHeight), maxOuterHeight)));
     const std::uint32_t nextWidth = geo.surfaceWidth;
 
     if (m_surface->height() != nextHeight || m_surface->width() != nextWidth) {

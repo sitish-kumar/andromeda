@@ -1030,8 +1030,11 @@ void ClipboardService::addToHistory(ClipboardEntry entry) {
     // History is disabled: retain only the live selection in memory (so paste
     // still works) and never persist. Ignore the self-copy echo of unchanged
     // content to avoid needless churn.
-    if (!m_history.empty() && !entry.data.empty() && m_history.front().byteSize == entry.byteSize &&
-        m_history.front().data == entry.data && m_history.front().dataMimeType == entry.dataMimeType) {
+    if (!m_history.empty()
+        && !entry.data.empty()
+        && m_history.front().byteSize == entry.byteSize
+        && m_history.front().data == entry.data
+        && m_history.front().dataMimeType == entry.dataMimeType) {
       return;
     }
     m_history.clear();
@@ -1189,8 +1192,8 @@ bool ClipboardService::persistHistory() {
         }
       }
 
-      const auto capturedAtMs =
-          std::chrono::duration_cast<std::chrono::milliseconds>(entry.capturedAt.time_since_epoch()).count();
+      const auto capturedAtMs
+          = std::chrono::duration_cast<std::chrono::milliseconds>(entry.capturedAt.time_since_epoch()).count();
       entries.push_back({
           {"id", entry.storageId},
           {"payload_path", entry.payloadPath},
@@ -1249,8 +1252,9 @@ void ClipboardService::trimHistoryToBudget() {
     }
   }
 
-  while ((unpinnedCount > m_maxHistoryEntries || unpinnedBytes > kMaxHistoryBytes) && !m_history.empty() &&
-         !m_history.back().pinned) {
+  while ((unpinnedCount > m_maxHistoryEntries || unpinnedBytes > kMaxHistoryBytes)
+         && !m_history.empty()
+         && !m_history.back().pinned) {
     const std::size_t removedBytes = m_history.back().byteSize;
     unpinnedBytes -= removedBytes;
     --unpinnedCount;
@@ -1325,9 +1329,9 @@ std::string ClipboardService::payloadPathForId(std::string_view storageId) {
 }
 
 std::string ClipboardService::generateStorageId() {
-  const auto now =
-      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
-          .count();
+  const auto now
+      = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
+            .count();
   return std::to_string(now) + "-" + std::to_string(++gStorageCounter);
 }
 

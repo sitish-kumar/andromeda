@@ -442,8 +442,8 @@ std::unique_ptr<Flex> NetworkTab::create() {
       ui::button({
           .text = i18n::tr("control-center.network.connect"),
           .variant = ButtonVariant::Default,
-          .onClick =
-              [this]() { submitPasswordPrompt(m_passwordInput != nullptr ? m_passwordInput->value() : std::string{}); },
+          .onClick
+          = [this]() { submitPasswordPrompt(m_passwordInput != nullptr ? m_passwordInput->value() : std::string{}); },
       }),
       ui::button({
           .text = i18n::tr("common.actions.cancel"),

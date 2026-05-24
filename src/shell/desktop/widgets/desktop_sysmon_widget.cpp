@@ -423,8 +423,8 @@ void DesktopSysmonWidget::updateGraph(Renderer& renderer) {
   if (m_stat2.has_value()) {
     std::vector<float> data2(n + 1U);
     for (std::size_t i = 0; i < n; ++i) {
-      data2[i] =
-          static_cast<float>(std::clamp(normalizedFromStats(*m_stat2, hist[i], m_tempMin2, m_tempMax2), 0.0, 1.0));
+      data2[i]
+          = static_cast<float>(std::clamp(normalizedFromStats(*m_stat2, hist[i], m_tempMin2, m_tempMax2), 0.0, 1.0));
     }
     const float last2 = data2[prev];
     const float previous2 = data2[prev2];

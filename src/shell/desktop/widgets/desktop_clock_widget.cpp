@@ -12,8 +12,9 @@
 namespace {
 
   bool formatShowsSeconds(const std::string& format) {
-    return format.find("%S") != std::string::npos || format.find("%T") != std::string::npos ||
-           format.find("%X") != std::string::npos;
+    return format.find("%S") != std::string::npos
+        || format.find("%T") != std::string::npos
+        || format.find("%X") != std::string::npos;
   }
 
   float clockFontSize(float contentScale) { return Style::fontSizeBody * 4.0f * contentScale; }

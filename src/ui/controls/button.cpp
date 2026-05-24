@@ -30,8 +30,8 @@ namespace {
               colorSpecFromRole(ColorRole::SurfaceVariant), colorSpecFromRole(ColorRole::Outline),
               colorSpecFromRole(ColorRole::OnSurface)
           ),
-          .hover =
-              makeState(colorSpecFromRole(ColorRole::Hover), clearColorSpec(), colorSpecFromRole(ColorRole::OnHover)),
+          .hover
+          = makeState(colorSpecFromRole(ColorRole::Hover), clearColorSpec(), colorSpecFromRole(ColorRole::OnHover)),
           .pressed = makeState(
               colorSpecFromRole(ColorRole::Primary), colorSpecFromRole(ColorRole::Primary),
               colorSpecFromRole(ColorRole::OnPrimary)
@@ -45,14 +45,12 @@ namespace {
     case ButtonVariant::Primary:
       return Button::ButtonPalette{
           .borderWidth = 0.0f,
-          .normal = makeState(
-              colorSpecFromRole(ColorRole::Primary), clearColorSpec(), colorSpecFromRole(ColorRole::OnPrimary)
-          ),
-          .hover =
-              makeState(colorSpecFromRole(ColorRole::Hover), clearColorSpec(), colorSpecFromRole(ColorRole::OnHover)),
-          .pressed = makeState(
-              colorSpecFromRole(ColorRole::Primary), clearColorSpec(), colorSpecFromRole(ColorRole::OnPrimary)
-          ),
+          .normal
+          = makeState(colorSpecFromRole(ColorRole::Primary), clearColorSpec(), colorSpecFromRole(ColorRole::OnPrimary)),
+          .hover
+          = makeState(colorSpecFromRole(ColorRole::Hover), clearColorSpec(), colorSpecFromRole(ColorRole::OnHover)),
+          .pressed
+          = makeState(colorSpecFromRole(ColorRole::Primary), clearColorSpec(), colorSpecFromRole(ColorRole::OnPrimary)),
           .disabled = makeState(
               colorSpecFromRole(ColorRole::Primary, kDisabledAlpha), clearColorSpec(),
               colorSpecFromRole(ColorRole::OnPrimary)
@@ -65,8 +63,8 @@ namespace {
               colorSpecFromRole(ColorRole::Secondary), colorSpecFromRole(ColorRole::Outline),
               colorSpecFromRole(ColorRole::OnSecondary)
           ),
-          .hover =
-              makeState(colorSpecFromRole(ColorRole::Hover), clearColorSpec(), colorSpecFromRole(ColorRole::OnHover)),
+          .hover
+          = makeState(colorSpecFromRole(ColorRole::Hover), clearColorSpec(), colorSpecFromRole(ColorRole::OnHover)),
           .pressed = makeState(
               colorSpecFromRole(ColorRole::Primary), colorSpecFromRole(ColorRole::Primary),
               colorSpecFromRole(ColorRole::OnPrimary)
@@ -84,8 +82,8 @@ namespace {
               colorSpecFromRole(ColorRole::Error), colorSpecFromRole(ColorRole::Outline),
               colorSpecFromRole(ColorRole::OnError)
           ),
-          .hover =
-              makeState(colorSpecFromRole(ColorRole::Hover), clearColorSpec(), colorSpecFromRole(ColorRole::OnHover)),
+          .hover
+          = makeState(colorSpecFromRole(ColorRole::Hover), clearColorSpec(), colorSpecFromRole(ColorRole::OnHover)),
           .pressed = makeState(
               colorSpecFromRole(ColorRole::Error), colorSpecFromRole(ColorRole::Error),
               colorSpecFromRole(ColorRole::OnError)
@@ -102,8 +100,8 @@ namespace {
               colorSpecFromRole(ColorRole::Surface), colorSpecFromRole(ColorRole::Outline),
               colorSpecFromRole(ColorRole::OnSurface)
           ),
-          .hover =
-              makeState(colorSpecFromRole(ColorRole::Hover), clearColorSpec(), colorSpecFromRole(ColorRole::OnHover)),
+          .hover
+          = makeState(colorSpecFromRole(ColorRole::Hover), clearColorSpec(), colorSpecFromRole(ColorRole::OnHover)),
 
           .pressed = makeState(
               colorSpecFromRole(ColorRole::Primary), colorSpecFromRole(ColorRole::Primary),
@@ -119,20 +117,20 @@ namespace {
       return Button::ButtonPalette{
           .borderWidth = 0.0f,
           .normal = makeState(clearColorSpec(), clearColorSpec(), colorSpecFromRole(ColorRole::OnSurface)),
-          .hover =
-              makeState(colorSpecFromRole(ColorRole::Hover), clearColorSpec(), colorSpecFromRole(ColorRole::OnHover)),
+          .hover
+          = makeState(colorSpecFromRole(ColorRole::Hover), clearColorSpec(), colorSpecFromRole(ColorRole::OnHover)),
           .pressed = makeState(
               colorSpecFromRole(ColorRole::SurfaceVariant), clearColorSpec(), colorSpecFromRole(ColorRole::OnSurface)
           ),
-          .disabled =
-              makeState(clearColorSpec(), clearColorSpec(), colorSpecFromRole(ColorRole::OnSurface, kDisabledAlpha)),
+          .disabled
+          = makeState(clearColorSpec(), clearColorSpec(), colorSpecFromRole(ColorRole::OnSurface, kDisabledAlpha)),
       };
     case ButtonVariant::Tab:
       return Button::ButtonPalette{
           .borderWidth = 0.0f,
           .normal = makeState(clearColorSpec(), clearColorSpec(), colorSpecFromRole(ColorRole::OnSurface)),
-          .hover =
-              makeState(colorSpecFromRole(ColorRole::Hover), clearColorSpec(), colorSpecFromRole(ColorRole::OnHover)),
+          .hover
+          = makeState(colorSpecFromRole(ColorRole::Hover), clearColorSpec(), colorSpecFromRole(ColorRole::OnHover)),
           .pressed = makeState(
               colorSpecFromRole(ColorRole::SurfaceVariant), clearColorSpec(), colorSpecFromRole(ColorRole::OnSurface)
           ),
@@ -141,15 +139,12 @@ namespace {
     case ButtonVariant::TabActive:
       return Button::ButtonPalette{
           .borderWidth = 0.0f,
-          .normal = makeState(
-              colorSpecFromRole(ColorRole::Primary), clearColorSpec(), colorSpecFromRole(ColorRole::OnPrimary)
-          ),
-          .hover = makeState(
-              colorSpecFromRole(ColorRole::Primary), clearColorSpec(), colorSpecFromRole(ColorRole::OnPrimary)
-          ),
-          .pressed = makeState(
-              colorSpecFromRole(ColorRole::Primary), clearColorSpec(), colorSpecFromRole(ColorRole::OnPrimary)
-          ),
+          .normal
+          = makeState(colorSpecFromRole(ColorRole::Primary), clearColorSpec(), colorSpecFromRole(ColorRole::OnPrimary)),
+          .hover
+          = makeState(colorSpecFromRole(ColorRole::Primary), clearColorSpec(), colorSpecFromRole(ColorRole::OnPrimary)),
+          .pressed
+          = makeState(colorSpecFromRole(ColorRole::Primary), clearColorSpec(), colorSpecFromRole(ColorRole::OnPrimary)),
           .disabled = makeState(
               colorSpecFromRole(ColorRole::Primary, kDisabledAlpha), clearColorSpec(),
               colorSpecFromRole(ColorRole::OnPrimary)
@@ -411,9 +406,14 @@ void Button::applyVariant() {
 void Button::refreshInputAreaEnabled() {
   if (m_inputArea != nullptr) {
     m_inputArea->setEnabled(
-        m_enabled && (static_cast<bool>(m_onClick) || static_cast<bool>(m_onMotion) ||
-                      static_cast<bool>(m_onPointerMotion) || static_cast<bool>(m_onPress) ||
-                      static_cast<bool>(m_onEnter) || static_cast<bool>(m_onLeave) || static_cast<bool>(m_onRightClick))
+        m_enabled
+        && (static_cast<bool>(m_onClick)
+            || static_cast<bool>(m_onMotion)
+            || static_cast<bool>(m_onPointerMotion)
+            || static_cast<bool>(m_onPress)
+            || static_cast<bool>(m_onEnter)
+            || static_cast<bool>(m_onLeave)
+            || static_cast<bool>(m_onRightClick))
     );
   }
 }

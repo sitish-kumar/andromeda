@@ -60,8 +60,17 @@ namespace {
     for (std::size_t i = 0; i < exec.size(); ++i) {
       if (exec[i] == '%' && i + 1 < exec.size()) {
         char next = exec[i + 1];
-        if (next == 'f' || next == 'F' || next == 'u' || next == 'U' || next == 'd' || next == 'D' || next == 'n' ||
-            next == 'N' || next == 'i' || next == 'c' || next == 'k') {
+        if (next == 'f'
+            || next == 'F'
+            || next == 'u'
+            || next == 'U'
+            || next == 'd'
+            || next == 'D'
+            || next == 'n'
+            || next == 'N'
+            || next == 'i'
+            || next == 'c'
+            || next == 'k') {
           ++i; // Skip the field code
           // Also skip trailing space
           if (i + 1 < exec.size() && exec[i + 1] == ' ') {
@@ -169,10 +178,9 @@ namespace {
     }
 
     if (terminal.empty()) {
-      static constexpr std::array<std::string_view, 9> kTerminalCandidates = {
-          "x-terminal-emulator", "ghostty", "kitty", "alacritty", "wezterm", "foot", "konsole",
-          "gnome-terminal",      "xterm"
-      };
+      static constexpr std::array<std::string_view, 9> kTerminalCandidates
+          = {"x-terminal-emulator", "ghostty", "kitty", "alacritty", "wezterm", "foot", "konsole",
+             "gnome-terminal",      "xterm"};
       for (const auto candidate : kTerminalCandidates) {
         if (isExecutableOnPath(candidate)) {
           terminal.emplace_back(candidate);

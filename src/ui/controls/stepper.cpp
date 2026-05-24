@@ -344,8 +344,9 @@ void Stepper::commitValueField() {
     syncValueField();
     return;
   }
-  while (!m_valueSuffix.empty() && t.size() >= m_valueSuffix.size() &&
-         t.compare(t.size() - m_valueSuffix.size(), m_valueSuffix.size(), m_valueSuffix) == 0) {
+  while (!m_valueSuffix.empty()
+         && t.size() >= m_valueSuffix.size()
+         && t.compare(t.size() - m_valueSuffix.size(), m_valueSuffix.size(), m_valueSuffix) == 0) {
     t.resize(t.size() - m_valueSuffix.size());
     t = trimAscii(t);
   }

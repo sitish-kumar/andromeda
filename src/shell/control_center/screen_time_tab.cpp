@@ -595,9 +595,9 @@ void ScreenTimeTab::syncContent(Renderer& renderer) {
     if (bucketChartTotal.count() <= 0 && bucket < snapshot.buckets.size()) {
       bucketChartTotal = snapshot.buckets[bucket];
     }
-    const float columnHeight = peakChartBucketSeconds > 0 ? chartHeight * static_cast<float>(bucketChartTotal.count()) /
-                                                                static_cast<float>(peakChartBucketSeconds)
-                                                          : 0.0f;
+    const float columnHeight = peakChartBucketSeconds > 0
+        ? chartHeight * static_cast<float>(bucketChartTotal.count()) / static_cast<float>(peakChartBucketSeconds)
+        : 0.0f;
 
     for (std::size_t seriesIdx = 0; seriesIdx < kMaxChartSeries; ++seriesIdx) {
       Box* segment = columnWidgets.segments[seriesIdx];
@@ -627,8 +627,8 @@ void ScreenTimeTab::syncContent(Renderer& renderer) {
         continue;
       }
 
-      const float segmentHeight =
-          columnHeight * static_cast<float>(seriesSeconds.count()) / static_cast<float>(bucketChartTotal.count());
+      const float segmentHeight
+          = columnHeight * static_cast<float>(seriesSeconds.count()) / static_cast<float>(bucketChartTotal.count());
       segment->setFill(series.chartColor);
       segment->setVisible(true);
       columnWidgets.segmentHeights[seriesIdx] = std::max(2.0f, segmentHeight);
@@ -681,8 +681,8 @@ void ScreenTimeTab::syncContent(Renderer& renderer) {
     }
     if (widgets.barFill != nullptr) {
       widgets.barFill->setFill(app.chartColor);
-      widgets.barFillRatio =
-          topTotal.count() > 0 ? static_cast<float>(app.total.count()) / static_cast<float>(topTotal.count()) : 0.0f;
+      widgets.barFillRatio
+          = topTotal.count() > 0 ? static_cast<float>(app.total.count()) / static_cast<float>(topTotal.count()) : 0.0f;
     }
 
     updateIconForRow(renderer, widgets, app.appKey, scale);
@@ -724,10 +724,9 @@ void ScreenTimeTab::layoutChart(Renderer& renderer) {
   if (rowWidth <= 0.0f && m_usageCard != nullptr) {
     rowWidth = m_usageCard->width();
   }
-  auto columnWidth =
-      activeBuckets > 0 && rowWidth > 0.0f
-          ? (rowWidth - barGap * static_cast<float>(activeBuckets - 1)) / static_cast<float>(activeBuckets)
-          : 0.0f;
+  auto columnWidth = activeBuckets > 0 && rowWidth > 0.0f
+      ? (rowWidth - barGap * static_cast<float>(activeBuckets - 1)) / static_cast<float>(activeBuckets)
+      : 0.0f;
 
   if (columnWidth <= 0.0f && activeBuckets > 0 && m_usageCard != nullptr) {
     m_usageCard->layout(renderer);
@@ -736,8 +735,8 @@ void ScreenTimeTab::layoutChart(Renderer& renderer) {
       rowWidth = m_usageCard->width();
     }
     columnWidth = activeBuckets > 0 && rowWidth > 0.0f
-                      ? (rowWidth - barGap * static_cast<float>(activeBuckets - 1)) / static_cast<float>(activeBuckets)
-                      : 0.0f;
+        ? (rowWidth - barGap * static_cast<float>(activeBuckets - 1)) / static_cast<float>(activeBuckets)
+        : 0.0f;
   }
 
   if (columnWidth > 0.0f) {
@@ -761,8 +760,8 @@ void ScreenTimeTab::layoutChart(Renderer& renderer) {
       continue;
     }
     columnWidgets.plotColumn->layout(renderer);
-    const float resolvedColumnWidth =
-        columnWidth > 0.0f ? columnWidth : std::max(1.0f, columnWidgets.plotColumn->width());
+    const float resolvedColumnWidth
+        = columnWidth > 0.0f ? columnWidth : std::max(1.0f, columnWidgets.plotColumn->width());
     const float plotHeight = std::max(chartHeight, columnWidgets.plotColumn->height());
 
     if (columnWidgets.track != nullptr) {
@@ -841,8 +840,8 @@ void ScreenTimeTab::updateIconForRow(
   }
   widgets.iconPath = iconPath;
   const int targetPx = static_cast<int>(std::round(kAppIconSize * scale));
-  const bool hasIcon =
-      !iconPath.empty() && widgets.icon != nullptr && widgets.icon->setSourceFile(renderer, iconPath, targetPx, true);
+  const bool hasIcon
+      = !iconPath.empty() && widgets.icon != nullptr && widgets.icon->setSourceFile(renderer, iconPath, targetPx, true);
   if (widgets.icon != nullptr) {
     widgets.icon->setVisible(hasIcon);
   }
@@ -866,10 +865,9 @@ std::string ScreenTimeTab::resolveIconPath(const std::string& appKey) const {
   }
 
   const int targetPx = static_cast<int>(std::round(kAppIconSize * contentScale()));
-  const auto lookupOptions =
-      baseKey.starts_with("steam_app_")
-          ? app_identity::DesktopEntryLookupOptions{.includeHidden = true, .includeNoDisplay = true}
-          : app_identity::DesktopEntryLookupOptions{};
+  const auto lookupOptions = baseKey.starts_with("steam_app_")
+      ? app_identity::DesktopEntryLookupOptions{.includeHidden = true, .includeNoDisplay = true}
+      : app_identity::DesktopEntryLookupOptions{};
   std::string iconName;
   if (const auto entry = app_identity::findDesktopEntry(baseKey, desktopEntries(), lookupOptions);
       entry.has_value() && !entry->icon.empty()) {

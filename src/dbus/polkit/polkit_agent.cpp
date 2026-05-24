@@ -222,8 +222,8 @@ static void noctalia_polkit_listener_initiate_authentication(
   }
 
   if (cancellable != nullptr) {
-    request->cancelHandlerId =
-        g_cancellable_connect(cancellable, G_CALLBACK(noctalia_polkit_request_cancelled), request.get(), nullptr);
+    request->cancelHandlerId
+        = g_cancellable_connect(cancellable, G_CALLBACK(noctalia_polkit_request_cancelled), request.get(), nullptr);
   }
 
   if (self->initiate == nullptr || self->owner == nullptr) {
@@ -703,12 +703,12 @@ struct PolkitAgent::Impl {
 
     for (std::size_t i = 0; i < glibPollFds.size(); ++i) {
       const std::size_t pollIndex = startIdx + i;
-      glibPollFds[i].revents =
-          pollIndex < fds.size() ? static_cast<gushort>(fds[pollIndex].revents) : static_cast<gushort>(0);
+      glibPollFds[i].revents
+          = pollIndex < fds.size() ? static_cast<gushort>(fds[pollIndex].revents) : static_cast<gushort>(0);
     }
 
-    const gboolean ready =
-        g_main_context_check(context, glibMaxPriority, glibPollFds.data(), static_cast<gint>(glibPollFds.size()));
+    const gboolean ready
+        = g_main_context_check(context, glibMaxPriority, glibPollFds.data(), static_cast<gint>(glibPollFds.size()));
     g_main_context_release(context);
 
     if (ready) {

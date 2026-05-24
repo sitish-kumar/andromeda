@@ -133,8 +133,8 @@ namespace {
   }
 
   std::string upowerDeviceLabel(const UPowerDeviceInfo& device) {
-    const std::string nativeName =
-        !device.nativePath.empty() ? StringUtils::pathTail(device.nativePath) : StringUtils::pathTail(device.path);
+    const std::string nativeName
+        = !device.nativePath.empty() ? StringUtils::pathTail(device.nativePath) : StringUtils::pathTail(device.path);
 
     std::string label;
     if (!device.vendor.empty() && !device.model.empty()) {
@@ -196,14 +196,14 @@ namespace {
     while (lineStart <= result.out.size()) {
       const std::size_t lineEnd = result.out.find('\n', lineStart);
       const std::string_view line = lineEnd == std::string::npos
-                                        ? std::string_view(result.out).substr(lineStart)
-                                        : std::string_view(result.out).substr(lineStart, lineEnd - lineStart);
+          ? std::string_view(result.out).substr(lineStart)
+          : std::string_view(result.out).substr(lineStart, lineEnd - lineStart);
 
       std::size_t tokenStart = 0;
       while (tokenStart <= line.size()) {
         const std::size_t tokenEnd = line.find(',', tokenStart);
-        const std::string_view token =
-            tokenEnd == std::string::npos ? line.substr(tokenStart) : line.substr(tokenStart, tokenEnd - tokenStart);
+        const std::string_view token
+            = tokenEnd == std::string::npos ? line.substr(tokenStart) : line.substr(tokenStart, tokenEnd - tokenStart);
         const std::string family = StringUtils::trim(std::string(token));
         if (!family.empty()) {
           seen.insert(family);
@@ -249,14 +249,15 @@ void SettingsWindow::applyPendingContentScrollTarget(float margin) {
     m_pendingContentScrollTarget = nullptr;
   };
 
-  if (m_contentScrollView == nullptr || m_contentScrollView->content() == nullptr ||
-      m_pendingContentScrollTarget == nullptr) {
+  if (m_contentScrollView == nullptr
+      || m_contentScrollView->content() == nullptr
+      || m_pendingContentScrollTarget == nullptr) {
     clearPending();
     return;
   }
 
-  const float viewportHeight =
-      std::max(0.0f, m_contentScrollView->height() - m_contentScrollView->viewportPaddingV() * 2.0f);
+  const float viewportHeight
+      = std::max(0.0f, m_contentScrollView->height() - m_contentScrollView->viewportPaddingV() * 2.0f);
   if (viewportHeight <= 0.0f) {
     clearPending();
     return;
@@ -345,8 +346,9 @@ void SettingsWindow::syncSelectedBarState(const Config& cfg, const std::vector<s
   }
 
   const BarConfig* selectedBar = settings::findBar(cfg, m_selectedBarName);
-  if (selectedBar != nullptr && !m_selectedMonitorOverride.empty() &&
-      settings::findMonitorOverride(*selectedBar, m_selectedMonitorOverride) == nullptr) {
+  if (selectedBar != nullptr
+      && !m_selectedMonitorOverride.empty()
+      && settings::findMonitorOverride(*selectedBar, m_selectedMonitorOverride) == nullptr) {
     m_selectedMonitorOverride.clear();
   }
 }
@@ -367,12 +369,11 @@ settings::SettingsContentContext SettingsWindow::makeContentContext(
     setSettingOverrides(std::move(overrides));
   };
   const auto clearOverride = [this](std::vector<std::string> path) { clearSettingOverride(std::move(path)); };
-  const auto renameWidget = [this](
-                                std::string oldName, std::string newName,
-                                std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>> referenceOverrides
-                            ) {
-    renameWidgetInstance(std::move(oldName), std::move(newName), std::move(referenceOverrides));
-  };
+  const auto renameWidget
+      = [this](
+            std::string oldName, std::string newName,
+            std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>> referenceOverrides
+        ) { renameWidgetInstance(std::move(oldName), std::move(newName), std::move(referenceOverrides)); };
 
   return settings::SettingsContentContext{
       .config = cfg,
@@ -395,12 +396,12 @@ settings::SettingsContentContext SettingsWindow::makeContentContext(
       .setScrollTarget = [this](Node* target) { m_pendingContentScrollTarget = target; },
       .focusArea = [this](InputArea* area) { m_inputDispatcher.setFocus(area); },
       .openBarWidgetAddPopup = [this](const std::vector<std::string>& lanePath) { openBarWidgetAddPopup(lanePath); },
-      .openSearchPickerPopup =
-          [this](
-              const std::string& title, const std::vector<settings::SelectOption>& options,
-              const std::string& selectedValue, const std::string& placeholder, const std::string& emptyText,
-              const std::vector<std::string>& settingPath
-          ) { openSearchPickerPopup(title, options, selectedValue, placeholder, emptyText, settingPath); },
+      .openSearchPickerPopup
+      = [this](
+            const std::string& title, const std::vector<settings::SelectOption>& options,
+            const std::string& selectedValue, const std::string& placeholder, const std::string& emptyText,
+            const std::vector<std::string>& settingPath
+        ) { openSearchPickerPopup(title, options, selectedValue, placeholder, emptyText, settingPath); },
       .setOverride = setOverride,
       .setOverrides = setOverrides,
       .clearOverride = clearOverride,
@@ -461,8 +462,8 @@ void SettingsWindow::rebuildSettingsContent() {
           .pendingDeleteMonitorOverrideBarName = m_pendingDeleteMonitorOverrideBarName,
           .pendingDeleteMonitorOverrideMatch = m_pendingDeleteMonitorOverrideMatch,
           .requestRebuild = [this]() { requestSceneRebuild(); },
-          .renameBar =
-              [this](std::string oldName, std::string newName) { renameBar(std::move(oldName), std::move(newName)); },
+          .renameBar
+          = [this](std::string oldName, std::string newName) { renameBar(std::move(oldName), std::move(newName)); },
           .deleteBar = [this](std::string name) { deleteBar(std::move(name)); },
           .moveBar = [this](std::string name, int direction) { moveBar(std::move(name), direction); },
           .renameMonitorOverride =
@@ -522,9 +523,8 @@ std::unique_ptr<Flex> SettingsWindow::buildFilterRow(
     float scale, const std::string& resetPageScope, std::vector<std::vector<std::string>> resetPagePaths
 ) {
   const auto requestRebuild = [this]() { requestSceneRebuild(); };
-  const auto clearOverrides = [this](std::vector<std::vector<std::string>> paths) {
-    clearSettingOverrides(std::move(paths));
-  };
+  const auto clearOverrides
+      = [this](std::vector<std::vector<std::string>> paths) { clearSettingOverrides(std::move(paths)); };
 
   auto filters = ui::row({
       .align = FlexAlign::Center,
@@ -616,8 +616,8 @@ std::unique_ptr<Flex> SettingsWindow::buildFilterRow(
     const bool pendingReset = m_pendingResetPageScope == resetPageScope;
     filters->addChild(
         ui::button({
-            .text =
-                pendingReset ? i18n::tr("settings.window.reset-page-confirm") : i18n::tr("settings.window.reset-page"),
+            .text
+            = pendingReset ? i18n::tr("settings.window.reset-page-confirm") : i18n::tr("settings.window.reset-page"),
             .fontSize = Style::fontSizeCaption * scale,
             .variant = pendingReset ? ButtonVariant::Destructive : ButtonVariant::Ghost,
             .minHeight = Style::controlHeightSm * scale,
@@ -782,8 +782,9 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
 
   if (m_openWallpaperPanel) {
     auto it = std::find_if(m_settingsRegistry.begin(), m_settingsRegistry.end(), [](const settings::SettingEntry& e) {
-      return e.section == "wallpaper" && e.group == "general" &&
-             e.path == std::vector<std::string>{"wallpaper", "fill_mode"};
+      return e.section == "wallpaper"
+          && e.group == "general"
+          && e.path == std::vector<std::string>{"wallpaper", "fill_mode"};
     });
     settings::SettingEntry btn{
         .section = "wallpaper",
@@ -791,12 +792,8 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
         .title = i18n::tr("settings.schema.wallpaper.panel.label"),
         .subtitle = i18n::tr("settings.schema.wallpaper.panel.description"),
         .path = {},
-        .control =
-            settings::ButtonSetting{
-                .label = i18n::tr("settings.schema.wallpaper.panel.button"),
-                .action = m_openWallpaperPanel,
-                .glyph = "wallpaper-selector"
-            },
+        .control = settings::
+            ButtonSetting{.label = i18n::tr("settings.schema.wallpaper.panel.button"), .action = m_openWallpaperPanel, .glyph = "wallpaper-selector"},
         .searchText = "wallpaper panel open selector browse",
         .visibleWhen = std::nullopt,
     };
@@ -816,12 +813,8 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
         .title = i18n::tr("settings.schema.desktop.widgets-editor.label"),
         .subtitle = i18n::tr("settings.schema.desktop.widgets-editor.description"),
         .path = {},
-        .control =
-            settings::ButtonSetting{
-                .label = i18n::tr("settings.schema.desktop.widgets-editor.button"),
-                .action = m_openDesktopWidgetEditor,
-                .glyph = {}
-            },
+        .control = settings::
+            ButtonSetting{.label = i18n::tr("settings.schema.desktop.widgets-editor.button"), .action = m_openDesktopWidgetEditor, .glyph = {}},
         .searchText = "desktop widgets editor edit",
         .visibleWhen = std::nullopt,
     };
@@ -832,23 +825,25 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
   if (m_selectedSection == "bar" && selectedBar == nullptr) {
     m_selectedSection.clear();
   } else if (
-      m_selectedSection != "bar" && !m_selectedSection.empty() &&
-      std::find(sections.begin(), sections.end(), m_selectedSection) == sections.end()
+      m_selectedSection != "bar"
+      && !m_selectedSection.empty()
+      && std::find(sections.begin(), sections.end(), m_selectedSection) == sections.end()
   ) {
     m_selectedSection.clear();
   }
   if (m_selectedSection.empty()) {
     m_selectedSection = std::find(sections.begin(), sections.end(), "appearance") != sections.end()
-                            ? std::string("appearance")
-                            : (!sections.empty() ? sections.front() : std::string{});
+        ? std::string("appearance")
+        : (!sections.empty() ? sections.front() : std::string{});
   }
 
   const std::string resetPageScope = pageScopeKey(m_selectedSection, m_selectedBarName, m_selectedMonitorOverride);
   std::vector<std::vector<std::string>> resetPagePaths;
   if (m_config != nullptr) {
     for (const auto& entry : m_settingsRegistry) {
-      if (settingEntryBelongsToPage(entry, m_selectedSection, m_selectedBarName, m_selectedMonitorOverride) &&
-          m_config->hasEffectiveOverride(entry.path) && !containsPath(resetPagePaths, entry.path)) {
+      if (settingEntryBelongsToPage(entry, m_selectedSection, m_selectedBarName, m_selectedMonitorOverride)
+          && m_config->hasEffectiveOverride(entry.path)
+          && !containsPath(resetPagePaths, entry.path)) {
         resetPagePaths.push_back(entry.path);
       }
     }

@@ -450,8 +450,8 @@ namespace noctalia::theme {
         if (dest.has_parent_path())
           std::filesystem::create_directories(dest.parent_path(), ec);
         ++(*pending);
-        const std::string url =
-            std::string(kCatalogUrl) + "/" + StringUtils::urlEncode(id) + "/" + urlEncodePath(file.name);
+        const std::string url
+            = std::string(kCatalogUrl) + "/" + StringUtils::urlEncode(id) + "/" + urlEncodePath(file.name);
         m_httpClient.download(
             url, dest, [this, file, dest, generation, pending, completed, notifyIfReady](bool success) {
               ++(*completed);

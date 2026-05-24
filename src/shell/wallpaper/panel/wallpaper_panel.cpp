@@ -546,8 +546,8 @@ std::optional<Color> WallpaperPanel::selectedFillColor() const {
   const auto& wp = m_config->config().wallpaper;
   const auto& choice = m_monitorChoices[m_selectedMonitorIndex];
   Color sourceColor;
-  const std::string currentPath =
-      choice.connector.empty() ? m_config->getDefaultWallpaperPath() : m_config->getWallpaperPath(choice.connector);
+  const std::string currentPath
+      = choice.connector.empty() ? m_config->getDefaultWallpaperPath() : m_config->getWallpaperPath(choice.connector);
   if (parseColorWallpaperPath(currentPath, sourceColor)) {
     return sourceColor;
   }

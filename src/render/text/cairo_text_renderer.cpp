@@ -173,9 +173,15 @@ namespace {
 // ── CacheKey equality/hash ──────────────────────────────────────────────────
 
 bool CairoTextRenderer::CacheKey::operator==(const CacheKey& other) const noexcept {
-  return fontWeight == other.fontWeight && sizeQ == other.sizeQ && scaleQ == other.scaleQ &&
-         maxWidthQ == other.maxWidthQ && maxLines == other.maxLines && align == other.align &&
-         colorRgba == other.colorRgba && text == other.text && fontFamily == other.fontFamily;
+  return fontWeight == other.fontWeight
+      && sizeQ == other.sizeQ
+      && scaleQ == other.scaleQ
+      && maxWidthQ == other.maxWidthQ
+      && maxLines == other.maxLines
+      && align == other.align
+      && colorRgba == other.colorRgba
+      && text == other.text
+      && fontFamily == other.fontFamily;
 }
 
 std::size_t CairoTextRenderer::CacheKeyHash::operator()(const CacheKey& k) const noexcept {
@@ -192,9 +198,14 @@ std::size_t CairoTextRenderer::CacheKeyHash::operator()(const CacheKey& k) const
 }
 
 bool CairoTextRenderer::MetricsKey::operator==(const MetricsKey& other) const noexcept {
-  return fontWeight == other.fontWeight && sizeQ == other.sizeQ && scaleQ == other.scaleQ &&
-         maxWidthQ == other.maxWidthQ && maxLines == other.maxLines && align == other.align && text == other.text &&
-         fontFamily == other.fontFamily;
+  return fontWeight == other.fontWeight
+      && sizeQ == other.sizeQ
+      && scaleQ == other.scaleQ
+      && maxWidthQ == other.maxWidthQ
+      && maxLines == other.maxLines
+      && align == other.align
+      && text == other.text
+      && fontFamily == other.fontFamily;
 }
 
 std::size_t CairoTextRenderer::MetricsKeyHash::operator()(const MetricsKey& k) const noexcept {
@@ -511,8 +522,8 @@ void CairoTextRenderer::measureCursorStops(
   for (const std::size_t offset : byteOffsets) {
     const std::size_t clampedOffset = std::min(offset, text.size());
     const int index = clampedOffset > static_cast<std::size_t>(std::numeric_limits<int>::max())
-                          ? std::numeric_limits<int>::max()
-                          : static_cast<int>(clampedOffset);
+        ? std::numeric_limits<int>::max()
+        : static_cast<int>(clampedOffset);
     PangoRectangle strong{};
     PangoRectangle weak{};
     pango_layout_get_cursor_pos(layout, index, &strong, &weak);
@@ -541,13 +552,13 @@ void CairoTextRenderer::rasterizeLayout(PangoLayout* layout, const Color& color,
 
   // Expand surface when ink extends beyond logical bounds (e.g. Nerd Font icons).
   const int extraLeftPx = (std::max(0, logicalLayout.x - inkLayout.x) + PANGO_SCALE - 1) / PANGO_SCALE;
-  const int extraRightPx =
-      (std::max(0, (inkLayout.x + inkLayout.width) - (logicalLayout.x + logicalLayout.width)) + PANGO_SCALE - 1) /
-      PANGO_SCALE;
+  const int extraRightPx
+      = (std::max(0, (inkLayout.x + inkLayout.width) - (logicalLayout.x + logicalLayout.width)) + PANGO_SCALE - 1)
+      / PANGO_SCALE;
   const int extraTopPx = (std::max(0, logicalLayout.y - inkLayout.y) + PANGO_SCALE - 1) / PANGO_SCALE;
-  const int extraBottomPx =
-      (std::max(0, (inkLayout.y + inkLayout.height) - (logicalLayout.y + logicalLayout.height)) + PANGO_SCALE - 1) /
-      PANGO_SCALE;
+  const int extraBottomPx
+      = (std::max(0, (inkLayout.y + inkLayout.height) - (logicalLayout.y + logicalLayout.height)) + PANGO_SCALE - 1)
+      / PANGO_SCALE;
   pxWidth += extraLeftPx + extraRightPx;
   pxHeight += extraTopPx + extraBottomPx;
   entry.inkOffsetX = static_cast<float>(extraLeftPx);
@@ -558,8 +569,8 @@ void CairoTextRenderer::rasterizeLayout(PangoLayout* layout, const Color& color,
 
   // Baseline from top of layout, in raster pixels (shifted by any ink overhang above).
   const int baselinePango = pango_layout_get_baseline(layout);
-  entry.baselinePx =
-      static_cast<float>(baselinePango) / static_cast<float>(PANGO_SCALE) + static_cast<float>(extraTopPx);
+  entry.baselinePx
+      = static_cast<float>(baselinePango) / static_cast<float>(PANGO_SCALE) + static_cast<float>(extraTopPx);
 
   if (m_glMaxTextureSize <= 0 && m_backend != nullptr) {
     m_glMaxTextureSize = m_backend->maxTextureSize();

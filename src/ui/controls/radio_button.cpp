@@ -109,8 +109,8 @@ void RadioButton::applyState() {
   m_outer->setFill(fill);
   m_outer->setBorder(border, Style::borderWidth * m_scale);
 
-  const ColorSpec innerFill =
-      m_checked ? colorSpecFromRole(ColorRole::OnPrimary) : colorSpecFromRole(ColorRole::Surface);
+  const ColorSpec innerFill
+      = m_checked ? colorSpecFromRole(ColorRole::OnPrimary) : colorSpecFromRole(ColorRole::Surface);
   m_inner->setFill(innerFill);
   m_inner->setBorder(innerFill, 0.0f);
   m_inner->setVisible(m_checked);

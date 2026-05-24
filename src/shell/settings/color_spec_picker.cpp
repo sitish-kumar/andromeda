@@ -107,8 +107,8 @@ namespace settings {
     }
 
     Color selectedFixedColor;
-    const bool selectedIsFixedColor =
-        options.allowCustomColor && tryParseHexColor(options.selectedValue, selectedFixedColor);
+    const bool selectedIsFixedColor
+        = options.allowCustomColor && tryParseHexColor(options.selectedValue, selectedFixedColor);
     if (options.allowCustomColor) {
       choices.push_back(
           Choice{
@@ -136,50 +136,48 @@ namespace settings {
         .options = labelsForChoices(choices),
         .selectedIndex = selectedIndex,
         .clearSelection = selectedUnknown,
-        .placeholder =
-            selectedUnknown
-                ? std::optional<std::string>(i18n::tr("settings.controls.select.unknown-value", "value", selectedValue))
-                : std::nullopt,
+        .placeholder = selectedUnknown
+            ? std::optional<std::string>(i18n::tr("settings.controls.select.unknown-value", "value", selectedValue))
+            : std::nullopt,
         .fontSize = options.fontSize > 0.0f ? std::optional<float>(options.fontSize) : std::nullopt,
         .controlHeight = options.controlHeight > 0.0f ? std::optional<float>(options.controlHeight) : std::nullopt,
         .glyphSize = options.glyphSize > 0.0f ? std::optional<float>(options.glyphSize) : std::nullopt,
         .optionIndicators = std::move(indicators),
         .width = options.width > 0.0f ? std::optional<float>(options.width) : std::nullopt,
-        .height =
-            options.width > 0.0f
-                ? std::optional<float>(options.controlHeight > 0.0f ? options.controlHeight : Style::controlHeight)
-                : std::nullopt,
+        .height = options.width > 0.0f
+            ? std::optional<float>(options.controlHeight > 0.0f ? options.controlHeight : Style::controlHeight)
+            : std::nullopt,
         .flexGrow = options.flexGrow ? std::optional<float>(1.0f) : std::nullopt,
-        .onSelectionChanged =
-            [choices = std::move(choices), setValue = std::move(setValue), clearValue = std::move(clearValue),
-             initialColor = customInitialColor](std::size_t index, std::string_view /*label*/) mutable {
-              if (index >= choices.size()) {
-                return;
+        .onSelectionChanged
+        = [choices = std::move(choices), setValue = std::move(setValue), clearValue = std::move(clearValue),
+           initialColor = customInitialColor](std::size_t index, std::string_view /*label*/) mutable {
+            if (index >= choices.size()) {
+              return;
+            }
+            if (choices[index].value == kCustomColorValue) {
+              ColorPickerDialogOptions dialogOptions;
+              dialogOptions.title = i18n::tr("settings.dialogs.color-picker.title");
+              if (initialColor.has_value()) {
+                dialogOptions.initialColor = *initialColor;
+              } else if (const auto last = ColorPickerDialog::lastResult()) {
+                dialogOptions.initialColor = *last;
               }
-              if (choices[index].value == kCustomColorValue) {
-                ColorPickerDialogOptions dialogOptions;
-                dialogOptions.title = i18n::tr("settings.dialogs.color-picker.title");
-                if (initialColor.has_value()) {
-                  dialogOptions.initialColor = *initialColor;
-                } else if (const auto last = ColorPickerDialog::lastResult()) {
-                  dialogOptions.initialColor = *last;
+              (void)ColorPickerDialog::open(std::move(dialogOptions), [setValue](std::optional<Color> result) {
+                if (!result.has_value()) {
+                  return;
                 }
-                (void)ColorPickerDialog::open(std::move(dialogOptions), [setValue](std::optional<Color> result) {
-                  if (!result.has_value()) {
-                    return;
-                  }
-                  Color rgb = *result;
-                  rgb.a = 1.0f;
-                  setValue(formatFixedColorConfigValue(rgb));
-                });
-                return;
-              }
-              if (choices[index].value.empty()) {
-                clearValue();
-                return;
-              }
-              setValue(choices[index].value);
-            },
+                Color rgb = *result;
+                rgb.a = 1.0f;
+                setValue(formatFixedColorConfigValue(rgb));
+              });
+              return;
+            }
+            if (choices[index].value.empty()) {
+              clearValue();
+              return;
+            }
+            setValue(choices[index].value);
+          },
     });
 
     return select;

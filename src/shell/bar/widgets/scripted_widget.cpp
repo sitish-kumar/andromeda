@@ -117,8 +117,8 @@ ScriptedWidget::ScriptedWidget(
     m_hotReload = config->getBool("hot_reload", false);
     m_sharedScope = config->getString("scope", "instance") == "shared";
     m_audioSpectrumEnabled = config->getBool("audio_spectrum", false);
-    m_audioSpectrumBands =
-        static_cast<int>(std::clamp<std::int64_t>(config->getInt("audio_spectrum_bands", 16), 1, 128));
+    m_audioSpectrumBands
+        = static_cast<int>(std::clamp<std::int64_t>(config->getInt("audio_spectrum_bands", 16), 1, 128));
   }
 }
 
@@ -371,8 +371,9 @@ ColorSpec ScriptedWidget::resolveScriptColor(const ScriptColorState& state) cons
   if (!state.color.has_value()) {
     return widgetForegroundOr(fallback);
   }
-  if (!state.color->role.has_value() || state.mode == ScriptColorMode::Script ||
-      *state.color->role != ColorRole::OnSurface) {
+  if (!state.color->role.has_value()
+      || state.mode == ScriptColorMode::Script
+      || *state.color->role != ColorRole::OnSurface) {
     return *state.color;
   }
   return widgetForegroundOr(fallback);
@@ -540,8 +541,8 @@ void ScriptedWidget::setupAudioSpectrum() {
     kLog.warn("scripted widget '{}': audio_spectrum requested but PipeWireSpectrum is unavailable", m_widgetConfigName);
     return;
   }
-  m_audioSpectrumListenerId =
-      m_audioSpectrum->addChangeListener(m_audioSpectrumBands, [this]() { handleAudioSpectrumChanged(); });
+  m_audioSpectrumListenerId
+      = m_audioSpectrum->addChangeListener(m_audioSpectrumBands, [this]() { handleAudioSpectrumChanged(); });
 }
 
 void ScriptedWidget::teardownAudioSpectrum() {

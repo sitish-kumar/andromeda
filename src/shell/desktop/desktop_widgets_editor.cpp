@@ -137,8 +137,9 @@ namespace {
     if (format == nullptr) {
       return false;
     }
-    return format->find("%S") != std::string::npos || format->find("%T") != std::string::npos ||
-           format->find("%X") != std::string::npos;
+    return format->find("%S") != std::string::npos
+        || format->find("%T") != std::string::npos
+        || format->find("%X") != std::string::npos;
   }
 
   bool parseDesktopWidgetCounter(std::string_view id, std::uint64_t& value) {
@@ -167,8 +168,8 @@ namespace {
       }
     }
 
-    const std::uint64_t nextCounter =
-        maxCounter == std::numeric_limits<std::uint64_t>::max() ? maxCounter : (maxCounter + 1);
+    const std::uint64_t nextCounter
+        = maxCounter == std::numeric_limits<std::uint64_t>::max() ? maxCounter : (maxCounter + 1);
     return std::format("desktop-widget-{:016x}", nextCounter);
   }
 
@@ -724,10 +725,10 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   });
   auto* toolbarHandleAreaPtr = toolbarHandleArea.get();
 
-  const auto selectedWidgetIt =
-      std::find_if(m_snapshot.widgets.begin(), m_snapshot.widgets.end(), [this](const auto& widget) {
-        return widget.id == m_selectedWidgetId;
-      });
+  const auto selectedWidgetIt
+      = std::find_if(m_snapshot.widgets.begin(), m_snapshot.widgets.end(), [this](const auto& widget) {
+          return widget.id == m_selectedWidgetId;
+        });
   const bool hasSelectedWidget = selectedWidgetIt != m_snapshot.widgets.end();
   const bool selectedWidgetEnabled = hasSelectedWidget ? selectedWidgetIt->enabled : false;
   const bool canSendSelectedToBack = hasSelectedWidget && selectedWidgetIt != m_snapshot.widgets.begin();
@@ -924,9 +925,13 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
 void DesktopWidgetsEditor::updateSelectionVisuals(OverlaySurface& surface) {
   const auto selectedIt = surface.views.find(m_selectedWidgetId);
   const DesktopWidgetState* state = findWidgetState(m_selectedWidgetId);
-  if (selectedIt == surface.views.end() || state == nullptr || surface.selectionFrameTransform == nullptr ||
-      surface.selectionBorderTransform == nullptr || surface.selectionBorder == nullptr ||
-      surface.rotationRing == nullptr || surface.rotateArea == nullptr) {
+  if (selectedIt == surface.views.end()
+      || state == nullptr
+      || surface.selectionFrameTransform == nullptr
+      || surface.selectionBorderTransform == nullptr
+      || surface.selectionBorder == nullptr
+      || surface.rotationRing == nullptr
+      || surface.rotateArea == nullptr) {
     return;
   }
   for (std::size_t i = 0; i < kScaleCornerCount; ++i) {
@@ -970,8 +975,8 @@ void DesktopWidgetsEditor::updateSelectionVisuals(OverlaySurface& surface) {
 
   for (std::size_t i = 0; i < kScaleCornerCount; ++i) {
     const CornerSigns signs = cornerSigns(i);
-    const auto [cornerX, cornerY] =
-        rotatedCorner(state->cx, state->cy, width * 0.5f * signs.x, height * 0.5f * signs.y, state->rotationRad);
+    const auto [cornerX, cornerY]
+        = rotatedCorner(state->cx, state->cy, width * 0.5f * signs.x, height * 0.5f * signs.y, state->rotationRad);
 
     const float shadowSize = kHandleSize + kShadowExpand * 2.0f;
     if (surface.scaleHandleShadows[i] != nullptr) {
@@ -1031,10 +1036,10 @@ void DesktopWidgetsEditor::addWidget(const std::string& outputName, const std::s
   float centerY = 240.0f;
   if (const WaylandOutput* output = desktop_widgets::resolveEffectiveOutput(*m_wayland, outputName);
       output != nullptr) {
-    const int logicalWidth =
-        output->logicalWidth > 0 ? output->logicalWidth : output->width / std::max(1, output->scale);
-    const int logicalHeight =
-        output->logicalHeight > 0 ? output->logicalHeight : output->height / std::max(1, output->scale);
+    const int logicalWidth
+        = output->logicalWidth > 0 ? output->logicalWidth : output->width / std::max(1, output->scale);
+    const int logicalHeight
+        = output->logicalHeight > 0 ? output->logicalHeight : output->height / std::max(1, output->scale);
     centerX = static_cast<float>(std::max(1, logicalWidth)) * 0.5f;
     centerY = static_cast<float>(std::max(1, logicalHeight)) * 0.5f;
   }
@@ -1378,10 +1383,10 @@ void DesktopWidgetsEditor::updateDrag() {
       );
     }
   } else if (m_drag.mode == DragMode::Rotate) {
-    const float startAngle =
-        std::atan2(m_drag.startSceneY - m_drag.initialState.cy, m_drag.startSceneX - m_drag.initialState.cx);
-    const float currentAngle =
-        std::atan2(m_currentEventSceneY - m_drag.initialState.cy, m_currentEventSceneX - m_drag.initialState.cx);
+    const float startAngle
+        = std::atan2(m_drag.startSceneY - m_drag.initialState.cy, m_drag.startSceneX - m_drag.initialState.cx);
+    const float currentAngle
+        = std::atan2(m_currentEventSceneY - m_drag.initialState.cy, m_currentEventSceneX - m_drag.initialState.cx);
     float rotation = normalizeAngle(m_drag.initialState.rotationRad + (currentAngle - startAngle));
     if (shouldSnap()) {
       rotation = std::round(rotation / kRotationSnap) * kRotationSnap;
@@ -1451,8 +1456,8 @@ void DesktopWidgetsEditor::updateDrag() {
         }
 
         if (targetExtent > 0.0f) {
-          const float snappedScale =
-              std::clamp(m_drag.initialState.scale * (targetExtent / initialExtent), kMinScale, kMaxScale);
+          const float snappedScale
+              = std::clamp(m_drag.initialState.scale * (targetExtent / initialExtent), kMinScale, kMaxScale);
           if (std::abs(snappedScale - state->scale) > 0.0001f) {
             state->scale = snappedScale;
             applyScaleDragState();
@@ -1662,8 +1667,10 @@ void DesktopWidgetsEditor::onKeyboardEvent(const KeyboardEvent& event) {
     return;
   }
 
-  if (event.sym == XKB_KEY_g || event.sym == XKB_KEY_G || event.utf32 == static_cast<std::uint32_t>('g') ||
-      event.utf32 == static_cast<std::uint32_t>('G')) {
+  if (event.sym == XKB_KEY_g
+      || event.sym == XKB_KEY_G
+      || event.utf32 == static_cast<std::uint32_t>('g')
+      || event.utf32 == static_cast<std::uint32_t>('G')) {
     m_snapshot.grid.visible = !m_snapshot.grid.visible;
     requestLayout();
   }

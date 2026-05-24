@@ -32,8 +32,8 @@ namespace settings {
           .height = std::max<std::uint32_t>(1, height),
           .anchor = XDG_POSITIONER_ANCHOR_NONE,
           .gravity = XDG_POSITIONER_GRAVITY_NONE,
-          .constraintAdjustment =
-              XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y,
+          .constraintAdjustment
+          = XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y,
           .offsetX = 0,
           .offsetY = 0,
           .serial = serial,
@@ -101,10 +101,10 @@ namespace settings {
   void SearchPickerPopup::populateContent(Node* contentParent, std::uint32_t /*width*/, std::uint32_t /*height*/) {
     const float panelPadding = Style::spaceSm * m_scale;
     const float panelGap = Style::spaceSm * m_scale;
-    const std::optional<std::string> placeholder =
-        m_placeholder.empty() ? std::nullopt : std::optional<std::string>(m_placeholder);
-    const std::optional<std::string> emptyText =
-        m_emptyText.empty() ? std::nullopt : std::optional<std::string>(m_emptyText);
+    const std::optional<std::string> placeholder
+        = m_placeholder.empty() ? std::nullopt : std::optional<std::string>(m_placeholder);
+    const std::optional<std::string> emptyText
+        = m_emptyText.empty() ? std::nullopt : std::optional<std::string>(m_emptyText);
 
     contentParent->addChild(
         ui::column(

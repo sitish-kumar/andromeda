@@ -114,9 +114,9 @@ void SelectDropdownPopup::openSelectDropdown(const DropdownRequest& request, Dro
       .height = chrome.surfaceHeight,
       .anchor = XDG_POSITIONER_ANCHOR_BOTTOM,
       .gravity = XDG_POSITIONER_GRAVITY_BOTTOM,
-      .constraintAdjustment = XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X |
-                              XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y |
-                              XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y,
+      .constraintAdjustment = XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X
+          | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y
+          | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y,
       .offsetX = 0,
       .offsetY = static_cast<std::int32_t>(std::lround(Style::spaceXs)),
       .serial = m_wayland.lastInputSerial(),
@@ -151,9 +151,10 @@ void SelectDropdownPopup::openSelectDropdown(const DropdownRequest& request, Dro
 
     self->m_renderContext.makeCurrent(self->m_surface->renderTarget());
 
-    const bool needsSceneBuild = self->m_sceneDirty || self->m_sceneRoot == nullptr ||
-                                 static_cast<std::uint32_t>(std::round(self->m_sceneRoot->width())) != width ||
-                                 static_cast<std::uint32_t>(std::round(self->m_sceneRoot->height())) != height;
+    const bool needsSceneBuild = self->m_sceneDirty
+        || self->m_sceneRoot == nullptr
+        || static_cast<std::uint32_t>(std::round(self->m_sceneRoot->width())) != width
+        || static_cast<std::uint32_t>(std::round(self->m_sceneRoot->height())) != height;
     if (!needsSceneBuild && !needsLayout) {
       return;
     }
@@ -181,8 +182,8 @@ void SelectDropdownPopup::openSelectDropdown(const DropdownRequest& request, Dro
 
   m_openInProgress = true;
   const bool initialized = m_parentLayerSurface != nullptr
-                               ? m_surface->initialize(m_parentLayerSurface, m_parentOutput, popupCfg)
-                               : m_surface->initializeAsChild(m_parentXdgSurface, m_parentOutput, popupCfg);
+      ? m_surface->initialize(m_parentLayerSurface, m_parentOutput, popupCfg)
+      : m_surface->initializeAsChild(m_parentXdgSurface, m_parentOutput, popupCfg);
   m_openInProgress = false;
   if (!initialized) {
     kLog.warn("failed to create select dropdown popup");

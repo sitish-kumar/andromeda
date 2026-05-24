@@ -1311,8 +1311,8 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     title->setFontSize(Style::fontSizeBody * scale);
     col->addChild(std::move(title));
 
-    const std::string para =
-        "The quick brown fox jumps over the lazy dog while a sphinx of black quartz judges its vow.";
+    const std::string para
+        = "The quick brown fox jumps over the lazy dog while a sphinx of black quartz judges its vow.";
     for (int lines : {1, 2, 3, 4}) {
       auto row = std::make_unique<Flex>();
       row->setDirection(FlexDirection::Horizontal);
@@ -1422,9 +1422,9 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     row->setAlign(FlexAlign::Center);
     row->setGap(Style::spaceSm * scale);
 
-    const float sizes[] = {
-        Style::fontSizeMini, Style::fontSizeCaption, Style::fontSizeBody, Style::fontSizeTitle, Style::fontSizeHeader
-    };
+    const float sizes[]
+        = {Style::fontSizeMini, Style::fontSizeCaption, Style::fontSizeBody, Style::fontSizeTitle,
+           Style::fontSizeHeader};
     for (float fs : sizes) {
       auto lbl = std::make_unique<Label>();
       lbl->setText("Hxg" + std::to_string(static_cast<int>(fs)));

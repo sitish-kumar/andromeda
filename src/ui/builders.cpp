@@ -221,9 +221,13 @@ namespace ui {
     if (props.maxHeight.has_value()) {
       control->setMaxHeight(*props.maxHeight);
     }
-    if (props.padding.has_value() || props.paddingV.has_value() || props.paddingH.has_value() ||
-        props.paddingTop.has_value() || props.paddingRight.has_value() || props.paddingBottom.has_value() ||
-        props.paddingLeft.has_value()) {
+    if (props.padding.has_value()
+        || props.paddingV.has_value()
+        || props.paddingH.has_value()
+        || props.paddingTop.has_value()
+        || props.paddingRight.has_value()
+        || props.paddingBottom.has_value()
+        || props.paddingLeft.has_value()) {
       const float allPadding = props.padding.value_or(0.0f);
       const float verticalPadding = props.paddingV.value_or(allPadding);
       const float horizontalPadding = props.paddingH.value_or(allPadding);

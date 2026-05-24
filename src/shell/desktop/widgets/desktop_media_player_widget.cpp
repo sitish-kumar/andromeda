@@ -172,8 +172,8 @@ void DesktopMediaPlayerWidget::layoutVertical(Renderer& renderer, float scale) {
 
   layoutButtons(renderer, scale);
 
-  const float controlsY =
-      (m_artist->visible() ? m_artist->y() + m_artist->height() : m_title->y() + m_title->height()) + spacing;
+  const float controlsY
+      = (m_artist->visible() ? m_artist->y() + m_artist->height() : m_title->y() + m_title->height()) + spacing;
   const float controlsX = std::round((artW - m_controls->width()) * 0.5f);
   m_controls->setPosition(controlsX, controlsY);
 
@@ -214,8 +214,8 @@ void DesktopMediaPlayerWidget::layoutHorizontal(Renderer& renderer, float scale)
   const float controlsY = textY + titleH + artistH + spacing * 0.5f;
   m_controls->setPosition(textX, controlsY);
 
-  const float totalWidth =
-      textX + std::max({m_title->width(), m_artist->visible() ? m_artist->width() : 0.0f, m_controls->width()});
+  const float totalWidth
+      = textX + std::max({m_title->width(), m_artist->visible() ? m_artist->width() : 0.0f, m_controls->width()});
   root()->setSize(totalWidth, artH);
 }
 

@@ -645,27 +645,27 @@ namespace settings {
       add(boolSpec("only_active_workspace", false));
       {
         auto showWsLabel = boolSpec("show_workspace_label", true);
-        showWsLabel.visibleWhen =
-            WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
+        showWsLabel.visibleWhen
+            = WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
         add(std::move(showWsLabel));
       }
       {
         auto labelPlacement = selectSpec("workspace_label_placement", "corner", workspaceLabelPlacement);
-        labelPlacement.visibleWhen =
-            WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
+        labelPlacement.visibleWhen
+            = WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
         add(std::move(labelPlacement));
       }
       {
         auto hideEmpty = boolSpec("hide_empty_workspaces", false);
-        hideEmpty.visibleWhen =
-            WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
+        hideEmpty.visibleWhen
+            = WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
         add(std::move(hideEmpty));
       }
       {
         auto groupCapsule = boolSpec("workspace_group_capsule", true);
         groupCapsule.descriptionKey = "settings.widgets.settings.workspace_group_capsule.description";
-        groupCapsule.visibleWhen =
-            WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
+        groupCapsule.visibleWhen
+            = WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
         add(std::move(groupCapsule));
       }
       const WidgetSettingVisibility groupedWorkspaceSettings{
@@ -957,8 +957,8 @@ namespace settings {
       std::string_view widgetName, std::string_view settingKey, const Config& withOverride,
       const Config& withoutOverride
   ) {
-    const auto valueInConfig = [](const Config& cfg, std::string_view name,
-                                  std::string_view key) -> std::optional<WidgetSettingValue> {
+    const auto valueInConfig
+        = [](const Config& cfg, std::string_view name, std::string_view key) -> std::optional<WidgetSettingValue> {
       const auto widgetIt = cfg.widgets.find(std::string(name));
       if (widgetIt == cfg.widgets.end()) {
         return std::nullopt;

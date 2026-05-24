@@ -19,8 +19,8 @@ struct wl_output;
 // without allocating full-output buffers.
 class OverviewLauncherCapture {
 public:
-  using OpenLauncherCallback =
-      std::function<void(std::string_view initialQuery, wl_output* output, std::string_view sourceBarName)>;
+  using OpenLauncherCallback
+      = std::function<void(std::string_view initialQuery, wl_output* output, std::string_view sourceBarName)>;
 
   bool initialize(
       WaylandConnection& wayland, RenderContext* renderContext, CompositorPlatform& platform, PanelManager& panelManager

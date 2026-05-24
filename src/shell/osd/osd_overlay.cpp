@@ -233,16 +233,17 @@ void OsdOverlay::ensureSurfaces() {
     return;
   }
 
-  const std::string position =
-      (m_config != nullptr && !m_config->config().osd.position.empty()) ? m_config->config().osd.position : "top_right";
+  const std::string position = (m_config != nullptr && !m_config->config().osd.position.empty())
+      ? m_config->config().osd.position
+      : "top_right";
   const std::string orientation = (m_config != nullptr && !m_config->config().osd.orientation.empty())
-                                      ? m_config->config().osd.orientation
-                                      : "horizontal";
+      ? m_config->config().osd.orientation
+      : "horizontal";
   const bool showProgress = m_content.showProgress;
   const float layoutScale = osdUiScale(m_config);
 
-  if (!m_instances.empty() &&
-      (position != m_lastPosition || orientation != m_lastOrientation || showProgress != m_lastShowProgress)) {
+  if (!m_instances.empty()
+      && (position != m_lastPosition || orientation != m_lastOrientation || showProgress != m_lastShowProgress)) {
     destroySurfaces();
   }
 
@@ -260,8 +261,10 @@ void OsdOverlay::ensureSurfaces() {
         continue;
       }
       const SurfaceMargins margins = surfaceMarginsForPosition(position);
-      if (inst->surface->marginTop() != margins.top || inst->surface->marginRight() != margins.right ||
-          inst->surface->marginBottom() != margins.bottom || inst->surface->marginLeft() != margins.left) {
+      if (inst->surface->marginTop() != margins.top
+          || inst->surface->marginRight() != margins.right
+          || inst->surface->marginBottom() != margins.bottom
+          || inst->surface->marginLeft() != margins.left) {
         inst->surface->setMargins(margins.top, margins.right, margins.bottom, margins.left);
       }
     }
@@ -366,9 +369,9 @@ void OsdOverlay::prepareFrame(Instance& inst, bool needsUpdate, bool needsLayout
 
   m_renderContext->makeCurrent(inst.surface->renderTarget());
 
-  const bool needsSceneBuild = inst.sceneRoot == nullptr ||
-                               static_cast<std::uint32_t>(std::round(inst.sceneRoot->width())) != width ||
-                               static_cast<std::uint32_t>(std::round(inst.sceneRoot->height())) != height;
+  const bool needsSceneBuild = inst.sceneRoot == nullptr
+      || static_cast<std::uint32_t>(std::round(inst.sceneRoot->width())) != width
+      || static_cast<std::uint32_t>(std::round(inst.sceneRoot->height())) != height;
   if (needsSceneBuild) {
     UiPhaseScope layoutPhase(UiPhase::Layout);
     buildScene(inst, width, height);
@@ -491,8 +494,12 @@ void OsdOverlay::buildScene(Instance& inst, std::uint32_t width, std::uint32_t h
 }
 
 void OsdOverlay::updateInstanceContent(Instance& inst) {
-  if (m_renderContext == nullptr || inst.card == nullptr || inst.row == nullptr || inst.glyph == nullptr ||
-      inst.value == nullptr || inst.progress == nullptr) {
+  if (m_renderContext == nullptr
+      || inst.card == nullptr
+      || inst.row == nullptr
+      || inst.glyph == nullptr
+      || inst.value == nullptr
+      || inst.progress == nullptr) {
     return;
   }
 

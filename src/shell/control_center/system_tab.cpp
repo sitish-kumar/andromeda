@@ -268,8 +268,8 @@ std::unique_ptr<Flex> SystemTab::create() {
         .align = FlexAlign::Stretch,
         .gap = Style::spaceSm * sc,
     });
-    static constexpr const char* kSystemGlyphs[] = {"device-desktop", "layout-board", "cpu-usage",
-                                                    "video",          "app-window",   "clock"};
+    static constexpr const char* kSystemGlyphs[]
+        = {"device-desktop", "layout-board", "cpu-usage", "video", "app-window", "clock"};
     makeInfoCard(
         *row, i18n::tr("control-center.system.titles.system"), sc, panelCardOpacity(), panelBordersEnabled(),
         m_systemLines, kSystemLines, kSystemGlyphs
@@ -772,8 +772,8 @@ void SystemTab::syncLabels() {
   }
   if (m_systemLines[5] != nullptr) {
     const auto uptime = systemUptime();
-    const std::string uptimeText =
-        uptime.has_value() ? formatDuration(*uptime) : i18n::tr("control-center.system.unknown");
+    const std::string uptimeText
+        = uptime.has_value() ? formatDuration(*uptime) : i18n::tr("control-center.system.unknown");
     m_systemLines[5]->setText(
         i18n::tr("control-center.system.uptime-prefix", "uptime", uptimeText, "osAge", osAgeLabel())
     );

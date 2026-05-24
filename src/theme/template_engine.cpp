@@ -126,8 +126,8 @@ namespace noctalia::theme {
 
     const std::unordered_set<std::string> kColorArgFilters = {"blend", "harmonize"};
 
-    constexpr std::array<int, 18> kPaletteTones = {0,  5,  10, 15, 20, 25, 30, 35, 40,
-                                                   50, 60, 70, 80, 90, 95, 98, 99, 100};
+    constexpr std::array<int, 18> kPaletteTones
+        = {0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 90, 95, 98, 99, 100};
     constexpr std::array<std::string_view, 2> kTemplateModes = {"dark", "light"};
 
     struct Lab {
@@ -256,25 +256,51 @@ namespace noctalia::theme {
         return out;
       }
       if (formatType == "rgb") {
-        return "rgb(" + std::to_string(color.color.r) + ", " + std::to_string(color.color.g) + ", " +
-               std::to_string(color.color.b) + ")";
+        return "rgb("
+            + std::to_string(color.color.r)
+            + ", "
+            + std::to_string(color.color.g)
+            + ", "
+            + std::to_string(color.color.b)
+            + ")";
       }
       if (formatType == "rgb_csv") {
-        return std::to_string(color.color.r) + "," + std::to_string(color.color.g) + "," +
-               std::to_string(color.color.b);
+        return std::to_string(color.color.r)
+            + ","
+            + std::to_string(color.color.g)
+            + ","
+            + std::to_string(color.color.b);
       }
       if (formatType == "rgba") {
-        return "rgba(" + std::to_string(color.color.r) + ", " + std::to_string(color.color.g) + ", " +
-               std::to_string(color.color.b) + ", " + StringUtils::formatDotDecimal(color.alpha) + ")";
+        return "rgba("
+            + std::to_string(color.color.r)
+            + ", "
+            + std::to_string(color.color.g)
+            + ", "
+            + std::to_string(color.color.b)
+            + ", "
+            + StringUtils::formatDotDecimal(color.alpha)
+            + ")";
       }
       auto [h, s, l] = color.color.toHsl();
       if (formatType == "hsl")
-        return "hsl(" + std::to_string(static_cast<int>(h)) + ", " + std::to_string(static_cast<int>(s * 100.0)) +
-               "%, " + std::to_string(static_cast<int>(l * 100.0)) + "%)";
+        return "hsl("
+            + std::to_string(static_cast<int>(h))
+            + ", "
+            + std::to_string(static_cast<int>(s * 100.0))
+            + "%, "
+            + std::to_string(static_cast<int>(l * 100.0))
+            + "%)";
       if (formatType == "hsla") {
-        return "hsla(" + std::to_string(static_cast<int>(h)) + ", " + std::to_string(static_cast<int>(s * 100.0)) +
-               "%, " + std::to_string(static_cast<int>(l * 100.0)) + "%, " +
-               StringUtils::formatDotDecimal(color.alpha) + ")";
+        return "hsla("
+            + std::to_string(static_cast<int>(h))
+            + ", "
+            + std::to_string(static_cast<int>(s * 100.0))
+            + "%, "
+            + std::to_string(static_cast<int>(l * 100.0))
+            + "%, "
+            + StringUtils::formatDotDecimal(color.alpha)
+            + ")";
       }
       if (formatType == "hue")
         return std::to_string(static_cast<int>(h));
@@ -441,8 +467,8 @@ namespace noctalia::theme {
         diff += 360.0;
       double newHue = srcHue;
       if (name == "blend") {
-        const std::optional<std::string> amountArg =
-            match[2].matched ? std::optional<std::string>(match[2].str()) : std::nullopt;
+        const std::optional<std::string> amountArg
+            = match[2].matched ? std::optional<std::string>(match[2].str()) : std::nullopt;
         const double amount = std::clamp(parseNumber(amountArg), 0.0, 1.0);
         newHue = std::fmod(srcHue + diff * amount + 360.0, 360.0);
       } else if (name == "harmonize") {
@@ -458,8 +484,8 @@ namespace noctalia::theme {
     RichColor applyColorFilter(RichColor color, const std::string& name, const std::optional<std::string>& arg) {
       auto [h, s, l] = color.color.toHsl();
       if (name == "grayscale") {
-        const int gray =
-            static_cast<int>(std::lround(0.299 * color.color.r + 0.587 * color.color.g + 0.114 * color.color.b));
+        const int gray
+            = static_cast<int>(std::lround(0.299 * color.color.r + 0.587 * color.color.g + 0.114 * color.color.b));
         color.color = Color(gray, gray, gray);
         return color;
       }
@@ -1117,8 +1143,8 @@ namespace noctalia::theme {
       const std::filesystem::path expanded = FileUtils::expandUserPath(path);
       if (expanded.is_absolute())
         return expanded;
-      const std::filesystem::path base =
-          configPath.has_parent_path() ? configPath.parent_path() : std::filesystem::path{};
+      const std::filesystem::path base
+          = configPath.has_parent_path() ? configPath.parent_path() : std::filesystem::path{};
       return base / expanded;
     }
 
@@ -1267,8 +1293,8 @@ namespace noctalia::theme {
     std::vector<ParsedTemplateEntry> entries;
     entries.reserve(templates->size());
     for (const auto& [templateName, templateNode] : *templates) {
-      if (!m_options.enabledTemplates.empty() &&
-          !m_options.enabledTemplates.contains(std::string(templateName.str()))) {
+      if (!m_options.enabledTemplates.empty()
+          && !m_options.enabledTemplates.contains(std::string(templateName.str()))) {
         continue;
       }
       const toml::table* tpl = templateNode.as_table();
@@ -1354,8 +1380,8 @@ namespace noctalia::theme {
           continue;
         }
 
-        const auto fileResult =
-            EngineImpl(m_themeData, renderOptions).renderFile(effectiveInput, std::filesystem::path(outputPath));
+        const auto fileResult
+            = EngineImpl(m_themeData, renderOptions).renderFile(effectiveInput, std::filesystem::path(outputPath));
         if (!fileResult.success) {
           ok = false;
           continue;

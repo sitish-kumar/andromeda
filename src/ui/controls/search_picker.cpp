@@ -80,8 +80,8 @@ namespace {
         setFill(clearColorSpec());
       }
 
-      ColorSpec foreground =
-          option.enabled ? colorSpecFromRole(ColorRole::OnSurface) : colorSpecFromRole(ColorRole::OnSurface, 0.55f);
+      ColorSpec foreground
+          = option.enabled ? colorSpecFromRole(ColorRole::OnSurface) : colorSpecFromRole(ColorRole::OnSurface, 0.55f);
       ColorSpec detailForeground = colorSpecFromRole(ColorRole::OnSurfaceVariant, option.enabled ? 1.0f : 0.55f);
       if (highlighted) {
         foreground = colorSpecFromRole(ColorRole::OnPrimary);

@@ -319,8 +319,8 @@ void DesktopWidgetsController::normalizeSnapshot() {
     normalizeDesktopWidgetSettings(widget);
 
     if (widget.id.empty() || seenIds.contains(widget.id)) {
-      const std::uint64_t nextCounter =
-          maxCounter == std::numeric_limits<std::uint64_t>::max() ? maxCounter : (maxCounter + 1);
+      const std::uint64_t nextCounter
+          = maxCounter == std::numeric_limits<std::uint64_t>::max() ? maxCounter : (maxCounter + 1);
       maxCounter = nextCounter;
       widget.id = makeDesktopWidgetId(nextCounter);
     }

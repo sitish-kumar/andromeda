@@ -27,8 +27,8 @@ public:
   LuauHost(const LuauHost&) = delete;
   LuauHost& operator=(const LuauHost&) = delete;
 
-  using AsyncCommandResultHandler =
-      std::function<void(std::uint64_t hostId, int callbackRef, process::RunResult result)>;
+  using AsyncCommandResultHandler
+      = std::function<void(std::uint64_t hostId, int callbackRef, process::RunResult result)>;
   using AsyncProcessMatchResultHandler = std::function<void(std::uint64_t hostId, int callbackRef, bool matched)>;
 
   // Compile and load `source` as a chunk named `chunkName`. The chunk is left

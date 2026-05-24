@@ -646,8 +646,8 @@ void WaylandConnection::bindGlobal(
 
   if (interfaceName == wl_subcompositor_interface.name) {
     const auto bindVersion = std::min(version, kSubcompositorVersion);
-    m_subcompositor =
-        static_cast<wl_subcompositor*>(wl_registry_bind(registry, name, &wl_subcompositor_interface, bindVersion));
+    m_subcompositor
+        = static_cast<wl_subcompositor*>(wl_registry_bind(registry, name, &wl_subcompositor_interface, bindVersion));
     return;
   }
 
@@ -691,8 +691,8 @@ void WaylandConnection::bindGlobal(
 
   if (interfaceName == zdwl_ipc_manager_v2_interface.name) {
     m_hasDwlIpcGlobal = true;
-    auto* manager =
-        static_cast<zdwl_ipc_manager_v2*>(wl_registry_bind(registry, name, &zdwl_ipc_manager_v2_interface, 2));
+    auto* manager
+        = static_cast<zdwl_ipc_manager_v2*>(wl_registry_bind(registry, name, &zdwl_ipc_manager_v2_interface, 2));
     if (m_dwlIpcManagerCallback) {
       m_dwlIpcManagerCallback(manager);
     } else {
@@ -736,8 +736,8 @@ void WaylandConnection::bindGlobal(
 
   if (interfaceName == xdg_activation_v1_interface.name) {
     const auto bindVersion = std::min(version, kXdgActivationVersion);
-    m_xdgActivation =
-        static_cast<xdg_activation_v1*>(wl_registry_bind(registry, name, &xdg_activation_v1_interface, bindVersion));
+    m_xdgActivation
+        = static_cast<xdg_activation_v1*>(wl_registry_bind(registry, name, &xdg_activation_v1_interface, bindVersion));
     return;
   }
 

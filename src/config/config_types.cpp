@@ -191,10 +191,8 @@ ResolvedIdleBehavior resolveIdleBehaviorActions(const IdleBehaviorConfig& behavi
   }
   if (act == "suspend") {
     return {
-        .idleAction =
-            IdleActionRequest{
-                .kind = IdleActionKind::Suspend, .command = {}, .lockBeforeSuspend = tmp.lockBeforeSuspend
-            },
+        .idleAction
+        = IdleActionRequest{.kind = IdleActionKind::Suspend, .command = {}, .lockBeforeSuspend = tmp.lockBeforeSuspend},
         .resumeAction = resume({}),
     };
   }
@@ -384,9 +382,9 @@ bool outputMatchesSelector(const std::string& match, const WaylandOutput& output
     std::size_t pos = 0;
     while ((pos = output.description.find(match, pos)) != std::string::npos) {
       const bool startOk = (pos == 0 || std::isspace(static_cast<unsigned char>(output.description[pos - 1])) != 0);
-      const bool endOk =
-          (pos + match.size() == output.description.size() ||
-           std::isspace(static_cast<unsigned char>(output.description[pos + match.size()])) != 0);
+      const bool endOk
+          = (pos + match.size() == output.description.size()
+             || std::isspace(static_cast<unsigned char>(output.description[pos + match.size()])) != 0);
       if (startOk && endOk) {
         return true;
       }

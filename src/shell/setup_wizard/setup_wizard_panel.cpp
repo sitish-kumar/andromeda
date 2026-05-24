@@ -305,11 +305,9 @@ void SetupWizardPanel::create() {
       row->addChild(
           ui::select({
               .out = &m_modeSelect,
-              .options =
-                  std::vector<std::string>{
-                      i18n::tr("settings.options.theme.mode.dark"), i18n::tr("settings.options.theme.mode.light"),
-                      i18n::tr("common.states.auto")
-                  },
+              .options = std::vector<
+                  std::
+                      string>{i18n::tr("settings.options.theme.mode.dark"), i18n::tr("settings.options.theme.mode.light"), i18n::tr("common.states.auto")},
               .selectedIndex = modeIdx,
               .fontSize = Style::fontSizeBody * scale,
               .controlHeight = Style::controlHeight * scale,
@@ -341,8 +339,8 @@ void SetupWizardPanel::create() {
       // and write no override until the user actually changes a control. The
       // wizard only offers builtin/wallpaper, so community/custom sources are
       // displayed as builtin but left untouched in config unless changed.
-      m_paletteSource =
-          cfg.theme.source == PaletteSource::Wallpaper ? PaletteSource::Wallpaper : PaletteSource::Builtin;
+      m_paletteSource
+          = cfg.theme.source == PaletteSource::Wallpaper ? PaletteSource::Wallpaper : PaletteSource::Builtin;
       m_builtinPalette = cfg.theme.builtinPalette;
       const std::string_view currentSource = m_paletteSource == PaletteSource::Wallpaper ? "wallpaper" : "builtin";
       row->addChild(

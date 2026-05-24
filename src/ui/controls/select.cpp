@@ -205,8 +205,10 @@ std::string_view Select::selectedText() const noexcept {
 }
 
 void Select::doLayout(Renderer& renderer) {
-  if (m_triggerBackground == nullptr || m_triggerLabel == nullptr || m_triggerGlyph == nullptr ||
-      m_triggerArea == nullptr) {
+  if (m_triggerBackground == nullptr
+      || m_triggerLabel == nullptr
+      || m_triggerGlyph == nullptr
+      || m_triggerArea == nullptr) {
     return;
   }
 
@@ -216,8 +218,8 @@ void Select::doLayout(Renderer& renderer) {
   m_triggerLabel->measure(renderer);
   m_triggerGlyph->measure(renderer);
 
-  const bool hasSelectedPreview =
-      m_selectedIndex < m_optionSwatchPreviews.size() && !m_optionSwatchPreviews[m_selectedIndex].empty();
+  const bool hasSelectedPreview
+      = m_selectedIndex < m_optionSwatchPreviews.size() && !m_optionSwatchPreviews[m_selectedIndex].empty();
   if (m_triggerPreview != nullptr) {
     m_triggerPreview->setMetricsFromFontSize(m_fontSize);
     if (hasSelectedPreview) {
@@ -227,18 +229,18 @@ void Select::doLayout(Renderer& renderer) {
     m_triggerPreview->setParticipatesInLayout(hasSelectedPreview);
   }
 
-  const float previewWidth =
-      hasSelectedPreview && m_triggerPreview != nullptr ? m_triggerPreview->preferredWidth() : 0.0f;
-  const float previewHeight =
-      hasSelectedPreview && m_triggerPreview != nullptr ? m_triggerPreview->preferredHeight() : 0.0f;
+  const float previewWidth
+      = hasSelectedPreview && m_triggerPreview != nullptr ? m_triggerPreview->preferredWidth() : 0.0f;
+  const float previewHeight
+      = hasSelectedPreview && m_triggerPreview != nullptr ? m_triggerPreview->preferredHeight() : 0.0f;
   const bool hasIndicators = !hasSelectedPreview && !m_indicatorColors.empty();
   const float indicatorSize = hasIndicators ? std::round(m_fontSize) : 0.0f;
   const float indicatorBorder = hasIndicators ? 1.5f : 0.0f;
-  const float leadingInset =
-      hasSelectedPreview ? (previewWidth + Style::spaceSm) : (hasIndicators ? indicatorSize + Style::spaceSm : 0.0f);
+  const float leadingInset
+      = hasSelectedPreview ? (previewWidth + Style::spaceSm) : (hasIndicators ? indicatorSize + Style::spaceSm : 0.0f);
 
-  float contentWidth =
-      m_triggerLabel->width() + m_horizontalPadding * 2.0f + m_glyphSize + Style::spaceXs + leadingInset;
+  float contentWidth
+      = m_triggerLabel->width() + m_horizontalPadding * 2.0f + m_glyphSize + Style::spaceXs + leadingInset;
   float dropdownWidth = m_fixedWidth > 0.0f ? m_fixedWidth : std::max(minWidth(), contentWidth);
 
   setSize(dropdownWidth, m_controlHeight);
@@ -263,8 +265,8 @@ void Select::doLayout(Renderer& renderer) {
   }
 
   const float triggerLabelLeft = m_horizontalPadding + leadingInset;
-  const float triggerLabelMax =
-      std::max(0.0f, dropdownWidth - (triggerLabelLeft + m_horizontalPadding + m_glyphSize + Style::spaceXs));
+  const float triggerLabelMax
+      = std::max(0.0f, dropdownWidth - (triggerLabelLeft + m_horizontalPadding + m_glyphSize + Style::spaceXs));
   m_triggerLabel->setMaxWidth(triggerLabelMax);
   m_triggerLabel->measure(renderer);
   float triggerLabelY = std::round((m_controlHeight - m_triggerLabel->height()) * 0.5f);
@@ -288,8 +290,9 @@ void Select::handleKey(std::uint32_t sym, std::uint32_t /*utf32*/, bool pressed)
     return;
   }
 
-  if (KeybindMatcher::matches(KeybindAction::Down, sym, 0) || KeybindMatcher::matches(KeybindAction::Up, sym, 0) ||
-      KeybindMatcher::matches(KeybindAction::Validate, sym, 0)) {
+  if (KeybindMatcher::matches(KeybindAction::Down, sym, 0)
+      || KeybindMatcher::matches(KeybindAction::Up, sym, 0)
+      || KeybindMatcher::matches(KeybindAction::Validate, sym, 0)) {
     if (!m_open) {
       toggleOpen();
     }

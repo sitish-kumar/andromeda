@@ -429,10 +429,9 @@ LayoutSize Flex::runLayout(Renderer& renderer, const LayoutConstraints& constrai
   const bool crossKnown = horizontal ? heightKnown : widthKnown;
   const float containerMain = horizontal ? targetWidth : targetHeight;
   const float containerCross = horizontal ? targetHeight : targetWidth;
-  const float innerCross =
-      crossKnown
-          ? std::max(0.0f, containerCross - crossPaddingStart(*this, horizontal) - crossPaddingEnd(*this, horizontal))
-          : 0.0f;
+  const float innerCross = crossKnown
+      ? std::max(0.0f, containerCross - crossPaddingStart(*this, horizontal) - crossPaddingEnd(*this, horizontal))
+      : 0.0f;
 
   FlexScratchGuard scratch;
   auto& items = scratch.items();
@@ -511,8 +510,8 @@ LayoutSize Flex::runLayout(Renderer& renderer, const LayoutConstraints& constrai
     childrenMain += item.main;
     crossMax = std::max(crossMax, item.cross);
   }
-  const float contentMain =
-      mainPaddingStart(*this, horizontal) + childrenMain + totalGap + mainPaddingEnd(*this, horizontal);
+  const float contentMain
+      = mainPaddingStart(*this, horizontal) + childrenMain + totalGap + mainPaddingEnd(*this, horizontal);
   const float contentCross = crossPaddingStart(*this, horizontal) + crossMax + crossPaddingEnd(*this, horizontal);
 
   LayoutSize desired = sizeFromAxes(horizontal, contentMain, contentCross);
@@ -529,10 +528,10 @@ LayoutSize Flex::runLayout(Renderer& renderer, const LayoutConstraints& constrai
   if (arrangeChildren) {
     const float finalMain = horizontal ? width() : height();
     const float finalCross = horizontal ? height() : width();
-    const float innerMain =
-        std::max(0.0f, finalMain - mainPaddingStart(*this, horizontal) - mainPaddingEnd(*this, horizontal));
-    const float finalInnerCross =
-        std::max(0.0f, finalCross - crossPaddingStart(*this, horizontal) - crossPaddingEnd(*this, horizontal));
+    const float innerMain
+        = std::max(0.0f, finalMain - mainPaddingStart(*this, horizontal) - mainPaddingEnd(*this, horizontal));
+    const float finalInnerCross
+        = std::max(0.0f, finalCross - crossPaddingStart(*this, horizontal) - crossPaddingEnd(*this, horizontal));
     float arrangedChildrenMain = 0.0f;
     for (const auto& item : items) {
       arrangedChildrenMain += item.main;
@@ -612,8 +611,8 @@ void Flex::doArrange(Renderer& renderer, const LayoutRect& rect) {
 
 LayoutSize Flex::measureByLayout(Renderer& renderer, const LayoutConstraints& constraints) {
   const float measureWidth = constraints.hasExactWidth() ? constraints.maxWidth : (m_explicitWidth ? width() : 0.0f);
-  const float measureHeight =
-      constraints.hasExactHeight() ? constraints.maxHeight : (m_explicitHeight ? height() : 0.0f);
+  const float measureHeight
+      = constraints.hasExactHeight() ? constraints.maxHeight : (m_explicitHeight ? height() : 0.0f);
   setSizeFromLayout(measureWidth, measureHeight);
   doLayout(renderer);
   return constraints.constrain(LayoutSize{.width = width(), .height = height()});

@@ -93,8 +93,9 @@ namespace {
   constexpr int kExpandedMaxLines = 500;
 
   std::filesystem::path remoteNotificationIconCachePath(std::string_view url) {
-    return std::filesystem::path("/tmp") / "noctalia-notification-icons" /
-           (std::to_string(std::hash<std::string_view>{}(url)) + ".img");
+    return std::filesystem::path("/tmp")
+        / "noctalia-notification-icons"
+        / (std::to_string(std::hash<std::string_view>{}(url)) + ".img");
   }
 
   std::string normalizeLocalIconPath(std::string_view iconValue) { return uri::normalizeFileUrl(iconValue); }
@@ -140,9 +141,8 @@ namespace {
   }
 
   std::int64_t currentRelativeTimeSlot() {
-    return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch())
-               .count() /
-           15;
+    return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count()
+        / 15;
   }
 
   bool matchesHistoryFilter(const NotificationHistoryEntry& e, std::size_t filterIndex) {
@@ -230,10 +230,9 @@ namespace {
     );
     bool bodyLineTruncated = false;
     const std::string collapsedBodyText = StringUtils::truncateByLines(bodyText, kBodyMaxLines, &bodyLineTruncated);
-    const bool bodyExpandable = bodyLineTruncated || canExpandText(
-                                                         renderer, bodyText, Style::fontSizeCaption * scale,
-                                                         FontWeight::Normal, metrics.cardTextWidth, kBodyMaxLines
-                                                     );
+    const bool bodyExpandable = bodyLineTruncated
+        || canExpandText(renderer, bodyText, Style::fontSizeCaption * scale, FontWeight::Normal, metrics.cardTextWidth,
+                         kBodyMaxLines);
     metrics.canExpand = summaryExpandable || bodyExpandable;
     metrics.expanded = metrics.canExpand && expandedRequested;
     metrics.bodyText = metrics.expanded ? bodyText : collapsedBodyText;
@@ -242,8 +241,8 @@ namespace {
     const float iconColumn = iconPx + Style::spaceSm * scale;
     const float actionButtonSize = kNotificationActionButtonSize * scale;
     const float actionButtonsGap = Style::spaceXs * scale;
-    const float headerActionsWidth =
-        actionButtonSize + (metrics.canExpand ? (actionButtonsGap + actionButtonSize) : 0.0f);
+    const float headerActionsWidth
+        = actionButtonSize + (metrics.canExpand ? (actionButtonsGap + actionButtonSize) : 0.0f);
     const float leftClusterWidth = metrics.cardTextWidth - headerActionsWidth;
     metrics.metaTextWidth = std::max(0.0f, leftClusterWidth - iconColumn);
 
@@ -258,14 +257,14 @@ namespace {
         metrics.expanded ? kExpandedMaxLines : kSummaryMaxLines
     );
     const float bodyHeight = metrics.bodyText.empty()
-                                 ? 0.0f
-                                 : measuredTextHeight(
-                                       renderer, metrics.bodyText, Style::fontSizeCaption * scale, FontWeight::Normal,
-                                       metrics.cardTextWidth, metrics.expanded ? kExpandedMaxLines : kBodyMaxLines
-                                   );
+        ? 0.0f
+        : measuredTextHeight(
+              renderer, metrics.bodyText, Style::fontSizeCaption * scale, FontWeight::Normal, metrics.cardTextWidth,
+              metrics.expanded ? kExpandedMaxLines : kBodyMaxLines
+          );
 
-    const float actionsRowHeight =
-        showHistoryActions ? measureHistoryActionsRowHeight(renderer, entry.notification.actions, scale) : 0.0f;
+    const float actionsRowHeight
+        = showHistoryActions ? measureHistoryActionsRowHeight(renderer, entry.notification.actions, scale) : 0.0f;
 
     const float paddingY = (Style::spaceSm + Style::spaceXs) * scale * 2.0f;
     int visibleSegments = 2;
@@ -394,8 +393,8 @@ namespace {
         IconResolver& iconResolver, std::function<void(uint32_t)> onToggleExpanded,
         std::function<void(uint32_t, bool)> onRemove, const std::function<void(uint32_t, const std::string&)>& onAction
     ) {
-      const NotificationCardMetrics metrics =
-          measureNotificationCard(renderer, entry, m_scale, width, expanded, showHistoryActions);
+      const NotificationCardMetrics metrics
+          = measureNotificationCard(renderer, entry, m_scale, width, expanded, showHistoryActions);
       setMinWidth(width);
       setSize(width, metrics.height);
 
@@ -525,8 +524,8 @@ namespace {
       if (entry.notification.imageData.has_value()) {
         const auto& image = *entry.notification.imageData;
         if (image.width > 0 && image.height > 0 && !image.data.empty()) {
-          const bool validImageMetadata = image.bitsPerSample == 8 && ((image.channels == 4 && image.hasAlpha) ||
-                                                                       (image.channels == 3 && !image.hasAlpha));
+          const bool validImageMetadata = image.bitsPerSample == 8
+              && ((image.channels == 4 && image.hasAlpha) || (image.channels == 3 && !image.hasAlpha));
           const PixmapFormat format = image.channels == 3 ? PixmapFormat::RGB : PixmapFormat::RGBA;
           const std::uint64_t key = rawImageKey(entry);
           bool ready = m_imageKind == ImageKind::Raw && m_rawImageKey == key && m_image->hasImage();
@@ -599,8 +598,8 @@ public:
     }
     const auto& entry = *m_owner.m_filtered[index];
     const bool expanded = m_owner.m_expandedIds.contains(entry.notification.id);
-    const bool showHistoryActions =
-        m_owner.m_notifications != nullptr && m_owner.m_notifications->hasPendingDBusClose(entry.notification.id);
+    const bool showHistoryActions
+        = m_owner.m_notifications != nullptr && m_owner.m_notifications->hasPendingDBusClose(entry.notification.id);
     return measureNotificationCard(renderer, entry, m_scale, width, expanded, showHistoryActions).height;
   }
 
@@ -617,8 +616,8 @@ public:
       return;
     }
     const auto& entry = *m_owner.m_filtered[index];
-    const bool showHistoryActions =
-        m_owner.m_notifications != nullptr && m_owner.m_notifications->hasPendingDBusClose(entry.notification.id);
+    const bool showHistoryActions
+        = m_owner.m_notifications != nullptr && m_owner.m_notifications->hasPendingDBusClose(entry.notification.id);
     row->bind(
         renderer, entry, width, m_owner.m_expandedIds.contains(entry.notification.id), showHistoryActions,
         m_owner.m_iconResolver, [this](uint32_t id) { m_owner.toggleNotificationExpanded(id); },
@@ -857,8 +856,8 @@ bool NotificationsTab::refreshDataSnapshot() {
 
   const std::uint64_t serial = m_notifications != nullptr ? m_notifications->changeSerial() : 0;
   const std::int64_t relativeSlot = currentRelativeTimeSlot();
-  const bool changed =
-      serial != m_lastSerial || relativeSlot != m_lastRelativeTimeSlot || m_filterIndex != m_lastRebuildFilterIndex;
+  const bool changed
+      = serial != m_lastSerial || relativeSlot != m_lastRelativeTimeSlot || m_filterIndex != m_lastRebuildFilterIndex;
   if (!changed) {
     updateEmptyState(hasHistory, !m_filtered.empty());
     return false;

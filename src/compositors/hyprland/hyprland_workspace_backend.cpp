@@ -738,8 +738,8 @@ std::vector<std::string_view> HyprlandWorkspaceBackend::parseEventArgs(std::stri
 }
 
 Workspace HyprlandWorkspaceBackend::toWorkspace(const WorkspaceState& state) {
-  const std::uint32_t coord =
-      state.id >= 0 ? static_cast<std::uint32_t>(state.id - 1) : static_cast<std::uint32_t>(state.ordinal);
+  const std::uint32_t coord
+      = state.id >= 0 ? static_cast<std::uint32_t>(state.id - 1) : static_cast<std::uint32_t>(state.ordinal);
   return Workspace{
       .id = std::to_string(state.id),
       .name = state.name,

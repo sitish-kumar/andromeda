@@ -23,8 +23,15 @@ namespace {
 
   // Returns true if the buffer starts with the RIFF....WEBP signature.
   bool isWebP(const std::uint8_t* data, std::size_t size) {
-    return size >= 12 && data[0] == 'R' && data[1] == 'I' && data[2] == 'F' && data[3] == 'F' && data[8] == 'W' &&
-           data[9] == 'E' && data[10] == 'B' && data[11] == 'P';
+    return size >= 12
+        && data[0] == 'R'
+        && data[1] == 'I'
+        && data[2] == 'F'
+        && data[3] == 'F'
+        && data[8] == 'W'
+        && data[9] == 'E'
+        && data[10] == 'B'
+        && data[11] == 'P';
   }
 
   bool isIco(const std::uint8_t* data, std::size_t size) {
@@ -32,15 +39,24 @@ namespace {
   }
 
   bool isPng(const std::uint8_t* data, std::size_t size) {
-    return size >= 8 && data[0] == 0x89 && data[1] == 'P' && data[2] == 'N' && data[3] == 'G' && data[4] == 0x0D &&
-           data[5] == 0x0A && data[6] == 0x1A && data[7] == 0x0A;
+    return size >= 8
+        && data[0] == 0x89
+        && data[1] == 'P'
+        && data[2] == 'N'
+        && data[3] == 'G'
+        && data[4] == 0x0D
+        && data[5] == 0x0A
+        && data[6] == 0x1A
+        && data[7] == 0x0A;
   }
 
   std::uint16_t readU16LE(const std::uint8_t* p) { return static_cast<std::uint16_t>(p[0] | (p[1] << 8)); }
 
   std::uint32_t readU32LE(const std::uint8_t* p) {
-    return static_cast<std::uint32_t>(p[0]) | (static_cast<std::uint32_t>(p[1]) << 8) |
-           (static_cast<std::uint32_t>(p[2]) << 16) | (static_cast<std::uint32_t>(p[3]) << 24);
+    return static_cast<std::uint32_t>(p[0])
+        | (static_cast<std::uint32_t>(p[1]) << 8)
+        | (static_cast<std::uint32_t>(p[2]) << 16)
+        | (static_cast<std::uint32_t>(p[3]) << 24);
   }
 
   // ICO files contain a directory of sub-images (PNG or BMP DIB). Pick the
@@ -137,8 +153,8 @@ namespace {
       for (int y = 0; y < height; ++y) {
         const int srcRow = bottomUp ? (height - 1 - y) : y;
         const std::uint8_t* srcLine = pixels + static_cast<std::size_t>(srcRow) * rowStride;
-        std::uint8_t* dstLine =
-            decoded.pixels.data() + static_cast<std::size_t>(y) * static_cast<std::size_t>(width) * 4;
+        std::uint8_t* dstLine
+            = decoded.pixels.data() + static_cast<std::size_t>(y) * static_cast<std::size_t>(width) * 4;
         for (int x = 0; x < width; ++x) {
           dstLine[x * 4 + 0] = srcLine[x * 4 + 2]; // R
           dstLine[x * 4 + 1] = srcLine[x * 4 + 1]; // G
@@ -195,8 +211,8 @@ namespace {
       for (int y = 0; y < height; ++y) {
         const int maskRow = bottomUp ? (height - 1 - y) : y;
         const std::uint8_t* maskLine = andMask + static_cast<std::size_t>(maskRow) * andRowStride;
-        std::uint8_t* dstLine =
-            decoded->pixels.data() + static_cast<std::size_t>(y) * static_cast<std::size_t>(width) * 4;
+        std::uint8_t* dstLine
+            = decoded->pixels.data() + static_cast<std::size_t>(y) * static_cast<std::size_t>(width) * 4;
         for (int x = 0; x < width; ++x) {
           if (maskLine[x / 8] & (0x80 >> (x % 8)))
             dstLine[x * 4 + 3] = 0;
@@ -272,8 +288,13 @@ decodeRasterImage(const std::uint8_t* data, std::size_t size, std::string* error
 namespace {
 
   bool isGif(const std::uint8_t* data, std::size_t size) {
-    return size >= 6 && data[0] == 'G' && data[1] == 'I' && data[2] == 'F' && data[3] == '8' &&
-           (data[4] == '7' || data[4] == '9') && data[5] == 'a';
+    return size >= 6
+        && data[0] == 'G'
+        && data[1] == 'I'
+        && data[2] == 'F'
+        && data[3] == '8'
+        && (data[4] == '7' || data[4] == '9')
+        && data[5] == 'a';
   }
 
   // GIF disposal applied to the persistent canvas BEFORE drawing the next
@@ -369,8 +390,8 @@ std::optional<DecodedRasterAnimation> decodeAnimatedGif(
 
   wuffs_base__pixel_buffer pb{};
   {
-    wuffs_base__status st =
-        wuffs_base__pixel_buffer__set_from_slice(&pb, &pixcfg, wuffs_base__make_slice_u8(canvas.data(), canvasBytes));
+    wuffs_base__status st
+        = wuffs_base__pixel_buffer__set_from_slice(&pb, &pixcfg, wuffs_base__make_slice_u8(canvas.data(), canvasBytes));
     if (st.repr != nullptr) {
       return fail(st.repr);
     }
@@ -415,8 +436,8 @@ std::optional<DecodedRasterAnimation> decodeAnimatedGif(
       std::memcpy(previous.data(), canvas.data(), canvasBytes);
     }
 
-    const wuffs_base__pixel_blend blend =
-        fc.overwrite_instead_of_blend() ? WUFFS_BASE__PIXEL_BLEND__SRC : WUFFS_BASE__PIXEL_BLEND__SRC_OVER;
+    const wuffs_base__pixel_blend blend
+        = fc.overwrite_instead_of_blend() ? WUFFS_BASE__PIXEL_BLEND__SRC : WUFFS_BASE__PIXEL_BLEND__SRC_OVER;
 
     wuffs_base__status frameStatus = dec->decode_frame(&pb, &io, blend, workbufSlice, nullptr);
     if (frameStatus.repr != nullptr && frameStatus.repr != wuffs_base__note__end_of_data) {

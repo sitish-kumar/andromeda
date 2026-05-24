@@ -79,8 +79,11 @@ namespace {
   Mat3 nodeLocalTransform(const Node* node) {
     const float cx = node->width() * 0.5f;
     const float cy = node->height() * 0.5f;
-    return Mat3::translation(node->x(), node->y()) * Mat3::translation(cx, cy) * Mat3::rotation(node->rotation()) *
-           Mat3::scale(node->scale(), node->scale()) * Mat3::translation(-cx, -cy);
+    return Mat3::translation(node->x(), node->y())
+        * Mat3::translation(cx, cy)
+        * Mat3::rotation(node->rotation())
+        * Mat3::scale(node->scale(), node->scale())
+        * Mat3::translation(-cx, -cy);
   }
 
 } // namespace

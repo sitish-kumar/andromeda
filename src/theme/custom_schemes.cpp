@@ -213,10 +213,9 @@ namespace noctalia::theme {
         for (int ci = 0; ci < k; ++ci) {
           if (cnt[static_cast<size_t>(ci)] > 0) {
             const double nd = static_cast<double>(cnt[static_cast<size_t>(ci)]);
-            centroids[static_cast<size_t>(ci)] = {
-                acc[static_cast<size_t>(ci)].L / nd, acc[static_cast<size_t>(ci)].a / nd,
-                acc[static_cast<size_t>(ci)].b / nd
-            };
+            centroids[static_cast<size_t>(ci)]
+                = {acc[static_cast<size_t>(ci)].L / nd, acc[static_cast<size_t>(ci)].a / nd,
+                   acc[static_cast<size_t>(ci)].b / nd};
           }
         }
       }
@@ -362,8 +361,9 @@ namespace noctalia::theme {
           return a.chroma > b.chroma;
         });
         for (const auto& e : entries) {
-          const double score = static_cast<double>(familyTotals.size() - rank) * 1'000'000.0 +
-                               static_cast<double>(e.count) * 1000.0 + e.chroma;
+          const double score = static_cast<double>(familyTotals.size() - rank) * 1'000'000.0
+              + static_cast<double>(e.count) * 1000.0
+              + e.chroma;
           result.push_back({e.color, score});
         }
       }
@@ -459,8 +459,9 @@ namespace noctalia::theme {
           return a.count > b.count;
         });
         for (const auto& e : entries) {
-          const double score = static_cast<double>(distant.size() - rank) * 1'000'000.0 + e.chroma * 1000.0 +
-                               static_cast<double>(e.count);
+          const double score = static_cast<double>(distant.size() - rank) * 1'000'000.0
+              + e.chroma * 1000.0
+              + static_cast<double>(e.count);
           result.push_back({e.color, score});
         }
       }
@@ -840,8 +841,8 @@ namespace noctalia::theme {
       const Color on_tertiary = ensureContrast(light_fg, tertiary_adjusted, 7.0);
       const Color on_error = ensureContrast(light_fg, error, 7.0);
 
-      const Color on_primary_container =
-          ensureContrast(fromHsl(primary_h, primary_s, 0.15), primary_container, 4.5, -1);
+      const Color on_primary_container
+          = ensureContrast(fromHsl(primary_h, primary_s, 0.15), primary_container, 4.5, -1);
       auto [sec_h, sec_s, _sl] = secondary.toHsl();
       (void)_sl;
       const Color on_secondary_container = ensureContrast(fromHsl(sec_h, sec_s, 0.15), secondary_container, 4.5, -1);
@@ -872,8 +873,8 @@ namespace noctalia::theme {
       const Color surface_bright = adjustSurface(palette[0], 0.90, 0.95);
 
       const Color outline = ensureContrast(fromHsl(text_h, std::max(surface_s * 0.4, 0.25), 0.65), surface, 3.0);
-      const Color outline_variant =
-          ensureContrast(fromHsl(text_h, std::max(surface_s * 0.3, 0.20), 0.75), surface, 3.0);
+      const Color outline_variant
+          = ensureContrast(fromHsl(text_h, std::max(surface_s * 0.3, 0.20), 0.75), surface, 3.0);
       const Color shadow = fromHsl(text_h, std::max(surface_s * 0.3, 0.15), 0.80);
       const Color scrim = Color(0, 0, 0);
 

@@ -30,8 +30,13 @@ namespace scripting {
     std::optional<int> updateIntervalMs;
 
     [[nodiscard]] bool empty() const {
-      return !text.has_value() && !glyph.has_value() && !fontFamily.has_value() && !textColor.has_value() &&
-             !glyphColor.has_value() && !visible.has_value() && !updateIntervalMs.has_value();
+      return !text.has_value()
+          && !glyph.has_value()
+          && !fontFamily.has_value()
+          && !textColor.has_value()
+          && !glyphColor.has_value()
+          && !visible.has_value()
+          && !updateIntervalMs.has_value();
     }
   };
 

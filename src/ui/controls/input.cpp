@@ -156,10 +156,11 @@ Input::Input() {
       const float textStartX = m_horizontalPadding + kTextInnerInset;
       const std::size_t offset = xToByteOffset(data.localX - textStartX + m_scrollOffset - m_contentLeadSlack);
       const auto now = std::chrono::steady_clock::now();
-      const bool isDoubleClick = data.button == BTN_LEFT && m_hasLastPrimaryPress &&
-                                 now - m_lastPrimaryPressTime <= kDoubleClickThreshold &&
-                                 std::abs(data.localX - m_lastPrimaryPressX) <= kDoubleClickDistance &&
-                                 std::abs(data.localY - m_lastPrimaryPressY) <= kDoubleClickDistance;
+      const bool isDoubleClick = data.button == BTN_LEFT
+          && m_hasLastPrimaryPress
+          && now - m_lastPrimaryPressTime <= kDoubleClickThreshold
+          && std::abs(data.localX - m_lastPrimaryPressX) <= kDoubleClickDistance
+          && std::abs(data.localY - m_lastPrimaryPressY) <= kDoubleClickDistance;
 
       if (data.button == BTN_LEFT) {
         m_lastPrimaryPressTime = now;
@@ -586,9 +587,15 @@ void Input::handleKey(std::uint32_t sym, std::uint32_t utf32, std::uint32_t modi
 
   // Ignore keys that produce no text and aren't action keys we handle below
   if (utf32 == 0 && !preedit) {
-    const bool navigationOrEdit = KeySymbol::isBackspace(sym) || KeySymbol::isDelete(sym) || KeySymbol::isLeft(sym) ||
-                                  KeySymbol::isRight(sym) || KeySymbol::isHome(sym) || KeySymbol::isEnd(sym) ||
-                                  KeySymbol::isInsert(sym) || undoShortcut || redoShortcut;
+    const bool navigationOrEdit = KeySymbol::isBackspace(sym)
+        || KeySymbol::isDelete(sym)
+        || KeySymbol::isLeft(sym)
+        || KeySymbol::isRight(sym)
+        || KeySymbol::isHome(sym)
+        || KeySymbol::isEnd(sym)
+        || KeySymbol::isInsert(sym)
+        || undoShortcut
+        || redoShortcut;
     if (!navigationOrEdit && !validateMatch) {
       return;
     }
@@ -606,8 +613,8 @@ void Input::handleKey(std::uint32_t sym, std::uint32_t utf32, std::uint32_t modi
   }
 
   const bool copyShortcut = ctrl && (KeySymbol::isInsert(sym) || sym == 'c' || sym == 'C');
-  const bool cutShortcut =
-      (ctrl && (sym == 'x' || sym == 'X')) || (!ctrl && shift && KeySymbol::isDelete(sym) && hasSelection());
+  const bool cutShortcut
+      = (ctrl && (sym == 'x' || sym == 'X')) || (!ctrl && shift && KeySymbol::isDelete(sym) && hasSelection());
   const bool pasteShortcut = (ctrl && (sym == 'v' || sym == 'V')) || (!ctrl && shift && KeySymbol::isInsert(sym));
 
   if (undoShortcut) {
@@ -775,9 +782,9 @@ void Input::applyVisualState() {
     m_background->setVisible(true);
     const Color fill = focused ? resolved(ColorRole::Surface) : resolved(ColorRole::SurfaceVariant);
     const Color border = m_invalid
-                             ? resolved(ColorRole::Error)
-                             : (focused ? resolved(ColorRole::Primary)
-                                        : (inputHovered ? resolved(ColorRole::Hover) : resolved(ColorRole::Outline)));
+        ? resolved(ColorRole::Error)
+        : (focused ? resolved(ColorRole::Primary)
+                   : (inputHovered ? resolved(ColorRole::Hover) : resolved(ColorRole::Outline)));
 
     m_background->setStyle(
         RoundedRectStyle{
@@ -816,11 +823,10 @@ void Input::applyVisualState() {
     } else {
       m_label->setColor(colorSpecFromRole(ColorRole::OnPrimary));
     }
-    const Color passwordGlyphEmb =
-        m_invalid ? resolved(ColorRole::Error)
-                  : (showingPlaceholder
-                         ? resolved(ColorRole::OnPrimary, kPrimaryPlaceholderAlpha)
-                         : (readOnly ? resolved(ColorRole::OnPrimary, 0.65f) : resolved(ColorRole::OnPrimary)));
+    const Color passwordGlyphEmb = m_invalid
+        ? resolved(ColorRole::Error)
+        : (showingPlaceholder ? resolved(ColorRole::OnPrimary, kPrimaryPlaceholderAlpha)
+                              : (readOnly ? resolved(ColorRole::OnPrimary, 0.65f) : resolved(ColorRole::OnPrimary)));
     for (auto* glyph : m_passwordGlyphs) {
       glyph->setColor(passwordGlyphEmb);
     }
@@ -843,11 +849,11 @@ void Input::applyVisualState() {
   m_cursor->setStyle(cursorStyle);
 
   const bool showingPlaceholder = m_value.empty() && !m_placeholder.empty();
-  const ColorSpec textColor =
-      m_invalid ? colorSpecFromRole(ColorRole::Error)
-                : (showingPlaceholder ? colorSpecFromRole(ColorRole::OnSurfaceVariant, kPlaceholderAlpha)
-                                      : (readOnly ? colorSpecFromRole(ColorRole::OnSurfaceVariant)
-                                                  : colorSpecFromRole(ColorRole::OnSurface)));
+  const ColorSpec textColor = m_invalid
+      ? colorSpecFromRole(ColorRole::Error)
+      : (showingPlaceholder
+             ? colorSpecFromRole(ColorRole::OnSurfaceVariant, kPlaceholderAlpha)
+             : (readOnly ? colorSpecFromRole(ColorRole::OnSurfaceVariant) : colorSpecFromRole(ColorRole::OnSurface)));
   m_label->setColor(textColor);
   const Color passwordGlyphColor = resolveColorSpec(textColor);
   for (auto* glyph : m_passwordGlyphs) {
@@ -901,8 +907,8 @@ void Input::updateInteractiveGeometry() {
   }
 
   const float previousScrollOffset = m_scrollOffset;
-  const bool shouldRevealCursor =
-      m_inputArea != nullptr && (m_inputArea->focused() || m_inputArea->pressed() || hasSelection());
+  const bool shouldRevealCursor
+      = m_inputArea != nullptr && (m_inputArea->focused() || m_inputArea->pressed() || hasSelection());
   if (shouldRevealCursor) {
     ensureCursorVisible();
   } else {
@@ -914,8 +920,8 @@ void Input::updateInteractiveGeometry() {
 
   const float controlHeight = height() > 0.0f ? height() : m_controlHeight;
   const float maxCursorHeight = std::max(0.0f, controlHeight - kCursorPadV * 2.0f);
-  const float cursorHeight =
-      std::clamp(controlHeight * kCursorHeightRatio, std::min(kCursorMinHeight, maxCursorHeight), maxCursorHeight);
+  const float cursorHeight
+      = std::clamp(controlHeight * kCursorHeightRatio, std::min(kCursorMinHeight, maxCursorHeight), maxCursorHeight);
   const float cursorY = std::round((controlHeight - cursorHeight) * 0.5f);
   const float cursorX = stopXForByte(m_cursorPos) - m_scrollOffset + m_contentLeadSlack;
   m_cursor->setPosition(cursorX, cursorY);
@@ -1202,9 +1208,12 @@ void Input::pushUndoSnapshot(EditCoalesceKind kind) {
   }
 
   const auto now = std::chrono::steady_clock::now();
-  if (kind == EditCoalesceKind::Typing && m_lastEditCoalesceKind == EditCoalesceKind::Typing &&
-      m_cursorPos == m_typingCoalesceCursorPos && !hasSelection() && !m_undoStack.empty() &&
-      now - m_lastUndoRecordTime <= kTypingUndoCoalesceWindow) {
+  if (kind == EditCoalesceKind::Typing
+      && m_lastEditCoalesceKind == EditCoalesceKind::Typing
+      && m_cursorPos == m_typingCoalesceCursorPos
+      && !hasSelection()
+      && !m_undoStack.empty()
+      && now - m_lastUndoRecordTime <= kTypingUndoCoalesceWindow) {
     m_redoStack.clear();
     m_lastUndoRecordTime = now;
     return;

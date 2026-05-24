@@ -52,8 +52,11 @@ namespace {
     if (source.size() < 5) {
       return false;
     }
-    return (source[0] == 'd' || source[0] == 'D') && (source[1] == 'a' || source[1] == 'A') &&
-           (source[2] == 't' || source[2] == 'T') && (source[3] == 'a' || source[3] == 'A') && source[4] == ':';
+    return (source[0] == 'd' || source[0] == 'D')
+        && (source[1] == 'a' || source[1] == 'A')
+        && (source[2] == 't' || source[2] == 'T')
+        && (source[3] == 'a' || source[3] == 'A')
+        && source[4] == ':';
   }
 
   [[nodiscard]] char asciiLower(char ch) { return ch >= 'A' && ch <= 'Z' ? static_cast<char>(ch - 'A' + 'a') : ch; }
@@ -314,8 +317,11 @@ namespace {
 
     const std::size_t scanEnd = std::min(data.size(), pos + 256U);
     for (; pos < scanEnd; ++pos) {
-      if (pos + 4 <= data.size() && data[pos] == '<' && asciiLower(static_cast<char>(data[pos + 1])) == 's' &&
-          asciiLower(static_cast<char>(data[pos + 2])) == 'v' && asciiLower(static_cast<char>(data[pos + 3])) == 'g') {
+      if (pos + 4 <= data.size()
+          && data[pos] == '<'
+          && asciiLower(static_cast<char>(data[pos + 1])) == 's'
+          && asciiLower(static_cast<char>(data[pos + 2])) == 'v'
+          && asciiLower(static_cast<char>(data[pos + 3])) == 'g') {
         return true;
       }
     }
@@ -356,8 +362,9 @@ namespace {
         // Use the sRGB resize: image bytes are sRGB-encoded, so averaging them
         // directly (the _linear variant) darkens and muddies downscaled icons.
         // STBIR_RGBA handles the non-premultiplied alpha correctly.
-        unsigned char* result =
-            stbir_resize_uint8_srgb(pixels.data(), width, height, 0, resized.data(), resizedW, resizedH, 0, STBIR_RGBA);
+        unsigned char* result = stbir_resize_uint8_srgb(
+            pixels.data(), width, height, 0, resized.data(), resizedW, resizedH, 0, STBIR_RGBA
+        );
         if (result != nullptr) {
           pixels = std::move(resized);
           width = resizedW;
@@ -444,8 +451,8 @@ namespace {
     GError* renderError = nullptr;
     if (rsvg_handle_render_document(handle, cr, &viewport, &renderError) == FALSE) {
       if (errorMessage != nullptr) {
-        *errorMessage =
-            std::string("failed to render SVG: ") + (renderError != nullptr ? renderError->message : "unknown");
+        *errorMessage
+            = std::string("failed to render SVG: ") + (renderError != nullptr ? renderError->message : "unknown");
       }
       if (renderError != nullptr) {
         g_error_free(renderError);

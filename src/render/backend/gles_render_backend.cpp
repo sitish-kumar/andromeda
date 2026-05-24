@@ -82,8 +82,11 @@ void main() {
     GlesSurfaceTarget& operator=(const GlesSurfaceTarget&) = delete;
 
     void resize(std::uint32_t bufferWidth, std::uint32_t bufferHeight) override {
-      if (bufferWidth == 0 || bufferHeight == 0 || m_wlSurface == nullptr || m_display == EGL_NO_DISPLAY ||
-          m_config == nullptr) {
+      if (bufferWidth == 0
+          || bufferHeight == 0
+          || m_wlSurface == nullptr
+          || m_display == EGL_NO_DISPLAY
+          || m_config == nullptr) {
         return;
       }
 
@@ -97,8 +100,8 @@ void main() {
       }
 
       if (m_surface == EGL_NO_SURFACE) {
-        m_surface =
-            eglCreateWindowSurface(m_display, m_config, reinterpret_cast<EGLNativeWindowType>(m_window), nullptr);
+        m_surface
+            = eglCreateWindowSurface(m_display, m_config, reinterpret_cast<EGLNativeWindowType>(m_window), nullptr);
         if (m_surface == EGL_NO_SURFACE && !m_createFailureLogged) {
           const EGLint error = eglGetError();
           kLog.warn(
@@ -116,8 +119,8 @@ void main() {
       if (m_surface != EGL_NO_SURFACE) {
         if (isCurrentEglSurface(m_display, m_surface)) {
           const EGLContext currentContext = eglGetCurrentContext();
-          if (currentContext != EGL_NO_CONTEXT &&
-              eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, currentContext) != EGL_TRUE) {
+          if (currentContext != EGL_NO_CONTEXT
+              && eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, currentContext) != EGL_TRUE) {
             const EGLint error = eglGetError();
             kLog.warn(
                 "eglMakeCurrent(EGL_NO_SURFACE) before surface destroy failed (EGL error 0x{:04x})",

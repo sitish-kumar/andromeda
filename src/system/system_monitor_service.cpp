@@ -178,8 +178,10 @@ namespace {
     const std::string name = StringUtils::toLower(hwmonName);
     const std::string lbl = StringUtils::toLower(label);
 
-    if (name.find("coretemp") != std::string::npos || name.find("k10temp") != std::string::npos ||
-        name.find("zenpower") != std::string::npos || name.find("cpu") != std::string::npos) {
+    if (name.find("coretemp") != std::string::npos
+        || name.find("k10temp") != std::string::npos
+        || name.find("zenpower") != std::string::npos
+        || name.find("cpu") != std::string::npos) {
       score += 20;
     }
 
@@ -206,8 +208,10 @@ namespace {
 
   bool isCpuThermalZoneType(const std::string& type) {
     const std::string t = StringUtils::toLower(type);
-    return t.find("x86_pkg_temp") != std::string::npos || t.find("cpu") != std::string::npos ||
-           t.find("soc") != std::string::npos || t.find("package") != std::string::npos;
+    return t.find("x86_pkg_temp") != std::string::npos
+        || t.find("cpu") != std::string::npos
+        || t.find("soc") != std::string::npos
+        || t.find("package") != std::string::npos;
   }
 
   int scoreGpuHwmonSensor(const std::string& hwmonName, const std::string& label) {
@@ -310,8 +314,8 @@ namespace {
 
     return SysfsGpuUsageReading{
         .percent = totalUsage / static_cast<double>(deviceCount),
-        .source =
-            deviceCount == 1 ? std::format("sysfs:{}", firstSource) : std::format("sysfs ({} devices)", deviceCount),
+        .source
+        = deviceCount == 1 ? std::format("sysfs:{}", firstSource) : std::format("sysfs ({} devices)", deviceCount),
     };
   }
 
@@ -700,13 +704,13 @@ private:
       return false;
     }
 
-    if (!loadDlsymFunction(m_library, "nvmlInit_v2", "nvmlInit", m_init) ||
-        !loadDlsymFunction(m_library, "nvmlShutdown", m_shutdown) ||
-        !loadDlsymFunction(m_library, "nvmlDeviceGetCount_v2", "nvmlDeviceGetCount", m_getCount) ||
-        !loadDlsymFunction(m_library, "nvmlDeviceGetHandleByIndex_v2", "nvmlDeviceGetHandleByIndex", m_getHandle) ||
-        !loadDlsymFunction(m_library, "nvmlDeviceGetTemperature", m_getTemperature) ||
-        !loadDlsymFunction(m_library, "nvmlDeviceGetUtilizationRates", m_getUsageRates) ||
-        !loadDlsymFunction(m_library, "nvmlDeviceGetMemoryInfo", m_getMemoryInfo)) {
+    if (!loadDlsymFunction(m_library, "nvmlInit_v2", "nvmlInit", m_init)
+        || !loadDlsymFunction(m_library, "nvmlShutdown", m_shutdown)
+        || !loadDlsymFunction(m_library, "nvmlDeviceGetCount_v2", "nvmlDeviceGetCount", m_getCount)
+        || !loadDlsymFunction(m_library, "nvmlDeviceGetHandleByIndex_v2", "nvmlDeviceGetHandleByIndex", m_getHandle)
+        || !loadDlsymFunction(m_library, "nvmlDeviceGetTemperature", m_getTemperature)
+        || !loadDlsymFunction(m_library, "nvmlDeviceGetUtilizationRates", m_getUsageRates)
+        || !loadDlsymFunction(m_library, "nvmlDeviceGetMemoryInfo", m_getMemoryInfo)) {
       close();
       m_state = State::Unavailable;
       return false;

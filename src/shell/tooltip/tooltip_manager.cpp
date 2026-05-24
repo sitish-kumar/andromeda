@@ -72,8 +72,11 @@ void TooltipManager::onHoverChange(InputArea* area, zwlr_layer_surface_v1* paren
 }
 
 void TooltipManager::showPopup() {
-  if (m_wayland == nullptr || m_renderContext == nullptr || m_pendingParent == nullptr || m_pendingOutput == nullptr ||
-      m_pendingArea == nullptr) {
+  if (m_wayland == nullptr
+      || m_renderContext == nullptr
+      || m_pendingParent == nullptr
+      || m_pendingOutput == nullptr
+      || m_pendingArea == nullptr) {
     m_state = State::Idle;
     return;
   }
@@ -97,8 +100,8 @@ void TooltipManager::showPopup() {
       .height = contentH,
       .anchor = XDG_POSITIONER_ANCHOR_BOTTOM,
       .gravity = XDG_POSITIONER_GRAVITY_BOTTOM,
-      .constraintAdjustment =
-          XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X,
+      .constraintAdjustment
+      = XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X,
       .offsetX = 0,
       .offsetY = static_cast<std::int32_t>(Style::spaceXs),
       .grab = false,

@@ -79,9 +79,10 @@ void ContextMenuPopup::openCommon(
       .height = chrome.surfaceHeight,
       .anchor = resolvedPlacement.anchor,
       .gravity = resolvedPlacement.gravity,
-      .constraintAdjustment = XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X |
-                              XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y |
-                              XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y,
+      .constraintAdjustment = XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X
+          | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y
+          | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_X
+          | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y,
       .offsetX = resolvedPlacement.offsetX,
       .offsetY = resolvedPlacement.offsetY,
       .serial = m_wayland.lastInputSerial(),
@@ -112,9 +113,9 @@ void ContextMenuPopup::openCommon(
 
     self->m_renderContext.makeCurrent(self->m_surface->renderTarget());
 
-    const bool needsSceneBuild = self->m_sceneRoot == nullptr ||
-                                 static_cast<std::uint32_t>(std::round(self->m_sceneRoot->width())) != width ||
-                                 static_cast<std::uint32_t>(std::round(self->m_sceneRoot->height())) != height;
+    const bool needsSceneBuild = self->m_sceneRoot == nullptr
+        || static_cast<std::uint32_t>(std::round(self->m_sceneRoot->width())) != width
+        || static_cast<std::uint32_t>(std::round(self->m_sceneRoot->height())) != height;
     if (!needsSceneBuild && !needsLayout) {
       return;
     }
@@ -160,8 +161,8 @@ void ContextMenuPopup::openCommon(
   m_surface->setDismissedCallback([self]() { DeferredCall::callLater([self]() { self->close(); }); });
 
   const bool initialized = parentXdgSurface != nullptr
-                               ? m_surface->initializeAsChild(parentXdgSurface, output, popupCfg)
-                               : m_surface->initialize(parentLayerSurface, output, popupCfg);
+      ? m_surface->initializeAsChild(parentXdgSurface, output, popupCfg)
+      : m_surface->initialize(parentLayerSurface, output, popupCfg);
   if (!initialized) {
     kLog.warn("failed to create context menu popup");
     m_surface.reset();

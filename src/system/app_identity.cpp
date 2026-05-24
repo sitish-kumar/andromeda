@@ -76,9 +76,11 @@ namespace app_identity {
       return false;
     }
     const auto valueKey = identityKey(valueLower);
-    return valueLower == idLower || valueLower == startupWmClassLower || valueLower == nameLower ||
-           (!valueKey.empty() &&
-            (identityKeyMatches(valueKey, idLower) || identityKeyMatches(valueKey, startupWmClassLower)));
+    return valueLower == idLower
+        || valueLower == startupWmClassLower
+        || valueLower == nameLower
+        || (!valueKey.empty()
+            && (identityKeyMatches(valueKey, idLower) || identityKeyMatches(valueKey, startupWmClassLower)));
   }
 
   bool desktopEntryMatchesLower(const DesktopEntry& entry, std::string_view valueLower) {

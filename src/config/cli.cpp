@@ -14,23 +14,23 @@
 namespace noctalia::config {
   namespace {
 
-    constexpr const char* kHelpText =
-        "Usage: noctalia config <command> [options]\n"
-        "\n"
-        "Commands:\n"
-        "  replay-report <report.toml> --target <dir> [--force]\n"
-        "      Reconstruct config-home/noctalia and state-home/noctalia from a support report.\n"
-        "\n"
-        "  replay-report <report.toml> --target <dir> --flattened [--force]\n"
-        "      Reconstruct a single config-home/noctalia/config.toml from the report's merged config.\n";
+    constexpr const char* kHelpText
+        = "Usage: noctalia config <command> [options]\n"
+          "\n"
+          "Commands:\n"
+          "  replay-report <report.toml> --target <dir> [--force]\n"
+          "      Reconstruct config-home/noctalia and state-home/noctalia from a support report.\n"
+          "\n"
+          "  replay-report <report.toml> --target <dir> --flattened [--force]\n"
+          "      Reconstruct a single config-home/noctalia/config.toml from the report's merged config.\n";
 
-    constexpr const char* kReplayHelpText =
-        "Usage: noctalia config replay-report <report.toml> --target <dir> [--flattened] [--force]\n"
-        "\n"
-        "Options:\n"
-        "  --target <dir>  Directory where replay files are written\n"
-        "  --flattened     Write only merged_config.content as config.toml\n"
-        "  --force         Remove an existing target directory before writing\n";
+    constexpr const char* kReplayHelpText
+        = "Usage: noctalia config replay-report <report.toml> --target <dir> [--flattened] [--force]\n"
+          "\n"
+          "Options:\n"
+          "  --target <dir>  Directory where replay files are written\n"
+          "  --flattened     Write only merged_config.content as config.toml\n"
+          "  --force         Remove an existing target directory before writing\n";
 
     struct ReplayOptions {
       std::filesystem::path reportPath;

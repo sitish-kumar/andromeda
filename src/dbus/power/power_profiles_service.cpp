@@ -94,13 +94,14 @@ PowerProfilesService::PowerProfilesService(SystemBus& bus) : m_bus(bus) {
           return;
         }
 
-        bool relevant = changedProperties.contains("ActiveProfile") || changedProperties.contains("Profiles") ||
-                        changedProperties.contains("PerformanceInhibited");
+        bool relevant = changedProperties.contains("ActiveProfile")
+            || changedProperties.contains("Profiles")
+            || changedProperties.contains("PerformanceInhibited");
 
         if (!relevant) {
-          relevant = std::ranges::find(invalidatedProperties, "ActiveProfile") != invalidatedProperties.end() ||
-                     std::ranges::find(invalidatedProperties, "Profiles") != invalidatedProperties.end() ||
-                     std::ranges::find(invalidatedProperties, "PerformanceInhibited") != invalidatedProperties.end();
+          relevant = std::ranges::find(invalidatedProperties, "ActiveProfile") != invalidatedProperties.end()
+              || std::ranges::find(invalidatedProperties, "Profiles") != invalidatedProperties.end()
+              || std::ranges::find(invalidatedProperties, "PerformanceInhibited") != invalidatedProperties.end();
         }
 
         if (relevant) {
@@ -184,8 +185,8 @@ void PowerProfilesService::emitChangedIfNeeded(const PowerProfilesState& next) {
   }
 
   const bool activeProfileChanged = next.activeProfile != m_state.activeProfile;
-  const PowerProfilesChangeOrigin origin =
-      activeProfileChanged ? consumeActiveProfileChangeOrigin(next.activeProfile) : PowerProfilesChangeOrigin::External;
+  const PowerProfilesChangeOrigin origin = activeProfileChanged ? consumeActiveProfileChangeOrigin(next.activeProfile)
+                                                                : PowerProfilesChangeOrigin::External;
   m_state = next;
   if (m_changeCallback) {
     m_changeCallback(m_state, origin);

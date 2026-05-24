@@ -44,10 +44,10 @@ namespace popup_chrome {
       geometry.bleed.down += kShadowSafetyPadding;
     }
 
-    geometry.surfaceWidth =
-        extentFor(geometry.contentWidth + static_cast<float>(geometry.bleed.left + geometry.bleed.right));
-    geometry.surfaceHeight =
-        extentFor(geometry.contentHeight + static_cast<float>(geometry.bleed.up + geometry.bleed.down));
+    geometry.surfaceWidth
+        = extentFor(geometry.contentWidth + static_cast<float>(geometry.bleed.left + geometry.bleed.right));
+    geometry.surfaceHeight
+        = extentFor(geometry.contentHeight + static_cast<float>(geometry.bleed.up + geometry.bleed.down));
     return geometry;
   }
 
@@ -59,9 +59,10 @@ namespace popup_chrome {
     case HorizontalAttachment::Right:
       return baseOffset + geometry.bleed.right;
     case HorizontalAttachment::Center:
-      return baseOffset + static_cast<std::int32_t>(
-                              std::lround(static_cast<float>(geometry.bleed.right - geometry.bleed.left) * 0.5f)
-                          );
+      return baseOffset
+          + static_cast<std::int32_t>(
+                 std::lround(static_cast<float>(geometry.bleed.right - geometry.bleed.left) * 0.5f)
+          );
     }
     return baseOffset;
   }
@@ -74,8 +75,8 @@ namespace popup_chrome {
     case VerticalAttachment::Bottom:
       return baseOffset + geometry.bleed.down;
     case VerticalAttachment::Center:
-      return baseOffset +
-             static_cast<std::int32_t>(std::lround(static_cast<float>(geometry.bleed.down - geometry.bleed.up) * 0.5f));
+      return baseOffset
+          + static_cast<std::int32_t>(std::lround(static_cast<float>(geometry.bleed.down - geometry.bleed.up) * 0.5f));
     }
     return baseOffset;
   }

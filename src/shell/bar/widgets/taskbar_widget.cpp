@@ -295,8 +295,8 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
         }
       }
     }
-    const std::optional<Workspace> clickWorkspace =
-        taskWorkspace != nullptr ? std::optional<Workspace>(taskWorkspace->workspace) : std::nullopt;
+    const std::optional<Workspace> clickWorkspace
+        = taskWorkspace != nullptr ? std::optional<Workspace>(taskWorkspace->workspace) : std::nullopt;
     wl_output* const taskWsHost = taskWorkspace != nullptr ? workspaceHostOutput(*taskWorkspace) : m_output;
 
     if (task.firstHandle != nullptr || !task.workspaceWindowId.empty() || clickWorkspace.has_value()) {
@@ -380,8 +380,9 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     if (externalBadge && !m_workspaceGroupCapsule) {
       float maxMainOverhang = 0.0f;
       for (const auto& wsm : m_workspaces) {
-        const auto measuredDisc =
-            measureWorkspaceDiscSize(renderer, wsm.label, externalBadgeFontSize, badgeBase, m_contentScale, fontWeight);
+        const auto measuredDisc = measureWorkspaceDiscSize(
+            renderer, wsm.label, externalBadgeFontSize, badgeBase, m_contentScale, fontWeight
+        );
         const float measuredMain = m_vertical ? measuredDisc.height : measuredDisc.width;
         maxMainOverhang = std::max(maxMainOverhang, externalBadgeMainOverhang(m_workspaceLabelPlacement, measuredMain));
       }
@@ -412,8 +413,8 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
 
       const bool groupedHorizontalPill = m_groupByWorkspace && !m_vertical;
       const float inlineBadgeFontSize = std::round(Style::fontSizeCaption * 0.85f * m_contentScale);
-      WorkspaceDiscSize disc =
-          measureWorkspaceDiscSize(renderer, ws.label, inlineBadgeFontSize, iconSize, m_contentScale, fontWeight);
+      WorkspaceDiscSize disc
+          = measureWorkspaceDiscSize(renderer, ws.label, inlineBadgeFontSize, iconSize, m_contentScale, fontWeight);
       disc.height = iconSize;
       disc.width = std::round(std::max(iconSize, disc.width));
       const float badgeX = centeredOffset(tileSize, disc.width);
@@ -424,8 +425,8 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       styleWorkspaceDisc(*badge, disc.width, disc.height, ws.workspace);
       auto* badgePtr = static_cast<Box*>(area->addChild(std::move(badge)));
 
-      const float badgeFontSize =
-          fitBadgeFontSize(renderer, ws.label, disc.width, disc.height, m_contentScale, fontWeight);
+      const float badgeFontSize
+          = fitBadgeFontSize(renderer, ws.label, disc.width, disc.height, m_contentScale, fontWeight);
       auto badgeText = ui::label({
           .text = ws.label,
           .fontSize = badgeFontSize,
@@ -469,8 +470,8 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       styleWorkspaceDisc(*badge, disc.width, disc.height, ws.workspace);
       auto* badgePtr = static_cast<Box*>(badgeHit->addChild(std::move(badge)));
 
-      const float badgeFontSize =
-          fitBadgeFontSize(renderer, ws.label, disc.width, disc.height, m_contentScale, fontWeight);
+      const float badgeFontSize
+          = fitBadgeFontSize(renderer, ws.label, disc.width, disc.height, m_contentScale, fontWeight);
       auto badgeText = ui::label({
           .text = ws.label,
           .fontSize = badgeFontSize,
@@ -509,8 +510,9 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       const bool emptyWorkspace = tasks.empty();
       WorkspaceDiscSize disc{};
       if (externalBadge) {
-        disc =
-            measureWorkspaceDiscSize(renderer, ws.label, externalBadgeFontSize, badgeBase, m_contentScale, fontWeight);
+        disc = measureWorkspaceDiscSize(
+            renderer, ws.label, externalBadgeFontSize, badgeBase, m_contentScale, fontWeight
+        );
       }
 
       const float discMain = externalBadge ? (m_vertical ? disc.height : disc.width) : 0.0f;
@@ -518,12 +520,12 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       const bool externalInsetCapsule = externalBadge && m_workspaceGroupCapsule;
       const float mainOverhang = externalBadgeMainOverhang(m_workspaceLabelPlacement, discMain);
       const float crossOverhang = externalBadgeCrossOverhang(m_workspaceLabelPlacement, discCross);
-      const float groupOuterLead =
-          externalInsetCapsule ? std::round(std::max(groupPad, mainOverhang + (groupIndex > 0 ? groupGap : 0.0f)))
-                               : 0.0f;
-      const bool needsOuterCrossLead =
-          externalInsetCapsule && (m_workspaceLabelPlacement == WorkspaceLabelPlacement::Corner ||
-                                   (m_workspaceLabelPlacement == WorkspaceLabelPlacement::Centered && m_vertical));
+      const float groupOuterLead = externalInsetCapsule
+          ? std::round(std::max(groupPad, mainOverhang + (groupIndex > 0 ? groupGap : 0.0f)))
+          : 0.0f;
+      const bool needsOuterCrossLead = externalInsetCapsule
+          && (m_workspaceLabelPlacement == WorkspaceLabelPlacement::Corner
+              || (m_workspaceLabelPlacement == WorkspaceLabelPlacement::Centered && m_vertical));
       const float groupOuterCrossLead = needsOuterCrossLead ? std::round(std::max(groupPadCross, crossOverhang)) : 0.0f;
 
       float tileMain = inlineBadge ? groupPadMain : groupPad;
@@ -531,20 +533,19 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
         tileMain = externalBadgeTileMainStart(m_workspaceLabelPlacement, discMain, groupPad, groupGap);
       }
 
-      const std::size_t inlineSlotCount =
-          m_showWorkspaceLabel ? (emptyWorkspace ? 1U : tasks.size() + 1) : (emptyWorkspace ? 0U : tasks.size());
+      const std::size_t inlineSlotCount
+          = m_showWorkspaceLabel ? (emptyWorkspace ? 1U : tasks.size() + 1) : (emptyWorkspace ? 0U : tasks.size());
       const float taskCount = std::max(1.0f, static_cast<float>(tasks.size()));
       const float externalGapCount = tasks.empty() ? 0.0f : (taskCount - 1.0f);
-      const float runLength =
-          inlineBadge ? (inlineSlotCount > 0
-                             ? (tileSize * static_cast<float>(inlineSlotCount)) +
-                                   (groupGap * (inlineSlotCount > 1 ? static_cast<float>(inlineSlotCount - 1) : 0.0f))
-                             : tileSize)
-                      : (tileSize * taskCount) + (groupGap * externalGapCount);
+      const float runLength = inlineBadge
+          ? (inlineSlotCount > 0 ? (tileSize * static_cast<float>(inlineSlotCount))
+                     + (groupGap * (inlineSlotCount > 1 ? static_cast<float>(inlineSlotCount - 1) : 0.0f))
+                                 : tileSize)
+          : (tileSize * taskCount) + (groupGap * externalGapCount);
       const float innerMainTotal = inlineBadge ? (groupPadMain * 2.0f + runLength) : (tileMain + groupPad + runLength);
-      const float innerCrossSize =
-          inlineBadge ? std::round(tileSize + (groupPadCross * 2.0f))
-                      : (m_vertical ? std::round(tileSize + (groupPadCross * 2.0f)) : std::round(tileSize));
+      const float innerCrossSize = inlineBadge
+          ? std::round(tileSize + (groupPadCross * 2.0f))
+          : (m_vertical ? std::round(tileSize + (groupPadCross * 2.0f)) : std::round(tileSize));
 
       float groupWidth = m_vertical ? innerCrossSize : innerMainTotal;
       float groupHeight = m_vertical ? innerMainTotal : innerCrossSize;
@@ -558,10 +559,10 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
         }
       }
       if (emptyWorkspace && !m_showWorkspaceLabel) {
-        groupWidth =
-            m_vertical ? std::round(tileSize + (groupPadCross * 2.0f)) : std::round(tileSize + (groupPadMain * 2.0f));
-        groupHeight =
-            m_vertical ? std::round(tileSize + (groupPadMain * 2.0f)) : std::round(tileSize + (groupPadCross * 2.0f));
+        groupWidth
+            = m_vertical ? std::round(tileSize + (groupPadCross * 2.0f)) : std::round(tileSize + (groupPadMain * 2.0f));
+        groupHeight
+            = m_vertical ? std::round(tileSize + (groupPadMain * 2.0f)) : std::round(tileSize + (groupPadCross * 2.0f));
       }
 
       const float contentWidth = externalInsetCapsule ? (m_vertical ? innerCrossSize : innerMainTotal) : groupWidth;
@@ -569,9 +570,9 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       const float tileCrossExtent = m_vertical ? contentWidth : contentHeight;
       const float inlineGroupCross = inlineBadge ? innerCrossSize : tileCrossExtent;
       const float tileCross = inlineBadge
-                                  ? centeredOffset(inlineGroupCross, tileSize, groupOutlineInset, true)
-                                  : (m_vertical ? centeredOffset(tileCrossExtent, tileSize, groupOutlineInset, false)
-                                                : centeredOffset(tileCrossExtent, tileSize, groupOutlineInset, true));
+          ? centeredOffset(inlineGroupCross, tileSize, groupOutlineInset, true)
+          : (m_vertical ? centeredOffset(tileCrossExtent, tileSize, groupOutlineInset, false)
+                        : centeredOffset(tileCrossExtent, tileSize, groupOutlineInset, true));
       const float contentOriginMain = externalInsetCapsule ? groupOuterLead : 0.0f;
       const float contentOriginCross = externalInsetCapsule ? groupOuterCrossLead : 0.0f;
 
@@ -735,8 +736,8 @@ void TaskbarWidget::updateModels() {
         WorkspaceModel item{};
         item.workspace = workspaces[i];
         item.hostOutput = wo.output;
-        const std::string baseKey =
-            i < displayKeys.size() && !displayKeys[i].empty() ? displayKeys[i] : workspaceLabel(item.workspace, i);
+        const std::string baseKey
+            = i < displayKeys.size() && !displayKeys[i].empty() ? displayKeys[i] : workspaceLabel(item.workspace, i);
         item.key = keyPrefix + baseKey;
         if (useMultiOutputWorkspaceKeys()) {
           const auto ordIt = monitorOrdinal.find(wo.output);
@@ -864,8 +865,10 @@ void TaskbarWidget::updateModels() {
           task.workspaceWindowId = *mappedId;
         }
       }
-      if (!task.active && focusedCompositorWindowId.has_value() && !task.workspaceWindowId.empty() &&
-          task.workspaceWindowId == *focusedCompositorWindowId) {
+      if (!task.active
+          && focusedCompositorWindowId.has_value()
+          && !task.workspaceWindowId.empty()
+          && task.workspaceWindowId == *focusedCompositorWindowId) {
         task.active = true;
       }
     }
@@ -936,8 +939,10 @@ void TaskbarWidget::updateModels() {
           if (!assigned.windowId.empty() && assignment.windowId != assigned.windowId) {
             continue;
           }
-          if (toLower(assignment.appId) != task.appIdLower && toLower(assignment.appId) != task.idLower &&
-              toLower(assignment.appId) != task.startupWmClassLower && toLower(assignment.appId) != task.nameLower) {
+          if (toLower(assignment.appId) != task.appIdLower
+              && toLower(assignment.appId) != task.idLower
+              && toLower(assignment.appId) != task.startupWmClassLower
+              && toLower(assignment.appId) != task.nameLower) {
             continue;
           }
           if (!assigned.title.empty() && !assignment.title.empty() && assignment.title != assigned.title) {
@@ -951,9 +956,8 @@ void TaskbarWidget::updateModels() {
 
       auto syntheticTaskKey = [](const WorkspaceWindowAssignment& assignment, std::size_t index) {
         const std::string seed = assignment.windowId.empty()
-                                     ? assignment.workspaceKey + "\n" + assignment.appId + "\n" + assignment.title +
-                                           "\n" + std::to_string(index)
-                                     : assignment.windowId;
+            ? assignment.workspaceKey + "\n" + assignment.appId + "\n" + assignment.title + "\n" + std::to_string(index)
+            : assignment.windowId;
         std::uintptr_t value = static_cast<std::uintptr_t>(std::hash<std::string>{}(seed));
         if (value == 0) {
           value = static_cast<std::uintptr_t>(index + 1);
@@ -1032,8 +1036,10 @@ void TaskbarWidget::updateModels() {
       std::vector<bool> used(workspaceAssignments.size(), false);
       auto matchesApp = [&](const TaskModel& task, const WorkspaceWindowAssignment& assignment) {
         const std::string assignmentAppLower = toLower(assignment.appId);
-        return assignmentAppLower == task.appIdLower || assignmentAppLower == task.idLower ||
-               assignmentAppLower == task.startupWmClassLower || assignmentAppLower == task.nameLower;
+        return assignmentAppLower == task.appIdLower
+            || assignmentAppLower == task.idLower
+            || assignmentAppLower == task.startupWmClassLower
+            || assignmentAppLower == task.nameLower;
       };
 
       auto assignMatch = [&](TaskModel& task, bool requireTitle,
@@ -1053,8 +1059,9 @@ void TaskbarWidget::updateModels() {
             continue;
           }
           const auto previous = previousWorkspaceByHandle.find(task.handleKey);
-          if (previous != previousWorkspaceByHandle.end() && assignment.workspaceKey != previous->second &&
-              isTransientWorkspace(assignment.workspaceKey)) {
+          if (previous != previousWorkspaceByHandle.end()
+              && assignment.workspaceKey != previous->second
+              && isTransientWorkspace(assignment.workspaceKey)) {
             continue;
           }
           if (!extraPredicate(assignment)) {
@@ -1138,8 +1145,9 @@ void TaskbarWidget::updateModels() {
             continue;
           }
           const auto previous = previousWorkspaceByHandle.find(task.handleKey);
-          if (previous != previousWorkspaceByHandle.end() && assignment.workspaceKey != previous->second &&
-              isTransientWorkspace(assignment.workspaceKey)) {
+          if (previous != previousWorkspaceByHandle.end()
+              && assignment.workspaceKey != previous->second
+              && isTransientWorkspace(assignment.workspaceKey)) {
             continue;
           }
           if (matchIndex.has_value()) {
@@ -1168,8 +1176,10 @@ void TaskbarWidget::updateModels() {
           }
           const auto& assignment = workspaceAssignments[i];
           const std::string assignmentAppLower = toLower(assignment.appId);
-          if (assignmentAppLower != task.appIdLower && assignmentAppLower != task.idLower &&
-              assignmentAppLower != task.startupWmClassLower && assignmentAppLower != task.nameLower) {
+          if (assignmentAppLower != task.appIdLower
+              && assignmentAppLower != task.idLower
+              && assignmentAppLower != task.startupWmClassLower
+              && assignmentAppLower != task.nameLower) {
             continue;
           }
           if (assignment.workspaceKey != task.workspaceKey) {
@@ -1222,8 +1232,10 @@ void TaskbarWidget::updateModels() {
         const std::string assignmentAppLower = toLower(assignment.appId);
 
         auto appMatches = [&](const TaskModel& task) {
-          return assignmentAppLower == task.appIdLower || assignmentAppLower == task.idLower ||
-                 assignmentAppLower == task.startupWmClassLower || assignmentAppLower == task.nameLower;
+          return assignmentAppLower == task.appIdLower
+              || assignmentAppLower == task.idLower
+              || assignmentAppLower == task.startupWmClassLower
+              || assignmentAppLower == task.nameLower;
         };
 
         auto tryClaim = [&](bool requireWorkspace, bool requireTitle) -> bool {
@@ -1271,9 +1283,8 @@ void TaskbarWidget::updateModels() {
     if (compositors::isHyprland()) {
       auto syntheticTaskHandleKey = [](const WorkspaceWindowAssignment& assignment, std::size_t index) {
         const std::string seed = assignment.windowId.empty()
-                                     ? assignment.workspaceKey + "\n" + assignment.appId + "\n" + assignment.title +
-                                           "\n" + std::to_string(index)
-                                     : assignment.windowId;
+            ? assignment.workspaceKey + "\n" + assignment.appId + "\n" + assignment.title + "\n" + std::to_string(index)
+            : assignment.windowId;
         std::uintptr_t value = static_cast<std::uintptr_t>(std::hash<std::string>{}(seed));
         if (value == 0) {
           value = static_cast<std::uintptr_t>(index + 1);
@@ -1331,11 +1342,10 @@ void TaskbarWidget::updateModels() {
       const auto byKey = runningByWorkspace.find(ws.key);
       const auto byName = runningByWorkspace.find(ws.workspace.name);
       const auto byId = runningByWorkspace.find(ws.workspace.id);
-      const auto* list =
-          byKey != runningByWorkspace.end()
-              ? &byKey->second
-              : (byName != runningByWorkspace.end() ? &byName->second
-                                                    : (byId != runningByWorkspace.end() ? &byId->second : nullptr));
+      const auto* list = byKey != runningByWorkspace.end()
+          ? &byKey->second
+          : (byName != runningByWorkspace.end() ? &byName->second
+                                                : (byId != runningByWorkspace.end() ? &byId->second : nullptr));
       if (list == nullptr) {
         continue;
       }
@@ -1532,9 +1542,11 @@ void TaskbarWidget::openTaskContextMenu(const TaskModel& task, InputArea& area) 
   std::vector<DesktopAction> entryActions;
   const auto& entriesIndex = desktopEntries();
   for (const auto& entry : entriesIndex) {
-    if (entry.idLower == task.idLower || entry.idLower == task.appIdLower ||
-        entry.startupWmClassLower == task.idLower || entry.startupWmClassLower == task.startupWmClassLower ||
-        entry.nameLower == task.nameLower) {
+    if (entry.idLower == task.idLower
+        || entry.idLower == task.appIdLower
+        || entry.startupWmClassLower == task.idLower
+        || entry.startupWmClassLower == task.startupWmClassLower
+        || entry.nameLower == task.nameLower) {
       entryActions = entry.actions;
       break;
     }
@@ -1716,19 +1728,27 @@ bool TaskbarWidget::modelsEqual(
     return false;
   }
   for (std::size_t i = 0; i < tasks.size(); ++i) {
-    if (tasks[i].appId != m_tasks[i].appId || tasks[i].iconPath != m_tasks[i].iconPath ||
-        tasks[i].active != m_tasks[i].active || tasks[i].firstHandle != m_tasks[i].firstHandle ||
-        tasks[i].workspaceKey != m_tasks[i].workspaceKey || tasks[i].order != m_tasks[i].order ||
-        tasks[i].workspaceOrder != m_tasks[i].workspaceOrder) {
+    if (tasks[i].appId != m_tasks[i].appId
+        || tasks[i].iconPath != m_tasks[i].iconPath
+        || tasks[i].active != m_tasks[i].active
+        || tasks[i].firstHandle != m_tasks[i].firstHandle
+        || tasks[i].workspaceKey != m_tasks[i].workspaceKey
+        || tasks[i].order != m_tasks[i].order
+        || tasks[i].workspaceOrder != m_tasks[i].workspaceOrder) {
       return false;
     }
   }
   for (std::size_t i = 0; i < workspaces.size(); ++i) {
     const auto& a = workspaces[i].workspace;
     const auto& b = m_workspaces[i].workspace;
-    if (a.id != b.id || a.name != b.name || a.active != b.active || a.urgent != b.urgent || a.occupied != b.occupied ||
-        workspaces[i].key != m_workspaces[i].key || workspaces[i].label != m_workspaces[i].label ||
-        workspaces[i].hostOutput != m_workspaces[i].hostOutput) {
+    if (a.id != b.id
+        || a.name != b.name
+        || a.active != b.active
+        || a.urgent != b.urgent
+        || a.occupied != b.occupied
+        || workspaces[i].key != m_workspaces[i].key
+        || workspaces[i].label != m_workspaces[i].label
+        || workspaces[i].hostOutput != m_workspaces[i].hostOutput) {
       return false;
     }
   }

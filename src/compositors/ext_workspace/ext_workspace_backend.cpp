@@ -160,8 +160,9 @@ void ExtWorkspaceBackend::activateForOutput(wl_output* output, const Workspace& 
   }
 
   auto matchesExact = [&](const Workspace& candidate) {
-    return candidate.id == workspace.id && candidate.name == workspace.name &&
-           normalizeCoordinates(candidate.coordinates) == normalizeCoordinates(workspace.coordinates);
+    return candidate.id == workspace.id
+        && candidate.name == workspace.name
+        && normalizeCoordinates(candidate.coordinates) == normalizeCoordinates(workspace.coordinates);
   };
   auto matchesId = [&](const Workspace& candidate) { return !workspace.id.empty() && candidate.id == workspace.id; };
   auto matchesCoordinatesPrimary = [&](const Workspace& candidate) {

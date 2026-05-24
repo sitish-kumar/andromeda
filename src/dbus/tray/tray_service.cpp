@@ -31,9 +31,9 @@ namespace {
 
   bool isStatusNotifierItemBusName(std::string_view value) {
     // Different implementations use different bus-name prefixes for SNI items.
-    return value.starts_with("org.kde.StatusNotifierItem-") ||
-           value.starts_with("org.freedesktop.StatusNotifierItem-") ||
-           value.starts_with("org.ayatana.StatusNotifierItem-");
+    return value.starts_with("org.kde.StatusNotifierItem-")
+        || value.starts_with("org.freedesktop.StatusNotifierItem-")
+        || value.starts_with("org.ayatana.StatusNotifierItem-");
   }
 
   bool starts_with_slash(std::string_view value) { return !value.empty() && value.front() == '/'; }
@@ -178,8 +178,8 @@ namespace {
   using IconPixmapStruct = sdbus::Struct<std::int32_t, std::int32_t, std::vector<std::uint8_t>>;
   using StatusNotifierTextTuple = std::tuple<std::string, std::vector<IconPixmapTuple>, std::string, std::string>;
   using StatusNotifierTextStruct = sdbus::Struct<std::string, std::vector<IconPixmapStruct>, std::string, std::string>;
-  using DbusMenuLayout =
-      sdbus::Struct<std::int32_t, std::map<std::string, sdbus::Variant>, std::vector<sdbus::Variant>>;
+  using DbusMenuLayout
+      = sdbus::Struct<std::int32_t, std::map<std::string, sdbus::Variant>, std::vector<sdbus::Variant>>;
   using DbusMenuItemProperties = sdbus::Struct<std::int32_t, std::map<std::string, sdbus::Variant>>;
 
   std::optional<std::string> stringFromVariant(const sdbus::Variant& value) {
@@ -355,8 +355,11 @@ namespace {
     if (entry.id <= 0 || !entry.visible) {
       return false;
     }
-    if (entry.label.empty() && !entry.separator && !entry.hasSubmenu && entry.iconName.empty() &&
-        entry.iconData.empty()) {
+    if (entry.label.empty()
+        && !entry.separator
+        && !entry.hasSubmenu
+        && entry.iconName.empty()
+        && entry.iconData.empty()) {
       return false;
     }
     return true;
@@ -894,8 +897,8 @@ void TrayService::requestMenuLayoutAfterAboutToShow(
                   return;
                 }
 
-                const auto afterFallback =
-                    entriesForParent(postFetchCache.entriesById, postFetchCache.childrenByParent, parentId);
+                const auto afterFallback
+                    = entriesForParent(postFetchCache.entriesById, postFetchCache.childrenByParent, parentId);
                 if (fetched) {
                   kLog.debug(
                       "dbusmenu children-property fallback id={} parentId={} children={} entries={}", itemId, parentId,
@@ -1024,8 +1027,8 @@ void TrayService::ensureMenuCache(const std::string& itemId, const std::string& 
             }
 
             if (parent <= 0) {
-              const bool hadVisibleRootEntries =
-                  !entriesForParent(cache.entriesById, cache.childrenByParent, 0).empty();
+              const bool hadVisibleRootEntries
+                  = !entriesForParent(cache.entriesById, cache.childrenByParent, 0).empty();
 
               // Soft-invalidate root: keep current snapshot visible and let the
               // next normal menu pull refresh it. Avoid force-refresh here,
@@ -1149,8 +1152,10 @@ void TrayService::notifyMenuOpened(const std::string& itemId, std::int32_t entry
     ensureMenuCache(itemId, itemIt->second.busName, itemIt->second.menuObjectPath);
     if (entryId == 0) {
       const auto cacheIt = m_menuCache.find(itemId);
-      if (cacheIt == m_menuCache.end() || cacheIt->second.proxy == nullptr || !cacheIt->second.rootLoaded ||
-          !cacheIt->second.loadedParents.contains(0)) {
+      if (cacheIt == m_menuCache.end()
+          || cacheIt->second.proxy == nullptr
+          || !cacheIt->second.rootLoaded
+          || !cacheIt->second.loadedParents.contains(0)) {
         requestMenuSubtree(itemId, 0, false);
       }
     } else {
@@ -1312,8 +1317,8 @@ void TrayService::onRegisterStatusNotifierItem(const std::string& serviceOrPath,
   // or extra async round-trip for every registration and improves responsiveness.
   // (See also: busOnlyRegistration branch above for the async owner check.)
   registerOrRefreshItem(busName, objectPath);
-  const auto elapsedMs =
-      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
+  const auto elapsedMs
+      = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
   kLog.debug(
       "tray register service/path='{}' sender='{}' -> bus='{}' objectPath='{}' elapsed={}ms", serviceOrPath,
       senderBusName, busName, objectPath, elapsedMs
@@ -1378,8 +1383,8 @@ void TrayService::tryRegisterItemForBusName(const std::string& busName, std::fun
     if (*registeredAny) {
       emitChanged();
     } else {
-      const auto elapsedMs =
-          std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
+      const auto elapsedMs
+          = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
       kLog.debug("tray probe exhausted bus='{}' elapsed={}ms", busName, elapsedMs);
     }
 
@@ -1464,8 +1469,10 @@ bool TrayService::isMetadataReady(const TrayItemInfo& item) const {
   if (!item.iconArgb32.empty() || !item.attentionArgb32.empty() || !item.overlayArgb32.empty()) {
     return true;
   }
-  if (!item.itemName.empty() || !item.title.empty() || !item.statusNotifierTitle.empty() ||
-      !item.statusNotifierDescription.empty()) {
+  if (!item.itemName.empty()
+      || !item.title.empty()
+      || !item.statusNotifierTitle.empty()
+      || !item.statusNotifierDescription.empty()) {
     return true;
   }
   return false;
@@ -1534,32 +1541,33 @@ void TrayService::registerOrRefreshItem(const std::string& busName, const std::s
   if (!m_items.contains(itemId)) {
     kLog.debug("tray item registered id={} bus='{}' path='{}'", itemId, busName, objectPath);
     m_items.emplace(
-        itemId, TrayItemInfo{
-                    .id = itemId,
-                    .busName = busName,
-                    .objectPath = objectPath,
-                    .iconName = {},
-                    .iconThemePath = {},
-                    .overlayIconName = {},
-                    .attentionIconName = {},
-                    .menuObjectPath = {},
-                    .itemName = {},
-                    .processName = {},
-                    .title = {},
-                    .statusNotifierTitle = {},
-                    .statusNotifierDescription = {},
-                    .status = {},
-                    .iconArgb32 = {},
-                    .iconWidth = 0,
-                    .iconHeight = 0,
-                    .overlayArgb32 = {},
-                    .overlayWidth = 0,
-                    .overlayHeight = 0,
-                    .attentionArgb32 = {},
-                    .attentionWidth = 0,
-                    .attentionHeight = 0,
-                    .needsAttention = false,
-                }
+        itemId,
+        TrayItemInfo{
+            .id = itemId,
+            .busName = busName,
+            .objectPath = objectPath,
+            .iconName = {},
+            .iconThemePath = {},
+            .overlayIconName = {},
+            .attentionIconName = {},
+            .menuObjectPath = {},
+            .itemName = {},
+            .processName = {},
+            .title = {},
+            .statusNotifierTitle = {},
+            .statusNotifierDescription = {},
+            .status = {},
+            .iconArgb32 = {},
+            .iconWidth = 0,
+            .iconHeight = 0,
+            .overlayArgb32 = {},
+            .overlayWidth = 0,
+            .overlayHeight = 0,
+            .attentionArgb32 = {},
+            .attentionWidth = 0,
+            .attentionHeight = 0,
+            .needsAttention = false,
+        }
     );
 
     if (looks_like_dbus_name(busName)) {
@@ -1715,9 +1723,10 @@ void TrayService::resolvePathOnlyItemProxy(const std::string& itemId) {
 
                     resolvedItemIt->second.busName = candidate;
                     auto [proxyIt, inserted] = m_itemProxies.emplace(
-                        itemId, sdbus::createProxy(
-                                    m_bus.connection(), sdbus::ServiceName{candidate}, sdbus::ObjectPath{objectPath}
-                                )
+                        itemId,
+                        sdbus::createProxy(
+                            m_bus.connection(), sdbus::ServiceName{candidate}, sdbus::ObjectPath{objectPath}
+                        )
                     );
                     if (!inserted) {
                       proxyIt->second = sdbus::createProxy(
@@ -1797,13 +1806,13 @@ void TrayService::refreshItemMetadata(const std::string& itemId) {
           next.iconName = get_item_property_string_from(properties, "IconName", cur.iconName);
           next.iconThemePath = get_item_property_string_from(properties, "IconThemePath", cur.iconThemePath);
           next.overlayIconName = get_item_property_string_from(properties, "OverlayIconName", cur.overlayIconName);
-          next.attentionIconName =
-              get_item_property_string_from(properties, "AttentionIconName", cur.attentionIconName);
+          next.attentionIconName
+              = get_item_property_string_from(properties, "AttentionIconName", cur.attentionIconName);
           next.menuObjectPath = get_item_property_string_from(properties, "Menu", cur.menuObjectPath);
           next.itemName = get_item_property_string_from(properties, "Id", cur.itemName);
           next.title = get_item_property_string_from(properties, "Title", cur.title);
-          auto [statusNotifierTitle, statusNotifierDescription] =
-              get_status_notifier_text_from(properties, cur.statusNotifierTitle, cur.statusNotifierDescription);
+          auto [statusNotifierTitle, statusNotifierDescription]
+              = get_status_notifier_text_from(properties, cur.statusNotifierTitle, cur.statusNotifierDescription);
           next.statusNotifierTitle = std::move(statusNotifierTitle);
           next.statusNotifierDescription = std::move(statusNotifierDescription);
           next.status = get_item_property_string_from(properties, "Status", cur.status);

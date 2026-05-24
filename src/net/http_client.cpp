@@ -23,8 +23,9 @@ namespace {
     const std::size_t redactedPos = url.find_first_of("?#");
     if (redactedPos != std::string_view::npos) {
       const char suffix = url[redactedPos] == '?' ? '?' : '#';
-      return std::string(url.substr(0, redactedPos)) + suffix +
-             (suffix == '?' ? "<query redacted>" : "<fragment redacted>");
+      return std::string(url.substr(0, redactedPos))
+          + suffix
+          + (suffix == '?' ? "<query redacted>" : "<fragment redacted>");
     }
 
     return std::string(url);

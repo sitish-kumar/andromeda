@@ -80,9 +80,9 @@ struct BarConfig {
   int fontWeight = 500;           // primary label weight for bar widgets
   std::vector<std::string> startWidgets = {"launcher", "wallpaper", "workspaces"};
   std::vector<std::string> centerWidgets = {"clock"};
-  std::vector<std::string> endWidgets = {"media",   "tray",           "notifications", "clipboard",
-                                         "network", "bluetooth",      "volume",        "brightness",
-                                         "battery", "control-center", "session"};
+  std::vector<std::string> endWidgets
+      = {"media",  "tray",       "notifications", "clipboard",      "network", "bluetooth",
+         "volume", "brightness", "battery",       "control-center", "session"};
   // When true, widgets on this bar use a capsule unless `[widget.*] capsule = false`.
   bool widgetCapsuleDefault = false;
   ColorSpec widgetCapsuleFill = colorSpecFromRole(ColorRole::SurfaceVariant);
@@ -302,9 +302,9 @@ struct WallpaperConfig {
   bool enabled = true;
   WallpaperFillMode fillMode = WallpaperFillMode::Crop;
   std::optional<ColorSpec> fillColor;
-  std::vector<WallpaperTransition> transitions = {WallpaperTransition::Fade, WallpaperTransition::Wipe,
-                                                  WallpaperTransition::Disc, WallpaperTransition::Stripes,
-                                                  WallpaperTransition::Zoom, WallpaperTransition::Honeycomb};
+  std::vector<WallpaperTransition> transitions
+      = {WallpaperTransition::Fade,    WallpaperTransition::Wipe, WallpaperTransition::Disc,
+         WallpaperTransition::Stripes, WallpaperTransition::Zoom, WallpaperTransition::Honeycomb};
   float transitionDurationMs = 1500.0f;
   float edgeSmoothness = 0.3f;
   std::string directory;

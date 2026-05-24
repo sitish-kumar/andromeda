@@ -44,8 +44,8 @@ namespace {
   }
 
   int daysInMonth(int yearValue, int monthValue) {
-    const auto lastDay =
-        std::chrono::year{yearValue} / std::chrono::month{static_cast<unsigned>(monthValue + 1)} / std::chrono::last;
+    const auto lastDay
+        = std::chrono::year{yearValue} / std::chrono::month{static_cast<unsigned>(monthValue + 1)} / std::chrono::last;
     return static_cast<int>(static_cast<unsigned>(lastDay.day()));
   }
 
@@ -240,11 +240,12 @@ void CalendarTab::doLayout(Renderer& renderer, float contentWidth, float bodyHei
   const float innerHeight = std::max(0.0f, m_card->height() - (m_card->paddingTop() + m_card->paddingBottom()));
   const CalendarBuildState state = currentCalendarState(m_monthOffset);
 
-  const bool sizeChanged = std::abs(innerWidth - m_lastInnerWidth) >= kCalendarLayoutEpsilon ||
-                           std::abs(innerHeight - m_lastInnerHeight) >= kCalendarLayoutEpsilon;
+  const bool sizeChanged = std::abs(innerWidth - m_lastInnerWidth) >= kCalendarLayoutEpsilon
+      || std::abs(innerHeight - m_lastInnerHeight) >= kCalendarLayoutEpsilon;
   const bool displayChanged = state.displayYear != m_lastDisplayYear || state.displayMonth != m_lastDisplayMonth;
-  const bool todayChanged =
-      state.currentYear != m_lastCurrentYear || state.currentMonth != m_lastCurrentMonth || state.today != m_lastToday;
+  const bool todayChanged = state.currentYear != m_lastCurrentYear
+      || state.currentMonth != m_lastCurrentMonth
+      || state.today != m_lastToday;
   if (!sizeChanged && !displayChanged && !todayChanged) {
     return;
   }
@@ -307,8 +308,8 @@ void CalendarTab::rebuild() {
   const float innerHeight = std::max(0.0f, m_card->height() - (m_card->paddingTop() + m_card->paddingBottom()));
   const float navWidth = kCalendarNavButtonSize * scale * 2.0f + Style::spaceSm * scale * 2.0f;
   const float monthWidth = std::max(0.0f, innerWidth - navWidth);
-  const float gridHeightAvailable =
-      std::max(0.0f, innerHeight - kCalendarHeaderHeight * scale - kCalendarGridGap * scale);
+  const float gridHeightAvailable
+      = std::max(0.0f, innerHeight - kCalendarHeaderHeight * scale - kCalendarGridGap * scale);
   const float weekdayHeight = kCalendarWeekdayRowHeight * scale;
   const float dayCellHeight = std::clamp(
       (gridHeightAvailable - weekdayHeight - kCalendarGridGap * scale * 6.0f) / 6.0f, kCalendarCellSizeMin * scale,

@@ -153,8 +153,10 @@ GammaService::GeoCoordinates GammaService::scheduleCoordinates() const {
 }
 
 bool GammaService::isManualMode() const {
-  return !effectiveForce() && (!m_config.useWeatherLocation || !hasWeatherCoordinates()) &&
-         normalizedClock(m_config.startTime).has_value() && normalizedClock(m_config.stopTime).has_value();
+  return !effectiveForce()
+      && (!m_config.useWeatherLocation || !hasWeatherCoordinates())
+      && normalizedClock(m_config.startTime).has_value()
+      && normalizedClock(m_config.stopTime).has_value();
 }
 
 bool GammaService::isManualNightPhase() const {
@@ -196,8 +198,8 @@ std::chrono::milliseconds GammaService::msUntilNextManualBoundary() const {
 
 void GammaService::scheduleManualTimer() {
   const auto boundaryDelay = msUntilNextManualBoundary();
-  const auto delay =
-      std::min(boundaryDelay, std::chrono::duration_cast<std::chrono::milliseconds>(kScheduleRecheckInterval));
+  const auto delay
+      = std::min(boundaryDelay, std::chrono::duration_cast<std::chrono::milliseconds>(kScheduleRecheckInterval));
   kLog.debug(
       "manual schedule: next phase boundary in {}s, recheck in {}s", boundaryDelay.count() / 1000, delay.count() / 1000
   );
@@ -213,8 +215,10 @@ std::optional<std::string> GammaService::normalizedClock(std::string_view value)
   if (value.size() != 5 || value[2] != ':') {
     return std::nullopt;
   }
-  if (!std::isdigit(static_cast<unsigned char>(value[0])) || !std::isdigit(static_cast<unsigned char>(value[1])) ||
-      !std::isdigit(static_cast<unsigned char>(value[3])) || !std::isdigit(static_cast<unsigned char>(value[4]))) {
+  if (!std::isdigit(static_cast<unsigned char>(value[0]))
+      || !std::isdigit(static_cast<unsigned char>(value[1]))
+      || !std::isdigit(static_cast<unsigned char>(value[3]))
+      || !std::isdigit(static_cast<unsigned char>(value[4]))) {
     return std::nullopt;
   }
   const int hour = (value[0] - '0') * 10 + (value[1] - '0');
@@ -237,17 +241,24 @@ GammaService::SolarTimes GammaService::computeSolarTimes(double lat, double lon)
   const double dayOfYear = static_cast<double>(local.tm_yday + 1);
   const double fractionalYear = 2.0 * kPi / 365.0 * (dayOfYear - 1.0);
 
-  const double equationOfTime =
-      229.18 * (0.000075 + 0.001868 * std::cos(fractionalYear) - 0.032077 * std::sin(fractionalYear) -
-                0.014615 * std::cos(2.0 * fractionalYear) - 0.040849 * std::sin(2.0 * fractionalYear));
-  const double declination = 0.006918 - 0.399912 * std::cos(fractionalYear) + 0.070257 * std::sin(fractionalYear) -
-                             0.006758 * std::cos(2.0 * fractionalYear) + 0.000907 * std::sin(2.0 * fractionalYear) -
-                             0.002697 * std::cos(3.0 * fractionalYear) + 0.00148 * std::sin(3.0 * fractionalYear);
+  const double equationOfTime = 229.18
+      * (0.000075
+         + 0.001868 * std::cos(fractionalYear)
+         - 0.032077 * std::sin(fractionalYear)
+         - 0.014615 * std::cos(2.0 * fractionalYear)
+         - 0.040849 * std::sin(2.0 * fractionalYear));
+  const double declination = 0.006918
+      - 0.399912 * std::cos(fractionalYear)
+      + 0.070257 * std::sin(fractionalYear)
+      - 0.006758 * std::cos(2.0 * fractionalYear)
+      + 0.000907 * std::sin(2.0 * fractionalYear)
+      - 0.002697 * std::cos(3.0 * fractionalYear)
+      + 0.00148 * std::sin(3.0 * fractionalYear);
 
   constexpr double kSunriseZenith = 90.833 * kPi / 180.0;
   const double latRad = lat * kPi / 180.0;
-  const double hourAngleArg =
-      std::cos(kSunriseZenith) / (std::cos(latRad) * std::cos(declination)) - std::tan(latRad) * std::tan(declination);
+  const double hourAngleArg = std::cos(kSunriseZenith) / (std::cos(latRad) * std::cos(declination))
+      - std::tan(latRad) * std::tan(declination);
 
   if (hourAngleArg > 1.0) {
     return SolarTimes{.sunriseMinutes = 0, .sunsetMinutes = 0};
@@ -333,8 +344,8 @@ std::chrono::milliseconds GammaService::msUntilNextGeoBoundary() const {
 
 void GammaService::scheduleGeoTimer() {
   const auto boundaryDelay = msUntilNextGeoBoundary();
-  const auto delay =
-      std::min(boundaryDelay, std::chrono::duration_cast<std::chrono::milliseconds>(kScheduleRecheckInterval));
+  const auto delay
+      = std::min(boundaryDelay, std::chrono::duration_cast<std::chrono::milliseconds>(kScheduleRecheckInterval));
   kLog.debug(
       "geo schedule: next phase boundary in {}s, recheck in {}s", boundaryDelay.count() / 1000, delay.count() / 1000
   );
@@ -518,8 +529,8 @@ void GammaService::restoreAll() {
 
 void GammaService::startTransition(int fromKelvin, int toKelvin) {
   if (fromKelvin < 0) {
-    const int dayTemp =
-        std::clamp(m_config.dayTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
+    const int dayTemp
+        = std::clamp(m_config.dayTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
     fromKelvin = dayTemp;
     syncOutputs();
     m_currentKelvin = fromKelvin;
@@ -580,10 +591,10 @@ void GammaService::stopTransition() {
 // --- Core state machine ---
 
 int GammaService::targetTemperature() const {
-  const int dayTemp =
-      std::clamp(m_config.dayTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
-  const int nightTemp =
-      std::clamp(m_config.nightTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
+  const int dayTemp
+      = std::clamp(m_config.dayTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
+  const int nightTemp
+      = std::clamp(m_config.nightTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
 
   if (dayTemp <= nightTemp) {
     return -1;
@@ -647,8 +658,8 @@ void GammaService::apply() {
   if (!effectiveEnabled()) {
     m_scheduleTimer.stop();
     if (m_currentKelvin > 0) {
-      const int dayTemp =
-          std::clamp(m_config.dayTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
+      const int dayTemp
+          = std::clamp(m_config.dayTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
       m_restoreAfterTransition = true;
       startTransition(m_currentKelvin, dayTemp);
     } else {
@@ -675,8 +686,8 @@ void GammaService::apply() {
   }
 
   if (target != m_targetKelvin) {
-    const int dayTemp =
-        std::clamp(m_config.dayTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
+    const int dayTemp
+        = std::clamp(m_config.dayTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
     kLog.info(
         "applying {}K (day={}K night={}K force={})", target, dayTemp,
         std::clamp(m_config.nightTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax),

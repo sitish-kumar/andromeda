@@ -218,36 +218,39 @@ namespace {
   bool doSuspend() {
     logActionContext("suspend");
     return runCheckedSessionCommand(
-        "suspend", {
-                       {"systemctl", "suspend"},
-                       {"loginctl", "suspend"},
-                   }
+        "suspend",
+        {
+            {"systemctl", "suspend"},
+            {"loginctl", "suspend"},
+        }
     );
   }
 
   bool doReboot() {
     logActionContext("reboot");
     return runCheckedSessionCommand(
-        "reboot", {
-                      {"systemctl", "reboot"},
-                      {"loginctl", "reboot"},
-                      {"reboot"},
-                      {"/sbin/reboot"},
-                      {"/usr/sbin/reboot"},
-                  }
+        "reboot",
+        {
+            {"systemctl", "reboot"},
+            {"loginctl", "reboot"},
+            {"reboot"},
+            {"/sbin/reboot"},
+            {"/usr/sbin/reboot"},
+        }
     );
   }
 
   bool doShutdown() {
     logActionContext("shutdown");
     return runCheckedSessionCommand(
-        "shutdown", {
-                        {"systemctl", "poweroff"},
-                        {"loginctl", "poweroff"},
-                        {"poweroff"},
-                        {"/sbin/poweroff"},
-                        {"/usr/sbin/poweroff"},
-                    }
+        "shutdown",
+        {
+            {"systemctl", "poweroff"},
+            {"loginctl", "poweroff"},
+            {"poweroff"},
+            {"/sbin/poweroff"},
+            {"/usr/sbin/poweroff"},
+        }
     );
   }
 
@@ -291,8 +294,12 @@ namespace {
   }
 
   [[nodiscard]] bool isKnownAction(std::string_view action) {
-    return action == "lock" || action == "logout" || action == "suspend" || action == "reboot" ||
-           action == "shutdown" || action == "command";
+    return action == "lock"
+        || action == "logout"
+        || action == "suspend"
+        || action == "reboot"
+        || action == "shutdown"
+        || action == "command";
   }
 
   [[nodiscard]] const char* labelKeyForAction(std::string_view action) {
@@ -531,8 +538,8 @@ namespace {
 } // namespace
 
 std::vector<SessionPanelActionConfig> SessionPanel::effectiveActions() const {
-  std::vector<SessionPanelActionConfig> src =
-      m_config != nullptr ? m_config->config().shell.session.actions : defaultSessionPanelActions();
+  std::vector<SessionPanelActionConfig> src
+      = m_config != nullptr ? m_config->config().shell.session.actions : defaultSessionPanelActions();
 
   std::vector<SessionPanelActionConfig> out;
   out.reserve(src.size());
@@ -573,16 +580,18 @@ PanelPlacement SessionPanel::panelPlacement() const noexcept {
 float SessionPanel::preferredWidth() const {
   const std::size_t n = visibleColumnCount();
   const float gap = Style::spaceSm;
-  const float w = kButtonMinWidth * static_cast<float>(n) + gap * static_cast<float>(n > 1 ? n - 1 : 0) +
-                  Style::panelPadding * 2.0f;
+  const float w = kButtonMinWidth * static_cast<float>(n)
+      + gap * static_cast<float>(n > 1 ? n - 1 : 0)
+      + Style::panelPadding * 2.0f;
   return scaled(std::max(kPanelMinWidth, w));
 }
 
 float SessionPanel::preferredHeight() const {
   const std::size_t rows = visibleRowCount();
   const float gap = Style::spaceSm;
-  const float h = kActionButtonMinHeight * static_cast<float>(rows) +
-                  gap * static_cast<float>(rows > 1 ? rows - 1 : 0) + Style::panelPadding * 2.0f;
+  const float h = kActionButtonMinHeight * static_cast<float>(rows)
+      + gap * static_cast<float>(rows > 1 ? rows - 1 : 0)
+      + Style::panelPadding * 2.0f;
   return std::ceil(scaled(h));
 }
 
@@ -652,8 +661,8 @@ void SessionPanel::create() {
 
 Button* SessionPanel::createActionButton(const SessionPanelActionConfig& cfg, float scale) {
   auto button = std::make_unique<Button>();
-  const std::string labelText =
-      cfg.label.has_value() && !cfg.label->empty() ? *cfg.label : i18n::tr(labelKeyForAction(cfg.action));
+  const std::string labelText
+      = cfg.label.has_value() && !cfg.label->empty() ? *cfg.label : i18n::tr(labelKeyForAction(cfg.action));
   button->setText(labelText);
   if (cfg.shortcut.has_value() && cfg.shortcut->sym != 0) {
     button->setBadge(keyChordDisplayLabel(*cfg.shortcut));

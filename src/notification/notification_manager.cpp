@@ -69,8 +69,10 @@ namespace {
       const Notification& notification, NotificationOrigin origin, const std::string& appName,
       const std::string& summary, const std::string& body
   ) {
-    return notification.origin == origin && notification.appName == appName && notification.summary == summary &&
-           notification.body == body;
+    return notification.origin == origin
+        && notification.appName == appName
+        && notification.summary == summary
+        && notification.body == body;
   }
 
   bool shouldTrackHistory(NotificationOrigin origin, Urgency urgency) noexcept {
@@ -78,8 +80,8 @@ namespace {
   }
 
   bool shouldRetainHistoryEntry(const NotificationHistoryEntry& entry) noexcept {
-    return shouldTrackHistory(entry.notification.origin, entry.notification.urgency) &&
-           entry.closeReason != CloseReason::Dismissed;
+    return shouldTrackHistory(entry.notification.origin, entry.notification.urgency)
+        && entry.closeReason != CloseReason::Dismissed;
   }
 
   bool notificationHasInvokableActions(const Notification& notification) {
@@ -177,10 +179,18 @@ uint32_t NotificationManager::addOrReplace(
       auto& n = m_notifications[it->second];
 
       // Check if anything changed to avoid duplicate events
-      const bool changed =
-          (n.appName != appName || n.summary != summary || n.body != body || n.timeout != timeout ||
-           n.urgency != urgency || n.origin != origin || n.actions != actions || n.icon != icon ||
-           n.imageData != imageData || n.category != category || n.desktopEntry != desktopEntry);
+      const bool changed
+          = (n.appName != appName
+             || n.summary != summary
+             || n.body != body
+             || n.timeout != timeout
+             || n.urgency != urgency
+             || n.origin != origin
+             || n.actions != actions
+             || n.icon != icon
+             || n.imageData != imageData
+             || n.category != category
+             || n.desktopEntry != desktopEntry);
 
       n.origin = origin;
       n.appName = std::move(appName);
@@ -220,8 +230,8 @@ uint32_t NotificationManager::addOrReplace(
   // Suppress immediate duplicate bursts. Later same-content notifications should still be visible.
   for (auto it = m_notifications.rbegin(); it != m_notifications.rend(); ++it) {
     const auto& existing = *it;
-    if (hasSameContent(existing, origin, appName, summary, body) &&
-        now - existing.receivedTime < kImplicitDuplicateWindow) {
+    if (hasSameContent(existing, origin, appName, summary, body)
+        && now - existing.receivedTime < kImplicitDuplicateWindow) {
       logNotification(existing, "duplicate ignored");
       return existing.id;
     }
@@ -371,11 +381,11 @@ bool NotificationManager::close(uint32_t id, CloseReason reason) {
   const size_t index = it->second;
   const Notification closed = m_notifications[index];
   const bool hadUnreadBefore = computeHasUnreadNotificationHistory();
-  const bool historyHandledUnreadChange =
-      shouldTrackHistory(closed.origin, closed.urgency) && reason == CloseReason::Dismissed;
-  const char* reasonStr = (reason == CloseReason::Expired)     ? "expired"
-                          : (reason == CloseReason::Dismissed) ? "dismissed"
-                                                               : "closed";
+  const bool historyHandledUnreadChange
+      = shouldTrackHistory(closed.origin, closed.urgency) && reason == CloseReason::Dismissed;
+  const char* reasonStr = (reason == CloseReason::Expired) ? "expired"
+      : (reason == CloseReason::Dismissed)                 ? "dismissed"
+                                                           : "closed";
   kLog.debug("notification {} #{}", reasonStr, id);
   if (shouldTrackHistory(closed.origin, closed.urgency)) {
     if (reason == CloseReason::Dismissed) {
@@ -423,8 +433,8 @@ void NotificationManager::removeHistoryEntry(uint32_t id, std::optional<CloseRea
   }
 
   const bool hadUnreadBefore = computeHasUnreadNotificationHistory();
-  const CloseReason reason =
-      dbusCloseReason.value_or(m_history[it->second].closeReason.value_or(CloseReason::Dismissed));
+  const CloseReason reason
+      = dbusCloseReason.value_or(m_history[it->second].closeReason.value_or(CloseReason::Dismissed));
   emitPendingDBusClose(id, reason);
   m_history.erase(m_history.begin() + static_cast<std::ptrdiff_t>(it->second));
   ++m_changeSerial;

@@ -135,10 +135,19 @@ void ImageProgram::ensureInitialized() {
   m_samplerLocation = glGetUniformLocation(m_program.id(), "u_texture");
   m_transformLocation = glGetUniformLocation(m_program.id(), "u_transform");
 
-  if (m_positionLocation < 0 || m_texCoordLocation < 0 || m_surfaceSizeLocation < 0 || m_rectLocation < 0 ||
-      m_tintLocation < 0 || m_opacityLocation < 0 || m_radiusLocation < 0 || m_borderColorLocation < 0 ||
-      m_borderWidthLocation < 0 || m_texSizeLocation < 0 || m_fitModeLocation < 0 || m_samplerLocation < 0 ||
-      m_transformLocation < 0) {
+  if (m_positionLocation < 0
+      || m_texCoordLocation < 0
+      || m_surfaceSizeLocation < 0
+      || m_rectLocation < 0
+      || m_tintLocation < 0
+      || m_opacityLocation < 0
+      || m_radiusLocation < 0
+      || m_borderColorLocation < 0
+      || m_borderWidthLocation < 0
+      || m_texSizeLocation < 0
+      || m_fitModeLocation < 0
+      || m_samplerLocation < 0
+      || m_transformLocation < 0) {
     throw std::runtime_error("failed to query image shader locations");
   }
 }

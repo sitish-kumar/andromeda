@@ -185,8 +185,8 @@ std::string IpcService::buildHelp() const {
 }
 
 std::string IpcService::executeParsed(const std::string& command, const std::string& args) const {
-  const auto it =
-      std::find_if(m_handlers.begin(), m_handlers.end(), [&command](const auto& e) { return e.first == command; });
+  const auto it
+      = std::find_if(m_handlers.begin(), m_handlers.end(), [&command](const auto& e) { return e.first == command; });
   if (it == m_handlers.end()) {
     return "error: unknown command (try: noctalia msg --help)\n";
   }

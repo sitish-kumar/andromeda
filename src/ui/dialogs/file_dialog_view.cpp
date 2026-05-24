@@ -526,8 +526,8 @@ void FileDialogView::doLayout(Renderer& renderer, float width, float height) {
     const float viewportW = m_gridGrid->scrollView().contentViewportWidth();
     if (viewportW > 0.0f) {
       const float gap = Style::spaceSm * contentScale();
-      const std::size_t columns =
-          std::max<std::size_t>(1, static_cast<std::size_t>(std::floor((viewportW + gap) / (m_gridCellSize + gap))));
+      const std::size_t columns
+          = std::max<std::size_t>(1, static_cast<std::size_t>(std::floor((viewportW + gap) / (m_gridCellSize + gap))));
       m_gridColumns = columns;
     }
   }
@@ -1087,8 +1087,8 @@ void FileDialogView::ensureSelectionVisible() {
 }
 
 void FileDialogView::syncGridSelection() {
-  const std::optional<std::size_t> selection =
-      m_selectedIndex < m_visibleEntries.size() ? std::optional{m_selectedIndex} : std::nullopt;
+  const std::optional<std::size_t> selection
+      = m_selectedIndex < m_visibleEntries.size() ? std::optional{m_selectedIndex} : std::nullopt;
   if (m_listGrid != nullptr) {
     m_listGrid->setSelectedIndex(selection);
   }
@@ -1143,8 +1143,11 @@ std::filesystem::path FileDialogView::homeDirectory() const {
 
 std::filesystem::path FileDialogView::resolveStartDirectory(const std::filesystem::path& preferred) const {
   std::error_code ec;
-  if (!preferred.empty() && std::filesystem::exists(preferred, ec) && !ec &&
-      std::filesystem::is_directory(preferred, ec) && !ec) {
+  if (!preferred.empty()
+      && std::filesystem::exists(preferred, ec)
+      && !ec
+      && std::filesystem::is_directory(preferred, ec)
+      && !ec) {
     return preferred;
   }
 

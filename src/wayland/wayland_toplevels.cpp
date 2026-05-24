@@ -384,8 +384,10 @@ bool WaylandToplevels::notifyIfChanged(const std::optional<ActiveToplevel>& befo
   if (!before.has_value() || !now.has_value()) {
     return false;
   }
-  if (before->title != now->title || before->appId != now->appId || before->identifier != now->identifier ||
-      before->handle != now->handle) {
+  if (before->title != now->title
+      || before->appId != now->appId
+      || before->identifier != now->identifier
+      || before->handle != now->handle) {
     if (m_changeCallback) {
       m_changeCallback();
     }

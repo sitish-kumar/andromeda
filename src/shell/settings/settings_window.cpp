@@ -450,32 +450,40 @@ bool SettingsWindow::onPointerEvent(const PointerEvent& event) {
   if (m_widgetAddPopup != nullptr && m_widgetAddPopup->onPointerEvent(event)) {
     return true;
   }
-  if (m_widgetAddPopup != nullptr && m_widgetAddPopup->isOpen() && event.type == PointerEvent::Type::Button &&
-      event.state == 1) {
+  if (m_widgetAddPopup != nullptr
+      && m_widgetAddPopup->isOpen()
+      && event.type == PointerEvent::Type::Button
+      && event.state == 1) {
     m_widgetAddPopup->close();
     return true;
   }
   if (m_configExportDialogPopup != nullptr && m_configExportDialogPopup->onPointerEvent(event)) {
     return true;
   }
-  if (m_configExportDialogPopup != nullptr && m_configExportDialogPopup->isOpen() &&
-      event.type == PointerEvent::Type::Button && event.state == 1) {
+  if (m_configExportDialogPopup != nullptr
+      && m_configExportDialogPopup->isOpen()
+      && event.type == PointerEvent::Type::Button
+      && event.state == 1) {
     m_configExportDialogPopup->close();
     return true;
   }
   if (m_searchPickerPopup != nullptr && m_searchPickerPopup->onPointerEvent(event)) {
     return true;
   }
-  if (m_searchPickerPopup != nullptr && m_searchPickerPopup->isOpen() && event.type == PointerEvent::Type::Button &&
-      event.state == 1) {
+  if (m_searchPickerPopup != nullptr
+      && m_searchPickerPopup->isOpen()
+      && event.type == PointerEvent::Type::Button
+      && event.state == 1) {
     m_searchPickerPopup->close();
     return true;
   }
   if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->onPointerEvent(event)) {
     return true;
   }
-  if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->isOpen() &&
-      event.type == PointerEvent::Type::Button && event.state == 1) {
+  if (m_sessionActionsEditorPopup != nullptr
+      && m_sessionActionsEditorPopup->isOpen()
+      && event.type == PointerEvent::Type::Button
+      && event.state == 1) {
     m_sessionActionsEditorPopup->close();
     return true;
   }
@@ -493,8 +501,10 @@ bool SettingsWindow::onPointerEvent(const PointerEvent& event) {
   if (m_actionsMenuPopup != nullptr && m_actionsMenuPopup->onPointerEvent(event)) {
     return true;
   }
-  if (m_actionsMenuPopup != nullptr && m_actionsMenuPopup->isOpen() && event.type == PointerEvent::Type::Button &&
-      event.state == 1) {
+  if (m_actionsMenuPopup != nullptr
+      && m_actionsMenuPopup->isOpen()
+      && event.type == PointerEvent::Type::Button
+      && event.state == 1) {
     m_actionsMenuPopup->close();
     return true;
   }
@@ -532,8 +542,10 @@ bool SettingsWindow::onPointerEvent(const PointerEvent& event) {
         m_pointerInside = true;
       }
       m_inputDispatcher.pointerMotion(static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial);
-      if (pressed && event.button == BTN_LEFT && m_inputDispatcher.hoveredArea() == nullptr &&
-          headerDragRegionContains(static_cast<float>(event.sx), static_cast<float>(event.sy))) {
+      if (pressed
+          && event.button == BTN_LEFT
+          && m_inputDispatcher.hoveredArea() == nullptr
+          && headerDragRegionContains(static_cast<float>(event.sx), static_cast<float>(event.sy))) {
         m_surface->beginMove(event.serial);
         consumed = true;
         break;
@@ -628,10 +640,16 @@ void SettingsWindow::onKeyboardEvent(const KeyboardEvent& event) {
       m_actionsMenuPopup->close();
       return;
     }
-    if (!m_editingWidgetName.empty() || !m_renamingWidgetName.empty() || !m_pendingDeleteWidgetName.empty() ||
-        !m_pendingDeleteWidgetSettingPath.empty() || !m_creatingBarName.empty() || !m_renamingBarName.empty() ||
-        !m_pendingDeleteBarName.empty() || !m_creatingMonitorOverrideBarName.empty() ||
-        !m_renamingMonitorOverrideBarName.empty() || !m_pendingDeleteMonitorOverrideBarName.empty()) {
+    if (!m_editingWidgetName.empty()
+        || !m_renamingWidgetName.empty()
+        || !m_pendingDeleteWidgetName.empty()
+        || !m_pendingDeleteWidgetSettingPath.empty()
+        || !m_creatingBarName.empty()
+        || !m_renamingBarName.empty()
+        || !m_pendingDeleteBarName.empty()
+        || !m_creatingMonitorOverrideBarName.empty()
+        || !m_renamingMonitorOverrideBarName.empty()
+        || !m_pendingDeleteMonitorOverrideBarName.empty()) {
       m_editingWidgetName.clear();
       m_renamingWidgetName.clear();
       m_pendingDeleteWidgetName.clear();

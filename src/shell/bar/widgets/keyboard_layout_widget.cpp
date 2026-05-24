@@ -40,8 +40,8 @@ namespace {
 
     std::size_t pos = haystack.find(needle);
     while (pos != std::string_view::npos) {
-      if (isWordBoundary(haystack, pos == 0 ? haystack.size() : pos - 1) &&
-          isWordBoundary(haystack, pos + needle.size())) {
+      if (isWordBoundary(haystack, pos == 0 ? haystack.size() : pos - 1)
+          && isWordBoundary(haystack, pos + needle.size())) {
         return true;
       }
       pos = haystack.find(needle, pos + 1);
@@ -57,8 +57,11 @@ namespace {
     if (count < 2 || count > 3) {
       return false;
     }
-    if (count < text.size() && text[count] != '+' && !std::isspace(static_cast<unsigned char>(text[count])) &&
-        text[count] != '_' && text[count] != '-') {
+    if (count < text.size()
+        && text[count] != '+'
+        && !std::isspace(static_cast<unsigned char>(text[count]))
+        && text[count] != '_'
+        && text[count] != '-') {
       return false;
     }
     out.assign(text.substr(0, count));
@@ -357,8 +360,8 @@ void KeyboardLayoutWidget::doLayout(Renderer& renderer, float containerWidth, fl
   m_label->setVisible(!m_hideLabel);
   m_label->setTextAlign(m_isVertical ? TextAlign::Center : TextAlign::Start);
   if (!m_hideLabel) {
-    const float stableLabelWidth =
-        std::round(renderer.measureText(kVerticalStableLabel, m_label->fontSize(), labelFontWeight()).width);
+    const float stableLabelWidth
+        = std::round(renderer.measureText(kVerticalStableLabel, m_label->fontSize(), labelFontWeight()).width);
     m_label->setMinWidth(m_isVertical ? std::min(containerWidth, stableLabelWidth) : 0.0f);
     m_label->measure(renderer);
   }
@@ -483,8 +486,10 @@ void KeyboardLayoutWidget::cycleLayout() {
     return;
   }
 
-  if (stateBefore.has_value() && stateBefore->currentIndex >= 0 &&
-      stateBefore->currentIndex < static_cast<int>(stateBefore->names.size()) && stateBefore->names.size() > 1) {
+  if (stateBefore.has_value()
+      && stateBefore->currentIndex >= 0
+      && stateBefore->currentIndex < static_cast<int>(stateBefore->names.size())
+      && stateBefore->names.size() > 1) {
     std::size_t nextIndex = static_cast<std::size_t>(stateBefore->currentIndex + 1);
     if (nextIndex >= stateBefore->names.size()) {
       nextIndex = 0;

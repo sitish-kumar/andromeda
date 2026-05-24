@@ -138,8 +138,10 @@ namespace scripting {
         if (stopped) {
           return false;
         }
-        if (unhealthy && event.kind != ScriptWidgetEventKind::Reload && event.kind != ScriptWidgetEventKind::Load &&
-            event.kind != ScriptWidgetEventKind::Stop) {
+        if (unhealthy
+            && event.kind != ScriptWidgetEventKind::Reload
+            && event.kind != ScriptWidgetEventKind::Load
+            && event.kind != ScriptWidgetEventKind::Stop) {
           return false;
         }
 
@@ -148,9 +150,9 @@ namespace scripting {
           if (updateQueued || updateRunning) {
             return true;
           }
-          if (lastUpdateAccepted.time_since_epoch().count() != 0 &&
-              now - lastUpdateAccepted <
-                  std::max(updateInterval - std::chrono::milliseconds(5), std::chrono::milliseconds(1))) {
+          if (lastUpdateAccepted.time_since_epoch().count() != 0
+              && now - lastUpdateAccepted
+                  < std::max(updateInterval - std::chrono::milliseconds(5), std::chrono::milliseconds(1))) {
             return true;
           }
           updateQueued = true;

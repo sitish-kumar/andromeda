@@ -59,9 +59,8 @@ WallpaperTile::WallpaperTile(float cellWidth, float cellHeight, float contentSca
           .out = &m_thumb,
           .fit = ImageFit::Cover,
           .radius = frameRadius,
-          .configure = [outlineWidth](Image& image) {
-            image.setBorder(colorSpecFromRole(ColorRole::Outline), outlineWidth);
-          },
+          .configure
+          = [outlineWidth](Image& image) { image.setBorder(colorSpecFromRole(ColorRole::Outline), outlineWidth); },
       })
   );
 
@@ -150,8 +149,8 @@ void WallpaperTile::doLayout(Renderer& renderer) { InputArea::doLayout(renderer)
 
 void WallpaperTile::setEntry(const WallpaperEntry& entry, Renderer& renderer) {
   const std::string newPath = entry.isDir ? std::string{} : entry.absPath.string();
-  const bool sameEntry =
-      m_hasEntry && m_entry.absPath == entry.absPath && m_entry.name == entry.name && m_entry.isDir == entry.isDir;
+  const bool sameEntry
+      = m_hasEntry && m_entry.absPath == entry.absPath && m_entry.name == entry.name && m_entry.isDir == entry.isDir;
   if (sameEntry) {
     setVisible(true);
     refreshThumbnail(renderer);

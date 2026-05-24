@@ -182,8 +182,8 @@ std::unique_ptr<Flex> HomeTab::create() {
           .padding = 1.0f * scale,
           .width = avatarSize,
           .height = avatarSize,
-          .configure =
-              [](Image& image) { image.setBorder(colorSpecFromRole(ColorRole::Primary), Style::borderWidth * 3.0f); },
+          .configure
+          = [](Image& image) { image.setBorder(colorSpecFromRole(ColorRole::Primary), Style::borderWidth * 3.0f); },
       }),
       ui::column(
           {.out = &m_userMain,
@@ -199,17 +199,16 @@ std::unique_ptr<Flex> HomeTab::create() {
               .fontSize = Style::fontSizeTitle * 1.12f * scale,
               .color = colorSpecFromRole(ColorRole::OnSurface),
               .fontWeight = FontWeight::Bold,
-              .configure =
-                  [scale](Label& label) { label.setShadow(Color{0.0f, 0.0f, 0.0f, 0.42f}, 0.0f, 1.0f * scale); },
+              .configure
+              = [scale](Label& label) { label.setShadow(Color{0.0f, 0.0f, 0.0f, 0.42f}, 0.0f, 1.0f * scale); },
           }),
           ui::label({
               .out = &m_userFacts,
               .text = "…",
               .fontSize = Style::fontSizeCaption * scale,
               .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-              .configure = [scale](Label& label) {
-                label.setShadow(Color{0.0f, 0.0f, 0.0f, 0.36f}, 0.0f, 1.0f * scale);
-              },
+              .configure
+              = [scale](Label& label) { label.setShadow(Color{0.0f, 0.0f, 0.0f, 0.36f}, 0.0f, 1.0f * scale); },
           })
       )
   );
@@ -404,8 +403,8 @@ std::unique_ptr<Flex> HomeTab::create() {
   bottomRow->addChild(std::move(leftColumn));
 
   // --- Shortcuts (right of media + clock) ---
-  const auto& shortcuts =
-      m_config != nullptr ? m_config->config().controlCenter.shortcuts : std::vector<ShortcutConfig>{};
+  const auto& shortcuts
+      = m_config != nullptr ? m_config->config().controlCenter.shortcuts : std::vector<ShortcutConfig>{};
   const std::size_t count = std::min(shortcuts.size(), std::size_t{6});
 
   auto grid = std::make_unique<GridView>();
@@ -544,11 +543,11 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
         inner = std::max(1.0f, pad.button->width() - pad.button->paddingLeft() - pad.button->paddingRight());
       } else {
         const float gridW = m_shortcutsGrid->width();
-        const float innerGrid =
-            std::max(1.0f, gridW - m_shortcutsGrid->paddingLeft() - m_shortcutsGrid->paddingRight());
+        const float innerGrid
+            = std::max(1.0f, gridW - m_shortcutsGrid->paddingLeft() - m_shortcutsGrid->paddingRight());
         const std::size_t cols = std::max<std::size_t>(1, std::min(m_shortcutsGrid->columns(), m_shortcutPads.size()));
-        const float cellWidth =
-            (innerGrid - static_cast<float>(cols - 1) * m_shortcutsGrid->columnGap()) / static_cast<float>(cols);
+        const float cellWidth
+            = (innerGrid - static_cast<float>(cols - 1) * m_shortcutsGrid->columnGap()) / static_cast<float>(cols);
         inner = std::max(1.0f, cellWidth - 2.0f * Style::spaceSm * scale);
       }
       pad.label->setMaxWidth(inner);
@@ -577,8 +576,10 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
   }
   if (m_weatherLine != nullptr) {
     const float weatherTextWrap = std::max(
-        1.0f, dateTimeRightWrap - (m_weatherGlyph != nullptr ? m_weatherGlyph->width() : 0.0f) -
-                  Style::spaceXs * contentScale()
+        1.0f,
+        dateTimeRightWrap
+            - (m_weatherGlyph != nullptr ? m_weatherGlyph->width() : 0.0f)
+            - Style::spaceXs * contentScale()
     );
     m_weatherLine->setMaxWidth(weatherTextWrap);
     m_weatherLine->setMaxLines(2);
@@ -630,9 +631,10 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
     // Cells aim for square but trimmed slightly so the grid stays compact and the bottom row
     // doesn't tower over the user card area.
     const float cellSide = cellWidth * 0.82f;
-    const float gridH = static_cast<float>(rows) * cellSide +
-                        static_cast<float>(rows > 0 ? rows - 1 : 0) * m_shortcutsGrid->rowGap() +
-                        m_shortcutsGrid->paddingTop() + m_shortcutsGrid->paddingBottom();
+    const float gridH = static_cast<float>(rows) * cellSide
+        + static_cast<float>(rows > 0 ? rows - 1 : 0) * m_shortcutsGrid->rowGap()
+        + m_shortcutsGrid->paddingTop()
+        + m_shortcutsGrid->paddingBottom();
     if (m_bottomRow != nullptr) {
       m_bottomRow->setMinHeight(gridH);
     }
@@ -667,8 +669,8 @@ bool HomeTab::resizeMediaArtToCard() {
   const float scale = contentScale();
   const float minArt = Style::controlHeightLg * 1.22f * scale;
   const float maxArt = Style::controlHeightLg * 2.6f * scale;
-  const float available =
-      std::max(0.0f, m_mediaCard->height() - m_mediaCard->paddingTop() - m_mediaCard->paddingBottom());
+  const float available
+      = std::max(0.0f, m_mediaCard->height() - m_mediaCard->paddingTop() - m_mediaCard->paddingBottom());
   const float desired = std::clamp(available, minArt, maxArt);
   if (std::abs(m_mediaArtSlot->width() - desired) <= 0.5f) {
     return false;
@@ -706,9 +708,9 @@ void HomeTab::layoutWallpaperBackground(Renderer& renderer) {
             .fill = surface,
             .fillMode = FillMode::LinearGradient,
             .gradientDirection = GradientDirection::Horizontal,
-            .gradientStops =
-                {GradientStop{0.0f, translucentSurface}, GradientStop{0.25f, translucentSurface},
-                 GradientStop{0.9f, transparentSurface}, GradientStop{1.0f, transparentSurface}},
+            .gradientStops
+            = {GradientStop{0.0f, translucentSurface}, GradientStop{0.25f, translucentSurface},
+               GradientStop{0.9f, transparentSurface}, GradientStop{1.0f, transparentSurface}},
             .radius = radius,
         }
     );
@@ -758,8 +760,9 @@ void HomeTab::doUpdate(Renderer& renderer) {
     return;
   }
 
-  const bool playing =
-      m_mpris != nullptr && m_mpris->activePlayer().has_value() && m_mpris->activePlayer()->playbackStatus == "Playing";
+  const bool playing = m_mpris != nullptr
+      && m_mpris->activePlayer().has_value()
+      && m_mpris->activePlayer()->playbackStatus == "Playing";
   if (playing) {
     if (!m_progressTimer.active()) {
       m_progressTimer.startRepeating(std::chrono::milliseconds(1000), [this]() {
@@ -934,8 +937,8 @@ void HomeTab::sync(Renderer& renderer) {
 
   if (m_userFacts != nullptr) {
     const auto uptime = systemUptime();
-    const std::string uptimeText =
-        uptime.has_value() ? formatDuration(*uptime) : i18n::tr("control-center.home.unknown");
+    const std::string uptimeText
+        = uptime.has_value() ? formatDuration(*uptime) : i18n::tr("control-center.home.unknown");
     m_userFacts->setText(
         i18n::tr(
             "control-center.home.user-facts", "user", sessionDisplayName(), "host", hostName(), "uptime", uptimeText,
@@ -1014,8 +1017,8 @@ void HomeTab::sync(Renderer& renderer) {
         m_loadedMediaArtUrl.clear();
         PanelManager::instance().requestLayout();
       } else {
-        const std::string trackText =
-            active->title.empty() ? i18n::tr("control-center.home.media.unknown-track") : active->title;
+        const std::string trackText
+            = active->title.empty() ? i18n::tr("control-center.home.media.unknown-track") : active->title;
         const std::string artists = mpris::joinArtists(active->artists);
         const std::string artistText = artists.empty() ? i18n::tr("control-center.home.media.unknown-artist") : artists;
         if (m_mediaTrack->text() != trackText || m_mediaArtist->text() != artistText) {
@@ -1032,17 +1035,18 @@ void HomeTab::sync(Renderer& renderer) {
           const auto now = std::chrono::steady_clock::now();
           std::int64_t livePositionUs = std::max<std::int64_t>(0, active->positionUs);
           livePositionUs = std::clamp<std::int64_t>(livePositionUs, 0, active->lengthUs);
-          const bool sameDisplayedTrack =
-              m_mediaPositionBusName == active->busName && m_mediaPositionTrackSignature == trackSignature;
-          const bool withinTransientRegressionWindow =
-              m_mediaPositionSampleAt != std::chrono::steady_clock::time_point{} &&
-              now - m_mediaPositionSampleAt <= kHomeTransientPositionRegressionWindow;
-          const bool preserveDisplayedPosition =
-              sameDisplayedTrack && m_mediaLastPlaybackStatus == "Playing" && active->playbackStatus == "Playing" &&
-              m_mediaPositionUs >= kHomeTransientPositionRegressionFloorUs &&
-              livePositionUs <= kHomeTransientPositionRegressionCeilingUs &&
-              livePositionUs + kHomeTransientPositionRegressionDeltaUs < m_mediaPositionUs &&
-              withinTransientRegressionWindow;
+          const bool sameDisplayedTrack
+              = m_mediaPositionBusName == active->busName && m_mediaPositionTrackSignature == trackSignature;
+          const bool withinTransientRegressionWindow
+              = m_mediaPositionSampleAt != std::chrono::steady_clock::time_point{}
+              && now - m_mediaPositionSampleAt <= kHomeTransientPositionRegressionWindow;
+          const bool preserveDisplayedPosition = sameDisplayedTrack
+              && m_mediaLastPlaybackStatus == "Playing"
+              && active->playbackStatus == "Playing"
+              && m_mediaPositionUs >= kHomeTransientPositionRegressionFloorUs
+              && livePositionUs <= kHomeTransientPositionRegressionCeilingUs
+              && livePositionUs + kHomeTransientPositionRegressionDeltaUs < m_mediaPositionUs
+              && withinTransientRegressionWindow;
           if (preserveDisplayedPosition) {
             livePositionUs = m_mediaPositionUs;
           }

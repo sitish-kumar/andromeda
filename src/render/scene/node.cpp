@@ -12,8 +12,11 @@ namespace {
   Mat3 localTransform(const Node* node) {
     const float cx = node->width() * 0.5f;
     const float cy = node->height() * 0.5f;
-    return Mat3::translation(node->x(), node->y()) * Mat3::translation(cx, cy) * Mat3::rotation(node->rotation()) *
-           Mat3::scale(node->scale(), node->scale()) * Mat3::translation(-cx, -cy);
+    return Mat3::translation(node->x(), node->y())
+        * Mat3::translation(cx, cy)
+        * Mat3::rotation(node->rotation())
+        * Mat3::scale(node->scale(), node->scale())
+        * Mat3::translation(-cx, -cy);
   }
 
   Mat3 computeWorldTransform(const Node* node) {
@@ -38,8 +41,10 @@ namespace {
       return localX >= 0.0f && localX < node->width() && localY >= 0.0f && localY < node->height();
     }
     const HitTestOutset outset = node->hitTestOutset();
-    return localX >= -outset.left && localX < node->width() + outset.right && localY >= -outset.top &&
-           localY < node->height() + outset.bottom;
+    return localX >= -outset.left
+        && localX < node->width() + outset.right
+        && localY >= -outset.top
+        && localY < node->height() + outset.bottom;
   }
 
 } // namespace
@@ -257,8 +262,10 @@ void Node::setHitTestOutset(const HitTestOutset& outset) {
       .right = std::max(0.0f, outset.right),
       .bottom = std::max(0.0f, outset.bottom),
   };
-  if (m_hitTestOutset.left == clamped.left && m_hitTestOutset.top == clamped.top &&
-      m_hitTestOutset.right == clamped.right && m_hitTestOutset.bottom == clamped.bottom) {
+  if (m_hitTestOutset.left == clamped.left
+      && m_hitTestOutset.top == clamped.top
+      && m_hitTestOutset.right == clamped.right
+      && m_hitTestOutset.bottom == clamped.bottom) {
     return;
   }
   m_hitTestOutset = clamped;

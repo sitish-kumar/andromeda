@@ -153,8 +153,8 @@ void SysmonWidget::create() {
         ui::label({
             .out = &m_label,
             .fontSize = Style::fontSizeBody * m_contentScale,
-            .minWidth = m_labelMinWidth > 0.0f ? std::optional<float>{m_labelMinWidth * m_contentScale}
-                                               : std::optional<float>{},
+            .minWidth
+            = m_labelMinWidth > 0.0f ? std::optional<float>{m_labelMinWidth * m_contentScale} : std::optional<float>{},
             .fontWeight = labelFontWeight(),
         })
     );
@@ -282,8 +282,8 @@ void SysmonWidget::doLayout(Renderer& renderer, float containerWidth, float cont
   }
 
   if (m_displayMode == SysmonDisplayMode::Graph && m_chartBg != nullptr) {
-    const float chartW =
-        verticalBar ? std::min(50.0f * m_contentScale, std::max(1.0f, containerWidth)) : 50.0f * m_contentScale;
+    const float chartW
+        = verticalBar ? std::min(50.0f * m_contentScale, std::max(1.0f, containerWidth)) : 50.0f * m_contentScale;
 
     if (verticalBar) {
       float contentW = std::max(m_glyph->width(), chartW);
@@ -449,8 +449,8 @@ void SysmonWidget::updateGraph(Renderer& renderer) {
   const int texSize = n + 1;
   data.push_back(
       std::clamp(
-          data[static_cast<std::size_t>(n - 1)] +
-              (data[static_cast<std::size_t>(n - 1)] - data[static_cast<std::size_t>(n - 2)]) * 0.5f,
+          data[static_cast<std::size_t>(n - 1)]
+              + (data[static_cast<std::size_t>(n - 1)] - data[static_cast<std::size_t>(n - 2)]) * 0.5f,
           0.0f, 1.0f
       )
   );

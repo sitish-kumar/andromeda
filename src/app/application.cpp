@@ -102,9 +102,10 @@ namespace {
 
   bool configHasLockKeysWidget(const Config& config) {
     return std::any_of(config.bars.begin(), config.bars.end(), [&config](const BarConfig& bar) {
-      return barMayRender(bar) &&
-             (widgetListHasLockKeys(bar.startWidgets, config) || widgetListHasLockKeys(bar.centerWidgets, config) ||
-              widgetListHasLockKeys(bar.endWidgets, config));
+      return barMayRender(bar)
+          && (widgetListHasLockKeys(bar.startWidgets, config)
+              || widgetListHasLockKeys(bar.centerWidgets, config)
+              || widgetListHasLockKeys(bar.endWidgets, config));
     });
   }
 
@@ -380,8 +381,8 @@ void Application::initServices() {
   };
   auto applyStyleConfig = [this, lastCornerRadiusScale = std::numeric_limits<float>::quiet_NaN()]() mutable {
     const float corner = m_configService.config().shell.cornerRadiusScale;
-    const bool cornerChanged =
-        std::isfinite(lastCornerRadiusScale) && std::abs(corner - lastCornerRadiusScale) > 1.0e-4f;
+    const bool cornerChanged
+        = std::isfinite(lastCornerRadiusScale) && std::abs(corner - lastCornerRadiusScale) > 1.0e-4f;
     Style::setCornerRadiusScale(corner);
     lastCornerRadiusScale = corner;
     if (cornerChanged) {
@@ -391,8 +392,8 @@ void Application::initServices() {
   };
   auto applyPasswordMaskStyle = [this]() {
     const auto style = m_configService.config().shell.passwordMaskStyle == PasswordMaskStyle::RandomIcons
-                           ? Input::PasswordMaskStyle::RandomIcons
-                           : Input::PasswordMaskStyle::CircleFilled;
+        ? Input::PasswordMaskStyle::RandomIcons
+        : Input::PasswordMaskStyle::CircleFilled;
     Input::setPasswordMaskStyle(style);
   };
   applyMotionConfig();
@@ -438,9 +439,10 @@ void Application::initServices() {
     m_hookManager.fire(HookKind::ColorsChanged);
     if (lastResolvedThemeMode.has_value() && *lastResolvedThemeMode != resolvedMode) {
       m_hookManager.fire(
-          HookKind::ThemeModeChanged, {{"NOCTALIA_THEME_MODE", resolvedMode},
-                                       {"NOCTALIA_THEME_MODE_PREVIOUS", *lastResolvedThemeMode},
-                                       {"NOCTALIA_THEME_MODE_CONFIGURED", configuredMode}}
+          HookKind::ThemeModeChanged,
+          {{"NOCTALIA_THEME_MODE", resolvedMode},
+           {"NOCTALIA_THEME_MODE_PREVIOUS", *lastResolvedThemeMode},
+           {"NOCTALIA_THEME_MODE_CONFIGURED", configuredMode}}
       );
     }
     lastResolvedThemeMode = resolvedMode;
@@ -610,7 +612,7 @@ void Application::initServices() {
 
   if (const auto distro = DistroDetector::detect(); distro.has_value()) {
     const auto& label = !distro->prettyName.empty() ? distro->prettyName
-                        : !distro->name.empty()     ? distro->name
+        : !distro->name.empty()                     ? distro->name
                                                     : distro->id;
     kLog.info("distro: {}", label);
   } else {
@@ -693,8 +695,9 @@ void Application::initServices() {
         if (active.empty()) {
           return;
         }
-        if (m_prevPowerProfileActiveForEvents.has_value() && *m_prevPowerProfileActiveForEvents != active &&
-            origin != PowerProfilesChangeOrigin::Noctalia) {
+        if (m_prevPowerProfileActiveForEvents.has_value()
+            && *m_prevPowerProfileActiveForEvents != active
+            && origin != PowerProfilesChangeOrigin::Noctalia) {
           std::string glyphIconSpec("noctalia-glyph:");
           glyphIconSpec.append(profileGlyphName(active));
           m_notificationManager.addInternal(
@@ -1138,8 +1141,8 @@ void Application::initUi() {
   );
   std::size_t trayDrawerColumns = 3;
   if (const auto it = m_configService.config().widgets.find("tray"); it != m_configService.config().widgets.end()) {
-    trayDrawerColumns =
-        static_cast<std::size_t>(std::clamp<std::int64_t>(it->second.getInt("drawer_columns", 3), 1, 5));
+    trayDrawerColumns
+        = static_cast<std::size_t>(std::clamp<std::int64_t>(it->second.getInt("drawer_columns", 3), 1, 5));
   }
   m_panelManager.registerPanel(
       "tray-drawer", std::make_unique<TrayDrawerPanel>(m_trayService.get(), &m_configService, trayDrawerColumns)
@@ -1660,9 +1663,10 @@ void Application::onPowerProfileChangedForEvents(const PowerProfilesState& state
   const std::string prev = *m_prevPowerProfileActiveForEvents;
   if (prev != state.activeProfile) {
     m_hookManager.fire(
-        HookKind::PowerProfileChanged, {{"NOCTALIA_POWER_PROFILE", state.activeProfile},
-                                        {"NOCTALIA_POWER_PROFILE_PREVIOUS", prev},
-                                        {"NOCTALIA_POWER_PROFILE_ORIGIN", std::string(powerProfileOriginName(origin))}}
+        HookKind::PowerProfileChanged,
+        {{"NOCTALIA_POWER_PROFILE", state.activeProfile},
+         {"NOCTALIA_POWER_PROFILE_PREVIOUS", prev},
+         {"NOCTALIA_POWER_PROFILE_ORIGIN", std::string(powerProfileOriginName(origin))}}
     );
   }
   m_prevPowerProfileActiveForEvents = state.activeProfile;

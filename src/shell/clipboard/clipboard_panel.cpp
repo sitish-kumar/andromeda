@@ -314,8 +314,8 @@ namespace {
         m_image->setSize(thumbPx, thumbPx);
       }
       if (m_title != nullptr && m_meta != nullptr) {
-        const float textWidth =
-            std::max(0.0f, rowW - thumbPx - Style::spaceMd * m_scale - Style::spaceSm * m_scale * 2.0f);
+        const float textWidth
+            = std::max(0.0f, rowW - thumbPx - Style::spaceMd * m_scale - Style::spaceSm * m_scale * 2.0f);
         m_title->setMaxWidth(textWidth);
         m_meta->setMaxWidth(textWidth);
       }
@@ -335,9 +335,9 @@ namespace {
         return;
       }
 
-      const Color bg = m_selected  ? colorForRole(ColorRole::SurfaceVariant)
-                       : m_hovered ? colorForRole(ColorRole::SurfaceVariant, 0.45f)
-                                   : clearColor();
+      const Color bg = m_selected ? colorForRole(ColorRole::SurfaceVariant)
+          : m_hovered             ? colorForRole(ColorRole::SurfaceVariant, 0.45f)
+                                  : clearColor();
       m_background->setFill(bg);
       m_glyph->setColor(colorSpecFromRole(m_isImage ? ColorRole::Secondary : ColorRole::Primary));
       m_title->setColor(colorSpecFromRole(ColorRole::OnSurface));
@@ -399,8 +399,10 @@ public:
   }
 
   void bindTile(Node& tile, std::size_t index, bool selected, bool hovered) override {
-    if (m_renderer == nullptr || m_clipboard == nullptr || m_filteredIndices == nullptr ||
-        index >= m_filteredIndices->size()) {
+    if (m_renderer == nullptr
+        || m_clipboard == nullptr
+        || m_filteredIndices == nullptr
+        || index >= m_filteredIndices->size()) {
       return;
     }
     const std::size_t historyIndex = (*m_filteredIndices)[index];
@@ -636,8 +638,11 @@ void ClipboardPanel::create() {
 }
 
 void ClipboardPanel::doLayout(Renderer& renderer, float width, float height) {
-  if (m_rootLayout == nullptr || m_sidebar == nullptr || m_previewCard == nullptr || m_listGrid == nullptr ||
-      m_previewScrollView == nullptr) {
+  if (m_rootLayout == nullptr
+      || m_sidebar == nullptr
+      || m_previewCard == nullptr
+      || m_listGrid == nullptr
+      || m_previewScrollView == nullptr) {
     return;
   }
 
@@ -723,8 +728,8 @@ void ClipboardPanel::doUpdate(Renderer& renderer) {
     }
 
     schedulePreviewPayloadRefresh(false);
-    const float previewWidth =
-        m_previewScrollView != nullptr ? m_previewScrollView->contentViewportWidth() : m_lastWidth;
+    const float previewWidth
+        = m_previewScrollView != nullptr ? m_previewScrollView->contentViewportWidth() : m_lastWidth;
     const float previewHeight = m_previewScrollView != nullptr ? m_previewScrollView->height() : m_lastHeight;
     rebuildPreview(renderer, previewWidth, previewHeight);
   }
@@ -857,9 +862,9 @@ void ClipboardPanel::updateListState() {
 
   if (m_listEmptyLabel != nullptr) {
     m_listEmptyLabel->setText(
-        history.empty()         ? i18n::tr("clipboard.empty.history-title")
-        : m_filterQuery.empty() ? i18n::tr("clipboard.empty.history-title")
-                                : i18n::tr("clipboard.empty.no-matches-title")
+        history.empty()             ? i18n::tr("clipboard.empty.history-title")
+            : m_filterQuery.empty() ? i18n::tr("clipboard.empty.history-title")
+                                    : i18n::tr("clipboard.empty.no-matches-title")
     );
     m_listEmptyLabel->setVisible(empty);
     m_listEmptyLabel->setParticipatesInLayout(empty);
@@ -876,12 +881,14 @@ void ClipboardPanel::updatePreviewActions() {
   }
 
   bool showImageAction = false;
-  if (m_clipboard != nullptr && m_config != nullptr &&
-      !StringUtils::trim(m_config->config().shell.clipboardImageActionCommand).empty()) {
+  if (m_clipboard != nullptr
+      && m_config != nullptr
+      && !StringUtils::trim(m_config->config().shell.clipboardImageActionCommand).empty()) {
     const std::size_t historyIndex = selectedHistoryIndex();
     const auto& history = m_clipboard->history();
-    showImageAction = historyIndex != static_cast<std::size_t>(-1) && historyIndex < history.size() &&
-                      history[historyIndex].isImage();
+    showImageAction = historyIndex != static_cast<std::size_t>(-1)
+        && historyIndex < history.size()
+        && history[historyIndex].isImage();
   }
 
   m_imageActionButton->setVisible(showImageAction);
@@ -965,8 +972,9 @@ void ClipboardPanel::rebuildPreview(Renderer& renderer, float width, float heigh
     return;
   }
 
-  if (m_clipboard != nullptr && m_previewPayloadIndex != static_cast<std::size_t>(-1) &&
-      m_previewPayloadIndex != historyIndex) {
+  if (m_clipboard != nullptr
+      && m_previewPayloadIndex != static_cast<std::size_t>(-1)
+      && m_previewPayloadIndex != historyIndex) {
     m_clipboard->evictEntryPayload(m_previewPayloadIndex);
   }
 

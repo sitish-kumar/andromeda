@@ -55,8 +55,12 @@ void LinearGradientProgram::ensureInitialized() {
   m_endColorLocation = glGetUniformLocation(m_program.id(), "u_end_color");
   m_directionLocation = glGetUniformLocation(m_program.id(), "u_direction");
 
-  if (m_positionLocation < 0 || m_surfaceSizeLocation < 0 || m_rectLocation < 0 || m_startColorLocation < 0 ||
-      m_endColorLocation < 0 || m_directionLocation < 0) {
+  if (m_positionLocation < 0
+      || m_surfaceSizeLocation < 0
+      || m_rectLocation < 0
+      || m_startColorLocation < 0
+      || m_endColorLocation < 0
+      || m_directionLocation < 0) {
     throw std::runtime_error("failed to query linear-gradient shader locations");
   }
 }

@@ -107,8 +107,8 @@ public:
   virtual void endFrame(RenderTarget& target) = 0;
 
   [[nodiscard]] virtual std::unique_ptr<RenderSurfaceTarget> createSurfaceTarget(wl_surface* surface) = 0;
-  [[nodiscard]] virtual std::unique_ptr<RenderFramebuffer>
-  createFramebuffer(std::uint32_t width, std::uint32_t height) = 0;
+  [[nodiscard]] virtual std::unique_ptr<RenderFramebuffer> createFramebuffer(std::uint32_t width, std::uint32_t height)
+      = 0;
   virtual void bindFramebuffer(const RenderFramebuffer& framebuffer) = 0;
   virtual void bindDefaultFramebuffer() = 0;
   virtual void setViewport(std::uint32_t width, std::uint32_t height) = 0;

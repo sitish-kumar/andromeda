@@ -94,8 +94,12 @@ void AudioSpectrumProgram::ensureInitialized() {
   m_snapToDeviceLocation = glGetUniformLocation(m_program.id(), "u_snap_to_device");
   m_transformLocation = glGetUniformLocation(m_program.id(), "u_transform");
 
-  if (m_positionLocation < 0 || m_colorLocation < 0 || m_surfaceSizeLocation < 0 || m_pixelScaleLocation < 0 ||
-      m_snapToDeviceLocation < 0 || m_transformLocation < 0) {
+  if (m_positionLocation < 0
+      || m_colorLocation < 0
+      || m_surfaceSizeLocation < 0
+      || m_pixelScaleLocation < 0
+      || m_snapToDeviceLocation < 0
+      || m_transformLocation < 0) {
     throw std::runtime_error("failed to query audio spectrum shader locations");
   }
 }
@@ -136,11 +140,12 @@ void AudioSpectrumProgram::draw(
   const int gapCount = std::max(0, barCount - 1);
   const float weightedSlots = static_cast<float>(barCount) + static_cast<float>(gapCount) * kGapToBarRatio;
   const float devicePixel = 1.0f / mainPixelScale;
-  const float barThickness =
-      std::max(devicePixel, std::floor(mainAxisLen / std::max(1.0f, weightedSlots) * mainPixelScale) / mainPixelScale);
-  const float gapThickness =
-      gapCount > 0 ? std::max(devicePixel, std::floor(barThickness * kGapToBarRatio * mainPixelScale) / mainPixelScale)
-                   : 0.0f;
+  const float barThickness = std::max(
+      devicePixel, std::floor(mainAxisLen / std::max(1.0f, weightedSlots) * mainPixelScale) / mainPixelScale
+  );
+  const float gapThickness = gapCount > 0
+      ? std::max(devicePixel, std::floor(barThickness * kGapToBarRatio * mainPixelScale) / mainPixelScale)
+      : 0.0f;
   const float stride = barThickness + gapThickness;
   const float used = barThickness * static_cast<float>(barCount) + gapThickness * static_cast<float>(gapCount);
   const float startOffset = std::floor(std::max(0.0f, (mainAxisLen - used) * 0.5f) * mainPixelScale) / mainPixelScale;
@@ -151,8 +156,8 @@ void AudioSpectrumProgram::draw(
   for (int i = 0; i < barCount; ++i) {
     const int valueIndex = style.mirrored ? (i < valueCount ? valueCount - 1 - i : i - valueCount) : i;
     const float rawValue = valueIndex >= 0 && valueIndex < valueCount
-                               ? std::clamp(values[static_cast<std::size_t>(valueIndex)], 0.0f, 1.0f)
-                               : 0.0f;
+        ? std::clamp(values[static_cast<std::size_t>(valueIndex)], 0.0f, 1.0f)
+        : 0.0f;
     float crossPixels = std::max(1.0f, std::floor(rawValue * crossAxisLen * crossPixelScale + 0.5f));
     if (style.centered && crossPixels > 1.0f) {
       crossPixels = std::max(2.0f, std::round(crossPixels * 0.5f) * 2.0f);
@@ -169,8 +174,8 @@ void AudioSpectrumProgram::draw(
       mainStart = std::max(0.0f, mainStart - (mainEnd - mainAxisLen));
       mainEnd = mainAxisLen;
     }
-    float crossStart =
-        snapToPixel(style.centered ? (crossAxisLen - crossSize) * 0.5f : crossAxisLen - crossSize, crossPixelScale);
+    float crossStart
+        = snapToPixel(style.centered ? (crossAxisLen - crossSize) * 0.5f : crossAxisLen - crossSize, crossPixelScale);
     float crossEnd = crossStart + crossSize;
     if (crossStart < 0.0f) {
       crossEnd -= crossStart;

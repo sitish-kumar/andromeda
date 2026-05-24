@@ -259,8 +259,9 @@ int main(int argc, char* argv[]) {
   bool shouldDaemonize = false;
 
   for (int i = 1; i < argc; ++i) {
-    if (std::strcmp(argv[i], "--daemon") == 0 || std::strcmp(argv[i], "--daemonize") == 0 ||
-        std::strcmp(argv[i], "-d") == 0) {
+    if (std::strcmp(argv[i], "--daemon") == 0
+        || std::strcmp(argv[i], "--daemonize") == 0
+        || std::strcmp(argv[i], "-d") == 0) {
       shouldDaemonize = true;
       for (int j = i; j < argc - 1; ++j) {
         argv[j] = argv[j + 1];

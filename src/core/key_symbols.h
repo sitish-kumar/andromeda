@@ -75,7 +75,11 @@ namespace KeySymbol {
   }
 
   [[nodiscard]] inline bool isSuperModifier(std::uint32_t sym) noexcept {
-    return sym == XKB_KEY_Super_L || sym == XKB_KEY_Super_R || sym == XKB_KEY_Hyper_L || sym == XKB_KEY_Hyper_R ||
-           sym == XKB_KEY_Meta_L || sym == XKB_KEY_Meta_R;
+    return sym == XKB_KEY_Super_L
+        || sym == XKB_KEY_Super_R
+        || sym == XKB_KEY_Hyper_L
+        || sym == XKB_KEY_Hyper_R
+        || sym == XKB_KEY_Meta_L
+        || sym == XKB_KEY_Meta_R;
   }
 } // namespace KeySymbol

@@ -67,9 +67,9 @@ namespace {
   }
 
   bool shouldUseStrftimeCompat(std::string_view fmt) {
-    return fmt.find("%-") != std::string_view::npos ||
-           (fmt.find('%') != std::string_view::npos &&
-            (fmt.find('{') == std::string_view::npos || fmt.find("{:") != std::string_view::npos));
+    return fmt.find("%-") != std::string_view::npos
+        || (fmt.find('%') != std::string_view::npos
+            && (fmt.find('{') == std::string_view::npos || fmt.find("{:") != std::string_view::npos));
   }
 
   std::optional<std::string> formatStrftimeCompat(std::string_view fmt, const std::tm& local) {
@@ -170,12 +170,10 @@ std::string formatIsoTime(std::string_view isoTime, const char* fmt) {
   }
 
   using namespace std::chrono;
-  const auto tp =
-      sys_days{
-          std::chrono::year{year} / std::chrono::month{static_cast<unsigned>(month)} /
-          std::chrono::day{static_cast<unsigned>(day)}
-      } +
-      hours{hour} + minutes{minute};
+  const auto tp
+      = sys_days{std::chrono::year{year} / std::chrono::month{static_cast<unsigned>(month)} / std::chrono::day{static_cast<unsigned>(day)}}
+      + hours{hour}
+      + minutes{minute};
   const auto local = local_seconds{tp.time_since_epoch()};
   try {
     return std::vformat(std::locale(""), normalizedFmt, std::make_format_args(local));

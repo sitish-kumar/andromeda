@@ -115,36 +115,62 @@ namespace {
   }
 
   bool desktopWidgetEqual(const DesktopWidgetState& a, const DesktopWidgetState& b) {
-    return a.id == b.id && a.type == b.type && a.outputName == b.outputName && nearlyEqual(a.cx, b.cx) &&
-           nearlyEqual(a.cy, b.cy) && nearlyEqual(a.scale, b.scale) && nearlyEqual(a.rotationRad, b.rotationRad) &&
-           a.enabled == b.enabled && widgetSettingsEqual(a.settings, b.settings);
+    return a.id == b.id
+        && a.type == b.type
+        && a.outputName == b.outputName
+        && nearlyEqual(a.cx, b.cx)
+        && nearlyEqual(a.cy, b.cy)
+        && nearlyEqual(a.scale, b.scale)
+        && nearlyEqual(a.rotationRad, b.rotationRad)
+        && a.enabled == b.enabled
+        && widgetSettingsEqual(a.settings, b.settings);
   }
 
   bool desktopWidgetsConfigEqual(const DesktopWidgetsConfig& a, const DesktopWidgetsConfig& b) {
-    return a.enabled == b.enabled && a.schemaVersion == b.schemaVersion && a.grid.visible == b.grid.visible &&
-           a.grid.cellSize == b.grid.cellSize && a.grid.majorInterval == b.grid.majorInterval &&
-           vectorEqual(a.widgets, b.widgets, desktopWidgetEqual);
+    return a.enabled == b.enabled
+        && a.schemaVersion == b.schemaVersion
+        && a.grid.visible == b.grid.visible
+        && a.grid.cellSize == b.grid.cellSize
+        && a.grid.majorInterval == b.grid.majorInterval
+        && vectorEqual(a.widgets, b.widgets, desktopWidgetEqual);
   }
 
   bool barBaseConfigEqual(const BarConfig& a, const BarConfig& b) {
-    return a.name == b.name && a.position == b.position && a.enabled == b.enabled && a.autoHide == b.autoHide &&
-           a.reserveSpace == b.reserveSpace && a.thickness == b.thickness &&
-           nearlyEqual(a.backgroundOpacity, b.backgroundOpacity) && colorSpecEqual(a.border, b.border) &&
-           nearlyEqual(a.borderWidth, b.borderWidth) && a.radius == b.radius && a.radiusTopLeft == b.radiusTopLeft &&
-           a.radiusTopRight == b.radiusTopRight && a.radiusBottomLeft == b.radiusBottomLeft &&
-           a.radiusBottomRight == b.radiusBottomRight && a.marginEnds == b.marginEnds && a.marginEdge == b.marginEdge &&
-           a.padding == b.padding && a.widgetSpacing == b.widgetSpacing && a.shadow == b.shadow &&
-           a.contactShadow == b.contactShadow && nearlyEqual(a.scale, b.scale) && a.fontWeight == b.fontWeight &&
-           a.startWidgets == b.startWidgets && a.centerWidgets == b.centerWidgets && a.endWidgets == b.endWidgets &&
-           a.widgetCapsuleDefault == b.widgetCapsuleDefault &&
-           colorSpecEqual(a.widgetCapsuleFill, b.widgetCapsuleFill) &&
-           optionalColorSpecEqual(a.widgetCapsuleForeground, b.widgetCapsuleForeground) &&
-           optionalColorSpecEqual(a.widgetColor, b.widgetColor) && a.widgetCapsuleGroups == b.widgetCapsuleGroups &&
-           nearlyEqual(a.widgetCapsulePadding, b.widgetCapsulePadding) &&
-           optionalDoubleEqual(a.widgetCapsuleRadius, b.widgetCapsuleRadius) &&
-           nearlyEqual(a.widgetCapsuleOpacity, b.widgetCapsuleOpacity) &&
-           a.widgetCapsuleBorderSpecified == b.widgetCapsuleBorderSpecified &&
-           optionalColorSpecEqual(a.widgetCapsuleBorder, b.widgetCapsuleBorder);
+    return a.name == b.name
+        && a.position == b.position
+        && a.enabled == b.enabled
+        && a.autoHide == b.autoHide
+        && a.reserveSpace == b.reserveSpace
+        && a.thickness == b.thickness
+        && nearlyEqual(a.backgroundOpacity, b.backgroundOpacity)
+        && colorSpecEqual(a.border, b.border)
+        && nearlyEqual(a.borderWidth, b.borderWidth)
+        && a.radius == b.radius
+        && a.radiusTopLeft == b.radiusTopLeft
+        && a.radiusTopRight == b.radiusTopRight
+        && a.radiusBottomLeft == b.radiusBottomLeft
+        && a.radiusBottomRight == b.radiusBottomRight
+        && a.marginEnds == b.marginEnds
+        && a.marginEdge == b.marginEdge
+        && a.padding == b.padding
+        && a.widgetSpacing == b.widgetSpacing
+        && a.shadow == b.shadow
+        && a.contactShadow == b.contactShadow
+        && nearlyEqual(a.scale, b.scale)
+        && a.fontWeight == b.fontWeight
+        && a.startWidgets == b.startWidgets
+        && a.centerWidgets == b.centerWidgets
+        && a.endWidgets == b.endWidgets
+        && a.widgetCapsuleDefault == b.widgetCapsuleDefault
+        && colorSpecEqual(a.widgetCapsuleFill, b.widgetCapsuleFill)
+        && optionalColorSpecEqual(a.widgetCapsuleForeground, b.widgetCapsuleForeground)
+        && optionalColorSpecEqual(a.widgetColor, b.widgetColor)
+        && a.widgetCapsuleGroups == b.widgetCapsuleGroups
+        && nearlyEqual(a.widgetCapsulePadding, b.widgetCapsulePadding)
+        && optionalDoubleEqual(a.widgetCapsuleRadius, b.widgetCapsuleRadius)
+        && nearlyEqual(a.widgetCapsuleOpacity, b.widgetCapsuleOpacity)
+        && a.widgetCapsuleBorderSpecified == b.widgetCapsuleBorderSpecified
+        && optionalColorSpecEqual(a.widgetCapsuleBorder, b.widgetCapsuleBorder);
   }
 
   BarConfig applyMonitorOverrideForComparison(const BarConfig& base, const BarMonitorOverride& ovr) {
@@ -252,17 +278,18 @@ namespace {
   }
 
   bool barMonitorOverrideEqual(const BarConfig& base, const BarMonitorOverride& a, const BarMonitorOverride& b) {
-    return a.match == b.match &&
-           barBaseConfigEqual(applyMonitorOverrideForComparison(base, a), applyMonitorOverrideForComparison(base, b));
+    return a.match == b.match
+        && barBaseConfigEqual(applyMonitorOverrideForComparison(base, a), applyMonitorOverrideForComparison(base, b));
   }
 
   bool barConfigEqual(const BarConfig& a, const BarConfig& b) {
-    return barBaseConfigEqual(a, b) && vectorEqual(
-                                           a.monitorOverrides, b.monitorOverrides,
-                                           [&a](const BarMonitorOverride& lhs, const BarMonitorOverride& rhs) {
-                                             return barMonitorOverrideEqual(a, lhs, rhs);
-                                           }
-                                       );
+    return barBaseConfigEqual(a, b)
+        && vectorEqual(
+               a.monitorOverrides, b.monitorOverrides,
+               [&a](const BarMonitorOverride& lhs, const BarMonitorOverride& rhs) {
+                 return barMonitorOverrideEqual(a, lhs, rhs);
+               }
+        );
   }
 
   bool widgetConfigEqual(const WidgetConfig& a, const WidgetConfig& b) {
@@ -300,130 +327,213 @@ namespace {
   }
 
   bool wallpaperMonitorOverrideEqual(const WallpaperMonitorOverride& a, const WallpaperMonitorOverride& b) {
-    return a.match == b.match && a.enabled == b.enabled && optionalColorSpecEqual(a.fillColor, b.fillColor) &&
-           a.directory == b.directory && a.directoryLight == b.directoryLight && a.directoryDark == b.directoryDark;
+    return a.match == b.match
+        && a.enabled == b.enabled
+        && optionalColorSpecEqual(a.fillColor, b.fillColor)
+        && a.directory == b.directory
+        && a.directoryLight == b.directoryLight
+        && a.directoryDark == b.directoryDark;
   }
 
   bool wallpaperConfigEqual(const WallpaperConfig& a, const WallpaperConfig& b) {
-    return a.enabled == b.enabled && a.fillMode == b.fillMode && optionalColorSpecEqual(a.fillColor, b.fillColor) &&
-           a.transitions == b.transitions && nearlyEqual(a.transitionDurationMs, b.transitionDurationMs) &&
-           nearlyEqual(a.edgeSmoothness, b.edgeSmoothness) && a.directory == b.directory &&
-           a.directoryLight == b.directoryLight && a.directoryDark == b.directoryDark &&
-           a.perMonitorDirectories == b.perMonitorDirectories && a.automation.enabled == b.automation.enabled &&
-           a.automation.intervalMinutes == b.automation.intervalMinutes && a.automation.order == b.automation.order &&
-           a.automation.recursive == b.automation.recursive &&
-           vectorEqual(a.monitorOverrides, b.monitorOverrides, wallpaperMonitorOverrideEqual);
+    return a.enabled == b.enabled
+        && a.fillMode == b.fillMode
+        && optionalColorSpecEqual(a.fillColor, b.fillColor)
+        && a.transitions == b.transitions
+        && nearlyEqual(a.transitionDurationMs, b.transitionDurationMs)
+        && nearlyEqual(a.edgeSmoothness, b.edgeSmoothness)
+        && a.directory == b.directory
+        && a.directoryLight == b.directoryLight
+        && a.directoryDark == b.directoryDark
+        && a.perMonitorDirectories == b.perMonitorDirectories
+        && a.automation.enabled == b.automation.enabled
+        && a.automation.intervalMinutes == b.automation.intervalMinutes
+        && a.automation.order == b.automation.order
+        && a.automation.recursive == b.automation.recursive
+        && vectorEqual(a.monitorOverrides, b.monitorOverrides, wallpaperMonitorOverrideEqual);
   }
 
   bool dockConfigEqual(const DockConfig& a, const DockConfig& b) {
-    return a.enabled == b.enabled && a.position == b.position && a.activeMonitorOnly == b.activeMonitorOnly &&
-           a.iconSize == b.iconSize && a.padding == b.padding && a.itemSpacing == b.itemSpacing &&
-           nearlyEqual(a.backgroundOpacity, b.backgroundOpacity) && a.radius == b.radius &&
-           a.radiusTopLeft == b.radiusTopLeft && a.radiusTopRight == b.radiusTopRight &&
-           a.radiusBottomLeft == b.radiusBottomLeft && a.radiusBottomRight == b.radiusBottomRight &&
-           a.marginEnds == b.marginEnds && a.marginEdge == b.marginEdge && a.shadow == b.shadow &&
-           a.showRunning == b.showRunning && a.autoHide == b.autoHide && a.reserveSpace == b.reserveSpace &&
-           nearlyEqual(a.activeScale, b.activeScale) && nearlyEqual(a.inactiveScale, b.inactiveScale) &&
-           nearlyEqual(a.activeOpacity, b.activeOpacity) && nearlyEqual(a.inactiveOpacity, b.inactiveOpacity) &&
-           a.showDots == b.showDots && a.showInstanceCount == b.showInstanceCount &&
-           a.launcherPosition == b.launcherPosition && a.launcherIcon == b.launcherIcon && a.pinned == b.pinned &&
-           a.monitors == b.monitors;
+    return a.enabled == b.enabled
+        && a.position == b.position
+        && a.activeMonitorOnly == b.activeMonitorOnly
+        && a.iconSize == b.iconSize
+        && a.padding == b.padding
+        && a.itemSpacing == b.itemSpacing
+        && nearlyEqual(a.backgroundOpacity, b.backgroundOpacity)
+        && a.radius == b.radius
+        && a.radiusTopLeft == b.radiusTopLeft
+        && a.radiusTopRight == b.radiusTopRight
+        && a.radiusBottomLeft == b.radiusBottomLeft
+        && a.radiusBottomRight == b.radiusBottomRight
+        && a.marginEnds == b.marginEnds
+        && a.marginEdge == b.marginEdge
+        && a.shadow == b.shadow
+        && a.showRunning == b.showRunning
+        && a.autoHide == b.autoHide
+        && a.reserveSpace == b.reserveSpace
+        && nearlyEqual(a.activeScale, b.activeScale)
+        && nearlyEqual(a.inactiveScale, b.inactiveScale)
+        && nearlyEqual(a.activeOpacity, b.activeOpacity)
+        && nearlyEqual(a.inactiveOpacity, b.inactiveOpacity)
+        && a.showDots == b.showDots
+        && a.showInstanceCount == b.showInstanceCount
+        && a.launcherPosition == b.launcherPosition
+        && a.launcherIcon == b.launcherIcon
+        && a.pinned == b.pinned
+        && a.monitors == b.monitors;
   }
 
   bool shellConfigEqual(const ShellConfig& a, const ShellConfig& b) {
-    return nearlyEqual(a.uiScale, b.uiScale) && nearlyEqual(a.cornerRadiusScale, b.cornerRadiusScale) &&
-           a.fontFamily == b.fontFamily && a.lang == b.lang && a.timeFormat == b.timeFormat &&
-           a.dateFormat == b.dateFormat && a.offlineMode == b.offlineMode && a.telemetryEnabled == b.telemetryEnabled &&
-           a.niriOverviewTypeToLaunchEnabled == b.niriOverviewTypeToLaunchEnabled && a.polkitAgent == b.polkitAgent &&
-           a.passwordMaskStyle == b.passwordMaskStyle && a.animation.enabled == b.animation.enabled &&
-           nearlyEqual(a.animation.speed, b.animation.speed) && a.avatarPath == b.avatarPath &&
-           a.settingsShowAdvanced == b.settingsShowAdvanced &&
-           a.middleClickOpensWidgetSettings == b.middleClickOpensWidgetSettings && a.showLocation == b.showLocation &&
-           a.launchAppsAsSystemdServices == b.launchAppsAsSystemdServices && a.clipboardEnabled == b.clipboardEnabled &&
-           a.clipboardHistoryMaxEntries == b.clipboardHistoryMaxEntries && a.screenTimeEnabled == b.screenTimeEnabled &&
-           a.clipboardAutoPaste == b.clipboardAutoPaste &&
-           a.clipboardImageActionCommand == b.clipboardImageActionCommand && a.shadow.blur == b.shadow.blur &&
-           a.shadow.offsetX == b.shadow.offsetX && a.shadow.offsetY == b.shadow.offsetY &&
-           nearlyEqual(a.shadow.alpha, b.shadow.alpha) && a.panel.backgroundBlur == b.panel.backgroundBlur &&
-           a.panel.borders == b.panel.borders && a.panel.shadow == b.panel.shadow &&
-           a.panel.transparencyMode == b.panel.transparencyMode &&
-           a.panel.launcherPlacement == b.panel.launcherPlacement &&
-           a.panel.clipboardPlacement == b.panel.clipboardPlacement &&
-           a.panel.controlCenterPlacement == b.panel.controlCenterPlacement &&
-           a.panel.wallpaperPlacement == b.panel.wallpaperPlacement &&
-           a.panel.sessionPlacement == b.panel.sessionPlacement &&
-           a.panel.openNearClickControlCenter == b.panel.openNearClickControlCenter &&
-           a.panel.openNearClickLauncher == b.panel.openNearClickLauncher &&
-           a.panel.openNearClickClipboard == b.panel.openNearClickClipboard &&
-           a.panel.openNearClickWallpaper == b.panel.openNearClickWallpaper &&
-           a.panel.openNearClickSession == b.panel.openNearClickSession &&
-           a.panel.launcherCategories == b.panel.launcherCategories &&
-           a.screenCorners.enabled == b.screenCorners.enabled && a.screenCorners.size == b.screenCorners.size &&
-           a.mpris.blacklist == b.mpris.blacklist && a.session.actions == b.session.actions;
+    return nearlyEqual(a.uiScale, b.uiScale)
+        && nearlyEqual(a.cornerRadiusScale, b.cornerRadiusScale)
+        && a.fontFamily == b.fontFamily
+        && a.lang == b.lang
+        && a.timeFormat == b.timeFormat
+        && a.dateFormat == b.dateFormat
+        && a.offlineMode == b.offlineMode
+        && a.telemetryEnabled == b.telemetryEnabled
+        && a.niriOverviewTypeToLaunchEnabled == b.niriOverviewTypeToLaunchEnabled
+        && a.polkitAgent == b.polkitAgent
+        && a.passwordMaskStyle == b.passwordMaskStyle
+        && a.animation.enabled == b.animation.enabled
+        && nearlyEqual(a.animation.speed, b.animation.speed)
+        && a.avatarPath == b.avatarPath
+        && a.settingsShowAdvanced == b.settingsShowAdvanced
+        && a.middleClickOpensWidgetSettings == b.middleClickOpensWidgetSettings
+        && a.showLocation == b.showLocation
+        && a.launchAppsAsSystemdServices == b.launchAppsAsSystemdServices
+        && a.clipboardEnabled == b.clipboardEnabled
+        && a.clipboardHistoryMaxEntries == b.clipboardHistoryMaxEntries
+        && a.screenTimeEnabled == b.screenTimeEnabled
+        && a.clipboardAutoPaste == b.clipboardAutoPaste
+        && a.clipboardImageActionCommand == b.clipboardImageActionCommand
+        && a.shadow.blur == b.shadow.blur
+        && a.shadow.offsetX == b.shadow.offsetX
+        && a.shadow.offsetY == b.shadow.offsetY
+        && nearlyEqual(a.shadow.alpha, b.shadow.alpha)
+        && a.panel.backgroundBlur == b.panel.backgroundBlur
+        && a.panel.borders == b.panel.borders
+        && a.panel.shadow == b.panel.shadow
+        && a.panel.transparencyMode == b.panel.transparencyMode
+        && a.panel.launcherPlacement == b.panel.launcherPlacement
+        && a.panel.clipboardPlacement == b.panel.clipboardPlacement
+        && a.panel.controlCenterPlacement == b.panel.controlCenterPlacement
+        && a.panel.wallpaperPlacement == b.panel.wallpaperPlacement
+        && a.panel.sessionPlacement == b.panel.sessionPlacement
+        && a.panel.openNearClickControlCenter == b.panel.openNearClickControlCenter
+        && a.panel.openNearClickLauncher == b.panel.openNearClickLauncher
+        && a.panel.openNearClickClipboard == b.panel.openNearClickClipboard
+        && a.panel.openNearClickWallpaper == b.panel.openNearClickWallpaper
+        && a.panel.openNearClickSession == b.panel.openNearClickSession
+        && a.panel.launcherCategories == b.panel.launcherCategories
+        && a.screenCorners.enabled == b.screenCorners.enabled
+        && a.screenCorners.size == b.screenCorners.size
+        && a.mpris.blacklist == b.mpris.blacklist
+        && a.session.actions == b.session.actions;
   }
 
   bool notificationConfigEqual(const NotificationConfig& a, const NotificationConfig& b) {
-    return a.enableDaemon == b.enableDaemon && a.position == b.position && a.layer == b.layer &&
-           nearlyEqual(a.scale, b.scale) && nearlyEqual(a.backgroundOpacity, b.backgroundOpacity) &&
-           a.offsetX == b.offsetX && a.offsetY == b.offsetY && a.monitors == b.monitors;
+    return a.enableDaemon == b.enableDaemon
+        && a.position == b.position
+        && a.layer == b.layer
+        && nearlyEqual(a.scale, b.scale)
+        && nearlyEqual(a.backgroundOpacity, b.backgroundOpacity)
+        && a.offsetX == b.offsetX
+        && a.offsetY == b.offsetY
+        && a.monitors == b.monitors;
   }
 
   bool audioConfigEqual(const AudioConfig& a, const AudioConfig& b) {
-    return a.enableOverdrive == b.enableOverdrive && a.enableSounds == b.enableSounds &&
-           nearlyEqual(a.soundVolume, b.soundVolume) && a.volumeChangeSound == b.volumeChangeSound &&
-           a.notificationSound == b.notificationSound;
+    return a.enableOverdrive == b.enableOverdrive
+        && a.enableSounds == b.enableSounds
+        && nearlyEqual(a.soundVolume, b.soundVolume)
+        && a.volumeChangeSound == b.volumeChangeSound
+        && a.notificationSound == b.notificationSound;
   }
 
   bool nightLightConfigEqual(const NightLightConfig& a, const NightLightConfig& b) {
-    return a.enabled == b.enabled && a.force == b.force && a.useWeatherLocation == b.useWeatherLocation &&
-           a.startTime == b.startTime && a.stopTime == b.stopTime && optionalDoubleEqual(a.latitude, b.latitude) &&
-           optionalDoubleEqual(a.longitude, b.longitude) && a.dayTemperature == b.dayTemperature &&
-           a.nightTemperature == b.nightTemperature;
+    return a.enabled == b.enabled
+        && a.force == b.force
+        && a.useWeatherLocation == b.useWeatherLocation
+        && a.startTime == b.startTime
+        && a.stopTime == b.stopTime
+        && optionalDoubleEqual(a.latitude, b.latitude)
+        && optionalDoubleEqual(a.longitude, b.longitude)
+        && a.dayTemperature == b.dayTemperature
+        && a.nightTemperature == b.nightTemperature;
   }
 
   bool idleConfigEqual(const IdleConfig& a, const IdleConfig& b) {
-    return nearlyEqual(a.preActionFadeSeconds, b.preActionFadeSeconds) &&
-           vectorEqual(a.behaviors, b.behaviors, [](const IdleBehaviorConfig& lhs, const IdleBehaviorConfig& rhs) {
-             return lhs.name == rhs.name && lhs.enabled == rhs.enabled && lhs.timeoutSeconds == rhs.timeoutSeconds &&
-                    lhs.action == rhs.action && lhs.command == rhs.command && lhs.resumeCommand == rhs.resumeCommand;
+    return nearlyEqual(a.preActionFadeSeconds, b.preActionFadeSeconds)
+        && vectorEqual(a.behaviors, b.behaviors, [](const IdleBehaviorConfig& lhs, const IdleBehaviorConfig& rhs) {
+             return lhs.name == rhs.name
+                 && lhs.enabled == rhs.enabled
+                 && lhs.timeoutSeconds == rhs.timeoutSeconds
+                 && lhs.action == rhs.action
+                 && lhs.command == rhs.command
+                 && lhs.resumeCommand == rhs.resumeCommand;
            });
   }
 
   bool themeConfigEqual(const ThemeConfig& a, const ThemeConfig& b) {
-    return a.source == b.source && a.builtinPalette == b.builtinPalette && a.communityPalette == b.communityPalette &&
-           a.customPalette == b.customPalette && a.wallpaperScheme == b.wallpaperScheme && a.mode == b.mode &&
-           a.templates.enableBuiltinTemplates == b.templates.enableBuiltinTemplates &&
-           a.templates.builtinIds == b.templates.builtinIds &&
-           a.templates.enableCommunityTemplates == b.templates.enableCommunityTemplates &&
-           a.templates.communityIds == b.templates.communityIds &&
-           a.templates.customColors == b.templates.customColors &&
-           a.templates.userTemplates == b.templates.userTemplates;
+    return a.source == b.source
+        && a.builtinPalette == b.builtinPalette
+        && a.communityPalette == b.communityPalette
+        && a.customPalette == b.customPalette
+        && a.wallpaperScheme == b.wallpaperScheme
+        && a.mode == b.mode
+        && a.templates.enableBuiltinTemplates == b.templates.enableBuiltinTemplates
+        && a.templates.builtinIds == b.templates.builtinIds
+        && a.templates.enableCommunityTemplates == b.templates.enableCommunityTemplates
+        && a.templates.communityIds == b.templates.communityIds
+        && a.templates.customColors == b.templates.customColors
+        && a.templates.userTemplates == b.templates.userTemplates;
   }
 
   bool configEqual(const Config& a, const Config& b) {
-    return vectorEqual(a.bars, b.bars, barConfigEqual) && widgetMapEqual(a.widgets, b.widgets) &&
-           wallpaperConfigEqual(a.wallpaper, b.wallpaper) && a.backdrop.enabled == b.backdrop.enabled &&
-           nearlyEqual(a.backdrop.blurIntensity, b.backdrop.blurIntensity) &&
-           nearlyEqual(a.backdrop.tintIntensity, b.backdrop.tintIntensity) && dockConfigEqual(a.dock, b.dock) &&
-           desktopWidgetsConfigEqual(a.desktopWidgets, b.desktopWidgets) && shellConfigEqual(a.shell, b.shell) &&
-           a.osd.position == b.osd.position && a.osd.orientation == b.osd.orientation &&
-           nearlyEqual(a.osd.scale, b.osd.scale) && a.osd.offsetX == b.osd.offsetX && a.osd.offsetY == b.osd.offsetY &&
-           a.osd.lockKeys == b.osd.lockKeys && a.osd.keyboardLayout == b.osd.keyboardLayout &&
-           notificationConfigEqual(a.notification, b.notification) && a.weather.enabled == b.weather.enabled &&
-           a.weather.autoLocate == b.weather.autoLocate && a.weather.effects == b.weather.effects &&
-           a.weather.address == b.weather.address && a.weather.refreshMinutes == b.weather.refreshMinutes &&
-           a.weather.unit == b.weather.unit && a.system.monitor.enabled == b.system.monitor.enabled &&
-           a.system.monitor.cpuPollSeconds == b.system.monitor.cpuPollSeconds &&
-           a.system.monitor.gpuPollSeconds == b.system.monitor.gpuPollSeconds &&
-           a.system.monitor.memoryPollSeconds == b.system.monitor.memoryPollSeconds &&
-           a.system.monitor.networkPollSeconds == b.system.monitor.networkPollSeconds &&
-           a.system.monitor.diskPollSeconds == b.system.monitor.diskPollSeconds && audioConfigEqual(a.audio, b.audio) &&
-           a.brightness == b.brightness && a.keybinds.validate == b.keybinds.validate &&
-           a.keybinds.cancel == b.keybinds.cancel && a.keybinds.left == b.keybinds.left &&
-           a.keybinds.right == b.keybinds.right && a.keybinds.up == b.keybinds.up &&
-           a.keybinds.down == b.keybinds.down && nightLightConfigEqual(a.nightlight, b.nightlight) &&
-           idleConfigEqual(a.idle, b.idle) && a.hooks == b.hooks && themeConfigEqual(a.theme, b.theme) &&
-           a.controlCenter == b.controlCenter;
+    return vectorEqual(a.bars, b.bars, barConfigEqual)
+        && widgetMapEqual(a.widgets, b.widgets)
+        && wallpaperConfigEqual(a.wallpaper, b.wallpaper)
+        && a.backdrop.enabled == b.backdrop.enabled
+        && nearlyEqual(a.backdrop.blurIntensity, b.backdrop.blurIntensity)
+        && nearlyEqual(a.backdrop.tintIntensity, b.backdrop.tintIntensity)
+        && dockConfigEqual(a.dock, b.dock)
+        && desktopWidgetsConfigEqual(a.desktopWidgets, b.desktopWidgets)
+        && shellConfigEqual(a.shell, b.shell)
+        && a.osd.position == b.osd.position
+        && a.osd.orientation == b.osd.orientation
+        && nearlyEqual(a.osd.scale, b.osd.scale)
+        && a.osd.offsetX == b.osd.offsetX
+        && a.osd.offsetY == b.osd.offsetY
+        && a.osd.lockKeys == b.osd.lockKeys
+        && a.osd.keyboardLayout == b.osd.keyboardLayout
+        && notificationConfigEqual(a.notification, b.notification)
+        && a.weather.enabled == b.weather.enabled
+        && a.weather.autoLocate == b.weather.autoLocate
+        && a.weather.effects == b.weather.effects
+        && a.weather.address == b.weather.address
+        && a.weather.refreshMinutes == b.weather.refreshMinutes
+        && a.weather.unit == b.weather.unit
+        && a.system.monitor.enabled == b.system.monitor.enabled
+        && a.system.monitor.cpuPollSeconds == b.system.monitor.cpuPollSeconds
+        && a.system.monitor.gpuPollSeconds == b.system.monitor.gpuPollSeconds
+        && a.system.monitor.memoryPollSeconds == b.system.monitor.memoryPollSeconds
+        && a.system.monitor.networkPollSeconds == b.system.monitor.networkPollSeconds
+        && a.system.monitor.diskPollSeconds == b.system.monitor.diskPollSeconds
+        && audioConfigEqual(a.audio, b.audio)
+        && a.brightness == b.brightness
+        && a.keybinds.validate == b.keybinds.validate
+        && a.keybinds.cancel == b.keybinds.cancel
+        && a.keybinds.left == b.keybinds.left
+        && a.keybinds.right == b.keybinds.right
+        && a.keybinds.up == b.keybinds.up
+        && a.keybinds.down == b.keybinds.down
+        && nightLightConfigEqual(a.nightlight, b.nightlight)
+        && idleConfigEqual(a.idle, b.idle)
+        && a.hooks == b.hooks
+        && themeConfigEqual(a.theme, b.theme)
+        && a.controlCenter == b.controlCenter;
   }
 
   toml::table* ensureTable(toml::table& parent, std::string_view key) {
@@ -965,8 +1075,10 @@ bool ConfigService::createBarOverride(std::string_view name) {
     return false;
   }
 
-  if (m_configFileBarNames.empty() && barRoot->empty() && m_config.bars.size() == 1 &&
-      m_config.bars.front().name == "default") {
+  if (m_configFileBarNames.empty()
+      && barRoot->empty()
+      && m_config.bars.size() == 1
+      && m_config.bars.front().name == "default") {
     auto* defaultBar = ensureTable(*barRoot, "default");
     if (defaultBar == nullptr) {
       return false;
@@ -1115,8 +1227,11 @@ bool ConfigService::createMonitorOverride(std::string_view barName, std::string_
 bool ConfigService::renameMonitorOverride(
     std::string_view barName, std::string_view oldMatch, std::string_view newMatch
 ) {
-  if (barName.empty() || oldMatch.empty() || newMatch.empty() || oldMatch == newMatch ||
-      !isOverrideOnlyMonitorOverride(barName, oldMatch)) {
+  if (barName.empty()
+      || oldMatch.empty()
+      || newMatch.empty()
+      || oldMatch == newMatch
+      || !isOverrideOnlyMonitorOverride(barName, oldMatch)) {
     return false;
   }
 
@@ -1180,8 +1295,8 @@ bool ConfigService::setOverrides(std::vector<std::pair<std::vector<std::string>,
       bool shouldErase = false;
       if (isWidgetSettingOverridePath(path)) {
         const std::string widgetType = widgetTypeForOverridePath(next, path[1]);
-        shouldErase = settings::widgetOverrideValueMatchesRegistryDefault(widgetType, path[2], value) ||
-                      !overridePathEffectiveInTable(path, next);
+        shouldErase = settings::widgetOverrideValueMatchesRegistryDefault(widgetType, path[2], value)
+            || !overridePathEffectiveInTable(path, next);
       } else {
         shouldErase = !overridePathEffectiveInTable(path, next);
       }

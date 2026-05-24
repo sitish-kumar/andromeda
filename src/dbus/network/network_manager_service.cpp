@@ -140,9 +140,11 @@ NetworkManagerService::NetworkManagerService(SystemBus& bus) : m_bus(bus) {
           } catch (const sdbus::Error&) {
           }
         }
-        if (changedProperties.contains("PrimaryConnection") || changedProperties.contains("ActiveConnections") ||
-            changedProperties.contains("WirelessEnabled") || changedProperties.contains("State") ||
-            changedProperties.contains("Connectivity")) {
+        if (changedProperties.contains("PrimaryConnection")
+            || changedProperties.contains("ActiveConnections")
+            || changedProperties.contains("WirelessEnabled")
+            || changedProperties.contains("State")
+            || changedProperties.contains("Connectivity")) {
           rebindActiveConnection();
         }
         if (wirelessNowOn) {
@@ -162,8 +164,8 @@ NetworkManagerService::NetworkManagerService(SystemBus& bus) : m_bus(bus) {
                 if (deviceType != kNmDeviceTypeWifi) {
                   continue;
                 }
-                const auto lastScan =
-                    getPropertyOr<std::int64_t>(*device, kNmDeviceWirelessInterface, "LastScan", std::int64_t{0});
+                const auto lastScan
+                    = getPropertyOr<std::int64_t>(*device, kNmDeviceWirelessInterface, "LastScan", std::int64_t{0});
                 if (lastScan > baseline) {
                   baseline = lastScan;
                 }
@@ -215,8 +217,8 @@ void NetworkManagerService::refresh() {
       const bool firstSnapshot = !m_hasStateSnapshot;
       const bool wirelessEnabledChanged = next.wirelessEnabled != m_state.wirelessEnabled;
       const NetworkChangeOrigin origin = wirelessEnabledChanged
-                                             ? consumeWirelessEnabledChangeOrigin(next.wirelessEnabled)
-                                             : NetworkChangeOrigin::External;
+          ? consumeWirelessEnabledChangeOrigin(next.wirelessEnabled)
+          : NetworkChangeOrigin::External;
       m_state = std::move(next);
       m_hasStateSnapshot = true;
       if ((firstSnapshot || stateChanged || apsChanged || vpnsChanged || savedChanged) && m_changeCallback) {
@@ -260,8 +262,8 @@ void NetworkManagerService::requestScan() {
         if (deviceType != kNmDeviceTypeWifi) {
           continue;
         }
-        const auto lastScan =
-            getPropertyOr<std::int64_t>(*device, kNmDeviceWirelessInterface, "LastScan", std::int64_t{0});
+        const auto lastScan
+            = getPropertyOr<std::int64_t>(*device, kNmDeviceWirelessInterface, "LastScan", std::int64_t{0});
         if (lastScan > baseline) {
           baseline = lastScan;
         }
@@ -414,8 +416,8 @@ void NetworkManagerService::watchPendingAccessPointActivation(
 
     auto* activeProxy = pending->activeProxy.get();
     m_pendingApActivations[activePath] = std::move(pending);
-    const auto state =
-        getPropertyOr<std::uint32_t>(*activeProxy, kNmActiveConnectionInterface, "State", std::uint32_t{0});
+    const auto state
+        = getPropertyOr<std::uint32_t>(*activeProxy, kNmActiveConnectionInterface, "State", std::uint32_t{0});
     handlePendingAccessPointActivationState(activePath, state);
   } catch (const sdbus::Error& e) {
     kLog.debug("pending ap activation watch failed ssid={} active={}: {}", ssid, activePath, e.what());
@@ -549,8 +551,9 @@ bool NetworkManagerService::deactivateVpnConnection(const VpnConnectionInfo& vpn
     for (const auto& activePath : activeConnections) {
       try {
         auto active = sdbus::createProxy(m_bus.connection(), kNmBusName, activePath);
-        const auto profilePath =
-            getPropertyOr<sdbus::ObjectPath>(*active, kNmActiveConnectionInterface, "Connection", sdbus::ObjectPath{});
+        const auto profilePath = getPropertyOr<sdbus::ObjectPath>(
+            *active, kNmActiveConnectionInterface, "Connection", sdbus::ObjectPath{}
+        );
         const auto activeState = getPropertyOr<std::uint32_t>(*active, kNmActiveConnectionInterface, "State", 0U);
         if (profilePath != vpn.path || activeState != kNmActiveConnectionStateActivated) {
           continue;
@@ -787,8 +790,8 @@ bool NetworkManagerService::hasSavedConnection(const std::string& ssid) const {
 void NetworkManagerService::refreshSavedConnections(std::function<void()> onComplete) {
   const std::weak_ptr<int> lifetimeToken = m_lifetimeToken;
   try {
-    auto settings =
-        std::shared_ptr<sdbus::IProxy>(sdbus::createProxy(m_bus.connection(), kNmBusName, kNmSettingsObjectPath));
+    auto settings
+        = std::shared_ptr<sdbus::IProxy>(sdbus::createProxy(m_bus.connection(), kNmBusName, kNmSettingsObjectPath));
     settings->callMethodAsync("ListConnections")
         .onInterface(kNmSettingsInterface)
         .uponReplyInvoke([this, lifetimeToken, settings,
@@ -813,12 +816,13 @@ void NetworkManagerService::refreshSavedConnections(std::function<void()> onComp
 
           for (const auto& connectionPath : connectionPaths) {
             try {
-              auto connection =
-                  std::shared_ptr<sdbus::IProxy>(sdbus::createProxy(m_bus.connection(), kNmBusName, connectionPath));
-              const auto flags =
-                  getPropertyOr<std::uint32_t>(*connection, kNmSettingsConnectionInterface, "Flags", std::uint32_t{0});
-              const auto filename =
-                  getPropertyOr<std::string>(*connection, kNmSettingsConnectionInterface, "Filename", {});
+              auto connection
+                  = std::shared_ptr<sdbus::IProxy>(sdbus::createProxy(m_bus.connection(), kNmBusName, connectionPath));
+              const auto flags = getPropertyOr<std::uint32_t>(
+                  *connection, kNmSettingsConnectionInterface, "Flags", std::uint32_t{0}
+              );
+              const auto filename
+                  = getPropertyOr<std::string>(*connection, kNmSettingsConnectionInterface, "Filename", {});
               if ((flags & kNmSettingsConnectionFlagUnsaved) != 0U && filename.empty()) {
                 if (--savedState->pending == 0) {
                   finishSavedConnections(savedState->ssids, onComplete);
@@ -870,8 +874,8 @@ void NetworkManagerService::refreshSavedConnections(std::function<void()> onComp
 void NetworkManagerService::refreshVpnConnections(std::function<void()> onComplete) {
   const std::weak_ptr<int> lifetimeToken = m_lifetimeToken;
   try {
-    auto settings =
-        std::shared_ptr<sdbus::IProxy>(sdbus::createProxy(m_bus.connection(), kNmBusName, kNmSettingsObjectPath));
+    auto settings
+        = std::shared_ptr<sdbus::IProxy>(sdbus::createProxy(m_bus.connection(), kNmBusName, kNmSettingsObjectPath));
     settings->callMethodAsync("ListConnections")
         .onInterface(kNmSettingsInterface)
         .uponReplyInvoke([this, lifetimeToken, settings,
@@ -981,8 +985,8 @@ void NetworkManagerService::refreshVpnConnections(std::function<void()> onComple
                                 }
                               }
 
-                              if (state == kNmActiveConnectionStateActivating ||
-                                  state == kNmActiveConnectionStateActivated) {
+                              if (state == kNmActiveConnectionStateActivating
+                                  || state == kNmActiveConnectionStateActivated) {
                                 if (auto connIt = properties.find("Connection"); connIt != properties.end()) {
                                   try {
                                     const auto profilePath = connIt->second.get<sdbus::ObjectPath>();
@@ -1003,8 +1007,8 @@ void NetworkManagerService::refreshVpnConnections(std::function<void()> onComple
 
           for (const auto& connectionPath : connectionPaths) {
             try {
-              auto connection =
-                  std::shared_ptr<sdbus::IProxy>(sdbus::createProxy(m_bus.connection(), kNmBusName, connectionPath));
+              auto connection
+                  = std::shared_ptr<sdbus::IProxy>(sdbus::createProxy(m_bus.connection(), kNmBusName, connectionPath));
               connection->callMethodAsync("GetSettings")
                   .onInterface(kNmSettingsConnectionInterface)
                   .uponReplyInvoke([lifetimeToken, connection, vpnState, connectionPath, markActiveAndFinalize,
@@ -1129,8 +1133,8 @@ void NetworkManagerService::refreshAccessPoints(std::function<void()> onComplete
 
           for (const auto& devicePath : devices) {
             try {
-              auto device =
-                  std::shared_ptr<sdbus::IProxy>(sdbus::createProxy(m_bus.connection(), kNmBusName, devicePath));
+              auto device
+                  = std::shared_ptr<sdbus::IProxy>(sdbus::createProxy(m_bus.connection(), kNmBusName, devicePath));
               // GetAll on DBus.Properties with the wireless interface arg: succeeds only for
               // WiFi devices and also gives us ActiveAccessPoint — no sync reads needed.
               device->callMethodAsync("GetAll")
@@ -1238,8 +1242,8 @@ void NetworkManagerService::refreshAccessPoints(std::function<void()> onComplete
                                             }
                                             return 0U;
                                           }();
-                                          info.secured =
-                                              (wpaFlags != k_nm80211ApSecNone) || (rsnFlags != k_nm80211ApSecNone);
+                                          info.secured
+                                              = (wpaFlags != k_nm80211ApSecNone) || (rsnFlags != k_nm80211ApSecNone);
                                           if (!info.ssid.empty()) {
                                             apState->aps.push_back(std::move(info));
                                           }
@@ -1354,8 +1358,9 @@ void NetworkManagerService::rebindActiveConnection() {
               if (interfaceName != kNmActiveConnectionInterface) {
                 return;
               }
-              if (changedProperties.contains("Devices") || changedProperties.contains("State") ||
-                  changedProperties.contains("Ip4Config")) {
+              if (changedProperties.contains("Devices")
+                  || changedProperties.contains("State")
+                  || changedProperties.contains("Ip4Config")) {
                 rebindActiveConnection();
               }
             });
@@ -1403,8 +1408,9 @@ void NetworkManagerService::rebindActiveDevice(const std::string& devicePath) {
                   const std::vector<std::string>& /*invalidatedProperties*/
               ) {
           if (interfaceName == kNmDeviceInterface) {
-            if (changedProperties.contains("Ip4Config") || changedProperties.contains("State") ||
-                changedProperties.contains("Interface")) {
+            if (changedProperties.contains("Ip4Config")
+                || changedProperties.contains("State")
+                || changedProperties.contains("Interface")) {
               refresh();
             }
           } else if (interfaceName == kNmDeviceWirelessInterface) {
@@ -1430,8 +1436,8 @@ void NetworkManagerService::rebindActiveDevice(const std::string& devicePath) {
   if (deviceType == kNmDeviceTypeWifi) {
     std::string apPath;
     try {
-      const sdbus::Variant value =
-          m_activeDevice->getProperty("ActiveAccessPoint").onInterface(kNmDeviceWirelessInterface);
+      const sdbus::Variant value
+          = m_activeDevice->getProperty("ActiveAccessPoint").onInterface(kNmDeviceWirelessInterface);
       apPath = value.get<sdbus::ObjectPath>();
     } catch (const sdbus::Error&) {
     }
@@ -1622,8 +1628,8 @@ void NetworkManagerService::readStateAsync(std::function<void(NetworkState)> onC
                         if (auto addressDataIt = ip4Properties.find("AddressData");
                             addressDataIt != ip4Properties.end()) {
                           try {
-                            const auto addressData =
-                                addressDataIt->second.get<std::vector<std::map<std::string, sdbus::Variant>>>();
+                            const auto addressData
+                                = addressDataIt->second.get<std::vector<std::map<std::string, sdbus::Variant>>>();
                             for (const auto& entry : addressData) {
                               auto addressIt = entry.find("address");
                               if (addressIt == entry.end()) {
@@ -1758,8 +1764,8 @@ void NetworkManagerService::emitChangedIfNeeded(NetworkState next) {
     return;
   }
   const bool wirelessEnabledChanged = next.wirelessEnabled != m_state.wirelessEnabled;
-  const NetworkChangeOrigin origin =
-      wirelessEnabledChanged ? consumeWirelessEnabledChangeOrigin(next.wirelessEnabled) : NetworkChangeOrigin::External;
+  const NetworkChangeOrigin origin = wirelessEnabledChanged ? consumeWirelessEnabledChangeOrigin(next.wirelessEnabled)
+                                                            : NetworkChangeOrigin::External;
   m_state = std::move(next);
   if (m_changeCallback) {
     m_changeCallback(m_state, origin);

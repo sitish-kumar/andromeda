@@ -55,8 +55,8 @@ Scrollbar::Scrollbar() {
     }
     if (data.pressed) {
       m_dragStartY = data.localY + m_thumbArea->y();
-      m_dragStartOffset =
-          std::clamp(m_maxScroll > 0.0f ? (m_thumb->y() / m_thumbTravel) * m_maxScroll : 0.0f, 0.0f, m_maxScroll);
+      m_dragStartOffset
+          = std::clamp(m_maxScroll > 0.0f ? (m_thumb->y() / m_thumbTravel) * m_maxScroll : 0.0f, 0.0f, m_maxScroll);
     }
   });
   thumbArea->setOnMotion([this](const InputArea::PointerData& data) {

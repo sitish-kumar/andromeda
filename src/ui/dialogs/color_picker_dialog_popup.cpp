@@ -21,8 +21,8 @@ void ColorPickerDialogPopup::initialize(
 bool ColorPickerDialogPopup::openColorPicker() {
   const float scale = uiScale();
   const auto width = static_cast<std::uint32_t>(ColorPickerSheet::preferredDialogWidth(scale));
-  const auto height =
-      static_cast<std::uint32_t>(ColorPickerSheet::preferredDialogHeight(static_cast<float>(width), scale));
+  const auto height
+      = static_cast<std::uint32_t>(ColorPickerSheet::preferredDialogHeight(static_cast<float>(width), scale));
   return openPopup(width, height);
 }
 

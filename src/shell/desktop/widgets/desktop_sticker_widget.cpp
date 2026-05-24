@@ -129,8 +129,8 @@ bool DesktopStickerWidget::tryLoadAnimated(Renderer& renderer) {
 
   m_frames.reserve(decoded->frames.size());
   for (const auto& frame : decoded->frames) {
-    TextureHandle handle =
-        renderer.textureManager().loadFromRgba(frame.rgba.data(), decoded->width, decoded->height, /*mipmap=*/false);
+    TextureHandle handle
+        = renderer.textureManager().loadFromRgba(frame.rgba.data(), decoded->width, decoded->height, /*mipmap=*/false);
     if (handle.id == 0) {
       kLog.warn("sticker: GPU upload failed for GIF \"{}\"", m_imagePath);
       unloadFrames();

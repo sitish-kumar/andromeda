@@ -36,14 +36,16 @@ namespace {
       const auto marker = sourceUrl.find("youtu.be/");
       const auto start = marker + std::string_view("youtu.be/").size();
       const auto end = sourceUrl.find_first_of("?#&/", start);
-      videoId =
-          std::string(sourceUrl.substr(start, end == std::string_view::npos ? sourceUrl.size() - start : end - start));
+      videoId = std::string(
+          sourceUrl.substr(start, end == std::string_view::npos ? sourceUrl.size() - start : end - start)
+      );
     } else if (sourceUrl.find("youtube.com/shorts/") != std::string_view::npos) {
       const auto marker = sourceUrl.find("youtube.com/shorts/");
       const auto start = marker + std::string_view("youtube.com/shorts/").size();
       const auto end = sourceUrl.find_first_of("?#&/", start);
-      videoId =
-          std::string(sourceUrl.substr(start, end == std::string_view::npos ? sourceUrl.size() - start : end - start));
+      videoId = std::string(
+          sourceUrl.substr(start, end == std::string_view::npos ? sourceUrl.size() - start : end - start)
+      );
     }
     if (videoId.empty())
       return {};

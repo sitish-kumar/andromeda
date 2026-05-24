@@ -106,8 +106,8 @@ namespace {
       if (a == 0) {
         continue;
       }
-      const float lum =
-          (loaded->rgba[i] * 0.299f + loaded->rgba[i + 1] * 0.587f + loaded->rgba[i + 2] * 0.114f) / 255.0f;
+      const float lum
+          = (loaded->rgba[i] * 0.299f + loaded->rgba[i + 1] * 0.587f + loaded->rgba[i + 2] * 0.114f) / 255.0f;
       loaded->rgba[i + 0] = rr;
       loaded->rgba[i + 1] = gg;
       loaded->rgba[i + 2] = bb;
@@ -317,14 +317,21 @@ void TrayWidget::syncState(Renderer& renderer) {
 
     // Resolved icon path cache is keyed by item id. Invalidate when icon-relevant
     // metadata changes, or we can keep showing stale paths after icon switches.
-    if (prev.iconName != item.iconName || prev.overlayIconName != item.overlayIconName ||
-        prev.attentionIconName != item.attentionIconName || prev.iconThemePath != item.iconThemePath ||
-        prev.needsAttention != item.needsAttention || prev.status != item.status ||
-        prev.overlayWidth != item.overlayWidth || prev.overlayHeight != item.overlayHeight ||
-        prev.overlayArgb32 != item.overlayArgb32 || prev.iconWidth != item.iconWidth ||
-        prev.iconHeight != item.iconHeight || prev.iconArgb32 != item.iconArgb32 ||
-        prev.attentionWidth != item.attentionWidth || prev.attentionHeight != item.attentionHeight ||
-        prev.attentionArgb32 != item.attentionArgb32) {
+    if (prev.iconName != item.iconName
+        || prev.overlayIconName != item.overlayIconName
+        || prev.attentionIconName != item.attentionIconName
+        || prev.iconThemePath != item.iconThemePath
+        || prev.needsAttention != item.needsAttention
+        || prev.status != item.status
+        || prev.overlayWidth != item.overlayWidth
+        || prev.overlayHeight != item.overlayHeight
+        || prev.overlayArgb32 != item.overlayArgb32
+        || prev.iconWidth != item.iconWidth
+        || prev.iconHeight != item.iconHeight
+        || prev.iconArgb32 != item.iconArgb32
+        || prev.attentionWidth != item.attentionWidth
+        || prev.attentionHeight != item.attentionHeight
+        || prev.attentionArgb32 != item.attentionArgb32) {
       kLog.debug(
           "tray widget invalidate icon cache id={} icon='{}'->'{}' overlay='{}'->'{}' attention='{}'->'{}' "
           "status={}=>{}",
@@ -494,12 +501,12 @@ void TrayWidget::rebuild(Renderer& renderer) {
     }
 
     if (iconNode == nullptr) {
-      const auto& pixmap =
-          item.needsAttention && !item.attentionArgb32.empty() ? item.attentionArgb32 : item.iconArgb32;
-      const std::int32_t pixmapW =
-          item.needsAttention && !item.attentionArgb32.empty() ? item.attentionWidth : item.iconWidth;
-      const std::int32_t pixmapH =
-          item.needsAttention && !item.attentionArgb32.empty() ? item.attentionHeight : item.iconHeight;
+      const auto& pixmap
+          = item.needsAttention && !item.attentionArgb32.empty() ? item.attentionArgb32 : item.iconArgb32;
+      const std::int32_t pixmapW
+          = item.needsAttention && !item.attentionArgb32.empty() ? item.attentionWidth : item.iconWidth;
+      const std::int32_t pixmapH
+          = item.needsAttention && !item.attentionArgb32.empty() ? item.attentionHeight : item.iconHeight;
 
       if (!pixmap.empty() && pixmapW > 0 && pixmapH > 0) {
         auto image = ui::image({
@@ -808,8 +815,8 @@ std::string TrayWidget::resolveIconPath(const TrayItemInfo& item) {
 
   const std::string stableBusName = isUniqueBusName(item.busName) ? std::string{} : item.busName;
   const std::string stableItemId = (!item.id.empty() && !isUniqueBusName(item.id))
-                                       ? item.id
-                                       : (isUniqueBusName(item.busName) ? item.objectPath : item.id);
+      ? item.id
+      : (isUniqueBusName(item.busName) ? item.objectPath : item.id);
 
   std::vector<std::pair<const char*, const std::string*>> candidates;
   candidates.reserve(12);
@@ -865,8 +872,8 @@ std::string TrayWidget::resolveIconPath(const TrayItemInfo& item) {
 }
 
 std::string TrayWidget::iconForItem(const TrayItemInfo& item) const {
-  const std::string preferred =
-      item.needsAttention && !item.attentionIconName.empty() ? item.attentionIconName : item.iconName;
+  const std::string preferred
+      = item.needsAttention && !item.attentionIconName.empty() ? item.attentionIconName : item.iconName;
   if (!preferred.empty() && GlyphRegistry::contains(preferred)) {
     return preferred;
   }

@@ -83,8 +83,8 @@ void WeatherWidget::sync(Renderer& renderer) {
   auto verticalTemperature = [](int temp) { return std::format("{}\xC2\xB0", temp); };
 
   std::string glyph = "weather-cloud";
-  std::string text =
-      m_isVertical ? i18n::tr("bar.widgets.weather.vertical-default") : i18n::tr("bar.widgets.weather.default");
+  std::string text
+      = m_isVertical ? i18n::tr("bar.widgets.weather.vertical-default") : i18n::tr("bar.widgets.weather.default");
 
   if (m_weather == nullptr || !m_weather->enabled()) {
     text = m_isVertical ? i18n::tr("bar.widgets.weather.vertical-off") : i18n::tr("bar.widgets.weather.off");

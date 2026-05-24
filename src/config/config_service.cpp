@@ -417,8 +417,8 @@ void ConfigService::setNotificationManager(NotificationManager* manager) {
       if (m_configErrorNotificationId != 0) {
         m_notificationManager->close(m_configErrorNotificationId);
       }
-      m_configErrorNotificationId =
-          m_notificationManager->addInternal("Noctalia", "Config parse error", pendingError, Urgency::Critical, 0);
+      m_configErrorNotificationId
+          = m_notificationManager->addInternal("Noctalia", "Config parse error", pendingError, Urgency::Critical, 0);
     });
   }
 }
@@ -430,9 +430,10 @@ void ConfigService::forceReload() {
 
   loadAll();
 
-  const bool wallpaperChanged =
-      (oldDefault != m_defaultWallpaperPath || oldLast != m_lastWallpaperPath ||
-       oldMonitors != m_monitorWallpaperPaths);
+  const bool wallpaperChanged
+      = (oldDefault != m_defaultWallpaperPath
+         || oldLast != m_lastWallpaperPath
+         || oldMonitors != m_monitorWallpaperPaths);
   if (wallpaperChanged && m_wallpaperChangeCallback) {
     m_wallpaperChangeCallback();
   }
@@ -626,9 +627,10 @@ void ConfigService::checkReload() {
 
   kLog.info("config changed, reloading");
   loadAll();
-  const bool wallpaperChanged =
-      (oldDefault != m_defaultWallpaperPath || oldLast != m_lastWallpaperPath ||
-       oldMonitors != m_monitorWallpaperPaths);
+  const bool wallpaperChanged
+      = (oldDefault != m_defaultWallpaperPath
+         || oldLast != m_lastWallpaperPath
+         || oldMonitors != m_monitorWallpaperPaths);
   if (wallpaperChanged && m_wallpaperChangeCallback) {
     m_wallpaperChangeCallback();
   }
@@ -742,8 +744,8 @@ void ConfigService::setupWatch() {
     return;
   }
 
-  m_configWatchWd =
-      inotify_add_watch(m_inotifyFd, m_configDir.c_str(), IN_MODIFY | IN_CLOSE_WRITE | IN_CREATE | IN_MOVED_TO);
+  m_configWatchWd
+      = inotify_add_watch(m_inotifyFd, m_configDir.c_str(), IN_MODIFY | IN_CLOSE_WRITE | IN_CREATE | IN_MOVED_TO);
   if (m_configWatchWd < 0) {
     kLog.warn("inotify_add_watch failed, hot reload disabled");
     ::close(m_inotifyFd);
@@ -775,8 +777,8 @@ void ConfigService::setupWatch() {
       const auto realName = real.filename().string();
       // inotify_add_watch is idempotent per inode — if realDir == m_configDir the
       // existing watch descriptor is returned and we simply record the extra name.
-      const int wd =
-          inotify_add_watch(m_inotifyFd, realDir.c_str(), IN_MODIFY | IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE);
+      const int wd
+          = inotify_add_watch(m_inotifyFd, realDir.c_str(), IN_MODIFY | IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE);
       if (wd >= 0) {
         m_symlinkDirWds[wd].push_back(realName);
         kLog.debug("watching symlink target {} in {}", realName, realDir);
@@ -787,8 +789,8 @@ void ConfigService::setupWatch() {
   // Also watch the state dir for settings.toml edits (external writes).
   if (!m_overridesPath.empty()) {
     const auto overridesDir = std::filesystem::path(m_overridesPath).parent_path().string();
-    m_overridesWatchWd =
-        inotify_add_watch(m_inotifyFd, overridesDir.c_str(), IN_MODIFY | IN_CLOSE_WRITE | IN_CREATE | IN_MOVED_TO);
+    m_overridesWatchWd
+        = inotify_add_watch(m_inotifyFd, overridesDir.c_str(), IN_MODIFY | IN_CLOSE_WRITE | IN_CREATE | IN_MOVED_TO);
     if (m_overridesWatchWd < 0) {
       kLog.warn("inotify_add_watch failed for {}, overrides reload disabled", overridesDir);
     } else {
@@ -842,8 +844,8 @@ void ConfigService::setConfigParseError(std::string parseError) {
     if (m_configErrorNotificationId != 0) {
       m_notificationManager->close(m_configErrorNotificationId);
     }
-    m_configErrorNotificationId =
-        m_notificationManager->addInternal("Noctalia", "Config parse error", parseError, Urgency::Critical, 0);
+    m_configErrorNotificationId
+        = m_notificationManager->addInternal("Noctalia", "Config parse error", parseError, Urgency::Critical, 0);
   } else {
     m_pendingError = std::move(parseError);
   }
@@ -1046,9 +1048,9 @@ void ConfigService::loadAll() {
     m_monitorWallpaperPaths.clear();
   }
 
-  const std::string parseError = !firstError.empty()              ? firstError
-                                 : !m_overridesParseError.empty() ? m_overridesParseError
-                                                                  : semanticError;
+  const std::string parseError = !firstError.empty() ? firstError
+      : !m_overridesParseError.empty()               ? m_overridesParseError
+                                                     : semanticError;
   setConfigParseError(parseError);
 }
 
@@ -1645,8 +1647,8 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
             auto dark = inputPathModesTbl->get_as<std::string>("dark");
             auto light = inputPathModesTbl->get_as<std::string>("light");
             if (dark != nullptr && light != nullptr) {
-              entry.inputPathModes =
-                  ThemeConfig::TemplateInputPathModesConfig{.dark = dark->get(), .light = light->get()};
+              entry.inputPathModes
+                  = ThemeConfig::TemplateInputPathModesConfig{.dark = dark->get(), .light = light->get()};
             }
           }
           if (const auto* outputPath = templateTbl->get("output_path")) {
@@ -2166,8 +2168,8 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       const std::string_view keyView{name.str()};
       if (keyView == "battery_low_percent_threshold") {
         if (auto v = node.value<int64_t>()) {
-          hooks.batteryLowPercentThreshold =
-              static_cast<std::int32_t>(std::clamp(*v, static_cast<std::int64_t>(0), static_cast<std::int64_t>(100)));
+          hooks.batteryLowPercentThreshold
+              = static_cast<std::int32_t>(std::clamp(*v, static_cast<std::int64_t>(0), static_cast<std::int64_t>(100)));
         }
         continue;
       }

@@ -445,8 +445,10 @@ std::vector<ToplevelInfo> CompositorPlatform::windowsForApp(
     const std::string& idLower, const std::string& wmClassLower, wl_output* outputFilter
 ) const {
   auto windows = m_wayland.windowsForApp(idLower, wmClassLower, outputFilter);
-  if (!compositors::isHyprland() || m_hyprlandToplevelMapping == nullptr || !m_hyprlandToplevelMapping->available() ||
-      !m_wayland.hasExtForeignToplevelList()) {
+  if (!compositors::isHyprland()
+      || m_hyprlandToplevelMapping == nullptr
+      || !m_hyprlandToplevelMapping->available()
+      || !m_wayland.hasExtForeignToplevelList()) {
     return windows;
   }
 
@@ -656,16 +658,19 @@ int CompositorPlatform::workspacePollTimeoutMs() const noexcept {
 
 void CompositorPlatform::dispatchWorkspacePoll(const std::vector<pollfd>& fds, std::size_t startIdx) {
   std::size_t index = startIdx;
-  if (m_workspaces != nullptr && m_workspaces->pollFd() >= 0 && index < fds.size() &&
-      fds[index].fd == m_workspaces->pollFd()) {
+  if (m_workspaces != nullptr
+      && m_workspaces->pollFd() >= 0
+      && index < fds.size()
+      && fds[index].fd == m_workspaces->pollFd()) {
     m_workspaces->dispatchPoll(fds[index].revents);
     ++index;
   }
 
   if (m_workspaceMetadataBackend != nullptr) {
     short revents = 0;
-    if (m_workspaceMetadataBackend->pollFd() >= 0 && index < fds.size() &&
-        fds[index].fd == m_workspaceMetadataBackend->pollFd()) {
+    if (m_workspaceMetadataBackend->pollFd() >= 0
+        && index < fds.size()
+        && fds[index].fd == m_workspaceMetadataBackend->pollFd()) {
       revents = fds[index].revents;
     }
     m_workspaceMetadataBackend->dispatchPoll(revents);
@@ -851,8 +856,9 @@ void CompositorPlatform::onOutputAdded(wl_output* output) {
   if (m_workspaces != nullptr) {
     m_workspaces->onOutputAdded(output);
   }
-  if (m_outputPowerBackend != nullptr && m_outputPowerBackend->isPerOutputTargeted() &&
-      m_lastRequestedOutputPowerState.has_value()) {
+  if (m_outputPowerBackend != nullptr
+      && m_outputPowerBackend->isPerOutputTargeted()
+      && m_lastRequestedOutputPowerState.has_value()) {
     (void)m_outputPowerBackend->setOutputPower(m_wayland, *m_lastRequestedOutputPowerState);
   }
 }
@@ -931,20 +937,29 @@ bool CompositorPlatform::sameWorkspaceModelSnapshot(
     const std::vector<WorkspaceModelSnapshot>& lhs, const std::vector<WorkspaceModelSnapshot>& rhs
 ) {
   auto sameWorkspace = [](const Workspace& a, const Workspace& b) {
-    return a.id == b.id && a.name == b.name && a.coordinates == b.coordinates && a.active == b.active &&
-           a.urgent == b.urgent && a.occupied == b.occupied;
+    return a.id == b.id
+        && a.name == b.name
+        && a.coordinates == b.coordinates
+        && a.active == b.active
+        && a.urgent == b.urgent
+        && a.occupied == b.occupied;
   };
   auto sameAssignment = [](const WorkspaceWindowAssignment& a, const WorkspaceWindowAssignment& b) {
-    return a.windowId == b.windowId && a.workspaceKey == b.workspaceKey && a.appId == b.appId && a.title == b.title &&
-           a.x == b.x && a.y == b.y;
+    return a.windowId == b.windowId
+        && a.workspaceKey == b.workspaceKey
+        && a.appId == b.appId
+        && a.title == b.title
+        && a.x == b.x
+        && a.y == b.y;
   };
 
   if (lhs.size() != rhs.size()) {
     return false;
   }
   for (std::size_t i = 0; i < lhs.size(); ++i) {
-    if (lhs[i].outputName != rhs[i].outputName || lhs[i].workspaces.size() != rhs[i].workspaces.size() ||
-        lhs[i].assignments.size() != rhs[i].assignments.size()) {
+    if (lhs[i].outputName != rhs[i].outputName
+        || lhs[i].workspaces.size() != rhs[i].workspaces.size()
+        || lhs[i].assignments.size() != rhs[i].assignments.size()) {
       return false;
     }
     for (std::size_t w = 0; w < lhs[i].workspaces.size(); ++w) {

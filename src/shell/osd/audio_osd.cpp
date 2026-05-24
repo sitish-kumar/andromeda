@@ -141,8 +141,8 @@ void AudioOsd::onAudioStateChanged(const PipeWireService& service) {
   const bool sinkDisappeared = sink == nullptr && m_lastSinkId != 0;
   const bool sourceVolumeChanged = source != nullptr && volumeChanged(sourceVolume, m_lastSourceVolume);
   const bool sourceMuteChanged = source != nullptr && sourceMuted != m_lastSourceMuted;
-  const bool sourceChanged =
-      source != nullptr && (sourceId != m_lastSourceId || sourceVolumeChanged || sourceMuteChanged);
+  const bool sourceChanged
+      = source != nullptr && (sourceId != m_lastSourceId || sourceVolumeChanged || sourceMuteChanged);
 
   if (sinkRouteChanged || sinkDisappeared) {
     m_suppressAutoInputOsdUntil = now + std::chrono::milliseconds(400);

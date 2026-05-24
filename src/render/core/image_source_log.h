@@ -18,8 +18,11 @@ namespace ImageSourceLog {
         return false;
       }
 
-      return (source[0] == 'd' || source[0] == 'D') && (source[1] == 'a' || source[1] == 'A') &&
-             (source[2] == 't' || source[2] == 'T') && (source[3] == 'a' || source[3] == 'A') && source[4] == ':';
+      return (source[0] == 'd' || source[0] == 'D')
+          && (source[1] == 'a' || source[1] == 'A')
+          && (source[2] == 't' || source[2] == 'T')
+          && (source[3] == 'a' || source[3] == 'A')
+          && source[4] == ':';
     }
 
     [[nodiscard]] inline std::string truncatedWithSize(std::string_view value, std::size_t maxBytes) {
@@ -27,8 +30,10 @@ namespace ImageSourceLog {
         return std::string(value);
       }
 
-      return StringUtils::truncateUtf8(value, maxBytes) + " ... [truncated, original=" + std::to_string(value.size()) +
-             " bytes]";
+      return StringUtils::truncateUtf8(value, maxBytes)
+          + " ... [truncated, original="
+          + std::to_string(value.size())
+          + " bytes]";
     }
 
   } // namespace detail
@@ -39,8 +44,8 @@ namespace ImageSourceLog {
     }
 
     const std::size_t comma = source.find(',');
-    const std::string_view header =
-        source.substr(5, comma == std::string_view::npos ? std::string_view::npos : comma - 5);
+    const std::string_view header
+        = source.substr(5, comma == std::string_view::npos ? std::string_view::npos : comma - 5);
     std::string result = "data:";
     result += header.empty() ? "<no-media-type>" : detail::truncatedWithSize(header, detail::kMaxLoggedDataHeaderBytes);
 

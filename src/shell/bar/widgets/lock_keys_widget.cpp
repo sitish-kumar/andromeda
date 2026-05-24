@@ -173,8 +173,8 @@ void LockKeysWidget::doUpdate(Renderer& renderer) { sync(renderer); }
 void LockKeysWidget::sync(Renderer& renderer) {
   (void)renderer;
 
-  const WaylandSeat::LockKeysState lockState =
-      m_lockKeys != nullptr ? m_lockKeys->state() : WaylandSeat::LockKeysState{};
+  const WaylandSeat::LockKeysState lockState
+      = m_lockKeys != nullptr ? m_lockKeys->state() : WaylandSeat::LockKeysState{};
 
   const bool capsVisible = m_showCapsLock && (!m_hideWhenOff || lockState.capsLock);
   const bool numVisible = m_showNumLock && (!m_hideWhenOff || lockState.numLock);

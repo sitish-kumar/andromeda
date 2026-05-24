@@ -21,9 +21,10 @@
 
 namespace {
 
-  constexpr std::uint32_t kPopupConstraintAdjust =
-      XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y |
-      XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y;
+  constexpr std::uint32_t kPopupConstraintAdjust = XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X
+      | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y
+      | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_X
+      | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y;
 
   ShellConfig::ShadowConfig popupShadowConfig(ConfigService* config) {
     return config != nullptr ? config->config().shell.shadow : ShellConfig::ShadowConfig{};
@@ -79,8 +80,9 @@ bool DialogPopupHost::openPopup(std::uint32_t width, std::uint32_t height) {
   });
   surface->setDismissedCallback([this]() { cancel(); });
 
-  m_chrome =
-      popup_chrome::computeGeometry(static_cast<float>(width), static_cast<float>(height), popupShadowConfig(m_config));
+  m_chrome = popup_chrome::computeGeometry(
+      static_cast<float>(width), static_cast<float>(height), popupShadowConfig(m_config)
+  );
   PopupSurfaceConfig popupConfig = defaultPopupConfig(*parentContext, width, height);
   popup_chrome::applyToConfig(
       popupConfig, m_chrome,
@@ -92,10 +94,9 @@ bool DialogPopupHost::openPopup(std::uint32_t width, std::uint32_t height) {
   m_surface = std::move(surface);
   m_popupHosts->beginAttachedPopup(m_parentSurface);
   m_attachedToHost = true;
-  const bool initialized =
-      parentContext->xdgSurface != nullptr
-          ? m_surface->initializeAsChild(parentContext->xdgSurface, parentContext->output, popupConfig)
-          : m_surface->initialize(parentContext->layerSurface, parentContext->output, popupConfig);
+  const bool initialized = parentContext->xdgSurface != nullptr
+      ? m_surface->initializeAsChild(parentContext->xdgSurface, parentContext->output, popupConfig)
+      : m_surface->initialize(parentContext->layerSurface, parentContext->output, popupConfig);
   if (!initialized) {
     destroyPopup();
     return false;
@@ -204,8 +205,8 @@ bool DialogPopupHost::onPointerEvent(const PointerEvent& event) {
   float localY = 0.0f;
   const bool mapped = mapPointerEvent(event, localX, localY);
   if (!mapped) {
-    if ((event.type == PointerEvent::Type::Leave && event.surface == m_parentSurface) ||
-        (event.type == PointerEvent::Type::Motion && event.surface == m_parentSurface && m_pointerInside)) {
+    if ((event.type == PointerEvent::Type::Leave && event.surface == m_parentSurface)
+        || (event.type == PointerEvent::Type::Motion && event.surface == m_parentSurface && m_pointerInside)) {
       m_pointerInside = false;
       if (!captured) {
         m_inputDispatcher.pointerLeave();
@@ -337,9 +338,9 @@ void DialogPopupHost::prepareFrame(bool needsUpdate, bool needsLayout) {
 
   m_renderContext->makeCurrent(m_surface->renderTarget());
 
-  const bool needsSceneBuild = m_sceneRoot == nullptr ||
-                               static_cast<std::uint32_t>(std::round(m_sceneRoot->width())) != width ||
-                               static_cast<std::uint32_t>(std::round(m_sceneRoot->height())) != height;
+  const bool needsSceneBuild = m_sceneRoot == nullptr
+      || static_cast<std::uint32_t>(std::round(m_sceneRoot->width())) != width
+      || static_cast<std::uint32_t>(std::round(m_sceneRoot->height())) != height;
   if (needsSceneBuild) {
     buildScene(width, height);
   }
@@ -365,9 +366,8 @@ void DialogPopupHost::buildScene(std::uint32_t width, std::uint32_t height) {
   m_panelShadow = popup_chrome::addShadow(*m_sceneRoot, m_chrome, popupShadowConfig(m_config), Style::scaledRadiusXl());
 
   auto bg = ui::box({
-      .configure = [this](Box& box) {
-        box.setPanelStyle(m_config != nullptr && m_config->config().shell.panel.borders);
-      },
+      .configure
+      = [this](Box& box) { box.setPanelStyle(m_config != nullptr && m_config->config().shell.panel.borders); },
   });
   m_bgNode = static_cast<Box*>(m_sceneRoot->addChild(std::move(bg)));
 

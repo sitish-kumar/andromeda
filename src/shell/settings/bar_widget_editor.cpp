@@ -327,8 +327,9 @@ namespace settings {
     }
 
     bool isGuiManagedNamedWidgetInstance(const BarWidgetEditorContext& ctx, std::string_view widgetName) {
-      return isNamedWidgetInstance(ctx.config, widgetName) && ctx.configService != nullptr &&
-             ctx.configService->hasOverride({"widget", std::string(widgetName)});
+      return isNamedWidgetInstance(ctx.config, widgetName)
+          && ctx.configService != nullptr
+          && ctx.configService->hasOverride({"widget", std::string(widgetName)});
     }
 
     bool isValidWidgetInstanceId(std::string_view id) {
@@ -920,10 +921,10 @@ namespace settings {
             .section = "bar",
             .group = "widget-settings",
             .title = !spec.literalLabel.empty() ? spec.literalLabel
-                     : spec.labelKey.empty()    ? std::string{}
+                : spec.labelKey.empty()         ? std::string{}
                                                 : i18n::tr(spec.labelKey),
             .subtitle = !spec.literalDescription.empty() ? spec.literalDescription
-                        : spec.descriptionKey.empty()    ? std::string{}
+                : spec.descriptionKey.empty()            ? std::string{}
                                                          : i18n::tr(spec.descriptionKey),
             .path = path,
             .control = TextSetting{},
@@ -944,19 +945,20 @@ namespace settings {
                 ui::toggle({
                     .checked = settingValueAsBool(value),
                     .scale = ctx.scale,
-                    .onChange = [configService = ctx.configService, setOverride = ctx.setOverride,
-                                 requestRebuild = ctx.requestRebuild, widgetName = std::string(widgetName), path,
-                                 displayPath = widgetSettingPath(std::string(widgetName), "display"),
-                                 specs](bool enabled) {
-                      setOverride(path, enabled);
-                      if (enabled && configService != nullptr &&
-                          settingCurrentString(configService->config(), widgetName, "display", specs) == "none") {
-                        setOverride(displayPath, std::string("id"));
-                      }
-                      if (requestRebuild) {
-                        requestRebuild();
-                      }
-                    },
+                    .onChange
+                    = [configService = ctx.configService, setOverride = ctx.setOverride,
+                       requestRebuild = ctx.requestRebuild, widgetName = std::string(widgetName), path,
+                       displayPath = widgetSettingPath(std::string(widgetName), "display"), specs](bool enabled) {
+                        setOverride(path, enabled);
+                        if (enabled
+                            && configService != nullptr
+                            && settingCurrentString(configService->config(), widgetName, "display", specs) == "none") {
+                          setOverride(displayPath, std::string("id"));
+                        }
+                        if (requestRebuild) {
+                          requestRebuild();
+                        }
+                      },
                 })
             );
           } else {
@@ -1196,8 +1198,8 @@ namespace settings {
             currentLaneKey = std::string(laneKey);
             currentLanePath = std::move(p);
             currentLaneItems = std::move(items);
-            currentLaneInherited = isMonitorWidgetListPath(currentLanePath) &&
-                                   !monitorWidgetListHasExplicitValue(ctx.config, currentLanePath);
+            currentLaneInherited = isMonitorWidgetListPath(currentLanePath)
+                && !monitorWidgetListHasExplicitValue(ctx.config, currentLanePath);
             break;
           }
         }
@@ -1805,9 +1807,11 @@ namespace settings {
             dragState->active = false;
             itemPtr->setOpacity(1.0f);
             hideDropIndicators(*laneTargets);
-            if (!dragState->moved || !dragState->targetLaneIndex.has_value() ||
-                !dragState->targetInsertionIndex.has_value() || laneTargetIndex >= laneTargets->size() ||
-                *dragState->targetLaneIndex >= laneTargets->size()) {
+            if (!dragState->moved
+                || !dragState->targetLaneIndex.has_value()
+                || !dragState->targetInsertionIndex.has_value()
+                || laneTargetIndex >= laneTargets->size()
+                || *dragState->targetLaneIndex >= laneTargets->size()) {
               return;
             }
 
@@ -1844,7 +1848,8 @@ namespace settings {
             dragState->lastLocalY = localY;
             if (std::hypot(
                     dragState->lastLocalX - dragState->startLocalX, dragState->lastLocalY - dragState->startLocalY
-                ) >= kDragStartThresholdPx * scale) {
+                )
+                >= kDragStartThresholdPx * scale) {
               dragState->moved = true;
             }
             if (!dragState->moved) {

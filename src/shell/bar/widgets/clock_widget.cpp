@@ -145,10 +145,10 @@ void ClockWidget::doLayout(Renderer& renderer, float containerWidth, float conta
   }
 
   if (showSecondary) {
-    const auto primaryMetrics =
-        renderer.measureText(m_lastPrimaryText, primaryFontSize, fontWeight, 0.0f, 1, TextAlign::Start);
-    const auto secondaryMetrics =
-        renderer.measureText(m_lastSecondaryText, secondaryFontSize, fontWeight, 0.0f, 1, TextAlign::Start);
+    const auto primaryMetrics
+        = renderer.measureText(m_lastPrimaryText, primaryFontSize, fontWeight, 0.0f, 1, TextAlign::Start);
+    const auto secondaryMetrics
+        = renderer.measureText(m_lastSecondaryText, secondaryFontSize, fontWeight, 0.0f, 1, TextAlign::Start);
     const float primaryInkWidth = std::max(0.0f, primaryMetrics.inkRight - primaryMetrics.inkLeft);
     const float secondaryInkWidth = std::max(0.0f, secondaryMetrics.inkRight - secondaryMetrics.inkLeft);
     width = std::max({width, primaryInkWidth, secondaryInkWidth});

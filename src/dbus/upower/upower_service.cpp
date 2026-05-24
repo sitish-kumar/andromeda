@@ -84,9 +84,11 @@ namespace {
   }
 
   bool selectorMatchesDevice(const UPowerDeviceInfo& info, std::string_view selector) {
-    return selectorMatchesField(info.path, selector) || selectorMatchesField(info.nativePath, selector) ||
-           selectorMatchesField(info.model, selector) || selectorMatchesField(info.serial, selector) ||
-           selectorMatchesField(info.vendor, selector);
+    return selectorMatchesField(info.path, selector)
+        || selectorMatchesField(info.nativePath, selector)
+        || selectorMatchesField(info.model, selector)
+        || selectorMatchesField(info.serial, selector)
+        || selectorMatchesField(info.vendor, selector);
   }
 
   BatteryState decodeBatteryState(std::uint32_t raw) {

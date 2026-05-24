@@ -163,8 +163,8 @@ int NiriWorkspaceBackend::pollTimeoutMs() const noexcept {
     return 0;
   }
 
-  const auto remaining =
-      std::chrono::ceil<std::chrono::milliseconds>(m_nextReconnectAt - std::chrono::steady_clock::now()).count();
+  const auto remaining
+      = std::chrono::ceil<std::chrono::milliseconds>(m_nextReconnectAt - std::chrono::steady_clock::now()).count();
   return static_cast<int>(std::max<std::int64_t>(0, remaining));
 }
 

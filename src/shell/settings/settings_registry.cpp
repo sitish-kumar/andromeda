@@ -346,8 +346,8 @@ namespace settings {
           wallpaperSchemeSelect(cfg.theme.wallpaperScheme), "wallpaper palette generator scheme material you m3 colors"
       ));
     } else if (cfg.theme.source == PaletteSource::Community) {
-      SettingControl communityPaletteControl =
-          TextSetting{.value = cfg.theme.communityPalette, .placeholder = "Oxocarbon", .browseFileExtensions = {}};
+      SettingControl communityPaletteControl
+          = TextSetting{.value = cfg.theme.communityPalette, .placeholder = "Oxocarbon", .browseFileExtensions = {}};
       if (!env.communityPalettes.empty()) {
         communityPaletteControl = SearchPickerSetting{
             .options = env.communityPalettes,
@@ -363,8 +363,8 @@ namespace settings {
           std::move(communityPaletteControl), "community palette colors"
       ));
     } else if (cfg.theme.source == PaletteSource::Custom) {
-      SettingControl customPaletteControl =
-          TextSetting{.value = cfg.theme.customPalette, .placeholder = "", .browseFileExtensions = {}};
+      SettingControl customPaletteControl
+          = TextSetting{.value = cfg.theme.customPalette, .placeholder = "", .browseFileExtensions = {}};
       if (!env.customPalettes.empty()) {
         customPaletteControl = SearchPickerSetting{
             .options = env.customPalettes,
@@ -391,8 +391,8 @@ namespace settings {
         SliderSetting{cfg.shell.cornerRadiusScale, 0.0f, 2.0f, 0.05f, false}, "rounded corners radius"
     ));
     {
-      SettingControl fontFamilyControl =
-          TextSetting{.value = cfg.shell.fontFamily, .placeholder = "sans-serif", .browseFileExtensions = {}};
+      SettingControl fontFamilyControl
+          = TextSetting{.value = cfg.shell.fontFamily, .placeholder = "sans-serif", .browseFileExtensions = {}};
       if (!env.fontFamilies.empty()) {
         fontFamilyControl = SearchPickerSetting{
             .options = env.fontFamilies,
@@ -1181,16 +1181,16 @@ namespace settings {
       constexpr float kPollMax = SystemConfig::MonitorConfig::kMaxPollSeconds;
       constexpr float kPollStep = 1.0f;
       const auto& mon = cfg.system.monitor;
-      auto addPoll = [&](std::string_view labelKey, std::string_view descKey, std::vector<std::string> path,
-                         float value) {
-        const float clampedValue = std::clamp(value, kPollMin, kPollMax);
-        auto entry = makeEntry(
-            "services", "system", tr(labelKey), tr(descKey), std::move(path),
-            SliderSetting{clampedValue, kPollMin, kPollMax, kPollStep, true}, "system monitor", true
-        );
-        entry.visibleWhen = monitorOn;
-        entries.push_back(std::move(entry));
-      };
+      auto addPoll
+          = [&](std::string_view labelKey, std::string_view descKey, std::vector<std::string> path, float value) {
+              const float clampedValue = std::clamp(value, kPollMin, kPollMax);
+              auto entry = makeEntry(
+                  "services", "system", tr(labelKey), tr(descKey), std::move(path),
+                  SliderSetting{clampedValue, kPollMin, kPollMax, kPollStep, true}, "system monitor", true
+              );
+              entry.visibleWhen = monitorOn;
+              entries.push_back(std::move(entry));
+            };
       addPoll(
           "settings.schema.services.system-monitor.cpu-poll.label",
           "settings.schema.services.system-monitor.cpu-poll.description", {"system", "monitor", "cpu_poll_seconds"},
@@ -1348,11 +1348,11 @@ namespace settings {
         e.visibleWhen = nightLightOn;
         entries.push_back(std::move(e));
       }
-      const bool weatherLocationConfigured =
-          cfg.weather.enabled && (cfg.weather.autoLocate || !cfg.weather.address.empty());
-      const std::string weatherLocationSubtitle =
-          weatherLocationConfigured ? tr("settings.schema.services.use-weather-location.description")
-                                    : tr("settings.schema.services.use-weather-location.requires-weather-location");
+      const bool weatherLocationConfigured
+          = cfg.weather.enabled && (cfg.weather.autoLocate || !cfg.weather.address.empty());
+      const std::string weatherLocationSubtitle = weatherLocationConfigured
+          ? tr("settings.schema.services.use-weather-location.description")
+          : tr("settings.schema.services.use-weather-location.requires-weather-location");
       {
         auto e = makeEntry(
             "services", "night-light", tr("settings.schema.services.use-weather-location.label"),
@@ -1366,8 +1366,8 @@ namespace settings {
           {{"nightlight", "enabled"}, {"true"}},
           {{"nightlight", "use_weather_location"}, {"false"}},
       }};
-      const SettingVisibility& manualNightLightControlsVisible =
-          weatherLocationConfigured ? nightLightOnWeatherLocationOff : nightLightOn;
+      const SettingVisibility& manualNightLightControlsVisible
+          = weatherLocationConfigured ? nightLightOnWeatherLocationOff : nightLightOn;
       {
         auto e = makeEntry(
             "services", "night-light", tr("settings.schema.services.night-light-start-time.label"),
@@ -1422,13 +1422,13 @@ namespace settings {
             NightLightConfig::kTemperatureMax
         );
         if (newDay - NightLightConfig::kTemperatureGap < curNight) {
-          std::int32_t pushedNight =
-              std::max(NightLightConfig::kTemperatureMin, newDay - NightLightConfig::kTemperatureGap);
+          std::int32_t pushedNight
+              = std::max(NightLightConfig::kTemperatureMin, newDay - NightLightConfig::kTemperatureGap);
           if (pushedNight + NightLightConfig::kTemperatureGap > newDay) {
             // Day was below kTemperatureMin + kTemperatureGap; bump day up too. The slider value
             // refresh comes through the rebuilt registry on the next config reload.
-            const std::int32_t bumpedDay =
-                std::min(NightLightConfig::kTemperatureMax, pushedNight + NightLightConfig::kTemperatureGap);
+            const std::int32_t bumpedDay
+                = std::min(NightLightConfig::kTemperatureMax, pushedNight + NightLightConfig::kTemperatureGap);
             overrides.emplace_back(
                 std::vector<std::string>{"nightlight", "temperature_day"}, static_cast<std::int64_t>(bumpedDay)
             );
@@ -1457,11 +1457,11 @@ namespace settings {
             NightLightConfig::kTemperatureMax
         );
         if (curDay - NightLightConfig::kTemperatureGap < newNight) {
-          std::int32_t pushedDay =
-              std::min(NightLightConfig::kTemperatureMax, newNight + NightLightConfig::kTemperatureGap);
+          std::int32_t pushedDay
+              = std::min(NightLightConfig::kTemperatureMax, newNight + NightLightConfig::kTemperatureGap);
           if (pushedDay - NightLightConfig::kTemperatureGap < newNight) {
-            const std::int32_t bumpedNight =
-                std::max(NightLightConfig::kTemperatureMin, pushedDay - NightLightConfig::kTemperatureGap);
+            const std::int32_t bumpedNight
+                = std::max(NightLightConfig::kTemperatureMin, pushedDay - NightLightConfig::kTemperatureGap);
             overrides.emplace_back(
                 std::vector<std::string>{"nightlight", "temperature_night"}, static_cast<std::int64_t>(bumpedNight)
             );
@@ -1543,12 +1543,18 @@ namespace settings {
       if (kind == HookKind::WallpaperChanged || kind == HookKind::ColorsChanged || kind == HookKind::ThemeModeChanged) {
         tags += " wallpaper colors theme mode light dark auto";
       }
-      if (kind == HookKind::WifiEnabled || kind == HookKind::WifiDisabled || kind == HookKind::BluetoothEnabled ||
-          kind == HookKind::BluetoothDisabled) {
+      if (kind == HookKind::WifiEnabled
+          || kind == HookKind::WifiDisabled
+          || kind == HookKind::BluetoothEnabled
+          || kind == HookKind::BluetoothDisabled) {
         tags += " network wifi bluetooth";
       }
-      if (kind == HookKind::SessionLocked || kind == HookKind::SessionUnlocked || kind == HookKind::LoggingOut ||
-          kind == HookKind::Rebooting || kind == HookKind::ShuttingDown || kind == HookKind::Started) {
+      if (kind == HookKind::SessionLocked
+          || kind == HookKind::SessionUnlocked
+          || kind == HookKind::LoggingOut
+          || kind == HookKind::Rebooting
+          || kind == HookKind::ShuttingDown
+          || kind == HookKind::Started) {
         tags += " session startup";
       }
       return tags;

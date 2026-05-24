@@ -119,8 +119,8 @@ void DisplayTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeig
   const float scale = contentScale();
   const float cardWidth = std::max(1.0f, contentWidth);
   const float cardInnerWidth = std::max(1.0f, cardWidth - Style::spaceMd * scale * 2.0f);
-  const float headerTextMaxWidth =
-      std::max(1.0f, cardInnerWidth - Style::fontSizeTitle * scale - Style::spaceSm * scale);
+  const float headerTextMaxWidth
+      = std::max(1.0f, cardInnerWidth - Style::fontSizeTitle * scale - Style::spaceSm * scale);
   for (auto& card : m_cards) {
     if (card.card != nullptr) {
       card.card->setMinWidth(cardWidth);
@@ -178,15 +178,17 @@ void DisplayTab::doUpdate(Renderer& renderer) {
 
     const bool isDragging = card.slider->dragging();
     const bool isPending = m_pendingDisplayId == card.displayId && m_pendingBrightness >= 0.0f;
-    const bool holdState = isDragging && m_lastSentBrightness >= 0.0f && now < m_ignoreStateUntil &&
-                           std::abs(display->brightness - m_lastSentBrightness) > 0.02f;
+    const bool holdState = isDragging
+        && m_lastSentBrightness >= 0.0f
+        && now < m_ignoreStateUntil
+        && std::abs(display->brightness - m_lastSentBrightness) > 0.02f;
 
     const float displayedBrightness = std::clamp(
         isPending ? m_pendingBrightness : (holdState ? m_lastSentBrightness : display->brightness), 0.0f, 1.0f
     );
 
-    if (!isDragging &&
-        (!card.lastControllable || std::abs(displayedBrightness - card.lastBrightness) >= kBrightnessSyncEpsilon)) {
+    if (!isDragging
+        && (!card.lastControllable || std::abs(displayedBrightness - card.lastBrightness) >= kBrightnessSyncEpsilon)) {
       m_syncingSlider = true;
       card.slider->setValue(displayedBrightness);
       m_syncingSlider = false;

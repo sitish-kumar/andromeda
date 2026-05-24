@@ -215,19 +215,20 @@ void VirtualGridView::doLayout(Renderer& renderer) {
   const float viewportH = std::max(0.0f, ourH - 2.0f * padV);
 
   m_itemCount = m_adapter->itemCount();
-  const std::size_t columns =
-      m_columns > 0 ? std::max<std::size_t>(1, m_columns)
-                    : std::max<std::size_t>(
-                          1, static_cast<std::size_t>(
-                                 std::floor((viewportW + m_columnGap) / std::max(1.0f, m_minCellWidth + m_columnGap))
-                             )
-                      );
+  const std::size_t columns = m_columns > 0
+      ? std::max<std::size_t>(1, m_columns)
+      : std::max<std::size_t>(
+            1,
+            static_cast<std::size_t>(
+                std::floor((viewportW + m_columnGap) / std::max(1.0f, m_minCellWidth + m_columnGap))
+            )
+        );
   const float columnsF = static_cast<float>(columns);
   const float cellW = columns == 0 ? 0.0f : std::max(0.0f, (viewportW - (columnsF - 1.0f) * m_columnGap) / columnsF);
   const float cellH = m_squareCells ? cellW : m_cellHeight;
   const std::size_t rowCount = (m_itemCount + columns - 1) / columns;
-  const float virtualHeight =
-      rowCount == 0 ? 0.0f : (static_cast<float>(rowCount) * cellH + static_cast<float>(rowCount - 1) * m_rowGap);
+  const float virtualHeight
+      = rowCount == 0 ? 0.0f : (static_cast<float>(rowCount) * cellH + static_cast<float>(rowCount - 1) * m_rowGap);
 
   m_layoutColumns = columns;
   m_cellWidth = cellW;
@@ -264,8 +265,8 @@ void VirtualGridView::doLayout(Renderer& renderer) {
   std::size_t lastRow = 0;
   if (rowStride > 0.0f && rowCount > 0) {
     const long firstRaw = static_cast<long>(std::floor(scrollY / rowStride)) - static_cast<long>(m_overscanRows);
-    const long lastRaw =
-        static_cast<long>(std::ceil((scrollY + viewportH) / rowStride)) + static_cast<long>(m_overscanRows);
+    const long lastRaw
+        = static_cast<long>(std::ceil((scrollY + viewportH) / rowStride)) + static_cast<long>(m_overscanRows);
     firstRow = static_cast<std::size_t>(std::max<long>(0, firstRaw));
     lastRow = static_cast<std::size_t>(std::max<long>(0, std::min<long>(lastRaw, static_cast<long>(rowCount) - 1)));
   }
@@ -326,8 +327,10 @@ void VirtualGridView::doLayout(Renderer& renderer) {
 
         const bool selected = m_selectedIndex.has_value() && *m_selectedIndex == logicalIndex;
         const bool hovered = m_hoveredIndex.has_value() && *m_hoveredIndex == logicalIndex;
-        const bool dirty = !m_slotBoundIndex[slot].has_value() || *m_slotBoundIndex[slot] != logicalIndex ||
-                           m_slotBoundSelected[slot] != selected || m_slotBoundHovered[slot] != hovered;
+        const bool dirty = !m_slotBoundIndex[slot].has_value()
+            || *m_slotBoundIndex[slot] != logicalIndex
+            || m_slotBoundSelected[slot] != selected
+            || m_slotBoundHovered[slot] != hovered;
         if (dirty) {
           m_adapter->bindTile(*tile, logicalIndex, selected, hovered);
           m_slotBoundIndex[slot] = logicalIndex;
@@ -367,10 +370,10 @@ LayoutSize VirtualGridView::doMeasure(Renderer& /*renderer*/, const LayoutConstr
   // in the dialog. Tile binding belongs in the arrange pass where the final rect
   // is known.
   const float w = constraints.hasExactWidth() ? constraints.maxWidth
-                  : constraints.hasMaxWidth   ? constraints.maxWidth
+      : constraints.hasMaxWidth               ? constraints.maxWidth
                                               : 0.0f;
   const float h = constraints.hasExactHeight() ? constraints.maxHeight
-                  : constraints.hasMaxHeight   ? constraints.maxHeight
+      : constraints.hasMaxHeight               ? constraints.maxHeight
                                                : 0.0f;
   return LayoutSize{.width = w, .height = h};
 }

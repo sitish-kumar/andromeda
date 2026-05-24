@@ -139,9 +139,12 @@ namespace {
       return false;
     }
     const auto& idLower = entry->idLower;
-    return entry->categoriesLower.find("utility") != std::string::npos || idLower.find("portal") != std::string::npos ||
-           idLower.find("polkit") != std::string::npos || idLower.find("auth") != std::string::npos ||
-           idLower.find("kwallet") != std::string::npos || idLower.find("gcr") != std::string::npos;
+    return entry->categoriesLower.find("utility") != std::string::npos
+        || idLower.find("portal") != std::string::npos
+        || idLower.find("polkit") != std::string::npos
+        || idLower.find("auth") != std::string::npos
+        || idLower.find("kwallet") != std::string::npos
+        || idLower.find("gcr") != std::string::npos;
   }
 
   template <typename HourlyMap>
@@ -177,10 +180,9 @@ namespace {
     }
 
     const std::string baseKey = canonicalAppKey(appKey);
-    const auto lookupOptions =
-        baseKey.starts_with("steam_app_")
-            ? app_identity::DesktopEntryLookupOptions{.includeHidden = true, .includeNoDisplay = true}
-            : app_identity::DesktopEntryLookupOptions{};
+    const auto lookupOptions = baseKey.starts_with("steam_app_")
+        ? app_identity::DesktopEntryLookupOptions{.includeHidden = true, .includeNoDisplay = true}
+        : app_identity::DesktopEntryLookupOptions{};
     if (const auto entry = app_identity::findDesktopEntry(baseKey, desktopEntries(), lookupOptions);
         entry.has_value()) {
       if (!entry->name.empty()) {
@@ -540,8 +542,9 @@ ScreenTimeSnapshot ScreenTimeService::snapshot(int rangeDays) {
 }
 
 void ScreenTimeService::flushActiveSession(std::chrono::steady_clock::time_point now) {
-  if (m_activeAppKey.empty() || m_activeSince == std::chrono::steady_clock::time_point{} ||
-      isScreenTimeExcludedAppKey(m_activeAppKey)) {
+  if (m_activeAppKey.empty()
+      || m_activeSince == std::chrono::steady_clock::time_point{}
+      || isScreenTimeExcludedAppKey(m_activeAppKey)) {
     return;
   }
 
@@ -672,8 +675,9 @@ void ScreenTimeService::load() {
   const std::size_t currentAppsBefore = m_currentDay.apps.size();
   const std::size_t currentHourlyBefore = m_currentDay.appHourly.size();
   pruneExcludedAppKeys(m_currentDay.apps, m_currentDay.appHourly);
-  if (prunedStored || m_currentDay.apps.size() != currentAppsBefore ||
-      m_currentDay.appHourly.size() != currentHourlyBefore) {
+  if (prunedStored
+      || m_currentDay.apps.size() != currentAppsBefore
+      || m_currentDay.appHourly.size() != currentHourlyBefore) {
     m_dirty = true;
   }
 }

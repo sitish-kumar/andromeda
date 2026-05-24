@@ -125,8 +125,9 @@ void Backdrop::syncInstances() {
 
   // Remove instances for outputs that no longer exist
   std::erase_if(m_instances, [&](const auto& inst) {
-    bool found =
-        std::any_of(outputs.begin(), outputs.end(), [&inst](const auto& out) { return out.name == inst->outputName; });
+    bool found = std::any_of(outputs.begin(), outputs.end(), [&inst](const auto& out) {
+      return out.name == inst->outputName;
+    });
     if (!found) {
       kLog.info("removing instance for output {}", inst->outputName);
       releaseInstanceTexture(*inst);

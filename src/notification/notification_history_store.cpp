@@ -317,11 +317,10 @@ namespace {
       const int sy = y * h / nh;
       for (int x = 0; x < nw; ++x) {
         const int sx = x * w / nw;
-        const std::uint8_t* srcPx =
-            rgba.data() +
-            (static_cast<std::size_t>(sy) * static_cast<std::size_t>(w) + static_cast<std::size_t>(sx)) * 4;
-        std::uint8_t* dstPx =
-            dst.data() + (static_cast<std::size_t>(y) * static_cast<std::size_t>(nw) + static_cast<std::size_t>(x)) * 4;
+        const std::uint8_t* srcPx = rgba.data()
+            + (static_cast<std::size_t>(sy) * static_cast<std::size_t>(w) + static_cast<std::size_t>(sx)) * 4;
+        std::uint8_t* dstPx = dst.data()
+            + (static_cast<std::size_t>(y) * static_cast<std::size_t>(nw) + static_cast<std::size_t>(x)) * 4;
         std::memcpy(dstPx, srcPx, 4);
       }
     }
@@ -361,8 +360,9 @@ namespace {
         }
         // Legacy sidecar: raw RGBA bytes (not a supported container format).
         if (img.width > 0 && img.height > 0 && img.channels >= 3) {
-          const std::size_t expected = static_cast<std::size_t>(img.width) * static_cast<std::size_t>(img.height) *
-                                       static_cast<std::size_t>(img.channels);
+          const std::size_t expected = static_cast<std::size_t>(img.width)
+              * static_cast<std::size_t>(img.height)
+              * static_cast<std::size_t>(img.channels);
           if (img.data.size() >= expected) {
             return img;
           }

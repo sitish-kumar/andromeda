@@ -190,8 +190,8 @@ namespace {
 
     ++gBufferedFileLogLines;
     const auto now = std::chrono::steady_clock::now();
-    return gBufferedFileLogLines >= kBufferedFileLogFlushLines ||
-           now - gLastFileFlushAt >= kBufferedFileLogFlushInterval;
+    return gBufferedFileLogLines >= kBufferedFileLogFlushLines
+        || now - gLastFileFlushAt >= kBufferedFileLogFlushInterval;
   }
 
   void closeLogFileUnlocked() {

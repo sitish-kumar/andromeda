@@ -279,8 +279,8 @@ void ColorPicker::rebuildSvTexture(Renderer& renderer) {
     for (int x = 0; x < tw; ++x) {
       const float s = (static_cast<float>(x) + 0.5f) / static_cast<float>(tw);
       const Color px = colorAtSv(m_h, s, v);
-      const std::size_t o =
-          (static_cast<std::size_t>(y) * static_cast<std::size_t>(tw) + static_cast<std::size_t>(x)) * 4U;
+      const std::size_t o
+          = (static_cast<std::size_t>(y) * static_cast<std::size_t>(tw) + static_cast<std::size_t>(x)) * 4U;
       m_svPixels[o + 0U] = static_cast<std::uint8_t>(std::lround(std::clamp(px.r, 0.0f, 1.0f) * 255.0f));
       m_svPixels[o + 1U] = static_cast<std::uint8_t>(std::lround(std::clamp(px.g, 0.0f, 1.0f) * 255.0f));
       m_svPixels[o + 2U] = static_cast<std::uint8_t>(std::lround(std::clamp(px.b, 0.0f, 1.0f) * 255.0f));
@@ -380,8 +380,8 @@ void ColorPicker::onRgbInputChange() {
   const int r = parseIntClamp(m_rInput->value(), 0, 255);
   const int g = parseIntClamp(m_gInput->value(), 0, 255);
   const int b = parseIntClamp(m_bInput->value(), 0, 255);
-  Color c =
-      rgba(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f, m_alpha);
+  Color c
+      = rgba(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f, m_alpha);
   setColor(c);
   if (m_onColorChanged) {
     m_onColorChanged(m_color);
@@ -407,8 +407,8 @@ void ColorPicker::positionOverlays() {
   if (m_hueStrip != nullptr && m_hueThumb != nullptr) {
     const float stripW = m_hueStrip->width();
     const float cx = m_hueStrip->x() + m_h * stripW;
-    const float x =
-        std::clamp(cx - m_hueThumb->width() * 0.5f, m_hueStrip->x(), m_hueStrip->x() + stripW - m_hueThumb->width());
+    const float x
+        = std::clamp(cx - m_hueThumb->width() * 0.5f, m_hueStrip->x(), m_hueStrip->x() + stripW - m_hueThumb->width());
     const float y = m_hueStrip->y() + (m_hueStrip->height() - m_hueThumb->height()) * 0.5f;
     m_hueThumb->setPosition(x, y);
   }

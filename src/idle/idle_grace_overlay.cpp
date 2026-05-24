@@ -173,9 +173,9 @@ void IdleGraceOverlay::prepareFrame(Instance& inst, bool needsUpdate, bool needs
 
   m_renderContext->makeCurrent(inst.surface->renderTarget());
 
-  const bool needsSceneBuild = inst.sceneRoot == nullptr ||
-                               static_cast<std::uint32_t>(std::round(inst.sceneRoot->width())) != width ||
-                               static_cast<std::uint32_t>(std::round(inst.sceneRoot->height())) != height;
+  const bool needsSceneBuild = inst.sceneRoot == nullptr
+      || static_cast<std::uint32_t>(std::round(inst.sceneRoot->width())) != width
+      || static_cast<std::uint32_t>(std::round(inst.sceneRoot->height())) != height;
   if (needsSceneBuild) {
     UiPhaseScope layoutPhase(UiPhase::Layout);
     buildScene(inst, width, height);

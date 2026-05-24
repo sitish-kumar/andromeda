@@ -193,9 +193,8 @@ namespace noctalia::theme {
             clusters[i] = {0, 0, 0};
             continue;
           }
-          clusters[i] = {
-              sa[i] / static_cast<double>(cnt), sb[i] / static_cast<double>(cnt), sc[i] / static_cast<double>(cnt)
-          };
+          clusters[i]
+              = {sa[i] / static_cast<double>(cnt), sb[i] / static_cast<double>(cnt), sc[i] / static_cast<double>(cnt)};
         }
       }
 

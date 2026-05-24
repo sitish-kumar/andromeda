@@ -326,8 +326,10 @@ void BatteryWidget::syncState(Renderer& renderer) {
 
   const auto s = m_upower->stateForDevice(m_deviceSelector);
 
-  if (s.percentage == m_lastPct && s.state == m_lastState && s.isPresent == m_lastPresent &&
-      m_isVertical == m_lastVertical) {
+  if (s.percentage == m_lastPct
+      && s.state == m_lastState
+      && s.isPresent == m_lastPresent
+      && m_isVertical == m_lastVertical) {
     return;
   }
 
@@ -336,12 +338,13 @@ void BatteryWidget::syncState(Renderer& renderer) {
   m_lastPresent = s.isPresent;
   m_lastVertical = m_isVertical;
 
-  const bool isPluggedIn = s.state == BatteryState::Charging || s.state == BatteryState::FullyCharged ||
-                           s.state == BatteryState::PendingCharge;
+  const bool isPluggedIn = s.state == BatteryState::Charging
+      || s.state == BatteryState::FullyCharged
+      || s.state == BatteryState::PendingCharge;
 
-  const bool showWidget =
-      s.isPresent && !(m_hideWhenPlugged && isPluggedIn) &&
-      !(m_hideWhenFull && (s.state == BatteryState::FullyCharged || s.state == BatteryState::PendingCharge));
+  const bool showWidget = s.isPresent
+      && !(m_hideWhenPlugged && isPluggedIn)
+      && !(m_hideWhenFull && (s.state == BatteryState::FullyCharged || s.state == BatteryState::PendingCharge));
 
   auto* rootNode = root();
   if (rootNode != nullptr) {

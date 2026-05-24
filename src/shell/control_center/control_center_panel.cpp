@@ -48,8 +48,8 @@ ControlCenterPanel::ControlCenterPanel(
   m_tabs[tabIndex(TabId::Media)] = std::make_unique<MediaTab>(
       mpris, httpClient, spectrum, config, wayland, PanelManager::instance().renderContext()
   );
-  m_tabs[tabIndex(TabId::Audio)] =
-      std::make_unique<AudioTab>(audio, mpris, config, wayland, PanelManager::instance().renderContext());
+  m_tabs[tabIndex(TabId::Audio)]
+      = std::make_unique<AudioTab>(audio, mpris, config, wayland, PanelManager::instance().renderContext());
   m_tabs[tabIndex(TabId::Weather)] = std::make_unique<WeatherTab>(weather, config);
   m_tabs[tabIndex(TabId::Calendar)] = std::make_unique<CalendarTab>(config);
   m_tabs[tabIndex(TabId::Notifications)] = std::make_unique<NotificationsTab>(notifications);
@@ -260,8 +260,8 @@ void ControlCenterPanel::doLayout(Renderer& renderer, float width, float height)
   m_rootLayout->setSize(width, height);
   m_rootLayout->layout(renderer);
 
-  const float contentInnerWidth =
-      std::max(0.0f, m_content->width() - (m_content->paddingLeft() + m_content->paddingRight()));
+  const float contentInnerWidth
+      = std::max(0.0f, m_content->width() - (m_content->paddingLeft() + m_content->paddingRight()));
   const float bodyWidth = m_tabBodies->width();
   const float bodyHeight = m_tabBodies->height();
 

@@ -88,8 +88,8 @@ namespace {
     const double rawTimeout = luaL_optnumber(
         L, 3, static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(kDefaultCommandTimeout).count())
     );
-    const double timeoutMs =
-        std::isfinite(rawTimeout) ? rawTimeout : static_cast<double>(kDefaultCommandTimeout.count());
+    const double timeoutMs
+        = std::isfinite(rawTimeout) ? rawTimeout : static_cast<double>(kDefaultCommandTimeout.count());
     const double bounded = std::clamp(
         timeoutMs, static_cast<double>(kMinCommandTimeout.count()), static_cast<double>(kMaxCommandTimeout.count())
     );
@@ -376,8 +376,9 @@ bool LuauHost::startAsyncCommand(std::string command, int callbackRef, std::chro
   try {
     std::thread([hostId = m_hostId, callbackRef, command = std::move(command), timeout,
                  handler = std::move(handler)]() mutable {
-      auto result =
-          process::runSyncWithTimeoutAndOutputLimit({"/bin/sh", "-lc", command}, timeout, kMaxAsyncCommandOutputBytes);
+      auto result = process::runSyncWithTimeoutAndOutputLimit(
+          {"/bin/sh", "-lc", command}, timeout, kMaxAsyncCommandOutputBytes
+      );
       inFlightAsyncCommands().fetch_sub(1, std::memory_order_relaxed);
       handler(hostId, callbackRef, std::move(result));
     }).detach();
@@ -391,8 +392,9 @@ bool LuauHost::startAsyncCommand(std::string command, int callbackRef, std::chro
 }
 
 bool LuauHost::startAsyncProcessMatch(std::vector<std::string> needles, int callbackRef) {
-  if (needles.empty() || callbackRef <= LUA_REFNIL ||
-      m_asyncProcessMatchCallbackRefs.size() >= kMaxAsyncProcessMatchesPerHost) {
+  if (needles.empty()
+      || callbackRef <= LUA_REFNIL
+      || m_asyncProcessMatchCallbackRefs.size() >= kMaxAsyncProcessMatchesPerHost) {
     return false;
   }
 

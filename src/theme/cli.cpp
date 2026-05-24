@@ -30,36 +30,36 @@ namespace noctalia::theme {
 
   namespace {
 
-    constexpr const char* kHelpText =
-        "Usage: noctalia theme <image> [options]\n"
-        "       noctalia theme --list-templates [-c <file>]\n"
-        "\n"
-        "Generate a color palette from an image. Material You and custom\n"
-        "schemes produce very different results.\n"
-        "\n"
-        "Options:\n"
-        "  --scheme <name>   Material You (Material Design 3):\n"
-        "                      m3-tonal-spot  (default)\n"
-        "                      m3-content\n"
-        "                      m3-fruit-salad\n"
-        "                      m3-rainbow\n"
-        "                      m3-monochrome\n"
-        "                    Custom (HSL-space, non-M3):\n"
-        "                      vibrant\n"
-        "                      faithful\n"
-        "                      dysfunctional\n"
-        "                      muted\n"
-        "  --dark            Emit only the dark variant (default)\n"
-        "  --light           Emit only the light variant\n"
-        "  --both            Emit both variants under dark/light keys\n"
-        "  --theme-json <f>  Load precomputed dark/light token maps from JSON\n"
-        "  -o <file>         Write JSON to file instead of stdout\n"
-        "  -r <in:out>       Render a template file to an output path\n"
-        "  -c <file>         Process a TOML template config file\n"
-        "  --builtin-config  Process the shipped built-in template catalog\n"
-        "  --list-templates  List built-in, cached community, and configured user templates\n"
-        "                    Use -c <file> to include a specific template config\n"
-        "  --default-mode    Template default mode: dark or light";
+    constexpr const char* kHelpText
+        = "Usage: noctalia theme <image> [options]\n"
+          "       noctalia theme --list-templates [-c <file>]\n"
+          "\n"
+          "Generate a color palette from an image. Material You and custom\n"
+          "schemes produce very different results.\n"
+          "\n"
+          "Options:\n"
+          "  --scheme <name>   Material You (Material Design 3):\n"
+          "                      m3-tonal-spot  (default)\n"
+          "                      m3-content\n"
+          "                      m3-fruit-salad\n"
+          "                      m3-rainbow\n"
+          "                      m3-monochrome\n"
+          "                    Custom (HSL-space, non-M3):\n"
+          "                      vibrant\n"
+          "                      faithful\n"
+          "                      dysfunctional\n"
+          "                      muted\n"
+          "  --dark            Emit only the dark variant (default)\n"
+          "  --light           Emit only the light variant\n"
+          "  --both            Emit both variants under dark/light keys\n"
+          "  --theme-json <f>  Load precomputed dark/light token maps from JSON\n"
+          "  -o <file>         Write JSON to file instead of stdout\n"
+          "  -r <in:out>       Render a template file to an output path\n"
+          "  -c <file>         Process a TOML template config file\n"
+          "  --builtin-config  Process the shipped built-in template catalog\n"
+          "  --list-templates  List built-in, cached community, and configured user templates\n"
+          "                    Use -c <file> to include a specific template config\n"
+          "  --default-mode    Template default mode: dark or light";
 
     std::filesystem::path builtinTemplateConfigPath() { return paths::assetPath("templates/builtin.toml"); }
 
@@ -288,8 +288,19 @@ namespace noctalia::theme {
       const auto outlineRaw = loadHexColor(src, "mOutline");
       const auto shadow = loadHexColor(src, "mShadow").value_or(surface.value_or(Color{}));
 
-      if (!primary || !onPrimary || !secondary || !onSecondary || !tertiary || !onTertiary || !error || !onError ||
-          !surface || !onSurface || !surfaceVariant || !onSurfaceVariant || !outlineRaw) {
+      if (!primary
+          || !onPrimary
+          || !secondary
+          || !onSecondary
+          || !tertiary
+          || !onTertiary
+          || !error
+          || !onError
+          || !surface
+          || !onSurface
+          || !surfaceVariant
+          || !onSurfaceVariant
+          || !outlineRaw) {
         err = "fixed palette json is missing required colors";
         return std::nullopt;
       }

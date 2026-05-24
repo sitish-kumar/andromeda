@@ -163,8 +163,8 @@ void MediaWidget::doLayout(Renderer& renderer, float containerWidth, float conta
       m_emptyGlyph->setPosition(0.0f, std::round((contentHeight - m_emptyGlyph->height()) * 0.5f));
       m_label->setPosition(m_emptyGlyph->width() + spacing, std::round((contentHeight - m_label->height()) * 0.5f));
     }
-    const float contentWidth =
-        showLabel ? m_label->x() + m_label->width() : (showArtSlot ? artSize : m_emptyGlyph->width());
+    const float contentWidth
+        = showLabel ? m_label->x() + m_label->width() : (showArtSlot ? artSize : m_emptyGlyph->width());
     rootNode->setSize(std::clamp(contentWidth, minLength, maxLength), contentHeight);
   }
 }
@@ -176,9 +176,9 @@ void MediaWidget::applyTitleScrollMode(bool titleVisible) {
     return;
   }
 
-  const bool shouldScroll =
-      titleVisible && (m_titleScrollMode == MediaTitleScrollMode::Always ||
-                       (m_titleScrollMode == MediaTitleScrollMode::OnHover && m_area != nullptr && m_area->hovered()));
+  const bool shouldScroll = titleVisible
+      && (m_titleScrollMode == MediaTitleScrollMode::Always
+          || (m_titleScrollMode == MediaTitleScrollMode::OnHover && m_area != nullptr && m_area->hovered()));
   m_label->setAutoScroll(shouldScroll);
   m_label->setAutoScrollOnlyWhenHovered(false);
 }

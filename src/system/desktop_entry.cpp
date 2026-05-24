@@ -449,8 +449,14 @@ namespace {
         return;
       }
 
-      constexpr std::uint32_t kMask = IN_CREATE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO | IN_CLOSE_WRITE |
-                                      IN_DELETE_SELF | IN_MOVE_SELF | IN_ATTRIB;
+      constexpr std::uint32_t kMask = IN_CREATE
+          | IN_DELETE
+          | IN_MOVED_FROM
+          | IN_MOVED_TO
+          | IN_CLOSE_WRITE
+          | IN_DELETE_SELF
+          | IN_MOVE_SELF
+          | IN_ATTRIB;
       const int wd = inotify_add_watch(m_inotifyFd, key.c_str(), kMask);
       if (wd < 0) {
         return;

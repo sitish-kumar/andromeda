@@ -126,8 +126,8 @@ WpaSupplicantService::WpaSupplicantService(SystemBus& bus) : m_bus(bus) {
   });
 
   try {
-    const auto ifaces =
-        m_wpa->getProperty("Interfaces").onInterface(kWpaInterface).get<std::vector<sdbus::ObjectPath>>();
+    const auto ifaces
+        = m_wpa->getProperty("Interfaces").onInterface(kWpaInterface).get<std::vector<sdbus::ObjectPath>>();
     for (const auto& p : ifaces) {
       subscribeInterface(std::string(p));
     }
@@ -177,8 +177,8 @@ void WpaSupplicantService::subscribeInterface(const std::string& ifacePath) {
 
     // Pre-populate BSS cache for already-visible BSSes.
     try {
-      const auto bssPaths =
-          proxy->getProperty("BSSs").onInterface(kWpaIfaceInterface).get<std::vector<sdbus::ObjectPath>>();
+      const auto bssPaths
+          = proxy->getProperty("BSSs").onInterface(kWpaIfaceInterface).get<std::vector<sdbus::ObjectPath>>();
       for (const auto& bssPath : bssPaths) {
         const std::string key{bssPath};
         if (!m_bssProxies.count(key)) {
@@ -215,14 +215,14 @@ void WpaSupplicantService::loadSavedNetworks(const std::string& /*ifacePath*/, s
     return;
   m_savedNetworks.clear();
   try {
-    const auto paths =
-        proxy.getProperty("Networks").onInterface(kWpaIfaceInterface).get<std::vector<sdbus::ObjectPath>>();
+    const auto paths
+        = proxy.getProperty("Networks").onInterface(kWpaIfaceInterface).get<std::vector<sdbus::ObjectPath>>();
     for (const auto& netPath : paths) {
       try {
         auto netProxy = sdbus::createProxy(m_bus.connection(), kWpaBusName, netPath);
         using VariantMap = std::map<std::string, sdbus::Variant>;
-        const auto props =
-            netProxy->getProperty("Properties").onInterface("fi.w1.wpa_supplicant1.Network").get<VariantMap>();
+        const auto props
+            = netProxy->getProperty("Properties").onInterface("fi.w1.wpa_supplicant1.Network").get<VariantMap>();
         if (const auto it = props.find("ssid"); it != props.end()) {
           std::string ssid = it->second.get<std::string>();
           if (ssid.size() >= 2 && ssid.front() == '"' && ssid.back() == '"') {
@@ -384,9 +384,11 @@ void WpaSupplicantService::rebuildState() {
     const std::string ifname = getPropertyOr<std::string>(*proxy, kWpaIfaceInterface, "Ifname", "");
     next.scanning = next.scanning || getPropertyOr(*proxy, kWpaIfaceInterface, "Scanning", false);
 
-    const bool connected =
-        (state == kStateCompleted || state == kStateAssociated || state == kStateGroupHandshake ||
-         state == k_state4wayHandshake);
+    const bool connected
+        = (state == kStateCompleted
+           || state == kStateAssociated
+           || state == kStateGroupHandshake
+           || state == k_state4wayHandshake);
     const bool associating = (state == kStateAssociating);
 
     if (connected || associating) {
@@ -395,20 +397,20 @@ void WpaSupplicantService::rebuildState() {
       next.interfaceName = ifname;
 
       try {
-        const auto currentBss =
-            proxy->getProperty("CurrentBSS").onInterface(kWpaIfaceInterface).get<sdbus::ObjectPath>();
+        const auto currentBss
+            = proxy->getProperty("CurrentBSS").onInterface(kWpaIfaceInterface).get<sdbus::ObjectPath>();
         activeBssPath = std::string(currentBss);
       } catch (const sdbus::Error&) {
       }
 
       try {
-        const auto currentNetwork =
-            proxy->getProperty("CurrentNetwork").onInterface(kWpaIfaceInterface).get<sdbus::ObjectPath>();
+        const auto currentNetwork
+            = proxy->getProperty("CurrentNetwork").onInterface(kWpaIfaceInterface).get<sdbus::ObjectPath>();
         if (std::string(currentNetwork) != "/") {
           auto netProxy = sdbus::createProxy(m_bus.connection(), kWpaBusName, currentNetwork);
           using VariantMap = std::map<std::string, sdbus::Variant>;
-          const auto props =
-              netProxy->getProperty("Properties").onInterface("fi.w1.wpa_supplicant1.Network").get<VariantMap>();
+          const auto props
+              = netProxy->getProperty("Properties").onInterface("fi.w1.wpa_supplicant1.Network").get<VariantMap>();
           if (const auto it = props.find("ssid"); it != props.end()) {
             try {
               next.ssid = it->second.get<std::string>();
@@ -425,8 +427,8 @@ void WpaSupplicantService::rebuildState() {
 
     // Enumerate BSSes using cached proxies — one GetAll per BSS, no createProxy.
     try {
-      const auto bssPaths =
-          proxy->getProperty("BSSs").onInterface(kWpaIfaceInterface).get<std::vector<sdbus::ObjectPath>>();
+      const auto bssPaths
+          = proxy->getProperty("BSSs").onInterface(kWpaIfaceInterface).get<std::vector<sdbus::ObjectPath>>();
       for (const auto& bssPath : bssPaths) {
         const std::string key{bssPath};
         auto cacheIt = m_bssProxies.find(key);
@@ -447,8 +449,8 @@ void WpaSupplicantService::rebuildState() {
         const bool active = (key == activeBssPath);
         const std::uint8_t pct = signalToPercent(info->signal);
 
-        auto existing =
-            std::find_if(aps.begin(), aps.end(), [&](const AccessPointInfo& a) { return a.ssid == info->ssid; });
+        auto existing
+            = std::find_if(aps.begin(), aps.end(), [&](const AccessPointInfo& a) { return a.ssid == info->ssid; });
         if (existing != aps.end()) {
           if (pct > existing->strength)
             existing->strength = pct;

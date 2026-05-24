@@ -161,8 +161,8 @@ void TimerManager::tick() {
     if (entry.callback) {
       const auto callbackStart = std::chrono::steady_clock::now();
       entry.callback();
-      const float callbackMs =
-          std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - callbackStart).count();
+      const float callbackMs
+          = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - callbackStart).count();
       if (callbackMs >= kSlowTimerCallbackWarnMs) {
         const auto callbackType = demangleTypeName(entry.callback.target_type().name());
         kLog.warn("timer callback {} id={} took {:.1f}ms", callbackType, entry.id, callbackMs);

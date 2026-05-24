@@ -146,8 +146,11 @@ namespace {
 } // namespace
 
 void SettingsWindow::openActionsMenu() {
-  if (m_wayland == nullptr || m_renderContext == nullptr || m_surface == nullptr || m_actionsMenuButton == nullptr ||
-      m_surface->xdgSurface() == nullptr) {
+  if (m_wayland == nullptr
+      || m_renderContext == nullptr
+      || m_surface == nullptr
+      || m_actionsMenuButton == nullptr
+      || m_surface->xdgSurface() == nullptr) {
     return;
   }
 
@@ -213,8 +216,11 @@ void SettingsWindow::openActionsMenu() {
 }
 
 void SettingsWindow::openConfigExportDialog() {
-  if (m_wayland == nullptr || m_renderContext == nullptr || m_surface == nullptr ||
-      m_surface->xdgSurface() == nullptr || m_config == nullptr) {
+  if (m_wayland == nullptr
+      || m_renderContext == nullptr
+      || m_surface == nullptr
+      || m_surface->xdgSurface() == nullptr
+      || m_config == nullptr) {
     return;
   }
 
@@ -235,8 +241,11 @@ void SettingsWindow::openConfigExportDialog() {
 }
 
 void SettingsWindow::openBarWidgetAddPopup(const std::vector<std::string>& lanePath) {
-  if (m_wayland == nullptr || m_renderContext == nullptr || m_surface == nullptr ||
-      m_surface->xdgSurface() == nullptr || m_config == nullptr) {
+  if (m_wayland == nullptr
+      || m_renderContext == nullptr
+      || m_surface == nullptr
+      || m_surface->xdgSurface() == nullptr
+      || m_config == nullptr) {
     return;
   }
 
@@ -300,8 +309,12 @@ void SettingsWindow::openSearchPickerPopup(
     const std::string& title, const std::vector<settings::SelectOption>& options, const std::string& selectedValue,
     const std::string& placeholder, const std::string& emptyText, const std::vector<std::string>& settingPath
 ) {
-  if (m_wayland == nullptr || m_renderContext == nullptr || m_surface == nullptr ||
-      m_surface->xdgSurface() == nullptr || m_config == nullptr || options.empty()) {
+  if (m_wayland == nullptr
+      || m_renderContext == nullptr
+      || m_surface == nullptr
+      || m_surface->xdgSurface() == nullptr
+      || m_config == nullptr
+      || options.empty()) {
     return;
   }
 
@@ -350,8 +363,11 @@ void SettingsWindow::openSearchPickerPopup(
 }
 
 void SettingsWindow::openSessionActionEntryEditor(std::size_t index) {
-  if (m_wayland == nullptr || m_renderContext == nullptr || m_surface == nullptr ||
-      m_surface->xdgSurface() == nullptr || m_config == nullptr) {
+  if (m_wayland == nullptr
+      || m_renderContext == nullptr
+      || m_surface == nullptr
+      || m_surface->xdgSurface() == nullptr
+      || m_config == nullptr) {
     return;
   }
 
@@ -437,8 +453,11 @@ void SettingsWindow::openSessionActionEntryEditor(std::size_t index) {
 }
 
 void SettingsWindow::openIdleBehaviorEntryEditor(std::size_t index) {
-  if (m_wayland == nullptr || m_renderContext == nullptr || m_surface == nullptr ||
-      m_surface->xdgSurface() == nullptr || m_config == nullptr) {
+  if (m_wayland == nullptr
+      || m_renderContext == nullptr
+      || m_surface == nullptr
+      || m_surface->xdgSurface() == nullptr
+      || m_config == nullptr) {
     return;
   }
 
@@ -543,8 +562,11 @@ void SettingsWindow::openIdleBehaviorEntryEditor(std::size_t index) {
 }
 
 void SettingsWindow::openIdleBehaviorCreateEditor() {
-  if (m_wayland == nullptr || m_renderContext == nullptr || m_surface == nullptr ||
-      m_surface->xdgSurface() == nullptr || m_config == nullptr) {
+  if (m_wayland == nullptr
+      || m_renderContext == nullptr
+      || m_surface == nullptr
+      || m_surface->xdgSurface() == nullptr
+      || m_config == nullptr) {
     return;
   }
 

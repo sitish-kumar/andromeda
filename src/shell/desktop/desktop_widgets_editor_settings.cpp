@@ -139,10 +139,11 @@ namespace {
       std::string_view labelText, const std::string& key, bool fallback, const Settings& s, DesktopWidgetsEditor* editor
   ) {
     return makeRow(
-        labelText, ui::toggle({
-                       .checked = getBool(s, key, fallback),
-                       .onChange = [editor, key](bool checked) { editor->applySettingChange(key, checked); },
-                   })
+        labelText,
+        ui::toggle({
+            .checked = getBool(s, key, fallback),
+            .onChange = [editor, key](bool checked) { editor->applySettingChange(key, checked); },
+        })
     );
   }
 
@@ -189,13 +190,14 @@ namespace {
       DesktopWidgetsEditor* editor
   ) {
     return makeRow(
-        labelText, ui::input({
-                       .value = value,
-                       .placeholder = placeholder,
-                       .controlHeight = Style::controlHeightSm,
-                       .flexGrow = 1.0f,
-                       .onChange = [editor, key](const std::string& val) { editor->applySettingChange(key, val); },
-                   })
+        labelText,
+        ui::input({
+            .value = value,
+            .placeholder = placeholder,
+            .controlHeight = Style::controlHeightSm,
+            .flexGrow = 1.0f,
+            .onChange = [editor, key](const std::string& val) { editor->applySettingChange(key, val); },
+        })
     );
   }
 
@@ -278,16 +280,17 @@ namespace {
       }
     }
     return makeRow(
-        labelText, ui::segmented({
-                       .options = std::move(segmentOptions),
-                       .selectedIndex = selectedIndex,
-                       .flexGrow = 1.0f,
-                       .onChange = [editor, key, values = std::move(values)](std::size_t index) {
-                         if (index < values.size()) {
-                           editor->applySettingChange(key, values[index]);
-                         }
-                       },
-                   })
+        labelText,
+        ui::segmented({
+            .options = std::move(segmentOptions),
+            .selectedIndex = selectedIndex,
+            .flexGrow = 1.0f,
+            .onChange = [editor, key, values = std::move(values)](std::size_t index) {
+              if (index < values.size()) {
+                editor->applySettingChange(key, values[index]);
+              }
+            },
+        })
     );
   }
 

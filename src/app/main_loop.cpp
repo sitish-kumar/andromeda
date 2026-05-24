@@ -83,8 +83,10 @@ namespace {
   bool idleProfileEnabled() {
     static const bool enabled = [] {
       const char* value = std::getenv("NOCTALIA_IDLE_PROFILE");
-      return value != nullptr && value[0] != '\0' && std::string_view(value) != "0" &&
-             std::string_view(value) != "false";
+      return value != nullptr
+          && value[0] != '\0'
+          && std::string_view(value) != "0"
+          && std::string_view(value) != "false";
     }();
     return enabled;
   }
@@ -226,8 +228,11 @@ namespace {
       if (printed >= 8) {
         break;
       }
-      if (surface.renders == 0 && surface.prepareCallbacks == 0 && requestTotal(surface) == 0 &&
-          surface.frameTicks == 0 && surface.updateCallbacks == 0) {
+      if (surface.renders == 0
+          && surface.prepareCallbacks == 0
+          && requestTotal(surface) == 0
+          && surface.frameTicks == 0
+          && surface.updateCallbacks == 0) {
         continue;
       }
       ++printed;
@@ -430,8 +435,8 @@ void MainLoop::run() {
         if (!s_zeroSince) {
           s_zeroSince = now;
         } else if (
-            now - *s_zeroSince > std::chrono::milliseconds(100) &&
-            (!s_lastWarn || now - *s_lastWarn > std::chrono::seconds(5))
+            now - *s_zeroSince > std::chrono::milliseconds(100)
+            && (!s_lastWarn || now - *s_lastWarn > std::chrono::seconds(5))
         ) {
           s_lastWarn = now;
           for (auto* src : sources) {
@@ -564,8 +569,8 @@ void MainLoop::run() {
       }
 
       auto* source = sources[i];
-      const std::vector<PollSource*> latestSources =
-          m_sourcesProvider ? m_sourcesProvider() : std::vector<PollSource*>{};
+      const std::vector<PollSource*> latestSources
+          = m_sourcesProvider ? m_sourcesProvider() : std::vector<PollSource*>{};
       if (std::find(latestSources.begin(), latestSources.end(), source) == latestSources.end()) {
         continue;
       }

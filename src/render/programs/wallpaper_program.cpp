@@ -381,8 +381,12 @@ void WallpaperProgram::initProgram(std::size_t index, const char* fragSource) {
   pd.maxBlockSizeLoc = glGetUniformLocation(id, "u_maxBlockSize");
   pd.cellSizeLoc = glGetUniformLocation(id, "u_cellSize");
 
-  if (pd.positionLoc < 0 || pd.surfaceSizeLoc < 0 || pd.quadSizeLoc < 0 || pd.transformLoc < 0 || pd.source1Loc < 0 ||
-      pd.progressLoc < 0) {
+  if (pd.positionLoc < 0
+      || pd.surfaceSizeLoc < 0
+      || pd.quadSizeLoc < 0
+      || pd.transformLoc < 0
+      || pd.source1Loc < 0
+      || pd.progressLoc < 0) {
     throw std::runtime_error("failed to query wallpaper shader locations");
   }
 }

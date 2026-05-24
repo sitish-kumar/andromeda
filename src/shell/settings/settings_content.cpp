@@ -907,8 +907,9 @@ namespace settings {
       });
       const auto commitTimeout = [&row, persist, timeoutPtr]() {
         const auto parsed = parseDoubleInput(timeoutPtr->value());
-        if (!parsed.has_value() || *parsed < 0.0 ||
-            *parsed > static_cast<double>(std::numeric_limits<std::int32_t>::max())) {
+        if (!parsed.has_value()
+            || *parsed < 0.0
+            || *parsed > static_cast<double>(std::numeric_limits<std::int32_t>::max())) {
           timeoutPtr->setInvalid(true);
           return;
         }
@@ -941,17 +942,17 @@ namespace settings {
               .paddingH = Style::spaceMd * scale,
               .radius = Style::scaledRadiusMd(scale),
               .flexGrow = 1.0f,
-              .onClick = [commitName, commitTimeout, applyHostedEditor = ctx.afterIdleBehaviorApply,
-                          closeHostedEditor]() {
-                commitName();
-                commitTimeout();
-                if (applyHostedEditor) {
-                  applyHostedEditor();
-                }
-                if (closeHostedEditor) {
-                  closeHostedEditor();
-                }
-              },
+              .onClick
+              = [commitName, commitTimeout, applyHostedEditor = ctx.afterIdleBehaviorApply, closeHostedEditor]() {
+                  commitName();
+                  commitTimeout();
+                  if (applyHostedEditor) {
+                    applyHostedEditor();
+                  }
+                  if (closeHostedEditor) {
+                    closeHostedEditor();
+                  }
+                },
           })
       );
       section.addChild(std::move(actions));
@@ -987,9 +988,8 @@ namespace settings {
     const Config& cfg = ctx.config;
     const float scale = ctx.scale;
 
-    const auto sectionLabel = [](std::string_view section) {
-      return i18n::tr("settings.navigation.sections." + std::string(section));
-    };
+    const auto sectionLabel
+        = [](std::string_view section) { return i18n::tr("settings.navigation.sections." + std::string(section)); };
 
     const auto groupLabel = [](std::string_view group) -> std::string {
       return i18n::tr("settings.navigation.groups." + std::string(group));
@@ -1052,24 +1052,24 @@ namespace settings {
       });
     };
 
-    const auto makeStatusBadge = [&](std::string_view label, const ColorSpec& fill, const ColorSpec& color,
-                                     bool matchResetHeight) {
-      return ui::row(
-          {.align = FlexAlign::Center,
-           .configure =
-               [scale, fill, matchResetHeight](Flex& flex) {
-                 if (matchResetHeight) {
-                   flex.setMinHeight(Style::controlHeightSm * scale);
-                   flex.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-                 } else {
-                   flex.setPadding(0.0f, Style::spaceXs * scale);
-                 }
-                 flex.setRadius(Style::scaledRadiusSm(scale));
-                 flex.setFill(fill);
-               }},
-          makeLabel(label, Style::fontSizeCaption * scale, color, FontWeight::Bold)
-      );
-    };
+    const auto makeStatusBadge
+        = [&](std::string_view label, const ColorSpec& fill, const ColorSpec& color, bool matchResetHeight) {
+            return ui::row(
+                {.align = FlexAlign::Center,
+                 .configure =
+                     [scale, fill, matchResetHeight](Flex& flex) {
+                       if (matchResetHeight) {
+                         flex.setMinHeight(Style::controlHeightSm * scale);
+                         flex.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
+                       } else {
+                         flex.setPadding(0.0f, Style::spaceXs * scale);
+                       }
+                       flex.setRadius(Style::scaledRadiusSm(scale));
+                       flex.setFill(fill);
+                     }},
+                makeLabel(label, Style::fontSizeCaption * scale, color, FontWeight::Bold)
+            );
+          };
 
     const auto makeOverrideBadge = [&]() {
       return makeStatusBadge(
@@ -1093,8 +1093,8 @@ namespace settings {
 
     const auto makeRow = [&](Flex& section, const SettingEntry& entry, std::unique_ptr<Node> control) {
       const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
-      const bool redundantGuiOverride =
-          ctx.configService != nullptr && ctx.configService->hasOverride(entry.path) && !overridden;
+      const bool redundantGuiOverride
+          = ctx.configService != nullptr && ctx.configService->hasOverride(entry.path) && !overridden;
       const bool monitorSetting = isMonitorOverrideSettingPath(entry.path);
       const bool monitorExplicit = monitorOverrideHasExplicitValue(cfg, entry.path) && !redundantGuiOverride;
       const bool monitorInherited = monitorSetting && !monitorExplicit;
@@ -1161,8 +1161,10 @@ namespace settings {
             .scale = scale,
             .onChange = [configService = ctx.configService, setOverride = ctx.setOverride,
                          clearOverride = ctx.clearOverride, path, clearWhenValue](bool value) {
-              if (clearWhenValue.has_value() && value == *clearWhenValue && configService != nullptr &&
-                  configService->hasOverride(path)) {
+              if (clearWhenValue.has_value()
+                  && value == *clearWhenValue
+                  && configService != nullptr
+                  && configService->hasOverride(path)) {
                 clearOverride(path);
                 return;
               }
@@ -1244,91 +1246,92 @@ namespace settings {
       });
     };
 
-    const auto makeSlider =
-        [&](float value, float minValue, float maxValue, float step, std::vector<std::string> path,
-            bool integerValue = false,
-            std::function<std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>(double)> linkedCommit =
-                {}) {
-          auto wrap = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * scale});
+    const auto makeSlider
+        = [&](float value, float minValue, float maxValue, float step, std::vector<std::string> path,
+              bool integerValue = false,
+              std::function<std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>(double)> linkedCommit
+              = {}) {
+            auto wrap = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * scale});
 
-          Input* valueInputPtr = nullptr;
-          auto valueInput = ui::input({
-              .out = &valueInputPtr,
-              .value = formatSliderValue(value, integerValue),
-              .fontSize = Style::fontSizeCaption * scale,
-              .controlHeight = Style::controlHeightSm * scale,
-              .horizontalPadding = Style::spaceXs * scale,
-              .width = 50.0f * scale,
-              .height = Style::controlHeightSm * scale,
-          });
+            Input* valueInputPtr = nullptr;
+            auto valueInput = ui::input({
+                .out = &valueInputPtr,
+                .value = formatSliderValue(value, integerValue),
+                .fontSize = Style::fontSizeCaption * scale,
+                .controlHeight = Style::controlHeightSm * scale,
+                .horizontalPadding = Style::spaceXs * scale,
+                .width = 50.0f * scale,
+                .height = Style::controlHeightSm * scale,
+            });
 
-          Slider* sliderPtr = nullptr;
-          auto slider = ui::slider({
-              .out = &sliderPtr,
-              .minValue = minValue,
-              .maxValue = maxValue,
-              .step = step,
-              .value = value,
-              .trackHeight = Style::sliderTrackHeight * scale,
-              .thumbSize = Style::sliderThumbSize * scale,
-              .controlHeight = Style::controlHeight * scale,
-              .width = Style::sliderDefaultWidth * scale,
-              .height = Style::controlHeight * scale,
-              .onValueChanged = [valueInputPtr, integerValue](float next) {
-                valueInputPtr->setInvalid(false);
-                valueInputPtr->setValue(formatSliderValue(next, integerValue));
-              },
-          });
+            Slider* sliderPtr = nullptr;
+            auto slider = ui::slider({
+                .out = &sliderPtr,
+                .minValue = minValue,
+                .maxValue = maxValue,
+                .step = step,
+                .value = value,
+                .trackHeight = Style::sliderTrackHeight * scale,
+                .thumbSize = Style::sliderThumbSize * scale,
+                .controlHeight = Style::controlHeight * scale,
+                .width = Style::sliderDefaultWidth * scale,
+                .height = Style::controlHeight * scale,
+                .onValueChanged = [valueInputPtr, integerValue](float next) {
+                  valueInputPtr->setInvalid(false);
+                  valueInputPtr->setValue(formatSliderValue(next, integerValue));
+                },
+            });
 
-          // Helper: commit either via single setOverride or as an atomic batch when linkedCommit
-          // returns extra overrides (cross-field constraints).
-          const auto commit = [setOverride = ctx.setOverride, setOverrides = ctx.setOverrides, path, integerValue,
-                               linkedCommit](double v) {
-            ConfigOverrideValue primary =
-                integerValue ? ConfigOverrideValue{static_cast<std::int64_t>(std::lround(v))} : ConfigOverrideValue{v};
-            if (linkedCommit) {
-              auto extras = linkedCommit(v);
-              if (!extras.empty()) {
-                std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>> all;
-                all.reserve(extras.size() + 1);
-                all.emplace_back(path, std::move(primary));
-                for (auto& e : extras) {
-                  all.push_back(std::move(e));
+            // Helper: commit either via single setOverride or as an atomic batch when linkedCommit
+            // returns extra overrides (cross-field constraints).
+            const auto commit = [setOverride = ctx.setOverride, setOverrides = ctx.setOverrides, path, integerValue,
+                                 linkedCommit](double v) {
+              ConfigOverrideValue primary = integerValue
+                  ? ConfigOverrideValue{static_cast<std::int64_t>(std::lround(v))}
+                  : ConfigOverrideValue{v};
+              if (linkedCommit) {
+                auto extras = linkedCommit(v);
+                if (!extras.empty()) {
+                  std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>> all;
+                  all.reserve(extras.size() + 1);
+                  all.emplace_back(path, std::move(primary));
+                  for (auto& e : extras) {
+                    all.push_back(std::move(e));
+                  }
+                  setOverrides(std::move(all));
+                  return;
                 }
-                setOverrides(std::move(all));
-                return;
               }
-            }
-            setOverride(path, std::move(primary));
+              setOverride(path, std::move(primary));
+            };
+
+            slider->setOnDragEnd([commit, sliderPtr]() { commit(static_cast<double>(sliderPtr->value())); });
+
+            const auto commitInputText
+                = [commit, sliderPtr, valueInputPtr, minValue, maxValue, integerValue](const std::string& text) {
+                    const auto parsed = parseFloatInput(text);
+                    if (!parsed.has_value() || *parsed < minValue || *parsed > maxValue) {
+                      valueInputPtr->setInvalid(true);
+                      return;
+                    }
+                    const float v = *parsed;
+                    valueInputPtr->setInvalid(false);
+                    sliderPtr->setValue(v);
+                    if (!integerValue) {
+                      valueInputPtr->setValue(formatSliderValue(sliderPtr->value(), false));
+                    }
+                    commit(static_cast<double>(v));
+                  };
+
+            valueInput->setOnChange([valueInputPtr](const std::string& /*text*/) { valueInputPtr->setInvalid(false); });
+            valueInput->setOnSubmit([commitInputText](const std::string& text) { commitInputText(text); });
+            valueInput->setOnFocusLoss([commitInputText, valueInputPtr]() { commitInputText(valueInputPtr->value()); });
+
+            // Slider first, numeric value field on the right (reset from makeRow stays left of this cluster).
+            wrap->addChild(std::move(slider));
+            wrap->addChild(std::move(valueInput));
+            return wrap;
           };
-
-          slider->setOnDragEnd([commit, sliderPtr]() { commit(static_cast<double>(sliderPtr->value())); });
-
-          const auto commitInputText = [commit, sliderPtr, valueInputPtr, minValue, maxValue,
-                                        integerValue](const std::string& text) {
-            const auto parsed = parseFloatInput(text);
-            if (!parsed.has_value() || *parsed < minValue || *parsed > maxValue) {
-              valueInputPtr->setInvalid(true);
-              return;
-            }
-            const float v = *parsed;
-            valueInputPtr->setInvalid(false);
-            sliderPtr->setValue(v);
-            if (!integerValue) {
-              valueInputPtr->setValue(formatSliderValue(sliderPtr->value(), false));
-            }
-            commit(static_cast<double>(v));
-          };
-
-          valueInput->setOnChange([valueInputPtr](const std::string& /*text*/) { valueInputPtr->setInvalid(false); });
-          valueInput->setOnSubmit([commitInputText](const std::string& text) { commitInputText(text); });
-          valueInput->setOnFocusLoss([commitInputText, valueInputPtr]() { commitInputText(valueInputPtr->value()); });
-
-          // Slider first, numeric value field on the right (reset from makeRow stays left of this cluster).
-          wrap->addChild(std::move(slider));
-          wrap->addChild(std::move(valueInput));
-          return wrap;
-        };
 
     const auto makeText = [&](const std::string& value, const std::string& placeholder, std::vector<std::string> path,
                               float width = 0.0f) {
@@ -1374,49 +1377,49 @@ namespace settings {
           .paddingV = Style::spaceXs * scale,
           .paddingH = Style::spaceSm * scale,
           .radius = Style::scaledRadiusMd(scale),
-          .onClick = [setOverride = ctx.setOverride, path, inputPtr, selectFolder,
-                      exts = setting.browseFileExtensions]() {
-            FileDialogOptions options;
-            options.mode = selectFolder ? FileDialogMode::SelectFolder : FileDialogMode::Open;
-            options.defaultViewMode = FileDialogViewMode::List;
-            options.title = selectFolder ? i18n::tr("settings.controls.path-browse.folder-title")
-                                         : i18n::tr("settings.controls.path-browse.file-title");
-            if (!selectFolder) {
-              options.extensions = exts;
-            }
-            const std::string cur = inputPtr->value();
-            if (!cur.empty()) {
-              std::filesystem::path p(cur);
-              std::error_code ec;
-              if (selectFolder) {
-                if (std::filesystem::exists(p, ec) && std::filesystem::is_directory(p, ec)) {
-                  options.startDirectory = p;
-                } else if (p.has_parent_path()) {
-                  const auto parent = p.parent_path();
-                  if (std::filesystem::exists(parent, ec)) {
-                    options.startDirectory = parent;
+          .onClick
+          = [setOverride = ctx.setOverride, path, inputPtr, selectFolder, exts = setting.browseFileExtensions]() {
+              FileDialogOptions options;
+              options.mode = selectFolder ? FileDialogMode::SelectFolder : FileDialogMode::Open;
+              options.defaultViewMode = FileDialogViewMode::List;
+              options.title = selectFolder ? i18n::tr("settings.controls.path-browse.folder-title")
+                                           : i18n::tr("settings.controls.path-browse.file-title");
+              if (!selectFolder) {
+                options.extensions = exts;
+              }
+              const std::string cur = inputPtr->value();
+              if (!cur.empty()) {
+                std::filesystem::path p(cur);
+                std::error_code ec;
+                if (selectFolder) {
+                  if (std::filesystem::exists(p, ec) && std::filesystem::is_directory(p, ec)) {
+                    options.startDirectory = p;
+                  } else if (p.has_parent_path()) {
+                    const auto parent = p.parent_path();
+                    if (std::filesystem::exists(parent, ec)) {
+                      options.startDirectory = parent;
+                    }
                   }
-                }
-              } else {
-                if (std::filesystem::exists(p, ec) && std::filesystem::is_regular_file(p, ec)) {
-                  options.startDirectory = p.parent_path();
-                  options.defaultFilename = p.filename().string();
-                } else if (p.has_parent_path() && std::filesystem::exists(p.parent_path(), ec)) {
-                  options.startDirectory = p.parent_path();
+                } else {
+                  if (std::filesystem::exists(p, ec) && std::filesystem::is_regular_file(p, ec)) {
+                    options.startDirectory = p.parent_path();
+                    options.defaultFilename = p.filename().string();
+                  } else if (p.has_parent_path() && std::filesystem::exists(p.parent_path(), ec)) {
+                    options.startDirectory = p.parent_path();
+                  }
                 }
               }
-            }
-            (void)FileDialog::open(
-                std::move(options), [setOverride, path, inputPtr](std::optional<std::filesystem::path> picked) {
-                  if (!picked.has_value()) {
-                    return;
+              (void)FileDialog::open(
+                  std::move(options), [setOverride, path, inputPtr](std::optional<std::filesystem::path> picked) {
+                    if (!picked.has_value()) {
+                      return;
+                    }
+                    const std::string s = picked->string();
+                    inputPtr->setValue(s);
+                    setOverride(path, s);
                   }
-                  const std::string s = picked->string();
-                  inputPtr->setValue(s);
-                  setOverride(path, s);
-                }
-            );
-          },
+              );
+            },
       });
       wrap->addChild(std::move(browse));
       return wrap;
@@ -1502,9 +1505,8 @@ namespace settings {
           .value = currentValue,
           .scale = scale,
           .valueSuffix = setting.valueSuffix.empty() ? std::nullopt : std::optional<std::string>{setting.valueSuffix},
-          .onValueCommitted = [setOverride = ctx.setOverride, path](int value) {
-            setOverride(path, static_cast<double>(value));
-          },
+          .onValueCommitted
+          = [setOverride = ctx.setOverride, path](int value) { setOverride(path, static_cast<double>(value)); },
       });
     };
 
@@ -1545,9 +1547,8 @@ namespace settings {
           .value = currentValue,
           .enabled = setting.value.has_value(),
           .scale = scale,
-          .onValueCommitted = [setOverride = ctx.setOverride, path](int value) {
-            setOverride(path, static_cast<double>(value));
-          },
+          .onValueCommitted
+          = [setOverride = ctx.setOverride, path](int value) { setOverride(path, static_cast<double>(value)); },
       });
 
       wrap->addChild(std::move(segmented));
@@ -1555,8 +1556,8 @@ namespace settings {
       return wrap;
     };
 
-    const auto makeColorSpecPicker = [&](const ColorSpecPickerSetting& setting,
-                                         std::vector<std::string> path) -> std::unique_ptr<Node> {
+    const auto makeColorSpecPicker
+        = [&](const ColorSpecPickerSetting& setting, std::vector<std::string> path) -> std::unique_ptr<Node> {
       ColorSpecSelectOptions options{
           .roles = setting.roles,
           .selectedValue = setting.selectedValue,
@@ -1581,8 +1582,8 @@ namespace settings {
       );
     };
 
-    const auto makeSearchPickerButton = [&](const SettingEntry& entry,
-                                            const SearchPickerSetting& setting) -> std::unique_ptr<Node> {
+    const auto makeSearchPickerButton
+        = [&](const SettingEntry& entry, const SearchPickerSetting& setting) -> std::unique_ptr<Node> {
       return ui::button({
           .text = optionLabel(setting.options, setting.selectedValue),
           .glyph = "search",
@@ -1656,10 +1657,10 @@ namespace settings {
 
       auto block = makeCollectionBlock(entry, overridden);
 
-      auto checkRow =
-          ui::row({.align = FlexAlign::Center, .gap = Style::spaceMd * scale, .configure = [scale](Flex& flex) {
-                     flex.setPadding(Style::spaceXs * scale, 0.0f);
-                   }});
+      auto checkRow
+          = ui::row({.align = FlexAlign::Center, .gap = Style::spaceMd * scale, .configure = [scale](Flex& flex) {
+                       flex.setPadding(Style::spaceXs * scale, 0.0f);
+                     }});
 
       auto options = setting.options;
       auto selected = setting.selectedValues;
@@ -1774,21 +1775,21 @@ namespace settings {
 
       // An empty list clears the override so defaults take effect again; never persist as "disabled".
       // If no GUI override exists, request a rebuild so the UI snaps back to the underlying default.
-      const auto commitItems = [configService = ctx.configService, setOverride = ctx.setOverride,
-                                clearOverride = ctx.clearOverride, requestRebuild = ctx.requestRebuild,
-                                path = entry.path](std::vector<KeyChord> items) {
-        if (items.empty()) {
-          if (configService != nullptr && configService->hasOverride(path)) {
-            if (clearOverride) {
-              clearOverride(path);
-            }
-          } else if (requestRebuild) {
-            requestRebuild();
-          }
-          return;
-        }
-        setOverride(path, items);
-      };
+      const auto commitItems
+          = [configService = ctx.configService, setOverride = ctx.setOverride, clearOverride = ctx.clearOverride,
+             requestRebuild = ctx.requestRebuild, path = entry.path](std::vector<KeyChord> items) {
+              if (items.empty()) {
+                if (configService != nullptr && configService->hasOverride(path)) {
+                  if (clearOverride) {
+                    clearOverride(path);
+                  }
+                } else if (requestRebuild) {
+                  requestRebuild();
+                }
+                return;
+              }
+              setOverride(path, items);
+            };
 
       for (std::size_t i = 0; i < keybinds.items.size(); ++i) {
         auto row = ui::row({.align = FlexAlign::Center, .gap = Style::spaceXs * scale});
@@ -2278,16 +2279,22 @@ namespace settings {
                           bool integerValue) -> std::unique_ptr<Node> {
           return makeSlider(value, minValue, maxValue, step, std::move(path), integerValue);
         },
-        .makeOptionalNumber = [&](const OptionalNumberSetting& setting, std::vector<std::string> path)
-            -> std::unique_ptr<Node> { return makeOptionalNumber(setting, std::move(path)); },
-        .makeOptionalStepper = [&](const OptionalStepperSetting& setting, std::vector<std::string> path)
-            -> std::unique_ptr<Node> { return makeOptionalStepper(setting, std::move(path)); },
+        .makeOptionalNumber
+        = [&](const OptionalNumberSetting& setting, std::vector<std::string> path) -> std::unique_ptr<Node> {
+          return makeOptionalNumber(setting, std::move(path));
+        },
+        .makeOptionalStepper
+        = [&](const OptionalStepperSetting& setting, std::vector<std::string> path) -> std::unique_ptr<Node> {
+          return makeOptionalStepper(setting, std::move(path));
+        },
         .makeText = [&](const std::string& value, const std::string& placeholder,
                         std::vector<std::string> path) -> std::unique_ptr<Node> {
           return makeText(value, placeholder, std::move(path));
         }, // width not used in search
-        .makeColorSpecPicker = [&](const ColorSpecPickerSetting& setting, std::vector<std::string> path)
-            -> std::unique_ptr<Node> { return makeColorSpecPicker(setting, std::move(path)); },
+        .makeColorSpecPicker
+        = [&](const ColorSpecPickerSetting& setting, std::vector<std::string> path) -> std::unique_ptr<Node> {
+          return makeColorSpecPicker(setting, std::move(path));
+        },
         .makeListBlock = [&](Flex& section, const SettingEntry& entry,
                              const ListSetting& list) { makeListBlock(section, entry, list); },
     };
@@ -2324,18 +2331,19 @@ namespace settings {
       return true;
     };
 
-    const std::string_view selectedBarName =
-        ctx.selectedBar != nullptr ? std::string_view{ctx.selectedBar->name} : std::string_view{};
+    const std::string_view selectedBarName
+        = ctx.selectedBar != nullptr ? std::string_view{ctx.selectedBar->name} : std::string_view{};
     const std::string_view selectedMonitorMatch = ctx.selectedMonitorOverride != nullptr
-                                                      ? std::string_view{ctx.selectedMonitorOverride->match}
-                                                      : std::string_view{};
+        ? std::string_view{ctx.selectedMonitorOverride->match}
+        : std::string_view{};
 
     for (const auto& entry : registry) {
       if (ctx.searchQuery.empty() && !ctx.selectedSection.empty() && entry.section != ctx.selectedSection) {
         continue;
       }
-      if (ctx.searchQuery.empty() && ctx.selectedSection == "bar" &&
-          !settingEntryMatchesBarNavigation(entry, selectedBarName, selectedMonitorMatch)) {
+      if (ctx.searchQuery.empty()
+          && ctx.selectedSection == "bar"
+          && !settingEntryMatchesBarNavigation(entry, selectedBarName, selectedMonitorMatch)) {
         continue;
       }
       if (!ctx.showAdvanced && entry.advanced) {
@@ -2344,8 +2352,9 @@ namespace settings {
       if (!isEntryVisible(entry)) {
         continue;
       }
-      if (ctx.showOverriddenOnly && ctx.configService != nullptr &&
-          !ctx.configService->hasEffectiveOverride(entry.path)) {
+      if (ctx.showOverriddenOnly
+          && ctx.configService != nullptr
+          && !ctx.configService->hasEffectiveOverride(entry.path)) {
         continue;
       }
       if (!matchesNormalizedSettingQuery(entry, normalizedSearchQuery)) {
