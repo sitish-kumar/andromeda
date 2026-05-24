@@ -531,7 +531,7 @@ namespace {
   };
 
   std::int32_t horizontalLayerMarginFromScreenMargin(int offsetX, float scale) {
-    return static_cast<std::int32_t>(offsetX) - horizontalRevealPadding(scale);
+    return std::max(std::int32_t{0}, static_cast<std::int32_t>(offsetX) - horizontalRevealPadding(scale));
   }
 
   ToastSurfaceMargins toastSurfaceMargins(std::string_view position, int offsetX, int offsetY, float scale) {

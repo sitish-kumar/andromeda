@@ -68,7 +68,10 @@ namespace {
   }
 
   [[nodiscard]] std::int32_t horizontalLayerMarginFromScreenMargin(int offsetX, float scale) {
-    return static_cast<std::int32_t>(offsetX) - static_cast<std::int32_t>(std::lround(Style::spaceMd * scale));
+    return std::max(
+        std::int32_t{0},
+        static_cast<std::int32_t>(offsetX) - static_cast<std::int32_t>(std::lround(Style::spaceMd * scale))
+    );
   }
 
   [[nodiscard]] std::uint32_t osdSurfaceHeight(float s, const std::string& orientation, bool showProgress) {
