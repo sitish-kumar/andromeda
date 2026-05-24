@@ -16,12 +16,8 @@
 #include "shell/tooltip/tooltip_manager.h"
 #include "system/app_identity.h"
 #include "system/desktop_entry.h"
-#include "ui/controls/box.h"
+#include "ui/builders.h"
 #include "ui/controls/context_menu.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/image.h"
-#include "ui/controls/label.h"
 #include "ui/palette.h"
 #include "ui/popup_chrome.h"
 #include "ui/style.h"
@@ -165,6 +161,15 @@ namespace {
         static_cast<float>(cfg.radiusBottomRight),
         static_cast<float>(cfg.radiusBottomLeft),
     };
+  }
+
+  std::unique_ptr<Flex> makeDockItemRow(const DockConfig& cfg, bool vertical) {
+    return ui::makeFlex(vertical ? FlexDirection::Vertical : FlexDirection::Horizontal,
+                        {
+                            .align = FlexAlign::Center,
+                            .gap = static_cast<float>(cfg.itemSpacing),
+                            .padding = static_cast<float>(cfg.padding),
+                        });
   }
 
 } // namespace
@@ -859,22 +864,16 @@ void Dock::buildScene(DockInstance& instance) {
 
     // Shadow
     if (shell::surface_shadow::enabled(cfg.shadow, shadowConfig)) {
-      auto shadow = std::make_unique<Box>();
-      instance.shadow = static_cast<Box*>(instance.slideRoot->addChild(std::move(shadow)));
+      instance.shadow = static_cast<Box*>(instance.slideRoot->addChild(ui::box()));
     }
 
     // Panel background
-    auto panel = std::make_unique<Box>();
-    panel->setRadii(radii);
-    instance.panel = static_cast<Box*>(instance.slideRoot->addChild(std::move(panel)));
+    instance.panel = static_cast<Box*>(instance.slideRoot->addChild(ui::box({
+        .configure = [radii](Box& box) { box.setRadii(radii); },
+    })));
 
     // Item row
-    auto row = std::make_unique<Flex>();
-    row->setDirection(vert ? FlexDirection::Vertical : FlexDirection::Horizontal);
-    row->setGap(static_cast<float>(cfg.itemSpacing));
-    row->setAlign(FlexAlign::Center);
-    row->setPadding(static_cast<float>(cfg.padding));
-    instance.row = static_cast<Flex*>(instance.panel->addChild(std::move(row)));
+    instance.row = static_cast<Flex*>(instance.panel->addChild(makeDockItemRow(cfg, vert)));
 
     // Wire up InputDispatcher.
     instance.inputDispatcher.setSceneRoot(instance.sceneRoot.get());
@@ -1027,11 +1026,7 @@ void Dock::rebuildItems(DockInstance& instance) {
   instance.items.clear();
 
   // Create a fresh row.
-  auto freshRow = std::make_unique<Flex>();
-  freshRow->setDirection(vert ? FlexDirection::Vertical : FlexDirection::Horizontal);
-  freshRow->setGap(static_cast<float>(cfg.itemSpacing));
-  freshRow->setAlign(FlexAlign::Center);
-  freshRow->setPadding(static_cast<float>(cfg.padding));
+  auto freshRow = makeDockItemRow(cfg, vert);
   instance.row = static_cast<Flex*>(instance.panel != nullptr ? instance.panel->addChild(std::move(freshRow))
                                                               : instance.sceneRoot->addChild(std::move(freshRow)));
 
@@ -1097,12 +1092,14 @@ void Dock::rebuildItems(DockInstance& instance) {
     }
 
     // Hover background — fills cell, radius matches dock panel.
-    auto bg = std::make_unique<Box>();
-    bg->setSize(cellMain, cellMain); // square — excludes indicator strip
-    bg->setPosition(0.0f, 0.0f);
-    bg->setRadius(static_cast<float>(cfg.radius));
-    bg->setFill(clearColorSpec());
-    item.background = static_cast<Box*>(areaNode->addChild(std::move(bg)));
+    areaNode->addChild(ui::box({
+        .out = &item.background,
+        .fill = clearColorSpec(),
+        .radius = static_cast<float>(cfg.radius),
+        .width = cellMain,
+        .height = cellMain, // square — excludes indicator strip
+        .configure = [](Box& box) { box.setPosition(0.0f, 0.0f); },
+    }));
 
     // Icon centred inside the padded cell.
     const std::string& iconPath = [&]() -> const std::string& {
@@ -1114,24 +1111,30 @@ void Dock::rebuildItems(DockInstance& instance) {
       }
       return m_iconResolver.resolve("application-x-executable", cfg.iconSize);
     }();
-    auto iconImg = std::make_unique<Image>();
-    if (!iconPath.empty() && m_renderContext != nullptr) {
-      iconImg->setSourceFile(*m_renderContext, iconPath, cfg.iconSize, true);
-    }
-    iconImg->setSize(iSize, iSize);
-    iconImg->setPosition(kCellPad, kCellPad);
+    auto iconImg = ui::image({
+        .width = iSize,
+        .height = iSize,
+        .configure =
+            [this, &iconPath, &cfg, kCellPad](Image& image) {
+              if (!iconPath.empty() && m_renderContext != nullptr) {
+                image.setSourceFile(*m_renderContext, iconPath, cfg.iconSize, true);
+              }
+              image.setPosition(kCellPad, kCellPad);
+            },
+    });
 
     if (iconImg->hasImage()) {
       item.iconImage = static_cast<Image*>(areaNode->addChild(std::move(iconImg)));
     } else {
       // Fallback: Tabler app-window glyph (matches launcher when theme icons are unavailable).
-      auto glyph = std::make_unique<Glyph>();
-      glyph->setGlyph("app-window");
-      glyph->setGlyphSize(iSize);
-      glyph->setColor(colorSpecFromRole(ColorRole::OnSurface));
-      glyph->setSize(iSize, iSize);
-      glyph->setPosition(kCellPad, kCellPad);
-      item.iconGlyph = static_cast<Glyph*>(areaNode->addChild(std::move(glyph)));
+      item.iconGlyph = static_cast<Glyph*>(areaNode->addChild(ui::glyph({
+          .glyph = "app-window",
+          .glyphSize = iSize,
+          .color = colorSpecFromRole(ColorRole::OnSurface),
+          .width = iSize,
+          .height = iSize,
+          .configure = [kCellPad](Glyph& glyph) { glyph.setPosition(kCellPad, kCellPad); },
+      })));
     }
 
     if (cfg.showDots) {
@@ -1139,21 +1142,23 @@ void Dock::rebuildItems(DockInstance& instance) {
       const bool verticalDots = cfg.position == "left" || cfg.position == "right";
 
       for (std::size_t dotIndex = 0; dotIndex < item.dotIndicators.size(); ++dotIndex) {
-        auto dotNode = std::make_unique<Box>();
-        dotNode->setRadius(dot * 0.5f);
-        dotNode->setSize(dot, dot);
-        dotNode->setFill(colorSpecFromRole(ColorRole::Secondary));
-        dotNode->setVisible(false);
-
-        if (verticalDots) {
-          const float x = cfg.position == "left" ? std::round(cellMain - dot - 1.0f) : 1.0f;
-          dotNode->setPosition(x, std::round((cellMain - dot) * 0.5f));
-        } else {
-          const float y = cfg.position == "bottom" ? 1.0f : std::round(cellMain - dot - 1.0f);
-          dotNode->setPosition(std::round((cellMain - dot) * 0.5f), y);
-        }
-
-        item.dotIndicators[dotIndex] = static_cast<Box*>(areaNode->addChild(std::move(dotNode)));
+        item.dotIndicators[dotIndex] = static_cast<Box*>(areaNode->addChild(ui::box({
+            .fill = colorSpecFromRole(ColorRole::Secondary),
+            .radius = dot * 0.5f,
+            .width = dot,
+            .height = dot,
+            .visible = false,
+            .configure =
+                [verticalDots, position = cfg.position, cellMain, dot](Box& box) {
+                  if (verticalDots) {
+                    const float x = position == "left" ? std::round(cellMain - dot - 1.0f) : 1.0f;
+                    box.setPosition(x, std::round((cellMain - dot) * 0.5f));
+                  } else {
+                    const float y = position == "bottom" ? 1.0f : std::round(cellMain - dot - 1.0f);
+                    box.setPosition(std::round((cellMain - dot) * 0.5f), y);
+                  }
+                },
+        })));
       }
     }
 
@@ -1163,19 +1168,22 @@ void Dock::rebuildItems(DockInstance& instance) {
       const float badgeX = kCellPad + iSize - bd * 0.55f;
       const float badgeY = kCellPad - bd * 0.45f;
 
-      auto badgeBox = std::make_unique<Box>();
-      badgeBox->setRadius(bd * 0.5f);
-      badgeBox->setSize(bd, bd);
-      badgeBox->setPosition(badgeX, badgeY);
-      badgeBox->setVisible(false);
-      item.badge = static_cast<Box*>(areaNode->addChild(std::move(badgeBox)));
+      areaNode->addChild(ui::box({
+          .out = &item.badge,
+          .radius = bd * 0.5f,
+          .width = bd,
+          .height = bd,
+          .visible = false,
+          .configure = [badgeX, badgeY](Box& box) { box.setPosition(badgeX, badgeY); },
+      }));
 
-      auto labelNode = std::make_unique<Label>();
-      labelNode->setFontSize(bd * kBadgeFontRatio);
-      labelNode->setFontWeight(FontWeight::Bold);
-      labelNode->setMaxLines(1);
-      labelNode->setVisible(false);
-      item.badgeLabel = static_cast<Label*>(item.badge->addChild(std::move(labelNode)));
+      item.badge->addChild(ui::label({
+          .out = &item.badgeLabel,
+          .fontSize = bd * kBadgeFontRatio,
+          .maxLines = 1,
+          .fontWeight = FontWeight::Bold,
+          .visible = false,
+      }));
     }
 
     // Pointer callbacks.
@@ -1392,23 +1400,29 @@ std::unique_ptr<InputArea> Dock::createLauncherButton(DockInstance& instance) {
     areaNode->setSize(cellCross, cellMain);
   }
 
-  auto bg = std::make_unique<Box>();
-  bg->setSize(cellMain, cellMain);
-  bg->setPosition(0.0f, 0.0f);
-  bg->setRadius(static_cast<float>(cfg.radius));
-  bg->setFill(clearColorSpec());
-  auto* bgPtr = bg.get();
-  areaNode->addChild(std::move(bg));
+  Box* bgPtr = nullptr;
+  areaNode->addChild(ui::box({
+      .out = &bgPtr,
+      .fill = clearColorSpec(),
+      .radius = static_cast<float>(cfg.radius),
+      .width = cellMain,
+      .height = cellMain,
+      .configure = [](Box& box) { box.setPosition(0.0f, 0.0f); },
+  }));
 
-  auto glyph = std::make_unique<Glyph>();
-  if (!glyph->setGlyph(dockLauncherIconGlyph(cfg))) {
-    glyph->setGlyph("grid-dots");
-  }
-  glyph->setGlyphSize(glyphSize);
-  glyph->setColor(colorSpecFromRole(ColorRole::OnSurface));
-  glyph->setSize(iSize, iSize);
-  glyph->setPosition(kCellPad, glyphOffsetY);
-  areaNode->addChild(std::move(glyph));
+  areaNode->addChild(ui::glyph({
+      .glyphSize = glyphSize,
+      .color = colorSpecFromRole(ColorRole::OnSurface),
+      .width = iSize,
+      .height = iSize,
+      .configure =
+          [&cfg, kCellPad, glyphOffsetY](Glyph& glyph) {
+            if (!glyph.setGlyph(dockLauncherIconGlyph(cfg))) {
+              glyph.setGlyph("grid-dots");
+            }
+            glyph.setPosition(kCellPad, glyphOffsetY);
+          },
+  }));
 
   auto* instPtr = &instance;
   areaNode->setOnEnter([bgPtr, instPtr](const InputArea::PointerData&) {
