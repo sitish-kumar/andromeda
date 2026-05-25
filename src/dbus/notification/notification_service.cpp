@@ -286,7 +286,9 @@ uint32_t NotificationService::onNotify(
   );
 }
 
-std::vector<std::string> NotificationService::onGetCapabilities() { return {"body", "actions", "inline-reply"}; }
+std::vector<std::string> NotificationService::onGetCapabilities() {
+  return {"body", "actions", "inline-reply", "persistence"};
+}
 
 std::vector<std::map<std::string, sdbus::Variant>> NotificationService::onGetNotifications() {
   std::vector<std::map<std::string, sdbus::Variant>> result;
