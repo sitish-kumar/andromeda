@@ -1763,7 +1763,8 @@ bool TaskbarWidget::modelsEqual(
         || tasks[i].firstHandle != m_tasks[i].firstHandle
         || tasks[i].workspaceKey != m_tasks[i].workspaceKey
         || tasks[i].order != m_tasks[i].order
-        || tasks[i].workspaceOrder != m_tasks[i].workspaceOrder) {
+        || tasks[i].workspaceOrder != m_tasks[i].workspaceOrder
+        || (m_showWindowTitle && tasks[i].title != m_tasks[i].title)) {
       return false;
     }
   }
