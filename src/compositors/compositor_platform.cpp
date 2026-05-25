@@ -967,7 +967,7 @@ bool CompositorPlatform::requestSessionExit() const {
   case compositors::CompositorKind::Triad:
     return m_runtimeRegistry->triad().requestAction("exit-session");
   case compositors::CompositorKind::Mango:
-    return process::launchFirstAvailable({{"mmsg", "-q"}});
+    return process::launchFirstAvailable({{"mmsg", "dispatch", "quit"}});
   case compositors::CompositorKind::Dwl:
     break;
   case compositors::CompositorKind::Labwc:
