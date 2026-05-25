@@ -84,6 +84,7 @@ public:
       std::function<void(ext_workspace_manager_v1*)> extWorkspace, std::function<void(zdwl_ipc_manager_v2*)> dwlIpc
   );
   void setToplevelChangeCallback(ChangeCallback callback);
+  void setToplevelClosedCallback(WaylandToplevels::ClosedCallback callback);
   void setHyprlandToplevelMappingManagerCallback(
       std::function<void(hyprland_toplevel_mapping_manager_v1* manager)> callback
   );

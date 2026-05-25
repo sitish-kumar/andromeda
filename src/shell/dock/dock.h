@@ -49,6 +49,7 @@ public:
   void requestLayout();
   void requestRedraw();
   bool onPointerEvent(const PointerEvent& event);
+  void onToplevelClosed(zwlr_foreign_toplevel_handle_v1* handle);
 
   void registerIpc(IpcService& ipc);
 

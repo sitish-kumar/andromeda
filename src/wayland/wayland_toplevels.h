@@ -33,9 +33,11 @@ struct ToplevelInfo {
 class WaylandToplevels {
 public:
   using ChangeCallback = std::function<void()>;
+  using ClosedCallback = std::function<void(zwlr_foreign_toplevel_handle_v1*)>;
 
   void bind(zwlr_foreign_toplevel_manager_v1* manager);
   void setChangeCallback(ChangeCallback callback);
+  void setClosedCallback(ClosedCallback callback);
   void cleanup();
 
   [[nodiscard]] std::optional<ActiveToplevel> current() const;
@@ -87,4 +89,5 @@ private:
   std::uint64_t m_generation = 0;
   std::uint64_t m_nextOrder = 0;
   ChangeCallback m_changeCallback;
+  ClosedCallback m_closedCallback;
 };

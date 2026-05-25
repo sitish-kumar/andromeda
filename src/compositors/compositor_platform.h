@@ -48,6 +48,7 @@ struct WorkspaceWindowAssignment {
 class CompositorPlatform {
 public:
   using ChangeCallback = std::function<void()>;
+  using ToplevelClosedCallback = std::function<void(zwlr_foreign_toplevel_handle_v1*)>;
 
   explicit CompositorPlatform(WaylandConnection& wayland);
   ~CompositorPlatform();
@@ -89,6 +90,7 @@ public:
   void focusCompositorWindow(const std::string& windowId) const;
 
   void setToplevelChangeCallback(ChangeCallback callback);
+  void setToplevelClosedCallback(ToplevelClosedCallback callback);
   void bindHyprlandToplevelMappingManager(hyprland_toplevel_mapping_manager_v1* manager);
   void syncHyprlandToplevelMappings();
   [[nodiscard]] std::optional<std::string> compositorWindowIdForToplevel(zwlr_foreign_toplevel_handle_v1* handle) const;
@@ -169,6 +171,7 @@ private:
   ChangeCallback m_overviewChangeCallback;
   ChangeCallback m_keyboardLayoutChangeCallback;
   ChangeCallback m_toplevelChangeCallback;
+  ToplevelClosedCallback m_toplevelClosedCallback;
   std::unique_ptr<compositors::hyprland::HyprlandToplevelMapping> m_hyprlandToplevelMapping;
   std::vector<WorkspaceModelSnapshot> m_lastWorkspaceModelSnapshot;
   bool m_initialized = false;

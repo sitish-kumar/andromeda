@@ -533,6 +533,9 @@ void Application::initServices() {
       m_panelManager.refresh();
     }
   });
+  m_compositorPlatform.setToplevelClosedCallback([this](zwlr_foreign_toplevel_handle_v1* handle) {
+    m_dock.onToplevelClosed(handle);
+  });
   if constexpr (kLockKeysEnabled) {
     if (lockKeysConsumersEnabled(m_configService.config())) {
       m_lockKeysService.refreshNow();

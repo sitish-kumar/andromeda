@@ -292,10 +292,19 @@ void Dock::show() {
 
 void Dock::closeAllInstances() {
   m_itemMenu.reset();
+  m_lastActiveHandleByAppIdLower.clear();
   m_surfaceMap.clear();
   m_hoveredInstance = nullptr;
   m_popupOwnerInstance = nullptr;
   m_instances.clear();
+}
+
+void Dock::onToplevelClosed(zwlr_foreign_toplevel_handle_v1* handle) {
+  if (handle == nullptr) {
+    return;
+  }
+
+  std::erase_if(m_lastActiveHandleByAppIdLower, [handle](const auto& cached) { return cached.second == handle; });
 }
 
 void Dock::detachInstanceState(DockInstance& inst) {

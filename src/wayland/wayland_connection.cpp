@@ -307,6 +307,10 @@ void WaylandConnection::setToplevelChangeCallback(ChangeCallback callback) {
   m_extForeignToplevels.setChangeCallback(std::move(callback));
 }
 
+void WaylandConnection::setToplevelClosedCallback(WaylandToplevels::ClosedCallback callback) {
+  m_toplevelsHandler.setClosedCallback(std::move(callback));
+}
+
 void WaylandConnection::setHyprlandToplevelMappingManagerCallback(
     std::function<void(hyprland_toplevel_mapping_manager_v1* manager)> callback
 ) {
