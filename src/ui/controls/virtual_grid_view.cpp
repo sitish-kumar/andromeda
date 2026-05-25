@@ -2,6 +2,7 @@
 
 #include "render/scene/input_area.h"
 #include "ui/controls/scroll_view.h"
+#include "ui/style.h"
 
 #include <algorithm>
 #include <cmath>
@@ -202,33 +203,59 @@ void VirtualGridView::doLayout(Renderer& renderer) {
   }
 
   // Step 1: estimate the canvas's virtual size so ScrollView can measure
-  // content height correctly. Reserve the scrollbar gutter (assume scrollbar
-  // is shown) and the ScrollView's own viewport padding — for card-styled
-  // scrollers that horizontal padding is non-trivial, and ignoring it makes
-  // tiles overflow the viewport into the scrollbar area.
-  constexpr float kScrollbarGutter = 14.0f; // matches ScrollView's internal kScrollbarWidth + kScrollbarGap
+  // content height correctly. Match ScrollView's gutter behavior: reserve
+  // space for the scrollbar only when the content overflows vertically.
   const float ourW = std::max(0.0f, width());
   const float ourH = std::max(0.0f, height());
   const float padH = m_scroll->viewportPaddingH();
   const float padV = m_scroll->viewportPaddingV();
-  const float viewportW = std::max(0.0f, ourW - 2.0f * padH - kScrollbarGutter);
+  const float innerW = std::max(0.0f, ourW - 2.0f * padH);
   const float viewportH = std::max(0.0f, ourH - 2.0f * padV);
+  const float scrollbarGutter = Style::scrollbarWidth + Style::scrollbarGap;
 
   m_itemCount = m_adapter->itemCount();
-  const std::size_t columns = m_columns > 0
-      ? std::max<std::size_t>(1, m_columns)
-      : std::max<std::size_t>(
-            1,
-            static_cast<std::size_t>(
-                std::floor((viewportW + m_columnGap) / std::max(1.0f, m_minCellWidth + m_columnGap))
-            )
-        );
-  const float columnsF = static_cast<float>(columns);
-  const float cellW = columns == 0 ? 0.0f : std::max(0.0f, (viewportW - (columnsF - 1.0f) * m_columnGap) / columnsF);
-  const float cellH = m_squareCells ? cellW : m_cellHeight;
-  const std::size_t rowCount = (m_itemCount + columns - 1) / columns;
-  const float virtualHeight =
-      rowCount == 0 ? 0.0f : (static_cast<float>(rowCount) * cellH + static_cast<float>(rowCount - 1) * m_rowGap);
+
+  struct GridMetrics {
+    std::size_t columns = 1;
+    float cellW = 0.0f;
+    float cellH = 0.0f;
+    std::size_t rowCount = 0;
+    float virtualHeight = 0.0f;
+  };
+
+  auto resolveMetrics = [this](float availableW) {
+    GridMetrics metrics;
+    metrics.columns = m_columns > 0
+        ? std::max<std::size_t>(1, m_columns)
+        : std::max<std::size_t>(
+              1,
+              static_cast<std::size_t>(
+                  std::floor((availableW + m_columnGap) / std::max(1.0f, m_minCellWidth + m_columnGap))
+              )
+          );
+    const float columnsF = static_cast<float>(metrics.columns);
+    metrics.cellW = std::max(0.0f, (availableW - (columnsF - 1.0f) * m_columnGap) / std::max(1.0f, columnsF));
+    metrics.cellH = m_squareCells ? metrics.cellW : m_cellHeight;
+    metrics.rowCount = (m_itemCount + metrics.columns - 1) / metrics.columns;
+    metrics.virtualHeight = metrics.rowCount == 0
+        ? 0.0f
+        : (static_cast<float>(metrics.rowCount) * metrics.cellH + static_cast<float>(metrics.rowCount - 1) * m_rowGap);
+    return metrics;
+  };
+
+  float viewportW = innerW;
+  GridMetrics metrics = resolveMetrics(viewportW);
+  if (metrics.virtualHeight > viewportH + 0.5f) {
+    viewportW = std::max(0.0f, innerW - scrollbarGutter);
+    metrics = resolveMetrics(viewportW);
+  }
+
+  const std::size_t previousLayoutColumns = m_layoutColumns;
+  const std::size_t columns = metrics.columns;
+  const float cellW = metrics.cellW;
+  const float cellH = metrics.cellH;
+  const std::size_t rowCount = metrics.rowCount;
+  const float virtualHeight = metrics.virtualHeight;
 
   m_layoutColumns = columns;
   m_cellWidth = cellW;
@@ -278,7 +305,7 @@ void VirtualGridView::doLayout(Renderer& renderer) {
   // same logical index while they remain in the visible window — avoids the
   // "every scroll rebinds every slot" thrash that would otherwise release
   // expensive per-tile state (e.g. wallpaper thumbnails).
-  if (m_layoutColumns != columns) {
+  if (previousLayoutColumns != columns) {
     // Column count changed (resize): existing slot→logicalIndex mapping is stale.
     std::fill(m_slotBoundIndex.begin(), m_slotBoundIndex.end(), std::nullopt);
   }
