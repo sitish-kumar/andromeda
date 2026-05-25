@@ -34,6 +34,7 @@ public:
   void setAsyncReadyCallback(AsyncReadyCallback callback);
 
   bool setSourceFile(Renderer& renderer, const std::string& path, int targetSize = 0, bool mipmap = false);
+  bool reloadSourceFile(Renderer& renderer, const std::string& path, int targetSize = 0, bool mipmap = false);
   bool setSourceFileAsync(
       Renderer& renderer, AsyncTextureCache& cache, const std::string& path, int targetSize = 0, bool mipmap = false
   );

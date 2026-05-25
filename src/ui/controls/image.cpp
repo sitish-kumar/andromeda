@@ -119,6 +119,38 @@ bool Image::setSourceFile(Renderer& renderer, const std::string& path, int targe
   return true;
 }
 
+bool Image::reloadSourceFile(Renderer& renderer, const std::string& path, int targetSize, bool mipmap) {
+  m_renderer = &renderer;
+
+  if (path.empty()) {
+    return false;
+  }
+
+  const int requestedTargetSize = std::max(0, targetSize);
+  const int textureTargetSize = renderTargetSize(renderer, requestedTargetSize);
+  auto texture = renderer.textureManager().loadFromFile(path, textureTargetSize, mipmap);
+  if (texture.id == 0) {
+    return false;
+  }
+
+  clearAsyncSource();
+  if (m_ownsTexture && m_texture.id != 0) {
+    renderer.textureManager().unload(m_texture);
+  }
+
+  m_texture = texture;
+  m_ownsTexture = true;
+  m_sourcePath = path;
+  m_sourceRequestedTargetSize = requestedTargetSize;
+  m_sourceTargetSize = textureTargetSize;
+  m_sourceMipmap = mipmap;
+  if (m_image != nullptr) {
+    m_image->setTextureId(m_texture.id);
+  }
+  updateLayout();
+  return true;
+}
+
 bool Image::setSourceFileAsync(
     Renderer& renderer, AsyncTextureCache& cache, const std::string& path, int targetSize, bool mipmap
 ) {

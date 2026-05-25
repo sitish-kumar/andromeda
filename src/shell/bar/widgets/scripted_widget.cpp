@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <fontconfig/fontconfig.h>
@@ -30,6 +31,8 @@
 namespace {
   constexpr Logger kLog("scripted-widget");
   constexpr std::chrono::milliseconds kDeferredUpdateRetry{50};
+  constexpr std::chrono::milliseconds kImageReloadRetry{150};
+  constexpr int kImageReloadRetryCount = 2;
   constexpr std::chrono::milliseconds kTimerPhaseStep{50};
   constexpr std::chrono::milliseconds kTimerMaxPhase{500};
 
@@ -127,6 +130,7 @@ ScriptedWidget::~ScriptedWidget() {
     *m_alive = false;
   }
   teardownAudioSpectrum();
+  teardownImageWatch();
   teardownScriptWatch();
   if (m_runtime != nullptr && m_runtimeSubscription != 0) {
     m_runtime->unsubscribe(m_runtimeSubscription);
@@ -178,6 +182,14 @@ void ScriptedWidget::create() {
       ui::glyph({
           .out = &m_glyph,
           .glyphSize = Style::barGlyphSize * m_contentScale,
+          .visible = false,
+      })
+  );
+
+  flex->addChild(
+      ui::image({
+          .out = &m_image,
+          .fit = ImageFit::Contain,
           .visible = false,
       })
   );
@@ -260,6 +272,8 @@ void ScriptedWidget::doLayout(Renderer& renderer, float containerWidth, float co
     m_glyph->measure(renderer);
   }
 
+  syncImage(renderer);
+
   m_flex->layout(renderer);
 
   if (m_area)
@@ -284,12 +298,63 @@ void ScriptedWidget::luaSetGlyph(std::string_view name) {
   if (!m_glyph)
     return;
   bool changed = m_glyph->setGlyph(name);
+  if (!m_imagePath.empty()) {
+    m_imagePath.clear();
+    m_resolvedImagePath.clear();
+    m_imageWidth = 0.0f;
+    m_imageHeight = 0.0f;
+    m_imageWatch = false;
+    m_imageForceReload = false;
+    m_imageDirty = true;
+    m_imageReloadRetries = 0;
+    m_imageReloadRetryTimer.stop();
+    teardownImageWatch();
+    if (m_image != nullptr) {
+      m_image->setVisible(false);
+    }
+    changed = true;
+  }
   if (!m_glyphVisible) {
     m_glyph->setVisible(true);
     m_glyphVisible = true;
     changed = true;
   }
   m_dirty |= changed;
+}
+
+void ScriptedWidget::luaSetImage(std::string_view path, bool watch, float width, float height) {
+  if (m_image == nullptr) {
+    return;
+  }
+
+  std::string nextPath(path);
+  const bool nextWatch = watch && !nextPath.empty();
+  const float nextWidth = std::max(0.0f, width);
+  const float nextHeight = std::max(0.0f, height);
+  const bool pathChanged = nextPath != m_imagePath;
+  const bool watchChanged = nextWatch != m_imageWatch;
+  const bool sizeChanged = nextWidth != m_imageWidth || nextHeight != m_imageHeight;
+  if (!pathChanged && !watchChanged && !sizeChanged && !m_glyphVisible) {
+    return;
+  }
+
+  m_imagePath = std::move(nextPath);
+  m_resolvedImagePath = m_imagePath.empty() ? std::filesystem::path{} : resolveScriptPath(m_imagePath);
+  m_imageWatch = nextWatch;
+  m_imageWidth = nextWidth;
+  m_imageHeight = nextHeight;
+  m_imageDirty = true;
+  m_imageForceReload = false;
+  m_imageReloadRetries = 0;
+  m_imageReloadRetryTimer.stop();
+
+  if (m_glyph != nullptr && m_glyphVisible) {
+    m_glyph->setVisible(false);
+    m_glyphVisible = false;
+  }
+
+  setupImageWatch();
+  m_dirty = true;
 }
 
 void ScriptedWidget::luaSetFont(std::string_view familyOrPath) {
@@ -503,6 +568,9 @@ void ScriptedWidget::applyScriptPatch(const scripting::ScriptWidgetPatch& patch)
   if (patch.glyph.has_value()) {
     luaSetGlyph(*patch.glyph);
   }
+  if (patch.image.has_value()) {
+    luaSetImage(patch.image->path, patch.image->watch, patch.image->width, patch.image->height);
+  }
   if (patch.textColor.has_value()) {
     luaSetColor(patch.textColor->role, patch.textColor->mode);
   }
@@ -533,6 +601,87 @@ std::string ScriptedWidget::focusedOutputName() const {
   wl_output* output = m_platform->preferredInteractiveOutput();
   const auto* info = m_platform->findOutputByWl(output);
   return info != nullptr ? info->connectorName : std::string{};
+}
+
+void ScriptedWidget::syncImage(Renderer& renderer) {
+  if (m_image == nullptr) {
+    return;
+  }
+
+  if (m_resolvedImagePath.empty()) {
+    if (m_imageDirty) {
+      m_image->clear(renderer);
+      m_imageDirty = false;
+      m_imageForceReload = false;
+    }
+    m_image->setVisible(false);
+    return;
+  }
+
+  const float logicalWidth = m_imageWidth > 0.0f ? m_imageWidth : Style::barIconSize;
+  const float logicalHeight = m_imageHeight > 0.0f ? m_imageHeight : logicalWidth;
+  const float imageWidth = logicalWidth * m_contentScale;
+  const float imageHeight = logicalHeight * m_contentScale;
+  m_image->setSize(imageWidth, imageHeight);
+
+  const int imageTargetSize = std::max(1, static_cast<int>(std::round(std::max(imageWidth, imageHeight) * 3.0f)));
+  if (m_imageDirty) {
+    const bool loaded = m_imageForceReload
+        ? m_image->reloadSourceFile(renderer, m_resolvedImagePath.string(), imageTargetSize, true)
+        : m_image->setSourceFile(renderer, m_resolvedImagePath.string(), imageTargetSize, true);
+    if (loaded) {
+      m_imageDirty = false;
+      m_imageForceReload = false;
+      m_imageReloadRetries = 0;
+      m_imageReloadRetryTimer.stop();
+    } else if (m_imageForceReload && m_image->hasImage() && m_imageReloadRetries > 0) {
+      scheduleImageReloadRetry();
+    } else {
+      m_imageDirty = false;
+      m_imageForceReload = false;
+      m_imageReloadRetries = 0;
+    }
+  } else {
+    (void)m_image->setSourceFile(renderer, m_resolvedImagePath.string(), imageTargetSize, true);
+  }
+
+  m_image->setVisible(m_image->hasImage());
+}
+
+void ScriptedWidget::setupImageWatch() {
+  teardownImageWatch();
+  if (!m_imageWatch || m_resolvedImagePath.empty() || m_fileWatcher == nullptr) {
+    return;
+  }
+
+  m_imageWatchId = m_fileWatcher->watch(m_resolvedImagePath, [this] { reloadImage(); });
+}
+
+void ScriptedWidget::teardownImageWatch() {
+  if (m_imageWatchId == 0 || m_fileWatcher == nullptr) {
+    return;
+  }
+  m_fileWatcher->unwatch(m_imageWatchId);
+  m_imageWatchId = 0;
+}
+
+void ScriptedWidget::reloadImage() {
+  m_imageDirty = true;
+  m_imageForceReload = true;
+  m_imageReloadRetries = kImageReloadRetryCount;
+  requestUpdate();
+}
+
+void ScriptedWidget::scheduleImageReloadRetry() {
+  if (m_imageReloadRetryTimer.active()) {
+    return;
+  }
+  --m_imageReloadRetries;
+  m_imageReloadRetryTimer.start(kImageReloadRetry, [this] {
+    if (m_imageForceReload) {
+      requestUpdate();
+    }
+  });
 }
 
 void ScriptedWidget::setupAudioSpectrum() {
@@ -585,12 +734,24 @@ void ScriptedWidget::teardownScriptWatch() {
 
 void ScriptedWidget::reloadScript() {
   m_updateTimer.stop();
+  m_imageReloadRetryTimer.stop();
+  teardownImageWatch();
   m_glyphVisible = false;
+  m_imagePath.clear();
+  m_resolvedImagePath.clear();
+  m_imageWidth = 0.0f;
+  m_imageHeight = 0.0f;
   m_textColor = {};
   m_glyphColor = {};
   m_updateIntervalMs = 250;
+  m_imageWatch = false;
+  m_imageDirty = true;
+  m_imageForceReload = false;
+  m_imageReloadRetries = 0;
   if (m_glyph)
     m_glyph->setVisible(false);
+  if (m_image)
+    m_image->setVisible(false);
   if (m_label) {
     m_label->setText("");
     m_label->setVisible(false);

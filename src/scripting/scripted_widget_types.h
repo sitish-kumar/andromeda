@@ -20,9 +20,19 @@ namespace scripting {
     bool operator==(const ScriptWidgetColorPatch&) const = default;
   };
 
+  struct ScriptWidgetImagePatch {
+    std::string path;
+    bool watch = false;
+    float width = 0.0f;
+    float height = 0.0f;
+
+    bool operator==(const ScriptWidgetImagePatch&) const = default;
+  };
+
   struct ScriptWidgetPatch {
     std::optional<std::string> text;
     std::optional<std::string> glyph;
+    std::optional<ScriptWidgetImagePatch> image;
     std::optional<std::string> fontFamily;
     std::optional<ScriptWidgetColorPatch> textColor;
     std::optional<ScriptWidgetColorPatch> glyphColor;
@@ -32,6 +42,7 @@ namespace scripting {
     [[nodiscard]] bool empty() const {
       return !text.has_value()
           && !glyph.has_value()
+          && !image.has_value()
           && !fontFamily.has_value()
           && !textColor.has_value()
           && !glyphColor.has_value()
