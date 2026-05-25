@@ -32,7 +32,7 @@ public:
       bool onlyActiveWorkspace, bool showWorkspaceLabel, WorkspaceLabelPlacement workspaceLabelPlacement,
       bool hideEmptyWorkspaces, bool workspaceGroupCapsule, ColorSpec focusedColor, ColorSpec occupiedColor,
       ColorSpec emptyColor, bool showWindowTitle, float windowTitleMaxWidth, std::string barPosition,
-      ShellConfig::ShadowConfig shadowConfig
+      ShellConfig::ShadowConfig shadowConfig, bool launchAppsAsSystemdService
   );
   ~TaskbarWidget() override;
 
@@ -111,6 +111,7 @@ private:
   float m_windowTitleMaxWidth = 100.0;
   std::string m_barPosition;
   ShellConfig::ShadowConfig m_shadowConfig;
+  bool m_launchAppsAsSystemdService = false;
   bool m_rebuildPending = true;
   bool m_vertical = false;
   std::uint64_t m_textMetricsGeneration = 0;

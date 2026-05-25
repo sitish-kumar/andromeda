@@ -447,7 +447,8 @@ std::unique_ptr<Widget> WidgetFactory::create(
     auto widget = std::make_unique<TaskbarWidget>(
         m_platform, output, groupByWorkspace, showAllOutputs, onlyActiveWorkspace, showWorkspaceLabel,
         workspaceLabelPlacement, hideEmptyWorkspaces, workspaceGroupCapsule, focusedColor, occupiedColor, emptyColor,
-        showWindowTitle, windowTitleMaxWidth, barPosition, m_config.shell.shadow
+        showWindowTitle, windowTitleMaxWidth, barPosition, m_config.shell.shadow,
+        m_config.shell.launchAppsAsSystemdServices
     );
     widget->setContentScale(contentScale);
     return widget;
