@@ -307,10 +307,6 @@ void WaylandConnection::setToplevelChangeCallback(ChangeCallback callback) {
   m_extForeignToplevels.setChangeCallback(std::move(callback));
 }
 
-void WaylandConnection::setToplevelClosedCallback(WaylandToplevels::ClosedCallback callback) {
-  m_toplevelsHandler.setClosedCallback(std::move(callback));
-}
-
 void WaylandConnection::setHyprlandToplevelMappingManagerCallback(
     std::function<void(hyprland_toplevel_mapping_manager_v1* manager)> callback
 ) {
@@ -499,6 +495,10 @@ WaylandConnection::extWindowsForApp(const std::string& idLower, const std::strin
     return {};
   }
   return m_extForeignToplevels.windowsForApp(idLower, wmClassLower);
+}
+
+bool WaylandConnection::containsWlrToplevelHandle(zwlr_foreign_toplevel_handle_v1* handle) const {
+  return m_toplevelsHandler.containsWlrHandle(handle);
 }
 
 void WaylandConnection::activateToplevel(zwlr_foreign_toplevel_handle_v1* handle) {

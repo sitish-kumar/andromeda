@@ -49,7 +49,6 @@ public:
   void requestLayout();
   void requestRedraw();
   bool onPointerEvent(const PointerEvent& event);
-  void onToplevelClosed(zwlr_foreign_toplevel_handle_v1* handle);
 
   void registerIpc(IpcService& ipc);
 
@@ -103,6 +102,7 @@ private:
 
   // Returns true if the item list was modified (triggers a rebuild).
   bool refreshPinnedAppsIfNeeded();
+  void pruneCachedToplevelHandles();
   void syncInstances();
   void createInstance(const WaylandOutput& output);
   void destroyInstance(std::uint32_t outputName);

@@ -281,6 +281,7 @@ void Dock::show() {
     return;
   }
 
+  pruneCachedToplevelHandles();
   refreshPinnedAppsIfNeeded();
   if (m_instances.empty()) {
     syncInstances();
@@ -299,12 +300,15 @@ void Dock::closeAllInstances() {
   m_instances.clear();
 }
 
-void Dock::onToplevelClosed(zwlr_foreign_toplevel_handle_v1* handle) {
-  if (handle == nullptr) {
+void Dock::pruneCachedToplevelHandles() {
+  if (m_platform == nullptr) {
+    m_lastActiveHandleByAppIdLower.clear();
     return;
   }
 
-  std::erase_if(m_lastActiveHandleByAppIdLower, [handle](const auto& cached) { return cached.second == handle; });
+  std::erase_if(m_lastActiveHandleByAppIdLower, [this](const auto& cached) {
+    return cached.second == nullptr || !m_platform->containsWlrToplevelHandle(cached.second);
+  });
 }
 
 void Dock::detachInstanceState(DockInstance& inst) {
@@ -334,6 +338,7 @@ void Dock::refresh() {
     return;
   }
 
+  pruneCachedToplevelHandles();
   refreshPinnedAppsIfNeeded();
 
   syncInstances();
@@ -1549,6 +1554,8 @@ void Dock::launchEntry(const DesktopEntry& entry) {
 // ── Private: click handling ───────────────────────────────────────────────────
 
 void Dock::handleItemClick(DockInstance& instance, DockItemView& item) {
+  pruneCachedToplevelHandles();
+
   auto windows = m_platform->windowsForApp(
       item.idLower, item.startupWmClassLower, currentDockFilterOutput(m_config->config().dock, instance.output)
   );

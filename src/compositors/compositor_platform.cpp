@@ -380,11 +380,6 @@ CompositorPlatform::CompositorPlatform(WaylandConnection& wayland)
     bindHyprlandToplevelMappingManager(manager);
   });
   m_wayland.setToplevelChangeCallback([this]() { notifyToplevelsChanged(); });
-  m_wayland.setToplevelClosedCallback([this](zwlr_foreign_toplevel_handle_v1* handle) {
-    if (m_toplevelClosedCallback) {
-      m_toplevelClosedCallback(handle);
-    }
-  });
   m_wayland.setOutputLifecycleCallbacks(
       [this](wl_output* output) { onOutputAdded(output); }, [this](wl_output* output) { onOutputRemoved(output); }
   );
@@ -396,7 +391,6 @@ CompositorPlatform::~CompositorPlatform() {
   m_wayland.setWorkspaceManagerCallbacks({}, {});
   m_wayland.setHyprlandToplevelMappingManagerCallback({});
   m_wayland.setToplevelChangeCallback({});
-  m_wayland.setToplevelClosedCallback({});
 }
 
 void CompositorPlatform::initialize() {
@@ -572,12 +566,12 @@ void CompositorPlatform::activateToplevel(zwlr_foreign_toplevel_handle_v1* handl
 
 void CompositorPlatform::closeToplevel(zwlr_foreign_toplevel_handle_v1* handle) { m_wayland.closeToplevel(handle); }
 
-void CompositorPlatform::setToplevelChangeCallback(ChangeCallback callback) {
-  m_toplevelChangeCallback = std::move(callback);
+bool CompositorPlatform::containsWlrToplevelHandle(zwlr_foreign_toplevel_handle_v1* handle) const {
+  return m_wayland.containsWlrToplevelHandle(handle);
 }
 
-void CompositorPlatform::setToplevelClosedCallback(ToplevelClosedCallback callback) {
-  m_toplevelClosedCallback = std::move(callback);
+void CompositorPlatform::setToplevelChangeCallback(ChangeCallback callback) {
+  m_toplevelChangeCallback = std::move(callback);
 }
 
 void CompositorPlatform::bindHyprlandToplevelMappingManager(hyprland_toplevel_mapping_manager_v1* manager) {

@@ -86,8 +86,6 @@ void WaylandToplevels::bind(zwlr_foreign_toplevel_manager_v1* manager) {
 
 void WaylandToplevels::setChangeCallback(ChangeCallback callback) { m_changeCallback = std::move(callback); }
 
-void WaylandToplevels::setClosedCallback(ClosedCallback callback) { m_closedCallback = std::move(callback); }
-
 void WaylandToplevels::cleanup() {
   for (auto& [handle, _] : m_handles) {
     if (handle != nullptr) {
@@ -172,9 +170,6 @@ void WaylandToplevels::onHandleClosed(zwlr_foreign_toplevel_handle_v1* handle) {
   const auto before = current();
 
   if (handle != nullptr) {
-    if (m_closedCallback) {
-      m_closedCallback(handle);
-    }
     zwlr_foreign_toplevel_handle_v1_destroy(handle);
     m_handles.erase(handle);
   }
@@ -344,6 +339,10 @@ std::vector<ToplevelInfo> WaylandToplevels::windowsForApp(
     out.push_back(std::move(window.info));
   }
   return out;
+}
+
+bool WaylandToplevels::containsWlrHandle(zwlr_foreign_toplevel_handle_v1* handle) const {
+  return handle != nullptr && m_handles.contains(handle);
 }
 
 void WaylandToplevels::activateHandle(zwlr_foreign_toplevel_handle_v1* handle, wl_seat* seat) {
