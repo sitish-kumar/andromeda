@@ -175,6 +175,18 @@ namespace {
     }
   }
 
+  std::string outputLabelForSurface(const WaylandConnection& connection, wl_surface* surface) {
+    wl_output* wlOutput = connection.outputForSurface(surface);
+    const WaylandOutput* output = connection.findOutputByWl(wlOutput);
+    if (output == nullptr) {
+      return "unknown";
+    }
+    if (!output->connectorName.empty()) {
+      return output->connectorName;
+    }
+    return std::format("#{}", output->name);
+  }
+
   class ScopedBoolFlag {
   public:
     explicit ScopedBoolFlag(bool& flag) noexcept : m_flag(flag) { m_flag = true; }
@@ -395,6 +407,12 @@ void Surface::onPreferredFractionalScale(std::uint32_t numerator) {
   }
 
   m_fractionalScaleNumerator = numerator;
+  const float preferredScale = std::max(1.0f, static_cast<float>(numerator) / 120.0f);
+  kLog.info(
+      "fractional scale preferred output={} surface={} scale={:.3f} raw={}/120 logical={}x{} buffer={}x{}",
+      outputLabelForSurface(m_connection, m_surface), static_cast<const void*>(m_surface), preferredScale, numerator,
+      m_width, m_height, bufferWidthFor(m_width), bufferHeightFor(m_height)
+  );
   if (!m_configured) {
     return;
   }

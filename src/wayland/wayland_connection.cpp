@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <cerrno>
+#include <cmath>
 #include <cstring>
 #include <format>
 #include <stdexcept>
@@ -73,6 +74,54 @@ namespace {
     }
     const char* text = std::strerror(value);
     return text != nullptr ? std::string(text) : std::string("unknown");
+  }
+
+  struct DetectedOutputScale {
+    double scale = 0.0;
+    bool rotated = false;
+    bool available = false;
+  };
+
+  DetectedOutputScale detectOutputScale(const WaylandOutput& output) {
+    if (output.width <= 0 || output.height <= 0 || output.logicalWidth <= 0 || output.logicalHeight <= 0) {
+      return {};
+    }
+
+    // wl_output.mode is physical buffer pixels; xdg_output.logical_size is the
+    // compositor's logical coordinate space. Their ratio is the output scale.
+    struct Candidate {
+      double scale = 0.0;
+      double axisDelta = 0.0;
+      bool rotated = false;
+    };
+
+    const auto candidate = [](double xScale, double yScale, bool rotated) {
+      return Candidate{
+          .scale = (xScale + yScale) * 0.5,
+          .axisDelta = std::abs(xScale - yScale),
+          .rotated = rotated,
+      };
+    };
+
+    const auto physicalW = static_cast<double>(output.width);
+    const auto physicalH = static_cast<double>(output.height);
+    const auto logicalW = static_cast<double>(output.logicalWidth);
+    const auto logicalH = static_cast<double>(output.logicalHeight);
+
+    const Candidate normal = candidate(physicalW / logicalW, physicalH / logicalH, false);
+    const Candidate rotated = candidate(physicalW / logicalH, physicalH / logicalW, true);
+    const Candidate& selected = rotated.axisDelta < normal.axisDelta ? rotated : normal;
+    if (selected.scale <= 0.0) {
+      return {};
+    }
+    return {.scale = selected.scale, .rotated = selected.rotated, .available = true};
+  }
+
+  std::string outputLabel(const WaylandOutput& output) {
+    if (!output.connectorName.empty()) {
+      return output.connectorName;
+    }
+    return std::format("#{}", output.name);
   }
 
   void
@@ -1051,9 +1100,21 @@ void WaylandConnection::logStartupSummary() const {
   );
 
   for (const auto& output : m_outputs) {
-    kLog.info(
-        "output {} global={} scale={} mode={}x{} desc=\"{}\"", output.connectorName, output.name, output.scale,
-        output.width, output.height, output.description
-    );
+    const DetectedOutputScale detectedScale = detectOutputScale(output);
+    if (detectedScale.available) {
+      kLog.info(
+          "output {} global={} wl_scale={} detected_fractional_scale={:.3f} logical={}x{} mode={}x{} orientation={} "
+          "desc=\"{}\"",
+          outputLabel(output), output.name, output.scale, detectedScale.scale, output.logicalWidth,
+          output.logicalHeight, output.width, output.height, detectedScale.rotated ? "rotated" : "normal",
+          output.description
+      );
+    } else {
+      kLog.info(
+          "output {} global={} wl_scale={} detected_fractional_scale=unavailable logical={}x{} mode={}x{} desc=\"{}\"",
+          outputLabel(output), output.name, output.scale, output.logicalWidth, output.logicalHeight, output.width,
+          output.height, output.description
+      );
+    }
   }
 }
