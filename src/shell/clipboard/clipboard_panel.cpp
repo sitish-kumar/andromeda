@@ -553,11 +553,11 @@ void ClipboardPanel::create() {
 
   auto previewActions = ui::row(
       {.align = FlexAlign::Center, .gap = Style::spaceXs * scale},
-      makeCompactIconButton(&m_copyButton, "copy", ButtonVariant::Default, scale, [this]() { activateSelected(); }),
       makeCompactIconButton(
           &m_imageActionButton, "photo-edit", ButtonVariant::Default, scale, [this]() { runImageAction(); }, false,
           false
       ),
+      makeCompactIconButton(&m_copyButton, "copy", ButtonVariant::Default, scale, [this]() { activateSelected(); }),
       makeCompactIconButton(&m_pinButton, "pin", ButtonVariant::Default, scale, [this]() { togglePinSelected(); }),
       makeCompactIconButton(
           &m_deleteEntryButton, "trash", ButtonVariant::Destructive, scale, [this]() { deleteSelectedEntry(); }
