@@ -368,6 +368,11 @@ namespace settings {
       );
     };
 
+    const auto isTemplateEnableTogglePath = [](const std::vector<std::string>& path) {
+      return path == std::vector<std::string>{"theme", "templates", "enable_builtin_templates"}
+      || path == std::vector<std::string>{"theme", "templates", "enable_community_templates"};
+    };
+
     const auto makeRow = [&](Flex& section, const SettingEntry& entry, std::unique_ptr<Node> control) {
       const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
       const bool redundantGuiOverride =
@@ -400,7 +405,11 @@ namespace settings {
       }
       titleRow->addChild(ui::spacer());
 
-      auto copy = ui::column({.align = FlexAlign::Start, .gap = Style::spaceXs * scale, .flexGrow = 1.0f});
+      ui::FlexProps copyProps{.align = FlexAlign::Start, .flexGrow = 1.0f};
+      if (!isTemplateEnableTogglePath(entry.path)) {
+        copyProps.gap = Style::spaceXs * scale;
+      }
+      auto copy = ui::column(std::move(copyProps));
       copy->addChild(std::move(titleRow));
 
       if (!entry.subtitle.empty()) {
@@ -885,20 +894,24 @@ namespace settings {
     };
 
     const auto makeCollectionBlock = [&](const SettingEntry& entry, bool overridden, bool reserveTitleHeight = false,
-                                         bool titleMaxTwoLines = false, bool fillWidth = false, bool flexGrow = false) {
-      auto block = ui::column(
-          {.align = FlexAlign::Stretch,
-           .gap = Style::spaceXs * scale,
-           .configure = [scale, fillWidth, flexGrow](Flex& flex) {
-             flex.setPadding(2.0f * scale, 0.0f);
-             if (fillWidth) {
-               flex.setFillWidth(true);
-             }
-             if (flexGrow) {
-               flex.setFlexGrow(1.0f);
-             }
-           }}
-      );
+                                         bool titleMaxTwoLines = false, bool fillWidth = false, bool flexGrow = false,
+                                         bool compactTitleDescription = false) {
+      ui::FlexProps blockProps{
+          .align = FlexAlign::Stretch,
+          .configure = [scale, fillWidth, flexGrow](Flex& flex) {
+            flex.setPadding(Style::spaceXs * scale, 0.0f);
+            if (fillWidth) {
+              flex.setFillWidth(true);
+            }
+            if (flexGrow) {
+              flex.setFlexGrow(1.0f);
+            }
+          },
+      };
+      if (!compactTitleDescription) {
+        blockProps.gap = Style::spaceXs * scale;
+      }
+      auto block = ui::column(std::move(blockProps));
 
       auto titleRow = ui::row(
           {.align = FlexAlign::Center,
@@ -996,7 +1009,7 @@ namespace settings {
                                            const TemplateGridSetting& setting) {
       const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
 
-      auto block = makeCollectionBlock(entry, overridden);
+      auto block = makeCollectionBlock(entry, overridden, false, false, false, false, true);
 
       if (setting.options.empty()) {
         block->addChild(makeSettingSubtitleLabel(setting.emptyText, scale));
@@ -1004,7 +1017,7 @@ namespace settings {
         return;
       }
 
-      constexpr std::size_t kCardsPerRow = 4;
+      constexpr std::size_t kTemplateCardsPerRow = 5;
       auto selected = std::make_shared<std::vector<std::string>>(setting.selectedValues);
       const auto options = std::make_shared<std::vector<SelectOption>>(setting.options);
       const auto path = entry.path;
@@ -1020,7 +1033,10 @@ namespace settings {
         setOverride(path, std::move(ordered));
       };
 
-      auto grid = ui::column({.align = FlexAlign::Stretch, .gap = Style::spaceSm * scale});
+      auto grid =
+          ui::column({.align = FlexAlign::Stretch, .gap = Style::spaceSm * scale, .configure = [scale](Flex& flex) {
+                        flex.setPadding(Style::spaceMd * scale, 0.0f, 0.0f, 0.0f);
+                      }});
       std::unique_ptr<Flex> row;
       std::size_t countInRow = 0;
 
@@ -1028,7 +1044,7 @@ namespace settings {
         if (row == nullptr) {
           return;
         }
-        while (countInRow > 0 && countInRow < kCardsPerRow) {
+        while (countInRow > 0 && countInRow < kTemplateCardsPerRow) {
           row->addChild(ui::row({.fillWidth = true, .flexGrow = 1.0f}));
           ++countInRow;
         }
@@ -1037,7 +1053,7 @@ namespace settings {
       };
 
       for (const auto& option : *options) {
-        if (row == nullptr || countInRow == kCardsPerRow) {
+        if (row == nullptr || countInRow == kTemplateCardsPerRow) {
           flushRow();
           row = ui::row({.align = FlexAlign::Stretch, .gap = Style::spaceSm * scale, .fillWidth = true});
         }
@@ -1084,10 +1100,10 @@ namespace settings {
             .out = &card,
             .contentAlign = ButtonContentAlign::Start,
             .customPalette = cardPaletteFor(checked),
-            .minHeight = Style::controlHeight * scale,
-            .paddingV = Style::spaceSm * scale,
-            .paddingH = Style::spaceMd * scale,
-            .gap = Style::spaceSm * scale,
+            .minHeight = Style::controlHeightSm * scale,
+            .paddingV = Style::spaceXs * scale,
+            .paddingH = Style::spaceSm * scale,
+            .gap = Style::spaceXs * scale,
             .radius = Style::scaledRadiusMd(scale),
             .flexGrow = 1.0f,
         });
@@ -1096,7 +1112,7 @@ namespace settings {
                 .out = &checkbox,
                 .checked = checked,
                 .scale = scale,
-                .checkedFill = colorSpecFromRole(ColorRole::OnPrimary),
+                .checkedFill = colorSpecFromRole(ColorRole::Surface),
                 .checkedBorder = colorSpecFromRole(ColorRole::OnPrimary),
                 .checkedGlyph = colorSpecFromRole(ColorRole::Primary),
                 .onChange = [selected, value, commit, checkedState, card, cardPaletteFor](bool nextChecked) mutable {
@@ -1117,7 +1133,7 @@ namespace settings {
             })
         );
 
-        auto text = ui::column({.align = FlexAlign::Start, .gap = Style::spaceXs * 0.5f * scale, .flexGrow = 1.0f});
+        auto text = ui::column({.align = FlexAlign::Start, .flexGrow = 1.0f});
         text->addChild(
             ui::label({
                 .out = &titleLabel,
@@ -1125,7 +1141,7 @@ namespace settings {
                 .fontSize = Style::fontSizeBody * scale,
                 .color = colorSpecFromRole(checked ? ColorRole::OnPrimary : ColorRole::OnSurface),
                 .maxLines = 1,
-                .fontWeight = FontWeight::Bold,
+                .fontWeight = FontWeight::Medium,
             })
         );
         if (!option.description.empty()) {

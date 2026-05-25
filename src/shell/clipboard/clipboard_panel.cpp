@@ -36,6 +36,7 @@ namespace {
   constexpr float kPreviewImageHeight = 280.0f;
   constexpr float kListGlyphSize = 24.0f;
   constexpr float kListThumbSize = 40.0f;
+  constexpr float kRowHoverFillAlpha = 0.18f;
   constexpr std::size_t kListOverscanRows = 3;
   constexpr auto kPreviewPayloadDebounceInterval = std::chrono::milliseconds(75);
   constexpr auto kFilterDebounceInterval = std::chrono::milliseconds(120);
@@ -336,7 +337,7 @@ namespace {
       }
 
       const Color bg = m_selected ? colorForRole(ColorRole::SurfaceVariant)
-          : m_hovered             ? colorForRole(ColorRole::SurfaceVariant, 0.45f)
+          : m_hovered             ? colorForRole(ColorRole::Hover, kRowHoverFillAlpha)
                                   : clearColor();
       m_background->setFill(bg);
       m_glyph->setColor(colorSpecFromRole(m_isImage ? ColorRole::Secondary : ColorRole::Primary));
