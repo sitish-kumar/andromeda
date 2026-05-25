@@ -495,6 +495,10 @@ WaylandConnection::extWindowsForApp(const std::string& idLower, const std::strin
   return m_extForeignToplevels.windowsForApp(idLower, wmClassLower);
 }
 
+bool WaylandConnection::containsWlrToplevelHandle(zwlr_foreign_toplevel_handle_v1* handle) const {
+  return m_toplevelsHandler.containsWlrHandle(handle);
+}
+
 void WaylandConnection::activateToplevel(zwlr_foreign_toplevel_handle_v1* handle) {
   m_toplevelsHandler.activateHandle(handle, m_seat);
 }

@@ -45,6 +45,7 @@ public:
   [[nodiscard]] std::vector<std::string> allAppIds(wl_output* outputFilter = nullptr) const;
   [[nodiscard]] std::vector<ToplevelInfo>
   windowsForApp(const std::string& idLower, const std::string& wmClassLower, wl_output* outputFilter = nullptr) const;
+  [[nodiscard]] bool containsWlrHandle(zwlr_foreign_toplevel_handle_v1* handle) const;
   void activateHandle(zwlr_foreign_toplevel_handle_v1* handle, wl_seat* seat);
   void closeHandle(zwlr_foreign_toplevel_handle_v1* handle);
 

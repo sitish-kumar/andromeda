@@ -153,6 +153,7 @@ public:
   windowsForApp(const std::string& idLower, const std::string& wmClassLower, wl_output* outputFilter = nullptr) const;
   [[nodiscard]] std::vector<ToplevelInfo>
   extWindowsForApp(const std::string& idLower, const std::string& wmClassLower) const;
+  [[nodiscard]] bool containsWlrToplevelHandle(zwlr_foreign_toplevel_handle_v1* handle) const;
   template <typename Fn> void visitExtToplevelHandles(Fn&& fn) const {
     m_extForeignToplevels.visitExtHandles(std::forward<Fn>(fn));
   }

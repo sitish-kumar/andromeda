@@ -30,7 +30,6 @@ class RenderContext;
 class LayerSurface;
 class Node;
 struct PointerEvent;
-struct ToplevelInfo;
 struct WaylandOutput;
 struct wl_output;
 struct wl_surface;
@@ -103,6 +102,7 @@ private:
 
   // Returns true if the item list was modified (triggers a rebuild).
   bool refreshPinnedAppsIfNeeded();
+  void pruneCachedToplevelHandles();
   void syncInstances();
   void createInstance(const WaylandOutput& output);
   void destroyInstance(std::uint32_t outputName);
@@ -122,8 +122,6 @@ private:
   void launchEntry(const DesktopEntry& entry);
   void launchAction(const DesktopAction& action);
   void handleItemClick(DockInstance& instance, DockItemView& item);
-  void openWindowPicker(DockInstance& instance, DockItemView& item, std::vector<ToplevelInfo> windows);
-  void closeWindowPicker();
   void openItemMenu(DockInstance& instance, DockItemView& item);
   void closeItemMenu();
   void startHideFadeOut(DockInstance& inst);
@@ -136,7 +134,7 @@ private:
   [[nodiscard]] std::int32_t dockThickness() const; // cross-axis (includes icon, cell padding, dock padding)
   [[nodiscard]] bool isVertical() const;
 
-  // Generic popup (window picker and item context menu).
+  // Generic popup for the item context menu.
   struct DockPopup {
     std::unique_ptr<PopupSurface> surface;
     std::unique_ptr<Node> sceneRoot;
@@ -161,10 +159,10 @@ private:
   std::uint64_t m_modelSerial = 0;
   std::uint64_t m_entriesVersion = 0;
   IconResolver m_iconResolver;
+  std::unordered_map<std::string, zwlr_foreign_toplevel_handle_v1*> m_lastActiveHandleByAppIdLower;
   std::vector<std::unique_ptr<DockInstance>> m_instances;
   std::unordered_map<wl_surface*, DockInstance*> m_surfaceMap;
   DockInstance* m_hoveredInstance = nullptr;
   DockInstance* m_popupOwnerInstance = nullptr; // instance that owns the current open popup
-  std::unique_ptr<DockPopup> m_windowMenu;      // left-click multi-window picker
   std::unique_ptr<DockPopup> m_itemMenu;        // right-click context menu
 };
