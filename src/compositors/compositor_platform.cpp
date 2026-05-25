@@ -435,6 +435,12 @@ const compositors::niri::NiriRuntime& CompositorPlatform::niriRuntime() const no
 
 bool CompositorPlatform::hasXdgShell() const noexcept { return m_wayland.hasXdgShell(); }
 
+bool CompositorPlatform::hasXdgActivation() const noexcept { return m_wayland.hasXdgActivation(); }
+
+std::string CompositorPlatform::requestActivationToken(wl_surface* surface) const {
+  return m_wayland.requestActivationToken(surface);
+}
+
 bool CompositorPlatform::hasGammaControl() const noexcept { return m_wayland.hasGammaControl(); }
 
 const std::vector<WaylandOutput>& CompositorPlatform::outputs() const noexcept { return m_wayland.outputs(); }
