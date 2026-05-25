@@ -20,7 +20,6 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include <fontconfig/fcfreetype.h>
 #include <fontconfig/fontconfig.h>
 #include <fstream>
 #include <iomanip>
@@ -52,16 +51,30 @@ namespace {
       }
       registeredFontFiles().insert(pathStr);
     }
-    // Extract family name from the font file
-    FcPattern* pat = FcFreeTypeQuery(reinterpret_cast<const FcChar8*>(pathStr.c_str()), 0, nullptr, nullptr);
-    if (!pat) {
-      kLog.warn("failed to query font family from: {}", pathStr);
+    FcFontSet* fontSet = FcFontSetCreate();
+    FcStrSet* dirs = FcStrSetCreate();
+    if (!fontSet || !dirs) {
+      if (dirs)
+        FcStrSetDestroy(dirs);
+      if (fontSet)
+        FcFontSetDestroy(fontSet);
+      kLog.warn("failed to allocate font scan state for: {}", pathStr);
       return {};
     }
+
+    if (!FcFileScan(fontSet, dirs, nullptr, nullptr, reinterpret_cast<const FcChar8*>(pathStr.c_str()), FcTrue)
+        || fontSet->nfont <= 0) {
+      kLog.warn("failed to query font family from: {}", pathStr);
+      FcStrSetDestroy(dirs);
+      FcFontSetDestroy(fontSet);
+      return {};
+    }
+
     FcChar8* family = nullptr;
-    FcPatternGetString(pat, FC_FAMILY, 0, &family);
+    FcPatternGetString(fontSet->fonts[0], FC_FAMILY, 0, &family);
     std::string result = family ? reinterpret_cast<const char*>(family) : "";
-    FcPatternDestroy(pat);
+    FcStrSetDestroy(dirs);
+    FcFontSetDestroy(fontSet);
     return result;
   }
 
