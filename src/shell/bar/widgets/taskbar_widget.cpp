@@ -1836,14 +1836,21 @@ void TaskbarWidget::activateAdjacentTask(int direction) {
     return;
   }
 
-  size_t activeTaskIndex =
+  const size_t activeTaskIndex =
       std::find_if(m_tasks.begin(), m_tasks.end(), [](const TaskModel& t) { return t.active; }) - m_tasks.begin();
-  if (direction > 0 && activeTaskIndex + 1 < m_tasks.size()) {
-    ++activeTaskIndex;
-  } else if (direction < 0 && activeTaskIndex > 0) {
-    --activeTaskIndex;
+  if (activeTaskIndex >= m_tasks.size()) {
+    return;
   }
-  const auto& targetTask = m_tasks[activeTaskIndex];
+  size_t newIndex = activeTaskIndex;
+  if (direction > 0 && activeTaskIndex + 1 < m_tasks.size()) {
+    ++newIndex;
+  } else if (direction < 0 && activeTaskIndex > 0) {
+    --newIndex;
+  }
+  if (newIndex == activeTaskIndex) {
+    return;
+  }
+  const auto& targetTask = m_tasks[newIndex];
   m_platform.activateToplevel(targetTask.firstHandle);
 }
 
