@@ -831,8 +831,13 @@
           "description": "Arrange widgets across the bar lanes"
         },
         "settings": {
-          "title": "Widget Settings",
-          "empty": "No settings match the current filters."
+          "empty": "No settings match the current filters.",
+          "sections": {
+            "runtime": "Runtime",
+            "widget": "Widget",
+            "presentation": "Presentation",
+            "grouping": "Grouping"
+          }
         },
         "raw": {
           "title": "Raw Settings",
@@ -858,7 +863,6 @@
           "delete-confirm-desc": "This named widget will be removed from every bar and its settings discarded."
         },
         "inspector": {
-          "edit-title": "Editing widget",
           "add-title": "Add widget to {lane}",
           "add-instance-title": "Add new named {widget} widget to {lane}",
           "move-to-lane": "Move to {lane}"
