@@ -319,7 +319,9 @@ settings::RegistryEnvironment SettingsWindow::buildRegistryEnvironment() const {
     );
   }
   for (const auto& t : noctalia::theme::CommunityTemplateService::availableTemplates()) {
-    env.communityTemplates.push_back(settings::SelectOption{t.id, t.displayName});
+    env.communityTemplates.push_back(
+        settings::SelectOption{.value = t.id, .label = t.displayName, .description = t.category}
+    );
   }
   static const std::vector<settings::SelectOption> kFontFamilies = discoverFontFamilyOptions();
   env.fontFamilies = kFontFamilies;
@@ -834,9 +836,11 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
   const auto sections = sectionKeys(m_settingsRegistry);
   if (m_selectedSection == "bar" && selectedBar == nullptr) {
     m_selectedSection.clear();
-  } else if (m_selectedSection != "bar"
-             && !m_selectedSection.empty()
-             && std::find(sections.begin(), sections.end(), m_selectedSection) == sections.end()) {
+  } else if (
+      m_selectedSection != "bar"
+      && !m_selectedSection.empty()
+      && std::find(sections.begin(), sections.end(), m_selectedSection) == sections.end()
+  ) {
     m_selectedSection.clear();
   }
   if (m_selectedSection.empty()) {

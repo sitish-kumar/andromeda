@@ -1618,16 +1618,18 @@
           "description": "Use the bundled catalog of theme templates for apps"
         },
         "builtin-ids": {
-          "label": "Active Built-in Templates",
-          "description": "Template IDs to render on each theme change"
+          "label": "Built-in Templates",
+          "description": "Toggle bundled app templates to render on each theme change",
+          "empty": "No built-in templates are available."
         },
         "enable-community-templates": {
           "label": "Enable Community Templates",
           "description": "Download and apply templates from the community catalog"
         },
         "community-ids": {
-          "label": "Active Community Templates",
-          "description": "Community template IDs to render on each theme change"
+          "label": "Community Templates",
+          "description": "Toggle cached community templates to render on each theme change",
+          "empty": "No community templates are available yet. Enable community templates and refresh the catalog first."
         }
       },
       "shell": {

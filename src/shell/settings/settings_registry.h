@@ -144,6 +144,12 @@ namespace settings {
     bool requireAtLeastOne = false; // disable removing the last selected entry
   };
 
+  struct TemplateGridSetting {
+    std::vector<SelectOption> options;
+    std::vector<std::string> selectedValues;
+    std::string emptyText;
+  };
+
   struct ButtonSetting {
     std::string label;
     std::function<void()> action;
@@ -161,7 +167,8 @@ namespace settings {
   using SettingControl = std::variant<
       ToggleSetting, SelectSetting, SliderSetting, TextSetting, OptionalNumberSetting, OptionalStepperSetting,
       StepperSetting, ListSetting, ShortcutListSetting, KeybindListSetting, SessionPanelActionsSetting,
-      IdleBehaviorsSetting, MultiSelectSetting, ButtonSetting, ColorSpecPickerSetting, SearchPickerSetting>;
+      IdleBehaviorsSetting, MultiSelectSetting, TemplateGridSetting, ButtonSetting, ColorSpecPickerSetting,
+      SearchPickerSetting>;
 
   struct SettingVisibilityCondition {
     std::vector<std::string> path;

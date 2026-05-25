@@ -634,12 +634,16 @@ namespace settings {
       std::vector<SelectOption> templateOptions;
       templateOptions.reserve(availableTemplates.size());
       for (const auto& t : availableTemplates) {
-        templateOptions.push_back(SelectOption{t.id, t.displayName});
+        templateOptions.push_back(SelectOption{.value = t.id, .label = t.displayName, .description = t.category});
       }
       entries.push_back(makeEntry(
           "templates", "built-in", tr("settings.schema.templates.builtin-ids.label"),
           tr("settings.schema.templates.builtin-ids.description"), {"theme", "templates", "builtin_ids"},
-          ListSetting{.items = cfg.theme.templates.builtinIds, .suggestedOptions = std::move(templateOptions)},
+          TemplateGridSetting{
+              .options = std::move(templateOptions),
+              .selectedValues = cfg.theme.templates.builtinIds,
+              .emptyText = tr("settings.schema.templates.builtin-ids.empty"),
+          },
           "theme templates apps foot walker gtk"
       ));
     }
@@ -652,7 +656,11 @@ namespace settings {
     entries.push_back(makeEntry(
         "templates", "community", tr("settings.schema.templates.community-ids.label"),
         tr("settings.schema.templates.community-ids.description"), {"theme", "templates", "community_ids"},
-        ListSetting{.items = cfg.theme.templates.communityIds, .suggestedOptions = env.communityTemplates},
+        TemplateGridSetting{
+            .options = env.communityTemplates,
+            .selectedValues = cfg.theme.templates.communityIds,
+            .emptyText = tr("settings.schema.templates.community-ids.empty"),
+        },
         "theme templates community apps discord fuzzel vscode walker"
     ));
 
