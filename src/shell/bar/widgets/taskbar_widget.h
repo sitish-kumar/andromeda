@@ -83,6 +83,7 @@ private:
   [[nodiscard]] std::string resolveIconPath(const std::string& appId, const std::string& iconNameOrPath);
   void openTaskContextMenu(const TaskModel& task, InputArea& area);
   void activateAdjacentWorkspace(int direction);
+  void activateAdjacentTask(int direction);
   [[nodiscard]] bool activeWorkspaceIndex(std::size_t& index) const;
   [[nodiscard]] wl_output* toplevelOutputFilter() const noexcept;
   [[nodiscard]] bool useMultiOutputWorkspaceKeys() const noexcept;
