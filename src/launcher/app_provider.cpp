@@ -191,7 +191,7 @@ bool AppProvider::activate(const LauncherResult& result) {
     };
 
     if (chosen != nullptr) {
-      return desktop_entry_launch::launchAction(*chosen, entry.id, entry.workingDir, launchOptions);
+      return desktop_entry_launch::launchAction(*chosen, entry.id, entry.workingDir, entry.terminal, launchOptions);
     }
     return desktop_entry_launch::launchEntry(entry, launchOptions);
   }

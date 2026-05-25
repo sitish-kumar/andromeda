@@ -30,7 +30,7 @@ namespace desktop_entry_launch {
   [[nodiscard]] bool launchEntry(const DesktopEntry& entry, const LaunchOptions& options = {});
 
   [[nodiscard]] bool launchAction(
-      const DesktopAction& action, std::string_view appName, std::string_view workingDir,
+      const DesktopAction& action, std::string_view appName, std::string_view workingDir, bool terminal,
       const LaunchOptions& options = {}
   );
 

@@ -216,9 +216,10 @@ namespace desktop_entry_launch {
   }
 
   bool launchAction(
-      const DesktopAction& action, std::string_view appName, std::string_view workingDir, const LaunchOptions& options
+      const DesktopAction& action, std::string_view appName, std::string_view workingDir, bool terminal,
+      const LaunchOptions& options
   ) {
-    auto prepared = prepareCommand(action.exec, false, workingDir);
+    auto prepared = prepareCommand(action.exec, terminal, workingDir);
     if (!prepared.has_value()) {
       log.warn("Failed to prepare launch command for desktop action '{}'", action.id.empty() ? action.name : action.id);
       return false;
