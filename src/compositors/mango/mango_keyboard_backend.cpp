@@ -157,8 +157,8 @@ void MangoKeyboardBackend::ensureConnected() const {
   }
 
   m_registry = wl_display_get_registry(m_display);
-  if (m_registry == nullptr ||
-      wl_registry_add_listener(m_registry, &kRegistryListener, const_cast<MangoKeyboardBackend*>(this)) != 0) {
+  if (m_registry == nullptr
+      || wl_registry_add_listener(m_registry, &kRegistryListener, const_cast<MangoKeyboardBackend*>(this)) != 0) {
     const_cast<MangoKeyboardBackend*>(this)->cleanup();
     m_failed = true;
     return;
@@ -241,8 +241,9 @@ void MangoKeyboardBackend::onRegistryGlobal(std::uint32_t name, const char* inte
     return;
   }
 
-  if (std::string_view(interfaceName) != zdwl_ipc_manager_v2_interface.name || m_registry == nullptr ||
-      m_manager != nullptr) {
+  if (std::string_view(interfaceName) != zdwl_ipc_manager_v2_interface.name
+      || m_registry == nullptr
+      || m_manager != nullptr) {
     return;
   }
 

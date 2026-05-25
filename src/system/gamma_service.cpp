@@ -153,8 +153,10 @@ GammaService::GeoCoordinates GammaService::scheduleCoordinates() const {
 }
 
 bool GammaService::isManualMode() const {
-  return !effectiveForce() && (!m_config.useWeatherLocation || !hasWeatherCoordinates()) &&
-         normalizedClock(m_config.startTime).has_value() && normalizedClock(m_config.stopTime).has_value();
+  return !effectiveForce()
+      && (!m_config.useWeatherLocation || !hasWeatherCoordinates())
+      && normalizedClock(m_config.startTime).has_value()
+      && normalizedClock(m_config.stopTime).has_value();
 }
 
 bool GammaService::isManualNightPhase() const {
@@ -213,8 +215,10 @@ std::optional<std::string> GammaService::normalizedClock(std::string_view value)
   if (value.size() != 5 || value[2] != ':') {
     return std::nullopt;
   }
-  if (!std::isdigit(static_cast<unsigned char>(value[0])) || !std::isdigit(static_cast<unsigned char>(value[1])) ||
-      !std::isdigit(static_cast<unsigned char>(value[3])) || !std::isdigit(static_cast<unsigned char>(value[4]))) {
+  if (!std::isdigit(static_cast<unsigned char>(value[0]))
+      || !std::isdigit(static_cast<unsigned char>(value[1]))
+      || !std::isdigit(static_cast<unsigned char>(value[3]))
+      || !std::isdigit(static_cast<unsigned char>(value[4]))) {
     return std::nullopt;
   }
   const int hour = (value[0] - '0') * 10 + (value[1] - '0');
@@ -237,12 +241,19 @@ GammaService::SolarTimes GammaService::computeSolarTimes(double lat, double lon)
   const double dayOfYear = static_cast<double>(local.tm_yday + 1);
   const double fractionalYear = 2.0 * kPi / 365.0 * (dayOfYear - 1.0);
 
-  const double equationOfTime =
-      229.18 * (0.000075 + 0.001868 * std::cos(fractionalYear) - 0.032077 * std::sin(fractionalYear) -
-                0.014615 * std::cos(2.0 * fractionalYear) - 0.040849 * std::sin(2.0 * fractionalYear));
-  const double declination = 0.006918 - 0.399912 * std::cos(fractionalYear) + 0.070257 * std::sin(fractionalYear) -
-                             0.006758 * std::cos(2.0 * fractionalYear) + 0.000907 * std::sin(2.0 * fractionalYear) -
-                             0.002697 * std::cos(3.0 * fractionalYear) + 0.00148 * std::sin(3.0 * fractionalYear);
+  const double equationOfTime = 229.18
+      * (0.000075
+         + 0.001868 * std::cos(fractionalYear)
+         - 0.032077 * std::sin(fractionalYear)
+         - 0.014615 * std::cos(2.0 * fractionalYear)
+         - 0.040849 * std::sin(2.0 * fractionalYear));
+  const double declination = 0.006918
+      - 0.399912 * std::cos(fractionalYear)
+      + 0.070257 * std::sin(fractionalYear)
+      - 0.006758 * std::cos(2.0 * fractionalYear)
+      + 0.000907 * std::sin(2.0 * fractionalYear)
+      - 0.002697 * std::cos(3.0 * fractionalYear)
+      + 0.00148 * std::sin(3.0 * fractionalYear);
 
   constexpr double kSunriseZenith = 90.833 * kPi / 180.0;
   const double latRad = lat * kPi / 180.0;

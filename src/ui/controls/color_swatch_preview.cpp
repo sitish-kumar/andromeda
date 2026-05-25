@@ -76,8 +76,9 @@ float ColorSwatchPreviewStrip::preferredWidth() const noexcept {
   if (m_visibleSwatches == 0) {
     return 0.0f;
   }
-  return m_paddingX * 2.0f + m_discSize * static_cast<float>(m_visibleSwatches) +
-         m_gap * static_cast<float>(m_visibleSwatches - 1);
+  return m_paddingX * 2.0f
+      + m_discSize * static_cast<float>(m_visibleSwatches)
+      + m_gap * static_cast<float>(m_visibleSwatches - 1);
 }
 
 void ColorSwatchPreviewStrip::syncGeometry() {

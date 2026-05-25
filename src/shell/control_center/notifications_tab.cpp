@@ -93,8 +93,9 @@ namespace {
   constexpr int kExpandedMaxLines = 500;
 
   std::filesystem::path remoteNotificationIconCachePath(std::string_view url) {
-    return std::filesystem::path("/tmp") / "noctalia-notification-icons" /
-           (std::to_string(std::hash<std::string_view>{}(url)) + ".img");
+    return std::filesystem::path("/tmp")
+        / "noctalia-notification-icons"
+        / (std::to_string(std::hash<std::string_view>{}(url)) + ".img");
   }
 
   std::string normalizeLocalIconPath(std::string_view iconValue) { return uri::normalizeFileUrl(iconValue); }
@@ -140,9 +141,8 @@ namespace {
   }
 
   std::int64_t currentRelativeTimeSlot() {
-    return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch())
-               .count() /
-           15;
+    return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count()
+        / 15;
   }
 
   bool matchesHistoryFilter(const NotificationHistoryEntry& e, std::size_t filterIndex) {
@@ -230,10 +230,9 @@ namespace {
     );
     bool bodyLineTruncated = false;
     const std::string collapsedBodyText = StringUtils::truncateByLines(bodyText, kBodyMaxLines, &bodyLineTruncated);
-    const bool bodyExpandable = bodyLineTruncated || canExpandText(
-                                                         renderer, bodyText, Style::fontSizeCaption * scale,
-                                                         FontWeight::Normal, metrics.cardTextWidth, kBodyMaxLines
-                                                     );
+    const bool bodyExpandable = bodyLineTruncated
+        || canExpandText(renderer, bodyText, Style::fontSizeCaption * scale, FontWeight::Normal, metrics.cardTextWidth,
+                         kBodyMaxLines);
     metrics.canExpand = summaryExpandable || bodyExpandable;
     metrics.expanded = metrics.canExpand && expandedRequested;
     metrics.bodyText = metrics.expanded ? bodyText : collapsedBodyText;
@@ -258,11 +257,11 @@ namespace {
         metrics.expanded ? kExpandedMaxLines : kSummaryMaxLines
     );
     const float bodyHeight = metrics.bodyText.empty()
-                                 ? 0.0f
-                                 : measuredTextHeight(
-                                       renderer, metrics.bodyText, Style::fontSizeCaption * scale, FontWeight::Normal,
-                                       metrics.cardTextWidth, metrics.expanded ? kExpandedMaxLines : kBodyMaxLines
-                                   );
+        ? 0.0f
+        : measuredTextHeight(
+              renderer, metrics.bodyText, Style::fontSizeCaption * scale, FontWeight::Normal, metrics.cardTextWidth,
+              metrics.expanded ? kExpandedMaxLines : kBodyMaxLines
+          );
 
     const float actionsRowHeight =
         showHistoryActions ? measureHistoryActionsRowHeight(renderer, entry.notification.actions, scale) : 0.0f;
@@ -525,8 +524,8 @@ namespace {
       if (entry.notification.imageData.has_value()) {
         const auto& image = *entry.notification.imageData;
         if (image.width > 0 && image.height > 0 && !image.data.empty()) {
-          const bool validImageMetadata = image.bitsPerSample == 8 && ((image.channels == 4 && image.hasAlpha) ||
-                                                                       (image.channels == 3 && !image.hasAlpha));
+          const bool validImageMetadata = image.bitsPerSample == 8
+              && ((image.channels == 4 && image.hasAlpha) || (image.channels == 3 && !image.hasAlpha));
           const PixmapFormat format = image.channels == 3 ? PixmapFormat::RGB : PixmapFormat::RGBA;
           const std::uint64_t key = rawImageKey(entry);
           bool ready = m_imageKind == ImageKind::Raw && m_rawImageKey == key && m_image->hasImage();

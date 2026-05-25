@@ -111,10 +111,14 @@ std::size_t TrayDrawerPanel::visibleItemCount() const {
       return false;
     }
     const auto lowered = StringUtils::toLower(token);
-    return hasVariant(lowered, item.id) || hasVariant(lowered, item.busName) || hasVariant(lowered, item.itemName) ||
-           hasVariant(lowered, item.processName) || hasVariant(lowered, item.objectPath) ||
-           hasVariant(lowered, item.iconName) || hasVariant(lowered, item.overlayIconName) ||
-           hasVariant(lowered, item.attentionIconName);
+    return hasVariant(lowered, item.id)
+        || hasVariant(lowered, item.busName)
+        || hasVariant(lowered, item.itemName)
+        || hasVariant(lowered, item.processName)
+        || hasVariant(lowered, item.objectPath)
+        || hasVariant(lowered, item.iconName)
+        || hasVariant(lowered, item.overlayIconName)
+        || hasVariant(lowered, item.attentionIconName);
   };
   std::size_t visible = 0;
   for (const auto& item : m_tray->items()) {

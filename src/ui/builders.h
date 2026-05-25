@@ -6,7 +6,6 @@
 #include "ui/controls/box.h"
 #include "ui/controls/button.h"
 #include "ui/controls/checkbox.h"
-#include "ui/controls/chip.h"
 #include "ui/controls/flex.h"
 #include "ui/controls/glyph.h"
 #include "ui/controls/image.h"
@@ -248,10 +247,10 @@ namespace ui {
 
   struct SliderProps {
     Slider** out = nullptr;
-    std::optional<float> minValue = std::nullopt;
-    std::optional<float> maxValue = std::nullopt;
-    std::optional<float> step = std::nullopt;
-    std::optional<float> value = std::nullopt;
+    std::optional<double> minValue = std::nullopt;
+    std::optional<double> maxValue = std::nullopt;
+    std::optional<double> step = std::nullopt;
+    std::optional<double> value = std::nullopt;
     std::optional<bool> enabled = std::nullopt;
     std::optional<float> trackHeight = std::nullopt;
     std::optional<float> thumbSize = std::nullopt;
@@ -263,7 +262,7 @@ namespace ui {
     std::optional<float> opacity = std::nullopt;
     std::optional<bool> visible = std::nullopt;
     std::optional<bool> participatesInLayout = std::nullopt;
-    std::function<void(float)> onValueChanged = nullptr;
+    std::function<void(double)> onValueChanged = nullptr;
     std::function<void()> onDragEnd = nullptr;
     std::function<void(Slider&)> configure = nullptr;
   };
@@ -470,19 +469,6 @@ namespace ui {
     std::function<void(Spinner&)> configure = nullptr;
   };
 
-  struct ChipProps {
-    Chip** out = nullptr;
-    std::optional<std::string> text = std::nullopt;
-    std::optional<bool> active = std::nullopt;
-    std::optional<float> width = std::nullopt;
-    std::optional<float> height = std::nullopt;
-    std::optional<float> flexGrow = std::nullopt;
-    std::optional<float> opacity = std::nullopt;
-    std::optional<bool> visible = std::nullopt;
-    std::optional<bool> participatesInLayout = std::nullopt;
-    std::function<void(Chip&)> configure = nullptr;
-  };
-
   struct ProgressBarProps {
     ProgressBar** out = nullptr;
     std::optional<ColorSpec> fill = std::nullopt;
@@ -500,7 +486,7 @@ namespace ui {
     std::function<void(ProgressBar&)> configure = nullptr;
   };
 
-  [[nodiscard]] std::unique_ptr<Flex> makeFlex(FlexDirection direction, FlexProps props);
+  [[nodiscard]] std::unique_ptr<Flex> flex(FlexDirection direction, FlexProps props);
   [[nodiscard]] std::unique_ptr<Input> input(InputProps props);
   [[nodiscard]] std::unique_ptr<Button> button(ButtonProps props);
   [[nodiscard]] std::unique_ptr<Label> label(LabelProps props);
@@ -521,18 +507,17 @@ namespace ui {
   [[nodiscard]] std::unique_ptr<Stepper> stepper(StepperProps props);
   [[nodiscard]] std::unique_ptr<KeybindRecorder> keybindRecorder(KeybindRecorderProps props);
   [[nodiscard]] std::unique_ptr<Spinner> spinner(SpinnerProps props = {});
-  [[nodiscard]] std::unique_ptr<Chip> chip(ChipProps props = {});
   [[nodiscard]] std::unique_ptr<ProgressBar> progressBar(ProgressBarProps props = {});
   [[nodiscard]] std::unique_ptr<Spacer> spacer();
 
   template <typename... Children> [[nodiscard]] std::unique_ptr<Flex> row(FlexProps props, Children&&... children) {
-    auto container = makeFlex(FlexDirection::Horizontal, std::move(props));
+    auto container = flex(FlexDirection::Horizontal, std::move(props));
     (container->addChild(std::forward<Children>(children)), ...);
     return container;
   }
 
   template <typename... Children> [[nodiscard]] std::unique_ptr<Flex> column(FlexProps props, Children&&... children) {
-    auto container = makeFlex(FlexDirection::Vertical, std::move(props));
+    auto container = flex(FlexDirection::Vertical, std::move(props));
     (container->addChild(std::forward<Children>(children)), ...);
     return container;
   }

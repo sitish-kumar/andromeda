@@ -391,8 +391,9 @@ bool LuauHost::startAsyncCommand(std::string command, int callbackRef, std::chro
 }
 
 bool LuauHost::startAsyncProcessMatch(std::vector<std::string> needles, int callbackRef) {
-  if (needles.empty() || callbackRef <= LUA_REFNIL ||
-      m_asyncProcessMatchCallbackRefs.size() >= kMaxAsyncProcessMatchesPerHost) {
+  if (needles.empty()
+      || callbackRef <= LUA_REFNIL
+      || m_asyncProcessMatchCallbackRefs.size() >= kMaxAsyncProcessMatchesPerHost) {
     return false;
   }
 

@@ -519,9 +519,9 @@ void BluetoothTab::syncPairingCard() {
     m_pairingTitle->setText(i18n::tr("control-center.bluetooth.pair-title", "device", alias));
   }
   const bool needsInput = req.kind == BluetoothPairingKind::PinCode || req.kind == BluetoothPairingKind::Passkey;
-  const bool showsCode = req.kind == BluetoothPairingKind::Confirm ||
-                         req.kind == BluetoothPairingKind::DisplayPasskey ||
-                         req.kind == BluetoothPairingKind::DisplayPinCode;
+  const bool showsCode = req.kind == BluetoothPairingKind::Confirm
+      || req.kind == BluetoothPairingKind::DisplayPasskey
+      || req.kind == BluetoothPairingKind::DisplayPinCode;
 
   if (m_pairingDetail != nullptr) {
     switch (req.kind) {

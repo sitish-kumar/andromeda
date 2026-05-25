@@ -1,6 +1,8 @@
 #include "shell/settings/widget_settings_registry.h"
 
 #include "i18n/i18n.h"
+#include "render/core/renderer.h"
+#include "shell/settings/font_weight_i18n.h"
 #include "ui/style.h"
 
 #include <algorithm>
@@ -112,6 +114,9 @@ namespace settings {
         }
         if (stat == "gpu_temp") {
           return "temperature";
+        }
+        if (stat == "gpu_usage") {
+          return "gpu-usage";
         }
         if (stat == "gpu_vram" || stat == "ram_used" || stat == "ram_pct") {
           return "memory";
@@ -325,18 +330,19 @@ namespace settings {
     }
 
     if (const auto it = cfg.widgets.find(std::string(name)); it != cfg.widgets.end()) {
-      std::string title = widgetInstanceDisplayLabel(name);
+      std::string detail = it->second.type.empty() ? tr("settings.entities.widget.detail.custom") : it->second.type;
       if (it->second.type == "scripted") {
         if (const std::string script = it->second.getString("script", ""); !script.empty()) {
           if (auto manifest = scripting::manifestForScriptConfig(script);
               manifest.has_value() && !manifest->label.empty()) {
-            title = manifest->label;
+            detail += ": ";
+            detail += manifest->label;
           }
         }
       }
       return WidgetReferenceInfo{
-          .title = std::move(title),
-          .detail = it->second.type.empty() ? tr("settings.entities.widget.detail.custom") : it->second.type,
+          .title = std::string(name),
+          .detail = std::move(detail),
           .badge = tr("settings.entities.widget.kinds.named"),
           .kind = WidgetReferenceKind::Named,
       };
@@ -436,11 +442,18 @@ namespace settings {
 
     auto anchor = boolSpec("anchor", false, true);
     auto widgetColor = colorSpec("color", {}, true);
+    std::vector<WidgetSettingSelectOption> fontWeightOptions;
+    fontWeightOptions.reserve(kFontWeightOptions.size() + 1);
+    fontWeightOptions.push_back(WidgetSettingSelectOption{"", "settings.options.font-weight.default"});
+    for (const FontWeightI18nOption& option : kFontWeightOptions) {
+      fontWeightOptions.push_back(
+          WidgetSettingSelectOption{std::to_string(static_cast<int>(option.weight)), std::string(option.labelKey)}
+      );
+    }
+    auto fontWeight = selectSpec("font_weight", "", std::move(fontWeightOptions), true);
+    fontWeight.integerValue = true;
 
     auto capsuleToggle = boolSpec("capsule", false);
-    auto capsuleGroup = stringSpec("capsule_group");
-    capsuleGroup.visibleWhen = capsuleOn;
-
     auto capsuleFill = colorSpec("capsule_fill", "", true);
     capsuleFill.visibleWhen = capsuleOn;
 
@@ -456,15 +469,20 @@ namespace settings {
     capsuleRadius.visibleWhen = capsuleOn;
     auto capsuleOpacity = doubleSpec("capsule_opacity", 1.0, 0.0, 1.0, 0.01);
     capsuleOpacity.visibleWhen = capsuleOn;
+
+    auto capsuleGroup = stringSpec("capsule_group");
+    capsuleGroup.visibleWhen = capsuleOn;
+
     return {
-        std::move(anchor),         std::move(widgetColor),    std::move(capsuleToggle), std::move(capsuleRadius),
-        std::move(capsuleGroup),   std::move(capsuleFill),    std::move(capsuleBorder), std::move(capsuleForeground),
-        std::move(capsulePadding), std::move(capsuleOpacity),
+        std::move(anchor),         std::move(widgetColor),    std::move(fontWeight),    std::move(capsuleToggle),
+        std::move(capsuleRadius),  std::move(capsuleFill),    std::move(capsuleBorder), std::move(capsuleForeground),
+        std::move(capsulePadding), std::move(capsuleOpacity), std::move(capsuleGroup),
     };
   }
 
   std::vector<WidgetSettingSpec> widgetSettingSpecs(std::string_view type) {
-    std::vector<WidgetSettingSpec> specs = commonWidgetSettingSpecs();
+    std::vector<WidgetSettingSpec> specs;
+    auto commonSpecs = commonWidgetSettingSpecs();
 
     auto add = [&](WidgetSettingSpec spec) { specs.push_back(std::move(spec)); };
     const std::vector<WidgetSettingSelectOption> shortFull = {
@@ -473,10 +491,11 @@ namespace settings {
     };
     const std::vector<WidgetSettingSelectOption> sysmonStats = {
         {"cpu_usage", "settings.widgets.options.cpu-usage"},   {"cpu_temp", "settings.widgets.options.cpu-temp"},
-        {"gpu_temp", "settings.widgets.options.gpu-temp"},     {"gpu_vram", "settings.widgets.options.gpu-vram"},
-        {"ram_used", "settings.widgets.options.ram-used"},     {"ram_pct", "settings.widgets.options.ram-percent"},
-        {"swap_pct", "settings.widgets.options.swap-percent"}, {"disk_pct", "settings.widgets.options.disk-percent"},
-        {"net_rx", "settings.widgets.options.net-rx"},         {"net_tx", "settings.widgets.options.net-tx"},
+        {"gpu_temp", "settings.widgets.options.gpu-temp"},     {"gpu_usage", "settings.widgets.options.gpu-usage"},
+        {"gpu_vram", "settings.widgets.options.gpu-vram"},     {"ram_used", "settings.widgets.options.ram-used"},
+        {"ram_pct", "settings.widgets.options.ram-percent"},   {"swap_pct", "settings.widgets.options.swap-percent"},
+        {"disk_pct", "settings.widgets.options.disk-percent"}, {"net_rx", "settings.widgets.options.net-rx"},
+        {"net_tx", "settings.widgets.options.net-tx"},
     };
     const std::vector<WidgetSettingSelectOption> sysmonDisplay = {
         {"gauge", "settings.widgets.options.gauge"},
@@ -599,9 +618,9 @@ namespace settings {
     } else if (type == "notifications") {
       add(boolSpec("hide_when_no_unread", false));
     } else if (type == "scripted") {
-      add(stringSpec("script"));
       add(selectSpec("scope", "instance", scriptedScopes));
       add(boolSpec("hot_reload", false, true));
+      add(stringSpec("script"));
     } else if (type == "session") {
       add(stringSpec("glyph", "shutdown"));
     } else if (type == "settings") {
@@ -669,7 +688,7 @@ namespace settings {
         emptyColor.visibleWhen = groupedWorkspaceSettings;
         add(std::move(emptyColor));
       }
-      for (auto& spec : specs) {
+      for (auto& spec : commonSpecs) {
         if (spec.key == "capsule_radius") {
           spec.descriptionKey = "settings.widgets.settings.capsule_radius.taskbar-description";
           spec.visibleWhen = WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
@@ -696,7 +715,7 @@ namespace settings {
       add(boolSpec("show_condition", true));
     } else if (type == "workspaces") {
       const WidgetSettingVisibility pillStyleOnly{{"minimal", {"false"}}};
-      for (auto& spec : specs) {
+      for (auto& spec : commonSpecs) {
         if (spec.key == "capsule_radius") {
           spec.descriptionKey = "settings.widgets.settings.capsule_radius.workspaces-description";
           spec.visibleWhen = pillStyleOnly;
@@ -739,6 +758,7 @@ namespace settings {
       }
     }
 
+    specs.insert(specs.end(), std::make_move_iterator(commonSpecs.begin()), std::make_move_iterator(commonSpecs.end()));
     return specs;
   }
 
@@ -800,18 +820,21 @@ namespace settings {
       const std::string script = config->getString("script", "");
       if (!script.empty()) {
         if (auto manifest = scripting::manifestForScriptConfig(script); manifest.has_value()) {
-          std::vector<WidgetSettingSpec> specs = commonWidgetSettingSpecs();
-          auto fromManifest = manifestSettingSpecs(*manifest);
-          specs.insert(
-              specs.end(), std::make_move_iterator(fromManifest.begin()), std::make_move_iterator(fromManifest.end())
-          );
-          // Power users keep the raw scripted knobs, tucked under "advanced".
+          std::vector<WidgetSettingSpec> specs;
+          auto commonSpecs = commonWidgetSettingSpecs();
           const std::vector<WidgetSettingSelectOption> scriptedScopes = {
               {.value = "instance", .labelKey = "settings.widgets.options.instance"},
               {.value = "shared", .labelKey = "settings.widgets.options.shared"},
           };
           specs.push_back(selectSpec("scope", "instance", scriptedScopes, true));
           specs.push_back(boolSpec("hot_reload", false, true));
+          auto fromManifest = manifestSettingSpecs(*manifest);
+          specs.insert(
+              specs.end(), std::make_move_iterator(fromManifest.begin()), std::make_move_iterator(fromManifest.end())
+          );
+          specs.insert(
+              specs.end(), std::make_move_iterator(commonSpecs.begin()), std::make_move_iterator(commonSpecs.end())
+          );
           return specs;
         }
       }

@@ -205,8 +205,10 @@ std::string_view Select::selectedText() const noexcept {
 }
 
 void Select::doLayout(Renderer& renderer) {
-  if (m_triggerBackground == nullptr || m_triggerLabel == nullptr || m_triggerGlyph == nullptr ||
-      m_triggerArea == nullptr) {
+  if (m_triggerBackground == nullptr
+      || m_triggerLabel == nullptr
+      || m_triggerGlyph == nullptr
+      || m_triggerArea == nullptr) {
     return;
   }
 
@@ -288,8 +290,9 @@ void Select::handleKey(std::uint32_t sym, std::uint32_t /*utf32*/, bool pressed)
     return;
   }
 
-  if (KeybindMatcher::matches(KeybindAction::Down, sym, 0) || KeybindMatcher::matches(KeybindAction::Up, sym, 0) ||
-      KeybindMatcher::matches(KeybindAction::Validate, sym, 0)) {
+  if (KeybindMatcher::matches(KeybindAction::Down, sym, 0)
+      || KeybindMatcher::matches(KeybindAction::Up, sym, 0)
+      || KeybindMatcher::matches(KeybindAction::Validate, sym, 0)) {
     if (!m_open) {
       toggleOpen();
     }

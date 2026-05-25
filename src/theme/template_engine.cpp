@@ -256,25 +256,51 @@ namespace noctalia::theme {
         return out;
       }
       if (formatType == "rgb") {
-        return "rgb(" + std::to_string(color.color.r) + ", " + std::to_string(color.color.g) + ", " +
-               std::to_string(color.color.b) + ")";
+        return "rgb("
+            + std::to_string(color.color.r)
+            + ", "
+            + std::to_string(color.color.g)
+            + ", "
+            + std::to_string(color.color.b)
+            + ")";
       }
       if (formatType == "rgb_csv") {
-        return std::to_string(color.color.r) + "," + std::to_string(color.color.g) + "," +
-               std::to_string(color.color.b);
+        return std::to_string(color.color.r)
+            + ","
+            + std::to_string(color.color.g)
+            + ","
+            + std::to_string(color.color.b);
       }
       if (formatType == "rgba") {
-        return "rgba(" + std::to_string(color.color.r) + ", " + std::to_string(color.color.g) + ", " +
-               std::to_string(color.color.b) + ", " + StringUtils::formatDotDecimal(color.alpha) + ")";
+        return "rgba("
+            + std::to_string(color.color.r)
+            + ", "
+            + std::to_string(color.color.g)
+            + ", "
+            + std::to_string(color.color.b)
+            + ", "
+            + StringUtils::formatDotDecimal(color.alpha)
+            + ")";
       }
       auto [h, s, l] = color.color.toHsl();
       if (formatType == "hsl")
-        return "hsl(" + std::to_string(static_cast<int>(h)) + ", " + std::to_string(static_cast<int>(s * 100.0)) +
-               "%, " + std::to_string(static_cast<int>(l * 100.0)) + "%)";
+        return "hsl("
+            + std::to_string(static_cast<int>(h))
+            + ", "
+            + std::to_string(static_cast<int>(s * 100.0))
+            + "%, "
+            + std::to_string(static_cast<int>(l * 100.0))
+            + "%)";
       if (formatType == "hsla") {
-        return "hsla(" + std::to_string(static_cast<int>(h)) + ", " + std::to_string(static_cast<int>(s * 100.0)) +
-               "%, " + std::to_string(static_cast<int>(l * 100.0)) + "%, " +
-               StringUtils::formatDotDecimal(color.alpha) + ")";
+        return "hsla("
+            + std::to_string(static_cast<int>(h))
+            + ", "
+            + std::to_string(static_cast<int>(s * 100.0))
+            + "%, "
+            + std::to_string(static_cast<int>(l * 100.0))
+            + "%, "
+            + StringUtils::formatDotDecimal(color.alpha)
+            + ")";
       }
       if (formatType == "hue")
         return std::to_string(static_cast<int>(h));
@@ -1267,8 +1293,8 @@ namespace noctalia::theme {
     std::vector<ParsedTemplateEntry> entries;
     entries.reserve(templates->size());
     for (const auto& [templateName, templateNode] : *templates) {
-      if (!m_options.enabledTemplates.empty() &&
-          !m_options.enabledTemplates.contains(std::string(templateName.str()))) {
+      if (!m_options.enabledTemplates.empty()
+          && !m_options.enabledTemplates.contains(std::string(templateName.str()))) {
         continue;
       }
       const toml::table* tpl = templateNode.as_table();

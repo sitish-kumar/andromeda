@@ -120,10 +120,9 @@ void ActiveWindowWidget::applyTitleScrollMode(bool titleVisible) {
     return;
   }
 
-  const bool shouldScroll =
-      titleVisible &&
-      (m_titleScrollMode == ActiveWindowTitleScrollMode::Always ||
-       (m_titleScrollMode == ActiveWindowTitleScrollMode::OnHover && m_area != nullptr && m_area->hovered()));
+  const bool shouldScroll = titleVisible
+      && (m_titleScrollMode == ActiveWindowTitleScrollMode::Always
+          || (m_titleScrollMode == ActiveWindowTitleScrollMode::OnHover && m_area != nullptr && m_area->hovered()));
   m_title->setAutoScroll(shouldScroll);
   m_title->setAutoScrollOnlyWhenHovered(false);
 }
@@ -160,8 +159,11 @@ void ActiveWindowWidget::syncState(Renderer& renderer) {
     }
   }
 
-  if (!desktopEntriesChanged && identifier == m_lastIdentifier && title == m_lastTitle && appId == m_lastAppId &&
-      emptyState == m_lastEmptyState) {
+  if (!desktopEntriesChanged
+      && identifier == m_lastIdentifier
+      && title == m_lastTitle
+      && appId == m_lastAppId
+      && emptyState == m_lastEmptyState) {
     return;
   }
 

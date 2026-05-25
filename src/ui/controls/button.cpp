@@ -411,9 +411,14 @@ void Button::applyVariant() {
 void Button::refreshInputAreaEnabled() {
   if (m_inputArea != nullptr) {
     m_inputArea->setEnabled(
-        m_enabled && (static_cast<bool>(m_onClick) || static_cast<bool>(m_onMotion) ||
-                      static_cast<bool>(m_onPointerMotion) || static_cast<bool>(m_onPress) ||
-                      static_cast<bool>(m_onEnter) || static_cast<bool>(m_onLeave) || static_cast<bool>(m_onRightClick))
+        m_enabled
+        && (static_cast<bool>(m_onClick)
+            || static_cast<bool>(m_onMotion)
+            || static_cast<bool>(m_onPointerMotion)
+            || static_cast<bool>(m_onPress)
+            || static_cast<bool>(m_onEnter)
+            || static_cast<bool>(m_onLeave)
+            || static_cast<bool>(m_onRightClick))
     );
   }
 }

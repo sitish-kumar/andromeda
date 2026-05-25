@@ -6,10 +6,7 @@
 #include "core/ui_phase.h"
 #include "render/render_context.h"
 #include "render/scene/node.h"
-#include "ui/controls/box.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/label.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "wayland/wayland_connection.h"
@@ -63,8 +60,15 @@ namespace {
   }
 
   [[nodiscard]] std::uint32_t osdSurfaceWidth(float s, const std::string& orientation) {
-    const float w = cardWidth(s, orientation) + Style::spaceMd * s;
+    const float w = cardWidth(s, orientation) + Style::spaceMd * s * 2.0f;
     return static_cast<std::uint32_t>(std::max(1, static_cast<int>(std::ceil(w))));
+  }
+
+  [[nodiscard]] std::int32_t horizontalLayerMarginFromScreenMargin(int offsetX, float scale) {
+    return std::max(
+        std::int32_t{0},
+        static_cast<std::int32_t>(offsetX) - static_cast<std::int32_t>(std::lround(Style::spaceMd * scale))
+    );
   }
 
   [[nodiscard]] std::uint32_t osdSurfaceHeight(float s, const std::string& orientation, bool showProgress) {
@@ -86,8 +90,6 @@ namespace {
 
   [[nodiscard]] float slideOffset(float s) { return Style::spaceSm * s; }
 
-  [[nodiscard]] int screenMargin(float s) { return static_cast<int>(std::lround(Style::spaceSm * s)); }
-
   [[nodiscard]] float osdCardRadius(float cw, float ch, float layoutScale) {
     const float maxR = std::min(cw, ch) * 0.5f;
     return std::min(maxR, Style::scaledRadiusXl(layoutScale));
@@ -104,17 +106,7 @@ namespace {
 
   [[nodiscard]] bool isLeftPosition(const std::string& position) { return position.ends_with("_left"); }
 
-  [[nodiscard]] bool isRightPosition(const std::string& position) { return position.ends_with("_right"); }
-
-  float cardBaseXForPosition(const std::string& position, float surfaceWidth, float cardW) {
-    if (isCenterPosition(position) && isLeftPosition(position)) {
-      return 0.0f;
-    }
-    if (isCenterPosition(position) && isRightPosition(position)) {
-      return std::max(0.0f, surfaceWidth - cardW);
-    }
-    return (surfaceWidth - cardW) * 0.5f;
-  }
+  float cardBaseX(float surfaceWidth, float cardW) { return (surfaceWidth - cardW) * 0.5f; }
 
   float cardBaseYForPosition(const std::string& position, float surfaceHeight, float cardH) {
     if (isBottomPosition(position)) {
@@ -191,6 +183,48 @@ void OsdOverlay::show(const OsdContent& content) {
   }
 }
 
+OsdOverlay::SurfaceMargins OsdOverlay::surfaceMarginsForPosition(const std::string& position) const {
+  const int marginH = (m_config != nullptr) ? std::max(0, m_config->config().osd.offsetX) : 0;
+  const int marginV = (m_config != nullptr) ? std::max(0, m_config->config().osd.offsetY) : 0;
+  const float layoutScale = osdUiScale(m_config);
+  const std::int32_t sideMargin = horizontalLayerMarginFromScreenMargin(marginH, layoutScale);
+
+  SurfaceMargins margins{
+      .top = marginV,
+      .right = sideMargin,
+      .bottom = 0,
+      .left = 0,
+  };
+
+  if (position == "top_left") {
+    margins.right = 0;
+    margins.left = sideMargin;
+  } else if (position == "top_center") {
+    margins.right = 0;
+  } else if (position == "bottom_left") {
+    margins.top = 0;
+    margins.right = 0;
+    margins.bottom = marginV;
+    margins.left = sideMargin;
+  } else if (position == "bottom_center") {
+    margins.top = 0;
+    margins.right = 0;
+    margins.bottom = marginV;
+  } else if (position == "bottom_right") {
+    margins.top = 0;
+    margins.bottom = marginV;
+  } else if (position == "center_left") {
+    margins.top = 0;
+    margins.right = 0;
+    margins.left = sideMargin;
+  } else if (position == "center_right") {
+    margins.top = 0;
+    margins.bottom = 0;
+  }
+
+  return margins;
+}
+
 void OsdOverlay::ensureSurfaces() {
   if (m_wayland == nullptr || m_renderContext == nullptr) {
     return;
@@ -199,13 +233,13 @@ void OsdOverlay::ensureSurfaces() {
   const std::string position =
       (m_config != nullptr && !m_config->config().osd.position.empty()) ? m_config->config().osd.position : "top_right";
   const std::string orientation = (m_config != nullptr && !m_config->config().osd.orientation.empty())
-                                      ? m_config->config().osd.orientation
-                                      : "horizontal";
+      ? m_config->config().osd.orientation
+      : "horizontal";
   const bool showProgress = m_content.showProgress;
   const float layoutScale = osdUiScale(m_config);
 
-  if (!m_instances.empty() &&
-      (position != m_lastPosition || orientation != m_lastOrientation || showProgress != m_lastShowProgress)) {
+  if (!m_instances.empty()
+      && (position != m_lastPosition || orientation != m_lastOrientation || showProgress != m_lastShowProgress)) {
     destroySurfaces();
   }
 
@@ -215,6 +249,21 @@ void OsdOverlay::ensureSurfaces() {
 
   if (!m_instances.empty() && std::abs(Style::cornerRadiusScale() - m_lastCornerRadiusScale) > 1.0e-4f) {
     destroySurfaces();
+  }
+
+  if (!m_instances.empty()) {
+    for (auto& inst : m_instances) {
+      if (inst->surface == nullptr) {
+        continue;
+      }
+      const SurfaceMargins margins = surfaceMarginsForPosition(position);
+      if (inst->surface->marginTop() != margins.top
+          || inst->surface->marginRight() != margins.right
+          || inst->surface->marginBottom() != margins.bottom
+          || inst->surface->marginLeft() != margins.left) {
+        inst->surface->setMargins(margins.top, margins.right, margins.bottom, margins.left);
+      }
+    }
   }
 
   if (!m_instances.empty() && m_instances.size() != m_wayland->outputs().size()) {
@@ -232,51 +281,30 @@ void OsdOverlay::ensureSurfaces() {
 
   const auto surfaceWidth = osdSurfaceWidth(layoutScale, orientation);
   const auto surfaceHeight = osdSurfaceHeight(layoutScale, orientation, showProgress);
-  const int margin = screenMargin(layoutScale);
 
   for (const auto& output : m_wayland->outputs()) {
     auto inst = std::make_unique<Instance>();
     inst->output = output.output;
     inst->scale = output.scale;
     inst->uiLayoutScale = layoutScale;
+    const SurfaceMargins margins = surfaceMarginsForPosition(position);
 
     std::uint32_t anchor = LayerShellAnchor::Top | LayerShellAnchor::Right;
-    std::int32_t marginTop = margin;
-    std::int32_t marginRight = margin;
-    std::int32_t marginBottom = 0;
-    std::int32_t marginLeft = 0;
 
     if (position == "top_left") {
       anchor = LayerShellAnchor::Top | LayerShellAnchor::Left;
-      marginRight = 0;
-      marginLeft = margin;
     } else if (position == "top_center") {
       anchor = LayerShellAnchor::Top;
-      marginRight = 0;
     } else if (position == "bottom_left") {
       anchor = LayerShellAnchor::Bottom | LayerShellAnchor::Left;
-      marginTop = 0;
-      marginRight = 0;
-      marginBottom = margin;
-      marginLeft = margin;
     } else if (position == "bottom_center") {
       anchor = LayerShellAnchor::Bottom;
-      marginTop = 0;
-      marginRight = 0;
-      marginBottom = margin;
     } else if (position == "bottom_right") {
       anchor = LayerShellAnchor::Bottom | LayerShellAnchor::Right;
-      marginTop = 0;
-      marginBottom = margin;
     } else if (position == "center_left") {
       anchor = LayerShellAnchor::Left;
-      marginTop = 0;
-      marginRight = 0;
-      marginLeft = margin;
     } else if (position == "center_right") {
       anchor = LayerShellAnchor::Right;
-      marginTop = 0;
-      marginBottom = 0;
     }
 
     auto surfaceConfig = LayerSurfaceConfig{
@@ -286,10 +314,10 @@ void OsdOverlay::ensureSurfaces() {
         .width = surfaceWidth,
         .height = surfaceHeight,
         .exclusiveZone = 0,
-        .marginTop = marginTop,
-        .marginRight = marginRight,
-        .marginBottom = marginBottom,
-        .marginLeft = marginLeft,
+        .marginTop = margins.top,
+        .marginRight = margins.right,
+        .marginBottom = margins.bottom,
+        .marginLeft = margins.left,
         .keyboard = LayerShellKeyboard::None,
         .defaultWidth = surfaceWidth,
         .defaultHeight = surfaceHeight,
@@ -337,9 +365,9 @@ void OsdOverlay::prepareFrame(Instance& inst, bool needsUpdate, bool needsLayout
 
   m_renderContext->makeCurrent(inst.surface->renderTarget());
 
-  const bool needsSceneBuild = inst.sceneRoot == nullptr ||
-                               static_cast<std::uint32_t>(std::round(inst.sceneRoot->width())) != width ||
-                               static_cast<std::uint32_t>(std::round(inst.sceneRoot->height())) != height;
+  const bool needsSceneBuild = inst.sceneRoot == nullptr
+      || static_cast<std::uint32_t>(std::round(inst.sceneRoot->width())) != width
+      || static_cast<std::uint32_t>(std::round(inst.sceneRoot->height())) != height;
   if (needsSceneBuild) {
     UiPhaseScope layoutPhase(UiPhase::Layout);
     buildScene(inst, width, height);
@@ -392,19 +420,24 @@ void OsdOverlay::buildScene(Instance& inst, std::uint32_t width, std::uint32_t h
   inst.sceneRoot->setOpacity(0.0f);
   inst.surface->setSceneRoot(inst.sceneRoot.get());
 
-  const float cardX = cardBaseXForPosition(m_lastPosition, w, cw);
+  const float cardX = cardBaseX(w, cw);
   const float cardY = cardBaseYForPosition(m_lastPosition, h, ch);
 
-  auto background = std::make_unique<Box>();
-  background->setCardStyle();
-  background->setFill(colorSpecFromRole(ColorRole::Surface));
-  background->setBorder(colorSpecFromRole(ColorRole::Outline), border);
-  background->setRadius(osdCardRadius(cw, ch, s));
-  background->setSize(cw, ch);
-  background->setPosition(cardX, cardY);
-  background->setZIndex(0);
-  inst.background = background.get();
-  inst.sceneRoot->addChild(std::move(background));
+  inst.sceneRoot->addChild(
+      ui::box({
+          .out = &inst.background,
+          .width = cw,
+          .height = ch,
+          .configure = [cardX, cardY, cw, ch, s, border](Box& box) {
+            box.setCardStyle();
+            box.setFill(colorSpecFromRole(ColorRole::Surface));
+            box.setBorder(colorSpecFromRole(ColorRole::Outline), border);
+            box.setRadius(osdCardRadius(cw, ch, s));
+            box.setPosition(cardX, cardY);
+            box.setZIndex(0);
+          },
+      })
+  );
 
   auto card = std::make_unique<Node>();
   card->setSize(cw, ch);
@@ -412,49 +445,57 @@ void OsdOverlay::buildScene(Instance& inst, std::uint32_t width, std::uint32_t h
   card->setZIndex(1);
   inst.card = card.get();
 
-  auto row = std::make_unique<Flex>();
-  row->setDirection(vertical ? FlexDirection::Vertical : FlexDirection::Horizontal);
-  row->setAlign(FlexAlign::Center);
-  row->setJustify(FlexJustify::Start);
-  row->setGap(gap);
-  row->setSize(cw - pad * 2.0f, vertical ? ch - pad * 2.0f : ch);
-  row->setZIndex(1);
-  inst.row = row.get();
+  const auto rowProps = ui::FlexProps{
+      .out = &inst.row,
+      .align = FlexAlign::Center,
+      .justify = FlexJustify::Start,
+      .gap = gap,
+      .width = cw - pad * 2.0f,
+      .height = vertical ? ch - pad * 2.0f : ch,
+      .configure = [](Flex& flex) { flex.setZIndex(1); },
+  };
+  auto row = ui::flex(vertical ? FlexDirection::Vertical : FlexDirection::Horizontal, rowProps);
 
-  auto glyph = std::make_unique<Glyph>();
-  glyph->setGlyphSize(glyphSize(s));
-  glyph->setColor(colorSpecFromRole(ColorRole::Primary));
-  inst.glyph = glyph.get();
-  inst.glyph->setZIndex(1);
-  inst.row->addChild(std::move(glyph));
+  row->addChild(
+      ui::glyph({
+          .out = &inst.glyph,
+          .glyphSize = glyphSize(s),
+          .color = colorSpecFromRole(ColorRole::Primary),
+          .configure = [](Glyph& glyph) { glyph.setZIndex(1); },
+      })
+  );
 
-  auto value = std::make_unique<Label>();
-  value->setFontWeight(FontWeight::Bold);
-  value->setFontSize(valueFontSize(s));
-  value->setColor(colorSpecFromRole(ColorRole::OnSurface));
-  value->setTextAlign(vertical ? TextAlign::Center : TextAlign::End);
-  value->setMaxWidth(vertical ? cw - pad * 2.0f : 0.0f);
+  auto value = ui::label({
+      .out = &inst.value,
+      .text = "100%",
+      .fontSize = valueFontSize(s),
+      .color = colorSpecFromRole(ColorRole::OnSurface),
+      .maxWidth = vertical ? cw - pad * 2.0f : 0.0f,
+      .fontWeight = FontWeight::Bold,
+      .textAlign = vertical ? TextAlign::Center : TextAlign::End,
+      .configure = [](Label& label) { label.setZIndex(1); },
+  });
   // Reserve enough width for "100%" so the progress bar doesn't shrink at max values.
-  value->setText("100%");
   value->measure(*m_renderContext);
   inst.progressValueMinWidth = value->width();
   value->setMinWidth(vertical ? 0.0f : inst.progressValueMinWidth);
-  value->setZIndex(1);
-  inst.value = value.get();
 
   const float ph = progressHeight(s);
-  auto progress = std::make_unique<ProgressBar>();
-  progress->setTrack(colorSpecFromRole(ColorRole::SurfaceVariant));
-  progress->setFill(colorSpecFromRole(ColorRole::Primary));
-  progress->setOrientation(vertical ? ProgressBarOrientation::Vertical : ProgressBarOrientation::Horizontal);
-  progress->setFlexGrow(1.0f);
-  progress->setSize(vertical ? verticalProgressWidth(s) : 0.0f, vertical ? 0.0f : ph);
-  progress->setRadius(osdProgressRadius(s));
-  inst.progress = progress.get();
-  inst.progress->setZIndex(1);
-  inst.row->addChild(std::move(progress));
-  inst.row->addChild(std::move(value));
-  inst.card->addChild(std::move(row));
+  row->addChild(
+      ui::progressBar({
+          .out = &inst.progress,
+          .fill = colorSpecFromRole(ColorRole::Primary),
+          .track = colorSpecFromRole(ColorRole::SurfaceVariant),
+          .radius = osdProgressRadius(s),
+          .orientation = vertical ? ProgressBarOrientation::Vertical : ProgressBarOrientation::Horizontal,
+          .width = vertical ? verticalProgressWidth(s) : 0.0f,
+          .height = vertical ? 0.0f : ph,
+          .flexGrow = 1.0f,
+          .configure = [](ProgressBar& progress) { progress.setZIndex(1); },
+      })
+  );
+  row->addChild(std::move(value));
+  card->addChild(std::move(row));
 
   inst.sceneRoot->addChild(std::move(card));
 
@@ -462,8 +503,12 @@ void OsdOverlay::buildScene(Instance& inst, std::uint32_t width, std::uint32_t h
 }
 
 void OsdOverlay::updateInstanceContent(Instance& inst) {
-  if (m_renderContext == nullptr || inst.card == nullptr || inst.row == nullptr || inst.glyph == nullptr ||
-      inst.value == nullptr || inst.progress == nullptr) {
+  if (m_renderContext == nullptr
+      || inst.card == nullptr
+      || inst.row == nullptr
+      || inst.glyph == nullptr
+      || inst.value == nullptr
+      || inst.progress == nullptr) {
     return;
   }
 
@@ -504,7 +549,7 @@ void OsdOverlay::animateInstance(Instance& inst) {
   const float s = inst.uiLayoutScale;
   const float cw = cardWidth(s, m_lastOrientation);
   const float ch = cardHeight(s, m_lastOrientation, m_lastShowProgress);
-  const float baseX = cardBaseXForPosition(m_lastPosition, inst.sceneRoot->width(), cw);
+  const float baseX = cardBaseX(inst.sceneRoot->width(), cw);
   const float baseY = cardBaseYForPosition(m_lastPosition, inst.sceneRoot->height(), ch);
   const SlideVector slide = cardSlideVectorForPosition(m_lastPosition, slideOffset(s));
   if (!inst.visible) {

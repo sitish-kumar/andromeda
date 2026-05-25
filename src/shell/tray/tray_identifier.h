@@ -33,9 +33,13 @@ namespace tray {
       return true;
     }
     const auto lower = StringUtils::toLower(value);
-    return lower.find("status_icon") != std::string::npos || lower.find("statusnotifieritem") != std::string::npos ||
-           lower.find("statusnotifier") != std::string::npos || lower.find("status-notifier") != std::string::npos ||
-           lower.find("status notifier") != std::string::npos || lower == "electron" || lower == "xdg-dbus-proxy";
+    return lower.find("status_icon") != std::string::npos
+        || lower.find("statusnotifieritem") != std::string::npos
+        || lower.find("statusnotifier") != std::string::npos
+        || lower.find("status-notifier") != std::string::npos
+        || lower.find("status notifier") != std::string::npos
+        || lower == "electron"
+        || lower == "xdg-dbus-proxy";
   }
 
   inline std::vector<std::string> identifierVariants(std::string_view value) {
@@ -138,8 +142,9 @@ namespace tray {
       return;
     }
     for (const auto& variant : identifierVariants(text)) {
-      if (!isTransientUniqueIdentifier(variant) && !looksGenericStatusItemName(variant) &&
-          std::ranges::find(candidates, variant) == candidates.end()) {
+      if (!isTransientUniqueIdentifier(variant)
+          && !looksGenericStatusItemName(variant)
+          && std::ranges::find(candidates, variant) == candidates.end()) {
         candidates.push_back(variant);
       }
     }

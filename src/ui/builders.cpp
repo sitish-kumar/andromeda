@@ -72,7 +72,7 @@ namespace ui {
 
   } // namespace
 
-  std::unique_ptr<Flex> makeFlex(FlexDirection direction, FlexProps props) {
+  std::unique_ptr<Flex> flex(FlexDirection direction, FlexProps props) {
     auto flex = std::make_unique<Flex>();
     applyFlexProps(*flex, direction, props);
     if (props.configure) {
@@ -221,9 +221,13 @@ namespace ui {
     if (props.maxHeight.has_value()) {
       control->setMaxHeight(*props.maxHeight);
     }
-    if (props.padding.has_value() || props.paddingV.has_value() || props.paddingH.has_value() ||
-        props.paddingTop.has_value() || props.paddingRight.has_value() || props.paddingBottom.has_value() ||
-        props.paddingLeft.has_value()) {
+    if (props.padding.has_value()
+        || props.paddingV.has_value()
+        || props.paddingH.has_value()
+        || props.paddingTop.has_value()
+        || props.paddingRight.has_value()
+        || props.paddingBottom.has_value()
+        || props.paddingLeft.has_value()) {
       const float allPadding = props.padding.value_or(0.0f);
       const float verticalPadding = props.paddingV.value_or(allPadding);
       const float horizontalPadding = props.paddingH.value_or(allPadding);
@@ -834,24 +838,6 @@ namespace ui {
       } else {
         control->stop();
       }
-    }
-    applyNodeProps(*control, props);
-    if (props.configure) {
-      props.configure(*control);
-    }
-    if (props.out != nullptr) {
-      *props.out = control.get();
-    }
-    return control;
-  }
-
-  std::unique_ptr<Chip> chip(ChipProps props) {
-    auto control = std::make_unique<Chip>();
-    if (props.text.has_value()) {
-      control->setText(*props.text);
-    }
-    if (props.active.has_value()) {
-      control->setActive(*props.active);
     }
     applyNodeProps(*control, props);
     if (props.configure) {

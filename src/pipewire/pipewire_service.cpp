@@ -940,7 +940,8 @@ void PipeWireService::onNodeParam(
             param, SPA_TYPE_OBJECT_ParamRoute, nullptr, SPA_PARAM_ROUTE_index, SPA_POD_Int(&routeIndex),
             SPA_PARAM_ROUTE_direction, SPA_POD_Id(&routeDirection), SPA_PARAM_ROUTE_device, SPA_POD_Int(&routeDevice),
             SPA_PARAM_ROUTE_priority, SPA_POD_Int(&routePriority), SPA_PARAM_ROUTE_props, SPA_POD_Pod(&routeProps)
-        ) >= 0) {
+        )
+        >= 0) {
       const spa_pod_prop* availProp = spa_pod_find_prop(param, nullptr, SPA_PARAM_ROUTE_available);
       std::uint32_t routeAvailable = SPA_PARAM_AVAILABILITY_unknown;
       if (availProp != nullptr) {
@@ -967,8 +968,9 @@ void PipeWireService::onNodeParam(
       }
       upsertRoute(nd.routes, route);
 
-      if (routeAvailable != SPA_PARAM_AVAILABILITY_no && routeProps != nullptr &&
-          routeVolumeDirectionMatchesNode(nd.mediaClass, routeDirection)) {
+      if (routeAvailable != SPA_PARAM_AVAILABILITY_no
+          && routeProps != nullptr
+          && routeVolumeDirectionMatchesNode(nd.mediaClass, routeDirection)) {
         ParsedPropsVolumes basis{};
         basis.channelVol = nd.volume;
         basis.scalarVol = nd.volume;
@@ -1085,7 +1087,8 @@ void PipeWireService::onDeviceParam(
           param, SPA_TYPE_OBJECT_ParamRoute, nullptr, SPA_PARAM_ROUTE_index, SPA_POD_Int(&routeIndex),
           SPA_PARAM_ROUTE_direction, SPA_POD_Id(&routeDirection), SPA_PARAM_ROUTE_device, SPA_POD_Int(&routeDevice),
           SPA_PARAM_ROUTE_priority, SPA_POD_Int(&routePriority), SPA_PARAM_ROUTE_props, SPA_POD_Pod(&routeProps)
-      ) < 0) {
+      )
+      < 0) {
     return;
   }
 
@@ -1133,8 +1136,9 @@ void PipeWireService::onDeviceParam(
   if (parsedRouteVolume) {
     for (auto& [nid, node] : m_nodes) {
       (void)nid;
-      if (node != nullptr && node->deviceId == id &&
-          routeVolumeDirectionMatchesNode(node->mediaClass, routeDirection)) {
+      if (node != nullptr
+          && node->deviceId == id
+          && routeVolumeDirectionMatchesNode(node->mediaClass, routeDirection)) {
         mergeParsedVolumesIntoNode(*node, fromRoute);
       }
     }
@@ -1174,9 +1178,11 @@ void PipeWireService::refreshNodeIdentity(NodeData& nd) {
     return;
   }
   const ClientData& client = it->second;
-  if ((nd.applicationName.empty() || nd.applicationName == "audio-src" || nd.applicationName == "audio-sink" ||
-       nd.applicationName == "audio-source") &&
-      !client.name.empty()) {
+  if ((nd.applicationName.empty()
+       || nd.applicationName == "audio-src"
+       || nd.applicationName == "audio-sink"
+       || nd.applicationName == "audio-source")
+      && !client.name.empty()) {
     nd.applicationName = client.name;
   }
   if ((nd.applicationId.empty() || nd.applicationId == "audio-src") && !client.appId.empty()) {

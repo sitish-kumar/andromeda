@@ -140,9 +140,11 @@ NetworkManagerService::NetworkManagerService(SystemBus& bus) : m_bus(bus) {
           } catch (const sdbus::Error&) {
           }
         }
-        if (changedProperties.contains("PrimaryConnection") || changedProperties.contains("ActiveConnections") ||
-            changedProperties.contains("WirelessEnabled") || changedProperties.contains("State") ||
-            changedProperties.contains("Connectivity")) {
+        if (changedProperties.contains("PrimaryConnection")
+            || changedProperties.contains("ActiveConnections")
+            || changedProperties.contains("WirelessEnabled")
+            || changedProperties.contains("State")
+            || changedProperties.contains("Connectivity")) {
           rebindActiveConnection();
         }
         if (wirelessNowOn) {
@@ -215,8 +217,8 @@ void NetworkManagerService::refresh() {
       const bool firstSnapshot = !m_hasStateSnapshot;
       const bool wirelessEnabledChanged = next.wirelessEnabled != m_state.wirelessEnabled;
       const NetworkChangeOrigin origin = wirelessEnabledChanged
-                                             ? consumeWirelessEnabledChangeOrigin(next.wirelessEnabled)
-                                             : NetworkChangeOrigin::External;
+          ? consumeWirelessEnabledChangeOrigin(next.wirelessEnabled)
+          : NetworkChangeOrigin::External;
       m_state = std::move(next);
       m_hasStateSnapshot = true;
       if ((firstSnapshot || stateChanged || apsChanged || vpnsChanged || savedChanged) && m_changeCallback) {
@@ -981,8 +983,8 @@ void NetworkManagerService::refreshVpnConnections(std::function<void()> onComple
                                 }
                               }
 
-                              if (state == kNmActiveConnectionStateActivating ||
-                                  state == kNmActiveConnectionStateActivated) {
+                              if (state == kNmActiveConnectionStateActivating
+                                  || state == kNmActiveConnectionStateActivated) {
                                 if (auto connIt = properties.find("Connection"); connIt != properties.end()) {
                                   try {
                                     const auto profilePath = connIt->second.get<sdbus::ObjectPath>();
@@ -1354,8 +1356,9 @@ void NetworkManagerService::rebindActiveConnection() {
               if (interfaceName != kNmActiveConnectionInterface) {
                 return;
               }
-              if (changedProperties.contains("Devices") || changedProperties.contains("State") ||
-                  changedProperties.contains("Ip4Config")) {
+              if (changedProperties.contains("Devices")
+                  || changedProperties.contains("State")
+                  || changedProperties.contains("Ip4Config")) {
                 rebindActiveConnection();
               }
             });
@@ -1403,8 +1406,9 @@ void NetworkManagerService::rebindActiveDevice(const std::string& devicePath) {
                   const std::vector<std::string>& /*invalidatedProperties*/
               ) {
           if (interfaceName == kNmDeviceInterface) {
-            if (changedProperties.contains("Ip4Config") || changedProperties.contains("State") ||
-                changedProperties.contains("Interface")) {
+            if (changedProperties.contains("Ip4Config")
+                || changedProperties.contains("State")
+                || changedProperties.contains("Interface")) {
               refresh();
             }
           } else if (interfaceName == kNmDeviceWirelessInterface) {

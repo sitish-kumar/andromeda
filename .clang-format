@@ -4,6 +4,9 @@ ColumnLimit: 120
 PointerAlignment: Left
 NamespaceIndentation: All
 AlignAfterOpenBracket: BlockIndent
+AlignOperands: DontAlign
+BreakBeforeBinaryOperators: NonAssignment
+BreakBinaryOperations: RespectPrecedence
 SortIncludes: CaseSensitive
 IncludeBlocks: Regroup
 IncludeCategories:

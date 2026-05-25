@@ -438,15 +438,36 @@ void RectProgram::ensureInitialized() {
   m_shadowExclusionRadiiLocation = glGetUniformLocation(m_program.id(), "u_shadow_exclusion_radii");
   m_transformLocation = glGetUniformLocation(m_program.id(), "u_transform");
 
-  if (m_positionLocation < 0 || m_surfaceSizeLocation < 0 || m_quadSizeLocation < 0 || m_rectOriginLocation < 0 ||
-      m_rectSizeLocation < 0 || m_colorLocation < 0 || m_borderColorLocation < 0 || m_fillModeLocation < 0 ||
-      m_gradientDirectionLocation < 0 || m_radiiLocation < 0 || m_softnessLocation < 0 || m_gradientStopsLocation < 0 ||
-      m_gradientColor0Location < 0 || m_gradientColor1Location < 0 || m_gradientColor2Location < 0 ||
-      m_gradientColor3Location < 0 || m_invertFillLocation < 0 || m_noAaLocation < 0 || m_cornerShapesLocation < 0 ||
-      m_logicalInsetLocation < 0 || m_borderWidthLocation < 0 || m_outerShadowLocation < 0 ||
-      m_shadowCutoutOffsetLocation < 0 || m_shadowExclusionLocation < 0 || m_shadowExclusionOffsetLocation < 0 ||
-      m_shadowExclusionSizeLocation < 0 || m_shadowExclusionCornerShapesLocation < 0 ||
-      m_shadowExclusionLogicalInsetLocation < 0 || m_shadowExclusionRadiiLocation < 0 || m_transformLocation < 0) {
+  if (m_positionLocation < 0
+      || m_surfaceSizeLocation < 0
+      || m_quadSizeLocation < 0
+      || m_rectOriginLocation < 0
+      || m_rectSizeLocation < 0
+      || m_colorLocation < 0
+      || m_borderColorLocation < 0
+      || m_fillModeLocation < 0
+      || m_gradientDirectionLocation < 0
+      || m_radiiLocation < 0
+      || m_softnessLocation < 0
+      || m_gradientStopsLocation < 0
+      || m_gradientColor0Location < 0
+      || m_gradientColor1Location < 0
+      || m_gradientColor2Location < 0
+      || m_gradientColor3Location < 0
+      || m_invertFillLocation < 0
+      || m_noAaLocation < 0
+      || m_cornerShapesLocation < 0
+      || m_logicalInsetLocation < 0
+      || m_borderWidthLocation < 0
+      || m_outerShadowLocation < 0
+      || m_shadowCutoutOffsetLocation < 0
+      || m_shadowExclusionLocation < 0
+      || m_shadowExclusionOffsetLocation < 0
+      || m_shadowExclusionSizeLocation < 0
+      || m_shadowExclusionCornerShapesLocation < 0
+      || m_shadowExclusionLogicalInsetLocation < 0
+      || m_shadowExclusionRadiiLocation < 0
+      || m_transformLocation < 0) {
     throw std::runtime_error("failed to query rounded-rect shader locations");
   }
 }

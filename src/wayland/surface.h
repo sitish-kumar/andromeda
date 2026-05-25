@@ -12,6 +12,7 @@
 #include <vector>
 
 struct wl_callback;
+struct wl_output;
 struct wl_surface;
 struct ext_background_effect_surface_v1;
 struct wp_fractional_scale_v1;
@@ -120,6 +121,8 @@ public:
   [[nodiscard]] std::uint32_t bufferHeightFor(std::uint32_t logicalHeight) const noexcept;
 
   static void handleFrameDone(void* data, wl_callback* callback, std::uint32_t callbackData);
+  void onSurfaceOutputEnter(wl_surface* surface, wl_output* output);
+  void onSurfaceOutputLeave(wl_surface* surface, wl_output* output);
   [[nodiscard]] static bool hasPendingFrameWork();
   static void drainPendingFrameWork();
   [[nodiscard]] static bool hasPendingRenders();

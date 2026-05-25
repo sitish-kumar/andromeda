@@ -16,7 +16,19 @@ class SystemMonitorService;
 struct SystemStats;
 struct wl_output;
 
-enum class SysmonStat { CpuUsage, CpuTemp, GpuTemp, GpuVram, RamUsed, RamPct, SwapPct, DiskPct, NetRx, NetTx };
+enum class SysmonStat {
+  CpuUsage,
+  CpuTemp,
+  GpuTemp,
+  GpuUsage,
+  GpuVram,
+  RamUsed,
+  RamPct,
+  SwapPct,
+  DiskPct,
+  NetRx,
+  NetTx
+};
 enum class SysmonDisplayMode { Text, Graph, Gauge };
 
 class SysmonWidget : public Widget {

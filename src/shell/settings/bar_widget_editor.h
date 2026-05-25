@@ -42,7 +42,7 @@ namespace settings {
     std::function<void(Flex&, const SettingEntry&, std::unique_ptr<Node>)> makeRow;
     std::function<std::unique_ptr<Node>(bool, std::vector<std::string>, std::optional<bool> clearWhenValue)> makeToggle;
     std::function<std::unique_ptr<Node>(const SelectSetting&, std::vector<std::string>)> makeSelect;
-    std::function<std::unique_ptr<Node>(float, float, float, float, std::vector<std::string>, bool)> makeSlider;
+    std::function<std::unique_ptr<Node>(double, double, double, double, std::vector<std::string>, bool)> makeSlider;
     std::function<std::unique_ptr<Node>(const OptionalNumberSetting&, std::vector<std::string>)> makeOptionalNumber;
     std::function<std::unique_ptr<Node>(const OptionalStepperSetting&, std::vector<std::string>)> makeOptionalStepper;
     std::function<std::unique_ptr<Node>(const std::string&, const std::string&, std::vector<std::string>)> makeText;

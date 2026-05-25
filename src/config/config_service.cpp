@@ -431,8 +431,9 @@ void ConfigService::forceReload() {
   loadAll();
 
   const bool wallpaperChanged =
-      (oldDefault != m_defaultWallpaperPath || oldLast != m_lastWallpaperPath ||
-       oldMonitors != m_monitorWallpaperPaths);
+      (oldDefault != m_defaultWallpaperPath
+       || oldLast != m_lastWallpaperPath
+       || oldMonitors != m_monitorWallpaperPaths);
   if (wallpaperChanged && m_wallpaperChangeCallback) {
     m_wallpaperChangeCallback();
   }
@@ -627,8 +628,9 @@ void ConfigService::checkReload() {
   kLog.info("config changed, reloading");
   loadAll();
   const bool wallpaperChanged =
-      (oldDefault != m_defaultWallpaperPath || oldLast != m_lastWallpaperPath ||
-       oldMonitors != m_monitorWallpaperPaths);
+      (oldDefault != m_defaultWallpaperPath
+       || oldLast != m_lastWallpaperPath
+       || oldMonitors != m_monitorWallpaperPaths);
   if (wallpaperChanged && m_wallpaperChangeCallback) {
     m_wallpaperChangeCallback();
   }
@@ -1046,9 +1048,9 @@ void ConfigService::loadAll() {
     m_monitorWallpaperPaths.clear();
   }
 
-  const std::string parseError = !firstError.empty()              ? firstError
-                                 : !m_overridesParseError.empty() ? m_overridesParseError
-                                                                  : semanticError;
+  const std::string parseError = !firstError.empty() ? firstError
+      : !m_overridesParseError.empty()               ? m_overridesParseError
+                                                     : semanticError;
   setConfigParseError(parseError);
 }
 
@@ -1792,6 +1794,10 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     if (auto v = finiteDouble((*osdTbl)["scale"])) {
       osd.scale = std::clamp(static_cast<float>(*v), 0.5f, 2.5f);
     }
+    if (auto v = (*osdTbl)["offset_x"].value<int64_t>())
+      osd.offsetX = std::max(0, static_cast<int>(*v));
+    if (auto v = (*osdTbl)["offset_y"].value<int64_t>())
+      osd.offsetY = std::max(0, static_cast<int>(*v));
     if (auto v = (*osdTbl)["lock_keys"].value<bool>())
       osd.lockKeys = *v;
     if (auto v = (*osdTbl)["keyboard_layout"].value<bool>())

@@ -533,14 +533,14 @@ void Wallpaper::runAutomation(std::int64_t minuteStamp) {
     return;
   }
 
-  if (m_lastAutomationSwitchMinute >= 0 &&
-      (minuteStamp - m_lastAutomationSwitchMinute) < static_cast<std::int64_t>(automation.intervalMinutes)) {
+  if (m_lastAutomationSwitchMinute >= 0
+      && (minuteStamp - m_lastAutomationSwitchMinute) < static_cast<std::int64_t>(automation.intervalMinutes)) {
     return;
   }
 
   const ThemeMode mode = wallpaper.perMonitorDirectories
-                             ? (m_config->config().theme.mode == ThemeMode::Light ? ThemeMode::Light : ThemeMode::Dark)
-                             : ThemeMode::Dark;
+      ? (m_config->config().theme.mode == ThemeMode::Light ? ThemeMode::Light : ThemeMode::Dark)
+      : ThemeMode::Dark;
 
   ConfigService::WallpaperBatch batch(*m_config);
 
@@ -567,8 +567,8 @@ void Wallpaper::runAutomation(std::int64_t minuteStamp) {
       }
       const std::string currentPath = m_config->getWallpaperPath(inst->connectorName);
       const std::string picked = automation.order == WallpaperAutomationConfig::Order::Alphabetical
-                                     ? pickAlphabeticalWallpaperPath(candidates, currentPath)
-                                     : pickRandomWallpaperPath(candidates, currentPath);
+          ? pickAlphabeticalWallpaperPath(candidates, currentPath)
+          : pickRandomWallpaperPath(candidates, currentPath);
       if (picked.empty() || picked == currentPath) {
         continue;
       }
@@ -581,8 +581,8 @@ void Wallpaper::runAutomation(std::int64_t minuteStamp) {
     if (!candidates.empty()) {
       const std::string currentDefault = m_config->getDefaultWallpaperPath();
       const std::string picked = automation.order == WallpaperAutomationConfig::Order::Alphabetical
-                                     ? pickAlphabeticalWallpaperPath(candidates, currentDefault)
-                                     : pickRandomWallpaperPath(candidates, currentDefault);
+          ? pickAlphabeticalWallpaperPath(candidates, currentDefault)
+          : pickRandomWallpaperPath(candidates, currentDefault);
       if (!picked.empty()) {
         for (const auto& inst : m_instances) {
           if (!inst->connectorName.empty()) {
@@ -604,8 +604,8 @@ bool Wallpaper::switchToRandomWallpaper(std::optional<std::string_view> connecto
 
   const auto& wallpaper = m_config->config().wallpaper;
   const ThemeMode mode = wallpaper.perMonitorDirectories
-                             ? (m_config->config().theme.mode == ThemeMode::Light ? ThemeMode::Light : ThemeMode::Dark)
-                             : ThemeMode::Dark;
+      ? (m_config->config().theme.mode == ThemeMode::Light ? ThemeMode::Light : ThemeMode::Dark)
+      : ThemeMode::Dark;
 
   if (connector.has_value()) {
     if (m_wayland != nullptr) {

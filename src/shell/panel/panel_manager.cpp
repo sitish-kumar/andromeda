@@ -503,8 +503,11 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     m_attachedOpenAnimationPending = false;
   };
 
-  if (activePlacement == PanelPlacement::Attached && !multipleBarsOnEdge && barConfig.thickness > 0 &&
-      outputWidth > 0 && outputHeight > 0) {
+  if (activePlacement == PanelPlacement::Attached
+      && !multipleBarsOnEdge
+      && barConfig.thickness > 0
+      && outputWidth > 0
+      && outputHeight > 0) {
     const std::string_view barPosition = barConfig.position;
     const bool barIsBottom = barPosition == "bottom";
     const bool barIsLeft = barPosition == "left";
@@ -600,8 +603,8 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     m_panelVisualWidth = panelWidth;
     m_panelVisualHeight = panelHeight;
     m_attachedBackgroundOpacity = m_activePanel->inheritsBarBackgroundOpacity()
-                                      ? barConfig.backgroundOpacity
-                                      : m_activePanel->attachedBackgroundOpacityOverride();
+        ? barConfig.backgroundOpacity
+        : m_activePanel->attachedBackgroundOpacityOverride();
     m_attachedContactShadow = barConfig.contactShadow;
     m_attachedRevealProgress = 0.0f;
     m_attachedRevealDirection = attached_panel::revealDirection(barPosition);
@@ -657,10 +660,11 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
         .marginRight = 0,
         .marginBottom = 0,
         .marginLeft = surfaceX,
-        .keyboard = (m_platform != nullptr && m_platform->focusGrabService() != nullptr &&
-                     m_platform->focusGrabService()->available())
-                        ? LayerShellKeyboard::Exclusive
-                        : LayerShellKeyboard::None,
+        .keyboard = (m_platform != nullptr
+                     && m_platform->focusGrabService() != nullptr
+                     && m_platform->focusGrabService()->available())
+            ? LayerShellKeyboard::Exclusive
+            : LayerShellKeyboard::None,
         .defaultWidth = surfaceWidth,
         .defaultHeight = surfaceHeight,
     };
@@ -683,8 +687,9 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
       applyPanelCompositorBlur();
       publishAttachedPanelGeometry(m_attachedRevealProgress);
       m_surface->requestRedraw();
-      const bool hasFocusGrab = m_platform != nullptr && m_platform->focusGrabService() != nullptr &&
-                                m_platform->focusGrabService()->available();
+      const bool hasFocusGrab = m_platform != nullptr
+          && m_platform->focusGrabService() != nullptr
+          && m_platform->focusGrabService()->available();
       const std::uint64_t gen = m_destroyGeneration;
       if (hasFocusGrab) {
         activateFocusGrab();
@@ -944,8 +949,9 @@ void PanelManager::togglePanel(const std::string& panelId, PanelOpenRequest requ
       }
       // Panels placed near the clicked widget must fully reopen so geometry
       // and bar decoration track the new anchor.
-      if (request.hasAnchorPosition && m_activePanel->panelPlacement() != PanelPlacement::Centered &&
-          openNearClickEnabledForPanel(m_config, panelId)) {
+      if (request.hasAnchorPosition
+          && m_activePanel->panelPlacement() != PanelPlacement::Centered
+          && openNearClickEnabledForPanel(m_config, panelId)) {
         openPanel(panelId, request);
         return;
       }
@@ -1037,8 +1043,10 @@ bool PanelManager::onPointerEvent(const PointerEvent& event) {
     }
 
     if (m_pointerInside) {
-      if (pressed && event.surface == m_wlSurface && m_activePanelId == "control-center" &&
-          m_inputDispatcher.hoveredArea() == nullptr) {
+      if (pressed
+          && event.surface == m_wlSurface
+          && m_activePanelId == "control-center"
+          && m_inputDispatcher.hoveredArea() == nullptr) {
         if (auto* controlCenter = dynamic_cast<ControlCenterPanel*>(m_activePanel);
             controlCenter != nullptr && controlCenter->dismissTransientUi()) {
           refresh();
@@ -1250,8 +1258,8 @@ void PanelManager::onKeyboardEvent(const KeyboardEvent& event) {
     return;
   }
 
-  if (m_activePanel != nullptr &&
-      m_activePanel->handleGlobalKey(event.sym, event.modifiers, event.pressed, event.preedit)) {
+  if (m_activePanel != nullptr
+      && m_activePanel->handleGlobalKey(event.sym, event.modifiers, event.pressed, event.preedit)) {
     if (m_surface != nullptr && m_sceneRoot != nullptr && (m_sceneRoot->paintDirty() || m_sceneRoot->layoutDirty())) {
       if (m_sceneRoot->layoutDirty()) {
         m_surface->requestLayout();
@@ -1282,14 +1290,14 @@ void PanelManager::applyAttachedReveal(float progress) {
   const float h = m_sceneRoot->height();
   const float panelW = m_panelVisualWidth > 0 ? static_cast<float>(m_panelVisualWidth) : w;
   const float panelH = m_panelVisualHeight > 0 ? static_cast<float>(m_panelVisualHeight) : h;
-  const float travelX = (m_attachedRevealDirection == AttachedRevealDirection::Left ||
-                         m_attachedRevealDirection == AttachedRevealDirection::Right)
-                            ? panelW * (1.0f - m_attachedRevealProgress)
-                            : 0.0f;
-  const float travelY = (m_attachedRevealDirection == AttachedRevealDirection::Up ||
-                         m_attachedRevealDirection == AttachedRevealDirection::Down)
-                            ? panelH * (1.0f - m_attachedRevealProgress)
-                            : 0.0f;
+  const float travelX = (m_attachedRevealDirection == AttachedRevealDirection::Left
+                         || m_attachedRevealDirection == AttachedRevealDirection::Right)
+      ? panelW * (1.0f - m_attachedRevealProgress)
+      : 0.0f;
+  const float travelY = (m_attachedRevealDirection == AttachedRevealDirection::Up
+                         || m_attachedRevealDirection == AttachedRevealDirection::Down)
+      ? panelH * (1.0f - m_attachedRevealProgress)
+      : 0.0f;
 
   float contentX = 0.0f;
   float contentY = 0.0f;
@@ -1372,8 +1380,8 @@ void PanelManager::publishAttachedPanelGeometry(float revealProgress) {
   // portion of the animation. Until then the silhouette is a sharp-edged rectangle.
   const float originalRadius = geometry.cornerRadius;
   const bool vertical =
-      (m_attachedRevealDirection == AttachedRevealDirection::Right ||
-       m_attachedRevealDirection == AttachedRevealDirection::Left);
+      (m_attachedRevealDirection == AttachedRevealDirection::Right
+       || m_attachedRevealDirection == AttachedRevealDirection::Left);
   const float panelMainDim = vertical ? geometry.width : geometry.height;
   const float bulgeRevealAmount = std::clamp(originalRadius - panelMainDim * (1.0f - progress), 0.0f, originalRadius);
   const float crossDelta = originalRadius - bulgeRevealAmount;
@@ -1861,9 +1869,9 @@ void PanelManager::prepareFrame(bool needsUpdate, bool needsLayout) {
   const auto width = m_surface->width();
   const auto height = m_surface->height();
 
-  const bool needsSceneBuild = m_sceneRoot == nullptr ||
-                               static_cast<std::uint32_t>(std::round(m_sceneRoot->width())) != width ||
-                               static_cast<std::uint32_t>(std::round(m_sceneRoot->height())) != height;
+  const bool needsSceneBuild = m_sceneRoot == nullptr
+      || static_cast<std::uint32_t>(std::round(m_sceneRoot->width())) != width
+      || static_cast<std::uint32_t>(std::round(m_sceneRoot->height())) != height;
   if (needsSceneBuild) {
     buildScene(width, height);
   }

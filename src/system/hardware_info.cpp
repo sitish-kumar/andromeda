@@ -61,9 +61,11 @@ namespace {
       std::string before = StringUtils::trim(rawName.substr(0, bracketOpen));
       std::string inside = rawName.substr(bracketOpen + 1, bracketClose - bracketOpen - 1);
 
-      const bool beforeIsModel = before.find("RX") != std::string::npos || before.find("GTX") != std::string::npos ||
-                                 before.find("RTX") != std::string::npos || before.find("Arc") != std::string::npos ||
-                                 before.find("HD ") != std::string::npos;
+      const bool beforeIsModel = before.find("RX") != std::string::npos
+          || before.find("GTX") != std::string::npos
+          || before.find("RTX") != std::string::npos
+          || before.find("Arc") != std::string::npos
+          || before.find("HD ") != std::string::npos;
       name = beforeIsModel ? before : inside;
     }
 

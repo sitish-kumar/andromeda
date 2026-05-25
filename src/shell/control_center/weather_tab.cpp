@@ -319,10 +319,9 @@ void WeatherTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeig
   m_rootLayout->setSize(contentWidth, bodyHeight);
   m_rootLayout->layout(renderer);
 
-  const float leftColumnWidth =
-      m_leftColumn != nullptr
-          ? std::max(0.0f, m_leftColumn->width() - (m_leftColumn->paddingLeft() + m_leftColumn->paddingRight()))
-          : contentWidth;
+  const float leftColumnWidth = m_leftColumn != nullptr
+      ? std::max(0.0f, m_leftColumn->width() - (m_leftColumn->paddingLeft() + m_leftColumn->paddingRight()))
+      : contentWidth;
   if (m_currentCard != nullptr) {
     m_currentCard->setMinWidth(leftColumnWidth);
   }
@@ -411,12 +410,9 @@ void WeatherTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeig
     }
   }
 
-  const float forecastInnerWidth =
-      m_forecastColumn != nullptr
-          ? std::max(
-                0.0f, m_forecastColumn->width() - m_forecastColumn->paddingLeft() - m_forecastColumn->paddingRight()
-            )
-          : 0.0f;
+  const float forecastInnerWidth = m_forecastColumn != nullptr
+      ? std::max(0.0f, m_forecastColumn->width() - m_forecastColumn->paddingLeft() - m_forecastColumn->paddingRight())
+      : 0.0f;
   for (std::size_t i = 0; i < kDayCount; ++i) {
     if (m_dayRows[i] == nullptr || !m_dayRows[i]->visible()) {
       continue;
@@ -497,8 +493,11 @@ void WeatherTab::onClose() {
 }
 
 void WeatherTab::sync(Renderer& renderer) {
-  if (m_statusLabel == nullptr || m_currentGlyph == nullptr || m_currentTempLabel == nullptr ||
-      m_currentDescLabel == nullptr || m_updatedLabel == nullptr) {
+  if (m_statusLabel == nullptr
+      || m_currentGlyph == nullptr
+      || m_currentTempLabel == nullptr
+      || m_currentDescLabel == nullptr
+      || m_updatedLabel == nullptr) {
     return;
   }
 
@@ -729,8 +728,8 @@ void WeatherTab::sync(Renderer& renderer) {
       !snapshot.forecastDays.empty() && snapshot.forecastDays.front().dateIso == todayIso(snapshot.utcOffsetSeconds);
   const std::size_t forecastStart = firstForecastIsToday ? 1 : 0;
   const std::size_t visibleForecastCount = forecastStart < snapshot.forecastDays.size()
-                                               ? std::min(kDayCount, snapshot.forecastDays.size() - forecastStart)
-                                               : 0;
+      ? std::min(kDayCount, snapshot.forecastDays.size() - forecastStart)
+      : 0;
 
   setForecastVisibleDayCount(visibleForecastCount);
   for (std::size_t i = 0; i < kDayCount; ++i) {
@@ -766,11 +765,10 @@ void WeatherTab::sync(Renderer& renderer) {
   }
 
   if (m_effectNode != nullptr) {
-    const EffectType newEffect =
-        kTestEffect != EffectType::None
-            ? kTestEffect
-            : (m_weather->effectsEnabled() ? effectForWeatherCode(snapshot.current.weatherCode, snapshot.current.isDay)
-                                           : EffectType::None);
+    const EffectType newEffect = kTestEffect != EffectType::None
+        ? kTestEffect
+        : (m_weather->effectsEnabled() ? effectForWeatherCode(snapshot.current.weatherCode, snapshot.current.isDay)
+                                       : EffectType::None);
     if (newEffect != m_activeEffect) {
       m_activeEffect = newEffect;
       m_shaderTime = 0.0f;

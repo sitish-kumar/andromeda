@@ -23,8 +23,15 @@ namespace {
 
   // Returns true if the buffer starts with the RIFF....WEBP signature.
   bool isWebP(const std::uint8_t* data, std::size_t size) {
-    return size >= 12 && data[0] == 'R' && data[1] == 'I' && data[2] == 'F' && data[3] == 'F' && data[8] == 'W' &&
-           data[9] == 'E' && data[10] == 'B' && data[11] == 'P';
+    return size >= 12
+        && data[0] == 'R'
+        && data[1] == 'I'
+        && data[2] == 'F'
+        && data[3] == 'F'
+        && data[8] == 'W'
+        && data[9] == 'E'
+        && data[10] == 'B'
+        && data[11] == 'P';
   }
 
   bool isIco(const std::uint8_t* data, std::size_t size) {
@@ -32,15 +39,24 @@ namespace {
   }
 
   bool isPng(const std::uint8_t* data, std::size_t size) {
-    return size >= 8 && data[0] == 0x89 && data[1] == 'P' && data[2] == 'N' && data[3] == 'G' && data[4] == 0x0D &&
-           data[5] == 0x0A && data[6] == 0x1A && data[7] == 0x0A;
+    return size >= 8
+        && data[0] == 0x89
+        && data[1] == 'P'
+        && data[2] == 'N'
+        && data[3] == 'G'
+        && data[4] == 0x0D
+        && data[5] == 0x0A
+        && data[6] == 0x1A
+        && data[7] == 0x0A;
   }
 
   std::uint16_t readU16LE(const std::uint8_t* p) { return static_cast<std::uint16_t>(p[0] | (p[1] << 8)); }
 
   std::uint32_t readU32LE(const std::uint8_t* p) {
-    return static_cast<std::uint32_t>(p[0]) | (static_cast<std::uint32_t>(p[1]) << 8) |
-           (static_cast<std::uint32_t>(p[2]) << 16) | (static_cast<std::uint32_t>(p[3]) << 24);
+    return static_cast<std::uint32_t>(p[0])
+        | (static_cast<std::uint32_t>(p[1]) << 8)
+        | (static_cast<std::uint32_t>(p[2]) << 16)
+        | (static_cast<std::uint32_t>(p[3]) << 24);
   }
 
   // ICO files contain a directory of sub-images (PNG or BMP DIB). Pick the
@@ -272,8 +288,13 @@ decodeRasterImage(const std::uint8_t* data, std::size_t size, std::string* error
 namespace {
 
   bool isGif(const std::uint8_t* data, std::size_t size) {
-    return size >= 6 && data[0] == 'G' && data[1] == 'I' && data[2] == 'F' && data[3] == '8' &&
-           (data[4] == '7' || data[4] == '9') && data[5] == 'a';
+    return size >= 6
+        && data[0] == 'G'
+        && data[1] == 'I'
+        && data[2] == 'F'
+        && data[3] == '8'
+        && (data[4] == '7' || data[4] == '9')
+        && data[5] == 'a';
   }
 
   // GIF disposal applied to the persistent canvas BEFORE drawing the next

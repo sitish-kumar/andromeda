@@ -473,8 +473,8 @@ void BluetoothService::refresh() {
         m_impl->adapter.reset();
         m_impl->seedFromManagedObjects(objects);
         const BluetoothStateChangeOrigin origin = previous.powered != m_state.powered
-                                                      ? consumePoweredChangeOrigin(m_state.powered)
-                                                      : BluetoothStateChangeOrigin::External;
+            ? consumePoweredChangeOrigin(m_state.powered)
+            : BluetoothStateChangeOrigin::External;
         m_hasStateSnapshot = true;
         emitState(origin);
         emitDevices();

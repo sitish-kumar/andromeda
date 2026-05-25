@@ -41,6 +41,29 @@ namespace {
     const char* name = luaL_checklstring(L, 1, &len);
     if (auto* context = getContext(L)) {
       context->patch.glyph = std::string(name, len);
+      context->patch.image.reset();
+    }
+    return 0;
+  }
+
+  int luau_setImage(lua_State* L) {
+    size_t len = 0;
+    const char* path = luaL_checklstring(L, 1, &len);
+    const bool watch = lua_gettop(L) >= 2 && !lua_isnil(L, 2) && lua_toboolean(L, 2) != 0;
+    float width = 0.0f;
+    float height = 0.0f;
+    if (lua_gettop(L) >= 3 && !lua_isnil(L, 3)) {
+      width = static_cast<float>(luaL_checknumber(L, 3));
+      height = width;
+    }
+    if (lua_gettop(L) >= 4 && !lua_isnil(L, 4)) {
+      height = static_cast<float>(luaL_checknumber(L, 4));
+    }
+    if (auto* context = getContext(L)) {
+      context->patch.image = scripting::ScriptWidgetImagePatch{
+          .path = std::string(path, len), .watch = watch, .width = width, .height = height
+      };
+      context->patch.glyph.reset();
     }
     return 0;
   }
@@ -308,17 +331,12 @@ namespace {
   }
 
   const luaL_Reg kWidgetLib[] = {
-      {"setText", luau_setText},
-      {"setGlyph", luau_setGlyph},
-      {"setFont", luau_setFont},
-      {"setColor", luau_setColor},
-      {"setGlyphColor", luau_setGlyphColor},
-      {"isVertical", luau_isVertical},
-      {"setUpdateInterval", luau_setUpdateInterval},
-      {"setVisible", luau_setVisible},
-      {"getConfig", luau_getConfig},
-      {"define", luau_define},
-      {nullptr, nullptr},
+      {"setText", luau_setText},       {"setGlyph", luau_setGlyph},
+      {"setImage", luau_setImage},     {"setFont", luau_setFont},
+      {"setColor", luau_setColor},     {"setGlyphColor", luau_setGlyphColor},
+      {"isVertical", luau_isVertical}, {"setUpdateInterval", luau_setUpdateInterval},
+      {"setVisible", luau_setVisible}, {"getConfig", luau_getConfig},
+      {"define", luau_define},         {nullptr, nullptr},
   };
 
 } // namespace

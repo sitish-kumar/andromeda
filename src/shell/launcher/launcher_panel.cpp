@@ -101,8 +101,11 @@ namespace {
       );
 
       m_image->setAsyncReadyCallback([this]() {
-        if (m_actionTextVisible || m_iconPath.empty() || m_image == nullptr || m_glyph == nullptr ||
-            !m_image->hasImage()) {
+        if (m_actionTextVisible
+            || m_iconPath.empty()
+            || m_image == nullptr
+            || m_glyph == nullptr
+            || !m_image->hasImage()) {
           return;
         }
         m_image->setVisible(true);

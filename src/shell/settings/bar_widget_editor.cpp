@@ -71,16 +71,46 @@ namespace settings {
       });
     }
 
-    std::unique_ptr<Node> makeMiniSectionHeader(std::string_view title, float scale) {
-      return ui::column(
-          {
-              .align = FlexAlign::Stretch,
-              .gap = Style::spaceXs * scale,
-              .configure = [scale](Flex& flex) { flex.setPadding(Style::spaceSm * scale, 0.0f, 0.0f, 0.0f); },
-          },
-          ui::separator(),
+    std::unique_ptr<Node> makeMiniSectionHeader(std::string_view title, float scale, bool withSeparator = true) {
+      auto header = ui::column({
+          .align = FlexAlign::Stretch,
+          .gap = Style::spaceXs * scale,
+          .configure = [scale](Flex& flex) { flex.setPadding(Style::spaceSm * scale, 0.0f, 0.0f, 0.0f); },
+      });
+      if (withSeparator) {
+        header->addChild(ui::separator());
+      }
+      header->addChild(
           makeLabel(title, Style::fontSizeCaption * scale, colorSpecFromRole(ColorRole::Secondary), FontWeight::Bold)
       );
+      return header;
+    }
+
+    std::string_view widgetSettingSectionKey(const WidgetSettingSpec& spec) {
+      const std::string& key = spec.key;
+      if (key == "scope" || key == "hot_reload") {
+        return "runtime";
+      }
+      if (key == "capsule_group") {
+        return "grouping";
+      }
+      if (key == "anchor"
+          || key == "color"
+          || key == "font_weight"
+          || key == "capsule"
+          || key == "capsule_radius"
+          || key == "capsule_fill"
+          || key == "capsule_border"
+          || key == "capsule_foreground"
+          || key == "capsule_padding"
+          || key == "capsule_opacity") {
+        return "presentation";
+      }
+      return "widget";
+    }
+
+    std::string widgetSettingSectionTitle(std::string_view sectionKey) {
+      return i18n::tr("settings.entities.widget.settings.sections." + std::string(sectionKey));
     }
 
     void closeInspector(
@@ -327,8 +357,9 @@ namespace settings {
     }
 
     bool isGuiManagedNamedWidgetInstance(const BarWidgetEditorContext& ctx, std::string_view widgetName) {
-      return isNamedWidgetInstance(ctx.config, widgetName) && ctx.configService != nullptr &&
-             ctx.configService->hasOverride({"widget", std::string(widgetName)});
+      return isNamedWidgetInstance(ctx.config, widgetName)
+          && ctx.configService != nullptr
+          && ctx.configService->hasOverride({"widget", std::string(widgetName)});
     }
 
     bool isValidWidgetInstanceId(std::string_view id) {
@@ -476,6 +507,9 @@ namespace settings {
           if (const auto* s = std::get_if<std::string>(&settingIt->second)) {
             return *s;
           }
+          if (const auto* i = std::get_if<std::int64_t>(&settingIt->second)) {
+            return std::to_string(*i);
+          }
           if (const auto* b = std::get_if<bool>(&settingIt->second)) {
             return *b ? "true" : "false";
           }
@@ -485,6 +519,9 @@ namespace settings {
         if (s.key == key) {
           if (const auto* str = std::get_if<std::string>(&s.defaultValue)) {
             return *str;
+          }
+          if (const auto* i = std::get_if<std::int64_t>(&s.defaultValue)) {
+            return std::to_string(*i);
           }
           if (const auto* b = std::get_if<bool>(&s.defaultValue)) {
             return *b ? "true" : "false";
@@ -593,6 +630,9 @@ namespace settings {
     std::string settingValueAsString(const WidgetSettingValue& value) {
       if (const auto* v = std::get_if<std::string>(&value)) {
         return *v;
+      }
+      if (const auto* v = std::get_if<std::int64_t>(&value)) {
+        return std::to_string(*v);
       }
       return {};
     }
@@ -855,36 +895,19 @@ namespace settings {
         return;
       }
 
-      auto panel = ui::column(
-          {
-              .align = FlexAlign::Stretch,
-              .gap = Style::spaceXs * ctx.scale,
-              .configure =
-                  [&ctx](Flex& flex) {
-                    flex.setPadding(Style::spaceSm * ctx.scale);
-                    flex.setRadius(Style::scaledRadiusSm(ctx.scale));
-                    flex.setFill(colorSpecFromRole(ColorRole::Surface));
-                    flex.setBorder(colorSpecFromRole(ColorRole::Outline, 0.22f), Style::borderWidth);
-                  },
+      auto panel = ui::column({
+          .align = FlexAlign::Stretch,
+          .gap = Style::spaceXs * ctx.scale,
+          .configure = [&ctx](Flex& flex) {
+            flex.setPadding(Style::spaceSm * ctx.scale);
+            flex.setRadius(Style::scaledRadiusSm(ctx.scale));
+            flex.setFill(colorSpecFromRole(ColorRole::Surface));
+            flex.setBorder(colorSpecFromRole(ColorRole::Outline, 0.22f), Style::borderWidth);
           },
-          ui::row(
-              {
-                  .align = FlexAlign::Center,
-                  .gap = Style::spaceXs * ctx.scale,
-              },
-              makeLabel(
-                  i18n::tr("settings.entities.widget.settings.title"), Style::fontSizeCaption * ctx.scale,
-                  colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold
-              ),
-              makeLabel(
-                  widgetType, Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                  FontWeight::Normal
-              )
-          )
-      );
+      });
 
       std::size_t visibleSpecs = 0;
-      bool groupingHeaderAdded = false;
+      std::string activeSectionKey;
       for (const auto& spec : specs) {
         if (spec.key == "capsule_group" && managedCapsuleGroups.empty()) {
           continue;
@@ -901,9 +924,10 @@ namespace settings {
           continue;
         }
 
-        if (spec.key == "capsule_group" && !groupingHeaderAdded) {
-          panel->addChild(makeMiniSectionHeader(i18n::tr("settings.navigation.groups.grouping"), ctx.scale));
-          groupingHeaderAdded = true;
+        const std::string_view sectionKey = widgetSettingSectionKey(spec);
+        if (sectionKey != activeSectionKey) {
+          panel->addChild(makeMiniSectionHeader(widgetSettingSectionTitle(sectionKey), ctx.scale, visibleSpecs > 0));
+          activeSectionKey = sectionKey;
         }
 
         const auto value = widgetSettingValue(ctx.config, widgetName, spec);
@@ -911,10 +935,10 @@ namespace settings {
             .section = "bar",
             .group = "widget-settings",
             .title = !spec.literalLabel.empty() ? spec.literalLabel
-                     : spec.labelKey.empty()    ? std::string{}
+                : spec.labelKey.empty()         ? std::string{}
                                                 : i18n::tr(spec.labelKey),
             .subtitle = !spec.literalDescription.empty() ? spec.literalDescription
-                        : spec.descriptionKey.empty()    ? std::string{}
+                : spec.descriptionKey.empty()            ? std::string{}
                                                          : i18n::tr(spec.descriptionKey),
             .path = path,
             .control = TextSetting{},
@@ -940,8 +964,9 @@ namespace settings {
                                  displayPath = widgetSettingPath(std::string(widgetName), "display"),
                                  specs](bool enabled) {
                       setOverride(path, enabled);
-                      if (enabled && configService != nullptr &&
-                          settingCurrentString(configService->config(), widgetName, "display", specs) == "none") {
+                      if (enabled
+                          && configService != nullptr
+                          && settingCurrentString(configService->config(), widgetName, "display", specs) == "none") {
                         setOverride(displayPath, std::string("id"));
                       }
                       if (requestRebuild) {
@@ -956,26 +981,19 @@ namespace settings {
           break;
         }
         case WidgetSettingValueType::Int: {
-          const auto minValue = static_cast<float>(spec.minValue.value_or(0.0));
-          const auto maxValue = static_cast<float>(spec.maxValue.value_or(100.0));
+          const double minValue = spec.minValue.value_or(0.0);
+          const double maxValue = spec.maxValue.value_or(100.0);
           ctx.makeRow(
               *panel, entry,
-              ctx.makeSlider(
-                  static_cast<float>(settingValueAsInt(value)), minValue, maxValue, static_cast<float>(spec.step), path,
-                  true
-              )
+              ctx.makeSlider(static_cast<double>(settingValueAsInt(value)), minValue, maxValue, spec.step, path, true)
           );
           break;
         }
         case WidgetSettingValueType::Double: {
-          const auto minValue = static_cast<float>(spec.minValue.value_or(0.0));
-          const auto maxValue = static_cast<float>(spec.maxValue.value_or(1.0));
+          const double minValue = spec.minValue.value_or(0.0);
+          const double maxValue = spec.maxValue.value_or(1.0);
           ctx.makeRow(
-              *panel, entry,
-              ctx.makeSlider(
-                  static_cast<float>(settingValueAsDouble(value)), minValue, maxValue, static_cast<float>(spec.step),
-                  path, false
-              )
+              *panel, entry, ctx.makeSlider(settingValueAsDouble(value), minValue, maxValue, spec.step, path, false)
           );
           break;
         }
@@ -1118,6 +1136,10 @@ namespace settings {
             selectSetting = SelectSetting{std::move(options), selectedValue};
           }
           selectSetting.segmented = spec.segmented;
+          selectSetting.integerValue = spec.integerValue;
+          if (const auto* defaultString = std::get_if<std::string>(&spec.defaultValue); defaultString != nullptr) {
+            selectSetting.clearOnEmpty = defaultString->empty();
+          }
           ctx.makeRow(*panel, entry, ctx.makeSelect(std::move(selectSetting), path));
           break;
         }
@@ -1183,31 +1205,40 @@ namespace settings {
             currentLaneKey = std::string(laneKey);
             currentLanePath = std::move(p);
             currentLaneItems = std::move(items);
-            currentLaneInherited = isMonitorWidgetListPath(currentLanePath) &&
-                                   !monitorWidgetListHasExplicitValue(ctx.config, currentLanePath);
+            currentLaneInherited = isMonitorWidgetListPath(currentLanePath)
+                && !monitorWidgetListHasExplicitValue(ctx.config, currentLanePath);
             break;
           }
         }
 
-        auto headerRow = ui::row(
-            {
-                .align = FlexAlign::Center,
-                .gap = Style::spaceSm * ctx.scale,
-            },
-            makeLabel(
-                i18n::tr("settings.entities.widget.inspector.edit-title"), Style::fontSizeCaption * ctx.scale,
-                colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Bold
-            )
-        );
+        auto headerRow = ui::row({
+            .align = FlexAlign::Center,
+            .gap = Style::spaceSm * ctx.scale,
+        });
+
+        auto titleBlock = ui::column({
+            .align = FlexAlign::Stretch,
+            .gap = 1.0f * ctx.scale,
+            .flexGrow = 1.0f,
+        });
+        auto titleRow = ui::row({
+            .align = FlexAlign::Center,
+            .gap = Style::spaceSm * ctx.scale,
+        });
         {
           auto titleLabel = makeLabel(
               info.title, Style::fontSizeBody * ctx.scale, colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold
           );
           titleLabel->setMaxLines(1);
           titleLabel->setFlexGrow(1.0f);
-          headerRow->addChild(std::move(titleLabel));
+          titleRow->addChild(std::move(titleLabel));
+        }
+        titleBlock->addChild(std::move(titleRow));
+        if (!info.detail.empty() && info.detail != info.title) {
+          titleBlock->addChild(makeSettingSubtitleLabel(info.detail, ctx.scale));
         }
 
+        headerRow->addChild(std::move(titleBlock));
         headerRow->addChild(
             ui::row(
                 {
@@ -1225,8 +1256,6 @@ namespace settings {
                 )
             )
         );
-
-        headerRow->addChild(ui::spacer());
 
         headerRow->addChild(
             ui::button({
@@ -1268,10 +1297,10 @@ namespace settings {
           );
         }
 
-        const bool pendingDelete = guiManaged && ctx.pendingDeleteWidgetName == widgetName;
-        const bool renaming = guiManaged && ctx.renamingWidgetName == widgetName;
+        const bool pendingDelete = ctx.pendingDeleteWidgetName == widgetName;
+        const bool renaming = ctx.renamingWidgetName == widgetName;
 
-        if (!pendingDelete && !renaming && !currentLaneInherited && !currentLaneKey.empty()) {
+        if (!currentLaneInherited && !currentLaneKey.empty()) {
           auto actionRow = ui::row({
               .align = FlexAlign::Center,
               .gap = Style::spaceXs * ctx.scale,
@@ -1320,9 +1349,11 @@ namespace settings {
                     .paddingV = Style::spaceXs * ctx.scale,
                     .paddingH = Style::spaceSm * ctx.scale,
                     .radius = Style::scaledRadiusSm(ctx.scale),
-                    .onClick = [&renamingWidgetName = ctx.renamingWidgetName, widgetName,
+                    .onClick = [&renamingWidgetName = ctx.renamingWidgetName,
+                                &pendingDeleteWidgetName = ctx.pendingDeleteWidgetName, widgetName,
                                 requestRebuild = ctx.requestRebuild]() {
                       renamingWidgetName = widgetName;
+                      pendingDeleteWidgetName.clear();
                       requestRebuild();
                     },
                 })
@@ -1352,10 +1383,6 @@ namespace settings {
 
           inspector->addChild(std::move(actionRow));
         }
-
-        addWidgetSettingsPanel(
-            *inspector, widgetName, currentLanePath, managedCapsuleGroupOptions(ctx.config, currentLanePath), ctx
-        );
 
         if (renaming) {
           auto renameRow = ui::row({
@@ -1496,6 +1523,10 @@ namespace settings {
           );
           inspector->addChild(std::move(confirmPanel));
         }
+
+        addWidgetSettingsPanel(
+            *inspector, widgetName, currentLanePath, managedCapsuleGroupOptions(ctx.config, currentLanePath), ctx
+        );
       }
 
       block.addChild(std::move(inspector));
@@ -1792,9 +1823,11 @@ namespace settings {
             dragState->active = false;
             itemPtr->setOpacity(1.0f);
             hideDropIndicators(*laneTargets);
-            if (!dragState->moved || !dragState->targetLaneIndex.has_value() ||
-                !dragState->targetInsertionIndex.has_value() || laneTargetIndex >= laneTargets->size() ||
-                *dragState->targetLaneIndex >= laneTargets->size()) {
+            if (!dragState->moved
+                || !dragState->targetLaneIndex.has_value()
+                || !dragState->targetInsertionIndex.has_value()
+                || laneTargetIndex >= laneTargets->size()
+                || *dragState->targetLaneIndex >= laneTargets->size()) {
               return;
             }
 
@@ -1831,7 +1864,8 @@ namespace settings {
             dragState->lastLocalY = localY;
             if (std::hypot(
                     dragState->lastLocalX - dragState->startLocalX, dragState->lastLocalY - dragState->startLocalY
-                ) >= kDragStartThresholdPx * scale) {
+                )
+                >= kDragStartThresholdPx * scale) {
               dragState->moved = true;
             }
             if (!dragState->moved) {

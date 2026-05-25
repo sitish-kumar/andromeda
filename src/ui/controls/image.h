@@ -34,6 +34,7 @@ public:
   void setAsyncReadyCallback(AsyncReadyCallback callback);
 
   bool setSourceFile(Renderer& renderer, const std::string& path, int targetSize = 0, bool mipmap = false);
+  bool reloadSourceFile(Renderer& renderer, const std::string& path, int targetSize = 0, bool mipmap = false);
   bool setSourceFileAsync(
       Renderer& renderer, AsyncTextureCache& cache, const std::string& path, int targetSize = 0, bool mipmap = false
   );
@@ -56,8 +57,8 @@ public:
   [[nodiscard]] int sourceHeight() const noexcept { return m_texture.height; }
   [[nodiscard]] float aspectRatio() const noexcept {
     return m_texture.width > 0 && m_texture.height > 0
-               ? static_cast<float>(m_texture.width) / static_cast<float>(m_texture.height)
-               : 1.0f;
+        ? static_cast<float>(m_texture.width) / static_cast<float>(m_texture.height)
+        : 1.0f;
   }
 
   void setSize(float width, float height) override;

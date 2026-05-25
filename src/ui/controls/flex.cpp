@@ -429,10 +429,9 @@ LayoutSize Flex::runLayout(Renderer& renderer, const LayoutConstraints& constrai
   const bool crossKnown = horizontal ? heightKnown : widthKnown;
   const float containerMain = horizontal ? targetWidth : targetHeight;
   const float containerCross = horizontal ? targetHeight : targetWidth;
-  const float innerCross =
-      crossKnown
-          ? std::max(0.0f, containerCross - crossPaddingStart(*this, horizontal) - crossPaddingEnd(*this, horizontal))
-          : 0.0f;
+  const float innerCross = crossKnown
+      ? std::max(0.0f, containerCross - crossPaddingStart(*this, horizontal) - crossPaddingEnd(*this, horizontal))
+      : 0.0f;
 
   FlexScratchGuard scratch;
   auto& items = scratch.items();

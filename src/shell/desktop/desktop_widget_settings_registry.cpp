@@ -93,6 +93,7 @@ namespace desktop_settings {
         {"cpu_usage", "desktop-widgets.editor.settings.stat-cpu-usage"},
         {"cpu_temp", "desktop-widgets.editor.settings.stat-cpu-temp"},
         {"gpu_temp", "desktop-widgets.editor.settings.stat-gpu-temp"},
+        {"gpu_usage", "desktop-widgets.editor.settings.stat-gpu-usage"},
         {"gpu_vram", "desktop-widgets.editor.settings.stat-gpu-vram"},
         {"ram_pct", "desktop-widgets.editor.settings.stat-ram-pct"},
         {"swap_pct", "desktop-widgets.editor.settings.stat-swap-pct"},

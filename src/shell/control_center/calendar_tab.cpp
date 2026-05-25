@@ -240,8 +240,8 @@ void CalendarTab::doLayout(Renderer& renderer, float contentWidth, float bodyHei
   const float innerHeight = std::max(0.0f, m_card->height() - (m_card->paddingTop() + m_card->paddingBottom()));
   const CalendarBuildState state = currentCalendarState(m_monthOffset);
 
-  const bool sizeChanged = std::abs(innerWidth - m_lastInnerWidth) >= kCalendarLayoutEpsilon ||
-                           std::abs(innerHeight - m_lastInnerHeight) >= kCalendarLayoutEpsilon;
+  const bool sizeChanged = std::abs(innerWidth - m_lastInnerWidth) >= kCalendarLayoutEpsilon
+      || std::abs(innerHeight - m_lastInnerHeight) >= kCalendarLayoutEpsilon;
   const bool displayChanged = state.displayYear != m_lastDisplayYear || state.displayMonth != m_lastDisplayMonth;
   const bool todayChanged =
       state.currentYear != m_lastCurrentYear || state.currentMonth != m_lastCurrentMonth || state.today != m_lastToday;

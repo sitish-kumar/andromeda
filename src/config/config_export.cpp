@@ -677,6 +677,8 @@ namespace config_export {
     osd.insert_or_assign("position", config.osd.position);
     osd.insert_or_assign("orientation", config.osd.orientation);
     osd.insert_or_assign("scale", static_cast<double>(config.osd.scale));
+    osd.insert_or_assign("offset_x", static_cast<std::int64_t>(config.osd.offsetX));
+    osd.insert_or_assign("offset_y", static_cast<std::int64_t>(config.osd.offsetY));
     osd.insert_or_assign("lock_keys", config.osd.lockKeys);
     osd.insert_or_assign("keyboard_layout", config.osd.keyboardLayout);
     root.insert_or_assign("osd", std::move(osd));

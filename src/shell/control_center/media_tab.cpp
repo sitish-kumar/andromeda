@@ -266,18 +266,18 @@ std::unique_ptr<Flex> MediaTab::create() {
           .thumbSize = 16.0f * scale,
           .controlHeight = (Style::controlHeight + Style::spaceXs) * scale,
           .onValueChanged =
-              [this](float value) {
+              [this](double value) {
                 if (m_syncingProgress || m_mpris == nullptr) {
                   return;
                 }
                 const auto active = m_mpris->activePlayer();
-                const std::int64_t targetUs = static_cast<std::int64_t>(std::llround(value * 1000000.0f));
+                const std::int64_t targetUs = static_cast<std::int64_t>(std::llround(value * 1000000.0));
                 const auto now = std::chrono::steady_clock::now();
                 m_positionUs = targetUs;
                 m_positionSampleAt = now;
                 m_pendingSeekBusName = active.has_value()
-                                           ? active->busName
-                                           : (!m_positionBusName.empty() ? m_positionBusName : std::string{});
+                    ? active->busName
+                    : (!m_positionBusName.empty() ? m_positionBusName : std::string{});
                 m_pendingSeekUs = targetUs;
                 m_pendingSeekUntil = now + kPendingSeekTimeout;
                 m_progressSettleUntil = now + kProgressSettleHold;
@@ -707,12 +707,12 @@ void MediaTab::clearArt(Renderer& renderer) {
   }
 }
 
-void MediaTab::commitPendingSeek(float valueSeconds) {
+void MediaTab::commitPendingSeek(double valueSeconds) {
   if (m_mpris == nullptr) {
     return;
   }
 
-  const std::int64_t targetUs = static_cast<std::int64_t>(std::llround(valueSeconds * 1000000.0f));
+  const std::int64_t targetUs = static_cast<std::int64_t>(std::llround(valueSeconds * 1000000.0));
   const auto now = std::chrono::steady_clock::now();
   m_positionUs = targetUs;
   m_positionSampleAt = now;
@@ -793,8 +793,12 @@ void MediaTab::refresh(Renderer& renderer) {
     }
   }
 
-  if (m_trackTitle == nullptr || m_trackArtist == nullptr || m_progressSlider == nullptr ||
-      m_playPauseButton == nullptr || m_repeatButton == nullptr || m_shuffleButton == nullptr) {
+  if (m_trackTitle == nullptr
+      || m_trackArtist == nullptr
+      || m_progressSlider == nullptr
+      || m_playPauseButton == nullptr
+      || m_repeatButton == nullptr
+      || m_shuffleButton == nullptr) {
     return;
   }
 
@@ -813,21 +817,26 @@ void MediaTab::refresh(Renderer& renderer) {
     }
 
     const bool pendingMatchesPlayer = m_pendingSeekBusName.empty() || m_pendingSeekBusName == player.busName;
-    const bool seekArrived = pendingMatchesPlayer && m_pendingSeekUs >= 0 &&
-                             std::llabs(livePositionUs - m_pendingSeekUs) <= kSeekArrivedToleranceUs &&
-                             (m_pendingSeekUs <= kSeekNearZeroUs || livePositionUs > kSeekNearZeroUs ||
-                              livePositionUs >= m_pendingSeekUs - kSeekArrivedToleranceUs);
+    const bool seekArrived = pendingMatchesPlayer
+        && m_pendingSeekUs >= 0
+        && std::llabs(livePositionUs - m_pendingSeekUs) <= kSeekArrivedToleranceUs
+        && (m_pendingSeekUs <= kSeekNearZeroUs
+            || livePositionUs > kSeekNearZeroUs
+            || livePositionUs >= m_pendingSeekUs - kSeekArrivedToleranceUs);
     const bool seekPending = pendingMatchesPlayer && m_pendingSeekUs >= 0 && !seekArrived && now < m_pendingSeekUntil;
     const bool withinProgressSettle =
         m_progressSettleUntil != std::chrono::steady_clock::time_point{} && now < m_progressSettleUntil;
     const bool sameDisplayedTrack = m_positionBusName == player.busName && m_positionTrackSignature == trackSignature;
-    const bool withinTransientRegressionWindow = m_positionSampleAt != std::chrono::steady_clock::time_point{} &&
-                                                 now - m_positionSampleAt <= kTransientPositionRegressionWindow;
-    const bool preserveDisplayedPosition =
-        !seekPending && sameDisplayedTrack && m_lastPlaybackStatus == "Playing" && player.playbackStatus == "Playing" &&
-        m_positionUs >= kTransientPositionRegressionFloorUs &&
-        livePositionUs <= kTransientPositionRegressionCeilingUs &&
-        livePositionUs + kTransientPositionRegressionDeltaUs < m_positionUs && withinTransientRegressionWindow;
+    const bool withinTransientRegressionWindow = m_positionSampleAt != std::chrono::steady_clock::time_point{}
+        && now - m_positionSampleAt <= kTransientPositionRegressionWindow;
+    const bool preserveDisplayedPosition = !seekPending
+        && sameDisplayedTrack
+        && m_lastPlaybackStatus == "Playing"
+        && player.playbackStatus == "Playing"
+        && m_positionUs >= kTransientPositionRegressionFloorUs
+        && livePositionUs <= kTransientPositionRegressionCeilingUs
+        && livePositionUs + kTransientPositionRegressionDeltaUs < m_positionUs
+        && withinTransientRegressionWindow;
     if (preserveDisplayedPosition) {
       livePositionUs = m_positionUs;
     }
@@ -881,8 +890,8 @@ void MediaTab::refresh(Renderer& renderer) {
       }
     }
 
-    if (m_artwork != nullptr &&
-        (!resolvedArtUrl.empty() && (resolvedArtUrl != m_lastArtPath || !m_artwork->hasImage()))) {
+    if (m_artwork != nullptr
+        && (!resolvedArtUrl.empty() && (resolvedArtUrl != m_lastArtPath || !m_artwork->hasImage()))) {
       bool loaded = false;
       if (artPath.empty()) {
         kLog.debug("artwork unresolved url=\"{}\"", resolvedArtUrl);
@@ -915,12 +924,12 @@ void MediaTab::refresh(Renderer& renderer) {
     m_syncingProgress = true;
     m_progressSlider->setEnabled(progressEnabled);
     if (trackLengthUs > 0) {
-      m_progressSlider->setRange(0.0f, static_cast<float>(trackLengthUs) / 1000000.0f);
+      m_progressSlider->setRange(0.0, static_cast<double>(trackLengthUs) / 1000000.0);
     }
     if (!m_progressSlider->dragging()) {
-      const float sliderMax = m_progressSlider->maxValue();
-      const float nextValue =
-          sliderMax > 0.0f ? std::clamp(static_cast<float>(displayPositionUs) / 1000000.0f, 0.0f, sliderMax) : 0.0f;
+      const double sliderMax = m_progressSlider->maxValue();
+      const double nextValue =
+          sliderMax > 0.0 ? std::clamp(static_cast<double>(displayPositionUs) / 1000000.0, 0.0, sliderMax) : 0.0;
       m_progressSlider->setValue(nextValue);
     }
     m_syncingProgress = false;

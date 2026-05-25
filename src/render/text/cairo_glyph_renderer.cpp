@@ -326,8 +326,8 @@ void CairoGlyphRenderer::drawGlyph(
   // Snap the visible ink origin to the nearest buffer pixel so linear filtering
   // samples land on texel centers without the 1px texture pad biasing icon alignment.
   // Skip when the transform has rotation/skew — snapping then introduces
-  // whole-pixel jumps per frame and makes animations look jittery on 1x.
-  if (m_contentScale == 1.0f && isAxisAligned(world)) {
+  // whole-pixel jumps per frame and makes animations look jittery.
+  if (isAxisAligned(world)) {
     world.m[6] = std::round(world.m[6]);
     world.m[7] = std::round(world.m[7]);
   }

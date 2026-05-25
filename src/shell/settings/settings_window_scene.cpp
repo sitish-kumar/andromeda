@@ -33,8 +33,6 @@
 
 namespace {
 
-  constexpr float kBodyMaxWidth = 1280.0f;
-
   bool useLightPalettePreview(ThemeMode mode) { return mode == ThemeMode::Light; }
 
   ColorSwatchPreview palettePreviewFromMetadata(const noctalia::theme::AvailablePalette::PreviewMode& metadata) {
@@ -74,9 +72,8 @@ namespace {
     });
   }
 
-  std::unique_ptr<Flex> centeredRow(std::unique_ptr<Flex> child, float scale) {
+  std::unique_ptr<Flex> centeredRow(std::unique_ptr<Flex> child) {
     child->setFlexGrow(1.0f);
-    child->setMaxWidth(kBodyMaxWidth * scale);
     return ui::row(
         {
             .align = FlexAlign::Stretch,
@@ -199,8 +196,8 @@ namespace {
     while (lineStart <= result.out.size()) {
       const std::size_t lineEnd = result.out.find('\n', lineStart);
       const std::string_view line = lineEnd == std::string::npos
-                                        ? std::string_view(result.out).substr(lineStart)
-                                        : std::string_view(result.out).substr(lineStart, lineEnd - lineStart);
+          ? std::string_view(result.out).substr(lineStart)
+          : std::string_view(result.out).substr(lineStart, lineEnd - lineStart);
 
       std::size_t tokenStart = 0;
       while (tokenStart <= line.size()) {
@@ -252,8 +249,9 @@ void SettingsWindow::applyPendingContentScrollTarget(float margin) {
     m_pendingContentScrollTarget = nullptr;
   };
 
-  if (m_contentScrollView == nullptr || m_contentScrollView->content() == nullptr ||
-      m_pendingContentScrollTarget == nullptr) {
+  if (m_contentScrollView == nullptr
+      || m_contentScrollView->content() == nullptr
+      || m_pendingContentScrollTarget == nullptr) {
     clearPending();
     return;
   }
@@ -348,8 +346,9 @@ void SettingsWindow::syncSelectedBarState(const Config& cfg, const std::vector<s
   }
 
   const BarConfig* selectedBar = settings::findBar(cfg, m_selectedBarName);
-  if (selectedBar != nullptr && !m_selectedMonitorOverride.empty() &&
-      settings::findMonitorOverride(*selectedBar, m_selectedMonitorOverride) == nullptr) {
+  if (selectedBar != nullptr
+      && !m_selectedMonitorOverride.empty()
+      && settings::findMonitorOverride(*selectedBar, m_selectedMonitorOverride) == nullptr) {
     m_selectedMonitorOverride.clear();
   }
 }
@@ -785,8 +784,9 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
 
   if (m_openWallpaperPanel) {
     auto it = std::find_if(m_settingsRegistry.begin(), m_settingsRegistry.end(), [](const settings::SettingEntry& e) {
-      return e.section == "wallpaper" && e.group == "general" &&
-             e.path == std::vector<std::string>{"wallpaper", "fill_mode"};
+      return e.section == "wallpaper"
+          && e.group == "general"
+          && e.path == std::vector<std::string>{"wallpaper", "fill_mode"};
     });
     settings::SettingEntry btn{
         .section = "wallpaper",
@@ -835,23 +835,25 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
   if (m_selectedSection == "bar" && selectedBar == nullptr) {
     m_selectedSection.clear();
   } else if (
-      m_selectedSection != "bar" && !m_selectedSection.empty() &&
-      std::find(sections.begin(), sections.end(), m_selectedSection) == sections.end()
+      m_selectedSection != "bar"
+      && !m_selectedSection.empty()
+      && std::find(sections.begin(), sections.end(), m_selectedSection) == sections.end()
   ) {
     m_selectedSection.clear();
   }
   if (m_selectedSection.empty()) {
     m_selectedSection = std::find(sections.begin(), sections.end(), "appearance") != sections.end()
-                            ? std::string("appearance")
-                            : (!sections.empty() ? sections.front() : std::string{});
+        ? std::string("appearance")
+        : (!sections.empty() ? sections.front() : std::string{});
   }
 
   const std::string resetPageScope = pageScopeKey(m_selectedSection, m_selectedBarName, m_selectedMonitorOverride);
   std::vector<std::vector<std::string>> resetPagePaths;
   if (m_config != nullptr) {
     for (const auto& entry : m_settingsRegistry) {
-      if (settingEntryBelongsToPage(entry, m_selectedSection, m_selectedBarName, m_selectedMonitorOverride) &&
-          m_config->hasEffectiveOverride(entry.path) && !containsPath(resetPagePaths, entry.path)) {
+      if (settingEntryBelongsToPage(entry, m_selectedSection, m_selectedBarName, m_selectedMonitorOverride)
+          && m_config->hasEffectiveOverride(entry.path)
+          && !containsPath(resetPagePaths, entry.path)) {
         resetPagePaths.push_back(entry.path);
       }
     }
@@ -896,13 +898,13 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
       .height = h,
   });
 
-  m_headerRow = main->addChild(centeredRow(buildHeaderRow(scale), scale));
-  main->addChild(centeredRow(buildFilterRow(scale, resetPageScope, std::move(resetPagePaths)), scale));
+  m_headerRow = main->addChild(centeredRow(buildHeaderRow(scale)));
+  main->addChild(centeredRow(buildFilterRow(scale, resetPageScope, std::move(resetPagePaths))));
   if (auto status = buildStatusRow(scale)) {
-    main->addChild(centeredRow(std::move(status), scale));
+    main->addChild(centeredRow(std::move(status)));
   }
 
-  auto bodyRow = centeredRow(buildBody(scale, cfg, sections, availableBars), scale);
+  auto bodyRow = centeredRow(buildBody(scale, cfg, sections, availableBars));
   bodyRow->setFlexGrow(1.0f);
   main->addChild(std::move(bodyRow));
 

@@ -362,8 +362,9 @@ namespace noctalia::theme {
           return a.chroma > b.chroma;
         });
         for (const auto& e : entries) {
-          const double score = static_cast<double>(familyTotals.size() - rank) * 1'000'000.0 +
-                               static_cast<double>(e.count) * 1000.0 + e.chroma;
+          const double score = static_cast<double>(familyTotals.size() - rank) * 1'000'000.0
+              + static_cast<double>(e.count) * 1000.0
+              + e.chroma;
           result.push_back({e.color, score});
         }
       }
@@ -459,8 +460,9 @@ namespace noctalia::theme {
           return a.count > b.count;
         });
         for (const auto& e : entries) {
-          const double score = static_cast<double>(distant.size() - rank) * 1'000'000.0 + e.chroma * 1000.0 +
-                               static_cast<double>(e.count);
+          const double score = static_cast<double>(distant.size() - rank) * 1'000'000.0
+              + e.chroma * 1000.0
+              + static_cast<double>(e.count);
           result.push_back({e.color, score});
         }
       }

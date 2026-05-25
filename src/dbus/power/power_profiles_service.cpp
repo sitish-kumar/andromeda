@@ -94,13 +94,14 @@ PowerProfilesService::PowerProfilesService(SystemBus& bus) : m_bus(bus) {
           return;
         }
 
-        bool relevant = changedProperties.contains("ActiveProfile") || changedProperties.contains("Profiles") ||
-                        changedProperties.contains("PerformanceInhibited");
+        bool relevant = changedProperties.contains("ActiveProfile")
+            || changedProperties.contains("Profiles")
+            || changedProperties.contains("PerformanceInhibited");
 
         if (!relevant) {
-          relevant = std::ranges::find(invalidatedProperties, "ActiveProfile") != invalidatedProperties.end() ||
-                     std::ranges::find(invalidatedProperties, "Profiles") != invalidatedProperties.end() ||
-                     std::ranges::find(invalidatedProperties, "PerformanceInhibited") != invalidatedProperties.end();
+          relevant = std::ranges::find(invalidatedProperties, "ActiveProfile") != invalidatedProperties.end()
+              || std::ranges::find(invalidatedProperties, "Profiles") != invalidatedProperties.end()
+              || std::ranges::find(invalidatedProperties, "PerformanceInhibited") != invalidatedProperties.end();
         }
 
         if (relevant) {

@@ -418,8 +418,10 @@ void PipeWireSpectrum::handleAudioStateChanged() {
   const std::uint32_t target = resolvedTargetNodeId();
   const auto* targetNode = resolvedTargetNode();
   const std::string targetObject = targetNode != nullptr ? targetNode->name : std::string{};
-  if (target != m_boundNodeId || targetObject != m_boundTargetObject || (target == 0 && m_stream != nullptr) ||
-      (target != 0 && targetNode == nullptr)) {
+  if (target != m_boundNodeId
+      || targetObject != m_boundTargetObject
+      || (target == 0 && m_stream != nullptr)
+      || (target != 0 && targetNode == nullptr)) {
     rebuildStream();
   }
 }
@@ -533,9 +535,9 @@ void PipeWireSpectrum::initProcessing() {
 
   m_window.resize(kFftSize);
   for (std::size_t i = 0; i < m_window.size(); ++i) {
-    m_window[i] =
-        0.5f *
-        (1.0f - std::cos(2.0f * std::numbers::pi_v<float> * static_cast<float>(i) / static_cast<float>(kFftSize - 1)));
+    m_window[i] = 0.5f
+        * (1.0f
+           - std::cos(2.0f * std::numbers::pi_v<float> * static_cast<float>(i) / static_cast<float>(kFftSize - 1)));
   }
 
   reconfigureAnalysisLayout();
@@ -654,8 +656,8 @@ bool PipeWireSpectrum::processListenerView(ListenerState& state, float nrFactor,
   for (std::size_t i = 0; i < bandCountSize; ++i) {
     if (bands[i] < state.prevBands[i] && m_noiseReduction > 0.1f) {
       bands[i] = static_cast<float>(
-          static_cast<double>(state.peak[i]) *
-          (1.0 - static_cast<double>(state.fall[i]) * static_cast<double>(state.fall[i]) * gravityMod)
+          static_cast<double>(state.peak[i])
+          * (1.0 - static_cast<double>(state.fall[i]) * static_cast<double>(state.fall[i]) * gravityMod)
       );
       if (bands[i] < 0.0f) {
         bands[i] = 0.0f;

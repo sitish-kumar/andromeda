@@ -385,8 +385,8 @@ bool outputMatchesSelector(const std::string& match, const WaylandOutput& output
     while ((pos = output.description.find(match, pos)) != std::string::npos) {
       const bool startOk = (pos == 0 || std::isspace(static_cast<unsigned char>(output.description[pos - 1])) != 0);
       const bool endOk =
-          (pos + match.size() == output.description.size() ||
-           std::isspace(static_cast<unsigned char>(output.description[pos + match.size()])) != 0);
+          (pos + match.size() == output.description.size()
+           || std::isspace(static_cast<unsigned char>(output.description[pos + match.size()])) != 0);
       if (startOk && endOk) {
         return true;
       }

@@ -21,9 +21,10 @@
 
 namespace {
 
-  constexpr std::uint32_t kPopupConstraintAdjust =
-      XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y |
-      XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y;
+  constexpr std::uint32_t kPopupConstraintAdjust = XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X
+      | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y
+      | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_X
+      | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y;
 
   ShellConfig::ShadowConfig popupShadowConfig(ConfigService* config) {
     return config != nullptr ? config->config().shell.shadow : ShellConfig::ShadowConfig{};
@@ -92,10 +93,9 @@ bool DialogPopupHost::openPopup(std::uint32_t width, std::uint32_t height) {
   m_surface = std::move(surface);
   m_popupHosts->beginAttachedPopup(m_parentSurface);
   m_attachedToHost = true;
-  const bool initialized =
-      parentContext->xdgSurface != nullptr
-          ? m_surface->initializeAsChild(parentContext->xdgSurface, parentContext->output, popupConfig)
-          : m_surface->initialize(parentContext->layerSurface, parentContext->output, popupConfig);
+  const bool initialized = parentContext->xdgSurface != nullptr
+      ? m_surface->initializeAsChild(parentContext->xdgSurface, parentContext->output, popupConfig)
+      : m_surface->initialize(parentContext->layerSurface, parentContext->output, popupConfig);
   if (!initialized) {
     destroyPopup();
     return false;
@@ -204,8 +204,8 @@ bool DialogPopupHost::onPointerEvent(const PointerEvent& event) {
   float localY = 0.0f;
   const bool mapped = mapPointerEvent(event, localX, localY);
   if (!mapped) {
-    if ((event.type == PointerEvent::Type::Leave && event.surface == m_parentSurface) ||
-        (event.type == PointerEvent::Type::Motion && event.surface == m_parentSurface && m_pointerInside)) {
+    if ((event.type == PointerEvent::Type::Leave && event.surface == m_parentSurface)
+        || (event.type == PointerEvent::Type::Motion && event.surface == m_parentSurface && m_pointerInside)) {
       m_pointerInside = false;
       if (!captured) {
         m_inputDispatcher.pointerLeave();
@@ -337,9 +337,9 @@ void DialogPopupHost::prepareFrame(bool needsUpdate, bool needsLayout) {
 
   m_renderContext->makeCurrent(m_surface->renderTarget());
 
-  const bool needsSceneBuild = m_sceneRoot == nullptr ||
-                               static_cast<std::uint32_t>(std::round(m_sceneRoot->width())) != width ||
-                               static_cast<std::uint32_t>(std::round(m_sceneRoot->height())) != height;
+  const bool needsSceneBuild = m_sceneRoot == nullptr
+      || static_cast<std::uint32_t>(std::round(m_sceneRoot->width())) != width
+      || static_cast<std::uint32_t>(std::round(m_sceneRoot->height())) != height;
   if (needsSceneBuild) {
     buildScene(width, height);
   }

@@ -165,8 +165,10 @@ bool PopupSurface::resize(std::uint32_t width, std::uint32_t height) {
 
   width = std::max(width, 1u);
   height = std::max(height, 1u);
-  if (m_config.width == width && m_config.height == height && Surface::width() == width &&
-      Surface::height() == height) {
+  if (m_config.width == width
+      && m_config.height == height
+      && Surface::width() == width
+      && Surface::height() == height) {
     return true;
   }
 

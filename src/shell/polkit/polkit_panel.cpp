@@ -145,8 +145,12 @@ void PolkitPanel::doLayout(Renderer& renderer, float width, float height) {
 
 void PolkitPanel::doUpdate(Renderer& /*renderer*/) {
   PolkitAgent* agent = m_agentProvider != nullptr ? m_agentProvider() : nullptr;
-  if (agent == nullptr || m_messageLabel == nullptr || m_promptLabel == nullptr || m_supplementaryLabel == nullptr ||
-      m_submitButton == nullptr || m_input == nullptr) {
+  if (agent == nullptr
+      || m_messageLabel == nullptr
+      || m_promptLabel == nullptr
+      || m_supplementaryLabel == nullptr
+      || m_submitButton == nullptr
+      || m_input == nullptr) {
     return;
   }
   const PolkitRequest request = agent->pendingRequest();
@@ -155,8 +159,8 @@ void PolkitPanel::doUpdate(Renderer& /*renderer*/) {
   const bool isInvalidPassword = supplementaryError && supplementaryRaw == i18n::tr("auth.polkit.invalid-password");
   std::string promptText = wrapLongRuns(agent->inputPrompt());
   std::string supplementaryText = wrapLongRuns(supplementaryRaw);
-  if (!supplementaryText.empty() &&
-      (supplementaryError || supplementaryText == i18n::tr("auth.polkit.authenticating"))) {
+  if (!supplementaryText.empty()
+      && (supplementaryError || supplementaryText == i18n::tr("auth.polkit.authenticating"))) {
     promptText = supplementaryText;
     supplementaryText.clear();
   }

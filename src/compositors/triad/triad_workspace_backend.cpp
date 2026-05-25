@@ -567,10 +567,14 @@ bool TriadWorkspaceBackend::applyLayoutState(const nlohmann::json& state) {
     bool same = true;
     for (const auto& [index, workspace] : next) {
       const auto oldIt = m_workspaces.find(index);
-      if (oldIt == m_workspaces.end() || oldIt->second.name != workspace.name ||
-          oldIt->second.output != workspace.output || oldIt->second.active != workspace.active ||
-          oldIt->second.globalActive != workspace.globalActive || oldIt->second.urgent != workspace.urgent ||
-          oldIt->second.occupied != workspace.occupied || oldIt->second.focusedWindowId != workspace.focusedWindowId) {
+      if (oldIt == m_workspaces.end()
+          || oldIt->second.name != workspace.name
+          || oldIt->second.output != workspace.output
+          || oldIt->second.active != workspace.active
+          || oldIt->second.globalActive != workspace.globalActive
+          || oldIt->second.urgent != workspace.urgent
+          || oldIt->second.occupied != workspace.occupied
+          || oldIt->second.focusedWindowId != workspace.focusedWindowId) {
         same = false;
         break;
       }
@@ -600,9 +604,13 @@ bool TriadWorkspaceBackend::applyWindows(const nlohmann::json& windows) {
     bool same = true;
     for (const auto& [id, window] : next) {
       const auto oldIt = m_windows.find(id);
-      if (oldIt == m_windows.end() || oldIt->second.workspaceIndex != window.workspaceIndex ||
-          oldIt->second.output != window.output || oldIt->second.appId != window.appId ||
-          oldIt->second.title != window.title || oldIt->second.x != window.x || oldIt->second.y != window.y) {
+      if (oldIt == m_windows.end()
+          || oldIt->second.workspaceIndex != window.workspaceIndex
+          || oldIt->second.output != window.output
+          || oldIt->second.appId != window.appId
+          || oldIt->second.title != window.title
+          || oldIt->second.x != window.x
+          || oldIt->second.y != window.y) {
         same = false;
         break;
       }
@@ -622,9 +630,13 @@ bool TriadWorkspaceBackend::applyWindow(const nlohmann::json& window) {
     return false;
   }
   const auto oldIt = m_windows.find(parsed->id);
-  if (oldIt != m_windows.end() && oldIt->second.workspaceIndex == parsed->workspaceIndex &&
-      oldIt->second.output == parsed->output && oldIt->second.appId == parsed->appId &&
-      oldIt->second.title == parsed->title && oldIt->second.x == parsed->x && oldIt->second.y == parsed->y) {
+  if (oldIt != m_windows.end()
+      && oldIt->second.workspaceIndex == parsed->workspaceIndex
+      && oldIt->second.output == parsed->output
+      && oldIt->second.appId == parsed->appId
+      && oldIt->second.title == parsed->title
+      && oldIt->second.x == parsed->x
+      && oldIt->second.y == parsed->y) {
     return false;
   }
   m_windows[parsed->id] = *parsed;

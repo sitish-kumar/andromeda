@@ -269,7 +269,7 @@ void TestPanel::create() {
     slider->setControlHeight(Style::controlHeight * scale);
     slider->setTrackHeight(Style::sliderTrackHeight * scale);
     slider->setThumbSize(Style::sliderThumbSize * scale);
-    slider->setOnValueChanged([this](float value) {
+    slider->setOnValueChanged([this](double value) {
       if (m_sliderValueLabel != nullptr) {
         const int percent = static_cast<int>(std::round(value));
         m_sliderValueLabel->setText(std::to_string(percent) + "%");

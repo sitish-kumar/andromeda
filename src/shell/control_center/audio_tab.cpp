@@ -91,8 +91,9 @@ namespace {
     while (normalized.find("--") != std::string::npos) {
       normalized.erase(normalized.find("--"), 1);
     }
-    return normalized.starts_with("audio-stream-") || normalized.starts_with("stream-") ||
-           normalized.find("audio-stream-#") != std::string::npos;
+    return normalized.starts_with("audio-stream-")
+        || normalized.starts_with("stream-")
+        || normalized.find("audio-stream-#") != std::string::npos;
   }
 
   bool isLowConfidenceProgramAppName(const AudioNode& node) {
@@ -165,10 +166,10 @@ namespace {
 
     const std::string canonicalName = canonical(appName);
     const std::string canonicalBinary = canonical(appBinary);
-    const bool binaryMatchesName =
-        !canonicalBinary.empty() &&
-        (canonicalName == canonicalBinary || canonicalName.find(canonicalBinary) != std::string::npos ||
-         canonicalBinary.find(canonicalName) != std::string::npos);
+    const bool binaryMatchesName = !canonicalBinary.empty()
+        && (canonicalName == canonicalBinary
+            || canonicalName.find(canonicalBinary) != std::string::npos
+            || canonicalBinary.find(canonicalName) != std::string::npos);
     // If we have no application.id and the binary disagrees with appName, appName is usually a runtime wrapper label.
     if (appId.empty() && !appBinary.empty() && !binaryMatchesName) {
       return true;
@@ -176,10 +177,13 @@ namespace {
 
     // Some stream clients expose a runtime/container name in application.name.
     // If application.id is more specific and does not match, prefer the id label.
-    const bool idLooksSpecific = appId.find('.') != std::string::npos || appId.find('-') != std::string::npos ||
-                                 appId.find('_') != std::string::npos;
-    const bool nameLooksSimple = appName.find('.') == std::string::npos && appName.find('-') == std::string::npos &&
-                                 appName.find('_') == std::string::npos && appName.find(' ') == std::string::npos;
+    const bool idLooksSpecific = appId.find('.') != std::string::npos
+        || appId.find('-') != std::string::npos
+        || appId.find('_') != std::string::npos;
+    const bool nameLooksSimple = appName.find('.') == std::string::npos
+        && appName.find('-') == std::string::npos
+        && appName.find('_') == std::string::npos
+        && appName.find(' ') == std::string::npos;
     return !appId.empty() && appName != appId && idLooksSpecific && nameLooksSimple;
   }
 
@@ -341,9 +345,9 @@ namespace {
     const std::string id = lowerIdentifier(entry.id);
     const std::string name = lowerIdentifier(entry.name);
     const std::string icon = lowerIdentifier(entry.icon);
-    return (!id.empty() && crossMatchDesktopSearch(search, id)) ||
-           (!name.empty() && crossMatchDesktopSearch(search, name)) ||
-           (!icon.empty() && crossMatchDesktopSearch(search, icon));
+    return (!id.empty() && crossMatchDesktopSearch(search, id))
+        || (!name.empty() && crossMatchDesktopSearch(search, name))
+        || (!icon.empty() && crossMatchDesktopSearch(search, icon));
   }
 
   void pushUnique(std::vector<std::string>& values, std::string value) {
@@ -501,21 +505,29 @@ namespace {
         resolved = prettifyIdentifier(node.applicationBinary);
       }
     }
-    if ((resolved.empty() || isGenericAudioLabel(resolved) || looksLikeRuntimeLauncher(resolved)) &&
-        !node.streamTitle.empty() && !isGenericAudioLabel(node.streamTitle) &&
-        !looksLikeRuntimeLauncher(node.streamTitle) && !isLikelyFallbackStreamLabel(node.streamTitle)) {
+    if ((resolved.empty() || isGenericAudioLabel(resolved) || looksLikeRuntimeLauncher(resolved))
+        && !node.streamTitle.empty()
+        && !isGenericAudioLabel(node.streamTitle)
+        && !looksLikeRuntimeLauncher(node.streamTitle)
+        && !isLikelyFallbackStreamLabel(node.streamTitle)) {
       resolved = node.streamTitle;
     }
-    if ((resolved.empty() || isGenericAudioLabel(resolved) || looksLikeRuntimeLauncher(resolved) ||
-         (lowerIdentifier(resolved) == lowerIdentifier(node.name) &&
-          lowerIdentifier(resolved) == lowerIdentifier(node.description) && node.applicationId.empty() &&
-          node.applicationBinary.empty())) &&
-        player != nullptr && !player->identity.empty() && !isGenericAudioLabel(player->identity)) {
+    if ((resolved.empty()
+         || isGenericAudioLabel(resolved)
+         || looksLikeRuntimeLauncher(resolved)
+         || (lowerIdentifier(resolved) == lowerIdentifier(node.name)
+             && lowerIdentifier(resolved) == lowerIdentifier(node.description)
+             && node.applicationId.empty()
+             && node.applicationBinary.empty()))
+        && player != nullptr
+        && !player->identity.empty()
+        && !isGenericAudioLabel(player->identity)) {
       resolved = player->identity;
     }
     result.desktop = lookupDesktopEntryForProgramStream(node, resolved);
-    if (result.desktop.entry != nullptr && !result.desktop.entry->name.empty() &&
-        !isGenericAudioLabel(result.desktop.entry->name)) {
+    if (result.desktop.entry != nullptr
+        && !result.desktop.entry->name.empty()
+        && !isGenericAudioLabel(result.desktop.entry->name)) {
       resolved = result.desktop.entry->name;
     }
     if (resolved.empty() || isGenericAudioLabel(resolved) || looksLikeRuntimeLauncher(resolved)) {
@@ -693,8 +705,10 @@ namespace {
   }
 
   void appendFallbackIconCandidates(std::vector<std::string>& candidates, const AudioNode& node) {
-    if (looksLikeRuntimeLauncher(node.applicationName) || looksLikeRuntimeLauncher(node.applicationBinary) ||
-        looksLikeRuntimeLauncher(node.applicationId) || isLikelyFallbackStreamLabel(node.streamTitle)) {
+    if (looksLikeRuntimeLauncher(node.applicationName)
+        || looksLikeRuntimeLauncher(node.applicationBinary)
+        || looksLikeRuntimeLauncher(node.applicationId)
+        || isLikelyFallbackStreamLabel(node.streamTitle)) {
       for (const std::string icon :
            {"wine", "steam", "applications-games", "application-x-executable", "application-default-icon"}) {
         pushUnique(candidates, icon);
@@ -906,15 +920,15 @@ namespace {
               .wheelAdjustEnabled = true,
               .flexGrow = 1.0f,
               .onValueChanged =
-                  [this](float value) {
+                  [this](double value) {
                     if (m_syncing || m_audio == nullptr) {
                       return;
                     }
                     if (m_valueLabel != nullptr) {
-                      m_valueLabel->setText(std::to_string(static_cast<int>(std::round(value * 100.0f))) + "%");
+                      m_valueLabel->setText(std::to_string(static_cast<int>(std::round(value * 100.0))) + "%");
                     }
                     if (m_onQueueVolume) {
-                      m_onQueueVolume(value);
+                      m_onQueueVolume(static_cast<float>(value));
                     }
                   },
               .onDragEnd =
@@ -1323,8 +1337,8 @@ void AudioTab::openDeviceMenu(bool isOutput) {
 }
 
 bool AudioTab::dragging() const noexcept {
-  if ((m_outputSlider != nullptr && m_outputSlider->dragging()) ||
-      (m_inputSlider != nullptr && m_inputSlider->dragging())) {
+  if ((m_outputSlider != nullptr && m_outputSlider->dragging())
+      || (m_inputSlider != nullptr && m_inputSlider->dragging())) {
     return true;
   }
   for (Flex* row : m_programRows) {
@@ -1439,15 +1453,15 @@ std::unique_ptr<Flex> AudioTab::create() {
           .wheelAdjustEnabled = true,
           .flexGrow = 1.0f,
           .onValueChanged =
-              [this](float value) {
+              [this](double value) {
                 if (m_syncingOutputSlider || m_audio == nullptr) {
                   return;
                 }
                 m_sinkVolumeDebounceTimer.stop();
-                queueSinkVolume(value);
+                queueSinkVolume(static_cast<float>(value));
                 flushPendingVolumes();
                 if (m_outputValue != nullptr) {
-                  m_outputValue->setText(std::to_string(static_cast<int>(std::round(value * 100.0f))) + "%");
+                  m_outputValue->setText(std::to_string(static_cast<int>(std::round(value * 100.0))) + "%");
                 }
               },
           .onDragEnd =
@@ -1525,15 +1539,15 @@ std::unique_ptr<Flex> AudioTab::create() {
           .wheelAdjustEnabled = true,
           .flexGrow = 1.0f,
           .onValueChanged =
-              [this](float value) {
+              [this](double value) {
                 if (m_syncingInputSlider || m_audio == nullptr) {
                   return;
                 }
                 m_sourceVolumeDebounceTimer.stop();
-                queueSourceVolume(value);
+                queueSourceVolume(static_cast<float>(value));
                 flushPendingVolumes();
                 if (m_inputValue != nullptr) {
-                  m_inputValue->setText(std::to_string(static_cast<int>(std::round(value * 100.0f))) + "%");
+                  m_inputValue->setText(std::to_string(static_cast<int>(std::round(value * 100.0))) + "%");
                 }
               },
           .onDragEnd =
@@ -1699,11 +1713,16 @@ void AudioTab::doUpdate(Renderer& renderer) {
   const float sourceVolume = source != nullptr ? source->volume : 0.0f;
   const bool showPendingSink = sink != nullptr && m_pendingSinkVolume >= 0.0f && m_pendingSinkId == sink->id;
   const bool showPendingSource = source != nullptr && m_pendingSourceVolume >= 0.0f && m_pendingSourceId == source->id;
-  const bool holdSinkState = outputDragging && sink != nullptr && m_lastSentSinkVolume >= 0.0f &&
-                             now < m_ignoreSinkStateUntil && std::abs(sink->volume - m_lastSentSinkVolume) > 0.02f;
-  const bool holdSourceState = inputDragging && source != nullptr && m_lastSentSourceVolume >= 0.0f &&
-                               now < m_ignoreSourceStateUntil &&
-                               std::abs(source->volume - m_lastSentSourceVolume) > 0.02f;
+  const bool holdSinkState = outputDragging
+      && sink != nullptr
+      && m_lastSentSinkVolume >= 0.0f
+      && now < m_ignoreSinkStateUntil
+      && std::abs(sink->volume - m_lastSentSinkVolume) > 0.02f;
+  const bool holdSourceState = inputDragging
+      && source != nullptr
+      && m_lastSentSourceVolume >= 0.0f
+      && now < m_ignoreSourceStateUntil
+      && std::abs(source->volume - m_lastSentSourceVolume) > 0.02f;
   const float displayedSinkVolume = std::clamp(
       showPendingSink ? m_pendingSinkVolume : (holdSinkState ? m_lastSentSinkVolume : sinkVolume), 0.0f, sliderMax
   );
@@ -1966,8 +1985,10 @@ void AudioTab::rebuildLists(Renderer& renderer) {
 
   const float scale = contentScale();
   if (m_audio == nullptr) {
-    if (outputWidth == m_lastOutputWidth && inputWidth == m_lastInputWidth && m_lastOutputListKey == "unavailable" &&
-        m_lastInputListKey == "unavailable") {
+    if (outputWidth == m_lastOutputWidth
+        && inputWidth == m_lastInputWidth
+        && m_lastOutputListKey == "unavailable"
+        && m_lastInputListKey == "unavailable") {
       return;
     }
     while (!m_outputList->children().empty()) {
@@ -1995,8 +2016,10 @@ void AudioTab::rebuildLists(Renderer& renderer) {
   const std::string nextOutputListKey = state.sinks.empty() ? "empty" : deviceListKey(state.sinks);
   const std::string nextInputListKey = state.sources.empty() ? "empty" : deviceListKey(state.sources);
 
-  if (outputWidth == m_lastOutputWidth && inputWidth == m_lastInputWidth && nextOutputListKey == m_lastOutputListKey &&
-      nextInputListKey == m_lastInputListKey) {
+  if (outputWidth == m_lastOutputWidth
+      && inputWidth == m_lastInputWidth
+      && nextOutputListKey == m_lastOutputListKey
+      && nextInputListKey == m_lastInputListKey) {
     return;
   }
 

@@ -31,6 +31,23 @@ namespace {
       .done = &Surface::handleFrameDone,
   };
 
+  void surfaceEnter(void* data, wl_surface* surface, wl_output* output) {
+    auto* self = static_cast<Surface*>(data);
+    self->onSurfaceOutputEnter(surface, output);
+  }
+
+  void surfaceLeave(void* data, wl_surface* surface, wl_output* output) {
+    auto* self = static_cast<Surface*>(data);
+    self->onSurfaceOutputLeave(surface, output);
+  }
+
+  const wl_surface_listener kSurfaceListener = {
+      .enter = surfaceEnter,
+      .leave = surfaceLeave,
+      .preferred_buffer_scale = nullptr,
+      .preferred_buffer_transform = nullptr,
+  };
+
   void preferredFractionalScale(void* data, wp_fractional_scale_v1* /*fractionalScale*/, std::uint32_t scale) {
     auto* self = static_cast<Surface*>(data);
     self->onPreferredFractionalScale(scale);
@@ -60,8 +77,10 @@ namespace {
   bool idleProfileEnabled() {
     static const bool enabled = [] {
       const char* value = std::getenv("NOCTALIA_IDLE_PROFILE");
-      return value != nullptr && value[0] != '\0' && std::string_view(value) != "0" &&
-             std::string_view(value) != "false";
+      return value != nullptr
+          && value[0] != '\0'
+          && std::string_view(value) != "0"
+          && std::string_view(value) != "false";
     }();
     return enabled;
   }
@@ -173,6 +192,18 @@ namespace {
     }
   }
 
+  std::string outputLabelForSurface(const WaylandConnection& connection, wl_surface* surface) {
+    wl_output* wlOutput = connection.outputForSurface(surface);
+    const WaylandOutput* output = connection.findOutputByWl(wlOutput);
+    if (output == nullptr) {
+      return "unknown";
+    }
+    if (!output->connectorName.empty()) {
+      return output->connectorName;
+    }
+    return std::format("#{}", output->name);
+  }
+
   class ScopedBoolFlag {
   public:
     explicit ScopedBoolFlag(bool& flag) noexcept : m_flag(flag) { m_flag = true; }
@@ -237,11 +268,42 @@ void Surface::handleFrameDone(void* data, wl_callback* callback, std::uint32_t c
   self->queueFrameWork(true, deltaMs);
 }
 
+void Surface::onSurfaceOutputEnter(wl_surface* surface, wl_output* output) {
+  if (surface != m_surface || output == nullptr) {
+    return;
+  }
+
+  m_connection.notifySurfaceOutputEnter(surface, output);
+
+  const WaylandOutput* outputInfo = m_connection.findOutputByWl(output);
+  if (outputInfo == nullptr) {
+    return;
+  }
+
+  const std::int32_t nextScale = std::max(1, outputInfo->scale);
+  if (nextScale == m_bufferScale) {
+    return;
+  }
+
+  m_bufferScale = nextScale;
+  if ((m_fractionalScale == nullptr || m_viewport == nullptr || m_fractionalScaleNumerator == 0) && m_configured) {
+    onScaleChanged();
+  }
+}
+
+void Surface::onSurfaceOutputLeave(wl_surface* surface, wl_output* output) {
+  if (surface != m_surface || output == nullptr) {
+    return;
+  }
+  m_connection.notifySurfaceOutputLeave(surface, output);
+}
+
 bool Surface::createWlSurface() {
   m_surface = wl_compositor_create_surface(m_connection.compositor());
   if (m_surface == nullptr) {
     return false;
   }
+  wl_surface_add_listener(m_surface, &kSurfaceListener, this);
 
   initializeSurfaceScaleProtocol();
 
@@ -379,8 +441,9 @@ void Surface::resizeRenderTarget() {
   const auto bufferHeight = bufferHeightFor(m_height);
 
   m_renderTarget.setLogicalSize(m_width, m_height);
-  if (m_renderTarget.bufferWidth() == bufferWidth && m_renderTarget.bufferHeight() == bufferHeight &&
-      m_renderTarget.isReady()) {
+  if (m_renderTarget.bufferWidth() == bufferWidth
+      && m_renderTarget.bufferHeight() == bufferHeight
+      && m_renderTarget.isReady()) {
     return;
   }
   m_renderTarget.resize(bufferWidth, bufferHeight);
@@ -392,6 +455,12 @@ void Surface::onPreferredFractionalScale(std::uint32_t numerator) {
   }
 
   m_fractionalScaleNumerator = numerator;
+  const float preferredScale = std::max(1.0f, static_cast<float>(numerator) / 120.0f);
+  kLog.info(
+      "fractional scale preferred output={} surface={} scale={:.3f} raw={}/120 logical={}x{} buffer={}x{}",
+      outputLabelForSurface(m_connection, m_surface), static_cast<const void*>(m_surface), preferredScale, numerator,
+      m_width, m_height, bufferWidthFor(m_width), bufferHeightFor(m_height)
+  );
   if (!m_configured) {
     return;
   }
@@ -863,8 +932,12 @@ void Surface::preparePendingFrame() {
 }
 
 void Surface::kickFrameLoop() {
-  if (!m_running || !m_configured || m_frameCallback != nullptr || m_inFrameHandler || m_inPrepareFrame ||
-      m_frameWorkQueued) {
+  if (!m_running
+      || !m_configured
+      || m_frameCallback != nullptr
+      || m_inFrameHandler
+      || m_inPrepareFrame
+      || m_frameWorkQueued) {
     return;
   }
 

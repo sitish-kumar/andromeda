@@ -136,19 +136,17 @@ namespace settings {
         .options = labelsForChoices(choices),
         .selectedIndex = selectedIndex,
         .clearSelection = selectedUnknown,
-        .placeholder =
-            selectedUnknown
-                ? std::optional<std::string>(i18n::tr("settings.controls.select.unknown-value", "value", selectedValue))
-                : std::nullopt,
+        .placeholder = selectedUnknown
+            ? std::optional<std::string>(i18n::tr("settings.controls.select.unknown-value", "value", selectedValue))
+            : std::nullopt,
         .fontSize = options.fontSize > 0.0f ? std::optional<float>(options.fontSize) : std::nullopt,
         .controlHeight = options.controlHeight > 0.0f ? std::optional<float>(options.controlHeight) : std::nullopt,
         .glyphSize = options.glyphSize > 0.0f ? std::optional<float>(options.glyphSize) : std::nullopt,
         .optionIndicators = std::move(indicators),
         .width = options.width > 0.0f ? std::optional<float>(options.width) : std::nullopt,
-        .height =
-            options.width > 0.0f
-                ? std::optional<float>(options.controlHeight > 0.0f ? options.controlHeight : Style::controlHeight)
-                : std::nullopt,
+        .height = options.width > 0.0f
+            ? std::optional<float>(options.controlHeight > 0.0f ? options.controlHeight : Style::controlHeight)
+            : std::nullopt,
         .flexGrow = options.flexGrow ? std::optional<float>(1.0f) : std::nullopt,
         .onSelectionChanged =
             [choices = std::move(choices), setValue = std::move(setValue), clearValue = std::move(clearValue),

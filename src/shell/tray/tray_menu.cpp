@@ -33,9 +33,10 @@ namespace {
 
   constexpr float kSurfaceWidth = kMenuWidth;
 
-  constexpr std::uint32_t kPopupConstraintAdjust =
-      XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y |
-      XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y;
+  constexpr std::uint32_t kPopupConstraintAdjust = XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X
+      | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y
+      | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_X
+      | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y;
 
   bool containsTrayWidget(const std::vector<std::string>& widgets) {
     return std::find(widgets.begin(), widgets.end(), "tray") != widgets.end();
@@ -109,8 +110,9 @@ namespace {
       if (!fallback.has_value()) {
         fallback = resolved;
       }
-      if (containsTrayWidget(resolved.startWidgets) || containsTrayWidget(resolved.centerWidgets) ||
-          containsTrayWidget(resolved.endWidgets)) {
+      if (containsTrayWidget(resolved.startWidgets)
+          || containsTrayWidget(resolved.centerWidgets)
+          || containsTrayWidget(resolved.endWidgets)) {
         return resolved;
       }
     }
@@ -374,8 +376,9 @@ bool TrayMenu::onPointerEvent(const PointerEvent& event) {
       break;
     }
 
-    if (sub->surface != nullptr && sub->sceneRoot != nullptr &&
-        (sub->sceneRoot->paintDirty() || sub->sceneRoot->layoutDirty())) {
+    if (sub->surface != nullptr
+        && sub->sceneRoot != nullptr
+        && (sub->sceneRoot->paintDirty() || sub->sceneRoot->layoutDirty())) {
       if (sub->sceneRoot->layoutDirty()) {
         sub->surface->requestLayout();
       } else {
@@ -442,8 +445,9 @@ bool TrayMenu::onPointerEvent(const PointerEvent& event) {
     break;
   }
 
-  if (inst->surface != nullptr && inst->sceneRoot != nullptr &&
-      (inst->sceneRoot->paintDirty() || inst->sceneRoot->layoutDirty())) {
+  if (inst->surface != nullptr
+      && inst->sceneRoot != nullptr
+      && (inst->sceneRoot->paintDirty() || inst->sceneRoot->layoutDirty())) {
     if (inst->sceneRoot->layoutDirty()) {
       inst->surface->requestLayout();
     } else {
@@ -476,16 +480,17 @@ void TrayMenu::refreshEntries() {
   if (!m_entries.empty() && trayDrawerEnabled(m_config)) {
     const bool pinned = activeItemPinned();
     m_entries.insert(
-        m_entries.begin(), TrayMenuEntry{
-                               .id = kPinToggleEntryId,
-                               .label = i18n::tr(pinned ? "tray.menu.unpin" : "tray.menu.pin"),
-                               .iconName = {},
-                               .iconData = {},
-                               .enabled = true,
-                               .visible = true,
-                               .separator = false,
-                               .hasSubmenu = false,
-                           }
+        m_entries.begin(),
+        TrayMenuEntry{
+            .id = kPinToggleEntryId,
+            .label = i18n::tr(pinned ? "tray.menu.unpin" : "tray.menu.pin"),
+            .iconName = {},
+            .iconData = {},
+            .enabled = true,
+            .visible = true,
+            .separator = false,
+            .hasSubmenu = false,
+        }
     );
   }
   if (m_entries.empty()) {
@@ -535,16 +540,17 @@ void TrayMenu::scheduleEntryRetry(int attempt) {
     if (!m_entries.empty() && trayDrawerEnabled(m_config)) {
       const bool pinned = activeItemPinned();
       m_entries.insert(
-          m_entries.begin(), TrayMenuEntry{
-                                 .id = kPinToggleEntryId,
-                                 .label = i18n::tr(pinned ? "tray.menu.unpin" : "tray.menu.pin"),
-                                 .iconName = {},
-                                 .iconData = {},
-                                 .enabled = true,
-                                 .visible = true,
-                                 .separator = false,
-                                 .hasSubmenu = false,
-                             }
+          m_entries.begin(),
+          TrayMenuEntry{
+              .id = kPinToggleEntryId,
+              .label = i18n::tr(pinned ? "tray.menu.unpin" : "tray.menu.pin"),
+              .iconName = {},
+              .iconData = {},
+              .enabled = true,
+              .visible = true,
+              .separator = false,
+              .hasSubmenu = false,
+          }
       );
     }
     resizeMainSurfaceToEntries();
@@ -698,6 +704,15 @@ void TrayMenu::ensureSurface() {
     if (svc == nullptr || !svc->available()) {
       return;
     }
+
+    // When the menu is opened from an attached panel (e.g. the tray drawer),
+    // this popup is already enrolled into the panel's existing focus grab.
+    // Creating another grab here would clear the panel grab, dismissing the
+    // parent panel.
+    if (svc->popupGrabHost() != nullptr) {
+      return;
+    }
+
     m_focusGrab = svc->createGrab();
     if (m_focusGrab == nullptr) {
       return;
@@ -767,9 +782,9 @@ void TrayMenu::prepareMainMenuFrame(MenuInstance& inst, bool /*needsUpdate*/, bo
 
   m_renderContext->makeCurrent(inst.surface->renderTarget());
 
-  const bool needsSceneBuild = inst.sceneRoot == nullptr ||
-                               static_cast<uint32_t>(std::round(inst.sceneRoot->width())) != width ||
-                               static_cast<uint32_t>(std::round(inst.sceneRoot->height())) != height;
+  const bool needsSceneBuild = inst.sceneRoot == nullptr
+      || static_cast<uint32_t>(std::round(inst.sceneRoot->width())) != width
+      || static_cast<uint32_t>(std::round(inst.sceneRoot->height())) != height;
   if (needsSceneBuild || needsLayout) {
     UiPhaseScope layoutPhase(UiPhase::Layout);
     buildScene(inst, width, height);
@@ -992,8 +1007,8 @@ void TrayMenu::openSubmenu(std::int32_t parentEntryId, float rowCenterY) {
 
   const auto* wlOutput = m_wayland->findOutputByWl(m_instance->output);
   const std::int32_t outputWidth = (wlOutput != nullptr && wlOutput->logicalWidth > 0)
-                                       ? wlOutput->logicalWidth
-                                       : static_cast<std::int32_t>(chrome.surfaceWidth);
+      ? wlOutput->logicalWidth
+      : static_cast<std::int32_t>(chrome.surfaceWidth);
 
   bool isRight = (m_instance->submenuDirection == ContextSubmenuDirection::Right);
   const std::int32_t submenuExtent = static_cast<std::int32_t>(chrome.surfaceWidth) + kSubGap;
@@ -1085,9 +1100,9 @@ void TrayMenu::prepareSubmenuFrame(MenuInstance& inst, bool /*needsUpdate*/, boo
 
   m_renderContext->makeCurrent(inst.surface->renderTarget());
 
-  const bool needsSceneBuild = inst.sceneRoot == nullptr ||
-                               static_cast<uint32_t>(std::round(inst.sceneRoot->width())) != width ||
-                               static_cast<uint32_t>(std::round(inst.sceneRoot->height())) != height;
+  const bool needsSceneBuild = inst.sceneRoot == nullptr
+      || static_cast<uint32_t>(std::round(inst.sceneRoot->width())) != width
+      || static_cast<uint32_t>(std::round(inst.sceneRoot->height())) != height;
   if (needsSceneBuild || needsLayout) {
     UiPhaseScope layoutPhase(UiPhase::Layout);
     buildSubmenuScene(inst, width, height);

@@ -26,8 +26,10 @@ namespace {
 
     const auto namesIt = stateJson->find("keyboard_layouts");
     const auto currentIt = stateJson->find("current_keyboard_layout_idx");
-    if (namesIt == stateJson->end() || !namesIt->is_array() || currentIt == stateJson->end() ||
-        !currentIt->is_number_integer()) {
+    if (namesIt == stateJson->end()
+        || !namesIt->is_array()
+        || currentIt == stateJson->end()
+        || !currentIt->is_number_integer()) {
       return std::nullopt;
     }
 

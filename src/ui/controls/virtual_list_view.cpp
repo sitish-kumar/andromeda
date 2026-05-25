@@ -246,9 +246,12 @@ void VirtualListView::doLayout(Renderer& renderer) {
       const std::uint64_t key = m_adapter->itemKey(index);
       const std::uint64_t revision = m_adapter->itemRevision(index);
       const bool hovered = m_hoveredIndex.has_value() && *m_hoveredIndex == index;
-      const bool dirty = !m_slotBoundIndex[slotIndex].has_value() || *m_slotBoundIndex[slotIndex] != index ||
-                         m_slotBoundKey[slotIndex] != key || m_slotBoundRevision[slotIndex] != revision ||
-                         m_slotBoundWidthKey[slotIndex] != bindWidthKey || m_slotBoundHovered[slotIndex] != hovered;
+      const bool dirty = !m_slotBoundIndex[slotIndex].has_value()
+          || *m_slotBoundIndex[slotIndex] != index
+          || m_slotBoundKey[slotIndex] != key
+          || m_slotBoundRevision[slotIndex] != revision
+          || m_slotBoundWidthKey[slotIndex] != bindWidthKey
+          || m_slotBoundHovered[slotIndex] != hovered;
 
       slotActive[slotIndex] = true;
       slot->setBoundIndex(index);
@@ -285,10 +288,10 @@ void VirtualListView::doLayout(Renderer& renderer) {
 
 LayoutSize VirtualListView::doMeasure(Renderer& /*renderer*/, const LayoutConstraints& constraints) {
   const float w = constraints.hasExactWidth() ? constraints.maxWidth
-                  : constraints.hasMaxWidth   ? constraints.maxWidth
+      : constraints.hasMaxWidth               ? constraints.maxWidth
                                               : 0.0f;
   const float h = constraints.hasExactHeight() ? constraints.maxHeight
-                  : constraints.hasMaxHeight   ? constraints.maxHeight
+      : constraints.hasMaxHeight               ? constraints.maxHeight
                                                : 0.0f;
   return LayoutSize{.width = w, .height = h};
 }
@@ -365,8 +368,9 @@ std::size_t VirtualListView::firstVisibleIndex(float scrollY) const noexcept {
   const auto end = m_itemOffsets.begin() + static_cast<std::ptrdiff_t>(m_itemCount);
   auto it = std::upper_bound(begin, end, std::max(0.0f, scrollY));
   std::size_t index = it == begin ? 0 : static_cast<std::size_t>((it - begin) - 1);
-  while (index + 1 < m_itemCount && index < m_itemHeights.size() &&
-         m_itemOffsets[index] + m_itemHeights[index] < scrollY) {
+  while (index + 1 < m_itemCount
+         && index < m_itemHeights.size()
+         && m_itemOffsets[index] + m_itemHeights[index] < scrollY) {
     ++index;
   }
   return std::min(index, m_itemCount - 1);

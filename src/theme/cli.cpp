@@ -288,8 +288,19 @@ namespace noctalia::theme {
       const auto outlineRaw = loadHexColor(src, "mOutline");
       const auto shadow = loadHexColor(src, "mShadow").value_or(surface.value_or(Color{}));
 
-      if (!primary || !onPrimary || !secondary || !onSecondary || !tertiary || !onTertiary || !error || !onError ||
-          !surface || !onSurface || !surfaceVariant || !onSurfaceVariant || !outlineRaw) {
+      if (!primary
+          || !onPrimary
+          || !secondary
+          || !onSecondary
+          || !tertiary
+          || !onTertiary
+          || !error
+          || !onError
+          || !surface
+          || !onSurface
+          || !surfaceVariant
+          || !onSurfaceVariant
+          || !outlineRaw) {
         err = "fixed palette json is missing required colors";
         return std::nullopt;
       }

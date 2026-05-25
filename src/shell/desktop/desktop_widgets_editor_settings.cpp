@@ -33,16 +33,16 @@ namespace {
     return fallback;
   }
 
-  float getFloat(const Settings& s, const std::string& key, float fallback) {
+  double getDouble(const Settings& s, const std::string& key, double fallback) {
     const auto it = s.find(key);
     if (it == s.end()) {
       return fallback;
     }
     if (const auto* v = std::get_if<double>(&it->second)) {
-      return static_cast<float>(*v);
+      return *v;
     }
     if (const auto* v = std::get_if<std::int64_t>(&it->second)) {
-      return static_cast<float>(*v);
+      return static_cast<double>(*v);
     }
     return fallback;
   }
@@ -139,15 +139,16 @@ namespace {
       std::string_view labelText, const std::string& key, bool fallback, const Settings& s, DesktopWidgetsEditor* editor
   ) {
     return makeRow(
-        labelText, ui::toggle({
-                       .checked = getBool(s, key, fallback),
-                       .onChange = [editor, key](bool checked) { editor->applySettingChange(key, checked); },
-                   })
+        labelText,
+        ui::toggle({
+            .checked = getBool(s, key, fallback),
+            .onChange = [editor, key](bool checked) { editor->applySettingChange(key, checked); },
+        })
     );
   }
 
   std::unique_ptr<Flex> makeSliderRow(
-      std::string_view labelText, const std::string& key, float fallback, float minVal, float maxVal, float step,
+      std::string_view labelText, const std::string& key, double fallback, double minVal, double maxVal, double step,
       const Settings& s, DesktopWidgetsEditor* editor
   ) {
     return makeRow(
@@ -156,9 +157,9 @@ namespace {
             .minValue = minVal,
             .maxValue = maxVal,
             .step = step,
-            .value = getFloat(s, key, fallback),
+            .value = getDouble(s, key, fallback),
             .flexGrow = 1.0f,
-            .onValueChanged = [editor, key](float val) { editor->applySettingChange(key, static_cast<double>(val)); },
+            .onValueChanged = [editor, key](double val) { editor->applySettingChange(key, val); },
         })
     );
   }
@@ -189,13 +190,14 @@ namespace {
       DesktopWidgetsEditor* editor
   ) {
     return makeRow(
-        labelText, ui::input({
-                       .value = value,
-                       .placeholder = placeholder,
-                       .controlHeight = Style::controlHeightSm,
-                       .flexGrow = 1.0f,
-                       .onChange = [editor, key](const std::string& val) { editor->applySettingChange(key, val); },
-                   })
+        labelText,
+        ui::input({
+            .value = value,
+            .placeholder = placeholder,
+            .controlHeight = Style::controlHeightSm,
+            .flexGrow = 1.0f,
+            .onChange = [editor, key](const std::string& val) { editor->applySettingChange(key, val); },
+        })
     );
   }
 
@@ -278,16 +280,17 @@ namespace {
       }
     }
     return makeRow(
-        labelText, ui::segmented({
-                       .options = std::move(segmentOptions),
-                       .selectedIndex = selectedIndex,
-                       .flexGrow = 1.0f,
-                       .onChange = [editor, key, values = std::move(values)](std::size_t index) {
-                         if (index < values.size()) {
-                           editor->applySettingChange(key, values[index]);
-                         }
-                       },
-                   })
+        labelText,
+        ui::segmented({
+            .options = std::move(segmentOptions),
+            .selectedIndex = selectedIndex,
+            .flexGrow = 1.0f,
+            .onChange = [editor, key, values = std::move(values)](std::size_t index) {
+              if (index < values.size()) {
+                editor->applySettingChange(key, values[index]);
+              }
+            },
+        })
     );
   }
 
@@ -310,12 +313,10 @@ namespace {
 
       case settings::WidgetSettingValueType::Double: {
         const auto* defVal = std::get_if<double>(&spec.defaultValue);
-        const float fallback = defVal != nullptr ? static_cast<float>(*defVal) : 0.0f;
-        const float minVal = spec.minValue.has_value() ? static_cast<float>(*spec.minValue) : 0.0f;
-        const float maxVal = spec.maxValue.has_value() ? static_cast<float>(*spec.maxValue) : 1.0f;
-        content.addChild(
-            makeSliderRow(label, spec.key, fallback, minVal, maxVal, static_cast<float>(spec.step), s, editor)
-        );
+        const double fallback = defVal != nullptr ? *defVal : 0.0;
+        const double minVal = spec.minValue.value_or(0.0);
+        const double maxVal = spec.maxValue.value_or(1.0);
+        content.addChild(makeSliderRow(label, spec.key, fallback, minVal, maxVal, spec.step, s, editor));
         break;
       }
 

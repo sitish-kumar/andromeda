@@ -200,7 +200,7 @@ float TrayWidget::resolvedInlineEntryGap() const {
 }
 
 void TrayWidget::create() {
-  auto container = ui::makeFlex(
+  auto container = ui::flex(
       m_panelGridMode ? FlexDirection::Vertical : FlexDirection::Horizontal,
       {
           .out = &m_container,
@@ -317,14 +317,21 @@ void TrayWidget::syncState(Renderer& renderer) {
 
     // Resolved icon path cache is keyed by item id. Invalidate when icon-relevant
     // metadata changes, or we can keep showing stale paths after icon switches.
-    if (prev.iconName != item.iconName || prev.overlayIconName != item.overlayIconName ||
-        prev.attentionIconName != item.attentionIconName || prev.iconThemePath != item.iconThemePath ||
-        prev.needsAttention != item.needsAttention || prev.status != item.status ||
-        prev.overlayWidth != item.overlayWidth || prev.overlayHeight != item.overlayHeight ||
-        prev.overlayArgb32 != item.overlayArgb32 || prev.iconWidth != item.iconWidth ||
-        prev.iconHeight != item.iconHeight || prev.iconArgb32 != item.iconArgb32 ||
-        prev.attentionWidth != item.attentionWidth || prev.attentionHeight != item.attentionHeight ||
-        prev.attentionArgb32 != item.attentionArgb32) {
+    if (prev.iconName != item.iconName
+        || prev.overlayIconName != item.overlayIconName
+        || prev.attentionIconName != item.attentionIconName
+        || prev.iconThemePath != item.iconThemePath
+        || prev.needsAttention != item.needsAttention
+        || prev.status != item.status
+        || prev.overlayWidth != item.overlayWidth
+        || prev.overlayHeight != item.overlayHeight
+        || prev.overlayArgb32 != item.overlayArgb32
+        || prev.iconWidth != item.iconWidth
+        || prev.iconHeight != item.iconHeight
+        || prev.iconArgb32 != item.iconArgb32
+        || prev.attentionWidth != item.attentionWidth
+        || prev.attentionHeight != item.attentionHeight
+        || prev.attentionArgb32 != item.attentionArgb32) {
       kLog.debug(
           "tray widget invalidate icon cache id={} icon='{}'->'{}' overlay='{}'->'{}' attention='{}'->'{}' "
           "status={}=>{}",
@@ -808,8 +815,8 @@ std::string TrayWidget::resolveIconPath(const TrayItemInfo& item) {
 
   const std::string stableBusName = isUniqueBusName(item.busName) ? std::string{} : item.busName;
   const std::string stableItemId = (!item.id.empty() && !isUniqueBusName(item.id))
-                                       ? item.id
-                                       : (isUniqueBusName(item.busName) ? item.objectPath : item.id);
+      ? item.id
+      : (isUniqueBusName(item.busName) ? item.objectPath : item.id);
 
   std::vector<std::pair<const char*, const std::string*>> candidates;
   candidates.reserve(12);

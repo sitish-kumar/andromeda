@@ -242,12 +242,14 @@ void GridView::doLayout(Renderer& renderer) {
   }
 
   const float contentWidth = std::max(
-      0.0f, std::accumulate(columnWidths.begin(), columnWidths.end(), 0.0f) +
-                m_columnGap * static_cast<float>(columns > 0 ? columns - 1 : 0)
+      0.0f,
+      std::accumulate(columnWidths.begin(), columnWidths.end(), 0.0f)
+          + m_columnGap * static_cast<float>(columns > 0 ? columns - 1 : 0)
   );
   const float contentHeight = std::max(
-      0.0f, std::accumulate(rowHeights.begin(), rowHeights.end(), 0.0f) +
-                m_rowGap * static_cast<float>(rows > 0 ? rows - 1 : 0)
+      0.0f,
+      std::accumulate(rowHeights.begin(), rowHeights.end(), 0.0f)
+          + m_rowGap * static_cast<float>(rows > 0 ? rows - 1 : 0)
   );
 
   const float computedWidth = m_paddingLeft + contentWidth + m_paddingRight;
@@ -261,8 +263,8 @@ void GridView::doLayout(Renderer& renderer) {
   float originX = m_paddingLeft;
   float originY = m_paddingTop;
   if (tightSquare && hasFixedHeight && rows > 0) {
-    const float usedH = std::accumulate(rowHeights.begin(), rowHeights.end(), 0.0f) +
-                        m_rowGap * static_cast<float>(rows > 0 ? rows - 1 : 0);
+    const float usedH = std::accumulate(rowHeights.begin(), rowHeights.end(), 0.0f)
+        + m_rowGap * static_cast<float>(rows > 0 ? rows - 1 : 0);
     const float availH = std::max(0.0f, fixedHeight - m_paddingTop - m_paddingBottom);
     originY = m_paddingTop + std::max(0.0f, (availH - usedH) * 0.5f);
   }

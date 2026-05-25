@@ -348,8 +348,8 @@ namespace StringUtils {
   }
 
   [[nodiscard]] inline bool isBlank(std::string_view text) {
-    return text.empty() ||
-           std::all_of(text.begin(), text.end(), [](unsigned char ch) { return std::isspace(ch) != 0; });
+    return text.empty()
+        || std::all_of(text.begin(), text.end(), [](unsigned char ch) { return std::isspace(ch) != 0; });
   }
 
   [[nodiscard]] inline std::string shellQuote(std::string_view text) {

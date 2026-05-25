@@ -4,7 +4,9 @@
 
 #include "shell/bar/widget.h"
 
-class Chip;
+class Flex;
+class Glyph;
+class Label;
 class Renderer;
 
 class DebugIndicatorWidget : public Widget {
@@ -16,7 +18,9 @@ public:
 private:
   void doLayout(Renderer& renderer, float containerWidth, float containerHeight) override;
 
-  Chip* m_chip = nullptr;
+  Flex* m_container = nullptr;
+  Glyph* m_glyph = nullptr;
+  Label* m_label = nullptr;
 };
 
 #endif

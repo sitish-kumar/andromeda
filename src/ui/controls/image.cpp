@@ -82,8 +82,12 @@ void Image::setAsyncReadyCallback(AsyncReadyCallback callback) { m_asyncReadyCal
 bool Image::setSourceFile(Renderer& renderer, const std::string& path, int targetSize, bool mipmap) {
   const int requestedTargetSize = std::max(0, targetSize);
   const int textureTargetSize = renderTargetSize(renderer, requestedTargetSize);
-  if (m_ownsTexture && path == m_sourcePath && m_sourceRequestedTargetSize == requestedTargetSize &&
-      m_sourceTargetSize == textureTargetSize && m_sourceMipmap == mipmap && m_texture.id != 0) {
+  if (m_ownsTexture
+      && path == m_sourcePath
+      && m_sourceRequestedTargetSize == requestedTargetSize
+      && m_sourceTargetSize == textureTargetSize
+      && m_sourceMipmap == mipmap
+      && m_texture.id != 0) {
     return true;
   }
 
@@ -115,6 +119,38 @@ bool Image::setSourceFile(Renderer& renderer, const std::string& path, int targe
   return true;
 }
 
+bool Image::reloadSourceFile(Renderer& renderer, const std::string& path, int targetSize, bool mipmap) {
+  m_renderer = &renderer;
+
+  if (path.empty()) {
+    return false;
+  }
+
+  const int requestedTargetSize = std::max(0, targetSize);
+  const int textureTargetSize = renderTargetSize(renderer, requestedTargetSize);
+  auto texture = renderer.textureManager().loadFromFile(path, textureTargetSize, mipmap);
+  if (texture.id == 0) {
+    return false;
+  }
+
+  clearAsyncSource();
+  if (m_ownsTexture && m_texture.id != 0) {
+    renderer.textureManager().unload(m_texture);
+  }
+
+  m_texture = texture;
+  m_ownsTexture = true;
+  m_sourcePath = path;
+  m_sourceRequestedTargetSize = requestedTargetSize;
+  m_sourceTargetSize = textureTargetSize;
+  m_sourceMipmap = mipmap;
+  if (m_image != nullptr) {
+    m_image->setTextureId(m_texture.id);
+  }
+  updateLayout();
+  return true;
+}
+
 bool Image::setSourceFileAsync(
     Renderer& renderer, AsyncTextureCache& cache, const std::string& path, int targetSize, bool mipmap
 ) {
@@ -127,9 +163,11 @@ bool Image::setSourceFileAsync(
     return false;
   }
 
-  const bool sameRequest = m_asyncTextureCache == &cache && m_asyncSourcePath == path &&
-                           m_asyncRequestedTargetSize == requestedTargetSize &&
-                           m_asyncTargetSize == normalizedTargetSize && m_asyncMipmap == mipmap;
+  const bool sameRequest = m_asyncTextureCache == &cache
+      && m_asyncSourcePath == path
+      && m_asyncRequestedTargetSize == requestedTargetSize
+      && m_asyncTargetSize == normalizedTargetSize
+      && m_asyncMipmap == mipmap;
   if (sameRequest && m_texture.id != 0) {
     return true;
   }
@@ -226,8 +264,10 @@ bool Image::setSourceRaw(
 }
 
 void Image::setExternalTexture(Renderer& renderer, TextureHandle handle) {
-  if (!m_ownsTexture && m_texture.id == handle.id && m_texture.width == handle.width &&
-      m_texture.height == handle.height) {
+  if (!m_ownsTexture
+      && m_texture.id == handle.id
+      && m_texture.width == handle.width
+      && m_texture.height == handle.height) {
     return;
   }
 

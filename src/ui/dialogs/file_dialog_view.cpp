@@ -1143,8 +1143,11 @@ std::filesystem::path FileDialogView::homeDirectory() const {
 
 std::filesystem::path FileDialogView::resolveStartDirectory(const std::filesystem::path& preferred) const {
   std::error_code ec;
-  if (!preferred.empty() && std::filesystem::exists(preferred, ec) && !ec &&
-      std::filesystem::is_directory(preferred, ec) && !ec) {
+  if (!preferred.empty()
+      && std::filesystem::exists(preferred, ec)
+      && !ec
+      && std::filesystem::is_directory(preferred, ec)
+      && !ec) {
     return preferred;
   }
 

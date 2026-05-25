@@ -72,8 +72,11 @@ void TooltipManager::onHoverChange(InputArea* area, zwlr_layer_surface_v1* paren
 }
 
 void TooltipManager::showPopup() {
-  if (m_wayland == nullptr || m_renderContext == nullptr || m_pendingParent == nullptr || m_pendingOutput == nullptr ||
-      m_pendingArea == nullptr) {
+  if (m_wayland == nullptr
+      || m_renderContext == nullptr
+      || m_pendingParent == nullptr
+      || m_pendingOutput == nullptr
+      || m_pendingArea == nullptr) {
     m_state = State::Idle;
     return;
   }

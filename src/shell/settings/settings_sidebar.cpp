@@ -18,7 +18,7 @@
 namespace settings {
   namespace {
 
-    constexpr float kSidebarWidth = 180.0f;
+    constexpr float kSidebarWidth = 200.0f;
 
     std::string normalizedConfigId(std::string_view text) { return StringUtils::trim(text); }
 
@@ -192,8 +192,10 @@ namespace settings {
           sectionGlyph("bar"), i18n::tr("settings.entities.bar.label", "name", barName), scale, barSelected,
           [selectedSection, selectedBarName, selectedMonitorOverride, scroll, barName, searchActive,
            clearTransientState, clearSearchQuery, requestRebuild]() {
-            if (searchActive || *selectedSection != "bar" || *selectedBarName != barName ||
-                !selectedMonitorOverride->empty()) {
+            if (searchActive
+                || *selectedSection != "bar"
+                || *selectedBarName != barName
+                || !selectedMonitorOverride->empty()) {
               scroll->offset = 0.0f;
             }
             *selectedSection = "bar";
@@ -211,16 +213,20 @@ namespace settings {
       }
 
       for (const auto& ovr : bar->monitorOverrides) {
-        const bool ovrSelected = showActiveTab && *selectedSection == "bar" && *selectedBarName == barName &&
-                                 *selectedMonitorOverride == ovr.match;
+        const bool ovrSelected = showActiveTab
+            && *selectedSection == "bar"
+            && *selectedBarName == barName
+            && *selectedMonitorOverride == ovr.match;
         auto match = ovr.match;
         sidebar->addChild(makeSecondaryNavButton(
             "device-desktop", i18n::tr("settings.entities.monitor-override.label", "name", ovr.match), scale,
             ovrSelected,
             [selectedSection, selectedBarName, selectedMonitorOverride, scroll, barName, match, searchActive,
              clearTransientState, clearSearchQuery, requestRebuild]() {
-              if (searchActive || *selectedSection != "bar" || *selectedBarName != barName ||
-                  *selectedMonitorOverride != match) {
+              if (searchActive
+                  || *selectedSection != "bar"
+                  || *selectedBarName != barName
+                  || *selectedMonitorOverride != match) {
                 scroll->offset = 0.0f;
               }
               *selectedSection = "bar";
@@ -296,8 +302,8 @@ namespace settings {
       auto doCreate = [barName, createMonitorOverride, inputPtr,
                        existingMatches = std::move(existingMatches)](std::string rawMatch) {
         const std::string match = normalizedConfigId(rawMatch);
-        if (match.empty() ||
-            std::find(existingMatches.begin(), existingMatches.end(), match) != existingMatches.end()) {
+        if (match.empty()
+            || std::find(existingMatches.begin(), existingMatches.end(), match) != existingMatches.end()) {
           inputPtr->setInvalid(true);
           return;
         }

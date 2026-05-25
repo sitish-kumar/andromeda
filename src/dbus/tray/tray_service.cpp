@@ -31,9 +31,9 @@ namespace {
 
   bool isStatusNotifierItemBusName(std::string_view value) {
     // Different implementations use different bus-name prefixes for SNI items.
-    return value.starts_with("org.kde.StatusNotifierItem-") ||
-           value.starts_with("org.freedesktop.StatusNotifierItem-") ||
-           value.starts_with("org.ayatana.StatusNotifierItem-");
+    return value.starts_with("org.kde.StatusNotifierItem-")
+        || value.starts_with("org.freedesktop.StatusNotifierItem-")
+        || value.starts_with("org.ayatana.StatusNotifierItem-");
   }
 
   bool starts_with_slash(std::string_view value) { return !value.empty() && value.front() == '/'; }
@@ -355,8 +355,11 @@ namespace {
     if (entry.id <= 0 || !entry.visible) {
       return false;
     }
-    if (entry.label.empty() && !entry.separator && !entry.hasSubmenu && entry.iconName.empty() &&
-        entry.iconData.empty()) {
+    if (entry.label.empty()
+        && !entry.separator
+        && !entry.hasSubmenu
+        && entry.iconName.empty()
+        && entry.iconData.empty()) {
       return false;
     }
     return true;
@@ -1149,8 +1152,10 @@ void TrayService::notifyMenuOpened(const std::string& itemId, std::int32_t entry
     ensureMenuCache(itemId, itemIt->second.busName, itemIt->second.menuObjectPath);
     if (entryId == 0) {
       const auto cacheIt = m_menuCache.find(itemId);
-      if (cacheIt == m_menuCache.end() || cacheIt->second.proxy == nullptr || !cacheIt->second.rootLoaded ||
-          !cacheIt->second.loadedParents.contains(0)) {
+      if (cacheIt == m_menuCache.end()
+          || cacheIt->second.proxy == nullptr
+          || !cacheIt->second.rootLoaded
+          || !cacheIt->second.loadedParents.contains(0)) {
         requestMenuSubtree(itemId, 0, false);
       }
     } else {
@@ -1464,8 +1469,10 @@ bool TrayService::isMetadataReady(const TrayItemInfo& item) const {
   if (!item.iconArgb32.empty() || !item.attentionArgb32.empty() || !item.overlayArgb32.empty()) {
     return true;
   }
-  if (!item.itemName.empty() || !item.title.empty() || !item.statusNotifierTitle.empty() ||
-      !item.statusNotifierDescription.empty()) {
+  if (!item.itemName.empty()
+      || !item.title.empty()
+      || !item.statusNotifierTitle.empty()
+      || !item.statusNotifierDescription.empty()) {
     return true;
   }
   return false;
@@ -1534,32 +1541,33 @@ void TrayService::registerOrRefreshItem(const std::string& busName, const std::s
   if (!m_items.contains(itemId)) {
     kLog.debug("tray item registered id={} bus='{}' path='{}'", itemId, busName, objectPath);
     m_items.emplace(
-        itemId, TrayItemInfo{
-                    .id = itemId,
-                    .busName = busName,
-                    .objectPath = objectPath,
-                    .iconName = {},
-                    .iconThemePath = {},
-                    .overlayIconName = {},
-                    .attentionIconName = {},
-                    .menuObjectPath = {},
-                    .itemName = {},
-                    .processName = {},
-                    .title = {},
-                    .statusNotifierTitle = {},
-                    .statusNotifierDescription = {},
-                    .status = {},
-                    .iconArgb32 = {},
-                    .iconWidth = 0,
-                    .iconHeight = 0,
-                    .overlayArgb32 = {},
-                    .overlayWidth = 0,
-                    .overlayHeight = 0,
-                    .attentionArgb32 = {},
-                    .attentionWidth = 0,
-                    .attentionHeight = 0,
-                    .needsAttention = false,
-                }
+        itemId,
+        TrayItemInfo{
+            .id = itemId,
+            .busName = busName,
+            .objectPath = objectPath,
+            .iconName = {},
+            .iconThemePath = {},
+            .overlayIconName = {},
+            .attentionIconName = {},
+            .menuObjectPath = {},
+            .itemName = {},
+            .processName = {},
+            .title = {},
+            .statusNotifierTitle = {},
+            .statusNotifierDescription = {},
+            .status = {},
+            .iconArgb32 = {},
+            .iconWidth = 0,
+            .iconHeight = 0,
+            .overlayArgb32 = {},
+            .overlayWidth = 0,
+            .overlayHeight = 0,
+            .attentionArgb32 = {},
+            .attentionWidth = 0,
+            .attentionHeight = 0,
+            .needsAttention = false,
+        }
     );
 
     if (looks_like_dbus_name(busName)) {
@@ -1715,9 +1723,10 @@ void TrayService::resolvePathOnlyItemProxy(const std::string& itemId) {
 
                     resolvedItemIt->second.busName = candidate;
                     auto [proxyIt, inserted] = m_itemProxies.emplace(
-                        itemId, sdbus::createProxy(
-                                    m_bus.connection(), sdbus::ServiceName{candidate}, sdbus::ObjectPath{objectPath}
-                                )
+                        itemId,
+                        sdbus::createProxy(
+                            m_bus.connection(), sdbus::ServiceName{candidate}, sdbus::ObjectPath{objectPath}
+                        )
                     );
                     if (!inserted) {
                       proxyIt->second = sdbus::createProxy(

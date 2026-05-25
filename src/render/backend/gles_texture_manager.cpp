@@ -228,8 +228,14 @@ bool GlesTextureManager::replace(
 bool GlesTextureManager::updateSubImage(
     TextureHandle& handle, const std::uint8_t* data, int x, int y, int width, int height, TextureDataFormat format
 ) {
-  if (handle.id == 0 || data == nullptr || x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > handle.width ||
-      y + height > handle.height) {
+  if (handle.id == 0
+      || data == nullptr
+      || x < 0
+      || y < 0
+      || width <= 0
+      || height <= 0
+      || x + width > handle.width
+      || y + height > handle.height) {
     return false;
   }
 

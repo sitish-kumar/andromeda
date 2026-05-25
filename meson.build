@@ -509,6 +509,7 @@ _noctalia_sources = files(
   'src/wayland/hyprland/focus_grab_service.cpp',
   'src/shell/panel/panel_manager.cpp',
   'src/shell/polkit/polkit_panel.cpp',
+  'src/shell/session/session_action_runner.cpp',
   'src/shell/session/session_panel.cpp',
   'src/shell/setup_wizard/setup_wizard_panel.cpp',
   'src/shell/surface_shadow.cpp',
@@ -517,6 +518,9 @@ _noctalia_sources = files(
   'src/shell/settings/color_spec_picker.cpp',
   'src/shell/settings/config_export_dialog_popup.cpp',
   'src/shell/settings/settings_content.cpp',
+  'src/shell/settings/settings_content_common.cpp',
+  'src/shell/settings/settings_content_idle_behavior.cpp',
+  'src/shell/settings/settings_content_session_action.cpp',
   'src/shell/settings/settings_bar_management.cpp',
   'src/shell/settings/settings_registry.cpp',
   'src/shell/settings/settings_sidebar.cpp',
@@ -594,7 +598,6 @@ _noctalia_sources = files(
   'src/ui/controls/button.cpp',
   'src/ui/controls/checkbox.cpp',
   'src/ui/controls/color_picker.cpp',
-  'src/ui/controls/chip.cpp',
   'src/ui/controls/collapsible.cpp',
   'src/ui/controls/context_menu.cpp',
   'src/ui/controls/context_menu_popup.cpp',
@@ -813,6 +816,16 @@ log_test = executable('log_test',
 )
 
 test('log', log_test)
+
+process_test = executable('process_test',
+  sources: files(
+    'tests/process_test.cpp',
+    'src/core/process.cpp',
+  ),
+  include_directories: _noctalia_inc,
+)
+
+test('process', process_test)
 
 string_utils_test = executable('string_utils_test',
   sources: files(

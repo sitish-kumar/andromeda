@@ -128,6 +128,7 @@ public:
   void addKeyboardLayoutPollFds(std::vector<pollfd>& fds) const;
   void dispatchKeyboardLayoutPoll(const std::vector<pollfd>& fds, std::size_t startIdx);
 
+  [[nodiscard]] bool requestSessionExit() const;
   [[nodiscard]] bool setOutputPower(bool on) const;
 
   [[nodiscard]] bool tracksOverviewState() const noexcept;

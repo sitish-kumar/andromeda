@@ -19,6 +19,7 @@
 
 class Flex;
 class Glyph;
+class Image;
 class InputArea;
 class Label;
 class CompositorPlatform;
@@ -46,6 +47,7 @@ public:
 
   void luaSetText(std::string_view text);
   void luaSetGlyph(std::string_view name);
+  void luaSetImage(std::string_view path, bool watch, float width, float height);
   void luaSetFont(std::string_view familyOrPath);
   void luaSetColor(std::string_view role, std::string_view mode);
   void luaSetGlyphColor(std::string_view role, std::string_view mode);
@@ -78,10 +80,15 @@ private:
   [[nodiscard]] static std::optional<ColorSpec> scriptColorFromToken(std::string_view token) noexcept;
 
   void reloadScript();
+  void reloadImage();
   void handleScriptResult(scripting::ScriptWidgetResult result);
   void applyScriptPatch(const scripting::ScriptWidgetPatch& patch);
   [[nodiscard]] scripting::ScriptWidgetSnapshot makeScriptSnapshot() const;
   [[nodiscard]] std::string focusedOutputName() const;
+  void syncImage(Renderer& renderer);
+  void setupImageWatch();
+  void teardownImageWatch();
+  void scheduleImageReloadRetry();
   void setupAudioSpectrum();
   void teardownAudioSpectrum();
   void handleAudioSpectrumChanged();
@@ -100,6 +107,7 @@ private:
   std::string m_barName;
   std::string m_outputName;
   std::filesystem::path m_resolvedPath;
+  std::filesystem::path m_resolvedImagePath;
   std::unordered_map<std::string, WidgetSettingValue> m_settings;
   std::shared_ptr<scripting::ScriptRuntime> m_runtime;
   scripting::ScriptRuntime::SubscriberId m_runtimeSubscription = 0;
@@ -111,27 +119,37 @@ private:
   FileWatcher::WatchId m_watchId = 0;
   Timer m_updateTimer;
   Timer m_deferredUpdateTimer;
+  Timer m_imageReloadRetryTimer;
   std::function<bool()> m_updateDeferralCallback;
   InputArea* m_area = nullptr;
   Flex* m_flex = nullptr;
   Glyph* m_glyph = nullptr;
+  Image* m_image = nullptr;
   Label* m_label = nullptr;
   ScriptColorState m_textColor;
   ScriptColorState m_glyphColor;
+  std::string m_imagePath;
+  float m_imageWidth = 0.0f;
+  float m_imageHeight = 0.0f;
   int m_updateIntervalMs = 250;
   std::uint32_t m_timerPhase = 0;
   std::uint64_t m_updateTimerGeneration = 0;
   std::uint64_t m_audioSpectrumListenerId = 0;
+  int m_imageReloadRetries = 0;
   int m_audioSpectrumBands = 16;
   bool m_dirty = false;
   bool m_updateDeferred = false;
   bool m_isVertical = false;
   bool m_glyphVisible = false;
+  bool m_imageWatch = false;
+  bool m_imageDirty = false;
+  bool m_imageForceReload = false;
   bool m_hotReload = false;
   bool m_sharedScope = false;
   bool m_audioSpectrumEnabled = false;
   bool m_hasOnIpc = false;
   bool m_hasOnIpcKnown = false;
   bool m_fontConfigDirty = false;
+  FileWatcher::WatchId m_imageWatchId = 0;
   std::shared_ptr<bool> m_alive = std::make_shared<bool>(true);
 };

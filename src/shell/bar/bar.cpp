@@ -39,6 +39,19 @@ namespace {
   constexpr float kCircularCapsuleNarrowWidthEpsilon = 1.0f;
   constexpr std::int32_t kAutoHideTriggerPx = 3;
   constexpr float kAutoHideSlideExtraPx = 4.0f;
+
+  [[nodiscard]] FontWeight parseWidgetLabelFontWeight(const WidgetConfig& config, FontWeight fallback) {
+    const auto it = config.settings.find("font_weight");
+    if (it == config.settings.end()) {
+      return fallback;
+    }
+
+    if (const auto* raw = std::get_if<std::int64_t>(&it->second)) {
+      return static_cast<FontWeight>(*raw);
+    }
+    return fallback;
+  }
+
   [[nodiscard]] int barAutoHideEdgeGutter(const BarConfig& cfg) noexcept {
     if (!cfg.autoHide || cfg.marginEdge <= 0) {
       return 0;
@@ -389,10 +402,17 @@ namespace {
   ) {
     const bool sameShadowSurface =
         (!a.shadow && !b.shadow) || shell::surface_shadow::sameSurfaceMetrics(previousShadow, nextShadow);
-    return a.name == b.name && a.position == b.position && a.enabled == b.enabled && a.autoHide == b.autoHide &&
-           a.reserveSpace == b.reserveSpace && a.thickness == b.thickness && a.marginEnds == b.marginEnds &&
-           a.marginEdge == b.marginEdge && a.shadow == b.shadow && sameShadowSurface &&
-           a.monitorOverrides == b.monitorOverrides;
+    return a.name == b.name
+        && a.position == b.position
+        && a.enabled == b.enabled
+        && a.autoHide == b.autoHide
+        && a.reserveSpace == b.reserveSpace
+        && a.thickness == b.thickness
+        && a.marginEnds == b.marginEnds
+        && a.marginEdge == b.marginEdge
+        && a.shadow == b.shadow
+        && sameShadowSurface
+        && a.monitorOverrides == b.monitorOverrides;
   }
 
   bool barSurfaceOrderRequiresRecreate(const std::vector<BarConfig>& previous, const std::vector<BarConfig>& next) {
@@ -517,9 +537,9 @@ namespace {
     RoundedRectStyle shadowStyle =
         shell::surface_shadow::style(shadowConfig, bgOpacity, shell::surface_shadow::Shape{.radius = barRadii});
 
-    const bool panelShadowExclusion = instance.attachedPanelGeometry.has_value() &&
-                                      instance.attachedPanelGeometry->width > 0.0f &&
-                                      instance.attachedPanelGeometry->height > 0.0f;
+    const bool panelShadowExclusion = instance.attachedPanelGeometry.has_value()
+        && instance.attachedPanelGeometry->width > 0.0f
+        && instance.attachedPanelGeometry->height > 0.0f;
     if (panelShadowExclusion) {
       const auto& attached = *instance.attachedPanelGeometry;
       const float convexRadius = std::max(0.0f, attached.cornerRadius);
@@ -664,8 +684,13 @@ namespace {
     finalizeCapsules(instance.centerCapsuleRuns);
     finalizeCapsules(instance.endCapsuleRuns);
 
-    const float contentMainStart = padding;
-    const float contentMainEnd = std::max(contentMainStart, (isVertical ? barAreaH : barAreaW) - padding);
+    // When bar touches screen edge, put the padding inside the sections, and extend the hit targets of
+    // the first/last widgets to cover the area. So clicking on the screen edge still triggers the widget.
+    const bool screenEdgeClick = instance.barConfig.marginEnds == 0 && padding > 0;
+    const float paddingInsideSection = screenEdgeClick ? padding : 0.0f;
+    const float contentMainStart = screenEdgeClick ? 0.0f : padding;
+    const float contentMainEnd =
+        std::max(contentMainStart, (isVertical ? barAreaH : barAreaW) - (screenEdgeClick ? 0.0f : padding));
     const float contentMainSpan = std::max(0.0f, contentMainEnd - contentMainStart);
 
     auto configureSlot = [&](Node* slot, float mainOffset, float mainSize) {
@@ -683,6 +708,19 @@ namespace {
       section->setJustify(justify);
       section->layout(renderer);
     };
+
+    if (screenEdgeClick) {
+      if (isVertical) {
+        instance.startSection->setPadding(paddingInsideSection, 0.0f, 0.0f, 0.0f);
+        instance.endSection->setPadding(0.0f, 0.0f, paddingInsideSection, 0.0f);
+      } else {
+        instance.startSection->setPadding(0.0f, 0.0f, 0.0f, paddingInsideSection);
+        instance.endSection->setPadding(0.0f, paddingInsideSection, 0.0f, 0.0f);
+      }
+    } else {
+      instance.startSection->setPadding(0.0f);
+      instance.endSection->setPadding(0.0f);
+    }
 
     configureSection(instance.startSection, FlexJustify::Start);
     configureSection(instance.centerSection, FlexJustify::Center);
@@ -746,6 +784,28 @@ namespace {
     applyBarWidgetHitTargets(instance.startSection, instance.startSlot, isVertical);
     applyBarWidgetHitTargets(instance.centerSection, instance.centerSlot, isVertical);
     applyBarWidgetHitTargets(instance.endSection, instance.endSlot, isVertical);
+    if (screenEdgeClick) {
+      if (!instance.startSection->children().empty()) {
+        auto node = instance.startSection->children().front().get();
+        auto hitTestOutset = node->hitTestOutset();
+        if (isVertical) {
+          hitTestOutset.top += paddingInsideSection;
+        } else {
+          hitTestOutset.left += paddingInsideSection;
+        }
+        node->setHitTestOutset(hitTestOutset);
+      }
+      if (!instance.endSection->children().empty()) {
+        auto node = instance.endSection->children().back().get();
+        auto hitTestOutset = node->hitTestOutset();
+        if (isVertical) {
+          hitTestOutset.bottom += paddingInsideSection;
+        } else {
+          hitTestOutset.right += paddingInsideSection;
+        }
+        node->setHitTestOutset(hitTestOutset);
+      }
+    }
   }
 
   void tickWidgets(std::vector<std::unique_ptr<Widget>>& widgets, float deltaMs) {
@@ -970,8 +1030,10 @@ void Bar::setAutoHideSuppressionCallback(std::function<bool(const BarInstance&)>
 
 void Bar::reevaluateAutoHide() {
   for (const auto& instance : m_instances) {
-    if (instance == nullptr || !instance->barConfig.autoHide || instance->pointerInside ||
-        instance->attachedPopupCount > 0) {
+    if (instance == nullptr
+        || !instance->barConfig.autoHide
+        || instance->pointerInside
+        || instance->attachedPopupCount > 0) {
       continue;
     }
     const bool suppressAutoHide =
@@ -1078,8 +1140,8 @@ void Bar::syncBarExclusiveZone(BarInstance& instance) {
     return;
   }
   const std::int32_t zone = shouldReserveExclusiveZone(instance)
-                                ? reservedBarExclusiveZone(instance.barConfig, m_config->config().shell.shadow)
-                                : 0;
+      ? reservedBarExclusiveZone(instance.barConfig, m_config->config().shell.shadow)
+      : 0;
   instance.surface->setExclusiveZone(zone);
 }
 
@@ -1116,8 +1178,8 @@ std::optional<LayerPopupParentContext> Bar::preferredPopupParentContext(wl_outpu
     instance = m_instances.front().get();
   }
   return instance != nullptr && instance->surface != nullptr
-             ? popupParentContextForSurface(instance->surface->wlSurface())
-             : std::nullopt;
+      ? popupParentContextForSurface(instance->surface->wlSurface())
+      : std::nullopt;
 }
 
 std::vector<InputRect> Bar::surfaceRectsForOutput(wl_output* output) const {
@@ -1413,7 +1475,9 @@ void Bar::populateWidgets(BarInstance& instance) {
           widget->setAnchor(wcPtr->getBool("anchor", false));
         }
         widget->setBarCapsuleSpec(resolveWidgetBarCapsuleSpec(instance.barConfig, wcPtr));
-        widget->setLabelFontWeight(labelFontWeight);
+        widget->setLabelFontWeight(
+            wcPtr != nullptr ? parseWidgetLabelFontWeight(*wcPtr, labelFontWeight) : labelFontWeight
+        );
         if (wcPtr != nullptr && wcPtr->hasSetting("color")) {
           widget->setWidgetForeground(wcPtr->getOptionalColorSpec("color", "widget." + name + ".color"));
         } else if (instance.barConfig.widgetColor.has_value()) {
@@ -1497,15 +1561,16 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
           }
         }
         PanelManager::instance().togglePanel(
-            std::string(panelId), PanelOpenRequest{
-                                      .output = inst->output,
-                                      .anchorX = anchorX,
-                                      .anchorY = anchorY,
-                                      .hasExplicitAnchor = anchorSurfaceX.has_value() || anchorSurfaceY.has_value(),
-                                      .hasAnchorPosition = true,
-                                      .context = context,
-                                      .sourceBarName = inst->barConfig.name
-                                  }
+            std::string(panelId),
+            PanelOpenRequest{
+                .output = inst->output,
+                .anchorX = anchorX,
+                .anchorY = anchorY,
+                .hasExplicitAnchor = anchorSurfaceX.has_value() || anchorSurfaceY.has_value(),
+                .hasAnchorPosition = true,
+                .context = context,
+                .sourceBarName = inst->barConfig.name
+            }
         );
       });
       widget->create();
@@ -1564,12 +1629,19 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
     auto canJoinCapsuleGroup = [](const Widget& first, const Widget& next) {
       const auto& firstSpec = first.barCapsuleSpec();
       const auto& nextSpec = next.barCapsuleSpec();
-      const bool sameCapsuleStyle = firstSpec.fill == nextSpec.fill && firstSpec.group == nextSpec.group &&
-                                    firstSpec.border == nextSpec.border &&
-                                    firstSpec.foreground == nextSpec.foreground &&
-                                    firstSpec.radius == nextSpec.radius && firstSpec.opacity == nextSpec.opacity;
-      return firstSpec.enabled && nextSpec.enabled && !first.isAnchor() && !next.isAnchor() &&
-             !firstSpec.group.empty() && sameCapsuleStyle && first.contentScale() == next.contentScale();
+      const bool sameCapsuleStyle = firstSpec.fill == nextSpec.fill
+          && firstSpec.group == nextSpec.group
+          && firstSpec.border == nextSpec.border
+          && firstSpec.foreground == nextSpec.foreground
+          && firstSpec.radius == nextSpec.radius
+          && firstSpec.opacity == nextSpec.opacity;
+      return firstSpec.enabled
+          && nextSpec.enabled
+          && !first.isAnchor()
+          && !next.isAnchor()
+          && !firstSpec.group.empty()
+          && sameCapsuleStyle
+          && first.contentScale() == next.contentScale();
     };
 
     std::size_t index = 0;
@@ -1594,8 +1666,10 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
       }
 
       std::size_t runEnd = index + 1;
-      while (runEnd < widgets.size() && widgets[runEnd] != nullptr && widgets[runEnd]->root() != nullptr &&
-             canJoinCapsuleGroup(*widget, *widgets[runEnd])) {
+      while (runEnd < widgets.size()
+             && widgets[runEnd] != nullptr
+             && widgets[runEnd]->root() != nullptr
+             && canJoinCapsuleGroup(*widget, *widgets[runEnd])) {
         ++runEnd;
       }
 
@@ -1624,11 +1698,12 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
       });
       shellPtr->addChild(std::move(capsuleBg));
 
-      auto inner = ui::makeFlex(
-          isVertical ? FlexDirection::Vertical : FlexDirection::Horizontal, {
-                                                                                .align = FlexAlign::Center,
-                                                                                .gap = widgetSpacing,
-                                                                            }
+      auto inner = ui::flex(
+          isVertical ? FlexDirection::Vertical : FlexDirection::Horizontal,
+          {
+              .align = FlexAlign::Center,
+              .gap = widgetSpacing,
+          }
       );
       Flex* innerPtr = inner.get();
       shellPtr->addChild(std::move(inner));
@@ -1731,8 +1806,9 @@ bool Bar::widgetsNeedFrameTick(const std::vector<std::unique_ptr<Widget>>& widge
 }
 
 bool Bar::instanceNeedsFrameTick(const BarInstance& instance) {
-  return widgetsNeedFrameTick(instance.startWidgets) || widgetsNeedFrameTick(instance.centerWidgets) ||
-         widgetsNeedFrameTick(instance.endWidgets);
+  return widgetsNeedFrameTick(instance.startWidgets)
+      || widgetsNeedFrameTick(instance.centerWidgets)
+      || widgetsNeedFrameTick(instance.endWidgets);
 }
 
 void Bar::applyBackgroundPalette(BarInstance& instance) {
@@ -1864,8 +1940,8 @@ void Bar::buildScene(BarInstance& instance, std::uint32_t width, std::uint32_t h
   const float widgetSpacing = static_cast<float>(instance.barConfig.widgetSpacing);
   const auto& shadowConfig = m_config->config().shell.shadow;
   const float shadowSize = shell::surface_shadow::enabled(instance.barConfig.shadow, shadowConfig)
-                               ? static_cast<float>(shadowConfig.blur)
-                               : 0.0f;
+      ? static_cast<float>(shadowConfig.blur)
+      : 0.0f;
   const float shadowOffsetX = static_cast<float>(shadowConfig.offsetX);
   const float shadowOffsetY = static_cast<float>(shadowConfig.offsetY);
   const bool isBottom = instance.barConfig.position == "bottom";
@@ -1933,11 +2009,12 @@ void Bar::buildScene(BarInstance& instance, std::uint32_t width, std::uint32_t h
 
     // Create section boxes
     auto makeSection = [widgetSpacing, isVertical]() {
-      return ui::makeFlex(
-          isVertical ? FlexDirection::Vertical : FlexDirection::Horizontal, {
-                                                                                .align = FlexAlign::Center,
-                                                                                .gap = widgetSpacing,
-                                                                            }
+      return ui::flex(
+          isVertical ? FlexDirection::Vertical : FlexDirection::Horizontal,
+          {
+              .align = FlexAlign::Center,
+              .gap = widgetSpacing,
+          }
       );
     };
 
@@ -2176,11 +2253,17 @@ bool Bar::onPointerEvent(const PointerEvent& event) {
     }
   }
 
-  if (targetInstance != nullptr && event.type == PointerEvent::Type::Button && event.button == BTN_MIDDLE &&
-      event.state == 1 && m_config != nullptr && m_config->config().shell.middleClickOpensWidgetSettings) {
+  if (targetInstance != nullptr
+      && event.type == PointerEvent::Type::Button
+      && event.button == BTN_MIDDLE
+      && event.state == 1
+      && m_config != nullptr
+      && m_config->config().shell.middleClickOpensWidgetSettings) {
     auto* widget = widgetAtPoint(*targetInstance, static_cast<float>(event.sx), static_cast<float>(event.sy));
-    if (widget != nullptr && !widget->reservesMiddleClick() && !widget->configName().empty() &&
-        m_openWidgetSettingsCallback) {
+    if (widget != nullptr
+        && !widget->reservesMiddleClick()
+        && !widget->configName().empty()
+        && m_openWidgetSettingsCallback) {
       m_openWidgetSettingsCallback(targetInstance->barConfig.name, std::string(widget->configName()));
       return true;
     }
@@ -2217,14 +2300,15 @@ bool Bar::onPointerEvent(const PointerEvent& event) {
             }
           }
           panelManager.openPanel(
-              "control-center", PanelOpenRequest{
-                                    .output = targetInstance->output,
-                                    .anchorX = anchorX,
-                                    .anchorY = anchorY,
-                                    .hasAnchorPosition = true,
-                                    .context = "home",
-                                    .sourceBarName = targetInstance->barConfig.name
-                                }
+              "control-center",
+              PanelOpenRequest{
+                  .output = targetInstance->output,
+                  .anchorX = anchorX,
+                  .anchorY = anchorY,
+                  .hasAnchorPosition = true,
+                  .context = "home",
+                  .sourceBarName = targetInstance->barConfig.name
+              }
           );
         }
         return true;
@@ -2285,9 +2369,9 @@ bool Bar::onPointerEvent(const PointerEvent& event) {
     if (pressed && event.button == BTN_RIGHT && !consumed) {
       const float sx = static_cast<float>(event.sx);
       const float sy = static_cast<float>(event.sy);
-      const bool insideAnySection = pointInsideNode(m_hoveredInstance->startSection, sx, sy) ||
-                                    pointInsideNode(m_hoveredInstance->centerSection, sx, sy) ||
-                                    pointInsideNode(m_hoveredInstance->endSection, sx, sy);
+      const bool insideAnySection = pointInsideNode(m_hoveredInstance->startSection, sx, sy)
+          || pointInsideNode(m_hoveredInstance->centerSection, sx, sy)
+          || pointInsideNode(m_hoveredInstance->endSection, sx, sy);
       const bool insideAnyWidget = widgetAtPoint(*m_hoveredInstance, sx, sy) != nullptr;
       if (!insideAnySection && !insideAnyWidget) {
         auto& panelManager = PanelManager::instance();
@@ -2305,14 +2389,15 @@ bool Bar::onPointerEvent(const PointerEvent& event) {
             }
           }
           panelManager.openPanel(
-              "control-center", PanelOpenRequest{
-                                    .output = m_hoveredInstance->output,
-                                    .anchorX = anchorX,
-                                    .anchorY = anchorY,
-                                    .hasAnchorPosition = true,
-                                    .context = "home",
-                                    .sourceBarName = m_hoveredInstance->barConfig.name
-                                }
+              "control-center",
+              PanelOpenRequest{
+                  .output = m_hoveredInstance->output,
+                  .anchorX = anchorX,
+                  .anchorY = anchorY,
+                  .hasAnchorPosition = true,
+                  .context = "home",
+                  .sourceBarName = m_hoveredInstance->barConfig.name
+              }
           );
         }
         consumed = true;
@@ -2334,8 +2419,9 @@ bool Bar::onPointerEvent(const PointerEvent& event) {
   }
 
   // Trigger redraw if any widget changed visual state
-  if (m_hoveredInstance != nullptr && m_hoveredInstance->sceneRoot != nullptr &&
-      (m_hoveredInstance->sceneRoot->paintDirty() || m_hoveredInstance->sceneRoot->layoutDirty())) {
+  if (m_hoveredInstance != nullptr
+      && m_hoveredInstance->sceneRoot != nullptr
+      && (m_hoveredInstance->sceneRoot->paintDirty() || m_hoveredInstance->sceneRoot->layoutDirty())) {
     if (m_hoveredInstance->sceneRoot->layoutDirty()) {
       m_hoveredInstance->surface->requestLayout();
     } else {
@@ -2457,9 +2543,10 @@ std::string Bar::dispatchScriptedWidgetIpc(std::string_view args) {
   }
 
   if (!parsedTarget->allOutputs && candidates.size() > 1) {
-    return "error: target '" + target +
-           "' matched multiple scripted widget instances; use '<target>:<bar-name>' "
-           "or 'all'\n";
+    return "error: target '"
+        + target
+        + "' matched multiple scripted widget instances; use '<target>:<bar-name>' "
+          "or 'all'\n";
   }
 
   ScriptedWidgetIpcCounts counts;
@@ -2602,8 +2689,11 @@ std::string Bar::setBarAutoHideIpc(std::string_view args) {
     return error;
   }
   if (matches.size() > 1) {
-    return "error: monitor selector \"" + selector +
-           "\" matched multiple outputs: " + StringUtils::join(matches, ", ") + "\n";
+    return "error: monitor selector \""
+        + selector
+        + "\" matched multiple outputs: "
+        + StringUtils::join(matches, ", ")
+        + "\n";
   }
 
   std::size_t updated = 0;

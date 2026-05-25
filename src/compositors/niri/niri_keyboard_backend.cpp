@@ -23,8 +23,10 @@ namespace {
 
     const auto namesIt = layoutsIt->find("names");
     const auto currentIt = layoutsIt->find("current_idx");
-    if (namesIt == layoutsIt->end() || !namesIt->is_array() || currentIt == layoutsIt->end() ||
-        !currentIt->is_number_integer()) {
+    if (namesIt == layoutsIt->end()
+        || !namesIt->is_array()
+        || currentIt == layoutsIt->end()
+        || !currentIt->is_number_integer()) {
       return std::nullopt;
     }
 

@@ -1030,8 +1030,11 @@ void ClipboardService::addToHistory(ClipboardEntry entry) {
     // History is disabled: retain only the live selection in memory (so paste
     // still works) and never persist. Ignore the self-copy echo of unchanged
     // content to avoid needless churn.
-    if (!m_history.empty() && !entry.data.empty() && m_history.front().byteSize == entry.byteSize &&
-        m_history.front().data == entry.data && m_history.front().dataMimeType == entry.dataMimeType) {
+    if (!m_history.empty()
+        && !entry.data.empty()
+        && m_history.front().byteSize == entry.byteSize
+        && m_history.front().data == entry.data
+        && m_history.front().dataMimeType == entry.dataMimeType) {
       return;
     }
     m_history.clear();
@@ -1249,8 +1252,9 @@ void ClipboardService::trimHistoryToBudget() {
     }
   }
 
-  while ((unpinnedCount > m_maxHistoryEntries || unpinnedBytes > kMaxHistoryBytes) && !m_history.empty() &&
-         !m_history.back().pinned) {
+  while ((unpinnedCount > m_maxHistoryEntries || unpinnedBytes > kMaxHistoryBytes)
+         && !m_history.empty()
+         && !m_history.back().pinned) {
     const std::size_t removedBytes = m_history.back().byteSize;
     unpinnedBytes -= removedBytes;
     --unpinnedCount;

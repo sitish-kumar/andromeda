@@ -137,8 +137,9 @@ namespace {
     if (format == nullptr) {
       return false;
     }
-    return format->find("%S") != std::string::npos || format->find("%T") != std::string::npos ||
-           format->find("%X") != std::string::npos;
+    return format->find("%S") != std::string::npos
+        || format->find("%T") != std::string::npos
+        || format->find("%X") != std::string::npos;
   }
 
   bool parseDesktopWidgetCounter(std::string_view id, std::uint64_t& value) {
@@ -924,9 +925,13 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
 void DesktopWidgetsEditor::updateSelectionVisuals(OverlaySurface& surface) {
   const auto selectedIt = surface.views.find(m_selectedWidgetId);
   const DesktopWidgetState* state = findWidgetState(m_selectedWidgetId);
-  if (selectedIt == surface.views.end() || state == nullptr || surface.selectionFrameTransform == nullptr ||
-      surface.selectionBorderTransform == nullptr || surface.selectionBorder == nullptr ||
-      surface.rotationRing == nullptr || surface.rotateArea == nullptr) {
+  if (selectedIt == surface.views.end()
+      || state == nullptr
+      || surface.selectionFrameTransform == nullptr
+      || surface.selectionBorderTransform == nullptr
+      || surface.selectionBorder == nullptr
+      || surface.rotationRing == nullptr
+      || surface.rotateArea == nullptr) {
     return;
   }
   for (std::size_t i = 0; i < kScaleCornerCount; ++i) {
@@ -1662,8 +1667,10 @@ void DesktopWidgetsEditor::onKeyboardEvent(const KeyboardEvent& event) {
     return;
   }
 
-  if (event.sym == XKB_KEY_g || event.sym == XKB_KEY_G || event.utf32 == static_cast<std::uint32_t>('g') ||
-      event.utf32 == static_cast<std::uint32_t>('G')) {
+  if (event.sym == XKB_KEY_g
+      || event.sym == XKB_KEY_G
+      || event.utf32 == static_cast<std::uint32_t>('g')
+      || event.utf32 == static_cast<std::uint32_t>('G')) {
     m_snapshot.grid.visible = !m_snapshot.grid.visible;
     requestLayout();
   }

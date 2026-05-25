@@ -491,6 +491,7 @@
         "stat-cpu-usage": "CPU Usage",
         "stat-cpu-temp": "CPU Temp",
         "stat-gpu-temp": "GPU Temp",
+        "stat-gpu-usage": "GPU Usage",
         "stat-gpu-vram": "GPU VRAM",
         "stat-ram-pct": "RAM %",
         "stat-swap-pct": "Swap %",
@@ -830,8 +831,13 @@
           "description": "Arrange widgets across the bar lanes"
         },
         "settings": {
-          "title": "Widget Settings",
-          "empty": "No settings match the current filters."
+          "empty": "No settings match the current filters.",
+          "sections": {
+            "runtime": "Runtime",
+            "widget": "Widget",
+            "presentation": "Presentation",
+            "grouping": "Grouping"
+          }
         },
         "raw": {
           "title": "Raw Settings",
@@ -857,7 +863,6 @@
           "delete-confirm-desc": "This named widget will be removed from every bar and its settings discarded."
         },
         "inspector": {
-          "edit-title": "Editing widget",
           "add-title": "Add widget to {lane}",
           "add-instance-title": "Add new named {widget} widget to {lane}",
           "move-to-lane": "Move to {lane}"
@@ -936,21 +941,20 @@
       }
     },
     "options": {
-      "bar": {
-        "font-weight": {
-          "thin": "Thin",
-          "ultra-light": "Ultra Light",
-          "light": "Light",
-          "semi-light": "Semi Light",
-          "book": "Book",
-          "regular": "Regular",
-          "medium": "Medium",
-          "semi-bold": "Semi Bold",
-          "bold": "Bold",
-          "ultra-bold": "Ultra Bold",
-          "heavy": "Heavy",
-          "ultra-heavy": "Ultra Heavy"
-        }
+      "font-weight": {
+        "default": "Default",
+        "thin": "Thin",
+        "ultra-light": "Ultra Light",
+        "light": "Light",
+        "semi-light": "Semi Light",
+        "book": "Book",
+        "regular": "Regular",
+        "medium": "Medium",
+        "semi-bold": "Semi Bold",
+        "bold": "Bold",
+        "ultra-bold": "Ultra Bold",
+        "heavy": "Heavy",
+        "ultra-heavy": "Ultra Heavy"
       },
       "theme": {
         "mode": {
@@ -1100,6 +1104,7 @@
         "cpu-temp": "CPU Temperature",
         "cpu-usage": "CPU Usage",
         "gpu-temp": "GPU Temperature",
+        "gpu-usage": "GPU Usage",
         "gpu-vram": "GPU VRAM",
         "disk-percent": "Disk Percent",
         "full": "Full",
@@ -1179,6 +1184,10 @@
         "color": {
           "label": "Color",
           "description": "Color role for widget foreground; fixed hex colors are also supported"
+        },
+        "font_weight": {
+          "label": "Font Weight",
+          "description": "Font weight for this widget's labels"
         },
         "command": {
           "label": "Left Click Command",
@@ -1676,6 +1685,14 @@
         "osd-scale": {
           "label": "Size",
           "description": "Scale OSD popups relative to the shell UI scale (1.0 keeps the default size)"
+        },
+        "osd-offset-x": {
+          "label": "Horizontal Margin",
+          "description": "Absolute horizontal margin from the screen edge"
+        },
+        "osd-offset-y": {
+          "label": "Vertical Margin",
+          "description": "Absolute vertical margin from the screen edge"
         },
         "osd-lock-keys": {
           "label": "Lock Keys",

@@ -130,9 +130,13 @@ void DesktopAudioVisualizerWidget::setEditorPreview(bool enabled) noexcept {
 }
 
 bool DesktopAudioVisualizerWidget::needsFrameTick() const {
-  return m_visualizer != nullptr &&
-         (m_pendingSpectrumUpdate || (m_editorPreview && m_visible) || (m_visible && !m_visualizer->converged()) ||
-          shouldBeVisible() != m_visible || m_fadingOut || m_visibilityAnimId != 0);
+  return m_visualizer != nullptr
+      && (m_pendingSpectrumUpdate
+          || (m_editorPreview && m_visible)
+          || (m_visible && !m_visualizer->converged())
+          || shouldBeVisible() != m_visible
+          || m_fadingOut
+          || m_visibilityAnimId != 0);
 }
 
 void DesktopAudioVisualizerWidget::onFrameTick(float deltaMs, Renderer& renderer) {

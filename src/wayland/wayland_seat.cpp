@@ -343,9 +343,10 @@ void WaylandSeat::handlePointerFrame(void* data, wl_pointer* /*pointer*/) {
   auto* self = static_cast<WaylandSeat*>(data);
   if (self->m_pointerEventCallback) {
     for (auto& event : self->m_pendingPointerEvents) {
-      if (event.type == PointerEvent::Type::Axis && event.axisLines == 0.0f &&
-          (event.axisSource == WL_POINTER_AXIS_SOURCE_WHEEL || event.axisSource == WL_POINTER_AXIS_SOURCE_WHEEL_TILT) &&
-          event.axisValue != 0.0) {
+      if (event.type == PointerEvent::Type::Axis
+          && event.axisLines == 0.0f
+          && (event.axisSource == WL_POINTER_AXIS_SOURCE_WHEEL || event.axisSource == WL_POINTER_AXIS_SOURCE_WHEEL_TILT)
+          && event.axisValue != 0.0) {
         // Some compositors send wheel-source axis events without discrete/value120.
         // Normalize those legacy wheel deltas into logical wheel steps centrally.
         event.axisLines = static_cast<float>(event.axisValue / kLegacyWheelAxisUnitsPerStep);

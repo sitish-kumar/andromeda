@@ -100,8 +100,9 @@ void WaylandWorkspaces::initialize() {
     }
     break;
   case compositors::CompositorKind::Triad:
-    if (m_triadBackend != nullptr && m_triadConnector != nullptr &&
-        (m_triadConnector->connectSocket() || m_triadBackend->isAvailable())) {
+    if (m_triadBackend != nullptr
+        && m_triadConnector != nullptr
+        && (m_triadConnector->connectSocket() || m_triadBackend->isAvailable())) {
       setActiveBackend(m_triadBackend);
       return;
     }
@@ -128,8 +129,9 @@ void WaylandWorkspaces::initialize() {
     setActiveBackend(m_swayBackend);
     return;
   }
-  if (m_triadBackend != nullptr && m_triadConnector != nullptr &&
-      (m_triadConnector->connectSocket() || m_triadBackend->isAvailable())) {
+  if (m_triadBackend != nullptr
+      && m_triadConnector != nullptr
+      && (m_triadConnector->connectSocket() || m_triadBackend->isAvailable())) {
     setActiveBackend(m_triadBackend);
     return;
   }

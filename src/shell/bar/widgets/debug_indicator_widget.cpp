@@ -6,29 +6,49 @@
 #include "ui/palette.h"
 #include "ui/style.h"
 
+#include <utility>
+
 DebugIndicatorWidget::DebugIndicatorWidget() = default;
 
 void DebugIndicatorWidget::create() {
-  setRoot(
-      ui::chip({
-          .out = &m_chip,
+  auto row = ui::row(
+      {
+          .out = &m_container,
+          .align = FlexAlign::Center,
+          .gap = Style::spaceXs * m_contentScale,
+      },
+      ui::glyph({
+          .out = &m_glyph,
+          .glyph = "bug",
+          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .color = colorSpecFromRole(ColorRole::Error),
+      }),
+      ui::label({
+          .out = &m_label,
           .text = "DEBUG",
-          .configure = [this](Chip& chip) {
-            chip.setFill(colorSpecFromRole(ColorRole::Error));
-            chip.label()->setColor(colorSpecFromRole(ColorRole::OnError));
-            chip.label()->setFontWeight(labelFontWeight());
-            chip.clearBorder();
-            chip.setPadding(2.0f, Style::spaceSm);
-          },
+          .fontSize = Style::fontSizeCaption * m_contentScale,
+          .color = colorSpecFromRole(ColorRole::Error),
+          .maxLines = 1,
+          .fontWeight = labelFontWeight(),
       })
   );
+  setRoot(std::move(row));
 }
 
-void DebugIndicatorWidget::doLayout(Renderer& renderer, float /*containerWidth*/, float /*containerHeight*/) {
-  const LayoutConstraints unconstrained{};
-  const auto size = m_chip->measure(renderer, unconstrained);
-  m_chip->setRadius(std::min(size.width, size.height) * 0.5f);
-  root()->setSize(size.width, size.height);
+void DebugIndicatorWidget::doLayout(Renderer& renderer, float containerWidth, float containerHeight) {
+  if (m_container == nullptr || m_glyph == nullptr || m_label == nullptr) {
+    return;
+  }
+
+  const bool isVertical = containerHeight > containerWidth;
+  m_container->setGap(Style::spaceXs * m_contentScale);
+  m_glyph->setGlyphSize(Style::barGlyphSize * m_contentScale);
+  m_glyph->setColor(colorSpecFromRole(ColorRole::Error));
+  m_label->setVisible(!isVertical);
+  m_label->setFontSize(Style::fontSizeCaption * m_contentScale);
+  m_label->setColor(colorSpecFromRole(ColorRole::Error));
+  m_label->setFontWeight(labelFontWeight());
+  m_container->layout(renderer);
 }
 
 #endif

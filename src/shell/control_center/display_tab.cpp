@@ -178,15 +178,17 @@ void DisplayTab::doUpdate(Renderer& renderer) {
 
     const bool isDragging = card.slider->dragging();
     const bool isPending = m_pendingDisplayId == card.displayId && m_pendingBrightness >= 0.0f;
-    const bool holdState = isDragging && m_lastSentBrightness >= 0.0f && now < m_ignoreStateUntil &&
-                           std::abs(display->brightness - m_lastSentBrightness) > 0.02f;
+    const bool holdState = isDragging
+        && m_lastSentBrightness >= 0.0f
+        && now < m_ignoreStateUntil
+        && std::abs(display->brightness - m_lastSentBrightness) > 0.02f;
 
     const float displayedBrightness = std::clamp(
         isPending ? m_pendingBrightness : (holdState ? m_lastSentBrightness : display->brightness), 0.0f, 1.0f
     );
 
-    if (!isDragging &&
-        (!card.lastControllable || std::abs(displayedBrightness - card.lastBrightness) >= kBrightnessSyncEpsilon)) {
+    if (!isDragging
+        && (!card.lastControllable || std::abs(displayedBrightness - card.lastBrightness) >= kBrightnessSyncEpsilon)) {
       m_syncingSlider = true;
       card.slider->setValue(displayedBrightness);
       m_syncingSlider = false;
@@ -295,7 +297,7 @@ void DisplayTab::rebuildCards(Renderer& /*renderer*/) {
         .controlHeight = Style::controlHeight * scale,
         .flexGrow = 1.0f,
         .onValueChanged =
-            [this, displayId](float value) {
+            [this, displayId](double value) {
               if (m_syncingSlider) {
                 return;
               }
@@ -303,12 +305,13 @@ void DisplayTab::rebuildCards(Renderer& /*renderer*/) {
               if (currentDisplay == nullptr || !currentDisplay->controllable) {
                 return;
               }
-              queueBrightness(displayId, value);
+              const float brightness = static_cast<float>(value);
+              queueBrightness(displayId, brightness);
               // Update the value label immediately
               for (auto& c : m_cards) {
                 if (c.displayId == displayId && c.valueLabel != nullptr) {
-                  c.valueLabel->setText(formatBrightnessValue(*currentDisplay, value));
-                  c.lastBrightness = value;
+                  c.valueLabel->setText(formatBrightnessValue(*currentDisplay, brightness));
+                  c.lastBrightness = brightness;
                   break;
                 }
               }

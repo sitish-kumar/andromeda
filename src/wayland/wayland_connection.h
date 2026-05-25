@@ -177,6 +177,8 @@ public:
   [[nodiscard]] wl_output* outputForSurface(wl_surface* surface) const noexcept;
 
   void registerSurfaceOutput(wl_surface* surface, wl_output* output);
+  void notifySurfaceOutputEnter(wl_surface* surface, wl_output* output);
+  void notifySurfaceOutputLeave(wl_surface* surface, wl_output* output);
   void registerLayerSurface(wl_surface* surface, zwlr_layer_surface_v1* layerSurface);
   void unregisterSurface(wl_surface* surface);
   [[nodiscard]] zwlr_layer_surface_v1* layerSurfaceFor(wl_surface* surface) const noexcept;
@@ -237,6 +239,7 @@ private:
   std::function<void(zdwl_ipc_manager_v2*)> m_dwlIpcManagerCallback;
   std::function<void(hyprland_toplevel_mapping_manager_v1*)> m_hyprlandToplevelMappingManagerCallback;
   std::unordered_map<wl_surface*, wl_output*> m_surfaceOutputMap;
+  std::unordered_map<wl_surface*, std::vector<wl_output*>> m_surfaceOutputs;
   std::unordered_map<wl_surface*, zwlr_layer_surface_v1*> m_layerSurfaceMap;
   wl_output* m_lastPointerOutput = nullptr;
   std::chrono::steady_clock::time_point m_lastPointerOutputAt{};

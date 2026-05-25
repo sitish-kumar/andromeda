@@ -170,8 +170,9 @@ namespace noctalia::theme {
 
     TemplateEngine engine(TemplateEngine::makeThemeData(request.palette), options);
 
-    if (request.templates.enableBuiltinTemplates && !request.templates.builtinIds.empty() &&
-        !requestSuperseded(request.generation)) {
+    if (request.templates.enableBuiltinTemplates
+        && !request.templates.builtinIds.empty()
+        && !requestSuperseded(request.generation)) {
       TemplateEngine::Options builtinOptions = options;
       builtinOptions.enabledTemplates.insert(request.templates.builtinIds.begin(), request.templates.builtinIds.end());
       TemplateEngine builtinEngine(TemplateEngine::makeThemeData(request.palette), std::move(builtinOptions));
@@ -181,8 +182,9 @@ namespace noctalia::theme {
       }
     }
 
-    if (request.templates.enableCommunityTemplates && !request.templates.communityIds.empty() &&
-        !requestSuperseded(request.generation)) {
+    if (request.templates.enableCommunityTemplates
+        && !request.templates.communityIds.empty()
+        && !requestSuperseded(request.generation)) {
       for (const auto& id : request.templates.communityIds) {
         if (requestSuperseded(request.generation))
           return;

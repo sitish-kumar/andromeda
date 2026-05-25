@@ -102,9 +102,10 @@ namespace {
 
   bool configHasLockKeysWidget(const Config& config) {
     return std::any_of(config.bars.begin(), config.bars.end(), [&config](const BarConfig& bar) {
-      return barMayRender(bar) &&
-             (widgetListHasLockKeys(bar.startWidgets, config) || widgetListHasLockKeys(bar.centerWidgets, config) ||
-              widgetListHasLockKeys(bar.endWidgets, config));
+      return barMayRender(bar)
+          && (widgetListHasLockKeys(bar.startWidgets, config)
+              || widgetListHasLockKeys(bar.centerWidgets, config)
+              || widgetListHasLockKeys(bar.endWidgets, config));
     });
   }
 
@@ -142,7 +143,6 @@ Application::Application()
     : m_lockKeysService(m_wayland), m_gammaService(m_wayland), m_weatherService(m_configService, m_httpClient) {
   m_notificationManager.loadPersistedHistory();
   notify::setInstance(&m_notificationManager);
-  LockScreen::setInstance(&m_lockScreen);
 
   auto shouldRefreshControlCenter = [this]() { return m_panelManager.isOpenPanel("control-center"); };
 
@@ -180,7 +180,6 @@ Application::~Application() {
   m_notificationManager.flushPersistedHistory();
   m_wayland.setClipboardService(nullptr);
   m_wayland.setVirtualKeyboardService(nullptr);
-  LockScreen::setInstance(nullptr);
   notify::setInstance(nullptr);
 }
 
@@ -391,8 +390,8 @@ void Application::initServices() {
   };
   auto applyPasswordMaskStyle = [this]() {
     const auto style = m_configService.config().shell.passwordMaskStyle == PasswordMaskStyle::RandomIcons
-                           ? Input::PasswordMaskStyle::RandomIcons
-                           : Input::PasswordMaskStyle::CircleFilled;
+        ? Input::PasswordMaskStyle::RandomIcons
+        : Input::PasswordMaskStyle::CircleFilled;
     Input::setPasswordMaskStyle(style);
   };
   applyMotionConfig();
@@ -438,9 +437,10 @@ void Application::initServices() {
     m_hookManager.fire(HookKind::ColorsChanged);
     if (lastResolvedThemeMode.has_value() && *lastResolvedThemeMode != resolvedMode) {
       m_hookManager.fire(
-          HookKind::ThemeModeChanged, {{"NOCTALIA_THEME_MODE", resolvedMode},
-                                       {"NOCTALIA_THEME_MODE_PREVIOUS", *lastResolvedThemeMode},
-                                       {"NOCTALIA_THEME_MODE_CONFIGURED", configuredMode}}
+          HookKind::ThemeModeChanged,
+          {{"NOCTALIA_THEME_MODE", resolvedMode},
+           {"NOCTALIA_THEME_MODE_PREVIOUS", *lastResolvedThemeMode},
+           {"NOCTALIA_THEME_MODE_CONFIGURED", configuredMode}}
       );
     }
     lastResolvedThemeMode = resolvedMode;
@@ -610,7 +610,7 @@ void Application::initServices() {
 
   if (const auto distro = DistroDetector::detect(); distro.has_value()) {
     const auto& label = !distro->prettyName.empty() ? distro->prettyName
-                        : !distro->name.empty()     ? distro->name
+        : !distro->name.empty()                     ? distro->name
                                                     : distro->id;
     kLog.info("distro: {}", label);
   } else {
@@ -693,8 +693,9 @@ void Application::initServices() {
         if (active.empty()) {
           return;
         }
-        if (m_prevPowerProfileActiveForEvents.has_value() && *m_prevPowerProfileActiveForEvents != active &&
-            origin != PowerProfilesChangeOrigin::Noctalia) {
+        if (m_prevPowerProfileActiveForEvents.has_value()
+            && *m_prevPowerProfileActiveForEvents != active
+            && origin != PowerProfilesChangeOrigin::Noctalia) {
           std::string glyphIconSpec("noctalia-glyph:");
           glyphIconSpec.append(profileGlyphName(active));
           m_notificationManager.addInternal(
@@ -993,9 +994,11 @@ void Application::initUi() {
       [this]() { m_hookManager.fire(HookKind::SessionUnlocked); }
   );
 
-  m_sessionActionHooks.onLogout = [this]() { return m_hookManager.fireBlocking(HookKind::LoggingOut); };
-  m_sessionActionHooks.onReboot = [this]() { return m_hookManager.fireBlocking(HookKind::Rebooting); };
-  m_sessionActionHooks.onShutdown = [this]() { return m_hookManager.fireBlocking(HookKind::ShuttingDown); };
+  SessionActionHooks sessionActionHooks;
+  sessionActionHooks.onLogout = [this]() { return m_hookManager.fireBlocking(HookKind::LoggingOut); };
+  sessionActionHooks.onReboot = [this]() { return m_hookManager.fireBlocking(HookKind::Rebooting); };
+  sessionActionHooks.onShutdown = [this]() { return m_hookManager.fireBlocking(HookKind::ShuttingDown); };
+  m_sessionActionRunner.setHooks(std::move(sessionActionHooks));
 
   m_wayland.setPointerEventCallback([this](const PointerEvent& event) {
     if (m_lockScreen.isActive()) {
@@ -1092,10 +1095,7 @@ void Application::initUi() {
   });
   m_panelManager.registerPanel("clipboard", std::move(clipboardPanel));
   syncClipboardService();
-  m_panelManager.registerPanel(
-      "session",
-      std::make_unique<SessionPanel>(&m_configService, m_sessionActionHooks, &m_compositorPlatform.niriRuntime())
-  );
+  m_panelManager.registerPanel("session", std::make_unique<SessionPanel>(&m_configService, m_sessionActionRunner));
   m_panelManager.registerPanel("test", std::make_unique<TestPanel>());
   m_panelManager.registerPanel(
       "control-center",
@@ -1545,17 +1545,16 @@ bool Application::runIdleAction(const IdleActionRequest& action) {
   case IdleActionKind::Command:
     return runUserCommand(action.command);
   case IdleActionKind::Lock:
-    return runUserCommand("noctalia:screen-lock");
+    return m_sessionActionRunner.lock();
   case IdleActionKind::ScreenOff:
-    return runUserCommand("noctalia:dpms-off");
+    return m_compositorPlatform.setOutputPower(false);
   case IdleActionKind::ScreenOn:
-    return runUserCommand("noctalia:dpms-on");
+    return m_compositorPlatform.setOutputPower(true);
   case IdleActionKind::Suspend:
     if (action.lockBeforeSuspend) {
-      m_lockScreen.runAfterSessionLocked([this]() { (void)runUserCommand("noctalia:suspend"); });
-      return true;
+      return m_sessionActionRunner.lockThenSuspendDetached();
     }
-    return runUserCommand("noctalia:suspend");
+    return m_sessionActionRunner.requestSuspendDetached();
   }
   return false;
 }
@@ -1660,9 +1659,10 @@ void Application::onPowerProfileChangedForEvents(const PowerProfilesState& state
   const std::string prev = *m_prevPowerProfileActiveForEvents;
   if (prev != state.activeProfile) {
     m_hookManager.fire(
-        HookKind::PowerProfileChanged, {{"NOCTALIA_POWER_PROFILE", state.activeProfile},
-                                        {"NOCTALIA_POWER_PROFILE_PREVIOUS", prev},
-                                        {"NOCTALIA_POWER_PROFILE_ORIGIN", std::string(powerProfileOriginName(origin))}}
+        HookKind::PowerProfileChanged,
+        {{"NOCTALIA_POWER_PROFILE", state.activeProfile},
+         {"NOCTALIA_POWER_PROFILE_PREVIOUS", prev},
+         {"NOCTALIA_POWER_PROFILE_ORIGIN", std::string(powerProfileOriginName(origin))}}
     );
   }
   m_prevPowerProfileActiveForEvents = state.activeProfile;

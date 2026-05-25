@@ -418,8 +418,9 @@ namespace {
   private:
     [[nodiscard]] std::string resolvedLayoutName() const {
       const auto state = m_platform != nullptr ? m_platform->keyboardLayoutState() : std::nullopt;
-      if (state.has_value() && state->currentIndex >= 0 &&
-          state->currentIndex < static_cast<int>(state->names.size())) {
+      if (state.has_value()
+          && state->currentIndex >= 0
+          && state->currentIndex < static_cast<int>(state->names.size())) {
         return state->names[static_cast<std::size_t>(state->currentIndex)];
       }
 

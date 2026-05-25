@@ -200,12 +200,13 @@ namespace {
   }
 
   std::unique_ptr<Flex> makeDockItemRow(const DockConfig& cfg, bool vertical) {
-    return ui::makeFlex(
-        vertical ? FlexDirection::Vertical : FlexDirection::Horizontal, {
-                                                                            .align = FlexAlign::Center,
-                                                                            .gap = static_cast<float>(cfg.itemSpacing),
-                                                                            .padding = static_cast<float>(cfg.padding),
-                                                                        }
+    return ui::flex(
+        vertical ? FlexDirection::Vertical : FlexDirection::Horizontal,
+        {
+            .align = FlexAlign::Center,
+            .gap = static_cast<float>(cfg.itemSpacing),
+            .padding = static_cast<float>(cfg.padding),
+        }
     );
   }
 
@@ -482,8 +483,9 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
     break;
   }
 
-  if (m_hoveredInstance != nullptr && m_hoveredInstance->sceneRoot != nullptr &&
-      (m_hoveredInstance->sceneRoot->paintDirty() || m_hoveredInstance->sceneRoot->layoutDirty())) {
+  if (m_hoveredInstance != nullptr
+      && m_hoveredInstance->sceneRoot != nullptr
+      && (m_hoveredInstance->sceneRoot->paintDirty() || m_hoveredInstance->sceneRoot->layoutDirty())) {
     if (m_hoveredInstance->sceneRoot->layoutDirty()) {
       m_hoveredInstance->surface->requestLayout();
     } else {
@@ -578,13 +580,13 @@ void Dock::syncInstances() {
   const bool hasStaticContent = !cfg.pinned.empty() || dockLauncherButtonCount(cfg) > 0;
   // When activeMonitorOnly is off, the running-apps check is identical for every output, so hoist it.
   const bool anyRunningGlobal = (!hasStaticContent && cfg.showRunning && !cfg.activeMonitorOnly)
-                                    ? !m_platform->runningAppIds(nullptr).empty()
-                                    : false;
+      ? !m_platform->runningAppIds(nullptr).empty()
+      : false;
   const auto outputAllowed = [&](const WaylandOutput& output) {
-    if (!selectedMonitors.empty() &&
-        std::none_of(selectedMonitors.begin(), selectedMonitors.end(), [&output](const std::string& m) {
-          return outputMatchesSelector(m, output);
-        })) {
+    if (!selectedMonitors.empty()
+        && std::none_of(selectedMonitors.begin(), selectedMonitors.end(), [&output](const std::string& m) {
+             return outputMatchesSelector(m, output);
+           })) {
       return false;
     }
     if (hasStaticContent) {
@@ -741,9 +743,9 @@ void Dock::prepareFrame(DockInstance& instance, bool needsUpdate, bool needsLayo
     needsModelRebuild = syncInstanceModel(instance);
   }
 
-  const bool needsSceneBuild = instance.sceneRoot == nullptr ||
-                               static_cast<std::uint32_t>(std::round(instance.sceneRoot->width())) != width ||
-                               static_cast<std::uint32_t>(std::round(instance.sceneRoot->height())) != height;
+  const bool needsSceneBuild = instance.sceneRoot == nullptr
+      || static_cast<std::uint32_t>(std::round(instance.sceneRoot->width())) != width
+      || static_cast<std::uint32_t>(std::round(instance.sceneRoot->height())) != height;
   if (needsSceneBuild || needsLayout || needsModelRebuild) {
     UiPhaseScope layoutPhase(UiPhase::Layout);
     if (needsModelRebuild && instance.sceneRoot != nullptr) {
@@ -1616,8 +1618,9 @@ bool Dock::routePopupEvent(DockPopup* popup, const PointerEvent& event) {
     break;
   }
 
-  if (popup->surface != nullptr && popup->sceneRoot != nullptr &&
-      (popup->sceneRoot->paintDirty() || popup->sceneRoot->layoutDirty())) {
+  if (popup->surface != nullptr
+      && popup->sceneRoot != nullptr
+      && (popup->sceneRoot->paintDirty() || popup->sceneRoot->layoutDirty())) {
     if (popup->sceneRoot->layoutDirty()) {
       popup->surface->requestLayout();
     } else {
@@ -1875,9 +1878,10 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
       .height = menuChrome.surfaceHeight,
       .anchor = anchor,
       .gravity = gravity,
-      .constraintAdjustment = XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X |
-                              XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y |
-                              XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_X | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y,
+      .constraintAdjustment = XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X
+          | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y
+          | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_X
+          | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y,
       .offsetX = offsetX,
       .offsetY = offsetY,
       .serial = m_platform->lastInputSerial(),
@@ -1911,9 +1915,9 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
 
     m_renderContext->makeCurrent(menuPtr->surface->renderTarget());
 
-    const bool needsSceneBuild = menuPtr->sceneRoot == nullptr ||
-                                 static_cast<std::uint32_t>(std::round(menuPtr->sceneRoot->width())) != width ||
-                                 static_cast<std::uint32_t>(std::round(menuPtr->sceneRoot->height())) != height;
+    const bool needsSceneBuild = menuPtr->sceneRoot == nullptr
+        || static_cast<std::uint32_t>(std::round(menuPtr->sceneRoot->width())) != width
+        || static_cast<std::uint32_t>(std::round(menuPtr->sceneRoot->height())) != height;
     if (!needsSceneBuild && !needsLayout) {
       return;
     }

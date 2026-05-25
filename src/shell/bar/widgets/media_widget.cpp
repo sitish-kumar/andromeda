@@ -176,9 +176,9 @@ void MediaWidget::applyTitleScrollMode(bool titleVisible) {
     return;
   }
 
-  const bool shouldScroll =
-      titleVisible && (m_titleScrollMode == MediaTitleScrollMode::Always ||
-                       (m_titleScrollMode == MediaTitleScrollMode::OnHover && m_area != nullptr && m_area->hovered()));
+  const bool shouldScroll = titleVisible
+      && (m_titleScrollMode == MediaTitleScrollMode::Always
+          || (m_titleScrollMode == MediaTitleScrollMode::OnHover && m_area != nullptr && m_area->hovered()));
   m_label->setAutoScroll(shouldScroll);
   m_label->setAutoScrollOnlyWhenHovered(false);
 }

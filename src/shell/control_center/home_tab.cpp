@@ -577,8 +577,10 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
   }
   if (m_weatherLine != nullptr) {
     const float weatherTextWrap = std::max(
-        1.0f, dateTimeRightWrap - (m_weatherGlyph != nullptr ? m_weatherGlyph->width() : 0.0f) -
-                  Style::spaceXs * contentScale()
+        1.0f,
+        dateTimeRightWrap
+            - (m_weatherGlyph != nullptr ? m_weatherGlyph->width() : 0.0f)
+            - Style::spaceXs * contentScale()
     );
     m_weatherLine->setMaxWidth(weatherTextWrap);
     m_weatherLine->setMaxLines(2);
@@ -630,9 +632,10 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
     // Cells aim for square but trimmed slightly so the grid stays compact and the bottom row
     // doesn't tower over the user card area.
     const float cellSide = cellWidth * 0.82f;
-    const float gridH = static_cast<float>(rows) * cellSide +
-                        static_cast<float>(rows > 0 ? rows - 1 : 0) * m_shortcutsGrid->rowGap() +
-                        m_shortcutsGrid->paddingTop() + m_shortcutsGrid->paddingBottom();
+    const float gridH = static_cast<float>(rows) * cellSide
+        + static_cast<float>(rows > 0 ? rows - 1 : 0) * m_shortcutsGrid->rowGap()
+        + m_shortcutsGrid->paddingTop()
+        + m_shortcutsGrid->paddingBottom();
     if (m_bottomRow != nullptr) {
       m_bottomRow->setMinHeight(gridH);
     }
@@ -1035,14 +1038,15 @@ void HomeTab::sync(Renderer& renderer) {
           const bool sameDisplayedTrack =
               m_mediaPositionBusName == active->busName && m_mediaPositionTrackSignature == trackSignature;
           const bool withinTransientRegressionWindow =
-              m_mediaPositionSampleAt != std::chrono::steady_clock::time_point{} &&
-              now - m_mediaPositionSampleAt <= kHomeTransientPositionRegressionWindow;
-          const bool preserveDisplayedPosition =
-              sameDisplayedTrack && m_mediaLastPlaybackStatus == "Playing" && active->playbackStatus == "Playing" &&
-              m_mediaPositionUs >= kHomeTransientPositionRegressionFloorUs &&
-              livePositionUs <= kHomeTransientPositionRegressionCeilingUs &&
-              livePositionUs + kHomeTransientPositionRegressionDeltaUs < m_mediaPositionUs &&
-              withinTransientRegressionWindow;
+              m_mediaPositionSampleAt != std::chrono::steady_clock::time_point{}
+              && now - m_mediaPositionSampleAt <= kHomeTransientPositionRegressionWindow;
+          const bool preserveDisplayedPosition = sameDisplayedTrack
+              && m_mediaLastPlaybackStatus == "Playing"
+              && active->playbackStatus == "Playing"
+              && m_mediaPositionUs >= kHomeTransientPositionRegressionFloorUs
+              && livePositionUs <= kHomeTransientPositionRegressionCeilingUs
+              && livePositionUs + kHomeTransientPositionRegressionDeltaUs < m_mediaPositionUs
+              && withinTransientRegressionWindow;
           if (preserveDisplayedPosition) {
             livePositionUs = m_mediaPositionUs;
           }

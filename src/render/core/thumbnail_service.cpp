@@ -72,8 +72,15 @@ namespace {
     }
 
     const auto ticks = mtime.time_since_epoch().count();
-    const std::string key = sourcePath + '\n' + std::to_string(size) + '\n' + std::to_string(ticks) + '\n' +
-                            std::to_string(kThumbnailTargetPx) + '\n' + std::string(kThumbnailCacheVersion);
+    const std::string key = sourcePath
+        + '\n'
+        + std::to_string(size)
+        + '\n'
+        + std::to_string(ticks)
+        + '\n'
+        + std::to_string(kThumbnailTargetPx)
+        + '\n'
+        + std::string(kThumbnailCacheVersion);
     return thumbnailCacheDir() / (hex64(fnv1a64(key)) + ".webp");
   }
 

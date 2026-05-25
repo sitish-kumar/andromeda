@@ -52,8 +52,11 @@ namespace {
     if (source.size() < 5) {
       return false;
     }
-    return (source[0] == 'd' || source[0] == 'D') && (source[1] == 'a' || source[1] == 'A') &&
-           (source[2] == 't' || source[2] == 'T') && (source[3] == 'a' || source[3] == 'A') && source[4] == ':';
+    return (source[0] == 'd' || source[0] == 'D')
+        && (source[1] == 'a' || source[1] == 'A')
+        && (source[2] == 't' || source[2] == 'T')
+        && (source[3] == 'a' || source[3] == 'A')
+        && source[4] == ':';
   }
 
   [[nodiscard]] char asciiLower(char ch) { return ch >= 'A' && ch <= 'Z' ? static_cast<char>(ch - 'A' + 'a') : ch; }
@@ -314,8 +317,11 @@ namespace {
 
     const std::size_t scanEnd = std::min(data.size(), pos + 256U);
     for (; pos < scanEnd; ++pos) {
-      if (pos + 4 <= data.size() && data[pos] == '<' && asciiLower(static_cast<char>(data[pos + 1])) == 's' &&
-          asciiLower(static_cast<char>(data[pos + 2])) == 'v' && asciiLower(static_cast<char>(data[pos + 3])) == 'g') {
+      if (pos + 4 <= data.size()
+          && data[pos] == '<'
+          && asciiLower(static_cast<char>(data[pos + 1])) == 's'
+          && asciiLower(static_cast<char>(data[pos + 2])) == 'v'
+          && asciiLower(static_cast<char>(data[pos + 3])) == 'g') {
         return true;
       }
     }

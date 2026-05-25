@@ -385,8 +385,10 @@ void WpaSupplicantService::rebuildState() {
     next.scanning = next.scanning || getPropertyOr(*proxy, kWpaIfaceInterface, "Scanning", false);
 
     const bool connected =
-        (state == kStateCompleted || state == kStateAssociated || state == kStateGroupHandshake ||
-         state == k_state4wayHandshake);
+        (state == kStateCompleted
+         || state == kStateAssociated
+         || state == kStateGroupHandshake
+         || state == k_state4wayHandshake);
     const bool associating = (state == kStateAssociating);
 
     if (connected || associating) {

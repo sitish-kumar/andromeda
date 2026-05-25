@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <cerrno>
+#include <cmath>
 #include <cstring>
 #include <format>
 #include <stdexcept>
@@ -73,6 +74,54 @@ namespace {
     }
     const char* text = std::strerror(value);
     return text != nullptr ? std::string(text) : std::string("unknown");
+  }
+
+  struct DetectedOutputScale {
+    double scale = 0.0;
+    bool rotated = false;
+    bool available = false;
+  };
+
+  DetectedOutputScale detectOutputScale(const WaylandOutput& output) {
+    if (output.width <= 0 || output.height <= 0 || output.logicalWidth <= 0 || output.logicalHeight <= 0) {
+      return {};
+    }
+
+    // wl_output.mode is physical buffer pixels; xdg_output.logical_size is the
+    // compositor's logical coordinate space. Their ratio is the output scale.
+    struct Candidate {
+      double scale = 0.0;
+      double axisDelta = 0.0;
+      bool rotated = false;
+    };
+
+    const auto candidate = [](double xScale, double yScale, bool rotated) {
+      return Candidate{
+          .scale = (xScale + yScale) * 0.5,
+          .axisDelta = std::abs(xScale - yScale),
+          .rotated = rotated,
+      };
+    };
+
+    const auto physicalW = static_cast<double>(output.width);
+    const auto physicalH = static_cast<double>(output.height);
+    const auto logicalW = static_cast<double>(output.logicalWidth);
+    const auto logicalH = static_cast<double>(output.logicalHeight);
+
+    const Candidate normal = candidate(physicalW / logicalW, physicalH / logicalH, false);
+    const Candidate rotated = candidate(physicalW / logicalH, physicalH / logicalW, true);
+    const Candidate& selected = rotated.axisDelta < normal.axisDelta ? rotated : normal;
+    if (selected.scale <= 0.0) {
+      return {};
+    }
+    return {.scale = selected.scale, .rotated = selected.rotated, .available = true};
+  }
+
+  std::string outputLabel(const WaylandOutput& output) {
+    if (!output.connectorName.empty()) {
+      return output.connectorName;
+    }
+    return std::format("#{}", output.name);
   }
 
   void
@@ -291,8 +340,45 @@ void WaylandConnection::setPointerEventCallback(WaylandSeat::PointerEventCallbac
 }
 
 void WaylandConnection::registerSurfaceOutput(wl_surface* surface, wl_output* output) {
-  if (surface != nullptr) {
-    m_surfaceOutputMap[surface] = output;
+  if (surface == nullptr || output == nullptr) {
+    return;
+  }
+  m_surfaceOutputMap[surface] = output;
+}
+
+void WaylandConnection::notifySurfaceOutputEnter(wl_surface* surface, wl_output* output) {
+  if (surface == nullptr || output == nullptr) {
+    return;
+  }
+  auto& outputs = m_surfaceOutputs[surface];
+  if (std::find(outputs.begin(), outputs.end(), output) == outputs.end()) {
+    outputs.push_back(output);
+  }
+  m_surfaceOutputMap[surface] = output;
+}
+
+void WaylandConnection::notifySurfaceOutputLeave(wl_surface* surface, wl_output* output) {
+  if (surface == nullptr || output == nullptr) {
+    return;
+  }
+
+  auto it = m_surfaceOutputs.find(surface);
+  if (it != m_surfaceOutputs.end()) {
+    auto& outputs = it->second;
+    outputs.erase(std::remove(outputs.begin(), outputs.end(), output), outputs.end());
+    if (outputs.empty()) {
+      m_surfaceOutputs.erase(it);
+    } else if (
+        auto current = m_surfaceOutputMap.find(surface);
+        current != m_surfaceOutputMap.end() && current->second == output
+    ) {
+      current->second = outputs.back();
+    }
+  }
+
+  const auto current = m_surfaceOutputMap.find(surface);
+  if (current != m_surfaceOutputMap.end() && current->second == output) {
+    m_surfaceOutputMap.erase(current);
   }
 }
 
@@ -306,6 +392,7 @@ void WaylandConnection::unregisterSurface(wl_surface* surface) {
   if (surface != nullptr) {
     m_seatHandler.forgetSurface(surface);
     m_surfaceOutputMap.erase(surface);
+    m_surfaceOutputs.erase(surface);
     m_layerSurfaceMap.erase(surface);
     if (m_lastPointerOutput != nullptr) {
       // Clear last pointer output only if it was from this surface
@@ -1029,6 +1116,7 @@ void WaylandConnection::cleanup() {
 
   m_outputs.clear();
   m_surfaceOutputMap.clear();
+  m_surfaceOutputs.clear();
   m_layerSurfaceMap.clear();
   m_hasLayerShellGlobal = false;
   m_hasExtWorkspaceGlobal = false;
@@ -1051,9 +1139,21 @@ void WaylandConnection::logStartupSummary() const {
   );
 
   for (const auto& output : m_outputs) {
-    kLog.info(
-        "output {} global={} scale={} mode={}x{} desc=\"{}\"", output.connectorName, output.name, output.scale,
-        output.width, output.height, output.description
-    );
+    const DetectedOutputScale detectedScale = detectOutputScale(output);
+    if (detectedScale.available) {
+      kLog.info(
+          "output {} global={} wl_scale={} detected_fractional_scale={:.3f} logical={}x{} mode={}x{} orientation={} "
+          "desc=\"{}\"",
+          outputLabel(output), output.name, output.scale, detectedScale.scale, output.logicalWidth,
+          output.logicalHeight, output.width, output.height, detectedScale.rotated ? "rotated" : "normal",
+          output.description
+      );
+    } else {
+      kLog.info(
+          "output {} global={} wl_scale={} detected_fractional_scale=unavailable logical={}x{} mode={}x{} desc=\"{}\"",
+          outputLabel(output), output.name, output.scale, output.logicalWidth, output.logicalHeight, output.width,
+          output.height, output.description
+      );
+    }
   }
 }

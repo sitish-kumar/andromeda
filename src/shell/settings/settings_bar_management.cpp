@@ -100,9 +100,14 @@ namespace settings {
     }
 
     void addMonitorManagement(Flex& content, SettingsBarManagementContext& ctx) {
-      if (ctx.searchQuery.empty() && ctx.selectedSection == "bar" && ctx.selectedBar != nullptr &&
-          ctx.selectedMonitorOverride != nullptr && ctx.configService != nullptr &&
-          ctx.configService->isOverrideOnlyMonitorOverride(ctx.selectedBar->name, ctx.selectedMonitorOverride->match)) {
+      if (ctx.searchQuery.empty()
+          && ctx.selectedSection == "bar"
+          && ctx.selectedBar != nullptr
+          && ctx.selectedMonitorOverride != nullptr
+          && ctx.configService != nullptr
+          && ctx.configService->isOverrideOnlyMonitorOverride(
+              ctx.selectedBar->name, ctx.selectedMonitorOverride->match
+          )) {
         const std::string barName = ctx.selectedBar->name;
         const std::string match = ctx.selectedMonitorOverride->match;
         const bool pendingDelete =
@@ -149,8 +154,8 @@ namespace settings {
               requestRebuild();
               return;
             }
-            if (newMatch.empty() ||
-                std::find(existingMatches.begin(), existingMatches.end(), newMatch) != existingMatches.end()) {
+            if (newMatch.empty()
+                || std::find(existingMatches.begin(), existingMatches.end(), newMatch) != existingMatches.end()) {
               inputPtr->setInvalid(true);
               return;
             }
@@ -267,8 +272,11 @@ namespace settings {
     }
 
     void addBarManagement(Flex& content, SettingsBarManagementContext& ctx) {
-      if (ctx.searchQuery.empty() && ctx.selectedSection == "bar" && ctx.selectedBar != nullptr &&
-          ctx.selectedMonitorOverride == nullptr && ctx.configService != nullptr) {
+      if (ctx.searchQuery.empty()
+          && ctx.selectedSection == "bar"
+          && ctx.selectedBar != nullptr
+          && ctx.selectedMonitorOverride == nullptr
+          && ctx.configService != nullptr) {
         const std::string barName = ctx.selectedBar->name;
         const bool overrideOnly = ctx.configService->isOverrideOnlyBar(barName);
         const bool canMoveUp = ctx.configService->canMoveBarOverride(barName, -1);

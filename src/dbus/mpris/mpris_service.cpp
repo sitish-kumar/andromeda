@@ -461,18 +461,15 @@ void MprisService::applyPositionSample(const std::string& busName, int64_t rawPo
   const auto trackChangeIt = m_lastLogicalTrackChangeAt.find(busName);
   const bool guardingRecentTrackChange =
       trackChangeIt != m_lastLogicalTrackChangeAt.end() && now - trackChangeIt->second < kRecentTrackChangeGuardWindow;
-  const std::int64_t elapsedSinceTrackChangeUs =
-      trackChangeIt != m_lastLogicalTrackChangeAt.end()
-          ? std::chrono::duration_cast<std::chrono::microseconds>(now - trackChangeIt->second).count()
-          : 0;
-  const std::int64_t maxPlausibleTrackPositionUs =
-      elapsedSinceTrackChangeUs +
-      std::chrono::duration_cast<std::chrono::microseconds>(kRecentTrackChangeSlack).count();
+  const std::int64_t elapsedSinceTrackChangeUs = trackChangeIt != m_lastLogicalTrackChangeAt.end()
+      ? std::chrono::duration_cast<std::chrono::microseconds>(now - trackChangeIt->second).count()
+      : 0;
+  const std::int64_t maxPlausibleTrackPositionUs = elapsedSinceTrackChangeUs
+      + std::chrono::duration_cast<std::chrono::microseconds>(kRecentTrackChangeSlack).count();
   const auto previousTrackRawIt = m_previousTrackRawPositionUs.find(busName);
   const bool hasPreviousTrackContext = previousTrackRawIt != m_previousTrackRawPositionUs.end();
-  const bool looksLikePreviousTrackContinuation =
-      hasPreviousTrackContext &&
-      std::llabs(rawPositionUs - previousTrackRawIt->second) <= kPreviousTrackContinuationSlackUs;
+  const bool looksLikePreviousTrackContinuation = hasPreviousTrackContext
+      && std::llabs(rawPositionUs - previousTrackRawIt->second) <= kPreviousTrackContinuationSlackUs;
 
   if (offsetUs > 0 && !hasPreviousTrackContext && rawPositionUs + kStaleRebaseClearSlackUs < offsetUs) {
     offsetIt->second = 0;
@@ -480,16 +477,21 @@ void MprisService::applyPositionSample(const std::string& busName, int64_t rawPo
     normalizedUs = rawPositionUs;
   }
 
-  if (!hadAuthoritativeSample && trackChangeIt != m_lastLogicalTrackChangeAt.end() && offsetUs > 0 &&
-      rawPositionUs + kStaleRebaseClearSlackUs < offsetUs) {
+  if (!hadAuthoritativeSample
+      && trackChangeIt != m_lastLogicalTrackChangeAt.end()
+      && offsetUs > 0
+      && rawPositionUs + kStaleRebaseClearSlackUs < offsetUs) {
     offsetIt->second = 0;
     offsetUs = 0;
     normalizedUs = rawPositionUs;
   }
 
-  if (!hadAuthoritativeSample && trackChangeIt != m_lastLogicalTrackChangeAt.end() &&
-      playerIt->second.playbackStatus != "Stopped" && rawPositionUs > 5'000'000 &&
-      normalizedUs > maxPlausibleTrackPositionUs && looksLikePreviousTrackContinuation) {
+  if (!hadAuthoritativeSample
+      && trackChangeIt != m_lastLogicalTrackChangeAt.end()
+      && playerIt->second.playbackStatus != "Stopped"
+      && rawPositionUs > 5'000'000
+      && normalizedUs > maxPlausibleTrackPositionUs
+      && looksLikePreviousTrackContinuation) {
     offsetIt->second = rawPositionUs;
     if (playerIt->second.positionUs != 0) {
       playerIt->second.positionUs = 0;
@@ -514,14 +516,21 @@ void MprisService::applyPositionSample(const std::string& busName, int64_t rawPo
     authoritativeSample = hadAuthoritativeSample;
   }
 
-  if (!authoritativeSample && !hadAuthoritativeSample && trackChangeIt != m_lastLogicalTrackChangeAt.end() &&
-      playerIt->second.playbackStatus != "Stopped" && normalizedUs > maxPlausibleTrackPositionUs &&
-      rawPositionUs > 5'000'000 && hasPreviousTrackContext && !looksLikePreviousTrackContinuation) {
+  if (!authoritativeSample
+      && !hadAuthoritativeSample
+      && trackChangeIt != m_lastLogicalTrackChangeAt.end()
+      && playerIt->second.playbackStatus != "Stopped"
+      && normalizedUs > maxPlausibleTrackPositionUs
+      && rawPositionUs > 5'000'000
+      && hasPreviousTrackContext
+      && !looksLikePreviousTrackContinuation) {
     authoritativeSample = true;
   }
 
-  if (!m_pendingPositionSignalRefresh[busName] && normalizedUs == 0 && playerIt->second.positionUs > 0 &&
-      playerIt->second.playbackStatus != "Stopped") {
+  if (!m_pendingPositionSignalRefresh[busName]
+      && normalizedUs == 0
+      && playerIt->second.positionUs > 0
+      && playerIt->second.playbackStatus != "Stopped") {
     return;
   }
 
@@ -547,18 +556,18 @@ void MprisService::applyPositionSample(const std::string& busName, int64_t rawPo
   if (!hadAuthoritativeSample && !authoritativeSample && normalizedUs > 0) {
     const auto candidateIt = m_pendingPositionCandidateUs.find(busName);
     const auto candidateAtIt = m_pendingPositionCandidateAt.find(busName);
-    const bool candidateFresh = candidateAtIt != m_pendingPositionCandidateAt.end() &&
-                                now - candidateAtIt->second <= kPositionCandidateMatchWindow;
-    bool candidateMatches = candidateIt != m_pendingPositionCandidateUs.end() && candidateFresh &&
-                            std::llabs(candidateIt->second - normalizedUs) <= kPositionCandidateToleranceUs;
+    const bool candidateFresh = candidateAtIt != m_pendingPositionCandidateAt.end()
+        && now - candidateAtIt->second <= kPositionCandidateMatchWindow;
+    bool candidateMatches = candidateIt != m_pendingPositionCandidateUs.end()
+        && candidateFresh
+        && std::llabs(candidateIt->second - normalizedUs) <= kPositionCandidateToleranceUs;
 
     if (candidateMatches && playerIt->second.playbackStatus == "Playing") {
       const auto elapsedSinceCandidateUs =
           std::chrono::duration_cast<std::chrono::microseconds>(now - candidateAtIt->second).count();
       const std::int64_t progressUs = normalizedUs - candidateIt->second;
-      const std::int64_t maxExpectedProgressUs =
-          elapsedSinceCandidateUs +
-          std::chrono::duration_cast<std::chrono::microseconds>(kRecentTrackChangeSlack).count();
+      const std::int64_t maxExpectedProgressUs = elapsedSinceCandidateUs
+          + std::chrono::duration_cast<std::chrono::microseconds>(kRecentTrackChangeSlack).count();
       candidateMatches = progressUs >= kPositionCandidateMinProgressUs && progressUs <= maxExpectedProgressUs;
     }
 
@@ -591,8 +600,9 @@ void MprisService::applyPositionSample(const std::string& busName, int64_t rawPo
   if (!authoritativeSample) {
     const bool hasAuthoritativeSample =
         m_hasAuthoritativePositionSample.contains(busName) && m_hasAuthoritativePositionSample.at(busName);
-    if (playerIt->second.playbackStatus == "Playing" && !hasAuthoritativeSample &&
-        shouldRetryPropertiesRefresh(busName)) {
+    if (playerIt->second.playbackStatus == "Playing"
+        && !hasAuthoritativeSample
+        && shouldRetryPropertiesRefresh(busName)) {
       schedulePositionRefreshRetry(busName, kPositionRetryInterval, true);
     }
     return;
@@ -633,12 +643,11 @@ std::int64_t MprisService::projectedPositionUs(const MprisPlayerInfo& player) co
   if (player.playbackStatus == "Playing" && hasAuthoritativeSample) {
     if (const auto it = m_lastPositionSampleAt.find(player.busName); it != m_lastPositionSampleAt.end()) {
       const auto trackChangeIt = m_lastLogicalTrackChangeAt.find(player.busName);
-      const bool inInitialTrackWindow =
-          trackChangeIt != m_lastLogicalTrackChangeAt.end() &&
-          std::chrono::steady_clock::now() - trackChangeIt->second <= kRecentTrackChangeGuardWindow;
-      const bool suppressInitialProjection =
-          inInitialTrackWindow && projectedUs <= kInitialPositionProjectionGraceCeilingUs &&
-          std::chrono::steady_clock::now() - it->second <= kInitialPositionProjectionGraceWindow;
+      const bool inInitialTrackWindow = trackChangeIt != m_lastLogicalTrackChangeAt.end()
+          && std::chrono::steady_clock::now() - trackChangeIt->second <= kRecentTrackChangeGuardWindow;
+      const bool suppressInitialProjection = inInitialTrackWindow
+          && projectedUs <= kInitialPositionProjectionGraceCeilingUs
+          && std::chrono::steady_clock::now() - it->second <= kInitialPositionProjectionGraceWindow;
       if (suppressInitialProjection) {
         if (player.lengthUs > 0) {
           return std::clamp<std::int64_t>(projectedUs, 0, player.lengthUs);
@@ -1389,8 +1398,10 @@ void MprisService::syncSignals(const std::optional<MprisPlayerInfo>& previousAct
     m_lastEmittedActivePlayer = current_active_name;
   }
 
-  if (previousActive.has_value() && current_active.has_value() && previousActive->busName == current_active->busName &&
-      previousActive->title != current_active->title) {
+  if (previousActive.has_value()
+      && current_active.has_value()
+      && previousActive->busName == current_active->busName
+      && previousActive->title != current_active->title) {
     emitTrackChanged(*current_active);
   }
 }
@@ -1520,12 +1531,10 @@ void MprisService::addOrRefreshPlayer(const std::string& busName) {
                   const std::vector<std::string>& invalidated_properties
               ) {
           if (interface_name == kMprisRootInterface || interface_name == kMprisPlayerInterface) {
-            const bool metadataChanged =
-                changed_properties.contains("Metadata") ||
-                std::ranges::find(invalidated_properties, std::string{"Metadata"}) != invalidated_properties.end();
-            const bool positionChanged =
-                changed_properties.contains("Position") ||
-                std::ranges::find(invalidated_properties, std::string{"Position"}) != invalidated_properties.end();
+            const bool metadataChanged = changed_properties.contains("Metadata")
+                || std::ranges::find(invalidated_properties, std::string{"Metadata"}) != invalidated_properties.end();
+            const bool positionChanged = changed_properties.contains("Position")
+                || std::ranges::find(invalidated_properties, std::string{"Position"}) != invalidated_properties.end();
             if (positionChanged) {
               m_pendingPositionSignalRefresh[busName] = true;
             }
@@ -1559,9 +1568,8 @@ void MprisService::addOrRefreshPlayer(const std::string& busName) {
       std::int64_t normalizedUs = std::max<std::int64_t>(0, posUs - offsetUs);
       const std::int64_t previousPosUs = playerIt->second.positionUs;
       const auto previousTrackRawIt = m_previousTrackRawPositionUs.find(busName);
-      const bool looksLikePreviousTrackContinuation =
-          previousTrackRawIt != m_previousTrackRawPositionUs.end() &&
-          std::llabs(posUs - previousTrackRawIt->second) <= kPreviousTrackContinuationSlackUs;
+      const bool looksLikePreviousTrackContinuation = previousTrackRawIt != m_previousTrackRawPositionUs.end()
+          && std::llabs(posUs - previousTrackRawIt->second) <= kPreviousTrackContinuationSlackUs;
 
       if (looksLikePreviousTrackContinuation) {
         return;
@@ -1769,9 +1777,14 @@ void MprisService::applyPlayerSnapshot(
       merged.artUrl = previous_info.artUrl;
     }
 
-    const bool incomingSnapshotEmpty = merged.playbackStatus.empty() && merged.trackId.empty() &&
-                                       merged.title.empty() && merged.artists.empty() && merged.album.empty() &&
-                                       merged.sourceUrl.empty() && merged.artUrl.empty() && merged.lengthUs == 0;
+    const bool incomingSnapshotEmpty = merged.playbackStatus.empty()
+        && merged.trackId.empty()
+        && merged.title.empty()
+        && merged.artists.empty()
+        && merged.album.empty()
+        && merged.sourceUrl.empty()
+        && merged.artUrl.empty()
+        && merged.lengthUs == 0;
     if (incomingSnapshotEmpty) {
       merged = previous_info;
     }
@@ -1785,8 +1798,11 @@ void MprisService::applyPlayerSnapshot(
     const bool recentLocalSeek =
         seekCommandIt != m_lastSeekCommandAt.end() && now - seekCommandIt->second <= kSeekPauseGraceWindow;
 
-    if (merged.playbackStatus == "Playing" && previousStrong && incomingWeak && withinStabilizeWindow &&
-        recentLocalSeek) {
+    if (merged.playbackStatus == "Playing"
+        && previousStrong
+        && incomingWeak
+        && withinStabilizeWindow
+        && recentLocalSeek) {
       const std::string incomingArtUrl = info.artUrl;
       const std::string incomingSourceUrl = info.sourceUrl;
       merged.trackId = previous_info.trackId;
@@ -1819,29 +1835,36 @@ void MprisService::applyPlayerSnapshot(
     const bool logicalTrackChanged = !newSignature.empty() && previousSignature != newSignature;
     const bool playbackStatusChanged = previous_info.playbackStatus != merged.playbackStatus;
 
-    if (previousPositionAuthoritative && !logicalTrackChanged && !hadPositionSignal &&
-        previous_info.playbackStatus == "Playing" && merged.playbackStatus == "Paused" && previous_info.canSeek) {
+    if (previousPositionAuthoritative
+        && !logicalTrackChanged
+        && !hadPositionSignal
+        && previous_info.playbackStatus == "Playing"
+        && merged.playbackStatus == "Paused"
+        && previous_info.canSeek) {
       m_recentNoSignalPauseAt[busName] = now;
     } else if (merged.playbackStatus != "Paused") {
       m_recentNoSignalPauseAt.erase(busName);
     }
 
     bool preservedNormalizedPosition = false;
-    if (previousPositionAuthoritative && !logicalTrackChanged && !hadPositionSignal &&
-        previous_info.playbackStatus != "Stopped" && merged.playbackStatus != "Stopped" &&
-        previous_info.positionUs != merged.positionUs) {
+    if (previousPositionAuthoritative
+        && !logicalTrackChanged
+        && !hadPositionSignal
+        && previous_info.playbackStatus != "Stopped"
+        && merged.playbackStatus != "Stopped"
+        && previous_info.positionUs != merged.positionUs) {
       bool preservePreviousPosition = playbackStatusChanged;
       if (!preservePreviousPosition) {
         const auto sampleIt = m_lastPositionSampleAt.find(busName);
-        const std::int64_t elapsedSinceSampleUs =
-            sampleIt != m_lastPositionSampleAt.end()
-                ? std::chrono::duration_cast<std::chrono::microseconds>(now - sampleIt->second).count()
-                : 0;
+        const std::int64_t elapsedSinceSampleUs = sampleIt != m_lastPositionSampleAt.end()
+            ? std::chrono::duration_cast<std::chrono::microseconds>(now - sampleIt->second).count()
+            : 0;
         const std::int64_t rawDeltaUs = std::llabs(merged.positionUs - previous_info.positionUs);
         const std::int64_t maxReasonableDeltaUs = std::max<std::int64_t>(5'000'000, elapsedSinceSampleUs + 2'000'000);
         preservePreviousPosition = rawDeltaUs > maxReasonableDeltaUs;
-        if (!preservePreviousPosition && previous_info.playbackStatus == "Paused" &&
-            merged.playbackStatus == "Paused") {
+        if (!preservePreviousPosition
+            && previous_info.playbackStatus == "Paused"
+            && merged.playbackStatus == "Paused") {
           preservePreviousPosition = !recentLocalSeek && rawDeltaUs < kPausedSameTrackPositionJumpToleranceUs;
         }
       }
@@ -1851,9 +1874,13 @@ void MprisService::applyPlayerSnapshot(
         preservedNormalizedPosition = true;
       }
     }
-    if (previousPositionAuthoritative && !logicalTrackChanged && !hadPositionSignal && merged.positionUs == 0 &&
-        previous_info.positionUs > 0 && previous_info.playbackStatus != "Stopped" &&
-        merged.playbackStatus != "Stopped") {
+    if (previousPositionAuthoritative
+        && !logicalTrackChanged
+        && !hadPositionSignal
+        && merged.positionUs == 0
+        && previous_info.positionUs > 0
+        && previous_info.playbackStatus != "Stopped"
+        && merged.playbackStatus != "Stopped") {
       merged.positionUs = previous_info.positionUs;
       preservedNormalizedPosition = true;
     }
@@ -1863,9 +1890,9 @@ void MprisService::applyPlayerSnapshot(
       const std::int64_t previousRawPositionUs = std::max<std::int64_t>(0, previous_info.positionUs + previousOffset);
       m_previousTrackRawPositionUs[busName] = previousRawPositionUs;
       offsetIt->second = 0;
-      const bool looksLikePreviousTrackContinuation =
-          merged.positionUs > 5'000'000 && previousNormalized > 5'000'000 &&
-          std::llabs(merged.positionUs - previousRawPositionUs) <= kPreviousTrackContinuationSlackUs;
+      const bool looksLikePreviousTrackContinuation = merged.positionUs > 5'000'000
+          && previousNormalized > 5'000'000
+          && std::llabs(merged.positionUs - previousRawPositionUs) <= kPreviousTrackContinuationSlackUs;
       if (looksLikePreviousTrackContinuation) {
         offsetIt->second = merged.positionUs;
       }
@@ -1893,16 +1920,23 @@ void MprisService::applyPlayerSnapshot(
 
     existing->second = merged;
 
-    const bool trackChanged = previous_info.title != merged.title || previous_info.album != merged.album ||
-                              previous_info.artists != merged.artists || previous_info.artUrl != merged.artUrl ||
-                              previous_info.sourceUrl != merged.sourceUrl || previous_info.trackId != merged.trackId ||
-                              previous_info.lengthUs != merged.lengthUs;
-    const bool significantChanged =
-        trackChanged || previous_info.identity != merged.identity ||
-        previous_info.playbackStatus != merged.playbackStatus || previous_info.loopStatus != merged.loopStatus ||
-        previous_info.shuffle != merged.shuffle || previous_info.canGoPrevious != merged.canGoPrevious ||
-        previous_info.canGoNext != merged.canGoNext || previous_info.canPlay != merged.canPlay ||
-        previous_info.canPause != merged.canPause || previous_info.canSeek != merged.canSeek;
+    const bool trackChanged = previous_info.title != merged.title
+        || previous_info.album != merged.album
+        || previous_info.artists != merged.artists
+        || previous_info.artUrl != merged.artUrl
+        || previous_info.sourceUrl != merged.sourceUrl
+        || previous_info.trackId != merged.trackId
+        || previous_info.lengthUs != merged.lengthUs;
+    const bool significantChanged = trackChanged
+        || previous_info.identity != merged.identity
+        || previous_info.playbackStatus != merged.playbackStatus
+        || previous_info.loopStatus != merged.loopStatus
+        || previous_info.shuffle != merged.shuffle
+        || previous_info.canGoPrevious != merged.canGoPrevious
+        || previous_info.canGoNext != merged.canGoNext
+        || previous_info.canPlay != merged.canPlay
+        || previous_info.canPause != merged.canPause
+        || previous_info.canSeek != merged.canSeek;
 
     if (trackChanged || previous_info.playbackStatus != merged.playbackStatus) {
       const std::weak_ptr<void> aliveGuard = m_aliveGuard;
@@ -2005,8 +2039,10 @@ std::optional<std::string> MprisService::chooseActivePlayer() const {
 
   for (const auto& busName : m_preferredPlayers) {
     const auto it = m_players.find(busName);
-    if (it != m_players.end() && !isBlacklisted(it->second) && !isDismissed(busName) &&
-        it->second.playbackStatus == "Playing") {
+    if (it != m_players.end()
+        && !isBlacklisted(it->second)
+        && !isDismissed(busName)
+        && it->second.playbackStatus == "Playing") {
       // kLog.debug("choose active player source=preferred_playing name={}", busName);
       return busName;
     }

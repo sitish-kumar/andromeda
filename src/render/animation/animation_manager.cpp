@@ -74,9 +74,10 @@ AnimationManager::Id AnimationManager::animateInternal(
               .startValue = reduceMotion ? to : from,
               .endValue = to,
               .durationMs = effectiveDurationMs,
-              .startedAt = reduceMotion ? now - std::chrono::duration_cast<std::chrono::steady_clock::duration>(
-                                                    std::chrono::duration<float, std::milli>(kReducedMotionDurationMs)
-                                                )
+              .startedAt = reduceMotion ? now
+                      - std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+                                              std::chrono::duration<float, std::milli>(kReducedMotionDurationMs)
+                      )
                                         : now,
               .easing = easing,
               .setter = std::move(setter),
@@ -107,9 +108,10 @@ void AnimationManager::reduceMotion() {
     anim.startValue = anim.endValue;
     anim.durationMs = kReducedMotionDurationMs;
     anim.elapsedMs = 0.0f;
-    anim.startedAt = now - std::chrono::duration_cast<std::chrono::steady_clock::duration>(
-                               std::chrono::duration<float, std::milli>(kReducedMotionDurationMs)
-                           );
+    anim.startedAt = now
+        - std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+                         std::chrono::duration<float, std::milli>(kReducedMotionDurationMs)
+        );
   }
 }
 

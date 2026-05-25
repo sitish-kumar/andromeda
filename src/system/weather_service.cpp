@@ -27,8 +27,12 @@ namespace {
   using Clock = std::chrono::system_clock;
 
   bool weatherConfigEqual(const WeatherConfig& lhs, const WeatherConfig& rhs) {
-    return lhs.enabled == rhs.enabled && lhs.autoLocate == rhs.autoLocate && lhs.effects == rhs.effects &&
-           lhs.address == rhs.address && lhs.refreshMinutes == rhs.refreshMinutes && lhs.unit == rhs.unit;
+    return lhs.enabled == rhs.enabled
+        && lhs.autoLocate == rhs.autoLocate
+        && lhs.effects == rhs.effects
+        && lhs.address == rhs.address
+        && lhs.refreshMinutes == rhs.refreshMinutes
+        && lhs.unit == rhs.unit;
   }
 
   bool weatherLocationConfigEqual(const WeatherConfig& lhs, const WeatherConfig& rhs) {
@@ -44,14 +48,17 @@ namespace {
   }
 
   bool isIsoDate(std::string_view text) {
-    return text.size() == 10 && std::isdigit(static_cast<unsigned char>(text[0])) != 0 &&
-           std::isdigit(static_cast<unsigned char>(text[1])) != 0 &&
-           std::isdigit(static_cast<unsigned char>(text[2])) != 0 &&
-           std::isdigit(static_cast<unsigned char>(text[3])) != 0 && text[4] == '-' &&
-           std::isdigit(static_cast<unsigned char>(text[5])) != 0 &&
-           std::isdigit(static_cast<unsigned char>(text[6])) != 0 && text[7] == '-' &&
-           std::isdigit(static_cast<unsigned char>(text[8])) != 0 &&
-           std::isdigit(static_cast<unsigned char>(text[9])) != 0;
+    return text.size() == 10
+        && std::isdigit(static_cast<unsigned char>(text[0])) != 0
+        && std::isdigit(static_cast<unsigned char>(text[1])) != 0
+        && std::isdigit(static_cast<unsigned char>(text[2])) != 0
+        && std::isdigit(static_cast<unsigned char>(text[3])) != 0
+        && text[4] == '-'
+        && std::isdigit(static_cast<unsigned char>(text[5])) != 0
+        && std::isdigit(static_cast<unsigned char>(text[6])) != 0
+        && text[7] == '-'
+        && std::isdigit(static_cast<unsigned char>(text[8])) != 0
+        && std::isdigit(static_cast<unsigned char>(text[9])) != 0;
   }
 
   std::string todayIsoForOffset(std::int32_t utcOffsetSeconds) {
@@ -635,9 +642,13 @@ void WeatherService::scheduleRetryAfterFailure() {
 }
 
 bool WeatherService::hasResolvedLocation() const noexcept {
-  return m_locationResolved && std::isfinite(m_resolvedLatitude) && std::isfinite(m_resolvedLongitude) &&
-         m_resolvedLatitude >= -90.0 && m_resolvedLatitude <= 90.0 && m_resolvedLongitude >= -180.0 &&
-         m_resolvedLongitude <= 180.0;
+  return m_locationResolved
+      && std::isfinite(m_resolvedLatitude)
+      && std::isfinite(m_resolvedLongitude)
+      && m_resolvedLatitude >= -90.0
+      && m_resolvedLatitude <= 90.0
+      && m_resolvedLongitude >= -180.0
+      && m_resolvedLongitude <= 180.0;
 }
 
 bool WeatherService::canFetchWeatherAfterLocationFailure(bool autoLocated) const noexcept {

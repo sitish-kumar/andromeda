@@ -29,8 +29,8 @@ namespace {
     if (dir.path.empty()) {
       return;
     }
-    if (std::find_if(dirs.begin(), dirs.end(), [&](const IconSearchDir& d) { return d.path == dir.path; }) ==
-        dirs.end()) {
+    if (std::find_if(dirs.begin(), dirs.end(), [&](const IconSearchDir& d) { return d.path == dir.path; })
+        == dirs.end()) {
       dirs.push_back(std::move(dir));
     }
   }
@@ -359,11 +359,12 @@ namespace {
              {"/scalable/apps/", "/256x256/apps/", "/128x128/apps/", "/64x64/apps/", "/48x48/apps/", "/32x32/apps/"}) {
           const std::string_view name(path);
           pushUniqueDir(
-              searchDirs, IconSearchDir{
-                              .path = themeRoot + path,
-                              .size = sizeFromDirName(name),
-                              .scalable = name.find("scalable") != std::string_view::npos
-                          }
+              searchDirs,
+              IconSearchDir{
+                  .path = themeRoot + path,
+                  .size = sizeFromDirName(name),
+                  .scalable = name.find("scalable") != std::string_view::npos
+              }
           );
         }
       } else {

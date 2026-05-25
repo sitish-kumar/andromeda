@@ -100,8 +100,9 @@ void WorkspacesWidget::syncWidgetVisibility(bool showWidget) {
 void WorkspacesWidget::doUpdate(Renderer& renderer) {
   auto current = m_platform.workspaces(m_output);
 
-  if (!m_cachedState.empty() && !current.empty() &&
-      !std::any_of(current.begin(), current.end(), [](const Workspace& ws) { return ws.active; })) {
+  if (!m_cachedState.empty()
+      && !current.empty()
+      && !std::any_of(current.begin(), current.end(), [](const Workspace& ws) { return ws.active; })) {
     return;
   }
 
@@ -577,9 +578,8 @@ std::string WorkspacesWidget::workspaceLabel(const Workspace& workspace, std::si
     std::string label = !workspace.name.empty() ? workspace.name : workspace.id;
     // Only truncate non-numeric labels (words like "VESKTOP" → "VE").
     // Numeric labels (workspace IDs like "10", "11") stay as-is.
-    const bool isNumeric = !label.empty() && std::all_of(label.begin(), label.end(), [](char c) {
-      return std::isdigit(static_cast<unsigned char>(c));
-    });
+    const bool isNumeric = !label.empty()
+        && std::all_of(label.begin(), label.end(), [](char c) { return std::isdigit(static_cast<unsigned char>(c)); });
     if (!isNumeric && m_maxLabelChars > 0) {
       label = StringUtils::truncateUtf8CodePoints(label, m_maxLabelChars);
     }

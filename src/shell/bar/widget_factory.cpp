@@ -146,14 +146,12 @@ std::unique_ptr<Widget> WidgetFactory::create(
     const bool mirrored = wc != nullptr ? wc->getBool("mirrored", true) : true;
     const bool centered = wc != nullptr ? wc->getBool("centered", true) : true;
     const bool showWhenIdle = wc != nullptr ? wc->getBool("show_when_idle", false) : false;
-    const ColorSpec lowColor =
-        wc != nullptr
-            ? wc->getColorSpec("low_color", colorSpecFromRole(ColorRole::Primary), "widget." + name + ".low_color")
-            : colorSpecFromRole(ColorRole::Primary);
-    const ColorSpec highColor =
-        wc != nullptr
-            ? wc->getColorSpec("high_color", colorSpecFromRole(ColorRole::Primary), "widget." + name + ".high_color")
-            : colorSpecFromRole(ColorRole::Primary);
+    const ColorSpec lowColor = wc != nullptr
+        ? wc->getColorSpec("low_color", colorSpecFromRole(ColorRole::Primary), "widget." + name + ".low_color")
+        : colorSpecFromRole(ColorRole::Primary);
+    const ColorSpec highColor = wc != nullptr
+        ? wc->getColorSpec("high_color", colorSpecFromRole(ColorRole::Primary), "widget." + name + ".high_color")
+        : colorSpecFromRole(ColorRole::Primary);
     auto widget = std::make_unique<AudioVisualizerWidget>(
         m_audioSpectrum, width, bands, mirrored, lowColor, highColor, centered, showWhenIdle
     );
@@ -164,11 +162,9 @@ std::unique_ptr<Widget> WidgetFactory::create(
   if (type == "battery") {
     const std::string deviceSelector = wc != nullptr ? wc->getString("device", "auto") : std::string("auto");
     const int warningThreshold = static_cast<int>(wc != nullptr ? wc->getInt("warning_threshold", 20) : 20);
-    const ColorSpec warningColor =
-        wc != nullptr ? wc->getColorSpec(
-                            "warning_color", colorSpecFromRole(ColorRole::Error), "widget." + name + ".warning_color"
-                        )
-                      : colorSpecFromRole(ColorRole::Error);
+    const ColorSpec warningColor = wc != nullptr
+        ? wc->getColorSpec("warning_color", colorSpecFromRole(ColorRole::Error), "widget." + name + ".warning_color")
+        : colorSpecFromRole(ColorRole::Error);
     const std::string displayModeStr = wc != nullptr ? wc->getString("display_mode", "icon") : std::string("icon");
     const bool showLabel = wc != nullptr ? wc->getBool("show_label", true) : true;
     const bool hideWhenPlugged = wc != nullptr ? wc->getBool("hide_when_plugged", false) : false;
@@ -381,6 +377,8 @@ std::unique_ptr<Widget> WidgetFactory::create(
       stat = SysmonStat::CpuTemp;
     } else if (statStr == "gpu_temp") {
       stat = SysmonStat::GpuTemp;
+    } else if (statStr == "gpu_usage") {
+      stat = SysmonStat::GpuUsage;
     } else if (statStr == "gpu_vram") {
       stat = SysmonStat::GpuVram;
     } else if (statStr == "ram_used") {
@@ -432,21 +430,17 @@ std::unique_ptr<Widget> WidgetFactory::create(
     }
     const bool hideEmptyWorkspaces = wc != nullptr ? wc->getBool("hide_empty_workspaces", false) : false;
     const bool workspaceGroupCapsule = wc != nullptr ? wc->getBool("workspace_group_capsule", true) : true;
-    const ColorSpec focusedColor =
-        wc != nullptr ? wc->getColorSpec(
-                            "focused_color", colorSpecFromRole(ColorRole::Primary), "widget." + name + ".focused_color"
-                        )
-                      : colorSpecFromRole(ColorRole::Primary);
-    const ColorSpec occupiedColor = wc != nullptr ? wc->getColorSpec(
-                                                        "occupied_color", colorSpecFromRole(ColorRole::Secondary),
-                                                        "widget." + name + ".occupied_color"
-                                                    )
-                                                  : colorSpecFromRole(ColorRole::Secondary);
-    const ColorSpec emptyColor =
-        wc != nullptr ? wc->getColorSpec(
-                            "empty_color", colorSpecFromRole(ColorRole::Secondary), "widget." + name + ".empty_color"
-                        )
-                      : colorSpecFromRole(ColorRole::Secondary);
+    const ColorSpec focusedColor = wc != nullptr
+        ? wc->getColorSpec("focused_color", colorSpecFromRole(ColorRole::Primary), "widget." + name + ".focused_color")
+        : colorSpecFromRole(ColorRole::Primary);
+    const ColorSpec occupiedColor = wc != nullptr
+        ? wc->getColorSpec(
+              "occupied_color", colorSpecFromRole(ColorRole::Secondary), "widget." + name + ".occupied_color"
+          )
+        : colorSpecFromRole(ColorRole::Secondary);
+    const ColorSpec emptyColor = wc != nullptr
+        ? wc->getColorSpec("empty_color", colorSpecFromRole(ColorRole::Secondary), "widget." + name + ".empty_color")
+        : colorSpecFromRole(ColorRole::Secondary);
     auto widget = std::make_unique<TaskbarWidget>(
         m_platform, output, groupByWorkspace, showAllOutputs, onlyActiveWorkspace, showWorkspaceLabel,
         workspaceLabelPlacement, hideEmptyWorkspaces, workspaceGroupCapsule, focusedColor, occupiedColor, emptyColor,
@@ -506,21 +500,17 @@ std::unique_ptr<Widget> WidgetFactory::create(
 
   if (type == "workspaces") {
     const std::string display = wc != nullptr ? wc->getString("display", "id") : std::string("id");
-    const ColorSpec focusedColor =
-        wc != nullptr ? wc->getColorSpec(
-                            "focused_color", colorSpecFromRole(ColorRole::Primary), "widget." + name + ".focused_color"
-                        )
-                      : colorSpecFromRole(ColorRole::Primary);
-    const ColorSpec occupiedColor = wc != nullptr ? wc->getColorSpec(
-                                                        "occupied_color", colorSpecFromRole(ColorRole::Secondary),
-                                                        "widget." + name + ".occupied_color"
-                                                    )
-                                                  : colorSpecFromRole(ColorRole::Secondary);
-    const ColorSpec emptyColor =
-        wc != nullptr ? wc->getColorSpec(
-                            "empty_color", colorSpecFromRole(ColorRole::Secondary), "widget." + name + ".empty_color"
-                        )
-                      : colorSpecFromRole(ColorRole::Secondary);
+    const ColorSpec focusedColor = wc != nullptr
+        ? wc->getColorSpec("focused_color", colorSpecFromRole(ColorRole::Primary), "widget." + name + ".focused_color")
+        : colorSpecFromRole(ColorRole::Primary);
+    const ColorSpec occupiedColor = wc != nullptr
+        ? wc->getColorSpec(
+              "occupied_color", colorSpecFromRole(ColorRole::Secondary), "widget." + name + ".occupied_color"
+          )
+        : colorSpecFromRole(ColorRole::Secondary);
+    const ColorSpec emptyColor = wc != nullptr
+        ? wc->getColorSpec("empty_color", colorSpecFromRole(ColorRole::Secondary), "widget." + name + ".empty_color")
+        : colorSpecFromRole(ColorRole::Secondary);
     WorkspacesWidget::DisplayMode displayMode = WorkspacesWidget::DisplayMode::Id;
     if (display == "id") {
       displayMode = WorkspacesWidget::DisplayMode::Id;

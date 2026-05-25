@@ -46,8 +46,9 @@ struct Mat3 {
     Mat3 out;
     for (std::size_t col = 0; col < 3; ++col) {
       for (std::size_t row = 0; row < 3; ++row) {
-        out.m[col * 3 + row] = m[0 * 3 + row] * other.m[col * 3 + 0] + m[1 * 3 + row] * other.m[col * 3 + 1] +
-                               m[2 * 3 + row] * other.m[col * 3 + 2];
+        out.m[col * 3 + row] = m[0 * 3 + row] * other.m[col * 3 + 0]
+            + m[1 * 3 + row] * other.m[col * 3 + 1]
+            + m[2 * 3 + row] * other.m[col * 3 + 2];
       }
     }
     return out;
