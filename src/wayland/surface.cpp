@@ -31,6 +31,23 @@ namespace {
       .done = &Surface::handleFrameDone,
   };
 
+  void surfaceEnter(void* data, wl_surface* surface, wl_output* output) {
+    auto* self = static_cast<Surface*>(data);
+    self->onSurfaceOutputEnter(surface, output);
+  }
+
+  void surfaceLeave(void* data, wl_surface* surface, wl_output* output) {
+    auto* self = static_cast<Surface*>(data);
+    self->onSurfaceOutputLeave(surface, output);
+  }
+
+  const wl_surface_listener kSurfaceListener = {
+      .enter = surfaceEnter,
+      .leave = surfaceLeave,
+      .preferred_buffer_scale = nullptr,
+      .preferred_buffer_transform = nullptr,
+  };
+
   void preferredFractionalScale(void* data, wp_fractional_scale_v1* /*fractionalScale*/, std::uint32_t scale) {
     auto* self = static_cast<Surface*>(data);
     self->onPreferredFractionalScale(scale);
@@ -251,11 +268,42 @@ void Surface::handleFrameDone(void* data, wl_callback* callback, std::uint32_t c
   self->queueFrameWork(true, deltaMs);
 }
 
+void Surface::onSurfaceOutputEnter(wl_surface* surface, wl_output* output) {
+  if (surface != m_surface || output == nullptr) {
+    return;
+  }
+
+  m_connection.notifySurfaceOutputEnter(surface, output);
+
+  const WaylandOutput* outputInfo = m_connection.findOutputByWl(output);
+  if (outputInfo == nullptr) {
+    return;
+  }
+
+  const std::int32_t nextScale = std::max(1, outputInfo->scale);
+  if (nextScale == m_bufferScale) {
+    return;
+  }
+
+  m_bufferScale = nextScale;
+  if ((m_fractionalScale == nullptr || m_viewport == nullptr || m_fractionalScaleNumerator == 0) && m_configured) {
+    onScaleChanged();
+  }
+}
+
+void Surface::onSurfaceOutputLeave(wl_surface* surface, wl_output* output) {
+  if (surface != m_surface || output == nullptr) {
+    return;
+  }
+  m_connection.notifySurfaceOutputLeave(surface, output);
+}
+
 bool Surface::createWlSurface() {
   m_surface = wl_compositor_create_surface(m_connection.compositor());
   if (m_surface == nullptr) {
     return false;
   }
+  wl_surface_add_listener(m_surface, &kSurfaceListener, this);
 
   initializeSurfaceScaleProtocol();
 

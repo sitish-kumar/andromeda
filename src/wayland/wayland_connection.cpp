@@ -340,8 +340,45 @@ void WaylandConnection::setPointerEventCallback(WaylandSeat::PointerEventCallbac
 }
 
 void WaylandConnection::registerSurfaceOutput(wl_surface* surface, wl_output* output) {
-  if (surface != nullptr) {
-    m_surfaceOutputMap[surface] = output;
+  if (surface == nullptr || output == nullptr) {
+    return;
+  }
+  m_surfaceOutputMap[surface] = output;
+}
+
+void WaylandConnection::notifySurfaceOutputEnter(wl_surface* surface, wl_output* output) {
+  if (surface == nullptr || output == nullptr) {
+    return;
+  }
+  auto& outputs = m_surfaceOutputs[surface];
+  if (std::find(outputs.begin(), outputs.end(), output) == outputs.end()) {
+    outputs.push_back(output);
+  }
+  m_surfaceOutputMap[surface] = output;
+}
+
+void WaylandConnection::notifySurfaceOutputLeave(wl_surface* surface, wl_output* output) {
+  if (surface == nullptr || output == nullptr) {
+    return;
+  }
+
+  auto it = m_surfaceOutputs.find(surface);
+  if (it != m_surfaceOutputs.end()) {
+    auto& outputs = it->second;
+    outputs.erase(std::remove(outputs.begin(), outputs.end(), output), outputs.end());
+    if (outputs.empty()) {
+      m_surfaceOutputs.erase(it);
+    } else if (
+        auto current = m_surfaceOutputMap.find(surface);
+        current != m_surfaceOutputMap.end() && current->second == output
+    ) {
+      current->second = outputs.back();
+    }
+  }
+
+  const auto current = m_surfaceOutputMap.find(surface);
+  if (current != m_surfaceOutputMap.end() && current->second == output) {
+    m_surfaceOutputMap.erase(current);
   }
 }
 
@@ -355,6 +392,7 @@ void WaylandConnection::unregisterSurface(wl_surface* surface) {
   if (surface != nullptr) {
     m_seatHandler.forgetSurface(surface);
     m_surfaceOutputMap.erase(surface);
+    m_surfaceOutputs.erase(surface);
     m_layerSurfaceMap.erase(surface);
     if (m_lastPointerOutput != nullptr) {
       // Clear last pointer output only if it was from this surface
@@ -1078,6 +1116,7 @@ void WaylandConnection::cleanup() {
 
   m_outputs.clear();
   m_surfaceOutputMap.clear();
+  m_surfaceOutputs.clear();
   m_layerSurfaceMap.clear();
   m_hasLayerShellGlobal = false;
   m_hasExtWorkspaceGlobal = false;
