@@ -50,7 +50,17 @@ namespace desktop_widgets {
         return &output;
       }
     }
+    if (!requestedOutput.empty()) {
+      return nullptr;
+    }
     return primary;
+  }
+
+  inline const WaylandOutput* resolveStateOutput(const WaylandConnection& wayland, const DesktopWidgetState& state) {
+    if (state.outputName.empty()) {
+      return resolveEffectiveOutput(wayland, state.outputName);
+    }
+    return findOutputByKey(wayland, state.outputName);
   }
 
   inline float outputLogicalWidth(const WaylandOutput& output) {
@@ -76,7 +86,7 @@ namespace desktop_widgets {
   inline const WaylandOutput* clampStateToOutput(
       const WaylandConnection& wayland, DesktopWidgetState& state, float intrinsicWidth, float intrinsicHeight
   ) {
-    const WaylandOutput* output = resolveEffectiveOutput(wayland, state.outputName);
+    const WaylandOutput* output = resolveStateOutput(wayland, state);
     if (output == nullptr) {
       return nullptr;
     }

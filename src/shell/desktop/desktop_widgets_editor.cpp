@@ -389,8 +389,7 @@ std::string DesktopWidgetsEditor::effectiveOutputName(const DesktopWidgetState& 
   if (m_wayland == nullptr) {
     return state.outputName;
   }
-  if (const WaylandOutput* output = desktop_widgets::resolveEffectiveOutput(*m_wayland, state.outputName);
-      output != nullptr) {
+  if (const WaylandOutput* output = desktop_widgets::resolveStateOutput(*m_wayland, state); output != nullptr) {
     return desktop_widgets::outputKey(*output);
   }
   return {};
