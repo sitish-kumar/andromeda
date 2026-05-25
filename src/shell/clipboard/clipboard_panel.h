@@ -57,7 +57,6 @@ private:
   void selectIndex(std::size_t index);
   void activateSelected();
   void togglePinSelected();
-  void updatePinButton();
   void runImageAction();
   bool handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers);
   void scrollToSelected();

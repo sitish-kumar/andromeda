@@ -864,7 +864,6 @@ void ClipboardPanel::updateListState() {
   if (m_clearHistoryButton != nullptr) {
     m_clearHistoryButton->setVisible(!historyEmpty);
     m_clearHistoryButton->setParticipatesInLayout(!historyEmpty);
-    m_clearHistoryButton->setEnabled(!historyEmpty);
   }
 
   if (m_listEmptyLabel != nullptr) {
@@ -884,67 +883,42 @@ void ClipboardPanel::updateListState() {
 
 void ClipboardPanel::updatePreviewActions() {
   bool hasSelection = false;
-  if (m_clipboard != nullptr) {
-    const std::size_t historyIndex = selectedHistoryIndex();
-    const auto& history = m_clipboard->history();
-    hasSelection = historyIndex != static_cast<std::size_t>(-1) && historyIndex < history.size();
-  }
-
-  if (m_copyButton != nullptr) {
-    m_copyButton->setVisible(hasSelection);
-    m_copyButton->setParticipatesInLayout(hasSelection);
-    m_copyButton->setEnabled(hasSelection);
-  }
-
-  if (m_deleteEntryButton != nullptr) {
-    m_deleteEntryButton->setVisible(hasSelection);
-    m_deleteEntryButton->setParticipatesInLayout(hasSelection);
-    m_deleteEntryButton->setEnabled(hasSelection);
-  }
-
-  if (m_imageActionButton == nullptr) {
-    return;
-  }
-
   bool showImageAction = false;
-  if (m_clipboard != nullptr
-      && m_config != nullptr
-      && !StringUtils::trim(m_config->config().shell.clipboardImageActionCommand).empty()) {
-    const std::size_t historyIndex = selectedHistoryIndex();
-    const auto& history = m_clipboard->history();
-    showImageAction = historyIndex != static_cast<std::size_t>(-1)
-        && historyIndex < history.size()
-        && history[historyIndex].isImage();
-  }
-
-  m_imageActionButton->setVisible(showImageAction);
-  m_imageActionButton->setParticipatesInLayout(showImageAction);
-  m_imageActionButton->setEnabled(showImageAction);
-
-  updatePinButton();
-}
-
-void ClipboardPanel::updatePinButton() {
-  if (m_pinButton == nullptr) {
-    return;
-  }
-
-  bool hasSelection = false;
   bool pinned = false;
+
   if (m_clipboard != nullptr) {
     const std::size_t historyIndex = selectedHistoryIndex();
     const auto& history = m_clipboard->history();
     if (historyIndex != static_cast<std::size_t>(-1) && historyIndex < history.size()) {
       hasSelection = true;
       pinned = history[historyIndex].pinned;
+      showImageAction = m_config != nullptr
+          && !StringUtils::trim(m_config->config().shell.clipboardImageActionCommand).empty()
+          && history[historyIndex].isImage();
     }
   }
 
-  m_pinButton->setVisible(hasSelection);
-  m_pinButton->setParticipatesInLayout(hasSelection);
-  m_pinButton->setEnabled(hasSelection);
-  m_pinButton->setGlyph(pinned ? "unpin" : "pin");
-  m_pinButton->setVariant(pinned ? ButtonVariant::Primary : ButtonVariant::Default);
+  if (m_copyButton != nullptr) {
+    m_copyButton->setVisible(hasSelection);
+    m_copyButton->setParticipatesInLayout(hasSelection);
+  }
+
+  if (m_deleteEntryButton != nullptr) {
+    m_deleteEntryButton->setVisible(hasSelection);
+    m_deleteEntryButton->setParticipatesInLayout(hasSelection);
+  }
+
+  if (m_imageActionButton != nullptr) {
+    m_imageActionButton->setVisible(showImageAction);
+    m_imageActionButton->setParticipatesInLayout(showImageAction);
+  }
+
+  if (m_pinButton != nullptr) {
+    m_pinButton->setVisible(hasSelection);
+    m_pinButton->setParticipatesInLayout(hasSelection);
+    m_pinButton->setGlyph(pinned ? "unpin" : "pin");
+    m_pinButton->setVariant(pinned ? ButtonVariant::Primary : ButtonVariant::Default);
+  }
 }
 
 void ClipboardPanel::rebuildPreview(Renderer& renderer, float width, float height) {
