@@ -49,8 +49,10 @@ public:
   [[nodiscard]] std::vector<Workspace> all() const;
   [[nodiscard]] std::vector<Workspace> forOutput(wl_output* output) const;
 
+  [[nodiscard]] wl_output* mangoIpcSelectedOutput() const;
+  [[nodiscard]] std::optional<std::pair<std::string, std::string>>
+  mangoIpcFocusedClientOnOutput(wl_output* output) const;
   [[nodiscard]] wl_output* dwlIpcSelectedOutput() const;
-
   [[nodiscard]] std::optional<std::pair<std::string, std::string>> dwlIpcFocusedClientOnOutput(wl_output* output) const;
   [[nodiscard]] std::optional<std::string> focusedWindowId() const;
 
@@ -64,6 +66,8 @@ private:
   ExtWorkspaceProtocolBinder* m_extWorkspaceBinder = nullptr;
   DwlIpcWorkspaceProtocolBinder* m_dwlIpcWorkspaceBinder = nullptr;
   WorkspaceBackend* m_extBackend = nullptr;
+  WorkspaceBackend* m_mangoIpcBackend = nullptr;
+  WorkspaceSocketConnector* m_mangoIpcConnector = nullptr;
   WorkspaceBackend* m_dwlIpcBackend = nullptr;
   WorkspaceBackend* m_hyprlandBackend = nullptr;
   WorkspaceBackend* m_swayBackend = nullptr;

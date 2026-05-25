@@ -295,6 +295,7 @@ namespace {
                                                         ) { return compositors::triad::setOutputPower(runtime, on); });
     case compositors::CompositorKind::Mango:
       return std::make_unique<LambdaOutputPowerBackend>(&setMangoOutputPower, true);
+    case compositors::CompositorKind::Dwl:
     case compositors::CompositorKind::Labwc:
     case compositors::CompositorKind::Unknown:
       return std::make_unique<LambdaOutputPowerBackend>(&setGenericOutputPower);
@@ -313,6 +314,7 @@ namespace {
       return std::make_unique<FocusedOutputAdapter<SwayOutputBackend>>(runtimeRegistry.sway());
     case compositors::CompositorKind::Triad:
       return std::make_unique<FocusedOutputAdapter<TriadOutputBackend>>(runtimeRegistry.triad());
+    case compositors::CompositorKind::Dwl:
     case compositors::CompositorKind::Labwc:
     case compositors::CompositorKind::Mango:
     case compositors::CompositorKind::Unknown:
@@ -331,6 +333,7 @@ namespace {
     case compositors::CompositorKind::Hyprland:
     case compositors::CompositorKind::Sway:
     case compositors::CompositorKind::Mango:
+    case compositors::CompositorKind::Dwl:
     case compositors::CompositorKind::Labwc:
     case compositors::CompositorKind::Unknown:
       break;
@@ -346,11 +349,12 @@ namespace {
     case compositors::CompositorKind::Hyprland:
       return std::make_unique<KeyboardLayoutBackendAdapter<HyprlandKeyboardBackend>>(runtimeRegistry.hyprland());
     case compositors::CompositorKind::Mango:
-      return std::make_unique<KeyboardLayoutBackendAdapter<MangoKeyboardBackend>>();
+      return std::make_unique<KeyboardLayoutBackendAdapter<MangoKeyboardBackend>>(runtimeRegistry.mango());
     case compositors::CompositorKind::Sway:
       return std::make_unique<KeyboardLayoutBackendAdapter<SwayKeyboardBackend>>(runtimeRegistry.sway());
     case compositors::CompositorKind::Triad:
       return std::make_unique<KeyboardLayoutBackendAdapter<TriadKeyboardBackend>>(runtimeRegistry.triad());
+    case compositors::CompositorKind::Dwl:
     case compositors::CompositorKind::Labwc:
     case compositors::CompositorKind::Unknown:
       break;
@@ -467,6 +471,11 @@ void CompositorPlatform::setCursorShape(std::uint32_t serial, std::uint32_t shap
 
 wl_output* CompositorPlatform::preferredInteractiveOutput(std::chrono::milliseconds pointerMaxAge) const {
   if (compositors::detect() == compositors::CompositorKind::Mango && m_workspaces != nullptr) {
+    if (wl_output* ipc = m_workspaces->mangoIpcSelectedOutput(); ipc != nullptr) {
+      return ipc;
+    }
+  }
+  if (compositors::detect() == compositors::CompositorKind::Dwl && m_workspaces != nullptr) {
     if (wl_output* ipc = m_workspaces->dwlIpcSelectedOutput(); ipc != nullptr) {
       return ipc;
     }
@@ -503,21 +512,42 @@ wl_output* CompositorPlatform::preferredInteractiveOutput(std::chrono::milliseco
 
 std::optional<ActiveToplevel> CompositorPlatform::activeToplevel() const {
   if (compositors::detect() == compositors::CompositorKind::Mango && m_workspaces != nullptr) {
+    wl_output* const selected = m_workspaces->mangoIpcSelectedOutput();
+    if (selected != nullptr) {
+      const auto hints = m_workspaces->mangoIpcFocusedClientOnOutput(selected);
+      if (hints.has_value()) {
+        const auto& [title, appId] = *hints;
+        if (title.empty() && appId.empty()) {
+          return std::nullopt;
+        }
+        if (auto matched = m_wayland.matchToplevelByTitleAndAppId(title, appId, selected); matched.has_value()) {
+          return matched;
+        }
+        return ActiveToplevel{
+            .title = title,
+            .appId = appId,
+            .identifier = appId + ":" + title,
+            .handle = nullptr,
+        };
+      }
+    }
+  }
+  if (compositors::detect() == compositors::CompositorKind::Dwl && m_workspaces != nullptr) {
     wl_output* const selected = m_workspaces->dwlIpcSelectedOutput();
     if (selected != nullptr) {
       const auto hints = m_workspaces->dwlIpcFocusedClientOnOutput(selected);
       if (hints.has_value()) {
-        const auto& [dwlTitle, dwlAppId] = *hints;
-        if (dwlTitle.empty() && dwlAppId.empty()) {
+        const auto& [title, appId] = *hints;
+        if (title.empty() && appId.empty()) {
           return std::nullopt;
         }
-        if (auto matched = m_wayland.matchToplevelByTitleAndAppId(dwlTitle, dwlAppId, selected); matched.has_value()) {
+        if (auto matched = m_wayland.matchToplevelByTitleAndAppId(title, appId, selected); matched.has_value()) {
           return matched;
         }
         return ActiveToplevel{
-            .title = dwlTitle,
-            .appId = dwlAppId,
-            .identifier = dwlAppId + ":" + dwlTitle,
+            .title = title,
+            .appId = appId,
+            .identifier = appId + ":" + title,
             .handle = nullptr,
         };
       }
@@ -930,6 +960,8 @@ bool CompositorPlatform::requestSessionExit() const {
     return m_runtimeRegistry->triad().requestAction("exit-session");
   case compositors::CompositorKind::Mango:
     return process::launchFirstAvailable({{"mmsg", "-q"}});
+  case compositors::CompositorKind::Dwl:
+    break;
   case compositors::CompositorKind::Labwc:
     if (requestLabwcSessionExit()) {
       return true;

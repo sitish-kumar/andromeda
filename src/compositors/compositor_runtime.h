@@ -8,6 +8,10 @@ namespace compositors {
     class HyprlandRuntime;
   } // namespace hyprland
 
+  namespace mango {
+    class MangoRuntime;
+  } // namespace mango
+
   namespace niri {
     class NiriRuntime;
   } // namespace niri
@@ -30,6 +34,8 @@ namespace compositors {
 
     [[nodiscard]] hyprland::HyprlandRuntime& hyprland() noexcept;
     [[nodiscard]] const hyprland::HyprlandRuntime& hyprland() const noexcept;
+    [[nodiscard]] mango::MangoRuntime& mango() noexcept;
+    [[nodiscard]] const mango::MangoRuntime& mango() const noexcept;
     [[nodiscard]] niri::NiriRuntime& niri() noexcept;
     [[nodiscard]] const niri::NiriRuntime& niri() const noexcept;
     [[nodiscard]] sway::SwayRuntime& sway() noexcept;
@@ -39,6 +45,7 @@ namespace compositors {
 
   private:
     std::unique_ptr<hyprland::HyprlandRuntime> m_hyprland;
+    std::unique_ptr<mango::MangoRuntime> m_mango;
     std::unique_ptr<niri::NiriRuntime> m_niri;
     std::unique_ptr<sway::SwayRuntime> m_sway;
     std::unique_ptr<triad::TriadRuntime> m_triad;

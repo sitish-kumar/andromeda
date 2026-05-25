@@ -2,6 +2,7 @@
 
 #include "compositors/compositor_detect.h"
 #include "compositors/compositor_runtime.h"
+#include "compositors/dwl/dwl_workspace_backend.h"
 #include "compositors/ext_workspace/ext_workspace_backend.h"
 #include "compositors/hyprland/hyprland_workspace_backend.h"
 #include "compositors/mango/mango_workspace_backend.h"
@@ -24,7 +25,14 @@ WaylandWorkspaces::WaylandWorkspaces(compositors::CompositorRuntimeRegistry& run
   m_extBackend = extBackend.get();
   m_backends.push_back(std::move(extBackend));
 
-  auto dwlIpcBackend = std::make_unique<MangoWorkspaceBackend>();
+  auto mangoIpcBackend = std::make_unique<MangoWorkspaceBackend>(runtimeRegistry.mango());
+  m_mangoIpcBackend = mangoIpcBackend.get();
+  m_mangoIpcConnector = mangoIpcBackend.get();
+  m_outputNameResolvers.push_back(mangoIpcBackend.get());
+  m_outputObservers.push_back(mangoIpcBackend.get());
+  m_backends.push_back(std::move(mangoIpcBackend));
+
+  auto dwlIpcBackend = std::make_unique<DwlWorkspaceBackend>();
   m_dwlIpcWorkspaceBinder = dwlIpcBackend.get();
   m_dwlIpcBackend = dwlIpcBackend.get();
   m_outputObservers.push_back(dwlIpcBackend.get());
@@ -79,6 +87,38 @@ void WaylandWorkspaces::initialize() {
   auto availableOrConnected = [](WorkspaceBackend* backend, WorkspaceSocketConnector* connector = nullptr) {
     return backend != nullptr && (backend->isAvailable() || (connector != nullptr && connector->connectSocket()));
   };
+  auto tryTriad = [&]() {
+    return m_triadBackend != nullptr
+        && m_triadConnector != nullptr
+        && (m_triadConnector->connectSocket() || m_triadBackend->isAvailable());
+  };
+  auto tryFallback = [&](bool includeMangoIpc, bool includeDwlIpc) {
+    if (availableOrConnected(m_extBackend)) {
+      setActiveBackend(m_extBackend);
+      return true;
+    }
+    if (availableOrConnected(m_hyprlandBackend, m_hyprlandConnector)) {
+      setActiveBackend(m_hyprlandBackend);
+      return true;
+    }
+    if (includeMangoIpc && availableOrConnected(m_mangoIpcBackend, m_mangoIpcConnector)) {
+      setActiveBackend(m_mangoIpcBackend);
+      return true;
+    }
+    if (includeDwlIpc && availableOrConnected(m_dwlIpcBackend)) {
+      setActiveBackend(m_dwlIpcBackend);
+      return true;
+    }
+    if (availableOrConnected(m_swayBackend, m_swayConnector)) {
+      setActiveBackend(m_swayBackend);
+      return true;
+    }
+    if (tryTriad()) {
+      setActiveBackend(m_triadBackend);
+      return true;
+    }
+    return false;
+  };
 
   switch (compositors::detect()) {
   case compositors::CompositorKind::Hyprland:
@@ -88,6 +128,17 @@ void WaylandWorkspaces::initialize() {
     }
     break;
   case compositors::CompositorKind::Mango:
+    if (availableOrConnected(m_mangoIpcBackend, m_mangoIpcConnector)) {
+      setActiveBackend(m_mangoIpcBackend);
+      return;
+    }
+    kLog.warn("Mango detected but MANGO_INSTANCE_SIGNATURE socket IPC is missing or unusable");
+    if (tryFallback(false, false)) {
+      return;
+    }
+    setActiveBackend(nullptr);
+    return;
+  case compositors::CompositorKind::Dwl:
     if (availableOrConnected(m_dwlIpcBackend)) {
       setActiveBackend(m_dwlIpcBackend);
       return;
@@ -100,9 +151,7 @@ void WaylandWorkspaces::initialize() {
     }
     break;
   case compositors::CompositorKind::Triad:
-    if (m_triadBackend != nullptr
-        && m_triadConnector != nullptr
-        && (m_triadConnector->connectSocket() || m_triadBackend->isAvailable())) {
+    if (tryTriad()) {
       setActiveBackend(m_triadBackend);
       return;
     }
@@ -113,26 +162,7 @@ void WaylandWorkspaces::initialize() {
     break;
   }
 
-  if (availableOrConnected(m_extBackend)) {
-    setActiveBackend(m_extBackend);
-    return;
-  }
-  if (availableOrConnected(m_hyprlandBackend, m_hyprlandConnector)) {
-    setActiveBackend(m_hyprlandBackend);
-    return;
-  }
-  if (availableOrConnected(m_dwlIpcBackend)) {
-    setActiveBackend(m_dwlIpcBackend);
-    return;
-  }
-  if (availableOrConnected(m_swayBackend, m_swayConnector)) {
-    setActiveBackend(m_swayBackend);
-    return;
-  }
-  if (m_triadBackend != nullptr
-      && m_triadConnector != nullptr
-      && (m_triadConnector->connectSocket() || m_triadBackend->isAvailable())) {
-    setActiveBackend(m_triadBackend);
+  if (tryFallback(true, true)) {
     return;
   }
 
@@ -259,11 +289,26 @@ std::vector<Workspace> WaylandWorkspaces::forOutput(wl_output* output) const {
   return m_activeBackend != nullptr ? m_activeBackend->forOutput(output) : std::vector<Workspace>{};
 }
 
+wl_output* WaylandWorkspaces::mangoIpcSelectedOutput() const {
+  if (m_mangoIpcBackend == nullptr || !m_mangoIpcBackend->isAvailable()) {
+    return nullptr;
+  }
+  return static_cast<MangoWorkspaceBackend*>(m_mangoIpcBackend)->ipcSelectedOutput();
+}
+
+std::optional<std::pair<std::string, std::string>>
+WaylandWorkspaces::mangoIpcFocusedClientOnOutput(wl_output* output) const {
+  if (m_mangoIpcBackend == nullptr || !m_mangoIpcBackend->isAvailable()) {
+    return std::nullopt;
+  }
+  return static_cast<const MangoWorkspaceBackend*>(m_mangoIpcBackend)->ipcFocusedClientForOutput(output);
+}
+
 wl_output* WaylandWorkspaces::dwlIpcSelectedOutput() const {
   if (m_dwlIpcBackend == nullptr || !m_dwlIpcBackend->isAvailable()) {
     return nullptr;
   }
-  return static_cast<MangoWorkspaceBackend*>(m_dwlIpcBackend)->ipcSelectedOutput();
+  return static_cast<DwlWorkspaceBackend*>(m_dwlIpcBackend)->ipcSelectedOutput();
 }
 
 std::optional<std::pair<std::string, std::string>>
@@ -271,7 +316,7 @@ WaylandWorkspaces::dwlIpcFocusedClientOnOutput(wl_output* output) const {
   if (m_dwlIpcBackend == nullptr || !m_dwlIpcBackend->isAvailable()) {
     return std::nullopt;
   }
-  return static_cast<const MangoWorkspaceBackend*>(m_dwlIpcBackend)->ipcFocusedClientForOutput(output);
+  return static_cast<const DwlWorkspaceBackend*>(m_dwlIpcBackend)->ipcFocusedClientForOutput(output);
 }
 
 void WaylandWorkspaces::setActiveBackend(WorkspaceBackend* backend) {
