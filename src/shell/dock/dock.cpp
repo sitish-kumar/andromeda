@@ -85,9 +85,8 @@ namespace {
     return instanceOutput;
   }
 
-  desktop_entry_launch::LaunchOptions dockLaunchOptions(
-      const CompositorPlatform& platform, const ConfigService& config, wl_surface* activationSurface
-  ) {
+  desktop_entry_launch::LaunchOptions
+  dockLaunchOptions(const CompositorPlatform& platform, const ConfigService& config, wl_surface* activationSurface) {
     std::string token;
     if (platform.hasXdgActivation()) {
       token = platform.requestActivationToken(activationSurface);
@@ -1553,9 +1552,7 @@ void Dock::handleItemClick(DockInstance& instance, DockItemView& item) {
 
   if (windows.empty()) {
     wl_surface* const activationSurface = instance.surface != nullptr ? instance.surface->wlSurface() : nullptr;
-    (void)desktop_entry_launch::launchEntry(
-        item.entry, dockLaunchOptions(*m_platform, *m_config, activationSurface)
-    );
+    (void)desktop_entry_launch::launchEntry(item.entry, dockLaunchOptions(*m_platform, *m_config, activationSurface));
     return;
   }
 
@@ -1897,8 +1894,7 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
   menu->surface->setConfigureCallback([menuPtr](std::uint32_t /*w*/, std::uint32_t /*h*/) {
     menuPtr->surface->requestLayout();
   });
-  menu->surface->setPrepareFrameCallback([this, menuPtr, entries,
-                                          entryActions, entryId, entryWorkingDir,
+  menu->surface->setPrepareFrameCallback([this, menuPtr, entries, entryActions, entryId, entryWorkingDir,
                                           entryTerminal](bool /*needsUpdate*/, bool needsLayout) {
     if (m_renderContext == nullptr || menuPtr->surface == nullptr) {
       return;

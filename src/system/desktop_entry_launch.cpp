@@ -7,8 +7,8 @@
 #include <array>
 #include <cstdlib>
 #include <string>
-#include <utility>
 #include <unistd.h>
+#include <utility>
 
 namespace {
 
@@ -140,8 +140,8 @@ namespace {
     }
 
     static constexpr std::array<std::string_view, 11> kTerminalCandidates = {
-        "x-terminal-emulator", "ghostty",        "kitty", "alacritty", "wezterm", "foot",
-        "konsole",             "gnome-terminal", "kgx",   "ptyxis",    "xterm",
+        "x-terminal-emulator", "ghostty", "kitty",  "alacritty", "wezterm", "foot", "konsole",
+        "gnome-terminal",      "kgx",     "ptyxis", "xterm",
     };
     for (const auto candidate : kTerminalCandidates) {
       if (isExecutableOnPath(candidate)) {
@@ -182,9 +182,8 @@ namespace {
 
 namespace desktop_entry_launch {
 
-  std::optional<PreparedCommand> prepareCommand(
-      std::string_view exec, bool terminal, std::string_view workingDir, const PrepareOptions& options
-  ) {
+  std::optional<PreparedCommand>
+  prepareCommand(std::string_view exec, bool terminal, std::string_view workingDir, const PrepareOptions& options) {
     (void)workingDir;
 
     std::string cleanExec = stripFieldCodes(exec);

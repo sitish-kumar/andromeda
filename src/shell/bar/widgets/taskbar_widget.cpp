@@ -150,12 +150,13 @@ TaskbarWidget::TaskbarWidget(
     ShellConfig::ShadowConfig shadowConfig
 )
     : m_platform(platform), m_config(config), m_output(output), m_groupByWorkspace(groupByWorkspace),
-      m_showAllOutputs(showAllOutputs), m_onlyActiveWorkspace(onlyActiveWorkspace), m_showWorkspaceLabel(showWorkspaceLabel),
-      m_workspaceLabelPlacement(workspaceLabelPlacement), m_hideEmptyWorkspaces(hideEmptyWorkspaces),
-      m_workspaceGroupCapsule(workspaceGroupCapsule), m_focusedColor(std::move(focusedColor)),
-      m_occupiedColor(std::move(occupiedColor)), m_emptyColor(std::move(emptyColor)),
-      m_showWindowTitle(showWindowTitle), m_windowTitleMaxWidth(windowTitleMaxWidth),
-      m_barPosition(std::move(barPosition)), m_shadowConfig(std::move(shadowConfig)) {
+      m_showAllOutputs(showAllOutputs), m_onlyActiveWorkspace(onlyActiveWorkspace),
+      m_showWorkspaceLabel(showWorkspaceLabel), m_workspaceLabelPlacement(workspaceLabelPlacement),
+      m_hideEmptyWorkspaces(hideEmptyWorkspaces), m_workspaceGroupCapsule(workspaceGroupCapsule),
+      m_focusedColor(std::move(focusedColor)), m_occupiedColor(std::move(occupiedColor)),
+      m_emptyColor(std::move(emptyColor)), m_showWindowTitle(showWindowTitle),
+      m_windowTitleMaxWidth(windowTitleMaxWidth), m_barPosition(std::move(barPosition)),
+      m_shadowConfig(std::move(shadowConfig)) {
   // Window title not implemented for vertical bars or workspace grouping.
   if (m_barPosition == "left" || m_barPosition == "right" || m_groupByWorkspace) {
     m_showWindowTitle = false;
@@ -1667,27 +1668,26 @@ void TaskbarWidget::openTaskContextMenu(const TaskModel& task, InputArea& area) 
     m_contextMenuPopup = std::make_unique<ContextMenuPopup>(m_platform.wayland(), *renderContext);
   }
   m_contextMenuPopup->setShadowConfig(m_shadowConfig);
-  m_contextMenuPopup->setOnActivate(
-      [this, entryActions, entryAppName, entryWorkingDir, entryTerminal](const ContextMenuControlEntry& entry) {
+  m_contextMenuPopup->setOnActivate([this, entryActions, entryAppName, entryWorkingDir,
+                                     entryTerminal](const ContextMenuControlEntry& entry) {
     if (entry.id >= 0) {
       const auto idx = static_cast<std::size_t>(entry.id);
       if (idx < entryActions.size()) {
         const auto action = entryActions[idx];
-        DeferredCall::callLater(
-            [this, action, appName = entryAppName, workingDir = entryWorkingDir, terminal = entryTerminal]() {
-              std::string token;
-              if (m_platform.hasXdgActivation()) {
-                token = m_platform.requestActivationToken(nullptr);
+        DeferredCall::callLater([this, action, appName = entryAppName, workingDir = entryWorkingDir,
+                                 terminal = entryTerminal]() {
+          std::string token;
+          if (m_platform.hasXdgActivation()) {
+            token = m_platform.requestActivationToken(nullptr);
+          }
+          (void)desktop_entry_launch::launchAction(
+              action, appName, workingDir, terminal,
+              desktop_entry_launch::LaunchOptions{
+                  .activationToken = std::move(token),
+                  .runAsSystemdService = m_config.shell.launchAppsAsSystemdServices,
               }
-              (void)desktop_entry_launch::launchAction(
-                  action, appName, workingDir, terminal,
-                  desktop_entry_launch::LaunchOptions{
-                      .activationToken = std::move(token),
-                      .runAsSystemdService = m_config.shell.launchAppsAsSystemdServices,
-                  }
-              );
-            }
-        );
+          );
+        });
       }
       return;
     }
