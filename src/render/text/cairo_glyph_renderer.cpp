@@ -32,6 +32,11 @@ namespace {
     return std::abs(transform.m[1]) <= kAxisAlignedEpsilon && std::abs(transform.m[3]) <= kAxisAlignedEpsilon;
   }
 
+  float snapToBufferPixel(float value, float scale) {
+    const float safeScale = std::max(1.0f, scale);
+    return std::round(value * safeScale) / safeScale;
+  }
+
   void hashCombine(std::size_t& seed, std::size_t v) { seed ^= v + 0x9E3779B97F4A7C15ULL + (seed << 12) + (seed >> 4); }
 
   // Hinting is disabled for icons: tabler glyphs are monoline strokes with
@@ -328,8 +333,8 @@ void CairoGlyphRenderer::drawGlyph(
   // Skip when the transform has rotation/skew — snapping then introduces
   // whole-pixel jumps per frame and makes animations look jittery.
   if (isAxisAligned(world)) {
-    world.m[6] = std::round(world.m[6]);
-    world.m[7] = std::round(world.m[7]);
+    world.m[6] = snapToBufferPixel(world.m[6], m_contentScale);
+    world.m[7] = snapToBufferPixel(world.m[7], m_contentScale);
   }
 
   m_backend->drawGlyph(
