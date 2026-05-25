@@ -348,9 +348,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     }
 
     const bool groupedHorizontalPill = m_groupByWorkspace && !m_vertical;
-    const bool externalWorkspaceBadge =
-        groupedHorizontalPill && m_showWorkspaceLabel && m_workspaceLabelPlacement != WorkspaceLabelPlacement::Inside;
-    const bool iconOddSpareOnEnd = !groupedHorizontalPill || externalWorkspaceBadge;
+    const bool iconOddSpareOnEnd = !groupedHorizontalPill;
     if (!task.iconPath.empty()) {
       const float iconInsetX = centeredOffset(tileSize, iconSize);
       const float iconInsetY = centeredOffset(tileSize, iconSize, 0.0f, iconOddSpareOnEnd);
@@ -583,9 +581,9 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
                                  : tileSize)
           : (tileSize * taskCount) + (groupGap * externalGapCount);
       const float innerMainTotal = inlineBadge ? (groupPadMain * 2.0f + runLength) : (tileMain + groupPad + runLength);
-      const float innerCrossSize = inlineBadge
-          ? std::round(tileSize + (groupPadCross * 2.0f))
-          : (m_vertical ? std::round(tileSize + (groupPadCross * 2.0f)) : std::round(tileSize));
+      const bool paddedCrossEnvelope = inlineBadge || externalBadge || m_vertical;
+      const float innerCrossSize =
+          paddedCrossEnvelope ? std::round(tileSize + (groupPadCross * 2.0f)) : std::round(tileSize);
       const auto badgeCrossOverhang = externalBadge
           ? externalBadgeCrossOverhangs(
                 m_workspaceLabelPlacement, m_vertical, innerCrossSize, disc.width, disc.height, groupOutlineInset

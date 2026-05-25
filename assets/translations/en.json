@@ -65,6 +65,13 @@
     "context-menu": {
       "open": "Open"
     },
+    "providers": {
+      "session": {
+        "category": "Session",
+        "action-subtitle": "Run session action",
+        "command-subtitle": "Run configured command"
+      }
+    },
     "categories": {
       "all": "All"
     },
@@ -1335,6 +1342,10 @@
         "hide_label": {
           "label": "Hide Label",
           "description": "Hide this widget's text label"
+        },
+        "hide_when_single_layout": {
+          "label": "Hide When Single Layout",
+          "description": "Hide the keyboard layout widget unless more than one layout is configured"
         },
         "high_color": {
           "label": "High Color",

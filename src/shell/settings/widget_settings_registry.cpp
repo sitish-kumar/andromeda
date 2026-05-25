@@ -593,6 +593,7 @@ namespace settings {
     } else if (type == "keyboard_layout") {
       add(stringSpec("cycle_command"));
       add(boolSpec("hide_label", false));
+      add(boolSpec("hide_when_single_layout", false));
       {
         auto display = segmentedSpec("display", "short", shortFull);
         display.visibleWhen = WidgetSettingVisibility{"hide_label", {"false"}};
@@ -1005,8 +1006,10 @@ namespace settings {
     std::string widgetType(widgetName);
     if (const auto withIt = withOverride.widgets.find(std::string(widgetName)); withIt != withOverride.widgets.end()) {
       widgetType = withIt->second.type;
-    } else if (const auto withoutIt = withoutOverride.widgets.find(std::string(widgetName));
-               withoutIt != withoutOverride.widgets.end()) {
+    } else if (
+        const auto withoutIt = withoutOverride.widgets.find(std::string(widgetName));
+        withoutIt != withoutOverride.widgets.end()
+    ) {
       widgetType = withoutIt->second.type;
     }
 

@@ -1835,6 +1835,13 @@ void MprisService::applyPlayerSnapshot(
     const bool logicalTrackChanged = !newSignature.empty() && previousSignature != newSignature;
     const bool playbackStatusChanged = previous_info.playbackStatus != merged.playbackStatus;
 
+    if (!logicalTrackChanged
+        && merged.lengthUs == 0
+        && previous_info.lengthUs > 0
+        && merged.playbackStatus != "Stopped") {
+      merged.lengthUs = previous_info.lengthUs;
+    }
+
     if (previousPositionAuthoritative
         && !logicalTrackChanged
         && !hadPositionSignal

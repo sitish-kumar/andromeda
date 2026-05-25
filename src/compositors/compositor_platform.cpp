@@ -918,7 +918,11 @@ std::string CompositorPlatform::currentKeyboardLayoutName() const {
 std::vector<std::string> CompositorPlatform::keyboardLayoutNames() const {
   if (m_keyboardLayoutBackend != nullptr) {
     if (const auto state = m_keyboardLayoutBackend->layoutState(); state.has_value() && !state->names.empty()) {
-      return state->names;
+      if (state->names.size() > 1) {
+        return state->names;
+      }
+      auto waylandNames = m_wayland.keyboardLayoutNames();
+      return waylandNames.size() > state->names.size() ? std::move(waylandNames) : state->names;
     }
   }
   return m_wayland.keyboardLayoutNames();
@@ -969,7 +973,7 @@ bool CompositorPlatform::requestSessionExit() const {
   case compositors::CompositorKind::Triad:
     return m_runtimeRegistry->triad().requestAction("exit-session");
   case compositors::CompositorKind::Mango:
-    return process::launchFirstAvailable({{"mmsg", "-q"}});
+    return process::launchFirstAvailable({{"mmsg", "dispatch", "quit"}});
   case compositors::CompositorKind::Dwl:
     break;
   case compositors::CompositorKind::Labwc:
