@@ -445,10 +445,9 @@ std::unique_ptr<Widget> WidgetFactory::create(
     const float windowTitleMaxWidth =
         static_cast<float>(wc != nullptr ? wc->getDouble("window_title_max_width", 100.0) : 100.0);
     auto widget = std::make_unique<TaskbarWidget>(
-        m_platform, output, groupByWorkspace, showAllOutputs, onlyActiveWorkspace, showWorkspaceLabel,
+        m_platform, m_config, output, groupByWorkspace, showAllOutputs, onlyActiveWorkspace, showWorkspaceLabel,
         workspaceLabelPlacement, hideEmptyWorkspaces, workspaceGroupCapsule, focusedColor, occupiedColor, emptyColor,
-        showWindowTitle, windowTitleMaxWidth, barPosition, m_config.shell.shadow,
-        m_config.shell.launchAppsAsSystemdServices
+        showWindowTitle, windowTitleMaxWidth, barPosition, m_config.shell.shadow
     );
     widget->setContentScale(contentScale);
     return widget;

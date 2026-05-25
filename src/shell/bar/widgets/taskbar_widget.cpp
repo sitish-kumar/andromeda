@@ -143,20 +143,19 @@ namespace {
 } // namespace
 
 TaskbarWidget::TaskbarWidget(
-    CompositorPlatform& platform, wl_output* output, bool groupByWorkspace, bool showAllOutputs,
+    CompositorPlatform& platform, const Config& config, wl_output* output, bool groupByWorkspace, bool showAllOutputs,
     bool onlyActiveWorkspace, bool showWorkspaceLabel, WorkspaceLabelPlacement workspaceLabelPlacement,
     bool hideEmptyWorkspaces, bool workspaceGroupCapsule, ColorSpec focusedColor, ColorSpec occupiedColor,
     ColorSpec emptyColor, bool showWindowTitle, float windowTitleMaxWidth, std::string barPosition,
-    ShellConfig::ShadowConfig shadowConfig, bool launchAppsAsSystemdService
+    ShellConfig::ShadowConfig shadowConfig
 )
-    : m_platform(platform), m_output(output), m_groupByWorkspace(groupByWorkspace), m_showAllOutputs(showAllOutputs),
-      m_onlyActiveWorkspace(onlyActiveWorkspace), m_showWorkspaceLabel(showWorkspaceLabel),
+    : m_platform(platform), m_config(config), m_output(output), m_groupByWorkspace(groupByWorkspace),
+      m_showAllOutputs(showAllOutputs), m_onlyActiveWorkspace(onlyActiveWorkspace), m_showWorkspaceLabel(showWorkspaceLabel),
       m_workspaceLabelPlacement(workspaceLabelPlacement), m_hideEmptyWorkspaces(hideEmptyWorkspaces),
       m_workspaceGroupCapsule(workspaceGroupCapsule), m_focusedColor(std::move(focusedColor)),
       m_occupiedColor(std::move(occupiedColor)), m_emptyColor(std::move(emptyColor)),
       m_showWindowTitle(showWindowTitle), m_windowTitleMaxWidth(windowTitleMaxWidth),
-      m_barPosition(std::move(barPosition)), m_shadowConfig(std::move(shadowConfig)),
-      m_launchAppsAsSystemdService(launchAppsAsSystemdService) {
+      m_barPosition(std::move(barPosition)), m_shadowConfig(std::move(shadowConfig)) {
   // Window title not implemented for vertical bars or workspace grouping.
   if (m_barPosition == "left" || m_barPosition == "right" || m_groupByWorkspace) {
     m_showWindowTitle = false;
@@ -1686,7 +1685,7 @@ void TaskbarWidget::openTaskContextMenu(const TaskModel& task, InputArea& area) 
                   action, appName, workingDir, terminal,
                   desktop_entry_launch::LaunchOptions{
                       .activationToken = std::move(token),
-                      .runAsSystemdService = m_launchAppsAsSystemdService,
+                      .runAsSystemdService = m_config.shell.launchAppsAsSystemdServices,
                   }
               );
             }
