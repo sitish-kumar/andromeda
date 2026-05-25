@@ -25,6 +25,7 @@ struct ext_foreign_toplevel_handle_v1;
 #include "xdg-shell-client-protocol.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <functional>
 #include <linux/input-event-codes.h>
