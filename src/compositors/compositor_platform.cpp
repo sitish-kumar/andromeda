@@ -566,6 +566,10 @@ void CompositorPlatform::activateToplevel(zwlr_foreign_toplevel_handle_v1* handl
 
 void CompositorPlatform::closeToplevel(zwlr_foreign_toplevel_handle_v1* handle) { m_wayland.closeToplevel(handle); }
 
+bool CompositorPlatform::containsWlrToplevelHandle(zwlr_foreign_toplevel_handle_v1* handle) const {
+  return m_wayland.containsWlrToplevelHandle(handle);
+}
+
 void CompositorPlatform::setToplevelChangeCallback(ChangeCallback callback) {
   m_toplevelChangeCallback = std::move(callback);
 }

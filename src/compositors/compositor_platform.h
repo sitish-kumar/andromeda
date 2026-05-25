@@ -84,6 +84,7 @@ public:
   [[nodiscard]] std::vector<std::string> runningAppIds(wl_output* outputFilter = nullptr) const;
   [[nodiscard]] std::vector<ToplevelInfo>
   windowsForApp(const std::string& idLower, const std::string& wmClassLower, wl_output* outputFilter = nullptr) const;
+  [[nodiscard]] bool containsWlrToplevelHandle(zwlr_foreign_toplevel_handle_v1* handle) const;
   void activateToplevel(zwlr_foreign_toplevel_handle_v1* handle);
   void closeToplevel(zwlr_foreign_toplevel_handle_v1* handle);
   void focusCompositorWindow(const std::string& windowId) const;

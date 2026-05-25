@@ -341,6 +341,10 @@ std::vector<ToplevelInfo> WaylandToplevels::windowsForApp(
   return out;
 }
 
+bool WaylandToplevels::containsWlrHandle(zwlr_foreign_toplevel_handle_v1* handle) const {
+  return handle != nullptr && m_handles.contains(handle);
+}
+
 void WaylandToplevels::activateHandle(zwlr_foreign_toplevel_handle_v1* handle, wl_seat* seat) {
   if (handle == nullptr || seat == nullptr)
     return;

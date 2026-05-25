@@ -85,6 +85,36 @@ namespace {
     return instanceOutput;
   }
 
+  zwlr_foreign_toplevel_handle_v1* nextActivatableWindowHandle(
+      const std::vector<ToplevelInfo>& windows, zwlr_foreign_toplevel_handle_v1* activeHandle,
+      zwlr_foreign_toplevel_handle_v1* preferredHandle
+  ) {
+    for (std::size_t i = 0; i < windows.size(); ++i) {
+      if (windows[i].handle != nullptr && windows[i].handle == activeHandle) {
+        for (std::size_t offset = 1; offset <= windows.size(); ++offset) {
+          auto* nextHandle = windows[(i + offset) % windows.size()].handle;
+          if (nextHandle != nullptr) {
+            return nextHandle;
+          }
+        }
+        return nullptr;
+      }
+    }
+
+    for (const auto& window : windows) {
+      if (window.handle != nullptr && window.handle == preferredHandle) {
+        return window.handle;
+      }
+    }
+
+    for (const auto& window : windows) {
+      if (window.handle != nullptr) {
+        return window.handle;
+      }
+    }
+    return nullptr;
+  }
+
   popup_chrome::Attachment popupAttachmentForDockPosition(bool isBottom, bool isTop, bool isRight) {
     if (isBottom) {
       return popup_chrome::Attachment{
@@ -251,6 +281,7 @@ void Dock::show() {
     return;
   }
 
+  pruneCachedToplevelHandles();
   refreshPinnedAppsIfNeeded();
   if (m_instances.empty()) {
     syncInstances();
@@ -261,12 +292,23 @@ void Dock::show() {
 }
 
 void Dock::closeAllInstances() {
-  m_windowMenu.reset();
   m_itemMenu.reset();
+  m_lastActiveHandleByAppIdLower.clear();
   m_surfaceMap.clear();
   m_hoveredInstance = nullptr;
   m_popupOwnerInstance = nullptr;
   m_instances.clear();
+}
+
+void Dock::pruneCachedToplevelHandles() {
+  if (m_platform == nullptr) {
+    m_lastActiveHandleByAppIdLower.clear();
+    return;
+  }
+
+  std::erase_if(m_lastActiveHandleByAppIdLower, [this](const auto& cached) {
+    return cached.second == nullptr || !m_platform->containsWlrToplevelHandle(cached.second);
+  });
 }
 
 void Dock::detachInstanceState(DockInstance& inst) {
@@ -279,7 +321,6 @@ void Dock::detachInstanceState(DockInstance& inst) {
     m_hoveredInstance = nullptr;
   }
   if (m_popupOwnerInstance == &inst) {
-    m_windowMenu.reset();
     m_itemMenu.reset();
     m_popupOwnerInstance = nullptr;
   }
@@ -297,6 +338,7 @@ void Dock::refresh() {
     return;
   }
 
+  pruneCachedToplevelHandles();
   refreshPinnedAppsIfNeeded();
 
   syncInstances();
@@ -340,7 +382,7 @@ void Dock::requestLayout() {
 // ── Input ─────────────────────────────────────────────────────────────────────
 
 bool Dock::onPointerEvent(const PointerEvent& event) {
-  // Route to any open popup first (item menu takes priority over window picker).
+  // Route to any open popup first.
   // If a pointer press is not consumed by the popup, close it and let the same
   // event continue to dock item hit-testing.
   if (m_itemMenu != nullptr) {
@@ -350,15 +392,6 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
     }
     if (event.type == PointerEvent::Type::Button && event.state == 1) {
       closeItemMenu();
-    }
-  }
-  if (m_windowMenu != nullptr) {
-    const bool consumed = routePopupEvent(m_windowMenu.get(), event);
-    if (consumed) {
-      return true;
-    }
-    if (event.type == PointerEvent::Type::Button && event.state == 1) {
-      closeWindowPicker();
     }
   }
 
@@ -745,6 +778,11 @@ bool Dock::syncInstanceModel(DockInstance& instance) {
 
   const auto& cfg = m_config->config().dock;
   const std::string globalActiveIdLower = currentActiveEntryIdLower(*m_platform);
+  if (!globalActiveIdLower.empty()) {
+    if (const auto active = m_platform->activeToplevel(); active.has_value() && active->handle != nullptr) {
+      m_lastActiveHandleByAppIdLower[globalActiveIdLower] = active->handle;
+    }
+  }
   wl_output* const activeOutput = m_platform->activeToplevelOutput();
   wl_output* filterOutput = currentDockFilterOutput(cfg, instance.output);
   const bool filterOutputChanged = (filterOutput != instance.lastFilterOutput);
@@ -1516,245 +1554,43 @@ void Dock::launchEntry(const DesktopEntry& entry) {
 // ── Private: click handling ───────────────────────────────────────────────────
 
 void Dock::handleItemClick(DockInstance& instance, DockItemView& item) {
-  // Find all windows matching this item's app.
+  pruneCachedToplevelHandles();
+
   auto windows = m_platform->windowsForApp(
       item.idLower, item.startupWmClassLower, currentDockFilterOutput(m_config->config().dock, instance.output)
   );
 
   if (windows.empty()) {
-    // Nothing running — launch the app.
     launchEntry(item.entry);
     return;
   }
 
   if (windows.size() == 1) {
-    // Exactly one window: activate it directly.
     m_platform->activateToplevel(windows[0].handle);
     return;
   }
 
-  // Multiple windows: show a picker popup.
-  openWindowPicker(instance, item, std::move(windows));
+  zwlr_foreign_toplevel_handle_v1* activeHandle = nullptr;
+  if (const auto active = m_platform->activeToplevel(); active.has_value()) {
+    activeHandle = active->handle;
+  }
+
+  auto* preferredHandle = [&]() -> zwlr_foreign_toplevel_handle_v1* {
+    const auto it = m_lastActiveHandleByAppIdLower.find(item.idLower);
+    return it != m_lastActiveHandleByAppIdLower.end() ? it->second : nullptr;
+  }();
+  if (auto* nextHandle = nextActivatableWindowHandle(windows, activeHandle, preferredHandle); nextHandle != nullptr) {
+    m_platform->activateToplevel(nextHandle);
+  }
 }
 
-// ── Private: window picker popup ─────────────────────────────────────────────
+// ── Private: item context menu constants ─────────────────────────────────────
 
 static constexpr float kMenuWidth = 240.0f;
-
-void Dock::openWindowPicker(DockInstance& instance, DockItemView& item, std::vector<ToplevelInfo> windows) {
-  if (!m_platform->hasXdgShell()) {
-    // Fallback: activate the first window if we can't show a popup.
-    if (!windows.empty()) {
-      m_platform->activateToplevel(windows[0].handle);
-    }
-    return;
-  }
-
-  closeWindowPicker();
-
-  m_popupOwnerInstance = &instance;
-  auto menu = std::make_unique<DockPopup>();
-
-  // Build context menu entries (window titles).
-  std::vector<ContextMenuControlEntry> entries;
-  entries.reserve(windows.size());
-  for (std::size_t i = 0; i < windows.size(); ++i) {
-    const auto& title = windows[i].title.empty() ? item.entry.name : windows[i].title;
-    entries.push_back(
-        ContextMenuControlEntry{
-            .id = static_cast<std::int32_t>(i),
-            .label = title,
-            .enabled = true,
-            .separator = false,
-            .hasSubmenu = false,
-        }
-    );
-    menu->handles.push_back(windows[i].handle);
-  }
-
-  // Compute popup height.
-  const float menuHeight = ContextMenuControl::preferredHeight(entries, entries.size());
-
-  // Determine anchor / gravity + gap based on dock position.
-  const auto& cfg = m_config->config().dock;
-  const bool isBottom = (cfg.position == "bottom");
-  const bool isTop = (cfg.position == "top");
-  const bool isRight = (cfg.position == "right");
-
-  std::uint32_t anchor = XDG_POSITIONER_ANCHOR_NONE;
-  std::uint32_t gravity = XDG_POSITIONER_GRAVITY_NONE;
-  std::int32_t offsetX = 0;
-  std::int32_t offsetY = 0;
-  const std::int32_t kGapBottom = std::max(2, static_cast<std::int32_t>(Style::spaceLg));
-  const std::int32_t kGap = std::max(2, static_cast<std::int32_t>(Style::spaceMd));
-
-  if (isBottom) {
-    anchor = XDG_POSITIONER_ANCHOR_TOP;
-    gravity = XDG_POSITIONER_GRAVITY_TOP;
-    offsetY = -kGapBottom;
-  } else if (isTop) {
-    anchor = XDG_POSITIONER_ANCHOR_BOTTOM;
-    gravity = XDG_POSITIONER_GRAVITY_BOTTOM;
-    offsetY = kGap;
-  } else if (isRight) {
-    anchor = XDG_POSITIONER_ANCHOR_LEFT;
-    gravity = XDG_POSITIONER_GRAVITY_LEFT;
-    offsetX = -kGap;
-  } else { // left
-    anchor = XDG_POSITIONER_ANCHOR_RIGHT;
-    gravity = XDG_POSITIONER_GRAVITY_RIGHT;
-    offsetX = kGap;
-  }
-
-  const auto sb = shell::surface_shadow::bleed(cfg.shadow, m_config->config().shell.shadow);
-  const std::int32_t panelThk = dockThickness();
-  const std::int32_t ptrX = static_cast<std::int32_t>(m_platform->lastPointerX());
-  const std::int32_t ptrY = static_cast<std::int32_t>(m_platform->lastPointerY());
-  const std::int32_t halfCell = cfg.iconSize / 2;
-
-  // Anchor rect: pointer-centred on main axis × panel face on cross axis.
-  std::int32_t aX, aY, aW, aH;
-  if (isBottom) {
-    // Panel top face is at sb.up.
-    aX = ptrX - halfCell;
-    aY = sb.up;
-    aW = halfCell * 2;
-    aH = panelThk;
-  } else if (isTop) {
-    const std::int32_t panelFace = std::min(cfg.marginEdge, sb.up) + panelThk;
-    aX = ptrX - halfCell;
-    aY = 0;
-    aW = halfCell * 2;
-    aH = panelFace;
-  } else if (isRight) {
-    aX = sb.left;
-    aY = ptrY - halfCell;
-    aW = panelThk;
-    aH = halfCell * 2;
-  } else { // left
-    const std::int32_t panelFace = std::min(cfg.marginEdge, sb.left) + panelThk;
-    aX = 0;
-    aY = ptrY - halfCell;
-    aW = panelFace;
-    aH = halfCell * 2;
-  }
-
-  const auto menuChrome = popup_chrome::computeGeometry(kMenuWidth, menuHeight, m_config->config().shell.shadow);
-  PopupSurfaceConfig popupCfg{
-      .anchorX = aX,
-      .anchorY = aY,
-      .anchorWidth = std::max(1, aW),
-      .anchorHeight = std::max(1, aH),
-      .width = menuChrome.surfaceWidth,
-      .height = menuChrome.surfaceHeight,
-      .anchor = anchor,
-      .gravity = gravity,
-      .constraintAdjustment = XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X
-          | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y
-          | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_X
-          | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y,
-      .offsetX = offsetX,
-      .offsetY = offsetY,
-      .serial = m_platform->lastInputSerial(),
-      .grab = true,
-  };
-  popup_chrome::applyToConfig(popupCfg, menuChrome, popupAttachmentForDockPosition(isBottom, isTop, isRight));
-
-  menu->surface = std::make_unique<PopupSurface>(m_platform->wayland());
-  menu->surface->setRenderContext(m_renderContext);
-  menu->chrome = menuChrome;
-
-  auto* menuPtr = menu.get();
-
-  menu->surface->setConfigureCallback([menuPtr](std::uint32_t /*w*/, std::uint32_t /*h*/) {
-    menuPtr->surface->requestLayout();
-  });
-  menu->surface->setPrepareFrameCallback([this, menuPtr, entries](bool /*needsUpdate*/, bool needsLayout) {
-    if (m_renderContext == nullptr || menuPtr->surface == nullptr) {
-      return;
-    }
-
-    const auto width = menuPtr->surface->width();
-    const auto height = menuPtr->surface->height();
-    if (width == 0 || height == 0) {
-      return;
-    }
-
-    m_renderContext->makeCurrent(menuPtr->surface->renderTarget());
-
-    const bool needsSceneBuild = menuPtr->sceneRoot == nullptr
-        || static_cast<std::uint32_t>(std::round(menuPtr->sceneRoot->width())) != width
-        || static_cast<std::uint32_t>(std::round(menuPtr->sceneRoot->height())) != height;
-    if (!needsSceneBuild && !needsLayout) {
-      return;
-    }
-
-    UiPhaseScope layoutPhase(UiPhase::Layout);
-
-    const auto fw = static_cast<float>(width);
-    const auto fh = static_cast<float>(height);
-
-    menuPtr->sceneRoot = std::make_unique<Node>();
-    menuPtr->sceneRoot->setSize(fw, fh);
-    (void)popup_chrome::addShadow(
-        *menuPtr->sceneRoot, menuPtr->chrome, m_config->config().shell.shadow, Style::scaledRadiusLg()
-    );
-
-    auto ctrl = std::make_unique<ContextMenuControl>();
-    ctrl->setMenuWidth(menuPtr->chrome.contentWidth);
-    ctrl->setMaxVisible(entries.size());
-    ctrl->setEntries(entries);
-    ctrl->setRedrawCallback([menuPtr]() {
-      if (menuPtr->surface)
-        menuPtr->surface->requestRedraw();
-    });
-    ctrl->setOnActivate([this, menuPtr](const ContextMenuControlEntry& e) {
-      const auto idx = static_cast<std::size_t>(e.id);
-      auto* handle = (idx < menuPtr->handles.size()) ? menuPtr->handles[idx] : nullptr;
-      DeferredCall::callLater([this, handle]() {
-        if (handle != nullptr) {
-          m_platform->activateToplevel(handle);
-        }
-        closeWindowPicker();
-      });
-    });
-    ctrl->setPosition(menuPtr->chrome.contentX(), menuPtr->chrome.contentY());
-    ctrl->setSize(menuPtr->chrome.contentWidth, menuPtr->chrome.contentHeight);
-    ctrl->layout(*m_renderContext);
-
-    menuPtr->sceneRoot->addChild(std::move(ctrl));
-    menuPtr->inputDispatcher.setSceneRoot(menuPtr->sceneRoot.get());
-    menuPtr->inputDispatcher.setCursorShapeCallback([this](std::uint32_t serial, std::uint32_t shape) {
-      m_platform->setCursorShape(serial, shape);
-    });
-    menuPtr->surface->setSceneRoot(menuPtr->sceneRoot.get());
-  });
-
-  menu->surface->setDismissedCallback([this]() { closeWindowPicker(); });
-
-  auto* layerSurface = m_platform->layerSurfaceFor(instance.surface->wlSurface());
-  if (layerSurface == nullptr || !menu->surface->initialize(layerSurface, instance.output, popupCfg)) {
-    kLog.warn("dock: failed to create window-picker popup");
-    return;
-  }
-
-  popup_chrome::setContentInputRegion(*menu->surface, menu->chrome);
-  menu->wlSurface = menu->surface->wlSurface();
-  m_windowMenu = std::move(menu);
-}
-
-void Dock::closeWindowPicker() {
-  DockInstance* owner = m_popupOwnerInstance;
-  m_popupOwnerInstance = nullptr;
-  m_windowMenu.reset();
-  if (m_config->config().dock.autoHide && owner != nullptr && owner->hideOpacity > 0.0f) {
-    owner->pointerInside = false;
-    if (m_hoveredInstance == owner) {
-      m_hoveredInstance = nullptr;
-    }
-    startHideFadeOut(*owner);
-  }
-}
+static constexpr std::int32_t kMenuCloseId = -1;
+static constexpr std::int32_t kMenuCloseAllId = -2;
+static constexpr std::int32_t kMenuSeparatorId = -3;
+static constexpr std::int32_t kMenuWindowBaseId = -1000;
 
 // ── Private: generic popup routing ───────────────────────────────────────────
 
@@ -1896,8 +1732,7 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
   if (!m_platform->hasXdgShell())
     return;
 
-  // Close existing popups before opening the new one.
-  closeWindowPicker();
+  // Close the existing popup before opening the new one.
   closeItemMenu();
 
   m_popupOwnerInstance = &instance;
@@ -1911,9 +1746,33 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
     menu->handles.push_back(w.handle);
   }
 
-  // IDs 0..N-1 → desktop actions; -1 → Close; -2 → Close All.
+  // IDs 0..N-1 → desktop actions; negative constants → windows / close commands.
   std::vector<ContextMenuControlEntry> entries;
-  entries.reserve(item.entry.actions.size() + 3);
+  entries.reserve(windows.size() + item.entry.actions.size() + 4);
+
+  for (std::size_t i = 0; i < windows.size(); ++i) {
+    const auto& title = windows[i].title.empty() ? item.entry.name : windows[i].title;
+    entries.push_back(
+        ContextMenuControlEntry{
+            .id = kMenuWindowBaseId - static_cast<std::int32_t>(i),
+            .label = title,
+            .enabled = windows[i].handle != nullptr,
+            .separator = false,
+            .hasSubmenu = false,
+        }
+    );
+  }
+
+  const bool hasWindowEntries = !windows.empty();
+  const bool hasActionEntries = !item.entry.actions.empty();
+  const bool hasCloseEntries = !menu->handles.empty();
+  if (hasWindowEntries && (hasActionEntries || hasCloseEntries)) {
+    entries.push_back(
+        ContextMenuControlEntry{
+            .id = kMenuSeparatorId, .label = {}, .enabled = false, .separator = true, .hasSubmenu = false
+        }
+    );
+  }
 
   for (std::int32_t i = 0; i < static_cast<std::int32_t>(item.entry.actions.size()); ++i) {
     entries.push_back(
@@ -1929,16 +1788,18 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
 
   const std::size_t runCount = menu->handles.size();
   if (runCount > 0) {
-    if (!entries.empty()) {
+    if (hasActionEntries) {
       // Separator between app actions and window-management entries.
       entries.push_back(
-          ContextMenuControlEntry{.id = -3, .label = {}, .enabled = false, .separator = true, .hasSubmenu = false}
+          ContextMenuControlEntry{
+              .id = kMenuSeparatorId, .label = {}, .enabled = false, .separator = true, .hasSubmenu = false
+          }
       );
     }
     if (runCount == 1) {
       entries.push_back(
           ContextMenuControlEntry{
-              .id = -1,
+              .id = kMenuCloseId,
               .label = i18n::tr("dock.actions.close"),
               .enabled = true,
               .separator = false,
@@ -1948,7 +1809,7 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
     } else {
       entries.push_back(
           ContextMenuControlEntry{
-              .id = -2,
+              .id = kMenuCloseAllId,
               .label = i18n::tr("dock.actions.close-all"),
               .enabled = true,
               .separator = false,
@@ -2103,16 +1964,23 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
     });
     ctrl->setOnActivate([this, menuPtr, entryActions](const ContextMenuControlEntry& e) {
       const std::int32_t id = e.id;
+      auto menuHandles = menuPtr->handles;
       auto closingHandles = menuPtr->handles;
-      DeferredCall::callLater([this, id, entryActions, closingHandles = std::move(closingHandles)]() mutable {
-        if (id >= 0) {
+      DeferredCall::callLater([this, id, entryActions, menuHandles = std::move(menuHandles),
+                               closingHandles = std::move(closingHandles)]() mutable {
+        if (id <= kMenuWindowBaseId) {
+          const auto idx = static_cast<std::size_t>(kMenuWindowBaseId - id);
+          if (idx < menuHandles.size() && menuHandles[idx] != nullptr) {
+            m_platform->activateToplevel(menuHandles[idx]);
+          }
+        } else if (id >= 0) {
           const auto idx = static_cast<std::size_t>(id);
           if (idx < entryActions.size()) {
             launchAction(entryActions[idx]);
           }
-        } else if (id == -1 && !closingHandles.empty()) {
+        } else if (id == kMenuCloseId && !closingHandles.empty()) {
           m_platform->closeToplevel(closingHandles[0]);
-        } else if (id == -2) {
+        } else if (id == kMenuCloseAllId) {
           for (auto* handle : closingHandles) {
             m_platform->closeToplevel(handle);
           }
