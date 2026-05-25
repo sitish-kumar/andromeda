@@ -1838,14 +1838,13 @@ void TaskbarWidget::buildDesktopIconIndex() {
 }
 
 std::string TaskbarWidget::resolveIconPath(const std::string& appId, const std::string& iconNameOrPath) {
-  if (appId.empty()) {
-    return {};
-  }
-
   const int iconTargetSize = static_cast<int>(std::round(48.0f * m_contentScale));
 
   if (!iconNameOrPath.empty()) {
-    return m_iconResolver.resolve(iconNameOrPath, iconTargetSize);
+    const std::string& primary = m_iconResolver.resolve(iconNameOrPath, iconTargetSize);
+    if (!primary.empty()) {
+      return primary;
+    }
   }
 
   if (const auto internal = internal_apps::metadataForAppId(appId); internal.has_value()) {
@@ -1855,9 +1854,18 @@ std::string TaskbarWidget::resolveIconPath(const std::string& appId, const std::
   const std::string appIdLower = toLower(appId);
   const auto it = m_appIconsByLower.find(appIdLower);
   if (it != m_appIconsByLower.end()) {
-    return m_iconResolver.resolve(it->second, iconTargetSize);
+    const std::string& desktopIcon = m_iconResolver.resolve(it->second, iconTargetSize);
+    if (!desktopIcon.empty()) {
+      return desktopIcon;
+    }
   }
-  return m_iconResolver.resolve(appId, iconTargetSize);
+  if (!appId.empty()) {
+    const std::string& appIcon = m_iconResolver.resolve(appId, iconTargetSize);
+    if (!appIcon.empty()) {
+      return appIcon;
+    }
+  }
+  return m_iconResolver.resolve("application-x-executable", iconTargetSize);
 }
 
 bool TaskbarWidget::activeWorkspaceIndex(std::size_t& index) const {
