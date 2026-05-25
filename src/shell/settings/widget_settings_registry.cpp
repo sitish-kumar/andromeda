@@ -1006,13 +1006,16 @@ namespace settings {
     if (!withValue.has_value() && !withoutValue.has_value()) {
       return false;
     }
-    if (!withValue.has_value() || !withoutValue.has_value()) {
-      return true;
-    }
-    if (spec.has_value() && spec->valueType == WidgetSettingValueType::OptionalDouble) {
+    if (!spec.has_value()) {
+      if (!withValue.has_value() || !withoutValue.has_value()) {
+        return true;
+      }
       return !widgetSettingValuesEqual(*withValue, *withoutValue);
     }
-    if (!spec.has_value()) {
+    if (spec->valueType == WidgetSettingValueType::OptionalDouble) {
+      if (!withValue.has_value() || !withoutValue.has_value()) {
+        return true;
+      }
       return !widgetSettingValuesEqual(*withValue, *withoutValue);
     }
 
