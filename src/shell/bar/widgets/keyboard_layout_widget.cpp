@@ -291,10 +291,11 @@ namespace {
 } // namespace
 
 KeyboardLayoutWidget::KeyboardLayoutWidget(
-    CompositorPlatform& platform, std::string cycleCommand, DisplayMode displayMode, bool hideLabel
+    CompositorPlatform& platform, std::string cycleCommand, DisplayMode displayMode, bool hideLabel,
+    bool hideWhenSingleLayout
 )
-    : m_platform(platform), m_cycleCommand(std::move(cycleCommand)), m_displayMode(displayMode),
-      m_hideLabel(hideLabel) {}
+    : m_platform(platform), m_cycleCommand(std::move(cycleCommand)), m_displayMode(displayMode), m_hideLabel(hideLabel),
+      m_hideWhenSingleLayout(hideWhenSingleLayout) {}
 
 void KeyboardLayoutWidget::create() {
   auto area = std::make_unique<InputArea>();
@@ -344,6 +345,10 @@ void KeyboardLayoutWidget::doLayout(Renderer& renderer, float containerWidth, fl
 
   m_isVertical = containerHeight > containerWidth;
   sync(renderer);
+  if (!root()->visible()) {
+    root()->setSize(0.0f, 0.0f);
+    return;
+  }
 
   if (m_glyph != nullptr) {
     m_glyph->setGlyphSize(Style::barGlyphSize * m_contentScale);
@@ -421,6 +426,17 @@ std::string KeyboardLayoutWidget::resolvedLayoutName() const {
 void KeyboardLayoutWidget::sync(Renderer& renderer) {
   if (m_label == nullptr) {
     return;
+  }
+
+  if (auto* node = root(); node != nullptr) {
+    const auto layoutNames = m_platform.keyboardLayoutNames();
+    const bool shouldHide = m_hideWhenSingleLayout && !layoutNames.empty() && layoutNames.size() <= 1;
+    node->setVisible(!shouldHide);
+    if (shouldHide) {
+      node->setSize(0.0f, 0.0f);
+      requestRedraw();
+      return;
+    }
   }
 
   std::string layoutName = resolvedLayoutName();

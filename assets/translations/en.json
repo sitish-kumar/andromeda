@@ -1336,6 +1336,10 @@
           "label": "Hide Label",
           "description": "Hide this widget's text label"
         },
+        "hide_when_single_layout": {
+          "label": "Hide When Single Layout",
+          "description": "Hide the keyboard layout widget unless more than one layout is configured"
+        },
         "high_color": {
           "label": "High Color",
           "description": "Color used for high visualizer values"

@@ -593,6 +593,7 @@ namespace settings {
     } else if (type == "keyboard_layout") {
       add(stringSpec("cycle_command"));
       add(boolSpec("hide_label", false));
+      add(boolSpec("hide_when_single_layout", false));
       {
         auto display = segmentedSpec("display", "short", shortFull);
         display.visibleWhen = WidgetSettingVisibility{"hide_label", {"false"}};

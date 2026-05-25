@@ -941,6 +941,7 @@ void ConfigService::seedBuiltinWidgets(Config& config) {
   WidgetConfig keyboardLayout;
   keyboardLayout.type = "keyboard_layout";
   keyboardLayout.settings["cycle_command"] = std::string("");
+  keyboardLayout.settings["hide_when_single_layout"] = false;
   seed("keyboard_layout", std::move(keyboardLayout));
 
   WidgetConfig lockKeys;
