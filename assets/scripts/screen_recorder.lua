@@ -146,6 +146,26 @@ local function copyToClipboard(path)
     noctalia.copyToClipboard(uri, "text/uri-list")
 end
 
+local function shellQuote(value)
+    return "'" .. value:gsub("'", [["'"']]) .. "'"
+end
+
+local function notifyRecordingSavedIfPresent()
+    local savedPath = outputPath
+    if savedPath == "" then return end
+
+    noctalia.runAsync("sleep 0.5; test -s " .. shellQuote(savedPath), function(result)
+        if result.exitCode ~= 0 then
+            return
+        end
+
+        noctalia.notify("Recording saved", savedPath)
+        if cfg("copy_to_clipboard", false) then
+            copyToClipboard(savedPath)
+        end
+    end)
+end
+
 -- ── Command builders ─────────────────────────────────────────────────────
 
 local function buildAudioFlags()
@@ -341,10 +361,7 @@ local function stopRecording()
     noctalia.runAsync("(sleep 3 && pkill -9 -f '^(/nix/store/.*-)?gpu-screen-recorder' 2>/dev/null || true) &")
 
     if state == "recording" then
-        noctalia.notify("Recording saved", outputPath)
-        if cfg("copy_to_clipboard", false) and outputPath ~= "" then
-            copyToClipboard(outputPath)
-        end
+        notifyRecordingSavedIfPresent()
     end
 
     setState("idle")
@@ -426,10 +443,7 @@ local function checkProcessState(processState)
     elseif state == "recording" then
         if processState ~= "recording" then
             setState("idle")
-            noctalia.notify("Recording saved", outputPath)
-            if cfg("copy_to_clipboard", false) and outputPath ~= "" then
-                copyToClipboard(outputPath)
-            end
+            notifyRecordingSavedIfPresent()
         end
     elseif state == "replaying" then
         if processState ~= "replaying" then
