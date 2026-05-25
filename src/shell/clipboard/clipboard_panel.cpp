@@ -903,7 +903,6 @@ void ClipboardPanel::updatePreviewActions() {
   }
 
   if (m_imageActionButton == nullptr) {
-    updatePinButton();
     return;
   }
 
