@@ -832,7 +832,7 @@
         },
         "settings": {
           "empty": "No settings match the current filters.",
-          "sections": {
+          "groups": {
             "runtime": "Runtime",
             "widget": "Widget",
             "presentation": "Presentation",

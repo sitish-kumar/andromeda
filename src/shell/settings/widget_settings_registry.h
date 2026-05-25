@@ -55,6 +55,13 @@ namespace settings {
     ColorSpec,
   };
 
+  enum class WidgetSettingGroup : std::uint8_t {
+    Widget,
+    Presentation,
+    Runtime,
+    Grouping,
+  };
+
   struct WidgetSettingSelectOption {
     std::string value;
     std::string labelKey; // i18n key, unless the owning spec sets `literalLabels` (then a literal label)
@@ -82,6 +89,7 @@ namespace settings {
     std::string literalDescription; // when non-empty, used verbatim instead of tr(descriptionKey)
     bool literalLabels = false;     // when true, option.labelKey holds a literal label (not an i18n key)
     WidgetSettingValueType valueType = WidgetSettingValueType::String;
+    WidgetSettingGroup group = WidgetSettingGroup::Widget;
     WidgetSettingValue defaultValue = std::string{};
     std::optional<double> minValue;
     std::optional<double> maxValue;

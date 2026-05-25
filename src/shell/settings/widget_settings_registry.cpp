@@ -149,6 +149,11 @@ namespace settings {
       return spec;
     }
 
+    WidgetSettingSpec withGroup(WidgetSettingSpec spec, WidgetSettingGroup group) {
+      spec.group = group;
+      return spec;
+    }
+
     WidgetSettingSpec boolSpec(std::string_view key, bool defaultValue, bool advanced = false) {
       return baseSpec(key, WidgetSettingValueType::Bool, defaultValue, advanced);
     }
@@ -440,9 +445,9 @@ namespace settings {
   std::vector<WidgetSettingSpec> commonWidgetSettingSpecs() {
     const WidgetSettingVisibility capsuleOn{"capsule", {"true"}};
 
-    auto anchor = boolSpec("anchor", false, true);
-    auto scale = doubleSpec("scale", 1.0, 0.2, 8.0, 0.05);
-    auto widgetColor = colorSpec("color", {}, true);
+    auto anchor = withGroup(boolSpec("anchor", false, true), WidgetSettingGroup::Presentation);
+    auto scale = withGroup(doubleSpec("scale", 1.0, 0.2, 2.5, 0.05), WidgetSettingGroup::Presentation);
+    auto widgetColor = withGroup(colorSpec("color", {}, true), WidgetSettingGroup::Presentation);
     std::vector<WidgetSettingSelectOption> fontWeightOptions;
     fontWeightOptions.reserve(kFontWeightOptions.size() + 1);
     fontWeightOptions.push_back(WidgetSettingSelectOption{"", "settings.options.font-weight.default"});
@@ -451,27 +456,32 @@ namespace settings {
           WidgetSettingSelectOption{std::to_string(static_cast<int>(option.weight)), std::string(option.labelKey)}
       );
     }
-    auto fontWeight = selectSpec("font_weight", "", std::move(fontWeightOptions), true);
+    auto fontWeight =
+        withGroup(selectSpec("font_weight", "", std::move(fontWeightOptions), true), WidgetSettingGroup::Presentation);
     fontWeight.integerValue = true;
 
-    auto capsuleToggle = boolSpec("capsule", false);
-    auto capsuleFill = colorSpec("capsule_fill", "", true);
+    auto capsuleToggle = withGroup(boolSpec("capsule", false), WidgetSettingGroup::Presentation);
+    auto capsuleFill = withGroup(colorSpec("capsule_fill", "", true), WidgetSettingGroup::Presentation);
     capsuleFill.visibleWhen = capsuleOn;
 
-    auto capsuleBorder = colorSpec("capsule_border", {}, true);
+    auto capsuleBorder = withGroup(colorSpec("capsule_border", {}, true), WidgetSettingGroup::Presentation);
     capsuleBorder.visibleWhen = capsuleOn;
 
-    auto capsuleForeground = colorSpec("capsule_foreground", {}, true);
+    auto capsuleForeground = withGroup(colorSpec("capsule_foreground", {}, true), WidgetSettingGroup::Presentation);
     capsuleForeground.visibleWhen = capsuleOn;
 
-    auto capsulePadding = doubleSpec("capsule_padding", static_cast<double>(Style::barCapsulePadding), 0.0, 48.0, 1.0);
+    auto capsulePadding = withGroup(
+        doubleSpec("capsule_padding", static_cast<double>(Style::barCapsulePadding), 0.0, 48.0, 1.0),
+        WidgetSettingGroup::Presentation
+    );
     capsulePadding.visibleWhen = capsuleOn;
-    auto capsuleRadius = optionalDoubleSpec("capsule_radius", 0.0, 80.0);
+    auto capsuleRadius = withGroup(optionalDoubleSpec("capsule_radius", 0.0, 80.0), WidgetSettingGroup::Presentation);
     capsuleRadius.visibleWhen = capsuleOn;
-    auto capsuleOpacity = doubleSpec("capsule_opacity", 1.0, 0.0, 1.0, 0.01);
+    auto capsuleOpacity =
+        withGroup(doubleSpec("capsule_opacity", 1.0, 0.0, 1.0, 0.01), WidgetSettingGroup::Presentation);
     capsuleOpacity.visibleWhen = capsuleOn;
 
-    auto capsuleGroup = stringSpec("capsule_group");
+    auto capsuleGroup = withGroup(stringSpec("capsule_group"), WidgetSettingGroup::Grouping);
     capsuleGroup.visibleWhen = capsuleOn;
 
     return {
@@ -828,8 +838,10 @@ namespace settings {
               {.value = "instance", .labelKey = "settings.widgets.options.instance"},
               {.value = "shared", .labelKey = "settings.widgets.options.shared"},
           };
-          specs.push_back(selectSpec("scope", "instance", scriptedScopes, true));
-          specs.push_back(boolSpec("hot_reload", false, true));
+          specs.push_back(
+              withGroup(selectSpec("scope", "instance", scriptedScopes, true), WidgetSettingGroup::Runtime)
+          );
+          specs.push_back(withGroup(boolSpec("hot_reload", false, true), WidgetSettingGroup::Runtime));
           auto fromManifest = manifestSettingSpecs(*manifest);
           specs.insert(
               specs.end(), std::make_move_iterator(fromManifest.begin()), std::make_move_iterator(fromManifest.end())

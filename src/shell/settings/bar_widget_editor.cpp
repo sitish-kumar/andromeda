@@ -86,32 +86,22 @@ namespace settings {
       return header;
     }
 
-    std::string_view widgetSettingSectionKey(const WidgetSettingSpec& spec) {
-      const std::string& key = spec.key;
-      if (key == "scope" || key == "hot_reload") {
+    std::string_view widgetSettingGroupKey(const WidgetSettingSpec& spec) {
+      switch (spec.group) {
+      case WidgetSettingGroup::Runtime:
         return "runtime";
-      }
-      if (key == "capsule_group") {
-        return "grouping";
-      }
-      if (key == "anchor"
-          || key == "scale"
-          || key == "color"
-          || key == "font_weight"
-          || key == "capsule"
-          || key == "capsule_radius"
-          || key == "capsule_fill"
-          || key == "capsule_border"
-          || key == "capsule_foreground"
-          || key == "capsule_padding"
-          || key == "capsule_opacity") {
+      case WidgetSettingGroup::Presentation:
         return "presentation";
+      case WidgetSettingGroup::Grouping:
+        return "grouping";
+      case WidgetSettingGroup::Widget:
+        return "widget";
       }
       return "widget";
     }
 
-    std::string widgetSettingSectionTitle(std::string_view sectionKey) {
-      return i18n::tr("settings.entities.widget.settings.sections." + std::string(sectionKey));
+    std::string widgetSettingGroupTitle(std::string_view groupKey) {
+      return i18n::tr("settings.entities.widget.settings.groups." + std::string(groupKey));
     }
 
     void closeInspector(
@@ -908,7 +898,7 @@ namespace settings {
       });
 
       std::size_t visibleSpecs = 0;
-      std::string activeSectionKey;
+      std::string activeGroupKey;
       for (const auto& spec : specs) {
         if (spec.key == "capsule_group" && managedCapsuleGroups.empty()) {
           continue;
@@ -925,10 +915,10 @@ namespace settings {
           continue;
         }
 
-        const std::string_view sectionKey = widgetSettingSectionKey(spec);
-        if (sectionKey != activeSectionKey) {
-          panel->addChild(makeMiniSectionHeader(widgetSettingSectionTitle(sectionKey), ctx.scale, visibleSpecs > 0));
-          activeSectionKey = sectionKey;
+        const std::string_view groupKey = widgetSettingGroupKey(spec);
+        if (groupKey != activeGroupKey) {
+          panel->addChild(makeMiniSectionHeader(widgetSettingGroupTitle(groupKey), ctx.scale, visibleSpecs > 0));
+          activeGroupKey = groupKey;
         }
 
         const auto value = widgetSettingValue(ctx.config, widgetName, spec);

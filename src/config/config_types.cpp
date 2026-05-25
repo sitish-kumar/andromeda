@@ -373,18 +373,18 @@ float resolveWidgetContentScale(float barScale, const WidgetConfig* widget, std:
   }
 
   double widgetScale = 1.0;
-  if (const auto* raw = std::get_if<double>(&it->second)) {
-    if (!std::isfinite(*raw)) {
+  if (const auto* rawDouble = std::get_if<double>(&it->second)) {
+    if (!std::isfinite(*rawDouble)) {
       throw std::runtime_error(std::string(context) + ": expected finite number");
     }
-    widgetScale = *raw;
-  } else if (const auto* raw = std::get_if<std::int64_t>(&it->second)) {
-    widgetScale = static_cast<double>(*raw);
+    widgetScale = *rawDouble;
+  } else if (const auto* rawInt = std::get_if<std::int64_t>(&it->second)) {
+    widgetScale = static_cast<double>(*rawInt);
   } else {
     throw std::runtime_error(std::string(context) + ": expected finite number");
   }
 
-  return barScale * std::clamp(static_cast<float>(widgetScale), 0.2f, 8.0f);
+  return barScale * std::clamp(static_cast<float>(widgetScale), 0.2f, 2.5f);
 }
 
 ColorSpec colorSpecFromConfigString(const std::string& raw, std::string_view context) {
