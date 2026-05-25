@@ -1565,6 +1565,11 @@ void Dock::handleItemClick(DockInstance& instance, DockItemView& item) {
     return;
   }
 
+  if (windows.size() == 1) {
+    m_platform->activateToplevel(windows[0].handle);
+    return;
+  }
+
   zwlr_foreign_toplevel_handle_v1* activeHandle = nullptr;
   if (const auto active = m_platform->activeToplevel(); active.has_value()) {
     activeHandle = active->handle;
