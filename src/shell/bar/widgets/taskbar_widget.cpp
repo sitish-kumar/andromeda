@@ -412,10 +412,12 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
 
       const bool groupedHorizontalPill = m_groupByWorkspace && !m_vertical;
       const float inlineBadgeFontSize = std::round(Style::fontSizeCaption * 0.85f * m_contentScale);
-      WorkspaceDiscSize disc =
-          measureWorkspaceDiscSize(renderer, ws.label, inlineBadgeFontSize, iconSize, m_contentScale, fontWeight);
-      disc.height = iconSize;
-      disc.width = std::round(std::max(iconSize, disc.width));
+      const float inlineBadgeHeight = std::round(std::max(10.0f, iconSize - (Style::spaceXs * m_contentScale)));
+      WorkspaceDiscSize disc = measureWorkspaceDiscSize(
+          renderer, ws.label, inlineBadgeFontSize, inlineBadgeHeight, m_contentScale, fontWeight
+      );
+      disc.height = inlineBadgeHeight;
+      disc.width = std::round(std::max(inlineBadgeHeight, disc.width));
       const float badgeX = centeredOffset(tileSize, disc.width);
       const float badgeY = centeredOffset(tileSize, disc.height, 0.0f, !groupedHorizontalPill);
 
@@ -553,7 +555,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
           groupWidth = std::round(innerCrossSize + (groupOuterCrossLead * 2.0f));
         } else {
           groupWidth = std::round(groupOuterLead + innerMainTotal);
-          groupHeight = std::round(innerCrossSize + groupOuterCrossLead);
+          groupHeight = std::round(innerCrossSize + (groupOuterCrossLead * 2.0f));
         }
       }
       if (emptyWorkspace && !m_showWorkspaceLabel) {
