@@ -145,14 +145,16 @@ namespace {
 TaskbarWidget::TaskbarWidget(
     CompositorPlatform& platform, wl_output* output, bool groupByWorkspace, bool showAllOutputs,
     bool onlyActiveWorkspace, bool showWorkspaceLabel, WorkspaceLabelPlacement workspaceLabelPlacement,
-    bool hideEmptyWorkspaces, bool workspaceGroupCapsule, ColorSpec focusedColor, ColorSpec occupiedColor,
-    ColorSpec emptyColor, bool showWindowTitle, float windowTitleMaxWidth, std::string barPosition,
+    bool hideEmptyWorkspaces, bool workspaceGroupCapsule, bool showActiveIndicator, float activeOpacity,
+    float inactiveOpacity, ColorSpec focusedColor, ColorSpec occupiedColor, ColorSpec emptyColor,
+    bool showWindowTitle, float windowTitleMaxWidth, std::string barPosition,
     ShellConfig::ShadowConfig shadowConfig
 )
     : m_platform(platform), m_output(output), m_groupByWorkspace(groupByWorkspace), m_showAllOutputs(showAllOutputs),
       m_onlyActiveWorkspace(onlyActiveWorkspace), m_showWorkspaceLabel(showWorkspaceLabel),
       m_workspaceLabelPlacement(workspaceLabelPlacement), m_hideEmptyWorkspaces(hideEmptyWorkspaces),
-      m_workspaceGroupCapsule(workspaceGroupCapsule), m_focusedColor(std::move(focusedColor)),
+      m_workspaceGroupCapsule(workspaceGroupCapsule), m_showActiveIndicator(showActiveIndicator),
+      m_activeOpacity(activeOpacity), m_inactiveOpacity(inactiveOpacity), m_focusedColor(std::move(focusedColor)),
       m_occupiedColor(std::move(occupiedColor)), m_emptyColor(std::move(emptyColor)),
       m_showWindowTitle(showWindowTitle), m_windowTitleMaxWidth(windowTitleMaxWidth),
       m_barPosition(std::move(barPosition)), m_shadowConfig(std::move(shadowConfig)) {
@@ -305,6 +307,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
   auto createTaskTile = [&](const TaskModel& task) {
     auto area = std::make_unique<InputArea>();
     area->setFrameSize(tileWidthWithTitle, tileSize);
+    area->setOpacity(task.active ? m_activeOpacity : m_inactiveOpacity);
     area->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
     area->setOnAxisHandler(workspaceAxisHandler);
 
@@ -383,7 +386,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       area->addChild(std::move(label));
     }
 
-    if (task.active) {
+    if (task.active && m_showActiveIndicator) {
       const float d = std::max(4.0f, std::round(Style::barGlyphSize * 0.32f * m_contentScale));
       const float bottomInset = 0.25f * m_contentScale;
       if (m_showWindowTitle) {

@@ -30,8 +30,9 @@ public:
   TaskbarWidget(
       CompositorPlatform& platform, wl_output* output, bool groupByWorkspace, bool showAllOutputs,
       bool onlyActiveWorkspace, bool showWorkspaceLabel, WorkspaceLabelPlacement workspaceLabelPlacement,
-      bool hideEmptyWorkspaces, bool workspaceGroupCapsule, ColorSpec focusedColor, ColorSpec occupiedColor,
-      ColorSpec emptyColor, bool showWindowTitle, float windowTitleMaxWidth, std::string barPosition,
+      bool hideEmptyWorkspaces, bool workspaceGroupCapsule, bool showActiveIndicator, float activeOpacity,
+      float inactiveOpacity, ColorSpec focusedColor, ColorSpec occupiedColor, ColorSpec emptyColor,
+      bool showWindowTitle, float windowTitleMaxWidth, std::string barPosition,
       ShellConfig::ShadowConfig shadowConfig
   );
   ~TaskbarWidget() override;
@@ -104,6 +105,9 @@ private:
   WorkspaceLabelPlacement m_workspaceLabelPlacement = WorkspaceLabelPlacement::Corner;
   bool m_hideEmptyWorkspaces = false;
   bool m_workspaceGroupCapsule = true;
+  bool m_showActiveIndicator = true;
+  float m_activeOpacity = 1.0f;
+  float m_inactiveOpacity = 1.0f;
   ColorSpec m_focusedColor = colorSpecFromRole(ColorRole::Primary);
   ColorSpec m_occupiedColor = colorSpecFromRole(ColorRole::Secondary);
   ColorSpec m_emptyColor = colorSpecFromRole(ColorRole::Secondary);
