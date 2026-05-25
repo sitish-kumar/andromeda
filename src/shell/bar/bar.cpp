@@ -778,7 +778,7 @@ namespace {
       endSlotMain = std::min(endNaturalMain, contentMainSpan);
       startSlotMain = std::min(startNaturalMain, contentMainSpan - endSlotMain);
       configureSlot(instance.startSlot, contentMainStart, startSlotMain);
-      configureSlot(instance.centerSlot, contentMainStart + startSlotMain, centerSlotMain);
+      configureSlot(instance.centerSlot, contentMainStart + startSlotMain, 0.0f);
       configureSlot(instance.endSlot, contentMainEnd - endSlotMain, endSlotMain);
     }
 
