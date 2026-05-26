@@ -231,7 +231,20 @@ void FileDialogView::create() {
       .flexGrow = 1.0f,
   });
 
-  listContainer->addChild(
+  auto listCard = ui::column({
+      .align = FlexAlign::Stretch,
+      .gap = Style::spaceXs * scale,
+      .flexGrow = 1.0f,
+      .configure = [scale](Flex& card) {
+        card.setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
+        card.setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
+        card.setRadius(Style::scaledRadiusXl(scale));
+        card.setPadding(Style::cardPadding * scale);
+        card.setClipChildren(true);
+      },
+  });
+
+  listCard->addChild(
       ui::row(
           {
               .align = FlexAlign::Center,
@@ -273,7 +286,7 @@ void FileDialogView::create() {
       )
   );
 
-  listContainer->addChild(ui::separator());
+  listCard->addChild(ui::separator({.gradientEdges = false}));
 
   m_listAdapter = std::make_unique<FileListAdapter>(scale);
   m_listAdapter->setEntries(&m_visibleEntries);
@@ -282,7 +295,7 @@ void FileDialogView::create() {
     DeferredCall::callLater([this, idx]() { handleEntryClick(idx); });
   });
 
-  listContainer->addChild(
+  listCard->addChild(
       ui::virtualGridView({
           .out = &m_listGrid,
           .columns = 1,
@@ -292,12 +305,13 @@ void FileDialogView::create() {
           .rowGap = 0.0f,
           .overscanRows = kListRowOverscan,
           .scrollbarVisible = true,
-          .scrollCardStyleScale = scale,
           .adapter = m_listAdapter.get(),
           .flexGrow = 1.0f,
           .onSelectionChanged = [this](std::optional<std::size_t>) { syncGridSelection(); },
       })
   );
+
+  listContainer->addChild(std::move(listCard));
 
   listContainer->addChild(
       ui::label({
