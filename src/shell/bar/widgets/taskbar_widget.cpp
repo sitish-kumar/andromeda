@@ -173,10 +173,6 @@ bool TaskbarWidget::taskInWorkspaceGroup(const TaskModel& task, const WorkspaceM
 void TaskbarWidget::create() {
   auto container = std::make_unique<InputArea>();
   container->setOnAxisHandler([this](const InputArea::PointerData& data) {
-    if (!m_groupByWorkspace) {
-      return false;
-    }
-
     if (data.axis != WL_POINTER_AXIS_VERTICAL_SCROLL && data.axis != WL_POINTER_AXIS_HORIZONTAL_SCROLL) {
       return false;
     }
@@ -191,7 +187,11 @@ void TaskbarWidget::create() {
     if (delta == 0.0f) {
       return false;
     }
-    activateAdjacentWorkspace(delta > 0.0f ? 1 : -1);
+    if (m_groupByWorkspace) {
+      activateAdjacentWorkspace(delta > 0.0f ? 1 : -1);
+    } else {
+      activateAdjacentTask(delta > 0.0f ? 1 : -1);
+    }
     return true;
   });
 
@@ -1901,6 +1901,29 @@ void TaskbarWidget::activateAdjacentWorkspace(int direction) {
 
   const auto& targetWs = m_workspaces[targetIndex];
   m_platform.activateWorkspace(workspaceHostOutput(targetWs), targetWs.workspace);
+}
+
+void TaskbarWidget::activateAdjacentTask(int direction) {
+  if (m_tasks.size() < 2 || direction == 0) {
+    return;
+  }
+
+  const size_t activeTaskIndex =
+      std::find_if(m_tasks.begin(), m_tasks.end(), [](const TaskModel& t) { return t.active; }) - m_tasks.begin();
+  if (activeTaskIndex >= m_tasks.size()) {
+    return;
+  }
+  size_t newIndex = activeTaskIndex;
+  if (direction > 0 && activeTaskIndex + 1 < m_tasks.size()) {
+    ++newIndex;
+  } else if (direction < 0 && activeTaskIndex > 0) {
+    --newIndex;
+  }
+  if (newIndex == activeTaskIndex) {
+    return;
+  }
+  const auto& targetTask = m_tasks[newIndex];
+  m_platform.activateToplevel(targetTask.firstHandle);
 }
 
 wl_output* TaskbarWidget::toplevelOutputFilter() const noexcept { return m_showAllOutputs ? nullptr : m_output; }
