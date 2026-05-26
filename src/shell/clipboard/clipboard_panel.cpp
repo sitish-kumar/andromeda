@@ -36,6 +36,7 @@ namespace {
   constexpr float kPreviewImageHeight = 280.0f;
   constexpr float kListGlyphSize = 24.0f;
   constexpr float kListThumbSize = 40.0f;
+  constexpr float kListPinGlyphSize = 16.0f;
   constexpr std::size_t kListOverscanRows = 3;
   constexpr auto kPreviewPayloadDebounceInterval = std::chrono::milliseconds(75);
   constexpr auto kFilterDebounceInterval = std::chrono::milliseconds(120);
@@ -219,6 +220,17 @@ namespace {
               })
           )
       );
+
+      m_row->addChild(
+          ui::glyph({
+              .out = &m_pinGlyph,
+              .glyph = "pin",
+              .glyphSize = kListPinGlyphSize * scale,
+              .visible = false,
+              .participatesInLayout = false,
+              .configure = [](Glyph& glyph) { glyph.setHitTestVisible(false); },
+          })
+      );
     }
 
     ~ClipboardListRow() override { releaseThumbnail(); }
@@ -239,6 +251,7 @@ namespace {
       m_selected = selected;
       m_hovered = hovered;
       m_isImage = entry.isImage();
+      m_pinned = entry.pinned;
       setVisible(true);
       setEnabled(true);
       setSize(width, kRowHeight * m_scale);
@@ -314,8 +327,9 @@ namespace {
         m_image->setSize(thumbPx, thumbPx);
       }
       if (m_title != nullptr && m_meta != nullptr) {
+        const float pinW = m_pinned ? kListPinGlyphSize * m_scale + Style::spaceMd * m_scale : 0.0f;
         const float textWidth =
-            std::max(0.0f, rowW - thumbPx - Style::spaceMd * m_scale - Style::spaceSm * m_scale * 2.0f);
+            std::max(0.0f, rowW - thumbPx - pinW - Style::spaceMd * m_scale - Style::spaceSm * m_scale * 2.0f);
         m_title->setMaxWidth(textWidth);
         m_meta->setMaxWidth(textWidth);
       }
@@ -348,6 +362,11 @@ namespace {
       );
       m_title->setColor(colorSpecFromRole(active ? ColorRole::OnHover : ColorRole::OnSurface));
       m_meta->setColor(active ? colorSpecFromRole(ColorRole::OnHover) : colorSpecFromRole(ColorRole::OnSurfaceVariant));
+      if (m_pinGlyph != nullptr) {
+        m_pinGlyph->setVisible(m_pinned);
+        m_pinGlyph->setParticipatesInLayout(m_pinned);
+        m_pinGlyph->setColor(colorSpecFromRole(active ? ColorRole::OnHover : ColorRole::Primary));
+      }
     }
 
     float m_scale = 1.0f;
@@ -357,6 +376,7 @@ namespace {
     Flex* m_lead = nullptr;
     Image* m_image = nullptr;
     Glyph* m_glyph = nullptr;
+    Glyph* m_pinGlyph = nullptr;
     Flex* m_textColumn = nullptr;
     Label* m_title = nullptr;
     Label* m_meta = nullptr;
@@ -364,6 +384,7 @@ namespace {
     bool m_selected = false;
     bool m_hovered = false;
     bool m_isImage = false;
+    bool m_pinned = false;
     std::string m_thumbnailPath;
   };
 
