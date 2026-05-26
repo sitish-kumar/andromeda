@@ -249,7 +249,7 @@ void Dock::pruneCachedToplevelHandles() {
   });
 }
 
-void Dock::detachInstanceState(DockInstance& inst) {
+void Dock::detachInstanceState(shell::dock::DockInstance& inst) {
   if (inst.surface != nullptr) {
     if (wl_surface* const wls = inst.surface->wlSurface()) {
       m_surfaceMap.erase(wls);
@@ -355,8 +355,9 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
           current, 1.0f, Style::animNormal, Easing::EaseOutCubic,
           [inst = m_hoveredInstance, this](float v) {
             inst->hideOpacity = v;
-            syncDockSlideLayerTransform(*inst);
-            applyDockCompositorBlur(*inst);
+            const auto& cfg = m_config->config().dock;
+            shell::dock::syncDockSlideLayerTransform(*inst, cfg);
+            shell::dock::applyDockCompositorBlur(*inst, cfg);
           },
           [inst = m_hoveredInstance]() { inst->hideAnimId = 0; }
       );
@@ -389,8 +390,8 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
         }
       }
 
-      if (m_config->config().dock.autoHide && m_popupOwnerInstance == nullptr) {
-        startHideFadeOut(*m_hoveredInstance);
+      if (m_config != nullptr && m_config->config().dock.autoHide && m_popupOwnerInstance == nullptr) {
+        shell::dock::startHideFadeOut(*m_hoveredInstance, *m_config);
       }
       m_hoveredInstance = nullptr;
     }
@@ -405,7 +406,7 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
   case PointerEvent::Type::Button: {
     auto it = m_surfaceMap.find(event.surface);
     if (it != m_surfaceMap.end()) {
-      DockInstance* targetInstance = it->second;
+      shell::dock::DockInstance* targetInstance = it->second;
       if (m_hoveredInstance != targetInstance) {
         if (m_hoveredInstance != nullptr) {
           m_hoveredInstance->pointerInside = false;
@@ -562,7 +563,7 @@ void Dock::createInstance(const WaylandOutput& output) {
       cfg.position
   );
 
-  auto instance = std::make_unique<DockInstance>();
+  auto instance = std::make_unique<shell::dock::DockInstance>();
   instance->outputName = output.name;
   instance->output = output.output;
   instance->scale = output.scale;
@@ -581,7 +582,20 @@ void Dock::createInstance(const WaylandOutput& output) {
     inst->surface->requestLayout();
   });
   instance->surface->setPrepareFrameCallback([this, inst](bool needsUpdate, bool needsLayout) {
-    prepareFrame(*inst, needsUpdate, needsLayout);
+    if (m_platform == nullptr || m_config == nullptr || m_renderContext == nullptr) {
+      return;
+    }
+    shell::dock::prepareFrame(
+        *inst, {.platform = *m_platform, .config = *m_config, .renderContext = *m_renderContext},
+        shell::dock::DockInstanceCallbacks{
+            .syncModel = [this](shell::dock::DockInstance& callbackInstance) {
+              return syncInstanceModel(callbackInstance);
+            },
+            .rebuildItems = [this](shell::dock::DockInstance& callbackInstance) { rebuildItems(callbackInstance); },
+            .updateVisuals = [this](shell::dock::DockInstance& callbackInstance) { updateVisuals(callbackInstance); },
+        },
+        needsUpdate, needsLayout
+    );
   });
   instance->surface->setAnimationManager(&instance->animations);
 
@@ -596,40 +610,7 @@ void Dock::createInstance(const WaylandOutput& output) {
 
 // ── Private: scene building ───────────────────────────────────────────────────
 
-void Dock::prepareFrame(DockInstance& instance, bool needsUpdate, bool needsLayout) {
-  if (m_renderContext == nullptr || instance.surface == nullptr) {
-    return;
-  }
-
-  const auto width = instance.surface->width();
-  const auto height = instance.surface->height();
-  if (width == 0 || height == 0) {
-    return;
-  }
-
-  m_renderContext->makeCurrent(instance.surface->renderTarget());
-
-  bool needsModelRebuild = false;
-  if (needsUpdate || instance.sceneRoot == nullptr) {
-    UiPhaseScope updatePhase(UiPhase::Update);
-    needsModelRebuild = syncInstanceModel(instance);
-  }
-
-  const bool needsSceneBuild = instance.sceneRoot == nullptr
-      || static_cast<std::uint32_t>(std::round(instance.sceneRoot->width())) != width
-      || static_cast<std::uint32_t>(std::round(instance.sceneRoot->height())) != height;
-  if (needsSceneBuild || needsLayout || needsModelRebuild) {
-    UiPhaseScope layoutPhase(UiPhase::Layout);
-    if (needsModelRebuild && instance.sceneRoot != nullptr) {
-      rebuildItems(instance);
-    }
-    buildScene(instance);
-  } else if (needsUpdate) {
-    updateVisuals(instance);
-  }
-}
-
-bool Dock::syncInstanceModel(DockInstance& instance) {
+bool Dock::syncInstanceModel(shell::dock::DockInstance& instance) {
   if (m_platform == nullptr || m_config == nullptr) {
     return false;
   }
@@ -692,188 +673,9 @@ bool Dock::syncInstanceModel(DockInstance& instance) {
   return needRebuild;
 }
 
-void Dock::syncDockSlideLayerTransform(DockInstance& instance) {
-  if (instance.slideRoot == nullptr) {
-    return;
-  }
-  const auto& cfg = m_config->config().dock;
-  if (cfg.autoHide) {
-    const float t = 1.0f - instance.hideOpacity;
-    instance.slideRoot->setPosition(instance.slideHiddenDx * t, instance.slideHiddenDy * t);
-  } else {
-    instance.slideRoot->setPosition(0.0f, 0.0f);
-  }
-}
-
-void Dock::applyDockCompositorBlur(DockInstance& instance) {
-  const auto& cfg = m_config->config().dock;
-  if (instance.surface == nullptr) {
-    return;
-  }
-  // Compositor blur is independent of scene opacity — clear it while auto-hide
-  // has faded the dock out so a transparent buffer does not leave a blur halo.
-  constexpr float kBlurVisibleOpacity = 0.02f;
-  if (cfg.autoHide && instance.hideOpacity < kBlurVisibleOpacity) {
-    instance.surface->clearBlurRegion();
-    return;
-  }
-  if (instance.panel == nullptr) {
-    return;
-  }
-  float absX = 0.0f;
-  float absY = 0.0f;
-  Node::absolutePosition(instance.panel, absX, absY);
-  const int px = static_cast<int>(std::lround(absX));
-  const int py = static_cast<int>(std::lround(absY));
-  const int pw = static_cast<int>(std::lround(instance.panel->width()));
-  const int ph = static_cast<int>(std::lround(instance.panel->height()));
-  const Radii radii = shell::dock::dockCornerRadii(cfg);
-  auto blurStrips = Surface::tessellateRoundedRect(px, py, pw, ph, radii.tl, radii.tr, radii.br, radii.bl);
-  instance.surface->setBlurRegion(blurStrips);
-}
-
-void Dock::buildScene(DockInstance& instance) {
-  uiAssertNotRendering("Dock::buildScene");
-  if (m_renderContext == nullptr || instance.surface == nullptr) {
-    return;
-  }
-
-  const auto& cfg = m_config->config().dock;
-  const bool vert = shell::dock::isVerticalPosition(cfg.position);
-
-  const float w = static_cast<float>(instance.surface->width());
-  const float h = static_cast<float>(instance.surface->height());
-
-  const auto& shadowConfig = m_config->config().shell.shadow;
-  const auto panelGeometry = shell::dock::computePanelGeometry(cfg, shadowConfig, w, h);
-  const Radii radii = shell::dock::dockCornerRadii(cfg);
-
-  if (instance.sceneRoot == nullptr) {
-    instance.sceneRoot = std::make_unique<Node>();
-    instance.sceneRoot->setAnimationManager(&instance.animations);
-    instance.sceneRoot->setSize(w, h);
-    instance.sceneRoot->setOpacity(1.0f);
-
-    auto slide = std::make_unique<Node>();
-    slide->setParticipatesInLayout(false);
-    instance.slideRoot = instance.sceneRoot->addChild(std::move(slide));
-
-    // Shadow
-    if (shell::surface_shadow::enabled(cfg.shadow, shadowConfig)) {
-      instance.shadow = static_cast<Box*>(instance.slideRoot->addChild(ui::box()));
-    }
-
-    // Panel background
-    instance.panel = static_cast<Box*>(instance.slideRoot->addChild(
-        ui::box({
-            .configure = [radii](Box& box) { box.setRadii(radii); },
-        })
-    ));
-
-    // Item row
-    instance.row = static_cast<Flex*>(instance.panel->addChild(makeDockItemRow(cfg, vert)));
-
-    // Wire up InputDispatcher.
-    instance.inputDispatcher.setSceneRoot(instance.sceneRoot.get());
-    instance.inputDispatcher.setCursorShapeCallback([this](std::uint32_t serial, std::uint32_t shape) {
-      m_platform->setCursorShape(serial, shape);
-    });
-    instance.inputDispatcher.setHoverChangeCallback([inst = &instance](InputArea* /*old*/, InputArea* next) {
-      TooltipManager::instance().onHoverChange(next, inst->surface->layerSurface(), inst->output);
-    });
-
-    // Populate items and wire up palette reactivity.
-    rebuildItems(instance);
-
-    if (cfg.autoHide) {
-      // Start off-screen (slide); opacity stays at 1 so the compositor blur matches the panel.
-      instance.slideRoot->setOpacity(1.0f);
-      instance.hideOpacity = 0.0f;
-    } else {
-      instance.slideRoot->setOpacity(0.0f);
-      instance.hideOpacity = 1.0f;
-      instance.animations.animate(
-          0.0f, 1.0f, Style::animSlow, Easing::EaseOutCubic,
-          [slide = instance.slideRoot](float v) { slide->setOpacity(v); }, {}, instance.slideRoot
-      );
-    }
-
-    instance.surface->setSceneRoot(instance.sceneRoot.get());
-  }
-
-  // Update root size on reconfigure.
-  instance.sceneRoot->setSize(w, h);
-  if (instance.slideRoot != nullptr) {
-    instance.slideRoot->setSize(w, h);
-  }
-
-  // Shadow
-  if (instance.shadow != nullptr) {
-    const float shadowOffsetX = static_cast<float>(shadowConfig.offsetX);
-    const float shadowOffsetY = static_cast<float>(shadowConfig.offsetY);
-    const RoundedRectStyle shadowStyle = shell::surface_shadow::style(
-        shadowConfig, cfg.backgroundOpacity, shell::surface_shadow::Shape{.radius = radii}
-    );
-    instance.shadow->setStyle(shadowStyle);
-    instance.shadow->setZIndex(-1);
-    instance.shadow->setPosition(panelGeometry.panelX + shadowOffsetX, panelGeometry.panelY + shadowOffsetY);
-    instance.shadow->setSize(panelGeometry.panelW, panelGeometry.panelH);
-  }
-
-  // Panel
-  applyPanelPalette(instance);
-  instance.panel->setPosition(panelGeometry.panelX, panelGeometry.panelY);
-  instance.panel->setSize(panelGeometry.panelW, panelGeometry.panelH);
-
-  // Row fills panel (padding already applied via Flex::setPadding).
-  instance.row->setPosition(0.0f, 0.0f);
-  instance.row->setSize(panelGeometry.panelW, panelGeometry.panelH);
-  instance.row->layout(*m_renderContext);
-
-  if (cfg.autoHide) {
-    const auto hiddenDelta = shell::dock::computeHiddenSlideDelta(cfg, shadowConfig, w, h, panelGeometry);
-    instance.slideHiddenDx = hiddenDelta.first;
-    instance.slideHiddenDy = hiddenDelta.second;
-  } else {
-    instance.slideHiddenDx = 0.0f;
-    instance.slideHiddenDy = 0.0f;
-  }
-  syncDockSlideLayerTransform(instance);
-
-  // Input region: trigger strip when hidden (autoHide), full panel otherwise.
-  const bool hiddenInputRegion = cfg.autoHide && instance.hideOpacity < 0.5f;
-  auto inputPanelGeometry = panelGeometry;
-  if (!hiddenInputRegion && instance.slideRoot != nullptr) {
-    inputPanelGeometry.panelX += instance.slideRoot->x();
-    inputPanelGeometry.panelY += instance.slideRoot->y();
-  }
-  instance.surface->setInputRegion(shell::dock::computeInputRegion(
-      cfg, inputPanelGeometry, static_cast<int>(w), static_cast<int>(h), hiddenInputRegion
-  ));
-
-  applyDockCompositorBlur(instance);
-
-  // Palette reactivity.
-  instance.paletteConn = paletteChanged().connect([inst = &instance, this] {
-    applyPanelPalette(*inst);
-    if (inst->surface)
-      inst->surface->requestRedraw();
-  });
-
-  updateVisuals(instance);
-}
-
-void Dock::applyPanelPalette(DockInstance& instance) {
-  if (instance.panel == nullptr)
-    return;
-  const float opacity = m_config->config().dock.backgroundOpacity;
-  instance.panel->setFill(colorSpecFromRole(ColorRole::Surface, opacity));
-  instance.panel->setBorder(colorSpecFromRole(ColorRole::Outline), 0.0f);
-}
-
 // ── Private: item population ──────────────────────────────────────────────────
 
-void Dock::rebuildItems(DockInstance& instance) {
+void Dock::rebuildItems(shell::dock::DockInstance& instance) {
   uiAssertNotRendering("Dock::rebuildItems");
   if (instance.row == nullptr || m_renderContext == nullptr) {
     return;
@@ -1115,27 +917,12 @@ void Dock::rebuildItems(DockInstance& instance) {
   instance.modelSerial = m_modelSerial;
 
   // Force surface resize when item count changes.
-  resizeSurface(instance);
-}
-
-void Dock::resizeSurface(DockInstance& instance) {
-  if (instance.surface == nullptr) {
-    return;
-  }
-
-  const auto& cfg = m_config->config().dock;
-  const auto surfaceGeometry = shell::dock::computeSurfaceGeometry(
-      cfg, m_config->config().shell.shadow, instance.items.size() + shell::dock::dockLauncherButtonCount(cfg)
-  );
-
-  if (instance.surface->width() != surfaceGeometry.surfaceW || instance.surface->height() != surfaceGeometry.surfaceH) {
-    instance.surface->requestSize(surfaceGeometry.surfaceW, surfaceGeometry.surfaceH);
-  }
+  shell::dock::resizeSurface(instance, cfg, m_config->config().shell.shadow);
 }
 
 // ── Private: visual update ────────────────────────────────────────────────────
 
-void Dock::updateVisuals(DockInstance& instance) {
+void Dock::updateVisuals(shell::dock::DockInstance& instance) {
   const auto& cfg = m_config->config().dock;
 
   for (auto& item : instance.items) {
@@ -1246,11 +1033,13 @@ void Dock::updateVisuals(DockInstance& instance) {
 
 // ── Private: helpers ──────────────────────────────────────────────────────────
 
-bool Dock::matchesActiveApp(const DockItemView& item, std::string_view activeIdLower) const {
+bool Dock::matchesActiveApp(const shell::dock::DockItemView& item, std::string_view activeIdLower) const {
   return !activeIdLower.empty() && activeIdLower == item.idLower;
 }
 
-bool Dock::matchesRunningApp(const DockItemView& item, const std::vector<std::string>& runningLower) const {
+bool Dock::matchesRunningApp(
+    const shell::dock::DockItemView& item, const std::vector<std::string>& runningLower
+) const {
   for (const auto& rid : runningLower) {
     if (!rid.empty() && rid == item.idLower) {
       return true;
@@ -1259,7 +1048,7 @@ bool Dock::matchesRunningApp(const DockItemView& item, const std::vector<std::st
   return false;
 }
 
-std::unique_ptr<InputArea> Dock::createLauncherButton(DockInstance& instance) {
+std::unique_ptr<InputArea> Dock::createLauncherButton(shell::dock::DockInstance& instance) {
   const auto& cfg = m_config->config().dock;
   const bool vert = shell::dock::isVerticalPosition(cfg.position);
   const float iSize = static_cast<float>(cfg.iconSize);
@@ -1328,7 +1117,7 @@ std::unique_ptr<InputArea> Dock::createLauncherButton(DockInstance& instance) {
 
 // ── Private: click handling ───────────────────────────────────────────────────
 
-void Dock::handleItemClick(DockInstance& instance, DockItemView& item) {
+void Dock::handleItemClick(shell::dock::DockInstance& instance, shell::dock::DockItemView& item) {
   pruneCachedToplevelHandles();
 
   auto windows = m_platform->windowsForApp(
@@ -1362,55 +1151,22 @@ void Dock::handleItemClick(DockInstance& instance, DockItemView& item) {
 
 // ── Private: item context menu (right-click) ──────────────────────────────────
 
-void Dock::startHideFadeOut(DockInstance& inst) {
-  if (inst.hideAnimId != 0) {
-    inst.animations.cancel(inst.hideAnimId);
-    inst.hideAnimId = 0;
-  }
-  const float current = inst.hideOpacity;
-  inst.hideAnimId = inst.animations.animate(
-      current, 0.0f, Style::animSlow, Easing::EaseInQuad,
-      [&inst, this](float v) {
-        inst.hideOpacity = v;
-        syncDockSlideLayerTransform(inst);
-        applyDockCompositorBlur(inst);
-      },
-      [&inst, this]() {
-        inst.hideAnimId = 0;
-        if (inst.surface == nullptr)
-          return;
-        const auto& cfg = m_config->config().dock;
-        const bool vert = shell::dock::isVerticalPosition(cfg.position);
-        const auto sb = shell::surface_shadow::bleed(cfg.shadow, m_config->config().shell.shadow);
-        const auto panelW = shell::dock::dockContentSize(cfg, inst.items.size());
-        const auto panelH = shell::dock::dockThickness(cfg);
-        const auto surfW = static_cast<int>(vert ? (sb.left + panelH + sb.right) : (panelW + sb.left + sb.right));
-        const auto surfH = static_cast<int>(vert ? (panelW + sb.up + sb.down) : (sb.up + panelH + cfg.marginEdge));
-        inst.surface->setInputRegion(
-            shell::dock::computeInputRegion(cfg, shell::dock::DockPanelGeometry{}, surfW, surfH, true)
-        );
-      }
-  );
-  if (inst.surface)
-    inst.surface->requestRedraw();
-}
-
 void Dock::closeItemMenu() {
-  DockInstance* owner = m_popupOwnerInstance;
+  shell::dock::DockInstance* owner = m_popupOwnerInstance;
   m_popupOwnerInstance = nullptr;
   m_itemMenu.reset();
   // Fade the owner out — the pointer left the dock to interact with the menu,
   // whether or not the compositor sent a Leave event at that time.
-  if (m_config->config().dock.autoHide && owner != nullptr && owner->hideOpacity > 0.0f) {
+  if (m_config != nullptr && m_config->config().dock.autoHide && owner != nullptr && owner->hideOpacity > 0.0f) {
     owner->pointerInside = false;
     if (m_hoveredInstance == owner) {
       m_hoveredInstance = nullptr;
     }
-    startHideFadeOut(*owner);
+    shell::dock::startHideFadeOut(*owner, *m_config);
   }
 }
 
-void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
+void Dock::openItemMenu(shell::dock::DockInstance& instance, shell::dock::DockItemView& item) {
   if (m_config == nullptr) {
     m_popupOwnerInstance = nullptr;
     m_itemMenu.reset();

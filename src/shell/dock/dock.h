@@ -1,13 +1,9 @@
 #pragma once
 
 #include "config/config_service.h"
-#include "render/animation/animation_manager.h"
-#include "render/scene/input_dispatcher.h"
-#include "system/desktop_entry.h"
+#include "shell/dock/dock_instance.h"
 #include "system/icon_resolver.h"
-#include "ui/signal.h"
 
-#include <array>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -18,17 +14,11 @@ class Box;
 class CompositorPlatform;
 class ConfigService;
 class Flex;
-class IpcService;
-class Glyph;
-class Image;
 class InputArea;
-class Label;
+class IpcService;
 class RenderContext;
-class LayerSurface;
-class Node;
 struct PointerEvent;
 struct WaylandOutput;
-struct wl_output;
 struct wl_surface;
 struct zwlr_foreign_toplevel_handle_v1;
 
@@ -55,53 +45,6 @@ public:
   void registerIpc(IpcService& ipc);
 
 private:
-  struct DockItemView {
-    DesktopEntry entry;
-    std::string idLower;
-    std::string startupWmClassLower;
-    InputArea* area = nullptr;
-    Box* background = nullptr;
-    std::array<Box*, 3> dotIndicators{};
-    Box* badge = nullptr;
-    Label* badgeLabel = nullptr;
-    Image* iconImage = nullptr;
-    Glyph* iconGlyph = nullptr;
-    bool hovered = false;
-    bool running = false;
-    bool active = false;
-    float visualScale = -1.0f;
-    float visualOpacity = -1.0f;
-    AnimationManager::Id scaleAnimId = 0;
-    AnimationManager::Id opacityAnimId = 0;
-    std::size_t instanceCount = 0;
-  };
-
-  struct DockInstance {
-    std::uint32_t outputName = 0;
-    wl_output* output = nullptr;
-    std::int32_t scale = 1;
-    std::unique_ptr<LayerSurface> surface;
-    // sceneRoot must be destroyed before `animations` — ~Node() calls cancelForOwner().
-    AnimationManager animations;
-    std::unique_ptr<Node> sceneRoot;
-    Node* slideRoot = nullptr;
-    float slideHiddenDx = 0.0f;
-    float slideHiddenDy = 0.0f;
-    Box* shadow = nullptr;
-    Box* panel = nullptr;
-    Flex* row = nullptr;
-    InputDispatcher inputDispatcher;
-    std::vector<DockItemView> items;
-    std::uint64_t modelSerial = 0;
-    std::string activeAppIdLower;
-    wl_output* lastFilterOutput = nullptr;
-    bool pointerInside = false;
-    // Auto-hide: tracks visibility [0,1] driven by hover.
-    float hideOpacity = 1.0f;
-    AnimationManager::Id hideAnimId = 0;
-    Signal<>::ScopedConnection paletteConn;
-  };
-
   // Returns true if the item list was modified (triggers a rebuild).
   bool refreshPinnedAppsIfNeeded();
   void pruneCachedToplevelHandles();
@@ -110,24 +53,21 @@ private:
   void destroyInstance(std::uint32_t outputName);
   // Drop any references the dock keeps to an instance (surface map, hovered, popup owner)
   // before the instance is destroyed. Safe to call multiple times.
-  void detachInstanceState(DockInstance& inst);
-  void prepareFrame(DockInstance& instance, bool needsUpdate, bool needsLayout);
-  bool syncInstanceModel(DockInstance& instance);
-  void applyDockCompositorBlur(DockInstance& instance);
-  void syncDockSlideLayerTransform(DockInstance& instance);
-  void buildScene(DockInstance& instance);
-  void rebuildItems(DockInstance& instance);
-  void resizeSurface(DockInstance& instance);
-  void updateVisuals(DockInstance& instance);
-  void applyPanelPalette(DockInstance& instance);
-  std::unique_ptr<InputArea> createLauncherButton(DockInstance& instance);
-  void handleItemClick(DockInstance& instance, DockItemView& item);
-  void openItemMenu(DockInstance& instance, DockItemView& item);
+  void detachInstanceState(shell::dock::DockInstance& inst);
+  bool syncInstanceModel(shell::dock::DockInstance& instance);
+  void rebuildItems(shell::dock::DockInstance& instance);
+  void updateVisuals(shell::dock::DockInstance& instance);
+  std::unique_ptr<InputArea> createLauncherButton(shell::dock::DockInstance& instance);
+  void handleItemClick(shell::dock::DockInstance& instance, shell::dock::DockItemView& item);
+  void openItemMenu(shell::dock::DockInstance& instance, shell::dock::DockItemView& item);
   void closeItemMenu();
-  void startHideFadeOut(DockInstance& inst);
 
-  [[nodiscard]] bool matchesActiveApp(const DockItemView& item, std::string_view activeAppIdLower) const;
-  [[nodiscard]] bool matchesRunningApp(const DockItemView& item, const std::vector<std::string>& runningLower) const;
+  [[nodiscard]] bool matchesActiveApp(
+      const shell::dock::DockItemView& item, std::string_view activeAppIdLower
+  ) const;
+  [[nodiscard]] bool matchesRunningApp(
+      const shell::dock::DockItemView& item, const std::vector<std::string>& runningLower
+  ) const;
 
   CompositorPlatform* m_platform = nullptr;
   ConfigService* m_config = nullptr;
@@ -141,9 +81,9 @@ private:
   std::uint64_t m_entriesVersion = 0;
   IconResolver m_iconResolver;
   std::unordered_map<std::string, zwlr_foreign_toplevel_handle_v1*> m_lastActiveHandleByAppIdLower;
-  std::vector<std::unique_ptr<DockInstance>> m_instances;
-  std::unordered_map<wl_surface*, DockInstance*> m_surfaceMap;
-  DockInstance* m_hoveredInstance = nullptr;
-  DockInstance* m_popupOwnerInstance = nullptr;       // instance that owns the current open popup
+  std::vector<std::unique_ptr<shell::dock::DockInstance>> m_instances;
+  std::unordered_map<wl_surface*, shell::dock::DockInstance*> m_surfaceMap;
+  shell::dock::DockInstance* m_hoveredInstance = nullptr;
+  shell::dock::DockInstance* m_popupOwnerInstance = nullptr; // instance that owns the current open popup
   std::unique_ptr<shell::dock::DockPopup> m_itemMenu; // right-click context menu
 };
