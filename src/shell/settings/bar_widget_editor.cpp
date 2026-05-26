@@ -3,6 +3,7 @@
 #include "cursor-shape-v1-client-protocol.h"
 #include "i18n/i18n.h"
 #include "render/scene/node.h"
+#include "scripting/scripted_widget_manifest.h"
 #include "shell/settings/settings_content.h"
 #include "shell/settings/widget_settings_registry.h"
 #include "ui/builders.h"
@@ -1082,6 +1083,59 @@ namespace settings {
                             std::filesystem::path current(currentValue);
                             std::error_code ec;
                             if (current.has_parent_path() && std::filesystem::exists(current.parent_path(), ec)) {
+                              options.startDirectory = current.parent_path();
+                            }
+                          }
+                          (void)FileDialog::open(
+                              std::move(options),
+                              [setOverride, requestRebuild, path](std::optional<std::filesystem::path> picked) {
+                                if (!picked.has_value()) {
+                                  return;
+                                }
+                                setOverride(path, picked->string());
+                                if (requestRebuild) {
+                                  requestRebuild();
+                                }
+                              }
+                          );
+                        },
+                    })
+                )
+            );
+          } else if (widgetType == "scripted" && spec.key == "script") {
+            ctx.makeRow(
+                *panel, entry,
+                ui::row(
+                    {
+                        .align = FlexAlign::Center,
+                        .gap = Style::spaceSm * ctx.scale,
+                    },
+                    std::move(textNode),
+                    ui::button({
+                        .glyph = "file-text",
+                        .glyphSize = Style::fontSizeBody * ctx.scale,
+                        .variant = ButtonVariant::Outline,
+                        .minWidth = Style::controlHeight * ctx.scale,
+                        .minHeight = Style::controlHeight * ctx.scale,
+                        .paddingV = Style::spaceXs * ctx.scale,
+                        .paddingH = Style::spaceSm * ctx.scale,
+                        .radius = Style::scaledRadiusMd(ctx.scale),
+                        .onClick = [setOverride = ctx.setOverride, requestRebuild = ctx.requestRebuild, path,
+                                    currentValue = settingValueAsString(value)]() {
+                          FileDialogOptions options;
+                          options.mode = FileDialogMode::Open;
+                          options.defaultViewMode = FileDialogViewMode::List;
+                          options.title = i18n::tr("settings.controls.path-browse.file-title");
+                          options.extensions = {".lua", ".luau"};
+                          if (!currentValue.empty()) {
+                            std::filesystem::path current = scripting::resolveScriptPath(currentValue);
+                            std::error_code ec;
+                            if (std::filesystem::exists(current, ec) && std::filesystem::is_regular_file(current, ec)) {
+                              options.startDirectory = current.parent_path();
+                              options.defaultFilename = current.filename().string();
+                            } else if (
+                                current.has_parent_path() && std::filesystem::exists(current.parent_path(), ec)
+                            ) {
                               options.startDirectory = current.parent_path();
                             }
                           }
