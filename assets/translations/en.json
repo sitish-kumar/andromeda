@@ -29,9 +29,19 @@
     },
     "actions": {
       "delete-selected": "Delete selected item",
-      "confirm-delete-selected": "Click again to delete this item",
-      "clear-unpinned": "Clear unpinned history",
-      "confirm-clear-unpinned": "Click again to clear unpinned history"
+      "delete-item": "Delete item",
+      "delete-cancel": "Cancel delete",
+      "clear-history": "Clear clipboard history",
+      "clear-cancel": "Cancel clear",
+      "keep-pinned": "Keep pinned",
+      "keep-pinned-unavailable": "No unpinned items to clear",
+      "clear-all": "Clear everything"
+    },
+    "confirm": {
+      "delete-title": "Delete clipboard item?",
+      "delete-desc": "This removes the selected item from clipboard history.",
+      "clear-title": "Clear clipboard history?",
+      "clear-desc": "Choose whether pinned items should be kept."
     },
     "empty": {
       "history-title": "Clipboard history is empty",

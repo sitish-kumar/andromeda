@@ -59,8 +59,11 @@ private:
   void togglePinSelected();
   void runImageAction();
   void requestClearUnpinnedHistory();
+  void clearUnpinnedHistory();
+  void clearAllHistory();
   bool handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers);
   void scrollToSelected();
+  void requestDeleteSelectedEntry();
   void deleteSelectedEntry();
   void resetDeleteConfirmation();
   void resetClearConfirmation();
@@ -80,6 +83,8 @@ private:
   Flex* m_sidebarHeaderRow = nullptr;
   Label* m_sidebarTitle = nullptr;
   Button* m_clearHistoryButton = nullptr;
+  Button* m_clearKeepPinnedButton = nullptr;
+  Flex* m_clearConfirmPanel = nullptr;
   Button* m_closeButton = nullptr;
   Input* m_filterInput = nullptr;
   VirtualGridView* m_listGrid = nullptr;
@@ -96,6 +101,7 @@ private:
   Button* m_pinButton = nullptr;
   Button* m_copyButton = nullptr;
   Button* m_deleteEntryButton = nullptr;
+  Flex* m_deleteConfirmPanel = nullptr;
   ScrollView* m_previewScrollView = nullptr;
   Flex* m_previewContent = nullptr;
   Image* m_previewImage = nullptr;
@@ -105,8 +111,6 @@ private:
   std::size_t m_pendingPreviewPayloadIndex = static_cast<std::size_t>(-1);
   Timer m_previewPayloadDebounceTimer;
   Timer m_filterDebounceTimer;
-  Timer m_deleteConfirmTimer;
-  Timer m_clearConfirmTimer;
   std::string m_pendingFilterQuery;
   std::string m_deleteConfirmStorageId;
   std::uint64_t m_lastChangeSerial = 0;

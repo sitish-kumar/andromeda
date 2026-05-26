@@ -1948,8 +1948,10 @@ namespace settings {
       auto emptyState = ui::column(
           {.align = FlexAlign::Center,
            .justify = FlexJustify::Center,
-           .gap = Style::spaceXs * scale,
-           .padding = (Style::spaceLg + Style::spaceMd) * scale,
+           .gap = Style::spaceSm * scale,
+           .padding = (Style::spaceLg * 2.0f) * scale,
+           .minHeight = 160.0f * scale,
+           .fillWidth = true,
            .configure =
                [scale](Flex& flex) {
                  flex.setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.24f));
@@ -1957,22 +1959,16 @@ namespace settings {
                  flex.setRadius(Style::scaledRadiusMd(scale));
                }},
           makeLabel(
-              i18n::tr("settings.window.no-results"), Style::fontSizeBody * scale,
+              i18n::tr("settings.window.no-results"), Style::fontSizeHeader * scale,
               colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold
           ),
           makeLabel(
-              i18n::tr("settings.window.no-results-hint"), Style::fontSizeCaption * scale,
+              i18n::tr("settings.window.no-results-hint"), Style::fontSizeBody * scale,
               colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal
           )
       );
 
-      auto emptyRow = ui::row({
-          .align = FlexAlign::Center,
-          .justify = FlexJustify::Center,
-          .fillWidth = true,
-      });
-      emptyRow->addChild(std::move(emptyState));
-      content.addChild(std::move(emptyRow));
+      content.addChild(std::move(emptyState));
     }
 
     return visibleEntries;
