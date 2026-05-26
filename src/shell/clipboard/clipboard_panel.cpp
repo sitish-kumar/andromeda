@@ -507,6 +507,7 @@ void ClipboardPanel::create() {
           .align = FlexAlign::Center,
           .justify = FlexJustify::SpaceBetween,
           .gap = Style::spaceSm * scale,
+          .minHeight = Style::controlHeightSm * scale,
       },
       ui::label({
           .out = &m_sidebarTitle,
