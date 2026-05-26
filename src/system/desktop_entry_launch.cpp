@@ -182,10 +182,7 @@ namespace {
 
 namespace desktop_entry_launch {
 
-  std::optional<PreparedCommand>
-  prepareCommand(std::string_view exec, bool terminal, std::string_view workingDir, const PrepareOptions& options) {
-    (void)workingDir;
-
+  std::optional<PreparedCommand> prepareCommand(std::string_view exec, bool terminal, const PrepareOptions& options) {
     std::string cleanExec = stripFieldCodes(exec);
     std::vector<std::string> args = terminal ? terminalLaunchArgs(cleanExec, options) : tokenize(cleanExec);
 
@@ -200,7 +197,7 @@ namespace desktop_entry_launch {
   }
 
   bool launchEntry(const DesktopEntry& entry, const LaunchOptions& options) {
-    auto prepared = prepareCommand(entry.exec, entry.terminal, entry.workingDir);
+    auto prepared = prepareCommand(entry.exec, entry.terminal);
     if (!prepared.has_value()) {
       log.warn("Failed to prepare launch command for desktop entry '{}'", entry.id.empty() ? entry.name : entry.id);
       return false;
@@ -218,7 +215,7 @@ namespace desktop_entry_launch {
       const DesktopAction& action, std::string_view appName, std::string_view workingDir, bool terminal,
       const LaunchOptions& options
   ) {
-    auto prepared = prepareCommand(action.exec, terminal, workingDir);
+    auto prepared = prepareCommand(action.exec, terminal);
     if (!prepared.has_value()) {
       log.warn("Failed to prepare launch command for desktop action '{}'", action.id.empty() ? action.name : action.id);
       return false;

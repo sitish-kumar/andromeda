@@ -2,6 +2,7 @@
 
 #include "compositors/compositor_detect.h"
 #include "compositors/workspace_backend.h"
+#include "config/config_service.h"
 #include "core/deferred_call.h"
 #include "i18n/i18n.h"
 #include "render/core/color.h"
@@ -143,13 +144,13 @@ namespace {
 } // namespace
 
 TaskbarWidget::TaskbarWidget(
-    CompositorPlatform& platform, const Config& config, wl_output* output, bool groupByWorkspace, bool showAllOutputs,
+    CompositorPlatform& platform, ConfigService& config, wl_output* output, bool groupByWorkspace, bool showAllOutputs,
     bool onlyActiveWorkspace, bool showWorkspaceLabel, WorkspaceLabelPlacement workspaceLabelPlacement,
     bool hideEmptyWorkspaces, bool workspaceGroupCapsule, ColorSpec focusedColor, ColorSpec occupiedColor,
     ColorSpec emptyColor, bool showWindowTitle, float windowTitleMaxWidth, std::string barPosition,
     ShellConfig::ShadowConfig shadowConfig
 )
-    : m_platform(platform), m_config(config), m_output(output), m_groupByWorkspace(groupByWorkspace),
+    : m_platform(platform), m_configService(config), m_output(output), m_groupByWorkspace(groupByWorkspace),
       m_showAllOutputs(showAllOutputs), m_onlyActiveWorkspace(onlyActiveWorkspace),
       m_showWorkspaceLabel(showWorkspaceLabel), m_workspaceLabelPlacement(workspaceLabelPlacement),
       m_hideEmptyWorkspaces(hideEmptyWorkspaces), m_workspaceGroupCapsule(workspaceGroupCapsule),
@@ -1684,7 +1685,7 @@ void TaskbarWidget::openTaskContextMenu(const TaskModel& task, InputArea& area) 
               action, appName, workingDir, terminal,
               desktop_entry_launch::LaunchOptions{
                   .activationToken = std::move(token),
-                  .runAsSystemdService = m_config.shell.launchAppsAsSystemdServices,
+                  .runAsSystemdService = m_configService.config().shell.launchAppsAsSystemdServices,
               }
           );
         });

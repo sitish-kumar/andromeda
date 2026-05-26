@@ -43,38 +43,38 @@ int main() {
   bool ok = true;
 
   ok = expectArgs(
-           desktop_entry_launch::prepareCommand("sample --name %% --file %f --url %U --keep", false, ""),
+           desktop_entry_launch::prepareCommand("sample --name %% --file %f --url %U --keep", false),
            {"sample", "--name", "%", "--file", "--url", "--keep"}, "field codes should be removed"
        )
-       && ok;
+      && ok;
 
   ok = expectArgs(
-           desktop_entry_launch::prepareCommand("sample --title \"Hello World\" --single 'Two Words'", false, ""),
+           desktop_entry_launch::prepareCommand("sample --title \"Hello World\" --single 'Two Words'", false),
            {"sample", "--title", "Hello World", "--single", "Two Words"}, "quoted arguments should stay together"
        )
-       && ok;
+      && ok;
 
   desktop_entry_launch::PrepareOptions terminalOptions;
   terminalOptions.terminalCandidates = {"test-terminal"};
   ok = expectArgs(
-           desktop_entry_launch::prepareCommand("sample --flag", true, "", terminalOptions),
+           desktop_entry_launch::prepareCommand("sample --flag", true, terminalOptions),
            {"test-terminal", "-e", "sh", "-lc", "sample --flag"}, "terminal candidates should wrap the command"
        )
-       && ok;
+      && ok;
 
   desktop_entry_launch::PrepareOptions noTerminalDiscovery;
   noTerminalDiscovery.useSystemTerminalDiscovery = false;
   ok = expect(
-           !desktop_entry_launch::prepareCommand("sample --flag", true, "", noTerminalDiscovery).has_value(),
+           !desktop_entry_launch::prepareCommand("sample --flag", true, noTerminalDiscovery).has_value(),
            "terminal preparation should fail when discovery is disabled and no candidates are provided"
        )
-       && ok;
+      && ok;
 
   ok = expect(
-           !desktop_entry_launch::prepareCommand(" %f %U ", false, "").has_value(),
+           !desktop_entry_launch::prepareCommand(" %f %U ", false).has_value(),
            "field-code-only command should not prepare an empty argv"
        )
-       && ok;
+      && ok;
 
   return ok ? 0 : 1;
 }

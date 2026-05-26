@@ -24,7 +24,7 @@ namespace desktop_entry_launch {
   };
 
   [[nodiscard]] std::optional<PreparedCommand>
-  prepareCommand(std::string_view exec, bool terminal, std::string_view workingDir, const PrepareOptions& options = {});
+  prepareCommand(std::string_view exec, bool terminal, const PrepareOptions& options = {});
 
   [[nodiscard]] bool launchEntry(const DesktopEntry& entry, const LaunchOptions& options = {});
 
