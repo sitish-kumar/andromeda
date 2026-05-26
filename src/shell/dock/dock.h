@@ -5,10 +5,7 @@
 #include "render/scene/input_dispatcher.h"
 #include "system/desktop_entry.h"
 #include "system/icon_resolver.h"
-#include "ui/controls/context_menu.h"
-#include "ui/popup_chrome.h"
 #include "ui/signal.h"
-#include "wayland/popup_surface.h"
 
 #include <array>
 #include <cstdint>
@@ -35,9 +32,14 @@ struct wl_output;
 struct wl_surface;
 struct zwlr_foreign_toplevel_handle_v1;
 
+namespace shell::dock {
+  struct DockPopup;
+}
+
 class Dock {
 public:
   Dock();
+  ~Dock();
 
   bool initialize(CompositorPlatform& platform, ConfigService* config, RenderContext* renderContext);
   void reload();
@@ -127,20 +129,6 @@ private:
   [[nodiscard]] bool matchesActiveApp(const DockItemView& item, std::string_view activeAppIdLower) const;
   [[nodiscard]] bool matchesRunningApp(const DockItemView& item, const std::vector<std::string>& runningLower) const;
 
-  // Generic popup for the item context menu.
-  struct DockPopup {
-    std::unique_ptr<PopupSurface> surface;
-    std::unique_ptr<Node> sceneRoot;
-    popup_chrome::Geometry chrome;
-    InputDispatcher inputDispatcher;
-    wl_surface* wlSurface = nullptr;
-    bool pointerInside = false;
-    std::vector<zwlr_foreign_toplevel_handle_v1*> handles;
-  };
-
-  // Route a pointer event to an open popup; returns true if consumed.
-  bool routePopupEvent(DockPopup* popup, const PointerEvent& event);
-
   CompositorPlatform* m_platform = nullptr;
   ConfigService* m_config = nullptr;
   RenderContext* m_renderContext = nullptr;
@@ -156,6 +144,6 @@ private:
   std::vector<std::unique_ptr<DockInstance>> m_instances;
   std::unordered_map<wl_surface*, DockInstance*> m_surfaceMap;
   DockInstance* m_hoveredInstance = nullptr;
-  DockInstance* m_popupOwnerInstance = nullptr; // instance that owns the current open popup
-  std::unique_ptr<DockPopup> m_itemMenu;        // right-click context menu
+  DockInstance* m_popupOwnerInstance = nullptr;       // instance that owns the current open popup
+  std::unique_ptr<shell::dock::DockPopup> m_itemMenu; // right-click context menu
 };
