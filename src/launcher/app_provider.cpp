@@ -1,10 +1,10 @@
 #include "launcher/app_provider.h"
 
+#include "compositors/compositor_platform.h"
 #include "config/config_service.h"
 #include "system/desktop_entry_launch.h"
 #include "util/fuzzy_match.h"
 #include "util/string_utils.h"
-#include "wayland/wayland_connection.h"
 
 #include <algorithm>
 #include <string_view>
@@ -91,7 +91,8 @@ namespace {
 
 } // namespace
 
-AppProvider::AppProvider(ConfigService* config, WaylandConnection* wayland) : m_config(config), m_wayland(wayland) {}
+AppProvider::AppProvider(ConfigService* config, CompositorPlatform* platform)
+    : m_config(config), m_platform(platform) {}
 
 void AppProvider::initialize() { refreshEntriesIfNeeded(); }
 
@@ -182,8 +183,8 @@ bool AppProvider::activate(const LauncherResult& result) {
     }
 
     std::string token;
-    if (m_wayland != nullptr && m_wayland->hasXdgActivation()) {
-      token = m_wayland->requestActivationToken(nullptr);
+    if (m_platform != nullptr && m_platform->hasXdgActivation()) {
+      token = m_platform->requestActivationToken(nullptr);
     }
     desktop_entry_launch::LaunchOptions launchOptions{
         .activationToken = std::move(token),
