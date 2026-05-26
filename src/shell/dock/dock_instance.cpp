@@ -19,18 +19,18 @@
 #include <cmath>
 
 namespace shell::dock {
-namespace {
+  namespace {
 
-  Radii dockCornerRadii(const DockConfig& cfg) {
-    return Radii{
-        static_cast<float>(cfg.radiusTopLeft),
-        static_cast<float>(cfg.radiusTopRight),
-        static_cast<float>(cfg.radiusBottomRight),
-        static_cast<float>(cfg.radiusBottomLeft),
-    };
-  }
+    Radii dockCornerRadii(const DockConfig& cfg) {
+      return Radii{
+          static_cast<float>(cfg.radiusTopLeft),
+          static_cast<float>(cfg.radiusTopRight),
+          static_cast<float>(cfg.radiusBottomRight),
+          static_cast<float>(cfg.radiusBottomLeft),
+      };
+    }
 
-} // namespace
+  } // namespace
 
   void prepareFrame(
       DockInstance& instance, DockInstanceDependencies deps, const DockInstanceCallbacks& callbacks, bool needsUpdate,
@@ -151,9 +151,10 @@ namespace {
 
       // Wire up InputDispatcher.
       instance.inputDispatcher.setSceneRoot(instance.sceneRoot.get());
-      instance.inputDispatcher.setCursorShapeCallback([&platform = deps.platform](
-                                                          std::uint32_t serial, std::uint32_t shape
-                                                      ) { platform.setCursorShape(serial, shape); });
+      instance.inputDispatcher.setCursorShapeCallback([&platform =
+                                                           deps.platform](std::uint32_t serial, std::uint32_t shape) {
+        platform.setCursorShape(serial, shape);
+      });
       instance.inputDispatcher.setHoverChangeCallback([inst = &instance](InputArea* /*old*/, InputArea* next) {
         TooltipManager::instance().onHoverChange(next, inst->surface->layerSurface(), inst->output);
       });
@@ -225,9 +226,11 @@ namespace {
       inputPanelGeometry.panelX += instance.slideRoot->x();
       inputPanelGeometry.panelY += instance.slideRoot->y();
     }
-    instance.surface->setInputRegion(shell::dock::computeInputRegion(
-        cfg, inputPanelGeometry, static_cast<int>(w), static_cast<int>(h), hiddenInputRegion
-    ));
+    instance.surface->setInputRegion(
+        shell::dock::computeInputRegion(
+            cfg, inputPanelGeometry, static_cast<int>(w), static_cast<int>(h), hiddenInputRegion
+        )
+    );
 
     applyDockCompositorBlur(instance, cfg);
 

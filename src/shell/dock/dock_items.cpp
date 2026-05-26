@@ -224,9 +224,8 @@ namespace shell::dock {
     );
   }
 
-  std::unique_ptr<InputArea> createLauncherButton(
-      DockInstance& instance, const DockConfig& cfg, const DockItemCallbacks& callbacks
-  ) {
+  std::unique_ptr<InputArea>
+  createLauncherButton(DockInstance& instance, const DockConfig& cfg, const DockItemCallbacks& callbacks) {
     const bool vert = shell::dock::isVerticalPosition(cfg.position);
     const float iSize = static_cast<float>(cfg.iconSize);
     const float cellMain = iSize + 2.0f * kCellPad;
@@ -578,9 +577,8 @@ namespace shell::dock {
       const bool needsWindowCount = cfg.showDots || item.badge != nullptr;
       std::size_t count = 0;
       if (needsWindowCount) {
-        const auto windows = deps.platform.windowsForApp(
-            item.idLower, item.startupWmClassLower, dockFilterOutput(cfg, instance.output)
-        );
+        const auto windows =
+            deps.platform.windowsForApp(item.idLower, item.startupWmClassLower, dockFilterOutput(cfg, instance.output));
         count = windows.size();
         item.instanceCount = count;
       }
@@ -648,8 +646,8 @@ namespace shell::dock {
 
     if (windows.empty()) {
       wl_surface* const activationSurface = instance.surface != nullptr ? instance.surface->wlSurface() : nullptr;
-      const auto options = callbacks.launchOptions ? callbacks.launchOptions(activationSurface)
-                                                   : desktop_entry_launch::LaunchOptions{};
+      const auto options =
+          callbacks.launchOptions ? callbacks.launchOptions(activationSurface) : desktop_entry_launch::LaunchOptions{};
       (void)desktop_entry_launch::launchEntry(item.entry, options);
       return;
     }
@@ -668,8 +666,7 @@ namespace shell::dock {
       const auto it = deps.lastActiveHandleByAppIdLower.find(item.idLower);
       return it != deps.lastActiveHandleByAppIdLower.end() ? it->second : nullptr;
     }();
-    if (auto* nextHandle = nextActivatableWindowHandle(windows, activeHandle, preferredHandle);
-        nextHandle != nullptr) {
+    if (auto* nextHandle = nextActivatableWindowHandle(windows, activeHandle, preferredHandle); nextHandle != nullptr) {
       deps.platform.activateToplevel(nextHandle);
     }
   }

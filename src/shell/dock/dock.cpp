@@ -477,9 +477,8 @@ void Dock::createInstance(const WaylandOutput& output) {
     shell::dock::prepareFrame(
         *inst, {.platform = *m_platform, .config = *m_config, .renderContext = *m_renderContext},
         shell::dock::DockInstanceCallbacks{
-            .syncModel = [this](shell::dock::DockInstance& callbackInstance) {
-              return syncInstanceModel(callbackInstance);
-            },
+            .syncModel =
+                [this](shell::dock::DockInstance& callbackInstance) { return syncInstanceModel(callbackInstance); },
             .rebuildItems = [this](shell::dock::DockInstance& callbackInstance) { rebuildItems(callbackInstance); },
             .updateVisuals = [this](shell::dock::DockInstance& callbackInstance) { updateVisuals(callbackInstance); },
         },
@@ -536,17 +535,15 @@ void Dock::rebuildItems(shell::dock::DockInstance& instance) {
       },
       {
           .pruneCachedToplevelHandles = [this]() { pruneCachedToplevelHandles(); },
-          .launchOptions =
-              [this](wl_surface* activationSurface) {
-                return dockLaunchOptions(*m_platform, *m_config, activationSurface);
-              },
+          .launchOptions = [this](
+                               wl_surface* activationSurface
+                           ) { return dockLaunchOptions(*m_platform, *m_config, activationSurface); },
           .toggleLauncher =
               [](shell::dock::DockInstance& inst) {
                 PanelManager::instance().togglePanel("launcher", PanelOpenRequest{.output = inst.output});
               },
-          .openItemMenu = [this](shell::dock::DockInstance& inst, shell::dock::DockItemView& item) {
-            openItemMenu(inst, item);
-          },
+          .openItemMenu =
+              [this](shell::dock::DockInstance& inst, shell::dock::DockItemView& item) { openItemMenu(inst, item); },
       }
   );
 }

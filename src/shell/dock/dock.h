@@ -23,7 +23,7 @@ namespace shell::dock {
   struct DockInstance;
   struct DockItemView;
   struct DockPopup;
-}
+} // namespace shell::dock
 
 class Dock {
 public:
@@ -74,5 +74,5 @@ private:
   std::unordered_map<wl_surface*, shell::dock::DockInstance*> m_surfaceMap;
   shell::dock::DockInstance* m_hoveredInstance = nullptr;
   shell::dock::DockInstance* m_popupOwnerInstance = nullptr; // instance that owns the current open popup
-  std::unique_ptr<shell::dock::DockPopup> m_itemMenu; // right-click context menu
+  std::unique_ptr<shell::dock::DockPopup> m_itemMenu;        // right-click context menu
 };
