@@ -379,6 +379,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
           .text = task.title,
           .fontSize = Style::fontSizeCaption * m_contentScale,
           .maxWidth = m_windowTitleMaxWidth * m_contentScale,
+          .fontWeight = fontWeight,
       });
       label->measure(renderer);
       label->setPosition(std::round(tileSize + tilePadding), 0);
