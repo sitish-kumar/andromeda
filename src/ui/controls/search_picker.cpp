@@ -85,10 +85,10 @@ namespace {
       ColorSpec detailForeground = colorSpecFromRole(ColorRole::OnSurfaceVariant, option.enabled ? 1.0f : 0.55f);
       if (highlighted) {
         foreground = colorSpecFromRole(ColorRole::OnPrimary);
-        detailForeground = colorSpecFromRole(ColorRole::OnPrimary, 0.78f);
+        detailForeground = colorSpecFromRole(ColorRole::OnPrimary);
       } else if (hovered) {
         foreground = colorSpecFromRole(ColorRole::OnHover);
-        detailForeground = colorSpecFromRole(ColorRole::OnHover, 0.78f);
+        detailForeground = colorSpecFromRole(ColorRole::OnHover);
       }
 
       if (m_preview != nullptr) {

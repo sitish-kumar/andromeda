@@ -33,7 +33,6 @@ namespace {
   constexpr std::size_t kMaxResults = 50;
   constexpr std::size_t kRowOverscan = 3;
   constexpr float kIconSize = 40.0f;
-  constexpr float kRowHoverFillAlpha = 0.18f;
   constexpr double kUsageScorePerCount = 0.1;
   constexpr double kTypedUsageScoreCap = 0.5;
   constexpr std::string_view kProviderOverviewProviderName = "__launcher_provider_overview__";
@@ -228,13 +227,20 @@ namespace {
 
   private:
     void applyVisualState() {
-      if (m_selected) {
-        m_row->setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
-      } else if (m_hovered) {
-        m_row->setFill(colorSpecFromRole(ColorRole::Hover, kRowHoverFillAlpha));
+      const bool active = m_selected || m_hovered;
+      if (active) {
+        m_row->setFill(colorSpecFromRole(ColorRole::Hover));
       } else {
         m_row->setFill(rgba(0, 0, 0, 0));
       }
+
+      const ColorSpec foreground = colorSpecFromRole(active ? ColorRole::OnHover : ColorRole::OnSurface);
+      const ColorSpec mutedForeground =
+          active ? colorSpecFromRole(ColorRole::OnHover) : colorSpecFromRole(ColorRole::OnSurfaceVariant);
+      m_actionLabel->setColor(foreground);
+      m_glyph->setColor(foreground);
+      m_title->setColor(foreground);
+      m_subtitle->setColor(mutedForeground);
     }
 
     float m_scale = 1.0f;

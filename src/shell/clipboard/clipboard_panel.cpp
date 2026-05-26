@@ -36,7 +36,6 @@ namespace {
   constexpr float kPreviewImageHeight = 280.0f;
   constexpr float kListGlyphSize = 24.0f;
   constexpr float kListThumbSize = 40.0f;
-  constexpr float kRowHoverFillAlpha = 0.18f;
   constexpr std::size_t kListOverscanRows = 3;
   constexpr auto kPreviewPayloadDebounceInterval = std::chrono::milliseconds(75);
   constexpr auto kFilterDebounceInterval = std::chrono::milliseconds(120);
@@ -336,13 +335,19 @@ namespace {
         return;
       }
 
-      const Color bg = m_selected ? colorForRole(ColorRole::SurfaceVariant)
-          : m_hovered             ? colorForRole(ColorRole::Hover, kRowHoverFillAlpha)
-                                  : clearColor();
-      m_background->setFill(bg);
-      m_glyph->setColor(colorSpecFromRole(m_isImage ? ColorRole::Secondary : ColorRole::Primary));
-      m_title->setColor(colorSpecFromRole(ColorRole::OnSurface));
-      m_meta->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+      const bool active = m_selected || m_hovered;
+      if (active) {
+        m_background->setFill(colorSpecFromRole(ColorRole::Hover));
+      } else {
+        m_background->setFill(clearColorSpec());
+      }
+
+      m_glyph->setColor(
+          active ? colorSpecFromRole(ColorRole::OnHover)
+                 : colorSpecFromRole(m_isImage ? ColorRole::Secondary : ColorRole::Primary)
+      );
+      m_title->setColor(colorSpecFromRole(active ? ColorRole::OnHover : ColorRole::OnSurface));
+      m_meta->setColor(active ? colorSpecFromRole(ColorRole::OnHover) : colorSpecFromRole(ColorRole::OnSurfaceVariant));
     }
 
     float m_scale = 1.0f;

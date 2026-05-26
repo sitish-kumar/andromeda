@@ -106,7 +106,7 @@ namespace {
               },
           .hover =
               Button::ButtonStateColors{
-                  .bg = colorSpecFromRole(ColorRole::Hover, std::max(opacity, 0.78f)),
+                  .bg = colorSpecFromRole(ColorRole::Hover),
                   .border = clearColorSpec(),
                   .label = colorSpecFromRole(ColorRole::OnHover),
               },
@@ -133,7 +133,7 @@ namespace {
               },
           .hover =
               Button::ButtonStateColors{
-                  .bg = colorSpecFromRole(ColorRole::Hover, std::max(opacity, 0.78f)),
+                  .bg = colorSpecFromRole(ColorRole::Hover),
                   .border = clearColorSpec(),
                   .label = colorSpecFromRole(ColorRole::OnHover),
               },
@@ -160,7 +160,7 @@ namespace {
               },
           .hover =
               Button::ButtonStateColors{
-                  .bg = colorSpecFromRole(ColorRole::Error, std::max(opacity, 0.78f)),
+                  .bg = colorSpecFromRole(ColorRole::Error),
                   .border = clearColorSpec(),
                   .label = colorSpecFromRole(ColorRole::OnError),
               },
@@ -187,7 +187,7 @@ namespace {
               },
           .hover =
               Button::ButtonStateColors{
-                  .bg = colorSpecFromRole(ColorRole::Hover, std::max(opacity, 0.78f)),
+                  .bg = colorSpecFromRole(ColorRole::Hover),
                   .border = clearColorSpec(),
                   .label = colorSpecFromRole(ColorRole::OnHover),
               },
@@ -214,7 +214,7 @@ namespace {
               },
           .hover =
               Button::ButtonStateColors{
-                  .bg = colorSpecFromRole(ColorRole::Hover, std::max(opacity, 0.78f)),
+                  .bg = colorSpecFromRole(ColorRole::Hover),
                   .border = clearColorSpec(),
                   .label = colorSpecFromRole(ColorRole::OnHover),
               },
@@ -244,7 +244,7 @@ namespace {
             },
         .hover =
             Button::ButtonStateColors{
-                .bg = colorSpecFromRole(ColorRole::Hover, std::max(opacity, 0.78f)),
+                .bg = colorSpecFromRole(ColorRole::Hover),
                 .border = clearColorSpec(),
                 .label = colorSpecFromRole(ColorRole::OnHover),
             },

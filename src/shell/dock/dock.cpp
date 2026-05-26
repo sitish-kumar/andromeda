@@ -1269,7 +1269,7 @@ void Dock::rebuildItems(DockInstance& instance) {
       if (!itemPtr->hovered) {
         itemPtr->hovered = true;
         if (itemPtr->background) {
-          itemPtr->background->setFill(colorSpecFromRole(ColorRole::Hover, 0.8f));
+          itemPtr->background->setFill(colorSpecFromRole(ColorRole::Hover));
         }
         if (instPtr->sceneRoot)
           instPtr->sceneRoot->markPaintDirty();
@@ -1508,7 +1508,7 @@ std::unique_ptr<InputArea> Dock::createLauncherButton(DockInstance& instance) {
 
   auto* instPtr = &instance;
   areaNode->setOnEnter([bgPtr, instPtr](const InputArea::PointerData&) {
-    bgPtr->setFill(colorSpecFromRole(ColorRole::Hover, 0.8f));
+    bgPtr->setFill(colorSpecFromRole(ColorRole::Hover));
     if (instPtr->sceneRoot != nullptr) {
       instPtr->sceneRoot->markPaintDirty();
     }

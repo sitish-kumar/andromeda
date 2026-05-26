@@ -76,7 +76,7 @@ namespace {
             },
         .hover =
             Button::ButtonStateColors{
-                .bg = colorSpecFromRole(ColorRole::Hover, std::max(opacity, 0.78f)),
+                .bg = colorSpecFromRole(ColorRole::Hover),
                 .border = clearColorSpec(),
                 .label = colorSpecFromRole(ColorRole::OnHover),
             },
