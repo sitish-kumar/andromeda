@@ -6,6 +6,7 @@
 #include <string>
 
 struct Config;
+class ConfigService;
 class FileWatcher;
 class CompositorPlatform;
 class NotificationManager;
@@ -33,7 +34,7 @@ namespace noctalia::theme {
 class WidgetFactory {
 public:
   WidgetFactory(
-      CompositorPlatform& platform, const Config& config, NotificationManager* notifications, TrayService* tray,
+      CompositorPlatform& platform, ConfigService& config, NotificationManager* notifications, TrayService* tray,
       PipeWireService* audio, UPowerService* upower, SystemMonitorService* sysmon, PowerProfilesService* powerProfiles,
       INetworkService* network, IdleInhibitor* idleInhibitor, MprisService* mpris, PipeWireSpectrum* audioSpectrum,
       HttpClient* httpClient, WeatherService* weather, GammaService* nightLight,
@@ -49,6 +50,7 @@ public:
 
 private:
   CompositorPlatform& m_platform;
+  ConfigService& m_configService;
   const Config& m_config;
   NotificationManager* m_notifications;
   TrayService* m_tray;

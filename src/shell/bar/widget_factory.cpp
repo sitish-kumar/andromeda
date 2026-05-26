@@ -94,18 +94,19 @@ namespace {
 } // namespace
 
 WidgetFactory::WidgetFactory(
-    CompositorPlatform& platform, const Config& config, NotificationManager* notifications, TrayService* tray,
+    CompositorPlatform& platform, ConfigService& config, NotificationManager* notifications, TrayService* tray,
     PipeWireService* audio, UPowerService* upower, SystemMonitorService* sysmon, PowerProfilesService* powerProfiles,
     INetworkService* network, IdleInhibitor* idleInhibitor, MprisService* mpris, PipeWireSpectrum* audioSpectrum,
     HttpClient* httpClient, WeatherService* weather, GammaService* nightLight,
     noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth, BrightnessService* brightness,
     LockKeysService* lockKeys, ClipboardService* clipboard, FileWatcher* fileWatcher
 )
-    : m_platform(platform), m_config(config), m_notifications(notifications), m_tray(tray), m_audio(audio),
-      m_upower(upower), m_sysmon(sysmon), m_powerProfiles(powerProfiles), m_network(network),
-      m_idleInhibitor(idleInhibitor), m_mpris(mpris), m_audioSpectrum(audioSpectrum), m_httpClient(httpClient),
-      m_weather(weather), m_nightLight(nightLight), m_themeService(themeService), m_bluetooth(bluetooth),
-      m_brightness(brightness), m_lockKeys(lockKeys), m_clipboard(clipboard), m_fileWatcher(fileWatcher) {}
+    : m_platform(platform), m_configService(config), m_config(config.config()), m_notifications(notifications),
+      m_tray(tray), m_audio(audio), m_upower(upower), m_sysmon(sysmon), m_powerProfiles(powerProfiles),
+      m_network(network), m_idleInhibitor(idleInhibitor), m_mpris(mpris), m_audioSpectrum(audioSpectrum),
+      m_httpClient(httpClient), m_weather(weather), m_nightLight(nightLight), m_themeService(themeService),
+      m_bluetooth(bluetooth), m_brightness(brightness), m_lockKeys(lockKeys), m_clipboard(clipboard),
+      m_fileWatcher(fileWatcher) {}
 
 WidgetFactory::~WidgetFactory() = default;
 
@@ -449,7 +450,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
     const float windowTitleMaxWidth =
         static_cast<float>(wc != nullptr ? wc->getDouble("window_title_max_width", 100.0) : 100.0);
     auto widget = std::make_unique<TaskbarWidget>(
-        m_platform, output, groupByWorkspace, showAllOutputs, onlyActiveWorkspace, showWorkspaceLabel,
+        m_platform, m_configService, output, groupByWorkspace, showAllOutputs, onlyActiveWorkspace, showWorkspaceLabel,
         workspaceLabelPlacement, hideEmptyWorkspaces, workspaceGroupCapsule, showActiveIndicator, activeOpacity,
         inactiveOpacity, focusedColor, occupiedColor, emptyColor, showWindowTitle, windowTitleMaxWidth, barPosition,
         m_config.shell.shadow
