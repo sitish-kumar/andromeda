@@ -85,6 +85,19 @@ private:
     std::string source;
   };
 
+  enum class NvidiaDisplayDeviceState { None, InactiveOnly, Active };
+
+  struct GpuTempData {
+    std::optional<double> tempC;
+    std::string source;
+    std::string detail;
+  };
+
+  struct GpuUsageData {
+    std::optional<double> percent;
+    std::string source;
+  };
+
   void start();
   void stop();
   void samplingLoop();
@@ -99,6 +112,11 @@ private:
   };
   [[nodiscard]] static std::optional<MemData> readMemoryKb();
   [[nodiscard]] static std::optional<double> readCpuTempCelsius();
+  [[nodiscard]] static NvidiaDisplayDeviceState detectNvidiaPciDisplayDeviceState();
+  [[nodiscard]] NvidiaNvmlReader& ensureNvmlReader();
+  [[nodiscard]] GpuTempData readGpuTempData(NvidiaDisplayDeviceState nvidiaDisplayState);
+  [[nodiscard]] GpuUsageData readGpuUsageData(NvidiaDisplayDeviceState nvidiaDisplayState);
+  [[nodiscard]] std::optional<GpuVramData> readGpuVramData(NvidiaDisplayDeviceState nvidiaDisplayState);
   [[nodiscard]] std::optional<double> readGpuTempCelsius();
   [[nodiscard]] std::optional<double> readGpuUsagePercent();
   [[nodiscard]] std::optional<GpuVramData> readGpuVram();
