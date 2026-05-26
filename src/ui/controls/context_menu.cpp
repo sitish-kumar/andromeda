@@ -3,10 +3,7 @@
 #include "core/ui_phase.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
-#include "ui/controls/box.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/label.h"
-#include "ui/controls/separator.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 
@@ -108,13 +105,17 @@ void ContextMenuControl::rebuild(Renderer& renderer) {
 
   setSize(m_menuWidth, preferredHeight());
 
-  auto bg = std::make_unique<Box>();
-  bg->setCardStyle();
-  bg->setRadius(Style::scaledRadiusLg());
-  bg->setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
-  bg->setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
-  bg->setFrameSize(width(), height());
-  addChild(std::move(bg));
+  addChild(
+      ui::box({
+          .configure = [this](Box& bg) {
+            bg.setCardStyle();
+            bg.setRadius(Style::scaledRadiusLg());
+            bg.setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
+            bg.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
+            bg.setFrameSize(width(), height());
+          },
+      })
+  );
 
   rebuildRows(renderer);
   m_needsRebuild = false;
@@ -158,62 +159,81 @@ void ContextMenuControl::rebuildRows(Renderer& renderer) {
     });
 
     if (!entry.separator) {
-      auto rowBg = std::make_unique<Box>();
-      rowBg->setFill(clearColorSpec());
-      rowBg->setRadius(Style::scaledRadiusSm());
-      rowBg->setFrameSize(rowWidth, rowHeight);
-      rowBgPtr = static_cast<Box*>(row->addChild(std::move(rowBg)));
+      row->addChild(
+          ui::box({
+              .out = &rowBgPtr,
+              .fill = clearColorSpec(),
+              .radius = Style::scaledRadiusSm(),
+              .width = rowWidth,
+              .height = rowHeight,
+          })
+      );
 
       const bool toggleVisible = hasToggle(entry);
       const float toggleSlot = toggleVisible ? 22.0f : 0.0f;
       const std::string toggleGlyph = toggleGlyphName(entry);
       if (!toggleGlyph.empty()) {
-        auto glyph = std::make_unique<Glyph>();
-        glyph->setGlyph(toggleGlyph);
-        glyph->setGlyphSize(Style::fontSizeBody - 1.0f);
-        glyph->setColor(entry.enabled ? enabledItemColor() : disabledItemColor());
+        auto glyph = ui::glyph({
+            .out = &togglePtr,
+            .glyph = toggleGlyph,
+            .glyphSize = Style::fontSizeBody - 1.0f,
+            .color = entry.enabled ? enabledItemColor() : disabledItemColor(),
+        });
         glyph->measure(renderer);
         glyph->setPosition(8.0f, (rowHeight - glyph->height()) * 0.5f);
-        togglePtr = static_cast<Glyph*>(row->addChild(std::move(glyph)));
+        row->addChild(std::move(glyph));
       }
 
-      std::string labelText = entry.label;
-      auto label = std::make_unique<Label>();
-      label->setText(labelText);
-      label->setFontSize(Style::fontSizeBody);
-      label->setColor(entry.enabled ? enabledItemColor() : disabledItemColor());
-      label->setMaxWidth(entry.hasSubmenu ? (rowWidth - 30.0f - toggleSlot) : (rowWidth - 16.0f - toggleSlot));
+      auto label = ui::label({
+          .out = &labelPtr,
+          .text = entry.label,
+          .fontSize = Style::fontSizeBody,
+          .color = entry.enabled ? enabledItemColor() : disabledItemColor(),
+          .maxWidth = entry.hasSubmenu ? (rowWidth - 30.0f - toggleSlot) : (rowWidth - 16.0f - toggleSlot),
+      });
       label->measure(renderer);
       label->setPosition(8.0f + toggleSlot, (rowHeight - label->height()) * 0.5f);
-      labelPtr = static_cast<Label*>(row->addChild(std::move(label)));
+      row->addChild(std::move(label));
 
       if (entry.hasSubmenu) {
-        auto chevron = std::make_unique<Glyph>();
-        chevron->setGlyph(m_submenuDirection == ContextSubmenuDirection::Right ? "chevron-right" : "chevron-left");
-        chevron->setGlyphSize(Style::fontSizeBody - 1.0f);
-        chevron->setColor(entry.enabled ? enabledItemColor() : disabledItemColor());
+        auto chevron = ui::glyph({
+            .out = &chevronPtr,
+            .glyph = m_submenuDirection == ContextSubmenuDirection::Right ? "chevron-right" : "chevron-left",
+            .glyphSize = Style::fontSizeBody - 1.0f,
+            .color = entry.enabled ? enabledItemColor() : disabledItemColor(),
+        });
         chevron->measure(renderer);
         chevron->setPosition(rowWidth - 8.0f - chevron->width(), (rowHeight - chevron->height()) * 0.5f);
-        chevronPtr = static_cast<Glyph*>(row->addChild(std::move(chevron)));
+        row->addChild(std::move(chevron));
       }
     } else {
-      auto rowBg = std::make_unique<Box>();
-      rowBg->setFill(clearColorSpec());
-      rowBg->setRadius(Style::scaledRadiusSm());
-      rowBg->setFrameSize(rowWidth, rowHeight);
-      rowBgPtr = static_cast<Box*>(row->addChild(std::move(rowBg)));
+      row->addChild(
+          ui::box({
+              .out = &rowBgPtr,
+              .fill = clearColorSpec(),
+              .radius = Style::scaledRadiusSm(),
+              .width = rowWidth,
+              .height = rowHeight,
+          })
+      );
 
-      auto label = std::make_unique<Label>();
-      label->setText("");
-      label->setFontSize(Style::fontSizeBody);
-      label->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      labelPtr = static_cast<Label*>(row->addChild(std::move(label)));
+      row->addChild(
+          ui::label({
+              .out = &labelPtr,
+              .text = "",
+              .fontSize = Style::fontSizeBody,
+              .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+          })
+      );
 
-      auto sep = std::make_unique<Separator>();
-      sep->setOrientation(SeparatorOrientation::HorizontalRule);
-      sep->setSize(rowWidth, 1.0f);
-      sep->setPosition(0.0f, (rowHeight - 1.0f) * 0.5f);
-      row->addChild(std::move(sep));
+      row->addChild(
+          ui::separator({
+              .orientation = SeparatorOrientation::HorizontalRule,
+              .width = rowWidth,
+              .height = 1.0f,
+              .configure = [rowHeight](Separator& sep) { sep.setPosition(0.0f, (rowHeight - 1.0f) * 0.5f); },
+          })
+      );
     }
 
     if (rowBgPtr != nullptr && labelPtr != nullptr) {
