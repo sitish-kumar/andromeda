@@ -1660,6 +1660,11 @@ namespace settings {
         SliderSetting{cfg.notification.backgroundOpacity, 0.0f, 1.0f, 0.01f, false}, "popup"
     ));
     entries.push_back(makeEntry(
+        "popups", "notifications", tr("settings.schema.notifications.collapse-on-dismiss.label"),
+        tr("settings.schema.notifications.collapse-on-dismiss.description"), {"notification", "collapse_on_dismiss"},
+        ToggleSetting{cfg.notification.collapseOnDismiss}, "reorder stack slide"
+    ));
+    entries.push_back(makeEntry(
         "popups", "notifications", tr("settings.schema.notifications.monitors.label"),
         tr("settings.schema.notifications.monitors.description"), {"notification", "monitors"},
         ListSetting{.items = cfg.notification.monitors, .suggestedOptions = env.availableOutputs},

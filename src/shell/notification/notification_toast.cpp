@@ -987,6 +987,9 @@ void NotificationToast::finishRemoval(uint32_t notificationId) {
   if (m_entries.empty()) {
     destroySurfaces();
   } else {
+    if (m_config != nullptr && m_config->config().notification.collapseOnDismiss) {
+      collapseStack();
+    }
     revealQueuedEntries();
   }
 }
@@ -1611,6 +1614,95 @@ void NotificationToast::alignBottomStackToPlacementBottom() {
       if (entry.rawTimeoutMs > 0 && m_notifications != nullptr) {
         m_notifications->pauseExpiry(entry.notificationId);
       }
+    }
+  }
+}
+
+void NotificationToast::collapseStack() {
+  const float scale = notificationUiScale(m_config);
+  const float layoutGap = kGap * scale;
+  const float topPad = paddingTop(scale);
+
+  struct PlacedEntry {
+    std::size_t index;
+    float oldY;
+  };
+  std::vector<PlacedEntry> placed;
+  for (std::size_t i = 0; i < m_entries.size(); ++i) {
+    if (hasPlacement(m_entries[i]) && !m_entries[i].exiting) {
+      placed.push_back({i, m_entries[i].y});
+    }
+  }
+  if (placed.empty()) {
+    return;
+  }
+
+  if (isBottomStacking()) {
+    std::sort(placed.begin(), placed.end(), [](const PlacedEntry& a, const PlacedEntry& b) { return a.oldY > b.oldY; });
+    float cursor = maxPlacementBottom();
+    for (auto& p : placed) {
+      float newY = cursor - m_entries[p.index].height;
+      m_entries[p.index].y = newY;
+      cursor = newY - layoutGap;
+    }
+  } else {
+    std::sort(placed.begin(), placed.end(), [](const PlacedEntry& a, const PlacedEntry& b) { return a.oldY < b.oldY; });
+    float cursor = topPad;
+    for (auto& p : placed) {
+      m_entries[p.index].y = cursor;
+      cursor = cursor + m_entries[p.index].height + layoutGap;
+    }
+  }
+
+  for (auto& p : placed) {
+    const float newY = m_entries[p.index].y;
+    if (std::abs(newY - p.oldY) < 0.5f) {
+      continue;
+    }
+
+    for (auto& inst : m_instances) {
+      if (p.index >= inst->cards.size()) {
+        continue;
+      }
+      auto& cs = inst->cards[p.index];
+      if (cs.cardNode == nullptr) {
+        continue;
+      }
+
+      if (cs.slideAnimId != 0) {
+        inst->animations.cancel(cs.slideAnimId);
+        cs.slideAnimId = 0;
+      }
+
+      const float surfH = static_cast<float>(inst->surface->height());
+      const float newSurfY = entryYForSurface(m_entries[p.index], surfH);
+
+      if (cs.entryAnimId != 0) {
+        const float currentReveal = cardReveal(cs, m_entries[p.index].height);
+        inst->animations.cancel(cs.entryAnimId);
+        cs.entryAnimId = 0;
+        const float cardHeight = m_entries[p.index].height;
+        Node* viewport = cs.cardNode;
+        Node* content = cs.cardContent;
+        Node* foreground = cs.cardForeground;
+        cs.entryAnimId = inst->animations.animate(
+            currentReveal, 1.0f, Style::animNormal, Easing::EaseOutCubic,
+            [this, viewport, content, foreground, newSurfY, cardHeight, scale](float v) {
+              applyCardRevealNodes(viewport, content, foreground, v, newSurfY, revealDirection(), cardHeight, scale);
+            },
+            [&cs]() { cs.entryAnimId = 0; }, viewport
+        );
+        continue;
+      }
+
+      const float px = paddingX(scale);
+      const float oldSurfY = cs.cardNode->y();
+      Node* cardNode = cs.cardNode;
+
+      cs.slideAnimId = inst->animations.animate(
+          oldSurfY, newSurfY, Style::animNormal, Easing::EaseInOutQuad,
+          [cardNode, px](float v) { cardNode->setPosition(px, v); }, [&cs]() { cs.slideAnimId = 0; }, cardNode
+      );
     }
   }
 }

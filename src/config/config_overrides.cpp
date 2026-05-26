@@ -430,7 +430,8 @@ namespace {
         && nearlyEqual(a.backgroundOpacity, b.backgroundOpacity)
         && a.offsetX == b.offsetX
         && a.offsetY == b.offsetY
-        && a.monitors == b.monitors;
+        && a.monitors == b.monitors
+        && a.collapseOnDismiss == b.collapseOnDismiss;
   }
 
   bool audioConfigEqual(const AudioConfig& a, const AudioConfig& b) {

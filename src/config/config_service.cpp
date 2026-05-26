@@ -1869,6 +1869,8 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     if (const auto* v = notifTable.get("monitors")) {
       notif.monitors = readStringArray(*v);
     }
+    if (auto v = notifTable["collapse_on_dismiss"].value<bool>())
+      notif.collapseOnDismiss = *v;
   };
 
   if (auto* notifTbl = tbl["notification"].as_table()) {

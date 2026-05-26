@@ -593,6 +593,7 @@ namespace config_export {
       table.insert_or_assign("offset_x", static_cast<std::int64_t>(notification.offsetX));
       table.insert_or_assign("offset_y", static_cast<std::int64_t>(notification.offsetY));
       table.insert_or_assign("monitors", stringArray(notification.monitors));
+      table.insert_or_assign("collapse_on_dismiss", notification.collapseOnDismiss);
       return table;
     }
 

@@ -407,6 +407,7 @@ struct NotificationConfig {
   int offsetX = 20;                // absolute horizontal margin from the screen edge
   int offsetY = 8;                 // absolute vertical margin from the screen edge
   std::vector<std::string> monitors;
+  bool collapseOnDismiss = true;
 };
 
 template <typename T> struct EnumOption {
