@@ -196,9 +196,22 @@ namespace {
     (void)resolveWidgetContentScale(1.0f, &widget, "widget." + std::string(widgetName) + ".scale");
   }
 
+  void validateKeyboardLayoutWidgetSettings(std::string_view widgetName, const WidgetConfig& widget) {
+    if (widget.type != "keyboard_layout") {
+      return;
+    }
+
+    const bool showIcon = widget.getBool("show_icon", true);
+    const bool showLabel = widget.getBool("show_label", true);
+    if (!showIcon && !showLabel) {
+      throw std::runtime_error("widget." + std::string(widgetName) + ": show_icon and show_label cannot both be false");
+    }
+  }
+
   void validateWidgetSettings(std::string_view widgetName, const WidgetConfig& widget) {
     validateWidgetColorSettings(widgetName, widget);
     validateWidgetScaleSetting(widgetName, widget);
+    validateKeyboardLayoutWidgetSettings(widgetName, widget);
   }
 
   void validateDesktopWidgetColorSettings(const DesktopWidgetState& widget) {

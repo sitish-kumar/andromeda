@@ -250,10 +250,12 @@ std::unique_ptr<Widget> WidgetFactory::create(
   if (type == "keyboard_layout") {
     const std::string cycleCommand = wc != nullptr ? wc->getString("cycle_command", "") : std::string{};
     const std::string display = wc != nullptr ? wc->getString("display", "short") : std::string("short");
-    const bool hideLabel = wc != nullptr ? wc->getBool("hide_label", false) : false;
+    const bool showIcon = wc != nullptr ? wc->getBool("show_icon", true) : true;
+    const bool showLabel = wc != nullptr ? wc->getBool("show_label", true) : true;
     const bool hideWhenSingleLayout = wc != nullptr ? wc->getBool("hide_when_single_layout", false) : false;
     auto widget = std::make_unique<KeyboardLayoutWidget>(
-        m_platform, cycleCommand, KeyboardLayoutWidget::parseDisplayMode(display), hideLabel, hideWhenSingleLayout
+        m_platform, cycleCommand, KeyboardLayoutWidget::parseDisplayMode(display), showIcon, showLabel,
+        hideWhenSingleLayout
     );
     widget->setContentScale(contentScale);
     return widget;

@@ -592,11 +592,12 @@ namespace settings {
       add(stringSpec("glyph", "clipboard"));
     } else if (type == "keyboard_layout") {
       add(stringSpec("cycle_command"));
-      add(boolSpec("hide_label", false));
       add(boolSpec("hide_when_single_layout", false));
+      add(boolSpec("show_icon", true));
+      add(boolSpec("show_label", true));
       {
         auto display = segmentedSpec("display", "short", shortFull);
-        display.visibleWhen = WidgetSettingVisibility{"hide_label", {"false"}};
+        display.visibleWhen = WidgetSettingVisibility{"show_label", {"true"}};
         add(std::move(display));
       }
     } else if (type == "launcher") {

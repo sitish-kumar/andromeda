@@ -1365,10 +1365,6 @@
           "description": "Hide workspace pills whne there are no open windows",
           "workspaces-description": "Hide workspace pills that have no open windows"
         },
-        "hide_label": {
-          "label": "Hide Label",
-          "description": "Hide this widget's text label"
-        },
         "hide_when_single_layout": {
           "label": "Hide When Single Layout",
           "description": "Hide the keyboard layout widget unless more than one layout is configured"
@@ -1475,6 +1471,10 @@
         "show_when_idle": {
           "label": "Show When Idle",
           "description": "Keep the visualizer visible even when no media is playing"
+        },
+        "show_icon": {
+          "label": "Show Icon",
+          "description": "Show this widget's icon"
         },
         "show_label": {
           "label": "Show Label",
