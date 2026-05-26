@@ -109,7 +109,11 @@ private:
 };
 
 WallpaperPanel::WallpaperPanel(WaylandConnection* wayland, ConfigService* config, ThumbnailService* thumbnails)
-    : m_wayland(wayland), m_config(config), m_thumbnails(thumbnails) {}
+    : m_wayland(wayland), m_config(config), m_thumbnails(thumbnails) {
+  if (m_config != nullptr) {
+    m_flatten = m_config->stateBool("wallpaper_panel", "flatten").value_or(false);
+  }
+}
 
 WallpaperPanel::~WallpaperPanel() = default;
 
@@ -246,9 +250,12 @@ void WallpaperPanel::create() {
   toolbar->addChild(
       ui::toggle({
           .out = &m_flattenToggle,
-          .checked = false,
+          .checked = m_flatten,
           .onChange = [this](bool checked) {
             m_flatten = checked;
+            if (m_config != nullptr) {
+              (void)m_config->setStateBool("wallpaper_panel", "flatten", checked);
+            }
             refreshScan();
             applyFilter();
             resetSelection();
@@ -419,13 +426,12 @@ void WallpaperPanel::onPanelCardOpacityChanged(float opacity) {
 void WallpaperPanel::onOpen(std::string_view /*context*/) {
   m_filterQuery.clear();
   m_pendingFilterQuery.clear();
-  m_flatten = false;
   m_filterDebounceTimer.stop();
   if (m_filterInput != nullptr) {
     m_filterInput->setValue("");
   }
   if (m_flattenToggle != nullptr) {
-    m_flattenToggle->setChecked(false);
+    m_flattenToggle->setCheckedImmediate(m_flatten);
   }
   m_navStack.clear();
   populateMonitorChoices();

@@ -360,6 +360,7 @@ _noctalia_sources = files(
   'src/config/config_overrides.cpp',
   'src/config/config_service.cpp',
   'src/config/config_types.cpp',
+  'src/config/state_store.cpp',
   'src/config/cli.cpp',
   'src/core/deferred_call.cpp',
   'src/core/file_watcher.cpp',
@@ -838,6 +839,17 @@ string_utils_test = executable('string_utils_test',
 )
 
 test('string_utils', string_utils_test)
+
+state_store_test = executable('state_store_test',
+  sources: files(
+    'tests/state_store_test.cpp',
+    'src/config/state_store.cpp',
+    'src/core/log.cpp',
+  ),
+  include_directories: _noctalia_inc,
+)
+
+test('state_store', state_store_test)
 
 image_source_log_test = executable('image_source_log_test',
   sources: files(

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config/config_types.h"
+#include "config/state_store.h"
 #include "core/toml.h"
 
 #include <cstdint>
@@ -48,6 +49,7 @@ public:
   [[nodiscard]] std::string buildMergedUserConfig() const;
   [[nodiscard]] std::string buildEffectiveConfig() const;
   [[nodiscard]] bool shouldRunSetupWizard() const;
+  [[nodiscard]] std::optional<bool> stateBool(std::string_view owner, std::string_view key) const;
 
   void addReloadCallback(ReloadCallback callback);
   void setNotificationManager(NotificationManager* manager);
@@ -73,6 +75,8 @@ public:
   void setDockEnabled(bool enabled);
   // Persist desktop widget layout/editor state to settings.toml and trigger the reload pipeline.
   bool setDesktopWidgetsState(const DesktopWidgetsConfig& desktopWidgets);
+  // Persist app-owned UI/runtime state to state.toml. This does not affect Config reloads.
+  bool setStateBool(std::string_view owner, std::string_view key, bool value);
   bool markSetupWizardCompleted();
   [[nodiscard]] bool hasOverride(const std::vector<std::string>& path) const;
   [[nodiscard]] bool hasEffectiveOverride(const std::vector<std::string>& path) const;
@@ -120,6 +124,9 @@ private:
   // App-writable settings file (state dir): lives outside config dir so it
   // can still be written when the config dir is read-only (e.g. NixOS).
   std::string m_overridesPath;
+  // App-owned UI/runtime state. This is not a config layer and is never
+  // deep-merged into Config.
+  StateStore m_stateStore;
   // Marker file (state dir): its existence means onboarding has been completed
   // or dismissed. Single canonical signal for the setup wizard.
   std::string m_setupMarkerPath;

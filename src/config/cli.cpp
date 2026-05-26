@@ -238,6 +238,21 @@ namespace noctalia::config {
             return 1;
           }
         }
+
+        const auto* appState = report["app_state"].as_table();
+        bool appStateExists = appState != nullptr;
+        if (appState != nullptr) {
+          if (auto exists = (*appState)["exists"].value<bool>()) {
+            appStateExists = *exists;
+          }
+        }
+        if (appStateExists && appState != nullptr) {
+          const auto content = (*appState)["content"].value<std::string>().value_or("");
+          if (!writeTextFile(stateDir / "state.toml", content, error)) {
+            std::fprintf(stderr, "error: %s\n", error.c_str());
+            return 1;
+          }
+        }
       }
 
       std::printf("Replayed support report into %s\n\n", target.string().c_str());

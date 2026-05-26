@@ -161,18 +161,23 @@ Noctalia has two configuration layers:
   Noctalia itself for settings changed through the UI, IPC-backed controls, setup flows, and other runtime actions
   that need persistence.
 
+Noctalia also keeps internal UI/runtime state in `$NOCTALIA_STATE_HOME/noctalia/state.toml`,
+`$XDG_STATE_HOME/noctalia/state.toml`, or `~/.local/state/noctalia/state.toml`. This is app-owned state, not a
+configuration layer, and it is not merged into the active config.
+
 `NOCTALIA_CONFIG_HOME` and `NOCTALIA_STATE_HOME` are Noctalia-specific overrides with the same "home root" semantics
 as the XDG variables. For example, `NOCTALIA_CONFIG_HOME=/tmp/profile` loads config from
 `/tmp/profile/noctalia/`. Prefer these variables over overriding `XDG_CONFIG_HOME` when launching Noctalia from a
 session, because applications started through Noctalia's launcher inherit the shell environment.
 
 Load order is built-in defaults first, then declarative config files, then `settings.toml`.
-Because the state file is applied last, GUI overrides win over matching values in `config.toml`.
+Because the override file is applied last, GUI overrides win over matching values in `config.toml`.
 
 Use the declarative config directory for hand-authored, dotfile-managed configuration. Treat `settings.toml` as an
 app-managed override layer: inspect or delete it when you want to understand or clear GUI changes, but do not rely on
-it as the primary place for curated config. Keeping the override file outside `~/.config` also allows the GUI to save
-changes when the config directory is read-only, such as on NixOS.
+it as the primary place for curated config. Treat `state.toml` as disposable app state: inspect it when debugging UI
+state, or delete it to reset remembered UI state. Keeping these app-managed files outside `~/.config` also allows the
+GUI to save changes when the config directory is read-only, such as on NixOS.
 
 Both layers are watched for changes and hot-reloaded. If neither declarative config nor state overrides exist,
 Noctalia falls back to built-in defaults in code.

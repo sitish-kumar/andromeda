@@ -387,10 +387,12 @@ ConfigService::ConfigService() {
     std::error_code ec;
     std::filesystem::create_directories(dir, ec);
     m_overridesPath = dir + "/settings.toml";
+    m_stateStore.setPath(dir + "/state.toml");
     m_setupMarkerPath = dir + "/.setup-complete";
   }
 
   loadOverridesFromFile();
+  m_stateStore.load();
   loadAll();
   setupWatch();
 }
@@ -464,6 +466,14 @@ bool ConfigService::shouldRunSetupWizard() const {
   return !m_setupMarkerPath.empty() && !std::filesystem::exists(m_setupMarkerPath);
 }
 
+std::optional<bool> ConfigService::stateBool(std::string_view owner, std::string_view key) const {
+  return m_stateStore.boolValue(owner, key);
+}
+
+bool ConfigService::setStateBool(std::string_view owner, std::string_view key, bool value) {
+  return m_stateStore.setBool(owner, key, value);
+}
+
 std::string ConfigService::buildSupportReport() const {
   toml::table root;
 
@@ -478,6 +488,7 @@ std::string ConfigService::buildSupportReport() const {
   toml::table paths;
   paths.insert_or_assign("config_dir", m_configDir);
   paths.insert_or_assign("settings_path", m_overridesPath);
+  paths.insert_or_assign("state_path", m_stateStore.path().string());
   root.insert_or_assign("paths", std::move(paths));
 
   toml::table merged;
@@ -533,6 +544,26 @@ std::string ConfigService::buildSupportReport() const {
     state.insert_or_assign("content", "");
   }
   root.insert_or_assign("state_settings", std::move(state));
+
+  toml::table appState;
+  appState.insert_or_assign("kind", "app_state");
+  appState.insert_or_assign("relative_path", "state.toml");
+  appState.insert_or_assign("path", m_stateStore.path().string());
+
+  const bool appStateExists = !m_stateStore.path().empty() && std::filesystem::exists(m_stateStore.path());
+  appState.insert_or_assign("exists", appStateExists);
+  if (appStateExists) {
+    std::string readError;
+    appState.insert_or_assign("content", readTextFile(m_stateStore.path(), &readError));
+    if (!readError.empty()) {
+      appState.insert_or_assign("read_error", readError);
+    } else if (!m_stateStore.parseError().empty()) {
+      appState.insert_or_assign("parse_error", m_stateStore.parseError());
+    }
+  } else {
+    appState.insert_or_assign("content", "");
+  }
+  root.insert_or_assign("app_state", std::move(appState));
 
   toml::table mergedConfig;
   mergedConfig.insert_or_assign("content", formatToml(merged));
