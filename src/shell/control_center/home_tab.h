@@ -20,6 +20,7 @@ class DependencyService;
 class Glyph;
 class GridView;
 class Image;
+class InputArea;
 class Label;
 class Shortcut;
 class Wallpaper;
@@ -75,6 +76,7 @@ private:
   Flex* m_mediaText = nullptr;
   Flex* m_userCard = nullptr;
   Flex* m_userMain = nullptr;
+  InputArea* m_userAvatarArea = nullptr;
   Image* m_userAvatar = nullptr;
 
   Label* m_timeLabel = nullptr;

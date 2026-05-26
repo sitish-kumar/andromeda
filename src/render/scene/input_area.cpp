@@ -2,6 +2,9 @@
 
 #include "cursor-shape-v1-client-protocol.h"
 
+#include <algorithm>
+#include <cmath>
+
 namespace {
 
   constexpr std::uint32_t kMouseButtonBase = BTN_MOUSE;
@@ -63,6 +66,22 @@ bool InputArea::acceptsButton(std::uint32_t button) const noexcept {
 }
 void InputArea::setPropagateEvents(bool propagate) { m_propagateEvents = propagate; }
 void InputArea::setEnabled(bool enabled) { m_enabled = enabled; }
+void InputArea::setHitShape(HitShape shape) { m_hitShape = shape; }
+
+bool InputArea::containsLocalPoint(float localX, float localY, bool includeHitOutset) const {
+  if (m_hitShape == HitShape::Rect) {
+    return Node::containsLocalPoint(localX, localY, includeHitOutset);
+  }
+
+  const HitTestOutset outset = includeHitOutset ? hitTestOutset() : HitTestOutset{};
+  const float centerX = width() * 0.5f;
+  const float centerY = height() * 0.5f;
+  const float baseRadius = std::min(width(), height()) * 0.5f;
+  const float radius = baseRadius + std::max({outset.left, outset.top, outset.right, outset.bottom});
+  const float dx = localX - centerX;
+  const float dy = localY - centerY;
+  return dx * dx + dy * dy <= radius * radius;
+}
 
 void InputArea::setTooltip(std::string text) { m_tooltipContent = std::move(text); }
 void InputArea::setTooltip(std::vector<TooltipRow> rows) { m_tooltipContent = std::move(rows); }

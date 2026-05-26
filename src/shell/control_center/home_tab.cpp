@@ -4,10 +4,12 @@
 #include "config/config_service.h"
 #include "core/build_info.h"
 #include "core/deferred_call.h"
+#include "cursor-shape-v1-client-protocol.h"
 #include "dbus/mpris/mpris_art.h"
 #include "dbus/mpris/mpris_service.h"
 #include "i18n/i18n.h"
 #include "net/http_client.h"
+#include "render/scene/input_area.h"
 #include "shell/control_center/shortcut_registry.h"
 #include "shell/panel/panel_button_style.h"
 #include "shell/panel/panel_manager.h"
@@ -18,9 +20,11 @@
 #include "time/time_format.h"
 #include "ui/builders.h"
 #include "ui/controls/grid_view.h"
+#include "ui/dialogs/file_dialog.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <filesystem>
 #include <format>
 #include <memory>
@@ -43,6 +47,20 @@ namespace {
   constexpr int kHomeMediaArtLayoutPassLimit = 8;
 
   float homeAvatarSize(float scale) { return Style::controlHeightLg * kHomeAvatarScale * scale; }
+
+  std::filesystem::path avatarStartDirectory(const ConfigService* config) {
+    if (config != nullptr) {
+      const std::filesystem::path current(config->config().shell.avatarPath);
+      std::error_code ec;
+      if (!current.empty() && std::filesystem::exists(current, ec) && current.has_parent_path()) {
+        return current.parent_path();
+      }
+    }
+    if (const char* home = std::getenv("HOME"); home != nullptr && home[0] != '\0') {
+      return std::filesystem::path(home) / "Pictures";
+    }
+    return {};
+  }
 
   void openControlCenterTab(std::string_view tab) {
     PanelManager::instance().togglePanel("control-center", PanelOpenRequest{.context = tab});
@@ -173,8 +191,31 @@ std::unique_ptr<Flex> HomeTab::create() {
   }
 
   const float avatarSize = homeAvatarSize(scale);
-  auto userRow = ui::row(
-      {.align = FlexAlign::Center, .gap = Style::spaceMd * scale},
+  auto avatarArea = std::make_unique<InputArea>();
+  avatarArea->setSize(avatarSize, avatarSize);
+  avatarArea->setHitShape(InputArea::HitShape::Circle);
+  avatarArea->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
+  avatarArea->setOnClick([this](const InputArea::PointerData&) {
+    if (m_config == nullptr) {
+      return;
+    }
+
+    FileDialogOptions options;
+    options.mode = FileDialogMode::Open;
+    options.defaultViewMode = FileDialogViewMode::Grid;
+    options.title = i18n::tr("control-center.home.select-avatar");
+    options.extensions = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"};
+    options.startDirectory = avatarStartDirectory(m_config);
+
+    (void)FileDialog::open(std::move(options), [this](std::optional<std::filesystem::path> result) {
+      if (!result.has_value() || m_config == nullptr) {
+        return;
+      }
+      (void)m_config->setOverride({"shell", "avatar_path"}, result->string());
+    });
+  });
+  m_userAvatarArea = avatarArea.get();
+  avatarArea->addChild(
       ui::image({
           .out = &m_userAvatar,
           .fit = ImageFit::Cover,
@@ -182,9 +223,14 @@ std::unique_ptr<Flex> HomeTab::create() {
           .padding = 1.0f * scale,
           .width = avatarSize,
           .height = avatarSize,
-          .configure =
-              [](Image& image) { image.setBorder(colorSpecFromRole(ColorRole::Primary), Style::borderWidth * 3.0f); },
-      }),
+          .configure = [](Image& image) {
+            image.setBorder(colorSpecFromRole(ColorRole::Primary), Style::borderWidth * 3.0f);
+            image.setHitTestVisible(false);
+          },
+      })
+  );
+  auto userRow = ui::row(
+      {.align = FlexAlign::Center, .gap = Style::spaceMd * scale}, std::move(avatarArea),
       ui::column(
           {.out = &m_userMain,
            .align = FlexAlign::Stretch,

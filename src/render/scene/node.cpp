@@ -27,26 +27,6 @@ namespace {
     return world;
   }
 
-  bool
-  pointInsideNode(const Node* node, float sceneX, float sceneY, float& localX, float& localY, bool includeHitOutset) {
-    if (node == nullptr) {
-      return false;
-    }
-
-    const Mat3 inverse = computeWorldTransform(node).inverse();
-    const Vec2 local = inverse.transformPoint(sceneX, sceneY);
-    localX = local.x;
-    localY = local.y;
-    if (!includeHitOutset) {
-      return localX >= 0.0f && localX < node->width() && localY >= 0.0f && localY < node->height();
-    }
-    const HitTestOutset outset = node->hitTestOutset();
-    return localX >= -outset.left
-        && localX < node->width() + outset.right
-        && localY >= -outset.top
-        && localY < node->height() + outset.bottom;
-  }
-
 } // namespace
 
 LayoutConstraints LayoutConstraints::unconstrained() noexcept { return {}; }
@@ -161,6 +141,31 @@ void Node::doArrange(Renderer& renderer, const LayoutRect& rect) {
   setPosition(rect.x, rect.y);
   setSize(rect.width, rect.height);
   doLayout(renderer);
+}
+
+bool Node::containsLocalPoint(float localX, float localY, bool includeHitOutset) const {
+  if (!includeHitOutset) {
+    return localX >= 0.0f && localX < width() && localY >= 0.0f && localY < height();
+  }
+  const HitTestOutset outset = hitTestOutset();
+  return localX >= -outset.left
+      && localX < width() + outset.right
+      && localY >= -outset.top
+      && localY < height() + outset.bottom;
+}
+
+bool Node::pointInsideNode(
+    const Node* node, float sceneX, float sceneY, float& localX, float& localY, bool includeHitOutset
+) {
+  if (node == nullptr) {
+    return false;
+  }
+
+  const Mat3 inverse = computeWorldTransform(node).inverse();
+  const Vec2 local = inverse.transformPoint(sceneX, sceneY);
+  localX = local.x;
+  localY = local.y;
+  return node->containsLocalPoint(localX, localY, includeHitOutset);
 }
 
 void Node::setPosition(float x, float y) {

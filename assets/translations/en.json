@@ -191,6 +191,7 @@
         "audio": "Audio"
       },
       "user-facts": "{user}@{host}\nUptime - {uptime}\nNoctalia {version}",
+      "select-avatar": "Select Avatar",
       "unknown": "unknown",
       "weather": {
         "unavailable": "Weather unavailable",

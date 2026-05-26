@@ -10,6 +10,11 @@
 
 class InputArea : public Node {
 public:
+  enum class HitShape : std::uint8_t {
+    Rect,
+    Circle,
+  };
+
   struct PointerData {
     float localX = 0.0f;
     float localY = 0.0f;
@@ -85,6 +90,8 @@ public:
 
   void setEnabled(bool enabled);
   [[nodiscard]] bool enabled() const noexcept { return m_enabled; }
+  void setHitShape(HitShape shape);
+  [[nodiscard]] HitShape hitShape() const noexcept { return m_hitShape; }
 
   // Tooltip
   void setTooltip(std::string text);
@@ -114,6 +121,8 @@ public:
   void dispatchFocusLoss();
 
 protected:
+  [[nodiscard]] bool containsLocalPoint(float localX, float localY, bool includeHitOutset) const override;
+
 private:
   DestroyCallback m_destroyCallback;
   PointerCallback m_onEnter;
@@ -131,6 +140,7 @@ private:
   std::uint32_t m_acceptedButtons = buttonMask(BTN_LEFT);
   bool m_propagateEvents = false;
   bool m_enabled = true;
+  HitShape m_hitShape = HitShape::Rect;
   bool m_hovered = false;
   bool m_pressed = false;
   std::uint32_t m_pressedButton = 0;

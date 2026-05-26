@@ -152,8 +152,11 @@ protected:
   virtual void doLayout(Renderer& renderer);
   virtual LayoutSize doMeasure(Renderer& renderer, const LayoutConstraints& constraints);
   virtual void doArrange(Renderer& renderer, const LayoutRect& rect);
+  [[nodiscard]] virtual bool containsLocalPoint(float localX, float localY, bool includeHitOutset) const;
 
 private:
+  static bool
+  pointInsideNode(const Node* node, float sceneX, float sceneY, float& localX, float& localY, bool includeHitOutset);
   static Node* hitTestImpl(Node* node, float px, float py);
   NodeType m_type;
   float m_x = 0.0f;
