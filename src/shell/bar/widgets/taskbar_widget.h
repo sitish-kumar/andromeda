@@ -32,8 +32,9 @@ public:
       CompositorPlatform& platform, ConfigService& config, wl_output* output, bool groupByWorkspace,
       bool showAllOutputs, bool onlyActiveWorkspace, bool showWorkspaceLabel,
       WorkspaceLabelPlacement workspaceLabelPlacement, bool hideEmptyWorkspaces, bool workspaceGroupCapsule,
-      ColorSpec focusedColor, ColorSpec occupiedColor, ColorSpec emptyColor, bool showWindowTitle,
-      float windowTitleMaxWidth, std::string barPosition, ShellConfig::ShadowConfig shadowConfig
+      bool showActiveIndicator, float activeOpacity, float inactiveOpacity, ColorSpec focusedColor,
+      ColorSpec occupiedColor, ColorSpec emptyColor, bool showWindowTitle, float windowTitleMaxWidth,
+      std::string barPosition, ShellConfig::ShadowConfig shadowConfig
   );
   ~TaskbarWidget() override;
 
@@ -85,6 +86,7 @@ private:
   [[nodiscard]] std::string resolveIconPath(const std::string& appId, const std::string& iconNameOrPath);
   void openTaskContextMenu(const TaskModel& task, InputArea& area);
   void activateAdjacentWorkspace(int direction);
+  void activateAdjacentTask(int direction);
   [[nodiscard]] bool activeWorkspaceIndex(std::size_t& index) const;
   [[nodiscard]] wl_output* toplevelOutputFilter() const noexcept;
   [[nodiscard]] bool useMultiOutputWorkspaceKeys() const noexcept;
@@ -106,6 +108,9 @@ private:
   WorkspaceLabelPlacement m_workspaceLabelPlacement = WorkspaceLabelPlacement::Corner;
   bool m_hideEmptyWorkspaces = false;
   bool m_workspaceGroupCapsule = true;
+  bool m_showActiveIndicator = true;
+  float m_activeOpacity = 1.0f;
+  float m_inactiveOpacity = 1.0f;
   ColorSpec m_focusedColor = colorSpecFromRole(ColorRole::Primary);
   ColorSpec m_occupiedColor = colorSpecFromRole(ColorRole::Secondary);
   ColorSpec m_emptyColor = colorSpecFromRole(ColorRole::Secondary);

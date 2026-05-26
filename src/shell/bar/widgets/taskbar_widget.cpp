@@ -146,14 +146,15 @@ namespace {
 TaskbarWidget::TaskbarWidget(
     CompositorPlatform& platform, ConfigService& config, wl_output* output, bool groupByWorkspace, bool showAllOutputs,
     bool onlyActiveWorkspace, bool showWorkspaceLabel, WorkspaceLabelPlacement workspaceLabelPlacement,
-    bool hideEmptyWorkspaces, bool workspaceGroupCapsule, ColorSpec focusedColor, ColorSpec occupiedColor,
-    ColorSpec emptyColor, bool showWindowTitle, float windowTitleMaxWidth, std::string barPosition,
-    ShellConfig::ShadowConfig shadowConfig
+    bool hideEmptyWorkspaces, bool workspaceGroupCapsule, bool showActiveIndicator, float activeOpacity,
+    float inactiveOpacity, ColorSpec focusedColor, ColorSpec occupiedColor, ColorSpec emptyColor, bool showWindowTitle,
+    float windowTitleMaxWidth, std::string barPosition, ShellConfig::ShadowConfig shadowConfig
 )
     : m_platform(platform), m_configService(config), m_output(output), m_groupByWorkspace(groupByWorkspace),
       m_showAllOutputs(showAllOutputs), m_onlyActiveWorkspace(onlyActiveWorkspace),
       m_showWorkspaceLabel(showWorkspaceLabel), m_workspaceLabelPlacement(workspaceLabelPlacement),
       m_hideEmptyWorkspaces(hideEmptyWorkspaces), m_workspaceGroupCapsule(workspaceGroupCapsule),
+      m_showActiveIndicator(showActiveIndicator), m_activeOpacity(activeOpacity), m_inactiveOpacity(inactiveOpacity),
       m_focusedColor(std::move(focusedColor)), m_occupiedColor(std::move(occupiedColor)),
       m_emptyColor(std::move(emptyColor)), m_showWindowTitle(showWindowTitle),
       m_windowTitleMaxWidth(windowTitleMaxWidth), m_barPosition(std::move(barPosition)),
@@ -174,10 +175,6 @@ bool TaskbarWidget::taskInWorkspaceGroup(const TaskModel& task, const WorkspaceM
 void TaskbarWidget::create() {
   auto container = std::make_unique<InputArea>();
   container->setOnAxisHandler([this](const InputArea::PointerData& data) {
-    if (!m_groupByWorkspace) {
-      return false;
-    }
-
     if (data.axis != WL_POINTER_AXIS_VERTICAL_SCROLL && data.axis != WL_POINTER_AXIS_HORIZONTAL_SCROLL) {
       return false;
     }
@@ -192,7 +189,11 @@ void TaskbarWidget::create() {
     if (delta == 0.0f) {
       return false;
     }
-    activateAdjacentWorkspace(delta > 0.0f ? 1 : -1);
+    if (m_groupByWorkspace) {
+      activateAdjacentWorkspace(delta > 0.0f ? 1 : -1);
+    } else {
+      activateAdjacentTask(delta > 0.0f ? 1 : -1);
+    }
     return true;
   });
 
@@ -307,6 +308,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
   auto createTaskTile = [&](const TaskModel& task) {
     auto area = std::make_unique<InputArea>();
     area->setFrameSize(tileWidthWithTitle, tileSize);
+    area->setOpacity(task.active ? m_activeOpacity : m_inactiveOpacity);
     area->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
     area->setOnAxisHandler(workspaceAxisHandler);
 
@@ -385,7 +387,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       area->addChild(std::move(label));
     }
 
-    if (task.active) {
+    if (task.active && m_showActiveIndicator) {
       const float d = std::max(4.0f, std::round(Style::barGlyphSize * 0.32f * m_contentScale));
       const float bottomInset = 0.25f * m_contentScale;
       if (m_showWindowTitle) {
@@ -1907,6 +1909,29 @@ void TaskbarWidget::activateAdjacentWorkspace(int direction) {
 
   const auto& targetWs = m_workspaces[targetIndex];
   m_platform.activateWorkspace(workspaceHostOutput(targetWs), targetWs.workspace);
+}
+
+void TaskbarWidget::activateAdjacentTask(int direction) {
+  if (m_tasks.size() < 2 || direction == 0) {
+    return;
+  }
+
+  const size_t activeTaskIndex =
+      std::find_if(m_tasks.begin(), m_tasks.end(), [](const TaskModel& t) { return t.active; }) - m_tasks.begin();
+  if (activeTaskIndex >= m_tasks.size()) {
+    return;
+  }
+  size_t newIndex = activeTaskIndex;
+  if (direction > 0 && activeTaskIndex + 1 < m_tasks.size()) {
+    ++newIndex;
+  } else if (direction < 0 && activeTaskIndex > 0) {
+    --newIndex;
+  }
+  if (newIndex == activeTaskIndex) {
+    return;
+  }
+  const auto& targetTask = m_tasks[newIndex];
+  m_platform.activateToplevel(targetTask.firstHandle);
 }
 
 wl_output* TaskbarWidget::toplevelOutputFilter() const noexcept { return m_showAllOutputs ? nullptr : m_output; }

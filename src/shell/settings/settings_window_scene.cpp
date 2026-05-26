@@ -319,7 +319,9 @@ settings::RegistryEnvironment SettingsWindow::buildRegistryEnvironment() const {
     );
   }
   for (const auto& t : noctalia::theme::CommunityTemplateService::availableTemplates()) {
-    env.communityTemplates.push_back(settings::SelectOption{t.id, t.displayName});
+    env.communityTemplates.push_back(
+        settings::SelectOption{.value = t.id, .label = t.displayName, .description = t.category}
+    );
   }
   static const std::vector<settings::SelectOption> kFontFamilies = discoverFontFamilyOptions();
   env.fontFamilies = kFontFamilies;

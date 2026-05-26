@@ -38,6 +38,11 @@ namespace {
     return std::abs(transform.m[1]) <= kAxisAlignedEpsilon && std::abs(transform.m[3]) <= kAxisAlignedEpsilon;
   }
 
+  float snapToBufferPixel(float value, float scale) {
+    const float safeScale = std::max(1.0f, scale);
+    return std::round(value * safeScale) / safeScale;
+  }
+
   void hashCombine(std::size_t& seed, std::size_t v) { seed ^= v + 0x9E3779B97F4A7C15ULL + (seed << 12) + (seed >> 4); }
 
   // Pack rgb into the top 24 bits; alpha is always forced to 0xFF so that
@@ -884,8 +889,8 @@ void CairoTextRenderer::draw(
   // a rotation animation, snapping causes the translation to jump by whole
   // buffer pixels between frames, which looks jittery.
   if (isAxisAligned(baseWorld)) {
-    baseWorld.m[6] = std::round(baseWorld.m[6]);
-    baseWorld.m[7] = std::round(baseWorld.m[7]);
+    baseWorld.m[6] = snapToBufferPixel(baseWorld.m[6], m_contentScale);
+    baseWorld.m[7] = snapToBufferPixel(baseWorld.m[7], m_contentScale);
   }
 
   // Emit one quad per tile. Tiles share the same X/width and abut on exact

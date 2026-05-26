@@ -368,6 +368,11 @@ namespace settings {
       );
     };
 
+    const auto isTemplateEnableTogglePath = [](const std::vector<std::string>& path) {
+      return path == std::vector<std::string>{"theme", "templates", "enable_builtin_templates"}
+      || path == std::vector<std::string>{"theme", "templates", "enable_community_templates"};
+    };
+
     const auto makeRow = [&](Flex& section, const SettingEntry& entry, std::unique_ptr<Node> control) {
       const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
       const bool redundantGuiOverride =
@@ -400,7 +405,11 @@ namespace settings {
       }
       titleRow->addChild(ui::spacer());
 
-      auto copy = ui::column({.align = FlexAlign::Start, .gap = Style::spaceXs * scale, .flexGrow = 1.0f});
+      ui::FlexProps copyProps{.align = FlexAlign::Start, .flexGrow = 1.0f};
+      if (!isTemplateEnableTogglePath(entry.path)) {
+        copyProps.gap = Style::spaceXs * scale;
+      }
+      auto copy = ui::column(std::move(copyProps));
       copy->addChild(std::move(titleRow));
 
       if (!entry.subtitle.empty()) {
@@ -885,25 +894,28 @@ namespace settings {
     };
 
     const auto makeCollectionBlock = [&](const SettingEntry& entry, bool overridden, bool reserveTitleHeight = false,
-                                         bool titleMaxTwoLines = false, bool fillWidth = false, bool flexGrow = false) {
-      auto block = ui::column(
-          {.align = FlexAlign::Stretch,
-           .gap = Style::spaceXs * scale,
-           .configure = [scale, fillWidth, flexGrow](Flex& flex) {
-             flex.setPadding(2.0f * scale, 0.0f);
-             if (fillWidth) {
-               flex.setFillWidth(true);
-             }
-             if (flexGrow) {
-               flex.setFlexGrow(1.0f);
-             }
-           }}
-      );
+                                         bool titleMaxTwoLines = false, bool fillWidth = false, bool flexGrow = false,
+                                         bool compactTitleDescription = false) {
+      ui::FlexProps blockProps{
+          .align = FlexAlign::Stretch,
+          .configure = [scale, fillWidth, flexGrow](Flex& flex) {
+            flex.setPadding(Style::spaceXs * scale, 0.0f);
+            if (fillWidth) {
+              flex.setFillWidth(true);
+            }
+            if (flexGrow) {
+              flex.setFlexGrow(1.0f);
+            }
+          },
+      };
+      if (!compactTitleDescription) {
+        blockProps.gap = Style::spaceXs * scale;
+      }
+      auto block = ui::column(std::move(blockProps));
 
       auto titleRow = ui::row(
           {.align = FlexAlign::Center,
            .gap = Style::spaceSm * scale,
-           .fillWidth = true,
            .configure =
                [scale, reserveTitleHeight](Flex& flex) {
                  if (reserveTitleHeight) {
@@ -916,17 +928,24 @@ namespace settings {
               .color = colorSpecFromRole(ColorRole::OnSurface),
               .maxLines = titleMaxTwoLines ? std::optional<int>{2} : std::nullopt,
               .fontWeight = FontWeight::Bold,
-          }),
-          ui::spacer()
+          })
       );
-      if (overridden) {
-        titleRow->addChild(makeOverrideResetActions(entry.path));
+      ui::FlexProps copyProps{.align = FlexAlign::Start, .flexGrow = 1.0f};
+      if (!compactTitleDescription) {
+        copyProps.gap = Style::spaceXs * scale;
       }
-      block->addChild(std::move(titleRow));
-
+      auto copy = ui::column(std::move(copyProps));
+      copy->addChild(std::move(titleRow));
       if (!entry.subtitle.empty()) {
-        block->addChild(makeSettingSubtitleLabel(entry.subtitle, scale));
+        copy->addChild(makeSettingSubtitleLabel(entry.subtitle, scale));
       }
+
+      auto header = ui::row({.align = FlexAlign::Start, .gap = Style::spaceSm * scale, .fillWidth = true});
+      header->addChild(std::move(copy));
+      if (overridden) {
+        header->addChild(makeOverrideResetActions(entry.path));
+      }
+      block->addChild(std::move(header));
       return block;
     };
 
@@ -989,6 +1008,226 @@ namespace settings {
       }
 
       block->addChild(std::move(checkRow));
+      section.addChild(std::move(block));
+    };
+
+    const auto makeTemplateGridBlock = [&](Flex& section, const SettingEntry& entry,
+                                           const TemplateGridSetting& setting) {
+      const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
+
+      auto block = makeCollectionBlock(entry, overridden, false, false, false, false, true);
+
+      if (setting.options.empty()) {
+        block->addChild(makeSettingSubtitleLabel(setting.emptyText, scale));
+        section.addChild(std::move(block));
+        return;
+      }
+
+      constexpr std::size_t kTemplateCardsPerRow = 5;
+      auto selected = std::make_shared<std::vector<std::string>>(setting.selectedValues);
+      const auto options = std::make_shared<std::vector<SelectOption>>(setting.options);
+      const auto path = entry.path;
+
+      auto commit = [setOverride = ctx.setOverride, path, options, selected]() {
+        std::vector<std::string> ordered;
+        ordered.reserve(selected->size());
+        for (const auto& opt : *options) {
+          if (std::find(selected->begin(), selected->end(), opt.value) != selected->end()) {
+            ordered.push_back(opt.value);
+          }
+        }
+        setOverride(path, std::move(ordered));
+      };
+
+      auto grid =
+          ui::column({.align = FlexAlign::Stretch, .gap = Style::spaceSm * scale, .configure = [scale](Flex& flex) {
+                        flex.setPadding(Style::spaceMd * scale, 0.0f, 0.0f, 0.0f);
+                      }});
+      std::unique_ptr<Flex> row;
+      std::size_t countInRow = 0;
+
+      auto flushRow = [&]() {
+        if (row == nullptr) {
+          return;
+        }
+        while (countInRow > 0 && countInRow < kTemplateCardsPerRow) {
+          row->addChild(ui::row({.fillWidth = true, .flexGrow = 1.0f}));
+          ++countInRow;
+        }
+        grid->addChild(std::move(row));
+        countInRow = 0;
+      };
+
+      for (const auto& option : *options) {
+        if (row == nullptr || countInRow == kTemplateCardsPerRow) {
+          flushRow();
+          row = ui::row({.align = FlexAlign::Stretch, .gap = Style::spaceSm * scale, .fillWidth = true});
+        }
+
+        const bool checked = std::find(selected->begin(), selected->end(), option.value) != selected->end();
+        const std::string value = option.value;
+        Button* card = nullptr;
+        Label* titleLabel = nullptr;
+        Label* categoryLabel = nullptr;
+        Checkbox* checkbox = nullptr;
+        auto checkedState = std::make_shared<bool>(checked);
+        const auto cardPaletteFor = [scale](bool active) {
+          return Button::ButtonPalette{
+              .borderWidth = 1.0f * scale,
+              .normal =
+                  Button::ButtonStateColors{
+                      .bg = colorSpecFromRole(
+                          active ? ColorRole::Primary : ColorRole::SurfaceVariant, active ? 1.0f : 0.45f
+                      ),
+                      .border =
+                          colorSpecFromRole(active ? ColorRole::Primary : ColorRole::Outline, active ? 0.9f : 0.45f),
+                      .label = colorSpecFromRole(active ? ColorRole::OnPrimary : ColorRole::OnSurface),
+                  },
+              .hover =
+                  Button::ButtonStateColors{
+                      .bg = colorSpecFromRole(active ? ColorRole::Primary : ColorRole::Hover),
+                      .border = colorSpecFromRole(active ? ColorRole::Primary : ColorRole::Hover),
+                      .label = colorSpecFromRole(active ? ColorRole::OnPrimary : ColorRole::OnHover),
+                  },
+              .pressed =
+                  Button::ButtonStateColors{
+                      .bg = colorSpecFromRole(ColorRole::Primary),
+                      .border = colorSpecFromRole(ColorRole::Primary),
+                      .label = colorSpecFromRole(ColorRole::OnPrimary),
+                  },
+              .disabled = Button::ButtonStateColors{
+                  .bg = colorSpecFromRole(ColorRole::SurfaceVariant, 0.35f),
+                  .border = colorSpecFromRole(ColorRole::Outline, 0.35f),
+                  .label = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+              },
+          };
+        };
+        auto cardNode = ui::button({
+            .out = &card,
+            .contentAlign = ButtonContentAlign::Start,
+            .customPalette = cardPaletteFor(checked),
+            .minHeight = Style::controlHeightSm * scale,
+            .paddingV = Style::spaceXs * scale,
+            .paddingH = Style::spaceSm * scale,
+            .gap = Style::spaceXs * scale,
+            .radius = Style::scaledRadiusMd(scale),
+            .flexGrow = 1.0f,
+        });
+        card->addChild(
+            ui::checkbox({
+                .out = &checkbox,
+                .checked = checked,
+                .scale = scale,
+                .checkedFill = colorSpecFromRole(ColorRole::Surface),
+                .checkedBorder = colorSpecFromRole(ColorRole::OnPrimary),
+                .checkedGlyph = colorSpecFromRole(ColorRole::Primary),
+                .onChange = [selected, value, commit, checkedState, card, cardPaletteFor](bool nextChecked) mutable {
+                  auto it = std::find(selected->begin(), selected->end(), value);
+                  if (nextChecked) {
+                    if (it == selected->end()) {
+                      selected->push_back(value);
+                    }
+                  } else if (it != selected->end()) {
+                    selected->erase(it);
+                  }
+                  *checkedState = nextChecked;
+                  if (card != nullptr) {
+                    card->setCustomPalette(cardPaletteFor(nextChecked));
+                  }
+                  commit();
+                },
+            })
+        );
+
+        auto text = ui::column({.align = FlexAlign::Start, .flexGrow = 1.0f});
+        text->addChild(
+            ui::label({
+                .out = &titleLabel,
+                .text = option.label,
+                .fontSize = Style::fontSizeBody * scale,
+                .color = colorSpecFromRole(checked ? ColorRole::OnPrimary : ColorRole::OnSurface),
+                .maxLines = 1,
+                .fontWeight = FontWeight::Medium,
+            })
+        );
+        if (!option.description.empty()) {
+          text->addChild(
+              ui::label({
+                  .out = &categoryLabel,
+                  .text = option.description,
+                  .fontSize = Style::fontSizeCaption * scale,
+                  .color = colorSpecFromRole(
+                      checked ? ColorRole::OnPrimary : ColorRole::OnSurfaceVariant, checked ? 0.75f : 1.0f
+                  ),
+                  .maxLines = 1,
+                  .configure = [](Label& label) { label.setCaptionStyle(); },
+              })
+          );
+        }
+        card->addChild(std::move(text));
+        const auto syncNormalText = [titleLabel, categoryLabel](bool active) {
+          if (titleLabel != nullptr) {
+            titleLabel->setColor(colorSpecFromRole(active ? ColorRole::OnPrimary : ColorRole::OnSurface));
+          }
+          if (categoryLabel != nullptr) {
+            categoryLabel->setColor(
+                colorSpecFromRole(active ? ColorRole::OnPrimary : ColorRole::OnSurfaceVariant, active ? 0.75f : 1.0f)
+            );
+          }
+        };
+        const auto syncHoverText = [titleLabel, categoryLabel](bool active) {
+          if (titleLabel != nullptr) {
+            titleLabel->setColor(colorSpecFromRole(active ? ColorRole::OnPrimary : ColorRole::OnHover));
+          }
+          if (categoryLabel != nullptr) {
+            categoryLabel->setColor(colorSpecFromRole(active ? ColorRole::OnPrimary : ColorRole::OnHover, 0.75f));
+          }
+        };
+        const auto syncPressedText = [titleLabel, categoryLabel]() {
+          if (titleLabel != nullptr) {
+            titleLabel->setColor(colorSpecFromRole(ColorRole::OnPrimary));
+          }
+          if (categoryLabel != nullptr) {
+            categoryLabel->setColor(colorSpecFromRole(ColorRole::OnPrimary, 0.75f));
+          }
+        };
+        auto setTileActive = [selected, value, commit, checkedState, card, checkbox, cardPaletteFor,
+                              syncNormalText](bool nextChecked) mutable {
+          auto it = std::find(selected->begin(), selected->end(), value);
+          if (nextChecked) {
+            if (it == selected->end()) {
+              selected->push_back(value);
+            }
+          } else if (it != selected->end()) {
+            selected->erase(it);
+          }
+          *checkedState = nextChecked;
+          if (card != nullptr) {
+            card->setCustomPalette(cardPaletteFor(nextChecked));
+          }
+          if (checkbox != nullptr) {
+            checkbox->setChecked(nextChecked);
+          }
+          syncNormalText(nextChecked);
+          commit();
+        };
+        syncNormalText(*checkedState);
+        card->setOnEnter([checkedState, syncHoverText]() { syncHoverText(*checkedState); });
+        card->setOnLeave([checkedState, syncNormalText]() { syncNormalText(*checkedState); });
+        card->setOnPress([syncPressedText](float /*localX*/, float /*localY*/, bool pressed) {
+          if (!pressed) {
+            return;
+          }
+          syncPressedText();
+        });
+        card->setOnClick([checkedState, setTileActive]() mutable { setTileActive(!*checkedState); });
+
+        row->addChild(std::move(cardNode));
+        ++countInRow;
+      }
+      flushRow();
+
+      block->addChild(std::move(grid));
       section.addChild(std::move(block));
     };
 
@@ -1473,6 +1712,8 @@ namespace settings {
               return nullptr;
             } else if constexpr (std::is_same_v<T, MultiSelectSetting>) {
               return nullptr;
+            } else if constexpr (std::is_same_v<T, TemplateGridSetting>) {
+              return nullptr;
             } else if constexpr (std::is_same_v<T, ListSetting>) {
               return nullptr;
             } else if constexpr (std::is_same_v<T, ShortcutListSetting>) {
@@ -1694,6 +1935,8 @@ namespace settings {
           makeRow(*activeSection, entry, makeSearchPickerButton(entry, *picker));
         } else if (const auto* multi = std::get_if<MultiSelectSetting>(&entry.control)) {
           makeMultiSelectBlock(*activeSection, entry, *multi);
+        } else if (const auto* templates = std::get_if<TemplateGridSetting>(&entry.control)) {
+          makeTemplateGridBlock(*activeSection, entry, *templates);
         } else {
           makeRow(*activeSection, entry, makeControl(entry));
         }

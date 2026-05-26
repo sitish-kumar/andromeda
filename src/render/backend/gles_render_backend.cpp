@@ -216,7 +216,9 @@ void GlesRenderBackend::makeCurrentNoSurface() {
   }
 
   if (eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, m_context) != EGL_TRUE) {
-    throw std::runtime_error("eglMakeCurrent(EGL_NO_SURFACE) failed");
+    throw std::runtime_error(
+        std::format("eglMakeCurrent(EGL_NO_SURFACE) failed (EGL error 0x{:04x})", static_cast<unsigned>(eglGetError()))
+    );
   }
 }
 
@@ -224,7 +226,9 @@ void GlesRenderBackend::makeCurrent(RenderTarget& target) {
   auto& surface = glesSurfaceTarget(target);
   const auto start = std::chrono::steady_clock::now();
   if (eglMakeCurrent(m_display, surface.eglSurface(), surface.eglSurface(), m_context) != EGL_TRUE) {
-    throw std::runtime_error("eglMakeCurrent failed");
+    throw std::runtime_error(
+        std::format("eglMakeCurrent failed (EGL error 0x{:04x})", static_cast<unsigned>(eglGetError()))
+    );
   }
   float ms = elapsedSince(start);
   logSlowRenderOperation(ms, "eglMakeCurrent took {:.1f}ms", ms);
@@ -251,7 +255,9 @@ void GlesRenderBackend::endFrame(RenderTarget& target) {
   auto& surface = glesSurfaceTarget(target);
   const auto swapStart = std::chrono::steady_clock::now();
   if (eglSwapBuffers(m_display, surface.eglSurface()) != EGL_TRUE) {
-    throw std::runtime_error("eglSwapBuffers failed");
+    throw std::runtime_error(
+        std::format("eglSwapBuffers failed (EGL error 0x{:04x})", static_cast<unsigned>(eglGetError()))
+    );
   }
   const float ms = elapsedSince(swapStart);
   logSlowRenderOperation(

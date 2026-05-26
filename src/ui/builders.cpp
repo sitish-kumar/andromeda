@@ -715,6 +715,11 @@ namespace ui {
     if (props.scale.has_value()) {
       control->setScale(*props.scale);
     }
+    if (props.checkedFill.has_value() || props.checkedBorder.has_value() || props.checkedGlyph.has_value()) {
+      control->setCheckedColors(
+          std::move(props.checkedFill), std::move(props.checkedBorder), std::move(props.checkedGlyph)
+      );
+    }
     if (props.onChange) {
       control->setOnChange(std::move(props.onChange));
     }

@@ -624,6 +624,8 @@ namespace settings {
     ));
 
     // Templates
+    const auto builtInTemplatesOn = SettingVisibility{{"theme", "templates", "enable_builtin_templates"}, {"true"}};
+    const auto communityTemplatesOn = SettingVisibility{{"theme", "templates", "enable_community_templates"}, {"true"}};
     entries.push_back(makeEntry(
         "templates", "built-in", tr("settings.schema.templates.enable-builtins.label"),
         tr("settings.schema.templates.enable-builtins.description"), {"theme", "templates", "enable_builtin_templates"},
@@ -634,14 +636,20 @@ namespace settings {
       std::vector<SelectOption> templateOptions;
       templateOptions.reserve(availableTemplates.size());
       for (const auto& t : availableTemplates) {
-        templateOptions.push_back(SelectOption{t.id, t.displayName});
+        templateOptions.push_back(SelectOption{.value = t.id, .label = t.displayName, .description = t.category});
       }
-      entries.push_back(makeEntry(
+      auto e = makeEntry(
           "templates", "built-in", tr("settings.schema.templates.builtin-ids.label"),
           tr("settings.schema.templates.builtin-ids.description"), {"theme", "templates", "builtin_ids"},
-          ListSetting{.items = cfg.theme.templates.builtinIds, .suggestedOptions = std::move(templateOptions)},
+          TemplateGridSetting{
+              .options = std::move(templateOptions),
+              .selectedValues = cfg.theme.templates.builtinIds,
+              .emptyText = tr("settings.schema.templates.builtin-ids.empty"),
+          },
           "theme templates apps foot walker gtk"
-      ));
+      );
+      e.visibleWhen = builtInTemplatesOn;
+      entries.push_back(std::move(e));
     }
     entries.push_back(makeEntry(
         "templates", "community", tr("settings.schema.templates.enable-community-templates.label"),
@@ -649,12 +657,20 @@ namespace settings {
         {"theme", "templates", "enable_community_templates"},
         ToggleSetting{cfg.theme.templates.enableCommunityTemplates}, "theme templates community"
     ));
-    entries.push_back(makeEntry(
-        "templates", "community", tr("settings.schema.templates.community-ids.label"),
-        tr("settings.schema.templates.community-ids.description"), {"theme", "templates", "community_ids"},
-        ListSetting{.items = cfg.theme.templates.communityIds, .suggestedOptions = env.communityTemplates},
-        "theme templates community apps discord fuzzel vscode walker"
-    ));
+    {
+      auto e = makeEntry(
+          "templates", "community", tr("settings.schema.templates.community-ids.label"),
+          tr("settings.schema.templates.community-ids.description"), {"theme", "templates", "community_ids"},
+          TemplateGridSetting{
+              .options = env.communityTemplates,
+              .selectedValues = cfg.theme.templates.communityIds,
+              .emptyText = tr("settings.schema.templates.community-ids.empty"),
+          },
+          "theme templates community apps discord fuzzel vscode walker"
+      );
+      e.visibleWhen = communityTemplatesOn;
+      entries.push_back(std::move(e));
+    }
 
     // Dock
     entries.push_back(makeEntry(
@@ -1094,6 +1110,11 @@ namespace settings {
         tr("settings.schema.shell.osd-offset-y.description"), {"osd", "offset_y"},
         StepperSetting{.value = cfg.osd.offsetY, .minValue = 0, .maxValue = 200, .step = 1, .valueSuffix = "px"},
         "hud overlay vertical margin"
+    ));
+    entries.push_back(makeEntry(
+        "popups", "osd", tr("settings.schema.shell.osd-background-opacity.label"),
+        tr("settings.schema.shell.osd-background-opacity.description"), {"osd", "background_opacity"},
+        SliderSetting{cfg.osd.backgroundOpacity, 0.0f, 1.0f, 0.01f, false}, "hud overlay popup opacity"
     ));
     entries.push_back(makeEntry(
         "popups", "osd", tr("settings.schema.shell.osd-lock-keys.label"),

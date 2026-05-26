@@ -1286,6 +1286,18 @@
           "label": "Window Title Max Width",
           "description": "Maximum width in pixels for window titles"
         },
+        "show_active_indicator": {
+          "label": "Active Window Indicator",
+          "description": "Show a small dot below the active window icon in the taskbar."
+        },
+        "active_opacity": {
+          "label": "Active Icon Opacity",
+          "description": "Opacity of the icon for the active (focused) window."
+        },
+        "inactive_opacity": {
+          "label": "Inactive Icon Opacity",
+          "description": "Opacity of icons for inactive (unfocused) windows."
+        },
         "height": {
           "label": "Height",
           "description": "Widget height in pixels"
@@ -1618,16 +1630,18 @@
           "description": "Use the bundled catalog of theme templates for apps"
         },
         "builtin-ids": {
-          "label": "Active Built-in Templates",
-          "description": "Template IDs to render on each theme change"
+          "label": "Built-in Templates",
+          "description": "Toggle bundled app templates to render on each theme change",
+          "empty": "No built-in templates are available."
         },
         "enable-community-templates": {
           "label": "Enable Community Templates",
           "description": "Download and apply templates from the community catalog"
         },
         "community-ids": {
-          "label": "Active Community Templates",
-          "description": "Community template IDs to render on each theme change"
+          "label": "Community Templates",
+          "description": "Toggle cached community templates to render on each theme change",
+          "empty": "No community templates are available yet. Enable community templates and refresh the catalog first."
         }
       },
       "shell": {
@@ -1708,6 +1722,10 @@
         "osd-scale": {
           "label": "Size",
           "description": "Scale OSD popups relative to the shell UI scale (1.0 keeps the default size)"
+        },
+        "osd-background-opacity": {
+          "label": "Background Opacity",
+          "description": "Background opacity of OSD popups"
         },
         "osd-offset-x": {
           "label": "Horizontal Margin",

@@ -75,12 +75,12 @@ namespace {
         && notification.body == body;
   }
 
-  bool shouldTrackHistory(NotificationOrigin origin, Urgency urgency) noexcept {
-    return origin == NotificationOrigin::External && urgency != Urgency::Low;
+  bool shouldTrackHistory(NotificationOrigin origin, Urgency urgency, bool transient) noexcept {
+    return origin == NotificationOrigin::External && urgency != Urgency::Low && !transient;
   }
 
   bool shouldRetainHistoryEntry(const NotificationHistoryEntry& entry) noexcept {
-    return shouldTrackHistory(entry.notification.origin, entry.notification.urgency)
+    return shouldTrackHistory(entry.notification.origin, entry.notification.urgency, entry.notification.transient)
         && entry.closeReason != CloseReason::Dismissed;
   }
 
@@ -159,7 +159,7 @@ void NotificationManager::notifyUnreadStateChangedIfNeeded(bool previousUnreadSt
 
 uint32_t NotificationManager::addOrReplace(
     uint32_t replacesId, std::string appName, std::string summary, std::string body, Urgency urgency, int32_t timeout,
-    NotificationOrigin origin, std::vector<std::string> actions, std::optional<std::string> icon,
+    NotificationOrigin origin, bool transient, std::vector<std::string> actions, std::optional<std::string> icon,
     std::optional<NotificationImageData> imageData, std::optional<std::string> category,
     std::optional<std::string> desktopEntry
 ) {
@@ -186,6 +186,7 @@ uint32_t NotificationManager::addOrReplace(
            || n.timeout != timeout
            || n.urgency != urgency
            || n.origin != origin
+           || n.transient != transient
            || n.actions != actions
            || n.icon != icon
            || n.imageData != imageData
@@ -193,6 +194,7 @@ uint32_t NotificationManager::addOrReplace(
            || n.desktopEntry != desktopEntry);
 
       n.origin = origin;
+      n.transient = transient;
       n.appName = std::move(appName);
       n.summary = std::move(summary);
       n.body = std::move(body);
@@ -209,7 +211,7 @@ uint32_t NotificationManager::addOrReplace(
       n.expiryWallClock = scheduleExpiryWall(wallNow, timeout);
 
       logNotification(n, "updated");
-      if (shouldTrackHistory(n.origin, n.urgency)) {
+      if (shouldTrackHistory(n.origin, n.urgency, n.transient)) {
         const bool hadUnreadBefore = computeHasUnreadNotificationHistory();
         upsertHistory(n, true, std::nullopt);
         notifyUnreadStateChangedIfNeeded(hadUnreadBefore);
@@ -242,6 +244,7 @@ uint32_t NotificationManager::addOrReplace(
       Notification{
           .id = id,
           .origin = origin,
+          .transient = transient,
           .appName = std::move(appName),
           .summary = std::move(summary),
           .body = std::move(body),
@@ -262,7 +265,7 @@ uint32_t NotificationManager::addOrReplace(
 
   const auto& n = m_notifications.back();
   logNotification(n, "added");
-  if (shouldTrackHistory(n.origin, n.urgency)) {
+  if (shouldTrackHistory(n.origin, n.urgency, n.transient)) {
     const bool hadUnreadBefore = computeHasUnreadNotificationHistory();
     upsertHistory(n, true, std::nullopt);
     notifyUnreadStateChangedIfNeeded(hadUnreadBefore);
@@ -284,8 +287,8 @@ uint32_t NotificationManager::addInternal(
     std::optional<std::string> category, std::optional<std::string> desktopEntry
 ) {
   return addOrReplace(
-      0, std::move(appName), std::move(summary), std::move(body), urgency, timeout, NotificationOrigin::Internal, {},
-      std::move(icon), std::move(imageData), std::move(category), std::move(desktopEntry)
+      0, std::move(appName), std::move(summary), std::move(body), urgency, timeout, NotificationOrigin::Internal, false,
+      {}, std::move(icon), std::move(imageData), std::move(category), std::move(desktopEntry)
   );
 }
 
@@ -382,12 +385,12 @@ bool NotificationManager::close(uint32_t id, CloseReason reason) {
   const Notification closed = m_notifications[index];
   const bool hadUnreadBefore = computeHasUnreadNotificationHistory();
   const bool historyHandledUnreadChange =
-      shouldTrackHistory(closed.origin, closed.urgency) && reason == CloseReason::Dismissed;
+      shouldTrackHistory(closed.origin, closed.urgency, closed.transient) && reason == CloseReason::Dismissed;
   const char* reasonStr = (reason == CloseReason::Expired) ? "expired"
       : (reason == CloseReason::Dismissed)                 ? "dismissed"
                                                            : "closed";
   kLog.debug("notification {} #{}", reasonStr, id);
-  if (shouldTrackHistory(closed.origin, closed.urgency)) {
+  if (shouldTrackHistory(closed.origin, closed.urgency, closed.transient)) {
     if (reason == CloseReason::Dismissed) {
       removeHistoryEntry(id, reason);
     } else {

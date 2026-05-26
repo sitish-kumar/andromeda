@@ -2,6 +2,7 @@
 
 #include "core/log.h"
 
+#include <format>
 #include <stdexcept>
 
 namespace {
@@ -72,7 +73,11 @@ void GlSharedContext::makeCurrentSurfaceless() const {
     return;
   }
   if (eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, m_rootContext) != EGL_TRUE) {
-    throw std::runtime_error("eglMakeCurrent (root, surfaceless) failed");
+    throw std::runtime_error(
+        std::format(
+            "eglMakeCurrent (root, surfaceless) failed (EGL error 0x{:04x})", static_cast<unsigned>(eglGetError())
+        )
+    );
   }
 }
 

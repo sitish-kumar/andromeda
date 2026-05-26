@@ -268,17 +268,27 @@ uint32_t NotificationService::onNotify(
     }
   }
 
+  bool transient = false;
+  if (auto it = hints.find("transient"); it != hints.end()) {
+    try {
+      transient = it->second.get<bool>();
+    } catch (...) {
+    }
+  }
+
   std::optional<NotificationImageData> imageData = decodeImageHint(hints);
 
   return m_manager.addOrReplace(
       replaces_id, StringUtils::truncateUtf8(app_name, kMaxStringLen),
       StringUtils::sanitizeMarkup(StringUtils::truncateUtf8(summary, kMaxStringLen)),
       StringUtils::sanitizeMarkup(StringUtils::truncateUtf8(body, kMaxStringLen)), urgency, timeout,
-      NotificationOrigin::External, sanitizedActions, icon, imageData, category, desktopEntry
+      NotificationOrigin::External, transient, sanitizedActions, icon, imageData, category, desktopEntry
   );
 }
 
-std::vector<std::string> NotificationService::onGetCapabilities() { return {"body", "actions", "inline-reply"}; }
+std::vector<std::string> NotificationService::onGetCapabilities() {
+  return {"body", "actions", "inline-reply", "persistence"};
+}
 
 std::vector<std::map<std::string, sdbus::Variant>> NotificationService::onGetNotifications() {
   std::vector<std::map<std::string, sdbus::Variant>> result;
