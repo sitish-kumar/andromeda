@@ -694,6 +694,27 @@ bool ClipboardService::removeHistoryEntry(std::size_t index) {
   return true;
 }
 
+void ClipboardService::clearUnpinnedHistory() {
+  const std::size_t firstUnpinned = pinnedCount();
+  if (firstUnpinned >= m_history.size()) {
+    return;
+  }
+
+  std::size_t removedBytes = 0;
+  for (std::size_t i = firstUnpinned; i < m_history.size(); ++i) {
+    removedBytes += m_history[i].byteSize;
+  }
+  m_history.erase(m_history.begin() + static_cast<std::ptrdiff_t>(firstUnpinned), m_history.end());
+  if (m_historyBytes >= removedBytes) {
+    m_historyBytes -= removedBytes;
+  } else {
+    m_historyBytes = 0;
+  }
+  ++m_changeSerial;
+  persistHistory();
+  notifyChanged();
+}
+
 void ClipboardService::clearHistory() {
   if (m_history.empty()) {
     return;

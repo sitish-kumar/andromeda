@@ -27,6 +27,12 @@
       "truncated": "… truncated",
       "image-action": "Open image action"
     },
+    "actions": {
+      "delete-selected": "Delete selected item",
+      "confirm-delete-selected": "Click again to delete this item",
+      "clear-unpinned": "Clear unpinned history",
+      "confirm-clear-unpinned": "Click again to clear unpinned history"
+    },
     "empty": {
       "history-title": "Clipboard history is empty",
       "history-message": "No entries in the clipboard history.",

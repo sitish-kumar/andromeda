@@ -40,6 +40,7 @@ namespace {
   constexpr std::size_t kListOverscanRows = 3;
   constexpr auto kPreviewPayloadDebounceInterval = std::chrono::milliseconds(75);
   constexpr auto kFilterDebounceInterval = std::chrono::milliseconds(120);
+  constexpr auto kDeleteConfirmTimeout = std::chrono::seconds(3);
   constexpr Logger kLog("clipboard");
 
   void replaceAll(std::string& text, std::string_view needle, std::string_view replacement) {
@@ -512,9 +513,7 @@ void ClipboardPanel::create() {
           .fontWeight = FontWeight::Bold,
       }),
       makeCompactIconButton(&m_clearHistoryButton, "trash", ButtonVariant::Destructive, scale, [this]() {
-        if (m_clipboard != nullptr) {
-          m_clipboard->clearHistory();
-        }
+        requestClearUnpinnedHistory();
       })
   );
   sidebar->addChild(std::move(sidebarHeader));
@@ -790,6 +789,8 @@ void ClipboardPanel::onOpen(std::string_view /*context*/) {
 }
 
 void ClipboardPanel::onClose() {
+  resetDeleteConfirmation();
+  resetClearConfirmation();
   m_thumbnailPendingSub.disconnect();
   if (m_listGrid != nullptr) {
     m_listGrid->setAdapter(nullptr);
@@ -885,12 +886,19 @@ void ClipboardPanel::schedulePreviewPayloadRefresh(bool debounced) {
 
 void ClipboardPanel::updateListState() {
   const auto& history = m_clipboard != nullptr ? m_clipboard->history() : std::deque<ClipboardEntry>{};
-  const bool historyEmpty = history.empty();
   const bool empty = history.empty() || m_filteredIndices.empty();
+  const bool hasUnpinned = std::ranges::any_of(history, [](const ClipboardEntry& entry) { return !entry.pinned; });
+  if (!hasUnpinned) {
+    resetClearConfirmation();
+  }
 
   if (m_clearHistoryButton != nullptr) {
-    m_clearHistoryButton->setVisible(!historyEmpty);
-    m_clearHistoryButton->setParticipatesInLayout(!historyEmpty);
+    m_clearHistoryButton->setVisible(hasUnpinned);
+    m_clearHistoryButton->setParticipatesInLayout(hasUnpinned);
+    m_clearHistoryButton->setGlyph(m_clearConfirm ? "warning" : "trash");
+    m_clearHistoryButton->setTooltip(
+        i18n::tr(m_clearConfirm ? "clipboard.actions.confirm-clear-unpinned" : "clipboard.actions.clear-unpinned")
+    );
   }
 
   if (m_listEmptyLabel != nullptr) {
@@ -912,6 +920,7 @@ void ClipboardPanel::updatePreviewActions() {
   bool hasSelection = false;
   bool showImageAction = false;
   bool pinned = false;
+  bool deleteConfirmActive = false;
 
   if (m_clipboard != nullptr) {
     const std::size_t historyIndex = selectedHistoryIndex();
@@ -919,6 +928,8 @@ void ClipboardPanel::updatePreviewActions() {
     if (historyIndex != static_cast<std::size_t>(-1) && historyIndex < history.size()) {
       hasSelection = true;
       pinned = history[historyIndex].pinned;
+      deleteConfirmActive =
+          !m_deleteConfirmStorageId.empty() && m_deleteConfirmStorageId == history[historyIndex].storageId;
       showImageAction = m_config != nullptr
           && !StringUtils::trim(m_config->config().shell.clipboardImageActionCommand).empty()
           && history[historyIndex].isImage();
@@ -933,6 +944,14 @@ void ClipboardPanel::updatePreviewActions() {
   if (m_deleteEntryButton != nullptr) {
     m_deleteEntryButton->setVisible(hasSelection);
     m_deleteEntryButton->setParticipatesInLayout(hasSelection);
+    m_deleteEntryButton->setGlyph(deleteConfirmActive ? "warning" : "trash");
+    m_deleteEntryButton->setTooltip(
+        hasSelection ? i18n::tr(
+                           deleteConfirmActive ? "clipboard.actions.confirm-delete-selected"
+                                               : "clipboard.actions.delete-selected"
+                       )
+                     : std::string{}
+    );
   }
 
   if (m_imageActionButton != nullptr) {
@@ -1153,6 +1172,7 @@ void ClipboardPanel::selectIndex(std::size_t index) {
   if (m_selectedIndex == index) {
     return;
   }
+  resetDeleteConfirmation();
   m_selectedIndex = index;
   if (m_listGrid != nullptr) {
     m_listGrid->setSelectedIndex(index);
@@ -1170,6 +1190,23 @@ void ClipboardPanel::deleteSelectedEntry() {
   if (historyIndex == static_cast<std::size_t>(-1)) {
     return;
   }
+  const auto& history = m_clipboard->history();
+  if (historyIndex >= history.size()) {
+    return;
+  }
+  const std::string storageId = history[historyIndex].storageId;
+  if (m_deleteConfirmStorageId != storageId) {
+    m_deleteConfirmStorageId = storageId;
+    m_deleteConfirmTimer.start(kDeleteConfirmTimeout, [this]() {
+      resetDeleteConfirmation();
+      updatePreviewActions();
+      PanelManager::instance().refresh();
+    });
+    updatePreviewActions();
+    PanelManager::instance().refresh();
+    return;
+  }
+  resetDeleteConfirmation();
   const std::size_t filterPos = m_selectedIndex;
   if (!m_clipboard->removeHistoryEntry(historyIndex)) {
     return;
@@ -1236,6 +1273,62 @@ void ClipboardPanel::togglePinSelected() {
   schedulePreviewPayloadRefresh(false);
   m_pendingScrollToSelected = true;
   PanelManager::instance().refresh();
+}
+
+void ClipboardPanel::requestClearUnpinnedHistory() {
+  if (m_clipboard == nullptr) {
+    return;
+  }
+
+  const auto& history = m_clipboard->history();
+  const bool hasUnpinned = std::ranges::any_of(history, [](const ClipboardEntry& entry) { return !entry.pinned; });
+  if (!hasUnpinned) {
+    resetClearConfirmation();
+    updateListState();
+    return;
+  }
+
+  if (!m_clearConfirm) {
+    m_clearConfirm = true;
+    m_clearConfirmTimer.start(kDeleteConfirmTimeout, [this]() {
+      resetClearConfirmation();
+      updateListState();
+      PanelManager::instance().refresh();
+    });
+    updateListState();
+    PanelManager::instance().refresh();
+    return;
+  }
+
+  resetClearConfirmation();
+  resetDeleteConfirmation();
+  m_clipboard->clearUnpinnedHistory();
+  applyFilter();
+  if (m_filteredIndices.empty()) {
+    m_selectedIndex = 0;
+  } else {
+    m_selectedIndex = std::min(m_selectedIndex, m_filteredIndices.size() - 1);
+  }
+  updateListState();
+  if (m_listGrid != nullptr) {
+    m_listGrid->notifyDataChanged();
+    m_listGrid->setSelectedIndex(
+        m_filteredIndices.empty() ? std::nullopt : std::optional<std::size_t>(m_selectedIndex)
+    );
+  }
+  schedulePreviewPayloadRefresh(false);
+  m_pendingScrollToSelected = true;
+  PanelManager::instance().refresh();
+}
+
+void ClipboardPanel::resetDeleteConfirmation() {
+  m_deleteConfirmTimer.stop();
+  m_deleteConfirmStorageId.clear();
+}
+
+void ClipboardPanel::resetClearConfirmation() {
+  m_clearConfirmTimer.stop();
+  m_clearConfirm = false;
 }
 
 void ClipboardPanel::runImageAction() {

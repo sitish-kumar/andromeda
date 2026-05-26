@@ -95,6 +95,7 @@ public:
   bool promoteEntry(std::size_t index);
   bool setEntryPinned(std::size_t index, bool pinned);
   bool removeHistoryEntry(std::size_t index);
+  void clearUnpinnedHistory();
   void clearHistory();
   void setChangeCallback(ChangeCallback callback);
   void dispatchReadEvents(short revents);

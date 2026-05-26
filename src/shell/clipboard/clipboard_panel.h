@@ -58,9 +58,12 @@ private:
   void activateSelected();
   void togglePinSelected();
   void runImageAction();
+  void requestClearUnpinnedHistory();
   bool handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers);
   void scrollToSelected();
   void deleteSelectedEntry();
+  void resetDeleteConfirmation();
+  void resetClearConfirmation();
   void applyFilter();
   void onFilterChanged(const std::string& text);
   [[nodiscard]] std::size_t selectedHistoryIndex() const;
@@ -102,8 +105,12 @@ private:
   std::size_t m_pendingPreviewPayloadIndex = static_cast<std::size_t>(-1);
   Timer m_previewPayloadDebounceTimer;
   Timer m_filterDebounceTimer;
+  Timer m_deleteConfirmTimer;
+  Timer m_clearConfirmTimer;
   std::string m_pendingFilterQuery;
+  std::string m_deleteConfirmStorageId;
   std::uint64_t m_lastChangeSerial = 0;
+  bool m_clearConfirm = false;
   float m_lastWidth = 0.0f;
   float m_lastHeight = 0.0f;
   float m_lastPreviewWidth = -1.0f;
