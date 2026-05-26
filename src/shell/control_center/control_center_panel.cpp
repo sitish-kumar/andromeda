@@ -24,7 +24,11 @@ using namespace control_center;
 
 namespace {
   constexpr auto kMprisRefreshMinInterval = std::chrono::milliseconds(750);
-}
+
+  ControlCenterSidebarMode sidebarModeFor(const ConfigService* config) {
+    return config != nullptr ? config->config().controlCenter.sidebarMode : ControlCenterSidebarMode::Compact;
+  }
+} // namespace
 
 ControlCenterPanel::ControlCenterPanel(
     NotificationManager* notifications, PipeWireService* audio, MprisService* mpris, ConfigService* config,
@@ -64,8 +68,15 @@ ControlCenterPanel::ControlCenterPanel(
 }
 
 float ControlCenterPanel::preferredWidth() const {
-  const bool compact = m_config != nullptr && m_config->config().controlCenter.compact;
-  return scaled(compact ? 660.0f : 780.0f);
+  switch (sidebarModeFor(m_config)) {
+  case ControlCenterSidebarMode::Full:
+    return scaled(780.0f);
+  case ControlCenterSidebarMode::Compact:
+    return scaled(660.0f);
+  case ControlCenterSidebarMode::None:
+    return scaled(600.0f);
+  }
+  return scaled(660.0f);
 }
 
 PanelPlacement ControlCenterPanel::panelPlacement() const noexcept {
@@ -79,7 +90,9 @@ bool ControlCenterPanel::dismissTransientUi() {
 
 void ControlCenterPanel::create() {
   const float scale = contentScale();
-  m_compact = m_config != nullptr && m_config->config().controlCenter.compact;
+  const ControlCenterSidebarMode sidebarMode = sidebarModeFor(m_config);
+  m_compact = sidebarMode == ControlCenterSidebarMode::Compact;
+  m_showSidebar = sidebarMode != ControlCenterSidebarMode::None;
 
   for (auto& tab : m_tabs) {
     tab->setContentScale(scale);
@@ -94,49 +107,51 @@ void ControlCenterPanel::create() {
       .padding = 0.0f,
   });
 
-  auto sidebar = ui::column({
-      .out = &m_sidebar,
-      .align = FlexAlign::Stretch,
-      .gap = Style::spaceXs * scale,
-      .padding = Style::spaceSm * scale,
-      .fillHeight = true,
-      .configure = [this, scale](Flex& column) {
-        column.setFill(colorSpecFromRole(ColorRole::SurfaceVariant, panelCardOpacity()));
-        column.setRadius(Style::scaledRadiusXl(scale));
-      },
-  });
+  if (m_showSidebar) {
+    auto sidebar = ui::column({
+        .out = &m_sidebar,
+        .align = FlexAlign::Stretch,
+        .gap = Style::spaceXs * scale,
+        .padding = Style::spaceSm * scale,
+        .fillHeight = true,
+        .configure = [this, scale](Flex& column) {
+          column.setFill(colorSpecFromRole(ColorRole::SurfaceVariant, panelCardOpacity()));
+          column.setRadius(Style::scaledRadiusXl(scale));
+        },
+    });
 
-  for (const auto& tab : kTabs) {
-    sidebar->addChild(
-        ui::button({
-            .out = &m_tabButtons[tabIndex(tab.id)],
-            .text = m_compact ? std::optional<std::string>{} : std::optional<std::string>{i18n::tr(tab.titleKey)},
-            .glyph = tab.glyph,
-            .glyphSize = 21.0f * scale,
-            .contentAlign = m_compact ? ButtonContentAlign::Center : ButtonContentAlign::Start,
-            .variant = ButtonVariant::Tab,
-            .minWidth = m_compact ? std::optional<float>{Style::controlHeight * scale} : std::optional<float>{},
-            .minHeight = Style::controlHeight * scale,
-            .paddingV = Style::spaceSm * scale,
-            .paddingH = (m_compact ? Style::spaceSm : Style::spaceMd) * scale,
-            .gap = Style::spaceSm * scale,
-            .radius = Style::scaledRadiusLg(scale),
-            .onClick =
-                [this, id = tab.id]() {
-                  selectTab(id);
-                  PanelManager::instance().refresh();
-                },
-            .configure =
-                [scale](Button& button) {
-                  if (button.label() != nullptr) {
-                    button.label()->setFontWeight(FontWeight::Bold);
-                    button.label()->setFontSize(Style::fontSizeBody * scale);
-                  }
-                },
-        })
-    );
+    for (const auto& tab : kTabs) {
+      sidebar->addChild(
+          ui::button({
+              .out = &m_tabButtons[tabIndex(tab.id)],
+              .text = m_compact ? std::optional<std::string>{} : std::optional<std::string>{i18n::tr(tab.titleKey)},
+              .glyph = tab.glyph,
+              .glyphSize = 21.0f * scale,
+              .contentAlign = m_compact ? ButtonContentAlign::Center : ButtonContentAlign::Start,
+              .variant = ButtonVariant::Tab,
+              .minWidth = m_compact ? std::optional<float>{Style::controlHeight * scale} : std::optional<float>{},
+              .minHeight = Style::controlHeight * scale,
+              .paddingV = Style::spaceSm * scale,
+              .paddingH = (m_compact ? Style::spaceSm : Style::spaceMd) * scale,
+              .gap = Style::spaceSm * scale,
+              .radius = Style::scaledRadiusLg(scale),
+              .onClick =
+                  [this, id = tab.id]() {
+                    selectTab(id);
+                    PanelManager::instance().refresh();
+                  },
+              .configure =
+                  [scale](Button& button) {
+                    if (button.label() != nullptr) {
+                      button.label()->setFontWeight(FontWeight::Bold);
+                      button.label()->setFontSize(Style::fontSizeBody * scale);
+                    }
+                  },
+          })
+      );
+    }
+    rootLayout->addChild(std::move(sidebar));
   }
-  rootLayout->addChild(std::move(sidebar));
 
   auto content = ui::column({
       .out = &m_content,

@@ -845,9 +845,10 @@ namespace settings {
       entries.push_back(std::move(e));
     }
     entries.push_back(makeEntry(
-        "panels", "control-center", tr("settings.schema.panels.compact-control-center.label"),
-        tr("settings.schema.panels.compact-control-center.description"), {"control_center", "compact"},
-        ToggleSetting{cfg.controlCenter.compact}, "compact sidebar icons narrow"
+        "panels", "control-center", tr("settings.schema.panels.control-center-sidebar.label"),
+        tr("settings.schema.panels.control-center-sidebar.description"), {"control_center", "sidebar"},
+        asSegmented(enumSelect(kControlCenterSidebarModes, cfg.controlCenter.sidebarMode)),
+        "full compact none sidebar icons narrow hidden"
     ));
     entries.push_back(makeEntry(
         "panels", "control-center", tr("settings.schema.panels.home-shortcuts.label"),

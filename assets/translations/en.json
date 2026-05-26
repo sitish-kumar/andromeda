@@ -1005,6 +1005,13 @@
           "centered": "Centered"
         }
       },
+      "control-center": {
+        "sidebar": {
+          "full": "Full",
+          "compact": "Compact",
+          "none": "None"
+        }
+      },
       "screen-position": {
         "top-right": "Top Right",
         "top-left": "Top Left",
@@ -1871,9 +1878,9 @@
           "label": "Placement",
           "description": "Choose whether Control Center attaches to the bar, floats near it, or opens centered"
         },
-        "compact-control-center": {
-          "label": "Compact Sidebar",
-          "description": "Show only icons in the sidebar to make Control Center narrower"
+        "control-center-sidebar": {
+          "label": "Sidebar",
+          "description": "Choose whether Control Center shows tab labels, icon-only tabs, or no sidebar"
         },
         "placement-launcher": {
           "label": "Placement",

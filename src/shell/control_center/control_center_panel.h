@@ -150,6 +150,7 @@ private:
   NotificationManager* m_notificationManager = nullptr;
   DependencyService* m_dependencies = nullptr;
   bool m_compact = false;
+  bool m_showSidebar = true;
   bool m_mprisRefreshScheduled = false;
   std::chrono::steady_clock::time_point m_lastMprisRefreshAt{};
 };

@@ -771,7 +771,9 @@ namespace config_export {
     root.insert_or_assign("widget", std::move(widgetRoot));
 
     toml::table controlCenter;
-    controlCenter.insert_or_assign("compact", config.controlCenter.compact);
+    controlCenter.insert_or_assign(
+        "sidebar", std::string(enumToKey(kControlCenterSidebarModes, config.controlCenter.sidebarMode))
+    );
     controlCenter.insert_or_assign("shortcuts", shortcutArray(config.controlCenter.shortcuts));
     root.insert_or_assign("control_center", std::move(controlCenter));
 

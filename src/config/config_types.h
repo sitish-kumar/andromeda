@@ -766,6 +766,18 @@ constexpr EnumOption<ThemeMode> kThemeModes[] = {
     {ThemeMode::Auto, "auto", "common.states.auto"},
 };
 
+enum class ControlCenterSidebarMode : std::uint8_t {
+  Full = 0,
+  Compact = 1,
+  None = 2,
+};
+
+constexpr EnumOption<ControlCenterSidebarMode> kControlCenterSidebarModes[] = {
+    {ControlCenterSidebarMode::Full, "full", "settings.options.control-center.sidebar.full"},
+    {ControlCenterSidebarMode::Compact, "compact", "settings.options.control-center.sidebar.compact"},
+    {ControlCenterSidebarMode::None, "none", "settings.options.control-center.sidebar.none"},
+};
+
 struct ThemeConfig {
   struct TemplateColorConfig {
     std::string name;
@@ -827,7 +839,7 @@ struct ThemeConfig {
 
 struct ControlCenterConfig {
   std::vector<ShortcutConfig> shortcuts;
-  bool compact = true;
+  ControlCenterSidebarMode sidebarMode = ControlCenterSidebarMode::Compact;
   bool operator==(const ControlCenterConfig&) const = default;
 };
 
