@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 class Flex;
 class Button;
@@ -27,7 +28,7 @@ public:
   void onClose() override;
 
   [[nodiscard]] float preferredWidth() const override { return scaled(1100.0f); }
-  [[nodiscard]] float preferredHeight() const override { return scaled(720.0f); }
+  [[nodiscard]] float preferredHeight() const override { return scaled(780.0f); }
 
 private:
   void doLayout(Renderer& renderer, float width, float height) override;
@@ -68,6 +69,7 @@ private:
   Button* m_openColorPickerButton = nullptr;
   Button* m_openGlyphPickerButton = nullptr;
   Label* m_glyphPickerResultLabel = nullptr;
+  Label* m_gridSelectionLabel = nullptr;
   Segmented* m_segmented = nullptr;
   Label* m_segmentedValueLabel = nullptr;
   Button* m_closeButton = nullptr;
@@ -79,4 +81,5 @@ private:
   Label* m_fontStatusLabel = nullptr;
   Label* m_baselineModeLabel = nullptr;
   Toggle* m_baselineModeToggle = nullptr;
+  std::vector<Button*> m_gridTileButtons;
 };

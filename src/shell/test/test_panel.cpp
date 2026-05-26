@@ -5,21 +5,7 @@
 #include "render/render_context.h"
 #include "shell/panel/panel_manager.h"
 #include "ui/builders.h"
-#include "ui/controls/box.h"
-#include "ui/controls/button.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/glyph.h"
-#include "ui/controls/grid_tile.h"
 #include "ui/controls/grid_view.h"
-#include "ui/controls/input.h"
-#include "ui/controls/label.h"
-#include "ui/controls/radio_button.h"
-#include "ui/controls/scroll_view.h"
-#include "ui/controls/segmented.h"
-#include "ui/controls/select.h"
-#include "ui/controls/slider.h"
-#include "ui/controls/spinner.h"
-#include "ui/controls/toggle.h"
 #include "ui/dialogs/color_picker_dialog.h"
 #include "ui/dialogs/file_dialog.h"
 #include "ui/dialogs/glyph_picker_dialog.h"
@@ -33,108 +19,105 @@
 
 void TestPanel::create() {
   const float scale = contentScale();
-  auto rootLayout = std::make_unique<Flex>();
-  rootLayout->setDirection(FlexDirection::Vertical);
-  rootLayout->setGap(Style::spaceMd * scale);
-  rootLayout->setAlign(FlexAlign::Stretch);
+  auto rootLayout = ui::column({
+      .align = FlexAlign::Stretch,
+      .gap = Style::spaceMd * scale,
+  });
 
-  auto headerRow = std::make_unique<Flex>();
-  headerRow->setDirection(FlexDirection::Horizontal);
-  headerRow->setAlign(FlexAlign::Center);
-  headerRow->setJustify(FlexJustify::SpaceBetween);
-  headerRow->setGap(Style::spaceSm * scale);
+  auto headerRow = ui::row({
+      .align = FlexAlign::Center,
+      .justify = FlexJustify::SpaceBetween,
+      .gap = Style::spaceSm * scale,
+  });
 
-  auto header = std::make_unique<Label>();
-  header->setText("Test");
-  header->setFontWeight(FontWeight::Bold);
-  header->setFontSize(Style::fontSizeTitle * scale);
-  header->setColor(colorSpecFromRole(ColorRole::Primary));
-  m_headerLabel = header.get();
+  auto header = ui::label({
+      .out = &m_headerLabel,
+      .text = "Test",
+      .fontSize = Style::fontSizeTitle * scale,
+      .color = colorSpecFromRole(ColorRole::Primary),
+      .fontWeight = FontWeight::Bold,
+  });
   headerRow->addChild(std::move(header));
 
-  auto tabSwitch = std::make_unique<Segmented>();
-  tabSwitch->setScale(scale);
-  tabSwitch->addOption("Controls");
-  tabSwitch->addOption("Text");
-  tabSwitch->setSelectedIndex(0);
-  tabSwitch->setOnChange([this](std::size_t index) { selectTab(index); });
-  m_tabSwitch = tabSwitch.get();
+  auto tabSwitch = ui::segmented({
+      .out = &m_tabSwitch,
+      .options = std::vector<ui::SegmentedOption>{{.label = "Controls"}, {.label = "Text"}},
+      .selectedIndex = 0,
+      .scale = scale,
+      .onChange = [this](std::size_t index) { selectTab(index); },
+  });
 
-  auto headerSpacerL = std::make_unique<Flex>();
-  headerSpacerL->setFlexGrow(1.0f);
-  headerRow->addChild(std::move(headerSpacerL));
+  headerRow->addChild(ui::row({.flexGrow = 1.0f}));
   headerRow->addChild(std::move(tabSwitch));
-  auto headerSpacerR = std::make_unique<Flex>();
-  headerSpacerR->setFlexGrow(1.0f);
-  headerRow->addChild(std::move(headerSpacerR));
+  headerRow->addChild(ui::row({.flexGrow = 1.0f}));
 
-  auto closeButton = std::make_unique<Button>();
-  closeButton->setGlyph("close");
-  closeButton->setVariant(ButtonVariant::Default);
-  closeButton->setGlyphSize(Style::fontSizeBody * scale);
-  closeButton->setMinWidth(Style::controlHeightSm * scale);
-  closeButton->setMinHeight(Style::controlHeightSm * scale);
-  closeButton->setPadding(Style::spaceXs * scale);
-  closeButton->setRadius(Style::scaledRadiusMd(scale));
-  closeButton->setOnClick([]() { PanelManager::instance().closePanel(); });
-  m_closeButton = closeButton.get();
+  auto closeButton = ui::button({
+      .out = &m_closeButton,
+      .glyph = "close",
+      .glyphSize = Style::fontSizeBody * scale,
+      .variant = ButtonVariant::Default,
+      .minWidth = Style::controlHeightSm * scale,
+      .minHeight = Style::controlHeightSm * scale,
+      .padding = Style::spaceXs * scale,
+      .radius = Style::scaledRadiusMd(scale),
+      .onClick = []() { PanelManager::instance().closePanel(); },
+  });
   headerRow->addChild(std::move(closeButton));
   rootLayout->addChild(std::move(headerRow));
 
-  auto content = std::make_unique<Flex>();
-  content->setDirection(FlexDirection::Horizontal);
-  content->setGap(Style::spaceLg * scale);
-  content->setAlign(FlexAlign::Start);
-  content->setFillWidth(true);
+  auto content = ui::row({
+      .align = FlexAlign::Start,
+      .gap = Style::spaceLg * scale,
+      .fillWidth = true,
+  });
 
-  auto colA = std::make_unique<Flex>();
-  colA->setDirection(FlexDirection::Vertical);
-  colA->setGap(Style::spaceMd * scale);
-  colA->setAlign(FlexAlign::Start);
-  colA->setFlexGrow(1.0f);
+  auto colA = ui::column({
+      .align = FlexAlign::Start,
+      .gap = Style::spaceMd * scale,
+      .flexGrow = 1.0f,
+  });
 
-  auto colB = std::make_unique<Flex>();
-  colB->setDirection(FlexDirection::Vertical);
-  colB->setGap(Style::spaceMd * scale);
-  colB->setAlign(FlexAlign::Start);
-  colB->setFlexGrow(1.0f);
+  auto colB = ui::column({
+      .align = FlexAlign::Start,
+      .gap = Style::spaceMd * scale,
+      .flexGrow = 1.0f,
+  });
 
-  auto colC = std::make_unique<Flex>();
-  colC->setDirection(FlexDirection::Vertical);
-  colC->setGap(Style::spaceMd * scale);
-  colC->setAlign(FlexAlign::Start);
-  colC->setFlexGrow(1.0f);
+  auto colC = ui::column({
+      .align = FlexAlign::Start,
+      .gap = Style::spaceMd * scale,
+      .flexGrow = 1.0f,
+  });
 
   auto makeRow = [scale]() {
-    auto row = std::make_unique<Flex>();
-    row->setDirection(FlexDirection::Horizontal);
-    row->setGap(Style::spaceMd * scale);
-    row->setAlign(FlexAlign::Center);
-    return row;
+    return ui::row({
+        .align = FlexAlign::Center,
+        .gap = Style::spaceMd * scale,
+    });
   };
 
   auto makeCol = [scale]() {
-    auto col = std::make_unique<Flex>();
-    col->setDirection(FlexDirection::Vertical);
-    col->setGap(Style::spaceXs * scale);
-    col->setAlign(FlexAlign::Start);
-    return col;
+    return ui::column({
+        .align = FlexAlign::Start,
+        .gap = Style::spaceXs * scale,
+    });
   };
 
   // Each control sits in a small section: a caption-style title on top, then
   // the control underneath. This is more compact than the prior row-label
   // pattern and avoids the 150px gutter of empty space on the left.
   auto makeSection = [scale](const char* title) {
-    auto section = std::make_unique<Flex>();
-    section->setDirection(FlexDirection::Vertical);
-    section->setGap(Style::spaceXs * scale);
-    section->setAlign(FlexAlign::Start);
-    auto label = std::make_unique<Label>();
-    label->setText(title);
-    label->setFontSize(Style::fontSizeCaption * scale);
-    label->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-    section->addChild(std::move(label));
-    return section;
+    return ui::column(
+        {
+            .align = FlexAlign::Start,
+            .gap = Style::spaceXs * scale,
+        },
+        ui::label({
+            .text = title,
+            .fontSize = Style::fontSizeCaption * scale,
+            .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+        })
+    );
   };
 
   // ── Column A: Buttons + Icon buttons ────────────────────────────────────
@@ -150,16 +133,17 @@ void TestPanel::create() {
     };
 
     auto makeVariantButton = [scale](const VariantSpec& spec, bool enabled = true) {
-      auto btn = std::make_unique<Button>();
-      btn->setText(spec.label);
-      btn->setFontSize(Style::fontSizeBody * scale);
-      btn->setVariant(spec.variant);
-      btn->setMinHeight(Style::controlHeight * scale);
-      btn->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-      btn->setRadius(Style::scaledRadiusMd(scale));
-      btn->setOnClick([]() {});
-      btn->setEnabled(enabled);
-      return btn;
+      return ui::button({
+          .text = spec.label,
+          .fontSize = Style::fontSizeBody * scale,
+          .enabled = enabled,
+          .variant = spec.variant,
+          .minHeight = Style::controlHeight * scale,
+          .paddingV = Style::spaceSm * scale,
+          .paddingH = Style::spaceMd * scale,
+          .radius = Style::scaledRadiusMd(scale),
+          .onClick = []() {},
+      });
     };
 
     auto buttonsSection = makeSection("Buttons");
@@ -180,29 +164,31 @@ void TestPanel::create() {
   }
 
   {
-    auto glyphTextButton = std::make_unique<Button>();
-    glyphTextButton->setText("Settings");
-    glyphTextButton->setGlyph("settings");
-    glyphTextButton->setFontSize(Style::fontSizeBody * scale);
-    glyphTextButton->setGlyphSize(Style::fontSizeBody * scale);
-    glyphTextButton->setVariant(ButtonVariant::Default);
-    glyphTextButton->setMinHeight(Style::controlHeight * scale);
-    glyphTextButton->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-    glyphTextButton->setRadius(Style::scaledRadiusMd(scale));
-    glyphTextButton->setOnClick([]() {});
-    m_glyphTextButton = glyphTextButton.get();
+    auto glyphTextButton = ui::button({
+        .out = &m_glyphTextButton,
+        .text = "Settings",
+        .glyph = "settings",
+        .fontSize = Style::fontSizeBody * scale,
+        .glyphSize = Style::fontSizeBody * scale,
+        .variant = ButtonVariant::Default,
+        .minHeight = Style::controlHeight * scale,
+        .paddingV = Style::spaceSm * scale,
+        .paddingH = Style::spaceMd * scale,
+        .radius = Style::scaledRadiusMd(scale),
+        .onClick = []() {},
+    });
 
-    auto glyphButton = std::make_unique<Button>();
-    glyphButton->setGlyph("home");
-    glyphButton->setGlyphSize(Style::fontSizeBody * scale);
-    glyphButton->setVariant(ButtonVariant::Default);
-    glyphButton->setMinHeight(Style::controlHeight * scale);
-    glyphButton->setPadding(
-        Style::spaceSm * scale, Style::spaceMd * scale, Style::spaceSm * scale, Style::spaceMd * scale
-    );
-    glyphButton->setRadius(Style::scaledRadiusMd(scale));
-    glyphButton->setOnClick([]() {});
-    m_glyphButton = glyphButton.get();
+    auto glyphButton = ui::button({
+        .out = &m_glyphButton,
+        .glyph = "home",
+        .glyphSize = Style::fontSizeBody * scale,
+        .variant = ButtonVariant::Default,
+        .minHeight = Style::controlHeight * scale,
+        .paddingV = Style::spaceSm * scale,
+        .paddingH = Style::spaceMd * scale,
+        .radius = Style::scaledRadiusMd(scale),
+        .onClick = []() {},
+    });
 
     auto section = makeSection("Icon buttons");
     auto row = makeRow();
@@ -214,15 +200,17 @@ void TestPanel::create() {
 
   // Select
   {
-    auto select = std::make_unique<Select>();
-    select->setSize(220.0f * scale, 0.0f);
-    select->setFontSize(Style::fontSizeBody * scale);
-    select->setControlHeight(Style::controlHeight * scale);
-    select->setHorizontalPadding(Style::spaceMd * scale);
-    select->setGlyphSize(14.0f * scale);
-    select->setOptions({"Something", "Yop", "Anything"});
-    select->setSelectedIndex(0);
-    m_select = select.get();
+    auto select = ui::select({
+        .out = &m_select,
+        .options = std::vector<std::string>{"Something", "Yop", "Anything"},
+        .selectedIndex = 0,
+        .fontSize = Style::fontSizeBody * scale,
+        .controlHeight = Style::controlHeight * scale,
+        .horizontalPadding = Style::spaceMd * scale,
+        .glyphSize = 14.0f * scale,
+        .width = 220.0f * scale,
+        .height = 0.0f,
+    });
 
     auto section = makeSection("Select");
     section->setZIndex(10);
@@ -232,23 +220,25 @@ void TestPanel::create() {
 
   // Input
   {
-    auto input = std::make_unique<Input>();
-    input->setPlaceholder("Type something...");
-    input->setSize(220.0f * scale, 0.0f);
-    input->setFontSize(Style::fontSizeBody * scale);
-    input->setControlHeight(Style::controlHeight * scale);
-    input->setHorizontalPadding(Style::spaceMd * scale);
-    m_input = input.get();
+    auto input = ui::input({
+        .out = &m_input,
+        .placeholder = "Type something...",
+        .fontSize = Style::fontSizeBody * scale,
+        .controlHeight = Style::controlHeight * scale,
+        .horizontalPadding = Style::spaceMd * scale,
+        .width = 220.0f * scale,
+        .height = 0.0f,
+        .onChange = [this](const std::string& val) {
+          if (m_inputValueLabel != nullptr) {
+            m_inputValueLabel->setText(val.empty() ? "..." : val.substr(0, 16));
+          }
+        },
+    });
 
-    auto valueLabel = std::make_unique<Label>();
-    valueLabel->setCaptionStyle();
-    valueLabel->setFontSize(Style::fontSizeCaption * scale);
-    m_inputValueLabel = valueLabel.get();
-
-    input->setOnChange([this](const std::string& val) {
-      if (m_inputValueLabel != nullptr) {
-        m_inputValueLabel->setText(val.empty() ? "..." : val.substr(0, 16));
-      }
+    auto valueLabel = ui::label({
+        .out = &m_inputValueLabel,
+        .fontSize = Style::fontSizeCaption * scale,
+        .configure = [](Label& label) { label.setCaptionStyle(); },
     });
 
     auto section = makeSection("Input");
@@ -261,27 +251,31 @@ void TestPanel::create() {
 
   // Slider
   {
-    auto slider = std::make_unique<Slider>();
-    slider->setRange(0.0f, 100.0f);
-    slider->setStep(1.0f);
-    slider->setValue(50.0f);
-    slider->setSize(Style::sliderDefaultWidth * scale, 0.0f);
-    slider->setControlHeight(Style::controlHeight * scale);
-    slider->setTrackHeight(Style::sliderTrackHeight * scale);
-    slider->setThumbSize(Style::sliderThumbSize * scale);
-    slider->setOnValueChanged([this](double value) {
-      if (m_sliderValueLabel != nullptr) {
-        const int percent = static_cast<int>(std::round(value));
-        m_sliderValueLabel->setText(std::to_string(percent) + "%");
-      }
+    auto slider = ui::slider({
+        .out = &m_slider,
+        .minValue = 0.0f,
+        .maxValue = 100.0f,
+        .step = 1.0f,
+        .value = 50.0f,
+        .trackHeight = Style::sliderTrackHeight * scale,
+        .thumbSize = Style::sliderThumbSize * scale,
+        .controlHeight = Style::controlHeight * scale,
+        .width = Style::sliderDefaultWidth * scale,
+        .height = 0.0f,
+        .onValueChanged = [this](double value) {
+          if (m_sliderValueLabel != nullptr) {
+            const int percent = static_cast<int>(std::round(value));
+            m_sliderValueLabel->setText(std::to_string(percent) + "%");
+          }
+        },
     });
-    m_slider = slider.get();
 
-    auto valueLabel = std::make_unique<Label>();
-    valueLabel->setText("50%");
-    valueLabel->setCaptionStyle();
-    valueLabel->setFontSize(Style::fontSizeCaption * scale);
-    m_sliderValueLabel = valueLabel.get();
+    auto valueLabel = ui::label({
+        .out = &m_sliderValueLabel,
+        .text = "50%",
+        .fontSize = Style::fontSizeCaption * scale,
+        .configure = [](Label& label) { label.setCaptionStyle(); },
+    });
 
     auto section = makeSection("Slider");
     auto row = makeRow();
@@ -293,22 +287,24 @@ void TestPanel::create() {
 
   // ── Column B: Toggles, Segmented, Checkbox, Radio, Spinner ──────────────
   {
-    auto toggle = std::make_unique<Toggle>();
-    toggle->setToggleSize(ToggleSize::Medium);
-    toggle->setScale(scale);
-    toggle->setChecked(false);
-    toggle->setOnChange([this](bool checked) {
-      if (m_toggleValueLabel != nullptr) {
-        m_toggleValueLabel->setText(checked ? "true" : "false");
-      }
+    auto toggle = ui::toggle({
+        .out = &m_toggle,
+        .checked = false,
+        .toggleSize = ToggleSize::Medium,
+        .scale = scale,
+        .onChange = [this](bool checked) {
+          if (m_toggleValueLabel != nullptr) {
+            m_toggleValueLabel->setText(checked ? "true" : "false");
+          }
+        },
     });
-    m_toggle = toggle.get();
 
-    auto valueLabel = std::make_unique<Label>();
-    valueLabel->setText("false");
-    valueLabel->setCaptionStyle();
-    valueLabel->setFontSize(Style::fontSizeCaption * scale);
-    m_toggleValueLabel = valueLabel.get();
+    auto valueLabel = ui::label({
+        .out = &m_toggleValueLabel,
+        .text = "false",
+        .fontSize = Style::fontSizeCaption * scale,
+        .configure = [](Label& label) { label.setCaptionStyle(); },
+    });
 
     auto section = makeSection("Toggle");
     auto row = makeRow();
@@ -319,26 +315,25 @@ void TestPanel::create() {
   }
 
   {
-    auto segmented = std::make_unique<Segmented>();
-    segmented->setScale(scale);
-    segmented->addOption("Light");
-    segmented->addOption("Dark");
-    segmented->addOption("System");
-    segmented->setSelectedIndex(2);
-
-    auto valueLabel = std::make_unique<Label>();
-    valueLabel->setText("System");
-    valueLabel->setCaptionStyle();
-    valueLabel->setFontSize(Style::fontSizeCaption * scale);
-    m_segmentedValueLabel = valueLabel.get();
+    auto valueLabel = ui::label({
+        .out = &m_segmentedValueLabel,
+        .text = "System",
+        .fontSize = Style::fontSizeCaption * scale,
+        .configure = [](Label& label) { label.setCaptionStyle(); },
+    });
 
     static const char* const kLabels[] = {"Light", "Dark", "System"};
-    segmented->setOnChange([this](std::size_t index) {
-      if (m_segmentedValueLabel != nullptr && index < std::size(kLabels)) {
-        m_segmentedValueLabel->setText(kLabels[index]);
-      }
+    auto segmented = ui::segmented({
+        .out = &m_segmented,
+        .options = std::vector<ui::SegmentedOption>{{.label = "Light"}, {.label = "Dark"}, {.label = "System"}},
+        .selectedIndex = 2,
+        .scale = scale,
+        .onChange = [this](std::size_t index) {
+          if (m_segmentedValueLabel != nullptr && index < std::size(kLabels)) {
+            m_segmentedValueLabel->setText(kLabels[index]);
+          }
+        },
     });
-    m_segmented = segmented.get();
 
     auto section = makeSection("Segmented");
     auto row = makeRow();
@@ -360,11 +355,12 @@ void TestPanel::create() {
         },
     });
 
-    auto valueLabel = std::make_unique<Label>();
-    valueLabel->setText("true");
-    valueLabel->setCaptionStyle();
-    valueLabel->setFontSize(Style::fontSizeCaption * scale);
-    m_checkboxValueLabel = valueLabel.get();
+    auto valueLabel = ui::label({
+        .out = &m_checkboxValueLabel,
+        .text = "true",
+        .fontSize = Style::fontSizeCaption * scale,
+        .configure = [](Label& label) { label.setCaptionStyle(); },
+    });
 
     auto section = makeSection("Checkbox");
     auto row = makeRow();
@@ -376,26 +372,30 @@ void TestPanel::create() {
 
   {
     auto makeRadioOption = [scale](const char* text, std::unique_ptr<RadioButton> radio) {
-      auto opt = std::make_unique<Flex>();
-      opt->setDirection(FlexDirection::Horizontal);
-      opt->setAlign(FlexAlign::Center);
-      opt->setGap(Style::spaceXs * scale);
+      auto opt = ui::row({
+          .align = FlexAlign::Center,
+          .gap = Style::spaceXs * scale,
+      });
       opt->addChild(std::move(radio));
-      auto label = std::make_unique<Label>();
-      label->setText(text);
-      label->setFontSize(Style::fontSizeBody * scale);
-      opt->addChild(std::move(label));
+      opt->addChild(
+          ui::label({
+              .text = text,
+              .fontSize = Style::fontSizeBody * scale,
+          })
+      );
       return opt;
     };
 
-    auto radioA = std::make_unique<RadioButton>();
-    radioA->setScale(scale);
-    radioA->setChecked(true);
-    m_radioA = radioA.get();
+    auto radioA = ui::radioButton({
+        .out = &m_radioA,
+        .checked = true,
+        .scale = scale,
+    });
 
-    auto radioB = std::make_unique<RadioButton>();
-    radioB->setScale(scale);
-    m_radioB = radioB.get();
+    auto radioB = ui::radioButton({
+        .out = &m_radioB,
+        .scale = scale,
+    });
 
     if (m_radioA != nullptr) {
       m_radioA->setOnChange([this](bool checked) {
@@ -416,10 +416,10 @@ void TestPanel::create() {
       });
     }
 
-    auto options = std::make_unique<Flex>();
-    options->setDirection(FlexDirection::Horizontal);
-    options->setAlign(FlexAlign::Center);
-    options->setGap(Style::spaceMd * scale);
+    auto options = ui::row({
+        .align = FlexAlign::Center,
+        .gap = Style::spaceMd * scale,
+    });
     options->addChild(makeRadioOption("Option A", std::move(radioA)));
     options->addChild(makeRadioOption("Option B", std::move(radioB)));
 
@@ -429,10 +429,11 @@ void TestPanel::create() {
   }
 
   {
-    auto spinner = std::make_unique<Spinner>();
-    spinner->setSpinnerSize(20.0f * scale);
-    spinner->setThickness(2.0f * scale);
-    m_spinner = spinner.get();
+    auto spinner = ui::spinner({
+        .out = &m_spinner,
+        .spinnerSize = 20.0f * scale,
+        .thickness = 2.0f * scale,
+    });
 
     auto section = makeSection("Spinner");
     section->addChild(std::move(spinner));
@@ -454,11 +455,12 @@ void TestPanel::create() {
         },
     });
 
-    auto valueLabel = std::make_unique<Label>();
-    valueLabel->setText("onChange: 42");
-    valueLabel->setCaptionStyle();
-    valueLabel->setFontSize(Style::fontSizeCaption * scale);
-    m_stepperValueLabel = valueLabel.get();
+    auto valueLabel = ui::label({
+        .out = &m_stepperValueLabel,
+        .text = "onChange: 42",
+        .fontSize = Style::fontSizeCaption * scale,
+        .configure = [](Label& label) { label.setCaptionStyle(); },
+    });
 
     auto section = makeSection("Stepper");
     section->addChild(std::move(stepper));
@@ -468,42 +470,45 @@ void TestPanel::create() {
 
   // ── Column C: File dialog, Color picker, Grid view, Transforms ──────────
   {
-    auto resultLabel = std::make_unique<Label>();
-    resultLabel->setText("No image selected");
-    resultLabel->setCaptionStyle();
-    resultLabel->setFontSize(Style::fontSizeCaption * scale);
-    resultLabel->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-    resultLabel->setMaxWidth(280.0f * scale);
-    m_fileDialogResultLabel = resultLabel.get();
-
-    auto openFileDialog = std::make_unique<Button>();
-    openFileDialog->setText("Browse images...");
-    openFileDialog->setGlyph("image");
-    openFileDialog->setFontSize(Style::fontSizeBody * scale);
-    openFileDialog->setGlyphSize(Style::fontSizeBody * scale);
-    openFileDialog->setVariant(ButtonVariant::Default);
-    openFileDialog->setMinHeight(Style::controlHeight * scale);
-    openFileDialog->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-    openFileDialog->setRadius(Style::scaledRadiusMd(scale));
-    openFileDialog->setOnClick([this]() {
-      FileDialogOptions options;
-      options.mode = FileDialogMode::Open;
-      options.title = "Select Image";
-      options.extensions = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"};
-      (void)FileDialog::open(std::move(options), [this](std::optional<std::filesystem::path> result) {
-        if (m_fileDialogResultLabel == nullptr) {
-          return;
-        }
-        if (result.has_value()) {
-          m_fileDialogResultLabel->setText(result->string());
-          m_fileDialogResultLabel->setColor(colorSpecFromRole(ColorRole::Primary));
-        } else {
-          m_fileDialogResultLabel->setText("Cancelled");
-          m_fileDialogResultLabel->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-        }
-      });
+    auto resultLabel = ui::label({
+        .out = &m_fileDialogResultLabel,
+        .text = "No image selected",
+        .fontSize = Style::fontSizeCaption * scale,
+        .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+        .maxWidth = 280.0f * scale,
+        .configure = [](Label& label) { label.setCaptionStyle(); },
     });
-    m_openFileDialogButton = openFileDialog.get();
+
+    auto openFileDialog = ui::button({
+        .out = &m_openFileDialogButton,
+        .text = "Browse images...",
+        .glyph = "image",
+        .fontSize = Style::fontSizeBody * scale,
+        .glyphSize = Style::fontSizeBody * scale,
+        .variant = ButtonVariant::Default,
+        .minHeight = Style::controlHeight * scale,
+        .paddingV = Style::spaceSm * scale,
+        .paddingH = Style::spaceMd * scale,
+        .radius = Style::scaledRadiusMd(scale),
+        .onClick = [this]() {
+          FileDialogOptions options;
+          options.mode = FileDialogMode::Open;
+          options.title = "Select Image";
+          options.extensions = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"};
+          (void)FileDialog::open(std::move(options), [this](std::optional<std::filesystem::path> result) {
+            if (m_fileDialogResultLabel == nullptr) {
+              return;
+            }
+            if (result.has_value()) {
+              m_fileDialogResultLabel->setText(result->string());
+              m_fileDialogResultLabel->setColor(colorSpecFromRole(ColorRole::Primary));
+            } else {
+              m_fileDialogResultLabel->setText("Cancelled");
+              m_fileDialogResultLabel->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+            }
+          });
+        },
+    });
 
     auto section = makeSection("File dialog");
     auto row = makeRow();
@@ -514,37 +519,39 @@ void TestPanel::create() {
   }
 
   {
-    auto resultSwatch = std::make_unique<Box>();
-    resultSwatch->setSize(28.0f * scale, 28.0f * scale);
-    resultSwatch->setRadius(Style::scaledRadiusMd(scale));
-    resultSwatch->setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth * scale);
-    if (const auto last = ColorPickerDialog::lastResult()) {
-      resultSwatch->setFill(*last);
-    } else {
-      resultSwatch->setFill(colorForRole(ColorRole::Primary));
-    }
-    m_colorPickerResultSwatch = resultSwatch.get();
-
-    auto openPicker = std::make_unique<Button>();
-    openPicker->setText("Open color picker…");
-    openPicker->setFontSize(Style::fontSizeBody * scale);
-    openPicker->setVariant(ButtonVariant::Default);
-    openPicker->setMinHeight(Style::controlHeight * scale);
-    openPicker->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-    openPicker->setRadius(Style::scaledRadiusMd(scale));
-    openPicker->setOnClick([this]() {
-      ColorPickerDialogOptions options;
-      if (const auto last = ColorPickerDialog::lastResult()) {
-        options.initialColor = *last;
-      }
-      (void)ColorPickerDialog::open(std::move(options), [this](std::optional<Color> result) {
-        if (!result.has_value() || m_colorPickerResultSwatch == nullptr) {
-          return;
-        }
-        m_colorPickerResultSwatch->setFill(*result);
-      });
+    auto resultSwatch = ui::box({
+        .out = &m_colorPickerResultSwatch,
+        .fill = fixedColorSpec(ColorPickerDialog::lastResult().value_or(colorForRole(ColorRole::Primary))),
+        .radius = Style::scaledRadiusMd(scale),
+        .width = 28.0f * scale,
+        .height = 28.0f * scale,
+        .configure = [scale](Box& box) {
+          box.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth * scale);
+        },
     });
-    m_openColorPickerButton = openPicker.get();
+
+    auto openPicker = ui::button({
+        .out = &m_openColorPickerButton,
+        .text = "Open color picker...",
+        .fontSize = Style::fontSizeBody * scale,
+        .variant = ButtonVariant::Default,
+        .minHeight = Style::controlHeight * scale,
+        .paddingV = Style::spaceSm * scale,
+        .paddingH = Style::spaceMd * scale,
+        .radius = Style::scaledRadiusMd(scale),
+        .onClick = [this]() {
+          ColorPickerDialogOptions options;
+          if (const auto last = ColorPickerDialog::lastResult()) {
+            options.initialColor = *last;
+          }
+          (void)ColorPickerDialog::open(std::move(options), [this](std::optional<Color> result) {
+            if (!result.has_value() || m_colorPickerResultSwatch == nullptr) {
+              return;
+            }
+            m_colorPickerResultSwatch->setFill(*result);
+          });
+        },
+    });
 
     auto section = makeSection("Color picker");
     auto row = makeRow();
@@ -555,45 +562,50 @@ void TestPanel::create() {
   }
 
   {
-    auto resultLabel = std::make_unique<Label>();
+    std::string resultText = "No glyph selected";
+    ColorSpec resultColor = colorSpecFromRole(ColorRole::OnSurfaceVariant);
     if (const auto last = GlyphPickerDialog::lastResult()) {
-      resultLabel->setText(last->name);
-      resultLabel->setColor(colorSpecFromRole(ColorRole::Primary));
-    } else {
-      resultLabel->setText("No glyph selected");
-      resultLabel->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
+      resultText = last->name;
+      resultColor = colorSpecFromRole(ColorRole::Primary);
     }
-    resultLabel->setCaptionStyle();
-    resultLabel->setFontSize(Style::fontSizeCaption * scale);
-    resultLabel->setMaxWidth(280.0f * scale);
-    m_glyphPickerResultLabel = resultLabel.get();
 
-    auto openPicker = std::make_unique<Button>();
-    openPicker->setText("Open glyph picker...");
-    openPicker->setFontSize(Style::fontSizeBody * scale);
-    openPicker->setVariant(ButtonVariant::Default);
-    openPicker->setMinHeight(Style::controlHeight * scale);
-    openPicker->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-    openPicker->setRadius(Style::scaledRadiusMd(scale));
-    openPicker->setOnClick([this]() {
-      GlyphPickerDialogOptions options;
-      if (const auto last = GlyphPickerDialog::lastResult()) {
-        options.initialGlyph = last->name;
-      }
-      (void)GlyphPickerDialog::open(std::move(options), [this](std::optional<GlyphPickerResult> result) {
-        if (!result.has_value()) {
-          return;
-        }
-        if (m_glyphPickerResultLabel != nullptr) {
-          m_glyphPickerResultLabel->setText(result->name);
-          m_glyphPickerResultLabel->setColor(colorSpecFromRole(ColorRole::Primary));
-        }
-        if (m_glyphButton != nullptr) {
-          m_glyphButton->setGlyph(result->name);
-        }
-      });
+    auto resultLabel = ui::label({
+        .out = &m_glyphPickerResultLabel,
+        .text = std::move(resultText),
+        .fontSize = Style::fontSizeCaption * scale,
+        .color = resultColor,
+        .maxWidth = 280.0f * scale,
+        .configure = [](Label& label) { label.setCaptionStyle(); },
     });
-    m_openGlyphPickerButton = openPicker.get();
+
+    auto openPicker = ui::button({
+        .out = &m_openGlyphPickerButton,
+        .text = "Open glyph picker...",
+        .fontSize = Style::fontSizeBody * scale,
+        .variant = ButtonVariant::Default,
+        .minHeight = Style::controlHeight * scale,
+        .paddingV = Style::spaceSm * scale,
+        .paddingH = Style::spaceMd * scale,
+        .radius = Style::scaledRadiusMd(scale),
+        .onClick = [this]() {
+          GlyphPickerDialogOptions options;
+          if (const auto last = GlyphPickerDialog::lastResult()) {
+            options.initialGlyph = last->name;
+          }
+          (void)GlyphPickerDialog::open(std::move(options), [this](std::optional<GlyphPickerResult> result) {
+            if (!result.has_value()) {
+              return;
+            }
+            if (m_glyphPickerResultLabel != nullptr) {
+              m_glyphPickerResultLabel->setText(result->name);
+              m_glyphPickerResultLabel->setColor(colorSpecFromRole(ColorRole::Primary));
+            }
+            if (m_glyphButton != nullptr) {
+              m_glyphButton->setGlyph(result->name);
+            }
+          });
+        },
+    });
 
     auto section = makeSection("Glyph picker");
     auto row = makeRow();
@@ -604,6 +616,8 @@ void TestPanel::create() {
   }
 
   {
+    m_gridTileButtons.clear();
+
     auto grid = std::make_unique<GridView>();
     grid->setColumns(3);
     grid->setColumnGap(Style::spaceSm * scale);
@@ -611,119 +625,156 @@ void TestPanel::create() {
     grid->setPadding(Style::spaceXs * scale);
     grid->setSize(300.0f * scale, 0.0f);
     grid->setUniformCellSize(true);
+    grid->setStretchItems(true);
     grid->setMinCellHeight(64.0f * scale);
 
     struct TileSpec {
       const char* glyph;
       const char* label;
-      bool accent;
     };
     const std::vector<TileSpec> tiles = {
-        {"home", "Home", false},         {"media-play", "Music", true},       {"copy", "Gallery", false},
-        {"settings", "Settings", false}, {"weather-cloud", "Weather", false}, {"check", "Calendar", false},
+        {"home", "Home"},         {"media-play", "Music"},      {"copy", "Gallery"},
+        {"settings", "Settings"}, {"weather-cloud", "Weather"}, {"check", "Calendar"},
     };
 
-    for (const auto& tileData : tiles) {
-      auto tile = std::make_unique<GridTile>();
-      tile->setDirection(FlexDirection::Vertical);
-      tile->setAlign(FlexAlign::Center);
-      tile->setJustify(FlexJustify::Center);
-      tile->setGap(Style::spaceXs * scale);
-      tile->setPadding(Style::spaceSm * scale, Style::spaceSm * scale);
-      if (tileData.accent) {
-        tile->setRadius(Style::scaledRadiusMd(scale));
-        tile->setFill(colorSpecFromRole(ColorRole::Primary));
-        tile->setBorder(colorSpecFromRole(ColorRole::Primary), Style::borderWidth);
-      } else {
-        tile->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
-        tile->setRadius(Style::scaledRadiusMd(scale));
-      }
+    for (std::size_t i = 0; i < tiles.size(); ++i) {
+      const auto& tileData = tiles[i];
+      auto tile = ui::button({
+          .text = tileData.label,
+          .glyph = tileData.glyph,
+          .fontSize = Style::fontSizeCaption * scale,
+          .glyphSize = 16.0f * scale,
+          .contentAlign = ButtonContentAlign::Center,
+          .variant = ButtonVariant::Default,
+          .minHeight = 64.0f * scale,
+          .padding = Style::spaceSm * scale,
+          .gap = Style::spaceXs * scale,
+          .radius = Style::scaledRadiusMd(scale),
+          .onClick =
+              [this, tileIndex = i, label = std::string(tileData.label)]() {
+                if (m_gridSelectionLabel != nullptr) {
+                  m_gridSelectionLabel->setText("Selected: " + label);
+                  m_gridSelectionLabel->setColor(colorSpecFromRole(ColorRole::Primary));
+                }
+                for (std::size_t buttonIndex = 0; buttonIndex < m_gridTileButtons.size(); ++buttonIndex) {
+                  if (m_gridTileButtons[buttonIndex] != nullptr) {
+                    m_gridTileButtons[buttonIndex]->setSelected(buttonIndex == tileIndex);
+                  }
+                }
+              },
+          .configure =
+              [](Button& button) {
+                button.setDirection(FlexDirection::Vertical);
+                if (button.label() != nullptr) {
+                  button.label()->setCaptionStyle();
+                  button.label()->setMaxLines(1);
+                  button.label()->setTextAlign(TextAlign::Center);
+                }
+              },
+      });
 
-      auto icon = std::make_unique<Glyph>();
-      icon->setGlyph(tileData.glyph);
-      icon->setGlyphSize(16.0f * scale);
-      icon->setColor(colorSpecFromRole(tileData.accent ? ColorRole::OnPrimary : ColorRole::OnSurface));
-      tile->addChild(std::move(icon));
-
-      auto label = std::make_unique<Label>();
-      label->setText(tileData.label);
-      label->setCaptionStyle();
-      label->setFontSize(Style::fontSizeCaption * scale);
-      label->setColor(colorSpecFromRole(tileData.accent ? ColorRole::OnPrimary : ColorRole::OnSurfaceVariant));
-      tile->addChild(std::move(label));
-
+      Button* tileButton = tile.get();
       grid->addChild(std::move(tile));
+      m_gridTileButtons.push_back(tileButton);
     }
+
+    auto statusLabel = ui::label({
+        .out = &m_gridSelectionLabel,
+        .text = "No grid item selected",
+        .fontSize = Style::fontSizeCaption * scale,
+        .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+        .configure = [](Label& label) { label.setCaptionStyle(); },
+    });
 
     auto section = makeSection("Grid view");
     section->addChild(std::move(grid));
+    section->addChild(std::move(statusLabel));
     colC->addChild(std::move(section));
   }
 
   // Transforms
   {
-    auto transformStage = std::make_unique<Box>();
-    transformStage->setSize(280.0f * scale, 220.0f * scale);
-    transformStage->setFill(colorSpecFromRole(ColorRole::Surface));
-    transformStage->setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth * scale);
-    transformStage->setRadius(Style::scaledRadiusLg(scale));
-    m_transformStage = transformStage.get();
-
-    auto demoBox = std::make_unique<Box>();
-    demoBox->setSize(180.0f * scale, 100.0f * scale);
-    demoBox->setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
-    demoBox->setBorder(colorSpecFromRole(ColorRole::Primary), Style::borderWidth * scale);
-    demoBox->setRadius(Style::scaledRadiusLg(scale));
-    demoBox->setRotation(0.0f);
-    m_transformDemoBox = demoBox.get();
-
-    auto demoButton = std::make_unique<Button>();
-    demoButton->setText("Click me...");
-    demoButton->setGlyph("cpu-temperature");
-    demoButton->setFontSize(Style::fontSizeBody * scale);
-    demoButton->setGlyphSize(Style::fontSizeBody * scale);
-    demoButton->setVariant(ButtonVariant::Primary);
-    demoButton->setPadding(Style::spaceSm * scale, Style::spaceLg * scale);
-    demoButton->setRadius(Style::scaledRadiusMd(scale));
-    demoButton->setOnClick([this]() {
-      if (m_transformHelp != nullptr) {
-        m_transformHelp->setText("Transform button clicked!");
-        m_transformHelp->setColor(colorSpecFromRole(ColorRole::Secondary));
-      }
+    auto transformStage = ui::box({
+        .out = &m_transformStage,
+        .fill = colorSpecFromRole(ColorRole::Surface),
+        .radius = Style::scaledRadiusLg(scale),
+        .width = 280.0f * scale,
+        .height = 220.0f * scale,
+        .configure = [scale](Box& box) {
+          box.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth * scale);
+        },
     });
-    m_transformDemoButton = demoButton.get();
+
+    auto demoBox = ui::box({
+        .out = &m_transformDemoBox,
+        .fill = colorSpecFromRole(ColorRole::SurfaceVariant),
+        .radius = Style::scaledRadiusLg(scale),
+        .width = 180.0f * scale,
+        .height = 100.0f * scale,
+        .configure = [scale](Box& box) {
+          box.setBorder(colorSpecFromRole(ColorRole::Primary), Style::borderWidth * scale);
+          box.setRotation(0.0f);
+        },
+    });
+
+    auto demoButton = ui::button({
+        .out = &m_transformDemoButton,
+        .text = "Click me...",
+        .glyph = "cpu-temperature",
+        .fontSize = Style::fontSizeBody * scale,
+        .glyphSize = Style::fontSizeBody * scale,
+        .variant = ButtonVariant::Primary,
+        .paddingV = Style::spaceSm * scale,
+        .paddingH = Style::spaceLg * scale,
+        .radius = Style::scaledRadiusMd(scale),
+        .onClick = [this]() {
+          if (m_transformHelp != nullptr) {
+            m_transformHelp->setText("Transform button clicked!");
+            m_transformHelp->setColor(colorSpecFromRole(ColorRole::Secondary));
+          }
+        },
+    });
     m_transformDemoBox->addChild(std::move(demoButton));
 
-    auto demoGlyph = std::make_unique<Glyph>();
-    demoGlyph->setGlyph("noctalia");
-    demoGlyph->setPosition(150.0f * scale, 60.0f * scale);
-    demoGlyph->setGlyphSize(24.0f * scale);
-    demoGlyph->setColor(colorSpecFromRole(ColorRole::Primary));
-    demoGlyph->setRotation(static_cast<float>(M_PI) * 0.5f);
-    m_transformDemoGlyph = demoGlyph.get();
+    auto demoGlyph = ui::glyph({
+        .out = &m_transformDemoGlyph,
+        .glyph = "noctalia",
+        .glyphSize = 24.0f * scale,
+        .color = colorSpecFromRole(ColorRole::Primary),
+        .configure = [scale](Glyph& glyph) {
+          glyph.setPosition(150.0f * scale, 60.0f * scale);
+          glyph.setRotation(static_cast<float>(M_PI) * 0.5f);
+        },
+    });
     m_transformDemoBox->addChild(std::move(demoGlyph));
 
-    auto badgeBox = std::make_unique<Box>();
-    badgeBox->setSize(28.0f * scale, 28.0f * scale);
-    badgeBox->setFill(colorSpecFromRole(ColorRole::Primary));
-    badgeBox->setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth * scale);
-    badgeBox->setRadius(14.0f * scale);
-    m_transformBadgeBox = badgeBox.get();
+    auto badgeBox = ui::box({
+        .out = &m_transformBadgeBox,
+        .fill = colorSpecFromRole(ColorRole::Primary),
+        .radius = 14.0f * scale,
+        .width = 28.0f * scale,
+        .height = 28.0f * scale,
+        .configure = [scale](Box& box) {
+          box.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth * scale);
+        },
+    });
 
-    auto badgeLabel = std::make_unique<Label>();
-    badgeLabel->setText("3");
-    badgeLabel->setFontSize(Style::fontSizeCaption * scale);
-    badgeLabel->setColor(colorSpecFromRole(ColorRole::OnPrimary));
-    m_transformBadgeLabel = badgeLabel.get();
+    auto badgeLabel = ui::label({
+        .out = &m_transformBadgeLabel,
+        .text = "3",
+        .fontSize = Style::fontSizeCaption * scale,
+        .color = colorSpecFromRole(ColorRole::OnPrimary),
+    });
     m_transformBadgeBox->addChild(std::move(badgeLabel));
     m_transformDemoBox->addChild(std::move(badgeBox));
     m_transformStage->addChild(std::move(demoBox));
 
-    auto helpLabel = std::make_unique<Label>();
-    helpLabel->setText("Rotated node with children.");
-    helpLabel->setFontSize(Style::fontSizeCaption * scale);
-    helpLabel->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-    m_transformHelp = helpLabel.get();
+    auto helpLabel = ui::label({
+        .out = &m_transformHelp,
+        .text = "Rotated node with children.",
+        .fontSize = Style::fontSizeCaption * scale,
+        .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+    });
 
     auto section = makeSection("Transforms");
     section->addChild(std::move(helpLabel));
@@ -736,10 +787,10 @@ void TestPanel::create() {
   content->addChild(std::move(colB));
   content->addChild(std::move(colC));
 
-  auto controlsTab = std::make_unique<Flex>();
-  controlsTab->setDirection(FlexDirection::Vertical);
-  controlsTab->setAlign(FlexAlign::Stretch);
-  controlsTab->setGap(Style::spaceLg * scale);
+  auto controlsTab = ui::column({
+      .align = FlexAlign::Stretch,
+      .gap = Style::spaceLg * scale,
+  });
   controlsTab->addChild(std::move(content));
   m_controlsTab = controlsTab.get();
 
@@ -747,14 +798,17 @@ void TestPanel::create() {
   m_textTab = textTab.get();
   m_textTab->setVisible(false);
 
-  auto scroll = std::make_unique<ScrollView>();
-  scroll->setScrollbarVisible(true);
-  scroll->setViewportPaddingH(0.0f);
-  scroll->setViewportPaddingV(0.0f);
-  scroll->clearFill();
-  scroll->clearBorder();
-  scroll->setFlexGrow(1.0f);
-  m_scrollView = scroll.get();
+  auto scroll = ui::scrollView({
+      .out = &m_scrollView,
+      .scrollbarVisible = true,
+      .viewportPaddingH = 0.0f,
+      .viewportPaddingV = 0.0f,
+      .flexGrow = 1.0f,
+      .configure = [](ScrollView& scrollView) {
+        scrollView.clearFill();
+        scrollView.clearBorder();
+      },
+  });
   auto* scrollContent = scroll->content();
   scrollContent->setDirection(FlexDirection::Vertical);
   scrollContent->setAlign(FlexAlign::Stretch);
@@ -786,77 +840,125 @@ void TestPanel::create() {
 }
 
 std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
-  auto section = std::make_unique<Flex>();
-  section->setDirection(FlexDirection::Vertical);
-  section->setAlign(FlexAlign::Stretch);
-  section->setGap(Style::spaceMd * scale);
+  auto section = ui::column({
+      .align = FlexAlign::Stretch,
+      .gap = Style::spaceMd * scale,
+  });
+
+  auto makeLabCard = [this, scale]() {
+    return ui::column({
+        .align = FlexAlign::Start,
+        .gap = Style::spaceSm * scale,
+        .configure = [this, scale](Flex& col) {
+          col.setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
+          col.setRadius(Style::scaledRadiusLg(scale));
+          col.setPadding(Style::spaceMd * scale);
+        },
+    });
+  };
+
+  auto makeLabTitle = [scale](std::string text) {
+    return ui::label({
+        .text = std::move(text),
+        .fontSize = Style::fontSizeBody * scale,
+        .fontWeight = FontWeight::Bold,
+    });
+  };
+
+  auto makeLabRow = [scale](FlexAlign align = FlexAlign::Center) {
+    return ui::row({
+        .align = align,
+        .gap = Style::spaceSm * scale,
+    });
+  };
+
+  auto makeTagLabel = [scale](std::string text, float minWidth) {
+    return ui::label({
+        .text = std::move(text),
+        .fontSize = Style::fontSizeCaption * scale,
+        .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+        .minWidth = minWidth * scale,
+    });
+  };
 
   // ── Section heading ────────────────────────────────────────────────
   {
-    auto heading = std::make_unique<Label>();
-    heading->setText("Text Lab");
-    heading->setFontWeight(FontWeight::Bold);
-    heading->setFontSize(Style::fontSizeHeader * scale);
-    heading->setColor(colorSpecFromRole(ColorRole::Primary));
-    section->addChild(std::move(heading));
+    section->addChild(
+        ui::label({
+            .text = "Text Lab",
+            .fontSize = Style::fontSizeHeader * scale,
+            .color = colorSpecFromRole(ColorRole::Primary),
+            .fontWeight = FontWeight::Bold,
+        })
+    );
   }
 
   // ── Font family controls ──────────────────────────────────────────
   {
-    auto row = std::make_unique<Flex>();
-    row->setDirection(FlexDirection::Horizontal);
-    row->setAlign(FlexAlign::Center);
-    row->setGap(Style::spaceSm * scale);
+    auto row = makeLabRow();
 
-    auto familyLabel = std::make_unique<Label>();
-    familyLabel->setText("Font family:");
-    familyLabel->setFontSize(Style::fontSizeBody * scale);
-    row->addChild(std::move(familyLabel));
+    row->addChild(
+        ui::label({
+            .text = "Font family:",
+            .fontSize = Style::fontSizeBody * scale,
+        })
+    );
 
-    auto input = std::make_unique<Input>();
-    input->setPlaceholder("e.g. sans-serif, Inter, DejaVu Sans, monospace");
-    input->setSize(360.0f * scale, 0.0f);
-    input->setFontSize(Style::fontSizeBody * scale);
-    input->setControlHeight(Style::controlHeight * scale);
-    input->setHorizontalPadding(Style::spaceMd * scale);
-    input->setOnSubmit([this](const std::string& value) { applyTestFontFamily(value); });
-    m_fontFamilyInput = input.get();
-    row->addChild(std::move(input));
+    row->addChild(
+        ui::input({
+            .out = &m_fontFamilyInput,
+            .placeholder = "e.g. sans-serif, Inter, DejaVu Sans, monospace",
+            .fontSize = Style::fontSizeBody * scale,
+            .controlHeight = Style::controlHeight * scale,
+            .horizontalPadding = Style::spaceMd * scale,
+            .width = 360.0f * scale,
+            .height = 0.0f,
+            .onSubmit = [this](const std::string& value) { applyTestFontFamily(value); },
+        })
+    );
 
-    auto applyBtn = std::make_unique<Button>();
-    applyBtn->setText("Apply");
-    applyBtn->setVariant(ButtonVariant::Primary);
-    applyBtn->setFontSize(Style::fontSizeBody * scale);
-    applyBtn->setMinHeight(Style::controlHeight * scale);
-    applyBtn->setPadding(Style::spaceSm * scale, Style::spaceMd * scale);
-    applyBtn->setRadius(Style::scaledRadiusMd(scale));
-    applyBtn->setOnClick([this]() {
-      if (m_fontFamilyInput != nullptr) {
-        applyTestFontFamily(m_fontFamilyInput->value());
-      }
-    });
-    row->addChild(std::move(applyBtn));
+    row->addChild(
+        ui::button({
+            .text = "Apply",
+            .fontSize = Style::fontSizeBody * scale,
+            .variant = ButtonVariant::Primary,
+            .minHeight = Style::controlHeight * scale,
+            .paddingV = Style::spaceSm * scale,
+            .paddingH = Style::spaceMd * scale,
+            .radius = Style::scaledRadiusMd(scale),
+            .onClick = [this]() {
+              if (m_fontFamilyInput != nullptr) {
+                applyTestFontFamily(m_fontFamilyInput->value());
+              }
+            },
+        })
+    );
 
     static const char* const kPresets[] = {"sans-serif", "serif", "monospace"};
     for (const char* preset : kPresets) {
-      auto btn = std::make_unique<Button>();
-      btn->setText(preset);
-      btn->setVariant(ButtonVariant::Ghost);
-      btn->setFontSize(Style::fontSizeCaption * scale);
-      btn->setMinHeight(Style::controlHeightSm * scale);
-      btn->setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-      btn->setRadius(Style::scaledRadiusMd(scale));
-      btn->setOnClick([this, preset]() { applyTestFontFamily(preset); });
-      row->addChild(std::move(btn));
+      row->addChild(
+          ui::button({
+              .text = preset,
+              .fontSize = Style::fontSizeCaption * scale,
+              .variant = ButtonVariant::Ghost,
+              .minHeight = Style::controlHeightSm * scale,
+              .paddingV = Style::spaceXs * scale,
+              .paddingH = Style::spaceSm * scale,
+              .radius = Style::scaledRadiusMd(scale),
+              .onClick = [this, preset]() { applyTestFontFamily(preset); },
+          })
+      );
     }
 
-    auto status = std::make_unique<Label>();
-    status->setCaptionStyle();
-    status->setFontSize(Style::fontSizeCaption * scale);
-    status->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-    status->setText("Live font swap rebuilds Pango cache.");
-    m_fontStatusLabel = status.get();
-    row->addChild(std::move(status));
+    row->addChild(
+        ui::label({
+            .out = &m_fontStatusLabel,
+            .text = "Live font swap rebuilds Pango cache.",
+            .fontSize = Style::fontSizeCaption * scale,
+            .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+            .configure = [](Label& label) { label.setCaptionStyle(); },
+        })
+    );
 
     section->addChild(std::move(row));
   }
@@ -869,19 +971,8 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
   // ── matching-size glyph next to each label. If the label and the
   // ── glyph disagree on baseline, this row will reveal it.
   {
-    auto col = std::make_unique<Flex>();
-    col->setDirection(FlexDirection::Vertical);
-    col->setAlign(FlexAlign::Start);
-    col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
-    col->setRadius(Style::scaledRadiusLg(scale));
-    col->setPadding(Style::spaceMd * scale);
-
-    auto title = std::make_unique<Label>();
-    title->setText("Size ladder (glyph + text, regular & bold)");
-    title->setFontWeight(FontWeight::Bold);
-    title->setFontSize(Style::fontSizeBody * scale);
-    col->addChild(std::move(title));
+    auto col = makeLabCard();
+    col->addChild(makeLabTitle("Size ladder (glyph + text, regular & bold)"));
 
     struct SizeSpec {
       const char* name;
@@ -893,40 +984,39 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     };
 
     for (const auto& s : sizes) {
-      auto row = std::make_unique<Flex>();
-      row->setDirection(FlexDirection::Horizontal);
-      row->setAlign(FlexAlign::Center);
-      row->setGap(Style::spaceMd * scale);
+      auto row = ui::row({
+          .align = FlexAlign::Center,
+          .gap = Style::spaceMd * scale,
+      });
 
-      auto tag = std::make_unique<Label>();
-      tag->setText(std::string(s.name) + " (" + std::to_string(static_cast<int>(s.size)) + ")");
-      tag->setFontSize(Style::fontSizeCaption * scale);
-      tag->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      tag->setMinWidth(110.0f * scale);
-      row->addChild(std::move(tag));
-
-      auto glyph = std::make_unique<Glyph>();
-      glyph->setGlyph("home");
-      glyph->setGlyphSize(s.size * scale);
-      glyph->setColor(colorSpecFromRole(ColorRole::Primary));
-      row->addChild(std::move(glyph));
-
-      auto regular = std::make_unique<Label>();
-      regular->setText(kSample);
-      regular->setFontSize(s.size * scale);
-      row->addChild(std::move(regular));
-
-      auto sep = std::make_unique<Label>();
-      sep->setText("|");
-      sep->setFontSize(s.size * scale);
-      sep->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      row->addChild(std::move(sep));
-
-      auto bold = std::make_unique<Label>();
-      bold->setText(kSample);
-      bold->setFontWeight(FontWeight::Bold);
-      bold->setFontSize(s.size * scale);
-      row->addChild(std::move(bold));
+      row->addChild(makeTagLabel(std::string(s.name) + " (" + std::to_string(static_cast<int>(s.size)) + ")", 110.0f));
+      row->addChild(
+          ui::glyph({
+              .glyph = "home",
+              .glyphSize = s.size * scale,
+              .color = colorSpecFromRole(ColorRole::Primary),
+          })
+      );
+      row->addChild(
+          ui::label({
+              .text = kSample,
+              .fontSize = s.size * scale,
+          })
+      );
+      row->addChild(
+          ui::label({
+              .text = "|",
+              .fontSize = s.size * scale,
+              .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+          })
+      );
+      row->addChild(
+          ui::label({
+              .text = kSample,
+              .fontSize = s.size * scale,
+              .fontWeight = FontWeight::Bold,
+          })
+      );
 
       col->addChild(std::move(row));
     }
@@ -937,44 +1027,26 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
   // ── Glyph/text alignment matrix: same body text next to glyphs of
   // ── increasing size. Useful for spotting bar-style 1px drifts.
   {
-    auto col = std::make_unique<Flex>();
-    col->setDirection(FlexDirection::Vertical);
-    col->setAlign(FlexAlign::Start);
-    col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
-    col->setRadius(Style::scaledRadiusLg(scale));
-    col->setPadding(Style::spaceMd * scale);
-
-    auto title = std::make_unique<Label>();
-    title->setText("Glyph + body text alignment (varying glyph size)");
-    title->setFontWeight(FontWeight::Bold);
-    title->setFontSize(Style::fontSizeBody * scale);
-    col->addChild(std::move(title));
+    auto col = makeLabCard();
+    col->addChild(makeLabTitle("Glyph + body text alignment (varying glyph size)"));
 
     const float glyphSizes[] = {10.0f, 12.0f, 14.0f, 16.0f, 18.0f, 20.0f, 24.0f, 28.0f, 32.0f};
     for (float gs : glyphSizes) {
-      auto row = std::make_unique<Flex>();
-      row->setDirection(FlexDirection::Horizontal);
-      row->setAlign(FlexAlign::Center);
-      row->setGap(Style::spaceSm * scale);
-
-      auto tag = std::make_unique<Label>();
-      tag->setText("g" + std::to_string(static_cast<int>(gs)));
-      tag->setFontSize(Style::fontSizeCaption * scale);
-      tag->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      tag->setMinWidth(36.0f * scale);
-      row->addChild(std::move(tag));
-
-      auto glyph = std::make_unique<Glyph>();
-      glyph->setGlyph("settings");
-      glyph->setGlyphSize(gs * scale);
-      glyph->setColor(colorSpecFromRole(ColorRole::Primary));
-      row->addChild(std::move(glyph));
-
-      auto label = std::make_unique<Label>();
-      label->setText("Hxg Apjy 0123 — body text");
-      label->setFontSize(Style::fontSizeBody * scale);
-      row->addChild(std::move(label));
+      auto row = makeLabRow();
+      row->addChild(makeTagLabel("g" + std::to_string(static_cast<int>(gs)), 36.0f));
+      row->addChild(
+          ui::glyph({
+              .glyph = "settings",
+              .glyphSize = gs * scale,
+              .color = colorSpecFromRole(ColorRole::Primary),
+          })
+      );
+      row->addChild(
+          ui::label({
+              .text = "Hxg Apjy 0123 — body text",
+              .fontSize = Style::fontSizeBody * scale,
+          })
+      );
 
       col->addChild(std::move(row));
     }
@@ -985,39 +1057,22 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
   // ── Wiggle test: identical labels repeated across a row. Any vertical
   // ── jitter shows up immediately under HiDPI snapping.
   {
-    auto col = std::make_unique<Flex>();
-    col->setDirection(FlexDirection::Vertical);
-    col->setAlign(FlexAlign::Start);
-    col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
-    col->setRadius(Style::scaledRadiusLg(scale));
-    col->setPadding(Style::spaceMd * scale);
-
-    auto title = std::make_unique<Label>();
-    title->setText("Repeat-row jitter probe (identical text repeated)");
-    title->setFontWeight(FontWeight::Bold);
-    title->setFontSize(Style::fontSizeBody * scale);
-    col->addChild(std::move(title));
+    auto col = makeLabCard();
+    col->addChild(makeLabTitle("Repeat-row jitter probe (identical text repeated)"));
 
     const float sizes[] = {Style::fontSizeMini, Style::fontSizeCaption, Style::fontSizeBody, Style::fontSizeTitle};
     for (float fs : sizes) {
-      auto row = std::make_unique<Flex>();
-      row->setDirection(FlexDirection::Horizontal);
-      row->setAlign(FlexAlign::Center);
-      row->setGap(Style::spaceSm * scale);
+      auto row = makeLabRow();
 
-      auto tag = std::make_unique<Label>();
-      tag->setText("fs" + std::to_string(static_cast<int>(fs)));
-      tag->setFontSize(Style::fontSizeCaption * scale);
-      tag->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      tag->setMinWidth(40.0f * scale);
-      row->addChild(std::move(tag));
+      row->addChild(makeTagLabel("fs" + std::to_string(static_cast<int>(fs)), 40.0f));
 
       for (int i = 0; i < 8; ++i) {
-        auto lbl = std::make_unique<Label>();
-        lbl->setText("Hgjy");
-        lbl->setFontSize(fs * scale);
-        row->addChild(std::move(lbl));
+        row->addChild(
+            ui::label({
+                .text = "Hgjy",
+                .fontSize = fs * scale,
+            })
+        );
       }
       col->addChild(std::move(row));
     }
@@ -1028,72 +1083,67 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
   // ── Baseline mode test (cap-only ↔ descender swap). Latin optical mode
   // ── logical mode follows Pango metrics; ink-centered mode follows visible ink.
   {
-    auto col = std::make_unique<Flex>();
-    col->setDirection(FlexDirection::Vertical);
-    col->setAlign(FlexAlign::Start);
-    col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
-    col->setRadius(Style::scaledRadiusLg(scale));
-    col->setPadding(Style::spaceMd * scale);
+    auto col = makeLabCard();
+    col->addChild(makeLabTitle("Baseline mode (logical vs ink-centered)"));
 
-    auto title = std::make_unique<Label>();
-    title->setText("Baseline mode (logical vs ink-centered)");
-    title->setFontWeight(FontWeight::Bold);
-    title->setFontSize(Style::fontSizeBody * scale);
-    col->addChild(std::move(title));
-
-    auto row = std::make_unique<Flex>();
-    row->setDirection(FlexDirection::Horizontal);
-    row->setAlign(FlexAlign::Center);
-    row->setGap(Style::spaceMd * scale);
-
-    auto stable = std::make_unique<Label>();
-    stable->setText("MAR 2025");
-    stable->setFontSize(Style::fontSizeTitle * scale);
-    m_baselineModeLabel = stable.get();
-    row->addChild(std::move(stable));
-
-    auto descender = std::make_unique<Label>();
-    descender->setText("Apgjy");
-    descender->setFontSize(Style::fontSizeTitle * scale);
-    row->addChild(std::move(descender));
-
-    auto plain = std::make_unique<Label>();
-    plain->setText("MAR 2025 (ink)");
-    plain->setFontSize(Style::fontSizeTitle * scale);
-    plain->setBaselineMode(LabelBaselineMode::InkCentered);
-    row->addChild(std::move(plain));
-
-    auto plainDesc = std::make_unique<Label>();
-    plainDesc->setText("Apgjy (ink)");
-    plainDesc->setFontSize(Style::fontSizeTitle * scale);
-    plainDesc->setBaselineMode(LabelBaselineMode::InkCentered);
-    row->addChild(std::move(plainDesc));
-
-    auto toggleRow = std::make_unique<Flex>();
-    toggleRow->setDirection(FlexDirection::Horizontal);
-    toggleRow->setAlign(FlexAlign::Center);
-    toggleRow->setGap(Style::spaceSm * scale);
-
-    auto toggleLabel = std::make_unique<Label>();
-    toggleLabel->setText("first label ink centered:");
-    toggleLabel->setCaptionStyle();
-    toggleLabel->setFontSize(Style::fontSizeCaption * scale);
-    toggleRow->addChild(std::move(toggleLabel));
-
-    auto toggle = std::make_unique<Toggle>();
-    toggle->setToggleSize(ToggleSize::Small);
-    toggle->setScale(scale);
-    toggle->setChecked(false);
-    toggle->setOnChange([this](bool checked) {
-      if (m_baselineModeLabel != nullptr) {
-        m_baselineModeLabel->setBaselineMode(
-            checked ? LabelBaselineMode::InkCentered : LabelBaselineMode::StableLogical
-        );
-      }
+    auto row = ui::row({
+        .align = FlexAlign::Center,
+        .gap = Style::spaceMd * scale,
     });
-    m_baselineModeToggle = toggle.get();
-    toggleRow->addChild(std::move(toggle));
+
+    row->addChild(
+        ui::label({
+            .out = &m_baselineModeLabel,
+            .text = "MAR 2025",
+            .fontSize = Style::fontSizeTitle * scale,
+        })
+    );
+    row->addChild(
+        ui::label({
+            .text = "Apgjy",
+            .fontSize = Style::fontSizeTitle * scale,
+        })
+    );
+    row->addChild(
+        ui::label({
+            .text = "MAR 2025 (ink)",
+            .fontSize = Style::fontSizeTitle * scale,
+            .baselineMode = LabelBaselineMode::InkCentered,
+        })
+    );
+    row->addChild(
+        ui::label({
+            .text = "Apgjy (ink)",
+            .fontSize = Style::fontSizeTitle * scale,
+            .baselineMode = LabelBaselineMode::InkCentered,
+        })
+    );
+
+    auto toggleRow = makeLabRow();
+
+    toggleRow->addChild(
+        ui::label({
+            .text = "first label ink centered:",
+            .fontSize = Style::fontSizeCaption * scale,
+            .configure = [](Label& label) { label.setCaptionStyle(); },
+        })
+    );
+
+    toggleRow->addChild(
+        ui::toggle({
+            .out = &m_baselineModeToggle,
+            .checked = false,
+            .toggleSize = ToggleSize::Small,
+            .scale = scale,
+            .onChange = [this](bool checked) {
+              if (m_baselineModeLabel != nullptr) {
+                m_baselineModeLabel->setBaselineMode(
+                    checked ? LabelBaselineMode::InkCentered : LabelBaselineMode::StableLogical
+                );
+              }
+            },
+        })
+    );
 
     col->addChild(std::move(row));
     col->addChild(std::move(toggleRow));
@@ -1104,19 +1154,8 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
   // ── Nerd Font / PUA glyph rendering test. These codepoints live in the
   // ── Unicode Private Use Area and require a Nerd Font for coverage.
   {
-    auto col = std::make_unique<Flex>();
-    col->setDirection(FlexDirection::Vertical);
-    col->setAlign(FlexAlign::Start);
-    col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
-    col->setRadius(Style::scaledRadiusLg(scale));
-    col->setPadding(Style::spaceMd * scale);
-
-    auto title = std::make_unique<Label>();
-    title->setText("Nerd Font symbols (requires a Nerd Font installed)");
-    title->setFontWeight(FontWeight::Bold);
-    title->setFontSize(Style::fontSizeBody * scale);
-    col->addChild(std::move(title));
+    auto col = makeLabCard();
+    col->addChild(makeLabTitle("Nerd Font symbols (requires a Nerd Font installed)"));
 
     struct NerdSpec {
       const char* codepoint;
@@ -1132,31 +1171,30 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     };
 
     for (const auto& s : symbols) {
-      auto row = std::make_unique<Flex>();
-      row->setDirection(FlexDirection::Horizontal);
-      row->setAlign(FlexAlign::Center);
-      row->setGap(Style::spaceMd * scale);
+      auto row = ui::row({
+          .align = FlexAlign::Center,
+          .gap = Style::spaceMd * scale,
+      });
 
-      auto tag = std::make_unique<Label>();
-      tag->setText(s.codepoint);
-      tag->setFontSize(Style::fontSizeCaption * scale);
-      tag->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      tag->setMinWidth(200.0f * scale);
-      row->addChild(std::move(tag));
+      row->addChild(makeTagLabel(s.codepoint, 200.0f));
 
       const float sizes[] = {Style::fontSizeMini, Style::fontSizeBody, Style::fontSizeTitle, Style::fontSizeHeader};
       for (float fs : sizes) {
-        auto lbl = std::make_unique<Label>();
-        lbl->setText(s.symbol);
-        lbl->setFontSize(fs * scale);
-        lbl->setColor(colorSpecFromRole(ColorRole::OnSurface));
-        row->addChild(std::move(lbl));
+        row->addChild(
+            ui::label({
+                .text = s.symbol,
+                .fontSize = fs * scale,
+                .color = colorSpecFromRole(ColorRole::OnSurface),
+            })
+        );
       }
 
-      auto mixed = std::make_unique<Label>();
-      mixed->setText(std::string(s.symbol) + " inline text");
-      mixed->setFontSize(Style::fontSizeBody * scale);
-      row->addChild(std::move(mixed));
+      row->addChild(
+          ui::label({
+              .text = std::string(s.symbol) + " inline text",
+              .fontSize = Style::fontSizeBody * scale,
+          })
+      );
 
       col->addChild(std::move(row));
     }
@@ -1167,49 +1205,35 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
   // ── Elision and wrapping tests at body font size. Each row is
   // ── identical text inside boxes of decreasing width.
   {
-    auto col = std::make_unique<Flex>();
-    col->setDirection(FlexDirection::Vertical);
-    col->setAlign(FlexAlign::Start);
-    col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
-    col->setRadius(Style::scaledRadiusLg(scale));
-    col->setPadding(Style::spaceMd * scale);
-
-    auto title = std::make_unique<Label>();
-    title->setText("Elision (single line, decreasing maxWidth)");
-    title->setFontWeight(FontWeight::Bold);
-    title->setFontSize(Style::fontSizeBody * scale);
-    col->addChild(std::move(title));
+    auto col = makeLabCard();
+    col->addChild(makeLabTitle("Elision (single line, decreasing maxWidth)"));
 
     const std::string longText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.";
     const float widths[] = {640.0f, 480.0f, 360.0f, 240.0f, 160.0f, 120.0f, 80.0f, 56.0f, 32.0f};
     for (float w : widths) {
-      auto row = std::make_unique<Flex>();
-      row->setDirection(FlexDirection::Horizontal);
-      row->setAlign(FlexAlign::Center);
-      row->setGap(Style::spaceSm * scale);
+      auto row = makeLabRow();
 
-      auto tag = std::make_unique<Label>();
-      tag->setText("w=" + std::to_string(static_cast<int>(w)));
-      tag->setFontSize(Style::fontSizeCaption * scale);
-      tag->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      tag->setMinWidth(56.0f * scale);
-      row->addChild(std::move(tag));
+      row->addChild(makeTagLabel("w=" + std::to_string(static_cast<int>(w)), 56.0f));
 
-      auto frame = std::make_unique<Flex>();
-      frame->setDirection(FlexDirection::Horizontal);
-      frame->setAlign(FlexAlign::Center);
-      frame->setSize(w * scale, 0.0f);
-      frame->setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
-      frame->setRadius(Style::scaledRadiusSm(scale));
-      frame->setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-
-      auto lbl = std::make_unique<Label>();
-      lbl->setText(longText);
-      lbl->setFontSize(Style::fontSizeBody * scale);
-      lbl->setMaxWidth(w * scale - Style::spaceSm * 2.0f * scale);
-      lbl->setMaxLines(1);
-      frame->addChild(std::move(lbl));
+      auto frame = ui::row(
+          {
+              .align = FlexAlign::Center,
+              .width = w * scale,
+              .height = 0.0f,
+              .configure =
+                  [scale](Flex& flex) {
+                    flex.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
+                    flex.setRadius(Style::scaledRadiusSm(scale));
+                    flex.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
+                  },
+          },
+          ui::label({
+              .text = longText,
+              .fontSize = Style::fontSizeBody * scale,
+              .maxWidth = w * scale - Style::spaceSm * 2.0f * scale,
+              .maxLines = 1,
+          })
+      );
       row->addChild(std::move(frame));
 
       col->addChild(std::move(row));
@@ -1224,19 +1248,8 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
   // ── always show the ellipsis; the short and medium columns show where the
   // ── text lands relative to the box edges.
   {
-    auto col = std::make_unique<Flex>();
-    col->setDirection(FlexDirection::Vertical);
-    col->setAlign(FlexAlign::Start);
-    col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
-    col->setRadius(Style::scaledRadiusLg(scale));
-    col->setPadding(Style::spaceMd * scale);
-
-    auto title = std::make_unique<Label>();
-    title->setText("Text alignment (Start / Center / End × short / medium / long)");
-    title->setFontWeight(FontWeight::Bold);
-    title->setFontSize(Style::fontSizeBody * scale);
-    col->addChild(std::move(title));
+    auto col = makeLabCard();
+    col->addChild(makeLabTitle("Text alignment (Start / Center / End × short / medium / long)"));
 
     constexpr float kBoxW = 200.0f;
     const std::string kShort = "Hi";
@@ -1254,36 +1267,32 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
     };
 
     auto makeAlignFrame = [&](const std::string& text, TextAlign align) {
-      auto frame = std::make_unique<Flex>();
-      frame->setDirection(FlexDirection::Horizontal);
-      frame->setAlign(FlexAlign::Center);
-      frame->setSize(kBoxW * scale, 0.0f);
-      frame->setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
-      frame->setRadius(Style::scaledRadiusSm(scale));
-      frame->setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-
-      auto lbl = std::make_unique<Label>();
-      lbl->setText(text);
-      lbl->setFontSize(Style::fontSizeBody * scale);
-      lbl->setMaxLines(1);
-      lbl->setTextAlign(align);
-      lbl->setFlexGrow(1.0f); // fill the frame so alignment has space to act
-      frame->addChild(std::move(lbl));
-      return frame;
+      return ui::row(
+          {
+              .align = FlexAlign::Center,
+              .width = kBoxW * scale,
+              .height = 0.0f,
+              .configure =
+                  [scale](Flex& frame) {
+                    frame.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
+                    frame.setRadius(Style::scaledRadiusSm(scale));
+                    frame.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
+                  },
+          },
+          ui::label({
+              .text = text,
+              .fontSize = Style::fontSizeBody * scale,
+              .maxLines = 1,
+              .textAlign = align,
+              .flexGrow = 1.0f, // fill the frame so alignment has space to act
+          })
+      );
     };
 
     for (const auto& r : rows) {
-      auto row = std::make_unique<Flex>();
-      row->setDirection(FlexDirection::Horizontal);
-      row->setAlign(FlexAlign::Center);
-      row->setGap(Style::spaceSm * scale);
+      auto row = makeLabRow();
 
-      auto tag = std::make_unique<Label>();
-      tag->setText(r.name);
-      tag->setFontSize(Style::fontSizeCaption * scale);
-      tag->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      tag->setMinWidth(48.0f * scale);
-      row->addChild(std::move(tag));
+      row->addChild(makeTagLabel(r.name, 48.0f));
 
       row->addChild(makeAlignFrame(kShort, r.align));
       row->addChild(makeAlignFrame(kMedium, r.align));
@@ -1297,41 +1306,23 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
 
   // ── Multi-line wrapping with explicit maxLines.
   {
-    auto col = std::make_unique<Flex>();
-    col->setDirection(FlexDirection::Vertical);
-    col->setAlign(FlexAlign::Start);
-    col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
-    col->setRadius(Style::scaledRadiusLg(scale));
-    col->setPadding(Style::spaceMd * scale);
-
-    auto title = std::make_unique<Label>();
-    title->setText("Wrapping (maxWidth=320, maxLines=1..4)");
-    title->setFontWeight(FontWeight::Bold);
-    title->setFontSize(Style::fontSizeBody * scale);
-    col->addChild(std::move(title));
+    auto col = makeLabCard();
+    col->addChild(makeLabTitle("Wrapping (maxWidth=320, maxLines=1..4)"));
 
     const std::string para =
         "The quick brown fox jumps over the lazy dog while a sphinx of black quartz judges its vow.";
     for (int lines : {1, 2, 3, 4}) {
-      auto row = std::make_unique<Flex>();
-      row->setDirection(FlexDirection::Horizontal);
-      row->setAlign(FlexAlign::Start);
-      row->setGap(Style::spaceSm * scale);
+      auto row = makeLabRow(FlexAlign::Start);
 
-      auto tag = std::make_unique<Label>();
-      tag->setText("L=" + std::to_string(lines));
-      tag->setFontSize(Style::fontSizeCaption * scale);
-      tag->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      tag->setMinWidth(40.0f * scale);
-      row->addChild(std::move(tag));
-
-      auto lbl = std::make_unique<Label>();
-      lbl->setText(para);
-      lbl->setFontSize(Style::fontSizeBody * scale);
-      lbl->setMaxWidth(320.0f * scale);
-      lbl->setMaxLines(lines);
-      row->addChild(std::move(lbl));
+      row->addChild(makeTagLabel("L=" + std::to_string(lines), 40.0f));
+      row->addChild(
+          ui::label({
+              .text = para,
+              .fontSize = Style::fontSizeBody * scale,
+              .maxWidth = 320.0f * scale,
+              .maxLines = lines,
+          })
+      );
 
       col->addChild(std::move(row));
     }
@@ -1343,19 +1334,8 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
   // ── This is the layout that has historically been most sensitive to
   // ── 1px ink-vs-metric disagreement.
   {
-    auto col = std::make_unique<Flex>();
-    col->setDirection(FlexDirection::Vertical);
-    col->setAlign(FlexAlign::Start);
-    col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
-    col->setRadius(Style::scaledRadiusLg(scale));
-    col->setPadding(Style::spaceMd * scale);
-
-    auto title = std::make_unique<Label>();
-    title->setText("Bar-style capsules (controlHeight rows, mixed icons)");
-    title->setFontWeight(FontWeight::Bold);
-    title->setFontSize(Style::fontSizeBody * scale);
-    col->addChild(std::move(title));
+    auto col = makeLabCard();
+    col->addChild(makeLabTitle("Bar-style capsules (controlHeight rows, mixed icons)"));
 
     struct Capsule {
       const char* glyph;
@@ -1366,30 +1346,30 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
         {"media-play", "Track"}, {"check", "12 messages"}, {"cpu-temperature", "62°"},
     };
 
-    auto row = std::make_unique<Flex>();
-    row->setDirection(FlexDirection::Horizontal);
-    row->setAlign(FlexAlign::Center);
-    row->setGap(Style::spaceSm * scale);
+    auto row = makeLabRow();
 
     for (const auto& c : capsules) {
-      auto pill = std::make_unique<Flex>();
-      pill->setDirection(FlexDirection::Horizontal);
-      pill->setAlign(FlexAlign::Center);
-      pill->setGap(Style::spaceXs * scale);
-      pill->setRadius(Style::scaledRadiusMd(scale));
-      pill->setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
-      pill->setPadding(0.0f, Style::spaceSm * scale);
-
-      auto glyph = std::make_unique<Glyph>();
-      glyph->setGlyph(c.glyph);
-      glyph->setGlyphSize(Style::barGlyphSize * scale);
-      glyph->setColor(colorSpecFromRole(ColorRole::Primary));
-      pill->addChild(std::move(glyph));
-
-      auto lbl = std::make_unique<Label>();
-      lbl->setText(c.text);
-      lbl->setFontSize(Style::fontSizeBody * scale);
-      pill->addChild(std::move(lbl));
+      auto pill = ui::row(
+          {
+              .align = FlexAlign::Center,
+              .gap = Style::spaceXs * scale,
+              .configure =
+                  [scale](Flex& flex) {
+                    flex.setRadius(Style::scaledRadiusMd(scale));
+                    flex.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
+                    flex.setPadding(0.0f, Style::spaceSm * scale);
+                  },
+          },
+          ui::glyph({
+              .glyph = c.glyph,
+              .glyphSize = Style::barGlyphSize * scale,
+              .color = colorSpecFromRole(ColorRole::Primary),
+          }),
+          ui::label({
+              .text = c.text,
+              .fontSize = Style::fontSizeBody * scale,
+          })
+      );
 
       row->addChild(std::move(pill));
     }
@@ -1403,33 +1383,21 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
   // ── ink rather than the cap line, smaller text will float relative to
   // ── larger.
   {
-    auto col = std::make_unique<Flex>();
-    col->setDirection(FlexDirection::Vertical);
-    col->setAlign(FlexAlign::Start);
-    col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
-    col->setRadius(Style::scaledRadiusLg(scale));
-    col->setPadding(Style::spaceMd * scale);
+    auto col = makeLabCard();
+    col->addChild(makeLabTitle("Mixed sizes inline (centered cross-axis)"));
 
-    auto title = std::make_unique<Label>();
-    title->setText("Mixed sizes inline (centered cross-axis)");
-    title->setFontWeight(FontWeight::Bold);
-    title->setFontSize(Style::fontSizeBody * scale);
-    col->addChild(std::move(title));
-
-    auto row = std::make_unique<Flex>();
-    row->setDirection(FlexDirection::Horizontal);
-    row->setAlign(FlexAlign::Center);
-    row->setGap(Style::spaceSm * scale);
+    auto row = makeLabRow();
 
     const float sizes[] = {
         Style::fontSizeMini, Style::fontSizeCaption, Style::fontSizeBody, Style::fontSizeTitle, Style::fontSizeHeader
     };
     for (float fs : sizes) {
-      auto lbl = std::make_unique<Label>();
-      lbl->setText("Hxg" + std::to_string(static_cast<int>(fs)));
-      lbl->setFontSize(fs * scale);
-      row->addChild(std::move(lbl));
+      row->addChild(
+          ui::label({
+              .text = "Hxg" + std::to_string(static_cast<int>(fs)),
+              .fontSize = fs * scale,
+          })
+      );
     }
     col->addChild(std::move(row));
 
@@ -1438,36 +1406,29 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
 
   // ── Auto-scrolling labels (marquee) ────────────────────────────────
   {
-    auto col = std::make_unique<Flex>();
-    col->setDirection(FlexDirection::Vertical);
-    col->setAlign(FlexAlign::Start);
-    col->setGap(Style::spaceSm * scale);
-    col->setCardStyle(scale, panelCardOpacity(), panelBordersEnabled());
-    col->setRadius(Style::scaledRadiusLg(scale));
-    col->setPadding(Style::spaceMd * scale);
+    auto col = makeLabCard();
+    col->addChild(makeLabTitle("Auto-scroll (marquee)"));
 
-    auto title = std::make_unique<Label>();
-    title->setText("Auto-scroll (marquee)");
-    title->setFontWeight(FontWeight::Bold);
-    title->setFontSize(Style::fontSizeBody * scale);
-    col->addChild(std::move(title));
+    col->addChild(
+        ui::label({
+            .text = "This label scrolls automatically when the line is longer than its layout width :p",
+            .fontSize = Style::fontSizeBody * scale,
+            .maxWidth = 240.0f * scale,
+            .autoScroll = true,
+            .autoScrollSpeed = 42.0f * scale,
+        })
+    );
 
-    auto marquee = std::make_unique<Label>();
-    marquee->setText("This label scrolls automatically when the line is longer than its layout width :p");
-    marquee->setFontSize(Style::fontSizeBody * scale);
-    marquee->setMaxWidth(240.0f * scale);
-    marquee->setAutoScroll(true);
-    marquee->setAutoScrollSpeed(42.0f * scale);
-    col->addChild(std::move(marquee));
-
-    auto marqueeHover = std::make_unique<Label>();
-    marqueeHover->setText("Hover this row to scroll - the marquee pauses when the pointer leaves the label.");
-    marqueeHover->setFontSize(Style::fontSizeBody * scale);
-    marqueeHover->setMaxWidth(240.0f * scale);
-    marqueeHover->setAutoScroll(true);
-    marqueeHover->setAutoScrollSpeed(42.0f * scale);
-    marqueeHover->setAutoScrollOnlyWhenHovered(true);
-    col->addChild(std::move(marqueeHover));
+    col->addChild(
+        ui::label({
+            .text = "Hover this row to scroll - the marquee pauses when the pointer leaves the label.",
+            .fontSize = Style::fontSizeBody * scale,
+            .maxWidth = 240.0f * scale,
+            .autoScroll = true,
+            .autoScrollSpeed = 42.0f * scale,
+            .autoScrollOnlyWhenHovered = true,
+        })
+    );
 
     section->addChild(std::move(col));
   }
@@ -1542,6 +1503,8 @@ void TestPanel::onClose() {
   m_openColorPickerButton = nullptr;
   m_openGlyphPickerButton = nullptr;
   m_glyphPickerResultLabel = nullptr;
+  m_gridSelectionLabel = nullptr;
+  m_gridTileButtons.clear();
   m_segmented = nullptr;
   m_segmentedValueLabel = nullptr;
   m_closeButton = nullptr;
