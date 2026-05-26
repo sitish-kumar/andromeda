@@ -8,10 +8,7 @@
 #include "render/render_context.h"
 #include "render/scene/wallpaper_node.h"
 #include "time/time_format.h"
-#include "ui/controls/box.h"
-#include "ui/controls/button.h"
-#include "ui/controls/input.h"
-#include "ui/controls/label.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "wayland/wayland_connection.h"
@@ -48,46 +45,66 @@ LockSurface::LockSurface(WaylandConnection& connection, ConfigService* config) :
   m_wallpaper = static_cast<WallpaperNode*>(m_root.addChild(std::move(wallpaper)));
   m_wallpaper->setZIndex(0);
 
-  auto backdrop = std::make_unique<Box>();
-  m_backdrop = static_cast<Box*>(m_root.addChild(std::move(backdrop)));
-  m_backdrop->setZIndex(-1);
+  m_root.addChild(
+      ui::box({
+          .out = &m_backdrop,
+          .configure = [](Box& box) { box.setZIndex(-1); },
+      })
+  );
 
-  auto clockShadow = std::make_unique<Label>();
-  m_clockShadow = static_cast<Label*>(m_root.addChild(std::move(clockShadow)));
+  m_root.addChild(
+      ui::label({
+          .out = &m_clockShadow,
+      })
+  );
 
-  auto clock = std::make_unique<Label>();
-  clock->setColor(colorSpecFromRole(ColorRole::Primary));
-  m_clock = static_cast<Label*>(m_root.addChild(std::move(clock)));
+  m_root.addChild(
+      ui::label({
+          .out = &m_clock,
+          .color = colorSpecFromRole(ColorRole::Primary),
+      })
+  );
 
-  auto loginPanel = std::make_unique<Box>();
-  m_loginPanel = static_cast<Box*>(m_root.addChild(std::move(loginPanel)));
+  m_root.addChild(
+      ui::box({
+          .out = &m_loginPanel,
+      })
+  );
 
-  auto passwordField = std::make_unique<Input>();
-  passwordField->setPlaceholder(i18n::tr("lockscreen.password-placeholder"));
-  passwordField->setPasswordMode(true);
-  passwordField->setOnChange([this](const std::string& value) {
-    if (m_onPasswordChanged) {
-      m_onPasswordChanged(value);
-    }
-  });
-  passwordField->setOnSubmit([this](const std::string& /*value*/) {
-    if (m_onLogin) {
-      m_onLogin();
-    }
-  });
-  m_passwordField = static_cast<Input*>(m_root.addChild(std::move(passwordField)));
+  m_root.addChild(
+      ui::input({
+          .out = &m_passwordField,
+          .placeholder = i18n::tr("lockscreen.password-placeholder"),
+          .passwordMode = true,
+          .onChange =
+              [this](const std::string& value) {
+                if (m_onPasswordChanged) {
+                  m_onPasswordChanged(value);
+                }
+              },
+          .onSubmit =
+              [this](const std::string& /*value*/) {
+                if (m_onLogin) {
+                  m_onLogin();
+                }
+              },
+      })
+  );
 
-  auto loginButton = std::make_unique<Button>();
-  loginButton->setText("");
-  loginButton->setGlyph("check");
-  loginButton->setGlyphSize(16.0f);
-  loginButton->setVariant(ButtonVariant::Primary);
-  loginButton->setOnClick([this]() {
-    if (m_onLogin) {
-      m_onLogin();
-    }
-  });
-  m_loginButton = static_cast<Button*>(m_root.addChild(std::move(loginButton)));
+  m_root.addChild(
+      ui::button({
+          .out = &m_loginButton,
+          .text = "",
+          .glyph = "check",
+          .glyphSize = 16.0f,
+          .variant = ButtonVariant::Primary,
+          .onClick = [this]() {
+            if (m_onLogin) {
+              m_onLogin();
+            }
+          },
+      })
+  );
 
   m_inputDispatcher.setSceneRoot(&m_root);
   m_inputDispatcher.setCursorShapeCallback([this](std::uint32_t serial, std::uint32_t shape) {
