@@ -195,27 +195,12 @@ void FileDialogView::create() {
                   },
               .onSubmit = [this](const std::string&) { activateSelection(); },
           }),
-          ui::button({
-              .out = &m_backButton,
-              .glyph = "arrow-big-up",
-              .glyphSize = Style::fontSizeBody * scale,
-              .variant = ButtonVariant::Default,
-              .minWidth = Style::controlHeightSm * scale,
-              .minHeight = Style::controlHeightSm * scale,
-              .padding = Style::spaceXs * scale,
-              .radius = Style::scaledRadiusMd(scale),
-              .onClick = [this]() { DeferredCall::callLater([this]() { navigateUp(); }); },
-          }),
           ui::spacer(),
-          ui::label({
-              .out = &m_sortLabel,
-              .fontSize = Style::fontSizeCaption * scale,
-          }),
           ui::button({
               .out = &m_hiddenToggle,
               .glyph = "eye",
               .glyphSize = Style::fontSizeBody * scale,
-              .variant = ButtonVariant::Tab,
+              .variant = ButtonVariant::Default,
               .minWidth = Style::controlHeightSm * scale,
               .minHeight = Style::controlHeightSm * scale,
               .padding = Style::spaceXs * scale,
@@ -257,7 +242,6 @@ void FileDialogView::create() {
               .text = i18n::tr("ui.dialogs.file.sort.name"),
               .contentAlign = ButtonContentAlign::Start,
               .variant = ButtonVariant::Ghost,
-              // File-list header sort style.
               .minHeight = Style::controlHeightSm * scale,
               .paddingV = Style::spaceXs * scale,
               .paddingH = Style::spaceSm * scale,
@@ -269,7 +253,6 @@ void FileDialogView::create() {
               .text = i18n::tr("ui.dialogs.file.sort.size"),
               .contentAlign = ButtonContentAlign::End,
               .variant = ButtonVariant::Ghost,
-              // File-list header sort style.
               .minWidth = 96.0f * scale,
               .minHeight = Style::controlHeightSm * scale,
               .paddingV = Style::spaceXs * scale,
@@ -281,7 +264,6 @@ void FileDialogView::create() {
               .text = i18n::tr("ui.dialogs.file.sort.date"),
               .contentAlign = ButtonContentAlign::End,
               .variant = ButtonVariant::Ghost,
-              // File-list header sort style.
               .minWidth = 152.0f * scale,
               .minHeight = Style::controlHeightSm * scale,
               .paddingV = Style::spaceXs * scale,
@@ -474,7 +456,7 @@ void FileDialogView::onClose() {
   m_homeButton = nullptr;
   m_backButton = nullptr;
   m_searchInput = nullptr;
-  m_sortLabel = nullptr;
+
   m_hiddenToggle = nullptr;
   m_viewToggle = nullptr;
   m_listContainer = nullptr;
@@ -706,11 +688,28 @@ void FileDialogView::rebuildBreadcrumb() {
 
   m_breadcrumbRow->addChild(
       ui::button({
-          .out = &m_homeButton,
-          .glyph = "home",
-          .variant = ButtonVariant::Ghost,
+          .out = &m_backButton,
+          .glyph = "arrow-big-up",
+          .glyphSize = Style::fontSizeBody * scale,
+          .variant = ButtonVariant::Default,
+          .minWidth = Style::controlHeightSm * scale,
           .minHeight = Style::controlHeightSm * scale,
           .padding = Style::spaceXs * scale,
+          .radius = Style::scaledRadiusMd(scale),
+          .onClick = [this]() { DeferredCall::callLater([this]() { navigateUp(); }); },
+      })
+  );
+
+  m_breadcrumbRow->addChild(
+      ui::button({
+          .out = &m_homeButton,
+          .glyph = "home",
+          .glyphSize = Style::fontSizeBody * scale,
+          .variant = ButtonVariant::Default,
+          .minWidth = Style::controlHeightSm * scale,
+          .minHeight = Style::controlHeightSm * scale,
+          .padding = Style::spaceXs * scale,
+          .radius = Style::scaledRadiusMd(scale),
           .onClick = [this]() { DeferredCall::callLater([this]() { navigateHome(); }); },
       })
   );
@@ -801,25 +800,22 @@ void FileDialogView::updateControls() {
     m_viewToggle->setGlyph(m_viewMode == ViewMode::List ? "layout-grid" : "list");
   }
 
-  if (m_sortLabel != nullptr) {
-    std::string field = i18n::tr("ui.dialogs.file.sort.name");
-    switch (m_sortField) {
-    case FileDialogSortField::Name:
-      field = i18n::tr("ui.dialogs.file.sort.name");
-      break;
-    case FileDialogSortField::Size:
-      field = i18n::tr("ui.dialogs.file.sort.size");
-      break;
-    case FileDialogSortField::Modified:
-      field = i18n::tr("ui.dialogs.file.sort.date");
-      break;
-    }
-    m_sortLabel->setText(
-        i18n::tr(
-            "ui.dialogs.file.sort.summary", "field", field, "direction",
-            m_sortOrder == FileDialogSortOrder::Ascending ? i18n::tr("ui.dialogs.file.sort.ascending")
-                                                          : i18n::tr("ui.dialogs.file.sort.descending")
-        )
+  const std::string arrow = m_sortOrder == FileDialogSortOrder::Ascending
+      ? " " + i18n::tr("ui.dialogs.file.sort.ascending")
+      : " " + i18n::tr("ui.dialogs.file.sort.descending");
+  if (m_nameSortButton != nullptr) {
+    m_nameSortButton->setText(
+        i18n::tr("ui.dialogs.file.sort.name") + (m_sortField == FileDialogSortField::Name ? arrow : "")
+    );
+  }
+  if (m_sizeSortButton != nullptr) {
+    m_sizeSortButton->setText(
+        i18n::tr("ui.dialogs.file.sort.size") + (m_sortField == FileDialogSortField::Size ? arrow : "")
+    );
+  }
+  if (m_dateSortButton != nullptr) {
+    m_dateSortButton->setText(
+        i18n::tr("ui.dialogs.file.sort.date") + (m_sortField == FileDialogSortField::Modified ? arrow : "")
     );
   }
 
