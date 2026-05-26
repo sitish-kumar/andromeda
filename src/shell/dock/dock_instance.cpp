@@ -285,12 +285,15 @@ namespace {
           if (inst.surface == nullptr)
             return;
           const auto& cfg = config.config().dock;
-          const bool vert = shell::dock::isVerticalPosition(cfg.position);
-          const auto sb = shell::surface_shadow::bleed(cfg.shadow, config.config().shell.shadow);
-          const auto panelW = shell::dock::dockContentSize(cfg, inst.items.size());
-          const auto panelH = shell::dock::dockThickness(cfg);
-          const auto surfW = static_cast<int>(vert ? (sb.left + panelH + sb.right) : (panelW + sb.left + sb.right));
-          const auto surfH = static_cast<int>(vert ? (panelW + sb.up + sb.down) : (sb.up + panelH + cfg.marginEdge));
+          int surfW = static_cast<int>(inst.surface->width());
+          int surfH = static_cast<int>(inst.surface->height());
+          if (surfW <= 0 || surfH <= 0) {
+            const auto surfaceGeometry = shell::dock::computeSurfaceGeometry(
+                cfg, config.config().shell.shadow, inst.items.size() + shell::dock::dockLauncherButtonCount(cfg)
+            );
+            surfW = static_cast<int>(surfaceGeometry.surfaceW);
+            surfH = static_cast<int>(surfaceGeometry.surfaceH);
+          }
           inst.surface->setInputRegion(
               shell::dock::computeInputRegion(cfg, shell::dock::DockPanelGeometry{}, surfW, surfH, true)
           );

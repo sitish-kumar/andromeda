@@ -391,9 +391,11 @@ namespace shell::dock {
     });
 
     menu->surface->setDismissedCallback([callbacks]() {
-      if (callbacks.closeMenu) {
-        callbacks.closeMenu();
-      }
+      DeferredCall::callLater([callbacks]() {
+        if (callbacks.closeMenu) {
+          callbacks.closeMenu();
+        }
+      });
     });
 
     if (parentLayerSurface == nullptr || !menu->surface->initialize(parentLayerSurface, output, popupCfg)) {
