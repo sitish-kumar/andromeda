@@ -1,5 +1,6 @@
 #include "shell/bar/widgets/clock_widget.h"
 
+#include "notification/notification.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
@@ -26,7 +27,9 @@ namespace {
   }
 } // namespace
 
-ClockWidget::ClockWidget(wl_output* /*output*/, std::string format, std::string verticalFormat, std::string tooltip_format)
+ClockWidget::ClockWidget(
+    wl_output* /*output*/, std::string format, std::string verticalFormat, std::string tooltip_format
+)
     : m_format(std::move(format)), m_verticalFormat(std::move(verticalFormat)),
       m_tooltipFormat(std::move(tooltip_format)) {}
 
@@ -63,6 +66,14 @@ std::string ClockWidget::formatTimeText() const {
     out.pop_back();
   }
   return out;
+}
+
+std::string ClockWidget::formatTooltipText() const {
+  if (m_tooltipFormat.empty()) {
+    return {};
+  }
+
+  return formatLocalTime(m_tooltipFormat.c_str());
 }
 
 void ClockWidget::create() {

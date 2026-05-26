@@ -197,8 +197,9 @@ std::unique_ptr<Widget> WidgetFactory::create(
   if (type == "clock") {
     std::string format = wc != nullptr ? wc->getString("format", "{:%H:%M}") : std::string("{:%H:%M}");
     std::string verticalFormat = wc != nullptr ? wc->getString("vertical_format", "") : std::string{};
-    std::string tooltip_format = wc != nullptr ? wc->getSTring("tooltip_format", "") : std::string{};
-    auto widget = std::make_unique<ClockWidget>(output, std::move(format), std::move(verticalFormat), std::move(tooltip_format));
+    std::string tooltip_format = wc != nullptr ? wc->getString("tooltip_format", "") : std::string{};
+    auto widget =
+        std::make_unique<ClockWidget>(output, std::move(format), std::move(verticalFormat), std::move(tooltip_format));
     widget->setContentScale(contentScale);
     return widget;
   }
