@@ -1,12 +1,10 @@
 #pragma once
 
 #include "config/config_types.h"
-#include "render/animation/animation_manager.h"
 #include "render/scene/input_dispatcher.h"
-#include "system/desktop_entry.h"
+#include "shell/dock/dock_items.h"
 #include "ui/signal.h"
 
-#include <array>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -17,37 +15,12 @@ class Box;
 class CompositorPlatform;
 class ConfigService;
 class Flex;
-class Glyph;
-class Image;
-class InputArea;
-class Label;
 class LayerSurface;
 class Node;
 class RenderContext;
 struct wl_output;
 
 namespace shell::dock {
-
-  struct DockItemView {
-    DesktopEntry entry;
-    std::string idLower;
-    std::string startupWmClassLower;
-    InputArea* area = nullptr;
-    Box* background = nullptr;
-    std::array<Box*, 3> dotIndicators{};
-    Box* badge = nullptr;
-    Label* badgeLabel = nullptr;
-    Image* iconImage = nullptr;
-    Glyph* iconGlyph = nullptr;
-    bool hovered = false;
-    bool running = false;
-    bool active = false;
-    float visualScale = -1.0f;
-    float visualOpacity = -1.0f;
-    AnimationManager::Id scaleAnimId = 0;
-    AnimationManager::Id opacityAnimId = 0;
-    std::size_t instanceCount = 0;
-  };
 
   struct DockInstance {
     std::uint32_t outputName = 0;
@@ -64,7 +37,7 @@ namespace shell::dock {
     Box* panel = nullptr;
     Flex* row = nullptr;
     InputDispatcher inputDispatcher;
-    std::vector<DockItemView> items;
+    std::vector<shell::dock::DockItemView> items;
     std::uint64_t modelSerial = 0;
     std::string activeAppIdLower;
     wl_output* lastFilterOutput = nullptr;

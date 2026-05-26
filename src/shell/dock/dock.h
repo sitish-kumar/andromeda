@@ -14,7 +14,6 @@ class Box;
 class CompositorPlatform;
 class ConfigService;
 class Flex;
-class InputArea;
 class IpcService;
 class RenderContext;
 struct PointerEvent;
@@ -57,17 +56,8 @@ private:
   bool syncInstanceModel(shell::dock::DockInstance& instance);
   void rebuildItems(shell::dock::DockInstance& instance);
   void updateVisuals(shell::dock::DockInstance& instance);
-  std::unique_ptr<InputArea> createLauncherButton(shell::dock::DockInstance& instance);
-  void handleItemClick(shell::dock::DockInstance& instance, shell::dock::DockItemView& item);
   void openItemMenu(shell::dock::DockInstance& instance, shell::dock::DockItemView& item);
   void closeItemMenu();
-
-  [[nodiscard]] bool matchesActiveApp(
-      const shell::dock::DockItemView& item, std::string_view activeAppIdLower
-  ) const;
-  [[nodiscard]] bool matchesRunningApp(
-      const shell::dock::DockItemView& item, const std::vector<std::string>& runningLower
-  ) const;
 
   CompositorPlatform* m_platform = nullptr;
   ConfigService* m_config = nullptr;

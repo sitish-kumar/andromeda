@@ -6,6 +6,7 @@
 #include "render/render_context.h"
 #include "render/scene/node.h"
 #include "shell/dock/dock_geometry.h"
+#include "shell/dock/dock_items.h"
 #include "shell/surface_shadow.h"
 #include "shell/tooltip/tooltip_manager.h"
 #include "ui/builders.h"
@@ -15,21 +16,6 @@
 #include "wayland/surface.h"
 
 #include <cmath>
-
-namespace {
-
-  std::unique_ptr<Flex> makeDockItemRow(const DockConfig& cfg, bool vertical) {
-    return ui::flex(
-        vertical ? FlexDirection::Vertical : FlexDirection::Horizontal,
-        {
-            .align = FlexAlign::Center,
-            .gap = static_cast<float>(cfg.itemSpacing),
-            .padding = static_cast<float>(cfg.padding),
-        }
-    );
-  }
-
-} // namespace
 
 namespace shell::dock {
 
