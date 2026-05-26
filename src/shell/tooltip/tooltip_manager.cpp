@@ -5,9 +5,7 @@
 #include "render/render_context.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
-#include "ui/controls/box.h"
-#include "ui/controls/flex.h"
-#include "ui/controls/label.h"
+#include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "wayland/popup_surface.h"
@@ -251,20 +249,24 @@ void TooltipManager::buildScene(const TooltipContent& content, float w, float h)
   m_sceneRoot->setHitTestVisible(false);
   m_surface->setSceneRoot(m_sceneRoot.get());
 
-  auto bg = std::make_unique<Box>();
-  bg->setFill(colorSpecFromRole(ColorRole::Surface));
-  bg->setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), kBorder);
-  bg->setRadius(Style::scaledRadiusMd());
-  bg->setSize(w, h);
-  m_sceneRoot->addChild(std::move(bg));
+  m_sceneRoot->addChild(
+      ui::box({
+          .fill = colorSpecFromRole(ColorRole::Surface),
+          .radius = Style::scaledRadiusMd(),
+          .width = w,
+          .height = h,
+          .configure = [](Box& box) { box.setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), kBorder); },
+      })
+  );
 
   if (const auto* text = std::get_if<std::string>(&content)) {
-    auto label = std::make_unique<Label>();
-    label->setFontSize(Style::fontSizeCaption);
-    label->setColor(colorSpecFromRole(ColorRole::OnSurface));
-    label->setMaxWidth(kMaxContentWidth);
-    label->setMaxLines(kMaxTextLines);
-    label->setText(*text);
+    auto label = ui::label({
+        .text = *text,
+        .fontSize = Style::fontSizeCaption,
+        .color = colorSpecFromRole(ColorRole::OnSurface),
+        .maxWidth = kMaxContentWidth,
+        .maxLines = kMaxTextLines,
+    });
     label->measure(*m_renderContext);
     label->setPosition(kPadH + kBorder, kPadV + kBorder);
     m_sceneRoot->addChild(std::move(label));
@@ -281,39 +283,43 @@ void TooltipManager::buildScene(const TooltipContent& content, float w, float h)
     }
     const float valMaxW = std::max(0.0f, containerW - maxKeyW - kTableColumnGap);
 
-    auto container = std::make_unique<Flex>();
-    container->setDirection(FlexDirection::Vertical);
-    container->setGap(kTableGap);
-    container->setPosition(kPadH + kBorder, kPadV + kBorder);
-    container->setSize(containerW, h - (kPadV + kBorder) * 2.0f);
+    auto container = ui::column({
+        .gap = kTableGap,
+        .width = containerW,
+        .height = h - (kPadV + kBorder) * 2.0f,
+        .configure = [](Flex& flex) { flex.setPosition(kPadH + kBorder, kPadV + kBorder); },
+    });
 
     for (const auto& row : *rows) {
-      auto rowFlex = std::make_unique<Flex>();
-      rowFlex->setDirection(FlexDirection::Horizontal);
-      rowFlex->setJustify(FlexJustify::SpaceBetween);
-      rowFlex->setGap(kTableColumnGap);
-      rowFlex->setWidthPolicy(FlexSizePolicy::Fill);
-
-      auto keyLabel = std::make_unique<Label>();
-      keyLabel->setFontSize(Style::fontSizeCaption);
-      keyLabel->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      keyLabel->setText(row.key);
+      auto keyLabel = ui::label({
+          .text = row.key,
+          .fontSize = Style::fontSizeCaption,
+          .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+      });
       keyLabel->measure(*m_renderContext);
-      rowFlex->addChild(std::move(keyLabel));
 
-      auto valLabel = std::make_unique<Label>();
-      valLabel->setFontSize(Style::fontSizeCaption);
-      valLabel->setColor(colorSpecFromRole(ColorRole::OnSurface));
-      valLabel->setTextAlign(TextAlign::End);
+      auto valLabel = ui::label({
+          .text = row.value,
+          .fontSize = Style::fontSizeCaption,
+          .color = colorSpecFromRole(ColorRole::OnSurface),
+          .textAlign = TextAlign::End,
+      });
       const auto vm = m_renderContext->measureText(row.value, Style::fontSizeCaption);
       if (vm.width > valMaxW + 0.5f) {
         valLabel->setMaxWidth(valMaxW);
       }
-      valLabel->setText(row.value);
       valLabel->measure(*m_renderContext);
-      rowFlex->addChild(std::move(valLabel));
 
-      container->addChild(std::move(rowFlex));
+      container->addChild(
+          ui::row(
+              {
+                  .justify = FlexJustify::SpaceBetween,
+                  .gap = kTableColumnGap,
+                  .widthPolicy = FlexSizePolicy::Fill,
+              },
+              std::move(keyLabel), std::move(valLabel)
+          )
+      );
     }
 
     container->layout(*m_renderContext);
