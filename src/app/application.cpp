@@ -1465,8 +1465,8 @@ void Application::initIpc() {
 
   m_ipcService.registerHandler(
       "suspend",
-      [](const std::string&) -> std::string {
-        if (!process::launchFirstAvailable({{"systemctl", "suspend"}, {"loginctl", "suspend"}})) {
+      [this](const std::string&) -> std::string {
+        if (!m_sessionActionRunner.requestSuspendDetached()) {
           return "error: failed to suspend\n";
         }
         return "ok\n";
