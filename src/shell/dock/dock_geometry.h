@@ -1,14 +1,15 @@
 #pragma once
 
 #include "config/config_types.h"
-#include "render/core/render_styles.h"
-#include "wayland/layer_surface.h"
 
 #include <cstddef>
 #include <cstdint>
 #include <string>
 #include <utility>
 #include <vector>
+
+struct InputRect;
+struct LayerSurfaceConfig;
 
 namespace shell::dock {
 
@@ -34,7 +35,6 @@ struct DockSurfaceGeometry {
 [[nodiscard]] std::int32_t dockContentSize(const DockConfig& cfg, std::size_t itemCount);
 [[nodiscard]] std::int32_t dockThickness(const DockConfig& cfg);
 [[nodiscard]] std::size_t dockLauncherButtonCount(const DockConfig& cfg);
-[[nodiscard]] Radii dockCornerRadii(const DockConfig& cfg);
 [[nodiscard]] DockSurfaceGeometry
 computeSurfaceGeometry(const DockConfig& cfg, const ShellConfig::ShadowConfig& shadow, std::size_t itemCount);
 [[nodiscard]] LayerSurfaceConfig

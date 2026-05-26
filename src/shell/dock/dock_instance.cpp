@@ -3,6 +3,7 @@
 #include "compositors/compositor_platform.h"
 #include "config/config_service.h"
 #include "core/ui_phase.h"
+#include "render/core/render_styles.h"
 #include "render/render_context.h"
 #include "render/scene/node.h"
 #include "shell/dock/dock_geometry.h"
@@ -18,6 +19,18 @@
 #include <cmath>
 
 namespace shell::dock {
+namespace {
+
+  Radii dockCornerRadii(const DockConfig& cfg) {
+    return Radii{
+        static_cast<float>(cfg.radiusTopLeft),
+        static_cast<float>(cfg.radiusTopRight),
+        static_cast<float>(cfg.radiusBottomRight),
+        static_cast<float>(cfg.radiusBottomLeft),
+    };
+  }
+
+} // namespace
 
   void prepareFrame(
       DockInstance& instance, DockInstanceDependencies deps, const DockInstanceCallbacks& callbacks, bool needsUpdate,
@@ -90,7 +103,7 @@ namespace shell::dock {
     const int py = static_cast<int>(std::lround(absY));
     const int pw = static_cast<int>(std::lround(instance.panel->width()));
     const int ph = static_cast<int>(std::lround(instance.panel->height()));
-    const Radii radii = shell::dock::dockCornerRadii(cfg);
+    const Radii radii = dockCornerRadii(cfg);
     auto blurStrips = Surface::tessellateRoundedRect(px, py, pw, ph, radii.tl, radii.tr, radii.br, radii.bl);
     instance.surface->setBlurRegion(blurStrips);
   }
@@ -109,7 +122,7 @@ namespace shell::dock {
 
     const auto& shadowConfig = deps.config.config().shell.shadow;
     const auto panelGeometry = shell::dock::computePanelGeometry(cfg, shadowConfig, w, h);
-    const Radii radii = shell::dock::dockCornerRadii(cfg);
+    const Radii radii = dockCornerRadii(cfg);
 
     if (instance.sceneRoot == nullptr) {
       instance.sceneRoot = std::make_unique<Node>();

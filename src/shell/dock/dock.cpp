@@ -10,6 +10,7 @@
 #include "render/scene/node.h"
 #include "shell/dock/dock_context_menu.h"
 #include "shell/dock/dock_geometry.h"
+#include "shell/dock/dock_instance.h"
 #include "shell/dock/dock_items.h"
 #include "shell/panel/panel_manager.h"
 #include "shell/surface_shadow.h"

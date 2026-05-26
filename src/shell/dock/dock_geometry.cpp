@@ -1,6 +1,7 @@
 #include "shell/dock/dock_geometry.h"
 
 #include "shell/surface_shadow.h"
+#include "wayland/layer_surface.h"
 
 #include <algorithm>
 #include <cmath>
@@ -42,15 +43,6 @@ std::int32_t dockThickness(const DockConfig& cfg) { return cfg.iconSize + kCellP
 
 std::size_t dockLauncherButtonCount(const DockConfig& cfg) {
   return (cfg.launcherPosition == "start" || cfg.launcherPosition == "end") ? 1U : 0U;
-}
-
-Radii dockCornerRadii(const DockConfig& cfg) {
-  return Radii{
-      static_cast<float>(cfg.radiusTopLeft),
-      static_cast<float>(cfg.radiusTopRight),
-      static_cast<float>(cfg.radiusBottomRight),
-      static_cast<float>(cfg.radiusBottomLeft),
-  };
 }
 
 DockSurfaceGeometry

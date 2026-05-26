@@ -1,7 +1,7 @@
 #pragma once
 
-#include "config/config_service.h"
-#include "shell/dock/dock_instance.h"
+#include "config/config_types.h"
+#include "system/desktop_entry.h"
 #include "system/icon_resolver.h"
 
 #include <cstdint>
@@ -10,10 +10,8 @@
 #include <unordered_map>
 #include <vector>
 
-class Box;
 class CompositorPlatform;
 class ConfigService;
-class Flex;
 class IpcService;
 class RenderContext;
 struct PointerEvent;
@@ -22,6 +20,8 @@ struct wl_surface;
 struct zwlr_foreign_toplevel_handle_v1;
 
 namespace shell::dock {
+  struct DockInstance;
+  struct DockItemView;
   struct DockPopup;
 }
 
@@ -49,7 +49,6 @@ private:
   void pruneCachedToplevelHandles();
   void syncInstances();
   void createInstance(const WaylandOutput& output);
-  void destroyInstance(std::uint32_t outputName);
   // Drop any references the dock keeps to an instance (surface map, hovered, popup owner)
   // before the instance is destroyed. Safe to call multiple times.
   void detachInstanceState(shell::dock::DockInstance& inst);
