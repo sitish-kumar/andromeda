@@ -68,6 +68,7 @@ private:
   [[nodiscard]] bool handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers);
   [[nodiscard]] std::filesystem::path activeDirectoryForSelection() const;
   [[nodiscard]] std::filesystem::path rootDirectoryForSelection() const;
+  [[nodiscard]] std::string currentWallpaperPathForSelection() const;
   [[nodiscard]] std::optional<Color> selectedFillColor() const;
 
   WaylandConnection* m_wayland = nullptr;

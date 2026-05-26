@@ -44,6 +44,7 @@ public:
   void refreshThumbnail(Renderer& renderer);
 
   void setSelected(bool selected);
+  void setCurrent(bool current);
   void setHoveredVisual(bool hovered);
   void setOnTileClick(ClickCallback callback);
   void setOnTileMotion(HoverCallback callback);
@@ -71,6 +72,7 @@ private:
   WallpaperEntry m_entry;
   bool m_hasEntry = false;
   bool m_selected = false;
+  bool m_current = false;
   bool m_hoveredVisual = false;
   bool m_loadingThumbnail = false;
   std::string m_thumbPath;

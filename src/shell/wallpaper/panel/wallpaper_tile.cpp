@@ -220,6 +220,7 @@ void WallpaperTile::clearEntry(Renderer& renderer) {
   }
   m_hasEntry = false;
   m_selected = false;
+  m_current = false;
   m_hoveredVisual = false;
   m_loadingThumbnail = false;
   applyVisualState();
@@ -268,6 +269,14 @@ void WallpaperTile::setSelected(bool selected) {
   applyVisualState();
 }
 
+void WallpaperTile::setCurrent(bool current) {
+  if (m_current == current) {
+    return;
+  }
+  m_current = current;
+  applyVisualState();
+}
+
 void WallpaperTile::setOnTileClick(ClickCallback callback) { m_onClick = std::move(callback); }
 void WallpaperTile::setOnTileMotion(HoverCallback callback) { m_onMotion = std::move(callback); }
 void WallpaperTile::setOnTileEnter(HoverCallback callback) { m_onEnter = std::move(callback); }
@@ -285,13 +294,16 @@ void WallpaperTile::applyVisualState() {
   if (m_thumbBox == nullptr || m_thumb == nullptr) {
     return;
   }
-  const bool active = m_selected || m_hoveredVisual;
+  const bool active = m_selected || m_hoveredVisual || m_current;
   setOpacity(1.0f);
   m_thumb->setTint(active ? rgba(1.0f, 1.0f, 1.0f, 1.0f) : rgba(0.5f, 0.5f, 0.5f, 1.0f));
 
   const float outlineWidth = Style::borderWidth * 3.0f;
-  ColorSpec borderColor = active ? colorSpecFromRole(ColorRole::Hover) : colorSpecFromRole(ColorRole::Outline);
+  ColorSpec borderColor = m_current   ? colorSpecFromRole(ColorRole::Primary)
+      : m_selected || m_hoveredVisual ? colorSpecFromRole(ColorRole::Hover)
+                                      : colorSpecFromRole(ColorRole::Outline);
   ColorSpec frameBg = colorSpecFromRole(ColorRole::SurfaceVariant);
+  m_label->setColor(m_current ? colorSpecFromRole(ColorRole::Primary) : colorSpecFromRole(ColorRole::OnSurfaceVariant));
 
   m_thumbBox->setFill(frameBg);
   if (m_entry.isDir) {

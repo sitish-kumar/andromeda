@@ -20,8 +20,10 @@
 
 #include <algorithm>
 #include <chrono>
+#include <filesystem>
 #include <memory>
 #include <string_view>
+#include <system_error>
 #include <utility>
 
 namespace {
@@ -42,6 +44,26 @@ namespace {
 
   std::string colorWallpaperPath(const Color& color) { return "color:" + formatRgbHex(color); }
 
+  std::filesystem::path comparableWallpaperPath(std::string_view path) {
+    if (path.empty() || path.starts_with("color:")) {
+      return {};
+    }
+
+    std::error_code ec;
+    auto absolute = std::filesystem::absolute(std::filesystem::path(path), ec);
+    if (ec) {
+      absolute = std::filesystem::path(path);
+    }
+    return absolute.lexically_normal();
+  }
+
+  bool wallpaperEntryIsCurrent(const WallpaperEntry& entry, std::string_view currentWallpaperPath) {
+    if (entry.isDir) {
+      return false;
+    }
+    return comparableWallpaperPath(entry.absPath.string()) == comparableWallpaperPath(currentWallpaperPath);
+  }
+
 } // namespace
 
 class WallpaperGridAdapter : public VirtualGridAdapter {
@@ -52,6 +74,7 @@ public:
 
   void setEntries(const std::vector<WallpaperEntry>* entries) { m_entries = entries; }
   void setRenderer(Renderer* renderer) { m_renderer = renderer; }
+  void setCurrentWallpaperPath(std::string path) { m_currentWallpaperPath = std::move(path); }
   void setThumbnailService(ThumbnailService* service) {
     m_thumbnails = service;
     for (WallpaperTile* tile : m_pool) {
@@ -86,6 +109,11 @@ public:
       wt->setEntry((*m_entries)[index], *m_renderer);
     }
     wt->setSelected(selected);
+    wt->setCurrent(
+        m_entries != nullptr
+        && index < m_entries->size()
+        && wallpaperEntryIsCurrent((*m_entries)[index], m_currentWallpaperPath)
+    );
     wt->setHoveredVisual(hovered && !selected);
   }
 
@@ -101,6 +129,7 @@ public:
 private:
   float m_scale;
   const std::vector<WallpaperEntry>* m_entries = nullptr;
+  std::string m_currentWallpaperPath;
   Renderer* m_renderer = nullptr;
   ThumbnailService* m_thumbnails = nullptr;
 
@@ -544,6 +573,15 @@ std::filesystem::path WallpaperPanel::activeDirectoryForSelection() const {
   return rootDirectoryForSelection();
 }
 
+std::string WallpaperPanel::currentWallpaperPathForSelection() const {
+  if (m_config == nullptr || m_selectedMonitorIndex >= m_monitorChoices.size()) {
+    return {};
+  }
+
+  const auto& choice = m_monitorChoices[m_selectedMonitorIndex];
+  return choice.connector.empty() ? m_config->getDefaultWallpaperPath() : m_config->getWallpaperPath(choice.connector);
+}
+
 std::optional<Color> WallpaperPanel::selectedFillColor() const {
   if (m_config == nullptr || m_selectedMonitorIndex >= m_monitorChoices.size()) {
     return std::nullopt;
@@ -612,6 +650,9 @@ void WallpaperPanel::applyFilter() {
 void WallpaperPanel::rebindGrid(bool resetScroll) {
   if (m_grid == nullptr) {
     return;
+  }
+  if (m_adapter != nullptr) {
+    m_adapter->setCurrentWallpaperPath(currentWallpaperPathForSelection());
   }
   m_grid->notifyDataChanged();
   if (resetScroll || m_visibleEntries.empty()) {
@@ -788,6 +829,7 @@ void WallpaperPanel::applyWallpaperFromEntry(const WallpaperEntry& entry) {
   } else {
     m_config->setWallpaperPath(choice.connector, path);
   }
+  rebindGrid();
   kLog.info("applied wallpaper {} to {}", path, choice.connector.empty() ? "ALL" : choice.connector);
 }
 
@@ -824,11 +866,13 @@ void WallpaperPanel::applyColorWallpaper() {
         }
       }
       m_config->setWallpaperPath(std::nullopt, path);
+      rebindGrid();
       kLog.info("applied color wallpaper {} to ALL", path);
       return;
     }
 
     m_config->setWallpaperPath(choice.connector, path);
+    rebindGrid();
     kLog.info("applied color wallpaper {} to {}", path, choice.connector);
   });
 }
