@@ -31,7 +31,6 @@
 
 namespace {
 
-  constexpr float kSidebarWidth = 272.0f;
   constexpr float kRowHeight = 46.0f;
   constexpr float kPreviewImageHeight = 280.0f;
   constexpr float kListGlyphSize = 24.0f;
@@ -207,7 +206,7 @@ namespace {
                   .out = &m_title,
                   .fontSize = Style::fontSizeBody * scale,
                   .maxLines = 1,
-                  .fontWeight = FontWeight::Bold,
+                  .fontWeight = FontWeight::SemiBold,
                   .configure = [](Label& label) { label.setHitTestVisible(false); },
               }),
               ui::label({
@@ -350,23 +349,26 @@ namespace {
         return;
       }
 
-      const bool active = m_selected || m_hovered;
-      if (active) {
+      if (m_selected) {
+        m_background->setFill(colorSpecFromRole(ColorRole::Primary));
+      } else if (m_hovered) {
         m_background->setFill(colorSpecFromRole(ColorRole::Hover));
       } else {
         m_background->setFill(clearColorSpec());
       }
 
+      const auto activeRole = m_selected ? ColorRole::OnPrimary : ColorRole::OnHover;
+      const bool active = m_selected || m_hovered;
       m_glyph->setColor(
-          active ? colorSpecFromRole(ColorRole::OnHover)
+          active ? colorSpecFromRole(activeRole)
                  : colorSpecFromRole(m_isImage ? ColorRole::Secondary : ColorRole::Primary)
       );
-      m_title->setColor(colorSpecFromRole(active ? ColorRole::OnHover : ColorRole::OnSurface));
-      m_meta->setColor(active ? colorSpecFromRole(ColorRole::OnHover) : colorSpecFromRole(ColorRole::OnSurfaceVariant));
+      m_title->setColor(colorSpecFromRole(active ? activeRole : ColorRole::OnSurface));
+      m_meta->setColor(active ? colorSpecFromRole(activeRole, 0.7f) : colorSpecFromRole(ColorRole::OnSurfaceVariant));
       if (m_pinGlyph != nullptr) {
         m_pinGlyph->setVisible(m_pinned);
         m_pinGlyph->setParticipatesInLayout(m_pinned);
-        m_pinGlyph->setColor(colorSpecFromRole(active ? ColorRole::OnHover : ColorRole::Primary));
+        m_pinGlyph->setColor(colorSpecFromRole(active ? activeRole : ColorRole::Primary));
       }
     }
 
@@ -496,6 +498,7 @@ void ClipboardPanel::create() {
       .align = FlexAlign::Stretch,
       .gap = Style::spaceSm * scale,
       .padding = Style::spaceSm * scale,
+      .flexGrow = 2.0f,
   });
 
   auto sidebarHeader = ui::row(
@@ -574,7 +577,7 @@ void ClipboardPanel::create() {
       .align = FlexAlign::Stretch,
       .gap = Style::spaceSm * scale,
       .padding = Style::spaceSm * scale,
-      .flexGrow = 1.0f,
+      .flexGrow = 3.0f,
   });
 
   auto previewActions = ui::row(
@@ -674,9 +677,6 @@ void ClipboardPanel::doLayout(Renderer& renderer, float width, float height) {
 
   m_lastWidth = width;
   m_lastHeight = height;
-
-  const float sidebarWidth = std::min(kSidebarWidth, std::max(220.0f, width * 0.34f));
-  m_sidebar->setSize(sidebarWidth, 0.0f);
 
   m_focusArea->setPosition(0.0f, 0.0f);
   m_focusArea->setSize(1.0f, 1.0f);
@@ -1025,7 +1025,9 @@ void ClipboardPanel::rebuildPreview(Renderer& renderer, float width, float heigh
   }
 
   if (entry.isImage()) {
-    const float imageHeight = std::min(kPreviewImageHeight, std::max(180.0f, height - Style::spaceMd));
+    const float scale = contentScale();
+    const float imageHeight =
+        std::min(kPreviewImageHeight * scale, std::max(180.0f * scale, height - Style::spaceMd * scale));
     auto image = ui::image({
         .fit = ImageFit::Contain,
         .width = width,

@@ -227,16 +227,19 @@ namespace {
 
   private:
     void applyVisualState() {
-      const bool active = m_selected || m_hovered;
-      if (active) {
+      if (m_selected) {
+        m_row->setFill(colorSpecFromRole(ColorRole::Primary));
+      } else if (m_hovered) {
         m_row->setFill(colorSpecFromRole(ColorRole::Hover));
       } else {
         m_row->setFill(rgba(0, 0, 0, 0));
       }
 
-      const ColorSpec foreground = colorSpecFromRole(active ? ColorRole::OnHover : ColorRole::OnSurface);
+      const auto activeRole = m_selected ? ColorRole::OnPrimary : ColorRole::OnHover;
+      const bool active = m_selected || m_hovered;
+      const ColorSpec foreground = colorSpecFromRole(active ? activeRole : ColorRole::OnSurface);
       const ColorSpec mutedForeground =
-          active ? colorSpecFromRole(ColorRole::OnHover) : colorSpecFromRole(ColorRole::OnSurfaceVariant);
+          active ? colorSpecFromRole(activeRole, 0.7f) : colorSpecFromRole(ColorRole::OnSurfaceVariant);
       m_actionLabel->setColor(foreground);
       m_glyph->setColor(foreground);
       m_title->setColor(foreground);
