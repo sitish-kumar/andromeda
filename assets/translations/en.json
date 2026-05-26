@@ -166,7 +166,7 @@
       "home": "Home",
       "media": "Media",
       "audio": "Audio",
-      "display": "Display",
+      "display": "Monitor",
       "system": "System",
       "network": "Network",
       "bluetooth": "Bluetooth",
@@ -371,7 +371,7 @@
       "no-application-audio-body": "No application playback streams are currently available."
     },
     "display": {
-      "no-displays": "No displays available",
+      "no-displays": "No monitors available",
       "unknown-resolution": "Unknown resolution",
       "disabled": "Disabled"
     },
@@ -1670,7 +1670,7 @@
         },
         "telemetry": {
           "label": "Anonymous Startup Ping",
-          "description": "Sends a small anonymous startup ping with version, OS, compositor, display sizes, RAM, and UI scale"
+          "description": "Sends a small anonymous startup ping with version, OS, compositor, monitor resolutions, RAM, and UI scale"
         },
         "niri-overview-type-to-launch": {
           "label": "Type to Launch",
@@ -1764,8 +1764,8 @@
           "description": "Only show applications running on the active monitor"
         },
         "monitors": {
-          "label": "Displays",
-          "description": "Choose which displays show the dock (leave empty for all); active-monitor filtering applies within these displays"
+          "label": "Monitors",
+          "description": "Choose which monitors show the dock (leave empty for all); active-monitor filtering applies within these monitors"
         },
         "icon-size": {
           "label": "Icon Size",
@@ -2058,20 +2058,20 @@
         },
         "per-monitor-directories": {
           "label": "Per-Monitor Directories",
-          "description": "Use separate wallpaper folders for each display"
+          "description": "Use separate wallpaper folders for each monitor"
         },
         "monitor-directory": {
           "label": "Wallpaper Directory",
-          "description": "Wallpaper folder for this display"
+          "description": "Wallpaper folder for this monitor"
         },
         "monitor-directory-light": {
           "label": "Light Mode Directory",
-          "description": "Wallpaper folder for this display in Light theme mode",
+          "description": "Wallpaper folder for this monitor in Light theme mode",
           "placeholder": "~/Pictures/Wallpapers"
         },
         "monitor-directory-dark": {
           "label": "Dark Mode Directory",
-          "description": "Wallpaper folder for this display in Dark theme mode",
+          "description": "Wallpaper folder for this monitor in Dark theme mode",
           "placeholder": "~/Pictures/Wallpapers"
         }
       },
@@ -2298,8 +2298,8 @@
           "description": "Absolute vertical margin from the screen or bar edge"
         },
         "monitors": {
-          "label": "Displays",
-          "description": "Choose which displays show notification toasts; leave empty to show on all displays"
+          "label": "Monitors",
+          "description": "Choose which monitors show notification toasts; leave empty to show on all monitors"
         },
         "collapse-on-dismiss": {
           "label": "Collapse on Dismiss",

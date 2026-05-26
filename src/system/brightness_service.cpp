@@ -1455,7 +1455,7 @@ void BrightnessService::registerIpc(IpcService& ipc, std::function<void()> onBat
         });
       },
       "brightness-set <value> | brightness-set <current|*|all|monitor-selector> <value>",
-      "Set brightness (defaults to current display)"
+      "Set brightness (defaults to current monitor)"
   );
 
   auto registerDeltaHandler =
@@ -1497,11 +1497,11 @@ void BrightnessService::registerIpc(IpcService& ipc, std::function<void()> onBat
 
   registerDeltaHandler(
       "brightness-up", 1.0f, "brightness-up [current|*|all|monitor-selector] [step]",
-      "Increase brightness (defaults to current display)"
+      "Increase brightness (defaults to current monitor)"
   );
   registerDeltaHandler(
       "brightness-down", -1.0f, "brightness-down [current|*|all|monitor-selector] [step]",
-      "Decrease brightness (defaults to current display)"
+      "Decrease brightness (defaults to current monitor)"
   );
 }
 

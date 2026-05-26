@@ -30,7 +30,7 @@ BrightnessWidget::BrightnessWidget(BrightnessService* brightness, wl_output* out
 
 void BrightnessWidget::create() {
   auto area = std::make_unique<InputArea>();
-  area->setOnClick([this](const InputArea::PointerData& /*data*/) { requestPanelToggle("control-center", "display"); });
+  area->setOnClick([this](const InputArea::PointerData& /*data*/) { requestPanelToggle("control-center", "monitor"); });
   area->setOnAxis([this](const InputArea::PointerData& data) {
     if (m_brightness == nullptr) {
       return;
