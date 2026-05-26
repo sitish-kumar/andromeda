@@ -1496,6 +1496,10 @@
           "label": "Type",
           "description": "Built-in widget type for this named widget"
         },
+        "tooltip_format" : {
+          "label": "Tooltip Format",
+          "description": "Optional tooltip text format for the clock"
+        },
         "vertical_format": {
           "label": "Vertical Format",
           "description": "Optional format used on vertical bars"
