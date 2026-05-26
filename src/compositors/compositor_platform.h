@@ -62,6 +62,8 @@ public:
   [[nodiscard]] const WaylandConnection& wayland() const noexcept { return m_wayland; }
   [[nodiscard]] wl_display* display() const noexcept;
   [[nodiscard]] bool hasXdgShell() const noexcept;
+  [[nodiscard]] bool hasXdgActivation() const noexcept;
+  [[nodiscard]] std::string requestActivationToken(wl_surface* surface) const;
   [[nodiscard]] bool hasGammaControl() const noexcept;
   [[nodiscard]] const std::vector<WaylandOutput>& outputs() const noexcept;
   [[nodiscard]] const WaylandOutput* findOutputByWl(wl_output* output) const;

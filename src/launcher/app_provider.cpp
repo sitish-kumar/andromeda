@@ -1,18 +1,13 @@
 #include "launcher/app_provider.h"
 
+#include "compositors/compositor_platform.h"
 #include "config/config_service.h"
-#include "core/process.h"
-#include "util/file_utils.h"
+#include "system/desktop_entry_launch.h"
 #include "util/fuzzy_match.h"
 #include "util/string_utils.h"
-#include "wayland/wayland_connection.h"
 
 #include <algorithm>
-#include <array>
-#include <cstdlib>
-#include <cstring>
 #include <string_view>
-#include <unistd.h>
 
 namespace {
 
@@ -52,183 +47,6 @@ namespace {
     const double execScore = FuzzyMatch::score(pattern, entry.execLower);
 
     return std::max({nameScore, genericScore, keywordScore, catScore, idScore, execScore});
-  }
-
-  std::string stripFieldCodes(const std::string& exec) {
-    std::string result;
-    result.reserve(exec.size());
-    for (std::size_t i = 0; i < exec.size(); ++i) {
-      if (exec[i] == '%' && i + 1 < exec.size()) {
-        char next = exec[i + 1];
-        if (next == 'f'
-            || next == 'F'
-            || next == 'u'
-            || next == 'U'
-            || next == 'd'
-            || next == 'D'
-            || next == 'n'
-            || next == 'N'
-            || next == 'i'
-            || next == 'c'
-            || next == 'k') {
-          ++i; // Skip the field code
-          // Also skip trailing space
-          if (i + 1 < exec.size() && exec[i + 1] == ' ') {
-            ++i;
-          }
-          continue;
-        }
-        if (next == '%') {
-          result += '%';
-          ++i;
-          continue;
-        }
-      }
-      result += exec[i];
-    }
-
-    // Trim trailing whitespace
-    while (!result.empty() && result.back() == ' ') {
-      result.pop_back();
-    }
-    return result;
-  }
-
-  std::vector<std::string> tokenize(const std::string& cmd) {
-    std::vector<std::string> args;
-    std::string current;
-    bool inSingle = false;
-    bool inDouble = false;
-
-    for (std::size_t i = 0; i < cmd.size(); ++i) {
-      char c = cmd[i];
-
-      if (c == '\'' && !inDouble) {
-        inSingle = !inSingle;
-        continue;
-      }
-      if (c == '"' && !inSingle) {
-        inDouble = !inDouble;
-        continue;
-      }
-      if (c == ' ' && !inSingle && !inDouble) {
-        if (!current.empty()) {
-          args.push_back(std::move(current));
-          current.clear();
-        }
-        continue;
-      }
-      current += c;
-    }
-    if (!current.empty()) {
-      args.push_back(std::move(current));
-    }
-    return args;
-  }
-
-  std::string expandExecutablePath(std::string_view binary) {
-    if (binary.empty() || binary[0] != '~') {
-      return std::string(binary);
-    }
-    return FileUtils::expandUserPath(std::string(binary)).string();
-  }
-
-  bool isExecutableOnPath(std::string_view binary) {
-    if (binary.empty()) {
-      return false;
-    }
-    if (binary.find('/') != std::string_view::npos) {
-      const std::string expanded = expandExecutablePath(binary);
-      return access(expanded.c_str(), X_OK) == 0;
-    }
-
-    const char* pathEnv = std::getenv("PATH");
-    if (pathEnv == nullptr || pathEnv[0] == '\0') {
-      return false;
-    }
-
-    std::string_view path(pathEnv);
-    std::size_t start = 0;
-    while (start <= path.size()) {
-      const auto sep = path.find(':', start);
-      const auto segment = sep == std::string_view::npos ? path.substr(start) : path.substr(start, sep - start);
-      if (!segment.empty()) {
-        std::string candidate(segment);
-        candidate.push_back('/');
-        candidate.append(binary);
-        if (access(candidate.c_str(), X_OK) == 0) {
-          return true;
-        }
-      }
-      if (sep == std::string_view::npos) {
-        break;
-      }
-      start = sep + 1;
-    }
-    return false;
-  }
-
-  std::vector<std::string> terminalLaunchArgs(const std::string& command) {
-    std::vector<std::string> terminal;
-    if (const char* envTerminal = std::getenv("TERMINAL"); envTerminal != nullptr && envTerminal[0] != '\0') {
-      terminal = tokenize(envTerminal);
-      if (!terminal.empty() && !isExecutableOnPath(terminal.front())) {
-        terminal.clear();
-      }
-    }
-
-    if (terminal.empty()) {
-      static constexpr std::array<std::string_view, 9> kTerminalCandidates = {
-          "x-terminal-emulator", "ghostty", "kitty", "alacritty", "wezterm", "foot", "konsole",
-          "gnome-terminal",      "xterm"
-      };
-      for (const auto candidate : kTerminalCandidates) {
-        if (isExecutableOnPath(candidate)) {
-          terminal.emplace_back(candidate);
-          break;
-        }
-      }
-    }
-
-    if (terminal.empty()) {
-      return {};
-    }
-
-    const std::string& termBin = terminal.front();
-    if (termBin == "gnome-terminal" || termBin == "kgx" || termBin == "ptyxis") {
-      terminal.emplace_back("--");
-      terminal.emplace_back("sh");
-      terminal.emplace_back("-lc");
-      terminal.emplace_back(command);
-    } else {
-      terminal.emplace_back("-e");
-      terminal.emplace_back("sh");
-      terminal.emplace_back("-lc");
-      terminal.emplace_back(command);
-    }
-    return terminal;
-  }
-
-  void launchCommand(
-      const std::string& exec, bool terminal, const std::string& activationToken, const std::string& workingDir,
-      const std::string& appName, bool runAsSystemdService
-  ) {
-    std::string cleanExec = stripFieldCodes(exec);
-    std::vector<std::string> args = terminal ? terminalLaunchArgs(cleanExec) : tokenize(cleanExec);
-
-    if (!args.empty() && args.front().find('/') != std::string::npos) {
-      args.front() = expandExecutablePath(args.front());
-    }
-
-    if (args.empty()) {
-      return;
-    }
-
-    if (runAsSystemdService) {
-      process::runAsyncAsSystemdService(args, appName, activationToken, workingDir);
-    } else {
-      (void)process::runAsync(args, activationToken, workingDir);
-    }
   }
 
   std::string_view primaryCategory(std::string_view categories) {
@@ -273,7 +91,8 @@ namespace {
 
 } // namespace
 
-AppProvider::AppProvider(ConfigService* config, WaylandConnection* wayland) : m_config(config), m_wayland(wayland) {}
+AppProvider::AppProvider(ConfigService* config, CompositorPlatform* platform)
+    : m_config(config), m_platform(platform) {}
 
 void AppProvider::initialize() { refreshEntriesIfNeeded(); }
 
@@ -350,9 +169,8 @@ bool AppProvider::activate(const LauncherResult& result) {
       continue;
     }
 
-    std::string execLine = entry.exec;
+    const DesktopAction* chosen = nullptr;
     if (!result.desktopActionId.empty()) {
-      const DesktopAction* chosen = nullptr;
       for (const auto& action : entry.actions) {
         if (action.id == result.desktopActionId) {
           chosen = &action;
@@ -362,18 +180,21 @@ bool AppProvider::activate(const LauncherResult& result) {
       if (chosen == nullptr || chosen->exec.empty()) {
         return false;
       }
-      execLine = chosen->exec;
     }
 
     std::string token;
-    if (m_wayland != nullptr && m_wayland->hasXdgActivation()) {
-      token = m_wayland->requestActivationToken(nullptr);
+    if (m_platform != nullptr && m_platform->hasXdgActivation()) {
+      token = m_platform->requestActivationToken(nullptr);
     }
-    launchCommand(
-        execLine, entry.terminal, token, entry.workingDir, entry.id,
-        m_config->config().shell.launchAppsAsSystemdServices
-    );
-    return true;
+    desktop_entry_launch::LaunchOptions launchOptions{
+        .activationToken = std::move(token),
+        .runAsSystemdService = m_config->config().shell.launchAppsAsSystemdServices,
+    };
+
+    if (chosen != nullptr) {
+      return desktop_entry_launch::launchAction(*chosen, entry.id, entry.workingDir, entry.terminal, launchOptions);
+    }
+    return desktop_entry_launch::launchEntry(entry, launchOptions);
   }
   return false;
 }

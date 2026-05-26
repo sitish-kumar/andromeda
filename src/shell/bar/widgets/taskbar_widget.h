@@ -13,6 +13,7 @@
 #include <vector>
 
 class ContextMenuPopup;
+class ConfigService;
 class Flex;
 class InputArea;
 struct wl_output;
@@ -28,11 +29,12 @@ enum class WorkspaceLabelPlacement {
 class TaskbarWidget : public Widget {
 public:
   TaskbarWidget(
-      CompositorPlatform& platform, wl_output* output, bool groupByWorkspace, bool showAllOutputs,
-      bool onlyActiveWorkspace, bool showWorkspaceLabel, WorkspaceLabelPlacement workspaceLabelPlacement,
-      bool hideEmptyWorkspaces, bool workspaceGroupCapsule, bool showActiveIndicator, float activeOpacity,
-      float inactiveOpacity, ColorSpec focusedColor, ColorSpec occupiedColor, ColorSpec emptyColor,
-      bool showWindowTitle, float windowTitleMaxWidth, std::string barPosition, ShellConfig::ShadowConfig shadowConfig
+      CompositorPlatform& platform, ConfigService& config, wl_output* output, bool groupByWorkspace,
+      bool showAllOutputs, bool onlyActiveWorkspace, bool showWorkspaceLabel,
+      WorkspaceLabelPlacement workspaceLabelPlacement, bool hideEmptyWorkspaces, bool workspaceGroupCapsule,
+      bool showActiveIndicator, float activeOpacity, float inactiveOpacity, ColorSpec focusedColor,
+      ColorSpec occupiedColor, ColorSpec emptyColor, bool showWindowTitle, float windowTitleMaxWidth,
+      std::string barPosition, ShellConfig::ShadowConfig shadowConfig
   );
   ~TaskbarWidget() override;
 
@@ -97,6 +99,7 @@ private:
   [[nodiscard]] static bool taskInWorkspaceGroup(const TaskModel& task, const WorkspaceModel& ws);
 
   CompositorPlatform& m_platform;
+  ConfigService& m_configService;
   wl_output* m_output = nullptr;
   bool m_groupByWorkspace = false;
   bool m_showAllOutputs = false;

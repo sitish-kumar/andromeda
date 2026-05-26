@@ -581,6 +581,7 @@ _noctalia_sources = files(
   'src/shell/bar/widgets/workspaces_widget.cpp',
   'src/system/dependency_service.cpp',
   'src/system/desktop_entry.cpp',
+  'src/system/desktop_entry_launch.cpp',
   'src/system/brightness_service.cpp',
   'src/system/lock_keys_service.cpp',
   'src/system/distro_info.cpp',
@@ -830,6 +831,18 @@ process_test = executable('process_test',
 )
 
 test('process', process_test)
+
+desktop_entry_launch_test = executable('desktop_entry_launch_test',
+  sources: files(
+    'tests/desktop_entry_launch_test.cpp',
+    'src/system/desktop_entry_launch.cpp',
+    'src/core/process.cpp',
+    'src/core/log.cpp',
+  ),
+  include_directories: _noctalia_inc,
+)
+
+test('desktop_entry_launch', desktop_entry_launch_test)
 
 string_utils_test = executable('string_utils_test',
   sources: files(

@@ -4,7 +4,6 @@
 #include "config/config_service.h"
 #include "core/deferred_call.h"
 #include "core/log.h"
-#include "core/process.h"
 #include "core/ui_phase.h"
 #include "i18n/i18n.h"
 #include "ipc/ipc_service.h"
@@ -16,6 +15,7 @@
 #include "shell/tooltip/tooltip_manager.h"
 #include "system/app_identity.h"
 #include "system/desktop_entry.h"
+#include "system/desktop_entry_launch.h"
 #include "ui/builders.h"
 #include "ui/controls/context_menu.h"
 #include "ui/palette.h"
@@ -83,6 +83,18 @@ namespace {
       return nullptr;
     }
     return instanceOutput;
+  }
+
+  desktop_entry_launch::LaunchOptions
+  dockLaunchOptions(const CompositorPlatform& platform, const ConfigService& config, wl_surface* activationSurface) {
+    std::string token;
+    if (platform.hasXdgActivation()) {
+      token = platform.requestActivationToken(activationSurface);
+    }
+    return desktop_entry_launch::LaunchOptions{
+        .activationToken = std::move(token),
+        .runAsSystemdService = config.config().shell.launchAppsAsSystemdServices,
+    };
   }
 
   zwlr_foreign_toplevel_handle_v1* nextActivatableWindowHandle(
@@ -1529,28 +1541,6 @@ std::unique_ptr<InputArea> Dock::createLauncherButton(DockInstance& instance) {
   return areaNode;
 }
 
-void Dock::launchEntry(const DesktopEntry& entry) {
-  if (entry.exec.empty()) {
-    kLog.warn("no exec for {}", entry.name);
-    return;
-  }
-  // Strip desktop-entry field codes (%u, %f, %F, %U, …).
-  std::string cmd;
-  cmd.reserve(entry.exec.size());
-  for (std::size_t i = 0; i < entry.exec.size(); ++i) {
-    if (entry.exec[i] == '%' && i + 1 < entry.exec.size()) {
-      ++i; // skip field code char
-      continue;
-    }
-    cmd += entry.exec[i];
-  }
-  while (!cmd.empty() && std::isspace(static_cast<unsigned char>(cmd.back()))) {
-    cmd.pop_back();
-  }
-  kLog.info("launching: {}", cmd);
-  (void)process::runAsync(cmd);
-}
-
 // ── Private: click handling ───────────────────────────────────────────────────
 
 void Dock::handleItemClick(DockInstance& instance, DockItemView& item) {
@@ -1561,7 +1551,8 @@ void Dock::handleItemClick(DockInstance& instance, DockItemView& item) {
   );
 
   if (windows.empty()) {
-    launchEntry(item.entry);
+    wl_surface* const activationSurface = instance.surface != nullptr ? instance.surface->wlSurface() : nullptr;
+    (void)desktop_entry_launch::launchEntry(item.entry, dockLaunchOptions(*m_platform, *m_config, activationSurface));
     return;
   }
 
@@ -1704,28 +1695,6 @@ void Dock::closeItemMenu() {
     }
     startHideFadeOut(*owner);
   }
-}
-
-void Dock::launchAction(const DesktopAction& action) {
-  if (action.exec.empty()) {
-    kLog.warn("no exec for action {}", action.name);
-    return;
-  }
-  // Strip desktop-entry field codes (%u, %f, %F, %U, …).
-  std::string cmd;
-  cmd.reserve(action.exec.size());
-  for (std::size_t i = 0; i < action.exec.size(); ++i) {
-    if (action.exec[i] == '%' && i + 1 < action.exec.size()) {
-      ++i;
-      continue;
-    }
-    cmd += action.exec[i];
-  }
-  while (!cmd.empty() && std::isspace(static_cast<unsigned char>(cmd.back()))) {
-    cmd.pop_back();
-  }
-  kLog.info("launching action: {}", cmd);
-  (void)process::runAsync(cmd);
 }
 
 void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
@@ -1918,12 +1887,15 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
 
   // Capture actions by value — item may be rebuilt before the callback fires.
   auto entryActions = item.entry.actions;
+  const std::string entryId = item.entry.id;
+  const std::string entryWorkingDir = item.entry.workingDir;
+  const bool entryTerminal = item.entry.terminal;
 
   menu->surface->setConfigureCallback([menuPtr](std::uint32_t /*w*/, std::uint32_t /*h*/) {
     menuPtr->surface->requestLayout();
   });
-  menu->surface->setPrepareFrameCallback([this, menuPtr, entries,
-                                          entryActions](bool /*needsUpdate*/, bool needsLayout) {
+  menu->surface->setPrepareFrameCallback([this, menuPtr, entries, entryActions, entryId, entryWorkingDir,
+                                          entryTerminal](bool /*needsUpdate*/, bool needsLayout) {
     if (m_renderContext == nullptr || menuPtr->surface == nullptr) {
       return;
     }
@@ -1962,11 +1934,13 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
       if (menuPtr->surface)
         menuPtr->surface->requestRedraw();
     });
-    ctrl->setOnActivate([this, menuPtr, entryActions](const ContextMenuControlEntry& e) {
+    ctrl->setOnActivate([this, menuPtr, entryActions, entryId, entryWorkingDir,
+                         entryTerminal](const ContextMenuControlEntry& e) {
       const std::int32_t id = e.id;
       auto menuHandles = menuPtr->handles;
       auto closingHandles = menuPtr->handles;
-      DeferredCall::callLater([this, id, entryActions, menuHandles = std::move(menuHandles),
+      DeferredCall::callLater([this, id, entryActions, entryId, entryWorkingDir, entryTerminal,
+                               menuHandles = std::move(menuHandles),
                                closingHandles = std::move(closingHandles)]() mutable {
         if (id <= kMenuWindowBaseId) {
           const auto idx = static_cast<std::size_t>(kMenuWindowBaseId - id);
@@ -1976,7 +1950,10 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
         } else if (id >= 0) {
           const auto idx = static_cast<std::size_t>(id);
           if (idx < entryActions.size()) {
-            launchAction(entryActions[idx]);
+            (void)desktop_entry_launch::launchAction(
+                entryActions[idx], entryId, entryWorkingDir, entryTerminal,
+                dockLaunchOptions(*m_platform, *m_config, nullptr)
+            );
           }
         } else if (id == kMenuCloseId && !closingHandles.empty()) {
           m_platform->closeToplevel(closingHandles[0]);
