@@ -1950,8 +1950,10 @@ namespace settings {
            .justify = FlexJustify::Center,
            .gap = Style::spaceSm * scale,
            .padding = (Style::spaceLg * 2.0f) * scale,
+           .minWidth = 360.0f * scale,
            .minHeight = 160.0f * scale,
            .fillWidth = true,
+           .flexGrow = 2.0f,
            .configure =
                [scale](Flex& flex) {
                  flex.setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.24f));
@@ -1968,7 +1970,12 @@ namespace settings {
           )
       );
 
-      content.addChild(std::move(emptyState));
+      content.addChild(
+          ui::row(
+              {.align = FlexAlign::Center, .fillWidth = true}, ui::box({.flexGrow = 0.5f}), std::move(emptyState),
+              ui::box({.flexGrow = 0.5f})
+          )
+      );
     }
 
     return visibleEntries;
