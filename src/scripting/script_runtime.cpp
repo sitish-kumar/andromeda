@@ -29,6 +29,12 @@ namespace scripting {
       if (src.glyph.has_value()) {
         dest.glyph = src.glyph;
       }
+      if (src.image.has_value()) {
+        dest.image = src.image;
+      }
+      if (src.tooltip.has_value()) {
+        dest.tooltip = src.tooltip;
+      }
       if (src.fontFamily.has_value()) {
         dest.fontFamily = src.fontFamily;
       }

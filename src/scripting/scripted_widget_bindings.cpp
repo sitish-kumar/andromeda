@@ -8,6 +8,7 @@
 #include <string>
 #include <string_view>
 #include <variant>
+#include <vector>
 
 namespace {
 
@@ -64,6 +65,91 @@ namespace {
           .path = std::string(path, len), .watch = watch, .width = width, .height = height
       };
       context->patch.glyph.reset();
+    }
+    return 0;
+  }
+
+  std::string tableOptionalStringField(lua_State* L, int tableIndex, const char* key) {
+    lua_getfield(L, tableIndex, key);
+    std::string out;
+    if (lua_isstring(L, -1)) {
+      size_t len = 0;
+      const char* value = lua_tolstring(L, -1, &len);
+      out.assign(value, len);
+    }
+    lua_pop(L, 1);
+    return out;
+  }
+
+  std::string tableOptionalStringIndex(lua_State* L, int tableIndex, int rawIndex) {
+    lua_rawgeti(L, tableIndex, rawIndex);
+    std::string out;
+    if (lua_isstring(L, -1)) {
+      size_t len = 0;
+      const char* value = lua_tolstring(L, -1, &len);
+      out.assign(value, len);
+    }
+    lua_pop(L, 1);
+    return out;
+  }
+
+  scripting::ScriptWidgetTooltipRowPatch tooltipRowFromLuaTable(lua_State* L, int rowIndex) {
+    scripting::ScriptWidgetTooltipRowPatch row;
+    row.key = tableOptionalStringField(L, rowIndex, "key");
+    row.value = tableOptionalStringField(L, rowIndex, "value");
+    if (row.key.empty()) {
+      row.key = tableOptionalStringIndex(L, rowIndex, 1);
+    }
+    if (row.value.empty()) {
+      row.value = tableOptionalStringIndex(L, rowIndex, 2);
+    }
+    return row;
+  }
+
+  int luau_setTooltip(lua_State* L) {
+    scripting::ScriptWidgetTooltipPatch patch;
+    if (lua_isnoneornil(L, 1)) {
+      patch.clear = true;
+    } else if (lua_isstring(L, 1)) {
+      size_t len = 0;
+      const char* text = lua_tolstring(L, 1, &len);
+      patch.text.assign(text, len);
+      patch.clear = patch.text.empty();
+    } else if (lua_istable(L, 1)) {
+      auto singleRow = tooltipRowFromLuaTable(L, 1);
+      if (!singleRow.key.empty() || !singleRow.value.empty()) {
+        patch.rows.push_back(std::move(singleRow));
+      } else {
+        const int rowCount = static_cast<int>(lua_objlen(L, 1));
+        patch.rows.reserve(static_cast<std::size_t>(std::max(0, rowCount)));
+        for (int i = 1; i <= rowCount; ++i) {
+          lua_rawgeti(L, 1, i);
+          if (lua_istable(L, -1)) {
+            auto row = tooltipRowFromLuaTable(L, lua_gettop(L));
+            if (!row.key.empty() || !row.value.empty()) {
+              patch.rows.push_back(std::move(row));
+            }
+          }
+          lua_pop(L, 1);
+        }
+      }
+      patch.clear = patch.rows.empty();
+    } else {
+      luaL_argerror(L, 1, "expected string, row table, or nil");
+      return 0;
+    }
+
+    if (auto* context = getContext(L)) {
+      context->patch.tooltip = std::move(patch);
+    }
+    return 0;
+  }
+
+  int luau_clearTooltip(lua_State* L) {
+    if (auto* context = getContext(L)) {
+      scripting::ScriptWidgetTooltipPatch patch;
+      patch.clear = true;
+      context->patch.tooltip = std::move(patch);
     }
     return 0;
   }
@@ -331,12 +417,20 @@ namespace {
   }
 
   const luaL_Reg kWidgetLib[] = {
-      {"setText", luau_setText},       {"setGlyph", luau_setGlyph},
-      {"setImage", luau_setImage},     {"setFont", luau_setFont},
-      {"setColor", luau_setColor},     {"setGlyphColor", luau_setGlyphColor},
-      {"isVertical", luau_isVertical}, {"setUpdateInterval", luau_setUpdateInterval},
-      {"setVisible", luau_setVisible}, {"getConfig", luau_getConfig},
-      {"define", luau_define},         {nullptr, nullptr},
+      {"setText", luau_setText},
+      {"setGlyph", luau_setGlyph},
+      {"setImage", luau_setImage},
+      {"setTooltip", luau_setTooltip},
+      {"clearTooltip", luau_clearTooltip},
+      {"setFont", luau_setFont},
+      {"setColor", luau_setColor},
+      {"setGlyphColor", luau_setGlyphColor},
+      {"isVertical", luau_isVertical},
+      {"setUpdateInterval", luau_setUpdateInterval},
+      {"setVisible", luau_setVisible},
+      {"getConfig", luau_getConfig},
+      {"define", luau_define},
+      {nullptr, nullptr},
   };
 
 } // namespace

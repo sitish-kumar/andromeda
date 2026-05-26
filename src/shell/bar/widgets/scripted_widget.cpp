@@ -27,6 +27,7 @@
 #include <optional>
 #include <sstream>
 #include <unordered_set>
+#include <vector>
 
 namespace {
   constexpr Logger kLog("scripted-widget");
@@ -371,6 +372,38 @@ void ScriptedWidget::luaSetImage(std::string_view path, bool watch, float width,
   m_dirty = true;
 }
 
+void ScriptedWidget::luaSetTooltip(const scripting::ScriptWidgetTooltipPatch& tooltip) {
+  if (m_area == nullptr) {
+    return;
+  }
+
+  if (tooltip.clear || (!tooltip.hasRows() && tooltip.text.empty())) {
+    m_area->clearTooltip();
+    if (m_area->hovered() && m_tooltipRefreshCallback) {
+      m_tooltipRefreshCallback(m_area);
+    }
+    return;
+  }
+
+  if (tooltip.hasRows()) {
+    std::vector<TooltipRow> rows;
+    rows.reserve(tooltip.rows.size());
+    for (const auto& row : tooltip.rows) {
+      rows.push_back({.key = row.key, .value = row.value});
+    }
+    m_area->setTooltip(std::move(rows));
+    if (m_area->hovered() && m_tooltipRefreshCallback) {
+      m_tooltipRefreshCallback(m_area);
+    }
+    return;
+  }
+
+  m_area->setTooltip(tooltip.text);
+  if (m_area->hovered() && m_tooltipRefreshCallback) {
+    m_tooltipRefreshCallback(m_area);
+  }
+}
+
 void ScriptedWidget::luaSetFont(std::string_view familyOrPath) {
   if (!m_label)
     return;
@@ -421,6 +454,10 @@ void ScriptedWidget::luaSetUpdateInterval(float ms) {
 
 void ScriptedWidget::setUpdateDeferralCallback(std::function<bool()> callback) {
   m_updateDeferralCallback = std::move(callback);
+}
+
+void ScriptedWidget::setTooltipRefreshCallback(std::function<void(InputArea*)> callback) {
+  m_tooltipRefreshCallback = std::move(callback);
 }
 
 void ScriptedWidget::luaSetVisible(bool visible) {
@@ -584,6 +621,9 @@ void ScriptedWidget::applyScriptPatch(const scripting::ScriptWidgetPatch& patch)
   }
   if (patch.image.has_value()) {
     luaSetImage(patch.image->path, patch.image->watch, patch.image->width, patch.image->height);
+  }
+  if (patch.tooltip.has_value()) {
+    luaSetTooltip(*patch.tooltip);
   }
   if (patch.textColor.has_value()) {
     luaSetColor(patch.textColor->role, patch.textColor->mode);

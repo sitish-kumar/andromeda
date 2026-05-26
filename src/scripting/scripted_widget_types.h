@@ -29,10 +29,28 @@ namespace scripting {
     bool operator==(const ScriptWidgetImagePatch&) const = default;
   };
 
+  struct ScriptWidgetTooltipRowPatch {
+    std::string key;
+    std::string value;
+
+    bool operator==(const ScriptWidgetTooltipRowPatch&) const = default;
+  };
+
+  struct ScriptWidgetTooltipPatch {
+    bool clear = false;
+    std::string text;
+    std::vector<ScriptWidgetTooltipRowPatch> rows;
+
+    [[nodiscard]] bool hasRows() const noexcept { return !rows.empty(); }
+
+    bool operator==(const ScriptWidgetTooltipPatch&) const = default;
+  };
+
   struct ScriptWidgetPatch {
     std::optional<std::string> text;
     std::optional<std::string> glyph;
     std::optional<ScriptWidgetImagePatch> image;
+    std::optional<ScriptWidgetTooltipPatch> tooltip;
     std::optional<std::string> fontFamily;
     std::optional<ScriptWidgetColorPatch> textColor;
     std::optional<ScriptWidgetColorPatch> glyphColor;
@@ -43,6 +61,7 @@ namespace scripting {
       return !text.has_value()
           && !glyph.has_value()
           && !image.has_value()
+          && !tooltip.has_value()
           && !fontFamily.has_value()
           && !textColor.has_value()
           && !glyphColor.has_value()

@@ -1558,6 +1558,9 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
           auto* panel = PanelManager::current();
           return panel != nullptr && panel->isPanelTransitionActive();
         });
+        scripted->setTooltipRefreshCallback([inst = &instance](InputArea* area) {
+          TooltipManager::instance().onHoverChange(area, inst->surface->layerSurface(), inst->output);
+        });
       }
       widget->setPanelToggleCallback([this, inst = &instance](
                                          std::string_view panelId, std::string_view context,
