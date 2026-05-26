@@ -10,7 +10,7 @@ struct wl_output;
 
 class ClockWidget : public Widget {
 public:
-  ClockWidget(wl_output* output, std::string format = "{:%H:%M}", std::string verticalFormat = "");
+  ClockWidget(wl_output* output, std::string format = "{:%H:%M}", std::string verticalFormat = "", std::string tooltip_format = "");
 
   void create() override;
 

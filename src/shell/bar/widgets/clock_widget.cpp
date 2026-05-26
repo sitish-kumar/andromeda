@@ -26,8 +26,9 @@ namespace {
   }
 } // namespace
 
-ClockWidget::ClockWidget(wl_output* /*output*/, std::string format, std::string verticalFormat)
-    : m_format(std::move(format)), m_verticalFormat(std::move(verticalFormat)) {}
+ClockWidget::ClockWidget(wl_output* /*output*/, std::string format, std::string verticalFormat, std::string tooltip_format)
+    : m_format(std::move(format)), m_verticalFormat(std::move(verticalFormat)),
+      m_tooltipFormat(std::move(tooltip_format)) {}
 
 std::string ClockWidget::formatTimeText() const {
   if (!m_isVertical) {
@@ -190,5 +191,17 @@ void ClockWidget::doUpdate(Renderer& renderer) {
     m_lastSecondaryText = std::move(secondaryText);
     m_secondaryLabel->setText(m_lastSecondaryText);
     m_secondaryLabel->measure(renderer);
+  }
+
+  if (auto* area = static_cast<InputArea*>(root()); area != nullptr) {
+    std::string tooltipText = formatTooltipText();
+
+    if (tooltipText.empty()) {
+      m_lastTooltipText.clear();
+      area->clearTooltip();
+    } else if (tooltipText != m_lastTooltipText) {
+      m_lastTooltipText = std::move(tooltipText);
+      area->setTooltip(m_lastTooltipText);
+    }
   }
 }
