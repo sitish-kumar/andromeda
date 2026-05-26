@@ -1678,17 +1678,19 @@ void TaskbarWidget::openTaskContextMenu(const TaskModel& task, InputArea& area) 
       const auto idx = static_cast<std::size_t>(entry.id);
       if (idx < entryActions.size()) {
         const auto action = entryActions[idx];
-        DeferredCall::callLater([this, action, appName = entryAppName, workingDir = entryWorkingDir,
-                                 terminal = entryTerminal]() {
+        auto& platform = m_platform;
+        auto& configService = m_configService;
+        DeferredCall::callLater([action, appName = entryAppName, workingDir = entryWorkingDir, terminal = entryTerminal,
+                                 &platform, &configService]() {
           std::string token;
-          if (m_platform.hasXdgActivation()) {
-            token = m_platform.requestActivationToken(nullptr);
+          if (platform.hasXdgActivation()) {
+            token = platform.requestActivationToken(nullptr);
           }
           (void)desktop_entry_launch::launchAction(
               action, appName, workingDir, terminal,
               desktop_entry_launch::LaunchOptions{
                   .activationToken = std::move(token),
-                  .runAsSystemdService = m_configService.config().shell.launchAppsAsSystemdServices,
+                  .runAsSystemdService = configService.config().shell.launchAppsAsSystemdServices,
               }
           );
         });
