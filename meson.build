@@ -456,6 +456,7 @@ _noctalia_sources = files(
   'src/shell/bar/bar.cpp',
   'src/shell/clipboard/clipboard_paste.cpp',
   'src/shell/dock/dock.cpp',
+  'src/shell/dock/dock_geometry.cpp',
   'src/shell/desktop/desktop_widget.cpp',
   'src/shell/desktop/desktop_widget_factory.cpp',
   'src/shell/desktop/desktop_widget_settings_registry.cpp',

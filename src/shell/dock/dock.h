@@ -127,11 +127,6 @@ private:
   [[nodiscard]] bool matchesActiveApp(const DockItemView& item, std::string_view activeAppIdLower) const;
   [[nodiscard]] bool matchesRunningApp(const DockItemView& item, const std::vector<std::string>& runningLower) const;
 
-  // Geometry helpers
-  [[nodiscard]] std::int32_t dockContentSize(std::size_t itemCount) const; // item row length (main axis)
-  [[nodiscard]] std::int32_t dockThickness() const; // cross-axis (includes icon, cell padding, dock padding)
-  [[nodiscard]] bool isVertical() const;
-
   // Generic popup for the item context menu.
   struct DockPopup {
     std::unique_ptr<PopupSurface> surface;

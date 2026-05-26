@@ -10,6 +10,7 @@
 #include "render/render_context.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
+#include "shell/dock/dock_geometry.h"
 #include "shell/panel/panel_manager.h"
 #include "shell/surface_shadow.h"
 #include "shell/tooltip/tooltip_manager.h"
@@ -44,32 +45,6 @@ namespace {
   constexpr float kDotSizeRatio = 0.09f;
   constexpr float kDotMinSize = 4.0f;
   constexpr float kDotGap = 3.0f;
-
-  // Thin strip (px) kept in the input region when auto-hide is in the hidden
-  // state, so the pointer can re-trigger show on approach to the screen edge.
-  constexpr std::int32_t kAutoHideTriggerPx = 2;
-  constexpr float kAutoHideSlideExtraPx = 16.0f;
-
-  // Slide the whole dock chrome (panel ± shadow) completely past the layer buffer edge, same
-  // idea as notification toasts driving `reveal` until the full card width has cleared the surface.
-  std::pair<float, float> computeAutoHideHiddenDelta(
-      bool vert, bool isBottom, bool isRight, float w, float h, float contentLeft, float contentTop, float contentRight,
-      float contentBottom
-  ) {
-    const float k = kAutoHideSlideExtraPx;
-    if (!vert) {
-      if (isBottom) {
-        // After slide: contentTop + dy >= h (+ slack) so nothing remains inside the buffer.
-        return {0.0f, (h - contentTop) + k};
-      }
-      // Top-anchored: move up until contentBottom + dy <= 0.
-      return {0.0f, -(contentBottom + k)};
-    }
-    if (isRight) {
-      return {(w - contentLeft) + k, 0.0f};
-    }
-    return {-(contentRight + k), 0.0f};
-  }
 
   std::string currentActiveEntryIdLower(const CompositorPlatform& platform) {
     if (const auto active = platform.activeToplevel(); active.has_value()) {
@@ -183,32 +158,8 @@ namespace {
     return signature;
   }
 
-  // Returns an anchor bitmask for the given position string.
-  std::uint32_t positionToAnchor(const std::string& pos) {
-    if (pos == "top")
-      return LayerShellAnchor::Top;
-    if (pos == "left")
-      return LayerShellAnchor::Left;
-    if (pos == "right")
-      return LayerShellAnchor::Right;
-    return LayerShellAnchor::Bottom; // default
-  }
-
-  std::size_t dockLauncherButtonCount(const DockConfig& cfg) {
-    return (cfg.launcherPosition == "start" || cfg.launcherPosition == "end") ? 1U : 0U;
-  }
-
   std::string_view dockLauncherIconGlyph(const DockConfig& cfg) {
     return cfg.launcherIcon.empty() ? "grid-dots" : std::string_view{cfg.launcherIcon};
-  }
-
-  Radii dockCornerRadii(const DockConfig& cfg) {
-    return Radii{
-        static_cast<float>(cfg.radiusTopLeft),
-        static_cast<float>(cfg.radiusTopRight),
-        static_cast<float>(cfg.radiusBottomRight),
-        static_cast<float>(cfg.radiusBottomLeft),
-    };
   }
 
   std::unique_ptr<Flex> makeDockItemRow(const DockConfig& cfg, bool vertical) {
@@ -522,29 +473,6 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
   return m_hoveredInstance != nullptr;
 }
 
-// ── Private: geometry helpers ─────────────────────────────────────────────────
-
-bool Dock::isVertical() const {
-  const auto& pos = m_config->config().dock.position;
-  return pos == "left" || pos == "right";
-}
-
-std::int32_t Dock::dockThickness() const {
-  const auto& cfg = m_config->config().dock;
-  constexpr std::int32_t kCellPad = 6;
-  return cfg.iconSize + kCellPad * 2 + cfg.padding * 2;
-}
-
-std::int32_t Dock::dockContentSize(std::size_t itemCount) const {
-  const auto& cfg = m_config->config().dock;
-  const auto n = static_cast<std::int32_t>(itemCount);
-  constexpr std::int32_t kCellPad = 6;
-  const std::int32_t cellSize = cfg.iconSize + kCellPad * 2;
-  if (n == 0)
-    return cellSize + cfg.padding * 2;
-  return n * cellSize + std::max(0, n - 1) * cfg.itemSpacing + cfg.padding * 2;
-}
-
 // ── Private: instance management ─────────────────────────────────────────────
 
 bool Dock::refreshPinnedAppsIfNeeded() {
@@ -603,7 +531,7 @@ void Dock::syncInstances() {
   const auto& outputs = m_platform->outputs();
   const auto& cfg = m_config->config().dock;
   const auto& selectedMonitors = cfg.monitors;
-  const bool hasStaticContent = !cfg.pinned.empty() || dockLauncherButtonCount(cfg) > 0;
+  const bool hasStaticContent = !cfg.pinned.empty() || shell::dock::dockLauncherButtonCount(cfg) > 0;
   // When activeMonitorOnly is off, the running-apps check is identical for every output, so hoist it.
   const bool anyRunningGlobal = (!hasStaticContent && cfg.showRunning && !cfg.activeMonitorOnly)
       ? !m_platform->runningAppIds(nullptr).empty()
@@ -665,67 +593,10 @@ void Dock::createInstance(const WaylandOutput& output) {
   instance->scale = output.scale;
   instance->activeAppIdLower = currentActiveEntryIdLower(*m_platform);
 
-  const bool vert = isVertical();
   const auto& shadowConfig = m_config->config().shell.shadow;
-  const auto sb = shell::surface_shadow::bleed(cfg.shadow, shadowConfig);
-  const bool hiddenOverlayMode = cfg.autoHide && !cfg.reserveSpace;
-  const auto panelW = dockContentSize(cfg.pinned.size() + dockLauncherButtonCount(cfg));
-  const auto panelH = dockThickness();
-  const auto anchor = positionToAnchor(cfg.position);
-  const bool isBottom = (cfg.position == "bottom");
-  const bool isRight = (cfg.position == "right");
-
-  // Surface dimensions incorporate shadow bleed + margin.
-  std::uint32_t surfW, surfH;
-  std::int32_t mL = 0, mR = 0, mT = 0, mB = 0;
-  std::int32_t exclusiveZone = 0;
-
-  if (!vert) {
-    // Horizontal dock (top / bottom): ends inset = left/right, edge gap = top/bottom.
-    surfW = static_cast<std::uint32_t>(panelW + sb.left + sb.right);
-    surfH = static_cast<std::uint32_t>(sb.up + panelH + std::min(cfg.marginEdge, sb.down));
-    if (isBottom) {
-      mB = std::max(0, cfg.marginEdge - sb.down);
-      surfH = static_cast<std::uint32_t>(sb.up + panelH + std::min(cfg.marginEdge, sb.down));
-      exclusiveZone = hiddenOverlayMode ? 0 : (panelH + std::min(cfg.marginEdge, sb.down));
-    } else {
-      mT = std::max(0, cfg.marginEdge - sb.up);
-      surfH = static_cast<std::uint32_t>(std::min(cfg.marginEdge, sb.up) + panelH + sb.down);
-      exclusiveZone = hiddenOverlayMode ? 0 : (std::min(cfg.marginEdge, sb.up) + panelH);
-    }
-    // marginEnds is applied symmetrically as compositor side margins.
-    mL = cfg.marginEnds;
-    mR = cfg.marginEnds;
-  } else {
-    // Vertical dock (left / right): ends inset = top/bottom, edge gap = left/right.
-    surfH = static_cast<std::uint32_t>(panelW + sb.up + sb.down);
-    if (isRight) {
-      mR = std::max(0, cfg.marginEdge - sb.right);
-      surfW = static_cast<std::uint32_t>(sb.left + panelH + std::min(cfg.marginEdge, sb.right));
-      exclusiveZone = hiddenOverlayMode ? 0 : (panelH + std::min(cfg.marginEdge, sb.right));
-    } else {
-      mL = std::max(0, cfg.marginEdge - sb.left);
-      surfW = static_cast<std::uint32_t>(std::min(cfg.marginEdge, sb.left) + panelH + sb.right);
-      exclusiveZone = hiddenOverlayMode ? 0 : (std::min(cfg.marginEdge, sb.left) + panelH);
-    }
-    mT = cfg.marginEnds;
-    mB = cfg.marginEnds;
-  }
-
-  LayerSurfaceConfig lsCfg{
-      .nameSpace = "noctalia-dock",
-      .layer = LayerShellLayer::Top,
-      .anchor = anchor,
-      .width = surfW,
-      .height = surfH,
-      .exclusiveZone = exclusiveZone,
-      .marginTop = mT,
-      .marginRight = mR,
-      .marginBottom = mB,
-      .marginLeft = mL,
-      .defaultWidth = surfW,
-      .defaultHeight = surfH,
-  };
+  LayerSurfaceConfig lsCfg = shell::dock::makeLayerSurfaceConfig(
+      cfg, shadowConfig, cfg.pinned.size() + shell::dock::dockLauncherButtonCount(cfg)
+  );
 
   instance->surface = std::make_unique<LayerSurface>(m_platform->wayland(), std::move(lsCfg));
   instance->surface->setRenderContext(m_renderContext);
@@ -881,7 +752,7 @@ void Dock::applyDockCompositorBlur(DockInstance& instance) {
   const int py = static_cast<int>(std::lround(absY));
   const int pw = static_cast<int>(std::lround(instance.panel->width()));
   const int ph = static_cast<int>(std::lround(instance.panel->height()));
-  const Radii radii = dockCornerRadii(cfg);
+  const Radii radii = shell::dock::dockCornerRadii(cfg);
   auto blurStrips = Surface::tessellateRoundedRect(px, py, pw, ph, radii.tl, radii.tr, radii.br, radii.bl);
   instance.surface->setBlurRegion(blurStrips);
 }
@@ -893,36 +764,14 @@ void Dock::buildScene(DockInstance& instance) {
   }
 
   const auto& cfg = m_config->config().dock;
-  const bool vert = isVertical();
+  const bool vert = shell::dock::isVerticalPosition(cfg.position);
 
   const float w = static_cast<float>(instance.surface->width());
   const float h = static_cast<float>(instance.surface->height());
 
   const auto& shadowConfig = m_config->config().shell.shadow;
-  const auto sb = shell::surface_shadow::bleed(cfg.shadow, shadowConfig);
-  const float bleedL = static_cast<float>(sb.left);
-  const float bleedR = static_cast<float>(sb.right);
-  const float bleedU = static_cast<float>(sb.up);
-  const float bleedD = static_cast<float>(sb.down);
-  const float mEdge = static_cast<float>(cfg.marginEdge);
-  const bool isBottom = (cfg.position == "bottom");
-  const bool isRight = (cfg.position == "right");
-
-  // Panel visual area within the surface.
-  float panelX, panelY, panelW, panelH;
-  if (!vert) {
-    panelX = bleedL;
-    panelY = isBottom ? bleedU : std::min(mEdge, bleedU);
-    panelW = w - bleedL - bleedR;
-    panelH = static_cast<float>(dockThickness());
-  } else {
-    panelX = isRight ? bleedL : std::min(mEdge, bleedL);
-    panelY = bleedU;
-    panelW = static_cast<float>(dockThickness());
-    panelH = h - bleedU - bleedD;
-  }
-
-  const Radii radii = dockCornerRadii(cfg);
+  const auto panelGeometry = shell::dock::computePanelGeometry(cfg, shadowConfig, w, h);
+  const Radii radii = shell::dock::dockCornerRadii(cfg);
 
   if (instance.sceneRoot == nullptr) {
     instance.sceneRoot = std::make_unique<Node>();
@@ -992,35 +841,22 @@ void Dock::buildScene(DockInstance& instance) {
     );
     instance.shadow->setStyle(shadowStyle);
     instance.shadow->setZIndex(-1);
-    instance.shadow->setPosition(panelX + shadowOffsetX, panelY + shadowOffsetY);
-    instance.shadow->setSize(panelW, panelH);
+    instance.shadow->setPosition(panelGeometry.panelX + shadowOffsetX, panelGeometry.panelY + shadowOffsetY);
+    instance.shadow->setSize(panelGeometry.panelW, panelGeometry.panelH);
   }
 
   // Panel
   applyPanelPalette(instance);
-  instance.panel->setPosition(panelX, panelY);
-  instance.panel->setSize(panelW, panelH);
+  instance.panel->setPosition(panelGeometry.panelX, panelGeometry.panelY);
+  instance.panel->setSize(panelGeometry.panelW, panelGeometry.panelH);
 
   // Row fills panel (padding already applied via Flex::setPadding).
   instance.row->setPosition(0.0f, 0.0f);
-  instance.row->setSize(panelW, panelH);
+  instance.row->setSize(panelGeometry.panelW, panelGeometry.panelH);
   instance.row->layout(*m_renderContext);
 
   if (cfg.autoHide) {
-    float contentLeft = panelX;
-    float contentTop = panelY;
-    float contentRight = panelX + panelW;
-    float contentBottom = panelY + panelH;
-    if (instance.shadow != nullptr) {
-      const float sx = panelX + static_cast<float>(shadowConfig.offsetX);
-      const float sy = panelY + static_cast<float>(shadowConfig.offsetY);
-      contentLeft = std::min(contentLeft, sx);
-      contentTop = std::min(contentTop, sy);
-      contentRight = std::max(contentRight, sx + panelW);
-      contentBottom = std::max(contentBottom, sy + panelH);
-    }
-    const auto hiddenDelta =
-        computeAutoHideHiddenDelta(vert, isBottom, isRight, w, h, contentLeft, contentTop, contentRight, contentBottom);
+    const auto hiddenDelta = shell::dock::computeHiddenSlideDelta(cfg, shadowConfig, w, h, panelGeometry);
     instance.slideHiddenDx = hiddenDelta.first;
     instance.slideHiddenDy = hiddenDelta.second;
   } else {
@@ -1030,27 +866,15 @@ void Dock::buildScene(DockInstance& instance) {
   syncDockSlideLayerTransform(instance);
 
   // Input region: trigger strip when hidden (autoHide), full panel otherwise.
-  if (cfg.autoHide && instance.hideOpacity < 0.5f) {
-    const int surfW = static_cast<int>(w);
-    const int surfH = static_cast<int>(h);
-    if (!vert) {
-      instance.surface->setInputRegion({InputRect{0, surfH - kAutoHideTriggerPx, surfW, kAutoHideTriggerPx}});
-    } else if (cfg.position == "left") {
-      instance.surface->setInputRegion({InputRect{surfW - kAutoHideTriggerPx, 0, kAutoHideTriggerPx, surfH}});
-    } else {
-      instance.surface->setInputRegion({InputRect{0, 0, kAutoHideTriggerPx, surfH}});
-    }
-  } else {
-    float absX = 0.0f;
-    float absY = 0.0f;
-    Node::absolutePosition(instance.panel, absX, absY);
-    instance.surface->setInputRegion({InputRect{
-        static_cast<int>(std::lround(absX)),
-        static_cast<int>(std::lround(absY)),
-        static_cast<int>(std::lround(instance.panel->width())),
-        static_cast<int>(std::lround(instance.panel->height())),
-    }});
+  const bool hiddenInputRegion = cfg.autoHide && instance.hideOpacity < 0.5f;
+  auto inputPanelGeometry = panelGeometry;
+  if (!hiddenInputRegion && instance.slideRoot != nullptr) {
+    inputPanelGeometry.panelX += instance.slideRoot->x();
+    inputPanelGeometry.panelY += instance.slideRoot->y();
   }
+  instance.surface->setInputRegion(shell::dock::computeInputRegion(
+      cfg, inputPanelGeometry, static_cast<int>(w), static_cast<int>(h), hiddenInputRegion
+  ));
 
   applyDockCompositorBlur(instance);
 
@@ -1081,7 +905,7 @@ void Dock::rebuildItems(DockInstance& instance) {
   }
 
   const auto& cfg = m_config->config().dock;
-  const bool vert = isVertical();
+  const bool vert = shell::dock::isVerticalPosition(cfg.position);
   const float iSize = static_cast<float>(cfg.iconSize);
 
   for (auto& item : instance.items) {
@@ -1221,7 +1045,7 @@ void Dock::rebuildItems(DockInstance& instance) {
 
     if (cfg.showDots) {
       const float dot = std::max(kDotMinSize, std::round(iSize * kDotSizeRatio));
-      const bool verticalDots = cfg.position == "left" || cfg.position == "right";
+      const bool verticalDots = shell::dock::isVerticalPosition(cfg.position);
 
       for (std::size_t dotIndex = 0; dotIndex < item.dotIndicators.size(); ++dotIndex) {
         item.dotIndicators[dotIndex] = static_cast<Box*>(areaNode->addChild(
@@ -1325,26 +1149,12 @@ void Dock::resizeSurface(DockInstance& instance) {
   }
 
   const auto& cfg = m_config->config().dock;
-  const bool vert = isVertical();
-  const auto sb = shell::surface_shadow::bleed(cfg.shadow, m_config->config().shell.shadow);
-  const auto panelW = dockContentSize(instance.items.size() + dockLauncherButtonCount(cfg));
-  const auto panelH = dockThickness();
-  const bool isBottom = (cfg.position == "bottom");
+  const auto surfaceGeometry = shell::dock::computeSurfaceGeometry(
+      cfg, m_config->config().shell.shadow, instance.items.size() + shell::dock::dockLauncherButtonCount(cfg)
+  );
 
-  std::uint32_t surfW, surfH;
-  if (!vert) {
-    surfW = static_cast<std::uint32_t>(panelW + sb.left + sb.right);
-    surfH = isBottom ? static_cast<std::uint32_t>(sb.up + panelH + std::min(cfg.marginEdge, sb.down))
-                     : static_cast<std::uint32_t>(std::min(cfg.marginEdge, sb.up) + panelH + sb.down);
-  } else {
-    const bool isRight = (cfg.position == "right");
-    surfW = isRight ? static_cast<std::uint32_t>(sb.left + panelH + std::min(cfg.marginEdge, sb.right))
-                    : static_cast<std::uint32_t>(std::min(cfg.marginEdge, sb.left) + panelH + sb.right);
-    surfH = static_cast<std::uint32_t>(panelW + sb.up + sb.down);
-  }
-
-  if (instance.surface->width() != surfW || instance.surface->height() != surfH) {
-    instance.surface->requestSize(surfW, surfH);
+  if (instance.surface->width() != surfaceGeometry.surfaceW || instance.surface->height() != surfaceGeometry.surfaceH) {
+    instance.surface->requestSize(surfaceGeometry.surfaceW, surfaceGeometry.surfaceH);
   }
 }
 
@@ -1414,7 +1224,7 @@ void Dock::updateVisuals(DockInstance& instance) {
       const float groupLength =
           dotCount == 0 ? dot : dot * static_cast<float>(dotCount) + kDotGap * static_cast<float>(dotCount - 1);
       const float groupStart = std::round((cellMain - groupLength) * 0.5f);
-      const bool verticalDots = cfg.position == "left" || cfg.position == "right";
+      const bool verticalDots = shell::dock::isVerticalPosition(cfg.position);
 
       for (std::size_t dotIndex = 0; dotIndex < item.dotIndicators.size(); ++dotIndex) {
         if (item.dotIndicators[dotIndex] == nullptr) {
@@ -1476,7 +1286,7 @@ bool Dock::matchesRunningApp(const DockItemView& item, const std::vector<std::st
 
 std::unique_ptr<InputArea> Dock::createLauncherButton(DockInstance& instance) {
   const auto& cfg = m_config->config().dock;
-  const bool vert = isVertical();
+  const bool vert = shell::dock::isVerticalPosition(cfg.position);
   const float iSize = static_cast<float>(cfg.iconSize);
   constexpr float kCellPad = 6.0f;
   const float cellMain = iSize + 2.0f * kCellPad;
@@ -1663,19 +1473,15 @@ void Dock::startHideFadeOut(DockInstance& inst) {
         if (inst.surface == nullptr)
           return;
         const auto& cfg = m_config->config().dock;
-        const bool vert = isVertical();
+        const bool vert = shell::dock::isVerticalPosition(cfg.position);
         const auto sb = shell::surface_shadow::bleed(cfg.shadow, m_config->config().shell.shadow);
-        const auto panelW = dockContentSize(inst.items.size());
-        const auto panelH = dockThickness();
+        const auto panelW = shell::dock::dockContentSize(cfg, inst.items.size());
+        const auto panelH = shell::dock::dockThickness(cfg);
         const auto surfW = static_cast<int>(vert ? (sb.left + panelH + sb.right) : (panelW + sb.left + sb.right));
         const auto surfH = static_cast<int>(vert ? (panelW + sb.up + sb.down) : (sb.up + panelH + cfg.marginEdge));
-        if (!vert) {
-          inst.surface->setInputRegion({InputRect{0, surfH - kAutoHideTriggerPx, surfW, kAutoHideTriggerPx}});
-        } else if (cfg.position == "left") {
-          inst.surface->setInputRegion({InputRect{surfW - kAutoHideTriggerPx, 0, kAutoHideTriggerPx, surfH}});
-        } else {
-          inst.surface->setInputRegion({InputRect{0, 0, kAutoHideTriggerPx, surfH}});
-        }
+        inst.surface->setInputRegion(
+            shell::dock::computeInputRegion(cfg, shell::dock::DockPanelGeometry{}, surfW, surfH, true)
+        );
       }
   );
   if (inst.surface)
@@ -1826,7 +1632,7 @@ void Dock::openItemMenu(DockInstance& instance, DockItemView& item) {
   }
 
   const auto sb = shell::surface_shadow::bleed(cfg.shadow, m_config->config().shell.shadow);
-  const std::int32_t panelThk = dockThickness();
+  const std::int32_t panelThk = shell::dock::dockThickness(cfg);
   const std::int32_t ptrX = static_cast<std::int32_t>(m_platform->lastPointerX());
   const std::int32_t ptrY = static_cast<std::int32_t>(m_platform->lastPointerY());
   const std::int32_t halfCell = cfg.iconSize / 2;
