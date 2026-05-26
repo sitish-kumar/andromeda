@@ -49,6 +49,8 @@ public:
   // Activate / deactivate a saved VPN connection profile.
   bool activateVpnConnection(const VpnConnectionInfo& vpn) override;
   bool deactivateVpnConnection(const VpnConnectionInfo& vpn) override;
+  [[nodiscard]] bool canActivateWiredConnection() const noexcept override;
+  bool activateWiredConnection() override;
 
   // Enable / disable the Wi-Fi radio.
   void setWirelessEnabled(bool enabled) override;
@@ -67,7 +69,9 @@ private:
   void refreshAccessPoints(std::function<void()> onComplete);
   void refreshSavedConnections(std::function<void()> onComplete);
   void refreshVpnConnections(std::function<void()> onComplete);
-  void finishSavedConnections(std::vector<std::string>& ssids, std::function<void()> onComplete);
+  void finishSavedConnections(
+      std::vector<std::string>& ssids, std::vector<std::string>& wiredConnectionPaths, std::function<void()> onComplete
+  );
   void finishRefreshAccessPoints(std::vector<AccessPointInfo>& aps, std::function<void()> onComplete);
   bool addAndActivateAccessPoint(const AccessPointInfo& ap, const std::optional<std::string>& psk);
   void watchPendingAccessPointActivation(
@@ -99,6 +103,7 @@ private:
   std::vector<AccessPointInfo> m_accessPoints;
   std::vector<VpnConnectionInfo> m_vpnConnections;
   std::vector<std::string> m_savedSsids;
+  std::vector<std::string> m_savedWiredConnectionPaths;
   std::unordered_map<std::string, std::unique_ptr<PendingAccessPointActivation>> m_pendingApActivations;
   std::shared_ptr<int> m_lifetimeToken;
   bool m_refreshInFlight = false;

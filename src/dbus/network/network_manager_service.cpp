@@ -35,6 +35,7 @@ namespace {
 
   using ConnectionSettings = std::map<std::string, std::map<std::string, sdbus::Variant>>;
   using VariantMap = std::map<std::string, sdbus::Variant>;
+  constexpr std::string_view kNmWiredConnectionType = "802-3-ethernet";
 
   // NMDeviceType values from NetworkManager D-Bus API.
   constexpr std::uint32_t kNmDeviceTypeWifi = 2;
@@ -76,12 +77,14 @@ namespace {
     std::vector<AccessPointInfo> capturedAps;
     std::vector<VpnConnectionInfo> capturedVpns;
     std::vector<std::string> capturedSaved;
+    std::vector<std::string> capturedWired;
     int pendingOps = 0;
     std::function<void()> onAllComplete;
   };
 
   struct SavedConnectionsState {
     std::vector<std::string> ssids;
+    std::vector<std::string> wiredConnectionPaths;
     int pending = 0;
   };
 
@@ -200,6 +203,7 @@ void NetworkManagerService::refresh() {
   pending->capturedAps = m_accessPoints;
   pending->capturedVpns = m_vpnConnections;
   pending->capturedSaved = m_savedSsids;
+  pending->capturedWired = m_savedWiredConnectionPaths;
   pending->pendingOps = 3;
 
   pending->onAllComplete = [this, pending, lifetimeToken]() {
@@ -213,6 +217,7 @@ void NetworkManagerService::refresh() {
       const bool apsChanged = pending->capturedAps != m_accessPoints;
       const bool vpnsChanged = pending->capturedVpns != m_vpnConnections;
       const bool savedChanged = pending->capturedSaved != m_savedSsids;
+      const bool wiredChanged = pending->capturedWired != m_savedWiredConnectionPaths;
       const bool stateChanged = next != m_state;
       const bool firstSnapshot = !m_hasStateSnapshot;
       const bool wirelessEnabledChanged = next.wirelessEnabled != m_state.wirelessEnabled;
@@ -221,7 +226,8 @@ void NetworkManagerService::refresh() {
           : NetworkChangeOrigin::External;
       m_state = std::move(next);
       m_hasStateSnapshot = true;
-      if ((firstSnapshot || stateChanged || apsChanged || vpnsChanged || savedChanged) && m_changeCallback) {
+      if ((firstSnapshot || stateChanged || apsChanged || vpnsChanged || savedChanged || wiredChanged)
+          && m_changeCallback) {
         m_changeCallback(m_state, origin);
       }
       // Break the self-reference cycle: pending->onAllComplete captures pending.
@@ -585,6 +591,41 @@ bool NetworkManagerService::deactivateVpnConnection(const VpnConnectionInfo& vpn
   return false;
 }
 
+bool NetworkManagerService::canActivateWiredConnection() const noexcept { return !m_savedWiredConnectionPaths.empty(); }
+
+bool NetworkManagerService::activateWiredConnection() {
+  if (m_state.kind == NetworkConnectivity::Wired && m_state.connected) {
+    return true;
+  }
+  if (m_savedWiredConnectionPaths.empty()) {
+    return false;
+  }
+
+  const std::string connectionPath = m_savedWiredConnectionPaths.front();
+  const std::weak_ptr<int> lifetimeToken = m_lifetimeToken;
+  try {
+    m_nm->callMethodAsync("ActivateConnection")
+        .onInterface(kNmInterface)
+        .withArguments(sdbus::ObjectPath{connectionPath}, sdbus::ObjectPath{"/"}, sdbus::ObjectPath{"/"})
+        .uponReplyInvoke([this, lifetimeToken,
+                          connectionPath](std::optional<sdbus::Error> err, sdbus::ObjectPath activePath) {
+          if (lifetimeToken.expired()) {
+            return;
+          }
+          if (err.has_value()) {
+            kLog.warn("ActivateConnection(wired) failed path={}: {}", connectionPath, err->what());
+          } else {
+            kLog.info("activating wired connection path={} active={}", connectionPath, std::string(activePath));
+          }
+          refresh();
+        });
+    return true;
+  } catch (const sdbus::Error& e) {
+    kLog.warn("ActivateConnection(wired) dispatch failed path={}: {}", connectionPath, e.what());
+    return false;
+  }
+}
+
 void NetworkManagerService::setWirelessEnabled(bool enabled) {
   if (enabled) {
     const RfkillSwitchResult rfkillResult = setRfkillSoftBlocked(RfkillDeviceType::Wlan, false);
@@ -610,6 +651,35 @@ void NetworkManagerService::setWirelessEnabled(bool enabled) {
 }
 
 void NetworkManagerService::disconnect() {
+  if (m_state.kind == NetworkConnectivity::Wired && !m_activeDevicePath.empty() && m_activeDevicePath != "/") {
+    // DeactivateConnection can be immediately undone by a wired profile's
+    // autoconnect policy. Device.Disconnect keeps the device down until the
+    // user manually activates it again.
+    const std::string devicePath = m_activeDevicePath;
+    const std::weak_ptr<int> lifetimeToken = m_lifetimeToken;
+    try {
+      auto device = std::shared_ptr<sdbus::IProxy>(
+          sdbus::createProxy(m_bus.connection(), kNmBusName, sdbus::ObjectPath{devicePath})
+      );
+      device->callMethodAsync("Disconnect")
+          .onInterface(kNmDeviceInterface)
+          .uponReplyInvoke([this, lifetimeToken, device, devicePath](std::optional<sdbus::Error> err) {
+            if (lifetimeToken.expired()) {
+              return;
+            }
+            if (err.has_value()) {
+              kLog.warn("Device.Disconnect failed path={}: {}", devicePath, err->what());
+            } else {
+              kLog.info("disconnected wired device path={}", devicePath);
+            }
+            refresh();
+          });
+      return;
+    } catch (const sdbus::Error& e) {
+      kLog.warn("Device.Disconnect dispatch failed path={}: {}", devicePath, e.what());
+    }
+  }
+
   if (m_activeConnectionPath.empty() || m_activeConnectionPath == "/") {
     return;
   }
@@ -617,16 +687,21 @@ void NetworkManagerService::disconnect() {
   // and a sync call would freeze the main loop while the polkit agent prompts
   // (or while polkit waits for an agent to register). Fire-and-forget here.
   const std::string activePath = m_activeConnectionPath;
+  const std::weak_ptr<int> lifetimeToken = m_lifetimeToken;
   try {
     m_nm->callMethodAsync("DeactivateConnection")
         .onInterface(kNmInterface)
         .withArguments(sdbus::ObjectPath{activePath})
-        .uponReplyInvoke([activePath](std::optional<sdbus::Error> err) {
+        .uponReplyInvoke([this, lifetimeToken, activePath](std::optional<sdbus::Error> err) {
+          if (lifetimeToken.expired()) {
+            return;
+          }
           if (err.has_value()) {
             kLog.warn("DeactivateConnection failed path={}: {}", activePath, err->what());
           } else {
             kLog.info("deactivated connection path={}", activePath);
           }
+          refresh();
         });
   } catch (const sdbus::Error& e) {
     kLog.warn("DeactivateConnection dispatch failed: {}", e.what());
@@ -806,6 +881,7 @@ void NetworkManagerService::refreshSavedConnections(std::function<void()> onComp
 
           if (connectionPaths.empty()) {
             m_savedSsids.clear();
+            m_savedWiredConnectionPaths.clear();
             onComplete();
             return;
           }
@@ -823,13 +899,13 @@ void NetworkManagerService::refreshSavedConnections(std::function<void()> onComp
                   getPropertyOr<std::string>(*connection, kNmSettingsConnectionInterface, "Filename", {});
               if ((flags & kNmSettingsConnectionFlagUnsaved) != 0U && filename.empty()) {
                 if (--savedState->pending == 0) {
-                  finishSavedConnections(savedState->ssids, onComplete);
+                  finishSavedConnections(savedState->ssids, savedState->wiredConnectionPaths, onComplete);
                 }
                 continue;
               }
               connection->callMethodAsync("GetSettings")
                   .onInterface(kNmSettingsConnectionInterface)
-                  .uponReplyInvoke([this, lifetimeToken, connection, savedState, onComplete](
+                  .uponReplyInvoke([this, lifetimeToken, connection, savedState, connectionPath, onComplete](
                                        std::optional<sdbus::Error> settingsErr,
                                        std::map<std::string, std::map<std::string, sdbus::Variant>> cfg
                                    ) {
@@ -837,6 +913,20 @@ void NetworkManagerService::refreshSavedConnections(std::function<void()> onComp
                       return;
                     }
                     if (!settingsErr.has_value()) {
+                      auto connIt = cfg.find("connection");
+                      if (connIt != cfg.end()) {
+                        auto typeIt = connIt->second.find("type");
+                        if (typeIt != connIt->second.end()) {
+                          try {
+                            const auto type = typeIt->second.get<std::string>();
+                            if (type == kNmWiredConnectionType) {
+                              savedState->wiredConnectionPaths.push_back(std::string(connectionPath));
+                            }
+                          } catch (const sdbus::Error&) {
+                          }
+                        }
+                      }
+
                       auto wifiIt = cfg.find("802-11-wireless");
                       if (wifiIt != cfg.end()) {
                         auto ssidIt = wifiIt->second.find("ssid");
@@ -853,12 +943,12 @@ void NetworkManagerService::refreshSavedConnections(std::function<void()> onComp
                       }
                     }
                     if (--savedState->pending == 0) {
-                      finishSavedConnections(savedState->ssids, onComplete);
+                      finishSavedConnections(savedState->ssids, savedState->wiredConnectionPaths, onComplete);
                     }
                   });
             } catch (const sdbus::Error&) {
               if (--savedState->pending == 0) {
-                finishSavedConnections(savedState->ssids, onComplete);
+                finishSavedConnections(savedState->ssids, savedState->wiredConnectionPaths, onComplete);
               }
             }
           }
@@ -1282,10 +1372,18 @@ void NetworkManagerService::refreshAccessPoints(std::function<void()> onComplete
   }
 }
 
-void NetworkManagerService::finishSavedConnections(std::vector<std::string>& ssids, std::function<void()> onComplete) {
+void NetworkManagerService::finishSavedConnections(
+    std::vector<std::string>& ssids, std::vector<std::string>& wiredConnectionPaths, std::function<void()> onComplete
+) {
   std::ranges::sort(ssids);
   ssids.erase(std::unique(ssids.begin(), ssids.end()), ssids.end());
   m_savedSsids = std::move(ssids);
+
+  std::ranges::sort(wiredConnectionPaths);
+  wiredConnectionPaths.erase(
+      std::unique(wiredConnectionPaths.begin(), wiredConnectionPaths.end()), wiredConnectionPaths.end()
+  );
+  m_savedWiredConnectionPaths = std::move(wiredConnectionPaths);
   onComplete();
 }
 

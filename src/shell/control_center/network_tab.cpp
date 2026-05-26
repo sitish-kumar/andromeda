@@ -381,8 +381,13 @@ std::unique_ptr<Flex> NetworkTab::create() {
           .padding = Style::spaceXs * scale,
           .radius = Style::scaledRadiusSm(scale),
           .onClick = [this]() {
-            if (m_network != nullptr) {
+            if (m_network == nullptr) {
+              return;
+            }
+            if (m_network->state().connected) {
               m_network->disconnect();
+            } else {
+              m_network->activateWiredConnection();
             }
             PanelManager::instance().refresh();
           },
@@ -636,7 +641,10 @@ void NetworkTab::syncCurrentCard() {
   m_currentTitle->setText(currentTitle(s));
   m_currentDetail->setText(currentDetail(s));
   if (m_disconnectButton != nullptr) {
-    m_disconnectButton->setVisible(s.connected);
+    const bool canReconnectWired = !s.connected && m_network->canActivateWiredConnection();
+    m_disconnectButton->setVisible(s.connected || canReconnectWired);
+    m_disconnectButton->setGlyph(s.connected ? "plug-off" : "plug");
+    m_disconnectButton->setVariant(s.connected ? ButtonVariant::Destructive : ButtonVariant::Default);
   }
   if (m_wifiToggle != nullptr) {
     m_wifiToggle->setChecked(s.wirelessEnabled);
