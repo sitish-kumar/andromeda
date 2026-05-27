@@ -1496,7 +1496,7 @@
           "label": "Type",
           "description": "Built-in widget type for this named widget"
         },
-        "tooltipFormat" : {
+        "tooltip_format" : {
           "label": "Tooltip Format",
           "description": "Optional format for the tooltip"
         },
