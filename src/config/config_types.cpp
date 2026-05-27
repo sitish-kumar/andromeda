@@ -132,9 +132,9 @@ float panelCardOpacityForTransparencyMode(PanelTransparencyMode mode, float pane
   case PanelTransparencyMode::Solid:
     return 1.0f;
   case PanelTransparencyMode::Soft:
-    return std::clamp(backgroundOpacity + 0.10f, 0.78f, 0.88f);
+    return std::clamp(backgroundOpacity + 0.08f, 0.82f, 0.92f);
   case PanelTransparencyMode::Glass:
-    return std::clamp(backgroundOpacity + 0.02f, 0.58f, 0.70f);
+    return std::clamp(backgroundOpacity + 0.10f, 0.62f, 0.75f);
   }
   return 1.0f;
 }
@@ -144,9 +144,9 @@ float detachedPanelBackgroundOpacityForTransparencyMode(PanelTransparencyMode mo
   case PanelTransparencyMode::Solid:
     return 1.0f;
   case PanelTransparencyMode::Soft:
-    return 0.90f;
+    return 0.80f;
   case PanelTransparencyMode::Glass:
-    return 0.72f;
+    return 0.55f;
   }
   return 1.0f;
 }
