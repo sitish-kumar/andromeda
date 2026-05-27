@@ -2,6 +2,7 @@
 
 #include "config/config_types.h"
 #include "render/animation/animation_manager.h"
+#include "shell/dock/dock_model.h"
 #include "system/desktop_entry.h"
 #include "system/desktop_entry_launch.h"
 
@@ -84,7 +85,10 @@ namespace shell::dock {
 
   [[nodiscard]] std::string_view dockLauncherIconGlyph(const DockConfig& cfg);
   [[nodiscard]] std::unique_ptr<Flex> makeDockItemRow(const DockConfig& cfg, bool vertical);
-  void rebuildItems(DockInstance& instance, DockItemSceneDependencies deps, const DockItemCallbacks& callbacks);
-  void updateVisuals(DockInstance& instance, DockItemSceneDependencies deps);
+  void rebuildItems(
+      DockInstance& instance, DockItemSceneDependencies deps, const DockSnapshot& snapshot,
+      const DockItemCallbacks& callbacks
+  );
+  void updateVisuals(DockInstance& instance, DockItemSceneDependencies deps, const DockSnapshot& snapshot);
 
 } // namespace shell::dock

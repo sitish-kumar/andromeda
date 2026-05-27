@@ -523,16 +523,36 @@ bool Dock::syncInstanceModel(shell::dock::DockInstance& instance) {
     return false;
   }
 
-  return shell::dock::syncInstanceModel(
-      instance,
+  auto next = shell::dock::buildDockSnapshot(
       {
           .platform = *m_platform,
-          .config = *m_config,
+          .config = m_config->config().dock,
+          .output = instance.output,
           .lastActiveHandleByAppIdLower = m_lastActiveHandleByAppIdLower,
           .pinnedEntries = m_pinnedEntries,
-          .modelSerial = m_modelSerial,
+          .sourceSerial = m_modelSerial,
       }
   );
+
+  const bool filterOutputChanged = next.filterOutput != instance.lastFilterOutput;
+  const bool needRebuild = instance.modelSerial != m_modelSerial || filterOutputChanged
+      || !shell::dock::sameDockItemSet(instance.snapshot, next);
+  instance.snapshot = std::move(next);
+
+  instance.lastFilterOutput = instance.snapshot.filterOutput;
+  instance.activeAppIdLower = instance.snapshot.activeAppIdLower;
+  for (auto& item : instance.items) {
+    for (const auto& model : instance.snapshot.items) {
+      if (item.idLower == model.idLower && item.startupWmClassLower == model.startupWmClassLower) {
+        item.running = model.running;
+        item.active = model.active;
+        item.instanceCount = model.instanceCount;
+        break;
+      }
+    }
+  }
+
+  return needRebuild;
 }
 
 // ── Private: item population ──────────────────────────────────────────────────
@@ -557,6 +577,7 @@ void Dock::rebuildItems(shell::dock::DockInstance& instance) {
           .renderContext = *m_renderContext,
           .iconResolver = m_iconResolver,
       },
+      instance.snapshot,
       {
           .pruneCachedToplevelHandles = [this]() { pruneCachedToplevelHandles(); },
           .launchOptions = [this](
@@ -590,7 +611,8 @@ void Dock::updateVisuals(shell::dock::DockInstance& instance) {
               },
           .renderContext = *m_renderContext,
           .iconResolver = m_iconResolver,
-      }
+      },
+      instance.snapshot
   );
 }
 

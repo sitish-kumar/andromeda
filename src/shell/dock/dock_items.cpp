@@ -288,7 +288,11 @@ namespace shell::dock {
     return areaNode;
   }
 
-  void rebuildItems(DockInstance& instance, DockItemSceneDependencies deps, const DockItemCallbacks& callbacks) {
+  void rebuildItems(
+      DockInstance& instance, DockItemSceneDependencies deps, const DockSnapshot& snapshot,
+      const DockItemCallbacks& callbacks
+  ) {
+    (void)snapshot;
     uiAssertNotRendering("shell::dock::rebuildItems");
     if (instance.row == nullptr) {
       return;
@@ -533,7 +537,8 @@ namespace shell::dock {
     shell::dock::resizeSurface(instance, cfg, deps.model.config.config().shell.shadow);
   }
 
-  void updateVisuals(DockInstance& instance, DockItemSceneDependencies deps) {
+  void updateVisuals(DockInstance& instance, DockItemSceneDependencies deps, const DockSnapshot& snapshot) {
+    (void)snapshot;
     const auto& cfg = deps.model.config.config().dock;
 
     for (auto& item : instance.items) {
