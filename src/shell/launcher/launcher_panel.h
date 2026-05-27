@@ -38,7 +38,7 @@ public:
   void onIconThemeChanged() override;
 
   [[nodiscard]] float preferredWidth() const override { return scaled(560.0f); }
-  [[nodiscard]] float preferredHeight() const override { return scaled(460.0f); }
+  [[nodiscard]] float preferredHeight() const override { return scaled(500.0f); }
   [[nodiscard]] LayerShellLayer layer() const override { return LayerShellLayer::Overlay; }
   [[nodiscard]] LayerShellKeyboard keyboardMode() const override { return LayerShellKeyboard::Exclusive; }
   [[nodiscard]] InputArea* initialFocusArea() const override;
