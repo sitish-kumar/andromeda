@@ -662,6 +662,7 @@ void Input::handleKey(std::uint32_t sym, std::uint32_t utf32, std::uint32_t modi
     return;
   }
   if (clearShortcut) {
+    resetUndoCoalescing();
     if (!m_value.empty() || hasSelection()) {
       pushUndoSnapshot(EditCoalesceKind::Discrete);
       m_value.clear();
