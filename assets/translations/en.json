@@ -1513,6 +1513,10 @@
           "label": "Type",
           "description": "Built-in widget type for this named widget"
         },
+        "tooltip_format" : {
+          "label": "Tooltip Format",
+          "description": "Optional format for the tooltip"
+        },
         "vertical_format": {
           "label": "Vertical Format",
           "description": "Optional format used on vertical bars"
