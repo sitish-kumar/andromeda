@@ -276,6 +276,10 @@ void AsyncTextureCache::dispatch(const std::vector<pollfd>& fds, std::size_t sta
     touchEntry(entryIt->second);
     notifyReady(job.key, entryIt->second.handle);
   }
+
+  if (madeCurrent) {
+    m_textureManager->flush();
+  }
 }
 
 void AsyncTextureCache::trimUnused(std::size_t maxUnusedEntries) { pruneUnusedEntries(maxUnusedEntries); }

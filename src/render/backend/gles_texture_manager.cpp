@@ -258,6 +258,8 @@ void GlesTextureManager::cleanup() {
   }
 }
 
+void GlesTextureManager::flush() { glFlush(); }
+
 void GlesTextureManager::probeExtensions() {
   const char* ext = reinterpret_cast<const char*>(glGetString(GL_EXTENSIONS));
   if (ext != nullptr && std::strstr(ext, "GL_EXT_texture_format_BGRA8888") != nullptr) {
