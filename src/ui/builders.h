@@ -82,6 +82,7 @@ namespace ui {
     std::optional<float> minLayoutWidth = std::nullopt;
     std::optional<TextAlign> textAlign = std::nullopt;
     std::optional<bool> enabled = std::nullopt;
+    std::optional<float> surfaceOpacity = std::nullopt;
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
@@ -106,6 +107,7 @@ namespace ui {
     std::optional<ButtonContentAlign> contentAlign = std::nullopt;
     std::optional<ButtonVariant> variant = std::nullopt;
     std::optional<Button::ButtonPalette> customPalette = std::nullopt;
+    std::optional<float> surfaceOpacity = std::nullopt;
     std::optional<std::string> badge = std::nullopt;
     std::optional<float> badgeFontSize = std::nullopt;
     std::optional<std::string> tooltip = std::nullopt;
@@ -282,6 +284,7 @@ namespace ui {
     std::optional<float> scale = std::nullopt;
     std::optional<bool> compact = std::nullopt;
     std::optional<bool> enabled = std::nullopt;
+    std::optional<float> surfaceOpacity = std::nullopt;
     std::optional<bool> equalSegmentWidths = std::nullopt;
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;

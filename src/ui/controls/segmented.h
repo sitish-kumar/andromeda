@@ -31,6 +31,7 @@ public:
   void clearOptions();
 
   void setEnabled(bool enabled);
+  void setSurfaceOpacity(float opacity);
   [[nodiscard]] bool enabled() const noexcept { return m_enabled; }
 
   // When true, each segment gets flexGrow 1 so the group fills the available width (e.g. full bar).
@@ -53,5 +54,6 @@ private:
   float m_scale = 1.0f;
   bool m_equalSegmentWidths = false;
   bool m_compact = false;
+  float m_surfaceOpacity = 1.0f;
   bool m_enabled = true;
 };

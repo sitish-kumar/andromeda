@@ -11,7 +11,6 @@
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
 #include "shell/control_center/tab.h"
-#include "shell/panel/panel_button_style.h"
 #include "shell/panel/panel_manager.h"
 #include "time/time_format.h"
 #include "ui/builders.h"
@@ -131,15 +130,15 @@ namespace {
   }
 
   std::unique_ptr<Button> makeCompactIconButton(
-      Button** out, std::string glyph, ButtonVariant variant, float scale, std::function<void()> onClick,
-      bool visible = true, bool participatesInLayout = true
+      Button** out, std::string glyph, ButtonVariant variant, float scale, float surfaceOpacity,
+      std::function<void()> onClick, bool visible = true, bool participatesInLayout = true
   ) {
     return ui::button({
         .out = out,
         .glyph = std::move(glyph),
         .glyphSize = Style::fontSizeBody * scale,
         .variant = variant,
-        // Compact entry action style.
+        .surfaceOpacity = surfaceOpacity,
         .minWidth = Style::controlHeightSm * scale,
         .minHeight = Style::controlHeightSm * scale,
         .padding = Style::spaceXs * scale,
@@ -558,9 +557,10 @@ void ClipboardPanel::create() {
           .color = colorSpecFromRole(ColorRole::Primary),
           .fontWeight = FontWeight::Bold,
       }),
-      makeCompactIconButton(&m_clearHistoryButton, "trash", ButtonVariant::Destructive, scale, [this]() {
-        requestClearUnpinnedHistory();
-      })
+      makeCompactIconButton(
+          &m_clearHistoryButton, "trash", ButtonVariant::Destructive, scale, panelCardOpacity(),
+          [this]() { requestClearUnpinnedHistory(); }
+      )
   );
   sidebar->addChild(std::move(sidebarHeader));
 
@@ -611,6 +611,7 @@ void ClipboardPanel::create() {
           .controlHeight = Style::controlHeight * scale,
           .horizontalPadding = Style::spaceMd * scale,
           .clearButtonEnabled = true,
+          .surfaceOpacity = panelCardOpacity(),
           .onChange = [this](const std::string& text) { onFilterChanged(text); },
           .onSubmit = [this](const std::string& /*text*/) { activateSelected(); },
           .onKeyEvent = [this](std::uint32_t sym, std::uint32_t modifiers) { return handleKeyEvent(sym, modifiers); },
@@ -664,28 +665,22 @@ void ClipboardPanel::create() {
 
   auto previewActions = ui::row(
       {.align = FlexAlign::Center, .gap = Style::spaceSm * scale},
-      makeCompactIconButton(&m_copyButton, "copy", ButtonVariant::Default, scale, [this]() { activateSelected(); }),
       makeCompactIconButton(
-          &m_imageActionButton, "photo-edit", ButtonVariant::Default, scale, [this]() { runImageAction(); }, false,
-          false
+          &m_copyButton, "copy", ButtonVariant::Default, scale, panelCardOpacity(), [this]() { activateSelected(); }
       ),
-      makeCompactIconButton(&m_pinButton, "pin", ButtonVariant::Default, scale, [this]() { togglePinSelected(); }),
       makeCompactIconButton(
-          &m_deleteEntryButton, "trash", ButtonVariant::Destructive, scale, [this]() { requestDeleteSelectedEntry(); }
+          &m_imageActionButton, "photo-edit", ButtonVariant::Default, scale, panelCardOpacity(),
+          [this]() { runImageAction(); }, false, false
       ),
-      ui::button({
-          .out = &m_closeButton,
-          .glyph = "close",
-          .glyphSize = Style::fontSizeBody * scale,
-          .minWidth = Style::controlHeightSm * scale,
-          .minHeight = Style::controlHeightSm * scale,
-          .padding = Style::spaceXs * scale,
-          .radius = Style::scaledRadiusMd(scale),
-          .onClick = []() { PanelManager::instance().close(); },
-          // Preview header icon style.
-          .configure = [scale, opacity = panelCardOpacity()](
-                           Button& button
-                       ) { panel_button_style::applyHeaderButtonStyle(button, opacity); },
+      makeCompactIconButton(
+          &m_pinButton, "pin", ButtonVariant::Default, scale, panelCardOpacity(), [this]() { togglePinSelected(); }
+      ),
+      makeCompactIconButton(
+          &m_deleteEntryButton, "trash", ButtonVariant::Destructive, scale, panelCardOpacity(),
+          [this]() { requestDeleteSelectedEntry(); }
+      ),
+      makeCompactIconButton(&m_closeButton, "close", ButtonVariant::Default, scale, panelCardOpacity(), []() {
+        PanelManager::instance().close();
       })
   );
 
@@ -962,11 +957,17 @@ InputArea* ClipboardPanel::initialFocusArea() const {
 }
 
 void ClipboardPanel::onPanelCardOpacityChanged(float opacity) {
-  if (m_closeButton != nullptr) {
-    panel_button_style::applyHeaderButtonStyle(*m_closeButton, opacity);
+  for (Button* btn :
+       {m_closeButton, m_copyButton, m_imageActionButton, m_pinButton, m_deleteEntryButton, m_clearHistoryButton}) {
+    if (btn != nullptr) {
+      btn->setSurfaceOpacity(opacity);
+    }
   }
   if (m_previewScrollView != nullptr) {
     m_previewScrollView->setCardStyle(contentScale(), opacity, panelBordersEnabled());
+  }
+  if (m_filterInput != nullptr) {
+    m_filterInput->setSurfaceOpacity(opacity);
   }
 }
 

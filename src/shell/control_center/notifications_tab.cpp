@@ -658,6 +658,7 @@ std::unique_ptr<Flex> NotificationsTab::create() {
           .selectedIndex = m_filterIndex,
           .fontSize = Style::fontSizeCaption * scale,
           .scale = scale,
+          .surfaceOpacity = panelCardOpacity(),
           .equalSegmentWidths = true,
           .onChange = [this](std::size_t idx) {
             m_filterIndex = idx;
@@ -912,4 +913,10 @@ std::optional<std::size_t> NotificationsTab::filteredIndexForId(uint32_t id) con
     }
   }
   return std::nullopt;
+}
+
+void NotificationsTab::onPanelCardOpacityChanged(float opacity) {
+  if (m_filter != nullptr) {
+    m_filter->setSurfaceOpacity(opacity);
+  }
 }

@@ -28,6 +28,7 @@ public:
   [[nodiscard]] InputArea* initialFocusArea() const override;
 
 private:
+  void onPanelCardOpacityChanged(float opacity) override;
   void doLayout(Renderer& renderer, float width, float height) override;
   void doUpdate(Renderer& renderer) override;
   void submit();

@@ -314,6 +314,7 @@ std::unique_ptr<Flex> BluetoothTab::create() {
       ui::input({
           .out = &m_pairingInput,
           .placeholder = i18n::tr("control-center.bluetooth.enter-code"),
+          .surfaceOpacity = panelCardOpacity(),
           .flexGrow = 1.0f,
           .onSubmit = [this](const std::string& value) {
             if (m_agent == nullptr) {
@@ -817,4 +818,10 @@ void BluetoothTab::rebuildDeviceList(Renderer& renderer) {
     rowPtr->startConnectingSpinner();
   }
   m_list->layout(renderer);
+}
+
+void BluetoothTab::onPanelCardOpacityChanged(float opacity) {
+  if (m_pairingInput != nullptr) {
+    m_pairingInput->setSurfaceOpacity(opacity);
+  }
 }

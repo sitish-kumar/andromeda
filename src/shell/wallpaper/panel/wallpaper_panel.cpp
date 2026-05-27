@@ -8,7 +8,6 @@
 #include "render/core/renderer.h"
 #include "render/core/thumbnail_service.h"
 #include "render/scene/input_area.h"
-#include "shell/panel/panel_button_style.h"
 #include "shell/panel/panel_manager.h"
 #include "shell/wallpaper/panel/wallpaper_tile.h"
 #include "ui/builders.h"
@@ -196,15 +195,12 @@ void WallpaperPanel::create() {
               .out = &m_closeButton,
               .glyph = "close",
               .glyphSize = Style::fontSizeBody * scale,
+              .surfaceOpacity = panelCardOpacity(),
               .minWidth = Style::controlHeightSm * scale,
               .minHeight = Style::controlHeightSm * scale,
               .padding = Style::spaceXs * scale,
               .radius = Style::scaledRadiusMd(scale),
               .onClick = []() { PanelManager::instance().close(); },
-              // Header icon button style: compact metrics with a panel-card-aware palette.
-              .configure = [scale, opacity = panelCardOpacity()](
-                               Button& button
-                           ) { panel_button_style::applyHeaderButtonStyle(button, opacity); },
           })
       )
   );
@@ -226,6 +222,7 @@ void WallpaperPanel::create() {
           .fontSize = Style::fontSizeBody * scale,
           .controlHeight = Style::controlHeight * scale,
           .horizontalPadding = Style::spaceMd * scale,
+          .surfaceOpacity = panelCardOpacity(),
           .width = 360.0f * scale,
           .height = 0.0f,
           .onChange =
@@ -448,7 +445,10 @@ void WallpaperPanel::doUpdate(Renderer& renderer) {
 
 void WallpaperPanel::onPanelCardOpacityChanged(float opacity) {
   if (m_closeButton != nullptr) {
-    panel_button_style::applyHeaderButtonStyle(*m_closeButton, opacity);
+    m_closeButton->setSurfaceOpacity(opacity);
+  }
+  if (m_filterInput != nullptr) {
+    m_filterInput->setSurfaceOpacity(opacity);
   }
 }
 

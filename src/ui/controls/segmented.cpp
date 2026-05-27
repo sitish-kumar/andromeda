@@ -116,6 +116,15 @@ void Segmented::clearOptions() {
 
 void Segmented::setOnChange(std::function<void(std::size_t)> callback) { m_onChange = std::move(callback); }
 
+void Segmented::setSurfaceOpacity(float opacity) {
+  const float clamped = std::clamp(opacity, 0.0f, 1.0f);
+  if (m_surfaceOpacity == clamped) {
+    return;
+  }
+  m_surfaceOpacity = clamped;
+  applyOuterStyle();
+}
+
 void Segmented::setEnabled(bool enabled) {
   if (m_enabled == enabled) {
     return;
@@ -205,7 +214,7 @@ void Segmented::refreshVariants() {
 
 void Segmented::applyOuterStyle() {
   setPadding(0.0f);
-  setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
+  setFill(colorSpecFromRole(ColorRole::SurfaceVariant, m_surfaceOpacity));
   clearBorder();
   setRadius(Style::scaledRadiusMd(m_scale));
 }

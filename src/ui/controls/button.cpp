@@ -393,8 +393,21 @@ void Button::setCustomPalette(ButtonPalette customPalette) {
   applyVariant();
 }
 
+void Button::setSurfaceOpacity(float opacity) {
+  const float clamped = std::clamp(opacity, 0.0f, 1.0f);
+  if (m_surfaceOpacity == clamped) {
+    return;
+  }
+  m_surfaceOpacity = clamped;
+  applyVariant();
+}
+
 void Button::applyVariant() {
   m_palette = m_customPalette.value_or(paletteForVariant(m_variant));
+  if (m_surfaceOpacity < 1.0f) {
+    m_palette.normal.bg.alpha *= m_surfaceOpacity;
+    m_palette.disabled.bg.alpha *= m_surfaceOpacity;
+  }
   setBorder(m_palette.normal.border, m_palette.borderWidth);
 
   // Only seed targets before the first visual state application. Once the

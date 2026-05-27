@@ -46,6 +46,7 @@ public:
   [[nodiscard]] bool wantsCloseAnimation() const noexcept override { return false; }
 
 private:
+  void onPanelCardOpacityChanged(float opacity) override;
   void doLayout(Renderer& renderer, float width, float height) override;
   void onInputChanged(const std::string& text);
   void refreshResults();

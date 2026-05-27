@@ -44,6 +44,7 @@ void TestPanel::create() {
       .options = std::vector<ui::SegmentedOption>{{.label = "Controls"}, {.label = "Text"}},
       .selectedIndex = 0,
       .scale = scale,
+      .surfaceOpacity = panelCardOpacity(),
       .onChange = [this](std::size_t index) { selectTab(index); },
   });
 
@@ -226,6 +227,7 @@ void TestPanel::create() {
         .fontSize = Style::fontSizeBody * scale,
         .controlHeight = Style::controlHeight * scale,
         .horizontalPadding = Style::spaceMd * scale,
+        .surfaceOpacity = panelCardOpacity(),
         .width = 220.0f * scale,
         .height = 0.0f,
         .onChange = [this](const std::string& val) {
@@ -328,6 +330,7 @@ void TestPanel::create() {
         .options = std::vector<ui::SegmentedOption>{{.label = "Light"}, {.label = "Dark"}, {.label = "System"}},
         .selectedIndex = 2,
         .scale = scale,
+        .surfaceOpacity = panelCardOpacity(),
         .onChange = [this](std::size_t index) {
           if (m_segmentedValueLabel != nullptr && index < std::size(kLabels)) {
             m_segmentedValueLabel->setText(kLabels[index]);
@@ -911,6 +914,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
             .fontSize = Style::fontSizeBody * scale,
             .controlHeight = Style::controlHeight * scale,
             .horizontalPadding = Style::spaceMd * scale,
+            .surfaceOpacity = panelCardOpacity(),
             .width = 360.0f * scale,
             .height = 0.0f,
             .onSubmit = [this](const std::string& value) { applyTestFontFamily(value); },
@@ -1566,3 +1570,18 @@ void TestPanel::doLayout(Renderer& renderer, float width, float height) {
 }
 
 void TestPanel::doUpdate(Renderer& /*renderer*/) {}
+
+void TestPanel::onPanelCardOpacityChanged(float opacity) {
+  if (m_input != nullptr) {
+    m_input->setSurfaceOpacity(opacity);
+  }
+  if (m_fontFamilyInput != nullptr) {
+    m_fontFamilyInput->setSurfaceOpacity(opacity);
+  }
+  if (m_segmented != nullptr) {
+    m_segmented->setSurfaceOpacity(opacity);
+  }
+  if (m_tabSwitch != nullptr) {
+    m_tabSwitch->setSurfaceOpacity(opacity);
+  }
+}

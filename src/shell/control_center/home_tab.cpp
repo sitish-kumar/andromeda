@@ -81,44 +81,9 @@ namespace {
     card.setGap(Style::spaceSm * scale);
   }
 
-  Button::ButtonPalette inactiveShortcutPalette(float fillOpacity) {
-    constexpr float kDisabledAlpha = 0.55f;
-    const float opacity = std::clamp(fillOpacity, 0.0f, 1.0f);
-    return Button::ButtonPalette{
-        .borderWidth = Style::borderWidth,
-        .normal =
-            Button::ButtonStateColors{
-                .bg = colorSpecFromRole(ColorRole::SurfaceVariant, opacity),
-                .border = colorSpecFromRole(ColorRole::Outline, 0.5f),
-                .label = colorSpecFromRole(ColorRole::OnSurface),
-            },
-        .hover =
-            Button::ButtonStateColors{
-                .bg = colorSpecFromRole(ColorRole::Hover),
-                .border = clearColorSpec(),
-                .label = colorSpecFromRole(ColorRole::OnHover),
-            },
-        .pressed =
-            Button::ButtonStateColors{
-                .bg = colorSpecFromRole(ColorRole::Primary),
-                .border = colorSpecFromRole(ColorRole::Primary),
-                .label = colorSpecFromRole(ColorRole::OnPrimary),
-            },
-        .disabled = Button::ButtonStateColors{
-            .bg = colorSpecFromRole(ColorRole::SurfaceVariant, opacity * kDisabledAlpha),
-            .border = colorSpecFromRole(ColorRole::Outline, 0.5f * kDisabledAlpha),
-            .label = colorSpecFromRole(ColorRole::OnSurface, kDisabledAlpha),
-        },
-    };
-  }
-
   void applyShortcutButtonStyle(Button& button, bool enabled, bool active, float fillOpacity) {
-    if (enabled && active) {
-      button.setVariant(ButtonVariant::Primary);
-    } else {
-      button.setVariant(ButtonVariant::Outline);
-      button.setCustomPalette(inactiveShortcutPalette(fillOpacity));
-    }
+    button.setVariant(enabled && active ? ButtonVariant::Primary : ButtonVariant::Default);
+    button.setSurfaceOpacity(fillOpacity);
     button.setEnabled(enabled);
   }
 
@@ -900,10 +865,10 @@ void HomeTab::onClose() {
 
 void HomeTab::onPanelCardOpacityChanged(float opacity) {
   if (m_settingsButton != nullptr) {
-    panel_button_style::applyHeaderButtonStyle(*m_settingsButton, opacity);
+    m_settingsButton->setSurfaceOpacity(opacity);
   }
   if (m_sessionButton != nullptr) {
-    panel_button_style::applyHeaderButtonStyle(*m_sessionButton, opacity);
+    m_sessionButton->setSurfaceOpacity(opacity);
   }
   syncShortcuts();
 }
