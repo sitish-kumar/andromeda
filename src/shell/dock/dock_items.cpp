@@ -133,78 +133,6 @@ namespace shell::dock {
     return true;
   }
 
-  bool matchesActiveApp(const DockItemView& item, std::string_view activeAppIdLower) {
-    return !activeAppIdLower.empty() && activeAppIdLower == item.idLower;
-  }
-
-  bool matchesRunningApp(const DockItemView& item, const std::vector<std::string>& runningLower) {
-    for (const auto& rid : runningLower) {
-      if (!rid.empty() && rid == item.idLower) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  bool syncInstanceModel(DockInstance& instance, DockItemModelDependencies deps) {
-    const auto& cfg = deps.config.config().dock;
-    const std::string globalActiveIdLower = currentActiveEntryIdLower(deps.platform);
-    if (!globalActiveIdLower.empty()) {
-      if (const auto active = deps.platform.activeToplevel(); active.has_value() && active->handle != nullptr) {
-        deps.lastActiveHandleByAppIdLower[globalActiveIdLower] = active->handle;
-      }
-    }
-    wl_output* const activeOutput = deps.platform.activeToplevelOutput();
-    wl_output* filterOutput = dockFilterOutput(cfg, instance.output);
-    const bool filterOutputChanged = (filterOutput != instance.lastFilterOutput);
-    instance.lastFilterOutput = filterOutput;
-
-    // When filtering by active monitor, inactive monitors' docks should not
-    // highlight the globally-active app — it isn't on them.
-    const std::string activeIdLower =
-        (cfg.activeMonitorOnly && activeOutput != instance.output) ? std::string{} : globalActiveIdLower;
-    instance.activeAppIdLower = activeIdLower;
-
-    const auto runningIds = cfg.showRunning ? deps.platform.runningAppIds(filterOutput) : std::vector<std::string>{};
-    const auto& allEntries = desktopEntries();
-    const auto resolvedRunning = app_identity::resolveRunningApps(runningIds, allEntries);
-    std::vector<std::string> runningLower;
-    runningLower.reserve(resolvedRunning.size());
-    for (const auto& run : resolvedRunning) {
-      runningLower.push_back(StringUtils::toLower(run.entry.id));
-    }
-
-    bool needRebuild = (instance.modelSerial != deps.modelSerial) || filterOutputChanged;
-    if (!needRebuild && cfg.showRunning) {
-      const std::size_t expectedTotal = [&] {
-        std::vector<DesktopEntry> entries = deps.pinnedEntries;
-        for (const auto& run : resolvedRunning) {
-          bool present = false;
-          for (const auto& entry : entries) {
-            if (app_identity::desktopEntryMatchesLower(entry, run.runningLower)) {
-              present = true;
-              break;
-            }
-          }
-          if (!present) {
-            entries.push_back(run.entry);
-          }
-        }
-        return entries.size();
-      }();
-      if (expectedTotal != instance.items.size()) {
-        needRebuild = true;
-      }
-    }
-
-    for (auto& item : instance.items) {
-      item.running = matchesRunningApp(item, runningLower);
-      item.active = matchesActiveApp(item, activeIdLower);
-    }
-
-    return needRebuild;
-  }
-
   std::string_view dockLauncherIconGlyph(const DockConfig& cfg) {
     return cfg.launcherIcon.empty() ? "grid-dots" : std::string_view{cfg.launcherIcon};
   }
@@ -342,12 +270,6 @@ namespace shell::dock {
 
     for (const auto& model : itemModels) {
       auto& item = instance.items.emplace_back();
-      item.entry = model.entry;
-      item.idLower = model.idLower;
-      item.startupWmClassLower = model.startupWmClassLower;
-      item.active = model.active;
-      item.running = model.running;
-      item.instanceCount = model.instanceCount;
       DockItemAction action{
           .entry = model.entry,
           .idLower = model.idLower,
@@ -504,8 +426,6 @@ namespace shell::dock {
       instance.row->addChild(createLauncherButton(instance, cfg, clickContext));
     }
 
-    instance.modelSerial = snapshot.sourceSerial;
-
     shell::dock::resizeSurface(instance, cfg, deps.model.config.config().shell.shadow);
   }
 
@@ -558,7 +478,6 @@ namespace shell::dock {
       }
 
       const std::size_t count = model.instanceCount;
-      item.instanceCount = count;
 
       if (cfg.showDots) {
         const std::size_t dotCount = std::min<std::size_t>(count, 3);

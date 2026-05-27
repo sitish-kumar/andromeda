@@ -476,9 +476,7 @@ void Dock::createInstance(const WaylandOutput& output) {
   instance->outputName = output.name;
   instance->output = output.output;
   instance->scale = output.scale;
-  instance->activeAppIdLower = shell::dock::currentActiveEntryIdLower(*m_platform);
   instance->snapshot.output = output.output;
-  instance->snapshot.activeAppIdLower = instance->activeAppIdLower;
 
   const auto& shadowConfig = m_config->config().shell.shadow;
   LayerSurfaceConfig lsCfg = shell::dock::makeLayerSurfaceConfig(
@@ -534,23 +532,9 @@ bool Dock::syncInstanceModel(shell::dock::DockInstance& instance) {
       }
   );
 
-  const bool filterOutputChanged = next.filterOutput != instance.lastFilterOutput;
-  const bool needRebuild = instance.modelSerial != m_modelSerial || filterOutputChanged
-      || !shell::dock::sameDockItemSet(instance.snapshot, next);
+  const bool needRebuild = instance.snapshot.sourceSerial != next.sourceSerial
+      || instance.snapshot.filterOutput != next.filterOutput || !shell::dock::sameDockItemSet(instance.snapshot, next);
   instance.snapshot = std::move(next);
-
-  instance.lastFilterOutput = instance.snapshot.filterOutput;
-  instance.activeAppIdLower = instance.snapshot.activeAppIdLower;
-  for (auto& item : instance.items) {
-    for (const auto& model : instance.snapshot.items) {
-      if (item.idLower == model.idLower && item.startupWmClassLower == model.startupWmClassLower) {
-        item.running = model.running;
-        item.active = model.active;
-        item.instanceCount = model.instanceCount;
-        break;
-      }
-    }
-  }
 
   return needRebuild;
 }

@@ -34,9 +34,6 @@ namespace shell::dock {
   struct DockInstance;
 
   struct DockItemView {
-    DesktopEntry entry;
-    std::string idLower;
-    std::string startupWmClassLower;
     InputArea* area = nullptr;
     Box* background = nullptr;
     std::array<Box*, 3> dotIndicators{};
@@ -45,13 +42,10 @@ namespace shell::dock {
     Image* iconImage = nullptr;
     Glyph* iconGlyph = nullptr;
     bool hovered = false;
-    bool running = false;
-    bool active = false;
     float visualScale = -1.0f;
     float visualOpacity = -1.0f;
     AnimationManager::Id scaleAnimId = 0;
     AnimationManager::Id opacityAnimId = 0;
-    std::size_t instanceCount = 0;
   };
 
   struct DockItemAction {
@@ -85,9 +79,6 @@ namespace shell::dock {
       const DockConfig& cfg, std::vector<std::string>& lastPinnedConfig, std::vector<DesktopEntry>& pinnedEntries,
       std::uint64_t& modelSerial, std::uint64_t& entriesVersion
   );
-  [[nodiscard]] bool matchesActiveApp(const DockItemView& item, std::string_view activeAppIdLower);
-  [[nodiscard]] bool matchesRunningApp(const DockItemView& item, const std::vector<std::string>& runningLower);
-  [[nodiscard]] bool syncInstanceModel(DockInstance& instance, DockItemModelDependencies deps);
 
   [[nodiscard]] std::string_view dockLauncherIconGlyph(const DockConfig& cfg);
   [[nodiscard]] std::unique_ptr<Flex> makeDockItemRow(const DockConfig& cfg, bool vertical);
