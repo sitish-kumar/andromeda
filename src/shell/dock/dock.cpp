@@ -26,6 +26,7 @@
 #include "wayland/surface.h"
 #include "wayland/wayland_toplevels.h"
 
+#include <cassert>
 #include <cerrno>
 #include <format>
 #include <optional>
@@ -34,6 +35,14 @@
 namespace {
 
   constexpr Logger kLog("dock");
+
+  void assertDockInitialized(
+      const CompositorPlatform* platform, const ConfigService* config, const RenderContext* renderContext
+  ) {
+    assert(platform != nullptr);
+    assert(config != nullptr);
+    assert(renderContext != nullptr);
+  }
 
   desktop_entry_launch::LaunchOptions
   dockLaunchOptions(const CompositorPlatform& platform, const ConfigService& config, wl_surface* activationSurface) {
@@ -325,7 +334,7 @@ bool Dock::onPointerEvent(const PointerEvent& event) {
         }
       }
 
-      if (m_config != nullptr && m_config->config().dock.autoHide && m_popupOwnerInstance == nullptr) {
+      if (m_config->config().dock.autoHide && m_popupOwnerInstance == nullptr) {
         shell::dock::startHideFadeOut(*m_hoveredInstance, *m_config);
       }
       m_hoveredInstance = nullptr;
@@ -446,6 +455,8 @@ void Dock::syncInstances() {
 }
 
 void Dock::createInstance(const WaylandOutput& output) {
+  assertDockInitialized(m_platform, m_config, m_renderContext);
+
   const auto& cfg = m_config->config().dock;
   kLog.info(
       "creating dock on {} ({}) icon_size={} position={}", output.connectorName, output.description, cfg.iconSize,
@@ -471,9 +482,7 @@ void Dock::createInstance(const WaylandOutput& output) {
     inst->surface->requestLayout();
   });
   instance->surface->setPrepareFrameCallback([this, inst](bool needsUpdate, bool needsLayout) {
-    if (m_platform == nullptr || m_config == nullptr || m_renderContext == nullptr) {
-      return;
-    }
+    assertDockInitialized(m_platform, m_config, m_renderContext);
     shell::dock::prepareFrame(
         *inst, {.platform = *m_platform, .config = *m_config, .renderContext = *m_renderContext},
         shell::dock::DockInstanceCallbacks{
@@ -499,9 +508,8 @@ void Dock::createInstance(const WaylandOutput& output) {
 // ── Private: scene building ───────────────────────────────────────────────────
 
 bool Dock::syncInstanceModel(shell::dock::DockInstance& instance) {
-  if (m_platform == nullptr || m_config == nullptr) {
-    return false;
-  }
+  assert(m_platform != nullptr);
+  assert(m_config != nullptr);
 
   return shell::dock::syncInstanceModel(
       instance,
@@ -518,9 +526,7 @@ bool Dock::syncInstanceModel(shell::dock::DockInstance& instance) {
 // ── Private: item population ──────────────────────────────────────────────────
 
 void Dock::rebuildItems(shell::dock::DockInstance& instance) {
-  if (m_platform == nullptr || m_config == nullptr || m_renderContext == nullptr) {
-    return;
-  }
+  assertDockInitialized(m_platform, m_config, m_renderContext);
 
   shell::dock::rebuildItems(
       instance,
@@ -551,9 +557,7 @@ void Dock::rebuildItems(shell::dock::DockInstance& instance) {
 // ── Private: visual update ────────────────────────────────────────────────────
 
 void Dock::updateVisuals(shell::dock::DockInstance& instance) {
-  if (m_platform == nullptr || m_config == nullptr || m_renderContext == nullptr) {
-    return;
-  }
+  assertDockInitialized(m_platform, m_config, m_renderContext);
 
   shell::dock::updateVisuals(
       instance,
@@ -577,7 +581,7 @@ void Dock::closeItemMenu() {
   m_itemMenu.reset();
   // Fade the owner out — the pointer left the dock to interact with the menu,
   // whether or not the compositor sent a Leave event at that time.
-  if (m_config != nullptr && m_config->config().dock.autoHide && owner != nullptr && owner->hideOpacity > 0.0f) {
+  if (owner != nullptr && owner->hideOpacity > 0.0f && m_config->config().dock.autoHide) {
     owner->pointerInside = false;
     if (m_hoveredInstance == owner) {
       m_hoveredInstance = nullptr;
@@ -587,15 +591,11 @@ void Dock::closeItemMenu() {
 }
 
 void Dock::openItemMenu(shell::dock::DockInstance& instance, shell::dock::DockItemView& item) {
-  if (m_config == nullptr) {
-    m_popupOwnerInstance = nullptr;
-    m_itemMenu.reset();
-    return;
-  }
+  assertDockInitialized(m_platform, m_config, m_renderContext);
 
   closeItemMenu();
 
-  if (m_platform == nullptr || m_renderContext == nullptr || !m_platform->hasXdgShell()) {
+  if (!m_platform->hasXdgShell()) {
     return;
   }
 

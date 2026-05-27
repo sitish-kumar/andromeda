@@ -90,12 +90,7 @@ namespace shell::dock {
 
   [[nodiscard]] std::string_view dockLauncherIconGlyph(const DockConfig& cfg);
   [[nodiscard]] std::unique_ptr<Flex> makeDockItemRow(const DockConfig& cfg, bool vertical);
-  [[nodiscard]] std::unique_ptr<InputArea>
-  createLauncherButton(DockInstance& instance, const DockConfig& cfg, const DockItemCallbacks& callbacks);
   void rebuildItems(DockInstance& instance, DockItemSceneDependencies deps, const DockItemCallbacks& callbacks);
   void updateVisuals(DockInstance& instance, DockItemSceneDependencies deps);
-  void handleItemClick(
-      DockInstance& instance, DockItemView& item, DockItemSceneDependencies deps, const DockItemCallbacks& callbacks
-  );
 
 } // namespace shell::dock

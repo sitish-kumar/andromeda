@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <cmath>
 #include <linux/input-event-codes.h>
+#include <memory>
 
 namespace {
 
@@ -68,6 +69,13 @@ namespace {
 } // namespace
 
 namespace shell::dock {
+
+  struct DockItemClickContext {
+    CompositorPlatform& platform;
+    ConfigService& config;
+    std::unordered_map<std::string, zwlr_foreign_toplevel_handle_v1*>& lastActiveHandleByAppIdLower;
+    DockItemCallbacks callbacks;
+  };
 
   std::string currentActiveEntryIdLower(const CompositorPlatform& platform) {
     if (const auto active = platform.activeToplevel(); active.has_value()) {
@@ -224,8 +232,11 @@ namespace shell::dock {
     );
   }
 
-  std::unique_ptr<InputArea>
-  createLauncherButton(DockInstance& instance, const DockConfig& cfg, const DockItemCallbacks& callbacks) {
+  void handleItemClick(DockInstance& instance, DockItemView& item, DockItemClickContext& context);
+
+  std::unique_ptr<InputArea> createLauncherButton(
+      DockInstance& instance, const DockConfig& cfg, const std::shared_ptr<DockItemClickContext>& clickContext
+  ) {
     const bool vert = shell::dock::isVerticalPosition(cfg.position);
     const float iSize = static_cast<float>(cfg.iconSize);
     const float cellMain = iSize + 2.0f * kCellPad;
@@ -281,9 +292,9 @@ namespace shell::dock {
       }
     });
     areaNode->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT}));
-    areaNode->setOnClick([instPtr, callbacks](const InputArea::PointerData& d) {
-      if (d.button == BTN_LEFT && callbacks.toggleLauncher) {
-        callbacks.toggleLauncher(*instPtr);
+    areaNode->setOnClick([instPtr, clickContext](const InputArea::PointerData& d) {
+      if (d.button == BTN_LEFT && clickContext->callbacks.toggleLauncher) {
+        clickContext->callbacks.toggleLauncher(*instPtr);
       }
     });
 
@@ -299,6 +310,12 @@ namespace shell::dock {
     const auto& cfg = deps.config.config().dock;
     const bool vert = shell::dock::isVerticalPosition(cfg.position);
     const float iSize = static_cast<float>(cfg.iconSize);
+    auto clickContext = std::make_shared<DockItemClickContext>(DockItemClickContext{
+        .platform = deps.platform,
+        .config = deps.config,
+        .lastActiveHandleByAppIdLower = deps.lastActiveHandleByAppIdLower,
+        .callbacks = callbacks,
+    });
 
     for (auto& item : instance.items) {
       if (item.scaleAnimId != 0) {
@@ -360,7 +377,7 @@ namespace shell::dock {
     }
 
     if (cfg.launcherPosition == "start") {
-      instance.row->addChild(createLauncherButton(instance, cfg, callbacks));
+      instance.row->addChild(createLauncherButton(instance, cfg, clickContext));
     }
 
     // Reserve up-front so emplace_back never reallocates while lambdas hold raw pointers.
@@ -509,11 +526,11 @@ namespace shell::dock {
         }
       });
       areaNode->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
-      areaNode->setOnClick([itemPtr, instPtr, deps, callbacks](const InputArea::PointerData& d) {
+      areaNode->setOnClick([itemPtr, instPtr, clickContext](const InputArea::PointerData& d) {
         if (d.button == BTN_LEFT) {
-          handleItemClick(*instPtr, *itemPtr, deps, callbacks);
-        } else if (d.button == BTN_RIGHT && callbacks.openItemMenu) {
-          callbacks.openItemMenu(*instPtr, *itemPtr);
+          handleItemClick(*instPtr, *itemPtr, *clickContext);
+        } else if (d.button == BTN_RIGHT && clickContext->callbacks.openItemMenu) {
+          clickContext->callbacks.openItemMenu(*instPtr, *itemPtr);
         }
       });
 
@@ -521,7 +538,7 @@ namespace shell::dock {
     }
 
     if (cfg.launcherPosition == "end") {
-      instance.row->addChild(createLauncherButton(instance, cfg, callbacks));
+      instance.row->addChild(createLauncherButton(instance, cfg, clickContext));
     }
 
     instance.modelSerial = deps.modelSerial;
@@ -633,41 +650,39 @@ namespace shell::dock {
     }
   }
 
-  void handleItemClick(
-      DockInstance& instance, DockItemView& item, DockItemSceneDependencies deps, const DockItemCallbacks& callbacks
-  ) {
-    if (callbacks.pruneCachedToplevelHandles) {
-      callbacks.pruneCachedToplevelHandles();
+  void handleItemClick(DockInstance& instance, DockItemView& item, DockItemClickContext& context) {
+    if (context.callbacks.pruneCachedToplevelHandles) {
+      context.callbacks.pruneCachedToplevelHandles();
     }
 
-    auto windows = deps.platform.windowsForApp(
-        item.idLower, item.startupWmClassLower, dockFilterOutput(deps.config.config().dock, instance.output)
+    auto windows = context.platform.windowsForApp(
+        item.idLower, item.startupWmClassLower, dockFilterOutput(context.config.config().dock, instance.output)
     );
 
     if (windows.empty()) {
       wl_surface* const activationSurface = instance.surface != nullptr ? instance.surface->wlSurface() : nullptr;
-      const auto options =
-          callbacks.launchOptions ? callbacks.launchOptions(activationSurface) : desktop_entry_launch::LaunchOptions{};
+      const auto options = context.callbacks.launchOptions ? context.callbacks.launchOptions(activationSurface)
+                                                           : desktop_entry_launch::LaunchOptions{};
       (void)desktop_entry_launch::launchEntry(item.entry, options);
       return;
     }
 
     if (windows.size() == 1) {
-      deps.platform.activateToplevel(windows[0].handle);
+      context.platform.activateToplevel(windows[0].handle);
       return;
     }
 
     zwlr_foreign_toplevel_handle_v1* activeHandle = nullptr;
-    if (const auto active = deps.platform.activeToplevel(); active.has_value()) {
+    if (const auto active = context.platform.activeToplevel(); active.has_value()) {
       activeHandle = active->handle;
     }
 
     auto* preferredHandle = [&]() -> zwlr_foreign_toplevel_handle_v1* {
-      const auto it = deps.lastActiveHandleByAppIdLower.find(item.idLower);
-      return it != deps.lastActiveHandleByAppIdLower.end() ? it->second : nullptr;
+      const auto it = context.lastActiveHandleByAppIdLower.find(item.idLower);
+      return it != context.lastActiveHandleByAppIdLower.end() ? it->second : nullptr;
     }();
     if (auto* nextHandle = nextActivatableWindowHandle(windows, activeHandle, preferredHandle); nextHandle != nullptr) {
-      deps.platform.activateToplevel(nextHandle);
+      context.platform.activateToplevel(nextHandle);
     }
   }
 
