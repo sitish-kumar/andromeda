@@ -78,7 +78,7 @@ public:
   void registerPanel(const std::string& id, std::unique_ptr<Panel> content);
 
   void openPanel(const std::string& panelId, PanelOpenRequest request = {});
-  void closePanel();
+  void closePanel(bool animateClose = true);
   void togglePanel(const std::string& panelId, PanelOpenRequest request);
   // IPC-friendly overload: asks CompositorPlatform for preferred interactive output.
   void togglePanel(const std::string& panelId);

@@ -43,7 +43,6 @@ public:
   [[nodiscard]] LayerShellKeyboard keyboardMode() const override { return LayerShellKeyboard::Exclusive; }
   [[nodiscard]] InputArea* initialFocusArea() const override;
   [[nodiscard]] PanelPlacement panelPlacement() const noexcept override;
-  [[nodiscard]] bool wantsCloseAnimation() const noexcept override { return false; }
 
 private:
   void onPanelCardOpacityChanged(float opacity) override;

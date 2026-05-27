@@ -834,7 +834,7 @@ void PanelManager::deactivateOutsideClickHandlers() {
   m_focusGrab.reset();
 }
 
-void PanelManager::closePanel() {
+void PanelManager::closePanel(bool animateClose) {
   if (!isOpen() || m_inTransition || m_closing) {
     return;
   }
@@ -850,7 +850,7 @@ void PanelManager::closePanel() {
   m_closing = true;
   m_attachedOpenAnimationPending = false;
 
-  if (m_sceneRoot != nullptr && m_activePanel != nullptr && m_activePanel->wantsCloseAnimation()) {
+  if (animateClose && m_sceneRoot != nullptr && m_activePanel != nullptr && m_activePanel->wantsCloseAnimation()) {
     const std::uint64_t gen = ++m_destroyGeneration;
     if (m_attachedToBar && m_attachedRevealClipNode != nullptr) {
       m_animations.cancelForOwner(m_attachedRevealClipNode);

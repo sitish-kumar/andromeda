@@ -926,7 +926,7 @@ void LauncherPanel::openAppActionsMenu(std::size_t index, float anchorX, float a
       if (provider->trackUsage()) {
         m_usageTracker.record(provider->name(), result.id);
       }
-      PanelManager::instance().closePanel();
+      PanelManager::instance().closePanel(false);
       return;
     }
     return;
@@ -987,7 +987,7 @@ void LauncherPanel::activateSelected() {
     if (provider->trackUsage()) {
       m_usageTracker.record(provider->name(), result.id);
     }
-    PanelManager::instance().closePanel();
+    PanelManager::instance().closePanel(false);
     return;
   }
 }
