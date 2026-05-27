@@ -1,6 +1,5 @@
 #include "shell/bar/widgets/clock_widget.h"
 
-#include "notification/notification.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
@@ -28,10 +27,10 @@ namespace {
 } // namespace
 
 ClockWidget::ClockWidget(
-    wl_output* /*output*/, std::string format, std::string verticalFormat, std::string tooltip_format
+    wl_output* /*output*/, std::string format, std::string verticalFormat, std::string tooltipFormat
 )
     : m_format(std::move(format)), m_verticalFormat(std::move(verticalFormat)),
-      m_tooltipFormat(std::move(tooltip_format)) {}
+      m_tooltipFormat(std::move(tooltipFormat)) {}
 
 std::string ClockWidget::formatTimeText() const {
   if (!m_isVertical) {

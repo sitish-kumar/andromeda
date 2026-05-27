@@ -588,7 +588,7 @@ namespace settings {
     } else if (type == "clock") {
       add(stringSpec("format", "{:%H:%M}"));
       add(stringSpec("vertical_format"));
-      add(stringSpec("tooltip_format"));
+      add(stringSpec("tooltipFormat"));
     } else if (type == "clipboard") {
       add(stringSpec("glyph", "clipboard"));
     } else if (type == "keyboard_layout") {
