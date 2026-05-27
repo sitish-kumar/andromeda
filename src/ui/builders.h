@@ -93,6 +93,7 @@ namespace ui {
     std::function<void(const std::string&)> onSubmit = nullptr;
     std::function<bool(std::uint32_t, std::uint32_t)> onKeyEvent = nullptr;
     std::function<void()> onFocusLoss = nullptr;
+    std::optional<bool> submitOnFocusLoss = std::nullopt;
     std::function<void(Input&)> configure = nullptr;
   };
 

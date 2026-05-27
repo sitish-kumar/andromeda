@@ -621,7 +621,7 @@ namespace settings {
     const auto makeText = [&](const std::string& value, const std::string& placeholder, std::vector<std::string> path,
                               float width = 0.0f) {
       const float inputWidth = (width > 0.0f ? width : 190.0f) * scale;
-      return ui::input({
+      auto input = ui::input({
           .value = value,
           .placeholder = placeholder.empty() ? i18n::tr("settings.controls.list.add-entry-placeholder") : placeholder,
           .fontSize = Style::fontSizeBody * scale,
@@ -630,7 +630,9 @@ namespace settings {
           .width = inputWidth,
           .height = Style::controlHeight * scale,
           .onSubmit = [setOverride = ctx.setOverride, path](const std::string& v) { setOverride(path, v); },
+          .submitOnFocusLoss = true,
       });
+      return input;
     };
 
     const auto makeTextWithPathBrowse = [&](const TextSetting& setting, const std::vector<std::string>& path) {
@@ -649,6 +651,7 @@ namespace settings {
           .width = inputWidth,
           .height = Style::controlHeight * scale,
           .onSubmit = [setOverride = ctx.setOverride, path](const std::string& v) { setOverride(path, v); },
+          .submitOnFocusLoss = true,
       });
       wrap->addChild(std::move(input));
 

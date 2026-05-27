@@ -146,6 +146,9 @@ Input::Input() {
     stopCursorBlink();
     updateCursorVisibility();
     applyVisualState();
+    if (m_submitOnFocusLoss && m_onSubmit) {
+      m_onSubmit(m_value);
+    }
     if (m_onFocusLoss) {
       m_onFocusLoss();
     }
@@ -379,6 +382,8 @@ void Input::setOnKeyEvent(std::function<bool(std::uint32_t, std::uint32_t)> call
 }
 
 void Input::setOnFocusLoss(std::function<void()> callback) { m_onFocusLoss = std::move(callback); }
+
+void Input::setSubmitOnFocusLoss(bool enabled) { m_submitOnFocusLoss = enabled; }
 
 void Input::setSurfaceOpacity(float opacity) {
   const float clamped = std::clamp(opacity, 0.0f, 1.0f);

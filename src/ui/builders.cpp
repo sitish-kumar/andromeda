@@ -137,6 +137,9 @@ namespace ui {
     if (props.onFocusLoss) {
       control->setOnFocusLoss(std::move(props.onFocusLoss));
     }
+    if (props.submitOnFocusLoss.has_value()) {
+      control->setSubmitOnFocusLoss(*props.submitOnFocusLoss);
+    }
     if (props.enabled.has_value()) {
       control->setEnabled(*props.enabled);
     }

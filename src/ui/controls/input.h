@@ -48,6 +48,7 @@ public:
   void setOnSubmit(std::function<void(const std::string&)> callback);
   void setOnKeyEvent(std::function<bool(std::uint32_t sym, std::uint32_t modifiers)> callback);
   void setOnFocusLoss(std::function<void()> callback);
+  void setSubmitOnFocusLoss(bool enabled);
   void setEnabled(bool enabled);
   void setSurfaceOpacity(float opacity);
   [[nodiscard]] bool enabled() const noexcept { return m_enabled; }
@@ -158,6 +159,7 @@ private:
   std::function<void(const std::string&)> m_onSubmit;
   std::function<bool(std::uint32_t, std::uint32_t)> m_onKeyEvent;
   std::function<void()> m_onFocusLoss;
+  bool m_submitOnFocusLoss = false;
   float m_fontSize = Style::fontSizeBody;
   float m_controlHeight = Style::controlHeight;
   float m_horizontalPadding = Style::spaceMd;
