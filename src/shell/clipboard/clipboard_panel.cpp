@@ -1019,9 +1019,6 @@ void ClipboardPanel::updateListState() {
     m_clearHistoryButton->setVisible(hasHistory);
     m_clearHistoryButton->setParticipatesInLayout(hasHistory);
     m_clearHistoryButton->setGlyph(m_clearConfirm ? "warning" : "trash");
-    m_clearHistoryButton->setTooltip(
-        i18n::tr(m_clearConfirm ? "clipboard.actions.clear-cancel" : "clipboard.actions.clear-history")
-    );
   }
   if (m_clearConfirmPanel != nullptr) {
     m_clearConfirmPanel->setVisible(hasHistory && m_clearConfirm);
@@ -1029,9 +1026,6 @@ void ClipboardPanel::updateListState() {
   }
   if (m_clearKeepPinnedButton != nullptr) {
     m_clearKeepPinnedButton->setEnabled(hasUnpinned);
-    m_clearKeepPinnedButton->setTooltip(
-        hasUnpinned ? i18n::tr("clipboard.actions.keep-pinned") : i18n::tr("clipboard.actions.keep-pinned-unavailable")
-    );
   }
 
   if (m_listEmptyLabel != nullptr) {
@@ -1078,11 +1072,6 @@ void ClipboardPanel::updatePreviewActions() {
     m_deleteEntryButton->setVisible(hasSelection);
     m_deleteEntryButton->setParticipatesInLayout(hasSelection);
     m_deleteEntryButton->setGlyph(deleteConfirmActive ? "warning" : "trash");
-    m_deleteEntryButton->setTooltip(
-        hasSelection
-            ? i18n::tr(deleteConfirmActive ? "clipboard.actions.delete-cancel" : "clipboard.actions.delete-selected")
-            : std::string{}
-    );
   }
   if (m_deleteConfirmPanel != nullptr) {
     m_deleteConfirmPanel->setVisible(hasSelection && deleteConfirmActive);

@@ -28,13 +28,8 @@
       "image-action": "Open image action"
     },
     "actions": {
-      "delete-selected": "Delete selected item",
       "delete-item": "Delete item",
-      "delete-cancel": "Cancel delete",
-      "clear-history": "Clear clipboard history",
-      "clear-cancel": "Cancel clear",
       "keep-pinned": "Keep pinned",
-      "keep-pinned-unavailable": "No unpinned items to clear",
       "clear-all": "Clear everything"
     },
     "confirm": {
