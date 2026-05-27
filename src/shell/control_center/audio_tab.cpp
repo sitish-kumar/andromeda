@@ -685,13 +685,7 @@ namespace {
     if (mpris == nullptr) {
       return {};
     }
-    std::vector<MprisPlayerInfo> players;
-    const auto& cachedPlayers = mpris->players();
-    players.reserve(cachedPlayers.size());
-    for (const auto& [_, player] : cachedPlayers) {
-      players.push_back(player);
-    }
-    return players;
+    return mpris->listPlayers();
   }
 
   void appendDesktopIconCandidates(

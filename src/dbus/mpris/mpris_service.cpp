@@ -214,6 +214,18 @@ namespace {
     return !info.title.empty() || !info.artists.empty() || !info.album.empty();
   }
 
+  std::vector<std::string> normalizeArtists(std::vector<std::string> artists) {
+    std::erase_if(artists, [](const std::string& artist) { return StringUtils::trim(artist).empty(); });
+    return artists;
+  }
+
+  std::string normalizeTrackId(std::string trackId) {
+    if (trackId.ends_with("/NoTrack")) {
+      return {};
+    }
+    return trackId;
+  }
+
   std::string canonicalTrackSourceUrl(std::string_view rawUrl) {
     if (rawUrl.empty()) {
       return {};
@@ -1680,10 +1692,15 @@ void MprisService::addOrRefreshPlayer(const std::string& busName) {
                     }
                   }
 
-                  // If both interfaces failed for a player we've never seen before, we'd produce a phantom
-                  // entry with all-empty fields. Bail out and let recovery rediscover it instead.
-                  if (rootFailed && playerFailed && !m_players.contains(busName)) {
-                    kLog.warn("player hydration failed (both interfaces) name={}", busName);
+                  // For a player we've never seen before, avoid creating a root-only placeholder
+                  // entry when the player interface is unavailable. Let recovery rediscover it once
+                  // we can read actual playback/metadata state.
+                  if (playerFailed && !m_players.contains(busName)) {
+                    if (rootFailed) {
+                      kLog.warn("player hydration failed (both interfaces) name={}", busName);
+                    } else {
+                      kLog.warn("player hydration failed (player interface) name={}", busName);
+                    }
                     scheduleRecoveryDiscovery();
                     return;
                   }
@@ -1700,6 +1717,10 @@ void MprisService::addOrRefreshPlayer(const std::string& busName) {
 
                   const MprisPlayerInfo info =
                       readPlayerInfoFromProperties(busName, effectiveRootProps, effectivePlayerProps);
+                  if (!playerFailed && !hasStrongNowPlayingMetadata(info)) {
+                    removePlayerCacheEntry(busName);
+                    return;
+                  }
                   applyPlayerSnapshot(busName, info, hadPositionSignal, hadFullRefreshFailure);
                 });
           } catch (const sdbus::Error& e) {
@@ -1723,6 +1744,7 @@ void MprisService::applyPlayerSnapshot(
   }
   const auto previousActive = activePlayer();
   const auto now = std::chrono::steady_clock::now();
+
   if (info.playbackStatus == "Playing") {
     m_stoppedPlayers.erase(busName);
     m_lastActivePlayer = busName;
@@ -1969,15 +1991,25 @@ void MprisService::applyPlayerSnapshot(
   }
 }
 
-void MprisService::removePlayer(const std::string& busName) {
+void MprisService::removePlayerCacheEntry(const std::string& busName) {
   const auto previousActive = activePlayer();
+  const bool hadPlayer = m_players.contains(busName);
 
-  if (!m_players.contains(busName) && !m_playerProxies.contains(busName)) {
+  clearPlayerState(busName);
+
+  if (!hadPlayer) {
     return;
   }
 
+  emitPlayersChanged();
+  syncSignals(previousActive);
+  if (m_changeCallback) {
+    m_changeCallback();
+  }
+}
+
+void MprisService::clearPlayerState(const std::string& busName) {
   m_players.erase(busName);
-  m_playerProxies.erase(busName);
   m_logicalTrackSignatures.erase(busName);
   m_positionOffsetsUs.erase(busName);
   if (auto it = m_positionResyncTimers.find(busName); it != m_positionResyncTimers.end()) {
@@ -2003,6 +2035,17 @@ void MprisService::removePlayer(const std::string& busName) {
     m_lastActivePlayer.clear();
   }
   m_stoppedPlayers.erase(busName);
+}
+
+void MprisService::removePlayer(const std::string& busName) {
+  const auto previousActive = activePlayer();
+
+  if (!m_players.contains(busName) && !m_playerProxies.contains(busName)) {
+    return;
+  }
+
+  clearPlayerState(busName);
+  m_playerProxies.erase(busName);
   emitPlayersChanged();
   syncSignals(previousActive);
   if (m_changeCallback) {
@@ -2503,15 +2546,17 @@ MprisPlayerInfo MprisService::readPlayerInfoFromProperties(
     const std::map<std::string, sdbus::Variant>& playerProps
 ) const {
   auto metadata = get_variant_map_from_props(playerProps, "Metadata");
+  std::string trackId = normalizeTrackId(get_object_path_from_variant(metadata, "mpris:trackid"));
+  std::vector<std::string> artists = normalizeArtists(get_string_array_from_variant(metadata, "xesam:artist"));
 
   return MprisPlayerInfo{
       .busName = busName,
       .identity = get_string_from_props(rootProps, "Identity"),
       .desktopEntry = get_string_from_props(rootProps, "DesktopEntry"),
       .playbackStatus = get_string_from_props(playerProps, "PlaybackStatus"),
-      .trackId = get_object_path_from_variant(metadata, "mpris:trackid"),
+      .trackId = std::move(trackId),
       .title = get_string_from_variant(metadata, "xesam:title"),
-      .artists = get_string_array_from_variant(metadata, "xesam:artist"),
+      .artists = std::move(artists),
       .album = get_string_from_variant(metadata, "xesam:album"),
       .sourceUrl = get_string_from_variant(metadata, "xesam:url"),
       .artUrl = get_string_from_variant(metadata, "mpris:artUrl"),
