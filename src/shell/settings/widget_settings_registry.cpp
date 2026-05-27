@@ -688,6 +688,12 @@ namespace settings {
             WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
         add(std::move(groupCapsule));
       }
+      {
+        auto singleIconPerApp = boolSpec("group_single_icon_per_app", false);
+        singleIconPerApp.visibleWhen =
+            WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
+        add(std::move(singleIconPerApp));
+      }
       add(boolSpec("show_active_indicator", true));
       add(doubleSpec("active_opacity", 1.0, 0.1, 1.0, 0.01));
       add(doubleSpec("inactive_opacity", 1.0, 0.1, 1.0, 0.01));

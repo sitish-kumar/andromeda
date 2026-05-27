@@ -434,6 +434,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
     }
     const bool hideEmptyWorkspaces = wc != nullptr ? wc->getBool("hide_empty_workspaces", false) : false;
     const bool workspaceGroupCapsule = wc != nullptr ? wc->getBool("workspace_group_capsule", true) : true;
+    const bool groupSingleIconPerApp = wc != nullptr ? wc->getBool("group_single_icon_per_app", false) : false;
     const bool showActiveIndicator = wc != nullptr ? wc->getBool("show_active_indicator", true) : true;
     const float activeOpacity = wc != nullptr ? static_cast<float>(wc->getDouble("active_opacity", 1.0)) : 1.0f;
     const float inactiveOpacity = wc != nullptr ? static_cast<float>(wc->getDouble("inactive_opacity", 1.0)) : 1.0f;
@@ -453,9 +454,9 @@ std::unique_ptr<Widget> WidgetFactory::create(
         static_cast<float>(wc != nullptr ? wc->getDouble("window_title_max_width", 100.0) : 100.0);
     auto widget = std::make_unique<TaskbarWidget>(
         m_platform, m_configService, output, groupByWorkspace, showAllOutputs, onlyActiveWorkspace, showWorkspaceLabel,
-        workspaceLabelPlacement, hideEmptyWorkspaces, workspaceGroupCapsule, showActiveIndicator, activeOpacity,
-        inactiveOpacity, focusedColor, occupiedColor, emptyColor, showWindowTitle, windowTitleMaxWidth, barPosition,
-        m_config.shell.shadow
+        workspaceLabelPlacement, hideEmptyWorkspaces, workspaceGroupCapsule, groupSingleIconPerApp, showActiveIndicator,
+        activeOpacity, inactiveOpacity, focusedColor, occupiedColor, emptyColor, showWindowTitle, windowTitleMaxWidth,
+        barPosition, m_config.shell.shadow
     );
     widget->setContentScale(contentScale);
     return widget;

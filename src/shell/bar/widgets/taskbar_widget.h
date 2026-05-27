@@ -32,9 +32,9 @@ public:
       CompositorPlatform& platform, ConfigService& config, wl_output* output, bool groupByWorkspace,
       bool showAllOutputs, bool onlyActiveWorkspace, bool showWorkspaceLabel,
       WorkspaceLabelPlacement workspaceLabelPlacement, bool hideEmptyWorkspaces, bool workspaceGroupCapsule,
-      bool showActiveIndicator, float activeOpacity, float inactiveOpacity, ColorSpec focusedColor,
-      ColorSpec occupiedColor, ColorSpec emptyColor, bool showWindowTitle, float windowTitleMaxWidth,
-      std::string barPosition, ShellConfig::ShadowConfig shadowConfig
+      bool groupSingleIconPerApp, bool showActiveIndicator, float activeOpacity, float inactiveOpacity,
+      ColorSpec focusedColor, ColorSpec occupiedColor, ColorSpec emptyColor, bool showWindowTitle,
+      float windowTitleMaxWidth, std::string barPosition, ShellConfig::ShadowConfig shadowConfig
   );
   ~TaskbarWidget() override;
 
@@ -97,6 +97,7 @@ private:
   [[nodiscard]] static ColorSpec readableColorForFill(const ColorSpec& fill);
   [[nodiscard]] static ColorRole onRoleForFill(ColorRole fill);
   [[nodiscard]] static bool taskInWorkspaceGroup(const TaskModel& task, const WorkspaceModel& ws);
+  void activateTaskModel(const TaskModel& task);
 
   CompositorPlatform& m_platform;
   ConfigService& m_configService;
@@ -108,6 +109,7 @@ private:
   WorkspaceLabelPlacement m_workspaceLabelPlacement = WorkspaceLabelPlacement::Corner;
   bool m_hideEmptyWorkspaces = false;
   bool m_workspaceGroupCapsule = true;
+  bool m_groupSingleIconPerApp = false;
   bool m_showActiveIndicator = true;
   float m_activeOpacity = 1.0f;
   float m_inactiveOpacity = 1.0f;
@@ -128,6 +130,7 @@ private:
   std::vector<TaskModel> m_tasks;
   std::vector<WorkspaceModel> m_workspaces;
   std::unordered_map<std::uintptr_t, PendingWorkspaceTransition> m_pendingWorkspaceTransitions;
+  std::unordered_map<std::string, std::size_t> m_groupedAppCycleCursor;
   std::unordered_map<std::string, std::string> m_appIconsByLower;
   std::unique_ptr<ContextMenuPopup> m_contextMenuPopup;
   std::vector<zwlr_foreign_toplevel_handle_v1*> m_contextMenuHandles;

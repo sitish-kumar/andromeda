@@ -1305,6 +1305,10 @@
           "label": "Workspace Group Capsule",
           "description": "Draw the background and border around each grouped workspace. Turn off to keep icon grouping and workspace disc labels only."
         },
+        "group_single_icon_per_app": {
+          "label": "Single Icon per App",
+          "description": "When grouping by workspace, collapse multiple windows from the same app into one icon with a count badge."
+        },
         "show_window_title": {
           "label": "Show Window Title",
           "description": "Show the window title next to its icon (only on horizontal bars)"
