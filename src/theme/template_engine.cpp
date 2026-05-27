@@ -1368,7 +1368,7 @@ namespace noctalia::theme {
       if (hasOutputs)
         runHook(entry.preHook);
 
-      bool wroteAny = false;
+      bool outputsOk = true;
       for (const std::string& outputPath : effectiveOutputs) {
         if (cancelRequested()) {
           return ok;
@@ -1376,6 +1376,7 @@ namespace noctalia::theme {
 
         if (effectiveInput.empty()) {
           kLog.warn("failed to resolve input path for template {} -> {}; skipping", entry.name, outputPath);
+          outputsOk = false;
           ok = false;
           continue;
         }
@@ -1383,17 +1384,17 @@ namespace noctalia::theme {
         const auto fileResult =
             EngineImpl(m_themeData, renderOptions).renderFile(effectiveInput, std::filesystem::path(outputPath));
         if (!fileResult.success) {
+          outputsOk = false;
           ok = false;
           continue;
         }
-        wroteAny = wroteAny || fileResult.wrote;
       }
 
       if (cancelRequested()) {
         return ok;
       }
 
-      if ((hasOutputs && wroteAny) || (!hasOutputs && !entry.postHook.empty()))
+      if ((hasOutputs && outputsOk) || (!hasOutputs && !entry.postHook.empty()))
         runHook(entry.postHook);
     }
 
