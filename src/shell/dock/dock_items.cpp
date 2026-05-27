@@ -9,6 +9,7 @@
 #include "render/scene/node.h"
 #include "shell/dock/dock_geometry.h"
 #include "shell/dock/dock_instance.h"
+#include "shell/dock/dock_model.h"
 #include "system/app_identity.h"
 #include "system/icon_resolver.h"
 #include "ui/builders.h"
@@ -76,20 +77,6 @@ namespace shell::dock {
     std::unordered_map<std::string, zwlr_foreign_toplevel_handle_v1*>& lastActiveHandleByAppIdLower;
     DockItemCallbacks callbacks;
   };
-
-  std::string currentActiveEntryIdLower(const CompositorPlatform& platform) {
-    if (const auto active = platform.activeToplevel(); active.has_value()) {
-      return StringUtils::toLower(app_identity::resolveRunningDesktopEntry(active->appId, desktopEntries()).id);
-    }
-    return {};
-  }
-
-  wl_output* dockFilterOutput(const DockConfig& cfg, wl_output* instanceOutput) {
-    if (!cfg.activeMonitorOnly) {
-      return nullptr;
-    }
-    return instanceOutput;
-  }
 
   bool refreshPinnedAppsIfNeeded(
       const DockConfig& cfg, std::vector<std::string>& lastPinnedConfig, std::vector<DesktopEntry>& pinnedEntries,

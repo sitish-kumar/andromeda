@@ -74,8 +74,6 @@ namespace shell::dock {
     std::function<void(DockInstance&, DockItemView&)> openItemMenu;
   };
 
-  [[nodiscard]] std::string currentActiveEntryIdLower(const CompositorPlatform& platform);
-  [[nodiscard]] wl_output* dockFilterOutput(const DockConfig& cfg, wl_output* instanceOutput);
   [[nodiscard]] bool refreshPinnedAppsIfNeeded(
       const DockConfig& cfg, std::vector<std::string>& lastPinnedConfig, std::vector<DesktopEntry>& pinnedEntries,
       std::uint64_t& modelSerial, std::uint64_t& entriesVersion
