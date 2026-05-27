@@ -123,7 +123,9 @@ private:
   );
   void refreshPlayerPosition(const std::string& busName, bool notifyChange);
   void applyPositionSample(const std::string& busName, int64_t rawPositionUs, bool notifyChange);
+  void clearPlayerState(const std::string& busName);
   void removePlayer(const std::string& busName);
+  void removePlayerCacheEntry(const std::string& busName);
   [[nodiscard]] MprisPlayerInfo readPlayerInfoFromProperties(
       const std::string& busName, const std::map<std::string, sdbus::Variant>& rootProps,
       const std::map<std::string, sdbus::Variant>& playerProps
