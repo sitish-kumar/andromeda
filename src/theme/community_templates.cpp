@@ -7,10 +7,12 @@
 #include "util/string_utils.h"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <glib.h>
 #include <json.hpp>
 #include <memory>
 #include <optional>
@@ -269,31 +271,79 @@ namespace noctalia::theme {
       return true;
     }
 
+    bool hasSuffix(std::string_view text, std::string_view suffix) {
+      return text.size() >= suffix.size() && text.substr(text.size() - suffix.size()) == suffix;
+    }
+
     std::filesystem::path sidecarPath(const std::filesystem::path& path) {
       return path.parent_path() / (path.filename().string() + ".md5");
     }
 
-    std::string readSmallFile(const std::filesystem::path& path) {
-      std::ifstream in(path);
-      if (!in)
-        return {};
-      std::string value;
-      std::getline(in, value);
-      return value;
+    void removeLegacyMd5Sidecar(const std::filesystem::path& path) {
+      std::error_code ec;
+      std::filesystem::remove(sidecarPath(path), ec);
     }
 
-    void writeSmallFile(const std::filesystem::path& path, std::string_view value) {
-      std::ofstream out(path);
-      if (out)
-        out << value << '\n';
+    void removeLegacyMd5Sidecars(const std::filesystem::path& cacheDir) {
+      std::error_code ec;
+      if (!std::filesystem::is_directory(cacheDir, ec))
+        return;
+
+      std::filesystem::recursive_directory_iterator it(
+          cacheDir, std::filesystem::directory_options::skip_permission_denied, ec
+      );
+      const std::filesystem::recursive_directory_iterator end;
+      while (!ec && it != end) {
+        const auto& entry = *it;
+        if (entry.is_regular_file(ec)) {
+          const std::string filename = entry.path().filename().string();
+          if (hasSuffix(filename, ".md5")) {
+            const std::filesystem::path source =
+                entry.path().parent_path() / filename.substr(0, filename.size() - std::string_view(".md5").size());
+            if (std::filesystem::exists(source, ec)) {
+              std::filesystem::remove(entry.path(), ec);
+            }
+          }
+        }
+        it.increment(ec);
+      }
+    }
+
+    std::string fileMd5Hex(const std::filesystem::path& path) {
+      std::ifstream in(path, std::ios::binary);
+      if (!in)
+        return {};
+
+      GChecksum* checksum = g_checksum_new(G_CHECKSUM_MD5);
+      if (checksum == nullptr)
+        return {};
+
+      std::array<char, 8192> buffer{};
+      while (in) {
+        in.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+        const std::streamsize bytesRead = in.gcount();
+        if (bytesRead > 0) {
+          g_checksum_update(checksum, reinterpret_cast<const guchar*>(buffer.data()), static_cast<gssize>(bytesRead));
+        }
+      }
+
+      std::string digest;
+      if (!in.bad()) {
+        if (const gchar* value = g_checksum_get_string(checksum); value != nullptr) {
+          digest = value;
+        }
+      }
+      g_checksum_free(checksum);
+      return digest;
     }
 
     bool cacheMatches(const CommunityTemplateFile& file, const std::filesystem::path& dest) {
+      removeLegacyMd5Sidecar(dest);
       if (!std::filesystem::exists(dest))
         return false;
       if (file.md5.empty())
         return true;
-      return readSmallFile(sidecarPath(dest)) == file.md5;
+      return fileMd5Hex(dest) == StringUtils::toLower(file.md5);
     }
 
     std::string urlEncodePath(std::string_view path) {
@@ -343,17 +393,30 @@ namespace noctalia::theme {
       }
     }
 
-    std::optional<AvailableTemplate> readTemplateTomlInfo(const std::filesystem::path& path) {
+    std::optional<AvailableTemplate> readTemplateTomlInfo(const std::filesystem::path& path, std::string_view cacheId) {
+      if (!isSafeCommunityTemplateId(cacheId))
+        return std::nullopt;
+
       try {
         toml::table root = toml::parse_file(path.string());
         const toml::table* catalog = root["catalog"].as_table();
         if (catalog == nullptr || catalog->empty())
           return std::nullopt;
-        const auto it = catalog->begin();
+
         AvailableTemplate out;
-        out.id = std::string(it->first.str());
+        out.id = std::string(cacheId);
         out.displayName = out.id;
-        if (const toml::table* info = it->second.as_table()) {
+
+        const toml::table* info = catalog->get_as<toml::table>(cacheId);
+        if (info == nullptr) {
+          kLog.warn(
+              "cached community template metadata {} does not contain catalog entry '{}'; using cache directory name",
+              path.string(), cacheId
+          );
+          return out;
+        }
+
+        {
           if (const auto name = info->get_as<std::string>("name"))
             out.displayName = name->get();
           if (const auto category = info->get_as<std::string>("category"))
@@ -378,7 +441,9 @@ namespace noctalia::theme {
     }
 
     std::error_code ec;
-    std::filesystem::create_directories(communityTemplatesCacheDir(), ec);
+    const std::filesystem::path cacheDir = communityTemplatesCacheDir();
+    std::filesystem::create_directories(cacheDir, ec);
+    removeLegacyMd5Sidecars(cacheDir);
     if (!templates.communityIds.empty()) {
       syncSelectedFromCatalog(templates.communityIds, generation, false);
     }
@@ -458,8 +523,12 @@ namespace noctalia::theme {
               if (generation != m_generation)
                 return;
               if (success) {
-                if (!file.md5.empty())
-                  writeSmallFile(sidecarPath(dest), file.md5);
+                removeLegacyMd5Sidecar(dest);
+                if (!file.md5.empty() && fileMd5Hex(dest) != StringUtils::toLower(file.md5)) {
+                  std::error_code removeEc;
+                  std::filesystem::remove(dest, removeEc);
+                  kLog.warn("downloaded community template file {} failed md5 validation", dest.string());
+                }
               } else {
                 kLog.warn("failed to download community template file {}", dest.string());
               }
@@ -494,13 +563,16 @@ namespace noctalia::theme {
     for (const auto& entry : std::filesystem::directory_iterator(cacheDir, ec)) {
       if (!entry.is_directory())
         continue;
+      const std::string cacheId = entry.path().filename().string();
+      const bool exists =
+          std::any_of(out.begin(), out.end(), [&](const AvailableTemplate& t) { return t.id == cacheId; });
+      if (exists)
+        continue;
       const auto toml = entry.path() / "template.toml";
       if (!std::filesystem::exists(toml))
         continue;
-      if (auto info = readTemplateTomlInfo(toml)) {
-        auto exists = std::any_of(out.begin(), out.end(), [&](const AvailableTemplate& t) { return t.id == info->id; });
-        if (!exists)
-          out.push_back(std::move(*info));
+      if (auto info = readTemplateTomlInfo(toml, cacheId)) {
+        out.push_back(std::move(*info));
       }
     }
 
