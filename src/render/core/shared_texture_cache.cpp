@@ -38,6 +38,7 @@ TextureHandle SharedTextureCache::acquire(const std::string& path) {
     return handle;
   }
 
+  m_textureManager->flush();
   m_entries[path] = Entry{.handle = handle, .refCount = 1};
   kLog.info("uploaded {}", path);
   return handle;
