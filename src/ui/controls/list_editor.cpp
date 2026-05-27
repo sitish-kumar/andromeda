@@ -100,7 +100,8 @@ void ListEditor::rebuildRows() {
   const float suggestedAddHeight = kSuggestedAddHeight * m_scale;
 
   std::unique_ptr<Flex> addRow;
-  if (m_maxItems == 0 || m_items.size() < m_maxItems) {
+  const bool atCapacity = m_maxItems > 0 && m_items.size() >= m_maxItems;
+  if (!atCapacity || !m_suggestedOptions.empty()) {
     addRow = ui::row({
         .align = FlexAlign::Center,
         .gap = Style::spaceSm * m_scale,
@@ -123,6 +124,7 @@ void ListEditor::rebuildRows() {
             .fontSize = Style::fontSizeCaption * m_scale,
             .controlHeight = suggestedAddHeight,
             .glyphSize = Style::fontSizeCaption * m_scale,
+            .enabled = !atCapacity,
             .width = labelCellWidth,
             .height = suggestedAddHeight,
         });
@@ -130,6 +132,7 @@ void ListEditor::rebuildRows() {
         auto addBtn = ui::button({
             .glyph = "add",
             .glyphSize = Style::fontSizeCaption * m_scale,
+            .enabled = !atCapacity,
             .variant = ButtonVariant::Ghost,
             .minWidth = suggestedAddHeight,
             .minHeight = suggestedAddHeight,
@@ -148,7 +151,7 @@ void ListEditor::rebuildRows() {
       } else {
         addRow.reset();
       }
-    } else {
+    } else if (!atCapacity) {
       Input* addInputPtr = nullptr;
       auto addInput = ui::input({
           .out = &addInputPtr,
@@ -183,6 +186,21 @@ void ListEditor::rebuildRows() {
 
       addRow->addChild(std::move(addInput));
       addRow->addChild(std::move(addBtn));
+    }
+  }
+
+  if (m_maxItems > 0) {
+    auto capacityLabel = ui::label({
+        .text = std::to_string(m_items.size()) + "/" + std::to_string(m_maxItems),
+        .fontSize = Style::fontSizeCaption * m_scale,
+        .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+    });
+    if (addRow) {
+      addRow->addChild(std::move(capacityLabel));
+    } else {
+      auto wrapper = ui::row({.align = FlexAlign::Center});
+      wrapper->addChild(std::move(capacityLabel));
+      addRow = std::move(wrapper);
     }
   }
 

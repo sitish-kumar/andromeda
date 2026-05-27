@@ -46,6 +46,7 @@ public:
     ButtonStateColors hover;
     ButtonStateColors pressed;
     ButtonStateColors disabled;
+    std::optional<ButtonStateColors> selected;
   };
 
   Button();
@@ -60,6 +61,7 @@ public:
   void setContentAlign(ButtonContentAlign align);
   void setVariant(ButtonVariant variant);
   void setCustomPalette(ButtonPalette customPalette);
+  void setSurfaceOpacity(float opacity);
   void setOnClick(std::function<void()> callback);
   void setOnRightClick(std::function<void()> callback);
   void setOnPress(std::function<void(float localX, float localY, bool pressed)> callback);
@@ -121,6 +123,7 @@ private:
   Color m_targetBorder{};
   Color m_targetLabel{};
   ButtonContentAlign m_contentAlign = ButtonContentAlign::Center;
+  float m_surfaceOpacity = 1.0f;
   bool m_enabled = true;
   bool m_selected = false;
   bool m_hoverSuppressed = false;

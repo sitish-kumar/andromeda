@@ -263,7 +263,7 @@ void ControlCenterPanel::onPanelCardOpacityChanged(float opacity) {
     m_sidebar->setFill(colorSpecFromRole(ColorRole::SurfaceVariant, opacity));
   }
   if (m_closeButton != nullptr) {
-    panel_button_style::applyHeaderButtonStyle(*m_closeButton, opacity);
+    m_closeButton->setSurfaceOpacity(opacity);
   }
 }
 

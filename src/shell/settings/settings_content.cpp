@@ -1095,11 +1095,13 @@ namespace settings {
                       .border = colorSpecFromRole(ColorRole::Primary),
                       .label = colorSpecFromRole(ColorRole::OnPrimary),
                   },
-              .disabled = Button::ButtonStateColors{
-                  .bg = colorSpecFromRole(ColorRole::SurfaceVariant, 0.35f),
-                  .border = colorSpecFromRole(ColorRole::Outline, 0.35f),
-                  .label = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-              },
+              .disabled =
+                  Button::ButtonStateColors{
+                      .bg = colorSpecFromRole(ColorRole::SurfaceVariant, 0.35f),
+                      .border = colorSpecFromRole(ColorRole::Outline, 0.35f),
+                      .label = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+                  },
+              .selected = std::nullopt,
           };
         };
         auto cardNode = ui::button({

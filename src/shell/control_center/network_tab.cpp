@@ -420,6 +420,7 @@ std::unique_ptr<Flex> NetworkTab::create() {
           .out = &m_passwordInput,
           .placeholder = i18n::tr("control-center.network.password"),
           .passwordMode = true,
+          .surfaceOpacity = panelCardOpacity(),
           .flexGrow = 1.0f,
           .onSubmit = [this](const std::string& value) { submitPasswordPrompt(value); },
       }),
@@ -928,4 +929,10 @@ void NetworkTab::rebuildApList(Renderer& renderer) {
     m_list->addChild(std::move(apRows));
   }
   m_list->layout(renderer);
+}
+
+void NetworkTab::onPanelCardOpacityChanged(float opacity) {
+  if (m_passwordInput != nullptr) {
+    m_passwordInput->setSurfaceOpacity(opacity);
+  }
 }

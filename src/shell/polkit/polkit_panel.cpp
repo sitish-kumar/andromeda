@@ -87,6 +87,7 @@ void PolkitPanel::create() {
           .out = &m_input,
           .placeholder = i18n::tr("auth.polkit.password-placeholder"),
           .passwordMode = true,
+          .surfaceOpacity = panelCardOpacity(),
           .onSubmit = [this](const std::string&) { submit(); },
           .onKeyEvent =
               [this](std::uint32_t sym, std::uint32_t modifiers) { return handleInputKeyEvent(sym, modifiers); },
@@ -204,4 +205,10 @@ bool PolkitPanel::handleInputKeyEvent(std::uint32_t sym, std::uint32_t modifiers
     return true;
   }
   return false;
+}
+
+void PolkitPanel::onPanelCardOpacityChanged(float opacity) {
+  if (m_input != nullptr) {
+    m_input->setSurfaceOpacity(opacity);
+  }
 }

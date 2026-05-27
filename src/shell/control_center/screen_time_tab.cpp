@@ -142,6 +142,7 @@ std::unique_ptr<Flex> ScreenTimeTab::create() {
           .selectedIndex = 0,
           .fontSize = Style::fontSizeCaption * scale,
           .scale = scale,
+          .surfaceOpacity = panelCardOpacity(),
           .equalSegmentWidths = true,
           .onChange = [this](std::size_t idx) {
             static constexpr int kRanges[] = {1, 3, 14};
@@ -883,4 +884,10 @@ std::string ScreenTimeTab::resolveIconPath(const std::string& appKey) const {
   }
   const std::string& resolved = g_iconResolver.resolve(baseKey, targetPx);
   return resolved.empty() ? std::string{} : std::string{resolved};
+}
+
+void ScreenTimeTab::onPanelCardOpacityChanged(float opacity) {
+  if (m_rangePicker != nullptr) {
+    m_rangePicker->setSurfaceOpacity(opacity);
+  }
 }

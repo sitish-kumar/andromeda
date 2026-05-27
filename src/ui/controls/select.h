@@ -31,6 +31,7 @@ public:
   void setSelectedIndex(std::size_t index);
   void clearSelection();
   void setEnabled(bool enabled);
+  void setSurfaceOpacity(float opacity);
   void setPlaceholder(std::string_view placeholder);
   void setFontSize(float size);
   void setControlHeight(float height);
@@ -69,6 +70,7 @@ private:
   std::vector<std::string> m_options;
   std::size_t m_selectedIndex = npos;
   std::string m_placeholder;
+  float m_surfaceOpacity = 1.0f;
   bool m_enabled = true;
   bool m_open = false;
   float m_caretProgress = 0.0f;

@@ -380,6 +380,15 @@ void Input::setOnKeyEvent(std::function<bool(std::uint32_t, std::uint32_t)> call
 
 void Input::setOnFocusLoss(std::function<void()> callback) { m_onFocusLoss = std::move(callback); }
 
+void Input::setSurfaceOpacity(float opacity) {
+  const float clamped = std::clamp(opacity, 0.0f, 1.0f);
+  if (m_surfaceOpacity == clamped) {
+    return;
+  }
+  m_surfaceOpacity = clamped;
+  applyVisualState();
+}
+
 void Input::setEnabled(bool enabled) {
   if (m_enabled == enabled) {
     return;
@@ -780,7 +789,8 @@ void Input::applyVisualState() {
 
   if (m_frameVisible) {
     m_background->setVisible(true);
-    const Color fill = focused ? resolved(ColorRole::Surface) : resolved(ColorRole::SurfaceVariant);
+    const Color fill = focused ? resolved(ColorRole::Surface, m_surfaceOpacity)
+                               : resolved(ColorRole::SurfaceVariant, m_surfaceOpacity);
     const Color border = m_invalid
         ? resolved(ColorRole::Error)
         : (focused ? resolved(ColorRole::Primary)

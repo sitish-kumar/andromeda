@@ -20,6 +20,13 @@ namespace {
     };
   }
 
+  Button::ButtonStateColors selectedState() {
+    return makeState(
+        colorSpecFromRole(ColorRole::Primary), colorSpecFromRole(ColorRole::Primary),
+        colorSpecFromRole(ColorRole::OnPrimary)
+    );
+  }
+
   Button::ButtonPalette paletteForVariant(ButtonVariant variant) {
     constexpr float kDisabledAlpha = 0.55f;
     switch (variant) {
@@ -41,6 +48,7 @@ namespace {
               colorSpecFromRole(ColorRole::Outline, kDisabledAlpha),
               colorSpecFromRole(ColorRole::OnSurface, kDisabledAlpha)
           ),
+          .selected = selectedState(),
       };
     case ButtonVariant::Primary:
       return Button::ButtonPalette{
@@ -57,6 +65,7 @@ namespace {
               colorSpecFromRole(ColorRole::Primary, kDisabledAlpha), clearColorSpec(),
               colorSpecFromRole(ColorRole::OnPrimary)
           ),
+          .selected = selectedState(),
       };
     case ButtonVariant::Secondary:
       return Button::ButtonPalette{
@@ -71,11 +80,11 @@ namespace {
               colorSpecFromRole(ColorRole::Primary), colorSpecFromRole(ColorRole::Primary),
               colorSpecFromRole(ColorRole::OnPrimary)
           ),
-
           .disabled = makeState(
               colorSpecFromRole(ColorRole::Secondary, kDisabledAlpha),
               colorSpecFromRole(ColorRole::Outline, kDisabledAlpha), colorSpecFromRole(ColorRole::OnSecondary)
           ),
+          .selected = selectedState(),
       };
     case ButtonVariant::Destructive:
       return Button::ButtonPalette{
@@ -94,6 +103,7 @@ namespace {
               colorSpecFromRole(ColorRole::Error, kDisabledAlpha),
               colorSpecFromRole(ColorRole::Outline, kDisabledAlpha), colorSpecFromRole(ColorRole::OnError)
           ),
+          .selected = selectedState(),
       };
     case ButtonVariant::Outline:
       return Button::ButtonPalette{
@@ -104,7 +114,6 @@ namespace {
           ),
           .hover =
               makeState(colorSpecFromRole(ColorRole::Hover), clearColorSpec(), colorSpecFromRole(ColorRole::OnHover)),
-
           .pressed = makeState(
               colorSpecFromRole(ColorRole::Primary), colorSpecFromRole(ColorRole::Primary),
               colorSpecFromRole(ColorRole::OnPrimary)
@@ -114,6 +123,7 @@ namespace {
               colorSpecFromRole(ColorRole::Outline, kDisabledAlpha),
               colorSpecFromRole(ColorRole::OnSurface, kDisabledAlpha)
           ),
+          .selected = selectedState(),
       };
     case ButtonVariant::Ghost:
       return Button::ButtonPalette{
@@ -126,6 +136,7 @@ namespace {
           ),
           .disabled =
               makeState(clearColorSpec(), clearColorSpec(), colorSpecFromRole(ColorRole::OnSurface, kDisabledAlpha)),
+          .selected = selectedState(),
       };
     case ButtonVariant::Tab:
       return Button::ButtonPalette{
@@ -137,6 +148,7 @@ namespace {
               colorSpecFromRole(ColorRole::SurfaceVariant), clearColorSpec(), colorSpecFromRole(ColorRole::OnSurface)
           ),
           .disabled = makeState(clearColorSpec(), clearColorSpec(), colorSpecFromRole(ColorRole::OnSurface)),
+          .selected = std::nullopt,
       };
     case ButtonVariant::TabActive:
       return Button::ButtonPalette{
@@ -154,6 +166,7 @@ namespace {
               colorSpecFromRole(ColorRole::Primary, kDisabledAlpha), clearColorSpec(),
               colorSpecFromRole(ColorRole::OnPrimary)
           ),
+          .selected = std::nullopt,
       };
     }
 
@@ -393,8 +406,21 @@ void Button::setCustomPalette(ButtonPalette customPalette) {
   applyVariant();
 }
 
+void Button::setSurfaceOpacity(float opacity) {
+  const float clamped = std::clamp(opacity, 0.0f, 1.0f);
+  if (m_surfaceOpacity == clamped) {
+    return;
+  }
+  m_surfaceOpacity = clamped;
+  applyVariant();
+}
+
 void Button::applyVariant() {
   m_palette = m_customPalette.value_or(paletteForVariant(m_variant));
+  if (m_surfaceOpacity < 1.0f) {
+    m_palette.normal.bg.alpha *= m_surfaceOpacity;
+    m_palette.disabled.bg.alpha *= m_surfaceOpacity;
+  }
   setBorder(m_palette.normal.border, m_palette.borderWidth);
 
   // Only seed targets before the first visual state application. Once the
@@ -495,8 +521,9 @@ void Button::applyColors(const Color& bg, const Color& border, const Color& labe
 }
 
 void Button::resolveVisualStateColors(Color& targetBg, Color& targetBorder, Color& targetLabel) const {
-  bool isHovered = m_enabled && ((!m_hoverSuppressed && hovered()) || m_selected);
+  bool isHovered = m_enabled && (!m_hoverSuppressed && hovered());
   bool isPressed = m_enabled && pressed();
+  bool isSelected = m_enabled && m_selected;
 
   if (!m_enabled) {
     targetBg = resolveColorSpec(m_palette.disabled.bg);
@@ -506,7 +533,11 @@ void Button::resolveVisualStateColors(Color& targetBg, Color& targetBorder, Colo
     targetBg = resolveColorSpec(m_palette.pressed.bg);
     targetBorder = resolveColorSpec(m_palette.pressed.border);
     targetLabel = resolveColorSpec(m_palette.pressed.label);
-  } else if (isHovered) {
+  } else if (isSelected && m_palette.selected.has_value()) {
+    targetBg = resolveColorSpec(m_palette.selected->bg);
+    targetBorder = resolveColorSpec(m_palette.selected->border);
+    targetLabel = resolveColorSpec(m_palette.selected->label);
+  } else if (isHovered || isSelected) {
     targetBg = resolveColorSpec(m_palette.hover.bg);
     targetBorder = resolveColorSpec(m_palette.hover.border);
     targetLabel = resolveColorSpec(m_palette.hover.label);

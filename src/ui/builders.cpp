@@ -140,6 +140,9 @@ namespace ui {
     if (props.enabled.has_value()) {
       control->setEnabled(*props.enabled);
     }
+    if (props.surfaceOpacity.has_value()) {
+      control->setSurfaceOpacity(*props.surfaceOpacity);
+    }
     applyNodeProps(*control, props);
     if (props.configure) {
       props.configure(*control);
@@ -178,6 +181,9 @@ namespace ui {
     }
     if (props.customPalette.has_value()) {
       control->setCustomPalette(std::move(*props.customPalette));
+    }
+    if (props.surfaceOpacity.has_value()) {
+      control->setSurfaceOpacity(*props.surfaceOpacity);
     }
     if (props.onClick) {
       control->setOnClick(std::move(props.onClick));
@@ -433,6 +439,9 @@ namespace ui {
     if (props.enabled.has_value()) {
       control->setEnabled(*props.enabled);
     }
+    if (props.surfaceOpacity.has_value()) {
+      control->setSurfaceOpacity(*props.surfaceOpacity);
+    }
     if (props.onSelectionChanged) {
       control->setOnSelectionChanged(std::move(props.onSelectionChanged));
     }
@@ -501,6 +510,9 @@ namespace ui {
     }
     if (props.enabled.has_value()) {
       control->setEnabled(*props.enabled);
+    }
+    if (props.surfaceOpacity.has_value()) {
+      control->setSurfaceOpacity(*props.surfaceOpacity);
     }
     if (props.equalSegmentWidths.has_value()) {
       control->setEqualSegmentWidths(*props.equalSegmentWidths);
@@ -779,6 +791,9 @@ namespace ui {
     }
     if (props.enabled.has_value()) {
       control->setEnabled(*props.enabled);
+    }
+    if (props.surfaceOpacity.has_value()) {
+      control->setSurfaceOpacity(*props.surfaceOpacity);
     }
     if (props.onValueChanged) {
       control->setOnValueChanged(std::move(props.onValueChanged));

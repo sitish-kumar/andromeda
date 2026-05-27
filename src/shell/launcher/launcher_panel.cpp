@@ -343,6 +343,7 @@ void LauncherPanel::create() {
           .controlHeight = Style::controlHeight * scale,
           .horizontalPadding = Style::spaceMd * scale,
           .clearButtonEnabled = true,
+          .surfaceOpacity = panelCardOpacity(),
           .onChange = [this](const std::string& text) { onInputChanged(text); },
           .onSubmit = [this](const std::string& /*text*/) { activateSelected(); },
           .onKeyEvent = [this](std::uint32_t sym, std::uint32_t modifiers) { return handleKeyEvent(sym, modifiers); },
@@ -354,6 +355,7 @@ void LauncherPanel::create() {
           .out = &m_categoryFilter,
           .scale = scale,
           .compact = true,
+          .surfaceOpacity = panelCardOpacity(),
           .equalSegmentWidths = true,
           .visible = false,
           .participatesInLayout = false,
@@ -412,6 +414,15 @@ void LauncherPanel::create() {
 
   if (m_animations != nullptr) {
     root()->setAnimationManager(m_animations);
+  }
+}
+
+void LauncherPanel::onPanelCardOpacityChanged(float opacity) {
+  if (m_input != nullptr) {
+    m_input->setSurfaceOpacity(opacity);
+  }
+  if (m_categoryFilter != nullptr) {
+    m_categoryFilter->setSurfaceOpacity(opacity);
   }
 }
 

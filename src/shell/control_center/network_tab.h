@@ -29,6 +29,7 @@ public:
 private:
   void doLayout(Renderer& renderer, float contentWidth, float bodyHeight) override;
   void doUpdate(Renderer& renderer) override;
+  void onPanelCardOpacityChanged(float opacity) override;
 
   void syncCurrentCard();
   void rebuildApList(Renderer& renderer);

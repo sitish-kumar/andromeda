@@ -27,6 +27,7 @@ public:
 private:
   void doLayout(Renderer& renderer, float contentWidth, float bodyHeight) override;
   void doUpdate(Renderer& renderer) override;
+  void onPanelCardOpacityChanged(float opacity) override;
   void syncContent(Renderer& renderer);
   void layoutChart(Renderer& renderer);
   void layoutAppRows(Renderer& renderer);

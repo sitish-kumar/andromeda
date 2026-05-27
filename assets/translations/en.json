@@ -28,13 +28,8 @@
       "image-action": "Open image action"
     },
     "actions": {
-      "delete-selected": "Delete selected item",
       "delete-item": "Delete item",
-      "delete-cancel": "Cancel delete",
-      "clear-history": "Clear clipboard history",
-      "clear-cancel": "Cancel clear",
       "keep-pinned": "Keep pinned",
-      "keep-pinned-unavailable": "No unpinned items to clear",
       "clear-all": "Clear everything"
     },
     "confirm": {
@@ -1750,7 +1745,7 @@
           "description": "Layout direction for OSD popups"
         },
         "osd-scale": {
-          "label": "Size",
+          "label": "Scale",
           "description": "Scale OSD popups relative to the shell UI scale (1.0 keeps the default size)"
         },
         "osd-background-opacity": {

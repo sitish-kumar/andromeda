@@ -8,6 +8,7 @@
 #include "lualib.h"
 #include "notification/notifications.h"
 #include "scripting/scripted_widget_bindings.h"
+#include "system/terminal_launch.h"
 
 #include <algorithm>
 #include <atomic>
@@ -52,19 +53,24 @@ namespace {
     return count;
   }
 
-  bool startDetachedCommandAsync(std::string command) {
-    if (command.empty()) {
-      return false;
-    }
-
+  bool acquireDetachedCommandSlot() {
     auto& globalInFlight = inFlightDetachedCommands();
     int current = globalInFlight.load(std::memory_order_relaxed);
     while (current < kMaxGlobalDetachedCommands) {
       if (globalInFlight.compare_exchange_weak(current, current + 1, std::memory_order_relaxed)) {
-        break;
+        return true;
       }
     }
-    if (current >= kMaxGlobalDetachedCommands) {
+    return false;
+  }
+
+  void releaseDetachedCommandSlot() { inFlightDetachedCommands().fetch_sub(1, std::memory_order_relaxed); }
+
+  bool startDetachedCommandAsync(std::string command) {
+    if (command.empty()) {
+      return false;
+    }
+    if (!acquireDetachedCommandSlot()) {
       return false;
     }
 
@@ -74,14 +80,43 @@ namespace {
           (void)process::runAsync(command);
         } catch (...) {
         }
-        inFlightDetachedCommands().fetch_sub(1, std::memory_order_relaxed);
+        releaseDetachedCommandSlot();
       }).detach();
     } catch (...) {
-      globalInFlight.fetch_sub(1, std::memory_order_relaxed);
+      releaseDetachedCommandSlot();
       return false;
     }
 
     return true;
+  }
+
+  bool startDetachedProcessAsync(std::vector<std::string> args) {
+    if (args.empty() || args.front().empty()) {
+      return false;
+    }
+    if (!acquireDetachedCommandSlot()) {
+      return false;
+    }
+
+    try {
+      std::thread([args = std::move(args)]() mutable {
+        try {
+          (void)process::runAsync(args);
+        } catch (...) {
+        }
+        releaseDetachedCommandSlot();
+      }).detach();
+    } catch (...) {
+      releaseDetachedCommandSlot();
+      return false;
+    }
+
+    return true;
+  }
+
+  bool startDetachedCommandInTerminalAsync(std::string command) {
+    auto prepared = terminal_launch::prepareCommand(command);
+    return prepared.has_value() && startDetachedProcessAsync(std::move(*prepared));
   }
 
   std::chrono::milliseconds commandTimeoutFromLua(lua_State* L) {
@@ -160,6 +195,14 @@ namespace {
     if (!ok) {
       lua_unref(L, callbackRef);
     }
+    lua_pushboolean(L, ok ? 1 : 0);
+    return 1;
+  }
+
+  int luau_runInTerminal(lua_State* L) {
+    size_t len = 0;
+    const char* cmd = luaL_checklstring(L, 1, &len);
+    bool ok = startDetachedCommandInTerminalAsync(std::string(cmd, len));
     lua_pushboolean(L, ok ? 1 : 0);
     return 1;
   }
@@ -291,6 +334,7 @@ namespace {
   const luaL_Reg kNoctaliaBaseLib[] = {
       {"log", luau_log},
       {"runAsync", luau_runAsync},
+      {"runInTerminal", luau_runInTerminal},
       {"commandExists", luau_commandExists},
       {"processMatches", luau_processMatches},
       {"flatpakAppInstalled", luau_flatpakAppInstalled},
