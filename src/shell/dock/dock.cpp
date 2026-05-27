@@ -37,14 +37,17 @@ namespace {
   constexpr Logger kLog("dock");
 
   void assertDockInitialized(
-      const CompositorPlatform* platform, const ConfigService* config, const RenderContext* renderContext
+      [[maybe_unused]] const CompositorPlatform* platform, [[maybe_unused]] const ConfigService* config,
+      [[maybe_unused]] const RenderContext* renderContext
   ) {
     assert(platform != nullptr);
     assert(config != nullptr);
     assert(renderContext != nullptr);
   }
 
-  void assertDockCoreInitialized(const CompositorPlatform* platform, const ConfigService* config) {
+  void assertDockCoreInitialized(
+      [[maybe_unused]] const CompositorPlatform* platform, [[maybe_unused]] const ConfigService* config
+  ) {
     assert(platform != nullptr);
     assert(config != nullptr);
   }
