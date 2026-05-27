@@ -1376,21 +1376,37 @@ void Application::initIpc() {
 
   m_ipcService.registerHandler(
       "notification-dnd-set",
-      [applyNotificationDnd](const std::string& args) -> std::string {
+      [this, applyNotificationDnd](const std::string& args) -> std::string {
         const auto parts = noctalia::ipc::splitWords(args);
         if (parts.size() != 1) {
           return "error: notification-dnd-set requires <on|off|true|false|1|0>\n";
         }
         const std::string value = parts[0];
+        std::optional<bool> nextState;
         if (value == "on" || value == "true" || value == "1") {
-          applyNotificationDnd(true);
+          nextState = true;
+        } else if (value == "off" || value == "false" || value == "0") {
+          nextState = false;
+        } else {
+          return "error: invalid value (use on/off, true/false, 1/0)\n";
+        }
+
+        const bool currentState = m_notificationManager.doNotDisturb();
+        if (currentState == *nextState) {
           return "ok\n";
         }
-        if (value == "off" || value == "false" || value == "0") {
-          applyNotificationDnd(false);
-          return "ok\n";
+        if (*nextState) {
+          notify::info(
+              "Noctalia", i18n::tr("notifications.internal.dnd"), i18n::tr("notifications.internal.dnd-enabled")
+          );
         }
-        return "error: invalid value (use on/off, true/false, 1/0)\n";
+        applyNotificationDnd(*nextState);
+        if (!*nextState) {
+          notify::info(
+              "Noctalia", i18n::tr("notifications.internal.dnd"), i18n::tr("notifications.internal.dnd-disabled")
+          );
+        }
+        return "ok\n";
       },
       "notification-dnd-set <on|off|true|false|1|0>", "Set notification Do Not Disturb state"
   );
@@ -1398,7 +1414,18 @@ void Application::initIpc() {
   m_ipcService.registerHandler(
       "notification-dnd-toggle",
       [this, applyNotificationDnd](const std::string&) -> std::string {
-        applyNotificationDnd(!m_notificationManager.doNotDisturb());
+        const bool nextState = !m_notificationManager.doNotDisturb();
+        if (nextState) {
+          notify::info(
+              "Noctalia", i18n::tr("notifications.internal.dnd"), i18n::tr("notifications.internal.dnd-enabled")
+          );
+        }
+        applyNotificationDnd(nextState);
+        if (!nextState) {
+          notify::info(
+              "Noctalia", i18n::tr("notifications.internal.dnd"), i18n::tr("notifications.internal.dnd-disabled")
+          );
+        }
         return "ok\n";
       },
       "notification-dnd-toggle", "Toggle notification Do Not Disturb state"
