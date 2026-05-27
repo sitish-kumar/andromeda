@@ -50,6 +50,29 @@ namespace {
     return path;
   }
 
+  std::string makeExecutableFixtureNamed(const char* name) {
+    char dir[] = "/tmp/noctalia-terminal-fixture-dir-XXXXXX";
+    if (mkdtemp(dir) == nullptr) {
+      return {};
+    }
+
+    std::string path(dir);
+    path.push_back('/');
+    path.append(name);
+
+    FILE* file = std::fopen(path.c_str(), "w");
+    if (file != nullptr) {
+      std::fclose(file);
+      chmod(path.c_str(), 0700);
+    }
+    return path;
+  }
+
+  std::string dirnameOf(const std::string& path) {
+    const auto slash = path.rfind('/');
+    return slash == std::string::npos ? std::string{} : path.substr(0, slash);
+  }
+
 } // namespace
 
 int main() {
@@ -77,6 +100,29 @@ int main() {
        )
       && ok;
   std::remove(fakeTerminal.c_str());
+
+  const char* oldPathRaw = std::getenv("PATH");
+  const bool hadOldPath = oldPathRaw != nullptr;
+  const std::string oldPath = hadOldPath ? oldPathRaw : std::string{};
+  const std::string fakeGnomeTerminal = makeExecutableFixtureNamed("gnome-terminal");
+  const std::string fakeTerminalDir = dirnameOf(fakeGnomeTerminal);
+  if (!fakeTerminalDir.empty()) {
+    setenv("PATH", (fakeTerminalDir + ":" + oldPath).c_str(), 1);
+  }
+  terminalOptions.terminalCandidates = {"gnome-terminal"};
+  ok = expectArgs(
+           desktop_entry_launch::prepareCommand("sample --flag", true, terminalOptions),
+           {"gnome-terminal", "--", "sh", "-lc", "sample --flag"},
+           "gnome-style terminals should use -- before the shell command"
+       )
+      && ok;
+  if (hadOldPath) {
+    setenv("PATH", oldPath.c_str(), 1);
+  } else {
+    unsetenv("PATH");
+  }
+  std::remove(fakeGnomeTerminal.c_str());
+  rmdir(fakeTerminalDir.c_str());
 
   desktop_entry_launch::PrepareOptions noTerminalDiscovery;
   noTerminalDiscovery.useSystemTerminalDiscovery = false;
