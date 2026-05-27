@@ -44,6 +44,11 @@ namespace {
     assert(renderContext != nullptr);
   }
 
+  void assertDockCoreInitialized(const CompositorPlatform* platform, const ConfigService* config) {
+    assert(platform != nullptr);
+    assert(config != nullptr);
+  }
+
   desktop_entry_launch::LaunchOptions
   dockLaunchOptions(const CompositorPlatform& platform, const ConfigService& config, wl_surface* activationSurface) {
     std::string token;
@@ -508,8 +513,9 @@ void Dock::createInstance(const WaylandOutput& output) {
 // ── Private: scene building ───────────────────────────────────────────────────
 
 bool Dock::syncInstanceModel(shell::dock::DockInstance& instance) {
-  assert(m_platform != nullptr);
-  assert(m_config != nullptr);
+  if (m_platform == nullptr || m_config == nullptr) {
+    return false;
+  }
 
   return shell::dock::syncInstanceModel(
       instance,
@@ -526,7 +532,10 @@ bool Dock::syncInstanceModel(shell::dock::DockInstance& instance) {
 // ── Private: item population ──────────────────────────────────────────────────
 
 void Dock::rebuildItems(shell::dock::DockInstance& instance) {
-  assertDockInitialized(m_platform, m_config, m_renderContext);
+  assertDockCoreInitialized(m_platform, m_config);
+  if (m_renderContext == nullptr) {
+    return;
+  }
 
   shell::dock::rebuildItems(
       instance,
