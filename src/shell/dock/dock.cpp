@@ -551,19 +551,18 @@ bool Dock::syncInstanceModel(shell::dock::DockInstance& instance) {
     return false;
   }
 
-  auto next = shell::dock::buildDockSnapshot(
-      {
-          .platform = *m_platform,
-          .config = m_config->config().dock,
-          .output = instance.output,
-          .lastActiveHandleByAppIdLower = m_lastActiveHandleByAppIdLower,
-          .pinnedEntries = m_pinnedEntries,
-          .sourceSerial = m_modelSerial,
-      }
-  );
+  auto next = shell::dock::buildDockSnapshot({
+      .platform = *m_platform,
+      .config = m_config->config().dock,
+      .output = instance.output,
+      .lastActiveHandleByAppIdLower = m_lastActiveHandleByAppIdLower,
+      .pinnedEntries = m_pinnedEntries,
+      .sourceSerial = m_modelSerial,
+  });
 
   const bool needRebuild = instance.snapshot.sourceSerial != next.sourceSerial
-      || instance.snapshot.filterOutput != next.filterOutput || !shell::dock::sameDockItemSet(instance.snapshot, next);
+      || instance.snapshot.filterOutput != next.filterOutput
+      || !shell::dock::sameDockItemSet(instance.snapshot, next);
   instance.snapshot = std::move(next);
 
   return needRebuild;
@@ -589,18 +588,16 @@ void Dock::rebuildItems(shell::dock::DockInstance& instance) {
       },
       instance.snapshot,
       {
-          .activateOrLaunch =
-              [this](shell::dock::DockInstance& inst, const shell::dock::DockItemAction& action) {
-                activateOrLaunchItem(inst, action);
-              },
+          .activateOrLaunch = [this](
+                                  shell::dock::DockInstance& inst, const shell::dock::DockItemAction& action
+                              ) { activateOrLaunchItem(inst, action); },
           .toggleLauncher =
               [](shell::dock::DockInstance& inst) {
                 PanelManager::instance().togglePanel("launcher", PanelOpenRequest{.output = inst.output});
               },
-          .openItemMenu =
-              [this](shell::dock::DockInstance& inst, const shell::dock::DockItemAction& action) {
-                openItemMenu(inst, action);
-              },
+          .openItemMenu = [this](
+                              shell::dock::DockInstance& inst, const shell::dock::DockItemAction& action
+                          ) { openItemMenu(inst, action); },
       }
   );
 }
@@ -647,7 +644,8 @@ void Dock::activateOrLaunchItem(shell::dock::DockInstance& instance, const shell
   pruneCachedToplevelHandles();
 
   auto windows = m_platform->windowsForApp(
-      action.idLower, action.startupWmClassLower, shell::dock::dockFilterOutput(m_config->config().dock, instance.output)
+      action.idLower, action.startupWmClassLower,
+      shell::dock::dockFilterOutput(m_config->config().dock, instance.output)
   );
 
   if (windows.empty()) {
@@ -687,7 +685,8 @@ void Dock::openItemMenu(shell::dock::DockInstance& instance, const shell::dock::
   m_popupOwnerInstance = &instance;
 
   auto windows = m_platform->windowsForApp(
-      action.idLower, action.startupWmClassLower, shell::dock::dockFilterOutput(m_config->config().dock, instance.output)
+      action.idLower, action.startupWmClassLower,
+      shell::dock::dockFilterOutput(m_config->config().dock, instance.output)
   );
   const std::string entryId = action.entry.id;
   const std::string entryWorkingDir = action.entry.workingDir;
