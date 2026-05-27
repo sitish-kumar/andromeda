@@ -238,6 +238,7 @@ namespace ui {
     std::optional<std::vector<ColorSpec>> optionIndicators = std::nullopt;
     std::optional<std::vector<ColorSwatchPreview>> colorSwatchPreviews = std::nullopt;
     std::optional<bool> enabled = std::nullopt;
+    std::optional<float> surfaceOpacity = std::nullopt;
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;
@@ -432,6 +433,7 @@ namespace ui {
     std::optional<bool> enabled = std::nullopt;
     std::optional<float> scale = std::nullopt;
     std::optional<std::string> valueSuffix = std::nullopt;
+    std::optional<float> surfaceOpacity = std::nullopt;
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
     std::optional<float> flexGrow = std::nullopt;

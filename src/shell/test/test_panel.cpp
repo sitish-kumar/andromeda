@@ -57,6 +57,7 @@ void TestPanel::create() {
       .glyph = "close",
       .glyphSize = Style::fontSizeBody * scale,
       .variant = ButtonVariant::Default,
+      .surfaceOpacity = panelCardOpacity(),
       .minWidth = Style::controlHeightSm * scale,
       .minHeight = Style::controlHeightSm * scale,
       .padding = Style::spaceXs * scale,
@@ -133,12 +134,13 @@ void TestPanel::create() {
         {"Outline", ButtonVariant::Outline},     {"Ghost", ButtonVariant::Ghost},
     };
 
-    auto makeVariantButton = [scale](const VariantSpec& spec, bool enabled = true) {
+    auto makeVariantButton = [scale, opacity = panelCardOpacity()](const VariantSpec& spec, bool enabled = true) {
       return ui::button({
           .text = spec.label,
           .fontSize = Style::fontSizeBody * scale,
           .enabled = enabled,
           .variant = spec.variant,
+          .surfaceOpacity = opacity,
           .minHeight = Style::controlHeight * scale,
           .paddingV = Style::spaceSm * scale,
           .paddingH = Style::spaceMd * scale,
@@ -172,6 +174,7 @@ void TestPanel::create() {
         .fontSize = Style::fontSizeBody * scale,
         .glyphSize = Style::fontSizeBody * scale,
         .variant = ButtonVariant::Default,
+        .surfaceOpacity = panelCardOpacity(),
         .minHeight = Style::controlHeight * scale,
         .paddingV = Style::spaceSm * scale,
         .paddingH = Style::spaceMd * scale,
@@ -184,6 +187,7 @@ void TestPanel::create() {
         .glyph = "home",
         .glyphSize = Style::fontSizeBody * scale,
         .variant = ButtonVariant::Default,
+        .surfaceOpacity = panelCardOpacity(),
         .minHeight = Style::controlHeight * scale,
         .paddingV = Style::spaceSm * scale,
         .paddingH = Style::spaceMd * scale,
@@ -209,6 +213,7 @@ void TestPanel::create() {
         .controlHeight = Style::controlHeight * scale,
         .horizontalPadding = Style::spaceMd * scale,
         .glyphSize = 14.0f * scale,
+        .surfaceOpacity = panelCardOpacity(),
         .width = 220.0f * scale,
         .height = 0.0f,
     });
@@ -451,6 +456,7 @@ void TestPanel::create() {
         .step = 1,
         .value = 42,
         .scale = scale,
+        .surfaceOpacity = panelCardOpacity(),
         .onValueChanged = [this](int v) {
           if (m_stepperValueLabel != nullptr) {
             m_stepperValueLabel->setText("onChange: " + std::to_string(v));
@@ -489,6 +495,7 @@ void TestPanel::create() {
         .fontSize = Style::fontSizeBody * scale,
         .glyphSize = Style::fontSizeBody * scale,
         .variant = ButtonVariant::Default,
+        .surfaceOpacity = panelCardOpacity(),
         .minHeight = Style::controlHeight * scale,
         .paddingV = Style::spaceSm * scale,
         .paddingH = Style::spaceMd * scale,
@@ -538,6 +545,7 @@ void TestPanel::create() {
         .text = "Open color picker...",
         .fontSize = Style::fontSizeBody * scale,
         .variant = ButtonVariant::Default,
+        .surfaceOpacity = panelCardOpacity(),
         .minHeight = Style::controlHeight * scale,
         .paddingV = Style::spaceSm * scale,
         .paddingH = Style::spaceMd * scale,
@@ -586,6 +594,7 @@ void TestPanel::create() {
         .text = "Open glyph picker...",
         .fontSize = Style::fontSizeBody * scale,
         .variant = ButtonVariant::Default,
+        .surfaceOpacity = panelCardOpacity(),
         .minHeight = Style::controlHeight * scale,
         .paddingV = Style::spaceSm * scale,
         .paddingH = Style::spaceMd * scale,
@@ -649,6 +658,7 @@ void TestPanel::create() {
           .glyphSize = 16.0f * scale,
           .contentAlign = ButtonContentAlign::Center,
           .variant = ButtonVariant::Default,
+          .surfaceOpacity = panelCardOpacity(),
           .minHeight = 64.0f * scale,
           .padding = Style::spaceSm * scale,
           .gap = Style::spaceXs * scale,
@@ -727,6 +737,7 @@ void TestPanel::create() {
         .fontSize = Style::fontSizeBody * scale,
         .glyphSize = Style::fontSizeBody * scale,
         .variant = ButtonVariant::Primary,
+        .surfaceOpacity = panelCardOpacity(),
         .paddingV = Style::spaceSm * scale,
         .paddingH = Style::spaceLg * scale,
         .radius = Style::scaledRadiusMd(scale),
@@ -926,6 +937,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
             .text = "Apply",
             .fontSize = Style::fontSizeBody * scale,
             .variant = ButtonVariant::Primary,
+            .surfaceOpacity = panelCardOpacity(),
             .minHeight = Style::controlHeight * scale,
             .paddingV = Style::spaceSm * scale,
             .paddingH = Style::spaceMd * scale,
@@ -1572,16 +1584,32 @@ void TestPanel::doLayout(Renderer& renderer, float width, float height) {
 void TestPanel::doUpdate(Renderer& /*renderer*/) {}
 
 void TestPanel::onPanelCardOpacityChanged(float opacity) {
-  if (m_input != nullptr) {
-    m_input->setSurfaceOpacity(opacity);
+  for (Input* input : {m_input, m_fontFamilyInput}) {
+    if (input != nullptr) {
+      input->setSurfaceOpacity(opacity);
+    }
   }
-  if (m_fontFamilyInput != nullptr) {
-    m_fontFamilyInput->setSurfaceOpacity(opacity);
+  for (Segmented* seg : {m_segmented, m_tabSwitch}) {
+    if (seg != nullptr) {
+      seg->setSurfaceOpacity(opacity);
+    }
   }
-  if (m_segmented != nullptr) {
-    m_segmented->setSurfaceOpacity(opacity);
+  for (Button* btn :
+       {m_closeButton, m_glyphTextButton, m_glyphButton, m_openFileDialogButton, m_openColorPickerButton,
+        m_openGlyphPickerButton, m_transformDemoButton}) {
+    if (btn != nullptr) {
+      btn->setSurfaceOpacity(opacity);
+    }
   }
-  if (m_tabSwitch != nullptr) {
-    m_tabSwitch->setSurfaceOpacity(opacity);
+  for (Button* tile : m_gridTileButtons) {
+    if (tile != nullptr) {
+      tile->setSurfaceOpacity(opacity);
+    }
+  }
+  if (m_select != nullptr) {
+    m_select->setSurfaceOpacity(opacity);
+  }
+  if (m_stepper != nullptr) {
+    m_stepper->setSurfaceOpacity(opacity);
   }
 }

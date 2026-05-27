@@ -61,7 +61,7 @@ Stepper::Stepper() {
   setGap(0.0f);
   setPadding(0.0f);
   setMinWidth(kDefaultMinWidth);
-  setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
+  setFill(colorSpecFromRole(ColorRole::SurfaceVariant, m_surfaceOpacity));
   clearBorder();
   setRadius(Style::scaledRadiusMd());
 
@@ -180,6 +180,15 @@ void Stepper::setValue(int value) {
     m_onValueChanged(m_value);
   }
   markLayoutDirty();
+}
+
+void Stepper::setSurfaceOpacity(float opacity) {
+  const float clamped = std::clamp(opacity, 0.0f, 1.0f);
+  if (m_surfaceOpacity == clamped) {
+    return;
+  }
+  m_surfaceOpacity = clamped;
+  refreshSegmentStyle();
 }
 
 void Stepper::setEnabled(bool enabled) {
@@ -412,7 +421,7 @@ void Stepper::refreshButtons() {
 
 void Stepper::refreshSegmentStyle() {
   const float r = Style::scaledRadiusMd(m_scale);
-  setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
+  setFill(colorSpecFromRole(ColorRole::SurfaceVariant, m_surfaceOpacity));
   clearBorder();
   setRadius(r);
   if (m_decrement != nullptr) {

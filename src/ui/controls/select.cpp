@@ -140,6 +140,15 @@ void Select::clearSelection() {
   markLayoutDirty();
 }
 
+void Select::setSurfaceOpacity(float opacity) {
+  const float clamped = std::clamp(opacity, 0.0f, 1.0f);
+  if (m_surfaceOpacity == clamped) {
+    return;
+  }
+  m_surfaceOpacity = clamped;
+  applyVisualState();
+}
+
 void Select::setEnabled(bool enabled) {
   if (m_enabled == enabled) {
     return;
@@ -308,17 +317,17 @@ void Select::applyVisualState() {
   const bool triggerPressed = m_triggerArea != nullptr && m_triggerArea->pressed();
   const bool triggerFocused = m_triggerArea != nullptr && m_triggerArea->focused();
 
-  Color triggerBg = resolved(ColorRole::SurfaceVariant);
+  Color triggerBg = resolved(ColorRole::SurfaceVariant, m_surfaceOpacity);
   Color triggerBorder = resolved(ColorRole::Outline);
   ColorSpec triggerText = selectedText().empty() ? colorSpecFromRole(ColorRole::OnSurfaceVariant, kPlaceholderAlpha)
                                                  : colorSpecFromRole(ColorRole::OnSurface);
 
   if (!m_enabled) {
-    triggerBg = resolved(ColorRole::SurfaceVariant, 0.75f);
+    triggerBg = resolved(ColorRole::SurfaceVariant, m_surfaceOpacity * 0.75f);
     triggerBorder = resolved(ColorRole::Outline, 0.6f);
     triggerText = colorSpecFromRole(ColorRole::OnSurface, 0.55f);
   } else if (triggerHovered || triggerPressed) {
-    triggerBg = resolved(ColorRole::SurfaceVariant);
+    triggerBg = resolved(ColorRole::SurfaceVariant, m_surfaceOpacity);
     triggerBorder = resolved(ColorRole::Hover);
   } else if (triggerFocused) {
     triggerBorder = resolved(ColorRole::Primary);

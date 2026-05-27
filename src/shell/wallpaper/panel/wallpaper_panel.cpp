@@ -253,7 +253,7 @@ void WallpaperPanel::create() {
           .glyph = "arrow-big-up",
           .glyphSize = Style::fontSizeBody * scale,
           .variant = ButtonVariant::Secondary,
-          // Toolbar icon button style.
+          .surfaceOpacity = panelCardOpacity(),
           .minWidth = Style::controlHeightSm * scale,
           .minHeight = Style::controlHeightSm * scale,
           .padding = Style::spaceXs * scale,
@@ -297,6 +297,7 @@ void WallpaperPanel::create() {
           .out = &m_monitorSelect,
           .fontSize = Style::fontSizeBody * scale,
           .controlHeight = Style::controlHeight * scale,
+          .surfaceOpacity = panelCardOpacity(),
           .onSelectionChanged =
               [this](std::size_t idx, std::string_view) {
                 m_selectedMonitorIndex = idx;
@@ -319,7 +320,7 @@ void WallpaperPanel::create() {
           .glyph = "color-picker",
           .glyphSize = Style::fontSizeBody * scale,
           .variant = ButtonVariant::Default,
-          // Toolbar icon button style.
+          .surfaceOpacity = panelCardOpacity(),
           .minWidth = Style::controlHeightSm * scale,
           .minHeight = Style::controlHeightSm * scale,
           .padding = Style::spaceXs * scale,
@@ -334,7 +335,7 @@ void WallpaperPanel::create() {
           .glyph = "refresh",
           .glyphSize = Style::fontSizeBody * scale,
           .variant = ButtonVariant::Default,
-          // Toolbar icon button style.
+          .surfaceOpacity = panelCardOpacity(),
           .minWidth = Style::controlHeightSm * scale,
           .minHeight = Style::controlHeightSm * scale,
           .padding = Style::spaceXs * scale,
@@ -444,11 +445,16 @@ void WallpaperPanel::doUpdate(Renderer& renderer) {
 }
 
 void WallpaperPanel::onPanelCardOpacityChanged(float opacity) {
-  if (m_closeButton != nullptr) {
-    m_closeButton->setSurfaceOpacity(opacity);
+  for (Button* btn : {m_closeButton, m_backButton, m_colorButton, m_refreshButton}) {
+    if (btn != nullptr) {
+      btn->setSurfaceOpacity(opacity);
+    }
   }
   if (m_filterInput != nullptr) {
     m_filterInput->setSurfaceOpacity(opacity);
+  }
+  if (m_monitorSelect != nullptr) {
+    m_monitorSelect->setSurfaceOpacity(opacity);
   }
 }
 

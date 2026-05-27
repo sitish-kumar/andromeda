@@ -439,6 +439,9 @@ namespace ui {
     if (props.enabled.has_value()) {
       control->setEnabled(*props.enabled);
     }
+    if (props.surfaceOpacity.has_value()) {
+      control->setSurfaceOpacity(*props.surfaceOpacity);
+    }
     if (props.onSelectionChanged) {
       control->setOnSelectionChanged(std::move(props.onSelectionChanged));
     }
@@ -788,6 +791,9 @@ namespace ui {
     }
     if (props.enabled.has_value()) {
       control->setEnabled(*props.enabled);
+    }
+    if (props.surfaceOpacity.has_value()) {
+      control->setSurfaceOpacity(*props.surfaceOpacity);
     }
     if (props.onValueChanged) {
       control->setOnValueChanged(std::move(props.onValueChanged));
