@@ -4,19 +4,14 @@
 #include "render/animation/animation_manager.h"
 #include "shell/dock/dock_model.h"
 #include "system/desktop_entry.h"
-#include "system/desktop_entry_launch.h"
 
 #include <array>
-#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
 #include <string_view>
-#include <unordered_map>
-#include <vector>
 
 class Box;
-class CompositorPlatform;
 class ConfigService;
 class Flex;
 class Glyph;
@@ -25,9 +20,6 @@ class Image;
 class InputArea;
 class Label;
 class RenderContext;
-struct wl_output;
-struct wl_surface;
-struct zwlr_foreign_toplevel_handle_v1;
 
 namespace shell::dock {
 
@@ -55,11 +47,7 @@ namespace shell::dock {
   };
 
   struct DockItemModelDependencies {
-    CompositorPlatform& platform;
     ConfigService& config;
-    std::unordered_map<std::string, zwlr_foreign_toplevel_handle_v1*>& lastActiveHandleByAppIdLower;
-    const std::vector<DesktopEntry>& pinnedEntries;
-    std::uint64_t modelSerial = 0;
   };
 
   struct DockItemSceneDependencies {
@@ -69,16 +57,10 @@ namespace shell::dock {
   };
 
   struct DockItemCallbacks {
-    std::function<void()> pruneCachedToplevelHandles;
-    std::function<desktop_entry_launch::LaunchOptions(wl_surface*)> launchOptions;
+    std::function<void(DockInstance&, const DockItemAction&)> activateOrLaunch;
     std::function<void(DockInstance&)> toggleLauncher;
     std::function<void(DockInstance&, const DockItemAction&)> openItemMenu;
   };
-
-  [[nodiscard]] bool refreshPinnedAppsIfNeeded(
-      const DockConfig& cfg, std::vector<std::string>& lastPinnedConfig, std::vector<DesktopEntry>& pinnedEntries,
-      std::uint64_t& modelSerial, std::uint64_t& entriesVersion
-  );
 
   [[nodiscard]] std::string_view dockLauncherIconGlyph(const DockConfig& cfg);
   [[nodiscard]] std::unique_ptr<Flex> makeDockItemRow(const DockConfig& cfg, bool vertical);

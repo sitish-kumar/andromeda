@@ -1,9 +1,16 @@
 #include "shell/dock/dock_model.h"
 
 #include "compositors/compositor_platform.h"
+#include "core/log.h"
 #include "system/app_identity.h"
 #include "util/string_utils.h"
 #include "wayland/wayland_toplevels.h"
+
+namespace {
+
+  constexpr Logger kLog("dock");
+
+} // namespace
 
 namespace shell::dock {
 
@@ -19,6 +26,59 @@ namespace shell::dock {
       return StringUtils::toLower(app_identity::resolveRunningDesktopEntry(active->appId, desktopEntries()).id);
     }
     return {};
+  }
+
+  bool refreshPinnedAppsIfNeeded(
+      const DockConfig& cfg, std::vector<std::string>& lastPinnedConfig, std::vector<DesktopEntry>& pinnedEntries,
+      std::uint64_t& modelSerial, std::uint64_t& entriesVersion
+  ) {
+    if (desktopEntriesVersion() == entriesVersion && cfg.pinned == lastPinnedConfig) {
+      return false;
+    }
+
+    lastPinnedConfig = cfg.pinned;
+    entriesVersion = desktopEntriesVersion();
+    pinnedEntries.clear();
+
+    const auto& entries = desktopEntries();
+
+    for (const auto& pinnedId : cfg.pinned) {
+      const auto pinnedLower = StringUtils::toLower(pinnedId);
+      bool found = false;
+
+      for (const auto& entry : entries) {
+        if (entry.hidden || entry.noDisplay) {
+          continue;
+        }
+        // Match by entry ID (stem of the desktop file path, e.g. "firefox"),
+        // by StartupWMClass (lower), or by Name (lower).
+        const auto stemLower = StringUtils::toLower([&] {
+          const auto slash = entry.id.rfind('/');
+          const auto base = (slash == std::string::npos) ? entry.id : entry.id.substr(slash + 1);
+          const auto dot = base.rfind('.');
+          return (dot == std::string::npos) ? base : base.substr(0, dot);
+        }());
+
+        if (stemLower == pinnedLower || app_identity::desktopEntryMatchesLower(entry, pinnedLower)) {
+          pinnedEntries.push_back(entry);
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        kLog.debug("pinned app not found: {}", pinnedId);
+        DesktopEntry placeholder;
+        placeholder.id = pinnedId;
+        placeholder.name = pinnedId;
+        placeholder.nameLower = pinnedLower;
+        pinnedEntries.push_back(std::move(placeholder));
+      }
+    }
+
+    ++modelSerial;
+    kLog.debug("pinned app list: {} entries", pinnedEntries.size());
+    return true;
   }
 
   namespace {
@@ -81,17 +141,17 @@ namespace shell::dock {
 
     snapshot.items.reserve(itemEntries.size());
     for (const auto& entry : itemEntries) {
-      DockItemModel item;
-      item.entry = entry;
-      item.idLower = StringUtils::toLower(entry.id);
-      item.startupWmClassLower = StringUtils::toLower(entry.startupWmClass);
-      item.running = containsRunningEntry(runningLower, item.idLower);
-      item.active = !snapshot.activeAppIdLower.empty() && snapshot.activeAppIdLower == item.idLower;
+      DockItemModel dockItem;
+      dockItem.entry = entry;
+      dockItem.idLower = StringUtils::toLower(entry.id);
+      dockItem.startupWmClassLower = StringUtils::toLower(entry.startupWmClass);
+      dockItem.running = containsRunningEntry(runningLower, dockItem.idLower);
+      dockItem.active = !snapshot.activeAppIdLower.empty() && snapshot.activeAppIdLower == dockItem.idLower;
       if (deps.config.showDots || deps.config.showInstanceCount) {
-        item.instanceCount =
-            deps.platform.windowsForApp(item.idLower, item.startupWmClassLower, snapshot.filterOutput).size();
+        dockItem.instanceCount =
+            deps.platform.windowsForApp(dockItem.idLower, dockItem.startupWmClassLower, snapshot.filterOutput).size();
       }
-      snapshot.items.push_back(std::move(item));
+      snapshot.items.push_back(std::move(dockItem));
     }
 
     return snapshot;

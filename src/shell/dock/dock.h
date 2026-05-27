@@ -56,7 +56,8 @@ private:
   bool syncInstanceModel(shell::dock::DockInstance& instance);
   void rebuildItems(shell::dock::DockInstance& instance);
   void updateVisuals(shell::dock::DockInstance& instance);
-  void openItemMenu(shell::dock::DockInstance& instance, const shell::dock::DockItemAction& item);
+  void activateOrLaunchItem(shell::dock::DockInstance& instance, const shell::dock::DockItemAction& action);
+  void openItemMenu(shell::dock::DockInstance& instance, const shell::dock::DockItemAction& action);
   void closeItemMenu();
 
   CompositorPlatform* m_platform = nullptr;

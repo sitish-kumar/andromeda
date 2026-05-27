@@ -43,6 +43,10 @@ namespace shell::dock {
 
   [[nodiscard]] wl_output* dockFilterOutput(const DockConfig& cfg, wl_output* instanceOutput);
   [[nodiscard]] std::string currentActiveEntryIdLower(const CompositorPlatform& platform);
+  [[nodiscard]] bool refreshPinnedAppsIfNeeded(
+      const DockConfig& cfg, std::vector<std::string>& lastPinnedConfig, std::vector<DesktopEntry>& pinnedEntries,
+      std::uint64_t& modelSerial, std::uint64_t& entriesVersion
+  );
   [[nodiscard]] DockSnapshot buildDockSnapshot(DockModelDependencies deps);
   [[nodiscard]] bool sameDockItemSet(const DockSnapshot& a, const DockSnapshot& b);
 
