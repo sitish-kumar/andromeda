@@ -46,6 +46,7 @@ public:
     ButtonStateColors hover;
     ButtonStateColors pressed;
     ButtonStateColors disabled;
+    std::optional<ButtonStateColors> selected;
   };
 
   Button();
