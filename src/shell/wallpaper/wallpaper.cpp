@@ -245,12 +245,7 @@ bool Wallpaper::initialize(
   m_renderContext = renderContext;
   m_textureCache = textureCache;
 
-  if (!m_config->config().wallpaper.enabled) {
-    m_wallpaperEnabled = false;
-    kLog.info("disabled in config");
-    return true;
-  }
-
+  // Register reload callback unconditionally so toggling enabled in config works.
   m_config->addReloadCallback([this]() { reload(); });
   m_paletteConn = paletteChanged().connect([this] {
     for (auto& inst : m_instances) {
@@ -260,6 +255,12 @@ bool Wallpaper::initialize(
       }
     }
   });
+
+  if (!m_config->config().wallpaper.enabled) {
+    m_wallpaperEnabled = false;
+    kLog.info("disabled in config");
+    return true;
+  }
 
   resetAutomationState();
   m_wallpaperEnabled = true;
