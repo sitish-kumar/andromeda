@@ -1,5 +1,6 @@
 #include "shell/tooltip/tooltip_manager.h"
 
+#include "core/deferred_call.h"
 #include "core/log.h"
 #include "core/ui_phase.h"
 #include "render/render_context.h"
@@ -172,7 +173,7 @@ void TooltipManager::dismissPopup() {
         },
         [this] {
           m_fadeAnimId = 0;
-          destroyPopup();
+          DeferredCall::callLater([this] { destroyPopup(); });
         },
         this
     );
