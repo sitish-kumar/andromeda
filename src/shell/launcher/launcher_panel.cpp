@@ -552,6 +552,13 @@ void LauncherPanel::onIconThemeChanged() {
 
 InputArea* LauncherPanel::initialFocusArea() const { return m_input != nullptr ? m_input->inputArea() : nullptr; }
 
+bool LauncherPanel::handleGlobalKey(std::uint32_t sym, std::uint32_t modifiers, bool pressed, bool preedit) {
+  if (!pressed || preedit) {
+    return false;
+  }
+  return handleKeyEvent(sym, modifiers);
+}
+
 void LauncherPanel::onInputChanged(const std::string& text) {
   m_query = text;
   m_allResults.clear();
