@@ -2,6 +2,7 @@
 
 #include "i18n/i18n.h"
 #include "render/core/renderer.h"
+#include "shell/settings/font_weight_catalog.h"
 #include "shell/settings/font_weight_i18n.h"
 #include "ui/style.h"
 
@@ -468,20 +469,14 @@ namespace settings {
     return entries;
   }
 
-  std::vector<WidgetSettingSpec> commonWidgetSettingSpecs() {
+  std::vector<WidgetSettingSpec> commonWidgetSettingSpecs(std::string_view shellFontFamily) {
     const WidgetSettingVisibility capsuleOn{"capsule", {"true"}};
 
     auto anchor = withGroup(boolSpec("anchor", false, true), WidgetSettingGroup::Presentation);
     auto scale = withGroup(doubleSpec("scale", 1.0, 0.2, 2.5, 0.05), WidgetSettingGroup::Presentation);
     auto widgetColor = withGroup(colorSpec("color", {}, true), WidgetSettingGroup::Presentation);
-    std::vector<WidgetSettingSelectOption> fontWeightOptions;
-    fontWeightOptions.reserve(kFontWeightOptions.size() + 1);
-    fontWeightOptions.push_back(WidgetSettingSelectOption{"", "settings.options.font-weight.default"});
-    for (const FontWeightI18nOption& option : kFontWeightOptions) {
-      fontWeightOptions.push_back(
-          WidgetSettingSelectOption{std::to_string(static_cast<int>(option.weight)), std::string(option.labelKey)}
-      );
-    }
+    auto fontWeightOptions =
+        buildLabelFontWeightSelectOptions(shellFontFamily, FontWeightSelectKind::WidgetInheritDefault);
     auto fontWeight =
         withGroup(selectSpec("font_weight", "", std::move(fontWeightOptions), true), WidgetSettingGroup::Presentation);
     fontWeight.integerValue = true;
@@ -518,9 +513,9 @@ namespace settings {
     };
   }
 
-  std::vector<WidgetSettingSpec> widgetSettingSpecs(std::string_view type) {
+  std::vector<WidgetSettingSpec> widgetSettingSpecs(std::string_view type, std::string_view shellFontFamily) {
     std::vector<WidgetSettingSpec> specs;
-    auto commonSpecs = commonWidgetSettingSpecs();
+    auto commonSpecs = commonWidgetSettingSpecs(shellFontFamily);
 
     auto add = [&](WidgetSettingSpec spec) { specs.push_back(std::move(spec)); };
     const std::vector<WidgetSettingSelectOption> shortFull = {
@@ -890,13 +885,14 @@ namespace settings {
     return specs;
   }
 
-  std::vector<WidgetSettingSpec> widgetSettingSpecs(std::string_view type, const WidgetConfig* config) {
+  std::vector<WidgetSettingSpec>
+  widgetSettingSpecs(std::string_view type, const WidgetConfig* config, std::string_view shellFontFamily) {
     if (type == "scripted" && config != nullptr) {
       const std::string script = config->getString("script", "");
       if (!script.empty()) {
         if (auto manifest = scripting::manifestForScriptConfig(script); manifest.has_value()) {
           std::vector<WidgetSettingSpec> specs;
-          auto commonSpecs = commonWidgetSettingSpecs();
+          auto commonSpecs = commonWidgetSettingSpecs(shellFontFamily);
           const std::vector<WidgetSettingSelectOption> scriptedScopes = {
               {.value = "instance", .labelKey = "settings.widgets.options.instance"},
               {.value = "shared", .labelKey = "settings.widgets.options.shared"},
@@ -916,7 +912,7 @@ namespace settings {
         }
       }
     }
-    return widgetSettingSpecs(type);
+    return widgetSettingSpecs(type, shellFontFamily);
   }
 
   namespace {
@@ -954,7 +950,7 @@ namespace settings {
 
   std::optional<WidgetSettingSpec> findWidgetSettingSpec(std::string_view widgetType, std::string_view settingKey) {
     const std::string key(settingKey);
-    for (const auto& spec : widgetSettingSpecs(widgetType)) {
+    for (const auto& spec : widgetSettingSpecs(widgetType, "sans-serif")) {
       if (spec.key == key) {
         return spec;
       }

@@ -8,6 +8,7 @@
 #include "i18n/i18n.h"
 #include "idle/idle_manager.h"
 #include "render/render_context.h"
+#include "render/text/font_weight_catalog.h"
 #include "system/dependency_service.h"
 #include "ui/controls/box.h"
 #include "ui/controls/flex.h"
@@ -693,6 +694,7 @@ void SettingsWindow::onThemeChanged() {
 }
 
 void SettingsWindow::onFontChanged() {
+  text::invalidateFontWeightCatalogCache();
   if (isOpen()) {
     if (m_widgetAddPopup != nullptr && m_widgetAddPopup->isOpen()) {
       m_widgetAddPopup->requestLayout();
@@ -703,7 +705,7 @@ void SettingsWindow::onFontChanged() {
     if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->isOpen()) {
       m_sessionActionsEditorPopup->requestLayout();
     }
-    m_surface->requestLayout();
+    requestSceneRebuild();
   }
 }
 

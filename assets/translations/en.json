@@ -1243,7 +1243,7 @@
         },
         "font_weight": {
           "label": "Font Weight",
-          "description": "Font weight for this widget's labels"
+          "description": "Font weight for this widget's labels. Only weights installed for the appearance font are listed; variable fonts show the full range."
         },
         "command": {
           "label": "Left Click Command",
@@ -2344,7 +2344,7 @@
         },
         "font-weight": {
           "label": "Font Weight",
-          "description": "Font weight for bar widget labels"
+          "description": "Default font weight for bar widget labels. Only weights installed for the appearance font are listed; variable fonts show the full range."
         },
         "content-padding": {
           "label": "Content Padding",

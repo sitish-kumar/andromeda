@@ -6,7 +6,7 @@
 #include "render/core/renderer.h"
 #include "shell/control_center/shortcut_registry.h"
 #include "shell/settings/color_spec_picker.h"
-#include "shell/settings/font_weight_i18n.h"
+#include "shell/settings/font_weight_catalog.h"
 #include "theme/builtin_palettes.h"
 #include "theme/builtin_templates.h"
 #include "util/string_utils.h"
@@ -1765,11 +1765,11 @@ namespace settings {
       ));
       {
         std::vector<SelectOption> fontWeightOptions;
-        fontWeightOptions.reserve(kFontWeightOptions.size());
-        for (const FontWeightI18nOption& option : kFontWeightOptions) {
-          fontWeightOptions.push_back(
-              SelectOption{std::to_string(static_cast<int>(option.weight)), tr(option.labelKey)}
-          );
+        const auto widgetOptions =
+            buildLabelFontWeightSelectOptions(cfg.shell.fontFamily, FontWeightSelectKind::BarDefault, bar.fontWeight);
+        fontWeightOptions.reserve(widgetOptions.size());
+        for (const auto& option : widgetOptions) {
+          fontWeightOptions.push_back(SelectOption{option.value, tr(option.labelKey)});
         }
         SelectSetting fontWeightSelect{std::move(fontWeightOptions), std::to_string(bar.fontWeight)};
         fontWeightSelect.integerValue = true;

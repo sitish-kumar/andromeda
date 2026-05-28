@@ -3,6 +3,7 @@
 #include "core/log.h"
 #include "render/backend/render_backend.h"
 #include "render/core/texture_manager.h"
+#include "render/text/font_weight_catalog.h"
 
 #include <algorithm>
 #include <cairo.h>
@@ -319,10 +320,12 @@ void CairoTextRenderer::setFontFamily(std::string family) {
     return;
   }
   m_fontFamily = std::move(family);
+  text::invalidateFontWeightCatalogCache();
   clearCaches();
 }
 
 void CairoTextRenderer::notifyFontConfigChanged() {
+  text::invalidateFontWeightCatalogCache();
   if (m_fontMap != nullptr && PANGO_IS_FC_FONT_MAP(m_fontMap)) {
     // PangoFcFontMap caches its fontconfig view; this forces it to re-read the
     // current FcConfig (which is where FcConfigAppFontAddFile added the font).

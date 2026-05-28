@@ -114,11 +114,13 @@ namespace settings {
   [[nodiscard]] WidgetReferenceInfo
   widgetReferenceInfo(const Config& cfg, std::string_view name, bool includeManifestVersion = true);
   [[nodiscard]] std::vector<WidgetPickerEntry> widgetPickerEntries(const Config& cfg);
-  [[nodiscard]] std::vector<WidgetSettingSpec> commonWidgetSettingSpecs();
-  [[nodiscard]] std::vector<WidgetSettingSpec> widgetSettingSpecs(std::string_view type);
+  [[nodiscard]] std::vector<WidgetSettingSpec> commonWidgetSettingSpecs(std::string_view shellFontFamily);
+  [[nodiscard]] std::vector<WidgetSettingSpec>
+  widgetSettingSpecs(std::string_view type, std::string_view shellFontFamily);
   // Config-aware variant: for scripted widgets whose `script` declares a Lua manifest,
   // returns the manifest-driven settings. Falls back to the type-only specs otherwise.
-  [[nodiscard]] std::vector<WidgetSettingSpec> widgetSettingSpecs(std::string_view type, const WidgetConfig* config);
+  [[nodiscard]] std::vector<WidgetSettingSpec>
+  widgetSettingSpecs(std::string_view type, const WidgetConfig* config, std::string_view shellFontFamily);
   // Build settings specs from a scripted widget's Lua manifest.
   [[nodiscard]] std::vector<WidgetSettingSpec> manifestSettingSpecs(const scripting::ScriptWidgetManifest& manifest);
 

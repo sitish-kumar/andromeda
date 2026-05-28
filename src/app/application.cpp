@@ -20,6 +20,7 @@
 #include "launcher/wallpaper_provider.h"
 #include "notification/notifications.h"
 #include "render/animation/motion_service.h"
+#include "render/text/font_weight_catalog.h"
 #include "shell/clipboard/clipboard_panel.h"
 #include "shell/clipboard/clipboard_paste.h"
 #include "shell/control_center/control_center_panel.h"
@@ -1289,6 +1290,7 @@ void Application::initUi() {
     }
 
     lastShellFontFamily = newShellFontFamily;
+    text::invalidateFontWeightCatalogCache();
     m_renderContext.setTextFontFamily(newShellFontFamily);
     m_bar.requestLayout();
     m_dock.requestLayout();

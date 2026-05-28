@@ -4,6 +4,7 @@
 #include "i18n/i18n.h"
 #include "render/scene/node.h"
 #include "scripting/scripted_widget_manifest.h"
+#include "shell/settings/font_weight_catalog.h"
 #include "shell/settings/settings_content.h"
 #include "shell/settings/widget_settings_registry.h"
 #include "ui/builders.h"
@@ -18,6 +19,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <format>
 #include <memory>
@@ -806,6 +808,34 @@ namespace settings {
       return selectSetting;
     }
 
+    SelectSetting labelFontWeightSelectSetting(
+        const BarWidgetEditorContext& ctx, std::string_view widgetName, const WidgetSettingSpec& spec,
+        std::string selectedValue
+    ) {
+      std::optional<int> preserveWeight;
+      if (!selectedValue.empty()) {
+        preserveWeight = static_cast<int>(std::strtol(selectedValue.c_str(), nullptr, 10));
+      } else {
+        const WidgetSettingValue configuredValue = widgetSettingValue(ctx.config, widgetName, spec);
+        if (const auto* configured = std::get_if<std::int64_t>(&configuredValue)) {
+          preserveWeight = static_cast<int>(*configured);
+        }
+      }
+
+      std::vector<SelectOption> options;
+      const auto catalogOptions = buildLabelFontWeightSelectOptions(
+          ctx.config.shell.fontFamily, FontWeightSelectKind::WidgetInheritDefault, preserveWeight
+      );
+      options.reserve(catalogOptions.size());
+      for (const auto& option : catalogOptions) {
+        options.push_back(SelectOption{option.value, i18n::tr(option.labelKey)});
+      }
+
+      SelectSetting selectSetting{std::move(options), std::move(selectedValue)};
+      selectSetting.integerValue = spec.integerValue;
+      return selectSetting;
+    }
+
     SelectSetting batteryDeviceSelectSetting(const BarWidgetEditorContext& ctx, std::string selectedValue) {
       if (selectedValue.empty()) {
         selectedValue = "auto";
@@ -959,7 +989,7 @@ namespace settings {
 
       const auto widgetIt = ctx.config.widgets.find(widgetName);
       const WidgetConfig* widgetConfig = widgetIt != ctx.config.widgets.end() ? &widgetIt->second : nullptr;
-      auto specs = widgetSettingSpecs(widgetType, widgetConfig);
+      auto specs = widgetSettingSpecs(widgetType, widgetConfig, ctx.config.shell.fontFamily);
       if (specs.empty()) {
         return;
       }
@@ -1200,6 +1230,8 @@ namespace settings {
           const std::string selectedValue = settingValueAsString(value);
           if (widgetType == "battery" && spec.key == "device") {
             selectSetting = batteryDeviceSelectSetting(ctx, selectedValue);
+          } else if (spec.key == "font_weight") {
+            selectSetting = labelFontWeightSelectSetting(ctx, widgetName, spec, selectedValue);
           } else if (widgetType == "workspaces" && spec.key == "display") {
             selectSetting = workspacesDisplaySelectSetting(ctx, widgetName, spec, specs, selectedValue);
           } else {
