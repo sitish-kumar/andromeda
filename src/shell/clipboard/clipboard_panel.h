@@ -85,6 +85,7 @@ private:
   Button* m_clearHistoryButton = nullptr;
   Button* m_clearKeepPinnedButton = nullptr;
   Flex* m_clearConfirmPanel = nullptr;
+  Label* m_clearConfirmDesc = nullptr;
   Button* m_closeButton = nullptr;
   Input* m_filterInput = nullptr;
   VirtualGridView* m_listGrid = nullptr;

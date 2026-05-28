@@ -36,7 +36,9 @@
       "delete-title": "Delete clipboard item?",
       "delete-desc": "This removes the selected item from clipboard history.",
       "clear-title": "Clear clipboard history?",
-      "clear-desc": "Choose whether pinned items should be kept."
+      "clear-desc": "Choose whether pinned items should be kept.",
+      "clear-desc-no-pinned": "This removes every entry from clipboard history.",
+      "clear-desc-all-pinned": "Every entry is pinned. Use Clear everything to remove them all."
     },
     "empty": {
       "history-title": "Clipboard history is empty",

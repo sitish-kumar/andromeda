@@ -575,6 +575,7 @@ void ClipboardPanel::create() {
   );
   clearConfirmPanel->addChild(
       ui::label({
+          .out = &m_clearConfirmDesc,
           .text = i18n::tr("clipboard.confirm.clear-desc"),
           .fontSize = Style::fontSizeCaption * scale,
           .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
@@ -917,6 +918,7 @@ void ClipboardPanel::onClose() {
   m_clearHistoryButton = nullptr;
   m_clearKeepPinnedButton = nullptr;
   m_clearConfirmPanel = nullptr;
+  m_clearConfirmDesc = nullptr;
   m_closeButton = nullptr;
   m_filterInput = nullptr;
   m_listGrid = nullptr;
@@ -1010,7 +1012,9 @@ void ClipboardPanel::updateListState() {
   const auto& history = m_clipboard != nullptr ? m_clipboard->history() : std::deque<ClipboardEntry>{};
   const bool empty = history.empty() || m_filteredIndices.empty();
   const bool hasHistory = !history.empty();
+  const bool hasPinned = std::ranges::any_of(history, [](const ClipboardEntry& entry) { return entry.pinned; });
   const bool hasUnpinned = std::ranges::any_of(history, [](const ClipboardEntry& entry) { return !entry.pinned; });
+  const bool showKeepPinnedChoice = hasPinned && hasUnpinned;
   if (!hasHistory) {
     resetClearConfirmation();
   }
@@ -1025,7 +1029,19 @@ void ClipboardPanel::updateListState() {
     m_clearConfirmPanel->setParticipatesInLayout(hasHistory && m_clearConfirm);
   }
   if (m_clearKeepPinnedButton != nullptr) {
+    const bool showKeepPinned = showKeepPinnedChoice && m_clearConfirm;
+    m_clearKeepPinnedButton->setVisible(showKeepPinned);
+    m_clearKeepPinnedButton->setParticipatesInLayout(showKeepPinned);
     m_clearKeepPinnedButton->setEnabled(hasUnpinned);
+  }
+  if (m_clearConfirmDesc != nullptr) {
+    if (!hasPinned) {
+      m_clearConfirmDesc->setText(i18n::tr("clipboard.confirm.clear-desc-no-pinned"));
+    } else if (!hasUnpinned) {
+      m_clearConfirmDesc->setText(i18n::tr("clipboard.confirm.clear-desc-all-pinned"));
+    } else {
+      m_clearConfirmDesc->setText(i18n::tr("clipboard.confirm.clear-desc"));
+    }
   }
 
   if (m_listEmptyLabel != nullptr) {
