@@ -52,6 +52,7 @@ public:
   AsyncTextureCache& operator=(const AsyncTextureCache&) = delete;
 
   void initialize(GlSharedContext* sharedGl);
+  void setMakeCurrentCallback(std::function<void()> callback) { m_makeCurrentCallback = std::move(callback); }
   [[nodiscard]] ReadySubscription
   subscribeReady(const std::string& path, int targetSize, bool mipmap, TextureReadyCallback callback);
 
@@ -113,6 +114,7 @@ private:
   [[nodiscard]] static RequestKey makeKey(const std::string& path, int targetSize, bool mipmap);
 
   GlSharedContext* m_sharedGl = nullptr;
+  std::function<void()> m_makeCurrentCallback;
   std::unique_ptr<TextureManager> m_textureManager;
   int m_eventFd = -1;
   std::vector<std::thread> m_workers;

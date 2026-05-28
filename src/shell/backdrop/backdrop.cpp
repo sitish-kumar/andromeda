@@ -3,6 +3,7 @@
 #include "compositors/compositor_detect.h"
 #include "config/config_service.h"
 #include "core/log.h"
+#include "render/backend/render_backend.h"
 #include "render/core/shared_texture_cache.h"
 #include "shell/backdrop/backdrop_surface.h"
 #include "ui/palette.h"
@@ -201,6 +202,13 @@ void Backdrop::createInstance(const WaylandOutput& output) {
 
 void Backdrop::loadWallpaper(BackdropInstance& inst, const std::string& path) {
   auto tex = m_textureCache->acquire(path);
+  if (tex.id == 0 && !m_textureCache->shared() && inst.surface != nullptr) {
+    auto* renderer = inst.surface->wallpaperRenderer();
+    if (renderer != nullptr && renderer->backend() != nullptr) {
+      renderer->backend()->makeCurrentNoSurface();
+      tex = renderer->backend()->textureManager().loadFromFile(path, 0, true);
+    }
+  }
   if (tex.id == 0) {
     kLog.warn("failed to load {}", path);
     return;
@@ -239,7 +247,15 @@ void Backdrop::updateRendererState(BackdropInstance& inst) {
 
 void Backdrop::releaseInstanceTexture(BackdropInstance& inst, bool clearPath) {
   if (inst.currentTexture.id != 0) {
-    m_textureCache->release(inst.currentTexture, inst.currentPath);
+    if (m_textureCache->shared()) {
+      m_textureCache->release(inst.currentTexture, inst.currentPath);
+    } else if (inst.surface != nullptr) {
+      auto* renderer = inst.surface->wallpaperRenderer();
+      if (renderer != nullptr && renderer->backend() != nullptr) {
+        renderer->backend()->makeCurrentNoSurface();
+        renderer->backend()->textureManager().unload(inst.currentTexture);
+      }
+    }
     inst.currentTexture = {};
   }
   if (clearPath) {

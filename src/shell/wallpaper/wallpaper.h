@@ -37,6 +37,8 @@ private:
   void runAutomation(std::int64_t minuteStamp);
   [[nodiscard]] bool switchToRandomWallpaper(std::optional<std::string_view> connector = std::nullopt);
   void createInstance(const WaylandOutput& output);
+  [[nodiscard]] TextureHandle acquireTexture(const std::string& path);
+  void releaseTexture(TextureHandle& handle, const std::string& path);
   void loadWallpaper(WallpaperInstance& instance, const std::string& path);
   void startTransition(WallpaperInstance& instance);
   void updateRendererState(WallpaperInstance& instance);

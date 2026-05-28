@@ -772,8 +772,41 @@ void Wallpaper::createInstance(const WaylandOutput& output) {
 }
 
 void Wallpaper::releaseInstanceTextures(WallpaperInstance& inst) {
-  m_textureCache->release(inst.currentTexture, inst.currentPath);
-  m_textureCache->release(inst.nextTexture, inst.pendingPath);
+  releaseTexture(inst.currentTexture, inst.currentPath);
+  releaseTexture(inst.nextTexture, inst.pendingPath);
+}
+
+TextureHandle Wallpaper::acquireTexture(const std::string& path) {
+  if (path.empty() || m_textureCache == nullptr) {
+    return {};
+  }
+
+  auto handle = m_textureCache->acquire(path);
+  if (handle.id != 0 || m_textureCache->shared() || m_renderContext == nullptr) {
+    return handle;
+  }
+
+  m_renderContext->backend().makeCurrentNoSurface();
+  return m_renderContext->textureManager().loadFromFile(path, 0, true);
+}
+
+void Wallpaper::releaseTexture(TextureHandle& handle, const std::string& path) {
+  if (handle.id == 0) {
+    return;
+  }
+
+  if (m_textureCache != nullptr && m_textureCache->shared()) {
+    m_textureCache->release(handle, path);
+    return;
+  }
+
+  if (m_renderContext != nullptr) {
+    m_renderContext->backend().makeCurrentNoSurface();
+    m_renderContext->textureManager().unload(handle);
+    return;
+  }
+
+  handle = {};
 }
 
 // ── Wallpaper loading & transitions ──────────────────────────────────────────
@@ -798,7 +831,7 @@ void Wallpaper::loadWallpaper(WallpaperInstance& instance, const std::string& pa
   if (parseColorWallpaperPath(path, newColor)) {
     newSourceKind = WallpaperSourceKind::Color;
   } else {
-    newTex = m_textureCache->acquire(path);
+    newTex = acquireTexture(path);
     if (newTex.id == 0) {
       kLog.warn("failed to load {}", path);
       return;
@@ -847,7 +880,7 @@ void Wallpaper::startTransition(WallpaperInstance& instance) {
       [inst](float v) { inst->transitionProgress = v; },
       [this, inst]() {
         // Transition complete — release old current, promote next to current
-        m_textureCache->release(inst->currentTexture, inst->currentPath);
+        releaseTexture(inst->currentTexture, inst->currentPath);
         inst->currentSourceKind = inst->nextSourceKind;
         inst->currentTexture = inst->nextTexture;
         inst->currentColor = inst->nextColor;

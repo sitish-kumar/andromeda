@@ -118,8 +118,13 @@ LockSurface::LockSurface(WaylandConnection& connection, ConfigService* config) :
 }
 
 LockSurface::~LockSurface() {
-  if (m_textureCache != nullptr && m_wallpaperTexture.id != 0) {
-    m_textureCache->release(m_wallpaperTexture, m_wallpaperPath);
+  if (m_wallpaperTexture.id != 0 && m_textureCache != nullptr) {
+    if (m_textureCache->shared()) {
+      m_textureCache->release(m_wallpaperTexture, m_wallpaperPath);
+    } else if (renderContext() != nullptr) {
+      renderContext()->backend().makeCurrentNoSurface();
+      renderContext()->textureManager().unload(m_wallpaperTexture);
+    }
   }
   m_connection.unregisterSurface(m_surface);
   if (m_lockSurface != nullptr) {
@@ -186,8 +191,13 @@ void LockSurface::setWallpaperPath(std::string wallpaperPath) {
   if (m_wallpaperPath == wallpaperPath) {
     return;
   }
-  if (m_textureCache != nullptr && m_wallpaperTexture.id != 0) {
-    m_textureCache->release(m_wallpaperTexture, m_wallpaperPath);
+  if (m_wallpaperTexture.id != 0 && m_textureCache != nullptr) {
+    if (m_textureCache->shared()) {
+      m_textureCache->release(m_wallpaperTexture, m_wallpaperPath);
+    } else if (renderContext() != nullptr) {
+      renderContext()->backend().makeCurrentNoSurface();
+      renderContext()->textureManager().unload(m_wallpaperTexture);
+    }
   }
   m_wallpaperPath = std::move(wallpaperPath);
   m_wallpaperTexture = {};
@@ -429,6 +439,10 @@ void LockSurface::applyWallpaperTexture() {
     m_wallpaper->setFillColor(m_wallpaperFillColor);
   } else if (m_textureCache != nullptr && !m_wallpaperPath.empty()) {
     m_wallpaperTexture = m_textureCache->acquire(m_wallpaperPath);
+    if (m_wallpaperTexture.id == 0 && !m_textureCache->shared() && renderContext() != nullptr) {
+      renderContext()->backend().makeCurrentNoSurface();
+      m_wallpaperTexture = renderContext()->textureManager().loadFromFile(m_wallpaperPath, 0, true);
+    }
     m_wallpaper->setTextures(
         m_wallpaperTexture.id, {}, static_cast<float>(m_wallpaperTexture.width),
         static_cast<float>(m_wallpaperTexture.height), 0.0f, 0.0f

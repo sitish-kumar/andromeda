@@ -22,6 +22,8 @@ public:
 
   void initialize(GlSharedContext* sharedGl);
 
+  [[nodiscard]] bool shared() const noexcept { return m_sharedGl != nullptr; }
+
   [[nodiscard]] TextureHandle acquire(const std::string& path);
   void release(TextureHandle& handle, const std::string& path);
 

@@ -17,11 +17,13 @@ SharedTextureCache::~SharedTextureCache() {
 
 void SharedTextureCache::initialize(GlSharedContext* sharedGl) {
   m_sharedGl = sharedGl;
-  m_textureManager = createDefaultTextureManager();
+  if (m_sharedGl != nullptr) {
+    m_textureManager = createDefaultTextureManager();
+  }
 }
 
 TextureHandle SharedTextureCache::acquire(const std::string& path) {
-  if (path.empty()) {
+  if (path.empty() || m_textureManager == nullptr) {
     return {};
   }
 
@@ -44,7 +46,7 @@ TextureHandle SharedTextureCache::acquire(const std::string& path) {
 }
 
 void SharedTextureCache::release(TextureHandle& handle, const std::string& path) {
-  if (handle.id == 0 || path.empty()) {
+  if (handle.id == 0 || path.empty() || m_textureManager == nullptr) {
     handle = {};
     return;
   }

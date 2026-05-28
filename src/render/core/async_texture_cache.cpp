@@ -340,6 +340,8 @@ void AsyncTextureCache::pushResult(DecodedJob job) {
 void AsyncTextureCache::makeCurrent() {
   if (m_sharedGl != nullptr) {
     m_sharedGl->makeCurrentSurfaceless();
+  } else if (m_makeCurrentCallback) {
+    m_makeCurrentCallback();
   }
 }
 

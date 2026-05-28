@@ -1741,7 +1741,7 @@
         },
         "shared-gl-context": {
           "label": "Shared GPU Context",
-          "description": "Share textures across surfaces to save VRAM; disable if you see corrupted textures on older GPUs"
+          "description": "Share textures across surfaces to save VRAM; disable if you see corrupted textures on older GPUs. Restart required."
         },
         "clipboard-history-max-entries": {
           "label": "History Size",
