@@ -651,6 +651,13 @@
         "pending-charge": "Pending charge",
         "pending-discharge": "Pending discharge",
         "battery": "Battery"
+      },
+      "tooltip": {
+        "status": "Status",
+        "time-left": "Time left",
+        "time-to-full": "Time to full",
+        "rate": "Rate",
+        "health": "Health"
       }
     },
     "profiles": {

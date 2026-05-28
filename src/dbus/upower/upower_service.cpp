@@ -257,6 +257,7 @@ UPowerState UPowerService::readDeviceState(sdbus::IProxy& proxy) const {
   next.state = decodeBatteryState(rawState);
   next.timeToEmpty = getPropertyOr<std::int64_t>(proxy, kDeviceInterface, "TimeToEmpty", 0);
   next.timeToFull = getPropertyOr<std::int64_t>(proxy, kDeviceInterface, "TimeToFull", 0);
+  next.energyRate = getPropertyOr<double>(proxy, kDeviceInterface, "EnergyRate", 0.0);
 
   return next;
 }
@@ -270,6 +271,8 @@ UPowerDeviceInfo UPowerService::readDeviceInfo(std::string path, sdbus::IProxy& 
   info.serial = getPropertyOr<std::string>(proxy, kDeviceInterface, "Serial", "");
   info.type = static_cast<UPowerDeviceType>(getPropertyOr<std::uint32_t>(proxy, kDeviceInterface, "Type", 0));
   info.powerSupply = getPropertyOr<bool>(proxy, kDeviceInterface, "PowerSupply", false);
+  info.energyFull = getPropertyOr<double>(proxy, kDeviceInterface, "EnergyFull", 0.0);
+  info.energyFullDesign = getPropertyOr<double>(proxy, kDeviceInterface, "EnergyFullDesign", 0.0);
   info.state = readDeviceState(proxy);
   info.isPresent = info.state.isPresent;
   return info;

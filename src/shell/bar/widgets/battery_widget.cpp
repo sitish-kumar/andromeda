@@ -1,14 +1,18 @@
 #include "shell/bar/widgets/battery_widget.h"
 
 #include "dbus/upower/upower_service.h"
+#include "i18n/i18n.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
+#include "time/time_format.h"
 #include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <sstream>
 #include <string>
 #include <utility>
 
@@ -451,6 +455,31 @@ void BatteryWidget::syncState(Renderer& renderer) {
       }
       int dp = static_cast<int>(std::round(dev.state.percentage));
       rows.push_back({std::move(name), std::to_string(dp) + "%"});
+
+      if (dev.isLaptopBattery()) {
+        rows.push_back({i18n::tr("power.battery.tooltip.status"), batteryStateLabel(dev.state.state)});
+
+        if (dev.state.timeToEmpty > 0) {
+          auto dur = formatDuration(std::chrono::seconds(dev.state.timeToEmpty));
+          rows.push_back({i18n::tr("power.battery.tooltip.time-left"), std::move(dur)});
+        } else if (dev.state.timeToFull > 0) {
+          auto dur = formatDuration(std::chrono::seconds(dev.state.timeToFull));
+          rows.push_back({i18n::tr("power.battery.tooltip.time-to-full"), std::move(dur)});
+        }
+
+        if (dev.state.energyRate > 0.0) {
+          std::ostringstream oss;
+          oss << std::fixed;
+          oss.precision(1);
+          oss << dev.state.energyRate << " W";
+          rows.push_back({i18n::tr("power.battery.tooltip.rate"), oss.str()});
+        }
+
+        if (dev.energyFullDesign > 0.0) {
+          int health = static_cast<int>(std::round(dev.energyFull / dev.energyFullDesign * 100.0));
+          rows.push_back({i18n::tr("power.battery.tooltip.health"), std::to_string(health) + "%"});
+        }
+      }
     }
     if (!rows.empty()) {
       static_cast<InputArea*>(rootNode)->setTooltip(std::move(rows));

@@ -39,6 +39,7 @@ enum class BatteryState : std::uint8_t {
 
 struct UPowerState {
   double percentage = 0.0;
+  double energyRate = 0.0; // watts
   BatteryState state = BatteryState::Unknown;
   std::int64_t timeToEmpty = 0; // seconds
   std::int64_t timeToFull = 0;  // seconds
@@ -54,6 +55,8 @@ struct UPowerDeviceInfo {
   std::string vendor;
   std::string model;
   std::string serial;
+  double energyFull = 0.0;       // Wh
+  double energyFullDesign = 0.0; // Wh
   UPowerDeviceType type = UPowerDeviceType::Unknown;
   bool powerSupply = false;
   bool isPresent = false;
