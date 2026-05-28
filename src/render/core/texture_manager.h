@@ -32,6 +32,9 @@ public:
   TextureManager(const TextureManager&) = delete;
   TextureManager& operator=(const TextureManager&) = delete;
 
+  static void setGlobalMipmapsEnabled(bool enabled) { s_mipmapsEnabled = enabled; }
+  [[nodiscard]] static bool globalMipmapsEnabled() { return s_mipmapsEnabled; }
+
   [[nodiscard]] virtual TextureHandle
   loadFromFile(const std::string& path, int targetSize = 0, bool mipmap = false) = 0;
   [[nodiscard]] virtual TextureHandle
@@ -62,4 +65,7 @@ public:
 
 protected:
   TextureManager() = default;
+
+private:
+  static inline bool s_mipmapsEnabled = true;
 };

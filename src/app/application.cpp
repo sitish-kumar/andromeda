@@ -20,6 +20,7 @@
 #include "launcher/wallpaper_provider.h"
 #include "notification/notifications.h"
 #include "render/animation/motion_service.h"
+#include "render/core/texture_manager.h"
 #include "render/text/font_weight_catalog.h"
 #include "shell/clipboard/clipboard_panel.h"
 #include "shell/clipboard/clipboard_paste.h"
@@ -478,6 +479,9 @@ void Application::initServices() {
       m_panelManager.refresh();
     }
   });
+  if (m_configService.config().shell.disableMipmaps) {
+    TextureManager::setGlobalMipmapsEnabled(false);
+  }
   m_glShared.initialize(m_wayland.display(), m_configService.config().shell.sharedGlContext);
   auto* sharedGlPtr = m_glShared.hasSharedContext() ? &m_glShared : nullptr;
   m_sharedTextureCache.initialize(sharedGlPtr);

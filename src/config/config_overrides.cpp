@@ -400,6 +400,7 @@ namespace {
         && a.clipboardConfirmClearHistory == b.clipboardConfirmClearHistory
         && a.screenTimeEnabled == b.screenTimeEnabled
         && a.sharedGlContext == b.sharedGlContext
+        && a.disableMipmaps == b.disableMipmaps
         && a.clipboardAutoPaste == b.clipboardAutoPaste
         && a.clipboardImageActionCommand == b.clipboardImageActionCommand
         && a.shadow.direction == b.shadow.direction

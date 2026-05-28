@@ -266,6 +266,7 @@ void GlesTextureManager::probeExtensions() {
 }
 
 TextureHandle GlesTextureManager::uploadBgra(const std::uint8_t* data, int width, int height, bool mipmap) {
+  mipmap = mipmap && globalMipmapsEnabled();
   GLuint tex = 0;
   glGenTextures(1, &tex);
   if (tex == 0) {
@@ -296,6 +297,7 @@ TextureHandle GlesTextureManager::uploadRgba(const std::uint8_t* data, int width
 TextureHandle GlesTextureManager::uploadPixels(
     const std::uint8_t* data, int width, int height, TextureDataFormat format, TextureFilter filter, bool mipmap
 ) {
+  mipmap = mipmap && globalMipmapsEnabled();
   GLuint tex = 0;
   glGenTextures(1, &tex);
   if (tex == 0) {

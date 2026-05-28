@@ -324,6 +324,7 @@ namespace config_export {
       table.insert_or_assign("clipboard_confirm_clear_history", shell.clipboardConfirmClearHistory);
       table.insert_or_assign("screen_time_enabled", shell.screenTimeEnabled);
       table.insert_or_assign("shared_gl_context", shell.sharedGlContext);
+      table.insert_or_assign("disable_mipmaps", shell.disableMipmaps);
       table.insert_or_assign(
           "clipboard_auto_paste", std::string(enumToKey(kClipboardAutoPasteModes, shell.clipboardAutoPaste))
       );
