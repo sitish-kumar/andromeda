@@ -15,6 +15,7 @@
 #include <vector>
 
 class TextClipboard;
+class Glyph;
 class GlyphNode;
 class InputArea;
 class Label;
@@ -150,7 +151,7 @@ private:
 
   std::vector<float> m_stopX;
   std::vector<std::size_t> m_stopByte;
-  std::vector<GlyphNode*> m_passwordGlyphs;
+  std::vector<Glyph*> m_passwordGlyphs;
   float m_scrollOffset = 0.0f;
   bool m_cursorBlinkVisible = true;
   Timer m_cursorBlinkTimer;
