@@ -814,15 +814,9 @@ namespace settings {
               },
           .selectedIndex = static_cast<std::size_t>(setting.value.has_value() ? 1 : 0),
           .scale = scale,
-          .onChange = [configService = ctx.configService, clearOverride = ctx.clearOverride,
-                       requestRebuild = ctx.requestRebuild, setOverride = ctx.setOverride, path,
-                       currentValue](std::size_t index) {
+          .onChange = [setOverride = ctx.setOverride, path, currentValue](std::size_t index) {
             if (index == 0) {
-              if (configService != nullptr && configService->hasOverride(path)) {
-                clearOverride(path);
-              } else if (requestRebuild) {
-                requestRebuild();
-              }
+              setOverride(path, std::string("auto"));
               return;
             }
             setOverride(path, static_cast<double>(currentValue));
