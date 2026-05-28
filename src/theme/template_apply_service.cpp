@@ -3,9 +3,11 @@
 #include "config/config_service.h"
 #include "core/log.h"
 #include "core/resource_paths.h"
+#include "ipc/ipc_service.h"
 #include "theme/community_templates.h"
 #include "theme/template_engine.h"
 #include "util/file_utils.h"
+#include "util/string_utils.h"
 
 #include <filesystem>
 #include <string>
@@ -144,8 +146,42 @@ namespace noctalia::theme {
       std::lock_guard lock(m_mutex);
       request.generation = ++m_nextGeneration;
       m_pendingRequest = std::move(request);
+      m_lastPalette = palette;
+      m_lastDefaultMode = std::string(defaultMode);
     }
     m_cv.notify_one();
+  }
+
+  bool TemplateApplyService::reapplyLast() const {
+    std::optional<GeneratedPalette> palette;
+    std::string defaultMode;
+    {
+      std::lock_guard lock(m_mutex);
+      if (!m_lastPalette.has_value()) {
+        return false;
+      }
+      palette = *m_lastPalette;
+      defaultMode = m_lastDefaultMode;
+    }
+
+    apply(*palette, defaultMode);
+    return true;
+  }
+
+  void TemplateApplyService::registerIpc(IpcService& ipc) {
+    ipc.registerHandler(
+        "templates-apply",
+        [this](const std::string& args) -> std::string {
+          if (!StringUtils::trim(args).empty()) {
+            return "error: usage: templates-apply\n";
+          }
+          if (!reapplyLast()) {
+            return "error: theme palette has not been resolved yet\n";
+          }
+          return "ok\n";
+        },
+        "templates-apply", "Apply configured theme templates for the current palette"
+    );
   }
 
   TemplateApplyService::ApplyRequest
