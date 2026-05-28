@@ -432,14 +432,20 @@ namespace {
 
   bool isProgramStreamClass(std::string_view mediaClass) { return mediaClass == "Stream/Output/Audio"; }
 
+  [[nodiscard]] bool isProgramOutputNode(const PipeWireService::NodeData& nd) {
+    // PipeWire loopback/filter helper endpoints are also Stream/* nodes, but they carry a link-group and
+    // should not be shown as standalone application streams.
+    return isProgramStreamClass(nd.mediaClass) && nd.linkGroup.empty();
+  }
+
   void logProgramStreamMetadata(std::string_view phase, std::uint32_t id, const PipeWireService::NodeData& nd) {
     if (!isProgramStreamClass(nd.mediaClass)) {
       return;
     }
     kLog.debug(
-        "[program-stream] {} id={} clientId={} class='{}' appName='{}' appId='{}' appBinary='{}' streamTitle='{}' "
-        "icon='{}' nodeName='{}' nodeDesc='{}'",
-        phase, id, nd.clientId, nd.mediaClass, nd.applicationName, nd.applicationId, nd.applicationBinary,
+        "[program-stream] {} id={} clientId={} class='{}' linkGroup='{}' appName='{}' appId='{}' appBinary='{}' "
+        "streamTitle='{}' icon='{}' nodeName='{}' nodeDesc='{}'",
+        phase, id, nd.clientId, nd.mediaClass, nd.linkGroup, nd.applicationName, nd.applicationId, nd.applicationBinary,
         nd.streamTitle, nd.iconName, nd.name, nd.description
     );
   }
@@ -722,6 +728,7 @@ void PipeWireService::onRegistryGlobal(std::uint32_t id, const char* type, std::
     if (nd->iconName.empty()) {
       nd->iconName = nd->applicationBinary;
     }
+    nd->linkGroup = dictGet(props, "node.link-group");
     nd->mediaClass = mediaClass;
     const bool audioDeviceNode = mediaClass == "Audio/Sink" || mediaClass == "Audio/Source";
     applyVolumePropsFromDict(*nd, props, !audioDeviceNode);
@@ -899,6 +906,7 @@ void PipeWireService::onNodeInfo(std::uint32_t id, const pw_node_info* info) {
     if (!iconName.empty()) {
       it->second->iconName = iconName;
     }
+    it->second->linkGroup = dictGet(info->props, "node.link-group");
     const bool audioDevice = it->second->mediaClass == "Audio/Sink" || it->second->mediaClass == "Audio/Source";
     applyVolumePropsFromDict(*it->second, info->props, !audioDevice);
     refreshNodeIdentity(*it->second);
@@ -1226,7 +1234,7 @@ void PipeWireService::rebuildState() {
         next.defaultSourceId = id;
       }
       next.sources.push_back(std::move(node));
-    } else if (nd->mediaClass == "Stream/Output/Audio") {
+    } else if (isProgramOutputNode(*nd)) {
       next.programOutputs.push_back(std::move(node));
     }
   }
