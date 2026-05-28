@@ -330,17 +330,27 @@ void BatteryWidget::syncState(Renderer& renderer) {
 
   const auto s = m_upower->stateForDevice(m_deviceSelector);
 
+  const auto now = std::chrono::steady_clock::now();
+  const bool forceTimeRefresh = (m_lastTooltipRefreshTime == std::chrono::steady_clock::time_point{})
+      || (now - m_lastTooltipRefreshTime >= std::chrono::seconds(15));
+
   if (s.percentage == m_lastPct
       && s.state == m_lastState
       && s.isPresent == m_lastPresent
-      && m_isVertical == m_lastVertical) {
+      && s.energyRate == m_lastEnergyRate
+      && s.timeToEmpty == m_lastTimeToEmpty
+      && m_isVertical == m_lastVertical
+      && !forceTimeRefresh) {
     return;
   }
 
   m_lastPct = s.percentage;
   m_lastState = s.state;
   m_lastPresent = s.isPresent;
+  m_lastEnergyRate = s.energyRate;
+  m_lastTimeToEmpty = s.timeToEmpty;
   m_lastVertical = m_isVertical;
+  m_lastTooltipRefreshTime = now;
 
   const bool isPluggedIn = s.state == BatteryState::Charging
       || s.state == BatteryState::FullyCharged

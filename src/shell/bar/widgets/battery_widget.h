@@ -5,6 +5,7 @@
 #include "shell/bar/widget.h"
 #include "ui/palette.h"
 
+#include <chrono>
 #include <string>
 
 class Box;
@@ -65,4 +66,8 @@ private:
   bool m_lastPresent = false;
   bool m_isVertical = false;
   bool m_lastVertical = false;
+
+  double m_lastEnergyRate = -1.0;
+  std::int64_t m_lastTimeToEmpty = -1;
+  std::chrono::steady_clock::time_point m_lastTooltipRefreshTime;
 };
