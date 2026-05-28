@@ -258,6 +258,17 @@ UPowerState UPowerService::readDeviceState(sdbus::IProxy& proxy) const {
   next.timeToEmpty = getPropertyOr<std::int64_t>(proxy, kDeviceInterface, "TimeToEmpty", 0);
   next.timeToFull = getPropertyOr<std::int64_t>(proxy, kDeviceInterface, "TimeToFull", 0);
   next.energyRate = getPropertyOr<double>(proxy, kDeviceInterface, "EnergyRate", 0.0);
+  next.energy = getPropertyOr<double>(proxy, kDeviceInterface, "Energy", 0.0);
+
+  // Fallback calculation for timeToEmpty / timeToFull if they are reported as 0 or less
+  if (next.state == BatteryState::Discharging && next.timeToEmpty <= 0 && next.energyRate > 0.0 && next.energy > 0.0) {
+    next.timeToEmpty = static_cast<std::int64_t>(std::round((next.energy / next.energyRate) * 3600.0));
+  } else if (next.state == BatteryState::Charging && next.timeToFull <= 0 && next.energyRate > 0.0) {
+    const double energyFull = getPropertyOr<double>(proxy, kDeviceInterface, "EnergyFull", 0.0);
+    if (energyFull > next.energy) {
+      next.timeToFull = static_cast<std::int64_t>(std::round(((energyFull - next.energy) / next.energyRate) * 3600.0));
+    }
+  }
 
   return next;
 }

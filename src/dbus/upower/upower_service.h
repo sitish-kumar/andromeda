@@ -43,6 +43,7 @@ struct UPowerState {
   BatteryState state = BatteryState::Unknown;
   std::int64_t timeToEmpty = 0; // seconds
   std::int64_t timeToFull = 0;  // seconds
+  double energy = 0.0;          // Wh
   bool isPresent = false;
   bool onBattery = false;
 
