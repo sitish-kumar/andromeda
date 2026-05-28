@@ -52,9 +52,6 @@ int UsageTracker::getRecentlyUsedIndex(std::string_view providerName, std::strin
     return 0;
   }
   const auto idIt = provIt->second.find(std::string(resultId));
-  if (idIt == provIt->second.end()) {
-    return 0;
-  }
   return idIt != provIt->second.end() ? idIt->second : 0;
 }
 

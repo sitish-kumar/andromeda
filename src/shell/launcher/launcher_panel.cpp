@@ -28,6 +28,7 @@
 #include <functional>
 #include <memory>
 #include <string_view>
+#include <tuple>
 
 namespace {
 
@@ -760,17 +761,10 @@ void LauncherPanel::applyActiveCategory() {
         m_allResults.begin(), m_allResults.end(), std::back_inserter(m_results),
         [this](const LauncherResult& r) { return r.recentlyUsedIndex > 0; }
     );
-    std::sort(m_results.begin(), m_results.end(), [this](const LauncherResult& a, const LauncherResult& b) {
-      if (a.recentlyUsedIndex > b.recentlyUsedIndex) {
-        return true;
-      } else if (a.recentlyUsedIndex == b.recentlyUsedIndex) {
-        if (a.providerName < b.providerName) {
-          return true;
-        } else if (a.providerName == b.providerName) {
-          return a.id < b.id;
-        }
-      }
-      return false;
+    std::sort(m_results.begin(), m_results.end(), [](const LauncherResult& a, const LauncherResult& b) {
+      return a.recentlyUsedIndex > b.recentlyUsedIndex
+          || (a.recentlyUsedIndex == b.recentlyUsedIndex
+              && std::tie(a.providerName, a.id) < std::tie(b.providerName, b.id));
     });
     break;
   case Category:
