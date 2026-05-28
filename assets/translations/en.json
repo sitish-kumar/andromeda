@@ -1739,10 +1739,6 @@
           "label": "Screen Time",
           "description": "Track per-app usage and show it in Control Center"
         },
-        "shared-gl-context": {
-          "label": "Shared GPU Context",
-          "description": "Share textures across surfaces to save VRAM; disable if you see corrupted textures on older GPUs. Restart required."
-        },
         "clipboard-history-max-entries": {
           "label": "History Size",
           "description": "Maximum unpinned entries kept in clipboard history"
