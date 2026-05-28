@@ -353,14 +353,17 @@ namespace {
       spec.marginRight = std::max(0, mEnds - sb.right);
       if (isBottom) {
         if (edgeGutter > 0) {
-          spec.surfaceHeight = static_cast<std::uint32_t>(sb.up + barConfig.thickness + sb.down + edgeGutter);
+          // Surface reaches the screen edge (no layer margin); the margin is folded
+          // into the surface as a gutter on the edge side. Do not add the edge-side
+          // bleed here — it lives inside the gutter, not beyond it.
+          spec.surfaceHeight = static_cast<std::uint32_t>(sb.up + barConfig.thickness + edgeGutter);
         } else {
           spec.marginBottom = std::max(0, mEdge - sb.down);
           spec.surfaceHeight = static_cast<std::uint32_t>(sb.up + barConfig.thickness + std::min(mEdge, sb.down));
         }
       } else {
         if (edgeGutter > 0) {
-          spec.surfaceHeight = static_cast<std::uint32_t>(sb.down + barConfig.thickness + sb.up + edgeGutter);
+          spec.surfaceHeight = static_cast<std::uint32_t>(sb.down + barConfig.thickness + edgeGutter);
         } else {
           spec.marginTop = std::max(0, mEdge - sb.up);
           spec.surfaceHeight = static_cast<std::uint32_t>(std::min(mEdge, sb.up) + barConfig.thickness + sb.down);
@@ -371,14 +374,14 @@ namespace {
       spec.marginBottom = std::max(0, mEnds - sb.down);
       if (isRight) {
         if (edgeGutter > 0) {
-          spec.surfaceWidth = static_cast<std::uint32_t>(sb.left + barConfig.thickness + sb.right + edgeGutter);
+          spec.surfaceWidth = static_cast<std::uint32_t>(sb.left + barConfig.thickness + edgeGutter);
         } else {
           spec.marginRight = std::max(0, mEdge - sb.right);
           spec.surfaceWidth = static_cast<std::uint32_t>(sb.left + barConfig.thickness + std::min(mEdge, sb.right));
         }
       } else {
         if (edgeGutter > 0) {
-          spec.surfaceWidth = static_cast<std::uint32_t>(sb.right + barConfig.thickness + sb.left + edgeGutter);
+          spec.surfaceWidth = static_cast<std::uint32_t>(sb.right + barConfig.thickness + edgeGutter);
         } else {
           spec.marginLeft = std::max(0, mEdge - sb.left);
           spec.surfaceWidth = static_cast<std::uint32_t>(std::min(mEdge, sb.left) + barConfig.thickness + sb.right);
@@ -457,10 +460,13 @@ namespace {
       const float y = std::min(marginEnds, bleedUp);
       float x = isRight ? bleedLeft : std::min(marginEdge, bleedLeft);
       if (const int gutter = barAutoHideEdgeGutter(cfg); gutter > 0) {
+        // The gutter equals marginEdge and sits between the screen edge and the bar.
+        // Position the bar exactly marginEdge from the edge so it matches the
+        // non-auto-hide placement; the edge-side shadow bleeds into the gutter.
         if (isRight) {
-          x = surfaceWidth - static_cast<float>(gutter) - barThickness - bleedRight;
+          x = surfaceWidth - static_cast<float>(gutter) - barThickness;
         } else {
-          x = static_cast<float>(gutter) + bleedLeft;
+          x = static_cast<float>(gutter);
         }
       }
       return {
@@ -476,9 +482,9 @@ namespace {
     float y = isBottom ? bleedUp : std::min(marginEdge, bleedUp);
     if (const int gutter = barAutoHideEdgeGutter(cfg); gutter > 0) {
       if (isBottom) {
-        y = surfaceHeight - static_cast<float>(gutter) - barThickness - bleedDown;
+        y = surfaceHeight - static_cast<float>(gutter) - barThickness;
       } else {
-        y = static_cast<float>(gutter) + bleedUp;
+        y = static_cast<float>(gutter);
       }
     }
     return {
