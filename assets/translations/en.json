@@ -976,7 +976,7 @@
     },
     "options": {
       "font-weight": {
-        "default": "Default",
+        "default": "Default (bar)",
         "thin": "Thin",
         "ultra-light": "Ultra Light",
         "light": "Light",
@@ -1243,7 +1243,7 @@
         },
         "font_weight": {
           "label": "Font Weight",
-          "description": "Font weight for this widget's labels. Only weights installed for the appearance font are listed; variable fonts show the full range."
+          "description": "Default inherits the bar font weight."
         },
         "command": {
           "label": "Left Click Command",
@@ -2344,7 +2344,7 @@
         },
         "font-weight": {
           "label": "Font Weight",
-          "description": "Default font weight for bar widget labels. Only weights installed for the appearance font are listed; variable fonts show the full range."
+          "description": "Default weight for widget labels on this bar."
         },
         "content-padding": {
           "label": "Content Padding",

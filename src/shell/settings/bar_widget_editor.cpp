@@ -708,6 +708,18 @@ namespace settings {
       return {};
     }
 
+    std::string widgetLabelFontWeightSelectedValue(const Config& cfg, std::string_view widgetName) {
+      const auto widgetIt = cfg.widgets.find(std::string(widgetName));
+      if (widgetIt == cfg.widgets.end()) {
+        return {};
+      }
+      const auto settingIt = widgetIt->second.settings.find("font_weight");
+      if (settingIt == widgetIt->second.settings.end()) {
+        return {};
+      }
+      return settingValueAsString(settingIt->second);
+    }
+
     std::vector<std::string> settingValueAsStringList(const WidgetSettingValue& value) {
       if (const auto* v = std::get_if<std::vector<std::string>>(&value)) {
         return *v;
@@ -809,17 +821,11 @@ namespace settings {
     }
 
     SelectSetting labelFontWeightSelectSetting(
-        const BarWidgetEditorContext& ctx, std::string_view widgetName, const WidgetSettingSpec& spec,
-        std::string selectedValue
+        const BarWidgetEditorContext& ctx, const WidgetSettingSpec& spec, std::string selectedValue
     ) {
       std::optional<int> preserveWeight;
       if (!selectedValue.empty()) {
         preserveWeight = static_cast<int>(std::strtol(selectedValue.c_str(), nullptr, 10));
-      } else {
-        const WidgetSettingValue configuredValue = widgetSettingValue(ctx.config, widgetName, spec);
-        if (const auto* configured = std::get_if<std::int64_t>(&configuredValue)) {
-          preserveWeight = static_cast<int>(*configured);
-        }
       }
 
       std::vector<SelectOption> options;
@@ -1231,7 +1237,8 @@ namespace settings {
           if (widgetType == "battery" && spec.key == "device") {
             selectSetting = batteryDeviceSelectSetting(ctx, selectedValue);
           } else if (spec.key == "font_weight") {
-            selectSetting = labelFontWeightSelectSetting(ctx, widgetName, spec, selectedValue);
+            selectSetting =
+                labelFontWeightSelectSetting(ctx, spec, widgetLabelFontWeightSelectedValue(ctx.config, widgetName));
           } else if (widgetType == "workspaces" && spec.key == "display") {
             selectSetting = workspacesDisplaySelectSetting(ctx, widgetName, spec, specs, selectedValue);
           } else {

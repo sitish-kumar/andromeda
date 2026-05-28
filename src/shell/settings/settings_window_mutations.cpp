@@ -1,6 +1,7 @@
 #include "config/config_service.h"
 #include "core/deferred_call.h"
 #include "i18n/i18n.h"
+#include "render/text/font_weight_catalog.h"
 #include "shell/settings/settings_window.h"
 
 #include <string>
@@ -23,6 +24,9 @@ void SettingsWindow::markSettingsWriteError(std::string message) {
 }
 
 void SettingsWindow::setSettingOverride(std::vector<std::string> path, ConfigOverrideValue value) {
+  if (path.size() == 2 && path[0] == "shell" && path[1] == "font_family") {
+    text::invalidateFontWeightCatalogCache();
+  }
   DeferredCall::callLater([this, path = std::move(path), value = std::move(value)]() mutable {
     if (m_config == nullptr) {
       return;
@@ -59,11 +63,9 @@ void SettingsWindow::clearSettingOverride(std::vector<std::string> path) {
     if (m_config == nullptr) {
       return;
     }
-    if (m_config->clearOverride(path)) {
-      markSettingsWriteSuccess();
-      return;
-    }
-    markSettingsWriteError(i18n::tr("settings.errors.clear"));
+    (void)m_config->clearOverride(path);
+    // Rebuild even when there was nothing to clear so inherit/default controls refresh.
+    markSettingsWriteSuccess();
   });
 }
 

@@ -478,8 +478,13 @@ namespace settings {
             .options = std::move(segmentedOptions),
             .selectedIndex = optionIndex(setting.options, setting.selectedValue),
             .scale = scale,
-            .onChange = [setOverride = ctx.setOverride, path, options, integerValue](std::size_t index) {
+            .onChange = [setOverride = ctx.setOverride, clearOverride = ctx.clearOverride, path, options,
+                         integerValue](std::size_t index) {
               if (index < options.size()) {
+                if (options[index].value.empty() && integerValue) {
+                  clearOverride(path);
+                  return;
+                }
                 if (integerValue) {
                   setOverride(path, static_cast<std::int64_t>(std::stoll(options[index].value)));
                 } else {
@@ -510,16 +515,11 @@ namespace settings {
           .colorSwatchPreviews = optionSwatchPreviews(setting.options),
           .width = selectWidth * scale,
           .height = Style::controlHeight * scale,
-          .onSelectionChanged = [configService = ctx.configService, clearOverride = ctx.clearOverride,
-                                 setOverride = ctx.setOverride, requestRebuild = ctx.requestRebuild, path, options,
+          .onSelectionChanged = [clearOverride = ctx.clearOverride, setOverride = ctx.setOverride, path, options,
                                  clearOnEmpty, integerValue](std::size_t index, std::string_view /*label*/) {
             if (index < options.size()) {
-              if (clearOnEmpty && options[index].value.empty()) {
-                if (configService != nullptr && configService->hasOverride(path)) {
-                  clearOverride(path);
-                } else {
-                  requestRebuild();
-                }
+              if (options[index].value.empty() && (clearOnEmpty || integerValue)) {
+                clearOverride(path);
                 return;
               }
               if (integerValue) {
