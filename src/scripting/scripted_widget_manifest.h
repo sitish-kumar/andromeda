@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace scripting {
@@ -66,6 +67,9 @@ namespace scripting {
     std::string assetScript; // asset-relative script path, e.g. "scripts/screen_recorder.lua"
     ScriptWidgetManifest manifest;
   };
+
+  // Expand a leading `~` / `~/` to $HOME. Other paths are returned unchanged.
+  [[nodiscard]] std::string expandUserPath(std::string_view path);
 
   // Resolve a `script` config value the same way ScriptedWidget does:
   // `~` -> $HOME, absolute paths verbatim, otherwise relative to the asset root.

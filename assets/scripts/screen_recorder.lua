@@ -19,7 +19,8 @@ barWidget.define({
         { key = "directory", type = "folder", label = "Output directory",
           description = "Defaults to ~/Videos when empty" },
         { key = "filename_pattern", type = "string", label = "Filename pattern",
-          default = "recording_%Y%m%d_%H%M%S", description = "os.date pattern, without extension" },
+          default = "recording_%Y%m%d_%H%M%S",
+          description = "os.date/strftime pattern without extension; use %s for unix epoch" },
         { key = "frame_rate", type = "int", label = "Frame rate", default = 60, min = 1, max = 240 },
         { key = "video_codec", type = "select", label = "Video codec", default = "h264",
           options = {
@@ -203,6 +204,19 @@ if command -v gpu-screen-recorder >/dev/null 2>&1; then
   gpu-screen-recorder]]
 end
 
+local function outputDirectory()
+    local dir = cfg("directory", "")
+    if dir == "" then
+        dir = (noctalia.getenv("HOME") or "/tmp") .. "/Videos"
+    else
+        dir = noctalia.expandPath(dir)
+    end
+    if dir:sub(-1) ~= "/" then
+        dir = dir .. "/"
+    end
+    return dir
+end
+
 local function buildGsrSuffix()
     return [[
 
@@ -222,9 +236,7 @@ local function buildRecordCommand()
         source = mon
     end
 
-    local dir = cfg("directory", "")
-    if dir == "" then dir = (noctalia.getenv("HOME") or "/tmp") .. "/Videos" end
-    if dir:sub(-1) ~= "/" then dir = dir .. "/" end
+    local dir = outputDirectory()
 
     local pattern = cfg("filename_pattern", "recording_%Y%m%d_%H%M%S")
     local filename = os.date(pattern) .. ".mp4"
@@ -259,9 +271,7 @@ local function buildReplayCommand()
         source = mon
     end
 
-    local dir = cfg("directory", "")
-    if dir == "" then dir = (noctalia.getenv("HOME") or "/tmp") .. "/Videos" end
-    if dir:sub(-1) ~= "/" then dir = dir .. "/" end
+    local dir = outputDirectory()
 
     local duration = cfg("replay_duration", 30)
     local storage = cfg("replay_storage", "ram")

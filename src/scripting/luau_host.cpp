@@ -8,6 +8,7 @@
 #include "lualib.h"
 #include "notification/notifications.h"
 #include "scripting/scripted_widget_bindings.h"
+#include "scripting/scripted_widget_manifest.h"
 #include "system/terminal_launch.h"
 
 #include <algorithm>
@@ -331,6 +332,14 @@ namespace {
     return 1;
   }
 
+  int luau_expandPath(lua_State* L) {
+    size_t len = 0;
+    const char* path = luaL_checklstring(L, 1, &len);
+    const std::string expanded = scripting::expandUserPath(std::string_view(path, len));
+    lua_pushlstring(L, expanded.data(), expanded.size());
+    return 1;
+  }
+
   const luaL_Reg kNoctaliaBaseLib[] = {
       {"log", luau_log},
       {"runAsync", luau_runAsync},
@@ -344,6 +353,7 @@ namespace {
       {"notifyError", luau_notifyError},
       {"copyToClipboard", luau_copyToClipboard},
       {"getenv", luau_getenv},
+      {"expandPath", luau_expandPath},
       {nullptr, nullptr},
   };
 

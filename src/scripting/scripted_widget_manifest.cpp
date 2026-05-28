@@ -62,20 +62,38 @@ namespace scripting {
 
   } // namespace
 
+  std::string expandUserPath(std::string_view path) {
+    if (path.empty()) {
+      return {};
+    }
+    if (path[0] != '~') {
+      return std::string(path);
+    }
+    const char* home = std::getenv("HOME");
+    if (home == nullptr) {
+      return std::string(path);
+    }
+    if (path.size() == 1) {
+      return home;
+    }
+    return std::string(home) + std::string(path.substr(1));
+  }
+
   std::filesystem::path resolveScriptPath(const std::string& path) {
     if (path.empty()) {
       return {};
     }
+    const std::string expanded = expandUserPath(path);
+    if (expanded.empty()) {
+      return {};
+    }
+    if (expanded[0] == '/') {
+      return expanded;
+    }
     if (path[0] == '~') {
-      if (const char* home = std::getenv("HOME"); home != nullptr) {
-        return std::string(home) + path.substr(1);
-      }
-      return path;
+      return expanded;
     }
-    if (path[0] == '/') {
-      return path;
-    }
-    return paths::assetPath(path);
+    return paths::assetPath(expanded);
   }
 
   std::optional<ScriptWidgetManifest> extractScriptManifest(const std::filesystem::path& resolvedScript) {
