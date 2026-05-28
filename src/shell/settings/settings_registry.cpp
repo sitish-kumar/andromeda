@@ -1060,6 +1060,11 @@ namespace settings {
         ToggleSetting{cfg.shell.screenTimeEnabled}, "screen time usage tracking control center"
     ));
     entries.push_back(makeEntry(
+        "shell", "shared-gl-context", tr("settings.schema.shell.shared-gl-context.label"),
+        tr("settings.schema.shell.shared-gl-context.description"), {"shell", "shared_gl_context"},
+        ToggleSetting{cfg.shell.sharedGlContext}, "gpu opengl egl texture share vram driver", true
+    ));
+    entries.push_back(makeEntry(
         "popups", "osd", tr("settings.schema.shell.osd-position.label"),
         tr("settings.schema.shell.osd-position.description"), {"osd", "position"},
         plainSelect(

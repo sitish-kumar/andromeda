@@ -398,6 +398,7 @@ namespace {
         && a.clipboardEnabled == b.clipboardEnabled
         && a.clipboardHistoryMaxEntries == b.clipboardHistoryMaxEntries
         && a.screenTimeEnabled == b.screenTimeEnabled
+        && a.sharedGlContext == b.sharedGlContext
         && a.clipboardAutoPaste == b.clipboardAutoPaste
         && a.clipboardImageActionCommand == b.clipboardImageActionCommand
         && a.shadow.direction == b.shadow.direction

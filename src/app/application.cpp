@@ -476,9 +476,10 @@ void Application::initServices() {
       m_panelManager.refresh();
     }
   });
-  m_glShared.initialize(m_wayland.display());
-  m_sharedTextureCache.initialize(&m_glShared);
-  m_asyncTextureCache.initialize(&m_glShared);
+  m_glShared.initialize(m_wayland.display(), m_configService.config().shell.sharedGlContext);
+  auto* sharedGlPtr = m_glShared.hasSharedContext() ? &m_glShared : nullptr;
+  m_sharedTextureCache.initialize(sharedGlPtr);
+  m_asyncTextureCache.initialize(sharedGlPtr);
   m_wayland.setVirtualKeyboardService(&m_virtualKeyboardService);
 
   auto bindKeybind = [this](KeybindAction action) {

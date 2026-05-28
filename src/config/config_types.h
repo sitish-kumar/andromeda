@@ -643,6 +643,7 @@ struct ShellConfig {
   int clipboardHistoryMaxEntries = 50;
   /// Disables per-app tracking and Control Center usage UI.
   bool screenTimeEnabled = false;
+  bool sharedGlContext = true;
   ClipboardAutoPasteMode clipboardAutoPaste = ClipboardAutoPasteMode::Auto;
   std::string clipboardImageActionCommand;
   ShadowConfig shadow;

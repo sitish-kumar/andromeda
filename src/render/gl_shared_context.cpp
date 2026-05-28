@@ -35,7 +35,7 @@ namespace {
 
 GlSharedContext::~GlSharedContext() { cleanup(); }
 
-void GlSharedContext::initialize(wl_display* display) {
+void GlSharedContext::initialize(wl_display* display, bool createSharedContext) {
   if (display == nullptr) {
     throw std::runtime_error("GlSharedContext requires a valid Wayland display");
   }
@@ -60,12 +60,15 @@ void GlSharedContext::initialize(wl_display* display) {
     throw std::runtime_error("eglChooseConfig failed");
   }
 
-  m_rootContext = eglCreateContext(m_display, m_config, EGL_NO_CONTEXT, kContextAttributes);
-  if (m_rootContext == EGL_NO_CONTEXT) {
-    throw std::runtime_error("eglCreateContext (root) failed");
+  if (createSharedContext) {
+    m_rootContext = eglCreateContext(m_display, m_config, EGL_NO_CONTEXT, kContextAttributes);
+    if (m_rootContext == EGL_NO_CONTEXT) {
+      throw std::runtime_error("eglCreateContext (root) failed");
+    }
+    kLog.info("initialized EGL {}.{} with shared root context", major, minor);
+  } else {
+    kLog.info("initialized EGL {}.{} without shared context (isolated GPU contexts)", major, minor);
   }
-
-  kLog.info("initialized EGL {}.{} with shared root context", major, minor);
 }
 
 void GlSharedContext::makeCurrentSurfaceless() const {

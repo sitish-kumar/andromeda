@@ -322,6 +322,7 @@ namespace config_export {
           "clipboard_history_max_entries", static_cast<std::int64_t>(shell.clipboardHistoryMaxEntries)
       );
       table.insert_or_assign("screen_time_enabled", shell.screenTimeEnabled);
+      table.insert_or_assign("shared_gl_context", shell.sharedGlContext);
       table.insert_or_assign(
           "clipboard_auto_paste", std::string(enumToKey(kClipboardAutoPasteModes, shell.clipboardAutoPaste))
       );

@@ -1542,6 +1542,9 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     if (auto v = (*shellTbl)["screen_time_enabled"].value<bool>()) {
       shell.screenTimeEnabled = *v;
     }
+    if (auto v = (*shellTbl)["shared_gl_context"].value<bool>()) {
+      shell.sharedGlContext = *v;
+    }
     if (auto v = (*shellTbl)["clipboard_auto_paste"].value<std::string>()) {
       if (auto parsed = enumFromKey(kClipboardAutoPasteModes, *v)) {
         shell.clipboardAutoPaste = *parsed;

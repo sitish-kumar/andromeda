@@ -18,15 +18,15 @@ public:
   GlSharedContext(const GlSharedContext&) = delete;
   GlSharedContext& operator=(const GlSharedContext&) = delete;
 
-  void initialize(wl_display* display);
+  void initialize(wl_display* display, bool createSharedContext = true);
   void cleanup();
 
   [[nodiscard]] EGLDisplay display() const noexcept { return m_display; }
   [[nodiscard]] EGLConfig config() const noexcept { return m_config; }
   [[nodiscard]] EGLContext rootContext() const noexcept { return m_rootContext; }
+  [[nodiscard]] bool hasSharedContext() const noexcept { return m_rootContext != EGL_NO_CONTEXT; }
 
-  // Bind the root context surfacelessly. Handy when a GL resource has to be
-  // created before any rendering surface exists.
+  // Bind the root context surfacelessly. No-op when shared context is disabled.
   void makeCurrentSurfaceless() const;
 
 private:
