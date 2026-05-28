@@ -50,6 +50,8 @@ namespace settings {
     Double,
     OptionalDouble,
     String,
+    File,
+    Folder,
     Glyph,
     StringList,
     Select,
@@ -97,9 +99,10 @@ namespace settings {
     double step = 1.0;
     std::vector<WidgetSettingSelectOption> options;
     bool advanced = false;
-    bool segmented = false;       // applies when valueType == Select
-    bool integerValue = false;    // applies when valueType == Select
-    bool allowCustomColor = true; // applies when valueType == ColorSpec
+    bool segmented = false;              // applies when valueType == Select
+    bool integerValue = false;           // applies when valueType == Select
+    bool allowCustomColor = true;        // applies when valueType == ColorSpec
+    std::vector<std::string> extensions; // applies when valueType == File
     std::optional<WidgetSettingVisibility> visibleWhen;
   };
 
@@ -108,7 +111,8 @@ namespace settings {
   [[nodiscard]] bool widgetTypeRequiresNamedConfig(std::string_view type);
   [[nodiscard]] std::string widgetTypeForReference(const Config& cfg, std::string_view name);
   [[nodiscard]] std::string titleFromWidgetKey(std::string_view key);
-  [[nodiscard]] WidgetReferenceInfo widgetReferenceInfo(const Config& cfg, std::string_view name);
+  [[nodiscard]] WidgetReferenceInfo
+  widgetReferenceInfo(const Config& cfg, std::string_view name, bool includeManifestVersion = true);
   [[nodiscard]] std::vector<WidgetPickerEntry> widgetPickerEntries(const Config& cfg);
   [[nodiscard]] std::vector<WidgetSettingSpec> commonWidgetSettingSpecs();
   [[nodiscard]] std::vector<WidgetSettingSpec> widgetSettingSpecs(std::string_view type);

@@ -859,6 +859,19 @@ string_utils_test = executable('string_utils_test',
 
 test('string_utils', string_utils_test)
 
+scripted_widget_manifest_test = executable('scripted_widget_manifest_test',
+  sources: files(
+    'tests/scripted_widget_manifest_test.cpp',
+    'src/scripting/scripted_widget_bindings.cpp',
+  ),
+  dependencies: [
+    luau_dep,
+  ],
+  include_directories: _noctalia_inc,
+)
+
+test('scripted_widget_manifest', scripted_widget_manifest_test)
+
 state_store_test = executable('state_store_test',
   sources: files(
     'tests/state_store_test.cpp',

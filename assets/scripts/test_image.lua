@@ -15,11 +15,13 @@
 
 barWidget.define({
   label = "Scripted Image Test",
+  version = "1.0.0",
   icon = "photo",
   description = "Test image display and image file watching",
   pickable = false,
   settings = {
-    { key = "image_path", type = "string", label = "Image path", default = "noctalia.svg",
+    { key = "image_path", type = "file", label = "Image path", default = "noctalia.svg",
+      extensions = { ".png", ".jpg", ".jpeg", ".webp", ".svg", ".bmp", ".gif" },
       description = "Absolute, ~/ path, or relative to the Noctalia assets directory" },
     { key = "watch_image", type = "bool", label = "Watch image file", default = true },
     { key = "image_width", type = "int", label = "Image width", default = 28, min = 1, max = 96 },

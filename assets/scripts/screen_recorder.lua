@@ -10,12 +10,13 @@
 -- picker and render its settings in the GUI. Must be the first statement.
 barWidget.define({
     label = "Screen Recorder",
+    version = "1.0.0",
     icon = "video",
     description = "Record the screen with gpu-screen-recorder",
     settings = {
         { key = "video_source", type = "string", label = "Video source", default = "portal",
           description = "\"portal\", \"focused-monitor\", or a monitor/output name" },
-        { key = "directory", type = "string", label = "Output directory",
+        { key = "directory", type = "folder", label = "Output directory",
           description = "Defaults to ~/Videos when empty" },
         { key = "filename_pattern", type = "string", label = "Filename pattern",
           default = "recording_%Y%m%d_%H%M%S", description = "os.date pattern, without extension" },

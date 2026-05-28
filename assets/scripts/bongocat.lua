@@ -27,10 +27,11 @@
 -- of the keyboard-reader spawn below, so manifest extraction stays side-effect free.
 barWidget.define({
   label = "Bongo Cat",
+  version = "1.0.0",
   icon = "cat",
   description = "A cat that slaps your bar when you type or to the beat",
   settings = {
-    { key = "input_device", type = "string", label = "Keyboard device",
+    { key = "input_device", type = "file", label = "Keyboard device",
       description = "/dev/input/eventN — requires evtest and membership in the input group" },
     { key = "audio_spectrum", type = "bool", label = "React to audio", default = false },
     { key = "tappy_mode", type = "bool", label = "Tap to the beat", default = false,

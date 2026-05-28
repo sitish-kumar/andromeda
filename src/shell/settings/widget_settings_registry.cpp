@@ -137,6 +137,20 @@ namespace settings {
       return defaultWidgetGlyph(type);
     }
 
+    std::string appendManifestVersion(std::string text, const scripting::ScriptWidgetManifest& manifest) {
+      if (manifest.version.empty()) {
+        return text;
+      }
+      const std::string versionText = "version " + manifest.version;
+      if (text.empty()) {
+        return versionText;
+      }
+      text += " (";
+      text += versionText;
+      text += ")";
+      return text;
+    }
+
     WidgetSettingSpec
     baseSpec(std::string_view key, WidgetSettingValueType type, WidgetSettingValue defaultValue, bool advanced) {
       WidgetSettingSpec spec;
@@ -319,7 +333,7 @@ namespace settings {
     return out;
   }
 
-  WidgetReferenceInfo widgetReferenceInfo(const Config& cfg, std::string_view name) {
+  WidgetReferenceInfo widgetReferenceInfo(const Config& cfg, std::string_view name, bool includeManifestVersion) {
     if (const auto* spec = findWidgetTypeSpec(name)) {
       if (const auto it = cfg.widgets.find(std::string(name));
           it != cfg.widgets.end() && !it->second.type.empty() && it->second.type != name) {
@@ -342,10 +356,14 @@ namespace settings {
       std::string detail = it->second.type.empty() ? tr("settings.entities.widget.detail.custom") : it->second.type;
       if (it->second.type == "scripted") {
         if (const std::string script = it->second.getString("script", ""); !script.empty()) {
-          if (auto manifest = scripting::manifestForScriptConfig(script);
-              manifest.has_value() && !manifest->label.empty()) {
-            detail += ": ";
-            detail += manifest->label;
+          if (auto manifest = scripting::manifestForScriptConfig(script); manifest.has_value()) {
+            if (!manifest->label.empty()) {
+              detail += ": ";
+              detail += manifest->label;
+            }
+            if (includeManifestVersion) {
+              detail = appendManifestVersion(std::move(detail), *manifest);
+            }
           }
         }
       }
@@ -389,17 +407,20 @@ namespace settings {
         continue;
       }
       std::string label = widgetInstanceDisplayLabel(name);
+      std::string description = widget.type.empty() ? tr("settings.entities.widget.detail.custom") : widget.type;
       if (widget.type == "scripted") {
         if (const std::string script = widget.getString("script", ""); !script.empty()) {
-          if (auto manifest = scripting::manifestForScriptConfig(script);
-              manifest.has_value() && !manifest->label.empty()) {
-            label = manifest->label;
+          if (auto manifest = scripting::manifestForScriptConfig(script); manifest.has_value()) {
+            if (!manifest->label.empty()) {
+              label = manifest->label;
+            }
+            description = appendManifestVersion(std::move(description), *manifest);
           }
         }
       }
       addPickerEntry(
-          entries, seen, name, label, widget.type.empty() ? tr("settings.entities.widget.detail.custom") : widget.type,
-          widgetGlyph(widget.type, &widget), WidgetReferenceKind::Named
+          entries, seen, name, label, std::move(description), widgetGlyph(widget.type, &widget),
+          WidgetReferenceKind::Named
       );
     }
 
@@ -408,11 +429,12 @@ namespace settings {
       if (!seen.insert(script.id).second) {
         continue;
       }
+      std::string description = appendManifestVersion(script.manifest.description, script.manifest);
       entries.push_back(
           WidgetPickerEntry{
               .value = script.id,
               .label = script.manifest.label.empty() ? script.id : script.manifest.label,
-              .description = script.manifest.description,
+              .description = std::move(description),
               .icon = script.manifest.icon.empty() ? "script" : script.manifest.icon,
               .script = script.assetScript,
               .kind = WidgetReferenceKind::Preset,
@@ -827,6 +849,15 @@ namespace settings {
       case scripting::ManifestFieldType::Double:
         spec.valueType = WidgetSettingValueType::Double;
         spec.defaultValue = field.numberDefault;
+        break;
+      case scripting::ManifestFieldType::File:
+        spec.valueType = WidgetSettingValueType::File;
+        spec.defaultValue = field.stringDefault;
+        spec.extensions = field.extensions;
+        break;
+      case scripting::ManifestFieldType::Folder:
+        spec.valueType = WidgetSettingValueType::Folder;
+        spec.defaultValue = field.stringDefault;
         break;
       case scripting::ManifestFieldType::Select:
         spec.valueType = WidgetSettingValueType::Select;

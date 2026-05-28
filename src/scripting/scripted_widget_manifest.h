@@ -13,6 +13,8 @@ namespace scripting {
     Int,
     Double,
     String,
+    File,
+    Folder,
     Glyph,
     Select,
     Color,
@@ -43,12 +45,14 @@ namespace scripting {
     std::optional<double> maxValue;
     double step = 1.0;
     std::vector<ManifestSelectOption> options;
+    std::vector<std::string> extensions;
     bool advanced = false;
     std::optional<ManifestVisibility> visibleWhen;
   };
 
   struct ScriptWidgetManifest {
     std::string label;
+    std::string version;
     std::string icon;
     std::string description;
     bool pickable = true;

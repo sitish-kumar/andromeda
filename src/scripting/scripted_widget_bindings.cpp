@@ -288,6 +288,12 @@ namespace {
     if (type == "select" || type == "enum") {
       return scripting::ManifestFieldType::Select;
     }
+    if (type == "file") {
+      return scripting::ManifestFieldType::File;
+    }
+    if (type == "folder") {
+      return scripting::ManifestFieldType::Folder;
+    }
     if (type == "glyph") {
       return scripting::ManifestFieldType::Glyph;
     }
@@ -339,6 +345,22 @@ namespace {
     lua_pop(L, 1);
   }
 
+  void parseFieldExtensions(lua_State* L, int fieldIndex, scripting::ManifestField& field) {
+    lua_getfield(L, fieldIndex, "extensions");
+    if (lua_istable(L, -1)) {
+      const int extensionsIndex = lua_gettop(L);
+      const int count = static_cast<int>(lua_objlen(L, extensionsIndex));
+      for (int i = 1; i <= count; ++i) {
+        lua_rawgeti(L, extensionsIndex, i);
+        if (lua_isstring(L, -1)) {
+          field.extensions.emplace_back(lua_tostring(L, -1));
+        }
+        lua_pop(L, 1);
+      }
+    }
+    lua_pop(L, 1);
+  }
+
   void parseFieldVisibility(lua_State* L, int fieldIndex, scripting::ManifestField& field) {
     lua_getfield(L, fieldIndex, "visible_when");
     if (lua_istable(L, -1)) {
@@ -369,6 +391,7 @@ namespace {
 
   void parseManifest(lua_State* L, int tableIndex, scripting::ScriptWidgetManifest& manifest) {
     manifest.label = tableStringField(L, tableIndex, "label");
+    manifest.version = tableStringField(L, tableIndex, "version");
     manifest.icon = tableStringField(L, tableIndex, "icon");
     manifest.description = tableStringField(L, tableIndex, "description");
     manifest.pickable = tableBoolField(L, tableIndex, "pickable", true);
@@ -395,6 +418,7 @@ namespace {
             }
             parseFieldDefault(L, fieldIndex, field);
             parseFieldOptions(L, fieldIndex, field);
+            parseFieldExtensions(L, fieldIndex, field);
             parseFieldVisibility(L, fieldIndex, field);
             manifest.settings.push_back(std::move(field));
           }

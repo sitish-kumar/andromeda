@@ -105,6 +105,83 @@ namespace settings {
       return i18n::tr("settings.entities.widget.settings.groups." + std::string(groupKey));
     }
 
+    enum class PathBrowseKind : std::uint8_t {
+      File,
+      Folder,
+    };
+
+    void applyPathDialogStartValue(FileDialogOptions& options, const std::string& currentValue, PathBrowseKind kind) {
+      if (currentValue.empty()) {
+        return;
+      }
+
+      const std::filesystem::path current(currentValue);
+      std::error_code ec;
+      if (kind == PathBrowseKind::Folder
+          && std::filesystem::exists(current, ec)
+          && std::filesystem::is_directory(current, ec)) {
+        options.startDirectory = current;
+        return;
+      }
+      if (kind == PathBrowseKind::File
+          && std::filesystem::exists(current, ec)
+          && std::filesystem::is_regular_file(current, ec)) {
+        options.startDirectory = current.parent_path();
+        options.defaultFilename = current.filename().string();
+        return;
+      }
+      if (current.has_parent_path()
+          && std::filesystem::exists(current.parent_path(), ec)
+          && std::filesystem::is_directory(current.parent_path(), ec)) {
+        options.startDirectory = current.parent_path();
+      }
+    }
+
+    std::unique_ptr<Node> makePathBrowseControl(
+        const BarWidgetEditorContext& ctx, std::vector<std::string> path, std::string currentValue, std::string glyph,
+        FileDialogOptions options, PathBrowseKind kind, std::string dialogStartValue = {}
+    ) {
+      if (dialogStartValue.empty()) {
+        dialogStartValue = currentValue;
+      }
+
+      auto textNode = ctx.makeText(currentValue, {}, path);
+      return ui::row(
+          {
+              .align = FlexAlign::Center,
+              .gap = Style::spaceSm * ctx.scale,
+          },
+          std::move(textNode),
+          ui::button({
+              .glyph = std::move(glyph),
+              .glyphSize = Style::fontSizeBody * ctx.scale,
+              .variant = ButtonVariant::Outline,
+              .minWidth = Style::controlHeight * ctx.scale,
+              .minHeight = Style::controlHeight * ctx.scale,
+              .paddingV = Style::spaceXs * ctx.scale,
+              .paddingH = Style::spaceSm * ctx.scale,
+              .radius = Style::scaledRadiusMd(ctx.scale),
+              .onClick = [setOverride = ctx.setOverride, requestRebuild = ctx.requestRebuild, path = std::move(path),
+                          options = std::move(options), kind, dialogStartValue = std::move(dialogStartValue)]() {
+                FileDialogOptions dialogOptions = options;
+                applyPathDialogStartValue(dialogOptions, dialogStartValue, kind);
+                (void)FileDialog::open(
+                    std::move(dialogOptions),
+                    [setOverride, requestRebuild, path](std::optional<std::filesystem::path> picked) {
+                      if (!picked.has_value()) {
+                        return;
+                      }
+                      setOverride(path, picked->string());
+                      if (requestRebuild) {
+                        requestRebuild();
+                      }
+                    }
+                );
+              },
+          })
+      );
+    }
+
     void closeInspector(
         std::string& editingWidgetName, std::string& renamingWidgetName, std::string& pendingDeleteWidgetName,
         std::string& pendingDeleteWidgetSettingPath, const std::function<void()>& requestRebuild
@@ -1048,116 +1125,68 @@ namespace settings {
           break;
         }
         case WidgetSettingValueType::String: {
-          auto textNode = ctx.makeText(settingValueAsString(value), {}, path);
           if (spec.key == "capsule_group" && !managedCapsuleGroups.empty()) {
             SelectSetting selectSetting{
                 .options = managedCapsuleGroups, .selectedValue = settingValueAsString(value), .clearOnEmpty = true
             };
             ctx.makeRow(*panel, entry, ctx.makeSelect(selectSetting, path));
           } else if (spec.key == "custom_image") {
+            FileDialogOptions options;
+            options.mode = FileDialogMode::Open;
+            options.defaultViewMode = FileDialogViewMode::Grid;
+            options.title = i18n::tr("settings.widgets.settings.custom_image.dialog-title");
+            options.extensions = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".bmp", ".gif"};
             ctx.makeRow(
                 *panel, entry,
-                ui::row(
-                    {
-                        .align = FlexAlign::Center,
-                        .gap = Style::spaceSm * ctx.scale,
-                    },
-                    std::move(textNode),
-                    ui::button({
-                        .glyph = "photo",
-                        .glyphSize = Style::fontSizeBody * ctx.scale,
-                        .variant = ButtonVariant::Outline,
-                        .minWidth = Style::controlHeight * ctx.scale,
-                        .minHeight = Style::controlHeight * ctx.scale,
-                        .paddingV = Style::spaceXs * ctx.scale,
-                        .paddingH = Style::spaceSm * ctx.scale,
-                        .radius = Style::scaledRadiusMd(ctx.scale),
-                        .onClick = [setOverride = ctx.setOverride, requestRebuild = ctx.requestRebuild, path,
-                                    currentValue = settingValueAsString(value)]() {
-                          FileDialogOptions options;
-                          options.mode = FileDialogMode::Open;
-                          options.defaultViewMode = FileDialogViewMode::Grid;
-                          options.title = i18n::tr("settings.widgets.settings.custom_image.dialog-title");
-                          options.extensions = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".bmp", ".gif"};
-                          if (!currentValue.empty()) {
-                            std::filesystem::path current(currentValue);
-                            std::error_code ec;
-                            if (current.has_parent_path() && std::filesystem::exists(current.parent_path(), ec)) {
-                              options.startDirectory = current.parent_path();
-                            }
-                          }
-                          (void)FileDialog::open(
-                              std::move(options),
-                              [setOverride, requestRebuild, path](std::optional<std::filesystem::path> picked) {
-                                if (!picked.has_value()) {
-                                  return;
-                                }
-                                setOverride(path, picked->string());
-                                if (requestRebuild) {
-                                  requestRebuild();
-                                }
-                              }
-                          );
-                        },
-                    })
+                makePathBrowseControl(
+                    ctx, path, settingValueAsString(value), "photo", std::move(options), PathBrowseKind::File
                 )
             );
           } else if (widgetType == "scripted" && spec.key == "script") {
+            FileDialogOptions options;
+            options.mode = FileDialogMode::Open;
+            options.defaultViewMode = FileDialogViewMode::List;
+            options.title = i18n::tr("settings.controls.path-browse.file-title");
+            options.extensions = {".lua", ".luau"};
+            const std::string currentValue = settingValueAsString(value);
+            const std::string startValue =
+                currentValue.empty() ? std::string{} : scripting::resolveScriptPath(currentValue).string();
             ctx.makeRow(
                 *panel, entry,
-                ui::row(
-                    {
-                        .align = FlexAlign::Center,
-                        .gap = Style::spaceSm * ctx.scale,
-                    },
-                    std::move(textNode),
-                    ui::button({
-                        .glyph = "file-text",
-                        .glyphSize = Style::fontSizeBody * ctx.scale,
-                        .variant = ButtonVariant::Outline,
-                        .minWidth = Style::controlHeight * ctx.scale,
-                        .minHeight = Style::controlHeight * ctx.scale,
-                        .paddingV = Style::spaceXs * ctx.scale,
-                        .paddingH = Style::spaceSm * ctx.scale,
-                        .radius = Style::scaledRadiusMd(ctx.scale),
-                        .onClick = [setOverride = ctx.setOverride, requestRebuild = ctx.requestRebuild, path,
-                                    currentValue = settingValueAsString(value)]() {
-                          FileDialogOptions options;
-                          options.mode = FileDialogMode::Open;
-                          options.defaultViewMode = FileDialogViewMode::List;
-                          options.title = i18n::tr("settings.controls.path-browse.file-title");
-                          options.extensions = {".lua", ".luau"};
-                          if (!currentValue.empty()) {
-                            std::filesystem::path current = scripting::resolveScriptPath(currentValue);
-                            std::error_code ec;
-                            if (std::filesystem::exists(current, ec) && std::filesystem::is_regular_file(current, ec)) {
-                              options.startDirectory = current.parent_path();
-                              options.defaultFilename = current.filename().string();
-                            } else if (
-                                current.has_parent_path() && std::filesystem::exists(current.parent_path(), ec)
-                            ) {
-                              options.startDirectory = current.parent_path();
-                            }
-                          }
-                          (void)FileDialog::open(
-                              std::move(options),
-                              [setOverride, requestRebuild, path](std::optional<std::filesystem::path> picked) {
-                                if (!picked.has_value()) {
-                                  return;
-                                }
-                                setOverride(path, picked->string());
-                                if (requestRebuild) {
-                                  requestRebuild();
-                                }
-                              }
-                          );
-                        },
-                    })
+                makePathBrowseControl(
+                    ctx, path, currentValue, "file-text", std::move(options), PathBrowseKind::File, startValue
                 )
             );
           } else {
-            ctx.makeRow(*panel, entry, std::move(textNode));
+            ctx.makeRow(*panel, entry, ctx.makeText(settingValueAsString(value), {}, path));
           }
+          break;
+        }
+        case WidgetSettingValueType::File: {
+          FileDialogOptions options;
+          options.mode = FileDialogMode::Open;
+          options.defaultViewMode = FileDialogViewMode::List;
+          options.title = i18n::tr("settings.controls.path-browse.file-title");
+          options.extensions = spec.extensions;
+          ctx.makeRow(
+              *panel, entry,
+              makePathBrowseControl(
+                  ctx, path, settingValueAsString(value), "file-text", std::move(options), PathBrowseKind::File
+              )
+          );
+          break;
+        }
+        case WidgetSettingValueType::Folder: {
+          FileDialogOptions options;
+          options.mode = FileDialogMode::SelectFolder;
+          options.defaultViewMode = FileDialogViewMode::List;
+          options.title = i18n::tr("settings.controls.path-browse.folder-title");
+          ctx.makeRow(
+              *panel, entry,
+              makePathBrowseControl(
+                  ctx, path, settingValueAsString(value), "folder", std::move(options), PathBrowseKind::Folder
+              )
+          );
           break;
         }
         case WidgetSettingValueType::Glyph:
@@ -1752,7 +1781,7 @@ namespace settings {
       lane->addChild(std::move(laneHeader));
 
       for (std::size_t i = 0; i < laneItems.size(); ++i) {
-        const auto info = widgetReferenceInfo(ctx.config, laneItems[i]);
+        const auto info = widgetReferenceInfo(ctx.config, laneItems[i], false);
         const std::string capsuleGroup = widgetCapsuleGroupName(ctx.config, laneItems[i]);
         auto item = ui::column({
             .align = FlexAlign::Stretch,
