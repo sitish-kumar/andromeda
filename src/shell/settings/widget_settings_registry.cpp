@@ -786,6 +786,12 @@ namespace settings {
       }
       add(segmentedSpec("display", "id", workspaceDisplay));
       {
+        auto labelsOnlyWhenOccupied = boolSpec("labels_only_when_occupied", false);
+        labelsOnlyWhenOccupied.descriptionKey =
+            "settings.widgets.settings.labels_only_when_occupied.workspaces-description";
+        add(std::move(labelsOnlyWhenOccupied));
+      }
+      {
         auto hideWhenEmpty = boolSpec("hide_when_empty", false);
         hideWhenEmpty.descriptionKey = "settings.widgets.settings.hide_when_empty.workspaces-description";
         add(std::move(hideWhenEmpty));

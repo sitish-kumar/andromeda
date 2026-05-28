@@ -1403,6 +1403,11 @@
           "description": "Hide workspace pills whne there are no open windows",
           "workspaces-description": "Hide workspace pills that have no open windows"
         },
+        "labels_only_when_occupied": {
+          "label": "Labels Only When Occupied",
+          "description": "Hide workspace labels on empty workspaces",
+          "workspaces-description": "Show workspace id or name labels only on workspaces with open windows; empty tags stay unlabeled"
+        },
         "hide_when_single_layout": {
           "label": "Hide When Single Layout",
           "description": "Hide the keyboard layout widget unless more than one layout is configured"

@@ -537,12 +537,13 @@ std::unique_ptr<Widget> WidgetFactory::create(
     if (wc != nullptr && wc->hasSetting("max_label_chars")) {
       maxLabelChars = static_cast<std::size_t>(wc->getInt("max_label_chars", 1));
     }
+    const bool labelsOnlyWhenOccupied = wc != nullptr ? wc->getBool("labels_only_when_occupied", false) : false;
     const bool hideWhenEmpty = wc != nullptr ? wc->getBool("hide_when_empty", false) : false;
     const double pillScale = wc != nullptr ? wc->getDouble("pill_scale", 1.0) : 1.0;
     const bool minimal = wc != nullptr ? wc->getBool("minimal", false) : false;
     auto widget = std::make_unique<WorkspacesWidget>(
-        m_platform, output, displayMode, focusedColor, occupiedColor, emptyColor, maxLabelChars, hideWhenEmpty,
-        pillScale, minimal
+        m_platform, output, displayMode, focusedColor, occupiedColor, emptyColor, maxLabelChars, labelsOnlyWhenOccupied,
+        hideWhenEmpty, pillScale, minimal
     );
     widget->setContentScale(contentScale);
     return widget;

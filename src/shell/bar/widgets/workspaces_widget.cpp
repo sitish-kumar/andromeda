@@ -40,12 +40,12 @@ namespace {
 
 WorkspacesWidget::WorkspacesWidget(
     CompositorPlatform& platform, wl_output* output, DisplayMode displayMode, ColorSpec focusedColor,
-    ColorSpec occupiedColor, ColorSpec emptyColor, std::size_t maxLabelChars, bool hideWhenEmpty, float pillScale,
-    bool minimal
+    ColorSpec occupiedColor, ColorSpec emptyColor, std::size_t maxLabelChars, bool labelsOnlyWhenOccupied,
+    bool hideWhenEmpty, float pillScale, bool minimal
 )
     : m_platform(platform), m_output(output), m_displayMode(displayMode), m_maxLabelChars(maxLabelChars),
-      m_hideWhenEmpty(hideWhenEmpty), m_pillScale(pillScale), m_minimal(minimal),
-      m_focusedColor(std::move(focusedColor)), m_occupiedColor(std::move(occupiedColor)),
+      m_labelsOnlyWhenOccupied(labelsOnlyWhenOccupied), m_hideWhenEmpty(hideWhenEmpty), m_pillScale(pillScale),
+      m_minimal(minimal), m_focusedColor(std::move(focusedColor)), m_occupiedColor(std::move(occupiedColor)),
       m_emptyColor(std::move(emptyColor)) {}
 
 WorkspacesWidget::DisplayMode WorkspacesWidget::effectiveDisplayMode() const noexcept {
@@ -53,6 +53,16 @@ WorkspacesWidget::DisplayMode WorkspacesWidget::effectiveDisplayMode() const noe
     return DisplayMode::Id;
   }
   return m_displayMode;
+}
+
+bool WorkspacesWidget::shouldShowWorkspaceLabel(const Workspace& workspace, std::string_view label) const noexcept {
+  if (effectiveDisplayMode() == DisplayMode::None || label.empty()) {
+    return false;
+  }
+  if (m_labelsOnlyWhenOccupied && !workspace.occupied) {
+    return false;
+  }
+  return true;
 }
 
 void WorkspacesWidget::create() {
@@ -137,8 +147,14 @@ void WorkspacesWidget::doUpdate(Renderer& renderer) {
         structuralChange = true;
         break;
       }
-      if (a.active != b.active || a.urgent != b.urgent || a.occupied != b.occupied) {
+      if (a.active != b.active || a.urgent != b.urgent) {
         activeChange = true;
+      }
+      if (a.occupied != b.occupied) {
+        activeChange = true;
+        if (m_labelsOnlyWhenOccupied) {
+          structuralChange = true;
+        }
       }
     }
   }
@@ -212,7 +228,7 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
   for (std::size_t i = 0; i < workspaces.size(); ++i) {
     auto& slot = slots[i];
     slot.label = labels[i];
-    slot.showLabel = (effectiveDisplayMode() != DisplayMode::None) && !labels[i].empty();
+    slot.showLabel = shouldShowWorkspaceLabel(workspaces[i], labels[i]);
 
     // Detect numeric labels (workspace IDs like "1", "10", "11")
     slot.isNumeric = !labels[i].empty() && std::all_of(labels[i].begin(), labels[i].end(), [](char c) {
@@ -507,11 +523,14 @@ void WorkspacesWidget::applyItemLayout(std::size_t i) {
     }
   }
   if (it.text != nullptr) {
-    const float itemW = m_isVertical ? m_indicatorHeight : it.currentWidth;
-    const float itemH = m_isVertical ? it.currentWidth : m_indicatorHeight;
-    const float textX = std::round((itemW - it.text->width()) * 0.5f - it.inkCenterOffset);
-    const float textY = std::round((itemH - it.text->height()) * 0.5f - it.inkVCenterOffset);
-    it.text->setPosition(std::max(0.0f, textX), textY);
+    it.text->setVisible(it.showLabel);
+    if (it.showLabel) {
+      const float itemW = m_isVertical ? m_indicatorHeight : it.currentWidth;
+      const float itemH = m_isVertical ? it.currentWidth : m_indicatorHeight;
+      const float textX = std::round((itemW - it.text->width()) * 0.5f - it.inkCenterOffset);
+      const float textY = std::round((itemH - it.text->height()) * 0.5f - it.inkVCenterOffset);
+      it.text->setPosition(std::max(0.0f, textX), textY);
+    }
   }
   if (it.indicator != nullptr) {
     const float itemW = m_isVertical ? m_indicatorHeight : it.currentWidth;
