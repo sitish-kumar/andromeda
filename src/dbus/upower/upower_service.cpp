@@ -6,6 +6,7 @@
 #include "util/string_utils.h"
 
 #include <algorithm>
+#include <cmath>
 #include <map>
 #include <sdbus-c++/IProxy.h>
 #include <sdbus-c++/Types.h>
