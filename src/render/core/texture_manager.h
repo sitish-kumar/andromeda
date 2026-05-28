@@ -57,7 +57,6 @@ public:
   ) = 0;
   virtual void unload(TextureHandle& handle) = 0;
   virtual void cleanup() = 0;
-  virtual void flush() = 0;
 
   virtual void probeExtensions() = 0;
 

@@ -39,7 +39,6 @@ public:
   ) override;
   void unload(TextureHandle& handle) override;
   void cleanup() override;
-  void flush() override;
 
   void probeExtensions() override;
 
