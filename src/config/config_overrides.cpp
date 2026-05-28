@@ -176,6 +176,9 @@ namespace {
   BarConfig applyMonitorOverrideForComparison(const BarConfig& base, const BarMonitorOverride& ovr) {
     BarConfig resolved = base;
     resolved.monitorOverrides.clear();
+    if (ovr.position) {
+      resolved.position = *ovr.position;
+    }
     if (ovr.enabled) {
       resolved.enabled = *ovr.enabled;
     }

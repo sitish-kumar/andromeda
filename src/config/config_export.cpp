@@ -200,6 +200,8 @@ namespace config_export {
 
     BarConfig applyMonitorOverride(const BarConfig& base, const BarMonitorOverride& ovr) {
       BarConfig resolved = base;
+      if (ovr.position)
+        resolved.position = *ovr.position;
       if (ovr.enabled)
         resolved.enabled = *ovr.enabled;
       if (ovr.autoHide)
@@ -285,6 +287,9 @@ namespace config_export {
           }
           toml::table monitor = toml::table{};
           monitor.insert_or_assign("match", ovr.match);
+          if (ovr.position) {
+            monitor.insert_or_assign("position", *ovr.position);
+          }
           insertBarFields(monitor, applyMonitorOverride(bar, ovr), false);
           monitors.insert_or_assign(ovr.match, std::move(monitor));
         }

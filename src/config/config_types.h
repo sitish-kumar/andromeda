@@ -18,6 +18,7 @@ struct WaylandOutput;
 
 struct BarMonitorOverride {
   std::string match;
+  std::optional<std::string> position;
   std::optional<bool> enabled;
   std::optional<bool> autoHide;
   std::optional<bool> reserveSpace;

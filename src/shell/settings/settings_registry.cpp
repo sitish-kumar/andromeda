@@ -1899,6 +1899,11 @@ namespace settings {
             ToggleSetting{ovr.enabled.value_or(bar.enabled)}, "visible"
         ));
         entries.push_back(makeEntry(
+            section, "general", tr("settings.schema.shared.position.label"),
+            tr("settings.schema.bar.position.description"), monitorPath("position"),
+            positionSelect(ovr.position.value_or(bar.position)), "edge"
+        ));
+        entries.push_back(makeEntry(
             section, "general", tr("settings.schema.shared.auto-hide.label"),
             tr("settings.schema.bar.auto-hide.description"), monitorPath("auto_hide"),
             ToggleSetting{ovr.autoHide.value_or(bar.autoHide)}, "autohide"

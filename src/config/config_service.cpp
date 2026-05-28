@@ -703,6 +703,8 @@ BarConfig ConfigService::resolveForOutput(const BarConfig& base, const WaylandOu
 
     kLog.debug("monitor override \"{}\" matched output {} ({})", ovr.match, output.connectorName, output.description);
 
+    if (ovr.position)
+      resolved.position = *ovr.position;
     if (ovr.enabled)
       resolved.enabled = *ovr.enabled;
     if (ovr.autoHide)
@@ -1224,6 +1226,8 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
             ovr.match = std::string(monName.str()); // key is the match if not explicit
           }
 
+          if (auto v = (*monTbl)["position"].value<std::string>())
+            ovr.position = *v;
           if (auto v = (*monTbl)["enabled"].value<bool>())
             ovr.enabled = *v;
           if (auto v = (*monTbl)["auto_hide"].value<bool>())
