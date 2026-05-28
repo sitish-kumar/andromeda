@@ -5,6 +5,7 @@
 #include "dbus/upower/upower_service.h"
 #include "i18n/i18n.h"
 #include "render/render_context.h"
+#include "shell/greeter/greeter_appearance_sync.h"
 #include "shell/settings/settings_bar_management.h"
 #include "shell/settings/settings_content.h"
 #include "shell/settings/settings_sidebar.h"
@@ -297,6 +298,7 @@ settings::RegistryEnvironment SettingsWindow::buildRegistryEnvironment() const {
   env.niriOverviewTypeToLaunchSupported = (m_wayland != nullptr && compositors::isNiri());
   env.ddcutilAvailable = (m_dependencies != nullptr && m_dependencies->hasDdcutil());
   env.gammaControlAvailable = (m_wayland != nullptr && m_wayland->hasGammaControl());
+  env.greeterSyncAvailable = greeter::appearanceSyncAvailable();
   const ThemeMode previewMode = m_config != nullptr ? m_config->config().theme.mode : ThemeMode::Dark;
   for (const auto& paletteInfo : noctalia::theme::availableCommunityPalettes()) {
     env.communityPalettes.push_back(
@@ -782,7 +784,35 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
 
   const BarConfig* selectedBar = settings::findBar(cfg, m_selectedBarName);
 
-  m_settingsRegistry = settings::buildSettingsRegistry(cfg, nullptr, nullptr, buildRegistryEnvironment());
+  const auto env = buildRegistryEnvironment();
+  m_settingsRegistry = settings::buildSettingsRegistry(cfg, nullptr, nullptr, env);
+
+  if (m_syncGreeterAppearance && env.greeterSyncAvailable) {
+    auto it = std::find_if(m_settingsRegistry.begin(), m_settingsRegistry.end(), [](const settings::SettingEntry& e) {
+      return e.section == "shell"
+          && e.group == "security"
+          && e.path == std::vector<std::string>{"shell", "password_style"};
+    });
+    if (it != m_settingsRegistry.end()) {
+      ++it;
+    }
+    settings::SettingEntry btn{
+        .section = "shell",
+        .group = "security",
+        .title = i18n::tr("settings.schema.shell.sync-greeter.label"),
+        .subtitle = i18n::tr("settings.schema.shell.sync-greeter.description"),
+        .path = {},
+        .control =
+            settings::ButtonSetting{
+                .label = i18n::tr("settings.schema.shell.sync-greeter.button"),
+                .action = m_syncGreeterAppearance,
+                .glyph = {},
+            },
+        .searchText = "greeter login sync appearance wallpaper colors security",
+        .visibleWhen = std::nullopt,
+    };
+    m_settingsRegistry.insert(it, std::move(btn));
+  }
 
   if (m_openWallpaperPanel) {
     auto it = std::find_if(m_settingsRegistry.begin(), m_settingsRegistry.end(), [](const settings::SettingEntry& e) {

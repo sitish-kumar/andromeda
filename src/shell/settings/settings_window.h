@@ -67,9 +67,13 @@ public:
   void onExternalOptionsChanged();
   void setOpenDesktopWidgetEditor(std::function<void()> callback) { m_openDesktopWidgetEditor = std::move(callback); }
   void setOpenWallpaperPanel(std::function<void()> callback) { m_openWallpaperPanel = std::move(callback); }
+  void setSyncGreeterAppearance(std::function<void()> callback) { m_syncGreeterAppearance = std::move(callback); }
 
   void onSecondTick();
   void onIdleLiveStatusChanged();
+  void markSettingsWriteSuccess(bool requestRebuild = true);
+  void markSettingsWriteError(std::string message);
+  void showTransientStatus(std::string message, bool isError = false);
 
 private:
   void destroyWindow();
@@ -113,8 +117,6 @@ private:
   void setSettingOverrides(std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>> overrides);
   void clearSettingOverride(std::vector<std::string> path);
   void clearSettingOverrides(std::vector<std::vector<std::string>> paths);
-  void markSettingsWriteSuccess(bool requestRebuild = true);
-  void markSettingsWriteError(std::string message);
   void renameWidgetInstance(
       std::string oldName, std::string newName,
       std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>> referenceOverrides
@@ -189,4 +191,5 @@ private:
   bool m_statusIsError = false;
   std::function<void()> m_openDesktopWidgetEditor;
   std::function<void()> m_openWallpaperPanel;
+  std::function<void()> m_syncGreeterAppearance;
 };

@@ -24,6 +24,7 @@
 #include "shell/clipboard/clipboard_panel.h"
 #include "shell/clipboard/clipboard_paste.h"
 #include "shell/control_center/control_center_panel.h"
+#include "shell/greeter/greeter_appearance_sync.h"
 #include "shell/launcher/launcher_panel.h"
 #include "shell/session/session_panel.h"
 #include "shell/setup_wizard/setup_wizard_panel.h"
@@ -994,6 +995,17 @@ void Application::initUi() {
       m_wayland, &m_configService, &m_renderContext, &m_dependencyService, m_upowerService.get(), &m_idleManager
   );
   m_settingsWindow.setOpenDesktopWidgetEditor([this]() { m_desktopWidgetsController.toggleEdit(); });
+  m_settingsWindow.setSyncGreeterAppearance([this]() {
+    (void)greeter::syncAppearanceToGreeterAsync(m_configService, m_themeService.resolvedMode(), [this](bool success) {
+      DeferredCall::callLater([this, success]() {
+        if (success) {
+          m_settingsWindow.showTransientStatus(i18n::tr("settings.schema.shell.sync-greeter.success"));
+          return;
+        }
+        m_settingsWindow.markSettingsWriteError(i18n::tr("settings.errors.sync-greeter"));
+      });
+    });
+  });
   m_lockScreen.initialize(m_wayland, &m_renderContext, &m_configService, &m_sharedTextureCache);
   m_lockScreen.setSessionHooks(
       [this]() { m_hookManager.fire(HookKind::SessionLocked); },
@@ -1527,6 +1539,7 @@ void Application::initIpc() {
   m_templateApplyService.registerIpc(m_ipcService);
   m_dock.registerIpc(m_ipcService);
   m_wallpaper.registerIpc(m_ipcService);
+  greeter::registerIpc(m_ipcService, m_configService, [this]() { return m_themeService.resolvedMode(); });
   if (m_mprisService) {
     m_mprisService->registerIpc(m_ipcService);
   }

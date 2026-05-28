@@ -23,6 +23,12 @@ void SettingsWindow::markSettingsWriteError(std::string message) {
   requestSceneRebuild();
 }
 
+void SettingsWindow::showTransientStatus(std::string message, bool isError) {
+  m_statusMessage = std::move(message);
+  m_statusIsError = isError;
+  requestSceneRebuild();
+}
+
 void SettingsWindow::setSettingOverride(std::vector<std::string> path, ConfigOverrideValue value) {
   if (path.size() == 2 && path[0] == "shell" && path[1] == "font_family") {
     text::invalidateFontWeightCatalogCache();

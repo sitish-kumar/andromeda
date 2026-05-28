@@ -802,6 +802,7 @@
       "reset-page": "Failed to reset some settings.",
       "support-report": "Failed to save support report.",
       "export-config": "Failed to save config export.",
+      "sync-greeter": "Could not sync appearance to Noctalia Greeter.",
       "widget": {
         "rename": "Could not rename named widget."
       },
@@ -1710,6 +1711,12 @@
         "password-style": {
           "label": "Password Style",
           "description": "Visual style for password input masking"
+        },
+        "sync-greeter": {
+          "label": "Noctalia Greeter",
+          "description": "Copy the current wallpaper and colors to Noctalia Greeter (requires administrator approval)",
+          "button": "Sync Now",
+          "success": "Noctalia Greeter appearance synced. Changes apply on the next login screen."
         },
         "middle-click-opens-widget-settings": {
           "label": "Middle Click Opens Widget Settings",
