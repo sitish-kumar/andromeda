@@ -22,6 +22,7 @@ struct LauncherResult {
   std::string desktopActionId;
   std::string category;
   double score = 0.0;
+  int recentlyUsedIndex = 0; // Higher is more recent. <=0 means no record or too old.
 };
 
 class LauncherProvider {

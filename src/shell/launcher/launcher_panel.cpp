@@ -480,6 +480,7 @@ void LauncherPanel::doLayout(Renderer& renderer, float width, float height) {
 
 void LauncherPanel::onOpen(std::string_view context) {
   m_categoryFilterVisible = m_config != nullptr && m_config->config().shell.panel.launcherCategories;
+  m_activeCategoryType = All;
   m_activeCategory.clear();
   m_currentCategories.clear();
   if (m_categoryFilter != nullptr) {
@@ -510,6 +511,7 @@ void LauncherPanel::onClose() {
   m_query.clear();
   m_results.clear();
   m_allResults.clear();
+  m_activeCategoryType = All;
   m_activeCategory.clear();
   m_currentCategories.clear();
   m_selectedIndex = 0;
@@ -587,6 +589,7 @@ void LauncherPanel::onInputChanged(const std::string& text) {
     for (auto& result : results) {
       const int usageCount = m_usageTracker.getCount(provider.name(), result.id);
       result.score += usageBoostForScore(result.score, usageCount, typedQuery);
+      result.recentlyUsedIndex = m_usageTracker.getRecentlyUsedIndex(provider.name(), result.id);
     }
   };
 
@@ -651,6 +654,7 @@ void LauncherPanel::onInputChanged(const std::string& text) {
     }
   }
   if (categoriesChanged) {
+    m_activeCategoryType = All;
     m_activeCategory.clear();
     rebuildCategoryFilter(newCategories);
   }
@@ -670,16 +674,23 @@ void LauncherPanel::rebuildCategoryFilter(const std::vector<LauncherCategory>& c
   }
   m_categoryFilter->addOption("", "layout-grid");
   m_categoryFilter->setOptionTooltip(0, i18n::tr("launcher.categories.all"));
+  m_categoryFilter->addOption("", "history");
+  m_categoryFilter->setOptionTooltip(1, i18n::tr("launcher.categories.recently-used"));
   for (std::size_t i = 0; i < categories.size(); ++i) {
     m_categoryFilter->addOption("", categories[i].glyphName);
-    m_categoryFilter->setOptionTooltip(i + 1, categories[i].label);
+    m_categoryFilter->setOptionTooltip(i + 2, categories[i].label);
   }
   m_categoryFilter->setSelectedIndex(0);
   m_categoryFilter->setOnChange([this](std::size_t idx) {
     if (idx == 0) {
+      m_activeCategoryType = All;
       m_activeCategory.clear();
-    } else if (idx - 1 < m_currentCategories.size()) {
-      m_activeCategory = m_currentCategories[idx - 1].label;
+    } else if (idx == 1) {
+      m_activeCategoryType = RecentlyUsed;
+      m_activeCategory.clear();
+    } else if (idx - 2 < m_currentCategories.size()) {
+      m_activeCategoryType = Category;
+      m_activeCategory = m_currentCategories[idx - 2].label;
     }
     applyActiveCategory();
   });
@@ -740,14 +751,35 @@ std::vector<LauncherResult> LauncherPanel::providerOverviewResults(std::string_v
 
 void LauncherPanel::applyActiveCategory() {
   m_results.clear();
-  if (m_activeCategory.empty()) {
+  switch (m_activeCategoryType) {
+  case All:
     m_results = m_allResults;
-  } else {
+    break;
+  case RecentlyUsed:
+    std::copy_if(
+        m_allResults.begin(), m_allResults.end(), std::back_inserter(m_results),
+        [this](const LauncherResult& r) { return r.recentlyUsedIndex > 0; }
+    );
+    std::sort(m_results.begin(), m_results.end(), [this](const LauncherResult& a, const LauncherResult& b) {
+      if (a.recentlyUsedIndex > b.recentlyUsedIndex) {
+        return true;
+      } else if (a.recentlyUsedIndex == b.recentlyUsedIndex) {
+        if (a.providerName < b.providerName) {
+          return true;
+        } else if (a.providerName == b.providerName) {
+          return a.id < b.id;
+        }
+      }
+      return false;
+    });
+    break;
+  case Category:
     for (const auto& r : m_allResults) {
       if (r.category == m_activeCategory) {
         m_results.push_back(r);
       }
     }
+    break;
   }
   if (!m_query.empty() && m_results.size() > kMaxResults) {
     m_results.resize(kMaxResults);
