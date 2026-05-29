@@ -44,7 +44,6 @@ namespace {
   constexpr float kPaddingTop = 0.0f;
   constexpr float kPaddingBottom = Style::spaceMd;
   constexpr int kFallbackVisibleCards = 5;
-  constexpr std::int32_t kHorizontalRevealPadding = static_cast<std::int32_t>(kPaddingX);
   constexpr float kQueuedY = -1.0f;
   constexpr float kCardInnerPad = Style::spaceMd;
   constexpr float kCloseButtonSize = 20.0f;
@@ -1809,11 +1808,19 @@ void NotificationToast::ensureSurfaces() {
   m_lastLayer = layer;
   m_lastMonitorSelectors = selectedMonitors;
 
+  // Monitor selection is a filter, not a binding: if none of the configured monitors are
+  // currently connected (e.g. an external display was undocked), fall back to every available
+  // output so notifications never silently disappear. Targeting is restored automatically when a
+  // configured monitor reconnects via onOutputChange().
+  const bool anyConfiguredPresent = selectedMonitors.empty()
+      || std::any_of(m_wayland->outputs().begin(), m_wayland->outputs().end(),
+                     [this](const WaylandOutput& o) { return o.output != nullptr && shouldRenderOnOutput(o); });
+
   for (const auto& output : m_wayland->outputs()) {
     if (output.output == nullptr) {
       continue;
     }
-    if (!shouldRenderOnOutput(output)) {
+    if (anyConfiguredPresent && !shouldRenderOnOutput(output)) {
       continue;
     }
 
