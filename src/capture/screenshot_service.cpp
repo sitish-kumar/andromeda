@@ -1,6 +1,5 @@
 #include "capture/screenshot_service.h"
 
-#include "capture/png_writer.h"
 #include "capture/screenshot_region_overlay.h"
 #include "config/config_service.h"
 #include "config/config_types.h"
@@ -10,6 +9,7 @@
 #include "ipc/ipc_service.h"
 #include "notification/notification.h"
 #include "notification/notification_manager.h"
+#include "render/core/image_encoder.h"
 #include "render/render_context.h"
 #include "shell/panel/panel_manager.h"
 #include "util/file_utils.h"
@@ -27,6 +27,7 @@
 #include <ctime>
 #include <fcntl.h>
 #include <filesystem>
+#include <fstream>
 #include <pthread.h>
 #include <sys/wait.h>
 #include <thread>
@@ -613,7 +614,7 @@ void ScreenshotService::onCaptureComplete(
   }
 
   std::string encodeError;
-  std::vector<std::uint8_t> png = capture::encodePng(image->rgba.data(), image->width, image->height, &encodeError);
+  std::vector<std::uint8_t> png = encodePng(image->rgba.data(), image->width, image->height, &encodeError);
   if (png.empty()) {
     kLog.warn("screenshot encode failed: {}", encodeError);
     notifyError(encodeError.empty() ? "Failed to encode screenshot" : encodeError);
@@ -627,10 +628,11 @@ void ScreenshotService::onCaptureComplete(
   if (options.saveToFile && destPath.has_value()) {
     std::error_code ec;
     std::filesystem::create_directories(destPath->parent_path(), ec);
-    std::string writeError;
-    if (!capture::writePng(*destPath, image->rgba.data(), image->width, image->height, &writeError)) {
-      kLog.warn("screenshot write failed: {}", writeError);
-      failureMessage = writeError.empty() ? "Failed to save screenshot" : writeError;
+    std::ofstream out(*destPath, std::ios::binary | std::ios::trunc);
+    out.write(reinterpret_cast<const char*>(png.data()), static_cast<std::streamsize>(png.size()));
+    if (!out) {
+      kLog.warn("screenshot write failed: {}", destPath->string());
+      failureMessage = "Failed to save screenshot";
     } else {
       notifySaved(*destPath);
       delivered = true;
