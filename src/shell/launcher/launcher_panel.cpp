@@ -723,7 +723,7 @@ void LauncherPanel::setCategoryFilterVisible(bool visible) {
   if (m_categoryFilter == nullptr) {
     return;
   }
-  const bool show = visible && !m_currentCategories.empty();
+  const bool show = visible && (!m_currentCategories.empty() || m_hasRecentlyUsed);
   m_categoryFilter->setVisible(show);
   m_categoryFilter->setParticipatesInLayout(show);
   if (m_container != nullptr) {
