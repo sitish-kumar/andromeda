@@ -967,6 +967,7 @@
         "power": "Power",
         "screen-time": "Screen Time",
         "screen-corners": "Screen Corners",
+        "screenshot": "Screenshot",
         "security": "Security",
         "shape": "Shape",
         "system": "System",
@@ -1304,34 +1305,6 @@
         "primary_click": {
           "label": "Primary click",
           "description": "Action performed when left-clicking the bar button"
-        },
-        "directory": {
-          "label": "Output directory",
-          "description": "Folder for saved PNG files; leave empty to use ~/Pictures"
-        },
-        "filename_pattern": {
-          "label": "Filename pattern",
-          "description": "strftime pattern without extension (.png is added); use %s for unix epoch"
-        },
-        "save_to_file": {
-          "label": "Save to file",
-          "description": "Write screenshots as PNG files to the output directory"
-        },
-        "copy_to_clipboard": {
-          "label": "Copy to clipboard",
-          "description": "Place the captured PNG on the clipboard selection"
-        },
-        "freeze_screen": {
-          "label": "Freeze screen",
-          "description": "Capture the desktop before region selection so moving content stays still"
-        },
-        "pipe_to_command": {
-          "label": "Pipe to command",
-          "description": "Send the captured PNG to a shell command on stdin"
-        },
-        "pipe_command": {
-          "label": "Pipe command",
-          "description": "Command run as /bin/sh -lc (for example: swappy - or wl-copy --type image/png)"
         },
         "label": {
           "label": "Label",
@@ -1791,6 +1764,36 @@
         "screen-time-enabled": {
           "label": "Screen Time",
           "description": "Track per-app usage and show it in Control Center"
+        },
+        "screenshot-save-to-file": {
+          "label": "Save to File",
+          "description": "Write screenshots as PNG files to the output directory"
+        },
+        "screenshot-directory": {
+          "label": "Output Directory",
+          "description": "Folder for saved PNG files; leave empty to use ~/Pictures",
+          "placeholder": "~/Pictures"
+        },
+        "screenshot-filename-pattern": {
+          "label": "Filename Pattern",
+          "description": "strftime pattern without extension (.png is added); use %s for unix epoch"
+        },
+        "screenshot-copy-to-clipboard": {
+          "label": "Copy to Clipboard",
+          "description": "Place the captured PNG on the clipboard selection"
+        },
+        "screenshot-freeze-screen": {
+          "label": "Freeze Screen",
+          "description": "Capture the desktop before region selection so moving content stays still"
+        },
+        "screenshot-pipe-to-command": {
+          "label": "Pipe to Command",
+          "description": "Send the captured PNG to a shell command on stdin"
+        },
+        "screenshot-pipe-command": {
+          "label": "Pipe Command",
+          "description": "Command run as /bin/sh -lc with the PNG on stdin; for annotators or uploaders (for example: swappy -f - or satty -f -)",
+          "placeholder": "swappy -f -"
         },
         "clipboard-history-max-entries": {
           "label": "History Size",

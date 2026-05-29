@@ -427,6 +427,7 @@ namespace {
         && a.screenCorners.enabled == b.screenCorners.enabled
         && a.screenCorners.size == b.screenCorners.size
         && a.mpris.blacklist == b.mpris.blacklist
+        && a.screenshot == b.screenshot
         && a.session.actions == b.session.actions;
   }
 

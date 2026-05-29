@@ -12,9 +12,7 @@
 #include "notification/notification_manager.h"
 #include "render/render_context.h"
 #include "shell/panel/panel_manager.h"
-#include "shell/settings/widget_settings_registry.h"
 #include "util/file_utils.h"
-#include "util/string_utils.h"
 #include "wayland/clipboard_service.h"
 #include "wayland/wayland_connection.h"
 #include "wayland/wayland_seat.h"
@@ -183,47 +181,6 @@ namespace {
     return true;
   }
 
-  [[nodiscard]] bool isScreenshotWidget(const Config& cfg, std::string_view name) {
-    return settings::widgetTypeForReference(cfg, name) == "screenshot";
-  }
-
-  [[nodiscard]] std::string resolveDefaultScreenshotWidgetName(const Config& cfg) {
-    const auto scanSection = [&](const std::vector<std::string>& names) -> std::optional<std::string> {
-      for (const auto& name : names) {
-        if (isScreenshotWidget(cfg, name)) {
-          return name;
-        }
-      }
-      return std::nullopt;
-    };
-
-    for (const auto& bar : cfg.bars) {
-      if (auto name = scanSection(bar.startWidgets)) {
-        return *name;
-      }
-      if (auto name = scanSection(bar.centerWidgets)) {
-        return *name;
-      }
-      if (auto name = scanSection(bar.endWidgets)) {
-        return *name;
-      }
-    }
-
-    std::vector<std::string> configured;
-    configured.reserve(cfg.widgets.size());
-    for (const auto& [name, widget] : cfg.widgets) {
-      (void)widget;
-      if (isScreenshotWidget(cfg, name)) {
-        configured.push_back(name);
-      }
-    }
-    if (configured.empty()) {
-      return "screenshot";
-    }
-    std::sort(configured.begin(), configured.end());
-    return configured.front();
-  }
-
   void attachStdioToDevNull() {
     const int devnull = ::open("/dev/null", O_RDWR);
     if (devnull >= 0) {
@@ -353,95 +310,50 @@ bool ScreenshotService::onKeyboardEvent(const KeyboardEvent& event) {
   return true;
 }
 
-ScreenshotService::OutputOptions ScreenshotService::outputOptionsFromWidget(const WidgetConfig& widget) {
+ScreenshotService::OutputOptions ScreenshotService::outputOptionsFromConfig(const Config& config) {
+  const auto& screenshot = config.shell.screenshot;
   OutputOptions options;
-  options.saveToFile = widget.getBool("save_to_file", true);
-  options.copyToClipboard = widget.getBool("copy_to_clipboard", false);
-  options.pipeCommand = widget.getString("pipe_command", "");
-  options.pipeToCommand = widget.getBool("pipe_to_command", false);
-  options.freezeScreen = widget.getBool("freeze_screen", false);
+  options.saveToFile = screenshot.saveToFile;
+  options.copyToClipboard = screenshot.copyToClipboard;
+  options.pipeToCommand = screenshot.pipeToCommand;
+  options.freezeScreen = screenshot.freezeScreen;
+  options.pipeCommand = screenshot.pipeCommand;
+  options.directory = screenshot.directory;
+  options.filenamePattern = screenshot.filenamePattern;
+  // A configured pipe command implies piping even if the toggle was left off.
   if (!options.pipeToCommand && !options.pipeCommand.empty()) {
     options.pipeToCommand = true;
   }
-  options.directory = widget.getString("directory", "");
-  options.filenamePattern = widget.getString("filename_pattern", "");
   return options;
 }
 
-ScreenshotService::OutputOptions
-ScreenshotService::outputOptionsFromConfig(const Config& config, std::string_view widgetName) {
-  std::string error;
-  if (auto options = tryOutputOptionsFromConfig(config, widgetName, error)) {
-    return *options;
-  }
-  WidgetConfig defaults;
-  defaults.type = "screenshot";
-  return outputOptionsFromWidget(defaults);
-}
-
-std::optional<ScreenshotService::OutputOptions> ScreenshotService::tryOutputOptionsFromConfig(
-    const Config& config, std::string_view widgetNameArg, std::string& error
-) {
-  error.clear();
-  const std::string widgetName = StringUtils::trim(widgetNameArg);
-  const std::string resolvedName = widgetName.empty() ? resolveDefaultScreenshotWidgetName(config) : widgetName;
-
-  if (!widgetName.empty() && !isScreenshotWidget(config, resolvedName)) {
-    error = "widget '" + resolvedName + "' is not a screenshot widget";
-    return std::nullopt;
-  }
-
-  if (const auto it = config.widgets.find(resolvedName); it != config.widgets.end()) {
-    return outputOptionsFromWidget(it->second);
-  }
-
-  WidgetConfig defaults;
-  defaults.type = "screenshot";
-  return outputOptionsFromWidget(defaults);
-}
-
 void ScreenshotService::registerIpc(IpcService& ipc, const ConfigService& configService) {
-  const auto runWithOptions =
-      [&configService](const std::string& args, std::string& error) -> std::optional<OutputOptions> {
-    return tryOutputOptionsFromConfig(configService.config(), args, error);
-  };
-
   ipc.registerHandler(
       "screenshot-region",
-      [this, runWithOptions](const std::string& args) -> std::string {
+      [this, &configService](const std::string& /*args*/) -> std::string {
         if (!available()) {
           return "error: screen capture is not available on this compositor\n";
-        }
-        std::string error;
-        const auto options = runWithOptions(args, error);
-        if (!options.has_value()) {
-          return "error: " + error + "\n";
         }
         auto* renderContext = PanelManager::instance().renderContext();
         if (renderContext == nullptr) {
           return "error: render context unavailable\n";
         }
-        beginRegionCapture(*renderContext, *options);
+        beginRegionCapture(*renderContext, outputOptionsFromConfig(configService.config()));
         return "ok\n";
       },
-      "screenshot-region [widget-name]", "Start an interactive region screenshot"
+      "screenshot-region", "Start an interactive region screenshot"
   );
 
   ipc.registerHandler(
       "screenshot-fullscreen",
-      [this, runWithOptions](const std::string& args) -> std::string {
+      [this, &configService](const std::string& /*args*/) -> std::string {
         if (!available()) {
           return "error: screen capture is not available on this compositor\n";
         }
-        std::string error;
-        const auto options = runWithOptions(args, error);
-        if (!options.has_value()) {
-          return "error: " + error + "\n";
-        }
-        captureFullscreen(*options);
+        captureFullscreen(outputOptionsFromConfig(configService.config()));
         return "ok\n";
       },
-      "screenshot-fullscreen [widget-name]", "Capture all outputs fullscreen"
+      "screenshot-fullscreen", "Capture all outputs fullscreen"
   );
 }
 

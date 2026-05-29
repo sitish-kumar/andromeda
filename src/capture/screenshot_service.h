@@ -14,7 +14,6 @@ class ConfigService;
 class IpcService;
 class NotificationManager;
 struct Config;
-struct WidgetConfig;
 class RenderContext;
 class WaylandConnection;
 struct KeyboardEvent;
@@ -48,10 +47,7 @@ public:
   [[nodiscard]] bool onPointerEvent(const PointerEvent& event);
   [[nodiscard]] bool onKeyboardEvent(const KeyboardEvent& event);
 
-  [[nodiscard]] static OutputOptions outputOptionsFromWidget(const WidgetConfig& widget);
-  [[nodiscard]] static OutputOptions outputOptionsFromConfig(const Config& config, std::string_view widgetName = {});
-  [[nodiscard]] static std::optional<OutputOptions>
-  tryOutputOptionsFromConfig(const Config& config, std::string_view widgetNameArg, std::string& error);
+  [[nodiscard]] static OutputOptions outputOptionsFromConfig(const Config& config);
 
   void registerIpc(IpcService& ipc, const ConfigService& configService);
 

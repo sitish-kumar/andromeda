@@ -625,6 +625,18 @@ struct ShellConfig {
     bool operator==(const MprisConfig&) const = default;
   };
 
+  struct ScreenshotConfig {
+    bool saveToFile = true;
+    bool copyToClipboard = false;
+    bool pipeToCommand = false;
+    bool freezeScreen = false;
+    std::string pipeCommand;
+    std::string directory;       // empty = ~/Pictures
+    std::string filenamePattern; // empty = screenshot_%Y%m%d_%H%M%S
+
+    bool operator==(const ScreenshotConfig&) const = default;
+  };
+
   float uiScale = 1.0f;
   float cornerRadiusScale = 1.0f;
   std::string fontFamily = "sans-serif";
@@ -658,6 +670,7 @@ struct ShellConfig {
   PanelConfig panel;
   ScreenCornersConfig screenCorners;
   MprisConfig mpris;
+  ScreenshotConfig screenshot;
   ShellSessionConfig session;
 };
 

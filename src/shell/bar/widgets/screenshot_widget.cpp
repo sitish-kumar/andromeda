@@ -175,10 +175,7 @@ void ScreenshotWidget::doLayout(Renderer& renderer, float /*containerWidth*/, fl
 }
 
 ScreenshotService::OutputOptions ScreenshotWidget::outputOptions() const {
-  if (configName().empty()) {
-    return ScreenshotService::outputOptionsFromConfig(m_configService.config());
-  }
-  return ScreenshotService::outputOptionsFromConfig(m_configService.config(), configName());
+  return ScreenshotService::outputOptionsFromConfig(m_configService.config());
 }
 
 bool ScreenshotWidget::primaryClickIsFullscreen() const {

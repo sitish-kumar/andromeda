@@ -1524,6 +1524,29 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
         shell.mpris.blacklist = readStringArray(*blacklistNode);
       }
     }
+    if (const auto* screenshotTbl = (*shellTbl)["screenshot"].as_table()) {
+      if (auto v = (*screenshotTbl)["save_to_file"].value<bool>()) {
+        shell.screenshot.saveToFile = *v;
+      }
+      if (auto v = (*screenshotTbl)["copy_to_clipboard"].value<bool>()) {
+        shell.screenshot.copyToClipboard = *v;
+      }
+      if (auto v = (*screenshotTbl)["pipe_to_command"].value<bool>()) {
+        shell.screenshot.pipeToCommand = *v;
+      }
+      if (auto v = (*screenshotTbl)["freeze_screen"].value<bool>()) {
+        shell.screenshot.freezeScreen = *v;
+      }
+      if (auto v = (*screenshotTbl)["pipe_command"].value<std::string>()) {
+        shell.screenshot.pipeCommand = *v;
+      }
+      if (auto v = (*screenshotTbl)["directory"].value<std::string>()) {
+        shell.screenshot.directory = *v;
+      }
+      if (auto v = (*screenshotTbl)["filename_pattern"].value<std::string>()) {
+        shell.screenshot.filenamePattern = *v;
+      }
+    }
     if (auto v = (*shellTbl)["avatar_path"].value<std::string>()) {
       shell.avatarPath = *v;
     }

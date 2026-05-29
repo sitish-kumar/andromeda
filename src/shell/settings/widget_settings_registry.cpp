@@ -208,10 +208,6 @@ namespace settings {
       return baseSpec(key, WidgetSettingValueType::String, std::move(defaultValue), advanced);
     }
 
-    WidgetSettingSpec folderSpec(std::string_view key, std::string defaultValue = {}, bool advanced = false) {
-      return baseSpec(key, WidgetSettingValueType::Folder, std::move(defaultValue), advanced);
-    }
-
     WidgetSettingSpec glyphSpec(std::string_view key, std::string defaultValue = {}, bool advanced = false) {
       return baseSpec(key, WidgetSettingValueType::Glyph, std::move(defaultValue), advanced);
     }
@@ -619,8 +615,6 @@ namespace settings {
       add(glyphSpec("glyph", "clipboard"));
     } else if (type == "screenshot") {
       add(glyphSpec("glyph", "screenshot"));
-      add(folderSpec("directory", ""));
-      add(stringSpec("filename_pattern", "screenshot_%Y%m%d_%H%M%S"));
       add(segmentedSpec(
           "primary_click", "region",
           {
@@ -628,15 +622,6 @@ namespace settings {
               {"fullscreen", "settings.widgets.options.screenshot-primary-fullscreen"},
           }
       ));
-      add(boolSpec("save_to_file", true));
-      add(boolSpec("copy_to_clipboard", false));
-      add(boolSpec("freeze_screen", false));
-      add(boolSpec("pipe_to_command", false));
-      {
-        auto pipeCommand = stringSpec("pipe_command", "");
-        pipeCommand.visibleWhen = WidgetSettingVisibility{"pipe_to_command", {"true"}};
-        add(std::move(pipeCommand));
-      }
     } else if (type == "keyboard_layout") {
       add(stringSpec("cycle_command"));
       add(boolSpec("hide_when_single_layout", false));

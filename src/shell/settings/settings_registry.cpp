@@ -1080,6 +1080,72 @@ namespace settings {
         ToggleSetting{cfg.shell.screenTimeEnabled}, "screen time usage tracking control center"
     ));
     entries.push_back(makeEntry(
+        "shell", "screenshot", tr("settings.schema.shell.screenshot-save-to-file.label"),
+        tr("settings.schema.shell.screenshot-save-to-file.description"), {"shell", "screenshot", "save_to_file"},
+        ToggleSetting{cfg.shell.screenshot.saveToFile}, "screenshot capture save png file"
+    ));
+    {
+      auto e = makeEntry(
+          "shell", "screenshot", tr("settings.schema.shell.screenshot-directory.label"),
+          tr("settings.schema.shell.screenshot-directory.description"), {"shell", "screenshot", "directory"},
+          TextSetting{
+              .value = cfg.shell.screenshot.directory,
+              .placeholder = tr("settings.schema.shell.screenshot-directory.placeholder"),
+              .browseMode = TextSettingBrowseMode::SelectFolder,
+              .browseFileExtensions = {}
+          },
+          "screenshot capture directory folder save location"
+      );
+      e.visibleWhen = SettingVisibility{{"shell", "screenshot", "save_to_file"}, {"true"}};
+      entries.push_back(std::move(e));
+    }
+    {
+      auto e = makeEntry(
+          "shell", "screenshot", tr("settings.schema.shell.screenshot-filename-pattern.label"),
+          tr("settings.schema.shell.screenshot-filename-pattern.description"),
+          {"shell", "screenshot", "filename_pattern"},
+          TextSetting{
+              .value = cfg.shell.screenshot.filenamePattern,
+              .placeholder = "screenshot_%Y%m%d_%H%M%S",
+              .browseFileExtensions = {}
+          },
+          "screenshot capture filename pattern strftime"
+      );
+      e.visibleWhen = SettingVisibility{{"shell", "screenshot", "save_to_file"}, {"true"}};
+      entries.push_back(std::move(e));
+    }
+    entries.push_back(makeEntry(
+        "shell", "screenshot", tr("settings.schema.shell.screenshot-copy-to-clipboard.label"),
+        tr("settings.schema.shell.screenshot-copy-to-clipboard.description"),
+        {"shell", "screenshot", "copy_to_clipboard"}, ToggleSetting{cfg.shell.screenshot.copyToClipboard},
+        "screenshot capture clipboard copy"
+    ));
+    entries.push_back(makeEntry(
+        "shell", "screenshot", tr("settings.schema.shell.screenshot-freeze-screen.label"),
+        tr("settings.schema.shell.screenshot-freeze-screen.description"), {"shell", "screenshot", "freeze_screen"},
+        ToggleSetting{cfg.shell.screenshot.freezeScreen}, "screenshot capture freeze region region"
+    ));
+    entries.push_back(makeEntry(
+        "shell", "screenshot", tr("settings.schema.shell.screenshot-pipe-to-command.label"),
+        tr("settings.schema.shell.screenshot-pipe-to-command.description"), {"shell", "screenshot", "pipe_to_command"},
+        ToggleSetting{cfg.shell.screenshot.pipeToCommand}, "screenshot capture pipe command stdin"
+    ));
+    {
+      auto e = makeEntry(
+          "shell", "screenshot", tr("settings.schema.shell.screenshot-pipe-command.label"),
+          tr("settings.schema.shell.screenshot-pipe-command.description"), {"shell", "screenshot", "pipe_command"},
+          TextSetting{
+              .value = cfg.shell.screenshot.pipeCommand,
+              .placeholder = tr("settings.schema.shell.screenshot-pipe-command.placeholder"),
+              .width = 320.0f,
+              .browseFileExtensions = {}
+          },
+          "screenshot capture pipe command stdin png"
+      );
+      e.visibleWhen = SettingVisibility{{"shell", "screenshot", "pipe_to_command"}, {"true"}};
+      entries.push_back(std::move(e));
+    }
+    entries.push_back(makeEntry(
         "popups", "osd", tr("settings.schema.shell.osd-position.label"),
         tr("settings.schema.shell.osd-position.description"), {"osd", "position"},
         plainSelect(
