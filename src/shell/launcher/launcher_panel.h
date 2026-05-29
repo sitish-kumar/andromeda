@@ -79,6 +79,7 @@ private:
   ActiveCategoryType m_activeCategoryType = All;
   std::string m_activeCategory;
   std::vector<LauncherCategory> m_currentCategories;
+  bool m_hasRecentlyUsed = false;
   std::size_t m_selectedIndex = 0;
   bool m_categoryFilterVisible = true;
   ConfigService* m_config = nullptr;

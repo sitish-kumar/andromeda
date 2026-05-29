@@ -55,6 +55,11 @@ int UsageTracker::getRecentlyUsedIndex(std::string_view providerName, std::strin
   return idIt != provIt->second.end() ? idIt->second : 0;
 }
 
+std::size_t UsageTracker::getRecentlyUsedCount(std::string_view providerName) const {
+  const auto provIt = m_recentlyUsed.find(std::string(providerName));
+  return provIt != m_recentlyUsed.end() ? provIt->second.size() : 0;
+}
+
 void UsageTracker::load() {
   {
     std::ifstream file(m_usageCountsPath);

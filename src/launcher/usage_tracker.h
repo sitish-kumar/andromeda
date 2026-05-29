@@ -15,6 +15,7 @@ public:
   void record(std::string_view providerName, std::string_view resultId);
   [[nodiscard]] int getCount(std::string_view providerName, std::string_view resultId) const;
   [[nodiscard]] int getRecentlyUsedIndex(std::string_view providerName, std::string_view resultId) const;
+  [[nodiscard]] std::size_t getRecentlyUsedCount(std::string_view providerName) const;
 
 private:
   void load();

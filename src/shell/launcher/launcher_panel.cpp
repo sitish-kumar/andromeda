@@ -484,6 +484,7 @@ void LauncherPanel::onOpen(std::string_view context) {
   m_activeCategoryType = All;
   m_activeCategory.clear();
   m_currentCategories.clear();
+  m_hasRecentlyUsed = false;
   if (m_categoryFilter != nullptr) {
     m_categoryFilter->clearOptions();
     m_categoryFilter->setVisible(false);
@@ -515,6 +516,7 @@ void LauncherPanel::onClose() {
   m_activeCategoryType = All;
   m_activeCategory.clear();
   m_currentCategories.clear();
+  m_hasRecentlyUsed = false;
   m_selectedIndex = 0;
 
   if (m_grid != nullptr) {
@@ -584,9 +586,6 @@ void LauncherPanel::onInputChanged(const std::string& text) {
   const bool typedQuery = !queryText.empty();
 
   auto applyUsageBoost = [&](std::vector<LauncherResult>& results, const LauncherProvider& provider) {
-    if (!provider.trackUsage()) {
-      return;
-    }
     for (auto& result : results) {
       const int usageCount = m_usageTracker.getCount(provider.name(), result.id);
       result.score += usageBoostForScore(result.score, usageCount, typedQuery);
@@ -596,9 +595,16 @@ void LauncherPanel::onInputChanged(const std::string& text) {
 
   std::vector<LauncherCategory> newCategories;
 
+  bool hasRecentlyUsed = false;
+
   if (activeProvider != nullptr) {
     m_allResults = activeProvider->query(queryText);
-    applyUsageBoost(m_allResults, *activeProvider);
+    if (activeProvider->trackUsage()) {
+      applyUsageBoost(m_allResults, *activeProvider);
+      if (m_usageTracker.getRecentlyUsedCount(activeProvider->name()) > 0) {
+        hasRecentlyUsed = true;
+      }
+    }
     for (auto& result : m_allResults) {
       result.providerName = activeProvider->name();
     }
@@ -610,7 +616,12 @@ void LauncherPanel::onInputChanged(const std::string& text) {
     for (auto& provider : m_providers) {
       if (provider->prefix().empty()) {
         auto results = provider->query(queryText);
-        applyUsageBoost(results, *provider);
+        if (provider->trackUsage()) {
+          applyUsageBoost(results, *provider);
+          if (m_usageTracker.getRecentlyUsedCount(provider->name()) > 0) {
+            hasRecentlyUsed = true;
+          }
+        }
         for (auto& result : results) {
           result.providerName = provider->name();
         }
@@ -654,6 +665,12 @@ void LauncherPanel::onInputChanged(const std::string& text) {
       }
     }
   }
+
+  if (hasRecentlyUsed != m_hasRecentlyUsed) {
+    m_hasRecentlyUsed = hasRecentlyUsed;
+    categoriesChanged = true;
+  }
+
   if (categoriesChanged) {
     m_activeCategoryType = All;
     m_activeCategory.clear();
@@ -675,23 +692,27 @@ void LauncherPanel::rebuildCategoryFilter(const std::vector<LauncherCategory>& c
   }
   m_categoryFilter->addOption("", "layout-grid");
   m_categoryFilter->setOptionTooltip(0, i18n::tr("launcher.categories.all"));
-  m_categoryFilter->addOption("", "history");
-  m_categoryFilter->setOptionTooltip(1, i18n::tr("launcher.categories.recently-used"));
+  size_t categoryStartIndex = 1;
+  if (m_hasRecentlyUsed) {
+    m_categoryFilter->addOption("", "history");
+    m_categoryFilter->setOptionTooltip(1, i18n::tr("launcher.categories.recently-used"));
+    ++categoryStartIndex;
+  }
   for (std::size_t i = 0; i < categories.size(); ++i) {
     m_categoryFilter->addOption("", categories[i].glyphName);
-    m_categoryFilter->setOptionTooltip(i + 2, categories[i].label);
+    m_categoryFilter->setOptionTooltip(i + categoryStartIndex, categories[i].label);
   }
   m_categoryFilter->setSelectedIndex(0);
-  m_categoryFilter->setOnChange([this](std::size_t idx) {
+  m_categoryFilter->setOnChange([this, categoryStartIndex](std::size_t idx) {
     if (idx == 0) {
       m_activeCategoryType = All;
       m_activeCategory.clear();
-    } else if (idx == 1) {
+    } else if (m_hasRecentlyUsed && idx == 1) {
       m_activeCategoryType = RecentlyUsed;
       m_activeCategory.clear();
-    } else if (idx - 2 < m_currentCategories.size()) {
+    } else if (idx - categoryStartIndex < m_currentCategories.size()) {
       m_activeCategoryType = Category;
-      m_activeCategory = m_currentCategories[idx - 2].label;
+      m_activeCategory = m_currentCategories[idx - categoryStartIndex].label;
     }
     applyActiveCategory();
   });
