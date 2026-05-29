@@ -1072,7 +1072,8 @@ bool LauncherPanel::handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers) {
   if (KeybindMatcher::matches(KeybindAction::Right, sym, modifiers)) {
     if (m_categoryFilter != nullptr && m_categoryFilter->visible()) {
       const std::size_t next = m_categoryFilter->selectedIndex() + 1;
-      const std::size_t total = m_currentCategories.size() + 2;
+      const std::size_t total = m_currentCategories.size()
+          + (m_hasRecentlyUsed ? 2 : 1); // +1 for "All" category, +2 for "Recently Used" if present
       if (next < total) {
         m_categoryFilter->setSelectedIndex(next);
         return true;
