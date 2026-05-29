@@ -1013,7 +1013,11 @@ namespace settings {
 
       std::size_t visibleSpecs = 0;
       std::string activeGroupKey;
-      for (const auto& spec : specs) {
+      // Coalesce specs by group so each group header renders once regardless of spec declaration order.
+      const auto specOrder =
+          coalesceByGroupKey(specs.size(), [&](std::size_t i) { return std::string(widgetSettingGroupKey(specs[i])); });
+      for (const std::size_t specIndex : specOrder) {
+        const auto& spec = specs[specIndex];
         if (spec.key == "capsule_group" && managedCapsuleGroups.empty()) {
           continue;
         }

@@ -122,6 +122,9 @@ namespace settings {
       if (key == "shadow") {
         return override->shadow.has_value();
       }
+      if (key == "panel_overlap") {
+        return override->panelOverlap.has_value();
+      }
       if (key == "widget_spacing") {
         return override->widgetSpacing.has_value();
       }
@@ -1849,7 +1852,14 @@ namespace settings {
         ? std::string_view{ctx.selectedMonitorOverride->match}
         : std::string_view{};
 
-    for (const auto& entry : registry) {
+    // Coalesce entries by (content section, group) so each group renders once even if its entries were
+    // declared non-contiguously in the registry. See coalesceByGroupKey().
+    const auto entryOrder = coalesceByGroupKey(registry.size(), [&](std::size_t i) {
+      return barSettingContentSectionKey(registry[i]) + '\x1f' + registry[i].group;
+    });
+
+    for (const std::size_t entryIndex : entryOrder) {
+      const auto& entry = registry[entryIndex];
       if (ctx.searchQuery.empty() && !ctx.selectedSection.empty() && entry.section != ctx.selectedSection) {
         continue;
       }

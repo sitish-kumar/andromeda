@@ -37,6 +37,7 @@ struct BarMonitorOverride {
   std::optional<std::int32_t> widgetSpacing; // gap between widgets within a section
   std::optional<bool> shadow;                // use the global shell shadow on this bar
   std::optional<bool> contactShadow;         // dark gradient between attached panel and bar
+  std::optional<std::int32_t> panelOverlap;  // logical px the attached panel overlaps the bar edge (seam tuning)
   std::optional<float> scale;
   std::optional<std::vector<std::string>> startWidgets;
   std::optional<std::vector<std::string>> centerWidgets;
@@ -77,8 +78,12 @@ struct BarConfig {
   std::int32_t widgetSpacing = 6; // gap between widgets within a section
   bool shadow = true;             // use the global shell shadow
   bool contactShadow = false;     // dark gradient between attached panel and bar
-  float scale = 1.0f;             // content scale multiplier for glyphs and text
-  int fontWeight = 500;           // primary label weight for bar widgets
+  // Logical px the attached panel overlaps the bar edge so their seam is hidden. The ideal value depends on the
+  // compositor and the output's fractional scale (physical-pixel rounding), so it is exposed for per-bar/per-monitor
+  // tuning. Negative values pull the panel away from the bar.
+  std::int32_t panelOverlap = 1;
+  float scale = 1.0f;   // content scale multiplier for glyphs and text
+  int fontWeight = 500; // primary label weight for bar widgets
   std::vector<std::string> startWidgets = {"launcher", "wallpaper", "workspaces"};
   std::vector<std::string> centerWidgets = {"clock"};
   std::vector<std::string> endWidgets = {"media",   "tray",           "notifications", "clipboard",

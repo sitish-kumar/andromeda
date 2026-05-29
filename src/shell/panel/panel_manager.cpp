@@ -30,7 +30,6 @@ PanelManager* PanelManager::s_instance = nullptr;
 namespace {
 
   constexpr Logger kLog("panel");
-  constexpr std::int32_t kAttachedPanelBarOverlap = 1;
   constexpr std::int32_t kDetachedPanelShadowSafetyPadding = 2;
 
   struct BarVisibleRect {
@@ -564,6 +563,8 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     );
     const auto totalStartInset = computeTotalInset(barRStart);
     const auto totalEndInset = computeTotalInset(barREnd);
+    // Logical px the attached panel overlaps the bar edge to hide the seam (per-bar/per-monitor tunable).
+    const std::int32_t panelOverlap = barConfig.panelOverlap;
     std::int32_t visualX = 0;
     std::int32_t visualY = 0;
     const bool useAnchorForAttached =
@@ -575,8 +576,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
       const auto desiredY =
           static_cast<std::int32_t>(std::lround(request.anchorY - static_cast<float>(panelHeight) * 0.5f));
       visualY = useAnchorForAttached ? std::clamp(desiredY, minY, maxY) : centeredY;
-      visualX = barIsLeft ? barRight - kAttachedPanelBarOverlap
-                          : barLeft - static_cast<std::int32_t>(panelWidth) + kAttachedPanelBarOverlap;
+      visualX = barIsLeft ? barRight - panelOverlap : barLeft - static_cast<std::int32_t>(panelWidth) + panelOverlap;
     } else {
       const auto minX = barLeft + totalStartInset;
       const auto maxX = std::max(minX, barRight - static_cast<std::int32_t>(panelWidth) - totalEndInset);
@@ -584,8 +584,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
       const auto desiredX =
           static_cast<std::int32_t>(std::lround(request.anchorX - static_cast<float>(panelWidth) * 0.5f));
       visualX = useAnchorForAttached ? std::clamp(desiredX, minX, maxX) : centeredX;
-      visualY = barIsBottom ? barTop - static_cast<std::int32_t>(panelHeight) + kAttachedPanelBarOverlap
-                            : barBottom - kAttachedPanelBarOverlap;
+      visualY = barIsBottom ? barTop - static_cast<std::int32_t>(panelHeight) + panelOverlap : barBottom - panelOverlap;
     }
 
     // Surface origin: cross-axis outset on each side, main-axis bleed on the side opposite the bar.

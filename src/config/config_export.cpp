@@ -171,6 +171,7 @@ namespace config_export {
       table.insert_or_assign("widget_spacing", static_cast<std::int64_t>(bar.widgetSpacing));
       table.insert_or_assign("shadow", bar.shadow);
       table.insert_or_assign("contact_shadow", bar.contactShadow);
+      table.insert_or_assign("panel_overlap", static_cast<std::int64_t>(bar.panelOverlap));
       table.insert_or_assign("scale", static_cast<double>(bar.scale));
       table.insert_or_assign("font_weight", static_cast<std::int64_t>(bar.fontWeight));
       table.insert_or_assign("start", stringArray(bar.startWidgets));
@@ -243,6 +244,8 @@ namespace config_export {
         resolved.shadow = *ovr.shadow;
       if (ovr.contactShadow)
         resolved.contactShadow = *ovr.contactShadow;
+      if (ovr.panelOverlap)
+        resolved.panelOverlap = *ovr.panelOverlap;
       if (ovr.startWidgets)
         resolved.startWidgets = *ovr.startWidgets;
       if (ovr.centerWidgets)

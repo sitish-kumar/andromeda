@@ -746,6 +746,8 @@ BarConfig ConfigService::resolveForOutput(const BarConfig& base, const WaylandOu
       resolved.shadow = *ovr.shadow;
     if (ovr.contactShadow)
       resolved.contactShadow = *ovr.contactShadow;
+    if (ovr.panelOverlap)
+      resolved.panelOverlap = *ovr.panelOverlap;
     if (ovr.startWidgets)
       resolved.startWidgets = *ovr.startWidgets;
     if (ovr.centerWidgets)
@@ -1169,6 +1171,8 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
         bar.shadow = *v;
       if (auto v = (*barTbl)["contact_shadow"].value<bool>())
         bar.contactShadow = *v;
+      if (auto v = (*barTbl)["panel_overlap"].value<int64_t>())
+        bar.panelOverlap = std::clamp(static_cast<std::int32_t>(*v), -2, 3);
       if (auto v = finiteDouble((*barTbl)["scale"]))
         bar.scale = std::clamp(static_cast<float>(*v), 0.5f, 4.0f);
       if (auto fontWeightValue = (*barTbl)["font_weight"].value<int64_t>()) {
@@ -1267,6 +1271,8 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
             ovr.shadow = *v;
           if (auto v = (*monTbl)["contact_shadow"].value<bool>())
             ovr.contactShadow = *v;
+          if (auto v = (*monTbl)["panel_overlap"].value<int64_t>())
+            ovr.panelOverlap = std::clamp(static_cast<std::int32_t>(*v), -2, 3);
           if (auto* n = (*monTbl)["start"].as_array())
             ovr.startWidgets = readStringArray(*n);
           if (auto* n = (*monTbl)["center"].as_array())

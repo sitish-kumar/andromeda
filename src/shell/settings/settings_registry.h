@@ -4,12 +4,15 @@
 #include "ui/controls/color_swatch_preview.h"
 #include "ui/palette.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <functional>
+#include <numeric>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -226,5 +229,30 @@ namespace settings {
   );
   [[nodiscard]] std::string barSettingContentSectionKey(const SettingEntry& entry);
   [[nodiscard]] std::string_view sectionGlyph(std::string_view section);
+
+  // Returns a permutation of [0, count) that coalesces items sharing a group key so a group renders
+  // exactly once, regardless of the order items were declared in. The first-appearance order of group
+  // keys and the original order of items within a group are preserved. `keyFn(i)` yields item i's key.
+  //
+  // Both settings render passes emit a group header whenever an item's group differs from the previous
+  // item's, so a stranded same-group item would otherwise produce a duplicate header. Route iteration
+  // through this permutation to make group placement independent of declaration order.
+  template <typename KeyFn>
+  [[nodiscard]] std::vector<std::size_t> coalesceByGroupKey(std::size_t count, KeyFn&& keyFn) {
+    std::unordered_map<std::string, std::size_t> rankByKey;
+    std::vector<std::size_t> rankOf(count);
+    std::size_t nextRank = 0;
+    for (std::size_t i = 0; i < count; ++i) {
+      auto [it, inserted] = rankByKey.try_emplace(keyFn(i), nextRank);
+      if (inserted) {
+        ++nextRank;
+      }
+      rankOf[i] = it->second;
+    }
+    std::vector<std::size_t> order(count);
+    std::iota(order.begin(), order.end(), std::size_t{0});
+    std::stable_sort(order.begin(), order.end(), [&](std::size_t a, std::size_t b) { return rankOf[a] < rankOf[b]; });
+    return order;
+  }
 
 } // namespace settings

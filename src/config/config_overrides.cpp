@@ -156,6 +156,7 @@ namespace {
         && a.widgetSpacing == b.widgetSpacing
         && a.shadow == b.shadow
         && a.contactShadow == b.contactShadow
+        && a.panelOverlap == b.panelOverlap
         && nearlyEqual(a.scale, b.scale)
         && a.fontWeight == b.fontWeight
         && a.startWidgets == b.startWidgets
@@ -236,6 +237,9 @@ namespace {
     }
     if (ovr.contactShadow) {
       resolved.contactShadow = *ovr.contactShadow;
+    }
+    if (ovr.panelOverlap) {
+      resolved.panelOverlap = *ovr.panelOverlap;
     }
     if (ovr.startWidgets) {
       resolved.startWidgets = *ovr.startWidgets;

@@ -2469,6 +2469,10 @@
         },
         "contact-shadow": {
           "description": "Dark gradient between an attached panel and the bar to suggest depth at the seam"
+        },
+        "panel-overlap": {
+          "label": "Panel Overlap",
+          "description": "Pixels an attached panel overlaps the bar edge to hide the seam. Adjust if you see a line or gap."
         }
       }
     }
