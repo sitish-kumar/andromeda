@@ -71,7 +71,9 @@ namespace shell::dock {
       geometry.marginRight = cfg.marginEnds;
       if (isBottom) {
         if (edgeGutter > 0) {
-          geometry.surfaceH = static_cast<std::uint32_t>(sb.up + panelH + sb.down + edgeGutter);
+          // Surface reaches the screen edge; marginEdge is a gutter on the edge side.
+          // Edge-side shadow bleed lives inside the gutter, not beyond it (see bar).
+          geometry.surfaceH = static_cast<std::uint32_t>(sb.up + panelH + edgeGutter);
         } else {
           geometry.marginBottom = std::max(0, mEdge - sb.down);
           geometry.surfaceH = static_cast<std::uint32_t>(sb.up + panelH + std::min(mEdge, sb.down));
@@ -79,7 +81,7 @@ namespace shell::dock {
         geometry.exclusiveZone = hiddenOverlayMode ? 0 : (panelH + std::min(mEdge, sb.down));
       } else {
         if (edgeGutter > 0) {
-          geometry.surfaceH = static_cast<std::uint32_t>(sb.down + panelH + sb.up + edgeGutter);
+          geometry.surfaceH = static_cast<std::uint32_t>(sb.down + panelH + edgeGutter);
         } else {
           geometry.marginTop = std::max(0, mEdge - sb.up);
           geometry.surfaceH = static_cast<std::uint32_t>(std::min(mEdge, sb.up) + panelH + sb.down);
@@ -94,7 +96,7 @@ namespace shell::dock {
     geometry.surfaceH = static_cast<std::uint32_t>(panelW + sb.up + sb.down);
     if (isRight) {
       if (edgeGutter > 0) {
-        geometry.surfaceW = static_cast<std::uint32_t>(sb.left + panelH + sb.right + edgeGutter);
+        geometry.surfaceW = static_cast<std::uint32_t>(sb.left + panelH + edgeGutter);
       } else {
         geometry.marginRight = std::max(0, mEdge - sb.right);
         geometry.surfaceW = static_cast<std::uint32_t>(sb.left + panelH + std::min(mEdge, sb.right));
@@ -102,7 +104,7 @@ namespace shell::dock {
       geometry.exclusiveZone = hiddenOverlayMode ? 0 : (panelH + std::min(mEdge, sb.right));
     } else {
       if (edgeGutter > 0) {
-        geometry.surfaceW = static_cast<std::uint32_t>(sb.right + panelH + sb.left + edgeGutter);
+        geometry.surfaceW = static_cast<std::uint32_t>(sb.right + panelH + edgeGutter);
       } else {
         geometry.marginLeft = std::max(0, mEdge - sb.left);
         geometry.surfaceW = static_cast<std::uint32_t>(std::min(mEdge, sb.left) + panelH + sb.right);
@@ -148,9 +150,9 @@ namespace shell::dock {
       float y = isBottom ? bleedU : std::min(mEdge, bleedU);
       if (const int gutter = dockAutoHideEdgeGutter(cfg); gutter > 0) {
         if (isBottom) {
-          y = surfaceH - static_cast<float>(gutter) - panelThickness - bleedD;
+          y = surfaceH - static_cast<float>(gutter) - panelThickness;
         } else {
-          y = static_cast<float>(gutter) + bleedU;
+          y = static_cast<float>(gutter);
         }
       }
       return DockPanelGeometry{
@@ -164,9 +166,9 @@ namespace shell::dock {
     float x = isRight ? bleedL : std::min(mEdge, bleedL);
     if (const int gutter = dockAutoHideEdgeGutter(cfg); gutter > 0) {
       if (isRight) {
-        x = surfaceW - static_cast<float>(gutter) - panelThickness - bleedR;
+        x = surfaceW - static_cast<float>(gutter) - panelThickness;
       } else {
-        x = static_cast<float>(gutter) + bleedL;
+        x = static_cast<float>(gutter);
       }
     }
     return DockPanelGeometry{
