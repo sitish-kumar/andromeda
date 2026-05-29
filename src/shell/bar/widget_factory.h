@@ -17,6 +17,8 @@ class MprisService;
 class BluetoothService;
 class BrightnessService;
 class ClipboardService;
+class RenderContext;
+class ScreenshotService;
 class INetworkService;
 class PipeWireService;
 class PipeWireSpectrum;
@@ -39,7 +41,8 @@ public:
       INetworkService* network, IdleInhibitor* idleInhibitor, MprisService* mpris, PipeWireSpectrum* audioSpectrum,
       HttpClient* httpClient, WeatherService* weather, GammaService* nightLight,
       noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth, BrightnessService* brightness,
-      LockKeysService* lockKeys, ClipboardService* clipboard, FileWatcher* fileWatcher = nullptr
+      LockKeysService* lockKeys, ClipboardService* clipboard, FileWatcher* fileWatcher = nullptr,
+      ScreenshotService* screenshots = nullptr, RenderContext* renderContext = nullptr
   );
   ~WidgetFactory();
 
@@ -71,4 +74,6 @@ private:
   LockKeysService* m_lockKeys;
   ClipboardService* m_clipboard;
   FileWatcher* m_fileWatcher;
+  ScreenshotService* m_screenshots;
+  RenderContext* m_renderContext = nullptr;
 };

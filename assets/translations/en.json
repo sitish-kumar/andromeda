@@ -540,6 +540,10 @@
     }
   },
   "bar": {
+    "screenshot": {
+      "fullscreen": "Full screen",
+      "region": "Select region"
+    },
     "widgets": {
       "weather": {
         "default": "Weather",
@@ -1141,6 +1145,7 @@
         "notifications": "Notifications",
         "power-profile": "Power Profile",
         "scripted": "Scripted",
+        "screenshot": "Screenshot",
         "session": "Session",
         "settings": "Settings",
         "spacer": "Spacer",
@@ -1181,6 +1186,8 @@
         "ram-percent": "RAM Percent",
         "ram-used": "RAM Used",
         "short": "Short",
+        "screenshot-primary-region": "Region",
+        "screenshot-primary-fullscreen": "Fullscreen",
         "shared": "Shared",
         "workspace-label-corner": "Corner",
         "workspace-label-centered": "Centered",
@@ -1293,6 +1300,34 @@
         "glyph": {
           "label": "Glyph",
           "description": "Icon glyph name"
+        },
+        "primary_click": {
+          "label": "Primary click",
+          "description": "Action performed when left-clicking the bar button"
+        },
+        "directory": {
+          "label": "Output directory",
+          "description": "Folder for saved PNG files; leave empty to use ~/Pictures"
+        },
+        "filename_pattern": {
+          "label": "Filename pattern",
+          "description": "strftime pattern without extension (.png is added); use %s for unix epoch"
+        },
+        "save_to_file": {
+          "label": "Save to file",
+          "description": "Write screenshots as PNG files to the output directory"
+        },
+        "copy_to_clipboard": {
+          "label": "Copy to clipboard",
+          "description": "Place the captured PNG on the clipboard selection"
+        },
+        "pipe_to_command": {
+          "label": "Pipe to command",
+          "description": "Send the captured PNG to a shell command on stdin"
+        },
+        "pipe_command": {
+          "label": "Pipe command",
+          "description": "Command run as /bin/sh -lc (for example: swappy - or wl-copy --type image/png)"
         },
         "label": {
           "label": "Label",

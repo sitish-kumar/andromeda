@@ -39,6 +39,7 @@ namespace settings {
         {.type = "notifications", .labelKey = "settings.widgets.types.notifications", .glyph = "bell"},
         {.type = "power_profile", .labelKey = "settings.widgets.types.power-profile", .glyph = "balanced"},
         {.type = "scripted", .labelKey = "settings.widgets.types.scripted", .glyph = "script"},
+        {.type = "screenshot", .labelKey = "settings.widgets.types.screenshot", .glyph = "screenshot"},
         {.type = "session", .labelKey = "settings.widgets.types.session", .glyph = "shutdown"},
         {.type = "settings", .labelKey = "settings.widgets.types.settings", .glyph = "settings"},
         {.type = "spacer", .labelKey = "settings.widgets.types.spacer", .glyph = "arrows-horizontal"},
@@ -205,6 +206,10 @@ namespace settings {
 
     WidgetSettingSpec stringSpec(std::string_view key, std::string defaultValue = {}, bool advanced = false) {
       return baseSpec(key, WidgetSettingValueType::String, std::move(defaultValue), advanced);
+    }
+
+    WidgetSettingSpec folderSpec(std::string_view key, std::string defaultValue = {}, bool advanced = false) {
+      return baseSpec(key, WidgetSettingValueType::Folder, std::move(defaultValue), advanced);
     }
 
     WidgetSettingSpec glyphSpec(std::string_view key, std::string defaultValue = {}, bool advanced = false) {
@@ -612,6 +617,25 @@ namespace settings {
       add(stringSpec("tooltip_format"));
     } else if (type == "clipboard") {
       add(glyphSpec("glyph", "clipboard"));
+    } else if (type == "screenshot") {
+      add(glyphSpec("glyph", "screenshot"));
+      add(folderSpec("directory", ""));
+      add(stringSpec("filename_pattern", "screenshot_%Y%m%d_%H%M%S"));
+      add(segmentedSpec(
+          "primary_click", "region",
+          {
+              {"region", "settings.widgets.options.screenshot-primary-region"},
+              {"fullscreen", "settings.widgets.options.screenshot-primary-fullscreen"},
+          }
+      ));
+      add(boolSpec("save_to_file", true));
+      add(boolSpec("copy_to_clipboard", false));
+      add(boolSpec("pipe_to_command", false));
+      {
+        auto pipeCommand = stringSpec("pipe_command", "");
+        pipeCommand.visibleWhen = WidgetSettingVisibility{"pipe_to_command", {"true"}};
+        add(std::move(pipeCommand));
+      }
     } else if (type == "keyboard_layout") {
       add(stringSpec("cycle_command"));
       add(boolSpec("hide_when_single_layout", false));

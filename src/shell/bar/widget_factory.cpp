@@ -22,6 +22,7 @@
 #ifndef NDEBUG
 #include "shell/bar/widgets/debug_indicator_widget.h"
 #endif
+#include "capture/screenshot_service.h"
 #include "shell/bar/widgets/idle_inhibitor_widget.h"
 #include "shell/bar/widgets/keyboard_layout_widget.h"
 #include "shell/bar/widgets/launcher_widget.h"
@@ -31,6 +32,7 @@
 #include "shell/bar/widgets/nightlight_widget.h"
 #include "shell/bar/widgets/notification_widget.h"
 #include "shell/bar/widgets/power_profile_widget.h"
+#include "shell/bar/widgets/screenshot_widget.h"
 #include "shell/bar/widgets/scripted_widget.h"
 #include "shell/bar/widgets/session_widget.h"
 #include "shell/bar/widgets/settings_widget.h"
@@ -99,14 +101,15 @@ WidgetFactory::WidgetFactory(
     INetworkService* network, IdleInhibitor* idleInhibitor, MprisService* mpris, PipeWireSpectrum* audioSpectrum,
     HttpClient* httpClient, WeatherService* weather, GammaService* nightLight,
     noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth, BrightnessService* brightness,
-    LockKeysService* lockKeys, ClipboardService* clipboard, FileWatcher* fileWatcher
+    LockKeysService* lockKeys, ClipboardService* clipboard, FileWatcher* fileWatcher, ScreenshotService* screenshots,
+    RenderContext* renderContext
 )
     : m_platform(platform), m_configService(config), m_config(config.config()), m_notifications(notifications),
       m_tray(tray), m_audio(audio), m_upower(upower), m_sysmon(sysmon), m_powerProfiles(powerProfiles),
       m_network(network), m_idleInhibitor(idleInhibitor), m_mpris(mpris), m_audioSpectrum(audioSpectrum),
       m_httpClient(httpClient), m_weather(weather), m_nightLight(nightLight), m_themeService(themeService),
       m_bluetooth(bluetooth), m_brightness(brightness), m_lockKeys(lockKeys), m_clipboard(clipboard),
-      m_fileWatcher(fileWatcher) {}
+      m_fileWatcher(fileWatcher), m_screenshots(screenshots), m_renderContext(renderContext) {}
 
 WidgetFactory::~WidgetFactory() = default;
 
@@ -340,6 +343,22 @@ std::unique_ptr<Widget> WidgetFactory::create(
     auto widget = std::make_unique<ScriptedWidget>(
         name, std::move(script), barName, outputName, wc, m_fileWatcher, &m_platform, m_clipboard, m_audioSpectrum,
         m_mpris
+    );
+    widget->setContentScale(contentScale);
+    return widget;
+  }
+
+  if (type == "screenshot") {
+    if (m_screenshots == nullptr || m_renderContext == nullptr || !m_screenshots->available()) {
+      return nullptr;
+    }
+    auto barGlyph = wc != nullptr ? wc->getString("glyph", "screenshot") : std::string{"screenshot"};
+    if (barGlyph.empty()) {
+      barGlyph = "screenshot";
+    }
+    auto widget = std::make_unique<ScreenshotWidget>(
+        output, std::move(barGlyph), *m_screenshots, m_configService, m_platform, *m_renderContext,
+        m_configService.config().shell.shadow, barPosition
     );
     widget->setContentScale(contentScale);
     return widget;

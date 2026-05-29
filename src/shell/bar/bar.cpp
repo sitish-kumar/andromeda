@@ -855,7 +855,7 @@ bool Bar::initialize(
     PipeWireSpectrum* audioSpectrum, HttpClient* httpClient, WeatherService* weatherService,
     RenderContext* renderContext, GammaService* nightLight, noctalia::theme::ThemeService* themeService,
     BluetoothService* bluetooth, BrightnessService* brightness, LockKeysService* lockKeys, ClipboardService* clipboard,
-    FileWatcher* fileWatcher
+    FileWatcher* fileWatcher, ScreenshotService* screenshots
 ) {
   m_platform = &platform;
   m_config = config;
@@ -879,11 +879,12 @@ bool Bar::initialize(
   m_lockKeys = lockKeys;
   m_clipboard = clipboard;
   m_fileWatcher = fileWatcher;
+  m_screenshots = screenshots;
 
   m_widgetFactory = std::make_unique<WidgetFactory>(
       *m_platform, *m_config, m_notifications, m_tray, m_audio, m_upower, m_sysmon, m_powerProfiles, m_network,
       m_idleInhibitor, m_mpris, m_audioSpectrum, m_httpClient, m_weatherService, m_nightLight, m_themeService,
-      m_bluetooth, m_brightness, m_lockKeys, m_clipboard, m_fileWatcher
+      m_bluetooth, m_brightness, m_lockKeys, m_clipboard, m_fileWatcher, m_screenshots, m_renderContext
   );
 
   if (timeService != nullptr) {
@@ -930,7 +931,7 @@ void Bar::reload() {
   m_widgetFactory = std::make_unique<WidgetFactory>(
       *m_platform, *m_config, m_notifications, m_tray, m_audio, m_upower, m_sysmon, m_powerProfiles, m_network,
       m_idleInhibitor, m_mpris, m_audioSpectrum, m_httpClient, m_weatherService, m_nightLight, m_themeService,
-      m_bluetooth, m_brightness, m_lockKeys, m_clipboard, m_fileWatcher
+      m_bluetooth, m_brightness, m_lockKeys, m_clipboard, m_fileWatcher, m_screenshots, m_renderContext
   );
 
   if (recreateForOrder) {

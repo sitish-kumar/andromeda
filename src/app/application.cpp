@@ -519,6 +519,7 @@ void Application::initServices() {
     m_idleGraceOverlay.onOutputChange();
     m_idleInhibitor.onOutputChange();
     m_overviewLauncherCapture.onOutputChange();
+    m_screenshotService.onOutputChange();
     m_notificationToast.onOutputChange();
   });
   m_clipboardService.setChangeCallback([this]() {
@@ -1030,6 +1031,9 @@ void Application::initUi() {
     if (m_desktopWidgetsController.onPointerEvent(event)) {
       return;
     }
+    if (m_screenshotService.onPointerEvent(event)) {
+      return;
+    }
     if (m_trayMenu.onPointerEvent(event))
       return;
     if (m_colorPickerDialogPopup.onPointerEvent(event))
@@ -1075,6 +1079,9 @@ void Application::initUi() {
       return;
     }
     if (m_overviewLauncherCapture.handleKeyboardEvent(event)) {
+      return;
+    }
+    if (m_screenshotService.onKeyboardEvent(event)) {
       return;
     }
     if (m_notificationToast.onKeyboardEvent(event)) {
@@ -1234,7 +1241,8 @@ void Application::initUi() {
       m_pipewireService.get(), m_upowerService.get(), m_systemMonitor.get(), m_powerProfilesService.get(),
       m_networkService.get(), &m_idleInhibitor, m_mprisService.get(), m_pipewireSpectrum.get(), &m_httpClient,
       &m_weatherService, &m_renderContext, &m_gammaService, &m_themeService, m_bluetoothService.get(),
-      m_brightnessService.get(), kLockKeysEnabled ? &m_lockKeysService : nullptr, &m_clipboardService, &m_fileWatcher
+      m_brightnessService.get(), kLockKeysEnabled ? &m_lockKeysService : nullptr, &m_clipboardService, &m_fileWatcher,
+      &m_screenshotService
   );
   m_bar.setOpenWidgetSettingsCallback([this](std::string barName, std::string widgetName) {
     if (m_panelManager.isOpen()) {
@@ -1550,6 +1558,7 @@ void Application::initIpc() {
   if (m_pipewireService) {
     m_pipewireService->registerIpc(m_ipcService, m_configService);
   }
+  m_screenshotService.registerIpc(m_ipcService, m_configService);
 }
 
 bool Application::runUserCommand(const std::string& command) {

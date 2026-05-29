@@ -3,6 +3,7 @@
 #include "app/deferred_call_poll_source.h"
 #include "app/main_loop.h"
 #include "app/timer_poll_source.h"
+#include "capture/screenshot_service.h"
 #include "compositors/compositor_platform.h"
 #include "config/config_poll_source.h"
 #include "config/config_service.h"
@@ -155,6 +156,7 @@ private:
   HookManager m_hookManager;
   DependencyService m_dependencyService;
   GammaService m_gammaService;
+  ScreenshotService m_screenshotService{m_wayland, m_compositorPlatform, m_notificationManager, &m_clipboardService};
   std::unique_ptr<MprisService> m_mprisService;
   std::unique_ptr<PowerProfilesService> m_powerProfilesService;
   std::unique_ptr<INetworkService> m_networkService;

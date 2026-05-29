@@ -24,6 +24,7 @@ class MprisService;
 class BluetoothService;
 class BrightnessService;
 class ClipboardService;
+class ScreenshotService;
 class INetworkService;
 class NotificationManager;
 class PipeWireService;
@@ -53,7 +54,7 @@ public:
       PipeWireSpectrum* audioSpectrum, HttpClient* httpClient, WeatherService* weatherService,
       RenderContext* renderContext, GammaService* nightLight, noctalia::theme::ThemeService* themeService,
       BluetoothService* bluetooth, BrightnessService* brightness, LockKeysService* lockKeys,
-      ClipboardService* clipboard, FileWatcher* fileWatcher = nullptr
+      ClipboardService* clipboard, FileWatcher* fileWatcher = nullptr, ScreenshotService* screenshots = nullptr
   );
   void reload();
   void closeAllInstances();
@@ -146,6 +147,7 @@ private:
   BrightnessService* m_brightness = nullptr;
   LockKeysService* m_lockKeys = nullptr;
   ClipboardService* m_clipboard = nullptr;
+  ScreenshotService* m_screenshots = nullptr;
   FileWatcher* m_fileWatcher = nullptr;
   std::unique_ptr<WidgetFactory> m_widgetFactory;
   std::vector<std::unique_ptr<BarInstance>> m_instances;

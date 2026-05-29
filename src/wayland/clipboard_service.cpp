@@ -595,6 +595,13 @@ bool ClipboardService::copyText(std::string text, std::string mimeType) {
   return copyData({std::move(mimeType)}, std::move(data));
 }
 
+bool ClipboardService::copyImagePng(std::vector<std::uint8_t> png) {
+  if (png.empty()) {
+    return false;
+  }
+  return copyData({"image/png"}, std::move(png));
+}
+
 bool ClipboardService::copyEntry(const ClipboardEntry& entry) {
   if (entry.data.empty() || entry.dataMimeType.empty()) {
     return false;

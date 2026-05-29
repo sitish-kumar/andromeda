@@ -311,6 +311,8 @@ foreach _p : [
     'protocols/hyprland-toplevel-mapping-v1.xml'],
   ['wlr-gamma-control-unstable-v1',
     'protocols/wlr-gamma-control-unstable-v1.xml'],
+  ['wlr-screencopy-unstable-v1',
+    'protocols/wlr-screencopy-unstable-v1.xml'],
 ]
   _name = _p[0]
   _xml  = _p[1]
@@ -599,6 +601,11 @@ _noctalia_sources = files(
   'src/system/icon_resolver.cpp',
   'src/system/internal_app_metadata.cpp',
   'src/system/gamma_service.cpp',
+  'src/capture/screencopy_capture.cpp',
+  'src/capture/png_writer.cpp',
+  'src/capture/screenshot_service.cpp',
+  'src/capture/screenshot_region_overlay.cpp',
+  'src/shell/bar/widgets/screenshot_widget.cpp',
   'src/system/rfkill_helper.cpp',
   'src/system/screen_time_service.cpp',
   'src/system/system_monitor_service.cpp',

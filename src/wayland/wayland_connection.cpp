@@ -23,6 +23,7 @@
 #include "wlr-foreign-toplevel-management-unstable-v1-client-protocol.h"
 #include "wlr-gamma-control-unstable-v1-client-protocol.h"
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
+#include "wlr-screencopy-unstable-v1-client-protocol.h"
 #include "xdg-activation-v1-client-protocol.h"
 #include "xdg-output-unstable-v1-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
@@ -62,6 +63,7 @@ namespace {
   constexpr std::uint32_t kOutputVersion = 4;
   constexpr std::uint32_t kVirtualKeyboardManagerVersion = 1;
   constexpr std::uint32_t kGammaControlManagerVersion = 1;
+  constexpr std::uint32_t kScreencopyManagerVersion = 3;
 
   const wl_registry_listener kRegistryListener = {
       .global = &WaylandConnection::handleGlobal,
@@ -198,7 +200,13 @@ namespace {
       .description = outputDescription,
   };
 
-  void xdgOutputLogicalPosition(void* /*data*/, zxdg_output_v1* /*xdgOutput*/, int32_t /*x*/, int32_t /*y*/) {}
+  void xdgOutputLogicalPosition(void* data, zxdg_output_v1* xdgOutput, int32_t x, int32_t y) {
+    auto* out = static_cast<WaylandConnection*>(data)->findOutputByXdg(xdgOutput);
+    if (out != nullptr) {
+      out->logicalX = x;
+      out->logicalY = y;
+    }
+  }
 
   void xdgOutputLogicalSize(void* data, zxdg_output_v1* xdgOutput, int32_t w, int32_t h) {
     auto* out = static_cast<WaylandConnection*>(data)->findOutputByXdg(xdgOutput);
@@ -535,7 +543,11 @@ bool WaylandConnection::hasFractionalScale() const noexcept {
 }
 bool WaylandConnection::hasGammaControl() const noexcept { return m_gammaControlManager != nullptr; }
 
+bool WaylandConnection::hasScreencopy() const noexcept { return m_screencopyManager != nullptr; }
+
 zwlr_gamma_control_manager_v1* WaylandConnection::gammaControlManager() const noexcept { return m_gammaControlManager; }
+
+zwlr_screencopy_manager_v1* WaylandConnection::screencopyManager() const noexcept { return m_screencopyManager; }
 
 std::string WaylandConnection::requestActivationToken(wl_surface* surface) const {
   if (m_xdgActivation == nullptr || m_display == nullptr) {
@@ -940,6 +952,14 @@ void WaylandConnection::bindGlobal(
     return;
   }
 
+  if (interfaceName == zwlr_screencopy_manager_v1_interface.name) {
+    const auto bindVersion = std::min(version, kScreencopyManagerVersion);
+    m_screencopyManager = static_cast<zwlr_screencopy_manager_v1*>(
+        wl_registry_bind(registry, name, &zwlr_screencopy_manager_v1_interface, bindVersion)
+    );
+    return;
+  }
+
   if (interfaceName == wl_output_interface.name) {
     const auto bindVersion = std::min(version, kOutputVersion);
     auto* output = static_cast<wl_output*>(wl_registry_bind(registry, name, &wl_output_interface, bindVersion));
@@ -1055,6 +1075,10 @@ void WaylandConnection::cleanup() {
   if (m_gammaControlManager != nullptr) {
     zwlr_gamma_control_manager_v1_destroy(m_gammaControlManager);
     m_gammaControlManager = nullptr;
+  }
+  if (m_screencopyManager != nullptr) {
+    zwlr_screencopy_manager_v1_destroy(m_screencopyManager);
+    m_screencopyManager = nullptr;
   }
 
   if (m_viewporter != nullptr) {
