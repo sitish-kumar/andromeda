@@ -2,9 +2,6 @@
 
 #include "capture/png_writer.h"
 #include "capture/screenshot_region_overlay.h"
-#include "compositors/compositor_detect.h"
-#include "compositors/compositor_platform.h"
-#include "compositors/niri/niri_runtime.h"
 #include "config/config_service.h"
 #include "config/config_types.h"
 #include "core/deferred_call.h"
@@ -26,16 +23,16 @@
 #include <cerrno>
 #include <chrono>
 #include <cmath>
+#include <csignal>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <fcntl.h>
 #include <filesystem>
-#include <json.hpp>
+#include <pthread.h>
 #include <sys/wait.h>
 #include <thread>
 #include <unistd.h>
-#include <unordered_map>
 #include <wayland-client.h>
 
 namespace {
@@ -75,22 +72,6 @@ namespace {
       stem += labelBase;
     }
     return stem;
-  }
-
-  [[nodiscard]] wl_output* outputByConnector(WaylandConnection& wayland, std::string_view connector) {
-    for (const auto& entry : wayland.outputs()) {
-      if (entry.connectorName == connector) {
-        return entry.output;
-      }
-    }
-    return nullptr;
-  }
-
-  [[nodiscard]] std::optional<std::pair<double, double>> jsonPair(const nlohmann::json& value) {
-    if (!value.is_array() || value.size() < 2) {
-      return std::nullopt;
-    }
-    return std::pair{value[0].get<double>(), value[1].get<double>()};
   }
 
   [[nodiscard]] bool hasAnyOutput(const ScreenshotService::OutputOptions& options) {
@@ -278,6 +259,13 @@ namespace {
     }
 
     std::thread([command = std::move(command), png = std::move(png)]() {
+      // Block SIGPIPE on this thread so a command that stops reading stdin makes
+      // write() fail with EPIPE instead of terminating the whole process.
+      sigset_t pipeMask;
+      sigemptyset(&pipeMask);
+      sigaddset(&pipeMask, SIGPIPE);
+      pthread_sigmask(SIG_BLOCK, &pipeMask, nullptr);
+
       int stdinPipe[2] = {-1, -1};
       if (::pipe(stdinPipe) != 0) {
         kLog.warn("screenshot pipe: failed to create stdin pipe");
@@ -299,6 +287,9 @@ namespace {
         }
         ::close(stdinPipe[0]);
         attachStdioToDevNull();
+        // Restore default SIGPIPE handling for the spawned command.
+        ::signal(SIGPIPE, SIG_DFL);
+        pthread_sigmask(SIG_UNBLOCK, &pipeMask, nullptr);
         const char* argv[] = {"/bin/sh", "-lc", command.c_str(), nullptr};
         ::execv("/bin/sh", const_cast<char* const*>(argv));
         ::_exit(127);
@@ -323,11 +314,9 @@ namespace {
 } // namespace
 
 ScreenshotService::ScreenshotService(
-    WaylandConnection& wayland, CompositorPlatform& platform, NotificationManager& notifications,
-    ClipboardService* clipboard
+    WaylandConnection& wayland, NotificationManager& notifications, ClipboardService* clipboard
 )
-    : m_wayland(wayland), m_platform(platform), m_notifications(notifications), m_clipboard(clipboard),
-      m_capture(wayland) {}
+    : m_wayland(wayland), m_notifications(notifications), m_clipboard(clipboard), m_capture(wayland) {}
 
 ScreenshotService::~ScreenshotService() = default;
 
@@ -413,7 +402,7 @@ std::optional<ScreenshotService::OutputOptions> ScreenshotService::tryOutputOpti
 
 void ScreenshotService::registerIpc(IpcService& ipc, const ConfigService& configService) {
   const auto runWithOptions =
-      [this, &configService](const std::string& args, std::string& error) -> std::optional<OutputOptions> {
+      [&configService](const std::string& args, std::string& error) -> std::optional<OutputOptions> {
     return tryOutputOptionsFromConfig(configService.config(), args, error);
   };
 
@@ -634,37 +623,6 @@ void ScreenshotService::deliverFrozenRegion(LogicalRect region, wl_output* outpu
   onCaptureComplete(std::move(*cropped), {}, options, destPath);
 }
 
-void ScreenshotService::captureWindow(const std::string& windowId, const OutputOptions& options) {
-  if (!available()) {
-    notifyError("Screen capture is not available on this compositor");
-    return;
-  }
-  if (!hasAnyOutput(options)) {
-    notifyError("No screenshot output enabled");
-    return;
-  }
-  const auto target = resolveWindowTarget(windowId);
-  if (!target.has_value() || target->output == nullptr) {
-    notifyError("Could not resolve window geometry for capture");
-    return;
-  }
-  captureOutput(target->output, target->region, "window", options);
-}
-
-std::vector<ScreenshotService::WindowTarget> ScreenshotService::windowTargets() const {
-  std::vector<WindowTarget> targets;
-  const auto assignments = m_platform.workspaceWindowAssignments(nullptr);
-  for (const auto& assignment : assignments) {
-    if (assignment.windowId.empty()) {
-      continue;
-    }
-    if (auto resolved = resolveWindowTarget(assignment.windowId); resolved.has_value()) {
-      targets.push_back(*resolved);
-    }
-  }
-  return targets;
-}
-
 void ScreenshotService::captureOutput(
     wl_output* output, std::optional<LogicalRect> region, const std::string& labelBase, const OutputOptions& options,
     int pathSuffix
@@ -822,100 +780,4 @@ void ScreenshotService::notifySaved(const std::filesystem::path& path) {
 
 void ScreenshotService::notifyError(const std::string& message) {
   m_notifications.addInternal("Noctalia", "Screenshot failed", message, Urgency::Critical);
-}
-
-std::optional<ScreenshotService::WindowTarget>
-ScreenshotService::resolveWindowTarget(const std::string& windowId) const {
-  WindowTarget target;
-  target.windowId = windowId;
-
-  if (compositors::isNiri() && m_platform.niriRuntime().available()) {
-    const auto response = m_platform.niriRuntime().requestJson("\"Windows\"\n");
-    if (!response.has_value() || !response->contains("Windows")) {
-      return std::nullopt;
-    }
-
-    std::unordered_map<std::uint64_t, std::string> workspaceOutputs;
-    if (const auto workspaces = m_platform.niriRuntime().requestJson("\"Workspaces\"\n");
-        workspaces.has_value() && workspaces->contains("Workspaces")) {
-      for (const auto& ws : (*workspaces)["Workspaces"]) {
-        if (!ws.is_object()) {
-          continue;
-        }
-        if (const auto id = ws.value("id", 0ULL); id != 0) {
-          workspaceOutputs.emplace(id, ws.value("output", std::string{}));
-        }
-      }
-    }
-
-    for (const auto& entry : (*response)["Windows"]) {
-      const nlohmann::json* windowJson = nullptr;
-      std::uint64_t id = 0;
-      if (entry.is_array() && entry.size() >= 2) {
-        id = entry[0].get<std::uint64_t>();
-        windowJson = &entry[1];
-      } else if (entry.is_object()) {
-        windowJson = &entry;
-        id = entry.value("id", 0ULL);
-      }
-      if (windowJson == nullptr || std::to_string(id) != windowId) {
-        continue;
-      }
-
-      target.title = windowJson->value("title", std::string{"Window"});
-      if (const auto workspaceId = windowJson->value("workspace_id", 0ULL); workspaceId != 0) {
-        const auto it = workspaceOutputs.find(workspaceId);
-        if (it != workspaceOutputs.end()) {
-          target.output = outputByConnector(m_wayland, it->second);
-        }
-      }
-
-      const auto& layout = (*windowJson)["layout"];
-      double x = 0.0;
-      double y = 0.0;
-      double w = 0.0;
-      double h = 0.0;
-      if (const auto pos = jsonPair(layout["tile_pos_in_workspace_view"]); pos.has_value()) {
-        x = pos->first;
-        y = pos->second;
-      }
-      if (const auto size = jsonPair(layout["tile_size"]); size.has_value()) {
-        w = size->first;
-        h = size->second;
-      }
-      target.region = LogicalRect{
-          .x = static_cast<int>(std::floor(x)),
-          .y = static_cast<int>(std::floor(y)),
-          .width = std::max(1, static_cast<int>(std::round(w))),
-          .height = std::max(1, static_cast<int>(std::round(h))),
-      };
-      if (target.output != nullptr && target.region.width > 0 && target.region.height > 0) {
-        return target;
-      }
-      return std::nullopt;
-    }
-  }
-
-  const auto assignments = m_platform.workspaceWindowAssignments(nullptr);
-  const auto it = std::find_if(assignments.begin(), assignments.end(), [&](const WorkspaceWindowAssignment& entry) {
-    return entry.windowId == windowId;
-  });
-  if (it == assignments.end()) {
-    return std::nullopt;
-  }
-
-  target.title = it->title;
-  for (const auto& output : m_wayland.outputs()) {
-    if (output.output != nullptr) {
-      target.output = output.output;
-      break;
-    }
-  }
-  target.region = LogicalRect{
-      .x = it->x,
-      .y = it->y,
-      .width = std::max(1, 320),
-      .height = std::max(1, 240),
-  };
-  return target;
 }

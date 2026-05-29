@@ -10,7 +10,6 @@
 #include <vector>
 
 class ClipboardService;
-class CompositorPlatform;
 class ConfigService;
 class IpcService;
 class NotificationManager;
@@ -34,16 +33,8 @@ public:
     std::string filenamePattern;
   };
 
-  struct WindowTarget {
-    std::string windowId;
-    std::string title;
-    wl_output* output = nullptr;
-    LogicalRect region{};
-  };
-
   ScreenshotService(
-      WaylandConnection& wayland, CompositorPlatform& platform, NotificationManager& notifications,
-      ClipboardService* clipboard = nullptr
+      WaylandConnection& wayland, NotificationManager& notifications, ClipboardService* clipboard = nullptr
   );
   ~ScreenshotService();
 
@@ -51,9 +42,6 @@ public:
 
   void captureFullscreen(const OutputOptions& options);
   void beginRegionCapture(RenderContext& renderContext, const OutputOptions& options);
-  void captureWindow(const std::string& windowId, const OutputOptions& options);
-
-  [[nodiscard]] std::vector<WindowTarget> windowTargets() const;
 
   void onOutputChange();
 
@@ -98,10 +86,8 @@ private:
   makeScreenshotPath(const OutputOptions& options, const std::string& labelBase, int suffix = 0) const;
   void notifySaved(const std::filesystem::path& path);
   void notifyError(const std::string& message);
-  [[nodiscard]] std::optional<WindowTarget> resolveWindowTarget(const std::string& windowId) const;
 
   WaylandConnection& m_wayland;
-  CompositorPlatform& m_platform;
   NotificationManager& m_notifications;
   ClipboardService* m_clipboard = nullptr;
   ScreencopyCapture m_capture;

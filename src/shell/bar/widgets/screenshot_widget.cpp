@@ -225,24 +225,6 @@ void ScreenshotWidget::openCaptureMenu() {
       }
   );
 
-  const auto windows = m_screenshots.windowTargets();
-  if (!windows.empty()) {
-    entries.push_back(
-        ContextMenuControlEntry{.id = -1, .label = {}, .enabled = false, .separator = true, .hasSubmenu = false}
-    );
-    int nextId = 10;
-    for (const auto& window : windows) {
-      std::string label = window.title.empty() ? window.windowId : window.title;
-      entries.push_back(
-          ContextMenuControlEntry{
-              .id = nextId++,
-              .label = std::move(label),
-              .enabled = true,
-          }
-      );
-    }
-  }
-
   wl_surface* pointerSurface = m_platform.lastPointerSurface();
   auto* layerSurface = m_platform.layerSurfaceFor(pointerSurface);
   if (layerSurface == nullptr || m_hitArea == nullptr) {
@@ -262,13 +244,6 @@ void ScreenshotWidget::openCaptureMenu() {
     if (entry.id == 2) {
       m_screenshots.beginRegionCapture(m_renderContext, options);
       return;
-    }
-    if (entry.id >= 10) {
-      const auto targets = m_screenshots.windowTargets();
-      const std::size_t index = static_cast<std::size_t>(entry.id - 10);
-      if (index < targets.size()) {
-        m_screenshots.captureWindow(targets[index].windowId, options);
-      }
     }
   });
 
