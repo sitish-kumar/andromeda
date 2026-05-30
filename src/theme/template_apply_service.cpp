@@ -140,32 +140,46 @@ namespace noctalia::theme {
     }
   }
 
-  void TemplateApplyService::apply(const GeneratedPalette& palette, std::string_view defaultMode) const {
+  void TemplateApplyService::apply(const GeneratedPalette& palette, std::string_view defaultMode, bool force) const {
     ApplyRequest request = makeRequest(palette, defaultMode);
     {
       std::lock_guard lock(m_mutex);
+      // Config reloads fire on every settings change, not just theme changes.
+      // Skip redundant reprocessing (and its synchronous template hooks) when
+      // nothing the templates depend on has changed. Explicit re-application
+      // (startup, IPC, template activation) passes force or carries new inputs.
+      if (!force && m_lastAppliedRequest.has_value() && sameInputs(request, *m_lastAppliedRequest)) {
+        return;
+      }
       request.generation = ++m_nextGeneration;
+      m_lastAppliedRequest = request;
       m_pendingRequest = std::move(request);
-      m_lastPalette = palette;
-      m_lastDefaultMode = std::string(defaultMode);
     }
     m_cv.notify_one();
   }
 
   bool TemplateApplyService::reapplyLast() const {
-    std::optional<GeneratedPalette> palette;
+    GeneratedPalette palette;
     std::string defaultMode;
     {
       std::lock_guard lock(m_mutex);
-      if (!m_lastPalette.has_value()) {
+      if (!m_lastAppliedRequest.has_value()) {
         return false;
       }
-      palette = *m_lastPalette;
-      defaultMode = m_lastDefaultMode;
+      palette = m_lastAppliedRequest->palette;
+      defaultMode = m_lastAppliedRequest->defaultMode;
     }
 
-    apply(*palette, defaultMode);
+    apply(palette, defaultMode, /*force=*/true);
     return true;
+  }
+
+  bool TemplateApplyService::sameInputs(const ApplyRequest& a, const ApplyRequest& b) {
+    return a.palette == b.palette
+        && a.templates == b.templates
+        && a.defaultMode == b.defaultMode
+        && a.imagePath == b.imagePath
+        && a.schemeType == b.schemeType;
   }
 
   void TemplateApplyService::registerIpc(IpcService& ipc) {
