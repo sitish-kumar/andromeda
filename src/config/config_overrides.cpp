@@ -284,6 +284,7 @@ namespace {
         && a.osd == b.osd
         && a.notification == b.notification
         && a.weather == b.weather
+        && a.calendar == b.calendar
         && a.system == b.system
         && a.audio == b.audio
         && a.brightness == b.brightness
