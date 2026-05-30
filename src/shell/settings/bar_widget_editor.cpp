@@ -2855,17 +2855,32 @@ namespace settings {
           }
 
           // Tint the container by the group's own fill so groups with different colors are distinguishable.
-          ColorSpec groupFillTint = group->fill;
-          groupFillTint.alpha *= 0.12f;
-          const ColorSpec groupFillBorder = group->fill;
+          // A color meant to blend into surfaces (e.g. surface_variant) can't separate the box from the lane,
+          // so fall back to a neutral border + slight surface lift when the fill is too close to the lane.
+          const Color groupFillColor = resolveColorSpec(group->fill);
+          const Color laneBgColor = colorForRole(ColorRole::SurfaceVariant);
+          const float dr = groupFillColor.r - laneBgColor.r;
+          const float dg = groupFillColor.g - laneBgColor.g;
+          const float db = groupFillColor.b - laneBgColor.b;
+          const bool fillDistinct = std::sqrt(dr * dr + dg * dg + db * db) >= 0.15f;
+          ColorSpec groupFillTint;
+          ColorSpec groupBorder;
+          if (fillDistinct) {
+            groupFillTint = group->fill;
+            groupFillTint.alpha *= 0.15f;
+            groupBorder = group->fill; // full opacity
+          } else {
+            groupFillTint = colorSpecFromRole(ColorRole::OnSurface, 0.06f); // slight neutral lift
+            groupBorder = colorSpecFromRole(ColorRole::Outline);            // full opacity
+          }
           auto container = ui::column({
               .align = FlexAlign::Stretch,
               .gap = Style::spaceXs * ctx.scale,
-              .configure = [&ctx, groupFillTint, groupFillBorder](Flex& flex) {
+              .configure = [&ctx, groupFillTint, groupBorder](Flex& flex) {
                 flex.setPadding(Style::spaceXs * ctx.scale);
                 flex.setRadius(Style::scaledRadiusSm(ctx.scale));
                 flex.setFill(groupFillTint);
-                flex.setBorder(groupFillBorder, Style::borderWidth);
+                flex.setBorder(groupBorder, Style::borderWidth);
               },
           });
           auto* containerPtr = container.get();
@@ -2887,6 +2902,9 @@ namespace settings {
                   .radius = std::max(1.0f, 2.0f * ctx.scale),
                   .width = Style::fontSizeCaption * ctx.scale,
                   .height = Style::fontSizeCaption * ctx.scale,
+                  .configure = [](Box& box) {
+                    box.setBorder(colorSpecFromRole(ColorRole::Outline, 0.6f), Style::borderWidth);
+                  },
               })
           );
           {
