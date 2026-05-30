@@ -60,19 +60,22 @@ namespace {
   };
 
   CalendarBuildState currentCalendarState(int monthOffset) {
-    const auto now = std::chrono::system_clock::now();
-    const auto today = std::chrono::floor<std::chrono::days>(now);
-    const auto ymd = std::chrono::year_month_day(today);
+    // Use local civil time, not UTC. system_clock::now() floored to days yields
+    // the UTC date, which can be off by one relative to the user's wall clock.
+    const std::time_t nowTime = std::time(nullptr);
+    std::tm localTm{};
+    localtime_r(&nowTime, &localTm);
 
     CalendarBuildState state;
-    state.currentYear = static_cast<int>(static_cast<std::int32_t>(ymd.year()));
-    state.currentMonth = static_cast<int>(static_cast<unsigned>(ymd.month()) - 1);
-    state.today = static_cast<int>(static_cast<unsigned>(ymd.day()));
+    state.currentYear = localTm.tm_year + 1900;
+    state.currentMonth = localTm.tm_mon;
+    state.today = localTm.tm_mday;
 
-    auto displayMonth = ymd.month() + std::chrono::months(monthOffset);
-    auto displayYmd = std::chrono::year_month_day(ymd.year() / displayMonth / std::chrono::day(1));
-    auto displaySys = std::chrono::sys_days(displayYmd);
-    displayYmd = std::chrono::year_month_day(displaySys);
+    const auto currentMonth =
+        std::chrono::year{state.currentYear} / std::chrono::month{static_cast<unsigned>(state.currentMonth + 1)};
+    const auto displayYmd =
+        std::chrono::year_month_day((currentMonth + std::chrono::months(monthOffset)) / std::chrono::day(1));
+    const auto displaySys = std::chrono::sys_days(displayYmd);
 
     state.displayYear = static_cast<int>(static_cast<std::int32_t>(displayYmd.year()));
     state.displayMonth = static_cast<int>(static_cast<unsigned>(displayYmd.month()) - 1);

@@ -203,22 +203,29 @@ std::string formatStrftime(std::string_view fmt, const std::tm& tm) {
 }
 
 int localeFirstDayOfWeek() {
-#if defined(_NL_TIME_WEEK_1STDAY)
-  constexpr nl_item kWeekFirstDayItem = _NL_TIME_WEEK_1STDAY;
-#elif defined(_NL_WEEK_1STDAY)
-  constexpr nl_item kWeekFirstDayItem = _NL_WEEK_1STDAY;
-#else
-  constexpr nl_item kWeekFirstDayItem = static_cast<nl_item>(-1);
-#endif
-  if constexpr (kWeekFirstDayItem != static_cast<nl_item>(-1)) {
-    const char* info = nl_langinfo(kWeekFirstDayItem);
-    if (info != nullptr && *info != '\0') {
-      const unsigned char ch = static_cast<unsigned char>(*info);
-      if (ch >= '0' && ch <= '6') {
-        return static_cast<int>(ch - '0');
-      }
+  // The _NL_TIME_* week items are glibc-only; elsewhere we keep the Monday fallback.
+#if defined(__GLIBC__)
+  // WEEK_1STDAY is a YYYYMMDD anchor packed into the low 32 bits of the returned
+  // pointer; FIRST_WEEKDAY is a 1-based offset from that anchor in the first byte.
+  const char* firstWeekdayInfo = nl_langinfo(_NL_TIME_FIRST_WEEKDAY);
+  const auto week1stday =
+      static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(nl_langinfo(_NL_TIME_WEEK_1STDAY)));
+  if (firstWeekdayInfo != nullptr && week1stday > 0) {
+    const int firstWeekday = static_cast<unsigned char>(*firstWeekdayInfo);
+    const int year = static_cast<int>(week1stday / 10000);
+    const int month = static_cast<int>((week1stday / 100) % 100);
+    const int day = static_cast<int>(week1stday % 100);
+    const std::chrono::year_month_day anchor{
+        std::chrono::year{year}
+        / std::chrono::month{static_cast<unsigned>(month)}
+        / std::chrono::day{static_cast<unsigned>(day)}
+    };
+    if (firstWeekday >= 1 && anchor.ok()) {
+      const int anchorWeekday = static_cast<int>(std::chrono::weekday{std::chrono::sys_days{anchor}}.c_encoding());
+      return (anchorWeekday + firstWeekday - 1) % 7;
     }
   }
+#endif
   return 1; // ISO-style Monday when the platform does not expose locale week data.
 }
 
