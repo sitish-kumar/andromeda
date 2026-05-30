@@ -64,6 +64,7 @@ struct WaylandOutput {
   std::int32_t logicalHeight = 0;
   std::int32_t logicalX = 0;
   std::int32_t logicalY = 0;
+  std::int32_t transform = 0;
   zxdg_output_v1* xdgOutput = nullptr;
   bool done = false;
 };
