@@ -3,6 +3,7 @@
 #include "core/log.h"
 #include "notification/notification_manager.h"
 #include "render/core/image_decoder.h"
+#include "util/base64.h"
 #include "util/file_utils.h"
 
 #include <algorithm>
@@ -103,53 +104,6 @@ namespace {
       return kCloseByCall;
     }
     return kCloseByCall;
-  }
-
-  static const char kBase64Chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-  std::string base64Encode(const std::vector<std::uint8_t>& data) {
-    std::string out;
-    out.reserve(((data.size() + 2) / 3) * 4);
-    for (std::size_t i = 0; i < data.size(); i += 3) {
-      const std::size_t n = std::min<std::size_t>(3, data.size() - i);
-      std::uint32_t chunk = 0;
-      for (std::size_t j = 0; j < n; ++j) {
-        chunk |= static_cast<std::uint32_t>(data[i + j]) << static_cast<unsigned>((16 - static_cast<int>(j * 8)));
-      }
-      out.push_back(kBase64Chars[(chunk >> 18) & 63]);
-      out.push_back(kBase64Chars[(chunk >> 12) & 63]);
-      out.push_back(n > 1 ? kBase64Chars[(chunk >> 6) & 63] : '=');
-      out.push_back(n > 2 ? kBase64Chars[chunk & 63] : '=');
-    }
-    return out;
-  }
-
-  std::vector<std::uint8_t> base64Decode(std::string_view in) {
-    std::vector<int> decodeTable(256, -1);
-    for (int b = 0; b < 64; ++b) {
-      decodeTable[static_cast<unsigned char>(kBase64Chars[b])] = b;
-    }
-    std::vector<std::uint8_t> out;
-    out.reserve(in.size() * 3 / 4);
-    int val = 0;
-    int valb = -8;
-    for (char rawc : in) {
-      const auto c = static_cast<unsigned char>(rawc);
-      if (c == '=') {
-        break;
-      }
-      const int d = decodeTable[c];
-      if (d < 0) {
-        continue;
-      }
-      val = (val << 6) + d;
-      valb += 6;
-      if (valb >= 0) {
-        out.push_back(static_cast<std::uint8_t>((val >> valb) & 0xFF));
-        valb -= 8;
-      }
-    }
-    return out;
   }
 
   constexpr std::string_view kAssetsDirName = "notification_history_assets";
@@ -376,7 +330,7 @@ namespace {
 
     const auto b64 = j.value("data_b64", std::string());
     if (!b64.empty()) {
-      img.data = base64Decode(b64);
+      img.data = Base64::decode(b64);
       return img;
     }
 
@@ -405,7 +359,7 @@ namespace {
       j["width"] = img.width;
       j["height"] = img.height;
       j["row_stride"] = img.rowStride;
-      j["data_b64"] = base64Encode(img.data);
+      j["data_b64"] = Base64::encode(img.data);
       return j;
     }
 
@@ -471,7 +425,7 @@ namespace {
     j["width"] = img.width;
     j["height"] = img.height;
     j["row_stride"] = img.rowStride;
-    j["data_b64"] = base64Encode(img.data);
+    j["data_b64"] = Base64::encode(img.data);
     return j;
   }
 
