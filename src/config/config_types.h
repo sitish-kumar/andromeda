@@ -679,7 +679,7 @@ struct ShellConfig {
 
   struct ScreenshotConfig {
     bool saveToFile = true;
-    bool copyToClipboard = false;
+    bool copyToClipboard = true;
     bool pipeToCommand = false;
     bool freezeScreen = false;
     std::string pipeCommand;
