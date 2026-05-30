@@ -239,6 +239,9 @@ std::int64_t WidgetConfig::getInt(const std::string& key, std::int64_t fallback)
   if (const auto* v = std::get_if<std::int64_t>(&it->second)) {
     return *v;
   }
+  if (const auto* v = std::get_if<double>(&it->second)) {
+    return static_cast<std::int64_t>(std::llround(*v));
+  }
   return fallback;
 }
 

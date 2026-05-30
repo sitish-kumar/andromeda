@@ -1132,10 +1132,31 @@ namespace settings {
         case WidgetSettingValueType::Int: {
           const double minValue = spec.minValue.value_or(0.0);
           const double maxValue = spec.maxValue.value_or(100.0);
-          ctx.makeRow(
-              *panel, entry,
-              ctx.makeSlider(static_cast<double>(settingValueAsInt(value)), minValue, maxValue, spec.step, path, true)
-          );
+          if (spec.stepper) {
+            const int minStep = static_cast<int>(std::lround(minValue));
+            const int maxStep = static_cast<int>(std::lround(maxValue));
+            const int stepValue = static_cast<int>(std::clamp(
+                settingValueAsInt(value), static_cast<std::int64_t>(minStep), static_cast<std::int64_t>(maxStep)
+            ));
+            ctx.makeRow(
+                *panel, entry,
+                ctx.makeStepper(
+                    StepperSetting{
+                        .value = stepValue,
+                        .minValue = minStep,
+                        .maxValue = maxStep,
+                        .step = static_cast<int>(std::max(1.0, spec.step)),
+                        .valueSuffix = spec.valueSuffix,
+                    },
+                    path
+                )
+            );
+          } else {
+            ctx.makeRow(
+                *panel, entry,
+                ctx.makeSlider(static_cast<double>(settingValueAsInt(value)), minValue, maxValue, spec.step, path, true)
+            );
+          }
           break;
         }
         case WidgetSettingValueType::Double: {

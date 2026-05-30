@@ -1517,6 +1517,10 @@
           "label": "Runtime Scope",
           "description": "Run one script runtime per live widget placement, or share one runtime across bars with the same widget id"
         },
+        "scroll_step": {
+          "label": "Scroll Step",
+          "description": "Percentage change applied on each mouse wheel step"
+        },
         "show_caps_lock": {
           "label": "Show Caps Lock",
           "description": "Show Caps Lock state"

@@ -192,7 +192,9 @@ std::unique_ptr<Widget> WidgetFactory::create(
 
   if (type == "brightness") {
     const bool showLabel = wc != nullptr ? wc->getBool("show_label", true) : true;
-    auto widget = std::make_unique<BrightnessWidget>(m_brightness, output, showLabel);
+    const int scrollStep =
+        static_cast<int>(std::clamp<std::int64_t>(wc != nullptr ? wc->getInt("scroll_step", 5) : 5, 1, 25));
+    auto widget = std::make_unique<BrightnessWidget>(m_brightness, output, showLabel, scrollStep);
     widget->setContentScale(contentScale);
     return widget;
   }
@@ -506,9 +508,11 @@ std::unique_ptr<Widget> WidgetFactory::create(
 
   if (type == "volume") {
     const bool showLabel = wc != nullptr ? wc->getBool("show_label", true) : true;
+    const int scrollStep =
+        static_cast<int>(std::clamp<std::int64_t>(wc != nullptr ? wc->getInt("scroll_step", 5) : 5, 1, 25));
     const std::string target = wc != nullptr ? wc->getString("device", "output") : std::string("output");
     const auto volumeTarget = target == "input" ? VolumeWidgetTarget::Input : VolumeWidgetTarget::Output;
-    auto widget = std::make_unique<VolumeWidget>(m_audio, &m_config, output, showLabel, volumeTarget);
+    auto widget = std::make_unique<VolumeWidget>(m_audio, &m_config, output, showLabel, volumeTarget, scrollStep);
     widget->setContentScale(contentScale);
     return widget;
   }

@@ -21,12 +21,13 @@ namespace {
     return "brightness-high";
   }
 
-  constexpr float kScrollStep = 0.05f;
-
 } // namespace
 
-BrightnessWidget::BrightnessWidget(BrightnessService* brightness, wl_output* output, bool showLabel)
-    : m_brightness(brightness), m_output(output), m_showLabel(showLabel) {}
+BrightnessWidget::BrightnessWidget(
+    BrightnessService* brightness, wl_output* output, bool showLabel, int scrollStepPercent
+)
+    : m_brightness(brightness), m_output(output), m_showLabel(showLabel),
+      m_scrollStep(static_cast<float>(scrollStepPercent) / 100.0f) {}
 
 void BrightnessWidget::create() {
   auto area = std::make_unique<InputArea>();
@@ -39,7 +40,7 @@ void BrightnessWidget::create() {
     if (display == nullptr) {
       return;
     }
-    const float delta = data.scrollDelta(1.0f) > 0 ? -kScrollStep : kScrollStep;
+    const float delta = data.scrollDelta(1.0f) > 0 ? -m_scrollStep : m_scrollStep;
     const float newValue = std::clamp(display->brightness + delta, 0.0f, 1.0f);
     m_brightness->setBrightness(display->id, newValue);
   });

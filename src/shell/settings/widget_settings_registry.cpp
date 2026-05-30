@@ -185,6 +185,16 @@ namespace settings {
       return spec;
     }
 
+    WidgetSettingSpec stepperIntSpec(
+        std::string_view key, std::int64_t defaultValue, double minValue, double maxValue, double step = 1.0,
+        std::string valueSuffix = {}, bool advanced = false
+    ) {
+      auto spec = intSpec(key, defaultValue, minValue, maxValue, step, advanced);
+      spec.stepper = true;
+      spec.valueSuffix = std::move(valueSuffix);
+      return spec;
+    }
+
     WidgetSettingSpec doubleSpec(
         std::string_view key, double defaultValue, double minValue, double maxValue, double step = 1.0,
         bool advanced = false
@@ -606,6 +616,7 @@ namespace settings {
       add(boolSpec("show_label", false));
       add(boolSpec("hide_when_no_connected_device", false));
     } else if (type == "brightness") {
+      add(stepperIntSpec("scroll_step", 5, 1.0, 25.0, 1.0, "%"));
       add(boolSpec("show_label", true));
     } else if (type == "clock") {
       add(stringSpec("format", "{:%H:%M}"));
@@ -774,6 +785,7 @@ namespace settings {
       }
     } else if (type == "volume") {
       add(segmentedSpec("device", "output", volumeDeviceOptions));
+      add(stepperIntSpec("scroll_step", 5, 1.0, 25.0, 1.0, "%"));
       add(boolSpec("show_label", true));
     } else if (type == "wallpaper") {
       add(glyphSpec("glyph", "wallpaper-selector"));

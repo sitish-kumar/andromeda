@@ -797,7 +797,7 @@ namespace settings {
           .scale = scale,
           .valueSuffix = setting.valueSuffix.empty() ? std::nullopt : std::optional<std::string>{setting.valueSuffix},
           .onValueCommitted = [setOverride = ctx.setOverride, path](int value) {
-            setOverride(path, static_cast<double>(value));
+            setOverride(path, static_cast<std::int64_t>(value));
           },
       });
     };
@@ -822,7 +822,7 @@ namespace settings {
               setOverride(path, std::string("auto"));
               return;
             }
-            setOverride(path, static_cast<double>(currentValue));
+            setOverride(path, static_cast<std::int64_t>(currentValue));
           },
       });
 
@@ -834,7 +834,7 @@ namespace settings {
           .enabled = setting.value.has_value(),
           .scale = scale,
           .onValueCommitted = [setOverride = ctx.setOverride, path](int value) {
-            setOverride(path, static_cast<double>(value));
+            setOverride(path, static_cast<std::int64_t>(value));
           },
       });
 
@@ -1804,6 +1804,9 @@ namespace settings {
             -> std::unique_ptr<Node> { return makeOptionalNumber(setting, std::move(path)); },
         .makeOptionalStepper = [&](const OptionalStepperSetting& setting, std::vector<std::string> path)
             -> std::unique_ptr<Node> { return makeOptionalStepper(setting, std::move(path)); },
+        .makeStepper = [&](const StepperSetting& setting, std::vector<std::string> path) -> std::unique_ptr<Node> {
+          return makeStepper(setting, std::move(path));
+        },
         .makeText = [&](const std::string& value, const std::string& placeholder,
                         std::vector<std::string> path) -> std::unique_ptr<Node> {
           return makeText(value, placeholder, std::move(path));

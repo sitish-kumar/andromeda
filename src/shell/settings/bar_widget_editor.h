@@ -45,6 +45,7 @@ namespace settings {
     std::function<std::unique_ptr<Node>(double, double, double, double, std::vector<std::string>, bool)> makeSlider;
     std::function<std::unique_ptr<Node>(const OptionalNumberSetting&, std::vector<std::string>)> makeOptionalNumber;
     std::function<std::unique_ptr<Node>(const OptionalStepperSetting&, std::vector<std::string>)> makeOptionalStepper;
+    std::function<std::unique_ptr<Node>(const StepperSetting&, std::vector<std::string>)> makeStepper;
     std::function<std::unique_ptr<Node>(const std::string&, const std::string&, std::vector<std::string>)> makeText;
     std::function<std::unique_ptr<Node>(const ColorSpecPickerSetting&, std::vector<std::string>)> makeColorSpecPicker;
     std::function<void(Flex&, const SettingEntry&, const ListSetting&)> makeListBlock;
