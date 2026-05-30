@@ -358,18 +358,21 @@ std::unique_ptr<Flex> ScreenTimeTab::create() {
           ui::column(
               {.align = FlexAlign::Stretch, .gap = Style::spaceXs * scale, .flexGrow = 1.0f},
               ui::row(
-                  {.align = FlexAlign::Center, .gap = Style::spaceSm * scale},
+                  {.align = FlexAlign::Center,
+                   .justify = FlexJustify::SpaceBetween,
+                   .gap = Style::spaceSm * scale,
+                   .fillWidth = true},
                   ui::label({
                       .out = &m_appRows[i].name,
                       .fontSize = Style::fontSizeBody * scale,
                       .color = colorSpecFromRole(ColorRole::OnSurface),
                       .maxLines = 1,
-                      .flexGrow = 1.0f,
                   }),
                   ui::label({
                       .out = &m_appRows[i].duration,
                       .fontSize = usageDurationFontSize(scale),
                       .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+                      .maxLines = 1,
                   })
               ),
               ui::row(
@@ -471,9 +474,10 @@ void ScreenTimeTab::doLayout(Renderer& renderer, float contentWidth, float bodyH
   if (m_root == nullptr) {
     return;
   }
+  syncContent(renderer);
+  bindAppNameMaxWidths(renderer, contentWidth);
   m_root->setSize(contentWidth, bodyHeight);
   m_root->layout(renderer);
-  syncContent(renderer);
   layoutChart(renderer);
   layoutAppRows(renderer);
 }
@@ -483,8 +487,40 @@ void ScreenTimeTab::doUpdate(Renderer& renderer) {
     return;
   }
   syncContent(renderer);
+  bindAppNameMaxWidths(renderer, m_root != nullptr ? m_root->width() : 0.0f);
+  if (m_root != nullptr) {
+    m_root->layout(renderer);
+  }
   layoutChart(renderer);
   layoutAppRows(renderer);
+}
+
+void ScreenTimeTab::bindAppNameMaxWidths(Renderer& renderer, float gridWidth) {
+  if (gridWidth <= 0.0f) {
+    return;
+  }
+
+  const float scale = contentScale();
+  const float columnGap = Style::spaceSm * scale;
+  const float cellWidth = std::max(1.0f, (gridWidth - columnGap) * 0.5f);
+  const float rowGap = Style::spaceSm * scale;
+  const float leadingWidth = kLegendSwatch * scale + kAppIconSize * scale + rowGap * 2.0f;
+
+  for (auto& widgets : m_appRows) {
+    if (widgets.name == nullptr || widgets.row == nullptr || !widgets.row->visible()) {
+      continue;
+    }
+
+    float durationWidth = 0.0f;
+    if (widgets.duration != nullptr) {
+      widgets.duration->measure(renderer);
+      durationWidth = widgets.duration->width();
+    }
+
+    const float textColumnWidth = std::max(1.0f, cellWidth - leadingWidth);
+    const float nameMax = std::max(1.0f, textColumnWidth - durationWidth - rowGap);
+    widgets.name->setMaxWidth(nameMax);
+  }
 }
 
 void ScreenTimeTab::syncContent(Renderer& renderer) {
@@ -798,9 +834,6 @@ void ScreenTimeTab::layoutAppRows(Renderer& renderer) {
   const float scale = contentScale();
   const float iconSize = kAppIconSize * scale;
   for (auto& widgets : m_appRows) {
-    if (widgets.cell != nullptr) {
-      widgets.cell->layout(renderer);
-    }
     if (widgets.row == nullptr || !widgets.row->visible()) {
       continue;
     }
@@ -815,32 +848,6 @@ void ScreenTimeTab::layoutAppRows(Renderer& renderer) {
         const float glyphSize = kAppIconSize * 0.55f * scale;
         widgets.iconFallback->setPosition((iconSize - glyphSize) * 0.5f, (iconSize - glyphSize) * 0.5f);
       }
-    }
-    if (widgets.name != nullptr && widgets.row != nullptr) {
-      float rowWidth = widgets.row->width();
-      if (rowWidth <= 0.0f && widgets.cell != nullptr) {
-        rowWidth = widgets.cell->width();
-      }
-      if (rowWidth > 0.0f) {
-        const float outerGap = Style::spaceSm * scale;
-        float leadingWidth = iconSize + outerGap;
-        if (widgets.chartSwatch != nullptr && widgets.chartSwatch->visible()) {
-          leadingWidth += kLegendSwatch * scale + outerGap;
-        }
-        float durationWidth = 0.0f;
-        if (widgets.duration != nullptr) {
-          widgets.duration->measure(renderer);
-          durationWidth = widgets.duration->width();
-        }
-        const float nameMax = std::max(1.0f, rowWidth - leadingWidth - durationWidth - outerGap);
-        if (std::abs(nameMax - widgets.lastNameTextMaxWidth) >= 0.5f) {
-          widgets.lastNameTextMaxWidth = nameMax;
-          widgets.name->setMaxWidth(nameMax);
-        }
-      }
-    }
-    if (widgets.row != nullptr) {
-      widgets.row->layout(renderer);
     }
     if (widgets.barHost != nullptr) {
       widgets.barHost->layout(renderer);

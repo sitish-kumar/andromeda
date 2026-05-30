@@ -29,6 +29,7 @@ private:
   void doUpdate(Renderer& renderer) override;
   void onPanelCardOpacityChanged(float opacity) override;
   void syncContent(Renderer& renderer);
+  void bindAppNameMaxWidths(Renderer& renderer, float gridWidth);
   void layoutChart(Renderer& renderer);
   void layoutAppRows(Renderer& renderer);
   void syncEnabledUi();
@@ -80,7 +81,6 @@ private:
     Box* barTrack = nullptr;
     Box* barFill = nullptr;
     float barFillRatio = 0.0f;
-    float lastNameTextMaxWidth = -1.0f;
     std::string iconPath;
   };
   std::array<AppRowWidgets, kMaxAppRows> m_appRows{};
