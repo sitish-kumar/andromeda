@@ -10,6 +10,7 @@
 #include <vector>
 
 class ClipboardService;
+class CompositorPlatform;
 class ConfigService;
 class IpcService;
 class NotificationManager;
@@ -33,14 +34,16 @@ public:
   };
 
   ScreenshotService(
-      WaylandConnection& wayland, NotificationManager& notifications, ClipboardService* clipboard = nullptr
+      WaylandConnection& wayland, CompositorPlatform& platform, NotificationManager& notifications,
+      ClipboardService* clipboard = nullptr
   );
   ~ScreenshotService();
 
   [[nodiscard]] bool available() const noexcept;
 
-  void captureFullscreen(const OutputOptions& options);
+  void captureFullscreen(const OutputOptions& options, wl_output* output = nullptr);
   void beginRegionCapture(RenderContext& renderContext, const OutputOptions& options);
+  void beginFullscreenCapture(RenderContext& renderContext, const OutputOptions& options);
 
   void onOutputChange();
 
@@ -59,23 +62,35 @@ private:
     std::optional<std::filesystem::path> destPath;
   };
 
+  struct AllOutputCaptureTarget {
+    wl_output* output = nullptr;
+    std::string label;
+  };
+
   void captureOutput(
       wl_output* output, std::optional<LogicalRect> region, const std::string& labelBase, const OutputOptions& options,
       int pathSuffix = 0
   );
   void ensureRegionOverlay();
   void startRegionOverlay(RenderContext& renderContext);
+  void startFullscreenOverlay(RenderContext& renderContext);
   void beginFreezeCapture();
   void finishFreezeCapture();
   void abortFreezeCapture(const std::string& message);
   void cancelRegionCapture();
   void deliverFrozenRegion(LogicalRect region, wl_output* output, const OutputOptions& options);
+  void completeFullscreenSelection(wl_output* output, const OutputOptions& options);
   void startNextQueuedCapture();
   void captureAllOutputs(const OutputOptions& options);
+  void runAllOutputsCaptureBatch(OutputOptions options, std::vector<AllOutputCaptureTarget> targets);
+  void deliverCaptureResult(
+      ScreencopyImage image, const OutputOptions& options, std::optional<std::filesystem::path> destPath
+  );
   void onCaptureComplete(
       std::optional<ScreencopyImage> image, const std::string& error, OutputOptions options,
       std::optional<std::filesystem::path> destPath
   );
+  [[nodiscard]] wl_output* preferredCaptureOutput() const;
   [[nodiscard]] std::filesystem::path defaultPicturesDirectory() const;
   [[nodiscard]] std::filesystem::path outputDirectory(const OutputOptions& options) const;
   [[nodiscard]] std::filesystem::path
@@ -84,6 +99,7 @@ private:
   void notifyError(const std::string& message);
 
   WaylandConnection& m_wayland;
+  CompositorPlatform& m_platform;
   NotificationManager& m_notifications;
   ClipboardService* m_clipboard = nullptr;
   ScreencopyCapture m_capture;
@@ -91,6 +107,7 @@ private:
   std::vector<PendingCapture> m_captureQueue;
   OutputOptions m_regionOutputOptions{};
   RenderContext* m_regionRenderContext = nullptr;
+  bool m_regionFullscreenPick = false;
   std::vector<capture::FrozenScreenshot> m_frozenScreenshots;
   std::vector<wl_output*> m_pendingFreezeOutputs;
   bool m_freezeCaptureActive = false;

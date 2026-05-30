@@ -92,12 +92,13 @@ namespace capture {
     m_frozenScreenshots = std::move(screenshots);
   }
 
-  void ScreenshotRegionOverlay::begin(bool freezeScreen) {
+  void ScreenshotRegionOverlay::begin(bool freezeScreen, bool fullscreenPick) {
     if (m_wayland == nullptr || m_renderContext == nullptr) {
       return;
     }
     destroySurfaces();
     m_freezeScreen = freezeScreen;
+    m_fullscreenPick = fullscreenPick;
     m_active = true;
     m_dragging = false;
     ensureSurfaces();
@@ -113,6 +114,7 @@ namespace capture {
     m_active = false;
     m_dragging = false;
     m_freezeScreen = false;
+    m_fullscreenPick = false;
     m_frozenScreenshots.clear();
     destroySurfaces();
   }
@@ -254,56 +256,65 @@ namespace capture {
     input->setAcceptedButtons(InputArea::buttonMask(BTN_LEFT));
     input->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_CROSSHAIR);
 
-    input->setOnPress([this, output = inst.output](const InputArea::PointerData& data) {
-      if (!data.pressed || data.button != BTN_LEFT) {
-        return;
-      }
-      const auto* out = findOutput(*m_wayland, output);
-      if (out == nullptr) {
-        return;
-      }
-      m_dragging = true;
-      m_startGlobalX = static_cast<double>(out->logicalX) + static_cast<double>(data.localX);
-      m_startGlobalY = static_cast<double>(out->logicalY) + static_cast<double>(data.localY);
-      m_currentGlobalX = m_startGlobalX;
-      m_currentGlobalY = m_startGlobalY;
-      updateSelectionVisuals();
-      for (auto& instance : m_instances) {
-        if (instance->surface != nullptr) {
-          instance->surface->requestRedraw();
+    if (m_fullscreenPick) {
+      input->setOnClick([this, output = inst.output](const InputArea::PointerData& data) {
+        if (data.pressed || data.button != BTN_LEFT) {
+          return;
         }
-      }
-    });
-
-    input->setOnMotion([this, output = inst.output](const InputArea::PointerData& data) {
-      if (!m_dragging) {
-        return;
-      }
-      const auto* out = findOutput(*m_wayland, output);
-      if (out == nullptr) {
-        return;
-      }
-      m_currentGlobalX = static_cast<double>(out->logicalX) + static_cast<double>(data.localX);
-      m_currentGlobalY = static_cast<double>(out->logicalY) + static_cast<double>(data.localY);
-      updateSelectionVisuals();
-      for (auto& instance : m_instances) {
-        if (instance->surface != nullptr) {
-          instance->surface->requestRedraw();
+        DeferredCall::callLater([this, output]() { completeFullscreenPick(output); });
+      });
+    } else {
+      input->setOnPress([this, output = inst.output](const InputArea::PointerData& data) {
+        if (!data.pressed || data.button != BTN_LEFT) {
+          return;
         }
-      }
-    });
+        const auto* out = findOutput(*m_wayland, output);
+        if (out == nullptr) {
+          return;
+        }
+        m_dragging = true;
+        m_startGlobalX = static_cast<double>(out->logicalX) + static_cast<double>(data.localX);
+        m_startGlobalY = static_cast<double>(out->logicalY) + static_cast<double>(data.localY);
+        m_currentGlobalX = m_startGlobalX;
+        m_currentGlobalY = m_startGlobalY;
+        updateSelectionVisuals();
+        for (auto& instance : m_instances) {
+          if (instance->surface != nullptr) {
+            instance->surface->requestRedraw();
+          }
+        }
+      });
 
-    input->setOnClick([this](const InputArea::PointerData& data) {
-      if (data.pressed || data.button != BTN_LEFT) {
-        return;
-      }
-      if (!m_dragging) {
-        return;
-      }
-      m_dragging = false;
-      // completeSelection() tears down surfaces; defer past InputDispatcher::pointerButton.
-      DeferredCall::callLater([this]() { completeSelection(); });
-    });
+      input->setOnMotion([this, output = inst.output](const InputArea::PointerData& data) {
+        if (!m_dragging) {
+          return;
+        }
+        const auto* out = findOutput(*m_wayland, output);
+        if (out == nullptr) {
+          return;
+        }
+        m_currentGlobalX = static_cast<double>(out->logicalX) + static_cast<double>(data.localX);
+        m_currentGlobalY = static_cast<double>(out->logicalY) + static_cast<double>(data.localY);
+        updateSelectionVisuals();
+        for (auto& instance : m_instances) {
+          if (instance->surface != nullptr) {
+            instance->surface->requestRedraw();
+          }
+        }
+      });
+
+      input->setOnClick([this](const InputArea::PointerData& data) {
+        if (data.pressed || data.button != BTN_LEFT) {
+          return;
+        }
+        if (!m_dragging) {
+          return;
+        }
+        m_dragging = false;
+        // completeSelection() tears down surfaces; defer past InputDispatcher::pointerButton.
+        DeferredCall::callLater([this]() { completeSelection(); });
+      });
+    }
 
     input->setOnKeyDown([this](const InputArea::KeyData& key) {
       if (!key.pressed) {
@@ -359,9 +370,11 @@ namespace capture {
     dimensionsLabel->setFontWeight(FontWeight::Bold);
     dimensionsLabel->setColor(border);
 
-    inst.dimensionsLabel = static_cast<Label*>(dimensionsBadge->addChild(std::move(dimensionsLabel)));
-    inst.selection = static_cast<Box*>(input->addChild(std::move(selection)));
-    inst.dimensionsBadge = static_cast<Box*>(input->addChild(std::move(dimensionsBadge)));
+    if (!m_fullscreenPick) {
+      inst.dimensionsLabel = static_cast<Label*>(dimensionsBadge->addChild(std::move(dimensionsLabel)));
+      inst.selection = static_cast<Box*>(input->addChild(std::move(selection)));
+      inst.dimensionsBadge = static_cast<Box*>(input->addChild(std::move(dimensionsBadge)));
+    }
     inst.input = input.get();
     inst.sceneRoot->addChild(std::move(input));
     inst.surface->setSceneRoot(inst.sceneRoot.get());
@@ -638,6 +651,38 @@ namespace capture {
     };
     if (m_onComplete) {
       m_onComplete(region, chosenOutput);
+    }
+  }
+
+  void ScreenshotRegionOverlay::completeFullscreenPick(wl_output* output) {
+    if (!m_active || output == nullptr || m_wayland == nullptr) {
+      if (m_onComplete) {
+        m_onComplete(std::nullopt, nullptr);
+      }
+      return;
+    }
+
+    const auto* out = findOutput(*m_wayland, output);
+    if (out == nullptr) {
+      m_active = false;
+      destroySurfaces();
+      if (m_onComplete) {
+        m_onComplete(std::nullopt, nullptr);
+      }
+      return;
+    }
+
+    m_active = false;
+    destroySurfaces();
+
+    LogicalRect region{
+        .x = 0,
+        .y = 0,
+        .width = out->logicalWidth,
+        .height = out->logicalHeight,
+    };
+    if (m_onComplete) {
+      m_onComplete(region, output);
     }
   }
 

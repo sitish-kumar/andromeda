@@ -1,6 +1,7 @@
 #include "capture/screenshot_service.h"
 
 #include "capture/screenshot_region_overlay.h"
+#include "compositors/compositor_platform.h"
 #include "config/config_service.h"
 #include "config/config_types.h"
 #include "core/deferred_call.h"
@@ -13,6 +14,7 @@
 #include "render/render_context.h"
 #include "shell/panel/panel_manager.h"
 #include "util/file_utils.h"
+#include "util/string_utils.h"
 #include "wayland/clipboard_service.h"
 #include "wayland/wayland_connection.h"
 #include "wayland/wayland_seat.h"
@@ -269,12 +271,159 @@ namespace {
     }).detach();
   }
 
+  [[nodiscard]] std::vector<wl_output*> validOutputs(const WaylandConnection& wayland) {
+    std::vector<wl_output*> outputs;
+    for (const auto& output : wayland.outputs()) {
+      if (output.output != nullptr && output.logicalWidth > 0 && output.logicalHeight > 0) {
+        outputs.push_back(output.output);
+      }
+    }
+    return outputs;
+  }
+
+  [[nodiscard]] wl_output*
+  resolveOutputSelector(const WaylandConnection& wayland, std::string_view selector, std::string& error) {
+    const std::string token = StringUtils::trim(selector);
+    if (token.empty()) {
+      return nullptr;
+    }
+
+    std::vector<wl_output*> matches;
+    std::vector<std::string> knownOutputs;
+    for (const auto& output : wayland.outputs()) {
+      if (output.output == nullptr || output.logicalWidth <= 0 || output.logicalHeight <= 0) {
+        continue;
+      }
+      if (!output.connectorName.empty()) {
+        knownOutputs.push_back(output.connectorName);
+      }
+      if (outputMatchesSelector(token, output)) {
+        matches.push_back(output.output);
+      }
+    }
+
+    std::sort(knownOutputs.begin(), knownOutputs.end());
+    knownOutputs.erase(std::unique(knownOutputs.begin(), knownOutputs.end()), knownOutputs.end());
+    std::sort(matches.begin(), matches.end(), [](wl_output* a, wl_output* b) {
+      return reinterpret_cast<std::uintptr_t>(a) < reinterpret_cast<std::uintptr_t>(b);
+    });
+    matches.erase(std::unique(matches.begin(), matches.end()), matches.end());
+
+    if (matches.empty()) {
+      error = "error: unknown monitor selector \"" + token + "\"";
+      if (!knownOutputs.empty()) {
+        error += " (available: " + StringUtils::join(knownOutputs, ", ") + ")";
+      }
+      error += "\n";
+      return nullptr;
+    }
+    if (matches.size() > 1) {
+      std::vector<std::string> matchNames;
+      matchNames.reserve(matches.size());
+      for (wl_output* output : matches) {
+        if (const auto* entry = findOutput(wayland, output); entry != nullptr && !entry->connectorName.empty()) {
+          matchNames.push_back(entry->connectorName);
+        }
+      }
+      error = "error: monitor selector \""
+          + token
+          + "\" matched multiple outputs: "
+          + StringUtils::join(matchNames, ", ")
+          + "\n";
+      return nullptr;
+    }
+
+    return matches.front();
+  }
+
+  struct CapturedOutputFrame {
+    ScreencopyImage image;
+    const WaylandOutput* output = nullptr;
+  };
+
+  void blitOpaqueRgba(ScreencopyImage& canvas, int destX, int destY, const ScreencopyImage& source) {
+    if (destX < 0 || destY < 0 || source.width <= 0 || source.height <= 0) {
+      return;
+    }
+    const int copyWidth = std::min(source.width, canvas.width - destX);
+    const int copyHeight = std::min(source.height, canvas.height - destY);
+    if (copyWidth <= 0 || copyHeight <= 0) {
+      return;
+    }
+
+    for (int y = 0; y < copyHeight; ++y) {
+      const auto* srcRow =
+          source.rgba.data() + static_cast<std::size_t>(y) * static_cast<std::size_t>(source.width) * 4U;
+      auto* dstRow = canvas.rgba.data()
+          + (static_cast<std::size_t>(destY + y) * static_cast<std::size_t>(canvas.width)
+             + static_cast<std::size_t>(destX))
+              * 4U;
+      std::memcpy(dstRow, srcRow, static_cast<std::size_t>(copyWidth) * 4U);
+    }
+  }
+
+  [[nodiscard]] std::optional<ScreencopyImage> stitchOutputFrames(std::vector<CapturedOutputFrame> frames) {
+    if (frames.empty()) {
+      return std::nullopt;
+    }
+    if (frames.size() == 1) {
+      return std::move(frames.front().image);
+    }
+
+    int minLogicalX = frames.front().output->logicalX;
+    int minLogicalY = frames.front().output->logicalY;
+    for (const auto& frame : frames) {
+      if (frame.output == nullptr) {
+        return std::nullopt;
+      }
+      minLogicalX = std::min(minLogicalX, frame.output->logicalX);
+      minLogicalY = std::min(minLogicalY, frame.output->logicalY);
+    }
+
+    int canvasWidth = 0;
+    int canvasHeight = 0;
+    for (const auto& frame : frames) {
+      const auto* out = frame.output;
+      if (out->logicalWidth <= 0 || out->logicalHeight <= 0 || frame.image.width <= 0 || frame.image.height <= 0) {
+        return std::nullopt;
+      }
+      const double scaleX = static_cast<double>(frame.image.width) / static_cast<double>(out->logicalWidth);
+      const double scaleY = static_cast<double>(frame.image.height) / static_cast<double>(out->logicalHeight);
+      const int destX = static_cast<int>(std::lround((out->logicalX - minLogicalX) * scaleX));
+      const int destY = static_cast<int>(std::lround((out->logicalY - minLogicalY) * scaleY));
+      canvasWidth = std::max(canvasWidth, destX + frame.image.width);
+      canvasHeight = std::max(canvasHeight, destY + frame.image.height);
+    }
+
+    if (canvasWidth <= 0 || canvasHeight <= 0) {
+      return std::nullopt;
+    }
+
+    ScreencopyImage canvas;
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    canvas.rgba.assign(static_cast<std::size_t>(canvasWidth) * static_cast<std::size_t>(canvasHeight) * 4U, 0);
+
+    for (auto& frame : frames) {
+      const auto* out = frame.output;
+      const double scaleX = static_cast<double>(frame.image.width) / static_cast<double>(out->logicalWidth);
+      const double scaleY = static_cast<double>(frame.image.height) / static_cast<double>(out->logicalHeight);
+      const int destX = static_cast<int>(std::lround((out->logicalX - minLogicalX) * scaleX));
+      const int destY = static_cast<int>(std::lround((out->logicalY - minLogicalY) * scaleY));
+      blitOpaqueRgba(canvas, destX, destY, frame.image);
+    }
+
+    return canvas;
+  }
+
 } // namespace
 
 ScreenshotService::ScreenshotService(
-    WaylandConnection& wayland, NotificationManager& notifications, ClipboardService* clipboard
+    WaylandConnection& wayland, CompositorPlatform& platform, NotificationManager& notifications,
+    ClipboardService* clipboard
 )
-    : m_wayland(wayland), m_notifications(notifications), m_clipboard(clipboard), m_capture(wayland) {}
+    : m_wayland(wayland), m_platform(platform), m_notifications(notifications), m_clipboard(clipboard),
+      m_capture(wayland) {}
 
 ScreenshotService::~ScreenshotService() = default;
 
@@ -347,18 +496,56 @@ void ScreenshotService::registerIpc(IpcService& ipc, const ConfigService& config
 
   ipc.registerHandler(
       "screenshot-fullscreen",
-      [this, &configService](const std::string& /*args*/) -> std::string {
+      [this, &configService](const std::string& args) -> std::string {
         if (!available()) {
           return "error: screen capture is not available on this compositor\n";
         }
-        captureFullscreen(outputOptionsFromConfig(configService.config()));
+        const std::string token = StringUtils::trim(args);
+        const auto options = outputOptionsFromConfig(configService.config());
+        if (token == "all" || token == "*") {
+          captureAllOutputs(options);
+          return "ok\n";
+        }
+        if (token == "pick") {
+          const auto outputs = validOutputs(m_wayland);
+          if (outputs.size() <= 1) {
+            captureFullscreen(options, outputs.empty() ? nullptr : outputs.front());
+            return "ok\n";
+          }
+          auto* renderContext = PanelManager::instance().renderContext();
+          if (renderContext == nullptr) {
+            return "error: render context unavailable\n";
+          }
+          beginFullscreenCapture(*renderContext, options);
+          return "ok\n";
+        }
+        if (!token.empty() && token != "pick") {
+          std::string error;
+          wl_output* output = resolveOutputSelector(m_wayland, token, error);
+          if (!error.empty()) {
+            return error;
+          }
+          captureFullscreen(options, output);
+          return "ok\n";
+        }
+
+        captureFullscreen(options);
         return "ok\n";
       },
-      "screenshot-fullscreen", "Capture all outputs fullscreen"
+      "screenshot-fullscreen [pick|monitor|all]",
+      "Capture the focused monitor by default, pick interactively with pick, or all outputs with all"
   );
 }
 
-void ScreenshotService::captureFullscreen(const OutputOptions& options) {
+wl_output* ScreenshotService::preferredCaptureOutput() const {
+  if (wl_output* output = m_platform.preferredInteractiveOutput(); output != nullptr) {
+    return output;
+  }
+  const auto outputs = validOutputs(m_wayland);
+  return outputs.empty() ? nullptr : outputs.front();
+}
+
+void ScreenshotService::captureFullscreen(const OutputOptions& options, wl_output* output) {
   if (!available()) {
     notifyError("Screen capture is not available on this compositor");
     return;
@@ -367,7 +554,14 @@ void ScreenshotService::captureFullscreen(const OutputOptions& options) {
     notifyError("No screenshot output enabled");
     return;
   }
-  captureAllOutputs(options);
+  if (output == nullptr) {
+    output = preferredCaptureOutput();
+  }
+  if (output == nullptr) {
+    notifyError("No outputs available");
+    return;
+  }
+  captureOutput(output, std::nullopt, "screenshot", options);
 }
 
 void ScreenshotService::beginRegionCapture(RenderContext& renderContext, const OutputOptions& options) {
@@ -388,6 +582,7 @@ void ScreenshotService::beginRegionCapture(RenderContext& renderContext, const O
 
   m_regionOutputOptions = options;
   m_regionRenderContext = &renderContext;
+  m_regionFullscreenPick = false;
 
   if (options.freezeScreen) {
     DeferredCall::callLater([this]() { beginFreezeCapture(); });
@@ -395,6 +590,34 @@ void ScreenshotService::beginRegionCapture(RenderContext& renderContext, const O
   }
 
   startRegionOverlay(renderContext);
+}
+
+void ScreenshotService::beginFullscreenCapture(RenderContext& renderContext, const OutputOptions& options) {
+  if (!available()) {
+    notifyError("Screen capture is not available on this compositor");
+    return;
+  }
+  if (!hasAnyOutput(options)) {
+    notifyError("No screenshot output enabled");
+    return;
+  }
+  if (m_regionOverlay != nullptr && m_regionOverlay->isActive()) {
+    m_regionOverlay->cancel();
+  }
+  if (m_freezeCaptureActive) {
+    abortFreezeCapture("Screenshot cancelled");
+  }
+
+  m_regionOutputOptions = options;
+  m_regionRenderContext = &renderContext;
+  m_regionFullscreenPick = true;
+
+  if (options.freezeScreen) {
+    DeferredCall::callLater([this]() { beginFreezeCapture(); });
+    return;
+  }
+
+  startFullscreenOverlay(renderContext);
 }
 
 void ScreenshotService::ensureRegionOverlay() {
@@ -408,6 +631,12 @@ void ScreenshotService::ensureRegionOverlay() {
   m_regionOverlay->setCompleteCallback([this](std::optional<LogicalRect> region, wl_output* output) {
     if (!region.has_value() || output == nullptr) {
       m_frozenScreenshots.clear();
+      m_regionFullscreenPick = false;
+      return;
+    }
+    if (m_regionFullscreenPick) {
+      completeFullscreenSelection(output, m_regionOutputOptions);
+      m_regionFullscreenPick = false;
       return;
     }
     if (m_regionOutputOptions.freezeScreen && !m_frozenScreenshots.empty()) {
@@ -420,9 +649,18 @@ void ScreenshotService::ensureRegionOverlay() {
 
 void ScreenshotService::startRegionOverlay(RenderContext& renderContext) {
   m_regionRenderContext = &renderContext;
+  m_regionFullscreenPick = false;
   ensureRegionOverlay();
   m_regionOverlay->setFrozenScreenshots({});
-  m_regionOverlay->begin(false);
+  m_regionOverlay->begin(false, false);
+}
+
+void ScreenshotService::startFullscreenOverlay(RenderContext& renderContext) {
+  m_regionRenderContext = &renderContext;
+  m_regionFullscreenPick = true;
+  ensureRegionOverlay();
+  m_regionOverlay->setFrozenScreenshots({});
+  m_regionOverlay->begin(false, true);
 }
 
 void ScreenshotService::beginFreezeCapture() {
@@ -492,7 +730,7 @@ void ScreenshotService::finishFreezeCapture() {
 
   ensureRegionOverlay();
   m_regionOverlay->setFrozenScreenshots(m_frozenScreenshots);
-  m_regionOverlay->begin(true);
+  m_regionOverlay->begin(true, m_regionFullscreenPick);
 }
 
 void ScreenshotService::abortFreezeCapture(const std::string& message) {
@@ -536,6 +774,33 @@ void ScreenshotService::deliverFrozenRegion(LogicalRect region, wl_output* outpu
   onCaptureComplete(std::move(*cropped), {}, options, destPath);
 }
 
+void ScreenshotService::completeFullscreenSelection(wl_output* output, const OutputOptions& options) {
+  if (output == nullptr) {
+    m_frozenScreenshots.clear();
+    return;
+  }
+  if (options.freezeScreen && !m_frozenScreenshots.empty()) {
+    const auto* out = findOutput(m_wayland, output);
+    if (out == nullptr) {
+      notifyError("Failed to crop frozen screenshot");
+      m_frozenScreenshots.clear();
+      return;
+    }
+    deliverFrozenRegion(
+        LogicalRect{
+            .x = 0,
+            .y = 0,
+            .width = out->logicalWidth,
+            .height = out->logicalHeight,
+        },
+        output, options
+    );
+    return;
+  }
+  m_frozenScreenshots.clear();
+  captureOutput(output, std::nullopt, "screenshot", options);
+}
+
 void ScreenshotService::captureOutput(
     wl_output* output, std::optional<LogicalRect> region, const std::string& labelBase, const OutputOptions& options,
     int pathSuffix
@@ -569,56 +834,106 @@ void ScreenshotService::startNextQueuedCapture() {
   if (m_captureQueue.empty() || m_capture.busy()) {
     return;
   }
-  PendingCapture pending = std::move(m_captureQueue.front());
-  m_captureQueue.erase(m_captureQueue.begin());
-  m_capture.capture(
-      pending.output, pending.region, true,
-      [this, options = pending.outputOptions,
-       destPath = pending.destPath](std::optional<ScreencopyImage> image, const std::string& error) {
-        onCaptureComplete(std::move(image), error, std::move(options), std::move(destPath));
-      }
-  );
+  DeferredCall::callLater([this]() {
+    if (m_captureQueue.empty() || m_capture.busy()) {
+      return;
+    }
+    PendingCapture pending = std::move(m_captureQueue.front());
+    m_captureQueue.erase(m_captureQueue.begin());
+    m_capture.capture(
+        pending.output, pending.region, true,
+        [this, options = pending.outputOptions,
+         destPath = pending.destPath](std::optional<ScreencopyImage> image, const std::string& error) {
+          onCaptureComplete(std::move(image), error, std::move(options), std::move(destPath));
+        }
+    );
+  });
 }
 
 void ScreenshotService::captureAllOutputs(const OutputOptions& options) {
-  const auto& outputs = m_wayland.outputs();
-  if (outputs.empty()) {
-    notifyError("No outputs available");
-    return;
-  }
-
-  if (outputs.size() == 1) {
-    captureOutput(outputs.front().output, std::nullopt, "screenshot", options);
-    return;
-  }
-
-  std::size_t index = 0;
-  for (const auto& output : outputs) {
-    if (output.output == nullptr) {
+  std::vector<AllOutputCaptureTarget> targets;
+  int index = 0;
+  for (const auto& output : m_wayland.outputs()) {
+    if (output.output == nullptr || output.logicalWidth <= 0 || output.logicalHeight <= 0) {
       continue;
     }
     ++index;
-    captureOutput(output.output, std::nullopt, "screenshot", options, static_cast<int>(index));
+    AllOutputCaptureTarget target{
+        .output = output.output,
+        .label = output.connectorName.empty() ? ("monitor-" + std::to_string(index)) : output.connectorName,
+    };
+    targets.push_back(std::move(target));
   }
-}
-
-void ScreenshotService::onCaptureComplete(
-    std::optional<ScreencopyImage> image, const std::string& error, OutputOptions options,
-    std::optional<std::filesystem::path> destPath
-) {
-  if (!error.empty() || !image.has_value()) {
-    kLog.warn("screenshot failed: {}", error.empty() ? "empty frame" : error);
-    notifyError(error.empty() ? "Screenshot failed" : error);
-    startNextQueuedCapture();
+  if (targets.empty()) {
+    notifyError("No outputs available");
+    return;
+  }
+  if (targets.size() == 1) {
+    captureOutput(targets.front().output, std::nullopt, targets.front().label, options);
     return;
   }
 
+  DeferredCall::callLater([this, options, targets = std::move(targets)]() mutable {
+    runAllOutputsCaptureBatch(std::move(options), std::move(targets));
+  });
+}
+
+void ScreenshotService::runAllOutputsCaptureBatch(OutputOptions options, std::vector<AllOutputCaptureTarget> targets) {
+  m_captureQueue.clear();
+  if (m_capture.busy()) {
+    m_capture.cancelInFlight();
+  }
+
+  std::vector<CapturedOutputFrame> frames;
+  frames.reserve(targets.size());
+  for (const auto& target : targets) {
+    if (target.output == nullptr) {
+      continue;
+    }
+    if (m_capture.busy()) {
+      m_capture.cancelInFlight();
+    }
+
+    ScreencopyImage image;
+    std::string error;
+    if (!captureOutputBlocking(m_capture, m_wayland, target.output, image, error)) {
+      kLog.warn("screenshot failed for {}: {}", target.label, error.empty() ? "empty frame" : error);
+      notifyError(error.empty() ? "Screenshot failed" : error);
+      return;
+    }
+
+    const auto* output = findOutput(m_wayland, target.output);
+    if (output == nullptr) {
+      notifyError("No output for capture");
+      return;
+    }
+    frames.push_back(CapturedOutputFrame{.image = std::move(image), .output = output});
+  }
+
+  if (frames.empty()) {
+    notifyError("Screenshot failed");
+    return;
+  }
+
+  auto stitched = stitchOutputFrames(std::move(frames));
+  if (!stitched.has_value()) {
+    notifyError("Failed to combine screenshots");
+    return;
+  }
+
+  const std::optional<std::filesystem::path> destPath =
+      options.saveToFile ? std::optional(makeScreenshotPath(options, "desktop")) : std::nullopt;
+  deliverCaptureResult(std::move(*stitched), options, destPath);
+}
+
+void ScreenshotService::deliverCaptureResult(
+    ScreencopyImage image, const OutputOptions& options, std::optional<std::filesystem::path> destPath
+) {
   std::string encodeError;
-  std::vector<std::uint8_t> png = encodePng(image->rgba.data(), image->width, image->height, &encodeError);
+  std::vector<std::uint8_t> png = encodePng(image.rgba.data(), image.width, image.height, &encodeError);
   if (png.empty()) {
     kLog.warn("screenshot encode failed: {}", encodeError);
     notifyError(encodeError.empty() ? "Failed to encode screenshot" : encodeError);
-    startNextQueuedCapture();
     return;
   }
 
@@ -663,7 +978,20 @@ void ScreenshotService::onCaptureComplete(
   if (!delivered) {
     notifyError(failureMessage.empty() ? "No screenshot output enabled" : failureMessage);
   }
+}
 
+void ScreenshotService::onCaptureComplete(
+    std::optional<ScreencopyImage> image, const std::string& error, OutputOptions options,
+    std::optional<std::filesystem::path> destPath
+) {
+  if (!error.empty() || !image.has_value()) {
+    kLog.warn("screenshot failed: {}", error.empty() ? "empty frame" : error);
+    notifyError(error.empty() ? "Screenshot failed" : error);
+    startNextQueuedCapture();
+    return;
+  }
+
+  deliverCaptureResult(std::move(*image), options, std::move(destPath));
   startNextQueuedCapture();
 }
 
