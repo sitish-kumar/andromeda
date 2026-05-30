@@ -45,6 +45,7 @@ Bundled in `third_party/` and built from source:
 - **[Luau](https://luau.org/)** — Lua dialect used for theme/template scripting (MIT)
 - **[Material Color Utilities](https://github.com/material-foundation/material-color-utilities)** — Material 3 palette generation (Apache-2.0)
 - **[nlohmann/json](https://github.com/nlohmann/json)** — JSON for Modern C++ (MIT)
+- **[pugixml](https://pugixml.org/)** — Light-weight XML parser used to read CalDAV responses (MIT)
 - **[stb](https://github.com/nothings/stb)** — Single-file utilities, primarily image I/O (MIT / public domain)
 - **[tinyexpr](https://github.com/codeplea/tinyexpr)** — Math expression parser (zlib)
 - **[toml++](https://github.com/marzer/tomlplusplus)** — TOML parser (MIT)
