@@ -621,6 +621,15 @@ void CalendarTab::rebuildEventList(float scale) {
     }
   }
 
+  // Bound the text width so labels wrap (and therefore measure their true multi-line height) instead
+  // of being measured single-line inside a flex-grow column and overflowing onto the next row.
+  const float dotWidth = Style::spaceXs * scale;
+  const float rowGap = Style::spaceSm * scale;
+  const float cardInner = m_eventsCard != nullptr
+      ? std::max(0.0f, m_eventsCard->width() - m_eventsCard->paddingLeft() - m_eventsCard->paddingRight())
+      : 0.0f;
+  const float textMaxWidth = std::max(40.0f, cardInner - dotWidth - rowGap - Style::spaceLg * scale);
+
   if (dayEvents.empty()) {
     content->addChild(
         ui::label({
@@ -647,19 +656,23 @@ void CalendarTab::rebuildEventList(float scale) {
     auto dot = ui::box({
         .fill = eventColor(*event),
         .radius = Style::spaceXs * 0.5f * scale,
-        .width = Style::spaceXs * scale,
+        .width = dotWidth,
         .flexGrow = 0.0f,
     });
 
+    Label* titleLabel = nullptr;
+    Label* timeLabel = nullptr;
     auto details = ui::column(
-        {.gap = Style::spaceXs * 0.5f * scale, .flexGrow = 1.0f},
+        {.align = FlexAlign::Start, .gap = Style::spaceXs * 0.5f * scale, .flexGrow = 1.0f},
         ui::label({
+            .out = &titleLabel,
             .text = event->title.empty() ? i18n::tr("control-center.calendar.events") : event->title,
             .fontSize = Style::fontSizeBody * scale,
             .color = colorSpecFromRole(ColorRole::OnSurface),
-            .maxLines = 2,
+            .maxLines = 3,
         }),
         ui::label({
+            .out = &timeLabel,
             .text = timeText,
             .fontSize = Style::fontSizeCaption * scale,
             .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
@@ -667,9 +680,14 @@ void CalendarTab::rebuildEventList(float scale) {
             .configure = [](Label& label) { label.setCaptionStyle(); },
         })
     );
+    if (titleLabel != nullptr) {
+      titleLabel->setMaxWidth(textMaxWidth);
+    }
+    if (timeLabel != nullptr) {
+      timeLabel->setMaxWidth(textMaxWidth);
+    }
 
-    auto eventRow =
-        ui::row({.align = FlexAlign::Stretch, .gap = Style::spaceSm * scale}, std::move(dot), std::move(details));
+    auto eventRow = ui::row({.align = FlexAlign::Stretch, .gap = rowGap}, std::move(dot), std::move(details));
     content->addChild(std::move(eventRow));
   }
 }
