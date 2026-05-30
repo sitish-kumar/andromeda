@@ -51,6 +51,13 @@ namespace {
     });
   }
 
+  void deferResponse(HttpClient::ResponseCallback cb) {
+    if (!cb) {
+      return;
+    }
+    DeferredCall::callLater([cb = std::move(cb)]() mutable { cb(HttpResponse{}); });
+  }
+
   std::size_t captureResponse(char* ptr, std::size_t size, std::size_t nmemb, void* userdata) {
     const std::size_t bytes = size * nmemb;
     if (userdata == nullptr || ptr == nullptr || bytes == 0) {
@@ -84,11 +91,20 @@ HttpClient::~HttpClient() {
       curl_slist_free_all(post.headers);
     }
   }
+  for (auto& [easy, req] : m_requestTransfers) {
+    curl_multi_remove_handle(m_multi, easy);
+    curl_easy_cleanup(easy);
+    if (req.headers != nullptr) {
+      curl_slist_free_all(req.headers);
+    }
+  }
   curl_multi_cleanup(m_multi);
   curl_global_cleanup();
 }
 
-bool HttpClient::hasActiveTransfers() const { return !m_transfers.empty() || !m_postTransfers.empty(); }
+bool HttpClient::hasActiveTransfers() const {
+  return !m_transfers.empty() || !m_postTransfers.empty() || !m_requestTransfers.empty();
+}
 
 void HttpClient::download(std::string_view url, const std::filesystem::path& destPath, CompletionCallback cb) {
   if (m_offlineMode) {
@@ -209,6 +225,70 @@ void HttpClient::post(std::string_view url, std::string body, std::string_view c
   performMulti("post start");
 }
 
+void HttpClient::request(HttpRequest req, ResponseCallback cb) {
+  if (m_offlineMode) {
+    kLog.warn("request skipped in offline mode url={}", urlForLog(req.url));
+    deferResponse(std::move(cb));
+    return;
+  }
+
+  CURL* easy = curl_easy_init();
+  if (easy == nullptr) {
+    kLog.warn("request failed to create curl handle url={}", urlForLog(req.url));
+    deferResponse(std::move(cb));
+    return;
+  }
+
+  RequestTransfer transfer{};
+  transfer.callback = std::move(cb);
+  transfer.url = req.url;
+  transfer.body = std::move(req.body);
+  for (const auto& header : req.headers) {
+    transfer.headers = curl_slist_append(transfer.headers, header.c_str());
+  }
+
+  m_requestTransfers[easy] = std::move(transfer);
+  RequestTransfer& stored = m_requestTransfers[easy];
+
+  curl_easy_setopt(easy, CURLOPT_URL, stored.url.c_str());
+  curl_easy_setopt(easy, CURLOPT_NOSIGNAL, 1L);
+  curl_easy_setopt(easy, CURLOPT_TIMEOUT, 30L);
+  // No CURLOPT_FAILONERROR: callers need the status and body for non-2xx responses.
+  if (req.method == "GET") {
+    curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
+  } else if (req.method == "POST") {
+    curl_easy_setopt(easy, CURLOPT_POST, 1L);
+  } else {
+    curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, req.method.c_str());
+  }
+  if (stored.headers != nullptr) {
+    curl_easy_setopt(easy, CURLOPT_HTTPHEADER, stored.headers);
+  }
+  if (!stored.body.empty()) {
+    curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE, static_cast<long>(stored.body.size()));
+    curl_easy_setopt(easy, CURLOPT_POSTFIELDS, stored.body.c_str());
+  }
+  curl_easy_setopt(easy, CURLOPT_ERRORBUFFER, stored.errorBuffer.data());
+  curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, captureResponse);
+  curl_easy_setopt(easy, CURLOPT_WRITEDATA, &stored.response);
+
+  const CURLMcode addResult = curl_multi_add_handle(m_multi, easy);
+  if (addResult != CURLM_OK) {
+    RequestTransfer failed = std::move(m_requestTransfers[easy]);
+    m_requestTransfers.erase(easy);
+    curl_easy_cleanup(easy);
+    if (failed.headers != nullptr) {
+      curl_slist_free_all(failed.headers);
+    }
+    kLog.warn(
+        "request failed to add curl handle url={} error={}", urlForLog(failed.url), curl_multi_strerror(addResult)
+    );
+    deferResponse(std::move(failed.callback));
+    return;
+  }
+  performMulti("request start");
+}
+
 void HttpClient::addPollFds(std::vector<pollfd>& fds) {
   if (!hasActiveTransfers()) {
     return;
@@ -261,6 +341,8 @@ void HttpClient::dispatch(const std::vector<pollfd>& /*fds*/, std::size_t /*star
       CURL* easy = msg->easy_handle;
       if (m_postTransfers.contains(easy)) {
         finishPostTransfer(easy, msg->data.result);
+      } else if (m_requestTransfers.contains(easy)) {
+        finishRequestTransfer(easy, msg->data.result);
       } else {
         finishTransfer(easy, msg->data.result);
       }
@@ -380,5 +462,43 @@ void HttpClient::finishPostTransfer(CURL* easy, CURLcode result) {
 
   if (post.callback) {
     post.callback(success);
+  }
+}
+
+void HttpClient::finishRequestTransfer(CURL* easy, CURLcode result) {
+  auto it = m_requestTransfers.find(easy);
+  if (it == m_requestTransfers.end()) {
+    curl_multi_remove_handle(m_multi, easy);
+    curl_easy_cleanup(easy);
+    return;
+  }
+
+  RequestTransfer transfer = std::move(it->second);
+  m_requestTransfers.erase(it);
+
+  long responseCode = 0;
+  curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &responseCode);
+
+  curl_multi_remove_handle(m_multi, easy);
+  curl_easy_cleanup(easy);
+
+  if (transfer.headers != nullptr) {
+    curl_slist_free_all(transfer.headers);
+  }
+
+  HttpResponse response;
+  response.transportOk = result == CURLE_OK;
+  response.status = responseCode;
+  response.body = std::move(transfer.response);
+  if (!response.transportOk) {
+    const char* detail = transfer.errorBuffer[0] != '\0' ? transfer.errorBuffer.data() : curl_easy_strerror(result);
+    kLog.warn(
+        "request failed url={} curl={} http={} error={}", urlForLog(transfer.url), static_cast<int>(result),
+        responseCode, detail
+    );
+  }
+
+  if (transfer.callback) {
+    transfer.callback(std::move(response));
   }
 }
