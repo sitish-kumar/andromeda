@@ -660,6 +660,9 @@ void ScreenTimeTab::syncContent(Renderer& renderer) {
       if (widgets.duration != nullptr) {
         widgets.duration->clearTooltip();
       }
+      if (widgets.name != nullptr) {
+        widgets.name->clearTooltip();
+      }
       continue;
     }
 
@@ -670,6 +673,7 @@ void ScreenTimeTab::syncContent(Renderer& renderer) {
     widgets.row->setVisible(true);
     if (widgets.name != nullptr) {
       widgets.name->setText(app.displayName);
+      widgets.name->setTooltip(appUsageTooltip(app.displayName, app.total));
     }
     if (widgets.duration != nullptr) {
       widgets.duration->setFontSize(durationFont);
@@ -810,6 +814,29 @@ void ScreenTimeTab::layoutAppRows(Renderer& renderer) {
         widgets.iconFallback->measure(renderer);
         const float glyphSize = kAppIconSize * 0.55f * scale;
         widgets.iconFallback->setPosition((iconSize - glyphSize) * 0.5f, (iconSize - glyphSize) * 0.5f);
+      }
+    }
+    if (widgets.name != nullptr && widgets.row != nullptr) {
+      float rowWidth = widgets.row->width();
+      if (rowWidth <= 0.0f && widgets.cell != nullptr) {
+        rowWidth = widgets.cell->width();
+      }
+      if (rowWidth > 0.0f) {
+        const float outerGap = Style::spaceSm * scale;
+        float leadingWidth = iconSize + outerGap;
+        if (widgets.chartSwatch != nullptr && widgets.chartSwatch->visible()) {
+          leadingWidth += kLegendSwatch * scale + outerGap;
+        }
+        float durationWidth = 0.0f;
+        if (widgets.duration != nullptr) {
+          widgets.duration->measure(renderer);
+          durationWidth = widgets.duration->width();
+        }
+        const float nameMax = std::max(1.0f, rowWidth - leadingWidth - durationWidth - outerGap);
+        if (std::abs(nameMax - widgets.lastNameTextMaxWidth) >= 0.5f) {
+          widgets.lastNameTextMaxWidth = nameMax;
+          widgets.name->setMaxWidth(nameMax);
+        }
       }
     }
     if (widgets.row != nullptr) {

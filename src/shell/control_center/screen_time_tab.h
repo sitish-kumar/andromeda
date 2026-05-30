@@ -80,6 +80,7 @@ private:
     Box* barTrack = nullptr;
     Box* barFill = nullptr;
     float barFillRatio = 0.0f;
+    float lastNameTextMaxWidth = -1.0f;
     std::string iconPath;
   };
   std::array<AppRowWidgets, kMaxAppRows> m_appRows{};
