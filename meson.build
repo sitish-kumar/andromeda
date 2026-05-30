@@ -111,6 +111,16 @@ drwav_dep = declare_dependency(
   include_directories: include_directories('third_party/dr_wav', is_system: true),
 )
 
+# ── Vendored: pugixml (XML parser, for CalDAV responses) ─────────────────────
+_pugixml_lib = static_library('pugixml',
+  'third_party/pugixml/pugixml.cpp',
+  override_options: ['warning_level=0'],
+)
+pugixml_dep = declare_dependency(
+  link_with: _pugixml_lib,
+  include_directories: include_directories('third_party/pugixml', is_system: true),
+)
+
 # ── Vendored: fzy matcher (C fuzzy scoring) ──────────────────────────────────
 _fzy_lib = static_library('fzy',
   'third_party/fzy/src/match.c',
@@ -782,6 +792,7 @@ executable('noctalia',
     drwav_dep,
     fzy_dep,
     mcu_dep,
+    pugixml_dep,
     stb_dep,
     libwebp_dep,
     luau_dep,
