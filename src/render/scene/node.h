@@ -118,10 +118,10 @@ public:
   void setHitTestOutset(const HitTestOutset& outset);
   void setZIndex(std::int32_t zIndex);
 
-  Node* addChild(std::unique_ptr<Node> child);
+  virtual Node* addChild(std::unique_ptr<Node> child);
   // Insert at a specific vector position to control Flex layout order (not rendering order — use zIndex for that).
-  Node* insertChildAt(std::size_t index, std::unique_ptr<Node> child);
-  std::unique_ptr<Node> removeChild(Node* child);
+  virtual Node* insertChildAt(std::size_t index, std::unique_ptr<Node> child);
+  virtual std::unique_ptr<Node> removeChild(Node* child);
 
   void setAnimationManager(AnimationManager* mgr);
   [[nodiscard]] AnimationManager* animationManager() const noexcept { return m_animationManager; }

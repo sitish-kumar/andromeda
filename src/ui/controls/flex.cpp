@@ -337,6 +337,23 @@ void Flex::setChildGapExcluded(Node* child, bool excluded) {
   markLayoutDirty();
 }
 
+Node* Flex::addChild(std::unique_ptr<Node> child) {
+  Node* raw = Node::addChild(std::move(child));
+  m_gapExcludedChildren.erase(raw);
+  return raw;
+}
+
+Node* Flex::insertChildAt(std::size_t index, std::unique_ptr<Node> child) {
+  Node* raw = Node::insertChildAt(index, std::move(child));
+  m_gapExcludedChildren.erase(raw);
+  return raw;
+}
+
+std::unique_ptr<Node> Flex::removeChild(Node* child) {
+  m_gapExcludedChildren.erase(child);
+  return Node::removeChild(child);
+}
+
 void Flex::ensureBackground() {
   if (m_background != nullptr) {
     return;

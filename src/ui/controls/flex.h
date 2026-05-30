@@ -73,6 +73,12 @@ public:
   void setRowLayout();
   void setChildGapExcluded(Node* child, bool excluded);
 
+  // Keep the gap-excluded set in sync with the child list so a freed-then-reused Node address never inherits
+  // a stale exclusion (which would collapse the gap around it).
+  Node* addChild(std::unique_ptr<Node> child) override;
+  Node* insertChildAt(std::size_t index, std::unique_ptr<Node> child) override;
+  std::unique_ptr<Node> removeChild(Node* child) override;
+
   [[nodiscard]] FlexDirection direction() const noexcept { return m_direction; }
   [[nodiscard]] float gap() const noexcept { return m_gap; }
   [[nodiscard]] FlexAlign align() const noexcept { return m_align; }
