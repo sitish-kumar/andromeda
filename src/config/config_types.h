@@ -166,6 +166,8 @@ struct IdleConfig {
   /// from transparent to opaque over this many seconds, then runs `command`. Compositor activity during
   /// the fade cancels. When 0, the idle command runs immediately with no overlay.
   float preActionFadeSeconds = 2.0f;
+
+  bool operator==(const IdleConfig&) const = default;
 };
 
 [[nodiscard]] std::vector<ShortcutConfig> defaultControlCenterShortcuts();
@@ -292,6 +294,8 @@ struct WallpaperMonitorOverride {
   std::optional<std::string> directory;
   std::optional<std::string> directoryLight;
   std::optional<std::string> directoryDark;
+
+  bool operator==(const WallpaperMonitorOverride&) const = default;
 };
 
 struct WallpaperAutomationConfig {
@@ -304,6 +308,8 @@ struct WallpaperAutomationConfig {
   std::int32_t intervalMinutes = 0; // 0 = disabled
   Order order = Order::Random;
   bool recursive = true;
+
+  bool operator==(const WallpaperAutomationConfig&) const = default;
 };
 
 struct WallpaperConfig {
@@ -321,12 +327,16 @@ struct WallpaperConfig {
   bool perMonitorDirectories = false;
   WallpaperAutomationConfig automation;
   std::vector<WallpaperMonitorOverride> monitorOverrides;
+
+  bool operator==(const WallpaperConfig&) const = default;
 };
 
 struct BackdropConfig {
   bool enabled = false;
   float blurIntensity = 0.5f;
   float tintIntensity = 0.3f;
+
+  bool operator==(const BackdropConfig&) const = default;
 };
 
 struct DockConfig {
@@ -402,6 +412,8 @@ struct OsdConfig {
   int offsetY = 8;
   bool lockKeys = true;
   bool keyboardLayout = true;
+
+  bool operator==(const OsdConfig&) const = default;
 };
 
 struct NotificationConfig {
@@ -414,6 +426,8 @@ struct NotificationConfig {
   int offsetY = 8;                 // absolute vertical margin from the screen edge
   std::vector<std::string> monitors;
   bool collapseOnDismiss = true;
+
+  bool operator==(const NotificationConfig&) const = default;
 };
 
 template <typename T> struct EnumOption {
@@ -583,6 +597,8 @@ struct ShellConfig {
   struct AnimationConfig {
     bool enabled = true;
     float speed = 1.0f;
+
+    bool operator==(const AnimationConfig&) const = default;
   };
 
   struct ShadowConfig {
@@ -672,6 +688,8 @@ struct ShellConfig {
   MprisConfig mpris;
   ScreenshotConfig screenshot;
   ShellSessionConfig session;
+
+  bool operator==(const ShellConfig&) const = default;
 };
 
 struct WeatherConfig {
@@ -681,6 +699,8 @@ struct WeatherConfig {
   std::string address;
   std::int32_t refreshMinutes = 30;
   std::string unit = "metric";
+
+  bool operator==(const WeatherConfig&) const = default;
 };
 
 struct SystemConfig {
@@ -694,9 +714,13 @@ struct SystemConfig {
     float memoryPollSeconds = 2.0f;
     float networkPollSeconds = 3.0f;
     float diskPollSeconds = 10.0f;
+
+    bool operator==(const MonitorConfig&) const = default;
   };
 
   MonitorConfig monitor;
+
+  bool operator==(const SystemConfig&) const = default;
 };
 
 struct AudioConfig {
@@ -705,6 +729,8 @@ struct AudioConfig {
   float soundVolume = 0.5f;
   std::string volumeChangeSound;
   std::string notificationSound;
+
+  bool operator==(const AudioConfig&) const = default;
 };
 
 enum class BrightnessBackendPreference : std::uint8_t {
@@ -743,6 +769,8 @@ struct KeybindsConfig {
   std::vector<KeyChord> right;
   std::vector<KeyChord> up;
   std::vector<KeyChord> down;
+
+  bool operator==(const KeybindsConfig&) const = default;
 };
 
 struct NightLightConfig {
@@ -760,6 +788,8 @@ struct NightLightConfig {
   std::optional<double> longitude;
   std::int32_t dayTemperature = 6500;
   std::int32_t nightTemperature = 4000;
+
+  bool operator==(const NightLightConfig&) const = default;
 };
 
 enum class HookKind : std::uint8_t {
@@ -910,6 +940,8 @@ struct ThemeConfig {
   std::string wallpaperScheme = "m3-content";
   ThemeMode mode = ThemeMode::Dark;
   TemplatesConfig templates;
+
+  bool operator==(const ThemeConfig&) const = default;
 };
 
 struct ControlCenterConfig {

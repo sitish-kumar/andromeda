@@ -7,7 +7,6 @@
 #include "util/string_utils.h"
 
 #include <algorithm>
-#include <cmath>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -19,7 +18,6 @@
 
 namespace {
   constexpr Logger kLog("config");
-  constexpr double kConfigFloatEpsilon = 1.0e-5;
 
   std::string overrideCacheKey(const std::vector<std::string>& path) {
     std::string key;
@@ -30,30 +28,6 @@ namespace {
       key += part;
     }
     return key;
-  }
-
-  bool nearlyEqual(double a, double b) noexcept { return std::abs(a - b) <= kConfigFloatEpsilon; }
-
-  bool colorEqual(const Color& a, const Color& b) noexcept {
-    return nearlyEqual(a.r, b.r) && nearlyEqual(a.g, b.g) && nearlyEqual(a.b, b.b) && nearlyEqual(a.a, b.a);
-  }
-
-  bool colorSpecEqual(const ColorSpec& a, const ColorSpec& b) noexcept {
-    return a.role == b.role && colorEqual(a.fixed, b.fixed) && nearlyEqual(a.alpha, b.alpha);
-  }
-
-  bool optionalDoubleEqual(const std::optional<double>& a, const std::optional<double>& b) noexcept {
-    if (a.has_value() != b.has_value()) {
-      return false;
-    }
-    return !a.has_value() || nearlyEqual(*a, *b);
-  }
-
-  bool optionalColorSpecEqual(const std::optional<ColorSpec>& a, const std::optional<ColorSpec>& b) noexcept {
-    if (a.has_value() != b.has_value()) {
-      return false;
-    }
-    return !a.has_value() || colorSpecEqual(*a, *b);
   }
 
   template <typename T, typename Equal>
@@ -83,7 +57,7 @@ namespace {
     const auto aNum = numericWidgetSetting(a);
     const auto bNum = numericWidgetSetting(b);
     if (aNum.has_value() || bNum.has_value()) {
-      return aNum.has_value() && bNum.has_value() && nearlyEqual(*aNum, *bNum);
+      return aNum.has_value() && bNum.has_value() && *aNum == *bNum;
     }
     if (a.index() != b.index()) {
       return false;
@@ -114,14 +88,16 @@ namespace {
     return true;
   }
 
+  // Like DesktopWidgetState's defaulted operator==, but compares the settings map with int/double coercion
+  // (widgetSettingsEqual) instead of exact variant equality.
   bool desktopWidgetEqual(const DesktopWidgetState& a, const DesktopWidgetState& b) {
     return a.id == b.id
         && a.type == b.type
         && a.outputName == b.outputName
-        && nearlyEqual(a.cx, b.cx)
-        && nearlyEqual(a.cy, b.cy)
-        && nearlyEqual(a.scale, b.scale)
-        && nearlyEqual(a.rotationRad, b.rotationRad)
+        && a.cx == b.cx
+        && a.cy == b.cy
+        && a.scale == b.scale
+        && a.rotationRad == b.rotationRad
         && a.enabled == b.enabled
         && widgetSettingsEqual(a.settings, b.settings);
   }
@@ -129,49 +105,19 @@ namespace {
   bool desktopWidgetsConfigEqual(const DesktopWidgetsConfig& a, const DesktopWidgetsConfig& b) {
     return a.enabled == b.enabled
         && a.schemaVersion == b.schemaVersion
-        && a.grid.visible == b.grid.visible
-        && a.grid.cellSize == b.grid.cellSize
-        && a.grid.majorInterval == b.grid.majorInterval
+        && a.grid == b.grid
         && vectorEqual(a.widgets, b.widgets, desktopWidgetEqual);
   }
 
+  // Compares two bars ignoring their monitor-override lists (those are resolved + compared separately by
+  // barConfigEqual). BarConfig's defaulted operator== covers every field, so new bar fields participate
+  // automatically — no list to keep in sync here.
   bool barBaseConfigEqual(const BarConfig& a, const BarConfig& b) {
-    return a.name == b.name
-        && a.position == b.position
-        && a.enabled == b.enabled
-        && a.autoHide == b.autoHide
-        && a.reserveSpace == b.reserveSpace
-        && a.thickness == b.thickness
-        && nearlyEqual(a.backgroundOpacity, b.backgroundOpacity)
-        && colorSpecEqual(a.border, b.border)
-        && nearlyEqual(a.borderWidth, b.borderWidth)
-        && a.radius == b.radius
-        && a.radiusTopLeft == b.radiusTopLeft
-        && a.radiusTopRight == b.radiusTopRight
-        && a.radiusBottomLeft == b.radiusBottomLeft
-        && a.radiusBottomRight == b.radiusBottomRight
-        && a.marginEnds == b.marginEnds
-        && a.marginEdge == b.marginEdge
-        && a.padding == b.padding
-        && a.widgetSpacing == b.widgetSpacing
-        && a.shadow == b.shadow
-        && a.contactShadow == b.contactShadow
-        && a.panelOverlap == b.panelOverlap
-        && nearlyEqual(a.scale, b.scale)
-        && a.fontWeight == b.fontWeight
-        && a.startWidgets == b.startWidgets
-        && a.centerWidgets == b.centerWidgets
-        && a.endWidgets == b.endWidgets
-        && a.widgetCapsuleDefault == b.widgetCapsuleDefault
-        && colorSpecEqual(a.widgetCapsuleFill, b.widgetCapsuleFill)
-        && optionalColorSpecEqual(a.widgetCapsuleForeground, b.widgetCapsuleForeground)
-        && optionalColorSpecEqual(a.widgetColor, b.widgetColor)
-        && a.widgetCapsuleGroups == b.widgetCapsuleGroups
-        && nearlyEqual(a.widgetCapsulePadding, b.widgetCapsulePadding)
-        && optionalDoubleEqual(a.widgetCapsuleRadius, b.widgetCapsuleRadius)
-        && nearlyEqual(a.widgetCapsuleOpacity, b.widgetCapsuleOpacity)
-        && a.widgetCapsuleBorderSpecified == b.widgetCapsuleBorderSpecified
-        && optionalColorSpecEqual(a.widgetCapsuleBorder, b.widgetCapsuleBorder);
+    BarConfig aa = a;
+    BarConfig bb = b;
+    aa.monitorOverrides.clear();
+    bb.monitorOverrides.clear();
+    return aa == bb;
   }
 
   BarConfig applyMonitorOverrideForComparison(const BarConfig& base, const BarMonitorOverride& ovr) {
@@ -322,217 +268,30 @@ namespace {
     return path.size() == 3 && path[0] == "widget";
   }
 
-  bool wallpaperMonitorOverrideEqual(const WallpaperMonitorOverride& a, const WallpaperMonitorOverride& b) {
-    return a.match == b.match
-        && a.enabled == b.enabled
-        && optionalColorSpecEqual(a.fillColor, b.fillColor)
-        && a.directory == b.directory
-        && a.directoryLight == b.directoryLight
-        && a.directoryDark == b.directoryDark;
-  }
-
-  bool wallpaperConfigEqual(const WallpaperConfig& a, const WallpaperConfig& b) {
-    return a.enabled == b.enabled
-        && a.fillMode == b.fillMode
-        && optionalColorSpecEqual(a.fillColor, b.fillColor)
-        && a.transitions == b.transitions
-        && nearlyEqual(a.transitionDurationMs, b.transitionDurationMs)
-        && nearlyEqual(a.edgeSmoothness, b.edgeSmoothness)
-        && a.directory == b.directory
-        && a.directoryLight == b.directoryLight
-        && a.directoryDark == b.directoryDark
-        && a.perMonitorDirectories == b.perMonitorDirectories
-        && a.automation.enabled == b.automation.enabled
-        && a.automation.intervalMinutes == b.automation.intervalMinutes
-        && a.automation.order == b.automation.order
-        && a.automation.recursive == b.automation.recursive
-        && vectorEqual(a.monitorOverrides, b.monitorOverrides, wallpaperMonitorOverrideEqual);
-  }
-
-  bool dockConfigEqual(const DockConfig& a, const DockConfig& b) {
-    return a.enabled == b.enabled
-        && a.position == b.position
-        && a.activeMonitorOnly == b.activeMonitorOnly
-        && a.iconSize == b.iconSize
-        && a.padding == b.padding
-        && a.itemSpacing == b.itemSpacing
-        && nearlyEqual(a.backgroundOpacity, b.backgroundOpacity)
-        && a.radius == b.radius
-        && a.radiusTopLeft == b.radiusTopLeft
-        && a.radiusTopRight == b.radiusTopRight
-        && a.radiusBottomLeft == b.radiusBottomLeft
-        && a.radiusBottomRight == b.radiusBottomRight
-        && a.marginEnds == b.marginEnds
-        && a.marginEdge == b.marginEdge
-        && a.shadow == b.shadow
-        && a.showRunning == b.showRunning
-        && a.autoHide == b.autoHide
-        && a.reserveSpace == b.reserveSpace
-        && nearlyEqual(a.activeScale, b.activeScale)
-        && nearlyEqual(a.inactiveScale, b.inactiveScale)
-        && nearlyEqual(a.activeOpacity, b.activeOpacity)
-        && nearlyEqual(a.inactiveOpacity, b.inactiveOpacity)
-        && a.showDots == b.showDots
-        && a.showInstanceCount == b.showInstanceCount
-        && a.launcherPosition == b.launcherPosition
-        && a.launcherIcon == b.launcherIcon
-        && a.pinned == b.pinned
-        && a.monitors == b.monitors;
-  }
-
-  bool shellConfigEqual(const ShellConfig& a, const ShellConfig& b) {
-    return nearlyEqual(a.uiScale, b.uiScale)
-        && nearlyEqual(a.cornerRadiusScale, b.cornerRadiusScale)
-        && a.fontFamily == b.fontFamily
-        && a.lang == b.lang
-        && a.timeFormat == b.timeFormat
-        && a.dateFormat == b.dateFormat
-        && a.offlineMode == b.offlineMode
-        && a.telemetryEnabled == b.telemetryEnabled
-        && a.niriOverviewTypeToLaunchEnabled == b.niriOverviewTypeToLaunchEnabled
-        && a.polkitAgent == b.polkitAgent
-        && a.passwordMaskStyle == b.passwordMaskStyle
-        && a.animation.enabled == b.animation.enabled
-        && nearlyEqual(a.animation.speed, b.animation.speed)
-        && a.avatarPath == b.avatarPath
-        && a.settingsShowAdvanced == b.settingsShowAdvanced
-        && a.middleClickOpensWidgetSettings == b.middleClickOpensWidgetSettings
-        && a.showLocation == b.showLocation
-        && a.launchAppsAsSystemdServices == b.launchAppsAsSystemdServices
-        && a.clipboardEnabled == b.clipboardEnabled
-        && a.clipboardHistoryMaxEntries == b.clipboardHistoryMaxEntries
-        && a.clipboardConfirmClearHistory == b.clipboardConfirmClearHistory
-        && a.screenTimeEnabled == b.screenTimeEnabled
-        && a.sharedGlContext == b.sharedGlContext
-        && a.disableMipmaps == b.disableMipmaps
-        && a.clipboardAutoPaste == b.clipboardAutoPaste
-        && a.clipboardImageActionCommand == b.clipboardImageActionCommand
-        && a.shadow.direction == b.shadow.direction
-        && nearlyEqual(a.shadow.alpha, b.shadow.alpha)
-        && a.panel.backgroundBlur == b.panel.backgroundBlur
-        && a.panel.borders == b.panel.borders
-        && a.panel.shadow == b.panel.shadow
-        && a.panel.transparencyMode == b.panel.transparencyMode
-        && a.panel.launcherPlacement == b.panel.launcherPlacement
-        && a.panel.clipboardPlacement == b.panel.clipboardPlacement
-        && a.panel.controlCenterPlacement == b.panel.controlCenterPlacement
-        && a.panel.wallpaperPlacement == b.panel.wallpaperPlacement
-        && a.panel.sessionPlacement == b.panel.sessionPlacement
-        && a.panel.openNearClickControlCenter == b.panel.openNearClickControlCenter
-        && a.panel.openNearClickLauncher == b.panel.openNearClickLauncher
-        && a.panel.openNearClickClipboard == b.panel.openNearClickClipboard
-        && a.panel.openNearClickWallpaper == b.panel.openNearClickWallpaper
-        && a.panel.openNearClickSession == b.panel.openNearClickSession
-        && a.panel.launcherCategories == b.panel.launcherCategories
-        && a.screenCorners.enabled == b.screenCorners.enabled
-        && a.screenCorners.size == b.screenCorners.size
-        && a.mpris.blacklist == b.mpris.blacklist
-        && a.screenshot == b.screenshot
-        && a.session.actions == b.session.actions;
-  }
-
-  bool notificationConfigEqual(const NotificationConfig& a, const NotificationConfig& b) {
-    return a.enableDaemon == b.enableDaemon
-        && a.position == b.position
-        && a.layer == b.layer
-        && nearlyEqual(a.scale, b.scale)
-        && nearlyEqual(a.backgroundOpacity, b.backgroundOpacity)
-        && a.offsetX == b.offsetX
-        && a.offsetY == b.offsetY
-        && a.monitors == b.monitors
-        && a.collapseOnDismiss == b.collapseOnDismiss;
-  }
-
-  bool audioConfigEqual(const AudioConfig& a, const AudioConfig& b) {
-    return a.enableOverdrive == b.enableOverdrive
-        && a.enableSounds == b.enableSounds
-        && nearlyEqual(a.soundVolume, b.soundVolume)
-        && a.volumeChangeSound == b.volumeChangeSound
-        && a.notificationSound == b.notificationSound;
-  }
-
-  bool nightLightConfigEqual(const NightLightConfig& a, const NightLightConfig& b) {
-    return a.enabled == b.enabled
-        && a.force == b.force
-        && a.useWeatherLocation == b.useWeatherLocation
-        && a.startTime == b.startTime
-        && a.stopTime == b.stopTime
-        && optionalDoubleEqual(a.latitude, b.latitude)
-        && optionalDoubleEqual(a.longitude, b.longitude)
-        && a.dayTemperature == b.dayTemperature
-        && a.nightTemperature == b.nightTemperature;
-  }
-
-  bool idleConfigEqual(const IdleConfig& a, const IdleConfig& b) {
-    return nearlyEqual(a.preActionFadeSeconds, b.preActionFadeSeconds)
-        && vectorEqual(a.behaviors, b.behaviors, [](const IdleBehaviorConfig& lhs, const IdleBehaviorConfig& rhs) {
-             return lhs.name == rhs.name
-                 && lhs.enabled == rhs.enabled
-                 && lhs.timeoutSeconds == rhs.timeoutSeconds
-                 && lhs.action == rhs.action
-                 && lhs.command == rhs.command
-                 && lhs.resumeCommand == rhs.resumeCommand;
-           });
-  }
-
-  bool themeConfigEqual(const ThemeConfig& a, const ThemeConfig& b) {
-    return a.source == b.source
-        && a.builtinPalette == b.builtinPalette
-        && a.communityPalette == b.communityPalette
-        && a.customPalette == b.customPalette
-        && a.wallpaperScheme == b.wallpaperScheme
-        && a.mode == b.mode
-        && a.templates.enableBuiltinTemplates == b.templates.enableBuiltinTemplates
-        && a.templates.builtinIds == b.templates.builtinIds
-        && a.templates.enableCommunityTemplates == b.templates.enableCommunityTemplates
-        && a.templates.communityIds == b.templates.communityIds
-        && a.templates.customColors == b.templates.customColors
-        && a.templates.userTemplates == b.templates.userTemplates;
-  }
-
+  // Override-effectiveness equality. Every config section uses its compiler-generated operator== (exact
+  // member-wise compare) so that adding a field cannot silently break override persistence — the only
+  // exceptions are the sections whose comparison carries semantics operator== can't express:
+  //   - bars: monitor overrides are resolved + clamped before comparing (barConfigEqual)
+  //   - widgets / desktop widgets: settings compared with int/double coercion (widgetMapEqual / desktopWidgetEqual)
   bool configEqual(const Config& a, const Config& b) {
     return vectorEqual(a.bars, b.bars, barConfigEqual)
         && widgetMapEqual(a.widgets, b.widgets)
-        && wallpaperConfigEqual(a.wallpaper, b.wallpaper)
-        && a.backdrop.enabled == b.backdrop.enabled
-        && nearlyEqual(a.backdrop.blurIntensity, b.backdrop.blurIntensity)
-        && nearlyEqual(a.backdrop.tintIntensity, b.backdrop.tintIntensity)
-        && dockConfigEqual(a.dock, b.dock)
         && desktopWidgetsConfigEqual(a.desktopWidgets, b.desktopWidgets)
-        && shellConfigEqual(a.shell, b.shell)
-        && a.osd.position == b.osd.position
-        && a.osd.orientation == b.osd.orientation
-        && nearlyEqual(a.osd.scale, b.osd.scale)
-        && nearlyEqual(a.osd.backgroundOpacity, b.osd.backgroundOpacity)
-        && a.osd.offsetX == b.osd.offsetX
-        && a.osd.offsetY == b.osd.offsetY
-        && a.osd.lockKeys == b.osd.lockKeys
-        && a.osd.keyboardLayout == b.osd.keyboardLayout
-        && notificationConfigEqual(a.notification, b.notification)
-        && a.weather.enabled == b.weather.enabled
-        && a.weather.autoLocate == b.weather.autoLocate
-        && a.weather.effects == b.weather.effects
-        && a.weather.address == b.weather.address
-        && a.weather.refreshMinutes == b.weather.refreshMinutes
-        && a.weather.unit == b.weather.unit
-        && a.system.monitor.enabled == b.system.monitor.enabled
-        && a.system.monitor.cpuPollSeconds == b.system.monitor.cpuPollSeconds
-        && a.system.monitor.gpuPollSeconds == b.system.monitor.gpuPollSeconds
-        && a.system.monitor.memoryPollSeconds == b.system.monitor.memoryPollSeconds
-        && a.system.monitor.networkPollSeconds == b.system.monitor.networkPollSeconds
-        && a.system.monitor.diskPollSeconds == b.system.monitor.diskPollSeconds
-        && audioConfigEqual(a.audio, b.audio)
+        && a.wallpaper == b.wallpaper
+        && a.backdrop == b.backdrop
+        && a.dock == b.dock
+        && a.shell == b.shell
+        && a.osd == b.osd
+        && a.notification == b.notification
+        && a.weather == b.weather
+        && a.system == b.system
+        && a.audio == b.audio
         && a.brightness == b.brightness
-        && a.keybinds.validate == b.keybinds.validate
-        && a.keybinds.cancel == b.keybinds.cancel
-        && a.keybinds.left == b.keybinds.left
-        && a.keybinds.right == b.keybinds.right
-        && a.keybinds.up == b.keybinds.up
-        && a.keybinds.down == b.keybinds.down
-        && nightLightConfigEqual(a.nightlight, b.nightlight)
-        && idleConfigEqual(a.idle, b.idle)
+        && a.keybinds == b.keybinds
+        && a.nightlight == b.nightlight
+        && a.idle == b.idle
         && a.hooks == b.hooks
-        && themeConfigEqual(a.theme, b.theme)
+        && a.theme == b.theme
         && a.controlCenter == b.controlCenter;
   }
 
