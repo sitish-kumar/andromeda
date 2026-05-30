@@ -101,6 +101,8 @@ namespace settings {
     bool advanced = false;
     bool segmented = false;              // applies when valueType == Select
     bool integerValue = false;           // applies when valueType == Select
+    bool stepper = false;                // applies when valueType == Int
+    std::string valueSuffix;             // applies when valueType == Int && stepper
     bool allowCustomColor = true;        // applies when valueType == ColorSpec
     std::vector<std::string> extensions; // applies when valueType == File
     std::optional<WidgetSettingVisibility> visibleWhen;

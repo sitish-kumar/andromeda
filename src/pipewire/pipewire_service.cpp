@@ -183,6 +183,55 @@ namespace {
     return val != nullptr ? std::string(val) : std::string{};
   }
 
+  bool dictHas(const spa_dict* dict, const char* key) {
+    return dict != nullptr && spa_dict_lookup(dict, key) != nullptr;
+  }
+
+  [[nodiscard]] bool isTruthyPipeWireProp(std::string_view value) { return value == "true" || value == "1"; }
+
+  bool applyStreamFilterPropsFromDict(PipeWireService::NodeData& nd, const spa_dict* props, bool mergeOnly) {
+    if (props == nullptr) {
+      return false;
+    }
+
+    bool changed = false;
+    auto updateStringField = [&](std::string& field, const char* key) {
+      if (mergeOnly && !dictHas(props, key)) {
+        return;
+      }
+      std::string value = dictGet(props, key);
+      if (field != value) {
+        field = std::move(value);
+        changed = true;
+      }
+    };
+
+    updateStringField(nd.linkGroup, PW_KEY_NODE_LINK_GROUP);
+
+    const bool hasTargetObject = dictHas(props, PW_KEY_TARGET_OBJECT);
+    const bool hasNodeTarget = dictHas(props, "node.target");
+    if (!mergeOnly || hasTargetObject || hasNodeTarget) {
+      std::string target = dictGet(props, PW_KEY_TARGET_OBJECT);
+      if (target.empty()) {
+        target = dictGet(props, "node.target");
+      }
+      if (nd.targetObject != target) {
+        nd.targetObject = std::move(target);
+        changed = true;
+      }
+    }
+
+    if (mergeOnly && !dictHas(props, PW_KEY_NODE_PASSIVE)) {
+      return changed;
+    }
+    const bool passive = isTruthyPipeWireProp(dictGet(props, PW_KEY_NODE_PASSIVE));
+    if (nd.nodePassive != passive) {
+      nd.nodePassive = passive;
+      changed = true;
+    }
+    return changed;
+  }
+
   std::string escapeJsonString(std::string_view text) {
     std::string escaped;
     escaped.reserve(text.size());
@@ -433,12 +482,10 @@ namespace {
 
   bool isProgramStreamClass(std::string_view mediaClass) { return mediaClass == "Stream/Output/Audio"; }
 
-  [[nodiscard]] bool isTruthyPipeWireProp(std::string_view value) { return value == "true" || value == "1"; }
-
   [[nodiscard]] bool isProgramOutputNode(const PipeWireService::NodeData& nd) {
     // Match wpctl "Streams": Stream/Output/Audio without node.link-group. Loopback/filter endpoints also
     // expose target.object or node.passive and must not appear as application volumes.
-    if (!isProgramStreamClass(nd.mediaClass)) {
+    if (!isProgramStreamClass(nd.mediaClass) || !nd.streamClassificationReady) {
       return false;
     }
     if (!nd.linkGroup.empty() || !nd.targetObject.empty() || nd.nodePassive) {
@@ -725,9 +772,7 @@ void PipeWireService::onRegistryGlobal(std::uint32_t id, const char* type, std::
     if (nd->iconName.empty()) {
       nd->iconName = nd->applicationBinary;
     }
-    nd->linkGroup = dictGet(props, PW_KEY_NODE_LINK_GROUP);
-    nd->targetObject = dictGet(props, PW_KEY_TARGET_OBJECT);
-    nd->nodePassive = isTruthyPipeWireProp(dictGet(props, PW_KEY_NODE_PASSIVE));
+    applyStreamFilterPropsFromDict(*nd, props, false);
     nd->mediaClass = mediaClass;
     const bool audioDeviceNode = mediaClass == "Audio/Sink" || mediaClass == "Audio/Source";
     applyVolumePropsFromDict(*nd, props, !audioDeviceNode);
@@ -753,8 +798,11 @@ void PipeWireService::onRegistryGlobal(std::uint32_t id, const char* type, std::
     NodeData& stored = *m_nodes[id];
     if (stored.mediaClass == "Audio/Sink" || stored.mediaClass == "Audio/Source") {
       m_pendingDefaultAudioDevicePropsEnum = true;
+      rebuildState();
+    } else if (stored.mediaClass != "Stream/Output/Audio") {
+      rebuildState();
     }
-    rebuildState();
+    // Stream/Output/Audio nodes wait for pw_node_info before appearing in Application Volumes.
   }
 
   // Track metadata for default sink/source names
@@ -852,12 +900,11 @@ void PipeWireService::onNodeInfo(std::uint32_t id, const pw_node_info* info) {
   }
 
   // Update name/description from props if available
-  if (info->props != nullptr) {
-    auto& nd = *it->second;
-    const std::string oldLinkGroup = nd.linkGroup;
-    const std::string oldTargetObject = nd.targetObject;
-    const bool oldNodePassive = nd.nodePassive;
+  auto& nd = *it->second;
+  const bool isStream = isProgramStreamClass(nd.mediaClass);
+  bool filterPropsChanged = false;
 
+  if (info->props != nullptr) {
     std::string desc = dictGet(info->props, PW_KEY_NODE_DESCRIPTION);
     if (!desc.empty()) {
       nd.description = desc;
@@ -909,16 +956,18 @@ void PipeWireService::onNodeInfo(std::uint32_t id, const pw_node_info* info) {
     if (!iconName.empty()) {
       nd.iconName = iconName;
     }
-    nd.linkGroup = dictGet(info->props, PW_KEY_NODE_LINK_GROUP);
-    nd.targetObject = dictGet(info->props, PW_KEY_TARGET_OBJECT);
-    nd.nodePassive = isTruthyPipeWireProp(dictGet(info->props, PW_KEY_NODE_PASSIVE));
+    filterPropsChanged = applyStreamFilterPropsFromDict(nd, info->props, true);
     const bool audioDevice = nd.mediaClass == "Audio/Sink" || nd.mediaClass == "Audio/Source";
     applyVolumePropsFromDict(nd, info->props, !audioDevice);
     refreshNodeIdentity(nd);
+  }
 
-    if (nd.linkGroup != oldLinkGroup || nd.targetObject != oldTargetObject || nd.nodePassive != oldNodePassive) {
-      rebuildState();
-    }
+  const bool wasStreamReady = nd.streamClassificationReady;
+  if (isStream) {
+    nd.streamClassificationReady = true;
+  }
+  if (isStream && (!wasStreamReady || filterPropsChanged)) {
+    rebuildState();
   }
 
   // Request Props param enumeration if changes flagged

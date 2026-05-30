@@ -101,6 +101,10 @@
       "filter-placeholder": "Filter...",
       "flatten": "Flatten",
       "all-monitors": "ALL",
+      "view-browse": "Browse",
+      "view-favorites": "Favorites",
+      "favorite-theme-label": "Theme",
+      "favorite-palette-label": "Colors",
       "no-directory-configured": "No directory configured",
       "color-title": "Wallpaper color"
     }
@@ -1530,6 +1534,10 @@
         "scope": {
           "label": "Runtime Scope",
           "description": "Run one script runtime per live widget placement, or share one runtime across bars with the same widget id"
+        },
+        "scroll_step": {
+          "label": "Scroll Step",
+          "description": "Percentage change applied on each mouse wheel step"
         },
         "show_caps_lock": {
           "label": "Show Caps Lock",

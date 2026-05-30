@@ -29,14 +29,14 @@ namespace {
     return "volume-high";
   }
 
-  constexpr float kScrollStep = 0.05f;
-
 } // namespace
 
 VolumeWidget::VolumeWidget(
-    PipeWireService* audio, const Config* config, wl_output* /*output*/, bool showLabel, VolumeWidgetTarget target
+    PipeWireService* audio, const Config* config, wl_output* /*output*/, bool showLabel, VolumeWidgetTarget target,
+    int scrollStepPercent
 )
-    : m_audio(audio), m_config(config), m_showLabel(showLabel), m_target(target) {}
+    : m_audio(audio), m_config(config), m_showLabel(showLabel),
+      m_scrollStep(static_cast<float>(scrollStepPercent) / 100.0f), m_target(target) {}
 
 void VolumeWidget::create() {
   auto area = std::make_unique<InputArea>();
@@ -49,7 +49,7 @@ void VolumeWidget::create() {
     if (node == nullptr) {
       return;
     }
-    const float delta = data.scrollDelta(1.0f) > 0 ? -kScrollStep : kScrollStep;
+    const float delta = data.scrollDelta(1.0f) > 0 ? -m_scrollStep : m_scrollStep;
     const float maxVolume = (m_config != nullptr && m_config->audio.enableOverdrive) ? 1.5f : 1.0f;
     const float newValue = std::clamp(node->volume + delta, 0.0f, maxVolume);
     if (m_target == VolumeWidgetTarget::Input) {

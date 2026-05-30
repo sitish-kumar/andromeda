@@ -377,7 +377,8 @@ const ScreenTimeService::DayRecord* ScreenTimeService::dayRecordForKey(const std
 std::vector<std::string> ScreenTimeService::dayKeysForRange(int rangeDays) const {
   std::vector<std::string> keys;
   keys.reserve(static_cast<std::size_t>(rangeDays));
-  for (int offset = 0; offset < rangeDays; ++offset) {
+  // Oldest day first so multi-day charts read left-to-right chronologically.
+  for (int offset = rangeDays - 1; offset >= 0; --offset) {
     keys.push_back(localDayKeyForCalendarOffset(offset));
   }
   return keys;

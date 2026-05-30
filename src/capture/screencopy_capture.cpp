@@ -175,9 +175,10 @@ namespace {
             ScreencopyImage image;
             image.width = pending->width;
             image.height = pending->height;
+            image.yInvert = pending->yInvert;
             convertToRgba(
                 static_cast<const std::uint8_t*>(pending->mapped), pending->width, pending->height, pending->stride,
-                pending->shmFormat, pending->yInvert, image.rgba
+                pending->shmFormat, false, image.rgba
             );
 
             zwlr_screencopy_frame_v1_destroy(frame);

@@ -20,6 +20,7 @@ struct LogicalRect {
 struct ScreencopyImage {
   int width = 0;
   int height = 0;
+  bool yInvert = false;
   std::vector<std::uint8_t> rgba;
 };
 

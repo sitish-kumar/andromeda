@@ -137,9 +137,14 @@ namespace {
   };
 
   void outputGeometry(
-      void* /*data*/, wl_output* /*output*/, int32_t /*x*/, int32_t /*y*/, int32_t /*physW*/, int32_t /*physH*/,
-      int32_t /*subpixel*/, const char* /*make*/, const char* /*model*/, int32_t /*transform*/
-  ) {}
+      void* data, wl_output* wlOut, int32_t /*x*/, int32_t /*y*/, int32_t /*physW*/, int32_t /*physH*/,
+      int32_t /*subpixel*/, const char* /*make*/, const char* /*model*/, int32_t transform
+  ) {
+    auto* out = static_cast<WaylandConnection*>(data)->findOutputByWl(wlOut);
+    if (out != nullptr) {
+      out->transform = transform;
+    }
+  }
 
   void outputMode(void* data, wl_output* wlOut, uint32_t flags, int32_t w, int32_t h, int32_t /*refresh*/) {
     if ((flags & WL_OUTPUT_MODE_CURRENT) == 0) {
