@@ -219,6 +219,13 @@ bool OverviewLauncherCapture::handleNiriOverviewKey(const KeyboardEvent& event) 
 }
 
 bool OverviewLauncherCapture::handleKeyboardEvent(const KeyboardEvent& event) {
+  if (m_panelManager != nullptr && (m_panelManager->isOpen() || m_panelManager->isPanelTransitionActive())) {
+    if (!m_instances.empty()) {
+      destroySurfaces();
+    }
+    return false;
+  }
+
   if (m_instances.empty() || m_wayland == nullptr) {
     return false;
   }

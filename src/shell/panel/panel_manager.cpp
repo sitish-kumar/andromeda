@@ -275,6 +275,10 @@ void PanelManager::setPanelClosedCallback(std::function<void()> callback) {
   m_panelClosedCallback = std::move(callback);
 }
 
+void PanelManager::setPanelOpenedCallback(std::function<void()> callback) {
+  m_panelOpenedCallback = std::move(callback);
+}
+
 void PanelManager::registerPanel(const std::string& id, std::unique_ptr<Panel> content) {
   m_panels[id] = std::move(content);
 }
@@ -708,6 +712,9 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
         });
       }
       kLog.debug("panel manager: opened \"{}\" as attached layer-shell", panelId);
+      if (m_panelOpenedCallback) {
+        m_panelOpenedCallback();
+      }
       return;
     }
 
@@ -772,6 +779,9 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     }
   });
   kLog.debug("panel manager: opened \"{}\"", panelId);
+  if (m_panelOpenedCallback) {
+    m_panelOpenedCallback();
+  }
 }
 
 void PanelManager::activateClickShield() {

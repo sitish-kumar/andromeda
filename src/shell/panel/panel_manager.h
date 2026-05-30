@@ -74,6 +74,7 @@ public:
   // grab whitelist so bar widgets keep receiving clicks while a panel is open.
   void setFocusGrabBarSurfacesProvider(std::function<std::vector<wl_surface*>()> provider);
   void setPanelClosedCallback(std::function<void()> callback);
+  void setPanelOpenedCallback(std::function<void()> callback);
 
   void registerPanel(const std::string& id, std::unique_ptr<Panel> content);
 
@@ -165,6 +166,7 @@ private:
   std::function<std::vector<InputRect>(wl_output*)> m_clickShieldExcludeRectsProvider;
   std::function<std::vector<wl_surface*>()> m_focusGrabBarSurfacesProvider;
   std::function<void()> m_panelClosedCallback;
+  std::function<void()> m_panelOpenedCallback;
   PanelClickShield m_clickShield;
   std::unique_ptr<FocusGrab> m_focusGrab;
 

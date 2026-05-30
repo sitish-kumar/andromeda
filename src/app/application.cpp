@@ -1154,12 +1154,16 @@ void Application::initUi() {
   m_overviewLauncherCapture.setEnabled(m_configService.config().shell.niriOverviewTypeToLaunchEnabled);
   m_overviewLauncherCapture.setOpenLauncherCallback(
       [this](std::string_view initialQuery, wl_output* output, std::string_view sourceBarName) {
+        if (m_panelManager.isOpenPanel("launcher")) {
+          return;
+        }
         m_panelManager.openPanel(
             "launcher", PanelOpenRequest{.output = output, .context = initialQuery, .sourceBarName = sourceBarName}
         );
       }
   );
   m_compositorPlatform.setOverviewChangeCallback([this]() { m_overviewLauncherCapture.sync(); });
+  m_panelManager.setPanelOpenedCallback([this]() { m_overviewLauncherCapture.sync(); });
   m_panelManager.setPanelClosedCallback([this]() {
     m_overviewLauncherCapture.sync();
     m_bar.reevaluateAutoHide();
