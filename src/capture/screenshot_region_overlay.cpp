@@ -6,6 +6,7 @@
 #include "core/keybind_matcher.h"
 #include "core/log.h"
 #include "core/ui_phase.h"
+#include "cursor-shape-v1-client-protocol.h"
 #include "render/animation/animation_manager.h"
 #include "render/core/color.h"
 #include "render/core/render_styles.h"
@@ -251,7 +252,7 @@ namespace capture {
 
     auto input = std::make_unique<InputArea>();
     input->setAcceptedButtons(InputArea::buttonMask(BTN_LEFT));
-    input->setCursorShape(1); // pointer - wp cursor shape set in dispatcher from bar usually
+    input->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_CROSSHAIR);
 
     input->setOnPress([this, output = inst.output](const InputArea::PointerData& data) {
       if (!data.pressed || data.button != BTN_LEFT) {
