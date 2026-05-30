@@ -1396,7 +1396,9 @@ void ConfigService::addWallpaperFavorite(std::string path) {
   }
 
   std::erase_if(m_wallpaperFavorites, [&](const WallpaperFavorite& favorite) { return favorite.path == path; });
-  m_wallpaperFavorites.push_back(WallpaperFavorite{.path = std::move(path), .themeMode = ThemeMode::Auto});
+  WallpaperFavorite favorite;
+  favorite.path = std::move(path);
+  m_wallpaperFavorites.push_back(std::move(favorite));
 
   syncWallpaperFavoritesToOverridesTable();
   if (!writeOverridesToFile()) {
