@@ -322,6 +322,8 @@ void SettingsWindow::destroyWindow() {
   m_selectedBarName.clear();
   m_selectedMonitorOverride.clear();
   m_editingWidgetName.clear();
+  m_editingCapsuleGroupId.clear();
+  m_selectedLaneWidgets.clear();
   m_pendingDeleteWidgetName.clear();
   m_pendingDeleteWidgetSettingPath.clear();
   m_renamingWidgetName.clear();
@@ -419,6 +421,8 @@ void SettingsWindow::clearStatusMessage() {
 
 void SettingsWindow::clearTransientSettingsState() {
   m_editingWidgetName.clear();
+  m_editingCapsuleGroupId.clear();
+  m_selectedLaneWidgets.clear();
   m_renamingWidgetName.clear();
   m_pendingDeleteWidgetName.clear();
   m_pendingDeleteWidgetSettingPath.clear();

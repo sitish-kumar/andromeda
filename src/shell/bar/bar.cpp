@@ -1527,7 +1527,7 @@ void Bar::populateWidgets(BarInstance& instance) {
         if (group == nullptr) {
           continue;
         }
-        const WidgetBarCapsuleSpec groupSpec = capsuleSpecFromGroup(*group);
+        const WidgetBarCapsuleSpec groupSpec = capsuleSpecFromGroup(instance.barConfig, *group);
         for (const auto& member : group->members) {
           createWidget(member, &groupSpec, &group->foreground, dest);
         }

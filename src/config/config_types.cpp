@@ -375,7 +375,7 @@ const BarCapsuleGroupStyle* findBarCapsuleGroupStyle(const BarConfig& bar, const
   return nullptr;
 }
 
-WidgetBarCapsuleSpec capsuleSpecFromGroup(const BarCapsuleGroupStyle& group) {
+WidgetBarCapsuleSpec capsuleSpecFromGroup(const BarConfig& bar, const BarCapsuleGroupStyle& group) {
   WidgetBarCapsuleSpec spec;
   spec.enabled = true;
   spec.group = group.id;
@@ -383,7 +383,14 @@ WidgetBarCapsuleSpec capsuleSpecFromGroup(const BarCapsuleGroupStyle& group) {
   spec.border = group.borderSpecified ? group.border : std::nullopt;
   spec.foreground = group.foreground;
   spec.padding = group.padding;
-  spec.radius = group.radius;
+  // "Auto" radius (no explicit group radius) inherits the bar's capsule radius; unset at both levels = pill.
+  if (group.radius.has_value()) {
+    spec.radius = group.radius;
+  } else if (bar.widgetCapsuleRadius.has_value()) {
+    spec.radius = std::clamp(static_cast<float>(*bar.widgetCapsuleRadius), 0.0f, 80.0f);
+  } else {
+    spec.radius = std::nullopt;
+  }
   spec.opacity = group.opacity;
   return spec;
 }

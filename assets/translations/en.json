@@ -886,13 +886,19 @@
           "clear": "Clear",
           "edit": "Edit style",
           "ungroup": "Ungroup",
+          "style": "Style",
           "fill": "Background",
+          "fill-description": "Capsule background color role; fixed hex colors are also supported",
           "border": "Border",
+          "border-description": "Capsule outline color role; leave on Default for no outline",
           "foreground": "Foreground",
+          "foreground-description": "Icon and label color role for widgets in this group",
           "padding": "Padding",
+          "padding-description": "Inner padding between the capsule edge and its widgets, in pixels",
           "opacity": "Opacity",
-          "radius-auto": "Automatic radius",
-          "radius": "Radius"
+          "opacity-description": "Capsule background opacity",
+          "radius": "Radius",
+          "radius-description": "Capsule corner radius in pixels; Auto inherits the bar's capsule radius"
         },
         "settings": {
           "empty": "No settings match the current filters.",

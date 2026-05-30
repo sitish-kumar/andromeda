@@ -292,7 +292,7 @@ struct WidgetConfig {
 [[nodiscard]] const BarCapsuleGroupStyle* findBarCapsuleGroupStyle(const BarConfig& bar, const std::string& id);
 
 // Builds the capsule spec a group's member widgets render with (style taken from the group).
-[[nodiscard]] WidgetBarCapsuleSpec capsuleSpecFromGroup(const BarCapsuleGroupStyle& group);
+[[nodiscard]] WidgetBarCapsuleSpec capsuleSpecFromGroup(const BarConfig& bar, const BarCapsuleGroupStyle& group);
 [[nodiscard]] float
 resolveWidgetContentScale(float barScale, const WidgetConfig* widget, std::string_view context = "widget.scale");
 

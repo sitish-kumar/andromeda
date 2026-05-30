@@ -32,6 +32,11 @@
 #include <vector>
 
 namespace settings {
+
+  // Defined in settings_content_common.cpp (header not included here to avoid a makeLabel overload clash).
+  [[nodiscard]] std::string formatSliderValue(double value, bool integerValue);
+  [[nodiscard]] std::optional<double> parseDoubleInput(std::string_view text);
+
   namespace {
 
     constexpr float kDragStartThresholdPx = 6.0f;
@@ -1895,8 +1900,9 @@ namespace settings {
       block.addChild(std::move(inspector));
     }
 
-    std::unique_ptr<Node> makeGroupColorRow(
-        const BarWidgetEditorContext& ctx, std::string_view labelText, std::string selectedValue, bool allowNone,
+    // Color picker control (no label) — placed into a standard settings row via ctx.makeRow.
+    std::unique_ptr<Node> makeGroupColorControl(
+        const BarWidgetEditorContext& ctx, std::string selectedValue, bool allowNone,
         std::function<void(std::optional<ColorSpec>)> onChange
     ) {
       ColorSpecSelectOptions opts;
@@ -1906,25 +1912,30 @@ namespace settings {
       opts.fontSize = Style::fontSizeBody * ctx.scale;
       opts.controlHeight = Style::controlHeight * ctx.scale;
       opts.glyphSize = Style::fontSizeBody * ctx.scale;
-      opts.width = 170.0f * ctx.scale;
-      auto select = makeColorSpecSelect(
+      opts.width = 190.0f * ctx.scale;
+      return makeColorSpecSelect(
           std::move(opts),
           [onChange](std::string value) { onChange(colorSpecFromConfigString(value, "bar.capsule_group.color")); },
           [onChange]() { onChange(std::nullopt); }
       );
-      auto row = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * ctx.scale, .fillWidth = true});
-      auto label =
-          makeLabel(labelText, Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      label->setFlexGrow(1.0f);
-      row->addChild(std::move(label));
-      row->addChild(std::move(select));
-      return row;
     }
 
-    std::unique_ptr<Node> makeGroupSliderRow(
-        const BarWidgetEditorContext& ctx, std::string_view labelText, double value, double minV, double maxV,
-        double step, std::function<void(double)> onCommit
+    // Slider + editable numeric value field (no label), matching the shell's standard slider control.
+    std::unique_ptr<Node> makeGroupSliderControl(
+        const BarWidgetEditorContext& ctx, double value, double minV, double maxV, double step, bool integerValue,
+        std::function<void(double)> onCommit
     ) {
+      Input* valueInputPtr = nullptr;
+      auto valueInput = ui::input({
+          .out = &valueInputPtr,
+          .value = formatSliderValue(value, integerValue),
+          .fontSize = Style::fontSizeCaption * ctx.scale,
+          .controlHeight = Style::controlHeightSm * ctx.scale,
+          .horizontalPadding = Style::spaceXs * ctx.scale,
+          .width = 50.0f * ctx.scale,
+          .height = Style::controlHeightSm * ctx.scale,
+      });
+
       Slider* sliderPtr = nullptr;
       auto slider = ui::slider({
           .out = &sliderPtr,
@@ -1937,15 +1948,68 @@ namespace settings {
           .controlHeight = Style::controlHeight * ctx.scale,
           .width = Style::sliderDefaultWidth * ctx.scale,
           .height = Style::controlHeight * ctx.scale,
+          .onValueChanged = [valueInputPtr, integerValue](double next) {
+            valueInputPtr->setInvalid(false);
+            valueInputPtr->setValue(formatSliderValue(next, integerValue));
+          },
       });
       slider->setOnDragEnd([sliderPtr, onCommit]() { onCommit(static_cast<double>(sliderPtr->value())); });
-      auto row = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * ctx.scale, .fillWidth = true});
-      auto label =
-          makeLabel(labelText, Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      label->setFlexGrow(1.0f);
-      row->addChild(std::move(label));
-      row->addChild(std::move(slider));
-      return row;
+
+      const auto commitInputText = [sliderPtr, valueInputPtr, minV, maxV, integerValue,
+                                    onCommit](const std::string& text) {
+        const auto parsed = parseDoubleInput(text);
+        if (!parsed.has_value() || *parsed < minV || *parsed > maxV) {
+          valueInputPtr->setInvalid(true);
+          return;
+        }
+        valueInputPtr->setInvalid(false);
+        sliderPtr->setValue(*parsed);
+        valueInputPtr->setValue(formatSliderValue(sliderPtr->value(), integerValue));
+        onCommit(static_cast<double>(sliderPtr->value()));
+      };
+      valueInput->setOnChange([valueInputPtr](const std::string& /*text*/) { valueInputPtr->setInvalid(false); });
+      valueInput->setOnSubmit([commitInputText](const std::string& text) { commitInputText(text); });
+      valueInput->setOnFocusLoss([commitInputText, valueInputPtr]() { commitInputText(valueInputPtr->value()); });
+
+      auto wrap = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * ctx.scale});
+      wrap->addChild(std::move(slider));
+      wrap->addChild(std::move(valueInput));
+      return wrap;
+    }
+
+    // Radius Auto | Custom segmented control + stepper (no label).
+    std::unique_ptr<Node> makeGroupRadiusControl(
+        const BarWidgetEditorContext& ctx, std::optional<float> radius,
+        std::function<void(std::optional<float>)> onChange
+    ) {
+      const int radiusValue = static_cast<int>(std::lround(std::clamp(radius.value_or(12.0f), 0.0f, 80.0f)));
+      auto wrap = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * ctx.scale});
+      wrap->addChild(
+          ui::segmented({
+              .options =
+                  std::vector<ui::SegmentedOption>{
+                      {.label = i18n::tr("common.states.auto")},
+                      {.label = i18n::tr("common.states.custom")},
+                  },
+              .selectedIndex = static_cast<std::size_t>(radius.has_value() ? 1 : 0),
+              .scale = ctx.scale,
+              .onChange = [onChange, radiusValue](std::size_t index) {
+                onChange(index == 0 ? std::optional<float>{} : std::optional<float>{static_cast<float>(radiusValue)});
+              },
+          })
+      );
+      wrap->addChild(
+          ui::stepper({
+              .minValue = 0,
+              .maxValue = 80,
+              .step = 1,
+              .value = radiusValue,
+              .enabled = radius.has_value(),
+              .scale = ctx.scale,
+              .onValueCommitted = [onChange](int v) { onChange(std::optional<float>{static_cast<float>(v)}); },
+          })
+      );
+      return wrap;
     }
 
     void addCapsuleGroupInspector(Flex& block, const SettingEntry& entry, const BarWidgetEditorContext& ctx) {
@@ -1972,7 +2036,7 @@ namespace settings {
             flex.setPadding(Style::spaceMd * ctx.scale);
             flex.setRadius(Style::scaledRadiusMd(ctx.scale));
             flex.setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
-            flex.setBorder(colorSpecFromRole(ColorRole::Primary, 0.5f), Style::borderWidth);
+            flex.setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
           },
       });
       if (ctx.setScrollTarget) {
@@ -2018,68 +2082,90 @@ namespace settings {
           })
       );
       inspector->addChild(std::move(headerRow));
-      inspector->addChild(ui::separator());
 
-      inspector->addChild(makeGroupColorRow(
-          ctx, i18n::tr("settings.entities.widget.group.fill"), colorSpecConfigValue(style.fill), false,
-          [mutateGroup](std::optional<ColorSpec> c) {
-            if (c.has_value()) {
-              mutateGroup([&](BarCapsuleGroupStyle& g) { g.fill = *c; });
-            }
-          }
-      ));
-      inspector->addChild(makeGroupColorRow(
-          ctx, i18n::tr("settings.entities.widget.group.border"), optionalColorSpecConfigValue(style.border), true,
-          [mutateGroup](std::optional<ColorSpec> c) {
-            mutateGroup([&](BarCapsuleGroupStyle& g) {
-              g.borderSpecified = true;
-              g.border = c;
-            });
-          }
-      ));
-      inspector->addChild(makeGroupColorRow(
-          ctx, i18n::tr("settings.entities.widget.group.foreground"), optionalColorSpecConfigValue(style.foreground),
-          true,
-          [mutateGroup](std::optional<ColorSpec> c) { mutateGroup([&](BarCapsuleGroupStyle& g) { g.foreground = c; }); }
-      ));
-      inspector->addChild(makeGroupSliderRow(
-          ctx, i18n::tr("settings.entities.widget.group.padding"), static_cast<double>(style.padding), 0.0, 48.0, 1.0,
-          [mutateGroup](double v) { mutateGroup([&](BarCapsuleGroupStyle& g) { g.padding = static_cast<float>(v); }); }
-      ));
-      inspector->addChild(makeGroupSliderRow(
-          ctx, i18n::tr("settings.entities.widget.group.opacity"), static_cast<double>(style.opacity), 0.0, 1.0, 0.05,
-          [mutateGroup](double v) { mutateGroup([&](BarCapsuleGroupStyle& g) { g.opacity = static_cast<float>(v); }); }
-      ));
+      // Controls live on a nested Surface panel and use the standard settings row (ctx.makeRow), matching the
+      // per-widget settings editor.
+      auto panel = ui::column({
+          .align = FlexAlign::Stretch,
+          .gap = Style::spaceXs * ctx.scale,
+          .configure = [&ctx](Flex& flex) {
+            flex.setPadding(Style::spaceSm * ctx.scale);
+            flex.setRadius(Style::scaledRadiusSm(ctx.scale));
+            flex.setFill(colorSpecFromRole(ColorRole::Surface));
+            flex.setBorder(colorSpecFromRole(ColorRole::Outline, 0.22f), Style::borderWidth);
+          },
+      });
+      Flex* panelPtr = panel.get();
 
-      {
-        auto radiusRow = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * ctx.scale, .fillWidth = true});
-        auto label = makeLabel(
-            i18n::tr("settings.entities.widget.group.radius-auto"), Style::fontSizeCaption * ctx.scale,
-            colorSpecFromRole(ColorRole::OnSurfaceVariant)
-        );
-        label->setFlexGrow(1.0f);
-        radiusRow->addChild(std::move(label));
-        radiusRow->addChild(
-            ui::toggle({
-                .checked = !style.radius.has_value(),
-                .scale = ctx.scale,
-                .onChange = [mutateGroup](bool autoRadius) {
-                  mutateGroup([&](BarCapsuleGroupStyle& g) {
-                    g.radius = autoRadius ? std::optional<float>{} : std::optional<float>{12.0f};
-                  });
-                },
-            })
-        );
-        inspector->addChild(std::move(radiusRow));
-      }
-      if (style.radius.has_value()) {
-        inspector->addChild(makeGroupSliderRow(
-            ctx, i18n::tr("settings.entities.widget.group.radius"), static_cast<double>(*style.radius), 0.0, 80.0, 1.0,
-            [mutateGroup](double v) { mutateGroup([&](BarCapsuleGroupStyle& g) { g.radius = static_cast<float>(v); }); }
-        ));
-      }
+      const auto groupEntry = [&](std::string_view field) {
+        const std::string base = std::string("settings.entities.widget.group.") + std::string(field);
+        return SettingEntry{
+            .section = "bar",
+            .group = "capsule-group",
+            .title = i18n::tr(base),
+            .subtitle = i18n::tr(base + "-description"),
+            .path = {"bar", barName, "capsule_group", groupId, std::string(field)},
+            .control = {},
+            .searchText = {},
+            .visibleWhen = std::nullopt,
+        };
+      };
 
-      inspector->addChild(ui::separator());
+      panel->addChild(makeMiniSectionHeader(i18n::tr("settings.entities.widget.group.style"), ctx.scale, false));
+
+      ctx.makeRow(
+          *panelPtr, groupEntry("fill"),
+          makeGroupColorControl(
+              ctx, colorSpecConfigValue(style.fill), false, [mutateGroup](std::optional<ColorSpec> c) {
+                if (c.has_value()) {
+                  mutateGroup([&](BarCapsuleGroupStyle& g) { g.fill = *c; });
+                }
+              }
+          )
+      );
+      ctx.makeRow(
+          *panelPtr, groupEntry("border"),
+          makeGroupColorControl(
+              ctx, optionalColorSpecConfigValue(style.border), true, [mutateGroup](std::optional<ColorSpec> c) {
+                mutateGroup([&](BarCapsuleGroupStyle& g) {
+                  g.borderSpecified = true;
+                  g.border = c;
+                });
+              }
+          )
+      );
+      ctx.makeRow(
+          *panelPtr, groupEntry("foreground"),
+          makeGroupColorControl(
+              ctx, optionalColorSpecConfigValue(style.foreground), true, [mutateGroup](std::optional<ColorSpec> c) {
+                mutateGroup([&](BarCapsuleGroupStyle& g) { g.foreground = c; });
+              }
+          )
+      );
+      ctx.makeRow(
+          *panelPtr, groupEntry("padding"),
+          makeGroupSliderControl(
+              ctx, static_cast<double>(style.padding), 0.0, 48.0, 1.0, true, [mutateGroup](double v) {
+                mutateGroup([&](BarCapsuleGroupStyle& g) { g.padding = static_cast<float>(v); });
+              }
+          )
+      );
+      ctx.makeRow(
+          *panelPtr, groupEntry("opacity"),
+          makeGroupSliderControl(
+              ctx, static_cast<double>(style.opacity), 0.0, 1.0, 0.05, false, [mutateGroup](double v) {
+                mutateGroup([&](BarCapsuleGroupStyle& g) { g.opacity = static_cast<float>(v); });
+              }
+          )
+      );
+      ctx.makeRow(
+          *panelPtr, groupEntry("radius"),
+          makeGroupRadiusControl(ctx, style.radius, [mutateGroup](std::optional<float> r) {
+            mutateGroup([&](BarCapsuleGroupStyle& g) { g.radius = r; });
+          })
+      );
+
+      inspector->addChild(std::move(panel));
       inspector->addChild(
           ui::button({
               .text = i18n::tr("settings.entities.widget.group.ungroup"),
@@ -2482,21 +2568,19 @@ namespace settings {
     // Builds a draggable widget card (used for both loose lane widgets and group members).
     auto makeWidgetCard = [&ctx, &wireDrag](
                               const std::string& name, std::size_t homeZoneIndex, std::size_t itemIndex, bool inherited,
-                              bool isMember, std::string_view removeGlyph, std::function<void()> removeAction,
-                              bool selectable, bool isSelected, std::function<void()> toggleSelect
+                              std::string_view removeGlyph, std::function<void()> removeAction, bool selectable,
+                              bool isSelected, std::function<void()> toggleSelect
                           ) -> std::unique_ptr<Flex> {
       const auto info = widgetReferenceInfo(ctx.config, name, false);
       auto card = ui::column({
           .align = FlexAlign::Stretch,
           .gap = Style::spaceXs * ctx.scale,
-          .configure = [&ctx, isMember, isSelected](Flex& flex) {
+          .configure = [&ctx, isSelected](Flex& flex) {
             flex.setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
             flex.setRadius(Style::scaledRadiusSm(ctx.scale));
             flex.setFill(colorSpecFromRole(ColorRole::Surface, 0.72f));
             if (isSelected) {
               flex.setBorder(colorSpecFromRole(ColorRole::Primary), Style::borderWidth * 1.5f);
-            } else if (isMember) {
-              flex.setBorder(colorSpecFromRole(ColorRole::Primary, 0.4f), Style::borderWidth);
             } else {
               flex.setBorder(colorSpecFromRole(ColorRole::Outline, 0.22f), Style::borderWidth);
             }
@@ -2770,14 +2854,18 @@ namespace settings {
             continue;
           }
 
+          // Tint the container by the group's own fill so groups with different colors are distinguishable.
+          ColorSpec groupFillTint = group->fill;
+          groupFillTint.alpha *= 0.12f;
+          const ColorSpec groupFillBorder = group->fill;
           auto container = ui::column({
               .align = FlexAlign::Stretch,
               .gap = Style::spaceXs * ctx.scale,
-              .configure = [&ctx](Flex& flex) {
+              .configure = [&ctx, groupFillTint, groupFillBorder](Flex& flex) {
                 flex.setPadding(Style::spaceXs * ctx.scale);
                 flex.setRadius(Style::scaledRadiusSm(ctx.scale));
-                flex.setFill(colorSpecFromRole(ColorRole::Primary, 0.08f));
-                flex.setBorder(colorSpecFromRole(ColorRole::Primary, 0.5f), Style::borderWidth);
+                flex.setFill(groupFillTint);
+                flex.setBorder(groupFillBorder, Style::borderWidth);
               },
           });
           auto* containerPtr = container.get();
@@ -2799,7 +2887,6 @@ namespace settings {
                   .radius = std::max(1.0f, 2.0f * ctx.scale),
                   .width = Style::fontSizeCaption * ctx.scale,
                   .height = Style::fontSizeCaption * ctx.scale,
-                  .opacity = group->opacity,
               })
           );
           {
@@ -2941,7 +3028,7 @@ namespace settings {
               };
             }
             auto memberCard = makeWidgetCard(
-                group->members[m], groupZoneIndex, m, inherited, true, "stack-pop", std::move(eject), false, false,
+                group->members[m], groupZoneIndex, m, inherited, "stack-pop", std::move(eject), false, false,
                 std::function<void()>{}
             );
             groupItemNodes->push_back(memberCard.get());
@@ -2979,7 +3066,7 @@ namespace settings {
           };
         }
         auto card = makeWidgetCard(
-            entryName, laneZoneIndex, i, inherited, false, "close", std::move(removeClose), !inherited, isSelected,
+            entryName, laneZoneIndex, i, inherited, "close", std::move(removeClose), !inherited, isSelected,
             std::move(toggleSelect)
         );
         laneItemNodes->push_back(card.get());
