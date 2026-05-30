@@ -313,14 +313,56 @@ namespace settings {
     ColorSpec widgetBadgeColor(WidgetReferenceKind kind) {
       switch (kind) {
       case WidgetReferenceKind::BuiltIn:
-        return colorSpecFromRole(ColorRole::Primary, 0.16f);
+        return colorSpecFromRole(ColorRole::Primary);
       case WidgetReferenceKind::Named:
       case WidgetReferenceKind::Preset:
-        return colorSpecFromRole(ColorRole::Secondary, 0.18f);
+        return colorSpecFromRole(ColorRole::Secondary);
       case WidgetReferenceKind::Unknown:
-        return colorSpecFromRole(ColorRole::Error, 0.16f);
+        return colorSpecFromRole(ColorRole::Error);
       }
-      return colorSpecFromRole(ColorRole::OnSurfaceVariant, 0.12f);
+      return colorSpecFromRole(ColorRole::SurfaceVariant);
+    }
+
+    // Readable foreground (icon + text) for the badge background above.
+    ColorSpec widgetBadgeOnColor(WidgetReferenceKind kind) {
+      switch (kind) {
+      case WidgetReferenceKind::BuiltIn:
+        return colorSpecFromRole(ColorRole::OnPrimary);
+      case WidgetReferenceKind::Named:
+      case WidgetReferenceKind::Preset:
+        return colorSpecFromRole(ColorRole::OnSecondary);
+      case WidgetReferenceKind::Unknown:
+        return colorSpecFromRole(ColorRole::OnError);
+      }
+      return colorSpecFromRole(ColorRole::OnSurfaceVariant);
+    }
+
+    // Compact kind indicator used on lane cards in place of the text badge.
+    std::string_view widgetBadgeGlyph(WidgetReferenceKind kind) {
+      switch (kind) {
+      case WidgetReferenceKind::BuiltIn:
+        return "puzzle";
+      case WidgetReferenceKind::Named:
+        return "tag";
+      case WidgetReferenceKind::Preset:
+        return "script";
+      case WidgetReferenceKind::Unknown:
+        return "help-circle";
+      }
+      return "help-circle";
+    }
+
+    ColorSpec widgetBadgeGlyphColor(WidgetReferenceKind kind) {
+      switch (kind) {
+      case WidgetReferenceKind::BuiltIn:
+        return colorSpecFromRole(ColorRole::Primary);
+      case WidgetReferenceKind::Named:
+      case WidgetReferenceKind::Preset:
+        return colorSpecFromRole(ColorRole::Secondary);
+      case WidgetReferenceKind::Unknown:
+        return colorSpecFromRole(ColorRole::Error);
+      }
+      return colorSpecFromRole(ColorRole::OnSurfaceVariant);
     }
 
     void collectWidgetReferenceNames(const std::vector<std::string>& widgets, std::unordered_set<std::string>& seen) {
@@ -1588,16 +1630,19 @@ namespace settings {
             ui::row(
                 {
                     .align = FlexAlign::Center,
+                    .gap = Style::spaceXs * ctx.scale,
                     .configure =
                         [&ctx, &info](Flex& flex) {
-                          flex.setPadding(0, Style::spaceXs * ctx.scale);
+                          flex.setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
                           flex.setRadius(Style::scaledRadiusSm(ctx.scale));
                           flex.setFill(widgetBadgeColor(info.kind));
                         },
                 },
+                makeGlyph(
+                    widgetBadgeGlyph(info.kind), Style::fontSizeCaption * ctx.scale, widgetBadgeOnColor(info.kind)
+                ),
                 makeLabel(
-                    info.badge, Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurface),
-                    FontWeight::Bold
+                    info.badge, Style::fontSizeCaption * ctx.scale, widgetBadgeOnColor(info.kind), FontWeight::Bold
                 )
             )
         );
@@ -2417,6 +2462,11 @@ namespace settings {
     const std::string barName = entry.path.size() >= 2 ? entry.path[1] : std::string{};
     auto zones = std::make_shared<std::vector<DropZone>>();
 
+    // Shared compact icon-button footprint for lane cards and group headers.
+    const float iconSize = Style::controlHeightSm * 0.72f * ctx.scale;
+    const float iconPad = 2.0f * ctx.scale;
+    const float rowGap = 2.0f * ctx.scale;
+
     // Wires a drag handle so its card can be dragged between any registered zone (lane or group).
     auto wireDrag =
         [&ctx, zones,
@@ -2566,7 +2616,7 @@ namespace settings {
         };
 
     // Builds a draggable widget card (used for both loose lane widgets and group members).
-    auto makeWidgetCard = [&ctx, &wireDrag](
+    auto makeWidgetCard = [&ctx, &wireDrag, iconSize, iconPad, rowGap](
                               const std::string& name, std::size_t homeZoneIndex, std::size_t itemIndex, bool inherited,
                               std::string_view removeGlyph, std::function<void()> removeAction, bool selectable,
                               bool isSelected, std::function<void()> toggleSelect
@@ -2574,9 +2624,8 @@ namespace settings {
       const auto info = widgetReferenceInfo(ctx.config, name, false);
       auto card = ui::column({
           .align = FlexAlign::Stretch,
-          .gap = Style::spaceXs * ctx.scale,
           .configure = [&ctx, isSelected](Flex& flex) {
-            flex.setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
+            flex.setPadding(2.0f * ctx.scale, Style::spaceXs * ctx.scale);
             flex.setRadius(Style::scaledRadiusSm(ctx.scale));
             flex.setFill(colorSpecFromRole(ColorRole::Surface, 0.72f));
             if (isSelected) {
@@ -2588,53 +2637,22 @@ namespace settings {
       });
       auto* cardPtr = card.get();
 
-      auto top = ui::row({.align = FlexAlign::Center, .gap = Style::spaceXs * ctx.scale});
+      // Single compact row: [checkbox] [drag] title… [kind glyph] [settings] [remove].
+      auto row = ui::row({.align = FlexAlign::Center, .gap = rowGap});
       if (selectable) {
-        top->addChild(
+        row->addChild(
             ui::button({
                 .glyph = isSelected ? "checkbox" : "square",
                 .glyphSize = Style::fontSizeCaption * ctx.scale,
                 .variant = isSelected ? ButtonVariant::Default : ButtonVariant::Ghost,
-                .minWidth = Style::controlHeightSm * ctx.scale,
-                .minHeight = Style::controlHeightSm * ctx.scale,
-                .padding = Style::spaceXs * ctx.scale,
+                .minWidth = iconSize,
+                .minHeight = iconSize,
+                .padding = iconPad,
                 .radius = Style::scaledRadiusSm(ctx.scale),
                 .onClick = std::move(toggleSelect),
             })
         );
       }
-      {
-        auto titleLabel = makeLabel(
-            info.title, Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold
-        );
-        titleLabel->setMaxLines(1);
-        titleLabel->setFlexGrow(1.0f);
-        top->addChild(std::move(titleLabel));
-      }
-      top->addChild(
-          ui::row(
-              {
-                  .align = FlexAlign::Center,
-                  .configure =
-                      [&ctx, &info](Flex& flex) {
-                        flex.setPadding(0, Style::spaceXs * ctx.scale);
-                        flex.setRadius(Style::scaledRadiusSm(ctx.scale));
-                        flex.setFill(widgetBadgeColor(info.kind));
-                      },
-              },
-              makeLabel(
-                  info.badge, Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurface),
-                  FontWeight::Bold
-              )
-          )
-      );
-      card->addChild(std::move(top));
-
-      if (info.kind != WidgetReferenceKind::BuiltIn && !info.detail.empty()) {
-        card->addChild(makeSettingSubtitleLabel(info.detail, ctx.scale));
-      }
-
-      auto actions = ui::row({.align = FlexAlign::Center, .gap = Style::spaceXs * ctx.scale});
       if (!inherited) {
         Button* dragBtnPtr = nullptr;
         auto dragBtn = ui::button({
@@ -2642,24 +2660,36 @@ namespace settings {
             .glyph = "menu-2",
             .glyphSize = Style::fontSizeCaption * ctx.scale,
             .variant = ButtonVariant::Ghost,
-            .minWidth = Style::controlHeightSm * ctx.scale,
-            .minHeight = Style::controlHeightSm * ctx.scale,
-            .padding = Style::spaceXs * ctx.scale,
+            .minWidth = iconSize,
+            .minHeight = iconSize,
+            .padding = iconPad,
             .radius = Style::scaledRadiusSm(ctx.scale),
             .configure = [](Button& button) { button.setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_MOVE); },
         });
         wireDrag(*dragBtn, dragBtnPtr, cardPtr, homeZoneIndex, itemIndex);
-        actions->addChild(std::move(dragBtn));
+        row->addChild(std::move(dragBtn));
       }
+      {
+        auto titleLabel = makeLabel(
+            info.title, Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurface),
+            FontWeight::SemiBold
+        );
+        titleLabel->setMaxLines(1);
+        titleLabel->setFlexGrow(1.0f);
+        row->addChild(std::move(titleLabel));
+      }
+      row->addChild(
+          makeGlyph(widgetBadgeGlyph(info.kind), Style::fontSizeCaption * ctx.scale, widgetBadgeGlyphColor(info.kind))
+      );
       if (!widgetTypeForReference(ctx.config, name).empty()) {
-        actions->addChild(
+        row->addChild(
             ui::button({
                 .glyph = "settings",
                 .glyphSize = Style::fontSizeCaption * ctx.scale,
                 .variant = ctx.editingWidgetName == name ? ButtonVariant::Default : ButtonVariant::Ghost,
-                .minWidth = Style::controlHeightSm * ctx.scale,
-                .minHeight = Style::controlHeightSm * ctx.scale,
-                .padding = Style::spaceXs * ctx.scale,
+                .minWidth = iconSize,
+                .minHeight = iconSize,
+                .padding = iconPad,
                 .radius = Style::scaledRadiusSm(ctx.scale),
                 .onClick = [&editingWidgetName = ctx.editingWidgetName, name,
                             &pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,
@@ -2676,21 +2706,20 @@ namespace settings {
         );
       }
       if (!inherited && removeAction) {
-        actions->addChild(ui::spacer());
-        actions->addChild(
+        row->addChild(
             ui::button({
                 .glyph = std::string(removeGlyph),
                 .glyphSize = Style::fontSizeCaption * ctx.scale,
                 .variant = ButtonVariant::Ghost,
-                .minWidth = Style::controlHeightSm * ctx.scale,
-                .minHeight = Style::controlHeightSm * ctx.scale,
-                .padding = Style::spaceXs * ctx.scale,
+                .minWidth = iconSize,
+                .minHeight = iconSize,
+                .padding = iconPad,
                 .radius = Style::scaledRadiusSm(ctx.scale),
                 .onClick = std::move(removeAction),
             })
         );
       }
-      card->addChild(std::move(actions));
+      card->addChild(std::move(row));
       return card;
     };
 
@@ -2745,6 +2774,8 @@ namespace settings {
           {
               .align = FlexAlign::Center,
               .gap = Style::spaceXs * ctx.scale,
+              // Fixed height so lanes with an Override badge / Reset button line up with plain ones.
+              .minHeight = Style::controlHeightSm * ctx.scale,
           },
           makeLabel(
               laneLabel(laneKey), Style::fontSizeBody * ctx.scale, colorSpecFromRole(ColorRole::OnSurface),
@@ -2895,7 +2926,7 @@ namespace settings {
           auto* groupIndicatorPtr = groupIndicator.get();
           container->addChild(std::move(groupIndicator));
 
-          auto groupHeader = ui::row({.align = FlexAlign::Center, .gap = Style::spaceXs * ctx.scale});
+          auto groupHeader = ui::row({.align = FlexAlign::Center, .gap = rowGap});
           groupHeader->addChild(
               ui::box({
                   .fill = group->fill,
@@ -2910,7 +2941,7 @@ namespace settings {
           {
             auto groupLabel = makeLabel(
                 i18n::tr("settings.entities.widget.group.title"), Style::fontSizeCaption * ctx.scale,
-                colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold
+                colorSpecFromRole(ColorRole::OnSurface), FontWeight::SemiBold
             );
             groupLabel->setFlexGrow(1.0f);
             groupHeader->addChild(std::move(groupLabel));
@@ -2920,9 +2951,9 @@ namespace settings {
                   .glyph = "settings",
                   .glyphSize = Style::fontSizeCaption * ctx.scale,
                   .variant = ButtonVariant::Ghost,
-                  .minWidth = Style::controlHeightSm * ctx.scale,
-                  .minHeight = Style::controlHeightSm * ctx.scale,
-                  .padding = Style::spaceXs * ctx.scale,
+                  .minWidth = iconSize,
+                  .minHeight = iconSize,
+                  .padding = iconPad,
                   .radius = Style::scaledRadiusSm(ctx.scale),
                   .onClick = [&editingCapsuleGroupId = ctx.editingCapsuleGroupId,
                               &editingWidgetName = ctx.editingWidgetName, gid, requestRebuild = ctx.requestRebuild]() {
@@ -2938,9 +2969,9 @@ namespace settings {
                     .glyph = "stack-pop",
                     .glyphSize = Style::fontSizeCaption * ctx.scale,
                     .variant = ButtonVariant::Ghost,
-                    .minWidth = Style::controlHeightSm * ctx.scale,
-                    .minHeight = Style::controlHeightSm * ctx.scale,
-                    .padding = Style::spaceXs * ctx.scale,
+                    .minWidth = iconSize,
+                    .minHeight = iconSize,
+                    .padding = iconPad,
                     .radius = Style::scaledRadiusSm(ctx.scale),
                     .onClick = [config = &ctx.config, barName, lanePath, gid, setOverrides = ctx.setOverrides]() {
                       const BarConfig* bar = findBar(*config, barName);
@@ -2974,9 +3005,9 @@ namespace settings {
                 .glyph = "menu-2",
                 .glyphSize = Style::fontSizeCaption * ctx.scale,
                 .variant = ButtonVariant::Ghost,
-                .minWidth = Style::controlHeightSm * ctx.scale,
-                .minHeight = Style::controlHeightSm * ctx.scale,
-                .padding = Style::spaceXs * ctx.scale,
+                .minWidth = iconSize,
+                .minHeight = iconSize,
+                .padding = iconPad,
                 .radius = Style::scaledRadiusSm(ctx.scale),
                 .configure = [](Button& button) { button.setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_MOVE); },
             });
