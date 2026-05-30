@@ -3,6 +3,8 @@
 #include "app/deferred_call_poll_source.h"
 #include "app/main_loop.h"
 #include "app/timer_poll_source.h"
+#include "calendar/calendar_poll_source.h"
+#include "calendar/calendar_service.h"
 #include "capture/screenshot_service.h"
 #include "compositors/compositor_platform.h"
 #include "config/config_poll_source.h"
@@ -232,9 +234,11 @@ private:
   IpcService m_ipcService;
   IpcPollSource m_ipcPollSource{m_ipcService};
   WeatherService m_weatherService;
+  CalendarService m_calendarService;
   HttpClientPollSource m_httpClientPollSource{m_httpClient};
   FileWatchPollSource m_fileWatchPollSource{m_fileWatcher};
   WeatherPollSource m_weatherPollSource{m_weatherService};
+  CalendarPollSource m_calendarPollSource{m_calendarService};
   Timer m_trayInitTimer;
   Timer m_polkitInitTimer;
   Timer m_clipboardAutoPasteTimer;

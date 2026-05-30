@@ -1374,6 +1374,22 @@ namespace settings {
       e.visibleWhen = weatherOn;
       entries.push_back(std::move(e));
     }
+    const SettingVisibility calendarOn{{"calendar", "enabled"}, {"true"}};
+    entries.push_back(makeEntry(
+        "services", "calendar", tr("settings.schema.services.calendar.label"),
+        tr("settings.schema.services.calendar.description"), {"calendar", "enabled"},
+        ToggleSetting{cfg.calendar.enabled}, "calendar events caldav google"
+    ));
+    {
+      auto e = makeEntry(
+          "services", "calendar", tr("settings.schema.services.calendar-refresh-interval.label"),
+          tr("settings.schema.services.calendar-refresh-interval.description"), {"calendar", "refresh_minutes"},
+          SliderSetting{cfg.calendar.refreshMinutes, 5.0f, 240.0f, 5.0f, true}, "calendar sync"
+      );
+      e.visibleWhen = calendarOn;
+      entries.push_back(std::move(e));
+    }
+
     entries.push_back(makeEntry(
         "services", "audio", tr("settings.schema.services.audio-overdrive.label"),
         tr("settings.schema.services.audio-overdrive.description"), {"audio", "enable_overdrive"},

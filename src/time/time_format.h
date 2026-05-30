@@ -35,5 +35,8 @@ std::string formatTimeAgo(std::chrono::system_clock::time_point tp);
 // Formats a std::tm with strftime semantics using a dynamically sized buffer.
 [[nodiscard]] std::string formatStrftime(std::string_view fmt, const std::tm& tm);
 
+// Formats a time_point as UTC (gmtime) with strftime semantics, e.g. "%Y-%m-%dT%H:%M:%SZ".
+[[nodiscard]] std::string formatUtcTime(std::chrono::system_clock::time_point tp, std::string_view fmt);
+
 // Formats a filesystem modification time as "YYYY-MM-DD HH:MM".
 [[nodiscard]] std::string formatFileTime(const std::filesystem::file_time_type& time);

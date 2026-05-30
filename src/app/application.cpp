@@ -144,7 +144,8 @@ namespace {
 } // namespace
 
 Application::Application()
-    : m_lockKeysService(m_wayland), m_gammaService(m_wayland), m_weatherService(m_configService, m_httpClient) {
+    : m_lockKeysService(m_wayland), m_gammaService(m_wayland), m_weatherService(m_configService, m_httpClient),
+      m_calendarService(m_configService, m_httpClient) {
   m_notificationManager.loadPersistedHistory();
   notify::setInstance(&m_notificationManager);
 
@@ -948,6 +949,7 @@ void Application::initServices() {
   }
 
   m_weatherService.initialize();
+  m_calendarService.initialize();
   auto syncNightLightWeatherCoordinates = [this]() {
     m_gammaService.setWeatherLocationConfigured(m_weatherService.enabled() && m_weatherService.locationConfigured());
     const auto coords = m_weatherService.resolvedCoordinates();
@@ -1103,6 +1105,9 @@ void Application::initUi() {
   m_settingsWindow.setOpenWallpaperPanel([this]() {
     wl_output* output = m_compositorPlatform.preferredInteractiveOutput(std::chrono::milliseconds(1200));
     m_panelManager.openPanel("wallpaper", PanelOpenRequest{.output = output});
+  });
+  m_settingsWindow.setConnectCalendarAccount([this](std::string accountId) {
+    m_calendarService.connectGoogleAccount(accountId);
   });
   auto clipboardPanel = std::make_unique<ClipboardPanel>(
       &m_clipboardService, &m_configService, &m_thumbnailService, &m_asyncTextureCache
@@ -1770,6 +1775,7 @@ std::vector<PollSource*> Application::currentPollSources() {
   sources.push_back(&m_ipcPollSource);
   sources.push_back(&m_httpClientPollSource);
   sources.push_back(&m_weatherPollSource);
+  sources.push_back(&m_calendarPollSource);
   sources.push_back(&m_thumbnailService);
   sources.push_back(&m_asyncTextureCache);
   return sources;

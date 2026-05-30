@@ -487,6 +487,14 @@ bool ConfigService::setStateBool(std::string_view owner, std::string_view key, b
   return m_stateStore.setBool(owner, key, value);
 }
 
+std::optional<std::string> ConfigService::stateString(std::string_view owner, std::string_view key) const {
+  return m_stateStore.stringValue(owner, key);
+}
+
+bool ConfigService::setStateString(std::string_view owner, std::string_view key, std::string_view value) {
+  return m_stateStore.setString(owner, key, value);
+}
+
 std::string ConfigService::buildSupportReport() const {
   toml::table root;
 
@@ -2081,6 +2089,39 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       weather.refreshMinutes = static_cast<std::int32_t>(*v);
     if (auto v = (*weatherTbl)["unit"].value<std::string>())
       weather.unit = *v;
+  }
+
+  // Parse [calendar]
+  if (auto* calendarTbl = tbl["calendar"].as_table()) {
+    auto& calendar = config.calendar;
+    if (auto v = (*calendarTbl)["enabled"].value<bool>())
+      calendar.enabled = *v;
+    if (auto v = (*calendarTbl)["refresh_minutes"].value<int64_t>())
+      calendar.refreshMinutes = static_cast<std::int32_t>(*v);
+    if (auto* accounts = (*calendarTbl)["accounts"].as_array()) {
+      for (const auto& entry : *accounts) {
+        const auto* acctTbl = entry.as_table();
+        if (acctTbl == nullptr) {
+          continue;
+        }
+        CalendarConfig::Account account;
+        if (auto v = (*acctTbl)["id"].value<std::string>())
+          account.id = *v;
+        if (auto v = (*acctTbl)["type"].value<std::string>())
+          account.type = *v;
+        if (auto v = (*acctTbl)["name"].value<std::string>())
+          account.displayName = *v;
+        if (auto v = (*acctTbl)["color"].value<std::string>())
+          account.color = *v;
+        if (auto v = (*acctTbl)["url"].value<std::string>())
+          account.url = *v;
+        if (auto v = (*acctTbl)["username"].value<std::string>())
+          account.username = *v;
+        if (!account.id.empty() && !account.type.empty()) {
+          calendar.accounts.push_back(std::move(account));
+        }
+      }
+    }
   }
 
   // Parse [system]

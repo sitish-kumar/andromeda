@@ -18,8 +18,10 @@ public:
   [[nodiscard]] const std::filesystem::path& path() const noexcept { return m_path; }
   [[nodiscard]] const std::string& parseError() const noexcept { return m_parseError; }
   [[nodiscard]] std::optional<bool> boolValue(std::string_view owner, std::string_view key) const;
+  [[nodiscard]] std::optional<std::string> stringValue(std::string_view owner, std::string_view key) const;
 
   bool setBool(std::string_view owner, std::string_view key, bool value);
+  bool setString(std::string_view owner, std::string_view key, std::string_view value);
 
 private:
   [[nodiscard]] bool write();

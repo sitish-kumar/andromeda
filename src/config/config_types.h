@@ -703,6 +703,27 @@ struct WeatherConfig {
   bool operator==(const WeatherConfig&) const = default;
 };
 
+struct CalendarConfig {
+  // A single connected account. Credentials (OAuth tokens / CalDAV app-password) are NOT stored
+  // here; they live in state.toml keyed by id. id must be [a-z0-9_] (used as a state key).
+  struct Account {
+    std::string id;
+    std::string type; // "google" | "caldav"
+    std::string displayName;
+    std::string color;    // optional "#rrggbb" override
+    std::string url;      // CalDAV collection URL (caldav only)
+    std::string username; // CalDAV login (caldav only)
+
+    bool operator==(const Account&) const = default;
+  };
+
+  bool enabled = false;
+  std::int32_t refreshMinutes = 15;
+  std::vector<Account> accounts;
+
+  bool operator==(const CalendarConfig&) const = default;
+};
+
 struct SystemConfig {
   struct MonitorConfig {
     static constexpr float kMinPollSeconds = 1.0f;
@@ -961,6 +982,7 @@ struct Config {
   OsdConfig osd;
   NotificationConfig notification;
   WeatherConfig weather;
+  CalendarConfig calendar;
   SystemConfig system;
   AudioConfig audio;
   BrightnessConfig brightness;

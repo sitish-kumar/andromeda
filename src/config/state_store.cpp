@@ -97,6 +97,32 @@ std::optional<bool> StateStore::boolValue(std::string_view owner, std::string_vi
   return std::nullopt;
 }
 
+std::optional<std::string> StateStore::stringValue(std::string_view owner, std::string_view key) const {
+  if (!validStateIdentifier(owner) || !validStateIdentifier(key)) {
+    kLog.warn("invalid state key {}.{}", owner, key);
+    return std::nullopt;
+  }
+
+  const auto* table = m_state[owner].as_table();
+  if (table == nullptr) {
+    if (m_state.contains(owner)) {
+      kLog.warn("state owner {} is not a table", owner);
+    }
+    return std::nullopt;
+  }
+
+  const auto* node = table->get(key);
+  if (node == nullptr) {
+    return std::nullopt;
+  }
+  if (auto value = node->value<std::string>()) {
+    return *value;
+  }
+
+  kLog.warn("state value {}.{} is not a string", owner, key);
+  return std::nullopt;
+}
+
 bool StateStore::setBool(std::string_view owner, std::string_view key, bool value) {
   if (m_path.empty()) {
     return false;
@@ -116,6 +142,34 @@ bool StateStore::setBool(std::string_view owner, std::string_view key, bool valu
   }
 
   table->insert_or_assign(key, value);
+  if (!write()) {
+    kLog.warn("failed to write {}", m_path.string());
+    return false;
+  }
+
+  m_parseError.clear();
+  return true;
+}
+
+bool StateStore::setString(std::string_view owner, std::string_view key, std::string_view value) {
+  if (m_path.empty()) {
+    return false;
+  }
+  if (!validStateIdentifier(owner) || !validStateIdentifier(key)) {
+    kLog.warn("invalid state key {}.{}", owner, key);
+    return false;
+  }
+
+  auto* table = ensureTable(m_state, owner);
+  if (table == nullptr) {
+    return false;
+  }
+
+  if (auto existing = (*table)[key].value<std::string>(); existing.has_value() && *existing == value) {
+    return true;
+  }
+
+  table->insert_or_assign(key, std::string(value));
   if (!write()) {
     kLog.warn("failed to write {}", m_path.string());
     return false;

@@ -863,6 +863,40 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
     m_settingsRegistry.insert(it, std::move(btn));
   }
 
+  if (m_connectCalendarAccount) {
+    auto it = std::find_if(m_settingsRegistry.begin(), m_settingsRegistry.end(), [](const settings::SettingEntry& e) {
+      return e.section == "services"
+          && e.group == "calendar"
+          && e.path == std::vector<std::string>{"calendar", "refresh_minutes"};
+    });
+    if (it != m_settingsRegistry.end()) {
+      ++it;
+    }
+    const settings::SettingVisibility calendarOn{{"calendar", "enabled"}, {"true"}};
+    for (const CalendarConfig::Account& account : cfg.calendar.accounts) {
+      if (account.type != "google") {
+        continue;
+      }
+      settings::SettingEntry btn{
+          .section = "services",
+          .group = "calendar",
+          .title = account.displayName.empty() ? account.id : account.displayName,
+          .subtitle = i18n::tr("settings.schema.services.calendar-connect.description"),
+          .path = {},
+          .control =
+              settings::ButtonSetting{
+                  .label = i18n::tr("settings.schema.services.calendar-connect.button"),
+                  .action = [cb = m_connectCalendarAccount, id = account.id]() { cb(id); },
+                  .glyph = {},
+              },
+          .searchText = "calendar google connect authorize " + account.id,
+          .visibleWhen = calendarOn,
+      };
+      it = m_settingsRegistry.insert(it, std::move(btn));
+      ++it;
+    }
+  }
+
   const auto sections = sectionKeys(m_settingsRegistry);
   if (m_selectedSection == "bar" && selectedBar == nullptr) {
     m_selectedSection.clear();

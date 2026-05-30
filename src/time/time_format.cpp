@@ -202,6 +202,13 @@ std::string formatStrftime(std::string_view fmt, const std::tm& tm) {
   return {};
 }
 
+std::string formatUtcTime(std::chrono::system_clock::time_point tp, std::string_view fmt) {
+  const std::time_t raw = std::chrono::system_clock::to_time_t(tp);
+  std::tm tm{};
+  gmtime_r(&raw, &tm);
+  return formatStrftime(fmt, tm);
+}
+
 int localeFirstDayOfWeek() {
   // The _NL_TIME_* week items are glibc-only; elsewhere we keep the Monday fallback.
 #if defined(__GLIBC__)

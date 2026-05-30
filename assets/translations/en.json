@@ -937,6 +937,7 @@
         "behavior": "Behavior",
         "brightness": "Brightness",
         "built-in": "Built-in",
+        "calendar": "Calendar",
         "capsules": "Capsules",
         "clipboard": "Clipboard",
         "community": "Community",
@@ -2166,6 +2167,20 @@
         "weather": {
           "label": "Weather",
           "description": "Enable the weather service"
+        },
+        "calendar": {
+          "label": "Calendar",
+          "description": "Show events from your online calendar accounts"
+        },
+        "calendar-refresh-interval": {
+          "label": "Refresh Interval",
+          "description": "How often to sync calendar events (minutes)"
+        },
+        "calendar-connect": {
+          "label": "Connect",
+          "description": "Authorize a Google account in your browser",
+          "button": "Connect",
+          "reauthorize": "Reauthorize"
         },
         "system-monitor": {
           "label": "System Monitor",
