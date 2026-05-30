@@ -572,8 +572,8 @@ namespace settings {
         {"input", "settings.widgets.options.input"},
     };
     if (type == "active_window") {
-      add(doubleSpec("min_length", 80.0, 0.0, 800.0, 1.0));
-      add(doubleSpec("max_length", 260.0, 40.0, 800.0, 1.0));
+      add(intSpec("min_length", 80, 0.0, 800.0, 1.0));
+      add(intSpec("max_length", 260, 40.0, 800.0, 1.0));
       add(doubleSpec("icon_size", static_cast<double>(Style::fontSizeBody), 8.0, 64.0, 1.0));
       add(selectSpec("title_scroll", "none", mediaTitleScroll));
       {
@@ -662,8 +662,8 @@ namespace settings {
       add(boolSpec("hide_when_off", false));
       add(segmentedSpec("display", "short", shortFull));
     } else if (type == "media") {
-      add(doubleSpec("min_length", 80.0, 0.0, 800.0, 1.0));
-      add(doubleSpec("max_length", 220.0, 40.0, 800.0, 1.0));
+      add(intSpec("min_length", 80, 0.0, 800.0, 1.0));
+      add(intSpec("max_length", 220, 40.0, 800.0, 1.0));
       add(doubleSpec("art_size", 16.0, 8.0, 96.0, 1.0));
       add(selectSpec("title_scroll", "none", mediaTitleScroll));
       add(boolSpec("hide_when_no_media", false));
@@ -680,7 +680,7 @@ namespace settings {
     } else if (type == "settings") {
       add(glyphSpec("glyph", "settings"));
     } else if (type == "spacer") {
-      add(doubleSpec("length", 20.0, 0.0, 400.0, 1.0));
+      add(intSpec("length", 20, 0.0, 400.0, 1.0));
     } else if (type == "sysmon") {
       add(selectSpec("stat", "cpu_usage", sysmonStats));
       {
@@ -787,7 +787,7 @@ namespace settings {
     } else if (type == "wallpaper") {
       add(glyphSpec("glyph", "wallpaper-selector"));
     } else if (type == "weather") {
-      add(doubleSpec("max_length", 160.0, 40.0, 800.0, 1.0));
+      add(intSpec("max_length", 160, 40.0, 800.0, 1.0));
       add(boolSpec("show_condition", true));
     } else if (type == "workspaces") {
       const WidgetSettingVisibility pillStyleOnly{{"minimal", {"false"}}};
