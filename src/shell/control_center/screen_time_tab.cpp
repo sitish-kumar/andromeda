@@ -358,21 +358,20 @@ std::unique_ptr<Flex> ScreenTimeTab::create() {
           ui::column(
               {.align = FlexAlign::Stretch, .gap = Style::spaceXs * scale, .flexGrow = 1.0f},
               ui::row(
-                  {.align = FlexAlign::Center,
-                   .justify = FlexJustify::SpaceBetween,
-                   .gap = Style::spaceSm * scale,
-                   .fillWidth = true},
+                  {.align = FlexAlign::Center, .gap = Style::spaceSm * scale, .fillWidth = true},
                   ui::label({
                       .out = &m_appRows[i].name,
                       .fontSize = Style::fontSizeBody * scale,
                       .color = colorSpecFromRole(ColorRole::OnSurface),
                       .maxLines = 1,
+                      .flexGrow = 1.0f,
                   }),
                   ui::label({
                       .out = &m_appRows[i].duration,
                       .fontSize = usageDurationFontSize(scale),
                       .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
                       .maxLines = 1,
+                      .configure = [](Label& label) { label.setTextAlign(TextAlign::End); },
                   })
               ),
               ui::row(
@@ -505,20 +504,32 @@ void ScreenTimeTab::bindAppNameMaxWidths(Renderer& renderer, float gridWidth) {
   const float cellWidth = std::max(1.0f, (gridWidth - columnGap) * 0.5f);
   const float rowGap = Style::spaceSm * scale;
   const float leadingWidth = kLegendSwatch * scale + kAppIconSize * scale + rowGap * 2.0f;
+  const float textColumnWidth = std::max(1.0f, cellWidth - leadingWidth);
+
+  float maxDurationWidth = 0.0f;
+  for (const auto& widgets : m_appRows) {
+    if (widgets.duration == nullptr || widgets.row == nullptr || !widgets.row->visible()) {
+      continue;
+    }
+    widgets.duration->measure(renderer);
+    maxDurationWidth = std::max(maxDurationWidth, widgets.duration->width());
+  }
+  maxDurationWidth = std::ceil(maxDurationWidth);
 
   for (auto& widgets : m_appRows) {
     if (widgets.name == nullptr || widgets.row == nullptr || !widgets.row->visible()) {
       continue;
     }
 
-    float durationWidth = 0.0f;
     if (widgets.duration != nullptr) {
-      widgets.duration->measure(renderer);
-      durationWidth = widgets.duration->width();
+      if (maxDurationWidth > 0.0f) {
+        widgets.duration->setMinWidth(maxDurationWidth);
+      } else {
+        widgets.duration->setMinWidth(0.0f);
+      }
     }
 
-    const float textColumnWidth = std::max(1.0f, cellWidth - leadingWidth);
-    const float nameMax = std::max(1.0f, textColumnWidth - durationWidth - rowGap);
+    const float nameMax = std::max(1.0f, textColumnWidth - maxDurationWidth - rowGap);
     widgets.name->setMaxWidth(nameMax);
   }
 }
