@@ -67,6 +67,13 @@ private:
     std::string label;
   };
 
+  struct AllOutputsBatch {
+    OutputOptions options{};
+    std::vector<AllOutputCaptureTarget> targets;
+    std::vector<capture::FrozenScreenshot> frames;
+    std::size_t next = 0;
+  };
+
   void captureOutput(
       wl_output* output, std::optional<LogicalRect> region, const std::string& labelBase, const OutputOptions& options,
       int pathSuffix = 0
@@ -82,13 +89,18 @@ private:
   void completeFullscreenSelection(wl_output* output, const OutputOptions& options);
   void startNextQueuedCapture();
   void captureAllOutputs(const OutputOptions& options);
-  void runAllOutputsCaptureBatch(OutputOptions options, std::vector<AllOutputCaptureTarget> targets);
+  void startNextAllOutputsCapture();
+  void onAllOutputsFrameCaptured(
+      wl_output* output, const std::string& label, std::optional<ScreencopyImage> image, const std::string& error
+  );
+  void finishAllOutputsBatch();
+  void cancelAllOutputsBatch();
   void deliverCaptureResult(
       ScreencopyImage image, const OutputOptions& options, std::optional<std::filesystem::path> destPath
   );
   void onCaptureComplete(
       std::optional<ScreencopyImage> image, const std::string& error, OutputOptions options,
-      std::optional<std::filesystem::path> destPath
+      std::optional<std::filesystem::path> destPath, wl_output* output, std::optional<LogicalRect> region
   );
   [[nodiscard]] wl_output* preferredCaptureOutput() const;
   [[nodiscard]] std::filesystem::path defaultPicturesDirectory() const;
@@ -105,6 +117,7 @@ private:
   ScreencopyCapture m_capture;
   std::unique_ptr<capture::ScreenshotRegionOverlay> m_regionOverlay;
   std::vector<PendingCapture> m_captureQueue;
+  std::optional<AllOutputsBatch> m_allOutputsBatch;
   OutputOptions m_regionOutputOptions{};
   RenderContext* m_regionRenderContext = nullptr;
   bool m_regionFullscreenPick = false;

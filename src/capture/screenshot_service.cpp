@@ -31,6 +31,7 @@
 #include <filesystem>
 #include <fstream>
 #include <pthread.h>
+#include <stb_image_resize2.h>
 #include <sys/wait.h>
 #include <thread>
 #include <unistd.h>
@@ -88,6 +89,54 @@ namespace {
     return nullptr;
   }
 
+  [[nodiscard]] bool resampleRgbaImage(ScreencopyImage& image, int targetWidth, int targetHeight) {
+    if (targetWidth <= 0 || targetHeight <= 0 || image.width <= 0 || image.height <= 0) {
+      return false;
+    }
+    if (image.width == targetWidth && image.height == targetHeight) {
+      return true;
+    }
+
+    std::vector<std::uint8_t> resized(
+        static_cast<std::size_t>(targetWidth) * static_cast<std::size_t>(targetHeight) * 4U
+    );
+    if (stbir_resize_uint8_srgb(
+            image.rgba.data(), image.width, image.height, 0, resized.data(), targetWidth, targetHeight, 0, STBIR_RGBA
+        )
+        == nullptr) {
+      return false;
+    }
+
+    image.width = targetWidth;
+    image.height = targetHeight;
+    image.rgba = std::move(resized);
+    return true;
+  }
+
+  [[nodiscard]] bool normalizeCaptureToLogicalSize(
+      ScreencopyImage& image, const WaylandConnection& wayland, wl_output* output,
+      const std::optional<LogicalRect>& region
+  ) {
+    const auto* out = findOutput(wayland, output);
+    if (out == nullptr) {
+      return false;
+    }
+
+    int targetWidth = 0;
+    int targetHeight = 0;
+    if (region.has_value() && region->width > 0 && region->height > 0) {
+      targetWidth = region->width;
+      targetHeight = region->height;
+    } else if (out->logicalWidth > 0 && out->logicalHeight > 0) {
+      targetWidth = out->logicalWidth;
+      targetHeight = out->logicalHeight;
+    } else {
+      return true;
+    }
+
+    return resampleRgbaImage(image, targetWidth, targetHeight);
+  }
+
   [[nodiscard]] std::optional<ScreencopyImage>
   cropFrozenRegion(const ScreencopyImage& source, int logicalOutputWidth, int logicalOutputHeight, LogicalRect region) {
     if (logicalOutputWidth <= 0 || logicalOutputHeight <= 0 || region.width <= 0 || region.height <= 0) {
@@ -128,6 +177,10 @@ namespace {
               * 4U;
       auto* dstRow = cropped.rgba.data() + static_cast<std::size_t>(y) * static_cast<std::size_t>(outWidth) * 4U;
       std::memcpy(dstRow, srcRow, static_cast<std::size_t>(outWidth) * 4U);
+    }
+
+    if (!resampleRgbaImage(cropped, clipped.width, clipped.height)) {
+      return std::nullopt;
     }
 
     return cropped;
@@ -366,6 +419,16 @@ namespace {
     if (frames.empty()) {
       return std::nullopt;
     }
+
+    for (auto& frame : frames) {
+      if (frame.output == nullptr) {
+        return std::nullopt;
+      }
+      if (!resampleRgbaImage(frame.image, frame.output->logicalWidth, frame.output->logicalHeight)) {
+        return std::nullopt;
+      }
+    }
+
     if (frames.size() == 1) {
       return std::move(frames.front().image);
     }
@@ -373,9 +436,6 @@ namespace {
     int minLogicalX = frames.front().output->logicalX;
     int minLogicalY = frames.front().output->logicalY;
     for (const auto& frame : frames) {
-      if (frame.output == nullptr) {
-        return std::nullopt;
-      }
       minLogicalX = std::min(minLogicalX, frame.output->logicalX);
       minLogicalY = std::min(minLogicalY, frame.output->logicalY);
     }
@@ -384,15 +444,13 @@ namespace {
     int canvasHeight = 0;
     for (const auto& frame : frames) {
       const auto* out = frame.output;
-      if (out->logicalWidth <= 0 || out->logicalHeight <= 0 || frame.image.width <= 0 || frame.image.height <= 0) {
+      if (out->logicalWidth <= 0 || out->logicalHeight <= 0) {
         return std::nullopt;
       }
-      const double scaleX = static_cast<double>(frame.image.width) / static_cast<double>(out->logicalWidth);
-      const double scaleY = static_cast<double>(frame.image.height) / static_cast<double>(out->logicalHeight);
-      const int destX = static_cast<int>(std::lround((out->logicalX - minLogicalX) * scaleX));
-      const int destY = static_cast<int>(std::lround((out->logicalY - minLogicalY) * scaleY));
-      canvasWidth = std::max(canvasWidth, destX + frame.image.width);
-      canvasHeight = std::max(canvasHeight, destY + frame.image.height);
+      const int destX = out->logicalX - minLogicalX;
+      const int destY = out->logicalY - minLogicalY;
+      canvasWidth = std::max(canvasWidth, destX + out->logicalWidth);
+      canvasHeight = std::max(canvasHeight, destY + out->logicalHeight);
     }
 
     if (canvasWidth <= 0 || canvasHeight <= 0) {
@@ -404,13 +462,9 @@ namespace {
     canvas.height = canvasHeight;
     canvas.rgba.assign(static_cast<std::size_t>(canvasWidth) * static_cast<std::size_t>(canvasHeight) * 4U, 0);
 
-    for (auto& frame : frames) {
+    for (const auto& frame : frames) {
       const auto* out = frame.output;
-      const double scaleX = static_cast<double>(frame.image.width) / static_cast<double>(out->logicalWidth);
-      const double scaleY = static_cast<double>(frame.image.height) / static_cast<double>(out->logicalHeight);
-      const int destX = static_cast<int>(std::lround((out->logicalX - minLogicalX) * scaleX));
-      const int destY = static_cast<int>(std::lround((out->logicalY - minLogicalY) * scaleY));
-      blitOpaqueRgba(canvas, destX, destY, frame.image);
+      blitOpaqueRgba(canvas, out->logicalX - minLogicalX, out->logicalY - minLogicalY, frame.image);
     }
 
     return canvas;
@@ -470,10 +524,6 @@ ScreenshotService::OutputOptions ScreenshotService::outputOptionsFromConfig(cons
   options.pipeCommand = screenshot.pipeCommand;
   options.directory = screenshot.directory;
   options.filenamePattern = screenshot.filenamePattern;
-  // A configured pipe command implies piping even if the toggle was left off.
-  if (!options.pipeToCommand && !options.pipeCommand.empty()) {
-    options.pipeToCommand = true;
-  }
   return options;
 }
 
@@ -734,6 +784,7 @@ void ScreenshotService::finishFreezeCapture() {
 }
 
 void ScreenshotService::abortFreezeCapture(const std::string& message) {
+  cancelAllOutputsBatch();
   m_freezeCaptureActive = false;
   m_pendingFreezeOutputs.clear();
   m_frozenScreenshots.clear();
@@ -744,6 +795,7 @@ void ScreenshotService::abortFreezeCapture(const std::string& message) {
 }
 
 void ScreenshotService::cancelRegionCapture() {
+  cancelAllOutputsBatch();
   if (m_freezeCaptureActive) {
     abortFreezeCapture({});
     return;
@@ -771,7 +823,7 @@ void ScreenshotService::deliverFrozenRegion(LogicalRect region, wl_output* outpu
 
   const std::optional<std::filesystem::path> destPath =
       options.saveToFile ? std::optional(makeScreenshotPath(options, "region")) : std::nullopt;
-  onCaptureComplete(std::move(*cropped), {}, options, destPath);
+  deliverCaptureResult(std::move(*cropped), options, std::move(destPath));
 }
 
 void ScreenshotService::completeFullscreenSelection(wl_output* output, const OutputOptions& options) {
@@ -823,9 +875,9 @@ void ScreenshotService::captureOutput(
 
   m_capture.capture(
       pending.output, pending.region, true,
-      [this, options = pending.outputOptions,
-       destPath = pending.destPath](std::optional<ScreencopyImage> image, const std::string& error) {
-        onCaptureComplete(std::move(image), error, std::move(options), std::move(destPath));
+      [this, options = pending.outputOptions, destPath = pending.destPath, output = pending.output,
+       region = pending.region](std::optional<ScreencopyImage> image, const std::string& error) {
+        onCaptureComplete(std::move(image), error, std::move(options), std::move(destPath), output, region);
       }
   );
 }
@@ -842,15 +894,21 @@ void ScreenshotService::startNextQueuedCapture() {
     m_captureQueue.erase(m_captureQueue.begin());
     m_capture.capture(
         pending.output, pending.region, true,
-        [this, options = pending.outputOptions,
-         destPath = pending.destPath](std::optional<ScreencopyImage> image, const std::string& error) {
-          onCaptureComplete(std::move(image), error, std::move(options), std::move(destPath));
+        [this, options = pending.outputOptions, destPath = pending.destPath, output = pending.output,
+         region = pending.region](std::optional<ScreencopyImage> image, const std::string& error) {
+          onCaptureComplete(std::move(image), error, std::move(options), std::move(destPath), output, region);
         }
     );
   });
 }
 
 void ScreenshotService::captureAllOutputs(const OutputOptions& options) {
+  cancelAllOutputsBatch();
+  m_captureQueue.clear();
+  if (m_capture.busy()) {
+    m_capture.cancelInFlight();
+  }
+
   std::vector<AllOutputCaptureTarget> targets;
   int index = 0;
   for (const auto& output : m_wayland.outputs()) {
@@ -873,46 +931,87 @@ void ScreenshotService::captureAllOutputs(const OutputOptions& options) {
     return;
   }
 
-  DeferredCall::callLater([this, options, targets = std::move(targets)]() mutable {
-    runAllOutputsCaptureBatch(std::move(options), std::move(targets));
-  });
+  m_allOutputsBatch = AllOutputsBatch{
+      .options = options,
+      .targets = std::move(targets),
+      .frames = {},
+      .next = 0,
+  };
+  startNextAllOutputsCapture();
 }
 
-void ScreenshotService::runAllOutputsCaptureBatch(OutputOptions options, std::vector<AllOutputCaptureTarget> targets) {
-  m_captureQueue.clear();
+void ScreenshotService::startNextAllOutputsCapture() {
+  if (!m_allOutputsBatch.has_value()) {
+    return;
+  }
+
+  auto& batch = *m_allOutputsBatch;
+  while (batch.next < batch.targets.size() && batch.targets[batch.next].output == nullptr) {
+    ++batch.next;
+  }
+  if (batch.next >= batch.targets.size()) {
+    finishAllOutputsBatch();
+    return;
+  }
+
+  const AllOutputCaptureTarget target = batch.targets[batch.next];
+  ++batch.next;
   if (m_capture.busy()) {
     m_capture.cancelInFlight();
   }
 
-  std::vector<CapturedOutputFrame> frames;
-  frames.reserve(targets.size());
-  for (const auto& target : targets) {
-    if (target.output == nullptr) {
-      continue;
-    }
-    if (m_capture.busy()) {
-      m_capture.cancelInFlight();
-    }
+  m_capture.capture(
+      target.output, std::nullopt, false,
+      [this, output = target.output,
+       label = target.label](std::optional<ScreencopyImage> image, const std::string& error) {
+        onAllOutputsFrameCaptured(output, label, std::move(image), error);
+      }
+  );
+}
 
-    ScreencopyImage image;
-    std::string error;
-    if (!captureOutputBlocking(m_capture, m_wayland, target.output, image, error)) {
-      kLog.warn("screenshot failed for {}: {}", target.label, error.empty() ? "empty frame" : error);
-      notifyError(error.empty() ? "Screenshot failed" : error);
-      return;
-    }
-
-    const auto* output = findOutput(m_wayland, target.output);
-    if (output == nullptr) {
-      notifyError("No output for capture");
-      return;
-    }
-    frames.push_back(CapturedOutputFrame{.image = std::move(image), .output = output});
+void ScreenshotService::onAllOutputsFrameCaptured(
+    wl_output* output, const std::string& label, std::optional<ScreencopyImage> image, const std::string& error
+) {
+  if (!m_allOutputsBatch.has_value()) {
+    return;
+  }
+  if (!error.empty() || !image.has_value()) {
+    kLog.warn("screenshot failed for {}: {}", label, error.empty() ? "empty frame" : error);
+    notifyError(error.empty() ? "Screenshot failed" : error);
+    cancelAllOutputsBatch();
+    return;
+  }
+  if (!normalizeCaptureToLogicalSize(*image, m_wayland, output, std::nullopt)) {
+    notifyError("Failed to scale screenshot");
+    cancelAllOutputsBatch();
+    return;
   }
 
-  if (frames.empty()) {
+  m_allOutputsBatch->frames.push_back(capture::FrozenScreenshot{.output = output, .image = std::move(*image)});
+  DeferredCall::callLater([this]() { startNextAllOutputsCapture(); });
+}
+
+void ScreenshotService::finishAllOutputsBatch() {
+  if (!m_allOutputsBatch.has_value()) {
+    return;
+  }
+
+  AllOutputsBatch batch = std::move(*m_allOutputsBatch);
+  m_allOutputsBatch.reset();
+  if (batch.frames.empty()) {
     notifyError("Screenshot failed");
     return;
+  }
+
+  std::vector<CapturedOutputFrame> frames;
+  frames.reserve(batch.frames.size());
+  for (auto& frame : batch.frames) {
+    const auto* out = findOutput(m_wayland, frame.output);
+    if (out == nullptr) {
+      notifyError("Failed to combine screenshots");
+      return;
+    }
+    frames.push_back(CapturedOutputFrame{.image = std::move(frame.image), .output = out});
   }
 
   auto stitched = stitchOutputFrames(std::move(frames));
@@ -922,9 +1021,11 @@ void ScreenshotService::runAllOutputsCaptureBatch(OutputOptions options, std::ve
   }
 
   const std::optional<std::filesystem::path> destPath =
-      options.saveToFile ? std::optional(makeScreenshotPath(options, "desktop")) : std::nullopt;
-  deliverCaptureResult(std::move(*stitched), options, destPath);
+      batch.options.saveToFile ? std::optional(makeScreenshotPath(batch.options, "desktop")) : std::nullopt;
+  deliverCaptureResult(std::move(*stitched), batch.options, destPath);
 }
+
+void ScreenshotService::cancelAllOutputsBatch() { m_allOutputsBatch.reset(); }
 
 void ScreenshotService::deliverCaptureResult(
     ScreencopyImage image, const OutputOptions& options, std::optional<std::filesystem::path> destPath
@@ -982,11 +1083,17 @@ void ScreenshotService::deliverCaptureResult(
 
 void ScreenshotService::onCaptureComplete(
     std::optional<ScreencopyImage> image, const std::string& error, OutputOptions options,
-    std::optional<std::filesystem::path> destPath
+    std::optional<std::filesystem::path> destPath, wl_output* output, std::optional<LogicalRect> region
 ) {
   if (!error.empty() || !image.has_value()) {
     kLog.warn("screenshot failed: {}", error.empty() ? "empty frame" : error);
     notifyError(error.empty() ? "Screenshot failed" : error);
+    startNextQueuedCapture();
+    return;
+  }
+
+  if (!normalizeCaptureToLogicalSize(*image, m_wayland, output, region)) {
+    notifyError("Failed to scale screenshot");
     startNextQueuedCapture();
     return;
   }
