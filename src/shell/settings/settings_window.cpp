@@ -1,6 +1,7 @@
 #include "shell/settings/settings_window.h"
 
 #include "config/config_service.h"
+#include "config/config_types.h"
 #include "core/deferred_call.h"
 #include "core/keybind_matcher.h"
 #include "core/log.h"
@@ -40,6 +41,28 @@ namespace {
   // How many frames to wait for the settings window to gain keyboard focus before opening a pending
   // widget-inspector sheet anyway (bounded so a never-focused window can't spin redraws forever).
   constexpr int kPendingWidgetInspectorFrameBudget = 240;
+
+  // Build the {"bar", name, <lane>} path the widget inspector expects, resolving which lane the widget
+  // currently lives in (the inspector keys off the bar name at index 1 and the lane at the tail).
+  std::vector<std::string>
+  barWidgetLanePath(const Config& cfg, const std::string& barName, const std::string& widgetName) {
+    std::string_view lane = "center";
+    for (const auto& bar : cfg.bars) {
+      if (bar.name != barName) {
+        continue;
+      }
+      const auto inLane = [&](const std::vector<std::string>& widgets) {
+        return std::find(widgets.begin(), widgets.end(), widgetName) != widgets.end();
+      };
+      if (inLane(bar.startWidgets)) {
+        lane = "start";
+      } else if (inLane(bar.endWidgets)) {
+        lane = "end";
+      }
+      break;
+    }
+    return {"bar", barName, std::string(lane)};
+  }
 
 } // namespace
 
@@ -396,7 +419,7 @@ void SettingsWindow::prepareFrame(bool /*needsUpdate*/, bool needsLayout) {
 }
 
 void SettingsWindow::maybeOpenPendingWidgetInspector() {
-  if (m_pendingOpenWidgetInspectorName.empty() || m_surface == nullptr || m_wayland == nullptr) {
+  if (m_pendingOpenWidgetInspectorName.empty() || m_surface == nullptr || m_wayland == nullptr || m_config == nullptr) {
     return;
   }
   // A grab popup needs an input serial this window owns. Right after a bar middle-click the latest
@@ -414,7 +437,11 @@ void SettingsWindow::maybeOpenPendingWidgetInspector() {
   // an xdg_popup grab. Open the sheet without a grab — the window holds keyboard focus and routes
   // input to it, and an outside click still dismisses it (handled in onPointerEvent).
   m_pendingEditorSheetNoGrab = true;
-  openWidgetInspectorEditor({"bar", m_selectedBarName}, std::move(widgetName));
+  // The inspector takes a per-lane path {"bar", name, <lane>} (same shape the lane-card gear passes);
+  // resolve which lane this widget lives in so it isn't a 2-element path that mislocates the bar name.
+  openWidgetInspectorEditor(
+      barWidgetLanePath(m_config->config(), m_selectedBarName, widgetName), std::move(widgetName)
+  );
 }
 
 void SettingsWindow::requestSceneRebuild() {
