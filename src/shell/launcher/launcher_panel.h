@@ -62,6 +62,7 @@ private:
   void setCategoryFilterVisible(bool visible);
   void applyActiveCategory();
   void syncLauncherListStyle();
+  void updateLauncherGridMetrics(Renderer& renderer);
 
   std::vector<std::unique_ptr<LauncherProvider>> m_providers;
   std::vector<LauncherResult> m_results;
@@ -86,6 +87,7 @@ private:
   bool m_categoryFilterVisible = true;
   bool m_launcherShowIcons = true;
   bool m_launcherCompact = false;
+  float m_launcherRowHeight = 0.0f;
   ConfigService* m_config = nullptr;
   AsyncTextureCache* m_asyncTextures = nullptr;
   std::unique_ptr<ContextMenuPopup> m_actionsMenu;

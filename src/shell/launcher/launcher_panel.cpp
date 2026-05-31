@@ -76,12 +76,36 @@ namespace {
     return (style.compact ? kIconSizeCompact : kIconSizeDefault) * style.scale;
   }
 
-  [[nodiscard]] float launcherRowHeight(const LauncherListStyle& style) {
+  [[nodiscard]] float inkCenteredLabelHeight(const TextMetrics& metrics) {
+    const float actualHeight = metrics.bottom - metrics.top;
+    const float inkHeight = std::max(0.0f, metrics.inkBottom - metrics.inkTop);
+    return std::round(std::max(actualHeight, inkHeight));
+  }
+
+  [[nodiscard]] float launcherTextStackHeight(Renderer& renderer, const LauncherListStyle& style) {
+    const float bodySize = Style::fontSizeBody * style.scale;
+    float textHeight = inkCenteredLabelHeight(renderer.measureFont(bodySize, FontWeight::Bold));
+    if (!style.compact) {
+      const float captionSize = Style::fontSizeCaption * style.scale;
+      textHeight += inkCenteredLabelHeight(renderer.measureFont(captionSize, FontWeight::Normal));
+    }
+    return textHeight;
+  }
+
+  [[nodiscard]] float launcherRowHeight(Renderer& renderer, const LauncherListStyle& style) {
     const float paddingY = (style.compact ? Style::spaceXs * 0.5f : Style::spaceXs) * style.scale;
-    const float textGap = style.compact ? 0.0f : Style::spaceXs * 0.5f * style.scale;
-    const float titleHeight = Style::fontSizeBody * style.scale * (style.compact ? 1.2f : 1.35f);
-    const float subtitleHeight = style.compact ? 0.0f : Style::fontSizeCaption * style.scale * 1.25f;
-    const float textHeight = titleHeight + textGap + subtitleHeight;
+    const float textHeight = launcherTextStackHeight(renderer, style);
+    if (!style.showIcons) {
+      return std::ceil(textHeight + paddingY * 2.0f);
+    }
+    return std::ceil(std::max(launcherIconSize(style), textHeight) + paddingY * 2.0f);
+  }
+
+  [[nodiscard]] float launcherRowHeightEstimate(const LauncherListStyle& style) {
+    const float paddingY = (style.compact ? Style::spaceXs * 0.5f : Style::spaceXs) * style.scale;
+    const float bodySize = Style::fontSizeBody * style.scale;
+    const float captionSize = Style::fontSizeCaption * style.scale;
+    const float textHeight = bodySize + (style.compact ? 0.0f : captionSize);
     if (!style.showIcons) {
       return std::ceil(textHeight + paddingY * 2.0f);
     }
@@ -198,7 +222,7 @@ namespace {
               {
                   .out = &m_textCol,
                   .align = FlexAlign::Start,
-                  .gap = m_style.compact ? 0.0f : Style::spaceXs * 0.5f * m_style.scale,
+                  .gap = 0.0f,
                   .flexGrow = 1.0f,
               },
               ui::label({
@@ -207,13 +231,14 @@ namespace {
                   .color = colorSpecFromRole(ColorRole::OnSurface),
                   .maxLines = 1,
                   .fontWeight = FontWeight::Bold,
+                  .baselineMode = LabelBaselineMode::InkCentered,
               }),
               ui::label({
                   .out = &m_subtitle,
                   .fontSize = Style::fontSizeCaption * m_style.scale,
                   .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
                   .maxLines = 1,
-                  .configure = [](Label& label) { label.setCaptionStyle(); },
+                  .baselineMode = LabelBaselineMode::InkCentered,
               })
           )
       );
@@ -229,7 +254,7 @@ namespace {
       const float iconSize = launcherIconSize(m_style);
       m_iconTargetSize = static_cast<int>(std::round(iconSize));
       m_actionTextVisible = !result.actionText.empty();
-      m_rowHeight = launcherRowHeight(m_style);
+      m_rowHeight = launcherRowHeight(renderer, m_style);
 
       setSize(width, m_rowHeight);
       m_row->setFrameSize(width, m_rowHeight);
@@ -420,6 +445,7 @@ void LauncherPanel::addProvider(std::unique_ptr<LauncherProvider> provider) {
 }
 
 void LauncherPanel::create() {
+  m_launcherRowHeight = 0.0f;
   const float scale = contentScale();
   auto container = ui::column({
       .out = &m_container,
@@ -473,7 +499,7 @@ void LauncherPanel::create() {
       ui::virtualGridView({
           .out = &m_grid,
           .columns = 1,
-          .cellHeight = launcherRowHeight(launcherListStyleFrom(m_config, scale)),
+          .cellHeight = launcherRowHeightEstimate(launcherListStyleFrom(m_config, scale)),
           .squareCells = false,
           .columnGap = 0.0f,
           .rowGap = 0.0f,
@@ -519,6 +545,7 @@ void LauncherPanel::syncLauncherListStyle() {
   }
   m_launcherShowIcons = showIcons;
   m_launcherCompact = compact;
+  m_launcherRowHeight = 0.0f;
 
   if (m_adapter == nullptr || m_grid == nullptr) {
     return;
@@ -526,8 +553,23 @@ void LauncherPanel::syncLauncherListStyle() {
 
   const LauncherListStyle style = launcherListStyleFrom(m_config, contentScale());
   m_adapter->setListStyle(style);
-  m_grid->setCellHeight(launcherRowHeight(style));
+  m_grid->setCellHeight(launcherRowHeightEstimate(style));
   m_grid->setAdapter(m_adapter.get());
+}
+
+void LauncherPanel::updateLauncherGridMetrics(Renderer& renderer) {
+  if (m_grid == nullptr) {
+    return;
+  }
+
+  const LauncherListStyle style = launcherListStyleFrom(m_config, contentScale());
+  const float rowHeight = launcherRowHeight(renderer, style);
+  if (std::abs(rowHeight - m_launcherRowHeight) < 0.5f) {
+    return;
+  }
+
+  m_launcherRowHeight = rowHeight;
+  m_grid->setCellHeight(rowHeight);
 }
 
 void LauncherPanel::onPanelCardOpacityChanged(float opacity) {
@@ -549,6 +591,7 @@ void LauncherPanel::doLayout(Renderer& renderer, float width, float height) {
   if (m_adapter != nullptr) {
     m_adapter->setRenderer(&renderer);
   }
+  updateLauncherGridMetrics(renderer);
 
   m_container->setSize(width, height);
   m_container->layout(renderer);
@@ -593,6 +636,7 @@ void LauncherPanel::onClose() {
   m_currentCategories.clear();
   m_hasRecentlyUsed = false;
   m_selectedIndex = 0;
+  m_launcherRowHeight = 0.0f;
 
   if (m_grid != nullptr) {
     m_grid->setAdapter(nullptr);
