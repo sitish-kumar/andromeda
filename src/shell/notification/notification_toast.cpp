@@ -259,8 +259,11 @@ namespace {
     );
   }
 
-  bool shouldShowNotificationAppName(std::string_view appName) {
+  bool shouldShowNotificationAppName(const ConfigService* config, std::string_view appName) {
     if (StringUtils::isBlank(appName)) {
+      return false;
+    }
+    if (config != nullptr && !config->config().notification.showAppName) {
       return false;
     }
     return true;
@@ -357,14 +360,14 @@ namespace {
   }
 
   float measureToastCardHeight(
-      RenderContext& rc, std::string_view appName, std::string_view summary, std::string_view body,
-      const std::vector<std::string>& actions, Urgency urgency, int displayDurationMs, int summaryLines, int bodyLines,
-      float scale
+      RenderContext& rc, const ConfigService* config, std::string_view appName, std::string_view summary,
+      std::string_view body, const std::vector<std::string>& actions, Urgency urgency, int displayDurationMs,
+      int summaryLines, int bodyLines, float scale
   ) {
     const float cardW = cardWidth(scale);
     const float textMaxWidth = notificationTextMaxWidth(scale);
     const float topTextMaxWidth = std::max(0.0f, textMaxWidth - closeButtonSize(scale) - Style::spaceSm * scale);
-    const bool showAppName = shouldShowNotificationAppName(appName);
+    const bool showAppName = shouldShowNotificationAppName(config, appName);
 
     auto card = ui::column(
         {.width = cardW},
@@ -1502,7 +1505,7 @@ void NotificationToast::refreshEntryGeometry(PopupEntry& entry) const {
   entry.height = std::min(
       maxToastCardHeight(scale),
       measureToastCardHeight(
-          *m_renderContext, entry.appName, entry.summary, entry.body, entry.actions, entry.urgency,
+          *m_renderContext, m_config, entry.appName, entry.summary, entry.body, entry.actions, entry.urgency,
           entry.displayDurationMs, kMaxSummaryLines, entry.toastBodyLines, scale
       )
   );
@@ -2044,7 +2047,7 @@ InputArea* NotificationToast::buildCard(
   const float cardW = cardWidth(scale);
   const float textMaxWidth = notificationTextMaxWidth(scale);
   const float topTextMaxWidth = std::max(0.0f, textMaxWidth - closeButtonSize(scale) - Style::spaceSm * scale);
-  const bool showAppName = shouldShowNotificationAppName(entry.appName);
+  const bool showAppName = shouldShowNotificationAppName(m_config, entry.appName);
 
   auto viewport = std::make_unique<InputArea>();
   viewport->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
