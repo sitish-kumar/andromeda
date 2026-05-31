@@ -694,8 +694,8 @@ struct ShellConfig {
   struct ScreenshotConfig {
     bool saveToFile = true;
     bool copyToClipboard = true;
+    bool freezeScreen = true;
     bool pipeToCommand = false;
-    bool freezeScreen = false;
     std::string pipeCommand;
     std::string directory;       // empty = ~/Pictures
     std::string filenamePattern; // empty = screenshot_%Y%m%d_%H%M%S
