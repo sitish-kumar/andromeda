@@ -365,13 +365,13 @@ namespace settings {
     }
 
     if (const auto it = cfg.widgets.find(std::string(name)); it != cfg.widgets.end()) {
+      std::string title = widgetInstanceDisplayLabel(name);
       std::string detail = it->second.type.empty() ? tr("settings.entities.widget.detail.custom") : it->second.type;
       if (it->second.type == "scripted") {
         if (const std::string script = it->second.getString("script", ""); !script.empty()) {
           if (auto manifest = scripting::manifestForScriptConfig(script); manifest.has_value()) {
             if (!manifest->label.empty()) {
-              detail += ": ";
-              detail += manifest->label;
+              title = manifest->label;
             }
             if (includeManifestVersion) {
               detail = appendManifestVersion(std::move(detail), *manifest);
@@ -380,7 +380,7 @@ namespace settings {
         }
       }
       return WidgetReferenceInfo{
-          .title = std::string(name),
+          .title = std::move(title),
           .detail = std::move(detail),
           .badge = tr("settings.entities.widget.kinds.named"),
           .kind = WidgetReferenceKind::Named,
@@ -388,7 +388,7 @@ namespace settings {
     }
 
     return WidgetReferenceInfo{
-        .title = std::string(name),
+        .title = widgetInstanceDisplayLabel(name),
         .detail = std::string(name),
         .badge = tr("settings.entities.widget.kinds.unknown"),
         .kind = WidgetReferenceKind::Unknown,
