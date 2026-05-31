@@ -774,13 +774,11 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
               .out = &toolbarHandlePtr,
               .align = FlexAlign::Center,
               .gap = Style::spaceXs,
+              .paddingV = Style::spaceXs,
+              .paddingH = Style::spaceSm,
+              .fill = colorSpecFromRole(ColorRole::SurfaceVariant, 0.85f),
+              .radius = Style::scaledRadiusLg(),
               .minHeight = Style::controlHeightSm,
-              .configure =
-                  [](Flex& flex) {
-                    flex.setPadding(Style::spaceXs, Style::spaceSm);
-                    flex.setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.85f));
-                    flex.setRadius(Style::scaledRadiusLg());
-                  },
           },
           ui::glyph({
               .glyph = "menu-2",

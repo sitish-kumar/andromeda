@@ -116,10 +116,12 @@ namespace {
     LauncherResultRow(float scale, AsyncTextureCache* asyncTextures)
         : m_scale(scale), m_rowHeight(launcherRowHeight(scale)), m_asyncTextures(asyncTextures) {
       auto row = ui::row(
-          {.out = &m_row, .align = FlexAlign::Center, .gap = Style::spaceMd * scale, .configure = [scale](Flex& flex) {
-             flex.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-             flex.setRadius(Style::scaledRadiusMd(scale));
-           }}
+          {.out = &m_row,
+           .align = FlexAlign::Center,
+           .gap = Style::spaceMd * scale,
+           .paddingV = Style::spaceXs * scale,
+           .paddingH = Style::spaceSm * scale,
+           .radius = Style::scaledRadiusMd(scale)}
       );
       addChild(std::move(row));
 

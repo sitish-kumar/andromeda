@@ -135,7 +135,8 @@ void SetupWizardPanel::create() {
        .align = FlexAlign::Stretch,
        .justify = FlexJustify::SpaceBetween,
        .gap = Style::spaceLg * scale,
-       .configure = [scale](Flex& flex) { flex.setPadding(24.0f * scale, 28.0f * scale); }}
+       .paddingV = 24.0f * scale,
+       .paddingH = 28.0f * scale}
   );
 
   auto scroll = ui::scrollView({

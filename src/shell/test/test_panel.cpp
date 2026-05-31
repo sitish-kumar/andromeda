@@ -1234,14 +1234,12 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
       auto frame = ui::row(
           {
               .align = FlexAlign::Center,
+              .paddingV = Style::spaceXs * scale,
+              .paddingH = Style::spaceSm * scale,
+              .radius = Style::scaledRadiusSm(scale),
+              .border = colorSpecFromRole(ColorRole::Outline),
               .width = w * scale,
               .height = 0.0f,
-              .configure =
-                  [scale](Flex& flex) {
-                    flex.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
-                    flex.setRadius(Style::scaledRadiusSm(scale));
-                    flex.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-                  },
           },
           ui::label({
               .text = longText,
@@ -1286,14 +1284,12 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
       return ui::row(
           {
               .align = FlexAlign::Center,
+              .paddingV = Style::spaceXs * scale,
+              .paddingH = Style::spaceSm * scale,
+              .radius = Style::scaledRadiusSm(scale),
+              .border = colorSpecFromRole(ColorRole::Outline),
               .width = kBoxW * scale,
               .height = 0.0f,
-              .configure =
-                  [scale](Flex& frame) {
-                    frame.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
-                    frame.setRadius(Style::scaledRadiusSm(scale));
-                    frame.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-                  },
           },
           ui::label({
               .text = text,
@@ -1369,12 +1365,10 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
           {
               .align = FlexAlign::Center,
               .gap = Style::spaceXs * scale,
-              .configure =
-                  [scale](Flex& flex) {
-                    flex.setRadius(Style::scaledRadiusMd(scale));
-                    flex.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
-                    flex.setPadding(0.0f, Style::spaceSm * scale);
-                  },
+              .paddingV = 0.0f,
+              .paddingH = Style::spaceSm * scale,
+              .radius = Style::scaledRadiusMd(scale),
+              .border = colorSpecFromRole(ColorRole::Outline),
           },
           ui::glyph({
               .glyph = c.glyph,

@@ -199,7 +199,7 @@ namespace settings {
               .align = FlexAlign::Stretch,
               .gap = Style::spaceSm * scale,
               .padding = Style::spaceLg * scale,
-              .configure = [](Flex& flex) { flex.setFill(clearColorSpec()); },
+              .fill = clearColorSpec(),
           },
           ui::row(
               {.align = FlexAlign::Center, .gap = Style::spaceSm * scale},
@@ -254,17 +254,11 @@ namespace settings {
                                      bool matchResetHeight) {
       return ui::row(
           {.align = FlexAlign::Center,
-           .configure =
-               [scale, fill, matchResetHeight](Flex& flex) {
-                 if (matchResetHeight) {
-                   flex.setMinHeight(Style::controlHeightSm * scale);
-                   flex.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-                 } else {
-                   flex.setPadding(0.0f, Style::spaceXs * scale);
-                 }
-                 flex.setRadius(Style::scaledRadiusSm(scale));
-                 flex.setFill(fill);
-               }},
+           .paddingV = matchResetHeight ? Style::spaceXs * scale : 0.0f,
+           .paddingH = matchResetHeight ? Style::spaceSm * scale : Style::spaceXs * scale,
+           .fill = fill,
+           .radius = Style::scaledRadiusSm(scale),
+           .minHeight = matchResetHeight ? std::optional<float>{Style::controlHeightSm * scale} : std::nullopt},
           makeLabel(label, Style::fontSizeCaption * scale, color, FontWeight::Bold)
       );
     };
@@ -348,11 +342,9 @@ namespace settings {
           {.align = FlexAlign::Center,
            .justify = FlexJustify::SpaceBetween,
            .gap = Style::spaceXs * scale,
-           .configure =
-               [scale](Flex& flex) {
-                 flex.setPadding(2.0f * scale, 0.0f);
-                 flex.setMinHeight(Style::controlHeight * scale);
-               }},
+           .paddingV = 2.0f * scale,
+           .paddingH = 0.0f,
+           .minHeight = Style::controlHeight * scale},
           std::move(copy), std::move(actions)
       );
 
@@ -816,15 +808,10 @@ namespace settings {
                                          bool compactTitleDescription = false) {
       ui::FlexProps blockProps{
           .align = FlexAlign::Stretch,
-          .configure = [scale, fillWidth, flexGrow](Flex& flex) {
-            flex.setPadding(Style::spaceXs * scale, 0.0f);
-            if (fillWidth) {
-              flex.setFillWidth(true);
-            }
-            if (flexGrow) {
-              flex.setFlexGrow(1.0f);
-            }
-          },
+          .paddingV = Style::spaceXs * scale,
+          .paddingH = 0.0f,
+          .fillWidth = fillWidth ? std::optional<bool>{true} : std::nullopt,
+          .flexGrow = flexGrow ? std::optional<float>{1.0f} : std::nullopt,
       };
       if (!compactTitleDescription) {
         blockProps.gap = Style::spaceXs * scale;
@@ -834,12 +821,7 @@ namespace settings {
       auto titleRow = ui::row(
           {.align = FlexAlign::Center,
            .gap = Style::spaceSm * scale,
-           .configure =
-               [scale, reserveTitleHeight](Flex& flex) {
-                 if (reserveTitleHeight) {
-                   flex.setMinHeight(Style::controlHeightSm * scale);
-                 }
-               }},
+           .minHeight = reserveTitleHeight ? std::optional<float>{Style::controlHeightSm * scale} : std::nullopt},
           ui::label({
               .text = entry.title,
               .fontSize = Style::fontSizeBody * scale,
@@ -872,10 +854,12 @@ namespace settings {
 
       auto block = makeCollectionBlock(entry, overridden);
 
-      auto checkRow =
-          ui::row({.align = FlexAlign::Center, .gap = Style::spaceMd * scale, .configure = [scale](Flex& flex) {
-                     flex.setPadding(Style::spaceXs * scale, 0.0f);
-                   }});
+      auto checkRow = ui::row(
+          {.align = FlexAlign::Center,
+           .gap = Style::spaceMd * scale,
+           .paddingV = Style::spaceXs * scale,
+           .paddingH = 0.0f}
+      );
 
       auto options = setting.options;
       auto selected = setting.selectedValues;
@@ -1875,16 +1859,13 @@ namespace settings {
            .justify = FlexJustify::Center,
            .gap = Style::spaceSm * scale,
            .padding = (Style::spaceLg * 2.0f) * scale,
+           .fill = colorSpecFromRole(ColorRole::SurfaceVariant, 0.24f),
+           .radius = Style::scaledRadiusMd(scale),
+           .border = colorSpecFromRole(ColorRole::Outline, 0.28f),
            .minWidth = 360.0f * scale,
            .minHeight = 160.0f * scale,
            .fillWidth = true,
-           .flexGrow = 2.0f,
-           .configure =
-               [scale](Flex& flex) {
-                 flex.setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.24f));
-                 flex.setBorder(colorSpecFromRole(ColorRole::Outline, 0.28f), Style::borderWidth);
-                 flex.setRadius(Style::scaledRadiusMd(scale));
-               }},
+           .flexGrow = 2.0f},
           makeLabel(
               i18n::tr("settings.window.no-results"), Style::fontSizeHeader * scale,
               colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold

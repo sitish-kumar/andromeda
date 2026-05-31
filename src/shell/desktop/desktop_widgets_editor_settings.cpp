@@ -544,14 +544,12 @@ void DesktopWidgetsEditor::buildInspector(
               .out = &handlePtr,
               .align = FlexAlign::Center,
               .gap = Style::spaceXs,
+              .paddingV = Style::spaceXs,
+              .paddingH = Style::spaceMd,
+              .fill = colorSpecFromRole(ColorRole::SurfaceVariant, 0.85f),
+              .radius = Style::scaledRadiusLg(),
               .minHeight = Style::controlHeightSm,
               .fillWidth = true,
-              .configure =
-                  [](Flex& flex) {
-                    flex.setPadding(Style::spaceXs, Style::spaceMd);
-                    flex.setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.85f));
-                    flex.setRadius(Style::scaledRadiusLg());
-                  },
           },
           ui::glyph({
               .glyph = "menu-2",

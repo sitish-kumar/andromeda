@@ -155,14 +155,12 @@ namespace {
         .align = FlexAlign::Stretch,
         .gap = Style::spaceXs * scale,
         .padding = Style::spaceSm * scale,
+        .fill = colorSpecFromRole(ColorRole::Error, 0.10f),
+        .radius = Style::scaledRadiusSm(scale),
+        .border = colorSpecFromRole(ColorRole::Error, 0.5f),
         .fillWidth = true,
         .visible = false,
         .participatesInLayout = false,
-        .configure = [scale](Flex& panel) {
-          panel.setRadius(Style::scaledRadiusSm(scale));
-          panel.setFill(colorSpecFromRole(ColorRole::Error, 0.10f));
-          panel.setBorder(colorSpecFromRole(ColorRole::Error, 0.5f), Style::borderWidth);
-        },
     });
   }
 
@@ -200,9 +198,11 @@ namespace {
       );
 
       auto row = ui::row(
-          {.out = &m_row, .align = FlexAlign::Center, .gap = Style::spaceMd * scale, .configure = [scale](Flex& flex) {
-             flex.setPadding(Style::spaceXs * scale, Style::spaceSm * scale);
-           }}
+          {.out = &m_row,
+           .align = FlexAlign::Center,
+           .gap = Style::spaceMd * scale,
+           .paddingV = Style::spaceXs * scale,
+           .paddingH = Style::spaceSm * scale}
       );
       addChild(std::move(row));
 
