@@ -37,6 +37,8 @@ namespace {
     return std::string(text.substr(begin, end - begin));
   }
 
+  bool shouldRefreshExchangeRateSource(std::string_view url) { return url.find("nbrb.by") == std::string_view::npos; }
+
 } // namespace
 
 MathProvider::MathProvider(ClipboardService* clipboard, ConfigService* config, HttpClient* httpClient)
@@ -66,6 +68,9 @@ void MathProvider::refreshExchangeRates() {
     std::string file = m_calc->getExchangeRatesFileName(i);
     if (url.empty() || file.empty()) {
       break;
+    }
+    if (!shouldRefreshExchangeRateSource(url)) {
+      continue;
     }
     sources.emplace_back(std::move(url), std::filesystem::path(std::move(file)));
   }
