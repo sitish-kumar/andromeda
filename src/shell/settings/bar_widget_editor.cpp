@@ -1170,7 +1170,8 @@ namespace settings {
               {
                   .align = FlexAlign::Stretch,
                   .gap = 1.0f * ctx.scale,
-                  .configure = [&ctx](Flex& flex) { flex.setPadding(Style::spaceXs * ctx.scale, 0.0f); },
+                  .paddingV = Style::spaceXs * ctx.scale,
+                  .paddingH = 0,
               },
               makeLabel(
                   i18n::tr("settings.entities.widget.raw.title"), Style::fontSizeCaption * ctx.scale,
@@ -1194,8 +1195,9 @@ namespace settings {
             {
                 .align = FlexAlign::Center,
                 .gap = Style::spaceSm * ctx.scale,
+                .paddingV = Style::spaceXs * ctx.scale,
+                .paddingH = 0,
                 .minHeight = Style::controlHeightSm * ctx.scale,
-                .configure = [&ctx](Flex& flex) { flex.setPadding(Style::spaceXs * ctx.scale, 0.0f); },
             },
             makeLabel(
                 key, Style::fontSizeCaption * ctx.scale, colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold
@@ -1258,12 +1260,10 @@ namespace settings {
       auto panel = ui::column({
           .align = FlexAlign::Stretch,
           .gap = Style::spaceXs * ctx.scale,
-          .configure = [&ctx](Flex& flex) {
-            flex.setPadding(Style::spaceSm * ctx.scale);
-            flex.setRadius(Style::scaledRadiusSm(ctx.scale));
-            flex.setFill(colorSpecFromRole(ColorRole::Surface));
-            flex.setBorder(colorSpecFromRole(ColorRole::Outline, 0.22f), Style::borderWidth);
-          },
+          .padding = Style::spaceSm * ctx.scale,
+          .fill = colorSpecFromRole(ColorRole::Surface),
+          .radius = Style::scaledRadiusSm(ctx.scale),
+          .border = colorSpecFromRole(ColorRole::Outline, 0.22f),
       });
 
       std::size_t visibleSpecs = 0;
@@ -1565,12 +1565,10 @@ namespace settings {
       auto inspector = ui::column({
           .align = FlexAlign::Stretch,
           .gap = Style::spaceSm * ctx.scale,
-          .configure = [&ctx](Flex& flex) {
-            flex.setPadding(Style::spaceMd * ctx.scale);
-            flex.setRadius(Style::scaledRadiusMd(ctx.scale));
-            flex.setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
-            flex.setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
-          },
+          .padding = Style::spaceMd * ctx.scale,
+          .fill = colorSpecFromRole(ColorRole::SurfaceVariant),
+          .radius = Style::scaledRadiusMd(ctx.scale),
+          .border = colorSpecFromRole(ColorRole::Outline, 0.5f),
       });
       if (ctx.setScrollTarget) {
         ctx.setScrollTarget(inspector.get());
@@ -1631,12 +1629,10 @@ namespace settings {
                 {
                     .align = FlexAlign::Center,
                     .gap = Style::spaceXs * ctx.scale,
-                    .configure =
-                        [&ctx, &info](Flex& flex) {
-                          flex.setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-                          flex.setRadius(Style::scaledRadiusSm(ctx.scale));
-                          flex.setFill(widgetBadgeColor(info.kind));
-                        },
+                    .paddingV = Style::spaceXs * ctx.scale,
+                    .paddingH = Style::spaceSm * ctx.scale,
+                    .fill = widgetBadgeColor(info.kind),
+                    .radius = Style::scaledRadiusSm(ctx.scale),
                 },
                 makeGlyph(
                     widgetBadgeGlyph(info.kind), Style::fontSizeCaption * ctx.scale, widgetBadgeOnColor(info.kind)
@@ -1873,13 +1869,10 @@ namespace settings {
               {
                   .align = FlexAlign::Stretch,
                   .gap = Style::spaceXs * ctx.scale,
-                  .configure =
-                      [&ctx](Flex& flex) {
-                        flex.setPadding(Style::spaceSm * ctx.scale);
-                        flex.setRadius(Style::scaledRadiusSm(ctx.scale));
-                        flex.setFill(colorSpecFromRole(ColorRole::Error, 0.10f));
-                        flex.setBorder(colorSpecFromRole(ColorRole::Error, 0.5f), Style::borderWidth);
-                      },
+                  .padding = Style::spaceSm * ctx.scale,
+                  .fill = colorSpecFromRole(ColorRole::Error, 0.10f),
+                  .radius = Style::scaledRadiusSm(ctx.scale),
+                  .border = colorSpecFromRole(ColorRole::Error, 0.5f),
               },
               makeLabel(
                   i18n::tr("settings.entities.widget.instance.delete-confirm-title", "name", widgetName),
@@ -2077,12 +2070,10 @@ namespace settings {
       auto inspector = ui::column({
           .align = FlexAlign::Stretch,
           .gap = Style::spaceSm * ctx.scale,
-          .configure = [&ctx](Flex& flex) {
-            flex.setPadding(Style::spaceMd * ctx.scale);
-            flex.setRadius(Style::scaledRadiusMd(ctx.scale));
-            flex.setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
-            flex.setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
-          },
+          .padding = Style::spaceMd * ctx.scale,
+          .fill = colorSpecFromRole(ColorRole::SurfaceVariant),
+          .radius = Style::scaledRadiusMd(ctx.scale),
+          .border = colorSpecFromRole(ColorRole::Outline, 0.5f),
       });
       if (ctx.setScrollTarget) {
         ctx.setScrollTarget(inspector.get());
@@ -2133,12 +2124,10 @@ namespace settings {
       auto panel = ui::column({
           .align = FlexAlign::Stretch,
           .gap = Style::spaceXs * ctx.scale,
-          .configure = [&ctx](Flex& flex) {
-            flex.setPadding(Style::spaceSm * ctx.scale);
-            flex.setRadius(Style::scaledRadiusSm(ctx.scale));
-            flex.setFill(colorSpecFromRole(ColorRole::Surface));
-            flex.setBorder(colorSpecFromRole(ColorRole::Outline, 0.22f), Style::borderWidth);
-          },
+          .padding = Style::spaceSm * ctx.scale,
+          .fill = colorSpecFromRole(ColorRole::Surface),
+          .radius = Style::scaledRadiusSm(ctx.scale),
+          .border = colorSpecFromRole(ColorRole::Outline, 0.22f),
       });
       Flex* panelPtr = panel.get();
 
@@ -2319,12 +2308,11 @@ namespace settings {
       auto toolbar = ui::row({
           .align = FlexAlign::Center,
           .gap = Style::spaceSm * ctx.scale,
+          .paddingV = Style::spaceXs * ctx.scale,
+          .paddingH = Style::spaceSm * ctx.scale,
+          .fill = colorSpecFromRole(ColorRole::Primary, 0.12f),
+          .radius = Style::scaledRadiusSm(ctx.scale),
           .fillWidth = true,
-          .configure = [&ctx](Flex& flex) {
-            flex.setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-            flex.setRadius(Style::scaledRadiusSm(ctx.scale));
-            flex.setFill(colorSpecFromRole(ColorRole::Primary, 0.12f));
-          },
       });
       auto label = makeLabel(
           i18n::tr("settings.entities.widget.group.selected", "count", std::to_string(ctx.selectedLaneWidgets.size())),
@@ -2419,7 +2407,8 @@ namespace settings {
         {
             .align = FlexAlign::Stretch,
             .gap = Style::spaceSm * ctx.scale,
-            .configure = [&ctx](Flex& flex) { flex.setPadding(2.0f * ctx.scale, 0.0f); },
+            .paddingV = 2.0f * ctx.scale,
+            .paddingH = 0,
         },
         ui::row(
             {
@@ -2624,16 +2613,12 @@ namespace settings {
       const auto info = widgetReferenceInfo(ctx.config, name, false);
       auto card = ui::column({
           .align = FlexAlign::Stretch,
-          .configure = [&ctx, isSelected](Flex& flex) {
-            flex.setPadding(2.0f * ctx.scale, Style::spaceXs * ctx.scale);
-            flex.setRadius(Style::scaledRadiusSm(ctx.scale));
-            flex.setFill(colorSpecFromRole(ColorRole::Surface, 0.72f));
-            if (isSelected) {
-              flex.setBorder(colorSpecFromRole(ColorRole::Primary), Style::borderWidth * 1.5f);
-            } else {
-              flex.setBorder(colorSpecFromRole(ColorRole::Outline, 0.22f), Style::borderWidth);
-            }
-          },
+          .paddingV = 2.0f * ctx.scale,
+          .paddingH = Style::spaceXs * ctx.scale,
+          .fill = colorSpecFromRole(ColorRole::Surface, 0.72f),
+          .radius = Style::scaledRadiusSm(ctx.scale),
+          .border = isSelected ? colorSpecFromRole(ColorRole::Primary) : colorSpecFromRole(ColorRole::Outline, 0.22f),
+          .borderWidth = isSelected ? Style::borderWidth * 1.5f : Style::borderWidth,
       });
       auto* cardPtr = card.get();
 
@@ -2734,14 +2719,12 @@ namespace settings {
       auto lane = ui::column({
           .align = FlexAlign::Stretch,
           .gap = Style::spaceXs * ctx.scale,
+          .padding = Style::spaceSm * ctx.scale,
+          .fill = colorSpecFromRole(ColorRole::SurfaceVariant, 0.45f),
+          .radius = Style::scaledRadiusMd(ctx.scale),
+          .border = colorSpecFromRole(ColorRole::Outline, 0.5f),
           .minWidth = 160.0f * ctx.scale,
           .flexGrow = 1.0f,
-          .configure = [&ctx](Flex& flex) {
-            flex.setPadding(Style::spaceSm * ctx.scale);
-            flex.setRadius(Style::scaledRadiusMd(ctx.scale));
-            flex.setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.45f));
-            flex.setBorder(colorSpecFromRole(ColorRole::Outline, 0.5f), Style::borderWidth);
-          },
       });
       auto* lanePtr = lane.get();
 
@@ -2787,12 +2770,10 @@ namespace settings {
             ui::row(
                 {
                     .align = FlexAlign::Center,
-                    .configure =
-                        [&ctx](Flex& flex) {
-                          flex.setPadding(0, Style::spaceXs * ctx.scale);
-                          flex.setRadius(Style::scaledRadiusSm(ctx.scale));
-                          flex.setFill(colorSpecFromRole(ColorRole::Primary, 0.15f));
-                        },
+                    .paddingV = 0,
+                    .paddingH = Style::spaceXs * ctx.scale,
+                    .fill = colorSpecFromRole(ColorRole::Primary, 0.15f),
+                    .radius = Style::scaledRadiusSm(ctx.scale),
                 },
                 makeLabel(
                     i18n::tr("settings.badges.override"), Style::fontSizeCaption * ctx.scale,
@@ -2806,12 +2787,10 @@ namespace settings {
             ui::row(
                 {
                     .align = FlexAlign::Center,
-                    .configure =
-                        [&ctx](Flex& flex) {
-                          flex.setPadding(0, Style::spaceXs * ctx.scale);
-                          flex.setRadius(Style::scaledRadiusSm(ctx.scale));
-                          flex.setFill(colorSpecFromRole(ColorRole::OnSurfaceVariant, 0.14f));
-                        },
+                    .paddingV = 0,
+                    .paddingH = Style::spaceXs * ctx.scale,
+                    .fill = colorSpecFromRole(ColorRole::OnSurfaceVariant, 0.14f),
+                    .radius = Style::scaledRadiusSm(ctx.scale),
                 },
                 makeLabel(
                     i18n::tr("settings.badges.inherited"), Style::fontSizeCaption * ctx.scale,
@@ -2854,11 +2833,10 @@ namespace settings {
             auto orphan = ui::column({
                 .align = FlexAlign::Center,
                 .gap = Style::spaceXs * ctx.scale,
-                .configure = [&ctx](Flex& flex) {
-                  flex.setPadding(Style::spaceXs * ctx.scale, Style::spaceSm * ctx.scale);
-                  flex.setRadius(Style::scaledRadiusSm(ctx.scale));
-                  flex.setBorder(colorSpecFromRole(ColorRole::Error, 0.5f), Style::borderWidth);
-                },
+                .paddingV = Style::spaceXs * ctx.scale,
+                .paddingH = Style::spaceSm * ctx.scale,
+                .radius = Style::scaledRadiusSm(ctx.scale),
+                .border = colorSpecFromRole(ColorRole::Error, 0.5f),
             });
             orphan->addChild(makeLabel(
                 i18n::tr("settings.entities.widget.group.orphan"), Style::fontSizeCaption * ctx.scale,
@@ -2907,12 +2885,10 @@ namespace settings {
           auto container = ui::column({
               .align = FlexAlign::Stretch,
               .gap = Style::spaceXs * ctx.scale,
-              .configure = [&ctx, groupFillTint, groupBorder](Flex& flex) {
-                flex.setPadding(Style::spaceXs * ctx.scale);
-                flex.setRadius(Style::scaledRadiusSm(ctx.scale));
-                flex.setFill(groupFillTint);
-                flex.setBorder(groupBorder, Style::borderWidth);
-              },
+              .padding = Style::spaceXs * ctx.scale,
+              .fill = groupFillTint,
+              .radius = Style::scaledRadiusSm(ctx.scale),
+              .border = groupBorder,
           });
           auto* containerPtr = container.get();
 
@@ -3128,13 +3104,11 @@ namespace settings {
                 {
                     .align = FlexAlign::Center,
                     .gap = 2.0f * ctx.scale,
-                    .configure =
-                        [&ctx](Flex& flex) {
-                          flex.setPadding(Style::spaceMd * ctx.scale, Style::spaceSm * ctx.scale);
-                          flex.setRadius(Style::scaledRadiusSm(ctx.scale));
-                          flex.setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.25f));
-                          flex.setBorder(colorSpecFromRole(ColorRole::Outline, 0.18f), Style::borderWidth);
-                        },
+                    .paddingV = Style::spaceMd * ctx.scale,
+                    .paddingH = Style::spaceSm * ctx.scale,
+                    .fill = colorSpecFromRole(ColorRole::SurfaceVariant, 0.25f),
+                    .radius = Style::scaledRadiusSm(ctx.scale),
+                    .border = colorSpecFromRole(ColorRole::Outline, 0.18f),
                 },
                 makeLabel(
                     i18n::tr("settings.entities.widget.lanes.empty"), Style::fontSizeCaption * ctx.scale,
