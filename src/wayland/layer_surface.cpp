@@ -104,11 +104,39 @@ void LayerSurface::requestSize(std::uint32_t width, std::uint32_t height) {
   if (m_layerSurface == nullptr || m_surface == nullptr) {
     return;
   }
-  m_config.width = width;
-  m_config.height = height;
-  m_config.defaultWidth = width;
-  m_config.defaultHeight = height;
-  zwlr_layer_surface_v1_set_size(m_layerSurface, width, height);
+
+  std::uint32_t resolvedWidth = width;
+  std::uint32_t resolvedHeight = height;
+  if (resolvedWidth == 0) {
+    resolvedWidth = m_config.width != 0 ? m_config.width : std::max(Surface::width(), 1u);
+  }
+  if (resolvedHeight == 0) {
+    const bool stretchHeight =
+        (m_config.anchor & LayerShellAnchor::Top) != 0 && (m_config.anchor & LayerShellAnchor::Bottom) != 0;
+    if (stretchHeight) {
+      resolvedHeight = 0;
+    } else if (m_config.height != 0) {
+      resolvedHeight = m_config.height;
+    } else if (Surface::height() != 0) {
+      resolvedHeight = Surface::height();
+    } else {
+      resolvedHeight = std::max(m_config.defaultHeight, 1u);
+    }
+  }
+
+  if (resolvedWidth == m_config.width && resolvedHeight == m_config.height) {
+    return;
+  }
+
+  m_config.width = resolvedWidth;
+  m_config.height = resolvedHeight;
+  if (resolvedWidth != 0) {
+    m_config.defaultWidth = resolvedWidth;
+  }
+  if (resolvedHeight != 0) {
+    m_config.defaultHeight = resolvedHeight;
+  }
+  zwlr_layer_surface_v1_set_size(m_layerSurface, resolvedWidth, resolvedHeight);
   wl_surface_commit(m_surface);
 }
 

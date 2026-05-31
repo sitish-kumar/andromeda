@@ -48,6 +48,8 @@ public:
   bool onPointerEvent(const PointerEvent& event);
   bool onKeyboardEvent(const KeyboardEvent& event);
 
+  [[nodiscard]] float horizontalInnerPad(float scale) const;
+
 private:
   // Per-notification visual state (shared across all instances)
   struct PopupEntry {

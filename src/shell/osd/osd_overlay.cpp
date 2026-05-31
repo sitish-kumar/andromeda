@@ -6,6 +6,7 @@
 #include "core/ui_phase.h"
 #include "render/render_context.h"
 #include "render/scene/node.h"
+#include "shell/surface_edge_inset.h"
 #include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
@@ -66,16 +67,9 @@ namespace {
     return (Style::controlHeight + Style::spaceSm) * s;
   }
 
-  [[nodiscard]] std::uint32_t osdSurfaceWidth(float s, const std::string& orientation) {
-    const float w = cardWidth(s, orientation) + Style::spaceMd * s * 2.0f;
+  [[nodiscard]] std::uint32_t osdSurfaceWidth(float s, const std::string& orientation, float innerPadX) {
+    const float w = cardWidth(s, orientation) + innerPadX * 2.0f;
     return static_cast<std::uint32_t>(std::max(1, static_cast<int>(std::ceil(w))));
-  }
-
-  [[nodiscard]] std::int32_t horizontalLayerMarginFromScreenMargin(int offsetX, float scale) {
-    return std::max(
-        std::int32_t{0},
-        static_cast<std::int32_t>(offsetX) - static_cast<std::int32_t>(std::lround(Style::spaceMd * scale))
-    );
   }
 
   [[nodiscard]] std::uint32_t osdSurfaceHeight(float s, const std::string& orientation, bool showProgress) {
@@ -194,7 +188,7 @@ OsdOverlay::SurfaceMargins OsdOverlay::surfaceMarginsForPosition(const std::stri
   const int marginH = (m_config != nullptr) ? std::max(0, m_config->config().osd.offsetX) : 0;
   const int marginV = (m_config != nullptr) ? std::max(0, m_config->config().osd.offsetY) : 0;
   const float layoutScale = osdUiScale(m_config);
-  const std::int32_t sideMargin = horizontalLayerMarginFromScreenMargin(marginH, layoutScale);
+  const std::int32_t sideMargin = shell::surface_edge_inset::resolve(marginH, Style::spaceMd * layoutScale).layerMargin;
 
   SurfaceMargins margins{
       .top = marginV,
@@ -258,6 +252,12 @@ void OsdOverlay::ensureSurfaces() {
     destroySurfaces();
   }
 
+  const int marginH = (m_config != nullptr) ? std::max(0, m_config->config().osd.offsetX) : 0;
+  const float horizontalInnerPad =
+      shell::surface_edge_inset::resolve(marginH, Style::spaceMd * layoutScale).innerPadding;
+  const auto surfaceWidth = osdSurfaceWidth(layoutScale, orientation, horizontalInnerPad);
+  const auto surfaceHeight = osdSurfaceHeight(layoutScale, orientation, showProgress);
+
   if (!m_instances.empty()) {
     for (auto& inst : m_instances) {
       if (inst->surface == nullptr) {
@@ -269,6 +269,9 @@ void OsdOverlay::ensureSurfaces() {
           || inst->surface->marginBottom() != margins.bottom
           || inst->surface->marginLeft() != margins.left) {
         inst->surface->setMargins(margins.top, margins.right, margins.bottom, margins.left);
+      }
+      if (inst->surface->width() != surfaceWidth || inst->surface->height() != surfaceHeight) {
+        inst->surface->requestSize(surfaceWidth, surfaceHeight);
       }
     }
   }
@@ -285,9 +288,6 @@ void OsdOverlay::ensureSurfaces() {
   m_lastShowProgress = showProgress;
   m_lastLayoutScale = layoutScale;
   m_lastCornerRadiusScale = Style::cornerRadiusScale();
-
-  const auto surfaceWidth = osdSurfaceWidth(layoutScale, orientation);
-  const auto surfaceHeight = osdSurfaceHeight(layoutScale, orientation, showProgress);
 
   for (const auto& output : m_wayland->outputs()) {
     auto inst = std::make_unique<Instance>();
