@@ -1875,6 +1875,10 @@
           "label": "Vertical Margin",
           "description": "Absolute vertical margin from the screen edge"
         },
+        "osd-monitors": {
+          "label": "Monitors",
+          "description": "Choose which monitors show OSD popups; leave empty to show on all monitors"
+        },
         "osd-lock-keys": {
           "label": "Lock Keys",
           "description": "Show OSD popups for Caps Lock, Num Lock, and Scroll Lock changes"

@@ -16,6 +16,7 @@ class Label;
 class Node;
 class RenderContext;
 class WaylandConnection;
+struct WaylandOutput;
 struct wl_surface;
 
 struct OsdContent {
@@ -35,6 +36,8 @@ public:
   OsdOverlay& operator=(const OsdOverlay&) = delete;
 
   void initialize(WaylandConnection& wayland, ConfigService* config, RenderContext* renderContext);
+  void onOutputChange();
+  void onConfigReload();
   void requestLayout();
   void requestRedraw();
 
@@ -73,6 +76,8 @@ private:
   };
 
   [[nodiscard]] SurfaceMargins surfaceMarginsForPosition(const std::string& position) const;
+  [[nodiscard]] std::vector<std::string> osdMonitors() const;
+  [[nodiscard]] bool shouldRenderOnOutput(const WaylandOutput& output) const;
   void ensureSurfaces();
   void destroySurfaces();
   void prepareFrame(Instance& inst, bool needsUpdate, bool needsLayout);
@@ -89,5 +94,6 @@ private:
   bool m_lastShowProgress = true;
   float m_lastLayoutScale = 1.0f;
   float m_lastCornerRadiusScale = 1.0f;
+  std::vector<std::string> m_lastMonitorSelectors;
   std::vector<std::unique_ptr<Instance>> m_instances;
 };

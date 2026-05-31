@@ -1957,6 +1957,9 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       osd.offsetX = std::max(0, static_cast<int>(*v));
     if (auto v = (*osdTbl)["offset_y"].value<int64_t>())
       osd.offsetY = std::max(0, static_cast<int>(*v));
+    if (const auto* v = osdTbl->get("monitors")) {
+      osd.monitors = readStringArray(*v);
+    }
     if (auto v = (*osdTbl)["lock_keys"].value<bool>())
       osd.lockKeys = *v;
     if (auto v = (*osdTbl)["keyboard_layout"].value<bool>())

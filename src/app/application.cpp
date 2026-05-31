@@ -523,6 +523,7 @@ void Application::initServices() {
     m_overviewLauncherCapture.onOutputChange();
     m_screenshotService.onOutputChange();
     m_notificationToast.onOutputChange();
+    m_osdOverlay.onOutputChange();
   });
   m_clipboardService.setChangeCallback([this]() {
     if (m_panelManager.isOpenPanel("clipboard")) {
@@ -1200,7 +1201,7 @@ void Application::initUi() {
 
   TooltipManager::instance().initialize(m_wayland, &m_renderContext);
   m_osdOverlay.initialize(m_wayland, &m_configService, &m_renderContext);
-  m_configService.addReloadCallback([this]() { m_osdOverlay.requestLayout(); });
+  m_configService.addReloadCallback([this]() { m_osdOverlay.onConfigReload(); });
   m_idleGraceOverlay.initialize(m_wayland, &m_renderContext);
   m_wayland.setIdleCapabilitiesReadyCallback([this]() { m_idleManager.reload(m_configService.config().idle); });
   m_idleManager.initialize(

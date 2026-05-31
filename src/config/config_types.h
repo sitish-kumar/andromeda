@@ -449,6 +449,7 @@ struct OsdConfig {
   float backgroundOpacity = 0.97f;
   int offsetX = 20;
   int offsetY = 8;
+  std::vector<std::string> monitors;
   bool lockKeys = true;
   bool keyboardLayout = true;
 

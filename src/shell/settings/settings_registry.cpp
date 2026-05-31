@@ -1221,6 +1221,12 @@ namespace settings {
         tr("settings.schema.shell.osd-keyboard-layout.description"), {"osd", "keyboard_layout"},
         ToggleSetting{cfg.osd.keyboardLayout}, "hud overlay xkb input language layout switch"
     ));
+    entries.push_back(makeEntry(
+        "popups", "osd", tr("settings.schema.shell.osd-monitors.label"),
+        tr("settings.schema.shell.osd-monitors.description"), {"osd", "monitors"},
+        ListSetting{.items = cfg.osd.monitors, .suggestedOptions = env.availableOutputs},
+        "monitor output display screen hud overlay"
+    ));
 
     // Keybinds (lives under Shell)
     entries.push_back(makeEntry(

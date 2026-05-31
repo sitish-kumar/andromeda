@@ -1,6 +1,7 @@
 #include "shell/osd/osd_overlay.h"
 
 #include "config/config_service.h"
+#include "config/config_types.h"
 #include "core/deferred_call.h"
 #include "core/log.h"
 #include "core/ui_phase.h"
@@ -226,6 +227,33 @@ OsdOverlay::SurfaceMargins OsdOverlay::surfaceMarginsForPosition(const std::stri
   return margins;
 }
 
+std::vector<std::string> OsdOverlay::osdMonitors() const {
+  if (m_config == nullptr) {
+    return {};
+  }
+  return m_config->config().osd.monitors;
+}
+
+bool OsdOverlay::shouldRenderOnOutput(const WaylandOutput& output) const {
+  const auto selectedMonitors = osdMonitors();
+  if (selectedMonitors.empty()) {
+    return true;
+  }
+  return std::any_of(selectedMonitors.begin(), selectedMonitors.end(), [&output](const std::string& match) {
+    return outputMatchesSelector(match, output);
+  });
+}
+
+void OsdOverlay::onOutputChange() {
+  if (m_instances.empty()) {
+    return;
+  }
+  ensureSurfaces();
+  requestLayout();
+}
+
+void OsdOverlay::onConfigReload() { onOutputChange(); }
+
 void OsdOverlay::ensureSurfaces() {
   if (m_wayland == nullptr || m_renderContext == nullptr) {
     return;
@@ -238,9 +266,13 @@ void OsdOverlay::ensureSurfaces() {
       : "horizontal";
   const bool showProgress = m_content.showProgress;
   const float layoutScale = osdUiScale(m_config);
+  const auto selectedMonitors = osdMonitors();
 
   if (!m_instances.empty()
-      && (position != m_lastPosition || orientation != m_lastOrientation || showProgress != m_lastShowProgress)) {
+      && (position != m_lastPosition
+          || orientation != m_lastOrientation
+          || showProgress != m_lastShowProgress
+          || selectedMonitors != m_lastMonitorSelectors)) {
     destroySurfaces();
   }
 
@@ -257,44 +289,67 @@ void OsdOverlay::ensureSurfaces() {
       shell::surface_edge_inset::resolve(marginH, Style::spaceMd * layoutScale).innerPadding;
   const auto surfaceWidth = osdSurfaceWidth(layoutScale, orientation, horizontalInnerPad);
   const auto surfaceHeight = osdSurfaceHeight(layoutScale, orientation, showProgress);
-
-  if (!m_instances.empty()) {
-    for (auto& inst : m_instances) {
-      if (inst->surface == nullptr) {
-        continue;
-      }
-      const SurfaceMargins margins = surfaceMarginsForPosition(position);
-      if (inst->surface->marginTop() != margins.top
-          || inst->surface->marginRight() != margins.right
-          || inst->surface->marginBottom() != margins.bottom
-          || inst->surface->marginLeft() != margins.left) {
-        inst->surface->setMargins(margins.top, margins.right, margins.bottom, margins.left);
-      }
-      if (inst->surface->width() != surfaceWidth || inst->surface->height() != surfaceHeight) {
-        inst->surface->requestSize(surfaceWidth, surfaceHeight);
-      }
-    }
-  }
-
-  if (!m_instances.empty() && m_instances.size() != m_wayland->outputs().size()) {
-    destroySurfaces();
-  }
-  if (!m_instances.empty()) {
-    return;
-  }
+  const SurfaceMargins margins = surfaceMarginsForPosition(position);
 
   m_lastPosition = position;
   m_lastOrientation = orientation;
   m_lastShowProgress = showProgress;
   m_lastLayoutScale = layoutScale;
   m_lastCornerRadiusScale = Style::cornerRadiusScale();
+  m_lastMonitorSelectors = selectedMonitors;
+
+  const bool anyConfiguredPresent = selectedMonitors.empty()
+      || std::any_of(m_wayland->outputs().begin(), m_wayland->outputs().end(), [this](const WaylandOutput& output) {
+                                      return output.output != nullptr && shouldRenderOnOutput(output);
+                                    });
+
+  std::erase_if(m_instances, [this, anyConfiguredPresent](const std::unique_ptr<Instance>& inst) {
+    if (inst->output == nullptr) {
+      return true;
+    }
+    const WaylandOutput* wlOutput = m_wayland->findOutputByWl(inst->output);
+    if (wlOutput == nullptr) {
+      return true;
+    }
+    return anyConfiguredPresent && !shouldRenderOnOutput(*wlOutput);
+  });
+
+  for (auto& inst : m_instances) {
+    if (inst->surface == nullptr) {
+      continue;
+    }
+    if (inst->surface->marginTop() != margins.top
+        || inst->surface->marginRight() != margins.right
+        || inst->surface->marginBottom() != margins.bottom
+        || inst->surface->marginLeft() != margins.left) {
+      inst->surface->setMargins(margins.top, margins.right, margins.bottom, margins.left);
+    }
+    if (inst->surface->width() != surfaceWidth || inst->surface->height() != surfaceHeight) {
+      inst->surface->requestSize(surfaceWidth, surfaceHeight);
+    }
+  }
 
   for (const auto& output : m_wayland->outputs()) {
+    if (output.output == nullptr) {
+      continue;
+    }
+    if (anyConfiguredPresent && !shouldRenderOnOutput(output)) {
+      continue;
+    }
+
+    auto existingIt = std::find_if(m_instances.begin(), m_instances.end(), [&output](const auto& inst) {
+      return inst != nullptr && inst->output == output.output;
+    });
+    if (existingIt != m_instances.end()) {
+      (*existingIt)->scale = output.scale;
+      (*existingIt)->uiLayoutScale = layoutScale;
+      continue;
+    }
+
     auto inst = std::make_unique<Instance>();
     inst->output = output.output;
     inst->scale = output.scale;
     inst->uiLayoutScale = layoutScale;
-    const SurfaceMargins margins = surfaceMarginsForPosition(position);
 
     std::uint32_t anchor = LayerShellAnchor::Top | LayerShellAnchor::Right;
 

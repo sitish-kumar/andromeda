@@ -694,6 +694,7 @@ namespace config_export {
     osd.insert_or_assign("background_opacity", static_cast<double>(config.osd.backgroundOpacity));
     osd.insert_or_assign("offset_x", static_cast<std::int64_t>(config.osd.offsetX));
     osd.insert_or_assign("offset_y", static_cast<std::int64_t>(config.osd.offsetY));
+    osd.insert_or_assign("monitors", stringArray(config.osd.monitors));
     osd.insert_or_assign("lock_keys", config.osd.lockKeys);
     osd.insert_or_assign("keyboard_layout", config.osd.keyboardLayout);
     root.insert_or_assign("osd", std::move(osd));
