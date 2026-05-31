@@ -30,6 +30,17 @@ namespace {
     return overlayControlSize(contentScale) + starPadding * 2.0f;
   }
 
+  [[nodiscard]] float starShadowOffset(float contentScale) { return std::max(0.5f, 1.0f * contentScale); }
+
+  void applyStarGlyphStyle(Glyph* glyph, const ColorSpec& fill, float contentScale) {
+    if (glyph == nullptr) {
+      return;
+    }
+    glyph->setColor(fill);
+    const float offset = starShadowOffset(contentScale);
+    glyph->setShadow(Color{0.0f, 0.0f, 0.0f, 0.58f}, 0.0f, offset);
+  }
+
   [[nodiscard]] bool
   starRegionContains(float cellWidth, float /*cellHeight*/, float contentScale, float localX, float localY) {
     const float padding = Style::spaceXs * contentScale;
@@ -490,13 +501,14 @@ void WallpaperTile::applyStarVisualState() {
 
   if (m_favorited) {
     m_starGlyph->setGlyph("star-filled");
-    m_starGlyph->setColor(colorSpecFromRole(ColorRole::Primary));
+    applyStarGlyphStyle(m_starGlyph, colorSpecFromRole(ColorRole::Primary), m_contentScale);
   } else if (m_starHoveredVisual) {
     m_starGlyph->setGlyph("star");
-    m_starGlyph->setColor(colorSpecFromRole(ColorRole::Primary));
+    applyStarGlyphStyle(m_starGlyph, colorSpecFromRole(ColorRole::Primary), m_contentScale);
   } else {
     m_starGlyph->setGlyph("star");
-    m_starGlyph->setColor(colorSpecFromRole(ColorRole::OnSurface));
+    // High-contrast overlay on arbitrary thumbnails: no pill/background, just fill + shadow.
+    applyStarGlyphStyle(m_starGlyph, fixedColorSpec(rgba(1.0f, 1.0f, 1.0f, 0.94f)), m_contentScale);
   }
 }
 

@@ -11,6 +11,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 class Button;
@@ -28,11 +29,6 @@ class WaylandConnection;
 
 class WallpaperPanel : public Panel {
 public:
-  enum class ViewMode : std::uint8_t {
-    Browse,
-    Favorites,
-  };
-
   WallpaperPanel(WaylandConnection* wayland, ConfigService* config, ThumbnailService* thumbnails);
   ~WallpaperPanel() override;
 
@@ -69,11 +65,14 @@ private:
   void applyWallpaperFromEntry(const WallpaperEntry& entry);
   void applyWallpaperPath(const std::string& path, const WallpaperFavorite* applyTheme);
   [[nodiscard]] const WallpaperFavorite* favoriteThemeToApply(std::string_view path) const;
-  void applyLiveFavoritePreview(const std::string& path);
+  [[nodiscard]] WallpaperFavorite themeFromControls() const;
+  void applyLiveThemePreview(const std::string& path);
   void toggleFavoriteForPath(const std::string& path);
-  void syncFavoriteControls();
+  void syncThemeControls();
   void rebuildFavoritePaletteDetailSelect(const WallpaperFavorite* favorite);
-  [[nodiscard]] std::string selectedFavoritePath() const;
+  [[nodiscard]] std::string selectedWallpaperPath() const;
+  void
+  appendFilteredFavoriteEntries(std::vector<WallpaperEntry>& out, std::unordered_set<std::string>& favoritePaths) const;
   void applyColorWallpaper();
   void rebindGrid(bool resetScroll = false);
   void resetSelection();
@@ -86,8 +85,6 @@ private:
   [[nodiscard]] std::vector<std::string> allMonitorConnectors() const;
   [[nodiscard]] std::optional<Color> selectedFillColor() const;
   [[nodiscard]] static std::string displayNameForWallpaperPath(std::string_view path);
-
-  ViewMode m_viewMode = ViewMode::Browse;
 
   WaylandConnection* m_wayland = nullptr;
   ConfigService* m_config = nullptr;
@@ -103,7 +100,6 @@ private:
   Label* m_title = nullptr;
   Button* m_backButton = nullptr;
   Label* m_breadcrumb = nullptr;
-  Segmented* m_viewSegmented = nullptr;
   Segmented* m_favoriteThemeSegmented = nullptr;
   Label* m_favoriteThemeLabel = nullptr;
   Segmented* m_favoritePaletteSourceSegmented = nullptr;
