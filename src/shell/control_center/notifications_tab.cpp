@@ -4,6 +4,7 @@
 #include "i18n/i18n.h"
 #include "net/uri.h"
 #include "notification/notification.h"
+#include "notification/notification_display_name.h"
 #include "notification/notification_manager.h"
 #include "render/core/renderer.h"
 #include "render/core/texture_manager.h"
@@ -246,7 +247,7 @@ namespace {
     const float leftClusterWidth = metrics.cardTextWidth - headerActionsWidth;
     metrics.metaTextWidth = std::max(0.0f, leftClusterWidth - iconColumn);
 
-    metrics.metaLine = entry.notification.appName + " • " + relativeMetaLine(entry.notification);
+    metrics.metaLine = notificationDisplayAppName(entry.notification) + " • " + relativeMetaLine(entry.notification);
 
     const float metaHeight = measuredTextHeight(
         renderer, metrics.metaLine, Style::fontSizeCaption * scale, FontWeight::Normal, metrics.metaTextWidth, 0

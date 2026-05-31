@@ -406,6 +406,7 @@ _noctalia_sources = files(
   'src/net/uri.cpp',
   'src/net/url_open.cpp',
   'src/notification/notification_manager.cpp',
+  'src/notification/notification_display_name.cpp',
   'src/notification/notification_history_store.cpp',
   'src/pipewire/pipewire_service.cpp',
   'src/pipewire/pipewire_spectrum.cpp',

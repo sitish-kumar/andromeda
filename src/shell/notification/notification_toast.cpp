@@ -9,6 +9,7 @@
 #include "i18n/i18n.h"
 #include "net/http_client.h"
 #include "net/uri.h"
+#include "notification/notification_display_name.h"
 #include "notification/notification_manager.h"
 #include "render/render_context.h"
 #include "render/scene/input_area.h"
@@ -673,7 +674,7 @@ void NotificationToast::onNotificationEvent(const Notification& n, NotificationE
         const int prevToastSummaryLines = m_entries[i].toastSummaryLines;
         const int prevToastBodyLines = m_entries[i].toastBodyLines;
         const bool previouslyPlaced = hasPlacement(m_entries[i]);
-        m_entries[i].appName = n.appName;
+        m_entries[i].appName = notificationDisplayAppName(n);
         m_entries[i].summary = n.summary;
         m_entries[i].body = n.body;
         m_entries[i].actions = n.actions;
@@ -782,7 +783,7 @@ void NotificationToast::onNotificationEvent(const Notification& n, NotificationE
             }
             regionChanged = true;
           } else if (!layoutChanged) {
-            cs.appNameLabel->setText(n.appName);
+            cs.appNameLabel->setText(notificationDisplayAppName(n));
             const float scale = notificationUiScale(m_config);
             const float actionsReservedHeight = measureActionsFromPairs(*m_renderContext, m_entries[i].actions, scale);
             PopupEntry& e = m_entries[i];
@@ -887,7 +888,7 @@ void NotificationToast::addPopup(const Notification& n) {
 
   PopupEntry entry;
   entry.notificationId = n.id;
-  entry.appName = n.appName;
+  entry.appName = notificationDisplayAppName(n);
   entry.summary = n.summary;
   entry.body = n.body;
   entry.actions = n.actions;
