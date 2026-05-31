@@ -8,8 +8,7 @@
     },
     "actions": {
       "cancel": "Cancel",
-      "apply": "Apply",
-      "remove": "Remove"
+      "apply": "Apply"
     }
   },
   "clipboard": {
@@ -24,8 +23,7 @@
       "text-title": "Text Clipboard Entry",
       "loading": "Loading preview...",
       "empty-text-payload": "(empty text payload)",
-      "truncated": "… truncated",
-      "image-action": "Open image action"
+      "truncated": "… truncated"
     },
     "actions": {
       "delete-item": "Delete item",
@@ -206,17 +204,10 @@
       "empty": "No app usage recorded yet. Focus a window to start tracking."
     },
     "home": {
-      "sections": {
-        "today": "Today",
-        "now-playing": "Now playing",
-        "power": "Power",
-        "audio": "Audio"
-      },
       "user-facts": "{user}@{host}\nUptime - {uptime}\nNoctalia {version}",
       "select-avatar": "Select Avatar",
       "unknown": "unknown",
       "weather": {
-        "unavailable": "Weather unavailable",
         "disabled": "Weather is disabled in config.",
         "configure-location": "Add [weather].address or enable auto_locate.",
         "fetching": "Fetching forecast...",
@@ -232,22 +223,6 @@
         "unknown-artist": "Unknown artist",
         "playing": "Playing",
         "paused": "Paused"
-      },
-      "power": {
-        "unavailable": "Power unavailable",
-        "on-battery": "On battery",
-        "ac-connected": "AC connected",
-        "mode": "Mode - {profile}{eta}",
-        "battery-power": "Battery power{eta}",
-        "plugged-in": "Plugged in{eta}",
-        "eta-left": " - {duration} left",
-        "eta-to-full": " - {duration} to full"
-      },
-      "audio": {
-        "unavailable": "Audio unavailable",
-        "no-output-device": "No output device",
-        "volume": "Volume - {volume}%",
-        "muted-volume": "Muted - {volume}%"
       }
     },
     "shortcuts": {
@@ -286,14 +261,10 @@
       "not-connected": "Not connected",
       "wifi-on": "Wi-Fi is on",
       "wifi-off": "Wi-Fi is off",
-      "forget": "Forget",
-      "disconnect": "Disconnect",
       "password": "Password",
       "connect": "Connect",
-      "wifi": "Wi-Fi",
       "password-prompt": "Enter password",
       "password-prompt-for": "Enter password for {ssid}",
-      "vpn": "VPN",
       "vpns": "VPNs",
       "wireless": "Wireless",
       "unavailable-title": "NetworkManager unavailable",
@@ -301,15 +272,8 @@
       "no-networks": "No networks in range"
     },
     "bluetooth": {
-      "devices": "Devices",
       "bluetooth": "Bluetooth",
       "visible": "Visible",
-      "connect": "Connect",
-      "connecting": "Connecting...",
-      "disconnect": "Disconnect",
-      "pair": "Pair",
-      "pairing": "Pairing...",
-      "forget": "Forget",
       "enter-code": "Enter code",
       "accept": "Accept",
       "reject": "Reject",
@@ -347,8 +311,6 @@
         "wind": "Wind",
         "sunrise": "Sunrise",
         "sunset": "Sunset",
-        "latitude": "Latitude",
-        "longitude": "Longitude",
         "timezone": "Timezone",
         "elevation": "Elevation",
         "tempMax": "Temperature Max",
@@ -364,17 +326,12 @@
       "now-playing": "Now Playing",
       "nothing-playing": "Nothing playing",
       "start-playback": "Start playback in an MPRIS app",
-      "spectrum": "Spectrum",
       "active-player": "Active player"
     },
     "audio": {
-      "outputs": "Outputs",
-      "inputs": "Inputs",
       "output-volume": "Output Volume",
       "input-volume": "Input Volume",
       "application-volumes": "Application Volumes",
-      "default-playback-device": "Default playback device",
-      "default-recording-device": "Default recording device",
       "no-output-selected": "No output device selected",
       "no-input-selected": "No input device selected",
       "unavailable-title": "Audio unavailable",
@@ -405,7 +362,6 @@
       "untitled": "Untitled notification"
     },
     "calendar": {
-      "today": "Today",
       "events": "Events",
       "no-events": "No events.",
       "all-day": "All day"
@@ -433,7 +389,6 @@
       "authenticating": "Authenticating..."
     },
     "pam": {
-      "password-required": "Password required",
       "user-unavailable": "Unable to resolve current user",
       "start-failed": "PAM start failed",
       "authentication-failed": "Authentication failed"
@@ -444,7 +399,6 @@
     "waiting": "Waiting for lock confirmation...",
     "password-cleared": "Password cleared",
     "ready": "Type your password and press Enter.",
-    "password-required": "Password required",
     "authenticating": "Authenticating...",
     "unlocked": "Unlocked",
     "authentication-failed": "Authentication failed"
@@ -460,12 +414,6 @@
       "custom": "Custom"
     },
     "errors": {
-      "logout-title": "Logout unavailable",
-      "logout-body": "Could not determine how to terminate this session.",
-      "reboot-title": "Reboot failed",
-      "reboot-body": "Could not launch a reboot command.",
-      "shutdown-title": "Shutdown failed",
-      "shutdown-body": "Could not launch a shutdown command.",
       "lock-title": "Lock unavailable",
       "lock-body": "The session lock protocol is not available."
     }
@@ -482,14 +430,9 @@
         "system-monitor": "System Monitor"
       },
       "actions": {
-        "back": "Back",
-        "front": "Front",
-        "delete": "Delete",
         "done": "Done"
       },
       "state": {
-        "enabled": "Enabled",
-        "disabled": "Disabled",
         "grid-on": "Grid On",
         "grid-off": "Grid Off"
       },
@@ -572,9 +515,6 @@
       },
       "network": {
         "wired": "Wired"
-      },
-      "active-window": {
-        "desktop": "Desktop"
       },
       "lock-keys": {
         "caps": "Caps",
@@ -730,7 +670,6 @@
       }
     },
     "session-actions": {
-      "entry-heading": "Menu item {n}",
       "icon-label": "Icon",
       "kind-section-label": "Behavior",
       "glyph-picker-title": "Action icon",
@@ -739,12 +678,8 @@
       "command-placeholder": "Optional bash command, leave empty for built-in behavior",
       "label-field": "Label",
       "label-placeholder": "Optional button text",
-      "glyph-field": "Glyph",
-      "glyph-placeholder": "Optional icon id",
       "shortcut-label": "Shortcut",
       "variant-label": "Button style",
-      "move-up": "Up",
-      "move-down": "Down",
       "add": "Add action",
       "variant": {
         "default": "Default",
@@ -815,7 +750,6 @@
     "errors": {
       "write": "Failed to save settings.",
       "batch-write": "Some settings could not be saved.",
-      "clear": "Failed to reset setting.",
       "reset-page": "Failed to reset some settings.",
       "support-report": "Failed to save support report.",
       "export-config": "Failed to save config export.",
@@ -875,8 +809,7 @@
         "kinds": {
           "built-in": "Built-in",
           "named": "Named",
-          "unknown": "Unknown",
-          "new-instance": "New Named Widget"
+          "unknown": "Unknown"
         },
         "editor": {
           "title": "Bar Widgets",
@@ -924,9 +857,7 @@
           "placeholder": "Search widgets...",
           "empty": "No widgets found",
           "instance-toggle": "Named Widget",
-          "instance-description": "Named widget for type \"{type}\"",
-          "create-label": "New Named {label}",
-          "create-description": "Choose a widget id for type \"{type}\""
+          "instance-description": "Named widget for type \"{type}\""
         },
         "instance": {
           "create-save": "Create",
@@ -1152,9 +1083,6 @@
       "theme-role": {
         "default": "Default",
         "custom": "Custom…"
-      },
-      "border": {
-        "none": "No Border"
       }
     },
     "widgets": {
@@ -2069,9 +1997,7 @@
         },
         "session-actions": {
           "label": "Entries",
-          "description": "Power menu entries, order, custom commands, and icons",
-          "configure": "Configure…",
-          "entry-settings": "Details…"
+          "description": "Power menu entries, order, custom commands, and icons"
         }
       },
       "idle": {
@@ -2224,17 +2150,14 @@
           "description": "Use separate wallpaper folders for each monitor"
         },
         "monitor-directory": {
-          "label": "Wallpaper Directory",
-          "description": "Wallpaper folder for this monitor"
+          "label": "Wallpaper Directory"
         },
         "monitor-directory-light": {
           "label": "Light Mode Directory",
-          "description": "Wallpaper folder for this monitor in Light theme mode",
           "placeholder": "~/Pictures/Wallpapers"
         },
         "monitor-directory-dark": {
           "label": "Dark Mode Directory",
-          "description": "Wallpaper folder for this monitor in Dark theme mode",
           "placeholder": "~/Pictures/Wallpapers"
         }
       },
@@ -2252,10 +2175,8 @@
           "description": "How often to sync calendar events (minutes)"
         },
         "calendar-connect": {
-          "label": "Connect",
           "description": "Authorize a Google account in your browser",
-          "button": "Connect",
-          "reauthorize": "Reauthorize"
+          "button": "Connect"
         },
         "system-monitor": {
           "label": "System Monitor",
@@ -2616,7 +2537,6 @@
         },
         "filter-placeholder": "Filter...",
         "sort": {
-          "summary": "Sort: {field} {direction}",
           "name": "Name",
           "size": "Size",
           "date": "Date",
