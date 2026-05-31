@@ -38,6 +38,8 @@ namespace capture {
     constexpr float kDimensionCursorOffsetY = 14.0f;
     constexpr float kDimensionPaddingX = 6.0f;
     constexpr float kDimensionPaddingY = 4.0f;
+    constexpr float kSelectionBorderWidth = 2.0f;
+    constexpr float kDimOpacity = 0.65f;
 
     [[nodiscard]] const WaylandOutput* findOutput(const WaylandConnection& wayland, wl_output* output) {
       for (const auto& entry : wayland.outputs()) {
@@ -68,7 +70,10 @@ namespace capture {
     std::unique_ptr<Node> sceneRoot;
     InputArea* input = nullptr;
     Image* backdrop = nullptr;
-    Box* dim = nullptr;
+    Box* dimTop = nullptr;
+    Box* dimBottom = nullptr;
+    Box* dimLeft = nullptr;
+    Box* dimRight = nullptr;
     Box* selection = nullptr;
     Box* dimensionsBadge = nullptr;
     Label* dimensionsLabel = nullptr;
@@ -341,20 +346,29 @@ namespace capture {
       inst.backdrop = static_cast<Image*>(input->addChild(std::move(backdrop)));
     }
 
-    auto dim = std::make_unique<Box>();
-    dim->setFill(colorSpecFromRole(ColorRole::Surface));
-    dim->setOpacity(0.45f);
-    dim->setPosition(0.0f, 0.0f);
-    dim->setSize(w, h);
-    inst.dim = static_cast<Box*>(input->addChild(std::move(dim)));
+    // Dim the screen with four strips that frame the selected region, leaving
+    // it undimmed (slurp-style). The selected region stays fully transparent so
+    // it shows real colors and never tints the captured pixels.
+    auto makeDimStrip = [&]() {
+      auto strip = std::make_unique<Box>();
+      // Fixed dark scrim (slurp-style): a theme color would lay a light veil on
+      // light themes instead of darkening. Black dims correctly in every theme.
+      strip->setFill(fixedColorSpec(rgba(0.0f, 0.0f, 0.0f, 1.0f)));
+      strip->setOpacity(kDimOpacity);
+      strip->setPosition(0.0f, 0.0f);
+      strip->setSize(0.0f, 0.0f);
+      return static_cast<Box*>(input->addChild(std::move(strip)));
+    };
+    inst.dimTop = makeDimStrip();
+    inst.dimBottom = makeDimStrip();
+    inst.dimLeft = makeDimStrip();
+    inst.dimRight = makeDimStrip();
 
-    auto selection = std::make_unique<Box>();
-    Color fill = colorForRole(ColorRole::Primary);
-    fill.a = 0.28f;
     Color border = colorForRole(ColorRole::Primary);
     border.a = 1.0f;
-    selection->setFill(fixedColorSpec(fill));
-    selection->setBorder(fixedColorSpec(border), 2.0f);
+
+    auto selection = std::make_unique<Box>();
+    selection->setBorder(fixedColorSpec(border), kSelectionBorderWidth);
     selection->setVisible(false);
 
     auto dimensionsBadge = std::make_unique<Box>();
@@ -494,8 +508,43 @@ namespace capture {
   }
 
   void ScreenshotRegionOverlay::updateSelectionVisuals() {
+    // Lay out the four dim strips so they cover the surface except for the hole
+    // rect (surface-local). An empty hole dims the whole surface.
+    const auto layoutDimFrame = [](Instance& inst, float surfaceW, float surfaceH, float hx0, float hy0, float hx1,
+                                   float hy1) {
+      hx0 = std::clamp(hx0, 0.0f, surfaceW);
+      hx1 = std::clamp(hx1, 0.0f, surfaceW);
+      hy0 = std::clamp(hy0, 0.0f, surfaceH);
+      hy1 = std::clamp(hy1, 0.0f, surfaceH);
+      if (hx1 < hx0 || hy1 < hy0) {
+        hx0 = hy0 = hx1 = hy1 = 0.0f;
+      }
+      if (inst.dimTop != nullptr) {
+        inst.dimTop->setPosition(0.0f, 0.0f);
+        inst.dimTop->setSize(surfaceW, hy0);
+      }
+      if (inst.dimBottom != nullptr) {
+        inst.dimBottom->setPosition(0.0f, hy1);
+        inst.dimBottom->setSize(surfaceW, surfaceH - hy1);
+      }
+      if (inst.dimLeft != nullptr) {
+        inst.dimLeft->setPosition(0.0f, hy0);
+        inst.dimLeft->setSize(hx0, hy1 - hy0);
+      }
+      if (inst.dimRight != nullptr) {
+        inst.dimRight->setPosition(hx1, hy0);
+        inst.dimRight->setSize(surfaceW - hx1, hy1 - hy0);
+      }
+    };
+
     if (!m_dragging) {
       for (auto& inst : m_instances) {
+        if (inst->surface != nullptr) {
+          layoutDimFrame(
+              *inst, static_cast<float>(inst->surface->width()), static_cast<float>(inst->surface->height()), 0.0f,
+              0.0f, 0.0f, 0.0f
+          );
+        }
         if (inst->selection != nullptr) {
           inst->selection->setVisible(false);
         }
@@ -522,8 +571,11 @@ namespace capture {
       if (inst->selection == nullptr || inst->surface == nullptr) {
         continue;
       }
+      const float surfaceW = static_cast<float>(inst->surface->width());
+      const float surfaceH = static_cast<float>(inst->surface->height());
       const auto* out = findOutput(*m_wayland, inst->output);
       if (out == nullptr) {
+        layoutDimFrame(*inst, surfaceW, surfaceH, 0.0f, 0.0f, 0.0f, 0.0f);
         inst->selection->setVisible(false);
         if (inst->dimensionsBadge != nullptr) {
           inst->dimensionsBadge->setVisible(false);
@@ -541,6 +593,7 @@ namespace capture {
       const int ix1 = std::min(globalX1, outRight);
       const int iy1 = std::min(globalY1, outBottom);
       if (ix1 <= ix0 || iy1 <= iy0) {
+        layoutDimFrame(*inst, surfaceW, surfaceH, 0.0f, 0.0f, 0.0f, 0.0f);
         inst->selection->setVisible(false);
         if (inst->dimensionsBadge != nullptr) {
           inst->dimensionsBadge->setVisible(false);
@@ -548,9 +601,19 @@ namespace capture {
         continue;
       }
 
+      const float holeX0 = static_cast<float>(ix0 - outLeft);
+      const float holeY0 = static_cast<float>(iy0 - outTop);
+      const float holeX1 = static_cast<float>(ix1 - outLeft);
+      const float holeY1 = static_cast<float>(iy1 - outTop);
+      layoutDimFrame(*inst, surfaceW, surfaceH, holeX0, holeY0, holeX1, holeY1);
+
+      // The outline is inset, so expand it outward to keep the border out of the
+      // captured (undimmed) region.
       inst->selection->setVisible(true);
-      inst->selection->setPosition(static_cast<float>(ix0 - outLeft), static_cast<float>(iy0 - outTop));
-      inst->selection->setSize(static_cast<float>(ix1 - ix0), static_cast<float>(iy1 - iy0));
+      inst->selection->setPosition(holeX0 - kSelectionBorderWidth, holeY0 - kSelectionBorderWidth);
+      inst->selection->setSize(
+          (holeX1 - holeX0) + (kSelectionBorderWidth * 2.0f), (holeY1 - holeY0) + (kSelectionBorderWidth * 2.0f)
+      );
 
       if (inst->dimensionsBadge != nullptr && inst->dimensionsLabel != nullptr && m_renderContext != nullptr) {
         const bool cursorOnOutput = cursorGlobalX >= outLeft
@@ -564,8 +627,6 @@ namespace capture {
           const float badgeHeight = inst->dimensionsLabel->height() + (kDimensionPaddingY * 2.0f);
           inst->dimensionsBadge->setSize(badgeWidth, badgeHeight);
 
-          const float surfaceW = static_cast<float>(inst->surface->width());
-          const float surfaceH = static_cast<float>(inst->surface->height());
           float badgeX = static_cast<float>(cursorGlobalX - outLeft) + kDimensionCursorOffsetX;
           float badgeY = static_cast<float>(cursorGlobalY - outTop) + kDimensionCursorOffsetY;
           const float maxX = std::max(0.0f, surfaceW - badgeWidth);
