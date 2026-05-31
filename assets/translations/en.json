@@ -88,7 +88,8 @@
       }
     },
     "categories": {
-      "all": "All"
+      "all": "All",
+      "recently-used": "Recently Used"
     },
     "empty": {
       "type-to-search": "Type to search...",

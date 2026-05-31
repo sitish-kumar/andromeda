@@ -46,6 +46,8 @@ public:
   [[nodiscard]] PanelPlacement panelPlacement() const noexcept override;
 
 private:
+  enum ActiveCategoryType { All, RecentlyUsed, Category };
+
   void onPanelCardOpacityChanged(float opacity) override;
   void doLayout(Renderer& renderer, float width, float height) override;
   void onInputChanged(const std::string& text);
@@ -75,8 +77,10 @@ private:
   std::unique_ptr<LauncherResultAdapter> m_adapter;
 
   std::string m_query;
+  ActiveCategoryType m_activeCategoryType = All;
   std::string m_activeCategory;
   std::vector<LauncherCategory> m_currentCategories;
+  bool m_hasRecentlyUsed = false;
   std::size_t m_selectedIndex = 0;
   bool m_categoryFilterVisible = true;
   ConfigService* m_config = nullptr;

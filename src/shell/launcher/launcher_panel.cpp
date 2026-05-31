@@ -28,6 +28,7 @@
 #include <functional>
 #include <memory>
 #include <string_view>
+#include <tuple>
 
 namespace {
 
@@ -481,8 +482,10 @@ void LauncherPanel::doLayout(Renderer& renderer, float width, float height) {
 
 void LauncherPanel::onOpen(std::string_view context) {
   m_categoryFilterVisible = m_config != nullptr && m_config->config().shell.panel.launcherCategories;
+  m_activeCategoryType = All;
   m_activeCategory.clear();
   m_currentCategories.clear();
+  m_hasRecentlyUsed = false;
   if (m_categoryFilter != nullptr) {
     m_categoryFilter->clearOptions();
     m_categoryFilter->setVisible(false);
@@ -511,8 +514,10 @@ void LauncherPanel::onClose() {
   m_query.clear();
   m_results.clear();
   m_allResults.clear();
+  m_activeCategoryType = All;
   m_activeCategory.clear();
   m_currentCategories.clear();
+  m_hasRecentlyUsed = false;
   m_selectedIndex = 0;
 
   if (m_grid != nullptr) {
@@ -589,20 +594,25 @@ void LauncherPanel::onInputChanged(const std::string& text) {
   const bool typedQuery = !queryText.empty();
 
   auto applyUsageBoost = [&](std::vector<LauncherResult>& results, const LauncherProvider& provider) {
-    if (!provider.trackUsage()) {
-      return;
-    }
     for (auto& result : results) {
       const int usageCount = m_usageTracker.getCount(provider.name(), result.id);
       result.score += usageBoostForScore(result.score, usageCount, typedQuery);
+      result.recentlyUsedIndex = m_usageTracker.getRecentlyUsedIndex(provider.name(), result.id);
     }
   };
 
   std::vector<LauncherCategory> newCategories;
 
+  bool hasRecentlyUsed = false;
+
   if (activeProvider != nullptr) {
     m_allResults = activeProvider->query(queryText);
-    applyUsageBoost(m_allResults, *activeProvider);
+    if (activeProvider->trackUsage()) {
+      applyUsageBoost(m_allResults, *activeProvider);
+      if (m_usageTracker.getRecentlyUsedCount(activeProvider->name()) > 0) {
+        hasRecentlyUsed = true;
+      }
+    }
     for (auto& result : m_allResults) {
       result.providerName = activeProvider->name();
     }
@@ -614,7 +624,12 @@ void LauncherPanel::onInputChanged(const std::string& text) {
     for (auto& provider : m_providers) {
       if (provider->prefix().empty()) {
         auto results = provider->query(queryText);
-        applyUsageBoost(results, *provider);
+        if (provider->trackUsage()) {
+          applyUsageBoost(results, *provider);
+          if (m_usageTracker.getRecentlyUsedCount(provider->name()) > 0) {
+            hasRecentlyUsed = true;
+          }
+        }
         for (auto& result : results) {
           result.providerName = provider->name();
         }
@@ -658,7 +673,14 @@ void LauncherPanel::onInputChanged(const std::string& text) {
       }
     }
   }
+
+  if (hasRecentlyUsed != m_hasRecentlyUsed) {
+    m_hasRecentlyUsed = hasRecentlyUsed;
+    categoriesChanged = true;
+  }
+
   if (categoriesChanged) {
+    m_activeCategoryType = All;
     m_activeCategory.clear();
     rebuildCategoryFilter(newCategories);
   }
@@ -672,22 +694,33 @@ void LauncherPanel::rebuildCategoryFilter(const std::vector<LauncherCategory>& c
     return;
   }
   m_categoryFilter->clearOptions();
-  if (categories.empty()) {
+  if (categories.empty() && !m_hasRecentlyUsed) {
     setCategoryFilterVisible(false);
     return;
   }
   m_categoryFilter->addOption("", "layout-grid");
   m_categoryFilter->setOptionTooltip(0, i18n::tr("launcher.categories.all"));
+  size_t categoryStartIndex = 1;
+  if (m_hasRecentlyUsed) {
+    m_categoryFilter->addOption("", "history");
+    m_categoryFilter->setOptionTooltip(1, i18n::tr("launcher.categories.recently-used"));
+    ++categoryStartIndex;
+  }
   for (std::size_t i = 0; i < categories.size(); ++i) {
     m_categoryFilter->addOption("", categories[i].glyphName);
-    m_categoryFilter->setOptionTooltip(i + 1, categories[i].label);
+    m_categoryFilter->setOptionTooltip(i + categoryStartIndex, categories[i].label);
   }
   m_categoryFilter->setSelectedIndex(0);
-  m_categoryFilter->setOnChange([this](std::size_t idx) {
+  m_categoryFilter->setOnChange([this, categoryStartIndex](std::size_t idx) {
     if (idx == 0) {
+      m_activeCategoryType = All;
       m_activeCategory.clear();
-    } else if (idx - 1 < m_currentCategories.size()) {
-      m_activeCategory = m_currentCategories[idx - 1].label;
+    } else if (m_hasRecentlyUsed && idx == 1) {
+      m_activeCategoryType = RecentlyUsed;
+      m_activeCategory.clear();
+    } else if (idx - categoryStartIndex < m_currentCategories.size()) {
+      m_activeCategoryType = Category;
+      m_activeCategory = m_currentCategories[idx - categoryStartIndex].label;
     }
     applyActiveCategory();
   });
@@ -698,7 +731,7 @@ void LauncherPanel::setCategoryFilterVisible(bool visible) {
   if (m_categoryFilter == nullptr) {
     return;
   }
-  const bool show = visible && !m_currentCategories.empty();
+  const bool show = visible && (!m_currentCategories.empty() || m_hasRecentlyUsed);
   m_categoryFilter->setVisible(show);
   m_categoryFilter->setParticipatesInLayout(show);
   if (m_container != nullptr) {
@@ -748,14 +781,28 @@ std::vector<LauncherResult> LauncherPanel::providerOverviewResults(std::string_v
 
 void LauncherPanel::applyActiveCategory() {
   m_results.clear();
-  if (m_activeCategory.empty()) {
+  switch (m_activeCategoryType) {
+  case All:
     m_results = m_allResults;
-  } else {
+    break;
+  case RecentlyUsed:
+    std::copy_if(
+        m_allResults.begin(), m_allResults.end(), std::back_inserter(m_results),
+        [this](const LauncherResult& r) { return r.recentlyUsedIndex > 0; }
+    );
+    std::sort(m_results.begin(), m_results.end(), [](const LauncherResult& a, const LauncherResult& b) {
+      return a.recentlyUsedIndex > b.recentlyUsedIndex
+          || (a.recentlyUsedIndex == b.recentlyUsedIndex
+              && std::tie(a.providerName, a.id) < std::tie(b.providerName, b.id));
+    });
+    break;
+  case Category:
     for (const auto& r : m_allResults) {
       if (r.category == m_activeCategory) {
         m_results.push_back(r);
       }
     }
+    break;
   }
   m_selectedIndex = 0;
   refreshResults();
@@ -1030,7 +1077,8 @@ bool LauncherPanel::handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers) {
   if (KeybindMatcher::matches(KeybindAction::Right, sym, modifiers)) {
     if (m_categoryFilter != nullptr && m_categoryFilter->visible()) {
       const std::size_t next = m_categoryFilter->selectedIndex() + 1;
-      const std::size_t total = m_currentCategories.size() + 1;
+      const std::size_t total = m_currentCategories.size()
+          + (m_hasRecentlyUsed ? 2 : 1); // +1 for "All" category, +2 for "Recently Used" if present
       if (next < total) {
         m_categoryFilter->setSelectedIndex(next);
         return true;
