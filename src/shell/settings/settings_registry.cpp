@@ -293,6 +293,8 @@ namespace settings {
       return "paint";
     if (section == "desktop")
       return "layout-board";
+    if (section == "system")
+      return "activity-heartbeat";
     if (section == "services")
       return "stack-2";
     if (section == "hooks")
@@ -953,7 +955,7 @@ namespace settings {
 
     // Shell
     entries.push_back(makeEntry(
-        "shell", "profile", tr("settings.schema.shell.avatar-path.label"),
+        "shell", "general", tr("settings.schema.shell.avatar-path.label"),
         tr("settings.schema.shell.avatar-path.description"), {"shell", "avatar_path"},
         TextSetting{
             .value = cfg.shell.avatarPath,
@@ -964,39 +966,33 @@ namespace settings {
         "image picture"
     ));
     entries.push_back(makeEntry(
-        "shell", "network", tr("settings.schema.shell.offline-mode.label"),
+        "shell", "privacy-security", tr("settings.schema.shell.offline-mode.label"),
         tr("settings.schema.shell.offline-mode.description"), {"shell", "offline_mode"},
         ToggleSetting{cfg.shell.offlineMode}, "network http fetch download"
     ));
     entries.push_back(makeEntry(
-        "shell", "network", tr("settings.schema.shell.telemetry.label"),
+        "shell", "privacy-security", tr("settings.schema.shell.telemetry.label"),
         tr("settings.schema.shell.telemetry.description"), {"shell", "telemetry_enabled"},
         ToggleSetting{cfg.shell.telemetryEnabled}, "analytics ping privacy"
     ));
     entries.push_back(makeEntry(
-        "shell", "security", tr("settings.schema.shell.polkit-agent.label"),
+        "shell", "privacy-security", tr("settings.schema.shell.polkit-agent.label"),
         tr("settings.schema.shell.polkit-agent.description"), {"shell", "polkit_agent"},
         ToggleSetting{cfg.shell.polkitAgent}, "auth password"
     ));
     entries.push_back(makeEntry(
-        "shell", "security", tr("settings.schema.shell.password-style.label"),
+        "shell", "privacy-security", tr("settings.schema.shell.password-style.label"),
         tr("settings.schema.shell.password-style.description"), {"shell", "password_style"},
         asSegmented(enumSelect(kPasswordMaskStyles, cfg.shell.passwordMaskStyle)), "polkit lock mask"
     ));
     entries.push_back(makeEntry(
-        "shell", "behavior", tr("settings.schema.shell.middle-click-opens-widget-settings.label"),
-        tr("settings.schema.shell.middle-click-opens-widget-settings.description"),
-        {"shell", "middle_click_opens_widget_settings"}, ToggleSetting{cfg.shell.middleClickOpensWidgetSettings},
-        "bar widget settings middle click configure"
-    ));
-    entries.push_back(makeEntry(
-        "shell", "formats", tr("settings.schema.shell.time-format.label"),
+        "shell", "general", tr("settings.schema.shell.time-format.label"),
         tr("settings.schema.shell.time-format.description"), {"shell", "time_format"},
         TextSetting{.value = cfg.shell.timeFormat, .placeholder = "{:%H:%M}", .browseFileExtensions = {}},
         "clock time format strftime chrono"
     ));
     entries.push_back(makeEntry(
-        "shell", "formats", tr("settings.schema.shell.date-format.label"),
+        "shell", "general", tr("settings.schema.shell.date-format.label"),
         tr("settings.schema.shell.date-format.description"), {"shell", "date_format"},
         TextSetting{.value = cfg.shell.dateFormat, .placeholder = "%A, %x", .browseFileExtensions = {}},
         "calendar date format strftime chrono"
@@ -1004,16 +1000,22 @@ namespace settings {
     const SettingVisibility weatherOn{{"weather", "enabled"}, {"true"}};
     {
       auto e = makeEntry(
-          "shell", "location", tr("settings.schema.shell.show-location.label"),
+          "shell", "general", tr("settings.schema.shell.show-location.label"),
           tr("settings.schema.shell.show-location.description"), {"shell", "show_location"},
           ToggleSetting{cfg.shell.showLocation}, "weather"
       );
       e.visibleWhen = weatherOn;
       entries.push_back(std::move(e));
     }
+    entries.push_back(makeEntry(
+        "shell", "general", tr("settings.schema.shell.middle-click-opens-widget-settings.label"),
+        tr("settings.schema.shell.middle-click-opens-widget-settings.description"),
+        {"shell", "middle_click_opens_widget_settings"}, ToggleSetting{cfg.shell.middleClickOpensWidgetSettings},
+        "bar widget settings middle click configure"
+    ));
     if (process::systemdAvailable()) {
       entries.push_back(makeEntry(
-          "shell", "launcher", tr("settings.schema.shell.launch-apps-as-systemd-services.label"),
+          "shell", "general", tr("settings.schema.shell.launch-apps-as-systemd-services.label"),
           tr("settings.schema.shell.launch-apps-as-systemd-services.description"),
           {"shell", "launch_apps_as_systemd_services"}, ToggleSetting{cfg.shell.launchAppsAsSystemdServices}
       ));
@@ -1074,11 +1076,6 @@ namespace settings {
       e.visibleWhen = clipboardOn;
       entries.push_back(std::move(e));
     }
-    entries.push_back(makeEntry(
-        "shell", "screen-time", tr("settings.schema.shell.screen-time-enabled.label"),
-        tr("settings.schema.shell.screen-time-enabled.description"), {"shell", "screen_time_enabled"},
-        ToggleSetting{cfg.shell.screenTimeEnabled}, "screen time usage tracking control center"
-    ));
     entries.push_back(makeEntry(
         "shell", "screenshot", tr("settings.schema.shell.screenshot-save-to-file.label"),
         tr("settings.schema.shell.screenshot-save-to-file.description"), {"shell", "screenshot", "save_to_file"},
@@ -1266,10 +1263,10 @@ namespace settings {
       }
     }
 
-    // Services
+    // System
     const SettingVisibility monitorOn{{"system", "monitor", "enabled"}, {"true"}};
     entries.push_back(makeEntry(
-        "services", "system", tr("settings.schema.services.system-monitor.label"),
+        "system", "monitor", tr("settings.schema.services.system-monitor.label"),
         tr("settings.schema.services.system-monitor.description"), {"system", "monitor", "enabled"},
         ToggleSetting{cfg.system.monitor.enabled}, "system monitor cpu ram memory"
     ));
@@ -1282,7 +1279,7 @@ namespace settings {
                          float value) {
         const float clampedValue = std::clamp(value, kPollMin, kPollMax);
         auto entry = makeEntry(
-            "services", "system", tr(labelKey), tr(descKey), std::move(path),
+            "system", "monitor", tr(labelKey), tr(descKey), std::move(path),
             SliderSetting{clampedValue, kPollMin, kPollMax, kPollStep, true}, "system monitor", true
         );
         entry.visibleWhen = monitorOn;
@@ -1314,6 +1311,13 @@ namespace settings {
           mon.diskPollSeconds
       );
     }
+    entries.push_back(makeEntry(
+        "system", "screen-time", tr("settings.schema.shell.screen-time-enabled.label"),
+        tr("settings.schema.shell.screen-time-enabled.description"), {"shell", "screen_time_enabled"},
+        ToggleSetting{cfg.shell.screenTimeEnabled}, "screen time usage tracking control center"
+    ));
+
+    // Services
     entries.push_back(makeEntry(
         "services", "weather", tr("settings.schema.services.weather.label"),
         tr("settings.schema.services.weather.description"), {"weather", "enabled"}, ToggleSetting{cfg.weather.enabled},
@@ -1428,16 +1432,16 @@ namespace settings {
         "sound path file", true
     ));
     entries.push_back(makeEntry(
-        "services", "media", tr("settings.schema.services.mpris-blacklist.label"),
-        tr("settings.schema.services.mpris-blacklist.description"), {"shell", "mpris", "blacklist"},
-        ListSetting{.items = cfg.shell.mpris.blacklist}, "mpris media player dbus session blacklist"
-    ));
-    entries.push_back(makeEntry(
         "services", "brightness", tr("settings.schema.services.ddcutil.label"),
         env.ddcutilAvailable ? tr("settings.schema.services.ddcutil.description")
                              : tr("settings.schema.services.ddcutil.requires-ddcutil"),
         {"brightness", "enable_ddcutil"},
         ToggleSetting{.checked = cfg.brightness.enableDdcutil, .enabled = env.ddcutilAvailable}, "monitor ddcutil"
+    ));
+    entries.push_back(makeEntry(
+        "services", "media", tr("settings.schema.services.mpris-blacklist.label"),
+        tr("settings.schema.services.mpris-blacklist.description"), {"shell", "mpris", "blacklist"},
+        ListSetting{.items = cfg.shell.mpris.blacklist}, "mpris media player dbus session blacklist"
     ));
     if (!env.gammaControlAvailable) {
       entries.push_back(makeEntry(

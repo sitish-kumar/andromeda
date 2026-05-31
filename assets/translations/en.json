@@ -960,6 +960,7 @@
         "backdrop": "Backdrop",
         "services": "Services",
         "shell": "Shell",
+        "system": "System",
         "templates": "Templates",
         "wallpaper": "Wallpaper"
       },
@@ -988,6 +989,7 @@
         "layout": "Layout",
         "location": "Location",
         "media": "Media",
+        "monitor": "System Monitor",
         "monitors": "Monitors",
         "motion": "Motion",
         "network": "Network",
@@ -997,6 +999,7 @@
         "osd": "OSD",
         "home": "Home",
         "pinned-apps": "Pinned Apps",
+        "privacy-security": "Privacy & Security",
         "profile": "Profile",
         "power": "Power",
         "screen-time": "Screen Time",
