@@ -149,6 +149,63 @@ namespace {
     return favorite;
   }
 
+  [[nodiscard]] std::filesystem::path canonicalWallpaperDirectory(const std::filesystem::path& dir) {
+    if (dir.empty()) {
+      return {};
+    }
+    std::error_code ec;
+    const auto canonical = std::filesystem::weakly_canonical(dir, ec);
+    return ec ? dir.lexically_normal() : canonical;
+  }
+
+  [[nodiscard]] bool wallpaperDirectoriesEquivalent(const std::filesystem::path& a, const std::filesystem::path& b) {
+    if (a.empty() || b.empty()) {
+      return a.empty() && b.empty();
+    }
+    std::error_code ec;
+    if (std::filesystem::equivalent(a, b, ec)) {
+      return true;
+    }
+    return canonicalWallpaperDirectory(a) == canonicalWallpaperDirectory(b);
+  }
+
+  [[nodiscard]] bool
+  wallpaperPathInsideDirectory(const std::filesystem::path& file, const std::filesystem::path& directory) {
+    const std::filesystem::path dir = canonicalWallpaperDirectory(directory);
+    if (dir.empty()) {
+      return false;
+    }
+    std::error_code ec;
+    const auto filePath = std::filesystem::weakly_canonical(file, ec);
+    if (ec) {
+      return false;
+    }
+    const auto rel = std::filesystem::relative(filePath.parent_path(), dir, ec);
+    if (ec || rel.empty()) {
+      return wallpaperDirectoriesEquivalent(filePath.parent_path(), dir);
+    }
+    const std::string relText = rel.generic_string();
+    return !relText.starts_with("..");
+  }
+
+  [[nodiscard]] bool favoriteVisibleInBrowseContext(
+      std::string_view favoritePath, const std::filesystem::path& activeDir, const std::filesystem::path& rootDir,
+      bool flatten
+  ) {
+    if (favoritePath.starts_with("color:")) {
+      return wallpaperDirectoriesEquivalent(activeDir, rootDir);
+    }
+
+    const std::filesystem::path favoriteFile = std::filesystem::path(FileUtils::normalizeWallpaperPath(favoritePath));
+    if (wallpaperDirectoriesEquivalent(activeDir, rootDir)) {
+      return true;
+    }
+    if (!flatten) {
+      return wallpaperDirectoriesEquivalent(favoriteFile.parent_path(), activeDir);
+    }
+    return wallpaperPathInsideDirectory(favoriteFile, activeDir);
+  }
+
 } // namespace
 
 class WallpaperGridAdapter : public VirtualGridAdapter {
@@ -961,7 +1018,8 @@ std::string WallpaperPanel::selectedWallpaperPath() const {
 }
 
 void WallpaperPanel::appendFilteredFavoriteEntries(
-    std::vector<WallpaperEntry>& out, std::unordered_set<std::string>& favoritePaths
+    std::vector<WallpaperEntry>& out, std::unordered_set<std::string>& favoritePaths,
+    const std::filesystem::path& activeDir, const std::filesystem::path& rootDir
 ) const {
   if (m_config == nullptr) {
     return;
@@ -969,6 +1027,10 @@ void WallpaperPanel::appendFilteredFavoriteEntries(
 
   const std::string filterNeedle = StringUtils::toLower(m_filterQuery);
   for (const auto& favorite : m_config->wallpaperFavorites()) {
+    if (!favoriteVisibleInBrowseContext(favorite.path, activeDir, rootDir, m_flatten)) {
+      continue;
+    }
+
     const std::string displayName = displayNameForWallpaperPath(favorite.path);
     if (!filterNeedle.empty() && StringUtils::toLower(displayName).find(filterNeedle) == std::string::npos) {
       continue;
@@ -1117,9 +1179,10 @@ void WallpaperPanel::refreshVisibleEntries() {
 void WallpaperPanel::applyFilter() {
   m_visibleEntries.clear();
   std::unordered_set<std::string> favoritePaths;
-  appendFilteredFavoriteEntries(m_visibleEntries, favoritePaths);
-
   const auto dir = activeDirectoryForSelection();
+  const auto rootDir = rootDirectoryForSelection();
+  appendFilteredFavoriteEntries(m_visibleEntries, favoritePaths, dir, rootDir);
+
   if (dir.empty()) {
     if (m_selectedVisibleIndex >= m_visibleEntries.size()) {
       resetSelection();

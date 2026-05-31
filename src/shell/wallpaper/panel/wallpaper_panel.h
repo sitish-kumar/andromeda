@@ -71,8 +71,10 @@ private:
   void syncThemeControls();
   void rebuildFavoritePaletteDetailSelect(const WallpaperFavorite* favorite);
   [[nodiscard]] std::string selectedWallpaperPath() const;
-  void
-  appendFilteredFavoriteEntries(std::vector<WallpaperEntry>& out, std::unordered_set<std::string>& favoritePaths) const;
+  void appendFilteredFavoriteEntries(
+      std::vector<WallpaperEntry>& out, std::unordered_set<std::string>& favoritePaths,
+      const std::filesystem::path& activeDir, const std::filesystem::path& rootDir
+  ) const;
   void applyColorWallpaper();
   void rebindGrid(bool resetScroll = false);
   void resetSelection();
