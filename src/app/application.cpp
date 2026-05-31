@@ -1543,6 +1543,22 @@ void Application::initIpc() {
       m_brightnessOsd.suppressFor(std::chrono::milliseconds(250));
     });
   }
+  m_ipcService.registerHandler(
+      "brightness-osd",
+      [this](const std::string& args) -> std::string {
+        const auto parts = noctalia::ipc::splitWords(args);
+        if (parts.size() != 1) {
+          return "error: brightness-osd requires <value>\n";
+        }
+        const auto value = noctalia::ipc::parseNormalizedOrPercent(parts[0]);
+        if (!value.has_value()) {
+          return "error: invalid brightness value (use percent like 65 or 65%, or normalized like 0.65)\n";
+        }
+        m_brightnessOsd.showValue(*value);
+        return "ok\n";
+      },
+      "brightness-osd <value>", "Show brightness OSD without changing brightness"
+  );
   m_configService.registerIpc(m_ipcService);
   m_bar.registerIpc(m_ipcService);
   m_desktopWidgetsController.registerIpc(m_ipcService);
