@@ -101,6 +101,7 @@ private:
   );
   void requestSceneRebuild();
   void requestContentRebuild();
+  void maybeOpenPendingWidgetInspector();
   void applyPendingContentScrollTarget(float margin);
   void clearStatusMessage();
   void clearTransientSettingsState();
@@ -184,6 +185,13 @@ private:
   bool m_scrollToPendingContentTarget = false;
   Node* m_pendingContentScrollTarget = nullptr;
   std::string m_searchQuery;
+  // Set by openToBarWidget (e.g. middle-click on a bar widget); consumed once the window holds
+  // keyboard focus so the sheet's grab popup gets a serial the compositor accepts.
+  std::string m_pendingOpenWidgetInspectorName;
+  int m_pendingOpenWidgetInspectorFrames = 0;
+  // When the editor sheet is opened programmatically (bar middle-click) there is no grab-valid serial,
+  // so open it without an xdg_popup grab. Consumed by openBarWidgetEditorSheet.
+  bool m_pendingEditorSheetNoGrab = false;
   std::string m_editingWidgetName;
   std::string m_editingCapsuleGroupId;
   std::vector<std::string> m_selectedLaneWidgets;

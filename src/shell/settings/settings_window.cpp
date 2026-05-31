@@ -37,6 +37,10 @@ namespace {
   constexpr float kWindowMinWidth = 900.0f;
   constexpr float kWindowMinHeight = 500.0f;
 
+  // How many frames to wait for the settings window to gain keyboard focus before opening a pending
+  // widget-inspector sheet anyway (bounded so a never-focused window can't spin redraws forever).
+  constexpr int kPendingWidgetInspectorFrameBudget = 240;
+
 } // namespace
 
 SettingsWindow::~SettingsWindow() = default;
@@ -242,10 +246,9 @@ void SettingsWindow::openToBarWidget(std::string barName, std::string widgetName
   m_selectedSection = "bar";
   m_selectedBarName = std::move(barName);
   m_selectedMonitorOverride.clear();
-  m_editingWidgetName = std::move(widgetName);
+  m_pendingOpenWidgetInspectorName = std::move(widgetName);
+  m_pendingOpenWidgetInspectorFrames = kPendingWidgetInspectorFrameBudget;
   m_contentScrollState.offset = 0.0f;
-  m_scrollToPendingContentTarget = true;
-  m_pendingContentScrollTarget = nullptr;
   m_sidebarScrollState.offset = 0.0f;
 
   const bool wasOpen = isOpen();
@@ -321,6 +324,7 @@ void SettingsWindow::destroyWindow() {
   m_selectedSection.clear();
   m_selectedBarName.clear();
   m_selectedMonitorOverride.clear();
+  m_pendingOpenWidgetInspectorName.clear();
   m_editingWidgetName.clear();
   m_editingCapsuleGroupId.clear();
   m_selectedLaneWidgets.clear();
@@ -387,6 +391,30 @@ void SettingsWindow::prepareFrame(bool /*needsUpdate*/, bool needsLayout) {
     m_lastSceneWidth = width;
     m_lastSceneHeight = height;
   }
+
+  maybeOpenPendingWidgetInspector();
+}
+
+void SettingsWindow::maybeOpenPendingWidgetInspector() {
+  if (m_pendingOpenWidgetInspectorName.empty() || m_surface == nullptr || m_wayland == nullptr) {
+    return;
+  }
+  // A grab popup needs an input serial this window owns. Right after a bar middle-click the latest
+  // serial still belongs to the bar surface; wait until this window holds keyboard focus (whose enter
+  // refreshes the serial) so the compositor accepts the sheet's grab instead of dismissing it.
+  const bool focused = m_wayland->lastKeyboardSurface() == m_surface->wlSurface();
+  if (!focused && m_pendingOpenWidgetInspectorFrames > 0) {
+    --m_pendingOpenWidgetInspectorFrames;
+    m_surface->requestRedraw();
+    return;
+  }
+  std::string widgetName = std::move(m_pendingOpenWidgetInspectorName);
+  m_pendingOpenWidgetInspectorName.clear();
+  // A bar middle-click gives us no press serial the settings surface owns, so the compositor rejects
+  // an xdg_popup grab. Open the sheet without a grab — the window holds keyboard focus and routes
+  // input to it, and an outside click still dismisses it (handled in onPointerEvent).
+  m_pendingEditorSheetNoGrab = true;
+  openWidgetInspectorEditor({"bar", m_selectedBarName}, std::move(widgetName));
 }
 
 void SettingsWindow::requestSceneRebuild() {
@@ -397,6 +425,11 @@ void SettingsWindow::requestSceneRebuild() {
     m_rebuildRequested = true;
     m_contentRebuildRequested = false;
     m_surface->requestLayout();
+    // The editor sheet edits the same config: rebuild its body so override/reset controls track
+    // value changes in place, the way the inline inspector did when the whole scene rebuilt.
+    if (m_editorSheetPopup != nullptr && m_editorSheetPopup->isOpen()) {
+      m_editorSheetPopup->rebuildBody();
+    }
   });
 }
 
@@ -420,6 +453,7 @@ void SettingsWindow::clearStatusMessage() {
 }
 
 void SettingsWindow::clearTransientSettingsState() {
+  m_pendingOpenWidgetInspectorName.clear();
   m_editingWidgetName.clear();
   m_editingCapsuleGroupId.clear();
   m_selectedLaneWidgets.clear();

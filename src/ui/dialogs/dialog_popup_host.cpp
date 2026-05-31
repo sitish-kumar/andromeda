@@ -1,6 +1,7 @@
 #include "ui/dialogs/dialog_popup_host.h"
 
 #include "config/config_service.h"
+#include "core/deferred_call.h"
 #include "core/key_symbols.h"
 #include "core/ui_phase.h"
 #include "render/render_context.h"
@@ -78,7 +79,9 @@ bool DialogPopupHost::openPopup(std::uint32_t width, std::uint32_t height) {
   surface->setPrepareFrameCallback([this](bool needsUpdate, bool needsLayout) {
     prepareFrame(needsUpdate, needsLayout);
   });
-  surface->setDismissedCallback([this]() { cancel(); });
+  // Defer: the compositor can send popup_done synchronously inside the init roundtrip below (e.g. a
+  // grab serial it rejects). Running cancel() there would destroy this popup mid-initialization.
+  surface->setDismissedCallback([this]() { DeferredCall::callLater([this]() { cancel(); }); });
 
   m_chrome =
       popup_chrome::computeGeometry(static_cast<float>(width), static_cast<float>(height), popupShadowConfig(m_config));
@@ -98,6 +101,9 @@ bool DialogPopupHost::openPopup(std::uint32_t width, std::uint32_t height) {
       : m_surface->initialize(parentContext->layerSurface, parentContext->output, popupConfig);
   if (!initialized) {
     destroyPopup();
+    return false;
+  }
+  if (m_surface == nullptr) {
     return false;
   }
   popup_chrome::setContentInputRegion(*m_surface, m_chrome);
@@ -121,7 +127,9 @@ bool DialogPopupHost::openPopupAsChild(
   surface->setPrepareFrameCallback([this](bool needsUpdate, bool needsLayout) {
     prepareFrame(needsUpdate, needsLayout);
   });
-  surface->setDismissedCallback([this]() { cancel(); });
+  // Defer: the compositor can send popup_done synchronously inside the init roundtrip below (e.g. a
+  // grab serial it rejects). Running cancel() there would destroy this popup mid-initialization.
+  surface->setDismissedCallback([this]() { DeferredCall::callLater([this]() { cancel(); }); });
 
   m_chrome = popup_chrome::computeGeometry(
       static_cast<float>(config.width), static_cast<float>(config.height), popupShadowConfig(m_config)
@@ -136,6 +144,9 @@ bool DialogPopupHost::openPopupAsChild(
   m_surface = std::move(surface);
   if (!m_surface->initializeAsChild(parentXdgSurface, output, config)) {
     destroyPopup();
+    return false;
+  }
+  if (m_surface == nullptr) {
     return false;
   }
   popup_chrome::setContentInputRegion(*m_surface, m_chrome);

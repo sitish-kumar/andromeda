@@ -696,9 +696,11 @@ void SettingsWindow::openBarWidgetEditorSheet(std::string title, std::function<v
     output = m_output;
   }
 
+  const std::uint32_t grabSerial = m_pendingEditorSheetNoGrab ? 0u : m_wayland->lastInputSerial();
+  m_pendingEditorSheetNoGrab = false;
   m_editorSheetPopup->open(
-      m_surface->xdgSurface(), output, m_wayland->lastInputSerial(), m_surface->wlSurface(), m_surface->width(),
-      m_surface->height(), scale, std::move(title), nullptr, std::move(populate)
+      m_surface->xdgSurface(), output, grabSerial, m_surface->wlSurface(), m_surface->width(), m_surface->height(),
+      scale, std::move(title), nullptr, std::move(populate)
   );
 }
 
