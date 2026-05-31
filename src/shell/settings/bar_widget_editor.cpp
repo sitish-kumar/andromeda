@@ -2292,7 +2292,7 @@ namespace settings {
     auto zones = std::make_shared<std::vector<DropZone>>();
 
     // Shared compact icon-button footprint for lane cards and group headers.
-    const float iconSize = Style::controlHeightSm * 0.72f * ctx.scale;
+    const float iconSize = Style::controlHeightSm * 0.84f * ctx.scale;
     const float iconPad = 2.0f * ctx.scale;
     const float rowGap = 2.0f * ctx.scale;
 
@@ -2453,7 +2453,7 @@ namespace settings {
       const auto info = widgetReferenceInfo(ctx.config, name, false);
       auto card = ui::column({
           .align = FlexAlign::Stretch,
-          .paddingV = 2.0f * ctx.scale,
+          .paddingV = 3.0f * ctx.scale,
           .paddingH = Style::spaceXs * ctx.scale,
           .fill = colorSpecFromRole(ColorRole::Surface, 0.72f),
           .radius = Style::scaledRadiusSm(ctx.scale),
