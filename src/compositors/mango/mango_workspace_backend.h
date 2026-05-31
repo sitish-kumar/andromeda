@@ -63,6 +63,7 @@ private:
     std::int32_t y = 0;
     std::int32_t width = 0;
     std::int32_t height = 0;
+    std::string activeClientId;
     std::string activeClientTitle;
     std::string activeClientAppId;
     std::vector<TagInfo> tags;
@@ -84,6 +85,7 @@ private:
   void readWatchSocket();
   bool handleMessage(std::string_view line);
   void refreshClients();
+  void syncFocusedClientTags();
   void notifyChanged();
   [[nodiscard]] std::string outputName(wl_output* output) const;
   [[nodiscard]] OutputState* activeOutputState();

@@ -45,6 +45,23 @@ namespace {
     return it != json.end() && it->is_boolean() && it->get<bool>();
   }
 
+  [[nodiscard]] std::string jsonIdString(const nlohmann::json& json, const char* key) {
+    const auto it = json.find(key);
+    if (it == json.end() || it->is_null()) {
+      return {};
+    }
+    if (it->is_string()) {
+      return it->get<std::string>();
+    }
+    if (it->is_number_unsigned()) {
+      return std::to_string(it->get<std::uint64_t>());
+    }
+    if (it->is_number_integer()) {
+      return std::to_string(it->get<std::int64_t>());
+    }
+    return {};
+  }
+
   [[nodiscard]] std::vector<std::uint32_t> jsonTagArray(const nlohmann::json& json, const char* key) {
     std::vector<std::uint32_t> result;
     const auto it = json.find(key);
@@ -100,6 +117,7 @@ bool MangoWorkspaceBackend::connectSocket() {
     return false;
   }
   refreshClients();
+  syncFocusedClientTags();
   return true;
 }
 
@@ -377,6 +395,7 @@ bool MangoWorkspaceBackend::handleMessage(std::string_view line) {
 
   m_outputsByName = std::move(nextOutputs);
   refreshClients();
+  syncFocusedClientTags();
   return true;
 }
 
@@ -400,6 +419,46 @@ void MangoWorkspaceBackend::refreshClients() {
     }
   }
   m_clients = std::move(nextClients);
+}
+
+void MangoWorkspaceBackend::syncFocusedClientTags() {
+  for (auto& [monitorName, state] : m_outputsByName) {
+    for (auto& tag : state.tags) {
+      tag.hasFocusedClient = false;
+    }
+
+    const ClientState* focusedClient = nullptr;
+    if (!state.activeClientId.empty()) {
+      for (const auto& client : m_clients) {
+        if (client.id == state.activeClientId && client.monitorName == monitorName) {
+          focusedClient = &client;
+          break;
+        }
+      }
+    }
+    if (focusedClient == nullptr) {
+      for (const auto& client : m_clients) {
+        if (client.focused && client.monitorName == monitorName) {
+          focusedClient = &client;
+          break;
+        }
+      }
+    }
+    if (focusedClient == nullptr) {
+      continue;
+    }
+
+    for (const std::uint32_t tagIndex : focusedClient->tags) {
+      if (tagIndex == 0) {
+        continue;
+      }
+      for (auto& tag : state.tags) {
+        if (tag.index == tagIndex) {
+          tag.hasFocusedClient = true;
+        }
+      }
+    }
+  }
 }
 
 void MangoWorkspaceBackend::notifyChanged() {
@@ -510,6 +569,7 @@ std::optional<MangoWorkspaceBackend::OutputState> MangoWorkspaceBackend::parseMo
 
   const auto activeClientIt = json.find("active_client");
   if (activeClientIt != json.end() && activeClientIt->is_object()) {
+    state.activeClientId = jsonIdString(*activeClientIt, "id");
     state.activeClientTitle = StringUtils::windowTitleSingleLine(jsonString(*activeClientIt, "title"));
     state.activeClientAppId = jsonString(*activeClientIt, "appid");
   }
@@ -539,14 +599,6 @@ std::optional<MangoWorkspaceBackend::OutputState> MangoWorkspaceBackend::parseMo
 
   for (auto& tag : state.tags) {
     tag.hasFocusedClient = false;
-  }
-  if (activeClientIt != json.end() && activeClientIt->is_object() && !state.tags.empty()) {
-    for (auto& tag : state.tags) {
-      if (tag.active) {
-        tag.hasFocusedClient = true;
-        break;
-      }
-    }
   }
 
   return state;
