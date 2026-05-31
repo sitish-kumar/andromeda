@@ -47,7 +47,13 @@ namespace ui {
     std::optional<FlexAlign> align = std::nullopt;
     std::optional<FlexJustify> justify = std::nullopt;
     std::optional<float> gap = std::nullopt;
-    std::optional<float> padding = std::nullopt;
+    std::optional<float> padding = std::nullopt;  // uniform; overridden per-axis by paddingV/paddingH
+    std::optional<float> paddingV = std::nullopt; // vertical (top+bottom)
+    std::optional<float> paddingH = std::nullopt; // horizontal (left+right)
+    std::optional<ColorSpec> fill = std::nullopt;
+    std::optional<float> radius = std::nullopt;
+    std::optional<ColorSpec> border = std::nullopt;
+    std::optional<float> borderWidth = std::nullopt; // defaults to 1.0 when `border` is set
     std::optional<float> minWidth = std::nullopt;
     std::optional<float> minHeight = std::nullopt;
     std::optional<float> maxWidth = std::nullopt;

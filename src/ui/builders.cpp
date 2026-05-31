@@ -37,8 +37,18 @@ namespace ui {
       if (props.gap.has_value()) {
         flex.setGap(*props.gap);
       }
-      if (props.padding.has_value()) {
-        flex.setPadding(*props.padding);
+      if (props.padding.has_value() || props.paddingV.has_value() || props.paddingH.has_value()) {
+        const float all = props.padding.value_or(0.0f);
+        flex.setPadding(props.paddingV.value_or(all), props.paddingH.value_or(all));
+      }
+      if (props.fill.has_value()) {
+        flex.setFill(*props.fill);
+      }
+      if (props.radius.has_value()) {
+        flex.setRadius(*props.radius);
+      }
+      if (props.border.has_value()) {
+        flex.setBorder(*props.border, props.borderWidth.value_or(1.0f));
       }
       if (props.minWidth.has_value()) {
         flex.setMinWidth(*props.minWidth);
