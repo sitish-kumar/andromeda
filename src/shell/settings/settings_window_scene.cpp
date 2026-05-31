@@ -792,7 +792,7 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
   if (m_syncGreeterAppearance && env.greeterSyncAvailable) {
     auto it = std::find_if(m_settingsRegistry.begin(), m_settingsRegistry.end(), [](const settings::SettingEntry& e) {
       return e.section == "shell"
-          && e.group == "security"
+          && e.group == "privacy-security"
           && e.path == std::vector<std::string>{"shell", "password_style"};
     });
     if (it != m_settingsRegistry.end()) {
@@ -800,7 +800,7 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
     }
     settings::SettingEntry btn{
         .section = "shell",
-        .group = "security",
+        .group = "privacy-security",
         .title = i18n::tr("settings.schema.shell.sync-greeter.label"),
         .subtitle = i18n::tr("settings.schema.shell.sync-greeter.description"),
         .path = {},
