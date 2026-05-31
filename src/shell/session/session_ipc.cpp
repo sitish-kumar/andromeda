@@ -12,7 +12,9 @@
 namespace {
 
   [[nodiscard]] SessionPanelActionConfig sessionActionConfig(std::string_view action) {
-    return SessionPanelActionConfig{.action = std::string(action)};
+    SessionPanelActionConfig cfg;
+    cfg.action = std::string(action);
+    return cfg;
   }
 
   [[nodiscard]] std::string unknownSessionActionError(std::string_view action) {
