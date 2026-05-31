@@ -2,14 +2,12 @@
 
 #include "config/config_types.h"
 #include "core/deferred_call.h"
-#include "core/key_modifiers.h"
 #include "core/keybind_matcher.h"
 #include "core/log.h"
 #include "core/ui_phase.h"
 #include "cursor-shape-v1-client-protocol.h"
 #include "render/animation/animation_manager.h"
 #include "render/core/color.h"
-#include "render/core/render_styles.h"
 #include "render/render_context.h"
 #include "render/scene/input_area.h"
 #include "render/scene/input_dispatcher.h"
@@ -346,13 +344,12 @@ namespace capture {
       inst.backdrop = static_cast<Image*>(input->addChild(std::move(backdrop)));
     }
 
-    // Dim the screen with four strips that frame the selected region, leaving
-    // it undimmed (slurp-style). The selected region stays fully transparent so
-    // it shows real colors and never tints the captured pixels.
+    // Dim the screen with four strips that frame the selected region. The
+    // region itself stays fully transparent so it shows real colors and never
+    // tints the captured pixels.
     auto makeDimStrip = [&]() {
       auto strip = std::make_unique<Box>();
-      // Fixed dark scrim (slurp-style): a theme color would lay a light veil on
-      // light themes instead of darkening. Black dims correctly in every theme.
+      // Fixed black scrim so it darkens under every theme.
       strip->setFill(fixedColorSpec(rgba(0.0f, 0.0f, 0.0f, 1.0f)));
       strip->setOpacity(kDimOpacity);
       strip->setPosition(0.0f, 0.0f);
