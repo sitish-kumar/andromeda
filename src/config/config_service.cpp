@@ -1561,6 +1561,12 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       if (auto v = (*panelTbl)["launcher_categories"].value<bool>()) {
         shell.panel.launcherCategories = *v;
       }
+      if (auto v = (*panelTbl)["launcher_show_icons"].value<bool>()) {
+        shell.panel.launcherShowIcons = *v;
+      }
+      if (auto v = (*panelTbl)["launcher_compact"].value<bool>()) {
+        shell.panel.launcherCompact = *v;
+      }
     }
     if (const auto* screenCornersTbl = (*shellTbl)["screen_corners"].as_table()) {
       if (auto v = (*screenCornersTbl)["enabled"].value<bool>()) {

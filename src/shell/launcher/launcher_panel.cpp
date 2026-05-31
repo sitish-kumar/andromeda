@@ -33,7 +33,8 @@
 namespace {
 
   constexpr std::size_t kRowOverscan = 3;
-  constexpr float kIconSize = 40.0f;
+  constexpr float kIconSizeDefault = 40.0f;
+  constexpr float kIconSizeCompact = 28.0f;
   constexpr double kUsageScorePerCount = 0.1;
   constexpr double kTypedUsageScoreCap = 0.5;
   constexpr std::string_view kProviderOverviewProviderName = "__launcher_provider_overview__";
@@ -65,13 +66,36 @@ namespace {
     return id;
   }
 
-  float launcherRowHeight(float scale) {
-    const float paddingY = Style::spaceXs * scale;
-    const float textGap = Style::spaceXs * scale;
-    const float titleHeight = Style::fontSizeBody * scale * 1.35f;
-    const float subtitleHeight = Style::fontSizeCaption * scale * 1.25f;
+  struct LauncherListStyle {
+    float scale = 1.0f;
+    bool showIcons = true;
+    bool compact = false;
+  };
+
+  [[nodiscard]] float launcherIconSize(const LauncherListStyle& style) {
+    return (style.compact ? kIconSizeCompact : kIconSizeDefault) * style.scale;
+  }
+
+  [[nodiscard]] float launcherRowHeight(const LauncherListStyle& style) {
+    const float paddingY = (style.compact ? Style::spaceXs * 0.5f : Style::spaceXs) * style.scale;
+    const float textGap = style.compact ? 0.0f : Style::spaceXs * 0.5f * style.scale;
+    const float titleHeight = Style::fontSizeBody * style.scale * (style.compact ? 1.2f : 1.35f);
+    const float subtitleHeight = style.compact ? 0.0f : Style::fontSizeCaption * style.scale * 1.25f;
     const float textHeight = titleHeight + textGap + subtitleHeight;
-    return std::ceil(std::max(kIconSize * scale, textHeight) + paddingY * 2.0f);
+    if (!style.showIcons) {
+      return std::ceil(textHeight + paddingY * 2.0f);
+    }
+    return std::ceil(std::max(launcherIconSize(style), textHeight) + paddingY * 2.0f);
+  }
+
+  [[nodiscard]] LauncherListStyle launcherListStyleFrom(const ConfigService* config, float scale) {
+    LauncherListStyle style{.scale = scale};
+    if (config != nullptr) {
+      const auto& panel = config->config().shell.panel;
+      style.showIcons = panel.launcherShowIcons;
+      style.compact = panel.launcherCompact;
+    }
+    return style;
   }
 
   // Must stay aligned with Dock::refreshPinnedAppsIfNeeded() matching rules.
@@ -114,22 +138,25 @@ namespace {
 
   class LauncherResultRow final : public Node {
   public:
-    LauncherResultRow(float scale, AsyncTextureCache* asyncTextures)
-        : m_scale(scale), m_rowHeight(launcherRowHeight(scale)), m_asyncTextures(asyncTextures) {
+    LauncherResultRow(LauncherListStyle style, AsyncTextureCache* asyncTextures)
+        : m_style(style), m_asyncTextures(asyncTextures) {
+      const float iconSize = launcherIconSize(m_style);
+      const float gap = (m_style.compact ? Style::spaceSm : Style::spaceMd) * m_style.scale;
+      const float paddingV = (m_style.compact ? Style::spaceXs * 0.5f : Style::spaceXs) * m_style.scale;
       auto row = ui::row(
           {.out = &m_row,
            .align = FlexAlign::Center,
-           .gap = Style::spaceMd * scale,
-           .paddingV = Style::spaceXs * scale,
-           .paddingH = Style::spaceSm * scale,
-           .radius = Style::scaledRadiusMd(scale)}
+           .gap = gap,
+           .paddingV = paddingV,
+           .paddingH = Style::spaceSm * m_style.scale,
+           .radius = Style::scaledRadiusMd(m_style.scale)}
       );
       addChild(std::move(row));
 
       m_row->addChild(
           ui::label({
               .out = &m_actionLabel,
-              .fontSize = kIconSize * scale,
+              .fontSize = iconSize,
               .color = colorSpecFromRole(ColorRole::OnSurface),
               .visible = false,
           })
@@ -138,8 +165,8 @@ namespace {
       m_row->addChild(
           ui::image({
               .out = &m_image,
-              .width = kIconSize * scale,
-              .height = kIconSize * scale,
+              .width = iconSize,
+              .height = iconSize,
               .visible = false,
           })
       );
@@ -147,14 +174,15 @@ namespace {
       m_row->addChild(
           ui::glyph({
               .out = &m_glyph,
-              .glyphSize = kIconSize * scale,
+              .glyphSize = iconSize,
               .color = colorSpecFromRole(ColorRole::OnSurface),
               .visible = false,
           })
       );
 
       m_image->setAsyncReadyCallback([this]() {
-        if (m_actionTextVisible
+        if (!m_style.showIcons
+            || m_actionTextVisible
             || m_iconPath.empty()
             || m_image == nullptr
             || m_glyph == nullptr
@@ -170,19 +198,19 @@ namespace {
               {
                   .out = &m_textCol,
                   .align = FlexAlign::Start,
-                  .gap = Style::spaceXs * 0.5f * scale,
+                  .gap = m_style.compact ? 0.0f : Style::spaceXs * 0.5f * m_style.scale,
                   .flexGrow = 1.0f,
               },
               ui::label({
                   .out = &m_title,
-                  .fontSize = Style::fontSizeBody * scale,
+                  .fontSize = Style::fontSizeBody * m_style.scale,
                   .color = colorSpecFromRole(ColorRole::OnSurface),
                   .maxLines = 1,
                   .fontWeight = FontWeight::Bold,
               }),
               ui::label({
                   .out = &m_subtitle,
-                  .fontSize = Style::fontSizeCaption * scale,
+                  .fontSize = Style::fontSizeCaption * m_style.scale,
                   .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
                   .maxLines = 1,
                   .configure = [](Label& label) { label.setCaptionStyle(); },
@@ -191,43 +219,62 @@ namespace {
       );
     }
 
+    void setListStyle(LauncherListStyle style) { m_style = style; }
+
     void bind(Renderer& renderer, const LauncherResult& result, float width, bool selected, bool hovered) {
       m_selected = selected;
       m_hovered = hovered;
       m_iconPath = result.iconPath;
       m_fallbackGlyph = result.glyphName.empty() ? "app-window" : result.glyphName;
-      m_iconTargetSize = static_cast<int>(std::round(kIconSize * m_scale));
+      const float iconSize = launcherIconSize(m_style);
+      m_iconTargetSize = static_cast<int>(std::round(iconSize));
       m_actionTextVisible = !result.actionText.empty();
+      m_rowHeight = launcherRowHeight(m_style);
 
       setSize(width, m_rowHeight);
       m_row->setFrameSize(width, m_rowHeight);
 
       m_actionLabel->setVisible(false);
+      m_actionLabel->setParticipatesInLayout(false);
       m_image->setVisible(false);
+      m_image->setParticipatesInLayout(false);
       m_glyph->setVisible(false);
+      m_glyph->setParticipatesInLayout(false);
 
+      const bool showAppIcon = m_style.showIcons && !m_actionTextVisible;
+      const bool showLeadingVisual = m_actionTextVisible || showAppIcon;
       if (m_actionTextVisible) {
         m_actionLabel->setText(result.actionText);
-        m_actionLabel->setSize(kIconSize * m_scale, kIconSize * m_scale);
+        m_actionLabel->setSize(iconSize, iconSize);
         m_actionLabel->setVisible(true);
+        m_actionLabel->setParticipatesInLayout(true);
         m_image->clear(renderer);
-      } else if (!m_iconPath.empty()) {
-        const bool ready = refreshAsyncIcon(renderer);
-        m_image->setVisible(ready);
-        m_glyph->setGlyph(m_fallbackGlyph);
-        m_glyph->setVisible(!ready);
+      } else if (showAppIcon) {
+        m_image->setParticipatesInLayout(true);
+        m_glyph->setParticipatesInLayout(true);
+        if (!m_iconPath.empty()) {
+          const bool ready = refreshAsyncIcon(renderer);
+          m_image->setVisible(ready);
+          m_glyph->setGlyph(m_fallbackGlyph);
+          m_glyph->setVisible(!ready);
+        } else {
+          m_image->clear(renderer);
+          m_glyph->setGlyph(m_fallbackGlyph);
+          m_glyph->setVisible(true);
+        }
       } else {
         m_image->clear(renderer);
-        m_glyph->setGlyph(m_fallbackGlyph);
-        m_glyph->setVisible(true);
       }
 
-      const float textWidth =
-          std::max(0.0f, width - kIconSize * m_scale - Style::spaceSm * m_scale * 2.0f - Style::spaceMd * m_scale);
+      const float gap = (m_style.compact ? Style::spaceSm : Style::spaceMd) * m_style.scale;
+      const float horizontalPad = Style::spaceSm * m_style.scale * 2.0f;
+      const float leadingWidth = showLeadingVisual ? iconSize + gap : 0.0f;
+      const float textWidth = std::max(0.0f, width - leadingWidth - horizontalPad);
       m_title->setText(result.title);
       m_title->setMaxWidth(textWidth);
 
-      if (result.subtitle.empty()) {
+      const bool showSubtitle = !m_style.compact && !result.subtitle.empty();
+      if (!showSubtitle) {
         m_subtitle->setVisible(false);
         m_subtitle->setText("");
       } else {
@@ -240,7 +287,9 @@ namespace {
     }
 
     bool refreshAsyncIcon(Renderer& renderer) {
-      if (m_actionTextVisible || m_iconPath.empty()) {
+      if (!m_style.showIcons || m_actionTextVisible || m_iconPath.empty()) {
+        m_image->setVisible(false);
+        m_glyph->setVisible(false);
         return false;
       }
 
@@ -251,7 +300,7 @@ namespace {
         ready = m_image->setSourceFile(renderer, m_iconPath, m_iconTargetSize, true);
       }
 
-      m_image->setSize(kIconSize * m_scale, kIconSize * m_scale);
+      m_image->setSize(launcherIconSize(m_style), launcherIconSize(m_style));
       m_image->setVisible(ready);
       m_glyph->setGlyph(m_fallbackGlyph);
       m_glyph->setVisible(!ready);
@@ -260,7 +309,7 @@ namespace {
 
   protected:
     void doLayout(Renderer& renderer) override {
-      if (!m_actionTextVisible && !m_iconPath.empty()) {
+      if (m_style.showIcons && !m_actionTextVisible && !m_iconPath.empty()) {
         (void)refreshAsyncIcon(renderer);
       }
       Node::doLayout(renderer);
@@ -287,7 +336,7 @@ namespace {
       m_subtitle->setColor(mutedForeground);
     }
 
-    float m_scale = 1.0f;
+    LauncherListStyle m_style{};
     float m_rowHeight = 0.0f;
     bool m_selected = false;
     bool m_hovered = false;
@@ -312,8 +361,9 @@ public:
   using ActivateCallback = std::function<void(std::size_t)>;
   using SecondaryActivateCallback = std::function<void(std::size_t, float, float)>;
 
-  LauncherResultAdapter(float scale, AsyncTextureCache* cache) : m_scale(scale), m_cache(cache) {}
+  LauncherResultAdapter(LauncherListStyle style, AsyncTextureCache* cache) : m_style(style), m_cache(cache) {}
 
+  void setListStyle(LauncherListStyle style) { m_style = style; }
   void setResults(const std::vector<LauncherResult>* results) { m_results = results; }
   void setRenderer(Renderer* renderer) { m_renderer = renderer; }
   void setOnActivate(ActivateCallback callback) { m_onActivate = std::move(callback); }
@@ -322,7 +372,7 @@ public:
   [[nodiscard]] std::size_t itemCount() const override { return m_results == nullptr ? 0u : m_results->size(); }
 
   [[nodiscard]] std::unique_ptr<Node> createTile() override {
-    return std::make_unique<LauncherResultRow>(m_scale, m_cache);
+    return std::make_unique<LauncherResultRow>(m_style, m_cache);
   }
 
   void bindTile(Node& tile, std::size_t index, bool selected, bool hovered) override {
@@ -330,6 +380,7 @@ public:
       return;
     }
     auto* row = static_cast<LauncherResultRow*>(&tile);
+    row->setListStyle(m_style);
     row->bind(*m_renderer, (*m_results)[index], tile.width(), selected, hovered);
   }
 
@@ -346,7 +397,7 @@ public:
   }
 
 private:
-  float m_scale;
+  LauncherListStyle m_style{};
   AsyncTextureCache* m_cache = nullptr;
   Renderer* m_renderer = nullptr;
   const std::vector<LauncherResult>* m_results = nullptr;
@@ -411,7 +462,7 @@ void LauncherPanel::create() {
       .flexGrow = 1.0f,
   });
 
-  m_adapter = std::make_unique<LauncherResultAdapter>(scale, m_asyncTextures);
+  m_adapter = std::make_unique<LauncherResultAdapter>(launcherListStyleFrom(m_config, scale), m_asyncTextures);
   m_adapter->setResults(&m_results);
   m_adapter->setOnActivate([this](std::size_t index) { activateAt(index); });
   m_adapter->setOnSecondaryActivate([this](std::size_t index, float ax, float ay) {
@@ -422,7 +473,7 @@ void LauncherPanel::create() {
       ui::virtualGridView({
           .out = &m_grid,
           .columns = 1,
-          .cellHeight = launcherRowHeight(scale),
+          .cellHeight = launcherRowHeight(launcherListStyleFrom(m_config, scale)),
           .squareCells = false,
           .columnGap = 0.0f,
           .rowGap = 0.0f,
@@ -456,6 +507,27 @@ void LauncherPanel::create() {
   if (m_animations != nullptr) {
     root()->setAnimationManager(m_animations);
   }
+
+  syncLauncherListStyle();
+}
+
+void LauncherPanel::syncLauncherListStyle() {
+  const bool showIcons = m_config == nullptr || m_config->config().shell.panel.launcherShowIcons;
+  const bool compact = m_config != nullptr && m_config->config().shell.panel.launcherCompact;
+  if (showIcons == m_launcherShowIcons && compact == m_launcherCompact && m_adapter != nullptr) {
+    return;
+  }
+  m_launcherShowIcons = showIcons;
+  m_launcherCompact = compact;
+
+  if (m_adapter == nullptr || m_grid == nullptr) {
+    return;
+  }
+
+  const LauncherListStyle style = launcherListStyleFrom(m_config, contentScale());
+  m_adapter->setListStyle(style);
+  m_grid->setCellHeight(launcherRowHeight(style));
+  m_grid->setAdapter(m_adapter.get());
 }
 
 void LauncherPanel::onPanelCardOpacityChanged(float opacity) {
@@ -471,6 +543,8 @@ void LauncherPanel::doLayout(Renderer& renderer, float width, float height) {
   if (m_container == nullptr || m_input == nullptr) {
     return;
   }
+
+  syncLauncherListStyle();
 
   if (m_adapter != nullptr) {
     m_adapter->setRenderer(&renderer);
@@ -648,7 +722,8 @@ void LauncherPanel::onInputChanged(const std::string& text) {
     });
   }
 
-  const int iconTargetSize = static_cast<int>(std::round(kIconSize * contentScale()));
+  const int iconTargetSize =
+      static_cast<int>(std::round(launcherIconSize(launcherListStyleFrom(m_config, contentScale()))));
   for (auto& result : m_allResults) {
     if (result.iconPath.empty() && !result.iconName.empty()) {
       const std::string& resolved = m_iconResolver.resolve(result.iconName, iconTargetSize);

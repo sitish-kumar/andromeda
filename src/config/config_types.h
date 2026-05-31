@@ -662,6 +662,8 @@ struct ShellConfig {
     bool openNearClickWallpaper = false;
     bool openNearClickSession = false;
     bool launcherCategories = true;
+    bool launcherShowIcons = true;
+    bool launcherCompact = false;
 
     bool operator==(const PanelConfig&) const = default;
   };

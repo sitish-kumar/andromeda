@@ -2040,6 +2040,14 @@
           "label": "Show Categories",
           "description": "Display category filters in the launcher; toggle with Tab while the launcher is open"
         },
+        "launcher-show-icons": {
+          "label": "Show App Icons",
+          "description": "Show application icons in launcher results"
+        },
+        "launcher-compact": {
+          "label": "Compact Rows",
+          "description": "Use smaller icons and tighter result rows"
+        },
         "open-near-click-clipboard": {
           "label": "Open Near Click",
           "description": "Position the clipboard panel near the bar click instead of centering it along the bar"

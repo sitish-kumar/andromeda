@@ -888,6 +888,16 @@ namespace settings {
         ToggleSetting{cfg.shell.panel.launcherCategories}, "launcher categories filter"
     ));
     entries.push_back(makeEntry(
+        "panels", "launcher", tr("settings.schema.panels.launcher-show-icons.label"),
+        tr("settings.schema.panels.launcher-show-icons.description"), {"shell", "panel", "launcher_show_icons"},
+        ToggleSetting{cfg.shell.panel.launcherShowIcons}, "launcher app icons hide"
+    ));
+    entries.push_back(makeEntry(
+        "panels", "launcher", tr("settings.schema.panels.launcher-compact.label"),
+        tr("settings.schema.panels.launcher-compact.description"), {"shell", "panel", "launcher_compact"},
+        ToggleSetting{cfg.shell.panel.launcherCompact}, "launcher compact rows dense"
+    ));
+    entries.push_back(makeEntry(
         "panels", "clipboard", tr("settings.schema.panels.placement-clipboard.label"),
         tr("settings.schema.panels.placement-clipboard.description"), {"shell", "panel", "clipboard_placement"},
         asSegmented(enumSelect(kPanelPlacements, cfg.shell.panel.clipboardPlacement)),
