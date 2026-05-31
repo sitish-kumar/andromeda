@@ -26,6 +26,7 @@
   glib,
   polkit,
   librsvg,
+  libqalculate,
   jemalloc
 }:
 
@@ -70,6 +71,7 @@ stdenv.mkDerivation {
     glib
     polkit
     librsvg
+    libqalculate
   ];
 
   mesonBuildType = "release";
