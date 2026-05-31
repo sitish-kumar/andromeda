@@ -5,6 +5,7 @@
 #include "render/render_context.h"
 #include "render/scene/node.h"
 #include "ui/builders.h"
+#include "ui/controls/label.h"
 #include "ui/controls/select_dropdown_popup.h"
 #include "ui/popup_chrome.h"
 #include "ui/style.h"
@@ -92,6 +93,13 @@ namespace settings {
 
   void SessionActionsEditorPopup::close() { destroyPopup(); }
 
+  void SessionActionsEditorPopup::setSheetTitle(std::string title) {
+    m_sheetTitle = std::move(title);
+    if (m_sheetTitleLabel != nullptr) {
+      m_sheetTitleLabel->setText(m_sheetTitle);
+    }
+  }
+
   bool SessionActionsEditorPopup::isOpen() const noexcept { return DialogPopupHost::isOpen(); }
 
   bool SessionActionsEditorPopup::onPointerEvent(const PointerEvent& event) {
@@ -144,6 +152,7 @@ namespace settings {
 
     header->addChild(
         ui::label({
+            .out = &m_sheetTitleLabel,
             .text = m_sheetTitle,
             .fontSize = Style::fontSizeBody * m_scale,
             .color = colorSpecFromRole(ColorRole::OnSurface),
@@ -256,6 +265,7 @@ namespace settings {
     }
     m_parentOutput = nullptr;
     m_sheetTitle.clear();
+    m_sheetTitleLabel = nullptr;
     m_removeAction = nullptr;
     m_populateSheetBody = nullptr;
     m_root = nullptr;

@@ -194,7 +194,7 @@ temperature_night    = 4000         # Kelvin
 
 [idle.behavior.lock]
 timeout = 600
-command = "noctalia:screen-lock"
+command = "noctalia:session lock"
 enabled = false
 
 [idle.behavior.screen-off]

@@ -41,6 +41,8 @@ namespace settings {
     [[nodiscard]] bool ownsSelectDropdownSurface(wl_surface* surface) const noexcept;
     [[nodiscard]] bool isSelectDropdownOpen() const noexcept;
 
+    void setSheetTitle(std::string title);
+
   protected:
     void populateContent(Node* contentParent, std::uint32_t width, std::uint32_t height) override;
     void layoutSheet(float contentWidth, float contentHeight) override;
@@ -51,6 +53,7 @@ namespace settings {
   private:
     float m_scale = 1.0f;
     std::string m_sheetTitle;
+    class Label* m_sheetTitleLabel = nullptr;
     std::function<void()> m_removeAction;
     std::function<void(Flex&)> m_populateSheetBody;
 

@@ -110,6 +110,7 @@ private:
       const std::string& placeholder, const std::string& emptyText, const std::vector<std::string>& settingPath
   );
   void openSessionActionEntryEditor(std::size_t index);
+  void syncSessionActionInlineSummary(std::size_t index, const SessionPanelActionConfig& row);
   void openIdleBehaviorEntryEditor(std::size_t index);
   void openIdleBehaviorCreateEditor();
   void refreshIdleLiveStatusText();
@@ -140,6 +141,8 @@ private:
   DependencyService* m_dependencies = nullptr;
   UPowerService* m_upower = nullptr;
   Label* m_idleLiveStatusLabel = nullptr;
+  std::vector<Label*> m_sessionActionSummaryLabels;
+  std::shared_ptr<std::vector<SessionPanelActionConfig>> m_sessionActionsEditState;
 
   std::unique_ptr<ToplevelSurface> m_surface;
   std::unique_ptr<Node> m_sceneRoot;

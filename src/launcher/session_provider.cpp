@@ -32,6 +32,7 @@ namespace {
     return action == "lock"
         || action == "logout"
         || action == "suspend"
+        || action == "lock_and_suspend"
         || action == "reboot"
         || action == "shutdown"
         || action == "command";
@@ -46,6 +47,9 @@ namespace {
     }
     if (action == "suspend") {
       return "session.actions.suspend";
+    }
+    if (action == "lock_and_suspend") {
+      return "session.actions.lock-and-suspend";
     }
     if (action == "reboot") {
       return "session.actions.reboot";
@@ -66,6 +70,9 @@ namespace {
     if (action == "suspend") {
       return "suspend";
     }
+    if (action == "lock_and_suspend") {
+      return "lock";
+    }
     if (action == "reboot") {
       return "reboot";
     }
@@ -84,6 +91,9 @@ namespace {
     }
     if (action == "suspend") {
       return "suspend sleep pause";
+    }
+    if (action == "lock_and_suspend") {
+      return "lock and suspend sleep pause";
     }
     if (action == "reboot") {
       return "reboot restart";
@@ -123,7 +133,9 @@ namespace {
   }
 
   [[nodiscard]] std::string actionSubtitle(const SessionPanelActionConfig& config) {
-    if (config.command.has_value() && !StringUtils::trim(*config.command).empty()) {
+    if (config.action != "lock_and_suspend"
+        && config.command.has_value()
+        && !StringUtils::trim(*config.command).empty()) {
       return i18n::tr("launcher.providers.session.command-subtitle");
     }
     return i18n::tr("launcher.providers.session.action-subtitle");

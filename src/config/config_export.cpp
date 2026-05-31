@@ -645,7 +645,9 @@ namespace config_export {
         item.insert_or_assign("action", behavior.action);
         item.insert_or_assign("command", behavior.command);
         item.insert_or_assign("resume_command", behavior.resumeCommand);
-        item.insert_or_assign("lock_before_suspend", behavior.lockBeforeSuspend);
+        if (behavior.action == "suspend" && !behavior.lockBeforeSuspend) {
+          item.insert_or_assign("lock_before_suspend", false);
+        }
         behaviors.insert_or_assign(behavior.name, std::move(item));
       }
       table.insert_or_assign("behavior_order", std::move(order));

@@ -1328,16 +1328,12 @@ namespace settings {
 
       auto block = makeCollectionBlock(entry, overridden);
 
-      const std::vector<SelectOption> kindOptions = {
-          {"lock", i18n::tr("settings.session-actions.kind.lock"), {}},
-          {"logout", i18n::tr("settings.session-actions.kind.logout"), {}},
-          {"suspend", i18n::tr("settings.session-actions.kind.suspend"), {}},
-          {"reboot", i18n::tr("settings.session-actions.kind.reboot"), {}},
-          {"shutdown", i18n::tr("settings.session-actions.kind.shutdown"), {}},
-          {"command", i18n::tr("settings.session-actions.kind.command"), {}},
-      };
+      const std::vector<SelectOption> kindOptions = settings::sessionActionKindOptions();
 
       auto state = std::make_shared<std::vector<SessionPanelActionConfig>>(sa.items);
+      if (ctx.bindSessionActionsEditState) {
+        ctx.bindSessionActionsEditState(state);
+      }
       const auto commit = [setOverride = ctx.setOverride, path = entry.path, state, req = ctx.requestContentRebuild]() {
         setOverride(path, *state);
         req();
@@ -1353,12 +1349,17 @@ namespace settings {
             .minHeight = Style::controlHeightSm * scale,
         });
 
+        Label* summaryLabel = nullptr;
         auto summary = ui::label({
+            .out = &summaryLabel,
             .text = sessionActionRowSummary(kindOptions, (*state)[idx]),
             .fontSize = Style::fontSizeBody * scale,
             .color = colorSpecFromRole(ColorRole::OnSurface),
             .flexGrow = 1.0f,
         });
+        if (ctx.registerSessionActionSummaryLabel) {
+          ctx.registerSessionActionSummaryLabel(idx, summaryLabel);
+        }
         row->addChild(std::move(summary));
 
         auto reorder = ui::row({.align = FlexAlign::Center, .gap = Style::spaceXs * scale});

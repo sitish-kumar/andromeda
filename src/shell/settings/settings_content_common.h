@@ -26,8 +26,10 @@ namespace settings {
   [[nodiscard]] std::string formatSliderValue(double value, bool integerValue);
   [[nodiscard]] std::optional<double> parseDoubleInput(std::string_view text);
 
+  [[nodiscard]] std::vector<SelectOption> sessionActionKindOptions();
   [[nodiscard]] std::string
   sessionActionRowSummary(const std::vector<SelectOption>& kindOptions, const SessionPanelActionConfig& row);
+  [[nodiscard]] std::string sessionActionDisplayTitle(const SessionPanelActionConfig& row);
 
   [[nodiscard]] std::string sanitizedIdleBehaviorName(std::string_view text);
   [[nodiscard]] std::string uniqueIdleBehaviorName(

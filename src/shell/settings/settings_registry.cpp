@@ -1617,7 +1617,7 @@ namespace settings {
         "idle", "behavior", tr("settings.schema.idle.behaviors.label"),
         tr("settings.schema.idle.behaviors.description"), {"idle", "behavior"},
         IdleBehaviorsSetting{.items = cfg.idle.behaviors},
-        "idle behavior timeout command resume screen lock dpms suspend lock_before_suspend caffeine"
+        "idle behavior timeout command resume screen lock dpms suspend lock_and_suspend caffeine"
     ));
 
     // Hooks

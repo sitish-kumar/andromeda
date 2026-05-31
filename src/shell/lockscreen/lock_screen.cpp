@@ -6,7 +6,6 @@
 #include "core/log.h"
 #include "ext-session-lock-v1-client-protocol.h"
 #include "i18n/i18n.h"
-#include "ipc/ipc_service.h"
 #include "render/render_context.h"
 #include "shell/lockscreen/lock_surface.h"
 #include "ui/palette.h"
@@ -447,17 +446,4 @@ void LockScreen::clearSensitiveString(std::string& value) {
     ptr[i] = '\0';
   }
   value.clear();
-}
-
-void LockScreen::registerIpc(IpcService& ipc) {
-  ipc.registerHandler(
-      "screen-lock",
-      [this](const std::string&) -> std::string {
-        if (lock()) {
-          return "ok\n";
-        }
-        return "error: lock screen unavailable\n";
-      },
-      "screen-lock", "Lock the session"
-  );
 }

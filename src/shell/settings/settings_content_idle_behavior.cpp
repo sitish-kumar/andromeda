@@ -35,13 +35,13 @@ namespace settings {
         {"lock", i18n::tr("settings.idle.behavior.kind.lock"), {}},
         {"screen_off", i18n::tr("settings.idle.behavior.kind.screen-off"), {}},
         {"suspend", i18n::tr("settings.idle.behavior.kind.suspend"), {}},
+        {"lock_and_suspend", i18n::tr("settings.idle.behavior.kind.lock-and-suspend"), {}},
         {"command", i18n::tr("settings.idle.behavior.kind.custom"), {}},
     };
 
     IdleBehaviorConfig norm = row;
-    inferIdleBehaviorActionFromLegacyFields(norm);
+    normalizeIdleBehaviorAction(norm);
     const bool showCustomCommands = (norm.action == "command");
-    const bool showSuspendLock = (norm.action == "suspend");
 
     auto body = ui::column({
         .align = FlexAlign::Stretch,
@@ -55,30 +55,6 @@ namespace settings {
         .gap = Style::spaceMd * scale,
         .visible = showCustomCommands,
     });
-
-    Flex* suspendLockRaw = nullptr;
-    auto suspendLockGrp = ui::row(
-        {.out = &suspendLockRaw,
-         .align = FlexAlign::Center,
-         .gap = Style::spaceSm * scale,
-         .fillWidth = true,
-         .visible = showSuspendLock},
-        ui::label({
-            .text = i18n::tr("settings.idle.behavior.lock-before-suspend-label"),
-            .fontSize = Style::fontSizeBody * scale,
-            .color = colorSpecFromRole(ColorRole::OnSurface),
-            .fontWeight = FontWeight::Normal,
-            .flexGrow = 1.0f,
-        }),
-        ui::toggle({
-            .checked = row.lockBeforeSuspend,
-            .scale = scale,
-            .onChange = [&row, persist](bool v) {
-              row.lockBeforeSuspend = v;
-              persist();
-            },
-        })
-    );
 
     const auto addCommandInput = [&](Flex& section, std::string label, std::string placeholder, std::string& target) {
       auto block = ui::column(
@@ -140,8 +116,7 @@ namespace settings {
         .controlHeight = Style::controlHeight * scale,
         .glyphSize = Style::fontSizeBody * scale,
         .onSelectionChanged =
-            [&row, persist, idleActionOptions, customCommandsRaw,
-             suspendLockRaw](std::size_t index, std::string_view /*label*/) {
+            [&row, persist, idleActionOptions, customCommandsRaw](std::size_t index, std::string_view /*label*/) {
               if (index < idleActionOptions.size()) {
                 row.action = idleActionOptions[index].value;
                 if (row.action != "command") {
@@ -149,16 +124,14 @@ namespace settings {
                 }
               }
               IdleBehaviorConfig n = row;
-              inferIdleBehaviorActionFromLegacyFields(n);
+              normalizeIdleBehaviorAction(n);
               customCommandsRaw->setVisible(n.action == "command");
-              suspendLockRaw->setVisible(n.action == "suspend");
               persist();
             },
         .configure = [](Select& select) { select.setFillWidth(true); },
     });
     kindBlock->addChild(std::move(kindSelect));
     body->addChild(std::move(kindBlock));
-    body->addChild(std::move(suspendLockGrp));
 
     auto nameBlock = ui::column(
         {.align = FlexAlign::Stretch, .gap = Style::spaceXs * scale},

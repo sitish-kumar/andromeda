@@ -452,6 +452,7 @@
       "lock": "Lock",
       "logout": "Log Out",
       "suspend": "Suspend",
+      "lock-and-suspend": "Lock & Suspend",
       "reboot": "Reboot",
       "shutdown": "Shut Down",
       "custom": "Custom"
@@ -755,6 +756,7 @@
         "lock": "Lock",
         "logout": "Log out",
         "suspend": "Suspend",
+        "lock-and-suspend": "Lock & Suspend",
         "reboot": "Reboot",
         "shutdown": "Shut down",
         "command": "Custom command"
@@ -776,6 +778,7 @@
           "lock": "Lock session",
           "screen-off": "Turn off displays",
           "suspend": "Suspend system",
+          "lock-and-suspend": "Lock & suspend",
           "custom": "Custom commands"
         },
         "name-label": "Name",
@@ -785,11 +788,11 @@
         "command-placeholder": "notify-send \"Idle\"",
         "resume-command-label": "Resume command",
         "resume-command-placeholder": "noctalia:dpms-on",
-        "lock-before-suspend-label": "Lock before suspend",
         "presets": {
           "lock": "Lock",
           "monitor-off": "Monitor off",
-          "suspend": "Suspend"
+          "suspend": "Suspend",
+          "lock-and-suspend": "Lock & Suspend"
         }
       }
     },
