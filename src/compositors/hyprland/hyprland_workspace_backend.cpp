@@ -39,10 +39,21 @@ void HyprlandWorkspaceBackend::activate(const std::string& id) {
     return;
   }
 
+  // Named workspaces carry negative ids; focusing one by its raw negative number is read as a
+  // relative move, so target it through the name selector instead.
+  std::string target = id;
+  if (const auto parsed = parseInt(id); parsed.has_value() && *parsed < 0) {
+    const auto* workspace = findWorkspaceById(*parsed);
+    if (workspace == nullptr || workspace->name.empty()) {
+      return;
+    }
+    target = "name:" + workspace->name;
+  }
+
   if (m_runtime.configIsLua()) {
-    (void)m_runtime.request(std::format("dispatch hl.dsp.focus({{workspace = {}}})", id));
+    (void)m_runtime.request(std::format("dispatch hl.dsp.focus({{workspace = \"{}\"}})", target));
   } else {
-    (void)m_runtime.request(std::format("dispatch workspace {}", id));
+    (void)m_runtime.request(std::format("dispatch workspace {}", target));
   }
 }
 
@@ -56,14 +67,12 @@ std::vector<Workspace> HyprlandWorkspaceBackend::all() const {
   std::vector<const WorkspaceState*> ordered;
   ordered.reserve(m_workspaces.size());
   for (const auto& workspace : m_workspaces) {
-    if (workspace.id >= 0) {
+    if (!isSpecial(workspace)) {
       ordered.push_back(&workspace);
     }
   }
 
-  std::sort(ordered.begin(), ordered.end(), [](const WorkspaceState* a, const WorkspaceState* b) {
-    return a->id < b->id;
-  });
+  std::sort(ordered.begin(), ordered.end(), workspaceOrderLess);
 
   std::vector<Workspace> result;
   result.reserve(ordered.size());
@@ -81,16 +90,12 @@ std::vector<Workspace> HyprlandWorkspaceBackend::forOutput(wl_output* output) co
 
   std::vector<const WorkspaceState*> ordered;
   for (const auto& workspace : m_workspaces) {
-    if (workspace.monitor == outputName) {
-      if (workspace.id >= 0) {
-        ordered.push_back(&workspace);
-      }
+    if (workspace.monitor == outputName && !isSpecial(workspace)) {
+      ordered.push_back(&workspace);
     }
   }
 
-  std::sort(ordered.begin(), ordered.end(), [](const WorkspaceState* a, const WorkspaceState* b) {
-    return a->id < b->id;
-  });
+  std::sort(ordered.begin(), ordered.end(), workspaceOrderLess);
 
   std::vector<Workspace> result;
   result.reserve(ordered.size());
@@ -735,6 +740,22 @@ std::vector<std::string_view> HyprlandWorkspaceBackend::parseEventArgs(std::stri
     args.push_back({});
   }
   return args;
+}
+
+bool HyprlandWorkspaceBackend::isSpecial(const WorkspaceState& state) {
+  return state.id < 0 && (state.name == "special" || state.name.starts_with("special:"));
+}
+
+bool HyprlandWorkspaceBackend::workspaceOrderLess(const WorkspaceState* a, const WorkspaceState* b) {
+  const bool aNamed = a->id < 0;
+  const bool bNamed = b->id < 0;
+  if (aNamed != bNamed) {
+    return !aNamed; // numbered workspaces before named ones
+  }
+  if (!aNamed) {
+    return a->id < b->id; // numbered: ascending id
+  }
+  return a->name < b->name; // named: alphabetical
 }
 
 Workspace HyprlandWorkspaceBackend::toWorkspace(const WorkspaceState& state) {
