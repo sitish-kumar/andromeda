@@ -281,6 +281,8 @@ namespace settings {
       return "color-swatch";
     if (section == "shell")
       return "app-window";
+    if (section == "security")
+      return "shield-lock";
     if (section == "dock")
       return "layout-bottombar-inactive";
     if (section == "panels")
@@ -988,23 +990,24 @@ namespace settings {
         },
         "image picture"
     ));
+    // Security
     entries.push_back(makeEntry(
-        "shell", "privacy-security", tr("settings.schema.shell.offline-mode.label"),
+        "security", "privacy-security", tr("settings.schema.shell.offline-mode.label"),
         tr("settings.schema.shell.offline-mode.description"), {"shell", "offline_mode"},
         ToggleSetting{cfg.shell.offlineMode}, "network http fetch download"
     ));
     entries.push_back(makeEntry(
-        "shell", "privacy-security", tr("settings.schema.shell.telemetry.label"),
+        "security", "privacy-security", tr("settings.schema.shell.telemetry.label"),
         tr("settings.schema.shell.telemetry.description"), {"shell", "telemetry_enabled"},
         ToggleSetting{cfg.shell.telemetryEnabled}, "analytics ping privacy"
     ));
     entries.push_back(makeEntry(
-        "shell", "privacy-security", tr("settings.schema.shell.polkit-agent.label"),
+        "security", "privacy-security", tr("settings.schema.shell.polkit-agent.label"),
         tr("settings.schema.shell.polkit-agent.description"), {"shell", "polkit_agent"},
         ToggleSetting{cfg.shell.polkitAgent}, "auth password"
     ));
     entries.push_back(makeEntry(
-        "shell", "privacy-security", tr("settings.schema.shell.password-style.label"),
+        "security", "privacy-security", tr("settings.schema.shell.password-style.label"),
         tr("settings.schema.shell.password-style.description"), {"shell", "password_style"},
         asSegmented(enumSelect(kPasswordMaskStyles, cfg.shell.passwordMaskStyle)), "polkit lock mask"
     ));
