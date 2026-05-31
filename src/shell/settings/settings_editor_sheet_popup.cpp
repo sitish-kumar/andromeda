@@ -44,7 +44,8 @@ namespace settings {
 
   } // namespace
 
-  constexpr float kPopupWidth = 640.0f; // minimum / fallback logical width
+  constexpr float kPopupWidth = 640.0f;    // minimum / fallback logical width
+  constexpr float kPopupWidthMax = 820.0f; // absolute maximum logical width
   constexpr float kPopupWidthParentFraction = 0.75f;
   constexpr float kInitialPopupHeight = 360.0f;
   constexpr float kParentMargin = 48.0f;
@@ -274,13 +275,15 @@ namespace settings {
     const ShellConfig::ShadowConfig shadow =
         config() != nullptr ? config()->config().shell.shadow : ShellConfig::ShadowConfig{};
 
-    // Sheet width tracks the parent (settings) window: 75% of it, floored at kPopupWidth and capped
-    // so the surface (content + chrome) still fits within the parent minus the edge margin.
+    // Sheet width tracks the parent (settings) window: 75% of it, floored at kPopupWidth, clamped to
+    // kPopupWidthMax, and capped so the surface (content + chrome) still fits within the parent minus
+    // the edge margin.
     float panelW = kPopupWidth * m_scale;
     if (m_parentWidth > 0) {
       const auto probe = popup_chrome::computeGeometry(panelW, panelW, shadow);
       const float chromeW = static_cast<float>(probe.surfaceWidth) - panelW;
-      const float maxPanelW = std::max(1.0f, static_cast<float>(m_parentWidth) - (kParentMargin * m_scale) - chromeW);
+      const float fitPanelW = std::max(1.0f, static_cast<float>(m_parentWidth) - (kParentMargin * m_scale) - chromeW);
+      const float maxPanelW = std::min(fitPanelW, kPopupWidthMax * m_scale);
       const float minPanelW = kPopupWidth * m_scale;
       const float preferredW = kPopupWidthParentFraction * static_cast<float>(m_parentWidth);
       panelW = std::min(std::max(preferredW, minPanelW), maxPanelW);
