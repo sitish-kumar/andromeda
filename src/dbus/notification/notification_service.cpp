@@ -58,9 +58,9 @@ NotificationService::NotificationService(SessionBus& bus, NotificationManager& m
               return onGetCapabilities();
             }),
 
-            sdbus::registerMethod("GetNotifications").withOutputParamNames("notifications").implementedAs([this]() {
-              return onGetNotifications();
-            }),
+            sdbus::registerMethod("GetNotifications")
+                .withOutputParamNames("active_notifications")
+                .implementedAs([this]() { return onGetNotifications(); }),
 
             sdbus::registerMethod("GetServerInformation")
                 .withOutputParamNames("name", "vendor", "version", "spec_version")
@@ -287,7 +287,7 @@ uint32_t NotificationService::onNotify(
 }
 
 std::vector<std::string> NotificationService::onGetCapabilities() {
-  return {"body", "actions", "inline-reply", "persistence"};
+  return {"actions", "body", "persistence", "inline-reply"};
 }
 
 std::vector<std::map<std::string, sdbus::Variant>> NotificationService::onGetNotifications() {
