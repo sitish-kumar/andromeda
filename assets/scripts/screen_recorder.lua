@@ -183,8 +183,6 @@ end
 local function buildResolutionFlag()
     local res = cfg("resolution", "original")
     if res ~= "original" then return "-s " .. res end
-    local codec = cfg("video_codec", "h264")
-    if codec == "h264" then return "-s 4096x4096" end
     return ""
 end
 
