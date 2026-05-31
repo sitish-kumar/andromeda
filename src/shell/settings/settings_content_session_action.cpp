@@ -43,6 +43,9 @@ namespace settings {
       if (action == "suspend") {
         return "suspend";
       }
+      if (action == "lock_and_suspend") {
+        return "lock";
+      }
       if (action == "reboot") {
         return "reboot";
       }
@@ -58,14 +61,7 @@ namespace settings {
       Flex& parent, SettingsContentContext& ctx, SessionPanelActionConfig& row, const std::function<void()>& persist
   ) {
     const float scale = ctx.scale;
-    const std::vector<SelectOption> kindOptions = {
-        {"lock", i18n::tr("settings.session-actions.kind.lock"), {}},
-        {"logout", i18n::tr("settings.session-actions.kind.logout"), {}},
-        {"suspend", i18n::tr("settings.session-actions.kind.suspend"), {}},
-        {"reboot", i18n::tr("settings.session-actions.kind.reboot"), {}},
-        {"shutdown", i18n::tr("settings.session-actions.kind.shutdown"), {}},
-        {"command", i18n::tr("settings.session-actions.kind.command"), {}},
-    };
+    const std::vector<SelectOption> kindOptions = sessionActionKindOptions();
 
     const float iconSq = Style::controlHeight * scale;
     const float iconGlyphSize = Style::fontSizeBody * scale;
@@ -179,6 +175,54 @@ namespace settings {
         i18n::tr("settings.session-actions.kind-section-label"), Style::fontSizeCaption * scale,
         colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal
     ));
+
+    Flex* cmdBlockRaw = nullptr;
+    Input* cmdPtr = nullptr;
+
+    auto cmdBlock = ui::column(
+        {.out = &cmdBlockRaw,
+         .align = FlexAlign::Stretch,
+         .gap = Style::spaceXs * scale,
+         .flexGrow = 1.0f,
+         .visible = row.action == "command",
+         .participatesInLayout = row.action == "command"},
+        makeLabel(
+            i18n::tr("settings.session-actions.command-label"), Style::fontSizeCaption * scale,
+            colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal
+        )
+    );
+    auto cmdIn = ui::input({
+        .out = &cmdPtr,
+        .value = row.command.value_or(""),
+        .placeholder = i18n::tr("settings.session-actions.command-placeholder"),
+        .fontSize = Style::fontSizeBody * scale,
+        .controlHeight = Style::controlHeight * scale,
+        .horizontalPadding = Style::spaceSm * scale,
+        .minLayoutWidth = 280.0f * scale,
+    });
+    const auto commitCommand = [&row, persist, cmdPtr]() {
+      if (row.action != "command") {
+        row.command = std::nullopt;
+        if (cmdPtr != nullptr) {
+          cmdPtr->setValue("");
+          cmdPtr->setInvalid(false);
+        }
+        return;
+      }
+      const std::string t = StringUtils::trim(cmdPtr->value());
+      if (t.empty()) {
+        row.command = std::nullopt;
+      } else {
+        row.command = t;
+      }
+      cmdPtr->setInvalid(false);
+      persist();
+    };
+    cmdIn->setOnChange([cmdPtr](const std::string& /*t*/) { cmdPtr->setInvalid(false); });
+    cmdIn->setOnSubmit([commitCommand](const std::string& /*text*/) { commitCommand(); });
+    cmdIn->setOnFocusLoss(commitCommand);
+    cmdBlock->addChild(std::move(cmdIn));
+
     const auto selectedKindIndex = optionIndex(kindOptions, row.action);
     auto kindSelect = ui::select({
         .options = optionLabels(kindOptions),
@@ -188,15 +232,34 @@ namespace settings {
         .controlHeight = Style::controlHeight * scale,
         .glyphSize = Style::fontSizeBody * scale,
         .onSelectionChanged =
-            [&row, kindOptions, persist, glyphPickBtnPtr, previewGlyphForRow,
-             hasCustomGlyph](std::size_t index, std::string_view /*label*/) {
-              if (index < kindOptions.size()) {
-                row.action = kindOptions[index].value;
-                if (!hasCustomGlyph()) {
-                  glyphPickBtnPtr->setGlyph(previewGlyphForRow());
-                }
-                persist();
+            [&row, kindOptions, persist, glyphPickBtnPtr, previewGlyphForRow, hasCustomGlyph, cmdBlockRaw,
+             cmdPtr](std::size_t index, std::string_view /*label*/) {
+              if (index >= kindOptions.size()) {
+                return;
               }
+              const std::string& nextAction = kindOptions[index].value;
+              if (nextAction == row.action) {
+                return;
+              }
+              const std::string prevAction = row.action;
+              row.action = nextAction;
+              const bool showCommand = nextAction == "command";
+              if (!showCommand) {
+                row.command = std::nullopt;
+                if (cmdPtr != nullptr) {
+                  cmdPtr->setValue("");
+                }
+              } else if (prevAction != "command" && cmdPtr != nullptr && row.command.value_or("").empty()) {
+                cmdPtr->setValue("");
+              }
+              if (cmdBlockRaw != nullptr) {
+                cmdBlockRaw->setVisible(showCommand);
+                cmdBlockRaw->setParticipatesInLayout(showCommand);
+              }
+              if (!hasCustomGlyph()) {
+                glyphPickBtnPtr->setGlyph(previewGlyphForRow());
+              }
+              persist();
             },
         .configure = [](Select& select) { select.setFillWidth(true); },
     });
@@ -234,38 +297,6 @@ namespace settings {
     labelIn->setOnFocusLoss(commitLabel);
     labelBlock->addChild(std::move(labelIn));
     fields->addChild(std::move(labelBlock));
-
-    auto cmdBlock = ui::column(
-        {.align = FlexAlign::Stretch, .gap = Style::spaceXs * scale, .flexGrow = 1.0f},
-        makeLabel(
-            i18n::tr("settings.session-actions.command-label"), Style::fontSizeCaption * scale,
-            colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal
-        )
-    );
-    Input* cmdPtr = nullptr;
-    auto cmdIn = ui::input({
-        .out = &cmdPtr,
-        .value = row.command.value_or(""),
-        .placeholder = i18n::tr("settings.session-actions.command-placeholder"),
-        .fontSize = Style::fontSizeBody * scale,
-        .controlHeight = Style::controlHeight * scale,
-        .horizontalPadding = Style::spaceSm * scale,
-        .minLayoutWidth = 280.0f * scale,
-    });
-    const auto commitCommand = [&row, persist, cmdPtr]() {
-      const std::string t = StringUtils::trim(cmdPtr->value());
-      if (t.empty()) {
-        row.command = std::nullopt;
-      } else {
-        row.command = t;
-      }
-      cmdPtr->setInvalid(false);
-      persist();
-    };
-    cmdIn->setOnChange([cmdPtr](const std::string& /*t*/) { cmdPtr->setInvalid(false); });
-    cmdIn->setOnSubmit([commitCommand](const std::string& /*text*/) { commitCommand(); });
-    cmdIn->setOnFocusLoss(commitCommand);
-    cmdBlock->addChild(std::move(cmdIn));
     fields->addChild(std::move(cmdBlock));
 
     const std::vector<SelectOption> variantOptions = sessionActionVariantOptions();

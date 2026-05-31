@@ -1695,6 +1695,9 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
                 row.shortcut = parseKeyChordSpec(s);
               }
             }
+            if (row.action == "lock_and_suspend") {
+              row.command = std::nullopt;
+            }
             shell.session.actions.push_back(std::move(row));
           }
         }
@@ -2427,7 +2430,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
           behavior.lockBeforeSuspend = *v;
         }
 
-        inferIdleBehaviorActionFromLegacyFields(behavior);
+        normalizeIdleBehaviorAction(behavior);
 
         config.idle.behaviors.push_back(std::move(behavior));
       }

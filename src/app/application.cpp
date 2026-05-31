@@ -27,6 +27,7 @@
 #include "shell/control_center/control_center_panel.h"
 #include "shell/greeter/greeter_appearance_sync.h"
 #include "shell/launcher/launcher_panel.h"
+#include "shell/session/session_ipc.h"
 #include "shell/session/session_panel.h"
 #include "shell/setup_wizard/setup_wizard_panel.h"
 #include "shell/test/test_panel.h"
@@ -1529,16 +1530,7 @@ void Application::initIpc() {
       "dpms-off", "Turn monitors off"
   );
 
-  m_ipcService.registerHandler(
-      "suspend",
-      [this](const std::string&) -> std::string {
-        if (!m_sessionActionRunner.requestSuspendDetached()) {
-          return "error: failed to suspend\n";
-        }
-        return "ok\n";
-      },
-      "suspend", "Suspend the system"
-  );
+  registerSessionIpc(m_ipcService, m_sessionActionRunner, m_lockScreen);
 
   if (m_powerProfilesService != nullptr) {
     m_powerProfilesService->registerIpc(m_ipcService);
@@ -1552,7 +1544,6 @@ void Application::initIpc() {
   m_configService.registerIpc(m_ipcService);
   m_bar.registerIpc(m_ipcService);
   m_desktopWidgetsController.registerIpc(m_ipcService);
-  m_lockScreen.registerIpc(m_ipcService);
   m_panelManager.registerIpc(m_ipcService);
   m_idleInhibitor.registerIpc(m_ipcService);
   m_gammaService.registerIpc(m_ipcService);
@@ -1622,10 +1613,9 @@ bool Application::runIdleAction(const IdleActionRequest& action) {
   case IdleActionKind::ScreenOn:
     return m_compositorPlatform.setOutputPower(true);
   case IdleActionKind::Suspend:
-    if (action.lockBeforeSuspend) {
-      return m_sessionActionRunner.lockThenSuspendDetached();
-    }
     return m_sessionActionRunner.requestSuspendDetached();
+  case IdleActionKind::LockAndSuspend:
+    return m_sessionActionRunner.lockThenSuspendDetached();
   }
   return false;
 }

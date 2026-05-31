@@ -80,12 +80,28 @@ namespace settings {
 
   std::optional<double> parseDoubleInput(std::string_view text) { return StringUtils::parseDotDecimal<double>(text); }
 
+  std::vector<SelectOption> sessionActionKindOptions() {
+    return {
+        {"lock", i18n::tr("settings.session-actions.kind.lock"), {}},
+        {"logout", i18n::tr("settings.session-actions.kind.logout"), {}},
+        {"suspend", i18n::tr("settings.session-actions.kind.suspend"), {}},
+        {"lock_and_suspend", i18n::tr("settings.session-actions.kind.lock-and-suspend"), {}},
+        {"reboot", i18n::tr("settings.session-actions.kind.reboot"), {}},
+        {"shutdown", i18n::tr("settings.session-actions.kind.shutdown"), {}},
+        {"command", i18n::tr("settings.session-actions.kind.command"), {}},
+    };
+  }
+
   std::string
   sessionActionRowSummary(const std::vector<SelectOption>& kindOptions, const SessionPanelActionConfig& row) {
     if (row.label.has_value() && !row.label->empty()) {
       return *row.label;
     }
     return optionLabel(kindOptions, row.action);
+  }
+
+  std::string sessionActionDisplayTitle(const SessionPanelActionConfig& row) {
+    return sessionActionRowSummary(sessionActionKindOptions(), row);
   }
 
   std::string sanitizedIdleBehaviorName(std::string_view text) {
@@ -140,7 +156,7 @@ namespace settings {
 
   std::string idleBehaviorRowSummary(const IdleBehaviorConfig& row) {
     IdleBehaviorConfig norm = row;
-    inferIdleBehaviorActionFromLegacyFields(norm);
+    normalizeIdleBehaviorAction(norm);
 
     const auto displayName = [&]() -> std::string {
       if (norm.action == "lock") {
@@ -151,6 +167,9 @@ namespace settings {
       }
       if (norm.action == "suspend") {
         return i18n::tr("settings.idle.behavior.presets.suspend");
+      }
+      if (norm.action == "lock_and_suspend") {
+        return i18n::tr("settings.idle.behavior.presets.lock-and-suspend");
       }
       if (row.name.empty()) {
         return i18n::tr("settings.idle.behavior.unnamed");

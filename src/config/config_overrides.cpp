@@ -373,7 +373,7 @@ namespace {
               toml::table row;
               row.insert_or_assign("action", item.action);
               row.insert_or_assign("enabled", item.enabled);
-              if (item.command.has_value() && !item.command->empty()) {
+              if (item.action != "lock_and_suspend" && item.command.has_value() && !item.command->empty()) {
                 row.insert_or_assign("command", *item.command);
               }
               if (item.label.has_value() && !item.label->empty()) {
@@ -438,8 +438,8 @@ namespace {
               if (!item.resumeCommand.empty()) {
                 row.insert_or_assign("resume_command", item.resumeCommand);
               }
-              if (item.action == "suspend") {
-                row.insert_or_assign("lock_before_suspend", item.lockBeforeSuspend);
+              if (item.action == "suspend" && !item.lockBeforeSuspend) {
+                row.insert_or_assign("lock_before_suspend", false);
               }
               behaviorTable.insert_or_assign(item.name, std::move(row));
               behaviorOrder.push_back(item.name);

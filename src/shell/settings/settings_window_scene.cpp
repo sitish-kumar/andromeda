@@ -8,6 +8,7 @@
 #include "shell/greeter/greeter_appearance_sync.h"
 #include "shell/settings/settings_bar_management.h"
 #include "shell/settings/settings_content.h"
+#include "shell/settings/settings_content_common.h"
 #include "shell/settings/settings_sidebar.h"
 #include "shell/settings/settings_window.h"
 #include "system/dependency_service.h"
@@ -421,10 +422,31 @@ settings::SettingsContentContext SettingsWindow::makeContentContext(
             m_idleLiveStatusLabel = label;
             refreshIdleLiveStatusText();
           },
+      .registerSessionActionSummaryLabel =
+          [this](std::size_t index, Label* label) {
+            if (index >= m_sessionActionSummaryLabels.size()) {
+              m_sessionActionSummaryLabels.resize(index + 1, nullptr);
+            }
+            m_sessionActionSummaryLabels[index] = label;
+          },
+      .bindSessionActionsEditState = [this](
+                                         std::shared_ptr<std::vector<SessionPanelActionConfig>> state
+                                     ) { m_sessionActionsEditState = std::move(state); },
       .afterSessionActionsCommit = {},
       .afterIdleBehaviorApply = {},
       .closeHostedEditor = {},
   };
+}
+
+void SettingsWindow::syncSessionActionInlineSummary(std::size_t index, const SessionPanelActionConfig& row) {
+  if (index >= m_sessionActionSummaryLabels.size()) {
+    return;
+  }
+  Label* label = m_sessionActionSummaryLabels[index];
+  if (label == nullptr) {
+    return;
+  }
+  label->setText(settings::sessionActionDisplayTitle(row));
 }
 
 void SettingsWindow::rebuildSettingsContent() {
@@ -435,6 +457,8 @@ void SettingsWindow::rebuildSettingsContent() {
 
   m_pendingContentScrollTarget = nullptr;
   m_idleLiveStatusLabel = nullptr;
+  m_sessionActionSummaryLabels.clear();
+  m_sessionActionsEditState.reset();
   while (!m_contentContainer->children().empty()) {
     m_contentContainer->removeChild(m_contentContainer->children().back().get());
   }

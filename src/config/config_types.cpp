@@ -99,13 +99,12 @@ std::vector<IdleBehaviorConfig> defaultIdleBehaviors() {
           .resumeCommand = "",
       },
       IdleBehaviorConfig{
-          .name = "suspend",
+          .name = "lock-and-suspend",
           .enabled = false,
           .timeoutSeconds = 900,
-          .action = "suspend",
+          .action = "lock_and_suspend",
           .command = "",
           .resumeCommand = "",
-          .lockBeforeSuspend = true,
       },
   };
 }
@@ -157,7 +156,7 @@ void inferIdleBehaviorActionFromLegacyFields(IdleBehaviorConfig& behavior) {
   if (!behavior.action.empty()) {
     return;
   }
-  if (behavior.command == "noctalia:screen-lock") {
+  if (behavior.command == "noctalia:session lock") {
     behavior.action = "lock";
     return;
   }
@@ -165,16 +164,27 @@ void inferIdleBehaviorActionFromLegacyFields(IdleBehaviorConfig& behavior) {
     behavior.action = "screen_off";
     return;
   }
-  if (behavior.command == "noctalia:suspend") {
+  if (behavior.command == "noctalia:session suspend") {
     behavior.action = "suspend";
+    return;
+  }
+  if (behavior.command == "noctalia:session lock-and-suspend") {
+    behavior.action = "lock_and_suspend";
     return;
   }
   behavior.action = "command";
 }
 
+void normalizeIdleBehaviorAction(IdleBehaviorConfig& behavior) {
+  inferIdleBehaviorActionFromLegacyFields(behavior);
+  if (behavior.action == "suspend" && behavior.lockBeforeSuspend) {
+    behavior.action = "lock_and_suspend";
+  }
+}
+
 ResolvedIdleBehavior resolveIdleBehaviorActions(const IdleBehaviorConfig& behavior) {
   IdleBehaviorConfig tmp = behavior;
-  inferIdleBehaviorActionFromLegacyFields(tmp);
+  normalizeIdleBehaviorAction(tmp);
   const std::string& act = tmp.action;
   const auto resume = [&tmp](IdleActionRequest fallback) {
     return tmp.resumeCommand.empty() ? std::move(fallback) : commandIdleAction(tmp.resumeCommand);
@@ -194,10 +204,13 @@ ResolvedIdleBehavior resolveIdleBehaviorActions(const IdleBehaviorConfig& behavi
   }
   if (act == "suspend") {
     return {
-        .idleAction =
-            IdleActionRequest{
-                .kind = IdleActionKind::Suspend, .command = {}, .lockBeforeSuspend = tmp.lockBeforeSuspend
-            },
+        .idleAction = idleAction(IdleActionKind::Suspend),
+        .resumeAction = resume({}),
+    };
+  }
+  if (act == "lock_and_suspend") {
+    return {
+        .idleAction = idleAction(IdleActionKind::LockAndSuspend),
         .resumeAction = resume({}),
     };
   }

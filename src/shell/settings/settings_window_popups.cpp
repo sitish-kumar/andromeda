@@ -4,6 +4,7 @@
 #include "i18n/i18n.h"
 #include "render/render_context.h"
 #include "shell/settings/settings_content.h"
+#include "shell/settings/settings_content_common.h"
 #include "shell/settings/settings_window.h"
 #include "ui/controls/button.h"
 #include "ui/controls/context_menu.h"
@@ -32,28 +33,7 @@ namespace {
   constexpr std::int32_t kActionExportConfig = 2;
 
   std::string sessionActionTitle(const SessionPanelActionConfig& row) {
-    if (row.label.has_value() && !StringUtils::trim(*row.label).empty()) {
-      return *row.label;
-    }
-    if (row.action == "lock") {
-      return i18n::tr("settings.session-actions.kind.lock");
-    }
-    if (row.action == "logout") {
-      return i18n::tr("settings.session-actions.kind.logout");
-    }
-    if (row.action == "suspend") {
-      return i18n::tr("settings.session-actions.kind.suspend");
-    }
-    if (row.action == "reboot") {
-      return i18n::tr("settings.session-actions.kind.reboot");
-    }
-    if (row.action == "shutdown") {
-      return i18n::tr("settings.session-actions.kind.shutdown");
-    }
-    if (row.action == "command") {
-      return i18n::tr("settings.session-actions.kind.command");
-    }
-    return row.action;
+    return settings::sessionActionDisplayTitle(row);
   }
 
   std::string idleBehaviorTitle(const IdleBehaviorConfig& row) {
@@ -405,9 +385,13 @@ void SettingsWindow::openSessionActionEntryEditor(std::size_t index) {
       return;
     }
     next[index] = *rowState;
+    if (m_sessionActionsEditState != nullptr && index < m_sessionActionsEditState->size()) {
+      (*m_sessionActionsEditState)[index] = *rowState;
+    }
+    syncSessionActionInlineSummary(index, *rowState);
     setSettingOverride({"shell", "session", "actions"}, next);
-    requestContentRebuild();
     if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->isOpen()) {
+      m_sessionActionsEditorPopup->setSheetTitle(sessionActionTitle(*rowState));
       m_sessionActionsEditorPopup->requestLayout();
     }
   };

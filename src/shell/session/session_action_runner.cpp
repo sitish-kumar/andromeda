@@ -182,12 +182,11 @@ SessionActionRunner::SessionActionRunner(CompositorPlatform& platform, LockScree
 void SessionActionRunner::setHooks(SessionActionHooks hooks) { m_hooks = std::move(hooks); }
 
 void SessionActionRunner::invoke(const SessionPanelActionConfig& cfg) const {
-  if (cfg.command.has_value()) {
-    const std::string cmd = StringUtils::trim(*cfg.command);
-    if (!cmd.empty()) {
-      runShellCommand(hookFor(cfg.action), cmd, cfg.action);
-      return;
-    }
+  const bool commandOverridesBuiltin =
+      cfg.action != "lock_and_suspend" && cfg.command.has_value() && !StringUtils::trim(*cfg.command).empty();
+  if (commandOverridesBuiltin) {
+    runShellCommand(hookFor(cfg.action), StringUtils::trim(*cfg.command), cfg.action);
+    return;
   }
 
   if (cfg.action == "command") {
@@ -201,6 +200,12 @@ void SessionActionRunner::invoke(const SessionPanelActionConfig& cfg) const {
   }
   if (cfg.action == "suspend") {
     runPowerAction({}, [this]() { return suspendBlocking(); }, "suspend");
+    return;
+  }
+  if (cfg.action == "lock_and_suspend") {
+    if (!lockThenSuspendDetached()) {
+      notify::error("Noctalia", i18n::tr("session.errors.lock-title"), i18n::tr("session.errors.lock-body"));
+    }
     return;
   }
   if (cfg.action == "reboot") {

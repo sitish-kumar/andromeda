@@ -15,7 +15,6 @@ struct ext_session_lock_v1;
 struct wl_surface;
 struct wl_output;
 class ConfigService;
-class IpcService;
 
 class LockSurface;
 class RenderContext;
@@ -48,8 +47,6 @@ public:
   /// Runs `fn` after the session reaches interactive lock (`m_locked`), or immediately if already locked.
   /// Used so suspend runs after lock surfaces exist. Cleared if lock fails or the lock request is aborted.
   void runAfterSessionLocked(std::function<void()> fn);
-
-  void registerIpc(IpcService& ipc);
 
   static void handleLocked(void* data, ext_session_lock_v1* lock);
   static void handleFinished(void* data, ext_session_lock_v1* lock);

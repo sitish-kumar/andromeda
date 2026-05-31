@@ -152,7 +152,7 @@ enum class SessionActionButtonVariant : std::uint8_t {
 };
 
 struct SessionPanelActionConfig {
-  // "lock" | "logout" | "suspend" | "reboot" | "shutdown" | "command"
+  // "lock" | "logout" | "suspend" | "lock_and_suspend" | "reboot" | "shutdown" | "command"
   std::string action;
   bool enabled = true;
   // When set, runs via `process::runAsync` (shell string) instead of the built-in handler.
@@ -175,7 +175,7 @@ struct IdleBehaviorConfig {
   std::string name;
   bool enabled = true;
   std::int32_t timeoutSeconds = 0;
-  /// lock | screen_off | suspend | command (custom shell strings)
+  /// lock | screen_off | suspend | lock_and_suspend | command (custom shell strings)
   std::string action;
   std::string command;
   std::string resumeCommand;
@@ -206,6 +206,7 @@ enum class IdleActionKind : std::uint8_t {
   ScreenOff,
   ScreenOn,
   Suspend,
+  LockAndSuspend,
 };
 
 struct IdleActionRequest {
@@ -224,6 +225,7 @@ struct ResolvedIdleBehavior {
 };
 
 void inferIdleBehaviorActionFromLegacyFields(IdleBehaviorConfig& behavior);
+void normalizeIdleBehaviorAction(IdleBehaviorConfig& behavior);
 [[nodiscard]] ResolvedIdleBehavior resolveIdleBehaviorActions(const IdleBehaviorConfig& behavior);
 
 enum class KeybindAction : std::uint8_t {
