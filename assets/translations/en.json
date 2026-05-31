@@ -105,7 +105,11 @@
       "favorite-theme-label": "Theme",
       "favorite-palette-label": "Colors",
       "no-directory-configured": "No directory configured",
-      "color-title": "Wallpaper color"
+      "color-title": "Wallpaper color",
+      "sort-name-asc": "Sort by name (A-Z)",
+      "sort-name-desc": "Sort by name (Z-A)",
+      "sort-date-asc": "Sort by date (oldest first)",
+      "sort-date-desc": "Sort by date (newest first)"
     }
   },
   "weather": {

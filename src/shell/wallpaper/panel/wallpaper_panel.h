@@ -29,6 +29,13 @@ class WaylandConnection;
 
 class WallpaperPanel : public Panel {
 public:
+  enum class SortMode : std::uint8_t {
+    NameAsc,
+    NameDesc,
+    DateAsc,
+    DateDesc,
+  };
+
   WallpaperPanel(WaylandConnection* wayland, ConfigService* config, ThumbnailService* thumbnails);
   ~WallpaperPanel() override;
 
@@ -75,6 +82,14 @@ private:
       std::vector<WallpaperEntry>& out, std::unordered_set<std::string>& favoritePaths,
       const std::filesystem::path& activeDir, const std::filesystem::path& rootDir
   ) const;
+  void sortVisibleEntries();
+  void syncSortButtonGlyph();
+  void cycleSortMode();
+  void setSortMode(SortMode mode);
+  [[nodiscard]] static SortMode sortModeFromState(std::string_view value);
+  [[nodiscard]] static std::string_view sortModeStateValue(SortMode mode);
+  [[nodiscard]] static std::string_view sortModeGlyph(SortMode mode);
+  [[nodiscard]] static const char* sortModeTooltipKey(SortMode mode);
   void applyColorWallpaper();
   void rebindGrid(bool resetScroll = false);
   void resetSelection();
@@ -111,6 +126,7 @@ private:
   Input* m_filterInput = nullptr;
   Toggle* m_flattenToggle = nullptr;
   Label* m_flattenLabel = nullptr;
+  Button* m_sortButton = nullptr;
   Button* m_refreshButton = nullptr;
   Button* m_colorButton = nullptr;
   Button* m_closeButton = nullptr;
@@ -133,6 +149,8 @@ private:
   Timer m_filterDebounceTimer;
 
   bool m_flatten = false;
+  SortMode m_sortMode = SortMode::NameAsc;
+  std::size_t m_pinnedFavoriteCount = 0;
   bool m_syncingFavoriteControls = false;
   std::vector<std::string> m_favoritePaletteDetailValues;
   std::size_t m_selectedVisibleIndex = 0;
