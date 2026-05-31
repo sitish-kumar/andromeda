@@ -5,7 +5,8 @@
 #include "render/scene/node.h"
 #include "shell/settings/config_export_dialog_popup.h"
 #include "shell/settings/search_picker_popup.h"
-#include "shell/settings/session_actions_editor_popup.h"
+#include "shell/settings/settings_control_factory.h"
+#include "shell/settings/settings_editor_sheet_popup.h"
 #include "shell/settings/settings_registry.h"
 #include "shell/settings/widget_add_popup.h"
 #include "ui/controls/context_menu_popup.h"
@@ -38,6 +39,7 @@ struct wl_surface;
 
 namespace settings {
   struct SettingsContentContext;
+  class SettingsControlFactory;
 } // namespace settings
 
 // Standalone xdg-toplevel settings UI (same binary as the shell; shares RenderContext).
@@ -113,6 +115,10 @@ private:
   void syncSessionActionInlineSummary(std::size_t index, const SessionPanelActionConfig& row);
   void openIdleBehaviorEntryEditor(std::size_t index);
   void openIdleBehaviorCreateEditor();
+  void openWidgetInspectorEditor(std::vector<std::string> laneListPath, std::string widgetName);
+  void openCapsuleGroupEditor(std::vector<std::string> laneListPath, std::string groupId);
+  void openBarWidgetEditorSheet(std::string title, std::function<void(Flex&)> populate);
+  void closeWidgetInspectorPopup();
   void refreshIdleLiveStatusText();
   void saveSupportReport();
   void saveConfigExport(settings::ConfigExportMode mode);
@@ -156,7 +162,11 @@ private:
   std::unique_ptr<settings::WidgetAddPopup> m_widgetAddPopup;
   std::unique_ptr<settings::ConfigExportDialogPopup> m_configExportDialogPopup;
   std::unique_ptr<settings::SearchPickerPopup> m_searchPickerPopup;
-  std::unique_ptr<settings::SessionActionsEditorPopup> m_sessionActionsEditorPopup;
+  std::unique_ptr<settings::SettingsEditorSheetPopup> m_editorSheetPopup;
+  // Owns the control factory for the open bar-widget/capsule editor sheet; the sheet's populate
+  // callback builds controls through it, so it must outlive the popup.
+  std::unique_ptr<settings::SettingsControlFactory> m_editorSheetFactory;
+  std::vector<std::string> m_editorSheetListPath;
   InputDispatcher m_inputDispatcher;
   AnimationManager m_animations;
   std::unique_ptr<SelectDropdownPopup> m_selectPopup;

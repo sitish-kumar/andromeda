@@ -97,10 +97,10 @@ bool SettingsWindow::ownsKeyboardSurface(wl_surface* surface) const noexcept {
   if (m_searchPickerPopup != nullptr && m_searchPickerPopup->wlSurface() == surface) {
     return true;
   }
-  if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->wlSurface() == surface) {
+  if (m_editorSheetPopup != nullptr && m_editorSheetPopup->wlSurface() == surface) {
     return true;
   }
-  if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->ownsSelectDropdownSurface(surface)) {
+  if (m_editorSheetPopup != nullptr && m_editorSheetPopup->ownsSelectDropdownSurface(surface)) {
     return true;
   }
   return m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen() && m_selectPopup->wlSurface() == surface;
@@ -152,16 +152,16 @@ std::optional<LayerPopupParentContext> SettingsWindow::popupParentContextForSurf
         m_searchPickerPopup->height()
     );
   }
-  if (m_sessionActionsEditorPopup != nullptr && surface == m_sessionActionsEditorPopup->wlSurface()) {
+  if (m_editorSheetPopup != nullptr && surface == m_editorSheetPopup->wlSurface()) {
     return makeContext(
-        m_sessionActionsEditorPopup->wlSurface(), m_sessionActionsEditorPopup->xdgSurface(),
-        m_sessionActionsEditorPopup->width(), m_sessionActionsEditorPopup->height()
+        m_editorSheetPopup->wlSurface(), m_editorSheetPopup->xdgSurface(), m_editorSheetPopup->width(),
+        m_editorSheetPopup->height()
     );
   }
-  if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->ownsSelectDropdownSurface(surface)) {
+  if (m_editorSheetPopup != nullptr && m_editorSheetPopup->ownsSelectDropdownSurface(surface)) {
     return makeContext(
-        m_sessionActionsEditorPopup->wlSurface(), m_sessionActionsEditorPopup->xdgSurface(),
-        m_sessionActionsEditorPopup->width(), m_sessionActionsEditorPopup->height()
+        m_editorSheetPopup->wlSurface(), m_editorSheetPopup->xdgSurface(), m_editorSheetPopup->width(),
+        m_editorSheetPopup->height()
     );
   }
   return std::nullopt;
@@ -289,9 +289,9 @@ void SettingsWindow::destroyWindow() {
     m_searchPickerPopup->close();
     m_searchPickerPopup.reset();
   }
-  if (m_sessionActionsEditorPopup != nullptr) {
-    m_sessionActionsEditorPopup->close();
-    m_sessionActionsEditorPopup.reset();
+  if (m_editorSheetPopup != nullptr) {
+    m_editorSheetPopup->close();
+    m_editorSheetPopup.reset();
   }
   m_sceneRoot.reset();
   m_surface.reset();
@@ -482,14 +482,14 @@ bool SettingsWindow::onPointerEvent(const PointerEvent& event) {
     m_searchPickerPopup->close();
     return true;
   }
-  if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->onPointerEvent(event)) {
+  if (m_editorSheetPopup != nullptr && m_editorSheetPopup->onPointerEvent(event)) {
     return true;
   }
-  if (m_sessionActionsEditorPopup != nullptr
-      && m_sessionActionsEditorPopup->isOpen()
+  if (m_editorSheetPopup != nullptr
+      && m_editorSheetPopup->isOpen()
       && event.type == PointerEvent::Type::Button
       && event.state == 1) {
-    m_sessionActionsEditorPopup->close();
+    m_editorSheetPopup->close();
     return true;
   }
 
@@ -616,16 +616,16 @@ void SettingsWindow::onKeyboardEvent(const KeyboardEvent& event) {
     return;
   }
 
-  if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->isOpen()) {
-    if (m_sessionActionsEditorPopup->isSelectDropdownOpen()) {
-      m_sessionActionsEditorPopup->onKeyboardEvent(event);
+  if (m_editorSheetPopup != nullptr && m_editorSheetPopup->isOpen()) {
+    if (m_editorSheetPopup->isSelectDropdownOpen()) {
+      m_editorSheetPopup->onKeyboardEvent(event);
       return;
     }
     if (event.pressed && KeybindMatcher::matches(KeybindAction::Cancel, event.sym, event.modifiers)) {
-      m_sessionActionsEditorPopup->close();
+      m_editorSheetPopup->close();
       return;
     }
-    m_sessionActionsEditorPopup->onKeyboardEvent(event);
+    m_editorSheetPopup->onKeyboardEvent(event);
     return;
   }
 
@@ -694,8 +694,8 @@ void SettingsWindow::onThemeChanged() {
     if (m_configExportDialogPopup != nullptr && m_configExportDialogPopup->isOpen()) {
       m_configExportDialogPopup->requestRedraw();
     }
-    if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->isOpen()) {
-      m_sessionActionsEditorPopup->requestRedraw();
+    if (m_editorSheetPopup != nullptr && m_editorSheetPopup->isOpen()) {
+      m_editorSheetPopup->requestRedraw();
     }
     m_surface->requestRedraw();
   }
@@ -710,8 +710,8 @@ void SettingsWindow::onFontChanged() {
     if (m_configExportDialogPopup != nullptr && m_configExportDialogPopup->isOpen()) {
       m_configExportDialogPopup->requestLayout();
     }
-    if (m_sessionActionsEditorPopup != nullptr && m_sessionActionsEditorPopup->isOpen()) {
-      m_sessionActionsEditorPopup->requestLayout();
+    if (m_editorSheetPopup != nullptr && m_editorSheetPopup->isOpen()) {
+      m_editorSheetPopup->requestLayout();
     }
     requestSceneRebuild();
   }

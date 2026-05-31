@@ -22,6 +22,9 @@ namespace settings {
   [[nodiscard]] std::vector<std::string> optionLabels(const std::vector<SelectOption>& options);
   [[nodiscard]] std::vector<ColorSwatchPreview> optionSwatchPreviews(const std::vector<SelectOption>& options);
 
+  [[nodiscard]] bool isMonitorOverrideSettingPath(const std::vector<std::string>& path);
+  [[nodiscard]] bool monitorOverrideHasExplicitValue(const Config& cfg, const std::vector<std::string>& path);
+
   [[nodiscard]] bool isBlankInput(std::string_view text);
   [[nodiscard]] std::string formatSliderValue(double value, bool integerValue);
   [[nodiscard]] std::optional<double> parseDoubleInput(std::string_view text);

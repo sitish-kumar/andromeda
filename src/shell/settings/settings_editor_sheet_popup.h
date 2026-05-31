@@ -1,6 +1,7 @@
 #pragma once
 
 #include "shell/settings/settings_content.h"
+#include "ui/controls/scroll_view.h"
 #include "ui/dialogs/dialog_popup_host.h"
 
 #include <functional>
@@ -20,10 +21,10 @@ class SelectDropdownPopup;
 
 namespace settings {
 
-  class SessionActionsEditorPopup final : public DialogPopupHost {
+  class SettingsEditorSheetPopup final : public DialogPopupHost {
   public:
-    SessionActionsEditorPopup() = default;
-    ~SessionActionsEditorPopup();
+    SettingsEditorSheetPopup() = default;
+    ~SettingsEditorSheetPopup();
 
     void initialize(WaylandConnection& wayland, ConfigService& config, RenderContext& renderContext);
 
@@ -43,6 +44,10 @@ namespace settings {
 
     void setSheetTitle(std::string title);
 
+    // Re-run the populate callback to rebuild the sheet body in place (e.g. after an edit that
+    // changes which controls are shown). Re-measures and resizes the popup. No-op if not open.
+    void rebuildBody();
+
   protected:
     void populateContent(Node* contentParent, std::uint32_t width, std::uint32_t height) override;
     void layoutSheet(float contentWidth, float contentHeight) override;
@@ -58,6 +63,9 @@ namespace settings {
     std::function<void(Flex&)> m_populateSheetBody;
 
     Flex* m_root = nullptr;
+    Flex* m_header = nullptr;
+    ScrollView* m_scrollView = nullptr;
+    ScrollViewState m_scrollState;
     std::uint32_t m_parentWidth = 0;
     std::uint32_t m_parentHeight = 0;
 

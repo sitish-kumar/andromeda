@@ -199,17 +199,6 @@ namespace settings {
       );
     }
 
-    void closeInspector(
-        std::string& editingWidgetName, std::string& renamingWidgetName, std::string& pendingDeleteWidgetName,
-        std::string& pendingDeleteWidgetSettingPath, const std::function<void()>& requestRebuild
-    ) {
-      editingWidgetName.clear();
-      renamingWidgetName.clear();
-      pendingDeleteWidgetName.clear();
-      pendingDeleteWidgetSettingPath.clear();
-      requestRebuild();
-    }
-
     std::string pathKey(const std::vector<std::string>& path) {
       std::string out;
       for (const auto& part : path) {
@@ -308,33 +297,6 @@ namespace settings {
         return ovr->endWidgets.has_value();
       }
       return true;
-    }
-
-    ColorSpec widgetBadgeColor(WidgetReferenceKind kind) {
-      switch (kind) {
-      case WidgetReferenceKind::BuiltIn:
-        return colorSpecFromRole(ColorRole::Primary);
-      case WidgetReferenceKind::Named:
-      case WidgetReferenceKind::Preset:
-        return colorSpecFromRole(ColorRole::Secondary);
-      case WidgetReferenceKind::Unknown:
-        return colorSpecFromRole(ColorRole::Error);
-      }
-      return colorSpecFromRole(ColorRole::SurfaceVariant);
-    }
-
-    // Readable foreground (icon + text) for the badge background above.
-    ColorSpec widgetBadgeOnColor(WidgetReferenceKind kind) {
-      switch (kind) {
-      case WidgetReferenceKind::BuiltIn:
-        return colorSpecFromRole(ColorRole::OnPrimary);
-      case WidgetReferenceKind::Named:
-      case WidgetReferenceKind::Preset:
-        return colorSpecFromRole(ColorRole::OnSecondary);
-      case WidgetReferenceKind::Unknown:
-        return colorSpecFromRole(ColorRole::OnError);
-      }
-      return colorSpecFromRole(ColorRole::OnSurfaceVariant);
     }
 
     // Compact kind indicator used on lane cards in place of the text badge.
@@ -1260,10 +1222,6 @@ namespace settings {
       auto panel = ui::column({
           .align = FlexAlign::Stretch,
           .gap = Style::spaceXs * ctx.scale,
-          .padding = Style::spaceSm * ctx.scale,
-          .fill = colorSpecFromRole(ColorRole::Surface),
-          .radius = Style::scaledRadiusSm(ctx.scale),
-          .border = colorSpecFromRole(ColorRole::Outline, 0.22f),
       });
 
       std::size_t visibleSpecs = 0;
@@ -1555,28 +1513,15 @@ namespace settings {
       item.addChild(std::move(panel));
     }
 
-    void addInspectorPane(Flex& block, const SettingEntry& entry, const BarWidgetEditorContext& ctx) {
+    void addInspectorPane(Flex& body, const std::vector<std::string>& laneListPath, const BarWidgetEditorContext& ctx) {
       static constexpr std::string_view kLaneKeys[] = {"start", "center", "end"};
 
       if (ctx.editingWidgetName.empty()) {
         return;
       }
 
-      auto inspector = ui::column({
-          .align = FlexAlign::Stretch,
-          .gap = Style::spaceSm * ctx.scale,
-          .padding = Style::spaceMd * ctx.scale,
-          .fill = colorSpecFromRole(ColorRole::SurfaceVariant),
-          .radius = Style::scaledRadiusMd(ctx.scale),
-          .border = colorSpecFromRole(ColorRole::Outline, 0.5f),
-      });
-      if (ctx.setScrollTarget) {
-        ctx.setScrollTarget(inspector.get());
-      }
-
       {
         const std::string widgetName = ctx.editingWidgetName;
-        const auto info = widgetReferenceInfo(ctx.config, widgetName);
         const bool guiManaged = isGuiManagedNamedWidgetInstance(ctx, widgetName);
 
         std::string currentLaneKey;
@@ -1584,7 +1529,7 @@ namespace settings {
         std::vector<std::string> currentLaneItems;
         bool currentLaneInherited = false;
         for (const auto laneKey : kLaneKeys) {
-          auto p = pathWithLastSegment(entry.path, std::string(laneKey));
+          auto p = pathWithLastSegment(laneListPath, std::string(laneKey));
           auto items = barWidgetItemsForPath(ctx.config, p);
           if (std::find(items.begin(), items.end(), widgetName) != items.end()) {
             currentLaneKey = std::string(laneKey);
@@ -1596,76 +1541,7 @@ namespace settings {
           }
         }
 
-        auto headerRow = ui::row({
-            .align = FlexAlign::Center,
-            .gap = Style::spaceSm * ctx.scale,
-        });
-
-        auto titleBlock = ui::column({
-            .align = FlexAlign::Stretch,
-            .gap = 1.0f * ctx.scale,
-            .flexGrow = 1.0f,
-        });
-        auto titleRow = ui::row({
-            .align = FlexAlign::Center,
-            .gap = Style::spaceSm * ctx.scale,
-        });
-        {
-          auto titleLabel = makeLabel(
-              info.title, Style::fontSizeBody * ctx.scale, colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold
-          );
-          titleLabel->setMaxLines(1);
-          titleLabel->setFlexGrow(1.0f);
-          titleRow->addChild(std::move(titleLabel));
-        }
-        titleBlock->addChild(std::move(titleRow));
-        if (!info.detail.empty() && info.detail != info.title) {
-          titleBlock->addChild(makeSettingSubtitleLabel(info.detail, ctx.scale));
-        }
-
-        headerRow->addChild(std::move(titleBlock));
-        headerRow->addChild(
-            ui::row(
-                {
-                    .align = FlexAlign::Center,
-                    .gap = Style::spaceXs * ctx.scale,
-                    .paddingV = Style::spaceXs * ctx.scale,
-                    .paddingH = Style::spaceSm * ctx.scale,
-                    .fill = widgetBadgeColor(info.kind),
-                    .radius = Style::scaledRadiusSm(ctx.scale),
-                },
-                makeGlyph(
-                    widgetBadgeGlyph(info.kind), Style::fontSizeCaption * ctx.scale, widgetBadgeOnColor(info.kind)
-                ),
-                makeLabel(
-                    info.badge, Style::fontSizeCaption * ctx.scale, widgetBadgeOnColor(info.kind), FontWeight::Bold
-                )
-            )
-        );
-
-        headerRow->addChild(
-            ui::button({
-                .glyph = "close",
-                .glyphSize = Style::fontSizeBody * ctx.scale,
-                .variant = ButtonVariant::Ghost,
-                .minWidth = Style::controlHeightSm * ctx.scale,
-                .minHeight = Style::controlHeightSm * ctx.scale,
-                .padding = Style::spaceXs * ctx.scale,
-                .radius = Style::scaledRadiusSm(ctx.scale),
-                .onClick = [&editingWidgetName = ctx.editingWidgetName, &renamingWidgetName = ctx.renamingWidgetName,
-                            &pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,
-                            &pendingDeleteWidgetSettingPath = ctx.pendingDeleteWidgetSettingPath,
-                            requestRebuild = ctx.requestRebuild]() {
-                  closeInspector(
-                      editingWidgetName, renamingWidgetName, pendingDeleteWidgetName, pendingDeleteWidgetSettingPath,
-                      requestRebuild
-                  );
-                },
-            })
-        );
-        inspector->addChild(std::move(headerRow));
-
-        const BarConfig* inspectorBar = entry.path.size() >= 2 ? findBar(ctx.config, entry.path[1]) : nullptr;
+        const BarConfig* inspectorBar = laneListPath.size() >= 2 ? findBar(ctx.config, laneListPath[1]) : nullptr;
         std::string capsuleGroup;
         if (inspectorBar != nullptr) {
           for (const auto& g : inspectorBar->widgetCapsuleGroups) {
@@ -1696,16 +1572,14 @@ namespace settings {
                   .paddingV = Style::spaceXs * ctx.scale,
                   .paddingH = Style::spaceSm * ctx.scale,
                   .radius = Style::scaledRadiusSm(ctx.scale),
-                  .onClick = [&editingCapsuleGroupId = ctx.editingCapsuleGroupId,
-                              &editingWidgetName = ctx.editingWidgetName, editGroupId,
-                              requestRebuild = ctx.requestRebuild]() {
-                    editingWidgetName.clear();
-                    editingCapsuleGroupId = editGroupId;
-                    requestRebuild();
+                  .onClick = [openCapsuleGroupInspector = ctx.openCapsuleGroupInspector, laneListPath, editGroupId]() {
+                    if (openCapsuleGroupInspector) {
+                      openCapsuleGroupInspector(laneListPath, editGroupId);
+                    }
                   },
               })
           );
-          inspector->addChild(std::move(groupRow));
+          body.addChild(std::move(groupRow));
         }
 
         const bool pendingDelete = ctx.pendingDeleteWidgetName == widgetName;
@@ -1725,7 +1599,7 @@ namespace settings {
             }
             auto sourceItems = currentLaneItems;
             auto sourcePath = currentLanePath;
-            auto targetPath = pathWithLastSegment(entry.path, std::string(targetLane));
+            auto targetPath = pathWithLastSegment(laneListPath, std::string(targetLane));
             auto targetItems = barWidgetItemsForPath(ctx.config, targetPath);
             actionRow->addChild(
                 ui::button({
@@ -1792,7 +1666,7 @@ namespace settings {
             );
           }
 
-          inspector->addChild(std::move(actionRow));
+          body.addChild(std::move(actionRow));
         }
 
         if (renaming) {
@@ -1861,7 +1735,7 @@ namespace settings {
                   },
               })
           );
-          inspector->addChild(std::move(renameRow));
+          body.addChild(std::move(renameRow));
         }
 
         if (pendingDelete) {
@@ -1913,29 +1787,27 @@ namespace settings {
                       .paddingV = Style::spaceXs * ctx.scale,
                       .paddingH = Style::spaceSm * ctx.scale,
                       .radius = Style::scaledRadiusSm(ctx.scale),
-                      .onClick = [&editingWidgetName = ctx.editingWidgetName,
-                                  &pendingDeleteWidgetName = ctx.pendingDeleteWidgetName, config = ctx.config,
-                                  widgetName, clearOverride = ctx.clearOverride, setOverrides = ctx.setOverrides]() {
+                      .onClick = [&pendingDeleteWidgetName = ctx.pendingDeleteWidgetName, config = ctx.config,
+                                  widgetName, clearOverride = ctx.clearOverride, setOverrides = ctx.setOverrides,
+                                  closeHostedEditor = ctx.closeHostedEditor]() {
                         pendingDeleteWidgetName.clear();
-                        if (editingWidgetName == widgetName) {
-                          editingWidgetName.clear();
-                        }
                         auto referenceRemovals = widgetReferenceRemovalOverrides(config, widgetName);
                         if (!referenceRemovals.empty()) {
                           setOverrides(std::move(referenceRemovals));
                         }
                         clearOverride({"widget", widgetName});
+                        if (closeHostedEditor) {
+                          closeHostedEditor();
+                        }
                       },
                   })
               )
           );
-          inspector->addChild(std::move(confirmPanel));
+          body.addChild(std::move(confirmPanel));
         }
 
-        addWidgetSettingsPanel(*inspector, widgetName, currentLanePath, ctx);
+        addWidgetSettingsPanel(body, widgetName, currentLanePath, ctx);
       }
-
-      block.addChild(std::move(inspector));
     }
 
     // Color picker control (no label) — placed into a standard settings row via ctx.makeRow.
@@ -2050,16 +1922,20 @@ namespace settings {
       return wrap;
     }
 
-    void addCapsuleGroupInspector(Flex& block, const SettingEntry& entry, const BarWidgetEditorContext& ctx) {
-      if (ctx.editingCapsuleGroupId.empty() || entry.path.size() < 2 || entry.path[0] != "bar") {
+    void addCapsuleGroupInspector(
+        Flex& body, const std::vector<std::string>& laneListPath, const BarWidgetEditorContext& ctx
+    ) {
+      if (ctx.editingCapsuleGroupId.empty() || laneListPath.size() < 2 || laneListPath[0] != "bar") {
         return;
       }
-      const std::string barName = entry.path[1];
+      const std::string barName = laneListPath[1];
       const std::string groupId = ctx.editingCapsuleGroupId;
       const BarConfig* bar = findBar(ctx.config, barName);
       const BarCapsuleGroupStyle* stylePtr = bar != nullptr ? findBarCapsuleGroupStyle(*bar, groupId) : nullptr;
       if (stylePtr == nullptr) {
-        ctx.editingCapsuleGroupId.clear();
+        if (ctx.closeHostedEditor) {
+          ctx.closeHostedEditor();
+        }
         return;
       }
       const BarCapsuleGroupStyle style = *stylePtr;
@@ -2067,17 +1943,9 @@ namespace settings {
       const std::size_t memberCount = stylePtr->members.size();
       const std::vector<std::string> groupPath{"bar", barName, "capsule_group"};
 
-      auto inspector = ui::column({
-          .align = FlexAlign::Stretch,
-          .gap = Style::spaceSm * ctx.scale,
-          .padding = Style::spaceMd * ctx.scale,
-          .fill = colorSpecFromRole(ColorRole::SurfaceVariant),
-          .radius = Style::scaledRadiusMd(ctx.scale),
-          .border = colorSpecFromRole(ColorRole::Outline, 0.5f),
-      });
-      if (ctx.setScrollTarget) {
-        ctx.setScrollTarget(inspector.get());
-      }
+      body.addChild(makeSettingSubtitleLabel(
+          i18n::tr("settings.entities.widget.group.members", "count", std::to_string(memberCount)), ctx.scale
+      ));
 
       // Commits a mutated copy of the group style vector.
       const auto mutateGroup = [setOverride = ctx.setOverride, groups, groupPath,
@@ -2092,42 +1960,10 @@ namespace settings {
         setOverride(groupPath, updated);
       };
 
-      auto headerRow = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * ctx.scale});
-      auto titleBlock = ui::column({.align = FlexAlign::Stretch, .gap = 1.0f * ctx.scale, .flexGrow = 1.0f});
-      titleBlock->addChild(makeLabel(
-          i18n::tr("settings.entities.widget.group.title"), Style::fontSizeBody * ctx.scale,
-          colorSpecFromRole(ColorRole::OnSurface), FontWeight::Bold
-      ));
-      titleBlock->addChild(makeSettingSubtitleLabel(
-          i18n::tr("settings.entities.widget.group.members", "count", std::to_string(memberCount)), ctx.scale
-      ));
-      headerRow->addChild(std::move(titleBlock));
-      headerRow->addChild(
-          ui::button({
-              .glyph = "close",
-              .glyphSize = Style::fontSizeBody * ctx.scale,
-              .variant = ButtonVariant::Ghost,
-              .minWidth = Style::controlHeightSm * ctx.scale,
-              .minHeight = Style::controlHeightSm * ctx.scale,
-              .padding = Style::spaceXs * ctx.scale,
-              .radius = Style::scaledRadiusSm(ctx.scale),
-              .onClick = [&editingCapsuleGroupId = ctx.editingCapsuleGroupId, requestRebuild = ctx.requestRebuild]() {
-                editingCapsuleGroupId.clear();
-                requestRebuild();
-              },
-          })
-      );
-      inspector->addChild(std::move(headerRow));
-
-      // Controls live on a nested Surface panel and use the standard settings row (ctx.makeRow), matching the
-      // per-widget settings editor.
+      // Controls use the standard settings row (ctx.makeRow), matching the per-widget settings editor.
       auto panel = ui::column({
           .align = FlexAlign::Stretch,
           .gap = Style::spaceXs * ctx.scale,
-          .padding = Style::spaceSm * ctx.scale,
-          .fill = colorSpecFromRole(ColorRole::Surface),
-          .radius = Style::scaledRadiusSm(ctx.scale),
-          .border = colorSpecFromRole(ColorRole::Outline, 0.22f),
       });
       Flex* panelPtr = panel.get();
 
@@ -2199,8 +2035,8 @@ namespace settings {
           })
       );
 
-      inspector->addChild(std::move(panel));
-      inspector->addChild(
+      body.addChild(std::move(panel));
+      body.addChild(
           ui::button({
               .text = i18n::tr("settings.entities.widget.group.ungroup"),
               .glyph = "stack-pop",
@@ -2212,12 +2048,14 @@ namespace settings {
               .paddingH = Style::spaceSm * ctx.scale,
               .radius = Style::scaledRadiusSm(ctx.scale),
               .onClick = [setOverrides = ctx.setOverrides, groups, groupPath, groupId, barName, config = &ctx.config,
-                          &editingCapsuleGroupId = ctx.editingCapsuleGroupId]() {
+                          closeHostedEditor = ctx.closeHostedEditor]() {
                 const BarConfig* targetBar = findBar(*config, barName);
                 const BarCapsuleGroupStyle* g =
                     targetBar != nullptr ? findBarCapsuleGroupStyle(*targetBar, groupId) : nullptr;
                 if (g == nullptr) {
-                  editingCapsuleGroupId.clear();
+                  if (closeHostedEditor) {
+                    closeHostedEditor();
+                  }
                   return;
                 }
                 std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>> batch;
@@ -2242,13 +2080,13 @@ namespace settings {
                   }
                 }
                 batch.push_back({groupPath, remaining});
-                editingCapsuleGroupId.clear();
                 setOverrides(std::move(batch));
+                if (closeHostedEditor) {
+                  closeHostedEditor();
+                }
               },
           })
       );
-
-      block.addChild(std::move(inspector));
     }
 
     struct LaneGroupPlan {
@@ -2336,7 +2174,7 @@ namespace settings {
                 .onClick = [setOverrides = ctx.setOverrides, config = &ctx.config, barName, laneKey = plan.laneKey,
                             firstIndex = plan.firstIndex, members = plan.members,
                             &selectedLaneWidgets = ctx.selectedLaneWidgets,
-                            &editingCapsuleGroupId = ctx.editingCapsuleGroupId]() {
+                            openCapsuleGroupInspector = ctx.openCapsuleGroupInspector, laneListPath = entry.path]() {
                   const BarConfig* bar = findBar(*config, barName);
                   if (bar == nullptr) {
                     return;
@@ -2360,8 +2198,10 @@ namespace settings {
                   }
 
                   selectedLaneWidgets.clear();
-                  editingCapsuleGroupId = newId;
                   setOverrides({{lanePath, lane}, {{"bar", barName, "capsule_group"}, groups}});
+                  if (openCapsuleGroupInspector) {
+                    openCapsuleGroupInspector(laneListPath, newId);
+                  }
                 },
             })
         );
@@ -2398,6 +2238,17 @@ namespace settings {
     return isBarWidgetListPath(path) && path.back() == "start";
   }
 
+  void buildWidgetInspectorBody(
+      Flex& body, const std::vector<std::string>& laneListPath, const BarWidgetEditorContext& ctx
+  ) {
+    addInspectorPane(body, laneListPath, ctx);
+  }
+
+  void
+  buildCapsuleGroupBody(Flex& body, const std::vector<std::string>& laneListPath, const BarWidgetEditorContext& ctx) {
+    addCapsuleGroupInspector(body, laneListPath, ctx);
+  }
+
   void addBarWidgetLaneEditor(Flex& section, const SettingEntry& entry, const BarWidgetEditorContext& ctx) {
     if (!isFirstBarWidgetListPath(entry.path)) {
       return;
@@ -2423,17 +2274,6 @@ namespace settings {
     );
 
     block->addChild(makeSettingSubtitleLabel(i18n::tr("settings.entities.widget.editor.description"), ctx.scale));
-
-    if (!ctx.editingWidgetName.empty()) {
-      addInspectorPane(*block, entry, ctx);
-      section.addChild(std::move(block));
-      return;
-    }
-    if (!ctx.editingCapsuleGroupId.empty()) {
-      addCapsuleGroupInspector(*block, entry, ctx);
-      section.addChild(std::move(block));
-      return;
-    }
 
     static constexpr std::string_view kLaneKeys[] = {"start", "center", "end"};
 
@@ -2605,7 +2445,7 @@ namespace settings {
         };
 
     // Builds a draggable widget card (used for both loose lane widgets and group members).
-    auto makeWidgetCard = [&ctx, &wireDrag, iconSize, iconPad, rowGap](
+    auto makeWidgetCard = [&ctx, &wireDrag, &entry, iconSize, iconPad, rowGap](
                               const std::string& name, std::size_t homeZoneIndex, std::size_t itemIndex, bool inherited,
                               std::string_view removeGlyph, std::function<void()> removeAction, bool selectable,
                               bool isSelected, std::function<void()> toggleSelect
@@ -2671,21 +2511,15 @@ namespace settings {
             ui::button({
                 .glyph = "settings",
                 .glyphSize = Style::fontSizeCaption * ctx.scale,
-                .variant = ctx.editingWidgetName == name ? ButtonVariant::Default : ButtonVariant::Ghost,
+                .variant = ButtonVariant::Ghost,
                 .minWidth = iconSize,
                 .minHeight = iconSize,
                 .padding = iconPad,
                 .radius = Style::scaledRadiusSm(ctx.scale),
-                .onClick = [&editingWidgetName = ctx.editingWidgetName, name,
-                            &pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,
-                            &renamingWidgetName = ctx.renamingWidgetName,
-                            &pendingDeleteWidgetSettingPath = ctx.pendingDeleteWidgetSettingPath,
-                            requestRebuild = ctx.requestRebuild]() {
-                  editingWidgetName = editingWidgetName == name ? std::string{} : name;
-                  pendingDeleteWidgetName.clear();
-                  pendingDeleteWidgetSettingPath.clear();
-                  renamingWidgetName.clear();
-                  requestRebuild();
+                .onClick = [openWidgetInspector = ctx.openWidgetInspector, laneListPath = entry.path, name]() {
+                  if (openWidgetInspector) {
+                    openWidgetInspector(laneListPath, name);
+                  }
                 },
             })
         );
@@ -2931,11 +2765,11 @@ namespace settings {
                   .minHeight = iconSize,
                   .padding = iconPad,
                   .radius = Style::scaledRadiusSm(ctx.scale),
-                  .onClick = [&editingCapsuleGroupId = ctx.editingCapsuleGroupId,
-                              &editingWidgetName = ctx.editingWidgetName, gid, requestRebuild = ctx.requestRebuild]() {
-                    editingWidgetName.clear();
-                    editingCapsuleGroupId = gid;
-                    requestRebuild();
+                  .onClick = [openCapsuleGroupInspector = ctx.openCapsuleGroupInspector, laneListPath = entry.path,
+                              gid]() {
+                    if (openCapsuleGroupInspector) {
+                      openCapsuleGroupInspector(laneListPath, gid);
+                    }
                   },
               })
           );

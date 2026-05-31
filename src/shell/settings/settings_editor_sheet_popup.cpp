@@ -1,4 +1,4 @@
-#include "shell/settings/session_actions_editor_popup.h"
+#include "shell/settings/settings_editor_sheet_popup.h"
 
 #include "config/config_service.h"
 #include "core/deferred_call.h"
@@ -44,19 +44,20 @@ namespace settings {
 
   } // namespace
 
-  constexpr float kPopupWidth = 640.0f;
+  constexpr float kPopupWidth = 640.0f; // minimum / fallback logical width
+  constexpr float kPopupWidthParentFraction = 0.75f;
   constexpr float kInitialPopupHeight = 360.0f;
   constexpr float kParentMargin = 48.0f;
 
-  SessionActionsEditorPopup::~SessionActionsEditorPopup() { destroyPopup(); }
+  SettingsEditorSheetPopup::~SettingsEditorSheetPopup() { destroyPopup(); }
 
-  void SessionActionsEditorPopup::initialize(
+  void SettingsEditorSheetPopup::initialize(
       WaylandConnection& wayland, ConfigService& config, RenderContext& renderContext
   ) {
     initializeBase(wayland, config, renderContext);
   }
 
-  void SessionActionsEditorPopup::open(
+  void SettingsEditorSheetPopup::open(
       xdg_surface* parentXdgSurface, wl_output* output, std::uint32_t serial, wl_surface* parentWlSurface,
       std::uint32_t parentWidth, std::uint32_t parentHeight, float scale, std::string sheetTitle,
       std::function<void()> removeAction, std::function<void(Flex& sheetBody)> populateSheetBody
@@ -91,18 +92,38 @@ namespace settings {
     m_parentOutput = output;
   }
 
-  void SessionActionsEditorPopup::close() { destroyPopup(); }
+  void SettingsEditorSheetPopup::close() { destroyPopup(); }
 
-  void SessionActionsEditorPopup::setSheetTitle(std::string title) {
+  void SettingsEditorSheetPopup::setSheetTitle(std::string title) {
     m_sheetTitle = std::move(title);
     if (m_sheetTitleLabel != nullptr) {
       m_sheetTitleLabel->setText(m_sheetTitle);
     }
   }
 
-  bool SessionActionsEditorPopup::isOpen() const noexcept { return DialogPopupHost::isOpen(); }
+  void SettingsEditorSheetPopup::rebuildBody() {
+    if (!isOpen()) {
+      return;
+    }
+    // Defer: control callbacks fire mid-dispatch; rebuilding the body destroys the nodes being
+    // dispatched. Re-run populate on the next loop tick, then re-measure/resize.
+    DeferredCall::callLater([this]() {
+      if (!isOpen() || m_contentNode == nullptr) {
+        return;
+      }
+      inputDispatcher().setFocus(nullptr);
+      while (!m_contentNode->children().empty()) {
+        m_contentNode->removeChild(m_contentNode->children().front().get());
+      }
+      m_root = nullptr;
+      populateContent(m_contentNode, width(), height());
+      requestLayout();
+    });
+  }
 
-  bool SessionActionsEditorPopup::onPointerEvent(const PointerEvent& event) {
+  bool SettingsEditorSheetPopup::isOpen() const noexcept { return DialogPopupHost::isOpen(); }
+
+  bool SettingsEditorSheetPopup::onPointerEvent(const PointerEvent& event) {
     if (m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen()) {
       if (m_selectPopup->onPointerEvent(event)) {
         return true;
@@ -115,7 +136,7 @@ namespace settings {
     return DialogPopupHost::onPointerEvent(event);
   }
 
-  void SessionActionsEditorPopup::onKeyboardEvent(const KeyboardEvent& event) {
+  void SettingsEditorSheetPopup::onKeyboardEvent(const KeyboardEvent& event) {
     if (m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen()) {
       m_selectPopup->onKeyboardEvent(event);
       return;
@@ -123,18 +144,18 @@ namespace settings {
     DialogPopupHost::onKeyboardEvent(event);
   }
 
-  wl_surface* SessionActionsEditorPopup::wlSurface() const noexcept { return DialogPopupHost::wlSurface(); }
+  wl_surface* SettingsEditorSheetPopup::wlSurface() const noexcept { return DialogPopupHost::wlSurface(); }
 
-  bool SessionActionsEditorPopup::ownsSelectDropdownSurface(wl_surface* surface) const noexcept {
+  bool SettingsEditorSheetPopup::ownsSelectDropdownSurface(wl_surface* surface) const noexcept {
     return m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen() && m_selectPopup->wlSurface() == surface;
   }
 
-  bool SessionActionsEditorPopup::isSelectDropdownOpen() const noexcept {
+  bool SettingsEditorSheetPopup::isSelectDropdownOpen() const noexcept {
     return m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen();
   }
 
   void
-  SessionActionsEditorPopup::populateContent(Node* contentParent, std::uint32_t /*width*/, std::uint32_t /*height*/) {
+  SettingsEditorSheetPopup::populateContent(Node* contentParent, std::uint32_t /*width*/, std::uint32_t /*height*/) {
     const float popupPadding = Style::spaceSm * m_scale;
     const float popupGap = Style::spaceSm * m_scale;
 
@@ -146,6 +167,7 @@ namespace settings {
     });
 
     auto header = ui::row({
+        .out = &m_header,
         .align = FlexAlign::Center,
         .gap = Style::spaceSm * m_scale,
     });
@@ -196,16 +218,31 @@ namespace settings {
     );
     root->addChild(std::move(header));
 
-    auto body = ui::column({
-        .align = FlexAlign::Stretch,
-        .gap = Style::spaceMd * m_scale,
+    // Body scrolls when its content exceeds the sheet's clamped height.
+    ScrollView* scrollPtr = nullptr;
+    auto scroll = ui::scrollView({
+        .out = &scrollPtr,
+        .state = &m_scrollState,
+        .scrollbarVisible = true,
+        .viewportPaddingH = 0.0f,
+        .viewportPaddingV = 0.0f,
+        .flexGrow = 1.0f,
+        .configure = [](ScrollView& sv) {
+          sv.clearFill();
+          sv.clearBorder();
+        },
     });
+    m_scrollView = scrollPtr;
 
+    Flex* body = scrollPtr->content();
+    body->setDirection(FlexDirection::Vertical);
+    body->setAlign(FlexAlign::Stretch);
+    body->setGap(Style::spaceMd * m_scale);
     if (m_populateSheetBody) {
       m_populateSheetBody(*body);
     }
 
-    root->addChild(std::move(body));
+    root->addChild(std::move(scroll));
     contentParent->addChild(std::move(root));
 
     if (wayland() != nullptr && renderContext() != nullptr && xdgSurface() != nullptr) {
@@ -220,22 +257,52 @@ namespace settings {
     }
   }
 
-  void SessionActionsEditorPopup::layoutSheet(float contentWidth, float contentHeight) {
-    if (m_root == nullptr || renderContext() == nullptr || m_surface == nullptr) {
+  void SettingsEditorSheetPopup::layoutSheet(float contentWidth, float contentHeight) {
+    if (m_root == nullptr
+        || m_header == nullptr
+        || m_scrollView == nullptr
+        || m_scrollView->content() == nullptr
+        || renderContext() == nullptr
+        || m_surface == nullptr) {
       return;
     }
 
     Renderer& renderer = *renderContext();
     const float pad = computePadding(uiScale());
-    const float panelW = kPopupWidth * m_scale;
+    const float popupPadding = Style::spaceSm * m_scale;
+    const float popupGap = Style::spaceSm * m_scale;
+    const ShellConfig::ShadowConfig shadow =
+        config() != nullptr ? config()->config().shell.shadow : ShellConfig::ShadowConfig{};
+
+    // Sheet width tracks the parent (settings) window: 75% of it, floored at kPopupWidth and capped
+    // so the surface (content + chrome) still fits within the parent minus the edge margin.
+    float panelW = kPopupWidth * m_scale;
+    if (m_parentWidth > 0) {
+      const auto probe = popup_chrome::computeGeometry(panelW, panelW, shadow);
+      const float chromeW = static_cast<float>(probe.surfaceWidth) - panelW;
+      const float maxPanelW = std::max(1.0f, static_cast<float>(m_parentWidth) - (kParentMargin * m_scale) - chromeW);
+      const float minPanelW = kPopupWidth * m_scale;
+      const float preferredW = kPopupWidthParentFraction * static_cast<float>(m_parentWidth);
+      panelW = std::min(std::max(preferredW, minPanelW), maxPanelW);
+    }
 
     float cw = std::max(1.0f, contentWidth);
     float ch = std::max(1.0f, contentHeight);
 
-    LayoutSize pref = m_root->measure(renderer, LayoutConstraints::available(cw, 1.0e6f));
-    const float panelH = std::ceil(pref.height + pad * 2.0f);
-    const ShellConfig::ShadowConfig shadow =
-        config() != nullptr ? config()->config().shell.shadow : ShellConfig::ShadowConfig{};
+    // Measure header + scroll content directly with width bounded, height unbounded. Measuring the
+    // root would let its flexGrow scroll view inflate to fill the constraint, so the sheet would
+    // never shrink to fit a short body.
+    const auto naturalHeight = [&](float widthBudget) {
+      const float innerCw = std::max(1.0f, widthBudget - 2.0f * popupPadding);
+      LayoutConstraints c;
+      c.setMaxWidth(innerCw);
+      const float headerH = m_header->measure(renderer, c).height;
+      const float contentH = m_scrollView->content()->measure(renderer, c).height;
+      return 2.0f * popupPadding + headerH + popupGap + contentH;
+    };
+
+    float rootH = naturalHeight(cw);
+    const float panelH = std::ceil(rootH + pad * 2.0f);
     const auto geo = popup_chrome::computeGeometry(panelW, panelH, shadow);
     const float maxOuterHeight =
         m_parentHeight > 0 ? std::max(1.0f, static_cast<float>(m_parentHeight) - (kParentMargin * m_scale)) : 1.0e6f;
@@ -248,18 +315,18 @@ namespace settings {
       syncSceneGeometryFromSurface();
       cw = std::max(1.0f, m_chrome.contentWidth - pad * 2.0f);
       ch = std::max(1.0f, m_chrome.contentHeight - pad * 2.0f);
-      pref = m_root->measure(renderer, LayoutConstraints::available(cw, 1.0e6f));
+      rootH = naturalHeight(cw);
     }
 
-    const float sheetH = std::max(1.0f, std::min(pref.height, ch));
+    const float sheetH = std::max(1.0f, std::min(rootH, ch));
     m_root->arrange(renderer, LayoutRect{.x = 0.0f, .y = 0.0f, .width = cw, .height = sheetH});
   }
 
-  void SessionActionsEditorPopup::cancelToFacade() {}
+  void SettingsEditorSheetPopup::cancelToFacade() {}
 
-  InputArea* SessionActionsEditorPopup::initialFocusArea() { return nullptr; }
+  InputArea* SettingsEditorSheetPopup::initialFocusArea() { return nullptr; }
 
-  void SessionActionsEditorPopup::onSheetClose() {
+  void SettingsEditorSheetPopup::onSheetClose() {
     if (m_selectPopup != nullptr) {
       m_selectPopup->closeSelectDropdown();
     }
@@ -269,6 +336,8 @@ namespace settings {
     m_removeAction = nullptr;
     m_populateSheetBody = nullptr;
     m_root = nullptr;
+    m_header = nullptr;
+    m_scrollView = nullptr;
     m_parentWidth = 0;
     m_parentHeight = 0;
   }

@@ -417,6 +417,12 @@ settings::SettingsContentContext SettingsWindow::makeContentContext(
       .openSessionActionEntryEditor = [this](std::size_t entryIndex) { openSessionActionEntryEditor(entryIndex); },
       .openIdleBehaviorEntryEditor = [this](std::size_t entryIndex) { openIdleBehaviorEntryEditor(entryIndex); },
       .openIdleBehaviorCreateEditor = [this]() { openIdleBehaviorCreateEditor(); },
+      .openWidgetInspectorEditor = [this](
+                                       std::vector<std::string> laneListPath, std::string widgetName
+                                   ) { openWidgetInspectorEditor(std::move(laneListPath), std::move(widgetName)); },
+      .openCapsuleGroupEditor = [this](
+                                    std::vector<std::string> laneListPath, std::string groupId
+                                ) { openCapsuleGroupEditor(std::move(laneListPath), std::move(groupId)); },
       .registerIdleLiveStatusLabel =
           [this](Label* label) {
             m_idleLiveStatusLabel = label;
