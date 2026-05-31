@@ -16,6 +16,7 @@
 #include <ctime>
 #include <cxxabi.h>
 #include <format>
+#include <limits>
 #include <memory>
 #include <poll.h>
 #include <stdexcept>
@@ -23,6 +24,7 @@
 #include <string_view>
 #include <typeinfo>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <wayland-client-core.h>
 
@@ -271,19 +273,6 @@ namespace {
     }
     return false;
   }
-
-  bool sourceTimeoutDue(int timeoutMs, int pollTimeoutMs, int pollResult, float elapsedSincePollStartMs) {
-    if (timeoutMs < 0) {
-      return false;
-    }
-    if (timeoutMs == 0) {
-      return true;
-    }
-    if (elapsedSincePollStartMs >= static_cast<float>(timeoutMs)) {
-      return true;
-    }
-    return pollResult == 0 && pollTimeoutMs >= 0 && timeoutMs <= pollTimeoutMs;
-  }
 } // namespace
 
 MainLoop::MainLoop(WaylandConnection& wayland, Bar& bar, PollSourcesProvider sourcesProvider)
@@ -377,18 +366,25 @@ void MainLoop::run() {
     int pollTimeout = -1;
     std::vector<std::size_t> sourceStartIndices;
     std::vector<std::size_t> sourceFdCounts;
-    std::vector<int> sourceTimeouts;
     sourceStartIndices.reserve(sources.size());
     sourceFdCounts.reserve(sources.size());
-    sourceTimeouts.reserve(sources.size());
 
+    // Forget deadlines for sources that no longer exist this iteration so the
+    // map cannot accumulate stale entries or fire on a freed pointer.
+    if (!m_sourceDeadlines.empty()) {
+      const std::unordered_set<PollSource*> live(sources.begin(), sources.end());
+      for (auto it = m_sourceDeadlines.begin(); it != m_sourceDeadlines.end();) {
+        it = live.contains(it->first) ? std::next(it) : m_sourceDeadlines.erase(it);
+      }
+    }
+
+    const auto nowBeforePoll = std::chrono::steady_clock::now();
     for (auto* source : sources) {
       const std::size_t startIdx = source->addPollFds(pollFds);
       sourceStartIndices.push_back(startIdx);
       sourceFdCounts.push_back(pollFds.size() - startIdx);
 
       const int t = source->pollTimeoutMs();
-      sourceTimeouts.push_back(t);
       if (idleProfileEnabled()) {
         auto& stats = sourceIdleProfile(idleProfile(), *source);
         if (t >= 0) {
@@ -398,8 +394,26 @@ void MainLoop::run() {
           ++stats.zeroTimeoutVotes;
         }
       }
-      if (t >= 0 && (pollTimeout < 0 || t < pollTimeout)) {
-        pollTimeout = t;
+
+      if (t < 0) {
+        // Source no longer wants a timed wake; drop any pending deadline.
+        m_sourceDeadlines.erase(source);
+        continue;
+      }
+
+      // Arm the deadline on first sight, then keep the earliest time the source
+      // has requested since its last dispatch.
+      const auto requested = nowBeforePoll + std::chrono::milliseconds(t);
+      auto [it, inserted] = m_sourceDeadlines.try_emplace(source, requested);
+      if (!inserted) {
+        it->second = std::min(it->second, requested);
+      }
+
+      const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(it->second - nowBeforePoll).count();
+      const int remainingMs =
+          remaining < 0 ? 0 : static_cast<int>(std::min<std::int64_t>(remaining, std::numeric_limits<int>::max()));
+      if (pollTimeout < 0 || remainingMs < pollTimeout) {
+        pollTimeout = remainingMs;
       }
     }
     if (Surface::hasPendingFrameWork() || Surface::hasPendingRenders()) {
@@ -561,9 +575,11 @@ void MainLoop::run() {
     // optional poll sources (e.g. polkit) mid-iteration. Re-check liveness
     // before each dispatch to avoid dereferencing a pointer that was valid when
     // we built `sources` but was freed by an earlier source in this same pass.
+    const auto nowAfterPoll = std::chrono::steady_clock::now();
     for (std::size_t i = 0; i < sources.size(); ++i) {
       const bool fdReady = sourceHasReadyFd(pollFds, sourceStartIndices[i], sourceFdCounts[i]);
-      const bool timeoutWake = sourceTimeoutDue(sourceTimeouts[i], pollTimeout, pollResult, elapsedSince(pollStart));
+      const auto deadlineIt = m_sourceDeadlines.find(sources[i]);
+      const bool timeoutWake = deadlineIt != m_sourceDeadlines.end() && nowAfterPoll >= deadlineIt->second;
       if (!fdReady && !timeoutWake) {
         continue;
       }
@@ -574,6 +590,8 @@ void MainLoop::run() {
       if (std::find(latestSources.begin(), latestSources.end(), source) == latestSources.end()) {
         continue;
       }
+      // Serviced now — restart its clock so the next timeout is measured fresh.
+      m_sourceDeadlines.erase(source);
       opStart = std::chrono::steady_clock::now();
       source->dispatch(pollFds, sourceStartIndices[i]);
       ms = elapsedSince(opStart);

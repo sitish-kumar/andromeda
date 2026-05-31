@@ -6,7 +6,6 @@
 #include <chrono>
 #include <cstdio>
 #include <filesystem>
-#include <limits>
 #include <string>
 
 namespace {
@@ -321,10 +320,13 @@ int HttpClient::timeoutMs() const {
   }
   long timeout = -1;
   curl_multi_timeout(m_multi, &timeout);
-  if (timeout < 0) {
-    return 1000; // poll at least every second while transfers are active
+  // curl_multi_timeout can report a deadline up to the per-transfer timeout, but
+  // curl needs servicing at least once per second to advance its timeout
+  // handling, so cap the wait while transfers are active.
+  if (timeout < 0 || timeout > 1000) {
+    return 1000;
   }
-  return static_cast<int>(std::min(timeout, static_cast<long>(std::numeric_limits<int>::max())));
+  return static_cast<int>(timeout);
 }
 
 void HttpClient::dispatch(const std::vector<pollfd>& /*fds*/, std::size_t /*startIdx*/) {
