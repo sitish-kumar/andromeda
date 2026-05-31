@@ -2373,6 +2373,11 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
         config.controlCenter.sidebarMode = *parsed;
       }
     }
+    if (auto v = (*ccTbl)["sidebar_section"].value<std::string>()) {
+      if (auto parsed = enumFromKey(kControlCenterSidebarModes, StringUtils::trim(*v))) {
+        config.controlCenter.sidebarSectionMode = *parsed;
+      }
+    }
     if (auto* shortcutsArr = (*ccTbl)["shortcuts"].as_array()) {
       controlCenterShortcutsConfigured = true;
       config.controlCenter.shortcuts.clear();

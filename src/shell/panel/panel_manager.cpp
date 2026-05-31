@@ -307,6 +307,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   m_sourceBarName = std::string(request.sourceBarName);
   m_activePanel->setContentScale(resolvePanelContentScale(m_config));
   m_pendingOpenContext = std::string(request.context);
+  m_activePanel->setPendingOpenContext(request.context);
 
   // Map shields BEFORE the panel surface is created or committed.
   // Within a single layer, wlroots stacks surfaces by mapping order.

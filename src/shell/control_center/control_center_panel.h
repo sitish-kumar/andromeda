@@ -128,6 +128,8 @@ private:
   [[nodiscard]] bool isTabVisible(TabId tab) const;
   [[nodiscard]] TabId firstVisibleTab() const;
   [[nodiscard]] TabId tabFromContext(std::string_view context) const;
+  [[nodiscard]] bool isDirectSectionOpenContext(std::string_view context) const;
+  [[nodiscard]] ControlCenterSidebarMode sidebarModeForOpen(std::string_view context) const;
   [[nodiscard]] static std::size_t tabIndex(TabId id);
 
   // Tab instances (long-lived, survive panel open/close cycles)

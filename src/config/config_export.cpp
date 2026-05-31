@@ -785,6 +785,9 @@ namespace config_export {
     controlCenter.insert_or_assign(
         "sidebar", std::string(enumToKey(kControlCenterSidebarModes, config.controlCenter.sidebarMode))
     );
+    controlCenter.insert_or_assign(
+        "sidebar_section", std::string(enumToKey(kControlCenterSidebarModes, config.controlCenter.sidebarSectionMode))
+    );
     controlCenter.insert_or_assign("shortcuts", shortcutArray(config.controlCenter.shortcuts));
     root.insert_or_assign("control_center", std::move(controlCenter));
 

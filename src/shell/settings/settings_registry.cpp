@@ -853,6 +853,12 @@ namespace settings {
         "full compact none sidebar icons narrow hidden"
     ));
     entries.push_back(makeEntry(
+        "panels", "control-center", tr("settings.schema.panels.control-center-sidebar-section.label"),
+        tr("settings.schema.panels.control-center-sidebar-section.description"), {"control_center", "sidebar_section"},
+        asSegmented(enumSelect(kControlCenterSidebarModes, cfg.controlCenter.sidebarSectionMode)),
+        "full compact none sidebar icons narrow hidden tab direct widget shortcut"
+    ));
+    entries.push_back(makeEntry(
         "panels", "control-center", tr("settings.schema.panels.home-shortcuts.label"),
         tr("settings.schema.panels.home-shortcuts.description"), {"control_center", "shortcuts"},
         ShortcutListSetting{

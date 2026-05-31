@@ -2006,7 +2006,11 @@
         },
         "control-center-sidebar": {
           "label": "Sidebar",
-          "description": "Choose whether Control Center shows tab labels, icon-only tabs, or no sidebar"
+          "description": "On Home and general opens"
+        },
+        "control-center-sidebar-section": {
+          "label": "Sidebar when opening a tab",
+          "description": "When opening a specific tab (volume, media etc.)"
         },
         "placement-launcher": {
           "label": "Placement",

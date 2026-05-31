@@ -1018,6 +1018,7 @@ struct ThemeConfig {
 struct ControlCenterConfig {
   std::vector<ShortcutConfig> shortcuts;
   ControlCenterSidebarMode sidebarMode = ControlCenterSidebarMode::Compact;
+  ControlCenterSidebarMode sidebarSectionMode = ControlCenterSidebarMode::Compact;
   bool operator==(const ControlCenterConfig&) const = default;
 };
 

@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <string_view>
 
 class AnimationManager;
@@ -72,6 +73,8 @@ public:
   [[nodiscard]] bool panelBordersEnabled() const noexcept { return m_panelBordersEnabled; }
 
   void setContentScale(float scale) noexcept { m_contentScale = scale; }
+  void setPendingOpenContext(std::string_view context) { m_pendingOpenContext = std::string(context); }
+  [[nodiscard]] std::string_view pendingOpenContext() const noexcept { return m_pendingOpenContext; }
   void setPanelBordersEnabled(bool enabled) noexcept {
     if (m_panelBordersEnabled == enabled) {
       return;
@@ -107,6 +110,7 @@ protected:
   float m_contentScale = 1.0f;
   float m_panelCardOpacity = 1.0f;
   bool m_panelBordersEnabled = true;
+  std::string m_pendingOpenContext;
   AnimationManager* m_animations = nullptr;
 
 private:

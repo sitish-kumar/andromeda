@@ -25,8 +25,16 @@ using namespace control_center;
 namespace {
   constexpr auto kMprisRefreshMinInterval = std::chrono::milliseconds(750);
 
-  ControlCenterSidebarMode sidebarModeFor(const ConfigService* config) {
-    return config != nullptr ? config->config().controlCenter.sidebarMode : ControlCenterSidebarMode::Compact;
+  [[nodiscard]] float preferredWidthForSidebarMode(ControlCenterSidebarMode mode, float scale) {
+    switch (mode) {
+    case ControlCenterSidebarMode::Full:
+      return 780.0f * scale;
+    case ControlCenterSidebarMode::Compact:
+      return 660.0f * scale;
+    case ControlCenterSidebarMode::None:
+      return 600.0f * scale;
+    }
+    return 660.0f * scale;
   }
 } // namespace
 
@@ -68,15 +76,7 @@ ControlCenterPanel::ControlCenterPanel(
 }
 
 float ControlCenterPanel::preferredWidth() const {
-  switch (sidebarModeFor(m_config)) {
-  case ControlCenterSidebarMode::Full:
-    return scaled(780.0f);
-  case ControlCenterSidebarMode::Compact:
-    return scaled(660.0f);
-  case ControlCenterSidebarMode::None:
-    return scaled(600.0f);
-  }
-  return scaled(660.0f);
+  return preferredWidthForSidebarMode(sidebarModeForOpen(pendingOpenContext()), m_contentScale);
 }
 
 PanelPlacement ControlCenterPanel::panelPlacement() const noexcept {
@@ -90,7 +90,7 @@ bool ControlCenterPanel::dismissTransientUi() {
 
 void ControlCenterPanel::create() {
   const float scale = contentScale();
-  const ControlCenterSidebarMode sidebarMode = sidebarModeFor(m_config);
+  const ControlCenterSidebarMode sidebarMode = sidebarModeForOpen(pendingOpenContext());
   m_compact = sidebarMode == ControlCenterSidebarMode::Compact;
   m_showSidebar = sidebarMode != ControlCenterSidebarMode::None;
 
@@ -478,6 +478,26 @@ void ControlCenterPanel::scheduleMprisRefreshFor(TabId tab) {
     PanelManager::instance().requestUpdateOnly();
     PanelManager::instance().requestRedraw();
   });
+}
+
+bool ControlCenterPanel::isDirectSectionOpenContext(std::string_view context) const {
+  if (context.empty() || context == "home") {
+    return false;
+  }
+  for (const auto& tab : kTabs) {
+    if (tab.id != TabId::Home && context == tab.key) {
+      return true;
+    }
+  }
+  return false;
+}
+
+ControlCenterSidebarMode ControlCenterPanel::sidebarModeForOpen(std::string_view context) const {
+  if (m_config == nullptr) {
+    return ControlCenterSidebarMode::Compact;
+  }
+  const auto& cc = m_config->config().controlCenter;
+  return isDirectSectionOpenContext(context) ? cc.sidebarSectionMode : cc.sidebarMode;
 }
 
 ControlCenterPanel::TabId ControlCenterPanel::tabFromContext(std::string_view context) const {
