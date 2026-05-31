@@ -55,6 +55,7 @@ polkit_gobject_dep  = dependency('polkit-gobject-1')
 pipewire_dep        = dependency('libpipewire-0.3', include_type: 'system')
 curl_dep            = dependency('libcurl')
 libqalculate_dep    = dependency('libqalculate')
+libxml2_dep         = dependency('libxml-2.0')
 pam_dep             = cc.find_library('pam')
 dl_dep              = cpp.find_library('dl', required: false)
 
@@ -99,16 +100,6 @@ _drwav_lib = static_library('dr_wav',
 drwav_dep = declare_dependency(
   link_with: _drwav_lib,
   include_directories: include_directories('third_party/dr_wav', is_system: true),
-)
-
-# ── Vendored: pugixml (XML parser, for CalDAV responses) ─────────────────────
-_pugixml_lib = static_library('pugixml',
-  'third_party/pugixml/pugixml.cpp',
-  override_options: ['warning_level=0'],
-)
-pugixml_dep = declare_dependency(
-  link_with: _pugixml_lib,
-  include_directories: include_directories('third_party/pugixml', is_system: true),
 )
 
 # ── Vendored: fzy matcher (C fuzzy scoring) ──────────────────────────────────
@@ -789,7 +780,7 @@ executable('noctalia',
     drwav_dep,
     fzy_dep,
     mcu_dep,
-    pugixml_dep,
+    libxml2_dep,
     stb_dep,
     libwebp_dep,
     luau_dep,

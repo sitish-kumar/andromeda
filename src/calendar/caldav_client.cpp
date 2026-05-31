@@ -3,11 +3,12 @@
 #include "calendar/ical_parser.h"
 #include "core/log.h"
 #include "net/http_client.h"
-#include "pugixml.hpp"
 #include "time/time_format.h"
 #include "util/base64.h"
 
-#include <string_view>
+#include <cstring>
+#include <libxml/parser.h>
+#include <libxml/tree.h>
 
 namespace calendar {
 
@@ -34,24 +35,21 @@ namespace calendar {
             "</C:calendar-query>";
     }
 
-    std::string_view localName(const char* qualified) {
-      std::string_view name(qualified);
-      const std::size_t colon = name.rfind(':');
-      return colon == std::string_view::npos ? name : name.substr(colon + 1);
-    }
-
     // Collect the text of every element whose local name is "calendar-data".
-    void collectCalendarData(const pugi::xml_node& node, std::vector<std::string>& out) {
-      for (pugi::xml_node child : node.children()) {
-        if (child.type() == pugi::node_element) {
-          if (localName(child.name()) == "calendar-data") {
-            const char* text = child.text().get();
-            if (text != nullptr && text[0] != '\0') {
-              out.emplace_back(text);
-            }
+    // libxml2 stores the local name in node->name; the namespace prefix lives in node->ns.
+    void collectCalendarData(xmlNode* node, std::vector<std::string>& out) {
+      if (node->type == XML_ELEMENT_NODE
+          && std::strcmp(reinterpret_cast<const char*>(node->name), "calendar-data") == 0) {
+        xmlChar* content = xmlNodeGetContent(node);
+        if (content != nullptr) {
+          if (content[0] != '\0') {
+            out.emplace_back(reinterpret_cast<const char*>(content));
           }
-          collectCalendarData(child, out);
+          xmlFree(content);
         }
+      }
+      for (xmlNode* child = node->children; child != nullptr; child = child->next) {
+        collectCalendarData(child, out);
       }
     }
   } // namespace
@@ -79,16 +77,21 @@ namespace calendar {
         return;
       }
 
-      pugi::xml_document doc;
-      const pugi::xml_parse_result parsed = doc.load_buffer(resp.body.data(), resp.body.size());
-      if (!parsed) {
-        kLog.warn("caldav response XML parse error: {}", parsed.description());
+      xmlDocPtr doc = xmlReadMemory(
+          resp.body.data(), static_cast<int>(resp.body.size()), "caldav.xml", nullptr,
+          XML_PARSE_NONET | XML_PARSE_NOERROR | XML_PARSE_NOWARNING | XML_PARSE_RECOVER
+      );
+      if (doc == nullptr) {
+        kLog.warn("caldav response XML parse error");
         cb(false, {});
         return;
       }
 
       std::vector<std::string> calendarDataBlocks;
-      collectCalendarData(doc, calendarDataBlocks);
+      if (xmlNode* root = xmlDocGetRootElement(doc); root != nullptr) {
+        collectCalendarData(root, calendarDataBlocks);
+      }
+      xmlFreeDoc(doc);
 
       std::vector<CalendarEvent> events;
       for (const std::string& ics : calendarDataBlocks) {
