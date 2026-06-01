@@ -25,6 +25,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
+#include <unordered_map>
 #include <unordered_set>
 #include <variant>
 #include <vector>
@@ -157,8 +158,73 @@ namespace noctalia::theme {
       std::vector<CompareColorEntry> colorsToCompare;
       std::string preHook;
       std::string postHook;
+      // When set, skip outputs if this path does not exist (explicit install check).
+      std::string requiresPath;
+      // When true, skip each output whose inferred client config root is missing.
+      bool gateOutputsByClientRoot = false;
       int index = 0;
     };
+
+    std::optional<std::filesystem::path> inferClientConfigRoot(const std::filesystem::path& outputPath) {
+      std::vector<std::filesystem::path> parts;
+      parts.reserve(16);
+      for (const auto& part : outputPath) {
+        if (!part.empty() && part != std::filesystem::path("."))
+          parts.push_back(part);
+      }
+
+      for (std::size_t i = 0; i + 3 < parts.size(); ++i) {
+        if (parts[i] == ".var" && parts[i + 1] == "app" && parts[i + 3] == "config") {
+          std::filesystem::path root;
+          for (std::size_t j = 0; j <= i + 3; ++j)
+            root /= parts[j];
+          return root;
+        }
+      }
+
+      std::filesystem::path current = outputPath.parent_path();
+      while (!current.empty() && current != current.root_path()) {
+        if (current.filename() == "themes") {
+          std::filesystem::path parent = current.parent_path();
+          const auto grandparent = parent.parent_path();
+          if (parent.filename() == "extensions" || grandparent.filename() == "extensions") {
+            std::filesystem::path walk = current;
+            while (!walk.empty() && walk.filename() != "extensions")
+              walk = walk.parent_path();
+            if (walk.filename() == "extensions")
+              return walk.parent_path();
+          }
+          return parent;
+        }
+        current = current.parent_path();
+      }
+      return std::nullopt;
+    }
+
+    bool pathExists(const std::filesystem::path& path) {
+      std::error_code ec;
+      return std::filesystem::exists(path, ec);
+    }
+
+    void markMultiClientGatedEntries(std::vector<ParsedTemplateEntry>& entries) {
+      std::unordered_map<std::string, std::unordered_set<std::string>> rootsByInputKey;
+      for (const ParsedTemplateEntry& entry : entries) {
+        if (entry.inputPath.empty())
+          continue;
+        for (const std::string& output : entry.outputPaths) {
+          if (auto root = inferClientConfigRoot(std::filesystem::path(output)))
+            rootsByInputKey[entry.inputPath].insert(root->string());
+        }
+      }
+
+      for (ParsedTemplateEntry& entry : entries) {
+        if (entry.inputPath.empty())
+          continue;
+        const auto it = rootsByInputKey.find(entry.inputPath);
+        if (it != rootsByInputKey.end() && it->second.size() > 1)
+          entry.gateOutputsByClientRoot = true;
+      }
+    }
 
     const std::regex kBlockRegex(R"(<\*([\s\S]*?)\*>)");
     const std::regex kExprRegex(R"(\{\{([^}\n]+?)\}\})");
@@ -1239,9 +1305,25 @@ namespace noctalia::theme {
         entry.postHook = postHook->get();
       if (const auto opd = tpl.get_as<std::string>("output_path_dynamic"))
         entry.outputPathDynamic = opd->get();
+      if (const auto requiresPath = tpl.get_as<std::string>("requires_path"))
+        entry.requiresPath = resolveConfigPath(configPath, requiresPath->get()).string();
       if (const auto index = tpl.get_as<int64_t>("index"))
         entry.index = static_cast<int>(index->get());
       return entry;
+    }
+
+    bool shouldSkipTemplateOutput(const ParsedTemplateEntry& entry, const std::string& outputPath) {
+      if (!entry.requiresPath.empty()) {
+        return !pathExists(entry.requiresPath);
+      }
+      if (!entry.gateOutputsByClientRoot) {
+        return false;
+      }
+      const auto root = inferClientConfigRoot(std::filesystem::path(outputPath));
+      if (!root) {
+        return false;
+      }
+      return !pathExists(*root);
     }
 
   } // namespace
@@ -1344,6 +1426,7 @@ namespace noctalia::theme {
         entries.begin(), entries.end(),
         [](const ParsedTemplateEntry& lhs, const ParsedTemplateEntry& rhs) { return lhs.index < rhs.index; }
     );
+    markMultiClientGatedEntries(entries);
 
     bool ok = true;
     for (const ParsedTemplateEntry& entry : entries) {
@@ -1409,6 +1492,11 @@ namespace noctalia::theme {
       for (const std::string& outputPath : effectiveOutputs) {
         if (cancelRequested()) {
           return ok;
+        }
+
+        if (shouldSkipTemplateOutput(entry, outputPath)) {
+          kLog.debug("skipping template {} -> {} (client not installed)", entry.name, outputPath);
+          continue;
         }
 
         if (effectiveInput.empty()) {
