@@ -267,7 +267,7 @@ namespace settings {
     m_searchPicker->setOptions(m_instanceModeEnabled ? m_instanceOptions : m_normalOptions);
   }
 
-  void WidgetAddPopup::refreshBodyState() {
+  void WidgetAddPopup::refreshBodyState(bool adjustFocus) {
     if (m_searchPicker != nullptr) {
       m_searchPicker->setVisible(!m_createFormVisible);
       m_searchPicker->setParticipatesInLayout(!m_createFormVisible);
@@ -286,6 +286,10 @@ namespace settings {
     if (m_createActions != nullptr) {
       m_createActions->setVisible(m_createFormVisible);
       m_createActions->setParticipatesInLayout(m_createFormVisible);
+    }
+
+    if (!adjustFocus) {
+      return;
     }
 
     if (!m_createFormVisible && m_searchPicker != nullptr) {
@@ -531,7 +535,8 @@ namespace settings {
 
     contentParent->addChild(std::move(root));
 
-    refreshBodyState();
+    // buildScene wires text-input context and sets focus after populateContent returns.
+    refreshBodyState(false);
   }
 
   void WidgetAddPopup::layoutSheet(float contentWidth, float contentHeight) {

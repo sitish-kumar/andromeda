@@ -80,7 +80,7 @@ namespace settings {
     std::string m_createLabel;
 
     void refreshPickerOptions();
-    void refreshBodyState();
+    void refreshBodyState(bool adjustFocus = true);
     void beginCreateFlow(const SearchPickerOption& option);
     void finishCreateFlow();
     void reopenForCurrentMode();

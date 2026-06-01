@@ -160,6 +160,7 @@ void DialogPopupHost::destroyPopup() {
   }
   m_pointerInside = false;
   m_parentSurface = nullptr;
+  m_inputDispatcher.setTextInputContext(nullptr, nullptr);
   m_inputDispatcher.setSceneRoot(nullptr);
   // onSheetClose hook fires before scene tear-down so subclasses can run
   // any sheet-specific cleanup (e.g. FileDialogView::onClose()) while their
@@ -384,10 +385,6 @@ void DialogPopupHost::buildScene(std::uint32_t width, std::uint32_t height) {
 
   auto content = std::make_unique<Node>();
   m_contentNode = content.get();
-  populateContent(
-      m_contentNode, static_cast<std::uint32_t>(std::round(m_chrome.contentWidth)),
-      static_cast<std::uint32_t>(std::round(m_chrome.contentHeight))
-  );
   m_sceneRoot->addChild(std::move(content));
 
   m_inputDispatcher.setSceneRoot(m_sceneRoot.get());
@@ -396,6 +393,11 @@ void DialogPopupHost::buildScene(std::uint32_t width, std::uint32_t height) {
     m_wayland->setCursorShape(serial, shape);
   });
   m_surface->setSceneRoot(m_sceneRoot.get());
+
+  populateContent(
+      m_contentNode, static_cast<std::uint32_t>(std::round(m_chrome.contentWidth)),
+      static_cast<std::uint32_t>(std::round(m_chrome.contentHeight))
+  );
 
   if (auto* focusArea = initialFocusArea(); focusArea != nullptr) {
     m_inputDispatcher.setFocus(focusArea);

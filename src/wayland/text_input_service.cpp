@@ -154,6 +154,9 @@ void TextInputService::setFocusedClient(wl_surface* surface, TextInputClient* cl
     clearFocusedClient(m_activeClient);
     return;
   }
+  if (m_textInput == nullptr) {
+    return;
+  }
 
   if (m_activeClient == client && m_activeSurface == surface) {
     commitActiveState(TextInputChangeCause::Other);
