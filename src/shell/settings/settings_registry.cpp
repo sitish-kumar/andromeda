@@ -786,7 +786,7 @@ namespace settings {
         SliderSetting{cfg.dock.radiusBottomRight, 0.0f, 80.0f, 1.0f, true}, "rounded corner", true
     ));
     entries.push_back(makeEntry(
-        "dock", "shape", tr("settings.schema.shared.background-opacity.label"),
+        "dock", "effects", tr("settings.schema.shared.background-opacity.label"),
         tr("settings.schema.dock.background-opacity.description"), {"dock", "background_opacity"},
         SliderSetting{cfg.dock.backgroundOpacity, 0.0f, 1.0f, 0.01f, false}, "alpha"
     ));
@@ -1903,11 +1903,6 @@ namespace settings {
           SliderSetting{bar.radiusBottomRight, 0.0f, 80.0f, 1.0f, true}, "rounded corner", true
       ));
       entries.push_back(makeEntry(
-          section, "shape", tr("settings.schema.shared.background-opacity.label"),
-          tr("settings.schema.bar.background-opacity.description"), path("background_opacity"),
-          SliderSetting{bar.backgroundOpacity, 0.0f, 1.0f, 0.01f, false}, "alpha"
-      ));
-      entries.push_back(makeEntry(
           section, "shape", tr("settings.schema.bar.border.label"), tr("settings.schema.bar.border.description"),
           path("border"), colorSpecPicker(bar.border), "outline color", true
       ));
@@ -1915,6 +1910,11 @@ namespace settings {
           section, "shape", tr("settings.schema.bar.border-width.label"),
           tr("settings.schema.bar.border-width.description"), path("border_width"),
           SliderSetting{bar.borderWidth, 0.0f, 20.0f, 0.5f, false}, "outline stroke", true
+      ));
+      entries.push_back(makeEntry(
+          section, "effects", tr("settings.schema.shared.background-opacity.label"),
+          tr("settings.schema.bar.background-opacity.description"), path("background_opacity"),
+          SliderSetting{bar.backgroundOpacity, 0.0f, 1.0f, 0.01f, false}, "alpha"
       ));
       entries.push_back(makeEntry(
           section, "effects", tr("settings.schema.shared.shadow.label"), tr("settings.schema.bar.shadow.description"),
@@ -2130,11 +2130,6 @@ namespace settings {
             "rounded corner", true
         ));
         entries.push_back(makeEntry(
-            section, "shape", tr("settings.schema.shared.background-opacity.label"),
-            tr("settings.schema.bar.background-opacity.description"), monitorPath("background_opacity"),
-            SliderSetting{ovr.backgroundOpacity.value_or(bar.backgroundOpacity), 0.0f, 1.0f, 0.01f, false}, "alpha"
-        ));
-        entries.push_back(makeEntry(
             section, "shape", tr("settings.schema.bar.border.label"), tr("settings.schema.bar.border.description"),
             monitorPath("border"), colorSpecPicker(ovr.border, true, tr("common.states.inherit")), "outline color", true
         ));
@@ -2142,6 +2137,11 @@ namespace settings {
             section, "shape", tr("settings.schema.bar.border-width.label"),
             tr("settings.schema.bar.border-width.description"), monitorPath("border_width"),
             SliderSetting{ovr.borderWidth.value_or(bar.borderWidth), 0.0f, 20.0f, 0.5f, false}, "outline stroke", true
+        ));
+        entries.push_back(makeEntry(
+            section, "effects", tr("settings.schema.shared.background-opacity.label"),
+            tr("settings.schema.bar.background-opacity.description"), monitorPath("background_opacity"),
+            SliderSetting{ovr.backgroundOpacity.value_or(bar.backgroundOpacity), 0.0f, 1.0f, 0.01f, false}, "alpha"
         ));
         entries.push_back(makeEntry(
             section, "effects", tr("settings.schema.shared.shadow.label"), tr("settings.schema.bar.shadow.description"),
