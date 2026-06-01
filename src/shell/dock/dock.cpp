@@ -506,7 +506,6 @@ void Dock::createInstance(const WaylandOutput& output) {
   instance->outputName = output.name;
   instance->output = output.output;
   instance->scale = output.scale;
-  instance->snapshot.output = output.output;
 
   const auto& shadowConfig = m_config->config().shell.shadow;
   LayerSurfaceConfig lsCfg = shell::dock::makeLayerSurfaceConfig(
@@ -551,11 +550,20 @@ bool Dock::syncInstanceModel(shell::dock::DockInstance& instance) {
     return false;
   }
 
+  // Resolve the active app once: it feeds both the last-active-handle cache and the snapshot,
+  // keeping buildDockSnapshot a pure query.
+  const std::string activeIdLower = shell::dock::currentActiveEntryIdLower(*m_platform);
+  if (!activeIdLower.empty()) {
+    if (const auto active = m_platform->activeToplevel(); active.has_value() && active->handle != nullptr) {
+      m_lastActiveHandleByAppIdLower[activeIdLower] = active->handle;
+    }
+  }
+
   auto next = shell::dock::buildDockSnapshot({
       .platform = *m_platform,
       .config = m_config->config().dock,
       .output = instance.output,
-      .lastActiveHandleByAppIdLower = m_lastActiveHandleByAppIdLower,
+      .globalActiveIdLower = activeIdLower,
       .pinnedEntries = m_pinnedEntries,
       .sourceSerial = m_modelSerial,
   });

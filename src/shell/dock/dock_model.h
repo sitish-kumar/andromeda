@@ -6,12 +6,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 class CompositorPlatform;
 struct wl_output;
-struct zwlr_foreign_toplevel_handle_v1;
 
 namespace shell::dock {
 
@@ -36,7 +34,7 @@ namespace shell::dock {
     CompositorPlatform& platform;
     const DockConfig& config;
     wl_output* output = nullptr;
-    std::unordered_map<std::string, zwlr_foreign_toplevel_handle_v1*>& lastActiveHandleByAppIdLower;
+    const std::string& globalActiveIdLower;
     const std::vector<DesktopEntry>& pinnedEntries;
     std::uint64_t sourceSerial = 0;
   };

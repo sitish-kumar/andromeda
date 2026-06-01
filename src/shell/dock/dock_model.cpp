@@ -109,16 +109,9 @@ namespace shell::dock {
     snapshot.filterOutput = dockFilterOutput(deps.config, deps.output);
     snapshot.sourceSerial = deps.sourceSerial;
 
-    const std::string globalActiveIdLower = currentActiveEntryIdLower(deps.platform);
-    if (!globalActiveIdLower.empty()) {
-      if (const auto active = deps.platform.activeToplevel(); active.has_value() && active->handle != nullptr) {
-        deps.lastActiveHandleByAppIdLower[globalActiveIdLower] = active->handle;
-      }
-    }
-
     wl_output* const activeOutput = deps.platform.activeToplevelOutput();
     snapshot.activeAppIdLower =
-        (deps.config.activeMonitorOnly && activeOutput != deps.output) ? std::string{} : globalActiveIdLower;
+        (deps.config.activeMonitorOnly && activeOutput != deps.output) ? std::string{} : deps.globalActiveIdLower;
 
     const auto runningIds =
         deps.config.showRunning ? deps.platform.runningAppIds(snapshot.filterOutput) : std::vector<std::string>{};
