@@ -321,6 +321,8 @@ enabled = false
 # [[control_center.shortcuts]]
 # type = "wallpaper"
 # [[control_center.shortcuts]]
+# type = "screen_recorder"
+# [[control_center.shortcuts]]
 # type = "session"
 
 # ── Hooks ─────────────────────────────────────────────────────────────────────

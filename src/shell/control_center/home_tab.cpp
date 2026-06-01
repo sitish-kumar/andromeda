@@ -93,7 +93,8 @@ HomeTab::HomeTab(
     MprisService* mpris, HttpClient* httpClient, WeatherService* weather, PipeWireService* audio,
     PowerProfilesService* powerProfiles, ConfigService* config, INetworkService* network, BluetoothService* bluetooth,
     GammaService* nightLight, noctalia::theme::ThemeService* theme, NotificationManager* notifications,
-    IdleInhibitor* idleInhibitor, DependencyService* dependencies, CompositorPlatform* platform, Wallpaper* wallpaper
+    IdleInhibitor* idleInhibitor, DependencyService* dependencies, CompositorPlatform* platform, IpcService* ipc,
+    Wallpaper* wallpaper
 )
     : m_mpris(mpris), m_httpClient(httpClient), m_weather(weather), m_config(config), m_wallpaper(wallpaper),
       m_services{
@@ -110,6 +111,7 @@ HomeTab::HomeTab(
           .config = config,
           .dependencies = dependencies,
           .platform = platform,
+          .ipc = ipc,
       } {}
 
 HomeTab::~HomeTab() = default;
