@@ -7,21 +7,6 @@ Noctalia is in early development. Expect breaking configuration and behavior cha
 
 ## Dependencies
 
-### Fedora
-
-```sh
-sudo dnf install meson gcc-c++ just \
-  wayland-devel wayland-protocols-devel \
-  libEGL-devel mesa-libGLES-devel \
-  freetype-devel fontconfig-devel \
-  cairo-devel pango-devel harfbuzz-devel \
-  libxkbcommon-devel glib2-devel \
-  sdbus-cpp-devel pipewire-devel \
-  pam-devel polkit-devel libcurl-devel libwebp-devel librsvg2-devel \
-  libqalculate-devel libxml2-devel \
-  jemalloc-devel
-```
-
 ### Arch
 
 ```sh
@@ -36,8 +21,21 @@ sudo pacman -S meson gcc just \
   jemalloc
 ```
 
-### Debian / Ubuntu
+### Fedora
+```sh
+sudo dnf install meson gcc-c++ just \
+  wayland-devel wayland-protocols-devel \
+  libEGL-devel mesa-libGLES-devel \
+  freetype-devel fontconfig-devel \
+  cairo-devel pango-devel harfbuzz-devel \
+  libxkbcommon-devel glib2-devel \
+  sdbus-cpp-devel pipewire-devel \
+  pam-devel polkit-devel libcurl-devel libwebp-devel librsvg2-devel \
+  libqalculate-devel libxml2-devel \
+  jemalloc-devel
+```
 
+### Debian / Ubuntu
 ```sh
 sudo apt install meson g++ just \
   libwayland-dev wayland-protocols \
