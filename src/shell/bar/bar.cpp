@@ -3,6 +3,7 @@
 #include "compositors/compositor_platform.h"
 #include "config/config_service.h"
 #include "core/log.h"
+#include "core/scoped_timer.h"
 #include "core/ui_phase.h"
 #include "dbus/power/power_profiles_service.h"
 #include "dbus/tray/tray_service.h"
@@ -903,13 +904,16 @@ bool Bar::initialize(
   m_lastBars = m_config->config().bars;
   m_lastWidgets = m_config->config().widgets;
   m_lastShadow = m_config->config().shell.shadow;
-  m_config->addReloadCallback([this]() {
-    const auto& cfg = m_config->config();
-    if (cfg.bars == m_lastBars && cfg.widgets == m_lastWidgets && cfg.shell.shadow == m_lastShadow) {
-      return;
-    }
-    reload();
-  });
+  m_config->addReloadCallback(
+      [this]() {
+        const auto& cfg = m_config->config();
+        if (cfg.bars == m_lastBars && cfg.widgets == m_lastWidgets && cfg.shell.shadow == m_lastShadow) {
+          return;
+        }
+        reload();
+      },
+      "bar"
+  );
 
   syncInstances();
   return true;
@@ -924,6 +928,7 @@ void Bar::onSecondTick() {
 }
 
 void Bar::reload() {
+  noctalia::profiling::ScopedTimer t(kLog, "bar: reload (all instances)");
   kLog.info("reloading config");
   const auto previousBars = m_lastBars;
   const auto previousShadow = m_lastShadow;
@@ -1798,6 +1803,8 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
 }
 
 void Bar::rebuildInstanceContents(BarInstance& instance, const BarConfig& newConfig) {
+  noctalia::profiling::ScopedTimer t(kLog, std::format("bar: rebuild contents [{}]", newConfig.name));
+
   // Drop any pointer hover/capture state pointing into the widgets we're about
   // to destroy. Hover will be re-acquired on the next pointer motion.
   instance.inputDispatcher.pointerLeave();

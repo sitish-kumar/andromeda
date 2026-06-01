@@ -45,7 +45,7 @@ bool Backdrop::initialize(
   m_sharedGl = sharedGl;
 
   // Register reload callback unconditionally so toggling enabled in config works.
-  m_config->addReloadCallback([this]() { reload(); });
+  m_config->addReloadCallback([this]() { reload(); }, "backdrop");
 
   if (!m_config->config().backdrop.enabled) {
     kLog.info("disabled in config");

@@ -420,7 +420,7 @@ void Application::initServices() {
     m_settingsWindow.onExternalOptionsChanged();
   });
   m_communityPaletteService.sync();
-  m_configService.addReloadCallback([this]() { m_communityPaletteService.sync(); });
+  m_configService.addReloadCallback([this]() { m_communityPaletteService.sync(); }, "community-palette-sync");
   m_communityTemplateService.setReadyCallback([this]() {
     if (m_configService.config().theme.templates.enableCommunityTemplates) {
       m_themeService.onConfigReload();
@@ -428,9 +428,9 @@ void Application::initServices() {
     }
   });
   m_communityTemplateService.sync(m_configService.config().theme.templates);
-  m_configService.addReloadCallback([this]() {
-    m_communityTemplateService.sync(m_configService.config().theme.templates);
-  });
+  m_configService.addReloadCallback(
+      [this]() { m_communityTemplateService.sync(m_configService.config().theme.templates); }, "community-template-sync"
+  );
 
   // i18n has no dependencies on other services and must be ready before any
   // UI construction reads a translated string.
@@ -459,7 +459,7 @@ void Application::initServices() {
     lastResolvedThemeMode = resolvedMode;
   });
   m_themeService.apply();
-  m_configService.addReloadCallback([this]() { m_themeService.onConfigReload(); });
+  m_configService.addReloadCallback([this]() { m_themeService.onConfigReload(); }, "theme");
 
   // Watch the dconf user database so Auto mode reacts immediately to system
   // color-scheme changes (org.gnome.desktop.interface color-scheme).
@@ -1334,29 +1334,32 @@ void Application::initUi() {
   m_iconThemePollSource.setChangeCallback([this]() { onIconThemeChanged(); });
 
   std::string lastShellFontFamily = m_configService.config().shell.fontFamily;
-  m_configService.addReloadCallback([this, lastShellFontFamily]() mutable {
-    const std::string& newShellFontFamily = m_configService.config().shell.fontFamily;
-    if (newShellFontFamily == lastShellFontFamily) {
-      return;
-    }
+  m_configService.addReloadCallback(
+      [this, lastShellFontFamily]() mutable {
+        const std::string& newShellFontFamily = m_configService.config().shell.fontFamily;
+        if (newShellFontFamily == lastShellFontFamily) {
+          return;
+        }
 
-    lastShellFontFamily = newShellFontFamily;
-    text::invalidateFontWeightCatalogCache();
-    m_renderContext.setTextFontFamily(newShellFontFamily);
-    m_bar.requestLayout();
-    m_dock.requestLayout();
-    m_desktopWidgetsController.requestLayout();
-    m_panelManager.requestLayout();
-    m_notificationToast.requestLayout();
-    m_lockScreen.onFontChanged();
-    m_osdOverlay.requestLayout();
-    m_trayMenu.onFontChanged();
-    m_backdrop.onFontChanged();
-    m_settingsWindow.onFontChanged();
-    m_colorPickerDialogPopup.requestLayout();
-    m_glyphPickerDialogPopup.requestLayout();
-    m_fileDialogPopup.requestLayout();
-  });
+        lastShellFontFamily = newShellFontFamily;
+        text::invalidateFontWeightCatalogCache();
+        m_renderContext.setTextFontFamily(newShellFontFamily);
+        m_bar.requestLayout();
+        m_dock.requestLayout();
+        m_desktopWidgetsController.requestLayout();
+        m_panelManager.requestLayout();
+        m_notificationToast.requestLayout();
+        m_lockScreen.onFontChanged();
+        m_osdOverlay.requestLayout();
+        m_trayMenu.onFontChanged();
+        m_backdrop.onFontChanged();
+        m_settingsWindow.onFontChanged();
+        m_colorPickerDialogPopup.requestLayout();
+        m_glyphPickerDialogPopup.requestLayout();
+        m_fileDialogPopup.requestLayout();
+      },
+      "shell-font-family"
+  );
 
   m_timeService.setTickSecondCallback([this]() {
     m_wallpaper.onSecondTick();

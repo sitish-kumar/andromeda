@@ -45,6 +45,9 @@ namespace noctalia::theme {
 
   private:
     void resolveAndSet(bool animate);
+    // Decodes + generates the wallpaper palette, memoized on (path, mtime, scheme)
+    // so repeated resolves for an unchanged wallpaper skip the ~100ms image decode.
+    std::optional<GeneratedPalette> resolveWallpaperGenerated(const ThemeConfig& cfg, const std::string& wallpaperPath);
     void queueResolvedCallback(const GeneratedPalette& generated, std::string_view mode);
     void flushResolvedCallback(bool defer);
     void startTransition(const Palette& target);
@@ -55,6 +58,14 @@ namespace noctalia::theme {
     ConfigService& m_config;
     HttpClient& m_httpClient;
     std::string m_inflightCommunityName;
+
+    // Memoized wallpaper palette (see resolveWallpaperGenerated). Keyed on the
+    // wallpaper path, its mtime, and the active scheme; any mismatch re-decodes.
+    std::optional<GeneratedPalette> m_wallpaperCacheGenerated;
+    std::string m_wallpaperCachePath;
+    std::string m_wallpaperCacheScheme;
+    std::int64_t m_wallpaperCacheMtimeNs = 0;
+
     ChangeCallback m_changeCallback;
     ResolvedCallback m_resolvedCallback;
     // External template/hooks callbacks are delayed until the shell palette is

@@ -4,6 +4,7 @@
 #include "core/build_info.h"
 #include "core/deferred_call.h"
 #include "core/log.h"
+#include "core/scoped_timer.h"
 #include "ipc/ipc_service.h"
 #include "notification/notification_manager.h"
 #include "render/core/renderer.h"
@@ -472,7 +473,9 @@ ConfigService::~ConfigService() {
 
 // ── Public interface ─────────────────────────────────────────────────────────
 
-void ConfigService::addReloadCallback(ReloadCallback callback) { m_reloadCallbacks.push_back(std::move(callback)); }
+void ConfigService::addReloadCallback(ReloadCallback callback, std::string_view label) {
+  m_reloadCallbacks.push_back({std::move(callback), std::string(label)});
+}
 
 void ConfigService::setNotificationManager(NotificationManager* manager) {
   m_notificationManager = manager;
@@ -511,9 +514,24 @@ void ConfigService::forceReload() {
 }
 
 void ConfigService::fireReloadCallbacks() {
-  for (const auto& cb : m_reloadCallbacks) {
-    cb();
+  if (!noctalia::profiling::enabled()) {
+    for (const auto& sub : m_reloadCallbacks) {
+      sub.callback();
+    }
+    return;
   }
+
+  noctalia::profiling::StopWatch total;
+  for (std::size_t i = 0; i < m_reloadCallbacks.size(); ++i) {
+    const auto& sub = m_reloadCallbacks[i];
+    noctalia::profiling::StopWatch one;
+    sub.callback();
+    const double ms = one.elapsedMs();
+    if (ms >= 0.5) {
+      kLog.info("reload[{}]: {:.1f} ms", sub.label.empty() ? std::format("#{}", i) : sub.label, ms);
+    }
+  }
+  kLog.info("reload: all subscribers {:.1f} ms", total.elapsedMs());
 }
 
 bool ConfigService::shouldRunSetupWizard() const {
@@ -1060,6 +1078,7 @@ void ConfigService::seedBuiltinWidgets(Config& config) {
 }
 
 void ConfigService::loadAll() {
+  noctalia::profiling::ScopedTimer parseTimer(kLog, "reload: parse (loadAll)");
   m_effectiveOverrideCache.clear();
   auto makeDefaultConfig = [] {
     Config config;

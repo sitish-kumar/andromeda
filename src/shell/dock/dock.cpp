@@ -144,18 +144,21 @@ bool Dock::initialize(CompositorPlatform& platform, ConfigService* config, Rende
   m_renderContext = renderContext;
 
   const auto& cfg = m_config->config().dock;
-  m_config->addReloadCallback([this]() {
-    const auto& newCfg = m_config->config().dock;
-    const auto& newShadow = m_config->config().shell.shadow;
-    const auto newBarLayerStack = barLayerStackSignature(m_config->config());
-    if (newCfg == m_lastDockConfig && newShadow == m_lastShadow && newBarLayerStack == m_lastBarLayerStack) {
-      return;
-    }
-    if (newBarLayerStack != m_lastBarLayerStack && newCfg == m_lastDockConfig && newShadow == m_lastShadow) {
-      kLog.info("bar layer stack changed; recreating dock surfaces");
-    }
-    reload();
-  });
+  m_config->addReloadCallback(
+      [this]() {
+        const auto& newCfg = m_config->config().dock;
+        const auto& newShadow = m_config->config().shell.shadow;
+        const auto newBarLayerStack = barLayerStackSignature(m_config->config());
+        if (newCfg == m_lastDockConfig && newShadow == m_lastShadow && newBarLayerStack == m_lastBarLayerStack) {
+          return;
+        }
+        if (newBarLayerStack != m_lastBarLayerStack && newCfg == m_lastDockConfig && newShadow == m_lastShadow) {
+          kLog.info("bar layer stack changed; recreating dock surfaces");
+        }
+        reload();
+      },
+      "dock"
+  );
 
   m_lastDockConfig = cfg;
   m_lastShadow = m_config->config().shell.shadow;

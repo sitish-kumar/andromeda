@@ -119,7 +119,7 @@ void DesktopWidgetsController::initialize(
   applyVisibility();
 
   if (m_config != nullptr) {
-    m_config->addReloadCallback([this]() { handleConfigReload(); });
+    m_config->addReloadCallback([this]() { handleConfigReload(); }, "desktop-widgets");
   }
 }
 

@@ -213,7 +213,7 @@ bool Wallpaper::initialize(
   m_textureCache = textureCache;
 
   // Register reload callback unconditionally so toggling enabled in config works.
-  m_config->addReloadCallback([this]() { reload(); });
+  m_config->addReloadCallback([this]() { reload(); }, "wallpaper");
   m_paletteConn = paletteChanged().connect([this] {
     for (auto& inst : m_instances) {
       updateRendererState(*inst);

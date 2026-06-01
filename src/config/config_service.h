@@ -52,7 +52,9 @@ public:
   [[nodiscard]] std::optional<bool> stateBool(std::string_view owner, std::string_view key) const;
   [[nodiscard]] std::optional<std::string> stateString(std::string_view owner, std::string_view key) const;
 
-  void addReloadCallback(ReloadCallback callback);
+  // The optional label is used only for opt-in reload profiling (NOCTALIA_PROFILE);
+  // unlabeled subscribers are reported by registration index.
+  void addReloadCallback(ReloadCallback callback, std::string_view label = {});
   void setNotificationManager(NotificationManager* manager);
   void checkReload();
   void forceReload();
@@ -172,5 +174,9 @@ private:
   bool m_wallpaperBatchDirty = false;
 
   ChangeCallback m_wallpaperChangeCallback;
-  std::vector<ReloadCallback> m_reloadCallbacks;
+  struct ReloadSubscriber {
+    ReloadCallback callback;
+    std::string label;
+  };
+  std::vector<ReloadSubscriber> m_reloadCallbacks;
 };
