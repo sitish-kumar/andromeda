@@ -2476,6 +2476,10 @@
         "reserve-space": {
           "description": "Push windows away from the bar edge (only when auto-hide is off; auto-hide always overlays)"
         },
+        "layer": {
+          "label": "Wayland Layer",
+          "description": "Layer-shell layer for the bar; attached panels open on the same layer"
+        },
         "ends-margin": {
           "description": "Inset from each end of the bar along its main axis"
         },

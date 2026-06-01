@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
 
 struct wl_output;
 struct zwlr_layer_surface_v1;
@@ -20,6 +21,8 @@ enum class LayerShellKeyboard : std::uint32_t {
   Exclusive = 1,
   OnDemand = 2,
 };
+
+[[nodiscard]] LayerShellLayer layerShellLayerFromConfig(std::string_view layer);
 
 namespace LayerShellAnchor {
   inline constexpr std::uint32_t Top = 1;

@@ -762,6 +762,8 @@ BarConfig ConfigService::resolveForOutput(const BarConfig& base, const WaylandOu
       resolved.autoHide = *ovr.autoHide;
     if (ovr.reserveSpace)
       resolved.reserveSpace = *ovr.reserveSpace;
+    if (ovr.layer)
+      resolved.layer = *ovr.layer;
     if (ovr.thickness)
       resolved.thickness = *ovr.thickness;
     if (ovr.backgroundOpacity)
@@ -1186,6 +1188,13 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
         bar.autoHide = *v;
       if (auto v = (*barTbl)["reserve_space"].value<bool>())
         bar.reserveSpace = *v;
+      if (auto v = (*barTbl)["layer"].value<std::string>()) {
+        if (*v == "top" || *v == "overlay") {
+          bar.layer = *v;
+        } else {
+          kLog.warn("invalid bar.{}.layer '{}'; expected top or overlay", bar.name, *v);
+        }
+      }
       if (auto v = (*barTbl)["thickness"].value<int64_t>())
         bar.thickness = std::clamp(static_cast<std::int32_t>(*v), 10, 300);
       if (auto v = finiteDouble((*barTbl)["background_opacity"]))
@@ -1289,11 +1298,18 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
             ovr.autoHide = *v;
           if (auto v = (*monTbl)["reserve_space"].value<bool>())
             ovr.reserveSpace = *v;
+          const std::string monitorContext = "bar." + bar.name + ".monitor." + std::string(monName.str());
+          if (auto v = (*monTbl)["layer"].value<std::string>()) {
+            if (*v == "top" || *v == "overlay") {
+              ovr.layer = *v;
+            } else {
+              kLog.warn("invalid {}.layer '{}'; expected top or overlay", monitorContext, *v);
+            }
+          }
           if (auto v = (*monTbl)["thickness"].value<int64_t>())
             ovr.thickness = std::clamp(static_cast<std::int32_t>(*v), 10, 300);
           if (auto v = finiteDouble((*monTbl)["background_opacity"]))
             ovr.backgroundOpacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
-          const std::string monitorContext = "bar." + bar.name + ".monitor." + std::string(monName.str());
           if (auto borderStr = colorStringValue(*monTbl, "border", monitorContext + ".border"))
             ovr.border = colorSpecFromConfigString(*borderStr, monitorContext + ".border");
           if (auto v = finiteDouble((*monTbl)["border_width"]))

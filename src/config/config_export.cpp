@@ -155,6 +155,7 @@ namespace config_export {
       table.insert_or_assign("enabled", bar.enabled);
       table.insert_or_assign("auto_hide", bar.autoHide);
       table.insert_or_assign("reserve_space", bar.reserveSpace);
+      table.insert_or_assign("layer", bar.layer);
       table.insert_or_assign("thickness", static_cast<std::int64_t>(bar.thickness));
       table.insert_or_assign("background_opacity", static_cast<double>(bar.backgroundOpacity));
       table.insert_or_assign("border", colorSpecToConfigString(bar.border));
@@ -208,6 +209,8 @@ namespace config_export {
         resolved.autoHide = *ovr.autoHide;
       if (ovr.reserveSpace)
         resolved.reserveSpace = *ovr.reserveSpace;
+      if (ovr.layer)
+        resolved.layer = *ovr.layer;
       if (ovr.thickness)
         resolved.thickness = *ovr.thickness;
       if (ovr.backgroundOpacity)

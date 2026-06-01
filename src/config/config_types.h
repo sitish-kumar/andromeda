@@ -47,6 +47,7 @@ struct BarMonitorOverride {
   std::optional<bool> enabled;
   std::optional<bool> autoHide;
   std::optional<bool> reserveSpace;
+  std::optional<std::string> layer; // top | overlay
   std::optional<std::int32_t> thickness;
   std::optional<float> backgroundOpacity;
   std::optional<ColorSpec> border;
@@ -85,8 +86,9 @@ struct BarConfig {
   std::string name = "default";
   std::string position = "top";
   bool enabled = true;
-  bool autoHide = false;    // slide out when the pointer leaves; reveal on edge approach
-  bool reserveSpace = true; // reserve compositor exclusive zone when auto_hide is false
+  bool autoHide = false;     // slide out when the pointer leaves; reveal on edge approach
+  bool reserveSpace = true;  // reserve compositor exclusive zone when auto_hide is false
+  std::string layer = "top"; // top | overlay — attached panels use the same layer
   std::int32_t thickness = Style::barThicknessDefault;
   float backgroundOpacity = 1.0f;
   // Inside outline for the bar background; attached panels inherit the resolved values.

@@ -140,7 +140,7 @@ private:
   void destroyPanel();
   // Called BEFORE the panel surface commits so shields sit below the panel
   // within the layer-shell layer. No-op when the focus-grab path is in use.
-  void activateClickShield();
+  void activateClickShield(LayerShellLayer layer);
   // Called AFTER the panel surface is mapped so the panel wl_surface is
   // available for the whitelist. No-op when focus-grab is unavailable.
   void activateFocusGrab();

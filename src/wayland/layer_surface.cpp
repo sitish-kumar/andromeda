@@ -18,6 +18,17 @@ namespace {
 
 } // namespace
 
+LayerShellLayer layerShellLayerFromConfig(std::string_view layer) {
+  if (layer == "overlay") {
+    return LayerShellLayer::Overlay;
+  }
+  if (layer == "top") {
+    return LayerShellLayer::Top;
+  }
+  kLog.warn("invalid layer-shell layer '{}'; expected top or overlay", layer);
+  return LayerShellLayer::Top;
+}
+
 LayerSurface::LayerSurface(WaylandConnection& connection, LayerSurfaceConfig config)
     : Surface(connection), m_config(std::move(config)) {}
 

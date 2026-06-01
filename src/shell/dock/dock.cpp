@@ -76,8 +76,8 @@ namespace {
 
     for (const auto& bar : config.bars) {
       std::string item = std::format(
-          "{}\x1f{}\x1f{}\x1f{}\x1f{}\x1f{}\x1f{}\x1f{}\x1f{}", bar.name, bar.position, bar.enabled, bar.autoHide,
-          bar.reserveSpace, bar.thickness, bar.marginEnds, bar.marginEdge, bar.shadow
+          "{}\x1f{}\x1f{}\x1f{}\x1f{}\x1f{}\x1f{}\x1f{}\x1f{}\x1f{}", bar.name, bar.position, bar.enabled, bar.autoHide,
+          bar.reserveSpace, bar.layer, bar.thickness, bar.marginEnds, bar.marginEdge, bar.shadow
       );
 
       item.push_back('\x1e');
@@ -87,6 +87,7 @@ namespace {
         appendOptionalStackPart(item, override.enabled);
         appendOptionalStackPart(item, override.autoHide);
         appendOptionalStackPart(item, override.reserveSpace);
+        appendOptionalStackPart(item, override.layer);
         appendOptionalStackPart(item, override.thickness);
         appendOptionalStackPart(item, override.marginEnds);
         appendOptionalStackPart(item, override.marginEdge);

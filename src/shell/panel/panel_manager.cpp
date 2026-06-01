@@ -17,6 +17,7 @@
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "util/string_utils.h"
+#include "wayland/layer_surface.h"
 #include "wayland/wayland_connection.h"
 #include "wayland/wayland_seat.h"
 
@@ -308,10 +309,6 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   m_pendingOpenContext = std::string(request.context);
   m_activePanel->setPendingOpenContext(request.context);
 
-  // Map shields BEFORE the panel surface is created or committed.
-  // Within a single layer, wlroots stacks surfaces by mapping order.
-  activateClickShield();
-
   const auto panelWidth = static_cast<std::uint32_t>(m_activePanel->preferredWidth());
   const auto panelHeight = static_cast<std::uint32_t>(m_activePanel->preferredHeight());
   const auto barConfig = resolvePanelBarConfig(m_config, m_platform, request.output, request.sourceBarName);
@@ -448,6 +445,18 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     }
   }
 
+  const bool useAttachedPlacement = activePlacement == PanelPlacement::Attached
+      && !multipleBarsOnEdge
+      && barConfig.thickness > 0
+      && outputWidth > 0
+      && outputHeight > 0;
+  const LayerShellLayer panelLayer =
+      useAttachedPlacement ? layerShellLayerFromConfig(barConfig.layer) : m_activePanel->layer();
+
+  // Map shields BEFORE the panel surface is created or committed.
+  // Within a single layer, wlroots stacks surfaces by mapping order.
+  activateClickShield(panelLayer);
+
   auto surfaceConfig = LayerSurfaceConfig{
       .nameSpace = "noctalia-panel",
       .layer = m_activePanel->layer(),
@@ -508,11 +517,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     m_attachedOpenAnimationPending = false;
   };
 
-  if (activePlacement == PanelPlacement::Attached
-      && !multipleBarsOnEdge
-      && barConfig.thickness > 0
-      && outputWidth > 0
-      && outputHeight > 0) {
+  if (useAttachedPlacement) {
     const std::string_view barPosition = barConfig.position;
     const bool barIsBottom = barPosition == "bottom";
     const bool barIsLeft = barPosition == "left";
@@ -656,7 +661,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     // exclusive_zone = -1 so the bar reservation does not shift our marginTop.
     auto attachedConfig = LayerSurfaceConfig{
         .nameSpace = "noctalia-panel",
-        .layer = m_activePanel->layer(),
+        .layer = panelLayer,
         .anchor = LayerShellAnchor::Top | LayerShellAnchor::Left,
         .width = surfaceWidth,
         .height = surfaceHeight,
@@ -785,7 +790,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   }
 }
 
-void PanelManager::activateClickShield() {
+void PanelManager::activateClickShield(LayerShellLayer layer) {
   if (m_activePanel == nullptr || m_platform == nullptr) {
     return;
   }
@@ -802,7 +807,7 @@ void PanelManager::activateClickShield() {
       outputs.push_back(wlOutput.output);
     }
   }
-  m_clickShield.activate(outputs, m_activePanel->layer(), m_clickShieldExcludeRectsProvider);
+  m_clickShield.activate(outputs, layer, m_clickShieldExcludeRectsProvider);
 }
 
 void PanelManager::activateFocusGrab() {

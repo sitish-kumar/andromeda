@@ -410,6 +410,7 @@ namespace {
         && a.enabled == b.enabled
         && a.autoHide == b.autoHide
         && a.reserveSpace == b.reserveSpace
+        && a.layer == b.layer
         && a.thickness == b.thickness
         && a.marginEnds == b.marginEnds
         && a.marginEdge == b.marginEdge
@@ -1446,7 +1447,7 @@ void Bar::createInstance(const WaylandOutput& output, std::size_t barIndex, cons
 
   auto surfaceConfig = LayerSurfaceConfig{
       .nameSpace = "noctalia-bar-" + barConfig.name,
-      .layer = LayerShellLayer::Top,
+      .layer = layerShellLayerFromConfig(barConfig.layer),
       .anchor = anchor,
       .width = surfaceSpec.surfaceWidth,
       .height = surfaceSpec.surfaceHeight,

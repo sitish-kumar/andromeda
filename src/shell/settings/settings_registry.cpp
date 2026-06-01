@@ -1854,6 +1854,14 @@ namespace settings {
         entries.push_back(std::move(e));
       }
       entries.push_back(makeEntry(
+          section, "general", tr("settings.schema.bar.layer.label"), tr("settings.schema.bar.layer.description"),
+          path("layer"),
+          asSegmented(plainSelect(
+              {{"top", "settings.options.layer.top"}, {"overlay", "settings.options.layer.overlay"}}, bar.layer
+          )),
+          "layer shell z-order"
+      ));
+      entries.push_back(makeEntry(
           section, "layout", tr("settings.schema.bar.thickness.label"), tr("settings.schema.bar.thickness.description"),
           path("thickness"), SliderSetting{bar.thickness, 10.0f, 120.0f, 1.0f, true}, "height width"
       ));
@@ -2075,6 +2083,15 @@ namespace settings {
           e.visibleWhen = SettingVisibility{monitorPath("auto_hide"), {"false"}};
           entries.push_back(std::move(e));
         }
+        entries.push_back(makeEntry(
+            section, "general", tr("settings.schema.bar.layer.label"), tr("settings.schema.bar.layer.description"),
+            monitorPath("layer"),
+            asSegmented(plainSelect(
+                {{"top", "settings.options.layer.top"}, {"overlay", "settings.options.layer.overlay"}},
+                ovr.layer.value_or(bar.layer)
+            )),
+            "layer shell z-order"
+        ));
         entries.push_back(makeEntry(
             section, "layout", tr("settings.schema.bar.thickness.label"),
             tr("settings.schema.bar.thickness.description"), monitorPath("thickness"),
