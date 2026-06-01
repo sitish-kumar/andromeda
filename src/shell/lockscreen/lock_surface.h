@@ -68,6 +68,8 @@ private:
   void updateClockText();
   void layoutScene(std::uint32_t width, std::uint32_t height);
   void updateCopy();
+  [[nodiscard]] bool passwordFieldContainsPoint(float sceneX, float sceneY) const;
+  void focusPasswordField();
 
   ext_session_lock_surface_v1* m_lockSurface = nullptr;
   wl_output* m_output = nullptr;

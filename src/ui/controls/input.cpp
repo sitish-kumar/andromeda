@@ -169,12 +169,14 @@ Input::Input() {
     revealCursor();
     startCursorBlink();
     applyVisualState();
+    markPaintDirty();
   });
   area->setOnFocusLoss([this]() {
     const bool removedPreedit = removePreeditText();
     stopCursorBlink();
     updateCursorVisibility();
     applyVisualState();
+    markPaintDirty();
     if (removedPreedit) {
       updateDisplayText();
       markLayoutDirty();

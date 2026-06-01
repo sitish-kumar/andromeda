@@ -180,12 +180,23 @@ void LockSurface::setLockedState(bool locked) {
     return;
   }
   m_locked = locked;
-  if (m_locked && m_passwordField != nullptr) {
-    m_inputDispatcher.setFocus(m_passwordField->inputArea());
+  if (m_locked) {
+    focusPasswordField();
   } else {
     m_inputDispatcher.setFocus(nullptr);
   }
   requestUpdate();
+}
+
+bool LockSurface::passwordFieldContainsPoint(float sceneX, float sceneY) const {
+  return m_passwordField != nullptr && m_passwordField->containsScenePoint(sceneX, sceneY);
+}
+
+void LockSurface::focusPasswordField() {
+  if (!m_locked || m_passwordField == nullptr) {
+    return;
+  }
+  m_inputDispatcher.setFocus(m_passwordField->inputArea());
 }
 
 void LockSurface::setPromptState(std::string user, std::string password, std::string status, bool error) {
@@ -303,12 +314,20 @@ void LockSurface::onPointerEvent(const PointerEvent& event) {
   case PointerEvent::Type::Motion:
     m_inputDispatcher.pointerMotion(static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial);
     break;
-  case PointerEvent::Type::Button:
-    m_inputDispatcher.pointerButton(
-        static_cast<float>(event.sx), static_cast<float>(event.sy), event.button,
-        event.state == WL_POINTER_BUTTON_STATE_PRESSED
-    );
+  case PointerEvent::Type::Button: {
+    const bool pressed = event.state == WL_POINTER_BUTTON_STATE_PRESSED;
+    const float x = static_cast<float>(event.sx);
+    const float y = static_cast<float>(event.sy);
+    if (m_locked && pressed && passwordFieldContainsPoint(x, y)) {
+      focusPasswordField();
+    }
+    m_inputDispatcher.pointerButton(x, y, event.button, pressed);
+    if (m_locked && pressed && passwordFieldContainsPoint(x, y)) {
+      focusPasswordField();
+      requestRedraw();
+    }
     break;
+  }
   case PointerEvent::Type::Axis:
     m_inputDispatcher.pointerAxis(
         static_cast<float>(event.sx), static_cast<float>(event.sy), event.axis, event.axisSource, event.axisValue,
@@ -339,6 +358,12 @@ void LockSurface::onThemeChanged() {
 }
 
 void LockSurface::onKeyboardEvent(const KeyboardEvent& event) {
+  if (m_locked
+      && event.pressed
+      && m_passwordField != nullptr
+      && m_inputDispatcher.focusedArea() != m_passwordField->inputArea()) {
+    focusPasswordField();
+  }
   m_inputDispatcher.keyEvent(event.sym, event.utf32, event.modifiers, event.pressed, event.preedit);
   if (m_root.paintDirty() || m_root.layoutDirty()) {
     if (m_root.layoutDirty()) {

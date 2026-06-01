@@ -110,21 +110,35 @@ bool InputDispatcher::pointerButton(float x, float y, std::uint32_t button, bool
 
   pruneDetachedAreas();
 
-  InputArea* target = m_capturedArea != nullptr ? m_capturedArea : inputAreaAcceptingButton(m_hoveredArea, button);
+  InputArea* target = m_capturedArea;
+  if (target == nullptr) {
+    if (pressed) {
+      target = inputAreaAcceptingButton(findInputAreaAt(x, y), button);
+    }
+    if (target == nullptr) {
+      target = inputAreaAcceptingButton(m_hoveredArea, button);
+    }
+  }
 
-  // Press with no hover target: subtree may have been rebuilt (same global coords, new InputArea*).
+  // Press with no target: subtree may have been rebuilt (same global coords, new InputArea*).
   if (target == nullptr && m_capturedArea == nullptr && pressed && m_hasPointerPosition) {
     updateHover(x, y, m_lastSerial);
-    target = inputAreaAcceptingButton(m_hoveredArea, button);
+    target = inputAreaAcceptingButton(findInputAreaAt(x, y), button);
+    if (target == nullptr) {
+      target = inputAreaAcceptingButton(m_hoveredArea, button);
+    }
   }
 
   if (target != nullptr) {
     if (pressed && m_capturedArea == nullptr) {
-      if (target != m_focusedArea && m_focusedArea != nullptr) {
+      if (target != m_focusedArea && m_focusedArea != nullptr && target->focusable()) {
         setFocus(nullptr);
         pruneDetachedAreas();
         updateHover(x, y, m_lastSerial);
-        target = inputAreaAcceptingButton(m_hoveredArea, button);
+        target = inputAreaAcceptingButton(findInputAreaAt(x, y), button);
+        if (target == nullptr) {
+          target = inputAreaAcceptingButton(m_hoveredArea, button);
+        }
         if (target == nullptr) {
           return false;
         }
@@ -224,6 +238,8 @@ void InputDispatcher::setFocus(InputArea* area) {
     syncTextInputFocus();
   }
 }
+
+InputArea* InputDispatcher::inputAreaAt(float x, float y) { return findInputAreaAt(x, y); }
 
 InputArea* InputDispatcher::findInputAreaAt(float x, float y) {
   if (m_sceneRoot == nullptr) {
