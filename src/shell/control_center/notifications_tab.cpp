@@ -853,7 +853,7 @@ void NotificationsTab::invokeNotificationAction(uint32_t id, const std::string& 
 bool NotificationsTab::refreshDataSnapshot() {
   const bool hasHistory = m_notifications != nullptr && !m_notifications->history().empty();
   if (m_clearAllButton != nullptr) {
-    m_clearAllButton->setEnabled(hasHistory);
+    m_clearAllButton->setVisible(hasHistory);
   }
 
   const std::uint64_t serial = m_notifications != nullptr ? m_notifications->changeSerial() : 0;

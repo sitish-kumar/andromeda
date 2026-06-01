@@ -352,14 +352,12 @@ namespace settings {
         return WidgetReferenceInfo{
             .title = std::string(name),
             .detail = it->second.type,
-            .badge = tr("settings.entities.widget.kinds.named"),
             .kind = WidgetReferenceKind::Named,
         };
       }
       return WidgetReferenceInfo{
           .title = tr(spec->labelKey),
           .detail = std::string(name),
-          .badge = tr("settings.entities.widget.kinds.built-in"),
           .kind = WidgetReferenceKind::BuiltIn,
       };
     }
@@ -382,7 +380,6 @@ namespace settings {
       return WidgetReferenceInfo{
           .title = std::move(title),
           .detail = std::move(detail),
-          .badge = tr("settings.entities.widget.kinds.named"),
           .kind = WidgetReferenceKind::Named,
       };
     }
@@ -390,7 +387,6 @@ namespace settings {
     return WidgetReferenceInfo{
         .title = widgetInstanceDisplayLabel(name),
         .detail = std::string(name),
-        .badge = tr("settings.entities.widget.kinds.unknown"),
         .kind = WidgetReferenceKind::Unknown,
     };
   }

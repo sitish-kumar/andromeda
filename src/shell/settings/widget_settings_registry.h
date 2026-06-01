@@ -31,7 +31,6 @@ namespace settings {
   struct WidgetReferenceInfo {
     std::string title;
     std::string detail;
-    std::string badge;
     WidgetReferenceKind kind = WidgetReferenceKind::Unknown;
   };
 
