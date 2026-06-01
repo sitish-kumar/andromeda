@@ -100,7 +100,13 @@ void WaylandSeat::forgetSurface(wl_surface* surface) noexcept {
     return;
   }
   if (m_lastPointerSurface == surface) {
+    if (m_cursorShapeDevice != nullptr && m_pointerEnterSerial != 0) {
+      wp_cursor_shape_device_v1_set_shape(
+          m_cursorShapeDevice, m_pointerEnterSerial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT
+      );
+    }
     m_lastPointerSurface = nullptr;
+    m_pointerEnterSerial = 0;
     m_hasPointerPosition = false;
   }
   if (m_lastKeyboardSurface == surface) {
@@ -225,6 +231,7 @@ void WaylandSeat::handlePointerEnter(
   self->m_lastSerial = serial;
   self->m_lastInputSource = InputSource::Pointer;
   self->m_lastPointerSurface = surface;
+  self->m_pointerEnterSerial = serial;
   self->m_lastPointerX = wl_fixed_to_double(sx);
   self->m_lastPointerY = wl_fixed_to_double(sy);
   self->m_hasPointerPosition = true;
@@ -241,9 +248,17 @@ void WaylandSeat::handlePointerEnter(
 
 void WaylandSeat::handlePointerLeave(void* data, wl_pointer* /*pointer*/, std::uint32_t serial, wl_surface* surface) {
   auto* self = static_cast<WaylandSeat*>(data);
+  if (self->m_cursorShapeDevice != nullptr
+      && self->m_pointerEnterSerial != 0
+      && self->m_lastPointerSurface == surface) {
+    wp_cursor_shape_device_v1_set_shape(
+        self->m_cursorShapeDevice, self->m_pointerEnterSerial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT
+    );
+  }
   self->m_lastSerial = serial;
   self->m_lastInputSource = InputSource::Pointer;
   self->m_lastPointerSurface = surface;
+  self->m_pointerEnterSerial = 0;
   self->m_hasPointerPosition = false;
   self->m_pendingPointerEvents.push_back(
       PointerEvent{

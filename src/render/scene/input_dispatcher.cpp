@@ -40,6 +40,7 @@ void InputDispatcher::setSceneRoot(Node* root) {
       if (m_hoverChangeCallback) {
         m_hoverChangeCallback(old, nullptr);
       }
+      updateCursor(m_lastSerial);
     }
   }
   if (root == nullptr) {
@@ -91,6 +92,9 @@ void InputDispatcher::pointerLeave() {
       m_hoverChangeCallback(old, nullptr);
     }
   }
+  // Restore the default cursor while the enter serial is still valid.
+  // Some compositors such as Hyprland keep the last wp_cursor_shape until the client clears it.
+  updateCursor(m_lastSerial);
 }
 
 void InputDispatcher::pointerMotion(float x, float y, std::uint32_t serial) {
@@ -313,6 +317,7 @@ void InputDispatcher::pruneDetachedAreas() {
       if (m_hoverChangeCallback) {
         m_hoverChangeCallback(old, nullptr);
       }
+      updateCursor(m_lastSerial);
     }
   }
   if (!isAttachedToScene(m_capturedArea)) {
