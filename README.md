@@ -129,7 +129,7 @@ disable it explicitly.
 
 Sanitizer runtime packages are only needed for ASan/UBSan builds configured with `just configure asan`.
 
-## Building and install
+## Building and installing
 
 Requires [just](https://github.com/casey/just) and [meson](https://mesonbuild.com/).
 
@@ -139,7 +139,7 @@ Requires [just](https://github.com/casey/just) and [meson](https://mesonbuild.co
 just configure release
 just build release
 
-# After building, install. The install recipe does not build or reconfigure.
+# Install the selected build mode. This does not build or reconfigure.
 sudo just install release
 ```
 
@@ -151,11 +151,12 @@ just build release
 just install release
 ```
 
-To remove files installed from a build directory, run `just uninstall release`.
+To remove files installed from a build directory, run `just uninstall release`. The `install` and `uninstall` recipes
+require an explicit build mode so debug builds are not installed by accident.
 
 #### Debug build
 ```sh
-# Debug build in build-debug/ don't use debug unless you are debugging...
+# Debug build in build-debug/ for local development and troubleshooting.
 just configure
 just build
 

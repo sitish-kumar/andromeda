@@ -29,7 +29,7 @@ _ensure-configured m=mode:
 run m=mode: (build m)
     ./build-{{m}}/noctalia
 
-install m=mode:
+install m:
     #!/usr/bin/env bash
     set -euo pipefail
     if [[ ! -x "build-{{m}}/noctalia" ]]; then
@@ -38,7 +38,7 @@ install m=mode:
     fi
     meson install --no-rebuild -C build-{{m}}
 
-uninstall m=mode:
+uninstall m:
     #!/usr/bin/env bash
     set -euo pipefail
     if [[ ! -f "build-{{m}}/build.ninja" ]]; then
