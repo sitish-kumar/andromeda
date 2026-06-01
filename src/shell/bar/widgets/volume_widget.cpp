@@ -40,7 +40,25 @@ VolumeWidget::VolumeWidget(
 
 void VolumeWidget::create() {
   auto area = std::make_unique<InputArea>();
-  area->setOnClick([this](const InputArea::PointerData& /*data*/) { requestPanelToggle("control-center", "audio"); });
+  area->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
+  area->setOnClick([this](const InputArea::PointerData& data) {
+    if (data.button == BTN_LEFT) {
+      requestPanelToggle("control-center", "audio");
+      return;
+    }
+    if (data.button != BTN_RIGHT || m_audio == nullptr) {
+      return;
+    }
+    const auto* node = m_target == VolumeWidgetTarget::Input ? m_audio->defaultSource() : m_audio->defaultSink();
+    if (node == nullptr) {
+      return;
+    }
+    if (m_target == VolumeWidgetTarget::Input) {
+      m_audio->setSourceMuted(node->id, !node->muted);
+    } else {
+      m_audio->setSinkMuted(node->id, !node->muted);
+    }
+  });
   area->setOnAxis([this](const InputArea::PointerData& data) {
     if (m_audio == nullptr) {
       return;
