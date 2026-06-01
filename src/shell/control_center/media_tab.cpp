@@ -161,7 +161,7 @@ std::unique_ptr<Flex> MediaTab::create() {
       .out = &m_mediaColumn,
       .align = FlexAlign::Stretch,
       .gap = Style::spaceMd * scale,
-      .flexGrow = 3.0f,
+      .flexGrow = 4.0f,
   });
 
   auto nowCard = ui::column({
@@ -235,8 +235,8 @@ std::unique_ptr<Flex> MediaTab::create() {
           ui::label({
               .out = &m_trackTitle,
               .text = i18n::tr("control-center.media.nothing-playing"),
-              .fontSize = (Style::fontSizeTitle + Style::spaceXs) * scale,
-              .color = colorSpecFromRole(ColorRole::OnSurface),
+              .fontSize = Style::fontSizeTitle * scale,
+              .color = colorSpecFromRole(ColorRole::Primary),
               .fontWeight = FontWeight::Bold,
           }),
           ui::label({
