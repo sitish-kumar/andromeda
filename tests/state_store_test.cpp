@@ -1,3 +1,4 @@
+#include "config/atomic_file.h"
 #include "config/state_store.h"
 
 #include <chrono>
@@ -80,11 +81,67 @@ namespace {
     std::filesystem::remove_all(dir);
     return ok;
   }
+
+  bool atomicWritePreservesSymlink() {
+    const auto dir = uniqueTestDir();
+    const auto targetDir = dir / "dotfiles";
+    const auto target = targetDir / "settings.toml";
+    const auto link = dir / "settings.toml";
+    std::filesystem::remove_all(dir);
+    std::filesystem::create_directories(targetDir);
+
+    {
+      std::ofstream out(target, std::ios::trunc);
+      out << "[theme]\nmode = \"dark\"\n";
+    }
+    std::filesystem::create_symlink(target, link);
+
+    bool ok = true;
+    ok = expect(writeTextFileAtomic(link, "[theme]\nmode = \"light\"\n"), "failed to write symlinked file") && ok;
+    ok = expect(std::filesystem::is_symlink(std::filesystem::symlink_status(link)), "settings symlink was replaced")
+        && ok;
+    ok = expect(
+             readText(target).find("mode = \"light\"") != std::string::npos, "settings target content was not updated"
+         )
+        && ok;
+
+    std::filesystem::remove_all(dir);
+    return ok;
+  }
+
+  bool stateStorePreservesSymlink() {
+    const auto dir = uniqueTestDir();
+    const auto targetDir = dir / "dotfiles";
+    const auto target = targetDir / "state.toml";
+    const auto link = dir / "state.toml";
+    std::filesystem::remove_all(dir);
+    std::filesystem::create_directories(targetDir);
+
+    {
+      std::ofstream out(target, std::ios::trunc);
+      out << "[wallpaper_panel]\nflatten = false\n";
+    }
+    std::filesystem::create_symlink(target, link);
+
+    StateStore store(link);
+    store.load();
+
+    bool ok = true;
+    ok = expect(store.setBool("wallpaper_panel", "flatten", true), "failed to update symlinked state") && ok;
+    ok = expect(std::filesystem::is_symlink(std::filesystem::symlink_status(link)), "state symlink was replaced") && ok;
+    ok = expect(readText(target).find("flatten = true") != std::string::npos, "state target content was not updated")
+        && ok;
+
+    std::filesystem::remove_all(dir);
+    return ok;
+  }
 } // namespace
 
 int main() {
   bool ok = true;
   ok = boolStateRoundTrips() && ok;
   ok = wrongTypeIsNotReadAsBool() && ok;
+  ok = atomicWritePreservesSymlink() && ok;
+  ok = stateStorePreservesSymlink() && ok;
   return ok ? 0 : 1;
 }

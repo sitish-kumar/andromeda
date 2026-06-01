@@ -1,5 +1,6 @@
 #include "config/config_service.h"
 
+#include "config/atomic_file.h"
 #include "config/config_export.h"
 #include "core/build_info.h"
 #include "core/deferred_call.h"
@@ -738,20 +739,25 @@ void ConfigService::checkReload() {
           if (name.size() >= 5 && name.substr(name.size() - 5) == ".toml") {
             configChanged = true;
           }
-        } else if (event->wd == m_overridesWatchWd) {
+        }
+        if (event->wd == m_overridesWatchWd) {
           const auto overridesFilename = std::filesystem::path(m_overridesPath).filename().string();
           if (name == overridesFilename) {
             overridesChanged = true;
           }
-        } else {
-          // Check whether this event comes from a symlink-target directory.
-          const auto symIt = m_symlinkDirWds.find(event->wd);
-          if (symIt != m_symlinkDirWds.end()) {
-            for (const auto& watched : symIt->second) {
-              if (name == watched) {
-                configChanged = true;
-                break;
-              }
+        }
+
+        // Check whether this event comes from a symlink-target directory.
+        const auto symIt = m_symlinkDirWds.find(event->wd);
+        if (symIt != m_symlinkDirWds.end()) {
+          for (const auto& watched : symIt->second) {
+            if (name != watched.filename) {
+              continue;
+            }
+            if (watched.overrides) {
+              overridesChanged = true;
+            } else {
+              configChanged = true;
             }
           }
         }
@@ -942,7 +948,7 @@ void ConfigService::setupWatch() {
       const int wd =
           inotify_add_watch(m_inotifyFd, realDir.c_str(), IN_MODIFY | IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE);
       if (wd >= 0) {
-        m_symlinkDirWds[wd].push_back(realName);
+        m_symlinkDirWds[wd].push_back(SymlinkTargetWatch{.filename = realName, .overrides = false});
         kLog.debug("watching symlink target {} in {}", realName, realDir);
       }
     }
@@ -957,6 +963,18 @@ void ConfigService::setupWatch() {
       kLog.warn("inotify_add_watch failed for {}, overrides reload disabled", overridesDir);
     } else {
       kLog.debug("watching {} for changes", overridesDir);
+    }
+
+    const auto target = resolveAtomicWriteTarget(m_overridesPath);
+    if (target.has_value() && target->throughSymlink) {
+      const auto realDir = target->path.parent_path().string();
+      const auto realName = target->path.filename().string();
+      const int wd =
+          inotify_add_watch(m_inotifyFd, realDir.c_str(), IN_MODIFY | IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE);
+      if (wd >= 0) {
+        m_symlinkDirWds[wd].push_back(SymlinkTargetWatch{.filename = realName, .overrides = true});
+        kLog.debug("watching settings symlink target {} in {}", realName, realDir);
+      }
     }
   }
 }

@@ -1,9 +1,9 @@
 #include "config/state_store.h"
 
+#include "config/atomic_file.h"
 #include "core/log.h"
 
 #include <format>
-#include <fstream>
 #include <sstream>
 #include <utility>
 
@@ -184,28 +184,5 @@ bool StateStore::write() {
     return false;
   }
 
-  std::error_code ec;
-  std::filesystem::create_directories(m_path.parent_path(), ec);
-  if (ec) {
-    return false;
-  }
-
-  const std::filesystem::path tmpPath = m_path.string() + ".tmp";
-  {
-    std::ofstream out(tmpPath, std::ios::trunc);
-    if (!out.is_open()) {
-      return false;
-    }
-    out << formatToml(m_state);
-    if (!out.good()) {
-      return false;
-    }
-  }
-
-  std::filesystem::rename(tmpPath, m_path, ec);
-  if (ec) {
-    std::filesystem::remove(tmpPath, ec);
-    return false;
-  }
-  return true;
+  return writeTextFileAtomic(m_path, formatToml(m_state));
 }
