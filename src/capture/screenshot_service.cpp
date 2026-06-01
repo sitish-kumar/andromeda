@@ -819,7 +819,7 @@ void ScreenshotService::captureOutput(
   }
 
   m_capture.capture(
-      pending.output, pending.region, true,
+      pending.output, pending.region, false,
       [this, options = pending.outputOptions, destPath = pending.destPath,
        output = pending.output](std::optional<ScreencopyImage> image, const std::string& error) {
         onCaptureComplete(std::move(image), error, std::move(options), std::move(destPath), output);
@@ -838,7 +838,7 @@ void ScreenshotService::startNextQueuedCapture() {
     PendingCapture pending = std::move(m_captureQueue.front());
     m_captureQueue.erase(m_captureQueue.begin());
     m_capture.capture(
-        pending.output, pending.region, true,
+        pending.output, pending.region, false,
         [this, options = pending.outputOptions, destPath = pending.destPath,
          output = pending.output](std::optional<ScreencopyImage> image, const std::string& error) {
           onCaptureComplete(std::move(image), error, std::move(options), std::move(destPath), output);
