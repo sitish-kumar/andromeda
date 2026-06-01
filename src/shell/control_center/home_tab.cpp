@@ -37,10 +37,13 @@ using namespace control_center;
 namespace {
 
   constexpr float kHomeAvatarScale = 2.6f;
-  // Bottom row: 1 : 1 — equal split so media/clock and shortcuts feel balanced (tweak either value slightly if needed).
+  // Bottom row split: media/clock column grows more than the shortcuts column so the row feels balanced
+  // (tweak either value slightly if needed).
   constexpr float kHomeMainColumnFlexGrow = 1.66f;
   constexpr float kHomeShortcutsFlexGrow = 1.0f;
   constexpr std::size_t kHomeShortcutGridColumns = 2;
+  // At or below this count the shortcuts stack in a single narrow column instead of the 2-column grid.
+  constexpr std::size_t kHomeStackedShortcutMax = 2;
   constexpr auto kHomeTransientPositionRegressionWindow = std::chrono::milliseconds(1500);
   constexpr std::int64_t kHomeTransientPositionRegressionFloorUs = 5'000'000;
   constexpr std::int64_t kHomeTransientPositionRegressionCeilingUs = 1'500'000;
@@ -49,6 +52,8 @@ namespace {
 
   float homeAvatarSize(float scale) { return Style::controlHeightLg * kHomeAvatarScale * scale; }
 
+  // Width for the stacked (single-column) shortcuts so each tile keeps the same width it would have
+  // as one cell of the standard 2-column grid, rather than stretching across the whole column.
   float homeStackedShortcutsWidth(float contentWidth, float bottomRowGap, const GridView& grid) {
     const float totalGrow = kHomeMainColumnFlexGrow + kHomeShortcutsFlexGrow;
     const float fullGridWidth = std::max(1.0f, contentWidth - bottomRowGap) * (kHomeShortcutsFlexGrow / totalGrow);
@@ -504,7 +509,7 @@ std::unique_ptr<Flex> HomeTab::create() {
     grid->addChild(std::move(btn));
   }
 
-  if (m_shortcutPads.size() <= 2) {
+  if (m_shortcutPads.size() <= kHomeStackedShortcutMax) {
     grid->setColumns(1);
     grid->setFlexGrow(0.0f);
   }
@@ -559,7 +564,7 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
     m_userMain->setMinHeight(userMainHeight);
     m_userMain->setSize(m_userMain->width(), userMainHeight);
   }
-  if (m_shortcutsGrid != nullptr && m_shortcutPads.size() <= 2) {
+  if (m_shortcutsGrid != nullptr && m_shortcutPads.size() <= kHomeStackedShortcutMax) {
     const float bottomRowGap = m_bottomRow != nullptr ? m_bottomRow->gap() : 0.0f;
     m_shortcutsGrid->setSize(
         homeStackedShortcutsWidth(contentWidth, bottomRowGap, *m_shortcutsGrid), m_shortcutsGrid->height()
