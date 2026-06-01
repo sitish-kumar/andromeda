@@ -1090,10 +1090,6 @@ void Application::initUi() {
       m_lockScreen.onKeyboardEvent(event);
       return;
     }
-    if (m_desktopWidgetsController.isEditing()) {
-      m_desktopWidgetsController.onKeyboardEvent(event);
-      return;
-    }
     if (m_colorPickerDialogPopup.isOpen()) {
       m_colorPickerDialogPopup.onKeyboardEvent(event);
       return;
@@ -1104,6 +1100,10 @@ void Application::initUi() {
     }
     if (m_fileDialogPopup.isOpen()) {
       m_fileDialogPopup.onKeyboardEvent(event);
+      return;
+    }
+    if (m_desktopWidgetsController.isEditing()) {
+      m_desktopWidgetsController.onKeyboardEvent(event);
       return;
     }
     if (m_settingsWindow.ownsKeyboardSurface(m_wayland.lastKeyboardSurface())) {
