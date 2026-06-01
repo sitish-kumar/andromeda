@@ -68,6 +68,8 @@ namespace {
     int inotifyWd = -1;
 
     int ddcBus = -1;
+    // Incremented on each user brightness write; completions with an older epoch are ignored.
+    std::uint64_t ddcWriteEpoch = 0;
     int failureCount = 0;
     bool quarantined = false;
     std::chrono::steady_clock::time_point cooldownUntil{};
@@ -90,6 +92,7 @@ namespace {
 
   struct DdcJob {
     std::uint64_t generation = 0;
+    std::uint64_t writeEpoch = 0;
     std::string displayId;
     int bus = -1;
     int targetRaw = -1;
@@ -105,6 +108,7 @@ namespace {
 
     Type type = Type::Detect;
     std::uint64_t generation = 0;
+    std::uint64_t writeEpoch = 0;
     std::string displayId;
     bool success = false;
     bool timedOut = false;
@@ -920,6 +924,7 @@ struct BrightnessService::Impl {
       return;
     }
 
+    ++display.ddcWriteEpoch;
     display.pub.brightness = value;
     display.quarantined = false;
     syncPublicDisplay(display);
@@ -929,6 +934,7 @@ struct BrightnessService::Impl {
 
     DdcJob job{
         .generation = generation,
+        .writeEpoch = display.ddcWriteEpoch,
         .displayId = display.pub.id,
         .bus = display.ddcBus,
         .targetRaw = static_cast<int>(std::round(value * 100.0f)),
@@ -958,6 +964,7 @@ struct BrightnessService::Impl {
 
       pendingRefreshes[display.pub.id] = DdcJob{
           .generation = generation,
+          .writeEpoch = display.ddcWriteEpoch,
           .displayId = display.pub.id,
           .bus = display.ddcBus,
           .targetRaw = -1,
@@ -1019,6 +1026,7 @@ struct BrightnessService::Impl {
         WorkerCompletion completion;
         completion.type = WorkerCompletion::Type::Set;
         completion.generation = writeJob->generation;
+        completion.writeEpoch = writeJob->writeEpoch;
         completion.displayId = writeJob->displayId;
 
         auto args = ddcBaseArgs(writeJob->bus);
@@ -1042,6 +1050,7 @@ struct BrightnessService::Impl {
         WorkerCompletion completion;
         completion.type = WorkerCompletion::Type::Refresh;
         completion.generation = refreshJob->generation;
+        completion.writeEpoch = refreshJob->writeEpoch;
         completion.displayId = refreshJob->displayId;
 
         std::string detail;
@@ -1193,6 +1202,15 @@ struct BrightnessService::Impl {
   bool applyDdcUpdateCompletion(const WorkerCompletion& completion) {
     DisplayInternal* display = findInternal(completion.displayId);
     if (display == nullptr || display->backend != RuntimeBackend::Ddcutil) {
+      return false;
+    }
+
+    if (completion.writeEpoch != display->ddcWriteEpoch) {
+      kLog.debug(
+          "ddcutil {} completion for '{}' ignored (stale epoch {} vs {})",
+          completion.type == WorkerCompletion::Type::Set ? "write" : "refresh", completion.displayId,
+          completion.writeEpoch, display->ddcWriteEpoch
+      );
       return false;
     }
 
