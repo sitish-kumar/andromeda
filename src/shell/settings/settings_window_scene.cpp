@@ -838,7 +838,7 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
       ++it;
     }
     settings::SettingEntry btn{
-        .section = "shell",
+        .section = "security",
         .group = "privacy-security",
         .title = i18n::tr("settings.schema.shell.sync-greeter.label"),
         .subtitle = i18n::tr("settings.schema.shell.sync-greeter.description"),
