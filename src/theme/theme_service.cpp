@@ -12,6 +12,7 @@
 #include "theme/image_loader.h"
 #include "theme/palette_generator.h"
 #include "theme/scheme.h"
+#include "theme/theme_mode.h"
 #include "util/string_utils.h"
 
 #include <cctype>
@@ -409,6 +410,7 @@ namespace noctalia::theme {
 
     queueResolvedCallback(resolved->generated, resolved->mode);
     m_isLightMode = resolved->mode == "light";
+    setDarkMode(!m_isLightMode);
 
     if (animate) {
       startTransition(resolved->palette);

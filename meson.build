@@ -713,6 +713,7 @@ _noctalia_sources = files(
   'src/theme/fixed_palette.cpp',
   'src/theme/template_apply_service.cpp',
   'src/theme/theme_service.cpp',
+  'src/theme/theme_mode.cpp',
   'src/theme/json_output.cpp',
   'src/theme/template_engine.cpp',
   'src/theme/cli.cpp',

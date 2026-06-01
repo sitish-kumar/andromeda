@@ -10,6 +10,7 @@
 #include "scripting/scripted_widget_bindings.h"
 #include "scripting/scripted_widget_manifest.h"
 #include "system/terminal_launch.h"
+#include "theme/theme_mode.h"
 
 #include <algorithm>
 #include <atomic>
@@ -254,6 +255,11 @@ namespace {
     return 1;
   }
 
+  int luau_isDarkMode(lua_State* L) {
+    lua_pushboolean(L, noctalia::theme::isDarkMode() ? 1 : 0);
+    return 1;
+  }
+
   int luau_processMatches(lua_State* L) {
     const int count = lua_gettop(L);
     luaL_checktype(L, 1, LUA_TFUNCTION);
@@ -349,6 +355,7 @@ namespace {
       {"flatpakAppInstalled", luau_flatpakAppInstalled},
       {"portalAvailable", luau_portalAvailable},
       {"focusedOutputName", luau_focusedOutputName},
+      {"isDarkMode", luau_isDarkMode},
       {"notify", luau_notify},
       {"notifyError", luau_notifyError},
       {"copyToClipboard", luau_copyToClipboard},
