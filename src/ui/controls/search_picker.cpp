@@ -18,6 +18,7 @@ namespace {
 
   constexpr float kDefaultWidth = 320.0f;
   constexpr float kDefaultHeight = 360.0f;
+  constexpr auto kFilterDebounceInterval = std::chrono::milliseconds(120);
 
   class SearchPickerRow : public Flex {
   public:
@@ -147,8 +148,11 @@ SearchPicker::SearchPicker() {
           .controlHeight = Style::controlHeight,
           .onChange =
               [this](const std::string& value) {
+                if (value == m_filter) {
+                  return;
+                }
                 m_filter = value;
-                applyFilter();
+                m_filterDebounceTimer.start(kFilterDebounceInterval, [this]() { applyFilter(); });
               },
           .onKeyEvent =
               [this](std::uint32_t sym, std::uint32_t modifiers) {
