@@ -687,7 +687,7 @@ namespace settings {
       add(segmentedSpec("display", "gauge", sysmonDisplay));
       add(boolSpec("show_label", true));
       {
-        auto minW = doubleSpec("label_min_width", 0.0, 0.0, 200.0, 1.0);
+        auto minW = intSpec("label_min_width", 0, 0.0, 200.0, 1.0);
         minW.visibleWhen = WidgetSettingVisibility{"show_label", {"true"}};
         add(std::move(minW));
       }
