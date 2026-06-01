@@ -357,6 +357,7 @@ _noctalia_sources = files(
   'src/calendar/google_client.cpp',
   'src/calendar/google_oauth.cpp',
   'src/calendar/ical_parser.cpp',
+  'src/config/atomic_file.cpp',
   'src/config/config_export.cpp',
   'src/config/config_overrides.cpp',
   'src/config/config_service.cpp',
@@ -894,6 +895,7 @@ test('scripted_widget_manifest', scripted_widget_manifest_test)
 state_store_test = executable('state_store_test',
   sources: files(
     'tests/state_store_test.cpp',
+    'src/config/atomic_file.cpp',
     'src/config/state_store.cpp',
     'src/core/log.cpp',
   ),

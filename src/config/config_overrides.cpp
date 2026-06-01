@@ -1,3 +1,4 @@
+#include "config/atomic_file.h"
 #include "config/config_service.h"
 #include "core/key_chord.h"
 #include "core/log.h"
@@ -12,6 +13,7 @@
 #include <fstream>
 #include <iterator>
 #include <optional>
+#include <sstream>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -1738,24 +1740,10 @@ bool ConfigService::writeOverridesToFile() {
   }
   toml::table output = m_overridesTable;
 
-  const std::string tmpPath = m_overridesPath + ".tmp";
-  {
-    std::ofstream out(tmpPath, std::ios::trunc);
-    if (!out.is_open()) {
-      return false;
-    }
-    out << toml::toml_formatter{
-        output, toml::toml_formatter::default_flags & ~toml::format_flags::allow_literal_strings
-    };
-    if (!out.good()) {
-      return false;
-    }
-  }
-  std::error_code ec;
-  std::filesystem::rename(tmpPath, m_overridesPath, ec);
-  if (ec) {
-    std::filesystem::remove(tmpPath, ec);
+  std::ostringstream out;
+  out << toml::toml_formatter{output, toml::toml_formatter::default_flags & ~toml::format_flags::allow_literal_strings};
+  if (!out.good()) {
     return false;
   }
-  return true;
+  return writeTextFileAtomic(m_overridesPath, out.str());
 }
