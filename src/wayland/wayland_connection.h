@@ -39,6 +39,7 @@ struct zwlr_foreign_toplevel_handle_v1;
 struct ext_workspace_manager_v1;
 struct zdwl_ipc_manager_v2;
 struct zwp_virtual_keyboard_manager_v1;
+struct zwp_text_input_manager_v3;
 struct hyprland_focus_grab_manager_v1;
 struct hyprland_toplevel_mapping_manager_v1;
 struct zwlr_gamma_control_manager_v1;
@@ -48,6 +49,7 @@ struct wp_viewporter;
 class ClipboardService;
 class FocusGrabService;
 struct DataControlOps;
+class TextInputService;
 class VirtualKeyboardService;
 
 struct WaylandOutput {
@@ -96,6 +98,7 @@ public:
   /// Fired when both `ext_idle_notifier_v1` and `wl_seat` are bound (including late registry globals).
   void setIdleCapabilitiesReadyCallback(ChangeCallback callback);
   void setClipboardService(ClipboardService* clipboardService);
+  void setTextInputService(TextInputService* textInputService);
   void setVirtualKeyboardService(VirtualKeyboardService* virtualKeyboardService);
   void setCursorShape(std::uint32_t serial, std::uint32_t shape);
 
@@ -127,6 +130,7 @@ public:
   [[nodiscard]] wp_fractional_scale_manager_v1* fractionalScaleManager() const noexcept;
   [[nodiscard]] hyprland_focus_grab_manager_v1* hyprlandFocusGrabManager() const noexcept;
   [[nodiscard]] FocusGrabService* focusGrabService() const noexcept;
+  [[nodiscard]] TextInputService* textInputService() const noexcept { return m_textInputService; }
   [[nodiscard]] wp_viewporter* viewporter() const noexcept;
   [[nodiscard]] wl_display* display() const noexcept;
   [[nodiscard]] std::string describeDisplayError(int operationErrno = 0) const;
@@ -202,6 +206,7 @@ public:
 private:
   void bindGlobal(wl_registry* registry, std::uint32_t name, const char* interface, std::uint32_t version);
   void bindClipboardService();
+  void bindTextInputService();
   void bindVirtualKeyboardService();
   void cleanup();
   void logStartupSummary() const;
@@ -230,8 +235,10 @@ private:
   bool m_backgroundEffectBlurSupported = false;
   void* m_dataControlManager = nullptr;
   const DataControlOps* m_dataControlOps = nullptr;
+  zwp_text_input_manager_v3* m_textInputManager = nullptr;
   zwp_virtual_keyboard_manager_v1* m_virtualKeyboardManager = nullptr;
   ClipboardService* m_clipboardService = nullptr;
+  TextInputService* m_textInputService = nullptr;
   VirtualKeyboardService* m_virtualKeyboardService = nullptr;
   bool m_hasLayerShellGlobal = false;
   bool m_hasExtWorkspaceGlobal = false;

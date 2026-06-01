@@ -95,6 +95,7 @@
 #include "wayland/clipboard_service.h"
 #include "wayland/key_repeat_poll_source.h"
 #include "wayland/keyboard_layout_poll_source.h"
+#include "wayland/text_input_service.h"
 #include "wayland/virtual_keyboard_service.h"
 #include "wayland/wayland_connection.h"
 #include "wayland/workspace_poll_source.h"
@@ -137,6 +138,7 @@ private:
   WaylandConnection m_wayland;
   CompositorPlatform m_compositorPlatform{m_wayland};
   ClipboardService m_clipboardService;
+  TextInputService m_textInputService;
   VirtualKeyboardService m_virtualKeyboardService;
   ConfigService m_configService;
   HttpClient m_httpClient;

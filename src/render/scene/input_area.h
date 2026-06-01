@@ -8,6 +8,8 @@
 #include <initializer_list>
 #include <linux/input-event-codes.h>
 
+class TextInputClient;
+
 class InputArea : public Node {
 public:
   enum class HitShape : std::uint8_t {
@@ -76,6 +78,8 @@ public:
   void setOnKeyUp(KeyCallback callback);
   void setOnFocusGain(VoidCallback callback);
   void setOnFocusLoss(VoidCallback callback);
+  void setTextInputClient(TextInputClient* client);
+  [[nodiscard]] TextInputClient* textInputClient() const noexcept { return m_textInputClient; }
 
   // Configuration
   void setCursorShape(std::uint32_t shape);
@@ -146,6 +150,7 @@ private:
   std::uint32_t m_pressedButton = 0;
   bool m_focusable = false;
   bool m_focused = false;
+  TextInputClient* m_textInputClient = nullptr;
 
   TooltipContent m_tooltipContent;
 };

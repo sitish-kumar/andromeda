@@ -185,6 +185,7 @@ Application::Application()
 Application::~Application() {
   m_notificationManager.flushPersistedHistory();
   m_wayland.setClipboardService(nullptr);
+  m_wayland.setTextInputService(nullptr);
   m_wayland.setVirtualKeyboardService(nullptr);
   notify::setInstance(nullptr);
 }
@@ -488,6 +489,7 @@ void Application::initServices() {
   auto* sharedGlPtr = m_glShared.hasSharedContext() ? &m_glShared : nullptr;
   m_sharedTextureCache.initialize(sharedGlPtr);
   m_asyncTextureCache.initialize(sharedGlPtr);
+  m_wayland.setTextInputService(&m_textInputService);
   m_wayland.setVirtualKeyboardService(&m_virtualKeyboardService);
 
   auto bindKeybind = [this](KeybindAction action) {

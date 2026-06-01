@@ -916,6 +916,7 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
 
   surface.sceneRoot = std::move(root);
   surface.surface->setSceneRoot(surface.sceneRoot.get());
+  surface.inputDispatcher.setTextInputContext(surface.surface->wlSurface(), m_wayland->textInputService());
   surface.inputDispatcher.setSceneRoot(surface.sceneRoot.get());
 }
 

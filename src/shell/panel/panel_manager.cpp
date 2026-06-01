@@ -1740,6 +1740,7 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
     sceneParent->addChild(std::move(contentWrapper));
 
     m_inputDispatcher.setSceneRoot(m_sceneRoot.get());
+    m_inputDispatcher.setTextInputContext(m_wlSurface, m_platform->wayland().textInputService());
     m_inputDispatcher.setCursorShapeCallback([this](std::uint32_t serial, std::uint32_t shape) {
       m_platform->setCursorShape(serial, shape);
     });

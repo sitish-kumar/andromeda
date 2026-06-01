@@ -1977,6 +1977,7 @@ void NotificationToast::buildScene(Instance& inst, uint32_t width, uint32_t heig
   sceneRoot->setAnimationManager(&inst.animations);
 
   inst.inputDispatcher.setSceneRoot(sceneRoot.get());
+  inst.inputDispatcher.setTextInputContext(inst.surface->wlSurface(), m_wayland->textInputService());
   inst.sceneRoot = std::move(sceneRoot);
   inst.inputDispatcher.setCursorShapeCallback([this](uint32_t serial, uint32_t shape) {
     m_wayland->setCursorShape(serial, shape);

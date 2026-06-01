@@ -1013,6 +1013,7 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
   m_mainContainer = static_cast<Flex*>(m_sceneRoot->addChild(std::move(main)));
 
   m_inputDispatcher.setSceneRoot(m_sceneRoot.get());
+  m_inputDispatcher.setTextInputContext(m_surface->wlSurface(), m_wayland->textInputService());
   m_inputDispatcher.setCursorShapeCallback([this](std::uint32_t serial, std::uint32_t shape) {
     m_wayland->setCursorShape(serial, shape);
   });

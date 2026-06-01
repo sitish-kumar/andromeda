@@ -2,6 +2,7 @@
 
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
+#include "wayland/text_input_service.h"
 
 namespace {
 
@@ -43,6 +44,7 @@ void InputDispatcher::setSceneRoot(Node* root) {
   }
   if (root == nullptr) {
     if (m_focusedArea != nullptr) {
+      clearTextInputFocus(m_focusedArea);
       m_focusedArea->dispatchFocusLoss();
       m_focusedArea = nullptr;
     }
@@ -59,6 +61,15 @@ void InputDispatcher::setHoverChangeCallback(HoverChangeCallback callback) {
 
 void InputDispatcher::setCursorShapeCallback(CursorShapeCallback callback) {
   m_cursorShapeCallback = std::move(callback);
+}
+
+void InputDispatcher::setTextInputContext(wl_surface* surface, TextInputService* service) {
+  if ((m_textInputSurface != surface || m_textInputService != service) && m_focusedArea != nullptr) {
+    clearTextInputFocus(m_focusedArea);
+  }
+  m_textInputSurface = surface;
+  m_textInputService = service;
+  syncTextInputFocus();
 }
 
 void InputDispatcher::pointerEnter(float x, float y, std::uint32_t serial) {
@@ -203,12 +214,14 @@ void InputDispatcher::setFocus(InputArea* area) {
     return;
   }
   if (m_focusedArea != nullptr) {
+    clearTextInputFocus(m_focusedArea);
     m_focusedArea->dispatchFocusLoss();
   }
   m_focusedArea = area;
   if (m_focusedArea != nullptr) {
     trackArea(m_focusedArea);
     m_focusedArea->dispatchFocusGain();
+    syncTextInputFocus();
   }
 }
 
@@ -291,6 +304,7 @@ void InputDispatcher::pruneDetachedAreas() {
   }
   if (!isAttachedToScene(m_focusedArea)) {
     if (m_focusedArea != nullptr) {
+      clearTextInputFocus(m_focusedArea);
       m_focusedArea->dispatchFocusLoss();
     }
     m_focusedArea = nullptr;
@@ -303,12 +317,31 @@ void InputDispatcher::trackArea(InputArea* area) {
       m_hoveredArea = nullptr;
     }
     if (m_focusedArea == a) {
+      clearTextInputFocus(a);
       m_focusedArea = nullptr;
     }
     if (m_capturedArea == a) {
       m_capturedArea = nullptr;
     }
   });
+}
+
+void InputDispatcher::clearTextInputFocus(InputArea* area) {
+  if (m_textInputService == nullptr || area == nullptr) {
+    return;
+  }
+  if (auto* client = area->textInputClient(); client != nullptr) {
+    m_textInputService->clearFocusedClient(client);
+  }
+}
+
+void InputDispatcher::syncTextInputFocus() {
+  if (m_textInputService == nullptr || m_textInputSurface == nullptr || m_focusedArea == nullptr) {
+    return;
+  }
+  if (auto* client = m_focusedArea->textInputClient(); client != nullptr) {
+    m_textInputService->setFocusedClient(m_textInputSurface, client);
+  }
 }
 
 void InputDispatcher::updateCursor(std::uint32_t serial) {

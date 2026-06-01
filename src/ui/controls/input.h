@@ -5,6 +5,7 @@
 #include "render/scene/node.h"
 #include "ui/signal.h"
 #include "ui/style.h"
+#include "ui/text_input_client.h"
 
 #include <chrono>
 #include <cstddef>
@@ -22,7 +23,7 @@ class Label;
 class RectNode;
 class Renderer;
 
-class Input : public Node {
+class Input : public Node, public TextInputClient {
 public:
   enum class PasswordMaskStyle : std::uint8_t {
     CircleFilled = 0,
@@ -30,6 +31,7 @@ public:
   };
 
   Input();
+  ~Input() override;
 
   void setValue(std::string_view value);
   void setPlaceholder(std::string_view placeholder);
@@ -68,6 +70,12 @@ public:
   [[nodiscard]] InputArea* inputArea() const noexcept { return m_inputArea; }
   [[nodiscard]] bool invalid() const noexcept { return m_invalid; }
 
+  [[nodiscard]] TextInputState textInputState() const override;
+  void textInputApplyEdit(const TextInputEdit& edit) override;
+  void textInputResetPreedit() override;
+  void textInputActivated(TextInputService& service) override;
+  void textInputDeactivated(TextInputService& service) override;
+
 private:
   enum class EditCoalesceKind : std::uint8_t {
     None = 0,
@@ -86,6 +94,9 @@ private:
   void doLayout(Renderer& renderer) override;
   LayoutSize doMeasure(Renderer& renderer, const LayoutConstraints& constraints) override;
   void handleKey(std::uint32_t sym, std::uint32_t utf32, std::uint32_t modifiers, bool preedit = false);
+  void notifyTextInputStateChanged(TextInputChangeCause cause);
+  bool removePreeditText();
+  bool deleteSurroundingText(std::uint32_t beforeLength, std::uint32_t afterLength);
   void applyVisualState();
   void updateDisplayText();
   void updateInteractiveGeometry();
@@ -171,6 +182,7 @@ private:
   bool m_embeddedOnSolidPrimary = false;
   float m_surfaceOpacity = 1.0f;
   bool m_enabled = true;
+  TextInputService* m_textInputService = nullptr;
   float m_minLayoutWidth = 0.0f;
   float m_contentLeadSlack = 0.0f;
   TextAlign m_textAlign = TextAlign::Start;

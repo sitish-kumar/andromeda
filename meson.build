@@ -284,6 +284,8 @@ foreach _p : [
     wayland_protos_dir / 'stable/viewporter/viewporter.xml'],
   ['idle-inhibit-unstable-v1',
     wayland_protos_dir / 'unstable/idle-inhibit/idle-inhibit-unstable-v1.xml'],
+  ['text-input-unstable-v3',
+    wayland_protos_dir / 'unstable/text-input/text-input-unstable-v3.xml'],
   ['virtual-keyboard-unstable-v1',
     'protocols/virtual-keyboard-unstable-v1.xml'],
 
@@ -658,6 +660,7 @@ _noctalia_sources = files(
   'src/ui/style.cpp',
   'src/util/fuzzy_match.cpp',
   'src/wayland/clipboard_service.cpp',
+  'src/wayland/text_input_service.cpp',
   'src/wayland/virtual_keyboard_service.cpp',
   'src/compositors/compositor_platform.cpp',
   'src/compositors/compositor_detect.cpp',

@@ -92,6 +92,7 @@ void InputArea::setOnKeyDown(KeyCallback callback) { m_onKeyDown = std::move(cal
 void InputArea::setOnKeyUp(KeyCallback callback) { m_onKeyUp = std::move(callback); }
 void InputArea::setOnFocusGain(VoidCallback callback) { m_onFocusGain = std::move(callback); }
 void InputArea::setOnFocusLoss(VoidCallback callback) { m_onFocusLoss = std::move(callback); }
+void InputArea::setTextInputClient(TextInputClient* client) { m_textInputClient = client; }
 
 void InputArea::dispatchEnter(float localX, float localY) {
   m_hovered = true;
