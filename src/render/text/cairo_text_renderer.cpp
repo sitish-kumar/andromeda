@@ -260,16 +260,15 @@ void CairoTextRenderer::initialize(RenderBackend* backend, TextureManager* textu
   m_fontMap = pango_cairo_font_map_new();
   m_pangoContext = pango_font_map_create_context(m_fontMap);
 
-  // Force grayscale AA + full hinting + hinted metrics. Without this, Cairo
-  // on an ARGB32 image surface produces unhinted glyph outlines that sample
-  // off the pixel grid → noticeably blurrier output. The font options are
-  // applied on the shared PangoContext so both measure() and draw() agree
-  // on glyph widths (critical — unhinted metrics produce sub-pixel widths
-  // that differ from the hinted raster).
+  // Force grayscale AA only. The tinted fast path rasterizes to A8 coverage and
+  // tints in the shader (u_tint), which cannot carry per-channel subpixel/LCD
+  // coverage — so subpixel AA can't be honored regardless of Fontconfig.
+  // hint_style and hint_metrics are left at DEFAULT so the user's Fontconfig
+  // hinting settings apply. measure() and draw() stay consistent because both
+  // load fonts from this same shared PangoContext, not because of any specific
+  // option value.
   cairo_font_options_t* fontOptions = cairo_font_options_create();
   cairo_font_options_set_antialias(fontOptions, CAIRO_ANTIALIAS_GRAY);
-  cairo_font_options_set_hint_style(fontOptions, CAIRO_HINT_STYLE_FULL);
-  cairo_font_options_set_hint_metrics(fontOptions, CAIRO_HINT_METRICS_ON);
   pango_cairo_context_set_font_options(m_pangoContext, fontOptions);
   cairo_font_options_destroy(fontOptions);
 
