@@ -356,6 +356,18 @@ std::vector<WorkspaceWindow> NiriWorkspaceBackend::workspaceWindows(const std::s
   return result;
 }
 
+bool NiriWorkspaceBackend::focusWindowById(const std::string& windowId) {
+  const auto id = parseUnsigned(windowId);
+  if (!id.has_value()) {
+    return false;
+  }
+  return m_runtime.requestAction(
+      nlohmann::json{
+          {"FocusWindow", nlohmann::json{{"id", *id}}},
+      }
+  );
+}
+
 void NiriWorkspaceBackend::cleanup() {
   closeSocket(false);
   const bool overviewWasOpen = m_overviewKnown && m_overviewOpen;
