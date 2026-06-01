@@ -60,7 +60,7 @@
   },
   "setup-wizard": {
     "browse": "Browse",
-    "builtin-palette": "Builtin Palette",
+    "builtin-palette": "Built-In Palette",
     "footer-note": "You can change these later in settings.",
     "get-started": "Get Started",
     "mode": "Mode",
@@ -408,7 +408,7 @@
       "lock": "Lock",
       "logout": "Log Out",
       "suspend": "Suspend",
-      "lock-and-suspend": "Lock & Suspend",
+      "lock-and-suspend": "Lock & suspend",
       "reboot": "Reboot",
       "shutdown": "Shut Down",
       "custom": "Custom"
@@ -806,11 +806,6 @@
           "empty": "No widgets",
           "empty-hint": "Add a widget to populate this lane."
         },
-        "kinds": {
-          "built-in": "Built-in",
-          "named": "Named",
-          "unknown": "Unknown"
-        },
         "editor": {
           "title": "Bar Widgets",
           "description": "Arrange widgets across the bar lanes"
@@ -905,7 +900,7 @@
         "background": "Background",
         "behavior": "Behavior",
         "brightness": "Brightness",
-        "built-in": "Built-in",
+        "built-in": "Built-In",
         "calendar": "Calendar",
         "capsules": "Capsules",
         "clipboard": "Clipboard",
@@ -977,7 +972,7 @@
           "light": "Light"
         },
         "source": {
-          "built-in": "Built-in",
+          "built-in": "Built-In",
           "wallpaper": "Wallpaper",
           "community": "Community",
           "custom": "Custom"
@@ -1220,7 +1215,7 @@
         },
         "font_weight": {
           "label": "Font Weight",
-          "description": "Default inherits the bar font weight."
+          "description": "Default inherits the bar font weight"
         },
         "command": {
           "label": "Left Click Command",
@@ -1378,7 +1373,7 @@
         },
         "hide_when_empty": {
           "label": "Hide When Empty",
-          "description": "Hide workspace pills whne there are no open windows",
+          "description": "Hide workspace pills when there are no open windows",
           "workspaces-description": "Hide workspace pills that have no open windows"
         },
         "labels_only_when_occupied": {
@@ -1607,7 +1602,7 @@
           "description": "Where to derive the color palette from"
         },
         "builtin-palette": {
-          "label": "Builtin Palette",
+          "label": "Built-In Palette",
           "description": "Choose a palette from the bundled catalog"
         },
         "wallpaper-generation-scheme": {
@@ -1657,11 +1652,11 @@
       },
       "templates": {
         "enable-builtins": {
-          "label": "Enable Built-in Templates",
+          "label": "Enable Built-In Templates",
           "description": "Use the bundled catalog of theme templates for apps"
         },
         "builtin-ids": {
-          "label": "Built-in Templates",
+          "label": "Built-In Templates",
           "description": "Toggle bundled app templates to render on each theme change",
           "empty": "No built-in templates are available."
         },
@@ -1771,7 +1766,7 @@
         },
         "clipboard-confirm-clear-history": {
           "label": "Confirm Clear History",
-          "description": "Ask before clearing clipboard history or deleting an unpinned entry from the panel. When off, those actions apply immediately; pinned entries still ask before delete."
+          "description": "Ask before clearing clipboard history or deleting an unpinned entry from the panel; when off, those actions apply immediately (pinned entries still ask before delete)"
         },
         "clipboard-auto-paste": {
           "label": "Clipboard Auto-Paste",
@@ -1944,7 +1939,7 @@
           "description": "On Home and general opens"
         },
         "control-center-sidebar-section": {
-          "label": "Sidebar when opening a tab",
+          "label": "Sidebar When Opening a Tab",
           "description": "When opening a specific tab (volume, media etc.)"
         },
         "placement-launcher": {
@@ -2020,19 +2015,19 @@
           "description": "Close popups, dismiss panels, or abort the current operation"
         },
         "left": {
-          "label": "Navigate left",
+          "label": "Navigate Left",
           "description": "Move focus or selection to the left"
         },
         "right": {
-          "label": "Navigate right",
+          "label": "Navigate Right",
           "description": "Move focus or selection to the right"
         },
         "up": {
-          "label": "Navigate up",
+          "label": "Navigate Up",
           "description": "Move focus or selection up one row"
         },
         "down": {
-          "label": "Navigate down",
+          "label": "Navigate Down",
           "description": "Move focus or selection down one row"
         }
       },
@@ -2182,23 +2177,23 @@
           "label": "System Monitor",
           "description": "Sample CPU, memory, network, load, temperature, and disk statistics",
           "cpu-poll": {
-            "label": "CPU poll interval",
+            "label": "CPU Poll Interval",
             "description": "1-120 seconds between CPU usage, CPU temperature, and load-average samples"
           },
           "gpu-poll": {
-            "label": "GPU poll interval",
+            "label": "GPU Poll Interval",
             "description": "1-120 seconds between GPU temperature and VRAM samples"
           },
           "memory-poll": {
-            "label": "Memory poll interval",
+            "label": "Memory Poll Interval",
             "description": "1-120 seconds between RAM usage samples"
           },
           "network-poll": {
-            "label": "Network poll interval",
+            "label": "Network Poll Interval",
             "description": "1-120 seconds between network throughput samples"
           },
           "disk-poll": {
-            "label": "Disk poll interval",
+            "label": "Disk Poll Interval",
             "description": "1-120 seconds between disk usage and swap usage samples"
           }
         },
@@ -2521,7 +2516,7 @@
         },
         "panel-overlap": {
           "label": "Panel Overlap",
-          "description": "Pixels an attached panel overlaps the bar edge to hide the seam. Adjust if you see a line or gap."
+          "description": "Pixels an attached panel overlaps the bar edge to hide the seam (adjust if you see a line or gap)"
         }
       }
     }
