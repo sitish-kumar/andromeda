@@ -4,7 +4,7 @@ Noctalia
 A lightweight Wayland shell and bar built directly on Wayland + OpenGL ES, with no Qt or GTK dependency.
 
 > [!IMPORTANT]
-> Noctalia is in early development. Expect breaking configuration and behavior changes while the project is still taking shape.
+> Noctalia v5 is in early/alpha development. Expect breaking configuration and behavior changes while the project is still taking shape.
 
 <p><br/></p>
 
