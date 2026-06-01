@@ -43,6 +43,9 @@ public:
   ConfigService& operator=(const ConfigService&) = delete;
 
   [[nodiscard]] const Config& config() const noexcept { return m_config; }
+  // Which sections changed in the reload currently being dispatched. Valid while
+  // reload callbacks run; subscribers consult it to skip unaffected work.
+  [[nodiscard]] const ConfigChangeSet& lastChange() const noexcept { return m_lastChange; }
   [[nodiscard]] bool matchesKeybind(KeybindAction action, std::uint32_t sym, std::uint32_t modifiers) const;
   [[nodiscard]] int watchFd() const noexcept { return m_inotifyFd; }
   [[nodiscard]] std::string buildSupportReport() const;
@@ -135,6 +138,7 @@ private:
   void syncWallpaperFavoritesToOverridesTable();
 
   Config m_config;
+  ConfigChangeSet m_lastChange;
 
   // Hand-authored config directory: all *.toml merged alphabetically.
   std::string m_configDir;

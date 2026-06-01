@@ -521,6 +521,37 @@ void ConfigService::fireReloadCallbacks() {
     return;
   }
 
+  {
+    std::string changed;
+    const auto add = [&](bool on, const char* name) {
+      if (on) {
+        changed += changed.empty() ? name : std::string(", ") + name;
+      }
+    };
+    add(m_lastChange.bars, "bars");
+    add(m_lastChange.widgets, "widgets");
+    add(m_lastChange.desktopWidgets, "desktopWidgets");
+    add(m_lastChange.wallpaper, "wallpaper");
+    add(m_lastChange.backdrop, "backdrop");
+    add(m_lastChange.lockscreen, "lockscreen");
+    add(m_lastChange.dock, "dock");
+    add(m_lastChange.shell, "shell");
+    add(m_lastChange.osd, "osd");
+    add(m_lastChange.notification, "notification");
+    add(m_lastChange.weather, "weather");
+    add(m_lastChange.calendar, "calendar");
+    add(m_lastChange.system, "system");
+    add(m_lastChange.audio, "audio");
+    add(m_lastChange.brightness, "brightness");
+    add(m_lastChange.keybinds, "keybinds");
+    add(m_lastChange.nightlight, "nightlight");
+    add(m_lastChange.idle, "idle");
+    add(m_lastChange.hooks, "hooks");
+    add(m_lastChange.theme, "theme");
+    add(m_lastChange.controlCenter, "controlCenter");
+    kLog.info("reload: changed sections = [{}]", changed.empty() ? "none" : changed);
+  }
+
   noctalia::profiling::StopWatch total;
   for (std::size_t i = 0; i < m_reloadCallbacks.size(); ++i) {
     const auto& sub = m_reloadCallbacks[i];
@@ -1149,6 +1180,7 @@ void ConfigService::loadAll() {
 
   if (files.empty() && m_overridesTable.empty()) {
     kLog.info("no config files found, using defaults");
+    m_lastChange = ConfigChangeSet{};
     m_config = makeDefaultConfig();
     m_configFileBarNames.clear();
     m_configFileMonitorOverrideNames.clear();
@@ -1168,17 +1200,22 @@ void ConfigService::loadAll() {
   }
 
   if (semanticError.empty()) {
+    m_lastChange = computeConfigChangeSet(m_config, nextConfig);
     m_config = std::move(nextConfig);
     m_configFileBarNames = std::move(configFileBarNames);
     m_configFileMonitorOverrideNames = std::move(configFileMonitorOverrideNames);
     extractWallpaperFromTable(merged);
   } else if (m_config.bars.empty()) {
+    m_lastChange = ConfigChangeSet{};
     m_config = makeDefaultConfig();
     m_configFileBarNames.clear();
     m_configFileMonitorOverrideNames.clear();
     m_defaultWallpaperPath.clear();
     m_lastWallpaperPath.clear();
     m_monitorWallpaperPaths.clear();
+  } else {
+    // Parse error with a usable previous config retained — fan out conservatively.
+    m_lastChange = ConfigChangeSet{};
   }
 
   const std::string parseError = !firstError.empty() ? firstError

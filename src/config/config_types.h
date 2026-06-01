@@ -1059,3 +1059,59 @@ struct Config {
   ThemeConfig theme;
   ControlCenterConfig controlCenter;
 };
+
+// Which top-level config sections changed across a reload. Default-constructed
+// to all-true (conservative: "assume everything changed") so any path that does
+// not compute a precise diff still fans the reload out to every subscriber.
+struct ConfigChangeSet {
+  bool bars = true;
+  bool widgets = true;
+  bool desktopWidgets = true;
+  bool wallpaper = true;
+  bool backdrop = true;
+  bool lockscreen = true;
+  bool dock = true;
+  bool shell = true;
+  bool osd = true;
+  bool notification = true;
+  bool weather = true;
+  bool calendar = true;
+  bool system = true;
+  bool audio = true;
+  bool brightness = true;
+  bool keybinds = true;
+  bool nightlight = true;
+  bool idle = true;
+  bool hooks = true;
+  bool theme = true;
+  bool controlCenter = true;
+
+  [[nodiscard]] bool any() const noexcept {
+    return bars
+        || widgets
+        || desktopWidgets
+        || wallpaper
+        || backdrop
+        || lockscreen
+        || dock
+        || shell
+        || osd
+        || notification
+        || weather
+        || calendar
+        || system
+        || audio
+        || brightness
+        || keybinds
+        || nightlight
+        || idle
+        || hooks
+        || theme
+        || controlCenter;
+  }
+};
+
+// Per-section diff using the same comparison semantics as configEqual()
+// (bars/widgets/desktop widgets get their specialized comparators). Implemented
+// in config_overrides.cpp alongside those comparators.
+[[nodiscard]] ConfigChangeSet computeConfigChangeSet(const Config& prev, const Config& next);

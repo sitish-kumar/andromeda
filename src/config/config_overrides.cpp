@@ -583,6 +583,32 @@ namespace {
   }
 } // namespace
 
+ConfigChangeSet computeConfigChangeSet(const Config& prev, const Config& next) {
+  return ConfigChangeSet{
+      .bars = !vectorEqual(prev.bars, next.bars, barConfigEqual),
+      .widgets = !widgetMapEqual(prev.widgets, next.widgets),
+      .desktopWidgets = !desktopWidgetsConfigEqual(prev.desktopWidgets, next.desktopWidgets),
+      .wallpaper = !(prev.wallpaper == next.wallpaper),
+      .backdrop = !(prev.backdrop == next.backdrop),
+      .lockscreen = !(prev.lockscreen == next.lockscreen),
+      .dock = !(prev.dock == next.dock),
+      .shell = !(prev.shell == next.shell),
+      .osd = !(prev.osd == next.osd),
+      .notification = !(prev.notification == next.notification),
+      .weather = !(prev.weather == next.weather),
+      .calendar = !(prev.calendar == next.calendar),
+      .system = !(prev.system == next.system),
+      .audio = !(prev.audio == next.audio),
+      .brightness = !(prev.brightness == next.brightness),
+      .keybinds = !(prev.keybinds == next.keybinds),
+      .nightlight = !(prev.nightlight == next.nightlight),
+      .idle = !(prev.idle == next.idle),
+      .hooks = !(prev.hooks == next.hooks),
+      .theme = !(prev.theme == next.theme),
+      .controlCenter = !(prev.controlCenter == next.controlCenter),
+  };
+}
+
 void ConfigService::setThemeMode(ThemeMode mode) {
   if (m_overridesPath.empty()) {
     return;

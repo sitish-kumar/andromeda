@@ -420,7 +420,14 @@ void Application::initServices() {
     m_settingsWindow.onExternalOptionsChanged();
   });
   m_communityPaletteService.sync();
-  m_configService.addReloadCallback([this]() { m_communityPaletteService.sync(); }, "community-palette-sync");
+  m_configService.addReloadCallback(
+      [this]() {
+        if (m_configService.lastChange().theme) {
+          m_communityPaletteService.sync();
+        }
+      },
+      "community-palette-sync"
+  );
   m_communityTemplateService.setReadyCallback([this]() {
     if (m_configService.config().theme.templates.enableCommunityTemplates) {
       m_themeService.onConfigReload();
@@ -429,7 +436,12 @@ void Application::initServices() {
   });
   m_communityTemplateService.sync(m_configService.config().theme.templates);
   m_configService.addReloadCallback(
-      [this]() { m_communityTemplateService.sync(m_configService.config().theme.templates); }, "community-template-sync"
+      [this]() {
+        if (m_configService.lastChange().theme) {
+          m_communityTemplateService.sync(m_configService.config().theme.templates);
+        }
+      },
+      "community-template-sync"
   );
 
   // i18n has no dependencies on other services and must be ready before any
@@ -581,7 +593,14 @@ void Application::initServices() {
     return runUserCommandBlocking(command);
   });
   m_hookManager.reload(m_configService.config().hooks);
-  m_configService.addReloadCallback([this]() { m_hookManager.reload(m_configService.config().hooks); });
+  m_configService.addReloadCallback(
+      [this]() {
+        if (m_configService.lastChange().hooks) {
+          m_hookManager.reload(m_configService.config().hooks);
+        }
+      },
+      "hooks"
+  );
   auto syncNightLightWeatherConfig = [this]() {
     m_gammaService.setWeatherLocationConfigured(
         weatherLocationConfiguredForNightLight(m_configService.config().weather)
@@ -1242,7 +1261,14 @@ void Application::initUi() {
     DeferredCall::callLater([this]() { m_settingsWindow.onIdleLiveStatusChanged(); });
   });
   m_idleManager.reload(m_configService.config().idle);
-  m_configService.addReloadCallback([this]() { m_idleManager.reload(m_configService.config().idle); });
+  m_configService.addReloadCallback(
+      [this]() {
+        if (m_configService.lastChange().idle) {
+          m_idleManager.reload(m_configService.config().idle);
+        }
+      },
+      "idle"
+  );
   m_audioOsd.bindOverlay(m_osdOverlay);
   m_audioOsd.setSoundPlayer(m_soundPlayer.get());
   if (m_pipewireService != nullptr) {
