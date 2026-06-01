@@ -40,6 +40,7 @@ namespace {
   // Bottom row: 1 : 1 — equal split so media/clock and shortcuts feel balanced (tweak either value slightly if needed).
   constexpr float kHomeMainColumnFlexGrow = 1.66f;
   constexpr float kHomeShortcutsFlexGrow = 1.0f;
+  constexpr std::size_t kHomeShortcutGridColumns = 2;
   constexpr auto kHomeTransientPositionRegressionWindow = std::chrono::milliseconds(1500);
   constexpr std::int64_t kHomeTransientPositionRegressionFloorUs = 5'000'000;
   constexpr std::int64_t kHomeTransientPositionRegressionCeilingUs = 1'500'000;
@@ -47,6 +48,19 @@ namespace {
   constexpr int kHomeMediaArtLayoutPassLimit = 8;
 
   float homeAvatarSize(float scale) { return Style::controlHeightLg * kHomeAvatarScale * scale; }
+
+  float homeStackedShortcutsWidth(float contentWidth, float bottomRowGap, const GridView& grid) {
+    const float totalGrow = kHomeMainColumnFlexGrow + kHomeShortcutsFlexGrow;
+    const float fullGridWidth = std::max(1.0f, contentWidth - bottomRowGap) * (kHomeShortcutsFlexGrow / totalGrow);
+    const float horizontalPadding = grid.paddingLeft() + grid.paddingRight();
+    const float fullGridInnerWidth = std::max(1.0f, fullGridWidth - horizontalPadding);
+    const float cellWidth = std::max(
+        1.0f,
+        (fullGridInnerWidth - grid.columnGap() * static_cast<float>(kHomeShortcutGridColumns - 1))
+            / static_cast<float>(kHomeShortcutGridColumns)
+    );
+    return cellWidth + horizontalPadding;
+  }
 
   std::filesystem::path avatarStartDirectory(const ConfigService* config) {
     if (config != nullptr) {
@@ -420,7 +434,7 @@ std::unique_ptr<Flex> HomeTab::create() {
   const std::size_t count = std::min(shortcuts.size(), std::size_t{6});
 
   auto grid = std::make_unique<GridView>();
-  grid->setColumns(2);
+  grid->setColumns(kHomeShortcutGridColumns);
   grid->setColumnGap(Style::spaceSm * scale);
   grid->setRowGap(Style::spaceSm * scale);
   grid->setPadding(0.0f);
@@ -490,6 +504,11 @@ std::unique_ptr<Flex> HomeTab::create() {
     grid->addChild(std::move(btn));
   }
 
+  if (m_shortcutPads.size() <= 2) {
+    grid->setColumns(1);
+    grid->setFlexGrow(0.0f);
+  }
+
   if (!m_shortcutPads.empty()) {
     bottomRow->addChild(std::move(grid));
   } else {
@@ -539,6 +558,12 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
     const float userMainHeight = std::max(1.0f, m_userAvatar->height());
     m_userMain->setMinHeight(userMainHeight);
     m_userMain->setSize(m_userMain->width(), userMainHeight);
+  }
+  if (m_shortcutsGrid != nullptr && m_shortcutPads.size() <= 2) {
+    const float bottomRowGap = m_bottomRow != nullptr ? m_bottomRow->gap() : 0.0f;
+    m_shortcutsGrid->setSize(
+        homeStackedShortcutsWidth(contentWidth, bottomRowGap, *m_shortcutsGrid), m_shortcutsGrid->height()
+    );
   }
   m_rootLayout->setSize(contentWidth, bodyHeight);
   m_rootLayout->layout(renderer);
