@@ -99,6 +99,7 @@ namespace noctalia::theme {
         for (const auto& item : *entries) {
           AvailablePalette palette;
           palette.name = paletteNameFromJson(item);
+          palette.md5 = item.is_object() ? stringField(item, "md5") : std::string{};
           palette.preview.dark = palettePreviewFromJson(item, "dark");
           palette.preview.light = palettePreviewFromJson(item, "light");
           if (!palette.name.empty()) {
@@ -152,6 +153,17 @@ namespace noctalia::theme {
   }
 
   std::vector<AvailablePalette> availableCommunityPalettes() { return parseCatalogFile(catalogCachePath()); }
+
+  std::string communityPaletteCatalogMd5(std::string_view name) {
+    const auto catalog = parseCatalogFile(catalogCachePath());
+    auto it = std::find_if(catalog.begin(), catalog.end(), [name](const AvailablePalette& palette) {
+      return palette.name == name;
+    });
+    if (it == catalog.end()) {
+      return {};
+    }
+    return it->md5;
+  }
 
   std::filesystem::path communityPaletteCacheDir() {
     if (const char* xdg = std::getenv("XDG_CACHE_HOME"); xdg != nullptr && xdg[0] != '\0') {

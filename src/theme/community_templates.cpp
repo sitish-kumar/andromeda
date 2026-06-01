@@ -4,15 +4,14 @@
 #include "core/log.h"
 #include "core/toml.h" // IWYU pragma: keep
 #include "net/http_client.h"
+#include "util/checksum.h"
 #include "util/string_utils.h"
 
 #include <algorithm>
-#include <array>
 #include <cctype>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
-#include <glib.h>
 #include <json.hpp>
 #include <memory>
 #include <optional>
@@ -309,41 +308,13 @@ namespace noctalia::theme {
       }
     }
 
-    std::string fileMd5Hex(const std::filesystem::path& path) {
-      std::ifstream in(path, std::ios::binary);
-      if (!in)
-        return {};
-
-      GChecksum* checksum = g_checksum_new(G_CHECKSUM_MD5);
-      if (checksum == nullptr)
-        return {};
-
-      std::array<char, 8192> buffer{};
-      while (in) {
-        in.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
-        const std::streamsize bytesRead = in.gcount();
-        if (bytesRead > 0) {
-          g_checksum_update(checksum, reinterpret_cast<const guchar*>(buffer.data()), static_cast<gssize>(bytesRead));
-        }
-      }
-
-      std::string digest;
-      if (!in.bad()) {
-        if (const gchar* value = g_checksum_get_string(checksum); value != nullptr) {
-          digest = value;
-        }
-      }
-      g_checksum_free(checksum);
-      return digest;
-    }
-
     bool cacheMatches(const CommunityTemplateFile& file, const std::filesystem::path& dest) {
       removeLegacyMd5Sidecar(dest);
       if (!std::filesystem::exists(dest))
         return false;
       if (file.md5.empty())
         return true;
-      return fileMd5Hex(dest) == StringUtils::toLower(file.md5);
+      return util::fileMd5Hex(dest) == StringUtils::toLower(file.md5);
     }
 
     std::string urlEncodePath(std::string_view path) {
@@ -524,7 +495,7 @@ namespace noctalia::theme {
                 return;
               if (success) {
                 removeLegacyMd5Sidecar(dest);
-                if (!file.md5.empty() && fileMd5Hex(dest) != StringUtils::toLower(file.md5)) {
+                if (!file.md5.empty() && util::fileMd5Hex(dest) != StringUtils::toLower(file.md5)) {
                   std::error_code removeEc;
                   std::filesystem::remove(dest, removeEc);
                   kLog.warn("downloaded community template file {} failed md5 validation", dest.string());

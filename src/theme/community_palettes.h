@@ -23,6 +23,7 @@ namespace noctalia::theme {
     };
 
     std::string name;
+    std::string md5 = {};
     Preview preview = {};
   };
 
@@ -42,6 +43,11 @@ namespace noctalia::theme {
   };
 
   [[nodiscard]] std::vector<AvailablePalette> availableCommunityPalettes();
+
+  // Catalog-declared MD5 of the named palette's downloaded JSON, or empty if the
+  // palette is absent from the cached catalog or the catalog omits a checksum.
+  [[nodiscard]] std::string communityPaletteCatalogMd5(std::string_view name);
+
   [[nodiscard]] std::filesystem::path communityPaletteCacheDir();
   [[nodiscard]] std::filesystem::path communityPaletteCachePath(std::string_view name);
   [[nodiscard]] std::string communityPaletteDownloadUrl(std::string_view name);

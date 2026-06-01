@@ -413,7 +413,12 @@ void Application::initServices() {
   });
   m_configService.addReloadCallback([this]() { syncClipboardService(); });
   m_configService.addReloadCallback([this]() { syncScreenTimeService(); });
-  m_communityPaletteService.setReadyCallback([this]() { m_settingsWindow.onExternalOptionsChanged(); });
+  m_communityPaletteService.setReadyCallback([this]() {
+    // A refreshed catalog may carry a new md5 for the selected palette; re-resolve
+    // so a stale cached palette gets re-downloaded and faded in.
+    m_themeService.onConfigReload();
+    m_settingsWindow.onExternalOptionsChanged();
+  });
   m_communityPaletteService.sync();
   m_configService.addReloadCallback([this]() { m_communityPaletteService.sync(); });
   m_communityTemplateService.setReadyCallback([this]() {

@@ -13,6 +13,7 @@
 #include "theme/palette_generator.h"
 #include "theme/scheme.h"
 #include "theme/theme_mode.h"
+#include "util/checksum.h"
 #include "util/string_utils.h"
 
 #include <cctype>
@@ -392,15 +393,23 @@ namespace noctalia::theme {
       resolved = resolveWallpaper(cfg, m_config.getPaletteWallpaperPath());
     } else if (cfg.source == PaletteSource::Community && !cfg.communityPalette.empty()) {
       const auto cachePath = communityPaletteCachePath(cfg.communityPalette);
+      bool stale = true;
       if (std::filesystem::exists(cachePath)) {
         if (auto parsed = parseCommunityPaletteJson(cachePath)) {
           resolved = makeResolvedFromParsed(*parsed, cfg);
+          // Re-fetch when the catalog advertises a different checksum than the
+          // cached copy. An empty catalog md5 means "freshness unknown" — keep
+          // the cached palette rather than re-downloading on every resolve.
+          const std::string expectedMd5 = communityPaletteCatalogMd5(cfg.communityPalette);
+          stale = !expectedMd5.empty() && util::fileMd5Hex(cachePath) != StringUtils::toLower(expectedMd5);
         } else {
           std::error_code rmEc;
           std::filesystem::remove(cachePath, rmEc);
         }
       }
-      if (!resolved.has_value()) {
+      // A stale-but-valid cache still resolves above, so the fresh copy fades in
+      // via the download callback instead of flashing the builtin palette.
+      if (stale) {
         startCommunityDownload(cfg.communityPalette);
       }
     }

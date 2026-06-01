@@ -659,6 +659,7 @@ _noctalia_sources = files(
   'src/ui/palette.cpp',
   'src/ui/popup_chrome.cpp',
   'src/ui/style.cpp',
+  'src/util/checksum.cpp',
   'src/util/fuzzy_match.cpp',
   'src/wayland/clipboard_service.cpp',
   'src/wayland/text_input_service.cpp',
