@@ -1,5 +1,6 @@
 #pragma once
 
+#include "config/config_types.h"
 #include "shell/backdrop/backdrop_instance.h"
 
 #include <memory>
@@ -29,6 +30,7 @@ private:
   [[nodiscard]] bool isSupportedForCurrentCompositor() const;
   [[nodiscard]] bool shouldHaveInstances() const;
   void reload();
+  void cacheReloadBaseline();
   void destroyInstances();
   void syncInstances();
   void createInstance(const WaylandOutput& output);
@@ -40,5 +42,9 @@ private:
   ConfigService* m_config = nullptr;
   SharedTextureCache* m_textureCache = nullptr;
   GlSharedContext* m_sharedGl = nullptr;
+  BackdropConfig m_lastBackdropConfig{};
+  bool m_lastShouldHaveInstances = false;
+  bool m_lastWallpaperEnabled = true;
+  WallpaperFillMode m_lastWallpaperFillMode = WallpaperFillMode::Crop;
   std::vector<std::unique_ptr<BackdropInstance>> m_instances;
 };

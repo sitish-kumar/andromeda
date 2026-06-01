@@ -1,5 +1,6 @@
 #pragma once
 
+#include "config/config_types.h"
 #include "shell/wallpaper/wallpaper_instance.h"
 #include "ui/signal.h"
 
@@ -49,6 +50,7 @@ private:
   RenderContext* m_renderContext = nullptr;
   SharedTextureCache* m_textureCache = nullptr;
   bool m_wallpaperEnabled = false;
+  WallpaperConfig m_lastWallpaperConfig{};
   std::int64_t m_lastAutomationMinuteStamp = -1;
   std::int64_t m_lastAutomationSwitchMinute = -1;
   Signal<>::ScopedConnection m_paletteConn;

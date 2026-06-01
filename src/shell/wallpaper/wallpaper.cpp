@@ -225,21 +225,29 @@ bool Wallpaper::initialize(
 
   if (!m_config->config().wallpaper.enabled) {
     m_wallpaperEnabled = false;
+    m_lastWallpaperConfig = m_config->config().wallpaper;
     kLog.info("disabled in config");
     return true;
   }
 
   resetAutomationState();
   m_wallpaperEnabled = true;
+  m_lastWallpaperConfig = m_config->config().wallpaper;
   syncInstances();
   return true;
 }
 
 void Wallpaper::reload() {
+  const auto& wallpaperConfig = m_config->config().wallpaper;
+  const bool nowEnabled = wallpaperConfig.enabled;
+
+  if (nowEnabled && m_wallpaperEnabled && wallpaperConfig == m_lastWallpaperConfig) {
+    return;
+  }
+
   kLog.info("reloading config");
 
   const bool wasEnabled = m_wallpaperEnabled;
-  const bool nowEnabled = m_config->config().wallpaper.enabled;
 
   if (!nowEnabled) {
     resetAutomationState();
@@ -249,6 +257,7 @@ void Wallpaper::reload() {
       releaseInstanceTextures(*inst);
     }
     m_instances.clear();
+    m_lastWallpaperConfig = wallpaperConfig;
     return;
   }
 
@@ -256,6 +265,7 @@ void Wallpaper::reload() {
     resetAutomationState();
   }
   m_wallpaperEnabled = true;
+  m_lastWallpaperConfig = wallpaperConfig;
 
   // Wallpaper remains (or becomes) enabled — sync instances without teardown
   // to avoid flickering. syncInstances handles monitor override changes

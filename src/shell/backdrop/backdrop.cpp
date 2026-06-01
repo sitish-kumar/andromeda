@@ -55,26 +55,66 @@ bool Backdrop::initialize(
   if (shouldHaveInstances()) {
     syncInstances();
   }
+  cacheReloadBaseline();
   return true;
 }
 
+void Backdrop::cacheReloadBaseline() {
+  if (m_config == nullptr) {
+    return;
+  }
+  const auto& cfg = m_config->config();
+  m_lastBackdropConfig = cfg.backdrop;
+  m_lastShouldHaveInstances = shouldHaveInstances();
+  m_lastWallpaperEnabled = cfg.wallpaper.enabled;
+  m_lastWallpaperFillMode = cfg.wallpaper.fillMode;
+}
+
 void Backdrop::reload() {
-  kLog.info("reloading config");
-
-  // Always tear down existing instances. This is necessary because a
-  // wallpaper enable/disable cycle resets the wallpaper share context, and any
-  // backdrop instances created against the old context cannot access the new
-  // textures. Full teardown + recreate is safe since backdrop surfaces are
-  // hidden by the compositor outside of overview mode (no visible flash).
-  destroyInstances();
-
-  if (!m_config->config().backdrop.enabled) {
+  if (m_config == nullptr) {
     return;
   }
 
-  if (shouldHaveInstances()) {
-    syncInstances();
+  const auto& cfg = m_config->config();
+  const bool shouldInstances = shouldHaveInstances();
+  const bool recreateNeeded = cfg.backdrop != m_lastBackdropConfig
+      || shouldInstances != m_lastShouldHaveInstances
+      || cfg.wallpaper.enabled != m_lastWallpaperEnabled;
+
+  if (!recreateNeeded
+      && cfg.backdrop.enabled
+      && shouldInstances
+      && !m_instances.empty()
+      && cfg.wallpaper.fillMode == m_lastWallpaperFillMode) {
+    return;
   }
+
+  cacheReloadBaseline();
+
+  if (!cfg.backdrop.enabled || !shouldInstances) {
+    if (!m_instances.empty()) {
+      kLog.info("reloading config");
+      destroyInstances();
+    }
+    return;
+  }
+
+  if (!recreateNeeded) {
+    for (auto& inst : m_instances) {
+      updateRendererState(*inst);
+      if (inst->surface != nullptr) {
+        inst->surface->requestRedraw();
+      }
+    }
+    return;
+  }
+
+  kLog.info("reloading config");
+
+  // Full teardown is required when backdrop or wallpaper enablement changes because
+  // a wallpaper enable/disable cycle resets the shared texture context.
+  destroyInstances();
+  syncInstances();
 }
 
 void Backdrop::onOutputChange() {
