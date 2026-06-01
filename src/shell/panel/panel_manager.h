@@ -91,6 +91,8 @@ public:
   [[nodiscard]] bool isOpenPanel(std::string_view panelId) const noexcept;
   [[nodiscard]] bool isPanelTransitionActive() const noexcept;
   [[nodiscard]] bool isAttachedOpen() const noexcept;
+  // Output the active panel is on; null when none is open.
+  [[nodiscard]] wl_output* attachedPanelOutput() const noexcept;
   // Bar that opened the active panel; empty when none was recorded.
   [[nodiscard]] std::string_view attachedSourceBarName() const noexcept;
   [[nodiscard]] const std::string& activePanelId() const noexcept;

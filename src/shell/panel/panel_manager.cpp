@@ -304,7 +304,6 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
 
   m_activePanel = it->second.get();
   m_activePanelId = panelId;
-  m_sourceBarName = std::string(request.sourceBarName);
   m_activePanel->setContentScale(resolvePanelContentScale(m_config));
   m_pendingOpenContext = std::string(request.context);
   m_activePanel->setPendingOpenContext(request.context);
@@ -316,6 +315,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   const auto panelWidth = static_cast<std::uint32_t>(m_activePanel->preferredWidth());
   const auto panelHeight = static_cast<std::uint32_t>(m_activePanel->preferredHeight());
   const auto barConfig = resolvePanelBarConfig(m_config, m_platform, request.output, request.sourceBarName);
+  m_sourceBarName = request.sourceBarName.empty() ? barConfig.name : std::string(request.sourceBarName);
   const bool isBottom = barConfig.position == "bottom";
   const bool isLeft = barConfig.position == "left";
   const bool isRight = barConfig.position == "right";
@@ -1115,6 +1115,8 @@ bool PanelManager::isPanelTransitionActive() const noexcept {
 }
 
 bool PanelManager::isAttachedOpen() const noexcept { return isOpen() && m_attachedToBar; }
+
+wl_output* PanelManager::attachedPanelOutput() const noexcept { return m_output; }
 
 std::string_view PanelManager::attachedSourceBarName() const noexcept { return m_sourceBarName; }
 

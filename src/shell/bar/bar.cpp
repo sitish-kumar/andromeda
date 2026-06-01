@@ -1291,6 +1291,13 @@ std::vector<wl_surface*> Bar::allBarSurfaces() const {
   return surfaces;
 }
 
+void Bar::revealAutoHideForAttachedPanel(wl_output* output, std::string_view barName) {
+  BarInstance* instance = instanceForBar(output, barName);
+  if (instance != nullptr) {
+    revealAutoHideBar(*instance);
+  }
+}
+
 void Bar::setAttachedPanelGeometry(
     wl_output* output, std::string_view barName, std::optional<AttachedPanelGeometry> geometry
 ) {

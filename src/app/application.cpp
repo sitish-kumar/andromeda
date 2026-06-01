@@ -1174,7 +1174,14 @@ void Application::initUi() {
       }
   );
   m_compositorPlatform.setOverviewChangeCallback([this]() { m_overviewLauncherCapture.sync(); });
-  m_panelManager.setPanelOpenedCallback([this]() { m_overviewLauncherCapture.sync(); });
+  m_panelManager.setPanelOpenedCallback([this]() {
+    m_overviewLauncherCapture.sync();
+    if (m_panelManager.isAttachedOpen()) {
+      m_bar.revealAutoHideForAttachedPanel(
+          m_panelManager.attachedPanelOutput(), m_panelManager.attachedSourceBarName()
+      );
+    }
+  });
   m_panelManager.setPanelClosedCallback([this]() {
     m_overviewLauncherCapture.sync();
     m_bar.reevaluateAutoHide();
