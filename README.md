@@ -3,7 +3,42 @@ Noctalia
 
 A lightweight Wayland shell and bar built directly on Wayland + OpenGL ES, with no Qt or GTK dependency.
 
-Noctalia is in early development. Expect breaking configuration and behavior changes while the project is still taking shape.
+> [!IMPORTANT]
+> Noctalia is in early development. Expect breaking configuration and behavior changes while the project is still taking shape.
+
+<p><br/></p>
+
+<p align="center">
+  <img src="https://assets.noctalia.dev/noctalia-logo.svg?v=2" alt="Noctalia Logo" style="width: 192px" />
+</p>
+
+<p align="center">
+  <a href="https://docs.noctalia.dev/v5/getting-started/installation">
+    <img
+      src="https://img.shields.io/badge/🌙_Install_Noctalia-A8AEFF?style=for-the-badge&labelColor=0C0D11"
+      alt="Install Noctalia"
+      style="height: 50px"
+    />
+  </a>
+</p>
+
+<p><br/></p>
+
+<p align="center">
+  <a href="https://github.com/noctalia-dev/noctalia-shell/commits">
+    <img src="https://img.shields.io/github/last-commit/noctalia-dev/noctalia-shell?style=for-the-badge&labelColor=0C0D11&color=A8AEFF&logo=git&logoColor=FFFFFF&label=commit" alt="Last commit" />
+  </a>
+  <a href="https://github.com/noctalia-dev/noctalia-shell/stargazers">
+    <img src="https://img.shields.io/github/stars/noctalia-dev/noctalia-shell?style=for-the-badge&labelColor=0C0D11&color=A8AEFF&logo=github&logoColor=FFFFFF" alt="GitHub stars" />
+  </a>
+  <a href="https://docs.noctalia.dev">
+    <img src="https://img.shields.io/badge/docs-A8AEFF?style=for-the-badge&logo=gitbook&logoColor=FFFFFF&labelColor=0C0D11" alt="Documentation" />
+  </a>
+  <a href="https://discord.noctalia.dev">
+    <img src="https://img.shields.io/badge/discord-A8AEFF?style=for-the-badge&labelColor=0C0D11&logo=discord&logoColor=FFFFFF" alt="Discord" />
+  </a>
+</p>
+
 
 ## Dependencies
 
