@@ -64,12 +64,15 @@ void InputDispatcher::setCursorShapeCallback(CursorShapeCallback callback) {
   m_cursorShapeCallback = std::move(callback);
 }
 
-void InputDispatcher::setTextInputContext(wl_surface* surface, TextInputService* service) {
+void InputDispatcher::setTextInputContext(
+    wl_surface* surface, TextInputService* service, bool keyboardFocusActivation
+) {
   if ((m_textInputSurface != surface || m_textInputService != service) && m_focusedArea != nullptr) {
     clearTextInputFocus(m_focusedArea);
   }
   m_textInputSurface = surface;
   m_textInputService = service;
+  m_textInputKeyboardFocusActivation = keyboardFocusActivation;
   syncTextInputFocus();
 }
 
@@ -361,7 +364,7 @@ void InputDispatcher::syncTextInputFocus() {
     return;
   }
   if (auto* client = m_focusedArea->textInputClient(); client != nullptr) {
-    m_textInputService->setFocusedClient(m_textInputSurface, client);
+    m_textInputService->setFocusedClient(m_textInputSurface, client, m_textInputKeyboardFocusActivation);
   }
 }
 

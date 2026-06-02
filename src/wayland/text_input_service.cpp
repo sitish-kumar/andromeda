@@ -142,6 +142,7 @@ void TextInputService::cleanup() {
   m_keyboardFocusSurface = nullptr;
   m_activeSurface = nullptr;
   m_activeClient = nullptr;
+  m_activeAcceptsKeyboardFocusActivation = false;
   m_pendingEdit = {};
   m_commitSerial = 0;
   m_textInputVersion = 0;
@@ -150,7 +151,9 @@ void TextInputService::cleanup() {
 
 bool TextInputService::isAvailable() const noexcept { return m_textInput != nullptr; }
 
-void TextInputService::setFocusedClient(wl_surface* surface, TextInputClient* client) {
+void TextInputService::setFocusedClient(
+    wl_surface* surface, TextInputClient* client, bool acceptKeyboardFocusActivation
+) {
   if (surface == nullptr || client == nullptr) {
     clearFocusedClient(m_activeClient);
     return;
@@ -158,6 +161,8 @@ void TextInputService::setFocusedClient(wl_surface* surface, TextInputClient* cl
   if (m_textInput == nullptr) {
     return;
   }
+
+  m_activeAcceptsKeyboardFocusActivation = acceptKeyboardFocusActivation;
 
   if (m_activeClient == client && m_activeSurface == surface) {
     commitActiveState(TextInputChangeCause::Other);
@@ -183,6 +188,7 @@ void TextInputService::clearFocusedClient(TextInputClient* client) {
   deactivateClient(client);
   m_activeClient = nullptr;
   m_activeSurface = nullptr;
+  m_activeAcceptsKeyboardFocusActivation = false;
   m_pendingEdit = {};
 }
 
@@ -209,7 +215,10 @@ bool TextInputService::activeSurfaceAcceptsTextInput() const noexcept {
   if (m_activeSurface == nullptr) {
     return false;
   }
-  return m_enteredSurface == m_activeSurface || m_keyboardFocusSurface == m_activeSurface;
+  if (m_enteredSurface == m_activeSurface) {
+    return true;
+  }
+  return m_activeAcceptsKeyboardFocusActivation && m_keyboardFocusSurface == m_activeSurface;
 }
 
 void TextInputService::handleEnter(wl_surface* surface) {

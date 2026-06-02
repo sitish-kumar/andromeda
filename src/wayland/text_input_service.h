@@ -22,7 +22,7 @@ public:
 
   [[nodiscard]] bool isAvailable() const noexcept;
 
-  void setFocusedClient(wl_surface* surface, TextInputClient* client);
+  void setFocusedClient(wl_surface* surface, TextInputClient* client, bool acceptKeyboardFocusActivation = false);
   void clearFocusedClient(TextInputClient* client);
   void notifyClientStateChanged(TextInputClient* client, TextInputChangeCause cause);
   void onKeyboardFocusSurface(wl_surface* surface, bool entered);
@@ -50,6 +50,7 @@ private:
   wl_surface* m_keyboardFocusSurface = nullptr;
   wl_surface* m_activeSurface = nullptr;
   TextInputClient* m_activeClient = nullptr;
+  bool m_activeAcceptsKeyboardFocusActivation = false;
   TextInputEdit m_pendingEdit;
   std::uint32_t m_commitSerial = 0;
   std::uint32_t m_textInputVersion = 0;
