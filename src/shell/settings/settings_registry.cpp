@@ -1036,6 +1036,18 @@ namespace settings {
       }
     }
     entries.push_back(makeEntry(
+        "security", "lock-screen", tr("settings.schema.lockscreen.wallpaper-blur-intensity.label"),
+        tr("settings.schema.lockscreen.wallpaper-blur-intensity.description"),
+        {"lockscreen", "wallpaper_blur_intensity"},
+        SliderSetting{cfg.lockscreen.wallpaperBlurIntensity, 0.0f, 1.0f, 0.01f, false}, "lock screen wallpaper blur"
+    ));
+    entries.push_back(makeEntry(
+        "security", "lock-screen", tr("settings.schema.lockscreen.wallpaper-tint-intensity.label"),
+        tr("settings.schema.lockscreen.wallpaper-tint-intensity.description"),
+        {"lockscreen", "wallpaper_tint_intensity"},
+        SliderSetting{cfg.lockscreen.wallpaperTintIntensity, 0.0f, 1.0f, 0.01f, false}, "lock screen wallpaper tint"
+    ));
+    entries.push_back(makeEntry(
         "shell", "general", tr("settings.schema.shell.time-format.label"),
         tr("settings.schema.shell.time-format.description"), {"shell", "time_format"},
         TextSetting{.value = cfg.shell.timeFormat, .placeholder = "{:%H:%M}", .browseFileExtensions = {}},

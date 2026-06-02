@@ -44,6 +44,7 @@ public:
   void setWallpaperFillColor(Color fillColor);
   void setDesktopCapture(std::optional<ScreencopyImage> capture);
   void setBlurredDesktopStyle(float blurIntensity, float tintIntensity);
+  void setWallpaperStyle(float blurIntensity, float tintIntensity);
   void setOnLogin(std::function<void()> onLogin);
   void setOnPasswordChanged(std::function<void(const std::string&)> onPasswordChanged);
   void selectAllPassword();
@@ -85,12 +86,16 @@ private:
   Button* m_loginButton = nullptr;
   SharedTextureCache* m_textureCache = nullptr;
   TextureHandle m_wallpaperTexture{};
+  TextureHandle m_blurredWallpaperTexture{};
   TextureHandle m_captureSourceTexture{};
   TextureHandle m_blurredDesktopTexture{};
   BlurCache m_blurCache;
+  BlurCache m_wallpaperBlurCache;
   std::optional<ScreencopyImage> m_desktopCapture;
   float m_blurIntensity = 0.5f;
   float m_tintIntensity = 0.3f;
+  float m_wallpaperBlurIntensity = 0.0f;
+  float m_wallpaperTintIntensity = 0.0f;
   bool m_captureDirty = true;
   std::string m_wallpaperPath;
   WallpaperFillMode m_wallpaperFillMode = WallpaperFillMode::Crop;

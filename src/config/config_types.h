@@ -384,6 +384,8 @@ struct LockscreenConfig {
   bool blurredDesktop = false;
   float blurIntensity = 0.5f;
   float tintIntensity = 0.3f;
+  float wallpaperBlurIntensity = 0.0f;
+  float wallpaperTintIntensity = 0.0f;
 
   bool operator==(const LockscreenConfig&) const = default;
 };

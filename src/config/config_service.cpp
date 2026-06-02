@@ -2040,6 +2040,10 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       lock.blurIntensity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
     if (auto v = finiteDouble((*lockTbl)["tint_intensity"]))
       lock.tintIntensity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
+    if (auto v = finiteDouble((*lockTbl)["wallpaper_blur_intensity"]))
+      lock.wallpaperBlurIntensity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
+    if (auto v = finiteDouble((*lockTbl)["wallpaper_tint_intensity"]))
+      lock.wallpaperTintIntensity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
   }
 
   // Parse [osd]

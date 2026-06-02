@@ -692,6 +692,12 @@ namespace config_export {
     lockscreen.insert_or_assign("blurred_desktop", config.lockscreen.blurredDesktop);
     lockscreen.insert_or_assign("blur_intensity", static_cast<double>(config.lockscreen.blurIntensity));
     lockscreen.insert_or_assign("tint_intensity", static_cast<double>(config.lockscreen.tintIntensity));
+    lockscreen.insert_or_assign(
+        "wallpaper_blur_intensity", static_cast<double>(config.lockscreen.wallpaperBlurIntensity)
+    );
+    lockscreen.insert_or_assign(
+        "wallpaper_tint_intensity", static_cast<double>(config.lockscreen.wallpaperTintIntensity)
+    );
     root.insert_or_assign("lockscreen", std::move(lockscreen));
 
     root.insert_or_assign("notification", notificationTable(config.notification));

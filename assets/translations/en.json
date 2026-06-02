@@ -2057,6 +2057,14 @@
         "tint-intensity": {
           "label": "Tint Intensity",
           "description": "Surface-color tint over the blurred desktop background"
+        },
+        "wallpaper-blur-intensity": {
+          "label": "Wallpaper Blur Intensity",
+          "description": "Blur intensity applied to the configured wallpaper when screencopy background is disabled"
+        },
+        "wallpaper-tint-intensity": {
+          "label": "Wallpaper Tint Intensity",
+          "description": "Surface-color tint over the configured wallpaper when screencopy background is disabled"
         }
       },
       "desktop": {
