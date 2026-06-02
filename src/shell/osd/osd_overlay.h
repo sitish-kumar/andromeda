@@ -83,6 +83,7 @@ private:
   void prepareFrame(Instance& inst, bool needsUpdate, bool needsLayout);
   void buildScene(Instance& inst, std::uint32_t width, std::uint32_t height);
   void updateInstanceContent(Instance& inst);
+  void updateBlurRegion(Instance& inst) const;
   void animateInstance(Instance& inst);
 
   WaylandConnection* m_wayland = nullptr;
