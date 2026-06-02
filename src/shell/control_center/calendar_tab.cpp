@@ -561,14 +561,16 @@ void CalendarTab::rebuild() {
       ++day;
     }
 
-    dayButton->setOnClick([this, cellYear, cellMonth, cellDay, cellMonthShift]() {
+    auto selectDay = [this, cellYear, cellMonth, cellDay, cellMonthShift]() {
       m_selectedYear = cellYear;
       m_selectedMonth = cellMonth;
       m_selectedDay = cellDay;
       m_monthOffset += cellMonthShift;
       m_eventsDirty = true;
       PanelManager::instance().refresh();
-    });
+    };
+
+    dayButton->setOnClick(selectDay);
 
     dayTile->addChild(std::move(dayButton));
 
@@ -586,7 +588,13 @@ void CalendarTab::rebuild() {
         );
       }
     }
-    dayTile->addChild(std::move(dotStrip));
+
+    // Make the dot strip below the number select the day too, so the whole cell is clickable.
+    auto dotArea = std::make_unique<InputArea>();
+    dotArea->setSize(dayButtonSize, dotStripHeight);
+    dotArea->setOnClick([selectDay](const InputArea::PointerData&) { selectDay(); });
+    dotArea->addChild(std::move(dotStrip));
+    dayTile->addChild(std::move(dotArea));
 
     dayGrid->addChild(std::move(dayTile));
   }
