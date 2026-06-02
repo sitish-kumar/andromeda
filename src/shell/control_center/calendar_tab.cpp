@@ -561,14 +561,16 @@ void CalendarTab::rebuild() {
       ++day;
     }
 
-    dayButton->setOnClick([this, cellYear, cellMonth, cellDay, cellMonthShift]() {
+    auto selectDay = [this, cellYear, cellMonth, cellDay, cellMonthShift]() {
       m_selectedYear = cellYear;
       m_selectedMonth = cellMonth;
       m_selectedDay = cellDay;
       m_monthOffset += cellMonthShift;
       m_eventsDirty = true;
       PanelManager::instance().refresh();
-    });
+    };
+
+    dayButton->setOnClick(selectDay);
 
     dayTile->addChild(std::move(dayButton));
 
@@ -586,7 +588,13 @@ void CalendarTab::rebuild() {
         );
       }
     }
-    dayTile->addChild(std::move(dotStrip));
+
+    // Make the dot strip below the number select the day too, so the whole cell is clickable.
+    auto dotArea = std::make_unique<InputArea>();
+    dotArea->setSize(dayButtonSize, dotStripHeight);
+    dotArea->setOnClick([selectDay](const InputArea::PointerData&) { selectDay(); });
+    dotArea->addChild(std::move(dotStrip));
+    dayTile->addChild(std::move(dotArea));
 
     dayGrid->addChild(std::move(dayTile));
   }
@@ -607,6 +615,10 @@ void CalendarTab::rebuildEventList(float scale) {
   }
   content->setDirection(FlexDirection::Vertical);
   content->setGap(Style::spaceSm * scale);
+  // Stretch rows to full content width so each title measures and paints at the same width.
+  // Start-aligned rows lay out at their rounded natural width, which can re-wrap a short title
+  // during arrange while the row reserved only a single line of height — overflowing the next event.
+  content->setAlign(FlexAlign::Stretch);
   while (!content->children().empty()) {
     content->removeChild(content->children().front().get());
   }
@@ -633,14 +645,12 @@ void CalendarTab::rebuildEventList(float scale) {
     }
   }
 
-  // Bound the text width so labels wrap (and therefore measure their true multi-line height) instead
-  // of being measured single-line inside a flex-grow column and overflowing onto the next row.
+  // Soft upper bound on the title width so very long titles still wrap. contentViewportWidth() is
+  // exactly the width rows are arranged at (insets + conditional scrollbar gutter), so this cap
+  // tracks the painted width and never binds early.
   const float dotWidth = Style::spaceXs * scale;
   const float rowGap = Style::spaceSm * scale;
-  const float cardInner = m_eventsCard != nullptr
-      ? std::max(0.0f, m_eventsCard->width() - m_eventsCard->paddingLeft() - m_eventsCard->paddingRight())
-      : 0.0f;
-  const float textMaxWidth = std::max(40.0f, cardInner - dotWidth - rowGap - Style::spaceLg * scale);
+  const float textMaxWidth = std::max(40.0f, m_eventsScroll->contentViewportWidth() - dotWidth - rowGap);
 
   if (dayEvents.empty()) {
     content->addChild(

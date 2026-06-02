@@ -19,6 +19,7 @@
 #include <chrono>
 #include <cmath>
 #include <filesystem>
+#include <optional>
 #include <string_view>
 #include <system_error>
 #include <vector>
@@ -353,6 +354,29 @@ void Wallpaper::onSecondTick() {
 }
 
 void Wallpaper::registerIpc(IpcService& ipc) {
+  auto validateOutputConnector = [this](std::string_view outputConnector) -> std::string {
+    if (m_wayland == nullptr) {
+      return {};
+    }
+    const auto& outputs = m_wayland->outputs();
+    const bool found = std::any_of(outputs.begin(), outputs.end(), [&](const WaylandOutput& out) {
+      return !out.connectorName.empty() && out.connectorName == outputConnector;
+    });
+    if (found) {
+      return {};
+    }
+
+    std::vector<std::string> known;
+    for (const auto& out : outputs) {
+      if (!out.connectorName.empty()) {
+        known.push_back(out.connectorName);
+      }
+    }
+    const std::string suffix =
+        known.empty() ? std::string() : std::string("; known: ") + StringUtils::join(known, ", ");
+    return "error: unknown output \"" + std::string(outputConnector) + "\"" + suffix + "\n";
+  };
+
   ipc.registerHandler(
       "wallpaper-random",
       [this](const std::string& args) -> std::string {
@@ -369,8 +393,32 @@ void Wallpaper::registerIpc(IpcService& ipc) {
       "wallpaper-random [<connector>]", "Switch to a random wallpaper immediately"
   );
   ipc.registerHandler(
+      "wallpaper-get",
+      [this, validateOutputConnector](const std::string& args) -> std::string {
+        if (m_config == nullptr) {
+          return "error: wallpaper service not initialized\n";
+        }
+        const auto tokens = StringUtils::splitWhitespace(StringUtils::trim(args));
+        if (tokens.empty()) {
+          std::string out = m_config->getDefaultWallpaperPath();
+          out.push_back('\n');
+          return out;
+        }
+        if (tokens.size() != 1) {
+          return "error: wallpaper-get accepts at most <connector>\n";
+        }
+        if (const std::string error = validateOutputConnector(tokens[0]); !error.empty()) {
+          return error;
+        }
+        std::string out = m_config->getWallpaperPath(tokens[0]);
+        out.push_back('\n');
+        return out;
+      },
+      "wallpaper-get [<connector>]", "Print default wallpaper path, or effective path for an output"
+  );
+  ipc.registerHandler(
       "wallpaper-set",
-      [this](const std::string& args) -> std::string {
+      [this, validateOutputConnector](const std::string& args) -> std::string {
         if (m_config == nullptr) {
           return "error: wallpaper service not initialized\n";
         }
@@ -404,22 +452,8 @@ void Wallpaper::registerIpc(IpcService& ipc) {
         }
 
         if (outputConnector.has_value()) {
-          if (m_wayland != nullptr) {
-            const auto& outputs = m_wayland->outputs();
-            const bool found = std::any_of(outputs.begin(), outputs.end(), [&](const WaylandOutput& out) {
-              return !out.connectorName.empty() && out.connectorName == *outputConnector;
-            });
-            if (!found) {
-              std::vector<std::string> known;
-              for (const auto& out : outputs) {
-                if (!out.connectorName.empty()) {
-                  known.push_back(out.connectorName);
-                }
-              }
-              const std::string suffix =
-                  known.empty() ? std::string() : std::string("; known: ") + StringUtils::join(known, ", ");
-              return "error: unknown output \"" + *outputConnector + "\"" + suffix + "\n";
-            }
+          if (const std::string error = validateOutputConnector(*outputConnector); !error.empty()) {
+            return error;
           }
           m_config->setWallpaperPath(*outputConnector, resolved);
           return "ok\n";
