@@ -337,23 +337,20 @@ namespace {
     return KeyboardLayoutWidget::parseDisplayMode(display);
   }
 
+  // The shortcut dispatches IPC to the widget named "screen_recorder", so detection must key on the
+  // same canonical config name — not just any scripted widget running screen_recorder.lua — otherwise
+  // the tile renders enabled while the IPC call silently matches nothing.
   bool hasScreenRecorderWidget(const ConfigService* config) {
     if (config == nullptr) {
       return false;
     }
 
-    for (const auto& [name, widget] : config->config().widgets) {
-      (void)name;
-      if (widget.type != "scripted") {
-        continue;
-      }
-      const auto resolved = scripting::resolveScriptPath(widget.getString("script", ""));
-      if (resolved.filename() == "screen_recorder.lua") {
-        return true;
-      }
+    const auto& widgets = config->config().widgets;
+    const auto it = widgets.find("screen_recorder");
+    if (it == widgets.end() || it->second.type != "scripted") {
+      return false;
     }
-
-    return false;
+    return scripting::resolveScriptPath(it->second.getString("script", "")).filename() == "screen_recorder.lua";
   }
 
   class PowerProfileShortcut final : public Shortcut {
