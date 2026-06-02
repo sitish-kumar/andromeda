@@ -439,7 +439,7 @@ bool LuauHost::startAsyncCommand(std::string command, int callbackRef, std::chro
     std::thread([hostId = m_hostId, callbackRef, command = std::move(command), timeout,
                  handler = std::move(handler)]() mutable {
       auto result =
-          process::runSyncWithTimeoutAndOutputLimit({"/bin/sh", "-lc", command}, timeout, kMaxAsyncCommandOutputBytes);
+          process::runSyncWithTimeoutAndOutputLimit({"/bin/sh", "-c", command}, timeout, kMaxAsyncCommandOutputBytes);
       inFlightAsyncCommands().fetch_sub(1, std::memory_order_relaxed);
       handler(hostId, callbackRef, std::move(result));
     }).detach();

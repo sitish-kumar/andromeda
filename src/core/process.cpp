@@ -314,16 +314,25 @@ namespace {
   }
 
   void terminateAndWait(pid_t pid, int& exitCode) {
+    // Signal the whole process group (child is its own group leader) so
+    // descendants spawned by the command are torn down too, not orphaned.
+    // Also signal the pid directly as a fallback in case setpgid did not take.
+    ::kill(-pid, SIGTERM);
     ::kill(pid, SIGTERM);
+    bool reaped = false;
     for (int i = 0; i < 10; ++i) {
       if (waitNoHang(pid, exitCode)) {
-        return;
+        reaped = true;
+        break;
       }
       ::poll(nullptr, 0, 10);
     }
 
+    ::kill(-pid, SIGKILL);
     ::kill(pid, SIGKILL);
-    exitCode = waitBlocking(pid);
+    if (!reaped) {
+      exitCode = waitBlocking(pid);
+    }
   }
 
   [[nodiscard]] int pollTimeoutMs(std::optional<std::chrono::steady_clock::time_point> deadline) {
@@ -367,6 +376,9 @@ namespace {
     }
 
     if (pid == 0) {
+      // Lead a new process group so a timeout can signal the whole tree
+      // (e.g. checkupdates spawning pacman -Sy), not just the top-level shell.
+      ::setpgid(0, 0);
       closeFd(outPipe[0]);
       closeFd(errPipe[0]);
       ::dup2(outPipe[1], STDOUT_FILENO);
@@ -379,6 +391,10 @@ namespace {
       ::execvp(argv[0], argv.data());
       ::_exit(127);
     }
+
+    // Mirror the child's setpgid so the group exists regardless of which side
+    // wins the race; harmless if the child has already exec'd.
+    ::setpgid(pid, pid);
 
     closeFd(outPipe[1]);
     closeFd(errPipe[1]);
