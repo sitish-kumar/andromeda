@@ -208,7 +208,23 @@ namespace {
     return display;
   }
 
-  std::string resolveBacklightConnector(const std::string& sysfsPath, const WaylandConnection& wayland) {
+  struct BacklightConnectorResolution {
+    std::string connectorName;
+    bool exactDrmMatch = false;
+  };
+
+  std::string readBacklightType(const std::string& sysfsPath) {
+    std::ifstream file(sysfsPath + "/type");
+    std::string type;
+    if (!file.is_open()) {
+      return {};
+    }
+    std::getline(file, type);
+    return StringUtils::toLower(StringUtils::trim(type));
+  }
+
+  BacklightConnectorResolution
+  resolveBacklightConnector(const std::string& sysfsPath, const WaylandConnection& wayland) {
     std::error_code ec;
 
     const auto devicePath = fs::canonical(sysfsPath + "/device", ec);
@@ -253,15 +269,72 @@ namespace {
     }
     ::closedir(dir);
 
+    if (!match.empty()) {
+      return {.connectorName = match, .exactDrmMatch = true};
+    }
+
     if (match.empty()) {
       for (const auto& output : wayland.outputs()) {
         if (output.connectorName.starts_with("eDP")) {
-          return output.connectorName;
+          return {.connectorName = output.connectorName, .exactDrmMatch = false};
         }
       }
     }
 
-    return match;
+    return {};
+  }
+
+  int backlightTypeRank(std::string_view type) {
+    if (type == "raw") {
+      return 0;
+    }
+    if (type == "platform") {
+      return 1;
+    }
+    if (type == "firmware") {
+      return 2;
+    }
+    return 3;
+  }
+
+  int backlightNamePenalty(std::string_view name) {
+    if (name.starts_with("nvidia")) {
+      return 2;
+    }
+    if (name.starts_with("acpi_video")) {
+      return 1;
+    }
+    return 0;
+  }
+
+  struct BacklightCandidate {
+    DisplayInternal display;
+    bool exactDrmMatch = false;
+    std::string type;
+  };
+
+  bool isBetterBacklightCandidate(const BacklightCandidate& current, const BacklightCandidate& next) {
+    if (current.exactDrmMatch != next.exactDrmMatch) {
+      return next.exactDrmMatch;
+    }
+
+    const int currentTypeRank = backlightTypeRank(current.type);
+    const int nextTypeRank = backlightTypeRank(next.type);
+    if (currentTypeRank != nextTypeRank) {
+      return nextTypeRank < currentTypeRank;
+    }
+
+    const int currentPenalty = backlightNamePenalty(current.display.backlightName);
+    const int nextPenalty = backlightNamePenalty(next.display.backlightName);
+    if (currentPenalty != nextPenalty) {
+      return nextPenalty < currentPenalty;
+    }
+
+    if (current.display.maxRaw != next.display.maxRaw) {
+      return next.display.maxRaw > current.display.maxRaw;
+    }
+
+    return next.display.backlightName < current.display.backlightName;
   }
 
   sdbus::ObjectPath resolveSessionPath(sdbus::IConnection& connection) {
@@ -750,6 +823,7 @@ struct BrightnessService::Impl {
       return;
     }
 
+    std::unordered_map<std::string, BacklightCandidate> bestByConnector;
     while (auto* entry = ::readdir(dir)) {
       const std::string name = entry->d_name;
       if (name == "." || name == "..") {
@@ -762,7 +836,8 @@ struct BrightnessService::Impl {
         continue;
       }
 
-      const std::string connectorName = resolveBacklightConnector(path, wayland);
+      const BacklightConnectorResolution resolution = resolveBacklightConnector(path, wayland);
+      const std::string& connectorName = resolution.connectorName;
       const WaylandOutput* output = findOutputByConnector(wayland, connectorName);
 
       if (connectorName.empty() || output == nullptr) {
@@ -796,22 +871,51 @@ struct BrightnessService::Impl {
         display.pub.label = !connectorName.empty() ? connectorName : name;
       }
 
-      if (inotifyFd >= 0) {
-        const std::string watchPath = path + "/brightness";
-        display.inotifyWd = inotify_add_watch(inotifyFd, watchPath.c_str(), IN_MODIFY);
-        if (display.inotifyWd < 0) {
-          kLog.debug("inotify_add_watch failed for {}", watchPath);
-        }
-      }
+      const std::string backlightType = readBacklightType(path);
 
       kLog.info(
-          "found backlight '{}' current={:.0f}% connector={}", name, display.pub.brightness * 100.0f,
-          display.connectorName.empty() ? "(none)" : display.connectorName
+          "found backlight candidate '{}' type='{}' current={:.0f}% connector={} match={}", name, backlightType,
+          display.pub.brightness * 100.0f, display.connectorName.empty() ? "(none)" : display.connectorName,
+          resolution.exactDrmMatch ? "exact" : "fallback"
       );
-      internals.push_back(std::move(display));
+      BacklightCandidate candidate{
+          .display = std::move(display),
+          .exactDrmMatch = resolution.exactDrmMatch,
+          .type = backlightType,
+      };
+
+      auto it = bestByConnector.find(connectorName);
+      if (it == bestByConnector.end()) {
+        bestByConnector.emplace(connectorName, std::move(candidate));
+        continue;
+      }
+
+      if (isBetterBacklightCandidate(it->second, candidate)) {
+        kLog.info(
+            "preferring backlight '{}' over '{}' for connector {} (type='{}' exact={})",
+            candidate.display.backlightName, it->second.display.backlightName, connectorName, candidate.type,
+            candidate.exactDrmMatch
+        );
+        it->second = std::move(candidate);
+      }
     }
 
     ::closedir(dir);
+
+    for (auto& [connector, candidate] : bestByConnector) {
+      if (inotifyFd >= 0) {
+        const std::string watchPath = candidate.display.sysfsPath + "/brightness";
+        candidate.display.inotifyWd = inotify_add_watch(inotifyFd, watchPath.c_str(), IN_MODIFY);
+        if (candidate.display.inotifyWd < 0) {
+          kLog.debug("inotify_add_watch failed for {}", watchPath);
+        }
+      }
+      kLog.info(
+          "selected backlight '{}' type='{}' connector={} match={}", candidate.display.backlightName, candidate.type,
+          connector, candidate.exactDrmMatch ? "exact" : "fallback"
+      );
+      internals.push_back(std::move(candidate.display));
+    }
   }
 
   void scheduleDdcDetect() {
