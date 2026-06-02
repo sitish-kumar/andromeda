@@ -134,6 +134,7 @@ namespace noctalia::config::schema {
     static const Schema<NotificationConfig> s = {
         field(&NotificationConfig::enableDaemon, "enable_daemon"),
         field(&NotificationConfig::showAppName, "show_app_name"),
+        field(&NotificationConfig::showActions, "show_actions"),
         field(&NotificationConfig::position, "position"),
         field(&NotificationConfig::layer, "layer"),
         field(&NotificationConfig::scale, "scale", Range<float>{0.5f, 2.5f}),
