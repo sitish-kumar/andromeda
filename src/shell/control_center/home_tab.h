@@ -15,6 +15,7 @@ class Button;
 class Box;
 class CompositorPlatform;
 class HttpClient;
+class IpcService;
 class ConfigService;
 class DependencyService;
 class Glyph;
@@ -38,7 +39,7 @@ public:
       MprisService* mpris, HttpClient* httpClient, WeatherService* weather, PipeWireService* audio,
       PowerProfilesService* powerProfiles, ConfigService* config, INetworkService* network, BluetoothService* bluetooth,
       GammaService* nightLight, noctalia::theme::ThemeService* theme, NotificationManager* notifications,
-      IdleInhibitor* idleInhibitor, DependencyService* dependencies, CompositorPlatform* platform,
+      IdleInhibitor* idleInhibitor, DependencyService* dependencies, CompositorPlatform* platform, IpcService* ipc,
       Wallpaper* wallpaper = nullptr
   );
   ~HomeTab() override;

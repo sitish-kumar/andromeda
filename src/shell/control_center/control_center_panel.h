@@ -29,6 +29,7 @@ class DependencyService;
 class Flex;
 class HttpClient;
 class IdleInhibitor;
+class IpcService;
 class InputArea;
 class Label;
 class MprisService;
@@ -61,8 +62,8 @@ public:
       BrightnessService* brightness = nullptr, SystemMonitorService* sysmon = nullptr,
       ScreenTimeService* screenTime = nullptr, GammaService* nightLight = nullptr,
       noctalia::theme::ThemeService* theme = nullptr, IdleInhibitor* idleInhibitor = nullptr,
-      DependencyService* dependencies = nullptr, CompositorPlatform* platform = nullptr, Wallpaper* wallpaper = nullptr,
-      CalendarService* calendar = nullptr
+      DependencyService* dependencies = nullptr, CompositorPlatform* platform = nullptr, IpcService* ipc = nullptr,
+      Wallpaper* wallpaper = nullptr, CalendarService* calendar = nullptr
   );
 
   void create() override;

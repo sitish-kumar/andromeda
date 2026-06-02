@@ -251,6 +251,7 @@
       "sysmon": "System",
       "screen-time": "Screen Time",
       "wallpaper": "Wallpaper",
+      "screen-recorder": "Recorder",
       "session": "Session",
       "clipboard": "Clipboard"
     },
