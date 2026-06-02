@@ -607,6 +607,15 @@ void CalendarTab::rebuildEventList(float scale) {
   }
   content->setDirection(FlexDirection::Vertical);
   content->setGap(Style::spaceSm * scale);
+  // Stretch each event row to the full content width. Without this the scroll content defaults to
+  // FlexAlign::Start, which lays every row out at its natural width. A short title's row was then
+  // sized to the title's natural width, and sub-pixel rounding of that width re-wrapped the last
+  // glyph onto a second line during arrange while the row had reserved only a single line of height
+  // (measured at the wider cap) -- so the extra line and the "All day" caption overflowed onto the
+  // next event (e.g. "Biotonne" rendering as "Biotonn"/"e" on top of the following entry). Stretching
+  // makes the title measure and paint at the same width in both passes, keeping the reserved height
+  // in sync with what is drawn.
+  content->setAlign(FlexAlign::Stretch);
   while (!content->children().empty()) {
     content->removeChild(content->children().front().get());
   }
@@ -633,14 +642,16 @@ void CalendarTab::rebuildEventList(float scale) {
     }
   }
 
-  // Bound the text width so labels wrap (and therefore measure their true multi-line height) instead
-  // of being measured single-line inside a flex-grow column and overflowing onto the next row.
+  // Soft upper bound on the title width so very long titles still wrap. With the stretch above the
+  // real wrap width comes from the row's stretched width; this cap only needs to stay at or above
+  // the true content width so it never binds early. Subtract the real scroll insets (viewport
+  // padding on both sides plus the scrollbar gutter) instead of a single fudge factor, which used
+  // to under-count the gutter and leave the cap above the painted width.
   const float dotWidth = Style::spaceXs * scale;
   const float rowGap = Style::spaceSm * scale;
-  const float cardInner = m_eventsCard != nullptr
-      ? std::max(0.0f, m_eventsCard->width() - m_eventsCard->paddingLeft() - m_eventsCard->paddingRight())
-      : 0.0f;
-  const float textMaxWidth = std::max(40.0f, cardInner - dotWidth - rowGap - Style::spaceLg * scale);
+  const float scrollInsets = m_eventsScroll->viewportPaddingH() * 2.0f + Style::scrollbarWidth + Style::scrollbarGap;
+  const float scrollWidth = m_eventsScroll->width();
+  const float textMaxWidth = std::max(40.0f, scrollWidth - dotWidth - rowGap - scrollInsets);
 
   if (dayEvents.empty()) {
     content->addChild(
