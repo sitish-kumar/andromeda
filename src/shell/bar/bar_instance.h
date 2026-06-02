@@ -25,7 +25,6 @@ struct BarCapsuleRun {
   Node* content = nullptr;
   WidgetBarCapsuleSpec spec{};
   float contentScale = 1.0f;
-  bool allowCircularSizing = true;
   std::vector<Widget*> widgets;
 };
 

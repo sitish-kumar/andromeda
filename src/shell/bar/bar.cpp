@@ -37,7 +37,6 @@
 
 namespace {
 
-  constexpr float kCircularCapsuleNarrowWidthEpsilon = 1.0f;
   constexpr std::int32_t kAutoHideTriggerPx = 3;
   constexpr float kAutoHideSlideExtraPx = 4.0f;
 
@@ -607,13 +606,10 @@ namespace {
     layoutWidgets(instance.centerWidgets);
     layoutWidgets(instance.endWidgets);
 
-    float cachedBodyExtent = -1.0f;
-    float cachedBodyExtentScale = -1.0f;
     // Capsules sit a small fixed margin in from the bar edges; keyed on the bar's scale (not any
     // per-widget scale) so every capsule keeps the same cross-size.
     const float capsuleCrossInset = std::round(Style::spaceXs * instance.barConfig.scale);
-    auto finalizeCapsules = [isVertical, slotCross, capsuleCrossInset, &renderer, &cachedBodyExtent,
-                             &cachedBodyExtentScale](std::vector<BarCapsuleRun>& runs) {
+    auto finalizeCapsules = [isVertical, slotCross, capsuleCrossInset, &renderer](std::vector<BarCapsuleRun>& runs) {
       for (auto& run : runs) {
         Node* shell = run.shell;
         Box* bg = run.bg;
@@ -647,37 +643,20 @@ namespace {
           bg->setSize(iw, ih);
           continue;
         }
-        if (scale != cachedBodyExtentScale) {
-          cachedBodyExtent = renderer.fontRowExtent(Style::fontSizeBody * scale);
-          cachedBodyExtentScale = scale;
-        }
-        const float bodyExtent = cachedBodyExtent;
-        const float iconExtent = std::max(bodyExtent, std::round(Style::barGlyphSize * scale));
         const float pad = run.spec.padding * scale;
         const float padMain = pad;
         // Cross-size is the bar thickness minus a small edge margin, independent of per-widget content
         // scale: scaling a widget enlarges its glyph/text inside the fixed-height pill rather than
         // resizing the capsule (so a differently scaled member can't grow or split its capsule group).
+        // The main axis is content plus per-widget padding, so an icon-only widget reads as a
+        // near-circular pill at the default padding and widens as padding increases.
         const float capsuleCross = std::max(1.0f, slotCross - 2.0f * capsuleCrossInset);
-        float shellMain = (isVertical ? ih : iw) + 2.0f * padMain;
-        float shellCross = capsuleCross;
-        float shellW = isVertical ? shellCross : shellMain;
-        float shellH = isVertical ? shellMain : shellCross;
-        float contentX = std::round((shellW - iw) * 0.5f);
-        float contentY = std::round((shellH - ih) * 0.5f);
-        // Glyph-only widgets become a fixed circle based on the bar capsule
-        // cross-size, not on the measured content width. Multi-line / wide
-        // content (e.g. stacked vertical clock) must NOT be squared, or the
-        // capsule collapses on the main axis.
-        const float iconThreshold = iconExtent + (kCircularCapsuleNarrowWidthEpsilon * scale);
-        const bool iconSized = run.allowCircularSizing && iw <= iconThreshold && ih <= iconThreshold;
-        if (iconSized) {
-          const float side = capsuleCross;
-          shellW = side;
-          shellH = side;
-          contentX = std::round((shellW - iw) * 0.5f);
-          contentY = std::round((shellH - ih) * 0.5f);
-        }
+        const float shellMain = (isVertical ? ih : iw) + 2.0f * padMain;
+        const float shellCross = capsuleCross;
+        const float shellW = isVertical ? shellCross : shellMain;
+        const float shellH = isVertical ? shellMain : shellCross;
+        const float contentX = std::round((shellW - iw) * 0.5f);
+        const float contentY = std::round((shellH - ih) * 0.5f);
         shell->setSize(shellW, shellH);
         bg->setVisible(true);
         bg->setPosition(0.0f, 0.0f);
@@ -1684,7 +1663,6 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
               .content = widget.root(),
               .spec = cap,
               .contentScale = widget.contentScale(),
-              .allowCircularSizing = true,
               .widgets = {&widget},
           }
       );
@@ -1779,7 +1757,6 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
       run.content = innerPtr;
       run.spec = cap;
       run.contentScale = widget->contentScale();
-      run.allowCircularSizing = false;
 
       for (std::size_t memberIndex = index; memberIndex < runEnd; ++memberIndex) {
         auto& member = widgets[memberIndex];
