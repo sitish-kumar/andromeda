@@ -154,7 +154,7 @@ namespace noctalia::config::schema {
   const Schema<DockConfig>& dockSchema() {
     static const Schema<DockConfig> s = {
         field(&DockConfig::enabled, "enabled"),
-        field(&DockConfig::position, "position"),
+        enumField(&DockConfig::position, "position", kDockEdges),
         field(&DockConfig::activeMonitorOnly, "active_monitor_only"),
         field(&DockConfig::iconSize, "icon_size", kDockIconSizeRange),
         field(&DockConfig::padding, "padding", kDockPaddingRange),
@@ -193,23 +193,7 @@ namespace noctalia::config::schema {
         field(&DockConfig::inactiveOpacity, "inactive_opacity", kUnitRange),
         field(&DockConfig::showDots, "show_dots"),
         field(&DockConfig::showInstanceCount, "show_instance_count"),
-        // launcher_position accepts none|start|end; anything else warns and is ignored.
-        custom<DockConfig>(
-            "launcher_position",
-            [](const toml::table& tbl, DockConfig& d, std::string_view parentPath, Diagnostics& diag) {
-              if (auto v = tbl["launcher_position"].value<std::string>()) {
-                if (*v == "none" || *v == "start" || *v == "end") {
-                  d.launcherPosition = *v;
-                } else {
-                  diag.warn(
-                      joinPath(parentPath, "launcher_position"),
-                      "invalid value '" + *v + "'; expected none, start, or end"
-                  );
-                }
-              }
-            },
-            [](toml::table& tbl, const DockConfig& d) { tbl.insert_or_assign("launcher_position", d.launcherPosition); }
-        ),
+        enumField(&DockConfig::launcherPosition, "launcher_position", kDockLauncherPositions),
         field(&DockConfig::launcherIcon, "launcher_icon"),
         field(&DockConfig::pinned, "pinned"),
         field(&DockConfig::monitors, "monitors"),

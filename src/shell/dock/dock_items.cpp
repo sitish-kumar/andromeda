@@ -68,7 +68,8 @@ namespace shell::dock {
   std::unique_ptr<InputArea> createLauncherButton(
       DockInstance& instance, const DockConfig& cfg, const std::shared_ptr<DockItemClickContext>& clickContext
   ) {
-    const bool vert = shell::dock::isVerticalPosition(cfg.position);
+    const DockEdge edge = cfg.position;
+    const bool vert = shell::dock::isVerticalEdge(edge);
     const float iSize = static_cast<float>(cfg.iconSize);
     const float cellMain = iSize + 2.0f * kCellPad;
     const float cellCross = iSize + 2.0f * kCellPad;
@@ -141,7 +142,9 @@ namespace shell::dock {
     }
 
     const auto& cfg = deps.model.config.config().dock;
-    const bool vert = shell::dock::isVerticalPosition(cfg.position);
+    const DockEdge edge = cfg.position;
+    const DockLauncherPosition launcherPosition = cfg.launcherPosition;
+    const bool vert = shell::dock::isVerticalEdge(edge);
     const float iSize = static_cast<float>(cfg.iconSize);
     auto clickContext = std::make_shared<DockItemClickContext>(DockItemClickContext{
         .config = deps.model.config,
@@ -173,7 +176,7 @@ namespace shell::dock {
     );
     const auto& itemModels = snapshot.items;
 
-    if (cfg.launcherPosition == "start") {
+    if (launcherPosition == DockLauncherPosition::Start) {
       instance.row->addChild(createLauncherButton(instance, cfg, clickContext));
     }
 
@@ -247,7 +250,7 @@ namespace shell::dock {
 
       if (cfg.showDots) {
         const float dot = std::max(kDotMinSize, std::round(iSize * kDotSizeRatio));
-        const bool verticalDots = shell::dock::isVerticalPosition(cfg.position);
+        const bool verticalDots = shell::dock::isVerticalEdge(edge);
 
         for (std::size_t dotIndex = 0; dotIndex < item.dotIndicators.size(); ++dotIndex) {
           item.dotIndicators[dotIndex] = static_cast<Box*>(areaNode->addChild(
@@ -257,12 +260,12 @@ namespace shell::dock {
                   .width = dot,
                   .height = dot,
                   .visible = false,
-                  .configure = [verticalDots, position = cfg.position, cellMain, dot](Box& box) {
+                  .configure = [verticalDots, edge, cellMain, dot](Box& box) {
                     if (verticalDots) {
-                      const float x = position == "left" ? std::round(cellMain - dot - 1.0f) : 1.0f;
+                      const float x = edge == DockEdge::Left ? std::round(cellMain - dot - 1.0f) : 1.0f;
                       box.setPosition(x, std::round((cellMain - dot) * 0.5f));
                     } else {
-                      const float y = position == "bottom" ? 1.0f : std::round(cellMain - dot - 1.0f);
+                      const float y = edge == DockEdge::Bottom ? 1.0f : std::round(cellMain - dot - 1.0f);
                       box.setPosition(std::round((cellMain - dot) * 0.5f), y);
                     }
                   },
@@ -335,7 +338,7 @@ namespace shell::dock {
       item.area = static_cast<InputArea*>(instance.row->addChild(std::move(areaNode)));
     }
 
-    if (cfg.launcherPosition == "end") {
+    if (launcherPosition == DockLauncherPosition::End) {
       instance.row->addChild(createLauncherButton(instance, cfg, clickContext));
     }
 
@@ -345,6 +348,7 @@ namespace shell::dock {
   void updateVisuals(DockInstance& instance, DockItemSceneDependencies deps, const DockSnapshot& snapshot) {
     const auto& cfg = deps.model.config.config().dock;
     const auto& shell = deps.model.config.config().shell;
+    const DockEdge edge = cfg.position;
     const std::size_t itemCount = std::min(instance.items.size(), snapshot.items.size());
 
     for (std::size_t itemIndex = 0; itemIndex < itemCount; ++itemIndex) {
@@ -402,7 +406,7 @@ namespace shell::dock {
         const float groupLength =
             dotCount == 0 ? dot : dot * static_cast<float>(dotCount) + kDotGap * static_cast<float>(dotCount - 1);
         const float groupStart = std::round((cellMain - groupLength) * 0.5f);
-        const bool verticalDots = shell::dock::isVerticalPosition(cfg.position);
+        const bool verticalDots = shell::dock::isVerticalEdge(edge);
 
         for (std::size_t dotIndex = 0; dotIndex < item.dotIndicators.size(); ++dotIndex) {
           if (item.dotIndicators[dotIndex] == nullptr) {
@@ -415,10 +419,10 @@ namespace shell::dock {
           if (visible) {
             const float main = groupStart + static_cast<float>(dotIndex) * (dot + kDotGap);
             if (verticalDots) {
-              const float x = cfg.position == "left" ? std::round(cellMain - dot - 1.0f) : 1.0f;
+              const float x = edge == DockEdge::Left ? std::round(cellMain - dot - 1.0f) : 1.0f;
               dotNode->setPosition(x, main);
             } else {
-              const float y = cfg.position == "bottom" ? 1.0f : std::round(cellMain - dot - 1.0f);
+              const float y = edge == DockEdge::Bottom ? 1.0f : std::round(cellMain - dot - 1.0f);
               dotNode->setPosition(main, y);
             }
           }

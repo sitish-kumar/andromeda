@@ -390,32 +390,83 @@ struct LockscreenConfig {
   bool operator==(const LockscreenConfig&) const = default;
 };
 
+template <typename T> struct EnumOption {
+  T value;
+  std::string_view key;
+  std::string_view labelKey;
+};
+
+template <typename T, std::size_t N>
+constexpr std::optional<T> enumFromKey(const EnumOption<T> (&options)[N], std::string_view key) {
+  for (const auto& opt : options) {
+    if (opt.key == key) {
+      return opt.value;
+    }
+  }
+  return std::nullopt;
+}
+
+template <typename T, std::size_t N> constexpr std::string_view enumToKey(const EnumOption<T> (&options)[N], T value) {
+  for (const auto& opt : options) {
+    if (opt.value == value) {
+      return opt.key;
+    }
+  }
+  return {};
+}
+
+enum class DockEdge : std::uint8_t {
+  Top = 0,
+  Bottom = 1,
+  Left = 2,
+  Right = 3,
+};
+
+constexpr EnumOption<DockEdge> kDockEdges[] = {
+    {DockEdge::Top, "top", "settings.options.edge.top"},
+    {DockEdge::Bottom, "bottom", "settings.options.edge.bottom"},
+    {DockEdge::Left, "left", "settings.options.edge.left"},
+    {DockEdge::Right, "right", "settings.options.edge.right"},
+};
+
+enum class DockLauncherPosition : std::uint8_t {
+  None = 0,
+  Start = 1,
+  End = 2,
+};
+
+constexpr EnumOption<DockLauncherPosition> kDockLauncherPositions[] = {
+    {DockLauncherPosition::None, "none", "settings.options.dock-launcher-position.none"},
+    {DockLauncherPosition::Start, "start", "settings.options.dock-launcher-position.start"},
+    {DockLauncherPosition::End, "end", "settings.options.dock-launcher-position.end"},
+};
+
 struct DockConfig {
-  bool enabled = false;            // opt-in; dock is hidden by default
-  std::string position = "bottom"; // top | bottom | left | right
-  bool activeMonitorOnly = false;  // render only on preferred active output
-  std::int32_t iconSize = 48;      // icon size in pixels (before ui_scale)
-  std::int32_t padding = 8;        // inner padding around the icon row
-  std::int32_t itemSpacing = 6;    // gap between items
+  bool enabled = false; // opt-in; dock is hidden by default
+  DockEdge position = DockEdge::Bottom;
+  bool activeMonitorOnly = false; // render only on preferred active output
+  std::int32_t iconSize = 48;     // icon size in pixels (before ui_scale)
+  std::int32_t padding = 8;       // inner padding around the icon row
+  std::int32_t itemSpacing = 6;   // gap between items
   float backgroundOpacity = 0.88f;
-  std::int32_t radius = 16;               // dock background corner radius
-  std::int32_t radiusTopLeft = 16;        // dock background top-left corner radius
-  std::int32_t radiusTopRight = 16;       // dock background top-right corner radius
-  std::int32_t radiusBottomLeft = 16;     // dock background bottom-left corner radius
-  std::int32_t radiusBottomRight = 16;    // dock background bottom-right corner radius
-  std::int32_t marginEnds = 0;            // inset from each end of the dock along its main axis
-  std::int32_t marginEdge = 8;            // distance from the nearest screen edge (floats the dock when > 0)
-  bool shadow = true;                     // use the global shell shadow
-  bool showRunning = true;                // also show running apps not in pinned list
-  bool autoHide = false;                  // fade out when not hovered (overlay mode)
-  bool reserveSpace = false;              // keep compositor exclusive zone even while auto-hidden
-  float activeScale = 1.0f;               // focused app icon scale
-  float inactiveScale = 0.85f;            // non-focused app icon scale
-  float activeOpacity = 1.0f;             // focused app icon opacity
-  float inactiveOpacity = 0.85f;          // non-focused app icon opacity
-  bool showDots = false;                  // show optional running window dots beside app icons
-  bool showInstanceCount = true;          // show a badge with count when app has >1 window
-  std::string launcherPosition = "none";  // none | start | end
+  std::int32_t radius = 16;            // dock background corner radius
+  std::int32_t radiusTopLeft = 16;     // dock background top-left corner radius
+  std::int32_t radiusTopRight = 16;    // dock background top-right corner radius
+  std::int32_t radiusBottomLeft = 16;  // dock background bottom-left corner radius
+  std::int32_t radiusBottomRight = 16; // dock background bottom-right corner radius
+  std::int32_t marginEnds = 0;         // inset from each end of the dock along its main axis
+  std::int32_t marginEdge = 8;         // distance from the nearest screen edge (floats the dock when > 0)
+  bool shadow = true;                  // use the global shell shadow
+  bool showRunning = true;             // also show running apps not in pinned list
+  bool autoHide = false;               // fade out when not hovered (overlay mode)
+  bool reserveSpace = false;           // keep compositor exclusive zone even while auto-hidden
+  float activeScale = 1.0f;            // focused app icon scale
+  float inactiveScale = 0.85f;         // non-focused app icon scale
+  float activeOpacity = 1.0f;          // focused app icon opacity
+  float inactiveOpacity = 0.85f;       // non-focused app icon opacity
+  bool showDots = false;               // show optional running window dots beside app icons
+  bool showInstanceCount = true;       // show a badge with count when app has >1 window
+  DockLauncherPosition launcherPosition = DockLauncherPosition::None;
   std::string launcherIcon = "grid-dots"; // Tabler glyph name
   std::vector<std::string> pinned;        // desktop entry IDs to always show
   std::vector<std::string> monitors;      // connector names to show on; empty = all outputs
@@ -486,31 +537,6 @@ struct NotificationConfig {
 
   bool operator==(const NotificationConfig&) const = default;
 };
-
-template <typename T> struct EnumOption {
-  T value;
-  std::string_view key;
-  std::string_view labelKey;
-};
-
-template <typename T, std::size_t N>
-constexpr std::optional<T> enumFromKey(const EnumOption<T> (&options)[N], std::string_view key) {
-  for (const auto& opt : options) {
-    if (opt.key == key) {
-      return opt.value;
-    }
-  }
-  return std::nullopt;
-}
-
-template <typename T, std::size_t N> constexpr std::string_view enumToKey(const EnumOption<T> (&options)[N], T value) {
-  for (const auto& opt : options) {
-    if (opt.value == value) {
-      return opt.key;
-    }
-  }
-  return {};
-}
 
 constexpr EnumOption<SessionActionButtonVariant> kSessionActionButtonVariants[] = {
     {SessionActionButtonVariant::Default, "default", "settings.session-actions.variant.default"},

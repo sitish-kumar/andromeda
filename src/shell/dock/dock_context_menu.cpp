@@ -211,9 +211,10 @@ namespace shell::dock {
     const float menuHeight = ContextMenuControl::preferredHeight(entries, entries.size());
 
     // Determine anchor / gravity + gap based on dock position.
-    const bool isBottom = (dockConfig.position == "bottom");
-    const bool isTop = (dockConfig.position == "top");
-    const bool isRight = (dockConfig.position == "right");
+    const DockEdge edge = dockConfig.position;
+    const bool isBottom = edge == DockEdge::Bottom;
+    const bool isTop = edge == DockEdge::Top;
+    const bool isRight = edge == DockEdge::Right;
 
     std::uint32_t anchor = XDG_POSITIONER_ANCHOR_NONE;
     std::uint32_t gravity = XDG_POSITIONER_GRAVITY_NONE;

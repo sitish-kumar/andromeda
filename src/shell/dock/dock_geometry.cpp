@@ -22,20 +22,20 @@ namespace shell::dock {
 
   } // namespace
 
-  std::uint32_t positionToAnchor(const std::string& position) {
-    if (position == "top") {
+  std::uint32_t positionToAnchor(DockEdge edge) {
+    if (edge == DockEdge::Top) {
       return LayerShellAnchor::Top;
     }
-    if (position == "left") {
+    if (edge == DockEdge::Left) {
       return LayerShellAnchor::Left;
     }
-    if (position == "right") {
+    if (edge == DockEdge::Right) {
       return LayerShellAnchor::Right;
     }
     return LayerShellAnchor::Bottom;
   }
 
-  bool isVerticalPosition(const std::string& position) { return position == "left" || position == "right"; }
+  bool isVerticalEdge(DockEdge edge) { return edge == DockEdge::Left || edge == DockEdge::Right; }
 
   std::int32_t dockContentSize(const DockConfig& cfg, std::size_t itemCount) {
     const auto n = static_cast<std::int32_t>(itemCount);
@@ -48,19 +48,22 @@ namespace shell::dock {
 
   std::int32_t dockThickness(const DockConfig& cfg) { return cfg.iconSize + kCellPad * 2 + cfg.padding * 2; }
 
-  std::size_t dockLauncherButtonCount(const DockConfig& cfg) {
-    return (cfg.launcherPosition == "start" || cfg.launcherPosition == "end") ? 1U : 0U;
+  std::size_t dockLauncherButtonCount(DockLauncherPosition position) {
+    return position == DockLauncherPosition::Start || position == DockLauncherPosition::End ? 1U : 0U;
   }
+
+  std::size_t dockLauncherButtonCount(const DockConfig& cfg) { return dockLauncherButtonCount(cfg.launcherPosition); }
 
   DockSurfaceGeometry
   computeSurfaceGeometry(const DockConfig& cfg, const ShellConfig::ShadowConfig& shadow, std::size_t itemCount) {
-    const bool vertical = isVerticalPosition(cfg.position);
+    const DockEdge edge = cfg.position;
+    const bool vertical = isVerticalEdge(edge);
     const auto sb = shell::surface_shadow::bleed(cfg.shadow, shadow);
     const bool hiddenOverlayMode = cfg.autoHide && !cfg.reserveSpace;
     const auto panelW = dockContentSize(cfg, itemCount);
     const auto panelH = dockThickness(cfg);
-    const bool isBottom = (cfg.position == "bottom");
-    const bool isRight = (cfg.position == "right");
+    const bool isBottom = edge == DockEdge::Bottom;
+    const bool isRight = edge == DockEdge::Right;
     const std::int32_t mEdge = cfg.marginEdge;
     const int edgeGutter = dockAutoHideEdgeGutter(cfg);
 
@@ -135,15 +138,16 @@ namespace shell::dock {
 
   DockPanelGeometry
   computePanelGeometry(const DockConfig& cfg, const ShellConfig::ShadowConfig& shadow, float surfaceW, float surfaceH) {
-    const bool vertical = isVerticalPosition(cfg.position);
+    const DockEdge edge = cfg.position;
+    const bool vertical = isVerticalEdge(edge);
     const auto sb = shell::surface_shadow::bleed(cfg.shadow, shadow);
     const float bleedL = static_cast<float>(sb.left);
     const float bleedR = static_cast<float>(sb.right);
     const float bleedU = static_cast<float>(sb.up);
     const float bleedD = static_cast<float>(sb.down);
     const float mEdge = static_cast<float>(cfg.marginEdge);
-    const bool isBottom = (cfg.position == "bottom");
-    const bool isRight = (cfg.position == "right");
+    const bool isBottom = edge == DockEdge::Bottom;
+    const bool isRight = edge == DockEdge::Right;
     const float panelThickness = static_cast<float>(dockThickness(cfg));
 
     if (!vertical) {
@@ -197,13 +201,14 @@ namespace shell::dock {
       contentBottom = std::max(contentBottom, sy + panel.panelH);
     }
 
-    if (!isVerticalPosition(cfg.position)) {
-      if (cfg.position == "bottom") {
+    const DockEdge edge = cfg.position;
+    if (!isVerticalEdge(edge)) {
+      if (edge == DockEdge::Bottom) {
         return {0.0f, (surfaceH - contentTop) + kAutoHideSlideExtraPx};
       }
       return {0.0f, -(contentBottom + kAutoHideSlideExtraPx)};
     }
-    if (cfg.position == "right") {
+    if (edge == DockEdge::Right) {
       return {(surfaceW - contentLeft) + kAutoHideSlideExtraPx, 0.0f};
     }
     return {-(contentRight + kAutoHideSlideExtraPx), 0.0f};
@@ -212,10 +217,11 @@ namespace shell::dock {
   std::vector<InputRect>
   computeInputRegion(const DockConfig& cfg, const DockPanelGeometry& panel, int surfaceW, int surfaceH, bool hidden) {
     if (hidden) {
-      if (!isVerticalPosition(cfg.position)) {
+      const DockEdge edge = cfg.position;
+      if (!isVerticalEdge(edge)) {
         return {InputRect{0, surfaceH - kAutoHideTriggerPx, surfaceW, kAutoHideTriggerPx}};
       }
-      if (cfg.position == "left") {
+      if (edge == DockEdge::Left) {
         return {InputRect{surfaceW - kAutoHideTriggerPx, 0, kAutoHideTriggerPx, surfaceH}};
       }
       return {InputRect{0, 0, kAutoHideTriggerPx, surfaceH}};
