@@ -315,6 +315,7 @@ namespace config_export {
       table.insert_or_assign("date_format", shell.dateFormat);
       table.insert_or_assign("offline_mode", shell.offlineMode);
       table.insert_or_assign("telemetry_enabled", shell.telemetryEnabled);
+      table.insert_or_assign("setup_wizard_enabled", shell.setupWizardEnabled);
       table.insert_or_assign("niri_overview_type_to_launch_enabled", shell.niriOverviewTypeToLaunchEnabled);
       table.insert_or_assign("polkit_agent", shell.polkitAgent);
       table.insert_or_assign("password_style", std::string(enumToKey(kPasswordMaskStyles, shell.passwordMaskStyle)));

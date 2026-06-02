@@ -568,6 +568,9 @@ void ConfigService::fireReloadCallbacks() {
 }
 
 bool ConfigService::shouldRunSetupWizard() const {
+  if (!m_config.shell.setupWizardEnabled) {
+    return false;
+  }
   // Single canonical signal: the marker file. If we have no state dir we cannot
   // persist completion, so never show the wizard (it would loop forever).
   return !m_setupMarkerPath.empty() && !std::filesystem::exists(m_setupMarkerPath);
@@ -1564,6 +1567,9 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     }
     if (auto v = (*shellTbl)["telemetry_enabled"].value<bool>()) {
       shell.telemetryEnabled = *v;
+    }
+    if (auto v = (*shellTbl)["setup_wizard_enabled"].value<bool>()) {
+      shell.setupWizardEnabled = *v;
     }
     if (auto v = (*shellTbl)["niri_overview_type_to_launch_enabled"].value<bool>()) {
       shell.niriOverviewTypeToLaunchEnabled = *v;
