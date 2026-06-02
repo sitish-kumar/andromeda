@@ -607,14 +607,9 @@ void CalendarTab::rebuildEventList(float scale) {
   }
   content->setDirection(FlexDirection::Vertical);
   content->setGap(Style::spaceSm * scale);
-  // Stretch each event row to the full content width. Without this the scroll content defaults to
-  // FlexAlign::Start, which lays every row out at its natural width. A short title's row was then
-  // sized to the title's natural width, and sub-pixel rounding of that width re-wrapped the last
-  // glyph onto a second line during arrange while the row had reserved only a single line of height
-  // (measured at the wider cap) -- so the extra line and the "All day" caption overflowed onto the
-  // next event (e.g. "Biotonne" rendering as "Biotonn"/"e" on top of the following entry). Stretching
-  // makes the title measure and paint at the same width in both passes, keeping the reserved height
-  // in sync with what is drawn.
+  // Stretch rows to full content width so each title measures and paints at the same width.
+  // Start-aligned rows lay out at their rounded natural width, which can re-wrap a short title
+  // during arrange while the row reserved only a single line of height — overflowing the next event.
   content->setAlign(FlexAlign::Stretch);
   while (!content->children().empty()) {
     content->removeChild(content->children().front().get());
@@ -642,16 +637,12 @@ void CalendarTab::rebuildEventList(float scale) {
     }
   }
 
-  // Soft upper bound on the title width so very long titles still wrap. With the stretch above the
-  // real wrap width comes from the row's stretched width; this cap only needs to stay at or above
-  // the true content width so it never binds early. Subtract the real scroll insets (viewport
-  // padding on both sides plus the scrollbar gutter) instead of a single fudge factor, which used
-  // to under-count the gutter and leave the cap above the painted width.
+  // Soft upper bound on the title width so very long titles still wrap. contentViewportWidth() is
+  // exactly the width rows are arranged at (insets + conditional scrollbar gutter), so this cap
+  // tracks the painted width and never binds early.
   const float dotWidth = Style::spaceXs * scale;
   const float rowGap = Style::spaceSm * scale;
-  const float scrollInsets = m_eventsScroll->viewportPaddingH() * 2.0f + Style::scrollbarWidth + Style::scrollbarGap;
-  const float scrollWidth = m_eventsScroll->width();
-  const float textMaxWidth = std::max(40.0f, scrollWidth - dotWidth - rowGap - scrollInsets);
+  const float textMaxWidth = std::max(40.0f, m_eventsScroll->contentViewportWidth() - dotWidth - rowGap);
 
   if (dayEvents.empty()) {
     content->addChild(
