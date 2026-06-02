@@ -1,5 +1,10 @@
 let
-  inherit (builtins) fromJSON readFile;
+  inherit (builtins)
+    fromJSON
+    readFile
+    substring
+    pathExists
+    ;
 
   lock = fromJSON (readFile ./flake.lock);
   namedNode = lock.nodes.${lock.nodes.root.inputs.nixpkgs}.locked;
@@ -12,10 +17,34 @@ in
   pkgs ? import nixpkgs { },
 }:
 let
-  inherit (builtins) substring;
   inherit (pkgs.lib) cleanSource mkDefault concatStringsSep;
 
-  src = fetchGit ./.;
+  # Taken from flake-compat
+  src =
+    let
+      tryFetchGit =
+        if (pathExists ./.git) then
+          let
+            res = fetchGit ./.;
+          in
+          if res.rev == "0000000000000000000000000000000000000000" then
+            removeAttrs res [
+              "rev"
+              "shortRev"
+            ]
+          else
+            res
+        else
+          {
+            outPath = ./.;
+          };
+
+    in
+    {
+      lastModified = 0;
+      lastModifiedDate = "19700101";
+    }
+    // tryFetchGit;
 
   mkDate =
     longDate:
