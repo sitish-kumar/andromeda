@@ -31,8 +31,6 @@ namespace {
   constexpr std::size_t kTrayMenuVisibleItems = 20;
   constexpr std::int32_t kPinToggleEntryId = -2147000000;
 
-  constexpr float kSurfaceWidth = kMenuWidth;
-
   constexpr std::uint32_t kPopupConstraintAdjust = XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X
       | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y
       | XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_X
@@ -134,8 +132,10 @@ namespace {
     ContextSubmenuDirection submenuDirection = ContextSubmenuDirection::Right;
   };
 
-  PopupPlacement popupPlacementForBar(const BarConfig& bar, std::int32_t anchorX, std::int32_t anchorY) {
-    const std::int32_t kGap = std::max(2, static_cast<std::int32_t>(Style::spaceMd));
+  PopupPlacement
+  popupPlacementForBar(const BarConfig& bar, std::int32_t anchorX, std::int32_t anchorY, float contentScale) {
+    const std::int32_t kGap =
+        std::max(2, static_cast<std::int32_t>(std::lround(Style::spaceMd * std::max(0.1f, contentScale))));
     const std::int32_t iconSize = std::clamp(bar.thickness - 10, 16, 40);
     const std::int32_t halfIcon = iconSize / 2;
     PopupPlacement placement{
@@ -243,7 +243,7 @@ void TrayMenu::onTrayChanged() {
   }
 }
 
-void TrayMenu::toggleForItem(const std::string& itemId) {
+void TrayMenu::toggleForItem(const std::string& itemId, float contentScale) {
   if (itemId.empty()) {
     close();
     return;
@@ -266,6 +266,7 @@ void TrayMenu::toggleForItem(const std::string& itemId) {
   }
 
   m_activeItemId = itemId;
+  m_contentScale = std::max(0.1f, contentScale);
 
   // Some dbusmenu servers only materialize menu rows after receiving "opened".
   // Emit this before the first fetch so we don't render a persistent empty menu.
@@ -585,7 +586,9 @@ uint32_t TrayMenu::submenuHeightPx(const std::vector<TrayMenuEntry>& submenuEntr
         }
     );
   }
-  return static_cast<uint32_t>(ContextMenuControl::preferredHeight(entries, visibleEntryLimit(entries.size())));
+  return static_cast<uint32_t>(
+      std::ceil(ContextMenuControl::preferredHeight(entries, visibleEntryLimit(entries.size()), contentScale()))
+  );
 }
 
 uint32_t TrayMenu::surfaceHeightPx() const {
@@ -605,12 +608,18 @@ uint32_t TrayMenu::surfaceHeightPx() const {
         }
     );
   }
-  return static_cast<uint32_t>(ContextMenuControl::preferredHeight(entries, visibleEntryLimit(entries.size())));
+  return static_cast<uint32_t>(
+      std::ceil(ContextMenuControl::preferredHeight(entries, visibleEntryLimit(entries.size()), contentScale()))
+  );
 }
 
 bool TrayMenu::ownsSurface(wl_surface* surface) const {
   return m_instance != nullptr && surface != nullptr && m_instance->wlSurface == surface;
 }
+
+float TrayMenu::contentScale() const noexcept { return std::max(0.1f, m_contentScale); }
+
+float TrayMenu::menuWidth() const noexcept { return kMenuWidth * contentScale(); }
 
 void TrayMenu::ensureSurface() {
   if (m_instance != nullptr) {
@@ -655,10 +664,10 @@ void TrayMenu::ensureSurface() {
   inst->surface->setDismissedCallback([this]() { close(); });
 
   const auto chrome =
-      popup_chrome::computeGeometry(kSurfaceWidth, static_cast<float>(surfaceHeightPx()), popupShadowConfig(m_config));
+      popup_chrome::computeGeometry(menuWidth(), static_cast<float>(surfaceHeightPx()), popupShadowConfig(m_config));
   PopupPlacement placement{};
   if (const auto bar = resolveTrayBarConfig(m_config, m_wayland, output); bar.has_value()) {
-    placement = popupPlacementForBar(*bar, anchorX, anchorY);
+    placement = popupPlacementForBar(*bar, anchorX, anchorY, contentScale());
     anchorX = placement.anchorX;
     anchorY = placement.anchorY;
   }
@@ -743,7 +752,7 @@ void TrayMenu::resizeMainSurfaceToEntries() {
   }
 
   const auto chrome =
-      popup_chrome::computeGeometry(kSurfaceWidth, static_cast<float>(surfaceHeightPx()), popupShadowConfig(m_config));
+      popup_chrome::computeGeometry(menuWidth(), static_cast<float>(surfaceHeightPx()), popupShadowConfig(m_config));
   const auto desiredWidth = chrome.surfaceWidth;
   const auto desiredHeight = chrome.surfaceHeight;
   if (m_instance->surface->width() == desiredWidth && m_instance->surface->height() == desiredHeight) {
@@ -810,7 +819,9 @@ void TrayMenu::buildScene(MenuInstance& inst, uint32_t width, uint32_t height) {
 
   inst.sceneRoot = std::make_unique<Node>();
   inst.sceneRoot->setSize(w, h);
-  (void)popup_chrome::addShadow(*inst.sceneRoot, inst.chrome, popupShadowConfig(m_config), Style::scaledRadiusLg());
+  (void)popup_chrome::addShadow(
+      *inst.sceneRoot, inst.chrome, popupShadowConfig(m_config), Style::scaledRadiusLg(contentScale())
+  );
 
   std::vector<ContextMenuControlEntry> entries;
   entries.reserve(m_entries.size());
@@ -843,6 +854,7 @@ void TrayMenu::buildScene(MenuInstance& inst, uint32_t width, uint32_t height) {
   scrollView->setScrollbarVisible(true);
 
   auto menu = std::make_unique<ContextMenuControl>();
+  menu->setContentScale(contentScale());
   menu->setMenuWidth(menuWidth);
   menu->setMaxVisible(entries.size()); // Always lay out all entries for scrolling
   menu->setSubmenuDirection(inst.submenuDirection);
@@ -1040,12 +1052,13 @@ void TrayMenu::openSubmenuAtLevel(std::size_t levelIndex, std::int32_t parentEnt
   const auto parentContentX = static_cast<std::int32_t>(std::lround(parentMenu->chrome.contentX()));
   const auto parentWidth = static_cast<std::int32_t>(std::lround(parentMenu->chrome.contentWidth));
   const auto parentX = parentMenu->surface->configuredX() + parentContentX;
-  const auto rowTop = static_cast<std::int32_t>(rowCenterY - Style::controlHeightSm * 0.5f);
-  const auto rowH = static_cast<std::int32_t>(Style::controlHeightSm);
-  constexpr std::int32_t kSubGap = 4;
+  const float scale = contentScale();
+  const auto rowTop = static_cast<std::int32_t>(std::lround(rowCenterY - Style::controlHeightSm * scale * 0.5f));
+  const auto rowH = std::max(1, static_cast<std::int32_t>(std::lround(Style::controlHeightSm * scale)));
+  const auto subGap = std::max(1, static_cast<std::int32_t>(std::lround(4.0f * scale)));
 
   const auto chrome = popup_chrome::computeGeometry(
-      kSurfaceWidth, static_cast<float>(submenuHeightPx(level.entries)), popupShadowConfig(m_config)
+      menuWidth(), static_cast<float>(submenuHeightPx(level.entries)), popupShadowConfig(m_config)
   );
 
   const auto* wlOutput = m_wayland->findOutputByWl(parentMenu->output);
@@ -1054,7 +1067,7 @@ void TrayMenu::openSubmenuAtLevel(std::size_t levelIndex, std::int32_t parentEnt
       : static_cast<std::int32_t>(chrome.surfaceWidth);
 
   bool isRight = (parentMenu->submenuDirection == ContextSubmenuDirection::Right);
-  const std::int32_t submenuExtent = static_cast<std::int32_t>(chrome.surfaceWidth) + kSubGap;
+  const std::int32_t submenuExtent = static_cast<std::int32_t>(chrome.surfaceWidth) + subGap;
   if (isRight) {
     if (parentX + parentWidth + submenuExtent > outputWidth) {
       isRight = false;
@@ -1069,7 +1082,7 @@ void TrayMenu::openSubmenuAtLevel(std::size_t levelIndex, std::int32_t parentEnt
   const std::int32_t anchorY = static_cast<std::int32_t>(std::lround(parentMenu->chrome.contentY())) + rowTop;
   const std::uint32_t anchor = isRight ? XDG_POSITIONER_ANCHOR_TOP_RIGHT : XDG_POSITIONER_ANCHOR_TOP_LEFT;
   const std::uint32_t gravity = isRight ? XDG_POSITIONER_GRAVITY_BOTTOM_RIGHT : XDG_POSITIONER_GRAVITY_BOTTOM_LEFT;
-  const std::int32_t offsetX = isRight ? kSubGap : -kSubGap;
+  const std::int32_t offsetX = isRight ? subGap : -subGap;
   const auto subDir = isRight ? ContextSubmenuDirection::Right : ContextSubmenuDirection::Left;
   const auto chromeAttachment = isRight
                                     ? popup_chrome::Attachment{
@@ -1159,7 +1172,9 @@ void TrayMenu::buildSubmenuScene(std::size_t levelIndex, MenuInstance& inst, uin
 
   inst.sceneRoot = std::make_unique<Node>();
   inst.sceneRoot->setSize(w, h);
-  (void)popup_chrome::addShadow(*inst.sceneRoot, inst.chrome, popupShadowConfig(m_config), Style::scaledRadiusLg());
+  (void)popup_chrome::addShadow(
+      *inst.sceneRoot, inst.chrome, popupShadowConfig(m_config), Style::scaledRadiusLg(contentScale())
+  );
 
   if (levelIndex >= m_submenuLevels.size()) {
     return;
@@ -1196,6 +1211,7 @@ void TrayMenu::buildSubmenuScene(std::size_t levelIndex, MenuInstance& inst, uin
   scrollView->setScrollbarVisible(true);
 
   auto menu = std::make_unique<ContextMenuControl>();
+  menu->setContentScale(contentScale());
   menu->setMenuWidth(menuWidth);
   menu->setMaxVisible(entries.size()); // Always lay out all entries for scrolling
   menu->setSubmenuDirection(inst.submenuDirection);

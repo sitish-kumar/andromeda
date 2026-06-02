@@ -974,7 +974,9 @@ void Application::initServices() {
       m_bar.refresh();
       m_trayMenu.onTrayChanged();
     });
-    m_trayService->setMenuToggleCallback([this](const std::string& itemId) { m_trayMenu.toggleForItem(itemId); });
+    m_trayService->setMenuToggleCallback([this](const std::string& itemId, float contentScale) {
+      m_trayMenu.toggleForItem(itemId, contentScale);
+    });
   }
 
   m_weatherService.initialize();

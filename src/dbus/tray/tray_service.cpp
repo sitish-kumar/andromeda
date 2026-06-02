@@ -610,9 +610,9 @@ void TrayService::setChangeCallback(ChangeCallback callback) { m_changeCallback 
 
 void TrayService::setMenuToggleCallback(MenuToggleCallback callback) { m_menuToggleCallback = std::move(callback); }
 
-void TrayService::requestMenuToggle(const std::string& itemId) const {
+void TrayService::requestMenuToggle(const std::string& itemId, float contentScale) const {
   if (m_menuToggleCallback) {
-    m_menuToggleCallback(itemId);
+    m_menuToggleCallback(itemId, contentScale);
   }
 }
 

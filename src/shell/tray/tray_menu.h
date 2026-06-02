@@ -30,7 +30,7 @@ public:
   void initialize(WaylandConnection& wayland, ConfigService* config, TrayService* tray, RenderContext* renderContext);
   void onTrayChanged();
 
-  void toggleForItem(const std::string& itemId);
+  void toggleForItem(const std::string& itemId, float contentScale = 1.0f);
   void close();
   void onFontChanged();
   void onThemeChanged();
@@ -57,6 +57,8 @@ private:
   [[nodiscard]] uint32_t surfaceHeightPx() const;
   [[nodiscard]] uint32_t submenuHeightPx(const std::vector<TrayMenuEntry>& submenuEntries) const;
   [[nodiscard]] bool ownsSurface(wl_surface* surface) const;
+  [[nodiscard]] float contentScale() const noexcept;
+  [[nodiscard]] float menuWidth() const noexcept;
   void ensureSurface();
   void resizeMainSurfaceToEntries();
   void destroySurface();
@@ -81,6 +83,7 @@ private:
   std::string m_activeItemId;
   std::vector<TrayMenuEntry> m_entries;
   std::unique_ptr<MenuInstance> m_instance;
+  float m_contentScale = 1.0f;
   bool m_visible = false;
   std::string m_lastClosedItemId;
   std::chrono::steady_clock::time_point m_lastCloseTime;

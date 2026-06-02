@@ -620,7 +620,7 @@ void TrayWidget::rebuild(Renderer& renderer) {
           m_itemActivated();
         }
       } else if (data.button == BTN_RIGHT) {
-        m_tray->requestMenuToggle(itemId);
+        m_tray->requestMenuToggle(itemId, m_contentScale);
       }
     });
     area->addChild(std::move(iconNode));

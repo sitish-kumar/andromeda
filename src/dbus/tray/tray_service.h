@@ -59,7 +59,7 @@ struct TrayMenuEntry {
 class TrayService {
 public:
   using ChangeCallback = std::function<void()>;
-  using MenuToggleCallback = std::function<void(const std::string&)>;
+  using MenuToggleCallback = std::function<void(const std::string&, float)>;
 
   explicit TrayService(SessionBus& bus);
   ~TrayService();
@@ -69,7 +69,7 @@ public:
   void start();
   void setChangeCallback(ChangeCallback callback);
   void setMenuToggleCallback(MenuToggleCallback callback);
-  void requestMenuToggle(const std::string& itemId) const;
+  void requestMenuToggle(const std::string& itemId, float contentScale = 1.0f) const;
   [[nodiscard]] std::size_t itemCount() const noexcept;
   [[nodiscard]] std::vector<TrayItemInfo> items() const;
   [[nodiscard]] std::vector<TrayMenuEntry> menuEntries(const std::string& itemId);
