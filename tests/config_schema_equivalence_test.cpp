@@ -139,6 +139,12 @@ namespace {
     c.keybinds.down = {*parseKeyChordSpec("Down")};
     c.hooks.commands[0] = {"notify-send hi"};
     c.hooks.commands[2] = {"cmd-a", "cmd-b"};
+    c.idle.preActionFadeSeconds = 3.0f;
+    // Explicit normalized actions so normalizeIdleBehaviorAction is a no-op on read.
+    c.idle.behaviors = {
+        {"dim", true, 60, "lock", "", "", true},
+        {"off", false, 300, "screen_off", "", "", true},
+    };
     return c;
   }
 
@@ -198,6 +204,7 @@ int main() {
   checkWriteParity("calendar", legacyRoot, probe.calendar, calendarSchema());
   checkWriteParity("keybinds", legacyRoot, probe.keybinds, keybindsSchema());
   checkWriteParity("hooks", legacyRoot, probe.hooks, hooksSchema());
+  checkWriteParity("idle", legacyRoot, probe.idle, idleSchema());
 
   checkReadInverse("audio", legacyRoot, probe.audio, audioSchema());
   checkReadInverse("weather", legacyRoot, probe.weather, weatherSchema());
@@ -215,6 +222,7 @@ int main() {
   checkReadInverse("calendar", legacyRoot, probe.calendar, calendarSchema());
   checkReadInverse("keybinds", legacyRoot, probe.keybinds, keybindsSchema());
   checkReadInverse("hooks", legacyRoot, probe.hooks, hooksSchema());
+  checkReadInverse("idle", legacyRoot, probe.idle, idleSchema());
 
   checkClamps();
 

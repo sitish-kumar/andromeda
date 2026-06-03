@@ -2171,81 +2171,10 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     config.controlCenter.shortcuts = defaultControlCenterShortcuts();
   }
 
-  // Parse [idle] and [idle.behavior.*]
+  // Parse [idle] and [idle.behavior.*]. Default-seeding stays here because it
+  // must apply even when [idle] is absent.
   if (auto* idleTbl = tbl["idle"].as_table()) {
-    if (auto v = finiteDouble((*idleTbl)["pre_action_fade_seconds"])) {
-      const double d = *v;
-      config.idle.preActionFadeSeconds = static_cast<float>(std::clamp(d, 0.0, 120.0));
-    }
-    if (auto* behaviorTbl = (*idleTbl)["behavior"].as_table()) {
-      for (const auto& [name, node] : *behaviorTbl) {
-        auto* entryTbl = node.as_table();
-        if (entryTbl == nullptr) {
-          continue;
-        }
-
-        IdleBehaviorConfig behavior;
-        behavior.name = std::string(name.str());
-
-        if (auto v = (*entryTbl)["enabled"].value<bool>()) {
-          behavior.enabled = *v;
-        }
-        if (auto v = (*entryTbl)["timeout"].value<int64_t>()) {
-          behavior.timeoutSeconds = static_cast<std::int32_t>(*v);
-        }
-        if (auto v = (*entryTbl)["action"].value<std::string>()) {
-          behavior.action = StringUtils::trim(*v);
-        }
-        if (auto v = (*entryTbl)["command"].value<std::string>()) {
-          behavior.command = *v;
-        }
-        if (auto v = (*entryTbl)["resume_command"].value<std::string>()) {
-          behavior.resumeCommand = *v;
-        }
-        if (auto v = (*entryTbl)["lock_before_suspend"].value<bool>()) {
-          behavior.lockBeforeSuspend = *v;
-        }
-
-        normalizeIdleBehaviorAction(behavior);
-
-        config.idle.behaviors.push_back(std::move(behavior));
-      }
-    }
-    if (auto* orderArr = (*idleTbl)["behavior_order"].as_array();
-        orderArr != nullptr && !config.idle.behaviors.empty()) {
-      std::vector<std::string> orderedNames;
-      orderedNames.reserve(orderArr->size());
-      for (const auto& item : *orderArr) {
-        if (auto name = item.value<std::string>(); name.has_value() && !name->empty()) {
-          orderedNames.push_back(*name);
-        }
-      }
-
-      if (!orderedNames.empty()) {
-        std::unordered_map<std::string, IdleBehaviorConfig> byName;
-        byName.reserve(config.idle.behaviors.size());
-        for (auto& behavior : config.idle.behaviors) {
-          byName.insert_or_assign(behavior.name, std::move(behavior));
-        }
-
-        std::vector<IdleBehaviorConfig> ordered;
-        ordered.reserve(byName.size());
-        for (const auto& name : orderedNames) {
-          auto it = byName.find(name);
-          if (it == byName.end()) {
-            continue;
-          }
-          ordered.push_back(std::move(it->second));
-          byName.erase(it);
-        }
-        for (auto& [name, behavior] : byName) {
-          (void)name;
-          ordered.push_back(std::move(behavior));
-        }
-
-        config.idle.behaviors = std::move(ordered);
-      }
-    }
+    schema::readInto(*idleTbl, config.idle, schema::idleSchema(), "idle", schemaDiag);
   }
   if (config.idle.behaviors.empty()) {
     config.idle.behaviors = defaultIdleBehaviors();

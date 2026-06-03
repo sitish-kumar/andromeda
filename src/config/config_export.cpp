@@ -538,33 +538,6 @@ namespace config_export {
       return table;
     }
 
-    toml::table idleTable(const IdleConfig& idle) {
-      toml::table table;
-      table.insert_or_assign("pre_action_fade_seconds", static_cast<double>(idle.preActionFadeSeconds));
-
-      toml::array order;
-      toml::table behaviors;
-      for (const auto& behavior : idle.behaviors) {
-        if (behavior.name.empty()) {
-          continue;
-        }
-        order.push_back(behavior.name);
-        toml::table item;
-        item.insert_or_assign("enabled", behavior.enabled);
-        item.insert_or_assign("timeout", static_cast<std::int64_t>(behavior.timeoutSeconds));
-        item.insert_or_assign("action", behavior.action);
-        item.insert_or_assign("command", behavior.command);
-        item.insert_or_assign("resume_command", behavior.resumeCommand);
-        if (behavior.action == "suspend" && !behavior.lockBeforeSuspend) {
-          item.insert_or_assign("lock_before_suspend", false);
-        }
-        behaviors.insert_or_assign(behavior.name, std::move(item));
-      }
-      table.insert_or_assign("behavior_order", std::move(order));
-      table.insert_or_assign("behavior", std::move(behaviors));
-      return table;
-    }
-
   } // namespace
 
   toml::table configToToml(const Config& config) {
@@ -594,7 +567,7 @@ namespace config_export {
     root.insert_or_assign("nightlight", schema::writeTable(config.nightlight, schema::nightlightSchema()));
     root.insert_or_assign("location", schema::writeTable(config.location, schema::locationSchema()));
 
-    root.insert_or_assign("idle", idleTable(config.idle));
+    root.insert_or_assign("idle", schema::writeTable(config.idle, schema::idleSchema()));
 
     root.insert_or_assign("keybinds", schema::writeTable(config.keybinds, schema::keybindsSchema()));
 

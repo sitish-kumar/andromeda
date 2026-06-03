@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <format>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace noctalia::config::schema {
 
@@ -356,6 +357,111 @@ namespace noctalia::config::schema {
         keybindActionField(&KeybindsConfig::right, "right", KeybindAction::Right),
         keybindActionField(&KeybindsConfig::up, "up", KeybindAction::Up),
         keybindActionField(&KeybindsConfig::down, "down", KeybindAction::Down),
+    };
+    return s;
+  }
+
+  namespace {
+    const Schema<IdleBehaviorConfig>& idleBehaviorSchema() {
+      static const Schema<IdleBehaviorConfig> s = {
+          field(&IdleBehaviorConfig::enabled, "enabled"),
+          field(&IdleBehaviorConfig::timeoutSeconds, "timeout"),
+          // action is trimmed on read.
+          custom<IdleBehaviorConfig>(
+              "action",
+              [](const toml::table& tbl, IdleBehaviorConfig& out, std::string_view, Diagnostics&) {
+                if (auto v = tbl["action"].value<std::string>()) {
+                  out.action = StringUtils::trim(*v);
+                }
+              },
+              [](toml::table& tbl, const IdleBehaviorConfig& in) { tbl.insert_or_assign("action", in.action); }
+          ),
+          field(&IdleBehaviorConfig::command, "command"),
+          field(&IdleBehaviorConfig::resumeCommand, "resume_command"),
+          // Emitted only for a bare `suspend` that opts out of pre-suspend locking.
+          custom<IdleBehaviorConfig>(
+              "lock_before_suspend",
+              [](const toml::table& tbl, IdleBehaviorConfig& out, std::string_view, Diagnostics&) {
+                if (auto v = tbl["lock_before_suspend"].value<bool>()) {
+                  out.lockBeforeSuspend = *v;
+                }
+              },
+              [](toml::table& tbl, const IdleBehaviorConfig& in) {
+                if (in.action == "suspend" && !in.lockBeforeSuspend) {
+                  tbl.insert_or_assign("lock_before_suspend", false);
+                }
+              }
+          ),
+          finalize<IdleBehaviorConfig>([](IdleBehaviorConfig& b, std::string_view, Diagnostics&) {
+            normalizeIdleBehaviorAction(b);
+          }),
+      };
+      return s;
+    }
+  } // namespace
+
+  const Schema<IdleConfig>& idleSchema() {
+    static const Schema<IdleConfig> s = {
+        field(&IdleConfig::preActionFadeSeconds, "pre_action_fade_seconds", Range<float>{0.0f, 120.0f}),
+        // behavior_order is emitted here (vector order); the actual reorder runs
+        // last, after the behavior map has been read.
+        custom<IdleConfig>(
+            "behavior_order", [](const toml::table&, IdleConfig&, std::string_view, Diagnostics&) {},
+            [](toml::table& tbl, const IdleConfig& in) {
+              toml::array order;
+              for (const auto& b : in.behaviors) {
+                if (!b.name.empty()) {
+                  order.push_back(b.name);
+                }
+              }
+              tbl.insert_or_assign("behavior_order", std::move(order));
+            }
+        ),
+        namedMap<IdleConfig, IdleBehaviorConfig>(
+            &IdleConfig::behaviors, "behavior", idleBehaviorSchema(),
+            [](IdleBehaviorConfig& b, std::string_view name) { b.name = std::string(name); },
+            [](const IdleBehaviorConfig& b) { return b.name; }
+        ),
+        // Keyless finalizer: reorder behaviors to match behavior_order, leaving
+        // any unlisted behaviors in their original relative order at the end.
+        custom<IdleConfig>(
+            "",
+            [](const toml::table& tbl, IdleConfig& out, std::string_view, Diagnostics&) {
+              const auto* orderArr = tbl["behavior_order"].as_array();
+              if (orderArr == nullptr || out.behaviors.empty()) {
+                return;
+              }
+              std::vector<std::string> orderedNames;
+              for (const auto& item : *orderArr) {
+                if (auto name = item.value<std::string>(); name && !name->empty()) {
+                  orderedNames.push_back(*name);
+                }
+              }
+              if (orderedNames.empty()) {
+                return;
+              }
+              std::unordered_map<std::string, IdleBehaviorConfig> byName;
+              for (auto& b : out.behaviors) {
+                byName.insert_or_assign(b.name, std::move(b));
+              }
+              std::vector<IdleBehaviorConfig> ordered;
+              ordered.reserve(byName.size());
+              for (const auto& name : orderedNames) {
+                auto it = byName.find(name);
+                if (it == byName.end()) {
+                  continue;
+                }
+                ordered.push_back(std::move(it->second));
+                byName.erase(it);
+              }
+              for (auto& [name, b] : byName) {
+                (void)name;
+                ordered.push_back(std::move(b));
+              }
+              out.behaviors = std::move(ordered);
+            },
+            [](toml::table&, const IdleConfig&) {}
+        ),
     };
     return s;
   }

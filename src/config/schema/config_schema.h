@@ -24,5 +24,6 @@ namespace noctalia::config::schema {
   const Schema<CalendarConfig>& calendarSchema();
   const Schema<KeybindsConfig>& keybindsSchema();
   const Schema<HooksConfig>& hooksSchema();
+  const Schema<IdleConfig>& idleSchema();
 
 } // namespace noctalia::config::schema
