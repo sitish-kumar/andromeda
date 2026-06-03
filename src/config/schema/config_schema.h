@@ -43,4 +43,11 @@ namespace noctalia::config::schema {
   const Schema<BarConfig>& barFieldsSchema();
   const Schema<BarMonitorOverride>& barMonitorOverrideSchema();
 
+  // True if `path` (a `{section, key, ...}` override path, e.g. {"shell","ui_scale"}
+  // or {"bar","default","monitor","DP-1","thickness"}) resolves to a real key in the
+  // schema. Lets the settings UI verify its hand-written override paths against the
+  // single schema source instead of drifting silently. Pure schema resolution — no
+  // ConfigService dependency.
+  [[nodiscard]] bool isKnownConfigPath(const std::vector<std::string>& path);
+
 } // namespace noctalia::config::schema

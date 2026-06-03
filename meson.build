@@ -928,6 +928,25 @@ config_schema_equivalence_test = executable('config_schema_equivalence_test',
 
 test('config_schema_equivalence', config_schema_equivalence_test)
 
+config_path_resolution_test = executable('config_path_resolution_test',
+  sources: files(
+    'tests/config_path_resolution_test.cpp',
+    'src/config/schema/config_schema.cpp',
+    'src/config/config_types.cpp',
+    'src/render/core/color.cpp',
+    'src/ui/palette.cpp',
+    'src/theme/builtin_palettes.cpp',
+    'src/theme/fixed_palette.cpp',
+    'src/theme/color.cpp',
+    'src/theme/contrast.cpp',
+    'src/core/key_chord.cpp',
+  ),
+  include_directories: _noctalia_inc,
+  dependencies: [xkbcommon_dep],
+)
+
+test('config_path_resolution', config_path_resolution_test)
+
 scripted_widget_manifest_test = executable('scripted_widget_manifest_test',
   sources: files(
     'tests/scripted_widget_manifest_test.cpp',
