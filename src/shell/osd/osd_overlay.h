@@ -68,6 +68,8 @@ private:
     Label* value = nullptr;
     ProgressBar* progress = nullptr;
     float progressValueMinWidth = 0.0f;
+    float rowBaseX = 0.0f;
+    float rowBaseY = 0.0f;
     AnimationManager::Id showAnimId = 0;
     AnimationManager::Id hideAnimId = 0;
     bool showPending = false;
@@ -84,6 +86,7 @@ private:
   void buildScene(Instance& inst, std::uint32_t width, std::uint32_t height);
   void updateInstanceContent(Instance& inst);
   void updateBlurRegion(Instance& inst) const;
+  void applyReveal(Instance& inst, float reveal);
   void animateInstance(Instance& inst);
 
   WaylandConnection* m_wayland = nullptr;

@@ -24,10 +24,15 @@ namespace {
 
   constexpr int kHideDelayMs = Style::animSlow * 3 + Style::animFast * 2;
 
-  struct SlideVector {
-    float x = 0.0f;
-    float y = 0.0f;
-  };
+  enum class OsdRevealDir { FromLeft, FromRight, FromTop, FromBottom };
+
+  [[nodiscard]] float osdContentOpacity(float reveal) {
+    const float v = std::clamp(reveal, 0.0f, 1.0f);
+    if (v <= 0.15f) {
+      return 0.0f;
+    }
+    return std::clamp((v - 0.15f) / 0.85f, 0.0f, 1.0f);
+  }
 
   [[nodiscard]] float osdUiScale(const ConfigService* config) {
     if (config == nullptr) {
@@ -121,13 +126,17 @@ namespace {
     return 0.0f;
   }
 
-  SlideVector cardHiddenOffsetForPosition(const std::string& position, float cardW, float cardH, float scale) {
-    if (isLeftPosition(position) || isRightPosition(position)) {
-      const float travelX = cardW + Style::spaceLg * scale;
-      return SlideVector{.x = isLeftPosition(position) ? -travelX : travelX, .y = 0.0f};
+  OsdRevealDir revealDirForPosition(const std::string& position) {
+    if (isLeftPosition(position)) {
+      return OsdRevealDir::FromLeft;
     }
-    const float travelY = cardH + Style::spaceLg * scale;
-    return SlideVector{.x = 0.0f, .y = (isBottomPosition(position) ? travelY : -travelY)};
+    if (isRightPosition(position)) {
+      return OsdRevealDir::FromRight;
+    }
+    if (isBottomPosition(position)) {
+      return OsdRevealDir::FromBottom;
+    }
+    return OsdRevealDir::FromTop;
   }
 
   std::string verticalValueText(std::string_view text) {
@@ -262,8 +271,9 @@ void OsdOverlay::ensureSurfaces() {
     return;
   }
 
-  const std::string position =
-      (m_config != nullptr && !m_config->config().osd.position.empty()) ? m_config->config().osd.position : "top_right";
+  const std::string position = (m_config != nullptr && !m_config->config().osd.position.empty())
+      ? m_config->config().osd.position
+      : "top_center";
   const std::string orientation = (m_config != nullptr && !m_config->config().osd.orientation.empty())
       ? m_config->config().osd.orientation
       : "horizontal";
@@ -522,6 +532,7 @@ void OsdOverlay::buildScene(Instance& inst, std::uint32_t width, std::uint32_t h
         box.setZIndex(1);
       },
   });
+  card->setClipChildren(true);
   inst.card = card.get();
 
   const auto rowProps = ui::FlexProps{
@@ -595,6 +606,9 @@ void OsdOverlay::updateInstanceContent(Instance& inst) {
 
   const float s = inst.uiLayoutScale;
   const bool vertical = isVerticalOrientation(m_lastOrientation);
+  // Card frame size is animated during reveal; measure layout against intrinsic size.
+  const float cw = cardWidth(s, m_lastOrientation);
+  const float ch = cardHeight(s, m_lastOrientation, m_lastShowProgress);
   inst.background->setFill(colorSpecFromRole(ColorRole::Surface, osdBackgroundOpacity(m_config)));
 
   const auto accentRole = m_content.overLimit ? ColorRole::Error : ColorRole::Primary;
@@ -607,15 +621,17 @@ void OsdOverlay::updateInstanceContent(Instance& inst) {
   inst.value->setFontSize(valueFontSize(s));
   inst.value->setColor(colorSpecFromRole(m_content.overLimit ? ColorRole::Error : ColorRole::OnSurface));
   inst.value->setTextAlign((vertical || !m_content.showProgress) ? TextAlign::Center : TextAlign::End);
-  inst.value->setMaxWidth(vertical ? inst.card->width() - cardPadding(s) * 2.0f : 0.0f);
+  inst.value->setMaxWidth(vertical ? cw - cardPadding(s) * 2.0f : 0.0f);
   inst.value->setMinWidth((!vertical && m_content.showProgress) ? inst.progressValueMinWidth : 0.0f);
   inst.value->setText((vertical && !m_content.showProgress) ? verticalValueText(m_content.value) : m_content.value);
   inst.progress->setRadius(osdProgressRadius(s));
   inst.progress->setProgress(m_content.progress);
   inst.row->layout(*m_renderContext);
-  const float rowX = std::round((inst.card->width() - inst.row->width()) * 0.5f);
-  const float rowY = std::round((inst.card->height() - inst.row->height()) * 0.5f);
-  inst.row->setPosition(vertical ? rowX : cardPadding(s), rowY);
+  const float rowX = std::round((cw - inst.row->width()) * 0.5f);
+  const float rowY = std::round((ch - inst.row->height()) * 0.5f);
+  inst.rowBaseX = vertical ? rowX : cardPadding(s);
+  inst.rowBaseY = rowY;
+  inst.row->setPosition(inst.rowBaseX, inst.rowBaseY);
 }
 
 void OsdOverlay::updateBlurRegion(Instance& inst) const {
@@ -635,6 +651,67 @@ void OsdOverlay::updateBlurRegion(Instance& inst) const {
   inst.surface->setBlurRegion(Surface::tessellateRoundedRect(rx, ry, rw, rh, radius));
 }
 
+void OsdOverlay::applyReveal(Instance& inst, float reveal) {
+  if (inst.card == nullptr || inst.background == nullptr || inst.sceneRoot == nullptr) {
+    return;
+  }
+
+  const float s = inst.uiLayoutScale;
+  const float cw = cardWidth(s, m_lastOrientation);
+  const float ch = cardHeight(s, m_lastOrientation, m_lastShowProgress);
+  const float baseX = cardBaseX(inst.sceneRoot->width(), cw);
+  const float baseY = cardBaseYForPosition(m_lastPosition, inst.sceneRoot->height(), ch);
+  const float r = std::clamp(reveal, 0.0f, 1.0f);
+
+  if (inst.row != nullptr) {
+    inst.row->setOpacity(osdContentOpacity(r));
+  }
+
+  // Grow the card from its anchored edge by clipping the visible extent; the rounded
+  // background and content stay at the resting position so nothing slides past the
+  // surface buffer (which the compositor would hard-clip into a flat edge).
+  switch (revealDirForPosition(m_lastPosition)) {
+  case OsdRevealDir::FromLeft: {
+    const float vw = std::round(cw * r);
+    inst.background->setPosition(baseX, baseY);
+    inst.background->setFrameSize(vw, ch);
+    inst.card->setPosition(baseX, baseY);
+    inst.card->setFrameSize(vw, ch);
+    inst.row->setPosition(inst.rowBaseX, inst.rowBaseY);
+    break;
+  }
+  case OsdRevealDir::FromRight: {
+    const float vw = std::round(cw * r);
+    const float hw = cw - vw;
+    inst.background->setPosition(baseX + hw, baseY);
+    inst.background->setFrameSize(vw, ch);
+    inst.card->setPosition(baseX + hw, baseY);
+    inst.card->setFrameSize(vw, ch);
+    inst.row->setPosition(inst.rowBaseX - hw, inst.rowBaseY);
+    break;
+  }
+  case OsdRevealDir::FromTop: {
+    const float vh = std::round(ch * r);
+    inst.background->setPosition(baseX, baseY);
+    inst.background->setFrameSize(cw, vh);
+    inst.card->setPosition(baseX, baseY);
+    inst.card->setFrameSize(cw, vh);
+    inst.row->setPosition(inst.rowBaseX, inst.rowBaseY);
+    break;
+  }
+  case OsdRevealDir::FromBottom: {
+    const float vh = std::round(ch * r);
+    const float hh = ch - vh;
+    inst.background->setPosition(baseX, baseY + hh);
+    inst.background->setFrameSize(cw, vh);
+    inst.card->setPosition(baseX, baseY + hh);
+    inst.card->setFrameSize(cw, vh);
+    inst.row->setPosition(inst.rowBaseX, inst.rowBaseY - hh);
+    break;
+  }
+  }
+}
+
 void OsdOverlay::animateInstance(Instance& inst) {
   if (inst.sceneRoot == nullptr) {
     return;
@@ -645,31 +722,14 @@ void OsdOverlay::animateInstance(Instance& inst) {
     inst.hideAnimId = 0;
   }
 
-  const float s = inst.uiLayoutScale;
-  const float cw = cardWidth(s, m_lastOrientation);
-  const float ch = cardHeight(s, m_lastOrientation, m_lastShowProgress);
-  const float baseX = cardBaseX(inst.sceneRoot->width(), cw);
-  const float baseY = cardBaseYForPosition(m_lastPosition, inst.sceneRoot->height(), ch);
-  const SlideVector hidden = cardHiddenOffsetForPosition(m_lastPosition, cw, ch, s);
   if (!inst.visible) {
     // During fast updates (e.g. slider drag), don't restart the show animation
     // every tick; keep the current show motion and only extend hide timing.
     if (inst.showAnimId == 0) {
       inst.sceneRoot->setOpacity(1.0f);
-      if (inst.hideAnimId == 0) {
-        inst.card->setPosition(baseX + hidden.x, baseY + hidden.y);
-        if (inst.background != nullptr) {
-          inst.background->setPosition(baseX + hidden.x, baseY + hidden.y);
-        }
-      }
+      applyReveal(inst, 0.0f);
       inst.showAnimId = inst.animations.animate(
-          0.0f, 1.0f, Style::animNormal, Easing::EaseOutCubic,
-          [&inst, baseX, baseY, hidden](float v) {
-            inst.card->setPosition(baseX + hidden.x * (1.0f - v), baseY + hidden.y * (1.0f - v));
-            if (inst.background != nullptr) {
-              inst.background->setPosition(baseX + hidden.x * (1.0f - v), baseY + hidden.y * (1.0f - v));
-            }
-          },
+          0.0f, 1.0f, Style::animNormal, Easing::EaseOutCubic, [this, &inst](float v) { applyReveal(inst, v); },
           [&inst]() {
             inst.showAnimId = 0;
             inst.visible = true;
@@ -677,24 +737,14 @@ void OsdOverlay::animateInstance(Instance& inst) {
       );
     }
   } else {
-    inst.card->setPosition(baseX, baseY);
-    if (inst.background != nullptr) {
-      inst.background->setPosition(baseX, baseY);
-    }
+    applyReveal(inst, 1.0f);
   }
 
   inst.hideAnimId = inst.animations.animateTimer(
       1.0f, 0.0f, kHideDelayMs, Easing::Linear, [](float /*v*/) {},
-      [this, &inst, baseX, baseY, hidden]() {
+      [this, &inst]() {
         inst.hideAnimId = inst.animations.animate(
-            1.0f, 0.0f, Style::animNormal, Easing::EaseInQuad,
-            [&inst, baseX, baseY, hidden](float v) {
-              const float t = 1.0f - v;
-              inst.card->setPosition(baseX + hidden.x * t, baseY + hidden.y * t);
-              if (inst.background != nullptr) {
-                inst.background->setPosition(baseX + hidden.x * t, baseY + hidden.y * t);
-              }
-            },
+            1.0f, 0.0f, Style::animNormal, Easing::EaseInQuad, [this, &inst](float v) { applyReveal(inst, v); },
             [this, &inst]() {
               inst.hideAnimId = 0;
               inst.visible = false;
