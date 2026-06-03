@@ -45,8 +45,9 @@ namespace {
     }
   }
 
-  std::optional<LoadedImageFile>
-  rasterizeSvg(const std::vector<std::uint8_t>& fileData, int targetSize, std::string* errorMessage);
+  std::optional<LoadedImageFile> rasterizeSvg(
+      const std::vector<std::uint8_t>& fileData, int targetSize, std::string* errorMessage, bool centerSquareCrop
+  );
 
   [[nodiscard]] bool asciiStartsWithDataScheme(std::string_view source) {
     if (source.size() < 5) {
@@ -328,8 +329,32 @@ namespace {
     return false;
   }
 
-  std::optional<LoadedImageFile>
-  loadImageBytes(std::vector<std::uint8_t> fileData, bool preferSvg, int targetSize, std::string* errorMessage) {
+  [[nodiscard]] LoadedImageFile cropCenterSquare(LoadedImageFile image) {
+    const int side = std::min(image.width, image.height);
+    if (side <= 0 || (image.width == side && image.height == side)) {
+      return image;
+    }
+
+    const int offsetX = (image.width - side) / 2;
+    const int offsetY = (image.height - side) / 2;
+    std::vector<std::uint8_t> cropped(static_cast<std::size_t>(side) * static_cast<std::size_t>(side) * 4U);
+    for (int row = 0; row < side; ++row) {
+      const auto srcRow = static_cast<std::size_t>(offsetY + row) * static_cast<std::size_t>(image.width) * 4U
+          + static_cast<std::size_t>(offsetX) * 4U;
+      const auto dstRow = static_cast<std::size_t>(row) * static_cast<std::size_t>(side) * 4U;
+      std::copy_n(image.rgba.data() + srcRow, static_cast<std::size_t>(side) * 4U, cropped.data() + dstRow);
+    }
+
+    image.rgba = std::move(cropped);
+    image.width = side;
+    image.height = side;
+    return image;
+  }
+
+  std::optional<LoadedImageFile> loadImageBytes(
+      std::vector<std::uint8_t> fileData, bool preferSvg, int targetSize, std::string* errorMessage,
+      bool centerSquareCrop
+  ) {
     if (fileData.empty()) {
       if (errorMessage != nullptr) {
         *errorMessage = "empty image data";
@@ -339,7 +364,7 @@ namespace {
 
     const bool svgLike = looksLikeSvg(fileData);
     if (preferSvg || svgLike) {
-      if (auto loaded = rasterizeSvg(fileData, targetSize, errorMessage)) {
+      if (auto loaded = rasterizeSvg(fileData, targetSize, errorMessage, centerSquareCrop)) {
         return loaded;
       }
       if (svgLike) {
@@ -371,14 +396,19 @@ namespace {
         }
       }
 
-      return LoadedImageFile{.rgba = std::move(pixels), .width = width, .height = height};
+      LoadedImageFile loaded{.rgba = std::move(pixels), .width = width, .height = height};
+      if (centerSquareCrop) {
+        loaded = cropCenterSquare(std::move(loaded));
+      }
+      return loaded;
     }
 
     return std::nullopt;
   }
 
-  std::optional<LoadedImageFile>
-  rasterizeSvg(const std::vector<std::uint8_t>& fileData, int targetSize, std::string* errorMessage) {
+  std::optional<LoadedImageFile> rasterizeSvg(
+      const std::vector<std::uint8_t>& fileData, int targetSize, std::string* errorMessage, bool centerSquareCrop
+  ) {
     GError* gerror = nullptr;
     RsvgHandle* handle = rsvg_handle_new_from_data(fileData.data(), fileData.size(), &gerror);
     if (handle == nullptr) {
@@ -476,12 +506,16 @@ namespace {
 
     cairo_surface_destroy(surface);
     g_object_unref(handle);
+    if (centerSquareCrop) {
+      loaded = cropCenterSquare(std::move(loaded));
+    }
     return loaded;
   }
 
 } // namespace
 
-std::optional<LoadedImageFile> loadImageFile(const std::string& path, int targetSize, std::string* errorMessage) {
+std::optional<LoadedImageFile>
+loadImageFile(const std::string& path, int targetSize, std::string* errorMessage, bool centerSquareCrop) {
   if (path.empty()) {
     if (errorMessage != nullptr) {
       *errorMessage = "empty image path";
@@ -494,7 +528,7 @@ std::optional<LoadedImageFile> loadImageFile(const std::string& path, int target
     if (!dataUri.has_value()) {
       return std::nullopt;
     }
-    return loadImageBytes(std::move(dataUri->bytes), dataUri->declaredSvg, targetSize, errorMessage);
+    return loadImageBytes(std::move(dataUri->bytes), dataUri->declaredSvg, targetSize, errorMessage, centerSquareCrop);
   }
 
   auto fileData = FileUtils::readBinaryFile(path);
@@ -506,6 +540,6 @@ std::optional<LoadedImageFile> loadImageFile(const std::string& path, int target
   }
 
   return loadImageBytes(
-      std::move(fileData), path.ends_with(".svg") || path.ends_with(".SVG"), targetSize, errorMessage
+      std::move(fileData), path.ends_with(".svg") || path.ends_with(".SVG"), targetSize, errorMessage, centerSquareCrop
   );
 }

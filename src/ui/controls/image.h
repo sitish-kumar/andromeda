@@ -40,8 +40,14 @@ public:
   void setPadding(float padding);
   void setAsyncReadyCallback(AsyncReadyCallback callback);
 
-  bool setSourceFile(Renderer& renderer, const std::string& path, int targetSize = 0, bool mipmap = false);
-  bool reloadSourceFile(Renderer& renderer, const std::string& path, int targetSize = 0, bool mipmap = false);
+  bool setSourceFile(
+      Renderer& renderer, const std::string& path, int targetSize = 0, bool mipmap = false,
+      bool centerSquareCrop = false
+  );
+  bool reloadSourceFile(
+      Renderer& renderer, const std::string& path, int targetSize = 0, bool mipmap = false,
+      bool centerSquareCrop = false
+  );
   bool setSourceFileAsync(
       Renderer& renderer, AsyncTextureCache& cache, const std::string& path, int targetSize = 0, bool mipmap = false
   );
@@ -93,6 +99,7 @@ private:
   int m_sourceRequestedTargetSize = 0;
   int m_sourceTargetSize = 0;
   bool m_sourceMipmap = false;
+  bool m_sourceCenterSquareCrop = false;
   float m_radius = 0.0f;
   float m_padding = 0.0f;
   ImageFit m_fit = ImageFit::Contain;

@@ -173,7 +173,9 @@ void Image::setPadding(float padding) {
 
 void Image::setAsyncReadyCallback(AsyncReadyCallback callback) { m_asyncReadyCallback = std::move(callback); }
 
-bool Image::setSourceFile(Renderer& renderer, const std::string& path, int targetSize, bool mipmap) {
+bool Image::setSourceFile(
+    Renderer& renderer, const std::string& path, int targetSize, bool mipmap, bool centerSquareCrop
+) {
   const int requestedTargetSize = std::max(0, targetSize);
   const int textureTargetSize = renderTargetSize(renderer, requestedTargetSize);
   if (m_ownsTexture
@@ -181,6 +183,7 @@ bool Image::setSourceFile(Renderer& renderer, const std::string& path, int targe
       && m_sourceRequestedTargetSize == requestedTargetSize
       && m_sourceTargetSize == textureTargetSize
       && m_sourceMipmap == mipmap
+      && m_sourceCenterSquareCrop == centerSquareCrop
       && m_texture.id != 0) {
     return true;
   }
@@ -193,7 +196,7 @@ bool Image::setSourceFile(Renderer& renderer, const std::string& path, int targe
   }
 
   std::string errorMessage;
-  auto loaded = loadImageFile(path, textureTargetSize, &errorMessage);
+  auto loaded = loadImageFile(path, textureTargetSize, &errorMessage, centerSquareCrop);
   if (!loaded.has_value()) {
     m_sourcePath.clear();
     if (m_image != nullptr) {
@@ -214,11 +217,14 @@ bool Image::setSourceFile(Renderer& renderer, const std::string& path, int targe
   m_sourceRequestedTargetSize = requestedTargetSize;
   m_sourceTargetSize = textureTargetSize;
   m_sourceMipmap = mipmap;
+  m_sourceCenterSquareCrop = centerSquareCrop;
   updateLayout();
   return true;
 }
 
-bool Image::reloadSourceFile(Renderer& renderer, const std::string& path, int targetSize, bool mipmap) {
+bool Image::reloadSourceFile(
+    Renderer& renderer, const std::string& path, int targetSize, bool mipmap, bool centerSquareCrop
+) {
   m_renderer = &renderer;
 
   if (path.empty()) {
@@ -227,7 +233,7 @@ bool Image::reloadSourceFile(Renderer& renderer, const std::string& path, int ta
 
   const int requestedTargetSize = std::max(0, targetSize);
   const int textureTargetSize = renderTargetSize(renderer, requestedTargetSize);
-  auto loaded = loadImageFile(path, textureTargetSize);
+  auto loaded = loadImageFile(path, textureTargetSize, nullptr, centerSquareCrop);
   if (!loaded.has_value()) {
     return false;
   }
@@ -241,6 +247,7 @@ bool Image::reloadSourceFile(Renderer& renderer, const std::string& path, int ta
   m_sourceRequestedTargetSize = requestedTargetSize;
   m_sourceTargetSize = textureTargetSize;
   m_sourceMipmap = mipmap;
+  m_sourceCenterSquareCrop = centerSquareCrop;
   if (m_image != nullptr) {
     m_image->setTextureId(m_texture.id);
   }
@@ -407,6 +414,7 @@ void Image::clear(Renderer& renderer) {
   m_sourceRequestedTargetSize = 0;
   m_sourceTargetSize = 0;
   m_sourceMipmap = false;
+  m_sourceCenterSquareCrop = false;
   clearColorizationSource();
   if (m_image != nullptr) {
     m_image->setTextureId({});
@@ -440,7 +448,7 @@ void Image::doLayout(Renderer& renderer) {
   if (m_ownsTexture && !m_sourcePath.empty() && m_sourceRequestedTargetSize > 0) {
     const int textureTargetSize = renderTargetSize(renderer, m_sourceRequestedTargetSize);
     if (textureTargetSize != m_sourceTargetSize) {
-      auto loaded = loadImageFile(m_sourcePath, textureTargetSize);
+      auto loaded = loadImageFile(m_sourcePath, textureTargetSize, nullptr, m_sourceCenterSquareCrop);
       if (loaded.has_value()) {
         if (commitColorizedRgba(renderer, loaded->rgba.data(), loaded->width, loaded->height, m_sourceMipmap)) {
           m_sourceTargetSize = textureTargetSize;
@@ -636,7 +644,9 @@ void Image::reloadColorizedSource() {
     return;
   }
   if (!m_sourcePath.empty() && m_texture.id != 0) {
-    (void)reloadSourceFile(*m_renderer, m_sourcePath, m_sourceRequestedTargetSize, m_sourceMipmap);
+    (void)reloadSourceFile(
+        *m_renderer, m_sourcePath, m_sourceRequestedTargetSize, m_sourceMipmap, m_sourceCenterSquareCrop
+    );
   }
 }
 

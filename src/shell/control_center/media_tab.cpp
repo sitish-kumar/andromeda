@@ -59,6 +59,11 @@ namespace {
     return playbackStatus == "Playing" ? "media-pause" : "media-play";
   }
 
+  [[nodiscard]] int mediaTabArtDecodeSize(float scale) {
+    // Match the widest artwork layout bound (see mediaWidth in doLayout).
+    return static_cast<int>(std::round(kMediaUnit * 11.0f * scale));
+  }
+
   std::string repeatGlyph(const std::string& loopStatus) { return loopStatus == "Track" ? "repeat-once" : "repeat"; }
 
   ButtonVariant toggleVariant(bool active) { return active ? ButtonVariant::Primary : ButtonVariant::Ghost; }
@@ -221,7 +226,7 @@ std::unique_ptr<Flex> MediaTab::create() {
       {.out = &m_artworkRow, .align = FlexAlign::Center, .justify = FlexJustify::Center, .gap = 0.0f, .flexGrow = 1.0f},
       ui::image({
           .out = &m_artwork,
-          .fit = ImageFit::Contain,
+          .fit = ImageFit::Cover,
           .radius = Style::scaledRadiusXl(scale),
           .width = kArtworkSize * scale,
           .height = kArtworkSize * scale,
@@ -548,7 +553,11 @@ void MediaTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight
     );
     float targetWidth = artWidth;
     float targetHeight = artHeight;
-    if (m_artwork->hasImage()) {
+    if (m_artworkSquarePresentation) {
+      const float side = std::min(artWidth, artHeight);
+      targetWidth = side;
+      targetHeight = side;
+    } else if (m_artwork->hasImage()) {
       const float imageAspect = std::max(0.01f, m_artwork->aspectRatio());
       const float boundsAspect = artWidth / std::max(1.0f, artHeight);
       if (imageAspect > boundsAspect) {
@@ -891,12 +900,18 @@ void MediaTab::refresh(Renderer& renderer) {
     }
 
     if (m_artwork != nullptr
-        && (!resolvedArtUrl.empty() && (resolvedArtUrl != m_lastArtPath || !m_artwork->hasImage()))) {
+        && (!resolvedArtUrl.empty()
+            && (resolvedArtUrl != m_lastArtPath
+                || m_artworkSquarePresentation != shouldCenterSquareCropArt(player, resolvedArtUrl)
+                || !m_artwork->hasImage()))) {
+      const bool squarePresentation = shouldCenterSquareCropArt(player, resolvedArtUrl);
       bool loaded = false;
       if (artPath.empty()) {
         kLog.debug("artwork unresolved url=\"{}\"", resolvedArtUrl);
         clearArt(renderer);
-      } else if (!m_artwork->setSourceFile(renderer, artPath, static_cast<int>(kArtworkSize))) {
+      } else if (!m_artwork->setSourceFile(
+                     renderer, artPath, mediaTabArtDecodeSize(contentScale()), true, squarePresentation
+                 )) {
         kLog.warn("artwork load failed url=\"{}\" path=\"{}\"", resolvedArtUrl, artPath);
         clearArt(renderer);
       } else {
@@ -907,9 +922,14 @@ void MediaTab::refresh(Renderer& renderer) {
       // Only lock this URL once we actually have an image.
       // Otherwise keep retrying while metadata/download catches up.
       m_lastArtPath = loaded ? resolvedArtUrl : std::string{};
+      if (loaded) {
+        m_artworkSquarePresentation = squarePresentation;
+        PanelManager::instance().requestLayout();
+      }
     } else if (m_artwork != nullptr && resolvedArtUrl.empty()) {
       clearArt(renderer);
       m_lastArtPath.clear();
+      m_artworkSquarePresentation = false;
     }
 
     std::int64_t trackLengthUs = player.lengthUs;

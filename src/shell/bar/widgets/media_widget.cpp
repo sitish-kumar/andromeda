@@ -256,7 +256,10 @@ void MediaWidget::syncState(Renderer& renderer) {
     }
 
     if (!artPath.empty()) {
-      if (!m_art->setSourceFile(renderer, artPath, static_cast<int>(std::round(64.0f * m_contentScale)), true)) {
+      const bool squareCrop = active.has_value() && shouldCenterSquareCropArt(*active, m_lastArtUrl);
+      if (!m_art->setSourceFile(
+              renderer, artPath, static_cast<int>(std::round(64.0f * m_contentScale)), true, squareCrop
+          )) {
         kLog.warn("artwork load failed url=\"{}\" path=\"{}\"", m_lastArtUrl, artPath);
         m_art->clear(renderer);
       } else {
@@ -278,7 +281,10 @@ void MediaWidget::syncState(Renderer& renderer) {
       }
     }
     if (!artPath.empty()) {
-      if (m_art->setSourceFile(renderer, artPath, static_cast<int>(std::round(64.0f * m_contentScale)))) {
+      const bool squareCrop = active.has_value() && shouldCenterSquareCropArt(*active, m_lastArtUrl);
+      if (m_art->setSourceFile(
+              renderer, artPath, static_cast<int>(std::round(64.0f * m_contentScale)), false, squareCrop
+          )) {
         requestRedraw();
       }
     }
