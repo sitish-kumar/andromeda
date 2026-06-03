@@ -56,21 +56,23 @@ let
 
   shortRev = src.shortRev or "dirty";
 
-  package = (pkgs.callPackage ./nix/package.nix { }) {
+  package = pkgs.callPackage ./nix/package.nix {
     inherit shortRev;
     version = mkDate (src.lastModifiedDate or "19700101") + "_" + shortRev;
-    src = cleanSource src;
+    source = cleanSource src;
   };
 in
 {
   hjemModule = {
     imports = [ ./nix/hjem-module.nix ];
     programs.noctalia.package = mkDefault package;
+    _class = "hjem";
   };
 
   homeModule = {
     imports = [ ./nix/home-module.nix ];
     programs.noctalia.package = mkDefault package;
+    _class = "homeManager";
   };
 
   inherit package;

@@ -47,7 +47,7 @@
       packages = forEachSystem (
         { pkgs, ... }:
         {
-          default = (pkgs.callPackage ./nix/package.nix { }) {
+          default = pkgs.callPackage ./nix/package.nix {
             inherit version shortRev;
           };
         }

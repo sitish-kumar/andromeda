@@ -27,9 +27,7 @@
   libqalculate,
   libxml2,
   jemalloc,
-}:
-{
-  src ? lib.cleanSource ./..,
+  source ? lib.cleanSource ./..,
   shortRev,
   version,
 }:
@@ -37,7 +35,7 @@ stdenv.mkDerivation {
   pname = "noctalia";
   inherit version;
 
-  inherit src;
+  src = source;
 
   postPatch = ''
     # Remove -march=native and -mtune=native for reproducible builds
