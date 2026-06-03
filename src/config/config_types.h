@@ -666,7 +666,6 @@ struct ShellConfig {
   };
 
   struct PanelConfig {
-    bool backgroundBlur = true; // request compositor blur behind panels via ext-background-effect-v1
     PanelTransparencyMode transparencyMode = PanelTransparencyMode::Solid;
     bool borders = true; // panel shell outline and in-panel section cards
     bool shadow = true;  // cast the global [shell.shadow] from panel surfaces

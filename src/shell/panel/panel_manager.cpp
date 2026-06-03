@@ -1461,10 +1461,6 @@ void PanelManager::applyPanelCompositorBlur() {
   if (m_surface == nullptr || m_activePanel == nullptr) {
     return;
   }
-  if (m_config == nullptr || !m_config->config().shell.panel.backgroundBlur) {
-    m_surface->clearBlurRegion();
-    return;
-  }
 
   int bx = m_panelInsetX;
   int by = m_panelInsetY;
@@ -1611,7 +1607,6 @@ void PanelManager::onConfigReloaded() {
     return;
   }
 
-  // Re-apply compositor blur for any open panel on background_blur changes.
   applyPanelCompositorBlur();
   const float panelBackgroundOpacity =
       m_attachedToBar ? m_attachedBackgroundOpacity : resolveDetachedPanelBackgroundOpacity(m_config);

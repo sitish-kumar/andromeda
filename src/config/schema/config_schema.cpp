@@ -843,7 +843,6 @@ namespace noctalia::config::schema {
 
     const Schema<ShellConfig::PanelConfig>& shellPanelSchema() {
       static const Schema<ShellConfig::PanelConfig> s = {
-          field(&ShellConfig::PanelConfig::backgroundBlur, "background_blur"),
           enumField(&ShellConfig::PanelConfig::transparencyMode, "transparency_mode", kPanelTransparencyModes),
           field(&ShellConfig::PanelConfig::borders, "borders"),
           field(&ShellConfig::PanelConfig::shadow, "shadow"),

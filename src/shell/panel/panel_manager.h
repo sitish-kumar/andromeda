@@ -109,9 +109,8 @@ public:
 
   void refresh();
   // Reacts to a ConfigService reload while a panel is open: re-pulls the host bar's
-  // per-panel-relevant config (attached background opacity) and
-  // re-applies the compositor blur region (which depends on shell.panel.background_blur,
-  // affects both attached and layer-shell panels). No-op when no panel is open.
+  // per-panel-relevant config (attached background opacity), styling, and compositor
+  // blur region. No-op when no panel is open.
   void onConfigReloaded();
   void onIconThemeChanged();
   void requestUpdateOnly();
@@ -154,8 +153,8 @@ private:
   // Safe to call any time after buildScene has run.
   void applyAttachedDecorationStyle();
   // Submit a wl_region matching the visible panel body to the compositor for blur.
-  // Honors shell.panel.background_blur; clips by m_attachedRevealProgress so the blur
-  // grows in lock-step with the open/close animation.
+  // Clips by m_attachedRevealProgress so the blur grows in lock-step with the
+  // open/close animation.
   void applyPanelCompositorBlur();
 
   CompositorPlatform* m_platform = nullptr;

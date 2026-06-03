@@ -37,7 +37,6 @@ direction = "down"                  # center, up, down, left, right, up_left, up
 alpha     = 0.55                    # multiplied by each component's background opacity
 
 [shell.panel]
-background_blur       = true        # request compositor blur behind panels
 transparency_mode     = "solid"     # solid | soft | glass; controls floating/centered opacity and card translucency
 borders               = true        # panel shell outline and in-panel section cards
 shadow                = true        # cast the global [shell.shadow] from panel surfaces
