@@ -1,9 +1,11 @@
 #include "config/schema/config_schema.h"
 
 #include "config/schema/engine.h"
+#include "core/key_chord.h"
 
 #include <algorithm>
 #include <format>
+#include <stdexcept>
 
 namespace noctalia::config::schema {
 
@@ -266,6 +268,152 @@ namespace noctalia::config::schema {
         arrayOf<ControlCenterConfig, ShortcutConfig>(
             &ControlCenterConfig::shortcuts, "shortcuts", shortcutSchema(),
             [](const ShortcutConfig& sc) { return !sc.type.empty(); }
+        ),
+    };
+    return s;
+  }
+
+  namespace {
+    // TOML key is "name" but the field is displayName.
+    const Schema<CalendarConfig::Account>& calendarAccountSchema() {
+      static const Schema<CalendarConfig::Account> s = {
+          field(&CalendarConfig::Account::id, "id"),
+          field(&CalendarConfig::Account::type, "type"),
+          field(&CalendarConfig::Account::displayName, "name"),
+          field(&CalendarConfig::Account::color, "color"),
+          field(&CalendarConfig::Account::url, "url"),
+          field(&CalendarConfig::Account::username, "username"),
+      };
+      return s;
+    }
+  } // namespace
+
+  namespace {
+    // One keybind action: reads a single chord string or an array of them
+    // (warning on an unparseable chord, rethrowing on a hard parse exception);
+    // writes the configured chords, or the built-in defaults when none are set.
+    Field<KeybindsConfig>
+    keybindActionField(std::vector<KeyChord> KeybindsConfig::* member, std::string_view key, KeybindAction action) {
+      return custom<KeybindsConfig>(
+          key,
+          [member, key](const toml::table& tbl, KeybindsConfig& out, std::string_view parentPath, Diagnostics& diag) {
+            auto& vec = out.*member;
+            vec.clear();
+            const auto* node = tbl.get(key);
+            if (node == nullptr) {
+              return;
+            }
+            auto parseOne = [&](const std::string& spec) {
+              try {
+                if (auto chord = parseKeyChordSpec(spec)) {
+                  vec.push_back(*chord);
+                } else {
+                  diag.warn(joinPath(parentPath, key), "invalid keybind chord \"" + spec + "\"");
+                }
+              } catch (const std::exception& e) {
+                throw std::runtime_error(std::format("keybinds.{}: {}", key, e.what()));
+              }
+            };
+            if (auto v = node->value<std::string>()) {
+              parseOne(*v);
+              return;
+            }
+            if (const auto* arr = node->as_array()) {
+              for (const auto& item : *arr) {
+                if (auto v = item.value<std::string>()) {
+                  parseOne(*v);
+                }
+              }
+            }
+          },
+          [member, key, action](toml::table& tbl, const KeybindsConfig& in) {
+            const auto& values = in.*member;
+            toml::array arr;
+            auto emit = [&](const std::vector<KeyChord>& chords) {
+              for (const auto& chord : chords) {
+                std::string serialized = keyChordToString(chord);
+                if (!serialized.empty()) {
+                  arr.push_back(std::move(serialized));
+                }
+              }
+            };
+            if (values.empty()) {
+              emit(defaultKeybindSet(action));
+            } else {
+              emit(values);
+            }
+            tbl.insert_or_assign(key, std::move(arr));
+          }
+      );
+    }
+  } // namespace
+
+  const Schema<KeybindsConfig>& keybindsSchema() {
+    static const Schema<KeybindsConfig> s = {
+        keybindActionField(&KeybindsConfig::validate, "validate", KeybindAction::Validate),
+        keybindActionField(&KeybindsConfig::cancel, "cancel", KeybindAction::Cancel),
+        keybindActionField(&KeybindsConfig::left, "left", KeybindAction::Left),
+        keybindActionField(&KeybindsConfig::right, "right", KeybindAction::Right),
+        keybindActionField(&KeybindsConfig::up, "up", KeybindAction::Up),
+        keybindActionField(&KeybindsConfig::down, "down", KeybindAction::Down),
+    };
+    return s;
+  }
+
+  const Schema<HooksConfig>& hooksSchema() {
+    // One field per HookKind, keyed by its canonical name. A value may be a single
+    // command string or an array; empty entries are dropped (matching the legacy
+    // setHookCommandsFromNode). Every kind is always emitted, even when empty.
+    static const Schema<HooksConfig> s = [] {
+      Schema<HooksConfig> fields;
+      for (std::size_t i = 0; i < static_cast<std::size_t>(HookKind::Count); ++i) {
+        const std::string_view key = hookKindKey(static_cast<HookKind>(i));
+        fields.push_back(
+            custom<HooksConfig>(
+                key,
+                [i, key](const toml::table& tbl, HooksConfig& out, std::string_view, Diagnostics&) {
+                  auto& vec = out.commands[i];
+                  vec.clear();
+                  const auto* node = tbl.get(key);
+                  if (node == nullptr) {
+                    return;
+                  }
+                  if (const auto* str = node->as_string()) {
+                    if (!str->get().empty()) {
+                      vec.push_back(str->get());
+                    }
+                    return;
+                  }
+                  if (const auto* arr = node->as_array()) {
+                    for (const auto& item : *arr) {
+                      if (auto v = item.value<std::string>(); v && !v->empty()) {
+                        vec.push_back(*v);
+                      }
+                    }
+                  }
+                },
+                [i, key](toml::table& tbl, const HooksConfig& in) {
+                  toml::array arr;
+                  for (const auto& cmd : in.commands[i]) {
+                    arr.push_back(cmd);
+                  }
+                  tbl.insert_or_assign(key, std::move(arr));
+                }
+            )
+        );
+      }
+      return fields;
+    }();
+    return s;
+  }
+
+  const Schema<CalendarConfig>& calendarSchema() {
+    static const Schema<CalendarConfig> s = {
+        field(&CalendarConfig::enabled, "enabled"),
+        field(&CalendarConfig::refreshMinutes, "refresh_minutes"),
+        arrayOf<CalendarConfig, CalendarConfig::Account>(
+            &CalendarConfig::accounts, "accounts", calendarAccountSchema(),
+            [](const CalendarConfig::Account& a) { return !a.id.empty() && !a.type.empty(); }
         ),
     };
     return s;

@@ -27,24 +27,6 @@ namespace config_export {
       return array;
     }
 
-    toml::array keyChordArray(const std::vector<KeyChord>& values) {
-      toml::array array;
-      for (const auto& value : values) {
-        std::string serialized = keyChordToString(value);
-        if (!serialized.empty()) {
-          array.push_back(std::move(serialized));
-        }
-      }
-      return array;
-    }
-
-    toml::array effectiveKeyChordArray(const std::vector<KeyChord>& values, KeybindAction action) {
-      if (!values.empty()) {
-        return keyChordArray(values);
-      }
-      return keyChordArray(defaultKeybindSet(action));
-    }
-
     void insertWidgetSettingValue(toml::table& table, std::string_view key, const WidgetSettingValue& value) {
       std::visit(
           [&](const auto& concrete) {
@@ -583,15 +565,6 @@ namespace config_export {
       return table;
     }
 
-    toml::table hooksTable(const HooksConfig& hooks) {
-      toml::table table;
-      for (std::size_t i = 0; i < static_cast<std::size_t>(HookKind::Count); ++i) {
-        const auto kind = static_cast<HookKind>(i);
-        table.insert_or_assign(hookKindKey(kind), stringArray(hooks.commands[i]));
-      }
-      return table;
-    }
-
   } // namespace
 
   toml::table configToToml(const Config& config) {
@@ -612,6 +585,7 @@ namespace config_export {
     root.insert_or_assign("system", schema::writeTable(config.system, schema::systemSchema()));
 
     root.insert_or_assign("weather", schema::writeTable(config.weather, schema::weatherSchema()));
+    root.insert_or_assign("calendar", schema::writeTable(config.calendar, schema::calendarSchema()));
     root.insert_or_assign("audio", schema::writeTable(config.audio, schema::audioSchema()));
 
     root.insert_or_assign("brightness", schema::writeTable(config.brightness, schema::brightnessSchema()));
@@ -622,14 +596,7 @@ namespace config_export {
 
     root.insert_or_assign("idle", idleTable(config.idle));
 
-    toml::table keybinds;
-    keybinds.insert_or_assign("validate", effectiveKeyChordArray(config.keybinds.validate, KeybindAction::Validate));
-    keybinds.insert_or_assign("cancel", effectiveKeyChordArray(config.keybinds.cancel, KeybindAction::Cancel));
-    keybinds.insert_or_assign("left", effectiveKeyChordArray(config.keybinds.left, KeybindAction::Left));
-    keybinds.insert_or_assign("right", effectiveKeyChordArray(config.keybinds.right, KeybindAction::Right));
-    keybinds.insert_or_assign("up", effectiveKeyChordArray(config.keybinds.up, KeybindAction::Up));
-    keybinds.insert_or_assign("down", effectiveKeyChordArray(config.keybinds.down, KeybindAction::Down));
-    root.insert_or_assign("keybinds", std::move(keybinds));
+    root.insert_or_assign("keybinds", schema::writeTable(config.keybinds, schema::keybindsSchema()));
 
     toml::table barRoot;
     toml::array barOrder;
@@ -661,7 +628,7 @@ namespace config_export {
 
     root.insert_or_assign("control_center", schema::writeTable(config.controlCenter, schema::controlCenterSchema()));
 
-    root.insert_or_assign("hooks", hooksTable(config.hooks));
+    root.insert_or_assign("hooks", schema::writeTable(config.hooks, schema::hooksSchema()));
     return root;
   }
 

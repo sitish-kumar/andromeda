@@ -15,6 +15,7 @@
 #include "config/config_types.h"
 #include "config/schema/config_schema.h"
 #include "config/schema/engine.h"
+#include "core/key_chord.h"
 #include "core/toml.h"
 
 #include <cstdio>
@@ -123,6 +124,21 @@ namespace {
     c.controlCenter.sidebarMode = ControlCenterSidebarMode::Full;
     c.controlCenter.sidebarSectionMode = ControlCenterSidebarMode::None;
     c.controlCenter.shortcuts = {{"wifi"}, {"bluetooth"}};
+    c.calendar.enabled = true;
+    c.calendar.refreshMinutes = 30;
+    c.calendar.accounts = {
+        {"acc1", "google", "Work", "#ff0000", "", "me@example.com"},
+        {"acc2", "caldav", "Home", "", "https://dav.example.com/cal", "user"},
+    };
+    // Explicit chords so write→read round-trips (empty would emit defaults instead).
+    c.keybinds.validate = {*parseKeyChordSpec("Return")};
+    c.keybinds.cancel = {*parseKeyChordSpec("Escape")};
+    c.keybinds.left = {*parseKeyChordSpec("Left")};
+    c.keybinds.right = {*parseKeyChordSpec("Right")};
+    c.keybinds.up = {*parseKeyChordSpec("Up")};
+    c.keybinds.down = {*parseKeyChordSpec("Down")};
+    c.hooks.commands[0] = {"notify-send hi"};
+    c.hooks.commands[2] = {"cmd-a", "cmd-b"};
     return c;
   }
 
@@ -179,6 +195,9 @@ int main() {
   checkWriteParity("brightness", legacyRoot, probe.brightness, brightnessSchema());
   checkWriteParity("battery", legacyRoot, probe.battery, batterySchema());
   checkWriteParity("control_center", legacyRoot, probe.controlCenter, controlCenterSchema());
+  checkWriteParity("calendar", legacyRoot, probe.calendar, calendarSchema());
+  checkWriteParity("keybinds", legacyRoot, probe.keybinds, keybindsSchema());
+  checkWriteParity("hooks", legacyRoot, probe.hooks, hooksSchema());
 
   checkReadInverse("audio", legacyRoot, probe.audio, audioSchema());
   checkReadInverse("weather", legacyRoot, probe.weather, weatherSchema());
@@ -193,6 +212,9 @@ int main() {
   checkReadInverse("brightness", legacyRoot, probe.brightness, brightnessSchema());
   checkReadInverse("battery", legacyRoot, probe.battery, batterySchema());
   checkReadInverse("control_center", legacyRoot, probe.controlCenter, controlCenterSchema());
+  checkReadInverse("calendar", legacyRoot, probe.calendar, calendarSchema());
+  checkReadInverse("keybinds", legacyRoot, probe.keybinds, keybindsSchema());
+  checkReadInverse("hooks", legacyRoot, probe.hooks, hooksSchema());
 
   checkClamps();
 

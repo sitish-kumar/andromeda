@@ -267,22 +267,6 @@ namespace {
     return widget;
   }
 
-  void setHookCommandsFromNode(const toml::node& node, std::vector<std::string>& out) {
-    out.clear();
-    if (auto* s = node.as_string()) {
-      const auto& val = s->get();
-      if (!val.empty()) {
-        out.push_back(val);
-      }
-      return;
-    }
-    for (const auto& line : readStringArray(node)) {
-      if (!line.empty()) {
-        out.push_back(line);
-      }
-    }
-  }
-
   const std::vector<KeyChord>& keybindSet(const KeybindsConfig& keybinds, KeybindAction action) {
     switch (action) {
     case KeybindAction::Validate:
@@ -2133,35 +2117,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
 
   // Parse [calendar]
   if (auto* calendarTbl = tbl["calendar"].as_table()) {
-    auto& calendar = config.calendar;
-    if (auto v = (*calendarTbl)["enabled"].value<bool>())
-      calendar.enabled = *v;
-    if (auto v = (*calendarTbl)["refresh_minutes"].value<int64_t>())
-      calendar.refreshMinutes = static_cast<std::int32_t>(*v);
-    if (auto* accounts = (*calendarTbl)["accounts"].as_array()) {
-      for (const auto& entry : *accounts) {
-        const auto* acctTbl = entry.as_table();
-        if (acctTbl == nullptr) {
-          continue;
-        }
-        CalendarConfig::Account account;
-        if (auto v = (*acctTbl)["id"].value<std::string>())
-          account.id = *v;
-        if (auto v = (*acctTbl)["type"].value<std::string>())
-          account.type = *v;
-        if (auto v = (*acctTbl)["name"].value<std::string>())
-          account.displayName = *v;
-        if (auto v = (*acctTbl)["color"].value<std::string>())
-          account.color = *v;
-        if (auto v = (*acctTbl)["url"].value<std::string>())
-          account.url = *v;
-        if (auto v = (*acctTbl)["username"].value<std::string>())
-          account.username = *v;
-        if (!account.id.empty() && !account.type.empty()) {
-          calendar.accounts.push_back(std::move(account));
-        }
-      }
-    }
+    schema::readInto(*calendarTbl, config.calendar, schema::calendarSchema(), "calendar", schemaDiag);
   }
 
   // Parse [system]
@@ -2186,47 +2142,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
 
   // Parse [keybinds]
   if (auto* keybindsTbl = tbl["keybinds"].as_table()) {
-    auto& keybinds = config.keybinds;
-
-    auto parseAction = [&](std::string_view key, std::vector<KeyChord>& out) {
-      out.clear();
-      if (const auto* node = keybindsTbl->get(key)) {
-        if (const auto v = node->value<std::string>()) {
-          try {
-            if (const auto chord = parseKeyChordSpec(*v); chord.has_value()) {
-              out.push_back(*chord);
-            } else {
-              kLog.warn("invalid keybind chord for [{}] {} = \"{}\"", "keybinds", key, *v);
-            }
-          } catch (const std::exception& e) {
-            throw std::runtime_error(std::format("keybinds.{}: {}", key, e.what()));
-          }
-          return;
-        }
-        if (const auto* arr = node->as_array()) {
-          for (const auto& item : *arr) {
-            if (const auto v = item.value<std::string>()) {
-              try {
-                if (const auto chord = parseKeyChordSpec(*v); chord.has_value()) {
-                  out.push_back(*chord);
-                } else {
-                  kLog.warn("invalid keybind chord for [{}] {} item = \"{}\"", "keybinds", key, *v);
-                }
-              } catch (const std::exception& e) {
-                throw std::runtime_error(std::format("keybinds.{}: {}", key, e.what()));
-              }
-            }
-          }
-        }
-      }
-    };
-
-    parseAction("validate", keybinds.validate);
-    parseAction("cancel", keybinds.cancel);
-    parseAction("left", keybinds.left);
-    parseAction("right", keybinds.right);
-    parseAction("up", keybinds.up);
-    parseAction("down", keybinds.down);
+    schema::readInto(*keybindsTbl, config.keybinds, schema::keybindsSchema(), "keybinds", schemaDiag);
   }
 
   // Parse [nightlight]
@@ -2241,13 +2157,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
 
   // Parse [hooks]
   if (auto* hooksTbl = tbl["hooks"].as_table()) {
-    auto& hooks = config.hooks;
-    for (const auto& [name, node] : *hooksTbl) {
-      const std::string_view keyView{name.str()};
-      if (const auto kind = hookKindFromKey(keyView)) {
-        setHookCommandsFromNode(node, hooks.commands[static_cast<std::size_t>(*kind)]);
-      }
-    }
+    schema::readInto(*hooksTbl, config.hooks, schema::hooksSchema(), "hooks", schemaDiag);
   }
 
   // Parse [control_center]. The default-shortcuts seeding stays here because it

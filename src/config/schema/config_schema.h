@@ -21,5 +21,8 @@ namespace noctalia::config::schema {
   const Schema<BrightnessConfig>& brightnessSchema();
   const Schema<BatteryConfig>& batterySchema();
   const Schema<ControlCenterConfig>& controlCenterSchema();
+  const Schema<CalendarConfig>& calendarSchema();
+  const Schema<KeybindsConfig>& keybindsSchema();
+  const Schema<HooksConfig>& hooksSchema();
 
 } // namespace noctalia::config::schema
