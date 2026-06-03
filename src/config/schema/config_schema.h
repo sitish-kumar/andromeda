@@ -14,5 +14,9 @@ namespace noctalia::config::schema {
   const Schema<BackdropConfig>& backdropSchema();
   const Schema<LockscreenConfig>& lockscreenSchema();
   const Schema<SystemConfig>& systemSchema();
+  const Schema<NightLightConfig>& nightlightSchema();
+  const Schema<LocationConfig>& locationSchema();
+  const Schema<NotificationConfig>& notificationSchema();
+  const Schema<DockConfig>& dockSchema();
 
 } // namespace noctalia::config::schema

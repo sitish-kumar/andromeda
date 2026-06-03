@@ -149,6 +149,24 @@ namespace noctalia::config::schema {
     };
   }
 
+  // Optional scalar written only when set (mirrors `if (x.has_value()) emit`).
+  // Read accepts an int or finite double, matching finiteDouble.
+  template <typename Struct> Field<Struct> field(std::optional<double> Struct::* member, std::string_view key) {
+    return Field<Struct>{
+        key,
+        [member, key](const toml::table& tbl, Struct& out, std::string_view, Diagnostics&) {
+          if (auto v = finiteDouble(tbl[key])) {
+            out.*member = *v;
+          }
+        },
+        [member, key](toml::table& tbl, const Struct& in) {
+          if ((in.*member).has_value()) {
+            tbl.insert_or_assign(key, *(in.*member));
+          }
+        },
+    };
+  }
+
   template <typename Struct> Field<Struct> field(std::vector<std::string> Struct::* member, std::string_view key) {
     return Field<Struct>{
         key,
@@ -170,6 +188,31 @@ namespace noctalia::config::schema {
           }
           tbl.insert_or_assign(key, std::move(arr));
         },
+    };
+  }
+
+  // Escape hatch for a single key whose read/write don't fit a stock codec
+  // (e.g. a value that cascades to sibling fields, or bespoke validation).
+  template <typename Struct>
+  Field<Struct> custom(
+      std::string_view key,
+      std::function<void(const toml::table& tbl, Struct& out, std::string_view parentPath, Diagnostics& diag)> read,
+      std::function<void(toml::table& tbl, const Struct& in)> write
+  ) {
+    return Field<Struct>{key, std::move(read), std::move(write)};
+  }
+
+  // A keyless field that runs cross-field logic after all leaf reads (enforcing
+  // invariants a per-field codec can't express, e.g. day > night). Writes
+  // nothing. Place it last in a Schema so it sees the fully-read struct.
+  template <typename Struct>
+  Field<Struct> finalize(std::function<void(Struct& out, std::string_view parentPath, Diagnostics& diag)> fn) {
+    return Field<Struct>{
+        "",
+        [fn = std::move(fn)](const toml::table&, Struct& out, std::string_view parentPath, Diagnostics& diag) {
+          fn(out, parentPath, diag);
+        },
+        [](toml::table&, const Struct&) {},
     };
   }
 

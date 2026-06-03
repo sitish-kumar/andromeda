@@ -93,6 +93,25 @@ namespace {
     c.system.monitor.memoryPollSeconds = 6.0f;
     c.system.monitor.networkPollSeconds = 7.0f;
     c.system.monitor.diskPollSeconds = 12.0f;
+    c.nightlight = NightLightConfig{true, true, 6000, 3500}; // gap satisfied
+    c.location.autoLocate = true;
+    c.location.address = "Berlin";
+    c.location.sunset = "20:30";
+    c.location.sunrise = "06:15";
+    c.location.latitude = 52.52;
+    c.location.longitude = 13.405;
+    c.notification = NotificationConfig{false, false, "bottom_left", "overlay", 1.3f, 0.5f, 12, 6, {"DP-2"}, false};
+    c.dock.enabled = true;
+    c.dock.position = "left";
+    c.dock.iconSize = 40;
+    c.dock.radius = 20;
+    c.dock.radiusTopLeft = 10;
+    c.dock.radiusTopRight = 12;
+    c.dock.radiusBottomLeft = 14;
+    c.dock.radiusBottomRight = 16;
+    c.dock.launcherPosition = "start";
+    c.dock.pinned = {"firefox.desktop"};
+    c.dock.monitors = {"DP-1"};
     return c;
   }
 
@@ -142,6 +161,10 @@ int main() {
   checkWriteParity("backdrop", legacyRoot, probe.backdrop, backdropSchema());
   checkWriteParity("lockscreen", legacyRoot, probe.lockscreen, lockscreenSchema());
   checkWriteParity("system", legacyRoot, probe.system, systemSchema());
+  checkWriteParity("nightlight", legacyRoot, probe.nightlight, nightlightSchema());
+  checkWriteParity("location", legacyRoot, probe.location, locationSchema());
+  checkWriteParity("notification", legacyRoot, probe.notification, notificationSchema());
+  checkWriteParity("dock", legacyRoot, probe.dock, dockSchema());
 
   checkReadInverse("audio", legacyRoot, probe.audio, audioSchema());
   checkReadInverse("weather", legacyRoot, probe.weather, weatherSchema());
@@ -149,6 +172,10 @@ int main() {
   checkReadInverse("backdrop", legacyRoot, probe.backdrop, backdropSchema());
   checkReadInverse("lockscreen", legacyRoot, probe.lockscreen, lockscreenSchema());
   checkReadInverse("system", legacyRoot, probe.system, systemSchema());
+  checkReadInverse("nightlight", legacyRoot, probe.nightlight, nightlightSchema());
+  checkReadInverse("location", legacyRoot, probe.location, locationSchema());
+  checkReadInverse("notification", legacyRoot, probe.notification, notificationSchema());
+  checkReadInverse("dock", legacyRoot, probe.dock, dockSchema());
 
   checkClamps();
 

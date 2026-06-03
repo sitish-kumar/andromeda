@@ -2051,109 +2051,17 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     schema::readInto(*osdTbl, config.osd, schema::osdSchema(), "osd", schemaDiag);
   }
 
-  auto parseNotificationTable = [&config](const toml::table& notifTable) {
-    auto& notif = config.notification;
-    if (auto v = notifTable["enable_daemon"].value<bool>())
-      notif.enableDaemon = *v;
-    if (auto v = notifTable["show_app_name"].value<bool>())
-      notif.showAppName = *v;
-    if (auto v = notifTable["position"].value<std::string>())
-      notif.position = *v;
-    if (auto v = notifTable["layer"].value<std::string>())
-      notif.layer = *v;
-    if (auto v = finiteDouble(notifTable["scale"]))
-      notif.scale = std::clamp(static_cast<float>(*v), 0.5f, 2.5f);
-    if (auto v = finiteDouble(notifTable["background_opacity"]))
-      notif.backgroundOpacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
-    if (auto v = notifTable["offset_x"].value<int64_t>())
-      notif.offsetX = static_cast<int>(*v);
-    if (auto v = notifTable["offset_y"].value<int64_t>())
-      notif.offsetY = static_cast<int>(*v);
-    if (const auto* v = notifTable.get("monitors")) {
-      notif.monitors = readStringArray(*v);
-    }
-    if (auto v = notifTable["collapse_on_dismiss"].value<bool>())
-      notif.collapseOnDismiss = *v;
-  };
-
   if (auto* notifTbl = tbl["notification"].as_table()) {
-    parseNotificationTable(*notifTbl);
+    schema::readInto(*notifTbl, config.notification, schema::notificationSchema(), "notification", schemaDiag);
   }
   // Compatibility alias: accept [notifications] as well.
   if (auto* notifTbl = tbl["notifications"].as_table()) {
-    parseNotificationTable(*notifTbl);
+    schema::readInto(*notifTbl, config.notification, schema::notificationSchema(), "notifications", schemaDiag);
   }
 
   // Parse [dock]
   if (auto* dockTbl = tbl["dock"].as_table()) {
-    auto& dock = config.dock;
-    if (auto v = (*dockTbl)["enabled"].value<bool>())
-      dock.enabled = *v;
-    if (auto v = (*dockTbl)["active_monitor_only"].value<bool>())
-      dock.activeMonitorOnly = *v;
-    if (auto v = (*dockTbl)["position"].value<std::string>())
-      dock.position = *v;
-    if (auto v = (*dockTbl)["icon_size"].value<int64_t>())
-      dock.iconSize = std::clamp(static_cast<std::int32_t>(*v), 16, 256);
-    if (auto v = (*dockTbl)["padding"].value<int64_t>())
-      dock.padding = std::clamp(static_cast<std::int32_t>(*v), 0, 100);
-    if (auto v = (*dockTbl)["item_spacing"].value<int64_t>())
-      dock.itemSpacing = std::clamp(static_cast<std::int32_t>(*v), 0, 100);
-    if (auto v = finiteDouble((*dockTbl)["background_opacity"]))
-      dock.backgroundOpacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
-    if (auto v = (*dockTbl)["radius"].value<int64_t>()) {
-      const auto r = std::clamp(static_cast<std::int32_t>(*v), 0, 500);
-      dock.radius = r;
-      dock.radiusTopLeft = r;
-      dock.radiusTopRight = r;
-      dock.radiusBottomLeft = r;
-      dock.radiusBottomRight = r;
-    }
-    if (auto v = (*dockTbl)["radius_top_left"].value<int64_t>())
-      dock.radiusTopLeft = std::clamp(static_cast<std::int32_t>(*v), 0, 500);
-    if (auto v = (*dockTbl)["radius_top_right"].value<int64_t>())
-      dock.radiusTopRight = std::clamp(static_cast<std::int32_t>(*v), 0, 500);
-    if (auto v = (*dockTbl)["radius_bottom_left"].value<int64_t>())
-      dock.radiusBottomLeft = std::clamp(static_cast<std::int32_t>(*v), 0, 500);
-    if (auto v = (*dockTbl)["radius_bottom_right"].value<int64_t>())
-      dock.radiusBottomRight = std::clamp(static_cast<std::int32_t>(*v), 0, 500);
-    if (auto v = (*dockTbl)["margin_ends"].value<int64_t>())
-      dock.marginEnds = std::clamp(static_cast<std::int32_t>(*v), 0, 500);
-    if (auto v = (*dockTbl)["margin_edge"].value<int64_t>())
-      dock.marginEdge = std::clamp(static_cast<std::int32_t>(*v), 0, 100);
-    if (auto v = (*dockTbl)["shadow"].value<bool>())
-      dock.shadow = *v;
-    if (auto v = (*dockTbl)["show_running"].value<bool>())
-      dock.showRunning = *v;
-    if (auto v = (*dockTbl)["auto_hide"].value<bool>())
-      dock.autoHide = *v;
-    if (auto v = (*dockTbl)["reserve_space"].value<bool>())
-      dock.reserveSpace = *v;
-    if (auto v = finiteDouble((*dockTbl)["active_scale"]))
-      dock.activeScale = std::clamp(static_cast<float>(*v), 0.1f, 1.75f);
-    if (auto v = finiteDouble((*dockTbl)["inactive_scale"]))
-      dock.inactiveScale = std::clamp(static_cast<float>(*v), 0.1f, 1.0f);
-    if (auto v = finiteDouble((*dockTbl)["active_opacity"]))
-      dock.activeOpacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
-    if (auto v = finiteDouble((*dockTbl)["inactive_opacity"]))
-      dock.inactiveOpacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
-    if (auto v = (*dockTbl)["show_dots"].value<bool>())
-      dock.showDots = *v;
-    if (auto v = (*dockTbl)["show_instance_count"].value<bool>())
-      dock.showInstanceCount = *v;
-    if (auto v = (*dockTbl)["launcher_position"].value<std::string>()) {
-      if (*v == "none" || *v == "start" || *v == "end") {
-        dock.launcherPosition = *v;
-      } else {
-        kLog.warn("invalid dock.launcher_position '{}'; expected none, start, or end", *v);
-      }
-    }
-    if (auto v = (*dockTbl)["launcher_icon"].value<std::string>())
-      dock.launcherIcon = *v;
-    if (auto* arr = (*dockTbl)["pinned"].as_array())
-      dock.pinned = readStringArray(*arr);
-    if (auto* arr = (*dockTbl)["monitors"].as_array())
-      dock.monitors = readStringArray(*arr);
+    schema::readInto(*dockTbl, config.dock, schema::dockSchema(), "dock", schemaDiag);
   }
 
   // Parse [desktop_widgets]
@@ -2379,56 +2287,12 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
 
   // Parse [nightlight]
   if (auto* nightlightTbl = tbl["nightlight"].as_table()) {
-    auto& nightlight = config.nightlight;
-    if (auto v = (*nightlightTbl)["enabled"].value<bool>()) {
-      nightlight.enabled = *v;
-    }
-    if (auto v = (*nightlightTbl)["force"].value<bool>()) {
-      nightlight.force = *v;
-    }
-    if (auto v = (*nightlightTbl)["temperature_day"].value<int64_t>()) {
-      nightlight.dayTemperature = std::clamp(static_cast<std::int32_t>(*v), 1000, 25000);
-    }
-    if (auto v = (*nightlightTbl)["temperature_night"].value<int64_t>()) {
-      nightlight.nightTemperature = std::clamp(static_cast<std::int32_t>(*v), 1000, 25000);
-    }
-    if (nightlight.dayTemperature - nightlight.nightTemperature < NightLightConfig::kTemperatureGap) {
-      const std::int32_t origDay = nightlight.dayTemperature;
-      const std::int32_t origNight = nightlight.nightTemperature;
-      // Prefer to preserve day and pull night down; if day is too low to leave room for the gap, bump day up.
-      nightlight.nightTemperature = origDay - NightLightConfig::kTemperatureGap;
-      if (nightlight.nightTemperature < NightLightConfig::kTemperatureMin) {
-        nightlight.nightTemperature = NightLightConfig::kTemperatureMin;
-        nightlight.dayTemperature = NightLightConfig::kTemperatureMin + NightLightConfig::kTemperatureGap;
-      }
-      kLog.warn(
-          "nightlight temperatures must satisfy day > night (day={}K night={}K); adjusted to day={}K night={}K",
-          origDay, origNight, nightlight.dayTemperature, nightlight.nightTemperature
-      );
-    }
+    schema::readInto(*nightlightTbl, config.nightlight, schema::nightlightSchema(), "nightlight", schemaDiag);
   }
 
   // Parse [location]
   if (auto* locationTbl = tbl["location"].as_table()) {
-    auto& location = config.location;
-    if (auto v = (*locationTbl)["auto_locate"].value<bool>()) {
-      location.autoLocate = *v;
-    }
-    if (auto v = (*locationTbl)["address"].value<std::string>()) {
-      location.address = *v;
-    }
-    if (auto v = (*locationTbl)["sunset"].value<std::string>()) {
-      location.sunset = *v;
-    }
-    if (auto v = (*locationTbl)["sunrise"].value<std::string>()) {
-      location.sunrise = *v;
-    }
-    if (auto v = finiteDouble((*locationTbl)["latitude"])) {
-      location.latitude = *v;
-    }
-    if (auto v = finiteDouble((*locationTbl)["longitude"])) {
-      location.longitude = *v;
-    }
+    schema::readInto(*locationTbl, config.location, schema::locationSchema(), "location", schemaDiag);
   }
 
   // Parse [hooks]

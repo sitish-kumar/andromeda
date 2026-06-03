@@ -521,39 +521,6 @@ namespace config_export {
       return table;
     }
 
-    toml::table dockTable(const DockConfig& dock) {
-      toml::table table;
-      table.insert_or_assign("enabled", dock.enabled);
-      table.insert_or_assign("position", dock.position);
-      table.insert_or_assign("active_monitor_only", dock.activeMonitorOnly);
-      table.insert_or_assign("icon_size", static_cast<std::int64_t>(dock.iconSize));
-      table.insert_or_assign("padding", static_cast<std::int64_t>(dock.padding));
-      table.insert_or_assign("item_spacing", static_cast<std::int64_t>(dock.itemSpacing));
-      table.insert_or_assign("background_opacity", static_cast<double>(dock.backgroundOpacity));
-      table.insert_or_assign("radius", static_cast<std::int64_t>(dock.radius));
-      table.insert_or_assign("radius_top_left", static_cast<std::int64_t>(dock.radiusTopLeft));
-      table.insert_or_assign("radius_top_right", static_cast<std::int64_t>(dock.radiusTopRight));
-      table.insert_or_assign("radius_bottom_left", static_cast<std::int64_t>(dock.radiusBottomLeft));
-      table.insert_or_assign("radius_bottom_right", static_cast<std::int64_t>(dock.radiusBottomRight));
-      table.insert_or_assign("margin_ends", static_cast<std::int64_t>(dock.marginEnds));
-      table.insert_or_assign("margin_edge", static_cast<std::int64_t>(dock.marginEdge));
-      table.insert_or_assign("shadow", dock.shadow);
-      table.insert_or_assign("show_running", dock.showRunning);
-      table.insert_or_assign("auto_hide", dock.autoHide);
-      table.insert_or_assign("reserve_space", dock.reserveSpace);
-      table.insert_or_assign("active_scale", static_cast<double>(dock.activeScale));
-      table.insert_or_assign("inactive_scale", static_cast<double>(dock.inactiveScale));
-      table.insert_or_assign("active_opacity", static_cast<double>(dock.activeOpacity));
-      table.insert_or_assign("inactive_opacity", static_cast<double>(dock.inactiveOpacity));
-      table.insert_or_assign("show_dots", dock.showDots);
-      table.insert_or_assign("show_instance_count", dock.showInstanceCount);
-      table.insert_or_assign("launcher_position", dock.launcherPosition);
-      table.insert_or_assign("launcher_icon", dock.launcherIcon);
-      table.insert_or_assign("pinned", stringArray(dock.pinned));
-      table.insert_or_assign("monitors", stringArray(dock.monitors));
-      return table;
-    }
-
     toml::table desktopWidgetsTable(const DesktopWidgetsConfig& desktopWidgets) {
       toml::table table;
       table.insert_or_assign("enabled", desktopWidgets.enabled);
@@ -599,21 +566,6 @@ namespace config_export {
         table.insert_or_assign("widget_order", std::move(order));
         table.insert_or_assign("widget", std::move(widgets));
       }
-      return table;
-    }
-
-    toml::table notificationTable(const NotificationConfig& notification) {
-      toml::table table;
-      table.insert_or_assign("enable_daemon", notification.enableDaemon);
-      table.insert_or_assign("show_app_name", notification.showAppName);
-      table.insert_or_assign("position", notification.position);
-      table.insert_or_assign("layer", notification.layer);
-      table.insert_or_assign("scale", static_cast<double>(notification.scale));
-      table.insert_or_assign("background_opacity", static_cast<double>(notification.backgroundOpacity));
-      table.insert_or_assign("offset_x", static_cast<std::int64_t>(notification.offsetX));
-      table.insert_or_assign("offset_y", static_cast<std::int64_t>(notification.offsetY));
-      table.insert_or_assign("monitors", stringArray(notification.monitors));
-      table.insert_or_assign("collapse_on_dismiss", notification.collapseOnDismiss);
       return table;
     }
 
@@ -708,7 +660,7 @@ namespace config_export {
 
     root.insert_or_assign("lockscreen", schema::writeTable(config.lockscreen, schema::lockscreenSchema()));
 
-    root.insert_or_assign("notification", notificationTable(config.notification));
+    root.insert_or_assign("notification", schema::writeTable(config.notification, schema::notificationSchema()));
 
     root.insert_or_assign("osd", schema::writeTable(config.osd, schema::osdSchema()));
 
@@ -720,25 +672,8 @@ namespace config_export {
     root.insert_or_assign("brightness", brightnessTable(config.brightness));
     root.insert_or_assign("battery", batteryTable(config.battery));
 
-    toml::table nightlight;
-    nightlight.insert_or_assign("enabled", config.nightlight.enabled);
-    nightlight.insert_or_assign("force", config.nightlight.force);
-    nightlight.insert_or_assign("temperature_day", static_cast<std::int64_t>(config.nightlight.dayTemperature));
-    nightlight.insert_or_assign("temperature_night", static_cast<std::int64_t>(config.nightlight.nightTemperature));
-    root.insert_or_assign("nightlight", std::move(nightlight));
-
-    toml::table location;
-    location.insert_or_assign("auto_locate", config.location.autoLocate);
-    location.insert_or_assign("address", config.location.address);
-    location.insert_or_assign("sunset", config.location.sunset);
-    location.insert_or_assign("sunrise", config.location.sunrise);
-    if (config.location.latitude.has_value()) {
-      location.insert_or_assign("latitude", *config.location.latitude);
-    }
-    if (config.location.longitude.has_value()) {
-      location.insert_or_assign("longitude", *config.location.longitude);
-    }
-    root.insert_or_assign("location", std::move(location));
+    root.insert_or_assign("nightlight", schema::writeTable(config.nightlight, schema::nightlightSchema()));
+    root.insert_or_assign("location", schema::writeTable(config.location, schema::locationSchema()));
 
     root.insert_or_assign("idle", idleTable(config.idle));
 
@@ -763,7 +698,7 @@ namespace config_export {
     barRoot.insert_or_assign("order", std::move(barOrder));
     root.insert_or_assign("bar", std::move(barRoot));
 
-    root.insert_or_assign("dock", dockTable(config.dock));
+    root.insert_or_assign("dock", schema::writeTable(config.dock, schema::dockSchema()));
     root.insert_or_assign("desktop_widgets", desktopWidgetsTable(config.desktopWidgets));
 
     toml::table widgetRoot;
