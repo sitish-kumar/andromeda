@@ -159,6 +159,18 @@ namespace {
     c.wallpaper.monitorOverrides = {
         {"DP-1", true, colorSpecFromConfigString("#00ff00"), std::string("/srv/wp1"), std::nullopt, std::nullopt},
     };
+    c.theme.source = PaletteSource::Wallpaper;
+    c.theme.builtinPalette = "Tokyo";
+    c.theme.mode = ThemeMode::Light;
+    c.theme.templates.enableBuiltinTemplates = false;
+    c.theme.templates.builtinIds = {"a", "b"};
+    c.theme.templates.customColors = {{"accent", "#112233", true}, {"bg", "#000000", false}};
+    c.theme.templates.userTemplates = {
+        ThemeConfig::UserTemplateConfig{
+            "tmpl1", true, "/in.png", ThemeConfig::TemplateInputPathModesConfig{"/d.png", "/l.png"},
+            {"/out1", "/out2"}, "/dyn", "compareX", {{"c1", "#aabbcc"}}, "pre", "post", 3,
+        },
+    };
     return c;
   }
 
@@ -220,6 +232,7 @@ int main() {
   checkWriteParity("hooks", legacyRoot, probe.hooks, hooksSchema());
   checkWriteParity("idle", legacyRoot, probe.idle, idleSchema());
   checkWriteParity("wallpaper", legacyRoot, probe.wallpaper, wallpaperSchema());
+  checkWriteParity("theme", legacyRoot, probe.theme, themeSchema());
 
   checkReadInverse("audio", legacyRoot, probe.audio, audioSchema());
   checkReadInverse("weather", legacyRoot, probe.weather, weatherSchema());
@@ -239,6 +252,7 @@ int main() {
   checkReadInverse("hooks", legacyRoot, probe.hooks, hooksSchema());
   checkReadInverse("idle", legacyRoot, probe.idle, idleSchema());
   checkReadInverse("wallpaper", legacyRoot, probe.wallpaper, wallpaperSchema());
+  checkReadInverse("theme", legacyRoot, probe.theme, themeSchema());
 
   checkClamps();
 

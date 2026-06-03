@@ -358,72 +358,6 @@ namespace config_export {
       return table;
     }
 
-    toml::table themeTable(const ThemeConfig& theme) {
-      toml::table table;
-      table.insert_or_assign("source", std::string(enumToKey(kPaletteSources, theme.source)));
-      table.insert_or_assign("builtin", theme.builtinPalette);
-      table.insert_or_assign("community_palette", theme.communityPalette);
-      table.insert_or_assign("custom_palette", theme.customPalette);
-      table.insert_or_assign("wallpaper_scheme", theme.wallpaperScheme);
-      table.insert_or_assign("mode", std::string(enumToKey(kThemeModes, theme.mode)));
-
-      toml::table templates;
-      templates.insert_or_assign("enable_builtin_templates", theme.templates.enableBuiltinTemplates);
-      templates.insert_or_assign("builtin_ids", stringArray(theme.templates.builtinIds));
-      templates.insert_or_assign("enable_community_templates", theme.templates.enableCommunityTemplates);
-      templates.insert_or_assign("community_ids", stringArray(theme.templates.communityIds));
-
-      if (!theme.templates.customColors.empty()) {
-        toml::table customColors;
-        for (const auto& color : theme.templates.customColors) {
-          toml::table colorTable;
-          colorTable.insert_or_assign("color", color.color);
-          colorTable.insert_or_assign("blend", color.blend);
-          customColors.insert_or_assign(color.name, std::move(colorTable));
-        }
-        templates.insert_or_assign("custom_colors", std::move(customColors));
-      }
-
-      if (!theme.templates.userTemplates.empty()) {
-        toml::table userTemplates;
-        for (const auto& tmpl : theme.templates.userTemplates) {
-          if (tmpl.id.empty()) {
-            continue;
-          }
-          toml::table item;
-          item.insert_or_assign("enabled", tmpl.enabled);
-          item.insert_or_assign("input_path", tmpl.inputPath);
-          if (tmpl.inputPathModes.has_value()) {
-            toml::table modes;
-            modes.insert_or_assign("dark", tmpl.inputPathModes->dark);
-            modes.insert_or_assign("light", tmpl.inputPathModes->light);
-            item.insert_or_assign("input_path_modes", std::move(modes));
-          }
-          item.insert_or_assign("output_path", stringArray(tmpl.outputPaths));
-          item.insert_or_assign("output_path_dynamic", tmpl.outputPathDynamic);
-          item.insert_or_assign("compare_to", tmpl.compareTo);
-          if (!tmpl.colorsToCompare.empty()) {
-            toml::array colors;
-            for (const auto& color : tmpl.colorsToCompare) {
-              toml::table colorTable;
-              colorTable.insert_or_assign("name", color.name);
-              colorTable.insert_or_assign("color", color.color);
-              colors.push_back(std::move(colorTable));
-            }
-            item.insert_or_assign("colors_to_compare", std::move(colors));
-          }
-          item.insert_or_assign("pre_hook", tmpl.preHook);
-          item.insert_or_assign("post_hook", tmpl.postHook);
-          item.insert_or_assign("index", static_cast<std::int64_t>(tmpl.index));
-          userTemplates.insert_or_assign(tmpl.id, std::move(item));
-        }
-        templates.insert_or_assign("user", std::move(userTemplates));
-      }
-
-      table.insert_or_assign("templates", std::move(templates));
-      return table;
-    }
-
     toml::table desktopWidgetsTable(const DesktopWidgetsConfig& desktopWidgets) {
       toml::table table;
       table.insert_or_assign("enabled", desktopWidgets.enabled);
@@ -479,7 +413,7 @@ namespace config_export {
 
     root.insert_or_assign("shell", shellTable(config.shell));
     root.insert_or_assign("wallpaper", schema::writeTable(config.wallpaper, schema::wallpaperSchema()));
-    root.insert_or_assign("theme", themeTable(config.theme));
+    root.insert_or_assign("theme", schema::writeTable(config.theme, schema::themeSchema()));
 
     root.insert_or_assign("backdrop", schema::writeTable(config.backdrop, schema::backdropSchema()));
 
