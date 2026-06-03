@@ -2176,68 +2176,12 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
 
   // Parse [brightness]
   if (auto* brightnessTbl = tbl["brightness"].as_table()) {
-    auto& brightness = config.brightness;
-    if (auto v = (*brightnessTbl)["enable_ddcutil"].value<bool>()) {
-      brightness.enableDdcutil = *v;
-    }
-    if (auto* mmidArr = (*brightnessTbl)["ignore_mmids"].as_array()) {
-      for (const auto& item : *mmidArr) {
-        if (auto s = item.value<std::string>()) {
-          brightness.ddcutilIgnoreMmids.push_back(*s);
-        }
-      }
-    }
-    if (auto* monitorTblMap = (*brightnessTbl)["monitor"].as_table()) {
-      for (const auto& [name, node] : *monitorTblMap) {
-        auto* entryTbl = node.as_table();
-        if (entryTbl == nullptr) {
-          continue;
-        }
-
-        BrightnessMonitorOverride override;
-        override.match = std::string(name.str());
-
-        if (auto v = (*entryTbl)["match"].value<std::string>()) {
-          override.match = *v;
-        }
-        if (auto v = (*entryTbl)["backend"].value<std::string>()) {
-          if (const auto parsed = enumFromKey(kBrightnessBackendPreferences, StringUtils::trim(*v));
-              parsed.has_value()) {
-            override.backend = *parsed;
-          } else {
-            kLog.warn("invalid brightness backend '{}' for monitor override '{}'", *v, override.match);
-          }
-        }
-
-        brightness.monitorOverrides.push_back(std::move(override));
-      }
-    }
+    schema::readInto(*brightnessTbl, config.brightness, schema::brightnessSchema(), "brightness", schemaDiag);
   }
 
   // Parse [battery]
   if (auto* batteryTbl = tbl["battery"].as_table()) {
-    auto& battery = config.battery;
-    if (auto v = (*batteryTbl)["warning_threshold"].value<std::int64_t>()) {
-      battery.warningThreshold = static_cast<std::int32_t>(std::clamp<std::int64_t>(*v, 0, 100));
-    }
-    if (auto* deviceTblMap = (*batteryTbl)["device"].as_table()) {
-      for (const auto& [selector, node] : *deviceTblMap) {
-        auto* entryTbl = node.as_table();
-        if (entryTbl == nullptr) {
-          continue;
-        }
-
-        BatteryDeviceWarningThreshold deviceThreshold;
-        deviceThreshold.selector = std::string(selector.str());
-        if (auto v = (*entryTbl)["warning_threshold"].value<std::int64_t>()) {
-          deviceThreshold.warningThreshold = static_cast<std::int32_t>(std::clamp<std::int64_t>(*v, 0, 100));
-        }
-
-        if (!deviceThreshold.selector.empty()) {
-          battery.deviceThresholds.push_back(std::move(deviceThreshold));
-        }
-      }
-    }
+    schema::readInto(*batteryTbl, config.battery, schema::batterySchema(), "battery", schemaDiag);
   }
 
   // Parse [keybinds]
@@ -2306,36 +2250,12 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     }
   }
 
-  // Parse [[control_center.shortcuts]]
+  // Parse [control_center]. The default-shortcuts seeding stays here because it
+  // must apply even when [control_center] (or its shortcuts array) is absent.
   bool controlCenterShortcutsConfigured = false;
   if (auto* ccTbl = tbl["control_center"].as_table()) {
-    if (auto v = (*ccTbl)["sidebar"].value<std::string>()) {
-      if (auto parsed = enumFromKey(kControlCenterSidebarModes, StringUtils::trim(*v))) {
-        config.controlCenter.sidebarMode = *parsed;
-      }
-    }
-    if (auto v = (*ccTbl)["sidebar_section"].value<std::string>()) {
-      if (auto parsed = enumFromKey(kControlCenterSidebarModes, StringUtils::trim(*v))) {
-        config.controlCenter.sidebarSectionMode = *parsed;
-      }
-    }
-    if (auto* shortcutsArr = (*ccTbl)["shortcuts"].as_array()) {
-      controlCenterShortcutsConfigured = true;
-      config.controlCenter.shortcuts.clear();
-      for (const auto& entry : *shortcutsArr) {
-        auto* entryTbl = entry.as_table();
-        if (entryTbl == nullptr) {
-          continue;
-        }
-        ShortcutConfig sc;
-        if (auto v = (*entryTbl)["type"].value<std::string>()) {
-          sc.type = *v;
-        }
-        if (!sc.type.empty()) {
-          config.controlCenter.shortcuts.push_back(std::move(sc));
-        }
-      }
-    }
+    controlCenterShortcutsConfigured = (*ccTbl)["shortcuts"].as_array() != nullptr;
+    schema::readInto(*ccTbl, config.controlCenter, schema::controlCenterSchema(), "control_center", schemaDiag);
   }
   if (!controlCenterShortcutsConfigured && config.controlCenter.shortcuts.empty()) {
     config.controlCenter.shortcuts = defaultControlCenterShortcuts();

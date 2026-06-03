@@ -79,19 +79,6 @@ namespace config_export {
       return table;
     }
 
-    toml::array shortcutArray(const std::vector<ShortcutConfig>& shortcuts) {
-      toml::array array;
-      for (const auto& shortcut : shortcuts) {
-        if (shortcut.type.empty()) {
-          continue;
-        }
-        toml::table item;
-        item.insert_or_assign("type", shortcut.type);
-        array.push_back(std::move(item));
-      }
-      return array;
-    }
-
     toml::array sessionActionArray(const std::vector<SessionPanelActionConfig>& actions) {
       toml::array array;
       for (const auto& action : actions) {
@@ -569,48 +556,6 @@ namespace config_export {
       return table;
     }
 
-    toml::table brightnessTable(const BrightnessConfig& brightness) {
-      toml::table table;
-      table.insert_or_assign("enable_ddcutil", brightness.enableDdcutil);
-      table.insert_or_assign("ignore_mmids", stringArray(brightness.ddcutilIgnoreMmids));
-
-      if (!brightness.monitorOverrides.empty()) {
-        toml::table monitors;
-        for (const auto& ovr : brightness.monitorOverrides) {
-          if (ovr.match.empty()) {
-            continue;
-          }
-          toml::table monitor;
-          monitor.insert_or_assign("match", ovr.match);
-          if (ovr.backend.has_value()) {
-            monitor.insert_or_assign("backend", std::string(enumToKey(kBrightnessBackendPreferences, *ovr.backend)));
-          }
-          monitors.insert_or_assign(ovr.match, std::move(monitor));
-        }
-        table.insert_or_assign("monitor", std::move(monitors));
-      }
-      return table;
-    }
-
-    toml::table batteryTable(const BatteryConfig& battery) {
-      toml::table table;
-      table.insert_or_assign("warning_threshold", static_cast<std::int64_t>(battery.warningThreshold));
-
-      if (!battery.deviceThresholds.empty()) {
-        toml::table devices;
-        for (const auto& deviceThreshold : battery.deviceThresholds) {
-          if (deviceThreshold.selector.empty()) {
-            continue;
-          }
-          toml::table device;
-          device.insert_or_assign("warning_threshold", static_cast<std::int64_t>(deviceThreshold.warningThreshold));
-          devices.insert_or_assign(deviceThreshold.selector, std::move(device));
-        }
-        table.insert_or_assign("device", std::move(devices));
-      }
-      return table;
-    }
-
     toml::table idleTable(const IdleConfig& idle) {
       toml::table table;
       table.insert_or_assign("pre_action_fade_seconds", static_cast<double>(idle.preActionFadeSeconds));
@@ -669,8 +614,8 @@ namespace config_export {
     root.insert_or_assign("weather", schema::writeTable(config.weather, schema::weatherSchema()));
     root.insert_or_assign("audio", schema::writeTable(config.audio, schema::audioSchema()));
 
-    root.insert_or_assign("brightness", brightnessTable(config.brightness));
-    root.insert_or_assign("battery", batteryTable(config.battery));
+    root.insert_or_assign("brightness", schema::writeTable(config.brightness, schema::brightnessSchema()));
+    root.insert_or_assign("battery", schema::writeTable(config.battery, schema::batterySchema()));
 
     root.insert_or_assign("nightlight", schema::writeTable(config.nightlight, schema::nightlightSchema()));
     root.insert_or_assign("location", schema::writeTable(config.location, schema::locationSchema()));
@@ -714,15 +659,7 @@ namespace config_export {
     }
     root.insert_or_assign("widget", std::move(widgetRoot));
 
-    toml::table controlCenter;
-    controlCenter.insert_or_assign(
-        "sidebar", std::string(enumToKey(kControlCenterSidebarModes, config.controlCenter.sidebarMode))
-    );
-    controlCenter.insert_or_assign(
-        "sidebar_section", std::string(enumToKey(kControlCenterSidebarModes, config.controlCenter.sidebarSectionMode))
-    );
-    controlCenter.insert_or_assign("shortcuts", shortcutArray(config.controlCenter.shortcuts));
-    root.insert_or_assign("control_center", std::move(controlCenter));
+    root.insert_or_assign("control_center", schema::writeTable(config.controlCenter, schema::controlCenterSchema()));
 
     root.insert_or_assign("hooks", hooksTable(config.hooks));
     return root;

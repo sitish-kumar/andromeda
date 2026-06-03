@@ -237,6 +237,32 @@ namespace noctalia::config::schema {
     return {};
   }
 
+  // Optional enum: read like enumField, but written only when the optional is
+  // set (mirrors `if (x.has_value()) emit`).
+  template <typename Struct, typename Enum, std::size_t N>
+  Field<Struct>
+  optionalEnumField(std::optional<Enum> Struct::* member, std::string_view key, const EnumOption<Enum> (&options)[N]) {
+    const EnumOption<Enum>* opts = options;
+    return Field<Struct>{
+        key,
+        [member, key, opts](const toml::table& tbl, Struct& out, std::string_view parentPath, Diagnostics& diag) {
+          if (auto v = tbl[key].value<std::string>()) {
+            const std::string trimmed = StringUtils::trim(*v);
+            if (auto parsed = enumLookup(opts, N, trimmed)) {
+              out.*member = *parsed;
+            } else {
+              diag.warn(joinPath(parentPath, key), "unknown value \"" + *v + "\"");
+            }
+          }
+        },
+        [member, key, opts](toml::table& tbl, const Struct& in) {
+          if ((in.*member).has_value()) {
+            tbl.insert_or_assign(key, std::string(enumKeyOf(opts, N, *(in.*member))));
+          }
+        },
+    };
+  }
+
   // Enum field backed by an existing EnumOption<E>[] table. Trims input, and
   // warns (does not fail) on unknown keys — matching the legacy behavior.
   template <typename Struct, typename Enum, std::size_t N>

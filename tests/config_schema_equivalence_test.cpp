@@ -112,6 +112,17 @@ namespace {
     c.dock.launcherPosition = "start";
     c.dock.pinned = {"firefox.desktop"};
     c.dock.monitors = {"DP-1"};
+    c.brightness.enableDdcutil = true;
+    c.brightness.ddcutilIgnoreMmids = {"ABC123"};
+    c.brightness.monitorOverrides = {
+        {"DP-1", BrightnessBackendPreference::Ddcutil},
+        {"eDP-1", std::nullopt},
+    };
+    c.battery.warningThreshold = 15;
+    c.battery.deviceThresholds = {{"BAT0", 10}, {"hidpp:1", 25}};
+    c.controlCenter.sidebarMode = ControlCenterSidebarMode::Full;
+    c.controlCenter.sidebarSectionMode = ControlCenterSidebarMode::None;
+    c.controlCenter.shortcuts = {{"wifi"}, {"bluetooth"}};
     return c;
   }
 
@@ -165,6 +176,9 @@ int main() {
   checkWriteParity("location", legacyRoot, probe.location, locationSchema());
   checkWriteParity("notification", legacyRoot, probe.notification, notificationSchema());
   checkWriteParity("dock", legacyRoot, probe.dock, dockSchema());
+  checkWriteParity("brightness", legacyRoot, probe.brightness, brightnessSchema());
+  checkWriteParity("battery", legacyRoot, probe.battery, batterySchema());
+  checkWriteParity("control_center", legacyRoot, probe.controlCenter, controlCenterSchema());
 
   checkReadInverse("audio", legacyRoot, probe.audio, audioSchema());
   checkReadInverse("weather", legacyRoot, probe.weather, weatherSchema());
@@ -176,6 +190,9 @@ int main() {
   checkReadInverse("location", legacyRoot, probe.location, locationSchema());
   checkReadInverse("notification", legacyRoot, probe.notification, notificationSchema());
   checkReadInverse("dock", legacyRoot, probe.dock, dockSchema());
+  checkReadInverse("brightness", legacyRoot, probe.brightness, brightnessSchema());
+  checkReadInverse("battery", legacyRoot, probe.battery, batterySchema());
+  checkReadInverse("control_center", legacyRoot, probe.controlCenter, controlCenterSchema());
 
   checkClamps();
 

@@ -208,4 +208,67 @@ namespace noctalia::config::schema {
     return s;
   }
 
+  namespace {
+    const Schema<BrightnessMonitorOverride>& brightnessMonitorSchema() {
+      static const Schema<BrightnessMonitorOverride> s = {
+          field(&BrightnessMonitorOverride::match, "match"),
+          optionalEnumField(&BrightnessMonitorOverride::backend, "backend", kBrightnessBackendPreferences),
+      };
+      return s;
+    }
+
+    const Schema<BatteryDeviceWarningThreshold>& batteryDeviceSchema() {
+      static const Schema<BatteryDeviceWarningThreshold> s = {
+          field(&BatteryDeviceWarningThreshold::warningThreshold, "warning_threshold", Range<std::int64_t>{0, 100}),
+      };
+      return s;
+    }
+  } // namespace
+
+  const Schema<BrightnessConfig>& brightnessSchema() {
+    static const Schema<BrightnessConfig> s = {
+        field(&BrightnessConfig::enableDdcutil, "enable_ddcutil"),
+        field(&BrightnessConfig::ddcutilIgnoreMmids, "ignore_mmids"),
+        // Map key seeds `match`; an explicit `match` key inside overrides it.
+        namedMap<BrightnessConfig, BrightnessMonitorOverride>(
+            &BrightnessConfig::monitorOverrides, "monitor", brightnessMonitorSchema(),
+            [](BrightnessMonitorOverride& o, std::string_view name) { o.match = std::string(name); },
+            [](const BrightnessMonitorOverride& o) { return o.match; }
+        ),
+    };
+    return s;
+  }
+
+  const Schema<BatteryConfig>& batterySchema() {
+    static const Schema<BatteryConfig> s = {
+        field(&BatteryConfig::warningThreshold, "warning_threshold", Range<std::int64_t>{0, 100}),
+        // selector comes only from the map key; empty selectors are dropped.
+        namedMap<BatteryConfig, BatteryDeviceWarningThreshold>(
+            &BatteryConfig::deviceThresholds, "device", batteryDeviceSchema(),
+            [](BatteryDeviceWarningThreshold& d, std::string_view name) { d.selector = std::string(name); },
+            [](const BatteryDeviceWarningThreshold& d) { return d.selector; }, /*readSkipEmptyName=*/true
+        ),
+    };
+    return s;
+  }
+
+  namespace {
+    const Schema<ShortcutConfig>& shortcutSchema() {
+      static const Schema<ShortcutConfig> s = {field(&ShortcutConfig::type, "type")};
+      return s;
+    }
+  } // namespace
+
+  const Schema<ControlCenterConfig>& controlCenterSchema() {
+    static const Schema<ControlCenterConfig> s = {
+        enumField(&ControlCenterConfig::sidebarMode, "sidebar", kControlCenterSidebarModes),
+        enumField(&ControlCenterConfig::sidebarSectionMode, "sidebar_section", kControlCenterSidebarModes),
+        arrayOf<ControlCenterConfig, ShortcutConfig>(
+            &ControlCenterConfig::shortcuts, "shortcuts", shortcutSchema(),
+            [](const ShortcutConfig& sc) { return !sc.type.empty(); }
+        ),
+    };
+    return s;
+  }
+
 } // namespace noctalia::config::schema
