@@ -339,8 +339,19 @@ void AsyncTextureCache::pushResult(DecodedJob job) {
 
 void AsyncTextureCache::makeCurrent() {
   if (m_sharedGl != nullptr) {
+    // If another backend already owns the thread's EGL context (e.g. a frame
+    // is in flight between beginFrame/endFrame on the main thread), do not
+    // yank it away. In shared-context mode uploads/unloads are valid on any
+    // context in the share group, and rebinding here would break the caller's
+    // trailing eglSwapBuffers.
+    if (eglGetCurrentContext() != EGL_NO_CONTEXT) {
+      return;
+    }
     m_sharedGl->makeCurrentSurfaceless();
   } else if (m_makeCurrentCallback) {
+    // In non-shared mode uploads must still be routed through RenderContext's
+    // dedicated EGL context, even if another isolated context is currently
+    // bound on the thread.
     m_makeCurrentCallback();
   }
 }
