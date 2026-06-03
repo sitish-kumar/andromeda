@@ -2,6 +2,7 @@
 
 #include "config/schema/engine.h"
 #include "core/key_chord.h"
+#include "util/file_utils.h"
 
 #include <algorithm>
 #include <format>
@@ -293,6 +294,162 @@ namespace noctalia::config::schema {
   } // namespace
 
   namespace {
+    // optional<ColorSpec> stored as a config string. alwaysEmit writes
+    // string-or-empty unconditionally (wallpaper.fill_color); otherwise only when
+    // set (monitor overrides). A present non-string value is a hard error.
+    template <typename Struct>
+    Field<Struct> colorSpecField(std::optional<ColorSpec> Struct::* member, std::string_view key, bool alwaysEmit) {
+      return custom<Struct>(
+          key,
+          [member, key](const toml::table& tbl, Struct& out, std::string_view parentPath, Diagnostics&) {
+            if (!tbl.contains(key)) {
+              return;
+            }
+            auto v = tbl[key].value<std::string>();
+            if (!v) {
+              throw std::runtime_error(joinPath(parentPath, key) + ": expected string ColorSpec");
+            }
+            if (StringUtils::trim(*v).empty()) {
+              out.*member = std::nullopt;
+            } else {
+              out.*member = colorSpecFromConfigString(*v, joinPath(parentPath, key));
+            }
+          },
+          [member, key, alwaysEmit](toml::table& tbl, const Struct& in) {
+            if ((in.*member).has_value()) {
+              tbl.insert_or_assign(key, colorSpecToConfigString(*(in.*member)));
+            } else if (alwaysEmit) {
+              tbl.insert_or_assign(key, std::string{});
+            }
+          }
+      );
+    }
+
+    // String holding a filesystem path: ~ and $VARS expand on read, emitted raw.
+    template <typename Struct> Field<Struct> pathStringField(std::string Struct::* member, std::string_view key) {
+      return custom<Struct>(
+          key,
+          [member, key](const toml::table& tbl, Struct& out, std::string_view, Diagnostics&) {
+            if (auto v = tbl[key].value<std::string>()) {
+              out.*member = v->empty() ? *v : FileUtils::expandUserPath(*v).string();
+            }
+          },
+          [member, key](toml::table& tbl, const Struct& in) { tbl.insert_or_assign(key, in.*member); }
+      );
+    }
+
+    template <typename Struct>
+    Field<Struct> optionalPathStringField(std::optional<std::string> Struct::* member, std::string_view key) {
+      return custom<Struct>(
+          key,
+          [member, key](const toml::table& tbl, Struct& out, std::string_view, Diagnostics&) {
+            if (auto v = tbl[key].value<std::string>()) {
+              out.*member = v->empty() ? *v : FileUtils::expandUserPath(*v).string();
+            }
+          },
+          [member, key](toml::table& tbl, const Struct& in) {
+            if ((in.*member).has_value()) {
+              tbl.insert_or_assign(key, *(in.*member));
+            }
+          }
+      );
+    }
+
+    template <typename Struct>
+    Field<Struct> optionalBoolField(std::optional<bool> Struct::* member, std::string_view key) {
+      return custom<Struct>(
+          key,
+          [member, key](const toml::table& tbl, Struct& out, std::string_view, Diagnostics&) {
+            if (auto v = tbl[key].value<bool>()) {
+              out.*member = *v;
+            }
+          },
+          [member, key](toml::table& tbl, const Struct& in) {
+            if ((in.*member).has_value()) {
+              tbl.insert_or_assign(key, *(in.*member));
+            }
+          }
+      );
+    }
+
+    // vector<Enum> <-> array of enum keys; pushes fallback if the parsed list is empty.
+    template <typename Struct, typename Enum, std::size_t N>
+    Field<Struct> enumArrayField(
+        std::vector<Enum> Struct::* member, std::string_view key, const EnumOption<Enum> (&options)[N],
+        std::optional<Enum> fallbackIfEmpty
+    ) {
+      const EnumOption<Enum>* opts = options;
+      return custom<Struct>(
+          key,
+          [member, key, opts, fallbackIfEmpty](const toml::table& tbl, Struct& out, std::string_view, Diagnostics&) {
+            const auto* arr = tbl[key].as_array();
+            if (arr == nullptr) {
+              return;
+            }
+            (out.*member).clear();
+            for (const auto& item : *arr) {
+              if (auto s = item.value<std::string>()) {
+                if (auto e = enumLookup(opts, N, *s)) {
+                  (out.*member).push_back(*e);
+                }
+              }
+            }
+            if ((out.*member).empty() && fallbackIfEmpty) {
+              (out.*member).push_back(*fallbackIfEmpty);
+            }
+          },
+          [member, key, opts](toml::table& tbl, const Struct& in) {
+            toml::array arr;
+            for (auto e : in.*member) {
+              const std::string_view k = enumKeyOf(opts, N, e);
+              if (!k.empty()) {
+                arr.push_back(std::string(k));
+              }
+            }
+            tbl.insert_or_assign(key, std::move(arr));
+          }
+      );
+    }
+
+    const Schema<WallpaperAutomationConfig>& wallpaperAutomationSchema() {
+      static const Schema<WallpaperAutomationConfig> s = {
+          field(&WallpaperAutomationConfig::enabled, "enabled"),
+          field(&WallpaperAutomationConfig::intervalMinutes, "interval_minutes", Range<std::int64_t>{0, 1440}),
+          // order accepts case-insensitive random|alphabetical.
+          custom<WallpaperAutomationConfig>(
+              "order",
+              [](const toml::table& tbl, WallpaperAutomationConfig& out, std::string_view parentPath,
+                 Diagnostics& diag) {
+                if (auto v = tbl["order"].value<std::string>()) {
+                  const std::string lowered = StringUtils::toLower(StringUtils::trim(*v));
+                  if (auto parsed = enumFromKey(kWallpaperAutomationOrders, lowered)) {
+                    out.order = *parsed;
+                  } else {
+                    diag.warn(joinPath(parentPath, "order"), "expected random|alphabetical, got \"" + *v + "\"");
+                  }
+                }
+              },
+              [](toml::table& tbl, const WallpaperAutomationConfig& in) {
+                tbl.insert_or_assign("order", std::string(enumToKey(kWallpaperAutomationOrders, in.order)));
+              }
+          ),
+          field(&WallpaperAutomationConfig::recursive, "recursive"),
+      };
+      return s;
+    }
+
+    const Schema<WallpaperMonitorOverride>& wallpaperMonitorSchema() {
+      static const Schema<WallpaperMonitorOverride> s = {
+          field(&WallpaperMonitorOverride::match, "match"),
+          optionalBoolField(&WallpaperMonitorOverride::enabled, "enabled"),
+          colorSpecField(&WallpaperMonitorOverride::fillColor, "fill_color", /*alwaysEmit=*/false),
+          optionalPathStringField(&WallpaperMonitorOverride::directory, "directory"),
+          optionalPathStringField(&WallpaperMonitorOverride::directoryLight, "directory_light"),
+          optionalPathStringField(&WallpaperMonitorOverride::directoryDark, "directory_dark"),
+      };
+      return s;
+    }
+
     // One keybind action: reads a single chord string or an array of them
     // (warning on an unparseable chord, rethrowing on a hard parse exception);
     // writes the configured chords, or the built-in defaults when none are set.
@@ -464,6 +621,32 @@ namespace noctalia::config::schema {
               out.behaviors = std::move(ordered);
             },
             [](toml::table&, const IdleConfig&) {}
+        ),
+    };
+    return s;
+  }
+
+  const Schema<WallpaperConfig>& wallpaperSchema() {
+    static const Schema<WallpaperConfig> s = {
+        field(&WallpaperConfig::enabled, "enabled"),
+        enumField(&WallpaperConfig::fillMode, "fill_mode", kWallpaperFillModes),
+        colorSpecField(&WallpaperConfig::fillColor, "fill_color", /*alwaysEmit=*/true),
+        enumArrayField(
+            &WallpaperConfig::transitions, "transition", kWallpaperTransitions,
+            std::optional<WallpaperTransition>{WallpaperTransition::Fade}
+        ),
+        field(&WallpaperConfig::transitionDurationMs, "transition_duration", Range<float>{100.0f, 30000.0f}),
+        field(&WallpaperConfig::edgeSmoothness, "edge_smoothness", Range<float>{0.0f, 1.0f}),
+        field(&WallpaperConfig::transitionOnStartup, "transition_on_startup"),
+        pathStringField(&WallpaperConfig::directory, "directory"),
+        pathStringField(&WallpaperConfig::directoryLight, "directory_light"),
+        pathStringField(&WallpaperConfig::directoryDark, "directory_dark"),
+        field(&WallpaperConfig::perMonitorDirectories, "per_monitor_directories"),
+        subTable(&WallpaperConfig::automation, "automation", wallpaperAutomationSchema()),
+        namedMap<WallpaperConfig, WallpaperMonitorOverride>(
+            &WallpaperConfig::monitorOverrides, "monitor", wallpaperMonitorSchema(),
+            [](WallpaperMonitorOverride& o, std::string_view name) { o.match = std::string(name); },
+            [](const WallpaperMonitorOverride& o) { return o.match; }
         ),
     };
     return s;

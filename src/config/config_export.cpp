@@ -110,17 +110,6 @@ namespace config_export {
       return array;
     }
 
-    toml::array wallpaperTransitionArray(const std::vector<WallpaperTransition>& transitions) {
-      toml::array array;
-      for (const auto transition : transitions) {
-        const std::string_view key = enumToKey(kWallpaperTransitions, transition);
-        if (!key.empty()) {
-          array.push_back(std::string(key));
-        }
-      }
-      return array;
-    }
-
     void insertBarFields(toml::table& table, const BarConfig& bar, bool includePosition) {
       if (includePosition) {
         table.insert_or_assign("position", bar.position);
@@ -435,61 +424,6 @@ namespace config_export {
       return table;
     }
 
-    toml::table wallpaperTable(const WallpaperConfig& wallpaper) {
-      toml::table table;
-      table.insert_or_assign("enabled", wallpaper.enabled);
-      table.insert_or_assign("fill_mode", std::string(enumToKey(kWallpaperFillModes, wallpaper.fillMode)));
-      table.insert_or_assign(
-          "fill_color", wallpaper.fillColor.has_value() ? colorSpecToConfigString(*wallpaper.fillColor) : std::string{}
-      );
-      table.insert_or_assign("transition", wallpaperTransitionArray(wallpaper.transitions));
-      table.insert_or_assign("transition_duration", static_cast<double>(wallpaper.transitionDurationMs));
-      table.insert_or_assign("edge_smoothness", static_cast<double>(wallpaper.edgeSmoothness));
-      table.insert_or_assign("transition_on_startup", wallpaper.transitionOnStartup);
-      table.insert_or_assign("directory", wallpaper.directory);
-      table.insert_or_assign("directory_light", wallpaper.directoryLight);
-      table.insert_or_assign("directory_dark", wallpaper.directoryDark);
-      table.insert_or_assign("per_monitor_directories", wallpaper.perMonitorDirectories);
-
-      toml::table automation;
-      automation.insert_or_assign("enabled", wallpaper.automation.enabled);
-      automation.insert_or_assign("interval_minutes", static_cast<std::int64_t>(wallpaper.automation.intervalMinutes));
-      automation.insert_or_assign(
-          "order", std::string(enumToKey(kWallpaperAutomationOrders, wallpaper.automation.order))
-      );
-      automation.insert_or_assign("recursive", wallpaper.automation.recursive);
-      table.insert_or_assign("automation", std::move(automation));
-
-      if (!wallpaper.monitorOverrides.empty()) {
-        toml::table monitors;
-        for (const auto& ovr : wallpaper.monitorOverrides) {
-          if (ovr.match.empty()) {
-            continue;
-          }
-          toml::table monitor;
-          monitor.insert_or_assign("match", ovr.match);
-          if (ovr.enabled.has_value()) {
-            monitor.insert_or_assign("enabled", *ovr.enabled);
-          }
-          if (ovr.fillColor.has_value()) {
-            monitor.insert_or_assign("fill_color", colorSpecToConfigString(*ovr.fillColor));
-          }
-          if (ovr.directory.has_value()) {
-            monitor.insert_or_assign("directory", *ovr.directory);
-          }
-          if (ovr.directoryLight.has_value()) {
-            monitor.insert_or_assign("directory_light", *ovr.directoryLight);
-          }
-          if (ovr.directoryDark.has_value()) {
-            monitor.insert_or_assign("directory_dark", *ovr.directoryDark);
-          }
-          monitors.insert_or_assign(ovr.match, std::move(monitor));
-        }
-        table.insert_or_assign("monitor", std::move(monitors));
-      }
-      return table;
-    }
-
     toml::table desktopWidgetsTable(const DesktopWidgetsConfig& desktopWidgets) {
       toml::table table;
       table.insert_or_assign("enabled", desktopWidgets.enabled);
@@ -544,7 +478,7 @@ namespace config_export {
     toml::table root;
 
     root.insert_or_assign("shell", shellTable(config.shell));
-    root.insert_or_assign("wallpaper", wallpaperTable(config.wallpaper));
+    root.insert_or_assign("wallpaper", schema::writeTable(config.wallpaper, schema::wallpaperSchema()));
     root.insert_or_assign("theme", themeTable(config.theme));
 
     root.insert_or_assign("backdrop", schema::writeTable(config.backdrop, schema::backdropSchema()));

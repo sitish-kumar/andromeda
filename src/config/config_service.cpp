@@ -50,13 +50,6 @@ namespace {
     return std::nullopt;
   }
 
-  std::string expandUserPathString(const std::string& path) {
-    if (path.empty()) {
-      return path;
-    }
-    return FileUtils::expandUserPath(path).string();
-  }
-
   std::vector<std::string> readStringArray(const toml::node& node) {
     std::vector<std::string> result;
     if (auto* arr = node.as_array()) {
@@ -1925,99 +1918,10 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     }
   }
 
-  // Parse [wallpaper]
+  // Parse [wallpaper] (config keys only; app-managed state keys default/last/
+  // monitors/favorite are handled separately by extractWallpaperFromTable).
   if (auto* wpTbl = tbl["wallpaper"].as_table()) {
-    auto& wp = config.wallpaper;
-    if (auto v = (*wpTbl)["enabled"].value<bool>())
-      wp.enabled = *v;
-    if (auto v = (*wpTbl)["fill_mode"].value<std::string>()) {
-      if (auto mode = enumFromKey(kWallpaperFillModes, *v)) {
-        wp.fillMode = *mode;
-      }
-    }
-    if (auto v = colorStringValue(*wpTbl, "fill_color", "wallpaper.fill_color")) {
-      if (StringUtils::trim(*v).empty()) {
-        wp.fillColor = std::nullopt;
-      } else {
-        wp.fillColor = colorSpecFromConfigString(*v, "wallpaper.fill_color");
-      }
-    }
-    if (auto* arr = (*wpTbl)["transition"].as_array()) {
-      wp.transitions.clear();
-      for (const auto& item : *arr) {
-        if (auto s = item.value<std::string>()) {
-          if (auto t = enumFromKey(kWallpaperTransitions, *s)) {
-            wp.transitions.push_back(*t);
-          }
-        }
-      }
-      if (wp.transitions.empty())
-        wp.transitions.push_back(WallpaperTransition::Fade);
-    }
-    if (auto v = finiteDouble((*wpTbl)["transition_duration"]))
-      wp.transitionDurationMs = std::clamp(static_cast<float>(*v), 100.0f, 30000.0f);
-    if (auto v = finiteDouble((*wpTbl)["edge_smoothness"]))
-      wp.edgeSmoothness = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
-    if (auto v = (*wpTbl)["transition_on_startup"].value<bool>())
-      wp.transitionOnStartup = *v;
-    if (auto v = (*wpTbl)["directory"].value<std::string>())
-      wp.directory = expandUserPathString(*v);
-    if (auto v = (*wpTbl)["directory_light"].value<std::string>())
-      wp.directoryLight = expandUserPathString(*v);
-    if (auto v = (*wpTbl)["directory_dark"].value<std::string>())
-      wp.directoryDark = expandUserPathString(*v);
-    if (auto v = (*wpTbl)["per_monitor_directories"].value<bool>())
-      wp.perMonitorDirectories = *v;
-    if (auto* automationTbl = (*wpTbl)["automation"].as_table()) {
-      if (auto v = (*automationTbl)["enabled"].value<bool>()) {
-        wp.automation.enabled = *v;
-      }
-      if (auto v = (*automationTbl)["interval_minutes"].value<int64_t>()) {
-        wp.automation.intervalMinutes = std::clamp(static_cast<std::int32_t>(*v), 0, 1440);
-      }
-      if (auto v = (*automationTbl)["order"].value<std::string>()) {
-        const std::string order = StringUtils::toLower(StringUtils::trim(*v));
-        if (auto parsed = enumFromKey(kWallpaperAutomationOrders, order)) {
-          wp.automation.order = *parsed;
-        } else {
-          kLog.warn("unknown wallpaper automation order \"{}\" (expected: random|alphabetical)", *v);
-        }
-      }
-      if (auto v = (*automationTbl)["recursive"].value<bool>()) {
-        wp.automation.recursive = *v;
-      }
-    }
-
-    if (auto* monTblMap = (*wpTbl)["monitor"].as_table()) {
-      for (const auto& [monName, monNode] : *monTblMap) {
-        auto* monTbl = monNode.as_table();
-        if (monTbl == nullptr) {
-          continue;
-        }
-        WallpaperMonitorOverride ovr;
-        if (auto v = (*monTbl)["match"].value<std::string>())
-          ovr.match = *v;
-        else
-          ovr.match = std::string(monName.str());
-        if (auto v = (*monTbl)["enabled"].value<bool>())
-          ovr.enabled = *v;
-        const std::string monitorContext = "wallpaper.monitor." + std::string(monName.str());
-        if (auto v = colorStringValue(*monTbl, "fill_color", monitorContext + ".fill_color")) {
-          if (StringUtils::trim(*v).empty()) {
-            ovr.fillColor = std::nullopt;
-          } else {
-            ovr.fillColor = colorSpecFromConfigString(*v, monitorContext + ".fill_color");
-          }
-        }
-        if (auto v = (*monTbl)["directory"].value<std::string>())
-          ovr.directory = expandUserPathString(*v);
-        if (auto v = (*monTbl)["directory_light"].value<std::string>())
-          ovr.directoryLight = expandUserPathString(*v);
-        if (auto v = (*monTbl)["directory_dark"].value<std::string>())
-          ovr.directoryDark = expandUserPathString(*v);
-        wp.monitorOverrides.push_back(std::move(ovr));
-      }
-    }
+    schema::readInto(*wpTbl, config.wallpaper, schema::wallpaperSchema(), "wallpaper", schemaDiag);
   }
 
   // Parse [backdrop]

@@ -25,5 +25,6 @@ namespace noctalia::config::schema {
   const Schema<KeybindsConfig>& keybindsSchema();
   const Schema<HooksConfig>& hooksSchema();
   const Schema<IdleConfig>& idleSchema();
+  const Schema<WallpaperConfig>& wallpaperSchema();
 
 } // namespace noctalia::config::schema

@@ -147,6 +147,18 @@ namespace {
         {"dim", true, 60, "lock", "", "", true},
         {"off", false, 300, "screen_off", "", "", true},
     };
+    c.wallpaper.enabled = false;
+    c.wallpaper.fillColor = colorSpecFromConfigString("#ff8800");
+    c.wallpaper.transitions = {WallpaperTransition::Wipe, WallpaperTransition::Zoom};
+    c.wallpaper.transitionDurationMs = 2000.0f;
+    c.wallpaper.edgeSmoothness = 0.5f;
+    c.wallpaper.directory = "/srv/wallpapers"; // absolute: expandUserPath leaves it unchanged
+    c.wallpaper.automation.enabled = true;
+    c.wallpaper.automation.intervalMinutes = 30;
+    c.wallpaper.automation.order = WallpaperAutomationConfig::Order::Alphabetical;
+    c.wallpaper.monitorOverrides = {
+        {"DP-1", true, colorSpecFromConfigString("#00ff00"), std::string("/srv/wp1"), std::nullopt, std::nullopt},
+    };
     return c;
   }
 
@@ -207,6 +219,7 @@ int main() {
   checkWriteParity("keybinds", legacyRoot, probe.keybinds, keybindsSchema());
   checkWriteParity("hooks", legacyRoot, probe.hooks, hooksSchema());
   checkWriteParity("idle", legacyRoot, probe.idle, idleSchema());
+  checkWriteParity("wallpaper", legacyRoot, probe.wallpaper, wallpaperSchema());
 
   checkReadInverse("audio", legacyRoot, probe.audio, audioSchema());
   checkReadInverse("weather", legacyRoot, probe.weather, weatherSchema());
@@ -225,6 +238,7 @@ int main() {
   checkReadInverse("keybinds", legacyRoot, probe.keybinds, keybindsSchema());
   checkReadInverse("hooks", legacyRoot, probe.hooks, hooksSchema());
   checkReadInverse("idle", legacyRoot, probe.idle, idleSchema());
+  checkReadInverse("wallpaper", legacyRoot, probe.wallpaper, wallpaperSchema());
 
   checkClamps();
 
