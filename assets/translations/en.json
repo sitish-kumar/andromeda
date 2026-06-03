@@ -2421,6 +2421,10 @@
           "label": "Show App Name",
           "description": "Show the sending application's name in notification toasts"
         },
+        "show-actions": {
+          "label": "Show Action Buttons",
+          "description": "Show action buttons in notification toasts; when disabled, clicking the toast triggers its default action"
+        },
         "position": {
           "label": "Screen Position",
           "description": "Screen position for notification toasts"

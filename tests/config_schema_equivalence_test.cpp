@@ -209,8 +209,8 @@ namespace {
     c.location.latitude = 52.52;
     c.location.longitude = 13.405;
     c.notification = NotificationConfig{
-        false,       false, "bottom_left",          "overlay", 1.3f, 0.5f, 12, 6, {"DP-2"}, false,
-        {"discord"}, true,  {"normal", "critical"},
+        false, false, false,    "bottom_left", "overlay",   1.3f, 0.5f,
+        12,    6,     {"DP-2"}, false,         {"discord"}, true, {"normal", "critical"},
     };
     c.dock.enabled = true;
     c.dock.position = "left";
