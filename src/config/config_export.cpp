@@ -61,27 +61,6 @@ namespace config_export {
       return table;
     }
 
-    toml::array sessionActionArray(const std::vector<SessionPanelActionConfig>& actions) {
-      toml::array array;
-      for (const auto& action : actions) {
-        if (action.action.empty()) {
-          continue;
-        }
-        toml::table item;
-        item.insert_or_assign("action", action.action);
-        item.insert_or_assign("enabled", action.enabled);
-        item.insert_or_assign("command", action.command.value_or(""));
-        item.insert_or_assign("label", action.label.value_or(""));
-        item.insert_or_assign("glyph", action.glyph.value_or(""));
-        item.insert_or_assign("variant", std::string(enumToKey(kSessionActionButtonVariants, action.variant)));
-        item.insert_or_assign(
-            "shortcut", action.shortcut.has_value() ? keyChordToString(*action.shortcut) : std::string{}
-        );
-        array.push_back(std::move(item));
-      }
-      return array;
-    }
-
     toml::array capsuleGroupArray(const std::vector<BarCapsuleGroupStyle>& groups) {
       toml::array array;
       for (const auto& group : groups) {
@@ -106,17 +85,6 @@ namespace config_export {
         }
         item.insert_or_assign("opacity", static_cast<double>(group.opacity));
         array.push_back(std::move(item));
-      }
-      return array;
-    }
-
-    toml::array wallpaperTransitionArray(const std::vector<WallpaperTransition>& transitions) {
-      toml::array array;
-      for (const auto transition : transitions) {
-        const std::string_view key = enumToKey(kWallpaperTransitions, transition);
-        if (!key.empty()) {
-          array.push_back(std::string(key));
-        }
       }
       return array;
     }
@@ -276,224 +244,6 @@ namespace config_export {
       return table;
     }
 
-    toml::table shellTable(const ShellConfig& shell) {
-      toml::table table;
-      table.insert_or_assign("ui_scale", static_cast<double>(shell.uiScale));
-      table.insert_or_assign("corner_radius_scale", static_cast<double>(shell.cornerRadiusScale));
-      table.insert_or_assign("font_family", shell.fontFamily);
-      if (!shell.lang.empty()) {
-        table.insert_or_assign("lang", shell.lang);
-      }
-      table.insert_or_assign("time_format", shell.timeFormat);
-      table.insert_or_assign("date_format", shell.dateFormat);
-      table.insert_or_assign("offline_mode", shell.offlineMode);
-      table.insert_or_assign("telemetry_enabled", shell.telemetryEnabled);
-      table.insert_or_assign("setup_wizard_enabled", shell.setupWizardEnabled);
-      table.insert_or_assign("niri_overview_type_to_launch_enabled", shell.niriOverviewTypeToLaunchEnabled);
-      table.insert_or_assign("polkit_agent", shell.polkitAgent);
-      table.insert_or_assign("password_style", std::string(enumToKey(kPasswordMaskStyles, shell.passwordMaskStyle)));
-      table.insert_or_assign("settings_show_advanced", shell.settingsShowAdvanced);
-      table.insert_or_assign("middle_click_opens_widget_settings", shell.middleClickOpensWidgetSettings);
-      table.insert_or_assign("show_location", shell.showLocation);
-      table.insert_or_assign("app_icon_colorize", shell.appIconColorize);
-      if (shell.appIconColor.has_value()) {
-        table.insert_or_assign("app_icon_color", colorSpecToConfigString(*shell.appIconColor));
-      }
-      table.insert_or_assign("launch_apps_as_systemd_services", shell.launchAppsAsSystemdServices);
-      table.insert_or_assign("clipboard_enabled", shell.clipboardEnabled);
-      table.insert_or_assign(
-          "clipboard_history_max_entries", static_cast<std::int64_t>(shell.clipboardHistoryMaxEntries)
-      );
-      table.insert_or_assign("clipboard_confirm_clear_history", shell.clipboardConfirmClearHistory);
-      table.insert_or_assign("screen_time_enabled", shell.screenTimeEnabled);
-      table.insert_or_assign("shared_gl_context", shell.sharedGlContext);
-      table.insert_or_assign("disable_mipmaps", shell.disableMipmaps);
-      table.insert_or_assign(
-          "clipboard_auto_paste", std::string(enumToKey(kClipboardAutoPasteModes, shell.clipboardAutoPaste))
-      );
-      table.insert_or_assign("clipboard_image_action_command", shell.clipboardImageActionCommand);
-      if (!shell.avatarPath.empty()) {
-        table.insert_or_assign("avatar_path", shell.avatarPath);
-      }
-
-      toml::table animation;
-      animation.insert_or_assign("enabled", shell.animation.enabled);
-      animation.insert_or_assign("speed", static_cast<double>(shell.animation.speed));
-      table.insert_or_assign("animation", std::move(animation));
-
-      toml::table shadow;
-      shadow.insert_or_assign("direction", std::string(enumToKey(kShadowDirections, shell.shadow.direction)));
-      shadow.insert_or_assign("alpha", static_cast<double>(shell.shadow.alpha));
-      table.insert_or_assign("shadow", std::move(shadow));
-
-      toml::table panel;
-      panel.insert_or_assign("background_blur", shell.panel.backgroundBlur);
-      panel.insert_or_assign(
-          "transparency_mode", std::string(enumToKey(kPanelTransparencyModes, shell.panel.transparencyMode))
-      );
-      panel.insert_or_assign("borders", shell.panel.borders);
-      panel.insert_or_assign("shadow", shell.panel.shadow);
-      panel.insert_or_assign(
-          "launcher_placement", std::string(enumToKey(kPanelPlacements, shell.panel.launcherPlacement))
-      );
-      panel.insert_or_assign(
-          "clipboard_placement", std::string(enumToKey(kPanelPlacements, shell.panel.clipboardPlacement))
-      );
-      panel.insert_or_assign(
-          "control_center_placement", std::string(enumToKey(kPanelPlacements, shell.panel.controlCenterPlacement))
-      );
-      panel.insert_or_assign(
-          "wallpaper_placement", std::string(enumToKey(kPanelPlacements, shell.panel.wallpaperPlacement))
-      );
-      panel.insert_or_assign(
-          "session_placement", std::string(enumToKey(kPanelPlacements, shell.panel.sessionPlacement))
-      );
-      panel.insert_or_assign("open_near_click_control_center", shell.panel.openNearClickControlCenter);
-      panel.insert_or_assign("open_near_click_launcher", shell.panel.openNearClickLauncher);
-      panel.insert_or_assign("open_near_click_clipboard", shell.panel.openNearClickClipboard);
-      panel.insert_or_assign("open_near_click_wallpaper", shell.panel.openNearClickWallpaper);
-      panel.insert_or_assign("open_near_click_session", shell.panel.openNearClickSession);
-      panel.insert_or_assign("launcher_categories", shell.panel.launcherCategories);
-      panel.insert_or_assign("launcher_show_icons", shell.panel.launcherShowIcons);
-      panel.insert_or_assign("launcher_compact", shell.panel.launcherCompact);
-      table.insert_or_assign("panel", std::move(panel));
-
-      toml::table screenCorners;
-      screenCorners.insert_or_assign("enabled", shell.screenCorners.enabled);
-      screenCorners.insert_or_assign("size", static_cast<std::int64_t>(shell.screenCorners.size));
-      table.insert_or_assign("screen_corners", std::move(screenCorners));
-
-      toml::table mpris;
-      mpris.insert_or_assign("blacklist", stringArray(shell.mpris.blacklist));
-      table.insert_or_assign("mpris", std::move(mpris));
-
-      toml::table session;
-      session.insert_or_assign("actions", sessionActionArray(shell.session.actions));
-      table.insert_or_assign("session", std::move(session));
-      return table;
-    }
-
-    toml::table themeTable(const ThemeConfig& theme) {
-      toml::table table;
-      table.insert_or_assign("source", std::string(enumToKey(kPaletteSources, theme.source)));
-      table.insert_or_assign("builtin", theme.builtinPalette);
-      table.insert_or_assign("community_palette", theme.communityPalette);
-      table.insert_or_assign("custom_palette", theme.customPalette);
-      table.insert_or_assign("wallpaper_scheme", theme.wallpaperScheme);
-      table.insert_or_assign("mode", std::string(enumToKey(kThemeModes, theme.mode)));
-
-      toml::table templates;
-      templates.insert_or_assign("enable_builtin_templates", theme.templates.enableBuiltinTemplates);
-      templates.insert_or_assign("builtin_ids", stringArray(theme.templates.builtinIds));
-      templates.insert_or_assign("enable_community_templates", theme.templates.enableCommunityTemplates);
-      templates.insert_or_assign("community_ids", stringArray(theme.templates.communityIds));
-
-      if (!theme.templates.customColors.empty()) {
-        toml::table customColors;
-        for (const auto& color : theme.templates.customColors) {
-          toml::table colorTable;
-          colorTable.insert_or_assign("color", color.color);
-          colorTable.insert_or_assign("blend", color.blend);
-          customColors.insert_or_assign(color.name, std::move(colorTable));
-        }
-        templates.insert_or_assign("custom_colors", std::move(customColors));
-      }
-
-      if (!theme.templates.userTemplates.empty()) {
-        toml::table userTemplates;
-        for (const auto& tmpl : theme.templates.userTemplates) {
-          if (tmpl.id.empty()) {
-            continue;
-          }
-          toml::table item;
-          item.insert_or_assign("enabled", tmpl.enabled);
-          item.insert_or_assign("input_path", tmpl.inputPath);
-          if (tmpl.inputPathModes.has_value()) {
-            toml::table modes;
-            modes.insert_or_assign("dark", tmpl.inputPathModes->dark);
-            modes.insert_or_assign("light", tmpl.inputPathModes->light);
-            item.insert_or_assign("input_path_modes", std::move(modes));
-          }
-          item.insert_or_assign("output_path", stringArray(tmpl.outputPaths));
-          item.insert_or_assign("output_path_dynamic", tmpl.outputPathDynamic);
-          item.insert_or_assign("compare_to", tmpl.compareTo);
-          if (!tmpl.colorsToCompare.empty()) {
-            toml::array colors;
-            for (const auto& color : tmpl.colorsToCompare) {
-              toml::table colorTable;
-              colorTable.insert_or_assign("name", color.name);
-              colorTable.insert_or_assign("color", color.color);
-              colors.push_back(std::move(colorTable));
-            }
-            item.insert_or_assign("colors_to_compare", std::move(colors));
-          }
-          item.insert_or_assign("pre_hook", tmpl.preHook);
-          item.insert_or_assign("post_hook", tmpl.postHook);
-          item.insert_or_assign("index", static_cast<std::int64_t>(tmpl.index));
-          userTemplates.insert_or_assign(tmpl.id, std::move(item));
-        }
-        templates.insert_or_assign("user", std::move(userTemplates));
-      }
-
-      table.insert_or_assign("templates", std::move(templates));
-      return table;
-    }
-
-    toml::table wallpaperTable(const WallpaperConfig& wallpaper) {
-      toml::table table;
-      table.insert_or_assign("enabled", wallpaper.enabled);
-      table.insert_or_assign("fill_mode", std::string(enumToKey(kWallpaperFillModes, wallpaper.fillMode)));
-      table.insert_or_assign(
-          "fill_color", wallpaper.fillColor.has_value() ? colorSpecToConfigString(*wallpaper.fillColor) : std::string{}
-      );
-      table.insert_or_assign("transition", wallpaperTransitionArray(wallpaper.transitions));
-      table.insert_or_assign("transition_duration", static_cast<double>(wallpaper.transitionDurationMs));
-      table.insert_or_assign("edge_smoothness", static_cast<double>(wallpaper.edgeSmoothness));
-      table.insert_or_assign("transition_on_startup", wallpaper.transitionOnStartup);
-      table.insert_or_assign("directory", wallpaper.directory);
-      table.insert_or_assign("directory_light", wallpaper.directoryLight);
-      table.insert_or_assign("directory_dark", wallpaper.directoryDark);
-      table.insert_or_assign("per_monitor_directories", wallpaper.perMonitorDirectories);
-
-      toml::table automation;
-      automation.insert_or_assign("enabled", wallpaper.automation.enabled);
-      automation.insert_or_assign("interval_minutes", static_cast<std::int64_t>(wallpaper.automation.intervalMinutes));
-      automation.insert_or_assign(
-          "order", std::string(enumToKey(kWallpaperAutomationOrders, wallpaper.automation.order))
-      );
-      automation.insert_or_assign("recursive", wallpaper.automation.recursive);
-      table.insert_or_assign("automation", std::move(automation));
-
-      if (!wallpaper.monitorOverrides.empty()) {
-        toml::table monitors;
-        for (const auto& ovr : wallpaper.monitorOverrides) {
-          if (ovr.match.empty()) {
-            continue;
-          }
-          toml::table monitor;
-          monitor.insert_or_assign("match", ovr.match);
-          if (ovr.enabled.has_value()) {
-            monitor.insert_or_assign("enabled", *ovr.enabled);
-          }
-          if (ovr.fillColor.has_value()) {
-            monitor.insert_or_assign("fill_color", colorSpecToConfigString(*ovr.fillColor));
-          }
-          if (ovr.directory.has_value()) {
-            monitor.insert_or_assign("directory", *ovr.directory);
-          }
-          if (ovr.directoryLight.has_value()) {
-            monitor.insert_or_assign("directory_light", *ovr.directoryLight);
-          }
-          if (ovr.directoryDark.has_value()) {
-            monitor.insert_or_assign("directory_dark", *ovr.directoryDark);
-          }
-          monitors.insert_or_assign(ovr.match, std::move(monitor));
-        }
-        table.insert_or_assign("monitor", std::move(monitors));
-      }
-      return table;
-    }
-
     toml::table desktopWidgetsTable(const DesktopWidgetsConfig& desktopWidgets) {
       toml::table table;
       table.insert_or_assign("enabled", desktopWidgets.enabled);
@@ -547,9 +297,9 @@ namespace config_export {
   toml::table configToToml(const Config& config) {
     toml::table root;
 
-    root.insert_or_assign("shell", shellTable(config.shell));
-    root.insert_or_assign("wallpaper", wallpaperTable(config.wallpaper));
-    root.insert_or_assign("theme", themeTable(config.theme));
+    root.insert_or_assign("shell", schema::writeTable(config.shell, schema::shellSchema()));
+    root.insert_or_assign("wallpaper", schema::writeTable(config.wallpaper, schema::wallpaperSchema()));
+    root.insert_or_assign("theme", schema::writeTable(config.theme, schema::themeSchema()));
 
     root.insert_or_assign("backdrop", schema::writeTable(config.backdrop, schema::backdropSchema()));
 

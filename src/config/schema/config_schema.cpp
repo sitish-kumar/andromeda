@@ -2,6 +2,7 @@
 
 #include "config/schema/engine.h"
 #include "core/key_chord.h"
+#include "util/file_utils.h"
 
 #include <algorithm>
 #include <format>
@@ -293,6 +294,162 @@ namespace noctalia::config::schema {
   } // namespace
 
   namespace {
+    // optional<ColorSpec> stored as a config string. alwaysEmit writes
+    // string-or-empty unconditionally (wallpaper.fill_color); otherwise only when
+    // set (monitor overrides). A present non-string value is a hard error.
+    template <typename Struct>
+    Field<Struct> colorSpecField(std::optional<ColorSpec> Struct::* member, std::string_view key, bool alwaysEmit) {
+      return custom<Struct>(
+          key,
+          [member, key](const toml::table& tbl, Struct& out, std::string_view parentPath, Diagnostics&) {
+            if (!tbl.contains(key)) {
+              return;
+            }
+            auto v = tbl[key].value<std::string>();
+            if (!v) {
+              throw std::runtime_error(joinPath(parentPath, key) + ": expected string ColorSpec");
+            }
+            if (StringUtils::trim(*v).empty()) {
+              out.*member = std::nullopt;
+            } else {
+              out.*member = colorSpecFromConfigString(*v, joinPath(parentPath, key));
+            }
+          },
+          [member, key, alwaysEmit](toml::table& tbl, const Struct& in) {
+            if ((in.*member).has_value()) {
+              tbl.insert_or_assign(key, colorSpecToConfigString(*(in.*member)));
+            } else if (alwaysEmit) {
+              tbl.insert_or_assign(key, std::string{});
+            }
+          }
+      );
+    }
+
+    // String holding a filesystem path: ~ and $VARS expand on read, emitted raw.
+    template <typename Struct> Field<Struct> pathStringField(std::string Struct::* member, std::string_view key) {
+      return custom<Struct>(
+          key,
+          [member, key](const toml::table& tbl, Struct& out, std::string_view, Diagnostics&) {
+            if (auto v = tbl[key].value<std::string>()) {
+              out.*member = v->empty() ? *v : FileUtils::expandUserPath(*v).string();
+            }
+          },
+          [member, key](toml::table& tbl, const Struct& in) { tbl.insert_or_assign(key, in.*member); }
+      );
+    }
+
+    template <typename Struct>
+    Field<Struct> optionalPathStringField(std::optional<std::string> Struct::* member, std::string_view key) {
+      return custom<Struct>(
+          key,
+          [member, key](const toml::table& tbl, Struct& out, std::string_view, Diagnostics&) {
+            if (auto v = tbl[key].value<std::string>()) {
+              out.*member = v->empty() ? *v : FileUtils::expandUserPath(*v).string();
+            }
+          },
+          [member, key](toml::table& tbl, const Struct& in) {
+            if ((in.*member).has_value()) {
+              tbl.insert_or_assign(key, *(in.*member));
+            }
+          }
+      );
+    }
+
+    template <typename Struct>
+    Field<Struct> optionalBoolField(std::optional<bool> Struct::* member, std::string_view key) {
+      return custom<Struct>(
+          key,
+          [member, key](const toml::table& tbl, Struct& out, std::string_view, Diagnostics&) {
+            if (auto v = tbl[key].value<bool>()) {
+              out.*member = *v;
+            }
+          },
+          [member, key](toml::table& tbl, const Struct& in) {
+            if ((in.*member).has_value()) {
+              tbl.insert_or_assign(key, *(in.*member));
+            }
+          }
+      );
+    }
+
+    // vector<Enum> <-> array of enum keys; pushes fallback if the parsed list is empty.
+    template <typename Struct, typename Enum, std::size_t N>
+    Field<Struct> enumArrayField(
+        std::vector<Enum> Struct::* member, std::string_view key, const EnumOption<Enum> (&options)[N],
+        std::optional<Enum> fallbackIfEmpty
+    ) {
+      const EnumOption<Enum>* opts = options;
+      return custom<Struct>(
+          key,
+          [member, key, opts, fallbackIfEmpty](const toml::table& tbl, Struct& out, std::string_view, Diagnostics&) {
+            const auto* arr = tbl[key].as_array();
+            if (arr == nullptr) {
+              return;
+            }
+            (out.*member).clear();
+            for (const auto& item : *arr) {
+              if (auto s = item.value<std::string>()) {
+                if (auto e = enumLookup(opts, N, *s)) {
+                  (out.*member).push_back(*e);
+                }
+              }
+            }
+            if ((out.*member).empty() && fallbackIfEmpty) {
+              (out.*member).push_back(*fallbackIfEmpty);
+            }
+          },
+          [member, key, opts](toml::table& tbl, const Struct& in) {
+            toml::array arr;
+            for (auto e : in.*member) {
+              const std::string_view k = enumKeyOf(opts, N, e);
+              if (!k.empty()) {
+                arr.push_back(std::string(k));
+              }
+            }
+            tbl.insert_or_assign(key, std::move(arr));
+          }
+      );
+    }
+
+    const Schema<WallpaperAutomationConfig>& wallpaperAutomationSchema() {
+      static const Schema<WallpaperAutomationConfig> s = {
+          field(&WallpaperAutomationConfig::enabled, "enabled"),
+          field(&WallpaperAutomationConfig::intervalMinutes, "interval_minutes", Range<std::int64_t>{0, 1440}),
+          // order accepts case-insensitive random|alphabetical.
+          custom<WallpaperAutomationConfig>(
+              "order",
+              [](const toml::table& tbl, WallpaperAutomationConfig& out, std::string_view parentPath,
+                 Diagnostics& diag) {
+                if (auto v = tbl["order"].value<std::string>()) {
+                  const std::string lowered = StringUtils::toLower(StringUtils::trim(*v));
+                  if (auto parsed = enumFromKey(kWallpaperAutomationOrders, lowered)) {
+                    out.order = *parsed;
+                  } else {
+                    diag.warn(joinPath(parentPath, "order"), "expected random|alphabetical, got \"" + *v + "\"");
+                  }
+                }
+              },
+              [](toml::table& tbl, const WallpaperAutomationConfig& in) {
+                tbl.insert_or_assign("order", std::string(enumToKey(kWallpaperAutomationOrders, in.order)));
+              }
+          ),
+          field(&WallpaperAutomationConfig::recursive, "recursive"),
+      };
+      return s;
+    }
+
+    const Schema<WallpaperMonitorOverride>& wallpaperMonitorSchema() {
+      static const Schema<WallpaperMonitorOverride> s = {
+          field(&WallpaperMonitorOverride::match, "match"),
+          optionalBoolField(&WallpaperMonitorOverride::enabled, "enabled"),
+          colorSpecField(&WallpaperMonitorOverride::fillColor, "fill_color", /*alwaysEmit=*/false),
+          optionalPathStringField(&WallpaperMonitorOverride::directory, "directory"),
+          optionalPathStringField(&WallpaperMonitorOverride::directoryLight, "directory_light"),
+          optionalPathStringField(&WallpaperMonitorOverride::directoryDark, "directory_dark"),
+      };
+      return s;
+    }
+
     // One keybind action: reads a single chord string or an array of them
     // (warning on an unparseable chord, rethrowing on a hard parse exception);
     // writes the configured chords, or the built-in defaults when none are set.
@@ -464,6 +621,420 @@ namespace noctalia::config::schema {
               out.behaviors = std::move(ordered);
             },
             [](toml::table&, const IdleConfig&) {}
+        ),
+    };
+    return s;
+  }
+
+  namespace {
+    using TemplateColor = ThemeConfig::TemplateColorConfig;
+    using UserTemplate = ThemeConfig::UserTemplateConfig;
+    using CompareColor = ThemeConfig::TemplateCompareColorConfig;
+
+    // [theme.templates.custom_colors]: a name-keyed map whose value is either a
+    // bare color string or a { color, blend } table. Kept only when name+color
+    // are non-empty; emitted only when the list is non-empty.
+    Field<ThemeConfig::TemplatesConfig> customColorsField() {
+      return custom<ThemeConfig::TemplatesConfig>(
+          "custom_colors",
+          [](const toml::table& tbl, ThemeConfig::TemplatesConfig& out, std::string_view, Diagnostics&) {
+            const auto* map = tbl["custom_colors"].as_table();
+            if (map == nullptr) {
+              return;
+            }
+            out.customColors.clear();
+            for (const auto& [name, value] : *map) {
+              TemplateColor color;
+              color.name = std::string(name.str());
+              if (const auto* str = value.as_string()) {
+                color.color = str->get();
+              } else if (const auto* t = value.as_table()) {
+                if (auto c = t->get_as<std::string>("color")) {
+                  color.color = c->get();
+                }
+                if (auto b = t->get_as<bool>("blend")) {
+                  color.blend = b->get();
+                }
+              }
+              if (!StringUtils::trim(color.name).empty() && !StringUtils::trim(color.color).empty()) {
+                out.customColors.push_back(std::move(color));
+              }
+            }
+          },
+          [](toml::table& tbl, const ThemeConfig::TemplatesConfig& in) {
+            if (in.customColors.empty()) {
+              return;
+            }
+            toml::table map;
+            for (const auto& color : in.customColors) {
+              toml::table colorTable;
+              colorTable.insert_or_assign("color", color.color);
+              colorTable.insert_or_assign("blend", color.blend);
+              map.insert_or_assign(color.name, std::move(colorTable));
+            }
+            tbl.insert_or_assign("custom_colors", std::move(map));
+          }
+      );
+    }
+
+    const Schema<UserTemplate>& userTemplateSchema() {
+      static const Schema<UserTemplate> s = {
+          field(&UserTemplate::enabled, "enabled"),
+          field(&UserTemplate::inputPath, "input_path"),
+          // input_path_modes is set only when both dark and light are present.
+          custom<UserTemplate>(
+              "input_path_modes",
+              [](const toml::table& tbl, UserTemplate& out, std::string_view, Diagnostics&) {
+                const auto* m = tbl["input_path_modes"].as_table();
+                if (m == nullptr) {
+                  return;
+                }
+                auto dark = m->get_as<std::string>("dark");
+                auto light = m->get_as<std::string>("light");
+                if (dark != nullptr && light != nullptr) {
+                  out.inputPathModes = ThemeConfig::TemplateInputPathModesConfig{dark->get(), light->get()};
+                }
+              },
+              [](toml::table& tbl, const UserTemplate& in) {
+                if (in.inputPathModes.has_value()) {
+                  toml::table modes;
+                  modes.insert_or_assign("dark", in.inputPathModes->dark);
+                  modes.insert_or_assign("light", in.inputPathModes->light);
+                  tbl.insert_or_assign("input_path_modes", std::move(modes));
+                }
+              }
+          ),
+          // output_path accepts a single string or an array; always emitted as an array.
+          custom<UserTemplate>(
+              "output_path",
+              [](const toml::table& tbl, UserTemplate& out, std::string_view, Diagnostics&) {
+                const auto* node = tbl.get("output_path");
+                if (node == nullptr) {
+                  return;
+                }
+                out.outputPaths.clear();
+                if (const auto* str = node->as_string()) {
+                  out.outputPaths.push_back(str->get());
+                } else if (const auto* arr = node->as_array()) {
+                  for (const auto& item : *arr) {
+                    if (const auto* itemStr = item.as_string()) {
+                      out.outputPaths.push_back(itemStr->get());
+                    }
+                  }
+                }
+              },
+              [](toml::table& tbl, const UserTemplate& in) {
+                toml::array arr;
+                for (const auto& p : in.outputPaths) {
+                  arr.push_back(p);
+                }
+                tbl.insert_or_assign("output_path", std::move(arr));
+              }
+          ),
+          field(&UserTemplate::outputPathDynamic, "output_path_dynamic"),
+          field(&UserTemplate::compareTo, "compare_to"),
+          // colors_to_compare: array of { name, color }; emitted only when non-empty.
+          custom<UserTemplate>(
+              "colors_to_compare",
+              [](const toml::table& tbl, UserTemplate& out, std::string_view, Diagnostics&) {
+                const auto* arr = tbl["colors_to_compare"].as_array();
+                if (arr == nullptr) {
+                  return;
+                }
+                out.colorsToCompare.clear();
+                for (const auto& item : *arr) {
+                  const auto* t = item.as_table();
+                  if (t == nullptr) {
+                    continue;
+                  }
+                  auto name = t->get_as<std::string>("name");
+                  auto color = t->get_as<std::string>("color");
+                  if (name != nullptr && color != nullptr) {
+                    out.colorsToCompare.push_back(CompareColor{name->get(), color->get()});
+                  }
+                }
+              },
+              [](toml::table& tbl, const UserTemplate& in) {
+                if (in.colorsToCompare.empty()) {
+                  return;
+                }
+                toml::array arr;
+                for (const auto& color : in.colorsToCompare) {
+                  toml::table colorTable;
+                  colorTable.insert_or_assign("name", color.name);
+                  colorTable.insert_or_assign("color", color.color);
+                  arr.push_back(std::move(colorTable));
+                }
+                tbl.insert_or_assign("colors_to_compare", std::move(arr));
+              }
+          ),
+          field(&UserTemplate::preHook, "pre_hook"),
+          field(&UserTemplate::postHook, "post_hook"),
+          field(&UserTemplate::index, "index"),
+      };
+      return s;
+    }
+
+    const Schema<ThemeConfig::TemplatesConfig>& templatesSchema() {
+      static const Schema<ThemeConfig::TemplatesConfig> s = {
+          field(&ThemeConfig::TemplatesConfig::enableBuiltinTemplates, "enable_builtin_templates"),
+          field(&ThemeConfig::TemplatesConfig::builtinIds, "builtin_ids"),
+          field(&ThemeConfig::TemplatesConfig::enableCommunityTemplates, "enable_community_templates"),
+          field(&ThemeConfig::TemplatesConfig::communityIds, "community_ids"),
+          customColorsField(),
+          namedMap<ThemeConfig::TemplatesConfig, UserTemplate>(
+              &ThemeConfig::TemplatesConfig::userTemplates, "user", userTemplateSchema(),
+              [](UserTemplate& t, std::string_view name) { t.id = std::string(name); },
+              [](const UserTemplate& t) { return t.id; }, /*readSkipEmptyName=*/true
+          ),
+      };
+      return s;
+    }
+  } // namespace
+
+  const Schema<ThemeConfig>& themeSchema() {
+    static const Schema<ThemeConfig> s = {
+        enumField(&ThemeConfig::source, "source", kPaletteSources),
+        field(&ThemeConfig::builtinPalette, "builtin"),
+        field(&ThemeConfig::communityPalette, "community_palette"),
+        field(&ThemeConfig::customPalette, "custom_palette"),
+        field(&ThemeConfig::wallpaperScheme, "wallpaper_scheme"),
+        enumField(&ThemeConfig::mode, "mode", kThemeModes),
+        subTable(&ThemeConfig::templates, "templates", templatesSchema()),
+    };
+    return s;
+  }
+
+  namespace {
+    // Plain string, but emitted only when non-empty (shell.lang, shell.avatar_path).
+    template <typename Struct> Field<Struct> stringIfNonEmptyField(std::string Struct::* member, std::string_view key) {
+      return custom<Struct>(
+          key,
+          [member, key](const toml::table& tbl, Struct& out, std::string_view, Diagnostics&) {
+            if (auto v = tbl[key].value<std::string>()) {
+              out.*member = *v;
+            }
+          },
+          [member, key](toml::table& tbl, const Struct& in) {
+            if (!(in.*member).empty()) {
+              tbl.insert_or_assign(key, in.*member);
+            }
+          }
+      );
+    }
+
+    const Schema<ShellConfig::AnimationConfig>& shellAnimationSchema() {
+      static const Schema<ShellConfig::AnimationConfig> s = {
+          field(&ShellConfig::AnimationConfig::enabled, "enabled"),
+          field(&ShellConfig::AnimationConfig::speed, "speed", Range<float>{0.05f, 4.0f}),
+      };
+      return s;
+    }
+
+    const Schema<ShellConfig::ShadowConfig>& shellShadowSchema() {
+      static const Schema<ShellConfig::ShadowConfig> s = {
+          enumField(&ShellConfig::ShadowConfig::direction, "direction", kShadowDirections),
+          field(&ShellConfig::ShadowConfig::alpha, "alpha", Range<float>{0.0f, 1.0f}),
+      };
+      return s;
+    }
+
+    const Schema<ShellConfig::PanelConfig>& shellPanelSchema() {
+      static const Schema<ShellConfig::PanelConfig> s = {
+          field(&ShellConfig::PanelConfig::backgroundBlur, "background_blur"),
+          enumField(&ShellConfig::PanelConfig::transparencyMode, "transparency_mode", kPanelTransparencyModes),
+          field(&ShellConfig::PanelConfig::borders, "borders"),
+          field(&ShellConfig::PanelConfig::shadow, "shadow"),
+          enumField(&ShellConfig::PanelConfig::launcherPlacement, "launcher_placement", kPanelPlacements),
+          enumField(&ShellConfig::PanelConfig::clipboardPlacement, "clipboard_placement", kPanelPlacements),
+          enumField(&ShellConfig::PanelConfig::controlCenterPlacement, "control_center_placement", kPanelPlacements),
+          enumField(&ShellConfig::PanelConfig::wallpaperPlacement, "wallpaper_placement", kPanelPlacements),
+          enumField(&ShellConfig::PanelConfig::sessionPlacement, "session_placement", kPanelPlacements),
+          field(&ShellConfig::PanelConfig::openNearClickControlCenter, "open_near_click_control_center"),
+          field(&ShellConfig::PanelConfig::openNearClickLauncher, "open_near_click_launcher"),
+          field(&ShellConfig::PanelConfig::openNearClickClipboard, "open_near_click_clipboard"),
+          field(&ShellConfig::PanelConfig::openNearClickWallpaper, "open_near_click_wallpaper"),
+          field(&ShellConfig::PanelConfig::openNearClickSession, "open_near_click_session"),
+          field(&ShellConfig::PanelConfig::launcherCategories, "launcher_categories"),
+          field(&ShellConfig::PanelConfig::launcherShowIcons, "launcher_show_icons"),
+          field(&ShellConfig::PanelConfig::launcherCompact, "launcher_compact"),
+      };
+      return s;
+    }
+
+    const Schema<ShellConfig::ScreenCornersConfig>& shellScreenCornersSchema() {
+      static const Schema<ShellConfig::ScreenCornersConfig> s = {
+          field(&ShellConfig::ScreenCornersConfig::enabled, "enabled"),
+          field(&ShellConfig::ScreenCornersConfig::size, "size", Range<std::int64_t>{1, 100}),
+      };
+      return s;
+    }
+
+    const Schema<ShellConfig::MprisConfig>& shellMprisSchema() {
+      static const Schema<ShellConfig::MprisConfig> s = {
+          field(&ShellConfig::MprisConfig::blacklist, "blacklist"),
+      };
+      return s;
+    }
+
+    // NOTE: legacy configToToml never emitted [shell.screenshot] (read-only gap);
+    // including it here fixes the export, mirroring the calendar gap-fix.
+    const Schema<ShellConfig::ScreenshotConfig>& shellScreenshotSchema() {
+      static const Schema<ShellConfig::ScreenshotConfig> s = {
+          field(&ShellConfig::ScreenshotConfig::saveToFile, "save_to_file"),
+          field(&ShellConfig::ScreenshotConfig::copyToClipboard, "copy_to_clipboard"),
+          field(&ShellConfig::ScreenshotConfig::freezeScreen, "freeze_screen"),
+          field(&ShellConfig::ScreenshotConfig::pipeToCommand, "pipe_to_command"),
+          field(&ShellConfig::ScreenshotConfig::pipeCommand, "pipe_command"),
+          field(&ShellConfig::ScreenshotConfig::directory, "directory"),
+          field(&ShellConfig::ScreenshotConfig::filenamePattern, "filename_pattern"),
+      };
+      return s;
+    }
+
+    // command/label/glyph are stored trimmed-or-nullopt but always emitted (value_or("")).
+    Field<SessionPanelActionConfig>
+    sessionOptionalString(std::optional<std::string> SessionPanelActionConfig::* member, std::string_view key) {
+      return custom<SessionPanelActionConfig>(
+          key,
+          [member, key](const toml::table& tbl, SessionPanelActionConfig& out, std::string_view, Diagnostics&) {
+            if (auto v = tbl[key].value<std::string>()) {
+              const std::string trimmed = StringUtils::trim(*v);
+              out.*member = trimmed.empty() ? std::optional<std::string>{} : std::optional<std::string>{trimmed};
+            }
+          },
+          [member, key](toml::table& tbl, const SessionPanelActionConfig& in) {
+            tbl.insert_or_assign(key, (in.*member).value_or(""));
+          }
+      );
+    }
+
+    const Schema<SessionPanelActionConfig>& sessionActionSchema() {
+      static const Schema<SessionPanelActionConfig> s = {
+          custom<SessionPanelActionConfig>(
+              "action",
+              [](const toml::table& tbl, SessionPanelActionConfig& out, std::string_view, Diagnostics&) {
+                if (auto v = tbl["action"].value<std::string>()) {
+                  out.action = StringUtils::toLower(StringUtils::trim(*v));
+                }
+              },
+              [](toml::table& tbl, const SessionPanelActionConfig& in) { tbl.insert_or_assign("action", in.action); }
+          ),
+          field(&SessionPanelActionConfig::enabled, "enabled"),
+          sessionOptionalString(&SessionPanelActionConfig::command, "command"),
+          sessionOptionalString(&SessionPanelActionConfig::label, "label"),
+          sessionOptionalString(&SessionPanelActionConfig::glyph, "glyph"),
+          enumField(&SessionPanelActionConfig::variant, "variant", kSessionActionButtonVariants),
+          custom<SessionPanelActionConfig>(
+              "shortcut",
+              [](const toml::table& tbl, SessionPanelActionConfig& out, std::string_view, Diagnostics&) {
+                if (auto v = tbl["shortcut"].value<std::string>()) {
+                  const std::string spec = StringUtils::trim(*v);
+                  if (!spec.empty()) {
+                    out.shortcut = parseKeyChordSpec(spec);
+                  }
+                }
+              },
+              [](toml::table& tbl, const SessionPanelActionConfig& in) {
+                tbl.insert_or_assign(
+                    "shortcut", in.shortcut.has_value() ? keyChordToString(*in.shortcut) : std::string{}
+                );
+              }
+          ),
+          // lock_and_suspend never carries a custom command.
+          finalize<SessionPanelActionConfig>([](SessionPanelActionConfig& a, std::string_view, Diagnostics&) {
+            if (a.action == "lock_and_suspend") {
+              a.command = std::nullopt;
+            }
+          }),
+      };
+      return s;
+    }
+
+    const Schema<ShellSessionConfig>& shellSessionSchema() {
+      static const Schema<ShellSessionConfig> s = {
+          arrayOf<ShellSessionConfig, SessionPanelActionConfig>(
+              &ShellSessionConfig::actions, "actions", sessionActionSchema(),
+              [](const SessionPanelActionConfig& a) { return !a.action.empty(); }
+          ),
+      };
+      return s;
+    }
+  } // namespace
+
+  const Schema<ShellConfig>& shellSchema() {
+    static const Schema<ShellConfig> s = {
+        field(&ShellConfig::uiScale, "ui_scale", Range<float>{0.5f, 4.0f}),
+        field(&ShellConfig::cornerRadiusScale, "corner_radius_scale", Range<float>{0.0f, 2.0f}),
+        // font_family is trimmed; empty falls back to sans-serif.
+        custom<ShellConfig>(
+            "font_family",
+            [](const toml::table& tbl, ShellConfig& out, std::string_view, Diagnostics&) {
+              if (auto v = tbl["font_family"].value<std::string>()) {
+                out.fontFamily = StringUtils::trim(*v);
+                if (out.fontFamily.empty()) {
+                  out.fontFamily = "sans-serif";
+                }
+              }
+            },
+            [](toml::table& tbl, const ShellConfig& in) { tbl.insert_or_assign("font_family", in.fontFamily); }
+        ),
+        stringIfNonEmptyField(&ShellConfig::lang, "lang"),
+        field(&ShellConfig::timeFormat, "time_format"),
+        field(&ShellConfig::dateFormat, "date_format"),
+        field(&ShellConfig::offlineMode, "offline_mode"),
+        field(&ShellConfig::telemetryEnabled, "telemetry_enabled"),
+        field(&ShellConfig::setupWizardEnabled, "setup_wizard_enabled"),
+        field(&ShellConfig::niriOverviewTypeToLaunchEnabled, "niri_overview_type_to_launch_enabled"),
+        field(&ShellConfig::polkitAgent, "polkit_agent"),
+        enumField(&ShellConfig::passwordMaskStyle, "password_style", kPasswordMaskStyles),
+        field(&ShellConfig::settingsShowAdvanced, "settings_show_advanced"),
+        field(&ShellConfig::middleClickOpensWidgetSettings, "middle_click_opens_widget_settings"),
+        field(&ShellConfig::showLocation, "show_location"),
+        field(&ShellConfig::appIconColorize, "app_icon_colorize"),
+        colorSpecField(&ShellConfig::appIconColor, "app_icon_color", /*alwaysEmit=*/false),
+        field(&ShellConfig::launchAppsAsSystemdServices, "launch_apps_as_systemd_services"),
+        field(&ShellConfig::clipboardEnabled, "clipboard_enabled"),
+        field(&ShellConfig::clipboardHistoryMaxEntries, "clipboard_history_max_entries", Range<std::int64_t>{10, 200}),
+        field(&ShellConfig::clipboardConfirmClearHistory, "clipboard_confirm_clear_history"),
+        field(&ShellConfig::screenTimeEnabled, "screen_time_enabled"),
+        field(&ShellConfig::sharedGlContext, "shared_gl_context"),
+        field(&ShellConfig::disableMipmaps, "disable_mipmaps"),
+        enumField(&ShellConfig::clipboardAutoPaste, "clipboard_auto_paste", kClipboardAutoPasteModes),
+        field(&ShellConfig::clipboardImageActionCommand, "clipboard_image_action_command"),
+        stringIfNonEmptyField(&ShellConfig::avatarPath, "avatar_path"),
+        subTable(&ShellConfig::animation, "animation", shellAnimationSchema()),
+        subTable(&ShellConfig::shadow, "shadow", shellShadowSchema()),
+        subTable(&ShellConfig::panel, "panel", shellPanelSchema()),
+        subTable(&ShellConfig::screenCorners, "screen_corners", shellScreenCornersSchema()),
+        subTable(&ShellConfig::mpris, "mpris", shellMprisSchema()),
+        subTable(&ShellConfig::screenshot, "screenshot", shellScreenshotSchema()),
+        subTable(&ShellConfig::session, "session", shellSessionSchema()),
+    };
+    return s;
+  }
+
+  const Schema<WallpaperConfig>& wallpaperSchema() {
+    static const Schema<WallpaperConfig> s = {
+        field(&WallpaperConfig::enabled, "enabled"),
+        enumField(&WallpaperConfig::fillMode, "fill_mode", kWallpaperFillModes),
+        colorSpecField(&WallpaperConfig::fillColor, "fill_color", /*alwaysEmit=*/true),
+        enumArrayField(
+            &WallpaperConfig::transitions, "transition", kWallpaperTransitions,
+            std::optional<WallpaperTransition>{WallpaperTransition::Fade}
+        ),
+        field(&WallpaperConfig::transitionDurationMs, "transition_duration", Range<float>{100.0f, 30000.0f}),
+        field(&WallpaperConfig::edgeSmoothness, "edge_smoothness", Range<float>{0.0f, 1.0f}),
+        field(&WallpaperConfig::transitionOnStartup, "transition_on_startup"),
+        pathStringField(&WallpaperConfig::directory, "directory"),
+        pathStringField(&WallpaperConfig::directoryLight, "directory_light"),
+        pathStringField(&WallpaperConfig::directoryDark, "directory_dark"),
+        field(&WallpaperConfig::perMonitorDirectories, "per_monitor_directories"),
+        subTable(&WallpaperConfig::automation, "automation", wallpaperAutomationSchema()),
+        namedMap<WallpaperConfig, WallpaperMonitorOverride>(
+            &WallpaperConfig::monitorOverrides, "monitor", wallpaperMonitorSchema(),
+            [](WallpaperMonitorOverride& o, std::string_view name) { o.match = std::string(name); },
+            [](const WallpaperMonitorOverride& o) { return o.match; }
         ),
     };
     return s;
