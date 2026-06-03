@@ -1231,6 +1231,14 @@ void Application::initUi() {
 
   m_notificationToast.initialize(m_wayland, &m_configService, &m_notificationManager, &m_renderContext, &m_httpClient);
   m_configService.addReloadCallback([this]() { m_notificationToast.onConfigReload(); });
+  auto applyNotificationFilterConfig = [this]() {
+    const auto& notification = m_configService.config().notification;
+    m_notificationManager.setBlacklist(notification.blacklist);
+    m_notificationManager.setBlacklistAllowCritical(notification.blacklistAllowCritical);
+    m_notificationManager.setAllowedUrgencies(notification.allowedUrgencies);
+  };
+  applyNotificationFilterConfig();
+  m_configService.addReloadCallback(applyNotificationFilterConfig);
   m_configService.setNotificationManager(&m_notificationManager);
   m_notificationManager.setSoundPlayer(m_soundPlayer.get());
 

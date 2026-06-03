@@ -411,6 +411,7 @@ _noctalia_sources = files(
   'src/net/uri.cpp',
   'src/net/url_open.cpp',
   'src/notification/notification_manager.cpp',
+  'src/notification/notification_filter.cpp',
   'src/notification/notification_display_name.cpp',
   'src/notification/notification_history_store.cpp',
   'src/pipewire/pipewire_service.cpp',
@@ -830,6 +831,16 @@ notification_history_utf8_test = executable('notification_history_utf8_test',
 )
 
 test('notification_history_utf8', notification_history_utf8_test)
+
+notification_filter_test = executable('notification_filter_test',
+  sources: files(
+    'tests/notification_filter_test.cpp',
+    'src/notification/notification_filter.cpp',
+  ),
+  include_directories: _noctalia_inc,
+)
+
+test('notification_filter', notification_filter_test)
 
 animation_manager_test = executable('animation_manager_test',
   sources: files(

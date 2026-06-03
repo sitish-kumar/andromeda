@@ -1778,19 +1778,19 @@ namespace settings {
       ));
     }
 
-    // Popups
+    // Notifications
     entries.push_back(makeEntry(
-        "popups", "notifications", tr("settings.schema.notifications.daemon.label"),
+        "notifications", "general", tr("settings.schema.notifications.daemon.label"),
         tr("settings.schema.notifications.daemon.description"), {"notification", "enable_daemon"},
         ToggleSetting{cfg.notification.enableDaemon}, "dbus"
     ));
     entries.push_back(makeEntry(
-        "popups", "notifications", tr("settings.schema.notifications.show-app-name.label"),
+        "notifications", "general", tr("settings.schema.notifications.show-app-name.label"),
         tr("settings.schema.notifications.show-app-name.description"), {"notification", "show_app_name"},
         ToggleSetting{cfg.notification.showAppName}, "application identity header"
     ));
     entries.push_back(makeEntry(
-        "popups", "notifications", tr("settings.schema.notifications.layer.label"),
+        "notifications", "toasts", tr("settings.schema.notifications.layer.label"),
         tr("settings.schema.notifications.layer.description"), {"notification", "layer"},
         asSegmented(plainSelect(
             {{"top", "settings.options.layer.top"}, {"overlay", "settings.options.layer.overlay"}},
@@ -1799,7 +1799,7 @@ namespace settings {
         "toast layer shell z-order"
     ));
     entries.push_back(makeEntry(
-        "popups", "notifications", tr("settings.schema.notifications.position.label"),
+        "notifications", "toasts", tr("settings.schema.notifications.position.label"),
         tr("settings.schema.notifications.position.description"), {"notification", "position"},
         plainSelect(
             {{"top_right", "settings.options.screen-position.top-right"},
@@ -1813,12 +1813,12 @@ namespace settings {
         "toast popup placement anchor"
     ));
     entries.push_back(makeEntry(
-        "popups", "notifications", tr("settings.schema.notifications.scale.label"),
+        "notifications", "toasts", tr("settings.schema.notifications.scale.label"),
         tr("settings.schema.notifications.scale.description"), {"notification", "scale"},
         SliderSetting{cfg.notification.scale, 0.5f, 2.5f, 0.05f, false}, "toast size scale"
     ));
     entries.push_back(makeEntry(
-        "popups", "notifications", tr("settings.schema.notifications.offset-x.label"),
+        "notifications", "toasts", tr("settings.schema.notifications.offset-x.label"),
         tr("settings.schema.notifications.offset-x.description"), {"notification", "offset_x"},
         StepperSetting{
             .value = cfg.notification.offsetX, .minValue = 0, .maxValue = 200, .step = 1, .valueSuffix = "px"
@@ -1826,7 +1826,7 @@ namespace settings {
         "offset margin horizontal"
     ));
     entries.push_back(makeEntry(
-        "popups", "notifications", tr("settings.schema.notifications.offset-y.label"),
+        "notifications", "toasts", tr("settings.schema.notifications.offset-y.label"),
         tr("settings.schema.notifications.offset-y.description"), {"notification", "offset_y"},
         StepperSetting{
             .value = cfg.notification.offsetY, .minValue = 0, .maxValue = 200, .step = 1, .valueSuffix = "px"
@@ -1834,20 +1834,51 @@ namespace settings {
         "offset margin vertical"
     ));
     entries.push_back(makeEntry(
-        "popups", "notifications", tr("settings.schema.notifications.toast-opacity.label"),
+        "notifications", "toasts", tr("settings.schema.notifications.toast-opacity.label"),
         tr("settings.schema.notifications.toast-opacity.description"), {"notification", "background_opacity"},
         SliderSetting{cfg.notification.backgroundOpacity, 0.0f, 1.0f, 0.01f, false}, "popup"
     ));
     entries.push_back(makeEntry(
-        "popups", "notifications", tr("settings.schema.notifications.collapse-on-dismiss.label"),
+        "notifications", "general", tr("settings.schema.notifications.collapse-on-dismiss.label"),
         tr("settings.schema.notifications.collapse-on-dismiss.description"), {"notification", "collapse_on_dismiss"},
         ToggleSetting{cfg.notification.collapseOnDismiss}, "reorder stack slide"
     ));
     entries.push_back(makeEntry(
-        "popups", "notifications", tr("settings.schema.notifications.monitors.label"),
+        "notifications", "toasts", tr("settings.schema.notifications.monitors.label"),
         tr("settings.schema.notifications.monitors.description"), {"notification", "monitors"},
         ListSetting{.items = cfg.notification.monitors, .suggestedOptions = env.availableOutputs},
         "monitor output display screen"
+    ));
+    {
+      MultiSelectSetting allowedUrgencies;
+      allowedUrgencies.options = {
+          {"low", tr("settings.options.notification-urgency.low")},
+          {"normal", tr("settings.options.notification-urgency.normal")},
+          {"critical", tr("settings.options.notification-urgency.critical")},
+      };
+      if (cfg.notification.allowedUrgencies.empty()) {
+        allowedUrgencies.selectedValues = {"low", "normal", "critical"};
+      } else {
+        allowedUrgencies.selectedValues = cfg.notification.allowedUrgencies;
+      }
+      allowedUrgencies.requireAtLeastOne = true;
+      entries.push_back(makeEntry(
+          "notifications", "filtering", tr("settings.schema.notifications.allowed-urgencies.label"),
+          tr("settings.schema.notifications.allowed-urgencies.description"), {"notification", "allowed_urgencies"},
+          std::move(allowedUrgencies), "urgency low normal critical filter"
+      ));
+    }
+    entries.push_back(makeEntry(
+        "notifications", "filtering", tr("settings.schema.notifications.blacklist.label"),
+        tr("settings.schema.notifications.blacklist.description"), {"notification", "blacklist"},
+        ListSetting{.items = cfg.notification.blacklist},
+        "blacklist block suppress filter app name desktop entry category substring"
+    ));
+    entries.push_back(makeEntry(
+        "notifications", "filtering", tr("settings.schema.notifications.blacklist-allow-critical.label"),
+        tr("settings.schema.notifications.blacklist-allow-critical.description"),
+        {"notification", "blacklist_allow_critical"}, ToggleSetting{cfg.notification.blacklistAllowCritical},
+        "critical urgency bypass"
     ));
 
     // Bar — register every configured bar so global search can surface settings from all of them.

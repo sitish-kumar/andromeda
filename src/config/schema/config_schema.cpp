@@ -141,6 +141,9 @@ namespace noctalia::config::schema {
         field(&NotificationConfig::offsetY, "offset_y"),
         field(&NotificationConfig::monitors, "monitors"),
         field(&NotificationConfig::collapseOnDismiss, "collapse_on_dismiss"),
+        field(&NotificationConfig::blacklist, "blacklist"),
+        field(&NotificationConfig::blacklistAllowCritical, "blacklist_allow_critical"),
+        field(&NotificationConfig::allowedUrgencies, "allowed_urgencies"),
     };
     return s;
   }

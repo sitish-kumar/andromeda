@@ -479,6 +479,10 @@ struct NotificationConfig {
   int offsetY = 8;                 // absolute vertical margin from the screen edge
   std::vector<std::string> monitors;
   bool collapseOnDismiss = true;
+  std::vector<std::string> blacklist;
+  bool blacklistAllowCritical = true;
+  /// Empty = allow low, normal, and critical. Otherwise only listed urgencies are shown.
+  std::vector<std::string> allowedUrgencies;
 
   bool operator==(const NotificationConfig&) const = default;
 };

@@ -2,6 +2,7 @@
 
 #include "core/deferred_call.h"
 #include "core/log.h"
+#include "notification/notification_filter.h"
 #include "notification/notification_history_store.h"
 #include "pipewire/sound_player.h"
 #include "util/file_utils.h"
@@ -175,6 +176,14 @@ uint32_t NotificationManager::addOrReplace(
   };
 
   if (replacesId != 0) {
+    if (m_suppressedIds.contains(replacesId)) {
+      if (origin == NotificationOrigin::External && shouldSuppressExternal(urgency, appName, category, desktopEntry)) {
+        kLog.debug("notification suppressed #{} from=\"{}\" urgency={}", replacesId, appName, urgencyStr(urgency));
+        return replacesId;
+      }
+      m_suppressedIds.erase(replacesId);
+    }
+
     if (const auto it = m_idToIndex.find(replacesId); it != m_idToIndex.end()) {
       auto& n = m_notifications[it->second];
 
@@ -227,6 +236,10 @@ uint32_t NotificationManager::addOrReplace(
 
       return n.id;
     }
+  }
+
+  if (origin == NotificationOrigin::External && shouldSuppressExternal(urgency, appName, category, desktopEntry)) {
+    return suppressExternal(appName, urgency);
   }
 
   // Suppress immediate duplicate bursts. Later same-content notifications should still be visible.
@@ -371,6 +384,16 @@ void NotificationManager::emitPendingDBusClose(uint32_t id, CloseReason reason) 
 }
 
 bool NotificationManager::close(uint32_t id, CloseReason reason) {
+  if (m_suppressedIds.erase(id) > 0) {
+    kLog.debug(
+        "notification closed #{} reason={}", id,
+        (reason == CloseReason::Expired)         ? "expired"
+            : (reason == CloseReason::Dismissed) ? "dismissed"
+                                                 : "closed"
+    );
+    return true;
+  }
+
   const auto it = m_idToIndex.find(id);
   if (it == m_idToIndex.end()) {
     if (m_pendingDBusClose.contains(id)) {
@@ -517,6 +540,53 @@ void NotificationManager::resumeExpiry(uint32_t id, int32_t remainingMs) {
   const auto wallResume = WallClock::now();
   m_notifications[it->second].expiryTime = steadyResume + std::chrono::milliseconds(remainingMs);
   m_notifications[it->second].expiryWallClock = wallResume + std::chrono::milliseconds(remainingMs);
+}
+
+void NotificationManager::setBlacklist(std::vector<std::string> blacklist) {
+  m_blacklist = normalizeNotificationBlacklist(std::move(blacklist));
+}
+
+void NotificationManager::setBlacklistAllowCritical(bool allowCritical) { m_blacklistAllowCritical = allowCritical; }
+
+const std::vector<std::string>& NotificationManager::blacklist() const noexcept { return m_blacklist; }
+
+bool NotificationManager::blacklistAllowCritical() const noexcept { return m_blacklistAllowCritical; }
+
+void NotificationManager::setAllowedUrgencies(std::vector<std::string> allowedUrgencies) {
+  m_allowedUrgencies = normalizeAllowedUrgencies(std::move(allowedUrgencies));
+}
+
+const std::unordered_set<Urgency>& NotificationManager::allowedUrgencies() const noexcept { return m_allowedUrgencies; }
+
+bool NotificationManager::shouldSuppressExternal(
+    Urgency urgency, std::string_view appName, const std::optional<std::string>& category,
+    const std::optional<std::string>& desktopEntry
+) const {
+  if (!urgencyIsAllowed(m_allowedUrgencies, urgency)) {
+    return true;
+  }
+  if (m_blacklist.empty()) {
+    return false;
+  }
+  if (m_blacklistAllowCritical && urgency == Urgency::Critical) {
+    return false;
+  }
+
+  return notificationMatchesBlacklist(
+      m_blacklist,
+      NotificationFilterFields{
+          .appName = appName,
+          .category = category.has_value() ? std::optional<std::string_view>{*category} : std::nullopt,
+          .desktopEntry = desktopEntry.has_value() ? std::optional<std::string_view>{*desktopEntry} : std::nullopt,
+      }
+  );
+}
+
+uint32_t NotificationManager::suppressExternal(std::string_view appName, Urgency urgency) {
+  const uint32_t id = m_nextId++;
+  m_suppressedIds.insert(id);
+  kLog.debug("notification suppressed #{} from=\"{}\" urgency={}", id, appName, urgencyStr(urgency));
+  return id;
 }
 
 void NotificationManager::setDoNotDisturb(bool enabled) {
