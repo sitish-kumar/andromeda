@@ -1834,6 +1834,11 @@ namespace settings {
         ToggleSetting{cfg.notification.showAppName}, "application identity header"
     ));
     entries.push_back(makeEntry(
+        "notifications", "general", tr("settings.schema.notifications.show-actions.label"),
+        tr("settings.schema.notifications.show-actions.description"), {"notification", "show_actions"},
+        ToggleSetting{cfg.notification.showActions}, "action buttons"
+    ));
+    entries.push_back(makeEntry(
         "notifications", "toasts", tr("settings.schema.notifications.layer.label"),
         tr("settings.schema.notifications.layer.description"), {"notification", "layer"},
         asSegmented(plainSelect(

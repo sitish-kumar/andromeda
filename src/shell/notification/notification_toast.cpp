@@ -49,7 +49,9 @@ namespace {
   constexpr float kCloseButtonSize = 20.0f;
   constexpr float kCloseGlyphSize = 12.0f;
   constexpr float kNotificationIconSize = 45.0f;
+  constexpr float kNotificationIconSizeCompact = 38.0f;
   constexpr float kNotificationIconGlyphSize = 24.0f;
+  constexpr float kNotificationIconGlyphSizeCompact = 20.0f;
   constexpr float kNotificationIconReferenceSize = 36.0f;
   constexpr float kTopProgressInset = Style::spaceMd;
 
@@ -120,7 +122,13 @@ namespace {
 
   [[nodiscard]] float closeButtonSize(float scale) { return kCloseButtonSize * scale; }
 
-  [[nodiscard]] float notificationIconSize(float scale) { return kNotificationIconSize * scale; }
+  [[nodiscard]] float notificationIconSize(float scale, bool showActions) {
+    return (showActions ? kNotificationIconSize : kNotificationIconSizeCompact) * scale;
+  }
+
+  [[nodiscard]] float notificationIconGlyphSize(float scale, bool showActions) {
+    return (showActions ? kNotificationIconGlyphSize : kNotificationIconGlyphSizeCompact) * scale;
+  }
 
   [[nodiscard]] float iconTextGap(float scale) { return kIconTextGap * scale; }
 
@@ -253,9 +261,10 @@ namespace {
     return 0;
   }
 
-  float notificationTextMaxWidth(float scale) {
+  float notificationTextMaxWidth(float scale, bool showActions) {
     return std::max(
-        0.0f, cardWidth(scale) - cardInnerPad(scale) * 2.0f - notificationIconSize(scale) - iconTextGap(scale)
+        0.0f,
+        cardWidth(scale) - cardInnerPad(scale) * 2.0f - notificationIconSize(scale, showActions) - iconTextGap(scale)
     );
   }
 
@@ -267,6 +276,10 @@ namespace {
       return false;
     }
     return true;
+  }
+
+  bool shouldShowNotificationActions(const ConfigService* config) {
+    return config == nullptr || config->config().notification.showActions;
   }
 
   std::unique_ptr<Button> makeNotificationActionButton(std::string_view label, float scale) {
@@ -312,7 +325,7 @@ namespace {
     if (buttons.size() < 2) {
       return false;
     }
-    const float rowWidth = notificationTextMaxWidth(scale);
+    const float rowWidth = notificationTextMaxWidth(scale, true);
     float totalWidth = 0.0f;
     for (std::size_t i = 0; i < buttons.size(); ++i) {
       if (i > 0) {
@@ -342,7 +355,7 @@ namespace {
   ) {
     const bool stacked = notificationActionsPreferStack(rc, buttons, scale);
     configureNotificationActionsRow(row, stacked, scale);
-    const float rowWidth = notificationTextMaxWidth(scale);
+    const float rowWidth = notificationTextMaxWidth(scale, true);
     for (auto& button : buttons) {
       if (stacked) {
         button->setMaxWidth(0.0f);
@@ -365,7 +378,9 @@ namespace {
       int summaryLines, int bodyLines, float scale
   ) {
     const float cardW = cardWidth(scale);
-    const float textMaxWidth = notificationTextMaxWidth(scale);
+    const bool showActions = shouldShowNotificationActions(config);
+    const float iconSize = notificationIconSize(scale, showActions);
+    const float textMaxWidth = notificationTextMaxWidth(scale, showActions);
     const float topTextMaxWidth = std::max(0.0f, textMaxWidth - closeButtonSize(scale) - Style::spaceSm * scale);
     const bool showAppName = shouldShowNotificationAppName(config, appName);
 
@@ -392,8 +407,8 @@ namespace {
             .width = cardW,
         },
         ui::node({
-            .width = notificationIconSize(scale),
-            .height = notificationIconSize(scale),
+            .width = iconSize,
+            .height = iconSize,
         })
     );
 
@@ -424,7 +439,8 @@ namespace {
       );
     }
 
-    auto buttons = collectNotificationActionButtons(actions, scale);
+    auto buttons = shouldShowNotificationActions(config) ? collectNotificationActionButtons(actions, scale)
+                                                         : std::vector<std::unique_ptr<Button>>{};
     if (!buttons.empty()) {
       auto actionsRow = ui::row({
           .padding = Style::spaceXs * scale,
@@ -2044,8 +2060,11 @@ InputArea* NotificationToast::buildCard(
 ) {
   const float scale = notificationUiScale(m_config);
   const bool hasInlineReply = hasInlineReplyAction(entry.actions);
+  const bool showActions = shouldShowNotificationActions(m_config);
+  const float iconSize = notificationIconSize(scale, showActions);
+  const float iconGlyphSize = notificationIconGlyphSize(scale, showActions);
   const float cardW = cardWidth(scale);
-  const float textMaxWidth = notificationTextMaxWidth(scale);
+  const float textMaxWidth = notificationTextMaxWidth(scale, showActions);
   const float topTextMaxWidth = std::max(0.0f, textMaxWidth - closeButtonSize(scale) - Style::spaceSm * scale);
   const bool showAppName = shouldShowNotificationAppName(m_config, entry.appName);
 
@@ -2092,15 +2111,15 @@ InputArea* NotificationToast::buildCard(
   );
 
   auto contentRow = ui::row({
-      .align = FlexAlign::Start,
+      .align = FlexAlign::Center,
       .gap = iconTextGap(scale),
       .padding = cardInnerPad(scale),
       .width = cardW,
   });
 
   auto iconSlot = ui::node({
-      .width = notificationIconSize(scale),
-      .height = notificationIconSize(scale),
+      .width = iconSize,
+      .height = iconSize,
   });
 
   bool iconAssigned = false;
@@ -2115,13 +2134,12 @@ InputArea* NotificationToast::buildCard(
         iconSlot->addChild(
             ui::glyph({
                 .glyph = std::string(glyphName),
-                .glyphSize = kNotificationIconGlyphSize * scale,
+                .glyphSize = iconGlyphSize,
                 .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                .configure = [this, scale](Glyph& glyph) {
+                .configure = [this, iconSize](Glyph& glyph) {
                   glyph.measure(*m_renderContext);
                   glyph.setPosition(
-                      std::round((notificationIconSize(scale) - glyph.width()) * 0.5f),
-                      std::round((notificationIconSize(scale) - glyph.height()) * 0.5f)
+                      std::round((iconSize - glyph.width()) * 0.5f), std::round((iconSize - glyph.height()) * 0.5f)
                   );
                 },
             })
@@ -2135,14 +2153,12 @@ InputArea* NotificationToast::buildCard(
     if (!iconPath.empty()) {
       auto appIcon = ui::image({
           .fit = ImageFit::Cover,
-          .radius = notificationIconRadius(notificationIconSize(scale), scale),
-          .width = notificationIconSize(scale),
-          .height = notificationIconSize(scale),
+          .radius = notificationIconRadius(iconSize, scale),
+          .width = iconSize,
+          .height = iconSize,
           .configure = [](Image& image) { image.setPosition(0.0f, 0.0f); },
       });
-      if (appIcon->setSourceFile(
-              *m_renderContext, iconPath, static_cast<int>(std::round(notificationIconSize(scale)))
-          )) {
+      if (appIcon->setSourceFile(*m_renderContext, iconPath, static_cast<int>(std::round(iconSize)))) {
         iconSlot->addChild(std::move(appIcon));
         iconAssigned = true;
       } else {
@@ -2153,9 +2169,9 @@ InputArea* NotificationToast::buildCard(
       if (image.width > 0 && image.height > 0 && !image.data.empty()) {
         auto appIcon = ui::image({
             .fit = ImageFit::Cover,
-            .radius = notificationIconRadius(notificationIconSize(scale), scale),
-            .width = notificationIconSize(scale),
-            .height = notificationIconSize(scale),
+            .radius = notificationIconRadius(iconSize, scale),
+            .width = iconSize,
+            .height = iconSize,
             .configure = [](Image& control) { control.setPosition(0.0f, 0.0f); },
         });
         const bool validImageMetadata = image.bitsPerSample == 8
@@ -2192,13 +2208,12 @@ InputArea* NotificationToast::buildCard(
     iconSlot->addChild(
         ui::glyph({
             .glyph = "bell",
-            .glyphSize = kNotificationIconGlyphSize * scale,
+            .glyphSize = iconGlyphSize,
             .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-            .configure = [this, scale](Glyph& glyph) {
+            .configure = [this, iconSize](Glyph& glyph) {
               glyph.measure(*m_renderContext);
               glyph.setPosition(
-                  std::round((notificationIconSize(scale) - glyph.width()) * 0.5f),
-                  std::round((notificationIconSize(scale) - glyph.height()) * 0.5f)
+                  std::round((iconSize - glyph.width()) * 0.5f), std::round((iconSize - glyph.height()) * 0.5f)
               );
             },
         })
@@ -2228,7 +2243,7 @@ InputArea* NotificationToast::buildCard(
   std::unique_ptr<Input> inlineReplyInput;
   std::unique_ptr<Button> inlineReplySendButton;
   Input* inlineReplyInputPtr = nullptr;
-  if (!entry.actions.empty()) {
+  if (showActions && !entry.actions.empty()) {
     const uint32_t notificationId = entry.notificationId;
     const int totalDuration = entry.displayDurationMs;
 
@@ -2773,7 +2788,10 @@ std::string NotificationToast::resolveNotificationIconPath(const PopupEntry& ent
   }
 
   const std::string& resolved = m_iconResolver.resolve(
-      localPath, static_cast<int>(std::round(notificationIconSize(notificationUiScale(m_config))))
+      localPath,
+      static_cast<int>(
+          std::round(notificationIconSize(notificationUiScale(m_config), shouldShowNotificationActions(m_config)))
+      )
   );
   if (!resolved.empty()) {
     return resolved;
