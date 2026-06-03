@@ -311,7 +311,8 @@ void DesktopMediaPlayerWidget::sync(Renderer& renderer) {
 
     if (!artPath.empty()) {
       const int targetPx = static_cast<int>(std::round(kArtSize * contentScale()));
-      if (!m_artwork->setSourceFile(renderer, artPath, targetPx, true))
+      const bool squareCrop = active.has_value() && shouldCenterSquareCropArt(*active, m_lastArtUrl);
+      if (!m_artwork->setSourceFile(renderer, artPath, targetPx, true, squareCrop))
         m_artwork->clear(renderer);
     } else {
       m_artwork->clear(renderer);
@@ -326,7 +327,8 @@ void DesktopMediaPlayerWidget::sync(Renderer& renderer) {
     }
     if (!artPath.empty()) {
       const int targetPx = static_cast<int>(std::round(kArtSize * contentScale()));
-      if (m_artwork->setSourceFile(renderer, artPath, targetPx, true))
+      const bool squareCrop = active.has_value() && shouldCenterSquareCropArt(*active, m_lastArtUrl);
+      if (m_artwork->setSourceFile(renderer, artPath, targetPx, true, squareCrop))
         requestRedraw();
     }
   }

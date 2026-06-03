@@ -83,6 +83,7 @@ private:
   Button* m_shuffleButton = nullptr;
 
   std::string m_lastArtPath;
+  bool m_artworkSquarePresentation = false;
   std::string m_lastBusName;
   std::string m_lastPlaybackStatus;
   std::string m_lastLoopStatus;

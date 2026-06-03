@@ -8,6 +8,8 @@
 
 namespace {
 
+  constexpr std::string_view kGoogleArtSizeSuffix = "=w544-h544-l90-rj";
+
   std::string extractQueryParam(std::string_view url, std::string_view key) {
     const auto queryPos = url.find('?');
     if (queryPos == std::string_view::npos)
@@ -30,7 +32,8 @@ namespace {
     if (sourceUrl.empty())
       return {};
     std::string videoId;
-    if (sourceUrl.find("youtube.com/watch") != std::string_view::npos) {
+    if (sourceUrl.find("youtube.com/watch") != std::string_view::npos
+        || sourceUrl.find("music.youtube.com/watch") != std::string_view::npos) {
       videoId = extractQueryParam(sourceUrl, "v");
     } else if (sourceUrl.find("youtu.be/") != std::string_view::npos) {
       const auto marker = sourceUrl.find("youtu.be/");
@@ -50,15 +53,51 @@ namespace {
     return std::format("https://i.ytimg.com/vi/{}/hqdefault.jpg", videoId);
   }
 
+  [[nodiscard]] std::string upgradeGoogleArtUrl(std::string_view url) {
+    if (url.find("googleusercontent.com") == std::string_view::npos
+        && url.find("ggpht.com") == std::string_view::npos) {
+      return std::string(url);
+    }
+
+    const auto paramStart = url.rfind('=');
+    if (paramStart == std::string_view::npos) {
+      return std::string(url);
+    }
+
+    std::string upgraded(url.substr(0, paramStart));
+    upgraded.append(kGoogleArtSizeSuffix);
+    return upgraded;
+  }
+
+  [[nodiscard]] bool isGoogleMusicArtUrl(std::string_view url) {
+    return url.find("googleusercontent.com") != std::string_view::npos
+        || url.find("ggpht.com") != std::string_view::npos;
+  }
+
+  [[nodiscard]] bool isYouTubeMusicSourceUrl(std::string_view sourceUrl) {
+    return sourceUrl.find("music.youtube.com") != std::string_view::npos;
+  }
+
 } // namespace
 
 namespace mpris {
 
   bool isRemoteArtUrl(std::string_view url) { return uri::isRemoteUrl(url); }
 
+  bool shouldCenterSquareCropArt(const MprisPlayerInfo& player, std::string_view effectiveArtUrl) {
+    if (isGoogleMusicArtUrl(effectiveArtUrl) || isGoogleMusicArtUrl(player.artUrl)) {
+      return true;
+    }
+    return isYouTubeMusicSourceUrl(player.sourceUrl);
+  }
+
   std::string effectiveArtUrl(const MprisPlayerInfo& player) {
-    if (!player.artUrl.empty())
+    if (!player.artUrl.empty()) {
+      if (isRemoteArtUrl(player.artUrl)) {
+        return upgradeGoogleArtUrl(player.artUrl);
+      }
       return player.artUrl;
+    }
     return deriveYouTubeThumbnailUrl(player.sourceUrl);
   }
 
