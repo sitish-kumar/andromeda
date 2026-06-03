@@ -33,6 +33,7 @@ namespace noctalia::theme {
     struct CommunityTemplateFile {
       std::string name;
       std::string md5;
+      std::optional<std::filesystem::perms> mode;
     };
 
     struct CommunityTemplateEntry {
@@ -194,7 +195,22 @@ namespace noctalia::theme {
       return out;
     }
 
-    std::vector<CommunityTemplateFile> parseFiles(const nlohmann::json& obj) {
+    std::optional<std::filesystem::perms> parseFileMode(std::string_view mode) {
+      if (mode.size() != 4)
+        return std::nullopt;
+
+      unsigned int value = 0;
+      for (char ch : mode) {
+        if (ch < '0' || ch > '7')
+          return std::nullopt;
+        value = (value << 3U) | static_cast<unsigned int>(ch - '0');
+      }
+      if ((value & 07000U) != 0)
+        return std::nullopt;
+      return static_cast<std::filesystem::perms>(value);
+    }
+
+    std::vector<CommunityTemplateFile> parseFiles(std::string_view templateId, const nlohmann::json& obj) {
       std::vector<CommunityTemplateFile> out;
       auto it = obj.find("files");
       if (it == obj.end() || !it->is_array())
@@ -205,8 +221,18 @@ namespace noctalia::theme {
         CommunityTemplateFile file;
         file.name = stringField(item, "name");
         file.md5 = stringField(item, "md5");
-        if (!file.name.empty())
-          out.push_back(std::move(file));
+        if (file.name.empty())
+          continue;
+
+        const std::string mode = stringField(item, "mode");
+        if (mode.empty()) {
+          kLog.warn("community template '{}' file '{}' is missing mode metadata", templateId, file.name);
+        } else if (auto parsed = parseFileMode(mode)) {
+          file.mode = *parsed;
+        } else {
+          kLog.warn("community template '{}' file '{}' has invalid mode metadata '{}'", templateId, file.name, mode);
+        }
+        out.push_back(std::move(file));
       }
       return out;
     }
@@ -222,7 +248,7 @@ namespace noctalia::theme {
       if (info.displayName.empty())
         info.displayName = info.id;
       info.category = stringField(obj, "category");
-      info.files = parseFiles(obj);
+      info.files = parseFiles(info.id, obj);
       info.entries = parseEntries(obj);
       return info;
     }
@@ -377,6 +403,51 @@ namespace noctalia::theme {
       const std::string md5 = util::fileMd5Hex(path);
       if (!md5.empty()) {
         metadata.fileMd5s[std::string(name)] = md5;
+      }
+    }
+
+    std::filesystem::perms fileModeMask() {
+      using P = std::filesystem::perms;
+      return P::owner_read
+          | P::owner_write
+          | P::owner_exec
+          | P::group_read
+          | P::group_write
+          | P::group_exec
+          | P::others_read
+          | P::others_write
+          | P::others_exec
+          | P::set_uid
+          | P::set_gid
+          | P::sticky_bit;
+    }
+
+    void syncCachedFileMode(
+        std::string_view templateId, const CommunityTemplateFile& file, const std::filesystem::path& dest
+    ) {
+      if (!file.mode.has_value())
+        return;
+
+      std::error_code ec;
+      const std::filesystem::file_status status = std::filesystem::symlink_status(dest, ec);
+      if (ec || !std::filesystem::exists(status))
+        return;
+      if (std::filesystem::is_symlink(status)) {
+        kLog.warn("skipping permission sync for symlinked community template file {}", dest.string());
+        return;
+      }
+      if (!std::filesystem::is_regular_file(status)) {
+        kLog.warn("skipping permission sync for non-regular community template file {}", dest.string());
+        return;
+      }
+
+      const std::filesystem::perms currentMode = status.permissions() & fileModeMask();
+      if (currentMode == *file.mode)
+        return;
+
+      std::filesystem::permissions(dest, *file.mode, std::filesystem::perm_options::replace, ec);
+      if (ec) {
+        kLog.warn("failed to set mode for community template '{}' file '{}': {}", templateId, file.name, ec.message());
       }
     }
 
@@ -628,6 +699,10 @@ namespace noctalia::theme {
           continue;
         }
         const std::filesystem::path dest = dir / std::filesystem::path(file.name);
+        std::error_code existsEc;
+        if (std::filesystem::exists(dest, existsEc)) {
+          syncCachedFileMode(id, file, dest);
+        }
         if (!cacheFileNeedsDownload(id, file, dest, *metadata))
           continue;
         if (dest.has_parent_path())
@@ -636,7 +711,9 @@ namespace noctalia::theme {
         const std::string url =
             std::string(kCatalogUrl) + "/" + StringUtils::urlEncode(id) + "/" + urlEncodePath(file.name);
         m_httpClient.download(
-            url, dest, [this, file, dest, dir, metadata, generation, pending, completed, notifyIfReady](bool success) {
+            url, dest,
+            [this, file, dest, dir, metadata, generation, pending, completed, notifyIfReady,
+             templateId = std::string(id)](bool success) {
               ++(*completed);
               if (generation != m_generation)
                 return;
@@ -650,6 +727,7 @@ namespace noctalia::theme {
                   kLog.warn("downloaded community template file {} failed md5 validation", dest.string());
                 } else if (!actualMd5.empty()) {
                   metadata->fileMd5s[file.name] = actualMd5;
+                  syncCachedFileMode(templateId, file, dest);
                 }
                 writeCacheMetadata(dir, *metadata);
               } else {
