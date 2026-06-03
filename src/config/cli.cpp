@@ -1,6 +1,8 @@
 #include "config/cli.h"
 
+#include "config/config_validate.h"
 #include "core/toml.h" // IWYU pragma: keep
+#include "util/file_utils.h"
 #include "util/string_utils.h"
 
 #include <cstdio>
@@ -22,7 +24,21 @@ namespace noctalia::config {
         "      Reconstruct config-home/noctalia and state-home/noctalia from a support report.\n"
         "\n"
         "  replay-report <report.toml> --target <dir> --flattened [--force]\n"
-        "      Reconstruct a single config-home/noctalia/config.toml from the report's merged config.\n";
+        "      Reconstruct a single config-home/noctalia/config.toml from the report's merged config.\n"
+        "\n"
+        "  validate [dir]\n"
+        "      Check config validity: TOML syntax, unknown/misspelled settings, and bad\n"
+        "      values. Defaults to the active config dir + state settings.toml. Exit 1 on error.\n";
+
+    constexpr const char* kValidateHelpText =
+        "Usage: noctalia config validate [dir]\n"
+        "\n"
+        "Validates the merged configuration the way the shell loads it:\n"
+        "  - every *.toml in [dir] (default: the active config dir), then\n"
+        "  - the state-dir settings.toml overrides (only when [dir] is omitted).\n"
+        "\n"
+        "Reports TOML syntax errors, unknown sections/settings, and bad values\n"
+        "(wrong type, out-of-range, invalid enum/color). Exits 1 if any error is found.\n";
 
     constexpr const char* kReplayHelpText =
         "Usage: noctalia config replay-report <report.toml> --target <dir> [--flattened] [--force]\n"
@@ -266,6 +282,57 @@ namespace noctalia::config {
       return 0;
     }
 
+    int runValidate(int argc, char* argv[]) {
+      std::string dirArg;
+      for (int i = 3; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--help") == 0) {
+          std::puts(kValidateHelpText);
+          return 0;
+        }
+        if (dirArg.empty()) {
+          dirArg = argv[i];
+          continue;
+        }
+        std::fprintf(stderr, "error: unexpected argument: %s\n", argv[i]);
+        std::fputs("Run 'noctalia config validate --help' for usage.\n", stderr);
+        return 1;
+      }
+
+      // With an explicit dir, validate just that dir; otherwise the live config
+      // dir plus the state-dir settings.toml overrides (matching how the shell loads).
+      std::string configDir = dirArg.empty() ? FileUtils::configDir() : dirArg;
+      std::string settingsPath;
+      if (dirArg.empty()) {
+        if (const std::string stateDir = FileUtils::stateDir(); !stateDir.empty()) {
+          settingsPath = stateDir + "/settings.toml";
+        }
+      }
+
+      const auto diagnostics = validateConfigSources(configDir, settingsPath);
+
+      std::size_t errors = 0;
+      std::size_t warnings = 0;
+      for (const auto& entry : diagnostics.entries) {
+        const bool isError = entry.severity == schema::Diagnostics::Severity::Error;
+        (isError ? errors : warnings)++;
+        std::fprintf(
+            isError ? stderr : stdout, "%s: %s: %s\n", isError ? "error" : "warning", entry.path.c_str(),
+            entry.message.c_str()
+        );
+      }
+
+      if (errors > 0) {
+        std::fprintf(stderr, "\n✗ Config is invalid (%zu error(s), %zu warning(s))\n", errors, warnings);
+        return 1;
+      }
+      if (warnings > 0) {
+        std::printf("\n✓ Config is valid (%zu warning(s))\n", warnings);
+      } else {
+        std::puts("✓ Config is valid");
+      }
+      return 0;
+    }
+
   } // namespace
 
   int runCli(int argc, char* argv[]) {
@@ -286,6 +353,10 @@ namespace noctalia::config {
         return 0;
       }
       return replayReport(*options, argv[0]);
+    }
+
+    if (std::strcmp(argv[2], "validate") == 0) {
+      return runValidate(argc, argv);
     }
 
     std::fprintf(stderr, "error: unknown config command: %s\n", argv[2]);

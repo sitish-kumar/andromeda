@@ -151,4 +151,15 @@ namespace desktop_settings {
     return specs;
   }
 
+  noctalia::config::schema::WidgetSettingSchema desktopWidgetSettingSchema(std::string_view type) {
+    noctalia::config::schema::WidgetSettingSchema out;
+    for (const auto& spec : desktopWidgetSettingSpecs(type)) {
+      out.push_back(spec.schema);
+    }
+    for (const auto& spec : commonDesktopWidgetSettingSpecs()) {
+      out.push_back(spec.schema);
+    }
+    return out;
+  }
+
 } // namespace desktop_settings

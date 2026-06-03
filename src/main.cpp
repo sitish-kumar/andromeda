@@ -140,7 +140,7 @@ namespace {
           "                   Run 'noctalia msg --help' for available commands\n"
           "  theme <image>    Generate a color palette from an image\n"
           "                   Run 'noctalia theme --help' for options\n"
-          "  config <command> Config support and replay helpers\n"
+          "  config <command> Validate config and support/replay helpers\n"
           "                   Run 'noctalia config --help' for options\n"
           "\n"
           "For more information and documentation, visit:\n"
