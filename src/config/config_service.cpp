@@ -11,6 +11,8 @@
 #include "ipc/ipc_service.h"
 #include "notification/notification_manager.h"
 #include "render/core/renderer.h"
+#include "shell/desktop/desktop_widget_settings_registry.h"
+#include "shell/settings/widget_settings_registry.h"
 #include "util/file_utils.h"
 #include "util/string_utils.h"
 #include "wayland/wayland_connection.h"
@@ -87,40 +89,15 @@ namespace {
     return std::nullopt;
   }
 
-  [[nodiscard]] bool isCommonWidgetColorSetting(std::string_view key) {
-    return key == "color" || key == "capsule_fill" || key == "capsule_border" || key == "capsule_foreground";
-  }
-
-  [[nodiscard]] bool isWidgetColorSetting(std::string_view type, std::string_view key) {
-    if (isCommonWidgetColorSetting(key)) {
-      return true;
+  // Returns true if `key` is a color-typed setting for `widget`, per the widget
+  // setting schema (the single source — not a hand-maintained key list).
+  [[nodiscard]] const schema::WidgetSettingField*
+  findColorField(const schema::WidgetSettingSchema& fields, std::string_view key) {
+    const auto it = std::find_if(fields.begin(), fields.end(), [&](const auto& f) { return f.key == key; });
+    if (it == fields.end() || it->type != schema::WidgetSettingType::Color) {
+      return nullptr;
     }
-    if (type == "audio_visualizer") {
-      return key == "low_color" || key == "high_color";
-    }
-    if (type == "battery") {
-      return key == "warning_color";
-    }
-    if (type == "workspaces") {
-      return key == "focused_color" || key == "occupied_color" || key == "empty_color";
-    }
-    return false;
-  }
-
-  [[nodiscard]] bool isDesktopWidgetColorSetting(std::string_view type, std::string_view key) {
-    if (key == "background_color") {
-      return true;
-    }
-    if (type == "clock" || type == "weather" || type == "media_player") {
-      return key == "color";
-    }
-    if (type == "audio_visualizer") {
-      return key == "low_color" || key == "high_color";
-    }
-    if (type == "sysmon") {
-      return key == "color" || key == "color2";
-    }
-    return false;
+    return &*it;
   }
 
   void validateWidgetColorSettingValue(
@@ -140,8 +117,9 @@ namespace {
   }
 
   void validateWidgetColorSettings(std::string_view widgetName, const WidgetConfig& widget) {
+    const auto fields = settings::widgetSettingSchema(widget.type);
     for (const auto& [key, value] : widget.settings) {
-      if (!isWidgetColorSetting(widget.type, key)) {
+      if (findColorField(fields, key) == nullptr) {
         continue;
       }
       const bool allowEmpty = key == "capsule_border";
@@ -175,8 +153,9 @@ namespace {
   }
 
   void validateDesktopWidgetColorSettings(const DesktopWidgetState& widget) {
+    const auto fields = desktop_settings::desktopWidgetSettingSchema(widget.type);
     for (const auto& [key, value] : widget.settings) {
-      if (!isDesktopWidgetColorSetting(widget.type, key)) {
+      if (findColorField(fields, key) == nullptr) {
         continue;
       }
       validateWidgetColorSettingValue(value, "desktop_widgets.widget." + widget.id + ".settings." + key);
