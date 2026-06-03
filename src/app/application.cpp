@@ -1046,12 +1046,24 @@ void Application::initUi() {
   m_settingsWindow.initialize(
       m_wayland, &m_configService, &m_renderContext, &m_dependencyService, m_upowerService.get(), &m_idleManager
   );
-  m_settingsWindow.setOpenDesktopWidgetEditor([this]() { m_desktopWidgetsController.toggleEdit(); });
+  m_settingsWindow.setOpenDesktopWidgetEditor([this]() {
+    const bool wasEditing = m_desktopWidgetsController.isEditing();
+    m_desktopWidgetsController.toggleEdit();
+    if (!wasEditing && m_desktopWidgetsController.isEditing()) {
+      notify::info(
+          "Noctalia", i18n::tr("notifications.internal.desktop-widgets-editor"),
+          i18n::tr("notifications.internal.desktop-widgets-editor-enabled")
+      );
+    }
+  });
   m_settingsWindow.setSyncGreeterAppearance([this]() {
     (void)greeter::syncAppearanceToGreeterAsync(m_configService, m_themeService.resolvedMode(), [this](bool success) {
       DeferredCall::callLater([this, success]() {
         if (success) {
-          m_settingsWindow.showTransientStatus(i18n::tr("settings.schema.shell.sync-greeter.success"));
+          notify::info(
+              "Noctalia", i18n::tr("notifications.internal.greeter-sync"),
+              i18n::tr("notifications.internal.greeter-sync-success")
+          );
           return;
         }
         m_settingsWindow.markSettingsWriteError(i18n::tr("settings.errors.sync-greeter"));

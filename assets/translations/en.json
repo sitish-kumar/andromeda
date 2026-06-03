@@ -594,7 +594,11 @@
       "keybind-invalid-modifier": "This shortcut accepts a single key without modifiers.",
       "power-profiles": "Power profiles",
       "power-profile-title": "Power mode",
-      "power-profile-body": "Switched to: {profile}"
+      "power-profile-body": "Switched to: {profile}",
+      "desktop-widgets-editor": "Widget editor",
+      "desktop-widgets-editor-enabled": "Desktop widget editor is on. Switch to an empty workspace to see the editor overlay.",
+      "greeter-sync": "Noctalia Greeter",
+      "greeter-sync-success": "Appearance synced. Changes apply on the next login screen."
     }
   },
   "system": {
@@ -1736,8 +1740,7 @@
         "sync-greeter": {
           "label": "Noctalia Greeter",
           "description": "Copy the current wallpaper and colors to Noctalia Greeter (requires administrator approval)",
-          "button": "Sync Now",
-          "success": "Noctalia Greeter appearance synced. Changes apply on the next login screen."
+          "button": "Sync Now"
         },
         "middle-click-opens-widget-settings": {
           "label": "Middle Click Opens Widget Settings",
