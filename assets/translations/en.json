@@ -1405,8 +1405,8 @@
         },
         "labels_only_when_occupied": {
           "label": "Labels Only When Occupied",
-          "description": "Hide workspace labels on empty workspaces",
-          "workspaces-description": "Show workspace id or name labels only on workspaces with open windows; empty tags stay unlabeled"
+          "description": "Hide workspace labels on empty, inactive workspaces",
+          "workspaces-description": "Show workspace id or name labels on workspaces with open windows and on the active workspace even when it is empty; other empty tags stay unlabeled"
         },
         "hide_when_single_layout": {
           "label": "Hide When Single Layout",

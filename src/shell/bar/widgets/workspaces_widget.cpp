@@ -59,7 +59,7 @@ bool WorkspacesWidget::shouldShowWorkspaceLabel(const Workspace& workspace, std:
   if (effectiveDisplayMode() == DisplayMode::None || label.empty()) {
     return false;
   }
-  if (m_labelsOnlyWhenOccupied && !workspace.occupied) {
+  if (m_labelsOnlyWhenOccupied && !workspace.occupied && !workspace.active) {
     return false;
   }
   return true;
@@ -149,6 +149,9 @@ void WorkspacesWidget::doUpdate(Renderer& renderer) {
       }
       if (a.active != b.active || a.urgent != b.urgent) {
         activeChange = true;
+        if (m_labelsOnlyWhenOccupied) {
+          structuralChange = true;
+        }
       }
       if (a.occupied != b.occupied) {
         activeChange = true;
