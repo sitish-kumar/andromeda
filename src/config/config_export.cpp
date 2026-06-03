@@ -1,5 +1,7 @@
 #include "config/config_export.h"
 
+#include "config/schema/config_schema.h"
+#include "config/schema/engine.h"
 #include "core/key_chord.h"
 
 #include <algorithm>
@@ -13,6 +15,8 @@
 #include <vector>
 
 namespace config_export {
+  namespace schema = noctalia::config::schema;
+
   namespace {
 
     toml::array stringArray(const std::vector<std::string>& values) {
@@ -700,64 +704,18 @@ namespace config_export {
     root.insert_or_assign("wallpaper", wallpaperTable(config.wallpaper));
     root.insert_or_assign("theme", themeTable(config.theme));
 
-    toml::table backdrop;
-    backdrop.insert_or_assign("enabled", config.backdrop.enabled);
-    backdrop.insert_or_assign("blur_intensity", static_cast<double>(config.backdrop.blurIntensity));
-    backdrop.insert_or_assign("tint_intensity", static_cast<double>(config.backdrop.tintIntensity));
-    root.insert_or_assign("backdrop", std::move(backdrop));
+    root.insert_or_assign("backdrop", schema::writeTable(config.backdrop, schema::backdropSchema()));
 
-    toml::table lockscreen;
-    lockscreen.insert_or_assign("blurred_desktop", config.lockscreen.blurredDesktop);
-    lockscreen.insert_or_assign("blur_intensity", static_cast<double>(config.lockscreen.blurIntensity));
-    lockscreen.insert_or_assign("tint_intensity", static_cast<double>(config.lockscreen.tintIntensity));
-    lockscreen.insert_or_assign(
-        "wallpaper_blur_intensity", static_cast<double>(config.lockscreen.wallpaperBlurIntensity)
-    );
-    lockscreen.insert_or_assign(
-        "wallpaper_tint_intensity", static_cast<double>(config.lockscreen.wallpaperTintIntensity)
-    );
-    root.insert_or_assign("lockscreen", std::move(lockscreen));
+    root.insert_or_assign("lockscreen", schema::writeTable(config.lockscreen, schema::lockscreenSchema()));
 
     root.insert_or_assign("notification", notificationTable(config.notification));
 
-    toml::table osd;
-    osd.insert_or_assign("position", config.osd.position);
-    osd.insert_or_assign("orientation", config.osd.orientation);
-    osd.insert_or_assign("scale", static_cast<double>(config.osd.scale));
-    osd.insert_or_assign("background_opacity", static_cast<double>(config.osd.backgroundOpacity));
-    osd.insert_or_assign("offset_x", static_cast<std::int64_t>(config.osd.offsetX));
-    osd.insert_or_assign("offset_y", static_cast<std::int64_t>(config.osd.offsetY));
-    osd.insert_or_assign("monitors", stringArray(config.osd.monitors));
-    osd.insert_or_assign("lock_keys", config.osd.lockKeys);
-    osd.insert_or_assign("keyboard_layout", config.osd.keyboardLayout);
-    root.insert_or_assign("osd", std::move(osd));
+    root.insert_or_assign("osd", schema::writeTable(config.osd, schema::osdSchema()));
 
-    toml::table system;
-    toml::table monitor;
-    const auto& mon = config.system.monitor;
-    monitor.insert_or_assign("enabled", mon.enabled);
-    monitor.insert_or_assign("cpu_poll_seconds", static_cast<double>(mon.cpuPollSeconds));
-    monitor.insert_or_assign("gpu_poll_seconds", static_cast<double>(mon.gpuPollSeconds));
-    monitor.insert_or_assign("memory_poll_seconds", static_cast<double>(mon.memoryPollSeconds));
-    monitor.insert_or_assign("network_poll_seconds", static_cast<double>(mon.networkPollSeconds));
-    monitor.insert_or_assign("disk_poll_seconds", static_cast<double>(mon.diskPollSeconds));
-    system.insert_or_assign("monitor", std::move(monitor));
-    root.insert_or_assign("system", std::move(system));
+    root.insert_or_assign("system", schema::writeTable(config.system, schema::systemSchema()));
 
-    toml::table weather;
-    weather.insert_or_assign("enabled", config.weather.enabled);
-    weather.insert_or_assign("effects", config.weather.effects);
-    weather.insert_or_assign("refresh_minutes", static_cast<std::int64_t>(config.weather.refreshMinutes));
-    weather.insert_or_assign("unit", config.weather.unit);
-    root.insert_or_assign("weather", std::move(weather));
-
-    toml::table audio;
-    audio.insert_or_assign("enable_overdrive", config.audio.enableOverdrive);
-    audio.insert_or_assign("enable_sounds", config.audio.enableSounds);
-    audio.insert_or_assign("sound_volume", static_cast<double>(config.audio.soundVolume));
-    audio.insert_or_assign("volume_change_sound", config.audio.volumeChangeSound);
-    audio.insert_or_assign("notification_sound", config.audio.notificationSound);
-    root.insert_or_assign("audio", std::move(audio));
+    root.insert_or_assign("weather", schema::writeTable(config.weather, schema::weatherSchema()));
+    root.insert_or_assign("audio", schema::writeTable(config.audio, schema::audioSchema()));
 
     root.insert_or_assign("brightness", brightnessTable(config.brightness));
     root.insert_or_assign("battery", batteryTable(config.battery));

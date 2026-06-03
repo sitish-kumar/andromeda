@@ -2,6 +2,8 @@
 
 #include "config/atomic_file.h"
 #include "config/config_export.h"
+#include "config/schema/config_schema.h"
+#include "config/schema/engine.h"
 #include "core/build_info.h"
 #include "core/deferred_call.h"
 #include "core/log.h"
@@ -30,6 +32,8 @@
 #include <unistd.h>
 #include <unordered_map>
 #include <vector>
+
+namespace schema = noctalia::config::schema;
 
 namespace {
 
@@ -1248,6 +1252,10 @@ void ConfigService::loadAll() {
 }
 
 void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool logSummary) const {
+  // Diagnostics raised by schema-driven sections (e.g. unknown enum values).
+  // Flushed to the log below, preserving the legacy warn-and-continue behavior.
+  schema::Diagnostics schemaDiag;
+
   // Parse [bar.*] named subtables
   if (auto* barTblMap = tbl["bar"].as_table()) {
     std::vector<BarConfig> parsedBars;
@@ -2030,53 +2038,17 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
 
   // Parse [backdrop]
   if (auto* ovTbl = tbl["backdrop"].as_table()) {
-    auto& ov = config.backdrop;
-    if (auto v = (*ovTbl)["enabled"].value<bool>())
-      ov.enabled = *v;
-    if (auto v = finiteDouble((*ovTbl)["blur_intensity"]))
-      ov.blurIntensity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
-    if (auto v = finiteDouble((*ovTbl)["tint_intensity"]))
-      ov.tintIntensity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
+    schema::readInto(*ovTbl, config.backdrop, schema::backdropSchema(), "backdrop", schemaDiag);
   }
 
   // Parse [lockscreen]
   if (auto* lockTbl = tbl["lockscreen"].as_table()) {
-    auto& lock = config.lockscreen;
-    if (auto v = (*lockTbl)["blurred_desktop"].value<bool>())
-      lock.blurredDesktop = *v;
-    if (auto v = finiteDouble((*lockTbl)["blur_intensity"]))
-      lock.blurIntensity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
-    if (auto v = finiteDouble((*lockTbl)["tint_intensity"]))
-      lock.tintIntensity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
-    if (auto v = finiteDouble((*lockTbl)["wallpaper_blur_intensity"]))
-      lock.wallpaperBlurIntensity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
-    if (auto v = finiteDouble((*lockTbl)["wallpaper_tint_intensity"]))
-      lock.wallpaperTintIntensity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
+    schema::readInto(*lockTbl, config.lockscreen, schema::lockscreenSchema(), "lockscreen", schemaDiag);
   }
 
   // Parse [osd]
   if (auto* osdTbl = tbl["osd"].as_table()) {
-    auto& osd = config.osd;
-    if (auto v = (*osdTbl)["position"].value<std::string>())
-      osd.position = *v;
-    if (auto v = (*osdTbl)["orientation"].value<std::string>())
-      osd.orientation = *v;
-    if (auto v = finiteDouble((*osdTbl)["scale"])) {
-      osd.scale = std::clamp(static_cast<float>(*v), 0.5f, 2.5f);
-    }
-    if (auto v = finiteDouble((*osdTbl)["background_opacity"]))
-      osd.backgroundOpacity = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
-    if (auto v = (*osdTbl)["offset_x"].value<int64_t>())
-      osd.offsetX = std::max(0, static_cast<int>(*v));
-    if (auto v = (*osdTbl)["offset_y"].value<int64_t>())
-      osd.offsetY = std::max(0, static_cast<int>(*v));
-    if (const auto* v = osdTbl->get("monitors")) {
-      osd.monitors = readStringArray(*v);
-    }
-    if (auto v = (*osdTbl)["lock_keys"].value<bool>())
-      osd.lockKeys = *v;
-    if (auto v = (*osdTbl)["keyboard_layout"].value<bool>())
-      osd.keyboardLayout = *v;
+    schema::readInto(*osdTbl, config.osd, schema::osdSchema(), "osd", schemaDiag);
   }
 
   auto parseNotificationTable = [&config](const toml::table& notifTable) {
@@ -2248,15 +2220,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
 
   // Parse [weather]
   if (auto* weatherTbl = tbl["weather"].as_table()) {
-    auto& weather = config.weather;
-    if (auto v = (*weatherTbl)["enabled"].value<bool>())
-      weather.enabled = *v;
-    if (auto v = (*weatherTbl)["effects"].value<bool>())
-      weather.effects = *v;
-    if (auto v = (*weatherTbl)["refresh_minutes"].value<int64_t>())
-      weather.refreshMinutes = static_cast<std::int32_t>(*v);
-    if (auto v = (*weatherTbl)["unit"].value<std::string>())
-      weather.unit = *v;
+    schema::readInto(*weatherTbl, config.weather, schema::weatherSchema(), "weather", schemaDiag);
   }
 
   // Parse [calendar]
@@ -2294,48 +2258,12 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
 
   // Parse [system]
   if (auto* systemTbl = tbl["system"].as_table()) {
-    auto& system = config.system;
-    if (const auto* monitorTbl = (*systemTbl)["monitor"].as_table()) {
-      auto& monitor = system.monitor;
-      if (auto v = (*monitorTbl)["enabled"].value<bool>()) {
-        monitor.enabled = *v;
-      }
-      if (auto v = finiteDouble((*monitorTbl)["cpu_poll_seconds"])) {
-        monitor.cpuPollSeconds = static_cast<float>(*v);
-      }
-      if (auto v = finiteDouble((*monitorTbl)["gpu_poll_seconds"])) {
-        monitor.gpuPollSeconds = static_cast<float>(*v);
-      }
-      if (auto v = finiteDouble((*monitorTbl)["memory_poll_seconds"])) {
-        monitor.memoryPollSeconds = static_cast<float>(*v);
-      }
-      if (auto v = finiteDouble((*monitorTbl)["network_poll_seconds"])) {
-        monitor.networkPollSeconds = static_cast<float>(*v);
-      }
-      if (auto v = finiteDouble((*monitorTbl)["disk_poll_seconds"])) {
-        monitor.diskPollSeconds = static_cast<float>(*v);
-      }
-    }
+    schema::readInto(*systemTbl, config.system, schema::systemSchema(), "system", schemaDiag);
   }
 
   // Parse [audio]
   if (auto* audioTbl = tbl["audio"].as_table()) {
-    auto& audio = config.audio;
-    if (auto v = (*audioTbl)["enable_overdrive"].value<bool>()) {
-      audio.enableOverdrive = *v;
-    }
-    if (auto v = (*audioTbl)["enable_sounds"].value<bool>()) {
-      audio.enableSounds = *v;
-    }
-    if (auto v = finiteDouble((*audioTbl)["sound_volume"])) {
-      audio.soundVolume = std::clamp(static_cast<float>(*v), 0.0f, 1.0f);
-    }
-    if (auto v = (*audioTbl)["volume_change_sound"].value<std::string>()) {
-      audio.volumeChangeSound = *v;
-    }
-    if (auto v = (*audioTbl)["notification_sound"].value<std::string>()) {
-      audio.notificationSound = *v;
-    }
+    schema::readInto(*audioTbl, config.audio, schema::audioSchema(), "audio", schemaDiag);
   }
 
   // Parse [brightness]
@@ -2654,6 +2582,10 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
       }
     }
     kLog.info("hooks kinds with commands={}", hookKindsUsed);
+  }
+
+  for (const auto& entry : schemaDiag.entries) {
+    kLog.warn("{}: {}", entry.path, entry.message);
   }
 }
 

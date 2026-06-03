@@ -1,0 +1,18 @@
+#pragma once
+
+#include "config/config_types.h"
+#include "config/schema/field.h"
+
+// Per-section field schemas: the single source of truth for reading, writing,
+// and validating each config section. Field order matches the legacy
+// configToToml emission order so serialization stays byte-identical.
+namespace noctalia::config::schema {
+
+  const Schema<AudioConfig>& audioSchema();
+  const Schema<WeatherConfig>& weatherSchema();
+  const Schema<OsdConfig>& osdSchema();
+  const Schema<BackdropConfig>& backdropSchema();
+  const Schema<LockscreenConfig>& lockscreenSchema();
+  const Schema<SystemConfig>& systemSchema();
+
+} // namespace noctalia::config::schema

@@ -362,6 +362,7 @@ _noctalia_sources = files(
   'src/config/config_overrides.cpp',
   'src/config/config_service.cpp',
   'src/config/config_types.cpp',
+  'src/config/schema/config_schema.cpp',
   'src/config/state_store.cpp',
   'src/config/cli.cpp',
   'src/core/deferred_call.cpp',
@@ -893,6 +894,26 @@ string_utils_test = executable('string_utils_test',
 )
 
 test('string_utils', string_utils_test)
+
+config_schema_equivalence_test = executable('config_schema_equivalence_test',
+  sources: files(
+    'tests/config_schema_equivalence_test.cpp',
+    'src/config/schema/config_schema.cpp',
+    'src/config/config_export.cpp',
+    'src/config/config_types.cpp',
+    'src/render/core/color.cpp',
+    'src/ui/palette.cpp',
+    'src/theme/builtin_palettes.cpp',
+    'src/theme/fixed_palette.cpp',
+    'src/theme/color.cpp',
+    'src/theme/contrast.cpp',
+    'src/core/key_chord.cpp',
+  ),
+  include_directories: _noctalia_inc,
+  dependencies: [xkbcommon_dep],
+)
+
+test('config_schema_equivalence', config_schema_equivalence_test)
 
 scripted_widget_manifest_test = executable('scripted_widget_manifest_test',
   sources: files(
