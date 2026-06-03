@@ -69,7 +69,16 @@ void SharedTextureCache::release(TextureHandle& handle, const std::string& path)
 }
 
 void SharedTextureCache::makeCurrent() {
-  if (m_sharedGl != nullptr) {
-    m_sharedGl->makeCurrentSurfaceless();
+  if (m_sharedGl == nullptr) {
+    return;
   }
+  // If another backend already owns the thread's EGL context (mid-frame between
+  // beginFrame/endFrame), do not yank it away. All backend contexts are created
+  // with the root context as a share-list, so texture uploads/deletes work on
+  // whichever context is currently bound. Switching here would leave the caller
+  // without a draw surface and break its trailing eglSwapBuffers.
+  if (eglGetCurrentContext() != EGL_NO_CONTEXT) {
+    return;
+  }
+  m_sharedGl->makeCurrentSurfaceless();
 }

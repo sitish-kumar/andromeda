@@ -338,6 +338,15 @@ void AsyncTextureCache::pushResult(DecodedJob job) {
 }
 
 void AsyncTextureCache::makeCurrent() {
+  // If another backend already owns the thread's EGL context (e.g. a frame is
+  // in flight between beginFrame/endFrame on the main thread), do not yank it
+  // away. All contexts share textures via the root context's share-list, so
+  // GPU uploads/unloads work on whichever context is currently bound; switching
+  // here would leave the caller without a draw surface and break its trailing
+  // eglSwapBuffers.
+  if (eglGetCurrentContext() != EGL_NO_CONTEXT) {
+    return;
+  }
   if (m_sharedGl != nullptr) {
     m_sharedGl->makeCurrentSurfaceless();
   } else if (m_makeCurrentCallback) {
