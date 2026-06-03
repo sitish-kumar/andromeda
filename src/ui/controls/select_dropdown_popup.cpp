@@ -371,7 +371,16 @@ void SelectDropdownPopup::selectAndClose(std::size_t index) {
   auto onSelect = m_callbacks.onSelect;
   m_callbacks.onDismiss = nullptr;
   DeferredCall::callLater([this, onSelect, index]() {
+    const bool hadSurface = m_surface != nullptr;
     closeSelectDropdown();
+    // xdg_popup children must attach to the compositor's topmost popup. Flush and roundtrip so
+    // the dropdown destroy is processed before any follow-up dialog opens on the parent chain.
+    if (hadSurface) {
+      wl_display_flush(m_wayland.display());
+      if (wl_display_roundtrip(m_wayland.display()) < 0) {
+        kLog.warn("select dropdown: post-close roundtrip failed (compositor protocol error)");
+      }
+    }
     if (onSelect) {
       onSelect(index);
     }
@@ -591,6 +600,16 @@ void SelectDropdownPopup::handleKey(std::uint32_t sym, std::uint32_t /*utf32*/, 
 }
 
 wl_surface* SelectDropdownPopup::wlSurface() const noexcept { return m_wlSurface; }
+
+xdg_surface* SelectDropdownPopup::xdgSurface() const noexcept {
+  return m_surface != nullptr ? m_surface->xdgSurface() : nullptr;
+}
+
+std::uint32_t SelectDropdownPopup::popupWidth() const noexcept { return m_surface != nullptr ? m_surface->width() : 0; }
+
+std::uint32_t SelectDropdownPopup::popupHeight() const noexcept {
+  return m_surface != nullptr ? m_surface->height() : 0;
+}
 
 bool SelectDropdownPopup::mapPointerEvent(const PointerEvent& event, float& localX, float& localY) const noexcept {
   if (m_surface == nullptr) {

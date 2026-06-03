@@ -96,10 +96,16 @@ bool DialogPopupHost::openPopup(std::uint32_t width, std::uint32_t height) {
   m_surface = std::move(surface);
   m_popupHosts->beginAttachedPopup(m_parentSurface);
   m_attachedToHost = true;
+  m_openInProgress = true;
   const bool initialized = parentContext->xdgSurface != nullptr
       ? m_surface->initializeAsChild(parentContext->xdgSurface, parentContext->output, popupConfig)
       : m_surface->initialize(parentContext->layerSurface, parentContext->output, popupConfig);
+  m_openInProgress = false;
   if (!initialized) {
+    destroyPopup();
+    return false;
+  }
+  if (m_closeRequestedDuringOpen) {
     destroyPopup();
     return false;
   }
@@ -142,7 +148,14 @@ bool DialogPopupHost::openPopupAsChild(
   );
 
   m_surface = std::move(surface);
-  if (!m_surface->initializeAsChild(parentXdgSurface, output, config)) {
+  m_openInProgress = true;
+  const bool initialized = m_surface->initializeAsChild(parentXdgSurface, output, config);
+  m_openInProgress = false;
+  if (!initialized) {
+    destroyPopup();
+    return false;
+  }
+  if (m_closeRequestedDuringOpen) {
     destroyPopup();
     return false;
   }
@@ -154,6 +167,11 @@ bool DialogPopupHost::openPopupAsChild(
 }
 
 void DialogPopupHost::destroyPopup() {
+  if (m_openInProgress) {
+    m_closeRequestedDuringOpen = true;
+    return;
+  }
+  m_closeRequestedDuringOpen = false;
   if (m_attachedToHost && m_popupHosts != nullptr) {
     m_popupHosts->endAttachedPopup(m_parentSurface);
     m_attachedToHost = false;

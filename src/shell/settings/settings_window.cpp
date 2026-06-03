@@ -133,6 +133,79 @@ bool SettingsWindow::ownsKeyboardSurface(wl_surface* surface) const noexcept {
   return m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen() && m_selectPopup->wlSurface() == surface;
 }
 
+std::optional<LayerPopupParentContext> SettingsWindow::topmostPopupParentContext() const {
+  if (!isOpen() || m_surface == nullptr) {
+    return std::nullopt;
+  }
+
+  const auto makeContext = [this](
+                               wl_surface* wlSurface, xdg_surface* xdgSurface, std::uint32_t width, std::uint32_t height
+                           ) -> std::optional<LayerPopupParentContext> {
+    if (wlSurface == nullptr || xdgSurface == nullptr || width == 0 || height == 0) {
+      return std::nullopt;
+    }
+    wl_output* output = m_wayland != nullptr ? m_wayland->outputForSurface(wlSurface) : nullptr;
+    if (output == nullptr) {
+      output = m_output;
+    }
+    return LayerPopupParentContext{
+        .surface = wlSurface,
+        .layerSurface = nullptr,
+        .xdgSurface = xdgSurface,
+        .output = output,
+        .width = width,
+        .height = height,
+    };
+  };
+
+  const auto selectContext = [this, &makeContext]() -> std::optional<LayerPopupParentContext> {
+    if (m_selectPopup == nullptr || !m_selectPopup->isSelectDropdownOpen()) {
+      return std::nullopt;
+    }
+    return makeContext(
+        m_selectPopup->wlSurface(), m_selectPopup->xdgSurface(), m_selectPopup->popupWidth(),
+        m_selectPopup->popupHeight()
+    );
+  };
+
+  if (auto context = selectContext(); context.has_value()) {
+    return context;
+  }
+  if (m_searchPickerPopup != nullptr && m_searchPickerPopup->isOpen()) {
+    return makeContext(
+        m_searchPickerPopup->wlSurface(), m_searchPickerPopup->xdgSurface(), m_searchPickerPopup->width(),
+        m_searchPickerPopup->height()
+    );
+  }
+  if (m_configExportDialogPopup != nullptr && m_configExportDialogPopup->isOpen()) {
+    return makeContext(
+        m_configExportDialogPopup->wlSurface(), m_configExportDialogPopup->xdgSurface(),
+        m_configExportDialogPopup->width(), m_configExportDialogPopup->height()
+    );
+  }
+  if (m_widgetAddPopup != nullptr && m_widgetAddPopup->isOpen()) {
+    return makeContext(
+        m_widgetAddPopup->wlSurface(), m_widgetAddPopup->xdgSurface(), m_widgetAddPopup->width(),
+        m_widgetAddPopup->height()
+    );
+  }
+  if (m_editorSheetPopup != nullptr && m_editorSheetPopup->isOpen()) {
+    return makeContext(
+        m_editorSheetPopup->wlSurface(), m_editorSheetPopup->xdgSurface(), m_editorSheetPopup->width(),
+        m_editorSheetPopup->height()
+    );
+  }
+  return makeContext(m_surface->wlSurface(), m_surface->xdgSurface(), m_surface->width(), m_surface->height());
+}
+
+std::optional<LayerPopupParentContext> SettingsWindow::fallbackPopupParentContext() const {
+  auto context = topmostPopupParentContext();
+  if (context.has_value()) {
+    context->usedFallback = true;
+  }
+  return context;
+}
+
 std::optional<LayerPopupParentContext> SettingsWindow::popupParentContextForSurface(wl_surface* surface) const {
   if (!isOpen() || surface == nullptr || m_surface == nullptr) {
     return std::nullopt;
@@ -159,7 +232,7 @@ std::optional<LayerPopupParentContext> SettingsWindow::popupParentContextForSurf
   };
 
   if (surface == m_surface->wlSurface()) {
-    return makeContext(m_surface->wlSurface(), m_surface->xdgSurface(), m_surface->width(), m_surface->height());
+    return topmostPopupParentContext();
   }
   if (m_widgetAddPopup != nullptr && surface == m_widgetAddPopup->wlSurface()) {
     return makeContext(
@@ -185,10 +258,10 @@ std::optional<LayerPopupParentContext> SettingsWindow::popupParentContextForSurf
         m_editorSheetPopup->height()
     );
   }
-  if (m_editorSheetPopup != nullptr && m_editorSheetPopup->ownsSelectDropdownSurface(surface)) {
+  if (m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen() && surface == m_selectPopup->wlSurface()) {
     return makeContext(
-        m_editorSheetPopup->wlSurface(), m_editorSheetPopup->xdgSurface(), m_editorSheetPopup->width(),
-        m_editorSheetPopup->height()
+        m_selectPopup->wlSurface(), m_selectPopup->xdgSurface(), m_selectPopup->popupWidth(),
+        m_selectPopup->popupHeight()
     );
   }
   return std::nullopt;
@@ -521,6 +594,7 @@ bool SettingsWindow::onPointerEvent(const PointerEvent& event) {
   }
   if (m_widgetAddPopup != nullptr
       && m_widgetAddPopup->isOpen()
+      && !m_widgetAddPopup->isInitializing()
       && event.type == PointerEvent::Type::Button
       && event.state == 1) {
     m_widgetAddPopup->close();
@@ -531,6 +605,7 @@ bool SettingsWindow::onPointerEvent(const PointerEvent& event) {
   }
   if (m_configExportDialogPopup != nullptr
       && m_configExportDialogPopup->isOpen()
+      && !m_configExportDialogPopup->isInitializing()
       && event.type == PointerEvent::Type::Button
       && event.state == 1) {
     m_configExportDialogPopup->close();
@@ -541,6 +616,7 @@ bool SettingsWindow::onPointerEvent(const PointerEvent& event) {
   }
   if (m_searchPickerPopup != nullptr
       && m_searchPickerPopup->isOpen()
+      && !m_searchPickerPopup->isInitializing()
       && event.type == PointerEvent::Type::Button
       && event.state == 1) {
     m_searchPickerPopup->close();
@@ -551,6 +627,7 @@ bool SettingsWindow::onPointerEvent(const PointerEvent& event) {
   }
   if (m_editorSheetPopup != nullptr
       && m_editorSheetPopup->isOpen()
+      && !m_editorSheetPopup->isInitializing()
       && event.type == PointerEvent::Type::Button
       && event.state == 1) {
     m_editorSheetPopup->close();
@@ -653,7 +730,7 @@ void SettingsWindow::onKeyboardEvent(const KeyboardEvent& event) {
     return;
   }
 
-  if (m_widgetAddPopup != nullptr && m_widgetAddPopup->isOpen()) {
+  if (m_widgetAddPopup != nullptr && m_widgetAddPopup->isOpen() && !m_widgetAddPopup->isInitializing()) {
     if (event.pressed && KeybindMatcher::matches(KeybindAction::Cancel, event.sym, event.modifiers)) {
       m_widgetAddPopup->close();
       return;
@@ -662,7 +739,9 @@ void SettingsWindow::onKeyboardEvent(const KeyboardEvent& event) {
     return;
   }
 
-  if (m_configExportDialogPopup != nullptr && m_configExportDialogPopup->isOpen()) {
+  if (m_configExportDialogPopup != nullptr
+      && m_configExportDialogPopup->isOpen()
+      && !m_configExportDialogPopup->isInitializing()) {
     if (event.pressed && KeybindMatcher::matches(KeybindAction::Cancel, event.sym, event.modifiers)) {
       m_configExportDialogPopup->close();
       return;
@@ -671,7 +750,7 @@ void SettingsWindow::onKeyboardEvent(const KeyboardEvent& event) {
     return;
   }
 
-  if (m_searchPickerPopup != nullptr && m_searchPickerPopup->isOpen()) {
+  if (m_searchPickerPopup != nullptr && m_searchPickerPopup->isOpen() && !m_searchPickerPopup->isInitializing()) {
     if (event.pressed && KeybindMatcher::matches(KeybindAction::Cancel, event.sym, event.modifiers)) {
       m_searchPickerPopup->close();
       return;
@@ -680,7 +759,7 @@ void SettingsWindow::onKeyboardEvent(const KeyboardEvent& event) {
     return;
   }
 
-  if (m_editorSheetPopup != nullptr && m_editorSheetPopup->isOpen()) {
+  if (m_editorSheetPopup != nullptr && m_editorSheetPopup->isOpen() && !m_editorSheetPopup->isInitializing()) {
     if (m_editorSheetPopup->isSelectDropdownOpen()) {
       m_editorSheetPopup->onKeyboardEvent(event);
       return;

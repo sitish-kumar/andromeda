@@ -60,6 +60,7 @@ public:
   void requestUpdateOnly();
 
   [[nodiscard]] bool isOpen() const noexcept { return m_surface != nullptr; }
+  [[nodiscard]] bool isInitializing() const noexcept { return m_openInProgress; }
   [[nodiscard]] wl_surface* wlSurface() const noexcept;
   [[nodiscard]] xdg_surface* xdgSurface() const noexcept;
   [[nodiscard]] std::uint32_t width() const noexcept;
@@ -187,6 +188,8 @@ protected:
   bool m_attachedToHost = false;
   wl_surface* m_parentSurface = nullptr;
   bool m_pointerInside = false;
+  bool m_openInProgress = false;
+  bool m_closeRequestedDuringOpen = false;
 
 private:
   void prepareFrame(bool needsUpdate, bool needsLayout);

@@ -43,6 +43,9 @@ public:
   void onKeyboardEvent(const KeyboardEvent& event);
 
   [[nodiscard]] wl_surface* wlSurface() const noexcept;
+  [[nodiscard]] xdg_surface* xdgSurface() const noexcept;
+  [[nodiscard]] std::uint32_t popupWidth() const noexcept;
+  [[nodiscard]] std::uint32_t popupHeight() const noexcept;
 
 private:
   struct OptionView {

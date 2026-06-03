@@ -62,6 +62,7 @@ public:
   }
   [[nodiscard]] bool ownsKeyboardSurface(wl_surface* surface) const noexcept;
   [[nodiscard]] std::optional<LayerPopupParentContext> popupParentContextForSurface(wl_surface* surface) const;
+  [[nodiscard]] std::optional<LayerPopupParentContext> fallbackPopupParentContext() const;
 
   [[nodiscard]] bool onPointerEvent(const PointerEvent& event);
   void onKeyboardEvent(const KeyboardEvent& event);
@@ -141,6 +142,8 @@ private:
   void renameMonitorOverride(std::string barName, std::string oldMatch, std::string newMatch);
   void deleteMonitorOverride(std::string barName, std::string match);
   [[nodiscard]] float uiScale() const;
+
+  [[nodiscard]] std::optional<LayerPopupParentContext> topmostPopupParentContext() const;
 
   WaylandConnection* m_wayland = nullptr;
   IdleManager* m_idleManager = nullptr;

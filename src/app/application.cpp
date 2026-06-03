@@ -1375,9 +1375,10 @@ void Application::initUi() {
         );
       }
   );
-  m_layerPopupHosts.registerHost([this](wl_surface* surface) {
-    return m_settingsWindow.popupParentContextForSurface(surface);
-  });
+  m_layerPopupHosts.registerHost(
+      [this](wl_surface* surface) { return m_settingsWindow.popupParentContextForSurface(surface); }, {}, {},
+      [this]() { return m_settingsWindow.fallbackPopupParentContext(); }
+  );
 
   m_colorPickerDialogPopup.initialize(m_wayland, m_configService, m_renderContext, m_layerPopupHosts);
   ColorPickerDialog::setPresenter(&m_colorPickerDialogPopup);
