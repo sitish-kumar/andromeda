@@ -871,15 +871,7 @@ bool Bar::initialize(
       m_bluetooth, m_brightness, m_lockKeys, m_clipboard, m_fileWatcher, m_screenshots, m_renderContext, m_scriptApi
   );
 
-  if (timeService != nullptr) {
-    timeService->setTickSecondCallback([this]() {
-      for (auto& inst : m_instances) {
-        if (inst->surface != nullptr) {
-          inst->surface->requestUpdate();
-        }
-      }
-    });
-  }
+  (void)timeService;
 
   m_lastBars = m_config->config().bars;
   m_lastWidgets = m_config->config().widgets;

@@ -125,23 +125,6 @@ namespace {
     return radians;
   }
 
-  bool formatShowsSeconds(const DesktopWidgetState& state) {
-    if (state.type != "clock") {
-      return false;
-    }
-    const auto it = state.settings.find("format");
-    if (it == state.settings.end()) {
-      return false;
-    }
-    const auto* format = std::get_if<std::string>(&it->second);
-    if (format == nullptr) {
-      return false;
-    }
-    return format->find("%S") != std::string::npos
-        || format->find("%T") != std::string::npos
-        || format->find("%X") != std::string::npos;
-  }
-
   bool parseDesktopWidgetCounter(std::string_view id, std::uint64_t& value) {
     if (!id.starts_with(kDesktopWidgetIdPrefix)) {
       return false;
@@ -1688,21 +1671,16 @@ void DesktopWidgetsEditor::onSecondTick() {
   }
 
   const bool minuteBoundary = formatLocalTime("{:%S}") == "00";
-  const bool needsSeconds = std::any_of(m_snapshot.widgets.begin(), m_snapshot.widgets.end(), [](const auto& widget) {
-    return formatShowsSeconds(widget);
-  });
-  if (minuteBoundary || needsSeconds) {
-    requestLayout();
-  }
 
   for (auto& surface : m_surfaces) {
     if (surface->surface == nullptr) {
       continue;
     }
-    const bool hasSecondTickWidget = std::any_of(surface->views.begin(), surface->views.end(), [](const auto& entry) {
-      return entry.second.widget != nullptr && entry.second.widget->wantsSecondTicks();
-    });
-    if (hasSecondTickWidget) {
+    const bool needsUpdate =
+        minuteBoundary || std::any_of(surface->views.begin(), surface->views.end(), [](const auto& entry) {
+          return entry.second.widget != nullptr && entry.second.widget->wantsSecondTicks();
+        });
+    if (needsUpdate) {
       surface->surface->requestUpdate();
     }
   }
