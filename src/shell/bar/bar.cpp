@@ -1878,6 +1878,9 @@ void Bar::syncBarAutoHideInputRegion(BarInstance& instance) const {
 }
 
 void Bar::revealAutoHideBar(BarInstance& instance) {
+  if (instance.autoHideDisablePending) {
+    return;
+  }
   if (!instance.barConfig.autoHide || instance.surface == nullptr || instance.slideRoot == nullptr) {
     return;
   }
@@ -1886,11 +1889,13 @@ void Bar::revealAutoHideBar(BarInstance& instance) {
   instance.animations.cancelForOwner(instance.slideRoot);
   const float current = instance.hideOpacity;
   instance.animations.animate(
-      current, 1.0f, Style::animNormal, Easing::EaseOutCubic, [inst = &instance, this](float v) {
+      current, 1.0f, Style::animNormal, Easing::EaseOutCubic,
+      [inst = &instance, this](float v) {
         inst->hideOpacity = v;
         syncBarSlideLayerTransform(*inst);
         syncBarSurfaceChrome(*inst);
-      }
+      },
+      {}, instance.slideRoot
   );
   const int surfW = static_cast<int>(instance.surface->width());
   const int surfH = static_cast<int>(instance.surface->height());
@@ -1939,6 +1944,9 @@ void Bar::applyBarCompositorBlur(BarInstance& instance) const {
 }
 
 void Bar::startHideFadeOut(BarInstance& instance) {
+  if (instance.autoHideDisablePending) {
+    return;
+  }
   const float current = instance.hideOpacity;
   instance.animations.animate(
       current, 0.0f, Style::animNormal, Easing::EaseInQuad,
@@ -1954,7 +1962,8 @@ void Bar::startHideFadeOut(BarInstance& instance) {
         syncBarAutoHideInputRegion(*inst);
         syncBarSurfaceChrome(*inst);
         inst->surface->requestRedraw();
-      }
+      },
+      instance.slideRoot
   );
   syncBarSurfaceChrome(instance);
   if (instance.surface != nullptr) {
@@ -2854,31 +2863,72 @@ std::string Bar::setBarAutoHideIpc(std::string_view args) {
   }
 
   auto applyTransientAutoHide = [this, enabled](BarInstance& instance) {
-    instance.barConfig.autoHide = enabled;
+    auto applySurfaceSpec = [this](BarInstance& inst) {
+      if (inst.surface == nullptr) {
+        return;
+      }
+      const auto spec = computeBarSurfaceSpec(inst.barConfig, m_config->config().shell.shadow);
+      inst.surface->setMargins(spec.marginTop, spec.marginRight, spec.marginBottom, spec.marginLeft);
+      inst.surface->requestSize(spec.surfaceWidth, spec.surfaceHeight);
+    };
+
     instance.ipcLayoutReleased = false;
+    instance.autoHideDisablePending = false;
     instance.animations.cancelForOwner(instance.slideRoot);
 
     if (enabled) {
+      instance.barConfig.autoHide = true;
+      applySurfaceSpec(instance);
+      if (instance.slideRoot != nullptr) {
+        instance.slideRoot->setOpacity(1.0f);
+      }
       const bool suppressAutoHide =
           (m_autoHideSuppressionCallback != nullptr) ? m_autoHideSuppressionCallback(instance) : false;
-      instance.hideOpacity =
-          (instance.pointerInside || instance.attachedPopupCount > 0 || suppressAutoHide) ? 1.0f : 0.0f;
-      if (instance.slideRoot != nullptr) {
-        instance.slideRoot->setOpacity(1.0f);
+      if (instance.pointerInside || instance.attachedPopupCount > 0 || suppressAutoHide) {
+        revealAutoHideBar(instance);
+      } else {
+        startHideFadeOut(instance);
       }
-    } else {
-      instance.hideOpacity = 1.0f;
-      if (instance.slideRoot != nullptr) {
-        instance.slideRoot->setOpacity(1.0f);
-      }
+      return;
     }
 
-    syncBarSlideLayerTransform(instance);
-    if (instance.surface != nullptr) {
-      const auto spec = computeBarSurfaceSpec(instance.barConfig, m_config->config().shell.shadow);
-      instance.surface->setMargins(spec.marginTop, spec.marginRight, spec.marginBottom, spec.marginLeft);
-      instance.surface->requestSize(spec.surfaceWidth, spec.surfaceHeight);
+    if (instance.barConfig.autoHide && instance.hideOpacity < 0.999f) {
+      const float current = instance.hideOpacity;
+      instance.autoHideDisablePending = true;
+      instance.animations.animate(
+          current, 1.0f, Style::animNormal, Easing::EaseOutCubic,
+          [this, inst = &instance](float v) {
+            inst->hideOpacity = v;
+            syncBarSlideLayerTransform(*inst);
+            syncBarSurfaceChrome(*inst);
+          },
+          [this, inst = &instance, applySurfaceSpec]() {
+            inst->autoHideDisablePending = false;
+            inst->barConfig.autoHide = false;
+            applySurfaceSpec(*inst);
+            syncBarSlideLayerTransform(*inst);
+            syncBarAutoHideInputRegion(*inst);
+            syncBarSurfaceChrome(*inst);
+            if (inst->surface != nullptr) {
+              inst->surface->requestRedraw();
+            }
+          },
+          instance.slideRoot
+      );
+      if (instance.surface != nullptr) {
+        instance.surface->requestRedraw();
+      }
+      return;
     }
+
+    instance.barConfig.autoHide = false;
+    instance.autoHideDisablePending = false;
+    instance.hideOpacity = 1.0f;
+    if (instance.slideRoot != nullptr) {
+      instance.slideRoot->setOpacity(1.0f);
+    }
+    applySurfaceSpec(instance);
+    syncBarSlideLayerTransform(instance);
     syncBarAutoHideInputRegion(instance);
     syncBarSurfaceChrome(instance);
     if (instance.surface != nullptr) {
