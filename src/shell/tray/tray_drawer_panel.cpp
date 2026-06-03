@@ -39,8 +39,12 @@ void TrayDrawerPanel::create() {
   const auto hiddenItems = currentHiddenItems();
   const auto pinnedItems = currentPinnedItems();
   const std::size_t drawerColumns = currentDrawerColumns();
+  if (m_config == nullptr) {
+    return;
+  }
   m_drawerWidget = std::make_unique<TrayWidget>(
-      m_tray, hiddenItems, pinnedItems, false, []() { PanelManager::instance().close(); }, "top", true, drawerColumns
+      *m_config, m_tray, hiddenItems, pinnedItems, false, []() { PanelManager::instance().close(); }, "top", true,
+      drawerColumns, Style::spaceXs, false
   );
   m_drawerWidget->setContentScale(contentScale());
   m_drawerWidget->create();

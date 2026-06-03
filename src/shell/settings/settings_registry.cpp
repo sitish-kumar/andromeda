@@ -9,6 +9,7 @@
 #include "shell/settings/font_weight_catalog.h"
 #include "theme/builtin_palettes.h"
 #include "theme/builtin_templates.h"
+#include "ui/app_icon_colorization.h"
 #include "util/string_utils.h"
 
 #include <algorithm>
@@ -406,6 +407,25 @@ namespace settings {
         tr("settings.schema.appearance.corner-roundness.description"), {"shell", "corner_radius_scale"},
         SliderSetting{cfg.shell.cornerRadiusScale, 0.0f, 2.0f, 0.05f, false}, "rounded corners radius"
     ));
+    entries.push_back(makeEntry(
+        "appearance", "interface", tr("settings.schema.appearance.app-icon-colorize.label"),
+        tr("settings.schema.appearance.app-icon-colorize.description"), {"shell", "app_icon_colorize"},
+        ToggleSetting{cfg.shell.appIconColorize}, "tint monochrome dock tray app icons"
+    ));
+    {
+      const SettingVisibility colorizeOn{{"shell", "app_icon_colorize"}, {"true"}};
+      ShellConfig colorizeShell = cfg.shell;
+      colorizeShell.appIconColorize = true;
+      const ColorSpec pickerColor =
+          cfg.shell.appIconColor.value_or(*effectiveShellAppIconColorizationTint(colorizeShell));
+      auto e = makeEntry(
+          "appearance", "interface", tr("settings.schema.appearance.app-icon-color.label"),
+          tr("settings.schema.appearance.app-icon-color.description"), {"shell", "app_icon_color"},
+          colorSpecPicker(pickerColor), "color role dock tray application icons"
+      );
+      e.visibleWhen = colorizeOn;
+      entries.push_back(std::move(e));
+    }
     {
       SettingControl fontFamilyControl =
           TextSetting{.value = cfg.shell.fontFamily, .placeholder = "sans-serif", .browseFileExtensions = {}};

@@ -1,11 +1,13 @@
 #include "shell/bar/widgets/active_window_widget.h"
 
+#include "config/config_service.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
 #include "system/app_identity.h"
 #include "system/desktop_entry.h"
 #include "system/internal_app_metadata.h"
+#include "ui/app_icon_colorization.h"
 #include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
@@ -16,10 +18,10 @@
 #include <string_view>
 
 ActiveWindowWidget::ActiveWindowWidget(
-    CompositorPlatform& platform, float maxWidth, float minWidth, float iconSize,
+    ConfigService& config, CompositorPlatform& platform, float maxWidth, float minWidth, float iconSize,
     ActiveWindowTitleScrollMode titleScrollMode, ActiveWindowDisplayMode displayMode
 )
-    : m_platform(platform), m_maxWidth(maxWidth), m_minWidth(minWidth), m_iconSize(iconSize),
+    : m_config(config), m_platform(platform), m_maxWidth(maxWidth), m_minWidth(minWidth), m_iconSize(iconSize),
       m_titleScrollMode(titleScrollMode), m_displayMode(displayMode) {
   buildDesktopIconIndex();
 }
@@ -57,6 +59,11 @@ void ActiveWindowWidget::create() {
           .autoScroll = false,
       })
   );
+
+  m_appIconColorizeConn = shellAppIconColorizationChanged().connect([this]() {
+    m_iconColorizeRefreshPending = true;
+    requestUpdate();
+  });
 
   setRoot(std::move(rootNode));
 }
@@ -160,13 +167,15 @@ void ActiveWindowWidget::syncState(Renderer& renderer) {
     }
   }
 
-  if (!desktopEntriesChanged
+  if (!m_iconColorizeRefreshPending
+      && !desktopEntriesChanged
       && identifier == m_lastIdentifier
       && title == m_lastTitle
       && appId == m_lastAppId
       && emptyState == m_lastEmptyState) {
     return;
   }
+  m_iconColorizeRefreshPending = false;
 
   m_lastIdentifier = std::move(identifier);
   m_lastTitle = title;
@@ -181,6 +190,7 @@ void ActiveWindowWidget::syncState(Renderer& renderer) {
   applyTitleScrollMode(m_title->visible());
   m_title->measure(renderer);
 
+  m_icon->setAppIconColorization(effectiveShellAppIconColorizationTint(m_config.config().shell));
   if (iconPath != m_lastIconPath) {
     m_lastIconPath = iconPath;
     if (!m_lastIconPath.empty()) {

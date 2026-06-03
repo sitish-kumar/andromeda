@@ -419,7 +419,6 @@ struct DockConfig {
   std::string launcherIcon = "grid-dots"; // Tabler glyph name
   std::vector<std::string> pinned;        // desktop entry IDs to always show
   std::vector<std::string> monitors;      // connector names to show on; empty = all outputs
-
   bool operator==(const DockConfig&) const = default;
 };
 
@@ -729,6 +728,8 @@ struct ShellConfig {
   bool settingsShowAdvanced = false;
   bool middleClickOpensWidgetSettings = true;
   bool showLocation = true;
+  bool appIconColorize = false;
+  std::optional<ColorSpec> appIconColor;
   bool launchAppsAsSystemdServices = false;
   /// When false, disables Wayland clipboard integration (history panel, data-control binding, Input paste/copy hooks).
   bool clipboardEnabled = true;

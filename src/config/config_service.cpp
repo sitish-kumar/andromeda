@@ -1706,6 +1706,12 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     if (auto v = (*shellTbl)["show_location"].value<bool>()) {
       shell.showLocation = *v;
     }
+    if (auto v = (*shellTbl)["app_icon_colorize"].value<bool>()) {
+      shell.appIconColorize = *v;
+    }
+    if (auto v = (*shellTbl)["app_icon_color"].value<std::string>()) {
+      shell.appIconColor = colorSpecFromConfigString(*v, "shell.app_icon_color");
+    }
     if (auto v = (*shellTbl)["launch_apps_as_systemd_services"].value<bool>()) {
       shell.launchAppsAsSystemdServices = *v;
     }

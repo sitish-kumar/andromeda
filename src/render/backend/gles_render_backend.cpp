@@ -359,8 +359,8 @@ void GlesRenderBackend::drawRect(
 void GlesRenderBackend::drawImage(const RenderImageDraw& draw) {
   m_imageProgram.ensureInitialized();
   m_imageProgram.draw(
-      draw.texture, draw.surfaceWidth, draw.surfaceHeight, draw.width, draw.height, draw.tint, draw.opacity,
-      draw.radius, draw.borderColor, draw.borderWidth, static_cast<int>(draw.fitMode), draw.textureWidth,
+      draw.texture, draw.surfaceWidth, draw.surfaceHeight, draw.width, draw.height, draw.tint, draw.monochromeTint,
+      draw.opacity, draw.radius, draw.borderColor, draw.borderWidth, static_cast<int>(draw.fitMode), draw.textureWidth,
       draw.textureHeight, draw.transform
   );
 }

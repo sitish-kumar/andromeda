@@ -311,6 +311,7 @@ void RenderContext::renderNode(
               .width = node->width(),
               .height = node->height(),
               .tint = tint,
+              .monochromeTint = img->monochromeTint(),
               .opacity = effectiveOpacity,
               .radius = img->radius(),
               .borderColor = img->borderColor(),

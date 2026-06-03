@@ -13,6 +13,7 @@
 #include "system/desktop_entry.h"
 #include "system/desktop_entry_launch.h"
 #include "system/internal_app_metadata.h"
+#include "ui/app_icon_colorization.h"
 #include "ui/builders.h"
 #include "ui/controls/context_menu.h"
 #include "ui/controls/context_menu_popup.h"
@@ -232,6 +233,11 @@ void TaskbarWidget::create() {
 
   container->addChild(std::move(root));
   setRoot(std::move(container));
+
+  m_appIconColorizeConn = shellAppIconColorizationChanged().connect([this]() {
+    m_rebuildPending = true;
+    requestUpdate();
+  });
 }
 
 void TaskbarWidget::doLayout(Renderer& renderer, float containerWidth, float containerHeight) {
@@ -396,6 +402,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
           .height = iconSize,
       });
       image->setPosition(iconInsetX, iconInsetY);
+      image->setAppIconColorization(effectiveShellAppIconColorizationTint(m_configService.config().shell));
       image->setSourceFile(renderer, task.iconPath, static_cast<int>(std::round(48.0f * m_contentScale)), true);
       if (image->hasImage()) {
         area->addChild(std::move(image));

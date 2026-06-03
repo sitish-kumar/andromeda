@@ -9,6 +9,7 @@
 #include "shell/dock/dock_instance.h"
 #include "shell/dock/dock_model.h"
 #include "system/icon_resolver.h"
+#include "ui/app_icon_colorization.h"
 #include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
@@ -30,6 +31,13 @@ namespace {
   constexpr float kDotMinSize = 4.0f;
   constexpr float kDotGap = 3.0f;
   constexpr float kCellPad = 6.0f;
+
+  void applyShellAppIconColorization(Image* image, const ShellConfig& shell) {
+    if (image == nullptr) {
+      return;
+    }
+    image->setAppIconColorization(effectiveShellAppIconColorizationTint(shell));
+  }
 
 } // namespace
 
@@ -86,20 +94,19 @@ namespace shell::dock {
         })
     );
 
-    areaNode->addChild(
-        ui::glyph({
-            .glyphSize = glyphSize,
-            .color = colorSpecFromRole(ColorRole::OnSurface),
-            .width = iSize,
-            .height = iSize,
-            .configure = [&cfg, glyphOffsetY](Glyph& glyph) {
-              if (!glyph.setGlyph(dockLauncherIconGlyph(cfg))) {
-                glyph.setGlyph("grid-dots");
-              }
-              glyph.setPosition(kCellPad, glyphOffsetY);
-            },
-        })
-    );
+    auto launcherGlyph = ui::glyph({
+        .glyphSize = glyphSize,
+        .color = colorSpecFromRole(ColorRole::OnSurface),
+        .width = iSize,
+        .height = iSize,
+        .configure = [&cfg, glyphOffsetY](Glyph& glyph) {
+          if (!glyph.setGlyph(dockLauncherIconGlyph(cfg))) {
+            glyph.setGlyph("grid-dots");
+          }
+          glyph.setPosition(kCellPad, glyphOffsetY);
+        },
+    });
+    areaNode->addChild(std::move(launcherGlyph));
 
     auto* instPtr = &instance;
     areaNode->setOnEnter([bgPtr, instPtr](const InputArea::PointerData&) {
@@ -214,7 +221,8 @@ namespace shell::dock {
       auto iconImg = ui::image({
           .width = iSize,
           .height = iSize,
-          .configure = [renderContext, &iconPath, &cfg](Image& image) {
+          .configure = [renderContext, &iconPath, &cfg, &shell = deps.model.config.config().shell](Image& image) {
+            image.setAppIconColorization(effectiveShellAppIconColorizationTint(shell));
             if (!iconPath.empty() && renderContext != nullptr) {
               image.setSourceFile(*renderContext, iconPath, cfg.iconSize, true);
             }
@@ -336,6 +344,7 @@ namespace shell::dock {
 
   void updateVisuals(DockInstance& instance, DockItemSceneDependencies deps, const DockSnapshot& snapshot) {
     const auto& cfg = deps.model.config.config().dock;
+    const auto& shell = deps.model.config.config().shell;
     const std::size_t itemCount = std::min(instance.items.size(), snapshot.items.size());
 
     for (std::size_t itemIndex = 0; itemIndex < itemCount; ++itemIndex) {
@@ -343,6 +352,7 @@ namespace shell::dock {
       const auto& model = snapshot.items[itemIndex];
       const float iconScale = model.active ? cfg.activeScale : cfg.inactiveScale;
       const float iconOpacity = model.active ? cfg.activeOpacity : cfg.inactiveOpacity;
+      applyShellAppIconColorization(item.iconImage, shell);
       Node* iconNode =
           item.iconImage != nullptr ? static_cast<Node*>(item.iconImage) : static_cast<Node*>(item.iconGlyph);
 

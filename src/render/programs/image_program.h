@@ -20,8 +20,9 @@ public:
 
   void draw(
       TextureId texture, float surfaceWidth, float surfaceHeight, float width, float height, const Color& tint,
-      float opacity, float radius = 0.0f, const Color& borderColor = {0.0f, 0.0f, 0.0f, 0.0f}, float borderWidth = 0.0f,
-      int fitMode = 0, float textureWidth = 0.0f, float textureHeight = 0.0f, const Mat3& transform = Mat3::identity()
+      bool monochromeTint, float opacity, float radius = 0.0f, const Color& borderColor = {0.0f, 0.0f, 0.0f, 0.0f},
+      float borderWidth = 0.0f, int fitMode = 0, float textureWidth = 0.0f, float textureHeight = 0.0f,
+      const Mat3& transform = Mat3::identity()
   ) const;
 
 private:
@@ -39,4 +40,5 @@ private:
   GLint m_fitModeLocation = -1;
   GLint m_samplerLocation = -1;
   GLint m_transformLocation = -1;
+  GLint m_monochromeLocation = -1;
 };

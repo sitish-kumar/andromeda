@@ -295,6 +295,10 @@ namespace config_export {
       table.insert_or_assign("settings_show_advanced", shell.settingsShowAdvanced);
       table.insert_or_assign("middle_click_opens_widget_settings", shell.middleClickOpensWidgetSettings);
       table.insert_or_assign("show_location", shell.showLocation);
+      table.insert_or_assign("app_icon_colorize", shell.appIconColorize);
+      if (shell.appIconColor.has_value()) {
+        table.insert_or_assign("app_icon_color", colorSpecToConfigString(*shell.appIconColor));
+      }
       table.insert_or_assign("launch_apps_as_systemd_services", shell.launchAppsAsSystemdServices);
       table.insert_or_assign("clipboard_enabled", shell.clipboardEnabled);
       table.insert_or_assign(

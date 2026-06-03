@@ -14,6 +14,7 @@
 #include "theme/image_loader.h"
 #include "theme/palette_generator.h"
 #include "theme/scheme.h"
+#include "ui/app_icon_colorization.h"
 #include "util/checksum.h"
 #include "util/string_utils.h"
 
@@ -451,6 +452,8 @@ namespace noctalia::theme {
     m_isLightMode = resolved->mode == "light";
 
     if (animate) {
+      setResolvedThemeLight(m_isLightMode);
+      notifyShellAppIconColorizationChanged();
       startTransition(resolved->palette);
     } else {
       if (m_transitionAnimId == 0 && palette == resolved->palette) {
@@ -462,6 +465,8 @@ namespace noctalia::theme {
         m_transitionAnimId = 0;
       }
       m_transitionTimer.stop();
+      setResolvedThemeLight(m_isLightMode);
+      notifyShellAppIconColorizationChanged();
       setPalette(resolved->palette);
       if (m_changeCallback) {
         m_changeCallback();

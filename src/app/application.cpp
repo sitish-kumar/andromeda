@@ -36,6 +36,7 @@
 #include "shell/wallpaper/panel/wallpaper_panel.h"
 #include "system/distro_info.h"
 #include "time/time_format.h"
+#include "ui/app_icon_colorization.h"
 #include "ui/controls/input.h"
 #include "ui/dialogs/color_picker_dialog.h"
 #include "ui/dialogs/file_dialog.h"
@@ -468,6 +469,21 @@ void Application::initServices() {
   });
   m_themeService.apply();
   m_configService.addReloadCallback([this]() { m_themeService.onConfigReload(); }, "theme");
+  {
+    static ShellAppIconColorizationSettings lastAppIconColorization =
+        shellAppIconColorizationSettings(m_configService.config().shell);
+    m_configService.addReloadCallback(
+        [this]() {
+          const auto current = shellAppIconColorizationSettings(m_configService.config().shell);
+          if (current == lastAppIconColorization) {
+            return;
+          }
+          lastAppIconColorization = current;
+          notifyShellAppIconColorizationChanged();
+        },
+        "app-icon-colorization"
+    );
+  }
 
   if (!m_wayland.connect()) {
     throw std::runtime_error("failed to connect to Wayland display");

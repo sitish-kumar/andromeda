@@ -19,6 +19,7 @@
 #include "system/app_identity.h"
 #include "system/desktop_entry.h"
 #include "system/desktop_entry_launch.h"
+#include "ui/app_icon_colorization.h"
 #include "ui/builders.h"
 #include "ui/palette.h"
 #include "ui/style.h"
@@ -159,6 +160,18 @@ bool Dock::initialize(CompositorPlatform& platform, ConfigService* config, Rende
       },
       "dock"
   );
+
+  m_appIconColorizeConn = shellAppIconColorizationChanged().connect([this]() {
+    if (m_config == nullptr) {
+      return;
+    }
+    for (const auto& instance : m_instances) {
+      if (instance != nullptr) {
+        updateVisuals(*instance);
+      }
+    }
+    requestRedraw();
+  });
 
   m_lastDockConfig = cfg;
   m_lastShadow = m_config->config().shell.shadow;

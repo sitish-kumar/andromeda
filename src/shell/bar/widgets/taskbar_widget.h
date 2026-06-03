@@ -4,6 +4,7 @@
 #include "shell/bar/widget.h"
 #include "system/icon_resolver.h"
 #include "ui/palette.h"
+#include "ui/signal.h"
 
 #include <cstdint>
 #include <limits>
@@ -137,4 +138,5 @@ private:
   zwlr_foreign_toplevel_handle_v1* m_contextMenuPrimaryHandle = nullptr;
   std::uint64_t m_desktopEntriesVersion = 0;
   IconResolver m_iconResolver;
+  Signal<>::ScopedConnection m_appIconColorizeConn;
 };

@@ -21,6 +21,7 @@
 #include "shell/bar/widgets/control_center_widget.h"
 #include "shell/bar/widgets/custom_button_widget.h"
 #include "system/battery_warning_monitor.h"
+#include "ui/app_icon_colorization.h"
 #ifndef NDEBUG
 #include "shell/bar/widgets/debug_indicator_widget.h"
 #endif
@@ -139,7 +140,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
     const std::string displayMode =
         wc != nullptr ? wc->getString("display", "icon_and_text") : std::string("icon_and_text");
     auto widget = std::make_unique<ActiveWindowWidget>(
-        m_platform, maxWidth, minWidth, iconSize, parseActiveWindowTitleScrollMode(titleScroll),
+        m_configService, m_platform, maxWidth, minWidth, iconSize, parseActiveWindowTitleScrollMode(titleScroll),
         parseActiveWindowDisplayMode(displayMode)
     );
     widget->setContentScale(contentScale);
@@ -508,8 +509,8 @@ std::unique_ptr<Widget> WidgetFactory::create(
         static_cast<std::size_t>(std::clamp<std::int64_t>(wc != nullptr ? wc->getInt("drawer_columns", 3) : 3, 1, 5));
     const bool matchAdjacentSpacing = wc != nullptr ? wc->getBool("match_adjacent_spacing", false) : false;
     auto widget = std::make_unique<TrayWidget>(
-        m_tray, hiddenItems, pinnedItems, drawer, std::function<void()>{}, barPosition, false, drawerColumns,
-        widgetSpacing, matchAdjacentSpacing
+        m_configService, m_tray, hiddenItems, pinnedItems, drawer, std::function<void()>{}, barPosition, false,
+        drawerColumns, widgetSpacing, matchAdjacentSpacing
     );
     widget->setContentScale(contentScale);
     return widget;

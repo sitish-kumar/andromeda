@@ -1002,6 +1002,11 @@
         "normal": "Normal",
         "critical": "Critical"
       },
+      "dock-icon-colorization": {
+        "muted": "Muted",
+        "primary": "Primary",
+        "secondary": "Secondary"
+      },
       "shell": {
         "password-style": {
           "filled-circles": "Filled Circles",
@@ -1650,6 +1655,14 @@
         "corner-roundness": {
           "label": "Corner Roundness",
           "description": "Scale corner radius across shell UI containers and controls"
+        },
+        "app-icon-colorize": {
+          "label": "Colorize App Icons",
+          "description": "Recolor dock and tray application icons to match the shell palette"
+        },
+        "app-icon-color": {
+          "label": "App Icon Color",
+          "description": "Palette color used when colorizing application icons"
         },
         "animations": {
           "label": "Animations",

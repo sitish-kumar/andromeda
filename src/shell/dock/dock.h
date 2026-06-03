@@ -3,6 +3,7 @@
 #include "config/config_types.h"
 #include "system/desktop_entry.h"
 #include "system/icon_resolver.h"
+#include "ui/signal.h"
 
 #include <cstdint>
 #include <memory>
@@ -77,4 +78,5 @@ private:
   shell::dock::DockInstance* m_hoveredInstance = nullptr;
   shell::dock::DockInstance* m_popupOwnerInstance = nullptr; // instance that owns the current open popup
   std::unique_ptr<shell::dock::DockPopup> m_itemMenu;        // right-click context menu
+  Signal<>::ScopedConnection m_appIconColorizeConn;
 };

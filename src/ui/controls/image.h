@@ -3,11 +3,15 @@
 #include "render/core/async_texture_cache.h"
 #include "render/core/texture_manager.h"
 #include "render/scene/node.h"
+#include "ui/app_icon_colorization.h"
 #include "ui/palette.h"
 #include "ui/signal.h"
 
+#include <cstdint>
 #include <functional>
+#include <optional>
 #include <string>
+#include <vector>
 
 class ImageNode;
 class Renderer;
@@ -29,6 +33,7 @@ public:
   void setBorder(const ColorSpec& color, float width);
   void setBorder(const Color& color, float width);
   void setTint(const Color& tint);
+  void setAppIconColorization(std::optional<ColorSpec> tint);
   void setFit(ImageFit fit);
   void setPadding(float padding);
   void setAsyncReadyCallback(AsyncReadyCallback callback);
@@ -71,6 +76,12 @@ private:
   void clearAsyncSource();
   void subscribeAsyncReady();
   void handleAsyncTextureReady(TextureHandle handle);
+  void storeColorizationSource(const std::uint8_t* rgba, int width, int height);
+  void clearColorizationSource();
+  void applyAppIconColorizationPrep(std::uint8_t* rgba, int width, int height);
+  bool commitColorizedRgba(Renderer& renderer, const std::uint8_t* rgba, int width, int height, bool mipmap);
+  void rebakeColorizedTexture();
+  void reloadColorizedSource();
 
   ImageNode* m_image = nullptr;
   TextureHandle m_texture{};
@@ -84,6 +95,10 @@ private:
   ImageFit m_fit = ImageFit::Contain;
   ColorSpec m_border = clearColorSpec();
   float m_borderWidth = 0.0f;
+  std::optional<ColorSpec> m_appIconColorizeTint;
+  std::vector<std::uint8_t> m_colorizationSource;
+  int m_colorizationSourceWidth = 0;
+  int m_colorizationSourceHeight = 0;
   Renderer* m_renderer = nullptr;
   AsyncTextureCache* m_asyncTextureCache = nullptr;
   AsyncTextureCache::ReadySubscription m_asyncReadySub;
