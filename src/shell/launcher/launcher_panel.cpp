@@ -116,7 +116,7 @@ namespace {
   }
 
   [[nodiscard]] LauncherListStyle launcherListStyleFrom(const ConfigService* config, float scale) {
-    LauncherListStyle style{.scale = scale};
+    LauncherListStyle style{.scale = scale, .appIconColorizeTint = std::nullopt};
     if (config != nullptr) {
       const auto& panel = config->config().shell.panel;
       style.showIcons = panel.launcherShowIcons;

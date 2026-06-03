@@ -34,7 +34,7 @@ public:
   void setBorder(const Color& color, float width);
   void setTint(const Color& tint);
   void setAppIconColorization(std::optional<ColorSpec> tint);
-  // Shader texel × tint for bar custom_image logos (not CPU app-icon bake).
+  // Alpha-mask recolor for bar widget custom_image (widget Color, not app-icon bake).
   void setForegroundTint(std::optional<ColorSpec> tint);
   void setFit(ImageFit fit);
   void setPadding(float padding);
