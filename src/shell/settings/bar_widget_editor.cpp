@@ -810,11 +810,11 @@ namespace settings {
     WidgetSettingValue
     widgetSettingValue(const Config& cfg, std::string_view widgetName, const WidgetSettingSpec& spec) {
       if (const auto it = cfg.widgets.find(std::string(widgetName)); it != cfg.widgets.end()) {
-        if (const auto settingIt = it->second.settings.find(spec.key); settingIt != it->second.settings.end()) {
+        if (const auto settingIt = it->second.settings.find(spec.schema.key); settingIt != it->second.settings.end()) {
           return settingIt->second;
         }
       }
-      return spec.defaultValue;
+      return spec.schema.defaultValue;
     }
 
     std::string settingCurrentString(
@@ -835,14 +835,14 @@ namespace settings {
         }
       }
       for (const auto& s : allSpecs) {
-        if (s.key == key) {
-          if (const auto* str = std::get_if<std::string>(&s.defaultValue)) {
+        if (s.schema.key == key) {
+          if (const auto* str = std::get_if<std::string>(&s.schema.defaultValue)) {
             return *str;
           }
-          if (const auto* i = std::get_if<std::int64_t>(&s.defaultValue)) {
+          if (const auto* i = std::get_if<std::int64_t>(&s.schema.defaultValue)) {
             return std::to_string(*i);
           }
-          if (const auto* b = std::get_if<bool>(&s.defaultValue)) {
+          if (const auto* b = std::get_if<bool>(&s.schema.defaultValue)) {
             return *b ? "true" : "false";
           }
           break;
@@ -1007,7 +1007,7 @@ namespace settings {
         const Config& cfg, std::string_view widgetName, const std::vector<WidgetSettingSpec>& allSpecs
     ) {
       for (const auto& spec : allSpecs) {
-        if (spec.key == "minimal") {
+        if (spec.schema.key == "minimal") {
           return settingValueAsBool(widgetSettingValue(cfg, widgetName, spec));
         }
       }
@@ -1101,7 +1101,7 @@ namespace settings {
       std::unordered_set<std::string> knownKeys;
       knownKeys.reserve(specs.size());
       for (const auto& spec : specs) {
-        knownKeys.insert(spec.key);
+        knownKeys.insert(spec.schema.key);
       }
       // `script` is the identity of a scripted widget, not a raw/deletable extra — when a Lua
       // manifest drives the settings it isn't among the specs, so guard it explicitly.
@@ -1237,7 +1237,7 @@ namespace settings {
         if (spec.advanced && !ctx.showAdvanced) {
           continue;
         }
-        const auto path = widgetSettingPath(widgetName, spec.key);
+        const auto path = widgetSettingPath(widgetName, spec.schema.key);
         const bool overridden = ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(path);
         if (ctx.showOverriddenOnly && !overridden) {
           continue;
@@ -1306,13 +1306,13 @@ namespace settings {
           );
         };
 
-        switch (spec.valueType) {
-        case WidgetSettingValueType::Bool: {
+        switch (spec.control) {
+        case WidgetControlKind::Bool: {
           std::optional<bool> clearWhenValue;
-          if (const auto* defaultBool = std::get_if<bool>(&spec.defaultValue)) {
+          if (const auto* defaultBool = std::get_if<bool>(&spec.schema.defaultValue)) {
             clearWhenValue = *defaultBool;
           }
-          if (widgetType == "workspaces" && spec.key == "minimal") {
+          if (widgetType == "workspaces" && spec.schema.key == "minimal") {
             ctx.makeRow(
                 *panel, entry,
                 ui::toggle({
@@ -1339,9 +1339,9 @@ namespace settings {
           }
           break;
         }
-        case WidgetSettingValueType::Int: {
-          const double minValue = spec.minValue.value_or(0.0);
-          const double maxValue = spec.maxValue.value_or(100.0);
+        case WidgetControlKind::Int: {
+          const double minValue = spec.schema.minValue.value_or(0.0);
+          const double maxValue = spec.schema.maxValue.value_or(100.0);
           if (spec.stepper) {
             const int minStep = static_cast<int>(std::lround(minValue));
             const int maxStep = static_cast<int>(std::lround(maxValue));
@@ -1355,7 +1355,7 @@ namespace settings {
                         .value = stepValue,
                         .minValue = minStep,
                         .maxValue = maxStep,
-                        .step = static_cast<int>(std::max(1.0, spec.step)),
+                        .step = static_cast<int>(std::max(1.0, spec.schema.step.value_or(1.0))),
                         .valueSuffix = spec.valueSuffix,
                     },
                     path
@@ -1364,28 +1364,34 @@ namespace settings {
           } else {
             ctx.makeRow(
                 *panel, entry,
-                ctx.makeSlider(static_cast<double>(settingValueAsInt(value)), minValue, maxValue, spec.step, path, true)
+                ctx.makeSlider(
+                    static_cast<double>(settingValueAsInt(value)), minValue, maxValue, spec.schema.step.value_or(1.0),
+                    path, true
+                )
             );
           }
           break;
         }
-        case WidgetSettingValueType::Double: {
-          const double minValue = spec.minValue.value_or(0.0);
-          const double maxValue = spec.maxValue.value_or(1.0);
+        case WidgetControlKind::Double: {
+          const double minValue = spec.schema.minValue.value_or(0.0);
+          const double maxValue = spec.schema.maxValue.value_or(1.0);
           ctx.makeRow(
-              *panel, entry, ctx.makeSlider(settingValueAsDouble(value), minValue, maxValue, spec.step, path, false)
+              *panel, entry,
+              ctx.makeSlider(
+                  settingValueAsDouble(value), minValue, maxValue, spec.schema.step.value_or(1.0), path, false
+              )
           );
           break;
         }
-        case WidgetSettingValueType::OptionalDouble: {
+        case WidgetControlKind::OptionalDouble: {
           ctx.makeRow(
               *panel, entry,
               ctx.makeOptionalStepper(
                   OptionalStepperSetting{
-                      .value = widgetSettingOptionalStepperValue(ctx.config, widgetName, spec.key),
-                      .minValue = static_cast<int>(std::lround(spec.minValue.value_or(0.0))),
-                      .maxValue = static_cast<int>(std::lround(spec.maxValue.value_or(80.0))),
-                      .step = static_cast<int>(std::max(1.0, spec.step)),
+                      .value = widgetSettingOptionalStepperValue(ctx.config, widgetName, spec.schema.key),
+                      .minValue = static_cast<int>(std::lround(spec.schema.minValue.value_or(0.0))),
+                      .maxValue = static_cast<int>(std::lround(spec.schema.maxValue.value_or(80.0))),
+                      .step = static_cast<int>(std::max(1.0, spec.schema.step.value_or(1.0))),
                       .fallbackValue = inheritedCapsuleRadiusForLane(ctx.config, lanePath),
                       .unsetLabel = i18n::tr("common.states.inherit"),
                       .customLabel = i18n::tr("common.states.custom")
@@ -1395,8 +1401,8 @@ namespace settings {
           );
           break;
         }
-        case WidgetSettingValueType::String: {
-          if (spec.key == "custom_image") {
+        case WidgetControlKind::String: {
+          if (spec.schema.key == "custom_image") {
             FileDialogOptions options;
             options.mode = FileDialogMode::Open;
             options.defaultViewMode = FileDialogViewMode::Grid;
@@ -1408,7 +1414,7 @@ namespace settings {
                     ctx, path, settingValueAsString(value), "photo", std::move(options), PathBrowseKind::File
                 )
             );
-          } else if (widgetType == "scripted" && spec.key == "script") {
+          } else if (widgetType == "scripted" && spec.schema.key == "script") {
             FileDialogOptions options;
             options.mode = FileDialogMode::Open;
             options.defaultViewMode = FileDialogViewMode::List;
@@ -1428,7 +1434,7 @@ namespace settings {
           }
           break;
         }
-        case WidgetSettingValueType::File: {
+        case WidgetControlKind::File: {
           FileDialogOptions options;
           options.mode = FileDialogMode::Open;
           options.defaultViewMode = FileDialogViewMode::List;
@@ -1442,7 +1448,7 @@ namespace settings {
           );
           break;
         }
-        case WidgetSettingValueType::Folder: {
+        case WidgetControlKind::Folder: {
           FileDialogOptions options;
           options.mode = FileDialogMode::SelectFolder;
           options.defaultViewMode = FileDialogViewMode::List;
@@ -1455,21 +1461,21 @@ namespace settings {
           );
           break;
         }
-        case WidgetSettingValueType::Glyph:
+        case WidgetControlKind::Glyph:
           ctx.makeRow(*panel, entry, makeGlyphTextControl(settingValueAsString(value)));
           break;
-        case WidgetSettingValueType::StringList:
+        case WidgetControlKind::StringList:
           ctx.makeListBlock(*panel, entry, ListSetting{.items = settingValueAsStringList(value)});
           break;
-        case WidgetSettingValueType::Select: {
+        case WidgetControlKind::Select: {
           SelectSetting selectSetting;
           const std::string selectedValue = settingValueAsString(value);
-          if (widgetType == "battery" && spec.key == "device") {
+          if (widgetType == "battery" && spec.schema.key == "device") {
             selectSetting = batteryDeviceSelectSetting(ctx, selectedValue);
-          } else if (spec.key == "font_weight") {
+          } else if (spec.schema.key == "font_weight") {
             selectSetting =
                 labelFontWeightSelectSetting(ctx, spec, widgetLabelFontWeightSelectedValue(ctx.config, widgetName));
-          } else if (widgetType == "workspaces" && spec.key == "display") {
+          } else if (widgetType == "workspaces" && spec.schema.key == "display") {
             selectSetting = workspacesDisplaySelectSetting(ctx, widgetName, spec, specs, selectedValue);
           } else {
             std::vector<SelectOption> options;
@@ -1483,13 +1489,14 @@ namespace settings {
           }
           selectSetting.segmented = spec.segmented;
           selectSetting.integerValue = spec.integerValue;
-          if (const auto* defaultString = std::get_if<std::string>(&spec.defaultValue); defaultString != nullptr) {
+          if (const auto* defaultString = std::get_if<std::string>(&spec.schema.defaultValue);
+              defaultString != nullptr) {
             selectSetting.clearOnEmpty = defaultString->empty();
           }
           ctx.makeRow(*panel, entry, ctx.makeSelect(std::move(selectSetting), path));
           break;
         }
-        case WidgetSettingValueType::ColorSpec: {
+        case WidgetControlKind::ColorSpec: {
           ColorSpecPickerSetting pickerSetting;
           pickerSetting.selectedValue = settingValueAsString(value);
           pickerSetting.allowNone = spec.advanced;

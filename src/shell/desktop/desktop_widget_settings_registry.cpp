@@ -5,9 +5,9 @@
 namespace desktop_settings {
   namespace {
 
+    using settings::WidgetControlKind;
     using settings::WidgetSettingSelectOption;
     using settings::WidgetSettingSpec;
-    using settings::WidgetSettingValueType;
     using settings::WidgetSettingVisibility;
 
     const std::vector<DesktopWidgetTypeSpec> kDesktopWidgetTypeSpecs = {
@@ -19,39 +19,43 @@ namespace desktop_settings {
         {.type = "sysmon", .labelKey = "desktop-widgets.editor.types.system-monitor"},
     };
 
-    WidgetSettingSpec baseSpec(std::string_view key, WidgetSettingValueType type, WidgetSettingValue defaultValue) {
+    WidgetSettingSpec baseSpec(std::string_view key, WidgetControlKind control, WidgetSettingValue defaultValue) {
       WidgetSettingSpec spec;
-      spec.key = std::string(key);
+      spec.schema.key = std::string(key);
+      spec.schema.type = settings::schemaTypeForControl(control);
+      spec.schema.defaultValue = std::move(defaultValue);
+      spec.control = control;
       spec.labelKey = "desktop-widgets.editor.settings." + StringUtils::snakeToKebab(key);
-      spec.valueType = type;
-      spec.defaultValue = std::move(defaultValue);
       return spec;
     }
 
     WidgetSettingSpec boolSpec(std::string_view key, bool defaultValue) {
-      return baseSpec(key, WidgetSettingValueType::Bool, defaultValue);
+      return baseSpec(key, WidgetControlKind::Bool, defaultValue);
     }
 
     WidgetSettingSpec
     doubleSpec(std::string_view key, double defaultValue, double minValue, double maxValue, double step = 1.0) {
-      auto spec = baseSpec(key, WidgetSettingValueType::Double, defaultValue);
-      spec.minValue = minValue;
-      spec.maxValue = maxValue;
-      spec.step = step;
+      auto spec = baseSpec(key, WidgetControlKind::Double, defaultValue);
+      spec.schema.minValue = minValue;
+      spec.schema.maxValue = maxValue;
+      spec.schema.step = step;
       return spec;
     }
 
     WidgetSettingSpec stringSpec(std::string_view key, std::string defaultValue = {}) {
-      return baseSpec(key, WidgetSettingValueType::String, std::move(defaultValue));
+      return baseSpec(key, WidgetControlKind::String, std::move(defaultValue));
     }
 
     WidgetSettingSpec colorSpec(std::string_view key, std::string defaultValue = {}) {
-      return baseSpec(key, WidgetSettingValueType::ColorSpec, std::move(defaultValue));
+      return baseSpec(key, WidgetControlKind::ColorSpec, std::move(defaultValue));
     }
 
     WidgetSettingSpec
     selectSpec(std::string_view key, std::string defaultValue, std::vector<WidgetSettingSelectOption> options) {
-      auto spec = baseSpec(key, WidgetSettingValueType::Select, std::move(defaultValue));
+      auto spec = baseSpec(key, WidgetControlKind::Select, std::move(defaultValue));
+      for (const auto& option : options) {
+        spec.schema.enumValues.push_back(option.value);
+      }
       spec.options = std::move(options);
       return spec;
     }
@@ -145,6 +149,17 @@ namespace desktop_settings {
     }
 
     return specs;
+  }
+
+  noctalia::config::schema::WidgetSettingSchema desktopWidgetSettingSchema(std::string_view type) {
+    noctalia::config::schema::WidgetSettingSchema out;
+    for (const auto& spec : desktopWidgetSettingSpecs(type)) {
+      out.push_back(spec.schema);
+    }
+    for (const auto& spec : commonDesktopWidgetSettingSpecs()) {
+      out.push_back(spec.schema);
+    }
+    return out;
   }
 
 } // namespace desktop_settings

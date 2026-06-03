@@ -71,11 +71,11 @@ namespace {
       }
     }
     for (const auto& spec : allSpecs) {
-      if (spec.key == key) {
-        if (const auto* vb = std::get_if<bool>(&spec.defaultValue)) {
+      if (spec.schema.key == key) {
+        if (const auto* vb = std::get_if<bool>(&spec.schema.defaultValue)) {
           return *vb ? "true" : "false";
         }
-        if (const auto* vs = std::get_if<std::string>(&spec.defaultValue)) {
+        if (const auto* vs = std::get_if<std::string>(&spec.schema.defaultValue)) {
           return *vs;
         }
         break;
@@ -304,48 +304,54 @@ namespace {
       }
       const auto label = i18n::tr(spec.labelKey);
 
-      switch (spec.valueType) {
-      case settings::WidgetSettingValueType::Bool: {
-        const auto* defVal = std::get_if<bool>(&spec.defaultValue);
-        content.addChild(makeToggleRow(label, spec.key, defVal != nullptr ? *defVal : false, s, editor));
+      switch (spec.control) {
+      case settings::WidgetControlKind::Bool: {
+        const auto* defVal = std::get_if<bool>(&spec.schema.defaultValue);
+        content.addChild(makeToggleRow(label, spec.schema.key, defVal != nullptr ? *defVal : false, s, editor));
         break;
       }
 
-      case settings::WidgetSettingValueType::Double: {
-        const auto* defVal = std::get_if<double>(&spec.defaultValue);
+      case settings::WidgetControlKind::Double: {
+        const auto* defVal = std::get_if<double>(&spec.schema.defaultValue);
         const double fallback = defVal != nullptr ? *defVal : 0.0;
-        const double minVal = spec.minValue.value_or(0.0);
-        const double maxVal = spec.maxValue.value_or(1.0);
-        content.addChild(makeSliderRow(label, spec.key, fallback, minVal, maxVal, spec.step, s, editor));
+        const double minVal = spec.schema.minValue.value_or(0.0);
+        const double maxVal = spec.schema.maxValue.value_or(1.0);
+        content.addChild(
+            makeSliderRow(label, spec.schema.key, fallback, minVal, maxVal, spec.schema.step.value_or(1.0), s, editor)
+        );
         break;
       }
 
-      case settings::WidgetSettingValueType::String: {
-        const auto* defVal = std::get_if<std::string>(&spec.defaultValue);
+      case settings::WidgetControlKind::String: {
+        const auto* defVal = std::get_if<std::string>(&spec.schema.defaultValue);
         const std::string fallback = defVal != nullptr ? *defVal : std::string{};
-        if (spec.key == "image_path") {
-          content.addChild(makeFilePickerRow(label, spec.key, editor));
+        if (spec.schema.key == "image_path") {
+          content.addChild(makeFilePickerRow(label, spec.schema.key, editor));
         } else {
-          content.addChild(makeInputRow(label, spec.key, getStr(s, spec.key, fallback), fallback, editor));
+          content.addChild(
+              makeInputRow(label, spec.schema.key, getStr(s, spec.schema.key, fallback), fallback, editor)
+          );
         }
         break;
       }
 
-      case settings::WidgetSettingValueType::Select: {
-        const auto* defVal = std::get_if<std::string>(&spec.defaultValue);
+      case settings::WidgetControlKind::Select: {
+        const auto* defVal = std::get_if<std::string>(&spec.schema.defaultValue);
         const std::string fallback = defVal != nullptr ? *defVal : std::string{};
-        const std::string currentValue = getStr(s, spec.key, fallback);
+        const std::string currentValue = getStr(s, spec.schema.key, fallback);
         if (spec.segmented) {
-          content.addChild(makeSegmentedRow(label, spec.key, spec.options, currentValue, editor));
+          content.addChild(makeSegmentedRow(label, spec.schema.key, spec.options, currentValue, editor));
         } else {
-          content.addChild(makeSelectRow(label, spec.key, spec.options, currentValue, editor));
+          content.addChild(makeSelectRow(label, spec.schema.key, spec.options, currentValue, editor));
         }
         break;
       }
 
-      case settings::WidgetSettingValueType::ColorSpec: {
-        const auto* defVal = std::get_if<std::string>(&spec.defaultValue);
-        content.addChild(makeColorSpecRow(label, spec.key, defVal != nullptr ? *defVal : std::string{}, s, editor));
+      case settings::WidgetControlKind::ColorSpec: {
+        const auto* defVal = std::get_if<std::string>(&spec.schema.defaultValue);
+        content.addChild(
+            makeColorSpecRow(label, spec.schema.key, defVal != nullptr ? *defVal : std::string{}, s, editor)
+        );
         break;
       }
 
