@@ -118,9 +118,12 @@ public:
 
   [[nodiscard]] static BarConfig resolveForOutput(const BarConfig& base, const WaylandOutput& output);
 
+  // Recursively overlays `overlay` onto `base` (tables merge, everything else
+  // replaces). Public so `config validate` can reproduce loadAll's merge order.
+  static void deepMerge(toml::table& base, const toml::table& overlay);
+
 private:
   static void seedBuiltinWidgets(Config& config);
-  static void deepMerge(toml::table& base, const toml::table& overlay);
   void loadAll();
   void parseTableInto(const toml::table& tbl, Config& config, bool logSummary) const;
   [[nodiscard]] std::optional<Config> configForOverrides(const toml::table& overrides) const;

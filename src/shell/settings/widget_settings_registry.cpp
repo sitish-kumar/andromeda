@@ -15,6 +15,34 @@
 #include <utility>
 
 namespace settings {
+  namespace schema = noctalia::config::schema;
+
+  // File/Folder/Glyph carry a String value; Select an Enum; ColorSpec a Color; the rest map 1:1.
+  schema::WidgetSettingType schemaTypeForControl(WidgetControlKind control) {
+    switch (control) {
+    case WidgetControlKind::Bool:
+      return schema::WidgetSettingType::Bool;
+    case WidgetControlKind::Int:
+      return schema::WidgetSettingType::Int;
+    case WidgetControlKind::Double:
+      return schema::WidgetSettingType::Double;
+    case WidgetControlKind::OptionalDouble:
+      return schema::WidgetSettingType::OptionalDouble;
+    case WidgetControlKind::String:
+    case WidgetControlKind::File:
+    case WidgetControlKind::Folder:
+    case WidgetControlKind::Glyph:
+      return schema::WidgetSettingType::String;
+    case WidgetControlKind::StringList:
+      return schema::WidgetSettingType::StringList;
+    case WidgetControlKind::Select:
+      return schema::WidgetSettingType::Enum;
+    case WidgetControlKind::ColorSpec:
+      return schema::WidgetSettingType::Color;
+    }
+    return schema::WidgetSettingType::String;
+  }
+
   namespace {
 
     using i18n::tr;
@@ -154,13 +182,14 @@ namespace settings {
     }
 
     WidgetSettingSpec
-    baseSpec(std::string_view key, WidgetSettingValueType type, WidgetSettingValue defaultValue, bool advanced) {
+    baseSpec(std::string_view key, WidgetControlKind control, WidgetSettingValue defaultValue, bool advanced) {
       WidgetSettingSpec spec;
-      spec.key = std::string(key);
+      spec.schema.key = std::string(key);
+      spec.schema.type = schemaTypeForControl(control);
+      spec.schema.defaultValue = std::move(defaultValue);
+      spec.control = control;
       spec.labelKey = std::string("settings.widgets.settings.") + std::string(key) + ".label";
       spec.descriptionKey = std::string("settings.widgets.settings.") + std::string(key) + ".description";
-      spec.valueType = type;
-      spec.defaultValue = std::move(defaultValue);
       spec.advanced = advanced;
       return spec;
     }
@@ -171,17 +200,17 @@ namespace settings {
     }
 
     WidgetSettingSpec boolSpec(std::string_view key, bool defaultValue, bool advanced = false) {
-      return baseSpec(key, WidgetSettingValueType::Bool, defaultValue, advanced);
+      return baseSpec(key, WidgetControlKind::Bool, defaultValue, advanced);
     }
 
     WidgetSettingSpec intSpec(
         std::string_view key, std::int64_t defaultValue, double minValue, double maxValue, double step = 1.0,
         bool advanced = false
     ) {
-      auto spec = baseSpec(key, WidgetSettingValueType::Int, defaultValue, advanced);
-      spec.minValue = minValue;
-      spec.maxValue = maxValue;
-      spec.step = step;
+      auto spec = baseSpec(key, WidgetControlKind::Int, defaultValue, advanced);
+      spec.schema.minValue = minValue;
+      spec.schema.maxValue = maxValue;
+      spec.schema.step = step;
       return spec;
     }
 
@@ -199,43 +228,46 @@ namespace settings {
         std::string_view key, double defaultValue, double minValue, double maxValue, double step = 1.0,
         bool advanced = false
     ) {
-      auto spec = baseSpec(key, WidgetSettingValueType::Double, defaultValue, advanced);
-      spec.minValue = minValue;
-      spec.maxValue = maxValue;
-      spec.step = step;
+      auto spec = baseSpec(key, WidgetControlKind::Double, defaultValue, advanced);
+      spec.schema.minValue = minValue;
+      spec.schema.maxValue = maxValue;
+      spec.schema.step = step;
       return spec;
     }
 
     WidgetSettingSpec
     optionalDoubleSpec(std::string_view key, double minValue, double maxValue, bool advanced = false) {
-      auto spec = baseSpec(key, WidgetSettingValueType::OptionalDouble, 0.0, advanced);
-      spec.minValue = minValue;
-      spec.maxValue = maxValue;
+      auto spec = baseSpec(key, WidgetControlKind::OptionalDouble, 0.0, advanced);
+      spec.schema.minValue = minValue;
+      spec.schema.maxValue = maxValue;
       return spec;
     }
 
     WidgetSettingSpec stringSpec(std::string_view key, std::string defaultValue = {}, bool advanced = false) {
-      return baseSpec(key, WidgetSettingValueType::String, std::move(defaultValue), advanced);
+      return baseSpec(key, WidgetControlKind::String, std::move(defaultValue), advanced);
     }
 
     WidgetSettingSpec glyphSpec(std::string_view key, std::string defaultValue = {}, bool advanced = false) {
-      return baseSpec(key, WidgetSettingValueType::Glyph, std::move(defaultValue), advanced);
+      return baseSpec(key, WidgetControlKind::Glyph, std::move(defaultValue), advanced);
     }
 
     WidgetSettingSpec colorSpec(std::string_view key, std::string defaultValue = {}, bool advanced = false) {
-      return baseSpec(key, WidgetSettingValueType::ColorSpec, std::move(defaultValue), advanced);
+      return baseSpec(key, WidgetControlKind::ColorSpec, std::move(defaultValue), advanced);
     }
 
     WidgetSettingSpec
     stringListSpec(std::string_view key, std::vector<std::string> defaultValue = {}, bool advanced = false) {
-      return baseSpec(key, WidgetSettingValueType::StringList, std::move(defaultValue), advanced);
+      return baseSpec(key, WidgetControlKind::StringList, std::move(defaultValue), advanced);
     }
 
     WidgetSettingSpec selectSpec(
         std::string_view key, std::string defaultValue, std::vector<WidgetSettingSelectOption> options,
         bool advanced = false
     ) {
-      auto spec = baseSpec(key, WidgetSettingValueType::Select, std::move(defaultValue), advanced);
+      auto spec = baseSpec(key, WidgetControlKind::Select, std::move(defaultValue), advanced);
+      for (const auto& option : options) {
+        spec.schema.enumValues.push_back(option.value);
+      }
       spec.options = std::move(options);
       return spec;
     }
@@ -747,7 +779,7 @@ namespace settings {
         add(std::move(emptyColor));
       }
       for (auto& spec : commonSpecs) {
-        if (spec.key == "capsule_radius") {
+        if (spec.schema.key == "capsule_radius") {
           spec.descriptionKey = "settings.widgets.settings.capsule_radius.taskbar-description";
           spec.visibleWhen = WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
           break;
@@ -787,7 +819,7 @@ namespace settings {
     } else if (type == "workspaces") {
       const WidgetSettingVisibility pillStyleOnly{{"minimal", {"false"}}};
       for (auto& spec : commonSpecs) {
-        if (spec.key == "capsule_radius") {
+        if (spec.schema.key == "capsule_radius") {
           spec.descriptionKey = "settings.widgets.settings.capsule_radius.workspaces-description";
           spec.visibleWhen = pillStyleOnly;
           break;
@@ -844,58 +876,60 @@ namespace settings {
     specs.reserve(manifest.settings.size());
     for (const auto& field : manifest.settings) {
       WidgetSettingSpec spec;
-      spec.key = field.key;
+      spec.schema.key = field.key;
       spec.literalLabel = field.label.empty() ? field.key : field.label;
       spec.literalDescription = field.description;
       spec.advanced = field.advanced;
-      spec.minValue = field.minValue;
-      spec.maxValue = field.maxValue;
-      spec.step = field.step;
+      spec.schema.minValue = field.minValue;
+      spec.schema.maxValue = field.maxValue;
+      spec.schema.step = field.step;
 
       switch (field.type) {
       case scripting::ManifestFieldType::Bool:
-        spec.valueType = WidgetSettingValueType::Bool;
-        spec.defaultValue = field.boolDefault;
+        spec.control = WidgetControlKind::Bool;
+        spec.schema.defaultValue = field.boolDefault;
         break;
       case scripting::ManifestFieldType::Int:
-        spec.valueType = WidgetSettingValueType::Int;
-        spec.defaultValue = static_cast<std::int64_t>(field.numberDefault);
+        spec.control = WidgetControlKind::Int;
+        spec.schema.defaultValue = static_cast<std::int64_t>(field.numberDefault);
         break;
       case scripting::ManifestFieldType::Double:
-        spec.valueType = WidgetSettingValueType::Double;
-        spec.defaultValue = field.numberDefault;
+        spec.control = WidgetControlKind::Double;
+        spec.schema.defaultValue = field.numberDefault;
         break;
       case scripting::ManifestFieldType::File:
-        spec.valueType = WidgetSettingValueType::File;
-        spec.defaultValue = field.stringDefault;
+        spec.control = WidgetControlKind::File;
+        spec.schema.defaultValue = field.stringDefault;
         spec.extensions = field.extensions;
         break;
       case scripting::ManifestFieldType::Folder:
-        spec.valueType = WidgetSettingValueType::Folder;
-        spec.defaultValue = field.stringDefault;
+        spec.control = WidgetControlKind::Folder;
+        spec.schema.defaultValue = field.stringDefault;
         break;
       case scripting::ManifestFieldType::Select:
-        spec.valueType = WidgetSettingValueType::Select;
-        spec.defaultValue = field.stringDefault;
+        spec.control = WidgetControlKind::Select;
+        spec.schema.defaultValue = field.stringDefault;
         spec.literalLabels = true;
         for (const auto& opt : field.options) {
+          spec.schema.enumValues.push_back(opt.value);
           spec.options.push_back(WidgetSettingSelectOption{.value = opt.value, .labelKey = opt.label});
         }
         break;
       case scripting::ManifestFieldType::Color:
-        spec.valueType = WidgetSettingValueType::ColorSpec;
-        spec.defaultValue = field.stringDefault;
+        spec.control = WidgetControlKind::ColorSpec;
+        spec.schema.defaultValue = field.stringDefault;
         break;
       case scripting::ManifestFieldType::Glyph:
-        spec.valueType = WidgetSettingValueType::Glyph;
-        spec.defaultValue = field.stringDefault;
+        spec.control = WidgetControlKind::Glyph;
+        spec.schema.defaultValue = field.stringDefault;
         break;
       case scripting::ManifestFieldType::String:
       default:
-        spec.valueType = WidgetSettingValueType::String;
-        spec.defaultValue = field.stringDefault;
+        spec.control = WidgetControlKind::String;
+        spec.schema.defaultValue = field.stringDefault;
         break;
       }
+      spec.schema.type = schemaTypeForControl(spec.control);
 
       if (field.visibleWhen.has_value()) {
         spec.visibleWhen = WidgetSettingVisibility{field.visibleWhen->key, field.visibleWhen->values};
@@ -971,9 +1005,33 @@ namespace settings {
   std::optional<WidgetSettingSpec> findWidgetSettingSpec(std::string_view widgetType, std::string_view settingKey) {
     const std::string key(settingKey);
     for (const auto& spec : widgetSettingSpecs(widgetType, "sans-serif")) {
-      if (spec.key == key) {
+      if (spec.schema.key == key) {
         return spec;
       }
+    }
+    return std::nullopt;
+  }
+
+  noctalia::config::schema::WidgetSettingSchema widgetSettingSchema(std::string_view type) {
+    noctalia::config::schema::WidgetSettingSchema out;
+    for (const auto& spec : widgetSettingSpecs(type, "sans-serif")) {
+      out.push_back(spec.schema);
+    }
+    return out;
+  }
+
+  noctalia::config::schema::WidgetSettingSchema widgetSettingSchema(std::string_view type, const WidgetConfig* config) {
+    noctalia::config::schema::WidgetSettingSchema out;
+    for (const auto& spec : widgetSettingSpecs(type, config, "sans-serif")) {
+      out.push_back(spec.schema);
+    }
+    return out;
+  }
+
+  std::optional<noctalia::config::schema::WidgetSettingField>
+  findWidgetSettingField(std::string_view widgetType, std::string_view settingKey) {
+    if (const auto spec = findWidgetSettingSpec(widgetType, settingKey)) {
+      return spec->schema;
     }
     return std::nullopt;
   }
@@ -1046,10 +1104,10 @@ namespace settings {
       return false;
     }
     // OptionalDouble unset means inherit/auto, 0 is a valid explicit radius and must persist.
-    if (spec->valueType == WidgetSettingValueType::OptionalDouble) {
+    if (spec->schema.type == schema::WidgetSettingType::OptionalDouble) {
       return false;
     }
-    return configOverrideValueMatchesWidgetSetting(overrideValue, spec->defaultValue);
+    return configOverrideValueMatchesWidgetSetting(overrideValue, spec->schema.defaultValue);
   }
 
   bool widgetSettingOverrideIsEffective(
@@ -1091,14 +1149,14 @@ namespace settings {
       }
       return !widgetSettingValuesEqual(*withValue, *withoutValue);
     }
-    if (spec->valueType == WidgetSettingValueType::OptionalDouble) {
+    if (spec->schema.type == schema::WidgetSettingType::OptionalDouble) {
       if (!withValue.has_value() || !withoutValue.has_value()) {
         return true;
       }
       return !widgetSettingValuesEqual(*withValue, *withoutValue);
     }
 
-    const WidgetSettingValue defaultValue = spec->defaultValue;
+    const WidgetSettingValue defaultValue = spec->schema.defaultValue;
     const auto resolvedValue = [&](const Config& cfg) -> WidgetSettingValue {
       if (const auto value = valueInConfig(cfg, widgetName, settingKey); value.has_value()) {
         return *value;
