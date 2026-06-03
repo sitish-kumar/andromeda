@@ -39,7 +39,7 @@
     in
     {
       overlays.default = final: prev: {
-        default = (final.callPackage ./nix/package.nix { }) {
+        noctalia = final.callPackage ./nix/package.nix {
           inherit version shortRev;
         };
       };
