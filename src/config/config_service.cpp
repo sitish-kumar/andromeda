@@ -2481,13 +2481,6 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
     auto& hooks = config.hooks;
     for (const auto& [name, node] : *hooksTbl) {
       const std::string_view keyView{name.str()};
-      if (keyView == "battery_low_percent_threshold") {
-        if (auto v = node.value<int64_t>()) {
-          hooks.batteryLowPercentThreshold =
-              static_cast<std::int32_t>(std::clamp(*v, static_cast<std::int64_t>(0), static_cast<std::int64_t>(100)));
-        }
-        continue;
-      }
       if (const auto kind = hookKindFromKey(keyView)) {
         setHookCommandsFromNode(node, hooks.commands[static_cast<std::size_t>(*kind)]);
       }
@@ -2633,9 +2626,7 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
         ++hookKindsUsed;
       }
     }
-    kLog.info(
-        "hooks kinds with commands={} battery_low_threshold={}%", hookKindsUsed, config.hooks.batteryLowPercentThreshold
-    );
+    kLog.info("hooks kinds with commands={}", hookKindsUsed);
   }
 }
 

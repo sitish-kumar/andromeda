@@ -732,7 +732,7 @@ void Application::initServices() {
 
     try {
       m_upowerService = std::make_unique<UPowerService>(*m_systemBus);
-      m_prevUpowerForHooks = m_upowerService->state();
+      m_batteryHookState.reset(m_upowerService->state());
       m_upowerService->setChangeCallback([this]() {
         onUpowerStateChangedForHooks();
         m_bar.refresh();
@@ -1683,27 +1683,13 @@ void Application::onUpowerStateChangedForHooks() {
   if (m_upowerService == nullptr) {
     return;
   }
-  const UPowerState next = m_upowerService->state();
-  if (!m_prevUpowerForHooks.has_value()) {
-    m_prevUpowerForHooks = next;
-    return;
-  }
-  const UPowerState prev = *m_prevUpowerForHooks;
-  if (prev.state != next.state) {
-    m_hookManager.fire(HookKind::BatteryStateChanged, {{"NOCTALIA_BATTERY_STATE", batteryStateLabel(next.state)}});
-  }
-  const std::int32_t thr = m_configService.config().hooks.batteryLowPercentThreshold;
-  if (thr > 0 && next.isPresent) {
-    const bool wasAbove = !prev.isPresent || prev.percentage > static_cast<double>(thr);
-    const bool isAtOrBelow = next.percentage <= static_cast<double>(thr);
-    if (wasAbove && isAtOrBelow) {
-      m_hookManager.fire(
-          HookKind::BatteryUnderThreshold,
-          {{"NOCTALIA_BATTERY_PERCENT", std::to_string(static_cast<int>(next.percentage))}}
-      );
+  for (const auto& event : m_batteryHookState.update(m_upowerService->state())) {
+    if (event.env.empty()) {
+      m_hookManager.fire(event.kind);
+    } else {
+      m_hookManager.fire(event.kind, event.env);
     }
   }
-  m_prevUpowerForHooks = next;
 }
 
 void Application::onNetworkStateChangedForEvents(const NetworkState& state, NetworkChangeOrigin origin) {

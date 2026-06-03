@@ -2359,24 +2359,24 @@
             "label": "On Bluetooth Disabled",
             "description": "Command to run when Bluetooth is disabled"
           },
-          "battery_state_changed": {
-            "label": "On Battery State Changed",
-            "description": "Command to run when charging state changes"
+          "battery_charging": {
+            "label": "On Battery Charging",
+            "description": "Command to run when the battery starts charging"
           },
-          "battery_under_threshold": {
-            "label": "On Battery Under Threshold",
-            "description": "Command to run when battery percent drops under the configured threshold"
+          "battery_discharging": {
+            "label": "On Battery Discharging",
+            "description": "Command to run when the battery starts discharging"
+          },
+          "battery_percentage_changed": {
+            "label": "On Battery Percentage Changed",
+            "description": "Command to run when the battery percentage changes"
           },
           "power_profile_changed": {
             "label": "On Power Profile Changed",
             "description": "Command to run when the active UPower/PPD power profile changes"
           }
         },
-        "command-placeholder": "shell command or script path",
-        "battery-low-threshold": {
-          "label": "Battery Low Threshold",
-          "description": "Percent threshold for the low-battery hook (0 disables it)"
-        }
+        "command-placeholder": "shell command or script path"
       },
       "notifications": {
         "daemon": {

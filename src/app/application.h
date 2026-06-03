@@ -29,6 +29,7 @@
 #include "dbus/tray/tray_service.h"
 #include "dbus/upower/upower_service.h"
 #include "debug/debug_service.h"
+#include "hooks/battery_hook_state.h"
 #include "hooks/hook_manager.h"
 #include "idle/idle_grace_overlay.h"
 #include "idle/idle_inhibitor.h"
@@ -106,6 +107,7 @@
 #include <atomic>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <vector>
 
 class Application {
@@ -175,7 +177,7 @@ private:
   std::unique_ptr<UPowerService> m_upowerService;
   std::optional<bool> m_notificationDaemonEnabled;
   bool m_notificationDaemonInitFailed = false;
-  std::optional<UPowerState> m_prevUpowerForHooks;
+  BatteryHookState m_batteryHookState;
   std::optional<bool> m_prevWirelessEnabledForEvents;
   std::optional<bool> m_prevBluetoothPoweredForEvents;
   std::optional<std::string> m_prevPowerProfileActiveForEvents;

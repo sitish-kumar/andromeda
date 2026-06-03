@@ -665,9 +665,6 @@ namespace config_export {
 
     toml::table hooksTable(const HooksConfig& hooks) {
       toml::table table;
-      table.insert_or_assign(
-          "battery_low_percent_threshold", static_cast<std::int64_t>(hooks.batteryLowPercentThreshold)
-      );
       for (std::size_t i = 0; i < static_cast<std::size_t>(HookKind::Count); ++i) {
         const auto kind = static_cast<HookKind>(i);
         table.insert_or_assign(hookKindKey(kind), stringArray(hooks.commands[i]));

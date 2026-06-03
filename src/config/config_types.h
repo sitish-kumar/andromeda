@@ -890,8 +890,9 @@ enum class HookKind : std::uint8_t {
   WifiDisabled,
   BluetoothEnabled,
   BluetoothDisabled,
-  BatteryStateChanged,
-  BatteryUnderThreshold,
+  BatteryCharging,
+  BatteryDischarging,
+  BatteryPercentageChanged,
   PowerProfileChanged,
   Count
 };
@@ -910,8 +911,9 @@ constexpr EnumOption<HookKind> kHookKinds[] = {
     {HookKind::WifiDisabled, "wifi_disabled", ""},
     {HookKind::BluetoothEnabled, "bluetooth_enabled", ""},
     {HookKind::BluetoothDisabled, "bluetooth_disabled", ""},
-    {HookKind::BatteryStateChanged, "battery_state_changed", ""},
-    {HookKind::BatteryUnderThreshold, "battery_under_threshold", ""},
+    {HookKind::BatteryCharging, "battery_charging", ""},
+    {HookKind::BatteryDischarging, "battery_discharging", ""},
+    {HookKind::BatteryPercentageChanged, "battery_percentage_changed", ""},
     {HookKind::PowerProfileChanged, "power_profile_changed", ""},
 };
 
@@ -919,9 +921,6 @@ static_assert(sizeof(kHookKinds) / sizeof(kHookKinds[0]) == static_cast<std::siz
 
 struct HooksConfig {
   std::array<std::vector<std::string>, static_cast<std::size_t>(HookKind::Count)> commands{};
-  // When > 0, `battery_under_threshold` fires when charge crosses from above to at or below this value.
-  // When 0, the under-threshold hook never runs.
-  std::int32_t batteryLowPercentThreshold = 0;
 
   bool operator==(const HooksConfig&) const = default;
 };

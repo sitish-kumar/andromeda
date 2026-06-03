@@ -392,6 +392,7 @@ _noctalia_sources = files(
   'src/debug/debug_service.cpp',
   'src/i18n/i18n.cpp',
   'src/i18n/i18n_service.cpp',
+  'src/hooks/battery_hook_state.cpp',
   'src/hooks/hook_manager.cpp',
   'src/idle/idle_inhibitor.cpp',
   'src/idle/idle_grace_overlay.cpp',
@@ -859,6 +860,16 @@ process_test = executable('process_test',
 )
 
 test('process', process_test)
+
+battery_hook_state_test = executable('battery_hook_state_test',
+  sources: files(
+    'tests/battery_hook_state_test.cpp',
+    'src/hooks/battery_hook_state.cpp',
+  ),
+  include_directories: _noctalia_inc,
+)
+
+test('battery_hook_state', battery_hook_state_test)
 
 desktop_entry_launch_test = executable('desktop_entry_launch_test',
   sources: files(

@@ -1695,8 +1695,9 @@ namespace settings {
       case HookKind::BluetoothEnabled:
       case HookKind::BluetoothDisabled:
         return "network";
-      case HookKind::BatteryStateChanged:
-      case HookKind::BatteryUnderThreshold:
+      case HookKind::BatteryCharging:
+      case HookKind::BatteryDischarging:
+      case HookKind::BatteryPercentageChanged:
       case HookKind::PowerProfileChanged:
         return "power";
       case HookKind::Count:
@@ -1707,7 +1708,9 @@ namespace settings {
 
     auto hookTags = [](HookKind kind) -> std::string {
       std::string tags = "hook command script exec event trigger";
-      if (kind == HookKind::BatteryUnderThreshold || kind == HookKind::BatteryStateChanged) {
+      if (kind == HookKind::BatteryCharging
+          || kind == HookKind::BatteryDischarging
+          || kind == HookKind::BatteryPercentageChanged) {
         tags += " battery power";
       }
       if (kind == HookKind::PowerProfileChanged) {
@@ -1749,12 +1752,6 @@ namespace settings {
           hookTags(kind.value)
       ));
     }
-
-    entries.push_back(makeEntry(
-        "hooks", "power", tr("settings.schema.hooks.battery-low-threshold.label"),
-        tr("settings.schema.hooks.battery-low-threshold.description"), {"hooks", "battery_low_percent_threshold"},
-        SliderSetting{cfg.hooks.batteryLowPercentThreshold, 0.0f, 100.0f, 1.0f, true}, "battery threshold hook trigger"
-    ));
 
     // Popups
     entries.push_back(makeEntry(
