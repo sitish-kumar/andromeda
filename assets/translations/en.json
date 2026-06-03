@@ -2204,23 +2204,23 @@
           "description": "Sample CPU, memory, network, load, temperature, and disk statistics",
           "cpu-poll": {
             "label": "CPU Poll Interval",
-            "description": "1-120 seconds between CPU usage, CPU temperature, and load-average samples"
+            "description": "Seconds between CPU usage, CPU temperature, and load-average samples (0 disables)"
           },
           "gpu-poll": {
             "label": "GPU Poll Interval",
-            "description": "1-120 seconds between GPU temperature and VRAM samples"
+            "description": "Seconds between GPU temperature and VRAM samples. 0 disables it (default), which avoids waking a discrete GPU; 5 is a good interval if you do enable it"
           },
           "memory-poll": {
             "label": "Memory Poll Interval",
-            "description": "1-120 seconds between RAM usage samples"
+            "description": "Seconds between RAM usage samples (0 disables)"
           },
           "network-poll": {
             "label": "Network Poll Interval",
-            "description": "1-120 seconds between network throughput samples"
+            "description": "Seconds between network throughput samples (0 disables)"
           },
           "disk-poll": {
             "label": "Disk Poll Interval",
-            "description": "1-120 seconds between disk usage and swap usage samples"
+            "description": "Seconds between disk usage and swap usage samples (0 disables)"
           }
         },
         "location-auto-locate": {

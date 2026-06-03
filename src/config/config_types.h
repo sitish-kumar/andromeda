@@ -780,12 +780,16 @@ struct CalendarConfig {
 
 struct SystemConfig {
   struct MonitorConfig {
+    // A poll value of 0 disables that metric entirely (no sampling, no wakeups);
+    // any non-zero value is clamped to [kMinPollSeconds, kMaxPollSeconds].
+    static constexpr float kDisabledPollSeconds = 0.0f;
     static constexpr float kMinPollSeconds = 1.0f;
     static constexpr float kMaxPollSeconds = 120.0f;
 
     bool enabled = true;
     float cpuPollSeconds = 2.0f;
-    float gpuPollSeconds = 5.0f;
+    // Disabled by default so laptops with a discrete GPU are not woken just to sample it.
+    float gpuPollSeconds = kDisabledPollSeconds;
     float memoryPollSeconds = 2.0f;
     float networkPollSeconds = 3.0f;
     float diskPollSeconds = 10.0f;

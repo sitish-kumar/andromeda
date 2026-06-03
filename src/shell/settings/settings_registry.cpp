@@ -1341,7 +1341,8 @@ namespace settings {
         ToggleSetting{cfg.system.monitor.enabled}, "system monitor cpu ram memory"
     ));
     {
-      constexpr float kPollMin = SystemConfig::MonitorConfig::kMinPollSeconds;
+      // The slider goes down to 0, which disables the metric (no polling, no dGPU wakeups).
+      constexpr float kPollMin = SystemConfig::MonitorConfig::kDisabledPollSeconds;
       constexpr float kPollMax = SystemConfig::MonitorConfig::kMaxPollSeconds;
       constexpr float kPollStep = 1.0f;
       const auto& mon = cfg.system.monitor;

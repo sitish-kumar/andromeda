@@ -116,19 +116,32 @@ namespace {
     return reading.totalBytes > 0 && reading.usedBytes <= reading.totalBytes;
   }
 
+  // 0 disables a metric; any other value is clamped to the supported poll range.
   [[nodiscard]] float clampPollSeconds(float seconds) noexcept {
+    if (seconds <= 0.0f) {
+      return SystemConfig::MonitorConfig::kDisabledPollSeconds;
+    }
     return std::clamp(
         seconds, SystemConfig::MonitorConfig::kMinPollSeconds, SystemConfig::MonitorConfig::kMaxPollSeconds
     );
   }
 
-  // Graph history snapshots and scroll timing follow the fastest metric poll so users
-  // only configure how often each stat is read, not a separate graph-only cadence.
+  // Graph history snapshots and scroll timing follow the fastest enabled metric poll so users
+  // only configure how often each stat is read, not a separate graph-only cadence. Disabled
+  // metrics (0) are ignored; if every metric is disabled the history is disabled too.
   [[nodiscard]] float effectiveHistoryPollSeconds(const SystemConfig::MonitorConfig& config) noexcept {
-    return std::min(
-        {config.cpuPollSeconds, config.gpuPollSeconds, config.memoryPollSeconds, config.networkPollSeconds,
-         config.diskPollSeconds}
-    );
+    float fastest = SystemConfig::MonitorConfig::kDisabledPollSeconds;
+    for (const float seconds :
+         {config.cpuPollSeconds, config.gpuPollSeconds, config.memoryPollSeconds, config.networkPollSeconds,
+          config.diskPollSeconds}) {
+      if (seconds <= 0.0f) {
+        continue;
+      }
+      if (fastest <= 0.0f || seconds < fastest) {
+        fastest = seconds;
+      }
+    }
+    return fastest;
   }
 
   [[nodiscard]] SystemConfig::MonitorConfig sanitizeMonitorConfig(SystemConfig::MonitorConfig config) {
@@ -924,17 +937,27 @@ void SystemMonitorService::samplingLoop() {
 
   while (m_running.load()) {
     const SystemConfig::MonitorConfig pollCfg = pollConfig();
+    const float historyPollSeconds = effectiveHistoryPollSeconds(pollCfg);
+
+    // A poll value of 0 disables that metric: it is never sampled and never schedules a wakeup.
+    const bool cpuEnabled = pollCfg.cpuPollSeconds > 0.0f;
+    const bool gpuEnabled = pollCfg.gpuPollSeconds > 0.0f;
+    const bool memoryEnabled = pollCfg.memoryPollSeconds > 0.0f;
+    const bool networkEnabled = pollCfg.networkPollSeconds > 0.0f;
+    const bool diskEnabled = pollCfg.diskPollSeconds > 0.0f;
+    const bool historyEnabled = historyPollSeconds > 0.0f;
+
     const auto cpuInterval = pollDuration(pollCfg.cpuPollSeconds);
     const auto gpuInterval = pollDuration(pollCfg.gpuPollSeconds);
     const auto memoryInterval = pollDuration(pollCfg.memoryPollSeconds);
     const auto networkInterval = pollDuration(pollCfg.networkPollSeconds);
     const auto diskInterval = pollDuration(pollCfg.diskPollSeconds);
-    const auto historyInterval = pollDuration(effectiveHistoryPollSeconds(pollCfg));
+    const auto historyInterval = pollDuration(historyPollSeconds);
 
     const auto now = Clock::now();
     bool statsTouched = false;
 
-    if (now >= nextCpu) {
+    if (cpuEnabled && now >= nextCpu) {
       const auto currentCpu = readCpuTotals();
       if (prevCpu.has_value() && currentCpu.has_value()) {
         const std::uint64_t totalDelta = currentCpu->total - prevCpu->total;
@@ -969,7 +992,7 @@ void SystemMonitorService::samplingLoop() {
       statsTouched = true;
     }
 
-    if (now >= nextMemory) {
+    if (memoryEnabled && now >= nextMemory) {
       if (const auto memKb = readMemoryKb(); memKb.has_value()) {
         std::lock_guard lock{m_statsMutex};
         m_latest.ramTotalMb = memKb->totalKb / 1024;
@@ -982,7 +1005,7 @@ void SystemMonitorService::samplingLoop() {
       statsTouched = true;
     }
 
-    if (now >= nextNetwork) {
+    if (networkEnabled && now >= nextNetwork) {
       if (const auto currentNetBytes = readNetBytes(); currentNetBytes.has_value()) {
         const double intervalSeconds = std::chrono::duration<double>(networkInterval).count();
         const double scale = intervalSeconds > 0.0 ? 1.0 / intervalSeconds : 1.0;
@@ -1008,7 +1031,7 @@ void SystemMonitorService::samplingLoop() {
       statsTouched = true;
     }
 
-    if (now >= nextGpu) {
+    if (gpuEnabled && now >= nextGpu) {
       const bool pollGpuTemp = m_gpuTempRefs.load(std::memory_order_relaxed) > 0;
       const bool pollGpuUsage = m_gpuUsageRefs.load(std::memory_order_relaxed) > 0;
       const bool pollGpuVram = m_gpuVramRefs.load(std::memory_order_relaxed) > 0;
@@ -1042,7 +1065,7 @@ void SystemMonitorService::samplingLoop() {
       statsTouched = true;
     }
 
-    if (now >= nextDisk) {
+    if (diskEnabled && now >= nextDisk) {
       if (const auto memKb = readMemoryKb(); memKb.has_value()) {
         std::lock_guard lock{m_statsMutex};
         m_latest.swapTotalMb = memKb->swapTotalKb / 1024;
@@ -1074,7 +1097,7 @@ void SystemMonitorService::samplingLoop() {
       m_latest.sampledAt = now;
     }
 
-    if (now >= nextHistory) {
+    if (historyEnabled && now >= nextHistory) {
       std::lock_guard lock{m_statsMutex};
       const auto writeIndex = static_cast<std::size_t>(m_historyHead);
       m_history[writeIndex] = m_latest;
@@ -1089,7 +1112,21 @@ void SystemMonitorService::samplingLoop() {
       nextHistory = now + historyInterval;
     }
 
-    const auto nextWake = std::min({nextCpu, nextGpu, nextMemory, nextNetwork, nextDisk, nextHistory});
+    // Only enabled metrics schedule a wakeup; if all are disabled we sleep until stopped or
+    // until a config change re-enables one (applyConfig notifies the wake cv).
+    auto nextWake = Clock::time_point::max();
+    const auto considerWake = [&](bool enabled, Clock::time_point at) {
+      if (enabled) {
+        nextWake = std::min(nextWake, at);
+      }
+    };
+    considerWake(cpuEnabled, nextCpu);
+    considerWake(gpuEnabled, nextGpu);
+    considerWake(memoryEnabled, nextMemory);
+    considerWake(networkEnabled, nextNetwork);
+    considerWake(diskEnabled, nextDisk);
+    considerWake(historyEnabled, nextHistory);
+
     std::unique_lock wakeLock{m_wakeMutex};
     m_wakeCv.wait_until(wakeLock, nextWake, [this]() { return !m_running.load(); });
   }
