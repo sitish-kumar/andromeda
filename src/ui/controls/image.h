@@ -78,6 +78,7 @@ private:
   void clearAsyncSource();
   void subscribeAsyncReady();
   void handleAsyncTextureReady(TextureHandle handle);
+  void presentAsyncTexture(TextureHandle handle);
   void storeColorizationSource(const std::uint8_t* rgba, int width, int height);
   void clearColorizationSource();
   void applyAppIconColorizationPrep(std::uint8_t* rgba, int width, int height);
