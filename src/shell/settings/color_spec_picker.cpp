@@ -1,5 +1,6 @@
 #include "shell/settings/color_spec_picker.h"
 
+#include "core/deferred_call.h"
 #include "i18n/i18n.h"
 #include "ui/builders.h"
 #include "ui/dialogs/color_picker_dialog.h"
@@ -162,13 +163,16 @@ namespace settings {
                 } else if (const auto last = ColorPickerDialog::lastResult()) {
                   dialogOptions.initialColor = *last;
                 }
-                (void)ColorPickerDialog::open(std::move(dialogOptions), [setValue](std::optional<Color> result) {
-                  if (!result.has_value()) {
-                    return;
-                  }
-                  Color rgb = *result;
-                  rgb.a = 1.0f;
-                  setValue(formatFixedColorConfigValue(rgb));
+                DeferredCall::callLater([dialogOptions = std::move(dialogOptions),
+                                         setValue = std::move(setValue)]() mutable {
+                  (void)ColorPickerDialog::open(std::move(dialogOptions), [setValue](std::optional<Color> result) {
+                    if (!result.has_value()) {
+                      return;
+                    }
+                    Color rgb = *result;
+                    rgb.a = 1.0f;
+                    setValue(formatFixedColorConfigValue(rgb));
+                  });
                 });
                 return;
               }
