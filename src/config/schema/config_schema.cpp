@@ -805,6 +805,213 @@ namespace noctalia::config::schema {
     return s;
   }
 
+  namespace {
+    // Plain string, but emitted only when non-empty (shell.lang, shell.avatar_path).
+    template <typename Struct> Field<Struct> stringIfNonEmptyField(std::string Struct::* member, std::string_view key) {
+      return custom<Struct>(
+          key,
+          [member, key](const toml::table& tbl, Struct& out, std::string_view, Diagnostics&) {
+            if (auto v = tbl[key].value<std::string>()) {
+              out.*member = *v;
+            }
+          },
+          [member, key](toml::table& tbl, const Struct& in) {
+            if (!(in.*member).empty()) {
+              tbl.insert_or_assign(key, in.*member);
+            }
+          }
+      );
+    }
+
+    const Schema<ShellConfig::AnimationConfig>& shellAnimationSchema() {
+      static const Schema<ShellConfig::AnimationConfig> s = {
+          field(&ShellConfig::AnimationConfig::enabled, "enabled"),
+          field(&ShellConfig::AnimationConfig::speed, "speed", Range<float>{0.05f, 4.0f}),
+      };
+      return s;
+    }
+
+    const Schema<ShellConfig::ShadowConfig>& shellShadowSchema() {
+      static const Schema<ShellConfig::ShadowConfig> s = {
+          enumField(&ShellConfig::ShadowConfig::direction, "direction", kShadowDirections),
+          field(&ShellConfig::ShadowConfig::alpha, "alpha", Range<float>{0.0f, 1.0f}),
+      };
+      return s;
+    }
+
+    const Schema<ShellConfig::PanelConfig>& shellPanelSchema() {
+      static const Schema<ShellConfig::PanelConfig> s = {
+          field(&ShellConfig::PanelConfig::backgroundBlur, "background_blur"),
+          enumField(&ShellConfig::PanelConfig::transparencyMode, "transparency_mode", kPanelTransparencyModes),
+          field(&ShellConfig::PanelConfig::borders, "borders"),
+          field(&ShellConfig::PanelConfig::shadow, "shadow"),
+          enumField(&ShellConfig::PanelConfig::launcherPlacement, "launcher_placement", kPanelPlacements),
+          enumField(&ShellConfig::PanelConfig::clipboardPlacement, "clipboard_placement", kPanelPlacements),
+          enumField(&ShellConfig::PanelConfig::controlCenterPlacement, "control_center_placement", kPanelPlacements),
+          enumField(&ShellConfig::PanelConfig::wallpaperPlacement, "wallpaper_placement", kPanelPlacements),
+          enumField(&ShellConfig::PanelConfig::sessionPlacement, "session_placement", kPanelPlacements),
+          field(&ShellConfig::PanelConfig::openNearClickControlCenter, "open_near_click_control_center"),
+          field(&ShellConfig::PanelConfig::openNearClickLauncher, "open_near_click_launcher"),
+          field(&ShellConfig::PanelConfig::openNearClickClipboard, "open_near_click_clipboard"),
+          field(&ShellConfig::PanelConfig::openNearClickWallpaper, "open_near_click_wallpaper"),
+          field(&ShellConfig::PanelConfig::openNearClickSession, "open_near_click_session"),
+          field(&ShellConfig::PanelConfig::launcherCategories, "launcher_categories"),
+          field(&ShellConfig::PanelConfig::launcherShowIcons, "launcher_show_icons"),
+          field(&ShellConfig::PanelConfig::launcherCompact, "launcher_compact"),
+      };
+      return s;
+    }
+
+    const Schema<ShellConfig::ScreenCornersConfig>& shellScreenCornersSchema() {
+      static const Schema<ShellConfig::ScreenCornersConfig> s = {
+          field(&ShellConfig::ScreenCornersConfig::enabled, "enabled"),
+          field(&ShellConfig::ScreenCornersConfig::size, "size", Range<std::int64_t>{1, 100}),
+      };
+      return s;
+    }
+
+    const Schema<ShellConfig::MprisConfig>& shellMprisSchema() {
+      static const Schema<ShellConfig::MprisConfig> s = {
+          field(&ShellConfig::MprisConfig::blacklist, "blacklist"),
+      };
+      return s;
+    }
+
+    // NOTE: legacy configToToml never emitted [shell.screenshot] (read-only gap);
+    // including it here fixes the export, mirroring the calendar gap-fix.
+    const Schema<ShellConfig::ScreenshotConfig>& shellScreenshotSchema() {
+      static const Schema<ShellConfig::ScreenshotConfig> s = {
+          field(&ShellConfig::ScreenshotConfig::saveToFile, "save_to_file"),
+          field(&ShellConfig::ScreenshotConfig::copyToClipboard, "copy_to_clipboard"),
+          field(&ShellConfig::ScreenshotConfig::freezeScreen, "freeze_screen"),
+          field(&ShellConfig::ScreenshotConfig::pipeToCommand, "pipe_to_command"),
+          field(&ShellConfig::ScreenshotConfig::pipeCommand, "pipe_command"),
+          field(&ShellConfig::ScreenshotConfig::directory, "directory"),
+          field(&ShellConfig::ScreenshotConfig::filenamePattern, "filename_pattern"),
+      };
+      return s;
+    }
+
+    // command/label/glyph are stored trimmed-or-nullopt but always emitted (value_or("")).
+    Field<SessionPanelActionConfig>
+    sessionOptionalString(std::optional<std::string> SessionPanelActionConfig::* member, std::string_view key) {
+      return custom<SessionPanelActionConfig>(
+          key,
+          [member, key](const toml::table& tbl, SessionPanelActionConfig& out, std::string_view, Diagnostics&) {
+            if (auto v = tbl[key].value<std::string>()) {
+              const std::string trimmed = StringUtils::trim(*v);
+              out.*member = trimmed.empty() ? std::optional<std::string>{} : std::optional<std::string>{trimmed};
+            }
+          },
+          [member, key](toml::table& tbl, const SessionPanelActionConfig& in) {
+            tbl.insert_or_assign(key, (in.*member).value_or(""));
+          }
+      );
+    }
+
+    const Schema<SessionPanelActionConfig>& sessionActionSchema() {
+      static const Schema<SessionPanelActionConfig> s = {
+          custom<SessionPanelActionConfig>(
+              "action",
+              [](const toml::table& tbl, SessionPanelActionConfig& out, std::string_view, Diagnostics&) {
+                if (auto v = tbl["action"].value<std::string>()) {
+                  out.action = StringUtils::toLower(StringUtils::trim(*v));
+                }
+              },
+              [](toml::table& tbl, const SessionPanelActionConfig& in) { tbl.insert_or_assign("action", in.action); }
+          ),
+          field(&SessionPanelActionConfig::enabled, "enabled"),
+          sessionOptionalString(&SessionPanelActionConfig::command, "command"),
+          sessionOptionalString(&SessionPanelActionConfig::label, "label"),
+          sessionOptionalString(&SessionPanelActionConfig::glyph, "glyph"),
+          enumField(&SessionPanelActionConfig::variant, "variant", kSessionActionButtonVariants),
+          custom<SessionPanelActionConfig>(
+              "shortcut",
+              [](const toml::table& tbl, SessionPanelActionConfig& out, std::string_view, Diagnostics&) {
+                if (auto v = tbl["shortcut"].value<std::string>()) {
+                  const std::string spec = StringUtils::trim(*v);
+                  if (!spec.empty()) {
+                    out.shortcut = parseKeyChordSpec(spec);
+                  }
+                }
+              },
+              [](toml::table& tbl, const SessionPanelActionConfig& in) {
+                tbl.insert_or_assign(
+                    "shortcut", in.shortcut.has_value() ? keyChordToString(*in.shortcut) : std::string{}
+                );
+              }
+          ),
+          // lock_and_suspend never carries a custom command.
+          finalize<SessionPanelActionConfig>([](SessionPanelActionConfig& a, std::string_view, Diagnostics&) {
+            if (a.action == "lock_and_suspend") {
+              a.command = std::nullopt;
+            }
+          }),
+      };
+      return s;
+    }
+
+    const Schema<ShellSessionConfig>& shellSessionSchema() {
+      static const Schema<ShellSessionConfig> s = {
+          arrayOf<ShellSessionConfig, SessionPanelActionConfig>(
+              &ShellSessionConfig::actions, "actions", sessionActionSchema(),
+              [](const SessionPanelActionConfig& a) { return !a.action.empty(); }
+          ),
+      };
+      return s;
+    }
+  } // namespace
+
+  const Schema<ShellConfig>& shellSchema() {
+    static const Schema<ShellConfig> s = {
+        field(&ShellConfig::uiScale, "ui_scale", Range<float>{0.5f, 4.0f}),
+        field(&ShellConfig::cornerRadiusScale, "corner_radius_scale", Range<float>{0.0f, 2.0f}),
+        // font_family is trimmed; empty falls back to sans-serif.
+        custom<ShellConfig>(
+            "font_family",
+            [](const toml::table& tbl, ShellConfig& out, std::string_view, Diagnostics&) {
+              if (auto v = tbl["font_family"].value<std::string>()) {
+                out.fontFamily = StringUtils::trim(*v);
+                if (out.fontFamily.empty()) {
+                  out.fontFamily = "sans-serif";
+                }
+              }
+            },
+            [](toml::table& tbl, const ShellConfig& in) { tbl.insert_or_assign("font_family", in.fontFamily); }
+        ),
+        stringIfNonEmptyField(&ShellConfig::lang, "lang"),
+        field(&ShellConfig::timeFormat, "time_format"),
+        field(&ShellConfig::dateFormat, "date_format"),
+        field(&ShellConfig::offlineMode, "offline_mode"),
+        field(&ShellConfig::telemetryEnabled, "telemetry_enabled"),
+        field(&ShellConfig::setupWizardEnabled, "setup_wizard_enabled"),
+        field(&ShellConfig::niriOverviewTypeToLaunchEnabled, "niri_overview_type_to_launch_enabled"),
+        field(&ShellConfig::polkitAgent, "polkit_agent"),
+        enumField(&ShellConfig::passwordMaskStyle, "password_style", kPasswordMaskStyles),
+        field(&ShellConfig::settingsShowAdvanced, "settings_show_advanced"),
+        field(&ShellConfig::middleClickOpensWidgetSettings, "middle_click_opens_widget_settings"),
+        field(&ShellConfig::showLocation, "show_location"),
+        field(&ShellConfig::launchAppsAsSystemdServices, "launch_apps_as_systemd_services"),
+        field(&ShellConfig::clipboardEnabled, "clipboard_enabled"),
+        field(&ShellConfig::clipboardHistoryMaxEntries, "clipboard_history_max_entries", Range<std::int64_t>{10, 200}),
+        field(&ShellConfig::clipboardConfirmClearHistory, "clipboard_confirm_clear_history"),
+        field(&ShellConfig::screenTimeEnabled, "screen_time_enabled"),
+        field(&ShellConfig::sharedGlContext, "shared_gl_context"),
+        field(&ShellConfig::disableMipmaps, "disable_mipmaps"),
+        enumField(&ShellConfig::clipboardAutoPaste, "clipboard_auto_paste", kClipboardAutoPasteModes),
+        field(&ShellConfig::clipboardImageActionCommand, "clipboard_image_action_command"),
+        stringIfNonEmptyField(&ShellConfig::avatarPath, "avatar_path"),
+        subTable(&ShellConfig::animation, "animation", shellAnimationSchema()),
+        subTable(&ShellConfig::shadow, "shadow", shellShadowSchema()),
+        subTable(&ShellConfig::panel, "panel", shellPanelSchema()),
+        subTable(&ShellConfig::screenCorners, "screen_corners", shellScreenCornersSchema()),
+        subTable(&ShellConfig::mpris, "mpris", shellMprisSchema()),
+        subTable(&ShellConfig::screenshot, "screenshot", shellScreenshotSchema()),
+        subTable(&ShellConfig::session, "session", shellSessionSchema()),
+    };
+    return s;
+  }
+
   const Schema<WallpaperConfig>& wallpaperSchema() {
     static const Schema<WallpaperConfig> s = {
         field(&WallpaperConfig::enabled, "enabled"),

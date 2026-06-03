@@ -27,5 +27,6 @@ namespace noctalia::config::schema {
   const Schema<IdleConfig>& idleSchema();
   const Schema<WallpaperConfig>& wallpaperSchema();
   const Schema<ThemeConfig>& themeSchema();
+  const Schema<ShellConfig>& shellSchema();
 
 } // namespace noctalia::config::schema

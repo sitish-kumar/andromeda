@@ -159,6 +159,32 @@ namespace {
     c.wallpaper.monitorOverrides = {
         {"DP-1", true, colorSpecFromConfigString("#00ff00"), std::string("/srv/wp1"), std::nullopt, std::nullopt},
     };
+    c.shell.uiScale = 1.25f;
+    c.shell.fontFamily = "Inter";
+    c.shell.lang = "en_US";
+    c.shell.timeFormat = "{:%H:%M:%S}";
+    c.shell.passwordMaskStyle = PasswordMaskStyle::RandomIcons;
+    c.shell.clipboardHistoryMaxEntries = 80;
+    c.shell.clipboardAutoPaste = ClipboardAutoPasteMode::CtrlV;
+    c.shell.avatarPath = "/home/u/face.png";
+    c.shell.animation.speed = 1.5f;
+    c.shell.shadow.direction = ShadowDirection::UpLeft;
+    c.shell.panel.transparencyMode = PanelTransparencyMode::Glass;
+    c.shell.panel.launcherPlacement = PanelPlacement::Floating;
+    c.shell.panel.launcherCompact = true;
+    c.shell.screenCorners.enabled = true;
+    c.shell.screenCorners.size = 24;
+    c.shell.mpris.blacklist = {"firefox"};
+    c.shell.screenshot.directory = "/shots";
+    c.shell.screenshot.pipeToCommand = true;
+    c.shell.session.actions = {
+        SessionPanelActionConfig{
+            "lock", true, std::nullopt, std::string("Lock"), std::string("lock"),
+            SessionActionButtonVariant::Primary, parseKeyChordSpec("Ctrl+l"),
+        },
+        SessionPanelActionConfig{"shutdown", false, std::nullopt, std::nullopt, std::nullopt,
+                                 SessionActionButtonVariant::Destructive, std::nullopt},
+    };
     c.theme.source = PaletteSource::Wallpaper;
     c.theme.builtinPalette = "Tokyo";
     c.theme.mode = ThemeMode::Light;
@@ -233,6 +259,7 @@ int main() {
   checkWriteParity("idle", legacyRoot, probe.idle, idleSchema());
   checkWriteParity("wallpaper", legacyRoot, probe.wallpaper, wallpaperSchema());
   checkWriteParity("theme", legacyRoot, probe.theme, themeSchema());
+  checkWriteParity("shell", legacyRoot, probe.shell, shellSchema());
 
   checkReadInverse("audio", legacyRoot, probe.audio, audioSchema());
   checkReadInverse("weather", legacyRoot, probe.weather, weatherSchema());
@@ -253,6 +280,7 @@ int main() {
   checkReadInverse("idle", legacyRoot, probe.idle, idleSchema());
   checkReadInverse("wallpaper", legacyRoot, probe.wallpaper, wallpaperSchema());
   checkReadInverse("theme", legacyRoot, probe.theme, themeSchema());
+  checkReadInverse("shell", legacyRoot, probe.shell, shellSchema());
 
   checkClamps();
 
