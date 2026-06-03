@@ -72,11 +72,9 @@ void SharedTextureCache::makeCurrent() {
   if (m_sharedGl == nullptr) {
     return;
   }
-  // If another backend already owns the thread's EGL context (mid-frame between
-  // beginFrame/endFrame), do not yank it away. All backend contexts are created
-  // with the root context as a share-list, so texture uploads/deletes work on
-  // whichever context is currently bound. Switching here would leave the caller
-  // without a draw surface and break its trailing eglSwapBuffers.
+  // Backend contexts share the root context's share-list, so uploads/deletes work on whichever context is bound. If
+  // a backend already owns the thread's context (mid-frame), switching away would drop its draw surface and break its
+  // trailing eglSwapBuffers.
   if (eglGetCurrentContext() != EGL_NO_CONTEXT) {
     return;
   }
