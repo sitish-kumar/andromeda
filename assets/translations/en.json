@@ -572,6 +572,10 @@
       "dnd": "Do Not Disturb",
       "dnd-enabled": "Do Not Disturb enabled",
       "dnd-disabled": "Do Not Disturb disabled",
+      "battery": "Battery",
+      "battery-device": "Battery device",
+      "battery-low-title": "Battery low",
+      "battery-low-body": "{device}: {percent}% remaining",
       "network": "Network",
       "wifi-enabled": "Wi-Fi is on",
       "wifi-disabled": "Wi-Fi is off",
@@ -902,6 +906,7 @@
       "groups": {
         "audio": "Audio",
         "automation": "Automation",
+        "battery": "Battery",
         "backdrop": "Backdrop",
         "background": "Background",
         "behavior": "Behavior",
@@ -1143,6 +1148,7 @@
         "gauge": "Gauge",
         "graph": "Graph",
         "graphic": "Graphic",
+        "glyph": "Glyph",
         "icon": "Icon",
         "icon-and-text": "Icon and Text",
         "icon-only": "Icon Only",
@@ -1247,7 +1253,7 @@
         },
         "display_mode": {
           "label": "Display Mode",
-          "description": "Render the battery as a graphical shape or a glyph icon"
+          "description": "Render the battery as a graphical shape or a Tabler glyph"
         },
         "focused_color": {
           "label": "Focused Color",
@@ -1532,11 +1538,7 @@
         },
         "warning_color": {
           "label": "Warning Color",
-          "description": "Color applied when charge is at or below the warning threshold"
-        },
-        "warning_threshold": {
-          "label": "Warning Threshold",
-          "description": "Battery percentage at or below which the widget switches to warning color"
+          "description": "Color applied when charge is at or below the System battery warning threshold"
         },
         "width": {
           "label": "Width",
@@ -1596,6 +1598,16 @@
         },
         "reserve-space": {
           "label": "Reserve Space"
+        }
+      },
+      "system": {
+        "battery-warning-threshold": {
+          "label": "Battery Warning Threshold",
+          "description": "System battery percentage at or below which the shell sends a low-battery notification and battery widgets use their warning color. Set 0 to disable."
+        },
+        "battery-device-warning-threshold": {
+          "label": "{device} Warning Threshold",
+          "description": "Override the battery warning threshold for this device. Set 0 to disable warnings for this device."
         }
       },
       "appearance": {

@@ -12,13 +12,13 @@ class Box;
 class Glyph;
 class Label;
 
-enum class BatteryDisplayMode : std::uint8_t { Graphic, Icon };
+enum class BatteryDisplayMode : std::uint8_t { Graphic, Glyph };
 
 class BatteryWidget : public Widget {
 public:
   BatteryWidget(
       UPowerService* upower, std::string deviceSelector = "auto", int warningThreshold = 0, ColorSpec warningColor = {},
-      BatteryDisplayMode displayMode = BatteryDisplayMode::Icon, bool showLabel = true, bool hideWhenPlugged = false,
+      BatteryDisplayMode displayMode = BatteryDisplayMode::Glyph, bool showLabel = true, bool hideWhenPlugged = false,
       bool hideWhenFull = false
   );
 
@@ -33,20 +33,20 @@ private:
   void updateFillGeometry();
 
   void createGraphicMode();
-  void createIconMode();
+  void createGlyphMode();
   void layoutGraphicMode(Renderer& renderer);
-  void layoutIconMode(Renderer& renderer, float containerWidth, float containerHeight);
+  void layoutGlyphMode(Renderer& renderer, float containerWidth, float containerHeight);
 
   UPowerService* m_upower = nullptr;
   std::string m_deviceSelector = "auto";
   int m_warningThreshold = 0;
   ColorSpec m_warningColor;
-  BatteryDisplayMode m_displayMode = BatteryDisplayMode::Icon;
+  BatteryDisplayMode m_displayMode = BatteryDisplayMode::Glyph;
   bool m_showLabel = true;
   bool m_hideWhenPlugged = false;
   bool m_hideWhenFull = false;
 
-  // Icon mode nodes
+  // Glyph mode nodes
   Glyph* m_glyph = nullptr;
   Label* m_label = nullptr;
 

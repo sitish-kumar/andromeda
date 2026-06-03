@@ -68,6 +68,8 @@ struct UPowerDeviceInfo {
   [[nodiscard]] bool isLaptopBattery() const { return type == UPowerDeviceType::Battery && powerSupply; }
 };
 
+[[nodiscard]] bool upowerDeviceMatchesSelector(const UPowerDeviceInfo& info, std::string_view selector);
+
 class UPowerService {
 public:
   using ChangeCallback = std::function<void()>;
@@ -80,6 +82,8 @@ public:
   [[nodiscard]] const UPowerState& state() const noexcept { return m_state; }
   [[nodiscard]] UPowerState stateForDevice(std::string_view selector) const;
   [[nodiscard]] std::vector<UPowerDeviceInfo> batteryDevices() const;
+  [[nodiscard]] const UPowerDeviceInfo* defaultSystemBattery() const noexcept;
+  [[nodiscard]] const UPowerDeviceInfo* deviceForSelector(std::string_view selector) const;
 
 private:
   struct TrackedDevice {
@@ -90,8 +94,6 @@ private:
   [[nodiscard]] UPowerState readDefaultState() const;
   [[nodiscard]] UPowerState readDeviceState(sdbus::IProxy& proxy) const;
   [[nodiscard]] UPowerDeviceInfo readDeviceInfo(std::string path, sdbus::IProxy& proxy) const;
-  [[nodiscard]] const UPowerDeviceInfo* defaultSystemBattery() const noexcept;
-  [[nodiscard]] const UPowerDeviceInfo* findDevice(std::string_view selector) const;
   void refreshDisplayDeviceProxy();
   void emitChangedIfNeeded(bool devicesChanged);
   void rescanDevices();

@@ -837,6 +837,22 @@ struct BrightnessConfig {
   bool operator==(const BrightnessConfig&) const = default;
 };
 
+struct BatteryDeviceWarningThreshold {
+  std::string selector;
+  // 0 disables the low-battery warning notification and widget warning state for this device.
+  std::int32_t warningThreshold = 20;
+
+  bool operator==(const BatteryDeviceWarningThreshold&) const = default;
+};
+
+struct BatteryConfig {
+  // 0 disables the low-battery warning notification and widget warning state by default.
+  std::int32_t warningThreshold = 20;
+  std::vector<BatteryDeviceWarningThreshold> deviceThresholds;
+
+  bool operator==(const BatteryConfig&) const = default;
+};
+
 struct KeybindsConfig {
   std::vector<KeyChord> validate;
   std::vector<KeyChord> cancel;
@@ -1062,6 +1078,7 @@ struct Config {
   SystemConfig system;
   AudioConfig audio;
   BrightnessConfig brightness;
+  BatteryConfig battery;
   KeybindsConfig keybinds;
   NightLightConfig nightlight;
   LocationConfig location;
@@ -1090,6 +1107,7 @@ struct ConfigChangeSet {
   bool system = true;
   bool audio = true;
   bool brightness = true;
+  bool battery = true;
   bool keybinds = true;
   bool nightlight = true;
   bool location = true;
@@ -1114,6 +1132,7 @@ struct ConfigChangeSet {
         || system
         || audio
         || brightness
+        || battery
         || keybinds
         || nightlight
         || location

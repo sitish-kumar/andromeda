@@ -84,14 +84,6 @@ namespace {
     return std::string_view(value) == selector || hasSelectorSuffix(value, selector);
   }
 
-  bool selectorMatchesDevice(const UPowerDeviceInfo& info, std::string_view selector) {
-    return selectorMatchesField(info.path, selector)
-        || selectorMatchesField(info.nativePath, selector)
-        || selectorMatchesField(info.model, selector)
-        || selectorMatchesField(info.serial, selector)
-        || selectorMatchesField(info.vendor, selector);
-  }
-
   BatteryState decodeBatteryState(std::uint32_t raw) {
     if (raw >= 1 && raw <= 6) {
       return static_cast<BatteryState>(raw);
@@ -102,6 +94,18 @@ namespace {
   constexpr Logger kLog("upower");
 
 } // namespace
+
+bool upowerDeviceMatchesSelector(const UPowerDeviceInfo& info, std::string_view selector) {
+  const std::string trimmed = StringUtils::trim(selector);
+  if (trimmed.empty()) {
+    return false;
+  }
+  return selectorMatchesField(info.path, trimmed)
+      || selectorMatchesField(info.nativePath, trimmed)
+      || selectorMatchesField(info.model, trimmed)
+      || selectorMatchesField(info.serial, trimmed)
+      || selectorMatchesField(info.vendor, trimmed);
+}
 
 UPowerService::UPowerService(SystemBus& bus) : m_bus(bus) {
   m_upowerProxy = sdbus::createProxy(m_bus.connection(), kUpowerBusName, kUpowerObjectPath);
@@ -157,7 +161,7 @@ UPowerState UPowerService::stateForDevice(std::string_view selector) const {
     return m_state;
   }
 
-  if (const auto* device = findDevice(selector); device != nullptr) {
+  if (const auto* device = deviceForSelector(selector); device != nullptr) {
     return device->state;
   }
 
@@ -299,14 +303,14 @@ const UPowerDeviceInfo* UPowerService::defaultSystemBattery() const noexcept {
   return nullptr;
 }
 
-const UPowerDeviceInfo* UPowerService::findDevice(std::string_view selector) const {
+const UPowerDeviceInfo* UPowerService::deviceForSelector(std::string_view selector) const {
   const std::string trimmed = StringUtils::trim(selector);
   if (trimmed.empty()) {
     return nullptr;
   }
 
   for (const auto& device : m_devices) {
-    if (isBatteryCapableDeviceType(device.info.type) && selectorMatchesDevice(device.info, trimmed)) {
+    if (isBatteryCapableDeviceType(device.info.type) && upowerDeviceMatchesSelector(device.info, trimmed)) {
       return &device.info;
     }
   }

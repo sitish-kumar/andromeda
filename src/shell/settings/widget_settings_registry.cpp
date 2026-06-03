@@ -593,14 +593,13 @@ namespace settings {
       }
     } else if (type == "battery") {
       add(selectSpec(
-          "display_mode", "icon",
-          {{"icon", "settings.widgets.options.icon"}, {"graphic", "settings.widgets.options.graphic"}}
+          "display_mode", "glyph",
+          {{"glyph", "settings.widgets.options.glyph"}, {"graphic", "settings.widgets.options.graphic"}}
       ));
       add(boolSpec("show_label", true));
       add(boolSpec("hide_when_plugged", false));
       add(boolSpec("hide_when_full", false));
       add(selectSpec("device", "auto", {{"auto", "common.states.auto"}}));
-      add(intSpec("warning_threshold", 20, 0.0, 100.0, 1.0));
       {
         auto warn = colorSpec("warning_color", "error");
         add(std::move(warn));

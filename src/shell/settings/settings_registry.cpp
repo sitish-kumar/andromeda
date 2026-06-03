@@ -1386,6 +1386,30 @@ namespace settings {
         tr("settings.schema.shell.screen-time-enabled.description"), {"shell", "screen_time_enabled"},
         ToggleSetting{cfg.shell.screenTimeEnabled}, "screen time usage tracking control center"
     ));
+    if (env.batteryAvailable) {
+      if (env.systemBatteryAvailable) {
+        entries.push_back(makeEntry(
+            "system", "battery", tr("settings.schema.system.battery-warning-threshold.label"),
+            tr("settings.schema.system.battery-warning-threshold.description"), {"battery", "warning_threshold"},
+            SliderSetting{cfg.battery.warningThreshold, 0.0f, 100.0f, 1.0f, true},
+            "battery low warning threshold notification"
+        ));
+      }
+      for (const auto& device : env.batteryDeviceOptions) {
+        int value = 0;
+        if (const auto it = env.batteryWarningThresholds.find(device.value); it != env.batteryWarningThresholds.end()) {
+          value = it->second;
+        }
+        entries.push_back(makeEntry(
+            "system", "battery",
+            tr("settings.schema.system.battery-device-warning-threshold.label", "device", device.label),
+            tr("settings.schema.system.battery-device-warning-threshold.description"),
+            {"battery", "device", device.value, "warning_threshold"},
+            SliderSetting{std::clamp(value, 0, 100), 0.0f, 100.0f, 1.0f, true},
+            std::string("battery device low warning threshold notification ") + device.label + " " + device.value
+        ));
+      }
+    }
 
     // Location — single source of "where am I"; shared by weather, night light, and theme auto mode.
     entries.push_back(makeEntry(

@@ -81,7 +81,7 @@ void BatteryWidget::create() {
   if (m_displayMode == BatteryDisplayMode::Graphic) {
     createGraphicMode();
   } else {
-    createIconMode();
+    createGlyphMode();
   }
 }
 
@@ -127,7 +127,7 @@ void BatteryWidget::createGraphicMode() {
   );
 }
 
-void BatteryWidget::createIconMode() {
+void BatteryWidget::createGlyphMode() {
   auto* container = static_cast<InputArea*>(root());
 
   container->addChild(
@@ -160,7 +160,7 @@ void BatteryWidget::doLayout(Renderer& renderer, float containerWidth, float con
   if (m_displayMode == BatteryDisplayMode::Graphic) {
     layoutGraphicMode(renderer);
   } else {
-    layoutIconMode(renderer, containerWidth, containerHeight);
+    layoutGlyphMode(renderer, containerWidth, containerHeight);
   }
 }
 
@@ -268,7 +268,7 @@ void BatteryWidget::layoutGraphicMode(Renderer& renderer) {
   }
 }
 
-void BatteryWidget::layoutIconMode(Renderer& renderer, float /*containerWidth*/, float /*containerHeight*/) {
+void BatteryWidget::layoutGlyphMode(Renderer& renderer, float /*containerWidth*/, float /*containerHeight*/) {
   auto* rootNode = root();
   if (m_glyph == nullptr || rootNode == nullptr) {
     return;
@@ -430,7 +430,6 @@ void BatteryWidget::syncState(Renderer& renderer) {
       m_overlayGlyph->setVisible(stateGlyph != nullptr);
     }
   } else {
-    // Icon mode — existing behavior
     if (m_glyph != nullptr) {
       m_glyph->setGlyph(batteryGlyphName(s.percentage, s.state));
       m_glyph->setGlyphSize(Style::barGlyphSize * m_contentScale);

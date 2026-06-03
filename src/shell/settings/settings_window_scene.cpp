@@ -5,6 +5,7 @@
 #include "dbus/upower/upower_service.h"
 #include "i18n/i18n.h"
 #include "render/render_context.h"
+#include "shell/battery_warning_monitor.h"
 #include "shell/greeter/greeter_appearance_sync.h"
 #include "shell/settings/settings_bar_management.h"
 #include "shell/settings/settings_content.h"
@@ -332,6 +333,23 @@ settings::RegistryEnvironment SettingsWindow::buildRegistryEnvironment() const {
   }
   static const std::vector<settings::SelectOption> kFontFamilies = discoverFontFamilyOptions();
   env.fontFamilies = kFontFamilies;
+  const auto allBatteryDeviceOptions = upowerBatteryDeviceOptions(m_upower);
+  const auto* systemBattery = m_upower != nullptr ? m_upower->defaultSystemBattery() : nullptr;
+  env.systemBatteryAvailable = systemBattery != nullptr;
+  for (const auto& option : allBatteryDeviceOptions) {
+    if (option.value == "auto" || (systemBattery != nullptr && option.value == systemBattery->path)) {
+      continue;
+    }
+    env.batteryDeviceOptions.push_back(option);
+  }
+  env.batteryAvailable = env.systemBatteryAvailable || !env.batteryDeviceOptions.empty();
+  if (env.batteryAvailable && m_config != nullptr) {
+    for (const auto& option : env.batteryDeviceOptions) {
+      env.batteryWarningThresholds.emplace(
+          option.value, batteryWarningThresholdForSelector(m_config->config().battery, m_upower, option.value)
+      );
+    }
+  }
   if (m_wayland != nullptr) {
     for (const auto& output : m_wayland->outputs()) {
       if (output.output == nullptr || output.connectorName.empty()) {

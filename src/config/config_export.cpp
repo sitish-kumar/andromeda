@@ -636,6 +636,25 @@ namespace config_export {
       return table;
     }
 
+    toml::table batteryTable(const BatteryConfig& battery) {
+      toml::table table;
+      table.insert_or_assign("warning_threshold", static_cast<std::int64_t>(battery.warningThreshold));
+
+      if (!battery.deviceThresholds.empty()) {
+        toml::table devices;
+        for (const auto& deviceThreshold : battery.deviceThresholds) {
+          if (deviceThreshold.selector.empty()) {
+            continue;
+          }
+          toml::table device;
+          device.insert_or_assign("warning_threshold", static_cast<std::int64_t>(deviceThreshold.warningThreshold));
+          devices.insert_or_assign(deviceThreshold.selector, std::move(device));
+        }
+        table.insert_or_assign("device", std::move(devices));
+      }
+      return table;
+    }
+
     toml::table idleTable(const IdleConfig& idle) {
       toml::table table;
       table.insert_or_assign("pre_action_fade_seconds", static_cast<double>(idle.preActionFadeSeconds));
@@ -741,6 +760,7 @@ namespace config_export {
     root.insert_or_assign("audio", std::move(audio));
 
     root.insert_or_assign("brightness", brightnessTable(config.brightness));
+    root.insert_or_assign("battery", batteryTable(config.battery));
 
     toml::table nightlight;
     nightlight.insert_or_assign("enabled", config.nightlight.enabled);

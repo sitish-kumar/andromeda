@@ -52,6 +52,7 @@
 #include "scripting/script_api_context.h"
 #include "shell/backdrop/backdrop.h"
 #include "shell/bar/bar.h"
+#include "shell/battery_warning_monitor.h"
 #include "shell/desktop/desktop_widgets_controller.h"
 #include "shell/dock/dock.h"
 #include "shell/lockscreen/lock_screen.h"
@@ -178,6 +179,7 @@ private:
   std::optional<bool> m_notificationDaemonEnabled;
   bool m_notificationDaemonInitFailed = false;
   BatteryHookState m_batteryHookState;
+  BatteryWarningMonitor m_batteryWarningMonitor;
   std::optional<bool> m_prevWirelessEnabledForEvents;
   std::optional<bool> m_prevBluetoothPoweredForEvents;
   std::optional<std::string> m_prevPowerProfileActiveForEvents;

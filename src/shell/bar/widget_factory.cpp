@@ -20,6 +20,7 @@
 #include "shell/bar/widgets/clock_widget.h"
 #include "shell/bar/widgets/control_center_widget.h"
 #include "shell/bar/widgets/custom_button_widget.h"
+#include "shell/battery_warning_monitor.h"
 #ifndef NDEBUG
 #include "shell/bar/widgets/debug_indicator_widget.h"
 #endif
@@ -166,16 +167,20 @@ std::unique_ptr<Widget> WidgetFactory::create(
 
   if (type == "battery") {
     const std::string deviceSelector = wc != nullptr ? wc->getString("device", "auto") : std::string("auto");
-    const int warningThreshold = static_cast<int>(wc != nullptr ? wc->getInt("warning_threshold", 20) : 20);
+    const int warningThreshold = batteryWarningThresholdForSelector(m_config.battery, m_upower, deviceSelector);
     const ColorSpec warningColor = wc != nullptr
         ? wc->getColorSpec("warning_color", colorSpecFromRole(ColorRole::Error), "widget." + name + ".warning_color")
         : colorSpecFromRole(ColorRole::Error);
-    const std::string displayModeStr = wc != nullptr ? wc->getString("display_mode", "icon") : std::string("icon");
+    const std::string displayModeStr = wc != nullptr ? wc->getString("display_mode", "glyph") : std::string("glyph");
     const bool showLabel = wc != nullptr ? wc->getBool("show_label", true) : true;
     const bool hideWhenPlugged = wc != nullptr ? wc->getBool("hide_when_plugged", false) : false;
     const bool hideWhenFull = wc != nullptr ? wc->getBool("hide_when_full", false) : false;
-    const BatteryDisplayMode displayMode =
-        displayModeStr == "graphic" ? BatteryDisplayMode::Graphic : BatteryDisplayMode::Icon;
+    BatteryDisplayMode displayMode = BatteryDisplayMode::Glyph;
+    if (displayModeStr == "graphic") {
+      displayMode = BatteryDisplayMode::Graphic;
+    } else if (displayModeStr != "glyph") {
+      kLog.warn("invalid widget.{}.display_mode '{}'; expected glyph or graphic", name, displayModeStr);
+    }
     auto widget = std::make_unique<BatteryWidget>(
         m_upower, deviceSelector, warningThreshold, warningColor, displayMode, showLabel, hideWhenPlugged, hideWhenFull
     );

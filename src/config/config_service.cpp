@@ -544,6 +544,7 @@ void ConfigService::fireReloadCallbacks() {
     add(m_lastChange.system, "system");
     add(m_lastChange.audio, "audio");
     add(m_lastChange.brightness, "brightness");
+    add(m_lastChange.battery, "battery");
     add(m_lastChange.keybinds, "keybinds");
     add(m_lastChange.nightlight, "nightlight");
     add(m_lastChange.location, "location");
@@ -2373,6 +2374,32 @@ void ConfigService::parseTableInto(const toml::table& tbl, Config& config, bool 
         }
 
         brightness.monitorOverrides.push_back(std::move(override));
+      }
+    }
+  }
+
+  // Parse [battery]
+  if (auto* batteryTbl = tbl["battery"].as_table()) {
+    auto& battery = config.battery;
+    if (auto v = (*batteryTbl)["warning_threshold"].value<std::int64_t>()) {
+      battery.warningThreshold = static_cast<std::int32_t>(std::clamp<std::int64_t>(*v, 0, 100));
+    }
+    if (auto* deviceTblMap = (*batteryTbl)["device"].as_table()) {
+      for (const auto& [selector, node] : *deviceTblMap) {
+        auto* entryTbl = node.as_table();
+        if (entryTbl == nullptr) {
+          continue;
+        }
+
+        BatteryDeviceWarningThreshold deviceThreshold;
+        deviceThreshold.selector = std::string(selector.str());
+        if (auto v = (*entryTbl)["warning_threshold"].value<std::int64_t>()) {
+          deviceThreshold.warningThreshold = static_cast<std::int32_t>(std::clamp<std::int64_t>(*v, 0, 100));
+        }
+
+        if (!deviceThreshold.selector.empty()) {
+          battery.deviceThresholds.push_back(std::move(deviceThreshold));
+        }
       }
     }
   }
