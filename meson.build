@@ -908,9 +908,9 @@ string_utils_test = executable('string_utils_test',
 
 test('string_utils', string_utils_test)
 
-config_schema_equivalence_test = executable('config_schema_equivalence_test',
+config_schema_roundtrip_test = executable('config_schema_roundtrip_test',
   sources: files(
-    'tests/config_schema_equivalence_test.cpp',
+    'tests/config_schema_roundtrip_test.cpp',
     'src/config/schema/config_schema.cpp',
     'src/config/config_export.cpp',
     'src/config/config_types.cpp',
@@ -926,7 +926,7 @@ config_schema_equivalence_test = executable('config_schema_equivalence_test',
   dependencies: [xkbcommon_dep],
 )
 
-test('config_schema_equivalence', config_schema_equivalence_test)
+test('config_schema_roundtrip', config_schema_roundtrip_test)
 
 config_path_resolution_test = executable('config_path_resolution_test',
   sources: files(
