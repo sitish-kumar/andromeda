@@ -290,9 +290,12 @@ namespace {
                                                             WaylandConnection& /*wayland*/, bool on
                                                         ) { return compositors::triad::setOutputPower(runtime, on); });
     case compositors::CompositorKind::Mango:
-      return std::make_unique<LambdaOutputPowerBackend>([&runtime = runtimeRegistry.mango()](
-                                                            WaylandConnection& wayland, bool on
-                                                        ) { return compositors::mango::setOutputPower(runtime, wayland, on); }, true);
+      return std::make_unique<LambdaOutputPowerBackend>(
+          [&runtime = runtimeRegistry.mango()](WaylandConnection& wayland, bool on) {
+            return compositors::mango::setOutputPower(runtime, wayland, on);
+          },
+          true
+      );
     case compositors::CompositorKind::Dwl:
     case compositors::CompositorKind::Labwc:
     case compositors::CompositorKind::Unknown:
