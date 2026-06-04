@@ -698,6 +698,17 @@ void Application::initServices() {
           }
           kLog.info("system resumed; rechecking night light schedule");
           m_gammaService.reevaluateSchedule();
+          // BlueZ property-change signals can be missed across the suspend window, leaving our
+          // cached adapter state stale. Re-sync now and again shortly after, since BlueZ may take a
+          // moment to restore the adapter on resume.
+          if (m_bluetoothService != nullptr) {
+            m_bluetoothService->refresh();
+            m_bluetoothResumeTimer.start(std::chrono::seconds(2), [this]() {
+              if (m_bluetoothService != nullptr) {
+                m_bluetoothService->refresh();
+              }
+            });
+          }
         });
         kLog.info("logind sleep monitor active");
       } catch (const std::exception& e) {
