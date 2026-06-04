@@ -36,6 +36,12 @@ public:
   void setTextFontFamily(std::string family);
   void notifyFontConfigChanged() override;
 
+  // Request that uploaded text- and icon-glyph textures be dropped and
+  // re-rasterized. The drop is deferred to the next renderScene so it runs with
+  // the context current. Used to recover from GPU memory loss across
+  // suspend/resume.
+  void invalidateGlyphTexturesNextFrame() noexcept { m_glyphTexturesDirty = true; }
+
   [[nodiscard]] RenderBackend& backend() noexcept { return *m_backend; }
   [[nodiscard]] const RenderBackend& backend() const noexcept { return *m_backend; }
 
@@ -67,4 +73,5 @@ private:
   std::string m_textFontFamily = "sans-serif";
   float m_renderScale = 1.0f;
   std::uint64_t m_textMetricsGeneration = 1;
+  bool m_glyphTexturesDirty = false;
 };

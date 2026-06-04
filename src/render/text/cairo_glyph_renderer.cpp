@@ -105,6 +105,17 @@ void CairoGlyphRenderer::initialize(const std::string& fontPath, RenderBackend* 
   m_cache.reserve(kMaxCacheEntries + 16);
 }
 
+void CairoGlyphRenderer::invalidateGlyphTextures() {
+  for (auto& [key, entry] : m_cache) {
+    if (m_textureManager != nullptr) {
+      m_textureManager->unload(entry.texture);
+    }
+  }
+  m_cache.clear();
+  m_lru.clear();
+  m_cacheBytes = 0;
+}
+
 void CairoGlyphRenderer::cleanup() {
   for (auto& [key, entry] : m_cache) {
     if (m_textureManager != nullptr) {

@@ -319,6 +319,19 @@ void CairoTextRenderer::clearCaches() {
   m_fontMetricsCache.clear();
 }
 
+void CairoTextRenderer::invalidateGlyphTextures() {
+  for (auto& [key, entry] : m_cache) {
+    for (auto& tile : entry.tiles) {
+      if (m_textureManager != nullptr) {
+        m_textureManager->unload(tile.texture);
+      }
+    }
+  }
+  m_cache.clear();
+  m_lru.clear();
+  m_cacheBytes = 0;
+}
+
 void CairoTextRenderer::setContentScale(float scale) {
   if (scale <= 0.0f) {
     return;

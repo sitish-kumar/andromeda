@@ -57,6 +57,12 @@ public:
   void setFontFamily(std::string family);
   void notifyFontConfigChanged();
 
+  // Drops the uploaded glyph textures (keeping CPU-side metrics) so they are
+  // re-rasterized on the next draw. Used to recover from GPU memory loss across
+  // suspend/resume on drivers that do not preserve VRAM. Requires the render
+  // context to be current.
+  void invalidateGlyphTextures();
+
   [[nodiscard]] TextMetrics measure(
       std::string_view text, float fontSize, FontWeight fontWeight = FontWeight::Normal, float maxWidth = 0.0f,
       int maxLines = 0, TextAlign align = TextAlign::Start, std::string_view fontFamily = {}

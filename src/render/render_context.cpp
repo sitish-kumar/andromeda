@@ -163,6 +163,12 @@ void RenderContext::renderScene(RenderTarget& target, Node* sceneRoot) {
   m_backend->beginFrame(target);
   syncContentScale(target);
 
+  if (m_glyphTexturesDirty) {
+    m_textRenderer.invalidateGlyphTextures();
+    m_glyphRenderer.invalidateGlyphTextures();
+    m_glyphTexturesDirty = false;
+  }
+
   const auto drawStart = std::chrono::steady_clock::now();
   if (sceneRoot != nullptr) {
     const auto sw = static_cast<float>(target.logicalWidth());

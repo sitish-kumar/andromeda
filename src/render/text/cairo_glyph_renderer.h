@@ -44,6 +44,11 @@ public:
 
   void setContentScale(float scale);
 
+  // Drops the uploaded icon-glyph textures so they are re-rasterized on the next
+  // draw. Recovers from GPU memory loss across suspend/resume. Requires the
+  // render context to be current.
+  void invalidateGlyphTextures();
+
   [[nodiscard]] TextMetrics measureGlyph(char32_t codepoint, float fontSize);
 
   void drawGlyph(
