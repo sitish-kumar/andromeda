@@ -291,19 +291,18 @@ void DesktopMediaPlayerWidget::sync(Renderer& renderer) {
 
   if (m_artwork != nullptr) {
     const int targetPx = static_cast<int>(std::round(kArtSize * contentScale()));
-    const bool squareCrop = active.has_value() && shouldCenterSquareCropArt(*active, m_lastArtUrl);
     if (artChanged) {
       const std::string artPath =
           resolveArtworkSource(m_httpClient, m_pendingArtDownloads, m_lastArtUrl, [this] { requestUpdate(); });
       if (!artPath.empty()) {
-        if (!m_artwork->setSourceFile(renderer, artPath, targetPx, true, squareCrop))
+        if (!m_artwork->setSourceFile(renderer, artPath, targetPx, true, true))
           m_artwork->clear(renderer);
       } else {
         m_artwork->clear(renderer);
       }
     } else if (!m_lastArtUrl.empty() && !m_artwork->hasImage()) {
       const std::string artPath = cachedArtworkPath(m_lastArtUrl);
-      if (!artPath.empty() && m_artwork->setSourceFile(renderer, artPath, targetPx, true, squareCrop))
+      if (!artPath.empty() && m_artwork->setSourceFile(renderer, artPath, targetPx, true, true))
         requestRedraw();
     }
   }

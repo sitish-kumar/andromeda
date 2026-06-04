@@ -550,22 +550,9 @@ void MediaTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight
         kMediaArtworkMinHeight * scale,
         m_artworkRow->height() - (m_artworkRow->paddingTop() + m_artworkRow->paddingBottom())
     );
-    float targetWidth = artWidth;
-    float targetHeight = artHeight;
-    if (m_artworkSquarePresentation) {
-      const float side = std::min(artWidth, artHeight);
-      targetWidth = side;
-      targetHeight = side;
-    } else if (m_artwork->hasImage()) {
-      const float imageAspect = std::max(0.01f, m_artwork->aspectRatio());
-      const float boundsAspect = artWidth / std::max(1.0f, artHeight);
-      if (imageAspect > boundsAspect) {
-        targetHeight = artWidth / imageAspect;
-      } else {
-        targetWidth = artHeight * imageAspect;
-      }
-    }
-    m_artwork->setSize(targetWidth, targetHeight);
+    // Media art is always presented as a square (album-art convention).
+    const float side = std::min(artWidth, artHeight);
+    m_artwork->setSize(side, side);
     m_artwork->setRadius(Style::scaledRadiusXl(scale));
     m_mediaStack->layout(renderer);
   }
@@ -885,18 +872,12 @@ void MediaTab::refresh(Renderer& renderer) {
     });
 
     if (m_artwork != nullptr
-        && (!resolvedArtUrl.empty()
-            && (resolvedArtUrl != m_lastArtPath
-                || m_artworkSquarePresentation != shouldCenterSquareCropArt(player, resolvedArtUrl)
-                || !m_artwork->hasImage()))) {
-      const bool squarePresentation = shouldCenterSquareCropArt(player, resolvedArtUrl);
+        && (!resolvedArtUrl.empty() && (resolvedArtUrl != m_lastArtPath || !m_artwork->hasImage()))) {
       bool loaded = false;
       if (artPath.empty()) {
         kLog.debug("artwork unresolved url=\"{}\"", resolvedArtUrl);
         clearArt(renderer);
-      } else if (!m_artwork->setSourceFile(
-                     renderer, artPath, mediaTabArtDecodeSize(contentScale()), true, squarePresentation
-                 )) {
+      } else if (!m_artwork->setSourceFile(renderer, artPath, mediaTabArtDecodeSize(contentScale()), true, true)) {
         kLog.warn("artwork load failed url=\"{}\" path=\"{}\"", resolvedArtUrl, artPath);
         clearArt(renderer);
       } else {
@@ -908,13 +889,11 @@ void MediaTab::refresh(Renderer& renderer) {
       // Otherwise keep retrying while metadata/download catches up.
       m_lastArtPath = loaded ? resolvedArtUrl : std::string{};
       if (loaded) {
-        m_artworkSquarePresentation = squarePresentation;
         PanelManager::instance().requestLayout();
       }
     } else if (m_artwork != nullptr && resolvedArtUrl.empty()) {
       clearArt(renderer);
       m_lastArtPath.clear();
-      m_artworkSquarePresentation = false;
     }
 
     std::int64_t trackLengthUs = player.lengthUs;
