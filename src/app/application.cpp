@@ -532,6 +532,7 @@ void Application::initServices() {
     m_bar.onOutputChange();
     m_dock.onOutputChange();
     m_desktopWidgetsController.onOutputChange();
+    m_lockscreenWidgetsController.onOutputChange();
     m_screenCorners.onOutputChange();
     m_lockScreen.onOutputChange();
     m_idleGraceOverlay.onOutputChange();
@@ -1051,12 +1052,38 @@ void Application::initUi() {
       m_wayland, &m_configService, &m_renderContext, &m_dependencyService, m_upowerService.get(), &m_idleManager
   );
   m_settingsWindow.setOpenDesktopWidgetEditor([this]() {
+    if (m_lockscreenWidgetsController.isEditing()) {
+      m_lockscreenWidgetsController.exitEdit();
+    }
     const bool wasEditing = m_desktopWidgetsController.isEditing();
     m_desktopWidgetsController.toggleEdit();
     if (!wasEditing && m_desktopWidgetsController.isEditing()) {
       notify::info(
           "Noctalia", i18n::tr("notifications.internal.desktop-widgets-editor"),
           i18n::tr("notifications.internal.desktop-widgets-editor-enabled")
+      );
+    }
+  });
+  m_settingsWindow.setOpenLockscreenWidgetEditor([this]() {
+    if (m_lockScreen.isActive()) {
+      notify::info(
+          "Noctalia", i18n::tr("notifications.internal.lockscreen-widgets-editor"),
+          i18n::tr("notifications.internal.lockscreen-widgets-editor-blocked-locked")
+      );
+      return;
+    }
+    if (m_desktopWidgetsController.isEditing()) {
+      m_desktopWidgetsController.exitEdit();
+    }
+    const bool wasEditing = m_lockscreenWidgetsController.isEditing();
+    m_lockscreenWidgetsController.toggleEdit();
+    if (!wasEditing && m_lockscreenWidgetsController.isEditing()) {
+      if (m_settingsWindow.isOpen()) {
+        m_settingsWindow.close();
+      }
+      notify::info(
+          "Noctalia", i18n::tr("notifications.internal.lockscreen-widgets-editor"),
+          i18n::tr("notifications.internal.lockscreen-widgets-editor-enabled")
       );
     }
   });
@@ -1077,8 +1104,14 @@ void Application::initUi() {
   m_lockScreen.initialize(m_wayland, &m_renderContext, &m_configService, &m_sharedTextureCache);
   m_configService.addReloadCallback([this]() { m_lockScreen.onConfigChanged(); });
   m_lockScreen.setSessionHooks(
-      [this]() { m_hookManager.fire(HookKind::SessionLocked); },
-      [this]() { m_hookManager.fire(HookKind::SessionUnlocked); }
+      [this]() {
+        m_lockscreenWidgetsController.onLockStateChanged();
+        m_hookManager.fire(HookKind::SessionLocked);
+      },
+      [this]() {
+        m_lockscreenWidgetsController.onLockStateChanged();
+        m_hookManager.fire(HookKind::SessionUnlocked);
+      }
   );
 
   SessionActionHooks sessionActionHooks;
@@ -1090,6 +1123,9 @@ void Application::initUi() {
   m_wayland.setPointerEventCallback([this](const PointerEvent& event) {
     if (m_lockScreen.isActive()) {
       m_lockScreen.onPointerEvent(event);
+      return;
+    }
+    if (m_lockscreenWidgetsController.onPointerEvent(event)) {
       return;
     }
     if (m_desktopWidgetsController.onPointerEvent(event)) {
@@ -1120,6 +1156,10 @@ void Application::initUi() {
   m_wayland.setKeyboardEventCallback([this](const KeyboardEvent& event) {
     if (m_lockScreen.isActive()) {
       m_lockScreen.onKeyboardEvent(event);
+      return;
+    }
+    if (m_lockscreenWidgetsController.isEditing()) {
+      m_lockscreenWidgetsController.onKeyboardEvent(event);
       return;
     }
     if (m_colorPickerDialogPopup.isOpen()) {
@@ -1394,9 +1434,13 @@ void Application::initUi() {
   FileDialog::setPresenter(&m_fileDialogPopup);
 
   m_dock.initialize(m_compositorPlatform, &m_configService, &m_renderContext);
+  m_lockscreenWidgetsController.initialize(
+      m_wayland, &m_configService, m_lockScreen, m_bar, m_dock, &m_desktopWidgetsController, m_pipewireSpectrum.get(),
+      &m_weatherService, &m_renderContext, m_mprisService.get(), &m_httpClient, m_systemMonitor.get()
+  );
   m_desktopWidgetsController.initialize(
       m_wayland, &m_configService, m_pipewireSpectrum.get(), &m_weatherService, &m_renderContext, m_mprisService.get(),
-      &m_httpClient, m_systemMonitor.get()
+      &m_httpClient, m_systemMonitor.get(), &m_lockscreenWidgetsController
   );
   m_iconThemePollSource.setChangeCallback([this]() { onIconThemeChanged(); });
 
@@ -1414,6 +1458,7 @@ void Application::initUi() {
         m_bar.requestLayout();
         m_dock.requestLayout();
         m_desktopWidgetsController.requestLayout();
+        m_lockscreenWidgetsController.requestLayout();
         m_panelManager.requestLayout();
         m_notificationToast.requestLayout();
         m_lockScreen.onFontChanged();
@@ -1431,12 +1476,14 @@ void Application::initUi() {
   m_timeService.setTickSecondCallback([this]() {
     m_wallpaper.onSecondTick();
     if (m_lockScreen.isActive()) {
+      m_lockscreenWidgetsController.onSecondTick();
       if (formatLocalTime("{:%S}") == "00") {
         m_lockScreen.onSecondTick();
       }
     } else {
       m_bar.onSecondTick();
       m_desktopWidgetsController.onSecondTick();
+      m_lockscreenWidgetsController.onSecondTick();
       m_settingsWindow.onSecondTick();
       if (m_configService.config().osd.keyboardLayout) {
         m_keyboardLayoutOsd.onLayoutChanged(m_compositorPlatform);
@@ -1647,6 +1694,7 @@ void Application::initIpc() {
   m_configService.registerIpc(m_ipcService);
   m_bar.registerIpc(m_ipcService);
   m_desktopWidgetsController.registerIpc(m_ipcService);
+  m_lockscreenWidgetsController.registerIpc(m_ipcService);
   m_panelManager.registerIpc(m_ipcService);
   m_idleInhibitor.registerIpc(m_ipcService);
   m_gammaService.registerIpc(m_ipcService);

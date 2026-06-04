@@ -1,11 +1,15 @@
-#include "shell/desktop/desktop_widgets_controller.h"
+#include "shell/lockscreen/lockscreen_widgets_controller.h"
 
 #include "ipc/ipc_service.h"
 #include "pipewire/pipewire_spectrum.h"
+#include "shell/bar/bar.h"
 #include "shell/desktop/desktop_widget_layout.h"
-#include "shell/desktop/desktop_widgets_editor.h"
-#include "shell/desktop/desktop_widgets_host.h"
-#include "shell/lockscreen/lockscreen_widgets_controller.h"
+#include "shell/desktop/desktop_widgets_controller.h"
+#include "shell/dock/dock.h"
+#include "shell/lockscreen/lock_screen.h"
+#include "shell/lockscreen/lock_surface.h"
+#include "shell/lockscreen/lockscreen_widgets_editor.h"
+#include "shell/lockscreen/lockscreen_widgets_host.h"
 #include "wayland/wayland_connection.h"
 
 #include <algorithm>
@@ -15,7 +19,7 @@
 
 namespace {
 
-  constexpr std::string_view kDesktopWidgetIdPrefix = "desktop-widget-";
+  constexpr std::string_view kLockscreenWidgetIdPrefix = "lockscreen-widget-";
   constexpr float kDefaultDesktopAudioVisualizerAspectRatio = 240.0f / 96.0f;
 
   void clampOpacitySetting(DesktopWidgetState& widget, const std::string& key, double fallback) {
@@ -34,7 +38,7 @@ namespace {
     widget.settings.insert_or_assign(key, fallback);
   }
 
-  void normalizeDesktopWidgetSettings(DesktopWidgetState& widget) {
+  void normalizeLockscreenWidgetSettings(DesktopWidgetState& widget) {
     clampOpacitySetting(widget, "background_opacity", 0.8);
 
     if (widget.type == "sticker") {
@@ -77,12 +81,12 @@ namespace {
     widget.settings.erase("min_value");
   }
 
-  bool parseDesktopWidgetCounter(std::string_view id, std::uint64_t& value) {
-    if (!id.starts_with(kDesktopWidgetIdPrefix)) {
+  bool parseLockscreenWidgetCounter(std::string_view id, std::uint64_t& value) {
+    if (!id.starts_with(kLockscreenWidgetIdPrefix)) {
       return false;
     }
 
-    const std::string_view suffix = id.substr(kDesktopWidgetIdPrefix.size());
+    const std::string_view suffix = id.substr(kLockscreenWidgetIdPrefix.size());
     if (suffix.empty()) {
       return false;
     }
@@ -94,26 +98,31 @@ namespace {
     return ec == std::errc{} && ptr == end;
   }
 
-  std::string makeDesktopWidgetId(std::uint64_t counter) { return std::format("desktop-widget-{:016x}", counter); }
+  std::string makeLockscreenWidgetId(std::uint64_t counter) {
+    return std::format("lockscreen-widget-{:016x}", counter);
+  }
 
 } // namespace
 
-DesktopWidgetsController::DesktopWidgetsController() = default;
+LockscreenWidgetsController::LockscreenWidgetsController() = default;
 
-DesktopWidgetsController::~DesktopWidgetsController() = default;
+LockscreenWidgetsController::~LockscreenWidgetsController() = default;
 
-void DesktopWidgetsController::initialize(
-    WaylandConnection& wayland, ConfigService* config, PipeWireSpectrum* pipewireSpectrum,
-    const WeatherService* weather, RenderContext* renderContext, MprisService* mpris, HttpClient* httpClient,
-    SystemMonitorService* sysmon, LockscreenWidgetsController* lockscreenWidgets
+void LockscreenWidgetsController::initialize(
+    WaylandConnection& wayland, ConfigService* config, LockScreen& lockScreen, Bar& bar, Dock& dock,
+    DesktopWidgetsController* desktopWidgets, PipeWireSpectrum* pipewireSpectrum, const WeatherService* weather,
+    RenderContext* renderContext, MprisService* mpris, HttpClient* httpClient, SystemMonitorService* sysmon
 ) {
   m_wayland = &wayland;
   m_config = config;
-  m_lockscreenWidgets = lockscreenWidgets;
+  m_lockScreen = &lockScreen;
+  m_bar = &bar;
+  m_dock = &dock;
+  m_desktopWidgets = desktopWidgets;
   m_renderContext = renderContext;
-  m_host = std::make_unique<DesktopWidgetsHost>();
+  m_host = std::make_unique<LockscreenWidgetsHost>();
   m_host->initialize(wayland, config, pipewireSpectrum, weather, renderContext, mpris, httpClient, sysmon);
-  m_editor = std::make_unique<DesktopWidgetsEditor>();
+  m_editor = std::make_unique<LockscreenWidgetsEditor>();
   m_editor->initialize(wayland, config, pipewireSpectrum, weather, renderContext, mpris, httpClient, sysmon);
   m_editor->setExitRequestedCallback([this]() { exitEdit(); });
   loadSnapshotFromConfig();
@@ -121,52 +130,54 @@ void DesktopWidgetsController::initialize(
   applyVisibility();
 
   if (m_config != nullptr) {
-    m_config->addReloadCallback([this]() { handleConfigReload(); }, "desktop-widgets");
+    m_config->addReloadCallback([this]() { handleConfigReload(); }, "lockscreen-widgets");
   }
 }
 
-void DesktopWidgetsController::registerIpc(IpcService& ipc) {
+void LockscreenWidgetsController::registerIpc(IpcService& ipc) {
   ipc.registerHandler(
-      "desktop-widgets-edit",
+      "lockscreen-widgets-edit",
       [this](const std::string&) -> std::string {
         enterEdit();
         return "ok\n";
       },
-      "desktop-widgets-edit", "Open the desktop widgets editor"
+      "lockscreen-widgets-edit", "Open the lockscreen widgets editor"
   );
 
   ipc.registerHandler(
-      "desktop-widgets-exit",
+      "lockscreen-widgets-exit",
       [this](const std::string&) -> std::string {
         exitEdit();
         return "ok\n";
       },
-      "desktop-widgets-exit", "Close the desktop widgets editor"
+      "lockscreen-widgets-exit", "Close the lockscreen widgets editor"
   );
 
   ipc.registerHandler(
-      "desktop-widgets-toggle-edit",
+      "lockscreen-widgets-toggle-edit",
       [this](const std::string&) -> std::string {
         toggleEdit();
         return "ok\n";
       },
-      "desktop-widgets-toggle-edit", "Toggle desktop widgets edit mode"
+      "lockscreen-widgets-toggle-edit", "Toggle lockscreen widgets edit mode"
   );
 }
 
-void DesktopWidgetsController::onOutputChange() {
-  if (!m_initialized) {
+void LockscreenWidgetsController::onLockStateChanged() { applyVisibility(); }
+
+void LockscreenWidgetsController::onOutputChange() {
+  if (!m_initialized || m_lockScreen == nullptr) {
     return;
   }
   normalizeSnapshot();
   if (isEditing()) {
     m_editor->onOutputChange();
   } else if (m_host != nullptr) {
-    m_host->onOutputChange();
+    m_host->onOutputChange(*m_lockScreen);
   }
 }
 
-void DesktopWidgetsController::onSecondTick() {
+void LockscreenWidgetsController::onSecondTick() {
   if (!m_initialized) {
     return;
   }
@@ -177,59 +188,81 @@ void DesktopWidgetsController::onSecondTick() {
   }
 }
 
-void DesktopWidgetsController::requestLayout() {
+void LockscreenWidgetsController::requestLayout() {
   if (!m_initialized) {
     return;
   }
   if (isEditing()) {
     m_editor->requestLayout();
-  } else if (m_host != nullptr) {
-    m_host->requestLayout();
+  } else if (m_lockScreen != nullptr) {
+    m_lockScreen->requestLayout();
   }
 }
 
-void DesktopWidgetsController::requestRedraw() {
+void LockscreenWidgetsController::requestRedraw() {
   if (!m_initialized) {
     return;
   }
   if (isEditing()) {
     m_editor->requestRedraw();
-  } else if (m_host != nullptr) {
-    m_host->requestRedraw();
+  } else if (m_lockScreen != nullptr) {
+    m_lockScreen->forEachSurface([](LockSurface& surface) { surface.requestRedraw(); });
   }
 }
 
-void DesktopWidgetsController::enterEdit() {
-  if (!m_initialized || m_editor == nullptr || m_host == nullptr || isEditing()) {
+void LockscreenWidgetsController::enterEdit() {
+  if (!m_initialized || m_editor == nullptr || m_host == nullptr || isEditing() || m_lockScreen == nullptr) {
     return;
   }
-  if (m_lockscreenWidgets != nullptr && m_lockscreenWidgets->isEditing()) {
-    m_lockscreenWidgets->exitEdit();
-  }
-  if (m_config != nullptr && !m_config->config().desktopWidgets.enabled) {
+  if (m_lockScreen->isActive()) {
     return;
   }
-  // Open the editor before tearing down host widgets so the PipeWire spectrum
-  // listener hand-off does not briefly drop to zero listeners (which resets the
-  // stream and leaves a new editor instance with empty spectrum values).
+  if (m_config != nullptr && !m_config->config().lockscreenWidgets.enabled) {
+    LockscreenWidgetsConfig enabled = m_config->config().lockscreenWidgets;
+    enabled.enabled = true;
+    if (m_config->setLockscreenWidgetsState(enabled)) {
+      m_snapshot = enabled;
+    }
+  }
+  if (m_desktopWidgets != nullptr) {
+    if (m_desktopWidgets->isEditing()) {
+      m_desktopWidgets->exitEdit();
+    } else {
+      m_desktopWidgets->suppressDisplay();
+    }
+  }
+  if (m_bar != nullptr) {
+    m_bar->suppressDisplay();
+  }
+  if (m_dock != nullptr) {
+    m_dock->suppressDisplay();
+  }
   m_editor->open(m_snapshot);
   m_host->hide();
 }
 
-void DesktopWidgetsController::exitEdit() {
-  if (!isEditing() || m_editor == nullptr) {
+void LockscreenWidgetsController::exitEdit() {
+  if (!isEditing() || m_editor == nullptr || m_lockScreen == nullptr) {
     return;
   }
 
   m_snapshot = m_editor->snapshot();
   normalizeSnapshot();
-  m_host->show(m_snapshot);
+  applyVisibility();
   (void)m_editor->close();
   saveSnapshotToConfig();
-  applyVisibility();
+  if (m_desktopWidgets != nullptr) {
+    m_desktopWidgets->unsuppressDisplay();
+  }
+  if (m_bar != nullptr) {
+    m_bar->unsuppressDisplay();
+  }
+  if (m_dock != nullptr) {
+    m_dock->unsuppressDisplay();
+  }
 }
 
-void DesktopWidgetsController::toggleEdit() {
+void LockscreenWidgetsController::toggleEdit() {
   if (isEditing()) {
     exitEdit();
   } else {
@@ -237,61 +270,44 @@ void DesktopWidgetsController::toggleEdit() {
   }
 }
 
-void DesktopWidgetsController::suppressDisplay() {
-  m_displaySuppressed = true;
-  if (isEditing()) {
-    exitEdit();
-  } else if (m_host != nullptr) {
-    m_host->hide();
-  }
-}
+bool LockscreenWidgetsController::isEditing() const noexcept { return m_editor != nullptr && m_editor->isOpen(); }
 
-void DesktopWidgetsController::unsuppressDisplay() {
-  m_displaySuppressed = false;
-  applyVisibility();
-}
-
-bool DesktopWidgetsController::isEditing() const noexcept { return m_editor != nullptr && m_editor->isOpen(); }
-
-bool DesktopWidgetsController::onPointerEvent(const PointerEvent& event) {
+bool LockscreenWidgetsController::onPointerEvent(const PointerEvent& event) {
   if (isEditing() && m_editor != nullptr) {
     return m_editor->onPointerEvent(event);
-  }
-  if (m_host != nullptr) {
-    return m_host->onPointerEvent(event);
   }
   return false;
 }
 
-void DesktopWidgetsController::onKeyboardEvent(const KeyboardEvent& event) {
+void LockscreenWidgetsController::onKeyboardEvent(const KeyboardEvent& event) {
   if (!isEditing() || m_editor == nullptr) {
     return;
   }
   m_editor->onKeyboardEvent(event);
 }
 
-void DesktopWidgetsController::loadSnapshotFromConfig() {
+void LockscreenWidgetsController::loadSnapshotFromConfig() {
   if (m_config == nullptr) {
-    m_snapshot = DesktopWidgetsSnapshot{};
+    m_snapshot = LockscreenWidgetsSnapshot{};
     return;
   }
-  m_snapshot = m_config->config().desktopWidgets;
+  m_snapshot = m_config->config().lockscreenWidgets;
   normalizeSnapshot();
 }
 
-void DesktopWidgetsController::saveSnapshotToConfig() {
+void LockscreenWidgetsController::saveSnapshotToConfig() {
   if (m_config == nullptr) {
     return;
   }
-  m_config->setDesktopWidgetsState(m_snapshot);
+  m_config->setLockscreenWidgetsState(m_snapshot);
 }
 
-void DesktopWidgetsController::applyVisibility() {
-  if (!m_initialized || m_host == nullptr || m_config == nullptr) {
+void LockscreenWidgetsController::applyVisibility() {
+  if (!m_initialized || m_host == nullptr || m_config == nullptr || m_lockScreen == nullptr) {
     return;
   }
 
-  const bool enabled = m_config->config().desktopWidgets.enabled;
+  const bool enabled = m_config->config().lockscreenWidgets.enabled;
   if (!enabled) {
     if (isEditing() && m_editor != nullptr) {
       m_snapshot = m_editor->close();
@@ -301,29 +317,33 @@ void DesktopWidgetsController::applyVisibility() {
     return;
   }
 
-  if (m_displaySuppressed || isEditing()) {
+  if (isEditing()) {
+    return;
+  }
+
+  if (!m_lockScreen->isActive()) {
     m_host->hide();
     return;
   }
 
-  m_host->show(m_snapshot);
+  m_host->show(m_snapshot, *m_lockScreen);
 }
 
-void DesktopWidgetsController::handleConfigReload() {
+void LockscreenWidgetsController::handleConfigReload() {
   if (!m_initialized) {
     return;
   }
 
   if (!isEditing()) {
     loadSnapshotFromConfig();
-    if (m_host != nullptr) {
-      m_host->rebuild(m_snapshot);
+    if (m_host != nullptr && m_lockScreen != nullptr) {
+      m_host->rebuild(m_snapshot, *m_lockScreen);
     }
   }
   applyVisibility();
 }
 
-void DesktopWidgetsController::normalizeSnapshot() {
+void LockscreenWidgetsController::normalizeSnapshot() {
   if (m_wayland == nullptr) {
     return;
   }
@@ -331,20 +351,20 @@ void DesktopWidgetsController::normalizeSnapshot() {
   std::uint64_t maxCounter = 0;
   for (const auto& widget : m_snapshot.widgets) {
     std::uint64_t counter = 0;
-    if (parseDesktopWidgetCounter(widget.id, counter)) {
+    if (parseLockscreenWidgetCounter(widget.id, counter)) {
       maxCounter = std::max(maxCounter, counter);
     }
   }
 
   std::unordered_set<std::string> seenIds;
   for (auto& widget : m_snapshot.widgets) {
-    normalizeDesktopWidgetSettings(widget);
+    normalizeLockscreenWidgetSettings(widget);
 
     if (widget.id.empty() || seenIds.contains(widget.id)) {
       const std::uint64_t nextCounter =
           maxCounter == std::numeric_limits<std::uint64_t>::max() ? maxCounter : (maxCounter + 1);
       maxCounter = nextCounter;
-      widget.id = makeDesktopWidgetId(nextCounter);
+      widget.id = makeLockscreenWidgetId(nextCounter);
     }
     seenIds.insert(widget.id);
 
@@ -360,8 +380,5 @@ void DesktopWidgetsController::normalizeSnapshot() {
         exact != nullptr) {
       widget.outputName = desktop_widgets::outputKey(*exact);
     }
-    // cx/cy clamping is owned by the editor (during drag) and the host (on widget creation and
-    // prepareFrame). Both of those paths know the widget's actual intrinsic size; clamping here
-    // with an estimate can push widgets that the editor had legitimately placed at the edge.
   }
 }

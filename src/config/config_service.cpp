@@ -128,17 +128,18 @@ namespace {
     validateKeyboardLayoutWidgetSettings(widgetName, widget);
   }
 
-  void validateDesktopWidgetColorSettings(const DesktopWidgetState& widget) {
+  void validateDesktopWidgetColorSettings(const DesktopWidgetState& widget, std::string_view section) {
     const auto fields = desktop_settings::desktopWidgetSettingSchema(widget.type);
     for (const auto& [key, value] : widget.settings) {
       if (findColorField(fields, key) == nullptr) {
         continue;
       }
-      validateWidgetColorSettingValue(value, "desktop_widgets.widget." + widget.id + ".settings." + key);
+      validateWidgetColorSettingValue(value, std::string(section) + ".widget." + widget.id + ".settings." + key);
     }
   }
 
-  DesktopWidgetState readDesktopWidgetState(std::string_view id, const toml::table& widgetTable) {
+  DesktopWidgetState
+  readDesktopWidgetState(std::string_view id, const toml::table& widgetTable, std::string_view colorSection) {
     DesktopWidgetState widget;
     widget.id = std::string(id);
     if (auto explicitId = widgetTable["id"].value<std::string>()) {
@@ -172,8 +173,65 @@ namespace {
         }
       }
     }
-    validateDesktopWidgetColorSettings(widget);
+    validateDesktopWidgetColorSettings(widget, colorSection);
     return widget;
+  }
+
+  void parseWidgetsPlacementSection(
+      const toml::table& sectionTbl, DesktopWidgetsGridState& grid, std::vector<DesktopWidgetState>& widgets,
+      std::string_view colorSection
+  ) {
+    if (const auto* gridTable = sectionTbl["grid"].as_table()) {
+      if (auto visible = (*gridTable)["visible"].value<bool>()) {
+        grid.visible = *visible;
+      }
+      if (auto cellSize = (*gridTable)["cell_size"].value<int64_t>()) {
+        grid.cellSize = std::clamp(static_cast<std::int32_t>(*cellSize), 8, 256);
+      }
+      if (auto majorInterval = (*gridTable)["major_interval"].value<int64_t>()) {
+        grid.majorInterval = std::clamp(static_cast<std::int32_t>(*majorInterval), 1, 16);
+      }
+    }
+    if (const auto* widgetsTable = sectionTbl["widget"].as_table()) {
+      std::vector<DesktopWidgetState> parsedWidgets;
+      parsedWidgets.reserve(widgetsTable->size());
+      for (const auto& [idNode, widgetNode] : *widgetsTable) {
+        const auto* widgetTable = widgetNode.as_table();
+        if (widgetTable == nullptr) {
+          continue;
+        }
+        auto widget = readDesktopWidgetState(idNode.str(), *widgetTable, colorSection);
+        if (!widget.id.empty() && !widget.type.empty()) {
+          parsedWidgets.push_back(std::move(widget));
+        }
+      }
+
+      std::vector<std::string> order;
+      bool orderSpecified = false;
+      if (const auto* orderNode = sectionTbl.get("widget_order")) {
+        order = readStringArray(*orderNode);
+        orderSpecified = true;
+      }
+
+      widgets.clear();
+      std::vector<bool> used(parsedWidgets.size(), false);
+      for (const auto& orderedId : order) {
+        for (std::size_t i = 0; i < parsedWidgets.size(); ++i) {
+          if (!used[i] && parsedWidgets[i].id == orderedId) {
+            used[i] = true;
+            widgets.push_back(std::move(parsedWidgets[i]));
+            break;
+          }
+        }
+      }
+      if (!orderSpecified) {
+        for (std::size_t i = 0; i < parsedWidgets.size(); ++i) {
+          if (!used[i]) {
+            widgets.push_back(std::move(parsedWidgets[i]));
+          }
+        }
+      }
+    }
   }
 
   const std::vector<KeyChord>& keybindSet(const KeybindsConfig& keybinds, KeybindAction action) {
@@ -379,6 +437,7 @@ void ConfigService::fireReloadCallbacks() {
     add(m_lastChange.bars, "bars");
     add(m_lastChange.widgets, "widgets");
     add(m_lastChange.desktopWidgets, "desktopWidgets");
+    add(m_lastChange.lockscreenWidgets, "lockscreenWidgets");
     add(m_lastChange.wallpaper, "wallpaper");
     add(m_lastChange.backdrop, "backdrop");
     add(m_lastChange.lockscreen, "lockscreen");
@@ -1158,57 +1217,21 @@ void ConfigService::parseConfigTable(const toml::table& tbl, Config& config, boo
     if (auto schemaVersion = (*desktopWidgetsTbl)["schema_version"].value<int64_t>()) {
       desktopWidgets.schemaVersion = static_cast<std::int32_t>(*schemaVersion);
     }
-    if (const auto* gridTable = (*desktopWidgetsTbl)["grid"].as_table()) {
-      if (auto visible = (*gridTable)["visible"].value<bool>()) {
-        desktopWidgets.grid.visible = *visible;
-      }
-      if (auto cellSize = (*gridTable)["cell_size"].value<int64_t>()) {
-        desktopWidgets.grid.cellSize = std::clamp(static_cast<std::int32_t>(*cellSize), 8, 256);
-      }
-      if (auto majorInterval = (*gridTable)["major_interval"].value<int64_t>()) {
-        desktopWidgets.grid.majorInterval = std::clamp(static_cast<std::int32_t>(*majorInterval), 1, 16);
-      }
-    }
-    if (const auto* widgetsTable = (*desktopWidgetsTbl)["widget"].as_table()) {
-      std::vector<DesktopWidgetState> parsedWidgets;
-      parsedWidgets.reserve(widgetsTable->size());
-      for (const auto& [idNode, widgetNode] : *widgetsTable) {
-        const auto* widgetTable = widgetNode.as_table();
-        if (widgetTable == nullptr) {
-          continue;
-        }
-        auto widget = readDesktopWidgetState(idNode.str(), *widgetTable);
-        if (!widget.id.empty() && !widget.type.empty()) {
-          parsedWidgets.push_back(std::move(widget));
-        }
-      }
+    parseWidgetsPlacementSection(*desktopWidgetsTbl, desktopWidgets.grid, desktopWidgets.widgets, "desktop_widgets");
+  }
 
-      std::vector<std::string> order;
-      bool orderSpecified = false;
-      if (const auto* orderNode = desktopWidgetsTbl->get("widget_order")) {
-        order = readStringArray(*orderNode);
-        orderSpecified = true;
-      }
-
-      desktopWidgets.widgets.clear();
-      std::vector<bool> used(parsedWidgets.size(), false);
-      for (const auto& orderedId : order) {
-        for (std::size_t i = 0; i < parsedWidgets.size(); ++i) {
-          if (!used[i] && parsedWidgets[i].id == orderedId) {
-            used[i] = true;
-            desktopWidgets.widgets.push_back(std::move(parsedWidgets[i]));
-            break;
-          }
-        }
-      }
-      if (!orderSpecified) {
-        for (std::size_t i = 0; i < parsedWidgets.size(); ++i) {
-          if (!used[i]) {
-            desktopWidgets.widgets.push_back(std::move(parsedWidgets[i]));
-          }
-        }
-      }
+  // Parse [lockscreen_widgets]
+  if (auto* lockscreenWidgetsTbl = tbl["lockscreen_widgets"].as_table()) {
+    auto& lockscreenWidgets = config.lockscreenWidgets;
+    if (auto v = (*lockscreenWidgetsTbl)["enabled"].value<bool>()) {
+      lockscreenWidgets.enabled = *v;
     }
+    if (auto schemaVersion = (*lockscreenWidgetsTbl)["schema_version"].value<int64_t>()) {
+      lockscreenWidgets.schemaVersion = static_cast<std::int32_t>(*schemaVersion);
+    }
+    parseWidgetsPlacementSection(
+        *lockscreenWidgetsTbl, lockscreenWidgets.grid, lockscreenWidgets.widgets, "lockscreen_widgets"
+    );
   }
 
   // Parse [weather]

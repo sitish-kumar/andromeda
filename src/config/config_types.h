@@ -453,6 +453,15 @@ struct DesktopWidgetsConfig {
   bool operator==(const DesktopWidgetsConfig&) const = default;
 };
 
+struct LockscreenWidgetsConfig {
+  bool enabled = false;
+  std::int32_t schemaVersion = 1;
+  DesktopWidgetsGridState grid;
+  std::vector<DesktopWidgetState> widgets;
+
+  bool operator==(const LockscreenWidgetsConfig&) const = default;
+};
+
 struct OsdConfig {
   std::string position = "top_center";
   std::string orientation = "horizontal";
@@ -1077,6 +1086,7 @@ struct Config {
   WallpaperConfig wallpaper;
   BackdropConfig backdrop;
   LockscreenConfig lockscreen;
+  LockscreenWidgetsConfig lockscreenWidgets;
   DockConfig dock;
   DesktopWidgetsConfig desktopWidgets;
   ShellConfig shell;
@@ -1104,6 +1114,7 @@ struct ConfigChangeSet {
   bool bars = true;
   bool widgets = true;
   bool desktopWidgets = true;
+  bool lockscreenWidgets = true;
   bool wallpaper = true;
   bool backdrop = true;
   bool lockscreen = true;
@@ -1129,6 +1140,7 @@ struct ConfigChangeSet {
     return bars
         || widgets
         || desktopWidgets
+        || lockscreenWidgets
         || wallpaper
         || backdrop
         || lockscreen

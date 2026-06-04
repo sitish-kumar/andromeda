@@ -28,6 +28,8 @@ class WallpaperNode;
 struct KeyboardEvent;
 struct PointerEvent;
 
+class LockscreenWidgetsHost;
+
 class LockSurface : public Surface {
 public:
   explicit LockSurface(WaylandConnection& connection, ConfigService* config = nullptr);
@@ -56,6 +58,10 @@ public:
   void onKeyboardEvent(const KeyboardEvent& event);
   [[nodiscard]] wl_output* output() const noexcept { return m_output; }
   [[nodiscard]] bool hasDesktopCapture() const noexcept;
+  [[nodiscard]] Node* widgetLayer() noexcept { return m_widgetLayer; }
+  void setBuiltinClockVisible(bool visible);
+  void setWidgetFrameTickCallback(std::function<void(float)> callback);
+  void setWidgetsHost(LockscreenWidgetsHost* host) noexcept { m_widgetsHost = host; }
 
   static void handleConfigure(
       void* data, ext_session_lock_surface_v1* lockSurface, std::uint32_t serial, std::uint32_t width,
@@ -77,6 +83,7 @@ private:
   wl_output* m_output = nullptr;
   ConfigService* m_config = nullptr;
   Node m_root;
+  Node* m_widgetLayer = nullptr;
   WallpaperNode* m_wallpaper = nullptr;
   Box* m_tintOverlay = nullptr;
   Box* m_backdrop = nullptr;
@@ -111,4 +118,7 @@ private:
   std::string m_status;
   bool m_error = false;
   bool m_clockShadowEnabled = true;
+  bool m_builtinClockVisible = true;
+  std::function<void(float)> m_widgetFrameTickCallback;
+  LockscreenWidgetsHost* m_widgetsHost = nullptr;
 };

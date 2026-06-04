@@ -71,6 +71,9 @@ public:
   void requestRedraw();
   void onExternalOptionsChanged();
   void setOpenDesktopWidgetEditor(std::function<void()> callback) { m_openDesktopWidgetEditor = std::move(callback); }
+  void setOpenLockscreenWidgetEditor(std::function<void()> callback) {
+    m_openLockscreenWidgetEditor = std::move(callback);
+  }
   void setOpenWallpaperPanel(std::function<void()> callback) { m_openWallpaperPanel = std::move(callback); }
   void setSyncGreeterAppearance(std::function<void()> callback) { m_syncGreeterAppearance = std::move(callback); }
   void setConnectCalendarAccount(std::function<void(std::string)> callback) {
@@ -221,6 +224,7 @@ private:
   bool m_showOverriddenOnly = false;
   bool m_statusIsError = false;
   std::function<void()> m_openDesktopWidgetEditor;
+  std::function<void()> m_openLockscreenWidgetEditor;
   std::function<void()> m_openWallpaperPanel;
   std::function<void()> m_syncGreeterAppearance;
   std::function<void(std::string)> m_connectCalendarAccount;

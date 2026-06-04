@@ -1347,6 +1347,25 @@ void Bar::hide() {
   applyIpcVisibility(false);
 }
 
+void Bar::suppressDisplay() {
+  if (m_overlayDisplaySuppressed) {
+    return;
+  }
+  m_overlayDisplaySuppressed = true;
+  m_wasVisibleBeforeOverlaySuppress = isVisible();
+  hide();
+}
+
+void Bar::unsuppressDisplay() {
+  if (!m_overlayDisplaySuppressed) {
+    return;
+  }
+  m_overlayDisplaySuppressed = false;
+  if (m_wasVisibleBeforeOverlaySuppress) {
+    show();
+  }
+}
+
 void Bar::toggle() {
   const bool anyEffectivelyVisible = std::any_of(m_instances.begin(), m_instances.end(), [this](const auto& inst) {
     return inst != nullptr && instanceEffectivelyVisible(*inst);

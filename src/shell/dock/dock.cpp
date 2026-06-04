@@ -238,6 +238,25 @@ void Dock::closeAllInstances() {
   m_instances.clear();
 }
 
+void Dock::suppressDisplay() {
+  if (m_overlayDisplaySuppressed) {
+    return;
+  }
+  m_overlayDisplaySuppressed = true;
+  m_hadInstancesBeforeOverlaySuppress = !m_instances.empty();
+  closeAllInstances();
+}
+
+void Dock::unsuppressDisplay() {
+  if (!m_overlayDisplaySuppressed) {
+    return;
+  }
+  m_overlayDisplaySuppressed = false;
+  if (m_hadInstancesBeforeOverlaySuppress) {
+    show();
+  }
+}
+
 void Dock::pruneCachedToplevelHandles() {
   if (m_platform == nullptr) {
     m_lastActiveHandleByAppIdLower.clear();

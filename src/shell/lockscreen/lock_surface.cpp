@@ -9,6 +9,7 @@
 #include "render/core/shared_texture_cache.h"
 #include "render/render_context.h"
 #include "render/scene/wallpaper_node.h"
+#include "shell/lockscreen/lockscreen_widgets_host.h"
 #include "time/time_format.h"
 #include "ui/builders.h"
 #include "ui/palette.h"
@@ -54,6 +55,12 @@ LockSurface::LockSurface(WaylandConnection& connection, ConfigService* config) :
           .configure = [](Box& box) { box.setZIndex(1); },
       })
   );
+
+  {
+    auto widgetLayer = std::make_unique<Node>();
+    widgetLayer->setZIndex(2);
+    m_widgetLayer = m_root.addChild(std::move(widgetLayer));
+  }
 
   m_root.addChild(
       ui::box({
@@ -399,6 +406,17 @@ void LockSurface::handleConfigure(
   self->Surface::onConfigure(width, height);
 }
 
+void LockSurface::setBuiltinClockVisible(bool visible) {
+  m_builtinClockVisible = visible;
+  if (m_surface != nullptr) {
+    requestLayout();
+  }
+}
+
+void LockSurface::setWidgetFrameTickCallback(std::function<void(float)> callback) {
+  m_widgetFrameTickCallback = std::move(callback);
+}
+
 void LockSurface::prepareFrame(bool needsUpdate, bool needsLayout) {
   auto* renderer = renderContext();
   if (renderer == nullptr || width() == 0 || height() == 0) {
@@ -406,6 +424,14 @@ void LockSurface::prepareFrame(bool needsUpdate, bool needsLayout) {
   }
 
   renderer->makeCurrent(renderTarget());
+
+  if (m_widgetFrameTickCallback) {
+    m_widgetFrameTickCallback(0.0f);
+  }
+
+  if (m_widgetsHost != nullptr) {
+    m_widgetsHost->prepareFrame(*this, needsUpdate, needsLayout);
+  }
 
   if (needsUpdate) {
     UiPhaseScope updatePhase(UiPhase::Update);
@@ -472,7 +498,8 @@ void LockSurface::layoutScene(std::uint32_t width, std::uint32_t height) {
   const float clockX = sw - 48.0f - m_clock->width();
   const float clockY = 86.0f;
 
-  m_clockShadow->setVisible(m_clockShadowEnabled);
+  m_clockShadow->setVisible(m_builtinClockVisible && m_clockShadowEnabled);
+  m_clock->setVisible(m_builtinClockVisible);
   m_clockShadow->setFontSize(kClockFontSize);
   m_clockShadow->setFontWeight(FontWeight::Bold);
   m_clockShadow->setColor(colorSpecFromRole(ColorRole::Shadow, 0.55f));

@@ -237,6 +237,15 @@ namespace noctalia::config::schema {
     return s;
   }
 
+  const Schema<LockscreenWidgetsConfig>& lockscreenWidgetsSchema() {
+    static const Schema<LockscreenWidgetsConfig> s = {
+        field(&LockscreenWidgetsConfig::enabled, "enabled"),
+        field(&LockscreenWidgetsConfig::schemaVersion, "schema_version"),
+        subTable(&LockscreenWidgetsConfig::grid, "grid", desktopWidgetsGridSchema()),
+    };
+    return s;
+  }
+
   namespace {
     const Schema<BrightnessMonitorOverride>& brightnessMonitorSchema() {
       static const Schema<BrightnessMonitorOverride> s = {
@@ -1184,6 +1193,9 @@ namespace noctalia::config::schema {
       }
       if (section == "desktop_widgets") {
         return chk(desktopWidgetsSchema());
+      }
+      if (section == "lockscreen_widgets") {
+        return chk(lockscreenWidgetsSchema());
       }
       if (section == "control_center") {
         return chk(controlCenterSchema());

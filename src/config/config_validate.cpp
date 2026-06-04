@@ -300,6 +300,64 @@ namespace noctalia::config {
       }
     }
 
+    void validateLockscreenWidgets(const toml::table& root, schema::Diagnostics& diag) {
+      const auto* section = root["lockscreen_widgets"].as_table();
+      if (section == nullptr) {
+        return;
+      }
+      static const std::unordered_set<std::string> kTopLevel = {
+          "enabled", "schema_version", "grid", "widget", "widget_order"
+      };
+      for (const auto& [key, node] : *section) {
+        (void)node;
+        if (!kTopLevel.contains(std::string(key.str()))) {
+          diag.warn("lockscreen_widgets." + std::string(key.str()), "unknown setting");
+        }
+      }
+      if (const auto* grid = (*section)["grid"].as_table()) {
+        static const std::unordered_set<std::string> kGrid = {"visible", "cell_size", "major_interval"};
+        for (const auto& [key, node] : *grid) {
+          (void)node;
+          if (!kGrid.contains(std::string(key.str()))) {
+            diag.warn("lockscreen_widgets.grid." + std::string(key.str()), "unknown setting");
+          }
+        }
+      }
+      const auto* widgets = (*section)["widget"].as_table();
+      if (widgets == nullptr) {
+        return;
+      }
+      static const std::unordered_set<std::string> kWidgetKeys = {"id",    "type",     "output",  "cx",      "cy",
+                                                                  "scale", "rotation", "enabled", "settings"};
+      for (const auto& [id, node] : *widgets) {
+        const auto* tbl = node.as_table();
+        if (tbl == nullptr) {
+          continue;
+        }
+        const std::string idStr(id.str());
+        const std::string base = "lockscreen_widgets.widget." + idStr;
+        for (const auto& [key, value] : *tbl) {
+          (void)value;
+          if (!kWidgetKeys.contains(std::string(key.str()))) {
+            diag.warn(base + "." + std::string(key.str()), "unknown setting");
+          }
+        }
+        const std::string type = (*tbl)["type"].value<std::string>().value_or("");
+        if (desktop_settings::desktopWidgetSettingSpecs(type).empty()) {
+          diag.warn(base, "unrecognized lockscreen widget type \"" + type + "\"");
+          continue;
+        }
+        const auto* settingsTbl = (*tbl)["settings"].as_table();
+        if (settingsTbl == nullptr) {
+          continue;
+        }
+        validateSettingsMap(
+            *settingsTbl, desktop_settings::desktopWidgetSettingSchema(type), base + ".settings",
+            /*flagUnknown=*/true, diag
+        );
+      }
+    }
+
     void validateBars(const toml::table& root, schema::Diagnostics& diag) {
       const auto* bars = root["bar"].as_table();
       if (bars == nullptr) {
@@ -386,12 +444,35 @@ namespace noctalia::config {
     validateBars(merged, diag);
     validateBarWidgets(merged, diag);
     validateDesktopWidgets(merged, diag);
+    validateLockscreenWidgets(merged, diag);
 
     // Unknown top-level sections.
     static const std::unordered_set<std::string> kKnownSections = {
-        "shell",  "wallpaper", "theme",    "backdrop", "lockscreen",      "notification", "notifications",  "osd",
-        "system", "weather",   "calendar", "audio",    "brightness",      "battery",      "nightlight",     "location",
-        "idle",   "keybinds",  "bar",      "dock",     "desktop_widgets", "widget",       "control_center", "hooks",
+        "shell",
+        "wallpaper",
+        "theme",
+        "backdrop",
+        "lockscreen",
+        "notification",
+        "notifications",
+        "osd",
+        "system",
+        "weather",
+        "calendar",
+        "audio",
+        "brightness",
+        "battery",
+        "nightlight",
+        "location",
+        "idle",
+        "keybinds",
+        "bar",
+        "dock",
+        "desktop_widgets",
+        "lockscreen_widgets",
+        "widget",
+        "control_center",
+        "hooks",
     };
     for (const auto& [key, node] : merged) {
       (void)node;

@@ -35,6 +35,9 @@ public:
   bool initialize(CompositorPlatform& platform, ConfigService* config, RenderContext* renderContext);
   void reload();
   void show();
+  /// Tears down dock surfaces without changing config (e.g. lockscreen widget editor overlay).
+  void suppressDisplay();
+  void unsuppressDisplay();
   void closeAllInstances();
   void onOutputChange();
   void refresh();
@@ -79,4 +82,6 @@ private:
   shell::dock::DockInstance* m_popupOwnerInstance = nullptr; // instance that owns the current open popup
   std::unique_ptr<shell::dock::DockPopup> m_itemMenu;        // right-click context menu
   Signal<>::ScopedConnection m_appIconColorizeConn;
+  bool m_overlayDisplaySuppressed = false;
+  bool m_hadInstancesBeforeOverlaySuppress = false;
 };

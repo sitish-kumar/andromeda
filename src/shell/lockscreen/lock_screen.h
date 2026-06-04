@@ -51,6 +51,14 @@ public:
   [[nodiscard]] bool isActive() const noexcept;
   [[nodiscard]] bool isSessionLocked() const noexcept;
 
+  template <typename Fn> void forEachSurface(Fn&& fn) {
+    for (auto& instance : m_instances) {
+      if (instance.surface != nullptr) {
+        fn(*instance.surface);
+      }
+    }
+  }
+
   /// Runs `fn` after the session reaches interactive lock (`m_locked`), or immediately if already locked.
   /// Used so suspend runs after lock surfaces exist. Cleared if lock fails or the lock request is aborted.
   void runAfterSessionLocked(std::function<void()> fn);

@@ -597,6 +597,9 @@
       "power-profile-body": "Switched to: {profile}",
       "desktop-widgets-editor": "Widget editor",
       "desktop-widgets-editor-enabled": "Desktop widget editor is on. Switch to an empty workspace to see the editor overlay.",
+      "lockscreen-widgets-editor": "Lockscreen widget editor",
+      "lockscreen-widgets-editor-enabled": "Lockscreen widget editor is on. Arrange widgets on the preview overlay, then lock the session to verify the layout.",
+      "lockscreen-widgets-editor-blocked-locked": "Unlock the session before editing lockscreen widgets.",
       "greeter-sync": "Noctalia Greeter",
       "greeter-sync-success": "Appearance synced. Changes apply on the next login screen."
     }
@@ -2108,6 +2111,15 @@
         "wallpaper-tint-intensity": {
           "label": "Wallpaper Tint Intensity",
           "description": "Surface-color tint over the configured wallpaper when screencopy background is disabled"
+        },
+        "widgets": {
+          "label": "Lockscreen Widgets",
+          "description": "Show configurable widgets on the lock screen"
+        },
+        "widgets-editor": {
+          "label": "Lockscreen Widget Editor",
+          "description": "Add, move, and resize widgets on the lock screen",
+          "button": "Toggle Editor"
         }
       },
       "desktop": {

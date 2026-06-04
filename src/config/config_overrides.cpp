@@ -112,6 +112,13 @@ namespace {
         && vectorEqual(a.widgets, b.widgets, desktopWidgetEqual);
   }
 
+  bool lockscreenWidgetsConfigEqual(const LockscreenWidgetsConfig& a, const LockscreenWidgetsConfig& b) {
+    return a.enabled == b.enabled
+        && a.schemaVersion == b.schemaVersion
+        && a.grid == b.grid
+        && vectorEqual(a.widgets, b.widgets, desktopWidgetEqual);
+  }
+
   // Compares two bars ignoring their monitor-override lists (those are resolved + compared separately by
   // barConfigEqual). BarConfig's defaulted operator== covers every field, so new bar fields participate
   // automatically — no list to keep in sync here.
@@ -280,6 +287,7 @@ namespace {
     return vectorEqual(a.bars, b.bars, barConfigEqual)
         && widgetMapEqual(a.widgets, b.widgets)
         && desktopWidgetsConfigEqual(a.desktopWidgets, b.desktopWidgets)
+        && lockscreenWidgetsConfigEqual(a.lockscreenWidgets, b.lockscreenWidgets)
         && a.wallpaper == b.wallpaper
         && a.backdrop == b.backdrop
         && a.lockscreen == b.lockscreen
@@ -593,6 +601,7 @@ ConfigChangeSet computeConfigChangeSet(const Config& prev, const Config& next) {
       .bars = !vectorEqual(prev.bars, next.bars, barConfigEqual),
       .widgets = !widgetMapEqual(prev.widgets, next.widgets),
       .desktopWidgets = !desktopWidgetsConfigEqual(prev.desktopWidgets, next.desktopWidgets),
+      .lockscreenWidgets = !lockscreenWidgetsConfigEqual(prev.lockscreenWidgets, next.lockscreenWidgets),
       .wallpaper = !(prev.wallpaper == next.wallpaper),
       .backdrop = !(prev.backdrop == next.backdrop),
       .lockscreen = !(prev.lockscreen == next.lockscreen),
@@ -684,6 +693,32 @@ void ConfigService::setDockEnabled(bool enabled) {
   fireReloadCallbacks();
 }
 
+namespace {
+
+  void writeWidgetsPlacementToTable(
+      toml::table& sectionTbl, const DesktopWidgetsGridState& grid, const std::vector<DesktopWidgetState>& widgets
+  ) {
+    toml::table gridTable;
+    gridTable.insert_or_assign("visible", grid.visible);
+    gridTable.insert_or_assign("cell_size", static_cast<std::int64_t>(grid.cellSize));
+    gridTable.insert_or_assign("major_interval", static_cast<std::int64_t>(grid.majorInterval));
+    sectionTbl.insert_or_assign("grid", std::move(gridTable));
+
+    toml::table widgetTable;
+    toml::array widgetOrder;
+    for (const auto& widget : widgets) {
+      if (widget.id.empty() || widget.type.empty()) {
+        continue;
+      }
+      widgetTable.insert_or_assign(widget.id, desktopWidgetTable(widget));
+      widgetOrder.push_back(widget.id);
+    }
+    sectionTbl.insert_or_assign("widget", std::move(widgetTable));
+    sectionTbl.insert_or_assign("widget_order", std::move(widgetOrder));
+  }
+
+} // namespace
+
 bool ConfigService::setDesktopWidgetsState(const DesktopWidgetsConfig& desktopWidgets) {
   if (m_overridesPath.empty()) {
     return false;
@@ -695,24 +730,32 @@ bool ConfigService::setDesktopWidgetsState(const DesktopWidgetsConfig& desktopWi
   }
 
   desktopWidgetsTbl->insert_or_assign("schema_version", static_cast<std::int64_t>(desktopWidgets.schemaVersion));
+  writeWidgetsPlacementToTable(*desktopWidgetsTbl, desktopWidgets.grid, desktopWidgets.widgets);
 
-  toml::table grid;
-  grid.insert_or_assign("visible", desktopWidgets.grid.visible);
-  grid.insert_or_assign("cell_size", static_cast<std::int64_t>(desktopWidgets.grid.cellSize));
-  grid.insert_or_assign("major_interval", static_cast<std::int64_t>(desktopWidgets.grid.majorInterval));
-  desktopWidgetsTbl->insert_or_assign("grid", std::move(grid));
-
-  toml::table widgets;
-  toml::array widgetOrder;
-  for (const auto& widget : desktopWidgets.widgets) {
-    if (widget.id.empty() || widget.type.empty()) {
-      continue;
-    }
-    widgets.insert_or_assign(widget.id, desktopWidgetTable(widget));
-    widgetOrder.push_back(widget.id);
+  if (!writeOverridesToFile()) {
+    kLog.warn("failed to write {}", m_overridesPath);
+    return false;
   }
-  desktopWidgetsTbl->insert_or_assign("widget", std::move(widgets));
-  desktopWidgetsTbl->insert_or_assign("widget_order", std::move(widgetOrder));
+
+  m_ownOverridesWritePending = true;
+  loadAll();
+  fireReloadCallbacks();
+  return true;
+}
+
+bool ConfigService::setLockscreenWidgetsState(const LockscreenWidgetsConfig& lockscreenWidgets) {
+  if (m_overridesPath.empty()) {
+    return false;
+  }
+
+  auto* sectionTbl = ensureTable(m_overridesTable, "lockscreen_widgets");
+  if (sectionTbl == nullptr) {
+    return false;
+  }
+
+  sectionTbl->insert_or_assign("enabled", lockscreenWidgets.enabled);
+  sectionTbl->insert_or_assign("schema_version", static_cast<std::int64_t>(lockscreenWidgets.schemaVersion));
+  writeWidgetsPlacementToTable(*sectionTbl, lockscreenWidgets.grid, lockscreenWidgets.widgets);
 
   if (!writeOverridesToFile()) {
     kLog.warn("failed to write {}", m_overridesPath);

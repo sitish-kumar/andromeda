@@ -168,21 +168,24 @@ namespace config_export {
       return table;
     }
 
-    toml::table desktopWidgetsTable(const DesktopWidgetsConfig& desktopWidgets) {
+    toml::table widgetsPlacementTable(
+        bool enabled, std::int32_t schemaVersion, const DesktopWidgetsGridState& grid,
+        const std::vector<DesktopWidgetState>& widgets
+    ) {
       toml::table table;
-      table.insert_or_assign("enabled", desktopWidgets.enabled);
-      table.insert_or_assign("schema_version", static_cast<std::int64_t>(desktopWidgets.schemaVersion));
+      table.insert_or_assign("enabled", enabled);
+      table.insert_or_assign("schema_version", static_cast<std::int64_t>(schemaVersion));
 
-      toml::table grid;
-      grid.insert_or_assign("visible", desktopWidgets.grid.visible);
-      grid.insert_or_assign("cell_size", static_cast<std::int64_t>(desktopWidgets.grid.cellSize));
-      grid.insert_or_assign("major_interval", static_cast<std::int64_t>(desktopWidgets.grid.majorInterval));
-      table.insert_or_assign("grid", std::move(grid));
+      toml::table gridTable;
+      gridTable.insert_or_assign("visible", grid.visible);
+      gridTable.insert_or_assign("cell_size", static_cast<std::int64_t>(grid.cellSize));
+      gridTable.insert_or_assign("major_interval", static_cast<std::int64_t>(grid.majorInterval));
+      table.insert_or_assign("grid", std::move(gridTable));
 
-      if (!desktopWidgets.widgets.empty()) {
+      if (!widgets.empty()) {
         toml::array order;
-        toml::table widgets;
-        for (const auto& widget : desktopWidgets.widgets) {
+        toml::table widgetTable;
+        for (const auto& widget : widgets) {
           if (widget.id.empty()) {
             continue;
           }
@@ -208,12 +211,18 @@ namespace config_export {
             insertWidgetSettingValue(settings, key, widget.settings.at(key));
           }
           item.insert_or_assign("settings", std::move(settings));
-          widgets.insert_or_assign(widget.id, std::move(item));
+          widgetTable.insert_or_assign(widget.id, std::move(item));
         }
         table.insert_or_assign("widget_order", std::move(order));
-        table.insert_or_assign("widget", std::move(widgets));
+        table.insert_or_assign("widget", std::move(widgetTable));
       }
       return table;
+    }
+
+    toml::table desktopWidgetsTable(const DesktopWidgetsConfig& desktopWidgets) {
+      return widgetsPlacementTable(
+          desktopWidgets.enabled, desktopWidgets.schemaVersion, desktopWidgets.grid, desktopWidgets.widgets
+      );
     }
 
   } // namespace
@@ -228,6 +237,13 @@ namespace config_export {
     root.insert_or_assign("backdrop", schema::writeTable(config.backdrop, schema::backdropSchema()));
 
     root.insert_or_assign("lockscreen", schema::writeTable(config.lockscreen, schema::lockscreenSchema()));
+    root.insert_or_assign(
+        "lockscreen_widgets",
+        widgetsPlacementTable(
+            config.lockscreenWidgets.enabled, config.lockscreenWidgets.schemaVersion, config.lockscreenWidgets.grid,
+            config.lockscreenWidgets.widgets
+        )
+    );
 
     root.insert_or_assign("notification", schema::writeTable(config.notification, schema::notificationSchema()));
 
