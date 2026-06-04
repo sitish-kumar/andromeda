@@ -1,46 +1,17 @@
 #include "compositors/niri/niri_workspace_backend.h"
 
 #include "compositors/niri/niri_runtime.h"
-#include "core/log.h"
 #include "util/string_utils.h"
 
 #include <algorithm>
-#include <array>
 #include <cctype>
-#include <cerrno>
 #include <charconv>
-#include <cstring>
-#include <fcntl.h>
 #include <json.hpp>
 #include <limits>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <unistd.h>
 #include <unordered_set>
 #include <utility>
 
 namespace {
-
-  constexpr Logger kLog("niri_workspace");
-  constexpr auto kReconnectInitial = std::chrono::seconds(2);
-  constexpr auto kReconnectMax = std::chrono::seconds(30);
-  constexpr std::size_t kReadBufferMaxBytes = 1024U * 1024U;
-  constexpr std::string_view kEventStreamRequest = "\"EventStream\"\n";
-
-  [[nodiscard]] bool writeAll(int fd, std::string_view data) {
-    std::size_t offset = 0;
-    while (offset < data.size()) {
-      const ssize_t written = ::write(fd, data.data() + offset, data.size() - offset);
-      if (written <= 0) {
-        if (written < 0 && errno == EINTR) {
-          continue;
-        }
-        return false;
-      }
-      offset += static_cast<std::size_t>(written);
-    }
-    return true;
-  }
 
   [[nodiscard]] std::optional<std::uint64_t> jsonUnsigned(const nlohmann::json& json) {
     if (json.is_number_unsigned()) {
@@ -138,11 +109,8 @@ namespace {
 
 } // namespace
 
-NiriWorkspaceBackend::NiriWorkspaceBackend(compositors::niri::NiriRuntime& runtime) : m_runtime(runtime) {
-  if (m_runtime.available()) {
-    connectIfNeeded();
-  }
-}
+NiriWorkspaceBackend::NiriWorkspaceBackend(compositors::niri::NiriRuntime& runtime)
+    : compositors::niri::NiriEventHandler(runtime) {}
 
 NiriWorkspaceBackend::~NiriWorkspaceBackend() { cleanup(); }
 
@@ -154,39 +122,13 @@ void NiriWorkspaceBackend::setOverviewChangeCallback(ChangeCallback callback) {
 
 bool NiriWorkspaceBackend::canTrackOverviewState() const noexcept { return m_runtime.available(); }
 
-int NiriWorkspaceBackend::pollTimeoutMs() const noexcept {
-  if (m_socketFd >= 0 || !m_runtime.available()) {
-    return -1;
-  }
+int NiriWorkspaceBackend::pollFd() const noexcept { return m_runtime.pollFd(); }
 
-  if (m_nextReconnectAt.time_since_epoch().count() == 0) {
-    return 0;
-  }
+short NiriWorkspaceBackend::pollEvents() const noexcept { return m_runtime.pollEvents(); }
 
-  const auto remaining =
-      std::chrono::ceil<std::chrono::milliseconds>(m_nextReconnectAt - std::chrono::steady_clock::now()).count();
-  return static_cast<int>(std::max<std::int64_t>(0, remaining));
-}
+int NiriWorkspaceBackend::pollTimeoutMs() const noexcept { return m_runtime.pollTimeoutMs(); }
 
-void NiriWorkspaceBackend::dispatchPoll(short revents) {
-  if (!m_runtime.available()) {
-    return;
-  }
-
-  if (m_socketFd < 0) {
-    connectIfNeeded();
-    return;
-  }
-
-  if ((revents & (POLLERR | POLLHUP | POLLNVAL)) != 0) {
-    closeSocket(true);
-    return;
-  }
-
-  if ((revents & POLLIN) != 0) {
-    readSocket();
-  }
-}
+void NiriWorkspaceBackend::dispatchPoll(short revents) { m_runtime.dispatchPoll(revents); }
 
 void NiriWorkspaceBackend::apply(std::vector<Workspace>& workspaces, const std::string& outputName) const {
   if (!m_runtime.available() || workspaces.empty() || m_workspaces.empty()) {
@@ -368,213 +310,51 @@ bool NiriWorkspaceBackend::focusWindowById(const std::string& windowId) {
   );
 }
 
-void NiriWorkspaceBackend::cleanup() {
-  closeSocket(false);
+void NiriWorkspaceBackend::cleanup() { m_runtime.cleanup(); }
+
+void NiriWorkspaceBackend::handleStreamReset() {
   const bool overviewWasOpen = m_overviewKnown && m_overviewOpen;
   m_windows.clear();
   m_workspaces.clear();
   m_overviewKnown = false;
   m_overviewOpen = false;
-  m_readBuffer.clear();
-  m_reconnectBackoff = kReconnectInitial;
   if (overviewWasOpen) {
     notifyOverviewChanged();
   }
 }
 
-void NiriWorkspaceBackend::connectIfNeeded() {
-  const auto& socketPath = m_runtime.socketPath();
-  if (m_socketFd >= 0 || socketPath.empty()) {
-    return;
-  }
-
-  const auto now = std::chrono::steady_clock::now();
-  if (m_nextReconnectAt.time_since_epoch().count() != 0 && now < m_nextReconnectAt) {
-    return;
-  }
-
-  const int fd = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
-  if (fd < 0) {
-    scheduleReconnect();
-    return;
-  }
-
-  sockaddr_un addr{};
-  addr.sun_family = AF_UNIX;
-  if (socketPath.size() >= sizeof(addr.sun_path)) {
-    kLog.warn("niri socket path too long");
-    ::close(fd);
-    scheduleReconnect();
-    return;
-  }
-  std::memcpy(addr.sun_path, socketPath.c_str(), socketPath.size() + 1);
-
-  if (::connect(fd, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)) < 0) {
-    ::close(fd);
-    scheduleReconnect();
-    return;
-  }
-
-  if (!writeAll(fd, kEventStreamRequest)) {
-    ::close(fd);
-    scheduleReconnect();
-    return;
-  }
-
-  const int flags = ::fcntl(fd, F_GETFL, 0);
-  if (flags >= 0) {
-    (void)::fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-  }
-
-  m_socketFd = fd;
-  m_nextReconnectAt = {};
-  m_reconnectBackoff = kReconnectInitial;
-  m_readBuffer.clear();
-  kLog.debug("connected to niri event stream");
-}
-
-void NiriWorkspaceBackend::closeSocket(bool scheduleReconnectFlag) {
-  if (m_socketFd >= 0) {
-    ::close(m_socketFd);
-    m_socketFd = -1;
-  }
-
-  if (scheduleReconnectFlag) {
-    scheduleReconnect();
-  } else {
-    m_nextReconnectAt = {};
-  }
-}
-
-void NiriWorkspaceBackend::scheduleReconnect() {
-  const auto now = std::chrono::steady_clock::now();
-  m_nextReconnectAt = now + m_reconnectBackoff;
-  const auto doubled = m_reconnectBackoff * 2;
-  m_reconnectBackoff = std::min(doubled, kReconnectMax);
-}
-
-void NiriWorkspaceBackend::readSocket() {
-  std::array<char, 4096> buffer{};
-  while (true) {
-    const ssize_t readBytes = ::read(m_socketFd, buffer.data(), buffer.size());
-    if (readBytes > 0) {
-      m_readBuffer.insert(m_readBuffer.end(), buffer.begin(), buffer.begin() + readBytes);
-      if (m_readBuffer.size() > kReadBufferMaxBytes) {
-        kLog.warn("niri event stream read buffer exceeded {} bytes; reconnecting", kReadBufferMaxBytes);
-        closeSocket(true);
-        m_readBuffer.clear();
-        return;
-      }
-      continue;
-    }
-
-    if (readBytes == 0) {
-      closeSocket(true);
-      return;
-    }
-
-    if (errno == EINTR) {
-      continue;
-    }
-    if (errno == EAGAIN || errno == EWOULDBLOCK) {
-      break;
-    }
-
-    closeSocket(true);
-    return;
-  }
-
-  parseMessages();
-}
-
-void NiriWorkspaceBackend::parseMessages() {
-  auto lineStart = m_readBuffer.begin();
-  for (auto it = m_readBuffer.begin(); it != m_readBuffer.end(); ++it) {
-    if (*it != '\n') {
-      continue;
-    }
-
-    std::string line(lineStart, it);
-    if (!line.empty() && line.back() == '\r') {
-      line.pop_back();
-    }
-
-    if (!line.empty() && !handleMessage(line)) {
-      m_readBuffer.clear();
-      return;
-    }
-
-    lineStart = std::next(it);
-  }
-
-  if (lineStart != m_readBuffer.begin()) {
-    m_readBuffer.erase(m_readBuffer.begin(), lineStart);
-  }
-}
-
-bool NiriWorkspaceBackend::handleMessage(std::string_view line) {
-  nlohmann::json json;
-  try {
-    json = nlohmann::json::parse(line);
-  } catch (const nlohmann::json::exception& e) {
-    kLog.warn("failed to parse niri event stream message: {}", e.what());
-    return true;
-  }
-
-  if (!json.is_object()) {
-    return true;
-  }
-
-  if (json.contains("Ok")) {
-    return true;
-  }
-  if (json.contains("Err")) {
-    kLog.warn("niri event stream returned an error, reconnecting");
-    closeSocket(true);
-    return false;
-  }
-  if (json.size() != 1) {
-    return true;
-  }
-
-  const auto it = json.begin();
-
-  // Fan the event out to other runtime handlers (e.g. the keyboard backend)
-  // before applying our own state changes.
-  m_runtime.dispatchEvent(it.key(), it.value());
-
+void NiriWorkspaceBackend::handleEvent(std::string_view key, const nlohmann::json& value) {
   bool changed = false;
-  if (it.key() == "WorkspacesChanged") {
-    changed = handleWorkspacesChanged(it.value());
-  } else if (it.key() == "WindowsChanged") {
-    changed = handleWindowsChanged(it.value());
-  } else if (it.key() == "OverviewOpenedOrClosed") {
-    if (handleOverviewChanged(it.value())) {
+  if (key == "WorkspacesChanged") {
+    changed = handleWorkspacesChanged(value);
+  } else if (key == "WindowsChanged") {
+    changed = handleWindowsChanged(value);
+  } else if (key == "OverviewOpenedOrClosed") {
+    if (handleOverviewChanged(value)) {
       notifyOverviewChanged();
     }
-    return true;
-  } else if (it.key() == "OverviewOpened") {
+    return;
+  } else if (key == "OverviewOpened") {
     if (handleOverviewChanged(nlohmann::json{{"is_open", true}})) {
       notifyOverviewChanged();
     }
-    return true;
-  } else if (it.key() == "OverviewClosed") {
+    return;
+  } else if (key == "OverviewClosed") {
     if (handleOverviewChanged(nlohmann::json{{"is_open", false}})) {
       notifyOverviewChanged();
     }
-    return true;
-  } else if (it.key() == "WindowOpenedOrChanged") {
-    changed = handleWindowOpenedOrChanged(it.value());
-  } else if (it.key() == "WindowLayoutsChanged") {
-    changed = handleWindowLayoutsChanged(it.value());
-  } else if (it.key() == "WindowClosed") {
-    changed = handleWindowClosed(it.value());
+    return;
+  } else if (key == "WindowOpenedOrChanged") {
+    changed = handleWindowOpenedOrChanged(value);
+  } else if (key == "WindowLayoutsChanged") {
+    changed = handleWindowLayoutsChanged(value);
+  } else if (key == "WindowClosed") {
+    changed = handleWindowClosed(value);
   }
 
   if (changed) {
     notifyChanged();
   }
-  return true;
 }
 
 bool NiriWorkspaceBackend::handleWorkspacesChanged(const nlohmann::json& payload) {
