@@ -8,8 +8,9 @@
 #include "shell/dock/dock.h"
 #include "shell/lockscreen/lock_screen.h"
 #include "shell/lockscreen/lock_surface.h"
-#include "shell/lockscreen/lockscreen_widgets_editor.h"
 #include "shell/lockscreen/lockscreen_widgets_host.h"
+#include "shell/widgets_editor/background_widgets_editor.h"
+#include "shell/widgets_editor/background_widgets_editor_config.h"
 #include "wayland/wayland_connection.h"
 
 #include <algorithm>
@@ -122,7 +123,7 @@ void LockscreenWidgetsController::initialize(
   m_renderContext = renderContext;
   m_host = std::make_unique<LockscreenWidgetsHost>();
   m_host->initialize(wayland, config, pipewireSpectrum, weather, renderContext, mpris, httpClient, sysmon);
-  m_editor = std::make_unique<LockscreenWidgetsEditor>();
+  m_editor = std::make_unique<BackgroundWidgetsEditor>(BackgroundWidgetsEditorProfile::lockscreen());
   m_editor->initialize(wayland, config, pipewireSpectrum, weather, renderContext, mpris, httpClient, sysmon);
   m_editor->setExitRequestedCallback([this]() { exitEdit(); });
   loadSnapshotFromConfig();
@@ -237,7 +238,7 @@ void LockscreenWidgetsController::enterEdit() {
   if (m_dock != nullptr) {
     m_dock->suppressDisplay();
   }
-  m_editor->open(m_snapshot);
+  m_editor->open(toWidgetsEditorSnapshot(m_snapshot));
   m_host->hide();
 }
 
@@ -246,7 +247,7 @@ void LockscreenWidgetsController::exitEdit() {
     return;
   }
 
-  m_snapshot = m_editor->snapshot();
+  m_snapshot = fromWidgetsEditorSnapshot(m_editor->snapshot());
   normalizeSnapshot();
   applyVisibility();
   (void)m_editor->close();
@@ -310,7 +311,7 @@ void LockscreenWidgetsController::applyVisibility() {
   const bool enabled = m_config->config().lockscreenWidgets.enabled;
   if (!enabled) {
     if (isEditing() && m_editor != nullptr) {
-      m_snapshot = m_editor->close();
+      m_snapshot = fromWidgetsEditorSnapshot(m_editor->close());
       saveSnapshotToConfig();
     }
     m_host->hide();

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "config/config_types.h"
 #include "render/animation/animation_manager.h"
 #include "render/scene/input_dispatcher.h"
 #include "render/scene/node.h"
 #include "shell/desktop/desktop_widget_factory.h"
+#include "shell/widgets_editor/background_widgets_editor_config.h"
 #include "ui/controls/select_dropdown_popup.h"
 #include "wayland/layer_surface.h"
 
@@ -33,11 +33,9 @@ struct WaylandOutput;
 struct wl_output;
 struct wl_surface;
 
-using LockscreenWidgetsSnapshot = LockscreenWidgetsConfig;
-
-class LockscreenWidgetsEditor {
+class BackgroundWidgetsEditor {
 public:
-  LockscreenWidgetsEditor() = default;
+  explicit BackgroundWidgetsEditor(BackgroundWidgetsEditorProfile profile);
 
   void initialize(
       WaylandConnection& wayland, ConfigService* config, PipeWireSpectrum* pipewireSpectrum,
@@ -46,9 +44,9 @@ public:
   );
   void setExitRequestedCallback(std::function<void()> callback);
 
-  void open(const LockscreenWidgetsSnapshot& snapshot);
-  [[nodiscard]] const LockscreenWidgetsSnapshot& snapshot() const noexcept { return m_snapshot; }
-  [[nodiscard]] LockscreenWidgetsSnapshot close();
+  void open(const WidgetsEditorSnapshot& snapshot);
+  [[nodiscard]] const WidgetsEditorSnapshot& snapshot() const noexcept { return m_snapshot; }
+  [[nodiscard]] WidgetsEditorSnapshot close();
   [[nodiscard]] bool isOpen() const noexcept;
 
   bool onPointerEvent(const PointerEvent& event);
@@ -136,6 +134,7 @@ private:
   void syncSurfaces();
   void createSurface(const WaylandOutput& output);
   void rebuildScene(OverlaySurface& surface);
+  void appendEditorBackdrop(InputArea& root);
   void prepareFrame(OverlaySurface& surface, bool needsUpdate, bool needsLayout);
   void applyViewState(EditorWidgetView& view, const DesktopWidgetState& state, bool refreshContent);
   void updateViewTransforms(const std::string* relayoutWidgetId = nullptr);
@@ -167,14 +166,16 @@ private:
   [[nodiscard]] std::string effectiveOutputName(const DesktopWidgetState& state) const;
   [[nodiscard]] bool shouldSnap() const;
   [[nodiscard]] float widgetContentScale(const DesktopWidgetState& state) const;
+  [[nodiscard]] std::string nextWidgetId() const;
 
+  BackgroundWidgetsEditorProfile m_profile;
   WaylandConnection* m_wayland = nullptr;
   ConfigService* m_config = nullptr;
   RenderContext* m_renderContext = nullptr;
   std::unique_ptr<DesktopWidgetFactory> m_factory;
   std::string m_addWidgetType = "clock";
   std::function<void()> m_exitRequestedCallback;
-  LockscreenWidgetsSnapshot m_snapshot;
+  WidgetsEditorSnapshot m_snapshot;
   std::vector<std::unique_ptr<OverlaySurface>> m_surfaces;
   std::string m_selectedWidgetId;
   DragState m_drag;

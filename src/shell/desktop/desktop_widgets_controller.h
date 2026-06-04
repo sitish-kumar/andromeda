@@ -4,7 +4,7 @@
 
 #include <memory>
 
-class DesktopWidgetsEditor;
+class BackgroundWidgetsEditor;
 class DesktopWidgetsHost;
 class HttpClient;
 class LockscreenWidgetsController;
@@ -68,5 +68,5 @@ private:
   bool m_initialized = false;
   bool m_displaySuppressed = false;
   std::unique_ptr<DesktopWidgetsHost> m_host;
-  std::unique_ptr<DesktopWidgetsEditor> m_editor;
+  std::unique_ptr<BackgroundWidgetsEditor> m_editor;
 };

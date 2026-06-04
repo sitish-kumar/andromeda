@@ -3,9 +3,10 @@
 #include "ipc/ipc_service.h"
 #include "pipewire/pipewire_spectrum.h"
 #include "shell/desktop/desktop_widget_layout.h"
-#include "shell/desktop/desktop_widgets_editor.h"
 #include "shell/desktop/desktop_widgets_host.h"
 #include "shell/lockscreen/lockscreen_widgets_controller.h"
+#include "shell/widgets_editor/background_widgets_editor.h"
+#include "shell/widgets_editor/background_widgets_editor_config.h"
 #include "wayland/wayland_connection.h"
 
 #include <algorithm>
@@ -113,7 +114,7 @@ void DesktopWidgetsController::initialize(
   m_renderContext = renderContext;
   m_host = std::make_unique<DesktopWidgetsHost>();
   m_host->initialize(wayland, config, pipewireSpectrum, weather, renderContext, mpris, httpClient, sysmon);
-  m_editor = std::make_unique<DesktopWidgetsEditor>();
+  m_editor = std::make_unique<BackgroundWidgetsEditor>(BackgroundWidgetsEditorProfile::desktop());
   m_editor->initialize(wayland, config, pipewireSpectrum, weather, renderContext, mpris, httpClient, sysmon);
   m_editor->setExitRequestedCallback([this]() { exitEdit(); });
   loadSnapshotFromConfig();

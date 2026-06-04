@@ -11,7 +11,7 @@ class DesktopWidgetsController;
 class HttpClient;
 class IpcService;
 class LockScreen;
-class LockscreenWidgetsEditor;
+class BackgroundWidgetsEditor;
 class LockscreenWidgetsHost;
 class MprisService;
 class PipeWireSpectrum;
@@ -71,5 +71,5 @@ private:
   LockscreenWidgetsSnapshot m_snapshot;
   bool m_initialized = false;
   std::unique_ptr<LockscreenWidgetsHost> m_host;
-  std::unique_ptr<LockscreenWidgetsEditor> m_editor;
+  std::unique_ptr<BackgroundWidgetsEditor> m_editor;
 };

@@ -3,9 +3,9 @@
 #include "render/render_context.h"
 #include "render/scene/input_area.h"
 #include "shell/desktop/desktop_widget_settings_registry.h"
-#include "shell/desktop/desktop_widgets_editor.h"
 #include "shell/settings/color_spec_picker.h"
 #include "shell/settings/widget_settings_registry.h"
+#include "shell/widgets_editor/background_widgets_editor.h"
 #include "ui/builders.h"
 #include "ui/dialogs/file_dialog.h"
 #include "ui/palette.h"
@@ -136,7 +136,8 @@ namespace {
   }
 
   std::unique_ptr<Flex> makeToggleRow(
-      std::string_view labelText, const std::string& key, bool fallback, const Settings& s, DesktopWidgetsEditor* editor
+      std::string_view labelText, const std::string& key, bool fallback, const Settings& s,
+      BackgroundWidgetsEditor* editor
   ) {
     return makeRow(
         labelText,
@@ -149,7 +150,7 @@ namespace {
 
   std::unique_ptr<Flex> makeSliderRow(
       std::string_view labelText, const std::string& key, double fallback, double minVal, double maxVal, double step,
-      const Settings& s, DesktopWidgetsEditor* editor
+      const Settings& s, BackgroundWidgetsEditor* editor
   ) {
     return makeRow(
         labelText,
@@ -166,7 +167,7 @@ namespace {
 
   std::unique_ptr<Flex> makeColorSpecRow(
       std::string_view labelText, const std::string& key, std::string fallbackValue, const Settings& s,
-      DesktopWidgetsEditor* editor
+      BackgroundWidgetsEditor* editor
   ) {
     settings::ColorSpecSelectOptions options{
         .roles = {},
@@ -187,7 +188,7 @@ namespace {
 
   std::unique_ptr<Flex> makeInputRow(
       std::string_view labelText, const std::string& key, const std::string& value, const std::string& placeholder,
-      DesktopWidgetsEditor* editor
+      BackgroundWidgetsEditor* editor
   ) {
     return makeRow(
         labelText,
@@ -202,7 +203,7 @@ namespace {
   }
 
   std::unique_ptr<Flex>
-  makeFilePickerRow(std::string_view labelText, const std::string& key, DesktopWidgetsEditor* editor) {
+  makeFilePickerRow(std::string_view labelText, const std::string& key, BackgroundWidgetsEditor* editor) {
     return makeRow(
         labelText,
         ui::button({
@@ -227,7 +228,7 @@ namespace {
   std::unique_ptr<Flex> makeSelectRow(
       std::string_view labelText, const std::string& key,
       const std::vector<settings::WidgetSettingSelectOption>& options, const std::string& currentValue,
-      DesktopWidgetsEditor* editor
+      BackgroundWidgetsEditor* editor
   ) {
     std::vector<std::string> labels;
     std::vector<std::string> values;
@@ -262,7 +263,7 @@ namespace {
   std::unique_ptr<Flex> makeSegmentedRow(
       std::string_view labelText, const std::string& key,
       const std::vector<settings::WidgetSettingSelectOption>& options, const std::string& currentValue,
-      DesktopWidgetsEditor* editor
+      BackgroundWidgetsEditor* editor
   ) {
     std::vector<std::string> values;
     values.reserve(options.size());
@@ -296,7 +297,7 @@ namespace {
 
   void addSpecSettings(
       Flex& content, const std::vector<settings::WidgetSettingSpec>& specs, const Settings& s,
-      DesktopWidgetsEditor* editor
+      BackgroundWidgetsEditor* editor
   ) {
     for (const auto& spec : specs) {
       if (!isSpecVisible(spec, s, specs)) {
@@ -382,7 +383,7 @@ namespace {
 
   void addSettingsSection(
       Flex& content, const std::vector<settings::WidgetSettingSpec>& specs, const Settings& s,
-      DesktopWidgetsEditor* editor, std::string_view labelKey, bool separator
+      BackgroundWidgetsEditor* editor, std::string_view labelKey, bool separator
   ) {
     if (!hasVisibleSpecs(specs, s)) {
       return;
@@ -392,14 +393,14 @@ namespace {
     addSpecSettings(content, specs, s, editor);
   }
 
-  void addBackgroundSection(Flex& content, const Settings& s, DesktopWidgetsEditor* editor) {
+  void addBackgroundSection(Flex& content, const Settings& s, BackgroundWidgetsEditor* editor) {
     const auto specs = desktop_settings::commonDesktopWidgetSettingSpecs();
     addSettingsSection(content, specs, s, editor, "desktop-widgets.editor.settings.background-section", true);
   }
 
 } // namespace
 
-void DesktopWidgetsEditor::applySettingChange(const std::string& key, WidgetSettingValue value) {
+void BackgroundWidgetsEditor::applySettingChange(const std::string& key, WidgetSettingValue value) {
   deferEditorMutation([this, key, value = std::move(value)]() {
     auto* state = findWidgetState(m_selectedWidgetId);
     if (state == nullptr) {
@@ -489,7 +490,7 @@ void DesktopWidgetsEditor::applySettingChange(const std::string& key, WidgetSett
   });
 }
 
-void DesktopWidgetsEditor::buildInspector(
+void BackgroundWidgetsEditor::buildInspector(
     OverlaySurface& surface, Node& root, const DesktopWidgetState& selectedState
 ) {
   auto handleArea = std::make_unique<InputArea>();
