@@ -1,5 +1,6 @@
 #include "capture/screencopy_capture.h"
 
+#include "core/log.h"
 #include "wayland/wayland_connection.h"
 #include "wlr-screencopy-unstable-v1-client-protocol.h"
 
@@ -8,6 +9,10 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <vector>
+
+namespace {
+  constexpr Logger kLog("screencopy");
+}
 
 struct ScreencopyCapturePending {
   ScreencopyCapture* owner = nullptr;
@@ -63,36 +68,70 @@ namespace {
     return fd;
   }
 
-  void convertToRgba(
+  [[nodiscard]] int bytesPerPixelFromStride(int width, int stride) {
+    if (width <= 0 || stride <= 0) {
+      return 0;
+    }
+    if (stride >= width * 4) {
+      return 4;
+    }
+    if (stride >= width * 3) {
+      return 3;
+    }
+    return 0;
+  }
+
+  [[nodiscard]] bool convertToRgba(
       const std::uint8_t* src, int width, int height, int stride, std::uint32_t format, bool yInvert,
       std::vector<std::uint8_t>& out
   ) {
+    const int bytesPerPixel = bytesPerPixelFromStride(width, stride);
+    if (bytesPerPixel == 0) {
+      return false;
+    }
+
     out.resize(static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4U);
     for (int y = 0; y < height; ++y) {
       const int srcY = yInvert ? (height - 1 - y) : y;
       const auto* row = src + static_cast<std::size_t>(srcY) * static_cast<std::size_t>(stride);
       auto* dst = out.data() + static_cast<std::size_t>(y) * static_cast<std::size_t>(width) * 4U;
       for (int x = 0; x < width; ++x) {
-        const auto* px = row + static_cast<std::size_t>(x) * 4U;
-        if (format == WL_SHM_FORMAT_ARGB8888 || format == WL_SHM_FORMAT_XRGB8888) {
-          dst[0] = px[2];
-          dst[1] = px[1];
-          dst[2] = px[0];
-          dst[3] = format == WL_SHM_FORMAT_XRGB8888 ? 255 : px[3];
-        } else if (format == WL_SHM_FORMAT_ABGR8888 || format == WL_SHM_FORMAT_XBGR8888) {
-          dst[0] = px[0];
-          dst[1] = px[1];
-          dst[2] = px[2];
-          dst[3] = format == WL_SHM_FORMAT_XBGR8888 ? 255 : px[3];
-        } else {
-          dst[0] = px[0];
-          dst[1] = px[1];
-          dst[2] = px[2];
+        if (bytesPerPixel == 3) {
+          const auto* px = row + static_cast<std::size_t>(x) * 3U;
+          if (format == WL_SHM_FORMAT_RGB888) {
+            dst[0] = px[0];
+            dst[1] = px[1];
+            dst[2] = px[2];
+          } else {
+            // BGR888, or compositors that report 32-bit names with a 24-bit stride (seen on NVIDIA).
+            dst[0] = px[2];
+            dst[1] = px[1];
+            dst[2] = px[0];
+          }
           dst[3] = 255;
+        } else {
+          const auto* px = row + static_cast<std::size_t>(x) * 4U;
+          if (format == WL_SHM_FORMAT_ARGB8888 || format == WL_SHM_FORMAT_XRGB8888) {
+            dst[0] = px[2];
+            dst[1] = px[1];
+            dst[2] = px[0];
+            dst[3] = format == WL_SHM_FORMAT_XRGB8888 ? 255 : px[3];
+          } else if (format == WL_SHM_FORMAT_ABGR8888 || format == WL_SHM_FORMAT_XBGR8888) {
+            dst[0] = px[0];
+            dst[1] = px[1];
+            dst[2] = px[2];
+            dst[3] = format == WL_SHM_FORMAT_XBGR8888 ? 255 : px[3];
+          } else {
+            dst[0] = px[0];
+            dst[1] = px[1];
+            dst[2] = px[2];
+            dst[3] = 255;
+          }
         }
         dst += 4;
       }
     }
+    return true;
   }
 
   const wl_buffer_listener kBufferListener = {
@@ -154,6 +193,10 @@ namespace {
             pending->width = static_cast<int>(width);
             pending->height = static_cast<int>(height);
             pending->stride = static_cast<int>(stride);
+            kLog.info(
+                "frame buffer format=0x{:08x} {}x{} stride={} bpp={}", format, width, height, stride,
+                bytesPerPixelFromStride(static_cast<int>(width), static_cast<int>(stride))
+            );
           },
       .flags =
           [](void* data, zwlr_screencopy_frame_v1* /*frame*/, std::uint32_t flags) {
@@ -176,10 +219,24 @@ namespace {
             image.width = pending->width;
             image.height = pending->height;
             image.yInvert = pending->yInvert;
-            convertToRgba(
-                static_cast<const std::uint8_t*>(pending->mapped), pending->width, pending->height, pending->stride,
-                pending->shmFormat, false, image.rgba
-            );
+            if (!convertToRgba(
+                    static_cast<const std::uint8_t*>(pending->mapped), pending->width, pending->height, pending->stride,
+                    pending->shmFormat, pending->yInvert, image.rgba
+                )) {
+              zwlr_screencopy_frame_v1_destroy(frame);
+              pending->frame = nullptr;
+              destroyShmBuffer(pending->pool, pending->buffer, pending->mapped, pending->mappedSize, pending->fd);
+              pending->owner->fail(
+                  "unsupported screencopy buffer layout (format=0x"
+                  + std::to_string(pending->shmFormat)
+                  + " stride="
+                  + std::to_string(pending->stride)
+                  + " width="
+                  + std::to_string(pending->width)
+                  + ")"
+              );
+              return;
+            }
 
             zwlr_screencopy_frame_v1_destroy(frame);
             pending->frame = nullptr;
