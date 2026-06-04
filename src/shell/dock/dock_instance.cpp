@@ -115,7 +115,7 @@ namespace shell::dock {
     }
 
     const auto& cfg = deps.config.config().dock;
-    const bool vert = shell::dock::isVerticalPosition(cfg.position);
+    const bool vert = shell::dock::isVerticalEdge(cfg.position);
 
     const float w = static_cast<float>(instance.surface->width());
     const float h = static_cast<float>(instance.surface->height());

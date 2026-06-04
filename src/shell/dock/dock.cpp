@@ -535,7 +535,7 @@ void Dock::createInstance(const WaylandOutput& output) {
   const auto& cfg = m_config->config().dock;
   kLog.info(
       "creating dock on {} ({}) icon_size={} position={}", output.connectorName, output.description, cfg.iconSize,
-      cfg.position
+      enumToKey(kDockEdges, cfg.position)
   );
 
   auto instance = std::make_unique<shell::dock::DockInstance>();

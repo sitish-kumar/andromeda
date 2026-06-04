@@ -344,14 +344,6 @@ namespace settings {
           selected
       ));
     };
-    const auto launcherPositionSelect = [](std::string_view selected) {
-      return asSegmented(plainSelect(
-          {{"none", "settings.options.dock-launcher-position.none"},
-           {"start", "settings.options.dock-launcher-position.start"},
-           {"end", "settings.options.dock-launcher-position.end"}},
-          selected
-      ));
-    };
     std::vector<SettingEntry> entries;
 
     // Appearance
@@ -770,7 +762,7 @@ namespace settings {
     entries.push_back(makeEntry(
         "dock", "behavior", tr("settings.schema.dock.launcher-position.label"),
         tr("settings.schema.dock.launcher-position.description"), {"dock", "launcher_position"},
-        launcherPositionSelect(cfg.dock.launcherPosition), "launcher apps grid"
+        asSegmented(enumSelect(kDockLauncherPositions, cfg.dock.launcherPosition)), "launcher apps grid"
     ));
     entries.push_back(makeEntry(
         "dock", "behavior", tr("settings.schema.dock.launcher-icon.label"),
@@ -780,7 +772,7 @@ namespace settings {
     ));
     entries.push_back(makeEntry(
         "dock", "layout", tr("settings.schema.shared.position.label"), tr("settings.schema.dock.position.description"),
-        {"dock", "position"}, positionSelect(cfg.dock.position), "edge"
+        {"dock", "position"}, asSegmented(enumSelect(kDockEdges, cfg.dock.position)), "edge"
     ));
     entries.push_back(makeEntry(
         "dock", "layout", tr("settings.schema.dock.icon-size.label"), tr("settings.schema.dock.icon-size.description"),

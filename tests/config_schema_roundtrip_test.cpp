@@ -200,14 +200,14 @@ namespace {
         12,    6,     {"DP-2"}, false,         {"discord"}, true, {"normal", "critical"},
     };
     c.dock.enabled = true;
-    c.dock.position = "left";
+    c.dock.position = DockEdge::Left;
     c.dock.iconSize = 40;
     c.dock.radius = 20;
     c.dock.radiusTopLeft = 10;
     c.dock.radiusTopRight = 12;
     c.dock.radiusBottomLeft = 14;
     c.dock.radiusBottomRight = 16;
-    c.dock.launcherPosition = "start";
+    c.dock.launcherPosition = DockLauncherPosition::Start;
     c.dock.pinned = {"firefox.desktop"};
     c.dock.monitors = {"DP-1"};
     c.brightness.enableDdcutil = true;
