@@ -622,19 +622,11 @@ void Application::initServices() {
   });
 
   m_themeService.setChangeCallback([this]() {
-    m_bar.requestRedraw();
-    m_dock.requestRedraw();
-    m_desktopWidgetsController.requestRedraw();
-    m_panelManager.requestRedraw();
-    m_notificationToast.requestRedraw();
+    requestAllSurfacesRedraw();
     m_lockScreen.onThemeChanged();
-    m_osdOverlay.requestRedraw();
     m_trayMenu.onThemeChanged();
     m_backdrop.onThemeChanged();
     m_settingsWindow.onThemeChanged();
-    m_colorPickerDialogPopup.requestRedraw();
-    m_glyphPickerDialogPopup.requestRedraw();
-    m_fileDialogPopup.requestRedraw();
   });
 
   if (const auto distro = DistroDetector::detect(); distro.has_value()) {
@@ -698,20 +690,6 @@ void Application::initServices() {
           }
           kLog.info("system resumed; rechecking night light schedule");
           m_gammaService.reevaluateSchedule();
-          // Drivers that do not preserve VRAM across suspend (notably the NVIDIA proprietary
-          // driver without NVreg_PreserveVideoMemoryAllocations) return garbage in our uploaded
-          // glyph textures on resume. Drop them so they re-rasterize, and repaint visible surfaces.
-          m_renderContext.invalidateGlyphTexturesNextFrame();
-          m_bar.requestRedraw();
-          m_dock.requestRedraw();
-          m_desktopWidgetsController.requestRedraw();
-          m_panelManager.requestRedraw();
-          m_notificationToast.requestRedraw();
-          m_osdOverlay.requestRedraw();
-          m_backdrop.requestLayout();
-          if (m_lockScreen.isActive()) {
-            m_lockScreen.requestLayout();
-          }
           // BlueZ property-change signals can be missed across the suspend window, leaving our
           // cached adapter state stale. Re-sync now and again shortly after, since BlueZ may take a
           // moment to restore the adapter on resume.
@@ -1062,6 +1040,7 @@ void Application::initUi() {
   auto shouldRefreshControlCenter = [this]() { return m_panelManager.isOpenPanel("control-center"); };
 
   m_renderContext.initialize(m_glShared);
+  m_renderContext.setGraphicsResetCallback([this](RenderGraphicsResetStatus status) { onGraphicsReset(status); });
   if (!m_glShared.hasSharedContext()) {
     m_asyncTextureCache.setMakeCurrentCallback([this]() { m_renderContext.backend().makeCurrentNoSurface(); });
   }
@@ -1750,6 +1729,32 @@ void Application::onIconThemeChanged() {
   m_dock.reload();
   m_panelManager.onIconThemeChanged();
   m_notificationToast.requestLayout();
+}
+
+void Application::onGraphicsReset(RenderGraphicsResetStatus status) {
+  (void)status;
+  m_sharedTextureCache.reloadResidentTextures();
+  m_asyncTextureCache.reloadResidentTextures();
+  m_thumbnailService.invalidateGpuResources(m_renderContext.textureManager());
+  m_wallpaper.onGpuResourcesInvalidated();
+  m_backdrop.onGpuResourcesInvalidated();
+  m_lockScreen.onGpuResourcesInvalidated();
+  m_trayMenu.requestLayout();
+  m_settingsWindow.requestRedraw();
+  m_screenCorners.requestRedraw();
+  requestAllSurfacesRedraw();
+}
+
+void Application::requestAllSurfacesRedraw() {
+  m_bar.requestRedraw();
+  m_dock.requestRedraw();
+  m_desktopWidgetsController.requestRedraw();
+  m_panelManager.requestRedraw();
+  m_notificationToast.requestRedraw();
+  m_osdOverlay.requestRedraw();
+  m_colorPickerDialogPopup.requestRedraw();
+  m_glyphPickerDialogPopup.requestRedraw();
+  m_fileDialogPopup.requestRedraw();
 }
 
 void Application::onUpowerStateChangedForHooks() {

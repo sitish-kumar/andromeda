@@ -7,8 +7,10 @@
 #include "render/text/cairo_text_renderer.h"
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
+#include <utility>
 
 class GlSharedContext;
 class Node;
@@ -26,6 +28,9 @@ public:
   void cleanup();
 
   void renderScene(RenderTarget& target, Node* sceneRoot);
+  void setGraphicsResetCallback(std::function<void(RenderGraphicsResetStatus)> callback) {
+    m_graphicsResetCallback = std::move(callback);
+  }
   void makeCurrent(RenderTarget& target);
   // Sync text/glyph renderer content scale to the given target's
   // buffer-to-logical ratio. Must be called before any measureText /
@@ -41,6 +46,7 @@ public:
   // the context current. Used to recover from GPU memory loss across
   // suspend/resume.
   void invalidateGlyphTexturesNextFrame() noexcept { m_glyphTexturesDirty = true; }
+  void invalidateGpuResourcesNextFrame() noexcept;
 
   [[nodiscard]] RenderBackend& backend() noexcept { return *m_backend; }
   [[nodiscard]] const RenderBackend& backend() const noexcept { return *m_backend; }
@@ -62,6 +68,7 @@ public:
 
 private:
   void makeCurrentNoSurface();
+  void handleGraphicsReset(RenderGraphicsResetStatus status);
   void renderNode(
       const Node* node, const Mat3& parentTransform, float parentOpacity, float sw, float sh, float bw, float bh,
       float clipLeft, float clipTop, float clipRight, float clipBottom, bool hasClip
@@ -73,5 +80,7 @@ private:
   std::string m_textFontFamily = "sans-serif";
   float m_renderScale = 1.0f;
   std::uint64_t m_textMetricsGeneration = 1;
+  std::uint64_t m_gpuResourceGeneration = 0;
   bool m_glyphTexturesDirty = false;
+  std::function<void(RenderGraphicsResetStatus)> m_graphicsResetCallback;
 };

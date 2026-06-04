@@ -68,6 +68,7 @@ public:
   void onKeyboardEvent(const KeyboardEvent& event);
   void onThemeChanged();
   void onFontChanged();
+  void requestRedraw();
   void onExternalOptionsChanged();
   void setOpenDesktopWidgetEditor(std::function<void()> callback) { m_openDesktopWidgetEditor = std::move(callback); }
   void setOpenWallpaperPanel(std::function<void()> callback) { m_openWallpaperPanel = std::move(callback); }

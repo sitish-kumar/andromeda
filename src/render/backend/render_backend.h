@@ -32,6 +32,15 @@ public:
   [[nodiscard]] virtual std::uint32_t height() const noexcept = 0;
 };
 
+enum class RenderGraphicsResetStatus {
+  NoError,
+  Guilty,
+  Innocent,
+  Unknown,
+  Purged,
+  Other,
+};
+
 enum class RenderBlendMode {
   Disabled,
   StraightAlpha,
@@ -107,6 +116,8 @@ public:
   virtual void makeCurrentNoSurface() = 0;
   virtual void beginFrame(RenderTarget& target) = 0;
   virtual void endFrame(RenderTarget& target) = 0;
+  [[nodiscard]] virtual RenderGraphicsResetStatus graphicsResetStatus() = 0;
+  virtual void invalidateGpuResources() = 0;
 
   [[nodiscard]] virtual std::unique_ptr<RenderSurfaceTarget> createSurfaceTarget(wl_surface* surface) = 0;
   [[nodiscard]] virtual std::unique_ptr<RenderFramebuffer>

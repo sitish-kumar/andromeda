@@ -202,6 +202,12 @@ void WallpaperRenderer::presentTexture(TextureId texture) {
   swapBuffers();
 }
 
+void WallpaperRenderer::invalidateGpuResources() {
+  if (m_backend != nullptr) {
+    m_backend->invalidateGpuResources();
+  }
+}
+
 void WallpaperRenderer::blur(RenderFramebuffer& target, RenderFramebuffer& scratch, float radius, int rounds) {
   if (m_backend == nullptr || !target.valid() || !scratch.valid() || radius < 0.5f || rounds <= 0) {
     return;

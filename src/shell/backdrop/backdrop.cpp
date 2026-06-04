@@ -151,6 +151,32 @@ void Backdrop::onThemeChanged() {
   }
 }
 
+void Backdrop::onGpuResourcesInvalidated() {
+  for (auto& inst : m_instances) {
+    if (inst->surface != nullptr) {
+      inst->surface->onGpuResourcesInvalidated();
+    }
+    if (!inst->currentPath.empty()) {
+      if (m_textureCache != nullptr && m_textureCache->shared()) {
+        inst->currentTexture = m_textureCache->peek(inst->currentPath);
+      } else if (inst->surface != nullptr) {
+        auto* renderer = inst->surface->wallpaperRenderer();
+        if (renderer != nullptr && renderer->backend() != nullptr) {
+          renderer->backend()->makeCurrentNoSurface();
+          if (inst->currentTexture.id != 0) {
+            renderer->backend()->textureManager().unload(inst->currentTexture);
+          }
+          inst->currentTexture = renderer->backend()->textureManager().loadFromFile(inst->currentPath, 0, true);
+        }
+      }
+    }
+    updateRendererState(*inst);
+    if (inst->surface != nullptr) {
+      inst->surface->requestRedraw();
+    }
+  }
+}
+
 void Backdrop::onFontChanged() { requestLayout(); }
 
 void Backdrop::requestLayout() {

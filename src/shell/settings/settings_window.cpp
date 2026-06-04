@@ -829,7 +829,9 @@ void SettingsWindow::onKeyboardEvent(const KeyboardEvent& event) {
   }
 }
 
-void SettingsWindow::onThemeChanged() {
+void SettingsWindow::onThemeChanged() { requestRedraw(); }
+
+void SettingsWindow::requestRedraw() {
   if (isOpen()) {
     if (m_widgetAddPopup != nullptr && m_widgetAddPopup->isOpen()) {
       m_widgetAddPopup->requestRedraw();

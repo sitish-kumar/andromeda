@@ -51,6 +51,7 @@ public:
   void clearPasswordSelection();
   void onSecondTick();
   void onThemeChanged();
+  void onGpuResourcesInvalidated();
   void onPointerEvent(const PointerEvent& event);
   void onKeyboardEvent(const KeyboardEvent& event);
   [[nodiscard]] wl_output* output() const noexcept { return m_output; }

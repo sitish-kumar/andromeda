@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <format>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -49,6 +50,24 @@ namespace {
     } else if (ms >= kSlowRenderOperationDebugMs) {
       kLog.debug(fmt, std::forward<Args>(args)...);
     }
+  }
+
+  std::string_view graphicsResetStatusName(RenderGraphicsResetStatus status) {
+    switch (status) {
+    case RenderGraphicsResetStatus::NoError:
+      return "no-error";
+    case RenderGraphicsResetStatus::Guilty:
+      return "guilty-context-reset";
+    case RenderGraphicsResetStatus::Innocent:
+      return "innocent-context-reset";
+    case RenderGraphicsResetStatus::Unknown:
+      return "unknown-context-reset";
+    case RenderGraphicsResetStatus::Purged:
+      return "purged-context-reset";
+    case RenderGraphicsResetStatus::Other:
+      return "other-context-reset";
+    }
+    return "other-context-reset";
   }
 
   RenderScissor
@@ -155,13 +174,18 @@ void RenderContext::notifyFontConfigChanged() {
 }
 
 void RenderContext::renderScene(RenderTarget& target, Node* sceneRoot) {
-  UiPhaseScope renderPhase(UiPhase::Render);
   if (m_backend == nullptr) {
     return;
   }
   const auto totalStart = std::chrono::steady_clock::now();
   m_backend->beginFrame(target);
   syncContentScale(target);
+
+  if (sceneRoot != nullptr
+      && m_gpuResourceGeneration != 0
+      && sceneRoot->gpuResourceGeneration() != m_gpuResourceGeneration) {
+    sceneRoot->invalidateGpuResources(*this, m_gpuResourceGeneration);
+  }
 
   if (m_glyphTexturesDirty) {
     m_textRenderer.invalidateGlyphTextures();
@@ -170,12 +194,15 @@ void RenderContext::renderScene(RenderTarget& target, Node* sceneRoot) {
   }
 
   const auto drawStart = std::chrono::steady_clock::now();
-  if (sceneRoot != nullptr) {
-    const auto sw = static_cast<float>(target.logicalWidth());
-    const auto sh = static_cast<float>(target.logicalHeight());
-    const auto bw = static_cast<float>(target.bufferWidth());
-    const auto bh = static_cast<float>(target.bufferHeight());
-    renderNode(sceneRoot, Mat3::identity(), 1.0f, sw, sh, bw, bh, 0.0f, 0.0f, sw, sh, false);
+  {
+    UiPhaseScope renderPhase(UiPhase::Render);
+    if (sceneRoot != nullptr) {
+      const auto sw = static_cast<float>(target.logicalWidth());
+      const auto sh = static_cast<float>(target.logicalHeight());
+      const auto bw = static_cast<float>(target.bufferWidth());
+      const auto bh = static_cast<float>(target.bufferHeight());
+      renderNode(sceneRoot, Mat3::identity(), 1.0f, sw, sh, bw, bh, 0.0f, 0.0f, sw, sh, false);
+    }
   }
   float ms = elapsedSince(drawStart);
   logSlowRenderOperation(
@@ -184,8 +211,12 @@ void RenderContext::renderScene(RenderTarget& target, Node* sceneRoot) {
   );
 
   m_backend->endFrame(target);
+  const RenderGraphicsResetStatus resetStatus = m_backend->graphicsResetStatus();
   ms = elapsedSince(totalStart);
   logSlowRenderOperation(ms, "renderScene took {:.1f}ms total", ms);
+  if (resetStatus != RenderGraphicsResetStatus::NoError) {
+    handleGraphicsReset(resetStatus);
+  }
 }
 
 TextMetrics RenderContext::measureText(
@@ -246,6 +277,25 @@ TextMetrics RenderContext::measureGlyph(char32_t codepoint, float fontSize) {
 TextureManager& RenderContext::textureManager() {
   makeCurrentNoSurface();
   return m_backend->textureManager();
+}
+
+void RenderContext::invalidateGpuResourcesNextFrame() noexcept {
+  ++m_gpuResourceGeneration;
+  m_glyphTexturesDirty = true;
+}
+
+void RenderContext::handleGraphicsReset(RenderGraphicsResetStatus status) {
+  kLog.warn("graphics reset detected: {}; rebuilding GPU resources", graphicsResetStatusName(status));
+  invalidateGpuResourcesNextFrame();
+  if (m_backend != nullptr) {
+    m_backend->invalidateGpuResources();
+  }
+  m_textRenderer.invalidateGlyphTextures();
+  m_glyphRenderer.invalidateGlyphTextures();
+  m_glyphTexturesDirty = false;
+  if (m_graphicsResetCallback) {
+    m_graphicsResetCallback(status);
+  }
 }
 
 void RenderContext::renderNode(

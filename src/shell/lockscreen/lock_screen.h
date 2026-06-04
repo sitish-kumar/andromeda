@@ -42,6 +42,7 @@ public:
   void onSecondTick();
   void onFontChanged();
   void onThemeChanged();
+  void onGpuResourcesInvalidated();
   void onWallpaperChanged();
   void onConfigChanged();
   void requestLayout();

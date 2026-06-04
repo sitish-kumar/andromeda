@@ -27,6 +27,7 @@ public:
   void onOutputChange();
   void onStateChange();
   void onSecondTick();
+  void onGpuResourcesInvalidated();
   void registerIpc(IpcService& ipc);
 
   [[nodiscard]] TextureHandle currentTexture() const;

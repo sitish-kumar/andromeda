@@ -24,6 +24,7 @@ public:
   void onFontChanged();
   void onStateChange();
   void onThemeChanged();
+  void onGpuResourcesInvalidated();
   void requestLayout();
 
 private:

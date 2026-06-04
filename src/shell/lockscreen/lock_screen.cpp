@@ -181,6 +181,17 @@ void LockScreen::onThemeChanged() {
   }
 }
 
+void LockScreen::onGpuResourcesInvalidated() {
+  if (!isActive()) {
+    return;
+  }
+  for (auto& instance : m_instances) {
+    if (instance.surface != nullptr) {
+      instance.surface->onGpuResourcesInvalidated();
+    }
+  }
+}
+
 void LockScreen::onConfigChanged() {
   if (!isActive()) {
     return;

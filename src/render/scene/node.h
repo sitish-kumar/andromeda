@@ -131,6 +131,8 @@ public:
   void layout(Renderer& renderer);
   [[nodiscard]] LayoutSize measure(Renderer& renderer, const LayoutConstraints& constraints);
   void arrange(Renderer& renderer, const LayoutRect& rect);
+  void invalidateGpuResources(Renderer& renderer, std::uint64_t generation);
+  [[nodiscard]] std::uint64_t gpuResourceGeneration() const noexcept { return m_gpuResourceGeneration; }
   [[nodiscard]] bool containsScenePoint(float sceneX, float sceneY) const;
 
   void setUserData(void* data) noexcept { m_userData = data; }
@@ -152,6 +154,7 @@ protected:
   virtual void doLayout(Renderer& renderer);
   virtual LayoutSize doMeasure(Renderer& renderer, const LayoutConstraints& constraints);
   virtual void doArrange(Renderer& renderer, const LayoutRect& rect);
+  virtual void doInvalidateGpuResources(Renderer& renderer);
   [[nodiscard]] virtual bool containsLocalPoint(float localX, float localY, bool includeHitOutset) const;
 
 private:
@@ -176,6 +179,7 @@ private:
   HitTestOutset m_hitTestOutset{};
   bool m_sizeAssignedByLayout = false;
   bool m_arranging = false;
+  std::uint64_t m_gpuResourceGeneration = 0;
   std::int32_t m_zIndex = 0;
   void* m_userData = nullptr;
   AnimationManager* m_animationManager = nullptr;

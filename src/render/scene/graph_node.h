@@ -4,6 +4,9 @@
 #include "render/core/texture_handle.h"
 #include "render/scene/node.h"
 
+#include <cstdint>
+#include <vector>
+
 class TextureManager;
 
 class GraphNode : public Node {
@@ -105,9 +108,12 @@ public:
   );
 
 private:
+  void doInvalidateGpuResources(Renderer& renderer) override;
+
   GraphStyle m_style;
   TextureManager* m_textureManager = nullptr;
   TextureHandle m_texture;
+  std::vector<std::uint8_t> m_pixels;
   int m_texWidth = 0;
   int m_texCapacity = 0;
 };

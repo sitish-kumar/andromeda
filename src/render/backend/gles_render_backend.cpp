@@ -7,11 +7,26 @@
 #include "render/render_target.h"
 
 #include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
 #include <chrono>
 #include <format>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 #include <wayland-egl.h>
+
+#ifndef GL_GUILTY_CONTEXT_RESET
+#define GL_GUILTY_CONTEXT_RESET 0x8253
+#endif
+#ifndef GL_INNOCENT_CONTEXT_RESET
+#define GL_INNOCENT_CONTEXT_RESET 0x8254
+#endif
+#ifndef GL_UNKNOWN_CONTEXT_RESET
+#define GL_UNKNOWN_CONTEXT_RESET 0x8255
+#endif
+#ifndef GL_PURGED_CONTEXT_RESET_NV
+#define GL_PURGED_CONTEXT_RESET_NV 0x92BB
+#endif
 
 namespace {
 
@@ -19,12 +34,6 @@ namespace {
   constexpr float kSlowRenderOperationDebugMs = 50.0f;
   constexpr float kSlowRenderOperationWarnMs = 1000.0f;
   bool g_backendInfoLogged = false;
-
-  constexpr EGLint kContextAttributes[] = {
-      EGL_CONTEXT_CLIENT_VERSION,
-      2,
-      EGL_NONE,
-  };
 
   constexpr char kFullscreenVertexShader[] = R"(
 precision highp float;
@@ -64,6 +73,31 @@ void main() {
 )";
 
   const char* safeCString(const char* value) { return value != nullptr ? value : "unknown"; }
+
+  bool hasGlExtension(std::string_view name) {
+    const char* extensions = reinterpret_cast<const char*>(glGetString(GL_EXTENSIONS));
+    if (extensions == nullptr || name.empty()) {
+      return false;
+    }
+
+    const std::string_view list(extensions);
+    std::size_t pos = 0;
+    while (pos < list.size()) {
+      while (pos < list.size() && list[pos] == ' ') {
+        ++pos;
+      }
+      const std::size_t end = list.find(' ', pos);
+      const std::string_view token = list.substr(pos, end == std::string_view::npos ? list.size() - pos : end - pos);
+      if (token == name) {
+        return true;
+      }
+      if (end == std::string_view::npos) {
+        break;
+      }
+      pos = end + 1;
+    }
+    return false;
+  }
 
   bool isCurrentEglSurface(EGLDisplay display, EGLSurface surface) {
     if (display == EGL_NO_DISPLAY || surface == EGL_NO_SURFACE || eglGetCurrentDisplay() != display) {
@@ -187,9 +221,11 @@ void GlesRenderBackend::initialize(GlSharedContext& shared) {
   m_display = shared.display();
   m_config = shared.config();
 
-  m_context = eglCreateContext(m_display, m_config, shared.rootContext(), kContextAttributes);
+  m_context = shared.createContext(shared.rootContext(), "render");
   if (m_context == EGL_NO_CONTEXT) {
-    throw std::runtime_error("eglCreateContext failed");
+    throw std::runtime_error(
+        std::format("eglCreateContext failed (EGL error 0x{:04x})", static_cast<unsigned>(eglGetError()))
+    );
   }
 
   // Make context current (surfaceless) so GL resources can be created eagerly.
@@ -208,6 +244,8 @@ void GlesRenderBackend::initialize(GlSharedContext& shared) {
     );
     g_backendInfoLogged = true;
   }
+
+  resolveGraphicsResetStatusProc();
 }
 
 void GlesRenderBackend::makeCurrentNoSurface() {
@@ -264,6 +302,36 @@ void GlesRenderBackend::endFrame(RenderTarget& target) {
       ms, "eglSwapBuffers took {:.1f}ms ({}x{} logical, {}x{} buffer)", ms, target.logicalWidth(),
       target.logicalHeight(), target.bufferWidth(), target.bufferHeight()
   );
+}
+
+RenderGraphicsResetStatus GlesRenderBackend::graphicsResetStatus() {
+  if (m_graphicsResetStatus == nullptr) {
+    return RenderGraphicsResetStatus::NoError;
+  }
+
+  const GLenum status = m_graphicsResetStatus();
+  switch (status) {
+  case GL_NO_ERROR:
+    return RenderGraphicsResetStatus::NoError;
+  case GL_GUILTY_CONTEXT_RESET:
+    return RenderGraphicsResetStatus::Guilty;
+  case GL_INNOCENT_CONTEXT_RESET:
+    return RenderGraphicsResetStatus::Innocent;
+  case GL_UNKNOWN_CONTEXT_RESET:
+    return RenderGraphicsResetStatus::Unknown;
+  case GL_PURGED_CONTEXT_RESET_NV:
+    return RenderGraphicsResetStatus::Purged;
+  default:
+    return RenderGraphicsResetStatus::Other;
+  }
+}
+
+void GlesRenderBackend::invalidateGpuResources() {
+  if (m_display == EGL_NO_DISPLAY || m_context == EGL_NO_CONTEXT) {
+    return;
+  }
+  makeCurrentNoSurface();
+  destroyGpuObjects();
 }
 
 std::unique_ptr<RenderSurfaceTarget> GlesRenderBackend::createSurfaceTarget(wl_surface* surface) {
@@ -488,11 +556,27 @@ void GlesRenderBackend::ensureFullscreenTintProgram() {
   }
 }
 
-void GlesRenderBackend::cleanup() {
-  if (m_display != EGL_NO_DISPLAY && m_context != EGL_NO_CONTEXT) {
-    eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, m_context);
+void GlesRenderBackend::resolveGraphicsResetStatusProc() {
+  m_graphicsResetStatus = reinterpret_cast<GraphicsResetStatusProc>(eglGetProcAddress("glGetGraphicsResetStatus"));
+  if (m_graphicsResetStatus == nullptr) {
+    m_graphicsResetStatus = reinterpret_cast<GraphicsResetStatusProc>(eglGetProcAddress("glGetGraphicsResetStatusKHR"));
+  }
+  if (m_graphicsResetStatus == nullptr) {
+    m_graphicsResetStatus = reinterpret_cast<GraphicsResetStatusProc>(eglGetProcAddress("glGetGraphicsResetStatusEXT"));
   }
 
+  if (!m_resetStatusLogged) {
+    if (m_graphicsResetStatus != nullptr) {
+      const bool purge = hasGlExtension("GL_NV_robustness_video_memory_purge");
+      kLog.info("graphics reset status polling enabled{}", purge ? " with NVIDIA video-memory purge status" : "");
+    } else {
+      kLog.info("graphics reset status polling unavailable");
+    }
+    m_resetStatusLogged = true;
+  }
+}
+
+void GlesRenderBackend::destroyGpuObjects() {
   m_rectProgram.destroy();
   m_imageProgram.destroy();
   m_glyphProgram.destroy();
@@ -506,6 +590,14 @@ void GlesRenderBackend::cleanup() {
   m_fullscreenTextureProgram.destroy();
   m_fullscreenTintProgram.destroy();
   m_textureManager.cleanup();
+}
+
+void GlesRenderBackend::cleanup() {
+  if (m_display != EGL_NO_DISPLAY && m_context != EGL_NO_CONTEXT) {
+    eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, m_context);
+  }
+
+  destroyGpuObjects();
 
   if (m_display != EGL_NO_DISPLAY) {
     eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
@@ -518,5 +610,7 @@ void GlesRenderBackend::cleanup() {
   m_display = EGL_NO_DISPLAY;
   m_config = nullptr;
   m_context = EGL_NO_CONTEXT;
+  m_graphicsResetStatus = nullptr;
+  m_resetStatusLogged = false;
   m_maxTextureSize = 0;
 }

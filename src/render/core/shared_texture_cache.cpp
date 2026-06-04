@@ -31,6 +31,13 @@ TextureHandle SharedTextureCache::acquire(const std::string& path) {
   if (it != m_entries.end()) {
     ++it->second.refCount;
     kLog.info("hit {} (refCount={})", path, it->second.refCount);
+    if (it->second.handle.id == 0) {
+      makeCurrent();
+      it->second.handle = m_textureManager->loadFromFile(path, 0, true);
+      if (it->second.handle.id == 0) {
+        return {};
+      }
+    }
     return it->second.handle;
   }
 
@@ -43,6 +50,11 @@ TextureHandle SharedTextureCache::acquire(const std::string& path) {
   m_entries[path] = Entry{.handle = handle, .refCount = 1};
   kLog.info("uploaded {}", path);
   return handle;
+}
+
+TextureHandle SharedTextureCache::peek(const std::string& path) const {
+  const auto it = m_entries.find(path);
+  return it != m_entries.end() ? it->second.handle : TextureHandle{};
 }
 
 void SharedTextureCache::release(TextureHandle& handle, const std::string& path) {
@@ -66,6 +78,26 @@ void SharedTextureCache::release(TextureHandle& handle, const std::string& path)
   }
 
   handle = {};
+}
+
+void SharedTextureCache::reloadResidentTextures() {
+  if (m_textureManager == nullptr || m_entries.empty()) {
+    return;
+  }
+
+  makeCurrent();
+
+  for (auto& [path, entry] : m_entries) {
+    if (entry.handle.id != 0) {
+      m_textureManager->unload(entry.handle);
+    }
+    entry.handle = m_textureManager->loadFromFile(path, 0, true);
+    if (entry.handle.id != 0) {
+      kLog.info("reuploaded {}", path);
+    } else {
+      kLog.warn("failed to reupload {}", path);
+    }
+  }
 }
 
 void SharedTextureCache::makeCurrent() {

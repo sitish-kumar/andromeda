@@ -205,6 +205,37 @@ TextureHandle Wallpaper::currentTexture() const {
   return {};
 }
 
+void Wallpaper::onGpuResourcesInvalidated() {
+  for (auto& inst : m_instances) {
+    if (inst->currentSourceKind == WallpaperSourceKind::Image && !inst->currentPath.empty()) {
+      if (m_textureCache != nullptr && m_textureCache->shared()) {
+        inst->currentTexture = m_textureCache->peek(inst->currentPath);
+      } else if (m_renderContext != nullptr) {
+        m_renderContext->backend().makeCurrentNoSurface();
+        if (inst->currentTexture.id != 0) {
+          m_renderContext->textureManager().unload(inst->currentTexture);
+        }
+        inst->currentTexture = m_renderContext->textureManager().loadFromFile(inst->currentPath, 0, true);
+      }
+    }
+    if (inst->nextSourceKind == WallpaperSourceKind::Image && !inst->pendingPath.empty()) {
+      if (m_textureCache != nullptr && m_textureCache->shared()) {
+        inst->nextTexture = m_textureCache->peek(inst->pendingPath);
+      } else if (m_renderContext != nullptr) {
+        m_renderContext->backend().makeCurrentNoSurface();
+        if (inst->nextTexture.id != 0) {
+          m_renderContext->textureManager().unload(inst->nextTexture);
+        }
+        inst->nextTexture = m_renderContext->textureManager().loadFromFile(inst->pendingPath, 0, true);
+      }
+    }
+    updateRendererState(*inst);
+    if (inst->surface != nullptr) {
+      inst->surface->requestRedraw();
+    }
+  }
+}
+
 bool Wallpaper::initialize(
     WaylandConnection& wayland, ConfigService* config, RenderContext* renderContext, SharedTextureCache* textureCache
 ) {

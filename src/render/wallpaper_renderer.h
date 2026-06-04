@@ -42,6 +42,7 @@ public:
       RenderFramebuffer& target, RenderFramebuffer& scratch, const BackdropPostProcessOptions& options
   );
   void presentTexture(TextureId texture);
+  void invalidateGpuResources();
   [[nodiscard]] std::unique_ptr<RenderFramebuffer> createFramebuffer(std::uint32_t width, std::uint32_t height);
 
   void setTransitionState(

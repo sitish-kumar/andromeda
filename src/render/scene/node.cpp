@@ -118,6 +118,17 @@ void Node::arrange(Renderer& renderer, const LayoutRect& rect) {
   m_sizeAssignedByLayout = true;
 }
 
+void Node::invalidateGpuResources(Renderer& renderer, std::uint64_t generation) {
+  uiAssertNotRendering("Node::invalidateGpuResources");
+  if (m_gpuResourceGeneration != generation) {
+    doInvalidateGpuResources(renderer);
+    m_gpuResourceGeneration = generation;
+  }
+  for (auto& child : m_children) {
+    child->invalidateGpuResources(renderer, generation);
+  }
+}
+
 bool Node::containsScenePoint(float sceneX, float sceneY) const {
   float localX = 0.0f;
   float localY = 0.0f;
@@ -142,6 +153,8 @@ void Node::doArrange(Renderer& renderer, const LayoutRect& rect) {
   setSize(rect.width, rect.height);
   doLayout(renderer);
 }
+
+void Node::doInvalidateGpuResources(Renderer& renderer) { (void)renderer; }
 
 bool Node::containsLocalPoint(float localX, float localY, bool includeHitOutset) const {
   if (!includeHitOutset) {

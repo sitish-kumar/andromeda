@@ -544,7 +544,9 @@ void LockSurface::applyWallpaperTexture() {
     m_wallpaper->setFillMode(m_wallpaperFillMode);
     m_wallpaper->setFillColor(m_wallpaperFillColor);
   } else if (m_textureCache != nullptr && !m_wallpaperPath.empty()) {
-    m_wallpaperTexture = m_textureCache->acquire(m_wallpaperPath);
+    if (m_wallpaperTexture.id == 0) {
+      m_wallpaperTexture = m_textureCache->acquire(m_wallpaperPath);
+    }
     if (m_wallpaperTexture.id == 0 && !m_textureCache->shared() && renderContext() != nullptr) {
       renderContext()->backend().makeCurrentNoSurface();
       m_wallpaperTexture = renderContext()->textureManager().loadFromFile(m_wallpaperPath, 0, true);
@@ -667,3 +669,23 @@ void LockSurface::applyBlurredDesktopTexture() {
 }
 
 void LockSurface::updateClockText() { m_clock->setText(formatLocalTime(shellTimeFormat(m_config))); }
+
+void LockSurface::onGpuResourcesInvalidated() {
+  releaseCaptureTextures();
+
+  if (m_wallpaperTexture.id != 0 && m_textureCache != nullptr) {
+    if (m_textureCache->shared()) {
+      m_wallpaperTexture = m_textureCache->peek(m_wallpaperPath);
+    } else if (renderContext() != nullptr) {
+      renderContext()->backend().makeCurrentNoSurface();
+      renderContext()->textureManager().unload(m_wallpaperTexture);
+      if (!m_wallpaperPath.empty()) {
+        m_wallpaperTexture = renderContext()->textureManager().loadFromFile(m_wallpaperPath, 0, true);
+      }
+    }
+  }
+
+  m_captureDirty = true;
+  m_wallpaperDirty = true;
+  requestLayout();
+}

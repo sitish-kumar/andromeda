@@ -280,6 +280,54 @@ void AsyncTextureCache::dispatch(const std::vector<pollfd>& fds, std::size_t sta
 
 void AsyncTextureCache::trimUnused(std::size_t maxUnusedEntries) { pruneUnusedEntries(maxUnusedEntries); }
 
+void AsyncTextureCache::reloadResidentTextures() {
+  if (m_textureManager == nullptr || m_entries.empty()) {
+    return;
+  }
+
+  makeCurrent();
+
+  std::vector<RequestKey> resident;
+  resident.reserve(m_entries.size());
+  for (const auto& [key, entry] : m_entries) {
+    if (entry.handle.id != 0 || entry.refCount > 0) {
+      resident.push_back(key);
+    }
+  }
+
+  for (const RequestKey& key : resident) {
+    auto entryIt = m_entries.find(key);
+    if (entryIt == m_entries.end()) {
+      continue;
+    }
+
+    Entry& entry = entryIt->second;
+    if (entry.handle.id != 0) {
+      m_textureManager->unload(entry.handle);
+    }
+    entry.handle = {};
+    entry.failed = false;
+
+    std::string errorMessage;
+    auto loaded = loadImageFile(key.path, key.targetSize, &errorMessage);
+    if (!loaded.has_value()) {
+      entry.failed = true;
+      if (!errorMessage.empty()) {
+        kLog.warn("failed to reload image after GPU reset: {} ({})", ImageSourceLog::describe(key.path), errorMessage);
+      }
+      continue;
+    }
+
+    entry.handle = m_textureManager->loadFromRgba(loaded->rgba.data(), loaded->width, loaded->height, key.mipmap);
+    if (entry.handle.id == 0) {
+      entry.failed = true;
+      continue;
+    }
+    touchEntry(entry);
+    notifyReady(key, entry.handle);
+  }
+}
+
 std::size_t AsyncTextureCache::RequestKeyHash::operator()(const RequestKey& key) const noexcept {
   std::size_t seed = std::hash<std::string>{}(key.path);
   seed ^= std::hash<int>{}(key.targetSize) + 0x9e3779b9U + (seed << 6U) + (seed >> 2U);

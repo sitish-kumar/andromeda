@@ -114,3 +114,9 @@ void BackdropSurface::setWallpaperState(TextureId tex, float imgW, float imgH, W
   );
   m_layer.invalidate();
 }
+
+void BackdropSurface::onGpuResourcesInvalidated() {
+  m_wallpaperRenderer.invalidateGpuResources();
+  m_layer.destroy();
+  requestRedraw();
+}

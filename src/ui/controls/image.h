@@ -40,10 +40,8 @@ public:
   void setPadding(float padding);
   void setAsyncReadyCallback(AsyncReadyCallback callback);
 
-  bool setSourceFile(
-      Renderer& renderer, const std::string& path, int targetSize = 0, bool mipmap = false,
-      bool centerSquareCrop = false
-  );
+  bool setSourceFile(Renderer& renderer, const std::string& path, int targetSize = 0, bool mipmap = false);
+  bool setSourceFile(Renderer& renderer, const std::string& path, int targetSize, bool mipmap, bool centerSquareCrop);
   bool reloadSourceFile(
       Renderer& renderer, const std::string& path, int targetSize = 0, bool mipmap = false,
       bool centerSquareCrop = false
@@ -79,9 +77,12 @@ public:
 
 private:
   void doLayout(Renderer& renderer) override;
+  void doInvalidateGpuResources(Renderer& renderer) override;
   void applyPalette();
   void updateLayout();
   void clearAsyncSource();
+  void storeOwnedRgbaSource(const std::uint8_t* rgba, int width, int height);
+  void clearOwnedRgbaSource();
   void subscribeAsyncReady();
   void handleAsyncTextureReady(TextureHandle handle);
   void presentAsyncTexture(TextureHandle handle);
@@ -100,6 +101,9 @@ private:
   int m_sourceTargetSize = 0;
   bool m_sourceMipmap = false;
   bool m_sourceCenterSquareCrop = false;
+  std::vector<std::uint8_t> m_ownedSourceRgba;
+  int m_ownedSourceRgbaWidth = 0;
+  int m_ownedSourceRgbaHeight = 0;
   float m_radius = 0.0f;
   float m_padding = 0.0f;
   ImageFit m_fit = ImageFit::Contain;

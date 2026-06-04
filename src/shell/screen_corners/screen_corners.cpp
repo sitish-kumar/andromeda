@@ -70,6 +70,16 @@ void ScreenCorners::onOutputChange() {
   ensureSurfaces();
 }
 
+void ScreenCorners::requestRedraw() {
+  for (auto& inst : m_instances) {
+    for (auto& corner : inst->corners) {
+      if (corner.surface != nullptr) {
+        corner.surface->requestRedraw();
+      }
+    }
+  }
+}
+
 void ScreenCorners::ensureSurfaces() {
   if (m_wayland == nullptr || m_renderContext == nullptr || m_config == nullptr) {
     return;

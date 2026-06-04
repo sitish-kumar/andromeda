@@ -173,6 +173,10 @@ void Image::setPadding(float padding) {
 
 void Image::setAsyncReadyCallback(AsyncReadyCallback callback) { m_asyncReadyCallback = std::move(callback); }
 
+bool Image::setSourceFile(Renderer& renderer, const std::string& path, int targetSize, bool mipmap) {
+  return setSourceFile(renderer, path, targetSize, mipmap, false);
+}
+
 bool Image::setSourceFile(
     Renderer& renderer, const std::string& path, int targetSize, bool mipmap, bool centerSquareCrop
 ) {
@@ -218,6 +222,7 @@ bool Image::setSourceFile(
   m_sourceTargetSize = textureTargetSize;
   m_sourceMipmap = mipmap;
   m_sourceCenterSquareCrop = centerSquareCrop;
+  clearOwnedRgbaSource();
   updateLayout();
   return true;
 }
@@ -248,6 +253,7 @@ bool Image::reloadSourceFile(
   m_sourceTargetSize = textureTargetSize;
   m_sourceMipmap = mipmap;
   m_sourceCenterSquareCrop = centerSquareCrop;
+  clearOwnedRgbaSource();
   if (m_image != nullptr) {
     m_image->setTextureId(m_texture.id);
   }
@@ -337,6 +343,7 @@ bool Image::setSourceBytes(Renderer& renderer, const std::uint8_t* data, std::si
 
   m_sourcePath.clear();
   m_sourceMipmap = mipmap;
+  storeOwnedRgbaSource(decoded->pixels.data(), decoded->width, decoded->height);
   updateLayout();
   return true;
 }
@@ -371,6 +378,7 @@ bool Image::setSourceRaw(
 
   m_sourcePath.clear();
   m_sourceMipmap = mipmap;
+  storeOwnedRgbaSource(rgba.data(), width, height);
   updateLayout();
   return true;
 }
@@ -396,6 +404,7 @@ void Image::setExternalTexture(Renderer& renderer, TextureHandle handle) {
   m_sourceRequestedTargetSize = 0;
   m_sourceTargetSize = 0;
   m_sourceMipmap = false;
+  clearOwnedRgbaSource();
   if (m_image != nullptr) {
     m_image->setTextureId(m_texture.id);
   }
@@ -415,6 +424,7 @@ void Image::clear(Renderer& renderer) {
   m_sourceTargetSize = 0;
   m_sourceMipmap = false;
   m_sourceCenterSquareCrop = false;
+  clearOwnedRgbaSource();
   clearColorizationSource();
   if (m_image != nullptr) {
     m_image->setTextureId({});
@@ -432,6 +442,23 @@ void Image::clearAsyncSource() {
   m_asyncRequestedTargetSize = 0;
   m_asyncTargetSize = 0;
   m_asyncMipmap = false;
+}
+
+void Image::storeOwnedRgbaSource(const std::uint8_t* rgba, int width, int height) {
+  if (rgba == nullptr || width <= 0 || height <= 0) {
+    clearOwnedRgbaSource();
+    return;
+  }
+  const auto byteCount = static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4U;
+  m_ownedSourceRgba.assign(rgba, rgba + byteCount);
+  m_ownedSourceRgbaWidth = width;
+  m_ownedSourceRgbaHeight = height;
+}
+
+void Image::clearOwnedRgbaSource() {
+  m_ownedSourceRgba.clear();
+  m_ownedSourceRgbaWidth = 0;
+  m_ownedSourceRgbaHeight = 0;
 }
 
 void Image::setSize(float width, float height) {
@@ -484,6 +511,72 @@ void Image::doLayout(Renderer& renderer) {
     if (handle.id != 0) {
       presentAsyncTexture(handle);
     }
+  }
+}
+
+void Image::doInvalidateGpuResources(Renderer& renderer) {
+  m_renderer = &renderer;
+
+  if (m_ownsTexture) {
+    if (m_texture.id != 0) {
+      renderer.textureManager().unload(m_texture);
+    }
+    m_texture = {};
+
+    bool reloaded = false;
+    if (m_appIconColorizeTint.has_value() && !m_colorizationSource.empty()) {
+      rebakeColorizedTexture();
+      reloaded = m_texture.id != 0;
+    } else if (!m_sourcePath.empty()) {
+      reloaded = reloadSourceFile(
+          renderer, m_sourcePath, m_sourceRequestedTargetSize, m_sourceMipmap, m_sourceCenterSquareCrop
+      );
+    } else if (!m_ownedSourceRgba.empty() && m_ownedSourceRgbaWidth > 0 && m_ownedSourceRgbaHeight > 0) {
+      reloaded = commitColorizedRgba(
+          renderer, m_ownedSourceRgba.data(), m_ownedSourceRgbaWidth, m_ownedSourceRgbaHeight, m_sourceMipmap
+      );
+    }
+
+    if (!reloaded && m_image != nullptr) {
+      m_image->setTextureId({});
+      m_image->setTextureSize(0, 0);
+    }
+    updateLayout();
+    markPaintDirty();
+    return;
+  }
+
+  if (m_asyncTextureCache != nullptr && !m_asyncSourcePath.empty()) {
+    const TextureHandle handle = m_asyncTextureCache->peek(m_asyncSourcePath, m_asyncTargetSize, m_asyncMipmap);
+    if (handle.id != 0) {
+      m_texture = handle;
+      if (m_image != nullptr) {
+        m_image->setTextureId(m_texture.id);
+      }
+      updateLayout();
+      markPaintDirty();
+      return;
+    }
+
+    m_texture = {};
+    if (m_image != nullptr) {
+      m_image->setTextureId({});
+      m_image->setTextureSize(0, 0);
+    }
+    subscribeAsyncReady();
+    updateLayout();
+    markPaintDirty();
+    return;
+  }
+
+  if (m_texture.id != 0) {
+    m_texture = {};
+    if (m_image != nullptr) {
+      m_image->setTextureId({});
+      m_image->setTextureSize(0, 0);
+    }
+    updateLayout();
+    markPaintDirty();
   }
 }
 
