@@ -698,6 +698,20 @@ void Application::initServices() {
           }
           kLog.info("system resumed; rechecking night light schedule");
           m_gammaService.reevaluateSchedule();
+          // Drivers that do not preserve VRAM across suspend (notably the NVIDIA proprietary
+          // driver without NVreg_PreserveVideoMemoryAllocations) return garbage in our uploaded
+          // glyph textures on resume. Drop them so they re-rasterize, and repaint visible surfaces.
+          m_renderContext.invalidateGlyphTexturesNextFrame();
+          m_bar.requestRedraw();
+          m_dock.requestRedraw();
+          m_desktopWidgetsController.requestRedraw();
+          m_panelManager.requestRedraw();
+          m_notificationToast.requestRedraw();
+          m_osdOverlay.requestRedraw();
+          m_backdrop.requestLayout();
+          if (m_lockScreen.isActive()) {
+            m_lockScreen.requestLayout();
+          }
           // BlueZ property-change signals can be missed across the suspend window, leaving our
           // cached adapter state stale. Re-sync now and again shortly after, since BlueZ may take a
           // moment to restore the adapter on resume.
