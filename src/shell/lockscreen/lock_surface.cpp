@@ -282,7 +282,7 @@ bool LockSurface::hasDesktopCapture() const noexcept {
   return m_desktopCapture.has_value() && !m_desktopCapture->rgba.empty();
 }
 
-void LockSurface::setBlurredDesktopStyle(float blurIntensity, float tintIntensity) {
+void LockSurface::setBackgroundStyle(float blurIntensity, float tintIntensity) {
   if (m_blurIntensity == blurIntensity && m_tintIntensity == tintIntensity) {
     return;
   }
@@ -290,15 +290,6 @@ void LockSurface::setBlurredDesktopStyle(float blurIntensity, float tintIntensit
   m_tintIntensity = tintIntensity;
   m_captureDirty = true;
   m_blurCache.invalidate();
-  requestLayout();
-}
-
-void LockSurface::setWallpaperStyle(float blurIntensity, float tintIntensity) {
-  if (m_wallpaperBlurIntensity == blurIntensity && m_wallpaperTintIntensity == tintIntensity) {
-    return;
-  }
-  m_wallpaperBlurIntensity = blurIntensity;
-  m_wallpaperTintIntensity = tintIntensity;
   m_wallpaperDirty = true;
   m_wallpaperBlurCache.invalidate();
   requestLayout();
@@ -470,7 +461,7 @@ void LockSurface::layoutScene(std::uint32_t width, std::uint32_t height) {
   if (m_tintOverlay != nullptr) {
     m_tintOverlay->setPosition(0.0f, 0.0f);
     m_tintOverlay->setSize(sw, sh);
-    const float tintIntensity = m_desktopCapture.has_value() ? m_tintIntensity : m_wallpaperTintIntensity;
+    const float tintIntensity = m_tintIntensity;
     const bool showTint = tintIntensity > 0.0f;
     m_tintOverlay->setVisible(showTint);
     if (showTint) {
@@ -576,11 +567,11 @@ void LockSurface::applyWallpaperTexture() {
       renderContext()->textureManager().unload(m_blurredWallpaperTexture);
       m_blurredWallpaperTexture = {};
     }
-    if (m_wallpaperTexture.id != 0 && m_wallpaperBlurIntensity > 0.0f && renderContext() != nullptr) {
+    if (m_wallpaperTexture.id != 0 && m_blurIntensity > 0.0f && renderContext() != nullptr) {
       auto* renderer = renderContext();
       renderer->makeCurrent(renderTarget());
       static constexpr int kBlurRounds = 3;
-      const float blurRadius = m_wallpaperBlurIntensity * 40.0f;
+      const float blurRadius = m_blurIntensity * 40.0f;
       m_blurredWallpaperTexture = m_wallpaperBlurCache.get(
           renderer->backend(), m_wallpaperTexture, static_cast<std::uint32_t>(m_wallpaperTexture.width),
           static_cast<std::uint32_t>(m_wallpaperTexture.height), blurRadius, kBlurRounds

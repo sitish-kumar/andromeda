@@ -439,8 +439,7 @@ void LockScreen::applyLockscreenStyle(LockSurface& surface) const {
     return;
   }
   const auto& lockscreen = m_configService->config().lockscreen;
-  surface.setBlurredDesktopStyle(lockscreen.blurIntensity, lockscreen.tintIntensity);
-  surface.setWallpaperStyle(lockscreen.wallpaperBlurIntensity, lockscreen.wallpaperTintIntensity);
+  surface.setBackgroundStyle(lockscreen.blurIntensity, lockscreen.tintIntensity);
 }
 
 void LockScreen::createInstance(const WaylandOutput& output) {

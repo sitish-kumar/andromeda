@@ -142,9 +142,9 @@ keyboard_layout = true            # show an OSD popup when the input keyboard la
 # ── Lock Screen ───────────────────────────────────────────────────────────────
 
 [lockscreen]
-blurred_desktop         = false       # capture desktop via screencopy before locking (requires wlr-screencopy)
-blur_intensity          = 0.5         # 0.0 = no blur, 1.0 = maximum
-tint_intensity          = 0.3         # 0.0 = no tint, 1.0 = opaque
+blurred_desktop         = false       # use a desktop snapshot as the lock screen background (requires wlr-screencopy)
+blur_intensity          = 0.5         # lock screen background blur (0.0 = none, 1.0 = maximum)
+tint_intensity          = 0.3         # surface-color tint over the lock screen background
 
 # ── System Monitor ────────────────────────────────────────────────────────────
 

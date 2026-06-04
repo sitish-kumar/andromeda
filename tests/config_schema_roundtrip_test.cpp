@@ -181,7 +181,7 @@ namespace {
     c.osd.lockKeys = false;
     c.osd.keyboardLayout = false;
     c.backdrop = BackdropConfig{true, 0.8f, 0.2f};
-    c.lockscreen = LockscreenConfig{true, 0.6f, 0.25f, 0.4f, 0.15f};
+    c.lockscreen = LockscreenConfig{true, 0.6f, 0.25f};
     c.system.monitor.enabled = false;
     c.system.monitor.cpuPollSeconds = 5.0f;
     c.system.monitor.gpuPollSeconds = 4.0f;

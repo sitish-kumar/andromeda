@@ -2134,24 +2134,16 @@
       },
       "lockscreen": {
         "blurred-desktop": {
-          "label": "Blurred Desktop",
-          "description": "Capture the desktop before locking and show it blurred behind the lock screen"
+          "label": "Desktop capture",
+          "description": "Use a snapshot of the desktop as the lock screen background"
         },
         "blur-intensity": {
           "label": "Blur Intensity",
-          "description": "Blur intensity of the captured desktop background"
+          "description": "How much the lock screen background is blurred"
         },
         "tint-intensity": {
           "label": "Tint Intensity",
-          "description": "Surface-color tint over the blurred desktop background"
-        },
-        "wallpaper-blur-intensity": {
-          "label": "Wallpaper Blur Intensity",
-          "description": "Blur intensity applied to the configured wallpaper when screencopy background is disabled"
-        },
-        "wallpaper-tint-intensity": {
-          "label": "Wallpaper Tint Intensity",
-          "description": "Surface-color tint over the configured wallpaper when screencopy background is disabled"
+          "description": "Surface-color tint over the lock screen background"
         },
         "widgets": {
           "label": "Lockscreen Widgets",

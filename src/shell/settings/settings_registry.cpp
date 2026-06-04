@@ -1048,44 +1048,21 @@ namespace settings {
         asSegmented(enumSelect(kPasswordMaskStyles, cfg.shell.passwordMaskStyle)), "polkit lock mask"
     ));
     if (env.screencopySupported) {
-      const SettingVisibility blurredDesktopOn{{"lockscreen", "blurred_desktop"}, {"true"}};
       entries.push_back(makeEntry(
           "security", "lock-screen", tr("settings.schema.lockscreen.blurred-desktop.label"),
           tr("settings.schema.lockscreen.blurred-desktop.description"), {"lockscreen", "blurred_desktop"},
-          ToggleSetting{cfg.lockscreen.blurredDesktop}, "lock screen screencopy blur desktop wallpaper"
+          ToggleSetting{cfg.lockscreen.blurredDesktop}, "lock screen desktop capture screencopy background"
       ));
-      {
-        auto entry = makeEntry(
-            "security", "lock-screen", tr("settings.schema.lockscreen.blur-intensity.label"),
-            tr("settings.schema.lockscreen.blur-intensity.description"), {"lockscreen", "blur_intensity"},
-            sliderFor(cfg.lockscreen.blurIntensity, noctalia::config::schema::kUnitRange, false), "lock screen blur"
-        );
-        entry.visibleWhen = blurredDesktopOn;
-        entries.push_back(std::move(entry));
-      }
-      {
-        auto entry = makeEntry(
-            "security", "lock-screen", tr("settings.schema.lockscreen.tint-intensity.label"),
-            tr("settings.schema.lockscreen.tint-intensity.description"), {"lockscreen", "tint_intensity"},
-            sliderFor(cfg.lockscreen.tintIntensity, noctalia::config::schema::kUnitRange, false), "lock screen tint"
-        );
-        entry.visibleWhen = blurredDesktopOn;
-        entries.push_back(std::move(entry));
-      }
     }
     entries.push_back(makeEntry(
-        "security", "lock-screen", tr("settings.schema.lockscreen.wallpaper-blur-intensity.label"),
-        tr("settings.schema.lockscreen.wallpaper-blur-intensity.description"),
-        {"lockscreen", "wallpaper_blur_intensity"},
-        sliderFor(cfg.lockscreen.wallpaperBlurIntensity, noctalia::config::schema::kUnitRange, false),
-        "lock screen wallpaper blur"
+        "security", "lock-screen", tr("settings.schema.lockscreen.blur-intensity.label"),
+        tr("settings.schema.lockscreen.blur-intensity.description"), {"lockscreen", "blur_intensity"},
+        sliderFor(cfg.lockscreen.blurIntensity, noctalia::config::schema::kUnitRange, false), "lock screen blur"
     ));
     entries.push_back(makeEntry(
-        "security", "lock-screen", tr("settings.schema.lockscreen.wallpaper-tint-intensity.label"),
-        tr("settings.schema.lockscreen.wallpaper-tint-intensity.description"),
-        {"lockscreen", "wallpaper_tint_intensity"},
-        sliderFor(cfg.lockscreen.wallpaperTintIntensity, noctalia::config::schema::kUnitRange, false),
-        "lock screen wallpaper tint"
+        "security", "lock-screen", tr("settings.schema.lockscreen.tint-intensity.label"),
+        tr("settings.schema.lockscreen.tint-intensity.description"), {"lockscreen", "tint_intensity"},
+        sliderFor(cfg.lockscreen.tintIntensity, noctalia::config::schema::kUnitRange, false), "lock screen tint"
     ));
     entries.push_back(makeEntry(
         "security", "lock-screen", tr("settings.schema.lockscreen.widgets.label"),

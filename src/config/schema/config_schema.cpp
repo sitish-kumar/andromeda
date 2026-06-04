@@ -62,8 +62,6 @@ namespace noctalia::config::schema {
         field(&LockscreenConfig::blurredDesktop, "blurred_desktop"),
         field(&LockscreenConfig::blurIntensity, "blur_intensity", kUnitRange),
         field(&LockscreenConfig::tintIntensity, "tint_intensity", kUnitRange),
-        field(&LockscreenConfig::wallpaperBlurIntensity, "wallpaper_blur_intensity", kUnitRange),
-        field(&LockscreenConfig::wallpaperTintIntensity, "wallpaper_tint_intensity", kUnitRange),
     };
     return s;
   }
