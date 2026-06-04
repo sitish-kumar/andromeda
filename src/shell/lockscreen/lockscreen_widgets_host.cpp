@@ -48,6 +48,12 @@ void LockscreenWidgetsHost::show(const LockscreenWidgetsSnapshot& snapshot, Lock
 
 void LockscreenWidgetsHost::hide() {
   for (auto& instance : m_instances) {
+    if (instance->widget != nullptr) {
+      instance->widget->setFrameTickRequestCallback(nullptr);
+      instance->widget->setUpdateCallback(nullptr);
+      instance->widget->setLayoutCallback(nullptr);
+      instance->widget->setRedrawCallback(nullptr);
+    }
     detachFromSurface(*instance);
   }
   m_visible = false;
@@ -263,7 +269,7 @@ void LockscreenWidgetsHost::attachToSurface(WidgetInstance& instance) {
 
   auto* surfacePtr = instance.surface;
   auto* host = this;
-  surfacePtr->setWidgetFrameTickCallback([host, surfacePtr](float deltaMs) {
+  surfacePtr->setFrameTickCallback([host, surfacePtr](float deltaMs) {
     if (host->m_renderContext == nullptr) {
       return;
     }
@@ -280,13 +286,24 @@ void LockscreenWidgetsHost::attachToSurface(WidgetInstance& instance) {
 }
 
 void LockscreenWidgetsHost::detachFromSurface(WidgetInstance& instance) {
-  if (instance.transformNode != nullptr && instance.surface != nullptr) {
-    if (Node* layer = instance.surface->widgetLayer(); layer != nullptr) {
+  LockSurface* surface = instance.surface;
+
+  if (instance.transformNode != nullptr && surface != nullptr) {
+    if (Node* layer = surface->widgetLayer(); layer != nullptr) {
       (void)layer->removeChild(instance.transformNode);
     }
     instance.transformNode = nullptr;
   }
   instance.surface = nullptr;
+
+  if (surface != nullptr) {
+    const bool surfaceInUse = std::any_of(m_instances.begin(), m_instances.end(), [&](const auto& other) {
+      return other.get() != &instance && other->surface == surface;
+    });
+    if (!surfaceInUse) {
+      surface->setFrameTickCallback(nullptr);
+    }
+  }
 }
 
 void LockscreenWidgetsHost::updateBuiltinClockVisibility(LockScreen& lockScreen) {

@@ -413,10 +413,6 @@ void LockSurface::setBuiltinClockVisible(bool visible) {
   }
 }
 
-void LockSurface::setWidgetFrameTickCallback(std::function<void(float)> callback) {
-  m_widgetFrameTickCallback = std::move(callback);
-}
-
 void LockSurface::prepareFrame(bool needsUpdate, bool needsLayout) {
   auto* renderer = renderContext();
   if (renderer == nullptr || width() == 0 || height() == 0) {
@@ -424,10 +420,6 @@ void LockSurface::prepareFrame(bool needsUpdate, bool needsLayout) {
   }
 
   renderer->makeCurrent(renderTarget());
-
-  if (m_widgetFrameTickCallback) {
-    m_widgetFrameTickCallback(0.0f);
-  }
 
   if (m_widgetsHost != nullptr) {
     m_widgetsHost->prepareFrame(*this, needsUpdate, needsLayout);

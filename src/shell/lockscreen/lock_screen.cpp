@@ -112,9 +112,6 @@ void LockScreen::unlock() {
   m_pendingAfterLocked = {};
 
   const bool wasLockedInteractive = m_locked;
-  if (wasLockedInteractive && m_onSessionUnlocked) {
-    m_onSessionUnlocked();
-  }
 
   if (m_lock != nullptr) {
     if (m_locked) {
@@ -134,6 +131,13 @@ void LockScreen::unlock() {
   m_statusIsError = false;
   m_wayland->stopKeyRepeat();
   m_desktopCaptures.clear();
+
+  // Tear down widgets while lock surfaces still exist. Session hooks run only after
+  // isActive() is false so LockscreenWidgetsController::applyVisibility() hides first.
+  if (wasLockedInteractive && m_onSessionUnlocked) {
+    m_onSessionUnlocked();
+  }
+
   clearInstances();
   m_pointerSurface = nullptr;
   wl_display_flush(m_wayland->display());
@@ -355,6 +359,9 @@ void LockScreen::handleFinished(void* data, ext_session_lock_v1* /*lock*/) {
   self->m_status.clear();
   self->m_statusIsError = false;
   self->m_desktopCaptures.clear();
+  if (self->m_onSessionUnlocked) {
+    self->m_onSessionUnlocked();
+  }
   self->clearInstances();
   self->m_pointerSurface = nullptr;
 }
