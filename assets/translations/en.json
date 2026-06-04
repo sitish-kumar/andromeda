@@ -432,7 +432,8 @@
         "sticker": "Sticker",
         "weather": "Weather",
         "media-player": "Media Player",
-        "system-monitor": "System Monitor"
+        "system-monitor": "System Monitor",
+        "label": "Label"
       },
       "actions": {
         "done": "Done"
@@ -448,6 +449,8 @@
         "title": "Settings",
         "widget-section": "Widget",
         "format": "Format",
+        "title": "Title",
+        "description": "Description",
         "color": "Color",
         "shadow": "Shadow",
         "aspect-ratio": "Aspect Ratio",

@@ -486,6 +486,7 @@ _noctalia_sources = files(
   'src/shell/lockscreen/lockscreen_widgets_host.cpp',
   'src/shell/desktop/widgets/desktop_audio_visualizer_widget.cpp',
   'src/shell/desktop/widgets/desktop_clock_widget.cpp',
+  'src/shell/desktop/widgets/desktop_label_widget.cpp',
   'src/shell/desktop/widgets/desktop_media_player_widget.cpp',
   'src/shell/desktop/widgets/desktop_sticker_widget.cpp',
   'src/shell/desktop/widgets/desktop_sysmon_widget.cpp',
