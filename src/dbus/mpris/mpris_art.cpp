@@ -70,11 +70,6 @@ namespace {
     return upgraded;
   }
 
-  [[nodiscard]] bool isGoogleMusicArtUrl(std::string_view url) {
-    return url.find("googleusercontent.com") != std::string_view::npos
-        || url.find("ggpht.com") != std::string_view::npos;
-  }
-
   [[nodiscard]] bool isYouTubeMusicSourceUrl(std::string_view sourceUrl) {
     return sourceUrl.find("music.youtube.com") != std::string_view::npos;
   }
@@ -84,13 +79,6 @@ namespace {
 namespace mpris {
 
   bool isRemoteArtUrl(std::string_view url) { return uri::isRemoteUrl(url); }
-
-  bool shouldCenterSquareCropArt(const MprisPlayerInfo& player, std::string_view effectiveArtUrl) {
-    if (isGoogleMusicArtUrl(effectiveArtUrl) || isGoogleMusicArtUrl(player.artUrl)) {
-      return true;
-    }
-    return isYouTubeMusicSourceUrl(player.sourceUrl);
-  }
 
   std::string effectiveArtUrl(const MprisPlayerInfo& player) {
     // YouTube Music advertises a tiny Google-CDN album-art URL; bumping its size

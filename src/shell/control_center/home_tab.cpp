@@ -1128,8 +1128,7 @@ void HomeTab::sync(Renderer& renderer) {
             bool loaded = false;
             if (!artPath.empty()) {
               const int decodeSize = static_cast<int>(std::round(Style::controlHeightLg * 2.6f * contentScale()));
-              const bool squareCrop = mpris::shouldCenterSquareCropArt(*active, artUrl);
-              loaded = m_mediaArt->setSourceFile(renderer, artPath, decodeSize, true, squareCrop);
+              loaded = m_mediaArt->setSourceFile(renderer, artPath, decodeSize, true, true);
               if (!loaded) {
                 m_mediaArt->clear(renderer);
               }

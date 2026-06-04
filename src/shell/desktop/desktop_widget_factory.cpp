@@ -4,6 +4,7 @@
 #include "pipewire/pipewire_spectrum.h"
 #include "shell/desktop/widgets/desktop_audio_visualizer_widget.h"
 #include "shell/desktop/widgets/desktop_clock_widget.h"
+#include "shell/desktop/widgets/desktop_label_widget.h"
 #include "shell/desktop/widgets/desktop_media_player_widget.h"
 #include "shell/desktop/widgets/desktop_sticker_widget.h"
 #include "shell/desktop/widgets/desktop_sysmon_widget.h"
@@ -173,6 +174,17 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
     const bool vertical = getStringSetting(settings, "layout", "horizontal") == "vertical";
     auto widget = std::make_unique<DesktopMediaPlayerWidget>(
         m_mpris, m_httpClient, vertical,
+        getColorSpecSetting(settings, "color", colorSpecFromRole(ColorRole::OnSurface)),
+        getBoolSetting(settings, "shadow", true)
+    );
+    applyCommonSettings(*widget, settings);
+    widget->setContentScale(contentScale);
+    return widget;
+  }
+
+  if (type == "label") {
+    auto widget = std::make_unique<DesktopLabelWidget>(
+        getStringSetting(settings, "title", "Title"), getStringSetting(settings, "description"),
         getColorSpecSetting(settings, "color", colorSpecFromRole(ColorRole::OnSurface)),
         getBoolSetting(settings, "shadow", true)
     );

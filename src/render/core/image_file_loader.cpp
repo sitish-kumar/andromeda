@@ -373,33 +373,34 @@ namespace {
     }
 
     if (auto decoded = decodeRasterImage(fileData.data(), fileData.size(), errorMessage)) {
-      int width = decoded->width;
-      int height = decoded->height;
-      auto pixels = std::move(decoded->pixels);
+      LoadedImageFile loaded{.rgba = std::move(decoded->pixels), .width = decoded->width, .height = decoded->height};
 
-      const int maxDim = std::max(width, height);
-      if (targetSize > 0 && maxDim > targetSize && width > 0 && height > 0) {
+      // Crop before resizing so the kept square fills targetSize at full detail,
+      // instead of resizing the whole frame and discarding most of it afterwards.
+      if (centerSquareCrop) {
+        loaded = cropCenterSquare(std::move(loaded));
+      }
+
+      const int maxDim = std::max(loaded.width, loaded.height);
+      if (targetSize > 0 && maxDim > targetSize && loaded.width > 0 && loaded.height > 0) {
         const float scale = static_cast<float>(targetSize) / static_cast<float>(maxDim);
-        const int resizedW = std::max(1, static_cast<int>(std::lround(static_cast<float>(width) * scale)));
-        const int resizedH = std::max(1, static_cast<int>(std::lround(static_cast<float>(height) * scale)));
+        const int resizedW = std::max(1, static_cast<int>(std::lround(static_cast<float>(loaded.width) * scale)));
+        const int resizedH = std::max(1, static_cast<int>(std::lround(static_cast<float>(loaded.height) * scale)));
 
         std::vector<std::uint8_t> resized(static_cast<std::size_t>(resizedW) * static_cast<std::size_t>(resizedH) * 4U);
         // Use the sRGB resize: image bytes are sRGB-encoded, so averaging them
         // directly (the _linear variant) darkens and muddies downscaled icons.
         // STBIR_RGBA handles the non-premultiplied alpha correctly.
-        unsigned char* result =
-            stbir_resize_uint8_srgb(pixels.data(), width, height, 0, resized.data(), resizedW, resizedH, 0, STBIR_RGBA);
+        unsigned char* result = stbir_resize_uint8_srgb(
+            loaded.rgba.data(), loaded.width, loaded.height, 0, resized.data(), resizedW, resizedH, 0, STBIR_RGBA
+        );
         if (result != nullptr) {
-          pixels = std::move(resized);
-          width = resizedW;
-          height = resizedH;
+          loaded.rgba = std::move(resized);
+          loaded.width = resizedW;
+          loaded.height = resizedH;
         }
       }
 
-      LoadedImageFile loaded{.rgba = std::move(pixels), .width = width, .height = height};
-      if (centerSquareCrop) {
-        loaded = cropCenterSquare(std::move(loaded));
-      }
       return loaded;
     }
 

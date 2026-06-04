@@ -17,6 +17,7 @@ namespace desktop_settings {
         {.type = "weather", .labelKey = "desktop-widgets.editor.types.weather"},
         {.type = "media_player", .labelKey = "desktop-widgets.editor.types.media-player"},
         {.type = "sysmon", .labelKey = "desktop-widgets.editor.types.system-monitor"},
+        {.type = "label", .labelKey = "desktop-widgets.editor.types.label"},
     };
 
     WidgetSettingSpec baseSpec(std::string_view key, WidgetControlKind control, WidgetSettingValue defaultValue) {
@@ -137,6 +138,11 @@ namespace desktop_settings {
           {{"horizontal", "desktop-widgets.editor.settings.horizontal"},
            {"vertical", "desktop-widgets.editor.settings.vertical"}}
       ));
+      add(colorSpec("color", "on_surface"));
+      add(boolSpec("shadow", true));
+    } else if (type == "label") {
+      add(stringSpec("title", "Title"));
+      add(stringSpec("description"));
       add(colorSpec("color", "on_surface"));
       add(boolSpec("shadow", true));
     } else if (type == "sysmon") {
