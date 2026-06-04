@@ -339,6 +339,10 @@ void InputDispatcher::trackArea(InputArea* area) {
   area->setDestroyCallback([this](InputArea* a) {
     if (m_hoveredArea == a) {
       m_hoveredArea = nullptr;
+      if (m_hoverChangeCallback) {
+        m_hoverChangeCallback(a, nullptr);
+      }
+      updateCursor(m_lastSerial);
     }
     if (m_focusedArea == a) {
       clearTextInputFocus(a);
