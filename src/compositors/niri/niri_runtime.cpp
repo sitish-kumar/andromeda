@@ -1,5 +1,8 @@
 #include "compositors/niri/niri_runtime.h"
 
+#include "compositors/niri/niri_event_handler.h"
+
+#include <algorithm>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
@@ -135,6 +138,26 @@ namespace compositors::niri {
     m_socketPath.clear();
     m_resolved = false;
     resolveSocketPath();
+  }
+
+  void NiriRuntime::registerEventHandler(NiriEventHandler* handler) {
+    if (handler == nullptr
+        || std::find(m_eventHandlers.begin(), m_eventHandlers.end(), handler) != m_eventHandlers.end()) {
+      return;
+    }
+    m_eventHandlers.push_back(handler);
+  }
+
+  void NiriRuntime::unregisterEventHandler(NiriEventHandler* handler) {
+    m_eventHandlers.erase(std::remove(m_eventHandlers.begin(), m_eventHandlers.end(), handler), m_eventHandlers.end());
+  }
+
+  void NiriRuntime::dispatchEvent(std::string_view key, const nlohmann::json& value) const {
+    for (auto* handler : m_eventHandlers) {
+      if (handler != nullptr) {
+        handler->handleEvent(key, value);
+      }
+    }
   }
 
   void NiriRuntime::ensureResolved() const {

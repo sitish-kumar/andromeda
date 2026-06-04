@@ -698,6 +698,7 @@ _noctalia_sources = files(
   'src/compositors/mango/mango_output_backend.cpp',
   'src/compositors/mango/mango_workspace_backend.cpp',
   'src/compositors/niri/niri_runtime.cpp',
+  'src/compositors/niri/niri_event_handler.cpp',
   'src/compositors/niri/niri_output_backend.cpp',
   'src/compositors/niri/niri_keyboard_backend.cpp',
   'src/compositors/niri/niri_workspace_backend.cpp',

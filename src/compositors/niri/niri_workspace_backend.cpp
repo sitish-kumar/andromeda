@@ -538,6 +538,11 @@ bool NiriWorkspaceBackend::handleMessage(std::string_view line) {
   }
 
   const auto it = json.begin();
+
+  // Fan the event out to other runtime handlers (e.g. the keyboard backend)
+  // before applying our own state changes.
+  m_runtime.dispatchEvent(it.key(), it.value());
+
   bool changed = false;
   if (it.key() == "WorkspacesChanged") {
     changed = handleWorkspacesChanged(it.value());

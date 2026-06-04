@@ -4,8 +4,11 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace compositors::niri {
+
+  class NiriEventHandler;
 
   class NiriRuntime {
   public:
@@ -18,6 +21,12 @@ namespace compositors::niri {
     [[nodiscard]] bool requestAction(const nlohmann::json& action, bool acceptNoResponse = false) const;
     void refresh();
 
+    // Shared event-stream dispatch. The socket owner (NiriWorkspaceBackend) calls
+    // dispatchEvent() for each parsed message; every registered handler sees it.
+    void registerEventHandler(NiriEventHandler* handler);
+    void unregisterEventHandler(NiriEventHandler* handler);
+    void dispatchEvent(std::string_view key, const nlohmann::json& value) const;
+
   private:
     struct IpcReply;
 
@@ -27,6 +36,7 @@ namespace compositors::niri {
 
     mutable bool m_resolved = false;
     mutable std::string m_socketPath;
+    std::vector<NiriEventHandler*> m_eventHandlers;
   };
 
 } // namespace compositors::niri
