@@ -6,6 +6,7 @@
 #include "core/log.h"
 #include "core/ui_phase.h"
 #include "cursor-shape-v1-client-protocol.h"
+#include "i18n/i18n.h"
 #include "render/animation/animation_manager.h"
 #include "render/core/color.h"
 #include "render/render_context.h"
@@ -13,6 +14,8 @@
 #include "render/scene/input_dispatcher.h"
 #include "render/scene/node.h"
 #include "ui/controls/box.h"
+#include "ui/controls/button.h"
+#include "ui/controls/flex.h"
 #include "ui/controls/image.h"
 #include "ui/controls/label.h"
 #include "ui/palette.h"
@@ -24,6 +27,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <functional>
 #include <linux/input-event-codes.h>
 #include <memory>
 
@@ -58,6 +62,61 @@ namespace capture {
         }
       }
       return nullptr;
+    }
+
+    [[nodiscard]] wl_output* outputAtGlobalPoint(const WaylandConnection& wayland, double globalX, double globalY) {
+      for (const auto& out : wayland.outputs()) {
+        if (out.output == nullptr || out.logicalWidth <= 0 || out.logicalHeight <= 0) {
+          continue;
+        }
+        if (globalX >= static_cast<double>(out.logicalX)
+            && globalX < static_cast<double>(out.logicalX + out.logicalWidth)
+            && globalY >= static_cast<double>(out.logicalY)
+            && globalY < static_cast<double>(out.logicalY + out.logicalHeight)) {
+          return out.output;
+        }
+      }
+      return nullptr;
+    }
+
+    [[nodiscard]] std::string outputPickerLabel(const WaylandOutput& output) {
+      if (!output.connectorName.empty()) {
+        return output.connectorName;
+      }
+      if (!output.description.empty()) {
+        return output.description;
+      }
+      return "Display";
+    }
+
+    std::unique_ptr<Flex>
+    buildFullscreenPickerBar(const WaylandConnection& wayland, std::function<void(wl_output*)> onPick) {
+      auto bar = std::make_unique<Flex>();
+      bar->setDirection(FlexDirection::Horizontal);
+      bar->setJustify(FlexJustify::Center);
+      bar->setAlign(FlexAlign::Center);
+      bar->setGap(Style::spaceSm);
+      bar->setPadding(Style::spaceSm, Style::spaceMd, Style::spaceSm, Style::spaceMd);
+      bar->setCardStyle(1.0f, 0.94f, true);
+
+      auto hint = std::make_unique<Label>();
+      hint->setText(i18n::tr("bar.screenshot.choose_display"));
+      hint->setFontSize(Style::fontSizeCaption);
+      hint->setColor(colorForRole(ColorRole::OnSurface));
+      bar->addChild(std::move(hint));
+
+      for (const auto& out : wayland.outputs()) {
+        if (out.output == nullptr || out.logicalWidth <= 0 || out.logicalHeight <= 0) {
+          continue;
+        }
+        auto button = std::make_unique<Button>();
+        button->setText(outputPickerLabel(out));
+        button->setVariant(ButtonVariant::Outline);
+        button->setOnClick([onPick, output = out.output]() { onPick(output); });
+        bar->addChild(std::move(button));
+      }
+
+      return bar;
     }
 
   } // namespace
@@ -260,11 +319,21 @@ namespace capture {
     input->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_CROSSHAIR);
 
     if (m_fullscreenPick) {
-      input->setOnClick([this, output = inst.output](const InputArea::PointerData& data) {
+      input->setOnClick([this, surfaceOutput = inst.output](const InputArea::PointerData& data) {
         if (data.pressed || data.button != BTN_LEFT) {
           return;
         }
-        DeferredCall::callLater([this, output]() { completeFullscreenPick(output); });
+        const auto* surfaceOut = findOutput(*m_wayland, surfaceOutput);
+        if (surfaceOut == nullptr) {
+          return;
+        }
+        const double globalX = static_cast<double>(surfaceOut->logicalX) + static_cast<double>(data.localX);
+        const double globalY = static_cast<double>(surfaceOut->logicalY) + static_cast<double>(data.localY);
+        wl_output* picked = outputAtGlobalPoint(*m_wayland, globalX, globalY);
+        if (picked == nullptr) {
+          picked = surfaceOutput;
+        }
+        DeferredCall::callLater([this, picked]() { completeFullscreenPick(picked); });
       });
     } else {
       input->setOnPress([this, output = inst.output](const InputArea::PointerData& data) {
@@ -388,6 +457,17 @@ namespace capture {
     }
     inst.input = input.get();
     inst.sceneRoot->addChild(std::move(input));
+
+    if (m_fullscreenPick) {
+      auto pickerBar = buildFullscreenPickerBar(*m_wayland, [this](wl_output* output) {
+        DeferredCall::callLater([this, output]() { completeFullscreenPick(output); });
+      });
+      Flex* pickerBarPtr = pickerBar.get();
+      inst.sceneRoot->addChild(std::move(pickerBar));
+      pickerBarPtr->layout(*m_renderContext);
+      pickerBarPtr->setPosition((w - pickerBarPtr->width()) * 0.5f, Style::spaceMd);
+    }
+
     inst.surface->setSceneRoot(inst.sceneRoot.get());
     inst.inputDispatcher.setSceneRoot(inst.sceneRoot.get());
     inst.inputDispatcher.setCursorShapeCallback([this](std::uint32_t serial, std::uint32_t shape) {

@@ -195,7 +195,7 @@ void ScreenshotWidget::runPrimaryClickAction() {
   }
   const auto options = outputOptions();
   if (primaryClickIsFullscreen()) {
-    m_screenshots.captureFullscreen(options);
+    m_screenshots.captureFullscreenInteractive(m_renderContext, options);
     return;
   }
   m_screenshots.beginRegionCapture(m_renderContext, options);
@@ -235,7 +235,7 @@ void ScreenshotWidget::openCaptureMenu() {
   const auto options = outputOptions();
   m_menuPopup->setOnActivate([this, options](const ContextMenuControlEntry& entry) {
     if (entry.id == 1) {
-      m_screenshots.captureFullscreen(options);
+      m_screenshots.captureFullscreenInteractive(m_renderContext, options);
       return;
     }
     if (entry.id == 2) {

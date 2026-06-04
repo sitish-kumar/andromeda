@@ -42,6 +42,7 @@ public:
   [[nodiscard]] bool available() const noexcept;
 
   void captureFullscreen(const OutputOptions& options, wl_output* output = nullptr);
+  void captureFullscreenInteractive(RenderContext& renderContext, const OutputOptions& options);
   void beginRegionCapture(RenderContext& renderContext, const OutputOptions& options);
   void beginFullscreenCapture(RenderContext& renderContext, const OutputOptions& options);
 

@@ -555,6 +555,22 @@ void ScreenshotService::captureFullscreen(const OutputOptions& options, wl_outpu
   captureOutput(output, std::nullopt, "screenshot", options);
 }
 
+void ScreenshotService::captureFullscreenInteractive(RenderContext& renderContext, const OutputOptions& options) {
+  if (!available()) {
+    notifyError("Screen capture is not available on this compositor");
+    return;
+  }
+  if (!hasAnyOutput(options)) {
+    notifyError("No screenshot output enabled");
+    return;
+  }
+  if (validOutputs(m_wayland).size() <= 1) {
+    captureFullscreen(options);
+    return;
+  }
+  beginFullscreenCapture(renderContext, options);
+}
+
 void ScreenshotService::beginRegionCapture(RenderContext& renderContext, const OutputOptions& options) {
   if (!available()) {
     notifyError("Screen capture is not available on this compositor");

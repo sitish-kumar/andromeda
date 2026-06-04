@@ -499,7 +499,8 @@
   "bar": {
     "screenshot": {
       "fullscreen": "Full screen",
-      "region": "Select region"
+      "region": "Select region",
+      "choose_display": "Choose display"
     },
     "widgets": {
       "weather": {
