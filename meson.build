@@ -407,6 +407,7 @@ _noctalia_sources = files(
   'src/launcher/math_provider.cpp',
   'src/launcher/session_provider.cpp',
   'src/launcher/wallpaper_provider.cpp',
+  'src/launcher/window_provider.cpp',
   'src/launcher/usage_tracker.cpp',
   'src/main.cpp',
   'src/net/http_client.cpp',

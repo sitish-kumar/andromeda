@@ -886,6 +886,9 @@ const char* CompositorPlatform::workspaceBackendName() const noexcept {
 }
 
 void CompositorPlatform::focusCompositorWindow(const std::string& windowId) const {
+  if (m_workspaceMetadataBackend != nullptr && m_workspaceMetadataBackend->focusWindowById(windowId)) {
+    return;
+  }
   if (m_workspaces != nullptr) {
     m_workspaces->focusWindow(windowId);
   }
