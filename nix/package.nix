@@ -1,5 +1,6 @@
 {
   lib,
+  config,
   stdenv,
   shortRev,
   version,
@@ -28,7 +29,9 @@
   librsvg,
   libqalculate,
   libxml2,
-  jemalloc
+  jemalloc,
+  autoAddDriverRunpath,
+  cudaSupport ? config.cudaSupport,
 }:
 
 stdenv.mkDerivation {
@@ -50,7 +53,8 @@ stdenv.mkDerivation {
     pkg-config
     wayland-scanner
     jemalloc
-  ];
+  ]
+  ++ lib.optional cudaSupport autoAddDriverRunpath;
 
   buildInputs = [
     wayland
