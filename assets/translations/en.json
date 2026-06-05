@@ -519,6 +519,7 @@
         "change-image": "Change…",
         "opacity": "Opacity",
         "layout": "Layout",
+        "hide-when-no-media": "Hide When No Media",
         "horizontal": "Horizontal",
         "vertical": "Vertical",
         "stat": "Stat",
