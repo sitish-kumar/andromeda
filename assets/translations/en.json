@@ -601,6 +601,18 @@
     }
   },
   "osd": {
+    "dnd": {
+      "on": "DND On",
+      "off": "DND Off"
+    },
+    "caffeine": {
+      "on": "Caffeine On",
+      "off": "Caffeine Off"
+    },
+    "wifi": {
+      "on": "Wi-Fi On",
+      "off": "Wi-Fi Off"
+    },
     "lock-keys": {
       "caps-on": "Caps Lock On",
       "caps-off": "Caps Lock Off",
@@ -628,19 +640,10 @@
     },
     "internal": {
       "dbus-disabled": "DBus notifications disabled",
-      "dnd": "Do Not Disturb",
-      "dnd-enabled": "Do Not Disturb enabled",
-      "dnd-disabled": "Do Not Disturb disabled",
       "battery": "Battery",
       "battery-device": "Battery device",
       "battery-low-title": "Battery low",
       "battery-low-body": "{device}: {percent}% remaining",
-      "network": "Network",
-      "wifi-enabled": "Wi-Fi is on",
-      "wifi-disabled": "Wi-Fi is off",
-      "caffeine": "Caffeine",
-      "caffeine-enabled": "Caffeine enabled",
-      "caffeine-disabled": "Caffeine disabled",
       "bluetooth": "Bluetooth",
       "bluetooth-enabled": "Bluetooth is on",
       "bluetooth-disabled": "Bluetooth is off",

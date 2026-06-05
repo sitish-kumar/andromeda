@@ -102,6 +102,30 @@ namespace {
     };
   }
 
+  OsdContent caffeineOsdContent(bool enabled) {
+    return OsdContent{
+        .icon = enabled ? "caffeine-on" : "caffeine-off",
+        .value = i18n::tr(enabled ? "osd.caffeine.on" : "osd.caffeine.off"),
+        .showProgress = false,
+    };
+  }
+
+  OsdContent dndOsdContent(bool enabled) {
+    return OsdContent{
+        .icon = enabled ? "bell-off" : "bell",
+        .value = i18n::tr(enabled ? "osd.dnd.on" : "osd.dnd.off"),
+        .showProgress = false,
+    };
+  }
+
+  OsdContent wifiOsdContent(bool enabled) {
+    return OsdContent{
+        .icon = enabled ? "wifi" : "wifi-off",
+        .value = i18n::tr(enabled ? "osd.wifi.on" : "osd.wifi.off"),
+        .showProgress = false,
+    };
+  }
+
   bool barMayRender(const BarConfig& bar) {
     if (bar.enabled) {
       return true;
@@ -1568,17 +1592,8 @@ void Application::initIpc() {
         if (currentState == *nextState) {
           return "ok\n";
         }
-        if (*nextState) {
-          notify::info(
-              "Noctalia", i18n::tr("notifications.internal.dnd"), i18n::tr("notifications.internal.dnd-enabled")
-          );
-        }
         applyNotificationDnd(*nextState);
-        if (!*nextState) {
-          notify::info(
-              "Noctalia", i18n::tr("notifications.internal.dnd"), i18n::tr("notifications.internal.dnd-disabled")
-          );
-        }
+        m_osdOverlay.show(dndOsdContent(*nextState));
         return "ok\n";
       },
       "notification-dnd-set <on|off|true|false|1|0>", "Set notification Do Not Disturb state"
@@ -1588,17 +1603,8 @@ void Application::initIpc() {
       "notification-dnd-toggle",
       [this, applyNotificationDnd](const std::string&) -> std::string {
         const bool nextState = !m_notificationManager.doNotDisturb();
-        if (nextState) {
-          notify::info(
-              "Noctalia", i18n::tr("notifications.internal.dnd"), i18n::tr("notifications.internal.dnd-enabled")
-          );
-        }
         applyNotificationDnd(nextState);
-        if (!nextState) {
-          notify::info(
-              "Noctalia", i18n::tr("notifications.internal.dnd"), i18n::tr("notifications.internal.dnd-disabled")
-          );
-        }
+        m_osdOverlay.show(dndOsdContent(nextState));
         return "ok\n";
       },
       "notification-dnd-toggle", "Toggle notification Do Not Disturb state"
@@ -1695,7 +1701,7 @@ void Application::initIpc() {
   m_desktopWidgetsController.registerIpc(m_ipcService);
   m_lockscreenWidgetsController.registerIpc(m_ipcService);
   m_panelManager.registerIpc(m_ipcService);
-  m_idleInhibitor.registerIpc(m_ipcService);
+  m_idleInhibitor.registerIpc(m_ipcService, [this](bool enabled) { m_osdOverlay.show(caffeineOsdContent(enabled)); });
   m_gammaService.registerIpc(m_ipcService);
   m_themeService.registerIpc(m_ipcService);
   m_templateApplyService.registerIpc(m_ipcService);
@@ -1825,15 +1831,7 @@ void Application::onNetworkStateChangedForEvents(const NetworkState& state, Netw
   const bool prev = *m_prevWirelessEnabledForEvents;
   if (prev != state.wirelessEnabled) {
     if (origin != NetworkChangeOrigin::Noctalia) {
-      if (state.wirelessEnabled) {
-        m_notificationManager.addInternal(
-            i18n::tr("notifications.internal.network"), i18n::tr("notifications.internal.wifi-enabled"), ""
-        );
-      } else {
-        m_notificationManager.addInternal(
-            i18n::tr("notifications.internal.network"), i18n::tr("notifications.internal.wifi-disabled"), ""
-        );
-      }
+      m_osdOverlay.show(wifiOsdContent(state.wirelessEnabled));
     }
     if (state.wirelessEnabled) {
       m_hookManager.fire(HookKind::WifiEnabled);
@@ -1881,7 +1879,9 @@ void Application::onPowerProfileChangedForEvents(const PowerProfilesState& state
   }
   const std::string prev = *m_prevPowerProfileActiveForEvents;
   if (prev != state.activeProfile) {
-    m_osdOverlay.show(powerProfileOsdContent(state.activeProfile));
+    if (origin != PowerProfilesChangeOrigin::Noctalia) {
+      m_osdOverlay.show(powerProfileOsdContent(state.activeProfile));
+    }
     m_hookManager.fire(
         HookKind::PowerProfileChanged,
         {{"NOCTALIA_POWER_PROFILE", state.activeProfile},
