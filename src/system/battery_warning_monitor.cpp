@@ -157,7 +157,7 @@ void BatteryWarningMonitor::update(
     notifications.addInternal(
         i18n::tr("notifications.internal.battery"), i18n::tr("notifications.internal.battery-low-title"),
         i18n::tr("notifications.internal.battery-low-body", "device", label, "percent", percent), Urgency::Critical,
-        kDefaultNotificationTimeout, std::string("noctalia-glyph:battery-exclamation")
+        kDefaultNotificationTimeout * 2, std::string("noctalia-glyph:battery-exclamation")
     );
   }
 
