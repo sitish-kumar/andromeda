@@ -59,6 +59,7 @@ public:
   [[nodiscard]] bool hasDesktopCapture() const noexcept;
   [[nodiscard]] Node* widgetLayer() noexcept { return m_widgetLayer; }
   void setBuiltinClockVisible(bool visible);
+  void setOutputKey(std::string outputKey) { m_outputKey = std::move(outputKey); }
   void setWidgetsHost(LockscreenWidgetsHost* host) noexcept { m_widgetsHost = host; }
 
   static void handleConfigure(
@@ -115,5 +116,6 @@ private:
   bool m_error = false;
   bool m_clockShadowEnabled = true;
   bool m_builtinClockVisible = true;
+  std::string m_outputKey;
   LockscreenWidgetsHost* m_widgetsHost = nullptr;
 };

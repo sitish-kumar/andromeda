@@ -7,6 +7,7 @@
 #include "config/widget_config.h"
 #include "core/toml.h"
 #include "shell/desktop/desktop_widget_settings_registry.h"
+#include "shell/lockscreen/lockscreen_login_box.h"
 #include "shell/settings/widget_settings_registry.h"
 
 #include <algorithm>
@@ -343,8 +344,11 @@ namespace noctalia::config {
           }
         }
         const std::string type = (*tbl)["type"].value<std::string>().value_or("");
-        if (desktop_settings::desktopWidgetSettingSpecs(type).empty()) {
+        if (type != lockscreen_login_box::kWidgetType && desktop_settings::desktopWidgetSettingSpecs(type).empty()) {
           diag.warn(base, "unrecognized lockscreen widget type \"" + type + "\"");
+          continue;
+        }
+        if (type == lockscreen_login_box::kWidgetType) {
           continue;
         }
         const auto* settingsTbl = (*tbl)["settings"].as_table();

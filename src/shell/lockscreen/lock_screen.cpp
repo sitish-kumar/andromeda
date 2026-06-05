@@ -8,6 +8,7 @@
 #include "ext-session-lock-v1-client-protocol.h"
 #include "i18n/i18n.h"
 #include "render/render_context.h"
+#include "shell/desktop/desktop_widget_layout.h"
 #include "shell/lockscreen/lock_surface.h"
 #include "ui/palette.h"
 #include "wayland/wayland_connection.h"
@@ -448,6 +449,7 @@ void LockScreen::createInstance(const WaylandOutput& output) {
   surface->setTextureCache(m_textureCache);
   surface->setLockedState(m_locked);
   applyLockscreenStyle(*surface);
+  surface->setOutputKey(desktop_widgets::outputKey(output));
   if (m_configService != nullptr) {
     surface->setWallpaperPath(m_configService->getWallpaperPath(output.connectorName));
     surface->setWallpaperFillMode(m_configService->config().wallpaper.fillMode);

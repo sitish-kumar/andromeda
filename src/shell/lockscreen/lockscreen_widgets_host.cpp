@@ -8,6 +8,7 @@
 #include "shell/desktop/desktop_widget_layout.h"
 #include "shell/lockscreen/lock_screen.h"
 #include "shell/lockscreen/lock_surface.h"
+#include "shell/lockscreen/lockscreen_login_box.h"
 #include "time/time_format.h"
 #include "wayland/wayland_connection.h"
 
@@ -132,7 +133,7 @@ void LockscreenWidgetsHost::syncSurfaces(LockScreen& lockScreen) {
   });
 
   for (const auto& state : m_snapshot.widgets) {
-    if (!state.enabled) {
+    if (!state.enabled || lockscreen_login_box::isLoginBoxWidget(state)) {
       continue;
     }
 

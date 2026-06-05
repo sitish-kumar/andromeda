@@ -13,6 +13,8 @@
 #include "render/scene/node.h"
 #include "shell/desktop/desktop_widget_layout.h"
 #include "shell/desktop/desktop_widget_settings_registry.h"
+#include "shell/desktop/widgets/desktop_login_box_widget.h"
+#include "shell/lockscreen/lockscreen_login_box.h"
 #include "time/time_format.h"
 #include "ui/builders.h"
 #include "ui/controls/select_dropdown_popup.h"
@@ -195,6 +197,9 @@ void BackgroundWidgetsEditor::setExitRequestedCallback(std::function<void()> cal
 
 void BackgroundWidgetsEditor::open(const WidgetsEditorSnapshot& snapshot) {
   m_snapshot = snapshot;
+  if (m_profile.showLockscreenLoginPreview && m_wayland != nullptr) {
+    lockscreen_login_box::ensureWidgets(m_snapshot.widgets, *m_wayland);
+  }
   m_open = true;
   m_selectedWidgetId.clear();
   m_drag = {};
@@ -409,90 +414,6 @@ void BackgroundWidgetsEditor::prepareFrame(OverlaySurface& surface, bool needsUp
   }
 }
 
-void BackgroundWidgetsEditor::appendEditorBackdrop(InputArea& root) {
-  if (!m_profile.showLockscreenLoginPreview || m_config == nullptr) {
-    return;
-  }
-
-  const float sw = root.width();
-  const float sh = root.height();
-  const float panelWidth = std::min(sw - Style::spaceLg * 2.0f, 520.0f);
-  const float panelHeight = 78.0f;
-  const float panelX = std::round((sw - panelWidth) * 0.5f);
-  const float panelY = std::max(Style::spaceLg, sh - panelHeight - 84.0f);
-  const float contentLeft = panelX + Style::spaceLg;
-  const float contentTop = panelY + 22.0f;
-  const float rightInset = Style::spaceLg + Style::spaceSm;
-  const float contentWidth = panelWidth - Style::spaceLg - rightInset;
-  const float buttonWidth = Style::controlHeight;
-  const float gap = Style::spaceSm;
-  const float inputWidth = std::max(120.0f, contentWidth - buttonWidth - gap);
-
-  auto loginPanel = ui::box({});
-  loginPanel->setPosition(panelX, panelY);
-  loginPanel->setSize(panelWidth, panelHeight);
-  loginPanel->setStyle(
-      RoundedRectStyle{
-          .fill = colorForRole(ColorRole::SurfaceVariant, 0.88f),
-          .border = colorForRole(ColorRole::Outline, 0.95f),
-          .fillMode = FillMode::Solid,
-          .radius = Style::scaledRadiusXl(),
-          .softness = 1.0f,
-          .borderWidth = Style::borderWidth,
-      }
-  );
-  loginPanel->setZIndex(2);
-  root.addChild(std::move(loginPanel));
-
-  auto passwordGhost = ui::box({
-      .fill = colorSpecFromRole(ColorRole::Surface, 0.65f),
-  });
-  passwordGhost->setPosition(contentLeft, contentTop);
-  passwordGhost->setSize(inputWidth, Style::controlHeight);
-  passwordGhost->setStyle(
-      RoundedRectStyle{
-          .fill = colorForRole(ColorRole::Surface, 0.65f),
-          .border = colorForRole(ColorRole::Outline, 0.85f),
-          .fillMode = FillMode::Solid,
-          .radius = Style::scaledRadiusMd(),
-          .borderWidth = Style::borderWidth,
-      }
-  );
-  passwordGhost->setZIndex(2);
-  root.addChild(std::move(passwordGhost));
-
-  constexpr float kLoginGlyphSize = 16.0f;
-  const float buttonX = contentLeft + inputWidth + gap;
-  auto loginButtonGhost = ui::box({
-      .fill = colorSpecFromRole(ColorRole::Primary, 0.9f),
-  });
-  loginButtonGhost->setPosition(buttonX, contentTop);
-  loginButtonGhost->setSize(buttonWidth, Style::controlHeight);
-  loginButtonGhost->setStyle(
-      RoundedRectStyle{
-          .fill = colorForRole(ColorRole::Primary, 0.9f),
-          .fillMode = FillMode::Solid,
-          .radius = Style::scaledRadiusMd(),
-      }
-  );
-  loginButtonGhost->setZIndex(2);
-  root.addChild(std::move(loginButtonGhost));
-
-  auto loginGlyph = ui::glyph({
-      .glyph = "check",
-      .glyphSize = kLoginGlyphSize,
-      .color = colorSpecFromRole(ColorRole::OnPrimary),
-  });
-  loginGlyph->setPosition(
-      buttonX + (buttonWidth - kLoginGlyphSize) * 0.5f, contentTop + (Style::controlHeight - kLoginGlyphSize) * 0.5f
-  );
-  loginGlyph->setZIndex(3);
-  if (m_renderContext != nullptr) {
-    loginGlyph->measure(*m_renderContext);
-  }
-  root.addChild(std::move(loginGlyph));
-}
-
 void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   surface.views.clear();
   surface.selectionFrameTransform = nullptr;
@@ -539,8 +460,6 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   });
   root->addChild(std::move(backgroundArea));
 
-  appendEditorBackdrop(*root);
-
   if (m_snapshot.grid.visible && m_snapshot.grid.cellSize > 0) {
     const float width = root->width();
     const float height = root->height();
@@ -584,6 +503,12 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     auto widget = m_factory->create(widgetState.type, widgetState.settings, widgetContentScale(widgetState));
     if (widget == nullptr) {
       continue;
+    }
+
+    if (lockscreen_login_box::isLoginBoxWidget(widgetState)) {
+      if (auto* loginWidget = dynamic_cast<DesktopLoginBoxWidget*>(widget.get())) {
+        loginWidget->setScreenWidth(root->width());
+      }
     }
 
     widget->create();
@@ -633,7 +558,7 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     view.transformNode->setRotation(widgetState.rotationRad);
     view.transformNode->setScale(1.0f);
     view.transformNode->setOpacity(widgetState.enabled ? 1.0f : kDisabledWidgetOpacity);
-    view.transformNode->setZIndex(4);
+    view.transformNode->setZIndex(lockscreen_login_box::isLoginBoxWidget(widgetState) ? 3 : 4);
     view.bodyArea->setOnPress([this, id = widgetState.id](const InputArea::PointerData& data) {
       if (data.button != BTN_LEFT) {
         return;
@@ -661,6 +586,8 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   }
 
   const auto selectedIt = surface.views.find(m_selectedWidgetId);
+  const DesktopWidgetState* selectedState = findWidgetState(m_selectedWidgetId);
+  const bool selectedIsLoginBox = selectedState != nullptr && lockscreen_login_box::isLoginBoxWidget(*selectedState);
   if (selectedIt != surface.views.end()) {
     selectedIt->second.bodyArea->setZIndex(101);
 
@@ -668,42 +595,44 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     selectionFrameTransform->setZIndex(100);
     surface.selectionFrameTransform = selectionFrameTransform.get();
 
-    auto ringShadow = ui::box({
-        .fill = clearColorSpec(),
-        .radius = Style::scaledRadiusMd() + kRotatePadding + kShadowExpand,
-        .configure = [](Box& box) { box.setBorder(kShadowColor, 1.0f + kShadowExpand * 2.0f); },
-    });
-    surface.rotationRingShadow = ringShadow.get();
-    surface.selectionFrameTransform->addChild(std::move(ringShadow));
+    if (!selectedIsLoginBox) {
+      auto ringShadow = ui::box({
+          .fill = clearColorSpec(),
+          .radius = Style::scaledRadiusMd() + kRotatePadding + kShadowExpand,
+          .configure = [](Box& box) { box.setBorder(kShadowColor, 1.0f + kShadowExpand * 2.0f); },
+      });
+      surface.rotationRingShadow = ringShadow.get();
+      surface.selectionFrameTransform->addChild(std::move(ringShadow));
 
-    auto ring = ui::box({
-        .fill = clearColorSpec(),
-        .radius = Style::scaledRadiusMd() + kRotatePadding,
-        .configure = [](Box& box) { box.setBorder(colorSpecFromRole(ColorRole::Primary), 1.0f); },
-    });
-    ring->setZIndex(1);
-    surface.rotationRing = ring.get();
-    surface.selectionFrameTransform->addChild(std::move(ring));
+      auto ring = ui::box({
+          .fill = clearColorSpec(),
+          .radius = Style::scaledRadiusMd() + kRotatePadding,
+          .configure = [](Box& box) { box.setBorder(colorSpecFromRole(ColorRole::Primary), 1.0f); },
+      });
+      ring->setZIndex(1);
+      surface.rotationRing = ring.get();
+      surface.selectionFrameTransform->addChild(std::move(ring));
 
-    auto rotateArea = std::make_unique<InputArea>();
-    rotateArea->setZIndex(1);
-    rotateArea->setOnPress([this, id = m_selectedWidgetId](const InputArea::PointerData& data) {
-      if (data.button != BTN_LEFT) {
-        return;
-      }
-      if (data.pressed) {
-        startDrag(DragMode::Rotate, id, false);
-      } else if (m_drag.mode == DragMode::Rotate && m_drag.widgetId == id) {
-        finishDrag();
-      }
-    });
-    rotateArea->setOnMotion([this, id = m_selectedWidgetId](const InputArea::PointerData& /*data*/) {
-      if (m_drag.mode == DragMode::Rotate && m_drag.widgetId == id) {
-        updateDrag();
-      }
-    });
-    surface.rotateArea = rotateArea.get();
-    surface.selectionFrameTransform->addChild(std::move(rotateArea));
+      auto rotateArea = std::make_unique<InputArea>();
+      rotateArea->setZIndex(1);
+      rotateArea->setOnPress([this, id = m_selectedWidgetId](const InputArea::PointerData& data) {
+        if (data.button != BTN_LEFT) {
+          return;
+        }
+        if (data.pressed) {
+          startDrag(DragMode::Rotate, id, false);
+        } else if (m_drag.mode == DragMode::Rotate && m_drag.widgetId == id) {
+          finishDrag();
+        }
+      });
+      rotateArea->setOnMotion([this, id = m_selectedWidgetId](const InputArea::PointerData& /*data*/) {
+        if (m_drag.mode == DragMode::Rotate && m_drag.widgetId == id) {
+          updateDrag();
+        }
+      });
+      surface.rotateArea = rotateArea.get();
+      surface.selectionFrameTransform->addChild(std::move(rotateArea));
+    }
 
     root->addChild(std::move(selectionFrameTransform));
 
@@ -730,45 +659,47 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     selectionBorderTransform->addChild(std::move(selectionBorder));
     root->addChild(std::move(selectionBorderTransform));
 
-    for (std::size_t i = 0; i < kScaleCornerCount; ++i) {
-      const ScaleCorner corner = static_cast<ScaleCorner>(i);
+    if (!selectedIsLoginBox) {
+      for (std::size_t i = 0; i < kScaleCornerCount; ++i) {
+        const ScaleCorner corner = static_cast<ScaleCorner>(i);
 
-      auto scaleHandleShadow = ui::box({
-          .fill = clearColorSpec(),
-          .radius = Style::scaledRadiusSm() + kShadowExpand,
-          .configure = [](Box& box) { box.setBorder(kShadowColor, kShadowExpand); },
-      });
-      scaleHandleShadow->setZIndex(103);
-      surface.scaleHandleShadows[i] = scaleHandleShadow.get();
-      root->addChild(std::move(scaleHandleShadow));
+        auto scaleHandleShadow = ui::box({
+            .fill = clearColorSpec(),
+            .radius = Style::scaledRadiusSm() + kShadowExpand,
+            .configure = [](Box& box) { box.setBorder(kShadowColor, kShadowExpand); },
+        });
+        scaleHandleShadow->setZIndex(103);
+        surface.scaleHandleShadows[i] = scaleHandleShadow.get();
+        root->addChild(std::move(scaleHandleShadow));
 
-      auto scaleHandle = ui::box({
-          .fill = colorSpecFromRole(ColorRole::Primary),
-          .radius = Style::scaledRadiusSm(),
-      });
-      scaleHandle->setZIndex(104);
-      surface.scaleHandles[i] = scaleHandle.get();
-      root->addChild(std::move(scaleHandle));
+        auto scaleHandle = ui::box({
+            .fill = colorSpecFromRole(ColorRole::Primary),
+            .radius = Style::scaledRadiusSm(),
+        });
+        scaleHandle->setZIndex(104);
+        surface.scaleHandles[i] = scaleHandle.get();
+        root->addChild(std::move(scaleHandle));
 
-      auto scaleArea = std::make_unique<InputArea>();
-      scaleArea->setZIndex(105);
-      scaleArea->setOnPress([this, id = m_selectedWidgetId, corner](const InputArea::PointerData& data) {
-        if (data.button != BTN_LEFT) {
-          return;
-        }
-        if (data.pressed) {
-          startDrag(DragMode::Scale, id, false, corner);
-        } else if (m_drag.mode == DragMode::Scale && m_drag.widgetId == id) {
-          finishDrag();
-        }
-      });
-      scaleArea->setOnMotion([this, id = m_selectedWidgetId](const InputArea::PointerData& /*data*/) {
-        if (m_drag.mode == DragMode::Scale && m_drag.widgetId == id) {
-          updateDrag();
-        }
-      });
-      surface.scaleAreas[i] = scaleArea.get();
-      root->addChild(std::move(scaleArea));
+        auto scaleArea = std::make_unique<InputArea>();
+        scaleArea->setZIndex(105);
+        scaleArea->setOnPress([this, id = m_selectedWidgetId, corner](const InputArea::PointerData& data) {
+          if (data.button != BTN_LEFT) {
+            return;
+          }
+          if (data.pressed) {
+            startDrag(DragMode::Scale, id, false, corner);
+          } else if (m_drag.mode == DragMode::Scale && m_drag.widgetId == id) {
+            finishDrag();
+          }
+        });
+        scaleArea->setOnMotion([this, id = m_selectedWidgetId](const InputArea::PointerData& /*data*/) {
+          if (m_drag.mode == DragMode::Scale && m_drag.widgetId == id) {
+            updateDrag();
+          }
+        });
+        surface.scaleAreas[i] = scaleArea.get();
+        root->addChild(std::move(scaleArea));
+      }
     }
 
     updateSelectionVisuals(surface);
@@ -801,8 +732,10 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
       });
   const bool hasSelectedWidget = selectedWidgetIt != m_snapshot.widgets.end();
   const bool selectedWidgetEnabled = hasSelectedWidget ? selectedWidgetIt->enabled : false;
-  const bool canSendSelectedToBack = hasSelectedWidget && selectedWidgetIt != m_snapshot.widgets.begin();
-  const bool canBringSelectedToFront = hasSelectedWidget && std::next(selectedWidgetIt) != m_snapshot.widgets.end();
+  const bool canSendSelectedToBack =
+      hasSelectedWidget && !selectedIsLoginBox && selectedWidgetIt != m_snapshot.widgets.begin();
+  const bool canBringSelectedToFront =
+      hasSelectedWidget && !selectedIsLoginBox && std::next(selectedWidgetIt) != m_snapshot.widgets.end();
 
   const auto& typeSpecs = desktop_settings::desktopWidgetTypeSpecs();
   std::vector<std::string> typeLabels;
@@ -897,7 +830,7 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
       }),
       ui::button({
           .glyph = "settings",
-          .enabled = hasSelectedWidget,
+          .enabled = hasSelectedWidget && !selectedIsLoginBox,
           .selected = m_inspectorOpen,
           .variant = ButtonVariant::Outline,
           .onClick =
@@ -910,14 +843,14 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
       }),
       ui::button({
           .glyph = selectedWidgetEnabled ? "eye" : "eye-off",
-          .enabled = hasSelectedWidget,
+          .enabled = hasSelectedWidget && !selectedIsLoginBox,
           .selected = selectedWidgetEnabled,
           .variant = ButtonVariant::Outline,
           .onClick = [this]() { deferEditorMutation([this]() { toggleSelectedWidgetEnabled(); }); },
       }),
       ui::button({
           .glyph = "trash",
-          .enabled = hasSelectedWidget,
+          .enabled = hasSelectedWidget && !selectedIsLoginBox,
           .variant = ButtonVariant::Destructive,
           .onClick = [this]() { deferEditorMutation([this]() { removeSelectedWidget(); }); },
       }),
@@ -998,13 +931,17 @@ void BackgroundWidgetsEditor::updateSelectionVisuals(OverlaySurface& surface) {
       || state == nullptr
       || surface.selectionFrameTransform == nullptr
       || surface.selectionBorderTransform == nullptr
-      || surface.selectionBorder == nullptr
-      || surface.rotationRing == nullptr
-      || surface.rotateArea == nullptr) {
+      || surface.selectionBorder == nullptr) {
     return;
   }
-  for (std::size_t i = 0; i < kScaleCornerCount; ++i) {
-    if (surface.scaleHandles[i] == nullptr || surface.scaleAreas[i] == nullptr) {
+  const bool selectedIsLoginBox = lockscreen_login_box::isLoginBoxWidget(*state);
+  if (!selectedIsLoginBox) {
+    for (std::size_t i = 0; i < kScaleCornerCount; ++i) {
+      if (surface.scaleHandles[i] == nullptr || surface.scaleAreas[i] == nullptr) {
+        return;
+      }
+    }
+    if (surface.rotationRing == nullptr || surface.rotateArea == nullptr) {
       return;
     }
   }
@@ -1022,17 +959,19 @@ void BackgroundWidgetsEditor::updateSelectionVisuals(OverlaySurface& surface) {
   surface.selectionBorderTransform->setPosition(left, top);
   surface.selectionBorderTransform->setRotation(state->rotationRad);
 
-  const float ringPadExp = kRotatePadding + kShadowExpand;
-  if (surface.rotationRingShadow != nullptr) {
-    surface.rotationRingShadow->setPosition(-ringPadExp, -ringPadExp);
-    surface.rotationRingShadow->setFrameSize(width + ringPadExp * 2.0f, height + ringPadExp * 2.0f);
+  if (!selectedIsLoginBox) {
+    const float ringPadExp = kRotatePadding + kShadowExpand;
+    if (surface.rotationRingShadow != nullptr) {
+      surface.rotationRingShadow->setPosition(-ringPadExp, -ringPadExp);
+      surface.rotationRingShadow->setFrameSize(width + ringPadExp * 2.0f, height + ringPadExp * 2.0f);
+    }
+
+    surface.rotationRing->setPosition(-kRotatePadding, -kRotatePadding);
+    surface.rotationRing->setFrameSize(width + kRotatePadding * 2.0f, height + kRotatePadding * 2.0f);
+
+    surface.rotateArea->setPosition(-kRotatePadding, -kRotatePadding);
+    surface.rotateArea->setFrameSize(width + kRotatePadding * 2.0f, height + kRotatePadding * 2.0f);
   }
-
-  surface.rotationRing->setPosition(-kRotatePadding, -kRotatePadding);
-  surface.rotationRing->setFrameSize(width + kRotatePadding * 2.0f, height + kRotatePadding * 2.0f);
-
-  surface.rotateArea->setPosition(-kRotatePadding, -kRotatePadding);
-  surface.rotateArea->setFrameSize(width + kRotatePadding * 2.0f, height + kRotatePadding * 2.0f);
 
   if (surface.selectionBorderShadow != nullptr) {
     surface.selectionBorderShadow->setPosition(-kShadowExpand, -kShadowExpand);
@@ -1042,22 +981,24 @@ void BackgroundWidgetsEditor::updateSelectionVisuals(OverlaySurface& surface) {
   surface.selectionBorder->setPosition(0.0f, 0.0f);
   surface.selectionBorder->setFrameSize(width, height);
 
-  for (std::size_t i = 0; i < kScaleCornerCount; ++i) {
-    const CornerSigns signs = cornerSigns(i);
-    const auto [cornerX, cornerY] =
-        rotatedCorner(state->cx, state->cy, width * 0.5f * signs.x, height * 0.5f * signs.y, state->rotationRad);
+  if (!selectedIsLoginBox) {
+    for (std::size_t i = 0; i < kScaleCornerCount; ++i) {
+      const CornerSigns signs = cornerSigns(i);
+      const auto [cornerX, cornerY] =
+          rotatedCorner(state->cx, state->cy, width * 0.5f * signs.x, height * 0.5f * signs.y, state->rotationRad);
 
-    const float shadowSize = kHandleSize + kShadowExpand * 2.0f;
-    if (surface.scaleHandleShadows[i] != nullptr) {
-      surface.scaleHandleShadows[i]->setPosition(cornerX - shadowSize * 0.5f, cornerY - shadowSize * 0.5f);
-      surface.scaleHandleShadows[i]->setFrameSize(shadowSize, shadowSize);
+      const float shadowSize = kHandleSize + kShadowExpand * 2.0f;
+      if (surface.scaleHandleShadows[i] != nullptr) {
+        surface.scaleHandleShadows[i]->setPosition(cornerX - shadowSize * 0.5f, cornerY - shadowSize * 0.5f);
+        surface.scaleHandleShadows[i]->setFrameSize(shadowSize, shadowSize);
+      }
+
+      surface.scaleHandles[i]->setPosition(cornerX - kHandleSize * 0.5f, cornerY - kHandleSize * 0.5f);
+      surface.scaleHandles[i]->setFrameSize(kHandleSize, kHandleSize);
+
+      surface.scaleAreas[i]->setPosition(cornerX - kHandleSize, cornerY - kHandleSize);
+      surface.scaleAreas[i]->setFrameSize(kHandleSize * 1.5f, kHandleSize * 1.5f);
     }
-
-    surface.scaleHandles[i]->setPosition(cornerX - kHandleSize * 0.5f, cornerY - kHandleSize * 0.5f);
-    surface.scaleHandles[i]->setFrameSize(kHandleSize, kHandleSize);
-
-    surface.scaleAreas[i]->setPosition(cornerX - kHandleSize, cornerY - kHandleSize);
-    surface.scaleAreas[i]->setFrameSize(kHandleSize * 1.5f, kHandleSize * 1.5f);
   }
 }
 
@@ -1069,6 +1010,14 @@ void BackgroundWidgetsEditor::applyViewState(
   }
 
   if (refreshContent) {
+    if (lockscreen_login_box::isLoginBoxWidget(state)) {
+      if (auto* loginWidget = dynamic_cast<DesktopLoginBoxWidget*>(view.widget.get())) {
+        if (OverlaySurface* surface = findSurfaceForWidget(state.id);
+            surface != nullptr && surface->surface != nullptr) {
+          loginWidget->setScreenWidth(static_cast<float>(surface->surface->width()));
+        }
+      }
+    }
     view.widget->setContentScale(widgetContentScale(state));
     view.widget->update(*m_renderContext);
     view.widget->layout(*m_renderContext);
@@ -1175,6 +1124,10 @@ void BackgroundWidgetsEditor::removeSelectedWidget() {
   if (m_selectedWidgetId.empty()) {
     return;
   }
+  const DesktopWidgetState* state = findWidgetState(m_selectedWidgetId);
+  if (state != nullptr && lockscreen_login_box::isLoginBoxWidget(*state)) {
+    return;
+  }
   std::erase_if(m_snapshot.widgets, [this](const auto& widget) { return widget.id == m_selectedWidgetId; });
   m_selectedWidgetId.clear();
   requestLayout();
@@ -1185,7 +1138,7 @@ void BackgroundWidgetsEditor::toggleSelectedWidgetEnabled() {
     return;
   }
   DesktopWidgetState* state = findWidgetState(m_selectedWidgetId);
-  if (state == nullptr) {
+  if (state == nullptr || lockscreen_login_box::isLoginBoxWidget(*state)) {
     return;
   }
   state->enabled = !state->enabled;
@@ -1194,6 +1147,10 @@ void BackgroundWidgetsEditor::toggleSelectedWidgetEnabled() {
 
 void BackgroundWidgetsEditor::sendSelectedWidgetToBack() {
   if (m_selectedWidgetId.empty()) {
+    return;
+  }
+  const DesktopWidgetState* state = findWidgetState(m_selectedWidgetId);
+  if (state != nullptr && lockscreen_login_box::isLoginBoxWidget(*state)) {
     return;
   }
 
@@ -1210,6 +1167,10 @@ void BackgroundWidgetsEditor::sendSelectedWidgetToBack() {
 
 void BackgroundWidgetsEditor::bringSelectedWidgetToFront() {
   if (m_selectedWidgetId.empty()) {
+    return;
+  }
+  const DesktopWidgetState* state = findWidgetState(m_selectedWidgetId);
+  if (state != nullptr && lockscreen_login_box::isLoginBoxWidget(*state)) {
     return;
   }
 
@@ -1304,6 +1265,9 @@ void BackgroundWidgetsEditor::startDrag(
 ) {
   DesktopWidgetState* state = findWidgetState(widgetId);
   if (state == nullptr) {
+    return;
+  }
+  if (lockscreen_login_box::isLoginBoxWidget(*state) && mode != DragMode::Move) {
     return;
   }
 

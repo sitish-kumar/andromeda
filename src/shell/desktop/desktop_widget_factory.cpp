@@ -6,6 +6,7 @@
 #include "shell/desktop/widgets/desktop_clock_widget.h"
 #include "shell/desktop/widgets/desktop_fancy_audio_visualizer_widget.h"
 #include "shell/desktop/widgets/desktop_label_widget.h"
+#include "shell/desktop/widgets/desktop_login_box_widget.h"
 #include "shell/desktop/widgets/desktop_media_player_widget.h"
 #include "shell/desktop/widgets/desktop_sticker_widget.h"
 #include "shell/desktop/widgets/desktop_sysmon_widget.h"
@@ -284,6 +285,12 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
         getBoolSetting(settings, "show_label", true), getBoolSetting(settings, "shadow", true)
     );
     applyCommonSettings(*widget, settings);
+    widget->setContentScale(contentScale);
+    return widget;
+  }
+
+  if (type == "login_box") {
+    auto widget = std::make_unique<DesktopLoginBoxWidget>();
     widget->setContentScale(contentScale);
     return widget;
   }

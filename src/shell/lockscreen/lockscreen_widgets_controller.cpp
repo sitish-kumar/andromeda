@@ -8,6 +8,7 @@
 #include "shell/dock/dock.h"
 #include "shell/lockscreen/lock_screen.h"
 #include "shell/lockscreen/lock_surface.h"
+#include "shell/lockscreen/lockscreen_login_box.h"
 #include "shell/lockscreen/lockscreen_widgets_host.h"
 #include "shell/widgets_editor/background_widgets_editor.h"
 #include "shell/widgets_editor/background_widgets_editor_config.h"
@@ -293,7 +294,11 @@ void LockscreenWidgetsController::loadSnapshotFromConfig() {
     return;
   }
   m_snapshot = m_config->config().lockscreenWidgets;
+  const std::size_t widgetCountBefore = m_snapshot.widgets.size();
   normalizeSnapshot();
+  if (m_snapshot.widgets.size() > widgetCountBefore) {
+    saveSnapshotToConfig();
+  }
 }
 
 void LockscreenWidgetsController::saveSnapshotToConfig() {
@@ -339,6 +344,7 @@ void LockscreenWidgetsController::handleConfigReload() {
     loadSnapshotFromConfig();
     if (m_host != nullptr && m_lockScreen != nullptr) {
       m_host->rebuild(m_snapshot, *m_lockScreen);
+      m_lockScreen->requestLayout();
     }
   }
   applyVisibility();
@@ -349,8 +355,13 @@ void LockscreenWidgetsController::normalizeSnapshot() {
     return;
   }
 
+  lockscreen_login_box::ensureWidgets(m_snapshot.widgets, *m_wayland);
+
   std::uint64_t maxCounter = 0;
   for (const auto& widget : m_snapshot.widgets) {
+    if (lockscreen_login_box::isLoginBoxWidget(widget)) {
+      continue;
+    }
     std::uint64_t counter = 0;
     if (parseLockscreenWidgetCounter(widget.id, counter)) {
       maxCounter = std::max(maxCounter, counter);
@@ -359,6 +370,11 @@ void LockscreenWidgetsController::normalizeSnapshot() {
 
   std::unordered_set<std::string> seenIds;
   for (auto& widget : m_snapshot.widgets) {
+    if (lockscreen_login_box::isLoginBoxWidget(widget)) {
+      seenIds.insert(widget.id);
+      continue;
+    }
+
     normalizeLockscreenWidgetSettings(widget);
 
     if (widget.id.empty() || seenIds.contains(widget.id)) {

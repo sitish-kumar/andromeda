@@ -134,7 +134,6 @@ private:
   void syncSurfaces();
   void createSurface(const WaylandOutput& output);
   void rebuildScene(OverlaySurface& surface);
-  void appendEditorBackdrop(InputArea& root);
   void prepareFrame(OverlaySurface& surface, bool needsUpdate, bool needsLayout);
   void applyViewState(EditorWidgetView& view, const DesktopWidgetState& state, bool refreshContent);
   void updateViewTransforms(const std::string* relayoutWidgetId = nullptr);

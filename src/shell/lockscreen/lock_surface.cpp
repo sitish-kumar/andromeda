@@ -9,6 +9,7 @@
 #include "render/core/shared_texture_cache.h"
 #include "render/render_context.h"
 #include "render/scene/wallpaper_node.h"
+#include "shell/lockscreen/lockscreen_login_box.h"
 #include "shell/lockscreen/lockscreen_widgets_host.h"
 #include "time/time_format.h"
 #include "ui/builders.h"
@@ -436,10 +437,17 @@ void LockSurface::layoutScene(std::uint32_t width, std::uint32_t height) {
 
   const float sw = static_cast<float>(width);
   const float sh = static_cast<float>(height);
-  const float panelWidth = std::min(sw - Style::spaceLg * 2.0f, 520.0f);
-  const float panelHeight = 78.0f;
-  const float panelX = std::round((sw - panelWidth) * 0.5f);
-  const float panelY = std::max(Style::spaceLg, sh - panelHeight - 84.0f);
+  const float panelHeight = lockscreen_login_box::panelHeight();
+  float panelWidth = lockscreen_login_box::panelWidth(sw);
+  float panelX = std::round((sw - panelWidth) * 0.5f);
+  float panelY = std::max(Style::spaceLg, sh - panelHeight - 84.0f);
+  if (m_config != nullptr) {
+    if (const DesktopWidgetState* loginBox =
+            lockscreen_login_box::findForOutput(m_config->config().lockscreenWidgets.widgets, m_outputKey);
+        loginBox != nullptr) {
+      lockscreen_login_box::panelOriginFromCenter(loginBox->cx, loginBox->cy, sw, panelX, panelY, panelWidth);
+    }
+  }
 
   m_root.setSize(sw, sh);
 
