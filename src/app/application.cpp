@@ -94,6 +94,14 @@ namespace {
     return "external";
   }
 
+  OsdContent powerProfileOsdContent(std::string_view profile) {
+    return OsdContent{
+        .icon = std::string(profileGlyphName(profile)),
+        .value = profileLabel(profile),
+        .showProgress = false,
+    };
+  }
+
   bool barMayRender(const BarConfig& bar) {
     if (bar.enabled) {
       return true;
@@ -715,31 +723,20 @@ void Application::initServices() {
 
     try {
       m_powerProfilesService = std::make_unique<PowerProfilesService>(*m_systemBus);
-      m_powerProfilesService->setChangeCallback([this, shouldRefreshControlCenter](
-                                                    const PowerProfilesState& state, PowerProfilesChangeOrigin origin
-                                                ) {
-        m_bar.refresh();
-        if (shouldRefreshControlCenter()) {
-          m_panelManager.refresh();
-        }
+      m_powerProfilesService->setChangeCallback(
+          [this, shouldRefreshControlCenter](const PowerProfilesState& state, PowerProfilesChangeOrigin origin) {
+            m_bar.refresh();
+            if (shouldRefreshControlCenter()) {
+              m_panelManager.refresh();
+            }
 
-        const std::string& active = state.activeProfile;
-        if (active.empty()) {
-          return;
-        }
-        if (m_prevPowerProfileActiveForEvents.has_value()
-            && *m_prevPowerProfileActiveForEvents != active
-            && origin != PowerProfilesChangeOrigin::Noctalia) {
-          std::string glyphIconSpec("noctalia-glyph:");
-          glyphIconSpec.append(profileGlyphName(active));
-          m_notificationManager.addInternal(
-              i18n::tr("notifications.internal.power-profiles"), i18n::tr("notifications.internal.power-profile-title"),
-              i18n::tr("notifications.internal.power-profile-body", "profile", profileLabel(active)), Urgency::Normal,
-              kDefaultNotificationTimeout, std::move(glyphIconSpec)
-          );
-        }
-        onPowerProfileChangedForEvents(state, origin);
-      });
+            const std::string& active = state.activeProfile;
+            if (active.empty()) {
+              return;
+            }
+            onPowerProfileChangedForEvents(state, origin);
+          }
+      );
       if (!m_powerProfilesService->activeProfile().empty()) {
         m_prevPowerProfileActiveForEvents = m_powerProfilesService->activeProfile();
         kLog.info("power profiles active profile: {}", m_powerProfilesService->activeProfile());
@@ -1884,6 +1881,7 @@ void Application::onPowerProfileChangedForEvents(const PowerProfilesState& state
   }
   const std::string prev = *m_prevPowerProfileActiveForEvents;
   if (prev != state.activeProfile) {
+    m_osdOverlay.show(powerProfileOsdContent(state.activeProfile));
     m_hookManager.fire(
         HookKind::PowerProfileChanged,
         {{"NOCTALIA_POWER_PROFILE", state.activeProfile},
