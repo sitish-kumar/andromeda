@@ -326,22 +326,16 @@ void Application::syncPolkitAgent() {
     if (m_polkitAgent == nullptr) {
       return;
     }
-    const bool hasPending = m_polkitAgent->hasPendingRequest();
-    const bool needsInput = m_polkitAgent->isResponseRequired();
-    if (!hasPending) {
+    if (!m_polkitAgent->hasPendingRequest()) {
       if (m_panelManager.isOpenPanel("polkit")) {
         m_panelManager.close();
       }
       return;
     }
-    if (needsInput) {
-      if (!m_panelManager.isOpenPanel("polkit")) {
-        wl_output* output = m_compositorPlatform.preferredInteractiveOutput(std::chrono::milliseconds(1200));
-        m_panelManager.openPanel("polkit", PanelOpenRequest{.output = output});
-      } else {
-        m_panelManager.refresh();
-      }
-    } else if (m_panelManager.isOpenPanel("polkit")) {
+    if (!m_panelManager.isOpenPanel("polkit")) {
+      wl_output* output = m_compositorPlatform.preferredInteractiveOutput(std::chrono::milliseconds(1200));
+      m_panelManager.openPanel("polkit", PanelOpenRequest{.output = output});
+    } else {
       m_panelManager.refresh();
     }
   });
