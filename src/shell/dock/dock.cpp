@@ -216,6 +216,9 @@ void Dock::reload() {
 }
 
 void Dock::show() {
+  if (m_overlayDisplaySuppressed) {
+    return;
+  }
   if (m_config == nullptr || !m_config->config().dock.enabled) {
     return;
   }
@@ -470,6 +473,9 @@ bool Dock::refreshPinnedAppsIfNeeded() {
 }
 
 void Dock::syncInstances() {
+  if (m_overlayDisplaySuppressed) {
+    return;
+  }
   const auto& outputs = m_platform->outputs();
   const auto& cfg = m_config->config().dock;
   const auto& selectedMonitors = cfg.monitors;
