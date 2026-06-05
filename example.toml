@@ -310,7 +310,9 @@ enabled = false
 # [desktop_widgets.grid]
 # visible        = true
 # cell_size      = 16
-# major_interval = 4
+# major_interval        = 4
+# center_guides_visible = false
+# snap_to_center        = true
 
 # [desktop_widgets.widget.clock_main]
 # type     = "clock"
