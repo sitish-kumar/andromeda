@@ -2247,7 +2247,7 @@
         },
         "automation-interval": {
           "label": "Rotation Interval",
-          "description": "Minutes between wallpaper changes (0 disables)"
+          "description": "Seconds between wallpaper changes"
         },
         "automation-order": {
           "label": "Order",
