@@ -221,6 +221,7 @@ void LockScreen::onWallpaperChanged() {
     return;
   }
   applyWallpaperStyleToSurfaces();
+  requestLayout();
 }
 
 void LockScreen::onPointerEvent(const PointerEvent& event) {
@@ -460,9 +461,7 @@ void LockScreen::applyWallpaperStyleToSurfaces() {
     if (instance.surface == nullptr || instance.surface->hasDesktopCapture()) {
       continue;
     }
-    const auto* output = m_wayland != nullptr ? m_wayland->findOutputByWl(instance.output) : nullptr;
-    const std::string connectorName = output != nullptr ? output->connectorName : std::string{};
-    instance.surface->setWallpaperPath(wallpaperPathForOutput(connectorName));
+    instance.surface->setWallpaperPath(wallpaperPathForOutput(instance.connectorName));
     instance.surface->setWallpaperFillMode(fillMode);
     instance.surface->setWallpaperFillColor(fillColor);
   }
@@ -497,6 +496,7 @@ void LockScreen::createInstance(const WaylandOutput& output) {
       Instance{
           .outputName = output.name,
           .output = output.output,
+          .connectorName = output.connectorName,
           .surface = std::move(surface),
       }
   );

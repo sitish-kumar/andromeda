@@ -70,6 +70,7 @@ private:
   struct Instance {
     std::uint32_t outputName = 0;
     wl_output* output = nullptr;
+    std::string connectorName;
     std::unique_ptr<LockSurface> surface;
   };
 
