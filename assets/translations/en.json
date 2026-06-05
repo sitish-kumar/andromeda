@@ -1480,6 +1480,10 @@
           "label": "Hide When Single Layout",
           "description": "Hide the keyboard layout widget unless more than one layout is configured"
         },
+        "gauge_color": {
+          "label": "Gauge Color",
+          "description": "Color role for the fill bar in gauge display mode; fixed hex colors are also supported"
+        },
         "high_color": {
           "label": "High Color",
           "description": "Color used for high visualizer values"
