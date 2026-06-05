@@ -8,9 +8,9 @@
 
 class Renderer;
 
-class AudioSpectrum : public AudioSpectrumNode {
+class AudioVisualizer : public AudioSpectrumNode {
 public:
-  AudioSpectrum();
+  AudioVisualizer();
 
   bool setValues(const std::vector<float>& values);
   void setGradient(const ColorSpec& lowColor, const ColorSpec& highColor);

@@ -4,9 +4,9 @@
 #include "render/animation/animation_manager.h"
 #include "render/core/renderer.h"
 #include "render/scene/node.h"
-#include "ui/controls/audio_spectrum.h"
 #include "ui/palette.h"
 #include "ui/style.h"
+#include "ui/visuals/audio_visualizer.h"
 
 #include <algorithm>
 #include <cmath>
@@ -47,7 +47,7 @@ void DesktopAudioVisualizerWidget::create() {
   auto rootNode = std::make_unique<Node>();
   rootNode->setClipChildren(true);
 
-  auto visualizer = std::make_unique<AudioSpectrum>();
+  auto visualizer = std::make_unique<AudioVisualizer>();
   visualizer->setOrientation(AudioSpectrumOrientation::Horizontal);
   visualizer->setCentered(m_centered);
   visualizer->setMirrored(m_mirrored);

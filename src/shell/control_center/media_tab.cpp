@@ -13,9 +13,9 @@
 #include "shell/control_center/tab.h"
 #include "shell/panel/panel_manager.h"
 #include "ui/builders.h"
-#include "ui/controls/audio_spectrum.h"
 #include "ui/controls/context_menu.h"
 #include "ui/controls/context_menu_popup.h"
+#include "ui/visuals/audio_visualizer.h"
 
 #include <algorithm>
 #include <chrono>
@@ -445,7 +445,7 @@ std::unique_ptr<Flex> MediaTab::create() {
       .flexGrow = 1.0f,
   });
 
-  auto visualizerSpectrum = std::make_unique<AudioSpectrum>();
+  auto visualizerSpectrum = std::make_unique<AudioVisualizer>();
   visualizerSpectrum->setGradient(colorForRole(ColorRole::Secondary), colorForRole(ColorRole::Tertiary));
   visualizerSpectrum->setOrientation(AudioSpectrumOrientation::Vertical);
   visualizerSpectrum->setMirrored(true);

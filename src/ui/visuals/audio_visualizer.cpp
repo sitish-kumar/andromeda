@@ -1,16 +1,16 @@
-#include "ui/controls/audio_spectrum.h"
+#include "ui/visuals/audio_visualizer.h"
 
 #include "ui/palette.h"
 
 #include <algorithm>
 #include <cmath>
 
-AudioSpectrum::AudioSpectrum() {
+AudioVisualizer::AudioVisualizer() {
   syncPalette();
   m_paletteConn = paletteChanged().connect([this] { syncPalette(); });
 }
 
-bool AudioSpectrum::setValues(const std::vector<float>& values) {
+bool AudioVisualizer::setValues(const std::vector<float>& values) {
   if (m_targetValues.size() == values.size() && std::equal(values.begin(), values.end(), m_targetValues.begin())) {
     return false;
   }
@@ -24,7 +24,7 @@ bool AudioSpectrum::setValues(const std::vector<float>& values) {
   return true;
 }
 
-void AudioSpectrum::tick(float deltaMs) {
+void AudioVisualizer::tick(float deltaMs) {
   if (m_targetValues.empty()) {
     m_converged = true;
     return;
@@ -60,39 +60,39 @@ void AudioSpectrum::tick(float deltaMs) {
   }
 }
 
-void AudioSpectrum::setGradient(const ColorSpec& lowColor, const ColorSpec& highColor) {
+void AudioVisualizer::setGradient(const ColorSpec& lowColor, const ColorSpec& highColor) {
   m_lowColor = lowColor;
   m_highColor = highColor;
   syncPalette();
 }
 
-void AudioSpectrum::setGradient(const Color& lowColor, const Color& highColor) {
+void AudioVisualizer::setGradient(const Color& lowColor, const Color& highColor) {
   setGradient(fixedColorSpec(lowColor), fixedColorSpec(highColor));
 }
 
-void AudioSpectrum::setOrientation(AudioSpectrumOrientation orientation) {
+void AudioVisualizer::setOrientation(AudioSpectrumOrientation orientation) {
   auto next = style();
   next.orientation = orientation;
   setStyle(next);
 }
 
-void AudioSpectrum::setMirrored(bool mirrored) {
+void AudioVisualizer::setMirrored(bool mirrored) {
   auto next = style();
   next.mirrored = mirrored;
   setStyle(next);
 }
 
-void AudioSpectrum::setCentered(bool centered) {
+void AudioVisualizer::setCentered(bool centered) {
   auto next = style();
   next.centered = centered;
   setStyle(next);
 }
 
-void AudioSpectrum::syncPalette() {
+void AudioVisualizer::syncPalette() {
   auto next = style();
   next.lowColor = resolveColorSpec(m_lowColor);
   next.highColor = resolveColorSpec(m_highColor);
   setStyle(next);
 }
 
-void AudioSpectrum::doLayout(Renderer& /*renderer*/) {}
+void AudioVisualizer::doLayout(Renderer& /*renderer*/) {}

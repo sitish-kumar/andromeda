@@ -21,7 +21,7 @@ class MprisService;
 class PipeWireSpectrum;
 class RenderContext;
 class Slider;
-class AudioSpectrum;
+class AudioVisualizer;
 class ConfigService;
 class WaylandConnection;
 
@@ -65,7 +65,7 @@ private:
   Flex* m_mediaColumn = nullptr;
   Flex* m_visualizerColumn = nullptr;
   Flex* m_visualizerBody = nullptr;
-  AudioSpectrum* m_visualizerSpectrum = nullptr;
+  AudioVisualizer* m_visualizerSpectrum = nullptr;
   Image* m_artwork = nullptr;
   Flex* m_artworkRow = nullptr;
   Flex* m_nowCard = nullptr;
