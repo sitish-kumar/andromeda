@@ -11,6 +11,7 @@
 #include "shell/dock/dock_model.h"
 #include "shell/tooltip/tooltip_manager.h"
 #include "system/icon_resolver.h"
+#include "system/internal_app_metadata.h"
 #include "ui/app_icon_colorization.h"
 #include "ui/builders.h"
 #include "ui/palette.h"
@@ -520,20 +521,23 @@ namespace shell::dock {
         areaNode->setSize(cellCross, cellMain);
       }
 
-      const std::string& iconPath = [&]() -> const std::string& {
-        if (!model.entry.icon.empty()) {
-          const std::string& primary = deps.iconResolver.resolve(model.entry.icon, cfg.iconSize);
-          if (!primary.empty()) {
-            return primary;
-          }
+      std::string iconPath;
+      if (!model.entry.icon.empty()) {
+        iconPath = deps.iconResolver.resolve(model.entry.icon, cfg.iconSize);
+      }
+      if (iconPath.empty()) {
+        if (const auto internal = internal_apps::metadataForDesktopEntry(model.entry); internal.has_value()) {
+          iconPath = internal->iconPath;
         }
-        return deps.iconResolver.resolve("application-x-executable", cfg.iconSize);
-      }();
+      }
+      if (iconPath.empty()) {
+        iconPath = deps.iconResolver.resolve("application-x-executable", cfg.iconSize);
+      }
       RenderContext* renderContext = &deps.renderContext;
       auto iconImg = ui::image({
           .width = iSize,
           .height = iSize,
-          .configure = [renderContext, &iconPath, &cfg, &shell = deps.model.config.config().shell](Image& image) {
+          .configure = [renderContext, iconPath, &cfg, &shell = deps.model.config.config().shell](Image& image) {
             image.setAppIconColorization(effectiveShellAppIconColorizationTint(shell));
             if (!iconPath.empty() && renderContext != nullptr) {
               image.setSourceFile(*renderContext, iconPath, cfg.iconSize, true);

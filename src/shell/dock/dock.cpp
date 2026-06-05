@@ -20,6 +20,7 @@
 #include "system/app_identity.h"
 #include "system/desktop_entry.h"
 #include "system/desktop_entry_launch.h"
+#include "system/internal_app_metadata.h"
 #include "ui/app_icon_colorization.h"
 #include "ui/builders.h"
 #include "ui/palette.h"
@@ -744,6 +745,11 @@ void Dock::activateOrLaunchItem(shell::dock::DockInstance& instance, const shell
   );
 
   if (windows.empty()) {
+    if (const auto* internalApp = internal_apps::definitionForDesktopEntry(action.entry);
+        internalApp != nullptr && internalApp->appId == "dev.noctalia.Noctalia.Settings") {
+      PanelManager::instance().toggleSettingsWindow();
+      return;
+    }
     wl_surface* const activationSurface = instance.surface != nullptr ? instance.surface->wlSurface() : nullptr;
     (void)desktop_entry_launch::launchEntry(action.entry, dockLaunchOptions(*m_platform, *m_config, activationSurface));
     return;
