@@ -51,7 +51,7 @@ namespace {
       return;
     }
     iconNode->setScale(scale);
-    const float shift = iconSize * (1.0f - scale) * 0.5f;
+    const float shift = scale > 1.0f ? iconSize * (1.0f - scale) * 0.5f : 0.0f;
     float x = baseX;
     float y = baseY;
     switch (edge) {
@@ -78,7 +78,7 @@ namespace {
       return;
     }
     badge->setScale(iconScale);
-    const float shift = iconSize * (1.0f - iconScale) * 0.5f;
+    const float shift = iconScale > 1.0f ? iconSize * (1.0f - iconScale) * 0.5f : 0.0f;
     float iconX = iconBaseX;
     float iconY = iconBaseY;
     switch (edge) {
@@ -639,8 +639,9 @@ namespace shell::dock {
             item.iconImage != nullptr ? static_cast<Node*>(item.iconImage) : static_cast<Node*>(item.iconGlyph);
         if (iconNode != nullptr) {
           item.visualScale = iconScale;
-          iconNode->setScale(iconScale);
           item.hoverMainOffset = 0.0f;
+          const float badgeSize = std::max(kBadgeMinSize, iSize * kBadgeSizeRatio);
+          applyHoverItemVisual(iconNode, item.badge, edge, kCellPad, kCellPad, iSize, badgeSize, iconScale);
         }
       }
     }
@@ -649,7 +650,22 @@ namespace shell::dock {
       instance.row->addChild(createLauncherButton(instance, cfg, clickContext));
     }
 
+    if (cfg.magnification && instance.launcherIconNode != nullptr) {
+      const float glyphSize = iSize * kLauncherGlyphSizeRatio;
+      const float launcherIconBaseY = kCellPad + (iSize - glyphSize) * 0.5f;
+      const float launcherScale = cfg.inactiveScale;
+      instance.launcherVisualScale = launcherScale;
+      applyHoverItemVisual(
+          instance.launcherIconNode, nullptr, edge, kCellPad, launcherIconBaseY, iSize, 0.0f, launcherScale
+      );
+    }
+
     shell::dock::resizeSurface(instance, cfg, deps.model.config.config().shell.shadow);
+
+    if (cfg.magnification && instance.surface != nullptr) {
+      instance.surface->requestFrameTick();
+      instance.surface->requestRedraw();
+    }
   }
 
   void updateVisuals(DockInstance& instance, DockItemSceneDependencies deps, const DockSnapshot& snapshot) {
