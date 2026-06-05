@@ -126,6 +126,14 @@ namespace {
     };
   }
 
+  OsdContent bluetoothOsdContent(bool enabled) {
+    return OsdContent{
+        .icon = enabled ? "bluetooth" : "bluetooth-off",
+        .value = i18n::tr(enabled ? "osd.bluetooth.on" : "osd.bluetooth.off"),
+        .showProgress = false,
+    };
+  }
+
   bool barMayRender(const BarConfig& bar) {
     if (bar.enabled) {
       return true;
@@ -1672,7 +1680,17 @@ void Application::initIpc() {
   registerSessionIpc(m_ipcService, m_sessionActionRunner, m_lockScreen);
 
   if (m_powerProfilesService != nullptr) {
-    m_powerProfilesService->registerIpc(m_ipcService);
+    m_powerProfilesService->registerIpc(m_ipcService, [this](std::string_view profile) {
+      m_osdOverlay.show(powerProfileOsdContent(profile));
+    });
+  }
+  if (m_networkService != nullptr) {
+    m_networkService->registerIpc(m_ipcService, [this](bool enabled) { m_osdOverlay.show(wifiOsdContent(enabled)); });
+  }
+  if (m_bluetoothService != nullptr) {
+    m_bluetoothService->registerIpc(m_ipcService, [this](bool enabled) {
+      m_osdOverlay.show(bluetoothOsdContent(enabled));
+    });
   }
 
   if (m_brightnessService != nullptr) {
@@ -1850,15 +1868,7 @@ void Application::onBluetoothStateChangedForEvents(const BluetoothState& state, 
   const bool prev = *m_prevBluetoothPoweredForEvents;
   if (prev != state.powered) {
     if (origin != BluetoothStateChangeOrigin::Noctalia) {
-      if (state.powered) {
-        m_notificationManager.addInternal(
-            i18n::tr("notifications.internal.bluetooth"), i18n::tr("notifications.internal.bluetooth-enabled"), ""
-        );
-      } else {
-        m_notificationManager.addInternal(
-            i18n::tr("notifications.internal.bluetooth"), i18n::tr("notifications.internal.bluetooth-disabled"), ""
-        );
-      }
+      m_osdOverlay.show(bluetoothOsdContent(state.powered));
     }
     if (state.powered) {
       m_hookManager.fire(HookKind::BluetoothEnabled);

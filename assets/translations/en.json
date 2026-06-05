@@ -613,6 +613,10 @@
       "on": "Wi-Fi On",
       "off": "Wi-Fi Off"
     },
+    "bluetooth": {
+      "on": "Bluetooth On",
+      "off": "Bluetooth Off"
+    },
     "lock-keys": {
       "caps-on": "Caps Lock On",
       "caps-off": "Caps Lock Off",
@@ -644,9 +648,6 @@
       "battery-device": "Battery device",
       "battery-low-title": "Battery low",
       "battery-low-body": "{device}: {percent}% remaining",
-      "bluetooth": "Bluetooth",
-      "bluetooth-enabled": "Bluetooth is on",
-      "bluetooth-disabled": "Bluetooth is off",
       "session-bus-unavailable": "Session bus unavailable",
       "mpris-disabled": "MPRIS disabled",
       "keybind-app": "Noctalia",
