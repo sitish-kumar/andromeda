@@ -2702,7 +2702,8 @@
       },
       "glyph-picker": {
         "title": "Pick an Icon",
-        "search-placeholder": "Search icons…"
+        "search-placeholder": "Search icons…",
+        "all-categories": "All"
       }
     },
     "controls": {
