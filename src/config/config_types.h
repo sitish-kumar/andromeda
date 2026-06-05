@@ -463,7 +463,7 @@ struct DockConfig {
   float activeScale = 1.0f;            // focused app icon scale
   float inactiveScale = 0.85f;         // non-focused app icon scale
   bool magnification = true;           // magnify icons near the pointer (macOS-style)
-  float magnificationScale = 1.35f;    // max icon scale multiplier at the pointer center
+  float magnificationScale = 1.45f;    // max icon scale multiplier at the pointer center
   float activeOpacity = 1.0f;          // focused app icon opacity
   float inactiveOpacity = 0.85f;       // non-focused app icon opacity
   bool showDots = false;               // show optional running window dots beside app icons
