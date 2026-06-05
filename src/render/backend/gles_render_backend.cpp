@@ -485,6 +485,15 @@ void GlesRenderBackend::drawAudioSpectrum(
   );
 }
 
+void GlesRenderBackend::drawFancyAudioVisualizer(
+    TextureId audioTexture, int textureWidth, float surfaceWidth, float surfaceHeight, float width, float height,
+    const FancyAudioVisualizerStyle& style, const Mat3& transform
+) {
+  (void)textureWidth;
+  m_fancyAudioVisualizerProgram.ensureInitialized();
+  m_fancyAudioVisualizerProgram.draw(audioTexture, surfaceWidth, surfaceHeight, width, height, style, transform);
+}
+
 void GlesRenderBackend::drawEffect(
     float surfaceWidth, float surfaceHeight, float width, float height, const EffectStyle& style, const Mat3& transform
 ) {
@@ -590,6 +599,7 @@ void GlesRenderBackend::destroyGpuObjects() {
   m_spinnerProgram.destroy();
   m_screenCornerProgram.destroy();
   m_audioSpectrumProgram.destroy();
+  m_fancyAudioVisualizerProgram.destroy();
   m_effectProgram.destroy();
   m_graphProgram.destroy();
   m_wallpaperProgram.destroy();

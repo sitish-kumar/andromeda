@@ -20,6 +20,7 @@ enum class NodeType : std::uint8_t {
   Spinner,
   ScreenCorner,
   AudioSpectrum,
+  FancyAudioVisualizer,
   Effect,
   Graph,
   Wallpaper,

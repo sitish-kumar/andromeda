@@ -10,6 +10,7 @@
 #include "render/render_target.h"
 #include "render/scene/audio_spectrum_node.h"
 #include "render/scene/effect_node.h"
+#include "render/scene/fancy_audio_visualizer_node.h"
 #include "render/scene/glyph_node.h"
 #include "render/scene/graph_node.h"
 #include "render/scene/image_node.h"
@@ -425,6 +426,19 @@ void RenderContext::renderNode(
     m_backend->drawAudioSpectrum(
         sw, sh, pixelScaleX, pixelScaleY, node->width(), node->height(), style, spectrum->values(), worldTransform
     );
+    break;
+  }
+  case NodeType::FancyAudioVisualizer: {
+    const auto* visualizer = static_cast<const FancyAudioVisualizerNode*>(node);
+    if (visualizer->textureId() != 0) {
+      auto style = visualizer->style();
+      style.primaryColor.a *= effectiveOpacity;
+      style.secondaryColor.a *= effectiveOpacity;
+      m_backend->drawFancyAudioVisualizer(
+          visualizer->textureId(), visualizer->textureWidth(), sw, sh, node->width(), node->height(), style,
+          worldTransform
+      );
+    }
     break;
   }
   case NodeType::Effect: {

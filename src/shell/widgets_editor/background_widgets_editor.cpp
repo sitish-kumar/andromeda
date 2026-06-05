@@ -587,7 +587,7 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     }
 
     widget->create();
-    if (widgetState.type == "audio_visualizer") {
+    if (widgetState.type == "audio_visualizer" || widgetState.type == "fancy_audio_visualizer") {
       widget->setEditorPreview(true);
     }
     widget->setAnimationManager(&surface.animations);
@@ -614,7 +614,8 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     });
     widget->update(*m_renderContext);
     widget->layout(*m_renderContext);
-    if (widgetState.type == "audio_visualizer" && surface.surface != nullptr) {
+    if ((widgetState.type == "audio_visualizer" || widgetState.type == "fancy_audio_visualizer")
+        && surface.surface != nullptr) {
       surface.surface->requestFrameTick();
     }
 
@@ -872,7 +873,7 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
                   m_addWidgetType = std::string(specs[index].type);
                 }
               },
-          .configure = [](Select& select) { select.setMinWidth(160.0f); },
+          .configure = [](Select& select) { select.setMinWidth(200.0f); },
       }),
       ui::button({
           .glyph = "plus",
@@ -1124,6 +1125,9 @@ void BackgroundWidgetsEditor::addWidget(const std::string& outputName, const std
     widget.settings.emplace("aspect_ratio", static_cast<double>(kDefaultDesktopAudioVisualizerAspectRatio));
     widget.settings.emplace("bands", static_cast<std::int64_t>(32));
     widget.settings.emplace("show_when_idle", true);
+  }
+  if (widget.type == "fancy_audio_visualizer") {
+    widget.settings.emplace("background", false);
   }
 
   if (widget.type == "sticker") {

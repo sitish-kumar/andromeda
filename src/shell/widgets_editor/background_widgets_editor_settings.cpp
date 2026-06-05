@@ -393,8 +393,8 @@ namespace {
     addSpecSettings(content, specs, s, editor);
   }
 
-  void addBackgroundSection(Flex& content, const Settings& s, BackgroundWidgetsEditor* editor) {
-    const auto specs = desktop_settings::commonDesktopWidgetSettingSpecs();
+  void addBackgroundSection(Flex& content, const Settings& s, BackgroundWidgetsEditor* editor, std::string_view type) {
+    const auto specs = desktop_settings::commonDesktopWidgetSettingSpecs(type);
     addSettingsSection(content, specs, s, editor, "desktop-widgets.editor.settings.background-section", true);
   }
 
@@ -445,7 +445,7 @@ void BackgroundWidgetsEditor::applySettingChange(const std::string& key, WidgetS
     }
 
     newWidget->create();
-    if (state->type == "audio_visualizer") {
+    if (state->type == "audio_visualizer" || state->type == "fancy_audio_visualizer") {
       newWidget->setEditorPreview(true);
     }
     newWidget->setAnimationManager(&surface->animations);
@@ -479,7 +479,7 @@ void BackgroundWidgetsEditor::applySettingChange(const std::string& key, WidgetS
     view.widget = std::move(newWidget);
 
     applyViewState(view, *state, false);
-    if (state->type == "audio_visualizer" && surface->surface != nullptr) {
+    if ((state->type == "audio_visualizer" || state->type == "fancy_audio_visualizer") && surface->surface != nullptr) {
       surface->surface->requestFrameTick();
     }
     updateSelectionVisuals(*surface);
@@ -528,7 +528,7 @@ void BackgroundWidgetsEditor::buildInspector(
   addSettingsSection(
       *content, typeSpecs, selectedState.settings, this, "desktop-widgets.editor.settings.widget-section", false
   );
-  addBackgroundSection(*content, selectedState.settings, this);
+  addBackgroundSection(*content, selectedState.settings, this, selectedState.type);
 
   Flex* panelPtr = nullptr;
   Flex* handlePtr = nullptr;

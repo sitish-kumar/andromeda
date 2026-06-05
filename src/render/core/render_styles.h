@@ -169,6 +169,45 @@ constexpr bool operator==(const AudioSpectrumStyle& lhs, const AudioSpectrumStyl
       && lhs.centered == rhs.centered;
 }
 
+enum class FancyAudioVisualizerMode : std::uint8_t {
+  Bars,
+  Wave,
+  Rings,
+  BarsRings,
+  WaveRings,
+  All,
+};
+
+struct FancyAudioVisualizerStyle {
+  Color primaryColor = rgba(0.0f, 0.0f, 0.0f, 1.0f);
+  Color secondaryColor = rgba(0.0f, 0.0f, 0.0f, 1.0f);
+  FancyAudioVisualizerMode mode = FancyAudioVisualizerMode::BarsRings;
+  float time = 0.0f;
+  float sensitivity = 1.5f;
+  float rotationSpeed = 0.5f;
+  float barWidth = 0.6f;
+  float ringOpacity = 0.8f;
+  float bloomIntensity = 0.5f;
+  float waveThickness = 1.0f;
+  float innerDiameter = 0.7f;
+  float cornerRadius = 12.0f;
+};
+
+constexpr bool operator==(const FancyAudioVisualizerStyle& lhs, const FancyAudioVisualizerStyle& rhs) noexcept {
+  return lhs.primaryColor == rhs.primaryColor
+      && lhs.secondaryColor == rhs.secondaryColor
+      && lhs.mode == rhs.mode
+      && lhs.time == rhs.time
+      && lhs.sensitivity == rhs.sensitivity
+      && lhs.rotationSpeed == rhs.rotationSpeed
+      && lhs.barWidth == rhs.barWidth
+      && lhs.ringOpacity == rhs.ringOpacity
+      && lhs.bloomIntensity == rhs.bloomIntensity
+      && lhs.waveThickness == rhs.waveThickness
+      && lhs.innerDiameter == rhs.innerDiameter
+      && lhs.cornerRadius == rhs.cornerRadius;
+}
+
 enum class EffectType : std::uint8_t { None, Sun, Snow, Rain, Cloud, Fog, Stars };
 
 struct EffectStyle {

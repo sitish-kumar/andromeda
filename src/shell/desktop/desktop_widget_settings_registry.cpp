@@ -13,6 +13,7 @@ namespace desktop_settings {
     const std::vector<DesktopWidgetTypeSpec> kDesktopWidgetTypeSpecs = {
         {.type = "audio_visualizer", .labelKey = "desktop-widgets.editor.types.audio-visualizer"},
         {.type = "clock", .labelKey = "desktop-widgets.editor.types.clock"},
+        {.type = "fancy_audio_visualizer", .labelKey = "desktop-widgets.editor.types.fancy-audio-visualizer"},
         {.type = "label", .labelKey = "desktop-widgets.editor.types.label"},
         {.type = "media_player", .labelKey = "desktop-widgets.editor.types.media-player"},
         {.type = "sticker", .labelKey = "desktop-widgets.editor.types.sticker"},
@@ -72,8 +73,9 @@ namespace desktop_settings {
 
   const std::vector<DesktopWidgetTypeSpec>& desktopWidgetTypeSpecs() { return kDesktopWidgetTypeSpecs; }
 
-  std::vector<WidgetSettingSpec> commonDesktopWidgetSettingSpecs() {
+  std::vector<WidgetSettingSpec> commonDesktopWidgetSettingSpecs(std::string_view type) {
     const WidgetSettingVisibility backgroundOn{"background", {"true"}};
+    const bool backgroundDefault = type != "fancy_audio_visualizer";
 
     auto bgColor = colorSpec("background_color", "surface");
     bgColor.visibleWhen = backgroundOn;
@@ -88,8 +90,11 @@ namespace desktop_settings {
     bgOpacity.visibleWhen = backgroundOn;
 
     return {
-        boolSpec("background", true), std::move(bgColor),   std::move(bgOpacity),
-        std::move(bgRadius),          std::move(bgPadding),
+        boolSpec("background", backgroundDefault),
+        std::move(bgColor),
+        std::move(bgOpacity),
+        std::move(bgRadius),
+        std::move(bgPadding),
     };
   }
 
@@ -126,6 +131,36 @@ namespace desktop_settings {
       add(boolSpec("show_when_idle", true));
       add(colorSpec("low_color", "primary"));
       add(colorSpec("high_color", "primary"));
+    } else if (type == "fancy_audio_visualizer") {
+      const WidgetSettingVisibility barsVisible{"visualization_mode", {"bars", "bars_rings", "all"}};
+      const WidgetSettingVisibility waveVisible{"visualization_mode", {"wave", "wave_rings", "all"}};
+      const WidgetSettingVisibility ringsVisible{"visualization_mode", {"rings", "bars_rings", "wave_rings", "all"}};
+
+      add(selectSpec(
+          "visualization_mode", "bars_rings",
+          {{"bars", "desktop-widgets.editor.settings.visualization-mode-bars"},
+           {"wave", "desktop-widgets.editor.settings.visualization-mode-wave"},
+           {"rings", "desktop-widgets.editor.settings.visualization-mode-rings"},
+           {"bars_rings", "desktop-widgets.editor.settings.visualization-mode-bars-rings"},
+           {"wave_rings", "desktop-widgets.editor.settings.visualization-mode-wave-rings"},
+           {"all", "desktop-widgets.editor.settings.visualization-mode-all"}}
+      ));
+      add(doubleSpec("sensitivity", 1.5, 0.5, 3.0, 0.1));
+      add(doubleSpec("rotation_speed", 0.5, 0.0, 2.0, 0.1));
+      auto barWidth = doubleSpec("bar_width", 0.6, 0.2, 1.0, 0.1);
+      barWidth.visibleWhen = barsVisible;
+      add(std::move(barWidth));
+      auto waveThickness = doubleSpec("wave_thickness", 1.0, 0.3, 2.0, 0.1);
+      waveThickness.visibleWhen = waveVisible;
+      add(std::move(waveThickness));
+      auto ringOpacity = doubleSpec("ring_opacity", 0.8, 0.0, 1.0, 0.1);
+      ringOpacity.visibleWhen = ringsVisible;
+      add(std::move(ringOpacity));
+      add(doubleSpec("inner_diameter", 0.7, 0.0, 1.0, 0.05));
+      add(doubleSpec("bloom_intensity", 0.5, 0.0, 1.0, 0.05));
+      add(boolSpec("fade_when_idle", false));
+      add(colorSpec("primary_color", "primary"));
+      add(colorSpec("secondary_color", "secondary"));
     } else if (type == "sticker") {
       add(stringSpec("image_path"));
       add(doubleSpec("opacity", 1.0, 0.0, 1.0, 0.01));
@@ -162,7 +197,7 @@ namespace desktop_settings {
     for (const auto& spec : desktopWidgetSettingSpecs(type)) {
       out.push_back(spec.schema);
     }
-    for (const auto& spec : commonDesktopWidgetSettingSpecs()) {
+    for (const auto& spec : commonDesktopWidgetSettingSpecs(type)) {
       out.push_back(spec.schema);
     }
     return out;
