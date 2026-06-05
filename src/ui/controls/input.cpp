@@ -313,6 +313,8 @@ void Input::setValue(std::string_view value) {
   m_value = std::string(value);
   m_cursorPos = m_value.size();
   m_selectionAnchor = m_cursorPos;
+  m_preeditStart = 0;
+  m_preeditLen = 0;
   clearEditHistory();
   updateDisplayText();
   notifyTextInputStateChanged(TextInputChangeCause::Other);
@@ -512,19 +514,21 @@ void Input::clearSelection() {
 
 TextInputState Input::textInputState() const {
   std::string surrounding = m_value;
-  std::size_t cursor = m_cursorPos;
-  std::size_t anchor = m_selectionAnchor;
+  std::size_t cursor = clampToUtf8End(m_value, m_cursorPos);
+  std::size_t anchor = clampToUtf8End(m_value, m_selectionAnchor);
   if (m_preeditLen > 0 && m_preeditStart <= surrounding.size()) {
-    const std::size_t preeditEnd = std::min(m_preeditStart + m_preeditLen, surrounding.size());
-    surrounding.erase(m_preeditStart, preeditEnd - m_preeditStart);
-    const auto adjustOffset = [this, preeditEnd](std::size_t pos) {
-      if (pos <= m_preeditStart) {
+    const std::size_t preeditStart = clampToUtf8End(surrounding, m_preeditStart);
+    const std::size_t preeditLen = std::min(m_preeditLen, surrounding.size() - preeditStart);
+    const std::size_t preeditEnd = preeditStart + preeditLen;
+    surrounding.erase(preeditStart, preeditLen);
+    const auto adjustOffset = [preeditStart, preeditEnd](std::size_t pos) {
+      if (pos <= preeditStart) {
         return pos;
       }
       if (pos <= preeditEnd) {
-        return m_preeditStart;
+        return preeditStart;
       }
-      return pos - (preeditEnd - m_preeditStart);
+      return pos - (preeditEnd - preeditStart);
     };
     cursor = adjustOffset(cursor);
     anchor = adjustOffset(anchor);
@@ -560,6 +564,8 @@ TextInputState Input::textInputState() const {
 }
 
 void Input::textInputApplyEdit(const TextInputEdit& edit) {
+  clampEditState();
+
   const bool permanentEdit = edit.hasDelete || edit.hasCommitText;
   if (permanentEdit) {
     pushUndoSnapshot(EditCoalesceKind::Discrete);
@@ -1006,6 +1012,8 @@ void Input::doLayout(Renderer& renderer) {
 }
 
 void Input::handleKey(std::uint32_t sym, std::uint32_t utf32, std::uint32_t modifiers, bool preedit) {
+  clampEditState();
+
   if (m_onKeyEvent && m_onKeyEvent(sym, modifiers)) {
     return;
   }
@@ -1232,13 +1240,29 @@ void Input::notifyTextInputStateChanged(TextInputChangeCause cause) {
 }
 
 bool Input::removePreeditText() {
-  if (m_preeditLen == 0 || m_preeditStart > m_value.size()) {
+  if (m_preeditLen == 0) {
     m_preeditStart = 0;
     m_preeditLen = 0;
     return false;
   }
-  const std::size_t end = std::min(m_preeditStart + m_preeditLen, m_value.size());
-  m_value.erase(m_preeditStart, end - m_preeditStart);
+
+  if (m_preeditStart > m_value.size()) {
+    m_preeditStart = 0;
+    m_preeditLen = 0;
+    clampEditState();
+    return false;
+  }
+
+  m_preeditStart = clampToUtf8End(m_value, m_preeditStart);
+  const std::size_t len = std::min(m_preeditLen, m_value.size() - m_preeditStart);
+  if (len == 0) {
+    m_preeditStart = 0;
+    m_preeditLen = 0;
+    clampEditState();
+    return false;
+  }
+
+  m_value.erase(m_preeditStart, len);
   m_cursorPos = m_preeditStart;
   m_selectionAnchor = m_cursorPos;
   m_preeditStart = 0;
@@ -1247,6 +1271,8 @@ bool Input::removePreeditText() {
 }
 
 bool Input::deleteSurroundingText(std::uint32_t beforeLength, std::uint32_t afterLength) {
+  clampEditState();
+
   const bool hadSelection = hasSelection();
   const std::size_t baseStart = selectionStart();
   const std::size_t baseEnd = selectionEnd();
@@ -1497,6 +1523,28 @@ void Input::clampScrollOffset() {
   m_scrollOffset = std::clamp(m_scrollOffset, 0.0f, maxOffset);
 }
 
+void Input::clampEditState() {
+  m_cursorPos = clampToUtf8End(m_value, m_cursorPos);
+  m_selectionAnchor = clampToUtf8End(m_value, m_selectionAnchor);
+
+  if (m_preeditLen == 0) {
+    m_preeditStart = 0;
+    return;
+  }
+
+  if (m_preeditStart > m_value.size()) {
+    m_preeditStart = 0;
+    m_preeditLen = 0;
+    return;
+  }
+
+  m_preeditStart = clampToUtf8End(m_value, m_preeditStart);
+  m_preeditLen = std::min(m_preeditLen, m_value.size() - m_preeditStart);
+  if (m_preeditLen == 0) {
+    m_preeditStart = 0;
+  }
+}
+
 LayoutSize Input::doMeasure(Renderer& renderer, const LayoutConstraints& constraints) {
   const float minFromHint = m_minLayoutWidth > 0.0f ? m_minLayoutWidth : 0.0f;
   float assignW = width() > 0.0f ? width() : (minFromHint > 0.0f ? minFromHint : kMinWidth);
@@ -1692,21 +1740,27 @@ float Input::clearButtonTextReserveWidth() const noexcept {
   return clearButtonHitWidth() * 0.5f + clearGlyphSize * 0.5f + kTextInnerInset;
 }
 
-bool Input::hasSelection() const noexcept { return m_selectionAnchor != m_cursorPos; }
+bool Input::hasSelection() const noexcept { return selectionStart() != selectionEnd(); }
 
-std::size_t Input::selectionStart() const noexcept { return std::min(m_selectionAnchor, m_cursorPos); }
+std::size_t Input::selectionStart() const noexcept {
+  return std::min(std::min(m_selectionAnchor, m_cursorPos), m_value.size());
+}
 
-std::size_t Input::selectionEnd() const noexcept { return std::max(m_selectionAnchor, m_cursorPos); }
+std::size_t Input::selectionEnd() const noexcept {
+  return std::min(std::max(m_selectionAnchor, m_cursorPos), m_value.size());
+}
 
 Input::EditSnapshot Input::currentEditSnapshot() const {
   return EditSnapshot{
       .value = m_value,
-      .cursorPos = m_cursorPos,
-      .selectionAnchor = m_selectionAnchor,
+      .cursorPos = clampToUtf8End(m_value, m_cursorPos),
+      .selectionAnchor = clampToUtf8End(m_value, m_selectionAnchor),
   };
 }
 
 void Input::deleteSelection() {
+  clampEditState();
+
   const std::size_t start = selectionStart();
   const std::size_t end = selectionEnd();
   m_value.erase(start, end - start);
@@ -1829,7 +1883,7 @@ float Input::stopXForByte(std::size_t bytePos) const {
 
 std::size_t Input::nextCharPos(const std::string& s, std::size_t pos) {
   if (pos >= s.size()) {
-    return pos;
+    return s.size();
   }
   ++pos;
   while (pos < s.size() && (static_cast<unsigned char>(s[pos]) & 0xC0U) == 0x80U) {
@@ -1839,6 +1893,7 @@ std::size_t Input::nextCharPos(const std::string& s, std::size_t pos) {
 }
 
 std::size_t Input::prevCharPos(const std::string& s, std::size_t pos) {
+  pos = std::min(pos, s.size());
   if (pos == 0) {
     return 0;
   }

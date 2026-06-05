@@ -108,6 +108,7 @@ private:
   void stopCursorBlink();
   void ensureCursorVisible();
   void clampScrollOffset();
+  void clampEditState();
   void selectWordAtByteOffset(std::size_t offset);
   [[nodiscard]] std::size_t wordStartForByteOffset(std::size_t offset) const;
   [[nodiscard]] std::size_t wordEndForByteOffset(std::size_t offset) const;
