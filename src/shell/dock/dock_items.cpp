@@ -145,66 +145,67 @@ namespace {
     return true;
   }
 
-  void computeEdgeAnchoredSpreadOffsets(
-      const std::vector<float>& scales, float iconSize, bool spreadFromStart, std::vector<float>& outOffsets
-  ) {
+  void computeSymmetricSpreadOffsets(const std::vector<float>& scales, float iconSize, std::vector<float>& outOffsets) {
     const std::size_t count = scales.size();
     outOffsets.assign(count, 0.0f);
     if (count <= 1U) {
       return;
     }
-    if (spreadFromStart) {
-      for (std::size_t index = 1; index < count; ++index) {
-        const float pairExtra = iconSize * (scales[index - 1U] + scales[index] - 2.0f) * 0.5f;
-        outOffsets[index] = outOffsets[index - 1U] + pairExtra;
-      }
-      return;
-    }
-    for (std::size_t index = count - 1U; index > 0U; --index) {
+    for (std::size_t index = 1; index < count; ++index) {
       const float pairExtra = iconSize * (scales[index - 1U] + scales[index] - 2.0f) * 0.5f;
-      outOffsets[index - 1U] = outOffsets[index] - pairExtra;
+      if (pairExtra <= 0.0f) {
+        continue;
+      }
+      const float halfExtra = pairExtra * 0.5f;
+      outOffsets[index - 1U] -= halfExtra;
+      outOffsets[index] += halfExtra;
     }
   }
 
   void clampSpreadOffsetsToBounds(
       const std::vector<float>& restMainPos, const std::vector<float>& scales, float cellMain, float iconSize,
-      float boundsMin, float boundsMax, bool spreadFromStart, std::vector<float>& offsets
+      float boundsMin, float boundsMax, std::vector<float>& offsets
   ) {
     if (offsets.empty() || restMainPos.size() != offsets.size() || scales.size() != offsets.size()) {
       return;
     }
 
-    const auto visualMainMax = [&](std::size_t index) {
-      return restMainPos[index] + offsets[index] + cellMain * 0.5f + iconSize * scales[index] * 0.5f;
+    const auto restVisualMainMax = [&](std::size_t index) {
+      return restMainPos[index] + cellMain * 0.5f + iconSize * scales[index] * 0.5f;
     };
-    const auto visualMainMin = [&](std::size_t index) {
-      return restMainPos[index] + offsets[index] + cellMain * 0.5f - iconSize * scales[index] * 0.5f;
+    const auto restVisualMainMin = [&](std::size_t index) {
+      return restMainPos[index] + cellMain * 0.5f - iconSize * scales[index] * 0.5f;
     };
 
-    const std::size_t last = offsets.size() - 1U;
-    if (spreadFromStart) {
-      const float predictedRight = visualMainMax(last);
-      if (predictedRight > boundsMax && offsets[last] > 0.0f) {
-        const float maxOffset = boundsMax - (restMainPos[last] + cellMain * 0.5f + iconSize * scales[last] * 0.5f);
-        const float factor = maxOffset / offsets[last];
-        if (factor < 1.0f) {
-          for (float& offset : offsets) {
-            offset *= factor;
-          }
+    float spreadFactor = 1.0f;
+    for (std::size_t index = 0; index < offsets.size(); ++index) {
+      const float offset = offsets[index];
+      if (std::abs(offset) <= 0.001f) {
+        continue;
+      }
+      if (offset > 0.0f) {
+        const float maxRightOffset = boundsMax - restVisualMainMax(index);
+        if (maxRightOffset <= 0.0f) {
+          spreadFactor = 0.0f;
+        } else {
+          spreadFactor = std::min(spreadFactor, maxRightOffset / offset);
+        }
+      } else {
+        const float maxLeftOffset = boundsMin - restVisualMainMin(index);
+        if (maxLeftOffset >= 0.0f) {
+          spreadFactor = 0.0f;
+        } else {
+          spreadFactor = std::min(spreadFactor, maxLeftOffset / offset);
         }
       }
-      return;
     }
 
-    const float predictedLeft = visualMainMin(0U);
-    if (predictedLeft < boundsMin && offsets[0U] < 0.0f) {
-      const float maxOffset = boundsMin - (restMainPos[0U] + cellMain * 0.5f - iconSize * scales[0U] * 0.5f);
-      const float factor = maxOffset / offsets[0U];
-      if (factor < 1.0f) {
-        for (float& offset : offsets) {
-          offset *= factor;
-        }
-      }
+    spreadFactor = std::clamp(spreadFactor, 0.0f, 1.0f);
+    if (spreadFactor >= 1.0f) {
+      return;
+    }
+    for (float& offset : offsets) {
+      offset *= spreadFactor;
     }
   }
 
@@ -829,7 +830,6 @@ namespace shell::dock {
     const float lerpFactor = hoverZoomFrameLerp(deltaMs);
     const DockEdge edge = cfg.position;
     const bool vertical = shell::dock::isVerticalEdge(edge);
-    const bool spreadFromStart = shell::dock::dockHoverZoomSpreadsFromStart(cfg);
     const float iSize = static_cast<float>(cfg.iconSize);
     const float cellMain = iSize + 2.0f * kCellPad;
     const float launcherIconBaseY = kCellPad + (iSize - iSize * kLauncherGlyphSizeRatio) * 0.5f;
@@ -926,15 +926,16 @@ namespace shell::dock {
 
     std::vector<float> targetOffsets;
     if (pointerActive) {
-      computeEdgeAnchoredSpreadOffsets(slotScales, iSize, spreadFromStart, targetOffsets);
+      computeSymmetricSpreadOffsets(slotScales, iSize, targetOffsets);
       std::vector<float> restMainPos;
       restMainPos.reserve(slots.size());
       for (const HoverSlot& slot : slots) {
         restMainPos.push_back(slot.restMainPos);
       }
-      const float boundsMax = vertical ? instance.row->height() : instance.row->width();
+      const float rowMainSize = vertical ? instance.row->height() : instance.row->width();
+      const float mainPad = static_cast<float>(cfg.mainAxisPadding);
       clampSpreadOffsetsToBounds(
-          restMainPos, slotScales, cellMain, iSize, 0.0f, boundsMax, spreadFromStart, targetOffsets
+          restMainPos, slotScales, cellMain, iSize, mainPad, rowMainSize - mainPad, targetOffsets
       );
     } else {
       targetOffsets.assign(slots.size(), 0.0f);

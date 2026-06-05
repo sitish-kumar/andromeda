@@ -37,10 +37,6 @@ namespace shell::dock {
 
   bool isVerticalEdge(DockEdge edge) { return edge == DockEdge::Left || edge == DockEdge::Right; }
 
-  bool dockHoverZoomSpreadsFromStart(const DockConfig& cfg) {
-    return cfg.launcherPosition != DockLauncherPosition::End;
-  }
-
   std::int32_t dockContentSize(const DockConfig& cfg, std::size_t itemCount) {
     const auto n = static_cast<std::int32_t>(itemCount);
     const std::int32_t cellSize = cfg.iconSize + kCellPad * 2;
