@@ -901,16 +901,19 @@ void Application::initServices() {
         m_panelManager.refresh();
       }
     });
-    m_configService.addReloadCallback([this, shouldRefreshControlCenter]() {
-      if (m_brightnessService == nullptr) {
-        return;
-      }
-      m_brightnessService->reload(m_configService.config().brightness);
-      m_bar.refresh();
-      if (shouldRefreshControlCenter()) {
-        m_panelManager.refresh();
-      }
-    });
+    m_configService.addReloadCallback(
+        [this, shouldRefreshControlCenter]() {
+          if (m_brightnessService == nullptr || !m_configService.lastChange().brightness) {
+            return;
+          }
+          m_brightnessService->reload(m_configService.config().brightness);
+          m_bar.refresh();
+          if (shouldRefreshControlCenter()) {
+            m_panelManager.refresh();
+          }
+        },
+        "brightness"
+    );
   } catch (const std::exception& e) {
     kLog.warn("brightness service disabled: {}", e.what());
     m_brightnessService.reset();
@@ -921,7 +924,13 @@ void Application::initServices() {
     m_pipewireSpectrum = std::make_unique<PipeWireSpectrum>(*m_pipewireService);
     m_soundPlayer = std::make_unique<SoundPlayer>(m_pipewireService->loop());
 
-    auto applySoundConfig = [this]() {
+    struct LoadedSoundPaths {
+      std::filesystem::path volumeChange;
+      std::filesystem::path notification;
+    };
+    auto loadedSoundPaths = std::make_shared<LoadedSoundPaths>();
+
+    auto applySoundConfig = [this, loadedSoundPaths]() {
       if (m_soundPlayer == nullptr) {
         return;
       }
@@ -940,11 +949,29 @@ void Application::initServices() {
         return paths::assetPath(expanded.string());
       };
 
-      (void)m_soundPlayer->load("volume-change", resolveSoundPath(audio.volumeChangeSound, "sounds/volume-change.wav"));
-      (void)m_soundPlayer->load("notification", resolveSoundPath(audio.notificationSound, "sounds/notification.wav"));
+      const auto volumeChangePath = resolveSoundPath(audio.volumeChangeSound, "sounds/volume-change.wav");
+      if (loadedSoundPaths->volumeChange != volumeChangePath) {
+        if (m_soundPlayer->load("volume-change", volumeChangePath)) {
+          loadedSoundPaths->volumeChange = volumeChangePath;
+        }
+      }
+
+      const auto notificationPath = resolveSoundPath(audio.notificationSound, "sounds/notification.wav");
+      if (loadedSoundPaths->notification != notificationPath) {
+        if (m_soundPlayer->load("notification", notificationPath)) {
+          loadedSoundPaths->notification = notificationPath;
+        }
+      }
     };
     applySoundConfig();
-    m_configService.addReloadCallback(applySoundConfig);
+    m_configService.addReloadCallback(
+        [this, applySoundConfig]() {
+          if (m_configService.lastChange().audio) {
+            applySoundConfig();
+          }
+        },
+        "sound"
+    );
   } catch (const std::exception& e) {
     kLog.warn("pipewire disabled: {}", e.what());
     m_soundPlayer.reset();
