@@ -2557,7 +2557,7 @@
           "label": "Stat"
         },
         "taskbar-max-width": {
-          "description": "Maximum width in pixels in total for the taskbar",
+          "description": "Total width budget in pixels; window titles shrink to fit and hide when too narrow",
           "label": "Taskbar Max Width"
         },
         "title-scroll": {

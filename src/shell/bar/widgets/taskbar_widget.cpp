@@ -321,7 +321,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
   const auto metric = renderer.measureText("...", Style::fontSizeCaption * m_contentScale, fontWeight);
   const float minWindowTitleWidth = (metric.right - metric.left) * 2;
   const float windowTitleWidth =
-      std::min(m_windowTitleMaxWidth * m_contentScale, maxTileWidth - tileSize - tilePadding);
+      std::min(m_windowTitleMaxWidth * m_contentScale, std::max(0.0f, maxTileWidth - tileSize - tilePadding));
   const bool showWindowTitle = m_showWindowTitle && windowTitleWidth > minWindowTitleWidth;
   const float tileWidthWithTitle = tileSize + (showWindowTitle ? windowTitleWidth + tilePadding : 0.0f);
 

@@ -867,6 +867,14 @@ namespace settings {
         }
         return false;
       };
+      for (const auto& condition : spec.visibleWhen->all) {
+        if (!matches(condition.key, condition.values)) {
+          return false;
+        }
+      }
+      if (spec.visibleWhen->any.empty()) {
+        return true;
+      }
       for (const auto& condition : spec.visibleWhen->any) {
         if (matches(condition.key, condition.values)) {
           return true;
