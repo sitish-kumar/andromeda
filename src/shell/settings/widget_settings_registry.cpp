@@ -723,6 +723,7 @@ namespace settings {
         gaugeColor.visibleWhen = WidgetSettingVisibility{"display", {"gauge"}};
         add(std::move(gaugeColor));
       }
+      add(colorSpec("highlight_color", "error"));
       add(boolSpec("show_label", true));
       {
         auto minW = intSpec("label_min_width", 0, 0.0, 200.0, 1.0);
@@ -1010,8 +1011,13 @@ namespace settings {
   } // namespace
 
   std::optional<WidgetSettingSpec> findWidgetSettingSpec(std::string_view widgetType, std::string_view settingKey) {
+    return findWidgetSettingSpec(widgetType, settingKey, nullptr);
+  }
+
+  std::optional<WidgetSettingSpec>
+  findWidgetSettingSpec(std::string_view widgetType, std::string_view settingKey, const WidgetConfig* config) {
     const std::string key(settingKey);
-    for (const auto& spec : widgetSettingSpecs(widgetType, "sans-serif")) {
+    for (const auto& spec : widgetSettingSpecs(widgetType, config, "sans-serif")) {
       if (spec.schema.key == key) {
         return spec;
       }
@@ -1121,30 +1127,39 @@ namespace settings {
       std::string_view widgetName, std::string_view settingKey, const Config& withOverride,
       const Config& withoutOverride
   ) {
-    const auto valueInConfig = [](const Config& cfg, std::string_view name,
-                                  std::string_view key) -> std::optional<WidgetSettingValue> {
+    const auto widgetInConfig = [](const Config& cfg, std::string_view name) -> const WidgetConfig* {
       const auto widgetIt = cfg.widgets.find(std::string(name));
       if (widgetIt == cfg.widgets.end()) {
+        return nullptr;
+      }
+      return &widgetIt->second;
+    };
+    const auto valueInConfig = [&](const Config& cfg, std::string_view name,
+                                   std::string_view key) -> std::optional<WidgetSettingValue> {
+      const auto* widget = widgetInConfig(cfg, name);
+      if (widget == nullptr) {
         return std::nullopt;
       }
-      const auto settingIt = widgetIt->second.settings.find(std::string(key));
-      if (settingIt == widgetIt->second.settings.end()) {
+      const auto settingIt = widget->settings.find(std::string(key));
+      if (settingIt == widget->settings.end()) {
         return std::nullopt;
       }
       return settingIt->second;
     };
 
     std::string widgetType(widgetName);
-    if (const auto withIt = withOverride.widgets.find(std::string(widgetName)); withIt != withOverride.widgets.end()) {
-      widgetType = withIt->second.type;
-    } else if (
-        const auto withoutIt = withoutOverride.widgets.find(std::string(widgetName));
-        withoutIt != withoutOverride.widgets.end()
-    ) {
-      widgetType = withoutIt->second.type;
+    if (const auto* withWidget = widgetInConfig(withOverride, widgetName); withWidget != nullptr) {
+      widgetType = withWidget->type;
+    } else if (const auto* withoutWidget = widgetInConfig(withoutOverride, widgetName); withoutWidget != nullptr) {
+      widgetType = withoutWidget->type;
     }
 
-    const auto spec = findWidgetSettingSpec(widgetType, settingKey);
+    const WidgetConfig* defaultConfig = widgetInConfig(withoutOverride, widgetName);
+    if (defaultConfig == nullptr) {
+      defaultConfig = widgetInConfig(withOverride, widgetName);
+    }
+
+    const auto spec = findWidgetSettingSpec(widgetType, settingKey, defaultConfig);
     const auto withValue = valueInConfig(withOverride, widgetName, settingKey);
     const auto withoutValue = valueInConfig(withoutOverride, widgetName, settingKey);
     if (!withValue.has_value() && !withoutValue.has_value()) {

@@ -650,6 +650,16 @@
       "battery-device": "Battery device",
       "battery-low-title": "Battery low",
       "battery-low-body": "{device}: {percent}% remaining",
+      "calendar": "Calendar",
+      "calendar-google-connect-failed-title": "Google Calendar connection failed",
+      "calendar-google-connect-missing-account": "No configured Google calendar account matched \"{account}\".",
+      "calendar-google-connect-rate-limited": "Google authorization is temporarily rate limited. Wait a bit, then try again.",
+      "calendar-google-connect-start-http": "Could not start Google authorization. The OAuth broker returned HTTP {status}.",
+      "calendar-google-connect-start-failed": "Could not start Google authorization. Check your network connection and try again.",
+      "calendar-google-connect-browser-failed": "No browser opener could be launched for Google authorization. Check your default browser or xdg-open setup.",
+      "calendar-google-connect-timeout": "Google authorization timed out. Start the connection again when you are ready to sign in.",
+      "calendar-google-connect-expired": "Google authorization expired before sign-in finished. Start the connection again.",
+      "calendar-google-connect-result-failed": "Could not finish Google authorization. Start the connection again.",
       "session-bus-unavailable": "Session bus unavailable",
       "mpris-disabled": "MPRIS disabled",
       "keybind-app": "Noctalia",
@@ -679,9 +689,8 @@
       "states": {
         "charging": "Charging",
         "discharging": "Discharging",
-        "charged": "Charged",
         "empty": "Empty",
-        "pending-charge": "Pending charge",
+        "plugged-in": "Plugged in",
         "pending-discharge": "Pending discharge",
         "battery": "Battery"
       },
@@ -846,6 +855,32 @@
         "rename": "Could not rename monitor override.",
         "delete": "Could not delete monitor override."
       }
+    },
+    "calendar-accounts": {
+      "add-title": "Add Calendar Account",
+      "edit-title": "Edit Calendar Account",
+      "provider-label": "Provider",
+      "provider": {
+        "icloud": "iCloud",
+        "custom": "CalDAV",
+        "google": "Google"
+      },
+      "id-label": "Account ID",
+      "name-label": "Display Name",
+      "name-placeholder": "Personal Calendar",
+      "color-label": "Color",
+      "username-label": "Username",
+      "username-placeholder": "name@example.com",
+      "password-label": "App Password",
+      "password-placeholder": "App-specific password",
+      "password-keep-placeholder": "Leave blank to keep current password",
+      "server-url-label": "Server URL",
+      "save": "Save",
+      "save-connect": "Save and Connect",
+      "invalid": "Check the highlighted calendar account fields.",
+      "save-error": "Could not save calendar account.",
+      "delete-error": "Could not delete calendar account.",
+      "password-save-error": "Could not save calendar account password."
     },
     "entities": {
       "bar": {
@@ -1484,6 +1519,10 @@
         "gauge_color": {
           "label": "Gauge Color",
           "description": "Color role for the fill bar in gauge display mode; fixed hex colors are also supported"
+        },
+        "highlight_color": {
+          "label": "Highlight Color",
+          "description": "Color reached at or above the critical threshold"
         },
         "high_color": {
           "label": "High Color",
@@ -2313,6 +2352,15 @@
           "label": "Refresh Interval",
           "description": "How often to sync calendar events (minutes)"
         },
+        "calendar-add": {
+          "label": "Calendar Accounts",
+          "description": "Add iCloud, CalDAV, or Google accounts",
+          "button": "Add Account"
+        },
+        "calendar-edit": {
+          "description": "Update this calendar account",
+          "button": "Edit"
+        },
         "calendar-connect": {
           "description": "Authorize a Google account in your browser",
           "button": "Connect"
@@ -2320,6 +2368,26 @@
         "system-monitor": {
           "label": "System Monitor",
           "description": "Sample CPU, memory, network, load, temperature, and disk statistics",
+          "stats": {
+            "cpu-usage": "CPU Usage",
+            "cpu-temp": "CPU Temp",
+            "gpu-temp": "GPU Temp",
+            "gpu-usage": "GPU Usage",
+            "gpu-vram": "GPU VRAM",
+            "ram-usage": "RAM Usage",
+            "swap-usage": "Swap Usage",
+            "disk-usage": "Disk Usage",
+            "network-rx": "Download",
+            "network-tx": "Upload"
+          },
+          "activity-threshold": {
+            "label": "{stat} Activity Threshold",
+            "description": "Value that shows significant activity"
+          },
+          "critical-threshold": {
+            "label": "{stat} Critical Threshold",
+            "description": "Value close to maximum capacity"
+          },
           "cpu-poll": {
             "label": "CPU Poll Interval",
             "description": "Seconds between CPU usage, CPU temperature, and load-average samples (0 disables)"
