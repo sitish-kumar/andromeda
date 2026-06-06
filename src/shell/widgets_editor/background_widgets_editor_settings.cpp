@@ -171,7 +171,7 @@ namespace {
   ) {
     settings::ColorSpecSelectOptions options{
         .roles = {},
-        .selectedValue = getStr(s, key, std::move(fallbackValue)),
+        .selectedValue = getStr(s, key, fallbackValue),
         .allowNone = false,
         .allowCustomColor = true,
         .noneLabel = {},

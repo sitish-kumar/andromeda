@@ -1008,9 +1008,7 @@ bool MprisService::setLoopStatus(const std::string& busName, std::string loopSta
   try {
     proxyIt->second->callMethodAsync("Set")
         .onInterface(kPropertiesInterface)
-        .withArguments(
-            std::string{kMprisPlayerInterface}, std::string{"LoopStatus"}, sdbus::Variant{std::move(loopStatus)}
-        )
+        .withArguments(std::string{kMprisPlayerInterface}, std::string{"LoopStatus"}, sdbus::Variant{loopStatus})
         .uponReplyInvoke(makeAsyncReplyHandler("set-loop-status", busName));
     return true;
   } catch (const sdbus::Error& e) {

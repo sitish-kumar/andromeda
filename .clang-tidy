@@ -1,5 +1,6 @@
 Checks: >-
   -clang-diagnostic-*,
+  performance-move-const-arg,
   readability-container-contains,
   readability-container-data-pointer,
   readability-container-size-empty,

@@ -1501,7 +1501,7 @@ namespace settings {
               defaultString != nullptr) {
             selectSetting.clearOnEmpty = defaultString->empty();
           }
-          ctx.makeRow(*panel, entry, ctx.makeSelect(std::move(selectSetting), path));
+          ctx.makeRow(*panel, entry, ctx.makeSelect(selectSetting, path));
           break;
         }
         case WidgetControlKind::ColorSpec: {
@@ -1509,7 +1509,7 @@ namespace settings {
           pickerSetting.selectedValue = settingValueAsString(value);
           pickerSetting.allowNone = spec.advanced;
           pickerSetting.allowCustomColor = spec.allowCustomColor;
-          ctx.makeRow(*panel, entry, ctx.makeColorSpecPicker(std::move(pickerSetting), path));
+          ctx.makeRow(*panel, entry, ctx.makeColorSpecPicker(pickerSetting, path));
           break;
         }
         }
