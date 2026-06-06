@@ -179,8 +179,7 @@ namespace {
     std::sort(settingKeys.begin(), settingKeys.end());
 
     std::ostringstream out;
-    out << "base=" << escapeRuntimeKeyToken(baseKey) << "|script=" << escapeRuntimeKeyToken(scriptPath)
-        << "|settings=";
+    out << "base=" << escapeRuntimeKeyToken(baseKey) << "|script=" << escapeRuntimeKeyToken(scriptPath) << "|settings=";
     for (std::size_t i = 0; i < settingKeys.size(); ++i) {
       if (i != 0) {
         out << '|';
@@ -311,9 +310,9 @@ void ScriptedWidget::create() {
   bool createdRuntime = true;
   if (m_sharedScope) {
     const std::string sharedRuntimeKey =
-      buildSharedScriptRuntimeKey(m_widgetConfigName, m_resolvedPath.string(), m_settings);
+        buildSharedScriptRuntimeKey(m_widgetConfigName, m_resolvedPath.string(), m_settings);
     auto acquired =
-      scripting::SharedScriptRuntimeRegistry::acquire(sharedRuntimeKey, m_settings, m_scriptApi, m_clipboard);
+        scripting::SharedScriptRuntimeRegistry::acquire(sharedRuntimeKey, m_settings, m_scriptApi, m_clipboard);
     m_runtime = std::move(acquired.runtime);
     createdRuntime = acquired.created;
   } else {
