@@ -99,10 +99,8 @@ namespace noctalia::theme {
       scale = 1.0 / scale;
 
       auto toU8 = [](float v) -> uint8_t {
-        v = std::max(v, 0.0f);
-        v = std::min(v, 255.0f);
-        float r = v < 0.0f ? std::ceil(v - 0.5f) : std::floor(v + 0.5f);
-        return static_cast<uint8_t>(r);
+        v = std::clamp(v, 0.0f, 255.0f);
+        return static_cast<uint8_t>(std::floor(v + 0.5f));
       };
 
       for (int outx = 0; outx < dstW; ++outx) {
@@ -224,10 +222,8 @@ namespace noctalia::theme {
           // FloatNearest(clamp(t, 0, 255)) → u8. Rust's f32::round is
           // round-half-away-from-zero.
           auto toU8 = [](float v) -> uint8_t {
-            v = std::max(v, 0.0f);
-            v = std::min(v, 255.0f);
-            float r = v < 0.0f ? std::ceil(v - 0.5f) : std::floor(v + 0.5f);
-            return static_cast<uint8_t>(r);
+            v = std::clamp(v, 0.0f, 255.0f);
+            return static_cast<uint8_t>(std::floor(v + 0.5f));
           };
           uint8_t* dp = dst + (y * dstW + outx) * 4;
           dp[0] = toU8(t0);
