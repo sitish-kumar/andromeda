@@ -132,7 +132,7 @@ namespace scripting {
       {
         std::lock_guard lock(mutex);
         id = nextSubscriberId++;
-        subscribers[id] = callback;
+        subscribers[id] = std::move(callback);
         if (replayStateReady) {
           replay = replayState;
           hasReplay = true;
