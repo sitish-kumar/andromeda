@@ -101,8 +101,9 @@ namespace {
   }
 
   void applyShortcutButtonStyle(Button& button, bool enabled, bool active, float fillOpacity) {
-    button.setVariant(enabled && active ? ButtonVariant::Primary : ButtonVariant::Default);
-    button.setSurfaceOpacity(fillOpacity);
+    const bool on = enabled && active;
+    button.setVariant(on ? ButtonVariant::Primary : ButtonVariant::Default);
+    button.setSurfaceOpacity(on ? 1.0f : fillOpacity);
     button.setEnabled(enabled);
   }
 
