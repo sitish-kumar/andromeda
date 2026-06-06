@@ -2556,6 +2556,10 @@
           "description": "System statistic to display",
           "label": "Stat"
         },
+        "taskbar-max-width": {
+          "description": "Maximum width in pixels in total for the taskbar",
+          "label": "Taskbar Max Width"
+        },
         "title-scroll": {
           "description": "When the widget title should scroll",
           "label": "Title Scroll"

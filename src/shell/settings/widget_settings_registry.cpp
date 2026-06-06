@@ -802,8 +802,14 @@ namespace settings {
       {
         auto windowTitleMaxWidth = doubleSpec("window_title_max_width", 100.0, 10.0, 200.0, 1.0);
         windowTitleMaxWidth.visibleWhen =
-            WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"false"}}};
+            WidgetSettingVisibility{WidgetSettingVisibilityCondition{"show_window_title", {"true"}}};
         add(std::move(windowTitleMaxWidth));
+      }
+      {
+        auto taskbarMaxWidth = doubleSpec("taskbar_max_width", 8192.0, 10.0, 8192.0, 1.0);
+        taskbarMaxWidth.visibleWhen =
+            WidgetSettingVisibility{WidgetSettingVisibilityCondition{"show_window_title", {"true"}}};
+        add(std::move(taskbarMaxWidth));
       }
     } else if (type == "tray") {
       add(stringListSpec("hidden"));
