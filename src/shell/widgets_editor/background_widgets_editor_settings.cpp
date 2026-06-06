@@ -470,6 +470,7 @@ void BackgroundWidgetsEditor::applySettingChange(const std::string& key, WidgetS
         surfacePtr->surface->requestFrameTick();
       }
     });
+    newWidget->setBox(state->boxWidth, state->boxHeight);
     newWidget->update(*m_renderContext);
     newWidget->layout(*m_renderContext);
 

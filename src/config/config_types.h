@@ -490,7 +490,13 @@ struct DesktopWidgetState {
   std::string outputName;
   float cx = 0.0f;
   float cy = 0.0f;
-  float scale = 1.0f;
+  // Box size of the widget's grid tile, in logical px. 0 means "unsized": the tile
+  // auto-fits the content's natural size. Resizing in the editor sets explicit values.
+  float boxWidth = 0.0f;
+  float boxHeight = 0.0f;
+  // Migration-only (schema v1 `scale`): applied to an unsized tile so legacy widgets keep
+  // their size until the editor bakes it into an explicit box. Never written back out.
+  float legacyScale = 1.0f;
   float rotationRad = 0.0f;
   bool enabled = true;
   std::unordered_map<std::string, WidgetSettingValue> settings;
@@ -500,7 +506,7 @@ struct DesktopWidgetState {
 
 struct DesktopWidgetsConfig {
   bool enabled = true;
-  std::int32_t schemaVersion = 1;
+  std::int32_t schemaVersion = 2;
   DesktopWidgetsGridState grid;
   std::vector<DesktopWidgetState> widgets;
 
@@ -509,7 +515,7 @@ struct DesktopWidgetsConfig {
 
 struct LockscreenWidgetsConfig {
   bool enabled = false;
-  std::int32_t schemaVersion = 1;
+  std::int32_t schemaVersion = 2;
   DesktopWidgetsGridState grid;
   std::vector<DesktopWidgetState> widgets;
 

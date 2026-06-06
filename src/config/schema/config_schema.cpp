@@ -1263,7 +1263,8 @@ namespace noctalia::config::schema {
         return true;
       }
       static const std::unordered_set<std::string> kWidgetKeys = {
-          "id", "type", "output", "cx", "cy", "scale", "rotation", "enabled", "settings",
+          "id",         "type",     "output",  "cx",       "cy",    "box_width",
+          "box_height", "rotation", "enabled", "settings", "scale", // "scale" is a legacy (v1) key
       };
       if (!kWidgetKeys.contains(path[3])) {
         return false;

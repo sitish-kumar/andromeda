@@ -157,8 +157,15 @@ namespace {
     if (auto cy = finiteDouble(widgetTable["cy"])) {
       widget.cy = static_cast<float>(*cy);
     }
+    if (auto boxWidth = finiteDouble(widgetTable["box_width"])) {
+      widget.boxWidth = std::max(0.0f, static_cast<float>(*boxWidth));
+    }
+    if (auto boxHeight = finiteDouble(widgetTable["box_height"])) {
+      widget.boxHeight = std::max(0.0f, static_cast<float>(*boxHeight));
+    }
+    // schema v1 migration: a legacy `scale` is honored only until the editor bakes it into a box.
     if (auto scale = finiteDouble(widgetTable["scale"])) {
-      widget.scale = std::clamp(static_cast<float>(*scale), 0.2f, 8.0f);
+      widget.legacyScale = std::clamp(static_cast<float>(*scale), 0.2f, 8.0f);
     }
     if (auto rotation = finiteDouble(widgetTable["rotation"])) {
       widget.rotationRad = static_cast<float>(*rotation);

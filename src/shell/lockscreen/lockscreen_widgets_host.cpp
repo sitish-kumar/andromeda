@@ -209,6 +209,7 @@ void LockscreenWidgetsHost::createInstance(
   }
 
   widget->create();
+  widget->setBox(state.boxWidth, state.boxHeight);
   widget->update(*m_renderContext);
   widget->layout(*m_renderContext);
 
@@ -353,6 +354,7 @@ void LockscreenWidgetsHost::prepareFrame(LockSurface& surface, bool needsUpdate,
     }
 
     instance->widget->setContentScale(desktop_widgets::widgetContentScale(baseUiScale, instance->state));
+    instance->widget->setBox(instance->state.boxWidth, instance->state.boxHeight);
 
     if (needsUpdate) {
       instance->widget->update(*m_renderContext);

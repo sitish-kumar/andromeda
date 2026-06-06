@@ -46,13 +46,10 @@ namespace {
   const Color kShadowColor = rgba(0.0f, 0.0f, 0.0f, 0.45f);
   constexpr float kRotatePadding = 14.0f;
   constexpr float kHandleSize = 14.0f;
-  constexpr float kMinScale = 0.2f;
-  constexpr float kMaxScale = 8.0f;
   constexpr float kDisabledWidgetOpacity = 0.25f;
   constexpr float kRotationSnap = static_cast<float>(M_PI) / 12.0f;
   constexpr float kSnapGuideThresholdMin = 6.0f;
   constexpr float kSnapGuideThresholdMax = 18.0f;
-  constexpr float kScaleHeightIntentRatio = 1.75f;
   constexpr float kCenterGuideThickness = 3.0f;
   constexpr std::size_t kScaleCornerCount = 4;
 
@@ -560,6 +557,7 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
         surfacePtr->surface->requestFrameTick();
       }
     });
+    widget->setBox(widgetState.boxWidth, widgetState.boxHeight);
     widget->update(*m_renderContext);
     widget->layout(*m_renderContext);
     if ((widgetState.type == "audio_visualizer" || widgetState.type == "fancy_audio_visualizer")
@@ -570,6 +568,20 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     EditorWidgetView view;
     view.intrinsicWidth = std::max(1.0f, widget->intrinsicWidth());
     view.intrinsicHeight = std::max(1.0f, widget->intrinsicHeight());
+
+    // schema v1 migration: now that the natural size is measured (with the legacy scale already
+    // applied), bake it into an explicit box so it persists in the new schema and no longer
+    // depends on `scale`. The login box stays unsized (it spans the screen).
+    if (!lockscreen_login_box::isLoginBoxWidget(widgetState)
+        && widgetState.boxWidth <= 0.0f
+        && widgetState.boxHeight <= 0.0f
+        && std::abs(widgetState.legacyScale - 1.0f) > 0.001f) {
+      if (DesktopWidgetState* mutableState = findWidgetState(widgetState.id); mutableState != nullptr) {
+        mutableState->boxWidth = view.intrinsicWidth;
+        mutableState->boxHeight = view.intrinsicHeight;
+        mutableState->legacyScale = 1.0f;
+      }
+    }
 
     auto bodyArea = std::make_unique<InputArea>();
     view.bodyArea = bodyArea.get();
@@ -1042,6 +1054,7 @@ void BackgroundWidgetsEditor::applyViewState(
       }
     }
     view.widget->setContentScale(widgetContentScale(state));
+    view.widget->setBox(state.boxWidth, state.boxHeight);
     view.widget->update(*m_renderContext);
     view.widget->layout(*m_renderContext);
     view.intrinsicWidth = std::max(1.0f, view.widget->intrinsicWidth());
@@ -1091,7 +1104,9 @@ void BackgroundWidgetsEditor::addWidget(const std::string& outputName, const std
   widget.outputName = outputName;
   widget.cx = centerX;
   widget.cy = centerY;
-  widget.scale = 1.0f;
+  // box 0 = auto-fit content's natural size; the user resizes from there.
+  widget.boxWidth = 0.0f;
+  widget.boxHeight = 0.0f;
   widget.rotationRad = 0.0f;
   if (widget.type == "audio_visualizer") {
     widget.settings.emplace("aspect_ratio", static_cast<double>(kDefaultDesktopAudioVisualizerAspectRatio));
@@ -1399,34 +1414,6 @@ void BackgroundWidgetsEditor::updateDrag() {
   }
   const float guideThreshold = snapGuideThreshold(m_snapshot.grid.cellSize);
 
-  CornerSigns scaleSigns;
-  float scaleHalfWidth = 1.0f;
-  float scaleHalfHeight = 1.0f;
-  float scaleInitialAabbWidth = 1.0f;
-  float scaleInitialAabbHeight = 1.0f;
-  bool hasScaleDragGeometry = false;
-  bool snapScaleByWidth = true;
-
-  const auto applyScaleDragState = [&]() {
-    if (!hasScaleDragGeometry) {
-      return;
-    }
-
-    if (!m_altHeld) {
-      const float scaleRatio = state->scale / std::max(0.001f, m_drag.initialState.scale);
-      const float factor = 1.0f - scaleRatio;
-      const float anchorLocalX = -scaleSigns.x * scaleHalfWidth;
-      const float anchorLocalY = -scaleSigns.y * scaleHalfHeight;
-      const float cosR = std::cos(m_drag.initialState.rotationRad);
-      const float sinR = std::sin(m_drag.initialState.rotationRad);
-      state->cx = m_drag.initialState.cx + (cosR * anchorLocalX - sinR * anchorLocalY) * factor;
-      state->cy = m_drag.initialState.cy + (sinR * anchorLocalX + cosR * anchorLocalY) * factor;
-    } else {
-      state->cx = m_drag.initialState.cx;
-      state->cy = m_drag.initialState.cy;
-    }
-  };
-
   if (m_drag.mode == DragMode::Move) {
     state->cx = m_drag.initialState.cx + (m_currentEventSceneX - m_drag.startSceneX);
     state->cy = m_drag.initialState.cy + (m_currentEventSceneY - m_drag.startSceneY);
@@ -1459,99 +1446,68 @@ void BackgroundWidgetsEditor::updateDrag() {
     }
     state->rotationRad = rotation;
   } else if (m_drag.mode == DragMode::Scale) {
-    scaleSigns = cornerSigns(static_cast<std::size_t>(m_drag.scaleCorner));
-    const float cornerX = m_currentEventSceneX;
-    const float cornerY = m_currentEventSceneY;
-    const float dx = cornerX - m_drag.initialState.cx;
-    const float dy = cornerY - m_drag.initialState.cy;
-    const float cosTheta = std::cos(-m_drag.initialState.rotationRad);
-    const float sinTheta = std::sin(-m_drag.initialState.rotationRad);
-    const float localX = (dx * cosTheta - dy * sinTheta) * scaleSigns.x;
-    const float localY = (dx * sinTheta + dy * cosTheta) * scaleSigns.y;
-    scaleHalfWidth = std::max(1.0f, m_drag.intrinsicWidth * 0.5f);
-    scaleHalfHeight = std::max(1.0f, m_drag.intrinsicHeight * 0.5f);
-    const WidgetTransformBounds initialBounds = computeWidgetTransformBounds(
-        m_drag.initialState.cx, m_drag.initialState.cy, m_drag.intrinsicWidth, m_drag.intrinsicHeight, 1.0f,
-        m_drag.initialState.rotationRad
-    );
-    scaleInitialAabbWidth = std::max(1.0f, initialBounds.aabbWidth);
-    scaleInitialAabbHeight = std::max(1.0f, initialBounds.aabbHeight);
-    hasScaleDragGeometry = true;
-    const float widthChange = std::abs(localX - scaleHalfWidth);
-    const float heightChange = std::abs(localY - scaleHalfHeight);
-    snapScaleByWidth = heightChange <= widthChange * kScaleHeightIntentRatio;
-    const float denominator = scaleHalfWidth * scaleHalfWidth + scaleHalfHeight * scaleHalfHeight;
-    const float relativeScale = (localX * scaleHalfWidth + localY * scaleHalfHeight) / std::max(1.0f, denominator);
-    const float newScale = std::clamp(m_drag.initialState.scale * relativeScale, kMinScale, kMaxScale);
-    state->scale = newScale;
-    applyScaleDragState();
+    // Resize the widget's box tile. The opposite corner stays fixed (Alt anchors the center).
+    // Snapping quantizes the box width/height to whole grid cells; content re-fits the box.
+    const CornerSigns signs = cornerSigns(static_cast<std::size_t>(m_drag.scaleCorner));
+    const float rot = m_drag.initialState.rotationRad;
+    const float cosR = std::cos(rot);
+    const float sinR = std::sin(rot);
+    const float halfW0 = std::max(0.5f, m_drag.intrinsicWidth * 0.5f);
+    const float halfH0 = std::max(0.5f, m_drag.intrinsicHeight * 0.5f);
+
+    float anchorX = m_drag.initialState.cx;
+    float anchorY = m_drag.initialState.cy;
+    if (!m_altHeld) {
+      const float anchorLocalX = -signs.x * halfW0;
+      const float anchorLocalY = -signs.y * halfH0;
+      anchorX = m_drag.initialState.cx + cosR * anchorLocalX - sinR * anchorLocalY;
+      anchorY = m_drag.initialState.cy + sinR * anchorLocalX + cosR * anchorLocalY;
+    }
+
+    // Dragged corner relative to the anchor, projected into the widget's un-rotated frame.
+    const float wx = m_currentEventSceneX - anchorX;
+    const float wy = m_currentEventSceneY - anchorY;
+    const float localX = wx * std::cos(-rot) - wy * std::sin(-rot);
+    const float localY = wx * std::sin(-rot) + wy * std::cos(-rot);
+
+    float boxW = m_altHeld ? std::abs(localX) * 2.0f : std::abs(localX);
+    float boxH = m_altHeld ? std::abs(localY) * 2.0f : std::abs(localY);
+
+    const float cell = static_cast<float>(std::max(1, m_snapshot.grid.cellSize));
+    boxW = std::max(cell, boxW);
+    boxH = std::max(cell, boxH);
+    if (shouldSnap()) {
+      boxW = std::max(cell, std::round(boxW / cell) * cell);
+      boxH = std::max(cell, std::round(boxH / cell) * cell);
+    }
+
+    if (!m_altHeld) {
+      const float centerLocalX = signs.x * boxW * 0.5f;
+      const float centerLocalY = signs.y * boxH * 0.5f;
+      state->cx = anchorX + cosR * centerLocalX - sinR * centerLocalY;
+      state->cy = anchorY + sinR * centerLocalX + cosR * centerLocalY;
+    }
+    state->boxWidth = boxW;
+    state->boxHeight = boxH;
   }
 
   float clampWidth = m_drag.intrinsicWidth;
   float clampHeight = m_drag.intrinsicHeight;
-  float dragVisualScale = 1.0f;
-  if (m_drag.mode == DragMode::Scale && hasScaleDragGeometry) {
-    dragVisualScale = state->scale / std::max(0.001f, m_drag.initialState.scale);
-    clampWidth = m_drag.intrinsicWidth * dragVisualScale;
-    clampHeight = m_drag.intrinsicHeight * dragVisualScale;
-
-    if (shouldSnap()) {
-      const bool axisX = snapScaleByWidth;
-      const float initialExtent = axisX ? scaleInitialAabbWidth : scaleInitialAabbHeight;
-      if (initialExtent > 0.0f) {
-        const float sign = axisX ? scaleSigns.x : scaleSigns.y;
-        const float initialCenter = axisX ? m_drag.initialState.cx : m_drag.initialState.cy;
-        const float currentExtent = initialExtent * (state->scale / std::max(0.001f, m_drag.initialState.scale));
-        float targetExtent = currentExtent;
-
-        if (m_altHeld) {
-          const float draggedLine = initialCenter + sign * currentExtent * 0.5f;
-          const float snappedLine = snapLineToTargets(
-              draggedLine, m_snapshot.grid.cellSize, axisX ? gridOriginX : gridOriginY, axisX ? snapLinesX : snapLinesY,
-              guideThreshold
-          );
-          targetExtent = std::abs(snappedLine - initialCenter) * 2.0f;
-        } else {
-          const float anchorLine = initialCenter - sign * initialExtent * 0.5f;
-          const float draggedLine = anchorLine + sign * currentExtent;
-          const float snappedLine = snapLineToTargets(
-              draggedLine, m_snapshot.grid.cellSize, axisX ? gridOriginX : gridOriginY, axisX ? snapLinesX : snapLinesY,
-              guideThreshold
-          );
-          targetExtent = std::abs(snappedLine - anchorLine);
-        }
-
-        if (targetExtent > 0.0f) {
-          const float snappedScale =
-              std::clamp(m_drag.initialState.scale * (targetExtent / initialExtent), kMinScale, kMaxScale);
-          if (std::abs(snappedScale - state->scale) > 0.0001f) {
-            state->scale = snappedScale;
-            applyScaleDragState();
-          }
-        }
-      }
-    }
-
-    if (EditorWidgetView* view = findView(m_drag.widgetId); view != nullptr) {
-      view->intrinsicWidth = clampWidth;
-      view->intrinsicHeight = clampHeight;
-    }
+  if (m_drag.mode == DragMode::Scale) {
+    clampWidth = std::max(1.0f, state->boxWidth);
+    clampHeight = std::max(1.0f, state->boxHeight);
   }
 
   if (m_wayland != nullptr) {
     desktop_widgets::clampStateToOutput(*m_wayland, *state, clampWidth, clampHeight);
   }
 
-  updateViewTransforms();
-
-  if (m_drag.mode == DragMode::Scale && hasScaleDragGeometry) {
-    if (EditorWidgetView* view = findView(m_drag.widgetId); view != nullptr && view->transformNode != nullptr) {
-      view->transformNode->setScale(dragVisualScale);
-      view->transformNode->setFrameSize(m_drag.intrinsicWidth, m_drag.intrinsicHeight);
-      view->transformNode->setPosition(
-          state->cx - m_drag.intrinsicWidth * 0.5f, state->cy - m_drag.intrinsicHeight * 0.5f
-      );
-    }
+  // For a resize, re-layout the dragged widget so its content re-fits the new box; otherwise
+  // just reposition the views.
+  if (m_drag.mode == DragMode::Scale) {
+    updateViewTransforms(&m_drag.widgetId);
+  } else {
+    updateViewTransforms();
   }
 
   if (OverlaySurface* redrawSurface = findSurfaceForWidget(m_drag.widgetId);
