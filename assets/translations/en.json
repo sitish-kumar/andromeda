@@ -689,9 +689,8 @@
       "states": {
         "charging": "Charging",
         "discharging": "Discharging",
-        "charged": "Charged",
         "empty": "Empty",
-        "pending-charge": "Pending charge",
+        "plugged-in": "Plugged in",
         "pending-discharge": "Pending discharge",
         "battery": "Battery"
       },
