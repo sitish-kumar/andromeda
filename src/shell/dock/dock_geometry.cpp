@@ -37,10 +37,6 @@ namespace shell::dock {
 
   bool isVerticalEdge(DockEdge edge) { return edge == DockEdge::Left || edge == DockEdge::Right; }
 
-  bool dockHoverZoomSpreadsFromStart(const DockConfig& cfg) {
-    return cfg.launcherPosition != DockLauncherPosition::End;
-  }
-
   std::int32_t dockContentSize(const DockConfig& cfg, std::size_t itemCount) {
     const auto n = static_cast<std::int32_t>(itemCount);
     const std::int32_t cellSize = cfg.iconSize + kCellPad * 2;
@@ -160,10 +156,9 @@ namespace shell::dock {
     const bool isBottom = edge == DockEdge::Bottom;
     const bool isRight = edge == DockEdge::Right;
     const float panelThickness = static_cast<float>(dockThickness(cfg));
-    const float zoomPad = static_cast<float>(dockHoverZoomCrossPad(cfg));
 
     if (!vertical) {
-      float y = isBottom ? bleedU + zoomPad : std::min(mEdge, bleedU);
+      float y = isBottom ? surfaceH - std::min(mEdge, bleedD) - panelThickness : std::min(mEdge, bleedU);
       if (const int gutter = dockAutoHideEdgeGutter(cfg); gutter > 0) {
         if (isBottom) {
           y = surfaceH - static_cast<float>(gutter) - panelThickness;
@@ -179,7 +174,7 @@ namespace shell::dock {
       };
     }
 
-    float x = isRight ? bleedL + zoomPad : std::min(mEdge, bleedL);
+    float x = isRight ? surfaceW - std::min(mEdge, bleedR) - panelThickness : std::min(mEdge, bleedL);
     if (const int gutter = dockAutoHideEdgeGutter(cfg); gutter > 0) {
       if (isRight) {
         x = surfaceW - static_cast<float>(gutter) - panelThickness;

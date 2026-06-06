@@ -2,8 +2,6 @@
   lib,
   config,
   stdenv,
-  shortRev,
-  version,
   meson,
   ninja,
   pkg-config,
@@ -33,18 +31,19 @@
   autoAddDriverRunpath,
   cudaSupport ? config.cudaSupport,
 }:
-
+let
+  inherit (builtins) head match readFile;
+  version = head (match ".*version: '([^']+)'.*" (readFile ../meson.build));
+in
 stdenv.mkDerivation {
   pname = "noctalia";
   inherit version;
 
-  src = lib.cleanSource ../.;
+  src = lib.cleanSource ./..;
 
   postPatch = ''
     # Remove -march=native and -mtune=native for reproducible builds
     sed -i "s/'-march=native', '-mtune=native',//" meson.build
-
-    sed -i "s|@VCS_TAG@|${shortRev}|g" src/core/git_revision.h.in
   '';
 
   nativeBuildInputs = [

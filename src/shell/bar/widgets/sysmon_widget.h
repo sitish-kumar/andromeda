@@ -2,12 +2,15 @@
 
 #include "core/timer_manager.h"
 #include "shell/bar/widget.h"
+#include "ui/palette.h"
 #include "ui/signal.h"
 
 #include <chrono>
 #include <string>
+#include <utility>
 
 class Box;
+class ConfigService;
 class Glyph;
 class GraphNode;
 class Label;
@@ -35,7 +38,8 @@ class SysmonWidget : public Widget {
 public:
   SysmonWidget(
       SystemMonitorService* monitor, wl_output* output, SysmonStat stat, std::string diskPath,
-      SysmonDisplayMode displayMode, bool showLabel = true, float labelMinWidth = 0.0f
+      SysmonDisplayMode displayMode, ColorSpec gaugeColor, ColorSpec highlightColor, ConfigService& configService,
+      bool showLabel = true, float labelMinWidth = 0.0f
   );
   ~SysmonWidget() override;
 
@@ -54,14 +58,21 @@ private:
   void scheduleNextUpdate(std::chrono::steady_clock::time_point latestSampleAt);
   void clearGraph();
   void syncVisualPalette();
+  void syncValueColor();
   void updateGraph(Renderer& renderer);
   [[nodiscard]] float scrollProgressForSample(std::chrono::steady_clock::time_point sampledAt) const;
+  [[nodiscard]] Color currentValueColor(ColorSpec baseColor);
+  [[nodiscard]] double currentGradientValue();
+  [[nodiscard]] std::pair<double, double> currentThresholds() const;
   [[nodiscard]] static double
   normalizedFromStats(SysmonStat stat, const SystemStats& stats, double& tempMin, double& tempMax);
 
   SystemMonitorService* m_monitor;
   SysmonStat m_stat;
   SysmonDisplayMode m_displayMode;
+  ColorSpec m_gaugeColor = colorSpecFromRole(ColorRole::Primary);
+  ColorSpec m_highlightColor = colorSpecFromRole(ColorRole::Error);
+  ConfigService& m_configService;
   bool m_showLabel;
   float m_labelMinWidth = 0.0f;
   std::string m_diskPath;

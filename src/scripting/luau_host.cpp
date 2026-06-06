@@ -502,11 +502,11 @@ bool LuauHost::startAsyncProcessMatch(std::vector<std::string> needles, int call
 }
 
 bool LuauHost::hasAsyncCommandCallback(int callbackRef) const {
-  return m_asyncCommandCallbackRefs.find(callbackRef) != m_asyncCommandCallbackRefs.end();
+  return m_asyncCommandCallbackRefs.contains(callbackRef);
 }
 
 bool LuauHost::hasAsyncProcessMatchCallback(int callbackRef) const {
-  return m_asyncProcessMatchCallbackRefs.find(callbackRef) != m_asyncProcessMatchCallbackRefs.end();
+  return m_asyncProcessMatchCallbackRefs.contains(callbackRef);
 }
 
 bool LuauHost::callAsyncCommandCallback(
@@ -568,6 +568,7 @@ void LuauHost::interruptIfBudgetExceeded(lua_State* L) {
     return;
   }
   m_lastCallTimedOut = true;
+  m_budgetActive = false;
   luaL_error(L, "script callback '%s' timed out", m_currentCallName.empty() ? "(unknown)" : m_currentCallName.c_str());
 }
 
