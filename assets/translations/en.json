@@ -1520,6 +1520,10 @@
           "label": "Gauge Color",
           "description": "Color role for the fill bar in gauge display mode; fixed hex colors are also supported"
         },
+        "highlight_color": {
+          "label": "Highlight Color",
+          "description": "Color reached at or above the critical threshold"
+        },
         "high_color": {
           "label": "High Color",
           "description": "Color used for high visualizer values"
@@ -2364,6 +2368,26 @@
         "system-monitor": {
           "label": "System Monitor",
           "description": "Sample CPU, memory, network, load, temperature, and disk statistics",
+          "stats": {
+            "cpu-usage": "CPU Usage",
+            "cpu-temp": "CPU Temp",
+            "gpu-temp": "GPU Temp",
+            "gpu-usage": "GPU Usage",
+            "gpu-vram": "GPU VRAM",
+            "ram-usage": "RAM Usage",
+            "swap-usage": "Swap Usage",
+            "disk-usage": "Disk Usage",
+            "network-rx": "Download",
+            "network-tx": "Upload"
+          },
+          "activity-threshold": {
+            "label": "{stat} Activity Threshold",
+            "description": "Value that shows significant activity"
+          },
+          "critical-threshold": {
+            "label": "{stat} Critical Threshold",
+            "description": "Value close to maximum capacity"
+          },
           "cpu-poll": {
             "label": "CPU Poll Interval",
             "description": "Seconds between CPU usage, CPU temperature, and load-average samples (0 disables)"
