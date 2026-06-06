@@ -111,8 +111,8 @@ SysmonWidget::SysmonWidget(
     SysmonDisplayMode displayMode, ColorSpec gaugeColor, ColorSpec highlightColor, ConfigService& configService,
     bool showLabel, float labelMinWidth
 )
-    : m_monitor(monitor), m_stat(stat), m_displayMode(displayMode), m_gaugeColor(std::move(gaugeColor)),
-      m_highlightColor(std::move(highlightColor)), m_configService(configService), m_showLabel(showLabel),
+    : m_monitor(monitor), m_stat(stat), m_displayMode(displayMode), m_gaugeColor(gaugeColor),
+      m_highlightColor(highlightColor), m_configService(configService), m_showLabel(showLabel),
       m_labelMinWidth(labelMinWidth), m_diskPath(std::move(diskPath)) {
   if (m_monitor != nullptr) {
     if (needsCpuTemp(m_stat)) {

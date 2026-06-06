@@ -1501,7 +1501,7 @@ namespace settings {
               defaultString != nullptr) {
             selectSetting.clearOnEmpty = defaultString->empty();
           }
-          ctx.makeRow(*panel, entry, ctx.makeSelect(std::move(selectSetting), path));
+          ctx.makeRow(*panel, entry, ctx.makeSelect(selectSetting, path));
           break;
         }
         case WidgetControlKind::ColorSpec: {
@@ -1509,7 +1509,7 @@ namespace settings {
           pickerSetting.selectedValue = settingValueAsString(value);
           pickerSetting.allowNone = spec.advanced;
           pickerSetting.allowCustomColor = spec.allowCustomColor;
-          ctx.makeRow(*panel, entry, ctx.makeColorSpecPicker(std::move(pickerSetting), path));
+          ctx.makeRow(*panel, entry, ctx.makeColorSpecPicker(pickerSetting, path));
           break;
         }
         }
@@ -1878,7 +1878,7 @@ namespace settings {
             valueInputPtr->setValue(formatSliderValue(next, integerValue));
           },
       });
-      slider->setOnDragEnd([sliderPtr, onCommit]() { onCommit(static_cast<double>(sliderPtr->value())); });
+      slider->setOnDragEnd([sliderPtr, onCommit]() { onCommit(sliderPtr->value()); });
 
       const auto commitInputText = [sliderPtr, valueInputPtr, minV, maxV, integerValue,
                                     onCommit](const std::string& text) {
@@ -1890,7 +1890,7 @@ namespace settings {
         valueInputPtr->setInvalid(false);
         sliderPtr->setValue(*parsed);
         valueInputPtr->setValue(formatSliderValue(sliderPtr->value(), integerValue));
-        onCommit(static_cast<double>(sliderPtr->value()));
+        onCommit(sliderPtr->value());
       };
       valueInput->setOnChange([valueInputPtr](const std::string& /*text*/) { valueInputPtr->setInvalid(false); });
       valueInput->setOnSubmit([commitInputText](const std::string& text) { commitInputText(text); });
