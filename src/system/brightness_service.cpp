@@ -118,9 +118,9 @@ namespace {
     std::vector<DdcCandidate> candidates;
   };
 
-  static const sdbus::ServiceName kLogindBusName{"org.freedesktop.login1"};
-  static constexpr auto kLogindManagerInterface = "org.freedesktop.login1.Manager";
-  static constexpr auto kLogindSessionInterface = "org.freedesktop.login1.Session";
+  const sdbus::ServiceName kLogindBusName{"org.freedesktop.login1"};
+  constexpr auto kLogindManagerInterface = "org.freedesktop.login1.Manager";
+  constexpr auto kLogindSessionInterface = "org.freedesktop.login1.Session";
 
   std::string joinBrightnessDisplayIds(const BrightnessService& service) {
     std::string out;

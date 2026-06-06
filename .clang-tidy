@@ -3,4 +3,5 @@ Checks: >-
   readability-container-contains,
   readability-container-data-pointer,
   readability-container-size-empty,
+  readability-static-definition-in-anonymous-namespace,
   readability-use-std-min-max,
