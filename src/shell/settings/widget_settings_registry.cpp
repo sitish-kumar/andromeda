@@ -188,8 +188,8 @@ namespace settings {
       spec.schema.type = schemaTypeForControl(control);
       spec.schema.defaultValue = std::move(defaultValue);
       spec.control = control;
-      spec.labelKey = std::string("settings.widgets.settings.") + std::string(key) + ".label";
-      spec.descriptionKey = std::string("settings.widgets.settings.") + std::string(key) + ".description";
+      spec.labelKey = std::string("settings.widgets.settings.") + i18n::keySegment(key) + ".label";
+      spec.descriptionKey = std::string("settings.widgets.settings.") + i18n::keySegment(key) + ".description";
       spec.advanced = advanced;
       return spec;
     }
@@ -754,7 +754,7 @@ namespace settings {
       }
       {
         auto groupCapsule = boolSpec("workspace_group_capsule", true);
-        groupCapsule.descriptionKey = "settings.widgets.settings.workspace_group_capsule.description";
+        groupCapsule.descriptionKey = "settings.widgets.settings.workspace-group-capsule.description";
         groupCapsule.visibleWhen =
             WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
         add(std::move(groupCapsule));
@@ -788,7 +788,7 @@ namespace settings {
       }
       for (auto& spec : commonSpecs) {
         if (spec.schema.key == "capsule_radius") {
-          spec.descriptionKey = "settings.widgets.settings.capsule_radius.taskbar-description";
+          spec.descriptionKey = "settings.widgets.settings.capsule-radius.taskbar-description";
           spec.visibleWhen = WidgetSettingVisibility{WidgetSettingVisibilityCondition{"group_by_workspace", {"true"}}};
           break;
         }
@@ -828,7 +828,7 @@ namespace settings {
       const WidgetSettingVisibility pillStyleOnly{{"minimal", {"false"}}};
       for (auto& spec : commonSpecs) {
         if (spec.schema.key == "capsule_radius") {
-          spec.descriptionKey = "settings.widgets.settings.capsule_radius.workspaces-description";
+          spec.descriptionKey = "settings.widgets.settings.capsule-radius.workspaces-description";
           spec.visibleWhen = pillStyleOnly;
           break;
         }
@@ -842,22 +842,22 @@ namespace settings {
       {
         auto labelsOnlyWhenOccupied = boolSpec("labels_only_when_occupied", false);
         labelsOnlyWhenOccupied.descriptionKey =
-            "settings.widgets.settings.labels_only_when_occupied.workspaces-description";
+            "settings.widgets.settings.labels-only-when-occupied.workspaces-description";
         add(std::move(labelsOnlyWhenOccupied));
       }
       {
         auto hideWhenEmpty = boolSpec("hide_when_empty", false);
-        hideWhenEmpty.descriptionKey = "settings.widgets.settings.hide_when_empty.workspaces-description";
+        hideWhenEmpty.descriptionKey = "settings.widgets.settings.hide-when-empty.workspaces-description";
         add(std::move(hideWhenEmpty));
       }
       {
         auto maxLabelChars = intSpec("max_label_chars", 1, 1.0, 20.0, 1.0);
-        maxLabelChars.descriptionKey = "settings.widgets.settings.max_label_chars.workspaces-description";
+        maxLabelChars.descriptionKey = "settings.widgets.settings.max-label-chars.workspaces-description";
         add(std::move(maxLabelChars));
       }
       {
         auto pillScale = doubleSpec("pill_scale", 1.0, 0.1, 1.0, 0.05);
-        pillScale.descriptionKey = "settings.widgets.settings.pill_scale.workspaces-description";
+        pillScale.descriptionKey = "settings.widgets.settings.pill-scale.workspaces-description";
         pillScale.visibleWhen = pillStyleOnly;
         add(std::move(pillScale));
       }

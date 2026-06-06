@@ -355,8 +355,8 @@
         "sunset": "Sunset",
         "timezone": "Timezone",
         "elevation": "Elevation",
-        "tempMax": "Temperature Max",
-        "tempMin": "Temperature Min"
+        "temp-max": "Temperature Max",
+        "temp-min": "Temperature Min"
       },
       "forecast-placeholder": {
         "day": "Sunday",
@@ -484,10 +484,9 @@
         "select-sticker-image": "Select Sticker Image"
       },
       "settings": {
-        "title": "Settings",
+        "title": "Title",
         "widget-section": "Widget",
         "format": "Format",
-        "title": "Title",
         "description": "Description",
         "color": "Color",
         "shadow": "Shadow",
@@ -559,7 +558,7 @@
     "screenshot": {
       "fullscreen": "Full screen",
       "region": "Select region",
-      "choose_display": "Choose display"
+      "choose-display": "Choose display"
     },
     "widgets": {
       "weather": {
@@ -1294,7 +1293,7 @@
           "label": "Anchor",
           "description": "Pin this widget as the center alignment anchor"
         },
-        "art_size": {
+        "art-size": {
           "label": "Art Size",
           "description": "Media artwork size in pixels"
         },
@@ -1306,27 +1305,27 @@
           "label": "Capsule",
           "description": "Draw a capsule behind this widget"
         },
-        "capsule_border": {
+        "capsule-border": {
           "label": "Capsule Border",
           "description": "Color role for the capsule outline; fixed hex colors are also supported"
         },
-        "capsule_fill": {
+        "capsule-fill": {
           "label": "Capsule Fill",
           "description": "Color role for the capsule background; fixed hex colors are also supported"
         },
-        "capsule_foreground": {
+        "capsule-foreground": {
           "label": "Capsule Foreground",
           "description": "Color role for content inside the capsule; fixed hex colors are also supported"
         },
-        "capsule_opacity": {
+        "capsule-opacity": {
           "label": "Capsule Opacity",
           "description": "Opacity of the capsule background"
         },
-        "capsule_padding": {
+        "capsule-padding": {
           "label": "Capsule Padding",
           "description": "Inner padding inside the capsule"
         },
-        "capsule_radius": {
+        "capsule-radius": {
           "label": "Capsule Radius",
           "description": "Corner radius for this widget capsule; leave blank for automatic pill shape, or set 0 for square corners",
           "taskbar-description": "Corner radius for the widget capsule, workspace disc indicators, and workspace group capsules; leave blank for automatic pill shape, or set 0 for square corners",
@@ -1340,7 +1339,7 @@
           "label": "Scale",
           "description": "Scale this widget relative to the bar content scale"
         },
-        "font_weight": {
+        "font-weight": {
           "label": "Font Weight",
           "description": "Default inherits the bar font weight"
         },
@@ -1348,16 +1347,16 @@
           "label": "Left Click Command",
           "description": "Shell command run when left-clicking this button"
         },
-        "custom_image": {
+        "custom-image": {
           "label": "Custom image",
           "description": "Path to a custom image. Leave empty to use the icon glyph.",
           "dialog-title": "Select custom image"
         },
-        "custom_image_colorize": {
+        "custom-image-colorize": {
           "label": "Colorize custom image",
           "description": "Tint the custom image with the widget Color setting"
         },
-        "cycle_command": {
+        "cycle-command": {
           "label": "Cycle Command",
           "description": "Command run when cycling keyboard layouts"
         },
@@ -1370,19 +1369,19 @@
           "description": "Display mode for this widget",
           "active-window-description": "Icon, title, or both on horizontal bars. Vertical bars stay icon-only."
         },
-        "display_mode": {
+        "display-mode": {
           "label": "Display Mode",
           "description": "Render the battery as a graphical shape or a Tabler glyph"
         },
-        "focused_color": {
+        "focused-color": {
           "label": "Focused Color",
           "description": "Color role used for the focused workspace; fixed hex colors are also supported"
         },
-        "occupied_color": {
+        "occupied-color": {
           "label": "Occupied Color",
           "description": "Color role used for occupied workspaces; fixed hex colors are also supported"
         },
-        "empty_color": {
+        "empty-color": {
           "label": "Empty Color",
           "description": "Color role used for empty workspaces; fixed hex colors are also supported"
         },
@@ -1394,7 +1393,7 @@
           "label": "Glyph",
           "description": "Icon glyph name"
         },
-        "primary_click": {
+        "primary-click": {
           "label": "Primary click",
           "description": "Action performed when left-clicking the bar button"
         },
@@ -1402,55 +1401,55 @@
           "label": "Label",
           "description": "Optional static text shown on this button"
         },
-        "group_by_workspace": {
+        "group-by-workspace": {
           "label": "Group by Workspace",
           "description": "Group taskbar icons into workspace capsules when compositor data is available"
         },
-        "show_all_outputs": {
+        "show-all-outputs": {
           "label": "Show All Monitors",
           "description": "Include windows from every display on this widget."
         },
-        "only_active_workspace": {
+        "only-active-workspace": {
           "label": "Only Active Workspace",
           "description": "Hide windows on inactive workspaces."
         },
-        "show_workspace_label": {
+        "show-workspace-label": {
           "label": "Workspace Capsule Label",
           "description": "Show the small workspace tag on grouped taskbar capsules. Turn off for icon-only groups."
         },
-        "workspace_label_placement": {
+        "workspace-label-placement": {
           "label": "Workspace Label Placement",
           "description": "Corner, centered on the edge, or inside the pill."
         },
-        "hide_empty_workspaces": {
+        "hide-empty-workspaces": {
           "label": "Hide Empty Workspaces",
           "description": "When grouping by workspace, omit capsules that have no running windows in the taskbar list."
         },
-        "workspace_group_capsule": {
+        "workspace-group-capsule": {
           "label": "Workspace Group Capsule",
           "description": "Draw the background and border around each grouped workspace. Turn off to keep icon grouping and workspace disc labels only."
         },
-        "group_single_icon_per_app": {
+        "group-single-icon-per-app": {
           "label": "Single Icon per App",
           "description": "When grouping by workspace, collapse multiple windows from the same app into one icon with a count badge."
         },
-        "show_window_title": {
+        "show-window-title": {
           "label": "Show Window Title",
           "description": "Show the window title next to its icon (only on horizontal bars)"
         },
-        "window_title_max_width": {
+        "window-title-max-width": {
           "label": "Window Title Max Width",
           "description": "Maximum width in pixels for window titles"
         },
-        "show_active_indicator": {
+        "show-active-indicator": {
           "label": "Active Window Indicator",
           "description": "Show a small dot below the active window icon in the taskbar."
         },
-        "active_opacity": {
+        "active-opacity": {
           "label": "Active Icon Opacity",
           "description": "Opacity of the icon for the active (focused) window."
         },
-        "inactive_opacity": {
+        "inactive-opacity": {
           "label": "Inactive Icon Opacity",
           "description": "Opacity of icons for inactive (unfocused) windows."
         },
@@ -1466,7 +1465,7 @@
           "label": "Pinned Items",
           "description": "Tray item ids that stay visible in the bar when drawer mode is enabled"
         },
-        "match_adjacent_spacing": {
+        "match-adjacent-spacing": {
           "label": "Match Adjacent Widget Spacing",
           "description": "Widen gaps between inline tray icons to match the visual spacing of neighboring bar widgets (includes capsule padding)"
         },
@@ -1474,65 +1473,65 @@
           "label": "Use Drawer Panel",
           "description": "Show a tray button in the bar and open items in a panel"
         },
-        "drawer_columns": {
+        "drawer-columns": {
           "label": "Drawer Columns",
           "description": "Number of tray icons per row in the drawer panel"
         },
-        "hide_when_off": {
+        "hide-when-off": {
           "label": "Hide When Off",
           "description": "Hide the lock key indicator when inactive"
         },
-        "hide_when_no_unread": {
+        "hide-when-no-unread": {
           "label": "Hide When No New",
           "description": "Hide the notifications widget when there are no unread notifications"
         },
-        "hide_when_plugged": {
+        "hide-when-plugged": {
           "label": "Hide When Plugged In",
           "description": "Hide the battery widget while connected to AC power"
         },
-        "hide_when_full": {
+        "hide-when-full": {
           "label": "Hide When Full",
           "description": "Hide the battery widget when fully charged"
         },
-        "hide_when_no_media": {
+        "hide-when-no-media": {
           "label": "Hide When No Media",
           "description": "Hide the media widget when no MPRIS player is active"
         },
-        "hide_when_no_connected_device": {
+        "hide-when-no-connected-device": {
           "label": "Hide When No Connected Device",
           "description": "Hide the bluetooth widget when no device is connected"
         },
-        "hide_when_empty": {
+        "hide-when-empty": {
           "label": "Hide When Empty",
           "description": "Hide workspace pills when there are no open windows",
           "workspaces-description": "Hide workspace pills that have no open windows"
         },
-        "labels_only_when_occupied": {
+        "labels-only-when-occupied": {
           "label": "Labels Only When Occupied",
           "description": "Hide workspace labels on empty, inactive workspaces",
           "workspaces-description": "Show workspace id or name labels on workspaces with open windows and on the active workspace even when it is empty; other empty tags stay unlabeled"
         },
-        "hide_when_single_layout": {
+        "hide-when-single-layout": {
           "label": "Hide When Single Layout",
           "description": "Hide the keyboard layout widget unless more than one layout is configured"
         },
-        "gauge_color": {
+        "gauge-color": {
           "label": "Gauge Color",
           "description": "Color role for the fill bar in gauge display mode; fixed hex colors are also supported"
         },
-        "highlight_color": {
+        "highlight-color": {
           "label": "Highlight Color",
           "description": "Color reached at or above the critical threshold"
         },
-        "high_color": {
+        "high-color": {
           "label": "High Color",
           "description": "Color used for high visualizer values"
         },
-        "label_min_width": {
+        "label-min-width": {
           "label": "Label Min Width",
           "description": "Minimum label width in pixels to prevent resizing"
         },
-        "max_label_chars": {
+        "max-label-chars": {
           "label": "Max Label Characters",
           "description": "Maximum number of characters to show for workspace names",
           "workspaces-description": "Maximum characters for workspace name labels"
@@ -1542,16 +1541,16 @@
           "description": "Show workspace id or name labels only, without animated pills",
           "workspaces-description": "Text-only workspace labels without pill backgrounds or slide animation"
         },
-        "pill_scale": {
+        "pill-scale": {
           "label": "Pill Scale",
           "description": "Adjust the scale of workspace pills",
           "workspaces-description": "Adjust the scale of workspace pills"
         },
-        "hot_reload": {
+        "hot-reload": {
           "label": "Hot Reload",
           "description": "Reload the scripted widget when its source changes"
         },
-        "icon_size": {
+        "icon-size": {
           "label": "Icon Size",
           "description": "Icon size in pixels"
         },
@@ -1559,35 +1558,35 @@
           "label": "Length",
           "description": "Spacer length in pixels"
         },
-        "low_color": {
+        "low-color": {
           "label": "Low Color",
           "description": "Color used for low visualizer values"
         },
-        "max_length": {
+        "max-length": {
           "label": "Max Length",
           "description": "Maximum widget length in pixels"
         },
-        "middle_command": {
+        "middle-command": {
           "label": "Middle Click Command",
           "description": "Shell command run when middle-clicking this button. When set, middle-click opens this command instead of widget settings."
         },
-        "min_length": {
+        "min-length": {
           "label": "Min Length",
           "description": "Minimum widget length in pixels"
         },
-        "right_command": {
+        "right-command": {
           "label": "Right Click Command",
           "description": "Shell command run when right-clicking this button"
         },
-        "scroll_down_command": {
+        "scroll-down-command": {
           "label": "Scroll Down Command",
           "description": "Shell command run when scrolling down over this button"
         },
-        "scroll_up_command": {
+        "scroll-up-command": {
           "label": "Scroll Up Command",
           "description": "Shell command run when scrolling up over this button"
         },
-        "title_scroll": {
+        "title-scroll": {
           "label": "Title Scroll",
           "description": "When the widget title should scroll"
         },
@@ -1615,35 +1614,35 @@
           "label": "Runtime Scope",
           "description": "Run one script runtime per live widget placement, or share one runtime across bars with the same widget id"
         },
-        "scroll_step": {
+        "scroll-step": {
           "label": "Scroll Step",
           "description": "Percentage change applied on each mouse wheel step"
         },
-        "show_caps_lock": {
+        "show-caps-lock": {
           "label": "Show Caps Lock",
           "description": "Show Caps Lock state"
         },
-        "show_condition": {
+        "show-condition": {
           "label": "Show Condition",
           "description": "Show weather condition text"
         },
-        "show_when_idle": {
+        "show-when-idle": {
           "label": "Show When Idle",
           "description": "Keep the visualizer visible even when no media is playing"
         },
-        "show_icon": {
+        "show-icon": {
           "label": "Show Icon",
           "description": "Show this widget's icon"
         },
-        "show_label": {
+        "show-label": {
           "label": "Show Label",
           "description": "Show text next to the icon"
         },
-        "show_num_lock": {
+        "show-num-lock": {
           "label": "Show Num Lock",
           "description": "Show Num Lock state"
         },
-        "show_scroll_lock": {
+        "show-scroll-lock": {
           "label": "Show Scroll Lock",
           "description": "Show Scroll Lock state"
         },
@@ -1655,15 +1654,15 @@
           "label": "Type",
           "description": "Built-in widget type for this named widget"
         },
-        "tooltip_format": {
+        "tooltip-format": {
           "label": "Tooltip Format",
           "description": "Optional format for the tooltip"
         },
-        "vertical_format": {
+        "vertical-format": {
           "label": "Vertical Format",
           "description": "Optional format used on vertical bars"
         },
-        "warning_color": {
+        "warning-color": {
           "label": "Warning Color",
           "description": "Color applied when charge is at or below the System battery warning threshold"
         },
@@ -2509,27 +2508,27 @@
             "label": "On Started",
             "description": "Command to run after Noctalia starts"
           },
-          "wallpaper_changed": {
+          "wallpaper-changed": {
             "label": "On Wallpaper Changed",
             "description": "Command to run when the wallpaper changes"
           },
-          "colors_changed": {
+          "colors-changed": {
             "label": "On Colors Changed",
             "description": "Command to run when the active color palette changes"
           },
-          "theme_mode_changed": {
+          "theme-mode-changed": {
             "label": "On Theme Mode Changed",
             "description": "Command to run when the resolved theme mode changes between light and dark"
           },
-          "session_locked": {
+          "session-locked": {
             "label": "On Session Locked",
             "description": "Command to run when the session is locked"
           },
-          "session_unlocked": {
+          "session-unlocked": {
             "label": "On Session Unlocked",
             "description": "Command to run after the session is unlocked"
           },
-          "logging_out": {
+          "logging-out": {
             "label": "On Logout",
             "description": "Command to run before logging out"
           },
@@ -2537,39 +2536,39 @@
             "label": "On Reboot",
             "description": "Command to run before rebooting"
           },
-          "shutting_down": {
+          "shutting-down": {
             "label": "On Shutdown",
             "description": "Command to run before shutdown"
           },
-          "wifi_enabled": {
+          "wifi-enabled": {
             "label": "On Wi-Fi Enabled",
             "description": "Command to run when Wi-Fi is enabled"
           },
-          "wifi_disabled": {
+          "wifi-disabled": {
             "label": "On Wi-Fi Disabled",
             "description": "Command to run when Wi-Fi is disabled"
           },
-          "bluetooth_enabled": {
+          "bluetooth-enabled": {
             "label": "On Bluetooth Enabled",
             "description": "Command to run when Bluetooth is enabled"
           },
-          "bluetooth_disabled": {
+          "bluetooth-disabled": {
             "label": "On Bluetooth Disabled",
             "description": "Command to run when Bluetooth is disabled"
           },
-          "battery_charging": {
+          "battery-charging": {
             "label": "On Battery Charging",
             "description": "Command to run when the battery starts charging"
           },
-          "battery_discharging": {
+          "battery-discharging": {
             "label": "On Battery Discharging",
             "description": "Command to run when the battery starts discharging"
           },
-          "battery_percentage_changed": {
+          "battery-percentage-changed": {
             "label": "On Battery Percentage Changed",
             "description": "Command to run when the battery percentage changes"
           },
-          "power_profile_changed": {
+          "power-profile-changed": {
             "label": "On Power Profile Changed",
             "description": "Command to run when the active UPower/PPD power profile changes"
           }

@@ -1918,7 +1918,7 @@ namespace settings {
     for (const auto& kind : kHookKinds) {
       const auto index = static_cast<std::size_t>(kind.value);
       const std::string key(kind.key);
-      const std::string baseKey = "settings.schema.hooks.events." + key;
+      const std::string baseKey = "settings.schema.hooks.events." + i18n::keySegment(key);
       const std::string hookCmd = cfg.hooks.commands[index].empty() ? "" : cfg.hooks.commands[index][0];
       entries.push_back(makeEntry(
           "hooks", hookGroup(kind.value), tr(baseKey + ".label"), tr(baseKey + ".description"), {"hooks", key},
