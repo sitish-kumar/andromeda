@@ -50,7 +50,7 @@ namespace {
     const double clampedValue = std::max(value, 0.0);
     const double clampedCritical = std::max(criticalThreshold, 0.0);
     if (clampedCritical <= 0.0) {
-      return 1.0;
+      return 0.0;
     }
     if (clampedValue <= 0.0) {
       return 0.0;
