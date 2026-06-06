@@ -184,7 +184,8 @@ namespace {
 
 Application::Application()
     : m_lockKeysService(m_wayland), m_gammaService(m_wayland), m_locationService(m_configService, m_httpClient),
-      m_weatherService(m_configService, m_httpClient), m_calendarService(m_configService, m_httpClient) {
+      m_weatherService(m_configService, m_httpClient),
+      m_calendarService(m_configService, m_httpClient, &m_notificationManager) {
   m_notificationManager.loadPersistedHistory();
   notify::setInstance(&m_notificationManager);
 
@@ -1232,8 +1233,8 @@ void Application::initUi() {
     wl_output* output = m_compositorPlatform.preferredInteractiveOutput(std::chrono::milliseconds(1200));
     m_panelManager.openPanel("wallpaper", PanelOpenRequest{.output = output});
   });
-  m_settingsWindow.setConnectCalendarAccount([this](std::string accountId) {
-    m_calendarService.connectGoogleAccount(accountId);
+  m_settingsWindow.setConnectCalendarAccount([this](std::string accountId, std::string activationToken) {
+    m_calendarService.connectGoogleAccount(accountId, activationToken);
   });
   auto clipboardPanel = std::make_unique<ClipboardPanel>(
       &m_clipboardService, &m_configService, &m_thumbnailService, &m_asyncTextureCache
