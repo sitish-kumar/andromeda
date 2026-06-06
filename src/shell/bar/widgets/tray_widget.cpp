@@ -118,9 +118,9 @@ namespace {
         ++transparentPixels;
         continue;
       }
-      const double lum =
-          (static_cast<double>(loaded->rgba[i]) * 0.299 + static_cast<double>(loaded->rgba[i + 1]) * 0.587
-           + static_cast<double>(loaded->rgba[i + 2]) * 0.114)
+      const double lum = (static_cast<double>(loaded->rgba[i]) * 0.299
+                          + static_cast<double>(loaded->rgba[i + 1]) * 0.587
+                          + static_cast<double>(loaded->rgba[i + 2]) * 0.114)
           / 255.0;
       const double w = static_cast<double>(a) / 255.0;
       lumSum += lum * w;
@@ -128,7 +128,7 @@ namespace {
     }
 
     const double transparentRatio =
-      pixelCount == 0 ? 0.0 : static_cast<double>(transparentPixels) / static_cast<double>(pixelCount);
+        pixelCount == 0 ? 0.0 : static_cast<double>(transparentPixels) / static_cast<double>(pixelCount);
     const bool useSourceAlphaMask = transparentRatio > 0.10;
     const double avgLum = alphaWeight > 0.0 ? lumSum / alphaWeight : 0.0;
     const bool invertLumaMask = avgLum > 0.5;
