@@ -912,7 +912,7 @@ namespace process {
       return;
     }
     if (systemdAvailable()) {
-      (void)startSystemdService(args, activationToken, workingDir, appName);
+      startSystemdService(args, activationToken, workingDir, appName);
       return;
     }
 #endif

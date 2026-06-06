@@ -310,7 +310,7 @@ namespace settings {
       setOverride(path, std::move(primary));
     };
 
-    slider->setOnDragEnd([commit, sliderPtr]() { commit(static_cast<double>(sliderPtr->value())); });
+    slider->setOnDragEnd([commit, sliderPtr]() { commit(sliderPtr->value()); });
 
     const auto commitInputText = [commit, sliderPtr, valueInputPtr, minValue, maxValue,
                                   integerValue](const std::string& text) {

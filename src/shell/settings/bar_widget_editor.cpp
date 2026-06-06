@@ -1878,7 +1878,7 @@ namespace settings {
             valueInputPtr->setValue(formatSliderValue(next, integerValue));
           },
       });
-      slider->setOnDragEnd([sliderPtr, onCommit]() { onCommit(static_cast<double>(sliderPtr->value())); });
+      slider->setOnDragEnd([sliderPtr, onCommit]() { onCommit(sliderPtr->value()); });
 
       const auto commitInputText = [sliderPtr, valueInputPtr, minV, maxV, integerValue,
                                     onCommit](const std::string& text) {
@@ -1890,7 +1890,7 @@ namespace settings {
         valueInputPtr->setInvalid(false);
         sliderPtr->setValue(*parsed);
         valueInputPtr->setValue(formatSliderValue(sliderPtr->value(), integerValue));
-        onCommit(static_cast<double>(sliderPtr->value()));
+        onCommit(sliderPtr->value());
       };
       valueInput->setOnChange([valueInputPtr](const std::string& /*text*/) { valueInputPtr->setInvalid(false); });
       valueInput->setOnSubmit([commitInputText](const std::string& text) { commitInputText(text); });
