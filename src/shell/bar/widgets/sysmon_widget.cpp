@@ -25,6 +25,14 @@ namespace {
     return raw.substr(0, raw.size() - 1);
   }
 
+  // The gauge track is a dimmed version of the gauge fill so it inherits the
+  // fill's readability against whatever sits behind it (e.g. a custom capsule).
+  [[nodiscard]] ColorSpec gaugeTrackColor(const ColorSpec& fill) {
+    ColorSpec track = fill;
+    track.alpha *= 0.3f;
+    return track;
+  }
+
   constexpr float kGraphLineWidth = 0.75f;
   constexpr auto kSamplePublishSlack = std::chrono::milliseconds(20);
   constexpr auto kSampleRetryDelay = std::chrono::milliseconds(25);
@@ -142,7 +150,7 @@ void SysmonWidget::create() {
     m_gauge = static_cast<ProgressBar*>(container->addChild(
         ui::progressBar({
             .fill = m_gaugeColor,
-            .track = colorSpecFromRole(ColorRole::OnSurface, 0.25f),
+            .track = gaugeTrackColor(m_gaugeColor),
             .progress = 0.0f,
         })
     ));
@@ -182,6 +190,7 @@ void SysmonWidget::syncVisualPalette() {
   }
   if (m_gauge != nullptr) {
     m_gauge->setFill(m_gaugeColor);
+    m_gauge->setTrack(gaugeTrackColor(m_gaugeColor));
   }
 }
 
