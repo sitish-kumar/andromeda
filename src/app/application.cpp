@@ -36,7 +36,6 @@
 #include "shell/tray/tray_drawer_panel.h"
 #include "shell/wallpaper/panel/wallpaper_panel.h"
 #include "system/distro_info.h"
-#include "time/time_format.h"
 #include "ui/app_icon_colorization.h"
 #include "ui/controls/input.h"
 #include "ui/dialogs/color_picker_dialog.h"
@@ -1530,9 +1529,6 @@ void Application::initUi() {
     m_wallpaper.onSecondTick();
     if (m_lockScreen.isActive()) {
       m_lockscreenWidgetsController.onSecondTick();
-      if (formatLocalTime("{:%S}") == "00") {
-        m_lockScreen.onSecondTick();
-      }
     } else {
       m_bar.onSecondTick();
       m_desktopWidgetsController.onSecondTick();

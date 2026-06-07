@@ -165,17 +165,6 @@ void LockScreen::onOutputChange() {
   syncInstances();
 }
 
-void LockScreen::onSecondTick() {
-  if (!isActive()) {
-    return;
-  }
-  for (auto& instance : m_instances) {
-    if (instance.surface != nullptr) {
-      instance.surface->onSecondTick();
-    }
-  }
-}
-
 void LockScreen::onThemeChanged() {
   if (!isActive()) {
     return;

@@ -39,7 +39,6 @@ public:
   bool lock();
   void unlock();
   void onOutputChange();
-  void onSecondTick();
   void onFontChanged();
   void onThemeChanged();
   void onGpuResourcesInvalidated();
