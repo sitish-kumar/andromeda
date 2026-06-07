@@ -321,7 +321,7 @@ namespace settings {
       return "map-pin";
     if (section == "hooks")
       return "link";
-    if (section == "popups")
+    if (section == "osd")
       return "message-circle";
     if (section == "notifications")
       return "bell";
@@ -1267,7 +1267,7 @@ namespace settings {
       entries.push_back(std::move(e));
     }
     entries.push_back(makeEntry(
-        "popups", "osd", tr("settings.schema.shell.osd-position.label"),
+        "osd", "osd", tr("settings.schema.shell.osd-position.label"),
         tr("settings.schema.shell.osd-position.description"), {"osd", "position"},
         plainSelect(
             {{"top_right", "settings.options.screen-position.top-right"},
@@ -1283,7 +1283,7 @@ namespace settings {
         "hud overlay volume brightness"
     ));
     entries.push_back(makeEntry(
-        "popups", "osd", tr("settings.schema.shell.osd-orientation.label"),
+        "osd", "osd", tr("settings.schema.shell.osd-orientation.label"),
         tr("settings.schema.shell.osd-orientation.description"), {"osd", "orientation"},
         asSegmented(plainSelect(
             {{"horizontal", "settings.options.orientation.horizontal"},
@@ -1293,39 +1293,39 @@ namespace settings {
         "hud overlay volume brightness vertical"
     ));
     entries.push_back(makeEntry(
-        "popups", "osd", tr("settings.schema.shell.osd-scale.label"), tr("settings.schema.shell.osd-scale.description"),
+        "osd", "osd", tr("settings.schema.shell.osd-scale.label"), tr("settings.schema.shell.osd-scale.description"),
         {"osd", "scale"}, sliderFor(cfg.osd.scale, noctalia::config::schema::kScaleRange, false),
         "hud overlay volume brightness size scale multiplier"
     ));
     entries.push_back(makeEntry(
-        "popups", "osd", tr("settings.schema.shell.osd-offset-x.label"),
+        "osd", "osd", tr("settings.schema.shell.osd-offset-x.label"),
         tr("settings.schema.shell.osd-offset-x.description"), {"osd", "offset_x"},
         StepperSetting{.value = cfg.osd.offsetX, .minValue = 0, .maxValue = 200, .step = 1, .valueSuffix = "px"},
         "hud overlay horizontal margin"
     ));
     entries.push_back(makeEntry(
-        "popups", "osd", tr("settings.schema.shell.osd-offset-y.label"),
+        "osd", "osd", tr("settings.schema.shell.osd-offset-y.label"),
         tr("settings.schema.shell.osd-offset-y.description"), {"osd", "offset_y"},
         StepperSetting{.value = cfg.osd.offsetY, .minValue = 0, .maxValue = 200, .step = 1, .valueSuffix = "px"},
         "hud overlay vertical margin"
     ));
     entries.push_back(makeEntry(
-        "popups", "osd", tr("settings.schema.shell.osd-background-opacity.label"),
+        "osd", "osd", tr("settings.schema.shell.osd-background-opacity.label"),
         tr("settings.schema.shell.osd-background-opacity.description"), {"osd", "background_opacity"},
         sliderFor(cfg.osd.backgroundOpacity, noctalia::config::schema::kUnitRange, false), "hud overlay popup opacity"
     ));
     entries.push_back(makeEntry(
-        "popups", "osd", tr("settings.schema.shell.osd-lock-keys.label"),
+        "osd", "osd", tr("settings.schema.shell.osd-lock-keys.label"),
         tr("settings.schema.shell.osd-lock-keys.description"), {"osd", "lock_keys"}, ToggleSetting{cfg.osd.lockKeys},
         "hud overlay caps num scroll keyboard"
     ));
     entries.push_back(makeEntry(
-        "popups", "osd", tr("settings.schema.shell.osd-keyboard-layout.label"),
+        "osd", "osd", tr("settings.schema.shell.osd-keyboard-layout.label"),
         tr("settings.schema.shell.osd-keyboard-layout.description"), {"osd", "keyboard_layout"},
         ToggleSetting{cfg.osd.keyboardLayout}, "hud overlay xkb input language layout switch"
     ));
     entries.push_back(makeEntry(
-        "popups", "osd", tr("settings.schema.shell.osd-monitors.label"),
+        "osd", "osd", tr("settings.schema.shell.osd-monitors.label"),
         tr("settings.schema.shell.osd-monitors.description"), {"osd", "monitors"},
         ListSetting{.items = cfg.osd.monitors, .suggestedOptions = env.availableOutputs},
         "monitor output display screen hud overlay"
