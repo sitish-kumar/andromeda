@@ -179,6 +179,17 @@ std::unique_ptr<Flex> CalendarTab::create() {
       },
   });
 
+  calendarCard->addChild(
+      ui::label({
+          .out = &m_todayLabel,
+          .text = formatShellDate(m_config),
+          .fontSize = Style::fontSizeTitle * scale,
+          .color = colorSpecFromRole(ColorRole::OnSurface),
+          .maxLines = 1,
+          .fontWeight = FontWeight::Medium,
+      })
+  );
+
   auto header = ui::row({
       .out = &m_header,
       .align = FlexAlign::Center,
@@ -211,13 +222,6 @@ std::unique_ptr<Flex> CalendarTab::create() {
           .color = colorSpecFromRole(ColorRole::OnSurface),
           .maxLines = 1,
           .fontWeight = FontWeight::Bold,
-      }),
-      ui::label({
-          .out = &m_monthSubLabel,
-          .text = formatShellDate(m_config),
-          .fontSize = Style::fontSizeCaption * scale,
-          .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-          .maxLines = 1,
       })
   );
   header->addChild(std::move(monthWrap));
@@ -323,8 +327,8 @@ void CalendarTab::doLayout(Renderer& renderer, float contentWidth, float bodyHei
 
 void CalendarTab::doUpdate(Renderer& renderer) {
   (void)renderer;
-  if (m_monthSubLabel != nullptr) {
-    m_monthSubLabel->setText(formatShellDate(m_config));
+  if (m_todayLabel != nullptr) {
+    m_todayLabel->setText(formatShellDate(m_config));
   }
 }
 
@@ -351,8 +355,8 @@ void CalendarTab::onClose() {
   m_previousSlot = nullptr;
   m_nextSlot = nullptr;
   m_monthWrap = nullptr;
+  m_todayLabel = nullptr;
   m_monthLabel = nullptr;
-  m_monthSubLabel = nullptr;
   m_previousButton = nullptr;
   m_nextButton = nullptr;
   m_grid = nullptr;
@@ -427,9 +431,9 @@ void CalendarTab::rebuild() {
 
   m_monthLabel->setText(monthName(month) + " " + std::to_string(year));
   m_monthLabel->setMaxWidth(monthWidth);
-  if (m_monthSubLabel != nullptr) {
-    m_monthSubLabel->setText(formatShellDate(m_config));
-    m_monthSubLabel->setMaxWidth(monthWidth);
+  if (m_todayLabel != nullptr) {
+    m_todayLabel->setText(formatShellDate(m_config));
+    m_todayLabel->setMaxWidth(innerWidth);
   }
 
   const int firstDayOfWeek = localeFirstDayOfWeek();
@@ -556,6 +560,7 @@ void CalendarTab::rebuild() {
       if (selected) {
         dayButton->setVariant(ButtonVariant::Primary);
       } else {
+        dayButton->label()->setFontWeight(FontWeight::Bold);
         dayButton->label()->setColor(colorSpecFromRole(isToday ? ColorRole::Primary : ColorRole::OnSurface));
       }
       ++day;
