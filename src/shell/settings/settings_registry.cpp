@@ -250,7 +250,7 @@ namespace settings {
         searchText += " advanced";
       }
       return SettingEntry{
-          .section = std::move(section),
+          .section = section,
           .group = std::move(group),
           .title = std::move(title),
           .subtitle = std::move(subtitle),
@@ -297,7 +297,7 @@ namespace settings {
     if (normalizedQuery.empty()) {
       return true;
     }
-    return entry.searchText.find(normalizedQuery) != std::string::npos;
+    return entry.searchText.contains(normalizedQuery);
   }
 
   bool matchesSettingQuery(const SettingEntry& entry, std::string_view query) {

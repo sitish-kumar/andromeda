@@ -254,7 +254,7 @@ namespace {
     }
 
     for (const auto& [pattern, display] : variantMap()) {
-      if (lower.find(pattern) != std::string::npos) {
+      if (lower.contains(pattern)) {
         return std::string(display);
       }
     }

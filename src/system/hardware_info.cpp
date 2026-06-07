@@ -39,13 +39,13 @@ namespace {
   }
 
   std::string shortVendorPrefix(const std::string& vendorName) {
-    if (vendorName.find("AMD") != std::string::npos || vendorName.find("ATI") != std::string::npos) {
+    if (vendorName.contains("AMD") || vendorName.contains("ATI")) {
       return "AMD";
     }
-    if (vendorName.find("NVIDIA") != std::string::npos) {
+    if (vendorName.contains("NVIDIA")) {
       return "NVIDIA";
     }
-    if (vendorName.find("Intel") != std::string::npos) {
+    if (vendorName.contains("Intel")) {
       return "Intel";
     }
     return {};
@@ -66,15 +66,15 @@ namespace {
       std::string before = StringUtils::trim(rawName.substr(0, bracketOpen));
       std::string inside = rawName.substr(bracketOpen + 1, bracketClose - bracketOpen - 1);
 
-      const bool beforeIsModel = before.find("RX") != std::string::npos
-          || before.find("GTX") != std::string::npos
-          || before.find("RTX") != std::string::npos
-          || before.find("Arc") != std::string::npos
-          || before.find("HD ") != std::string::npos;
+      const bool beforeIsModel = before.contains("RX")
+          || before.contains("GTX")
+          || before.contains("RTX")
+          || before.contains("Arc")
+          || before.contains("HD ");
       name = beforeIsModel ? before : inside;
     }
 
-    if (!prefix.empty() && name.find(prefix) == std::string::npos) {
+    if (!prefix.empty() && !name.contains(prefix)) {
       return prefix + " " + name;
     }
     return name;
@@ -179,7 +179,7 @@ namespace {
 
     for (const auto& entry : fs::directory_iterator{drmRoot}) {
       const auto name = entry.path().filename().string();
-      if (!name.starts_with("card") || name.find('-') != std::string::npos) {
+      if (!name.starts_with("card") || name.contains('-')) {
         continue;
       }
 

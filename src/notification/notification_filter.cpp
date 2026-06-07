@@ -44,7 +44,7 @@ bool notificationMatchesBlacklist(const std::vector<std::string>& blacklist, con
         || (!desktopEntry.empty() && token == desktopEntry)) {
       return true;
     }
-    if (!token.empty() && !appName.empty() && appName.find(token) != std::string::npos) {
+    if (!token.empty() && !appName.empty() && appName.contains(token)) {
       return true;
     }
   }

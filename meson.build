@@ -1,7 +1,7 @@
 project('noctalia', ['c', 'cpp'],
   version: '5.0.0',
   default_options: [
-    'cpp_std=c++20',
+    'cpp_std=c++23',
     'cpp_extensions=false',
     'warning_level=0',   # applied selectively to our target; avoids noise in vendored code
     'b_ndebug=if-release',
@@ -777,7 +777,7 @@ endif
 # ── Include directories ────────────────────────────────────────────────────────
 _noctalia_inc = [
   include_directories('src'),
-  include_directories('third_party/tomlplusplus'),
+  include_directories('third_party/tomlplusplus', is_system: true),
   include_directories('third_party/wuffs', is_system: true),
   # nlohmann is header-only and uses GCC extensions in some paths; treat as system.
   include_directories('third_party/nlohmann', is_system: true),

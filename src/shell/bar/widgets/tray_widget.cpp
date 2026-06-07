@@ -77,12 +77,10 @@ namespace {
   }
 
   bool isSymbolicIconName(std::string_view name) {
-    return name.find("symbolic") != std::string_view::npos || name.ends_with("-panel") || name.ends_with("_panel");
+    return name.contains("symbolic") || name.ends_with("-panel") || name.ends_with("_panel");
   }
 
-  bool isSymbolicIconPath(std::string_view path) {
-    return path.find("symbolic") != std::string_view::npos || path.find("/status/") != std::string_view::npos;
-  }
+  bool isSymbolicIconPath(std::string_view path) { return path.contains("symbolic") || path.contains("/status/"); }
 
   bool isSvgPath(std::string_view path) { return path.ends_with(".svg") || path.ends_with(".SVG"); }
 

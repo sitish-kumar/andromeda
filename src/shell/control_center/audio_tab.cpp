@@ -74,7 +74,7 @@ namespace {
         "proton", "protontricks", "steam-runtime",    "pressure-vessel",
     };
     for (const auto token : kRuntimeTokens) {
-      if (normalized == token || normalized.find(token) != std::string::npos) {
+      if (normalized == token || normalized.contains(token)) {
         return true;
       }
     }
@@ -88,12 +88,12 @@ namespace {
         ch = '-';
       }
     }
-    while (normalized.find("--") != std::string::npos) {
+    while (normalized.contains("--")) {
       normalized.erase(normalized.find("--"), 1);
     }
     return normalized.starts_with("audio-stream-")
         || normalized.starts_with("stream-")
-        || normalized.find("audio-stream-#") != std::string::npos;
+        || normalized.contains("audio-stream-#");
   }
 
   bool isLowConfidenceProgramAppName(const AudioNode& node) {
@@ -168,8 +168,8 @@ namespace {
     const std::string canonicalBinary = canonical(appBinary);
     const bool binaryMatchesName = !canonicalBinary.empty()
         && (canonicalName == canonicalBinary
-            || canonicalName.find(canonicalBinary) != std::string::npos
-            || canonicalBinary.find(canonicalName) != std::string::npos);
+            || canonicalName.contains(canonicalBinary)
+            || canonicalBinary.contains(canonicalName));
     // If we have no application.id and the binary disagrees with appName, appName is usually a runtime wrapper label.
     if (appId.empty() && !appBinary.empty() && !binaryMatchesName) {
       return true;
@@ -177,13 +177,9 @@ namespace {
 
     // Some stream clients expose a runtime/container name in application.name.
     // If application.id is more specific and does not match, prefer the id label.
-    const bool idLooksSpecific = appId.find('.') != std::string::npos
-        || appId.find('-') != std::string::npos
-        || appId.find('_') != std::string::npos;
-    const bool nameLooksSimple = appName.find('.') == std::string::npos
-        && appName.find('-') == std::string::npos
-        && appName.find('_') == std::string::npos
-        && appName.find(' ') == std::string::npos;
+    const bool idLooksSpecific = appId.contains('.') || appId.contains('-') || appId.contains('_');
+    const bool nameLooksSimple =
+        !appName.contains('.') && !appName.contains('-') && !appName.contains('_') && !appName.contains(' ');
     return !appId.empty() && appName != appId && idLooksSpecific && nameLooksSimple;
   }
 

@@ -1663,7 +1663,7 @@ void TrayService::resolvePathOnlyItemProxy(const std::string& itemId) {
               if (candidates->size() >= kMaxProbeAttempts) {
                 break;
               }
-              if (StringUtils::toLower(candidate).find(hint) != std::string::npos) {
+              if (StringUtils::toLower(candidate).contains(hint)) {
                 appendCandidate(candidate);
               }
             }

@@ -1089,7 +1089,7 @@ void WallpaperPanel::appendFilteredFavoriteEntries(
     }
 
     const std::string displayName = displayNameForWallpaperPath(favorite.path);
-    if (!filterNeedle.empty() && StringUtils::toLower(displayName).find(filterNeedle) == std::string::npos) {
+    if (!filterNeedle.empty() && !StringUtils::toLower(displayName).contains(filterNeedle)) {
       continue;
     }
 
@@ -1254,7 +1254,7 @@ void WallpaperPanel::applyFilter() {
           continue;
         }
       }
-      if (filterActive && StringUtils::toLower(entry.name).find(needle) == std::string::npos) {
+      if (filterActive && !StringUtils::toLower(entry.name).contains(needle)) {
         continue;
       }
       m_visibleEntries.push_back(entry);
