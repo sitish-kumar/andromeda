@@ -100,6 +100,15 @@ bool DesktopWeatherWidget::applySetting(
   return DesktopWidget::applySetting(key, value, allSettings, renderer);
 }
 
+void DesktopWeatherWidget::onFontFamilyChanged(const std::string& family, Renderer& /*renderer*/) {
+  if (m_temperature != nullptr) {
+    m_temperature->setFontFamily(family);
+  }
+  if (m_condition != nullptr) {
+    m_condition->setFontFamily(family);
+  }
+}
+
 void DesktopWeatherWidget::doLayout(Renderer& renderer) {
   if (root() == nullptr || m_glyph == nullptr || m_temperature == nullptr || m_condition == nullptr) {
     return;

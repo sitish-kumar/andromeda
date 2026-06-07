@@ -73,6 +73,12 @@ bool DesktopClockWidget::applySetting(
   return DesktopWidget::applySetting(key, value, allSettings, renderer);
 }
 
+void DesktopClockWidget::onFontFamilyChanged(const std::string& family, Renderer& /*renderer*/) {
+  if (m_label != nullptr) {
+    m_label->setFontFamily(family);
+  }
+}
+
 void DesktopClockWidget::doLayout(Renderer& renderer) {
   if (m_label == nullptr || root() == nullptr) {
     return;

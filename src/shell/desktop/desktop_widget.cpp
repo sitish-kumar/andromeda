@@ -18,6 +18,10 @@ namespace {
 void DesktopWidget::layout(Renderer& renderer) {
   UiPhaseScope layoutPhase(UiPhase::Layout);
 
+  // Apply the configured font before measuring so text metrics are correct on the first pass and
+  // the family survives widget rebuilds (the factory only stores it on the widget).
+  onFontFamilyChanged(m_fontFamily, renderer);
+
   // First pass measures the content at its natural (base) scale.
   m_contentScale = m_baseScale;
   doLayout(renderer);
@@ -120,9 +124,18 @@ void DesktopWidget::setBackgroundStyle(const ColorSpec& color, float radius, flo
 }
 
 bool DesktopWidget::applySetting(
-    const std::string& key, const WidgetSettingValue& /*value*/,
+    const std::string& key, const WidgetSettingValue& value,
     const std::unordered_map<std::string, WidgetSettingValue>& allSettings, Renderer& renderer
 ) {
+  if (key == "font_family") {
+    if (const auto* v = std::get_if<std::string>(&value)) {
+      m_fontFamily = *v;
+      onFontFamilyChanged(m_fontFamily, renderer);
+      requestLayout();
+      return true;
+    }
+    return false;
+  }
   if (key != "background_color"
       && key != "background_opacity"
       && key != "background_radius"

@@ -134,6 +134,9 @@ namespace {
       const float padding = getFloatSetting(settings, "background_padding", kDefaultBgPadding);
       widget.setBackgroundStyle(bgColor, radius, padding);
     }
+    // Stored on the widget and pushed onto its text nodes during layout(), so the chosen font
+    // survives widget rebuilds (constructor settings bake in; this does not).
+    widget.setFontFamily(getStringSetting(settings, "font_family", ""));
   }
 
 } // namespace

@@ -168,6 +168,12 @@ bool DesktopSysmonWidget::applySetting(
   return DesktopWidget::applySetting(key, value, allSettings, renderer);
 }
 
+void DesktopSysmonWidget::onFontFamilyChanged(const std::string& family, Renderer& /*renderer*/) {
+  if (m_label != nullptr) {
+    m_label->setFontFamily(family);
+  }
+}
+
 void DesktopSysmonWidget::doLayout(Renderer& renderer) {
   if (root() == nullptr || m_glyph == nullptr) {
     return;

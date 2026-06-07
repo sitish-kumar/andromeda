@@ -559,6 +559,7 @@ _noctalia_sources = files(
   'src/shell/settings/settings_bar_management.cpp',
   'src/shell/settings/settings_registry.cpp',
   'src/shell/settings/settings_sidebar.cpp',
+  'src/shell/settings/font_family_catalog.cpp',
   'src/shell/settings/font_weight_catalog.cpp',
   'src/shell/settings/widget_settings_registry.cpp',
   'src/shell/settings/widget_add_popup.cpp',

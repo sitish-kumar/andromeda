@@ -331,6 +331,8 @@
         "custom-color": "Custom…",
         "description": "Description",
         "fade-when-idle": "Fade When Idle",
+        "font-family": "Font",
+        "font-family-default": "System default",
         "format": "Format",
         "hide-when-no-media": "Hide When No Media",
         "high-color": "High Color",

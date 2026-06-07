@@ -22,6 +22,7 @@ private:
   [[nodiscard]] std::string formatText() const;
   void doLayout(Renderer& renderer) override;
   void doUpdate(Renderer& renderer) override;
+  void onFontFamilyChanged(const std::string& family, Renderer& renderer) override;
   void applyShadow();
 
   std::string m_format;

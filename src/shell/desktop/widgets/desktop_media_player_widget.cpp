@@ -148,6 +148,15 @@ bool DesktopMediaPlayerWidget::applySetting(
   return DesktopWidget::applySetting(key, value, allSettings, renderer);
 }
 
+void DesktopMediaPlayerWidget::onFontFamilyChanged(const std::string& family, Renderer& /*renderer*/) {
+  if (m_title != nullptr) {
+    m_title->setFontFamily(family);
+  }
+  if (m_artist != nullptr) {
+    m_artist->setFontFamily(family);
+  }
+}
+
 void DesktopMediaPlayerWidget::setEditorPreview(bool enabled) noexcept {
   if (m_editorPreview == enabled) {
     return;

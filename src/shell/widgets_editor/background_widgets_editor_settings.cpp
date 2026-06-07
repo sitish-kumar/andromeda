@@ -228,7 +228,7 @@ namespace {
   std::unique_ptr<Flex> makeSelectRow(
       std::string_view labelText, const std::string& key,
       const std::vector<settings::WidgetSettingSelectOption>& options, const std::string& currentValue,
-      BackgroundWidgetsEditor* editor
+      bool literalLabels, BackgroundWidgetsEditor* editor
   ) {
     std::vector<std::string> labels;
     std::vector<std::string> values;
@@ -237,7 +237,7 @@ namespace {
     std::size_t selectedIndex = 0;
 
     for (std::size_t i = 0; i < options.size(); ++i) {
-      labels.push_back(i18n::tr(options[i].labelKey));
+      labels.push_back(literalLabels ? options[i].labelKey : i18n::tr(options[i].labelKey));
       values.emplace_back(options[i].value);
       if (options[i].value == currentValue) {
         selectedIndex = i;
@@ -343,7 +343,9 @@ namespace {
         if (spec.segmented) {
           content.addChild(makeSegmentedRow(label, spec.schema.key, spec.options, currentValue, editor));
         } else {
-          content.addChild(makeSelectRow(label, spec.schema.key, spec.options, currentValue, editor));
+          content.addChild(
+              makeSelectRow(label, spec.schema.key, spec.options, currentValue, spec.literalLabels, editor)
+          );
         }
         break;
       }

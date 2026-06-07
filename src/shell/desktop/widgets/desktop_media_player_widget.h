@@ -34,6 +34,7 @@ public:
 private:
   void doLayout(Renderer& renderer) override;
   void doUpdate(Renderer& renderer) override;
+  void onFontFamilyChanged(const std::string& family, Renderer& renderer) override;
   void layoutHorizontal(Renderer& renderer, float scale);
   void layoutVertical(Renderer& renderer, float scale);
   void layoutButtons(Renderer& renderer, float scale);

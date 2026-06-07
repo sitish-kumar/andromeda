@@ -1,5 +1,6 @@
 #include "shell/desktop/desktop_widget_settings_registry.h"
 
+#include "shell/settings/font_family_catalog.h"
 #include "util/string_utils.h"
 
 namespace desktop_settings {
@@ -69,6 +70,17 @@ namespace desktop_settings {
       return spec;
     }
 
+    // Font picker rendered as a dropdown of installed families, but validated as a free string:
+    // a font configured on another machine but absent here must still load (no silent reset).
+    // Empty value = inherit the shell font.
+    WidgetSettingSpec fontFamilySpec() {
+      auto spec = baseSpec("font_family", WidgetControlKind::Select, std::string{});
+      spec.schema.type = noctalia::config::schema::WidgetSettingType::String;
+      spec.options = settings::buildFontFamilySelectOptions();
+      spec.literalLabels = true;
+      return spec;
+    }
+
   } // namespace
 
   const std::vector<DesktopWidgetTypeSpec>& desktopWidgetTypeSpecs() { return kDesktopWidgetTypeSpecs; }
@@ -122,6 +134,7 @@ namespace desktop_settings {
     if (type == "clock") {
       add(stringSpec("format", "{:%H:%M}"));
       add(colorSpec("color", "on_surface"));
+      add(fontFamilySpec());
       add(boolSpec("shadow", true));
     } else if (type == "audio_visualizer") {
       add(doubleSpec("aspect_ratio", 2.5, 0.5, 6.0, 0.1));
@@ -166,6 +179,7 @@ namespace desktop_settings {
       add(doubleSpec("opacity", 1.0, 0.0, 1.0, 0.01));
     } else if (type == "weather") {
       add(colorSpec("color", "on_surface"));
+      add(fontFamilySpec());
       add(boolSpec("shadow", true));
     } else if (type == "media_player") {
       add(segmentedSpec(
@@ -174,18 +188,21 @@ namespace desktop_settings {
            {"vertical", "desktop-widgets.editor.settings.vertical"}}
       ));
       add(colorSpec("color", "on_surface"));
+      add(fontFamilySpec());
       add(boolSpec("shadow", true));
       add(boolSpec("hide_when_no_media", false));
     } else if (type == "label") {
       add(stringSpec("title", "Title"));
       add(stringSpec("description"));
       add(colorSpec("color", "on_surface"));
+      add(fontFamilySpec());
       add(boolSpec("shadow", true));
     } else if (type == "sysmon") {
       add(selectSpec("stat", "cpu_usage", sysmonStats));
       add(selectSpec("stat2", "", sysmonStatsWithNone));
       add(colorSpec("color", "primary"));
       add(colorSpec("color2", "secondary"));
+      add(fontFamilySpec());
       add(boolSpec("show_label", true));
       add(boolSpec("shadow", true));
     }
