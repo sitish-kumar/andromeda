@@ -134,7 +134,7 @@ void BatteryWidget::createGlyphMode() {
       ui::glyph({
           .out = &m_glyph,
           .glyph = "battery-4",
-          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .glyphSize = Style::baseGlyphSize * m_contentScale,
           .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
       })
   );
@@ -432,7 +432,7 @@ void BatteryWidget::syncState(Renderer& renderer) {
   } else {
     if (m_glyph != nullptr) {
       m_glyph->setGlyph(batteryGlyphName(s.percentage, s.state));
-      m_glyph->setGlyphSize(Style::barGlyphSize * m_contentScale);
+      m_glyph->setGlyphSize(Style::baseGlyphSize * m_contentScale);
       m_glyph->setColor(fgColor);
       m_glyph->measure(renderer);
     }

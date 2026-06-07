@@ -163,7 +163,7 @@ void SysmonWidget::create() {
       ui::glyph({
           .out = &m_glyph,
           .glyph = glyphName(m_stat),
-          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .glyphSize = Style::baseGlyphSize * m_contentScale,
           .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
       })
   );

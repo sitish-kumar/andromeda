@@ -1372,7 +1372,7 @@ std::unique_ptr<Flex> TestPanel::buildTextLabSection(float scale) {
           },
           ui::glyph({
               .glyph = c.glyph,
-              .glyphSize = Style::barGlyphSize * scale,
+              .glyphSize = Style::baseGlyphSize * scale,
               .color = colorSpecFromRole(ColorRole::Primary),
           }),
           ui::label({

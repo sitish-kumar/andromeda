@@ -301,7 +301,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
   if (m_taskStrip == nullptr) {
     return;
   }
-  const float iconSize = std::round(Style::barGlyphSize * m_contentScale);
+  const float iconSize = std::round(Style::baseGlyphSize * m_contentScale);
   const float tilePadding = Style::spaceXs * 0.35f * m_contentScale;
   const float tileSize = std::round(iconSize + tilePadding * 2.0f);
   const float tileGap = Style::spaceSm * m_contentScale;
@@ -457,7 +457,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
 
     if (badgeCount > 1) {
       const std::size_t dotCount = badgeCount >= 4 ? 3U : (badgeCount == 3 ? 2U : 1U);
-      const float dotSize = std::round(std::max(2.0f, Style::barGlyphSize * 0.16f * m_contentScale));
+      const float dotSize = std::round(std::max(2.0f, Style::baseGlyphSize * 0.16f * m_contentScale));
       const float dotGap = std::round(std::max(1.0f, dotSize * 0.55f));
       const float runHeight =
           dotSize * static_cast<float>(dotCount) + dotGap * static_cast<float>(dotCount > 0 ? dotCount - 1 : 0);
@@ -479,7 +479,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     }
 
     if (task.active && m_showActiveIndicator) {
-      const float d = std::max(4.0f, std::round(Style::barGlyphSize * 0.32f * m_contentScale));
+      const float d = std::max(4.0f, std::round(Style::baseGlyphSize * 0.32f * m_contentScale));
       const float bottomInset = 0.25f * m_contentScale;
       if (showWindowTitle) {
         const float lineThickness = d * 0.5f;
@@ -512,7 +512,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     const float groupPadCross = Style::spaceXs * 0.35f * m_contentScale;
     const bool inlineBadge = m_showWorkspaceLabel && m_workspaceLabelPlacement == WorkspaceLabelPlacement::Inside;
     const bool externalBadge = m_showWorkspaceLabel && !inlineBadge;
-    const float badgeBase = std::round(std::max(11.0f, Style::barGlyphSize * 0.72f) * m_contentScale);
+    const float badgeBase = std::round(std::max(11.0f, Style::baseGlyphSize * 0.72f) * m_contentScale);
     const float externalBadgeFontSize = std::round(Style::fontSizeCaption * 0.72f * m_contentScale);
 
     float stripGap = groupGap;

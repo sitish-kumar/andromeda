@@ -27,7 +27,7 @@ namespace {
   }
 
   constexpr float kWorkspaceGap = Style::spaceXs;
-  constexpr float kWorkspacePillDefaultHeight = Style::barGlyphSize;
+  constexpr float kWorkspacePillDefaultHeight = Style::baseGlyphSize;
   constexpr float kWorkspaceAnimDurationMs = static_cast<float>(Style::animNormal);
 
   [[nodiscard]] FontWeight workspaceFontWeight(FontWeight baseWeight, bool minimal, bool active) {

@@ -25,8 +25,7 @@ namespace Style {
 
   // Default inner inset for bar widget capsules (logical px, before bar content scale).
   inline constexpr float barCapsulePadding = 6.0f;
-  inline constexpr float barGlyphSize = 16.0f;
-  inline constexpr float barIconSize = 16.0f;
+  inline constexpr float baseGlyphSize = 16.0f;
 
   inline constexpr float fontSizeMini = 11.0f;
   inline constexpr float fontSizeCaption = 13.0f;

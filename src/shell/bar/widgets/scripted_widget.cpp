@@ -197,7 +197,7 @@ void ScriptedWidget::create() {
   flex->addChild(
       ui::glyph({
           .out = &m_glyph,
-          .glyphSize = Style::barGlyphSize * m_contentScale,
+          .glyphSize = Style::baseGlyphSize * m_contentScale,
           .visible = false,
       })
   );
@@ -675,7 +675,7 @@ void ScriptedWidget::syncImage(Renderer& renderer) {
     return;
   }
 
-  const float logicalWidth = m_imageWidth > 0.0f ? m_imageWidth : Style::barIconSize;
+  const float logicalWidth = m_imageWidth > 0.0f ? m_imageWidth : Style::baseGlyphSize;
   const float logicalHeight = m_imageHeight > 0.0f ? m_imageHeight : logicalWidth;
   const float imageWidth = logicalWidth * m_contentScale;
   const float imageHeight = logicalHeight * m_contentScale;
