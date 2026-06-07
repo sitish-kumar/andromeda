@@ -312,7 +312,7 @@ namespace settings {
       const SettingEntry& entry, std::string_view selectedBarName, std::string_view selectedMonitorOverride
   ) {
     if (entry.section != SettingsSection::Bar || entry.path.size() < 2 || entry.path[0] != "bar") {
-      return true;
+      return false;
     }
     if (selectedBarName.empty() || entry.path[1] != selectedBarName) {
       return false;
