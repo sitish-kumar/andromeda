@@ -208,6 +208,11 @@ namespace settings {
       );
     };
 
+    const auto makeRangeSlider = [&](const RangeSliderSetting& setting,
+                                     const std::vector<std::string>& lowPath) -> std::unique_ptr<Node> {
+      return factory.makeRangeSlider(setting, lowPath);
+    };
+
     const auto makeText = [&](const std::string& value, const std::string& placeholder, std::vector<std::string> path,
                               float width = 0.0f) {
       return factory.makeText(value, placeholder, std::move(path), width);
@@ -1079,6 +1084,8 @@ namespace settings {
                   control.value, control.minValue, control.maxValue, control.step, entry.path, control.integerValue,
                   control.valueSuffix, control.linkedCommit
               );
+            } else if constexpr (std::is_same_v<T, RangeSliderSetting>) {
+              return makeRangeSlider(control, entry.path);
             } else if constexpr (std::is_same_v<T, TextSetting>) {
               if (isDockLauncherIconPath(entry.path)) {
                 return makeGlyphText(control, entry.path);

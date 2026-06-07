@@ -864,6 +864,8 @@
         "lock-screen": "Lock Screen",
         "media": "Media",
         "monitor": "System Monitor",
+        "monitor-polling": "Poll Intervals",
+        "monitor-thresholds": "Highlight Thresholds",
         "monitors": "Monitors",
         "motion": "Motion",
         "network": "Network",
@@ -1764,17 +1766,9 @@
           "label": "Sunset"
         },
         "system-monitor": {
-          "activity-threshold": {
-            "description": "Value that shows significant activity",
-            "label": "{stat} Activity Threshold"
-          },
           "cpu-poll": {
             "description": "Seconds between CPU usage, CPU temperature, and load-average samples (0 disables)",
             "label": "CPU Poll Interval"
-          },
-          "critical-threshold": {
-            "description": "Value close to maximum capacity",
-            "label": "{stat} Critical Threshold"
           },
           "description": "Sample CPU, memory, network, load, temperature, and disk statistics",
           "disk-poll": {
@@ -1805,6 +1799,10 @@
             "network-tx": "Upload",
             "ram-usage": "RAM Usage",
             "swap-usage": "Swap Usage"
+          },
+          "threshold": {
+            "description": "Activity threshold (left) and critical threshold (right)",
+            "label": "{stat}"
           }
         },
         "volume-change-sound": {

@@ -1409,9 +1409,11 @@ namespace settings {
       auto addPoll = [&](std::string_view labelKey, std::string_view descKey, std::vector<std::string> path,
                          float value) {
         const float clampedValue = std::clamp(value, kPollMin, kPollMax);
+        SliderSetting slider{clampedValue, kPollMin, kPollMax, kPollStep, true};
+        slider.valueSuffix = "s";
         auto entry = makeEntry(
-            "system", "monitor", tr(labelKey), tr(descKey), std::move(path),
-            SliderSetting{clampedValue, kPollMin, kPollMax, kPollStep, true}, "system monitor", true
+            "system", "monitor-polling", tr(labelKey), tr(descKey), std::move(path), std::move(slider),
+            "system monitor", true
         );
         entry.visibleWhen = monitorOn;
         entries.push_back(std::move(entry));
@@ -1442,6 +1444,7 @@ namespace settings {
           mon.diskPollSeconds
       );
 
+      // One dual-thumb range row per metric: low thumb = activity threshold, high thumb = critical.
       auto addThresholdPair = [&](std::string_view baseKey, std::string_view statLabelKey, double activityValue,
                                   double criticalValue, noctalia::sysmon::ThresholdProfile profile, bool integerValue,
                                   std::string valueSuffix) {
@@ -1453,45 +1456,24 @@ namespace settings {
         };
         const std::string statLabel = tr(statLabelKey);
 
-        auto activitySlider =
-            SliderSetting{activityValue, profile.minValue, profile.maxValue, profile.step, integerValue};
-        activitySlider.valueSuffix = valueSuffix;
-        activitySlider.linkedCommit = [criticalValue, criticalPath](double committedValue) {
-          if (committedValue <= criticalValue) {
-            return std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>{};
-          }
-          return std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>{
-              {criticalPath, ConfigOverrideValue{committedValue}}
-          };
-        };
-        auto activity = makeEntry(
-            "system", "monitor",
-            tr("settings.schema.services.system-monitor.activity-threshold.label", "stat", statLabel),
-            tr("settings.schema.services.system-monitor.activity-threshold.description"), activityPath,
-            std::move(activitySlider), "system monitor threshold", true
-        );
-        activity.visibleWhen = monitorOn;
-        entries.push_back(std::move(activity));
+        RangeSliderSetting range;
+        range.lowValue = activityValue;
+        range.highValue = criticalValue;
+        range.minValue = profile.minValue;
+        range.maxValue = profile.maxValue;
+        range.step = profile.step;
+        range.integerValue = integerValue;
+        range.valueSuffix = std::move(valueSuffix);
+        range.highPath = criticalPath;
 
-        auto criticalSlider =
-            SliderSetting{criticalValue, profile.minValue, profile.maxValue, profile.step, integerValue};
-        criticalSlider.valueSuffix = std::move(valueSuffix);
-        criticalSlider.linkedCommit = [activityValue, activityPath](double committedValue) {
-          if (committedValue >= activityValue) {
-            return std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>{};
-          }
-          return std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>{
-              {activityPath, ConfigOverrideValue{committedValue}}
-          };
-        };
-        auto critical = makeEntry(
-            "system", "monitor",
-            tr("settings.schema.services.system-monitor.critical-threshold.label", "stat", statLabel),
-            tr("settings.schema.services.system-monitor.critical-threshold.description"), criticalPath,
-            std::move(criticalSlider), "system monitor threshold", true
+        auto entry = makeEntry(
+            "system", "monitor-thresholds",
+            tr("settings.schema.services.system-monitor.threshold.label", "stat", statLabel),
+            tr("settings.schema.services.system-monitor.threshold.description"), activityPath, std::move(range),
+            "system monitor threshold activity critical", true
         );
-        critical.visibleWhen = monitorOn;
-        entries.push_back(std::move(critical));
+        entry.visibleWhen = monitorOn;
+        entries.push_back(std::move(entry));
       };
 
       using noctalia::sysmon::Stat;

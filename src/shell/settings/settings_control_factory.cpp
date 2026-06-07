@@ -25,6 +25,26 @@
 
 namespace settings {
 
+  namespace {
+    // Fixed-width slot so unit suffixes (%, °C, MB/s, s) left-align into one column across rows,
+    // keeping every slider's value box at the same right edge.
+    constexpr float kSuffixSlotWidth = 36.0f;
+
+    std::unique_ptr<Node> makeSuffixSlot(std::string suffix, float scale) {
+      if (suffix.empty()) {
+        return nullptr;
+      }
+      return ui::row(
+          {.align = FlexAlign::Center, .justify = FlexJustify::Start, .width = kSuffixSlotWidth * scale},
+          ui::label({
+              .text = std::move(suffix),
+              .fontSize = Style::fontSizeCaption * scale,
+              .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+          })
+      );
+    }
+  } // namespace
+
   SettingsControlFactory::SettingsControlFactory(SettingsContentContext ctx)
       : m_ctx(std::move(ctx)), m_scale(m_ctx.scale) {}
 
@@ -45,6 +65,25 @@ namespace settings {
         .paddingH = Style::spaceSm * scale,
         .radius = Style::scaledRadiusMd(scale),
         .onClick = [clearOverride = ctx.clearOverride, path]() { clearOverride(path); },
+    });
+  }
+
+  std::unique_ptr<Button> SettingsControlFactory::makeResetButton(std::vector<std::vector<std::string>> paths) {
+    auto& ctx = m_ctx;
+    const float scale = m_scale;
+    return ui::button({
+        .text = i18n::tr("settings.actions.reset"),
+        .fontSize = Style::fontSizeCaption * scale,
+        .variant = ButtonVariant::Ghost,
+        .minHeight = Style::controlHeightSm * scale,
+        .paddingV = Style::spaceXs * scale,
+        .paddingH = Style::spaceSm * scale,
+        .radius = Style::scaledRadiusMd(scale),
+        .onClick = [clearOverride = ctx.clearOverride, paths = std::move(paths)]() {
+          for (const auto& path : paths) {
+            clearOverride(path);
+          }
+        },
     });
   }
 
@@ -88,7 +127,12 @@ namespace settings {
     auto& ctx = m_ctx;
     const float scale = m_scale;
     const Config& cfg = m_ctx.config;
-    const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
+    // Range sliders own a second config path (high/critical); both reset and report "override" together.
+    const auto* rangeSlider = std::get_if<RangeSliderSetting>(&entry.control);
+    const auto isOverridden = [&](const std::vector<std::string>& p) {
+      return ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(p);
+    };
+    const bool overridden = isOverridden(entry.path) || (rangeSlider != nullptr && isOverridden(rangeSlider->highPath));
     const bool redundantGuiOverride =
         ctx.configService != nullptr && ctx.configService->hasOverride(entry.path) && !overridden;
     const bool monitorSetting = isMonitorOverrideSettingPath(entry.path);
@@ -133,7 +177,11 @@ namespace settings {
     auto actions = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * scale});
     if (overridden) {
       actions->addChild(makeOverrideBadge());
-      actions->addChild(makeResetButton(entry.path));
+      if (rangeSlider != nullptr) {
+        actions->addChild(makeResetButton(std::vector<std::vector<std::string>>{entry.path, rangeSlider->highPath}));
+      } else {
+        actions->addChild(makeResetButton(entry.path));
+      }
     }
     actions->addChild(std::move(control));
 
@@ -335,14 +383,119 @@ namespace settings {
     // Slider first, numeric value field on the right (reset from makeRow stays left of this cluster).
     wrap->addChild(std::move(slider));
     wrap->addChild(std::move(valueInput));
-    if (!valueSuffix.empty()) {
-      wrap->addChild(
-          ui::label({
-              .text = std::move(valueSuffix),
-              .fontSize = Style::fontSizeCaption * scale,
-              .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-          })
-      );
+    if (auto suffix = makeSuffixSlot(std::move(valueSuffix), scale)) {
+      wrap->addChild(std::move(suffix));
+    }
+    return wrap;
+  }
+
+  std::unique_ptr<Flex>
+  SettingsControlFactory::makeRangeSlider(const RangeSliderSetting& setting, const std::vector<std::string>& lowPath) {
+    auto& ctx = m_ctx;
+    const float scale = m_scale;
+    const bool integerValue = setting.integerValue;
+    const std::vector<std::string> highPath = setting.highPath;
+    auto wrap = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * scale});
+
+    auto makeValueInput = [&](double value, Input** out) {
+      return ui::input({
+          .out = out,
+          .value = formatSliderValue(value, integerValue),
+          .fontSize = Style::fontSizeCaption * scale,
+          .controlHeight = Style::controlHeightSm * scale,
+          .horizontalPadding = Style::spaceXs * scale,
+          .width = 50.0f * scale,
+          .height = Style::controlHeightSm * scale,
+      });
+    };
+
+    Input* lowInputPtr = nullptr;
+    Input* highInputPtr = nullptr;
+    auto lowInput = makeValueInput(setting.lowValue, &lowInputPtr);
+    auto highInput = makeValueInput(setting.highValue, &highInputPtr);
+
+    RangeSlider* sliderPtr = nullptr;
+    auto slider = ui::rangeSlider({
+        .out = &sliderPtr,
+        .minValue = setting.minValue,
+        .maxValue = setting.maxValue,
+        .step = setting.step,
+        .lowValue = setting.lowValue,
+        .highValue = setting.highValue,
+        .trackHeight = Style::sliderTrackHeight * scale,
+        .thumbSize = Style::sliderThumbSize * scale,
+        .controlHeight = Style::controlHeight * scale,
+        .width = Style::sliderDefaultWidth * scale,
+        .height = Style::controlHeight * scale,
+        .onLowChanged =
+            [lowInputPtr, integerValue](double next) {
+              lowInputPtr->setInvalid(false);
+              lowInputPtr->setValue(formatSliderValue(next, integerValue));
+            },
+        .onHighChanged =
+            [highInputPtr, integerValue](double next) {
+              highInputPtr->setInvalid(false);
+              highInputPtr->setValue(formatSliderValue(next, integerValue));
+            },
+    });
+
+    const auto commitTo = [setOverride = ctx.setOverride,
+                           integerValue](const std::vector<std::string>& path, double v) {
+      ConfigOverrideValue value =
+          integerValue ? ConfigOverrideValue{static_cast<std::int64_t>(std::lround(v))} : ConfigOverrideValue{v};
+      setOverride(path, std::move(value));
+    };
+
+    // Drag commits both ends together — they are one linked pair (reset clears both).
+    slider->setOnDragEnd([commitTo, sliderPtr, lowPath, highPath]() {
+      commitTo(lowPath, sliderPtr->lowValue());
+      commitTo(highPath, sliderPtr->highValue());
+    });
+
+    const auto commitInput = [commitTo, sliderPtr, integerValue](
+                                 Input* input, const std::vector<std::string>& path, double minValue, double maxValue,
+                                 bool isLow
+                             ) {
+      const auto parsed = parseDoubleInput(input->value());
+      if (!parsed.has_value() || *parsed < minValue || *parsed > maxValue) {
+        input->setInvalid(true);
+        return;
+      }
+      input->setInvalid(false);
+      if (isLow) {
+        sliderPtr->setLowValue(*parsed);
+        input->setValue(formatSliderValue(sliderPtr->lowValue(), integerValue));
+        commitTo(path, sliderPtr->lowValue());
+      } else {
+        sliderPtr->setHighValue(*parsed);
+        input->setValue(formatSliderValue(sliderPtr->highValue(), integerValue));
+        commitTo(path, sliderPtr->highValue());
+      }
+    };
+
+    const double minValue = setting.minValue;
+    const double maxValue = setting.maxValue;
+    lowInput->setOnChange([lowInputPtr](const std::string& /*text*/) { lowInputPtr->setInvalid(false); });
+    lowInput->setOnSubmit([commitInput, lowInputPtr, lowPath, minValue, maxValue](const std::string& /*text*/) {
+      commitInput(lowInputPtr, lowPath, minValue, maxValue, true);
+    });
+    lowInput->setOnFocusLoss([commitInput, lowInputPtr, lowPath, minValue, maxValue]() {
+      commitInput(lowInputPtr, lowPath, minValue, maxValue, true);
+    });
+    highInput->setOnChange([highInputPtr](const std::string& /*text*/) { highInputPtr->setInvalid(false); });
+    highInput->setOnSubmit([commitInput, highInputPtr, highPath, minValue, maxValue](const std::string& /*text*/) {
+      commitInput(highInputPtr, highPath, minValue, maxValue, false);
+    });
+    highInput->setOnFocusLoss([commitInput, highInputPtr, highPath, minValue, maxValue]() {
+      commitInput(highInputPtr, highPath, minValue, maxValue, false);
+    });
+
+    wrap->addChild(std::move(slider));
+    wrap->addChild(std::move(lowInput));
+    wrap->addChild(makeLabel("–", Style::fontSizeCaption * scale, colorSpecFromRole(ColorRole::OnSurfaceVariant)));
+    wrap->addChild(std::move(highInput));
+    if (auto suffix = makeSuffixSlot(setting.valueSuffix, scale)) {
+      wrap->addChild(std::move(suffix));
     }
     return wrap;
   }

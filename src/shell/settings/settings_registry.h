@@ -73,6 +73,19 @@ namespace settings {
         linkedCommit;
   };
 
+  /// Dual-thumb slider for a low/high pair on one axis. `entry.path` is the low (e.g. activity)
+  /// value; `highPath` is the high (e.g. critical) value. Both participate in override/reset together.
+  struct RangeSliderSetting {
+    double lowValue = 0.0;
+    double highValue = 1.0;
+    double minValue = 0.0;
+    double maxValue = 1.0;
+    double step = 0.01;
+    bool integerValue = false;
+    std::string valueSuffix = {};
+    std::vector<std::string> highPath;
+  };
+
   enum class TextSettingBrowseMode : std::uint8_t {
     None = 0,
     SelectFolder,
@@ -171,10 +184,10 @@ namespace settings {
   };
 
   using SettingControl = std::variant<
-      ToggleSetting, SelectSetting, SliderSetting, TextSetting, OptionalNumberSetting, OptionalStepperSetting,
-      StepperSetting, ListSetting, ShortcutListSetting, KeybindListSetting, SessionPanelActionsSetting,
-      IdleBehaviorsSetting, MultiSelectSetting, TemplateGridSetting, ButtonSetting, ColorSpecPickerSetting,
-      SearchPickerSetting>;
+      ToggleSetting, SelectSetting, SliderSetting, RangeSliderSetting, TextSetting, OptionalNumberSetting,
+      OptionalStepperSetting, StepperSetting, ListSetting, ShortcutListSetting, KeybindListSetting,
+      SessionPanelActionsSetting, IdleBehaviorsSetting, MultiSelectSetting, TemplateGridSetting, ButtonSetting,
+      ColorSpecPickerSetting, SearchPickerSetting>;
 
   struct SettingVisibilityCondition {
     std::vector<std::string> path;
