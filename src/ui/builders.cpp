@@ -416,6 +416,9 @@ namespace ui {
     if (props.thickness.has_value()) {
       control->setThickness(*props.thickness);
     }
+    if (props.spacing.has_value()) {
+      control->setSpacing(*props.spacing);
+    }
     if (props.orientation.has_value()) {
       control->setOrientation(*props.orientation);
     }

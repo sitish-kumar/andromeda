@@ -234,6 +234,7 @@ namespace ui {
     Separator** out = nullptr;
     std::optional<ColorSpec> color = std::nullopt;
     std::optional<float> thickness = std::nullopt;
+    std::optional<float> spacing = std::nullopt;
     std::optional<SeparatorOrientation> orientation = std::nullopt;
     std::optional<bool> gradientEdges = std::nullopt;
     std::optional<float> width = std::nullopt;
