@@ -1259,7 +1259,7 @@ namespace settings {
 
         const auto value = widgetSettingValue(ctx.config, widgetName, spec);
         SettingEntry entry{
-            .section = "bar",
+            .section = SettingsSection::Bar,
             .group = "widget-settings",
             .title = !spec.literalLabel.empty() ? spec.literalLabel
                 : spec.labelKey.empty()         ? std::string{}
@@ -1985,7 +1985,7 @@ namespace settings {
       const auto groupEntry = [&](std::string_view field) {
         const std::string base = std::string("settings.entities.widget.group.") + std::string(field);
         return SettingEntry{
-            .section = "bar",
+            .section = SettingsSection::Bar,
             .group = "capsule-group",
             .title = i18n::tr(base),
             .subtitle = i18n::tr(base + "-description"),

@@ -895,6 +895,7 @@
       },
       "sections": {
         "appearance": "Appearance",
+        "bar": "Bar",
         "backdrop": "Backdrop",
         "desktop": "Desktop",
         "dock": "Dock",

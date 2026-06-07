@@ -98,7 +98,7 @@ private:
   buildFilterRow(float scale, const std::string& resetPageScope, std::vector<std::vector<std::string>> resetPagePaths);
   [[nodiscard]] std::unique_ptr<Flex> buildStatusRow(float scale);
   [[nodiscard]] std::unique_ptr<Flex> buildBody(
-      float scale, const Config& cfg, const std::vector<std::string>& sections,
+      float scale, const Config& cfg, const std::vector<settings::SettingsSection>& sections,
       const std::vector<std::string>& availableBars
   );
   [[nodiscard]] std::vector<settings::SelectOption> batteryDeviceOptions() const;

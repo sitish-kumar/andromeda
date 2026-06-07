@@ -130,15 +130,13 @@ namespace settings {
   addSettingsContentSections(Flex& content, const std::vector<SettingEntry>& registry, SettingsContentContext ctx) {
     const float scale = ctx.scale;
 
-    const auto sectionLabel = [](std::string_view section) {
-      return i18n::tr("settings.navigation.sections." + std::string(section));
-    };
+    const auto sectionLabel = [](SettingsSection section) { return i18n::tr(settingsSectionLabelKey(section)); };
 
     const auto groupLabel = [](std::string_view group) -> std::string {
       return i18n::tr("settings.navigation.groups." + std::string(group));
     };
 
-    const auto makeSection = [&](std::string_view title, std::string_view sectionKey) -> Flex* {
+    const auto makeSection = [&](std::string_view title, SettingsSection sectionKey) -> Flex* {
       auto section = ui::column(
           {
               .align = FlexAlign::Stretch,
@@ -1198,6 +1196,8 @@ namespace settings {
     const std::string_view selectedMonitorMatch = ctx.selectedMonitorOverride != nullptr
         ? std::string_view{ctx.selectedMonitorOverride->match}
         : std::string_view{};
+    const std::optional<SettingsSection> selectedSettingsSection =
+        ctx.selectedSection != "bar" ? settingsSectionFromId(ctx.selectedSection) : std::nullopt;
 
     // Coalesce entries by (content section, group) so each group renders once even if its entries were
     // declared non-contiguously in the registry. See coalesceByGroupKey().
@@ -1207,7 +1207,10 @@ namespace settings {
 
     for (const std::size_t entryIndex : entryOrder) {
       const auto& entry = registry[entryIndex];
-      if (ctx.searchQuery.empty() && !ctx.selectedSection.empty() && entry.section != ctx.selectedSection) {
+      if (ctx.searchQuery.empty()
+          && !ctx.selectedSection.empty()
+          && ctx.selectedSection != "bar"
+          && (!selectedSettingsSection.has_value() || entry.section != *selectedSettingsSection)) {
         continue;
       }
       if (ctx.searchQuery.empty()
@@ -1237,7 +1240,7 @@ namespace settings {
         activeKeybindRow = nullptr;
         activeKeybindRowCount = 0;
         std::string displayTitle;
-        if (entry.section == "bar" && entry.path.size() >= 2) {
+        if (entry.section == SettingsSection::Bar && entry.path.size() >= 2) {
           displayTitle = i18n::tr("settings.entities.bar.label", "name", entry.path[1]);
           if (isBarMonitorOverrideSettingPath(entry.path)) {
             displayTitle += " / " + entry.path[3];
@@ -1246,7 +1249,7 @@ namespace settings {
           displayTitle = sectionLabel(entry.section);
         }
         activeSection = makeSection(displayTitle, entry.section);
-        if (entry.section == "idle") {
+        if (entry.section == SettingsSection::Idle) {
           addIdleLiveStatusPanel(*activeSection, ctx, scale);
         }
       }

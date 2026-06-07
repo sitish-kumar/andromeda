@@ -6,9 +6,11 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <numeric>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -18,6 +20,33 @@
 #include <vector>
 
 namespace settings {
+
+  enum class SettingsSection : std::uint8_t {
+    Appearance,
+    Wallpaper,
+    Templates,
+    Desktop,
+    Dock,
+    Panels,
+    Notifications,
+    Osd,
+    Shell,
+    Security,
+    System,
+    Services,
+    Location,
+    Idle,
+    Hooks,
+    Niri,
+    Bar,
+  };
+
+  struct SettingsSectionDescriptor {
+    SettingsSection section;
+    std::string_view id;
+    std::string_view glyph;
+    bool sidebar = true;
+  };
 
   struct ToggleSetting {
     bool checked = false;
@@ -204,7 +233,7 @@ namespace settings {
   };
 
   struct SettingEntry {
-    std::string section;
+    SettingsSection section = SettingsSection::Appearance;
     std::string group;
     std::string title;
     std::string subtitle;
@@ -249,7 +278,11 @@ namespace settings {
       const SettingEntry& entry, std::string_view selectedBarName, std::string_view selectedMonitorOverride
   );
   [[nodiscard]] std::string barSettingContentSectionKey(const SettingEntry& entry);
-  [[nodiscard]] std::string_view sectionGlyph(std::string_view section);
+  [[nodiscard]] std::span<const SettingsSectionDescriptor> settingsSectionDescriptors();
+  [[nodiscard]] std::string_view settingsSectionId(SettingsSection section);
+  [[nodiscard]] std::string settingsSectionLabelKey(SettingsSection section);
+  [[nodiscard]] std::string_view sectionGlyph(SettingsSection section);
+  [[nodiscard]] std::optional<SettingsSection> settingsSectionFromId(std::string_view id);
 
   // Returns a permutation of [0, count) that coalesces items sharing a group key so a group renders
   // exactly once, regardless of the order items were declared in. The first-appearance order of group
