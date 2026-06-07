@@ -167,6 +167,13 @@ namespace settings {
     std::vector<SelectOption> suggestedOptions = {};
   };
 
+  struct StringMapSetting {
+    std::unordered_map<std::string, std::string> entries;
+    std::vector<std::string> suggestedKeys;
+    std::string keyPlaceholder;
+    std::string valuePlaceholder;
+  };
+
   struct ShortcutListSetting {
     std::vector<ShortcutConfig> items;
     std::vector<SelectOption> suggestedOptions = {};

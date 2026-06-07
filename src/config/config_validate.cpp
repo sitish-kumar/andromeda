@@ -159,6 +159,17 @@ namespace noctalia::config {
           diag.error(path, "expected a list of strings");
         }
         break;
+      case WidgetSettingType::StringMap:
+        if (const auto* table = node.as_table()) {
+          for (const auto& [mapKey, mapValue] : *table) {
+            if (!mapValue.is_string()) {
+              diag.error(path + "." + std::string(mapKey.str()), "expected a string");
+            }
+          }
+        } else {
+          diag.error(path, "expected a table of strings");
+        }
+        break;
       case WidgetSettingType::Enum: {
         // Most selects store a string, but integer-valued ones (e.g. font_weight)
         // store an int — accept either and compare by string form.

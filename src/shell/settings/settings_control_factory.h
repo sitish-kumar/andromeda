@@ -73,6 +73,7 @@ namespace settings {
     );
 
     void makeListBlock(Flex& section, const SettingEntry& entry, const ListSetting& list);
+    void makeStringMapBlock(Flex& section, const SettingEntry& entry, const StringMapSetting& map);
 
   private:
     [[nodiscard]] std::unique_ptr<Flex>

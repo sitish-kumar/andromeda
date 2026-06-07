@@ -58,6 +58,29 @@ namespace config_export {
       for (const auto& key : keys) {
         insertWidgetSettingValue(table, key, widget.settings.at(key));
       }
+      std::vector<std::string> tableKeys;
+      tableKeys.reserve(widget.tables.size());
+      for (const auto& [key, map] : widget.tables) {
+        (void)map;
+        tableKeys.push_back(key);
+      }
+      std::sort(tableKeys.begin(), tableKeys.end());
+      for (const auto& key : tableKeys) {
+        const auto& map = widget.tables.at(key);
+        toml::table subtable;
+        std::vector<std::string> mapKeys;
+        mapKeys.reserve(map.size());
+        for (const auto& [mapKey, value] : map) {
+          (void)value;
+          mapKeys.push_back(mapKey);
+        }
+        std::sort(mapKeys.begin(), mapKeys.end());
+        for (const auto& mapKey : mapKeys) {
+          const auto& value = map.at(mapKey);
+          subtable.insert_or_assign(mapKey, value);
+        }
+        table.insert_or_assign(key, std::move(subtable));
+      }
       return table;
     }
 

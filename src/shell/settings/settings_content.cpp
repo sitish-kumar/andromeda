@@ -77,6 +77,7 @@ namespace settings {
         .showAdvanced = ctx.showAdvanced,
         .showOverriddenOnly = ctx.showOverriddenOnly,
         .batteryDeviceOptions = ctx.batteryDeviceOptions,
+        .keyboardLayoutNames = ctx.keyboardLayoutNames,
         .editingWidgetName = ctx.editingWidgetName,
         .editingCapsuleGroupId = ctx.editingCapsuleGroupId,
         .selectedLaneWidgets = ctx.selectedLaneWidgets,
@@ -123,6 +124,9 @@ namespace settings {
         .makeListBlock = [&factory](
                              Flex& section, const SettingEntry& entry, const ListSetting& list
                          ) { factory.makeListBlock(section, entry, list); },
+        .makeStringMapBlock = [&factory](
+                                  Flex& section, const SettingEntry& entry, const StringMapSetting& map
+                              ) { factory.makeStringMapBlock(section, entry, map); },
     };
   }
 

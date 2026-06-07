@@ -2337,6 +2337,10 @@
           "description": "Tint the custom image with the widget Color setting",
           "label": "Colorize custom image"
         },
+        "custom-labels": {
+          "description": "Map keyboard layout names to custom labels",
+          "label": "Custom Labels"
+        },
         "cycle-command": {
           "description": "Command run when cycling keyboard layouts",
           "label": "Cycle Command"

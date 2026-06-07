@@ -27,6 +27,7 @@
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -1474,6 +1475,18 @@ namespace settings {
           break;
         case WidgetControlKind::StringList:
           ctx.makeListBlock(*panel, entry, ListSetting{.items = settingValueAsStringList(value)});
+          break;
+        case WidgetControlKind::StringMap:
+          ctx.makeStringMapBlock(
+              *panel, entry,
+              StringMapSetting{
+                  .entries = widgetConfig != nullptr ? widgetConfig->getStringMap(spec.schema.key)
+                                                     : std::unordered_map<std::string, std::string>{},
+                  .suggestedKeys = ctx.keyboardLayoutNames,
+                  .keyPlaceholder = "Layout name",
+                  .valuePlaceholder = "Label",
+              }
+          );
           break;
         case WidgetControlKind::Select: {
           SelectSetting selectSetting;

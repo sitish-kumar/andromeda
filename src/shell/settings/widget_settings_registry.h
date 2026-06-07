@@ -57,6 +57,7 @@ namespace settings {
     Folder,
     Glyph,
     StringList,
+    StringMap,
     Select,
     ColorSpec,
   };

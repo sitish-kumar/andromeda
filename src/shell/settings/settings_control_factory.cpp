@@ -21,6 +21,7 @@
 #include <cmath>
 #include <cstdint>
 #include <format>
+#include <unordered_set>
 #include <utility>
 
 namespace settings {
@@ -742,6 +743,223 @@ namespace settings {
       setOverride(path, items);
     });
     block->addChild(std::move(listEditor));
+
+    section.addChild(std::move(block));
+  }
+
+  void
+  SettingsControlFactory::makeStringMapBlock(Flex& section, const SettingEntry& entry, const StringMapSetting& map) {
+    auto& ctx = m_ctx;
+    const float scale = m_scale;
+    const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
+
+    auto block = makeCollectionBlock(entry, overridden);
+
+    const auto setAndCommit = [setOverride = ctx.setOverride, clearOverride = ctx.clearOverride,
+                               requestRebuild = ctx.requestRebuild,
+                               path = entry.path](const std::string& key, const std::string& value) {
+      auto entryPath = path;
+      entryPath.push_back(key);
+      if (value.empty()) {
+        clearOverride(entryPath);
+      } else {
+        setOverride(entryPath, value);
+      }
+      if (requestRebuild) {
+        requestRebuild();
+      }
+    };
+
+    const auto removeAndCommit = [clearOverride = ctx.clearOverride, requestRebuild = ctx.requestRebuild,
+                                  path = entry.path](const std::string& key) {
+      auto entryPath = path;
+      entryPath.push_back(key);
+      clearOverride(entryPath);
+      if (requestRebuild) {
+        requestRebuild();
+      }
+    };
+
+    std::unordered_set<std::string> suggestedSet(map.suggestedKeys.begin(), map.suggestedKeys.end());
+    std::vector<std::string> suggested = map.suggestedKeys;
+    std::sort(suggested.begin(), suggested.end());
+
+    std::vector<std::string> customKeys;
+    for (const auto& [key, value] : map.entries) {
+      (void)value;
+      if (!suggestedSet.contains(key)) {
+        customKeys.push_back(key);
+      }
+    }
+    std::sort(customKeys.begin(), customKeys.end());
+
+    const auto addSuggestedRow = [&](const std::string& key) {
+      const auto valueIt = map.entries.find(key);
+      const std::string value = valueIt != map.entries.end() ? valueIt->second : std::string{};
+      auto row = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * scale, .fillWidth = true});
+      row->addChild(
+          ui::label({
+              .text = key,
+              .fontSize = Style::fontSizeBody * scale,
+              .color = colorSpecFromRole(ColorRole::OnSurface),
+              .flexGrow = 1.0f,
+          })
+      );
+      row->addChild(
+          ui::label({
+              .text = "->",
+              .fontSize = Style::fontSizeBody * scale,
+              .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+          })
+      );
+      row->addChild(
+          ui::input({
+              .value = value,
+              .placeholder = map.valuePlaceholder,
+              .fontSize = Style::fontSizeBody * scale,
+              .controlHeight = Style::controlHeight * scale,
+              .horizontalPadding = Style::spaceSm * scale,
+              .height = Style::controlHeight * scale,
+              .flexGrow = 1.0f,
+              .onSubmit = [setAndCommit, key](const std::string& newValue) { setAndCommit(key, newValue); },
+              .submitOnFocusLoss = true,
+          })
+      );
+      row->addChild(
+          ui::button({
+              .glyph = value.empty() ? std::string{} : std::string{"close"},
+              .fontSize = Style::fontSizeCaption * scale,
+              .glyphSize = Style::fontSizeCaption * scale,
+              .variant = ButtonVariant::Ghost,
+              .minWidth = Style::controlHeight * scale,
+              .minHeight = Style::controlHeight * scale,
+              .onClick = [removeAndCommit, key, value]() {
+                if (!value.empty()) {
+                  removeAndCommit(key);
+                }
+              },
+          })
+      );
+      block->addChild(std::move(row));
+    };
+
+    const auto addCustomRow = [&](const std::string& key) {
+      const std::string value = map.entries.at(key);
+      auto row = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * scale, .fillWidth = true});
+      row->addChild(
+          ui::input({
+              .value = key,
+              .placeholder = map.keyPlaceholder,
+              .fontSize = Style::fontSizeBody * scale,
+              .controlHeight = Style::controlHeight * scale,
+              .horizontalPadding = Style::spaceSm * scale,
+              .height = Style::controlHeight * scale,
+              .flexGrow = 1.0f,
+              .onSubmit =
+                  [removeAndCommit, setAndCommit, value, oldKey = key](const std::string& newKey) {
+                    if (newKey.empty() || newKey == oldKey) {
+                      return;
+                    }
+                    removeAndCommit(oldKey);
+                    setAndCommit(newKey, value);
+                  },
+              .submitOnFocusLoss = true,
+          })
+      );
+      row->addChild(
+          ui::label({
+              .text = "->",
+              .fontSize = Style::fontSizeBody * scale,
+              .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+          })
+      );
+      row->addChild(
+          ui::input({
+              .value = value,
+              .placeholder = map.valuePlaceholder,
+              .fontSize = Style::fontSizeBody * scale,
+              .controlHeight = Style::controlHeight * scale,
+              .horizontalPadding = Style::spaceSm * scale,
+              .height = Style::controlHeight * scale,
+              .flexGrow = 1.0f,
+              .onSubmit = [setAndCommit, key](const std::string& newValue) { setAndCommit(key, newValue); },
+              .submitOnFocusLoss = true,
+          })
+      );
+      row->addChild(
+          ui::button({
+              .glyph = "close",
+              .fontSize = Style::fontSizeCaption * scale,
+              .glyphSize = Style::fontSizeCaption * scale,
+              .variant = ButtonVariant::Ghost,
+              .minWidth = Style::controlHeight * scale,
+              .minHeight = Style::controlHeight * scale,
+              .onClick = [removeAndCommit, key]() { removeAndCommit(key); },
+          })
+      );
+      block->addChild(std::move(row));
+    };
+
+    for (const auto& key : suggested) {
+      addSuggestedRow(key);
+    }
+    for (const auto& key : customKeys) {
+      addCustomRow(key);
+    }
+
+    auto addRow = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * scale, .fillWidth = true});
+    Input* keyInput = nullptr;
+    Input* valueInput = nullptr;
+    addRow->addChild(
+        ui::input({
+            .out = &keyInput,
+            .placeholder = map.keyPlaceholder,
+            .fontSize = Style::fontSizeBody * scale,
+            .controlHeight = Style::controlHeight * scale,
+            .horizontalPadding = Style::spaceSm * scale,
+            .height = Style::controlHeight * scale,
+            .flexGrow = 1.0f,
+        })
+    );
+    addRow->addChild(
+        ui::label({
+            .text = "->",
+            .fontSize = Style::fontSizeBody * scale,
+            .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+        })
+    );
+    addRow->addChild(
+        ui::input({
+            .out = &valueInput,
+            .placeholder = map.valuePlaceholder,
+            .fontSize = Style::fontSizeBody * scale,
+            .controlHeight = Style::controlHeight * scale,
+            .horizontalPadding = Style::spaceSm * scale,
+            .height = Style::controlHeight * scale,
+            .flexGrow = 1.0f,
+        })
+    );
+    addRow->addChild(
+        ui::button({
+            .glyph = "add",
+            .fontSize = Style::fontSizeCaption * scale,
+            .glyphSize = Style::fontSizeCaption * scale,
+            .variant = ButtonVariant::Ghost,
+            .minWidth = Style::controlHeight * scale,
+            .minHeight = Style::controlHeight * scale,
+            .onClick = [keyInput, valueInput, setAndCommit]() {
+              if (keyInput == nullptr || valueInput == nullptr) {
+                return;
+              }
+              const std::string key = keyInput->value();
+              const std::string value = valueInput->value();
+              if (!key.empty()) {
+                setAndCommit(key, value);
+              }
+            },
+        })
+    );
+    block->addChild(std::move(addRow));
 
     section.addChild(std::move(block));
   }

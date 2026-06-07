@@ -13,6 +13,7 @@
 #include <cmath>
 #include <memory>
 #include <string_view>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -292,10 +293,10 @@ namespace {
 
 KeyboardLayoutWidget::KeyboardLayoutWidget(
     CompositorPlatform& platform, std::string cycleCommand, DisplayMode displayMode, bool showIcon, bool showLabel,
-    bool hideWhenSingleLayout
+    bool hideWhenSingleLayout, std::unordered_map<std::string, std::string> customLabels
 )
     : m_platform(platform), m_cycleCommand(std::move(cycleCommand)), m_displayMode(displayMode), m_showIcon(showIcon),
-      m_showLabel(showLabel), m_hideWhenSingleLayout(hideWhenSingleLayout) {}
+      m_showLabel(showLabel), m_hideWhenSingleLayout(hideWhenSingleLayout), m_customLabels(std::move(customLabels)) {}
 
 void KeyboardLayoutWidget::create() {
   auto area = std::make_unique<InputArea>();
@@ -460,7 +461,7 @@ void KeyboardLayoutWidget::sync(Renderer& renderer) {
     m_refreshAttemptsRemaining = 0;
     m_refreshTimer.stop();
   }
-  std::string layoutLabel = formatLayoutLabel(layoutName, m_displayMode);
+  std::string layoutLabel = resolveLayoutLabel(layoutName, m_displayMode, m_customLabels);
   if (m_isVertical && layoutLabel.size() > 3) {
     layoutLabel = layoutLabel.substr(0, 3);
   }
@@ -574,4 +575,14 @@ std::string KeyboardLayoutWidget::formatLayoutLabel(const std::string& layoutNam
     return layoutName;
   }
   return shortLayoutLabel(layoutName);
+}
+
+std::string KeyboardLayoutWidget::resolveLayoutLabel(
+    const std::string& layoutName, DisplayMode displayMode,
+    const std::unordered_map<std::string, std::string>& customLabels
+) {
+  if (const auto it = customLabels.find(layoutName); it != customLabels.end() && !it->second.empty()) {
+    return it->second;
+  }
+  return formatLayoutLabel(layoutName, displayMode);
 }

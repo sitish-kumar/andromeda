@@ -273,6 +273,7 @@ struct WidgetBarCapsuleSpec {
 struct WidgetConfig {
   std::string type; // widget type (e.g. "clock", "spacer"); defaults to the entry name
   std::unordered_map<std::string, WidgetSettingValue> settings;
+  std::unordered_map<std::string, std::unordered_map<std::string, std::string>> tables;
 
   [[nodiscard]] std::string getString(const std::string& key, const std::string& fallback = {}) const;
   [[nodiscard]] std::vector<std::string>
@@ -284,6 +285,8 @@ struct WidgetConfig {
   getColorSpec(const std::string& key, const ColorSpec& fallback, std::string_view context = {}) const;
   [[nodiscard]] std::optional<ColorSpec>
   getOptionalColorSpec(const std::string& key, std::string_view context = {}) const;
+  [[nodiscard]] std::unordered_map<std::string, std::string>
+  getStringMap(const std::string& key, const std::unordered_map<std::string, std::string>& fallback = {}) const;
   [[nodiscard]] bool hasSetting(const std::string& key) const;
 
   bool operator==(const WidgetConfig&) const = default;
