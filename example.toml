@@ -138,7 +138,9 @@ offset_y = 8                        # absolute vertical margin from the screen e
 # monitors = ["DP-1"]               # connector names; omit or leave empty for all monitors
 
 [osd.kinds]
-volume = true                       # output and input volume changes
+volume = true                       # master volume OSD toggle
+volume_output = true                # output (speaker) volume; requires volume = true
+volume_input = true                 # input (microphone) volume; requires volume = true
 brightness = true                   # display brightness changes
 wifi = true                         # Wi-Fi toggle
 bluetooth = true                    # Bluetooth toggle

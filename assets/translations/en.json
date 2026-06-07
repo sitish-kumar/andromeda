@@ -1968,8 +1968,16 @@
           "label": "Power Profile"
         },
         "osd-kinds-volume": {
-          "description": "Show OSD popups when output or input volume changes",
+          "description": "Show OSD popups when volume changes; use advanced settings to control output and input separately",
           "label": "Volume"
+        },
+        "osd-kinds-volume-input": {
+          "description": "Show an OSD popup when input (microphone) volume changes",
+          "label": "Input Volume"
+        },
+        "osd-kinds-volume-output": {
+          "description": "Show an OSD popup when output (speaker) volume changes",
+          "label": "Output Volume"
         },
         "osd-kinds-wifi": {
           "description": "Show an OSD popup when Wi-Fi is toggled",

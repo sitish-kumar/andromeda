@@ -1351,6 +1351,25 @@ namespace settings {
         tr("settings.schema.shell.osd-kinds-volume.description"), {"osd", "kinds", "volume"},
         ToggleSetting{cfg.osd.kinds.volume}, "hud overlay audio output input microphone"
     ));
+    {
+      const SettingVisibility volumeOn{{"osd", "kinds", "volume"}, {"true"}};
+      SettingEntry outputEntry = makeEntry(
+          SettingsSection::Osd, "kinds", tr("settings.schema.shell.osd-kinds-volume-output.label"),
+          tr("settings.schema.shell.osd-kinds-volume-output.description"), {"osd", "kinds", "volume_output"},
+          ToggleSetting{cfg.osd.kinds.volumeOutput}, "hud overlay audio speaker sink output"
+      );
+      outputEntry.advanced = true;
+      outputEntry.visibleWhen = volumeOn;
+      entries.push_back(std::move(outputEntry));
+      SettingEntry inputEntry = makeEntry(
+          SettingsSection::Osd, "kinds", tr("settings.schema.shell.osd-kinds-volume-input.label"),
+          tr("settings.schema.shell.osd-kinds-volume-input.description"), {"osd", "kinds", "volume_input"},
+          ToggleSetting{cfg.osd.kinds.volumeInput}, "hud overlay audio microphone source input"
+      );
+      inputEntry.advanced = true;
+      inputEntry.visibleWhen = volumeOn;
+      entries.push_back(std::move(inputEntry));
+    }
     entries.push_back(makeEntry(
         SettingsSection::Osd, "kinds", tr("settings.schema.shell.osd-kinds-brightness.label"),
         tr("settings.schema.shell.osd-kinds-brightness.description"), {"osd", "kinds", "brightness"},

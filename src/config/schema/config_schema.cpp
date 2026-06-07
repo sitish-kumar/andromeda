@@ -36,6 +36,8 @@ namespace noctalia::config::schema {
   const Schema<OsdKindsConfig>& osdKindsSchema() {
     static const Schema<OsdKindsConfig> s = {
         field(&OsdKindsConfig::volume, "volume"),
+        field(&OsdKindsConfig::volumeOutput, "volume_output"),
+        field(&OsdKindsConfig::volumeInput, "volume_input"),
         field(&OsdKindsConfig::brightness, "brightness"),
         field(&OsdKindsConfig::wifi, "wifi"),
         field(&OsdKindsConfig::bluetooth, "bluetooth"),

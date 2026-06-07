@@ -46,8 +46,9 @@ namespace {
   [[nodiscard]] bool isOsdKindEnabled(const OsdKindsConfig& kinds, OsdKind kind) {
     switch (kind) {
     case OsdKind::Volume:
+      return kinds.volume && kinds.volumeOutput;
     case OsdKind::Microphone:
-      return kinds.volume;
+      return kinds.volume && kinds.volumeInput;
     case OsdKind::Brightness:
       return kinds.brightness;
     case OsdKind::Wifi:

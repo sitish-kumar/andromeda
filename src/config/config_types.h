@@ -524,6 +524,8 @@ struct LockscreenWidgetsConfig {
 
 struct OsdKindsConfig {
   bool volume = true;
+  bool volumeOutput = true;
+  bool volumeInput = true;
   bool brightness = true;
   bool wifi = true;
   bool bluetooth = true;
