@@ -242,7 +242,7 @@ namespace {
     std::string match;
     while (auto* entry = ::readdir(dir)) {
       const std::string name = entry->d_name;
-      if (name.find('-') == std::string::npos) {
+      if (!name.contains('-')) {
         continue;
       }
 

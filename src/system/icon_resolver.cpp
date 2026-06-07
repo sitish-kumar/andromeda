@@ -37,7 +37,7 @@ namespace {
 
   // Nominal size encoded in a well-known subdir name like "48x48" or "scalable".
   int sizeFromDirName(std::string_view dirName) {
-    if (dirName.find("scalable") != std::string_view::npos) {
+    if (dirName.contains("scalable")) {
       return 0;
     }
     int size = 0;
@@ -361,9 +361,7 @@ namespace {
           pushUniqueDir(
               searchDirs,
               IconSearchDir{
-                  .path = themeRoot + path,
-                  .size = sizeFromDirName(name),
-                  .scalable = name.find("scalable") != std::string_view::npos
+                  .path = themeRoot + path, .size = sizeFromDirName(name), .scalable = name.contains("scalable")
               }
           );
         }

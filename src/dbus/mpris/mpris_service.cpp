@@ -887,7 +887,7 @@ bool MprisService::setPosition(const std::string& busName, int64_t positionUs) {
   // Use projected position to reduce stale-cache drift for relative-seek fallback.
   // Capture values by value, not iterator references.
   const int64_t currentPositionUs = projectedPositionUs(it->second);
-  const bool preferRelativeSeek = it->second.trackId.empty() || busName.find("spotify") != std::string::npos;
+  const bool preferRelativeSeek = it->second.trackId.empty() || busName.contains("spotify");
 
   auto fallback_seek = [this, busName, currentPositionUs, positionUs]() {
     const int64_t offsetUs = positionUs - currentPositionUs;
@@ -2136,7 +2136,7 @@ bool MprisService::isBlacklisted(const MprisPlayerInfo& player) const {
     if (token == busName || token == identity || token == desktopEntry) {
       return true;
     }
-    if (!token.empty() && busName.find(token) != std::string::npos) {
+    if (!token.empty() && busName.contains(token)) {
       return true;
     }
   }

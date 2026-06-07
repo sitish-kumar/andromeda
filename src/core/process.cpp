@@ -98,10 +98,10 @@ namespace {
   }
 
   [[nodiscard]] bool isSafeFlatpakAppId(std::string_view appId) {
-    if (appId.empty() || appId.find('/') != std::string_view::npos || appId.find('\\') != std::string_view::npos) {
+    if (appId.empty() || appId.contains('/') || appId.contains('\\')) {
       return false;
     }
-    return appId.find("..") == std::string_view::npos;
+    return !appId.contains("..");
   }
 
   void appendFlatpakDataRoots(std::vector<std::filesystem::path>& roots) {

@@ -65,16 +65,14 @@ namespace {
   }
 
   bool shouldUseStrftimeCompat(std::string_view fmt) {
-    return fmt.find("%-") != std::string_view::npos
-        || (fmt.find('%') != std::string_view::npos
-            && (fmt.find('{') == std::string_view::npos || fmt.find("{:") != std::string_view::npos));
+    return fmt.contains("%-") || (fmt.contains('%') && (!fmt.contains('{') || fmt.contains("{:")));
   }
 
   std::optional<std::string> formatStrftimeCompat(std::string_view fmt, const std::tm& local) {
     if (!shouldUseStrftimeCompat(fmt)) {
       return std::nullopt;
     }
-    if (fmt.find('{') == std::string_view::npos) {
+    if (!fmt.contains('{')) {
       return formatStrftime(fmt, local);
     }
 

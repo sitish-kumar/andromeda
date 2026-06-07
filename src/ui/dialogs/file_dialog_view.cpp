@@ -647,7 +647,7 @@ void FileDialogView::applyFilter(bool resetScroll) {
 
   m_visibleEntries.clear();
   for (const auto& entry : m_entries) {
-    if (!query.empty() && StringUtils::toLower(entry.name).find(query) == std::string::npos) {
+    if (!query.empty() && !StringUtils::toLower(entry.name).contains(query)) {
       continue;
     }
     m_visibleEntries.push_back(entry);

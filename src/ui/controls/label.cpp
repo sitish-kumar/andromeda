@@ -398,7 +398,7 @@ LayoutSize Label::measureWithConstraints(Renderer& renderer, const LayoutConstra
   const int effectiveMaxLines = m_autoScroll ? 1 : m_userMaxLines;
   const bool singleLine = m_autoScroll
       || (effectiveMaxLines == 1)
-      || (effectiveMaxLines == 0 && configuredMaxWidth <= 0.0f && m_plainText.find('\n') == std::string::npos);
+      || (effectiveMaxLines == 0 && configuredMaxWidth <= 0.0f && !m_plainText.contains('\n'));
   const TextAlign align = m_textNode->textAlign();
   const FontWeight fontWeight = m_textNode->fontWeight();
   const float renderScale = renderer.renderScale();

@@ -53,8 +53,8 @@ namespace {
   }
 
   std::string buildImageActionCommand(std::string command, std::string_view imagePath) {
-    const bool hasPathPlaceholder = command.find("{path}") != std::string::npos;
-    const bool hasStdinPlaceholder = command.find("{stdin}") != std::string::npos;
+    const bool hasPathPlaceholder = command.contains("{path}");
+    const bool hasStdinPlaceholder = command.contains("{stdin}");
     const std::string quotedPath = StringUtils::shellQuote(imagePath);
 
     if (hasPathPlaceholder) {
@@ -1260,7 +1260,7 @@ void ClipboardPanel::applyFilter() {
     for (char& ch : haystack) {
       ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
     }
-    if (haystack.find(needle) != std::string::npos) {
+    if (haystack.contains(needle)) {
       m_filteredIndices.push_back(i);
     }
   }
