@@ -1512,7 +1512,8 @@ void Application::initUi() {
   m_dock.initialize(m_compositorPlatform, &m_configService, &m_renderContext);
   m_lockscreenWidgetsController.initialize(
       m_wayland, &m_configService, m_lockScreen, m_bar, m_dock, &m_desktopWidgetsController, m_pipewireSpectrum.get(),
-      &m_weatherService, &m_renderContext, m_mprisService.get(), &m_httpClient, m_systemMonitor.get()
+      &m_weatherService, &m_renderContext, m_mprisService.get(), &m_httpClient, m_systemMonitor.get(),
+      &m_sharedTextureCache
   );
   m_desktopWidgetsController.initialize(
       m_wayland, &m_configService, m_pipewireSpectrum.get(), &m_weatherService, &m_renderContext, m_mprisService.get(),

@@ -8,9 +8,13 @@
 #include "cursor-shape-v1-client-protocol.h"
 #include "i18n/i18n.h"
 #include "pipewire/pipewire_spectrum.h"
+#include "render/core/color.h"
+#include "render/core/shared_texture_cache.h"
+#include "render/core/wallpaper_types.h"
 #include "render/render_context.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
+#include "render/scene/wallpaper_node.h"
 #include "shell/desktop/desktop_widget_layout.h"
 #include "shell/desktop/desktop_widget_settings_registry.h"
 #include "shell/desktop/widgets/desktop_login_box_widget.h"
@@ -160,6 +164,34 @@ namespace {
     return {cx + halfWidth * cosTheta - halfHeight * sinTheta, cy + halfWidth * sinTheta + halfHeight * cosTheta};
   }
 
+  Color lockscreenWallpaperFillColor(const WallpaperConfig& config) {
+    if (!config.fillColor) {
+      return rgba(0.0f, 0.0f, 0.0f, 1.0f);
+    }
+    return resolveColorSpec(*config.fillColor);
+  }
+
+  bool parseColorWallpaperPath(std::string_view path, Color& out) {
+    constexpr std::string_view kPrefix = "color:";
+    if (!path.starts_with(kPrefix)) {
+      return false;
+    }
+    return tryParseHexColor(path.substr(kPrefix.size()), out);
+  }
+
+  bool lockscreenWallpaperDiffersFromDesktop(
+      const BackgroundWidgetsEditorProfile& profile, ConfigService* config, std::string_view connectorName
+  ) {
+    if (!profile.showLockscreenLoginPreview || config == nullptr) {
+      return false;
+    }
+    const std::string& custom = config->config().lockscreen.wallpaper;
+    if (custom.empty()) {
+      return false;
+    }
+    return custom != config->getWallpaperPath(std::string(connectorName));
+  }
+
 } // namespace
 
 BackgroundWidgetsEditor::BackgroundWidgetsEditor(BackgroundWidgetsEditorProfile profile) : m_profile(profile) {}
@@ -181,11 +213,12 @@ std::string BackgroundWidgetsEditor::nextWidgetId() const {
 void BackgroundWidgetsEditor::initialize(
     WaylandConnection& wayland, ConfigService* config, PipeWireSpectrum* pipewireSpectrum,
     const WeatherService* weather, RenderContext* renderContext, MprisService* mpris, HttpClient* httpClient,
-    SystemMonitorService* sysmon
+    SystemMonitorService* sysmon, SharedTextureCache* textureCache
 ) {
   m_wayland = &wayland;
   m_config = config;
   m_renderContext = renderContext;
+  m_textureCache = textureCache;
   m_factory = std::make_unique<DesktopWidgetFactory>(pipewireSpectrum, weather, mpris, httpClient, sysmon);
 }
 
@@ -215,6 +248,9 @@ void BackgroundWidgetsEditor::open(const WidgetsEditorSnapshot& snapshot) {
 WidgetsEditorSnapshot BackgroundWidgetsEditor::close() {
   if (m_drag.mode != DragMode::None) {
     finishDrag();
+  }
+  for (auto& surface : m_surfaces) {
+    releaseWallpaperPreview(*surface);
   }
   m_surfaces.clear();
   m_drag = {};
@@ -410,6 +446,10 @@ void BackgroundWidgetsEditor::prepareFrame(OverlaySurface& surface, bool needsUp
   if (needsLayout && surface.sceneRoot != nullptr) {
     surface.sceneRoot->layout(*m_renderContext);
   }
+
+  if (surface.wallpaperPreviewActive) {
+    updateWallpaperPreview(surface);
+  }
 }
 
 void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
@@ -434,6 +474,26 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     root->setPopupContext(surface.selectPopup.get());
   }
   root->setFrameSize(static_cast<float>(surface.surface->width()), static_cast<float>(surface.surface->height()));
+
+  releaseWallpaperPreview(surface);
+  surface.wallpaperPreview = nullptr;
+  surface.wallpaperPreviewActive = false;
+  surface.wallpaperPreviewPath.clear();
+
+  if (lockscreenWallpaperDiffersFromDesktop(m_profile, m_config, surface.outputName)) {
+    surface.wallpaperPreviewActive = true;
+    surface.wallpaperPreviewPath = m_config->config().lockscreen.wallpaper;
+
+    auto wallpaper = std::make_unique<WallpaperNode>();
+    surface.wallpaperPreview = wallpaper.get();
+    wallpaper->setZIndex(-1);
+    const auto& wpConfig = m_config->config().wallpaper;
+    wallpaper->setFillMode(wpConfig.fillMode);
+    wallpaper->setFillColor(lockscreenWallpaperFillColor(wpConfig));
+    wallpaper->setPosition(0.0f, 0.0f);
+    wallpaper->setFrameSize(root->width(), root->height());
+    root->addChild(std::move(wallpaper));
+  }
 
   auto dim = ui::box({
       .fill = colorSpecFromRole(ColorRole::SurfaceVariant, 0.14f),
@@ -1725,6 +1785,87 @@ void BackgroundWidgetsEditor::onSecondTick() {
       surface->surface->requestUpdate();
     }
   }
+}
+
+void BackgroundWidgetsEditor::releaseWallpaperPreview(OverlaySurface& surface) {
+  if (surface.wallpaperPreviewTexture.id == 0) {
+    surface.wallpaperPreviewLoadedPath.clear();
+    return;
+  }
+
+  const std::string& releasePath = surface.wallpaperPreviewLoadedPath;
+  if (m_textureCache != nullptr && m_textureCache->shared()) {
+    if (!releasePath.empty()) {
+      m_textureCache->release(surface.wallpaperPreviewTexture, releasePath);
+    }
+  } else if (m_renderContext != nullptr) {
+    m_renderContext->backend().makeCurrentNoSurface();
+    m_renderContext->textureManager().unload(surface.wallpaperPreviewTexture);
+  }
+  surface.wallpaperPreviewTexture = {};
+  surface.wallpaperPreviewLoadedPath.clear();
+}
+
+void BackgroundWidgetsEditor::updateWallpaperPreview(OverlaySurface& surface) {
+  if (!surface.wallpaperPreviewActive
+      || surface.wallpaperPreview == nullptr
+      || m_config == nullptr
+      || m_renderContext == nullptr
+      || surface.surface == nullptr) {
+    return;
+  }
+
+  const float width = static_cast<float>(surface.surface->width());
+  const float height = static_cast<float>(surface.surface->height());
+  surface.wallpaperPreview->setPosition(0.0f, 0.0f);
+  surface.wallpaperPreview->setSize(width, height);
+
+  const std::string& path = surface.wallpaperPreviewPath;
+  if (path.empty()) {
+    return;
+  }
+
+  Color color = rgba(0.0f, 0.0f, 0.0f, 1.0f);
+  if (parseColorWallpaperPath(path, color)) {
+    if (surface.wallpaperPreviewTexture.id != 0) {
+      releaseWallpaperPreview(surface);
+    }
+    surface.wallpaperPreview->setSources(
+        WallpaperSourceKind::Color, {}, color, WallpaperSourceKind::Image, {}, rgba(0.0f, 0.0f, 0.0f, 1.0f), 0.0f, 0.0f,
+        0.0f, 0.0f
+    );
+    surface.wallpaperPreview->setTransition(WallpaperTransition::Fade, 0.0f, TransitionParams{});
+    return;
+  }
+
+  const bool needsReload = surface.wallpaperPreviewTexture.id == 0 || surface.wallpaperPreviewLoadedPath != path;
+  TextureHandle texture = surface.wallpaperPreviewTexture;
+  if (needsReload) {
+    if (m_textureCache != nullptr) {
+      texture = m_textureCache->acquire(path);
+      if (texture.id == 0 && !m_textureCache->shared()) {
+        m_renderContext->backend().makeCurrentNoSurface();
+        texture = m_renderContext->textureManager().loadFromFile(path, 0, true);
+      }
+    } else {
+      m_renderContext->backend().makeCurrentNoSurface();
+      texture = m_renderContext->textureManager().loadFromFile(path, 0, true);
+    }
+  }
+
+  if (texture.id == 0) {
+    return;
+  }
+
+  if (needsReload && surface.wallpaperPreviewTexture.id != 0 && surface.wallpaperPreviewLoadedPath != path) {
+    releaseWallpaperPreview(surface);
+  }
+  surface.wallpaperPreviewTexture = texture;
+  surface.wallpaperPreviewLoadedPath = path;
+  surface.wallpaperPreview->setTextures(
+      texture.id, {}, static_cast<float>(texture.width), static_cast<float>(texture.height), 0.0f, 0.0f
+  );
+  surface.wallpaperPreview->setTransition(WallpaperTransition::Fade, 0.0f, TransitionParams{});
 }
 
 void BackgroundWidgetsEditor::requestLayout() {
