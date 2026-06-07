@@ -81,6 +81,23 @@ namespace {
     return false;
   }
 
+  bool looksLikeWaydroidRuntime(std::string_view value) {
+    const std::string normalized = StringUtils::toLower(value);
+    return normalized == "waydroid"
+        || normalized == "waydroid-container"
+        || normalized == "org.waydroid.waydroid"
+        || normalized.starts_with("waydroid.")
+        || normalized.starts_with("org.waydroid.");
+  }
+
+  bool isWaydroidProgramStream(const AudioNode& node) {
+    return looksLikeWaydroidRuntime(node.applicationBinary)
+        || looksLikeWaydroidRuntime(node.applicationId)
+        || looksLikeWaydroidRuntime(node.iconName)
+        || looksLikeWaydroidRuntime(node.applicationName)
+        || looksLikeWaydroidRuntime(node.name);
+  }
+
   bool isLikelyFallbackStreamLabel(std::string_view value) {
     std::string normalized = StringUtils::toLower(value);
     for (char& ch : normalized) {
@@ -423,6 +440,7 @@ namespace {
 
   DesktopEntryMatch lookupDesktopEntryForProgramStream(const AudioNode& node, std::string_view resolvedBeforeDesktop) {
     DesktopEntryMatch out;
+    const bool waydroidStream = isWaydroidProgramStream(node);
     const std::string binary = lowerIdentifier(StringUtils::trim(node.applicationBinary));
     // Wine/Proton streams report wine64-preloader etc.; matching desktop entries by that binary (or
     // the shared Icon=wine) incorrectly picks unrelated apps (e.g. Protontricks) before app/node name.
@@ -444,7 +462,7 @@ namespace {
       }
     }
     const std::string appName = lowerIdentifier(StringUtils::trim(node.applicationName));
-    if (!appName.empty() && !isGenericAudioLabel(appName) && !looksLikeRuntimeLauncher(appName)) {
+    if (!waydroidStream && !appName.empty() && !isGenericAudioLabel(appName) && !looksLikeRuntimeLauncher(appName)) {
       if (const DesktopEntry* entry = findDesktopEntryByTerm(appName)) {
         out.entry = entry;
         out.matchedVia = "application_name";
@@ -453,7 +471,7 @@ namespace {
       }
     }
     const std::string resolved = lowerIdentifier(StringUtils::trim(resolvedBeforeDesktop));
-    if (!resolved.empty() && !isGenericAudioLabel(resolved) && !looksLikeRuntimeLauncher(resolved)) {
+    if (!waydroidStream && !resolved.empty() && !isGenericAudioLabel(resolved) && !looksLikeRuntimeLauncher(resolved)) {
       if (const DesktopEntry* entry = findDesktopEntryByTerm(resolved)) {
         out.entry = entry;
         out.matchedVia = "resolved_intermediate";
@@ -462,7 +480,7 @@ namespace {
       }
     }
     const std::string nodeName = lowerIdentifier(StringUtils::trim(node.name));
-    if (!nodeName.empty()) {
+    if (!waydroidStream && !nodeName.empty()) {
       if (const DesktopEntry* entry = findDesktopEntryByTerm(nodeName)) {
         out.entry = entry;
         out.matchedVia = "node_name";
