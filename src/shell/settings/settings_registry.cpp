@@ -2132,15 +2132,11 @@ namespace settings {
           section, "general", tr("settings.schema.shared.auto-hide.label"),
           tr("settings.schema.bar.auto-hide.description"), path("auto_hide"), ToggleSetting{bar.autoHide}, "autohide"
       ));
-      {
-        auto e = makeEntry(
-            section, "general", tr("settings.schema.shared.reserve-space.label"),
-            tr("settings.schema.bar.reserve-space.description"), path("reserve_space"), ToggleSetting{bar.reserveSpace},
-            "exclusive zone"
-        );
-        e.visibleWhen = SettingVisibility{path("auto_hide"), {"false"}};
-        entries.push_back(std::move(e));
-      }
+      entries.push_back(makeEntry(
+          section, "general", tr("settings.schema.shared.reserve-space.label"),
+          tr("settings.schema.bar.reserve-space.description"), path("reserve_space"), ToggleSetting{bar.reserveSpace},
+          "exclusive zone"
+      ));
       entries.push_back(makeEntry(
           section, "general", tr("settings.schema.bar.layer.label"), tr("settings.schema.bar.layer.description"),
           path("layer"),
@@ -2362,15 +2358,11 @@ namespace settings {
             tr("settings.schema.bar.auto-hide.description"), monitorPath("auto_hide"),
             ToggleSetting{ovr.autoHide.value_or(bar.autoHide)}, "autohide"
         ));
-        {
-          auto e = makeEntry(
-              section, "general", tr("settings.schema.shared.reserve-space.label"),
-              tr("settings.schema.bar.reserve-space.description"), monitorPath("reserve_space"),
-              ToggleSetting{ovr.reserveSpace.value_or(bar.reserveSpace)}, "exclusive zone"
-          );
-          e.visibleWhen = SettingVisibility{monitorPath("auto_hide"), {"false"}};
-          entries.push_back(std::move(e));
-        }
+        entries.push_back(makeEntry(
+            section, "general", tr("settings.schema.shared.reserve-space.label"),
+            tr("settings.schema.bar.reserve-space.description"), monitorPath("reserve_space"),
+            ToggleSetting{ovr.reserveSpace.value_or(bar.reserveSpace)}, "exclusive zone"
+        ));
         entries.push_back(makeEntry(
             section, "general", tr("settings.schema.bar.layer.label"), tr("settings.schema.bar.layer.description"),
             monitorPath("layer"),

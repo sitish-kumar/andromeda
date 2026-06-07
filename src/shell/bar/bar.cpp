@@ -389,8 +389,7 @@ namespace {
       }
     }
 
-    spec.exclusiveZone =
-        (!barConfig.autoHide && barConfig.reserveSpace) ? reservedBarExclusiveZone(barConfig, shadowConfig) : 0;
+    spec.exclusiveZone = barConfig.reserveSpace ? reservedBarExclusiveZone(barConfig, shadowConfig) : 0;
     return spec;
   }
 
@@ -1128,10 +1127,6 @@ bool Bar::barContentVisuallyShown(const BarInstance& instance) const noexcept {
 }
 
 bool Bar::shouldReserveExclusiveZone(const BarInstance& instance) const noexcept {
-  // v4 parity: auto-hide never reserves compositor space (overlay slide only).
-  if (instance.barConfig.autoHide) {
-    return false;
-  }
   if (instance.ipcLayoutReleased) {
     return false;
   }

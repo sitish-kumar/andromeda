@@ -88,7 +88,7 @@ struct BarConfig {
   std::string position = "top";
   bool enabled = true;
   bool autoHide = false;     // slide out when the pointer leaves; reveal on edge approach
-  bool reserveSpace = true;  // reserve compositor exclusive zone when auto_hide is false
+  bool reserveSpace = true;  // reserve compositor exclusive zone; applies with or without auto_hide
   std::string layer = "top"; // top | overlay — attached panels use the same layer
   std::int32_t thickness = Style::barThicknessDefault;
   float backgroundOpacity = 1.0f;
