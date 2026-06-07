@@ -1159,6 +1159,22 @@ void Application::initUi() {
       });
     });
   });
+  m_settingsWindow.setSaveWallpaperPaletteAsCustom([this]() {
+    std::string paletteName;
+    std::string error;
+    if (!m_themeService.saveWallpaperPaletteAsCustom(&paletteName, &error)) {
+      m_settingsWindow.markSettingsWriteError(
+          error.empty() ? i18n::tr("settings.errors.export-wallpaper-palette") : std::move(error)
+      );
+      return;
+    }
+    m_settingsWindow.onExternalOptionsChanged();
+    m_settingsWindow.markSettingsWriteSuccess(true);
+    notify::info(
+        "Noctalia", i18n::tr("notifications.internal.wallpaper-palette-export"),
+        i18n::tr("notifications.internal.wallpaper-palette-export-success", "name", paletteName)
+    );
+  });
   m_lockScreen.initialize(m_wayland, &m_renderContext, &m_configService, &m_sharedTextureCache);
   m_wallpaper.setAutomationGate([this]() { return !m_lockScreen.isActive(); });
   m_configService.addReloadCallback([this]() { m_lockScreen.onConfigChanged(); });
@@ -1496,7 +1512,8 @@ void Application::initUi() {
   m_dock.initialize(m_compositorPlatform, &m_configService, &m_renderContext);
   m_lockscreenWidgetsController.initialize(
       m_wayland, &m_configService, m_lockScreen, m_bar, m_dock, &m_desktopWidgetsController, m_pipewireSpectrum.get(),
-      &m_weatherService, &m_renderContext, m_mprisService.get(), &m_httpClient, m_systemMonitor.get()
+      &m_weatherService, &m_renderContext, m_mprisService.get(), &m_httpClient, m_systemMonitor.get(),
+      &m_sharedTextureCache
   );
   m_desktopWidgetsController.initialize(
       m_wayland, &m_configService, m_pipewireSpectrum.get(), &m_weatherService, &m_renderContext, m_mprisService.get(),

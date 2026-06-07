@@ -836,6 +836,33 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
     m_settingsRegistry.insert(it, std::move(btn));
   }
 
+  if (m_saveWallpaperPaletteAsCustom && cfg.theme.source == PaletteSource::Wallpaper) {
+    auto it = std::find_if(m_settingsRegistry.begin(), m_settingsRegistry.end(), [](const settings::SettingEntry& e) {
+      return e.section == settings::SettingsSection::Appearance
+          && e.group == "theme"
+          && e.path == std::vector<std::string>{"theme", "wallpaper_scheme"};
+    });
+    if (it != m_settingsRegistry.end()) {
+      ++it;
+    }
+    settings::SettingEntry btn{
+        .section = settings::SettingsSection::Appearance,
+        .group = "theme",
+        .title = i18n::tr("settings.schema.appearance.export-wallpaper-palette.label"),
+        .subtitle = i18n::tr("settings.schema.appearance.export-wallpaper-palette.description"),
+        .path = {},
+        .control =
+            settings::ButtonSetting{
+                .label = i18n::tr("settings.schema.appearance.export-wallpaper-palette.button"),
+                .action = m_saveWallpaperPaletteAsCustom,
+                .glyph = {},
+            },
+        .searchText = "wallpaper palette export custom save colors theme",
+        .visibleWhen = std::nullopt,
+    };
+    m_settingsRegistry.insert(it, std::move(btn));
+  }
+
   if (m_openWallpaperPanel) {
     auto it = std::find_if(m_settingsRegistry.begin(), m_settingsRegistry.end(), [](const settings::SettingEntry& e) {
       return e.section == settings::SettingsSection::Wallpaper

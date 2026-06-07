@@ -530,6 +530,8 @@
       "desktop-widgets-editor-enabled": "Desktop widget editor is on. Switch to an empty workspace to see the editor overlay.",
       "greeter-sync": "Noctalia Greeter",
       "greeter-sync-success": "Appearance synced. Changes apply on the next login screen.",
+      "wallpaper-palette-export": "Custom Palette",
+      "wallpaper-palette-export-success": "Saved \"{name}\" and switched palette source to custom.",
       "keybind-app": "Noctalia",
       "keybind-invalid-modifier": "This shortcut accepts a single key without modifiers.",
       "keybind-invalid-printable": "Printable keys (letters, numbers, symbols) require a modifier such as Ctrl or Alt.",
@@ -787,6 +789,7 @@
       "reset-page": "Failed to reset some settings.",
       "support-report": "Failed to save support report.",
       "sync-greeter": "Could not sync appearance to Noctalia Greeter.",
+      "export-wallpaper-palette": "Could not save the wallpaper palette as a custom palette.",
       "widget": {
         "rename": "Could not rename named widget."
       },
@@ -1125,6 +1128,11 @@
         "wallpaper-generation-scheme": {
           "description": "Choose how wallpaper colors are converted into a palette",
           "label": "Wallpaper Generation Scheme"
+        },
+        "export-wallpaper-palette": {
+          "description": "Save the current wallpaper-generated palette as a reusable custom palette file",
+          "label": "Export Wallpaper Palette",
+          "button": "Save as Custom Palette"
         }
       },
       "backdrop": {
