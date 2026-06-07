@@ -1876,6 +1876,7 @@ namespace settings {
         return "network";
       case HookKind::BatteryCharging:
       case HookKind::BatteryDischarging:
+      case HookKind::BatteryPlugged:
       case HookKind::BatteryPercentageChanged:
       case HookKind::PowerProfileChanged:
         return "power";
@@ -1889,6 +1890,7 @@ namespace settings {
       std::string tags = "hook command script exec event trigger";
       if (kind == HookKind::BatteryCharging
           || kind == HookKind::BatteryDischarging
+          || kind == HookKind::BatteryPlugged
           || kind == HookKind::BatteryPercentageChanged) {
         tags += " battery power";
       }

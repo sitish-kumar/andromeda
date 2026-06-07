@@ -997,6 +997,7 @@ enum class HookKind : std::uint8_t {
   BluetoothDisabled,
   BatteryCharging,
   BatteryDischarging,
+  BatteryPlugged,
   BatteryPercentageChanged,
   PowerProfileChanged,
   Count
@@ -1018,6 +1019,7 @@ constexpr EnumOption<HookKind> kHookKinds[] = {
     {HookKind::BluetoothDisabled, "bluetooth_disabled", ""},
     {HookKind::BatteryCharging, "battery_charging", ""},
     {HookKind::BatteryDischarging, "battery_discharging", ""},
+    {HookKind::BatteryPlugged, "battery_plugged", ""},
     {HookKind::BatteryPercentageChanged, "battery_percentage_changed", ""},
     {HookKind::PowerProfileChanged, "power_profile_changed", ""},
 };
