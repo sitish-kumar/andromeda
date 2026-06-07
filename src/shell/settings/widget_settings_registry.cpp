@@ -718,11 +718,6 @@ namespace settings {
         add(std::move(path));
       }
       add(segmentedSpec("display", "gauge", sysmonDisplay));
-      {
-        auto gaugeColor = colorSpec("gauge_color", "primary");
-        gaugeColor.visibleWhen = WidgetSettingVisibility{"display", {"gauge"}};
-        add(std::move(gaugeColor));
-      }
       add(colorSpec("highlight_color", "error"));
       add(boolSpec("show_label", true));
       {

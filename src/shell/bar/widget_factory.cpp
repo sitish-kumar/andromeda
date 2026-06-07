@@ -443,17 +443,13 @@ std::unique_ptr<Widget> WidgetFactory::create(
       displayMode = SysmonDisplayMode::Graph;
     const bool showLabel = wc != nullptr ? wc->getBool("show_label", true) : true;
     const auto labelMinWidth = static_cast<float>(wc != nullptr ? wc->getDouble("label_min_width", 0.0) : 0.0);
-    const ColorSpec gaugeColor = wc != nullptr
-        ? wc->getColorSpec("gauge_color", colorSpecFromRole(ColorRole::Primary), "widget." + name + ".gauge_color")
-        : colorSpecFromRole(ColorRole::Primary);
     const ColorSpec highlightColor = wc != nullptr
         ? wc->getColorSpec(
               "highlight_color", colorSpecFromRole(ColorRole::Error), "widget." + name + ".highlight_color"
           )
         : colorSpecFromRole(ColorRole::Error);
     auto widget = std::make_unique<SysmonWidget>(
-        m_sysmon, output, stat, std::move(path), displayMode, gaugeColor, highlightColor, m_configService, showLabel,
-        labelMinWidth
+        m_sysmon, output, stat, std::move(path), displayMode, highlightColor, m_configService, showLabel, labelMinWidth
     );
     widget->setContentScale(contentScale);
     return widget;

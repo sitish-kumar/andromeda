@@ -2327,10 +2327,6 @@
           "description": "Time format string",
           "label": "Format"
         },
-        "gauge-color": {
-          "description": "Color role for the fill bar in gauge display mode; fixed hex colors are also supported",
-          "label": "Gauge Color"
-        },
         "glyph": {
           "description": "Icon glyph name",
           "label": "Glyph"
