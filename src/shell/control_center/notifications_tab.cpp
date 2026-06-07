@@ -232,7 +232,7 @@ namespace {
     bool bodyLineTruncated = false;
     const std::string collapsedBodyText = StringUtils::truncateByLines(bodyText, kBodyMaxLines, &bodyLineTruncated);
     const bool bodyExpandable = bodyLineTruncated
-        || canExpandText(renderer, bodyText, Style::fontSizeCaption * scale, FontWeight::Normal, metrics.cardTextWidth,
+        || canExpandText(renderer, bodyText, Style::fontSizeBody * scale, FontWeight::Normal, metrics.cardTextWidth,
                          kBodyMaxLines);
     metrics.canExpand = summaryExpandable || bodyExpandable;
     metrics.expanded = metrics.canExpand && expandedRequested;
@@ -250,7 +250,7 @@ namespace {
     metrics.metaLine = notificationDisplayAppName(entry.notification) + " • " + relativeMetaLine(entry.notification);
 
     const float metaHeight = measuredTextHeight(
-        renderer, metrics.metaLine, Style::fontSizeCaption * scale, FontWeight::Normal, metrics.metaTextWidth, 0
+        renderer, metrics.metaLine, Style::fontSizeBody * scale, FontWeight::Normal, metrics.metaTextWidth, 0
     );
     const float headerHeight = std::max({iconPx, actionButtonSize, metaHeight});
     const float summaryHeight = measuredTextHeight(
@@ -260,7 +260,7 @@ namespace {
     const float bodyHeight = metrics.bodyText.empty()
         ? 0.0f
         : measuredTextHeight(
-              renderer, metrics.bodyText, Style::fontSizeCaption * scale, FontWeight::Normal, metrics.cardTextWidth,
+              renderer, metrics.bodyText, Style::fontSizeBody * scale, FontWeight::Normal, metrics.cardTextWidth,
               metrics.expanded ? kExpandedMaxLines : kBodyMaxLines
           );
 
@@ -339,7 +339,7 @@ namespace {
 
       m_meta = static_cast<Label*>(m_leftCluster->addChild(
           ui::label({
-              .fontSize = Style::fontSizeCaption * scale,
+              .fontSize = Style::fontSizeBody * scale,
               .flexGrow = 1.0f,
           })
       ));
@@ -363,7 +363,7 @@ namespace {
 
       m_body = static_cast<Label*>(addChild(
           ui::label({
-              .fontSize = Style::fontSizeCaption * scale,
+              .fontSize = Style::fontSizeBody * scale,
               .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
               .visible = false,
           })
@@ -656,7 +656,7 @@ std::unique_ptr<Flex> NotificationsTab::create() {
                   {.label = i18n::tr("control-center.notifications.filter.older")},
               },
           .selectedIndex = m_filterIndex,
-          .fontSize = Style::fontSizeCaption * scale,
+          .fontSize = Style::fontSizeBody * scale,
           .scale = scale,
           .surfaceOpacity = panelCardOpacity(),
           .equalSegmentWidths = true,
@@ -708,7 +708,7 @@ std::unique_ptr<Flex> NotificationsTab::create() {
           }),
           ui::label({
               .out = &m_emptyBody,
-              .fontSize = Style::fontSizeCaption * scale,
+              .fontSize = Style::fontSizeBody * scale,
               .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
           })
       )
