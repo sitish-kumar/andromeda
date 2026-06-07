@@ -64,6 +64,9 @@ namespace {
   constexpr float kShadowAlpha = 0.6f;
   constexpr float kShadowOffset = 1.5f;
   constexpr float kPi = 3.14159265358979323846f;
+  constexpr float kHourHandReach = 0.54f;
+  constexpr float kMinuteHandReach = 0.90f;
+  constexpr float kSecondHandReach = 0.84f;
 
   [[nodiscard]] float degreesToRadians(float degrees) { return degrees * (kPi / 180.0f); }
 
@@ -227,12 +230,14 @@ void DesktopClockWidget::create() {
   buildAnalogTicks(*m_ticksRoot, metrics, handColor);
   m_analogRoot->addChild(std::move(ticksRoot));
 
-  const float hourWidth = std::max(2.5f, 3.0f * scale);
+  const float hourWidth = std::max(2.2f, 2.65f * scale);
   const float minuteWidth = std::max(1.75f, 2.0f * scale);
   const float secondWidth = std::max(1.0f, 1.25f * scale);
-  m_hourPivot = addHandPivot(*m_analogRoot, metrics.center, hourWidth, metrics.dialRadius * 0.42f, handColor);
-  m_minutePivot = addHandPivot(*m_analogRoot, metrics.center, minuteWidth, metrics.dialRadius * 0.58f, handColor);
-  m_secondPivot = addHandPivot(*m_analogRoot, metrics.center, secondWidth, metrics.dialRadius * 0.66f, secondColor);
+  m_hourPivot = addHandPivot(*m_analogRoot, metrics.center, hourWidth, metrics.dialRadius * kHourHandReach, handColor);
+  m_minutePivot =
+      addHandPivot(*m_analogRoot, metrics.center, minuteWidth, metrics.dialRadius * kMinuteHandReach, handColor);
+  m_secondPivot =
+      addHandPivot(*m_analogRoot, metrics.center, secondWidth, metrics.dialRadius * kSecondHandReach, secondColor);
 
   auto hub = std::make_unique<RectNode>();
   m_hub = hub.get();
@@ -352,7 +357,7 @@ void DesktopClockWidget::layoutAnalog(Renderer& /*renderer*/, float size) {
     m_secondPivot->setPosition(metrics.center, metrics.center);
   }
 
-  const float hourWidth = std::max(2.5f, 3.0f * scale);
+  const float hourWidth = std::max(2.2f, 2.65f * scale);
   const float minuteWidth = std::max(1.75f, 2.0f * scale);
   const float secondWidth = std::max(1.0f, 1.25f * scale);
   const auto resizeHand = [](Node* pivot, float width, float length) {
@@ -366,9 +371,9 @@ void DesktopClockWidget::layoutAnalog(Renderer& /*renderer*/, float size) {
     style.radius = width * 0.5f;
     hand->setStyle(style);
   };
-  resizeHand(m_hourPivot, hourWidth, metrics.dialRadius * 0.42f);
-  resizeHand(m_minutePivot, minuteWidth, metrics.dialRadius * 0.58f);
-  resizeHand(m_secondPivot, secondWidth, metrics.dialRadius * 0.66f);
+  resizeHand(m_hourPivot, hourWidth, metrics.dialRadius * kHourHandReach);
+  resizeHand(m_minutePivot, minuteWidth, metrics.dialRadius * kMinuteHandReach);
+  resizeHand(m_secondPivot, secondWidth, metrics.dialRadius * kSecondHandReach);
 
   if (m_hub != nullptr) {
     const float hubSize = std::max(4.0f, 5.0f * scale);
