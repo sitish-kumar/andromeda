@@ -414,6 +414,12 @@ PangoLayout* CairoTextRenderer::buildLayout(
     pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
   } else {
     pango_layout_set_width(layout, -1);
+    if (maxLines > 0) {
+      constexpr int kHardMaxLines = 500;
+      const int lineBudget = std::min(maxLines, kHardMaxLines);
+      pango_layout_set_height(layout, -lineBudget);
+      pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
+    }
   }
 
   PangoAlignment pangoAlign = PANGO_ALIGN_LEFT;
