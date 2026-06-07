@@ -777,7 +777,7 @@ endif
 # ── Include directories ────────────────────────────────────────────────────────
 _noctalia_inc = [
   include_directories('src'),
-  include_directories('third_party/tomlplusplus'),
+  include_directories('third_party/tomlplusplus', is_system: true),
   include_directories('third_party/wuffs', is_system: true),
   # nlohmann is header-only and uses GCC extensions in some paths; treat as system.
   include_directories('third_party/nlohmann', is_system: true),
