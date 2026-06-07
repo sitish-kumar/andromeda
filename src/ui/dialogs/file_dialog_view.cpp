@@ -318,9 +318,9 @@ void FileDialogView::create() {
   listContainer->addChild(
       ui::label({
           .out = &m_listEmptyLabel,
+          .fontSize = Style::fontSizeCaption * scale,
           .visible = false,
           .participatesInLayout = false,
-          .configure = [](Label& label) { label.setCaptionStyle(); },
       })
   );
 
@@ -360,9 +360,9 @@ void FileDialogView::create() {
   gridContainer->addChild(
       ui::label({
           .out = &m_gridEmptyLabel,
+          .fontSize = Style::fontSizeCaption * scale,
           .visible = false,
           .participatesInLayout = false,
-          .configure = [](Label& label) { label.setCaptionStyle(); },
       })
   );
 

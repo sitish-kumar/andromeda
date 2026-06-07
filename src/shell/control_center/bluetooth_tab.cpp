@@ -88,7 +88,6 @@ namespace {
             .text = std::move(text),
             .fontSize = Style::fontSizeCaption * scale,
             .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-            .configure = [](Label& label) { label.setCaptionStyle(); },
         })
     );
   }
@@ -230,7 +229,6 @@ namespace {
                     .fontSize = Style::fontSizeCaption * scale,
                     .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
                     .flexGrow = 1.0f,
-                    .configure = [](Label& label) { label.setCaptionStyle(); },
                 }),
                 ui::toggle({
                     .checkedImmediate = m_device.trusted,
@@ -296,7 +294,6 @@ std::unique_ptr<Flex> BluetoothTab::create() {
           .out = &m_pairingDetail,
           .fontSize = Style::fontSizeCaption * scale,
           .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-          .configure = [](Label& label) { label.setCaptionStyle(); },
       })
   );
 
@@ -632,7 +629,6 @@ void BluetoothTab::rebuildDeviceList(Renderer& renderer) {
             .text = i18n::tr("control-center.bluetooth.unavailable"),
             .fontSize = Style::fontSizeCaption * scale,
             .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-            .configure = [](Label& label) { label.setCaptionStyle(); },
         })
     );
     m_list->layout(renderer);
@@ -653,7 +649,6 @@ void BluetoothTab::rebuildDeviceList(Renderer& renderer) {
             .fontSize = Style::fontSizeCaption * scale,
             .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
             .flexGrow = 1.0f,
-            .configure = [](Label& label) { label.setCaptionStyle(); },
         })
     );
 
@@ -716,7 +711,6 @@ void BluetoothTab::rebuildDeviceList(Renderer& renderer) {
             .fontSize = Style::fontSizeCaption * scale,
             .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
             .flexGrow = 1.0f,
-            .configure = [](Label& label) { label.setCaptionStyle(); },
         }),
         ui::toggle({
             .out = &m_discoverableToggle,
@@ -744,7 +738,6 @@ void BluetoothTab::rebuildDeviceList(Renderer& renderer) {
                                         : i18n::tr("control-center.bluetooth.off"),
             .fontSize = Style::fontSizeCaption * scale,
             .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-            .configure = [](Label& label) { label.setCaptionStyle(); },
         })
     );
     m_list->layout(renderer);
@@ -773,7 +766,6 @@ void BluetoothTab::rebuildDeviceList(Renderer& renderer) {
             .text = i18n::tr("control-center.bluetooth.no-devices"),
             .fontSize = Style::fontSizeCaption * scale,
             .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-            .configure = [](Label& label) { label.setCaptionStyle(); },
         })
     );
     m_list->layout(renderer);
@@ -806,7 +798,6 @@ void BluetoothTab::rebuildDeviceList(Renderer& renderer) {
               .fontSize = Style::fontSizeCaption * scale,
               .color = colorSpecFromRole(ColorRole::Secondary),
               .fontWeight = FontWeight::Bold,
-              .configure = [](Label& label) { label.setCaptionStyle(); },
           })
       );
       currentBucket = bucket;

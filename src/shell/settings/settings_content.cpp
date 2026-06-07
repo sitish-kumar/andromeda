@@ -598,7 +598,6 @@ namespace settings {
                       checked ? ColorRole::OnPrimary : ColorRole::OnSurfaceVariant, checked ? 0.75f : 1.0f
                   ),
                   .maxLines = 1,
-                  .configure = [](Label& label) { label.setCaptionStyle(); },
               })
           );
         }

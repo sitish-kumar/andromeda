@@ -218,7 +218,6 @@ std::unique_ptr<Flex> CalendarTab::create() {
           .fontSize = Style::fontSizeCaption * scale,
           .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
           .maxLines = 1,
-          .configure = [](Label& label) { label.setCaptionStyle(); },
       })
   );
   header->addChild(std::move(monthWrap));
@@ -700,7 +699,6 @@ void CalendarTab::rebuildEventList(float scale) {
             .fontSize = Style::fontSizeCaption * scale,
             .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
             .maxLines = 1,
-            .configure = [](Label& label) { label.setCaptionStyle(); },
         })
     );
     if (titleLabel != nullptr) {

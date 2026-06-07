@@ -341,7 +341,6 @@ namespace {
           ui::label({
               .fontSize = Style::fontSizeCaption * scale,
               .flexGrow = 1.0f,
-              .configure = [](Label& label) { label.setCaptionStyle(); },
           })
       ));
 
@@ -711,7 +710,6 @@ std::unique_ptr<Flex> NotificationsTab::create() {
               .out = &m_emptyBody,
               .fontSize = Style::fontSizeCaption * scale,
               .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-              .configure = [](Label& label) { label.setCaptionStyle(); },
           })
       )
   );

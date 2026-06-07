@@ -902,7 +902,6 @@ namespace {
               .fontSize = Style::fontSizeCaption * scale,
               .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
               .visible = false,
-              .configure = [](Label& label) { label.setCaptionStyle(); },
           })
       );
 
@@ -1246,7 +1245,6 @@ namespace {
                 .text = body,
                 .fontSize = Style::fontSizeCaption * scale,
                 .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                .configure = [](Label& label) { label.setCaptionStyle(); },
             })
         )
     );
@@ -1441,7 +1439,6 @@ std::unique_ptr<Flex> AudioTab::create() {
           .text = i18n::tr("control-center.audio.no-output-selected"),
           .fontSize = Style::fontSizeCaption * scale,
           .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-          .configure = [](Label& label) { label.setCaptionStyle(); },
       })
   );
 
@@ -1527,7 +1524,6 @@ std::unique_ptr<Flex> AudioTab::create() {
           .text = i18n::tr("control-center.audio.no-input-selected"),
           .fontSize = Style::fontSizeCaption * scale,
           .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-          .configure = [](Label& label) { label.setCaptionStyle(); },
       })
   );
 

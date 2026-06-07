@@ -487,10 +487,10 @@ void LauncherPanel::create() {
   body->addChild(
       ui::label({
           .out = &m_emptyLabel,
+          .fontSize = Style::fontSizeCaption * scale,
           .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
           .visible = false,
           .participatesInLayout = false,
-          .configure = [](Label& label) { label.setCaptionStyle(); },
       })
   );
 

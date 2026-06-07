@@ -248,10 +248,7 @@ namespace {
                   .out = &m_meta,
                   .fontSize = Style::fontSizeCaption * scale,
                   .maxLines = 1,
-                  .configure = [](Label& label) {
-                    label.setCaptionStyle();
-                    label.setHitTestVisible(false);
-                  },
+                  .configure = [](Label& label) { label.setHitTestVisible(false); },
               })
           )
       );
@@ -645,10 +642,10 @@ void ClipboardPanel::create() {
   sidebar->addChild(
       ui::label({
           .out = &m_listEmptyLabel,
+          .fontSize = Style::fontSizeCaption * scale,
           .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
           .visible = false,
           .participatesInLayout = false,
-          .configure = [](Label& label) { label.setCaptionStyle(); },
       })
   );
 
@@ -702,7 +699,6 @@ void ClipboardPanel::create() {
           .out = &m_previewMeta,
           .fontSize = Style::fontSizeCaption * scale,
           .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-          .configure = [](Label& label) { label.setCaptionStyle(); },
       })
   );
 
@@ -1216,8 +1212,8 @@ void ClipboardPanel::rebuildPreview(Renderer& renderer, float width, float heigh
         m_previewContent->addChild(
             ui::label({
                 .text = i18n::tr("clipboard.preview.truncated"),
+                .fontSize = Style::fontSizeCaption,
                 .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                .configure = [](Label& label) { label.setCaptionStyle(); },
             })
         );
       }

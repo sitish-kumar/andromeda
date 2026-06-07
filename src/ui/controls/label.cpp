@@ -375,11 +375,6 @@ void Label::doArrange(Renderer& renderer, const LayoutRect& rect) {
   setSize(rect.width, rect.height > 0.0f ? rect.height : measured.height);
 }
 
-void Label::setCaptionStyle() {
-  setFontSize(Style::fontSizeCaption);
-  setColor(colorSpecFromRole(ColorRole::OnSurface));
-}
-
 void Label::measure(Renderer& renderer) {
   LayoutConstraints constraints;
   measureWithConstraints(renderer, constraints);
