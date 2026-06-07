@@ -132,10 +132,22 @@ namespace desktop_settings {
     auto add = [&](WidgetSettingSpec spec) { specs.push_back(std::move(spec)); };
 
     if (type == "clock") {
-      add(stringSpec("format", "{:%H:%M}"));
+      const WidgetSettingVisibility digitalOnly{{"clock_style", {"digital"}}};
+      const WidgetSettingVisibility analogOnly{{"clock_style", {"analog"}}};
+      add(segmentedSpec(
+          "clock_style", "digital",
+          {{"digital", "desktop-widgets.editor.settings.clock-style-digital"},
+           {"analog", "desktop-widgets.editor.settings.clock-style-analog"}}
+      ));
+      auto format = stringSpec("format", "{:%H:%M}");
+      format.visibleWhen = digitalOnly;
+      add(std::move(format));
       add(colorSpec("color", "on_surface"));
       add(fontFamilySpec());
       add(boolSpec("shadow", true));
+      auto circle = boolSpec("circle", true);
+      circle.visibleWhen = analogOnly;
+      add(std::move(circle));
     } else if (type == "audio_visualizer") {
       add(doubleSpec("aspect_ratio", 2.5, 0.5, 6.0, 0.1));
       add(doubleSpec("bands", 32.0, 4.0, 128.0, 4.0));

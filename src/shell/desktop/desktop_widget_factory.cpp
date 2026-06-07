@@ -152,10 +152,13 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
     const std::string& type, const std::unordered_map<std::string, WidgetSettingValue>& settings, float contentScale
 ) const {
   if (type == "clock") {
+    const std::string styleSetting = getStringSetting(settings, "clock_style", "digital");
+    const DesktopClockWidget::Style style =
+        styleSetting == "analog" ? DesktopClockWidget::Style::Analog : DesktopClockWidget::Style::Digital;
     auto widget = std::make_unique<DesktopClockWidget>(
-        getStringSetting(settings, "format", "{:%H:%M}"),
+        style, getStringSetting(settings, "format", "{:%H:%M}"),
         getColorSpecSetting(settings, "color", colorSpecFromRole(ColorRole::OnSurface)),
-        getBoolSetting(settings, "shadow", true)
+        getBoolSetting(settings, "shadow", true), getBoolSetting(settings, "circle", true)
     );
     applyCommonSettings(*widget, settings);
     widget->setContentScale(contentScale);
