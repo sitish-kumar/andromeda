@@ -89,7 +89,7 @@ void DesktopSysmonWidget::create() {
   if (m_showLabel) {
     auto label = ui::label({
         .out = &m_label,
-        .fontWeight = FontWeight::Bold,
+        .fontWeight = FontWeight::Medium,
     });
     if (m_shadow) {
       label->setShadow(Color{0.0f, 0.0f, 0.0f, 0.5f}, 0.0f, 1.0f);
@@ -181,6 +181,7 @@ void DesktopSysmonWidget::doLayout(Renderer& renderer) {
 
   const float scale = m_contentScale;
   const float fontSize = Style::fontSizeBody * scale;
+  const float glyphSize = Style::baseGlyphSize * scale;
   const float gap = Style::spaceSm * scale;
 
   m_graphNode->setLineColor1(resolveColorSpec(m_lineColor));
@@ -189,7 +190,7 @@ void DesktopSysmonWidget::doLayout(Renderer& renderer) {
   }
   m_graphNode->setLineWidth(kGraphLineWidth * scale);
 
-  m_glyph->setGlyphSize(fontSize);
+  m_glyph->setGlyphSize(glyphSize);
   m_glyph->setColor(colorForRole(ColorRole::OnSurface));
   if (m_shadow) {
     m_glyph->setShadow(Color{0.0f, 0.0f, 0.0f, 0.5f}, 0.0f, 1.0f);
@@ -211,17 +212,19 @@ void DesktopSysmonWidget::doLayout(Renderer& renderer) {
   }
 
   const float contentW = std::max(totalW, headerW);
-  m_glyph->setPosition(0.0f, std::round((headerH - m_glyph->height()) * 0.5f));
 
-  if (m_label != nullptr) {
-    m_label->setPosition(m_glyph->width() + gap, std::round((headerH - m_label->height()) * 0.5f));
-  }
-
-  const float chartY = headerH + gap;
-  m_graphNode->setPosition(0.0f, chartY);
+  m_graphNode->setPosition(0.0f, 0.0f);
   m_graphNode->setSize(contentW, chartH);
 
-  root()->setSize(contentW, chartY + chartH);
+  const float headerY = chartH + gap;
+  const float headerX = std::round((contentW - headerW) * 0.5f);
+  m_glyph->setPosition(headerX, headerY + std::round((headerH - m_glyph->height()) * 0.5f));
+
+  if (m_label != nullptr) {
+    m_label->setPosition(headerX + m_glyph->width() + gap, headerY + std::round((headerH - m_label->height()) * 0.5f));
+  }
+
+  root()->setSize(contentW, headerY + headerH);
 }
 
 void DesktopSysmonWidget::doUpdate(Renderer& renderer) {
