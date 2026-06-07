@@ -1,6 +1,5 @@
 #include "system/gamma_service.h"
 
-#include "config/config_service.h"
 #include "core/log.h"
 #include "ipc/ipc_service.h"
 #include "system/day_night_schedule.h"
@@ -35,8 +34,6 @@ GammaService::GammaService(WaylandConnection& wayland) : m_wayland(wayland) {}
 GammaService::~GammaService() { restoreAll(); }
 
 void GammaService::setChangeCallback(ChangeCallback callback) { m_changeCallback = std::move(callback); }
-
-void GammaService::bindConfigService(ConfigService& configService) { m_configService = &configService; }
 
 void GammaService::reload(const NightLightConfig& config, const LocationConfig& location) {
   if (config.enabled != m_config.enabled) {
@@ -81,10 +78,6 @@ void GammaService::setResolvedCoordinates(std::optional<double> latitude, std::o
 }
 
 void GammaService::setForceEnabled(bool enabled) {
-  if (m_configService != nullptr) {
-    m_configService->setNightlightForce(enabled);
-    return;
-  }
   m_forceOverride = enabled;
   apply();
 }
@@ -92,10 +85,6 @@ void GammaService::setForceEnabled(bool enabled) {
 void GammaService::toggleForceEnabled() { setForceEnabled(!forceEnabled()); }
 
 void GammaService::clearForceOverride() {
-  if (m_configService != nullptr) {
-    m_configService->setNightlightForce(false);
-    return;
-  }
   m_forceOverride.reset();
   apply();
 }

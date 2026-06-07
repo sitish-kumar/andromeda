@@ -11,7 +11,6 @@
 #include <string>
 #include <string_view>
 
-class ConfigService;
 class IpcService;
 class WaylandConnection;
 struct wl_output;
@@ -28,7 +27,6 @@ public:
   GammaService& operator=(const GammaService&) = delete;
 
   void reload(const NightLightConfig& config, const LocationConfig& location);
-  void bindConfigService(ConfigService& configService);
   void setLocationResolving(bool resolving);
   void setResolvedCoordinates(std::optional<double> latitude, std::optional<double> longitude);
   void setEnabled(bool enabled);
@@ -89,7 +87,6 @@ private:
   static void fillGammaRamp(std::uint16_t* ramp, std::uint32_t size, const RgbMultipliers& mul);
 
   WaylandConnection& m_wayland;
-  ConfigService* m_configService = nullptr;
   NightLightConfig m_config;
   LocationConfig m_location;
   std::optional<bool> m_enabledOverride;
