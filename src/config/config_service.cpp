@@ -25,6 +25,7 @@
 #include <cstring>
 #include <ctime>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iomanip>
 #include <optional>
@@ -330,6 +331,51 @@ namespace {
     return path.filename().string();
   }
 
+  std::string parseErrorMessage(const std::filesystem::path& path, const toml::parse_error& e) {
+    const auto& src = e.source();
+    return std::format(
+        "{} line {}, column {}: {}", path.filename().string(), src.begin.line, src.begin.column, e.description()
+    );
+  }
+
+  std::optional<toml::table>
+  mergeUserConfigSources(std::string_view configDir, std::string_view settingsPath, std::string* error) {
+    toml::table merged;
+
+    for (const auto& path : sortedConfigTomlFiles(configDir)) {
+      try {
+        auto table = toml::parse_file(path.string());
+        ConfigService::deepMerge(merged, table);
+      } catch (const toml::parse_error& e) {
+        if (error != nullptr) {
+          *error = parseErrorMessage(path, e);
+          return std::nullopt;
+        }
+        kLog.warn(
+            "skipping parse error in merged user config export {}: {}", path.filename().string(), e.description()
+        );
+      }
+    }
+
+    if (!settingsPath.empty() && std::filesystem::exists(std::filesystem::path(std::string(settingsPath)))) {
+      try {
+        auto table = toml::parse_file(std::string(settingsPath));
+        ConfigService::deepMerge(merged, table);
+      } catch (const toml::parse_error& e) {
+        if (error != nullptr) {
+          *error = parseErrorMessage(std::filesystem::path(std::string(settingsPath)), e);
+          return std::nullopt;
+        }
+        kLog.warn("skipping parse error in merged user config export {}: {}", settingsPath, e.description());
+      }
+    }
+
+    if (error != nullptr) {
+      error->clear();
+    }
+    return merged;
+  }
+
 } // namespace
 
 // ── Lifecycle ────────────────────────────────────────────────────────────────
@@ -605,31 +651,60 @@ std::string ConfigService::buildSupportReport() const {
 }
 
 std::string ConfigService::buildMergedUserConfig() const {
-  toml::table merged;
-
-  for (const auto& path : sortedConfigTomlFiles(m_configDir)) {
-    try {
-      auto table = toml::parse_file(path.string());
-      deepMerge(merged, table);
-    } catch (const toml::parse_error& e) {
-      kLog.warn("skipping parse error in merged user config export {}: {}", path.filename().string(), e.description());
-    }
-  }
-
-  if (!m_overridesPath.empty() && std::filesystem::exists(m_overridesPath)) {
-    try {
-      auto table = toml::parse_file(m_overridesPath);
-      deepMerge(merged, table);
-    } catch (const toml::parse_error& e) {
-      kLog.warn("skipping parse error in merged user config export {}: {}", m_overridesPath, e.description());
-    }
-  }
-
-  return formatToml(merged) + "\n";
+  return buildMergedUserConfigFromSources(m_configDir, m_overridesPath);
 }
 
 std::string ConfigService::buildEffectiveConfig() const {
   return formatToml(config_export::serialize(m_config)) + "\n";
+}
+
+std::string ConfigService::buildMergedUserConfigFromSources(
+    std::string_view configDir, std::string_view settingsPath, std::string* error
+) {
+  const auto merged = mergeUserConfigSources(configDir, settingsPath, error);
+  if (!merged.has_value()) {
+    return {};
+  }
+  return formatToml(*merged) + "\n";
+}
+
+std::string ConfigService::buildEffectiveConfigFromSources(
+    std::string_view configDir, std::string_view settingsPath, std::string* error
+) {
+  const auto merged = mergeUserConfigSources(configDir, settingsPath, error);
+  if (!merged.has_value()) {
+    return {};
+  }
+
+  Config config;
+  noctalia::config::seedBuiltinWidgets(config);
+  if (merged->empty()) {
+    config = makeDefaultConfig();
+  } else {
+    try {
+      parseConfigTable(*merged, config, false);
+    } catch (const std::exception& e) {
+      if (error != nullptr) {
+        *error = e.what();
+      }
+      return {};
+    }
+  }
+
+  if (error != nullptr) {
+    error->clear();
+  }
+  return formatToml(config_export::serialize(config)) + "\n";
+}
+
+Config ConfigService::makeDefaultConfig() {
+  Config config;
+  noctalia::config::seedBuiltinWidgets(config);
+  config.idle.behaviors = defaultIdleBehaviors();
+  config.bars.push_back(BarConfig{});
+  config.controlCenter.shortcuts = defaultControlCenterShortcuts();
+  config.shell.session.actions = defaultSessionPanelActions();
+  return config;
 }
 
 void ConfigService::checkReload() {
@@ -967,15 +1042,6 @@ void ConfigService::deepMerge(toml::table& base, const toml::table& overlay) {
 void ConfigService::loadAll() {
   noctalia::profiling::ScopedTimer parseTimer(kLog, "reload: parse (loadAll)");
   m_effectiveOverrideCache.clear();
-  auto makeDefaultConfig = [] {
-    Config config;
-    noctalia::config::seedBuiltinWidgets(config);
-    config.idle.behaviors = defaultIdleBehaviors();
-    config.bars.push_back(BarConfig{});
-    config.controlCenter.shortcuts = defaultControlCenterShortcuts();
-    config.shell.session.actions = defaultSessionPanelActions();
-    return config;
-  };
 
   Config nextConfig;
   noctalia::config::seedBuiltinWidgets(nextConfig);
@@ -1093,7 +1159,7 @@ void ConfigService::loadAll() {
   setConfigParseError(parseError);
 }
 
-void ConfigService::parseConfigTable(const toml::table& tbl, Config& config, bool logSummary) const {
+void ConfigService::parseConfigTable(const toml::table& tbl, Config& config, bool logSummary) {
   // Diagnostics raised by schema-driven sections (e.g. unknown enum values).
   // Flushed to the log below, preserving the legacy warn-and-continue behavior.
   schema::Diagnostics schemaDiag;
@@ -1176,17 +1242,17 @@ void ConfigService::parseConfigTable(const toml::table& tbl, Config& config, boo
   }
 
   // Parse [shell]
+  bool sessionActionsConfigured = false;
   if (auto* shellTbl = tbl["shell"].as_table()) {
-    // session.actions default-seeding stays here: it must fire when [shell.session]
-    // or its actions array is absent, which the schema read can't observe.
-    const bool sessionActionsKeyPresent = [&] {
+    // Schema reads can't tell whether an empty actions list was explicit.
+    sessionActionsConfigured = [&] {
       const auto* sessionTbl = (*shellTbl)["session"].as_table();
       return sessionTbl != nullptr && (*sessionTbl)["actions"].as_array() != nullptr;
     }();
     schema::readInto(*shellTbl, config.shell, schema::shellSchema(), "shell", schemaDiag);
-    if (!sessionActionsKeyPresent && config.shell.session.actions.empty()) {
-      config.shell.session.actions = defaultSessionPanelActions();
-    }
+  }
+  if (!sessionActionsConfigured && config.shell.session.actions.empty()) {
+    config.shell.session.actions = defaultSessionPanelActions();
   }
 
   // Parse [theme]
