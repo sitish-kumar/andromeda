@@ -1398,13 +1398,13 @@
             "description": "Command to run when the battery starts discharging",
             "label": "On Battery Discharging"
           },
-          "battery-plugged": {
-            "description": "Command to run when the battery becomes fully charged or pending charge",
-            "label": "On Battery Plugged"
-          },
           "battery-percentage-changed": {
             "description": "Command to run when the battery percentage changes",
             "label": "On Battery Percentage Changed"
+          },
+          "battery-plugged": {
+            "description": "Command to run when the battery becomes fully charged or pending charge",
+            "label": "On Battery Plugged"
           },
           "bluetooth-disabled": {
             "description": "Command to run when Bluetooth is disabled",
