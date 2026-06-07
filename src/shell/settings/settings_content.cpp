@@ -752,6 +752,8 @@ namespace settings {
         list->addChild(std::move(addRow));
       }
 
+      // Push the recorder to the bottom of the block so inputs line up across the stretched row.
+      block->addChild(ui::spacer());
       block->addChild(std::move(list));
 
       section.addChild(std::move(block));
@@ -1276,8 +1278,10 @@ namespace settings {
           makeShortcutListBlock(*activeSection, entry, *shortcuts);
         } else if (const auto* keybindList = std::get_if<KeybindListSetting>(&entry.control)) {
           if (activeKeybindRow == nullptr || activeKeybindRowCount >= kKeybindsPerRow) {
+            // Stretch so every block in the row shares the tallest block's height; each block then
+            // bottom-anchors its recorder, keeping inputs aligned regardless of description length.
             auto row = ui::row({
-                .align = FlexAlign::Start,
+                .align = FlexAlign::Stretch,
                 .gap = Style::spaceMd * scale,
                 .fillWidth = true,
             });
