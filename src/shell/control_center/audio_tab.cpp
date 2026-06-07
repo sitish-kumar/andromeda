@@ -488,9 +488,14 @@ namespace {
 
   ResolveProgramNameResult resolveProgramDisplayName(const AudioNode& node, const MprisPlayerInfo* player) {
     ResolveProgramNameResult result;
-    std::string resolved = node.applicationName;
     const bool appNameIsGeneric = isLowConfidenceProgramAppName(node);
 
+    if (!node.applicationName.empty() && !isGenericAudioLabel(node.applicationName) && !appNameIsGeneric) {
+      result.displayName = node.applicationName;
+      return result;
+    }
+
+    std::string resolved = node.applicationName;
     if (appNameIsGeneric) {
       // Force fallback chain when app name is considered low-confidence.
       resolved.clear();
@@ -1121,6 +1126,10 @@ namespace {
       const std::string candidateApp = sanitize(resolvedAppName);
       const std::string candidateFallback =
           sanitize(node.applicationBinary.empty() ? node.name : node.applicationBinary);
+      if (!candidateIcon.empty()) {
+        pushUnique(candidates, candidateIcon);
+        pushUnique(candidates, candidateIcon + ".desktop");
+      }
       if (!candidateApp.empty()) {
         pushUnique(candidates, candidateApp);
         pushUnique(candidates, candidateApp + ".desktop");
@@ -1133,13 +1142,10 @@ namespace {
         pushUnique(candidates, candidateId);
         pushUnique(candidates, candidateId + ".desktop");
       }
-      appendDesktopIconCandidates(candidates, node, resolvedAppName);
-      appendFallbackIconCandidates(candidates, node);
-      // Keep raw node icon as final fallback (Electron streams often report Chromium icon names).
-      if (!candidateIcon.empty()) {
-        pushUnique(candidates, candidateIcon);
-        pushUnique(candidates, candidateIcon + ".desktop");
+      if (candidateIcon.empty()) {
+        appendDesktopIconCandidates(candidates, node, resolvedAppName);
       }
+      appendFallbackIconCandidates(candidates, node);
       std::string nextIconIdentity;
       nextIconIdentity.reserve(128);
       for (const auto& candidate : candidates) {
