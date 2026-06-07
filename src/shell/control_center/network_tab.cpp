@@ -371,7 +371,6 @@ std::unique_ptr<Flex> NetworkTab::create() {
           .fontSize = Style::fontSizeCaption * scale,
           .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
           .flexGrow = 1.0f,
-          .configure = [](Label& label) { label.setCaptionStyle(); },
       }),
       ui::button({
           .out = &m_disconnectButton,
