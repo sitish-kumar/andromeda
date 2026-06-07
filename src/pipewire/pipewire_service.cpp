@@ -280,10 +280,6 @@ namespace {
     return std::nullopt;
   }
 
-  bool isGenericStreamAppName(std::string_view name) {
-    return name.empty() || name == "audio-src" || name == "audio-sink" || name == "audio-source";
-  }
-
   bool applyClientPropsFromDict(PipeWireService::ClientData& client, const spa_dict* props) {
     if (props == nullptr) {
       return false;
@@ -297,9 +293,9 @@ namespace {
       }
     };
 
-    std::string name = dictGet(props, "client.name");
+    std::string name = dictGet(props, "application.name");
     if (name.empty()) {
-      name = dictGet(props, "application.name");
+      name = dictGet(props, "client.name");
     }
     assignIfBetter(client.name, std::move(name));
 
@@ -1245,22 +1241,11 @@ void PipeWireService::refreshNodeIdentity(NodeData& nd) {
     return;
   }
   const ClientData& client = it->second;
-
-  if (isProgramStreamClass(nd.mediaClass) && !client.name.empty()) {
-    nd.applicationName = client.name;
-    if (!client.appId.empty()) {
-      nd.applicationId = client.appId;
-    }
-    if (!client.binary.empty()) {
-      nd.applicationBinary = client.binary;
-    }
-    if (nd.iconName.empty() && !client.iconName.empty()) {
-      nd.iconName = client.iconName;
-    }
-    return;
-  }
-
-  if (isGenericStreamAppName(nd.applicationName) && !client.name.empty()) {
+  if ((nd.applicationName.empty()
+       || nd.applicationName == "audio-src"
+       || nd.applicationName == "audio-sink"
+       || nd.applicationName == "audio-source")
+      && !client.name.empty()) {
     nd.applicationName = client.name;
   }
   if ((nd.applicationId.empty() || nd.applicationId == "audio-src") && !client.appId.empty()) {
