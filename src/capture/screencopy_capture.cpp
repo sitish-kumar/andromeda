@@ -241,6 +241,9 @@ namespace {
           [](void* data, zwlr_screencopy_frame_v1* frame) {
             auto* pending = static_cast<ScreencopyCapturePending*>(data);
             zwlr_screencopy_frame_v1_destroy(frame);
+            if (pending != nullptr) {
+              pending->frame = nullptr;
+            }
             if (pending != nullptr && pending->owner != nullptr) {
               pending->owner->fail("screencopy frame failed");
             }

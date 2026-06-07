@@ -734,18 +734,30 @@ void ScreenshotService::ensureRegionOverlay() {
   m_regionOverlay->setCompleteCallback([this](std::optional<LogicalRect> region, wl_output* output) {
     if (!region.has_value()) {
       m_frozenScreenshots.clear();
+      if (m_regionOverlay != nullptr) {
+        m_regionOverlay->setFrozenScreenshots({});
+      }
       m_regionFullscreenPick = false;
       return;
     }
     if (m_regionFullscreenPick) {
       if (output == nullptr) {
         m_frozenScreenshots.clear();
+        if (m_regionOverlay != nullptr) {
+          m_regionOverlay->setFrozenScreenshots({});
+        }
         m_regionFullscreenPick = false;
         return;
+      }
+      if (m_regionOutputOptions.freezeScreen && m_regionOverlay != nullptr) {
+        m_frozenScreenshots = m_regionOverlay->takeFrozenScreenshots();
       }
       completeFullscreenSelection(output, m_regionOutputOptions);
       m_regionFullscreenPick = false;
       return;
+    }
+    if (m_regionOutputOptions.freezeScreen && m_regionOverlay != nullptr) {
+      m_frozenScreenshots = m_regionOverlay->takeFrozenScreenshots();
     }
     if (m_regionOutputOptions.freezeScreen && !m_frozenScreenshots.empty()) {
       deliverFrozenGlobalRegion(*region, m_regionOutputOptions);
@@ -841,7 +853,7 @@ void ScreenshotService::finishFreezeCapture() {
   }
 
   ensureRegionOverlay();
-  m_regionOverlay->setFrozenScreenshots(m_frozenScreenshots);
+  m_regionOverlay->setFrozenScreenshots(std::move(m_frozenScreenshots));
   m_regionOverlay->begin(true, m_regionFullscreenPick);
 }
 
