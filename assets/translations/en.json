@@ -326,10 +326,10 @@
         "bloom-intensity": "Bloom",
         "centered": "Centered",
         "change-image": "Change…",
+        "circle": "Circle",
         "clock-style": "Clock Style",
         "clock-style-analog": "Analog",
         "clock-style-digital": "Digital",
-        "circle": "Circle",
         "color": "Color",
         "color2": "Color 2",
         "custom-color": "Custom…",
@@ -900,8 +900,8 @@
       },
       "sections": {
         "appearance": "Appearance",
-        "bar": "Bar",
         "backdrop": "Backdrop",
+        "bar": "Bar",
         "desktop": "Desktop",
         "dock": "Dock",
         "hooks": "Hooks",
@@ -909,8 +909,9 @@
         "location": "Location",
         "niri": "Niri",
         "notifications": "Notifications",
-        "panels": "Panels",
         "osd": "OSD",
+        "panels": "Panels",
+        "popups": "Popups",
         "security": "Security",
         "services": "Services",
         "shell": "Shell",
@@ -1226,7 +1227,7 @@
           "label": "Font Weight"
         },
         "layer": {
-          "description": "Use Overlay to show the bar above fullscreen apps. Attached panels follow the bar.",
+          "description": "Layer-shell layer for the bar; attached panels open on the same layer",
           "label": "Wayland Layer"
         },
         "panel-overlap": {
@@ -1556,7 +1557,7 @@
           "label": "Notification Daemon"
         },
         "layer": {
-          "description": "Use Overlay to show notification toasts above fullscreen apps.",
+          "description": "Choose whether toasts use the top or overlay layer",
           "label": "Wayland Layer"
         },
         "monitors": {
@@ -1943,6 +1944,10 @@
           "description": "Background opacity of OSD popups",
           "label": "Background Opacity"
         },
+        "osd-keyboard-layout": {
+          "description": "Show an OSD popup when the input keyboard layout changes",
+          "label": "Keyboard Layout"
+        },
         "osd-kinds-bluetooth": {
           "description": "Show an OSD popup when Bluetooth is toggled",
           "label": "Bluetooth"
@@ -1986,6 +1991,10 @@
         "osd-kinds-wifi": {
           "description": "Show an OSD popup when Wi-Fi is toggled",
           "label": "Wi-Fi"
+        },
+        "osd-lock-keys": {
+          "description": "Show OSD popups for Caps Lock, Num Lock, and Scroll Lock changes",
+          "label": "Lock Keys"
         },
         "osd-monitors": {
           "description": "Choose which monitors show OSD popups; leave empty to show on all monitors",
