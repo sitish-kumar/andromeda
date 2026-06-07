@@ -276,11 +276,56 @@ std::unique_ptr<Flex> SystemTab::create() {
     )
         ->setFlexGrow(2.0f);
 
-    static constexpr const char* kResourcesGlyphs[] = {"activity", "memory", "storage"};
-    makeInfoCard(
+    static constexpr const char* kResourcesGlyphs[] = {"activity", "memory"};
+    auto* resourcesCard = makeInfoCard(
         *row, i18n::tr("control-center.system.titles.resources"), sc, panelCardOpacity(), panelBordersEnabled(),
         m_resourcesLines, kResourcesLines, kResourcesGlyphs
     );
+
+    // Swap, right after RAM. Hidden in doUpdate when the system has no swap configured.
+    m_swapRow = static_cast<Flex*>(resourcesCard->addChild(
+        ui::row(
+            {.align = FlexAlign::Center, .gap = Style::spaceXs * sc},
+            ui::glyph({
+                .glyph = "arrows-exchange",
+                .glyphSize = Style::fontSizeMini * sc,
+                .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+            }),
+            ui::label({
+                .out = &m_swapLabel,
+                .fontSize = Style::fontSizeMini * sc,
+                .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+                .maxLines = 1,
+                .flexGrow = 1.0f,
+            })
+        )
+    ));
+
+    // One line per physical disk, discovered automatically (root first). Usage refreshes in doUpdate.
+    m_diskMountPoints = physicalDiskMountPoints();
+    m_diskLabels.clear();
+    m_diskLabels.reserve(m_diskMountPoints.size());
+    for (std::size_t i = 0; i < m_diskMountPoints.size(); ++i) {
+      Label* lineLabel = nullptr;
+      resourcesCard->addChild(
+          ui::row(
+              {.align = FlexAlign::Center, .gap = Style::spaceXs * sc},
+              ui::glyph({
+                  .glyph = "storage",
+                  .glyphSize = Style::fontSizeMini * sc,
+                  .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+              }),
+              ui::label({
+                  .out = &lineLabel,
+                  .fontSize = Style::fontSizeMini * sc,
+                  .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+                  .maxLines = 1,
+                  .flexGrow = 1.0f,
+              })
+          )
+      );
+      m_diskLabels.push_back(lineLabel);
+    }
 
     tab->addChild(std::move(row));
   }
@@ -323,6 +368,10 @@ void SystemTab::onClose() {
     l = nullptr;
   for (auto& l : m_resourcesLines)
     l = nullptr;
+  m_swapRow = nullptr;
+  m_swapLabel = nullptr;
+  m_diskLabels.clear();
+  m_diskMountPoints.clear();
   m_graphInitialized = false;
   m_gpuVisible = false;
   m_lastSampleAt = {};
@@ -784,8 +833,17 @@ void SystemTab::syncLabels() {
   if (m_resourcesLines[1] != nullptr) {
     m_resourcesLines[1]->setText(formatMemoryUsedTotal(stats));
   }
-  if (m_resourcesLines[2] != nullptr) {
-    m_resourcesLines[2]->setText(diskRootUsageLabel());
+  if (m_swapRow != nullptr) {
+    const bool hasSwap = stats.swapTotalMb > 0;
+    m_swapRow->setVisible(hasSwap);
+    if (hasSwap && m_swapLabel != nullptr) {
+      m_swapLabel->setText(FormatUnits::formatBinaryMibUsageAsGib(stats.swapUsedMb, stats.swapTotalMb));
+    }
+  }
+  for (std::size_t i = 0; i < m_diskLabels.size(); ++i) {
+    if (m_diskLabels[i] != nullptr) {
+      m_diskLabels[i]->setText(std::format("{}  {}", m_diskMountPoints[i], diskUsageLabel(m_diskMountPoints[i])));
+    }
   }
 }
 
