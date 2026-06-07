@@ -7,6 +7,7 @@
 #include "ui/builders.h"
 #include "ui/controls/collapsible.h"
 #include "ui/palette.h"
+#include "ui/style.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -147,7 +148,7 @@ namespace {
             ui::spinner({
                 .out = &m_connectingSpinner,
                 .color = colorSpecFromRole(ColorRole::Primary),
-                .spinnerSize = Style::fontSizeBody * scale,
+                .spinnerSize = Style::baseGlyphSize * scale,
             })
         );
       } else {
@@ -232,7 +233,7 @@ namespace {
                 }),
                 ui::toggle({
                     .checkedImmediate = m_device.trusted,
-                    .toggleSize = ToggleSize::Small,
+                    .toggleSize = ToggleSize::Medium,
                     .scale = scale,
                     .onChange = [this](bool checked) {
                       if (m_service != nullptr) {
@@ -646,8 +647,8 @@ void BluetoothTab::rebuildDeviceList(Renderer& renderer) {
          .maxHeight = Style::controlHeightSm * scale},
         ui::label({
             .text = i18n::tr("control-center.bluetooth.bluetooth"),
-            .fontSize = Style::fontSizeCaption * scale,
-            .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+            .fontSize = Style::fontSizeBody * scale,
+            .color = colorSpecFromRole(ColorRole::OnSurface),
             .flexGrow = 1.0f,
         })
     );
@@ -656,7 +657,7 @@ void BluetoothTab::rebuildDeviceList(Renderer& renderer) {
         ui::spinner({
             .out = &m_scanSpinner,
             .color = colorSpecFromRole(ColorRole::Primary),
-            .spinnerSize = Style::fontSizeCaption * scale,
+            .spinnerSize = Style::baseGlyphSize * scale,
             .visible = false,
         })
     );
@@ -665,10 +666,10 @@ void BluetoothTab::rebuildDeviceList(Renderer& renderer) {
         ui::button({
             .out = &m_rescanButton,
             .glyph = "refresh",
-            .glyphSize = Style::fontSizeCaption * scale,
+            .glyphSize = Style::baseGlyphSize * scale,
             .enabled = s.adapterPresent && s.powered,
             .variant = ButtonVariant::Ghost,
-            .minHeight = Style::fontSizeCaption * scale,
+            .minHeight = Style::fontSizeBody * scale,
             .padding = Style::spaceXs * scale,
             .radius = Style::scaledRadiusSm(scale),
             .onClick = [this]() {
@@ -686,7 +687,7 @@ void BluetoothTab::rebuildDeviceList(Renderer& renderer) {
             .out = &m_powerToggle,
             .checkedImmediate = s.powered,
             .enabled = s.adapterPresent,
-            .toggleSize = ToggleSize::Small,
+            .toggleSize = ToggleSize::Medium,
             .scale = scale,
             .onChange = [this](bool checked) {
               if (m_service != nullptr) {
@@ -708,15 +709,15 @@ void BluetoothTab::rebuildDeviceList(Renderer& renderer) {
          .maxHeight = Style::controlHeightSm * scale},
         ui::label({
             .text = i18n::tr("control-center.bluetooth.visible"),
-            .fontSize = Style::fontSizeCaption * scale,
-            .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+            .fontSize = Style::fontSizeBody * scale,
+            .color = colorSpecFromRole(ColorRole::OnSurface),
             .flexGrow = 1.0f,
         }),
         ui::toggle({
             .out = &m_discoverableToggle,
             .checkedImmediate = s.discoverable,
             .enabled = s.adapterPresent && s.powered,
-            .toggleSize = ToggleSize::Small,
+            .toggleSize = ToggleSize::Medium,
             .scale = scale,
             .onChange = [this](bool checked) {
               if (m_service != nullptr) {
@@ -729,14 +730,14 @@ void BluetoothTab::rebuildDeviceList(Renderer& renderer) {
     m_list->addChild(std::move(row));
   }
 
-  m_list->addChild(ui::separator());
+  m_list->addChild(ui::separator({.spacing = Style::spaceMd * scale}));
 
   if (!s.powered) {
     m_list->addChild(
         ui::label({
             .text = s.rfkillSoftBlocked ? i18n::tr("control-center.bluetooth.rfkill-blocked")
                                         : i18n::tr("control-center.bluetooth.off"),
-            .fontSize = Style::fontSizeCaption * scale,
+            .fontSize = Style::fontSizeBody * scale,
             .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
         })
     );
@@ -764,7 +765,7 @@ void BluetoothTab::rebuildDeviceList(Renderer& renderer) {
     m_list->addChild(
         ui::label({
             .text = i18n::tr("control-center.bluetooth.no-devices"),
-            .fontSize = Style::fontSizeCaption * scale,
+            .fontSize = Style::fontSizeBody * scale,
             .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
         })
     );
@@ -778,7 +779,7 @@ void BluetoothTab::rebuildDeviceList(Renderer& renderer) {
     const auto bucket = bucketFor(device);
     if (first || bucket != currentBucket) {
       if (!first) {
-        m_list->addChild(ui::separator());
+        m_list->addChild(ui::separator({.spacing = Style::spaceMd * scale}));
       }
       std::string sectionText;
       switch (bucket) {
@@ -795,7 +796,7 @@ void BluetoothTab::rebuildDeviceList(Renderer& renderer) {
       m_list->addChild(
           ui::label({
               .text = sectionText,
-              .fontSize = Style::fontSizeCaption * scale,
+              .fontSize = Style::fontSizeBody * scale,
               .color = colorSpecFromRole(ColorRole::Secondary),
               .fontWeight = FontWeight::Bold,
           })

@@ -142,7 +142,7 @@
       },
       "unavailable": "Bluetooth service unavailable",
       "unknown-device": "Unknown device",
-      "visible": "Visible"
+      "visible": "Discoverable by nearby devices"
     },
     "calendar": {
       "all-day": "All day",
