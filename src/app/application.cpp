@@ -1161,6 +1161,7 @@ void Application::initUi() {
     });
   });
   m_lockScreen.initialize(m_wayland, &m_renderContext, &m_configService, &m_sharedTextureCache);
+  m_wallpaper.setAutomationGate([this]() { return !m_lockScreen.isActive(); });
   m_configService.addReloadCallback([this]() { m_lockScreen.onConfigChanged(); });
   m_lockScreen.setSessionHooks(
       [this]() {
