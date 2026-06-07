@@ -382,9 +382,6 @@ void ScriptedWidget::luaSetTooltip(const scripting::ScriptWidgetTooltipPatch& to
 
   if (tooltip.clear || (!tooltip.hasRows() && tooltip.text.empty())) {
     m_area->clearTooltip();
-    if (m_area->hovered() && m_tooltipRefreshCallback) {
-      m_tooltipRefreshCallback(m_area);
-    }
     return;
   }
 
@@ -395,16 +392,10 @@ void ScriptedWidget::luaSetTooltip(const scripting::ScriptWidgetTooltipPatch& to
       rows.push_back({.key = row.key, .value = row.value});
     }
     m_area->setTooltip(std::move(rows));
-    if (m_area->hovered() && m_tooltipRefreshCallback) {
-      m_tooltipRefreshCallback(m_area);
-    }
     return;
   }
 
   m_area->setTooltip(tooltip.text);
-  if (m_area->hovered() && m_tooltipRefreshCallback) {
-    m_tooltipRefreshCallback(m_area);
-  }
 }
 
 void ScriptedWidget::luaSetFont(std::string_view familyOrPath) {
@@ -457,10 +448,6 @@ void ScriptedWidget::luaSetUpdateInterval(float ms) {
 
 void ScriptedWidget::setUpdateDeferralCallback(std::function<bool()> callback) {
   m_updateDeferralCallback = std::move(callback);
-}
-
-void ScriptedWidget::setTooltipRefreshCallback(std::function<void(InputArea*)> callback) {
-  m_tooltipRefreshCallback = std::move(callback);
 }
 
 void ScriptedWidget::luaSetVisible(bool visible) {

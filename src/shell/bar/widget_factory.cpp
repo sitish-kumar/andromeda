@@ -325,7 +325,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
 
   if (type == "network") {
     const bool showLabel = wc != nullptr ? wc->getBool("show_label", true) : true;
-    auto widget = std::make_unique<NetworkWidget>(m_network, output, showLabel);
+    auto widget = std::make_unique<NetworkWidget>(m_network, m_sysmon, output, showLabel);
     widget->setContentScale(contentScale);
     return widget;
   }
