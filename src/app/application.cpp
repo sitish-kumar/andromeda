@@ -1159,6 +1159,22 @@ void Application::initUi() {
       });
     });
   });
+  m_settingsWindow.setSaveWallpaperPaletteAsCustom([this]() {
+    std::string paletteName;
+    std::string error;
+    if (!m_themeService.saveWallpaperPaletteAsCustom(&paletteName, &error)) {
+      m_settingsWindow.markSettingsWriteError(
+          error.empty() ? i18n::tr("settings.errors.export-wallpaper-palette") : std::move(error)
+      );
+      return;
+    }
+    m_settingsWindow.onExternalOptionsChanged();
+    m_settingsWindow.markSettingsWriteSuccess(true);
+    notify::info(
+        "Noctalia", i18n::tr("notifications.internal.wallpaper-palette-export"),
+        i18n::tr("notifications.internal.wallpaper-palette-export-success", "name", paletteName)
+    );
+  });
   m_lockScreen.initialize(m_wayland, &m_renderContext, &m_configService, &m_sharedTextureCache);
   m_wallpaper.setAutomationGate([this]() { return !m_lockScreen.isActive(); });
   m_configService.addReloadCallback([this]() { m_lockScreen.onConfigChanged(); });
