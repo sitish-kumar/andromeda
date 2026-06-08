@@ -932,11 +932,6 @@
           "none": "None"
         }
       },
-      "dock-icon-colorization": {
-        "muted": "Muted",
-        "primary": "Primary",
-        "secondary": "Secondary"
-      },
       "dock-launcher-position": {
         "end": "End",
         "none": "None",
@@ -1690,10 +1685,6 @@
           "description": "Add iCloud, CalDAV, or Google accounts",
           "label": "Calendar Accounts"
         },
-        "calendar-connect": {
-          "button": "Connect",
-          "description": "Authorize a Google account in your browser"
-        },
         "calendar-edit": {
           "button": "Edit",
           "description": "Update this calendar account"
@@ -1740,14 +1731,6 @@
           "description": "Shift screen colors warmer at night",
           "label": "Night Light",
           "requires-gamma-control": "Compositor does not support gamma control"
-        },
-        "night-light-start-time": {
-          "description": "Manual night light start time in HH:MM when weather location is off",
-          "label": "Start Time"
-        },
-        "night-light-stop-time": {
-          "description": "Manual night light stop time in HH:MM when weather location is off",
-          "label": "Stop Time"
         },
         "night-temperature": {
           "description": "Color temperature at night (Kelvin)",
@@ -1876,9 +1859,6 @@
         "main-axis-padding": {
           "label": "Main Axis Padding"
         },
-        "padding": {
-          "label": "Padding"
-        },
         "position": {
           "label": "Position"
         },
@@ -1946,10 +1926,6 @@
           "description": "Background opacity of OSD popups",
           "label": "Background Opacity"
         },
-        "osd-keyboard-layout": {
-          "description": "Show an OSD popup when the input keyboard layout changes",
-          "label": "Keyboard Layout"
-        },
         "osd-kinds-bluetooth": {
           "description": "Show an OSD popup when Bluetooth is toggled",
           "label": "Bluetooth"
@@ -1993,10 +1969,6 @@
         "osd-kinds-wifi": {
           "description": "Show an OSD popup when Wi-Fi is toggled",
           "label": "Wi-Fi"
-        },
-        "osd-lock-keys": {
-          "description": "Show OSD popups for Caps Lock, Num Lock, and Scroll Lock changes",
-          "label": "Lock Keys"
         },
         "osd-monitors": {
           "description": "Choose which monitors show OSD popups; leave empty to show on all monitors",
@@ -2237,7 +2209,6 @@
         "gpu-vram": "GPU VRAM",
         "graph": "Graph",
         "graphic": "Graphic",
-        "icon": "Icon",
         "icon-and-text": "Icon and Text",
         "icon-only": "Icon Only",
         "id": "ID",
