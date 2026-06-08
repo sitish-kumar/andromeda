@@ -250,7 +250,7 @@ namespace {
     metrics.metaLine = notificationDisplayAppName(entry.notification) + " • " + relativeMetaLine(entry.notification);
 
     const float metaHeight = measuredTextHeight(
-        renderer, metrics.metaLine, Style::fontSizeBody * scale, FontWeight::Normal, metrics.metaTextWidth, 0
+        renderer, metrics.metaLine, Style::fontSizeCaption * scale, FontWeight::Normal, metrics.metaTextWidth, 0
     );
     const float headerHeight = std::max({iconPx, actionButtonSize, metaHeight});
     const float summaryHeight = measuredTextHeight(
@@ -339,7 +339,7 @@ namespace {
 
       m_meta = static_cast<Label*>(m_leftCluster->addChild(
           ui::label({
-              .fontSize = Style::fontSizeBody * scale,
+              .fontSize = Style::fontSizeCaption * scale,
               .flexGrow = 1.0f,
           })
       ));

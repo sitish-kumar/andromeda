@@ -67,6 +67,31 @@ environment with fewer moving parts and a consistent UI.
 - Direct Wayland integration for layer-shell, session lock, idle behavior, clipboard, foreign toplevels, workspaces,
   fractional scaling, and compositor-specific workspace backends where needed.
 
+## Wayland Compositor Support
+
+Noctalia supports Wayland compositors that provide the layer-shell protocols it needs for shell surfaces. Workspace
+integration works through compositor-native backends where needed, or through `ext-workspace-v1` on compositors that
+implement it.
+
+Current compositor integrations include Niri, Hyprland, Sway, Scroll, Mango, Labwc, Triad, dwl, and other compatible
+Wayland compositors. Other compositors may run Noctalia but can have reduced workspace, window, output, or
+session-action integration depending on the protocols and IPC they expose.
+
+## Scope
+
+Noctalia is a desktop shell, not a full desktop environment. It provides the visual and service layer around your
+Wayland compositor: bars, panels, launcher, notifications, dock, lock screen, idle behavior, OSDs, theming, wallpapers,
+desktop widgets, and multi-monitor shell surfaces.
+
+Window management, tiling, file management, removable-drive mounting, and screen mirroring/casting belong to the
+compositor, dedicated desktop applications, or system services. Display/login greeter support lives in the separate
+[Noctalia Greeter](https://github.com/noctalia-dev/noctalia-greeter) project. Noctalia may integrate with those pieces
+when useful, but it does not replace them.
+
+A v5 plugin system is planned and under active development. Features that are useful to some users but not essential to
+the core shell are intended to live there once that system is available: extra bar widgets, launcher providers, desktop
+widgets, compositor-specific extras, hardware-specific controls, and third-party service integrations.
+
 ## Dependencies
 
 ### Arch
@@ -262,3 +287,36 @@ lives in the [documentation site](https://docs.noctalia.dev/v5/).
 
 Developer notes, architecture overview, code style, project layout, and debugging commands live in
 [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Bug reports, fixes, documentation updates, themes, and configuration examples are welcome. For general help and design
+discussion, join the community on [Discord](https://discord.noctalia.dev).
+
+## Credits
+
+Thank you to the [contributors](https://github.com/noctalia-dev/noctalia-shell/graphs/contributors) and community
+members who test Noctalia, report issues, share configurations, and help shape the project.
+
+## Donations
+
+Donations are appreciated but completely optional.
+
+<p>
+  <a href="https://www.buymeacoffee.com/noctalia">
+    <img src="https://img.shields.io/badge/Buy_Me_a_Coffee-A8AEFF?style=for-the-badge&logo=buymeacoffee&logoColor=FFFFFF&labelColor=0C0D11" alt="Buy Me a Coffee">
+  </a>
+  <a href="https://ko-fi.com/noctaliadev">
+    <img src="https://img.shields.io/badge/Ko--fi-A8AEFF?style=for-the-badge&logo=kofi&logoColor=FFFFFF&labelColor=0C0D11" alt="Ko-fi">
+  </a>
+</p>
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.
+
+## Star History
+
+<p align="center">
+  <a href="https://github.com/noctalia-dev/noctalia-shell/stargazers">
+    <img src="https://api.noctalia.dev/stars" alt="Star History" />
+  </a>
+</p>
