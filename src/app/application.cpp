@@ -583,13 +583,17 @@ void Application::initServices() {
     m_screenshotService.onOutputChange();
     m_notificationToast.onOutputChange();
     m_osdOverlay.onOutputChange();
+    m_windowSwitcher.onOutputChange();
   });
   m_clipboardService.setChangeCallback([this]() {
     if (m_panelManager.isOpenPanel("clipboard")) {
       m_panelManager.refresh();
     }
   });
-  m_compositorPlatform.setWorkspaceChangeCallback([this]() { m_bar.refresh(); });
+  m_compositorPlatform.setWorkspaceChangeCallback([this]() {
+    m_bar.refresh();
+    m_windowSwitcher.onToplevelChange();
+  });
   m_compositorPlatform.setKeyboardLayoutChangeCallback([this]() {
     m_bar.refresh();
     if (m_configService.config().osd.kinds.keyboardLayout) {
@@ -600,6 +604,7 @@ void Application::initServices() {
     m_screenTimeService.onFocusChange();
     m_bar.refresh();
     m_dock.refresh();
+    m_windowSwitcher.onToplevelChange();
     if (m_panelManager.isOpenPanel("control-center")) {
       m_panelManager.refresh();
     }
@@ -1223,6 +1228,8 @@ void Application::initUi() {
       return;
     if (m_dock.onPointerEvent(event))
       return;
+    if (m_windowSwitcher.onPointerEvent(event))
+      return;
     if (m_panelManager.onPointerEvent(event))
       return;
     m_notificationToast.onPointerEvent(event);
@@ -1264,6 +1271,9 @@ void Application::initUi() {
       return;
     }
     if (m_notificationToast.onKeyboardEvent(event)) {
+      return;
+    }
+    if (m_windowSwitcher.onKeyboardEvent(event)) {
       return;
     }
     m_panelManager.onKeyboardEvent(event);
@@ -1392,6 +1402,9 @@ void Application::initUi() {
 
   TooltipManager::instance().initialize(m_wayland, &m_renderContext);
   m_osdOverlay.initialize(m_wayland, &m_configService, &m_renderContext);
+  m_windowSwitcher.initialize(
+      m_wayland, &m_renderContext, m_compositorPlatform, &m_configService, &m_asyncTextureCache
+  );
   m_configService.addReloadCallback([this]() { m_osdOverlay.onConfigReload(); });
   m_idleGraceOverlay.initialize(m_wayland, &m_renderContext);
   m_wayland.setIdleCapabilitiesReadyCallback([this]() { m_idleManager.reload(m_configService.config().idle); });
@@ -1779,6 +1792,7 @@ void Application::initIpc() {
     m_pipewireService->registerIpc(m_ipcService, m_configService);
   }
   m_screenshotService.registerIpc(m_ipcService, m_configService);
+  m_windowSwitcher.registerIpc(m_ipcService);
 }
 
 bool Application::runUserCommand(const std::string& command) {

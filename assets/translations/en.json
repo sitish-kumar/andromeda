@@ -417,6 +417,11 @@
       "display-name": "Settings"
     }
   },
+  "window-switcher": {
+    "empty": "No open windows",
+    "hint": "Tab · Shift+Tab · Arrow keys · Release Alt to switch · Esc to cancel",
+    "title": "Windows"
+  },
   "launcher": {
     "categories": {
       "all": "All",

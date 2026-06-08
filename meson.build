@@ -528,6 +528,8 @@ _noctalia_sources = files(
   'src/ui/dialogs/glyph_picker_dialog_popup.cpp',
   'src/ui/dialogs/layer_popup_host.cpp',
   'src/shell/launcher/launcher_panel.cpp',
+  'src/shell/switcher/window_switcher.cpp',
+  'src/shell/switcher/window_switcher_tile.cpp',
   'src/shell/greeter/greeter_appearance_sync.cpp',
   'src/shell/lockscreen/lock_screen.cpp',
   'src/shell/lockscreen/lock_surface.cpp',
