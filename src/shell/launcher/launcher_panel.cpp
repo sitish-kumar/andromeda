@@ -470,7 +470,7 @@ void LauncherPanel::create() {
           .cellHeight = launcherRowHeightEstimate(launcherListStyleFrom(m_config, scale)),
           .squareCells = false,
           .columnGap = 0.0f,
-          .rowGap = 0.0f,
+          .rowGap = Style::spaceXs * scale,
           .overscanRows = kRowOverscan,
           .adapter = m_adapter.get(),
           .flexGrow = 1.0f,
