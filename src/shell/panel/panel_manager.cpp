@@ -666,7 +666,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     // Layer-shell surface anchored top-left of the output for absolute positioning.
     // exclusive_zone = -1 so the bar reservation does not shift our marginTop.
     auto attachedConfig = LayerSurfaceConfig{
-        .nameSpace = "noctalia-panel",
+        .nameSpace = "noctalia-attached-panel",
         .layer = panelLayer,
         .anchor = LayerShellAnchor::Top | LayerShellAnchor::Left,
         .width = surfaceWidth,
