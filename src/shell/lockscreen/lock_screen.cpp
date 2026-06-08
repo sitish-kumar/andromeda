@@ -64,6 +64,8 @@ void LockScreen::setSessionHooks(std::function<void()> onLocked, std::function<v
   m_onSessionUnlocked = std::move(onUnlocked);
 }
 
+void LockScreen::setLockEngagedCallback(std::function<void()> callback) { m_onLockEngaged = std::move(callback); }
+
 bool LockScreen::lock() {
   if (m_wayland == nullptr || m_renderContext == nullptr) {
     return false;
@@ -106,6 +108,9 @@ bool LockScreen::lock() {
   }
   wl_display_flush(m_wayland->display());
   kLog.info("session lock requested");
+  if (m_onLockEngaged) {
+    m_onLockEngaged();
+  }
   return true;
 }
 

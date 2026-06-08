@@ -1191,8 +1191,24 @@ void Application::initUi() {
       [this]() {
         m_lockscreenWidgetsController.onLockStateChanged();
         m_hookManager.fire(HookKind::SessionUnlocked);
+        if (m_logindService != nullptr) {
+          m_logindService->syncSessionUnlocked();
+        }
       }
   );
+  if (m_logindService != nullptr) {
+    m_logindService->setLockCallback([this]() {
+      if (!m_lockScreen.isActive()) {
+        (void)m_lockScreen.lock();
+      }
+    });
+    m_logindService->setUnlockCallback([this]() {
+      if (m_lockScreen.isActive()) {
+        m_lockScreen.unlock();
+      }
+    });
+    m_lockScreen.setLockEngagedCallback([this]() { m_logindService->syncSessionLocked(); });
+  }
 
   SessionActionHooks sessionActionHooks;
   sessionActionHooks.onLogout = [this]() { return m_hookManager.fireBlocking(HookKind::LoggingOut); };

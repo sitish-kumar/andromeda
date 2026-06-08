@@ -36,6 +36,7 @@ public:
       SharedTextureCache* textureCache
   );
   void setSessionHooks(std::function<void()> onLocked, std::function<void()> onUnlocked);
+  void setLockEngagedCallback(std::function<void()> callback);
   bool lock();
   void unlock();
   void onOutputChange();
@@ -105,4 +106,5 @@ private:
   std::function<void()> m_pendingAfterLocked;
   std::function<void()> m_onSessionLocked;
   std::function<void()> m_onSessionUnlocked;
+  std::function<void()> m_onLockEngaged;
 };
