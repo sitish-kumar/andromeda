@@ -195,16 +195,15 @@ namespace {
       score += 20;
     }
 
-    // AMD k10temp exposes Tctl first, but Tctl is a fan-control value. Prefer
-    // physical die/CCD readings when the kernel provides them.
-    if (lbl.contains("tdie")) {
+    // Package/Tdie/SoC labels are global CPU temps. On AMD k10temp systems
+    // without those labels, prefer physical CCD readings over the Tctl control
+    // temperature.
+    if (lbl.contains("package") || lbl.contains("tdie") || lbl.contains("soc temperature")) {
+      score += 90;
+    } else if (lbl.contains("tccd") || lbl.contains("core")) {
       score += 80;
-    } else if (lbl.contains("tccd")) {
-      score += 70;
-    } else if (lbl.contains("package")) {
-      score += 60;
     } else if (lbl.contains("cpu")) {
-      score += 50;
+      score += 60;
     } else if (lbl.contains("tctl")) {
       score += 40;
     }
