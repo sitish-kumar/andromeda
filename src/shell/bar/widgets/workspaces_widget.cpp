@@ -22,10 +22,8 @@ namespace {
     return !workspace.occupied && !workspace.active && !workspace.urgent;
   }
 
-  void filterEmptyWorkspaces(std::vector<Workspace>& workspaces) {
-    workspaces.erase(std::remove_if(workspaces.begin(), workspaces.end(), isEmptyWorkspace), workspaces.end());
-  }
-
+  constexpr float kActiveFactor = 2.2f;
+  constexpr float kInactiveFactor = 1.0f;
   constexpr float kWorkspaceGap = Style::spaceXs;
   constexpr float kWorkspacePillDefaultHeight = Style::baseGlyphSize;
   constexpr float kWorkspaceAnimDurationMs = static_cast<float>(Style::animNormal);
@@ -68,6 +66,10 @@ bool WorkspacesWidget::shouldShowWorkspaceLabel(const Workspace& workspace, std:
     return false;
   }
   return true;
+}
+
+bool WorkspacesWidget::isWorkspaceHidden(const Workspace& workspace) const noexcept {
+  return m_hideWhenEmpty && isEmptyWorkspace(workspace);
 }
 
 void WorkspacesWidget::create() {
@@ -121,11 +123,9 @@ void WorkspacesWidget::doUpdate(Renderer& renderer) {
     return;
   }
 
-  if (m_hideWhenEmpty) {
-    filterEmptyWorkspaces(current);
-  }
-
-  const bool showWidget = !current.empty();
+  const bool showWidget = !current.empty()
+      && (!m_hideWhenEmpty
+          || std::any_of(current.begin(), current.end(), [](const Workspace& ws) { return !isEmptyWorkspace(ws); }));
   syncWidgetVisibility(showWidget);
   if (!showWidget) {
     if (!m_cachedState.empty() || !m_items.empty()) {
@@ -154,15 +154,9 @@ void WorkspacesWidget::doUpdate(Renderer& renderer) {
       }
       if (a.active != b.active || a.urgent != b.urgent) {
         activeChange = true;
-        if (m_labelsOnlyWhenOccupied) {
-          structuralChange = true;
-        }
       }
       if (a.occupied != b.occupied) {
         activeChange = true;
-        if (m_labelsOnlyWhenOccupied) {
-          structuralChange = true;
-        }
       }
     }
   }
@@ -244,12 +238,17 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
 
   const float baseSize = std::round(pillHeight);
   const float padding = m_minimal ? (Style::spaceXs * m_contentScale) : (baseSize * 0.6f);
-  constexpr float kActiveFactor = 2.2f;
-  constexpr float kInactiveFactor = 1.0f;
-
   float maxLabelHeight = labelFontSize;
+
   for (std::size_t i = 0; i < workspaces.size(); ++i) {
     auto& slot = slots[i];
+    if (isWorkspaceHidden(workspaces[i])) {
+      slot.showLabel = false;
+      slot.inactiveWidth = 0.0f;
+      slot.activeWidth = 0.0f;
+      continue;
+    }
+
     if (m_minimal) {
       const float minWidth = baseSize;
       if (!slot.showLabel) {
@@ -336,22 +335,7 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
     m_items.push_back(item);
   }
 
-  // Size the container now that per-item widths are known.
-  float total = 0.0f;
-  for (std::size_t i = 0; i < m_items.size(); ++i) {
-    const float itemWidth = (m_cachedState[i].active) ? m_items[i].activeWidth : m_items[i].inactiveWidth;
-    total += itemWidth;
-  }
-  if (m_items.size() > 1) {
-    total += gap * static_cast<float>(m_items.size() - 1);
-  }
-  if (m_isVertical) {
-    m_container->setFrameSize(m_indicatorHeight, total);
-  } else {
-    m_container->setFrameSize(total, m_indicatorHeight);
-  }
-
-  // Snap to targets immediately (no animation on structural rebuild).
+  // Size the container after targets are known.
   computeTargets();
   for (std::size_t i = 0; i < m_items.size(); ++i) {
     auto& it = m_items[i];
@@ -359,17 +343,30 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
     it.currentWidth = it.targetWidth;
     applyItemLayout(i);
   }
+
+  float total = 0.0f;
+  for (const auto& item : m_items) {
+    total = std::max(total, item.currentX + item.currentWidth);
+  }
+  if (m_isVertical) {
+    m_container->setFrameSize(m_indicatorHeight, total);
+  } else {
+    m_container->setFrameSize(total, m_indicatorHeight);
+  }
 }
 
 void WorkspacesWidget::computeTargets() {
   float cursor = 0.0f;
   for (std::size_t i = 0; i < m_items.size(); ++i) {
     auto& it = m_items[i];
-    const float w = (m_cachedState[i].active) ? it.activeWidth : it.inactiveWidth;
+    const bool hidden = isWorkspaceHidden(m_cachedState[i]);
+    const float w = hidden ? 0.0f : ((m_cachedState[i].active) ? it.activeWidth : it.inactiveWidth);
     it.targetX = cursor;
     it.targetWidth = w;
     it.active = m_cachedState[i].active;
-    cursor += w + m_gap;
+    if (w > 0.0f) {
+      cursor += w + m_gap;
+    }
   }
 }
 
@@ -379,10 +376,7 @@ void WorkspacesWidget::updateContainerSize() {
   }
   float total = 0.0f;
   for (std::size_t i = 0; i < m_items.size(); ++i) {
-    total += m_items[i].currentWidth;
-  }
-  if (m_items.size() > 1) {
-    total += m_gap * static_cast<float>(m_items.size() - 1);
+    total = std::max(total, m_items[i].currentX + m_items[i].currentWidth);
   }
   if (m_isVertical) {
     m_container->setFrameSize(m_indicatorHeight, total);
@@ -394,34 +388,118 @@ void WorkspacesWidget::updateContainerSize() {
   }
 }
 
+void WorkspacesWidget::ensureItemLabel(Renderer& renderer, std::size_t index) {
+  if (index >= m_items.size() || index >= m_cachedState.size()) {
+    return;
+  }
+
+  auto& item = m_items[index];
+  const auto& workspace = m_cachedState[index];
+  if (!item.showLabel || item.area == nullptr) {
+    return;
+  }
+  if (item.text != nullptr) {
+    return;
+  }
+
+  const float labelFontSize = Style::fontSizeMini * m_contentScale;
+  item.text = static_cast<Label*>(item.area->addChild(
+      ui::label({
+          .text = item.label,
+          .fontSize = labelFontSize,
+          .color = workspaceTextColor(workspace),
+          .fontWeight = workspaceFontWeight(labelFontWeight(), m_minimal, workspace.active),
+          .baselineMode = LabelBaselineMode::StableLogical,
+      })
+  ));
+  item.text->measure(renderer);
+}
+
+void WorkspacesWidget::recalculateItemMetrics(Renderer& renderer, std::size_t index) {
+  if (index >= m_items.size() || index >= m_cachedState.size()) {
+    return;
+  }
+
+  auto& item = m_items[index];
+  const auto& workspace = m_cachedState[index];
+  const std::string label = workspaceLabel(workspace, index);
+  const float labelFontSize = Style::fontSizeMini * m_contentScale;
+  const float pillHeight = std::round(kWorkspacePillDefaultHeight * m_contentScale * m_pillScale);
+  const float baseSize = std::round(pillHeight);
+  const float padding = m_minimal ? (Style::spaceXs * m_contentScale) : (baseSize * 0.6f);
+  const FontWeight configuredFontWeight = labelFontWeight();
+
+  item.label = label;
+  item.showLabel = shouldShowWorkspaceLabel(workspace, label);
+
+  if (isWorkspaceHidden(workspace)) {
+    item.inactiveWidth = 0.0f;
+    item.activeWidth = 0.0f;
+    if (item.text != nullptr) {
+      item.text->setVisible(false);
+    }
+    return;
+  }
+
+  float textWidth = 0.0f;
+  if (item.showLabel) {
+    const FontWeight slotFontWeight = workspaceFontWeight(configuredFontWeight, m_minimal, workspace.active);
+    const TextMetrics tm = renderer.measureText(label, labelFontSize, slotFontWeight);
+    textWidth = std::max(tm.right - tm.left, tm.inkRight - tm.inkLeft);
+  }
+
+  if (m_minimal) {
+    const float minWidth = baseSize;
+    if (!item.showLabel) {
+      item.inactiveWidth = minWidth;
+      item.activeWidth = minWidth;
+    } else {
+      const float textBasedWidth = textWidth + padding * 2.0f;
+      item.inactiveWidth = std::max(minWidth, textBasedWidth);
+      item.activeWidth = item.inactiveWidth;
+    }
+  } else {
+    const float minWidth = baseSize * kInactiveFactor;
+    const float minActiveWidth = baseSize * kActiveFactor;
+    if (!item.showLabel) {
+      item.inactiveWidth = minWidth;
+      item.activeWidth = minActiveWidth;
+    } else {
+      const float textBasedWidth = textWidth + padding;
+      item.inactiveWidth = std::max(minWidth, textBasedWidth);
+      item.activeWidth = std::max(minActiveWidth, textBasedWidth);
+    }
+  }
+
+  ensureItemLabel(renderer, index);
+  if (item.text != nullptr) {
+    item.text->setVisible(item.showLabel);
+    if (item.showLabel) {
+      item.text->setText(label);
+      item.text->setFontWeight(workspaceFontWeight(configuredFontWeight, m_minimal, workspace.active));
+      item.text->setColor(workspaceTextColor(workspace));
+      item.text->measure(renderer);
+    }
+  }
+}
+
+void WorkspacesWidget::updateAllItemMetrics(Renderer& renderer) {
+  for (std::size_t i = 0; i < m_items.size(); ++i) {
+    recalculateItemMetrics(renderer, i);
+  }
+}
+
 void WorkspacesWidget::retarget(Renderer& renderer) {
   for (std::size_t i = 0; i < m_items.size(); ++i) {
     auto& it = m_items[i];
     const auto& ws = m_cachedState[i];
-    const std::string label = workspaceLabel(ws, i);
-    const FontWeight fontWeight = workspaceFontWeight(labelFontWeight(), m_minimal, ws.active);
-    const bool labelChanged = it.label != label;
-    if (labelChanged) {
-      it.label = label;
-      if (it.text != nullptr) {
-        it.text->setText(label);
-      }
-    }
-    if (it.text != nullptr) {
-      const bool weightChanged = it.text->fontWeight() != fontWeight;
-      it.text->setFontWeight(fontWeight);
-      if (labelChanged || weightChanged) {
-        it.text->measure(renderer);
-      }
-    }
     if (it.indicator != nullptr) {
       it.indicator->setFill(workspaceFillColor(ws));
       it.indicator->clearBorder();
     }
-    if (it.text != nullptr) {
-      it.text->setColor(workspaceTextColor(ws));
-    }
   }
+
+  updateAllItemMetrics(renderer);
 
   if (m_minimal) {
     computeTargets();
@@ -459,6 +537,8 @@ void WorkspacesWidget::startAnimation() {
     return;
   }
   cancelAnimation();
+  requestFrameTick();
+  requestRedraw();
   m_animId = mgr->animate(
       0.0f, 1.0f, kWorkspaceAnimDurationMs, Easing::EaseOutCubic,
       [this](float t) {
@@ -492,6 +572,10 @@ void WorkspacesWidget::applyItemLayout(std::size_t i) {
   if (it.area == nullptr) {
     return;
   }
+  const bool hidden = i < m_cachedState.size() && isWorkspaceHidden(m_cachedState[i]);
+  const bool visible = !hidden || it.currentWidth > 0.0f;
+  it.area->setVisible(visible);
+  it.area->setParticipatesInLayout(visible);
   if (m_isVertical) {
     it.area->setPosition(0.0f, std::round(it.currentX));
     it.area->setFrameSize(m_indicatorHeight, it.currentWidth);
