@@ -1,5 +1,6 @@
 #include "config/config_service.h"
 
+#include "compositors/compositor_detect.h"
 #include "config/atomic_file.h"
 #include "config/config_export.h"
 #include "config/schema/config_schema.h"
@@ -14,6 +15,8 @@
 #include "render/core/renderer.h"
 #include "shell/desktop/desktop_widget_settings_registry.h"
 #include "shell/settings/widget_settings_registry.h"
+#include "system/distro_info.h"
+#include "system/hardware_info.h"
 #include "util/file_utils.h"
 #include "util/string_utils.h"
 #include "wayland/wayland_connection.h"
@@ -331,6 +334,37 @@ namespace {
     return path.filename().string();
   }
 
+  void insertNonEmpty(toml::table& table, std::string_view key, const std::string& value) {
+    if (!value.empty()) {
+      table.insert_or_assign(std::string(key), value);
+    }
+  }
+
+  toml::table buildDistroReport() {
+    toml::table distro;
+    distro.insert_or_assign("label", distroLabel());
+    if (const auto detected = DistroDetector::detect(); detected.has_value()) {
+      insertNonEmpty(distro, "id", detected->id);
+      insertNonEmpty(distro, "name", detected->name);
+      insertNonEmpty(distro, "version", detected->version);
+      insertNonEmpty(distro, "pretty_name", detected->prettyName);
+    }
+    return distro;
+  }
+
+  toml::table buildCompositorReport() {
+    const compositors::CompositorKind kind = compositors::detect();
+
+    toml::table compositor;
+    compositor.insert_or_assign("label", compositorLabel());
+    compositor.insert_or_assign("name", std::string(compositors::name(kind)));
+    const std::string_view hint = compositors::envHint();
+    if (!hint.empty()) {
+      compositor.insert_or_assign("env_hint", std::string(hint));
+    }
+    return compositor;
+  }
+
   std::string parseErrorMessage(const std::filesystem::path& path, const toml::parse_error& e) {
     const auto& src = e.source();
     return std::format(
@@ -562,6 +596,11 @@ std::string ConfigService::buildSupportReport() const {
   report.insert_or_assign("noctalia_version", std::string(noctalia::build_info::version()));
   report.insert_or_assign("git_revision", std::string(noctalia::build_info::revision()));
   root.insert_or_assign("report", std::move(report));
+
+  toml::table system;
+  system.insert_or_assign("distro", buildDistroReport());
+  system.insert_or_assign("compositor", buildCompositorReport());
+  root.insert_or_assign("system", std::move(system));
 
   toml::table paths;
   paths.insert_or_assign("config_dir", m_configDir);
