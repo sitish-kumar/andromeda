@@ -1264,6 +1264,14 @@ std::vector<wl_surface*> Bar::allBarSurfaces() const {
   return surfaces;
 }
 
+bool Bar::canAttachPanelToBar(wl_output* output, std::string_view barName) const noexcept {
+  const BarInstance* instance = instanceForBar(output, barName);
+  if (instance == nullptr || instance->surface == nullptr || !instance->barConfig.enabled) {
+    return false;
+  }
+  return instance->barConfig.autoHide || instanceEffectivelyVisible(*instance);
+}
+
 void Bar::revealAutoHideForAttachedPanel(wl_output* output, std::string_view barName) {
   BarInstance* instance = instanceForBar(output, barName);
   if (instance != nullptr) {

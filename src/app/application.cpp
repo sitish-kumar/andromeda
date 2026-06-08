@@ -1468,6 +1468,9 @@ void Application::initUi() {
     return m_bar.surfaceRectsForOutput(output);
   });
   m_panelManager.setFocusGrabBarSurfacesProvider([this]() { return m_bar.allBarSurfaces(); });
+  m_panelManager.setAttachedPanelAvailabilityCallback([this](wl_output* output, std::string_view barName) {
+    return m_bar.canAttachPanelToBar(output, barName);
+  });
   m_bar.setAutoHideSuppressionCallback([this](const BarInstance& instance) {
     if (m_trayMenu.isOpen()) {
       return true;
