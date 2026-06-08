@@ -135,6 +135,9 @@ namespace settings {
                 if (row.action != "command") {
                   row.command.clear();
                 }
+                // "suspend" and "lock_and_suspend" are distinct choices; pin lockBeforeSuspend so the
+                // explicit selection wins over normalizeIdleBehaviorAction's suspend -> lock_and_suspend fold.
+                row.lockBeforeSuspend = (row.action == "lock_and_suspend");
               }
               IdleBehaviorConfig n = row;
               normalizeIdleBehaviorAction(n);
