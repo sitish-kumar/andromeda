@@ -39,6 +39,12 @@ namespace {
 
   void hashCombine(std::size_t& seed, std::size_t v) { seed ^= v + 0x9E3779B97F4A7C15ULL + (seed << 12) + (seed >> 4); }
 
+  // Fixed salt mixed into the glyph cache key hash. std::hash<integral> is the
+  // identity map on most libstdc++/libc++ builds, which clusters sequential
+  // codepoints into adjacent buckets and degrades the open-addressing probe
+  // sequence; seeding from a non-trivial constant decorrelates the low bits.
+  constexpr std::size_t kGlyphHashSalt = 0x7E4B2A9C5D3F8161ULL;
+
   // Hinting is disabled for icons: tabler glyphs are monoline strokes with
   // fractional widths by design. Autohinter snaps each stroke to the nearest
   // integer pixel, which visibly thins the icons. Grayscale AA without
@@ -69,7 +75,8 @@ bool CairoGlyphRenderer::CacheKey::operator==(const CacheKey& other) const noexc
 }
 
 std::size_t CairoGlyphRenderer::CacheKeyHash::operator()(const CacheKey& k) const noexcept {
-  std::size_t seed = std::hash<char32_t>{}(k.codepoint);
+  std::size_t seed = kGlyphHashSalt;
+  hashCombine(seed, std::hash<char32_t>{}(k.codepoint));
   hashCombine(seed, std::hash<std::uint32_t>{}(k.sizeQ));
   hashCombine(seed, std::hash<std::uint16_t>{}(k.scaleQ));
   return seed;

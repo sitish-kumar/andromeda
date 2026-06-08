@@ -37,32 +37,10 @@ namespace {
     return baseWeight;
   }
 
-  struct LabelCenterOffsets {
-    float horizontal = 0.0f;
-    float vertical = 0.0f;
-  };
-
-  // Offsets to recenter a label's ink box within its slot. Numeric labels
-  // (workspace IDs) are special-cased: per-glyph ink extents are subpixel and
-  // unhinted now that Fontconfig hinting is honored, so the apex of "4" vs the
-  // flat top of "1" land on different pixels after rounding. Horizontal uses
-  // logical centering (uniform digit advances align). Vertical keeps ink
-  // centering — digits have no descender, so the logical box sits high — but
-  // derives it from a fixed digit reference so every digit shares one center.
-  [[nodiscard]] LabelCenterOffsets
-  labelCenterOffsets(Renderer& renderer, std::string_view label, bool numeric, float fontSize, FontWeight fontWeight) {
-    const TextMetrics tm = renderer.measureText(label, fontSize, fontWeight);
-    const float logCenter = (tm.left + tm.right) * 0.5f;
-    const float logVCenter = (tm.top + tm.bottom) * 0.5f;
-    LabelCenterOffsets out;
-    if (numeric) {
-      const TextMetrics ref = renderer.measureText("0123456789", fontSize, fontWeight);
-      out.vertical = (ref.inkTop + ref.inkBottom) * 0.5f - logVCenter;
-    } else {
-      out.horizontal = (tm.inkLeft + tm.inkRight) * 0.5f - logCenter;
-      out.vertical = (tm.inkTop + tm.inkBottom) * 0.5f - logVCenter;
-    }
-    return out;
+  // Numeric workspace IDs ("10", "11") must not be truncated like word labels.
+  [[nodiscard]] bool isNumericLabel(std::string_view label) {
+    return !label.empty()
+        && std::all_of(label.begin(), label.end(), [](char c) { return std::isdigit(static_cast<unsigned char>(c)); });
   }
 } // namespace
 
@@ -246,10 +224,7 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
   struct SlotMetrics {
     std::string label;
     bool showLabel = false;
-    bool isNumeric = false;
     float textWidth = 0.0f;
-    float inkCenterOffset = 0.0f;
-    float inkVCenterOffset = 0.0f;
     float inactiveWidth = 0.0f;
     float activeWidth = 0.0f;
   };
@@ -260,19 +235,10 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
     slot.label = labels[i];
     slot.showLabel = shouldShowWorkspaceLabel(workspaces[i], labels[i]);
 
-    // Detect numeric labels (workspace IDs like "1", "10", "11")
-    slot.isNumeric = !labels[i].empty() && std::all_of(labels[i].begin(), labels[i].end(), [](char c) {
-      return std::isdigit(static_cast<unsigned char>(c));
-    });
-
     if (slot.showLabel) {
       const FontWeight slotFontWeight = workspaceFontWeight(configuredFontWeight, m_minimal, workspaces[i].active);
       const TextMetrics tm = renderer.measureText(labels[i], labelFontSize, slotFontWeight);
       slot.textWidth = std::max(tm.right - tm.left, tm.inkRight - tm.inkLeft);
-      const LabelCenterOffsets off =
-          labelCenterOffsets(renderer, labels[i], slot.isNumeric, labelFontSize, slotFontWeight);
-      slot.inkCenterOffset = off.horizontal;
-      slot.inkVCenterOffset = off.vertical;
     }
   }
 
@@ -332,8 +298,6 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
     item.showLabel = slot.showLabel;
     item.inactiveWidth = slot.inactiveWidth;
     item.activeWidth = slot.activeWidth;
-    item.inkCenterOffset = slot.inkCenterOffset;
-    item.inkVCenterOffset = slot.inkVCenterOffset;
 
     if (!m_minimal) {
       const float indicatorW = m_isVertical ? m_indicatorHeight : w;
@@ -356,8 +320,7 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
               .fontSize = labelFontSize,
               .color = workspaceTextColor(ws),
               .fontWeight = workspaceFontWeight(configuredFontWeight, m_minimal, ws.active),
-              .baselineMode = m_isVertical ? std::optional<LabelBaselineMode>{LabelBaselineMode::InkCentered}
-                                           : std::optional<LabelBaselineMode>{},
+              .baselineMode = LabelBaselineMode::StableLogical,
           })
       ));
       item.text->measure(renderer);
@@ -449,13 +412,6 @@ void WorkspacesWidget::retarget(Renderer& renderer) {
       it.text->setFontWeight(fontWeight);
       if (labelChanged || weightChanged) {
         it.text->measure(renderer);
-        const float fontSize = it.text->fontSize();
-        const bool numeric = !label.empty() && std::all_of(label.begin(), label.end(), [](char c) {
-          return std::isdigit(static_cast<unsigned char>(c));
-        });
-        const LabelCenterOffsets off = labelCenterOffsets(renderer, label, numeric, fontSize, fontWeight);
-        it.inkCenterOffset = off.horizontal;
-        it.inkVCenterOffset = off.vertical;
       }
     }
     if (it.indicator != nullptr) {
@@ -554,8 +510,10 @@ void WorkspacesWidget::applyItemLayout(std::size_t i) {
     if (it.showLabel) {
       const float itemW = m_isVertical ? m_indicatorHeight : it.currentWidth;
       const float itemH = m_isVertical ? it.currentWidth : m_indicatorHeight;
-      const float textX = std::round((itemW - it.text->width()) * 0.5f - it.inkCenterOffset);
-      const float textY = std::round((itemH - it.text->height()) * 0.5f - it.inkVCenterOffset);
+      // Box-center the (text-only) label, unrounded: the renderer snaps the glyph
+      // quad to the pixel grid, so rounding here would double-round the baseline.
+      const float textX = (itemW - it.text->width()) * 0.5f;
+      const float textY = (itemH - it.text->height()) * 0.5f;
       it.text->setPosition(std::max(0.0f, textX), textY);
     }
   }
@@ -624,9 +582,7 @@ std::string WorkspacesWidget::workspaceLabel(const Workspace& workspace, std::si
     std::string label = !workspace.name.empty() ? workspace.name : workspace.id;
     // Only truncate non-numeric labels (words like "VESKTOP" → "VE").
     // Numeric labels (workspace IDs like "10", "11") stay as-is.
-    const bool isNumeric = !label.empty()
-        && std::all_of(label.begin(), label.end(), [](char c) { return std::isdigit(static_cast<unsigned char>(c)); });
-    if (!isNumeric && m_maxLabelChars > 0) {
+    if (!isNumericLabel(label) && m_maxLabelChars > 0) {
       label = StringUtils::truncateUtf8CodePoints(label, m_maxLabelChars);
     }
     return label;
