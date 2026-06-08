@@ -119,7 +119,7 @@ private:
       {TabId::Network, "network", "control-center.tabs.network", "wifi"},
       {TabId::Bluetooth, "bluetooth", "control-center.tabs.bluetooth", "bluetooth"},
       {TabId::Weather, "weather", "control-center.tabs.weather", "weather-cloud-sun"},
-      {TabId::Calendar, "calendar", "control-center.tabs.calendar", "calendar"},
+      {TabId::Calendar, "calendar", "control-center.tabs.calendar", "calendar-event"},
       {TabId::Notifications, "notifications", "control-center.tabs.notifications", "bell"},
       {TabId::ScreenTime, "screen-time", "control-center.tabs.screen-time", "hourglass"},
   }};
