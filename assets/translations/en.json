@@ -598,7 +598,7 @@
     "actions": {
       "custom": "Custom",
       "lock": "Lock",
-      "lock-and-suspend": "Lock & suspend",
+      "lock-and-suspend": "Lock & Suspend",
       "logout": "Log Out",
       "reboot": "Reboot",
       "shutdown": "Shut Down",
@@ -811,21 +811,15 @@
         "command-label": "Idle command",
         "command-placeholder": "notify-send \"Idle\"",
         "kind": {
-          "custom": "Custom commands",
-          "lock": "Lock session",
-          "lock-and-suspend": "Lock & suspend",
-          "screen-off": "Turn off displays",
-          "suspend": "Suspend system"
+          "custom": "Custom",
+          "lock": "Lock",
+          "lock-and-suspend": "Lock & Suspend",
+          "screen-off": "Screen Off",
+          "suspend": "Suspend"
         },
         "kind-section-label": "Action",
         "name-label": "Name",
         "name-placeholder": "idle-behavior",
-        "presets": {
-          "lock": "Lock",
-          "lock-and-suspend": "Lock & Suspend",
-          "monitor-off": "Monitor off",
-          "suspend": "Suspend"
-        },
         "resume-command-label": "Resume command",
         "resume-command-placeholder": "noctalia:dpms-on",
         "summary": "{name} · {seconds}s",
@@ -1522,7 +1516,7 @@
         },
         "blurred-desktop": {
           "description": "Use a snapshot of the desktop as the lock screen background",
-          "label": "Desktop capture"
+          "label": "Desktop Capture"
         },
         "tint-intensity": {
           "description": "Surface-color tint over the lock screen background",
@@ -2205,15 +2199,6 @@
       "command-placeholder": "Optional bash command, leave empty for built-in behavior",
       "glyph-label": "Glyph",
       "glyph-picker-title": "Action glyph",
-      "kind": {
-        "command": "Custom command",
-        "lock": "Lock",
-        "lock-and-suspend": "Lock & Suspend",
-        "logout": "Log out",
-        "reboot": "Reboot",
-        "shutdown": "Shut down",
-        "suspend": "Suspend"
-      },
       "kind-section-label": "Behavior",
       "label-field": "Label",
       "label-placeholder": "Optional button text",

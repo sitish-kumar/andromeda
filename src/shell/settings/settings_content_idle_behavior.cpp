@@ -126,6 +126,7 @@ namespace settings {
               IdleBehaviorConfig n = row;
               normalizeIdleBehaviorAction(n);
               customCommandsRaw->setVisible(n.action == "command");
+              nameBlockRaw->setVisible(n.action == "command");
               persist();
             },
         .configure = [](Select& select) { select.setFillWidth(true); },
@@ -133,13 +134,15 @@ namespace settings {
     kindBlock->addChild(std::move(kindSelect));
     body->addChild(std::move(kindBlock));
 
+    Flex* nameBlockRaw = nullptr;
     auto nameBlock = ui::column(
-        {.align = FlexAlign::Stretch, .gap = Style::spaceXs * scale},
+        {.out = &nameBlockRaw, .align = FlexAlign::Stretch, .gap = Style::spaceXs * scale},
         makeLabel(
             i18n::tr("settings.idle.behavior.name-label"), Style::fontSizeCaption * scale,
             colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal
         )
     );
+    nameBlockRaw->setVisible(showCustomCommands);
     Input* namePtr = nullptr;
     auto nameIn = ui::input({
         .out = &namePtr,
