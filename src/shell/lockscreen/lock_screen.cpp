@@ -77,6 +77,11 @@ bool LockScreen::lock() {
     kLog.warn("session lock protocol unavailable");
     return false;
   }
+  if (m_wayland->outputs().empty()) {
+    m_lockDeferred = true;
+    kLog.warn("no outputs available for lock screen; lock deferred until an output is connected");
+    return true;
+  }
 
   m_desktopCaptures.clear();
   if (shouldUseBlurredDesktop()) {
@@ -115,6 +120,7 @@ bool LockScreen::lock() {
 }
 
 void LockScreen::unlock() {
+  m_lockDeferred = false;
   if (!isActive()) {
     return;
   }
@@ -164,6 +170,13 @@ void LockScreen::requestLayout() {
 }
 
 void LockScreen::onOutputChange() {
+  if (m_lockDeferred) {
+    if (m_wayland != nullptr && !m_wayland->outputs().empty()) {
+      m_lockDeferred = false;
+      (void)lock();
+    }
+    return;
+  }
   if (!isActive()) {
     return;
   }
@@ -498,16 +511,15 @@ void LockScreen::createInstance(const WaylandOutput& output) {
 
 void LockScreen::resetLockState() {
   m_pendingAfterLocked = {};
+  m_lockDeferred = false;
   if (m_lock == nullptr) {
     m_lockPending = false;
     m_locked = false;
     return;
   }
-  if (m_locked) {
-    ext_session_lock_v1_unlock_and_destroy(m_lock);
-  } else {
-    ext_session_lock_v1_destroy(m_lock);
-  }
+  // unlock_and_destroy is required once the compositor may have entered the locked
+  // state (including while m_lockPending is still true locally).
+  ext_session_lock_v1_unlock_and_destroy(m_lock);
   m_lock = nullptr;
   m_lockPending = false;
   m_locked = false;

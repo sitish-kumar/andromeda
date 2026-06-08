@@ -103,6 +103,7 @@ private:
   bool m_statusIsError = false;
   bool m_lockPending = false;
   bool m_locked = false;
+  bool m_lockDeferred = false;
   std::function<void()> m_pendingAfterLocked;
   std::function<void()> m_onSessionLocked;
   std::function<void()> m_onSessionUnlocked;
