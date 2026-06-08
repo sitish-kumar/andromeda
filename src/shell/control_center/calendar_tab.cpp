@@ -30,8 +30,8 @@ namespace {
 
   constexpr float kCalendarGridGap = Style::spaceSm;
   constexpr float kCalendarNavButtonSize = Style::controlHeight;
-  constexpr float kCalendarWeekdayRowHeight = Style::controlHeightSm;
-  constexpr float kCalendarHeaderHeight = Style::controlHeightLg;
+  constexpr float kCalendarWeekdayRowHeight = Style::fontSizeCaption + Style::spaceXs;
+  constexpr float kCalendarHeaderHeight = Style::controlHeight;
   constexpr float kCalendarCellSizeMin = Style::controlHeightSm + Style::spaceXs;
   constexpr float kCalendarCellSizeMax = Style::controlHeightLg + Style::spaceXs;
   constexpr float kCalendarDayButtonSizeMax = Style::controlHeightLg;
@@ -184,7 +184,7 @@ std::unique_ptr<Flex> CalendarTab::create() {
           .out = &m_todayLabel,
           .text = formatShellDate(m_config),
           .fontSize = Style::fontSizeTitle * scale,
-          .color = colorSpecFromRole(ColorRole::OnSurface),
+          .color = colorSpecFromRole(ColorRole::Secondary),
           .maxLines = 1,
           .fontWeight = FontWeight::Medium,
       })
@@ -460,9 +460,9 @@ void CalendarTab::rebuild() {
     dayCell->addChild(
         ui::label({
             .text = weekdays[i],
-            .fontSize = (Style::fontSizeCaption + 1.0f) * scale,
+            .fontSize = Style::fontSizeCaption * scale,
             .color = colorSpecFromRole(weekend ? ColorRole::Secondary : ColorRole::OnSurfaceVariant),
-            .fontWeight = FontWeight::Bold,
+            .fontWeight = FontWeight::Medium,
         })
     );
 
