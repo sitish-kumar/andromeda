@@ -1421,8 +1421,15 @@ void ConfigService::parseConfigTable(const toml::table& tbl, Config& config, boo
     config.controlCenter.shortcuts = defaultControlCenterShortcuts();
   }
 
+  // Parse [plugins]. Default-seeding stays here because it must apply even when
+  // [plugins] (or its source array) is absent.
+  bool pluginSourcesConfigured = false;
   if (auto* pluginsTbl = tbl["plugins"].as_table()) {
+    pluginSourcesConfigured = (*pluginsTbl)["source"].as_array() != nullptr;
     schema::readInto(*pluginsTbl, config.plugins, schema::pluginsSchema(), "plugins", schemaDiag);
+  }
+  if (!pluginSourcesConfigured && config.plugins.sources.empty()) {
+    config.plugins.sources = defaultPluginSources();
   }
 
   // Parse [idle] and [idle.behavior.*]. Default-seeding stays here because it

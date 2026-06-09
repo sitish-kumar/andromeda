@@ -804,10 +804,14 @@ bool Bar::initialize(
   m_lastBars = m_config->config().bars;
   m_lastWidgets = m_config->config().widgets;
   m_lastShadow = m_config->config().shell.shadow;
+  m_lastPlugins = m_config->config().plugins;
   m_config->addReloadCallback(
       [this]() {
         const auto& cfg = m_config->config();
-        if (cfg.bars == m_lastBars && cfg.widgets == m_lastWidgets && cfg.shell.shadow == m_lastShadow) {
+        if (cfg.bars == m_lastBars
+            && cfg.widgets == m_lastWidgets
+            && cfg.shell.shadow == m_lastShadow
+            && cfg.plugins == m_lastPlugins) {
           return;
         }
         reload();
@@ -836,6 +840,7 @@ void Bar::reload() {
   m_lastBars = m_config->config().bars;
   m_lastWidgets = m_config->config().widgets;
   m_lastShadow = m_config->config().shell.shadow;
+  m_lastPlugins = m_config->config().plugins;
   m_widgetFactory = std::make_unique<WidgetFactory>(
       *m_platform, *m_config, m_notifications, m_tray, m_audio, m_upower, m_sysmon, m_powerProfiles, m_network,
       m_idleInhibitor, m_mpris, m_audioSpectrum, m_httpClient, m_weatherService, m_nightLight, m_themeService,

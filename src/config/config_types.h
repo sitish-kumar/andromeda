@@ -1196,9 +1196,13 @@ struct PluginSourceConfig {
 // intent → config (declarative-friendly); clones live under the state dir.
 struct PluginsConfig {
   std::vector<PluginSourceConfig> sources;
-  std::vector<std::string> enabled; // fully-qualified plugin ids ("author/plugin")
+  std::vector<std::string> enabled; // active plugin ids ("author/plugin"); opt-in for every source
   bool operator==(const PluginsConfig&) const = default;
 };
+
+// Default sources seeded when [plugins] declares no [[plugins.source]]: the
+// official + community plugin repos (auto-update off).
+[[nodiscard]] std::vector<PluginSourceConfig> defaultPluginSources();
 
 struct Config {
   std::vector<BarConfig> bars;

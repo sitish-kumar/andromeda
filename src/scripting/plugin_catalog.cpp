@@ -97,6 +97,7 @@ namespace scripting {
       CatalogEntry e{
           .id = tableString(*tbl, "id"),
           .name = tableString(*tbl, "name"),
+          .tags = {},
           .version = tableString(*tbl, "version"),
           .author = tableString(*tbl, "author"),
           .minNoctalia = tableString(*tbl, "min_noctalia"),
@@ -122,23 +123,23 @@ namespace scripting {
       std::error_code ec;
       const std::filesystem::path dir = FileUtils::expandUserPath(source.location);
       if (!std::filesystem::is_directory(dir, ec)) {
-        return {.ok = false, .error = "path source directory not found: " + dir.string()};
+        return {.ok = false, .error = "path source directory not found: " + dir.string(), .entries = {}};
       }
       const auto catalogPath = dir / "catalog.toml";
       if (std::filesystem::exists(catalogPath, ec)) {
         std::string body;
         if (readFileToString(catalogPath, body)) {
-          return {.ok = true, .entries = parseCatalogToml(body)};
+          return {.ok = true, .error = {}, .entries = parseCatalogToml(body)};
         }
       }
       // No catalog.toml — path sources are on disk, so scan straight away.
-      return {.ok = true, .entries = scanDir(dir)};
+      return {.ok = true, .error = {}, .entries = scanDir(dir)};
     }
 
     // Git source: clone-if-needed (blobless, no-checkout), then read the catalog
     // via `git show` so nothing is checked out until a plugin is enabled.
     if (!plugin_git::available()) {
-      return {.ok = false, .error = "git is not installed"};
+      return {.ok = false, .error = "git is not installed", .entries = {}};
     }
     const std::filesystem::path dest = std::filesystem::path(FileUtils::pluginSourcesDir()) / source.name;
     std::error_code ec;
@@ -146,14 +147,14 @@ namespace scripting {
       std::filesystem::create_directories(dest.parent_path(), ec);
       auto cloned = plugin_git::cloneBlobless(source.location, dest);
       if (!cloned) {
-        return {.ok = false, .error = "clone failed: " + cloned.err};
+        return {.ok = false, .error = "clone failed: " + cloned.err, .entries = {}};
       }
     }
     auto shown = plugin_git::showFile(dest, "catalog.toml");
     if (!shown) {
-      return {.ok = false, .error = "no catalog.toml in source '" + source.name + "'"};
+      return {.ok = false, .error = "no catalog.toml in source '" + source.name + "'", .entries = {}};
     }
-    return {.ok = true, .entries = parseCatalogToml(shown.out)};
+    return {.ok = true, .error = {}, .entries = parseCatalogToml(shown.out)};
   }
 
 } // namespace scripting

@@ -44,6 +44,10 @@ namespace scripting {
     // `git -C dest rev-parse HEAD` — out = commit sha (trimmed).
     [[nodiscard]] GitResult headRevision(const std::filesystem::path& dest);
 
+    // `git -C dest reset --hard <rev>` — revert the source to a known revision
+    // (the post-update compatibility guard's rollback).
+    [[nodiscard]] GitResult resetHard(const std::filesystem::path& dest, std::string_view rev);
+
   } // namespace plugin_git
 
 } // namespace scripting

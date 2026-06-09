@@ -79,4 +79,8 @@ namespace scripting::plugin_git {
     return r;
   }
 
+  GitResult resetHard(const std::filesystem::path& dest, std::string_view rev) {
+    return run({"git", "-C", dest.string(), "reset", "--hard", std::string(rev)}, kLocalTimeout, kProgressCap);
+  }
+
 } // namespace scripting::plugin_git
