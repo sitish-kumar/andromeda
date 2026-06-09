@@ -1427,15 +1427,26 @@ void Application::initUi() {
   m_wayland.setIdleCapabilitiesReadyCallback([this]() { m_idleManager.reload(m_configService.config().idle); });
   m_idleManager.initialize(
       m_wayland,
-      [this](const std::string& behaviorName, std::chrono::milliseconds fadeIn, std::function<void()> onFadeComplete) {
+      [this](
+          const std::string& behaviorName, std::chrono::milliseconds fadeIn, bool willLockSession,
+          std::function<void()> onFadeComplete
+      ) {
         (void)behaviorName;
+        // Snapshot the clean desktop before the overlay fades in
+        if (willLockSession) {
+          m_lockScreen.primeDesktopCaptures();
+        }
         DeferredCall::callLater([this, fadeIn, done = std::move(onFadeComplete)]() mutable {
           m_idleGraceOverlay.show(fadeIn, std::move(done));
         });
       },
       [this](bool userCancelled) {
-        (void)userCancelled;
-        DeferredCall::callLater([this]() { m_idleGraceOverlay.hide(); });
+        DeferredCall::callLater([this, userCancelled]() {
+          m_idleGraceOverlay.hide();
+          if (userCancelled) {
+            m_lockScreen.clearPrimedDesktopCaptures();
+          }
+        });
       }
   );
   m_idleManager.setActionRunner(
