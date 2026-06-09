@@ -10,6 +10,7 @@
 #include "lualib.h"
 #include "net/http_client.h"
 #include "notification/notifications.h"
+#include "scripting/plugin_state_store.h"
 #include "scripting/script_api_context.h"
 #include "scripting/scripted_widget_bindings.h"
 #include "system/terminal_launch.h"
@@ -356,6 +357,14 @@ namespace {
     return 1;
   }
 
+  int luau_setUpdateInterval(lua_State* L) {
+    const int ms = static_cast<int>(luaL_checknumber(L, 1));
+    if (auto* host = hostForState(L)) {
+      host->scriptSetUpdateInterval(ms);
+    }
+    return 0;
+  }
+
   // Filesystem path resolution: ~ -> $HOME, absolute paths verbatim, otherwise relative
   // to the plugin's own directory. No sandbox — the trust model allows any path.
   std::filesystem::path resolveHostPath(LuauHost* host, std::string_view path) {
@@ -613,6 +622,147 @@ namespace {
     return 1;
   }
 
+  // ── Lua <-> JSON (for the shared state store; values cross runtimes as JSON) ──
+
+  nlohmann::json luaToJson(lua_State* L, int idx, int depth = 0) {
+    if (depth > 32) {
+      return nullptr;
+    }
+    const int abs = idx > 0 ? idx : lua_gettop(L) + idx + 1;
+    switch (lua_type(L, abs)) {
+    case LUA_TBOOLEAN:
+      return lua_toboolean(L, abs) != 0;
+    case LUA_TNUMBER: {
+      const double n = lua_tonumber(L, abs);
+      if (std::isfinite(n) && n == std::floor(n) && std::abs(n) < 9.007199254740992e15) {
+        return static_cast<std::int64_t>(n);
+      }
+      return n;
+    }
+    case LUA_TSTRING: {
+      size_t len = 0;
+      const char* s = lua_tolstring(L, abs, &len);
+      return std::string(s, len);
+    }
+    case LUA_TTABLE: {
+      const int len = lua_objlen(L, abs);
+      if (len > 0) {
+        nlohmann::json array = nlohmann::json::array();
+        for (int i = 1; i <= len; ++i) {
+          lua_rawgeti(L, abs, i);
+          array.push_back(luaToJson(L, -1, depth + 1));
+          lua_pop(L, 1);
+        }
+        return array;
+      }
+      nlohmann::json object = nlohmann::json::object();
+      lua_pushnil(L);
+      while (lua_next(L, abs) != 0) {
+        if (lua_type(L, -2) == LUA_TSTRING) {
+          object[lua_tostring(L, -2)] = luaToJson(L, -1, depth + 1);
+        }
+        lua_pop(L, 1);
+      }
+      return object;
+    }
+    default:
+      return nullptr;
+    }
+  }
+
+  void jsonToLua(lua_State* L, const nlohmann::json& json) {
+    switch (json.type()) {
+    case nlohmann::json::value_t::boolean:
+      lua_pushboolean(L, json.get<bool>() ? 1 : 0);
+      break;
+    case nlohmann::json::value_t::number_integer:
+    case nlohmann::json::value_t::number_unsigned:
+      lua_pushnumber(L, static_cast<double>(json.get<std::int64_t>()));
+      break;
+    case nlohmann::json::value_t::number_float:
+      lua_pushnumber(L, json.get<double>());
+      break;
+    case nlohmann::json::value_t::string: {
+      const std::string s = json.get<std::string>();
+      lua_pushlstring(L, s.data(), s.size());
+      break;
+    }
+    case nlohmann::json::value_t::array: {
+      lua_createtable(L, static_cast<int>(json.size()), 0);
+      int i = 1;
+      for (const auto& item : json) {
+        jsonToLua(L, item);
+        lua_rawseti(L, -2, i++);
+      }
+      break;
+    }
+    case nlohmann::json::value_t::object: {
+      lua_createtable(L, 0, static_cast<int>(json.size()));
+      for (const auto& [key, value] : json.items()) {
+        jsonToLua(L, value);
+        lua_setfield(L, -2, key.c_str());
+      }
+      break;
+    }
+    default:
+      lua_pushnil(L);
+      break;
+    }
+  }
+
+  int luau_state_set(lua_State* L) {
+    size_t keyLen = 0;
+    const char* key = luaL_checklstring(L, 1, &keyLen);
+    auto* host = hostForState(L);
+    if (host == nullptr) {
+      return 0;
+    }
+    const nlohmann::json value = lua_gettop(L) >= 2 ? luaToJson(L, 2) : nlohmann::json(nullptr);
+    host->stateSet(std::string(key, keyLen), value.dump());
+    return 0;
+  }
+
+  int luau_state_get(lua_State* L) {
+    size_t keyLen = 0;
+    const char* key = luaL_checklstring(L, 1, &keyLen);
+    auto* host = hostForState(L);
+    if (host == nullptr) {
+      lua_pushnil(L);
+      return 1;
+    }
+    const auto json = host->stateGet(std::string(key, keyLen));
+    if (!json.has_value()) {
+      lua_pushnil(L);
+      return 1;
+    }
+    try {
+      jsonToLua(L, nlohmann::json::parse(*json));
+    } catch (const nlohmann::json::exception&) {
+      lua_pushnil(L);
+    }
+    return 1;
+  }
+
+  int luau_state_watch(lua_State* L) {
+    size_t keyLen = 0;
+    const char* key = luaL_checklstring(L, 1, &keyLen);
+    luaL_checktype(L, 2, LUA_TFUNCTION);
+    auto* host = hostForState(L);
+    if (host == nullptr) {
+      return 0;
+    }
+    const int callbackRef = lua_ref(L, 2);
+    host->stateWatch(std::string(key, keyLen), callbackRef);
+    return 0;
+  }
+
+  const luaL_Reg kNoctaliaStateLib[] = {
+      {"set", luau_state_set},
+      {"get", luau_state_get},
+      {"watch", luau_state_watch},
+      {nullptr, nullptr},
+  };
+
   const luaL_Reg kNoctaliaBaseLib[] = {
       {"log", luau_log},
       {"runAsync", luau_runAsync},
@@ -628,6 +778,7 @@ namespace {
       {"copyToClipboard", luau_copyToClipboard},
       {"getenv", luau_getenv},
       {"expandPath", luau_expandPath},
+      {"setUpdateInterval", luau_setUpdateInterval},
       {"readFile", luau_readFile},
       {"writeFile", luau_writeFile},
       {"fileExists", luau_fileExists},
@@ -642,6 +793,10 @@ namespace {
 
   void registerNoctaliaLib(lua_State* L) {
     luaL_register(L, "noctalia", kNoctaliaBaseLib);
+    // noctalia.state = { set, get, watch }
+    lua_createtable(L, 0, 0);
+    luaL_register(L, nullptr, kNoctaliaStateLib);
+    lua_setfield(L, -2, "state");
     lua_pop(L, 1);
   }
 } // namespace
@@ -880,6 +1035,46 @@ bool LuauHost::callAsyncDownloadCallback(int callbackRef, bool ok, std::chrono::
   return callWithBudget("async download callback", 1, 0, budget);
 }
 
+void LuauHost::stateSet(const std::string& key, std::string json) {
+  scripting::PluginStateStore::instance().set(m_pluginId, key, std::move(json));
+}
+
+std::optional<std::string> LuauHost::stateGet(const std::string& key) const {
+  return scripting::PluginStateStore::instance().get(m_pluginId, key);
+}
+
+void LuauHost::stateWatch(std::string key, int callbackRef) {
+  if (callbackRef <= LUA_REFNIL) {
+    return;
+  }
+  m_stateWatchCallbackRefs.insert(callbackRef);
+  if (m_stateWatchHandler) {
+    m_stateWatchHandler(std::move(key), callbackRef);
+  }
+}
+
+bool LuauHost::hasStateWatchCallback(int callbackRef) const { return m_stateWatchCallbackRefs.contains(callbackRef); }
+
+bool LuauHost::callStateWatchCallback(int callbackRef, const std::string& json, std::chrono::milliseconds budget) {
+  if (m_T == nullptr || !m_stateWatchCallbackRefs.contains(callbackRef)) {
+    return false;
+  }
+  // Watch callbacks fire repeatedly, so the ref is NOT released here — it lives
+  // with the lua_State and is cleaned up wholesale on reload (new host).
+  lua_getref(m_T, callbackRef);
+  if (!lua_isfunction(m_T, -1)) {
+    lua_pop(m_T, 1);
+    return false;
+  }
+  try {
+    jsonToLua(m_T, nlohmann::json::parse(json));
+  } catch (const nlohmann::json::exception&) {
+    lua_pop(m_T, 1);
+    return false;
+  }
+  return callWithBudget("state watch callback", 1, 0, budget);
+}
+
 bool LuauHost::callAsyncCommandCallback(
     int callbackRef, const process::RunResult& result, std::chrono::milliseconds budget
 ) {
@@ -1013,6 +1208,12 @@ std::string LuauHost::translate(std::string_view key, const std::unordered_map<s
     ++i;
   }
   return out;
+}
+
+void LuauHost::scriptSetUpdateInterval(int ms) {
+  if (m_scriptContext != nullptr) {
+    m_scriptContext->patch.updateIntervalMs = std::max(16, ms);
+  }
 }
 
 void LuauHost::scriptLog(std::string message) {

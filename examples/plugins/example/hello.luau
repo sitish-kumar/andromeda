@@ -7,6 +7,7 @@
 --   noctalia.tr / trp    translation against this plugin's translations/<lang>.json
 --   noctalia.readFile    filesystem, resolved relative to the plugin's own dir
 --   noctalia.http        async HTTP (off-thread; response delivered back as a callback)
+--   noctalia.state.*     shared data published by this plugin's [[service]] (ticker.luau)
 --   noctalia.notify      host notification
 --   onIpc                shell-triggered events
 --
@@ -20,18 +21,25 @@ local showGlyph = barWidget.getConfig("show_glyph")
 
 local clicks = 0
 local dataNote = noctalia.readFile("data.txt") or "(no data file)"
+local tick = noctalia.state.get("tick") or 0
 
 local function render()
   if showGlyph then
     barWidget.setGlyph(glyph)
   end
   barWidget.setText(label)
-  barWidget.setTooltip(noctalia.trp("clicks", clicks) .. " — " .. dataNote)
+  barWidget.setTooltip(noctalia.trp("clicks", clicks) .. " — " .. dataNote .. " — service tick " .. tostring(tick))
 end
+
+-- Live updates from the plugin's background service (ticker.luau).
+noctalia.state.watch("tick", function(value)
+  tick = value
+  render()
+end)
 
 -- Called on the widget's update interval. Static here, so slow the ticks right down.
 function update()
-  barWidget.setUpdateInterval(1000)
+  noctalia.setUpdateInterval(1000)
   render()
 end
 

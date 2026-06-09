@@ -100,6 +100,7 @@ namespace scripting {
     AsyncCommandResult,
     AsyncProcessMatchResult,
     AsyncHttpResult,
+    StateWatchResult,
     Stop,
   };
 
@@ -126,6 +127,8 @@ namespace scripting {
     bool httpIsDownload = false;
     int httpStatus = 0;
     std::string httpBody;
+    // StateWatchResult payload (the changed value as JSON).
+    std::string stateJson;
     ScriptWidgetSnapshot snapshot;
     std::chrono::milliseconds budget{12};
   };

@@ -469,6 +469,8 @@ _noctalia_sources = files(
   'src/scripting/plugin_ipc.cpp',
   'src/scripting/plugin_manifest.cpp',
   'src/scripting/plugin_registry.cpp',
+  'src/scripting/plugin_service_host.cpp',
+  'src/scripting/plugin_state_store.cpp',
   'src/scripting/script_runtime.cpp',
   'src/scripting/script_worker_pool.cpp',
   'src/scripting/scripted_widget_bindings.cpp',

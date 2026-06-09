@@ -386,6 +386,7 @@ void Application::run(std::function<void()> startupReadyCallback) {
   kLog.info("noctalia {}", noctalia::build_info::displayVersion());
   runStartupPhase("initServices", [this]() { initServices(); });
   runStartupPhase("initUi", [this]() { initUi(); });
+  runStartupPhase("initPluginServices", [this]() { m_pluginServiceHost.start(); });
   runStartupPhase("initIpc", [this]() { initIpc(); });
   runStartupPhase("buildPollSources", [this]() { (void)buildPollSources(); });
 

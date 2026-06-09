@@ -193,14 +193,6 @@ namespace {
     return 1;
   }
 
-  int luau_setUpdateInterval(lua_State* L) {
-    auto ms = static_cast<float>(luaL_checknumber(L, 1));
-    if (auto* context = getContext(L)) {
-      context->patch.updateIntervalMs = std::max(16, static_cast<int>(ms));
-    }
-    return 0;
-  }
-
   int luau_setVisible(lua_State* L) {
     bool visible = lua_toboolean(L, 1) != 0;
     if (auto* context = getContext(L)) {
@@ -251,19 +243,10 @@ namespace {
   }
 
   const luaL_Reg kWidgetLib[] = {
-      {"setText", luau_setText},
-      {"setGlyph", luau_setGlyph},
-      {"setImage", luau_setImage},
-      {"setTooltip", luau_setTooltip},
-      {"clearTooltip", luau_clearTooltip},
-      {"setFont", luau_setFont},
-      {"setColor", luau_setColor},
-      {"setGlyphColor", luau_setGlyphColor},
-      {"isVertical", luau_isVertical},
-      {"setUpdateInterval", luau_setUpdateInterval},
-      {"setVisible", luau_setVisible},
-      {"getConfig", luau_getConfig},
-      {nullptr, nullptr},
+      {"setText", luau_setText},       {"setGlyph", luau_setGlyph},           {"setImage", luau_setImage},
+      {"setTooltip", luau_setTooltip}, {"clearTooltip", luau_clearTooltip},   {"setFont", luau_setFont},
+      {"setColor", luau_setColor},     {"setGlyphColor", luau_setGlyphColor}, {"isVertical", luau_isVertical},
+      {"setVisible", luau_setVisible}, {"getConfig", luau_getConfig},         {nullptr, nullptr},
   };
 
 } // namespace

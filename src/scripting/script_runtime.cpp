@@ -4,12 +4,14 @@
 #include "core/log.h"
 #include "notification/notifications.h"
 #include "scripting/luau_host.h"
+#include "scripting/plugin_state_store.h"
 #include "scripting/script_api_context.h"
 #include "scripting/script_worker_pool.h"
 #include "scripting/scripted_widget_bindings.h"
 #include "wayland/clipboard_service.h"
 
 #include <algorithm>
+#include <atomic>
 #include <deque>
 #include <mutex>
 #include <unordered_map>
@@ -19,6 +21,13 @@ namespace scripting {
   namespace {
     constexpr Logger kLog("script-runtime");
     constexpr std::size_t kMaxQueuedEvents = 64;
+
+    // Unique per-State id, used to tag and clean up this runtime's state-store watchers.
+    std::uint64_t nextStateToken() {
+      static std::atomic<std::uint64_t> counter{1};
+      return counter.fetch_add(1, std::memory_order_relaxed);
+    }
+
     constexpr auto kLoadBudget = std::chrono::milliseconds(100);
     constexpr auto kUpdateBudget = std::chrono::milliseconds(12);
     constexpr auto kCallbackBudget = std::chrono::milliseconds(25);
@@ -106,6 +115,7 @@ namespace scripting {
     ScriptApiContext& scriptApi;
     std::filesystem::path pluginDir;
     HttpClient* httpClient = nullptr;
+    const std::uint64_t stateToken = nextStateToken();
     std::deque<ScriptWidgetEvent> queue;
     std::unordered_map<SubscriberId, ScriptWidgetResultCallback> subscribers;
     std::unique_ptr<LuauHost> host;
@@ -177,6 +187,7 @@ namespace scripting {
     }
 
     void stop() {
+      PluginStateStore::instance().removeWatchers(stateToken);
       std::lock_guard lock(mutex);
       stopped = true;
       queue.clear();
@@ -314,6 +325,15 @@ namespace scripting {
       (void)enqueue(std::move(event));
     }
 
+    void enqueueStateWatchResult(int callbackRef, std::string json) {
+      ScriptWidgetEvent event;
+      event.kind = ScriptWidgetEventKind::StateWatchResult;
+      event.callbackRef = callbackRef;
+      event.stateJson = std::move(json);
+      event.budget = kCallbackBudget;
+      (void)enqueue(std::move(event));
+    }
+
     void drain() {
       for (;;) {
         ScriptWidgetEvent event;
@@ -390,6 +410,15 @@ namespace scripting {
         return collectResult(event, "http callback", ok);
       }
 
+      if (event.kind == ScriptWidgetEventKind::StateWatchResult) {
+        if (!host->hasStateWatchCallback(event.callbackRef)) {
+          return std::nullopt;
+        }
+        bindingContext.beginCall(event.snapshot);
+        const bool ok = host->callStateWatchCallback(event.callbackRef, event.stateJson, event.budget);
+        return collectResult(event, "state watch callback", ok);
+      }
+
       bindingContext.beginCall(event.snapshot);
       bool ok = false;
       switch (event.kind) {
@@ -419,17 +448,30 @@ namespace scripting {
     }
 
     ScriptWidgetResult processLoad(const ScriptWidgetEvent& event) {
+      // Drop watchers registered by the previous load before re-registering below.
+      PluginStateStore::instance().removeWatchers(stateToken);
+
       host = std::make_unique<LuauHost>(scriptApi);
       bindingContext.settings = &settings;
       bindingContext.host = host.get();
       bindingContext.ownerId = runtimeName;
       host->setPluginDir(pluginDir);
+      host->setPluginId(runtimeName.substr(0, runtimeName.find(':')));
       host->loadTranslations();
       host->setHttpClient(httpClient);
       host->setScriptContext(&bindingContext);
       registerScriptedWidgetBindings(host->state(), &bindingContext);
 
       std::weak_ptr<State> weak = shared_from_this();
+      const std::string pluginId = runtimeName.substr(0, runtimeName.find(':'));
+      const std::uint64_t token = stateToken;
+      host->setStateWatchHandler([weak, pluginId, token](std::string key, int callbackRef) {
+        PluginStateStore::instance().watch(pluginId, key, token, [weak, callbackRef](const std::string& json) {
+          if (auto state = weak.lock()) {
+            state->enqueueStateWatchResult(callbackRef, json);
+          }
+        });
+      });
       host->setAsyncCommandResultHandler([weak](std::uint64_t hostId, int callbackRef, process::RunResult result) {
         if (auto state = weak.lock()) {
           state->enqueueAsyncResult(hostId, callbackRef, std::move(result));

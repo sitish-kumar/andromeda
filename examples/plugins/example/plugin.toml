@@ -33,3 +33,10 @@ entry = "hello.luau"
   type = "bool"
   label = "Show glyph"
   default = true
+
+# Headless background service: publishes a counter to the plugin's shared state
+# every second. The widget above watches it (noctalia.state.watch) to show how a
+# service feeds the plugin's UI entries without sharing Lua memory.
+[[service]]
+id = "ticker"
+entry = "ticker.luau"
