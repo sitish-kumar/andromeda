@@ -398,21 +398,6 @@ std::vector<std::string> physicalDiskMountPoints() {
   return mounts;
 }
 
-std::string diskMountDisplayLabel(const std::string_view mountPoint) {
-  if (mountPoint == "/") {
-    return "/";
-  }
-  constexpr std::size_t kMaxChars = 28;
-  if (mountPoint.size() <= kMaxChars) {
-    return std::string(mountPoint);
-  }
-  const std::size_t slash = mountPoint.find_last_of('/');
-  if (slash == std::string_view::npos || slash + 1 >= mountPoint.size()) {
-    return std::string(mountPoint);
-  }
-  return std::format("…/{}", mountPoint.substr(slash + 1));
-}
-
 std::string diskUsageLabel(const std::string& mountPoint) {
   struct statvfs sv{};
   if (::statvfs(mountPoint.c_str(), &sv) != 0 || sv.f_blocks == 0 || sv.f_frsize == 0) {
@@ -422,7 +407,7 @@ std::string diskUsageLabel(const std::string& mountPoint) {
   const double avail = static_cast<double>(sv.f_bavail) * static_cast<double>(sv.f_frsize);
   const double used = std::max(0.0, total - avail);
   const double percent = total > 0.0 ? (used / total) * 100.0 : 0.0;
-  return std::format("{} · {:.0f}%", FormatUnits::formatDecimalBytesAsGb(total), percent);
+  return std::format("{} ({:.0f}%)", FormatUnits::formatDecimalBytesAsGb(total), percent);
 }
 
 std::string compositorLabel() { return detectCompositor(); }

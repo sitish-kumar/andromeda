@@ -85,11 +85,6 @@ private:
   Label* m_resourcesLines[kResourcesLines] = {};
   Flex* m_swapRow = nullptr;
   Label* m_swapLabel = nullptr;
-  struct DiskRowLabels {
-    Label* mount = nullptr;
-    Label* usage = nullptr;
-  };
-
   std::vector<std::string> m_diskMountPoints;
-  std::vector<DiskRowLabels> m_diskRows;
+  std::vector<Label*> m_diskLabels;
 };
