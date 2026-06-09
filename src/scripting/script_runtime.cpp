@@ -11,10 +11,7 @@
 
 #include <algorithm>
 #include <deque>
-#include <iomanip>
 #include <mutex>
-#include <sstream>
-#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
@@ -93,94 +90,22 @@ namespace scripting {
       }
     }
 
-    std::string escapeRuntimeKeyToken(std::string_view token) {
-      std::string out;
-      out.reserve(token.size());
-      for (char ch : token) {
-        if (ch == '\\' || ch == '|' || ch == '=' || ch == ',' || ch == ':') {
-          out.push_back('\\');
-        }
-        out.push_back(ch);
-      }
-      return out;
-    }
-
-    std::string encodeRuntimeSettingValue(const WidgetSettingValue& value) {
-      return std::visit(
-          [](const auto& concrete) -> std::string {
-            using T = std::decay_t<decltype(concrete)>;
-            if constexpr (std::is_same_v<T, bool>) {
-              return std::string("b:") + (concrete ? "1" : "0");
-            } else if constexpr (std::is_same_v<T, std::int64_t>) {
-              return std::string("i:") + std::to_string(concrete);
-            } else if constexpr (std::is_same_v<T, double>) {
-              std::ostringstream out;
-              out << "d:" << std::setprecision(17) << concrete;
-              return out.str();
-            } else if constexpr (std::is_same_v<T, std::string>) {
-              return std::string("s:") + escapeRuntimeKeyToken(concrete);
-            } else if constexpr (std::is_same_v<T, std::vector<std::string>>) {
-              std::ostringstream out;
-              out << "v:" << concrete.size() << ':';
-              for (std::size_t i = 0; i < concrete.size(); ++i) {
-                if (i != 0) {
-                  out << ',';
-                }
-                out << escapeRuntimeKeyToken(concrete[i]);
-              }
-              return out.str();
-            } else {
-              return std::string{};
-            }
-          },
-          value
-      );
-    }
-
-    std::string buildSharedScriptRuntimeKey(
-        std::string_view baseKey, std::string_view scriptPath, const ScriptWidgetSettings& settings
-    ) {
-      std::vector<std::string> settingKeys;
-      settingKeys.reserve(settings.size());
-      for (const auto& [key, value] : settings) {
-        (void)value;
-        settingKeys.push_back(key);
-      }
-      std::sort(settingKeys.begin(), settingKeys.end());
-
-      std::ostringstream out;
-      out
-          << "base="
-          << escapeRuntimeKeyToken(baseKey)
-          << "|script="
-          << escapeRuntimeKeyToken(scriptPath)
-          << "|settings=";
-      for (std::size_t i = 0; i < settingKeys.size(); ++i) {
-        if (i != 0) {
-          out << '|';
-        }
-        const auto& key = settingKeys[i];
-        const auto it = settings.find(key);
-        if (it == settings.end()) {
-          continue;
-        }
-        out << escapeRuntimeKeyToken(key) << '=' << encodeRuntimeSettingValue(it->second);
-      }
-      return out.str();
-    }
   } // namespace
 
   struct ScriptRuntime::State : public std::enable_shared_from_this<ScriptRuntime::State> {
     explicit State(
-        std::string name, ScriptWidgetSettings widgetSettings, ScriptApiContext& api, ClipboardService* clipboardService
+        std::string name, ScriptWidgetSettings widgetSettings, ScriptApiContext& api, std::filesystem::path dir,
+        HttpClient* httpClientPtr, ClipboardService* clipboardService
     )
-        : runtimeName(std::move(name)), settings(std::move(widgetSettings)), scriptApi(api),
-          clipboard(clipboardService) {}
+        : runtimeName(std::move(name)), settings(std::move(widgetSettings)), scriptApi(api), pluginDir(std::move(dir)),
+          httpClient(httpClientPtr), clipboard(clipboardService) {}
 
     mutable std::mutex mutex;
     std::string runtimeName;
     ScriptWidgetSettings settings;
     ScriptApiContext& scriptApi;
+    std::filesystem::path pluginDir;
+    HttpClient* httpClient = nullptr;
     std::deque<ScriptWidgetEvent> queue;
     std::unordered_map<SubscriberId, ScriptWidgetResultCallback> subscribers;
     std::unique_ptr<LuauHost> host;
@@ -374,6 +299,21 @@ namespace scripting {
       (void)enqueue(std::move(event));
     }
 
+    void enqueueAsyncHttpResult(
+        std::uint64_t hostId, int callbackRef, bool ok, int status, std::string body, bool isDownload
+    ) {
+      ScriptWidgetEvent event;
+      event.kind = ScriptWidgetEventKind::AsyncHttpResult;
+      event.hostId = hostId;
+      event.callbackRef = callbackRef;
+      event.httpOk = ok;
+      event.httpStatus = status;
+      event.httpBody = std::move(body);
+      event.httpIsDownload = isDownload;
+      event.budget = kCallbackBudget;
+      (void)enqueue(std::move(event));
+    }
+
     void drain() {
       for (;;) {
         ScriptWidgetEvent event;
@@ -437,6 +377,19 @@ namespace scripting {
         return collectResult(event, "process match callback", ok);
       }
 
+      if (event.kind == ScriptWidgetEventKind::AsyncHttpResult) {
+        if (event.hostId != host->hostId() || !host->hasAsyncHttpCallback(event.callbackRef)) {
+          return std::nullopt;
+        }
+        bindingContext.beginCall(event.snapshot);
+        const bool ok = event.httpIsDownload
+            ? host->callAsyncDownloadCallback(event.callbackRef, event.httpOk, event.budget)
+            : host->callAsyncHttpCallback(
+                  event.callbackRef, event.httpOk, event.httpStatus, event.httpBody, event.budget
+              );
+        return collectResult(event, "http callback", ok);
+      }
+
       bindingContext.beginCall(event.snapshot);
       bool ok = false;
       switch (event.kind) {
@@ -470,6 +423,9 @@ namespace scripting {
       bindingContext.settings = &settings;
       bindingContext.host = host.get();
       bindingContext.ownerId = runtimeName;
+      host->setPluginDir(pluginDir);
+      host->loadTranslations();
+      host->setHttpClient(httpClient);
       host->setScriptContext(&bindingContext);
       registerScriptedWidgetBindings(host->state(), &bindingContext);
 
@@ -484,6 +440,13 @@ namespace scripting {
           state->enqueueAsyncProcessMatchResult(hostId, callbackRef, matched);
         }
       });
+      host->setAsyncHttpResultHandler(
+          [weak](std::uint64_t hostId, int callbackRef, bool ok, int status, std::string body, bool isDownload) {
+            if (auto state = weak.lock()) {
+              state->enqueueAsyncHttpResult(hostId, callbackRef, ok, status, std::move(body), isDownload);
+            }
+          }
+      );
 
       ScriptWidgetResult result;
       result.generation = event.generation;
@@ -606,9 +569,14 @@ namespace scripting {
   };
 
   ScriptRuntime::ScriptRuntime(
-      std::string runtimeName, ScriptWidgetSettings settings, ScriptApiContext& api, ClipboardService* clipboard
+      std::string runtimeName, ScriptWidgetSettings settings, ScriptApiContext& api, std::filesystem::path pluginDir,
+      HttpClient* httpClient, ClipboardService* clipboard
   )
-      : m_state(std::make_shared<State>(std::move(runtimeName), std::move(settings), api, clipboard)) {}
+      : m_state(
+            std::make_shared<State>(
+                std::move(runtimeName), std::move(settings), api, std::move(pluginDir), httpClient, clipboard
+            )
+        ) {}
 
   ScriptRuntime::~ScriptRuntime() { stop(); }
 
@@ -709,28 +677,6 @@ namespace scripting {
     }
     std::lock_guard lock(m_state->mutex);
     return m_state->unhealthy;
-  }
-
-  SharedScriptRuntimeAcquireResult SharedScriptRuntimeRegistry::acquire(
-      std::string_view baseKey, std::string_view scriptPath, ScriptWidgetSettings settings, ScriptApiContext& api,
-      ClipboardService* clipboard
-  ) {
-    static std::mutex mutex;
-    static std::unordered_map<std::string, std::weak_ptr<ScriptRuntime>> runtimes;
-
-    const std::string key = buildSharedScriptRuntimeKey(baseKey, scriptPath, settings);
-
-    std::lock_guard lock(mutex);
-    if (auto it = runtimes.find(key); it != runtimes.end()) {
-      if (auto runtime = it->second.lock()) {
-        return {.runtime = std::move(runtime), .created = false};
-      }
-      runtimes.erase(it);
-    }
-
-    auto runtime = std::make_shared<ScriptRuntime>(key, std::move(settings), api, clipboard);
-    runtimes[key] = runtime;
-    return {.runtime = std::move(runtime), .created = true};
   }
 
 } // namespace scripting

@@ -25,6 +25,7 @@ class InputArea;
 class Label;
 class CompositorPlatform;
 class ClipboardService;
+class HttpClient;
 namespace scripting {
   class ScriptApiContext;
 }
@@ -38,7 +39,7 @@ public:
       std::string entryId, std::filesystem::path sourcePath,
       std::unordered_map<std::string, WidgetSettingValue> settings, std::string barName, std::string outputName,
       scripting::ScriptApiContext& scriptApi, FileWatcher* fileWatcher = nullptr,
-      CompositorPlatform* platform = nullptr, ClipboardService* clipboard = nullptr
+      CompositorPlatform* platform = nullptr, ClipboardService* clipboard = nullptr, HttpClient* httpClient = nullptr
   );
   ~PluginWidget() override;
 
@@ -116,6 +117,7 @@ private:
   FileWatcher* m_fileWatcher = nullptr;
   CompositorPlatform* m_platform = nullptr;
   ClipboardService* m_clipboard = nullptr;
+  HttpClient* m_httpClient = nullptr;
   FileWatcher::WatchId m_watchId = 0;
   Timer m_updateTimer;
   Timer m_deferredUpdateTimer;

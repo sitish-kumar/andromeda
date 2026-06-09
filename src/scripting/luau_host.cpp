@@ -1,11 +1,14 @@
 #include "scripting/luau_host.h"
 
 #include "compositors/compositor_platform.h"
+#include "core/deferred_call.h"
 #include "core/log.h"
 #include "core/process.h"
+#include "i18n/i18n_service.h"
 #include "lua.h"
 #include "luacode.h"
 #include "lualib.h"
+#include "net/http_client.h"
 #include "notification/notifications.h"
 #include "scripting/script_api_context.h"
 #include "scripting/scripted_widget_bindings.h"
@@ -18,7 +21,12 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <json.hpp>
+#include <sstream>
 #include <string>
+#include <system_error>
 #include <thread>
 #include <vector>
 
@@ -34,6 +42,7 @@ namespace {
   constexpr std::size_t kMaxAsyncProcessMatchesPerHost = 16;
   constexpr int kMaxGlobalAsyncProcessMatches = 64;
   constexpr int kMaxGlobalDetachedCommands = 32;
+  constexpr std::size_t kMaxAsyncHttpPerHost = 8;
 
   std::uint64_t& nextHostId() {
     static std::uint64_t id = 1;
@@ -347,6 +356,263 @@ namespace {
     return 1;
   }
 
+  // Filesystem path resolution: ~ -> $HOME, absolute paths verbatim, otherwise relative
+  // to the plugin's own directory. No sandbox — the trust model allows any path.
+  std::filesystem::path resolveHostPath(LuauHost* host, std::string_view path) {
+    if (path.empty()) {
+      return {};
+    }
+    if (path[0] == '~') {
+      return FileUtils::expandUserPath(std::string(path));
+    }
+    if (path[0] == '/') {
+      return std::filesystem::path(path);
+    }
+    return host->pluginDir() / path;
+  }
+
+  int luau_readFile(lua_State* L) {
+    size_t len = 0;
+    const char* path = luaL_checklstring(L, 1, &len);
+    auto* host = hostForState(L);
+    if (host == nullptr) {
+      lua_pushnil(L);
+      lua_pushstring(L, "no host");
+      return 2;
+    }
+    std::ifstream file(resolveHostPath(host, std::string_view(path, len)), std::ios::binary);
+    if (!file) {
+      lua_pushnil(L);
+      lua_pushstring(L, "cannot open file");
+      return 2;
+    }
+    std::ostringstream ss;
+    ss << file.rdbuf();
+    const std::string contents = ss.str();
+    lua_pushlstring(L, contents.data(), contents.size());
+    return 1;
+  }
+
+  int luau_writeFile(lua_State* L) {
+    size_t pathLen = 0;
+    const char* path = luaL_checklstring(L, 1, &pathLen);
+    size_t dataLen = 0;
+    const char* data = luaL_checklstring(L, 2, &dataLen);
+    auto* host = hostForState(L);
+    if (host == nullptr) {
+      lua_pushboolean(L, 0);
+      lua_pushstring(L, "no host");
+      return 2;
+    }
+    std::ofstream file(resolveHostPath(host, std::string_view(path, pathLen)), std::ios::binary | std::ios::trunc);
+    if (!file) {
+      lua_pushboolean(L, 0);
+      lua_pushstring(L, "cannot open file for writing");
+      return 2;
+    }
+    file.write(data, static_cast<std::streamsize>(dataLen));
+    lua_pushboolean(L, file.good() ? 1 : 0);
+    return 1;
+  }
+
+  int luau_fileExists(lua_State* L) {
+    size_t len = 0;
+    const char* path = luaL_checklstring(L, 1, &len);
+    auto* host = hostForState(L);
+    if (host == nullptr) {
+      lua_pushboolean(L, 0);
+      return 1;
+    }
+    std::error_code ec;
+    lua_pushboolean(L, std::filesystem::exists(resolveHostPath(host, std::string_view(path, len)), ec) ? 1 : 0);
+    return 1;
+  }
+
+  int luau_listDir(lua_State* L) {
+    size_t len = 0;
+    const char* path = luaL_checklstring(L, 1, &len);
+    auto* host = hostForState(L);
+    if (host == nullptr) {
+      lua_pushnil(L);
+      lua_pushstring(L, "no host");
+      return 2;
+    }
+    const std::filesystem::path dir = resolveHostPath(host, std::string_view(path, len));
+    std::error_code ec;
+    if (!std::filesystem::is_directory(dir, ec)) {
+      lua_pushnil(L);
+      lua_pushstring(L, "not a directory");
+      return 2;
+    }
+    lua_createtable(L, 0, 0);
+    int index = 1;
+    for (const auto& entry : std::filesystem::directory_iterator(dir, ec)) {
+      if (ec) {
+        break;
+      }
+      const std::string name = entry.path().filename().string();
+      lua_pushlstring(L, name.data(), name.size());
+      lua_rawseti(L, -2, index++);
+    }
+    return 1;
+  }
+
+  int luau_pluginDir(lua_State* L) {
+    auto* host = hostForState(L);
+    if (host == nullptr) {
+      lua_pushnil(L);
+      return 1;
+    }
+    const std::string dir = host->pluginDir().string();
+    lua_pushlstring(L, dir.data(), dir.size());
+    return 1;
+  }
+
+  std::string numberToString(double n) {
+    if (std::isfinite(n) && n == std::floor(n)) {
+      return std::to_string(static_cast<long long>(n));
+    }
+    return std::to_string(n);
+  }
+
+  // Read an optional `{ name = value }` substitutions table at stack index `idx`.
+  std::unordered_map<std::string, std::string> readSubstTable(lua_State* L, int idx) {
+    std::unordered_map<std::string, std::string> subst;
+    if (lua_gettop(L) < idx || !lua_istable(L, idx)) {
+      return subst;
+    }
+    lua_pushnil(L);
+    while (lua_next(L, idx) != 0) {
+      if (lua_type(L, -2) == LUA_TSTRING) {
+        std::string value;
+        if (lua_type(L, -1) == LUA_TSTRING) {
+          size_t vlen = 0;
+          const char* vs = lua_tolstring(L, -1, &vlen);
+          value.assign(vs, vlen);
+        } else if (lua_type(L, -1) == LUA_TNUMBER) {
+          value = numberToString(lua_tonumber(L, -1));
+        } else if (lua_type(L, -1) == LUA_TBOOLEAN) {
+          value = lua_toboolean(L, -1) != 0 ? "true" : "false";
+        }
+        subst.emplace(lua_tostring(L, -2), std::move(value));
+      }
+      lua_pop(L, 1);
+    }
+    return subst;
+  }
+
+  int luau_tr(lua_State* L) {
+    size_t keyLen = 0;
+    const char* key = luaL_checklstring(L, 1, &keyLen);
+    auto* host = hostForState(L);
+    const auto subst = readSubstTable(L, 2);
+    const std::string result =
+        host != nullptr ? host->translate(std::string_view(key, keyLen), subst) : std::string(key, keyLen);
+    lua_pushlstring(L, result.data(), result.size());
+    return 1;
+  }
+
+  int luau_trp(lua_State* L) {
+    size_t keyLen = 0;
+    const char* key = luaL_checklstring(L, 1, &keyLen);
+    const double count = luaL_checknumber(L, 2);
+    auto* host = hostForState(L);
+    auto subst = readSubstTable(L, 3);
+    subst.insert_or_assign("count", numberToString(count));
+
+    const std::string base(key, keyLen);
+    if (host == nullptr) {
+      lua_pushlstring(L, base.data(), base.size());
+      return 1;
+    }
+    // Plural selection: prefer `<key>.one` / `<key>.other`, else the bare key.
+    const std::string variant = base + (count == 1.0 ? ".one" : ".other");
+    const std::string useKey = host->hasTranslation(variant) ? variant : base;
+    const std::string result = host->translate(useKey, subst);
+    lua_pushlstring(L, result.data(), result.size());
+    return 1;
+  }
+
+  std::string reqStringField(lua_State* L, int tableIdx, const char* key, std::string fallback = {}) {
+    lua_getfield(L, tableIdx, key);
+    std::string out = lua_isstring(L, -1) ? std::string(lua_tostring(L, -1)) : std::move(fallback);
+    lua_pop(L, 1);
+    return out;
+  }
+
+  bool reqBoolField(lua_State* L, int tableIdx, const char* key, bool fallback) {
+    lua_getfield(L, tableIdx, key);
+    const bool out = lua_isnil(L, -1) ? fallback : (lua_toboolean(L, -1) != 0);
+    lua_pop(L, 1);
+    return out;
+  }
+
+  int luau_http(lua_State* L) {
+    luaL_checktype(L, 1, LUA_TTABLE);
+    luaL_checktype(L, 2, LUA_TFUNCTION);
+    auto* host = hostForState(L);
+    if (host == nullptr) {
+      lua_pushboolean(L, 0);
+      return 1;
+    }
+
+    HttpRequest request;
+    request.url = reqStringField(L, 1, "url");
+    request.method = reqStringField(L, 1, "method", "GET");
+    request.body = reqStringField(L, 1, "body");
+    request.basicUsername = reqStringField(L, 1, "basic_username");
+    request.basicPassword = reqStringField(L, 1, "basic_password");
+    request.followRedirects = reqBoolField(L, 1, "follow_redirects", false);
+    lua_getfield(L, 1, "headers");
+    if (lua_istable(L, -1)) {
+      const int headersIdx = lua_gettop(L);
+      const int count = lua_objlen(L, headersIdx);
+      for (int i = 1; i <= count; ++i) {
+        lua_rawgeti(L, headersIdx, i);
+        if (lua_isstring(L, -1)) {
+          request.headers.emplace_back(lua_tostring(L, -1));
+        }
+        lua_pop(L, 1);
+      }
+    }
+    lua_pop(L, 1);
+
+    if (request.url.empty()) {
+      lua_pushboolean(L, 0);
+      return 1;
+    }
+
+    const int callbackRef = lua_ref(L, 2);
+    const bool ok = host->startAsyncHttp(std::move(request), callbackRef);
+    if (!ok) {
+      lua_unref(L, callbackRef);
+    }
+    lua_pushboolean(L, ok ? 1 : 0);
+    return 1;
+  }
+
+  int luau_download(lua_State* L) {
+    size_t urlLen = 0;
+    const char* url = luaL_checklstring(L, 1, &urlLen);
+    size_t destLen = 0;
+    const char* dest = luaL_checklstring(L, 2, &destLen);
+    luaL_checktype(L, 3, LUA_TFUNCTION);
+    auto* host = hostForState(L);
+    if (host == nullptr) {
+      lua_pushboolean(L, 0);
+      return 1;
+    }
+
+    const std::string destPath = resolveHostPath(host, std::string_view(dest, destLen)).string();
+    const int callbackRef = lua_ref(L, 3);
+    const bool ok = host->startAsyncDownload(std::string(url, urlLen), destPath, callbackRef);
+    if (!ok) {
+      lua_unref(L, callbackRef);
+    }
+    lua_pushboolean(L, ok ? 1 : 0);
+    return 1;
+  }
+
   const luaL_Reg kNoctaliaBaseLib[] = {
       {"log", luau_log},
       {"runAsync", luau_runAsync},
@@ -362,6 +628,15 @@ namespace {
       {"copyToClipboard", luau_copyToClipboard},
       {"getenv", luau_getenv},
       {"expandPath", luau_expandPath},
+      {"readFile", luau_readFile},
+      {"writeFile", luau_writeFile},
+      {"fileExists", luau_fileExists},
+      {"listDir", luau_listDir},
+      {"pluginDir", luau_pluginDir},
+      {"tr", luau_tr},
+      {"trp", luau_trp},
+      {"http", luau_http},
+      {"download", luau_download},
       {nullptr, nullptr},
   };
 
@@ -509,6 +784,102 @@ bool LuauHost::hasAsyncProcessMatchCallback(int callbackRef) const {
   return m_asyncProcessMatchCallbackRefs.contains(callbackRef);
 }
 
+bool LuauHost::hasAsyncHttpCallback(int callbackRef) const { return m_asyncHttpCallbackRefs.contains(callbackRef); }
+
+bool LuauHost::startAsyncHttp(HttpRequest request, int callbackRef) {
+  if (m_httpClient == nullptr || callbackRef <= LUA_REFNIL || m_asyncHttpCallbackRefs.size() >= kMaxAsyncHttpPerHost) {
+    return false;
+  }
+  auto handler = m_asyncHttpResultHandler;
+  if (!handler) {
+    return false;
+  }
+  m_asyncHttpCallbackRefs.insert(callbackRef);
+
+  // HttpClient must be driven from the main loop; marshal there, then deliver the
+  // response back through the handler (which enqueues onto the runtime thread).
+  DeferredCall::callLater([client = m_httpClient, request = std::move(request), handler = std::move(handler),
+                           hostId = m_hostId, callbackRef]() mutable {
+    client->request(std::move(request), [handler, hostId, callbackRef](HttpResponse response) {
+      handler(
+          hostId, callbackRef, response.transportOk, static_cast<int>(response.status), std::move(response.body), false
+      );
+    });
+  });
+  return true;
+}
+
+bool LuauHost::startAsyncDownload(std::string url, std::string destPath, int callbackRef) {
+  if (m_httpClient == nullptr
+      || url.empty()
+      || destPath.empty()
+      || callbackRef <= LUA_REFNIL
+      || m_asyncHttpCallbackRefs.size() >= kMaxAsyncHttpPerHost) {
+    return false;
+  }
+  auto handler = m_asyncHttpResultHandler;
+  if (!handler) {
+    return false;
+  }
+  m_asyncHttpCallbackRefs.insert(callbackRef);
+
+  DeferredCall::callLater([client = m_httpClient, url = std::move(url), destPath = std::move(destPath),
+                           handler = std::move(handler), hostId = m_hostId, callbackRef]() mutable {
+    client->download(url, std::filesystem::path(destPath), [handler, hostId, callbackRef](bool success) {
+      handler(hostId, callbackRef, success, 0, std::string(), true);
+    });
+  });
+  return true;
+}
+
+bool LuauHost::callAsyncHttpCallback(
+    int callbackRef, bool ok, int status, const std::string& body, std::chrono::milliseconds budget
+) {
+  if (m_T == nullptr) {
+    return false;
+  }
+  const auto it = m_asyncHttpCallbackRefs.find(callbackRef);
+  if (it == m_asyncHttpCallbackRefs.end()) {
+    return false;
+  }
+  m_asyncHttpCallbackRefs.erase(it);
+
+  lua_getref(m_T, callbackRef);
+  lua_unref(m_T, callbackRef);
+  if (!lua_isfunction(m_T, -1)) {
+    lua_pop(m_T, 1);
+    return false;
+  }
+
+  lua_createtable(m_T, 0, 3);
+  setTableBool(m_T, "ok", ok);
+  setTableInteger(m_T, "status", status);
+  setTableString(m_T, "body", body);
+
+  return callWithBudget("async http callback", 1, 0, budget);
+}
+
+bool LuauHost::callAsyncDownloadCallback(int callbackRef, bool ok, std::chrono::milliseconds budget) {
+  if (m_T == nullptr) {
+    return false;
+  }
+  const auto it = m_asyncHttpCallbackRefs.find(callbackRef);
+  if (it == m_asyncHttpCallbackRefs.end()) {
+    return false;
+  }
+  m_asyncHttpCallbackRefs.erase(it);
+
+  lua_getref(m_T, callbackRef);
+  lua_unref(m_T, callbackRef);
+  if (!lua_isfunction(m_T, -1)) {
+    lua_pop(m_T, 1);
+    return false;
+  }
+
+  lua_pushboolean(m_T, ok ? 1 : 0);
+  return callWithBudget("async download callback", 1, 0, budget);
+}
+
 bool LuauHost::callAsyncCommandCallback(
     int callbackRef, const process::RunResult& result, std::chrono::milliseconds budget
 ) {
@@ -570,6 +941,78 @@ void LuauHost::interruptIfBudgetExceeded(lua_State* L) {
   m_lastCallTimedOut = true;
   m_budgetActive = false;
   luaL_error(L, "script callback '%s' timed out", m_currentCallName.empty() ? "(unknown)" : m_currentCallName.c_str());
+}
+
+namespace {
+  // Flatten a nested JSON object into dotted keys, e.g. {"a":{"b":"c"}} -> {"a.b":"c"}.
+  void flattenTranslations(
+      const nlohmann::json& node, const std::string& prefix, std::unordered_map<std::string, std::string>& out
+  ) {
+    if (node.is_object()) {
+      for (const auto& [key, value] : node.items()) {
+        flattenTranslations(value, prefix.empty() ? key : prefix + "." + key, out);
+      }
+    } else if (node.is_string()) {
+      out[prefix] = node.get<std::string>();
+    }
+  }
+
+  void mergeTranslationFile(const std::filesystem::path& path, std::unordered_map<std::string, std::string>& out) {
+    std::ifstream file(path);
+    if (!file) {
+      return;
+    }
+    try {
+      flattenTranslations(nlohmann::json::parse(file), {}, out);
+    } catch (const nlohmann::json::exception&) {
+      kLog.warn("failed to parse plugin translations: {}", path.string());
+    }
+  }
+} // namespace
+
+void LuauHost::loadTranslations() {
+  m_translations.clear();
+  if (m_pluginDir.empty()) {
+    return;
+  }
+  const std::filesystem::path dir = m_pluginDir / "translations";
+  // English is the fallback layer; the active language overrides it.
+  mergeTranslationFile(dir / "en.json", m_translations);
+  if (const std::string_view lang = i18n::Service::instance().language(); !lang.empty() && lang != "en") {
+    mergeTranslationFile(dir / (std::string(lang) + ".json"), m_translations);
+  }
+}
+
+std::string LuauHost::translate(std::string_view key, const std::unordered_map<std::string, std::string>& subst) const {
+  const auto it = m_translations.find(std::string(key));
+  if (it == m_translations.end()) {
+    kLog.warn("plugin translation key '{}' not found", key);
+    return std::string(key);
+  }
+  const std::string& tmpl = it->second;
+  if (subst.empty() || tmpl.find('{') == std::string::npos) {
+    return tmpl;
+  }
+  std::string out;
+  out.reserve(tmpl.size());
+  for (std::size_t i = 0; i < tmpl.size();) {
+    if (tmpl[i] == '{') {
+      const std::size_t end = tmpl.find('}', i + 1);
+      if (end != std::string::npos) {
+        const std::string name = tmpl.substr(i + 1, end - i - 1);
+        if (const auto found = subst.find(name); found != subst.end()) {
+          out += found->second;
+        } else {
+          out.append(tmpl, i, end - i + 1); // leave unknown placeholders verbatim
+        }
+        i = end + 1;
+        continue;
+      }
+    }
+    out.push_back(tmpl[i]);
+    ++i;
+  }
+  return out;
 }
 
 void LuauHost::scriptLog(std::string message) {

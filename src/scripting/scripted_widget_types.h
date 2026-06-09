@@ -99,6 +99,7 @@ namespace scripting {
     CallStrings,
     AsyncCommandResult,
     AsyncProcessMatchResult,
+    AsyncHttpResult,
     Stop,
   };
 
@@ -120,6 +121,11 @@ namespace scripting {
     bool coalesce = false;
     int callbackRef = 0;
     process::RunResult commandResult;
+    // AsyncHttpResult payload.
+    bool httpOk = false;
+    bool httpIsDownload = false;
+    int httpStatus = 0;
+    std::string httpBody;
     ScriptWidgetSnapshot snapshot;
     std::chrono::milliseconds budget{12};
   };

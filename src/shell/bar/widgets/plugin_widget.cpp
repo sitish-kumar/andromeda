@@ -95,12 +95,12 @@ namespace {
 PluginWidget::PluginWidget(
     std::string entryId, std::filesystem::path sourcePath, std::unordered_map<std::string, WidgetSettingValue> settings,
     std::string barName, std::string outputName, scripting::ScriptApiContext& scriptApi, FileWatcher* fileWatcher,
-    CompositorPlatform* platform, ClipboardService* clipboard
+    CompositorPlatform* platform, ClipboardService* clipboard, HttpClient* httpClient
 )
     : m_entryId(std::move(entryId)), m_sourcePath(std::move(sourcePath)), m_pluginDir(m_sourcePath.parent_path()),
       m_barName(std::move(barName)), m_outputName(std::move(outputName)), m_scriptApi(scriptApi),
       m_settings(std::move(settings)), m_fileWatcher(fileWatcher), m_platform(platform), m_clipboard(clipboard),
-      m_timerPhase(nextTimerPhase()) {
+      m_httpClient(httpClient), m_timerPhase(nextTimerPhase()) {
   scripting::PluginIpcRouter::instance().registerEndpoint(this);
 }
 
@@ -213,7 +213,9 @@ void PluginWidget::create() {
     return;
   }
 
-  m_runtime = std::make_shared<scripting::ScriptRuntime>(m_entryId, m_settings, m_scriptApi, m_clipboard);
+  m_runtime = std::make_shared<scripting::ScriptRuntime>(
+      m_entryId, m_settings, m_scriptApi, m_pluginDir, m_httpClient, m_clipboard
+  );
 
   auto alive = std::weak_ptr<bool>(m_alive);
   m_runtimeSubscription = m_runtime->subscribe([this, alive](scripting::ScriptWidgetResult result) {
