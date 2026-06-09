@@ -1225,7 +1225,7 @@
           "label": "Font Weight"
         },
         "layer": {
-          "description": "Layer-shell layer for the bar; attached panels open on the same layer",
+          "description": "Use Overlay to show the bar above fullscreen apps. Attached panels follow the bar.",
           "label": "Wayland Layer"
         },
         "panel-overlap": {
@@ -1555,7 +1555,7 @@
           "label": "Notification Daemon"
         },
         "layer": {
-          "description": "Choose whether toasts use the top or overlay layer",
+          "description": "Use Overlay to show notification toasts above fullscreen apps.",
           "label": "Wayland Layer"
         },
         "monitors": {
