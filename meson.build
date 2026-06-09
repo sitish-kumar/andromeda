@@ -565,6 +565,7 @@ _noctalia_sources = files(
   'src/shell/settings/config_export_dialog_popup.cpp',
   'src/shell/settings/settings_content.cpp',
   'src/shell/settings/settings_content_common.cpp',
+  'src/shell/settings/settings_content_plugins.cpp',
   'src/shell/settings/settings_control_factory.cpp',
   'src/shell/settings/settings_content_idle_behavior.cpp',
   'src/shell/settings/settings_content_session_action.cpp',
