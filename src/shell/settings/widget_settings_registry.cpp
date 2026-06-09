@@ -826,9 +826,13 @@ namespace settings {
       add(boolSpec("match_adjacent_spacing", false));
       add(boolSpec("drawer", false));
       {
+        const WidgetSettingVisibility drawerOn{"drawer", {"true"}};
         auto cols = intSpec("drawer_columns", 3, 1.0, 5.0, 1.0);
-        cols.visibleWhen = WidgetSettingVisibility{"drawer", {"true"}};
+        cols.visibleWhen = drawerOn;
         add(std::move(cols));
+        auto detachedPanel = boolSpec("detached_panel", false);
+        detachedPanel.visibleWhen = drawerOn;
+        add(std::move(detachedPanel));
       }
     } else if (type == "volume") {
       add(segmentedSpec("device", "output", volumeDeviceOptions));

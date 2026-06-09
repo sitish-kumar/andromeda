@@ -2337,6 +2337,10 @@
           "description": "Number of tray icons per row in the drawer panel",
           "label": "Drawer Columns"
         },
+        "detached-panel": {
+          "description": "Open the drawer as a floating panel with its own background instead of merging with the bar",
+          "label": "Detached Panel"
+        },
         "empty-color": {
           "description": "Color role used for empty workspaces; fixed hex colors are also supported",
           "label": "Empty Color"
