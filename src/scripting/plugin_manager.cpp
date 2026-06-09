@@ -72,10 +72,43 @@ namespace scripting {
     return ids;
   }
 
+  bool PluginManager::ensureEnabledMaterialized(const PluginsConfig& plugins) const {
+    bool materialized = false;
+    std::error_code ec;
+    for (const auto& source : plugins.sources) {
+      if (source.kind != PluginSourceKind::Git) {
+        continue;
+      }
+      const std::filesystem::path root = sourceRoot(source);
+      if (!std::filesystem::exists(root / ".git", ec)) {
+        continue; // not cloned yet — enable/list/update will clone
+      }
+      for (const auto& id : plugins.enabled) {
+        const std::string sub = pluginSubdir(id);
+        if (std::filesystem::exists(root / sub / "plugin.toml", ec)) {
+          continue; // already checked out
+        }
+        if (!plugin_git::hasPath(root, sub + "/plugin.toml")) {
+          continue; // this source doesn't ship it
+        }
+        kLog.info("materializing enabled plugin '{}' from source '{}'", id, source.name);
+        if (plugin_git::sparseAdd(root, sub)) {
+          materialized = true;
+        }
+      }
+    }
+    return materialized;
+  }
+
   void PluginManager::refresh() {
     const PluginsConfig& pc = m_config.config().plugins;
     if (m_applied && pc == m_lastApplied) {
       return;
+    }
+    // Heal a wiped clone / restored config once at startup (the clone state does
+    // not change on later config reloads, so don't re-touch the network then).
+    if (!m_applied) {
+      ensureEnabledMaterialized(pc);
     }
 
     // Scan the local dev dir + every configured source; a plugin is active only if

@@ -83,4 +83,10 @@ namespace scripting::plugin_git {
     return run({"git", "-C", dest.string(), "reset", "--hard", std::string(rev)}, kLocalTimeout, kProgressCap);
   }
 
+  bool hasPath(const std::filesystem::path& dest, std::string_view repoPath) {
+    return run({"git", "-C", dest.string(), "cat-file", "-e", "HEAD:" + std::string(repoPath)}, kLocalTimeout,
+               kProgressCap)
+        .ok;
+  }
+
 } // namespace scripting::plugin_git

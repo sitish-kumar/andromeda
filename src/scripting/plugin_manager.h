@@ -72,6 +72,10 @@ namespace scripting {
     [[nodiscard]] std::optional<PluginSourceConfig> findSource(std::string_view name) const;
     // Plugin ids offered by the implicit local dev source.
     [[nodiscard]] std::unordered_set<std::string> localPluginIds() const;
+    // Sparse-check-out any enabled git-source plugin missing from its (already
+    // cloned) source — heals a wiped clone or a restored config. Returns whether
+    // anything was materialized. No network when nothing is missing.
+    bool ensureEnabledMaterialized(const PluginsConfig& plugins) const;
     void applyUpdate(
         const std::filesystem::path& root, const std::string& sourceName, const std::string& preRev,
         const std::string& postRev, bool pullOk, const std::string& err

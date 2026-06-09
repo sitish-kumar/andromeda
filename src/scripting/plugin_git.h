@@ -48,6 +48,11 @@ namespace scripting {
     // (the post-update compatibility guard's rollback).
     [[nodiscard]] GitResult resetHard(const std::filesystem::path& dest, std::string_view rev);
 
+    // `git -C dest cat-file -e HEAD:<repoPath>` — true if the path exists in HEAD
+    // (tree metadata only, no blob fetch). Used to confirm a source actually ships
+    // a plugin before sparse-checking it out.
+    [[nodiscard]] bool hasPath(const std::filesystem::path& dest, std::string_view repoPath);
+
   } // namespace plugin_git
 
 } // namespace scripting
