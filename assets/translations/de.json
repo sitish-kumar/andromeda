@@ -193,6 +193,7 @@
       "unavailable-title": "NetworkManager nicht verfügbar",
       "vpns": "VPNs",
       "wi-fi": "Drahtlos",
+      "wifi": "Wi-Fi",
       "wifi-off": "Wi-Fi ist aus",
       "wifi-on": "Wi-Fi ist an",
       "wired-connection": "Kabelverbindung"
@@ -854,6 +855,7 @@
         "general": "Allgemein",
         "grouping": "Gruppierung",
         "home": "Startseite",
+        "idle": "Inaktiv",
         "interface": "Oberfläche",
         "keybinds": "Tastenkürzel",
         "kinds": "Arten",
@@ -906,6 +908,7 @@
         "osd": "OSD",
         "panels": "Panels",
         "popups": "Einblendungen",
+        "power": "Energie",
         "security": "Sicherheit",
         "services": "Dienste",
         "shell": "Shell",
@@ -1221,7 +1224,7 @@
           "label": "Schriftstärke"
         },
         "layer": {
-          "description": "Layer-shell-Ebene für die Bar; angehängte Panels öffnen sich auf derselben Ebene",
+          "description": "Nutze Overlay, um die Leiste über Vollbild-Apps anzuzeigen. Angeheftete Panels folgen der Leiste.",
           "label": "Wayland-Ebene"
         },
         "panel-overlap": {
@@ -1551,7 +1554,7 @@
           "label": "Benachrichtigungsdienst"
         },
         "layer": {
-          "description": "Wähle, ob Toasts die obere oder die Overlay-Ebene nutzen",
+          "description": "Nutze Overlay, um Benachrichtigungs-Toasts über Vollbild-Apps anzuzeigen.",
           "label": "Wayland-Schicht"
         },
         "monitors": {
@@ -1662,6 +1665,12 @@
         "transparency-mode": {
           "description": "Glasstil des Panels, einschließlich der Deckkraft von schwebenden/zentrierten Panels und der Kartentransparenz",
           "label": "Transparenz"
+        }
+      },
+      "power": {
+        "session-actions": {
+          "description": "Sitzungsmenü-Einträge, Reihenfolge, benutzerdefinierte Befehle und Symbole",
+          "label": "Einträge"
         }
       },
       "services": {
@@ -2821,5 +2830,10 @@
       "fetch-failed": "Wetterabruf fehlgeschlagen",
       "parse-weather": "Konnte Wetterantwort nicht parsen"
     }
+  },
+  "window-switcher": {
+    "empty": "Keine offenen Fenster",
+    "hint": "Tab · Shift+Tab · Pfeiltasten · Alt loslassen zum Wechseln · Esc zum Abbrechen",
+    "title": "Windows"
   }
 }
