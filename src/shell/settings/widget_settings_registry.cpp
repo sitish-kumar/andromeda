@@ -357,6 +357,8 @@ namespace settings {
 
   bool isBuiltInWidgetType(std::string_view type) { return findWidgetTypeSpec(type) != nullptr; }
 
+  bool isPluginWidgetType(std::string_view type) { return resolvePluginWidget(type).has_value(); }
+
   bool widgetTypeRequiresNamedConfig(std::string_view type) {
     return type == "custom_button" || type == "spacer" || resolvePluginWidget(type).has_value();
   }

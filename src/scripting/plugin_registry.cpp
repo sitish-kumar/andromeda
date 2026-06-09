@@ -1,7 +1,6 @@
 #include "scripting/plugin_registry.h"
 
 #include "core/log.h"
-#include "core/resource_paths.h"
 #include "util/file_utils.h"
 
 #include <algorithm>
@@ -33,7 +32,8 @@ namespace scripting {
 
   void PluginRegistry::scan() {
     m_plugins.clear();
-    scanDir(paths::assetPath("plugins"));
+    // Plugins live under the user data dir only (honoring NOCTALIA_DATA_HOME). Official /
+    // Community plugins are git sources cloned here at runtime — never shipped on disk.
     if (const std::string data = FileUtils::dataDir(); !data.empty()) {
       scanDir(std::filesystem::path(data) / "plugins");
     }

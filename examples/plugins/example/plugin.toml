@@ -1,0 +1,35 @@
+# Minimal reference plugin. Demonstrates the full bar-widget pipeline:
+# static manifest -> appears in the Add-widget picker -> renders/ticks ->
+# manifest-driven settings -> onIpc. See ../../../../noctalia-docs plugins guide.
+id = "noctalia/example"
+name = "Example"
+version = "1.0.0"
+min_noctalia = "5.0.0"
+author = "noctalia"
+tags = ["example", "demo"]
+icon = "puzzle"
+description = "A minimal reference plugin: a bar widget with settings, click handling, and IPC."
+
+[[widget]]
+id = "hello"
+entry = "hello.luau"
+
+  [[widget.setting]]
+  key = "label"
+  type = "string"
+  label = "Label"
+  description = "Text shown in the bar."
+  default = "Hello"
+
+  [[widget.setting]]
+  key = "glyph"
+  type = "glyph"
+  label = "Glyph"
+  description = "Glyph shown before the label."
+  default = "puzzle"
+
+  [[widget.setting]]
+  key = "show_glyph"
+  type = "bool"
+  label = "Show glyph"
+  default = true

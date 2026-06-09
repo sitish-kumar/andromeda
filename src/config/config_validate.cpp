@@ -263,7 +263,7 @@ namespace noctalia::config {
         const std::string base = "widget." + nameStr;
         WidgetConfig wc = readBarWidgetConfig(nameStr, *tbl, resolvedConfig);
         const std::string type = wc.type;
-        if (!settings::isBuiltInWidgetType(type)) {
+        if (!settings::isBuiltInWidgetType(type) && !settings::isPluginWidgetType(type)) {
           diag.warn(base, "unrecognized widget type \"" + type + "\"");
           resolvedConfig.widgets[nameStr] = std::move(wc);
           continue;

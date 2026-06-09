@@ -20,8 +20,8 @@ namespace scripting {
     [[nodiscard]] std::string fullId() const; // "author/plugin:entry"
   };
 
-  // Scans bundled + user plugin directories and exposes their entries by id.
-  // P0: bundled and user plugins are implicitly active; distribution (sources,
+  // Scans the user plugin directory and exposes its entries by id. P0: every
+  // discovered plugin is implicitly active; distribution (git sources,
   // enable/disable) is a later phase.
   class PluginRegistry {
   public:
@@ -32,9 +32,8 @@ namespace scripting {
     // Scan once on first use (idempotent). Call scan() directly to force a rescan.
     void ensureScanned();
 
-    // Rescan the bundled (assets/plugins) and user ($XDG_DATA_HOME/noctalia/plugins)
-    // directories. Pointers from prior resolve()/entriesOfKind() calls are
-    // invalidated.
+    // Rescan $XDG_DATA_HOME/noctalia/plugins (honoring NOCTALIA_DATA_HOME). Pointers
+    // from prior resolve()/entriesOfKind() calls are invalidated.
     void scan();
 
     // Resolve "author/plugin:entry" to its manifest, entry, and source path.
