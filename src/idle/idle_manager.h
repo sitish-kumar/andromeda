@@ -64,6 +64,7 @@ private:
   void destroyHeartbeat();
   void notifyLiveIdleChanged();
   void createBehavior(const IdleBehaviorConfig& config);
+  void recreateBehaviorNotification(BehaviorState& behavior);
   void recreateBehaviorNotifications();
   void runBehavior(BehaviorState& behavior);
   void runResumeBehavior(BehaviorState& behavior);

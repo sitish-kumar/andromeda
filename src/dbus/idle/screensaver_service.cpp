@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <chrono>
 #include <map>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -30,6 +31,23 @@ namespace {
       sdbus::ObjectPath{"/ScreenSaver"},
   };
 
+  [[nodiscard]] std::optional<std::string> querySessionBusNameOwner(std::string_view serviceName) {
+    try {
+      auto connection = sdbus::createSessionBusConnection();
+      auto proxy = sdbus::createProxy(
+          *connection, sdbus::ServiceName{"org.freedesktop.DBus"}, sdbus::ObjectPath{"/org/freedesktop/DBus"}
+      );
+      std::string owner;
+      proxy->callMethod("GetNameOwner")
+          .onInterface("org.freedesktop.DBus")
+          .withArguments(std::string{serviceName})
+          .storeResultsTo(owner);
+      return owner;
+    } catch (const std::exception&) {
+      return std::nullopt;
+    }
+  }
+
 } // namespace
 
 ScreenSaverService::ScreenSaverService(SystemBus* systemBus) {
@@ -38,7 +56,16 @@ ScreenSaverService::ScreenSaverService(SystemBus* systemBus) {
     registerScreenSaver();
   } catch (const sdbus::Error& e) {
     if (e.getName() == kFileExistsError) {
-      kLog.warn("org.freedesktop.ScreenSaver is already owned; direct screensaver inhibit disabled");
+      const auto owner = querySessionBusNameOwner(kBusName);
+      if (owner.has_value()) {
+        kLog.warn(
+            "org.freedesktop.ScreenSaver is already owned by {}; direct screensaver inhibit disabled (stop hypridle "
+            "or other ScreenSaver providers on Hyprland)",
+            *owner
+        );
+      } else {
+        kLog.warn("org.freedesktop.ScreenSaver is already owned; direct screensaver inhibit disabled");
+      }
     } else {
       kLog.warn("screensaver D-Bus registration failed: {}", e.what());
     }
@@ -114,29 +141,37 @@ void ScreenSaverService::registerScreenSaver() {
       });
 
   for (const auto& path : kObjectPaths) {
-    auto object = sdbus::createObject(*m_connection, path);
-    object
-        ->addVTable(
-            sdbus::registerMethod("Inhibit")
-                .withInputParamNames("application_name", "reason_for_inhibit")
-                .withOutputParamNames("cookie")
-                .implementedAs([this, objectPtr = object.get()](std::string app, std::string reason) {
-                  return onInhibit(
-                      std::move(app), std::move(reason), objectPtr->getCurrentlyProcessedMessage().getSender()
-                  );
-                }),
-            sdbus::registerMethod("UnInhibit")
-                .withInputParamNames("cookie")
-                .implementedAs([this, objectPtr = object.get()](std::uint32_t cookie) {
-                  onUninhibit(cookie, objectPtr->getCurrentlyProcessedMessage().getSender());
-                })
-        )
-        .forInterface(kInterface);
-    m_objects.push_back(std::move(object));
+    try {
+      auto object = sdbus::createObject(*m_connection, path);
+      object
+          ->addVTable(
+              sdbus::registerMethod("Inhibit")
+                  .withInputParamNames("application_name", "reason_for_inhibit")
+                  .withOutputParamNames("cookie")
+                  .implementedAs([this, objectPtr = object.get()](std::string app, std::string reason) {
+                    return onInhibit(
+                        std::move(app), std::move(reason), objectPtr->getCurrentlyProcessedMessage().getSender()
+                    );
+                  }),
+              sdbus::registerMethod("UnInhibit")
+                  .withInputParamNames("cookie")
+                  .implementedAs([this, objectPtr = object.get()](std::uint32_t cookie) {
+                    onUninhibit(cookie, objectPtr->getCurrentlyProcessedMessage().getSender());
+                  })
+          )
+          .forInterface(kInterface);
+      m_objects.push_back(std::move(object));
+    } catch (const std::exception& e) {
+      kLog.warn("failed to register ScreenSaver at {}: {}", std::string{path}, e.what());
+    }
+  }
+
+  if (m_objects.empty()) {
+    throw sdbus::Error(sdbus::Error::Name{kFileExistsError}, "no ScreenSaver object paths registered");
   }
 
   m_active = true;
-  kLog.info("listening on org.freedesktop.ScreenSaver");
+  kLog.info("listening on org.freedesktop.ScreenSaver ({} object path(s))", m_objects.size());
 }
 
 void ScreenSaverService::registerLogindIdleMonitor(SystemBus* systemBus) {

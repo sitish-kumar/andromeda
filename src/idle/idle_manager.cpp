@@ -145,6 +145,30 @@ void IdleManager::clearBehaviors() {
   m_behaviors.clear();
 }
 
+void IdleManager::recreateBehaviorNotification(BehaviorState& behavior) {
+  if (m_wayland == nullptr || !m_wayland->hasIdleNotifier() || m_wayland->seat() == nullptr) {
+    return;
+  }
+
+  if (behavior.notification != nullptr) {
+    ext_idle_notification_v1_destroy(behavior.notification);
+    behavior.notification = nullptr;
+  }
+  behavior.phase = BehaviorPhase::Waiting;
+
+  if (!behavior.config.enabled || behavior.config.timeoutSeconds <= 0) {
+    return;
+  }
+
+  const auto timeoutMs = static_cast<std::uint32_t>(behavior.config.timeoutSeconds) * 1000u;
+  behavior.notification = m_wayland->createIdleNotification(timeoutMs);
+  if (behavior.notification == nullptr) {
+    kLog.warn("failed to re-register idle behavior '{}'", behavior.config.name);
+    return;
+  }
+  ext_idle_notification_v1_add_listener(behavior.notification, &kIdleNotificationListener, &behavior);
+}
+
 void IdleManager::recreateBehaviorNotifications() {
   if (m_wayland == nullptr || !m_wayland->hasIdleNotifier() || m_wayland->seat() == nullptr) {
     return;
@@ -152,23 +176,7 @@ void IdleManager::recreateBehaviorNotifications() {
 
   cancelActiveGrace(false);
   for (auto& behavior : m_behaviors) {
-    if (behavior->notification != nullptr) {
-      ext_idle_notification_v1_destroy(behavior->notification);
-      behavior->notification = nullptr;
-    }
-    behavior->phase = BehaviorPhase::Waiting;
-
-    if (!behavior->config.enabled || behavior->config.timeoutSeconds <= 0) {
-      continue;
-    }
-
-    const auto timeoutMs = static_cast<std::uint32_t>(behavior->config.timeoutSeconds) * 1000u;
-    behavior->notification = m_wayland->createIdleNotification(timeoutMs);
-    if (behavior->notification == nullptr) {
-      kLog.warn("failed to re-register idle behavior '{}'", behavior->config.name);
-      continue;
-    }
-    ext_idle_notification_v1_add_listener(behavior->notification, &kIdleNotificationListener, behavior.get());
+    recreateBehaviorNotification(*behavior);
   }
   kLog.info("idle behavior notifications reset after screensaver inhibit released");
 }
@@ -291,10 +299,11 @@ void IdleManager::handleIdled(void* data, ext_idle_notification_v1* /*notificati
   IdleManager& self = *behavior->owner;
   if (self.m_screenSaverInhibitLocks > 0) {
     self.m_idledWhileScreenSaverInhibited = true;
-    kLog.debug(
+    kLog.info(
         "idle behavior '{}' suppressed (screensaver inhibit locks={})", behavior->config.name,
         self.m_screenSaverInhibitLocks
     );
+    self.recreateBehaviorNotification(*behavior);
     return;
   }
 
