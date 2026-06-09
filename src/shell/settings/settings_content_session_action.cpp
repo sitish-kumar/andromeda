@@ -44,6 +44,10 @@ namespace settings {
 
     const float iconSq = Style::controlHeight * scale;
     const float iconGlyphSize = Style::fontSizeBody * scale;
+    const float captionSize = Style::fontSizeCaption * scale;
+    const std::string glyphLabelText = i18n::tr("settings.session-actions.glyph-label");
+    const float glyphColumnWidth =
+        std::max(iconSq, static_cast<float>(glyphLabelText.size()) * captionSize * 0.62f + 2.0f * scale);
 
     auto body = ui::row({
         .align = FlexAlign::Start,
@@ -51,16 +55,15 @@ namespace settings {
         .fillWidth = true,
     });
 
-    auto iconCol = ui::column(
-        {
-            .align = FlexAlign::Stretch,
-            .gap = Style::spaceSm * scale,
-        },
-        makeLabel(
-            i18n::tr("settings.session-actions.glyph-label"), Style::fontSizeCaption * scale,
-            colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal
-        )
-    );
+    auto iconCol = ui::column({
+        .align = FlexAlign::Start,
+        .gap = Style::spaceSm * scale,
+    });
+    iconCol->setMinWidth(glyphColumnWidth);
+    auto glyphLabel =
+        makeLabel(glyphLabelText, captionSize, colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal);
+    glyphLabel->setMinWidth(glyphColumnWidth);
+    iconCol->addChild(std::move(glyphLabel));
 
     auto glyphBtnRow = ui::row({
         .align = FlexAlign::Center,
