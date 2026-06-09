@@ -61,6 +61,21 @@ namespace scripting {
       if (src.updateIntervalMs.has_value()) {
         dest.updateIntervalMs = src.updateIntervalMs;
       }
+      if (src.label.has_value()) {
+        dest.label = src.label;
+      }
+      if (src.iconOn.has_value()) {
+        dest.iconOn = src.iconOn;
+      }
+      if (src.iconOff.has_value()) {
+        dest.iconOff = src.iconOff;
+      }
+      if (src.active.has_value()) {
+        dest.active = src.active;
+      }
+      if (src.enabled.has_value()) {
+        dest.enabled = src.enabled;
+      }
     }
 
     void mergeResult(ScriptWidgetResult& dest, const ScriptWidgetResult& src) {

@@ -249,6 +249,58 @@ namespace {
       {"setVisible", luau_setVisible}, {"getConfig", luau_getConfig},         {nullptr, nullptr},
   };
 
+  // ── shortcut.* — control-center quick-toggle tile presentation ──
+
+  int luau_shortcut_setLabel(lua_State* L) {
+    size_t len = 0;
+    const char* label = luaL_checklstring(L, 1, &len);
+    if (auto* context = getContext(L)) {
+      context->patch.label = std::string(label, len);
+    }
+    return 0;
+  }
+
+  int luau_shortcut_setIcon(lua_State* L) {
+    size_t onLen = 0;
+    const char* on = luaL_checklstring(L, 1, &onLen);
+    if (auto* context = getContext(L)) {
+      context->patch.iconOn = std::string(on, onLen);
+      // Optional second arg: a distinct "off" icon; defaults to the same glyph.
+      if (lua_gettop(L) >= 2 && lua_isstring(L, 2)) {
+        size_t offLen = 0;
+        const char* off = lua_tolstring(L, 2, &offLen);
+        context->patch.iconOff = std::string(off, offLen);
+      } else {
+        context->patch.iconOff = std::string(on, onLen);
+      }
+    }
+    return 0;
+  }
+
+  int luau_shortcut_setActive(lua_State* L) {
+    const bool active = lua_toboolean(L, 1) != 0;
+    if (auto* context = getContext(L)) {
+      context->patch.active = active;
+    }
+    return 0;
+  }
+
+  int luau_shortcut_setEnabled(lua_State* L) {
+    const bool enabled = lua_toboolean(L, 1) != 0;
+    if (auto* context = getContext(L)) {
+      context->patch.enabled = enabled;
+    }
+    return 0;
+  }
+
+  const luaL_Reg kShortcutLib[] = {
+      {"setLabel", luau_shortcut_setLabel},
+      {"setIcon", luau_shortcut_setIcon},
+      {"setActive", luau_shortcut_setActive},
+      {"setEnabled", luau_shortcut_setEnabled},
+      {nullptr, nullptr},
+  };
+
 } // namespace
 
 namespace scripting {
@@ -258,6 +310,8 @@ namespace scripting {
     lua_setglobal(L, kWidgetKey);
 
     luaL_register(L, "barWidget", kWidgetLib);
+    lua_pop(L, 1);
+    luaL_register(L, "shortcut", kShortcutLib);
     lua_pop(L, 1);
   }
 

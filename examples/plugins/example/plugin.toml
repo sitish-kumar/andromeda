@@ -42,3 +42,8 @@ entry = "hello.luau"
 [[service]]
 id = "ticker"
 entry = "ticker.luau"
+
+# Control-center quick-toggle tile. Add it from Settings → Control Center shortcuts.
+[[shortcut]]
+id = "toggle"
+entry = "shortcut.luau"

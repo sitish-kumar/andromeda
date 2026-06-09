@@ -12,7 +12,10 @@
 #include "ipc/ipc_service.h"
 #include "notification/notification_manager.h"
 #include "pipewire/pipewire_service.h"
+#include "scripting/plugin_manifest.h"
+#include "scripting/plugin_registry.h"
 #include "shell/bar/widgets/keyboard_layout_widget.h"
+#include "shell/control_center/plugin_shortcut.h"
 #include "shell/control_center/shortcut_services.h"
 #include "shell/panel/panel_manager.h"
 #include "system/gamma_service.h"
@@ -21,13 +24,14 @@
 
 #include <array>
 #include <cmath>
+#include <deque>
 #include <format>
 #include <optional>
 #include <vector>
 
 namespace {
 
-  constexpr std::array<ShortcutRegistry::CatalogEntry, 18> kShortcutCatalog{{
+  constexpr std::array<ShortcutRegistry::CatalogEntry, 17> kShortcutCatalog{{
       {"wifi", "control-center.shortcuts.wifi"},
       {"bluetooth", "control-center.shortcuts.bluetooth"},
       {"nightlight", "control-center.shortcuts.nightlight"},
@@ -513,9 +517,37 @@ namespace {
 
 } // namespace
 
-std::span<const ShortcutRegistry::CatalogEntry> ShortcutRegistry::catalog() { return kShortcutCatalog; }
+std::span<const ShortcutRegistry::CatalogEntry> ShortcutRegistry::catalog() {
+  // Built-in shortcuts plus every plugin [[shortcut]] entry. Plugin id/label
+  // strings are held in a stable static deque so the CatalogEntry views stay valid.
+  static std::deque<std::string> storage;
+  static const std::vector<CatalogEntry> combined = [] {
+    std::vector<CatalogEntry> result(kShortcutCatalog.begin(), kShortcutCatalog.end());
+    scripting::PluginRegistry::instance().ensureScanned();
+    for (const auto& entry :
+         scripting::PluginRegistry::instance().entriesOfKind(scripting::PluginEntryKind::Shortcut)) {
+      storage.push_back(entry.fullId());
+      const std::string_view typeView = storage.back();
+      storage.push_back(entry.manifest->name.empty() ? entry.fullId() : entry.manifest->name);
+      const std::string_view labelView = storage.back();
+      result.push_back(CatalogEntry{.type = typeView, .labelKey = labelView});
+    }
+    return result;
+  }();
+  return combined;
+}
 
 std::unique_ptr<Shortcut> ShortcutRegistry::create(std::string_view type, const ShortcutServices& s) {
+  if (auto entry = scripting::PluginRegistry::instance().resolve(type);
+      entry.has_value() && entry->entry->kind == scripting::PluginEntryKind::Shortcut) {
+    if (s.scriptApi == nullptr) {
+      return nullptr;
+    }
+    auto seeded = scripting::seedEntrySettings(*entry->entry, {});
+    return std::make_unique<PluginShortcut>(
+        entry->fullId(), entry->sourcePath, std::move(seeded), *s.scriptApi, s.httpClient, s.clipboard
+    );
+  }
   if (type == "wifi")
     return std::make_unique<WifiShortcut>(s.network);
   if (type == "bluetooth")
