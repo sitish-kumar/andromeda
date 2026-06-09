@@ -302,10 +302,10 @@ std::unique_ptr<Flex> SystemTab::create() {
 
     // One line per physical disk, discovered automatically (root first). Usage refreshes in doUpdate.
     m_diskMountPoints = physicalDiskMountPoints();
-    m_diskLabels.clear();
-    m_diskLabels.reserve(m_diskMountPoints.size());
+    m_diskRows.clear();
+    m_diskRows.reserve(m_diskMountPoints.size());
     for (std::size_t i = 0; i < m_diskMountPoints.size(); ++i) {
-      Label* lineLabel = nullptr;
+      DiskRowLabels rowLabels;
       resourcesCard->addChild(
           ui::row(
               {.align = FlexAlign::Center, .gap = Style::spaceXs * sc},
@@ -315,15 +315,21 @@ std::unique_ptr<Flex> SystemTab::create() {
                   .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
               }),
               ui::label({
-                  .out = &lineLabel,
+                  .out = &rowLabels.mount,
                   .fontSize = Style::fontSizeMini * sc,
                   .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
                   .maxLines = 1,
                   .flexGrow = 1.0f,
+              }),
+              ui::label({
+                  .out = &rowLabels.usage,
+                  .fontSize = Style::fontSizeMini * sc,
+                  .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+                  .maxLines = 1,
               })
           )
       );
-      m_diskLabels.push_back(lineLabel);
+      m_diskRows.push_back(rowLabels);
     }
 
     tab->addChild(std::move(row));
@@ -369,7 +375,7 @@ void SystemTab::onClose() {
     l = nullptr;
   m_swapRow = nullptr;
   m_swapLabel = nullptr;
-  m_diskLabels.clear();
+  m_diskRows.clear();
   m_diskMountPoints.clear();
   m_graphInitialized = false;
   m_gpuVisible = false;
@@ -839,9 +845,14 @@ void SystemTab::syncLabels() {
       m_swapLabel->setText(FormatUnits::formatBinaryMibUsageAsGib(stats.swapUsedMb, stats.swapTotalMb));
     }
   }
-  for (std::size_t i = 0; i < m_diskLabels.size(); ++i) {
-    if (m_diskLabels[i] != nullptr) {
-      m_diskLabels[i]->setText(std::format("{}  {}", m_diskMountPoints[i], diskUsageLabel(m_diskMountPoints[i])));
+  for (std::size_t i = 0; i < m_diskRows.size(); ++i) {
+    const std::string& mountPoint = m_diskMountPoints[i];
+    if (m_diskRows[i].mount != nullptr) {
+      m_diskRows[i].mount->setText(diskMountDisplayLabel(mountPoint));
+      m_diskRows[i].mount->setTooltip(mountPoint);
+    }
+    if (m_diskRows[i].usage != nullptr) {
+      m_diskRows[i].usage->setText(diskUsageLabel(mountPoint));
     }
   }
 }
