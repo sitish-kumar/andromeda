@@ -1,0 +1,110 @@
+{
+  "auth": {
+    "pam": {
+      "authentication-failed": "Xác thực không thành công",
+      "start-failed": "Khởi động PAM không thành công",
+      "user-unavailable": "Không thể giải quyết người dùng hiện tại"
+    },
+    "polkit": {
+      "authenticate": "Xác thực",
+      "authenticating": "Đang xác thực...",
+      "default-message": "Yêu cầu xác thực",
+      "invalid-password": "Mật khẩu không hợp lệ",
+      "password-placeholder": "Mật khẩu",
+      "title": "Yêu cầu Xác thực"
+    }
+  },
+  "bar": {
+    "screenshot": {
+      "choose-display": "Chọn màn hình",
+      "fullscreen": "Toàn màn hình",
+      "region": "Chọn khu vực"
+    },
+    "widgets": {
+      "lock-keys": {
+        "caps": "Caps",
+        "caps-short": "C",
+        "num": "Num",
+        "num-short": "N",
+        "scroll": "Scroll",
+        "scroll-short": "S"
+      },
+      "media": {
+        "nothing-playing": "Không có nội dung đang phát",
+        "playing": "Đang phát"
+      },
+      "network": {
+        "wired": "Mạng có dây"
+      },
+      "scripted": {
+        "reload-failed": "Tải lại script thất bại",
+        "reloaded": "Script đã được tải lại"
+      },
+      "weather": {
+        "default": "Thời tiết",
+        "error": "Không thể tải thời tiết",
+        "loading": "Đang cập nhật thời tiết...",
+        "no-location": "Không xác định vị trí",
+        "off": "Thời tiết không được bật",
+        "vertical-default": "WX",
+        "vertical-error": "ERR",
+        "vertical-loading": "...",
+        "vertical-no-location": "NOLOC",
+        "vertical-off": "OFF"
+      }
+    }
+  },
+  "clipboard": {
+    "actions": {
+      "clear-all": "Xóa tất cả",
+      "delete-item": "Xóa mục này",
+      "keep-pinned": "Giữ cố định"
+    },
+    "confirm": {
+      "clear-desc": "Chọn có giữ các mục được ghim hay không.",
+      "clear-desc-all-pinned": "Tất cả mục đang được ghim. Dùng Xóa tất cả để xóa chúng.",
+      "clear-desc-no-pinned": "Hành động này sẽ xóa tất cả mục trong lịch sử sao chép.",
+      "clear-title": "Xóa lịch sử sao chép?",
+      "delete-desc": "Hành động này sẽ xóa mục được chọn khỏi lịch sử sao chép.",
+      "delete-title": "Xóa mục đã sao chép?"
+    },
+    "empty": {
+      "history-message": "Không có dữ liệu trong lịch sử sao chép.",
+      "history-title": "Lịch sử sao chép trống",
+      "no-matches-message": "Không tìm thấy mục khớp bộ lọc.",
+      "no-matches-title": "Không có kết quả phù hợp"
+    },
+    "entry": {
+      "image": "Hình ảnh",
+      "title": "Mục Bộ nhớ"
+    },
+    "filter-placeholder": "Lọc lịch sử sao chép...",
+    "preview": {
+      "empty-text-payload": "(nội dung văn bản trống)",
+      "image-title": "Bộ nhớ Ảnh",
+      "loading": "Đang tải bản xem trước...",
+      "text-title": "Bộ nhớ Văn bản",
+      "truncated": "… đã rút gọn"
+    },
+    "title": "Bộ nhớ tạm"
+  },
+  "common": {
+    "actions": {
+      "apply": "Áp dụng",
+      "cancel": "Hủy"
+    },
+    "states": {
+      "auto": "Tự động",
+      "custom": "Tùy chỉnh",
+      "inherit": "Kế thừa",
+      "off": "Tắt"
+    }
+  },
+  "control-center": {
+    "audio": {
+      "application-volumes": "Âm lượng Ứng dụng",
+      "input-volume": "Âm lượng Đầu vào",
+      "no-application-audio": "Không có âm thanh từ ứng dụng"
+    }
+  }
+}

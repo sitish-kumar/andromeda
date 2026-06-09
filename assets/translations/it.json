@@ -1,0 +1,12 @@
+{
+  "auth": {
+    "pam": {
+      "authentication-failed": "Autenticazione fallita",
+      "start-failed": "Avvio di PAM fallito",
+      "user-unavailable": "Impossibile risolvere l'utente attuale"
+    },
+    "polkit": {
+      "authenticate": "Autentica"
+    }
+  }
+}

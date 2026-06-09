@@ -193,6 +193,7 @@
       "unavailable-detail": "Install and enable NetworkManager to manage networks from here.",
       "unavailable-title": "NetworkManager unavailable",
       "vpns": "VPNs",
+      "wi-fi": "Wi-Fi",
       "wifi": "Wi-Fi",
       "wifi-off": "Wi-Fi is off",
       "wifi-on": "Wi-Fi is on",
@@ -416,11 +417,6 @@
       "display-name": "Settings"
     }
   },
-  "window-switcher": {
-    "empty": "No open windows",
-    "hint": "Tab · Shift+Tab · Arrow keys · Release Alt to switch · Esc to cancel",
-    "title": "Windows"
-  },
   "launcher": {
     "categories": {
       "all": "All",
@@ -534,8 +530,6 @@
       "desktop-widgets-editor-enabled": "Desktop widget editor is on. Switch to an empty workspace to see the editor overlay.",
       "greeter-sync": "Noctalia Greeter",
       "greeter-sync-success": "Appearance synced. Changes apply on the next login screen.",
-      "wallpaper-palette-export": "Custom Palette",
-      "wallpaper-palette-export-success": "Saved \"{name}\" and switched palette source to custom.",
       "keybind-app": "Noctalia",
       "keybind-invalid-modifier": "This shortcut accepts a single key without modifiers.",
       "keybind-invalid-printable": "Printable keys (letters, numbers, symbols) require a modifier such as Ctrl or Alt.",
@@ -545,7 +539,9 @@
       "lockscreen-widgets-editor-blocked-locked": "Unlock the session before editing lockscreen widgets.",
       "lockscreen-widgets-editor-enabled": "Lockscreen widget editor is on. Arrange widgets on the preview overlay, then lock the session to verify the layout.",
       "mpris-disabled": "MPRIS disabled",
-      "session-bus-unavailable": "Session bus unavailable"
+      "session-bus-unavailable": "Session bus unavailable",
+      "wallpaper-palette-export": "Custom Palette",
+      "wallpaper-palette-export-success": "Saved \"{name}\" and switched palette source to custom."
     }
   },
   "osd": {
@@ -785,6 +781,7 @@
       },
       "batch-write": "Some settings could not be saved.",
       "export-config": "Failed to save config export.",
+      "export-wallpaper-palette": "Could not save the wallpaper palette as a custom palette.",
       "monitor-override": {
         "create": "Could not create monitor override.",
         "delete": "Could not delete monitor override.",
@@ -793,7 +790,6 @@
       "reset-page": "Failed to reset some settings.",
       "support-report": "Failed to save support report.",
       "sync-greeter": "Could not sync appearance to Noctalia Greeter.",
-      "export-wallpaper-palette": "Could not save the wallpaper palette as a custom palette.",
       "widget": {
         "rename": "Could not rename named widget."
       },
@@ -1092,6 +1088,11 @@
           "label": "Custom Palette",
           "search-placeholder": "Search custom palettes..."
         },
+        "export-wallpaper-palette": {
+          "button": "Save as Custom Palette",
+          "description": "Save the current wallpaper-generated palette as a reusable custom palette file",
+          "label": "Export Wallpaper Palette"
+        },
         "font-family": {
           "description": "Font family for the shell interface",
           "label": "Font Family"
@@ -1121,11 +1122,6 @@
         "wallpaper-generation-scheme": {
           "description": "Choose how wallpaper colors are converted into a palette",
           "label": "Wallpaper Generation Scheme"
-        },
-        "export-wallpaper-palette": {
-          "description": "Save the current wallpaper-generated palette as a reusable custom palette file",
-          "label": "Export Wallpaper Palette",
-          "button": "Save as Custom Palette"
         }
       },
       "backdrop": {
@@ -2832,5 +2828,10 @@
       "fetch-failed": "Weather fetch failed",
       "parse-weather": "Could not parse weather response"
     }
+  },
+  "window-switcher": {
+    "empty": "No open windows",
+    "hint": "Tab · Shift+Tab · Arrow keys · Release Alt to switch · Esc to cancel",
+    "title": "Windows"
   }
 }

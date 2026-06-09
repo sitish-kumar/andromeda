@@ -1,0 +1,12 @@
+{
+  "auth": {
+    "pam": {
+      "authentication-failed": "Аутентификация не удалась",
+      "start-failed": "Сбой запуска PAM",
+      "user-unavailable": "Не удалось определить текущего пользователя"
+    },
+    "polkit": {
+      "authenticate": "Аутентифицировать"
+    }
+  }
+}
