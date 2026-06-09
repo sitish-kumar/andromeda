@@ -170,8 +170,8 @@
       "unknown": "ismeretlen",
       "user-facts": "{user}@{host}\nRendszeridő - {uptime}\nNoctalia {version}",
       "weather": {
-        "configure-location": "Add meg a [weather].address-t vagy engedélyezd az auto_locate-et",
-        "data-unavailable": "Időjárási adatok nem elérhetők.",
+        "configure-location": "Add meg a [weather].address értéket vagy engedélyezd az auto_locate beállítást",
+        "data-unavailable": "Az időjárási adatok nem érhetők el.",
         "disabled": "Az időjárás le van tiltva a konfigurációban.",
         "fetching": "Előrejelzés lekérése…"
       }
@@ -180,7 +180,7 @@
       "active-player": "Aktív lejátszó",
       "nothing-playing": "Nincs lejátszás",
       "now-playing": "Lejátszás alatt",
-      "start-playback": "Indítsd el a lejátszást egy MPRIS alkalmazásban"
+      "start-playback": "Indítsd el a lejátszást egy MPRIS-alkalmazásban"
     },
     "network": {
       "connect": "Csatlakozás",
@@ -190,9 +190,9 @@
       "password": "Jelszó",
       "password-prompt": "Jelszó megadása",
       "password-prompt-for": "Add meg a jelszót a {ssid} hálózathoz",
-      "unavailable-detail": "Telepítsd és engedélyezd a NetworkManagert, hogy innen kezeld a hálózatokat.",
-      "unavailable-title": "NetworkManager nem elérhető",
-      "vpns": "VPNs",
+      "unavailable-detail": "Telepítsd és engedélyezd a NetworkManagert a hálózatok innen történő kezeléséhez.",
+      "unavailable-title": "A NetworkManager nem érhető el",
+      "vpns": "VPN-ek",
       "wi-fi": "Wi-Fi",
       "wifi": "Wi-Fi",
       "wifi-off": "A Wi-Fi ki van kapcsolva",
@@ -208,17 +208,17 @@
         "today": "Ma",
         "yesterday": "Tegnap"
       },
-      "filter-empty-body": "Nincsenek a szűrőnek megfelelő értesítések.",
-      "filter-empty-title": "Semmi sincs itt",
+      "filter-empty-body": "Nincs a szűrőnek megfelelő értesítés.",
+      "filter-empty-title": "Itt nincs semmi",
       "untitled": "Cím nélküli értesítés"
     },
     "screen-time": {
-      "disabled": "A képernyőidő követés ki van kapcsolva. Engedélyezd a Beállításokban az alkalmazásonkénti használat rögzítéséhez.",
-      "empty": "Még nem rögzítettünk alkalmazáshasználatot. Fókuszálj egy ablakra a követés megkezdéséhez.",
-      "hour-0": "éjfél",
-      "hour-12": "Dél",
+      "disabled": "A képernyőidő-követés ki van kapcsolva. Engedélyezd a Beállításokban az alkalmazásonkénti használat rögzítéséhez.",
+      "empty": "Még nincs rögzített alkalmazáshasználat. Aktiválj egy ablakot a mérés indításához",
+      "hour-0": "12:00",
+      "hour-12": "24:00",
       "hour-18": "18:00",
-      "hour-6": "reggel 6",
+      "hour-6": "6:00",
       "most-used": "LEGGYAKRABBAN HASZNÁLT",
       "range": {
         "14-days": "14 nap",
@@ -232,7 +232,7 @@
       "caffeine": "Koffein",
       "clipboard": "Vágólap",
       "dark-mode": {
-        "auto": "Automatikus Mód",
+        "auto": "Automatikus mód",
         "dark": "Sötét mód",
         "light": "Világos mód"
       },
@@ -244,11 +244,11 @@
         "forced": "Mindig bekapcsolva",
         "off": "Éjszakai fény",
         "scheduled-day": "Ütemezett",
-        "scheduled-night": "Futó"
+        "scheduled-night": "Fut"
       },
-      "notification": "DND",
+      "notification": "Ne zavarjanak",
       "power-profile": "Energiagazdálkodás",
-      "screen-recorder": "Felvevő",
+      "screen-recorder": "Rögzítő",
       "screen-time": "Képernyőidő",
       "session": "Munkamenet",
       "system": "Rendszer",
@@ -266,7 +266,7 @@
         "system": "Rendszer"
       },
       "unknown": "ismeretlen",
-      "uptime-prefix": "Fent {uptime} · {osAge}"
+      "uptime-prefix": "Fut: {uptime} · {osAge}"
     },
     "tabs": {
       "audio": "Hang",
@@ -282,27 +282,27 @@
       "weather": "Időjárás"
     },
     "weather": {
-      "configure-location": "[weather].address beállítása vagy az auto_locate engedélyezése",
-      "data-unavailable": "Időjárási adatok nem elérhetők",
+      "configure-location": "Állítsd be a [weather].address értéket vagy az auto_locate beállítást",
+      "data-unavailable": "Az időjárási adatok nem érhetők el",
       "details": {
         "elevation": "Emelkedés",
-        "sunrise": "Napfelkelte",
-        "sunset": "Naplemente",
-        "temp-max": "Hőmérséklet Max.",
+        "sunrise": "Napkelte",
+        "sunset": "Napnyugta",
+        "temp-max": "Maximális hőmérséklet",
         "temp-min": "Minimális hőmérséklet",
         "timezone": "Időzóna",
         "wind": "Szél"
       },
-      "disabled": "Engedélyezd a [weather] részt a config.toml-ban",
+      "disabled": "Engedélyezd a [weather] részt a config.toml fájlban",
       "fetching": "Előrejelzés lekérése…",
       "forecast-placeholder": {
         "day": "Vasárnap",
         "description": "Időjárás",
         "temperature": "10 / 4C"
       },
-      "location-unavailable": "Helyzet nem elérhető",
+      "location-unavailable": "A hely nem érhető el",
       "refreshing": "Időjárás frissítése…",
-      "waiting": "Várakozás időjárási adatokra"
+      "waiting": "Várakozás az időjárási adatokra"
     }
   },
   "desktop-widgets": {
@@ -322,9 +322,9 @@
         "background-radius": "Sugár",
         "background-section": "Háttér",
         "bands": "Sávok",
-        "bar-width": "Sáv Szélessége",
-        "bloom-intensity": "Fényudvar",
-        "centered": "Középre",
+        "bar-width": "Sáv szélessége",
+        "bloom-intensity": "Ragyogás",
+        "centered": "Középre zárt",
         "change-image": "Módosítás…",
         "circle": "Kör",
         "clock-style": "Órastílus",
@@ -332,13 +332,13 @@
         "clock-style-digital": "Digitális",
         "color": "Szín",
         "color2": "2. szín",
-        "custom-color": "Egyedi…",
+        "custom-color": "Egyéni…",
         "description": "Leírás",
-        "fade-when-idle": "Halványul, ha tétlen",
+        "fade-when-idle": "Halványítás tétlenség esetén",
         "font-family": "Betűtípus",
-        "font-family-default": "Rendszer alapértelmezett",
+        "font-family-default": "Rendszer alapértelmezése",
         "format": "Formátum",
-        "hide-when-no-media": "Elrejtés, ha nincs média",
+        "hide-when-no-media": "Elrejtés, ha nincs lejátszás",
         "high-color": "Magas szín",
         "horizontal": "Vízszintes",
         "image-path": "Kép",
@@ -354,28 +354,28 @@
         "sensitivity": "Érzékenység",
         "shadow": "Árnyék",
         "show-label": "Címke megjelenítése",
-        "show-when-idle": "Mutatás tétlen állapotban",
+        "show-when-idle": "Megjelenítés tétlenség esetén",
         "stat": "Statisztika",
-        "stat-cpu-temp": "CPU hőmérséklet",
-        "stat-cpu-usage": "CPU kihasználtság",
-        "stat-gpu-temp": "GPU Hőmérséklet",
-        "stat-gpu-usage": "GPU használat",
-        "stat-gpu-vram": "GPU VRAM",
-        "stat-net-rx": "Hálózati Fogadás",
-        "stat-net-tx": "Net kimenő",
+        "stat-cpu-temp": "CPU-hőmérséklet",
+        "stat-cpu-usage": "CPU-használat",
+        "stat-gpu-temp": "GPU-hőmérséklet",
+        "stat-gpu-usage": "GPU-használat",
+        "stat-gpu-vram": "VRAM-használat",
+        "stat-net-rx": "Letöltés",
+        "stat-net-tx": "Feltöltés",
         "stat-none": "Nincs",
         "stat-ram-pct": "RAM %",
-        "stat-swap-pct": "Lapozó %",
-        "stat2": "Stat. 2",
+        "stat-swap-pct": "Cserehely %",
+        "stat2": "2. statisztika",
         "title": "Cím",
         "vertical": "Függőleges",
         "visualization-mode": "Mód",
         "visualization-mode-all": "Összes",
         "visualization-mode-bars": "Sávok",
-        "visualization-mode-bars-rings": "Sávok + Gyűrűk",
+        "visualization-mode-bars-rings": "Sávok + gyűrűk",
         "visualization-mode-rings": "Gyűrűk",
         "visualization-mode-wave": "Hullám",
-        "visualization-mode-wave-rings": "Hullám + Gyűrűk",
+        "visualization-mode-wave-rings": "Hullám + gyűrűk",
         "wave-thickness": "Hullámvastagság",
         "widget-section": "Modul"
       },
@@ -396,7 +396,7 @@
       }
     },
     "media": {
-      "nothing-playing": "Semmi sem játszik"
+      "nothing-playing": "Nincs lejátszás"
     },
     "weather": {
       "error": "Hiba",
@@ -434,7 +434,7 @@
       "emoji": {
         "activity": "Tevékenység",
         "animals": "Állatok",
-        "flags": "Jelzők",
+        "flags": "Zászlók",
         "food": "Étel",
         "nature": "Természet",
         "objects": "Objektumok",

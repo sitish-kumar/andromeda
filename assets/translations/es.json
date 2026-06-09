@@ -9,7 +9,7 @@
       "authenticate": "Autenticar",
       "authenticating": "Autenticando...",
       "default-message": "Autorización requerida",
-      "invalid-password": "Contraseña invalida",
+      "invalid-password": "Contraseña incorrecta",
       "password-placeholder": "Contraseña",
       "title": "Autorización requerida"
     }
@@ -18,7 +18,7 @@
     "screenshot": {
       "choose-display": "Elige pantalla",
       "fullscreen": "Pantalla completa",
-      "region": "Seleccione region"
+      "region": "Seleccione región"
     },
     "widgets": {
       "lock-keys": {
@@ -55,25 +55,32 @@
     "actions": {
       "clear-all": "Borrar todo",
       "delete-item": "Borrar elemento",
-      "keep-pinned": "Mantener fijado"
+      "keep-pinned": "Mantener elementos fijados"
     },
     "confirm": {
-      "clear-desc": "Elegir si los elementos fijados deben retenerse.",
+      "clear-desc": "Elegir si los elementos fijados deben mantenerse.",
       "clear-desc-all-pinned": "Todas las entradas estan fijadas. Use Borrar todo para eliminar todas.",
       "clear-desc-no-pinned": "Esto elimina todas las entradas del portapapeles.",
-      "clear-title": "Borrar historial del portapepeles?",
-      "delete-desc": "Esto elimina el elemento seleccionado en el historial del portapapeles.",
-      "delete-title": "Eliminar elemento del portapapeles?"
+      "clear-title": "¿Borrar el historial del portapepeles?",
+      "delete-desc": "Esto elimina el elemento seleccionado del historial del portapapeles.",
+      "delete-title": "¿Eliminar elemento del portapapeles?"
     },
     "empty": {
       "history-message": "No hay entradas en el historial del portapapeles.",
-      "history-title": "El historial del portapapeles está vacío"
+      "history-title": "El historial del portapapeles está vacío",
+      "no-matches-message": "No hay resultados que coincidan con el filtro actual.",
+      "no-matches-title": "No se han encontrado resultados"
     },
     "entry": {
-      "image": "Imagen"
+      "image": "Imagen",
+      "title": "Entrada del portapapeles"
     },
+    "filter-placeholder": "Filtrar el portapapeles...",
     "preview": {
+      "empty-text-payload": "Contenido sin texto",
+      "image-title": "Entrada de Imagen en el portapapeles",
       "loading": "Cargando vista previa...",
+      "text-title": "Entrada de Texto en el Portapapeles",
       "truncated": "... truncado"
     },
     "title": "Portapapeles"
@@ -94,6 +101,11 @@
     "audio": {
       "application-volumes": "Volumen de aplicaciones",
       "input-volume": "Volumen de entrada",
+      "no-application-audio": "Sin aplicacion de audio",
+      "no-input-devices": "No hay dispositivos de entrada",
+      "no-input-selected": "No se ha seleccionado ningún dispositivo de entrada",
+      "no-output-devices": "No hay dispositivos de salida",
+      "no-output-selected": "No se ha seleccionado ningún dispositivo de salida",
       "output-volume": "Volumen de salida",
       "unavailable-body": "PipeWire no está activado.",
       "unavailable-title": "Sonido no está disponible"
@@ -107,16 +119,23 @@
       "pair-title": "Emparejar con {device}",
       "pairing-detail": {
         "authorize": "Aceptar la solicitud de emparejamiento entrante?",
-        "authorize-service": "Permitir acceso a servicio {uuid}?"
+        "authorize-service": "Permitir acceso a servicio {uuid}?",
+        "confirm": "Verifica que este código coincida con el que aparece en el dispositivo:",
+        "display-passkey": "Ingresa este código en el dispositivo:",
+        "display-pin": "Ingresa este PIN en el dispositivo:",
+        "passkey": "Introduce la clave de acceso que aparece en el dispositivo:",
+        "pin-code": "Introduce el PIN que aparece en el dispositivo:"
       },
       "reject": "Rechazar",
+      "rfkill-blocked": "El sistema ha bloqueado el Bluetooth. Actívalo para desactivar el bloqueo.",
       "sections": {
         "available": "Disponible",
         "connected": "Conectado",
         "paired": "Emparejado"
       },
       "unavailable": "El servicio de Bluetooth no está disponible",
-      "unknown-device": "Dispositivo desconocido"
+      "unknown-device": "Dispositivo desconocido",
+      "visible": "Visible para los dispositivos cercanos"
     },
     "calendar": {
       "all-day": "Todo el día",
@@ -125,14 +144,25 @@
     },
     "display": {
       "disabled": "Desabilitado",
-      "no-displays": "No hay monitores disponibles"
+      "no-displays": "No hay monitores disponibles",
+      "unknown-resolution": "Resolución desconocida"
     },
     "home": {
+      "media": {
+        "idle": "Inactivo",
+        "no-active-player": "No hay ningún reproductor activo",
+        "nothing-playing": "No hay nada reproduciéndose"
+      },
       "weather": {
         "disabled": "Pronóstico desabilitado en la configuracion."
       }
     },
     "shortcuts": {
+      "clipboard": "Portapapeles",
+      "dark-mode": {
+        "dark": "Modo oscuro",
+        "light": "Modo claro"
+      },
       "session": "Sesión",
       "system": "Sistema",
       "wallpaper": "Fondo de Pantalla",
@@ -175,6 +205,7 @@
         "background-padding": "Relleno",
         "background-radius": "Radio",
         "background-section": "Fondo",
+        "bloom-intensity": "Bloom",
         "centered": "Centrado",
         "change-image": "Cambiar...",
         "circle": "Circulo",
@@ -233,7 +264,7 @@
       "close": "Cerrar",
       "close-all": "Cerrar todo"
     },
-    "launcher": "Lanzador"
+    "launcher": "Launcher"
   },
   "internal-apps": {
     "settings": {
@@ -455,7 +486,8 @@
     },
     "navigation": {
       "groups": {
-        "launcher": "Lanzador",
+        "clipboard": "Portapapeles",
+        "launcher": "Launcher",
         "osd": "Visualizacion en pantalla",
         "session-panel": "Sesión",
         "wallpaper": "Fondo de Pantalla",
@@ -469,6 +501,13 @@
       }
     },
     "options": {
+      "clipboard": {
+        "auto-paste": {
+          "ctrl-shift-v": "Ctrl+Shift+V",
+          "ctrl-v": "Ctrl+V",
+          "shift-insert": "Shift+Insert"
+        }
+      },
       "control-center": {
         "sidebar": {
           "compact": "Compacto",
@@ -549,6 +588,20 @@
         }
       },
       "shell": {
+        "clipboard-confirm-clear-history": {
+          "label": "Confirmar borrado del historial"
+        },
+        "clipboard-enabled": {
+          "description": "Habilitar el historial del portapapeles, el panel del portapapeles y la integración de copiar/pegar",
+          "label": "Portapapeles"
+        },
+        "clipboard-history-max-entries": {
+          "description": "Número máximo de entradas no fijadas que se guardan en el historial del portapapeles",
+          "label": "Tamaño del historial"
+        },
+        "clipboard-image-action": {
+          "placeholder": "gimp {path} o satty -f -"
+        },
         "osd-kinds-bluetooth": {
           "label": "Bluetooth"
         },
@@ -591,6 +644,9 @@
         "osd-scale": {
           "label": "Escala"
         },
+        "screenshot-copy-to-clipboard": {
+          "label": "Copiar al portapapeles"
+        },
         "show-location": {
           "description": "Mostrar el nombre de la ubicacion en el widget del pronóstico"
         }
@@ -598,6 +654,19 @@
       "wallpaper": {
         "automation-order": {
           "label": "Orden"
+        },
+        "directory-dark": {
+          "description": "Directorio de fondos de pantalla utilizado en el modo de tema oscuro",
+          "label": "Directorio del modo oscuro"
+        },
+        "directory-light": {
+          "label": "Directorio del modo claro"
+        },
+        "monitor-directory-dark": {
+          "label": "Directorio del modo oscuro"
+        },
+        "monitor-directory-light": {
+          "label": "Directorio del modo claro"
         }
       }
     },
@@ -607,6 +676,7 @@
         "bluetooth": "Bluetooth",
         "brightness": "Brillo",
         "caffeine": "Caffeina",
+        "clipboard": "Portapapeles",
         "clock": "Reloj",
         "notifications": "Notificaciones",
         "screenshot": "Captura de pantalla",

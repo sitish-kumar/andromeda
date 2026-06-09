@@ -22,15 +22,15 @@
     },
     "widgets": {
       "lock-keys": {
-        "caps": "",
-        "caps-short": "",
-        "num": "",
-        "num-short": "",
-        "scroll": "",
-        "scroll-short": ""
+        "caps": "Caps",
+        "caps-short": "C",
+        "num": "Num",
+        "num-short": "N",
+        "scroll": "Scroll",
+        "scroll-short": "S"
       },
       "media": {
-        "nothing-playing": "Nada tocando",
+        "nothing-playing": "Nada reproduzindo",
         "playing": "Tocando"
       },
       "network": {
@@ -49,6 +49,7 @@
         "vertical-default": "WX",
         "vertical-error": "ERRO",
         "vertical-loading": "...",
+        "vertical-no-location": "SEMLOC",
         "vertical-off": "Desligado"
       }
     }
@@ -74,9 +75,10 @@
       "no-matches-title": "nenhuma entrada correspondente"
     },
     "entry": {
-      "image": "Imagem"
+      "image": "Imagem",
+      "title": "Entrada da barra de transferência"
     },
-    "filter-placeholder": "Filtrar a área de transferência...",
+    "filter-placeholder": "Filtro da área de transferência",
     "preview": {
       "empty-text-payload": "(corpo do texto vazio)",
       "image-title": "Entrada na Área de Transferência de Imagem ",
@@ -92,7 +94,7 @@
       "cancel": "Cancelar"
     },
     "states": {
-      "auto": "Auto",
+      "auto": "Automático",
       "custom": "Personalizado",
       "inherit": "Herdar",
       "off": "Desligada"
@@ -156,7 +158,7 @@
       "media": {
         "idle": "Ocioso",
         "no-active-player": "nenhum reprodutor ativo",
-        "nothing-playing": "nada tocando",
+        "nothing-playing": "Nada reproduzindo",
         "paused": "Pausado",
         "playback-unavailable": "Reprodução indisponível",
         "playing": "Tocando",
@@ -166,7 +168,7 @@
       },
       "select-avatar": "Selecionar Avatar",
       "unknown": "desconhecido",
-      "user-facts": "{user}@{host}Tempo ativo - {uptime}Noctalia {version}",
+      "user-facts": "{user}@{host} Ativo - {uptime}Noctalia {version}",
       "weather": {
         "configure-location": "Adicionar [weather].address ou habilitar auto_locate.",
         "data-unavailable": "Dados de clima indisponíveis",
@@ -176,7 +178,7 @@
     },
     "media": {
       "active-player": "Player ativo",
-      "nothing-playing": "Nada tocando",
+      "nothing-playing": "Nada reproduzindo",
       "now-playing": "Tocando agora",
       "start-playback": "Iniciar reprodução em um aplicativo MPRIS"
     },
@@ -192,6 +194,7 @@
       "unavailable-title": "NetworkManager indisponível",
       "vpns": "VPNs",
       "wi-fi": "Sem fio",
+      "wifi": "Wi-Fi",
       "wifi-off": "O Wi-Fi está desligado",
       "wifi-on": "O Wi-Fi está ligado",
       "wired-connection": "Conexão cabeada"
@@ -243,7 +246,7 @@
         "scheduled-day": "Agendada",
         "scheduled-night": "Em uso"
       },
-      "notification": "não Perturbe",
+      "notification": "Não Perturbe",
       "power-profile": "Energia",
       "screen-recorder": "Gravador de Tela",
       "screen-time": "Tempo de Tela",
@@ -320,6 +323,7 @@
         "background-section": "Plano de fundo",
         "bands": "Faixas",
         "bar-width": "Largura da Barra",
+        "bloom-intensity": "Bloom",
         "centered": "Centralizado",
         "change-image": "Mudar...",
         "circle": "Círculo",
@@ -392,7 +396,7 @@
       }
     },
     "media": {
-      "nothing-playing": "Nada tocando"
+      "nothing-playing": "Nada reproduzindo"
     },
     "weather": {
       "error": "Erro",
@@ -406,7 +410,7 @@
       "close": "Fechar",
       "close-all": "Fechar todos"
     },
-    "launcher": "Lançador"
+    "launcher": "Launcher"
   },
   "internal-apps": {
     "settings": {
@@ -504,7 +508,7 @@
     },
     "inline-reply": {
       "button": "Responder",
-      "placeholder": "Digite para responder..."
+      "placeholder": "Digite uma resposta"
     },
     "internal": {
       "battery": "Bateria",
@@ -638,6 +642,7 @@
       "save-connect": "Salvar e Conectar",
       "save-error": "Não foi possível salvar a conta de calendário.",
       "server-url-label": "URL do servidor",
+      "username-label": "Nome de usuário",
       "username-placeholder": "nome@exemplo.com"
     },
     "controls": {
@@ -738,7 +743,7 @@
           "rename-save": "Salvar"
         },
         "lanes": {
-          "center": "Centralizar",
+          "center": "Centro",
           "customize": "Customizar",
           "empty": "Nenhum widget",
           "empty-hint": "Adicionar um widget para preencher essa área",
@@ -769,6 +774,7 @@
     },
     "errors": {
       "bar": {
+        "create": "Não foi possível criar a barra.",
         "delete": "Não foi possível deletar a barra.",
         "move": "Não foi possível mover a barra.",
         "rename": "Não foi possível renomear a barra."
@@ -803,9 +809,9 @@
       "behavior": {
         "add": "Adicionar comportamento",
         "command-label": "Comando ocioso",
-        "command-placeholder": "",
+        "command-placeholder": "notify-send \"Idle\"",
         "kind": {
-          "custom": "Personalização",
+          "custom": "Personalizado",
           "lock": "Bloquear",
           "lock-and-suspend": "Bloquear e Suspender",
           "screen-off": "Desligar tela",
@@ -813,18 +819,18 @@
         },
         "kind-section-label": "Ação",
         "name-label": "Nome",
-        "name-placeholder": "",
+        "name-placeholder": "idle-behavior",
         "resume-command-label": "Comando ao retomar",
         "resume-command-placeholder": "noctalia:dpms-on",
-        "summary": "",
-        "summary-disabled-timeout": "{name} · tempo limite desabilitado",
+        "summary": "{name} · {seconds}s",
+        "summary-disabled-timeout": "{name} · timeout disabled",
         "timeout-label": "Tempo limite em segundos",
         "unnamed": "Comportamento não nomeado"
       },
       "live-status": {
         "active": "Ativo",
-        "idle-for-one": "Ocioso por 1 segundo",
-        "idle-for-seconds": "Ocioso por {seconds} segundos"
+        "idle-for-one": "Idle for 1 second",
+        "idle-for-seconds": "Idle for {seconds} seconds"
       }
     },
     "navigation": {
@@ -850,10 +856,11 @@
         "general": "Geral",
         "grouping": "Agrupamento",
         "home": "Início",
+        "idle": "Inatividade",
         "interface": "Interface",
         "keybinds": "Atalhos do Teclado",
         "kinds": "Tipos",
-        "launcher": "Lançador",
+        "launcher": "Launcher",
         "layout": "Layout",
         "lifecycle": "Ciclo de Vida",
         "location": "Localização",
@@ -902,6 +909,7 @@
         "osd": "OSD",
         "panels": "Painéis",
         "popups": "Popups",
+        "power": "Energia",
         "security": "Segurança",
         "services": "Serviços",
         "shell": "Shell",
@@ -911,6 +919,13 @@
       }
     },
     "options": {
+      "clipboard": {
+        "auto-paste": {
+          "ctrl-shift-v": "Ctrl+Shift+V",
+          "ctrl-v": "Ctrl+V",
+          "shift-insert": "Shift+Insert"
+        }
+      },
       "control-center": {
         "sidebar": {
           "compact": "Compacto",
@@ -945,7 +960,7 @@
         "ultra-light": "Ultra Leve"
       },
       "layer": {
-        "overlay": "Sobreposição",
+        "overlay": "Overlay",
         "top": "Topo"
       },
       "notification-urgency": {
@@ -1000,9 +1015,9 @@
           "light": "Claro"
         },
         "source": {
-          "built-in": "Integrados",
+          "built-in": "Integradas",
           "community": "Comunidade",
-          "custom": "Personalizado",
+          "custom": "Personalizada",
           "wallpaper": "Papel de parede"
         }
       },
@@ -1090,7 +1105,7 @@
           "description": "Direção em que a sombra é projetada nas superfícies"
         },
         "language": {
-          "description": "Ignorar detecção automática de localidade",
+          "description": "Ignorar detecção automática de localização",
           "label": "Idioma"
         },
         "palette-source": {
@@ -1099,7 +1114,7 @@
         },
         "theme-mode": {
           "description": "Escolha o modo escuro, claro ou automático com base na hora do dia.",
-          "label": "Modo de Tema"
+          "label": "Modo do Tema"
         },
         "ui-scale": {
           "description": "Aumente ou diminua a escala de toda a interface.",
@@ -1151,9 +1166,11 @@
           "label": "Primeiro Plano da Cápsula"
         },
         "capsule-opacity": {
+          "description": "Opacidade dos fundos das cápsulas dos widgets",
           "label": "Opacidade da Cápsula"
         },
         "capsule-padding": {
+          "description": "Espaçamento interno das cápsulas dos widgets",
           "label": "Preenchimento Interno da Cápsula"
         },
         "capsule-radius": {
@@ -1168,6 +1185,7 @@
           "description": "Gradiente escuro entre um painel anexado e a barra para sugerir profundidade na junção"
         },
         "content-padding": {
+          "description": "Espaçamento interno da área de conteúdo da barra",
           "label": "Preenchimento Interno de Conteúdo"
         },
         "content-scale": {
@@ -1207,7 +1225,7 @@
           "label": "Peso da Fonte"
         },
         "layer": {
-          "description": "Camada de revestimento para a barra; painéis anexados abrem na mesma camada",
+          "description": "Use Overlay para a barra; painéis anexados abrem na mesma camada",
           "label": "Camada Wayland"
         },
         "panel-overlap": {
@@ -1232,6 +1250,7 @@
           "label": "Espessura"
         },
         "widget-capsules": {
+          "description": "Envolve widgets em fundos de cápsula",
           "label": "Cápsulas de Widgets"
         },
         "widget-color": {
@@ -1257,6 +1276,7 @@
           "label": "Widgets da Área de trabalho"
         },
         "widgets-editor": {
+          "button": "Alternar Editor",
           "description": "Adicione, mova e redimensione widgets da área de trabalho",
           "label": "Editor de Widgets"
         }
@@ -1288,8 +1308,134 @@
         },
         "corner-radius": {
           "description": "Raio de canto do dock"
+        },
+        "corner-top-left": {
+          "description": "Raio do canto superior esquerdo do dock"
+        },
+        "corner-top-right": {
+          "description": "Raio do canto superior direito do dock"
+        },
+        "cross-axis-padding": {
+          "description": "Espaçamento interno ao longo do eixo transversal do dock (entre ícones e a borda da tela)"
+        },
+        "edge-margin": {
+          "description": "Distância da borda da tela mais próxima; valores positivos distanciam o dock da borda"
+        },
+        "enabled": {
+          "description": "Mostra ou oculta o dock"
+        },
+        "ends-margin": {
+          "description": "Recuo em cada extremidade do dock ao longo do eixo principal"
+        },
+        "icon-size": {
+          "description": "Tamanho dos ícones do dock em pixels",
+          "label": "Tamanho do Ícone"
+        },
+        "inactive-icon-opacity": {
+          "description": "Opacidade de ícones não focados no dock",
+          "label": "Opacidade de Ícones Inativos "
+        },
+        "inactive-icon-scale": {
+          "description": "Escala dos ícones não focados do dock",
+          "label": "Escala de Ícones Inativos"
+        },
+        "item-spacing": {
+          "description": "Espaço entre itens do dock",
+          "label": "Espaçamento entre Itens "
+        },
+        "launcher-icon": {
+          "description": "Ícone do Tabler exibido no botão do Launcher no dock",
+          "label": "Ícone do Launcher"
+        },
+        "launcher-position": {
+          "description": "Mostra um botão do Launcher no início ou fim do dock",
+          "label": "Botão do Launcher"
+        },
+        "monitors": {
+          "label": "Monitores"
+        }
+      },
+      "notifications": {
+        "layer": {
+          "description": "Use uma sobreposição para exibir notificações flutuantes sobre apps em tela cheia."
+        },
+        "toast-opacity": {
+          "description": "Opacidade do plano de fundo das notificações flutuantes",
+          "label": "Opacidade do Plano de Fundo"
+        }
+      },
+      "panels": {
+        "launcher-categories": {
+          "label": "Mostrar Categorias"
+        },
+        "launcher-compact": {
+          "label": "Colunas Compactas"
+        },
+        "launcher-show-icons": {
+          "label": "Mostrar Ícones dos Apps"
+        }
+      },
+      "power": {
+        "session-actions": {
+          "label": "Entradas"
+        }
+      },
+      "shared": {
+        "background-opacity": {
+          "label": "Opacidade do Plano de Fundo"
+        },
+        "contact-shadow": {
+          "label": "Sombra de Contato"
+        },
+        "enabled": {
+          "label": "Habilitado"
+        },
+        "shadow-alpha": {
+          "label": "Opacidade da Sombra"
+        },
+        "shadow-direction": {
+          "label": "Direção da Sombra"
+        }
+      },
+      "shell": {
+        "osd-background-opacity": {
+          "description": "Opacidade do plano de fundo das popups OSD",
+          "label": "Opacidade do Plano de Fundo"
+        },
+        "osd-kinds-power-profile": {
+          "label": "Perfil de Energia"
+        }
+      },
+      "templates": {
+        "builtin-ids": {
+          "description": "Ative a opção para exibir os modelos de aplicativos incluídos a cada alteração de tema.",
+          "empty": "Nenhum modelo integrado disponível.",
+          "label": "Modelos Integrados"
+        },
+        "community-ids": {
+          "description": "Ative/desative a exibição em cache dos modelos da comunidade a cada alteração de tema",
+          "empty": "Ainda não há modelos da comunidade disponíveis. Primeiro, habilite os modelos de comunidade e atualize o catálogo.",
+          "label": "Modelos da Comunidade"
+        },
+        "enable-builtins": {
+          "description": "Use o catálogo de modelos de temas integrados para apps",
+          "label": "Habilitar Modelos Integrados"
+        },
+        "enable-community-templates": {
+          "description": "Baixe e aplique modelos do catálogo da comunidade",
+          "label": "Habilitar Modelos da Comunidade"
         }
       }
+    },
+    "widgets": {
+      "types": {
+        "power-profile": "Perfil de Energia"
+      }
+    },
+    "window": {
+      "filter-modified": "Modificado",
+      "reset-page": "Resetar Página",
+      "search-placeholder": "Pesquisar configurações..."
     }
   }
 }
