@@ -810,7 +810,7 @@ void NetworkTab::rebuildApList(Renderer& renderer) {
           .configure = [scale, opacity, borders](Flex& card) { applySectionCardStyle(card, scale, opacity, borders); },
       });
 
-      auto wifiHeader = makeCardHeaderRow(i18n::tr("control-center.network.wireless"), scale);
+      auto wifiHeader = makeCardHeaderRow(i18n::tr("control-center.network.wifi"), scale);
       wifiHeader->addChild(
           ui::spinner({
               .out = &m_scanSpinner,

@@ -193,10 +193,10 @@
       "unavailable-detail": "Install and enable NetworkManager to manage networks from here.",
       "unavailable-title": "NetworkManager unavailable",
       "vpns": "VPNs",
+      "wifi": "Wi-Fi",
       "wifi-off": "Wi-Fi is off",
       "wifi-on": "Wi-Fi is on",
-      "wired-connection": "Wired connection",
-      "wireless": "Wireless"
+      "wired-connection": "Wired connection"
     },
     "notifications": {
       "empty-body": "Recent notifications will show here.",
