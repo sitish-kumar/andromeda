@@ -75,6 +75,16 @@ namespace FileUtils {
     return {};
   }
 
+  // Git-source working copies (blobless sparse clones). Host-managed cache,
+  // re-fetchable, so it lives under the state dir — never config.
+  [[nodiscard]] inline std::string pluginSourcesDir() {
+    const std::string base = stateDir();
+    if (base.empty()) {
+      return {};
+    }
+    return base + "/plugins/sources";
+  }
+
   [[nodiscard]] inline std::vector<std::uint8_t> readBinaryFile(const std::string& path) {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
     if (!file) {

@@ -489,6 +489,7 @@ namespace noctalia::config {
     checkSection(merged, "keybinds", schema::keybindsSchema(), diag);
     checkSection(merged, "dock", schema::dockSchema(), diag);
     checkSection(merged, "control_center", schema::controlCenterSchema(), diag);
+    checkSection(merged, "plugins", schema::pluginsSchema(), diag);
     checkSection(merged, "hooks", schema::hooksSchema(), diag);
 
     validateBars(merged, diag);
@@ -522,6 +523,7 @@ namespace noctalia::config {
         "lockscreen_widgets",
         "widget",
         "control_center",
+        "plugins",
         "hooks",
     };
     for (const auto& [key, node] : merged) {

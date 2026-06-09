@@ -30,12 +30,28 @@ namespace scripting {
     }
   }
 
+  void PluginRegistry::setSources(std::vector<std::filesystem::path> sourceRoots) {
+    m_sourceRoots = std::move(sourceRoots);
+    m_scanned = false;
+  }
+
+  void PluginRegistry::setEnabledFilter(std::optional<std::unordered_set<std::string>> enabled) {
+    m_enabledFilter = std::move(enabled);
+    m_scanned = false;
+  }
+
   void PluginRegistry::scan() {
     m_plugins.clear();
-    // Plugins live under the user data dir only (honoring NOCTALIA_DATA_HOME). Official /
-    // Community plugins are git sources cloned here at runtime — never shipped on disk.
-    if (const std::string data = FileUtils::dataDir(); !data.empty()) {
-      scanDir(std::filesystem::path(data) / "plugins");
+    std::vector<std::filesystem::path> roots = m_sourceRoots;
+    if (roots.empty()) {
+      // Implicit local source: the user data dir (honoring NOCTALIA_DATA_HOME). When
+      // the plugin manager is wired it injects the resolved git/path source roots.
+      if (const std::string data = FileUtils::dataDir(); !data.empty()) {
+        roots.emplace_back(std::filesystem::path(data) / "plugins");
+      }
+    }
+    for (const auto& root : roots) {
+      scanDir(root);
     }
     m_scanned = true;
   }
@@ -63,6 +79,9 @@ namespace scripting {
       if (!manifest.has_value()) {
         kLog.warn("ignoring plugin at {}: {}", sub.path().string(), error);
         continue;
+      }
+      if (m_enabledFilter.has_value() && !m_enabledFilter->contains(manifest->id)) {
+        continue; // discovered but not enabled
       }
       if (findPlugin(manifest->id) != nullptr) {
         kLog.warn("ignoring duplicate plugin id '{}' at {}", manifest->id, sub.path().string());

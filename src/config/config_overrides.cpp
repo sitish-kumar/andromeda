@@ -310,7 +310,8 @@ namespace {
         && a.idle == b.idle
         && a.hooks == b.hooks
         && a.theme == b.theme
-        && a.controlCenter == b.controlCenter;
+        && a.controlCenter == b.controlCenter
+        && a.plugins == b.plugins;
   }
 
   toml::table* ensureTable(toml::table& parent, std::string_view key) {
@@ -626,6 +627,7 @@ ConfigChangeSet computeConfigChangeSet(const Config& prev, const Config& next) {
       .hooks = !(prev.hooks == next.hooks),
       .theme = !(prev.theme == next.theme),
       .controlCenter = !(prev.controlCenter == next.controlCenter),
+      .plugins = !(prev.plugins == next.plugins),
   };
 }
 

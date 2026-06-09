@@ -545,6 +545,7 @@ void ConfigService::fireReloadCallbacks() {
     add(m_lastChange.hooks, "hooks");
     add(m_lastChange.theme, "theme");
     add(m_lastChange.controlCenter, "controlCenter");
+    add(m_lastChange.plugins, "plugins");
     kLog.info("reload: changed sections = [{}]", changed.empty() ? "none" : changed);
   }
 
@@ -1418,6 +1419,10 @@ void ConfigService::parseConfigTable(const toml::table& tbl, Config& config, boo
   }
   if (!controlCenterShortcutsConfigured && config.controlCenter.shortcuts.empty()) {
     config.controlCenter.shortcuts = defaultControlCenterShortcuts();
+  }
+
+  if (auto* pluginsTbl = tbl["plugins"].as_table()) {
+    schema::readInto(*pluginsTbl, config.plugins, schema::pluginsSchema(), "plugins", schemaDiag);
   }
 
   // Parse [idle] and [idle.behavior.*]. Default-seeding stays here because it

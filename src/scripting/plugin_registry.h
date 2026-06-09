@@ -6,6 +6,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <unordered_set>
 #include <vector>
 
 namespace scripting {
@@ -32,9 +33,19 @@ namespace scripting {
     // Scan once on first use (idempotent). Call scan() directly to force a rescan.
     void ensureScanned();
 
-    // Rescan $XDG_DATA_HOME/noctalia/plugins (honoring NOCTALIA_DATA_HOME). Pointers
-    // from prior resolve()/entriesOfKind() calls are invalidated.
+    // Rescan all configured source roots (or the implicit local data dir when none
+    // are set). Pointers from prior resolve()/entriesOfKind() calls are invalidated.
     void scan();
+
+    // Source roots to scan, each a directory of `<plugin>/plugin.toml` subdirs (a
+    // git-source clone or a path source). Replaces the implicit local data dir.
+    // Forces a rescan on next ensureScanned().
+    void setSources(std::vector<std::filesystem::path> sourceRoots);
+
+    // Restrict active plugins to this set of ids ("author/plugin"). nullopt (the
+    // default) activates every discovered plugin — dev/local behavior. Forces a
+    // rescan on next ensureScanned().
+    void setEnabledFilter(std::optional<std::unordered_set<std::string>> enabled);
 
     // Resolve "author/plugin:entry" to its manifest, entry, and source path.
     [[nodiscard]] std::optional<ResolvedPluginEntry> resolve(std::string_view fullEntryId) const;
@@ -55,6 +66,8 @@ namespace scripting {
     [[nodiscard]] const LoadedPlugin* findPlugin(std::string_view pluginId) const;
 
     std::vector<LoadedPlugin> m_plugins;
+    std::vector<std::filesystem::path> m_sourceRoots;
+    std::optional<std::unordered_set<std::string>> m_enabledFilter;
     bool m_scanned = false;
   };
 
