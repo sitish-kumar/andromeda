@@ -58,13 +58,9 @@ ScreenSaverService::ScreenSaverService(SystemBus* systemBus) {
     if (e.getName() == kFileExistsError) {
       const auto owner = querySessionBusNameOwner(kBusName);
       if (owner.has_value()) {
-        kLog.warn(
-            "org.freedesktop.ScreenSaver is already owned by {}; direct screensaver inhibit disabled (stop hypridle "
-            "or other ScreenSaver providers on Hyprland)",
-            *owner
-        );
+        kLog.warn("could not provide org.freedesktop.ScreenSaver from noctalia (already owned by {})", *owner);
       } else {
-        kLog.warn("org.freedesktop.ScreenSaver is already owned; direct screensaver inhibit disabled");
+        kLog.warn("could not provide org.freedesktop.ScreenSaver from noctalia (name already taken)");
       }
     } else {
       kLog.warn("screensaver D-Bus registration failed: {}", e.what());

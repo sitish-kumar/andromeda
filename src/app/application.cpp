@@ -1,7 +1,6 @@
 #include "application.h"
 
 #include "app/poll_source.h"
-#include "compositors/compositor_detect.h"
 #include "config/config_types.h"
 #include "core/build_info.h"
 #include "core/deferred_call.h"
@@ -1455,12 +1454,6 @@ void Application::initUi() {
         m_idleManager.setScreenSaverInhibitLocks(locks);
       });
       m_idleManager.setScreenSaverInhibitLocks(m_screenSaverService->inhibitLocks());
-      if (compositors::isHyprland() && !m_screenSaverService->hasScreenSaverBus()) {
-        kLog.warn(
-            "Hyprland requires org.freedesktop.ScreenSaver for Chrome/Firefox video idle inhibit; another service owns "
-            "the name (stop hypridle before starting noctalia)"
-        );
-      }
     } else {
       m_screenSaverService.reset();
     }
