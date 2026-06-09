@@ -40,15 +40,28 @@ namespace {
 } // namespace
 
 LockSurface::LockSurface(WaylandConnection& connection, ConfigService* config) : Surface(connection), m_config(config) {
+  {
+    auto backgroundLayer = std::make_unique<Node>();
+    backgroundLayer->setZIndex(0);
+    m_backgroundLayer = m_root.addChild(std::move(backgroundLayer));
+  }
+
   auto wallpaper = std::make_unique<WallpaperNode>();
-  m_wallpaper = static_cast<WallpaperNode*>(m_root.addChild(std::move(wallpaper)));
+  m_wallpaper = static_cast<WallpaperNode*>(m_backgroundLayer->addChild(std::move(wallpaper)));
   m_wallpaper->setZIndex(0);
 
-  m_root.addChild(
+  m_backgroundLayer->addChild(
       ui::box({
           .out = &m_tintOverlay,
           .visible = false,
           .configure = [](Box& box) { box.setZIndex(1); },
+      })
+  );
+
+  m_backgroundLayer->addChild(
+      ui::box({
+          .out = &m_backdrop,
+          .configure = [](Box& box) { box.setZIndex(-1); },
       })
   );
 
@@ -60,14 +73,8 @@ LockSurface::LockSurface(WaylandConnection& connection, ConfigService* config) :
 
   m_root.addChild(
       ui::box({
-          .out = &m_backdrop,
-          .configure = [](Box& box) { box.setZIndex(-1); },
-      })
-  );
-
-  m_root.addChild(
-      ui::box({
           .out = &m_loginPanel,
+          .configure = [](Box& box) { box.setZIndex(2); },
       })
   );
 
@@ -88,6 +95,7 @@ LockSurface::LockSurface(WaylandConnection& connection, ConfigService* config) :
                   m_onLogin();
                 }
               },
+          .configure = [](Input& input) { input.setZIndex(2); },
       })
   );
 
@@ -98,11 +106,13 @@ LockSurface::LockSurface(WaylandConnection& connection, ConfigService* config) :
           .glyph = "check",
           .glyphSize = 16.0f,
           .variant = ButtonVariant::Primary,
-          .onClick = [this]() {
-            if (m_onLogin) {
-              m_onLogin();
-            }
-          },
+          .onClick =
+              [this]() {
+                if (m_onLogin) {
+                  m_onLogin();
+                }
+              },
+          .configure = [](Button& button) { button.setZIndex(2); },
       })
   );
 
@@ -407,6 +417,9 @@ void LockSurface::layoutScene(std::uint32_t width, std::uint32_t height) {
   }
 
   m_root.setSize(sw, sh);
+
+  m_backgroundLayer->setPosition(0.0f, 0.0f);
+  m_backgroundLayer->setSize(sw, sh);
 
   m_wallpaper->setPosition(0.0f, 0.0f);
   m_wallpaper->setSize(sw, sh);

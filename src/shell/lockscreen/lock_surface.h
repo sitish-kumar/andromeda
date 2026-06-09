@@ -79,6 +79,7 @@ private:
   wl_output* m_output = nullptr;
   ConfigService* m_config = nullptr;
   Node m_root;
+  Node* m_backgroundLayer = nullptr;
   Node* m_widgetLayer = nullptr;
   WallpaperNode* m_wallpaper = nullptr;
   Box* m_tintOverlay = nullptr;
