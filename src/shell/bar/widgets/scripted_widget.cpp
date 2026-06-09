@@ -472,9 +472,6 @@ ScriptedWidget::IpcDispatchResult ScriptedWidget::dispatchIpcEvent(std::string_v
 }
 
 ColorSpec ScriptedWidget::resolveScriptColor(const ScriptColorState& state) const noexcept {
-  if (m_widgetForeground.has_value()) {
-    return *m_widgetForeground;
-  }
   const ColorSpec fallback = colorSpecFromRole(ColorRole::OnSurface);
   if (!state.color.has_value()) {
     return widgetForegroundOr(fallback);
