@@ -63,6 +63,13 @@ void IdleManager::setScreenSaverInhibitLocks(std::int64_t locks) {
   const bool wasInhibited = m_screenSaverInhibitLocks > 0;
   m_screenSaverInhibitLocks = next;
   const bool inhibited = m_screenSaverInhibitLocks > 0;
+  if (!wasInhibited && inhibited) {
+    m_heartbeatCompositorIdle = false;
+    if (m_liveIdleSeconds != 0) {
+      m_liveIdleSeconds = 0;
+      notifyLiveIdleChanged();
+    }
+  }
   if (wasInhibited && !inhibited && m_idledWhileScreenSaverInhibited) {
     m_idledWhileScreenSaverInhibited = false;
     recreateBehaviorNotifications();
@@ -95,7 +102,7 @@ void IdleManager::reload(const IdleConfig& config) {
 }
 
 void IdleManager::onSecondTick() {
-  if (m_heartbeatCompositorIdle) {
+  if (m_heartbeatCompositorIdle && m_screenSaverInhibitLocks == 0) {
     ++m_liveIdleSeconds;
   }
 }
@@ -353,6 +360,9 @@ void IdleManager::handleResumed(void* data, ext_idle_notification_v1* /*notifica
 void IdleManager::handleHeartbeatIdled(void* data, ext_idle_notification_v1* /*notification*/) {
   auto* self = static_cast<IdleManager*>(data);
   if (self == nullptr) {
+    return;
+  }
+  if (self->m_screenSaverInhibitLocks > 0) {
     return;
   }
   self->m_heartbeatCompositorIdle = true;

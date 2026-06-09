@@ -1446,16 +1446,18 @@ void Application::initUi() {
     DeferredCall::callLater([this]() { m_settingsWindow.onIdleLiveStatusChanged(); });
   });
   m_idleManager.reload(m_configService.config().idle);
-  if (m_bus != nullptr) {
-    try {
-      m_screenSaverService = std::make_unique<ScreenSaverService>(*m_bus);
+  try {
+    m_screenSaverService = std::make_unique<ScreenSaverService>(m_systemBus.get());
+    if (m_screenSaverService->active()) {
       m_screenSaverService->setChangeCallback([this](std::int64_t locks) {
         m_idleManager.setScreenSaverInhibitLocks(locks);
       });
-    } catch (const std::exception& e) {
-      kLog.warn("screensaver service disabled: {}", e.what());
+    } else {
       m_screenSaverService.reset();
     }
+  } catch (const std::exception& e) {
+    kLog.warn("idle inhibit service disabled: {}", e.what());
+    m_screenSaverService.reset();
   }
   m_configService.addReloadCallback(
       [this]() {
@@ -1994,6 +1996,11 @@ std::vector<PollSource*> Application::currentPollSources() {
   if (m_busPollSource != nullptr) {
     sources.push_back(m_busPollSource.get());
   }
+  if (m_screenSaverService != nullptr
+      && m_screenSaverService->hasScreenSaverBus()
+      && m_screenSaverPollSource != nullptr) {
+    sources.push_back(m_screenSaverPollSource.get());
+  }
   if (m_systemBusPollSource != nullptr) {
     sources.push_back(m_systemBusPollSource.get());
   }
@@ -2043,6 +2050,13 @@ std::vector<PollSource*> Application::buildPollSources() {
     }
   } else {
     m_busPollSource.reset();
+  }
+  if (m_screenSaverService != nullptr && m_screenSaverService->hasScreenSaverBus()) {
+    if (m_screenSaverPollSource == nullptr) {
+      m_screenSaverPollSource = std::make_unique<ScreenSaverPollSource>(*m_screenSaverService);
+    }
+  } else {
+    m_screenSaverPollSource.reset();
   }
   if (m_systemBus != nullptr) {
     if (m_systemBusPollSource == nullptr) {

@@ -13,6 +13,7 @@
 #include "core/timer_manager.h"
 #include "dbus/bluetooth/bluetooth_agent.h"
 #include "dbus/bluetooth/bluetooth_service.h"
+#include "dbus/idle/screensaver_poll_source.h"
 #include "dbus/idle/screensaver_service.h"
 #include "dbus/logind/logind_service.h"
 #include "dbus/mpris/mpris_service.h"
@@ -165,6 +166,7 @@ private:
   std::unique_ptr<SystemBus> m_systemBus;
   std::unique_ptr<LogindService> m_logindService;
   std::unique_ptr<ScreenSaverService> m_screenSaverService;
+  std::unique_ptr<ScreenSaverPollSource> m_screenSaverPollSource;
   std::unique_ptr<SystemMonitorService> m_systemMonitor;
   std::unique_ptr<DebugService> m_debugService;
   IdleInhibitor m_idleInhibitor;
