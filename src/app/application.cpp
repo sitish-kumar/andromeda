@@ -1446,6 +1446,17 @@ void Application::initUi() {
     DeferredCall::callLater([this]() { m_settingsWindow.onIdleLiveStatusChanged(); });
   });
   m_idleManager.reload(m_configService.config().idle);
+  if (m_bus != nullptr) {
+    try {
+      m_screenSaverService = std::make_unique<ScreenSaverService>(*m_bus);
+      m_screenSaverService->setChangeCallback([this](std::int64_t locks) {
+        m_idleManager.setScreenSaverInhibitLocks(locks);
+      });
+    } catch (const std::exception& e) {
+      kLog.warn("screensaver service disabled: {}", e.what());
+      m_screenSaverService.reset();
+    }
+  }
   m_configService.addReloadCallback(
       [this]() {
         if (m_configService.lastChange().idle) {

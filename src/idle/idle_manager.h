@@ -35,6 +35,8 @@ public:
   void setActionRunner(ActionRunner runner);
   void setLiveIdleChangeCallback(std::function<void()> callback);
   void reload(const IdleConfig& config);
+  /// D-Bus screensaver inhibits (e.g. Chrome video playback). Suppresses idle actions while > 0.
+  void setScreenSaverInhibitLocks(std::int64_t locks);
   /// Seconds the compositor has reported session-idle (1s heartbeat notification); 0 when active.
   [[nodiscard]] std::int64_t liveIdleSeconds() const noexcept { return m_liveIdleSeconds; }
   void onSecondTick();
@@ -62,6 +64,7 @@ private:
   void destroyHeartbeat();
   void notifyLiveIdleChanged();
   void createBehavior(const IdleBehaviorConfig& config);
+  void recreateBehaviorNotifications();
   void runBehavior(BehaviorState& behavior);
   void runResumeBehavior(BehaviorState& behavior);
   bool runAction(const IdleBehaviorConfig& behavior, const IdleActionRequest& action) const;
@@ -83,4 +86,6 @@ private:
   ext_idle_notification_v1* m_heartbeatNotification = nullptr;
   bool m_heartbeatCompositorIdle = false;
   std::int64_t m_liveIdleSeconds = 0;
+  std::int64_t m_screenSaverInhibitLocks = 0;
+  bool m_idledWhileScreenSaverInhibited = false;
 };
