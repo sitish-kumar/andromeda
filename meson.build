@@ -11,6 +11,16 @@ project('noctalia', ['c', 'cpp'],
 cc  = meson.get_compiler('c')
 cpp = meson.get_compiler('cpp')
 
+
+# Clang requires an opt-in flag to properly use experimental C++ libraries.
+# GCC/libstdc++ doesn't need this since these libraries are unconditionally
+# exposed.
+is_libcxx = cpp.get_define('_LIBCPP_VERSION', prefix: '#include <version>' ) != ''
+if is_libcxx
+  add_project_arguments('-fexperimental-library', language: 'cpp')
+  add_project_link_arguments('-lc++experimental', language: 'cpp')
+endif
+
 # Sanitizers are enabled via meson's built-in -Db_sanitize=address,undefined.
 # pipewire_lsan.cpp is only needed when address sanitizer is active.
 sanitize = get_option('b_sanitize') != 'none'
