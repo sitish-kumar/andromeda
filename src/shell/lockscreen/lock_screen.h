@@ -78,7 +78,9 @@ private:
   void captureDesktopSnapshots();
   [[nodiscard]] bool shouldUseBlurredDesktop() const;
   void applyLockscreenStyle(LockSurface& surface) const;
+  void applyOutputRestriction();
   void applyWallpaperStyleToSurfaces();
+  [[nodiscard]] bool isInteractiveOutput(const WaylandOutput& output) const;
   [[nodiscard]] std::string wallpaperPathForOutput(const std::string& connectorName) const;
   void createInstance(const WaylandOutput& output);
   void resetLockState();

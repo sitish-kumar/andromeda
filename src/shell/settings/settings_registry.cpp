@@ -1118,6 +1118,12 @@ namespace settings {
         tr("settings.schema.lockscreen.tint-intensity.description"), {"lockscreen", "tint_intensity"},
         sliderFor(cfg.lockscreen.tintIntensity, noctalia::config::schema::kUnitRange, false), "lock screen tint"
     ));
+    entries.push_back(makeEntry(
+        SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.monitors.label"),
+        tr("settings.schema.lockscreen.monitors.description"), {"lockscreen", "monitors"},
+        ListSetting{.items = cfg.lockscreen.monitors, .suggestedOptions = env.availableOutputs},
+        "lock screen monitor output connector"
+    ));
     {
       const SettingVisibility lockscreenWallpaperOn{{"lockscreen", "blurred_desktop"}, {"false"}};
       auto e = makeEntry(
