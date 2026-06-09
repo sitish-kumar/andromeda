@@ -1298,6 +1298,7 @@ void Application::initUi() {
   // Panel manager must be before bar so widgets can access PanelManager::instance()
   m_panelManager.initialize(m_compositorPlatform, &m_configService, &m_renderContext);
   m_panelManager.setOpenSettingsWindowCallback([this]() { m_settingsWindow.open(); });
+  m_panelManager.setCloseSettingsWindowCallback([this]() { m_settingsWindow.close(); });
   m_panelManager.setToggleSettingsWindowCallback([this]() {
     if (m_settingsWindow.isOpen()) {
       m_settingsWindow.close();

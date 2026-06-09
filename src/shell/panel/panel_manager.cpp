@@ -232,6 +232,10 @@ void PanelManager::setOpenSettingsWindowCallback(std::function<void()> callback)
   m_openSettingsWindow = std::move(callback);
 }
 
+void PanelManager::setCloseSettingsWindowCallback(std::function<void()> callback) {
+  m_closeSettingsWindow = std::move(callback);
+}
+
 void PanelManager::setToggleSettingsWindowCallback(std::function<void()> callback) {
   m_toggleSettingsWindow = std::move(callback);
 }
@@ -242,6 +246,12 @@ void PanelManager::openSettingsWindow() {
   }
   if (m_openSettingsWindow) {
     m_openSettingsWindow();
+  }
+}
+
+void PanelManager::closeSettingsWindow() {
+  if (m_closeSettingsWindow) {
+    m_closeSettingsWindow();
   }
 }
 
@@ -2020,9 +2030,43 @@ void PanelManager::registerIpc(IpcService& ipc) {
       "panel-close [id]", "Close the active panel, or close the named panel if it is active"
   );
 
+  const auto rejectSettingsArgs = [](const std::string& args, std::string_view command) -> std::optional<std::string> {
+    if (StringUtils::trim(args).empty()) {
+      return std::nullopt;
+    }
+    return std::format("error: {} accepts no arguments\n", command);
+  };
+
+  ipc.registerHandler(
+      "settings-open",
+      [this, rejectSettingsArgs](const std::string& args) -> std::string {
+        if (auto error = rejectSettingsArgs(args, "settings-open")) {
+          return *error;
+        }
+        openSettingsWindow();
+        return "ok\n";
+      },
+      "settings-open", "Open the settings window, or focus it if already open"
+  );
+
+  ipc.registerHandler(
+      "settings-close",
+      [this, rejectSettingsArgs](const std::string& args) -> std::string {
+        if (auto error = rejectSettingsArgs(args, "settings-close")) {
+          return *error;
+        }
+        closeSettingsWindow();
+        return "ok\n";
+      },
+      "settings-close", "Close the settings window"
+  );
+
   ipc.registerHandler(
       "settings-toggle",
-      [this](const std::string&) -> std::string {
+      [this, rejectSettingsArgs](const std::string& args) -> std::string {
+        if (auto error = rejectSettingsArgs(args, "settings-toggle")) {
+          return *error;
+        }
         toggleSettingsWindow();
         return "ok\n";
       },
