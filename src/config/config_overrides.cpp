@@ -391,7 +391,7 @@ namespace {
               toml::table row;
               row.insert_or_assign("action", item.action);
               row.insert_or_assign("enabled", item.enabled);
-              if (item.action != "lock_and_suspend" && item.command.has_value() && !item.command->empty()) {
+              if (item.command.has_value() && !item.command->empty()) {
                 row.insert_or_assign("command", *item.command);
               }
               if (item.label.has_value() && !item.label->empty()) {

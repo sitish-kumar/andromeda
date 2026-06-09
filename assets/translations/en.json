@@ -2176,6 +2176,7 @@
       "clear-glyph": "Clear",
       "command-label": "Shell command",
       "command-placeholder": "Optional bash command, leave empty for built-in behavior",
+      "command-required-placeholder": "Shell command to run",
       "glyph-label": "Glyph",
       "glyph-picker-title": "Action glyph",
       "kind-section-label": "Behavior",

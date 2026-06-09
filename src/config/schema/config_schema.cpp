@@ -1020,12 +1020,6 @@ namespace noctalia::config::schema {
                 );
               }
           ),
-          // lock_and_suspend never carries a custom command.
-          finalize<SessionPanelActionConfig>([](SessionPanelActionConfig& a, std::string_view, Diagnostics&) {
-            if (a.action == "lock_and_suspend") {
-              a.command = std::nullopt;
-            }
-          }),
       };
       return s;
     }

@@ -80,9 +80,7 @@ namespace {
   }
 
   [[nodiscard]] std::string actionSubtitle(const SessionPanelActionConfig& config) {
-    if (config.action != "lock_and_suspend"
-        && config.command.has_value()
-        && !StringUtils::trim(*config.command).empty()) {
+    if (config.command.has_value() && !StringUtils::trim(*config.command).empty()) {
       return i18n::tr("launcher.providers.session.command-subtitle");
     }
     return i18n::tr("launcher.providers.session.action-subtitle");
