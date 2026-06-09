@@ -886,7 +886,7 @@ namespace noctalia::config::schema {
   }
 
   namespace {
-    // Plain string, but emitted only when non-empty (shell.lang, shell.avatar_path).
+    // Plain string, but emitted only when non-empty (shell.lang).
     template <typename Struct> Field<Struct> stringIfNonEmptyField(std::string Struct::* member, std::string_view key) {
       return custom<Struct>(
           key,
@@ -1075,7 +1075,7 @@ namespace noctalia::config::schema {
         field(&ShellConfig::disableMipmaps, "disable_mipmaps"),
         enumField(&ShellConfig::clipboardAutoPaste, "clipboard_auto_paste", kClipboardAutoPasteModes),
         field(&ShellConfig::clipboardImageActionCommand, "clipboard_image_action_command"),
-        stringIfNonEmptyField(&ShellConfig::avatarPath, "avatar_path"),
+        pathStringField(&ShellConfig::avatarPath, "avatar_path"),
         subTable(&ShellConfig::animation, "animation", shellAnimationSchema()),
         subTable(&ShellConfig::shadow, "shadow", shellShadowSchema()),
         subTable(&ShellConfig::panel, "panel", shellPanelSchema()),
