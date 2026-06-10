@@ -61,6 +61,50 @@ namespace {
     }
   }
 
+  void checkPluginSourceNameValidation() {
+    const std::string valid[] = {"official", "my-repo", "team.plugins", "repo_2", "A1"};
+    for (const auto& name : valid) {
+      if (!isValidPluginSourceName(name)) {
+        fail("plugins: rejected valid source name " + name);
+      }
+    }
+
+    const std::string invalid[] = {"", ".", "..", "../repo", "repo/name", "repo name", "-repo", "_repo"};
+    for (const auto& name : invalid) {
+      if (isValidPluginSourceName(name)) {
+        fail("plugins: accepted invalid source name " + name);
+      }
+    }
+
+    const toml::table root = toml::parse(R"(
+[[source]]
+name = "good-repo"
+kind = "git"
+location = "https://example.invalid/good"
+
+[[source]]
+name = "../bad"
+kind = "git"
+location = "https://example.invalid/bad"
+)");
+
+    PluginsConfig plugins;
+    Diagnostics diag;
+    readInto(root, plugins, pluginsSchema(), "plugins", diag);
+    if (plugins.sources.size() != 1 || plugins.sources[0].name != "good-repo") {
+      fail("plugins: schema did not keep only valid source names");
+    }
+    bool sawWarning = false;
+    for (const auto& entry : diag.entries) {
+      if (entry.severity == Diagnostics::Severity::Warning && entry.path == "plugins.source.name") {
+        sawWarning = true;
+      }
+    }
+    if (!sawWarning) {
+      fail("plugins: schema did not warn for invalid source name");
+    }
+  }
+
   // A fully-specified bar with a fully-specified monitor override. Every override
   // optional is set so the resolve-and-flatten write round-trips back into the
   // same override on read (a partial override would come back fully resolved).
@@ -512,6 +556,7 @@ widget_spacing = 8
   checkReadInverse("theme", serialized, probe.theme, themeSchema());
   checkReadInverse("shell", serialized, probe.shell, shellSchema());
 
+  checkPluginSourceNameValidation();
   checkClamps();
 
   if (g_failures == 0) {

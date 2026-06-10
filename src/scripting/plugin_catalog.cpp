@@ -119,6 +119,9 @@ namespace scripting {
   }
 
   CatalogResult discoverCatalog(const PluginSourceConfig& source) {
+    if (!isValidPluginSourceName(source.name)) {
+      return {.ok = false, .error = "invalid plugin source name: " + source.name, .entries = {}};
+    }
     if (source.kind == PluginSourceKind::Path) {
       std::error_code ec;
       const std::filesystem::path dir = FileUtils::expandUserPath(source.location);

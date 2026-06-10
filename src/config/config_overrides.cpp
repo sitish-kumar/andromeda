@@ -692,7 +692,7 @@ void ConfigService::setPluginEnabled(std::string_view pluginId, bool enabled) {
 }
 
 void ConfigService::addPluginSource(const PluginSourceConfig& source) {
-  if (m_overridesPath.empty() || source.name.empty()) {
+  if (m_overridesPath.empty() || !isValidPluginSourceName(source.name)) {
     return;
   }
 

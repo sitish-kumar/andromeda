@@ -29,6 +29,9 @@ namespace scripting {
     }
 
     std::filesystem::path sourceRootFor(const PluginSourceConfig& source) {
+      if (!isValidPluginSourceName(source.name)) {
+        return {};
+      }
       if (source.kind == PluginSourceKind::Path) {
         return FileUtils::expandUserPath(source.location);
       }
@@ -44,7 +47,9 @@ namespace scripting {
       roots.push_back(std::filesystem::path(data) / "plugins");
     }
     for (const auto& source : plugins.sources) {
-      roots.push_back(sourceRootFor(source));
+      if (auto root = sourceRootFor(source); !root.empty()) {
+        roots.push_back(std::move(root));
+      }
     }
     registry.setSources(std::move(roots));
     registry.setEnabledFilter(std::unordered_set<std::string>(plugins.enabled.begin(), plugins.enabled.end()));
@@ -223,6 +228,10 @@ namespace scripting {
   }
 
   void PluginManager::addSource(const PluginSourceConfig& source) {
+    if (!isValidPluginSourceName(source.name)) {
+      kLog.warn("refusing plugin source with invalid name '{}'", source.name);
+      return;
+    }
     kLog.info("adding plugin source '{}' ({})", source.name, source.location);
     m_config.addPluginSource(source); // fires reload -> refresh re-injects the registry
   }

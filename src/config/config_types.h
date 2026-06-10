@@ -1209,6 +1209,9 @@ struct PluginsConfig {
 // Default sources seeded when [plugins] declares no [[plugins.source]]: the
 // official + community plugin repos (auto-update off).
 [[nodiscard]] std::vector<PluginSourceConfig> defaultPluginSources();
+// Source names are stable user-facing handles and git clone directory names.
+// Keep them flat so they can never escape the plugin source cache.
+[[nodiscard]] bool isValidPluginSourceName(std::string_view name);
 
 struct Config {
   std::vector<BarConfig> bars;

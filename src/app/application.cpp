@@ -1923,6 +1923,9 @@ void Application::initIpc() {
             if (!kind.has_value()) {
               return "error: source kind must be 'git' or 'path'\n";
             }
+            if (!isValidPluginSourceName(parts[2])) {
+              return "error: source name must use letters, digits, '.', '_' or '-', starting with a letter or digit\n";
+            }
             PluginSourceConfig source{
                 .kind = *kind,
                 .name = parts[2],

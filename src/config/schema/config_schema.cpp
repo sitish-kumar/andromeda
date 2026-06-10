@@ -339,6 +339,14 @@ namespace noctalia::config::schema {
           enumField(&PluginSourceConfig::kind, "kind", kPluginSourceKinds),
           field(&PluginSourceConfig::location, "location"),
           field(&PluginSourceConfig::autoUpdate, "auto_update"),
+          finalize<PluginSourceConfig>([](PluginSourceConfig& src, std::string_view parentPath, Diagnostics& diag) {
+            if (!src.name.empty() && !isValidPluginSourceName(src.name)) {
+              diag.warn(
+                  joinPath(parentPath, "name"),
+                  "invalid plugin source name; use letters, digits, '.', '_' or '-', starting with a letter or digit"
+              );
+            }
+          }),
       };
       return s;
     }
@@ -348,7 +356,7 @@ namespace noctalia::config::schema {
     static const Schema<PluginsConfig> s = {
         arrayOf<PluginsConfig, PluginSourceConfig>(
             &PluginsConfig::sources, "source", pluginSourceSchema(),
-            [](const PluginSourceConfig& src) { return !src.name.empty(); }
+            [](const PluginSourceConfig& src) { return isValidPluginSourceName(src.name); }
         ),
         field(&PluginsConfig::enabled, "enabled"),
     };
