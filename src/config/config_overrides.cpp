@@ -3,6 +3,7 @@
 #include "config/widget_config.h"
 #include "core/key_chord.h"
 #include "core/log.h"
+#include "scripting/plugin_id.h"
 #include "shell/settings/widget_settings_registry.h"
 #include "theme/builtin_palettes.h"
 #include "theme/custom_palettes.h"
@@ -652,6 +653,9 @@ ConfigChangeSet computeConfigChangeSet(const Config& prev, const Config& next) {
 }
 
 void ConfigService::setPluginEnabled(std::string_view pluginId, bool enabled) {
+  if (enabled && !scripting::isValidPluginId(pluginId)) {
+    return;
+  }
   if (m_overridesPath.empty()) {
     return;
   }

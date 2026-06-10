@@ -7,6 +7,7 @@
 #include "core/version.h"
 #include "scripting/plugin_catalog.h"
 #include "scripting/plugin_git.h"
+#include "scripting/plugin_id.h"
 #include "scripting/plugin_manifest.h"
 #include "scripting/plugin_registry.h"
 #include "util/file_utils.h"
@@ -21,12 +22,6 @@ namespace scripting {
 
   namespace {
     constexpr Logger kLog("plugins");
-
-    // Repo subdir for a plugin id by convention: "author/foo" lives at "foo/".
-    std::string pluginSubdir(std::string_view pluginId) {
-      const auto slash = pluginId.find('/');
-      return slash == std::string_view::npos ? std::string(pluginId) : std::string(pluginId.substr(slash + 1));
-    }
 
     std::filesystem::path sourceRootFor(const PluginSourceConfig& source) {
       if (!isValidPluginSourceName(source.name)) {
@@ -43,6 +38,7 @@ namespace scripting {
     // Scan the local dev dir + every configured source; a plugin is active only if
     // its id is in [plugins].enabled (opt-in, uniform across all sources).
     std::vector<std::filesystem::path> roots;
+    std::unordered_set<std::string> enabled;
     if (const std::string data = FileUtils::dataDir(); !data.empty()) {
       roots.push_back(std::filesystem::path(data) / "plugins");
     }
@@ -51,8 +47,13 @@ namespace scripting {
         roots.push_back(std::move(root));
       }
     }
+    for (const auto& id : plugins.enabled) {
+      if (isValidPluginId(id)) {
+        enabled.insert(id);
+      }
+    }
     registry.setSources(std::move(roots));
-    registry.setEnabledFilter(std::unordered_set<std::string>(plugins.enabled.begin(), plugins.enabled.end()));
+    registry.setEnabledFilter(std::move(enabled));
     registry.scan();
   }
 
@@ -104,6 +105,9 @@ namespace scripting {
         continue;
       }
       const std::filesystem::path root = sourceRoot(source);
+      if (root.empty()) {
+        continue;
+      }
       if (!std::filesystem::exists(root / ".git", ec)) {
         // Source clone is gone (e.g. the state dir was wiped). Re-clone it (metadata
         // only); the per-plugin materialize below checks out what's enabled.
@@ -114,15 +118,19 @@ namespace scripting {
         }
       }
       for (const auto& id : plugins.enabled) {
-        const std::string sub = pluginSubdir(id);
-        if (std::filesystem::exists(root / sub / "plugin.toml", ec)) {
+        const auto sub = pluginSubdirFromId(id);
+        if (!sub.has_value()) {
+          kLog.warn("skipping enabled plugin with invalid id '{}'", id);
+          continue;
+        }
+        if (std::filesystem::exists(root / *sub / "plugin.toml", ec)) {
           continue; // already materialized
         }
-        if (!plugin_git::hasPath(root, sub + "/plugin.toml")) {
+        if (!plugin_git::hasPath(root, *sub + "/plugin.toml")) {
           continue; // this source doesn't ship it
         }
         kLog.info("materializing enabled plugin '{}' from source '{}'", id, source.name);
-        if (plugin_git::materialize(root, "HEAD", sub)) {
+        if (plugin_git::materialize(root, "HEAD", *sub)) {
           materialized = true;
         }
       }
@@ -149,19 +157,25 @@ namespace scripting {
 
   EnableResult PluginManager::enable(std::string_view pluginId) {
     const std::string id(pluginId);
+    if (!isValidPluginId(id)) {
+      return {.ok = false, .error = "invalid plugin id '" + id + "' (expected author/plugin)"};
+    }
 
     // Managed source: fetch the code (git sparse-checkout) before enabling.
     if (const auto source = findSourceOffering(id); source.has_value()) {
       const std::filesystem::path root = sourceRoot(*source);
-      const std::string subdir = pluginSubdir(id);
+      const auto subdir = pluginSubdirFromId(id);
+      if (!subdir.has_value()) {
+        return {.ok = false, .error = "invalid plugin id '" + id + "' (expected author/plugin)"};
+      }
       if (source->kind == PluginSourceKind::Git) {
-        const auto materialized = plugin_git::materialize(root, "HEAD", subdir);
+        const auto materialized = plugin_git::materialize(root, "HEAD", *subdir);
         if (!materialized) {
           return {.ok = false, .error = "materialize failed: " + materialized.err};
         }
       }
       std::string error;
-      const auto manifest = parsePluginManifest(root / subdir / "plugin.toml", &error);
+      const auto manifest = parsePluginManifest(root / *subdir / "plugin.toml", &error);
       if (!manifest.has_value()) {
         return {.ok = false, .error = error};
       }
@@ -242,14 +256,20 @@ namespace scripting {
       return; // path / unknown sources are externally owned
     }
     const std::filesystem::path root = sourceRoot(*source);
+    if (root.empty()) {
+      return;
+    }
     std::error_code ec;
     if (!std::filesystem::exists(root / ".git", ec)) {
       return; // nothing cloned yet
     }
     // Snapshot the enabled set for the worker (config is read on the main thread only).
-    std::unordered_set<std::string> enabled(
-        m_config.config().plugins.enabled.begin(), m_config.config().plugins.enabled.end()
-    );
+    std::unordered_set<std::string> enabled;
+    for (const auto& id : m_config.config().plugins.enabled) {
+      if (isValidPluginId(id)) {
+        enabled.insert(id);
+      }
+    }
 
     // The whole git sequence runs off-thread; only the final registry rescan marshals
     // back to the main thread. `this` is an Application member, so it outlives the worker.
@@ -293,11 +313,14 @@ namespace scripting {
       // then advance HEAD so catalog/hasPath reads follow. A failed materialize leaves
       // HEAD where it is; the partial state is re-derivable on the next run.
       for (const auto& id : enabled) {
-        const std::string sub = pluginSubdir(id);
-        if (!plugin_git::hasPath(root, sub + "/plugin.toml", newRev)) {
+        const auto sub = pluginSubdirFromId(id);
+        if (!sub.has_value()) {
+          continue;
+        }
+        if (!plugin_git::hasPath(root, *sub + "/plugin.toml", newRev)) {
           continue; // not shipped by this source
         }
-        if (const auto m = plugin_git::materialize(root, newRev, sub); !m) {
+        if (const auto m = plugin_git::materialize(root, newRev, *sub); !m) {
           DeferredCall::callLater([sourceName, id, err = m.err]() {
             kLog.warn("update '{}': materialize '{}' failed: {}", sourceName, id, err);
           });

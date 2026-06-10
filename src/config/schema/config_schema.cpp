@@ -3,6 +3,7 @@
 #include "config/schema/engine.h"
 #include "config/schema/ranges.h"
 #include "core/key_chord.h"
+#include "scripting/plugin_id.h"
 #include "util/file_utils.h"
 
 #include <algorithm>
@@ -359,6 +360,16 @@ namespace noctalia::config::schema {
             [](const PluginSourceConfig& src) { return isValidPluginSourceName(src.name); }
         ),
         field(&PluginsConfig::enabled, "enabled"),
+        finalize<PluginsConfig>([](PluginsConfig& plugins, std::string_view parentPath, Diagnostics& diag) {
+          for (auto it = plugins.enabled.begin(); it != plugins.enabled.end();) {
+            if (scripting::isValidPluginId(*it)) {
+              ++it;
+              continue;
+            }
+            diag.warn(joinPath(parentPath, "enabled"), "invalid plugin id \"" + *it + "\"; expected author/plugin");
+            it = plugins.enabled.erase(it);
+          }
+        }),
     };
     return s;
   }

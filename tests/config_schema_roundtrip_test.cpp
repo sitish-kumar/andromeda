@@ -16,6 +16,7 @@
 #include "config/schema/engine.h"
 #include "core/key_chord.h"
 #include "core/toml.h"
+#include "scripting/plugin_id.h"
 
 #include <cstdio>
 #include <sstream>
@@ -77,6 +78,8 @@ namespace {
     }
 
     const toml::table root = toml::parse(R"(
+enabled = ["me/hello", "../bad", "missing-slash", "me/foo/bar"]
+
 [[source]]
 name = "good-repo"
 kind = "git"
@@ -94,14 +97,48 @@ location = "https://example.invalid/bad"
     if (plugins.sources.size() != 1 || plugins.sources[0].name != "good-repo") {
       fail("plugins: schema did not keep only valid source names");
     }
+    if (plugins.enabled.size() != 1 || plugins.enabled[0] != "me/hello") {
+      fail("plugins: schema did not keep only valid enabled plugin ids");
+    }
     bool sawWarning = false;
+    bool sawEnabledWarning = false;
     for (const auto& entry : diag.entries) {
       if (entry.severity == Diagnostics::Severity::Warning && entry.path == "plugins.source.name") {
         sawWarning = true;
       }
+      if (entry.severity == Diagnostics::Severity::Warning && entry.path == "plugins.enabled") {
+        sawEnabledWarning = true;
+      }
     }
     if (!sawWarning) {
       fail("plugins: schema did not warn for invalid source name");
+    }
+    if (!sawEnabledWarning) {
+      fail("plugins: schema did not warn for invalid enabled plugin id");
+    }
+  }
+
+  void checkPluginIdValidation() {
+    const std::string valid[] = {"noctalia/screen_recorder", "me/hello", "Team/repo_2", "a/b.c-d"};
+    for (const auto& id : valid) {
+      if (!scripting::isValidPluginId(id)) {
+        fail("plugins: rejected valid plugin id " + id);
+      }
+      if (!scripting::pluginSubdirFromId(id).has_value()) {
+        fail("plugins: did not derive subdir for valid plugin id " + id);
+      }
+    }
+
+    const std::string invalid[] = {
+        "", "hello", "me/", "/hello", "me/foo/bar", "me/../hello", "me/foo bar", "../foo", "me/.hidden"
+    };
+    for (const auto& id : invalid) {
+      if (scripting::isValidPluginId(id)) {
+        fail("plugins: accepted invalid plugin id " + id);
+      }
+      if (scripting::pluginSubdirFromId(id).has_value()) {
+        fail("plugins: derived subdir for invalid plugin id " + id);
+      }
     }
   }
 
@@ -556,6 +593,7 @@ widget_spacing = 8
   checkReadInverse("theme", serialized, probe.theme, themeSchema());
   checkReadInverse("shell", serialized, probe.shell, shellSchema());
 
+  checkPluginIdValidation();
   checkPluginSourceNameValidation();
   checkClamps();
 

@@ -5,6 +5,7 @@
 #include "core/toml.h" // IWYU pragma: keep
 #include "core/version.h"
 #include "scripting/plugin_git.h"
+#include "scripting/plugin_id.h"
 #include "scripting/plugin_manifest.h"
 #include "util/file_utils.h"
 
@@ -104,6 +105,10 @@ namespace scripting {
       };
       if (e.id.empty()) {
         continue; // a catalog row without an id is unusable
+      }
+      if (!isValidPluginId(e.id)) {
+        kLog.warn("catalog row has invalid plugin id '{}'; expected author/plugin", e.id);
+        continue;
       }
       if (const auto* tags = (*tbl)["tags"].as_array()) {
         for (const auto& tag : *tags) {
