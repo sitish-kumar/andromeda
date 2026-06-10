@@ -477,7 +477,7 @@ _noctalia_sources = files(
   'src/scripting/plugin_state_store.cpp',
   'src/scripting/script_runtime.cpp',
   'src/scripting/script_worker_pool.cpp',
-  'src/scripting/scripted_widget_bindings.cpp',
+  'src/scripting/plugin_bindings.cpp',
   'src/system/battery_warning_monitor.cpp',
   'src/shell/bar/bar.cpp',
   'src/shell/clipboard/clipboard_paste.cpp',
