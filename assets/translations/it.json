@@ -78,7 +78,7 @@
       "empty-text-payload": "(contenuto di testo vuoto)",
       "image-title": "Voce immagine degli appunti",
       "loading": "Caricamento anteprima...",
-      "text-title": "Voce testo degli appunti",
+      "text-title": "Testo degli appunti",
       "truncated": "... troncato"
     },
     "title": "Appunti"
@@ -903,6 +903,7 @@
         "notifications": "Notifiche",
         "osd": "OSD",
         "panels": "Pannelli",
+        "plugins": "Plugin",
         "popups": "Popup",
         "power": "Energia",
         "security": "Sicurezza",
@@ -1404,14 +1405,14 @@
           },
           "battery-plugged": {
             "description": "Comando da eseguire quando la batteria diventa completamente carica o in attesa di carica",
-            "label": "Alla batteria collegata"
+            "label": "A batteria collegata"
           },
           "bluetooth-disabled": {
-            "description": "Comando da eseguire quando Bluetooth viene disabilitato",
+            "description": "Comando da eseguire quando il Bluetooth viene disabilitato",
             "label": "Alla disattivazione del Bluetooth"
           },
           "bluetooth-enabled": {
-            "description": "Comando da eseguire quando Bluetooth viene abilitato",
+            "description": "Comando da eseguire quando il Bluetooth viene abilitato",
             "label": "All'attivazione del Bluetooth"
           },
           "colors-changed": {
@@ -1447,7 +1448,7 @@
             "label": "All'avvio"
           },
           "theme-mode-changed": {
-            "description": "Comando da eseguire quando la modalità tema risolta cambia tra chiaro e scuro",
+            "description": "Comando da eseguire quando la modalità tema cambia tra chiaro e scuro",
             "label": "Al cambio modalità tema"
           },
           "wallpaper-changed": {
@@ -1455,11 +1456,11 @@
             "label": "Al cambio sfondo"
           },
           "wifi-disabled": {
-            "description": "Comando da eseguire quando Wi-Fi viene disabilitato",
+            "description": "Comando da eseguire quando il Wi-Fi viene disabilitato",
             "label": "Alla disattivazione del Wi-Fi"
           },
           "wifi-enabled": {
-            "description": "Comando da eseguire quando Wi-Fi viene abilitato",
+            "description": "Comando da eseguire quando il Wi-Fi viene abilitato",
             "label": "All'attivazione del Wi-Fi"
           }
         }
@@ -1518,7 +1519,7 @@
           "label": "Intensità tinta"
         },
         "wallpaper": {
-          "description": "Immagine personalizzata per lo sfondo del blocco schermo. Lascia vuoto per usare lo sfondo del desktop.",
+          "description": "Immagine personalizzata per lo sfondo del blocco schermo. Lascia vuoto per usare lo sfondo del desktop",
           "label": "Sfondo",
           "placeholder": "Usa sfondo desktop"
         },
@@ -1596,7 +1597,7 @@
           "label": "Bordi"
         },
         "control-center-sidebar": {
-          "description": "Tipo barra laterale nella home",
+          "description": "Scegli come mostrare la barra laterale",
           "label": "Barra laterale"
         },
         "control-center-sidebar-section": {
@@ -1713,7 +1714,7 @@
           "label": "Latitudine"
         },
         "location-address": {
-          "description": "Città o indirizzo da localizzare, usato quando auto-locate è disattivato",
+          "description": "Città o indirizzo da localizzare, usato quando Localizzazione automatica è disattivato",
           "label": "Indirizzo",
           "placeholder": "Città, Paese"
         },
@@ -1817,7 +1818,7 @@
           "label": "Intervallo aggiornamento"
         },
         "weather-unit": {
-          "description": "Unità di misura per la visualizzazione meteo",
+          "description": "Unità di misura per la visualizzazione dei dati meteo",
           "label": "Unità"
         }
       },
@@ -1905,7 +1906,7 @@
           "placeholder": "gimp {path} o satty -f -"
         },
         "date-format": {
-          "description": "Formato data predefinito per UI shell senza impostazione propria",
+          "description": "Formato data predefinito per la shell UI senza impostazione propria",
           "label": "Formato data"
         },
         "launch-apps-as-systemd-services": {
@@ -1929,7 +1930,7 @@
           "label": "Opacità sfondo"
         },
         "osd-kinds-bluetooth": {
-          "description": "Mostra un popup OSD quando Bluetooth viene alternato",
+          "description": "Mostra un popup OSD quando il Bluetooth viene attivato/disattivato",
           "label": "Bluetooth"
         },
         "osd-kinds-brightness": {
@@ -1941,11 +1942,11 @@
           "label": "Modalità Caffeine"
         },
         "osd-kinds-dnd": {
-          "description": "Mostra un popup OSD quando Non disturbare viene alternato",
+          "description": "Mostra un popup OSD quando Non disturbare viene attivato/disattivato",
           "label": "Non disturbare"
         },
         "osd-kinds-keyboard-layout": {
-          "description": "Mostra un popup OSD quando cambia il layout della tastiera di input",
+          "description": "Mostra un popup OSD quando cambia il layout della tastiera",
           "label": "Layout tastiera"
         },
         "osd-kinds-lock-keys": {
@@ -1969,7 +1970,7 @@
           "label": "Volume uscita"
         },
         "osd-kinds-wifi": {
-          "description": "Mostra un popup OSD quando Wi-Fi viene alternato",
+          "description": "Mostra un popup OSD quando il Wi-Fi viene attivato/disattivato",
           "label": "Wi-Fi"
         },
         "osd-monitors": {
@@ -2052,7 +2053,7 @@
           "label": "Ping anonimo all'avvio"
         },
         "time-format": {
-          "description": "Formato ora predefinito per UI shell senza impostazione propria",
+          "description": "Formato ora predefinito per la shell UI senza impostazione propria",
           "label": "Formato ora"
         }
       },
