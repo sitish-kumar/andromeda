@@ -3,7 +3,7 @@
     "pam": {
       "authentication-failed": "Autenticazione non riuscita",
       "start-failed": "Avvio di PAM non riuscito",
-      "user-unavailable": "Impossibile risolvere l'utente corrente"
+      "user-unavailable": "Impossibile identificare l'utente corrente"
     },
     "polkit": {
       "authenticate": "Autentica",
@@ -34,7 +34,7 @@
         "playing": "In riproduzione"
       },
       "network": {
-        "wired": "Cablata"
+        "wired": "Rete cablata"
       },
       "scripted": {
         "reload-failed": "Ricaricamento dello script non riuscito",
@@ -102,7 +102,7 @@
   },
   "control-center": {
     "audio": {
-      "application-volumes": "Volumi applicazioni",
+      "application-volumes": "Volume applicazioni",
       "input-volume": "Volume ingresso",
       "no-application-audio": "Nessun audio applicazione",
       "no-application-audio-body": "Nessun flusso di riproduzione applicazione disponibile al momento.",
@@ -122,10 +122,10 @@
       "bluetooth": "Bluetooth",
       "enter-code": "Inserisci codice",
       "no-devices": "Nessun dispositivo trovato. Avvia la scansione per rilevare dispositivi Bluetooth vicini.",
-      "off": "Bluetooth è disattivato",
+      "off": "Il Bluetooth è disattivato",
       "pair-title": "Associa {device}",
       "pairing-detail": {
-        "authorize": "Accettare la richiesta di associazione in arrivo?",
+        "authorize": "Accettare la richiesta di associazione?",
         "authorize-service": "Consentire l'accesso al servizio {uuid}?",
         "confirm": "Conferma che questo codice corrisponda a quello mostrato sul dispositivo:",
         "display-passkey": "Inserisci questo codice sul dispositivo:",
@@ -134,7 +134,7 @@
         "pin-code": "Inserisci il PIN mostrato sul dispositivo:"
       },
       "reject": "Rifiuta",
-      "rfkill-blocked": "Bluetooth è bloccato dal sistema. Attivalo per rimuovere il blocco.",
+      "rfkill-blocked": "Il Bluetooth è bloccato dal sistema. Attivalo per rimuovere il blocco.",
       "sections": {
         "available": "Disponibili",
         "connected": "Connessi",
@@ -173,7 +173,7 @@
         "configure-location": "Aggiungi [weather].address o abilita auto_locate.",
         "data-unavailable": "Dati meteo non disponibili.",
         "disabled": "Il meteo è disabilitato nella configurazione.",
-        "fetching": "Recupero previsioni..."
+        "fetching": "Recupero previsioni meteo..."
       }
     },
     "media": {
@@ -185,7 +185,7 @@
     "network": {
       "connect": "Connetti",
       "current-connection": "Connessione corrente",
-      "no-networks": "Nessuna rete nel raggio",
+      "no-networks": "Nessuna rete nel raggio d'azione",
       "not-connected": "Non connesso",
       "password": "Password",
       "password-prompt": "Inserisci password",
@@ -213,9 +213,9 @@
       "untitled": "Notifica senza titolo"
     },
     "screen-time": {
-      "disabled": "Il monitoraggio del tempo schermo è disattivato. Abilitalo nelle Impostazioni per registrare l'uso per app.",
-      "empty": "Nessun uso app registrato. Metti a fuoco una finestra per iniziare il monitoraggio.",
-      "hour-0": "00:00",
+      "disabled": "Monitoraggio del tempo di utilizzo disattivato. Abilitalo nelle Impostazioni per registrare l'uso per app.",
+      "empty": "Nessun tempo di utilizzo app registrato. Seleziona una finestra per iniziare il monitoraggio.",
+      "hour-0": "12:00",
       "hour-12": "12:00",
       "hour-18": "18:00",
       "hour-6": "06:00",
@@ -229,12 +229,12 @@
     "shortcuts": {
       "audio": "Audio",
       "bluetooth": "Bluetooth",
-      "caffeine": "Caffeina",
+      "caffeine": "Caffeine",
       "clipboard": "Appunti",
       "dark-mode": {
-        "auto": "Modalita automatica",
-        "dark": "Modalita scura",
-        "light": "Modalita chiara"
+        "auto": "Modalità automatica",
+        "dark": "Modalità scura",
+        "light": "Modalità chiara"
       },
       "keyboard-layout": "Layout",
       "media": "Media",
@@ -317,7 +317,7 @@
         "aspect-ratio": "Proporzioni",
         "background": "Sfondo",
         "background-color": "Colore",
-        "background-opacity": "Opacita",
+        "background-opacity": "Opacità",
         "background-padding": "Spaziatura",
         "background-radius": "Raggio",
         "background-section": "Sfondo",
@@ -339,19 +339,19 @@
         "font-family-default": "Predefinito di sistema",
         "format": "Formato",
         "hide-when-no-media": "Nascondi senza media",
-        "high-color": "Colore alto",
+        "high-color": "Colore alte frequenze",
         "horizontal": "Orizzontale",
         "image-path": "Immagine",
         "inner-diameter": "Diametro interno",
         "layout": "Layout",
-        "low-color": "Colore basso",
+        "low-color": "Colore basse frequenze",
         "mirrored": "Specchiato",
-        "opacity": "Opacita",
+        "opacity": "Opacità",
         "primary-color": "Colore primario",
-        "ring-opacity": "Opacita anello",
-        "rotation-speed": "Velocita rotazione",
+        "ring-opacity": "Opacità anello",
+        "rotation-speed": "Velocità rotazione",
         "secondary-color": "Colore secondario",
-        "sensitivity": "Sensibilita",
+        "sensitivity": "Sensibilità",
         "shadow": "Ombra",
         "show-label": "Mostra etichetta",
         "show-when-idle": "Mostra quando inattivo",
@@ -369,7 +369,7 @@
         "stat2": "Statistica 2",
         "title": "Titolo",
         "vertical": "Verticale",
-        "visualization-mode": "Modalita",
+        "visualization-mode": "Modalità",
         "visualization-mode-all": "Tutto",
         "visualization-mode-bars": "Barre",
         "visualization-mode-bars-rings": "Barre + Anelli",
@@ -429,10 +429,10 @@
         "multimedia": "Multimedia",
         "office": "Ufficio",
         "system": "Sistema",
-        "utilities": "Utilita"
+        "utilities": "Utilità"
       },
       "emoji": {
-        "activity": "Attivita",
+        "activity": "Attività",
         "animals": "Animali",
         "flags": "Bandiere",
         "food": "Cibo",
@@ -550,8 +550,8 @@
       "on": "Bluetooth attivato"
     },
     "caffeine": {
-      "off": "Caffeina disattivata",
-      "on": "Caffeina attivata"
+      "off": "Modalità Caffeine disattivata",
+      "on": "Modalità Caffeine attivata"
     },
     "dnd": {
       "off": "Non disturbare disattivato",
@@ -582,10 +582,10 @@
       },
       "tooltip": {
         "health": "Salute",
-        "rate": "Velocita",
+        "rate": "Velocità",
         "status": "Stato",
         "time-left": "Tempo rimanente",
-        "time-to-full": "Tempo alla carica completa"
+        "time-to-full": "Tempo rimanente alla carica completa"
       }
     },
     "profiles": {
@@ -617,7 +617,7 @@
       "advanced": "Avanzato",
       "inherited": "Ereditato",
       "monitor": "Monitor",
-      "override": "Sovrascritto"
+      "override": "Override"
     },
     "calendar-accounts": {
       "add-title": "Aggiungi account calendario",
@@ -685,12 +685,12 @@
       "monitor-override": {
         "create": "Crea",
         "delete": "Elimina",
-        "delete-confirm-desc": "Questa sovrascrittura monitor creata dalla GUI verrà rimossa da settings.toml.",
+        "delete-confirm-desc": "Questa override monitor creato dalla GUI verrà rimosso da settings.toml.",
         "delete-confirm-title": "Eliminare \"{name}\"?",
         "label": "Monitor: {name}",
-        "management": "Sovrascrittura monitor",
+        "management": "Override monitor",
         "match-placeholder": "Corrispondenza monitor",
-        "new": "Sovrascrittura monitor",
+        "new": "Override monitor",
         "rename": "Rinomina",
         "rename-save": "Salva"
       },
@@ -715,8 +715,8 @@
           "foreground-description": "Ruolo colore di icone ed etichette per i widget in questo gruppo",
           "hint": "Parte di un gruppo capsula",
           "members": "{count} widget",
-          "opacity": "Opacita",
-          "opacity-description": "Opacita dello sfondo capsula",
+          "opacity": "Opacità",
+          "opacity-description": "Opacità dello sfondo capsula",
           "orphan": "Gruppo sconosciuto",
           "padding": "Spaziatura",
           "padding-description": "Spaziatura interna tra il bordo della capsula e i suoi widget, in pixel",
@@ -783,9 +783,9 @@
       "export-config": "Salvataggio esportazione configurazione non riuscito.",
       "export-wallpaper-palette": "Impossibile salvare la palette dello sfondo come palette personalizzata.",
       "monitor-override": {
-        "create": "Impossibile creare la sovrascrittura monitor.",
-        "delete": "Impossibile eliminare la sovrascrittura monitor.",
-        "rename": "Impossibile rinominare la sovrascrittura monitor."
+        "create": "Impossibile creare l'override del monitor.",
+        "delete": "Impossibile eliminare l'override del monitor.",
+        "rename": "Impossibile rinominare l'override del monitor."
       },
       "reset-page": "Ripristino di alcune impostazioni non riuscito.",
       "support-report": "Salvataggio report di supporto non riuscito.",
@@ -800,7 +800,7 @@
       "full-effective-description": "Esporta ogni impostazione attiva, inclusi i valori predefiniti integrati. Utile per ispezionare o condividere un'istantanea, ma fissa esplicitamente i valori predefiniti correnti.",
       "full-effective-save-title": "Salva configurazione effettiva completa",
       "full-effective-title": "Configurazione effettiva completa",
-      "merged-user-description": "Combina file di configurazione e sovrascritture GUI in un unico file TOML. I valori predefiniti integrati restano impliciti.",
+      "merged-user-description": "Combina file di configurazione e override della GUI in un unico file TOML. I valori predefiniti integrati restano impliciti.",
       "merged-user-save-title": "Salva configurazione utente unificata",
       "merged-user-title": "Configurazione utente unificata (consigliata)",
       "title": "Esporta configurazione"
@@ -808,7 +808,7 @@
     "idle": {
       "behavior": {
         "add": "Aggiungi comportamento",
-        "command-label": "Comando inattivita",
+        "command-label": "Comando inattività",
         "command-placeholder": "notify-send \"Inattivo\"",
         "kind": {
           "custom": "Personalizzato",
@@ -819,7 +819,7 @@
         },
         "kind-section-label": "Azione",
         "name-label": "Nome",
-        "name-placeholder": "comportamento-inattivita",
+        "name-placeholder": "comportamento-inattività",
         "resume-command-label": "Comando ripresa",
         "resume-command-placeholder": "noctalia:dpms-on",
         "summary": "{name} · {seconds}s",
@@ -841,7 +841,7 @@
         "background": "Sfondo",
         "battery": "Batteria",
         "behavior": "Comportamento",
-        "brightness": "Luminosita",
+        "brightness": "Luminosità",
         "built-in": "Integrato",
         "calendar": "Calendario",
         "capsules": "Capsule",
@@ -856,7 +856,7 @@
         "general": "Generale",
         "grouping": "Raggruppamento",
         "home": "Home",
-        "idle": "Inattivita",
+        "idle": "Inattività",
         "interface": "Interfaccia",
         "keybinds": "Scorciatoie",
         "kinds": "Tipi",
@@ -1057,7 +1057,7 @@
       "appearance": {
         "animation-speed": {
           "description": "Moltiplicatore di velocità per tutte le animazioni",
-          "label": "Velocita animazioni"
+          "label": "Velocità animazioni"
         },
         "animations": {
           "description": "Abilita o disabilita le animazioni dell'interfaccia",
@@ -1099,7 +1099,7 @@
           "label": "Famiglia carattere"
         },
         "global-shadow-alpha": {
-          "description": "Opacita globale dell'ombra delle superfici"
+          "description": "Opacità globale dell'ombra delle superfici"
         },
         "global-shadow-direction": {
           "description": "Direzione da cui viene proiettata l'ombra sulle superfici"
@@ -1114,7 +1114,7 @@
         },
         "theme-mode": {
           "description": "Scegli scuro, chiaro o automatico in base all'ora del giorno",
-          "label": "Modalita tema"
+          "label": "Modalità tema"
         },
         "ui-scale": {
           "description": "Scala l'intera interfaccia in alto o in basso",
@@ -1127,15 +1127,15 @@
       },
       "backdrop": {
         "blur-intensity": {
-          "description": "Intensita sfocatura dello sfondo pannelli",
-          "label": "Intensita sfocatura"
+          "description": "Intensità sfocatura dello sfondo pannelli",
+          "label": "Intensità sfocatura"
         },
         "enabled": {
           "description": "Abilita lo sfondo pannelli"
         },
         "tint-intensity": {
-          "description": "Intensita tinta dello sfondo pannelli",
-          "label": "Intensita tinta"
+          "description": "Intensità tinta dello sfondo pannelli",
+          "label": "Intensità tinta"
         }
       },
       "bar": {
@@ -1143,7 +1143,7 @@
           "description": "Nasconde automaticamente la barra quando non è in uso"
         },
         "background-opacity": {
-          "description": "Opacita dello sfondo della barra"
+          "description": "Opacità dello sfondo della barra"
         },
         "border": {
           "description": "Ruolo colore per il contorno della barra; sono supportati anche colori hex fissi",
@@ -1166,8 +1166,8 @@
           "label": "Primo piano capsula"
         },
         "capsule-opacity": {
-          "description": "Opacita degli sfondi capsula dei widget",
-          "label": "Opacita capsula"
+          "description": "Opacità degli sfondi capsula dei widget",
+          "label": "Opacità capsula"
         },
         "capsule-padding": {
           "description": "Spaziatura interna nelle capsule widget",
@@ -1264,7 +1264,7 @@
       },
       "desktop": {
         "screen-corners-enabled": {
-          "description": "Arrotonda gli angoli dello schermo con una sovrapposizione nera",
+          "description": "Arrotonda gli angoli dello schermo con un overlay nero",
           "label": "Angoli schermo"
         },
         "screen-corners-size": {
@@ -1283,8 +1283,8 @@
       },
       "dock": {
         "active-icon-opacity": {
-          "description": "Opacita dell'icona dock con focus",
-          "label": "Opacita icona attiva"
+          "description": "Opacità dell'icona dock con focus",
+          "label": "Opacità icona attiva"
         },
         "active-icon-scale": {
           "description": "Scala dell'icona dock con focus",
@@ -1298,7 +1298,7 @@
           "description": "Nasconde automaticamente la dock quando non è in uso"
         },
         "background-opacity": {
-          "description": "Opacita dello sfondo della dock"
+          "description": "Opacità dello sfondo della dock"
         },
         "corner-bottom-left": {
           "description": "Raggio angolo in basso a sinistra della dock"
@@ -1332,8 +1332,8 @@
           "label": "Dimensione icone"
         },
         "inactive-icon-opacity": {
-          "description": "Opacita delle icone dock senza focus",
-          "label": "Opacita icona inattiva"
+          "description": "Opacità delle icone dock senza focus",
+          "label": "Opacità icona inattiva"
         },
         "inactive-icon-scale": {
           "description": "Scala delle icone dock senza focus",
@@ -1397,15 +1397,15 @@
         "events": {
           "battery-charging": {
             "description": "Comando da eseguire quando la batteria inizia a caricarsi",
-            "label": "Alla carica batteria"
+            "label": "Quando la batteria è in carica"
           },
           "battery-discharging": {
             "description": "Comando da eseguire quando la batteria inizia a scaricarsi",
-            "label": "Alla scarica batteria"
+            "label": "Durante lo scaricamento batteria"
           },
           "battery-percentage-changed": {
             "description": "Comando da eseguire quando cambia la percentuale della batteria",
-            "label": "Al cambio percentuale batteria"
+            "label": "Quando il livello di batteria cambia"
           },
           "battery-plugged": {
             "description": "Comando da eseguire quando la batteria diventa completamente carica o in attesa di carica",
@@ -1413,11 +1413,11 @@
           },
           "bluetooth-disabled": {
             "description": "Comando da eseguire quando Bluetooth viene disabilitato",
-            "label": "Alla disattivazione Bluetooth"
+            "label": "Alla disattivazione del Bluetooth"
           },
           "bluetooth-enabled": {
             "description": "Comando da eseguire quando Bluetooth viene abilitato",
-            "label": "All'attivazione Bluetooth"
+            "label": "All'attivazione del Bluetooth"
           },
           "colors-changed": {
             "description": "Comando da eseguire quando cambia la palette colori attiva",
@@ -1461,11 +1461,11 @@
           },
           "wifi-disabled": {
             "description": "Comando da eseguire quando Wi-Fi viene disabilitato",
-            "label": "Alla disattivazione Wi-Fi"
+            "label": "Alla disattivazione del Wi-Fi"
           },
           "wifi-enabled": {
             "description": "Comando da eseguire quando Wi-Fi viene abilitato",
-            "label": "All'attivazione Wi-Fi"
+            "label": "All'attivazione del Wi-Fi"
           }
         }
       },
@@ -1475,8 +1475,8 @@
           "label": "Comportamenti"
         },
         "pre-action-fade": {
-          "description": "Secondi di oscuramento a schermo intero prima del comando di inattivita; usa 0 per disabilitare",
-          "label": "Oscuramento inattivita"
+          "description": "Secondi di oscuramento a schermo intero prima del comando di inattività; usa 0 per disabilitare",
+          "label": "Oscuramento inattività"
         }
       },
       "keybinds": {
@@ -1508,7 +1508,7 @@
       "lockscreen": {
         "blur-intensity": {
           "description": "Quanto viene sfocato lo sfondo del blocco schermo",
-          "label": "Intensita sfocatura"
+          "label": "Intensità sfocatura"
         },
         "blurred-desktop": {
           "description": "Usa un'istantanea del desktop come sfondo del blocco schermo",
@@ -1520,7 +1520,7 @@
         },
         "tint-intensity": {
           "description": "Tinta del colore superficie sopra lo sfondo del blocco schermo",
-          "label": "Intensita tinta"
+          "label": "Intensità tinta"
         },
         "wallpaper": {
           "description": "Immagine personalizzata per lo sfondo del blocco schermo. Lascia vuoto per usare lo sfondo del desktop.",
@@ -1559,11 +1559,11 @@
           "label": "Demone notifiche"
         },
         "layer": {
-          "description": "Usa Sovrapposto per mostrare i toast delle notifiche sopra le app a schermo intero.",
+          "description": "Usa Sovrapposto per mostrare le notifiche toast sopra le app a schermo intero.",
           "label": "Layer Wayland"
         },
         "monitors": {
-          "description": "Scegli quali monitor mostrano i toast delle notifiche; lascia vuoto per mostrare su tutti i monitor",
+          "description": "Scegli quali monitor mostrano le notifiche toast; lascia vuoto per mostrare su tutti i monitor",
           "label": "Monitor"
         },
         "offset-x": {
@@ -1575,24 +1575,24 @@
           "label": "Margine verticale"
         },
         "position": {
-          "description": "Posizione sullo schermo per i toast delle notifiche",
+          "description": "Posizione sullo schermo per le notifiche toast",
           "label": "Posizione schermo"
         },
         "scale": {
-          "description": "Scala i toast delle notifiche rispetto alla scala UI della shell",
+          "description": "Scala le notifiche toast rispetto alla scala UI della shell",
           "label": "Dimensione"
         },
         "show-actions": {
-          "description": "Mostra pulsanti azione nei toast delle notifiche; se disabilitato, cliccare il toast attiva l'azione predefinita",
+          "description": "Mostra pulsanti azione nelle notifiche toast; se disabilitato, cliccare il toast attiva l'azione predefinita",
           "label": "Mostra pulsanti azione"
         },
         "show-app-name": {
-          "description": "Mostra il nome dell'app mittente nei toast delle notifiche",
+          "description": "Mostra nel toast il nome dell'app che ha inviato la notifica",
           "label": "Mostra nome app"
         },
         "toast-opacity": {
-          "description": "Opacita sfondo dei toast notifiche",
-          "label": "Opacita sfondo"
+          "description": "Opacità sfondo delle notifiche toast",
+          "label": "Opacità sfondo"
         }
       },
       "panels": {
@@ -1625,24 +1625,24 @@
           "label": "Mostra icone app"
         },
         "open-near-click-clipboard": {
-          "description": "Posiziona il pannello appunti vicino al clic sulla barra invece di centrarlo lungo la barra",
-          "label": "Apri vicino al clic"
+          "description": "Posiziona il pannello appunti vicino al click sulla barra invece di centrarlo lungo la barra",
+          "label": "Apri vicino al click"
         },
         "open-near-click-control-center": {
-          "description": "Posiziona il pannello Centro di controllo vicino al clic sulla barra invece di centrarlo lungo la barra",
-          "label": "Apri vicino al clic"
+          "description": "Posiziona il pannello Centro di controllo vicino al click sulla barra invece di centrarlo lungo la barra",
+          "label": "Apri vicino al click"
         },
         "open-near-click-launcher": {
-          "description": "Posiziona il pannello launcher vicino al clic sulla barra invece di centrarlo lungo la barra",
-          "label": "Apri vicino al clic"
+          "description": "Posiziona il pannello launcher vicino al click sulla barra invece di centrarlo lungo la barra",
+          "label": "Apri vicino al click"
         },
         "open-near-click-session": {
-          "description": "Posiziona il pannello menu sessione vicino al clic sulla barra invece di centrarlo lungo la barra",
-          "label": "Apri vicino al clic"
+          "description": "Posiziona il pannello menu sessione vicino al click sulla barra invece di centrarlo lungo la barra",
+          "label": "Apri vicino al click"
         },
         "open-near-click-wallpaper": {
-          "description": "Posiziona il pannello selettore sfondo vicino al clic sulla barra invece di centrarlo lungo la barra",
-          "label": "Apri vicino al clic"
+          "description": "Posiziona il pannello selettore sfondo vicino al click sulla barra invece di centrarlo lungo la barra",
+          "label": "Apri vicino al click"
         },
         "placement-clipboard": {
           "description": "Scegli se gli appunti si attaccano alla barra, fluttuano vicino a essa o si aprono centrati",
@@ -1822,8 +1822,8 @@
           "label": "Intervallo aggiornamento"
         },
         "weather-unit": {
-          "description": "Sistema di unita per la visualizzazione meteo",
-          "label": "Unita"
+          "description": "Unità di misura per la visualizzazione meteo",
+          "label": "Unità"
         }
       },
       "shared": {
@@ -1831,7 +1831,7 @@
           "label": "Nascondi automaticamente"
         },
         "background-opacity": {
-          "label": "Opacita sfondo"
+          "label": "Opacità sfondo"
         },
         "contact-shadow": {
           "label": "Ombra contatto"
@@ -1876,7 +1876,7 @@
           "label": "Ombra"
         },
         "shadow-alpha": {
-          "label": "Opacita ombra"
+          "label": "Opacità ombra"
         },
         "shadow-direction": {
           "label": "Direzione ombra"
@@ -1918,20 +1918,20 @@
           "label": "Avvia app come servizi systemd"
         },
         "middle-click-opens-widget-settings": {
-          "description": "Apre le impostazioni di un widget barra dalla barra con clic centrale",
-          "label": "Clic centrale apre impostazioni widget"
+          "description": "Apre le impostazioni di un widget barra dalla barra con click centrale",
+          "label": "Click centrale apre impostazioni widget"
         },
         "niri-overview-type-to-launch": {
           "description": "Apre il launcher digitando nella panoramica niri; usa una piccola superficie di focus tastiera mentre la panoramica è aperta",
-          "label": "Digita per avviare"
+          "label": "Digita per avviare launcher"
         },
         "offline-mode": {
           "description": "Blocca tutte le richieste di rete in uscita",
-          "label": "Modalita offline"
+          "label": "Modalità offline"
         },
         "osd-background-opacity": {
-          "description": "Opacita dello sfondo dei popup OSD",
-          "label": "Opacita sfondo"
+          "description": "Opacità dello sfondo dei popup OSD",
+          "label": "Opacità sfondo"
         },
         "osd-kinds-bluetooth": {
           "description": "Mostra un popup OSD quando Bluetooth viene alternato",
@@ -1939,11 +1939,11 @@
         },
         "osd-kinds-brightness": {
           "description": "Mostra un popup OSD quando cambia la luminosità del display",
-          "label": "Luminosita"
+          "label": "Luminosità"
         },
         "osd-kinds-caffeine": {
-          "description": "Mostra un popup OSD quando cambia lo stato della caffeina (inibitore inattivita)",
-          "label": "Caffeina"
+          "description": "Mostra un popup OSD quando cambia lo stato della modalità caffeine (inibitore inattività)",
+          "label": "Modalità Caffeine"
         },
         "osd-kinds-dnd": {
           "description": "Mostra un popup OSD quando Non disturbare viene alternato",
@@ -1994,7 +1994,7 @@
           "label": "Orientamento"
         },
         "osd-position": {
-          "description": "Posizione sullo schermo per popup OSD",
+          "description": "Posizione sullo schermo per i popup OSD",
           "label": "Posizione schermo"
         },
         "osd-scale": {
@@ -2014,7 +2014,7 @@
           "label": "Tempo schermo"
         },
         "screenshot-copy-to-clipboard": {
-          "description": "Mette il PNG catturato nella selezione degli appunti",
+          "description": "Copia il PNG catturato negli appunti",
           "label": "Copia negli appunti"
         },
         "screenshot-directory": {
@@ -2027,7 +2027,7 @@
           "label": "Pattern nome file"
         },
         "screenshot-freeze-screen": {
-          "description": "Cattura il desktop prima della selezione area così i contenuti in movimento restano fermi",
+          "description": "Prima della cattura congela lo schermo per bloccare il contenuto",
           "label": "Congela schermo"
         },
         "screenshot-pipe-command": {
@@ -2040,11 +2040,11 @@
           "label": "Invia a comando"
         },
         "screenshot-save-to-file": {
-          "description": "Scrive le schermate come file PNG nella directory di output",
+          "description": "Salva le schermate come file PNG nella directory di output",
           "label": "Salva su file"
         },
         "show-location": {
-          "description": "Mostra il nome posizione nei widget meteo",
+          "description": "Mostra il nome della posizione nei widget meteo",
           "label": "Mostra posizione"
         },
         "sync-greeter": {
@@ -2067,7 +2067,7 @@
           "label": "Soglia avviso {device}"
         },
         "battery-warning-threshold": {
-          "description": "Percentuale batteria di sistema pari o inferiore alla quale la shell invia una notifica batteria scarica e i widget batteria usano il colore di avviso. Imposta 0 per disabilitare.",
+          "description": "Percentuale batteria di sistema pari o inferiore alla quale la shell invia una notifica di batteria scarica e i widget batteria usano il colore di avviso. Imposta 0 per disabilitare.",
           "label": "Soglia avviso batteria"
         }
       },
@@ -2078,17 +2078,17 @@
           "label": "Template integrati"
         },
         "community-ids": {
-          "description": "Attiva/disattiva template community in cache da renderizzare a ogni cambio tema",
-          "empty": "Nessun template community disponibile ancora. Abilita i template community e aggiorna prima il catalogo.",
-          "label": "Template community"
+          "description": "Attiva/disattiva i template della community in cache da renderizzare ad ogni cambio tema",
+          "empty": "Non ci sono template della community disponibili. Prima abilita i template della community e aggiorna il catalogo.",
+          "label": "Template della community"
         },
         "enable-builtins": {
-          "description": "Usa il catalogo incluso di template tema per app",
+          "description": "Usa i template dei temi inclusi per le app",
           "label": "Abilita template integrati"
         },
         "enable-community-templates": {
-          "description": "Scarica e applica template dal catalogo community",
-          "label": "Abilita template community"
+          "description": "Scarica e applica template dal catalogo della community",
+          "label": "Abilita i template della community"
         }
       },
       "wallpaper": {
@@ -2135,7 +2135,7 @@
         },
         "fill-mode": {
           "description": "Come gli sfondi si adattano allo schermo",
-          "label": "Modalita riempimento"
+          "label": "Modalità riempimento"
         },
         "monitor-directory": {
           "label": "Directory sfondi"
@@ -2243,8 +2243,8 @@
       },
       "settings": {
         "active-opacity": {
-          "description": "Opacita dell'icona per la finestra attiva (con focus).",
-          "label": "Opacita icona attiva"
+          "description": "Opacità dell'icona per la finestra attiva (con focus).",
+          "label": "Opacità icona attiva"
         },
         "anchor": {
           "description": "Fissa questo widget come ancora dell'allineamento centrale",
@@ -2275,8 +2275,8 @@
           "label": "Primo piano capsula"
         },
         "capsule-opacity": {
-          "description": "Opacita dello sfondo capsula",
-          "label": "Opacita capsula"
+          "description": "Opacità dello sfondo capsula",
+          "label": "Opacità capsula"
         },
         "capsule-padding": {
           "description": "Spaziatura interna dentro la capsula",
@@ -2297,8 +2297,8 @@
           "label": "Colore"
         },
         "command": {
-          "description": "Comando shell eseguito al clic sinistro su questo pulsante",
-          "label": "Comando clic sinistro"
+          "description": "Comando shell eseguito al click sinistro su questo pulsante",
+          "label": "Comando click sinistro"
         },
         "custom-image": {
           "description": "Percorso a un'immagine personalizzata. Lascia vuoto per usare il glifo icona.",
@@ -2327,12 +2327,12 @@
         },
         "display": {
           "active-window-description": "Icona, titolo o entrambi sulle barre orizzontali. Le barre verticali restano solo icona.",
-          "description": "Modalita di visualizzazione per questo widget",
+          "description": "Modalità di visualizzazione per questo widget",
           "label": "Visualizzazione"
         },
         "display-mode": {
           "description": "Renderizza la batteria come forma grafica o glifo Tabler",
-          "label": "Modalita visualizzazione"
+          "label": "Modalità visualizzazione"
         },
         "drawer": {
           "description": "Mostra un pulsante vassoio nella barra e apri gli elementi in un pannello",
@@ -2417,7 +2417,7 @@
         },
         "high-color": {
           "description": "Colore usato per valori alti del visualizzatore",
-          "label": "Colore alto"
+          "label": "Colore alte frequenze"
         },
         "highlight-color": {
           "description": "Colore raggiunto alla soglia critica o oltre",
@@ -2425,15 +2425,15 @@
         },
         "hot-reload": {
           "description": "Ricarica il widget scriptato quando cambia la sua sorgente",
-          "label": "Ricarica a caldo"
+          "label": "Aggiornamento a caldo"
         },
         "icon-size": {
           "description": "Dimensione icona in pixel",
           "label": "Dimensione icona"
         },
         "inactive-opacity": {
-          "description": "Opacita delle icone per finestre inattive (senza focus).",
-          "label": "Opacita icona inattiva"
+          "description": "Opacità delle icone per finestre inattive (senza focus).",
+          "label": "Opacità icona inattiva"
         },
         "label": {
           "description": "Testo statico opzionale mostrato su questo pulsante",
@@ -2454,7 +2454,7 @@
         },
         "low-color": {
           "description": "Colore usato per valori bassi del visualizzatore",
-          "label": "Colore basso"
+          "label": "Colore basse frequenze"
         },
         "match-adjacent-spacing": {
           "description": "Allarga gli spazi tra icone vassoio inline per corrispondere alla spaziatura visiva dei widget barra vicini (include spaziatura capsula)",
@@ -2470,8 +2470,8 @@
           "label": "Lunghezza max"
         },
         "middle-command": {
-          "description": "Comando shell eseguito al clic centrale su questo pulsante. Se impostato, il clic centrale apre questo comando invece delle impostazioni widget.",
-          "label": "Comando clic centrale"
+          "description": "Comando shell eseguito al click centrale su questo pulsante. Se impostato, il click centrale apre questo comando invece delle impostazioni widget.",
+          "label": "Comando click centrale"
         },
         "min-length": {
           "description": "Lunghezza minima widget in pixel",
@@ -2508,12 +2508,12 @@
           "label": "Elementi fissati"
         },
         "primary-click": {
-          "description": "Azione eseguita al clic sinistro sul pulsante barra",
-          "label": "Clic primario"
+          "description": "Azione eseguita al click sinistro sul pulsante barra",
+          "label": "Click primario"
         },
         "right-command": {
-          "description": "Comando shell eseguito al clic destro su questo pulsante",
-          "label": "Comando clic destro"
+          "description": "Comando shell eseguito al click destro su questo pulsante",
+          "label": "Comando click destro"
         },
         "scale": {
           "description": "Scala questo widget rispetto alla scala contenuto della barra",
@@ -2637,8 +2637,8 @@
         "audio-visualizer": "Visualizzatore audio",
         "battery": "Batteria",
         "bluetooth": "Bluetooth",
-        "brightness": "Luminosita",
-        "caffeine": "Caffeina",
+        "brightness": "Luminosità",
+        "caffeine": "Caffeine",
         "clipboard": "Appunti",
         "clock": "Orologio",
         "control-center": "Centro di controllo",
@@ -2659,7 +2659,7 @@
         "sysmon": "Monitor di sistema",
         "taskbar": "Taskbar",
         "test": "Test",
-        "theme-mode": "Modalita tema",
+        "theme-mode": "Modalità tema",
         "tray": "Vassoio",
         "volume": "Volume",
         "wallpaper": "Sfondo",
@@ -2688,7 +2688,7 @@
     "builtin-palette": "Palette integrata",
     "footer-note": "Puoi cambiare queste opzioni più tardi nelle impostazioni.",
     "get-started": "Inizia",
-    "mode": "Modalita",
+    "mode": "Modalità",
     "no-wallpaper-selected": "Nessuno sfondo selezionato",
     "select-wallpaper": "Seleziona sfondo",
     "subtitle": "Alcune scelte rapide per iniziare.",

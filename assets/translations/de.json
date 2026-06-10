@@ -1239,7 +1239,7 @@
           "description": "Fenster vom Leistenrand wegschieben"
         },
         "shadow": {
-          "description": "Den globalen Oberflächenschatten von der Bar werfen"
+          "description": "Den globalen Oberflächenschatten von der Leiste werfen"
         },
         "start-widgets": {
           "description": "Widgets am Anfang (links/oben) der Leiste",
@@ -2664,7 +2664,7 @@
         "volume": "Lautstärke",
         "wallpaper": "Hintergrundbild",
         "weather": "Wetter",
-        "workspaces": "Virtuelle Desktops"
+        "workspaces": "Arbeitsflächen"
       }
     },
     "window": {
