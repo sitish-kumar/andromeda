@@ -45,12 +45,7 @@
         "error": "Памылка надвор'я",
         "loading": "Надвор'е...",
         "no-location": "Няма месцазнаходжання",
-        "off": "Надвор'е выключана",
-        "vertical-default": "НАД",
-        "vertical-error": "ПАМ",
-        "vertical-loading": "...",
-        "vertical-no-location": "НЯМАМЗ",
-        "vertical-off": "ВЫКЛ"
+        "off": "Надвор'е выключана"
       }
     }
   },

@@ -45,12 +45,7 @@
         "error": "Időjárási hiba",
         "loading": "Időjárás…",
         "no-location": "Nincs hely",
-        "off": "Időjárás kikapcsolva",
-        "vertical-default": "Időjárás",
-        "vertical-error": "Hiba",
-        "vertical-loading": "…",
-        "vertical-no-location": "Nincs hely",
-        "vertical-off": "KI"
+        "off": "Időjárás kikapcsolva"
       }
     }
   },

@@ -45,12 +45,7 @@
         "error": "Không thể tải thời tiết",
         "loading": "Đang cập nhật thời tiết...",
         "no-location": "Không xác định vị trí",
-        "off": "Thời tiết không được bật",
-        "vertical-default": "WX",
-        "vertical-error": "ERR",
-        "vertical-loading": "...",
-        "vertical-no-location": "NOLOC",
-        "vertical-off": "OFF"
+        "off": "Thời tiết không được bật"
       }
     }
   },

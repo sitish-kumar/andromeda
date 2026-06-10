@@ -45,12 +45,7 @@
         "error": "Помилка погоди",
         "loading": "Погода...",
         "no-location": "Немає розташування",
-        "off": "Погода вимкнено",
-        "vertical-default": "В\nХ",
-        "vertical-error": "Помилка",
-        "vertical-loading": "...",
-        "vertical-no-location": "Н О Л О С",
-        "vertical-off": "Вимкнено"
+        "off": "Погода вимкнено"
       }
     }
   },

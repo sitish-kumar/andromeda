@@ -45,12 +45,7 @@
         "error": "Погода: ошибка",
         "loading": "Погода...",
         "no-location": "Нет местоположения",
-        "off": "Погода выкл.",
-        "vertical-default": "W\nX",
-        "vertical-error": "ОШИБКА",
-        "vertical-loading": ".\n.\n.",
-        "vertical-no-location": "N\nO\nL\nO\nC",
-        "vertical-off": "ВЫКЛ"
+        "off": "Погода выкл."
       }
     }
   },

@@ -45,12 +45,7 @@
         "error": "天气错误",
         "loading": "天气......",
         "no-location": "无位置信息",
-        "off": "天气已关闭",
-        "vertical-default": "天\\n气",
-        "vertical-error": "错\\n误",
-        "vertical-loading": ".\\n.\\n.",
-        "vertical-no-location": "无\\n位\\n置",
-        "vertical-off": "关\\n闭"
+        "off": "天气已关闭"
       }
     }
   },
@@ -105,12 +100,12 @@
       "application-volumes": "应用音量",
       "input-volume": "输入音量",
       "no-application-audio": "无应用音频",
-      "no-application-audio-body": "当前没有可用的应用播放流。",
+      "no-application-audio-body": "暂无可用的应用播放流。",
       "no-input-devices": "无输入设备",
-      "no-input-devices-body": "当前没有可用的录音源。",
+      "no-input-devices-body": "暂无可用的录音源。",
       "no-input-selected": "未选择输入设备",
       "no-output-devices": "无输出设备",
-      "no-output-devices-body": "当前没有可用的播放接收端。",
+      "no-output-devices-body": "暂无可用的播放接收端。",
       "no-output-selected": "未选择输出设备",
       "output-volume": "输出音量",
       "unavailable-body": "PipeWire 未处于活动状态。",
@@ -944,7 +939,7 @@
       },
       "shell": {
         "date-format": {
-          "description": "为未单独设置的 Shell UI 提供默认日期格式"
+          "description": "Shell UI 默认日期格式"
         },
         "osd-scale": {
           "description": "相对于 Shell UI 缩放比例调整 OSD 弹窗大小（1.0 保持默认尺寸）"
@@ -960,7 +955,7 @@
           "description": "启动时发送匿名统计信息，包含版本、操作系统、合成器、显示器分辨率、内存及 UI 缩放比例"
         },
         "time-format": {
-          "description": "为未单独设置的 Shell UI 提供默认时间格式"
+          "description": "Shell UI 默认日期格式"
         }
       },
       "templates": {
@@ -970,7 +965,7 @@
           "label": "内置模板"
         },
         "community-ids": {
-          "empty": "暂无可用社区模板。请先启用社区模板并刷新目录。"
+          "empty": "暂无可用的社区模板。请先启用社区模板并刷新目录。"
         },
         "enable-builtins": {
           "description": "使用内置的应用主题模板目录",

@@ -45,12 +45,7 @@
         "error": "Weer fout",
         "loading": "Weer...",
         "no-location": "Geen locatie",
-        "off": "Weer uit",
-        "vertical-default": "WX",
-        "vertical-error": "FOUT",
-        "vertical-loading": "...",
-        "vertical-no-location": "GELOC",
-        "vertical-off": "UIT"
+        "off": "Weer uit"
       }
     }
   },

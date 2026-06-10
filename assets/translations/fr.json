@@ -45,12 +45,7 @@
         "error": "Err météo",
         "loading": "Météo...",
         "no-location": "Pas de localisation",
-        "off": "Météo désactivée",
-        "vertical-default": "O",
-        "vertical-error": "ERR",
-        "vertical-loading": "...",
-        "vertical-no-location": "SANSLOC",
-        "vertical-off": "Désactivé"
+        "off": "Météo désactivée"
       }
     }
   },

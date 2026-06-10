@@ -45,12 +45,7 @@
         "error": "Wetterfehler",
         "loading": "Wetter...",
         "no-location": "Kein Standort",
-        "off": "Wetter aus",
-        "vertical-default": "W\\nX",
-        "vertical-error": "E R R",
-        "vertical-loading": ".",
-        "vertical-no-location": "N O L O C",
-        "vertical-off": "AUS"
+        "off": "Wetter aus"
       }
     }
   },

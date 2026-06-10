@@ -45,12 +45,7 @@
         "error": "Errore meteo",
         "loading": "Meteo...",
         "no-location": "Nessuna posizione",
-        "off": "Meteo disattivato",
-        "vertical-default": "M\nE",
-        "vertical-error": "E\nR\nR",
-        "vertical-loading": ".\n.\n.",
-        "vertical-no-location": "N\nO\nP\nO\nS",
-        "vertical-off": "O\nF\nF"
+        "off": "Meteo disattivato"
       }
     }
   },
@@ -1539,16 +1534,16 @@
       },
       "notifications": {
         "allowed-urgencies": {
-          "description": "Mostra solo notifiche esterne ai livelli di urgenza selezionati",
-          "label": "Urgenze consentite"
+          "description": "Mostra solo notifiche relative ai livelli di urgenza selezionati",
+          "label": "Notifiche urgenti consentite"
         },
         "blacklist": {
-          "description": "Nasconde mittenti corrispondenti (nome app, desktop entry o categoria)",
+          "description": "Nasconde notifiche corrispondenti a (nome app, desktop entry o categoria)",
           "label": "Blacklist notifiche"
         },
         "blacklist-allow-critical": {
           "description": "Mostra comunque notifiche critiche da mittenti in blacklist",
-          "label": "Consenti critiche attraverso blacklist"
+          "label": "Consenti notifiche critiche attraverso blacklist"
         },
         "collapse-on-dismiss": {
           "description": "Fa scorrere i toast rimanenti per chiudere gli spazi quando uno viene ignorato",
@@ -1575,7 +1570,7 @@
           "label": "Margine verticale"
         },
         "position": {
-          "description": "Posizione sullo schermo per le notifiche toast",
+          "description": "Posizione delle notifiche toast sullo schermo",
           "label": "Posizione schermo"
         },
         "scale": {
@@ -1587,7 +1582,7 @@
           "label": "Mostra pulsanti azione"
         },
         "show-app-name": {
-          "description": "Mostra nel toast il nome dell'app che ha inviato la notifica",
+          "description": "Mostra nel toast il nome dell'app che ha generato la notifica",
           "label": "Mostra nome app"
         },
         "toast-opacity": {
@@ -1609,7 +1604,7 @@
           "label": "Barra laterale aprendo una scheda"
         },
         "home-shortcuts": {
-          "description": "Scegli fino a sei pulsanti scorciatoia per la scheda home",
+          "description": "Scegli fino a sei pulsanti scorciatoia per la tab home",
           "label": "Scorciatoie home"
         },
         "launcher-categories": {
@@ -1641,7 +1636,7 @@
           "label": "Apri vicino al click"
         },
         "open-near-click-wallpaper": {
-          "description": "Posiziona il pannello selettore sfondo vicino al click sulla barra invece di centrarlo lungo la barra",
+          "description": "Posiziona il pannello di scelta sfondo vicino al click sulla barra invece di centrarlo lungo la barra",
           "label": "Apri vicino al click"
         },
         "placement-clipboard": {
@@ -1994,7 +1989,7 @@
           "label": "Orientamento"
         },
         "osd-position": {
-          "description": "Posizione sullo schermo per i popup OSD",
+          "description": "Posizione dei popup OSD sullo schermo",
           "label": "Posizione schermo"
         },
         "osd-scale": {
@@ -2150,7 +2145,7 @@
         },
         "panel": {
           "button": "Apri pannello",
-          "description": "Apri il pannello selettore sfondo",
+          "description": "Apri il pannello di scelta sfondo",
           "label": "Pannello sfondo"
         },
         "per-monitor-directories": {

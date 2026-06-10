@@ -45,12 +45,7 @@
         "error": "Błąd pogody",
         "loading": "Pogoda...",
         "no-location": "Brak lokalizacji",
-        "off": "Pogoda wyłączona",
-        "vertical-default": "P\nO",
-        "vertical-error": "BŁĄD",
-        "vertical-loading": ".\n.\n.",
-        "vertical-no-location": "B\nL\nO\nK",
-        "vertical-off": "W\nY\nŁ"
+        "off": "Pogoda wyłączona"
       }
     }
   },

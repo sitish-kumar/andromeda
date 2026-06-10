@@ -45,12 +45,7 @@
         "error": "Erro no clima",
         "loading": "Clima...",
         "no-location": "Sem localização",
-        "off": "Clima desligado",
-        "vertical-default": "WX",
-        "vertical-error": "ERRO",
-        "vertical-loading": "...",
-        "vertical-no-location": "SEMLOC",
-        "vertical-off": "Desligado"
+        "off": "Clima desligado"
       }
     }
   },
