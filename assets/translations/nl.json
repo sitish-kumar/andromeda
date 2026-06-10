@@ -163,6 +163,7 @@
       },
       "select-avatar": "Selecteer avatar",
       "unknown": "onbekend",
+      "uptime": "Uptime - {uptime}",
       "weather": {
         "configure-location": "Voeg [weather].address toe of zet auto_locate aan.",
         "data-unavailable": "Weergegevens niet beschikbaar.",
@@ -337,17 +338,21 @@
         "horizontal": "Horizontaal",
         "image-path": "Afbeelding",
         "inner-diameter": "Binnendiameter",
+        "input-opacity": "Doorzichtigheid van invoer",
+        "input-radius": "Radius van invoer",
         "layout": "Indeling",
         "low-color": "Lage kleur",
         "mirrored": "Gespiegeld",
         "opacity": "Dekking",
         "primary-color": "Primaire kleur",
+        "reset-defaults": "Terugzetten naar standaardinstellingen",
         "ring-opacity": "Ringdekking",
         "rotation-speed": "Draaisnelheid",
         "secondary-color": "Secundaire kleur",
         "sensitivity": "Gevoeligheid",
         "shadow": "Schaduw",
         "show-label": "Label tonen",
+        "show-login-button": "Inlog knop",
         "show-when-idle": "Tonen bij inactiviteit",
         "stat": "Statistiek",
         "stat-cpu-temp": "CPU-temp",
@@ -902,6 +907,7 @@
         "notifications": "Meldingen",
         "osd": "OSD",
         "panels": "Panelen",
+        "plugins": "Plugins",
         "popups": "Pop-ups",
         "power": "Energiebeheer",
         "security": "Veiligheid",
@@ -1045,6 +1051,43 @@
           "imperial": "Imperiaal",
           "metric": "Metrisch"
         }
+      }
+    },
+    "plugins": {
+      "plugins": {
+        "configure": "Configureren",
+        "empty": "Er zijn geen plugins gevonden. Voeg een bron toe of controleer je netwerk.",
+        "loading": "Plugins laden...",
+        "refreshing": "Plugins herladen...",
+        "requires-newer-noctalia": "Heeft een nieuwere Noctalia nodig",
+        "title": "Plugins"
+      },
+      "settings": {
+        "empty": "Geen instellingen beschikbaar."
+      },
+      "sources": {
+        "add": "Voeg bron toe",
+        "add-title": "Voeg plugin bron toe",
+        "empty": "Geen bronnen geconfigureerd",
+        "errors": {
+          "duplicate-name": "Een bron met deze naam bestaat al.",
+          "invalid-name": "De naam van de bron moet bestaan uit letters, cijfers, ‘.’, ‘_’ of ‘-’, en moet beginnen met een letter of een cijfer.",
+          "location-required": "Bronlocatie is vereist."
+        },
+        "kind": {
+          "git": "Git",
+          "path": "Pad"
+        },
+        "kind-label": "Soort",
+        "location-label": "Locatie",
+        "location-placeholder-git": "https://github.com/me/noctalia-plugins",
+        "location-placeholder-path": "~/dev/noctalia-plugins",
+        "name-label": "Naam",
+        "name-placeholder": "mijn-plugins",
+        "remove": "Verwijder bron",
+        "title": "Bronnen",
+        "update": "Update",
+        "update-on-startup": "Update bij opstarten"
       }
     },
     "schema": {

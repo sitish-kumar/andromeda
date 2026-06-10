@@ -338,17 +338,21 @@
         "horizontal": "Horizontal",
         "image-path": "Imagem",
         "inner-diameter": "Diâmetro Interno",
+        "input-opacity": "Opacidade de Entrada",
+        "input-radius": "Raio Externo da Entrada",
         "layout": "Layout",
         "low-color": "Cor baixa",
         "mirrored": "Espelhado",
         "opacity": "Opacidade",
         "primary-color": "Cor Primária",
+        "reset-defaults": "Resetar para Padrão",
         "ring-opacity": "Opacidade do Anel",
         "rotation-speed": "Velocidade de Rotação",
         "secondary-color": "Cor Secundária",
         "sensitivity": "Sensibilidade",
         "shadow": "Sombra",
         "show-label": "Mostrar rótulo",
+        "show-login-button": "Botão de Login",
         "show-when-idle": "Mostrar Quando Ocioso",
         "stat": "Estatísticas",
         "stat-cpu-temp": "Temperatura da CPU",
@@ -1047,6 +1051,43 @@
           "imperial": "Imperial",
           "metric": "Métrica"
         }
+      }
+    },
+    "plugins": {
+      "plugins": {
+        "configure": "Configurar",
+        "empty": "Nenhum plugin encontrado. Adicione uma fonte ou cheque sua conexão.",
+        "loading": "Carregando plugins...",
+        "refreshing": "Atualizando plugins...",
+        "requires-newer-noctalia": "Requer Noctalia mais atualizado",
+        "title": "Plugins"
+      },
+      "settings": {
+        "empty": "Nenhuma configuração disponível."
+      },
+      "sources": {
+        "add": "Adicionar fonte",
+        "add-title": "Adicionar fonte de plugin",
+        "empty": "Nenhuma fonte configurada.",
+        "errors": {
+          "duplicate-name": "Uma fonte com este nome já existe.",
+          "invalid-name": "O nome da fonte deve usar letras, dígitos, '.', '_' ou '-', iniciando com uma letra ou dígito.",
+          "location-required": "A localização da fonte é necessária."
+        },
+        "kind": {
+          "git": "Git",
+          "path": "Caminho"
+        },
+        "kind-label": "Tipo",
+        "location-label": "Localização",
+        "location-placeholder-git": "https://github.com/me/noctalia-plugins",
+        "location-placeholder-path": "~/dev/noctalia-plugins",
+        "name-label": "Nome",
+        "name-placeholder": "meus-plugins",
+        "remove": "Remover fonte",
+        "title": "Fontes",
+        "update": "Atualizar",
+        "update-on-startup": "Atualizar ao Iniciar o Sistema"
       }
     },
     "schema": {
