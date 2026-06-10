@@ -1181,6 +1181,13 @@ void PanelManager::onIconThemeChanged() {
   m_surface->requestUpdate();
 }
 
+void PanelManager::focusArea(InputArea* area) {
+  if (!isOpen() || m_sceneRoot == nullptr) {
+    return;
+  }
+  m_inputDispatcher.setFocus(area);
+}
+
 void PanelManager::requestUpdateOnly() {
   if (!isOpen() || m_surface == nullptr) {
     return;
