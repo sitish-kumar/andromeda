@@ -56,6 +56,9 @@ namespace scripting {
     // All entries of one kind (e.g. every [[widget]]) across active plugins.
     [[nodiscard]] std::vector<ResolvedPluginEntry> entriesOfKind(PluginEntryKind kind) const;
 
+    // The manifest of a loaded plugin by its id ("author/plugin"), or null.
+    [[nodiscard]] const PluginManifest* findManifest(std::string_view pluginId) const;
+
   private:
     struct LoadedPlugin {
       PluginManifest manifest;

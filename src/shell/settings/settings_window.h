@@ -164,6 +164,8 @@ private:
   // entering the Plugins section and after an enable/disable/source action.
   std::vector<scripting::PluginStatus> m_pluginList;
   bool m_pluginListDirty = true;
+  // Plugin id whose plugin-level settings editor is expanded in the Plugins section.
+  std::string m_configurePluginId;
   RenderContext* m_renderContext = nullptr;
   DependencyService* m_dependencies = nullptr;
   UPowerService* m_upower = nullptr;

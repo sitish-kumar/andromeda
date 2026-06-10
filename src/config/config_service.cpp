@@ -1432,6 +1432,24 @@ void ConfigService::parseConfigTable(const toml::table& tbl, Config& config, boo
     config.plugins.sources = defaultPluginSources();
   }
 
+  // Parse [plugin_settings."author/plugin"] — open-ended per-plugin setting maps,
+  // validated against the manifest schema (not the static pluginsSchema). Keys may
+  // contain '/', so this is a top-level table rather than nested under [plugins].
+  if (auto* pluginSettingsTbl = tbl["plugin_settings"].as_table()) {
+    for (const auto& [pluginId, pluginNode] : *pluginSettingsTbl) {
+      const auto* perPlugin = pluginNode.as_table();
+      if (perPlugin == nullptr) {
+        continue;
+      }
+      auto& bucket = config.plugins.pluginSettings[std::string(pluginId.str())];
+      for (const auto& [key, value] : *perPlugin) {
+        if (auto parsed = noctalia::config::readWidgetSettingValue(value); parsed.has_value()) {
+          bucket[std::string(key.str())] = std::move(*parsed);
+        }
+      }
+    }
+  }
+
   // Parse [idle] and [idle.behavior.*]. Default-seeding stays here because it
   // must apply even when [idle] is absent.
   if (auto* idleTbl = tbl["idle"].as_table()) {

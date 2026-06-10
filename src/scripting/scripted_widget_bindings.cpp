@@ -201,52 +201,19 @@ namespace {
     return 0;
   }
 
-  int luau_getConfig(lua_State* L) {
-    const char* key = luaL_checkstring(L, 1);
-    auto* context = getContext(L);
-    if (context == nullptr || context->settings == nullptr) {
-      lua_pushnil(L);
-      return 1;
-    }
-
-    auto it = context->settings->find(key);
-    if (it == context->settings->end()) {
-      kLog.warn("plugin {} read undeclared setting '{}'", context->ownerId, key);
-      lua_pushnil(L);
-      return 1;
-    }
-
-    std::visit(
-        [L](const auto& val) {
-          using T = std::decay_t<decltype(val)>;
-          if constexpr (std::is_same_v<T, bool>)
-            lua_pushboolean(L, val ? 1 : 0);
-          else if constexpr (std::is_same_v<T, std::int64_t>)
-            lua_pushnumber(L, static_cast<double>(val));
-          else if constexpr (std::is_same_v<T, double>)
-            lua_pushnumber(L, val);
-          else if constexpr (std::is_same_v<T, std::string>)
-            lua_pushlstring(L, val.data(), val.size());
-          else if constexpr (std::is_same_v<T, std::vector<std::string>>) {
-            lua_createtable(L, static_cast<int>(val.size()), 0);
-            for (size_t i = 0; i < val.size(); ++i) {
-              lua_pushlstring(L, val[i].data(), val[i].size());
-              lua_rawseti(L, -2, static_cast<int>(i + 1));
-            }
-          } else {
-            lua_pushnil(L);
-          }
-        },
-        it->second
-    );
-    return 1;
-  }
-
   const luaL_Reg kWidgetLib[] = {
-      {"setText", luau_setText},       {"setGlyph", luau_setGlyph},           {"setImage", luau_setImage},
-      {"setTooltip", luau_setTooltip}, {"clearTooltip", luau_clearTooltip},   {"setFont", luau_setFont},
-      {"setColor", luau_setColor},     {"setGlyphColor", luau_setGlyphColor}, {"isVertical", luau_isVertical},
-      {"setVisible", luau_setVisible}, {"getConfig", luau_getConfig},         {nullptr, nullptr},
+      {"setText", luau_setText},
+      {"setGlyph", luau_setGlyph},
+      {"setImage", luau_setImage},
+      {"setTooltip", luau_setTooltip},
+      {"clearTooltip", luau_clearTooltip},
+      {"setFont", luau_setFont},
+      {"setColor", luau_setColor},
+      {"setGlyphColor", luau_setGlyphColor},
+      {"isVertical", luau_isVertical},
+      {"setVisible", luau_setVisible},
+      {"getConfig", scripting::luau_getConfig},
+      {nullptr, nullptr},
   };
 
   // ── shortcut.* — control-center quick-toggle tile presentation ──
@@ -304,6 +271,47 @@ namespace {
 } // namespace
 
 namespace scripting {
+
+  int luau_getConfig(lua_State* L) {
+    const char* key = luaL_checkstring(L, 1);
+    auto* context = getContext(L);
+    if (context == nullptr || context->settings == nullptr) {
+      lua_pushnil(L);
+      return 1;
+    }
+
+    auto it = context->settings->find(key);
+    if (it == context->settings->end()) {
+      kLog.warn("plugin {} read undeclared setting '{}'", context->ownerId, key);
+      lua_pushnil(L);
+      return 1;
+    }
+
+    std::visit(
+        [L](const auto& val) {
+          using T = std::decay_t<decltype(val)>;
+          if constexpr (std::is_same_v<T, bool>)
+            lua_pushboolean(L, val ? 1 : 0);
+          else if constexpr (std::is_same_v<T, std::int64_t>)
+            lua_pushnumber(L, static_cast<double>(val));
+          else if constexpr (std::is_same_v<T, double>)
+            lua_pushnumber(L, val);
+          else if constexpr (std::is_same_v<T, std::string>)
+            lua_pushlstring(L, val.data(), val.size());
+          else if constexpr (std::is_same_v<T, std::vector<std::string>>) {
+            lua_createtable(L, static_cast<int>(val.size()), 0);
+            for (size_t i = 0; i < val.size(); ++i) {
+              lua_pushlstring(L, val[i].data(), val[i].size());
+              lua_rawseti(L, -2, static_cast<int>(i + 1));
+            }
+          } else {
+            lua_pushnil(L);
+          }
+        },
+        it->second
+    );
+    return 1;
+  }
 
   void registerScriptedWidgetBindings(lua_State* L, ScriptedWidgetBindingContext* context) {
     lua_pushlightuserdata(L, context);

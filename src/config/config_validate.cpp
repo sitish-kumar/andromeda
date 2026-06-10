@@ -249,6 +249,31 @@ namespace noctalia::config {
       }
     }
 
+    void validatePluginSettings(const toml::table& root, schema::Diagnostics& diag) {
+      const auto* pluginSettings = root["plugin_settings"].as_table();
+      if (pluginSettings == nullptr) {
+        return;
+      }
+      for (const auto& [pluginId, node] : *pluginSettings) {
+        const auto* perPlugin = node.as_table();
+        if (perPlugin == nullptr) {
+          continue;
+        }
+        const std::string idStr(pluginId.str());
+        const std::string base = "plugin_settings." + idStr;
+        const scripting::PluginManifest* manifest = scripting::PluginRegistry::instance().findManifest(idStr);
+        if (manifest == nullptr) {
+          diag.warn(base, "no loaded plugin with this id");
+          continue;
+        }
+        schema::WidgetSettingSchema fields;
+        for (const auto& spec : settings::manifestSettingSpecs(manifest->settings)) {
+          fields.push_back(spec.schema);
+        }
+        validateSettingsMap(*perPlugin, fields, base, /*flagUnknown=*/true, diag);
+      }
+    }
+
     void validateBarWidgets(const toml::table& root, schema::Diagnostics& diag) {
       const auto* widgets = root["widget"].as_table();
       if (widgets == nullptr) {
@@ -513,6 +538,7 @@ namespace noctalia::config {
 
     validateBars(merged, diag);
     validateBarWidgets(merged, diag);
+    validatePluginSettings(merged, diag);
     validateDesktopWidgets(merged, diag);
     validateLockscreenWidgets(merged, diag);
 
@@ -543,6 +569,7 @@ namespace noctalia::config {
         "widget",
         "control_center",
         "plugins",
+        "plugin_settings",
         "hooks",
     };
     for (const auto& [key, node] : merged) {

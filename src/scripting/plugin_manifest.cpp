@@ -1,5 +1,6 @@
 #include "scripting/plugin_manifest.h"
 
+#include "core/log.h"
 #include "core/toml.h" // IWYU pragma: keep
 
 #include <algorithm>
@@ -7,10 +8,42 @@
 #include <type_traits>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 
 namespace scripting {
 
   namespace {
+
+    constexpr Logger kLog("plugin-manifest");
+
+    std::optional<double> numericSetting(const WidgetSettingValue& value) {
+      if (const auto* i = std::get_if<std::int64_t>(&value)) {
+        return static_cast<double>(*i);
+      }
+      if (const auto* d = std::get_if<double>(&value)) {
+        return *d;
+      }
+      return std::nullopt;
+    }
+
+    bool valueEqual(const WidgetSettingValue& a, const WidgetSettingValue& b) {
+      const auto aNum = numericSetting(a);
+      const auto bNum = numericSetting(b);
+      if (aNum.has_value() || bNum.has_value()) {
+        return aNum.has_value() && bNum.has_value() && *aNum == *bNum;
+      }
+      if (a.index() != b.index()) {
+        return false;
+      }
+      return std::visit(
+          [&](const auto& av) {
+            using T = std::decay_t<decltype(av)>;
+            const auto* bv = std::get_if<T>(&b);
+            return bv != nullptr && av == *bv;
+          },
+          a
+      );
+    }
 
     // Each entry kind paired with its TOML array-table name.
     constexpr std::array<std::pair<PluginEntryKind, std::string_view>, 6> kEntryKinds{{
@@ -285,6 +318,17 @@ namespace scripting {
       parseEntries(root, kind, tableName, manifest);
     }
 
+    if (const auto* settings = root["setting"].as_array()) {
+      for (const auto& node : *settings) {
+        if (const auto* settingTable = node.as_table()) {
+          ManifestField field = parseField(*settingTable);
+          if (!field.key.empty()) {
+            manifest.settings.push_back(std::move(field));
+          }
+        }
+      }
+    }
+
     std::unordered_set<std::string> seenEntryIds;
     for (const auto& entry : manifest.entries) {
       if (!seenEntryIds.insert(entry.id).second) {
@@ -292,7 +336,51 @@ namespace scripting {
       }
     }
 
+    std::unordered_set<std::string> pluginLevelKeys;
+    for (const auto& field : manifest.settings) {
+      pluginLevelKeys.insert(field.key);
+    }
+    for (const auto& entry : manifest.entries) {
+      for (const auto& field : entry.settings) {
+        if (pluginLevelKeys.contains(field.key)) {
+          kLog.warn(
+              "plugin '{}' entry '{}' setting '{}' shadows a plugin-level setting; entry value wins", manifest.id,
+              entry.id, field.key
+          );
+        }
+      }
+    }
+
     return manifest;
+  }
+
+  void mergePluginSettings(
+      const PluginManifest& manifest, const std::unordered_map<std::string, WidgetSettingValue>& pluginOverrides,
+      std::unordered_map<std::string, WidgetSettingValue>& seeded
+  ) {
+    for (const ManifestField& field : manifest.settings) {
+      if (seeded.contains(field.key)) {
+        continue; // entry-level setting declared the same key — entry wins
+      }
+      const auto it = pluginOverrides.find(field.key);
+      seeded.emplace(field.key, it != pluginOverrides.end() ? it->second : field.defaultValue());
+    }
+  }
+
+  bool settingsEqual(
+      const std::unordered_map<std::string, WidgetSettingValue>& a,
+      const std::unordered_map<std::string, WidgetSettingValue>& b
+  ) {
+    if (a.size() != b.size()) {
+      return false;
+    }
+    for (const auto& [key, value] : a) {
+      const auto it = b.find(key);
+      if (it == b.end() || !valueEqual(value, it->second)) {
+        return false;
+      }
+    }
+    return true;
   }
 
 } // namespace scripting

@@ -10,6 +10,7 @@
 #include "shell/settings/settings_content.h"
 #include "shell/settings/settings_content_common.h"
 #include "shell/settings/settings_content_plugins.h"
+#include "shell/settings/settings_control_factory.h"
 #include "shell/settings/settings_sidebar.h"
 #include "shell/settings/settings_window.h"
 #include "system/battery_warning_monitor.h"
@@ -506,6 +507,7 @@ void SettingsWindow::rebuildSettingsContent() {
       m_pluginList = m_pluginManager->list();
       m_pluginListDirty = false;
     }
+    settings::SettingsControlFactory pluginFactory(makeContentContext(cfg, selectedBar, selectedMonitorOverride));
     settings::addSettingsPlugins(
         *m_contentContainer,
         settings::SettingsPluginsContext{
@@ -533,6 +535,15 @@ void SettingsWindow::rebuildSettingsContent() {
             .refresh =
                 [this]() {
                   m_pluginListDirty = true;
+                  requestSceneRebuild();
+                },
+            .config = &cfg,
+            .controlFactory = &pluginFactory,
+            .configurePluginId = m_configurePluginId,
+            .showAdvanced = m_showAdvanced,
+            .onConfigure =
+                [this](std::string id) {
+                  m_configurePluginId = (m_configurePluginId == id) ? std::string{} : std::move(id);
                   requestSceneRebuild();
                 },
         }

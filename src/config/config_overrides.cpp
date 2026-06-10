@@ -93,6 +93,21 @@ namespace {
     return true;
   }
 
+  // PluginsConfig equality that compares the open-ended pluginSettings map with int/double coercion
+  // (widgetSettingsEqual) instead of the defaulted operator== — same reason as widgets.
+  bool pluginsConfigEqual(const PluginsConfig& a, const PluginsConfig& b) {
+    if (a.sources != b.sources || a.enabled != b.enabled || a.pluginSettings.size() != b.pluginSettings.size()) {
+      return false;
+    }
+    for (const auto& [id, aMap] : a.pluginSettings) {
+      const auto it = b.pluginSettings.find(id);
+      if (it == b.pluginSettings.end() || !widgetSettingsEqual(aMap, it->second)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   // Like DesktopWidgetState's defaulted operator==, but compares the settings map with int/double coercion
   // (widgetSettingsEqual) instead of exact variant equality.
   bool desktopWidgetEqual(const DesktopWidgetState& a, const DesktopWidgetState& b) {
@@ -281,6 +296,11 @@ namespace {
     return path.size() == 3 && path[0] == "widget";
   }
 
+  bool isPluginSettingOverridePath(const std::vector<std::string>& path) {
+    // {"plugin_settings", pluginId, key}; pluginId is "author/plugin".
+    return path.size() == 3 && path[0] == "plugin_settings";
+  }
+
   // Override-effectiveness equality. Every config section uses its compiler-generated operator== (exact
   // member-wise compare) so that adding a field cannot silently break override persistence — the only
   // exceptions are the sections whose comparison carries semantics operator== can't express:
@@ -311,7 +331,7 @@ namespace {
         && a.hooks == b.hooks
         && a.theme == b.theme
         && a.controlCenter == b.controlCenter
-        && a.plugins == b.plugins;
+        && pluginsConfigEqual(a.plugins, b.plugins);
   }
 
   toml::table* ensureTable(toml::table& parent, std::string_view key) {
@@ -627,7 +647,7 @@ ConfigChangeSet computeConfigChangeSet(const Config& prev, const Config& next) {
       .hooks = !(prev.hooks == next.hooks),
       .theme = !(prev.theme == next.theme),
       .controlCenter = !(prev.controlCenter == next.controlCenter),
-      .plugins = !(prev.plugins == next.plugins),
+      .plugins = !pluginsConfigEqual(prev.plugins, next.plugins),
   };
 }
 
@@ -1034,6 +1054,30 @@ bool ConfigService::overridePathEffectiveInTable(
 
   if (isWidgetSettingOverridePath(path)) {
     return settings::widgetSettingOverrideIsEffective(path[1], path[2], *parsedWith, *withoutOverride);
+  }
+
+  if (isPluginSettingOverridePath(path)) {
+    const auto pluginSettingValue = [](const Config& cfg, const std::string& pluginId,
+                                       const std::string& key) -> std::optional<WidgetSettingValue> {
+      const auto it = cfg.plugins.pluginSettings.find(pluginId);
+      if (it == cfg.plugins.pluginSettings.end()) {
+        return std::nullopt;
+      }
+      const auto kIt = it->second.find(key);
+      if (kIt == it->second.end()) {
+        return std::nullopt;
+      }
+      return kIt->second;
+    };
+    const auto withVal = pluginSettingValue(*parsedWith, path[1], path[2]);
+    const auto withoutVal = pluginSettingValue(*withoutOverride, path[1], path[2]);
+    if (!withVal.has_value() && !withoutVal.has_value()) {
+      return false;
+    }
+    if (!withVal.has_value() || !withoutVal.has_value()) {
+      return true;
+    }
+    return !widgetSettingEqual(*withVal, *withoutVal);
   }
 
   return !configEqual(*parsedWith, *withoutOverride);

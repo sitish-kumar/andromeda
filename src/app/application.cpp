@@ -399,7 +399,16 @@ void Application::run(std::function<void()> startupReadyCallback) {
     }
   });
   runStartupPhase("initUi", [this]() { initUi(); });
-  runStartupPhase("initPluginServices", [this]() { m_pluginServiceHost.start(); });
+  runStartupPhase("initPluginServices", [this]() {
+    m_pluginServiceHost.start(m_configService.config().plugins.pluginSettings);
+    // Re-seed services when plugin settings change. Guarded by the plugins change
+    // flag so unrelated reloads don't churn running service runtimes.
+    m_configService.addReloadCallback([this]() {
+      if (m_configService.lastChange().plugins) {
+        m_pluginServiceHost.refresh(m_configService.config().plugins.pluginSettings);
+      }
+    });
+  });
   runStartupPhase("initIpc", [this]() { initIpc(); });
   runStartupPhase("buildPollSources", [this]() { (void)buildPollSources(); });
 

@@ -87,6 +87,10 @@ namespace scripting {
     std::string icon;
     std::string description;
     std::vector<PluginEntry> entries;
+    // Plugin-level settings, declared once at the manifest root ([[setting]]) and
+    // shared across every entry (widget, shortcut, service). Distinct from a
+    // per-entry instance setting; seeded into all of the plugin's runtimes.
+    std::vector<ManifestField> settings;
 
     [[nodiscard]] const PluginEntry* findEntry(std::string_view entryId) const;
   };
@@ -100,6 +104,21 @@ namespace scripting {
   // loud miss rather than silently resolving from a stray override.
   [[nodiscard]] std::unordered_map<std::string, WidgetSettingValue>
   seedEntrySettings(const PluginEntry& entry, const std::unordered_map<std::string, WidgetSettingValue>& overrides);
+
+  // Overlay the plugin-level settings (manifest defaults, then `pluginOverrides`)
+  // onto an already-seeded entry settings map. A key already present (an entry-level
+  // setting) is left untouched — entry-level wins over plugin-level.
+  void mergePluginSettings(
+      const PluginManifest& manifest, const std::unordered_map<std::string, WidgetSettingValue>& pluginOverrides,
+      std::unordered_map<std::string, WidgetSettingValue>& seeded
+  );
+
+  // Settings-map equality with int/double coercion (matches config override
+  // comparison), so reseeding a service from an unchanged config is a no-op.
+  [[nodiscard]] bool settingsEqual(
+      const std::unordered_map<std::string, WidgetSettingValue>& a,
+      const std::unordered_map<std::string, WidgetSettingValue>& b
+  );
 
   // Parse a plugin.toml. Returns nullopt and sets `error` on a hard failure:
   // unreadable file, TOML parse error, or a missing mandatory `id` / `min_noctalia`.

@@ -544,6 +544,15 @@ std::unique_ptr<Shortcut> ShortcutRegistry::create(std::string_view type, const 
       return nullptr;
     }
     auto seeded = scripting::seedEntrySettings(*entry->entry, {});
+    static const std::unordered_map<std::string, WidgetSettingValue> kNoPluginOverrides;
+    const auto* overrides = &kNoPluginOverrides;
+    if (s.config != nullptr) {
+      const auto& pluginSettings = s.config->config().plugins.pluginSettings;
+      if (const auto psIt = pluginSettings.find(entry->manifest->id); psIt != pluginSettings.end()) {
+        overrides = &psIt->second;
+      }
+    }
+    scripting::mergePluginSettings(*entry->manifest, *overrides, seeded);
     return std::make_unique<PluginShortcut>(
         entry->fullId(), entry->sourcePath, std::move(seeded), *s.scriptApi, s.httpClient, s.clipboard
     );

@@ -1198,6 +1198,11 @@ struct PluginSourceConfig {
 struct PluginsConfig {
   std::vector<PluginSourceConfig> sources;
   std::vector<std::string> enabled; // active plugin ids ("author/plugin"); opt-in for every source
+  // Plugin-level setting overrides, keyed by plugin id then setting key. Seeded
+  // into every entry runtime of the plugin (widget/shortcut/service). Open-ended
+  // (validated against the manifest schema), so compared via configEqual rather
+  // than the defaulted operator== (which lacks int/double coercion).
+  std::unordered_map<std::string, std::unordered_map<std::string, WidgetSettingValue>> pluginSettings;
   bool operator==(const PluginsConfig&) const = default;
 };
 

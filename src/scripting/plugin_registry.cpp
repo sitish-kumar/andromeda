@@ -134,4 +134,9 @@ namespace scripting {
     return out;
   }
 
+  const PluginManifest* PluginRegistry::findManifest(std::string_view pluginId) const {
+    const LoadedPlugin* plugin = findPlugin(pluginId);
+    return plugin != nullptr ? &plugin->manifest : nullptr;
+  }
+
 } // namespace scripting

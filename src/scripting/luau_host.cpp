@@ -813,6 +813,7 @@ namespace {
       {"trp", luau_trp},
       {"http", luau_http},
       {"download", luau_download},
+      {"getConfig", scripting::luau_getConfig},
       {nullptr, nullptr},
   };
 

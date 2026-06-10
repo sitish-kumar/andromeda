@@ -1340,6 +1340,12 @@ namespace noctalia::config::schema {
       return true;
     }
 
+    // [plugin_settings."author/plugin"].<key> — open schema; keys validate against
+    // the manifest in config_validate's validatePluginSettings, not here.
+    if (section == "plugin_settings") {
+      return path.size() <= 3;
+    }
+
     if (path.size() < 2) {
       return false; // a bare section is not a setting path
     }
