@@ -1056,7 +1056,7 @@
     "schema": {
       "appearance": {
         "animation-speed": {
-          "description": "Moltiplicatore di velocità per tutte le animazioni",
+          "description": "Moltiplicatore di velocità per le animazioni",
           "label": "Velocità animazioni"
         },
         "animations": {
@@ -1081,7 +1081,7 @@
           "search-placeholder": "Cerca palette..."
         },
         "corner-roundness": {
-          "description": "Scala il raggio degli angoli nei contenitori e controlli della shell",
+          "description": "Scala il raggio degli angoli nei contenitori e della shell UI",
           "label": "Arrotondamento angoli"
         },
         "custom-palette": {
@@ -1109,7 +1109,7 @@
           "label": "Lingua"
         },
         "palette-source": {
-          "description": "Da dove derivare la palette colori",
+          "description": "Da dove ricavare la palette colori",
           "label": "Sorgente palette"
         },
         "theme-mode": {
@@ -1291,7 +1291,7 @@
           "label": "Scala icona attiva"
         },
         "active-monitor-only": {
-          "description": "Mostra solo le applicazioni in esecuzione sul monitor attivo",
+          "description": "Mostra le applicazioni in esecuzione solo sul monitor attivo",
           "label": "Solo monitor attivo"
         },
         "auto-hide": {
@@ -1344,7 +1344,7 @@
           "label": "Spaziatura elementi"
         },
         "launcher-icon": {
-          "description": "Icona Tabler mostrata sul pulsante launcher della dock",
+          "description": "Icona del launcher mostrata sul pulsante della dock",
           "label": "Icona launcher"
         },
         "launcher-position": {
@@ -1380,7 +1380,7 @@
           "description": "Proietta l'ombra globale della superficie dalla dock"
         },
         "show-dots": {
-          "description": "Mostra punti delle finestre in esecuzione accanto alle icone dock",
+          "description": "Mostra punti delle finestre in esecuzione accanto alle icone del dock",
           "label": "Mostra punti"
         },
         "show-instance-count": {
@@ -1601,7 +1601,7 @@
           "label": "Bordi"
         },
         "control-center-sidebar": {
-          "description": "In Home e aperture generali",
+          "description": "Tipo barra laterale nella home",
           "label": "Barra laterale"
         },
         "control-center-sidebar-section": {
@@ -1649,19 +1649,19 @@
           "label": "Posizionamento"
         },
         "placement-control-center": {
-          "description": "Scegli se il Centro di controllo si attacca alla barra, fluttua vicino a essa o si apre centrato",
+          "description": "Scegli se il Centro di controllo si attacca alla barra, fluttua vicino ad essa o si apre centrato",
           "label": "Posizionamento"
         },
         "placement-launcher": {
-          "description": "Scegli se il launcher si attacca alla barra, fluttua vicino a essa o si apre centrato",
+          "description": "Scegli se il launcher si attacca alla barra, fluttua vicino ad essa o si apre centrato",
           "label": "Posizionamento"
         },
         "placement-session": {
-          "description": "Scegli se il menu sessione si attacca alla barra, fluttua vicino a essa o si apre centrato",
+          "description": "Scegli se il menu sessione si attacca alla barra, fluttua vicino ad essa o si apre centrato",
           "label": "Posizionamento"
         },
         "placement-wallpaper": {
-          "description": "Scegli se il selettore sfondo si attacca alla barra, fluttua vicino a essa o si apre centrato",
+          "description": "Scegli se il selettore sfondo si attacca alla barra, fluttua vicino ad essa o si apre centrato",
           "label": "Posizionamento"
         },
         "shadow": {
@@ -2073,7 +2073,7 @@
       },
       "templates": {
         "builtin-ids": {
-          "description": "Attiva/disattiva template app inclusi da renderizzare a ogni cambio tema",
+          "description": "Attiva/disattiva template app inclusi da renderizzare ad ogni cambio tema",
           "empty": "Nessun template integrato disponibile.",
           "label": "Template integrati"
         },
@@ -2166,7 +2166,7 @@
           "label": "Anima all'avvio"
         },
         "transitions": {
-          "description": "Effetti disponibili quando si cambia sfondo (uno viene scelto casualmente a ogni cambio)",
+          "description": "Effetti disponibili quando si cambia sfondo (scelti casualmente a ogni cambio)",
           "label": "Effetti transizione"
         }
       }

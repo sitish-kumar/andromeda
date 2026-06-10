@@ -364,7 +364,7 @@
         "stat-net-rx": "网络下行",
         "stat-net-tx": "网络上行",
         "stat-none": "无",
-        "stat-ram-pct": "内存 %",
+        "stat-ram-pct": "RAM %",
         "stat-swap-pct": "交换空间 %",
         "stat2": "统计 2",
         "title": "标题",
@@ -519,7 +519,7 @@
       "calendar-google-connect-browser-failed": "未找到可用于 Google 授权的浏览器。请检查默认浏览器或 xdg-open 设置。",
       "calendar-google-connect-expired": "Google 授权在登录完成前已过期。请重新发起连接。",
       "calendar-google-connect-failed-title": "Google 日历连接失败",
-      "calendar-google-connect-missing-account": "未找到与 \\\"{account}\\\" 匹配的已配置 Google 日历账户。",
+      "calendar-google-connect-missing-account": "未找到与 \"{account}\" 匹配的已配置 Google 日历账户。",
       "calendar-google-connect-rate-limited": "Google 授权暂时受到频率限制。请稍等片刻后重试。",
       "calendar-google-connect-result-failed": "无法完成 Google 授权。请重新发起连接。",
       "calendar-google-connect-start-failed": "无法启动 Google 授权。请检查网络连接并重试。",
@@ -541,7 +541,7 @@
       "mpris-disabled": "MPRIS 已禁用",
       "session-bus-unavailable": "会话总线不可用",
       "wallpaper-palette-export": "自定义调色板",
-      "wallpaper-palette-export-success": "已保存 \\\"{name}\\\" 并将调色板源切换为自定义。"
+      "wallpaper-palette-export-success": "已保存 \"{name}\" 并将调色板源切换为自定义。"
     }
   },
   "osd": {
@@ -617,7 +617,7 @@
       "advanced": "高级",
       "inherited": "已继承",
       "monitor": "显示器",
-      "override": "覆盖"
+      "override": "已覆盖"
     },
     "calendar-accounts": {
       "add-title": "添加日历账户",
@@ -672,7 +672,7 @@
         "create": "创建",
         "delete": "删除",
         "delete-confirm-desc": "此通过 GUI 创建的状态栏将从 settings.toml 中移除。",
-        "delete-confirm-title": "删除 \\\"{name}\\\"？",
+        "delete-confirm-title": "删除 \"{name}\"？",
         "id-placeholder": "状态栏 ID",
         "label": "状态栏：{name}",
         "management": "状态栏",
@@ -686,10 +686,10 @@
         "create": "创建",
         "delete": "删除",
         "delete-confirm-desc": "此通过 GUI 创建的显示器覆盖项将从 settings.toml 中移除。",
-        "delete-confirm-title": "删除 \\\"{name}\\\"？",
+        "delete-confirm-title": "删除 \"{name}\"？",
         "label": "显示器：{name}",
         "management": "显示器覆盖",
-        "match-placeholder": "显示器匹配",
+        "match-placeholder": "显示器标识",
         "new": "新建显示器覆盖",
         "rename": "重命名",
         "rename-save": "保存"
@@ -736,23 +736,23 @@
           "create-save": "创建",
           "delete": "删除",
           "delete-confirm-desc": "此命名小组件将从所有状态栏中移除，其设置也会被丢弃。",
-          "delete-confirm-title": "删除 \\\"{name}\\\"？\"",
+          "delete-confirm-title": "删除 \"{name}\"？\"",
           "id-description": "仅支持字母、数字、下划线或连字符；不能包含空格；必须唯一",
           "id-placeholder": "小组件 ID",
           "rename": "重命名",
           "rename-save": "保存"
         },
         "lanes": {
-          "center": "中部",
+          "center": "中央区域",
           "customize": "自定义",
           "empty": "无小组件",
           "empty-hint": "添加一个小组件以填充此区域。",
-          "end": "尾部",
-          "start": "首部"
+          "end": "末端区域",
+          "start": "起始区域"
         },
         "picker": {
           "empty": "未找到小组件",
-          "instance-description": "类型为 \\\"{type}\\\" 的命名小组件",
+          "instance-description": "类型为 \"{type}\" 的命名小组件",
           "instance-toggle": "命名小组件",
           "placeholder": "搜索小组件......"
         },
@@ -798,11 +798,105 @@
     "export-config": {
       "export": "导出",
       "full-effective-description": "导出所有生效的配置，包括内置默认值；这便于检查或共享配置快照，但会将当前默认值显式固定。",
-      "merged-user-description": "将配置文件与 GUI 覆盖项合并为单个 TOML 文件。内置默认值保持隐式状态。"
+      "full-effective-save-title": "保存完整有效配置",
+      "full-effective-title": "完整有效配置",
+      "merged-user-description": "将配置文件与 GUI 覆盖项合并为单个 TOML 文件。内置默认值保持隐式状态。",
+      "merged-user-save-title": "保存合并的用户配置",
+      "merged-user-title": "合并用户配置（推荐）",
+      "title": "导出配置"
+    },
+    "idle": {
+      "behavior": {
+        "add": "添加行为",
+        "command-label": "空闲命令",
+        "command-placeholder": "notify-send \"Idle\"",
+        "kind": {
+          "custom": "自定义",
+          "lock": "锁定",
+          "lock-and-suspend": "锁定并挂起",
+          "screen-off": "关闭屏幕",
+          "suspend": "挂起"
+        },
+        "kind-section-label": "操作",
+        "name-label": "名称",
+        "name-placeholder": "",
+        "resume-command-label": "恢复命令",
+        "resume-command-placeholder": "noctalia:dpms-on",
+        "summary": "{name} · {seconds}s",
+        "summary-disabled-timeout": "{name} · 超时已禁用",
+        "timeout-label": "超时秒数",
+        "unnamed": "未命名行为"
+      },
+      "live-status": {
+        "active": "活跃",
+        "idle-for-one": "空闲 1 秒",
+        "idle-for-seconds": "空闲 {seconds} 秒"
+      }
     },
     "navigation": {
       "groups": {
-        "built-in": "内置"
+        "audio": "音频",
+        "automation": "自动化",
+        "backdrop": "",
+        "background": "",
+        "battery": "电池",
+        "behavior": "行为",
+        "brightness": "亮度",
+        "built-in": "内置",
+        "calendar": "日历",
+        "clipboard": "剪贴板",
+        "community": "社区",
+        "directories": "目录",
+        "effects": "效果",
+        "filtering": "过滤",
+        "focus-styling": "焦点样式",
+        "formats": "格式",
+        "general": "通用",
+        "grouping": "分组",
+        "home": "主页",
+        "idle": "空闲",
+        "interface": "界面",
+        "keybinds": "快捷键",
+        "kinds": "类型",
+        "layout": "布局",
+        "lifecycle": "生命周期",
+        "location": "位置",
+        "lock-screen": "锁屏",
+        "media": "媒体",
+        "monitor": "系统监视器",
+        "monitor-polling": "轮询间隔",
+        "monitor-thresholds": "高亮阈值",
+        "monitors": "显示器",
+        "motion": "动效",
+        "network": "网络",
+        "notifications": "通知",
+        "osd": "",
+        "pinned-apps": "固定应用",
+        "power": "电源",
+        "privacy-security": "隐私与安全",
+        "profile": "配置文件",
+        "screen-corners": "屏幕圆角",
+        "screen-time": "屏幕时间",
+        "screenshot": "截图",
+        "security": "安全",
+        "session-panel": "会话",
+        "shape": "形状",
+        "system": "系统",
+        "theme": "主题",
+        "transition": "过渡",
+        "user": "用户",
+        "wallpaper": "壁纸",
+        "weather": "天气"
+      },
+      "sections": {
+        "appearance": "外观",
+        "desktop": "桌面",
+        "location": "位置",
+        "niri": "Niri",
+        "notifications": "通知",
+        "osd": "",
+        "panels": "面板",
+        "popups": "弹出窗口"
       }
     },
     "options": {
@@ -893,6 +987,9 @@
         "type": {
           "description": "此自定义小组件的内置类型"
         }
+      },
+      "types": {
+        "nightlight": "夜间模式"
       }
     },
     "window": {

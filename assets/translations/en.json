@@ -1602,7 +1602,7 @@
           "label": "Borders"
         },
         "control-center-sidebar": {
-          "description": "On Home and general opens",
+          "description": "Choose how to display the sidebar",
           "label": "Sidebar"
         },
         "control-center-sidebar-section": {
