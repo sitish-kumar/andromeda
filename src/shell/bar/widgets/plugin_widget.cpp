@@ -769,7 +769,7 @@ bool PluginWidget::shouldDeferUpdate() const { return m_updateDeferralCallback &
 void PluginWidget::setupScriptWatch() {
   if (m_sourcePath.empty() || !m_fileWatcher)
     return;
-  m_watchId = m_fileWatcher->watch(m_sourcePath, [this] { reloadScript(); });
+  m_watchId = m_fileWatcher->watch(m_sourcePath, [this] { reloadScript(); }, FileWatcher::WatchTrigger::WriteCompleted);
 }
 
 void PluginWidget::teardownScriptWatch() {
@@ -780,6 +780,14 @@ void PluginWidget::teardownScriptWatch() {
 }
 
 void PluginWidget::reloadScript() {
+  std::string source = readFile(m_sourcePath);
+  auto name = m_sourcePath.filename().string();
+  if (source.empty() || !m_runtime) {
+    kLog.warn("hot reload: failed to reload '{}'", name);
+    notify::error("Noctalia", i18n::tr("bar.widgets.scripted.reload-failed"), name);
+    return;
+  }
+
   m_updateTimer.stop();
   m_imageReloadRetryTimer.stop();
   teardownImageWatch();
@@ -806,15 +814,6 @@ void PluginWidget::reloadScript() {
 
   m_hasOnIpc = false;
   m_hasOnIpcKnown = false;
-
-  std::string source = readFile(m_sourcePath);
-  auto name = m_sourcePath.filename().string();
-  if (source.empty() || !m_runtime) {
-    kLog.warn("hot reload: failed to reload '{}'", name);
-    notify::error("Noctalia", i18n::tr("bar.widgets.scripted.reload-failed"), name);
-    requestRedraw();
-    return;
-  }
 
   m_runtime->reload(m_sourcePath.string(), std::move(source), makeScriptSnapshot());
   startUpdateTimer();
