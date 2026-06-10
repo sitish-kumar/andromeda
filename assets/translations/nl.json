@@ -3,11 +3,11 @@
     "pam": {
       "authentication-failed": "Authenticatie mislukt",
       "start-failed": "PAM-start mislukt",
-      "user-unavailable": "Kan huidige gebruiker niet bepalen"
+      "user-unavailable": "Huidige gebruiker kan niet worden vastgesteld"
     },
     "polkit": {
-      "authenticate": "Authenticeren",
-      "authenticating": "Authenticeren...",
+      "authenticate": "Authenticeer",
+      "authenticating": "Authenticeren",
       "default-message": "Authenticatie vereist",
       "invalid-password": "Ongeldig wachtwoord",
       "password-placeholder": "Wachtwoord",
@@ -16,9 +16,9 @@
   },
   "bar": {
     "screenshot": {
-      "choose-display": "Kies scherm",
+      "choose-display": "Kies display",
       "fullscreen": "Volledig scherm",
-      "region": "Selecteer gebied"
+      "region": "Kies regio"
     },
     "widgets": {
       "lock-keys": {
@@ -34,51 +34,46 @@
         "playing": "Afspelen"
       },
       "network": {
-        "wired": "Bekabeld"
+        "wired": "Bedraad"
       },
       "scripted": {
-        "reload-failed": "Herladen van script mislukt",
+        "reload-failed": "Script herladen mislukt",
         "reloaded": "Script herladen"
       },
       "weather": {
         "default": "Weer",
-        "error": "Weerfout",
+        "error": "Weer fout",
         "loading": "Weer...",
         "no-location": "Geen locatie",
-        "off": "Weer uit",
-        "vertical-default": "W\nX",
-        "vertical-error": "E\nR\nR",
-        "vertical-loading": ".\n.\n.",
-        "vertical-no-location": "N\nO\nL\nO\nC",
-        "vertical-off": "U\nI\nT"
+        "off": "Weer uit"
       }
     }
   },
   "clipboard": {
     "actions": {
-      "clear-all": "Alles wissen",
-      "delete-item": "Item verwijderen",
+      "clear-all": "Wis alles",
+      "delete-item": "Verwijder item",
       "keep-pinned": "Vastgezet bewaren"
     },
     "confirm": {
       "clear-desc": "Kies of vastgezette items moeten worden bewaard.",
       "clear-desc-all-pinned": "Elk item is vastgezet. Gebruik Alles wissen om ze allemaal te verwijderen.",
-      "clear-desc-no-pinned": "Dit verwijdert elk item uit de klembordgeschiedenis.",
+      "clear-desc-no-pinned": "Dit wist alles uit de klembordgeschiedenis.",
       "clear-title": "Klembordgeschiedenis wissen?",
       "delete-desc": "Dit verwijdert het geselecteerde item uit de klembordgeschiedenis.",
-      "delete-title": "Klemborditem verwijderen?"
+      "delete-title": "Verwijder klembord item"
     },
     "empty": {
       "history-message": "Geen items in de klembordgeschiedenis.",
-      "history-title": "Klembordgeschiedenis is leeg",
-      "no-matches-message": "Geen items komen overeen met het huidige filter.",
-      "no-matches-title": "Geen overeenkomende items"
+      "history-title": "Klembordgeschiedenis is leeg.",
+      "no-matches-message": "Geen resultaten die aan de huidige filtercriteria voldoen.",
+      "no-matches-title": "Geen resultaten"
     },
     "entry": {
-      "image": "Afbeelding",
+      "image": "Foto",
       "title": "Klemborditem"
     },
-    "filter-placeholder": "Klembord filteren...",
+    "filter-placeholder": "Filter klembord...",
     "preview": {
       "empty-text-payload": "(lege tekstinhoud)",
       "image-title": "Afbeelding klemborditem",
@@ -125,8 +120,8 @@
       "off": "Bluetooth staat uit",
       "pair-title": "Koppelen met {device}",
       "pairing-detail": {
-        "authorize": "Inkomend koppelingsverzoek accepteren?",
-        "authorize-service": "Toegang toestaan tot service {uuid}?",
+        "authorize": "Accepteer inkomend koppelingsverzoek?",
+        "authorize-service": "Sta toegang tot service {uuid} toe?",
         "confirm": "Bevestig dat deze code overeenkomt met de code op het apparaat:",
         "display-passkey": "Voer deze code in op het apparaat:",
         "display-pin": "Voer deze pincode in op het apparaat:",
@@ -168,9 +163,8 @@
       },
       "select-avatar": "Selecteer avatar",
       "unknown": "onbekend",
-      "user-facts": "{user}@{host}\nUptime - {uptime}\nNoctalia {version}",
       "weather": {
-        "configure-location": "Voeg [weather].address toe of schakel auto_locate in.",
+        "configure-location": "Voeg [weather].address toe of zet auto_locate aan.",
         "data-unavailable": "Weergegevens niet beschikbaar.",
         "disabled": "Weer is uitgeschakeld in de configuratie.",
         "fetching": "Weersvoorspelling ophalen..."
@@ -282,7 +276,7 @@
       "weather": "Weer"
     },
     "weather": {
-      "configure-location": "Stel [weather].address in of schakel auto_locate in",
+      "configure-location": "Voeg [weather].address toe of zet auto_locate aan.",
       "data-unavailable": "Weergegevens niet beschikbaar",
       "details": {
         "elevation": "Hoogte",
@@ -2335,11 +2329,11 @@
           "label": "Weergavemodus"
         },
         "drawer": {
-          "description": "Toon een ladeknop in de balk en open items in een paneel",
+          "description": "Toon systeemvak-knop in de balk en open items in een ladevenster",
           "label": "Gebruik ladepaneel"
         },
         "drawer-columns": {
-          "description": "Aantal systeemvakpictogrammen per rij in het ladepaneel",
+          "description": "Aantal pictogrammen per rij in het ladevenster",
           "label": "Ladekolommen"
         },
         "empty-color": {
@@ -2375,7 +2369,7 @@
           "label": "Hoogte"
         },
         "hidden": {
-          "description": "Systeemvak-item-ID's om te verbergen",
+          "description": "ID’s van te verbergen items in het systeemvak",
           "label": "Verborgen items"
         },
         "hide-empty-workspaces": {
@@ -2457,7 +2451,7 @@
           "label": "Kleur bij laag"
         },
         "match-adjacent-spacing": {
-          "description": "Verbreed de gaten tussen inline systeemvakpictogrammen om overeen te komen met de visuele tussenruimte van naburige balkwidgets (inclusief capsule-opvulling)",
+          "description": "De afstand tussen de pictogrammen in het inline-systeemvak vergroten, zodat deze overeenkomt met de visuele afstand tussen aangrenzende balkwidgets (inclusief opvulling van de pictogrammen)",
           "label": "Tussenruimte aanpassen aan widget"
         },
         "max-label-chars": {
@@ -2504,7 +2498,7 @@
           "workspaces-description": "Pas de schaal van werkruimte-pills aan"
         },
         "pinned": {
-          "description": "Systeemvak-item-ID's die zichtbaar blijven in de balk wanneer lademodus is ingeschakeld",
+          "description": "ID’s van items in het systeemvak die zichtbaar blijven in de balk wanneer het ladevenster is geopend",
           "label": "Vastgemaakte items"
         },
         "primary-click": {
@@ -2739,8 +2733,8 @@
   },
   "tray": {
     "menu": {
-      "empty": "Geen menu-items...",
-      "pin": "Vastmaken",
+      "empty": "Geen menu items...",
+      "pin": "Vastzetten",
       "unpin": "Losmaken"
     }
   },

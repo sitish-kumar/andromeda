@@ -338,17 +338,21 @@
         "horizontal": "Poziomo",
         "image-path": "Obraz",
         "inner-diameter": "Średnica wewnętrzna",
+        "input-opacity": "Krycie Pola",
+        "input-radius": "Promień Pola",
         "layout": "Układ",
         "low-color": "Kolor niski",
         "mirrored": "Odbite lustrzanie",
         "opacity": "Krycie",
         "primary-color": "Kolor główny",
+        "reset-defaults": "Zresetuj do ustawień domyślnych",
         "ring-opacity": "Krycie pierścienia",
         "rotation-speed": "Prędkość obrotu",
         "secondary-color": "Kolor wtórny",
         "sensitivity": "Czułość",
         "shadow": "Cień",
         "show-label": "Pokaż etykietę",
+        "show-login-button": "Przycisk Logowania",
         "show-when-idle": "Pokaż w bezczynności",
         "stat": "Statystyka",
         "stat-cpu-temp": "Temp. CPU",
@@ -903,6 +907,7 @@
         "notifications": "Powiadomienia",
         "osd": "OSD",
         "panels": "Panele",
+        "plugins": "Wtyczki",
         "popups": "Okna wyskakujące",
         "power": "Zasilanie",
         "security": "Bezpieczeństwo",
@@ -1046,6 +1051,43 @@
           "imperial": "Imperialny",
           "metric": "Metryczny"
         }
+      }
+    },
+    "plugins": {
+      "plugins": {
+        "configure": "Skonfiguruj",
+        "empty": "Nie znaleziono wtyczek. Dodaj źródło, albo sprawdź swoją sieć.",
+        "loading": "Ładowanie wtyczek...",
+        "refreshing": "Odświeżanie wtyczek...",
+        "requires-newer-noctalia": "wymaga nowszej Noctalii",
+        "title": "Wtyczki"
+      },
+      "settings": {
+        "empty": "Brak dostępnych ustawień."
+      },
+      "sources": {
+        "add": "Dodaj źródło",
+        "add-title": "Dodaj źródło wtyczek",
+        "empty": "Źródło nie skonfigurowane.",
+        "errors": {
+          "duplicate-name": "Źródło z tą nazwą już istnieje.",
+          "invalid-name": "Źródło musi zawierać litery, cyfry, '.', '_' albo '-', zaczynając od litery albo cyfry.",
+          "location-required": "Lokalizacja źródła jest wymagana."
+        },
+        "kind": {
+          "git": "Git",
+          "path": "Ścieżka"
+        },
+        "kind-label": "Rodzaj",
+        "location-label": "Lokalizacja",
+        "location-placeholder-git": "https://github.com/me/noctalia-plugins",
+        "location-placeholder-path": "~/dev/noctalia-plugins",
+        "name-label": "Nazwa",
+        "name-placeholder": "moje-wtyczki",
+        "remove": "Usuń źródło",
+        "title": "Źródła",
+        "update": "Aktualizacja",
+        "update-on-startup": "Zaaktualizuj przy uruchomieniu"
       }
     },
     "schema": {
