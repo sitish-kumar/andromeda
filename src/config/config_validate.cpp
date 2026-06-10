@@ -6,6 +6,8 @@
 #include "config/schema/engine.h"
 #include "config/widget_config.h"
 #include "core/toml.h"
+#include "scripting/plugin_manager.h"
+#include "scripting/plugin_registry.h"
 #include "shell/desktop/desktop_widget_settings_registry.h"
 #include "shell/lockscreen/lockscreen_login_box.h"
 #include "shell/settings/widget_settings_registry.h"
@@ -491,6 +493,23 @@ namespace noctalia::config {
     checkSection(merged, "control_center", schema::controlCenterSchema(), diag);
     checkSection(merged, "plugins", schema::pluginsSchema(), diag);
     checkSection(merged, "hooks", schema::hooksSchema(), diag);
+
+    // Resolve [plugins] into the registry so plugin widget types validate the same
+    // way the running app sees them. Disk-only — no materialization/network here.
+    {
+      PluginsConfig pc;
+      schema::Diagnostics sink; // schema issues are already reported by checkSection above
+      if (const auto* pluginsTbl = merged["plugins"].as_table()) {
+        const bool sourcesConfigured = (*pluginsTbl)["source"].as_array() != nullptr;
+        schema::readInto(*pluginsTbl, pc, schema::pluginsSchema(), "plugins", sink);
+        if (!sourcesConfigured && pc.sources.empty()) {
+          pc.sources = defaultPluginSources();
+        }
+      } else {
+        pc.sources = defaultPluginSources();
+      }
+      scripting::applyPluginSourcesToRegistry(scripting::PluginRegistry::instance(), pc);
+    }
 
     validateBars(merged, diag);
     validateBarWidgets(merged, diag);

@@ -27,13 +27,32 @@ namespace scripting {
       const auto slash = pluginId.find('/');
       return slash == std::string_view::npos ? std::string(pluginId) : std::string(pluginId.substr(slash + 1));
     }
+
+    std::filesystem::path sourceRootFor(const PluginSourceConfig& source) {
+      if (source.kind == PluginSourceKind::Path) {
+        return FileUtils::expandUserPath(source.location);
+      }
+      return std::filesystem::path(FileUtils::pluginSourcesDir()) / source.name;
+    }
   } // namespace
 
-  std::filesystem::path PluginManager::sourceRoot(const PluginSourceConfig& source) const {
-    if (source.kind == PluginSourceKind::Path) {
-      return FileUtils::expandUserPath(source.location);
+  void applyPluginSourcesToRegistry(PluginRegistry& registry, const PluginsConfig& plugins) {
+    // Scan the local dev dir + every configured source; a plugin is active only if
+    // its id is in [plugins].enabled (opt-in, uniform across all sources).
+    std::vector<std::filesystem::path> roots;
+    if (const std::string data = FileUtils::dataDir(); !data.empty()) {
+      roots.push_back(std::filesystem::path(data) / "plugins");
     }
-    return std::filesystem::path(FileUtils::pluginSourcesDir()) / source.name;
+    for (const auto& source : plugins.sources) {
+      roots.push_back(sourceRootFor(source));
+    }
+    registry.setSources(std::move(roots));
+    registry.setEnabledFilter(std::unordered_set<std::string>(plugins.enabled.begin(), plugins.enabled.end()));
+    registry.scan();
+  }
+
+  std::filesystem::path PluginManager::sourceRoot(const PluginSourceConfig& source) const {
+    return sourceRootFor(source);
   }
 
   std::optional<PluginSourceConfig> PluginManager::findSourceOffering(std::string_view pluginId) const {
@@ -111,20 +130,7 @@ namespace scripting {
       ensureEnabledMaterialized(pc);
     }
 
-    // Scan the local dev dir + every configured source; a plugin is active only if
-    // its id is in [plugins].enabled (opt-in, uniform across all sources).
-    std::vector<std::filesystem::path> roots;
-    if (const std::string data = FileUtils::dataDir(); !data.empty()) {
-      roots.push_back(std::filesystem::path(data) / "plugins");
-    }
-    for (const auto& source : pc.sources) {
-      roots.push_back(sourceRoot(source));
-    }
-
-    auto& registry = PluginRegistry::instance();
-    registry.setSources(std::move(roots));
-    registry.setEnabledFilter(std::unordered_set<std::string>(pc.enabled.begin(), pc.enabled.end()));
-    registry.scan();
+    applyPluginSourcesToRegistry(PluginRegistry::instance(), pc);
 
     m_lastApplied = pc;
     m_applied = true;

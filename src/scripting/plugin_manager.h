@@ -13,6 +13,14 @@ class ConfigService;
 
 namespace scripting {
 
+  class PluginRegistry;
+
+  // Resolve the [plugins] config into registry source roots + an enabled gate and
+  // (re)scan. Pure disk work — never materializes (no network). Shared by
+  // PluginManager::refresh and the config-validate CLI so both resolve plugin
+  // widget types against the same active set.
+  void applyPluginSourcesToRegistry(PluginRegistry& registry, const PluginsConfig& plugins);
+
   struct EnableResult {
     bool ok = false;
     std::string error;
