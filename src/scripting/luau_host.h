@@ -1,9 +1,11 @@
 #pragma once
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -86,6 +88,16 @@ public:
   bool callStateWatchCallback(int callbackRef, const std::string& json, std::chrono::milliseconds budget);
   [[nodiscard]] bool hasStateWatchCallback(int callbackRef) const;
 
+  // noctalia.runStream — run a long-lived process and deliver each stdout line to a
+  // Lua callback. Cancellable: every active stream's process is terminated when the
+  // host is destroyed (reload / runtime stop), so editing the script or removing the
+  // widget kills the subprocess instead of leaking it.
+  using StreamLineHandler = std::function<void(std::uint64_t hostId, int callbackRef, std::string line)>;
+  void setStreamLineHandler(StreamLineHandler handler) { m_streamLineHandler = std::move(handler); }
+  [[nodiscard]] bool startStream(std::string command, int callbackRef);
+  bool callStreamCallback(int callbackRef, const std::string& line, std::chrono::milliseconds budget);
+  [[nodiscard]] bool hasStreamCallback(int callbackRef) const;
+
   // Load the plugin's own translations/<lang>.json (over en.json) into a flat dotted-key
   // catalog. Call after setPluginDir().
   void loadTranslations();
@@ -126,6 +138,7 @@ public:
   [[nodiscard]] std::optional<std::string> scriptFocusedOutputName() const;
 
 private:
+  void stopAllStreams() noexcept;
   bool callGlobalInternal(const char* name, int args, std::chrono::milliseconds budget);
   bool callWithBudget(const char* name, int args, int results, std::chrono::milliseconds budget);
   void beginBudget(std::string_view name, std::chrono::milliseconds budget);
@@ -140,6 +153,9 @@ private:
   std::unordered_map<std::string, std::string> m_translations;
   std::unordered_set<int> m_stateWatchCallbackRefs;
   StateWatchHandler m_stateWatchHandler;
+  std::unordered_set<int> m_streamCallbackRefs;
+  std::vector<std::shared_ptr<std::atomic<bool>>> m_streamCancels;
+  StreamLineHandler m_streamLineHandler;
   lua_State* m_L = nullptr; // main state, frozen by luaL_sandbox
   lua_State* m_T = nullptr; // sandboxed thread; user code runs here
   int m_threadRef = -1;     // registry ref pinning m_T against the GC

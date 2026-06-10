@@ -26,6 +26,8 @@ class Label;
 class CompositorPlatform;
 class ClipboardService;
 class HttpClient;
+class PipeWireSpectrum;
+class MprisService;
 namespace scripting {
   class ScriptApiContext;
 }
@@ -39,7 +41,8 @@ public:
       std::string entryId, std::filesystem::path sourcePath,
       std::unordered_map<std::string, WidgetSettingValue> settings, std::string barName, std::string outputName,
       scripting::ScriptApiContext& scriptApi, FileWatcher* fileWatcher = nullptr,
-      CompositorPlatform* platform = nullptr, ClipboardService* clipboard = nullptr, HttpClient* httpClient = nullptr
+      CompositorPlatform* platform = nullptr, ClipboardService* clipboard = nullptr, HttpClient* httpClient = nullptr,
+      PipeWireSpectrum* audioSpectrum = nullptr, MprisService* mpris = nullptr
   );
   ~PluginWidget() override;
 
@@ -104,6 +107,12 @@ private:
   void scheduleDeferredUpdate();
   [[nodiscard]] bool shouldDeferUpdate() const;
 
+  // Audio-reactive widgets (e.g. bongocat): subscribe to the PipeWire spectrum and
+  // forward each frame to the script's onAudioSpectrum(values, state) callback.
+  void setupAudioSpectrum();
+  void teardownAudioSpectrum();
+  void handleAudioSpectrumChanged();
+
   std::string m_entryId; // "author/plugin:entry"
   std::filesystem::path m_sourcePath;
   std::filesystem::path m_pluginDir;
@@ -118,6 +127,11 @@ private:
   CompositorPlatform* m_platform = nullptr;
   ClipboardService* m_clipboard = nullptr;
   HttpClient* m_httpClient = nullptr;
+  PipeWireSpectrum* m_audioSpectrum = nullptr;
+  MprisService* m_mpris = nullptr;
+  std::uint64_t m_audioSpectrumListenerId = 0;
+  int m_audioSpectrumBands = 16;
+  bool m_audioSpectrumEnabled = false;
   FileWatcher::WatchId m_watchId = 0;
   Timer m_updateTimer;
   Timer m_deferredUpdateTimer;

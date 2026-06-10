@@ -370,7 +370,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
     auto seeded = scripting::seedEntrySettings(*pluginEntry->entry, overrides);
     auto widget = std::make_unique<PluginWidget>(
         pluginEntry->fullId(), pluginEntry->sourcePath, std::move(seeded), barName, outputName, *m_scriptApi,
-        m_fileWatcher, &m_platform, m_clipboard, m_httpClient
+        m_fileWatcher, &m_platform, m_clipboard, m_httpClient, m_audioSpectrum, m_mpris
     );
     widget->setContentScale(contentScale);
     return widget;

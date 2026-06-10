@@ -349,6 +349,16 @@ namespace scripting {
       (void)enqueue(std::move(event));
     }
 
+    void enqueueStreamLine(std::uint64_t hostId, int callbackRef, std::string line) {
+      ScriptWidgetEvent event;
+      event.kind = ScriptWidgetEventKind::StreamLine;
+      event.hostId = hostId;
+      event.callbackRef = callbackRef;
+      event.first = std::move(line);
+      event.budget = kCallbackBudget;
+      (void)enqueue(std::move(event));
+    }
+
     void drain() {
       for (;;) {
         ScriptWidgetEvent event;
@@ -434,6 +444,15 @@ namespace scripting {
         return collectResult(event, "state watch callback", ok);
       }
 
+      if (event.kind == ScriptWidgetEventKind::StreamLine) {
+        if (event.hostId != host->hostId() || !host->hasStreamCallback(event.callbackRef)) {
+          return std::nullopt; // stale (reloaded host) or unregistered
+        }
+        bindingContext.beginCall(event.snapshot);
+        const bool ok = host->callStreamCallback(event.callbackRef, event.first, event.budget);
+        return collectResult(event, "stream callback", ok);
+      }
+
       bindingContext.beginCall(event.snapshot);
       bool ok = false;
       switch (event.kind) {
@@ -504,6 +523,11 @@ namespace scripting {
             }
           }
       );
+      host->setStreamLineHandler([weak](std::uint64_t hostId, int callbackRef, std::string line) {
+        if (auto state = weak.lock()) {
+          state->enqueueStreamLine(hostId, callbackRef, std::move(line));
+        }
+      });
 
       ScriptWidgetResult result;
       result.generation = event.generation;

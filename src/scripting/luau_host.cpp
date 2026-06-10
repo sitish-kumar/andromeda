@@ -44,6 +44,10 @@ namespace {
   constexpr int kMaxGlobalAsyncProcessMatches = 64;
   constexpr int kMaxGlobalDetachedCommands = 32;
   constexpr std::size_t kMaxAsyncHttpPerHost = 8;
+  constexpr std::size_t kMaxStreamsPerHost = 4;
+  // A single stream line can't exceed this; protects against a process spewing one
+  // unbounded line with no newline.
+  constexpr std::size_t kMaxStreamLineBytes = 64 * 1024;
 
   std::uint64_t& nextHostId() {
     static std::uint64_t id = 1;
@@ -204,6 +208,26 @@ namespace {
     const auto timeout = commandTimeoutFromLua(L);
     const int callbackRef = lua_ref(L, 2);
     bool ok = host->startAsyncCommand(std::move(command), callbackRef, timeout);
+    if (!ok) {
+      lua_unref(L, callbackRef);
+    }
+    lua_pushboolean(L, ok ? 1 : 0);
+    return 1;
+  }
+
+  int luau_runStream(lua_State* L) {
+    size_t len = 0;
+    const char* cmd = luaL_checklstring(L, 1, &len);
+    luaL_checktype(L, 2, LUA_TFUNCTION);
+
+    auto* host = hostForState(L);
+    if (host == nullptr) {
+      lua_pushboolean(L, 0);
+      return 1;
+    }
+
+    const int callbackRef = lua_ref(L, 2);
+    bool ok = host->startStream(std::string(cmd, len), callbackRef);
     if (!ok) {
       lua_unref(L, callbackRef);
     }
@@ -766,6 +790,7 @@ namespace {
   const luaL_Reg kNoctaliaBaseLib[] = {
       {"log", luau_log},
       {"runAsync", luau_runAsync},
+      {"runStream", luau_runStream},
       {"runInTerminal", luau_runInTerminal},
       {"commandExists", luau_commandExists},
       {"processMatches", luau_processMatches},
@@ -825,6 +850,8 @@ LuauHost::LuauHost(scripting::ScriptApiContext& api, CompositorPlatform* platfor
 }
 
 LuauHost::~LuauHost() {
+  // Terminate any long-lived stream subprocesses before tearing down the state.
+  stopAllStreams();
   if (m_L) {
     if (m_T != nullptr) {
       for (int callbackRef : m_asyncCommandCallbackRefs) {
@@ -835,6 +862,10 @@ LuauHost::~LuauHost() {
         lua_unref(m_T, callbackRef);
       }
       m_asyncProcessMatchCallbackRefs.clear();
+      for (int callbackRef : m_streamCallbackRefs) {
+        lua_unref(m_T, callbackRef);
+      }
+      m_streamCallbackRefs.clear();
     }
     if (m_threadRef != -1)
       lua_unref(m_L, m_threadRef);
@@ -1054,6 +1085,73 @@ void LuauHost::stateWatch(std::string key, int callbackRef) {
 }
 
 bool LuauHost::hasStateWatchCallback(int callbackRef) const { return m_stateWatchCallbackRefs.contains(callbackRef); }
+
+bool LuauHost::startStream(std::string command, int callbackRef) {
+  if (command.empty() || callbackRef <= LUA_REFNIL || m_streamCancels.size() >= kMaxStreamsPerHost) {
+    return false;
+  }
+  auto handler = m_streamLineHandler;
+  if (!handler) {
+    return false;
+  }
+
+  m_streamCallbackRefs.insert(callbackRef);
+  auto cancel = std::make_shared<std::atomic<bool>>(false);
+  m_streamCancels.push_back(cancel);
+
+  const std::uint64_t hostId = m_hostId;
+  auto buffer = std::make_shared<std::string>();
+
+  process::RunCallbacks callbacks;
+  // Runs on the process worker thread: split chunks into lines and marshal each
+  // back to the runtime thread (the handler enqueues into the runtime mailbox).
+  callbacks.stdOut = [hostId, callbackRef, handler, buffer](std::string_view chunk) {
+    buffer->append(chunk);
+    std::size_t pos = 0;
+    while ((pos = buffer->find('\n')) != std::string::npos) {
+      std::string line = buffer->substr(0, pos);
+      buffer->erase(0, pos + 1);
+      if (!line.empty() && line.back() == '\r') {
+        line.pop_back();
+      }
+      handler(hostId, callbackRef, std::move(line));
+    }
+    if (buffer->size() > kMaxStreamLineBytes) {
+      buffer->clear(); // drop a pathological unbounded line
+    }
+  };
+
+  process::RunOptions options;
+  options.cancel = std::move(cancel);
+  // No timeout (long-lived); no onExit so output is never accumulated, only streamed.
+  return process::runAsync({"/bin/sh", "-c", std::move(command)}, std::move(callbacks), std::move(options));
+}
+
+bool LuauHost::callStreamCallback(int callbackRef, const std::string& line, std::chrono::milliseconds budget) {
+  if (m_T == nullptr || !m_streamCallbackRefs.contains(callbackRef)) {
+    return false;
+  }
+  // Stream callbacks fire repeatedly; the ref lives with the lua_State and is
+  // cleaned up wholesale on reload (new host).
+  lua_getref(m_T, callbackRef);
+  if (!lua_isfunction(m_T, -1)) {
+    lua_pop(m_T, 1);
+    return false;
+  }
+  lua_pushlstring(m_T, line.data(), line.size());
+  return callWithBudget("stream callback", 1, 0, budget);
+}
+
+bool LuauHost::hasStreamCallback(int callbackRef) const { return m_streamCallbackRefs.contains(callbackRef); }
+
+void LuauHost::stopAllStreams() noexcept {
+  for (const auto& cancel : m_streamCancels) {
+    if (cancel) {
+      cancel->store(true, std::memory_order_relaxed);
+    }
+  }
+  m_streamCancels.clear();
+}
 
 bool LuauHost::callStateWatchCallback(int callbackRef, const std::string& json, std::chrono::milliseconds budget) {
   if (m_T == nullptr || !m_stateWatchCallbackRefs.contains(callbackRef)) {

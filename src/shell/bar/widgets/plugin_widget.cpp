@@ -3,8 +3,10 @@
 #include "compositors/compositor_platform.h"
 #include "core/log.h"
 #include "cursor-shape-v1-client-protocol.h"
+#include "dbus/mpris/mpris_service.h"
 #include "i18n/i18n.h"
 #include "notification/notifications.h"
+#include "pipewire/pipewire_spectrum.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
 #include "scripting/script_api_context.h"
@@ -20,6 +22,7 @@
 #include <cstdlib>
 #include <fontconfig/fontconfig.h>
 #include <fstream>
+#include <iomanip>
 #include <linux/input-event-codes.h>
 #include <optional>
 #include <sstream>
@@ -33,6 +36,40 @@ namespace {
   constexpr int kImageReloadRetryCount = 2;
   constexpr std::chrono::milliseconds kTimerPhaseStep{50};
   constexpr std::chrono::milliseconds kTimerMaxPhase{500};
+
+  bool
+  settingBool(const std::unordered_map<std::string, WidgetSettingValue>& settings, const std::string& key, bool def) {
+    const auto it = settings.find(key);
+    if (it == settings.end()) {
+      return def;
+    }
+    const auto* value = std::get_if<bool>(&it->second);
+    return value != nullptr ? *value : def;
+  }
+
+  std::int64_t settingInt(
+      const std::unordered_map<std::string, WidgetSettingValue>& settings, const std::string& key, std::int64_t def
+  ) {
+    const auto it = settings.find(key);
+    if (it == settings.end()) {
+      return def;
+    }
+    const auto* value = std::get_if<std::int64_t>(&it->second);
+    return value != nullptr ? *value : def;
+  }
+
+  std::string joinSpectrumValues(const std::vector<float>& values) {
+    std::ostringstream out;
+    out.setf(std::ios::fixed, std::ios::floatfield);
+    out << std::setprecision(4);
+    for (std::size_t i = 0; i < values.size(); ++i) {
+      if (i != 0) {
+        out << ',';
+      }
+      out << values[i];
+    }
+    return out.str();
+  }
 
   std::unordered_set<std::string>& registeredFontFiles() {
     static std::unordered_set<std::string> s;
@@ -95,12 +132,16 @@ namespace {
 PluginWidget::PluginWidget(
     std::string entryId, std::filesystem::path sourcePath, std::unordered_map<std::string, WidgetSettingValue> settings,
     std::string barName, std::string outputName, scripting::ScriptApiContext& scriptApi, FileWatcher* fileWatcher,
-    CompositorPlatform* platform, ClipboardService* clipboard, HttpClient* httpClient
+    CompositorPlatform* platform, ClipboardService* clipboard, HttpClient* httpClient, PipeWireSpectrum* audioSpectrum,
+    MprisService* mpris
 )
     : m_entryId(std::move(entryId)), m_sourcePath(std::move(sourcePath)), m_pluginDir(m_sourcePath.parent_path()),
       m_barName(std::move(barName)), m_outputName(std::move(outputName)), m_scriptApi(scriptApi),
       m_settings(std::move(settings)), m_fileWatcher(fileWatcher), m_platform(platform), m_clipboard(clipboard),
-      m_httpClient(httpClient), m_timerPhase(nextTimerPhase()) {
+      m_httpClient(httpClient), m_audioSpectrum(audioSpectrum), m_mpris(mpris), m_timerPhase(nextTimerPhase()) {
+  m_audioSpectrumEnabled = settingBool(m_settings, "audio_spectrum", false);
+  m_audioSpectrumBands =
+      static_cast<int>(std::clamp<std::int64_t>(settingInt(m_settings, "audio_spectrum_bands", 16), 1, 128));
   scripting::PluginIpcRouter::instance().registerEndpoint(this);
 }
 
@@ -109,6 +150,7 @@ PluginWidget::~PluginWidget() {
   if (m_alive) {
     *m_alive = false;
   }
+  teardownAudioSpectrum();
   teardownImageWatch();
   teardownScriptWatch();
   if (m_runtime != nullptr) {
@@ -229,6 +271,38 @@ void PluginWidget::create() {
   m_runtime->start(m_sourcePath.string(), std::move(source), makeScriptSnapshot());
   startUpdateTimer();
   setupScriptWatch();
+  setupAudioSpectrum();
+}
+
+void PluginWidget::setupAudioSpectrum() {
+  if (!m_audioSpectrumEnabled || m_audioSpectrum == nullptr || m_audioSpectrumListenerId != 0) {
+    return;
+  }
+  m_audioSpectrumListenerId =
+      m_audioSpectrum->addChangeListener(m_audioSpectrumBands, [this]() { handleAudioSpectrumChanged(); });
+}
+
+void PluginWidget::teardownAudioSpectrum() {
+  if (m_audioSpectrum != nullptr && m_audioSpectrumListenerId != 0) {
+    m_audioSpectrum->removeChangeListener(m_audioSpectrumListenerId);
+  }
+  m_audioSpectrumListenerId = 0;
+}
+
+void PluginWidget::handleAudioSpectrumChanged() {
+  if (m_runtime == nullptr || m_audioSpectrum == nullptr || m_audioSpectrumListenerId == 0) {
+    return;
+  }
+  const bool audioActive = !m_audioSpectrum->idle();
+  const auto active = m_mpris != nullptr ? m_mpris->activePlayer() : std::nullopt;
+  const bool mprisPlaying = active.has_value() && active->playbackStatus == "Playing";
+  const std::string state = std::string(audioActive ? "1" : "0") + "," + (mprisPlaying ? "1" : "0");
+  // Coalesce: at ~60Hz only the latest frame matters, so a slow script can't
+  // accumulate stale spectrum events.
+  (void)m_runtime->enqueueCallStrings(
+      "onAudioSpectrum", joinSpectrumValues(m_audioSpectrum->values(m_audioSpectrumListenerId)), state,
+      makeScriptSnapshot(), /*coalesce=*/true
+  );
 }
 
 void PluginWidget::doLayout(Renderer& renderer, float containerWidth, float containerHeight) {

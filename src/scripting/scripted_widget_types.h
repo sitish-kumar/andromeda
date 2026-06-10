@@ -113,6 +113,7 @@ namespace scripting {
     AsyncProcessMatchResult,
     AsyncHttpResult,
     StateWatchResult,
+    StreamLine,
     Stop,
   };
 
