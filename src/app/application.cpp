@@ -1941,6 +1941,9 @@ void Application::initIpc() {
             if (parts.size() != 3) {
               return "error: plugins source remove <name>\n";
             }
+            if (isDefaultPluginSourceName(parts[2])) {
+              return "error: built-in plugin sources cannot be removed from IPC\n";
+            }
             m_pluginManager.removeSource(parts[2]);
             return "ok\n";
           }

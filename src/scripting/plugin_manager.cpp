@@ -536,6 +536,10 @@ namespace scripting {
   }
 
   void PluginManager::removeSource(std::string sourceName) {
+    if (isDefaultPluginSourceName(sourceName)) {
+      kLog.warn("refusing to remove built-in plugin source '{}'", sourceName);
+      return;
+    }
     const auto source = findSource(sourceName);
     if (!source.has_value()) {
       return;

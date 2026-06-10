@@ -61,19 +61,21 @@ namespace settings {
             })
         );
       }
-      r->addChild(
-          ui::button({
-              .glyph = "trash",
-              .glyphSize = Style::fontSizeBody * scale,
-              .variant = ButtonVariant::Ghost,
-              .tooltip = "Remove source",
-              .onClick = [cb = ctx.removeSource, name = source.name]() {
-                if (cb) {
-                  cb(name);
-                }
-              },
-          })
-      );
+      if (!isDefaultPluginSourceName(source.name)) {
+        r->addChild(
+            ui::button({
+                .glyph = "trash",
+                .glyphSize = Style::fontSizeBody * scale,
+                .variant = ButtonVariant::Ghost,
+                .tooltip = "Remove source",
+                .onClick = [cb = ctx.removeSource, name = source.name]() {
+                  if (cb) {
+                    cb(name);
+                  }
+                },
+            })
+        );
+      }
       return row;
     }
 

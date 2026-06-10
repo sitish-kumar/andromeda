@@ -58,8 +58,7 @@ int main() {
        )
       && ok;
   ok = expectPath(
-           scripting::plugin_paths::gitRepoRoot(gitSource), stateRoot / "plugins/sources/official/repo",
-           "git repo root"
+           scripting::plugin_paths::gitRepoRoot(gitSource), stateRoot / "plugins/sources/official/repo", "git repo root"
        )
       && ok;
   ok = expectPath(
@@ -72,6 +71,9 @@ int main() {
            "git registry root"
        )
       && ok;
+  ok = expect(isDefaultPluginSourceName("official"), "official source should be protected as a default source") && ok;
+  ok = expect(isDefaultPluginSourceName("community"), "community source should be protected as a default source") && ok;
+  ok = expect(!isDefaultPluginSourceName("dev"), "custom source should not be protected as a default source") && ok;
   ok = expect(
            scripting::plugin_paths::registryRoot(pathSource).string().ends_with("/dev/noctalia-plugins"),
            "path source registry root expands user path"

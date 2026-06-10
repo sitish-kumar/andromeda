@@ -68,6 +68,13 @@ std::vector<PluginSourceConfig> defaultPluginSources() {
   };
 }
 
+bool isDefaultPluginSourceName(std::string_view name) {
+  const auto sources = defaultPluginSources();
+  return std::any_of(sources.begin(), sources.end(), [name](const PluginSourceConfig& source) {
+    return source.name == name;
+  });
+}
+
 bool isValidPluginSourceName(std::string_view name) {
   if (name.empty()) {
     return false;
