@@ -456,14 +456,14 @@ namespace settings {
       if (isBuiltInWidgetType(name)) {
         continue;
       }
+      // Only surface named instances of built-in multi-instance types (custom_button, spacer).
+      // Plugin-typed instances are already represented by their registry [[widget]] entry below,
+      // and stale/invalid types (e.g. "scripted") are surfaced loudly by config_validate.
+      if (!widget.type.empty() && !isBuiltInWidgetType(widget.type)) {
+        continue;
+      }
       std::string label = widgetInstanceDisplayLabel(name);
       std::string description = widget.type.empty() ? tr("settings.entities.widget.detail.custom") : widget.type;
-      if (auto pw = resolvePluginWidget(widget.type)) {
-        if (!pw->manifest->name.empty()) {
-          label = pw->manifest->name;
-        }
-        description = appendVersion(std::move(description), pw->manifest->version);
-      }
       addPickerEntry(
           entries, seen, name, label, std::move(description), widgetGlyph(widget.type, &widget),
           WidgetReferenceKind::Named
