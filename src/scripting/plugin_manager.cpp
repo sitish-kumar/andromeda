@@ -161,7 +161,7 @@ namespace scripting {
       return {.ok = false, .error = "invalid plugin id '" + id + "' (expected author/plugin)"};
     }
 
-    // Managed source: fetch the code (git sparse-checkout) before enabling.
+    // Managed source: materialize the plugin directory before enabling.
     if (const auto source = findSourceOffering(id); source.has_value()) {
       const std::filesystem::path root = sourceRoot(*source);
       const auto subdir = pluginSubdirFromId(id);

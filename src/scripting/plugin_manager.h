@@ -55,7 +55,7 @@ namespace scripting {
     // No-op when the plugins config is unchanged since the last applied refresh.
     void refresh();
 
-    // Enable a managed-source plugin by id ("author/plugin"): clone + sparse-checkout
+    // Enable a managed-source plugin by id ("author/plugin"): clone + materialize
     // from its git source if needed, enforce min_noctalia, then persist. Persisting
     // fans out a reload (which re-refreshes the registry). Hard error on an unknown
     // id, a failed fetch, or an incompatible min_noctalia.
@@ -72,9 +72,9 @@ namespace scripting {
     void addSource(const PluginSourceConfig& source);
 
     // Fetch a git source off-thread, check the new catalog's min_noctalia for every
-    // enabled plugin, and fast-forward only if all are compatible — otherwise the
-    // update is skipped (nothing is applied). Re-scans on the main thread. No-op for
-    // path / unknown sources.
+    // enabled plugin, and apply only if all are compatible — otherwise the update is
+    // skipped (nothing is applied). Re-scans on the main thread. No-op for path /
+    // unknown sources.
     void update(std::string sourceName);
 
     // Remove a source: delete its git clone, disable its plugins, drop it from

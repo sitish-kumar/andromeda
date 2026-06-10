@@ -75,7 +75,7 @@ namespace FileUtils {
     return {};
   }
 
-  // Git-source working copies (blobless sparse clones). Host-managed cache,
+  // Git-source working copies (blobless source clones). Host-managed cache,
   // re-fetchable, so it lives under the state dir — never config.
   [[nodiscard]] inline std::string pluginSourcesDir() {
     const std::string base = stateDir();

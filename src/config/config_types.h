@@ -1173,8 +1173,9 @@ struct ControlCenterConfig {
 };
 
 // A plugin source: where plugin code comes from. `Git` is a repo URL the host
-// clones/pulls/sparse-checks-out; `Path` is an immutable local directory (e.g. a
-// Nix store path) the host treats read-only (update/auto-update/remove are no-ops).
+// clones, updates, and materializes plugin directories from; `Path` is an
+// immutable local directory (e.g. a Nix store path) the host treats read-only
+// (update/auto-update/remove are no-ops).
 enum class PluginSourceKind : std::uint8_t {
   Git = 0,
   Path = 1,

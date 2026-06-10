@@ -42,7 +42,7 @@ namespace scripting::plugin_git {
 
   GitResult cloneBlobless(const std::string& url, const std::filesystem::path& dest) {
     // Blobless but NOT shallow: full commit/tree history (still tiny — no file
-    // blobs until needed), so later fetch + fast-forward work normally. A `--depth 1`
+    // blobs until needed), so later fetches can inspect history normally. A `--depth 1`
     // shallow clone grafts fetched commits as disjoint roots ("unrelated histories").
     return run(
         {"git", "clone", "--filter=blob:none", "--no-checkout", url, dest.string()}, kNetworkTimeout, kProgressCap

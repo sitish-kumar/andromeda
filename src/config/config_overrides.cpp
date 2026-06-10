@@ -653,37 +653,35 @@ ConfigChangeSet computeConfigChangeSet(const Config& prev, const Config& next) {
 }
 
 void ConfigService::setPluginEnabled(std::string_view pluginId, bool enabled) {
-  if (enabled && !scripting::isValidPluginId(pluginId)) {
+  if (!scripting::isValidPluginId(pluginId)) {
     return;
   }
   if (m_overridesPath.empty()) {
     return;
   }
 
-  auto* pluginsTbl = ensureTable(m_overridesTable, "plugins");
-  auto* arr = pluginsTbl->get_as<toml::array>("enabled");
-  if (arr == nullptr) {
-    auto [it, _] = pluginsTbl->insert_or_assign("enabled", toml::array{});
-    arr = it->second.as_array();
-  }
-
   const std::string id(pluginId);
-  auto pos = std::find_if(arr->begin(), arr->end(), [&id](const toml::node& node) {
-    const auto value = node.value<std::string>();
-    return value && *value == id;
-  });
+  std::vector<std::string> next = m_config.plugins.enabled;
+  const bool currentlyEnabled = std::find(next.begin(), next.end(), id) != next.end();
 
   if (enabled) {
-    if (pos != arr->end()) {
+    if (currentlyEnabled) {
       return; // already enabled
     }
-    arr->push_back(id);
+    next.push_back(id);
   } else {
-    if (pos == arr->end()) {
+    if (!currentlyEnabled) {
       return; // already disabled
     }
-    arr->erase(pos);
+    std::erase(next, id);
   }
+
+  toml::array enabledArray;
+  for (const auto& plugin : next) {
+    enabledArray.push_back(plugin);
+  }
+  auto* pluginsTbl = ensureTable(m_overridesTable, "plugins");
+  pluginsTbl->insert_or_assign("enabled", std::move(enabledArray));
 
   if (!writeOverridesToFile()) {
     kLog.warn("failed to write {}", m_overridesPath);
