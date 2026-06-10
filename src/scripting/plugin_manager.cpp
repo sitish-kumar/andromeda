@@ -113,7 +113,13 @@ namespace scripting {
         // only); the per-plugin materialize below checks out what's enabled.
         std::filesystem::create_directories(root.parent_path(), ec);
         kLog.info("re-cloning missing plugin source '{}'", source.name);
-        if (!plugin_git::cloneBlobless(source.location, root)) {
+        const auto cloned = plugin_git::cloneBlobless(source.location, root);
+        if (!cloned) {
+          if (cloned.timedOut) {
+            kLog.warn("plugin source '{}': clone timed out", source.name);
+          } else {
+            kLog.warn("plugin source '{}': clone failed with exit code {}", source.name, cloned.exitCode);
+          }
           continue; // offline / unreachable — leave it; list/enable will retry
         }
       }
@@ -130,8 +136,16 @@ namespace scripting {
           continue; // this source doesn't ship it
         }
         kLog.info("materializing enabled plugin '{}' from source '{}'", id, source.name);
-        if (plugin_git::materialize(root, "HEAD", *sub)) {
+        const auto materializedPlugin = plugin_git::materialize(root, "HEAD", *sub);
+        if (materializedPlugin) {
           materialized = true;
+        } else if (materializedPlugin.timedOut) {
+          kLog.warn("plugin source '{}': materializing '{}' timed out", source.name, id);
+        } else {
+          kLog.warn(
+              "plugin source '{}': materializing '{}' failed with exit code {}", source.name, id,
+              materializedPlugin.exitCode
+          );
         }
       }
     }

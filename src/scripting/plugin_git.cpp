@@ -3,6 +3,7 @@
 #include "core/process.h"
 
 #include <chrono>
+#include <cstdlib>
 #include <system_error>
 #include <utility>
 #include <vector>
@@ -19,8 +20,32 @@ namespace scripting::plugin_git {
     constexpr std::size_t kFileCap = 4 * 1024 * 1024;
     constexpr std::size_t kProgressCap = 64 * 1024;
 
+    std::string nonInteractiveSshCommand() {
+      if (const char* existing = std::getenv("GIT_SSH_COMMAND"); existing != nullptr && existing[0] != '\0') {
+        return std::string(existing) + " -oBatchMode=yes";
+      }
+      return "ssh -oBatchMode=yes";
+    }
+
+    std::vector<process::EnvOverride> nonInteractiveGitEnv() {
+      return {
+          {.name = "GIT_TERMINAL_PROMPT", .value = "0"},
+          {.name = "GIT_ASKPASS", .value = "/bin/false"},
+          {.name = "SSH_ASKPASS", .value = "/bin/false"},
+          {.name = "SSH_ASKPASS_REQUIRE", .value = "never"},
+          {.name = "GIT_SSH_COMMAND", .value = nonInteractiveSshCommand()},
+      };
+    }
+
     GitResult run(std::vector<std::string> args, std::chrono::milliseconds timeout, std::size_t cap) {
-      const auto r = process::runSyncWithTimeoutAndOutputLimit(args, timeout, cap);
+      if (!args.empty() && args.front() == "git") {
+        args.insert(args.begin() + 1, {"-c", "credential.interactive=false", "-c", "core.askPass=/bin/false"});
+      }
+      process::RunOptions options;
+      options.timeout = timeout;
+      options.maxOutputBytes = cap;
+      options.env = nonInteractiveGitEnv();
+      const auto r = process::runSync(args, std::move(options));
       return GitResult{
           .ok = static_cast<bool>(r),
           .exitCode = r.exitCode,

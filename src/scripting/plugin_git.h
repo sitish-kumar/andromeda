@@ -21,9 +21,10 @@ namespace scripting {
   // Thin synchronous wrapper over the `git` CLI for plugin sources. Every call
   // blocks on the subprocess, so callers MUST run these off the UI thread (the
   // plugin manager drives them on a worker). All ops target a single source
-  // clone directory. `--filter=blob:none` is requested for lazy blob fetch;
-  // servers that don't support it make git fall back to a normal shallow clone
-  // on its own — no explicit degrade path here.
+  // clone directory. Commands run non-interactively so private/unavailable
+  // remotes fail instead of prompting during shell startup. `--filter=blob:none`
+  // is requested for lazy blob fetch; servers that don't support it make git
+  // fall back to a normal shallow clone on its own — no explicit degrade path here.
   namespace plugin_git {
 
     [[nodiscard]] bool available();
