@@ -1087,9 +1087,6 @@ void NotificationToast::removeCardFromInstance(Instance& inst, std::size_t entry
   if (inst.pointerInside) {
     inst.inputDispatcher.pointerMotion(inst.lastPointerX, inst.lastPointerY, 0);
   }
-  if (entryIndex < m_entries.size()) {
-    finishExitingEntryIfOrphaned(m_entries[entryIndex].notificationId);
-  }
 
   if (inst.surface != nullptr) {
     inst.surface->requestRedraw();
@@ -2093,14 +2090,17 @@ void NotificationToast::buildScene(Instance& inst, uint32_t width, uint32_t heig
   }
 
   std::vector<uint32_t> exitingIds;
-  exitingIds.reserve(m_entries.size());
   for (const auto& entry : m_entries) {
     if (entry.exiting) {
       exitingIds.push_back(entry.notificationId);
     }
   }
-  for (const uint32_t id : exitingIds) {
-    finishExitingEntryIfOrphaned(id);
+  if (!exitingIds.empty()) {
+    DeferredCall::callLater([this, exitingIds = std::move(exitingIds)]() {
+      for (const uint32_t id : exitingIds) {
+        finishExitingEntryIfOrphaned(id);
+      }
+    });
   }
 }
 
