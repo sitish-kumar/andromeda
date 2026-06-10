@@ -796,6 +796,7 @@
       "write": "未能保存设置。"
     },
     "export-config": {
+      "export": "导出",
       "full-effective-description": "导出所有生效的配置，包括内置默认值；这便于检查或共享配置快照，但会将当前默认值显式固定。",
       "merged-user-description": "将配置文件与 GUI 覆盖项合并为单个 TOML 文件。内置默认值保持隐式状态。"
     },
