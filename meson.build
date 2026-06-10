@@ -474,6 +474,7 @@ _noctalia_sources = files(
   'src/scripting/plugin_manifest.cpp',
   'src/scripting/plugin_registry.cpp',
   'src/scripting/plugin_service_host.cpp',
+  'src/scripting/plugin_source_paths.cpp',
   'src/scripting/plugin_state_store.cpp',
   'src/scripting/script_runtime.cpp',
   'src/scripting/script_worker_pool.cpp',
@@ -938,6 +939,36 @@ string_utils_test = executable('string_utils_test',
 )
 
 test('string_utils', string_utils_test)
+
+plugin_source_paths_test = executable('plugin_source_paths_test',
+  sources: files(
+    'tests/plugin_source_paths_test.cpp',
+    'src/scripting/plugin_source_paths.cpp',
+    'src/config/config_types.cpp',
+    'src/render/core/color.cpp',
+    'src/ui/palette.cpp',
+    'src/theme/builtin_palettes.cpp',
+    'src/theme/fixed_palette.cpp',
+    'src/theme/color.cpp',
+    'src/theme/contrast.cpp',
+    'src/core/key_chord.cpp',
+  ),
+  include_directories: _noctalia_inc,
+  dependencies: [xkbcommon_dep],
+)
+
+test('plugin_source_paths', plugin_source_paths_test)
+
+plugin_git_export_test = executable('plugin_git_export_test',
+  sources: files(
+    'tests/plugin_git_export_test.cpp',
+    'src/scripting/plugin_git.cpp',
+    'src/core/process.cpp',
+  ),
+  include_directories: _noctalia_inc,
+)
+
+test('plugin_git_export', plugin_git_export_test)
 
 config_schema_roundtrip_test = executable('config_schema_roundtrip_test',
   sources: files(

@@ -1174,7 +1174,7 @@ struct ControlCenterConfig {
 };
 
 // A plugin source: where plugin code comes from. `Git` is a repo URL the host
-// clones, updates, and materializes plugin directories from; `Path` is an
+// caches, updates, and exports plugin runtime files from; `Path` is an
 // immutable local directory (e.g. a Nix store path) the host treats read-only
 // (update/auto-update/remove are no-ops).
 enum class PluginSourceKind : std::uint8_t {
@@ -1211,7 +1211,7 @@ struct PluginsConfig {
 // Default sources seeded when [plugins] declares no [[plugins.source]]: the
 // official + community plugin repos (auto-update off).
 [[nodiscard]] std::vector<PluginSourceConfig> defaultPluginSources();
-// Source names are stable user-facing handles and git clone directory names.
+// Source names are stable user-facing handles and git source storage directory names.
 // Keep them flat so they can never escape the plugin source cache.
 [[nodiscard]] bool isValidPluginSourceName(std::string_view name);
 

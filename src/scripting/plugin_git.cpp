@@ -37,7 +37,9 @@ namespace scripting::plugin_git {
       };
     }
 
-    GitResult run(std::vector<std::string> args, std::chrono::milliseconds timeout, std::size_t cap) {
+    GitResult
+    run(std::vector<std::string> args, std::chrono::milliseconds timeout, std::size_t cap,
+        std::vector<process::EnvOverride> extraEnv = {}) {
       if (!args.empty() && args.front() == "git") {
         args.insert(args.begin() + 1, {"-c", "credential.interactive=false", "-c", "core.askPass=/bin/false"});
       }
@@ -45,6 +47,7 @@ namespace scripting::plugin_git {
       options.timeout = timeout;
       options.maxOutputBytes = cap;
       options.env = nonInteractiveGitEnv();
+      options.env.insert(options.env.end(), extraEnv.begin(), extraEnv.end());
       const auto r = process::runSync(args, std::move(options));
       return GitResult{
           .ok = static_cast<bool>(r),
@@ -80,15 +83,22 @@ namespace scripting::plugin_git {
     );
   }
 
-  GitResult materialize(const std::filesystem::path& dest, std::string_view rev, std::string_view subdir) {
-    // Discard any prior copy first so the result exactly matches `rev` (no stale files
-    // left over from an older revision, no tampered edits). `checkout <rev> -- <path>`
-    // then recreates it from the object store, lazily fetching blobs.
+  GitResult exportSubdir(
+      const std::filesystem::path& dest, std::string_view rev, std::string_view subdir,
+      const std::filesystem::path& workTree
+  ) {
     std::error_code ec;
-    std::filesystem::remove_all(dest / std::filesystem::path(subdir), ec);
+    std::filesystem::create_directories(workTree, ec);
+    if (ec) {
+      return GitResult{.ok = false, .exitCode = -1, .out = {}, .err = ec.message(), .timedOut = false};
+    }
+    std::vector<process::EnvOverride> env{
+        {.name = "GIT_INDEX_FILE", .value = (workTree / ".git-index").string()},
+    };
     return run(
-        {"git", "-C", dest.string(), "checkout", std::string(rev), "--", std::string(subdir)}, kNetworkTimeout,
-        kProgressCap
+        {"git", "-C", dest.string(), "--work-tree", workTree.string(), "checkout", std::string(rev), "--",
+         std::string(subdir)},
+        kNetworkTimeout, kProgressCap, std::move(env)
     );
   }
 

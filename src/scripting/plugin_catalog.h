@@ -25,11 +25,12 @@ namespace scripting {
     std::vector<CatalogEntry> entries;
   };
 
-  // Discover the plugins a source offers. git sources clone-if-needed (blobless,
-  // no-checkout) and read `catalog.toml` via `git show`; path sources read it
-  // straight from disk, falling back to scanning `*/plugin.toml`. Blocking git/IO
-  // — call off the UI thread. Compatibility is computed against the running
-  // version so the list can badge incompatible plugins before any detail fetch.
+  // Discover the plugins a source offers. git sources clone-if-needed into a repo
+  // cache (blobless, no-checkout) and read `catalog.toml` via `git show`; path
+  // sources read it straight from disk, falling back to scanning `*/plugin.toml`.
+  // Blocking git/IO — call off the UI thread. Compatibility is computed against
+  // the running version so the list can badge incompatible plugins before any
+  // detail fetch.
   [[nodiscard]] CatalogResult discoverCatalog(const PluginSourceConfig& source);
 
   // Parse a `catalog.toml` body. Exposed for testing + the git-source path.

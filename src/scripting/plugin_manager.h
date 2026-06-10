@@ -17,7 +17,7 @@ namespace scripting {
   class PluginRegistry;
 
   // Resolve the [plugins] config into registry source roots + an enabled gate and
-  // (re)scan. Pure disk work — never materializes (no network). Shared by
+  // (re)scan. Pure disk work — never exports git files (no network). Shared by
   // PluginManager::refresh and the config-validate CLI so both resolve plugin
   // widget types against the same active set.
   void applyPluginSourcesToRegistry(PluginRegistry& registry, const PluginsConfig& plugins);
@@ -55,10 +55,10 @@ namespace scripting {
     // No-op when the plugins config is unchanged since the last applied refresh.
     void refresh();
 
-    // Enable a managed-source plugin by id ("author/plugin"): clone + materialize
-    // from its git source if needed, enforce min_noctalia, then persist. Persisting
-    // fans out a reload (which re-refreshes the registry). Hard error on an unknown
-    // id, a failed fetch, or an incompatible min_noctalia.
+    // Enable a managed-source plugin by id ("author/plugin"): clone/read the git
+    // source if needed, export its runtime files if needed, enforce min_noctalia,
+    // then persist. Persisting fans out a reload (which re-refreshes the registry).
+    // Hard error on an unknown id, a failed export, or an incompatible min_noctalia.
     [[nodiscard]] EnableResult enable(std::string_view pluginId);
 
     // Disable a plugin by id and persist. Code stays on disk; settings are retained.
@@ -77,8 +77,9 @@ namespace scripting {
     // unknown sources.
     void update(std::string sourceName);
 
-    // Remove a source: delete its git clone, disable its plugins, drop it from
-    // config. Path sources keep their externally-owned directory.
+    // Remove a source: delete its git repo cache and exported runtime files, disable
+    // its plugins, drop it from config. Path sources keep their externally-owned
+    // directory.
     void removeSource(std::string sourceName);
 
   private:
@@ -88,7 +89,7 @@ namespace scripting {
     // Plugin ids offered by the implicit local dev source.
     [[nodiscard]] std::unordered_set<std::string> localPluginIds() const;
     // Re-derive any enabled git-source plugin missing from disk — re-clones a wiped
-    // source and checks out enabled plugins it ships. Heals a deleted clone or a
+    // source repo and exports enabled plugins it ships. Heals a deleted repo or a
     // restored config. Returns whether anything was materialized. No network when
     // nothing is missing.
     bool ensureEnabledMaterialized(const PluginsConfig& plugins) const;

@@ -7,6 +7,7 @@
 #include "scripting/plugin_git.h"
 #include "scripting/plugin_id.h"
 #include "scripting/plugin_manifest.h"
+#include "scripting/plugin_source_paths.h"
 #include "util/file_utils.h"
 
 #include <filesystem>
@@ -145,11 +146,14 @@ namespace scripting {
     }
 
     // Git source: clone-if-needed (blobless, no-checkout), then read the catalog
-    // via `git show` so nothing is checked out until a plugin is enabled.
+    // via `git show`. Runtime plugin files are exported separately on enable/update.
     if (!plugin_git::available()) {
       return {.ok = false, .error = "git is not installed", .entries = {}};
     }
-    const std::filesystem::path dest = std::filesystem::path(FileUtils::pluginSourcesDir()) / source.name;
+    const std::filesystem::path dest = plugin_paths::gitRepoRoot(source);
+    if (dest.empty()) {
+      return {.ok = false, .error = "empty plugin source repo path", .entries = {}};
+    }
     std::error_code ec;
     if (!std::filesystem::exists(dest / ".git", ec)) {
       std::filesystem::create_directories(dest.parent_path(), ec);

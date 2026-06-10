@@ -75,14 +75,24 @@ namespace FileUtils {
     return {};
   }
 
-  // Git-source working copies (blobless source clones). Host-managed cache,
-  // re-fetchable, so it lives under the state dir — never config.
+  // Git-source repo caches. Host-managed, re-fetchable, so they live under the
+  // state dir — never config.
   [[nodiscard]] inline std::string pluginSourcesDir() {
     const std::string base = stateDir();
     if (base.empty()) {
       return {};
     }
     return base + "/plugins/sources";
+  }
+
+  // Exported runtime files for enabled git-source plugins. Re-derivable from
+  // source repos; path sources and local dev plugins do not use this directory.
+  [[nodiscard]] inline std::string pluginMaterializedDir() {
+    const std::string base = stateDir();
+    if (base.empty()) {
+      return {};
+    }
+    return base + "/plugins/materialized";
   }
 
   [[nodiscard]] inline std::vector<std::uint8_t> readBinaryFile(const std::string& path) {
