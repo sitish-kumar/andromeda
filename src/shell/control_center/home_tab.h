@@ -111,6 +111,7 @@ private:
   Image* m_mediaArt = nullptr;
   std::string m_loadedMediaArtUrl;
   std::unordered_set<std::string> m_pendingArtDownloads;
+  std::shared_ptr<void> m_aliveGuard = std::make_shared<int>(0);
   std::string m_mediaPositionBusName;
   std::string m_mediaPositionTrackId;
   std::string m_mediaPositionTrackSignature;

@@ -237,8 +237,9 @@ void MediaWidget::syncState(Renderer& renderer) {
 
   const int artDecodePx = static_cast<int>(std::round(64.0f * m_contentScale));
   if (artChanged) {
-    const std::string artPath =
-        resolveArtworkSource(m_httpClient, m_pendingArtDownloads, m_lastArtUrl, [this] { requestUpdate(); });
+    const std::string artPath = resolveArtworkSource(
+        m_httpClient, m_pendingArtDownloads, m_lastArtUrl, [this] { requestUpdate(); }, m_aliveGuard
+    );
     if (!artPath.empty()) {
       if (!m_art->setSourceFile(renderer, artPath, artDecodePx, true, true)) {
         kLog.warn("artwork load failed url=\"{}\" path=\"{}\"", m_lastArtUrl, artPath);

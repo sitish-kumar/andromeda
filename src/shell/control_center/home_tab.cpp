@@ -1143,11 +1143,14 @@ void HomeTab::sync(Renderer& renderer) {
           const std::string artUrl = mpris::effectiveArtUrl(*active);
           const bool artRetry = !artUrl.empty() && !m_mediaArt->hasImage();
           if (artUrl != m_loadedMediaArtUrl || artRetry) {
-            const std::string artPath =
-                mpris::resolveArtworkSource(m_httpClient, m_pendingArtDownloads, artUrl, [this] {
+            const std::string artPath = mpris::resolveArtworkSource(
+                m_httpClient, m_pendingArtDownloads, artUrl,
+                [this] {
                   m_loadedMediaArtUrl.clear();
                   PanelManager::instance().refresh();
-                });
+                },
+                m_aliveGuard
+            );
             bool loaded = false;
             if (!artPath.empty()) {
               const int decodeSize = static_cast<int>(std::round(Style::controlHeightLg * 2.6f * contentScale()));
