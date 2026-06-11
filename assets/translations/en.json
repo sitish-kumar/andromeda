@@ -255,6 +255,11 @@
       "wifi": "Wi-Fi"
     },
     "system": {
+      "labels": {
+        "load": "CPU Load",
+        "ram": "RAM",
+        "swap": "Swap"
+      },
       "titles": {
         "cpu": "CPU",
         "gpu": "GPU",
@@ -262,6 +267,9 @@
         "network": "Network",
         "resources": "Resources",
         "system": "System"
+      },
+      "tooltips": {
+        "load": "Load average over 1 / 5 / 15 minutes"
       },
       "unknown": "unknown",
       "uptime-prefix": "Up {uptime} · {osAge}"
