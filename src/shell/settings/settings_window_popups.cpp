@@ -1,3 +1,4 @@
+#include "config/atomic_file.h"
 #include "config/config_service.h"
 #include "config/config_types.h"
 #include "core/deferred_call.h"
@@ -27,7 +28,6 @@
 #include <cstdint>
 #include <filesystem>
 #include <format>
-#include <fstream>
 #include <memory>
 #include <optional>
 #include <string>
@@ -1485,16 +1485,8 @@ void SettingsWindow::saveSupportReport() {
       path += ".toml";
     }
 
-    std::ofstream out(path, std::ios::trunc);
-    if (!out.is_open()) {
-      m_statusMessage = i18n::tr("settings.errors.support-report");
-      m_statusIsError = true;
-      requestSceneRebuild();
-      return;
-    }
-
-    out << m_config->buildSupportReport();
-    if (!out.good()) {
+    const std::string content = m_config->buildSupportReport();
+    if (!writeTextFileAtomic(path, content)) {
       m_statusMessage = i18n::tr("settings.errors.support-report");
       m_statusIsError = true;
       requestSceneRebuild();
@@ -1537,18 +1529,9 @@ void SettingsWindow::saveConfigExport(settings::ConfigExportMode mode) {
       path += ".toml";
     }
 
-    std::ofstream out(path, std::ios::trunc);
-    if (!out.is_open()) {
-      m_statusMessage = i18n::tr("settings.errors.export-config");
-      m_statusIsError = true;
-      requestSceneRebuild();
-      return;
-    }
-
     const std::string content = mode == settings::ConfigExportMode::FullEffective ? m_config->buildEffectiveConfig()
                                                                                   : m_config->buildMergedUserConfig();
-    out << content;
-    if (!out.good()) {
+    if (!writeTextFileAtomic(path, content)) {
       m_statusMessage = i18n::tr("settings.errors.export-config");
       m_statusIsError = true;
       requestSceneRebuild();
