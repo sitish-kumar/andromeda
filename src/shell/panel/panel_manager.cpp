@@ -355,7 +355,10 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   };
 
   const PanelPlacement activePlacement = m_activePanel->panelPlacement();
-  const bool useCenteredPlacement = activePlacement == PanelPlacement::Centered;
+  const bool useCenteredPlacement = activePlacement == PanelPlacement::Centered
+      || (activePlacement == PanelPlacement::Attached
+          && m_attachedPanelAvailabilityCallback != nullptr
+          && !m_attachedPanelAvailabilityCallback(request.output, m_sourceBarName));
   const bool useFloatingAnchor =
       !useCenteredPlacement && request.hasAnchorPosition && openNearClickEnabledForPanel(m_config, m_activePanelId);
   const auto detachedShadowBleed =
