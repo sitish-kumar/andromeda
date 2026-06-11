@@ -45,12 +45,24 @@ namespace settings {
 
     std::string_view pluginDisplayName(const scripting::PluginStatus& plugin) { return plugin.name; }
 
+    std::string pluginSourceDisplayName(std::string_view source) {
+      if (source == "official") {
+        return "Official";
+      }
+      if (source == "community") {
+        return "Community";
+      }
+      return std::string(source);
+    }
+
     std::unique_ptr<Flex> sourceRow(const PluginSourceConfig& source, const SettingsPluginsContext& ctx, float scale) {
       auto row = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * scale, .fillWidth = true});
       Flex* r = row.get();
 
       auto info = ui::column({.align = FlexAlign::Start, .gap = 2.0F * scale, .flexGrow = 1.0F});
-      info->addChild(makeLabel(source.name, Style::fontSizeBody * scale, ColorRole::OnSurface, FontWeight::Medium));
+      info->addChild(makeLabel(
+          pluginSourceDisplayName(source.name), Style::fontSizeBody * scale, ColorRole::OnSurface, FontWeight::Medium
+      ));
       const std::string kind = source.kind == PluginSourceKind::Git ? i18n::tr("settings.plugins.sources.kind.git")
                                                                     : i18n::tr("settings.plugins.sources.kind.path");
       info->addChild(
@@ -130,7 +142,9 @@ namespace settings {
       title->addChild(
           makeLabel(pluginDisplayName(plugin), Style::fontSizeBody * scale, ColorRole::OnSurface, FontWeight::Medium)
       );
-      title->addChild(makeLabel(plugin.source, Style::fontSizeCaption * scale, ColorRole::OnSurfaceVariant));
+      title->addChild(
+          makeLabel(pluginSourceDisplayName(plugin.source), Style::fontSizeCaption * scale, ColorRole::OnSurfaceVariant)
+      );
       title->addChild(makeLabel("v" + version, Style::fontSizeCaption * scale, ColorRole::OnSurfaceVariant));
       if (!plugin.compatible) {
         title->addChild(makeLabel(
@@ -426,7 +440,7 @@ namespace settings {
       section->addChild(sourceRow(source, ctx, scale));
     }
 
-    section->addChild(ui::separator());
+    section->addChild(ui::separator({.spacing = Style::spaceSm * scale}));
 
     // ── Plugins ──────────────────────────────────────────────────────────
     section->addChild(makeLabel(

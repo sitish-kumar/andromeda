@@ -1071,8 +1071,8 @@
         "add-title": "Add plugin source",
         "empty": "No sources configured.",
         "errors": {
-          "duplicate-name": "A source with this name already exists.",
-          "invalid-name": "Source name must use letters, digits, '.', '_' or '-', starting with a letter or digit.",
+          "duplicate-name": "A source with this ID already exists.",
+          "invalid-name": "Source ID must use letters, digits, '.', '_' or '-', starting with a letter or digit.",
           "location-required": "Source location is required."
         },
         "kind": {
@@ -1083,7 +1083,7 @@
         "location-label": "Location",
         "location-placeholder-git": "https://github.com/me/noctalia-plugins",
         "location-placeholder-path": "~/dev/noctalia-plugins",
-        "name-label": "Name",
+        "name-label": "Source ID",
         "name-placeholder": "my-plugins",
         "remove": "Remove source",
         "title": "Sources",
