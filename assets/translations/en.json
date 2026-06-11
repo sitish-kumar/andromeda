@@ -306,13 +306,13 @@
   "desktop-widgets": {
     "editor": {
       "actions": {
-        "done": "Done",
         "add": "Add",
-        "stack-back":"Stack Behind",
-        "stack-front": "Stack In Front",
+        "done": "Done",
+        "hide": "Hide",
         "settings": "Settings",
-        "hide":"Hide",
-        "show":"Show",
+        "show": "Show",
+        "stack-back": "Stack Behind",
+        "stack-front": "Stack In Front",
         "trash": "Delete"
       },
       "dialogs": {
