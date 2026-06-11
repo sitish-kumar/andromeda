@@ -38,6 +38,8 @@ public:
   void setSessionHooks(std::function<void()> onLocked, std::function<void()> onUnlocked);
   void setLockEngagedCallback(std::function<void()> callback);
   bool lock();
+  void primeDesktopCaptures();
+  void clearPrimedDesktopCaptures();
   void unlock();
   void onOutputChange();
   void onFontChanged();
@@ -78,7 +80,9 @@ private:
   void captureDesktopSnapshots();
   [[nodiscard]] bool shouldUseBlurredDesktop() const;
   void applyLockscreenStyle(LockSurface& surface) const;
+  void applyOutputRestriction();
   void applyWallpaperStyleToSurfaces();
+  [[nodiscard]] bool isInteractiveOutput(const WaylandOutput& output) const;
   [[nodiscard]] std::string wallpaperPathForOutput(const std::string& connectorName) const;
   void createInstance(const WaylandOutput& output);
   void resetLockState();
@@ -103,6 +107,7 @@ private:
   bool m_statusIsError = false;
   bool m_lockPending = false;
   bool m_locked = false;
+  bool m_desktopCapturesPrimed = false;
   bool m_lockDeferred = false;
   std::function<void()> m_pendingAfterLocked;
   std::function<void()> m_onSessionLocked;

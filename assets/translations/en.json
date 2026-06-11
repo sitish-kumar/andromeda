@@ -45,12 +45,7 @@
         "error": "Weather err",
         "loading": "Weather...",
         "no-location": "No location",
-        "off": "Weather off",
-        "vertical-default": "W\nX",
-        "vertical-error": "E\nR\nR",
-        "vertical-loading": ".\n.\n.",
-        "vertical-no-location": "N\nO\nL\nO\nC",
-        "vertical-off": "O\nF\nF"
+        "off": "Weather off"
       }
     }
   },
@@ -168,7 +163,7 @@
       },
       "select-avatar": "Select Avatar",
       "unknown": "unknown",
-      "user-facts": "{user}@{host}\nUptime - {uptime}\nNoctalia {version}",
+      "uptime": "Uptime - {uptime}",
       "weather": {
         "configure-location": "Add [weather].address or enable auto_locate.",
         "data-unavailable": "Weather data unavailable.",
@@ -350,17 +345,21 @@
         "horizontal": "Horizontal",
         "image-path": "Image",
         "inner-diameter": "Inner Diameter",
+        "input-opacity": "Input Opacity",
+        "input-radius": "Input Radius",
         "layout": "Layout",
         "low-color": "Low Color",
         "mirrored": "Mirrored",
         "opacity": "Opacity",
         "primary-color": "Primary Color",
+        "reset-defaults": "Reset to Defaults",
         "ring-opacity": "Ring Opacity",
         "rotation-speed": "Rotation Speed",
         "secondary-color": "Secondary Color",
         "sensitivity": "Sensitivity",
         "shadow": "Shadow",
         "show-label": "Show Label",
+        "show-login-button": "Login Button",
         "show-when-idle": "Show When Idle",
         "stat": "Stat",
         "stat-cpu-temp": "CPU Temp",
@@ -915,6 +914,7 @@
         "notifications": "Notifications",
         "osd": "OSD",
         "panels": "Panels",
+        "plugins": "Plugins",
         "popups": "Popups",
         "power": "Power",
         "security": "Security",
@@ -1058,6 +1058,44 @@
           "imperial": "Imperial",
           "metric": "Metric"
         }
+      }
+    },
+    "plugins": {
+      "plugins": {
+        "configure": "Configure",
+        "deprecated": "deprecated",
+        "empty": "No plugins found. Add a source, or check your network.",
+        "loading": "Loading plugins...",
+        "refreshing": "Refreshing plugins...",
+        "requires-newer-noctalia": "requires newer Noctalia",
+        "title": "Plugins"
+      },
+      "settings": {
+        "empty": "No settings available."
+      },
+      "sources": {
+        "add": "Add source",
+        "add-title": "Add plugin source",
+        "empty": "No sources configured.",
+        "errors": {
+          "duplicate-name": "A source with this ID already exists.",
+          "invalid-name": "Source ID must use letters, digits, '.', '_' or '-', starting with a letter or digit.",
+          "location-required": "Source location is required."
+        },
+        "kind": {
+          "git": "Git",
+          "path": "Path"
+        },
+        "kind-label": "Kind",
+        "location-label": "Location",
+        "location-placeholder-git": "https://github.com/me/noctalia-plugins",
+        "location-placeholder-path": "~/dev/noctalia-plugins",
+        "name-label": "Source ID",
+        "name-placeholder": "my-plugins",
+        "remove": "Remove source",
+        "title": "Sources",
+        "update": "Update",
+        "update-on-startup": "Update on startup"
       }
     },
     "schema": {
@@ -1381,7 +1419,7 @@
           "description": "Which screen edge the dock sits on"
         },
         "reserve-space": {
-          "description": "Reserve screen space for the dock"
+          "description": "Push windows away from the dock edge"
         },
         "shadow": {
           "description": "Cast the global surface shadow from the dock"
@@ -1513,6 +1551,10 @@
         }
       },
       "lockscreen": {
+        "enabled": {
+          "description": "Enable session lock, logind integration, and lock actions",
+          "label": "Lock Screen"
+        },
         "blur-intensity": {
           "description": "How much the lock screen background is blurred",
           "label": "Blur Intensity"
@@ -1520,6 +1562,10 @@
         "blurred-desktop": {
           "description": "Use a snapshot of the desktop as the lock screen background",
           "label": "Desktop Capture"
+        },
+        "monitors": {
+          "description": "Choose which monitors show the lock screen; leave empty to show on all monitors",
+          "label": "Monitors"
         },
         "tint-intensity": {
           "description": "Surface-color tint over the lock screen background",
@@ -1604,7 +1650,7 @@
           "label": "Borders"
         },
         "control-center-sidebar": {
-          "description": "On Home and general opens",
+          "description": "Choose how to display the sidebar",
           "label": "Sidebar"
         },
         "control-center-sidebar-section": {
@@ -1622,6 +1668,10 @@
         "launcher-compact": {
           "description": "Use smaller icons and tighter result rows",
           "label": "Compact Rows"
+        },
+        "launcher-session-search": {
+          "description": "Include session actions (lock, suspend, reboot, shutdown, logout) in general launcher searches, not only behind the /session prefix",
+          "label": "Enable Session Search"
         },
         "launcher-show-icons": {
           "description": "Show application icons in launcher results",
@@ -2179,6 +2229,7 @@
       "clear-glyph": "Clear",
       "command-label": "Shell command",
       "command-placeholder": "Optional bash command, leave empty for built-in behavior",
+      "command-required-placeholder": "Shell command to run",
       "glyph-label": "Glyph",
       "glyph-picker-title": "Action glyph",
       "kind-section-label": "Behavior",
@@ -2318,6 +2369,10 @@
         "cycle-command": {
           "description": "Command run when cycling keyboard layouts",
           "label": "Cycle Command"
+        },
+        "detached-panel": {
+          "description": "Open the drawer as a floating panel with its own background instead of merging with the bar",
+          "label": "Detached Panel"
         },
         "device": {
           "description": "Device to monitor or control",

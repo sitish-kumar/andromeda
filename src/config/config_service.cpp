@@ -545,6 +545,7 @@ void ConfigService::fireReloadCallbacks() {
     add(m_lastChange.hooks, "hooks");
     add(m_lastChange.theme, "theme");
     add(m_lastChange.controlCenter, "controlCenter");
+    add(m_lastChange.plugins, "plugins");
     kLog.info("reload: changed sections = [{}]", changed.empty() ? "none" : changed);
   }
 
@@ -661,26 +662,6 @@ std::string ConfigService::buildSupportReport() const {
     state.insert_or_assign("content", "");
   }
   root.insert_or_assign("state_settings", std::move(state));
-
-  toml::table appState;
-  appState.insert_or_assign("kind", "app_state");
-  appState.insert_or_assign("relative_path", "state.toml");
-  appState.insert_or_assign("path", m_stateStore.path().string());
-
-  const bool appStateExists = !m_stateStore.path().empty() && std::filesystem::exists(m_stateStore.path());
-  appState.insert_or_assign("exists", appStateExists);
-  if (appStateExists) {
-    std::string readError;
-    appState.insert_or_assign("content", readTextFile(m_stateStore.path(), &readError));
-    if (!readError.empty()) {
-      appState.insert_or_assign("read_error", readError);
-    } else if (!m_stateStore.parseError().empty()) {
-      appState.insert_or_assign("parse_error", m_stateStore.parseError());
-    }
-  } else {
-    appState.insert_or_assign("content", "");
-  }
-  root.insert_or_assign("app_state", std::move(appState));
 
   toml::table mergedConfig;
   mergedConfig.insert_or_assign("content", formatToml(merged));
@@ -1418,6 +1399,35 @@ void ConfigService::parseConfigTable(const toml::table& tbl, Config& config, boo
   }
   if (!controlCenterShortcutsConfigured && config.controlCenter.shortcuts.empty()) {
     config.controlCenter.shortcuts = defaultControlCenterShortcuts();
+  }
+
+  // Parse [plugins]. Default-seeding stays here because it must apply even when
+  // [plugins] (or its source array) is absent.
+  bool pluginSourcesConfigured = false;
+  if (auto* pluginsTbl = tbl["plugins"].as_table()) {
+    pluginSourcesConfigured = (*pluginsTbl)["source"].as_array() != nullptr;
+    schema::readInto(*pluginsTbl, config.plugins, schema::pluginsSchema(), "plugins", schemaDiag);
+  }
+  if (!pluginSourcesConfigured && config.plugins.sources.empty()) {
+    config.plugins.sources = defaultPluginSources();
+  }
+
+  // Parse [plugin_settings."author/plugin"] — open-ended per-plugin setting maps,
+  // validated against the manifest schema (not the static pluginsSchema). Keys may
+  // contain '/', so this is a top-level table rather than nested under [plugins].
+  if (auto* pluginSettingsTbl = tbl["plugin_settings"].as_table()) {
+    for (const auto& [pluginId, pluginNode] : *pluginSettingsTbl) {
+      const auto* perPlugin = pluginNode.as_table();
+      if (perPlugin == nullptr) {
+        continue;
+      }
+      auto& bucket = config.plugins.pluginSettings[std::string(pluginId.str())];
+      for (const auto& [key, value] : *perPlugin) {
+        if (auto parsed = noctalia::config::readWidgetSettingValue(value); parsed.has_value()) {
+          bucket[std::string(key.str())] = std::move(*parsed);
+        }
+      }
+    }
   }
 
   // Parse [idle] and [idle.behavior.*]. Default-seeding stays here because it

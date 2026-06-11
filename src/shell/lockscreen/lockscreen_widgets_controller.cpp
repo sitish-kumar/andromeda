@@ -143,6 +143,9 @@ void LockscreenWidgetsController::registerIpc(IpcService& ipc) {
   ipc.registerHandler(
       "lockscreen-widgets-edit",
       [this](const std::string&) -> std::string {
+        if (m_config != nullptr && !m_config->isLockScreenEnabled()) {
+          return "error: lock screen disabled\n";
+        }
         enterEdit();
         return "ok\n";
       },
@@ -161,6 +164,9 @@ void LockscreenWidgetsController::registerIpc(IpcService& ipc) {
   ipc.registerHandler(
       "lockscreen-widgets-toggle-edit",
       [this](const std::string&) -> std::string {
+        if (m_config != nullptr && !m_config->isLockScreenEnabled()) {
+          return "error: lock screen disabled\n";
+        }
         toggleEdit();
         return "ok\n";
       },
@@ -217,6 +223,9 @@ void LockscreenWidgetsController::requestRedraw() {
 
 void LockscreenWidgetsController::enterEdit() {
   if (!m_initialized || m_editor == nullptr || m_host == nullptr || isEditing() || m_lockScreen == nullptr) {
+    return;
+  }
+  if (m_config != nullptr && !m_config->isLockScreenEnabled()) {
     return;
   }
   if (m_lockScreen->isActive()) {
@@ -316,6 +325,15 @@ void LockscreenWidgetsController::applyVisibility() {
     return;
   }
 
+  if (!m_config->isLockScreenEnabled()) {
+    if (isEditing() && m_editor != nullptr) {
+      m_snapshot = fromWidgetsEditorSnapshot(m_editor->close());
+      saveSnapshotToConfig();
+    }
+    m_host->hide();
+    return;
+  }
+
   const bool enabled = m_config->config().lockscreenWidgets.enabled;
   if (!enabled) {
     if (isEditing() && m_editor != nullptr) {
@@ -376,6 +394,7 @@ void LockscreenWidgetsController::normalizeSnapshot() {
   std::unordered_set<std::string> seenIds;
   for (auto& widget : m_snapshot.widgets) {
     if (lockscreen_login_box::isLoginBoxWidget(widget)) {
+      lockscreen_login_box::normalizeSettings(widget.settings);
       seenIds.insert(widget.id);
       continue;
     }

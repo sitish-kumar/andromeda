@@ -32,7 +32,7 @@ namespace settings {
 
     constexpr int kBarMarginMax = 4096;
 
-    constexpr std::array<SettingsSectionDescriptor, 17> kSettingsSections{{
+    constexpr std::array<SettingsSectionDescriptor, 18> kSettingsSections{{
         {SettingsSection::Appearance, "appearance", "adjustments-horizontal"},
         {SettingsSection::Wallpaper, "wallpaper", "paint"},
         {SettingsSection::Templates, "templates", "color-swatch"},
@@ -50,6 +50,7 @@ namespace settings {
         {SettingsSection::Hooks, "hooks", "link"},
         {SettingsSection::Niri, "niri", "niri"},
         {SettingsSection::Bar, "bar", "crop-3-2", false},
+        {SettingsSection::Plugins, "plugins", "puzzle", true, true},
     }};
 
     const SettingsSectionDescriptor& descriptorFor(SettingsSection section) {
@@ -772,12 +773,11 @@ namespace settings {
         tr("settings.schema.dock.auto-hide.description"), {"dock", "auto_hide"}, ToggleSetting{cfg.dock.autoHide},
         "autohide"
     ));
-    if (cfg.dock.autoHide)
-      entries.push_back(makeEntry(
-          SettingsSection::Dock, "behavior", tr("settings.schema.shared.reserve-space.label"),
-          tr("settings.schema.dock.reserve-space.description"), {"dock", "reserve_space"},
-          ToggleSetting{cfg.dock.reserveSpace}, "exclusive zone"
-      ));
+    entries.push_back(makeEntry(
+        SettingsSection::Dock, "behavior", tr("settings.schema.shared.reserve-space.label"),
+        tr("settings.schema.dock.reserve-space.description"), {"dock", "reserve_space"},
+        ToggleSetting{cfg.dock.reserveSpace}, "exclusive zone"
+    ));
     entries.push_back(makeEntry(
         SettingsSection::Dock, "behavior", tr("settings.schema.dock.show-running.label"),
         tr("settings.schema.dock.show-running.description"), {"dock", "show_running"},
@@ -996,6 +996,12 @@ namespace settings {
         ToggleSetting{cfg.shell.panel.launcherCompact}, "launcher compact rows dense"
     ));
     entries.push_back(makeEntry(
+        SettingsSection::Panels, "launcher", tr("settings.schema.panels.launcher-session-search.label"),
+        tr("settings.schema.panels.launcher-session-search.description"), {"shell", "panel", "launcher_session_search"},
+        ToggleSetting{cfg.shell.panel.launcherSessionSearch},
+        "launcher session search power menu lock suspend reboot shutdown logout"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Panels, "clipboard", tr("settings.schema.panels.placement-clipboard.label"),
         tr("settings.schema.panels.placement-clipboard.description"), {"shell", "panel", "clipboard_placement"},
         asSegmented(enumSelect(kPanelPlacements, cfg.shell.panel.clipboardPlacement)),
@@ -1101,25 +1107,57 @@ namespace settings {
         tr("settings.schema.shell.password-style.description"), {"shell", "password_style"},
         asSegmented(enumSelect(kPasswordMaskStyles, cfg.shell.passwordMaskStyle)), "polkit lock mask"
     ));
+    const SettingVisibility lockscreenOn{{"lockscreen", "enabled"}, {"true"}};
+    {
+      auto e = makeEntry(
+          SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.enabled.label"),
+          tr("settings.schema.lockscreen.enabled.description"), {"lockscreen", "enabled"},
+          ToggleSetting{cfg.lockscreen.enabled}, "lock screen session"
+      );
+      entries.push_back(std::move(e));
+    }
     if (env.screencopySupported) {
-      entries.push_back(makeEntry(
+      auto e = makeEntry(
           SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.blurred-desktop.label"),
           tr("settings.schema.lockscreen.blurred-desktop.description"), {"lockscreen", "blurred_desktop"},
           ToggleSetting{cfg.lockscreen.blurredDesktop}, "lock screen desktop capture screencopy background"
-      ));
+      );
+      e.visibleWhen = lockscreenOn;
+      entries.push_back(std::move(e));
     }
-    entries.push_back(makeEntry(
-        SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.blur-intensity.label"),
-        tr("settings.schema.lockscreen.blur-intensity.description"), {"lockscreen", "blur_intensity"},
-        sliderFor(cfg.lockscreen.blurIntensity, noctalia::config::schema::kUnitRange, false), "lock screen blur"
-    ));
-    entries.push_back(makeEntry(
-        SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.tint-intensity.label"),
-        tr("settings.schema.lockscreen.tint-intensity.description"), {"lockscreen", "tint_intensity"},
-        sliderFor(cfg.lockscreen.tintIntensity, noctalia::config::schema::kUnitRange, false), "lock screen tint"
-    ));
     {
-      const SettingVisibility lockscreenWallpaperOn{{"lockscreen", "blurred_desktop"}, {"false"}};
+      auto e = makeEntry(
+          SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.blur-intensity.label"),
+          tr("settings.schema.lockscreen.blur-intensity.description"), {"lockscreen", "blur_intensity"},
+          sliderFor(cfg.lockscreen.blurIntensity, noctalia::config::schema::kUnitRange, false), "lock screen blur"
+      );
+      e.visibleWhen = lockscreenOn;
+      entries.push_back(std::move(e));
+    }
+    {
+      auto e = makeEntry(
+          SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.tint-intensity.label"),
+          tr("settings.schema.lockscreen.tint-intensity.description"), {"lockscreen", "tint_intensity"},
+          sliderFor(cfg.lockscreen.tintIntensity, noctalia::config::schema::kUnitRange, false), "lock screen tint"
+      );
+      e.visibleWhen = lockscreenOn;
+      entries.push_back(std::move(e));
+    }
+    {
+      auto e = makeEntry(
+          SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.monitors.label"),
+          tr("settings.schema.lockscreen.monitors.description"), {"lockscreen", "monitors"},
+          ListSetting{.items = cfg.lockscreen.monitors, .suggestedOptions = env.availableOutputs},
+          "lock screen monitor output connector"
+      );
+      e.visibleWhen = lockscreenOn;
+      entries.push_back(std::move(e));
+    }
+    {
+      const SettingVisibility lockscreenWallpaperOn{std::vector<SettingVisibilityCondition>{
+          {{"lockscreen", "enabled"}, {"true"}},
+          {{"lockscreen", "blurred_desktop"}, {"false"}},
+      }};
       auto e = makeEntry(
           SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.wallpaper.label"),
           tr("settings.schema.lockscreen.wallpaper.description"), {"lockscreen", "wallpaper"},
@@ -1135,11 +1173,15 @@ namespace settings {
       e.visibleWhen = lockscreenWallpaperOn;
       entries.push_back(std::move(e));
     }
-    entries.push_back(makeEntry(
-        SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.widgets.label"),
-        tr("settings.schema.lockscreen.widgets.description"), {"lockscreen_widgets", "enabled"},
-        ToggleSetting{cfg.lockscreenWidgets.enabled}, "lock screen widgets layout"
-    ));
+    {
+      auto e = makeEntry(
+          SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.widgets.label"),
+          tr("settings.schema.lockscreen.widgets.description"), {"lockscreen_widgets", "enabled"},
+          ToggleSetting{cfg.lockscreenWidgets.enabled}, "lock screen widgets layout"
+      );
+      e.visibleWhen = lockscreenOn;
+      entries.push_back(std::move(e));
+    }
     entries.push_back(makeEntry(
         SettingsSection::Shell, "general", tr("settings.schema.shell.time-format.label"),
         tr("settings.schema.shell.time-format.description"), {"shell", "time_format"},
@@ -1187,10 +1229,10 @@ namespace settings {
           tr("settings.schema.shell.clipboard-history-max-entries.description"),
           {"shell", "clipboard_history_max_entries"},
           StepperSetting{
-              .value = std::clamp(cfg.shell.clipboardHistoryMaxEntries, 10, 200),
-              .minValue = 10,
-              .maxValue = 200,
-              .step = 5
+              .value = cfg.shell.clipboardHistoryMaxEntries,
+              .minValue = static_cast<int>(noctalia::config::schema::kClipboardHistoryMaxEntriesRange.min.value()),
+              .maxValue = static_cast<int>(noctalia::config::schema::kClipboardHistoryMaxEntriesRange.max.value()),
+              .step = static_cast<int>(noctalia::config::schema::kClipboardHistoryMaxEntriesRange.step.value())
           },
           "clipboard history limit entries"
       );

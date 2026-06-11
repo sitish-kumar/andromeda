@@ -3,6 +3,7 @@
 #include "config/widget_config.h"
 #include "core/key_chord.h"
 #include "core/log.h"
+#include "scripting/plugin_id.h"
 #include "shell/settings/widget_settings_registry.h"
 #include "theme/builtin_palettes.h"
 #include "theme/custom_palettes.h"
@@ -87,6 +88,21 @@ namespace {
     for (const auto& [key, value] : a) {
       const auto it = b.find(key);
       if (it == b.end() || !widgetSettingEqual(value, it->second)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // PluginsConfig equality that compares the open-ended pluginSettings map with int/double coercion
+  // (widgetSettingsEqual) instead of the defaulted operator== — same reason as widgets.
+  bool pluginsConfigEqual(const PluginsConfig& a, const PluginsConfig& b) {
+    if (a.sources != b.sources || a.enabled != b.enabled || a.pluginSettings.size() != b.pluginSettings.size()) {
+      return false;
+    }
+    for (const auto& [id, aMap] : a.pluginSettings) {
+      const auto it = b.pluginSettings.find(id);
+      if (it == b.pluginSettings.end() || !widgetSettingsEqual(aMap, it->second)) {
         return false;
       }
     }
@@ -281,6 +297,11 @@ namespace {
     return path.size() == 3 && path[0] == "widget";
   }
 
+  bool isPluginSettingOverridePath(const std::vector<std::string>& path) {
+    // {"plugin_settings", pluginId, key}; pluginId is "author/plugin".
+    return path.size() == 3 && path[0] == "plugin_settings";
+  }
+
   // Override-effectiveness equality. Every config section uses its compiler-generated operator== (exact
   // member-wise compare) so that adding a field cannot silently break override persistence — the only
   // exceptions are the sections whose comparison carries semantics operator== can't express:
@@ -310,7 +331,8 @@ namespace {
         && a.idle == b.idle
         && a.hooks == b.hooks
         && a.theme == b.theme
-        && a.controlCenter == b.controlCenter;
+        && a.controlCenter == b.controlCenter
+        && pluginsConfigEqual(a.plugins, b.plugins);
   }
 
   toml::table* ensureTable(toml::table& parent, std::string_view key) {
@@ -391,7 +413,7 @@ namespace {
               toml::table row;
               row.insert_or_assign("action", item.action);
               row.insert_or_assign("enabled", item.enabled);
-              if (item.action != "lock_and_suspend" && item.command.has_value() && !item.command->empty()) {
+              if (item.command.has_value() && !item.command->empty()) {
                 row.insert_or_assign("command", *item.command);
               }
               if (item.label.has_value() && !item.label->empty()) {
@@ -626,7 +648,137 @@ ConfigChangeSet computeConfigChangeSet(const Config& prev, const Config& next) {
       .hooks = !(prev.hooks == next.hooks),
       .theme = !(prev.theme == next.theme),
       .controlCenter = !(prev.controlCenter == next.controlCenter),
+      .plugins = !pluginsConfigEqual(prev.plugins, next.plugins),
   };
+}
+
+void ConfigService::setPluginEnabled(std::string_view pluginId, bool enabled) {
+  if (!scripting::isValidPluginId(pluginId)) {
+    return;
+  }
+  if (m_overridesPath.empty()) {
+    return;
+  }
+
+  const std::string id(pluginId);
+  std::vector<std::string> next = m_config.plugins.enabled;
+  const bool currentlyEnabled = std::find(next.begin(), next.end(), id) != next.end();
+
+  if (enabled) {
+    if (currentlyEnabled) {
+      return; // already enabled
+    }
+    next.push_back(id);
+  } else {
+    if (!currentlyEnabled) {
+      return; // already disabled
+    }
+    std::erase(next, id);
+  }
+
+  toml::array enabledArray;
+  for (const auto& plugin : next) {
+    enabledArray.push_back(plugin);
+  }
+  auto* pluginsTbl = ensureTable(m_overridesTable, "plugins");
+  pluginsTbl->insert_or_assign("enabled", std::move(enabledArray));
+
+  if (!writeOverridesToFile()) {
+    kLog.warn("failed to write {}", m_overridesPath);
+    return;
+  }
+
+  m_ownOverridesWritePending = true;
+  loadAll();
+  fireReloadCallbacks();
+}
+
+void ConfigService::addPluginSource(const PluginSourceConfig& source) {
+  if (m_overridesPath.empty() || !isValidPluginSourceName(source.name)) {
+    return;
+  }
+
+  const auto sourceTable = [](const PluginSourceConfig& src) {
+    toml::table entry;
+    entry.insert_or_assign("name", src.name);
+    entry.insert_or_assign("kind", std::string(enumToKey(kPluginSourceKinds, src.kind)));
+    entry.insert_or_assign("location", src.location);
+    if (src.autoUpdate) {
+      entry.insert_or_assign("auto_update", true);
+    }
+    return entry;
+  };
+
+  auto* pluginsTbl = ensureTable(m_overridesTable, "plugins");
+  auto* arr = pluginsTbl->get_as<toml::array>("source");
+  bool sourceWritten = false;
+  if (arr == nullptr) {
+    toml::array seededSources;
+    for (const auto& existing : m_config.plugins.sources) {
+      if (!isValidPluginSourceName(existing.name)) {
+        continue;
+      }
+      seededSources.push_back(sourceTable(existing.name == source.name ? source : existing));
+      sourceWritten = sourceWritten || existing.name == source.name;
+    }
+    auto [it, _] = pluginsTbl->insert_or_assign("source", std::move(seededSources));
+    arr = it->second.as_array();
+  }
+
+  if (!sourceWritten) {
+    // A source name is an identity, not a duplicate key — replace any existing entry.
+    for (auto it = arr->begin(); it != arr->end();) {
+      const auto* tbl = it->as_table();
+      const auto name = tbl != nullptr ? (*tbl)["name"].value<std::string>() : std::nullopt;
+      it = (name && *name == source.name) ? arr->erase(it) : it + 1;
+    }
+    arr->push_back(sourceTable(source));
+  }
+
+  if (!writeOverridesToFile()) {
+    kLog.warn("failed to write {}", m_overridesPath);
+    return;
+  }
+  m_ownOverridesWritePending = true;
+  loadAll();
+  fireReloadCallbacks();
+}
+
+void ConfigService::removePluginSource(std::string_view name) {
+  if (m_overridesPath.empty()) {
+    return;
+  }
+  auto* pluginsTbl = m_overridesTable.get_as<toml::table>("plugins");
+  if (pluginsTbl == nullptr) {
+    return;
+  }
+  auto* arr = pluginsTbl->get_as<toml::array>("source");
+  if (arr == nullptr) {
+    return;
+  }
+
+  bool removed = false;
+  for (auto it = arr->begin(); it != arr->end();) {
+    const auto* tbl = it->as_table();
+    const auto entryName = tbl != nullptr ? (*tbl)["name"].value<std::string>() : std::nullopt;
+    if (entryName && *entryName == name) {
+      it = arr->erase(it);
+      removed = true;
+    } else {
+      ++it;
+    }
+  }
+  if (!removed) {
+    return;
+  }
+
+  if (!writeOverridesToFile()) {
+    kLog.warn("failed to write {}", m_overridesPath);
+    return;
+  }
+  m_ownOverridesWritePending = true;
+  loadAll();
+  fireReloadCallbacks();
 }
 
 void ConfigService::setThemeMode(ThemeMode mode) {
@@ -918,6 +1070,30 @@ bool ConfigService::overridePathEffectiveInTable(
 
   if (isWidgetSettingOverridePath(path)) {
     return settings::widgetSettingOverrideIsEffective(path[1], path[2], *parsedWith, *withoutOverride);
+  }
+
+  if (isPluginSettingOverridePath(path)) {
+    const auto pluginSettingValue = [](const Config& cfg, const std::string& pluginId,
+                                       const std::string& key) -> std::optional<WidgetSettingValue> {
+      const auto it = cfg.plugins.pluginSettings.find(pluginId);
+      if (it == cfg.plugins.pluginSettings.end()) {
+        return std::nullopt;
+      }
+      const auto kIt = it->second.find(key);
+      if (kIt == it->second.end()) {
+        return std::nullopt;
+      }
+      return kIt->second;
+    };
+    const auto withVal = pluginSettingValue(*parsedWith, path[1], path[2]);
+    const auto withoutVal = pluginSettingValue(*withoutOverride, path[1], path[2]);
+    if (!withVal.has_value() && !withoutVal.has_value()) {
+      return false;
+    }
+    if (!withVal.has_value() || !withoutVal.has_value()) {
+      return true;
+    }
+    return !widgetSettingEqual(*withVal, *withoutVal);
   }
 
   return !configEqual(*parsedWith, *withoutOverride);
@@ -1344,6 +1520,26 @@ std::string ConfigService::getPaletteWallpaperPath() const {
     return m_lastWallpaperPath;
   }
   return m_defaultWallpaperPath;
+}
+
+std::string ConfigService::getGreeterSyncWallpaperPath() const {
+  const std::string palettePath = getPaletteWallpaperPath();
+  if (!palettePath.empty()) {
+    return palettePath;
+  }
+
+  std::vector<std::string> connectors;
+  connectors.reserve(m_monitorWallpaperPaths.size());
+  for (const auto& [connector, path] : m_monitorWallpaperPaths) {
+    if (!path.empty()) {
+      connectors.push_back(connector);
+    }
+  }
+  std::sort(connectors.begin(), connectors.end());
+  for (const std::string& connector : connectors) {
+    return m_monitorWallpaperPaths.at(connector);
+  }
+  return {};
 }
 
 void ConfigService::setWallpaperChangeCallback(ChangeCallback callback) {

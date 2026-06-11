@@ -80,9 +80,7 @@ namespace {
   }
 
   [[nodiscard]] std::string actionSubtitle(const SessionPanelActionConfig& config) {
-    if (config.action != "lock_and_suspend"
-        && config.command.has_value()
-        && !StringUtils::trim(*config.command).empty()) {
+    if (config.command.has_value() && !StringUtils::trim(*config.command).empty()) {
       return i18n::tr("launcher.providers.session.command-subtitle");
     }
     return i18n::tr("launcher.providers.session.action-subtitle");
@@ -100,6 +98,11 @@ namespace {
         continue;
       }
       if (row.action == "command" && (!row.command.has_value() || StringUtils::trim(*row.command).empty())) {
+        continue;
+      }
+      if ((row.action == "lock" || row.action == "lock_and_suspend")
+          && config != nullptr
+          && !config->isLockScreenEnabled()) {
         continue;
       }
 
@@ -127,6 +130,10 @@ SessionProvider::SessionProvider(ConfigService* config, SessionActionRunner* act
     : m_config(config), m_actionRunner(actionRunner) {}
 
 std::string SessionProvider::displayName() const { return i18n::tr("launcher.providers.session.title"); }
+
+bool SessionProvider::includeInGlobalSearch() const {
+  return m_config != nullptr && m_config->config().shell.panel.launcherSessionSearch;
+}
 
 std::vector<LauncherResult> SessionProvider::query(std::string_view text) const {
   auto entries = collectActions(m_config);

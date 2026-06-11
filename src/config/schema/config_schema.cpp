@@ -3,6 +3,7 @@
 #include "config/schema/engine.h"
 #include "config/schema/ranges.h"
 #include "core/key_chord.h"
+#include "scripting/plugin_id.h"
 #include "util/file_utils.h"
 
 #include <algorithm>
@@ -75,10 +76,12 @@ namespace noctalia::config::schema {
 
   const Schema<LockscreenConfig>& lockscreenSchema() {
     static const Schema<LockscreenConfig> s = {
+        field(&LockscreenConfig::enabled, "enabled"),
         field(&LockscreenConfig::blurredDesktop, "blurred_desktop"),
         field(&LockscreenConfig::blurIntensity, "blur_intensity", kUnitRange),
         field(&LockscreenConfig::tintIntensity, "tint_intensity", kUnitRange),
         field(&LockscreenConfig::wallpaper, "wallpaper"),
+        field(&LockscreenConfig::monitors, "monitors"),
     };
     return s;
   }
@@ -327,6 +330,47 @@ namespace noctalia::config::schema {
             &ControlCenterConfig::shortcuts, "shortcuts", shortcutSchema(),
             [](const ShortcutConfig& sc) { return !sc.type.empty(); }
         ),
+    };
+    return s;
+  }
+
+  namespace {
+    const Schema<PluginSourceConfig>& pluginSourceSchema() {
+      static const Schema<PluginSourceConfig> s = {
+          field(&PluginSourceConfig::name, "name"),
+          enumField(&PluginSourceConfig::kind, "kind", kPluginSourceKinds),
+          field(&PluginSourceConfig::location, "location"),
+          field(&PluginSourceConfig::autoUpdate, "auto_update"),
+          finalize<PluginSourceConfig>([](PluginSourceConfig& src, std::string_view parentPath, Diagnostics& diag) {
+            if (!src.name.empty() && !isValidPluginSourceName(src.name)) {
+              diag.warn(
+                  joinPath(parentPath, "name"),
+                  "invalid plugin source name; use letters, digits, '.', '_' or '-', starting with a letter or digit"
+              );
+            }
+          }),
+      };
+      return s;
+    }
+  } // namespace
+
+  const Schema<PluginsConfig>& pluginsSchema() {
+    static const Schema<PluginsConfig> s = {
+        arrayOf<PluginsConfig, PluginSourceConfig>(
+            &PluginsConfig::sources, "source", pluginSourceSchema(),
+            [](const PluginSourceConfig& src) { return isValidPluginSourceName(src.name); }
+        ),
+        field(&PluginsConfig::enabled, "enabled"),
+        finalize<PluginsConfig>([](PluginsConfig& plugins, std::string_view parentPath, Diagnostics& diag) {
+          for (auto it = plugins.enabled.begin(); it != plugins.enabled.end();) {
+            if (scripting::isValidPluginId(*it)) {
+              ++it;
+              continue;
+            }
+            diag.warn(joinPath(parentPath, "enabled"), "invalid plugin id \"" + *it + "\"; expected author/plugin");
+            it = plugins.enabled.erase(it);
+          }
+        }),
     };
     return s;
   }
@@ -885,7 +929,7 @@ namespace noctalia::config::schema {
   }
 
   namespace {
-    // Plain string, but emitted only when non-empty (shell.lang, shell.avatar_path).
+    // Plain string, but emitted only when non-empty (shell.lang).
     template <typename Struct> Field<Struct> stringIfNonEmptyField(std::string Struct::* member, std::string_view key) {
       return custom<Struct>(
           key,
@@ -936,6 +980,7 @@ namespace noctalia::config::schema {
           field(&ShellConfig::PanelConfig::launcherCategories, "launcher_categories"),
           field(&ShellConfig::PanelConfig::launcherShowIcons, "launcher_show_icons"),
           field(&ShellConfig::PanelConfig::launcherCompact, "launcher_compact"),
+          field(&ShellConfig::PanelConfig::launcherSessionSearch, "launcher_session_search"),
       };
       return s;
     }
@@ -1019,12 +1064,6 @@ namespace noctalia::config::schema {
                 );
               }
           ),
-          // lock_and_suspend never carries a custom command.
-          finalize<SessionPanelActionConfig>([](SessionPanelActionConfig& a, std::string_view, Diagnostics&) {
-            if (a.action == "lock_and_suspend") {
-              a.command = std::nullopt;
-            }
-          }),
       };
       return s;
     }
@@ -1073,14 +1112,16 @@ namespace noctalia::config::schema {
         colorSpecField(&ShellConfig::appIconColor, "app_icon_color", /*alwaysEmit=*/false),
         field(&ShellConfig::launchAppsAsSystemdServices, "launch_apps_as_systemd_services"),
         field(&ShellConfig::clipboardEnabled, "clipboard_enabled"),
-        field(&ShellConfig::clipboardHistoryMaxEntries, "clipboard_history_max_entries", Range<std::int64_t>{10, 200}),
+        field(
+            &ShellConfig::clipboardHistoryMaxEntries, "clipboard_history_max_entries", kClipboardHistoryMaxEntriesRange
+        ),
         field(&ShellConfig::clipboardConfirmClearHistory, "clipboard_confirm_clear_history"),
         field(&ShellConfig::screenTimeEnabled, "screen_time_enabled"),
         field(&ShellConfig::sharedGlContext, "shared_gl_context"),
         field(&ShellConfig::disableMipmaps, "disable_mipmaps"),
         enumField(&ShellConfig::clipboardAutoPaste, "clipboard_auto_paste", kClipboardAutoPasteModes),
         field(&ShellConfig::clipboardImageActionCommand, "clipboard_image_action_command"),
-        stringIfNonEmptyField(&ShellConfig::avatarPath, "avatar_path"),
+        pathStringField(&ShellConfig::avatarPath, "avatar_path"),
         subTable(&ShellConfig::animation, "animation", shellAnimationSchema()),
         subTable(&ShellConfig::shadow, "shadow", shellShadowSchema()),
         subTable(&ShellConfig::panel, "panel", shellPanelSchema()),
@@ -1320,6 +1361,12 @@ namespace noctalia::config::schema {
 
     if (section == "desktop_widgets" && isKnownDesktopWidgetPath(path)) {
       return true;
+    }
+
+    // [plugin_settings."author/plugin"].<key> — open schema; keys validate against
+    // the manifest in config_validate's validatePluginSettings, not here.
+    if (section == "plugin_settings") {
+      return path.size() <= 3;
     }
 
     if (path.size() < 2) {

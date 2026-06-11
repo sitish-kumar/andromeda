@@ -60,8 +60,10 @@ public:
 
   // Optional: invoked from shell UI (e.g. control center) to spawn the standalone settings toplevel.
   void setOpenSettingsWindowCallback(std::function<void()> callback);
+  void setCloseSettingsWindowCallback(std::function<void()> callback);
   void setToggleSettingsWindowCallback(std::function<void()> callback);
   void openSettingsWindow();
+  void closeSettingsWindow();
   void toggleSettingsWindow();
   void setAttachedPanelGeometryCallback(
       std::function<void(wl_output*, std::string_view, std::optional<AttachedPanelGeometry>)> callback
@@ -84,6 +86,7 @@ public:
   void togglePanel(const std::string& panelId, PanelOpenRequest request);
   // IPC-friendly overload: asks CompositorPlatform for preferred interactive output.
   void togglePanel(const std::string& panelId);
+  void clearClipboardHistory();
 
   bool onPointerEvent(const PointerEvent& event);
   void onKeyboardEvent(const KeyboardEvent& event);
@@ -114,6 +117,7 @@ public:
   // blur region. No-op when no panel is open.
   void onConfigReloaded();
   void onIconThemeChanged();
+  void focusArea(InputArea* area);
   void requestUpdateOnly();
   void requestLayout();
   // Requests a redraw on the active panel surface without re-running panel
@@ -162,6 +166,7 @@ private:
   ConfigService* m_config = nullptr;
   RenderContext* m_renderContext = nullptr;
   std::function<void()> m_openSettingsWindow;
+  std::function<void()> m_closeSettingsWindow;
   std::function<void()> m_toggleSettingsWindow;
   std::function<void(wl_output*, std::string_view, std::optional<AttachedPanelGeometry>)>
       m_attachedPanelGeometryCallback;

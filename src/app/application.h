@@ -13,6 +13,8 @@
 #include "core/timer_manager.h"
 #include "dbus/bluetooth/bluetooth_agent.h"
 #include "dbus/bluetooth/bluetooth_service.h"
+#include "dbus/idle/screensaver_poll_source.h"
+#include "dbus/idle/screensaver_service.h"
 #include "dbus/logind/logind_service.h"
 #include "dbus/mpris/mpris_service.h"
 #include "dbus/network/inetwork_service.h"
@@ -49,6 +51,9 @@
 #include "render/core/thumbnail_service.h"
 #include "render/gl_shared_context.h"
 #include "render/render_context.h"
+#include "scripting/plugin_ipc.h"
+#include "scripting/plugin_manager.h"
+#include "scripting/plugin_service_host.h"
 #include "scripting/script_api_context.h"
 #include "shell/backdrop/backdrop.h"
 #include "shell/bar/bar.h"
@@ -157,12 +162,16 @@ private:
   noctalia::theme::ThemeService m_themeService{m_configService, m_httpClient};
   noctalia::theme::TemplateApplyService m_templateApplyService{m_configService};
   scripting::ScriptApiContext m_scriptApi;
+  scripting::PluginManager m_pluginManager{m_configService};
+  scripting::PluginServiceHost m_pluginServiceHost{m_scriptApi, &m_httpClient, &m_clipboardService};
   TimeService m_timeService;
   LockKeysService m_lockKeysService;
   NotificationManager m_notificationManager;
   std::unique_ptr<SessionBus> m_bus;
   std::unique_ptr<SystemBus> m_systemBus;
   std::unique_ptr<LogindService> m_logindService;
+  std::unique_ptr<ScreenSaverService> m_screenSaverService;
+  std::unique_ptr<ScreenSaverPollSource> m_screenSaverPollSource;
   std::unique_ptr<SystemMonitorService> m_systemMonitor;
   std::unique_ptr<DebugService> m_debugService;
   IdleInhibitor m_idleInhibitor;

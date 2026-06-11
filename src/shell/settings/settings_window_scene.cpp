@@ -9,8 +9,11 @@
 #include "shell/settings/settings_bar_management.h"
 #include "shell/settings/settings_content.h"
 #include "shell/settings/settings_content_common.h"
+#include "shell/settings/settings_content_plugins.h"
+#include "shell/settings/settings_control_factory.h"
 #include "shell/settings/settings_sidebar.h"
 #include "shell/settings/settings_window.h"
+#include "shell/tooltip/tooltip_manager.h"
 #include "system/battery_warning_monitor.h"
 #include "system/dependency_service.h"
 #include "theme/community_palettes.h"
@@ -94,12 +97,12 @@ namespace {
       if (!descriptor.sidebar) {
         continue;
       }
-      const bool present =
-          std::find_if(
-              entries.begin(), entries.end(),
-              [section = descriptor.section](const settings::SettingEntry& entry) { return entry.section == section; }
-          )
-          != entries.end();
+      const bool present = descriptor.alwaysShow
+          || std::find_if(
+                 entries.begin(), entries.end(), [section = descriptor.section](const settings::SettingEntry& entry) {
+                   return entry.section == section;
+                 }
+             ) != entries.end();
       if (present) {
         sections.push_back(descriptor.section);
       }
@@ -499,6 +502,52 @@ void SettingsWindow::rebuildSettingsContent() {
   settings::addSettingsContentSections(
       *m_contentContainer, m_settingsRegistry, makeContentContext(cfg, selectedBar, selectedMonitorOverride)
   );
+
+  if (m_selectedSection == "plugins" && m_pluginManager != nullptr) {
+    refreshPluginListIfNeeded();
+    settings::addSettingsPlugins(
+        *m_contentContainer,
+        settings::SettingsPluginsContext{
+            .scale = scale,
+            .selectedSection = m_selectedSection,
+            .plugins = m_pluginList,
+            .sources = cfg.plugins.sources,
+            .pluginsLoading = m_pluginListDirty || m_pluginListRefreshInFlight,
+            .setEnabled =
+                [this](std::string id, bool enable) {
+                  if (enable) {
+                    (void)m_pluginManager->enable(id);
+                  } else {
+                    m_pluginManager->disable(id);
+                  }
+                  markPluginListDirty();
+                  requestSceneRebuild();
+                },
+            .addSource = [this]() { openPluginSourceCreateEditor(); },
+            .setSourceAutoUpdate =
+                [this](PluginSourceConfig source, bool autoUpdate) {
+                  source.autoUpdate = autoUpdate;
+                  m_pluginManager->addSource(source);
+                  markPluginListDirty();
+                  requestSceneRebuild();
+                },
+            .updateSource = [this](std::string source) { m_pluginManager->update(std::move(source)); },
+            .removeSource =
+                [this](std::string source) {
+                  m_pluginManager->removeSource(std::move(source));
+                  markPluginListDirty();
+                  requestSceneRebuild();
+                },
+            .refresh =
+                [this]() {
+                  markPluginListDirty();
+                  requestSceneRebuild();
+                },
+            .config = &cfg,
+            .onConfigure = [this](std::string id) { openPluginSettingsEditor(std::move(id)); },
+        }
+    );
+  }
 }
 
 std::unique_ptr<Flex> SettingsWindow::buildHeaderRow(float scale) {
@@ -934,7 +983,10 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
                 .glyph = {}
             },
         .searchText = "lockscreen widgets editor edit layout",
-        .visibleWhen = std::nullopt,
+        .visibleWhen = settings::SettingVisibility{std::vector<settings::SettingVisibilityCondition>{
+            {{"lockscreen", "enabled"}, {"true"}},
+            {{"lockscreen_widgets", "enabled"}, {"true"}},
+        }},
     };
     m_settingsRegistry.insert(it, std::move(btn));
   }
@@ -1075,10 +1127,19 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
   applyPendingContentScrollTarget(Style::spaceMd * scale);
   m_mainContainer = static_cast<Flex*>(m_sceneRoot->addChild(std::move(main)));
 
-  m_inputDispatcher.setSceneRoot(m_sceneRoot.get());
   m_inputDispatcher.setTextInputContext(m_surface->wlSurface(), m_wayland->textInputService());
   m_inputDispatcher.setCursorShapeCallback([this](std::uint32_t serial, std::uint32_t shape) {
     m_wayland->setCursorShape(serial, shape);
   });
+  m_inputDispatcher.setHoverChangeCallback([this](InputArea* /*old*/, InputArea* next) {
+    if (m_surface != nullptr) {
+      wl_output* output = m_output;
+      if (output == nullptr && m_wayland != nullptr) {
+        output = m_wayland->outputForSurface(m_surface->wlSurface());
+      }
+      TooltipManager::instance().onHoverChange(next, m_surface->xdgSurface(), output);
+    }
+  });
+  m_inputDispatcher.setSceneRoot(m_sceneRoot.get());
   m_surface->setSceneRoot(m_sceneRoot.get());
 }
