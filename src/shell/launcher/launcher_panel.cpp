@@ -716,9 +716,18 @@ void LauncherPanel::onInputChanged(const std::string& text) {
   } else if (startsWithSlash(text)) {
     m_allResults = providerOverviewResults(text);
   } else {
-    // Query default providers (empty prefix)
+    // Query default providers (empty prefix), plus prefixed providers that opt into global search.
+    // Prefixed opt-in providers (e.g. Session) only contribute once the query is at least 2 chars,
+    // so opening the launcher with no/short input does not flood it with their entries.
+    const bool allowGlobalOptIn = queryText.size() >= 2;
     for (auto& provider : m_providers) {
-      if (provider->prefix().empty()) {
+      const bool isDefault = provider->prefix().empty();
+      if (!isDefault) {
+        if (!provider->includeInGlobalSearch() || !allowGlobalOptIn) {
+          continue;
+        }
+      }
+      {
         auto results = provider->query(queryText);
         if (provider->trackUsage()) {
           applyUsageBoost(results, *provider);

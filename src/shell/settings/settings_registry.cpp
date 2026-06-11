@@ -997,6 +997,12 @@ namespace settings {
         ToggleSetting{cfg.shell.panel.launcherCompact}, "launcher compact rows dense"
     ));
     entries.push_back(makeEntry(
+        SettingsSection::Panels, "launcher", tr("settings.schema.panels.launcher-session-search.label"),
+        tr("settings.schema.panels.launcher-session-search.description"), {"shell", "panel", "launcher_session_search"},
+        ToggleSetting{cfg.shell.panel.launcherSessionSearch},
+        "launcher session search power menu lock suspend reboot shutdown logout"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Panels, "clipboard", tr("settings.schema.panels.placement-clipboard.label"),
         tr("settings.schema.panels.placement-clipboard.description"), {"shell", "panel", "clipboard_placement"},
         asSegmented(enumSelect(kPanelPlacements, cfg.shell.panel.clipboardPlacement)),

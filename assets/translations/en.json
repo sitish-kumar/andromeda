@@ -1658,6 +1658,10 @@
           "description": "Use smaller icons and tighter result rows",
           "label": "Compact Rows"
         },
+        "launcher-session-search": {
+          "description": "Include session actions (lock, suspend, reboot, shutdown, logout) in general launcher searches, not only behind the /session prefix",
+          "label": "Enable Session Search"
+        },
         "launcher-show-icons": {
           "description": "Show application icons in launcher results",
           "label": "Show App Icons"
