@@ -715,7 +715,8 @@ bool SettingsWindow::onPointerEvent(const PointerEvent& event) {
       if (onThis) {
         m_pointerInside = true;
       }
-      m_inputDispatcher.pointerMotion(static_cast<float>(event.sx), static_cast<float>(event.sy), 0);
+      const std::uint32_t serial = m_wayland != nullptr ? m_wayland->lastInputSerial() : 0;
+      m_inputDispatcher.pointerMotion(static_cast<float>(event.sx), static_cast<float>(event.sy), serial);
       consumed = m_pointerInside;
     }
     break;
