@@ -350,6 +350,7 @@ location = "https://example.invalid/bad"
     c.shell.panel.transparencyMode = PanelTransparencyMode::Glass;
     c.shell.panel.launcherPlacement = PanelPlacement::Floating;
     c.shell.panel.launcherCompact = true;
+    c.shell.panel.launcherSessionSearch = true;
     c.shell.screenCorners.enabled = true;
     c.shell.screenCorners.size = 24;
     c.shell.mpris.blacklist = {"firefox"};
