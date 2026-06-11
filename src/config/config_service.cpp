@@ -891,6 +891,9 @@ BarConfig ConfigService::resolveForOutput(const BarConfig& base, const WaylandOu
     if (ovr.widgetColor) {
       resolved.widgetColor = *ovr.widgetColor;
     }
+    if (ovr.widgetIconColor) {
+      resolved.widgetIconColor = *ovr.widgetIconColor;
+    }
     if (ovr.widgetCapsuleGroups) {
       resolved.widgetCapsuleGroups = *ovr.widgetCapsuleGroups;
     }
