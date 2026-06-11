@@ -804,7 +804,7 @@
       "behavior": {
         "add": "Добавить поведение",
         "command-label": "Команда простоя",
-        "command-placeholder": "notify-send \"Idle\"",
+        "command-placeholder": "отправить уведомление \"idle\"",
         "kind": {
           "custom": "Пользовательское",
           "lock": "Блокировка",

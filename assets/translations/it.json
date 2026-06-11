@@ -76,9 +76,9 @@
     "filter-placeholder": "Filtra appunti...",
     "preview": {
       "empty-text-payload": "(contenuto di testo vuoto)",
-      "image-title": "Voce immagine degli appunti",
+      "image-title": "Immagine negli appunti",
       "loading": "Caricamento anteprima...",
-      "text-title": "Testo degli appunti",
+      "text-title": "Testo negli appunti",
       "truncated": "... troncato"
     },
     "title": "Appunti"
@@ -338,17 +338,21 @@
         "horizontal": "Orizzontale",
         "image-path": "Immagine",
         "inner-diameter": "Diametro interno",
+        "input-opacity": "Opacità input",
+        "input-radius": "Raggio input",
         "layout": "Layout",
         "low-color": "Colore basse frequenze",
         "mirrored": "Specchiato",
         "opacity": "Opacità",
         "primary-color": "Colore primario",
+        "reset-defaults": "Ripristina predefiniti",
         "ring-opacity": "Opacità anello",
         "rotation-speed": "Velocità rotazione",
         "secondary-color": "Colore secondario",
         "sensitivity": "Sensibilità",
         "shadow": "Ombra",
         "show-label": "Mostra etichetta",
+        "show-login-button": "Pulsante di login",
         "show-when-idle": "Mostra quando inattivo",
         "stat": "Statistica",
         "stat-cpu-temp": "Temp CPU",
@@ -1049,6 +1053,44 @@
         }
       }
     },
+    "plugins": {
+      "plugins": {
+        "configure": "Configura",
+        "deprecated": "deprecato",
+        "empty": "Nessun plugin trovato. Aggiungi una sorgente o controlla la rete",
+        "loading": "Caricamento plugin...",
+        "refreshing": "Aggiornamento plugin...",
+        "requires-newer-noctalia": "Richiede Noctalia aggiornato",
+        "title": "Elenco plugin"
+      },
+      "settings": {
+        "empty": "Nessuna impostazione disponibile."
+      },
+      "sources": {
+        "add": "Aggiungi sorgente",
+        "add-title": "Aggiungi sorgente plugin",
+        "empty": "Nessuna sorgente configurata.",
+        "errors": {
+          "duplicate-name": "Esiste già una sorgente con questo ID",
+          "invalid-name": "L'ID sorgente deve includere lettere, numeri, '.', '_' o '-', iniziare con una lettera o un numero.",
+          "location-required": "È richiesto un indirizzo sorgente"
+        },
+        "kind": {
+          "git": "Git",
+          "path": "Percorso"
+        },
+        "kind-label": "Tipo",
+        "location-label": "Indirizzo",
+        "location-placeholder-git": "https://github.com/me/noctalia-plugins",
+        "location-placeholder-path": "~/dev/noctalia-plugins",
+        "name-label": "ID sorgente",
+        "name-placeholder": "miei-plugin",
+        "remove": "Rimuovi sorgente",
+        "title": "Sorgenti",
+        "update": "Aggiorna",
+        "update-on-startup": "Aggiorna all'avvio"
+      }
+    },
     "schema": {
       "appearance": {
         "animation-speed": {
@@ -1252,6 +1294,10 @@
         "widget-color": {
           "description": "Ruolo colore predefinito per icone ed etichette dei widget su questa barra; sono supportati anche colori hex fissi",
           "label": "Colore widget"
+        },
+        "widget-icon-color": {
+          "description": "Sostituisce il colore del widget per le icone su questa barra; sono supportati anche i colori esadecimali",
+          "label": "Colore icona widget"
         },
         "widget-spacing": {
           "description": "Spazio tra i widget della barra",
@@ -1510,6 +1556,10 @@
           "description": "Usa un'istantanea del desktop come sfondo del blocco schermo",
           "label": "Cattura desktop"
         },
+        "enabled": {
+          "description": "Abilita il blocco della sessione, l'integrazione con logind e le azioni di blocco",
+          "label": "Blocco schermo"
+        },
         "monitors": {
           "description": "Scegli quali monitor mostrano il blocco schermo; lascia vuoto per mostrare su tutti i monitor",
           "label": "Monitor"
@@ -1615,6 +1665,10 @@
         "launcher-compact": {
           "description": "Usa icone più piccole e righe risultato più compatte",
           "label": "Righe compatte"
+        },
+        "launcher-session-search": {
+          "description": "Includere azioni di sessione (blocco, sospensione, riavvio, spegnimento, disconnessione) nelle ricerche generali del launcher, non solo attraverso l'uso del prefisso /session",
+          "label": "Abilita ricerca dei comandi di sessione"
         },
         "launcher-show-icons": {
           "description": "Mostra icone applicazione nei risultati del launcher",
@@ -2119,7 +2173,7 @@
           "placeholder": "~/Pictures/Wallpapers"
         },
         "edge-smoothness": {
-          "description": "Sfumatura dei bordi di transizione tra sfondi",
+          "description": "Sfumatura dei bordi della transizione tra sfondi",
           "label": "Morbidezza bordi"
         },
         "enabled": {
@@ -2147,7 +2201,7 @@
         "panel": {
           "button": "Apri pannello",
           "description": "Apri il pannello di scelta sfondo",
-          "label": "Pannello sfondo"
+          "label": "Pannello sfondi"
         },
         "per-monitor-directories": {
           "description": "Usa cartelle sfondi separate per ciascun monitor",
@@ -2422,6 +2476,10 @@
         "hot-reload": {
           "description": "Ricarica il widget scriptato quando cambia la sua sorgente",
           "label": "Aggiornamento a caldo"
+        },
+        "icon-color": {
+          "description": "Sostituisce il colore del widget solo per le icone; sono supportati anche i colori in formato esadecimale",
+          "label": "Colore icona"
         },
         "icon-size": {
           "description": "Dimensione icona in pixel",

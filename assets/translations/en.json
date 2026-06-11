@@ -21,6 +21,9 @@
       "region": "Select region"
     },
     "widgets": {
+      "active-window": {
+        "no-active-window": "No active window"
+      },
       "lock-keys": {
         "caps": "Caps",
         "caps-short": "C",
@@ -28,9 +31,6 @@
         "num-short": "N",
         "scroll": "Scroll",
         "scroll-short": "S"
-      },
-      "active-window": {
-        "no-active-window": "No active window"
       },
       "media": {
         "nothing-playing": "Nothing playing",
@@ -1937,7 +1937,7 @@
       },
       "shell": {
         "avatar-path": {
-          "description": "Avatar image shown in the control center.",
+          "description": "Path to a custom avatar image",
           "label": "Avatar Path",
           "placeholder": "/path/to/avatar.png"
         },
@@ -2468,10 +2468,6 @@
           "description": "Hide the keyboard layout widget unless more than one layout is configured",
           "label": "Hide When Single Layout"
         },
-        "show-empty-label": {
-          "description": "Show placeholder text when no window is focused instead of hiding the widget",
-          "label": "Show Empty Label"
-        },
         "high-color": {
           "description": "Color used for high visualizer values",
           "label": "High Color"
@@ -2615,6 +2611,10 @@
         "show-condition": {
           "description": "Show weather condition text",
           "label": "Show Condition"
+        },
+        "show-empty-label": {
+          "description": "Show placeholder text when no window is focused instead of hiding the widget",
+          "label": "Show Empty Label"
         },
         "show-icon": {
           "description": "Show this widget's icon",
