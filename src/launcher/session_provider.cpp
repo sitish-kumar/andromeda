@@ -100,6 +100,11 @@ namespace {
       if (row.action == "command" && (!row.command.has_value() || StringUtils::trim(*row.command).empty())) {
         continue;
       }
+      if ((row.action == "lock" || row.action == "lock_and_suspend")
+          && config != nullptr
+          && !config->isLockScreenEnabled()) {
+        continue;
+      }
 
       SessionActionEntry entry;
       entry.index = i;

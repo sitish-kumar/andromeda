@@ -983,7 +983,10 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
                 .glyph = {}
             },
         .searchText = "lockscreen widgets editor edit layout",
-        .visibleWhen = std::nullopt,
+        .visibleWhen = settings::SettingVisibility{std::vector<settings::SettingVisibilityCondition>{
+            {{"lockscreen", "enabled"}, {"true"}},
+            {{"lockscreen_widgets", "enabled"}, {"true"}},
+        }},
     };
     m_settingsRegistry.insert(it, std::move(btn));
   }

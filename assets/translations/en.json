@@ -1544,6 +1544,10 @@
         }
       },
       "lockscreen": {
+        "enabled": {
+          "description": "Enable session lock, logind integration, and lock actions",
+          "label": "Lock Screen"
+        },
         "blur-intensity": {
           "description": "How much the lock screen background is blurred",
           "label": "Blur Intensity"

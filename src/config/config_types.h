@@ -386,6 +386,7 @@ struct BackdropConfig {
 };
 
 struct LockscreenConfig {
+  bool enabled = true;
   bool blurredDesktop = false;
   float blurIntensity = 0.5f;
   float tintIntensity = 0.3f;
@@ -394,6 +395,10 @@ struct LockscreenConfig {
 
   bool operator==(const LockscreenConfig&) const = default;
 };
+
+[[nodiscard]] inline bool isLockScreenEnabled(const LockscreenConfig& lockscreen) noexcept {
+  return lockscreen.enabled;
+}
 
 template <typename T> struct EnumOption {
   T value;

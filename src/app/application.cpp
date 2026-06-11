@@ -1161,6 +1161,9 @@ void Application::initUi() {
     }
   });
   m_settingsWindow.setOpenLockscreenWidgetEditor([this]() {
+    if (!m_configService.isLockScreenEnabled()) {
+      return;
+    }
     if (m_lockScreen.isActive()) {
       notify::info(
           "Noctalia", i18n::tr("notifications.internal.lockscreen-widgets-editor"),
@@ -1215,7 +1218,13 @@ void Application::initUi() {
   });
   m_lockScreen.initialize(m_wayland, &m_renderContext, &m_configService, &m_sharedTextureCache);
   m_wallpaper.setAutomationGate([this]() { return !m_lockScreen.isActive(); });
-  m_configService.addReloadCallback([this]() { m_lockScreen.onConfigChanged(); });
+  m_configService.addReloadCallback([this]() {
+    if (m_logindService != nullptr) {
+      m_logindService->setSessionLockIntegrationEnabled(m_configService.isLockScreenEnabled());
+    }
+    m_lockScreen.onConfigChanged();
+    m_lockscreenWidgetsController.onLockStateChanged();
+  });
   m_lockScreen.setSessionHooks(
       [this]() {
         m_lockscreenWidgetsController.onLockStateChanged();
@@ -1230,7 +1239,11 @@ void Application::initUi() {
       }
   );
   if (m_logindService != nullptr) {
+    m_logindService->setSessionLockIntegrationEnabled(m_configService.isLockScreenEnabled());
     m_logindService->setLockCallback([this]() {
+      if (!m_configService.isLockScreenEnabled()) {
+        return;
+      }
       if (!m_lockScreen.isActive()) {
         (void)m_lockScreen.lock();
       }
@@ -1240,7 +1253,12 @@ void Application::initUi() {
         m_lockScreen.unlock();
       }
     });
-    m_lockScreen.setLockEngagedCallback([this]() { m_logindService->syncSessionLocked(); });
+    m_lockScreen.setLockEngagedCallback([this]() {
+      if (!m_configService.isLockScreenEnabled() || m_logindService == nullptr) {
+        return;
+      }
+      m_logindService->syncSessionLocked();
+    });
   }
 
   SessionActionHooks sessionActionHooks;
@@ -1467,7 +1485,7 @@ void Application::initUi() {
       ) {
         (void)behaviorName;
         // Snapshot the clean desktop before the overlay fades in
-        if (willLockSession) {
+        if (willLockSession && m_configService.isLockScreenEnabled()) {
           m_lockScreen.primeDesktopCaptures();
         }
         DeferredCall::callLater([this, fadeIn, done = std::move(onFadeComplete)]() mutable {
@@ -1821,7 +1839,7 @@ void Application::initIpc() {
       "dpms-off", "Turn monitors off"
   );
 
-  registerSessionIpc(m_ipcService, m_sessionActionRunner, m_lockScreen);
+  registerSessionIpc(m_ipcService, m_sessionActionRunner, m_lockScreen, m_configService);
 
   if (m_powerProfilesService != nullptr) {
     m_powerProfilesService->registerIpc(m_ipcService, [this](std::string_view profile) {
@@ -2022,6 +2040,9 @@ bool Application::runIdleAction(const IdleActionRequest& action) {
   case IdleActionKind::Command:
     return runUserCommand(action.command);
   case IdleActionKind::Lock:
+    if (!m_configService.isLockScreenEnabled()) {
+      return true;
+    }
     return m_sessionActionRunner.lock();
   case IdleActionKind::ScreenOff:
     return m_compositorPlatform.setOutputPower(false);
@@ -2030,6 +2051,9 @@ bool Application::runIdleAction(const IdleActionRequest& action) {
   case IdleActionKind::Suspend:
     return m_sessionActionRunner.requestSuspendDetached();
   case IdleActionKind::LockAndSuspend:
+    if (!m_configService.isLockScreenEnabled()) {
+      return m_sessionActionRunner.requestSuspendDetached();
+    }
     return m_sessionActionRunner.lockThenSuspendDetached();
   }
   return false;
