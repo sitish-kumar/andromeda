@@ -332,6 +332,9 @@ void BackgroundWidgetsEditor::createSurface(const WaylandOutput& output) {
   overlay->surface->setPrepareFrameCallback([this, rawOverlay](bool needsUpdate, bool needsLayout) {
     prepareFrame(*rawOverlay, needsUpdate, needsLayout);
   });
+  overlay->inputDispatcher.setHoverChangeCallback([rawOverlay](InputArea* /*old*/, InputArea* next) {
+    TooltipManager::instance().onHoverChange(next, rawOverlay->surface->layerSurface(), rawOverlay->output);
+  });
   overlay->surface->setFrameTickCallback([this, rawOverlay](float deltaMs) {
     if (m_renderContext == nullptr || rawOverlay->surface == nullptr) {
       return;
@@ -464,9 +467,6 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   surface.toolbar = nullptr;
 
   auto root = std::make_unique<InputArea>();
-  surface.inputDispatcher.setHoverChangeCallback([inst = &surface](InputArea* /*old*/, InputArea* next) {
-    TooltipManager::instance().onHoverChange(next, inst->surface->layerSurface(), inst->output);
-  });
   root->setEnabled(false);
   root->setAnimationManager(&surface.animations);
   if (m_renderContext != nullptr && m_wayland != nullptr) {
@@ -960,7 +960,7 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
                       .glyph = "trash",
                       .enabled = hasSelectedWidget && !selectedIsLoginBox,
                       .variant = ButtonVariant::Destructive,
-                      .tooltip = i18n::tr("desktop-widgets.editor.actions.show"),
+                      .tooltip = i18n::tr("desktop-widgets.editor.actions.trash"),
                       .onClick = [this]() { deferEditorMutation([this]() { removeSelectedWidget(); }); },
                   }),
                   ui::separator(
