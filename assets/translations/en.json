@@ -1412,7 +1412,7 @@
           "description": "Which screen edge the dock sits on"
         },
         "reserve-space": {
-          "description": "Reserve screen space for the dock"
+          "description": "Push windows away from the dock edge"
         },
         "shadow": {
           "description": "Cast the global surface shadow from the dock"

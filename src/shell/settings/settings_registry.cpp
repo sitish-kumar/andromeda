@@ -773,12 +773,11 @@ namespace settings {
         tr("settings.schema.dock.auto-hide.description"), {"dock", "auto_hide"}, ToggleSetting{cfg.dock.autoHide},
         "autohide"
     ));
-    if (cfg.dock.autoHide)
-      entries.push_back(makeEntry(
-          SettingsSection::Dock, "behavior", tr("settings.schema.shared.reserve-space.label"),
-          tr("settings.schema.dock.reserve-space.description"), {"dock", "reserve_space"},
-          ToggleSetting{cfg.dock.reserveSpace}, "exclusive zone"
-      ));
+    entries.push_back(makeEntry(
+        SettingsSection::Dock, "behavior", tr("settings.schema.shared.reserve-space.label"),
+        tr("settings.schema.dock.reserve-space.description"), {"dock", "reserve_space"},
+        ToggleSetting{cfg.dock.reserveSpace}, "exclusive zone"
+    ));
     entries.push_back(makeEntry(
         SettingsSection::Dock, "behavior", tr("settings.schema.dock.show-running.label"),
         tr("settings.schema.dock.show-running.description"), {"dock", "show_running"},

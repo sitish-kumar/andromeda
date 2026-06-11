@@ -470,7 +470,7 @@ struct DockConfig {
   bool shadow = true;                  // use the global shell shadow
   bool showRunning = true;             // also show running apps not in pinned list
   bool autoHide = false;               // fade out when not hovered (overlay mode)
-  bool reserveSpace = false;           // keep compositor exclusive zone even while auto-hidden
+  bool reserveSpace = true;            // reserve compositor exclusive zone; applies with or without auto_hide
   float activeScale = 1.0f;            // focused app icon scale
   float inactiveScale = 0.85f;         // non-focused app icon scale
   bool magnification = true;           // magnify icons near the pointer (macOS-style)
