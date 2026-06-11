@@ -334,14 +334,12 @@
         "font-family-default": "Mặc định hệ thống",
         "format": "Định dạng",
         "hide-when-no-media": "Ẩn khi không có trình phát đang chạy",
-        "high-color": "Màu sắc cao",
         "horizontal": "Ngang",
         "image-path": "Ảnh",
         "inner-diameter": "Đường kính trong",
         "input-opacity": "Độ mờ đầu vào",
         "input-radius": "Bo góc đầu vào",
         "layout": "Bố cục",
-        "low-color": "Màu nhạt",
         "mirrored": "Phản chiếu",
         "opacity": "Độ trong suốt",
         "primary-color": "Màu chính",
@@ -2465,10 +2463,6 @@
           "description": "Ẩn widget bố cục bàn phím trừ khi có hơn một bố cục được cấu hình",
           "label": "Ẩn khi chỉ có một bố cục"
         },
-        "high-color": {
-          "description": "Màu dùng cho các giá trị cao của bộ hiển thị",
-          "label": "Màu sắc cao"
-        },
         "highlight-color": {
           "description": "Màu đã đạt hoặc vượt quá ngưỡng tới hạn",
           "label": "Màu nổi bật"
@@ -2505,10 +2499,6 @@
         "length": {
           "description": "Chiều dài Spacer theo pixel",
           "label": "Độ dài"
-        },
-        "low-color": {
-          "description": "Màu dùng cho các giá trị hiển thị thấp",
-          "label": "Màu sắc giảm"
         },
         "match-adjacent-spacing": {
           "description": "Mở rộng khoảng cách giữa các biểu tượng Tray nội tuyến để khớp với khoảng cách hiển thị của các tiện ích thanh trạng thái lân cận (bao gồm đệm Capsule)",

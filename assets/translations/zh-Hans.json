@@ -306,7 +306,12 @@
   "desktop-widgets": {
     "editor": {
       "actions": {
-        "done": "完成"
+        "add": "添加",
+        "done": "完成",
+        "hide": "隐藏",
+        "settings": "设置",
+        "show": "显示",
+        "trash": "删除"
       },
       "dialogs": {
         "select-sticker-image": "选择贴纸图像"
@@ -337,14 +342,12 @@
         "font-family-default": "系统默认",
         "format": "格式",
         "hide-when-no-media": "无媒体时隐藏",
-        "high-color": "高频颜色",
         "horizontal": "水平",
         "image-path": "图像",
         "inner-diameter": "内径",
         "input-opacity": "输入框不透明度",
         "input-radius": "输入框圆角",
         "layout": "布局",
-        "low-color": "低频颜色",
         "mirrored": "镜像",
         "opacity": "不透明度",
         "primary-color": "主色",
@@ -2260,6 +2263,8 @@
         "icon-and-text": "图标与文本",
         "icon-only": "仅图标",
         "id": "ID",
+        "input": "输入",
+        "name": "名称",
         "none": "无",
         "on-hover": "悬停时",
         "output": "输出",
@@ -2290,6 +2295,27 @@
           "description": "可视化频段数量",
           "label": "频段"
         },
+        "capsule": {
+          "label": "胶囊"
+        },
+        "capsule-border": {
+          "label": "胶囊边框"
+        },
+        "capsule-fill": {
+          "label": "胶囊填充"
+        },
+        "capsule-foreground": {
+          "label": "胶囊前景"
+        },
+        "capsule-opacity": {
+          "label": "胶囊不透明度"
+        },
+        "capsule-padding": {
+          "label": "胶囊内边距"
+        },
+        "capsule-radius": {
+          "label": "胶囊圆角半径"
+        },
         "centered": {
           "label": "居中"
         },
@@ -2304,6 +2330,9 @@
           "description": "自定义图片的路径。留空则使用图标。",
           "dialog-title": "选择自定义图片",
           "label": "自定义图片"
+        },
+        "custom-labels": {
+          "label": "自定义标签"
         },
         "cycle-command": {
           "description": "切换键盘布局时执行的命令",
@@ -2409,6 +2438,9 @@
           "description": "源文件变化时重载脚本小组件",
           "label": "热重载"
         },
+        "icon-color": {
+          "label": "图标颜色"
+        },
         "icon-size": {
           "description": "图标大小（像素）",
           "label": "图标大小"
@@ -2458,6 +2490,9 @@
           "description": "将可视化围绕其中心镜像",
           "label": "镜像"
         },
+        "occupied-color": {
+          "label": "已占用颜色"
+        },
         "only-active-workspace": {
           "description": "隐藏非活跃工作区上的窗口。",
           "label": "仅当前工作区"
@@ -2466,19 +2501,27 @@
           "description": "磁盘统计使用的路径",
           "label": "路径"
         },
+        "pill-scale": {
+          "label": "胶囊缩放"
+        },
         "pinned": {
           "description": "启用抽屉模式时保持在状态栏中可见的 Tray 条目 ID",
           "label": "固定条目"
         },
         "primary-click": {
-          "description": "左键点击状态栏按钮时执行的操作"
+          "description": "左键点击状态栏按钮时执行的操作",
+          "label": "主键点击"
         },
         "right-command": {
-          "description": "右键点击此按钮时执行的 Shell 命令"
+          "description": "右键点击此按钮时执行的 Shell 命令",
+          "label": "右键命令"
         },
         "scale": {
           "description": "相对于状态栏内容缩放比例调整此小组件大小",
           "label": "缩放"
+        },
+        "scope": {
+          "label": "运行时范围"
         },
         "script": {
           "description": "Lua 脚本的路径",
@@ -2499,6 +2542,9 @@
           "description": "在任务栏中活跃窗口图标下方显示小圆点。",
           "label": "活跃窗口指示器"
         },
+        "show-all-outputs": {
+          "label": "显示所有显示器"
+        },
         "show-caps-lock": {
           "description": "显示 Caps Lock 状态",
           "label": "显示 Caps Lock"
@@ -2506,6 +2552,9 @@
         "show-condition": {
           "description": "显示天气状况文字",
           "label": "显示天气状况"
+        },
+        "show-empty-label": {
+          "label": "显示空标签"
         },
         "show-icon": {
           "description": "显示此小组件的图标",
@@ -2530,6 +2579,9 @@
         "show-window-title": {
           "description": "在图标旁显示窗口标题（仅限水平状态栏）",
           "label": "显示窗口标题"
+        },
+        "show-workspace-label": {
+          "label": "工作区胶囊标签"
         },
         "stat": {
           "description": "要显示的系统统计项",
@@ -2560,7 +2612,8 @@
           "label": "垂直格式"
         },
         "warning-color": {
-          "description": "电量处于或低于系统电池警告阈值时应用的颜色"
+          "description": "电量处于或低于系统电池警告阈值时应用的颜色",
+          "label": "警告颜色"
         },
         "width": {
           "description": "小组件宽度（像素）",
@@ -2571,7 +2624,11 @@
           "label": "窗口标题最大宽度"
         },
         "workspace-group-capsule": {
-          "description": ""
+          "description": "",
+          "label": "工作区分组胶囊"
+        },
+        "workspace-label-placement": {
+          "label": "工作区标签位置"
         }
       },
       "types": {
@@ -2580,6 +2637,7 @@
         "battery": "电池",
         "bluetooth": "蓝牙",
         "brightness": "亮度",
+        "caffeine": "保持唤醒",
         "clipboard": "剪贴板",
         "clock": "时钟",
         "control-center": "控制中心",
@@ -2634,7 +2692,8 @@
     "select-wallpaper": "选择壁纸",
     "subtitle": "简单几步，快速上手。",
     "title": "欢迎使用 Noctalia",
-    "wallpaper": "壁纸"
+    "wallpaper": "壁纸",
+    "wallpaper-scheme": "壁纸方案"
   },
   "system": {
     "hardware": {

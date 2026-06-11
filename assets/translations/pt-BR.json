@@ -21,6 +21,9 @@
       "region": "Selecione a área"
     },
     "widgets": {
+      "active-window": {
+        "no-active-window": "Nenhuma janela ativa"
+      },
       "lock-keys": {
         "caps": "Caps",
         "caps-short": "C",
@@ -303,7 +306,14 @@
   "desktop-widgets": {
     "editor": {
       "actions": {
-        "done": "Pronto"
+        "add": "Adicionar",
+        "done": "Pronto",
+        "hide": "Esconder",
+        "settings": "Configurações",
+        "show": "Exibir",
+        "stack-back": "Empilhar Atrás",
+        "stack-front": "Empilhar na Frente",
+        "trash": "Deletar"
       },
       "dialogs": {
         "select-sticker-image": "Selecionar imagem de sticker"
@@ -334,14 +344,12 @@
         "font-family-default": "Padrão do sistema",
         "format": "Formato",
         "hide-when-no-media": "Esconder Quando Não houver mídia",
-        "high-color": "Cor Alta",
         "horizontal": "Horizontal",
         "image-path": "Imagem",
         "inner-diameter": "Diâmetro Interno",
         "input-opacity": "Opacidade de Entrada",
         "input-radius": "Raio Externo da Entrada",
         "layout": "Layout",
-        "low-color": "Cor baixa",
         "mirrored": "Espelhado",
         "opacity": "Opacidade",
         "primary-color": "Cor Primária",
@@ -1056,6 +1064,7 @@
     "plugins": {
       "plugins": {
         "configure": "Configurar",
+        "deprecated": "Obsoleto",
         "empty": "Nenhum plugin encontrado. Adicione uma fonte ou cheque sua conexão.",
         "loading": "Carregando plugins...",
         "refreshing": "Atualizando plugins...",
@@ -1293,6 +1302,10 @@
         "widget-color": {
           "description": "Função padrão de cor para ícones e rótulos de widgets nesta barra; cores hexadecimais fixas também são suportadas",
           "label": "Cor do Widget"
+        },
+        "widget-icon-color": {
+          "description": "Substitui a cor do widget para ícones nesta barra; cores hexadecimais fixas também são suportadas",
+          "label": "Cor do Ícone do Widget"
         },
         "widget-spacing": {
           "description": "Espaço entre os widgets da barra",
@@ -1551,6 +1564,10 @@
           "description": "Use uma captura de tela da área de trabalho como plano de fundo da tela de bloqueio",
           "label": "Captura da Área de Trabalho"
         },
+        "enabled": {
+          "description": "Ativar bloqueio de sessão, integração com logind e ações de bloqueio",
+          "label": "Tela de Bloqueio"
+        },
         "monitors": {
           "description": "Escolha em quais monitores a tela de bloqueio será exibida; deixe em branco para exibir em todos os monitores",
           "label": "Monitores"
@@ -1656,6 +1673,10 @@
         "launcher-compact": {
           "description": "Usar ícones menores e estreitar as linhas de resultado",
           "label": "Linhas Compactas"
+        },
+        "launcher-session-search": {
+          "description": "Inclua ações de sessão (bloquear, suspender, reiniciar, desligar, fazer logout) nas buscas gerais do iniciador, não apenas atrás do prefixo /session",
+          "label": "Habilitar Pesquisa na Sessão"
         },
         "launcher-show-icons": {
           "description": "Mostrar ícones dos aplicativos nos resultados do launcher",
@@ -2452,10 +2473,6 @@
           "description": "Ocultar o widget de layout do teclado, a menos que mais de um layout esteja configurado",
           "label": "Ocultar Quando Houver Layout Único"
         },
-        "high-color": {
-          "description": "Cor usada para valores altos do visualizador",
-          "label": "Cores Altas"
-        },
         "highlight-color": {
           "description": "A cor atingiu ou ultrapassou o limiar crítico",
           "label": "Cor de Destaque"
@@ -2463,6 +2480,10 @@
         "hot-reload": {
           "description": "Recarregue o widget com script quando sua origem for alterada",
           "label": "Recarregamento Rápido"
+        },
+        "icon-color": {
+          "description": "Substitui a cor do widget apenas para ícones; cores hexadecimais fixas também são suportadas",
+          "label": "Cor do Ícone"
         },
         "icon-size": {
           "description": "Tamanho do ícone em pixels",
@@ -2488,10 +2509,6 @@
         "length": {
           "description": "Comprimento do espaçador em pixels",
           "label": "Comprimento"
-        },
-        "low-color": {
-          "description": "Cor usada para valores baixos do visualizador.",
-          "label": "Cores Baixas"
         },
         "match-adjacent-spacing": {
           "description": "Aumente o espaçamento entre os ícones do tray do sistema para corresponder ao espaçamento visual dos widgets da barra adjacentes (incluindo o espaçamento interno da cápsula)",
@@ -2591,6 +2608,10 @@
         "show-condition": {
           "description": "Mostra texto com as condições meteorológicas",
           "label": "Mostrar Condição"
+        },
+        "show-empty-label": {
+          "description": "Exibe o placeholder quando nenhuma janela estiver em foco, em vez de ocultar o widget",
+          "label": "Mostrar Rótulo Vazio"
         },
         "show-icon": {
           "description": "Exibe o ícone deste widget",
@@ -2797,7 +2818,7 @@
       },
       "file": {
         "actions": {
-          "open": "Aberto",
+          "open": "Abrir",
           "save": "Salvar",
           "select-folder": "Selecione uma pasta"
         },
