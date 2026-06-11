@@ -239,6 +239,7 @@ private:
   std::string m_selectedSection;
   std::string m_statusMessage;
   std::string m_pendingResetPageScope;
+  bool m_forceEnTranslation = false;
   bool m_showAdvanced = false;
   bool m_showOverriddenOnly = false;
   bool m_statusIsError = false;

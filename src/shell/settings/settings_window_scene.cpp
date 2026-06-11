@@ -24,6 +24,7 @@
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "util/string_utils.h"
+#include "util/sys_utils.h"
 #include "wayland/toplevel_surface.h"
 #include "wayland/wayland_connection.h"
 
@@ -636,6 +637,28 @@ std::unique_ptr<Flex> SettingsWindow::buildFilterRow(
       })
   );
   filters->addChild(ui::spacer());
+
+  static const bool translatorMode = SysUtils::isEnvFlagOn("NOCTALIA_TRANSLATOR");
+  if (translatorMode) {
+    auto enLabel =
+        makeLabel("en", Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::Error), FontWeight::Normal);
+    filters->addChild(std::move(enLabel));
+
+    filters->addChild(
+        ui::toggle({
+            .checked = m_forceEnTranslation,
+            .scale = scale,
+            .onChange = [this, requestRebuild](bool value) {
+              m_forceEnTranslation = value;
+              if (value)
+                i18n::Service::instance().setLanguage("en");
+              else if (m_config != nullptr)
+                i18n::Service::instance().setLanguage(m_config->config().shell.lang);
+              requestRebuild();
+            },
+        })
+    );
+  }
 
   auto advancedLabel = makeLabel(
       i18n::tr("settings.badges.advanced"), Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::OnSurfaceVariant),

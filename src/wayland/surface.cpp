@@ -7,6 +7,7 @@
 #include "render/animation/animation_manager.h"
 #include "render/render_context.h"
 #include "render/scene/node.h"
+#include "util/sys_utils.h"
 #include "viewporter-client-protocol.h"
 #include "wayland/wayland_connection.h"
 
@@ -75,13 +76,7 @@ namespace {
   }
 
   bool idleProfileEnabled() {
-    static const bool enabled = [] {
-      const char* value = std::getenv("NOCTALIA_IDLE_PROFILE");
-      return value != nullptr
-          && value[0] != '\0'
-          && std::string_view(value) != "0"
-          && std::string_view(value) != "false";
-    }();
+    static const bool enabled = SysUtils::isEnvFlagOn("NOCTALIA_IDLE_PROFILE");
     return enabled;
   }
 
