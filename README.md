@@ -160,7 +160,7 @@ sudo xbps-install meson ninja pkg-config git \
   pango-devel fontconfig-devel freetype-devel \
   harfbuzz-devel libxkbcommon-devel pipewire-devel \
   libcurl-devel pam-devel libwebp-devel \
-  basu-devel libcurl-devel sdbus-c++-devel \
+  basu-devel sdbus-c++-devel \
   polkit-devel librsvg-devel libqalculate-devel libxml2-devel jemalloc-devel
 ```
 
