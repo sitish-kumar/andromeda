@@ -345,6 +345,7 @@
         "mirrored": "Phản chiếu",
         "opacity": "Độ trong suốt",
         "primary-color": "Màu chính",
+        "reset-defaults": "Khôi phục về mặc định",
         "ring-opacity": "Độ mờ vòng",
         "rotation-speed": "Tốc độ quay",
         "secondary-color": "Màu phụ",
@@ -1052,6 +1053,44 @@
         }
       }
     },
+    "plugins": {
+      "plugins": {
+        "configure": "Cấu hình",
+        "deprecated": "đã lỗi thời",
+        "empty": "Không tìm thấy plugin nào. Hãy thêm nguồn hoặc kiểm tra mạng của bạn.",
+        "loading": "Đang tải các plugin...",
+        "refreshing": "Đang làm mới các plugin...",
+        "requires-newer-noctalia": "Yêu cầu phiên bản Noctalia mới hơn",
+        "title": "Plugins"
+      },
+      "settings": {
+        "empty": "Không có cài đặt nào khả dụng."
+      },
+      "sources": {
+        "add": "Thêm nguồn",
+        "add-title": "Thêm nguồn của plugin",
+        "empty": "Chưa có nguồn nào được cấu hình.",
+        "errors": {
+          "duplicate-name": "Nguồn có ID này đã tồn tại.",
+          "invalid-name": "ID nguồn chỉ được chứa chữ cái, chữ số, '.', '_' hoặc '-', và phải bắt đầu bằng chữ cái hoặc chữ số.",
+          "location-required": "Cần chỉ định vị trí nguồn."
+        },
+        "kind": {
+          "git": "Git",
+          "path": "Đường dẫn"
+        },
+        "kind-label": "Loại",
+        "location-label": "Vị trí",
+        "location-placeholder-git": "https://github.com/me/noctalia-plugins",
+        "location-placeholder-path": "~/dev/noctalia-plugins",
+        "name-label": "Mã nguồn",
+        "name-placeholder": "my-plugins",
+        "remove": "Xóa nguồn",
+        "title": "Các nguồn",
+        "update": "Cập nhật",
+        "update-on-startup": "Cập nhật khi khởi động"
+      }
+    },
     "schema": {
       "appearance": {
         "animation-speed": {
@@ -1255,6 +1294,10 @@
         "widget-color": {
           "description": "Vai trò màu sắc mặc định cho biểu tượng và nhãn của các tiện ích trên thanh này; mã màu hex cố định cũng được hỗ trợ",
           "label": "Màu Widget"
+        },
+        "widget-icon-color": {
+          "description": "Thay thế màu widget của các biểu tượng trên thanh này. Bạn cũng có thể sử dụng mã màu hex cố định",
+          "label": "Màu biểu tượng widget"
         },
         "widget-spacing": {
           "description": "Khoảng cách giữa các tiện ích trên Thanh",
@@ -1513,6 +1556,10 @@
           "description": "Sử dụng ảnh chụp màn hình nền làm nền màn hình khóa",
           "label": "Chụp màn hình"
         },
+        "enabled": {
+          "description": "Kích hoạt khóa phiên, tích hợp với logind và các hành động khóa",
+          "label": "Khóa màn hình"
+        },
         "monitors": {
           "description": "Chọn màn hình hiển thị màn hình khóa; để trống để hiển thị trên tất cả các màn hình",
           "label": "Màn hình"
@@ -1618,6 +1665,10 @@
         "launcher-compact": {
           "description": "Dùng biểu tượng nhỏ hơn và hàng kết quả gọn hơn",
           "label": "Hàng gọn"
+        },
+        "launcher-session-search": {
+          "description": "Cho phép tìm thấy các thao tác phiên (khóa, tạm ngủ, khởi động lại, tắt máy, đăng xuất) từ tìm kiếm thông thường, thay vì chỉ qua /session",
+          "label": "Bật tìm kiếm các thao tác phiên"
         },
         "launcher-show-icons": {
           "description": "Hiển thị biểu tượng ứng dụng trong kết quả của Launcher",
@@ -2425,6 +2476,10 @@
         "hot-reload": {
           "description": "Tải lại widget có script khi nguồn của nó thay đổi",
           "label": "Hot Reload"
+        },
+        "icon-color": {
+          "description": "Chỉ áp dụng màu tùy chỉnh cho biểu tượng của widget. Hỗ trợ cả mã màu hex cố định",
+          "label": "Màu biểu tượng"
         },
         "icon-size": {
           "description": "Kích thước biểu tượng (pixel)",
