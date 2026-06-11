@@ -145,7 +145,9 @@ namespace desktop_entry_launch {
   ) {
     auto prepared = prepareCommand(action.exec, terminal);
     if (!prepared.has_value()) {
-      kLog.warn("Failed to prepare launch command for desktop action '{}'", action.id.empty() ? action.name : action.id);
+      kLog.warn(
+          "Failed to prepare launch command for desktop action '{}'", action.id.empty() ? action.name : action.id
+      );
       return false;
     }
 
