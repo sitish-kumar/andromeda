@@ -306,7 +306,14 @@
   "desktop-widgets": {
     "editor": {
       "actions": {
-        "done": "Done"
+        "done": "Done",
+        "add": "Add",
+        "stack-back":"Stack Behind",
+        "stack-front": "Stack In Front",
+        "settings": "Settings",
+        "hide":"Hide",
+        "show":"Show",
+        "trash": "Delete"
       },
       "dialogs": {
         "select-sticker-image": "Select Sticker Image"
