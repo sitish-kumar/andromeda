@@ -408,6 +408,7 @@ _noctalia_sources = files(
   'src/dbus/upower/upower_service.cpp',
   'src/debug/debug_service.cpp',
   'src/i18n/i18n.cpp',
+  'src/i18n/language_tag.cpp',
   'src/i18n/i18n_service.cpp',
   'src/hooks/battery_hook_state.cpp',
   'src/hooks/hook_manager.cpp',
@@ -950,6 +951,16 @@ string_utils_test = executable('string_utils_test',
 )
 
 test('string_utils', string_utils_test)
+
+i18n_language_tag_test = executable('i18n_language_tag_test',
+  sources: files(
+    'tests/i18n_language_tag_test.cpp',
+    'src/i18n/language_tag.cpp',
+  ),
+  include_directories: _noctalia_inc,
+)
+
+test('i18n_language_tag', i18n_language_tag_test)
 
 plugin_source_paths_test = executable('plugin_source_paths_test',
   sources: files(

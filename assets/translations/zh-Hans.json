@@ -1050,25 +1050,437 @@
     },
     "schema": {
       "appearance": {
+        "animation-speed": {
+          "description": "所有动画的速度倍数",
+          "label": "动画速度"
+        },
         "animations": {
-          "description": "启用或禁用 UI 动画"
+          "description": "启用或禁用 UI 动画",
+          "label": "动画"
+        },
+        "app-icon-color": {
+          "description": "为应用图标着色时使用的调色板颜色",
+          "label": "应用图标颜色"
+        },
+        "app-icon-colorize": {
+          "description": "将 shell 中的应用图标重新着色以匹配当前调色板",
+          "label": "应用图标着色"
         },
         "builtin-palette": {
           "description": "从预置目录中选择调色板",
           "label": "内置调色板"
         },
+        "community-palette": {
+          "description": "从社区目录中选择调色板",
+          "label": "社区调色板",
+          "search-placeholder": "搜索调色板..."
+        },
         "corner-roundness": {
           "description": "缩放 Shell UI 容器与控件的圆角半径"
         },
+        "custom-palette": {
+          "description": "从 ~/.config/noctalia/palettes/ 中选择调色板",
+          "label": "自定义调色板",
+          "search-placeholder": "搜索自定义调色板..."
+        },
         "export-wallpaper-palette": {
+          "button": "保存为自定义调色板",
           "description": "将当前由壁纸生成的调色板保存为可复用的自定义调色板文件"
+        },
+        "font-family": {
+          "description": "shell 界面的字体",
+          "label": "字体"
+        },
+        "global-shadow-alpha": {
+          "description": "全局表面阴影不透明度"
+        },
+        "global-shadow-direction": {
+          "description": "表面投射阴影的方向"
+        },
+        "language": {
+          "description": "",
+          "label": "语言"
+        },
+        "palette-source": {
+          "description": "调色板的来源",
+          "label": "调色板来源"
+        },
+        "theme-mode": {
+          "description": "选择深色、浅色或根据一天中的时间自动切换",
+          "label": "主题模式"
         },
         "ui-scale": {
           "description": "缩放整体界面比例",
           "label": "UI 缩放"
+        },
+        "wallpaper-generation-scheme": {
+          "description": "选择壁纸颜色转换为调色板的方式"
+        }
+      },
+      "backdrop": {
+        "blur-intensity": {
+          "label": "模糊强度"
+        }
+      },
+      "bar": {
+        "auto-hide": {
+          "description": "不使用时自动隐藏状态栏"
+        },
+        "background-opacity": {
+          "description": "状态栏的背景不透明度"
+        },
+        "border": {
+          "label": "边框"
+        },
+        "border-width": {
+          "description": "状态栏的内部轮廓宽度",
+          "label": "边框宽度"
+        },
+        "center-widgets": {
+          "description": "状态栏中间的小组件",
+          "label": "中间小组件"
+        },
+        "contact-shadow": {
+          "description": "吸附面板与状态栏之间的深色渐变，以在接缝处营造深度感"
+        },
+        "content-padding": {
+          "description": "状态栏内容区域内的内边距",
+          "label": "内容内边距"
+        },
+        "content-scale": {
+          "description": "状态栏内容的缩放比例",
+          "label": "内容缩放"
+        },
+        "corner-bottom-left": {
+          "description": "状态栏左下角圆角半径"
+        },
+        "corner-bottom-right": {
+          "description": "状态栏右下角圆角半径"
+        },
+        "corner-radius": {
+          "description": "状态栏的圆角半径"
+        },
+        "corner-top-left": {
+          "description": "状态栏左上角圆角半径"
+        },
+        "corner-top-right": {
+          "description": "状态栏右上角圆角半径"
+        },
+        "edge-margin": {
+          "description": "与最近屏幕边缘的距离；正值使状态栏悬浮离开边缘"
+        },
+        "enabled": {
+          "description": "显示或隐藏此状态栏"
+        },
+        "end-widgets": {
+          "description": "状态栏末端（右侧/底部）的小组件",
+          "label": "末端小组件"
+        },
+        "ends-margin": {
+          "description": "沿主轴从状态栏两端向内收缩的距离"
+        },
+        "font-weight": {
+          "description": "此状态栏上小组件标签的默认字重",
+          "label": "字重"
+        },
+        "layer": {
+          "description": "使用 Overlay 可将状态栏显示在全屏应用上方。吸附面板跟随状态栏。",
+          "label": "Wayland 层级"
+        },
+        "position": {
+          "description": "状态栏所在的屏幕边缘"
+        },
+        "reserve-space": {
+          "description": "将窗口推离状态栏边缘"
+        },
+        "shadow": {
+          "description": "从状态栏投射全局表面阴影"
+        },
+        "start-widgets": {
+          "description": "状态栏起始端（左侧/顶部）的小组件",
+          "label": "起始小组件"
+        },
+        "thickness": {
+          "description": "状态栏厚度（像素）",
+          "label": "厚度"
+        },
+        "widget-color": {
+          "label": "小组件颜色"
+        },
+        "widget-spacing": {
+          "description": "状态栏里小组件之间的间距",
+          "label": "小组件间距"
+        }
+      },
+      "desktop": {
+        "screen-corners-enabled": {
+          "label": "屏幕圆角"
+        },
+        "screen-corners-size": {
+          "description": "屏幕圆角的像素半径",
+          "label": "圆角大小"
+        },
+        "widgets": {
+          "description": "在桌面上显示组件",
+          "label": "桌面组件"
+        },
+        "widgets-editor": {
+          "button": "切换编辑器",
+          "description": "添加、移动和调整桌面组件大小",
+          "label": "桌面组件编辑器"
+        }
+      },
+      "dock": {
+        "active-icon-opacity": {
+          "description": "焦点 Dock 图标的不透明度",
+          "label": "活跃图标不透明度"
+        },
+        "active-icon-scale": {
+          "description": "焦点 Dock 图标的缩放比例",
+          "label": "焦点图标缩放"
+        },
+        "active-monitor-only": {
+          "description": "只显示在当前显示器上运行的应用",
+          "label": "仅限当前显示器"
+        },
+        "auto-hide": {
+          "description": "不使用时自动隐藏 Dock"
+        },
+        "background-opacity": {
+          "description": "Dock 的背景不透明度"
+        },
+        "corner-bottom-left": {
+          "description": "Dock 左下角圆角半径"
+        },
+        "corner-bottom-right": {
+          "description": "Dock 右下角圆角半径"
+        },
+        "corner-radius": {
+          "description": "Dock 的圆角半径"
+        },
+        "corner-top-left": {
+          "description": "Dock 左上角圆角半径"
+        },
+        "corner-top-right": {
+          "description": "Dock 右上角圆角半径"
+        },
+        "cross-axis-padding": {
+          "description": "沿 Dock 横轴方向的内边距（图标与屏幕边缘之间）"
+        },
+        "edge-margin": {
+          "description": "与最近屏幕边缘的距离；正值使 Dock 悬浮离开屏幕边缘"
+        },
+        "enabled": {
+          "description": "显示或隐藏 Dock"
+        },
+        "ends-margin": {
+          "description": "沿主轴从 Dock 两端向内收缩的距离"
+        },
+        "icon-size": {
+          "description": "Dock 图标大小（像素）",
+          "label": "图标大小"
+        },
+        "inactive-icon-opacity": {
+          "description": "非焦点 Dock 图标的不透明度",
+          "label": "非焦点图标不透明度"
+        },
+        "inactive-icon-scale": {
+          "description": "非焦点 Dock 图标的缩放比例",
+          "label": "非焦点图标缩放"
+        },
+        "item-spacing": {
+          "description": "Dock 条目之间的间距",
+          "label": "条目间距"
+        },
+        "launcher-icon": {
+          "description": "Dock 启动器按钮上显示的 Tabler 图标",
+          "label": "启动器图标"
+        },
+        "launcher-position": {
+          "description": "在 Dock 起始端或末端显示启动器按钮",
+          "label": "启动器按钮"
+        },
+        "magnification": {
+          "description": "以 macOS 风格在指针附近放大 Dock 图标",
+          "label": "放大效果"
+        },
+        "magnification-scale": {
+          "description": "指针中心处的最大图标缩放倍数（1.0 禁用放大效果）",
+          "label": "放大比例"
+        },
+        "monitors": {
+          "description": "选择哪些显示器显示 Dock（留空则在所有显示器上显示）；当前显示器过滤在所选显示器范围内生效",
+          "label": "显示器"
+        },
+        "pinned-apps": {
+          "description": "固定到 Dock 的应用的桌面条目 ID",
+          "label": "固定应用"
+        },
+        "position": {
+          "description": "Dock 所在的屏幕边缘"
+        },
+        "reserve-space": {
+          "description": "为 Dock 保留屏幕空间"
+        },
+        "shadow": {
+          "description": "从 Dock 投射全局表面阴影"
+        },
+        "show-dots": {
+          "description": "在 Dock 图标旁显示运行中的窗口指示点",
+          "label": "显示指示点"
+        },
+        "show-instance-count": {
+          "description": "显示带有打开实例数量的徽章",
+          "label": "显示实例数量"
+        },
+        "show-running": {
+          "description": "显示未固定的运行中应用",
+          "label": "显示运行中的应用"
+        }
+      },
+      "hooks": {
+        "command-placeholder": "shell 命令或脚本路径",
+        "events": {
+          "battery-charging": {
+            "description": "电池开始充电时运行的命令"
+          },
+          "battery-discharging": {
+            "description": "电池开始放电时运行的命令"
+          },
+          "battery-percentage-changed": {
+            "description": "电池电量百分比变化时运行的命令"
+          },
+          "battery-plugged": {
+            "description": "电池充满或等待充电时运行的命令"
+          },
+          "bluetooth-disabled": {
+            "description": "Bluetooth 禁用时运行的命令"
+          },
+          "bluetooth-enabled": {
+            "description": "Bluetooth 启用时运行的命令"
+          },
+          "colors-changed": {
+            "description": "当前颜色调色板变化时运行的命令"
+          },
+          "logging-out": {
+            "description": "注销前运行的命令"
+          },
+          "power-profile-changed": {
+            "description": "当前 UPower/PPD 电源配置切换时运行的命令"
+          },
+          "rebooting": {
+            "description": "重启前运行的命令"
+          },
+          "session-locked": {
+            "description": "会话锁定时运行的命令"
+          },
+          "session-unlocked": {
+            "description": "会话解锁后运行的命令"
+          },
+          "shutting-down": {
+            "description": "关机前运行的命令"
+          },
+          "started": {
+            "description": "Noctalia 启动后运行的命令"
+          },
+          "theme-mode-changed": {
+            "description": "已解析的主题模式在浅色与深色之间切换时运行的命令"
+          },
+          "wallpaper-changed": {
+            "description": "壁纸变化时运行的命令"
+          },
+          "wifi-disabled": {
+            "description": "Wi-Fi 禁用时运行的命令"
+          },
+          "wifi-enabled": {
+            "description": "Wi-Fi 启用时运行的命令"
+          }
+        }
+      },
+      "idle": {
+        "behaviors": {
+          "label": "行为"
+        },
+        "pre-action-fade": {
+          "description": "执行空闲命令前全屏调暗的秒数；设为 0 则禁用",
+          "label": "空闲调暗"
+        }
+      },
+      "keybinds": {
+        "cancel": {
+          "description": "关闭弹出窗口、收起面板或中止当前操作",
+          "label": "取消"
+        },
+        "down": {
+          "description": "将焦点或选择向下移动一行",
+          "label": "向下导航"
+        },
+        "left": {
+          "description": "将焦点或选择向左移动",
+          "label": "向左导航"
+        },
+        "right": {
+          "description": "将焦点或选择向右移动",
+          "label": "向右导航"
+        },
+        "up": {
+          "description": "将焦点或选择向上移动一行",
+          "label": "向上导航"
+        },
+        "validate": {
+          "description": "确认选择、提交输入或激活焦点项",
+          "label": "确认"
+        }
+      },
+      "lockscreen": {
+        "blur-intensity": {
+          "description": "锁屏背景的模糊程度",
+          "label": "模糊强度"
+        },
+        "blurred-desktop": {
+          "description": "使用桌面截图作为锁屏背景",
+          "label": "桌面截图"
+        },
+        "monitors": {
+          "description": "选择哪些显示器显示锁屏；留空则在所有显示器上显示",
+          "label": "显示器"
+        },
+        "tint-intensity": {
+          "description": "锁屏背景上的表面颜色着色强度",
+          "label": "着色强度"
+        },
+        "wallpaper": {
+          "description": "锁屏背景的自定义图片。留空则使用桌面壁纸。",
+          "label": "壁纸",
+          "placeholder": "使用桌面壁纸"
+        },
+        "widgets": {
+          "description": "在锁屏上显示可配置的组件",
+          "label": "锁屏组件"
+        },
+        "widgets-editor": {
+          "button": "切换编辑器",
+          "description": "在锁屏上添加、移动和调整组件大小",
+          "label": "锁屏组件编辑器"
         }
       },
       "notifications": {
+        "allowed-urgencies": {
+          "description": "只显示所选紧急级别的外部通知",
+          "label": "允许的紧急级别"
+        },
+        "blacklist": {
+          "description": "隐藏匹配发送者的通知（应用名称、桌面条目或分类）",
+          "label": "通知黑名单"
+        },
+        "blacklist-allow-critical": {
+          "description": "仍显示黑名单发送者的紧急通知",
+          "label": "允许黑名单中的紧急通知"
+        },
+        "collapse-on-dismiss": {
+          "description": "关闭某个 Toast 后，将剩余 Toast 滑动填补间隙",
+          "label": "关闭后折叠"
+        },
         "daemon": {
           "description": "启用内置的通知守护进程"
         },
