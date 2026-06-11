@@ -334,12 +334,10 @@
         "font-family-default": "Systemstandard",
         "format": "Format",
         "hide-when-no-media": "Ausblenden, wenn keine Medien vorhanden",
-        "high-color": "Hohe Farbe",
         "horizontal": "Horizontal",
         "image-path": "Bild",
         "inner-diameter": "Innendurchmesser",
         "layout": "Layout",
-        "low-color": "Geringe Farbe",
         "mirrored": "Gespiegelt",
         "opacity": "Deckkraft",
         "primary-color": "Primärfarbe",
@@ -2411,10 +2409,6 @@
           "description": "Das Tastaturlayout-Widget ausblenden, es sei denn, es ist mehr als ein Layout konfiguriert",
           "label": "Bei einzelnem Layout ausblenden"
         },
-        "high-color": {
-          "description": "Farbe für hohe Visualisiererwerte",
-          "label": "Hohe Farbe"
-        },
         "highlight-color": {
           "description": "Farbe hat den kritischen Schwellenwert erreicht oder überschritten",
           "label": "Hervorhebungsfarbe"
@@ -2447,10 +2441,6 @@
         "length": {
           "description": "Länge des Abstandhalters in Pixeln",
           "label": "Länge"
-        },
-        "low-color": {
-          "description": "Farbe für niedrige Visualizer-Werte",
-          "label": "Weniger Farbe"
         },
         "match-adjacent-spacing": {
           "description": "Abstände zwischen den Inline-Tray-Symbolen vergrößern, um den visuellen Abstand der benachbarten Bar-Widgets anzupassen (inklusive Capsule-Polsterung)",

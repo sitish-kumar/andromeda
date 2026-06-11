@@ -334,14 +334,12 @@
         "font-family-default": "Domyślna systemowa",
         "format": "Format",
         "hide-when-no-media": "Ukryj bez mediów",
-        "high-color": "Kolor wysoki",
         "horizontal": "Poziomo",
         "image-path": "Obraz",
         "inner-diameter": "Średnica wewnętrzna",
         "input-opacity": "Krycie Pola",
         "input-radius": "Promień Pola",
         "layout": "Układ",
-        "low-color": "Kolor niski",
         "mirrored": "Odbite lustrzanie",
         "opacity": "Krycie",
         "primary-color": "Kolor główny",
@@ -2452,10 +2450,6 @@
           "description": "Ukryj widżet układu klawiatury, chyba że skonfigurowano więcej niż jeden układ",
           "label": "Ukryj przy jednym układzie"
         },
-        "high-color": {
-          "description": "Kolor używany dla wysokich wartości wizualizera",
-          "label": "Kolor wysoki"
-        },
         "highlight-color": {
           "description": "Kolor osiągnięty na lub powyżej krytycznego progu",
           "label": "Kolor podświetlenia"
@@ -2488,10 +2482,6 @@
         "length": {
           "description": "Długość spacjatora w pikselach",
           "label": "Długość"
-        },
-        "low-color": {
-          "description": "Kolor używany dla niskich wartości wizualizera",
-          "label": "Kolor niski"
         },
         "match-adjacent-spacing": {
           "description": "Powiększ przerwy między wbudowanymi ikonami Tray, aby odpowiadały wizualnym odstępom między sąsiednimi widżetami paska (obejmuje wypełnienie kapsułki)",

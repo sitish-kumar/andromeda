@@ -334,12 +334,10 @@
         "font-family-default": "Rendszer alapértelmezése",
         "format": "Formátum",
         "hide-when-no-media": "Elrejtés, ha nincs lejátszás",
-        "high-color": "Magas szín",
         "horizontal": "Vízszintes",
         "image-path": "Kép",
         "inner-diameter": "Belső átmérő",
         "layout": "Elrendezés",
-        "low-color": "Halvány színek",
         "mirrored": "Tükrözött",
         "opacity": "Átlátszatlanság",
         "primary-color": "Elsődleges szín",
@@ -2405,10 +2403,6 @@
           "description": "Rejtse el a billentyűzetkiosztás widgetet, hacsak nincs egynél több kiosztás konfigurálva",
           "label": "Elrejtés, ha egyetlen elrendezés van"
         },
-        "high-color": {
-          "description": "Szín magas vizualizáló értékekhez",
-          "label": "Magas színmélység"
-        },
         "highlight-color": {
           "description": "A szín elérte vagy túllépte a kritikus küszöböt",
           "label": "Kiemelés színe"
@@ -2441,10 +2435,6 @@
         "length": {
           "description": "Távtartó hossza pixelben",
           "label": "Hossz"
-        },
-        "low-color": {
-          "description": "Az alacsony vizualizátor értékekhez használt szín",
-          "label": "Alacsony szín"
         },
         "match-adjacent-spacing": {
           "description": "Növeld a hézagokat az inline Tray ikonok között, hogy illeszkedjen a szomszédos Bar Widgetek vizuális térközéhez (beleértve a Capsule kitöltését).",

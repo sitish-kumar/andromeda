@@ -334,14 +334,12 @@
         "font-family-default": "Predefinito di sistema",
         "format": "Formato",
         "hide-when-no-media": "Nascondi senza media",
-        "high-color": "Colore alte frequenze",
         "horizontal": "Orizzontale",
         "image-path": "Immagine",
         "inner-diameter": "Diametro interno",
         "input-opacity": "Opacità input",
         "input-radius": "Raggio input",
         "layout": "Layout",
-        "low-color": "Colore basse frequenze",
         "mirrored": "Specchiato",
         "opacity": "Opacità",
         "primary-color": "Colore primario",
@@ -2465,10 +2463,6 @@
           "description": "Nasconde il widget layout tastiera a meno che non sia configurato più di un layout",
           "label": "Nascondi con layout singolo"
         },
-        "high-color": {
-          "description": "Colore usato per valori alti del visualizzatore",
-          "label": "Colore alte frequenze"
-        },
         "highlight-color": {
           "description": "Colore raggiunto alla soglia critica o oltre",
           "label": "Colore evidenziazione"
@@ -2505,10 +2499,6 @@
         "length": {
           "description": "Lunghezza spaziatore in pixel",
           "label": "Lunghezza"
-        },
-        "low-color": {
-          "description": "Colore usato per valori bassi del visualizzatore",
-          "label": "Colore basse frequenze"
         },
         "match-adjacent-spacing": {
           "description": "Allarga gli spazi tra icone vassoio inline per corrispondere alla spaziatura visiva dei widget barra vicini (include spaziatura capsula)",

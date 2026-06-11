@@ -303,7 +303,11 @@
   "desktop-widgets": {
     "editor": {
       "actions": {
-        "done": "Gereed"
+        "done": "Gereed",
+        "hide": "Verberg",
+        "settings": "Instellingen",
+        "show": "Toon",
+        "trash": "Verwijder"
       },
       "dialogs": {
         "select-sticker-image": "Selecteer sticker-afbeelding"
@@ -312,7 +316,7 @@
         "aspect-ratio": "Beeldverhouding",
         "background": "Achtergrond",
         "background-color": "Kleur",
-        "background-opacity": "Dekking",
+        "background-opacity": "Transparantie",
         "background-padding": "Opvulling",
         "background-radius": "Radius",
         "background-section": "Achtergrond",
@@ -326,6 +330,8 @@
         "clock-style-analog": "Analoog",
         "clock-style-digital": "Digitaal",
         "color": "Kleur",
+        "color-1": "Kleur Een",
+        "color-2": "Kleur Twee",
         "color2": "Kleur 2",
         "custom-color": "Aangepast…",
         "description": "Beschrijving",
@@ -334,19 +340,17 @@
         "font-family-default": "Systeemstandaard",
         "format": "Indeling",
         "hide-when-no-media": "Verbergen wanneer er geen media is",
-        "high-color": "Hoge kleur",
         "horizontal": "Horizontaal",
         "image-path": "Afbeelding",
         "inner-diameter": "Binnendiameter",
-        "input-opacity": "Doorzichtigheid van invoer",
+        "input-opacity": "Transparantie van invoer",
         "input-radius": "Radius van invoer",
         "layout": "Indeling",
-        "low-color": "Lage kleur",
         "mirrored": "Gespiegeld",
-        "opacity": "Dekking",
+        "opacity": "Transparantie",
         "primary-color": "Primaire kleur",
         "reset-defaults": "Terugzetten naar standaardinstellingen",
-        "ring-opacity": "Ringdekking",
+        "ring-opacity": "Ringtransparantie",
         "rotation-speed": "Draaisnelheid",
         "secondary-color": "Secundaire kleur",
         "sensitivity": "Gevoeligheid",
@@ -714,8 +718,8 @@
           "foreground-description": "Icoon- en labelkleurrol voor widgets in deze groep",
           "hint": "Onderdeel van een capsulegroep",
           "members": "{count} widgets",
-          "opacity": "Dekking",
-          "opacity-description": "Dekking van de capsule-achtergrond",
+          "opacity": "Transparantie",
+          "opacity-description": "Transparantie van de capsule-achtergrond",
           "orphan": "Onbekende groep",
           "padding": "Opvulling",
           "padding-description": "Binnenste opvulling tussen de capsule-rand en de widgets, in pixels",
@@ -995,7 +999,7 @@
         },
         "password-style": {
           "filled-circles": "Ingevulde cirkels",
-          "random-icons": "Willekeurige pictogrammen"
+          "random-icons": "Willekeurige iconen"
         },
         "shadow-direction": {
           "center": "Midden",
@@ -1102,12 +1106,12 @@
           "label": "Animaties"
         },
         "app-icon-color": {
-          "description": "Paletkleur gebruikt bij het inkleuren van applicatiepictogrammen",
-          "label": "Kleur applicatiepictogram"
+          "description": "Paletkleur gebruikt bij het inkleuren van app iconen",
+          "label": "Kleur app icoon"
         },
         "app-icon-colorize": {
-          "description": "Kleur applicatiepictogrammen in de shell opnieuw in om bij het actieve palet te passen",
-          "label": "Applicatiepictogrammen inkleuren"
+          "description": "Kleur app iconen in de shell opnieuw in om bij het actieve palet te passen",
+          "label": "App iconen inkleuren"
         },
         "builtin-palette": {
           "description": "Kies een palet uit de ingebouwde catalogus",
@@ -1137,7 +1141,7 @@
           "label": "Lettertype"
         },
         "global-shadow-alpha": {
-          "description": "Wereldwijde schaduwdekking voor oppervlakken"
+          "description": "Wereldwijde schaduwtransparantie voor oppervlakken"
         },
         "global-shadow-direction": {
           "description": "Richting waarin de schaduw vanaf oppervlakken wordt geworpen"
@@ -1181,7 +1185,7 @@
           "description": "Verberg de balk automatisch wanneer deze niet in gebruik is"
         },
         "background-opacity": {
-          "description": "Achtergronddekking van de balk"
+          "description": "Achtergrondtransparantie van de balk"
         },
         "border": {
           "description": "Kleurrol voor de balkomtrek; vaste hex-kleuren worden ook ondersteund",
@@ -1204,8 +1208,8 @@
           "label": "Capsule-voorgrond"
         },
         "capsule-opacity": {
-          "description": "Dekking van widget-capsuleachtergronden",
-          "label": "Capsule-dekking"
+          "description": "Transparantie van widget-capsuleachtergronden",
+          "label": "Capsule-transparantie"
         },
         "capsule-padding": {
           "description": "Opvulling binnen widget-capsules",
@@ -1321,11 +1325,11 @@
       },
       "dock": {
         "active-icon-opacity": {
-          "description": "Dekking van het actieve dock-pictogram",
-          "label": "Actieve icoondekking"
+          "description": "Transparantie van het actieve dock-icoon",
+          "label": "Actieve icoontransparantie"
         },
         "active-icon-scale": {
-          "description": "Schaal van het actieve dock-pictogram",
+          "description": "Schaal van het actieve dock-icoon",
           "label": "Actieve icoonschaal"
         },
         "active-monitor-only": {
@@ -1336,7 +1340,7 @@
           "description": "Verberg de dock automatisch wanneer deze niet in gebruik is"
         },
         "background-opacity": {
-          "description": "Achtergronddekking van het dock"
+          "description": "Achtergrondtransparantie van het dock"
         },
         "corner-bottom-left": {
           "description": "Radius links onder voor het dock"
@@ -1354,7 +1358,7 @@
           "description": "Radius rechts boven voor het dock"
         },
         "cross-axis-padding": {
-          "description": "Binnenste opvulling langs de dwarsas van het dock (tussen pictogrammen en de schermrand)"
+          "description": "Binnenste opvulling langs de dwarsas van het dock (tussen iconen en de schermrand)"
         },
         "edge-margin": {
           "description": "Afstand tot de dichtstbijzijnde schermrand; positieve waarden laten het dock zweven"
@@ -1366,15 +1370,15 @@
           "description": "Inspringing vanaf elk uiteinde van het dock langs de hoofdas"
         },
         "icon-size": {
-          "description": "Grootte van dock-pictogrammen in pixels",
+          "description": "Grootte van dock-iconen in pixels",
           "label": "Icoongrootte"
         },
         "inactive-icon-opacity": {
-          "description": "Dekking van inactieve dock-pictogrammen",
-          "label": "Inactieve icoondekking"
+          "description": "Transparantie van inactieve dock-iconen",
+          "label": "Inactieve Icoon Transparantie"
         },
         "inactive-icon-scale": {
-          "description": "Schaal van inactieve dock-pictogrammen",
+          "description": "Schaal van inactieve dock-iconen",
           "label": "Inactieve icoonschaal"
         },
         "item-spacing": {
@@ -1382,7 +1386,7 @@
           "label": "Item-tussenruimte"
         },
         "launcher-icon": {
-          "description": "Tabler-pictogram weergegeven op de dock-launcher-knop",
+          "description": "Tabler-icoon weergegeven op de dock-launcher-knop",
           "label": "Launcher-knop icoon"
         },
         "launcher-position": {
@@ -1390,15 +1394,15 @@
           "label": "Launcher knop"
         },
         "magnification": {
-          "description": "Vergroting dock-pictogrammen in de buurt van de aanwijzer, macOS-stijl",
+          "description": "Vergroting dock-iconen in de buurt van de aanwijzer, macOS-stijl",
           "label": "Vergroting"
         },
         "magnification-scale": {
-          "description": "Maximale schaalfactor voor pictogrammen in het midden van de aanwijzer; 1.0 schakelt vergroting uit",
+          "description": "Maximale schaalfactor voor iconen in het midden van de aanwijzer; 1.0 schakelt vergroting uit",
           "label": "Vergrotingsschaal"
         },
         "main-axis-padding": {
-          "description": "Binnenste opvulling langs de hoofdas van het dock (tussen pictogrammen en de korte uiteinden van de capsule)"
+          "description": "Binnenste opvulling langs de hoofdas van het dock (tussen iconen en de korte uiteinden van de capsule)"
         },
         "monitors": {
           "description": "Kies welke monitoren het dock tonen; laat leeg voor alle; actieve-monitorfiltering is van toepassing binnen deze monitoren",
@@ -1418,7 +1422,7 @@
           "description": "Werp de wereldwijde oppervlakteschaduw vanaf het dock"
         },
         "show-dots": {
-          "description": "Toon stippen voor actieve vensters naast dock-pictogrammen",
+          "description": "Toon stippen voor actieve vensters naast dock-iconen",
           "label": "Stippen tonen"
         },
         "show-instance-count": {
@@ -1629,8 +1633,8 @@
           "label": "App-naam tonen"
         },
         "toast-opacity": {
-          "description": "Achtergronddekking van meldings-toasts",
-          "label": "Achtergronddekking"
+          "description": "Achtergrondtransparantie van meldings-toasts",
+          "label": "Achtergrondtransparantie"
         }
       },
       "panels": {
@@ -1655,11 +1659,11 @@
           "label": "Categorieën tonen"
         },
         "launcher-compact": {
-          "description": "Gebruik kleinere pictogrammen en compactere resultaatrijen",
+          "description": "Gebruik kleinere iconen en compactere resultaatrijen",
           "label": "Compacte rijen"
         },
         "launcher-show-icons": {
-          "description": "Toon applicatiepictogrammen in de resultaten van Launcher",
+          "description": "Toon app iconen in de resultaten van Launcher",
           "label": "App-iconen tonen"
         },
         "open-near-click-clipboard": {
@@ -1706,13 +1710,13 @@
           "description": "Werp de wereldwijde oppervlakteschaduw vanaf paneeloppervlakken"
         },
         "transparency-mode": {
-          "description": "Glansstijl van het paneel, inclusief dekking van zwevende/gecentreerde panelen en kaarttransparantie",
+          "description": "Glansstijl van het paneel, inclusief transparantie van zwevende/gecentreerde panelen en kaarttransparantie",
           "label": "Transparantie"
         }
       },
       "power": {
         "session-actions": {
-          "description": "Invoeren in het energiemenu, volgorde, aangepaste commando's en pictogrammen",
+          "description": "Invoeren in het energiemenu, volgorde, aangepaste commando's en iconen",
           "label": "Opties"
         }
       },
@@ -1869,7 +1873,7 @@
           "label": "Automatisch verbergen"
         },
         "background-opacity": {
-          "label": "Achtergronddekking"
+          "label": "Achtergrondtransparantie"
         },
         "contact-shadow": {
           "label": "Naadschaduw"
@@ -1914,7 +1918,7 @@
           "label": "Schaduw"
         },
         "shadow-alpha": {
-          "label": "Schaduwdekking"
+          "label": "Schaduwtransparantie"
         },
         "shadow-direction": {
           "label": "Schaduwrichting"
@@ -1968,8 +1972,8 @@
           "label": "Offline-modus"
         },
         "osd-background-opacity": {
-          "description": "Achtergronddekking van OSD-pop-ups",
-          "label": "Achtergronddekking"
+          "description": "Achtergrondtransparantie van OSD-pop-ups",
+          "label": "Achtergrondtransparantie"
         },
         "osd-kinds-bluetooth": {
           "description": "Toon een OSD-pop-up wanneer Bluetooth wordt in-/uitgeschakeld",
@@ -2281,8 +2285,8 @@
       },
       "settings": {
         "active-opacity": {
-          "description": "Dekking van het pictogram voor het actieve (gefocuste) venster.",
-          "label": "Actieve icoondekking"
+          "description": "Transparantie van het icoon voor het actieve (gefocuste) venster.",
+          "label": "Actieve icoontransparantie"
         },
         "anchor": {
           "description": "Zet deze widget vast als middelpunt-uitlijningsanker",
@@ -2313,8 +2317,8 @@
           "label": "Capsule-voorgrond"
         },
         "capsule-opacity": {
-          "description": "Dekking van de capsule-achtergrond",
-          "label": "Capsule-dekking"
+          "description": "Transparantie van de capsule-achtergrond",
+          "label": "Capsule-transparantie"
         },
         "capsule-padding": {
           "description": "Binnenste opvulling in de capsule",
@@ -2334,12 +2338,15 @@
           "description": "Kleurrol voor widget-voorgrond; vaste hex-kleuren worden ook ondersteund",
           "label": "Kleur"
         },
+        "color-1": {
+          "label": "Kleur Een"
+        },
         "command": {
           "description": "Shell-commando uitgevoerd bij linksklikken op deze knop",
           "label": "Linksklikcommando"
         },
         "custom-image": {
-          "description": "Pad naar een aangepaste afbeelding. Laat leeg om het pictogram-symbool te gebruiken.",
+          "description": "Pad naar een aangepaste afbeelding. Laat leeg om een icoon te gebruiken.",
           "dialog-title": "Selecteer aangepaste afbeelding",
           "label": "Aangepaste afbeelding"
         },
@@ -2369,7 +2376,7 @@
           "label": "Weergave"
         },
         "display-mode": {
-          "description": "Render de batterij als een grafische vorm of een Tabler-pictogram",
+          "description": "Render de batterij als een grafische vorm of een Tabler-icoon",
           "label": "Weergavemodus"
         },
         "drawer": {
@@ -2377,7 +2384,7 @@
           "label": "Gebruik ladepaneel"
         },
         "drawer-columns": {
-          "description": "Aantal pictogrammen per rij in het ladevenster",
+          "description": "Aantal iconen per rij in het ladevenster",
           "label": "Ladekolommen"
         },
         "empty-color": {
@@ -2397,15 +2404,15 @@
           "label": "Notatie"
         },
         "glyph": {
-          "description": "Pictogram-symboolnaam",
+          "description": "icoon-symboolnaam",
           "label": "Symbool"
         },
         "group-by-workspace": {
-          "description": "Groepeer taakbalkpictogrammen in werkruimtecapsules wanneer compositor-gegevens beschikbaar zijn",
+          "description": "Groepeer taakbalkiconen in werkruimtecapsules wanneer compositor-gegevens beschikbaar zijn",
           "label": "Groeperen per werkruimte"
         },
         "group-single-icon-per-app": {
-          "description": "Bij groeperen per werkruimte, voeg meerdere vensters van dezelfde app samen tot één pictogram met een teller-badge.",
+          "description": "Bij groeperen per werkruimte, voeg meerdere vensters van dezelfde app samen tot één icoon met een teller-badge.",
           "label": "Eén icoon per app"
         },
         "height": {
@@ -2453,10 +2460,6 @@
           "description": "Verberg de toetsenbordindeling-widget tenzij er meer dan één indeling is geconfigureerd",
           "label": "Verbergen bij één indeling"
         },
-        "high-color": {
-          "description": "Kleur gebruikt voor hoge visualisatiewaarden",
-          "label": "Kleur bij hoog"
-        },
         "highlight-color": {
           "description": "Kleur bereikt bij of boven de kritieke drempelwaarde",
           "label": "Accentkleur"
@@ -2465,13 +2468,16 @@
           "description": "Laad de gescripte widget opnieuw wanneer de bron verandert",
           "label": "Hot Reload"
         },
+        "icon-color": {
+          "label": "Icoonkleur"
+        },
         "icon-size": {
           "description": "Icoongrootte in pixels",
           "label": "Icoongrootte"
         },
         "inactive-opacity": {
-          "description": "Dekking van pictogrammen voor inactieve (niet-gefocuste) vensters.",
-          "label": "Inactieve icoondekking"
+          "description": "Transparantie van iconen voor inactieve (niet-gefocuste) vensters.",
+          "label": "Inactieve icoontransparantie"
         },
         "label": {
           "description": "Optionele statische tekst weergegeven op deze knop",
@@ -2490,12 +2496,8 @@
           "description": "Lengte van de spacer in pixels",
           "label": "Lengte"
         },
-        "low-color": {
-          "description": "Kleur gebruikt voor lage visualisatiewaarden",
-          "label": "Kleur bij laag"
-        },
         "match-adjacent-spacing": {
-          "description": "De afstand tussen de pictogrammen in het inline-systeemvak vergroten, zodat deze overeenkomt met de visuele afstand tussen aangrenzende balkwidgets (inclusief opvulling van de pictogrammen)",
+          "description": "De afstand tussen de iconen in het inline-systeemvak vergroten, zodat deze overeenkomt met de visuele afstand tussen aangrenzende balkwidgets (inclusief opvulling van de iconen)",
           "label": "Tussenruimte aanpassen aan widget"
         },
         "max-label-chars": {
@@ -2578,7 +2580,7 @@
           "label": "Commando bij omhoog scrollen"
         },
         "show-active-indicator": {
-          "description": "Toon een kleine stip onder het pictogram van het actieve venster op de taakbalk.",
+          "description": "Toon een kleine stip onder het icoon van het actieve venster op de taakbalk.",
           "label": "Actief venster-indicator"
         },
         "show-all-outputs": {
@@ -2594,11 +2596,11 @@
           "label": "Toon omstandigheden"
         },
         "show-icon": {
-          "description": "Toon het pictogram van deze widget",
-          "label": "Toon pictogram"
+          "description": "Toon het icoon van deze widget",
+          "label": "Toon icoon"
         },
         "show-label": {
-          "description": "Toon tekst naast het pictogram",
+          "description": "Toon tekst naast het icoon",
           "label": "Toon label"
         },
         "show-num-lock": {
@@ -2614,11 +2616,11 @@
           "label": "Tonen bij inactiviteit"
         },
         "show-window-title": {
-          "description": "Toon de venstertitel naast het pictogram (alleen op horizontale balken)",
+          "description": "Toon de venstertitel naast het icoon (alleen op horizontale balken)",
           "label": "Toon venstertitel"
         },
         "show-workspace-label": {
-          "description": "Toon het kleine werkruimtelabel op gegroepeerde taakbalkcapsules. Schakel uit voor groepen met alleen pictogrammen.",
+          "description": "Toon het kleine werkruimtelabel op gegroepeerde taakbalkcapsules. Schakel uit voor groepen met alleen iconen.",
           "label": "Werkruimtelabel op capsule"
         },
         "stat": {
@@ -2662,7 +2664,7 @@
           "label": "Maximale breedte venstertitel"
         },
         "workspace-group-capsule": {
-          "description": "Teken de achtergrond en rand rond elke gegroepeerde werkruimte. Schakel uit om alleen pictogramgroepering en werkruimte-schijflabels te behouden.",
+          "description": "Teken de achtergrond en rand rond elke gegroepeerde werkruimte. Schakel uit om alleen icoongroepering en werkruimte-schijflabels te behouden.",
           "label": "Werkruimte-groepcapsule"
         },
         "workspace-label-placement": {

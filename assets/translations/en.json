@@ -336,6 +336,8 @@
         "clock-style-analog": "Analog",
         "clock-style-digital": "Digital",
         "color": "Color",
+        "color-1": "Color One",
+        "color-2": "Color Two",
         "color2": "Color 2",
         "custom-color": "Custom…",
         "description": "Description",
@@ -344,8 +346,6 @@
         "font-family-default": "System default",
         "format": "Format",
         "hide-when-no-media": "Hide When No Media",
-        "color-1": "Color One",
-        "color-2": "Color Two",
         "horizontal": "Horizontal",
         "image-path": "Image",
         "inner-diameter": "Inner Diameter",
@@ -2356,6 +2356,14 @@
           "description": "Color role for this widget's icon and label; fixed hex colors are also supported",
           "label": "Color"
         },
+        "color-1": {
+          "description": "First gradient color in the visualizer",
+          "label": "Color One"
+        },
+        "color-2": {
+          "description": "Second gradient color in the visualizer",
+          "label": "Color Two"
+        },
         "command": {
           "description": "Shell command run when left-clicking this button",
           "label": "Left Click Command"
@@ -2474,14 +2482,6 @@
         "hide-when-single-layout": {
           "description": "Hide the keyboard layout widget unless more than one layout is configured",
           "label": "Hide When Single Layout"
-        },
-        "color-1": {
-          "description": "First gradient color in the visualizer",
-          "label": "Color One"
-        },
-        "color-2": {
-          "description": "Second gradient color in the visualizer",
-          "label": "Color Two"
         },
         "highlight-color": {
           "description": "Color reached at or above the critical threshold",
