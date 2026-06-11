@@ -8,6 +8,7 @@
 #include "core/log.h"
 #include "core/process.h"
 #include "core/resource_paths.h"
+#include "cursor-shape-v1-client-protocol.h"
 #include "dbus/network/network_manager_service.h"
 #include "dbus/network/wpa_supplicant_service.h"
 #include "i18n/i18n.h"
@@ -639,6 +640,12 @@ void Application::initServices() {
     m_windowSwitcher.onToplevelChange();
     if (m_panelManager.isOpenPanel("control-center")) {
       m_panelManager.refresh();
+    }
+    if (!m_lockScreen.isActive() && m_wayland.hasPointerPosition() && !m_wayland.activeToplevel().has_value()) {
+      const std::uint32_t serial = m_wayland.lastInputSerial();
+      if (serial != 0) {
+        m_wayland.setCursorShape(serial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
+      }
     }
   });
   if constexpr (kLockKeysEnabled) {
@@ -1276,6 +1283,9 @@ void Application::initUi() {
       return;
     }
     if (m_desktopWidgetsController.onPointerEvent(event)) {
+      return;
+    }
+    if (m_wallpaper.onPointerEvent(event)) {
       return;
     }
     if (m_screenshotService.onPointerEvent(event)) {
