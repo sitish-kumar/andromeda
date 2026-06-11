@@ -307,6 +307,8 @@
         "hide": "Verberg",
         "settings": "Instellingen",
         "show": "Toon",
+        "stack-back": "Stapel Erachter",
+        "stack-front": "Stapel Ervoor",
         "trash": "Verwijder"
       },
       "dialogs": {

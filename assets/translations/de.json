@@ -21,6 +21,9 @@
       "region": "Region auswählen"
     },
     "widgets": {
+      "active-window": {
+        "no-active-window": "Kein aktives Fenster"
+      },
       "lock-keys": {
         "caps": "Caps",
         "caps-short": "C",
@@ -303,7 +306,14 @@
   "desktop-widgets": {
     "editor": {
       "actions": {
-        "done": "Fertig"
+        "add": "Hinzufügen",
+        "done": "Fertig",
+        "hide": "Ausblenden",
+        "settings": "Einstellungen",
+        "show": "Anzeigen",
+        "stack-back": "Im Hintergrund stapeln",
+        "stack-front": "Im Vordergrund stapeln",
+        "trash": "Löschen"
       },
       "dialogs": {
         "select-sticker-image": "Stickerbild auswählen"
@@ -326,6 +336,8 @@
         "clock-style-analog": "Analog",
         "clock-style-digital": "Digital",
         "color": "Farbe",
+        "color-1": "Farbe Eins",
+        "color-2": "Farbe Zwei",
         "color2": "Farbe 2",
         "custom-color": "Benutzerdefiniert…",
         "description": "Beschreibung",
@@ -337,16 +349,20 @@
         "horizontal": "Horizontal",
         "image-path": "Bild",
         "inner-diameter": "Innendurchmesser",
+        "input-opacity": "Eingabedeckkraft",
+        "input-radius": "Eingaberadius",
         "layout": "Layout",
         "mirrored": "Gespiegelt",
         "opacity": "Deckkraft",
         "primary-color": "Primärfarbe",
+        "reset-defaults": "Auf Standardeinstellungen zurücksetzen",
         "ring-opacity": "Ring-Deckkraft",
         "rotation-speed": "Rotationsgeschwindigkeit",
         "secondary-color": "Sekundärfarbe",
         "sensitivity": "Empfindlichkeit",
         "shadow": "Schatten",
         "show-label": "Beschriftung anzeigen",
+        "show-login-button": "Anmelde-Button",
         "show-when-idle": "Bei Inaktivität anzeigen",
         "stat": "Status",
         "stat-cpu-temp": "CPU-Temperatur",
@@ -1047,6 +1063,44 @@
         }
       }
     },
+    "plugins": {
+      "plugins": {
+        "configure": "Konfigurieren",
+        "deprecated": "veraltet",
+        "empty": "Es wurden keine Plugins gefunden. Füge eine Quelle hinzu oder überprüfe deine Netzwerkverbindung.",
+        "loading": "Plugins werden geladen...",
+        "refreshing": "Plugins werden aktualisiert...",
+        "requires-newer-noctalia": "erfordert eine neuere Version von Noctalia",
+        "title": "Plugins"
+      },
+      "settings": {
+        "empty": "Keine Einstellungen verfügbar."
+      },
+      "sources": {
+        "add": "Quelle hinzufügen",
+        "add-title": "Plugin-Quelle hinzufügen",
+        "empty": "Keine Quellen konfiguriert.",
+        "errors": {
+          "duplicate-name": "Eine Quelle mit dieser ID existiert bereits.",
+          "invalid-name": "Quell-ID muss aus Buchstaben, Ziffern, '.', '_' oder '-' bestehen und mit einem Buchstaben oder einer Ziffer beginnen.",
+          "location-required": "Die Angabe des Speicherorts ist erforderlich."
+        },
+        "kind": {
+          "git": "Git",
+          "path": "Pfad"
+        },
+        "kind-label": "Typ",
+        "location-label": "Speicherort",
+        "location-placeholder-git": "https://github.com/me/noctalia-plugins",
+        "location-placeholder-path": "~/dev/noctalia-plugins",
+        "name-label": "Quell-ID",
+        "name-placeholder": "my-plugins",
+        "remove": "Quelle entfernen",
+        "title": "Quellen",
+        "update": "Aktualisieren",
+        "update-on-startup": "Beim Start aktualisieren"
+      }
+    },
     "schema": {
       "appearance": {
         "animation-speed": {
@@ -1250,6 +1304,10 @@
         "widget-color": {
           "description": "Standard-Symbol- und Beschriftungsfarbrolle für Widgets auf dieser Bar; feste Hex-Farben werden ebenfalls unterstützt",
           "label": "Widget-Farbe"
+        },
+        "widget-icon-color": {
+          "description": "Überschreibt die Widget-Farbe für Symbole in dieser Leiste; feste Hex-Farben werden ebenfalls unterstützt",
+          "label": "Farbe des Widget-Symbols"
         },
         "widget-spacing": {
           "description": "Abstand zwischen den Bar-Widgets",
@@ -1508,6 +1566,10 @@
           "description": "Verwende einen Schnappschuss des Desktops als Hintergrund der Bildschirmsperre",
           "label": "Bildschirmaufnahme"
         },
+        "enabled": {
+          "description": "Sitzungssperre, Logind-Integration und Sperraktionen aktivieren",
+          "label": "Sperrbildschirm"
+        },
         "monitors": {
           "description": "Wähle aus, welche Monitore den Sperrbildschirm anzeigen sollen; lass es leer, um ihn auf allen Monitoren anzuzeigen",
           "label": "Monitore"
@@ -1613,6 +1675,10 @@
         "launcher-compact": {
           "description": "Kleinere Symbole und engere Ergebniszeilen verwenden",
           "label": "Kompakte Zeilen"
+        },
+        "launcher-session-search": {
+          "description": "Sitzungsaktionen (Sperren, Anhalten, Neustart, Herunterfahren, Abmelden) in allgemeine Launcher-Suchen einbeziehen, nicht nur hinter dem /session-Präfix",
+          "label": "Sitzungssuche aktivieren"
         },
         "launcher-show-icons": {
           "description": "App-Symbole in den Launcher-Ergebnissen anzeigen",
@@ -2044,7 +2110,7 @@
         "sync-greeter": {
           "button": "Jetzt synchronisieren",
           "description": "Kopiere das aktuelle Hintergrundbild und die Farben in den Noctalia Greeter (erfordert Administratorgenehmigung)",
-          "label": "Noctalia Begrüßung"
+          "label": "Noctalia Greeter"
         },
         "telemetry": {
           "description": "Sendet einen kleinen anonymen Start-Ping mit Version, OS, Compositor, Monitorauflösungen, RAM und UI-Skalierung",
@@ -2290,6 +2356,14 @@
           "description": "Farbrolle für den Widget-Vordergrund; feste Hex-Farben werden ebenfalls unterstützt",
           "label": "Farbe"
         },
+        "color-1": {
+          "description": "Erste Farbverlaufsfarbe im Visualizer",
+          "label": "Farbe Eins"
+        },
+        "color-2": {
+          "description": "Zweite Farbverlaufsfarbe im Visualizer",
+          "label": "Farbe Zwei"
+        },
         "command": {
           "description": "Shell-Befehl, der beim Linksklick auf diesen Button ausgeführt wird",
           "label": "Linksklick-Befehl"
@@ -2417,6 +2491,10 @@
           "description": "Lade das geskriptete Widget neu, wenn sich seine Quelle ändert",
           "label": "Hot Reload"
         },
+        "icon-color": {
+          "description": "Überschreibt die Widget-Farbe nur für Icons; feste Hex-Farben werden ebenfalls unterstützt",
+          "label": "Icon-Farbe"
+        },
         "icon-size": {
           "description": "Icon-Größe in Pixeln",
           "label": "Symbolgröße"
@@ -2540,6 +2618,10 @@
         "show-condition": {
           "description": "Wetterbedingungstext anzeigen",
           "label": "Anzeigebedingung"
+        },
+        "show-empty-label": {
+          "description": "Platzhaltertext anzeigen, wenn kein Fenster aktiv ist, anstatt das Widget auszublenden",
+          "label": "Leeres Label anzeigen"
         },
         "show-icon": {
           "description": "Zeige das Icon dieses Widgets",

@@ -21,6 +21,9 @@
       "region": "Vel område"
     },
     "widgets": {
+      "active-window": {
+        "no-active-window": "Inga aktiv rute"
+      },
       "lock-keys": {
         "caps": "Stor",
         "caps-short": "S",
@@ -34,7 +37,7 @@
         "playing": "Spelar"
       },
       "network": {
-        "wired": "Trådsamband"
+        "wired": "Trådbunden"
       },
       "scripted": {
         "reload-failed": "Kunne ikkje lasta inn skript å nyo",
@@ -91,7 +94,7 @@
     "states": {
       "auto": "Automatisk",
       "custom": "Sjølvvald",
-      "inherit": "Arva",
+      "inherit": "Erva",
       "off": "Avslegen"
     }
   },
@@ -303,7 +306,14 @@
   "desktop-widgets": {
     "editor": {
       "actions": {
-        "done": "Ferdig"
+        "add": "Legg til",
+        "done": "Ferdig",
+        "hide": "Gøym",
+        "settings": "Innstillingar",
+        "show": "Vis",
+        "stack-back": "Set bak",
+        "stack-front": "Set føre",
+        "trash": "Sletta"
       },
       "dialogs": {
         "select-sticker-image": "Vel merkebilete"
@@ -326,6 +336,8 @@
         "clock-style-analog": "Analog",
         "clock-style-digital": "Digital",
         "color": "Let",
+        "color-1": "Let ein",
+        "color-2": "Let to",
         "color2": "Let 2",
         "custom-color": "Sjølvvald ...",
         "description": "Skildring",
@@ -571,7 +583,283 @@
     "battery": {
       "states": {
         "battery": "Batteri",
-        "charging": "Ladar"
+        "charging": "Ladar",
+        "discharging": "Ladar ut",
+        "empty": "Tomt",
+        "pending-discharge": "Ventar på utlading",
+        "plugged-in": "Kopla til"
+      },
+      "tooltip": {
+        "health": "Helse",
+        "rate": "Rate",
+        "status": "Status",
+        "time-left": "Tid att",
+        "time-to-full": "Tid til fullt"
+      }
+    },
+    "profiles": {
+      "balanced": "Vanleg",
+      "performance": "Yting",
+      "power-saver": "Straumsparing"
+    }
+  },
+  "session": {
+    "actions": {
+      "custom": "Sjølvvald",
+      "lock": "Lås",
+      "lock-and-suspend": "Lås og set i dvale",
+      "logout": "Skriv ut",
+      "reboot": "Start å nyo",
+      "shutdown": "Slå av",
+      "suspend": "Set i dvale"
+    },
+    "errors": {
+      "lock-body": "Protokollen for øyktelås er ikkje tilgjengeleg",
+      "lock-title": "Lås utilgjengeleg"
+    }
+  },
+  "settings": {
+    "actions": {
+      "reset": "Nullstill"
+    },
+    "badges": {
+      "advanced": "Avansert",
+      "inherited": "Ervd",
+      "monitor": "Skjerm",
+      "override": "Overstyr"
+    },
+    "calendar-accounts": {
+      "add-title": "Legg til kalenderkonto",
+      "color-label": "Let",
+      "delete-error": "Kunne ikkje sletta kalenderkonto",
+      "edit-title": "Endra på kalenderkonto",
+      "id-label": "Konto-ID",
+      "invalid": "Sjå over dei merkte felta for kalenderkontoen",
+      "name-label": "Visingsnamn",
+      "name-placeholder": "Personleg kalender",
+      "password-keep-placeholder": "Haldt tomt for å halda fram med same passord",
+      "password-label": "App-passord",
+      "password-placeholder": "Sereige app-passord",
+      "password-save-error": "Kunne ikkje lagra passordet til kalenderkontoen.",
+      "provider": {
+        "custom": "CalDAV",
+        "google": "Google",
+        "icloud": "iCloud"
+      },
+      "provider-label": "Leverandør",
+      "save": "Lagra",
+      "save-connect": "Lagra og kopla til",
+      "save-error": "Kunne ikkje lagra kalenderkonto.",
+      "server-url-label": "Tenar URL",
+      "username-label": "Brukarnamn",
+      "username-placeholder": "namn@doeme.no"
+    },
+    "controls": {
+      "keybind": {
+        "add": "Trykk for å leggja til snarveg",
+        "recording-placeholder": "Trykk på eit knappeval ...",
+        "unset-placeholder": "Trykk for å binda ..."
+      },
+      "list": {
+        "add-entry-placeholder": "Legg til ..."
+      },
+      "path-browse": {
+        "file-title": "Vel fil",
+        "folder-title": "Vel mappe"
+      },
+      "select": {
+        "unknown-value": "Ukjend: {value}"
+      }
+    },
+    "dialogs": {
+      "color-picker": {
+        "title": "Vel ein let"
+      }
+    },
+    "entities": {
+      "bar": {
+        "create": "Skapa",
+        "delete": "Sletta",
+        "delete-confirm-desc": "Denne stonga, som var laga med grensesnittet, vert sletta frå settings.toml.",
+        "delete-confirm-title": "Sletta \"{name}\"?",
+        "id-placeholder": "Stong-ID",
+        "label": "Stong: {name}",
+        "management": "Stong",
+        "move-down": "Flytta nedover",
+        "move-up": "Flytta oppover",
+        "new": "Ny stong",
+        "rename": "Nytt namn",
+        "rename-save": "Lagra"
+      },
+      "monitor-override": {
+        "create": "Skapa",
+        "delete": "Sletta",
+        "delete-confirm-desc": "Denne skjermoverstyringa, som var laga med grensesnittet, vert sletta frå settings.toml.",
+        "delete-confirm-title": "Sletta \"{name}\"?",
+        "label": "Skjerm: {name}",
+        "management": "Skjermoverstyring",
+        "match-placeholder": "Skjermsamsvar",
+        "new": "Skjermoverstyring",
+        "rename": "Nytt namn",
+        "rename-save": "Lagra"
+      },
+      "widget": {
+        "add": "Legg til nøytel",
+        "detail": {
+          "custom": "Sjølvvald nøytel"
+        },
+        "editor": {
+          "description": "Stell nøytlar i dei ulike stongfelta",
+          "title": "Stongnøytlar"
+        },
+        "group": {
+          "action": "Gruppe",
+          "border": "Rand",
+          "border-description": "Leten for pilleomritet; lat vera på Vanleg for inkje omrit",
+          "clear": "Rydd",
+          "edit": "Endra på stil",
+          "fill": "Bakgrunn",
+          "fill-description": "Leten for pillebakgrunnen; hex-leter er stødde òg.",
+          "foreground": "Framgrunn",
+          "foreground-description": "Leten for merke og etikettar til nøytlar i denne gruppa",
+          "hint": "Del av pillegruppe",
+          "members": "{count} nøytlar",
+          "opacity": "Uklårleik",
+          "opacity-description": "Uklårleik for pillebakgrunn",
+          "orphan": "Ukjend gruppe",
+          "padding": "Utfylling",
+          "padding-description": "Indre utfylling mellom pilleranda og nøytlane sine, i piksel",
+          "radius": "Radius",
+          "radius-description": "Hyrneradius på pillene i piksel; erver pilleradien åt stonga automatisk.",
+          "selected": "{count} utvalde",
+          "style": "Stil",
+          "title": "Pillegruppe",
+          "ungroup": "Skil"
+        },
+        "inspector": {
+          "add-instance-title": "Legg til ny nøytel med namn {widget} i {lane}",
+          "add-title": "Legg til nøytel i {lane}",
+          "move-to-lane": "Flytta til {lane}"
+        },
+        "instance": {
+          "create-save": "Skapa",
+          "delete": "Sletta",
+          "delete-confirm-desc": "Denne nøytelen med namn vert sletta frå kvar stong og innstillingane gløymde.",
+          "delete-confirm-title": "Sletta \"{name}\"?",
+          "id-description": "Bruk berre bokstavar, tal, understrek, eller strek. Inkje mellomrom, må vera eineståande.",
+          "id-placeholder": "Nøytel-ID",
+          "rename": "Nytt namn",
+          "rename-save": "Lagra"
+        },
+        "lanes": {
+          "center": "I midten",
+          "customize": "Måta til",
+          "empty": "Ingen nøytlar",
+          "empty-hint": "Legg til ein nøytel i feltet.",
+          "end": "Ende",
+          "start": "Byrjing"
+        },
+        "picker": {
+          "empty": "Fann ingen nøytlar",
+          "instance-description": "Nøytel med namn for sort \"{type}\"",
+          "instance-toggle": "Nøytel med namn",
+          "placeholder": "Leita i nøytlar ..."
+        },
+        "raw": {
+          "delete": "Sletta",
+          "description": "Ustødde lyklar heldt på frå denne nøyteltilmåtinga.",
+          "title": "Råe innstillingar"
+        },
+        "settings": {
+          "empty": "Ingen innstillingar funne med desse søkjevilkåra.",
+          "groups": {
+            "grouping": "Gruppering",
+            "presentation": "Framsyning",
+            "runtime": "Køyretid",
+            "widget": "Nøytel"
+          }
+        }
+      }
+    },
+    "errors": {
+      "bar": {
+        "create": "Kunne ikkje skapa stong.",
+        "delete": "Kunne ikkje sletta stong.",
+        "move": "Kunne ikkje flytta på stong.",
+        "rename": "Kunne ikkje gjeva stonga eit nytt namn."
+      },
+      "batch-write": "Kunne ikkje lagra sume innstillingar.",
+      "export-config": "Utførsla av tilmåtinga gjekk gale.",
+      "export-wallpaper-palette": "Kunne ikkje lagra paletten frå bakgrunnabiletet som sjølvvald palett.",
+      "monitor-override": {
+        "create": "Kunne ikkje skapa skjermoverstyring.",
+        "delete": "Kunne ikkje sletta skjermoverstyring.",
+        "rename": "Kunne ikkje gjeva skjermoverstyring eit nytt namn."
+      },
+      "reset-page": "Kunne ikkje nullstille sume innstillingar.",
+      "support-report": "Kunne ikkje lagra støtterapport.",
+      "sync-greeter": "Kunne ikkje synkronisera utsjånad med Noctaliahelsaren.",
+      "widget": {
+        "rename": "Kunne ikkje gjeva eit nytt namn til nøytelen."
+      },
+      "write": "Kunne ikkje lagra innstillingar."
+    },
+    "export-config": {
+      "export": "Før ut",
+      "full-effective-description": "Fører ut alle aktive innstillingar, medrekna innebygde standardinnstillingar. Nyttig for å sjå over eller dela eit utklipp, men eksplisitt fester standardane som er på no.",
+      "full-effective-save-title": "Lagra full effektiv tilmåting",
+      "full-effective-title": "Full effektiv tilmåting",
+      "merged-user-description": "Blandar tilmåtingsfler og grensesnittoverstyringar i éi TOML-fil. Innebygde standardinnstillingar held seg som implisitte.",
+      "merged-user-save-title": "Lagra blanda brukartilmåting",
+      "merged-user-title": "Blanda brukartilmåting (tilrådd)",
+      "title": "Før ut tilmåting"
+    },
+    "idle": {
+      "behavior": {
+        "add": "Legg til åtburd",
+        "command-label": "Inaktiv-kommando",
+        "command-placeholder": "notify-send \"Inaktiv\"",
+        "kind": {
+          "custom": "Sjølvvald",
+          "lock": "Lås",
+          "lock-and-suspend": "Lås og set i dvale",
+          "screen-off": "Skjerm av",
+          "suspend": "Set i dvale"
+        },
+        "kind-section-label": "Gjerd",
+        "name-label": "Namn",
+        "name-placeholder": "Inaktiv-åtburd",
+        "resume-command-label": "Framhaldkommando",
+        "resume-command-placeholder": "noctalia:dpms-on",
+        "summary": "{name} · {seconds} s",
+        "summary-disabled-timeout": "{name} · timeout avslege",
+        "timeout-label": "Timeout sekund",
+        "unnamed": "Åtburd utan namn"
+      },
+      "live-status": {
+        "active": "Aktiv",
+        "idle-for-one": "Inaktiv i 1 sekund",
+        "idle-for-seconds": "Inaktiv i {seconds} sekund"
+      }
+    },
+    "navigation": {
+      "groups": {
+        "audio": "Ljod",
+        "automation": "Automatisering",
+        "backdrop": "Bakgrunnsbilete",
+        "background": "Bakgrunn",
+        "battery": "Batteri",
+        "behavior": "Åtburd",
+        "brightness": "Ljosstyrke",
+        "built-in": "Innebygd",
+        "calendar": "Kalender",
+        "capsules": "Piller",
+        "clipboard": "Utklippstavle",
+        "community": "Samfunn",
+        "control-center": "Styrerom",
+        "directories": "Mapper",
+        "effects": "Verknader",
+        "filtering": "Søkjevilkår"
       }
     }
   }

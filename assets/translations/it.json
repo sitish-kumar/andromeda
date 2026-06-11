@@ -21,6 +21,9 @@
       "region": "Seleziona area"
     },
     "widgets": {
+      "active-window": {
+        "no-active-window": "Nessuna finestra attiva"
+      },
       "lock-keys": {
         "caps": "Caps",
         "caps-short": "C",
@@ -303,7 +306,14 @@
   "desktop-widgets": {
     "editor": {
       "actions": {
-        "done": "Fatto"
+        "add": "Aggiungi",
+        "done": "Fatto",
+        "hide": "Nascondi",
+        "settings": "Impostazioni",
+        "show": "Mostra",
+        "stack-back": "Posiziona in secondo piano",
+        "stack-front": "Posiziona in primo piano",
+        "trash": "Cancella"
       },
       "dialogs": {
         "select-sticker-image": "Seleziona immagine adesivo"
@@ -326,6 +336,8 @@
         "clock-style-analog": "Analogico",
         "clock-style-digital": "Digitale",
         "color": "Colore",
+        "color-1": "Colore uno",
+        "color-2": "Colore due",
         "color2": "Colore 2",
         "custom-color": "Personalizzato...",
         "description": "Descrizione",
@@ -524,7 +536,7 @@
       "calendar-google-connect-timeout": "Autorizzazione Google scaduta. Avvia di nuovo la connessione quando sei pronto ad accedere.",
       "dbus-disabled": "Notifiche DBus disabilitate",
       "desktop-widgets-editor": "Editor widget",
-      "desktop-widgets-editor-enabled": "L'editor dei widget desktop è attivo. Passa a uno spazio di lavoro vuoto per vedere la sovrapposizione dell'editor.",
+      "desktop-widgets-editor-enabled": "L'editor dei widget desktop è attivo. Passa a uno spazio di lavoro vuoto per visualizzarlo.",
       "greeter-sync": "Noctalia Greeter",
       "greeter-sync-success": "Aspetto sincronizzato. Le modifiche si applicano alla prossima schermata di accesso.",
       "keybind-app": "Noctalia",
@@ -707,7 +719,7 @@
           "clear": "Cancella",
           "edit": "Modifica stile",
           "fill": "Sfondo",
-          "fill-description": "Ruolo colore dello sfondo capsula; sono supportati anche colori hex fissi",
+          "fill-description": "Ruolo colore dello sfondo capsula; sono supportati anche codici colore esadecimali",
           "foreground": "Primo piano",
           "foreground-description": "Ruolo colore di icone ed etichette per i widget in questo gruppo",
           "hint": "Parte di un gruppo capsula",
@@ -1182,7 +1194,7 @@
           "description": "Opacità dello sfondo della barra"
         },
         "border": {
-          "description": "Ruolo colore per il contorno della barra; sono supportati anche colori hex fissi",
+          "description": "Ruolo colore per il contorno della barra; sono supportati anche codici colore esadecimali",
           "label": "Bordo"
         },
         "border-width": {
@@ -1190,15 +1202,15 @@
           "label": "Larghezza bordo"
         },
         "capsule-border": {
-          "description": "Ruolo colore predefinito del contorno capsula; sono supportati anche colori hex fissi",
+          "description": "Ruolo colore predefinito del contorno capsula; sono supportati anche codici colore esadecimali",
           "label": "Bordo capsula"
         },
         "capsule-fill": {
-          "description": "Ruolo colore predefinito dello sfondo capsula; sono supportati anche colori hex fissi",
+          "description": "Ruolo colore predefinito dello sfondo capsula; sono supportati anche codici colore esadecimali",
           "label": "Riempimento capsula"
         },
         "capsule-foreground": {
-          "description": "Ruolo colore predefinito per icone ed etichette dentro le capsule; sono supportati anche colori hex fissi",
+          "description": "Ruolo colore predefinito per icone ed etichette dentro le capsule; sono supportati anche codici colore esadecimali",
           "label": "Primo piano capsula"
         },
         "capsule-opacity": {
@@ -1290,11 +1302,11 @@
           "label": "Capsule widget"
         },
         "widget-color": {
-          "description": "Ruolo colore predefinito per icone ed etichette dei widget su questa barra; sono supportati anche colori hex fissi",
+          "description": "Ruolo colore predefinito per icone ed etichette dei widget su questa barra; sono supportati anche codici colore esadecimali",
           "label": "Colore widget"
         },
         "widget-icon-color": {
-          "description": "Sostituisce il colore del widget per le icone su questa barra; sono supportati anche i colori esadecimali",
+          "description": "Sostituisce il colore del widget per le icone su questa barra; sono supportati anche codici colore esadecimali",
           "label": "Colore icona widget"
         },
         "widget-spacing": {
@@ -2295,7 +2307,7 @@
           "label": "Opacità icona attiva"
         },
         "anchor": {
-          "description": "Fissa questo widget come ancora dell'allineamento centrale",
+          "description": "Fissa questo widget come ancoraggio di allineamento centrale",
           "label": "Ancora"
         },
         "art-size": {
@@ -2307,19 +2319,19 @@
           "label": "Bande"
         },
         "capsule": {
-          "description": "Disegna una capsula dietro questo widget",
+          "description": "Disegna una capsula dietro il widget",
           "label": "Capsula"
         },
         "capsule-border": {
-          "description": "Ruolo colore per il contorno capsula; sono supportati anche colori hex fissi",
+          "description": "Ruolo colore per il contorno capsula; sono supportati anche codici colore esadecimali",
           "label": "Bordo capsula"
         },
         "capsule-fill": {
-          "description": "Ruolo colore per lo sfondo capsula; sono supportati anche colori hex fissi",
+          "description": "Ruolo colore per lo sfondo capsula; sono supportati anche codici colore esadecimali",
           "label": "Riempimento capsula"
         },
         "capsule-foreground": {
-          "description": "Ruolo colore per il contenuto dentro la capsula; sono supportati anche colori hex fissi",
+          "description": "Ruolo colore per il contenuto dentro la capsula; sono supportati anche codici colore esadecimali",
           "label": "Primo piano capsula"
         },
         "capsule-opacity": {
@@ -2331,18 +2343,26 @@
           "label": "Spaziatura capsula"
         },
         "capsule-radius": {
-          "description": "Raggio angoli per questa capsula widget; lascia vuoto per forma pill automatica, o imposta 0 per angoli quadrati",
+          "description": "Raggio angoli per la capsula widget; lascia vuoto per forma pill automatica, o imposta 0 per angoli squadrati",
           "label": "Raggio capsula",
-          "taskbar-description": "Raggio angoli per la capsula widget, gli indicatori disco workspace e le capsule gruppo workspace; lascia vuoto per forma pill automatica, o imposta 0 per angoli quadrati",
-          "workspaces-description": "Raggio angoli per questa capsula widget e le pillole workspace; lascia vuoto per forma pill automatica, o imposta 0 per angoli quadrati"
+          "taskbar-description": "Raggio angoli per la capsula widget, gli indicatori disco dei workspace e le capsule gruppo di workspace; lascia vuoto per forma pill automatica, o imposta 0 per angoli squadrati",
+          "workspaces-description": "Raggio angoli per questa capsula widget e le pillole workspace; lascia vuoto per forma pill automatica, o imposta 0 per angoli squadrati"
         },
         "centered": {
           "description": "Centra le barre del visualizzatore invece di allinearle al bordo",
           "label": "Centrato"
         },
         "color": {
-          "description": "Ruolo colore per il primo piano widget; sono supportati anche colori hex fissi",
+          "description": "Ruolo colore per il primo piano del widget; sono supportati anche codici colore esadecimali",
           "label": "Colore"
+        },
+        "color-1": {
+          "description": "Primo colore sfumato nel visualizzatore",
+          "label": "Colore uno"
+        },
+        "color-2": {
+          "description": "Secondo colore sfumato nel visualizzatore",
+          "label": "Colore due"
         },
         "command": {
           "description": "Comando shell eseguito al click sinistro su questo pulsante",
@@ -2375,11 +2395,11 @@
         },
         "display": {
           "active-window-description": "Icona, titolo o entrambi sulle barre orizzontali. Le barre verticali restano solo icona.",
-          "description": "Modalità di visualizzazione per questo widget",
+          "description": "Modalità di visualizzazione del widget",
           "label": "Visualizzazione"
         },
         "display-mode": {
-          "description": "Renderizza la batteria come forma grafica o glifo Tabler",
+          "description": "Renderizza la batteria come forma grafica o glifo",
           "label": "Modalità visualizzazione"
         },
         "drawer": {
@@ -2391,11 +2411,11 @@
           "label": "Colonne cassetto"
         },
         "empty-color": {
-          "description": "Ruolo colore usato per workspace vuoti; sono supportati anche colori hex fissi",
+          "description": "Ruolo colore usato per workspace vuoti; sono supportati anche codici colore esadecimali",
           "label": "Colore vuoto"
         },
         "focused-color": {
-          "description": "Ruolo colore usato per il workspace con focus; sono supportati anche colori hex fissi",
+          "description": "Ruolo colore usato per il workspace con focus; sono supportati anche codici colore esadecimali",
           "label": "Colore focus"
         },
         "font-weight": {
@@ -2449,7 +2469,7 @@
         },
         "hide-when-no-unread": {
           "description": "Nasconde il widget notifiche quando non ci sono notifiche non lette",
-          "label": "Nascondi senza nuove"
+          "label": "Nascondi quando non ci sono nuove notifiche"
         },
         "hide-when-off": {
           "description": "Nasconde l'indicatore tasto blocco quando inattivo",
@@ -2527,11 +2547,11 @@
           "workspaces-description": "Etichette workspace solo testo senza sfondi pillola o animazione di scorrimento"
         },
         "mirrored": {
-          "description": "Specchia il visualizzatore attorno al centro",
+          "description": "Specchia il visualizzatore dal centro",
           "label": "Specchiato"
         },
         "occupied-color": {
-          "description": "Ruolo colore usato per workspace occupati; sono supportati anche colori hex fissi",
+          "description": "Ruolo colore usato per workspace occupati; sono supportati anche codici colore esadecimali",
           "label": "Colore occupato"
         },
         "only-active-workspace": {
@@ -2598,6 +2618,10 @@
         "show-condition": {
           "description": "Mostra testo condizione meteo",
           "label": "Mostra condizione"
+        },
+        "show-empty-label": {
+          "description": "Mostra un testo segnaposto quando nessuna finestra è selezionata invece di nascondere il widget",
+          "label": "Mostra testo quando vuota"
         },
         "show-icon": {
           "description": "Mostra l'icona di questo widget",
