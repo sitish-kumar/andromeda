@@ -5,8 +5,8 @@
 
 namespace SysUtils {
 
-  [[nodiscard]] inline bool isEnvFlagOn(std::string_view name) {
-    const char* s = std::getenv(name.data());
+  [[nodiscard]] inline bool isEnvFlagOn(const char* name) {
+    const char* s = std::getenv(name);
     if (s == nullptr) {
       return false;
     }
