@@ -9,6 +9,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -90,7 +91,7 @@ private:
   void clearInstances();
   void updatePromptOnSurfaces();
   void handlePasswordEdited(const std::string& value);
-  void tryAuthenticate();
+  void tryAuthenticate(std::string_view submittedPassword = {});
   void scheduleAutoAuthentication();
   void startAuthentication(bool userInitiated);
   void completeAuthentication(PamAuthenticator::Result result, bool emptyPasswordAttempt);
@@ -115,6 +116,8 @@ private:
   bool m_desktopCapturesPrimed = false;
   bool m_lockDeferred = false;
   std::atomic<bool> m_authInFlight{false};
+  bool m_pendingUserAuth = false;
+  std::string m_pendingPassword;
   std::function<void()> m_pendingAfterLocked;
   std::function<void()> m_onSessionLocked;
   std::function<void()> m_onSessionUnlocked;
