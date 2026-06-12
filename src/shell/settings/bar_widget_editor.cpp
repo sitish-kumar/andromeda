@@ -851,6 +851,14 @@ namespace settings {
       return {};
     }
 
+    [[nodiscard]] bool isBarHorizontal(const Config& cfg, std::string_view barName) {
+      const BarConfig* bar = findBar(cfg, barName);
+      if (bar == nullptr) {
+        return true;
+      }
+      return bar->position != "left" && bar->position != "right";
+    }
+
     bool isSettingVisible(
         const Config& cfg, std::string_view widgetName, const WidgetSettingSpec& spec,
         const std::vector<WidgetSettingSpec>& allSpecs
@@ -1232,8 +1240,13 @@ namespace settings {
       // Coalesce specs by group so each group header renders once regardless of spec declaration order.
       const auto specOrder =
           coalesceByGroupKey(specs.size(), [&](std::size_t i) { return std::string(widgetSettingGroupKey(specs[i])); });
+      const bool barHorizontal =
+          lanePath.size() >= 2 && lanePath[0] == "bar" ? isBarHorizontal(ctx.config, lanePath[1]) : true;
       for (const std::size_t specIndex : specOrder) {
         const auto& spec = specs[specIndex];
+        if (spec.horizontalBarOnly && !barHorizontal) {
+          continue;
+        }
         if (!isSettingVisible(ctx.config, widgetName, spec, specs)) {
           continue;
         }
