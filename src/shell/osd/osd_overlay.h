@@ -31,12 +31,14 @@ enum class OsdKind : std::uint8_t {
   Dnd,
   LockKeys,
   KeyboardLayout,
+  Mpris
 };
 
 struct OsdContent {
   OsdKind kind = OsdKind::Volume;
   std::string icon;
   std::string value;
+  std::string value2;
   float progress = 0.0f;
   bool showProgress = true;
   bool overLimit = false;

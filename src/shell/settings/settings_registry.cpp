@@ -1453,6 +1453,11 @@ namespace settings {
         ToggleSetting{cfg.osd.kinds.keyboardLayout}, "hud overlay xkb input language layout switch"
     ));
     entries.push_back(makeEntry(
+        SettingsSection::Osd, "kinds", tr("settings.schema.shell.osd-kinds-mpris.label"),
+        tr("settings.schema.shell.osd-kinds-mpris.description"), {"osd", "kinds", "mpris"},
+        ToggleSetting{cfg.osd.kinds.mpris}, "hud overlay mpris audio music"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-monitors.label"),
         tr("settings.schema.shell.osd-monitors.description"), {"osd", "monitors"},
         ListSetting{.items = cfg.osd.monitors, .suggestedOptions = env.availableOutputs},

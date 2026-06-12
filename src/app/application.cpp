@@ -1077,6 +1077,7 @@ void Application::initServices() {
       m_configService.addReloadCallback(applyMprisConfig);
       m_mprisService->setChangeCallback([this, shouldRefreshControlCenter]() {
         m_bar.refresh();
+        m_mprisOsd.onMprisChanged(*m_mprisService);
         if (shouldRefreshControlCenter()) {
           m_panelManager.refresh();
         }
@@ -1581,6 +1582,7 @@ void Application::initUi() {
   }
   m_keyboardLayoutOsd.bindOverlay(m_osdOverlay);
   m_keyboardLayoutOsd.prime(m_compositorPlatform);
+  m_mprisOsd.bindOverlay(m_osdOverlay);
   m_screenCorners.initialize(m_wayland, &m_configService, &m_renderContext);
   m_screenCorners.onConfigReload();
 
