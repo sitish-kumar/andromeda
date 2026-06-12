@@ -224,12 +224,20 @@
       "wifi": "Wi-Fi"
     },
     "system": {
+      "labels": {
+        "load": "Carga CPU",
+        "ram": "RAM",
+        "swap": "Swap"
+      },
       "titles": {
         "cpu": "CPU",
         "gpu": "GPU",
         "memory": "Memoria",
         "network": "Red",
         "system": "Sistema"
+      },
+      "tooltips": {
+        "load": "Carga media en 1 /5/15 minutos"
       },
       "unknown": "Desconocido"
     },
@@ -267,6 +275,14 @@
   },
   "desktop-widgets": {
     "editor": {
+      "actions": {
+        "add": "Añadir",
+        "done": "Hecho",
+        "hide": "Ocultar",
+        "settings": "Configuraciones",
+        "show": "Mostrar",
+        "trash": "Borrar"
+      },
       "settings": {
         "aspect-ratio": "Relación de aspecto",
         "background": "Fondo",
@@ -581,7 +597,17 @@
           "border": "Borde",
           "edit": "Eliminar estilo",
           "fill": "Fondo",
-          "opacity": "Opacidad"
+          "opacity": "Opacidad",
+          "radius": "Radio",
+          "selected": "{count} seleccionados",
+          "style": "Estilo",
+          "ungroup": "Desagrupar"
+        },
+        "instance": {
+          "create-save": "Crear",
+          "delete": "Borrar",
+          "rename": "Renombrar",
+          "rename-save": "Guardar"
         }
       }
     },
@@ -605,7 +631,13 @@
       "sections": {
         "bar": "Barra",
         "dock": "Dock",
+        "niri": "Niri",
+        "notifications": "Notificaciones",
         "osd": "OSD",
+        "security": "Seguridad",
+        "services": "Servicios",
+        "shell": "Shell",
+        "system": "Sistema",
         "wallpaper": "Fondo de Pantalla"
       }
     },
@@ -629,8 +661,20 @@
         "none": "Ninguno",
         "start": "Inicio"
       },
+      "edge": {
+        "left": "Izquierda",
+        "right": "Derecha"
+      },
       "layer": {
         "overlay": "Overlay"
+      },
+      "notification-urgency": {
+        "critical": "Crítico",
+        "low": "Bajo",
+        "normal": "Normal"
+      },
+      "orientation": {
+        "vertical": "Vertical"
       },
       "theme": {
         "source": {
