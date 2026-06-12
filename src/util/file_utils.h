@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
@@ -25,6 +26,11 @@ namespace FileUtils {
       return std::filesystem::path(home) / path.substr(2);
     }
     return std::filesystem::path(path);
+  }
+
+  [[nodiscard]] inline bool
+  containsPath(const std::vector<std::filesystem::path>& paths, const std::filesystem::path& path) {
+    return std::ranges::find(paths, path) != paths.end();
   }
 
   [[nodiscard]] inline std::string configDir() {
