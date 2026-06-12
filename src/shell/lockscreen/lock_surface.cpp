@@ -90,9 +90,9 @@ LockSurface::LockSurface(WaylandConnection& connection, ConfigService* config) :
                 }
               },
           .onSubmit =
-              [this](const std::string& value) {
+              [this](const std::string& /*value*/) {
                 if (m_onLogin) {
-                  m_onLogin(value);
+                  m_onLogin();
                 }
               },
           .configure = [](Input& input) { input.setZIndex(2); },
@@ -108,8 +108,8 @@ LockSurface::LockSurface(WaylandConnection& connection, ConfigService* config) :
           .variant = ButtonVariant::Primary,
           .onClick =
               [this]() {
-                if (m_onLogin && m_passwordField != nullptr) {
-                  m_onLogin(m_passwordField->value());
+                if (m_onLogin) {
+                  m_onLogin();
                 }
               },
           .configure = [](Button& button) { button.setZIndex(2); },
@@ -288,7 +288,7 @@ void LockSurface::setBlackout(bool blackout) {
   requestLayout();
 }
 
-void LockSurface::setOnLogin(std::function<void(std::string_view password)> onLogin) { m_onLogin = std::move(onLogin); }
+void LockSurface::setOnLogin(std::function<void()> onLogin) { m_onLogin = std::move(onLogin); }
 
 void LockSurface::setOnPasswordChanged(std::function<void(const std::string&)> onPasswordChanged) {
   m_onPasswordChanged = std::move(onPasswordChanged);

@@ -47,7 +47,7 @@ public:
   void setBackgroundStyle(float blurIntensity, float tintIntensity);
   void setBlackout(bool blackout);
   [[nodiscard]] bool isBlackout() const noexcept { return m_blackout; }
-  void setOnLogin(std::function<void(std::string_view password)> onLogin);
+  void setOnLogin(std::function<void()> onLogin);
   void setOnPasswordChanged(std::function<void(const std::string&)> onPasswordChanged);
   void selectAllPassword();
   void clearPasswordSelection();
@@ -107,7 +107,7 @@ private:
   Color m_wallpaperFillColor = rgba(0.0f, 0.0f, 0.0f, 0.0f);
   bool m_wallpaperDirty = false;
   InputDispatcher m_inputDispatcher;
-  std::function<void(std::string_view password)> m_onLogin;
+  std::function<void()> m_onLogin;
   std::function<void(const std::string&)> m_onPasswordChanged;
   bool m_locked = false;
   std::string m_user;

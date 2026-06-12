@@ -154,8 +154,6 @@ void LockScreen::unlock() {
   m_lockPending = false;
   m_locked = false;
   m_authInFlight.store(false);
-  m_pendingUserAuth = false;
-  clearSensitiveString(m_pendingPassword);
   clearSensitiveString(m_password);
   m_status.clear();
   m_statusIsError = false;
@@ -361,7 +359,7 @@ void LockScreen::handleLocked(void* data, ext_session_lock_v1* /*lock*/) {
   self->m_statusIsError = false;
   for (auto& instance : self->m_instances) {
     instance.surface->setLockedState(true);
-    instance.surface->setOnLogin([self](std::string_view password) { self->tryAuthenticate(password); });
+    instance.surface->setOnLogin([self]() { self->tryAuthenticate(); });
   }
   self->updatePromptOnSurfaces();
   kLog.info("session is locked");
@@ -392,8 +390,6 @@ void LockScreen::handleFinished(void* data, ext_session_lock_v1* /*lock*/) {
   self->m_lockPending = false;
   self->m_locked = false;
   self->m_authInFlight.store(false);
-  self->m_pendingUserAuth = false;
-  clearSensitiveString(self->m_pendingPassword);
   clearSensitiveString(self->m_password);
   self->m_status.clear();
   self->m_statusIsError = false;
@@ -597,7 +593,7 @@ void LockScreen::createInstance(const WaylandOutput& output) {
     surface->setDesktopCapture(std::move(captureIt->second));
     m_desktopCaptures.erase(captureIt);
   }
-  surface->setOnLogin([this](std::string_view password) { tryAuthenticate(password); });
+  surface->setOnLogin([this]() { tryAuthenticate(); });
   surface->setOnPasswordChanged([this](const std::string& value) { handlePasswordEdited(value); });
   surface->setPromptState(m_user, m_password, m_status, m_statusIsError);
 
@@ -652,12 +648,7 @@ void LockScreen::handlePasswordEdited(const std::string& value) {
   updatePromptOnSurfaces();
 }
 
-void LockScreen::tryAuthenticate(std::string_view submittedPassword) {
-  if (!submittedPassword.empty()) {
-    m_password = std::string(submittedPassword);
-  }
-  startAuthentication(true);
-}
+void LockScreen::tryAuthenticate() { startAuthentication(true); }
 
 void LockScreen::scheduleAutoAuthentication() {
   if (!fingerprintAuthLikelyAvailable()) {
@@ -677,22 +668,12 @@ bool LockScreen::fingerprintAuthLikelyAvailable() {
 }
 
 void LockScreen::startAuthentication(bool userInitiated) {
-  if (!m_locked) {
-    return;
-  }
-  if (m_authInFlight.load()) {
-    if (userInitiated) {
-      m_pendingUserAuth = true;
-      m_pendingPassword = m_password;
-    }
+  if (!m_locked || m_authInFlight.load()) {
     return;
   }
   if (!userInitiated && !m_password.empty()) {
     return;
   }
-
-  m_pendingUserAuth = false;
-  clearSensitiveString(m_pendingPassword);
 
   std::string password = m_password;
   if (userInitiated) {
@@ -719,16 +700,6 @@ void LockScreen::completeAuthentication(PamAuthenticator::Result result, bool em
     return;
   }
 
-  if (m_pendingUserAuth) {
-    std::string pending = std::move(m_pendingPassword);
-    m_pendingUserAuth = false;
-    if (!pending.empty()) {
-      m_password = std::move(pending);
-      startAuthentication(true);
-      return;
-    }
-  }
-
   if (result.success) {
     clearSensitiveString(m_password);
     m_status = i18n::tr("lockscreen.unlocked");
@@ -739,14 +710,10 @@ void LockScreen::completeAuthentication(PamAuthenticator::Result result, bool em
   }
 
   if (emptyPasswordAttempt) {
-    if (!m_password.empty()) {
-      startAuthentication(true);
-      return;
-    }
     m_status = i18n::tr("lockscreen.ready");
     m_statusIsError = false;
     updatePromptOnSurfaces();
-    if (fingerprintAuthLikelyAvailable()) {
+    if (fingerprintAuthLikelyAvailable() && m_password.empty()) {
       scheduleAutoAuthentication();
     }
     return;
