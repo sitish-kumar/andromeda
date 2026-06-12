@@ -92,14 +92,10 @@ private:
   void updatePromptOnSurfaces();
   void handlePasswordEdited(const std::string& value);
   void tryAuthenticate(std::string_view submittedPassword = {});
-  void syncPasswordFromInputs();
   void scheduleAutoAuthentication();
-  void startFingerprintVerification();
-  void startPasswordAuthentication(std::string password);
-  void completeFingerprintVerification(bool success);
-  void completePasswordAuthentication(PamAuthenticator::Result result);
+  void startAuthentication(bool userInitiated);
+  void completeAuthentication(PamAuthenticator::Result result, bool emptyPasswordAttempt);
   [[nodiscard]] static bool fingerprintAuthLikelyAvailable();
-  [[nodiscard]] static std::string passwordPamService();
   static void clearSensitiveString(std::string& value);
 
   WaylandConnection* m_wayland = nullptr;
@@ -120,7 +116,6 @@ private:
   bool m_desktopCapturesPrimed = false;
   bool m_lockDeferred = false;
   std::atomic<bool> m_authInFlight{false};
-  bool m_fingerprintAuthInFlight = false;
   bool m_pendingUserAuth = false;
   std::string m_pendingPassword;
   std::function<void()> m_pendingAfterLocked;

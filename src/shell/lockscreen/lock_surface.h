@@ -49,7 +49,6 @@ public:
   [[nodiscard]] bool isBlackout() const noexcept { return m_blackout; }
   void setOnLogin(std::function<void(std::string_view password)> onLogin);
   void setOnPasswordChanged(std::function<void(const std::string&)> onPasswordChanged);
-  [[nodiscard]] std::string enteredPassword() const;
   void selectAllPassword();
   void clearPasswordSelection();
   void onThemeChanged();
