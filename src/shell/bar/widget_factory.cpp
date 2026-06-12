@@ -323,9 +323,10 @@ std::unique_ptr<Widget> WidgetFactory::create(
     const float artSize = static_cast<float>(wc != nullptr ? wc->getDouble("art_size", 16.0) : 16.0);
     const std::string titleScroll = wc != nullptr ? wc->getString("title_scroll", "none") : std::string("none");
     const bool hideWhenNoMedia = wc != nullptr ? wc->getBool("hide_when_no_media", false) : false;
+    const bool albumArtOnly = wc != nullptr ? wc->getBool("album_art_only", false) : false;
     auto widget = std::make_unique<MediaWidget>(
         m_mpris, m_httpClient, output, maxWidth, minWidth, artSize, parseMediaTitleScrollMode(titleScroll),
-        hideWhenNoMedia
+        hideWhenNoMedia, albumArtOnly
     );
     widget->setContentScale(contentScale);
     return widget;

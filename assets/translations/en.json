@@ -2316,6 +2316,10 @@
           "description": "Opacity of the icon for the active (focused) window.",
           "label": "Active Icon Opacity"
         },
+        "album-art-only": {
+          "description": "Show only the circular album artwork without the track title",
+          "label": "Album Art Only"
+        },
         "anchor": {
           "description": "Pin this widget as the center alignment anchor",
           "label": "Anchor"

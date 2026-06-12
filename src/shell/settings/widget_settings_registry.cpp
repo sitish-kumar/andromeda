@@ -704,10 +704,28 @@ namespace settings {
       add(boolSpec("hide_when_off", false));
       add(segmentedSpec("display", "short", shortFull));
     } else if (type == "media") {
-      add(intSpec("min_length", 80, 0.0, 800.0, 1.0));
-      add(intSpec("max_length", 220, 40.0, 800.0, 1.0));
+      const WidgetSettingVisibility notAlbumArtOnly{"album_art_only", {"false"}};
+      {
+        auto albumArtOnly = boolSpec("album_art_only", false);
+        albumArtOnly.horizontalBarOnly = true;
+        add(std::move(albumArtOnly));
+      }
+      {
+        auto minLength = intSpec("min_length", 80, 0.0, 800.0, 1.0);
+        minLength.visibleWhen = notAlbumArtOnly;
+        add(std::move(minLength));
+      }
+      {
+        auto maxLength = intSpec("max_length", 220, 40.0, 800.0, 1.0);
+        maxLength.visibleWhen = notAlbumArtOnly;
+        add(std::move(maxLength));
+      }
       add(doubleSpec("art_size", 16.0, 8.0, 96.0, 1.0));
-      add(selectSpec("title_scroll", "none", mediaTitleScroll));
+      {
+        auto titleScroll = selectSpec("title_scroll", "none", mediaTitleScroll);
+        titleScroll.visibleWhen = notAlbumArtOnly;
+        add(std::move(titleScroll));
+      }
       add(boolSpec("hide_when_no_media", false));
     } else if (type == "network") {
       add(boolSpec("show_label", true));
