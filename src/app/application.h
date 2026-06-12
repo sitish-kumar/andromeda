@@ -119,6 +119,8 @@
 #include <optional>
 #include <vector>
 
+class LauncherPanel;
+
 class Application {
 public:
   Application();
@@ -133,6 +135,8 @@ private:
   void initServices();
   void initUi();
   void initIpc();
+  // (Re)register plugin-backed launcher providers from the enabled plugin set.
+  void reloadPluginLauncherProviders();
   void startTrayService();
   void syncNotificationDaemon();
   void syncPolkitAgent();
@@ -221,6 +225,8 @@ private:
   LockscreenWidgetsController m_lockscreenWidgetsController;
   SessionActionRunner m_sessionActionRunner{m_compositorPlatform, m_lockScreen};
   PanelManager m_panelManager;
+  // Owned by m_panelManager; kept raw so plugin launcher providers can be re-applied.
+  LauncherPanel* m_launcherPanel = nullptr;
   WindowSwitcher m_windowSwitcher;
   OverviewLauncherCapture m_overviewLauncherCapture;
   NotificationToast m_notificationToast;

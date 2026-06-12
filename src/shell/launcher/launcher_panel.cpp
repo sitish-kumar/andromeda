@@ -147,7 +147,7 @@ namespace {
 
       m_row->addChild(
           ui::label({
-              .out = &m_actionLabel,
+              .out = &m_badgeLabel,
               .fontSize = iconSize,
               .color = colorSpecFromRole(ColorRole::OnSurface),
               .visible = false,
@@ -174,7 +174,7 @@ namespace {
 
       m_image->setAsyncReadyCallback([this]() {
         if (!m_style.showIcons
-            || m_actionTextVisible
+            || m_badgeVisible
             || m_iconPath.empty()
             || m_image == nullptr
             || m_glyph == nullptr
@@ -221,26 +221,26 @@ namespace {
       m_fallbackGlyph = result.glyphName.empty() ? "app-window" : result.glyphName;
       const float iconSize = launcherIconSize(m_style);
       m_iconTargetSize = static_cast<int>(std::round(iconSize));
-      m_actionTextVisible = !result.actionText.empty();
+      m_badgeVisible = !result.badge.empty();
       m_rowHeight = launcherRowHeight(renderer, m_style);
 
       setSize(width, m_rowHeight);
       m_row->setFrameSize(width, m_rowHeight);
 
-      m_actionLabel->setVisible(false);
-      m_actionLabel->setParticipatesInLayout(false);
+      m_badgeLabel->setVisible(false);
+      m_badgeLabel->setParticipatesInLayout(false);
       m_image->setVisible(false);
       m_image->setParticipatesInLayout(false);
       m_glyph->setVisible(false);
       m_glyph->setParticipatesInLayout(false);
 
-      const bool showAppIcon = m_style.showIcons && !m_actionTextVisible;
-      const bool showLeadingVisual = m_actionTextVisible || showAppIcon;
-      if (m_actionTextVisible) {
-        m_actionLabel->setText(result.actionText);
-        m_actionLabel->setSize(iconSize, iconSize);
-        m_actionLabel->setVisible(true);
-        m_actionLabel->setParticipatesInLayout(true);
+      const bool showAppIcon = m_style.showIcons && !m_badgeVisible;
+      const bool showLeadingVisual = m_badgeVisible || showAppIcon;
+      if (m_badgeVisible) {
+        m_badgeLabel->setText(result.badge);
+        m_badgeLabel->setSize(iconSize, iconSize);
+        m_badgeLabel->setVisible(true);
+        m_badgeLabel->setParticipatesInLayout(true);
         m_image->clear(renderer);
       } else if (showAppIcon) {
         m_image->setParticipatesInLayout(true);
@@ -280,7 +280,7 @@ namespace {
     }
 
     bool refreshAsyncIcon(Renderer& renderer) {
-      if (!m_style.showIcons || m_actionTextVisible || m_iconPath.empty()) {
+      if (!m_style.showIcons || m_badgeVisible || m_iconPath.empty()) {
         m_image->setVisible(false);
         m_glyph->setVisible(false);
         return false;
@@ -304,7 +304,7 @@ namespace {
 
   protected:
     void doLayout(Renderer& renderer) override {
-      if (m_style.showIcons && !m_actionTextVisible && !m_iconPath.empty()) {
+      if (m_style.showIcons && !m_badgeVisible && !m_iconPath.empty()) {
         (void)refreshAsyncIcon(renderer);
       }
       Node::doLayout(renderer);
@@ -325,7 +325,7 @@ namespace {
       const ColorSpec foreground = colorSpecFromRole(active ? activeRole : ColorRole::OnSurface);
       const ColorSpec mutedForeground =
           active ? colorSpecFromRole(activeRole, 0.7f) : colorSpecFromRole(ColorRole::OnSurfaceVariant);
-      m_actionLabel->setColor(foreground);
+      m_badgeLabel->setColor(foreground);
       m_glyph->setColor(foreground);
       m_title->setColor(foreground);
       m_subtitle->setColor(mutedForeground);
@@ -336,7 +336,7 @@ namespace {
     bool m_selected = false;
     bool m_hovered = false;
     Flex* m_row = nullptr;
-    Label* m_actionLabel = nullptr;
+    Label* m_badgeLabel = nullptr;
     Image* m_image = nullptr;
     Glyph* m_glyph = nullptr;
     Flex* m_textCol = nullptr;
@@ -346,7 +346,7 @@ namespace {
     std::string m_iconPath;
     std::string m_fallbackGlyph;
     int m_iconTargetSize = 0;
-    bool m_actionTextVisible = false;
+    bool m_badgeVisible = false;
   };
 
 } // namespace
@@ -411,7 +411,12 @@ PanelPlacement LauncherPanel::panelPlacement() const noexcept {
 
 void LauncherPanel::addProvider(std::unique_ptr<LauncherProvider> provider) {
   provider->initialize();
+  provider->setResultsChangedCallback([this]() { onProviderResultsChanged(); });
   m_providers.push_back(std::move(provider));
+}
+
+void LauncherPanel::clearDynamicProviders() {
+  std::erase_if(m_providers, [](const std::unique_ptr<LauncherProvider>& provider) { return provider->isDynamic(); });
 }
 
 void LauncherPanel::create() {
@@ -608,6 +613,10 @@ void LauncherPanel::onClose() {
     DeferredCall::callLater([asyncTextures = m_asyncTextures]() { asyncTextures->trimUnused(0); });
   }
 
+  for (auto& provider : m_providers) {
+    provider->reset();
+  }
+
   m_query.clear();
   m_results.clear();
   m_allResults.clear();
@@ -633,7 +642,9 @@ void LauncherPanel::onClose() {
   clearReleasedRoot();
 }
 
-void LauncherPanel::onIconThemeChanged() {
+void LauncherPanel::onIconThemeChanged() { reapplyCurrentQuery(); }
+
+void LauncherPanel::reapplyCurrentQuery() {
   std::string selectedProvider;
   std::string selectedId;
   if (m_selectedIndex < m_results.size()) {
@@ -652,6 +663,15 @@ void LauncherPanel::onIconThemeChanged() {
     }
   }
   refreshResults();
+}
+
+void LauncherPanel::onProviderResultsChanged() {
+  // Only re-gather while the panel is open and built; after onClose the scene
+  // nodes are gone and a refresh would touch null grid/label pointers.
+  if (m_input == nullptr) {
+    return;
+  }
+  reapplyCurrentQuery();
 }
 
 InputArea* LauncherPanel::initialFocusArea() const { return m_input != nullptr ? m_input->inputArea() : nullptr; }

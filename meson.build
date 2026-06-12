@@ -426,6 +426,7 @@ _noctalia_sources = files(
   'src/launcher/app_provider.cpp',
   'src/launcher/emoji_provider.cpp',
   'src/launcher/math_provider.cpp',
+  'src/launcher/plugin_launcher_provider.cpp',
   'src/launcher/session_provider.cpp',
   'src/launcher/wallpaper_provider.cpp',
   'src/launcher/window_provider.cpp',

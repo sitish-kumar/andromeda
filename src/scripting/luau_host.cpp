@@ -787,6 +787,39 @@ namespace {
       {nullptr, nullptr},
   };
 
+  int luau_json_decode(lua_State* L) {
+    size_t len = 0;
+    const char* str = luaL_checklstring(L, 1, &len);
+    try {
+      jsonToLua(L, nlohmann::json::parse(str, str + len));
+      return 1;
+    } catch (const nlohmann::json::exception& e) {
+      lua_pushnil(L);
+      lua_pushstring(L, e.what());
+      return 2;
+    }
+  }
+
+  int luau_json_encode(lua_State* L) {
+    const nlohmann::json value = lua_gettop(L) >= 1 ? luaToJson(L, 1) : nlohmann::json(nullptr);
+    const bool pretty = lua_toboolean(L, 2) != 0;
+    try {
+      const std::string out = value.dump(pretty ? 2 : -1);
+      lua_pushlstring(L, out.data(), out.size());
+      return 1;
+    } catch (const nlohmann::json::exception& e) {
+      lua_pushnil(L);
+      lua_pushstring(L, e.what());
+      return 2;
+    }
+  }
+
+  const luaL_Reg kNoctaliaJsonLib[] = {
+      {"decode", luau_json_decode},
+      {"encode", luau_json_encode},
+      {nullptr, nullptr},
+  };
+
   const luaL_Reg kNoctaliaBaseLib[] = {
       {"log", luau_log},
       {"runAsync", luau_runAsync},
@@ -823,6 +856,10 @@ namespace {
     lua_createtable(L, 0, 0);
     luaL_register(L, nullptr, kNoctaliaStateLib);
     lua_setfield(L, -2, "state");
+    // noctalia.json = { decode, encode }
+    lua_createtable(L, 0, 0);
+    luaL_register(L, nullptr, kNoctaliaJsonLib);
+    lua_setfield(L, -2, "json");
     lua_pop(L, 1);
   }
 } // namespace

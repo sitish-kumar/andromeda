@@ -242,17 +242,26 @@ namespace scripting {
   } // namespace
 
   void applyPluginSourcesToRegistry(PluginRegistry& registry, const PluginsConfig& plugins) {
-    // Scan the local dev dir + every configured source; a plugin is active only if
+    // Scan every configured source + the local dev dir; a plugin is active only if
     // its id is in [plugins].enabled (opt-in, uniform across all sources).
+    //
+    // Root order is lowest-to-highest precedence: built-in defaults, then user-added
+    // sources (later config entries override earlier), then the local data dir last.
+    // The registry keeps the last copy of a duplicate id, so a cloned official /
+    // community repo added as a later source overrides the built-in one without
+    // touching plugin ids, and a drop-in under the data dir overrides everything.
     std::vector<std::filesystem::path> roots;
     std::unordered_set<std::string> enabled;
-    if (auto localRoot = plugin_paths::localSourceRoot(); !localRoot.empty()) {
-      roots.push_back(std::move(localRoot));
-    }
     for (const auto& source : plugins.sources) {
+      if (!source.enabled) {
+        continue;
+      }
       if (auto root = sourceRootFor(source); !root.empty()) {
         roots.push_back(std::move(root));
       }
+    }
+    if (auto localRoot = plugin_paths::localSourceRoot(); !localRoot.empty()) {
+      roots.push_back(std::move(localRoot));
     }
     for (const auto& id : plugins.enabled) {
       if (isValidPluginId(id)) {
@@ -269,11 +278,14 @@ namespace scripting {
   }
 
   std::optional<PluginSourceConfig> PluginManager::findSourceOffering(std::string_view pluginId) const {
-    for (const auto& source : m_config.config().plugins.sources) {
-      const auto catalog = discoverCatalog(source);
+    // Highest precedence wins: a later source overrides an earlier one for the same id,
+    // so materialize the copy that the registry will actually load (reverse config order).
+    const auto& sources = m_config.config().plugins.sources;
+    for (auto it = sources.rbegin(); it != sources.rend(); ++it) {
+      const auto catalog = discoverCatalog(*it);
       for (const auto& entry : catalog.entries) {
         if (entry.id == pluginId) {
-          return source;
+          return *it;
         }
       }
     }
@@ -308,7 +320,7 @@ namespace scripting {
     bool materialized = false;
     std::error_code ec;
     for (const auto& source : plugins.sources) {
-      if (source.kind != PluginSourceKind::Git) {
+      if (source.kind != PluginSourceKind::Git || !source.enabled) {
         continue;
       }
       const std::filesystem::path repoRoot = plugin_paths::gitRepoRoot(source);
@@ -464,8 +476,16 @@ namespace scripting {
     const std::unordered_set<std::string> enabledSet(plugins.enabled.begin(), plugins.enabled.end());
 
     std::vector<PluginStatus> out;
+    // A plugin id is canonical: if the same id ships from more than one source, only
+    // the highest-precedence copy runs (local data dir > later user source > earlier
+    // > built-in default), so the catalog shows one row per id from that same source.
+    // Visit highest precedence first and keep the first seen; the GUI re-sorts anyway.
+    std::unordered_set<std::string> seen;
     const auto collect = [&](const std::string& sourceName, const CatalogResult& catalog) {
       for (const auto& entry : catalog.entries) {
+        if (!seen.insert(entry.id).second) {
+          continue;
+        }
         out.push_back(
             PluginStatus{
                 .id = entry.id,
@@ -491,8 +511,12 @@ namespace scripting {
       };
       collect("local", discoverCatalog(localSource));
     }
-    for (const auto& source : plugins.sources) {
-      collect(source.name, discoverCatalog(source));
+    // Reverse config order: a later user source outranks earlier ones and the defaults.
+    for (auto it = plugins.sources.rbegin(); it != plugins.sources.rend(); ++it) {
+      if (!it->enabled) {
+        continue;
+      }
+      collect(it->name, discoverCatalog(*it));
     }
     return out;
   }

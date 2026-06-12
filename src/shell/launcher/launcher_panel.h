@@ -32,6 +32,9 @@ public:
   ~LauncherPanel() override;
 
   void addProvider(std::unique_ptr<LauncherProvider> provider);
+  // Drop every dynamically-registered (plugin-backed) provider, so the enabled
+  // plugin set can be re-applied without disturbing the built-in providers.
+  void clearDynamicProviders();
 
   void create() override;
   void onOpen(std::string_view context) override;
@@ -52,6 +55,10 @@ private:
   void onPanelCardOpacityChanged(float opacity) override;
   void doLayout(Renderer& renderer, float width, float height) override;
   void onInputChanged(const std::string& text);
+  // Re-gather the current query, preserving the selected result by identity.
+  void reapplyCurrentQuery();
+  // A plugin provider delivered fresh async results — re-gather if the panel is open.
+  void onProviderResultsChanged();
   void refreshResults();
   void activateAt(std::size_t index);
   void activateSelected();

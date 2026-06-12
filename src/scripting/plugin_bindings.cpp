@@ -265,6 +265,56 @@ namespace {
       {nullptr, nullptr},
   };
 
+  // ── launcher.* — launcher-provider results ──
+
+  // launcher.setResults(query, results) — replaces this provider's result set.
+  // `query` echoes the text passed to onQuery so late async results map back to the
+  // right query. Each result is a table { id, title, subtitle?, glyph?, icon?,
+  // badge?, score? }. An empty array clears the provider's results.
+  int luau_launcher_setResults(lua_State* L) {
+    size_t queryLen = 0;
+    const char* query = luaL_checklstring(L, 1, &queryLen);
+    luaL_checktype(L, 2, LUA_TTABLE);
+    auto* context = getContext(L);
+    if (context == nullptr) {
+      return 0;
+    }
+    scripting::ScriptLauncherResultSet set;
+    set.query.assign(query, queryLen);
+    const int count = lua_objlen(L, 2);
+    set.results.reserve(static_cast<std::size_t>(std::max(0, count)));
+    for (int i = 1; i <= count; ++i) {
+      lua_rawgeti(L, 2, i);
+      if (lua_istable(L, -1)) {
+        const int row = lua_gettop(L);
+        scripting::ScriptLauncherResult result;
+        result.id = tableOptionalStringField(L, row, "id");
+        result.title = tableOptionalStringField(L, row, "title");
+        result.subtitle = tableOptionalStringField(L, row, "subtitle");
+        result.glyph = tableOptionalStringField(L, row, "glyph");
+        result.icon = tableOptionalStringField(L, row, "icon");
+        result.badge = tableOptionalStringField(L, row, "badge");
+        lua_getfield(L, row, "score");
+        if (lua_isnumber(L, -1)) {
+          result.score = lua_tonumber(L, -1);
+        }
+        lua_pop(L, 1);
+        if (!result.id.empty() || !result.title.empty()) {
+          set.results.push_back(std::move(result));
+        }
+      }
+      lua_pop(L, 1);
+    }
+    context->patch.launcherResults = std::move(set);
+    return 0;
+  }
+
+  const luaL_Reg kLauncherLib[] = {
+      {"setResults", luau_launcher_setResults},
+      {"getConfig", scripting::luau_getConfig},
+      {nullptr, nullptr},
+  };
+
 } // namespace
 
 namespace scripting {
@@ -317,6 +367,8 @@ namespace scripting {
     luaL_register(L, "barWidget", kWidgetLib);
     lua_pop(L, 1);
     luaL_register(L, "shortcut", kShortcutLib);
+    lua_pop(L, 1);
+    luaL_register(L, "launcher", kLauncherLib);
     lua_pop(L, 1);
   }
 

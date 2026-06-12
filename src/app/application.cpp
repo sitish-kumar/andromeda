@@ -17,6 +17,7 @@
 #include "launcher/app_provider.h"
 #include "launcher/emoji_provider.h"
 #include "launcher/math_provider.h"
+#include "launcher/plugin_launcher_provider.h"
 #include "launcher/session_provider.h"
 #include "launcher/wallpaper_provider.h"
 #include "launcher/window_provider.h"
@@ -24,6 +25,8 @@
 #include "render/animation/motion_service.h"
 #include "render/core/texture_manager.h"
 #include "render/text/font_weight_catalog.h"
+#include "scripting/plugin_manifest.h"
+#include "scripting/plugin_registry.h"
 #include "shell/clipboard/clipboard_panel.h"
 #include "shell/clipboard/clipboard_paste.h"
 #include "shell/control_center/control_center_panel.h"
@@ -408,6 +411,7 @@ void Application::run(std::function<void()> startupReadyCallback) {
     m_configService.addReloadCallback([this]() {
       if (m_configService.lastChange().plugins) {
         m_pluginServiceHost.refresh(m_configService.config().plugins.pluginSettings);
+        reloadPluginLauncherProviders();
         m_settingsWindow.onPluginsChanged();
       }
     });
@@ -416,6 +420,7 @@ void Application::run(std::function<void()> startupReadyCallback) {
     m_pluginManager.setOnChanged([this]() {
       m_pluginServiceHost.refresh(m_configService.config().plugins.pluginSettings);
       m_bar.refresh();
+      reloadPluginLauncherProviders();
       m_settingsWindow.onPluginsChanged();
     });
   });
@@ -1432,8 +1437,10 @@ void Application::initUi() {
     launcherPanel->addProvider(std::make_unique<SessionProvider>(&m_configService, &m_sessionActionRunner));
     launcherPanel->addProvider(std::make_unique<MathProvider>(&m_clipboardService, &m_configService, &m_httpClient));
     launcherPanel->addProvider(std::make_unique<EmojiProvider>(&m_clipboardService));
+    m_launcherPanel = launcherPanel.get();
     m_panelManager.registerPanel("launcher", std::move(launcherPanel));
   }
+  reloadPluginLauncherProviders();
   m_overviewLauncherCapture.initialize(m_wayland, &m_renderContext, m_compositorPlatform, m_panelManager);
   m_overviewLauncherCapture.setEnabled(m_configService.config().shell.niriOverviewTypeToLaunchEnabled);
   m_overviewLauncherCapture.setOpenLauncherCallback(
@@ -1739,6 +1746,43 @@ void Application::initUi() {
         m_audioOsd.showOutput(id, volume, muted);
       }
     });
+  }
+}
+
+void Application::reloadPluginLauncherProviders() {
+  if (m_launcherPanel == nullptr) {
+    return;
+  }
+  m_launcherPanel->clearDynamicProviders();
+
+  auto& registry = scripting::PluginRegistry::instance();
+  const auto& pluginSettings = m_configService.config().plugins.pluginSettings;
+  static const std::unordered_map<std::string, WidgetSettingValue> kNoOverrides;
+
+  for (const auto& resolved : registry.entriesOfKind(scripting::PluginEntryKind::LauncherProvider)) {
+    if (resolved.entry == nullptr || resolved.manifest == nullptr) {
+      continue;
+    }
+    // Launcher providers have no per-instance config, only plugin-level settings.
+    auto seeded = scripting::seedEntrySettings(*resolved.entry, kNoOverrides);
+    const auto psIt = pluginSettings.find(resolved.manifest->id);
+    scripting::mergePluginSettings(
+        *resolved.manifest, psIt != pluginSettings.end() ? psIt->second : kNoOverrides, seeded
+    );
+
+    std::vector<LauncherCategory> categories;
+    categories.reserve(resolved.entry->launcherCategories.size());
+    for (const auto& cat : resolved.entry->launcherCategories) {
+      categories.push_back(LauncherCategory{.label = cat.label, .glyphName = cat.glyph});
+    }
+
+    m_launcherPanel->addProvider(
+        std::make_unique<PluginLauncherProvider>(
+            resolved.fullId(), resolved.manifest->name, resolved.sourcePath, resolved.entry->launcherPrefix,
+            resolved.entry->launcherGlyph, resolved.entry->launcherGlobalSearch, resolved.entry->launcherDebounceMs,
+            std::move(categories), std::move(seeded), m_scriptApi, &m_httpClient, &m_clipboardService
+        )
+    );
   }
 }
 
