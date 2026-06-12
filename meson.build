@@ -821,7 +821,7 @@ _noctalia_inc = [
 ]
 
 # ── Executable ────────────────────────────────────────────────────────────────
-executable('noctalia',
+noctalia_exe = executable('noctalia',
   sources: _noctalia_sources + _protocol_sources + _protocol_headers + [_git_revision_h],
   dependencies: [
     sdbus_cpp_dep,
@@ -1080,6 +1080,19 @@ config_path_resolution_test = executable('config_path_resolution_test',
 )
 
 test('config_path_resolution', config_path_resolution_test)
+
+config_validate_env = environment()
+config_validate_env.set('NOCTALIA_CONFIG_HOME', meson.current_source_dir() / 'tests/config_validate/config-home')
+config_validate_env.set('NOCTALIA_STATE_HOME', meson.current_source_dir() / 'tests/config_validate/state-home')
+config_validate_env.set('NOCTALIA_DATA_HOME', meson.current_source_dir() / 'tests/config_validate/data-home')
+
+sh_program = find_program('sh')
+test('config_validate_cli',
+  sh_program,
+  args: ['tests/config_validate_cli_test.sh', noctalia_exe.full_path()],
+  workdir: meson.current_source_dir(),
+  env: config_validate_env,
+)
 
 state_store_test = executable('state_store_test',
   sources: files(
