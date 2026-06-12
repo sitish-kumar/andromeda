@@ -294,6 +294,10 @@ void LockSurface::setOnPasswordChanged(std::function<void(const std::string&)> o
   m_onPasswordChanged = std::move(onPasswordChanged);
 }
 
+std::string LockSurface::enteredPassword() const {
+  return m_passwordField != nullptr ? m_passwordField->value() : std::string{};
+}
+
 void LockSurface::selectAllPassword() {
   if (m_passwordField == nullptr) {
     return;
@@ -549,7 +553,19 @@ void LockSurface::layoutScene(std::uint32_t width, std::uint32_t height) {
   }
 }
 
-void LockSurface::updateCopy() { m_passwordField->setValue(m_password); }
+void LockSurface::updateCopy() {
+  if (m_passwordField == nullptr) {
+    return;
+  }
+  const bool focused =
+      m_passwordField->inputArea() != nullptr && m_inputDispatcher.focusedArea() == m_passwordField->inputArea();
+  if (focused && m_passwordField->value() != m_password) {
+    return;
+  }
+  if (m_passwordField->value() != m_password) {
+    m_passwordField->setValue(m_password);
+  }
+}
 
 void LockSurface::releaseWallpaperTextureRef(const std::string& path) {
   if (m_wallpaperTexture.id == 0) {

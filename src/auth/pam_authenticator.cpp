@@ -5,6 +5,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <pwd.h>
 #include <security/pam_appl.h>
 #include <sys/types.h>
@@ -96,10 +97,22 @@ namespace {
 
 } // namespace
 
-PamAuthenticator::Result PamAuthenticator::authenticateCurrentUser(std::string_view password) const {
+bool PamAuthenticator::pamServiceExists(std::string_view name) {
+  if (name.empty()) {
+    return false;
+  }
+  std::error_code ec;
+  return std::filesystem::exists(std::filesystem::path("/etc/pam.d") / name, ec) && !ec;
+}
+
+PamAuthenticator::Result
+PamAuthenticator::authenticateCurrentUser(std::string_view password, std::string_view service) const {
   std::string user = currentUsername();
   if (user.empty()) {
     return Result{.success = false, .message = i18n::tr("auth.pam.user-unavailable")};
+  }
+  if (service.empty()) {
+    service = "login";
   }
 
   std::string passwordCopy(password);
@@ -110,7 +123,7 @@ PamAuthenticator::Result PamAuthenticator::authenticateCurrentUser(std::string_v
   };
 
   PamHandle pamh;
-  const int startRc = pam_start("login", user.c_str(), &conv, &pamh.h);
+  const int startRc = pam_start(service.data(), user.c_str(), &conv, &pamh.h);
   if (startRc != PAM_SUCCESS || pamh.h == nullptr) {
     secureClear(passwordCopy);
     return Result{.success = false, .message = i18n::tr("auth.pam.start-failed")};
