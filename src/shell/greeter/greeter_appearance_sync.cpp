@@ -143,6 +143,17 @@ namespace {
     );
   }
 
+  // pkexec is the traditional polkit front-end; run0 is systemd's setuid-free alternative.
+  [[nodiscard]] std::string resolvePrivilegeEscalator() {
+    if (process::commandExists("pkexec")) {
+      return "pkexec";
+    }
+    if (process::commandExists("run0")) {
+      return "run0";
+    }
+    return {};
+  }
+
   [[nodiscard]] std::filesystem::path makeStagingDirectory() {
     const char* runtimeDir = std::getenv("XDG_RUNTIME_DIR");
     const std::filesystem::path base = runtimeDir != nullptr && runtimeDir[0] != '\0'
@@ -240,7 +251,7 @@ namespace greeter {
   bool appearanceSyncAvailable() {
     return programExists(kGreeterName, {"/usr/bin/noctalia-greeter", "/usr/local/bin/noctalia-greeter"})
         && !findApplyHelper().empty()
-        && process::commandExists("pkexec");
+        && !resolvePrivilegeEscalator().empty();
   }
 
   bool syncAppearanceToGreeterAsync(
@@ -259,8 +270,9 @@ namespace greeter {
       finish(false);
       return false;
     }
-    if (!process::commandExists("pkexec")) {
-      kLog.warn("pkexec is not available");
+    const std::string escalator = resolvePrivilegeEscalator();
+    if (escalator.empty()) {
+      kLog.warn("no privilege escalator available (pkexec or run0)");
       finish(false);
       return false;
     }
@@ -280,7 +292,7 @@ namespace greeter {
       return false;
     }
 
-    const std::vector<std::string> args = {"pkexec", helper, staging.string()};
+    const std::vector<std::string> args = {escalator, helper, staging.string()};
     process::RunCallbacks callbacks;
     callbacks.onExit = [finish](const process::RunResult& result) {
       if (!result) {

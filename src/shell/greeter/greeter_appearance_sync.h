@@ -14,7 +14,7 @@ namespace greeter {
   [[nodiscard]] bool appearanceSyncAvailable();
 
   // Writes the current shell appearance to a staging directory, then runs
-  // `pkexec noctalia-greeter-apply-appearance <staging>` so the greeter can read
+  // `pkexec|run0 noctalia-greeter-apply-appearance <staging>` so the greeter can read
   // `/var/lib/noctalia-greeter/appearance.json` on next login.
   // Returns true when the privileged helper was launched; completion is asynchronous.
   [[nodiscard]] bool syncAppearanceToGreeterAsync(
