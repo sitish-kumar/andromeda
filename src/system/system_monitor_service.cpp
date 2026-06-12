@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
 #include <filesystem>
@@ -79,6 +80,19 @@ namespace {
       return static_cast<double>(raw) / 1000.0;
     }
     return static_cast<double>(raw);
+  }
+
+  double readCpuTempInputCelsius(const std::filesystem::path& path) {
+    std::ifstream file{path};
+    long long raw = 0;
+    if (file.is_open()) {
+      file >> raw;
+      if (file.fail()) {
+        raw = 0;
+      }
+    }
+
+    return static_cast<double>(raw / 1000);
   }
 
   std::optional<std::uint64_t> readUint64File(const std::filesystem::path& path) {
@@ -470,22 +484,22 @@ namespace {
         for (const auto& file : fs::directory_iterator{path}) {
           const fs::path inputPath = file.path();
           const std::string fileName = inputPath.filename().string();
-          const std::string filePath = inputPath.string();
-          if (!fileName.starts_with("temp") || !fileName.ends_with("_input") || filePath.contains("nvme")) {
+          const std::string fileSuffix = "input";
+          std::string filePath = inputPath.string();
+          if (!filePath.contains(fileSuffix) || filePath.contains("nvme")) {
             continue;
           }
 
-          const std::string id = fileName.substr(4, fileName.size() - 10);
-          const std::string base = fileName.substr(0, fileName.size() - 6);
-          const std::string label = readSmallTextFile(path / (base + "_label")).value_or("temp" + id);
-          const auto tempC = readTempInputCelsius(inputPath);
-          if (!tempC.has_value()) {
-            continue;
-          }
-
+          const int fileId = fileName.size() > 4 ? std::atoi(fileName.c_str() + 4) : 0;
+          const std::string basePath = filePath.erase(filePath.find(fileSuffix), fileSuffix.length());
+          const std::string label =
+              readSmallTextFile(fs::path(basePath + "label")).value_or("temp" + std::to_string(fileId));
+          const fs::path valuePath = fs::path(basePath + "input");
           const std::string sensorName = hwmonName + "/" + label;
           foundSensors[sensorName] = TempSensorReading{
-              .tempC = *tempC, .score = 0, .source = formatHwmonTempSource(hwmonName, label, inputPath)
+              .tempC = readCpuTempInputCelsius(valuePath),
+              .score = 0,
+              .source = formatHwmonTempSource(hwmonName, label, valuePath)
           };
 
           if (!gotCpu && isPrimaryCpuSensorLabel(label)) {
@@ -507,14 +521,12 @@ namespace {
           }
 
           const std::string label = readSmallTextFile(basePath / "type").value_or("temp" + std::to_string(i));
-          const auto tempC = readTempInputCelsius(tempPath);
-          if (!tempC.has_value()) {
-            continue;
-          }
-
           const std::string sensorName = "thermal" + std::to_string(i) + "/" + label;
-          foundSensors[sensorName] =
-              TempSensorReading{.tempC = *tempC, .score = 0, .source = formatThermalZoneTempSource(label, tempPath)};
+          foundSensors[sensorName] = TempSensorReading{
+              .tempC = readCpuTempInputCelsius(tempPath),
+              .score = 0,
+              .source = formatThermalZoneTempSource(label, tempPath)
+          };
         }
       }
     } catch (...) {
