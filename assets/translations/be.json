@@ -381,7 +381,148 @@
         "visualization-mode-wave-rings": "Хваля + Колы",
         "wave-thickness": "Таўшчыня хвалі",
         "widget-section": "Віджэт"
+      },
+      "state": {
+        "grid-off": "Сетка выключана",
+        "grid-on": "Сетка ўключана"
+      },
+      "title": "Віджэты працоўнага стала",
+      "types": {
+        "audio-visualizer": "Візуальізатар аўдыя",
+        "clock": "Гадзіннік",
+        "fancy-audio-visualizer": "Вычварны візуалізатар аўдыя",
+        "label": "Загаловак",
+        "media-player": "Медыяпрайгравальнік",
+        "sticker": "Стыкер",
+        "system-monitor": "Манітор рэсурсаў",
+        "weather": "Надвор'е"
       }
+    },
+    "media": {
+      "nothing-playing": "Нічога не грае"
+    },
+    "weather": {
+      "error": "Памылка",
+      "loading": "Загрузка",
+      "no-location": "Няма месцазнаходжання",
+      "off": "Надвор'е выключана"
+    }
+  },
+  "dock": {
+    "actions": {
+      "close": "Закрыць",
+      "close-all": "Закрыць усё"
+    },
+    "launcher": "Меню запуску"
+  },
+  "internal-apps": {
+    "settings": {
+      "display-name": "Налады"
+    }
+  },
+  "launcher": {
+    "categories": {
+      "all": "Усе",
+      "applications": {
+        "development": "Распрацоўка",
+        "education": "Адукацыя",
+        "games": "Гульні",
+        "graphics": "Графіка",
+        "internet": "Інтэрнэт",
+        "multimedia": "Мультымедыя",
+        "office": "Офіс",
+        "system": "Сістэма",
+        "utilities": "Утыліты"
+      },
+      "emoji": {
+        "activity": "Актыўнасць",
+        "animals": "Жывёлы",
+        "flags": "Сцягі",
+        "food": "Ежа",
+        "nature": "Прырода",
+        "objects": "Аб'екты",
+        "people": "Людзі",
+        "symbols": "Сімвалы",
+        "travel": "Падарожжа"
+      },
+      "recently-used": "Нядаўна выкарыстаныя"
+    },
+    "context-menu": {
+      "open": "Адкрыць",
+      "pin-to-dock": "Замацаваць у доке",
+      "unpin-from-dock": "Адмацаваць ад дока"
+    },
+    "empty": {
+      "no-results": "Вынікаў не знойдзена",
+      "type-to-search": "Пачніце ўвод для пошуку..."
+    },
+    "providers": {
+      "applications": {
+        "title": "Праграмы"
+      },
+      "calculator": {
+        "title": "Калькулятар"
+      },
+      "emoji": {
+        "title": "Эмодзі"
+      },
+      "session": {
+        "action-subtitle": "Выканаць дзеянне сеанса",
+        "command-subtitle": "Выканаць сканфігураваную каманду",
+        "title": "Сеанс"
+      },
+      "wallpaper": {
+        "title": "Шпалеры"
+      },
+      "window": {
+        "title": "Вокны"
+      }
+    },
+    "search-placeholder": "Пошук праграм..."
+  },
+  "location": {
+    "errors": {
+      "address-lookup-failed": "Не ўдалося адшукаць адрас",
+      "ip-geolocation-failed": "Не ўдалося вызначыць месцазнаходжанне па IP",
+      "parse-geocode": "Не ўдалося прааналізаваць адказ з геакодам",
+      "parse-ip-geolocation": "Не ўдалося прааналізаваць адказ з месцазнаходжаннем"
+    },
+    "locations": {
+      "current": "Бягучае месцазнаходжанне"
+    },
+    "source": {
+      "address": "Адрас",
+      "auto": "Аўтаматычна"
+    }
+  },
+  "lockscreen": {
+    "authenticating": "Аўтарызацыя...",
+    "authentication-failed": "Аўтарызацыя не ўдалася",
+    "password-cleared": "Пароль ачышчаны",
+    "password-placeholder": "Пароль",
+    "ready": "Увядзіце ваш пароль і націсніце Enter.",
+    "unlocked": "Рзблакіроўка выканана",
+    "waiting": "Чаканне пацвярджэння блакіроўкі..."
+  },
+  "notifications": {
+    "actions": {
+      "fallback": "Дзеянне",
+      "open": "Адкрыць"
+    },
+    "inline-reply": {
+      "button": "Адказаць",
+      "placeholder": "Увядзіце адказ..."
+    },
+    "internal": {
+      "battery": "Батарэя",
+      "battery-device": "Прылада з батарэяй",
+      "battery-low-body": "{device}: засталося {percent}%",
+      "battery-low-title": "Нізкі зарад батарэі",
+      "calendar": "Каляндар",
+      "calendar-google-connect-browser-failed": "Не ўдаецца адкрыць браўзер для аўтарызацыі праз Google. Праверце ваш прадвызначаны браўзер або налады xdg-open.",
+      "calendar-google-connect-expired": "Аўтарызацыя Google пратэрмінавалася да сканчэння ўваходу. Паўтарыце працэс падлучэння.",
+      "calendar-google-connect-failed-title": "Не ўдалося падлучыць Google Calendar",
+      "calendar-google-connect-missing-account": "Няма сканфігураванага ўліковага запісу календару Google, які адпавядае «{account}»."
     }
   }
 }
