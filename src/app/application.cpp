@@ -811,7 +811,7 @@ void Application::initServices() {
       });
       kLog.info("accounts service active for uid {}", m_accountsService->sessionUid());
     } catch (const std::exception& e) {
-      kLog.warn("accounts service disabled: {}", e.what());
+      kLog.info("accounts service disabled: {}", e.what());
       m_accountsService.reset();
     }
 
