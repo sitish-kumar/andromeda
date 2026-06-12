@@ -32,6 +32,12 @@ in
       description = "The noctalia package to use.";
     };
 
+    validateConfig = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Validate the configuration file at build time.";
+    };
+
     settings = lib.mkOption {
       type =
         with lib.types;
@@ -109,7 +115,18 @@ in
     xdg = {
       configFile = lib.mkMerge [
         (lib.mkIf (cfg.settings != { }) {
-          "noctalia/config.toml".source = generateToml "config.toml" cfg.settings;
+          "noctalia/config.toml".source =
+            let
+              rawConfig = generateToml "config.toml" cfg.settings;
+            in
+            if cfg.validateConfig && cfg.package != null then
+              pkgs.runCommand "noctalia-config" { } ''
+                cp ${rawConfig} config.toml
+                ${lib.getExe cfg.package} config validate .
+                cp config.toml $out
+              ''
+            else
+              rawConfig;
         })
         (lib.mapAttrs' (
           name: palette:
