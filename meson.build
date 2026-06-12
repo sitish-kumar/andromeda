@@ -922,6 +922,7 @@ process_test = executable('process_test',
   sources: files(
     'tests/process_test.cpp',
     'src/core/process.cpp',
+    'src/core/log.cpp'
   ),
   include_directories: _noctalia_inc,
 )
@@ -1004,6 +1005,7 @@ plugin_git_export_test = executable('plugin_git_export_test',
     'tests/plugin_git_export_test.cpp',
     'src/scripting/plugin_git.cpp',
     'src/core/process.cpp',
+    'src/core/log.cpp',
   ),
   include_directories: _noctalia_inc,
 )

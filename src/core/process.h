@@ -90,9 +90,8 @@ namespace process {
 
   [[nodiscard]] bool launchFirstAvailable(std::initializer_list<std::initializer_list<const char*>> commandVariants);
 
-  bool systemdAvailable();
-  // Run an app as a systemd service
-  void runAsyncAsSystemdService(
+  [[nodiscard]] bool systemdAvailable();
+  [[nodiscard]] bool runAsyncAsSystemdService(
       const std::vector<std::string>& args, const std::string& appName, const std::string& activationToken = {},
       const std::string& workingDir = {}
   );
