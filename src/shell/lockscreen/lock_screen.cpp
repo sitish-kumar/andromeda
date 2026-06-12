@@ -6,7 +6,6 @@
 #include "core/deferred_call.h"
 #include "core/keybind_matcher.h"
 #include "core/log.h"
-#include "core/process.h"
 #include "ext-session-lock-v1-client-protocol.h"
 #include "i18n/i18n.h"
 #include "render/render_context.h"
@@ -18,7 +17,6 @@
 
 #include <algorithm>
 #include <string>
-#include <thread>
 #include <wayland-client.h>
 
 namespace {
@@ -153,7 +151,6 @@ void LockScreen::unlock() {
 
   m_lockPending = false;
   m_locked = false;
-  m_authInFlight.store(false);
   clearSensitiveString(m_password);
   m_status.clear();
   m_statusIsError = false;
@@ -371,7 +368,6 @@ void LockScreen::handleLocked(void* data, ext_session_lock_v1* /*lock*/) {
     self->m_pendingAfterLocked = {};
     DeferredCall::callLater(std::move(pending));
   }
-  self->scheduleAutoAuthentication();
 }
 
 void LockScreen::handleFinished(void* data, ext_session_lock_v1* /*lock*/) {
@@ -389,7 +385,6 @@ void LockScreen::handleFinished(void* data, ext_session_lock_v1* /*lock*/) {
   }
   self->m_lockPending = false;
   self->m_locked = false;
-  self->m_authInFlight.store(false);
   clearSensitiveString(self->m_password);
   self->m_status.clear();
   self->m_statusIsError = false;
@@ -648,59 +643,15 @@ void LockScreen::handlePasswordEdited(const std::string& value) {
   updatePromptOnSurfaces();
 }
 
-void LockScreen::tryAuthenticate() { startAuthentication(true); }
-
-void LockScreen::scheduleAutoAuthentication() {
-  if (!fingerprintAuthLikelyAvailable()) {
-    return;
-  }
-  DeferredCall::callLater([this]() {
-    if (m_locked && m_password.empty() && !m_authInFlight.load()) {
-      startAuthentication(false);
-    }
-  });
-}
-
-bool LockScreen::fingerprintAuthLikelyAvailable() {
-  static const bool available = process::commandExists("fprintd");
-  return available;
-}
-
-void LockScreen::startAuthentication(bool userInitiated) {
-  if (!m_locked || m_authInFlight.load()) {
-    return;
-  }
-  if (!userInitiated && !m_password.empty()) {
-    return;
-  }
-
-  std::string password = m_password;
-  if (userInitiated) {
-    clearSensitiveString(m_password);
-  }
-  const bool emptyPasswordAttempt = password.empty();
-
-  m_authInFlight.store(true);
+void LockScreen::tryAuthenticate() {
   m_status = i18n::tr("lockscreen.authenticating");
   m_statusIsError = false;
   updatePromptOnSurfaces();
 
-  std::thread([this, password = std::move(password), emptyPasswordAttempt]() {
-    const auto result = m_authenticator.authenticateCurrentUser(password);
-    DeferredCall::callLater([this, result, emptyPasswordAttempt]() {
-      completeAuthentication(result, emptyPasswordAttempt);
-    });
-  }).detach();
-}
-
-void LockScreen::completeAuthentication(PamAuthenticator::Result result, bool emptyPasswordAttempt) {
-  m_authInFlight.store(false);
-  if (!m_locked) {
-    return;
-  }
+  const auto result = m_authenticator.authenticateCurrentUser(m_password);
+  clearSensitiveString(m_password);
 
   if (result.success) {
-    clearSensitiveString(m_password);
     m_status = i18n::tr("lockscreen.unlocked");
     m_statusIsError = false;
     updatePromptOnSurfaces();
@@ -708,17 +659,6 @@ void LockScreen::completeAuthentication(PamAuthenticator::Result result, bool em
     return;
   }
 
-  if (emptyPasswordAttempt) {
-    m_status = i18n::tr("lockscreen.ready");
-    m_statusIsError = false;
-    updatePromptOnSurfaces();
-    if (fingerprintAuthLikelyAvailable() && m_password.empty()) {
-      scheduleAutoAuthentication();
-    }
-    return;
-  }
-
-  clearSensitiveString(m_password);
   m_status = result.message.empty() ? i18n::tr("lockscreen.authentication-failed") : result.message;
   m_statusIsError = true;
   updatePromptOnSurfaces();

@@ -3,7 +3,6 @@
 #include "auth/pam_authenticator.h"
 #include "capture/screencopy_capture.h"
 
-#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -91,10 +90,6 @@ private:
   void updatePromptOnSurfaces();
   void handlePasswordEdited(const std::string& value);
   void tryAuthenticate();
-  void scheduleAutoAuthentication();
-  void startAuthentication(bool userInitiated);
-  void completeAuthentication(PamAuthenticator::Result result, bool emptyPasswordAttempt);
-  [[nodiscard]] static bool fingerprintAuthLikelyAvailable();
   static void clearSensitiveString(std::string& value);
 
   WaylandConnection* m_wayland = nullptr;
@@ -114,7 +109,6 @@ private:
   bool m_locked = false;
   bool m_desktopCapturesPrimed = false;
   bool m_lockDeferred = false;
-  std::atomic<bool> m_authInFlight{false};
   std::function<void()> m_pendingAfterLocked;
   std::function<void()> m_onSessionLocked;
   std::function<void()> m_onSessionUnlocked;
