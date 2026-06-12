@@ -16,7 +16,7 @@
   },
   "bar": {
     "screenshot": {
-      "choose-display": "选择显示器",
+      "choose-display": "选择屏幕",
       "fullscreen": "全屏",
       "region": "选择区域"
     },
@@ -73,13 +73,13 @@
       "no-matches-title": "没有匹配的条目"
     },
     "entry": {
-      "image": "图像",
+      "image": "图片",
       "title": "剪贴板条目"
     },
     "filter-placeholder": "筛选剪贴板...",
     "preview": {
       "empty-text-payload": "（空文本内容）",
-      "image-title": "图像剪贴板条目",
+      "image-title": "图片剪贴板条目",
       "loading": "正在加载预览...",
       "text-title": "文本剪贴板条目",
       "truncated": "...已截断"
@@ -149,7 +149,7 @@
     },
     "display": {
       "disabled": "已禁用",
-      "no-displays": "无可用显示器",
+      "no-displays": "无可用屏幕",
       "unknown-resolution": "未知分辨率"
     },
     "home": {
@@ -278,7 +278,7 @@
       "audio": "音频",
       "bluetooth": "蓝牙",
       "calendar": "日历",
-      "display": "显示器",
+      "display": "屏幕",
       "home": "主页",
       "media": "媒体",
       "network": "网络",
@@ -324,7 +324,7 @@
         "trash": "删除"
       },
       "dialogs": {
-        "select-sticker-image": "选择贴纸图像"
+        "select-sticker-image": "选择贴纸图片"
       },
       "settings": {
         "aspect-ratio": "纵横比",
@@ -355,7 +355,7 @@
         "format": "格式",
         "hide-when-no-media": "无媒体时隐藏",
         "horizontal": "水平",
-        "image-path": "图像",
+        "image-path": "图片",
         "inner-diameter": "内径",
         "input-opacity": "输入框不透明度",
         "input-radius": "输入框圆角",
@@ -633,7 +633,7 @@
     "badges": {
       "advanced": "高级",
       "inherited": "已继承",
-      "monitor": "显示器",
+      "monitor": "屏幕",
       "override": "已覆盖"
     },
     "calendar-accounts": {
@@ -702,12 +702,12 @@
       "monitor-override": {
         "create": "创建",
         "delete": "删除",
-        "delete-confirm-desc": "此通过 GUI 创建的显示器覆盖项将从 settings.toml 中移除。",
+        "delete-confirm-desc": "此通过 GUI 创建的屏幕覆盖项将从 settings.toml 中移除。",
         "delete-confirm-title": "删除 \"{name}\"？",
-        "label": "显示器：{name}",
-        "management": "显示器覆盖",
-        "match-placeholder": "显示器标识",
-        "new": "新建显示器覆盖",
+        "label": "屏幕：{name}",
+        "management": "屏幕覆盖",
+        "match-placeholder": "屏幕标识",
+        "new": "新建屏幕覆盖",
         "rename": "重命名",
         "rename-save": "保存"
       },
@@ -800,9 +800,9 @@
       "export-config": "未能保存配置导出。",
       "export-wallpaper-palette": "无法将壁纸调色板保存为自定义调色板。",
       "monitor-override": {
-        "create": "无法创建显示器覆盖。",
-        "delete": "无法删除显示器覆盖。",
-        "rename": "无法重命名显示器覆盖。"
+        "create": "无法创建屏幕覆盖。",
+        "delete": "无法删除屏幕覆盖。",
+        "rename": "无法重命名屏幕覆盖。"
       },
       "reset-page": "未能重置部分设置。",
       "support-report": "未能保存支持报告。",
@@ -886,7 +886,7 @@
         "monitor": "系统监视",
         "monitor-polling": "轮询间隔",
         "monitor-thresholds": "高亮阈值",
-        "monitors": "显示器",
+        "monitors": "屏幕",
         "motion": "动效",
         "network": "网络",
         "night-light": "夜间模式",
@@ -926,7 +926,7 @@
         "osd": "OSD",
         "panels": "面板",
         "plugins": "插件",
-        "popups": "弹出窗口",
+        "popups": "弹窗",
         "power": "电源",
         "security": "安全",
         "services": "服务",
@@ -1346,16 +1346,16 @@
       },
       "dock": {
         "active-icon-opacity": {
-          "description": "焦点 Dock 图标的不透明度",
+          "description": "当前聚焦的 Dock 图标的不透明度",
           "label": "焦点图标不透明度"
         },
         "active-icon-scale": {
-          "description": "焦点 Dock 图标的缩放比例",
+          "description": "当前聚焦的 Dock 图标的缩放比例",
           "label": "焦点图标缩放"
         },
         "active-monitor-only": {
-          "description": "只显示当前显示器上运行的应用",
-          "label": "仅限当前显示器"
+          "description": "只显示当前屏幕上运行的应用",
+          "label": "仅限当前屏幕"
         },
         "auto-hide": {
           "description": "不使用时自动隐藏 Dock"
@@ -1426,8 +1426,8 @@
           "description": "沿 Dock 主轴方向的内边距（图标和 Dock 两边之间）"
         },
         "monitors": {
-          "description": "选择显示 Dock 的显示器（留空为全选）；活动显示器筛选规则将在所选显示器内生效",
-          "label": "显示器"
+          "description": "选择显示 Dock 的屏幕（留空为全选）；活动屏幕筛选规则将在所选屏幕内生效",
+          "label": "屏幕"
         },
         "pinned-apps": {
           "description": "固定到 Dock 的应用的桌面条目 ID",
@@ -1582,15 +1582,15 @@
           "label": "锁屏"
         },
         "monitors": {
-          "description": "选择显示锁屏的显示器；留空则在所有显示器上显示",
-          "label": "显示器"
+          "description": "选择显示锁屏的屏幕；留空则在所有屏幕上显示",
+          "label": "屏幕"
         },
         "tint-intensity": {
           "description": "锁屏背景上的表面颜色着色强度",
           "label": "着色强度"
         },
         "wallpaper": {
-          "description": "锁屏背景的自定义图像。留空则使用桌面壁纸。",
+          "description": "锁屏背景的自定义图片。留空则使用桌面壁纸。",
           "label": "壁纸",
           "placeholder": "使用桌面壁纸"
         },
@@ -1630,8 +1630,8 @@
           "label": "Wayland 层级"
         },
         "monitors": {
-          "description": "选择显示 Toast 通知的显示器；留空则在所有显示器上显示",
-          "label": "显示器"
+          "description": "选择显示 Toast 通知的屏幕；留空则在所有屏幕上显示",
+          "label": "屏幕"
         },
         "offset-x": {
           "description": "距屏幕或状态栏边缘的绝对水平边距",
@@ -1776,7 +1776,7 @@
           "label": "白天色温"
         },
         "ddcutil": {
-          "description": "通过 DDC/CI 控制外接显示器的亮度",
+          "description": "通过 DDC/CI 控制外接屏幕的亮度",
           "label": "DDC/CI（ddcutil）",
           "requires-ddcutil": "安装 ddcutil 以启用 DDC/CI 亮度控制"
         },
@@ -2045,12 +2045,12 @@
           "label": "输出音量"
         },
         "osd-kinds-wifi": {
-          "description": "切换 Wi-Fi 时显示 OSD 弹出窗口",
+          "description": "切换 Wi-Fi 时显示 OSD 弹窗",
           "label": "Wi-Fi"
         },
         "osd-monitors": {
-          "description": "选择显示 OSD 弹窗的显示器；留空则在所有显示器上显示",
-          "label": "显示器"
+          "description": "选择显示 OSD 弹窗的屏幕；留空则在所有屏幕上显示",
+          "label": "屏幕"
         },
         "osd-offset-x": {
           "description": "距屏幕边缘的绝对水平边距",
@@ -2085,7 +2085,7 @@
           "label": "屏幕使用时间"
         },
         "screenshot-copy-to-clipboard": {
-          "description": "将截取的 PNG 图像复制到剪贴板",
+          "description": "将截取的 PNG 图片复制到剪贴板",
           "label": "复制到剪贴板"
         },
         "screenshot-directory": {
@@ -2102,12 +2102,12 @@
           "label": "冻结屏幕"
         },
         "screenshot-pipe-command": {
-          "description": "通过 /bin/sh -lc 执行命令，并将 PNG 图像通过标准输入传入；适用于截图标注或上传工具（例如：swappy -f - 或 satty -f -）",
+          "description": "通过 /bin/sh -lc 执行命令，并将 PNG 图片通过标准输入传入；适用于截图标注或上传工具（例如：swappy -f - 或 satty -f -）",
           "label": "管道命令",
           "placeholder": "swappy -f -"
         },
         "screenshot-pipe-to-command": {
-          "description": "将截取的 PNG 图像通过标准输入传递给 Shell 命令",
+          "description": "将截取的 PNG 图片通过标准输入传递给 Shell 命令",
           "label": "通过管道传递给命令"
         },
         "screenshot-save-to-file": {
@@ -2124,7 +2124,7 @@
           "label": "Noctalia Greeter"
         },
         "telemetry": {
-          "description": "启动时发送匿名统计信息，包含版本、操作系统、合成器、显示器分辨率、内存及 UI 缩放比例",
+          "description": "启动时发送匿名统计信息，包含版本、操作系统、合成器、屏幕分辨率、内存及 UI 缩放比例",
           "label": "发送匿名统计信息"
         },
         "time-format": {
@@ -2225,8 +2225,8 @@
           "label": "壁纸面板"
         },
         "per-monitor-directories": {
-          "description": "为每个显示器使用单独的壁纸文件夹",
-          "label": "显示器独立壁纸目录"
+          "description": "为每个屏幕使用单独的壁纸文件夹",
+          "label": "屏幕独立壁纸目录"
         },
         "transition-duration": {
           "description": "壁纸切换动画的时长（毫秒）",
@@ -2557,7 +2557,7 @@
           "label": "最小长度"
         },
         "minimal": {
-          "description": "只显示工作区ID或名字，不显示胶囊和动画。",
+          "description": "只显示工作区 ID 或名字，不显示胶囊和动画。",
           "label": "极简样式",
           "workspaces-description": "只显示工作区标签，不显示胶囊背景和滑动动画。"
         },
@@ -2623,8 +2623,8 @@
           "label": "活跃窗口指示器"
         },
         "show-all-outputs": {
-          "description": "包含所有显示器上的窗口",
-          "label": "显示所有显示器"
+          "description": "包含所有屏幕上的窗口",
+          "label": "包含所有屏幕"
         },
         "show-caps-lock": {
           "description": "显示 Caps Lock 状态",

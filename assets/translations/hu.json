@@ -370,7 +370,7 @@
         "visualization-mode-wave": "Hullám",
         "visualization-mode-wave-rings": "Hullám + gyűrűk",
         "wave-thickness": "Hullámvastagság",
-        "widget-section": "Modul"
+        "widget-section": "Widget"
       },
       "state": {
         "grid-off": "Rács kikapcsolva",
@@ -519,18 +519,18 @@
       "calendar-google-connect-start-http": "Nem sikerült elindítani a Google-hitelesítést. Az OAuth bróker HTTP {status} kóddal tért vissza.",
       "calendar-google-connect-timeout": "A Google-hitelesítés túllépte az időkorlátot. Indítsd újra a kapcsolódást, amikor készen állsz a bejelentkezésre.",
       "dbus-disabled": "D-Bus értesítések letiltva",
-      "desktop-widgets-editor": "Modulszerkesztő",
-      "desktop-widgets-editor-enabled": "Az asztali modulszerkesztő be van kapcsolva. Válts egy üres munkaterületre, hogy lásd a szerkesztőfelületet.",
-      "greeter-sync": "Noctalia Üdvözlő",
+      "desktop-widgets-editor": "Widget-szerkesztő",
+      "desktop-widgets-editor-enabled": "Az asztali widget-szerkesztő be van kapcsolva. Válts egy üres munkaterületre, hogy lásd a szerkesztőfelületet.",
+      "greeter-sync": "Noctalia Greeter",
       "greeter-sync-success": "Megjelenés szinkronizálva. A változások a következő bejelentkezési képernyőn lépnek érvénybe.",
       "keybind-app": "Noctalia",
       "keybind-invalid-modifier": "Ez a gyorsbillentyű egyetlen billentyűt fogad el módosítók nélkül.",
       "keybind-invalid-printable": "A nyomtatható billentyűk (betűk, számok, szimbólumok) módosító billentyűt igényelnek, mint például a Ctrl vagy az Alt.",
       "keybind-invalid-super": "A Super/Windows billentyű nem használható shell gyorsbillentyűkben.",
       "keybind-invalid-title": "Gyorsbillentyű nem engedélyezett",
-      "lockscreen-widgets-editor": "Zárolási képernyő modulszerkesztő",
-      "lockscreen-widgets-editor-blocked-locked": "Oldd fel a munkamenetet, mielőtt szerkesztenéd a zárolási képernyő moduljait.",
-      "lockscreen-widgets-editor-enabled": "A zárolási képernyő modulszerkesztője be van kapcsolva. Rendezd el a modulokat az előnézeti átfedésen, majd zárold a munkamenetet az elrendezés ellenőrzéséhez.",
+      "lockscreen-widgets-editor": "Zárolási képernyő widget-szerkesztő",
+      "lockscreen-widgets-editor-blocked-locked": "Oldd fel a munkamenetet, mielőtt szerkesztenéd a zárolási képernyő widgeteit.",
+      "lockscreen-widgets-editor-enabled": "A zárolási képernyő widget-szerkesztője be van kapcsolva. Rendezd el a widgeteket az előnézeti átfedésen, majd zárold a munkamenetet az elrendezés ellenőrzéséhez.",
       "mpris-disabled": "MPRIS letiltva",
       "session-bus-unavailable": "A munkamenet-busz nem érhető el",
       "wallpaper-palette-export": "Egyéni paletta",
@@ -688,79 +688,79 @@
         "rename-save": "Mentés"
       },
       "widget": {
-        "add": "Modul hozzáadása",
+        "add": "Widget hozzáadása",
         "detail": {
-          "custom": "egyéni modul"
+          "custom": "egyéni widget"
         },
         "editor": {
-          "description": "Modulok elrendezése a sáv sávjain",
-          "title": "Sávmodulok"
+          "description": "Widgetek elrendezése a sáv sávjain",
+          "title": "Sávwidgetek"
         },
         "group": {
           "action": "Csoport",
           "border": "Szegély",
-          "border-description": "A kapszula körvonalának színszerepe; hagyd Alapértelmezett értéken, ha nem szeretnél körvonalat",
+          "border-description": "A kapszula körvonalának színszerepe; hagyd alapértelmezetten, ha nem szeretnél körvonalat",
           "clear": "Törlés",
           "edit": "Stílus szerkesztése",
           "fill": "Háttér",
-          "fill-description": "Kapszula háttérszín szerepe; fix hex színek is támogatottak",
+          "fill-description": "A kapszula háttérszín szerepe; fix hexadecimális színek is támogatottak",
           "foreground": "Előtér",
-          "foreground-description": "Az ikon és a felirat színszerepe az ebben a csoportban lévő widgetekhez",
-          "hint": "Egy kapszula csoport része",
-          "members": "{count} vezérlő",
+          "foreground-description": "A csoportban lévő widgetek ikonjának és feliratának színszerepe",
+          "hint": "Egy kapszulacsoport része",
+          "members": "{count} widget",
           "opacity": "Átlátszatlanság",
-          "opacity-description": "Kapszula háttér átlátszatlansága",
+          "opacity-description": "Kapszula háttérének átlátszósága",
           "orphan": "Ismeretlen csoport",
           "padding": "Kitöltés",
-          "padding-description": "A kapszula széle és a widgetjei közötti belső kitöltés, képpontokban",
+          "padding-description": "A kapszula széle és a widgetjei közötti belső margó, képpontban megadva",
           "radius": "Sugár",
-          "radius-description": "Capsule sarokrádiusza képpontokban; az Automatikus örökli a Bar Capsule rádiuszát",
+          "radius-description": "A kapszula sarokkerekítése képpontban; az „Automatikus” beállítás örökli a sáv kapszulasugarát",
           "selected": "{count} kiválasztva",
           "style": "Stílus",
-          "title": "Kapszula csoport",
-          "ungroup": "Szétcsoportosítás"
+          "title": "Kapszulacsoport",
+          "ungroup": "Csoport bontása"
         },
         "inspector": {
-          "add-instance-title": "Új elnevezett {widget} widget hozzáadása a {lane} sávhoz",
-          "add-title": "Minialkalmazás hozzáadása a {lane}hez",
-          "move-to-lane": "Áthelyezés ide: {lane}"
+          "add-instance-title": "Új elnevezett {widget} widget hozzáadása a(z) {lane} sávhoz",
+          "add-title": "Widget hozzáadása a(z) {lane} sávhoz",
+          "move-to-lane": "Áthelyezés a(z) {lane} sávba"
         },
         "instance": {
           "create-save": "Létrehozás",
           "delete": "Törlés",
-          "delete-confirm-desc": "Ez az elnevezett vezérlő el lesz távolítva minden sávról, és a beállításai elvetésre kerülnek.",
+          "delete-confirm-desc": "Ez az elnevezett widget minden sávból el lesz távolítva, a beállításai pedig elvesznek.",
           "delete-confirm-title": "Törlöd a(z) „{name}” elemet?",
-          "id-description": "Csak betűket, számokat, aláhúzásokat vagy kötőjeleket használj. Szóközök nélkül; egyedinek kell lennie.",
-          "id-placeholder": "Widget azonosító",
+          "id-description": "Csak betűket, számokat, aláhúzásokat vagy kötőjeleket használj. Szóköz nem megengedett, és a névnek egyedinek kell lennie.",
+          "id-placeholder": "Widget-azonosító",
           "rename": "Átnevezés",
           "rename-save": "Mentés"
         },
         "lanes": {
           "center": "Közép",
           "customize": "Testreszabás",
-          "empty": "Nincsenek vezérlők",
+          "empty": "Nincsenek widgetek",
           "empty-hint": "Adj hozzá egy widgetet, hogy kitöltsd ezt a sávot.",
           "end": "Vége",
-          "start": "Indítás"
+          "start": "Eleje"
         },
         "picker": {
-          "empty": "Nincsenek modulok",
-          "instance-description": "Elnevezett vezérlő a(z) {type} típushoz",
-          "instance-toggle": "Elnevezett Vezérlő",
+          "empty": "Nem találhatók widgetek",
+          "instance-description": "Elnevezett widget a(z) {type} típushoz",
+          "instance-toggle": "Elnevezett widget",
           "placeholder": "Widgetek keresése…"
         },
         "raw": {
           "delete": "Törlés",
-          "description": "Nem támogatott kulcsok maradtak meg a vezérlő konfigurációjából",
+          "description": "Nem támogatott kulcsok megőrizve a widget-konfigurációból",
           "title": "Nyers beállítások"
         },
         "settings": {
-          "empty": "Nincsenek a szűrőknek megfelelő beállítások.",
+          "empty": "Nincsenek a jelenlegi szűrőknek megfelelő beállítások.",
           "groups": {
             "grouping": "Csoportosítás",
             "presentation": "Megjelenítés",
-            "runtime": "Futásidő",
-            "widget": "Vezérlő"
+            "runtime": "Futási idő",
+            "widget": "Widget"
           }
         }
       }
@@ -773,12 +773,12 @@
         "rename": "Nem sikerült átnevezni a sávot."
       },
       "batch-write": "Néhány beállítást nem sikerült menteni.",
-      "export-config": "Nem sikerült menteni a konfiguráció exportot.",
-      "export-wallpaper-palette": "Nem sikerült menteni a háttérkép palettát egyéni palettaként.",
+      "export-config": "Nem sikerült menteni a konfigurációexportálást.",
+      "export-wallpaper-palette": "Nem sikerült elmenteni a háttérkép-palettát egyedi palettaként.",
       "monitor-override": {
         "create": "Nem sikerült létrehozni a monitor felülbírálást.",
-        "delete": "Nem sikerült törölni a monitor felülbírálását.",
-        "rename": "Nem sikerült átnevezni a monitor felülbírálását."
+        "delete": "Nem sikerült törölni a monitor-felülbírálást.",
+        "rename": "Nem sikerült átnevezni a monitor-felülbírálást."
       },
       "reset-page": "Nem sikerült visszaállítani néhány beállítást.",
       "support-report": "Nem sikerült menteni a támogatási jelentést.",
@@ -786,14 +786,14 @@
       "widget": {
         "rename": "Nem sikerült átnevezni az elnevezett widgetet."
       },
-      "write": "A beállítások mentése sikertelen."
+      "write": "Nem sikerült menteni a beállításokat."
     },
     "export-config": {
       "export": "Exportálás",
-      "full-effective-description": "Exportálja az összes aktív beállítást, beleértve a beépített alapértelmezéseket is; hasznos ellenőrzéshez vagy pillanatkép megosztásához, de explicit módon rögzíti az aktuális alapértelmezéseket",
-      "full-effective-save-title": "Teljes Aktuális Konfiguráció Mentése",
-      "full-effective-title": "Teljes Aktuális Konfiguráció",
-      "merged-user-description": "Egyesíti a konfigurációs fájlokat és a GUI felülírásokat egyetlen TOML fájlba; a beépített alapértelmezések implicit módon maradnak",
+      "full-effective-description": "Minden aktív beállítást exportál, a beépített alapértelmezéseket is beleértve. Hasznos az adatok ellenőrzéséhez vagy egy pillanatkép megosztásához, de rögzíti az aktuális alapértelmezett értékeket.",
+      "full-effective-save-title": "Teljes effektív konfiguráció mentése",
+      "full-effective-title": "Teljes effektív konfiguráció",
+      "merged-user-description": "Egyetlen TOML-fájlban egyesíti a konfigurációs fájlokat és a grafikus felületen megadott felülbírálásokat. A beépített alapértelmezések rejtve maradnak.",
       "merged-user-save-title": "Egyesített felhasználói konfiguráció mentése",
       "merged-user-title": "Egyesített felhasználói konfiguráció (Ajánlott)",
       "title": "Konfiguráció exportálása"
@@ -801,29 +801,29 @@
     "idle": {
       "behavior": {
         "add": "Viselkedés hozzáadása",
-        "command-label": "Üresjárati parancs",
-        "command-placeholder": "notify-send \"Idle\"",
+        "command-label": "Tétlenségi parancs",
+        "command-placeholder": "notify-send \"Tétlen\"",
         "kind": {
           "custom": "Egyéni",
           "lock": "Zárolás",
-          "lock-and-suspend": "Zárolás és Felfüggesztés",
-          "screen-off": "Képernyő ki",
+          "lock-and-suspend": "Zárolás és felfüggesztés",
+          "screen-off": "Képernyő kikapcsolása",
           "suspend": "Felfüggesztés"
         },
         "kind-section-label": "Művelet",
         "name-label": "Név",
         "name-placeholder": "Tétlenségi viselkedés",
-        "resume-command-label": "Folytatás parancs",
-        "resume-command-placeholder": "noctalia:dpms-bekapcsolva",
+        "resume-command-label": "Folytatási parancs",
+        "resume-command-placeholder": "noctalia:dpms-on",
         "summary": "{name} · {seconds} mp",
-        "summary-disabled-timeout": "{name} · időtúllépés kikapcsolva",
-        "timeout-label": "Időtúllépés másodpercek",
-        "unnamed": "Névtelen működés"
+        "summary-disabled-timeout": "{name} · időtúllépés letiltva",
+        "timeout-label": "Időtúllépés másodpercben",
+        "unnamed": "Névtelen viselkedés"
       },
       "live-status": {
         "active": "Aktív",
-        "idle-for-one": "Tétlen 1 másodpercig",
-        "idle-for-seconds": "Tétlen {seconds} másodperce"
+        "idle-for-one": "1 másodperce tétlen",
+        "idle-for-seconds": "{seconds} másodperce tétlen"
       }
     },
     "navigation": {
@@ -844,14 +844,14 @@
         "directories": "Könyvtárak",
         "effects": "Effektek",
         "filtering": "Szűrés",
-        "focus-styling": "Fókusz stílus",
+        "focus-styling": "Fókuszstílus",
         "formats": "Formátumok",
         "general": "Általános",
         "grouping": "Csoportosítás",
         "home": "Kezdőlap",
         "idle": "Tétlen",
         "interface": "Felület",
-        "keybinds": "Billentyűparancsok",
+        "keybinds": "Gyorsbillentyűk",
         "kinds": "Típusok",
         "launcher": "Indító",
         "layout": "Elrendezés",
@@ -861,48 +861,49 @@
         "media": "Média",
         "monitor": "Rendszerfigyelő",
         "monitor-polling": "Lekérdezési időközök",
-        "monitor-thresholds": "Kiemelési Küszöbértékek",
-        "monitors": "Monitorok",
+        "monitor-thresholds": "Kiemelési küszöbértékek",
+        "monitors": "Kijelzők",
         "motion": "Mozgás",
         "network": "Hálózat",
         "night-light": "Éjszakai fény",
         "notifications": "Értesítések",
-        "osd": "OSD",
+        "osd": "Képernyőkijelzés",
         "overview": "Áttekintés",
-        "pinned-apps": "Kitűzött alkalmazások",
-        "power": "Bekapcsolás",
-        "privacy-security": "Adatvédelem és Biztonság",
+        "pinned-apps": "Rögzített alkalmazások",
+        "power": "Energiagazdálkodás",
+        "privacy-security": "Adatvédelem és biztonság",
         "profile": "Profil",
-        "screen-corners": "Képernyő sarkok",
+        "screen-corners": "Képernyősarkok",
         "screen-time": "Képernyőidő",
-        "screenshot": "Képernyőfelvétel",
+        "screenshot": "Képernyőkép",
         "security": "Biztonság",
         "session-panel": "Munkamenet",
         "shape": "Alak",
         "system": "Rendszer",
         "theme": "Téma",
-        "toasts": "Toastok",
+        "toasts": "Felugró értesítések",
         "transition": "Átmenet",
         "user": "Felhasználó",
         "wallpaper": "Háttérkép",
         "weather": "Időjárás",
-        "widget-list": "Widget Lista",
+        "widget-list": "Widgetlista",
         "widgets": "Widgetek"
       },
       "sections": {
         "appearance": "Megjelenés",
         "backdrop": "Háttér",
-        "bar": "Állapotsáv",
+        "bar": "Sáv",
         "desktop": "Asztal",
         "dock": "Dokk",
-        "hooks": "Hookok",
+        "hooks": "Eseményindítók",
         "location": "Hely",
         "niri": "Niri",
         "notifications": "Értesítések",
-        "osd": "OSD",
+        "osd": "Képernyőkijelzés",
         "panels": "Panelek",
-        "popups": "Felugrók",
-        "power": "Energiakezelés",
+        "plugins": "Bővítmények",
+        "popups": "Felugró ablakok",
+        "power": "Energiagazdálkodás",
         "security": "Biztonság",
         "services": "Szolgáltatások",
         "shell": "Felület",
@@ -929,7 +930,7 @@
       "dock-launcher-position": {
         "end": "Vége",
         "none": "Nincs",
-        "start": "Indítás"
+        "start": "Eleje"
       },
       "edge": {
         "bottom": "Alul",
@@ -938,19 +939,19 @@
         "top": "Felül"
       },
       "font-weight": {
-        "bold": "Félkövér",
+        "bold": "Kövér",
         "book": "Könyv",
-        "default": "Alapértelmezett (bar)",
+        "default": "Alapértelmezett (sáv)",
         "heavy": "Vastag",
-        "light": "Világos",
+        "light": "Vékony",
         "medium": "Közepes",
         "regular": "Normál",
         "semi-bold": "Félkövér",
-        "semi-light": "Félvilágos",
-        "thin": "Vékony",
-        "ultra-bold": "Ultra Vastag",
+        "semi-light": "Félvékony",
+        "thin": "Hajszálvékony",
+        "ultra-bold": "Ultra félkövér",
         "ultra-heavy": "Ultra vastag",
-        "ultra-light": "Ultra világos"
+        "ultra-light": "Ultra vékony"
       },
       "layer": {
         "overlay": "Átfedés",
@@ -1015,7 +1016,7 @@
         }
       },
       "theme-role": {
-        "custom": "Egyedi…",
+        "custom": "Egyéni…",
         "default": "Alapértelmezett"
       },
       "wallpaper": {
@@ -1041,9 +1042,39 @@
       },
       "weather": {
         "unit": {
-          "imperial": "Birodalmi",
+          "imperial": "Angolszász",
           "metric": "Metrikus"
         }
+      }
+    },
+    "plugins": {
+      "plugins": {
+        "configure": "Beállítás",
+        "deprecated": "elavult",
+        "loading": "Bővítmények betöltése…",
+        "refreshing": "Bővítmények frissítése…",
+        "requires-newer-noctalia": "újabb Noctalia szükséges",
+        "title": "Bővítmények"
+      },
+      "sources": {
+        "add": "Forrás hozzáadása",
+        "add-title": "Bővítményforrás hozzáadása",
+        "edit": "Forrás szerkesztése",
+        "edit-title": "Bővítményforrás szerkesztése",
+        "kind": {
+          "git": "Git",
+          "path": "Útvonal"
+        },
+        "location-label": "Hely",
+        "location-placeholder-git": "https://github.com/én/noctalia-plugins",
+        "location-placeholder-path": "~/dev/noctalia-plugins",
+        "name-label": "Forrásazonosító",
+        "name-placeholder": "saját-bővítmények",
+        "remove": "Forrás eltávolítása",
+        "save": "Mentés",
+        "title": "Források",
+        "update": "Frissítés",
+        "update-on-startup": "Frissítés indításkor"
       }
     },
     "schema": {
@@ -1080,7 +1111,7 @@
         "custom-palette": {
           "description": "Válassz egy palettát innen: ~/.config/noctalia/palettes/",
           "label": "Egyéni Paletta",
-          "search-placeholder": "Keress egyedi palettákat…"
+          "search-placeholder": "Egyéni paletták keresése…"
         },
         "export-wallpaper-palette": {
           "button": "Mentés egyéni palettaként",
@@ -1171,8 +1202,8 @@
           "label": "Kapszula Sugár"
         },
         "center-widgets": {
-          "description": "Modulok a sáv közepén",
-          "label": "Középső modulok"
+          "description": "Widgetek a sáv közepén",
+          "label": "Középső widgetek"
         },
         "contact-shadow": {
           "description": "Sötét gradiens egy rögzített panel és a sáv között, hogy mélységet sugalljon az illesztésnél"
@@ -1208,7 +1239,7 @@
         },
         "end-widgets": {
           "description": "Widgetek a Bar végén (jobb/alsó oldalon)",
-          "label": "Végmodulok"
+          "label": "Záró widgetek"
         },
         "ends-margin": {
           "description": "Behúzás a sáv mindkét végénél, a főtengely mentén"
@@ -2043,7 +2074,7 @@
         "sync-greeter": {
           "button": "Szinkronizálás most",
           "description": "Másold az aktuális háttérképet és színeket a Noctalia Greeterbe (rendszergazdai jóváhagyás szükséges)",
-          "label": "Noctalia Üdvözlő"
+          "label": "Noctalia Greeter"
         },
         "telemetry": {
           "description": "Kis, anonim indítási pinget küld verzióval, OS-sel, kompozitorral, monitorfelbontásokkal, RAM-mal és UI skálával",

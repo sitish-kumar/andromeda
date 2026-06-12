@@ -1,4 +1,57 @@
 {
+  "auth": {
+    "pam": {
+      "authentication-failed": "Rasta din têk çû",
+      "start-failed": "Destpêkirina PAMê têk çû",
+      "user-unavailable": "Nikare bikarhênerê heyî çareser bike"
+    },
+    "polkit": {
+      "authenticate": "Rastandin",
+      "authenticating": "Tê rastandin...",
+      "default-message": "Rastandin pêdivî ye",
+      "invalid-password": "Borînpeyva nederbasdar ",
+      "password-placeholder": "Borînpyev",
+      "title": "Rastandin pêdivî ye "
+    }
+  },
+  "bar": {
+    "screenshot": {
+      "choose-display": "Dîmenderê hilbijêre",
+      "fullscreen": "Dîmendera tijî",
+      "region": "Herêmê hilbijêre"
+    },
+    "widgets": {
+      "active-window": {
+        "no-active-window": "Çarçoveya çalak tine ye "
+      },
+      "lock-keys": {
+        "caps": "CAPS",
+        "caps-short": "C",
+        "num": "Num",
+        "num-short": "N",
+        "scroll": "Scroll",
+        "scroll-short": "S"
+      },
+      "media": {
+        "nothing-playing": "Tiştek nayê lîstin",
+        "playing": "Tê lîstin"
+      },
+      "network": {
+        "wired": "Bi têl"
+      },
+      "scripted": {
+        "reload-failed": "Ji nû ve barkirina skrîptê têk çû"
+      },
+      "weather": {
+        "no-location": "Cih tine ye"
+      }
+    }
+  },
+  "clipboard": {
+    "entry": {
+      "image": "Wêne"
+    }
+  },
   "control-center": {
     "screen-time": {
       "range": {

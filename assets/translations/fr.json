@@ -889,7 +889,7 @@
         "power": "Alimentation",
         "privacy-security": "Confidentialité et Sécurité",
         "profile": "Profil",
-        "screen-corners": "Coins de l’écran",
+        "screen-corners": "Coins d’écran",
         "screen-time": "Temps d’écran",
         "screenshot": "Capture d'écran",
         "security": "Sécurité",
@@ -1221,13 +1221,169 @@
           "label": "Opacité de capsule"
         },
         "capsule-padding": {
-          "description": "Marges internes des capsules de widgets"
+          "description": "Marges internes des capsules de widgets",
+          "label": "Marges internes des capsules"
         },
         "capsule-radius": {
+          "description": "Rayon de coin par défaut pour les capsules de widgets, les pastilles d’espaces de travail et les groupes d’espaces de travail de la barre des tâches ; laissez vide pour une forme automatique en pastille, ou définissez 0 pour des coins carrés",
           "label": "Rayon de capsule"
+        },
+        "center-widgets": {
+          "description": "Widgets au centre de la barre",
+          "label": "Widgets centraux"
+        },
+        "contact-shadow": {
+          "description": "Dégradé sombre entre un panneau attaché et la barre"
+        },
+        "content-padding": {
+          "description": "Marges internes dans la zone de contenu de la barre",
+          "label": "Marges internes du contenu"
+        },
+        "content-scale": {
+          "description": "Facteur d’échelle du contenu de la barre",
+          "label": "Échelle du contenu"
+        },
+        "corner-bottom-left": {
+          "description": "Rayon du coin inférieur gauche de la barre"
+        },
+        "corner-bottom-right": {
+          "description": "Rayon du coin inférieur droit de la barre"
+        },
+        "corner-radius": {
+          "description": "Rayon des coins de la barre"
+        },
+        "corner-top-left": {
+          "description": "Rayon du coin supérieur gauche de la barre"
+        },
+        "corner-top-right": {
+          "description": "Rayon du coin supérieur droit de la barre"
+        },
+        "edge-margin": {
+          "description": "Distance par rapport au bord d’écran le plus proche ; des valeurs positives éloignent la barre du bord"
         },
         "enabled": {
           "description": "Afficher ou cacher cette barre"
+        },
+        "end-widgets": {
+          "description": "Widgets en fin (droite/bas) de la barre",
+          "label": "Widgets finaux"
+        },
+        "ends-margin": {
+          "description": "Décalage à chaque extrémité de la barre le long de son axe principal"
+        },
+        "font-weight": {
+          "description": "Poids par défaut des libellés de widgets sur cette barre.",
+          "label": "Poids de police"
+        },
+        "layer": {
+          "description": "Utiliser le mode de superposition pour afficher la barre au-dessus des applications en plein écran. Les panneaux attachés suivent la barre.",
+          "label": "Couche Wayland"
+        },
+        "panel-overlap": {
+          "description": "Nombre de pixels de chevauchement d’un panneau attaché sur le bord de la barre pour masquer la jonction (à ajuster si une ligne ou un espace apparaît)",
+          "label": "Chevauchement du panneau"
+        },
+        "position": {
+          "description": "Bord de l’écran où se situe la barre"
+        },
+        "reserve-space": {
+          "description": "Écarte les fenêtres du bord de la barre"
+        },
+        "shadow": {
+          "description": "Projeter l’ombre globale des surfaces depuis la barre"
+        },
+        "start-widgets": {
+          "description": "Widgets en début (gauche/haut) de la barre",
+          "label": "Widgets initaux"
+        },
+        "thickness": {
+          "description": "Épaisseur de la barre en pixels",
+          "label": "Épaisseur"
+        },
+        "widget-capsules": {
+          "description": "Encapsuler les widgets dans des arrière-plans de capsule",
+          "label": "Capsules de widgets"
+        },
+        "widget-color": {
+          "description": "Rôle de couleur par défaut des icônes et des libellés des widgets sur cette barre ; les couleurs hex fixes sont également prises en charge",
+          "label": "Couleur des widgets"
+        },
+        "widget-icon-color": {
+          "description": "Remplace la couleur des widgets pour les icônes sur cette barre ; les couleurs hex fixes sont également prises en charge",
+          "label": "Couleur des icônes des widgets"
+        },
+        "widget-spacing": {
+          "description": "Espacement entre les widgets de la barre",
+          "label": "Espacement des widgets"
+        }
+      },
+      "desktop": {
+        "screen-corners-enabled": {
+          "description": "Arrondir les coins de l’écran en noir",
+          "label": "Coins d'écran"
+        },
+        "screen-corners-size": {
+          "description": "Rayon des coins arrondis de l’écran en pixels",
+          "label": "Taille des coins"
+        },
+        "widgets": {
+          "description": "Afficher les widgets sur le bureau",
+          "label": "Widgets de bureau"
+        },
+        "widgets-editor": {
+          "button": "Afficher l'éditeur",
+          "description": "Ajouter, déplacer et redimensionner des widgets de bureau",
+          "label": "Éditeur de widgets"
+        }
+      },
+      "dock": {
+        "active-icon-opacity": {
+          "description": "Opacité de l’icône active du dock",
+          "label": "Opacité de l’icône active"
+        },
+        "active-icon-scale": {
+          "description": "Échelle de l’icône active du dock",
+          "label": "Échelle de l’icône active"
+        },
+        "active-monitor-only": {
+          "description": "Afficher uniquement les applications exécutées sur l’écran actif",
+          "label": "Écran actif uniquement"
+        },
+        "auto-hide": {
+          "description": "Masquer automatiquement le dock lorsqu’il n’est pas utilisé"
+        },
+        "background-opacity": {
+          "description": "Opacité de fond du dock"
+        },
+        "corner-bottom-left": {
+          "description": "Rayon du coin inférieur gauche du dock"
+        },
+        "corner-bottom-right": {
+          "description": "Rayon du coin inférieur droit du dock"
+        },
+        "corner-radius": {
+          "description": "Rayon des coins du dock"
+        },
+        "corner-top-left": {
+          "description": "Rayon du coin supérieur gauche du dock"
+        },
+        "corner-top-right": {
+          "description": "Rayon du coin supérieur droit du dock"
+        },
+        "cross-axis-padding": {
+          "description": "Marges internes sur l’axe transversal du dock (entre les icônes et le bord de l’écran)"
+        },
+        "edge-margin": {
+          "description": "Distance par rapport au bord d’écran le plus proche ; des valeurs positives éloignent le dock du bord"
+        },
+        "enabled": {
+          "description": "Afficher ou masquer le dock"
+        },
+        "ends-margin": {
+          "description": "Retrait à chaque extrémité du dock le long de son axe principal"
+        },
+        "icon-size": {
+          "label": "Taille des icônes"
         }
       }
     },

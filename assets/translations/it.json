@@ -782,7 +782,7 @@
           "empty": "Nessuna impostazione corrisponde ai filtri correnti.",
           "groups": {
             "grouping": "Raggruppamento",
-            "presentation": "Presentazione",
+            "presentation": "Visualizzazione",
             "runtime": "Runtime",
             "widget": "Widget"
           }
@@ -899,7 +899,7 @@
         "profile": "Profilo",
         "screen-corners": "Angoli schermo",
         "screen-time": "Tempo schermo",
-        "screenshot": "Schermata",
+        "screenshot": "Cattura schermo",
         "security": "Sicurezza",
         "session-panel": "Sessione",
         "shape": "Forma",
@@ -2734,7 +2734,7 @@
         "nightlight": "Luce notturna",
         "notifications": "Notifiche",
         "power-profile": "Profilo energetico",
-        "screenshot": "Schermata",
+        "screenshot": "Cattura schermo",
         "scripted": "Scriptato",
         "session": "Sessione",
         "settings": "Impostazioni",

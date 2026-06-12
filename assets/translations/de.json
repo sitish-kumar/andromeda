@@ -255,6 +255,11 @@
       "wifi": "Wi-Fi"
     },
     "system": {
+      "labels": {
+        "load": "CPU-Auslastung",
+        "ram": "RAM",
+        "swap": "Swap"
+      },
       "titles": {
         "cpu": "CPU",
         "gpu": "GPU",
@@ -262,6 +267,9 @@
         "network": "Netzwerk",
         "resources": "Ressourcen",
         "system": "System"
+      },
+      "tooltips": {
+        "load": "Durchschnittliche Auslastung über 1 / 5 / 15 Minuten"
       },
       "unknown": "unbekannt",
       "uptime-prefix": "Seit {uptime} · {osAge}"
@@ -1079,6 +1087,8 @@
       "sources": {
         "add": "Quelle hinzufügen",
         "add-title": "Plugin-Quelle hinzufügen",
+        "edit": "Quelle bearbeiten",
+        "edit-title": "Plugin-Quelle bearbeiten",
         "empty": "Keine Quellen konfiguriert.",
         "errors": {
           "duplicate-name": "Eine Quelle mit dieser ID existiert bereits.",
@@ -1096,6 +1106,7 @@
         "name-label": "Quell-ID",
         "name-placeholder": "my-plugins",
         "remove": "Quelle entfernen",
+        "save": "Speichern",
         "title": "Quellen",
         "update": "Aktualisieren",
         "update-on-startup": "Beim Start aktualisieren"
@@ -1219,7 +1230,7 @@
         },
         "capsule-padding": {
           "description": "Innenabstand in Widget-Kapseln",
-          "label": "Kapsel-Abstand"
+          "label": "Kapsel-Innenabstand"
         },
         "capsule-radius": {
           "description": "Standard-Eckradius für Widget-Kapseln, Workspace-Pillen und Taskbar-Workspace-Gruppen; leer lassen für automatische Pillenform oder 0 für eckige Ecken einstellen",
@@ -2306,6 +2317,10 @@
           "description": "Deckkraft des Symbols für das aktive (fokussierte) Fenster.",
           "label": "Aktive Symbol-Deckkraft"
         },
+        "album-art-only": {
+          "description": "Nur das runde Albumcover ohne den Titelnamen anzeigen",
+          "label": "Nur Albumcover"
+        },
         "anchor": {
           "description": "Dieses Widget als Anker für die mittlere Ausrichtung anheften",
           "label": "Anker"
@@ -2340,7 +2355,7 @@
         },
         "capsule-padding": {
           "description": "Innenabstand in der Kapsel",
-          "label": "Kapsel-Polsterung"
+          "label": "Kapsel-Innenabstand"
         },
         "capsule-radius": {
           "description": "Eckradius für diese Widget-Kapsel; leer lassen für automatische Pillenform; oder 0 für eckige Ecken setzen",
