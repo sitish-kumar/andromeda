@@ -662,7 +662,8 @@ void LockScreen::scheduleAutoAuthentication() {
 }
 
 bool LockScreen::fingerprintAuthLikelyAvailable() {
-  static const bool available = process::commandExists("fprintd");
+  // The fprintd D-Bus daemon is not on PATH; fprintd-verify is the usual CLI from the package.
+  static const bool available = process::commandExists("fprintd-verify");
   return available;
 }
 
