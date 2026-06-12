@@ -61,7 +61,8 @@ namespace settings {
 
       auto info = ui::column({.align = FlexAlign::Start, .gap = 2.0F * scale, .flexGrow = 1.0F});
       info->addChild(makeLabel(
-          pluginSourceDisplayName(source.name), Style::fontSizeBody * scale, ColorRole::OnSurface, FontWeight::Medium
+          pluginSourceDisplayName(source.name), Style::fontSizeBody * scale,
+          source.enabled ? ColorRole::OnSurface : ColorRole::OnSurfaceVariant, FontWeight::Medium
       ));
       const std::string kind = source.kind == PluginSourceKind::Git ? i18n::tr("settings.plugins.sources.kind.git")
                                                                     : i18n::tr("settings.plugins.sources.kind.path");
@@ -70,30 +71,13 @@ namespace settings {
       );
       r->addChild(std::move(info));
 
-      if (source.kind == PluginSourceKind::Git) {
-        auto autoUpdate = ui::row({.align = FlexAlign::Center, .gap = Style::spaceXs * scale});
-        autoUpdate->addChild(makeLabel(
-            i18n::tr("settings.plugins.sources.update-on-startup"), Style::fontSizeCaption * scale,
-            ColorRole::OnSurfaceVariant, FontWeight::Medium
-        ));
-        autoUpdate->addChild(
-            ui::toggle({
-                .checked = source.autoUpdate,
-                .toggleSize = ToggleSize::Small,
-                .scale = scale,
-                .onChange = [cb = ctx.setSourceAutoUpdate, source](bool on) {
-                  if (cb) {
-                    cb(source, on);
-                  }
-                },
-            })
-        );
-        r->addChild(std::move(autoUpdate));
+      if (source.enabled && source.kind == PluginSourceKind::Git) {
         r->addChild(
             ui::button({
-                .text = i18n::tr("settings.plugins.sources.update"),
-                .fontSize = Style::fontSizeCaption * scale,
-                .variant = ButtonVariant::Outline,
+                .glyph = "refresh",
+                .glyphSize = Style::fontSizeBody * scale,
+                .variant = ButtonVariant::Ghost,
+                .tooltip = i18n::tr("settings.plugins.sources.update"),
                 .onClick = [cb = ctx.updateSource, name = source.name]() {
                   if (cb) {
                     cb(name);
@@ -102,21 +86,30 @@ namespace settings {
             })
         );
       }
-      if (!isDefaultPluginSourceName(source.name)) {
-        r->addChild(
-            ui::button({
-                .glyph = "trash",
-                .glyphSize = Style::fontSizeBody * scale,
-                .variant = ButtonVariant::Ghost,
-                .tooltip = i18n::tr("settings.plugins.sources.remove"),
-                .onClick = [cb = ctx.removeSource, name = source.name]() {
-                  if (cb) {
-                    cb(name);
-                  }
-                },
-            })
-        );
-      }
+      r->addChild(
+          ui::button({
+              .glyph = "settings",
+              .glyphSize = Style::fontSizeBody * scale,
+              .variant = ButtonVariant::Ghost,
+              .tooltip = i18n::tr("settings.plugins.sources.edit"),
+              .onClick = [cb = ctx.editSource, source]() {
+                if (cb) {
+                  cb(source);
+                }
+              },
+          })
+      );
+      r->addChild(
+          ui::toggle({
+              .checked = source.enabled,
+              .scale = scale,
+              .onChange = [cb = ctx.setSourceEnabled, source](bool on) {
+                if (cb) {
+                  cb(source, on);
+                }
+              },
+          })
+      );
       return row;
     }
 

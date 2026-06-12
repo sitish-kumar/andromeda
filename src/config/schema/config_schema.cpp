@@ -341,6 +341,7 @@ namespace noctalia::config::schema {
           enumField(&PluginSourceConfig::kind, "kind", kPluginSourceKinds),
           field(&PluginSourceConfig::location, "location"),
           field(&PluginSourceConfig::autoUpdate, "auto_update"),
+          field(&PluginSourceConfig::enabled, "enabled"),
           finalize<PluginSourceConfig>([](PluginSourceConfig& src, std::string_view parentPath, Diagnostics& diag) {
             if (!src.name.empty() && !isValidPluginSourceName(src.name)) {
               diag.warn(

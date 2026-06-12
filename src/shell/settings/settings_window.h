@@ -135,9 +135,11 @@ private:
   void openCalendarAccountEditor(std::optional<std::string> accountId);
   void openWidgetInspectorEditor(std::vector<std::string> laneListPath, std::string widgetName);
   void openCapsuleGroupEditor(std::vector<std::string> laneListPath, std::string groupId);
-  void openPluginSourceCreateEditor();
+  void openPluginSourceCreateEditor(std::optional<PluginSourceConfig> existing = std::nullopt);
   void openPluginSettingsEditor(std::string pluginId);
-  void openBarWidgetEditorSheet(std::string title, std::function<void(Flex&)> populate);
+  void openBarWidgetEditorSheet(
+      std::string title, std::function<void(Flex&)> populate, std::function<void()> removeAction = nullptr
+  );
   void closeWidgetInspectorPopup();
   void refreshIdleLiveStatusText();
   void saveSupportReport();

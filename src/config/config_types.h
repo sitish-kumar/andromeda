@@ -1202,6 +1202,7 @@ struct PluginSourceConfig {
   std::string name;        // stable handle (also the clone subdir for git sources)
   std::string location;    // git URL or local path
   bool autoUpdate = false; // git-only, opt-in
+  bool enabled = true;     // disabled sources are not scanned; their clone is kept
   bool operator==(const PluginSourceConfig&) const = default;
 };
 

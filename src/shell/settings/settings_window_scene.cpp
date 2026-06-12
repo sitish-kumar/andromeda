@@ -528,20 +528,15 @@ void SettingsWindow::rebuildSettingsContent() {
                   requestSceneRebuild();
                 },
             .addSource = [this]() { openPluginSourceCreateEditor(); },
-            .setSourceAutoUpdate =
-                [this](PluginSourceConfig source, bool autoUpdate) {
-                  source.autoUpdate = autoUpdate;
+            .setSourceEnabled =
+                [this](PluginSourceConfig source, bool enabled) {
+                  source.enabled = enabled;
                   m_pluginManager->addSource(source);
                   markPluginListDirty();
                   requestSceneRebuild();
                 },
+            .editSource = [this](PluginSourceConfig source) { openPluginSourceCreateEditor(std::move(source)); },
             .updateSource = [this](std::string source) { m_pluginManager->update(std::move(source)); },
-            .removeSource =
-                [this](std::string source) {
-                  m_pluginManager->removeSource(std::move(source));
-                  markPluginListDirty();
-                  requestSceneRebuild();
-                },
             .refresh =
                 [this]() {
                   markPluginListDirty();

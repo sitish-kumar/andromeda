@@ -45,6 +45,8 @@ namespace {
     std::string name;
     std::string location;
     bool autoUpdate = false;
+    bool enabled = true;
+    bool editing = false;
     bool nameInvalid = false;
     bool locationInvalid = false;
     std::string error;
@@ -1106,7 +1108,9 @@ void SettingsWindow::openCalendarAccountEditor(std::optional<std::string> accoun
   );
 }
 
-void SettingsWindow::openBarWidgetEditorSheet(std::string title, std::function<void(Flex&)> populate) {
+void SettingsWindow::openBarWidgetEditorSheet(
+    std::string title, std::function<void(Flex&)> populate, std::function<void()> removeAction
+) {
   if (m_wayland == nullptr
       || m_renderContext == nullptr
       || m_surface == nullptr
@@ -1177,7 +1181,7 @@ void SettingsWindow::openBarWidgetEditorSheet(std::string title, std::function<v
   m_pendingEditorSheetNoGrab = false;
   m_editorSheetPopup->open(
       m_surface->xdgSurface(), output, grabSerial, m_surface->wlSurface(), m_surface->width(), m_surface->height(),
-      scale, std::move(title), nullptr, std::move(populate)
+      scale, std::move(title), std::move(removeAction), std::move(populate)
   );
 }
 
@@ -1224,200 +1228,237 @@ void SettingsWindow::openCapsuleGroupEditor(std::vector<std::string> laneListPat
   });
 }
 
-void SettingsWindow::openPluginSourceCreateEditor() {
-  DeferredCall::callLater([this]() {
+void SettingsWindow::openPluginSourceCreateEditor(std::optional<PluginSourceConfig> existing) {
+  DeferredCall::callLater([this, existing = std::move(existing)]() {
     if (m_config == nullptr || m_pluginManager == nullptr) {
       return;
     }
 
     auto draft = std::make_shared<PluginSourceDraft>();
-    openBarWidgetEditorSheet(i18n::tr("settings.plugins.sources.add-title"), [this, draft](Flex& body) {
-      const float scale = uiScale();
-      auto addField = [scale](Flex& parent, const std::string& label, std::unique_ptr<Node> control) {
-        auto field = ui::column({
-            .align = FlexAlign::Stretch,
-            .gap = Style::spaceXs * scale,
-        });
-        field->addChild(
-            ui::label({
-                .text = label,
-                .fontSize = Style::fontSizeCaption * scale,
-                .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                .fontWeight = FontWeight::Medium,
-            })
-        );
-        field->addChild(std::move(control));
-        parent.addChild(std::move(field));
+    if (existing.has_value()) {
+      draft->kind = existing->kind;
+      draft->name = existing->name;
+      draft->location = existing->location;
+      draft->autoUpdate = existing->autoUpdate;
+      draft->enabled = existing->enabled;
+      draft->editing = true;
+    }
+    const bool nameLocked = draft->editing;
+    const bool fieldsLocked = draft->editing && isDefaultPluginSourceName(draft->name);
+    const std::string title = draft->editing ? i18n::tr("settings.plugins.sources.edit-title")
+                                             : i18n::tr("settings.plugins.sources.add-title");
+
+    std::function<void()> removeAction;
+    if (draft->editing && !isDefaultPluginSourceName(draft->name)) {
+      removeAction = [this, name = draft->name]() {
+        if (m_pluginManager == nullptr) {
+          return;
+        }
+        m_pluginManager->removeSource(name);
+        markPluginListDirty();
+        markSettingsWriteSuccess(false);
+        if (m_editorSheetPopup != nullptr) {
+          m_editorSheetPopup->close();
+        }
+        requestSceneRebuild();
       };
+    }
 
-      if (!draft->error.empty()) {
-        body.addChild(
-            ui::label({
-                .text = draft->error,
-                .fontSize = Style::fontSizeCaption * scale,
-                .color = colorSpecFromRole(ColorRole::Error),
-                .fontWeight = FontWeight::Medium,
-            })
-        );
-      }
+    openBarWidgetEditorSheet(
+        title,
+        [this, draft, nameLocked, fieldsLocked](Flex& body) {
+          const float scale = uiScale();
+          auto addField = [scale](Flex& parent, const std::string& label, std::unique_ptr<Node> control) {
+            auto field = ui::column({
+                .align = FlexAlign::Stretch,
+                .gap = Style::spaceXs * scale,
+            });
+            field->addChild(
+                ui::label({
+                    .text = label,
+                    .fontSize = Style::fontSizeCaption * scale,
+                    .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+                    .fontWeight = FontWeight::Medium,
+                })
+            );
+            field->addChild(std::move(control));
+            parent.addChild(std::move(field));
+          };
 
-      addField(
-          body, i18n::tr("settings.plugins.sources.kind-label"),
-          ui::segmented({
-              .options =
-                  std::vector<ui::SegmentedOption>{
-                      {.label = i18n::tr("settings.plugins.sources.kind.git"), .glyph = "brand-git"},
-                      {.label = i18n::tr("settings.plugins.sources.kind.path"), .glyph = "folder"},
-                  },
-              .selectedIndex = pluginSourceKindIndex(draft->kind),
-              .scale = scale,
-              .equalSegmentWidths = true,
-              .onChange = [this, draft](std::size_t index) {
-                draft->kind = index == 1 ? PluginSourceKind::Path : PluginSourceKind::Git;
-                if (draft->kind == PluginSourceKind::Path) {
-                  draft->autoUpdate = false;
-                }
-                draft->error.clear();
-                if (m_editorSheetPopup != nullptr) {
-                  m_editorSheetPopup->rebuildBody();
-                }
-              },
-          })
-      );
+          if (!draft->error.empty()) {
+            body.addChild(
+                ui::label({
+                    .text = draft->error,
+                    .fontSize = Style::fontSizeCaption * scale,
+                    .color = colorSpecFromRole(ColorRole::Error),
+                    .fontWeight = FontWeight::Medium,
+                })
+            );
+          }
 
-      Input* nameInput = nullptr;
-      addField(
-          body, i18n::tr("settings.plugins.sources.name-label"),
-          ui::input({
-              .out = &nameInput,
-              .value = draft->name,
-              .placeholder = i18n::tr("settings.plugins.sources.name-placeholder"),
-              .invalid = draft->nameInvalid,
-              .onChange = [draft](const std::string& value) {
-                draft->name = value;
-                draft->nameInvalid = false;
-                draft->error.clear();
-              },
-          })
-      );
-
-      Input* locationInput = nullptr;
-      addField(
-          body, i18n::tr("settings.plugins.sources.location-label"),
-          ui::input({
-              .out = &locationInput,
-              .value = draft->location,
-              .placeholder = draft->kind == PluginSourceKind::Git
-                  ? i18n::tr("settings.plugins.sources.location-placeholder-git")
-                  : i18n::tr("settings.plugins.sources.location-placeholder-path"),
-              .invalid = draft->locationInvalid,
-              .onChange = [draft](const std::string& value) {
-                draft->location = value;
-                draft->locationInvalid = false;
-                draft->error.clear();
-              },
-          })
-      );
-
-      if (draft->kind == PluginSourceKind::Git) {
-        auto autoUpdate = ui::row({
-            .align = FlexAlign::Center,
-            .gap = Style::spaceSm * scale,
-            .fillWidth = true,
-        });
-        autoUpdate->addChild(
-            ui::label({
-                .text = i18n::tr("settings.plugins.sources.update-on-startup"),
-                .fontSize = Style::fontSizeCaption * scale,
-                .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-                .fontWeight = FontWeight::Medium,
-            })
-        );
-        autoUpdate->addChild(ui::spacer());
-        autoUpdate->addChild(
-            ui::toggle({
-                .checked = draft->autoUpdate,
-                .toggleSize = ToggleSize::Small,
-                .scale = scale,
-                .onChange = [draft](bool value) { draft->autoUpdate = value; },
-            })
-        );
-        body.addChild(std::move(autoUpdate));
-      }
-
-      auto actions = ui::row({
-          .align = FlexAlign::Center,
-          .justify = FlexJustify::End,
-          .gap = Style::spaceSm * scale,
-          .fillWidth = true,
-      });
-      actions->addChild(
-          ui::button({
-              .text = i18n::tr("common.actions.cancel"),
-              .fontSize = Style::fontSizeCaption * scale,
-              .variant = ButtonVariant::Default,
-              .onClick = [this]() {
-                if (m_editorSheetPopup != nullptr) {
-                  m_editorSheetPopup->close();
-                }
-              },
-          })
-      );
-      actions->addChild(
-          ui::button({
-              .text = i18n::tr("settings.plugins.sources.add"),
-              .glyph = "add",
-              .fontSize = Style::fontSizeCaption * scale,
-              .glyphSize = Style::fontSizeBody * scale,
-              .variant = ButtonVariant::Primary,
-              .onClick = [this, draft, nameInput, locationInput]() {
-                if (m_config == nullptr || m_pluginManager == nullptr) {
-                  return;
-                }
-                draft->name = StringUtils::trim(nameInput != nullptr ? nameInput->value() : draft->name);
-                draft->location =
-                    StringUtils::trim(locationInput != nullptr ? locationInput->value() : draft->location);
-                draft->nameInvalid = false;
-                draft->locationInvalid = false;
-                draft->error.clear();
-
-                if (!isValidPluginSourceName(draft->name)) {
-                  draft->nameInvalid = true;
-                  draft->error = i18n::tr("settings.plugins.sources.errors.invalid-name");
-                } else if (pluginSourceNameExists(m_config->config(), draft->name)) {
-                  draft->nameInvalid = true;
-                  draft->error = i18n::tr("settings.plugins.sources.errors.duplicate-name");
-                } else if (draft->location.empty()) {
-                  draft->locationInvalid = true;
-                  draft->error = i18n::tr("settings.plugins.sources.errors.location-required");
-                }
-
-                if (!draft->error.empty()) {
-                  if (m_editorSheetPopup != nullptr) {
-                    m_editorSheetPopup->rebuildBody();
-                  }
-                  return;
-                }
-
-                m_pluginManager->addSource(
-                    PluginSourceConfig{
-                        .kind = draft->kind,
-                        .name = draft->name,
-                        .location = draft->location,
-                        .autoUpdate = draft->kind == PluginSourceKind::Git && draft->autoUpdate,
+          addField(
+              body, i18n::tr("settings.plugins.sources.kind-label"),
+              ui::segmented({
+                  .options =
+                      std::vector<ui::SegmentedOption>{
+                          {.label = i18n::tr("settings.plugins.sources.kind.git"), .glyph = "brand-git"},
+                          {.label = i18n::tr("settings.plugins.sources.kind.path"), .glyph = "folder"},
+                      },
+                  .selectedIndex = pluginSourceKindIndex(draft->kind),
+                  .scale = scale,
+                  .enabled = !fieldsLocked,
+                  .equalSegmentWidths = true,
+                  .onChange = [this, draft](std::size_t index) {
+                    draft->kind = index == 1 ? PluginSourceKind::Path : PluginSourceKind::Git;
+                    if (draft->kind == PluginSourceKind::Path) {
+                      draft->autoUpdate = false;
                     }
-                );
-                markPluginListDirty();
-                markSettingsWriteSuccess(false);
-                if (m_editorSheetPopup != nullptr) {
-                  m_editorSheetPopup->close();
-                }
-                requestSceneRebuild();
-              },
-          })
-      );
-      body.addChild(std::move(actions));
-    });
+                    draft->error.clear();
+                    if (m_editorSheetPopup != nullptr) {
+                      m_editorSheetPopup->rebuildBody();
+                    }
+                  },
+              })
+          );
+
+          Input* nameInput = nullptr;
+          addField(
+              body, i18n::tr("settings.plugins.sources.name-label"),
+              ui::input({
+                  .out = &nameInput,
+                  .value = draft->name,
+                  .placeholder = i18n::tr("settings.plugins.sources.name-placeholder"),
+                  .invalid = draft->nameInvalid,
+                  .enabled = !nameLocked,
+                  .onChange = [draft](const std::string& value) {
+                    draft->name = value;
+                    draft->nameInvalid = false;
+                    draft->error.clear();
+                  },
+              })
+          );
+
+          Input* locationInput = nullptr;
+          addField(
+              body, i18n::tr("settings.plugins.sources.location-label"),
+              ui::input({
+                  .out = &locationInput,
+                  .value = draft->location,
+                  .placeholder = draft->kind == PluginSourceKind::Git
+                      ? i18n::tr("settings.plugins.sources.location-placeholder-git")
+                      : i18n::tr("settings.plugins.sources.location-placeholder-path"),
+                  .invalid = draft->locationInvalid,
+                  .enabled = !fieldsLocked,
+                  .onChange = [draft](const std::string& value) {
+                    draft->location = value;
+                    draft->locationInvalid = false;
+                    draft->error.clear();
+                  },
+              })
+          );
+
+          if (draft->kind == PluginSourceKind::Git) {
+            auto autoUpdate = ui::row({
+                .align = FlexAlign::Center,
+                .gap = Style::spaceSm * scale,
+                .fillWidth = true,
+            });
+            autoUpdate->addChild(
+                ui::label({
+                    .text = i18n::tr("settings.plugins.sources.update-on-startup"),
+                    .fontSize = Style::fontSizeCaption * scale,
+                    .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+                    .fontWeight = FontWeight::Medium,
+                })
+            );
+            autoUpdate->addChild(ui::spacer());
+            autoUpdate->addChild(
+                ui::toggle({
+                    .checked = draft->autoUpdate,
+                    .scale = scale,
+                    .onChange = [draft](bool value) { draft->autoUpdate = value; },
+                })
+            );
+            body.addChild(std::move(autoUpdate));
+          }
+
+          auto actions = ui::row({
+              .align = FlexAlign::Center,
+              .justify = FlexJustify::End,
+              .gap = Style::spaceSm * scale,
+              .fillWidth = true,
+          });
+          actions->addChild(
+              ui::button({
+                  .text = i18n::tr("common.actions.cancel"),
+                  .fontSize = Style::fontSizeCaption * scale,
+                  .variant = ButtonVariant::Default,
+                  .onClick = [this]() {
+                    if (m_editorSheetPopup != nullptr) {
+                      m_editorSheetPopup->close();
+                    }
+                  },
+              })
+          );
+          actions->addChild(
+              ui::button({
+                  .text = draft->editing ? i18n::tr("settings.plugins.sources.save")
+                                         : i18n::tr("settings.plugins.sources.add"),
+                  .glyph = draft->editing ? "device-floppy" : "add",
+                  .fontSize = Style::fontSizeCaption * scale,
+                  .glyphSize = Style::fontSizeBody * scale,
+                  .variant = ButtonVariant::Primary,
+                  .onClick = [this, draft, nameInput, locationInput]() {
+                    if (m_config == nullptr || m_pluginManager == nullptr) {
+                      return;
+                    }
+                    draft->name = StringUtils::trim(nameInput != nullptr ? nameInput->value() : draft->name);
+                    draft->location =
+                        StringUtils::trim(locationInput != nullptr ? locationInput->value() : draft->location);
+                    draft->nameInvalid = false;
+                    draft->locationInvalid = false;
+                    draft->error.clear();
+
+                    if (!isValidPluginSourceName(draft->name)) {
+                      draft->nameInvalid = true;
+                      draft->error = i18n::tr("settings.plugins.sources.errors.invalid-name");
+                    } else if (!draft->editing && pluginSourceNameExists(m_config->config(), draft->name)) {
+                      draft->nameInvalid = true;
+                      draft->error = i18n::tr("settings.plugins.sources.errors.duplicate-name");
+                    } else if (draft->location.empty()) {
+                      draft->locationInvalid = true;
+                      draft->error = i18n::tr("settings.plugins.sources.errors.location-required");
+                    }
+
+                    if (!draft->error.empty()) {
+                      if (m_editorSheetPopup != nullptr) {
+                        m_editorSheetPopup->rebuildBody();
+                      }
+                      return;
+                    }
+
+                    m_pluginManager->addSource(
+                        PluginSourceConfig{
+                            .kind = draft->kind,
+                            .name = draft->name,
+                            .location = draft->location,
+                            .autoUpdate = draft->kind == PluginSourceKind::Git && draft->autoUpdate,
+                            .enabled = draft->enabled,
+                        }
+                    );
+                    markPluginListDirty();
+                    markSettingsWriteSuccess(false);
+                    if (m_editorSheetPopup != nullptr) {
+                      m_editorSheetPopup->close();
+                    }
+                    requestSceneRebuild();
+                  },
+              })
+          );
+          body.addChild(std::move(actions));
+        },
+        std::move(removeAction)
+    );
   });
 }
 

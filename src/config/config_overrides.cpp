@@ -709,6 +709,9 @@ void ConfigService::addPluginSource(const PluginSourceConfig& source) {
     if (src.autoUpdate) {
       entry.insert_or_assign("auto_update", true);
     }
+    if (!src.enabled) {
+      entry.insert_or_assign("enabled", false);
+    }
     return entry;
   };
 

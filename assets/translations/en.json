@@ -1087,6 +1087,8 @@
       "sources": {
         "add": "Add source",
         "add-title": "Add plugin source",
+        "edit": "Edit source",
+        "edit-title": "Edit plugin source",
         "empty": "No sources configured.",
         "errors": {
           "duplicate-name": "A source with this ID already exists.",
@@ -1103,7 +1105,7 @@
         "location-placeholder-path": "~/dev/noctalia-plugins",
         "name-label": "Source ID",
         "name-placeholder": "my-plugins",
-        "remove": "Remove source",
+        "save": "Save",
         "title": "Sources",
         "update": "Update",
         "update-on-startup": "Update on startup"
