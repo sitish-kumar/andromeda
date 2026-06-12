@@ -1105,6 +1105,7 @@
         "location-placeholder-path": "~/dev/noctalia-plugins",
         "name-label": "Source ID",
         "name-placeholder": "my-plugins",
+        "remove": "Remove source",
         "save": "Save",
         "title": "Sources",
         "update": "Update",

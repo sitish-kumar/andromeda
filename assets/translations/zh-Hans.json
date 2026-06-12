@@ -255,6 +255,11 @@
       "wifi": "Wi-Fi"
     },
     "system": {
+      "labels": {
+        "load": "CPU 负载",
+        "ram": "RAM",
+        "swap": "Swap"
+      },
       "titles": {
         "cpu": "CPU",
         "gpu": "GPU",
@@ -262,6 +267,9 @@
         "network": "网络",
         "resources": "资源",
         "system": "系统"
+      },
+      "tooltips": {
+        "load": "1/5/15 分钟内的平均负载"
       },
       "unknown": "未知",
       "uptime-prefix": "已运行 {uptime} · {osAge}"
@@ -311,6 +319,8 @@
         "hide": "隐藏",
         "settings": "设置",
         "show": "显示",
+        "stack-back": "在后",
+        "stack-front": "在前",
         "trash": "删除"
       },
       "dialogs": {
@@ -334,6 +344,8 @@
         "clock-style-analog": "指针",
         "clock-style-digital": "数字",
         "color": "颜色",
+        "color-1": "颜色1",
+        "color-2": "颜色2",
         "color2": "颜色 2",
         "custom-color": "自定义...",
         "description": "描述",
@@ -711,7 +723,7 @@
         "group": {
           "action": "组合",
           "border": "边框",
-          "border-description": "胶囊边框的颜色角色；保持“默认”则不显示边框",
+          "border-description": "胶囊轮廓的颜色角色；保持“默认”则不显示边框",
           "clear": "清除",
           "edit": "编辑样式",
           "fill": "背景",
@@ -735,7 +747,7 @@
         "inspector": {
           "add-instance-title": "添加新的 {widget} 命名小组件到 {lane}",
           "add-title": "添加小组件到 {lane}",
-          "move-to-lane": "移动至 {lane}"
+          "move-to-lane": "移动至{lane}"
         },
         "instance": {
           "create-save": "创建",
@@ -842,7 +854,7 @@
       "groups": {
         "audio": "音频",
         "automation": "自动化",
-        "backdrop": "",
+        "backdrop": "Backdrop",
         "background": "背景",
         "battery": "电池",
         "behavior": "行为",
@@ -903,6 +915,7 @@
       },
       "sections": {
         "appearance": "外观",
+        "backdrop": "Backdrop",
         "bar": "状态栏",
         "desktop": "桌面",
         "dock": "Dock",
@@ -950,7 +963,7 @@
         "top": "顶部"
       },
       "font-weight": {
-        "bold": "粗体",
+        "bold": "Bold",
         "book": "正文",
         "default": "默认 (状态栏)",
         "heavy": "Heavy",
@@ -963,6 +976,10 @@
         "ultra-bold": "Ultra Bold",
         "ultra-heavy": "Ultra Heavy",
         "ultra-light": "Ultra Light"
+      },
+      "layer": {
+        "overlay": "Overlay",
+        "top": "Top"
       },
       "notification-urgency": {
         "critical": "紧急",
@@ -1070,6 +1087,8 @@
       "sources": {
         "add": "添加源",
         "add-title": "添加插件源",
+        "edit": "编辑源代码",
+        "edit-title": "编辑插件源代码",
         "empty": "未配置任何源。",
         "errors": {
           "duplicate-name": "已存在使用此 ID 的源。",
@@ -1087,6 +1106,7 @@
         "name-label": "源 ID",
         "name-placeholder": "my-plugins",
         "remove": "移除源",
+        "save": "保存",
         "title": "源",
         "update": "更新",
         "update-on-startup": "启动时更新"
@@ -1148,7 +1168,7 @@
           "label": "语言"
         },
         "palette-source": {
-          "description": "调色板的来源",
+          "description": "从何处获得调色板",
           "label": "调色板来源"
         },
         "theme-mode": {
@@ -1160,7 +1180,7 @@
           "label": "UI 缩放"
         },
         "wallpaper-generation-scheme": {
-          "description": "选择壁纸颜色转换为调色板的方式",
+          "description": "选择壁纸颜色转换为调色板的方案",
           "label": "壁纸生成方案"
         }
       },
@@ -1209,7 +1229,7 @@
           "label": "胶囊不透明度"
         },
         "capsule-padding": {
-          "description": "小组件胶囊的内部内边距",
+          "description": "小组件胶囊的内边距",
           "label": "胶囊内边距"
         },
         "capsule-radius": {
@@ -1275,7 +1295,7 @@
           "description": "状态栏所在的屏幕边缘"
         },
         "reserve-space": {
-          "description": "将窗口推离状态栏边缘"
+          "description": "为状态栏预留屏幕空间"
         },
         "shadow": {
           "description": "从状态栏投射全局表面阴影"
@@ -1297,6 +1317,7 @@
           "label": "小组件颜色"
         },
         "widget-icon-color": {
+          "description": "覆盖本状态栏上小组件图标的颜色角色；也支持固定的十六进制颜色",
           "label": "小组件图标颜色"
         },
         "widget-spacing": {
@@ -1319,7 +1340,7 @@
         },
         "widgets-editor": {
           "button": "切换编辑器",
-          "description": "添加、移动并调整桌面组件大小",
+          "description": "添加、移动并调整桌面小组件大小",
           "label": "桌面小组件编辑器"
         }
       },
@@ -1333,7 +1354,7 @@
           "label": "焦点图标缩放"
         },
         "active-monitor-only": {
-          "description": "只显示在当前显示器上运行的应用",
+          "description": "只显示当前显示器上运行的应用",
           "label": "仅限当前显示器"
         },
         "auto-hide": {
@@ -1402,7 +1423,7 @@
           "label": "放大比例"
         },
         "main-axis-padding": {
-          "description": "指针中心的最大图标缩放比例（1.0 为禁用放大）"
+          "description": "沿 Dock 主轴方向的内边距（图标和 Dock 两边之间）"
         },
         "monitors": {
           "description": "选择显示 Dock 的显示器（留空为全选）；活动显示器筛选规则将在所选显示器内生效",
@@ -1667,6 +1688,7 @@
           "label": "紧凑行"
         },
         "launcher-session-search": {
+          "description": "将会话菜单条目（锁定、挂起、重启、关机、注销）纳入启动器常规搜索范围，从而不需要添加 /session 前缀。",
           "label": "启用会话搜索"
         },
         "launcher-show-icons": {
@@ -1776,7 +1798,7 @@
           "label": "自动定位（IP）"
         },
         "longitude": {
-          "description": "日出/日落计划的手动经度，在自动定位和地址均关闭时使用",
+          "description": "日出/日落时间表的手动经度，在自动定位和地址解析关闭时使用",
           "label": "经度"
         },
         "mpris-blacklist": {
@@ -1843,8 +1865,8 @@
             "gpu-temp": "GPU 温度",
             "gpu-usage": "GPU 使用率",
             "gpu-vram": "GPU VRAM",
-            "network-rx": "下载",
-            "network-tx": "上传",
+            "network-rx": "网络下行",
+            "network-tx": "网络上行",
             "ram-usage": "RAM 使用率",
             "swap-usage": "交换空间使用率"
           },
@@ -2203,7 +2225,8 @@
           "label": "壁纸面板"
         },
         "per-monitor-directories": {
-          "description": "为每个显示器使用单独的壁纸文件夹"
+          "description": "为每个显示器使用单独的壁纸文件夹",
+          "label": "显示器独立壁纸目录"
         },
         "transition-duration": {
           "description": "壁纸切换动画的时长（毫秒）",
@@ -2232,7 +2255,12 @@
       "label-placeholder": "可选的按钮文字",
       "shortcut-label": "快捷键",
       "variant": {
-        "default": "默认"
+        "default": "默认",
+        "destructive": "破坏性",
+        "ghost": "无边框",
+        "outline": "仅边框",
+        "primary": "首要",
+        "secondary": "次要"
       },
       "variant-label": "按钮样式"
     },
@@ -2264,7 +2292,10 @@
         "icon-only": "仅图标",
         "id": "ID",
         "input": "输入",
+        "instance": "按位置",
         "name": "名称",
+        "net-rx": "网络下行",
+        "net-tx": "网络上行",
         "none": "无",
         "on-hover": "悬停时",
         "output": "输出",
@@ -2273,15 +2304,22 @@
         "screenshot-primary-fullscreen": "全屏",
         "screenshot-primary-region": "区域",
         "shared": "共享",
+        "short": "简短",
         "swap-percent": "交换百分比",
         "text": "文字",
         "text-only": "仅文字",
-        "workspace-label-centered": "居中"
+        "workspace-label-centered": "居中",
+        "workspace-label-corner": "角上",
+        "workspace-label-inside": "胶囊内部"
       },
       "settings": {
         "active-opacity": {
           "description": "活跃（焦点）窗口图标的不透明度。",
           "label": "焦点图标不透明度"
+        },
+        "album-art-only": {
+          "description": "只显示圆形的专辑封面，不显示曲目。",
+          "label": "仅专辑封面"
         },
         "anchor": {
           "description": "将此小组件固定为居中对齐锚点",
@@ -2296,31 +2334,50 @@
           "label": "频段"
         },
         "capsule": {
+          "description": "在本小组件背后绘制一个胶囊",
           "label": "胶囊"
         },
         "capsule-border": {
+          "description": "胶囊轮廓的颜色角色；也支持固定的十六进制颜色值",
           "label": "胶囊边框"
         },
         "capsule-fill": {
+          "description": "胶囊背景的颜色角色；也支持固定的十六进制颜色值",
           "label": "胶囊填充"
         },
         "capsule-foreground": {
+          "description": "胶囊内容的颜色角色；也支持固定的十六进制颜色",
           "label": "胶囊前景"
         },
         "capsule-opacity": {
+          "description": "胶囊背景的不透明度",
           "label": "胶囊不透明度"
         },
         "capsule-padding": {
+          "description": "此胶囊的内边距",
           "label": "胶囊内边距"
         },
         "capsule-radius": {
-          "label": "胶囊圆角半径"
+          "description": "小组件胶囊的圆角半径；空：自动；0：方角。",
+          "label": "胶囊圆角半径",
+          "taskbar-description": "小组件胶囊、工作区标签和工作区分组胶囊的圆角半径；空：自动；0：方角。",
+          "workspaces-description": "小组件胶囊和工作区胶囊的圆角半径；空：自动；0：方角。"
         },
         "centered": {
+          "description": "居中可视化条，不要边缘对齐。",
           "label": "居中"
         },
         "color": {
+          "description": "小组件图标和标签的颜色角色；也支持固定的十六进制颜色",
           "label": "颜色"
+        },
+        "color-1": {
+          "description": "可视化用的第一渐变色",
+          "label": "颜色1"
+        },
+        "color-2": {
+          "description": "可视化用的第二渐变色",
+          "label": "颜色2"
         },
         "command": {
           "description": "左键点击此按钮时执行的 Shell 命令",
@@ -2331,7 +2388,12 @@
           "dialog-title": "选择自定义图片",
           "label": "自定义图片"
         },
+        "custom-image-colorize": {
+          "description": "按“图标颜色”设置给自定义图片染色",
+          "label": "着色自定义图片"
+        },
         "custom-labels": {
+          "description": "将键盘布局名称映射为自定义标签",
           "label": "自定义标签"
         },
         "cycle-command": {
@@ -2364,9 +2426,11 @@
           "label": "抽屉列数"
         },
         "empty-color": {
+          "description": "空工作区的颜色角色；也支持固定的十六进制颜色",
           "label": "空工作区颜色"
         },
         "focused-color": {
+          "description": "当前工作区的颜色角色；也支持固定的十六进制颜色",
           "label": "焦点工作区颜色"
         },
         "font-weight": {
@@ -2382,6 +2446,7 @@
           "label": "图标"
         },
         "group-by-workspace": {
+          "description": "如果合成器支持，将任务栏图标分组为工作区胶囊。",
           "label": "按工作区分组"
         },
         "group-single-icon-per-app": {
@@ -2397,10 +2462,13 @@
           "label": "隐藏条目"
         },
         "hide-empty-workspaces": {
+          "description": "按工作区分组时，不显示没有窗口的胶囊。",
           "label": "隐藏空工作区"
         },
         "hide-when-empty": {
-          "label": "空时隐藏"
+          "description": "如果没有打开的窗口，隐藏工作区胶囊。",
+          "label": "空时隐藏",
+          "workspaces-description": "如果没有打开的窗口，隐藏工作区胶囊。"
         },
         "hide-when-full": {
           "description": "电池充满时隐藏电池小组件",
@@ -2439,6 +2507,7 @@
           "label": "热重载"
         },
         "icon-color": {
+          "description": "仅覆盖本小组件图标的颜色角色；也支持固定的十六进制颜色覆盖本状态栏上小组件图标的颜色角色；也支持固定的十六进制颜色",
           "label": "图标颜色"
         },
         "icon-size": {
@@ -2466,6 +2535,10 @@
           "description": "间隔长度（像素）",
           "label": "长度"
         },
+        "match-adjacent-spacing": {
+          "description": "加宽 Tray 图标的间距，使其看起来和相邻小组件的间距一致（包括胶囊内边距）。",
+          "label": "匹配相邻小组件的间距"
+        },
         "max-label-chars": {
           "description": "工作区名称显示的最大字符数",
           "label": "最大标签字符数",
@@ -2484,13 +2557,16 @@
           "label": "最小长度"
         },
         "minimal": {
-          "label": "极简样式"
+          "description": "只显示工作区ID或名字，不显示胶囊和动画。",
+          "label": "极简样式",
+          "workspaces-description": "只显示工作区标签，不显示胶囊背景和滑动动画。"
         },
         "mirrored": {
           "description": "将可视化围绕其中心镜像",
           "label": "镜像"
         },
         "occupied-color": {
+          "description": "非空工作区的颜色角色；也支持固定的十六进制颜色",
           "label": "已占用颜色"
         },
         "only-active-workspace": {
@@ -2502,7 +2578,9 @@
           "label": "路径"
         },
         "pill-scale": {
-          "label": "胶囊缩放"
+          "description": "调整工作区胶囊的大小",
+          "label": "胶囊缩放",
+          "workspaces-description": "调整工作区胶囊的大小"
         },
         "pinned": {
           "description": "启用抽屉模式时保持在状态栏中可见的 Tray 条目 ID",
@@ -2521,6 +2599,7 @@
           "label": "缩放"
         },
         "scope": {
+          "description": "是每个小组件有单独的脚本运行时，还是在所有状态栏上相同小组件ID共享一个运行时。",
           "label": "运行时范围"
         },
         "script": {
@@ -2532,6 +2611,7 @@
           "label": "向下滚动命令"
         },
         "scroll-step": {
+          "description": "每格鼠标滚轮对应的变化百分比",
           "label": "滚动步长"
         },
         "scroll-up-command": {
@@ -2543,6 +2623,7 @@
           "label": "活跃窗口指示器"
         },
         "show-all-outputs": {
+          "description": "包含所有显示器上的窗口",
           "label": "显示所有显示器"
         },
         "show-caps-lock": {
@@ -2554,6 +2635,7 @@
           "label": "显示天气状况"
         },
         "show-empty-label": {
+          "description": "在没有焦点窗口时，不要隐藏小组件，而是显示占位文字。",
           "label": "显示空标签"
         },
         "show-icon": {
@@ -2581,6 +2663,7 @@
           "label": "显示窗口标题"
         },
         "show-workspace-label": {
+          "description": "在分组胶囊上显示工作区标签。若关闭，则分组只包含图标。",
           "label": "工作区胶囊标签"
         },
         "stat": {
@@ -2624,10 +2707,11 @@
           "label": "窗口标题最大宽度"
         },
         "workspace-group-capsule": {
-          "description": "",
+          "description": "在每个工作区分组周围绘制背景和边框。若关闭，则只有图标分组和工作区标签。",
           "label": "工作区分组胶囊"
         },
         "workspace-label-placement": {
+          "description": "角上 / 居中 / 胶囊内部",
           "label": "工作区标签位置"
         }
       },
@@ -2738,7 +2822,7 @@
   },
   "tray": {
     "menu": {
-      "empty": "",
+      "empty": "无",
       "pin": "固定",
       "unpin": "取消固定"
     }
@@ -2797,7 +2881,7 @@
       "favorite-palette-label": "颜色",
       "favorite-theme-label": "主题",
       "filter-placeholder": "筛选...",
-      "flatten": "平铺显示",
+      "flatten": "展开嵌套",
       "no-directory-configured": "未配置目录",
       "sort-date-asc": "按日期排序（最旧优先）",
       "sort-date-desc": "按日期排序（最新优先）",
@@ -2836,7 +2920,8 @@
       }
     },
     "errors": {
-      "fetch-failed": "天气获取失败"
+      "fetch-failed": "天气获取失败",
+      "parse-weather": "无法解析天气数据"
     }
   },
   "window-switcher": {

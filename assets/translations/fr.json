@@ -640,6 +640,7 @@
       "password-keep-placeholder": "Laissez vide pour conserver le mot de passe actuel",
       "password-label": "Mot de passe de l'application",
       "password-placeholder": "Mot de passe spécifique à l’application",
+      "password-save-error": "Impossible d’enregistrer le mot de passe du compte de calendrier.",
       "provider": {
         "custom": "CalDAV",
         "google": "Google",
@@ -766,6 +767,7 @@
         },
         "raw": {
           "delete": "Supprimer",
+          "description": "Les clés non prises en charge ont été conservées.",
           "title": "Paramètres bruts"
         },
         "settings": {
@@ -816,7 +818,7 @@
       "behavior": {
         "add": "Ajouter un comportement",
         "command-label": "Commande en inactivité",
-        "command-placeholder": "",
+        "command-placeholder": "notify-send \"Idle\"",
         "kind": {
           "custom": "Personnalisé",
           "lock": "Verrouiller",
@@ -859,6 +861,7 @@
         "effects": "Effets",
         "filtering": "Filtrage",
         "focus-styling": "Style du focus",
+        "formats": "Formats",
         "general": "Général",
         "grouping": "Regroupement",
         "home": "Accueil",
@@ -1066,18 +1069,173 @@
         "deprecated": "Déprécié",
         "empty": "Aucun plugin trouvé. Ajoutez une source ou vérifiez votre connexion.",
         "loading": "Chargement des plugins…",
-        "refreshing": "Actualisation des plugins…"
+        "refreshing": "Actualisation des plugins…",
+        "requires-newer-noctalia": "Nécessite une version plus récente de Noctalia",
+        "title": "Plugins"
+      },
+      "settings": {
+        "empty": "Aucun paramètre disponible."
+      },
+      "sources": {
+        "add": "Ajouter une source",
+        "add-title": "Ajouter une source de plugins",
+        "edit": "Éditer la source",
+        "edit-title": "Éditer la source du plugin",
+        "empty": "Aucune source configurée.",
+        "errors": {
+          "duplicate-name": "Une source avec cet identifiant existe déjà.",
+          "invalid-name": "L’identifiant de la source doit utiliser uniquement des lettres, chiffres, « . », « _ » ou « - », et commencer par une lettre ou un chiffre.",
+          "location-required": "L’emplacement de la source est obligatoire."
+        },
+        "kind": {
+          "git": "Git",
+          "path": "Chemin"
+        },
+        "kind-label": "Type",
+        "location-label": "Localisation",
+        "location-placeholder-git": "https://github.com/me/noctalia-plugins",
+        "location-placeholder-path": "~/dev/noctalia-plugins",
+        "name-label": "Identifiant de la source",
+        "name-placeholder": "my-plugins",
+        "remove": "Retirer la source",
+        "save": "Sauvegarder",
+        "title": "Sources",
+        "update": "Mettre à jour",
+        "update-on-startup": "Mettre à jour au démarrage"
       }
     },
     "schema": {
       "appearance": {
+        "animation-speed": {
+          "description": "Multiplicateur de vitesse pour toutes les animations",
+          "label": "Vitesse de l'animation"
+        },
+        "animations": {
+          "description": "Activer ou désactiver les animations de l’interface",
+          "label": "Animations"
+        },
+        "app-icon-color": {
+          "description": "Couleur de palette utilisée pour coloriser les icônes d’application",
+          "label": "Couleur des icônes d’application"
+        },
         "app-icon-colorize": {
+          "description": "Recoloriser les icônes d’application dans toute l’interface pour les adapter à la palette active",
           "label": "Coloriser les icônes d'application"
+        },
+        "builtin-palette": {
+          "description": "Choisir une palette dans la liste pré-intégré",
+          "label": "Palette intégrée"
+        },
+        "community-palette": {
+          "description": "Choisir une palette dans le catalogue communautaire",
+          "label": "Palette communautaire",
+          "search-placeholder": "Chercher des palettes..."
+        },
+        "corner-roundness": {
+          "description": "Appliquer une mise à l’échelle du rayon des coins sur les conteneurs et contrôles de l’interface",
+          "label": "Arrondi des coins"
+        },
+        "custom-palette": {
+          "description": "Choisir une palette depuis ~/.config/noctalia/palettes/",
+          "label": "Palette personnalisée",
+          "search-placeholder": "Chercher des palettes personnalisées..."
+        },
+        "export-wallpaper-palette": {
+          "button": "Enregistrer comme palette personnalisée",
+          "description": "Enregistrer la palette générée à partir du fond d’écran comme fichier de palette réutilisable",
+          "label": "Exporter la palette du fond d’écran"
+        },
+        "font-family": {
+          "description": "Famille de police pour l’interface",
+          "label": "Famille de police"
+        },
+        "global-shadow-alpha": {
+          "description": "Opacité globale des ombres de surface"
+        },
+        "global-shadow-direction": {
+          "description": "Direction de l’ombre projetée par les surfaces"
+        },
+        "language": {
+          "description": "Remplacer la détection automatique de la langue",
+          "label": "Langue"
+        },
+        "palette-source": {
+          "description": "Source de génération de la palette de couleurs",
+          "label": "Source de la palette"
+        },
+        "theme-mode": {
+          "description": "Choisir sombre, clair ou automatique selon l’heure de la journée",
+          "label": "Mode du thème"
+        },
+        "ui-scale": {
+          "description": "Ajuster la taille globale de l’interface",
+          "label": "Échelle de l’interface"
+        },
+        "wallpaper-generation-scheme": {
+          "description": "Choisir comment les couleurs du fond d’écran sont converties en palette",
+          "label": "Schéma de génération du fond d’écran"
+        }
+      },
+      "backdrop": {
+        "blur-intensity": {
+          "description": "Intensité du flou de l’arrière-plan",
+          "label": "Intensité du flou"
+        },
+        "enabled": {
+          "description": "Activer l’arrière-plan"
+        },
+        "tint-intensity": {
+          "description": "Intensité de la teinte de l’arrière-plan",
+          "label": "Intensité de la teinte"
+        }
+      },
+      "bar": {
+        "auto-hide": {
+          "description": "Masquer automatiquement la barre lorsqu’elle n’est pas utilisée"
+        },
+        "background-opacity": {
+          "description": "Opacité de fond de la barre"
+        },
+        "border": {
+          "description": "Rôle de couleur pour le contour de la barre ; les couleurs hex fixes sont également prises en charge",
+          "label": "Bordure"
+        },
+        "border-width": {
+          "description": "Largeur du contour interne de la barre",
+          "label": "Largeur de la bordure"
+        },
+        "capsule-border": {
+          "description": "Rôle de couleur par défaut du contour de capsule ; les couleurs hex fixes sont également prises en charge",
+          "label": "Bordure de capsule"
+        },
+        "capsule-fill": {
+          "description": "Rôle de couleur par défaut de l’arrière-plan de capsule ; les couleurs hex fixes sont également prises en charge",
+          "label": "Remplissage de capsule"
+        },
+        "capsule-foreground": {
+          "description": "Rôle de couleur par défaut des icônes et des libellés à l’intérieur des capsules ; les couleurs hex fixes sont également prises en charge",
+          "label": "Premier plan de capsule"
+        },
+        "capsule-opacity": {
+          "description": "Opacité des arrière-plans des capsules de widgets",
+          "label": "Opacité de capsule"
+        },
+        "capsule-padding": {
+          "description": "Marges internes des capsules de widgets"
+        },
+        "capsule-radius": {
+          "label": "Rayon de capsule"
+        },
+        "enabled": {
+          "description": "Afficher ou cacher cette barre"
         }
       }
     },
     "widgets": {
       "settings": {
+        "stat": {
+          "label": "Stats"
+        },
         "type": {
           "label": "Type"
         },
@@ -1094,6 +1252,8 @@
         "battery": "Batterie",
         "bluetooth": "Bluetooth",
         "brightness": "Luminosité",
+        "caffeine": "Caféine",
+        "clipboard": "Presse-papiers",
         "clock": "Horloge",
         "control-center": "Centre de contrôle",
         "custom-button": "Bouton personnalisé",
@@ -1112,12 +1272,14 @@
         "sysmon": "Moniteur système",
         "taskbar": "Barre des tâches",
         "test": "Test",
+        "theme-mode": "Mode du thème",
         "volume": "Volume",
         "wallpaper": "Fond d'écran",
         "weather": "Météo"
       }
     },
     "window": {
+      "export-config": "Exporter la configuration...",
       "filter-modified": "Modifié",
       "native-title": "Paramètres Noctalia",
       "no-results": "Pas de paramètre trouvé",
@@ -1129,6 +1291,7 @@
   },
   "setup-wizard": {
     "browse": "Chercher",
+    "builtin-palette": "Palette intégrée",
     "footer-note": "Vous pourrez les changer plus tard dans les paramètres.",
     "get-started": "Commencer",
     "mode": "Mode",
@@ -1149,13 +1312,21 @@
   "time": {
     "duration": {
       "days-hours-minutes": "{jours}j {heures}h {minutes}m",
-      "hours-minutes": "{heures}h {minutes}m"
+      "hours-minutes": "{heures}h {minutes}m",
+      "less-than-minute": "<1m",
+      "minutes": "{minutes}m"
     },
     "file": {
       "unknown": "Inconnu"
     },
     "relative": {
-      "just-now": "À l'instant"
+      "days-ago": "il y a {count} jour",
+      "days-ago-plural": "il y a {count} jours",
+      "hours-ago": "il y a {count} heure",
+      "hours-ago-plural": "il y a {count} heures",
+      "just-now": "À l'instant",
+      "minutes-ago": "il y a {count} minute",
+      "minutes-ago-plural": "il y a {count} minutes"
     }
   },
   "tray": {
@@ -1205,8 +1376,9 @@
         }
       },
       "glyph-picker": {
-        "all-categories": "Toutes",
-        "search-placeholder": "Chercher des glyphes"
+        "all-categories": "Tous",
+        "search-placeholder": "Chercher des glyphes",
+        "title": "Choisir un glyphe"
       }
     }
   },
@@ -1215,7 +1387,7 @@
       "all-monitors": "TOUS",
       "color-title": "Couleur du fond d'écran",
       "favorite-palette-label": "Couleurs",
-      "favorite-theme-label": "Theme",
+      "favorite-theme-label": "Thème",
       "filter-placeholder": "Filtre...",
       "flatten": "Aplati",
       "no-directory-configured": "Pas de dossier configuré",
@@ -1259,5 +1431,9 @@
       "fetch-failed": "Échec du chargement météo",
       "parse-weather": "Impossible d'analyser la réponse météo"
     }
+  },
+  "window-switcher": {
+    "empty": "Pas de fenêtre ouverte",
+    "title": "Fenêtres"
   }
 }
