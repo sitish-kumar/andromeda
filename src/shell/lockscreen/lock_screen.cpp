@@ -716,8 +716,13 @@ void LockScreen::scheduleAutoAuthentication() {
 bool LockScreen::fingerprintAuthLikelyAvailable() { return fprintd::isAvailable(); }
 
 std::string LockScreen::passwordPamService() {
-  // When login stacks pam_fprintd before pam_unix (e.g. NixOS fprintAuth), use su if present.
-  if (fingerprintAuthLikelyAvailable() && PamAuthenticator::pamServiceExists("su")) {
+  if (!fingerprintAuthLikelyAvailable()) {
+    return "login";
+  }
+  if (PamAuthenticator::pamServiceExists("noctalia-lock")) {
+    return "noctalia-lock";
+  }
+  if (PamAuthenticator::pamServiceExists("su")) {
     return "su";
   }
   return "login";
