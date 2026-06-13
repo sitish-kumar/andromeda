@@ -25,6 +25,11 @@ endif
 # pipewire_lsan.cpp is only needed when address sanitizer is active.
 sanitize = get_option('b_sanitize') != 'none'
 
+# Tests build by default for every non-release buildtype; release skips them
+# unless explicitly enabled (-Dtests=enabled).
+tests_opt = get_option('tests')
+build_tests = tests_opt.enabled() or (tests_opt.auto() and get_option('buildtype') != 'release')
+
 # ── Release-only optimizations ────────────────────────────────────────────────
 if get_option('buildtype') == 'release'
   add_project_arguments(
@@ -875,6 +880,8 @@ install_subdir('assets',
   install_dir: get_option('datadir') / 'noctalia',
 )
 
+if build_tests
+
 notification_history_utf8_test = executable('notification_history_utf8_test',
   sources: files(
     'tests/notification_history_utf8_test.cpp',
@@ -1243,3 +1250,5 @@ wayland_toplevels_identity_test = executable('wayland_toplevels_identity_test',
 )
 
 test('wayland_toplevels_identity', wayland_toplevels_identity_test)
+
+endif # build_tests

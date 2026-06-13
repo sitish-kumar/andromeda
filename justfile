@@ -39,6 +39,16 @@ _ensure-configured m=mode:
 run m=mode: (build m)
     ./build-{{m}}/noctalia
 
+# Build (forcing tests on, even for release) and run the unit tests.
+test m=mode *args: (_ensure-configured m)
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Plain reconfigure first so build dirs predating the 'tests' option learn it,
+    # then force it on (covers release, where it defaults off).
+    meson setup "build-{{m}}" --reconfigure >/dev/null
+    meson setup "build-{{m}}" -Dtests=enabled --reconfigure >/dev/null
+    meson test -C build-{{m}} {{args}}
+
 install m:
     #!/usr/bin/env bash
     set -euo pipefail
