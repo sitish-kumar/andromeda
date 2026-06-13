@@ -8,7 +8,7 @@ struct MprisOsdData {
   std::string Title;
   std::string Artist;
 
-  bool operator ==(const MprisOsdData& d) const { return d.Artist == Artist && d.Title == Title; }
+  bool operator==(const MprisOsdData& d) const { return d.Artist == Artist && d.Title == Title; }
 };
 
 class MprisOsd {

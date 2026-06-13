@@ -10,8 +10,8 @@ OsdContent makeMprisContent(const MprisOsdData& data) {
   return OsdContent{
       .kind = OsdKind::Mpris,
       .icon = "music",
-      .value = data.Title,
-      .value2 = data.Artist,
+      .value = data.Title + "-" + data.Artist,
+      .showProgress = false,
   };
 }
 void MprisOsd::onMprisChanged(const MprisService& service) {
