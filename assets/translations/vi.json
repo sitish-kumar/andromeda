@@ -2839,11 +2839,8 @@
     "panel": {
       "all-monitors": "Tất cả",
       "color-title": "Màu hình nền",
-      "favorite-palette-label": "Màu sắc",
-      "favorite-theme-label": "Chủ đề",
       "filter-placeholder": "Lọc...",
       "flatten": "Làm phẳng",
-      "no-directory-configured": "Chưa cấu hình thư mục",
       "sort-date-asc": "Sắp xếp theo ngày (cũ nhất trước)",
       "sort-date-desc": "Sắp xếp theo ngày (mới nhất trước)",
       "sort-name-asc": "Sắp xếp theo tên (A-Z)",

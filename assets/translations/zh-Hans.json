@@ -2878,11 +2878,8 @@
     "panel": {
       "all-monitors": "全部",
       "color-title": "壁纸颜色",
-      "favorite-palette-label": "颜色",
-      "favorite-theme-label": "主题",
       "filter-placeholder": "筛选...",
       "flatten": "展开嵌套",
-      "no-directory-configured": "未配置目录",
       "sort-date-asc": "按日期排序（最旧优先）",
       "sort-date-desc": "按日期排序（最新优先）",
       "sort-name-asc": "按名称排序（A-Z）",

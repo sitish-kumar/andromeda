@@ -2779,11 +2779,8 @@
     "panel": {
       "all-monitors": "УСІ",
       "color-title": "Колір шпалер",
-      "favorite-palette-label": "Кольори",
-      "favorite-theme-label": "Тема",
       "filter-placeholder": "Фільтр...",
       "flatten": "Згладити",
-      "no-directory-configured": "Не налаштовано жодної директорії",
       "sort-date-asc": "Сортувати за датою (спочатку найстаріші)",
       "sort-date-desc": "Сортувати за датою (спочатку новіші)",
       "sort-name-asc": "Сортувати за назвою (А-Я)",

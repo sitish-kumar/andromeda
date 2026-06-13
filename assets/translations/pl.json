@@ -2822,11 +2822,8 @@
     "panel": {
       "all-monitors": "Wszystkie",
       "color-title": "Kolor tapety",
-      "favorite-palette-label": "Kolory",
-      "favorite-theme-label": "Motyw",
       "filter-placeholder": "Filtruj…",
       "flatten": "Spłaszcz",
-      "no-directory-configured": "Brak skonfigurowanego katalogu",
       "sort-date-asc": "Sortuj po dacie (najstarsze pierwsze)",
       "sort-date-desc": "Sortuj po dacie (najnowsze pierwsze)",
       "sort-name-asc": "Sortuj po nazwie (A–Z)",

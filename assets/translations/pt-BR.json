@@ -2853,11 +2853,8 @@
     "panel": {
       "all-monitors": "TODOS",
       "color-title": "Cor do papel de parede",
-      "favorite-palette-label": "Cores",
-      "favorite-theme-label": "Tema",
       "filter-placeholder": "Filtrar...",
       "flatten": "Achatar",
-      "no-directory-configured": "Nenhum diretório configurado",
       "sort-date-asc": "Ordenar por data (mais antigos primeiro)",
       "sort-date-desc": "Ordenar por data (mais recentes primeiro)",
       "sort-name-asc": "Ordenar por nome (A-Z)",

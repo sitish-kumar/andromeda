@@ -634,7 +634,7 @@
       "advanced": "Erweitert",
       "inherited": "Geerbt",
       "monitor": "Monitor",
-      "override": "Überschreiben"
+      "override": "Überschreibung"
     },
     "calendar-accounts": {
       "add-title": "Kalenderkonto hinzufügen",
@@ -2878,11 +2878,8 @@
     "panel": {
       "all-monitors": "Alle",
       "color-title": "Hintergrundbildfarbe",
-      "favorite-palette-label": "Farben",
-      "favorite-theme-label": "Design",
       "filter-placeholder": "Filtern...",
       "flatten": "Abflachen",
-      "no-directory-configured": "Kein Verzeichnis konfiguriert",
       "sort-date-asc": "Nach Datum sortieren (älteste zuerst)",
       "sort-date-desc": "Nach Datum sortieren (neueste zuerst)",
       "sort-name-asc": "Nach Name sortieren (A-Z)",

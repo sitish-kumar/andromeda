@@ -2806,11 +2806,8 @@
     "panel": {
       "all-monitors": "ÖSSZES",
       "color-title": "Háttérkép színe",
-      "favorite-palette-label": "Színek",
-      "favorite-theme-label": "Téma",
       "filter-placeholder": "Szűrés…",
       "flatten": "Lapít",
-      "no-directory-configured": "Nincs könyvtár konfigurálva",
       "sort-date-asc": "Rendezés dátum szerint (legkorábbi elöl)",
       "sort-date-desc": "Rendezés dátum szerint (legújabb elöl)",
       "sort-name-asc": "Rendezés név szerint (A-Z)",

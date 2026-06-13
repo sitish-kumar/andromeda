@@ -2780,11 +2780,8 @@
     "panel": {
       "all-monitors": "ВСЕ",
       "color-title": "Цвет обоев",
-      "favorite-palette-label": "Цвета",
-      "favorite-theme-label": "Тема",
       "filter-placeholder": "Фильтр...",
       "flatten": "Сгладить",
-      "no-directory-configured": "Каталог не настроен",
       "sort-date-asc": "Сортировать по дате (сначала самые старые)",
       "sort-date-desc": "Сортировать по дате (сначала самые новые)",
       "sort-name-asc": "Сортировать по имени (А-Я)",

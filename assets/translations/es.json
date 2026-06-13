@@ -921,7 +921,6 @@
   },
   "wallpaper": {
     "panel": {
-      "favorite-palette-label": "Colores",
       "filter-placeholder": "Filtrar...",
       "sort-date-asc": "Ordenar por fecha (más antiguo primero)",
       "sort-date-desc": "Ordenar por fecha (más nuevo primero)"

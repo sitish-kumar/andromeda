@@ -1,7 +1,7 @@
 {
   "auth": {
     "pam": {
-      "authentication-failed": "Rasta din têk çû",
+      "authentication-failed": "Rastandin têk çû",
       "start-failed": "Destpêkirina PAMê têk çû",
       "user-unavailable": "Nikare bikarhênerê heyî çareser bike"
     },
@@ -48,15 +48,102 @@
     }
   },
   "clipboard": {
+    "actions": {
+      "clear-all": "Her tiştî pak bike",
+      "delete-item": "Hêmanê jê bibe",
+      "keep-pinned": "Bidarxistî bihêle"
+    },
     "entry": {
       "image": "Wêne"
+    },
+    "preview": {
+      "loading": "Pêşdîtin tê barkirin..."
+    }
+  },
+  "common": {
+    "actions": {
+      "apply": "Bisepîne",
+      "cancel": "Têk bibe"
+    },
+    "states": {
+      "auto": "Xweber",
+      "custom": "Kesane",
+      "off": "Vemirî ye"
     }
   },
   "control-center": {
+    "bluetooth": {
+      "accept": "Bipejirîne",
+      "bluetooth": "Bluetooth",
+      "enter-code": "Kodê têxîne",
+      "off": "Bluetooth vemirî ye",
+      "pair-title": "Bi {device} re girê bide",
+      "pairing-detail": {
+        "display-passkey": "Vê kodê li ser amûrê binivîse:",
+        "display-pin": "Vê PINê li ser amûrê binivîse:"
+      },
+      "sections": {
+        "connected": "Girêdayî "
+      }
+    },
+    "calendar": {
+      "events": "Çalakî",
+      "no-events": "Çalakî tine ne."
+    },
+    "display": {
+      "disabled": "Neçalakkirî"
+    },
     "screen-time": {
       "range": {
         "14-days": "jor 41"
       }
     }
+  },
+  "dock": {
+    "actions": {
+      "close": "Bigire",
+      "close-all": "Hemûyan bigire"
+    },
+    "launcher": "Destpêkar"
+  },
+  "internal-apps": {
+    "settings": {
+      "display-name": "Sazkarî"
+    }
+  },
+  "settings": {
+    "options": {
+      "dock-launcher-position": {
+        "end": "Dawî",
+        "none": "Ne yek",
+        "start": "Destpêk"
+      }
+    },
+    "schema": {
+      "dock": {
+        "active-icon-opacity": {
+          "label": "Zelaliya îkonê çalak"
+        },
+        "active-monitor-only": {
+          "label": "Tenê dîmenderê çalak"
+        },
+        "icon-size": {
+          "label": "Mezinahiya îkonê"
+        },
+        "inactive-icon-opacity": {
+          "label": "Zelaliya îkonê neçalak"
+        },
+        "pinned-apps": {
+          "label": "Sepanên bidarxistî"
+        },
+        "show-dots": {
+          "label": "Xalan nîşan bide"
+        }
+      }
+    }
+  },
+  "window-switcher": {
+    "empty": "Çarçoveyên vekirî tine ne",
+    "title": "Çarçove"
   }
 }

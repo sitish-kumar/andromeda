@@ -2878,11 +2878,8 @@
     "panel": {
       "all-monitors": "TUTTI",
       "color-title": "Colore sfondo",
-      "favorite-palette-label": "Colori",
-      "favorite-theme-label": "Tema",
       "filter-placeholder": "Filtra...",
       "flatten": "Appiattisci",
-      "no-directory-configured": "Nessuna directory configurata",
       "sort-date-asc": "Ordina per data (prima i più vecchi)",
       "sort-date-desc": "Ordina per data (prima i più recenti)",
       "sort-name-asc": "Ordina per nome (A-Z)",

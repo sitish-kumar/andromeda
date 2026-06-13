@@ -1542,11 +1542,8 @@
     "panel": {
       "all-monitors": "TOUS",
       "color-title": "Couleur du fond d'écran",
-      "favorite-palette-label": "Couleurs",
-      "favorite-theme-label": "Thème",
       "filter-placeholder": "Filtre...",
       "flatten": "Aplati",
-      "no-directory-configured": "Pas de dossier configuré",
       "sort-date-asc": "Trier par date (du plus ancien)",
       "sort-date-desc": "Trier par date (du plus récent)",
       "sort-name-asc": "Trier par nom (A-Z)",
