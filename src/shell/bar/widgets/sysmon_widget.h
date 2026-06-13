@@ -12,7 +12,7 @@
 class Box;
 class ConfigService;
 class Glyph;
-class GraphNode;
+class Graph;
 class Label;
 class ProgressBar;
 class SystemMonitorService;
@@ -88,7 +88,7 @@ private:
   double m_tempMin = 30.0;
   double m_tempMax = 80.0;
   Box* m_chartBg = nullptr;
-  GraphNode* m_graphNode = nullptr;
+  Graph* m_graph = nullptr;
   float m_scrollProgress = 1.0f;
   Timer m_updateTimer;
 

@@ -11,7 +11,7 @@
 struct SystemStats;
 
 class Glyph;
-class GraphNode;
+class Graph;
 class Label;
 class SystemMonitorService;
 
@@ -67,7 +67,7 @@ private:
 
   Glyph* m_glyph = nullptr;
   Label* m_label = nullptr;
-  GraphNode* m_graphNode = nullptr;
+  Graph* m_graph = nullptr;
 
   bool m_graphInitialized = false;
   float m_scrollProgress = 1.0f;

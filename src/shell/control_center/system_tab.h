@@ -8,7 +8,7 @@
 
 class Flex;
 class Glyph;
-class GraphNode;
+class Graph;
 class Label;
 class SystemMonitorService;
 
@@ -46,10 +46,10 @@ private:
 
   Flex* m_root = nullptr;
 
-  GraphNode* m_cpuGraph = nullptr;
-  GraphNode* m_ramGraph = nullptr;
-  GraphNode* m_gpuGraph = nullptr;
-  GraphNode* m_netGraph = nullptr;
+  Graph* m_cpuGraph = nullptr;
+  Graph* m_ramGraph = nullptr;
+  Graph* m_gpuGraph = nullptr;
+  Graph* m_netGraph = nullptr;
 
   Flex* m_cpuCard = nullptr;
   Flex* m_ramCard = nullptr;
