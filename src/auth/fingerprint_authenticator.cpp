@@ -88,13 +88,14 @@ void FingerprintAuthenticator::start() {
   if (m_active) {
     return;
   }
-  if (!m_bus.nameHasOwner("net.reactivated.Fprint")) {
+  if (!m_bus.nameHasOwner(kFprintBusName)) {
     kLog.debug("fprintd not available on system bus; fingerprint disabled");
     return;
   }
   m_active = true;
   m_abort = false;
   m_retries = 0;
+  m_reclaimAttempted = false;
   if (m_sleeping) {
     return;
   }
@@ -210,10 +211,19 @@ void FingerprintAuthenticator::startVerify(bool isRetry) {
         if (e.has_value()) {
           kLog.info("could not start fingerprint verification: {}", e->what());
           m_verifying = false;
+          // A claim dropped across suspend/resume makes VerifyStart fail; drop the stale proxy and
+          // recreate+reclaim once. The one-shot guard keeps a permanently failing device from looping.
+          if (!m_reclaimAttempted && m_active && !m_sleeping && !m_abort) {
+            m_reclaimAttempted = true;
+            m_device.reset();
+            m_retryTimer.start(kRetryDelay, [this]() { startVerify(false); });
+            return;
+          }
           emitStatus({}, false); // issue loading: drop the status message
           return;
         }
         kLog.debug("fingerprint verification started");
+        m_reclaimAttempted = false;
         if (isRetry) {
           m_retries++;
         }
@@ -262,6 +272,9 @@ void FingerprintAuthenticator::handleVerifyStatus(const std::string& result, boo
 
   bool authenticated = false;
   bool retryInPlace = false;
+  // Set when a branch fully owns the post-verify restart decision (capped rearm or deliberate stop),
+  // so the generic done-restart below does not also fire.
+  bool ownsRestart = false;
 
   switch (match) {
   case MatchResult::Invalid:
@@ -273,11 +286,12 @@ void FingerprintAuthenticator::handleVerifyStatus(const std::string& result, boo
     break;
   case MatchResult::NoMatch:
     stopVerify();
+    ownsRestart = true;
     if (m_retries >= kMaxRetries) {
       emitStatus(i18n::tr("auth.fingerprint.too-many-attempts"), true);
     } else {
       emitStatus(i18n::tr("auth.fingerprint.no-match"), true);
-      // XXX: rearm after a short delay
+      // rearm after a short delay
       m_retryTimer.start(kRetryDelay, [this]() { startVerify(true); });
     }
     break;
@@ -304,7 +318,13 @@ void FingerprintAuthenticator::handleVerifyStatus(const std::string& result, boo
     break;
   case MatchResult::UnknownError:
     stopVerify();
-    emitStatus(i18n::tr("auth.fingerprint.error"), true);
+    ownsRestart = true;
+    if (m_retries >= kMaxRetries) {
+      emitStatus(i18n::tr("auth.fingerprint.too-many-attempts"), true);
+    } else {
+      emitStatus(i18n::tr("auth.fingerprint.error"), true);
+      m_retryTimer.start(kRetryDelay, [this]() { startVerify(true); });
+    }
     break;
   }
 
@@ -316,7 +336,7 @@ void FingerprintAuthenticator::handleVerifyStatus(const std::string& result, boo
   }
 
   // In-place retries keep verifying; otherwise restart only when fprintd reports done.
-  if (!retryInPlace && done && !m_abort && match != MatchResult::NoMatch && m_active && !m_sleeping) {
+  if (!retryInPlace && !ownsRestart && done && !m_abort && m_active && !m_sleeping) {
     startVerify(true);
   }
 }

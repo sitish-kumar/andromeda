@@ -52,5 +52,6 @@ private:
   bool m_claiming = false;
   bool m_sleeping = false;
   bool m_abort = false;
+  bool m_reclaimAttempted = false;
   int m_retries = 0;
 };
