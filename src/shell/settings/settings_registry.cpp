@@ -1116,6 +1116,15 @@ namespace settings {
       );
       entries.push_back(std::move(e));
     }
+    {
+      auto e = makeEntry(
+          SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.fingerprint.label"),
+          tr("settings.schema.lockscreen.fingerprint.description"), {"lockscreen", "fingerprint"},
+          ToggleSetting{cfg.lockscreen.fingerprint}, "lock screen fingerprint fprintd biometric"
+      );
+      e.visibleWhen = lockscreenOn;
+      entries.push_back(std::move(e));
+    }
     if (env.screencopySupported) {
       auto e = makeEntry(
           SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.blurred-desktop.label"),

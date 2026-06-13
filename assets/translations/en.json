@@ -1,5 +1,17 @@
 {
   "auth": {
+    "fingerprint": {
+      "disconnected": "Fingerprint reader disconnected",
+      "error": "Fingerprint authentication error",
+      "no-match": "Fingerprint did not match",
+      "not-centered": "Center your finger and try again",
+      "present": "Reading fingerprint...",
+      "ready": "Place your finger on the reader",
+      "remove-and-retry": "Remove your finger and try again",
+      "retry": "Please scan your fingerprint again",
+      "swipe-too-short": "Swipe was too short, try again",
+      "too-many-attempts": "Fingerprint disabled (too many attempts)"
+    },
     "pam": {
       "authentication-failed": "Authentication failed",
       "start-failed": "PAM start failed",
@@ -1580,6 +1592,10 @@
         "enabled": {
           "description": "Enable session lock, logind integration, and lock actions",
           "label": "Lock Screen"
+        },
+        "fingerprint": {
+          "description": "Unlock with a fingerprint reader via fprintd, alongside password entry",
+          "label": "Fingerprint Unlock"
         },
         "monitors": {
           "description": "Choose which monitors show the lock screen; leave empty to show on all monitors",
