@@ -1593,6 +1593,10 @@
           "description": "Enable session lock, logind integration, and lock actions",
           "label": "Lock Screen"
         },
+        "fingerprint": {
+          "description": "Unlock with a fingerprint reader via fprintd, alongside password entry",
+          "label": "Fingerprint Unlock"
+        },
         "monitors": {
           "description": "Choose which monitors show the lock screen; leave empty to show on all monitors",
           "label": "Monitors"
