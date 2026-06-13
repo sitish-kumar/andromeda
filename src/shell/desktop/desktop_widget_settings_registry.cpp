@@ -1,7 +1,12 @@
 #include "shell/desktop/desktop_widget_settings_registry.h"
 
+#include "i18n/i18n.h"
+#include "scripting/plugin_registry.h"
 #include "shell/settings/font_family_catalog.h"
+#include "shell/settings/widget_settings_registry.h"
 #include "util/string_utils.h"
+
+#include <algorithm>
 
 namespace desktop_settings {
   namespace {
@@ -81,9 +86,41 @@ namespace desktop_settings {
       return spec;
     }
 
+    // Resolve "author/plugin:entry" to its [[desktop_widget]] entry, or nullopt.
+    std::optional<scripting::ResolvedPluginEntry> resolvePluginDesktopWidget(std::string_view type) {
+      if (!type.contains('/')) {
+        return std::nullopt;
+      }
+      scripting::PluginRegistry::instance().ensureScanned();
+      auto entry = scripting::PluginRegistry::instance().resolve(type);
+      if (entry.has_value() && entry->entry->kind == scripting::PluginEntryKind::DesktopWidget) {
+        return entry;
+      }
+      return std::nullopt;
+    }
+
   } // namespace
 
   const std::vector<DesktopWidgetTypeSpec>& desktopWidgetTypeSpecs() { return kDesktopWidgetTypeSpecs; }
+
+  std::vector<DesktopWidgetTypeOption> desktopWidgetTypeOptions() {
+    std::vector<DesktopWidgetTypeOption> options;
+    options.reserve(kDesktopWidgetTypeSpecs.size());
+    for (const auto& spec : kDesktopWidgetTypeSpecs) {
+      options.push_back(DesktopWidgetTypeOption{.value = std::string(spec.type), .label = i18n::tr(spec.labelKey)});
+    }
+
+    scripting::PluginRegistry::instance().ensureScanned();
+    for (const auto& entry :
+         scripting::PluginRegistry::instance().entriesOfKind(scripting::PluginEntryKind::DesktopWidget)) {
+      const std::string entryId = entry.fullId();
+      std::string label = entry.manifest->name.empty() ? entryId : entry.manifest->name;
+      options.push_back(DesktopWidgetTypeOption{.value = entryId, .label = std::move(label)});
+    }
+
+    std::sort(options.begin(), options.end(), [](const auto& a, const auto& b) { return a.label < b.label; });
+    return options;
+  }
 
   std::vector<WidgetSettingSpec> commonDesktopWidgetSettingSpecs(std::string_view type) {
     if (type == "login_box") {
@@ -122,6 +159,10 @@ namespace desktop_settings {
   }
 
   std::vector<WidgetSettingSpec> desktopWidgetSettingSpecs(std::string_view type) {
+    if (auto pluginEntry = resolvePluginDesktopWidget(type)) {
+      return settings::manifestSettingSpecs(pluginEntry->entry->settings);
+    }
+
     const std::vector<WidgetSettingSelectOption> sysmonStats = {
         {"cpu_usage", "desktop-widgets.editor.settings.stat-cpu-usage"},
         {"cpu_temp", "desktop-widgets.editor.settings.stat-cpu-temp"},

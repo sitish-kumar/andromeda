@@ -2,6 +2,7 @@
 
 #include "config/config_types.h"
 #include "core/process.h"
+#include "ui/ui_tree.h"
 
 #include <chrono>
 #include <cstdint>
@@ -89,6 +90,12 @@ namespace scripting {
     // Launcher-provider results (the `launcher.*` namespace).
     std::optional<ScriptLauncherResultSet> launcherResults;
 
+    // Desktop-widget fields (the `desktopWidget.*` namespace): the declarative
+    // control tree from desktopWidget.render() plus tick opt-ins.
+    std::optional<ui::UiTreeNode> uiTree;
+    std::optional<bool> wantsSecondTicks;
+    std::optional<bool> needsFrameTick;
+
     [[nodiscard]] bool empty() const {
       return !text.has_value()
           && !glyph.has_value()
@@ -104,7 +111,10 @@ namespace scripting {
           && !iconOff.has_value()
           && !active.has_value()
           && !enabled.has_value()
-          && !launcherResults.has_value();
+          && !launcherResults.has_value()
+          && !uiTree.has_value()
+          && !wantsSecondTicks.has_value()
+          && !needsFrameTick.has_value();
     }
   };
 

@@ -3,6 +3,7 @@
 #include "core/log.h"
 #include "lua.h"
 #include "lualib.h"
+#include "ui/ui_tree.h"
 
 #include <algorithm>
 #include <optional>
@@ -315,6 +316,156 @@ namespace {
       {nullptr, nullptr},
   };
 
+  // ── desktopWidget.* — declarative UI tree + tick opt-ins ──
+
+  constexpr int kUiTreeMaxDepth = 32;
+  constexpr int kUiTreeMaxChildren = 256;
+
+  // Reads the value at `index` into a UiTreeValue. A table is read as a number
+  // array (graph data); any other shape is rejected.
+  bool readUiTreeValue(lua_State* L, int index, ui::UiTreeValue& out) {
+    switch (lua_type(L, index)) {
+    case LUA_TBOOLEAN:
+      out = lua_toboolean(L, index) != 0;
+      return true;
+    case LUA_TNUMBER:
+      out = lua_tonumber(L, index);
+      return true;
+    case LUA_TSTRING: {
+      size_t len = 0;
+      const char* value = lua_tolstring(L, index, &len);
+      out = std::string(value, len);
+      return true;
+    }
+    case LUA_TTABLE: {
+      std::vector<double> numbers;
+      const int count = lua_objlen(L, index);
+      numbers.reserve(static_cast<std::size_t>(std::max(0, count)));
+      for (int i = 1; i <= count; ++i) {
+        lua_rawgeti(L, index, i);
+        if (!lua_isnumber(L, -1)) {
+          lua_pop(L, 1);
+          return false;
+        }
+        numbers.push_back(lua_tonumber(L, -1));
+        lua_pop(L, 1);
+      }
+      out = std::move(numbers);
+      return true;
+    }
+    default:
+      return false;
+    }
+  }
+
+  // Recursively reads a ui.* node table { type, props, children } at `index`.
+  // Malformed input is loud: the offending node/prop is logged and skipped.
+  bool readUiTreeNode(lua_State* L, int index, ui::UiTreeNode& out, int depth, const std::string& ownerId) {
+    if (depth > kUiTreeMaxDepth) {
+      kLog.warn("plugin {}: ui tree deeper than {} levels, subtree dropped", ownerId, kUiTreeMaxDepth);
+      return false;
+    }
+    if (!lua_istable(L, index)) {
+      kLog.warn("plugin {}: ui tree node is not a table", ownerId);
+      return false;
+    }
+    const int node = lua_absindex(L, index);
+
+    out.type = tableOptionalStringField(L, node, "type");
+    if (out.type.empty()) {
+      kLog.warn("plugin {}: ui tree node without a type, dropped", ownerId);
+      return false;
+    }
+
+    lua_getfield(L, node, "props");
+    if (lua_istable(L, -1)) {
+      const int props = lua_gettop(L);
+      lua_pushnil(L);
+      while (lua_next(L, props) != 0) {
+        if (lua_isstring(L, -2)) {
+          size_t keyLen = 0;
+          const char* key = lua_tolstring(L, -2, &keyLen);
+          ui::UiTreeValue value;
+          if (readUiTreeValue(L, -1, value)) {
+            out.props.emplace(std::string(key, keyLen), std::move(value));
+          } else {
+            kLog.warn("plugin {}: ui node '{}' prop '{}' has an unsupported value type", ownerId, out.type, key);
+          }
+        }
+        lua_pop(L, 1);
+      }
+    }
+    lua_pop(L, 1);
+
+    if (auto it = out.props.find("key"); it != out.props.end()) {
+      if (const auto* key = std::get_if<std::string>(&it->second)) {
+        out.key = *key;
+      }
+      out.props.erase(it);
+    }
+
+    lua_getfield(L, node, "children");
+    if (lua_istable(L, -1)) {
+      const int children = lua_gettop(L);
+      const int count = std::min(lua_objlen(L, children), kUiTreeMaxChildren);
+      if (lua_objlen(L, children) > kUiTreeMaxChildren) {
+        kLog.warn(
+            "plugin {}: ui node '{}' has more than {} children, extra dropped", ownerId, out.type, kUiTreeMaxChildren
+        );
+      }
+      out.children.reserve(static_cast<std::size_t>(std::max(0, count)));
+      for (int i = 1; i <= count; ++i) {
+        lua_rawgeti(L, children, i);
+        ui::UiTreeNode child;
+        if (readUiTreeNode(L, lua_gettop(L), child, depth + 1, ownerId)) {
+          out.children.push_back(std::move(child));
+        }
+        lua_pop(L, 1);
+      }
+    }
+    lua_pop(L, 1);
+
+    return true;
+  }
+
+  // desktopWidget.render(tree) — replaces the widget's declarative control tree.
+  int luau_desktop_render(lua_State* L) {
+    luaL_checktype(L, 1, LUA_TTABLE);
+    auto* context = getContext(L);
+    if (context == nullptr) {
+      return 0;
+    }
+    ui::UiTreeNode tree;
+    if (readUiTreeNode(L, 1, tree, 0, context->ownerId)) {
+      context->patch.uiTree = std::move(tree);
+    }
+    return 0;
+  }
+
+  int luau_desktop_setWantsSecondTicks(lua_State* L) {
+    const bool wants = lua_toboolean(L, 1) != 0;
+    if (auto* context = getContext(L)) {
+      context->patch.wantsSecondTicks = wants;
+    }
+    return 0;
+  }
+
+  int luau_desktop_setNeedsFrameTick(lua_State* L) {
+    const bool needs = lua_toboolean(L, 1) != 0;
+    if (auto* context = getContext(L)) {
+      context->patch.needsFrameTick = needs;
+    }
+    return 0;
+  }
+
+  const luaL_Reg kDesktopWidgetLib[] = {
+      {"render", luau_desktop_render},
+      {"setWantsSecondTicks", luau_desktop_setWantsSecondTicks},
+      {"setNeedsFrameTick", luau_desktop_setNeedsFrameTick},
+      {"getConfig", scripting::luau_getConfig},
+      {nullptr, nullptr},
+  };
+
 } // namespace
 
 namespace scripting {
@@ -369,6 +520,8 @@ namespace scripting {
     luaL_register(L, "shortcut", kShortcutLib);
     lua_pop(L, 1);
     luaL_register(L, "launcher", kLauncherLib);
+    lua_pop(L, 1);
+    luaL_register(L, "desktopWidget", kDesktopWidgetLib);
     lua_pop(L, 1);
   }
 

@@ -214,13 +214,13 @@ std::string BackgroundWidgetsEditor::nextWidgetId() const {
 void BackgroundWidgetsEditor::initialize(
     WaylandConnection& wayland, ConfigService* config, PipeWireSpectrum* pipewireSpectrum,
     const WeatherService* weather, RenderContext* renderContext, MprisService* mpris, HttpClient* httpClient,
-    SystemMonitorService* sysmon, SharedTextureCache* textureCache
+    SystemMonitorService* sysmon, SharedTextureCache* textureCache, DesktopWidgetScriptDeps scriptDeps
 ) {
   m_wayland = &wayland;
   m_config = config;
   m_renderContext = renderContext;
   m_textureCache = textureCache;
-  m_factory = std::make_unique<DesktopWidgetFactory>(pipewireSpectrum, weather, mpris, httpClient, sysmon);
+  m_factory = std::make_unique<DesktopWidgetFactory>(pipewireSpectrum, weather, mpris, httpClient, sysmon, scriptDeps);
 }
 
 void BackgroundWidgetsEditor::setExitRequestedCallback(std::function<void()> callback) {
@@ -509,6 +509,31 @@ void BackgroundWidgetsEditor::prepareFrame(OverlaySurface& surface, bool needsUp
   }
 
   if (needsLayout && surface.sceneRoot != nullptr) {
+    // Re-run each widget's own layout so async content (e.g. a plugin widget's
+    // first render() arriving after view creation) reconciles and the view
+    // tracks the widget's natural size.
+    bool intrinsicsChanged = false;
+    for (auto& [id, view] : surface.views) {
+      if (view.widget == nullptr || view.transformNode == nullptr) {
+        continue;
+      }
+      view.widget->layout(*m_renderContext);
+      const float w = std::max(1.0f, view.widget->intrinsicWidth());
+      const float h = std::max(1.0f, view.widget->intrinsicHeight());
+      if (w == view.intrinsicWidth && h == view.intrinsicHeight) {
+        continue;
+      }
+      view.intrinsicWidth = w;
+      view.intrinsicHeight = h;
+      view.transformNode->setFrameSize(w, h);
+      if (const DesktopWidgetState* state = findWidgetState(id); state != nullptr) {
+        view.transformNode->setPosition(state->cx - w * 0.5f, state->cy - h * 0.5f);
+      }
+      intrinsicsChanged = true;
+    }
+    if (intrinsicsChanged) {
+      updateSelectionVisuals(surface);
+    }
     surface.sceneRoot->layout(*m_renderContext);
   }
 
@@ -897,13 +922,13 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   const bool canBringSelectedToFront =
       hasSelectedWidget && !selectedIsLoginBox && std::next(selectedWidgetIt) != m_snapshot.widgets.end();
 
-  const auto& typeSpecs = desktop_settings::desktopWidgetTypeSpecs();
+  const auto typeOptions = desktop_settings::desktopWidgetTypeOptions();
   std::vector<std::string> typeLabels;
-  typeLabels.reserve(typeSpecs.size());
+  typeLabels.reserve(typeOptions.size());
   std::size_t selectedTypeIndex = 0;
-  for (std::size_t i = 0; i < typeSpecs.size(); ++i) {
-    typeLabels.push_back(i18n::tr(typeSpecs[i].labelKey));
-    if (typeSpecs[i].type == m_addWidgetType) {
+  for (std::size_t i = 0; i < typeOptions.size(); ++i) {
+    typeLabels.push_back(typeOptions[i].label);
+    if (typeOptions[i].value == m_addWidgetType) {
       selectedTypeIndex = i;
     }
   }
@@ -964,9 +989,9 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
                       .controlHeight = Style::controlHeightSm,
                       .onSelectionChanged =
                           [this](std::size_t index, std::string_view) {
-                            const auto& specs = desktop_settings::desktopWidgetTypeSpecs();
-                            if (index < specs.size()) {
-                              m_addWidgetType = std::string(specs[index].type);
+                            const auto options = desktop_settings::desktopWidgetTypeOptions();
+                            if (index < options.size()) {
+                              m_addWidgetType = options[index].value;
                             }
                           },
                       .configure = [](Select& select) { select.setMinWidth(200.0f); },

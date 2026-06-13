@@ -1669,14 +1669,20 @@ void Application::initUi() {
   FileDialog::setPresenter(&m_fileDialogPopup);
 
   m_dock.initialize(m_compositorPlatform, &m_configService, &m_renderContext);
+  const DesktopWidgetScriptDeps desktopWidgetScriptDeps{
+      .scriptApi = &m_scriptApi,
+      .fileWatcher = &m_fileWatcher,
+      .clipboard = &m_clipboardService,
+      .configService = &m_configService,
+  };
   m_lockscreenWidgetsController.initialize(
       m_wayland, &m_configService, m_lockScreen, m_bar, m_dock, &m_desktopWidgetsController, m_pipewireSpectrum.get(),
       &m_weatherService, &m_renderContext, m_mprisService.get(), &m_httpClient, m_systemMonitor.get(),
-      &m_sharedTextureCache
+      &m_sharedTextureCache, desktopWidgetScriptDeps
   );
   m_desktopWidgetsController.initialize(
       m_wayland, &m_configService, m_pipewireSpectrum.get(), &m_weatherService, &m_renderContext, m_mprisService.get(),
-      &m_httpClient, m_systemMonitor.get(), &m_lockscreenWidgetsController
+      &m_httpClient, m_systemMonitor.get(), &m_lockscreenWidgetsController, desktopWidgetScriptDeps
   );
   m_iconThemePollSource.setChangeCallback([this]() { onIconThemeChanged(); });
 

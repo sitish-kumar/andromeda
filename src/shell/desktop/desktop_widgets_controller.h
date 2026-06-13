@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config/config_service.h"
+#include "shell/desktop/desktop_widget_factory.h"
 #include "ui/dialogs/layer_popup_host.h"
 
 #include <memory>
@@ -32,7 +33,8 @@ public:
   void initialize(
       WaylandConnection& wayland, ConfigService* config, PipeWireSpectrum* pipewireSpectrum,
       const WeatherService* weather, RenderContext* renderContext, MprisService* mpris, HttpClient* httpClient,
-      SystemMonitorService* sysmon, LockscreenWidgetsController* lockscreenWidgets
+      SystemMonitorService* sysmon, LockscreenWidgetsController* lockscreenWidgets,
+      DesktopWidgetScriptDeps scriptDeps = {}
   );
 
   void registerIpc(IpcService& ipc);

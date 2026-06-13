@@ -2,6 +2,7 @@
 
 #include "core/log.h"
 #include "pipewire/pipewire_spectrum.h"
+#include "scripting/plugin_registry.h"
 #include "shell/desktop/widgets/desktop_audio_visualizer_widget.h"
 #include "shell/desktop/widgets/desktop_clock_widget.h"
 #include "shell/desktop/widgets/desktop_fancy_audio_visualizer_widget.h"
@@ -11,6 +12,7 @@
 #include "shell/desktop/widgets/desktop_sticker_widget.h"
 #include "shell/desktop/widgets/desktop_sysmon_widget.h"
 #include "shell/desktop/widgets/desktop_weather_widget.h"
+#include "shell/desktop/widgets/plugin_desktop_widget.h"
 
 #include <algorithm>
 #include <optional>
@@ -143,10 +145,10 @@ namespace {
 
 DesktopWidgetFactory::DesktopWidgetFactory(
     PipeWireSpectrum* pipewireSpectrum, const WeatherService* weather, MprisService* mpris, HttpClient* httpClient,
-    SystemMonitorService* sysmon
+    SystemMonitorService* sysmon, DesktopWidgetScriptDeps scriptDeps
 )
     : m_pipewireSpectrum(pipewireSpectrum), m_weather(weather), m_mpris(mpris), m_httpClient(httpClient),
-      m_sysmon(sysmon) {}
+      m_sysmon(sysmon), m_scriptDeps(scriptDeps) {}
 
 std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
     const std::string& type, const std::unordered_map<std::string, WidgetSettingValue>& settings, float contentScale
@@ -298,6 +300,31 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
   if (type == "login_box") {
     auto widget = std::make_unique<DesktopLoginBoxWidget>();
     widget->setSettings(settings);
+    widget->setContentScale(contentScale);
+    return widget;
+  }
+
+  if (auto pluginEntry = scripting::PluginRegistry::instance().resolve(type);
+      pluginEntry.has_value() && pluginEntry->entry->kind == scripting::PluginEntryKind::DesktopWidget) {
+    if (m_scriptDeps.scriptApi == nullptr) {
+      kLog.warn("desktop widget factory: plugin widget \"{}\" requires script support in this host", type);
+      return nullptr;
+    }
+    auto seeded = scripting::seedEntrySettings(*pluginEntry->entry, settings);
+    static const std::unordered_map<std::string, WidgetSettingValue> kNoPluginOverrides;
+    const auto* pluginOverrides = &kNoPluginOverrides;
+    if (m_scriptDeps.configService != nullptr) {
+      const auto& pluginSettings = m_scriptDeps.configService->config().plugins.pluginSettings;
+      if (const auto psIt = pluginSettings.find(pluginEntry->manifest->id); psIt != pluginSettings.end()) {
+        pluginOverrides = &psIt->second;
+      }
+    }
+    scripting::mergePluginSettings(*pluginEntry->manifest, *pluginOverrides, seeded);
+    auto widget = std::make_unique<PluginDesktopWidget>(
+        pluginEntry->fullId(), pluginEntry->sourcePath, std::move(seeded), std::string{}, *m_scriptDeps.scriptApi,
+        m_scriptDeps.fileWatcher, m_httpClient, m_scriptDeps.clipboard
+    );
+    applyCommonSettings(*widget, settings);
     widget->setContentScale(contentScale);
     return widget;
   }

@@ -45,7 +45,7 @@ public:
   void initialize(
       WaylandConnection& wayland, ConfigService* config, PipeWireSpectrum* pipewireSpectrum,
       const WeatherService* weather, RenderContext* renderContext, MprisService* mpris, HttpClient* httpClient,
-      SystemMonitorService* sysmon, SharedTextureCache* textureCache = nullptr
+      SystemMonitorService* sysmon, SharedTextureCache* textureCache = nullptr, DesktopWidgetScriptDeps scriptDeps = {}
   );
   void setExitRequestedCallback(std::function<void()> callback);
 

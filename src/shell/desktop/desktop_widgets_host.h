@@ -30,7 +30,7 @@ public:
   void initialize(
       WaylandConnection& wayland, ConfigService* config, PipeWireSpectrum* pipewireSpectrum,
       const WeatherService* weather, RenderContext* renderContext, MprisService* mpris, HttpClient* httpClient,
-      SystemMonitorService* sysmon
+      SystemMonitorService* sysmon, DesktopWidgetScriptDeps scriptDeps = {}
   );
   void show(const DesktopWidgetsSnapshot& snapshot);
   void hide();

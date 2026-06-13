@@ -13,6 +13,8 @@
 #include "ui/style.h"
 #include "wayland/layer_surface.h"
 
+#include <algorithm>
+#include <cmath>
 #include <functional>
 #include <linux/input-event-codes.h>
 
@@ -167,6 +169,27 @@ namespace {
     );
   }
 
+  // Integer-valued slider: commits std::int64_t so the stored value matches the
+  // schema's Int type (plugin manifest int settings).
+  std::unique_ptr<Flex> makeIntSliderRow(
+      std::string_view labelText, const std::string& key, double fallback, double minVal, double maxVal, double step,
+      const Settings& s, BackgroundWidgetsEditor* editor
+  ) {
+    return makeRow(
+        labelText,
+        ui::slider({
+            .minValue = minVal,
+            .maxValue = maxVal,
+            .step = std::max(1.0, step),
+            .value = getDouble(s, key, fallback),
+            .flexGrow = 1.0f,
+            .onValueChanged = [editor, key](double val) {
+              editor->applySettingChange(key, static_cast<std::int64_t>(std::llround(val)));
+            },
+        })
+    );
+  }
+
   std::unique_ptr<Flex> makeColorSpecRow(
       std::string_view labelText, const std::string& key, std::string fallbackValue, const Settings& s,
       BackgroundWidgetsEditor* editor
@@ -305,12 +328,24 @@ namespace {
       if (!isSpecVisible(spec, s, specs)) {
         continue;
       }
-      const auto label = i18n::tr(spec.labelKey);
+      // Plugin manifest specs carry literal labels; built-in specs carry i18n keys.
+      const auto label = !spec.literalLabel.empty() ? spec.literalLabel : i18n::tr(spec.labelKey);
 
       switch (spec.control) {
       case settings::WidgetControlKind::Bool: {
         const auto* defVal = std::get_if<bool>(&spec.schema.defaultValue);
         content.addChild(makeToggleRow(label, spec.schema.key, defVal != nullptr ? *defVal : false, s, editor));
+        break;
+      }
+
+      case settings::WidgetControlKind::Int: {
+        const auto* defVal = std::get_if<std::int64_t>(&spec.schema.defaultValue);
+        const auto fallback = static_cast<double>(defVal != nullptr ? *defVal : 0);
+        const double minVal = spec.schema.minValue.value_or(0.0);
+        const double maxVal = spec.schema.maxValue.value_or(std::max(fallback, 100.0));
+        content.addChild(makeIntSliderRow(
+            label, spec.schema.key, fallback, minVal, maxVal, spec.schema.step.value_or(1.0), s, editor
+        ));
         break;
       }
 
