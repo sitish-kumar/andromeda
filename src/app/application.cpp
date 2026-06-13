@@ -1241,7 +1241,7 @@ void Application::initUi() {
         i18n::tr("notifications.internal.wallpaper-palette-export-success", "name", paletteName)
     );
   });
-  m_lockScreen.initialize(m_wayland, &m_renderContext, &m_configService, &m_sharedTextureCache);
+  m_lockScreen.initialize(m_wayland, &m_renderContext, &m_configService, &m_sharedTextureCache, m_systemBus.get());
   m_wallpaper.setAutomationGate([this]() { return !m_lockScreen.isActive(); });
   m_configService.addReloadCallback([this]() {
     if (m_logindService != nullptr) {

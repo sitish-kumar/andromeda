@@ -12,6 +12,7 @@
 #include "shell/lockscreen/lockscreen_login_box.h"
 #include "shell/lockscreen/lockscreen_widgets_host.h"
 #include "ui/builders.h"
+#include "ui/controls/label.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "wayland/wayland_connection.h"
@@ -113,6 +114,17 @@ LockSurface::LockSurface(WaylandConnection& connection, ConfigService* config) :
                 }
               },
           .configure = [](Button& button) { button.setZIndex(2); },
+      })
+  );
+
+  m_root.addChild(
+      ui::label({
+          .out = &m_statusLabel,
+          .fontSize = Style::fontSizeCaption,
+          .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+          .textAlign = TextAlign::Center,
+          .visible = false,
+          .configure = [](Label& label) { label.setZIndex(2); },
       })
   );
 
@@ -442,6 +454,9 @@ void LockSurface::layoutScene(std::uint32_t width, std::uint32_t height) {
     m_loginPanel->setVisible(false);
     m_passwordField->setVisible(false);
     m_loginButton->setVisible(false);
+    if (m_statusLabel != nullptr) {
+      m_statusLabel->setVisible(false);
+    }
     return;
   }
 
@@ -547,9 +562,29 @@ void LockSurface::layoutScene(std::uint32_t width, std::uint32_t height) {
     m_loginButton->setPosition(contentLeft + inputWidth + gap, contentTop);
     m_loginButton->layout(*renderer);
   }
+
+  // Status line, centered above the login panel.
+  if (m_statusLabel != nullptr && m_locked && !m_status.empty()) {
+    m_statusLabel->setMaxWidth(contentWidth);
+    m_statusLabel->layout(*renderer);
+    const float labelX = panelX + std::round((panelWidth - m_statusLabel->width()) * 0.5f);
+    const float labelY = panelY - m_statusLabel->height() - Style::spaceSm;
+    m_statusLabel->setPosition(labelX, labelY);
+  }
 }
 
-void LockSurface::updateCopy() { m_passwordField->setValue(m_password); }
+void LockSurface::updateCopy() {
+  m_passwordField->setValue(m_password);
+
+  if (m_statusLabel != nullptr) {
+    const bool show = m_locked && !m_blackout && !m_status.empty();
+    m_statusLabel->setVisible(show);
+    if (show) {
+      m_statusLabel->setText(m_status);
+      m_statusLabel->setColor(colorSpecFromRole(m_error ? ColorRole::Error : ColorRole::OnSurfaceVariant));
+    }
+  }
+}
 
 void LockSurface::releaseWallpaperTextureRef(const std::string& path) {
   if (m_wallpaperTexture.id == 0) {

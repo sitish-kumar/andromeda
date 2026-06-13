@@ -1,5 +1,6 @@
 #include "shell/lockscreen/lock_screen.h"
 
+#include "auth/fingerprint_authenticator.h"
 #include "capture/screencopy_util.h"
 #include "config/config_service.h"
 #include "config/config_types.h"
@@ -50,13 +51,27 @@ LockScreen::~LockScreen() {
 
 bool LockScreen::initialize(
     WaylandConnection& wayland, RenderContext* renderContext, ConfigService* configService,
-    SharedTextureCache* textureCache
+    SharedTextureCache* textureCache, SystemBus* systemBus
 ) {
   m_wayland = &wayland;
   m_renderContext = renderContext;
   m_configService = configService;
   m_textureCache = textureCache;
+  m_systemBus = systemBus;
   m_user = PamAuthenticator::currentUsername();
+
+  if (m_systemBus != nullptr) {
+    m_fingerprint = std::make_unique<FingerprintAuthenticator>(*m_systemBus);
+    m_fingerprint->setAuthenticatedCallback([this]() {
+      m_status = i18n::tr("lockscreen.unlocked");
+      m_statusIsError = false;
+      updatePromptOnSurfaces();
+      unlock();
+    });
+    m_fingerprint->setStatusCallback([this](const std::string& message, bool isError) {
+      handleFingerprintStatus(message, isError);
+    });
+  }
   return true;
 }
 
@@ -135,6 +150,7 @@ void LockScreen::unlock() {
   }
 
   m_pendingAfterLocked = {};
+  stopFingerprint();
 
   const bool wasLockedInteractive = m_locked;
 
@@ -359,6 +375,7 @@ void LockScreen::handleLocked(void* data, ext_session_lock_v1* /*lock*/) {
     instance.surface->setOnLogin([self]() { self->tryAuthenticate(); });
   }
   self->updatePromptOnSurfaces();
+  self->startFingerprint();
   kLog.info("session is locked");
   if (self->m_onSessionLocked) {
     self->m_onSessionLocked();
@@ -374,6 +391,7 @@ void LockScreen::handleFinished(void* data, ext_session_lock_v1* /*lock*/) {
   auto* self = static_cast<LockScreen*>(data);
   kLog.info("session lock finished by compositor");
   self->m_pendingAfterLocked = {};
+  self->stopFingerprint();
 
   if (self->m_lock != nullptr) {
     if (self->m_locked) {
@@ -661,6 +679,36 @@ void LockScreen::tryAuthenticate() {
 
   m_status = result.message.empty() ? i18n::tr("lockscreen.authentication-failed") : result.message;
   m_statusIsError = true;
+  updatePromptOnSurfaces();
+}
+
+void LockScreen::startFingerprint() {
+  if (m_fingerprint == nullptr) {
+    return;
+  }
+  if (m_configService != nullptr && !m_configService->config().lockscreen.fingerprint) {
+    return;
+  }
+  m_fingerprint->start();
+}
+
+void LockScreen::stopFingerprint() {
+  if (m_fingerprint != nullptr) {
+    m_fingerprint->stop();
+  }
+}
+
+void LockScreen::handleFingerprintStatus(const std::string& message, bool isError) {
+  if (!isActive()) {
+    return;
+  }
+  // Don't clobber a password the user is typing.
+  if (!m_password.empty()) {
+    return;
+  }
+  // Empty message means verification disarmed; fall back to the default prompt.
+  m_status = message.empty() ? i18n::tr("lockscreen.ready") : message;
+  m_statusIsError = isError;
   updatePromptOnSurfaces();
 }
 

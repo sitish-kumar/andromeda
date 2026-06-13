@@ -22,6 +22,7 @@ struct wl_output;
 class Button;
 class Box;
 class Input;
+class Label;
 class SharedTextureCache;
 class WallpaperNode;
 struct KeyboardEvent;
@@ -89,6 +90,7 @@ private:
   Box* m_loginPanel = nullptr;
   Input* m_passwordField = nullptr;
   Button* m_loginButton = nullptr;
+  Label* m_statusLabel = nullptr;
   SharedTextureCache* m_textureCache = nullptr;
   TextureHandle m_wallpaperTexture{};
   TextureHandle m_blurredWallpaperTexture{};
