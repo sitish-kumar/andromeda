@@ -55,6 +55,25 @@ namespace settings {
       return std::string(source);
     }
 
+    int pluginSourceOrder(std::string_view source) {
+      if (source == "official") {
+        return 0;
+      }
+      if (source == "community") {
+        return 1;
+      }
+      return 2;
+    }
+
+    bool pluginSourceLess(std::string_view a, std::string_view b) {
+      const int aOrder = pluginSourceOrder(a);
+      const int bOrder = pluginSourceOrder(b);
+      if (aOrder != bOrder) {
+        return aOrder < bOrder;
+      }
+      return a < b;
+    }
+
     std::unique_ptr<Flex> sourceRow(const PluginSourceConfig& source, const SettingsPluginsContext& ctx, float scale) {
       auto row = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * scale, .fillWidth = true});
       Flex* r = row.get();
@@ -429,7 +448,11 @@ namespace settings {
           i18n::tr("settings.plugins.sources.empty"), Style::fontSizeCaption * scale, ColorRole::OnSurfaceVariant
       ));
     }
-    for (const auto& source : ctx.sources) {
+    std::vector<PluginSourceConfig> sources = ctx.sources;
+    std::stable_sort(sources.begin(), sources.end(), [](const auto& a, const auto& b) {
+      return pluginSourceLess(a.name, b.name);
+    });
+    for (const auto& source : sources) {
       section->addChild(sourceRow(source, ctx, scale));
     }
 
@@ -452,18 +475,13 @@ namespace settings {
     }
     std::vector<scripting::PluginStatus> plugins = ctx.plugins;
     std::sort(plugins.begin(), plugins.end(), [&](const auto& a, const auto& b) {
-      const bool aEnabled = pluginEnabled(a, ctx);
-      const bool bEnabled = pluginEnabled(b, ctx);
-      if (aEnabled != bEnabled) {
-        return aEnabled;
-      }
       const std::string_view aName = pluginDisplayName(a);
       const std::string_view bName = pluginDisplayName(b);
       if (aName != bName) {
         return aName < bName;
       }
       if (a.source != b.source) {
-        return a.source < b.source;
+        return pluginSourceLess(a.source, b.source);
       }
       return a.id < b.id;
     });
