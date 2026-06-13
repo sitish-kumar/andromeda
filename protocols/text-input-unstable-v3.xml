@@ -517,27 +517,27 @@
 
     <request name="show_input_panel" since="2">
       <description summary="show input panel">
-        Requests an input panel to be shown (e.g. a on-screen keyboard).
+	Requests an input panel to be shown (e.g. a on-screen keyboard).
 
-        This request only hints the desired interaction pattern from the
-        client side, and its effect may be ignored by compositors given
-        other environmental factors. Repeated calls will be ignored.
+	This request only hints the desired interaction pattern from the
+	client side, and its effect may be ignored by compositors given
+	other environmental factors. Repeated calls will be ignored.
       </description>
     </request>
 
     <request name="hide_input_panel" since="2">
       <description summary="hide input panel">
-        Requests an input panel to be hidden.
+	Requests an input panel to be hidden.
 
-        This request only hints the desired interaction pattern from the
-        client side, and its effect may be ignored by compositors given
-        other environmental factors. Repeated calls will be ignored.
+	This request only hints the desired interaction pattern from the
+	client side, and its effect may be ignored by compositors given
+	other environmental factors. Repeated calls will be ignored.
       </description>
     </request>
 
     <enum name="preedit_hint">
       <description summary="preedit style hint">
-        Style hints for the preedit string.
+	Style hints for the preedit string.
       </description>
       <entry name="whole" value="1" summary="simple pre-edit text style, typically underlined"/>
       <entry name="selection" value="2"
