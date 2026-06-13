@@ -1056,6 +1056,7 @@ ui_tree_reconciler_test = executable('ui_tree_reconciler_test',
     'src/theme/contrast.cpp',
   ) + _protocol_headers,
   dependencies: [
+    wayland_client_dep,
     cairo_dep,
     egl_dep,
     librsvg_dep,
