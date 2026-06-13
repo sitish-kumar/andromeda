@@ -300,7 +300,7 @@ foreach _p : [
   ['idle-inhibit-unstable-v1',
     wayland_protos_dir / 'unstable/idle-inhibit/idle-inhibit-unstable-v1.xml'],
   ['text-input-unstable-v3',
-    wayland_protos_dir / 'unstable/text-input/text-input-unstable-v3.xml'],
+    'protocols/text-input-unstable-v3.xml'],
   ['virtual-keyboard-unstable-v1',
     'protocols/virtual-keyboard-unstable-v1.xml'],
 
