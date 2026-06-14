@@ -974,6 +974,26 @@ string_utils_test = executable('string_utils_test',
 
 test('string_utils', string_utils_test)
 
+time_format_test = executable('time_format_test',
+  sources: files(
+    'tests/time_format_test.cpp',
+    'src/time/time_format.cpp',
+    'src/i18n/i18n.cpp',
+    'src/i18n/i18n_service.cpp',
+    'src/i18n/language_tag.cpp',
+    'src/core/resource_paths.cpp',
+    'src/core/log.cpp',
+  ),
+  include_directories: _noctalia_inc,
+  cpp_args: [
+    '-DNOCTALIA_SOURCE_ASSETS_DIR="' + meson.project_source_root() / 'assets' + '"',
+    '-DNOCTALIA_INSTALL_PREFIX="' + get_option('prefix') + '"',
+    '-DNOCTALIA_INSTALL_DATADIR="' + get_option('datadir') + '"',
+  ],
+)
+
+test('time_format', time_format_test)
+
 cpu_temp_sensor_test = executable('cpu_temp_sensor_test',
   sources: files(
     'tests/cpu_temp_sensor_test.cpp',

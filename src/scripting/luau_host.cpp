@@ -14,6 +14,7 @@
 #include "scripting/plugin_state_store.h"
 #include "scripting/script_api_context.h"
 #include "system/terminal_launch.h"
+#include "time/time_format.h"
 #include "util/file_utils.h"
 
 #include <algorithm>
@@ -27,8 +28,10 @@
 #include <json.hpp>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 namespace {
@@ -378,6 +381,26 @@ namespace {
     const char* path = luaL_checklstring(L, 1, &len);
     const std::string expanded = FileUtils::expandUserPath(std::string(path, len)).string();
     lua_pushlstring(L, expanded.data(), expanded.size());
+    return 1;
+  }
+
+  int luau_formatTime(lua_State* L) {
+    size_t patternLen = 0;
+    const char* pattern = luaL_checklstring(L, 1, &patternLen);
+
+    std::int64_t unixSeconds = 0;
+    if (lua_isnoneornil(L, 2)) {
+      unixSeconds = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    } else {
+      const double raw = luaL_checknumber(L, 2);
+      if (!std::isfinite(raw)) {
+        luaL_argerror(L, 2, "expected finite unix timestamp");
+      }
+      unixSeconds = static_cast<std::int64_t>(raw);
+    }
+
+    const std::string result = formatLocalUnixTime(unixSeconds, std::string_view(pattern, patternLen));
+    lua_pushlstring(L, result.data(), result.size());
     return 1;
   }
 
@@ -836,6 +859,7 @@ namespace {
       {"copyToClipboard", luau_copyToClipboard},
       {"getenv", luau_getenv},
       {"expandPath", luau_expandPath},
+      {"formatTime", luau_formatTime},
       {"setUpdateInterval", luau_setUpdateInterval},
       {"readFile", luau_readFile},
       {"writeFile", luau_writeFile},
