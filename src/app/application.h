@@ -139,6 +139,7 @@ private:
   void reloadPluginLauncherProviders();
   void startTrayService();
   void syncNotificationDaemon();
+  void scheduleNotificationShellRefresh();
   void syncPolkitAgent();
   void syncClipboardService();
   void syncScreenTimeService();
@@ -198,6 +199,7 @@ private:
   std::unique_ptr<UPowerService> m_upowerService;
   std::optional<bool> m_notificationDaemonEnabled;
   bool m_notificationDaemonInitFailed = false;
+  bool m_notificationShellRefreshScheduled = false;
   BatteryHookState m_batteryHookState;
   BatteryWarningMonitor m_batteryWarningMonitor;
   std::optional<bool> m_prevWirelessEnabledForEvents;

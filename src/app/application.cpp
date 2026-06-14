@@ -199,10 +199,7 @@ Application::Application()
   m_notificationManager.loadPersistedHistory();
   notify::setInstance(&m_notificationManager);
 
-  auto shouldRefreshControlCenter = [this]() { return m_panelManager.isOpenPanel("control-center"); };
-
-  m_notificationManager.addEventCallback([this,
-                                          shouldRefreshControlCenter](const Notification& n, NotificationEvent event) {
+  m_notificationManager.addEventCallback([this](const Notification& n, NotificationEvent event) {
     const char* kind = "updated";
     if (event == NotificationEvent::Added) {
       kind = "added";
@@ -217,15 +214,21 @@ Application::Application()
     }
 
     // Keep bar widgets in sync with notification state changes.
-    m_bar.refresh();
-    if (shouldRefreshControlCenter()) {
-      m_panelManager.refresh();
-    }
+    scheduleNotificationShellRefresh();
   });
 
-  m_notificationManager.setStateCallback([this, shouldRefreshControlCenter]() {
+  m_notificationManager.setStateCallback([this]() { scheduleNotificationShellRefresh(); });
+}
+
+void Application::scheduleNotificationShellRefresh() {
+  if (m_notificationShellRefreshScheduled) {
+    return;
+  }
+  m_notificationShellRefreshScheduled = true;
+  DeferredCall::callLater([this]() {
+    m_notificationShellRefreshScheduled = false;
     m_bar.refresh();
-    if (shouldRefreshControlCenter()) {
+    if (m_panelManager.isOpenPanel("control-center")) {
       m_panelManager.refresh();
     }
   });
