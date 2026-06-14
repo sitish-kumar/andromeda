@@ -328,6 +328,7 @@
     "editor": {
       "actions": {
         "add": "Add",
+        "clone": "Duplicate (Ctrl+C, Ctrl+V to copy/paste)",
         "done": "Done",
         "flip-horizontal": "Flip Horizontal",
         "flip-vertical": "Flip Vertical",

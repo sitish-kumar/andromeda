@@ -235,6 +235,8 @@ void BackgroundWidgetsEditor::open(const WidgetsEditorSnapshot& snapshot) {
   }
   m_open = true;
   clearSelection();
+  m_widgetClipboard.clear();
+  m_pasteCount = 0;
   m_drag = {};
   m_shiftHeld = false;
   m_leftShiftHeld = false;
@@ -260,6 +262,8 @@ WidgetsEditorSnapshot BackgroundWidgetsEditor::close() {
   m_surfaces.clear();
   m_drag = {};
   clearSelection();
+  m_widgetClipboard.clear();
+  m_pasteCount = 0;
   m_shiftHeld = false;
   m_leftShiftHeld = false;
   m_rightShiftHeld = false;
@@ -1033,6 +1037,13 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   const bool selectedFlipX = hasSelectedWidget && selectedWidgetIt->flipX;
   const bool selectedFlipY = hasSelectedWidget && selectedWidgetIt->flipY;
 
+  const bool canCloneSelected = hasSelectedWidget
+      && !selectedIsLoginBox
+      && std::any_of(m_selectedWidgetIds.begin(), m_selectedWidgetIds.end(), [this](const std::string& id) {
+                                  const DesktopWidgetState* state = findWidgetState(id);
+                                  return state != nullptr && !lockscreen_login_box::isLoginBoxWidget(*state);
+                                });
+
   const auto typeOptions = desktop_settings::desktopWidgetTypeOptions();
   std::vector<std::string> typeLabels;
   typeLabels.reserve(typeOptions.size());
@@ -1115,6 +1126,13 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
                           [this, outputName = surface.outputName]() {
                             deferEditorMutation([this, outputName]() { addWidget(outputName, m_addWidgetType); });
                           },
+                  }),
+                  ui::button({
+                      .glyph = "copy-plus",
+                      .enabled = canCloneSelected,
+                      .variant = ButtonVariant::Outline,
+                      .tooltip = i18n::tr("desktop-widgets.editor.actions.clone"),
+                      .onClick = [this]() { deferEditorMutation([this]() { cloneSelectedWidgets(); }); },
                   }),
                   ui::button({
                       .glyph = "stack-back",
@@ -1582,6 +1600,91 @@ void BackgroundWidgetsEditor::flipSelectedWidgetVertical() {
   }
   updateViewTransforms();
   requestRedraw();
+}
+
+float BackgroundWidgetsEditor::duplicateOffset() const {
+  if (shouldSnap() && m_snapshot.grid.cellSize > 0) {
+    return static_cast<float>(m_snapshot.grid.cellSize);
+  }
+  return 24.0f;
+}
+
+std::vector<DesktopWidgetState> BackgroundWidgetsEditor::selectedWidgetTemplates() const {
+  std::vector<DesktopWidgetState> templates;
+  for (const auto& widget : m_snapshot.widgets) {
+    if (!m_selectedWidgetIds.contains(widget.id) || lockscreen_login_box::isLoginBoxWidget(widget)) {
+      continue;
+    }
+    templates.push_back(widget);
+  }
+  return templates;
+}
+
+std::vector<std::string> BackgroundWidgetsEditor::insertWidgetCopies(
+    const std::vector<DesktopWidgetState>& templates, float offsetX, float offsetY, bool selectInserted
+) {
+  if (templates.empty() || m_wayland == nullptr) {
+    return {};
+  }
+
+  std::vector<std::string> insertedIds;
+  insertedIds.reserve(templates.size());
+  for (const DesktopWidgetState& templateState : templates) {
+    if (lockscreen_login_box::isLoginBoxWidget(templateState)) {
+      continue;
+    }
+
+    DesktopWidgetState copy = templateState;
+    copy.id = nextWidgetId();
+    copy.cx += offsetX;
+    copy.cy += offsetY;
+
+    const float intrinsicWidth = copy.boxWidth > 0.0f ? copy.boxWidth : 96.0f;
+    const float intrinsicHeight = copy.boxHeight > 0.0f ? copy.boxHeight : 96.0f;
+    desktop_widgets::clampStateToOutput(*m_wayland, copy, intrinsicWidth, intrinsicHeight);
+
+    insertedIds.push_back(copy.id);
+    m_snapshot.widgets.push_back(std::move(copy));
+  }
+
+  if (insertedIds.empty()) {
+    return insertedIds;
+  }
+
+  if (selectInserted) {
+    clearSelection();
+    for (const std::string& id : insertedIds) {
+      m_selectedWidgetIds.insert(id);
+    }
+    m_selectedWidgetId = insertedIds.back();
+  }
+
+  requestLayout();
+  return insertedIds;
+}
+
+void BackgroundWidgetsEditor::cloneSelectedWidgets() {
+  const std::vector<DesktopWidgetState> templates = selectedWidgetTemplates();
+  if (templates.empty()) {
+    return;
+  }
+  const float step = duplicateOffset();
+  insertWidgetCopies(templates, step, step, true);
+}
+
+void BackgroundWidgetsEditor::copySelectedWidgets() {
+  m_widgetClipboard = selectedWidgetTemplates();
+  m_pasteCount = 0;
+}
+
+void BackgroundWidgetsEditor::pasteWidgets() {
+  if (m_widgetClipboard.empty()) {
+    return;
+  }
+  ++m_pasteCount;
+  const float step = duplicateOffset();
+  const float offset = step * static_cast<float>(m_pasteCount);
+  insertWidgetCopies(m_widgetClipboard, offset, offset, true);
 }
 
 void BackgroundWidgetsEditor::startToolbarDrag(const std::string& outputName) {
@@ -2102,6 +2205,23 @@ void BackgroundWidgetsEditor::onKeyboardEvent(const KeyboardEvent& event) {
   if (KeySymbol::isBackspaceOrDelete(event.sym)) {
     removeSelectedWidget();
     return;
+  }
+
+  if ((event.modifiers & KeyMod::Ctrl) != 0) {
+    if (event.sym == XKB_KEY_c
+        || event.sym == XKB_KEY_C
+        || event.utf32 == static_cast<std::uint32_t>('c')
+        || event.utf32 == static_cast<std::uint32_t>('C')) {
+      copySelectedWidgets();
+      return;
+    }
+    if (event.sym == XKB_KEY_v
+        || event.sym == XKB_KEY_V
+        || event.utf32 == static_cast<std::uint32_t>('v')
+        || event.utf32 == static_cast<std::uint32_t>('V')) {
+      pasteWidgets();
+      return;
+    }
   }
 
   if (event.sym == XKB_KEY_g

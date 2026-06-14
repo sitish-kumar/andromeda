@@ -170,6 +170,9 @@ private:
   void bringSelectedWidgetToFront();
   void flipSelectedWidgetHorizontal();
   void flipSelectedWidgetVertical();
+  void cloneSelectedWidgets();
+  void copySelectedWidgets();
+  void pasteWidgets();
   void startToolbarDrag(const std::string& outputName);
   void startInspectorDrag(const std::string& outputName);
   void clampToolbarPosition(OverlaySurface& surface, float toolbarWidth, float toolbarHeight);
@@ -195,6 +198,11 @@ private:
   [[nodiscard]] bool shouldSnap() const;
   [[nodiscard]] float widgetContentScale(const DesktopWidgetState& state) const;
   [[nodiscard]] std::string nextWidgetId() const;
+  [[nodiscard]] float duplicateOffset() const;
+  [[nodiscard]] std::vector<DesktopWidgetState> selectedWidgetTemplates() const;
+  std::vector<std::string> insertWidgetCopies(
+      const std::vector<DesktopWidgetState>& templates, float offsetX, float offsetY, bool selectInserted
+  );
   [[nodiscard]] bool isWidgetSelected(const std::string& id) const;
   void clearSelection();
   void setSingleSelection(const std::string& id);
@@ -212,6 +220,8 @@ private:
   std::vector<std::unique_ptr<OverlaySurface>> m_surfaces;
   std::string m_selectedWidgetId;
   std::unordered_set<std::string> m_selectedWidgetIds;
+  std::vector<DesktopWidgetState> m_widgetClipboard;
+  std::size_t m_pasteCount = 0;
   DragState m_drag;
   bool m_open = false;
   bool m_shiftHeld = false;
