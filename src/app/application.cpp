@@ -1215,18 +1215,22 @@ void Application::initUi() {
     }
   });
   m_settingsWindow.setSyncGreeterAppearance([this]() {
-    (void)greeter::syncAppearanceToGreeterAsync(m_configService, m_themeService.resolvedMode(), [this](bool success) {
-      DeferredCall::callLater([this, success]() {
-        if (success) {
-          notify::info(
-              "Noctalia", i18n::tr("notifications.internal.greeter-sync"),
-              i18n::tr("notifications.internal.greeter-sync-success")
-          );
-          return;
-        }
-        m_settingsWindow.markSettingsWriteError(i18n::tr("settings.errors.sync-greeter"));
-      });
-    });
+    (void)greeter::syncAppearanceToGreeterAsync(
+        m_configService, m_themeService.resolvedMode(),
+        [this](bool success) {
+          DeferredCall::callLater([this, success]() {
+            if (success) {
+              notify::info(
+                  "Noctalia", i18n::tr("notifications.internal.greeter-sync"),
+                  i18n::tr("notifications.internal.greeter-sync-success")
+              );
+              return;
+            }
+            m_settingsWindow.markSettingsWriteError(i18n::tr("settings.errors.sync-greeter"));
+          });
+        },
+        &m_compositorPlatform
+    );
   });
   m_settingsWindow.setSaveWallpaperPaletteAsCustom([this]() {
     std::string paletteName;
@@ -2091,7 +2095,9 @@ void Application::initIpc() {
   m_templateApplyService.registerIpc(m_ipcService);
   m_dock.registerIpc(m_ipcService);
   m_wallpaper.registerIpc(m_ipcService);
-  greeter::registerIpc(m_ipcService, m_configService, [this]() { return m_themeService.resolvedMode(); });
+  greeter::registerIpc(
+      m_ipcService, m_configService, [this]() { return m_themeService.resolvedMode(); }, &m_compositorPlatform
+  );
   if (m_mprisService) {
     m_mprisService->registerIpc(m_ipcService);
   }
