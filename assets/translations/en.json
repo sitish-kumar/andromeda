@@ -177,6 +177,7 @@
         "unknown-track": "Unknown track"
       },
       "select-avatar": "Select Avatar",
+      "avatar-error-title": "Avatar not updated",
       "unknown": "unknown",
       "uptime": "Uptime - {uptime}",
       "weather": {
@@ -327,7 +328,10 @@
     "editor": {
       "actions": {
         "add": "Add",
+        "clone": "Duplicate (Ctrl+C, Ctrl+V to copy/paste)",
         "done": "Done",
+        "flip-horizontal": "Flip Horizontal",
+        "flip-vertical": "Flip Vertical",
         "hide": "Hide",
         "settings": "Settings",
         "show": "Show",
@@ -365,6 +369,7 @@
         "font-family": "Font",
         "font-family-default": "Default",
         "format": "Format",
+        "forecast-days": "Forecast Days",
         "hide-when-no-media": "Hide When No Media",
         "horizontal": "Horizontal",
         "image-path": "Image",
@@ -382,6 +387,7 @@
         "sensitivity": "Sensitivity",
         "shadow": "Shadow",
         "show-label": "Show Label",
+        "show-forecast": "Show Forecast",
         "show-login-button": "Login Button",
         "show-when-idle": "Show When Idle",
         "stat": "Stat",
@@ -418,6 +424,7 @@
         "clock": "Clock",
         "fancy-audio-visualizer": "Fancy Audio Visualizer",
         "label": "Label",
+        "login-box": "Login Box",
         "media-player": "Media Player",
         "sticker": "Sticker",
         "system-monitor": "System Monitor",
@@ -822,7 +829,11 @@
       "widget": {
         "rename": "Could not rename named widget."
       },
-      "write": "Failed to save settings."
+      "write": "Failed to save settings.",
+      "avatar-invalid-path": "The selected avatar path is not a readable image file.",
+      "avatar-load": "Could not load the selected image. Use PNG, JPEG, WebP, GIF, BMP, or SVG.",
+      "avatar-write": "Could not prepare the avatar image for saving.",
+      "avatar-accounts": "Could not update the system account avatar."
     },
     "export-config": {
       "export": "Export",
@@ -1979,7 +1990,7 @@
       },
       "shell": {
         "avatar-path": {
-          "description": "Path to a custom avatar image",
+          "description": "Path to a custom avatar image. Large images are cropped and resized automatically.",
           "label": "Avatar Path",
           "placeholder": "/path/to/avatar.png"
         },

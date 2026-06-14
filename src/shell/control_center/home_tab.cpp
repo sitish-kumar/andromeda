@@ -11,8 +11,8 @@
 #include "dbus/mpris/mpris_service.h"
 #include "i18n/i18n.h"
 #include "net/http_client.h"
+#include "notification/notifications.h"
 #include "render/animation/animation_manager.h"
-#include "render/scene/input_area.h"
 #include "shell/avatar_path.h"
 #include "shell/control_center/shortcut_registry.h"
 #include "shell/panel/panel_button_style.h"
@@ -249,13 +249,23 @@ std::unique_ptr<Flex> HomeTab::create() {
     options.extensions = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"};
     options.startDirectory = avatarStartDirectory(m_accounts, m_config);
 
-    (void)FileDialog::open(std::move(options), [this](std::optional<std::filesystem::path> result) {
-      if (!result.has_value() || m_config == nullptr) {
+    (void)FileDialog::open(std::move(options), [this](std::optional<std::filesystem::path> pickedPath) {
+      if (!pickedPath.has_value() || m_config == nullptr) {
         return;
       }
-      if (!shell::applyAvatarPath(m_accounts, m_config, result->string())) {
-        kLog.warn("failed to set avatar path");
+      const auto applyResult = shell::applyAvatarPath(m_accounts, m_config, pickedPath->string());
+      if (applyResult.success()) {
+        m_loadedAvatarPath.clear();
+        DeferredCall::callLater([]() {
+          PanelManager::instance().refresh();
+          PanelManager::instance().requestRedraw();
+        });
+        return;
       }
+      notify::error(
+          "Noctalia", i18n::tr("control-center.home.avatar-error-title"),
+          i18n::tr(shell::avatarApplyErrorTranslationKey(applyResult.error))
+      );
     });
   });
   m_userAvatarArea = avatarArea.get();
@@ -1144,18 +1154,18 @@ void HomeTab::sync(Renderer& renderer) {
   syncWallpaperBackground(renderer);
 
   if (m_userAvatar != nullptr && m_config != nullptr) {
-    const std::string avatarPath = shell::resolvedAvatarPath(m_accounts, m_config->config());
+    const std::string displayPath = shell::avatarDisplayPath(m_accounts, m_config->config());
     const int avatarSize = static_cast<int>(std::round(m_userAvatar->width()));
-    if (avatarPath != m_loadedAvatarPath || avatarSize != m_loadedAvatarSize) {
-      if (avatarPath.empty()) {
+    if (displayPath != m_loadedAvatarPath || avatarSize != m_loadedAvatarSize) {
+      if (displayPath.empty()) {
         m_userAvatar->clear(renderer);
       } else {
         // Decode at the avatar's final on-screen size with no mipmaps: layout grows the
         // avatar to match the user text block, and trilinear mipmap sampling softens an
         // image displayed near 1:1. Both made the avatar look blurry.
-        m_userAvatar->setSourceFile(renderer, avatarPath, avatarSize, false);
+        (void)m_userAvatar->setSourceFile(renderer, displayPath, avatarSize, false);
       }
-      m_loadedAvatarPath = avatarPath;
+      m_loadedAvatarPath = displayPath;
       m_loadedAvatarSize = avatarSize;
     }
   }
