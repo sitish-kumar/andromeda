@@ -208,6 +208,7 @@ namespace {
       wallpaper["fill_color"] = formatRgbHex(fillColor);
     }
     root["wallpaper"] = std::move(wallpaper);
+    root["corner_radius_scale"] = config.shell.cornerRadiusScale;
 
     const auto manifestPath = staging / "appearance.json";
     std::ofstream out(manifestPath);
