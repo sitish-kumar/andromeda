@@ -1306,19 +1306,19 @@
           "label": "Content Scale"
         },
         "corner-bottom-left": {
-          "description": "Bottom left corner radius for the bar"
+          "description": "Bottom left corner radius for the bar; negative values carve a concave corner when this corner faces away from the screen edge"
         },
         "corner-bottom-right": {
-          "description": "Bottom right corner radius for the bar"
+          "description": "Bottom right corner radius for the bar; negative values carve a concave corner when this corner faces away from the screen edge"
         },
         "corner-radius": {
           "description": "Corner radius of the bar"
         },
         "corner-top-left": {
-          "description": "Top left corner radius for the bar"
+          "description": "Top left corner radius for the bar; negative values carve a concave corner when this corner faces away from the screen edge"
         },
         "corner-top-right": {
-          "description": "Top right corner radius for the bar"
+          "description": "Top right corner radius for the bar; negative values carve a concave corner when this corner faces away from the screen edge"
         },
         "edge-margin": {
           "description": "Distance from the nearest screen edge; positive values float the bar away from it"
