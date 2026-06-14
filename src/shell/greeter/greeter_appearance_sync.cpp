@@ -143,13 +143,13 @@ namespace {
     );
   }
 
-  // pkexec is the traditional polkit front-end; run0 is systemd's setuid-free alternative.
+  // Prefer run0: pkexec often stays on PATH without the setuid wrapper (e.g. NixOS).
   [[nodiscard]] std::string resolvePrivilegeEscalator() {
-    if (process::commandExists("pkexec")) {
-      return "pkexec";
-    }
     if (process::commandExists("run0")) {
       return "run0";
+    }
+    if (process::commandExists("pkexec")) {
+      return "pkexec";
     }
     return {};
   }
