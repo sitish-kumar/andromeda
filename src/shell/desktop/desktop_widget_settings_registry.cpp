@@ -122,6 +122,23 @@ namespace desktop_settings {
     return options;
   }
 
+  std::string desktopWidgetTypeLabel(std::string_view type) {
+    for (const auto& spec : kDesktopWidgetTypeSpecs) {
+      if (spec.type == type) {
+        return i18n::tr(spec.labelKey);
+      }
+    }
+    if (type == "login_box") {
+      return i18n::tr("desktop-widgets.editor.types.login-box");
+    }
+    if (auto entry = resolvePluginDesktopWidget(type); entry.has_value()) {
+      if (!entry->manifest->name.empty()) {
+        return entry->manifest->name;
+      }
+    }
+    return std::string(type);
+  }
+
   std::vector<WidgetSettingSpec> commonDesktopWidgetSettingSpecs(std::string_view type) {
     if (type == "login_box") {
       auto bgColor = colorSpec("background_color", "surface_variant");

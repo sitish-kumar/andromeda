@@ -1,13 +1,17 @@
 #include "cursor-shape-v1-client-protocol.h"
 #include "i18n/i18n.h"
+#include "render/core/render_styles.h"
 #include "render/render_context.h"
 #include "render/scene/input_area.h"
 #include "shell/desktop/desktop_widget_settings_registry.h"
 #include "shell/lockscreen/lockscreen_login_box.h"
 #include "shell/settings/color_spec_picker.h"
+#include "shell/settings/settings_content_common.h"
 #include "shell/settings/widget_settings_registry.h"
 #include "shell/widgets_editor/background_widgets_editor.h"
 #include "ui/builders.h"
+#include "ui/controls/input.h"
+#include "ui/controls/slider.h"
 #include "ui/dialogs/file_dialog.h"
 #include "ui/palette.h"
 #include "ui/style.h"
@@ -116,26 +120,104 @@ namespace {
   }
 
   std::unique_ptr<Flex> makeRow(std::string_view labelText, std::unique_ptr<Node> control) {
+    auto controlSlot = ui::row({
+        .align = FlexAlign::Center,
+        .justify = FlexJustify::End,
+        .gap = Style::spaceSm,
+        .minWidth = 0.0f,
+        .fillWidth = true,
+        .flexGrow = 1.0f,
+    });
+    controlSlot->addChild(std::move(control));
+
     return ui::row(
         {
             .align = FlexAlign::Center,
-            .justify = FlexJustify::SpaceBetween,
-            .gap = Style::spaceSm,
+            .gap = Style::spaceMd,
             .minHeight = kSettingRowHeight,
             .fillWidth = true,
         },
-        ui::row(
-            {
-                .align = FlexAlign::Center,
-                .minWidth = kLabelWidth,
-            },
-            ui::label({
-                .text = std::string(labelText),
-                .fontSize = Style::fontSizeCaption,
-                .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-            })
-        ),
-        std::move(control)
+        ui::label({
+            .text = std::string(labelText),
+            .fontSize = Style::fontSizeCaption,
+            .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+            .minWidth = kLabelWidth,
+            .maxWidth = kLabelWidth,
+            .textAlign = TextAlign::Start,
+            .ellipsize = TextEllipsize::End,
+        }),
+        std::move(controlSlot)
+    );
+  }
+
+  std::unique_ptr<Flex> makeSliderControl(
+      double value, double minVal, double maxVal, double step, bool integerValue, BackgroundWidgetsEditor* editor,
+      const std::string& key
+  ) {
+    Input* valueInputPtr = nullptr;
+    auto valueInput = ui::input({
+        .out = &valueInputPtr,
+        .value = settings::formatSliderValue(value, integerValue),
+        .fontSize = Style::fontSizeCaption,
+        .controlHeight = Style::controlHeightSm,
+        .horizontalPadding = Style::spaceXs,
+        .textAlign = TextAlign::End,
+        .width = 52.0f,
+        .height = Style::controlHeightSm,
+    });
+
+    Slider* sliderPtr = nullptr;
+    auto slider = ui::slider({
+        .out = &sliderPtr,
+        .minValue = minVal,
+        .maxValue = maxVal,
+        .step = step,
+        .value = value,
+        .trackHeight = Style::sliderTrackHeight,
+        .thumbSize = Style::sliderThumbSize,
+        .controlHeight = Style::controlHeightSm,
+        .flexGrow = 1.0f,
+        .onValueChanged = [valueInputPtr, integerValue, editor, key](double val) {
+          valueInputPtr->setInvalid(false);
+          valueInputPtr->setValue(settings::formatSliderValue(val, integerValue));
+          if (integerValue) {
+            editor->applySettingChange(key, static_cast<std::int64_t>(std::llround(val)));
+          } else {
+            editor->applySettingChange(key, val);
+          }
+        },
+    });
+
+    const auto commitInputText = [sliderPtr, valueInputPtr, minVal, maxVal, integerValue, editor,
+                                  key](const std::string& text) {
+      const auto parsed = settings::parseDoubleInput(text);
+      if (!parsed.has_value() || *parsed < minVal || *parsed > maxVal) {
+        valueInputPtr->setInvalid(true);
+        return;
+      }
+      const double v = *parsed;
+      valueInputPtr->setInvalid(false);
+      sliderPtr->setValue(v);
+      valueInputPtr->setValue(settings::formatSliderValue(sliderPtr->value(), integerValue));
+      if (integerValue) {
+        editor->applySettingChange(key, static_cast<std::int64_t>(std::llround(v)));
+      } else {
+        editor->applySettingChange(key, v);
+      }
+    };
+
+    valueInput->setOnChange([valueInputPtr](const std::string& /*text*/) { valueInputPtr->setInvalid(false); });
+    valueInput->setOnSubmit([commitInputText](const std::string& text) { commitInputText(text); });
+    valueInput->setOnFocusLoss([commitInputText, valueInputPtr]() { commitInputText(valueInputPtr->value()); });
+
+    return ui::row(
+        {
+            .align = FlexAlign::Center,
+            .gap = Style::spaceSm,
+            .fillWidth = true,
+            .flexGrow = 1.0f,
+        },
+        std::move(slider), std::move(valueInput)
     );
   }
 
@@ -156,17 +238,7 @@ namespace {
       std::string_view labelText, const std::string& key, double fallback, double minVal, double maxVal, double step,
       const Settings& s, BackgroundWidgetsEditor* editor
   ) {
-    return makeRow(
-        labelText,
-        ui::slider({
-            .minValue = minVal,
-            .maxValue = maxVal,
-            .step = step,
-            .value = getDouble(s, key, fallback),
-            .flexGrow = 1.0f,
-            .onValueChanged = [editor, key](double val) { editor->applySettingChange(key, val); },
-        })
-    );
+    return makeRow(labelText, makeSliderControl(getDouble(s, key, fallback), minVal, maxVal, step, false, editor, key));
   }
 
   // Integer-valued slider: commits std::int64_t so the stored value matches the
@@ -177,16 +249,7 @@ namespace {
   ) {
     return makeRow(
         labelText,
-        ui::slider({
-            .minValue = minVal,
-            .maxValue = maxVal,
-            .step = std::max(1.0, step),
-            .value = getDouble(s, key, fallback),
-            .flexGrow = 1.0f,
-            .onValueChanged = [editor, key](double val) {
-              editor->applySettingChange(key, static_cast<std::int64_t>(std::llround(val)));
-            },
-        })
+        makeSliderControl(getDouble(s, key, fallback), minVal, maxVal, std::max(1.0, step), true, editor, key)
     );
   }
 
@@ -610,17 +673,20 @@ void BackgroundWidgetsEditor::buildInspector(
 
   Flex* panelPtr = nullptr;
   Flex* handlePtr = nullptr;
+  const float panelRadius = Style::scaledRadiusXl();
   auto panel = ui::column(
       {
           .out = &panelPtr,
+          .align = FlexAlign::Stretch,
           .gap = 0.0f,
           .minWidth = kInspectorWidth,
           .maxWidth = kInspectorWidth,
+          .clipChildren = true,
           .configure =
-              [](Flex& flex) {
+              [panelRadius](Flex& flex) {
                 flex.setFill(colorSpecFromRole(ColorRole::Surface, 0.94f));
                 flex.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
-                flex.setRadius(Style::scaledRadiusXl());
+                flex.setRadius(panelRadius);
                 flex.setZIndex(201);
               },
       },
@@ -628,33 +694,35 @@ void BackgroundWidgetsEditor::buildInspector(
           {
               .out = &handlePtr,
               .align = FlexAlign::Center,
+              .justify = FlexJustify::Center,
               .gap = Style::spaceXs,
               .paddingV = Style::spaceXs,
               .paddingH = Style::spaceMd,
               .fill = colorSpecFromRole(ColorRole::SurfaceVariant, 0.85f),
-              .radius = Style::scaledRadiusLg(),
               .minHeight = Style::controlHeightSm,
               .fillWidth = true,
+              .width = kInspectorWidth,
+              .configure = [panelRadius](Flex& flex) { flex.setRadii(Radii(panelRadius, panelRadius, 0.0f, 0.0f)); },
           },
           ui::glyph({
               .glyph = "menu-2",
               .glyphSize = 14.0f,
           }),
           ui::label({
-              .text = i18n::tr("desktop-widgets.editor.settings.title"),
+              .text = desktop_settings::desktopWidgetTypeLabel(selectedState.type),
               .fontSize = Style::fontSizeBody,
               .fontWeight = FontWeight::Bold,
-          }),
-          std::move(handleArea)
+          })
       ),
       std::move(scrollView)
   );
 
   surface.inspector = panelPtr;
   root.addChild(std::move(panel));
+  panelPtr->addChild(std::move(handleArea));
   panelPtr->layout(*m_renderContext);
   handleAreaPtr->setPosition(0.0f, 0.0f);
-  handleAreaPtr->setFrameSize(handlePtr->width(), handlePtr->height());
+  handleAreaPtr->setFrameSize(panelPtr->width(), handlePtr->height());
 
   if (!surface.inspectorPositionInitialized && surface.toolbar != nullptr) {
     surface.inspectorX = surface.toolbarX;
