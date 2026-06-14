@@ -696,8 +696,9 @@ void LockScreen::tryAuthenticate() {
   updatePromptOnSurfaces();
 
   const PamAuthenticator authenticator = m_authenticator;
-  std::thread([this, generation, password = std::move(password), authenticator]() mutable {
-    const auto result = authenticator.authenticateCurrentUser(password);
+  const std::string pamService = passwordPamService();
+  std::thread([this, generation, password = std::move(password), authenticator, pamService]() mutable {
+    const auto result = authenticator.authenticateCurrentUser(password, pamService);
     clearSensitiveString(password);
     DeferredCall::callLater([this, generation, result]() { handleAuthResult(generation, result); });
   }).detach();
@@ -752,6 +753,15 @@ void LockScreen::handleFingerprintStatus(const std::string& message, bool isErro
   m_status = message.empty() ? i18n::tr("lockscreen.ready") : message;
   m_statusIsError = isError;
   updatePromptOnSurfaces();
+}
+
+std::string LockScreen::passwordPamService() const {
+  if (m_configService != nullptr
+      && m_configService->config().lockscreen.fingerprint
+      && PamAuthenticator::pamServiceExists("su")) {
+    return "su";
+  }
+  return "login";
 }
 
 void LockScreen::clearSensitiveString(std::string& value) {

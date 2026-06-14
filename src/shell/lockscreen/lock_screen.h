@@ -97,6 +97,7 @@ private:
   void startFingerprint();
   void stopFingerprint();
   void handleFingerprintStatus(const std::string& message, bool isError);
+  [[nodiscard]] std::string passwordPamService() const;
   static void clearSensitiveString(std::string& value);
 
   WaylandConnection* m_wayland = nullptr;
