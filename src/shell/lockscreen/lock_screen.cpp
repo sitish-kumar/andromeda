@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <string>
+#include <thread>
 #include <wayland-client.h>
 
 namespace {
@@ -45,6 +46,7 @@ namespace {
 LockScreen::LockScreen() = default;
 
 LockScreen::~LockScreen() {
+  invalidatePendingAuthentication();
   clearInstances();
   resetLockState();
 }
@@ -150,6 +152,7 @@ void LockScreen::unlock() {
   }
 
   m_pendingAfterLocked = {};
+  invalidatePendingAuthentication();
   stopFingerprint();
 
   const bool wasLockedInteractive = m_locked;
@@ -391,6 +394,7 @@ void LockScreen::handleFinished(void* data, ext_session_lock_v1* /*lock*/) {
   auto* self = static_cast<LockScreen*>(data);
   kLog.info("session lock finished by compositor");
   self->m_pendingAfterLocked = {};
+  self->invalidatePendingAuthentication();
   self->stopFingerprint();
 
   if (self->m_lock != nullptr) {
@@ -608,7 +612,7 @@ void LockScreen::createInstance(const WaylandOutput& output) {
   }
   surface->setOnLogin([this]() { tryAuthenticate(); });
   surface->setOnPasswordChanged([this](const std::string& value) { handlePasswordEdited(value); });
-  surface->setPromptState(m_user, m_password, m_status, m_statusIsError);
+  surface->setPromptState(m_user, m_password, m_status, m_statusIsError, m_authenticating);
 
   surface->setBlackout(!isInteractiveOutput(output));
 
@@ -647,11 +651,19 @@ void LockScreen::clearInstances() { m_instances.clear(); }
 
 void LockScreen::updatePromptOnSurfaces() {
   for (auto& instance : m_instances) {
-    instance.surface->setPromptState(m_user, m_password, m_status, m_statusIsError);
+    instance.surface->setPromptState(m_user, m_password, m_status, m_statusIsError, m_authenticating);
   }
 }
 
+void LockScreen::invalidatePendingAuthentication() {
+  ++m_authGeneration;
+  m_authenticating = false;
+}
+
 void LockScreen::handlePasswordEdited(const std::string& value) {
+  if (m_authenticating) {
+    return;
+  }
   if (m_password == value && m_status.empty() && !m_statusIsError) {
     return;
   }
@@ -662,12 +674,41 @@ void LockScreen::handlePasswordEdited(const std::string& value) {
 }
 
 void LockScreen::tryAuthenticate() {
+  if (m_authenticating || !m_locked) {
+    return;
+  }
+  if (m_password.empty()) {
+    return;
+  }
+
+  stopFingerprint();
+  if (m_wayland != nullptr) {
+    m_wayland->stopKeyRepeat();
+  }
+
+  std::string password = m_password;
+  clearSensitiveString(m_password);
+
+  const std::uint64_t generation = ++m_authGeneration;
+  m_authenticating = true;
   m_status = i18n::tr("lockscreen.authenticating");
   m_statusIsError = false;
   updatePromptOnSurfaces();
 
-  const auto result = m_authenticator.authenticateCurrentUser(m_password);
-  clearSensitiveString(m_password);
+  const PamAuthenticator authenticator = m_authenticator;
+  std::thread([this, generation, password = std::move(password), authenticator]() mutable {
+    const auto result = authenticator.authenticateCurrentUser(password);
+    clearSensitiveString(password);
+    DeferredCall::callLater([this, generation, result]() { handleAuthResult(generation, result); });
+  }).detach();
+}
+
+void LockScreen::handleAuthResult(std::uint64_t generation, PamAuthenticator::Result result) {
+  if (generation != m_authGeneration || !m_locked) {
+    return;
+  }
+
+  m_authenticating = false;
 
   if (result.success) {
     m_status = i18n::tr("lockscreen.unlocked");
@@ -680,6 +721,7 @@ void LockScreen::tryAuthenticate() {
   m_status = result.message.empty() ? i18n::tr("lockscreen.authentication-failed") : result.message;
   m_statusIsError = true;
   updatePromptOnSurfaces();
+  startFingerprint();
 }
 
 void LockScreen::startFingerprint() {

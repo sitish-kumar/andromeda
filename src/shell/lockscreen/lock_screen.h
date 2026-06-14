@@ -92,6 +92,8 @@ private:
   void updatePromptOnSurfaces();
   void handlePasswordEdited(const std::string& value);
   void tryAuthenticate();
+  void handleAuthResult(std::uint64_t generation, PamAuthenticator::Result result);
+  void invalidatePendingAuthentication();
   void startFingerprint();
   void stopFingerprint();
   void handleFingerprintStatus(const std::string& message, bool isError);
@@ -112,6 +114,8 @@ private:
   std::string m_status;
   wl_surface* m_pointerSurface = nullptr;
   bool m_statusIsError = false;
+  bool m_authenticating = false;
+  std::uint64_t m_authGeneration = 0;
   bool m_lockPending = false;
   bool m_locked = false;
   bool m_desktopCapturesPrimed = false;

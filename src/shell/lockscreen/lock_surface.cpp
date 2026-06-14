@@ -206,14 +206,21 @@ void LockSurface::focusPasswordField() {
   m_inputDispatcher.setFocus(m_passwordField->inputArea());
 }
 
-void LockSurface::setPromptState(std::string user, std::string password, std::string status, bool error) {
-  if (m_user == user && m_password == password && m_status == status && m_error == error) {
+void LockSurface::setPromptState(
+    std::string user, std::string password, std::string status, bool error, bool authenticating
+) {
+  if (m_user == user
+      && m_password == password
+      && m_status == status
+      && m_error == error
+      && m_authenticating == authenticating) {
     return;
   }
   m_user = std::move(user);
   m_password = std::move(password);
   m_status = std::move(status);
   m_error = error;
+  m_authenticating = authenticating;
   requestUpdate();
 }
 
@@ -575,6 +582,10 @@ void LockSurface::layoutScene(std::uint32_t width, std::uint32_t height) {
 
 void LockSurface::updateCopy() {
   m_passwordField->setValue(m_password);
+  m_passwordField->setEnabled(!m_authenticating);
+  if (m_loginButton != nullptr) {
+    m_loginButton->setEnabled(!m_authenticating);
+  }
 
   if (m_statusLabel != nullptr) {
     const bool show = m_locked && !m_blackout && !m_status.empty();

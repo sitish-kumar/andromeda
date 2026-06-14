@@ -39,7 +39,7 @@ public:
   bool initialize() override { return false; }
   bool initialize(ext_session_lock_v1* lock, wl_output* output, std::int32_t scale);
   void setLockedState(bool locked);
-  void setPromptState(std::string user, std::string password, std::string status, bool error);
+  void setPromptState(std::string user, std::string password, std::string status, bool error, bool authenticating);
   void setTextureCache(SharedTextureCache* cache) noexcept { m_textureCache = cache; }
   void setWallpaperPath(std::string wallpaperPath);
   void setWallpaperFillMode(WallpaperFillMode fillMode);
@@ -116,6 +116,7 @@ private:
   std::string m_password;
   std::string m_status;
   bool m_error = false;
+  bool m_authenticating = false;
   std::string m_outputKey;
   LockscreenWidgetsHost* m_widgetsHost = nullptr;
 };
