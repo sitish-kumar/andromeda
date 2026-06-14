@@ -710,8 +710,12 @@ void LauncherPanel::onInputChanged(const std::string& text) {
   }
 
   const bool typedQuery = !queryText.empty();
+  const bool sortByUsage = m_config != nullptr && m_config->config().shell.panel.launcherSortByUsage;
 
   auto applyUsageBoost = [&](std::vector<LauncherResult>& results, const LauncherProvider& provider) {
+    if (!sortByUsage) {
+      return;
+    }
     for (auto& result : results) {
       const int usageCount = m_usageTracker.getCount(provider.id(), result.id);
       result.score += usageBoostForScore(result.score, usageCount, typedQuery);
@@ -727,7 +731,7 @@ void LauncherPanel::onInputChanged(const std::string& text) {
     m_allResults = activeProvider->query(queryText);
     if (activeProvider->trackUsage()) {
       applyUsageBoost(m_allResults, *activeProvider);
-      if (m_usageTracker.getRecentlyUsedCount(activeProvider->id()) > 0) {
+      if (sortByUsage && m_usageTracker.getRecentlyUsedCount(activeProvider->id()) > 0) {
         hasRecentlyUsed = true;
       }
     }
@@ -751,7 +755,7 @@ void LauncherPanel::onInputChanged(const std::string& text) {
       auto results = provider->query(queryText);
       if (provider->trackUsage()) {
         applyUsageBoost(results, *provider);
-        if (m_usageTracker.getRecentlyUsedCount(provider->id()) > 0) {
+        if (sortByUsage && m_usageTracker.getRecentlyUsedCount(provider->id()) > 0) {
           hasRecentlyUsed = true;
         }
       }

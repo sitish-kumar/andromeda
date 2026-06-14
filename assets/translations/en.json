@@ -1741,6 +1741,10 @@
           "description": "Include session actions (lock, suspend, reboot, shutdown, logout) in general launcher searches, not only behind the /session prefix",
           "label": "Enable Session Search"
         },
+        "launcher-sort-by-usage": {
+          "description": "Boost frequently used apps toward the top and show a Recently Used category filter",
+          "label": "Sort by Usage"
+        },
         "launcher-show-icons": {
           "description": "Show application icons in launcher results",
           "label": "Show App Icons"

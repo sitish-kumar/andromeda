@@ -996,6 +996,11 @@ namespace settings {
         ToggleSetting{cfg.shell.panel.launcherCompact}, "launcher compact rows dense"
     ));
     entries.push_back(makeEntry(
+        SettingsSection::Panels, "launcher", tr("settings.schema.panels.launcher-sort-by-usage.label"),
+        tr("settings.schema.panels.launcher-sort-by-usage.description"), {"shell", "panel", "launcher_sort_by_usage"},
+        ToggleSetting{cfg.shell.panel.launcherSortByUsage}, "launcher sort usage recently used frequency"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Panels, "launcher", tr("settings.schema.panels.launcher-session-search.label"),
         tr("settings.schema.panels.launcher-session-search.description"), {"shell", "panel", "launcher_session_search"},
         ToggleSetting{cfg.shell.panel.launcherSessionSearch},

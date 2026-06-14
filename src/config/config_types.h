@@ -775,6 +775,7 @@ struct ShellConfig {
     bool launcherShowIcons = true;
     bool launcherCompact = false;
     bool launcherSessionSearch = false;
+    bool launcherSortByUsage = true;
 
     bool operator==(const PanelConfig&) const = default;
   };
