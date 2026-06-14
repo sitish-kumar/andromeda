@@ -1818,7 +1818,7 @@
           "label": "Longitude"
         },
         "minimum-brightness": {
-          "description": "Prevent screen from going completely dark",
+          "description": "Prevent the screen from going completely dark",
           "label": "Minimum Brightness"
         },
         "mpris-blacklist": {
