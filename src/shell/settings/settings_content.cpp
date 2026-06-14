@@ -1075,7 +1075,6 @@ namespace settings {
         req();
       };
 
-      const float iconBtnH = Style::controlHeight * scale;
       for (std::size_t idx = 0; idx < state->size(); ++idx) {
         auto row = ui::row({
             .align = FlexAlign::Center,
@@ -1091,47 +1090,6 @@ namespace settings {
             .flexGrow = 1.0f,
         });
         row->addChild(std::move(summary));
-
-        auto reorder = ui::row({.align = FlexAlign::Center, .gap = Style::spaceXs * scale});
-
-        auto upBtn = ui::button({
-            .glyph = "chevron-up",
-            .glyphSize = Style::fontSizeBody * scale,
-            .enabled = idx > 0,
-            .variant = ButtonVariant::Ghost,
-            .minWidth = Style::controlHeightSm * scale,
-            .minHeight = iconBtnH,
-            .padding = Style::spaceXs * scale,
-            .radius = Style::scaledRadiusMd(scale),
-            .onClick = [state, rowIndex = idx, commit]() {
-              if (rowIndex == 0 || rowIndex >= state->size()) {
-                return;
-              }
-              std::swap((*state)[rowIndex - 1], (*state)[rowIndex]);
-              commit();
-            },
-        });
-        reorder->addChild(std::move(upBtn));
-
-        auto downBtn = ui::button({
-            .glyph = "chevron-down",
-            .glyphSize = Style::fontSizeBody * scale,
-            .enabled = idx + 1 < state->size(),
-            .variant = ButtonVariant::Ghost,
-            .minWidth = Style::controlHeightSm * scale,
-            .minHeight = iconBtnH,
-            .padding = Style::spaceXs * scale,
-            .radius = Style::scaledRadiusMd(scale),
-            .onClick = [state, rowIndex = idx, commit]() {
-              if (rowIndex + 1 >= state->size()) {
-                return;
-              }
-              std::swap((*state)[rowIndex + 1], (*state)[rowIndex]);
-              commit();
-            },
-        });
-        reorder->addChild(std::move(downBtn));
-        row->addChild(std::move(reorder));
 
         auto entrySettings = ui::button({
             .glyph = "settings",
