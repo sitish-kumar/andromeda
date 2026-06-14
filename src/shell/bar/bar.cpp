@@ -32,6 +32,7 @@
 #include <cmath>
 #include <linux/input-event-codes.h>
 #include <optional>
+#include <unordered_set>
 #include <wayland-client-core.h>
 
 namespace {
@@ -955,9 +956,41 @@ void Bar::reload() {
     newBarsByName[m_lastBars[i].name] = {&m_lastBars[i], i};
   }
 
+  // Exclusive-zone geometry on an output depends on the order its bar surfaces are
+  // created: bars on the same edge stack in creation order, and bars on adjacent
+  // edges (e.g. top + left) compete for the shared corner the same way. Rebuilding
+  // one bar's surface in place while recreating another would commit them out of
+  // config order and reshuffle that geometry. So if any bar on an output needs a
+  // surface recreate, recreate every bar on that output — syncInstances rebuilds
+  // them in config order. Scoped per output so other monitors are untouched.
+  const auto needsSurfaceRecreate = [&](const BarInstance& inst) -> bool {
+    auto it = newBarsByName.find(inst.barConfig.name);
+    if (it == newBarsByName.end()) {
+      return true;
+    }
+    const auto& outputs = m_platform->outputs();
+    auto outIt =
+        std::find_if(outputs.begin(), outputs.end(), [&inst](const auto& o) { return o.name == inst.outputName; });
+    if (outIt == outputs.end()) {
+      return true;
+    }
+    auto resolved = ConfigService::resolveForOutput(*it->second.first, *outIt);
+    if (!resolved.enabled) {
+      return true;
+    }
+    return !barConfigSurfaceFieldsEqual(inst.barConfig, resolved, previousShadow, m_lastShadow);
+  };
+  std::unordered_set<std::uint32_t> outputsNeedingRecreate;
+  for (const auto& instUp : m_instances) {
+    if (needsSurfaceRecreate(*instUp)) {
+      outputsNeedingRecreate.insert(instUp->outputName);
+    }
+  }
+
   // For each existing instance, decide whether to rebuild contents in place
   // (surface preserved → no exclusive-zone churn) or destroy (will be recreated
-  // by syncInstances below).
+  // by syncInstances below). Any bar on an output flagged above is destroyed so the
+  // whole output is rebuilt in config order.
   bool destroyedAny = false;
   std::erase_if(m_instances, [&](const std::unique_ptr<BarInstance>& instUp) {
     auto& inst = *instUp;
@@ -972,6 +1005,9 @@ void Bar::reload() {
       destroyedAny = true;
       return true;
     };
+    if (outputsNeedingRecreate.contains(inst.outputName)) {
+      return destroy();
+    }
     if (it == newBarsByName.end()) {
       return destroy();
     }
@@ -985,9 +1021,6 @@ void Bar::reload() {
 
     auto resolved = ConfigService::resolveForOutput(*it->second.first, *outIt);
     if (!resolved.enabled) {
-      return destroy();
-    }
-    if (!barConfigSurfaceFieldsEqual(inst.barConfig, resolved, previousShadow, m_lastShadow)) {
       return destroy();
     }
 
