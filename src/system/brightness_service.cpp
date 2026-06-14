@@ -1289,7 +1289,8 @@ struct BrightnessService::Impl {
       display.ddcBus = candidate.bus;
       display.maxRaw = candidate.maxRaw;
       display.pub.id = candidate.connectorName;
-      display.pub.brightness = std::max(normalizedBrightness(candidate.currentRaw, candidate.maxRaw), activeConfig.minimumBrightness);
+      display.pub.brightness =
+          std::max(normalizedBrightness(candidate.currentRaw, candidate.maxRaw), activeConfig.minimumBrightness);
       applyOutputMetadata(display.pub, *output);
       internals.push_back(std::move(display));
 
@@ -1324,7 +1325,8 @@ struct BrightnessService::Impl {
       display->quarantined = false;
       display->cooldownUntil = {};
       display->maxRaw = completion.maxRaw;
-      display->pub.brightness = std::max(normalizedBrightness(completion.currentRaw, completion.maxRaw), activeConfig.minimumBrightness);
+      display->pub.brightness =
+          std::max(normalizedBrightness(completion.currentRaw, completion.maxRaw), activeConfig.minimumBrightness);
       syncPublicDisplay(*display);
       return std::abs(display->pub.brightness - oldBrightness) > 0.001f;
     }
@@ -1372,7 +1374,8 @@ struct BrightnessService::Impl {
             continue;
           }
 
-          const float newBrightness = std::max(readBacklightBrightness(display.sysfsPath, display.maxRaw), activeConfig.minimumBrightness);
+          const float newBrightness =
+              std::max(readBacklightBrightness(display.sysfsPath, display.maxRaw), activeConfig.minimumBrightness);
           if (std::abs(newBrightness - display.pub.brightness) > 0.001f) {
             display.pub.brightness = newBrightness;
             syncPublicDisplay(display);
