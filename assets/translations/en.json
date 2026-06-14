@@ -165,6 +165,7 @@
       "unknown-resolution": "Unknown resolution"
     },
     "home": {
+      "avatar-error-title": "Avatar not updated",
       "media": {
         "idle": "Idle",
         "no-active-player": "No active player",
@@ -177,7 +178,6 @@
         "unknown-track": "Unknown track"
       },
       "select-avatar": "Select Avatar",
-      "avatar-error-title": "Avatar not updated",
       "unknown": "unknown",
       "uptime": "Uptime - {uptime}",
       "weather": {
@@ -367,9 +367,9 @@
         "description": "Description",
         "fade-when-idle": "Fade When Idle",
         "font-family": "Font",
-        "font-family-default": "Default",
-        "format": "Format",
+        "font-family-default": "System default",
         "forecast-days": "Forecast Days",
+        "format": "Format",
         "hide-when-no-media": "Hide When No Media",
         "horizontal": "Horizontal",
         "image-path": "Image",
@@ -386,8 +386,8 @@
         "secondary-color": "Secondary Color",
         "sensitivity": "Sensitivity",
         "shadow": "Shadow",
-        "show-label": "Show Label",
         "show-forecast": "Show Forecast",
+        "show-label": "Show Label",
         "show-login-button": "Login Button",
         "show-when-idle": "Show When Idle",
         "stat": "Stat",
@@ -573,12 +573,12 @@
       "keybind-invalid-title": "Keybind not allowed",
       "launcher-usage-reset": "Launcher",
       "launcher-usage-reset-success": "Usage data cleared.",
-      "screen-time-reset": "Screen Time",
-      "screen-time-reset-success": "Usage history cleared.",
       "lockscreen-widgets-editor": "Lockscreen widget editor",
       "lockscreen-widgets-editor-blocked-locked": "Unlock the session before editing lockscreen widgets.",
       "lockscreen-widgets-editor-enabled": "Lockscreen widget editor is on. Arrange widgets on the preview overlay, then lock the session to verify the layout.",
       "mpris-disabled": "MPRIS disabled",
+      "screen-time-reset": "Screen Time",
+      "screen-time-reset-success": "Usage history cleared.",
       "session-bus-unavailable": "Session bus unavailable",
       "wallpaper-palette-export": "Custom Palette",
       "wallpaper-palette-export-success": "Saved \"{name}\" and switched palette source to custom."
@@ -814,6 +814,10 @@
       }
     },
     "errors": {
+      "avatar-accounts": "Could not update the system account avatar.",
+      "avatar-invalid-path": "The selected avatar path is not a readable image file.",
+      "avatar-load": "Could not load the selected image. Use PNG, JPEG, WebP, GIF, BMP, or SVG.",
+      "avatar-write": "Could not prepare the avatar image for saving.",
       "bar": {
         "create": "Could not create bar.",
         "delete": "Could not delete bar.",
@@ -834,11 +838,7 @@
       "widget": {
         "rename": "Could not rename named widget."
       },
-      "write": "Failed to save settings.",
-      "avatar-invalid-path": "The selected avatar path is not a readable image file.",
-      "avatar-load": "Could not load the selected image. Use PNG, JPEG, WebP, GIF, BMP, or SVG.",
-      "avatar-write": "Could not prepare the avatar image for saving.",
-      "avatar-accounts": "Could not update the system account avatar."
+      "write": "Failed to save settings."
     },
     "export-config": {
       "export": "Export",
@@ -876,28 +876,6 @@
         "active": "Active",
         "idle-for-one": "Idle for 1 second",
         "idle-for-seconds": "Idle for {seconds} seconds"
-      }
-    },
-    "notifications": {
-      "filter": {
-        "add": "Add filter",
-        "add-title": "Add Notification Filter",
-        "allowed-urgencies-label": "Allowed urgencies",
-        "flag": {
-          "history": "history",
-          "sound": "sound",
-          "toast": "toast"
-        },
-        "flags-label": "When matched",
-        "match-label": "App",
-        "match-placeholder": "App name, desktop entry, or category…",
-        "play-sound": "Play sound",
-        "save-history": "Save to history",
-        "show-toast": "Show toast",
-        "summary": "{match} · {flags}",
-        "summary-blocked": "{match} · blocked",
-        "summary-disabled": "{match} · disabled",
-        "unnamed": "Unnamed filter"
       }
     },
     "navigation": {
@@ -984,6 +962,28 @@
         "system": "System",
         "templates": "Templates",
         "wallpaper": "Wallpaper"
+      }
+    },
+    "notifications": {
+      "filter": {
+        "add": "Add filter",
+        "add-title": "Add Notification Filter",
+        "allowed-urgencies-label": "Allowed urgencies",
+        "flag": {
+          "history": "history",
+          "sound": "sound",
+          "toast": "toast"
+        },
+        "flags-label": "When matched",
+        "match-label": "App",
+        "match-placeholder": "App name, desktop entry, or category…",
+        "play-sound": "Play sound",
+        "save-history": "Save to history",
+        "show-toast": "Show toast",
+        "summary": "{match} · {flags}",
+        "summary-blocked": "{match} · blocked",
+        "summary-disabled": "{match} · disabled",
+        "unnamed": "Unnamed filter"
       }
     },
     "options": {
@@ -1667,9 +1667,16 @@
         }
       },
       "notifications": {
-        "filters": {
-          "description": "Per-sender rules for toasts, history, and sounds; first matching enabled filter wins",
-          "label": "Notification Filters"
+        "allowed-urgencies": {
+          "description": "Only show external notifications at the selected urgency levels",
+          "label": "Allowed Urgencies"
+        },
+        "blacklist": {
+          "description": "Hide matching senders (app name, desktop entry, or category)",
+          "label": "Notification Blacklist"
+        },
+        "blacklist-allow-critical": {
+          "description": "Still show critical notifications from blacklisted senders"
         },
         "collapse-on-dismiss": {
           "description": "Slide remaining toasts to close gaps when one is dismissed",
@@ -1678,6 +1685,10 @@
         "daemon": {
           "description": "Enable the built-in notification daemon",
           "label": "Notification Daemon"
+        },
+        "filters": {
+          "description": "Per-sender rules for toasts, history, and sounds; first matching enabled filter wins",
+          "label": "Notification Filters"
         },
         "layer": {
           "description": "Use Overlay to show notification toasts above fullscreen apps.",
@@ -1741,22 +1752,22 @@
           "description": "Use smaller icons and tighter result rows",
           "label": "Compact Rows"
         },
-        "launcher-session-search": {
-          "description": "Include session actions (lock, suspend, reboot, shutdown, logout) in general launcher searches, not only behind the /session prefix",
-          "label": "Enable Session Search"
-        },
-        "launcher-sort-by-usage": {
-          "description": "Boost frequently used apps toward the top and show a Recently Used category filter",
-          "label": "Sort by Usage"
-        },
         "launcher-reset-usage": {
           "button": "Reset",
           "description": "Clear launch counts and recently used history used for launcher sorting",
           "label": "Reset Usage Data"
         },
+        "launcher-session-search": {
+          "description": "Include session actions (lock, suspend, reboot, shutdown, logout) in general launcher searches, not only behind the /session prefix",
+          "label": "Enable Session Search"
+        },
         "launcher-show-icons": {
           "description": "Show application icons in launcher results",
           "label": "Show App Icons"
+        },
+        "launcher-sort-by-usage": {
+          "description": "Boost frequently used apps toward the top and show a Recently Used category filter",
+          "label": "Sort by Usage"
         },
         "open-near-click-clipboard": {
           "description": "Position the clipboard panel near the bar click instead of centering it along the bar",
