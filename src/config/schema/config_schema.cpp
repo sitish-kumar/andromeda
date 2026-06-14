@@ -3,6 +3,7 @@
 #include "config/schema/engine.h"
 #include "config/schema/ranges.h"
 #include "core/key_chord.h"
+#include "notification/notification_filter.h"
 #include "scripting/plugin_id.h"
 #include "util/file_utils.h"
 
@@ -10,6 +11,7 @@
 #include <format>
 #include <stdexcept>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace noctalia::config::schema {
 
@@ -171,6 +173,42 @@ namespace noctalia::config::schema {
     return s;
   }
 
+  const Schema<NotificationFilterConfig>& notificationFilterSchema() {
+    static const Schema<NotificationFilterConfig> s = {
+        field(&NotificationFilterConfig::enabled, "enabled"),
+        custom<NotificationFilterConfig>(
+            "matches",
+            [](const toml::table& tbl, NotificationFilterConfig& out, std::string_view, Diagnostics&) {
+              if (!out.match.empty()) {
+                return;
+              }
+              const auto* arr = tbl["matches"].as_array();
+              if (arr == nullptr) {
+                return;
+              }
+              for (const auto& node : *arr) {
+                const auto token = node.value<std::string>();
+                if (!token.has_value() || StringUtils::trim(*token).empty()) {
+                  continue;
+                }
+                out.match = normalizeNotificationMatchToken(*token);
+                return;
+              }
+            },
+            [](toml::table&, const NotificationFilterConfig&) {}
+        ),
+        field(&NotificationFilterConfig::match, "match"),
+        field(&NotificationFilterConfig::showToast, "show_toast"),
+        field(&NotificationFilterConfig::saveHistory, "save_history"),
+        field(&NotificationFilterConfig::playSound, "play_sound"),
+        field(&NotificationFilterConfig::allowCritical, "allow_critical"),
+        finalize<NotificationFilterConfig>([](NotificationFilterConfig& filter, std::string_view, Diagnostics&) {
+          filter.match = normalizeNotificationMatchToken(std::move(filter.match));
+        }),
+    };
+    return s;
+  }
+
   const Schema<NotificationConfig>& notificationSchema() {
     static const Schema<NotificationConfig> s = {
         field(&NotificationConfig::enableDaemon, "enable_daemon"),
@@ -184,8 +222,95 @@ namespace noctalia::config::schema {
         field(&NotificationConfig::offsetY, "offset_y"),
         field(&NotificationConfig::monitors, "monitors"),
         field(&NotificationConfig::collapseOnDismiss, "collapse_on_dismiss"),
-        field(&NotificationConfig::blacklist, "blacklist"),
-        field(&NotificationConfig::blacklistAllowCritical, "blacklist_allow_critical"),
+        custom<NotificationConfig>(
+            "blacklist",
+            [](const toml::table& tbl, NotificationConfig& out, std::string_view, Diagnostics&) {
+              if (!out.filters.empty()) {
+                return;
+              }
+              const auto* arr = tbl["blacklist"].as_array();
+              if (arr == nullptr) {
+                return;
+              }
+              const bool allowCritical = tbl["blacklist_allow_critical"].value<bool>().value_or(true);
+              for (const auto& node : *arr) {
+                const auto token = node.value<std::string>();
+                if (!token.has_value() || StringUtils::trim(*token).empty()) {
+                  continue;
+                }
+                NotificationFilterConfig filter;
+                filter.match = normalizeNotificationMatchToken(*token);
+                filter.showToast = false;
+                filter.saveHistory = false;
+                filter.playSound = false;
+                filter.allowCritical = allowCritical;
+                out.filters.push_back(std::move(filter));
+              }
+              normalizeNotificationFilterNames(out.filters);
+            },
+            [](toml::table&, const NotificationConfig&) {}
+        ),
+        custom<NotificationConfig>(
+            "filter_order", [](const toml::table&, NotificationConfig&, std::string_view, Diagnostics&) {},
+            [](toml::table& tbl, const NotificationConfig& in) {
+              toml::array order;
+              for (const auto& filter : in.filters) {
+                if (!filter.name.empty()) {
+                  order.push_back(filter.name);
+                }
+              }
+              if (!order.empty()) {
+                tbl.insert_or_assign("filter_order", std::move(order));
+              }
+            }
+        ),
+        namedMap<NotificationConfig, NotificationFilterConfig>(
+            &NotificationConfig::filters, "filter", notificationFilterSchema(),
+            [](NotificationFilterConfig& filter, std::string_view name) { filter.name = std::string(name); },
+            [](const NotificationFilterConfig& filter) { return filter.name; }
+        ),
+        custom<NotificationConfig>(
+            "",
+            [](const toml::table& tbl, NotificationConfig& out, std::string_view, Diagnostics&) {
+              const auto* orderArr = tbl["filter_order"].as_array();
+              if (orderArr == nullptr || out.filters.empty()) {
+                normalizeNotificationFilterNames(out.filters);
+                return;
+              }
+
+              std::unordered_map<std::string, NotificationFilterConfig> byName;
+              byName.reserve(out.filters.size());
+              for (auto& filter : out.filters) {
+                if (!filter.name.empty()) {
+                  byName.emplace(filter.name, std::move(filter));
+                }
+              }
+
+              std::vector<NotificationFilterConfig> ordered;
+              ordered.reserve(byName.size());
+              std::unordered_set<std::string> placed;
+              for (const auto& node : *orderArr) {
+                const auto name = node.value<std::string>();
+                if (!name.has_value()) {
+                  continue;
+                }
+                const auto it = byName.find(*name);
+                if (it == byName.end()) {
+                  continue;
+                }
+                ordered.push_back(std::move(it->second));
+                placed.insert(*name);
+              }
+              for (auto& [name, filter] : byName) {
+                if (!placed.contains(name)) {
+                  ordered.push_back(std::move(filter));
+                }
+              }
+              out.filters = std::move(ordered);
+              normalizeNotificationFilterNames(out.filters);
+            },
+            [](toml::table&, const NotificationConfig&) {}
+        ),
         field(&NotificationConfig::allowedUrgencies, "allowed_urgencies"),
     };
     return s;

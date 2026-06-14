@@ -1494,8 +1494,7 @@ void Application::initUi() {
   m_configService.addReloadCallback([this]() { m_notificationToast.onConfigReload(); });
   auto applyNotificationFilterConfig = [this]() {
     const auto& notification = m_configService.config().notification;
-    m_notificationManager.setBlacklist(notification.blacklist);
-    m_notificationManager.setBlacklistAllowCritical(notification.blacklistAllowCritical);
+    m_notificationManager.setFilters(notification.filters);
     m_notificationManager.setAllowedUrgencies(notification.allowedUrgencies);
   };
   applyNotificationFilterConfig();

@@ -1,3 +1,4 @@
+#include "config/config_types.h"
 #include "notification/notification_filter.h"
 
 #include <iostream>
@@ -78,6 +79,60 @@ int main() {
   const auto normalOnly = normalizeAllowedUrgencies({"normal", "invalid"});
   ok &= check(urgencyIsAllowed(normalOnly, Urgency::Normal), "configured normal allowed");
   ok &= check(!urgencyIsAllowed(normalOnly, Urgency::Low), "configured normal excludes low");
+
+  std::vector<NotificationFilterConfig> filters = {
+      NotificationFilterConfig{
+          .name = "discord",
+          .enabled = true,
+          .match = "discord",
+          .showToast = false,
+          .saveHistory = false,
+          .playSound = false,
+          .allowCritical = true,
+      },
+      NotificationFilterConfig{
+          .name = "music",
+          .enabled = true,
+          .match = "x-gnome.music",
+          .showToast = true,
+          .saveHistory = false,
+          .playSound = true,
+          .allowCritical = true,
+      },
+  };
+  normalizeNotificationFilterNames(filters);
+
+  const auto blocked = resolveNotificationFilter(
+      filters,
+      NotificationFilterFields{
+          .appName = "Discord",
+          .category = std::nullopt,
+          .desktopEntry = std::nullopt,
+      }
+  );
+  ok &= check(blocked.matched && !blocked.showToast && !blocked.saveHistory, "first filter blocks discord");
+  ok &= check(shouldShowNotificationToast(blocked, Urgency::Critical), "allow critical bypass shows critical");
+  ok &= check(!shouldShowNotificationToast(blocked, Urgency::Normal), "blocked normal urgency hidden");
+
+  const auto music = resolveNotificationFilter(
+      filters,
+      NotificationFilterFields{
+          .appName = "Rhythmbox",
+          .category = std::optional<std::string_view>{"x-gnome.music"},
+          .desktopEntry = std::nullopt,
+      }
+  );
+  ok &= check(music.matched && music.showToast && !music.saveHistory && music.playSound, "music filter toast only");
+
+  const auto unmatched = resolveNotificationFilter(
+      filters,
+      NotificationFilterFields{
+          .appName = "Other App",
+          .category = std::nullopt,
+          .desktopEntry = std::nullopt,
+      }
+  );
+  ok &= check(!unmatched.matched && unmatched.showToast && unmatched.saveHistory, "default allow when no match");
 
   return ok ? 0 : 1;
 }

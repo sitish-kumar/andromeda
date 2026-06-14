@@ -121,8 +121,13 @@ scale              = 1.0            # notification size multiplier applied on to
 background_opacity = 0.97
 offset_x           = 20             # absolute horizontal margin from the screen edge
 offset_y           = 8              # absolute vertical margin from the screen edge
-# blacklist            = ["discord", "org.telegram.desktop"]
-# blacklist_allow_critical = true
+# [notification.filter.rhythmbox]
+# enabled         = true
+# match           = "rhythmbox"
+# show_toast      = true
+# save_history    = false
+# play_sound      = true
+# allow_critical  = true
 # allowed_urgencies      = ["normal", "critical"]  # omit or list all three to allow every level
 # IPC examples:
 # noctalia msg notification-clear-active

@@ -2,6 +2,7 @@
 
 #include "config/config_types.h"
 #include "i18n/i18n.h"
+#include "notification/notification_filter.h"
 #include "render/core/color.h"
 #include "shell/settings/bar_widget_editor.h"
 #include "shell/settings/color_spec_picker.h"
@@ -1060,6 +1061,128 @@ namespace settings {
       section.addChild(std::move(block));
     };
 
+    const auto makeNotificationFiltersInlineBlock = [&](Flex& section, const SettingEntry& entry,
+                                                        const NotificationFiltersSetting& filters) {
+      const bool overridden = (ctx.configService != nullptr && ctx.configService->hasEffectiveOverride(entry.path));
+
+      auto block = makeCollectionBlock(entry, overridden);
+
+      auto state = std::make_shared<std::vector<NotificationFilterConfig>>(filters.items);
+      normalizeNotificationFilterNames(*state);
+      const auto commit = [setOverride = ctx.setOverride, path = entry.path, state, req = ctx.requestContentRebuild]() {
+        normalizeNotificationFilterNames(*state);
+        setOverride(path, *state);
+        req();
+      };
+
+      const float iconBtnH = Style::controlHeight * scale;
+      for (std::size_t idx = 0; idx < state->size(); ++idx) {
+        auto row = ui::row({
+            .align = FlexAlign::Center,
+            .justify = FlexJustify::SpaceBetween,
+            .gap = Style::spaceSm * scale,
+            .minHeight = Style::controlHeightSm * scale,
+        });
+
+        auto summary = ui::label({
+            .text = notificationFilterRowSummary((*state)[idx]),
+            .fontSize = Style::fontSizeBody * scale,
+            .color = colorSpecFromRole(ColorRole::OnSurface),
+            .flexGrow = 1.0f,
+        });
+        row->addChild(std::move(summary));
+
+        auto reorder = ui::row({.align = FlexAlign::Center, .gap = Style::spaceXs * scale});
+
+        auto upBtn = ui::button({
+            .glyph = "chevron-up",
+            .glyphSize = Style::fontSizeBody * scale,
+            .enabled = idx > 0,
+            .variant = ButtonVariant::Ghost,
+            .minWidth = Style::controlHeightSm * scale,
+            .minHeight = iconBtnH,
+            .padding = Style::spaceXs * scale,
+            .radius = Style::scaledRadiusMd(scale),
+            .onClick = [state, rowIndex = idx, commit]() {
+              if (rowIndex == 0 || rowIndex >= state->size()) {
+                return;
+              }
+              std::swap((*state)[rowIndex - 1], (*state)[rowIndex]);
+              commit();
+            },
+        });
+        reorder->addChild(std::move(upBtn));
+
+        auto downBtn = ui::button({
+            .glyph = "chevron-down",
+            .glyphSize = Style::fontSizeBody * scale,
+            .enabled = idx + 1 < state->size(),
+            .variant = ButtonVariant::Ghost,
+            .minWidth = Style::controlHeightSm * scale,
+            .minHeight = iconBtnH,
+            .padding = Style::spaceXs * scale,
+            .radius = Style::scaledRadiusMd(scale),
+            .onClick = [state, rowIndex = idx, commit]() {
+              if (rowIndex + 1 >= state->size()) {
+                return;
+              }
+              std::swap((*state)[rowIndex + 1], (*state)[rowIndex]);
+              commit();
+            },
+        });
+        reorder->addChild(std::move(downBtn));
+        row->addChild(std::move(reorder));
+
+        auto entrySettings = ui::button({
+            .glyph = "settings",
+            .glyphSize = Style::fontSizeCaption * scale,
+            .variant = ButtonVariant::Ghost,
+            .minWidth = Style::controlHeightSm * scale,
+            .minHeight = Style::controlHeightSm * scale,
+            .padding = Style::spaceXs * scale,
+            .radius = Style::scaledRadiusSm(scale),
+            .onClick = [openEntry = ctx.openNotificationFilterEntryEditor, rowIndex = idx]() {
+              if (openEntry) {
+                openEntry(rowIndex);
+              }
+            },
+        });
+        row->addChild(std::move(entrySettings));
+
+        auto enabledToggle = ui::toggle({
+            .checked = (*state)[idx].enabled,
+            .scale = scale,
+            .onChange = [state, rowIndex = idx, commit](bool v) {
+              (*state)[rowIndex].enabled = v;
+              commit();
+            },
+        });
+        row->addChild(std::move(enabledToggle));
+
+        block->addChild(std::move(row));
+      }
+
+      auto addBtn = ui::button({
+          .text = i18n::tr("settings.notifications.filter.add"),
+          .glyph = "add",
+          .fontSize = Style::fontSizeBody * scale,
+          .glyphSize = Style::fontSizeBody * scale,
+          .variant = ButtonVariant::Default,
+          .minHeight = Style::controlHeight * scale,
+          .paddingV = Style::spaceSm * scale,
+          .paddingH = Style::spaceMd * scale,
+          .radius = Style::scaledRadiusMd(scale),
+          .onClick = [openCreate = ctx.openNotificationFilterCreateEditor]() {
+            if (openCreate) {
+              openCreate();
+            }
+          },
+      });
+      block->addChild(std::move(addBtn));
+
+      section.addChild(std::move(block));
+    };
+
     const auto makeControl = [&](const SettingEntry& entry) -> std::unique_ptr<Node> {
       return std::visit(
           [&](const auto& control) -> std::unique_ptr<Node> {
@@ -1104,6 +1227,8 @@ namespace settings {
             } else if constexpr (std::is_same_v<T, SessionPanelActionsSetting>) {
               return nullptr;
             } else if constexpr (std::is_same_v<T, IdleBehaviorsSetting>) {
+              return nullptr;
+            } else if constexpr (std::is_same_v<T, NotificationFiltersSetting>) {
               return nullptr;
             } else if constexpr (std::is_same_v<T, ButtonSetting>) {
               if (control.glyph.empty()) {
@@ -1283,6 +1408,8 @@ namespace settings {
           makeSessionActionsInlineBlock(*activeSection, entry, *sessionActs);
         } else if (const auto* idle = std::get_if<IdleBehaviorsSetting>(&entry.control)) {
           makeIdleBehaviorsInlineBlock(*activeSection, entry, *idle);
+        } else if (const auto* filters = std::get_if<NotificationFiltersSetting>(&entry.control)) {
+          makeNotificationFiltersInlineBlock(*activeSection, entry, *filters);
         } else if (const auto* picker = std::get_if<SearchPickerSetting>(&entry.control)) {
           makeRow(*activeSection, entry, makeSearchPickerButton(entry, *picker));
         } else if (const auto* multi = std::get_if<MultiSelectSetting>(&entry.control)) {

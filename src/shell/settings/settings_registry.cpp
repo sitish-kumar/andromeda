@@ -2150,16 +2150,10 @@ namespace settings {
       ));
     }
     entries.push_back(makeEntry(
-        SettingsSection::Notifications, "filtering", tr("settings.schema.notifications.blacklist.label"),
-        tr("settings.schema.notifications.blacklist.description"), {"notification", "blacklist"},
-        ListSetting{.items = cfg.notification.blacklist},
-        "blacklist block suppress filter app name desktop entry category substring"
-    ));
-    entries.push_back(makeEntry(
-        SettingsSection::Notifications, "filtering", tr("settings.schema.notifications.blacklist-allow-critical.label"),
-        tr("settings.schema.notifications.blacklist-allow-critical.description"),
-        {"notification", "blacklist_allow_critical"}, ToggleSetting{cfg.notification.blacklistAllowCritical},
-        "critical urgency bypass"
+        SettingsSection::Notifications, "filtering", tr("settings.schema.notifications.filters.label"),
+        tr("settings.schema.notifications.filters.description"), {"notification", "filter"},
+        NotificationFiltersSetting{.items = cfg.notification.filters},
+        "filter blacklist suppress toast history sound app name desktop entry category"
     ));
 
     // Bar — register every configured bar so global search can surface settings from all of them.

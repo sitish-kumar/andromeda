@@ -1,5 +1,6 @@
 #pragma once
 
+#include "config/config_types.h"
 #include "notification.h"
 
 #include <cstdint>
@@ -101,11 +102,9 @@ public:
   [[nodiscard]] std::uint64_t changeSerial() const noexcept;
   void removeHistoryEntry(uint32_t id, std::optional<CloseReason> dbusCloseReason = std::nullopt);
   void clearHistory();
-  void setBlacklist(std::vector<std::string> blacklist);
-  void setBlacklistAllowCritical(bool allowCritical);
+  void setFilters(std::vector<NotificationFilterConfig> filters);
   void setAllowedUrgencies(std::vector<std::string> allowedUrgencies);
-  [[nodiscard]] const std::vector<std::string>& blacklist() const noexcept;
-  [[nodiscard]] bool blacklistAllowCritical() const noexcept;
+  [[nodiscard]] const std::vector<NotificationFilterConfig>& filters() const noexcept;
   [[nodiscard]] const std::unordered_set<Urgency>& allowedUrgencies() const noexcept;
   void setDoNotDisturb(bool enabled);
   [[nodiscard]] bool doNotDisturb() const noexcept;
@@ -131,9 +130,15 @@ private:
   void emitPendingDBusClose(uint32_t id, CloseReason reason);
   [[nodiscard]] bool computeHasUnreadNotificationHistory() const noexcept;
   void notifyUnreadStateChangedIfNeeded(bool previousUnreadState);
-  [[nodiscard]] bool shouldSuppressExternal(
+  struct ExternalNotificationDispatch {
+    bool fullySuppress = false;
+    bool showToast = true;
+    bool saveHistory = true;
+    bool playSound = true;
+  };
+  [[nodiscard]] ExternalNotificationDispatch evaluateExternalDispatch(
       Urgency urgency, std::string_view appName, const std::optional<std::string>& category,
-      const std::optional<std::string>& desktopEntry
+      const std::optional<std::string>& desktopEntry, bool transient
   ) const;
   uint32_t suppressExternal(std::string_view appName, Urgency urgency);
 
@@ -142,8 +147,7 @@ private:
   std::deque<Notification> m_notifications;
   std::unordered_map<uint32_t, size_t> m_idToIndex;
   std::unordered_set<uint32_t> m_suppressedIds;
-  std::vector<std::string> m_blacklist;
-  bool m_blacklistAllowCritical = true;
+  std::vector<NotificationFilterConfig> m_filters;
   std::unordered_set<Urgency> m_allowedUrgencies;
   /// Expired notifications with actions: NotificationClosed deferred until dismiss, action, or history removal.
   std::unordered_set<uint32_t> m_pendingDBusClose;

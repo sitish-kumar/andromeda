@@ -408,6 +408,9 @@ settings::SettingsContentContext SettingsWindow::makeContentContext(
       .openSessionActionEntryEditor = [this](std::size_t entryIndex) { openSessionActionEntryEditor(entryIndex); },
       .openIdleBehaviorEntryEditor = [this](std::size_t entryIndex) { openIdleBehaviorEntryEditor(entryIndex); },
       .openIdleBehaviorCreateEditor = [this]() { openIdleBehaviorCreateEditor(); },
+      .openNotificationFilterEntryEditor =
+          [this](std::size_t entryIndex) { openNotificationFilterEntryEditor(entryIndex); },
+      .openNotificationFilterCreateEditor = [this]() { openNotificationFilterCreateEditor(); },
       .openWidgetInspectorEditor = [this](
                                        std::vector<std::string> laneListPath, std::string widgetName
                                    ) { openWidgetInspectorEditor(std::move(laneListPath), std::move(widgetName)); },
@@ -431,6 +434,7 @@ settings::SettingsContentContext SettingsWindow::makeContentContext(
                                      ) { m_sessionActionsEditState = std::move(state); },
       .afterSessionActionsCommit = {},
       .afterIdleBehaviorApply = {},
+      .afterNotificationFilterApply = {},
       .closeHostedEditor = {},
   };
 }

@@ -507,6 +507,29 @@ namespace {
             if (key == "behavior") {
               table.insert_or_assign("behavior_order", std::move(behaviorOrder));
             }
+          } else if constexpr (std::is_same_v<T, std::vector<NotificationFilterConfig>>) {
+            toml::table filterTable;
+            toml::array filterOrder;
+            for (const auto& item : concrete) {
+              if (item.name.empty()) {
+                continue;
+              }
+              toml::table row;
+              row.insert_or_assign("enabled", item.enabled);
+              if (!item.match.empty()) {
+                row.insert_or_assign("match", item.match);
+              }
+              row.insert_or_assign("show_toast", item.showToast);
+              row.insert_or_assign("save_history", item.saveHistory);
+              row.insert_or_assign("play_sound", item.playSound);
+              row.insert_or_assign("allow_critical", item.allowCritical);
+              filterTable.insert_or_assign(item.name, std::move(row));
+              filterOrder.push_back(item.name);
+            }
+            table.insert_or_assign(key, std::move(filterTable));
+            if (key == "filter") {
+              table.insert_or_assign("filter_order", std::move(filterOrder));
+            }
           } else if constexpr (std::is_same_v<T, std::vector<KeyChord>>) {
             toml::array array;
             for (const auto& item : concrete) {

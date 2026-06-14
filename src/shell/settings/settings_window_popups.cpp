@@ -3,6 +3,7 @@
 #include "config/config_types.h"
 #include "core/deferred_call.h"
 #include "i18n/i18n.h"
+#include "notification/notification_filter.h"
 #include "render/render_context.h"
 #include "scripting/plugin_registry.h"
 #include "shell/settings/bar_widget_editor.h"
@@ -149,6 +150,16 @@ namespace {
       return row.name;
     }
     return i18n::tr("settings.idle.behavior.unnamed");
+  }
+
+  std::string notificationFilterTitle(const NotificationFilterConfig& row) {
+    if (!row.match.empty()) {
+      return row.match;
+    }
+    if (!StringUtils::trim(row.name).empty()) {
+      return row.name;
+    }
+    return i18n::tr("settings.notifications.filter.unnamed");
   }
 
   void normalizeIdleBehaviorNames(std::vector<IdleBehaviorConfig>& rows) {
@@ -719,6 +730,191 @@ void SettingsWindow::openIdleBehaviorCreateEditor() {
       m_surface->height(), scale, idleBehaviorTitle(*rowState), nullptr,
       [ctx, rowState, persistDraft](Flex& body) mutable {
         settings::buildIdleBehaviorEntryDetailContent(body, ctx, *rowState, persistDraft);
+      }
+  );
+}
+
+void SettingsWindow::openNotificationFilterEntryEditor(std::size_t index) {
+  if (m_wayland == nullptr
+      || m_renderContext == nullptr
+      || m_surface == nullptr
+      || m_surface->xdgSurface() == nullptr
+      || m_config == nullptr) {
+    return;
+  }
+
+  if (m_editorSheetPopup != nullptr && m_editorSheetPopup->isOpen()) {
+    m_editorSheetPopup->close();
+  }
+
+  const Config& cfg = m_config->config();
+  if (index >= cfg.notification.filters.size()) {
+    return;
+  }
+
+  if (m_widgetAddPopup != nullptr && m_widgetAddPopup->isOpen()) {
+    m_widgetAddPopup->close();
+  }
+  if (m_searchPickerPopup != nullptr && m_searchPickerPopup->isOpen()) {
+    m_searchPickerPopup->close();
+  }
+
+  if (m_editorSheetPopup == nullptr) {
+    m_editorSheetPopup = std::make_unique<settings::SettingsEditorSheetPopup>();
+    m_editorSheetPopup->initialize(*m_wayland, *m_config, *m_renderContext);
+  }
+  const float scale = uiScale();
+  const BarConfig* selectedBar = settings::findBar(cfg, m_selectedBarName);
+  const BarMonitorOverride* selectedMonitorOverride = nullptr;
+  if (selectedBar != nullptr && !m_selectedMonitorOverride.empty()) {
+    selectedMonitorOverride = settings::findMonitorOverride(*selectedBar, m_selectedMonitorOverride);
+  }
+
+  auto rowState = std::make_shared<NotificationFilterConfig>(cfg.notification.filters[index]);
+  auto rowKey = std::make_shared<std::string>(rowState->name);
+
+  const auto persist = [this, rowState, rowKey, index]() {
+    if (m_config == nullptr) {
+      return;
+    }
+    auto next = m_config->config().notification.filters;
+    auto target = std::find_if(next.begin(), next.end(), [rowKey](const NotificationFilterConfig& filter) {
+      return filter.name == *rowKey;
+    });
+    if (target == next.end() && index < next.size()) {
+      target = next.begin() + static_cast<std::ptrdiff_t>(index);
+    }
+    if (target == next.end()) {
+      return;
+    }
+    const auto targetIndex = static_cast<std::size_t>(std::distance(next.begin(), target));
+    next[targetIndex] = *rowState;
+    normalizeNotificationFilterNames(next);
+    *rowState = next[targetIndex];
+    *rowKey = rowState->name;
+    setSettingOverride({"notification", "filter"}, next);
+    requestContentRebuild();
+    if (m_editorSheetPopup != nullptr && m_editorSheetPopup->isOpen()) {
+      m_editorSheetPopup->requestLayout();
+    }
+  };
+
+  const auto removeRow = [this, index]() {
+    if (m_config == nullptr) {
+      return;
+    }
+    auto next = m_config->config().notification.filters;
+    if (index >= next.size()) {
+      return;
+    }
+    next.erase(next.begin() + static_cast<std::ptrdiff_t>(index));
+    normalizeNotificationFilterNames(next);
+    setSettingOverride({"notification", "filter"}, next);
+    if (m_editorSheetPopup != nullptr) {
+      m_editorSheetPopup->close();
+    }
+    requestContentRebuild();
+  };
+
+  auto ctx = makeContentContext(cfg, selectedBar, selectedMonitorOverride);
+  ctx.openNotificationFilterEntryEditor = {};
+  ctx.afterNotificationFilterApply = [persist]() { persist(); };
+  ctx.closeHostedEditor = [this]() {
+    if (m_editorSheetPopup != nullptr) {
+      m_editorSheetPopup->close();
+    }
+  };
+
+  wl_output* output = m_wayland->lastPointerOutput();
+  if (output == nullptr) {
+    output = m_output;
+  }
+
+  m_editorSheetPopup->open(
+      m_surface->xdgSurface(), output, m_wayland->lastInputSerial(), m_surface->wlSurface(), m_surface->width(),
+      m_surface->height(), scale, notificationFilterTitle(*rowState), removeRow,
+      [ctx, rowState, persist](Flex& body) mutable {
+        settings::buildNotificationFilterEntryDetailContent(body, ctx, *rowState, persist);
+      }
+  );
+}
+
+void SettingsWindow::openNotificationFilterCreateEditor() {
+  if (m_wayland == nullptr
+      || m_renderContext == nullptr
+      || m_surface == nullptr
+      || m_surface->xdgSurface() == nullptr
+      || m_config == nullptr) {
+    return;
+  }
+
+  if (m_editorSheetPopup != nullptr && m_editorSheetPopup->isOpen()) {
+    m_editorSheetPopup->close();
+  }
+  if (m_widgetAddPopup != nullptr && m_widgetAddPopup->isOpen()) {
+    m_widgetAddPopup->close();
+  }
+  if (m_searchPickerPopup != nullptr && m_searchPickerPopup->isOpen()) {
+    m_searchPickerPopup->close();
+  }
+
+  if (m_editorSheetPopup == nullptr) {
+    m_editorSheetPopup = std::make_unique<settings::SettingsEditorSheetPopup>();
+    m_editorSheetPopup->initialize(*m_wayland, *m_config, *m_renderContext);
+  }
+
+  const Config& cfg = m_config->config();
+  const float scale = uiScale();
+  const BarConfig* selectedBar = settings::findBar(cfg, m_selectedBarName);
+  const BarMonitorOverride* selectedMonitorOverride = nullptr;
+  if (selectedBar != nullptr && !m_selectedMonitorOverride.empty()) {
+    selectedMonitorOverride = settings::findMonitorOverride(*selectedBar, m_selectedMonitorOverride);
+  }
+
+  auto rowState = std::make_shared<NotificationFilterConfig>(NotificationFilterConfig{
+      .name = "filter",
+      .enabled = true,
+      .match = {},
+      .showToast = true,
+      .saveHistory = true,
+      .playSound = true,
+      .allowCritical = true,
+  });
+
+  const auto persistDraft = [this]() {
+    if (m_editorSheetPopup != nullptr && m_editorSheetPopup->isOpen()) {
+      m_editorSheetPopup->requestLayout();
+    }
+  };
+
+  auto ctx = makeContentContext(cfg, selectedBar, selectedMonitorOverride);
+  ctx.openNotificationFilterEntryEditor = {};
+  ctx.afterNotificationFilterApply = [this, rowState]() {
+    if (m_config == nullptr || rowState->match.empty()) {
+      return;
+    }
+    auto next = m_config->config().notification.filters;
+    next.push_back(*rowState);
+    normalizeNotificationFilterNames(next);
+    setSettingOverride({"notification", "filter"}, next);
+    requestContentRebuild();
+  };
+  ctx.closeHostedEditor = [this]() {
+    if (m_editorSheetPopup != nullptr) {
+      m_editorSheetPopup->close();
+    }
+  };
+
+  wl_output* output = m_wayland->lastPointerOutput();
+  if (output == nullptr) {
+    output = m_output;
+  }
+
+  m_editorSheetPopup->open(
+      m_surface->xdgSurface(), output, m_wayland->lastInputSerial(), m_surface->wlSurface(), m_surface->width(),
+      m_surface->height(), scale, i18n::tr("settings.notifications.filter.add-title"), nullptr,
+      [ctx, rowState, persistDraft](Flex& body) mutable {
+        settings::buildNotificationFilterEntryDetailContent(body, ctx, *rowState, persistDraft);
       }
   );
 }

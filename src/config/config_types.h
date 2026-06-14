@@ -198,6 +198,20 @@ struct IdleBehaviorConfig {
   bool operator==(const IdleBehaviorConfig&) const = default;
 };
 
+struct NotificationFilterConfig {
+  std::string name;
+  bool enabled = true;
+  /// Case-insensitive token matched against app name (exact/substring), desktop entry, or category.
+  std::string match;
+  bool showToast = true;
+  bool saveHistory = true;
+  bool playSound = true;
+  /// When `show_toast` is false, still show critical-urgency toasts.
+  bool allowCritical = true;
+
+  bool operator==(const NotificationFilterConfig&) const = default;
+};
+
 struct IdleConfig {
   std::vector<IdleBehaviorConfig> behaviors;
   /// When > 0, after the compositor reports idle the shell fades a fullscreen overlay (surface color)
@@ -255,8 +269,8 @@ enum class KeybindAction : std::uint8_t {
 using WidgetSettingValue = std::variant<bool, std::int64_t, double, std::string, std::vector<std::string>>;
 using ConfigOverrideValue = std::variant<
     bool, std::int64_t, double, std::string, std::vector<std::string>, std::vector<ShortcutConfig>,
-    std::vector<SessionPanelActionConfig>, std::vector<IdleBehaviorConfig>, std::vector<KeyChord>,
-    std::vector<BarCapsuleGroupStyle>>;
+    std::vector<SessionPanelActionConfig>, std::vector<IdleBehaviorConfig>, std::vector<NotificationFilterConfig>,
+    std::vector<KeyChord>, std::vector<BarCapsuleGroupStyle>>;
 
 // Optional rounded “capsule” behind a bar widget (see `[widget.*] capsule_*` in CONFIG.md).
 // Corner shape, border width, and edge softness are fixed in the shell code; padding/radius are configurable.
@@ -585,8 +599,7 @@ struct NotificationConfig {
   int offsetY = 8;                 // absolute vertical margin from the screen edge
   std::vector<std::string> monitors;
   bool collapseOnDismiss = true;
-  std::vector<std::string> blacklist;
-  bool blacklistAllowCritical = true;
+  std::vector<NotificationFilterConfig> filters;
   /// Empty = allow low, normal, and critical. Otherwise only listed urgencies are shown.
   std::vector<std::string> allowedUrgencies;
 
