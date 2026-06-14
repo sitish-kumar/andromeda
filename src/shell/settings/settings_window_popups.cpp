@@ -878,7 +878,7 @@ void SettingsWindow::openNotificationFilterCreateEditor() {
       .showToast = true,
       .saveHistory = true,
       .playSound = true,
-      .allowCritical = true,
+      .allowedUrgencies = {},
   });
 
   const auto persistDraft = [this]() {

@@ -878,7 +878,7 @@
       "filter": {
         "add": "Add filter",
         "add-title": "Add Notification Filter",
-        "allow-critical": "Allow critical through",
+        "allowed-urgencies-label": "Allowed urgencies",
         "flag": {
           "history": "history",
           "sound": "sound",
@@ -1663,10 +1663,6 @@
         }
       },
       "notifications": {
-        "allowed-urgencies": {
-          "description": "Only show external notifications at the selected urgency levels",
-          "label": "Allowed Urgencies"
-        },
         "filters": {
           "description": "Per-sender rules for toasts, history, and sounds; first matching enabled filter wins",
           "label": "Notification Filters"

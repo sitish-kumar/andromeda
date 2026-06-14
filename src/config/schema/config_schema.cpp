@@ -201,9 +201,14 @@ namespace noctalia::config::schema {
         field(&NotificationFilterConfig::showToast, "show_toast"),
         field(&NotificationFilterConfig::saveHistory, "save_history"),
         field(&NotificationFilterConfig::playSound, "play_sound"),
-        field(&NotificationFilterConfig::allowCritical, "allow_critical"),
+        field(&NotificationFilterConfig::allowedUrgencies, "allowed_urgencies"),
+        custom<NotificationFilterConfig>(
+            "allow_critical", [](const toml::table&, NotificationFilterConfig&, std::string_view, Diagnostics&) {},
+            [](toml::table&, const NotificationFilterConfig&) {}
+        ),
         finalize<NotificationFilterConfig>([](NotificationFilterConfig& filter, std::string_view, Diagnostics&) {
           filter.match = normalizeNotificationMatchToken(std::move(filter.match));
+          filter.allowedUrgencies = normalizeFilterAllowedUrgencyStrings(std::move(filter.allowedUrgencies));
         }),
     };
     return s;
@@ -232,7 +237,6 @@ namespace noctalia::config::schema {
               if (arr == nullptr) {
                 return;
               }
-              const bool allowCritical = tbl["blacklist_allow_critical"].value<bool>().value_or(true);
               for (const auto& node : *arr) {
                 const auto token = node.value<std::string>();
                 if (!token.has_value() || StringUtils::trim(*token).empty()) {
@@ -243,11 +247,14 @@ namespace noctalia::config::schema {
                 filter.showToast = false;
                 filter.saveHistory = false;
                 filter.playSound = false;
-                filter.allowCritical = allowCritical;
                 out.filters.push_back(std::move(filter));
               }
               normalizeNotificationFilterNames(out.filters);
             },
+            [](toml::table&, const NotificationConfig&) {}
+        ),
+        custom<NotificationConfig>(
+            "blacklist_allow_critical", [](const toml::table&, NotificationConfig&, std::string_view, Diagnostics&) {},
             [](toml::table&, const NotificationConfig&) {}
         ),
         custom<NotificationConfig>(
@@ -272,6 +279,23 @@ namespace noctalia::config::schema {
         custom<NotificationConfig>(
             "",
             [](const toml::table& tbl, NotificationConfig& out, std::string_view, Diagnostics&) {
+              if (const auto* arr = tbl["allowed_urgencies"].as_array()) {
+                std::vector<std::string> global;
+                for (const auto& node : *arr) {
+                  if (auto value = node.value<std::string>()) {
+                    global.push_back(*value);
+                  }
+                }
+                global = normalizeFilterAllowedUrgencyStrings(std::move(global));
+                if (!global.empty()) {
+                  for (auto& filter : out.filters) {
+                    if (filter.allowedUrgencies.empty()) {
+                      filter.allowedUrgencies = global;
+                    }
+                  }
+                }
+              }
+
               const auto* orderArr = tbl["filter_order"].as_array();
               if (orderArr == nullptr || out.filters.empty()) {
                 normalizeNotificationFilterNames(out.filters);
@@ -311,7 +335,6 @@ namespace noctalia::config::schema {
             },
             [](toml::table&, const NotificationConfig&) {}
         ),
-        field(&NotificationConfig::allowedUrgencies, "allowed_urgencies"),
     };
     return s;
   }

@@ -2130,30 +2130,11 @@ namespace settings {
         ListSetting{.items = cfg.notification.monitors, .suggestedOptions = env.availableOutputs},
         "monitor output display screen"
     ));
-    {
-      MultiSelectSetting allowedUrgencies;
-      allowedUrgencies.options = {
-          {"low", tr("settings.options.notification-urgency.low")},
-          {"normal", tr("settings.options.notification-urgency.normal")},
-          {"critical", tr("settings.options.notification-urgency.critical")},
-      };
-      if (cfg.notification.allowedUrgencies.empty()) {
-        allowedUrgencies.selectedValues = {"low", "normal", "critical"};
-      } else {
-        allowedUrgencies.selectedValues = cfg.notification.allowedUrgencies;
-      }
-      allowedUrgencies.requireAtLeastOne = true;
-      entries.push_back(makeEntry(
-          SettingsSection::Notifications, "filtering", tr("settings.schema.notifications.allowed-urgencies.label"),
-          tr("settings.schema.notifications.allowed-urgencies.description"), {"notification", "allowed_urgencies"},
-          std::move(allowedUrgencies), "urgency low normal critical filter"
-      ));
-    }
     entries.push_back(makeEntry(
         SettingsSection::Notifications, "filtering", tr("settings.schema.notifications.filters.label"),
         tr("settings.schema.notifications.filters.description"), {"notification", "filter"},
         NotificationFiltersSetting{.items = cfg.notification.filters},
-        "filter blacklist suppress toast history sound app name desktop entry category"
+        "filter blacklist suppress toast history sound app name desktop entry category urgency"
     ));
 
     // Bar — register every configured bar so global search can surface settings from all of them.

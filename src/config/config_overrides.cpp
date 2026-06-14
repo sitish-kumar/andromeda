@@ -522,7 +522,13 @@ namespace {
               row.insert_or_assign("show_toast", item.showToast);
               row.insert_or_assign("save_history", item.saveHistory);
               row.insert_or_assign("play_sound", item.playSound);
-              row.insert_or_assign("allow_critical", item.allowCritical);
+              if (!item.allowedUrgencies.empty()) {
+                toml::array urgencies;
+                for (const auto& urgency : item.allowedUrgencies) {
+                  urgencies.push_back(urgency);
+                }
+                row.insert_or_assign("allowed_urgencies", std::move(urgencies));
+              }
               filterTable.insert_or_assign(item.name, std::move(row));
               filterOrder.push_back(item.name);
             }

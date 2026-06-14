@@ -579,27 +579,13 @@ void NotificationManager::setFilters(std::vector<NotificationFilterConfig> filte
   m_filters = normalizeNotificationFilters(std::move(filters));
 }
 
-void NotificationManager::setAllowedUrgencies(std::vector<std::string> allowedUrgencies) {
-  m_allowedUrgencies = normalizeAllowedUrgencies(std::move(allowedUrgencies));
-}
-
 const std::vector<NotificationFilterConfig>& NotificationManager::filters() const noexcept { return m_filters; }
-
-const std::unordered_set<Urgency>& NotificationManager::allowedUrgencies() const noexcept { return m_allowedUrgencies; }
 
 NotificationManager::ExternalNotificationDispatch NotificationManager::evaluateExternalDispatch(
     Urgency urgency, std::string_view appName, const std::optional<std::string>& category,
     const std::optional<std::string>& desktopEntry, bool transient
 ) const {
   ExternalNotificationDispatch dispatch;
-  if (!urgencyIsAllowed(m_allowedUrgencies, urgency)) {
-    dispatch.fullySuppress = true;
-    dispatch.showToast = false;
-    dispatch.saveHistory = false;
-    dispatch.playSound = false;
-    return dispatch;
-  }
-
   const auto resolved = resolveNotificationFilter(
       m_filters,
       NotificationFilterFields{
@@ -608,7 +594,14 @@ NotificationManager::ExternalNotificationDispatch NotificationManager::evaluateE
           .desktopEntry = desktopEntry.has_value() ? std::optional<std::string_view>{*desktopEntry} : std::nullopt,
       }
   );
-  dispatch.showToast = shouldShowNotificationToast(resolved, urgency);
+  if (resolved.matched && !urgencyIsAllowed(resolved.allowedUrgencies, urgency)) {
+    dispatch.fullySuppress = true;
+    dispatch.showToast = false;
+    dispatch.saveHistory = false;
+    dispatch.playSound = false;
+    return dispatch;
+  }
+  dispatch.showToast = resolved.showToast;
   dispatch.saveHistory = resolved.saveHistory && shouldTrackHistory(NotificationOrigin::External, urgency, transient);
   dispatch.playSound = resolved.playSound && dispatch.showToast;
   dispatch.fullySuppress = !dispatch.showToast && !dispatch.saveHistory;

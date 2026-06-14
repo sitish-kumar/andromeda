@@ -324,6 +324,14 @@ namespace settings {
     if (filter.playSound) {
       parts.emplace_back(i18n::tr("settings.notifications.filter.flag.sound"));
     }
+    if (!filter.allowedUrgencies.empty()) {
+      std::vector<std::string> urgencyLabels;
+      urgencyLabels.reserve(filter.allowedUrgencies.size());
+      for (const auto& urgency : filter.allowedUrgencies) {
+        urgencyLabels.emplace_back(i18n::tr("settings.options.notification-urgency." + urgency));
+      }
+      parts.emplace_back(StringUtils::join(urgencyLabels, ", "));
+    }
     if (parts.empty()) {
       return i18n::tr("settings.notifications.filter.summary-blocked", "match", matchLabel);
     }

@@ -12,9 +12,11 @@
 #include "ui/style.h"
 #include "util/string_utils.h"
 
+#include <algorithm>
 #include <functional>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace settings {
 
@@ -93,6 +95,49 @@ namespace settings {
             colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal
         )
     );
+    const auto urgencyEnabled = [&row](std::string_view level) {
+      return row.allowedUrgencies.empty()
+          || std::find(row.allowedUrgencies.begin(), row.allowedUrgencies.end(), level) != row.allowedUrgencies.end();
+    };
+    const auto setUrgency = [&row, persist](std::string_view level, bool enabled) {
+      std::vector<std::string> selected;
+      if (row.allowedUrgencies.empty()) {
+        selected = {"low", "normal", "critical"};
+      } else {
+        selected = row.allowedUrgencies;
+      }
+      if (enabled) {
+        if (std::find(selected.begin(), selected.end(), level) == selected.end()) {
+          selected.emplace_back(level);
+        }
+      } else if (selected.size() <= 1) {
+        return;
+      } else {
+        std::erase(selected, std::string(level));
+      }
+      row.allowedUrgencies = normalizeFilterAllowedUrgencyStrings(std::move(selected));
+      persist();
+    };
+    auto urgenciesBlock = ui::column(
+        {.align = FlexAlign::Stretch, .gap = Style::spaceSm * scale},
+        makeLabel(
+            i18n::tr("settings.notifications.filter.allowed-urgencies-label"), Style::fontSizeCaption * scale,
+            colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal
+        )
+    );
+    addToggleRow(
+        *urgenciesBlock, scale, i18n::tr("settings.options.notification-urgency.low"), urgencyEnabled("low"),
+        [setUrgency](bool value) { setUrgency("low", value); }
+    );
+    addToggleRow(
+        *urgenciesBlock, scale, i18n::tr("settings.options.notification-urgency.normal"), urgencyEnabled("normal"),
+        [setUrgency](bool value) { setUrgency("normal", value); }
+    );
+    addToggleRow(
+        *urgenciesBlock, scale, i18n::tr("settings.options.notification-urgency.critical"), urgencyEnabled("critical"),
+        [setUrgency](bool value) { setUrgency("critical", value); }
+    );
+    body->addChild(std::move(urgenciesBlock));
     addToggleRow(
         *flagsBlock, scale, i18n::tr("settings.notifications.filter.show-toast"), row.showToast,
         [&row, persist](bool value) {
@@ -111,13 +156,6 @@ namespace settings {
         *flagsBlock, scale, i18n::tr("settings.notifications.filter.play-sound"), row.playSound,
         [&row, persist](bool value) {
           row.playSound = value;
-          persist();
-        }
-    );
-    addToggleRow(
-        *flagsBlock, scale, i18n::tr("settings.notifications.filter.allow-critical"), row.allowCritical,
-        [&row, persist](bool value) {
-          row.allowCritical = value;
           persist();
         }
     );

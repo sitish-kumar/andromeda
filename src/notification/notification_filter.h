@@ -19,7 +19,8 @@ struct ResolvedNotificationFilter {
   bool showToast = true;
   bool saveHistory = true;
   bool playSound = true;
-  bool allowCritical = true;
+  /// Empty = all urgencies allowed for this filter.
+  std::unordered_set<Urgency> allowedUrgencies;
   bool matched = false;
 };
 
@@ -38,12 +39,13 @@ normalizeNotificationFilters(std::vector<NotificationFilterConfig> filters);
 [[nodiscard]] ResolvedNotificationFilter
 resolveNotificationFilter(const std::vector<NotificationFilterConfig>& filters, const NotificationFilterFields& fields);
 
-[[nodiscard]] bool shouldShowNotificationToast(const ResolvedNotificationFilter& filter, Urgency urgency) noexcept;
-
 void normalizeNotificationFilterNames(std::vector<NotificationFilterConfig>& filters);
 
 /// Empty result means all urgencies are allowed.
 [[nodiscard]] std::unordered_set<Urgency> normalizeAllowedUrgencies(std::vector<std::string> values);
+
+/// Canonical config form: empty vector when all three levels are allowed.
+[[nodiscard]] std::vector<std::string> normalizeFilterAllowedUrgencyStrings(std::vector<std::string> values);
 
 [[nodiscard]] bool urgencyIsAllowed(const std::unordered_set<Urgency>& allowed, Urgency urgency) noexcept;
 

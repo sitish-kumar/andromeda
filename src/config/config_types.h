@@ -206,8 +206,8 @@ struct NotificationFilterConfig {
   bool showToast = true;
   bool saveHistory = true;
   bool playSound = true;
-  /// When `show_toast` is false, still show critical-urgency toasts.
-  bool allowCritical = true;
+  /// Empty = allow low, normal, and critical. Otherwise only listed urgencies pass this filter.
+  std::vector<std::string> allowedUrgencies;
 
   bool operator==(const NotificationFilterConfig&) const = default;
 };
@@ -600,8 +600,6 @@ struct NotificationConfig {
   std::vector<std::string> monitors;
   bool collapseOnDismiss = true;
   std::vector<NotificationFilterConfig> filters;
-  /// Empty = allow low, normal, and critical. Otherwise only listed urgencies are shown.
-  std::vector<std::string> allowedUrgencies;
 
   bool operator==(const NotificationConfig&) const = default;
 };

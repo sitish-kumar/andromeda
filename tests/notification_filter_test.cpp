@@ -88,7 +88,6 @@ int main() {
           .showToast = false,
           .saveHistory = false,
           .playSound = false,
-          .allowCritical = true,
       },
       NotificationFilterConfig{
           .name = "music",
@@ -97,7 +96,6 @@ int main() {
           .showToast = true,
           .saveHistory = false,
           .playSound = true,
-          .allowCritical = true,
       },
   };
   normalizeNotificationFilterNames(filters);
@@ -111,8 +109,25 @@ int main() {
       }
   );
   ok &= check(blocked.matched && !blocked.showToast && !blocked.saveHistory, "first filter blocks discord");
-  ok &= check(shouldShowNotificationToast(blocked, Urgency::Critical), "allow critical bypass shows critical");
-  ok &= check(!shouldShowNotificationToast(blocked, Urgency::Normal), "blocked normal urgency hidden");
+
+  const auto lowOnlyFilter = resolveNotificationFilter(
+      {NotificationFilterConfig{
+          .name = "chat",
+          .enabled = true,
+          .match = "chat",
+          .showToast = true,
+          .saveHistory = true,
+          .playSound = true,
+          .allowedUrgencies = {"low"},
+      }},
+      NotificationFilterFields{
+          .appName = "Chat",
+          .category = std::nullopt,
+          .desktopEntry = std::nullopt,
+      }
+  );
+  ok &= check(lowOnlyFilter.matched && urgencyIsAllowed(lowOnlyFilter.allowedUrgencies, Urgency::Low), "filter low allowed");
+  ok &= check(!urgencyIsAllowed(lowOnlyFilter.allowedUrgencies, Urgency::Normal), "filter normal blocked");
 
   const auto music = resolveNotificationFilter(
       filters,

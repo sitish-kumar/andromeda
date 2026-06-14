@@ -304,9 +304,8 @@ location = "https://example.invalid/bad"
             .showToast = false,
             .saveHistory = false,
             .playSound = false,
-            .allowCritical = true,
+            .allowedUrgencies = {"normal", "critical"},
         }},
-        {"normal", "critical"},
     };
     c.dock.enabled = true;
     c.dock.position = DockEdge::Left;

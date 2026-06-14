@@ -117,6 +117,7 @@ bool notificationMatchesTokens(const std::vector<std::string>& tokens, const Not
 std::vector<NotificationFilterConfig> normalizeNotificationFilters(std::vector<NotificationFilterConfig> filters) {
   for (auto& filter : filters) {
     filter.match = normalizeNotificationMatchToken(std::move(filter.match));
+    filter.allowedUrgencies = normalizeFilterAllowedUrgencyStrings(std::move(filter.allowedUrgencies));
   }
   normalizeNotificationFilterNames(filters);
   return filters;
@@ -136,18 +137,11 @@ ResolvedNotificationFilter resolveNotificationFilter(
         .showToast = filter.showToast,
         .saveHistory = filter.saveHistory,
         .playSound = filter.playSound,
-        .allowCritical = filter.allowCritical,
+        .allowedUrgencies = normalizeAllowedUrgencies(filter.allowedUrgencies),
         .matched = true,
     };
   }
   return {};
-}
-
-bool shouldShowNotificationToast(const ResolvedNotificationFilter& filter, Urgency urgency) noexcept {
-  if (filter.showToast) {
-    return true;
-  }
-  return filter.allowCritical && urgency == Urgency::Critical;
 }
 
 void normalizeNotificationFilterNames(std::vector<NotificationFilterConfig>& filters) {
@@ -176,6 +170,24 @@ std::unordered_set<Urgency> normalizeAllowedUrgencies(std::vector<std::string> v
     }
   }
   return allowed;
+}
+
+std::vector<std::string> normalizeFilterAllowedUrgencyStrings(std::vector<std::string> values) {
+  const auto allowed = normalizeAllowedUrgencies(std::move(values));
+  if (allowed.empty() || allowed.size() == 3) {
+    return {};
+  }
+  std::vector<std::string> out;
+  if (allowed.contains(Urgency::Low)) {
+    out.emplace_back("low");
+  }
+  if (allowed.contains(Urgency::Normal)) {
+    out.emplace_back("normal");
+  }
+  if (allowed.contains(Urgency::Critical)) {
+    out.emplace_back("critical");
+  }
+  return out;
 }
 
 bool urgencyIsAllowed(const std::unordered_set<Urgency>& allowed, Urgency urgency) noexcept {

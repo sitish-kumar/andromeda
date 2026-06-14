@@ -103,9 +103,7 @@ public:
   void removeHistoryEntry(uint32_t id, std::optional<CloseReason> dbusCloseReason = std::nullopt);
   void clearHistory();
   void setFilters(std::vector<NotificationFilterConfig> filters);
-  void setAllowedUrgencies(std::vector<std::string> allowedUrgencies);
   [[nodiscard]] const std::vector<NotificationFilterConfig>& filters() const noexcept;
-  [[nodiscard]] const std::unordered_set<Urgency>& allowedUrgencies() const noexcept;
   void setDoNotDisturb(bool enabled);
   [[nodiscard]] bool doNotDisturb() const noexcept;
   [[nodiscard]] bool toggleDoNotDisturb();
@@ -148,7 +146,6 @@ private:
   std::unordered_map<uint32_t, size_t> m_idToIndex;
   std::unordered_set<uint32_t> m_suppressedIds;
   std::vector<NotificationFilterConfig> m_filters;
-  std::unordered_set<Urgency> m_allowedUrgencies;
   /// Expired notifications with actions: NotificationClosed deferred until dismiss, action, or history removal.
   std::unordered_set<uint32_t> m_pendingDBusClose;
   std::deque<NotificationHistoryEntry> m_history;
