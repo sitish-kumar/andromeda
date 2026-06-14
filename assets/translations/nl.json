@@ -1614,8 +1614,7 @@
           "label": "Zwarte lijst voor meldingen"
         },
         "blacklist-allow-critical": {
-          "description": "Toon nog steeds kritieke meldingen van afzenders op de zwarte lijst",
-          "label": "Kritieke meldingen doorlaten"
+          "description": "Toon nog steeds kritieke meldingen van afzenders op de zwarte lijst"
         },
         "collapse-on-dismiss": {
           "description": "Verschuif resterende meldingen om gaten te sluiten wanneer er een wordt gesloten",

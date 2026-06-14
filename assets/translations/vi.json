@@ -1591,8 +1591,7 @@
           "label": "Danh sách đen thông báo"
         },
         "blacklist-allow-critical": {
-          "description": "Vẫn hiển thị thông báo khẩn cấp từ người gửi bị chặn",
-          "label": "Cho phép quan trọng vượt qua danh sách đen"
+          "description": "Vẫn hiển thị thông báo khẩn cấp từ người gửi bị chặn"
         },
         "collapse-on-dismiss": {
           "description": "Trượt các Toast còn lại để lấp đầy khoảng trống khi một cái bị đóng",

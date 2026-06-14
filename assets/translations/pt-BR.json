@@ -1601,8 +1601,7 @@
           "label": "Lista Negra de Notificações"
         },
         "blacklist-allow-critical": {
-          "description": "Ainda exibe notificações críticas de remetentes na lista negra",
-          "label": "Notificações Críticas da Lista Negra"
+          "description": "Ainda exibe notificações críticas de remetentes na lista negra"
         },
         "collapse-on-dismiss": {
           "description": "Deslize as notificações flutuantes restantes para preencher as lacunas quando uma delas for descartada",

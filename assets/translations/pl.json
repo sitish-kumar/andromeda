@@ -1582,8 +1582,7 @@
           "label": "Czarna lista Toast-ów"
         },
         "blacklist-allow-critical": {
-          "description": "Nadal wyświetlaj krytyczne Toast-y od nadawców na czarnej liście",
-          "label": "Dopuść krytyczne przez czarną listę"
+          "description": "Nadal wyświetlaj krytyczne Toast-y od nadawców na czarnej liście"
         },
         "collapse-on-dismiss": {
           "description": "Przesuń pozostałe Toast-y by zamknąć przerwy gdy jeden zostaje odrzucony",

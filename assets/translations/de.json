@@ -1614,8 +1614,7 @@
           "label": "Benachrichtigungssperrliste"
         },
         "blacklist-allow-critical": {
-          "description": "Kritische Benachrichtigungen von Absendern auf der Blacklist trotzdem anzeigen",
-          "label": "Kritisches trotz Blacklist zulassen"
+          "description": "Kritische Benachrichtigungen von Absendern auf der Blacklist trotzdem anzeigen"
         },
         "collapse-on-dismiss": {
           "description": "Verbleibende Toasts nachrücken lassen, um Lücken zu schließen, wenn einer verworfen wird",

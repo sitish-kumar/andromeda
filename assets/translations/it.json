@@ -1,5 +1,17 @@
 {
   "auth": {
+    "fingerprint": {
+      "disconnected": "Lettore impronte disconnesso",
+      "error": "Errore autenticazione impronta",
+      "no-match": "Impronta non riconosciuta",
+      "not-centered": "Centra il dito e prova di nuovo",
+      "present": "Lettura impronta...",
+      "ready": "Posiziona il dito nel lettore",
+      "remove-and-retry": "Rimuovi il dito e riprova",
+      "retry": "Per favore scansiona di nuovo l'impronta",
+      "swipe-too-short": "Lo swipe è stato troppo breve, riprova",
+      "too-many-attempts": "Impronta disattivata (troppi tentativi)"
+    },
     "pam": {
       "authentication-failed": "Autenticazione non riuscita",
       "start-failed": "Avvio di PAM non riuscito",
@@ -92,7 +104,7 @@
       "cancel": "Annulla"
     },
     "states": {
-      "auto": "Auto",
+      "auto": "Automatico",
       "custom": "Personalizzato",
       "inherit": "Eredita",
       "off": "Disattivato"
@@ -153,6 +165,7 @@
       "unknown-resolution": "Risoluzione sconosciuta"
     },
     "home": {
+      "avatar-error-title": "Avatar non aggiornato",
       "media": {
         "idle": "Inattivo",
         "no-active-player": "Nessun lettore attivo",
@@ -315,7 +328,10 @@
     "editor": {
       "actions": {
         "add": "Aggiungi",
+        "clone": "Duplica (Ctrl+C, Ctrl+V per copiare/incollare)",
         "done": "Fatto",
+        "flip-horizontal": "Inverti orizzontalmente",
+        "flip-vertical": "Inverti verticalmente",
         "hide": "Nascondi",
         "settings": "Impostazioni",
         "show": "Mostra",
@@ -352,6 +368,7 @@
         "fade-when-idle": "Dissolvi quando inattivo",
         "font-family": "Carattere",
         "font-family-default": "Predefinito di sistema",
+        "forecast-days": "Previsioni giornaliere",
         "format": "Formato",
         "hide-when-no-media": "Nascondi senza media",
         "horizontal": "Orizzontale",
@@ -369,6 +386,7 @@
         "secondary-color": "Colore secondario",
         "sensitivity": "Sensibilità",
         "shadow": "Ombra",
+        "show-forecast": "Mostra previsioni",
         "show-label": "Mostra etichetta",
         "show-login-button": "Pulsante di login",
         "show-when-idle": "Mostra quando inattivo",
@@ -406,6 +424,7 @@
         "clock": "Orologio",
         "fancy-audio-visualizer": "Visualizzatore audio avanzato",
         "label": "Etichetta",
+        "login-box": "Casella di Login",
         "media-player": "Lettore multimediale",
         "sticker": "Adesivo",
         "system-monitor": "Monitor di sistema",
@@ -506,7 +525,7 @@
     },
     "source": {
       "address": "Indirizzo",
-      "auto": "Auto"
+      "auto": "Automatico"
     }
   },
   "lockscreen": {
@@ -790,6 +809,10 @@
       }
     },
     "errors": {
+      "avatar-accounts": "Impossibile aggiornare l'avatar",
+      "avatar-invalid-path": "Il percorso dell'avatar selezionato non è un file immagine leggibile.",
+      "avatar-load": "Impossibile caricare l'immagine selezionata. Utilizza PNG, JPEG, WebP, GIF, BMP o SVG.",
+      "avatar-write": "Impossibile preparare l'immagine avatar per il salvataggio.",
       "bar": {
         "create": "Impossibile creare la barra.",
         "delete": "Impossibile eliminare la barra.",
@@ -1581,6 +1604,10 @@
           "description": "Abilita il blocco della sessione, l'integrazione con logind e le azioni di blocco",
           "label": "Blocco schermo"
         },
+        "fingerprint": {
+          "description": "Sblocco con un lettore di impronte digitali tramite fprintd, insieme alla password",
+          "label": "Sblocco con impronta"
+        },
         "monitors": {
           "description": "Scegli quali monitor mostrano il blocco schermo; lascia vuoto per mostrare su tutti i monitor",
           "label": "Monitor"
@@ -1614,8 +1641,7 @@
           "label": "Blacklist notifiche"
         },
         "blacklist-allow-critical": {
-          "description": "Mostra comunque notifiche critiche da mittenti in blacklist",
-          "label": "Consenti notifiche critiche attraverso blacklist"
+          "description": "Mostra comunque notifiche critiche da mittenti in blacklist"
         },
         "collapse-on-dismiss": {
           "description": "Fa scorrere i toast rimanenti per chiudere gli spazi quando uno viene ignorato",
@@ -1993,7 +2019,7 @@
           "label": "Click centrale apre impostazioni widget"
         },
         "niri-overview-type-to-launch": {
-          "description": "Apre il launcher digitando nella panoramica niri; usa una piccola superficie di focus tastiera mentre la panoramica è aperta",
+          "description": "Apre il launcher quando digiti nella panoramica niri (overiew)",
           "label": "Digita per avviare launcher"
         },
         "offline-mode": {
@@ -2013,7 +2039,7 @@
           "label": "Luminosità"
         },
         "osd-kinds-caffeine": {
-          "description": "Mostra un popup OSD quando cambia lo stato della modalità caffeine (inibitore inattività)",
+          "description": "Mostra un popup OSD quando cambia lo stato della modalità Caffeine (inibitore inattività)",
           "label": "Modalità Caffeine"
         },
         "osd-kinds-dnd": {

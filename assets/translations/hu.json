@@ -1571,8 +1571,7 @@
           "label": "Értesítési feketelista"
         },
         "blacklist-allow-critical": {
-          "description": "Mégis mutassa a kritikus értesítéseket a feketelistára tett küldőktől",
-          "label": "Kritikus átengedése a feketelistán"
+          "description": "Mégis mutassa a kritikus értesítéseket a feketelistára tett küldőktől"
         },
         "collapse-on-dismiss": {
           "description": "A megmaradt Toastok elcsúsztatása, hogy kitöltsék a helyet, ha egyet bezárnak",
