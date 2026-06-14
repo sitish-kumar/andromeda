@@ -190,6 +190,7 @@ void SysmonWidget::create() {
         ui::label({
             .out = &m_label,
             .fontSize = Style::fontSizeBody * m_contentScale,
+            .fontFamily = labelFontFamily(),
             .minWidth = m_labelMinWidth > 0.0f ? std::optional<float>{m_labelMinWidth * m_contentScale}
                                                : std::optional<float>{},
             .fontWeight = labelFontWeight(),

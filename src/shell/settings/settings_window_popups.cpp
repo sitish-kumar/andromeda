@@ -383,8 +383,8 @@ void SettingsWindow::openBarWidgetAddPopup(const std::vector<std::string>& laneP
 }
 
 void SettingsWindow::openSearchPickerPopup(
-    const std::string& title, const std::vector<settings::SelectOption>& options, const std::string& selectedValue,
-    const std::string& placeholder, const std::string& emptyText, const std::vector<std::string>& settingPath
+    std::string title, std::vector<settings::SelectOption> options, std::string selectedValue, std::string placeholder,
+    std::string emptyText, std::vector<std::string> settingPath
 ) {
   if (m_wayland == nullptr
       || m_renderContext == nullptr

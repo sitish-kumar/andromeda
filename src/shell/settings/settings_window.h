@@ -124,9 +124,11 @@ private:
   void openActionsMenu();
   void openConfigExportDialog();
   void openBarWidgetAddPopup(const std::vector<std::string>& lanePath);
+  // Parameters are taken by value: opening the popup closes the editor sheet, which can own the control
+  // whose callback forwarded these arguments, so copies must outlive that destruction.
   void openSearchPickerPopup(
-      const std::string& title, const std::vector<settings::SelectOption>& options, const std::string& selectedValue,
-      const std::string& placeholder, const std::string& emptyText, const std::vector<std::string>& settingPath
+      std::string title, std::vector<settings::SelectOption> options, std::string selectedValue,
+      std::string placeholder, std::string emptyText, std::vector<std::string> settingPath
   );
   void openSessionActionEntryEditor(std::size_t index);
   void syncSessionActionInlineSummary(std::size_t index, const SessionPanelActionConfig& row);

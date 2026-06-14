@@ -133,6 +133,10 @@ namespace config_export {
         resolved.contactShadow = *ovr.contactShadow;
       if (ovr.panelOverlap)
         resolved.panelOverlap = *ovr.panelOverlap;
+      if (ovr.capsuleThickness)
+        resolved.capsuleThickness = *ovr.capsuleThickness;
+      if (ovr.fontFamily)
+        resolved.fontFamily = *ovr.fontFamily;
       if (ovr.startWidgets)
         resolved.startWidgets = *ovr.startWidgets;
       if (ovr.centerWidgets)

@@ -105,6 +105,11 @@ namespace settings {
         .makeSelect = [&factory](const SelectSetting& setting, std::vector<std::string> path) -> std::unique_ptr<Node> {
           return factory.makeSelect(setting, std::move(path));
         },
+        .makeSearchPicker = [&factory](
+                                const SearchPickerSetting& setting, std::string title, std::vector<std::string> path
+                            ) -> std::unique_ptr<Node> {
+          return factory.makeSearchPicker(setting, std::move(title), std::move(path));
+        },
         .makeSlider = [&factory](
                           double value, double minValue, double maxValue, double step, std::vector<std::string> path,
                           bool integerValue
@@ -353,26 +358,7 @@ namespace settings {
 
     const auto makeSearchPickerButton = [&](const SettingEntry& entry,
                                             const SearchPickerSetting& setting) -> std::unique_ptr<Node> {
-      return ui::button({
-          .text = optionLabel(setting.options, setting.selectedValue),
-          .glyph = "search",
-          .fontSize = Style::fontSizeBody * scale,
-          .glyphSize = Style::fontSizeBody * scale,
-          .contentAlign = ButtonContentAlign::Start,
-          .variant = ButtonVariant::Outline,
-          .minWidth = 190.0f * scale,
-          .minHeight = Style::controlHeight * scale,
-          .paddingV = Style::spaceSm * scale,
-          .paddingH = Style::spaceMd * scale,
-          .radius = Style::scaledRadiusMd(scale),
-          .onClick = [openPopup = ctx.openSearchPickerPopup, title = entry.title, options = setting.options,
-                      selectedValue = setting.selectedValue, placeholder = setting.placeholder,
-                      emptyText = setting.emptyText, path = entry.path]() {
-            if (openPopup) {
-              openPopup(title, options, selectedValue, placeholder, emptyText, path);
-            }
-          },
-      });
+      return factory.makeSearchPicker(setting, entry.title, entry.path);
     };
 
     const auto makeCollectionBlock = [&](const SettingEntry& entry, bool overridden, bool reserveTitleHeight = false,

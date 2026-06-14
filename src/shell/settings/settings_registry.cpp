@@ -2273,10 +2273,31 @@ namespace settings {
           tr("settings.schema.bar.panel-overlap.description"), path("panel_overlap"),
           barPanelOverlapStepper(bar.panelOverlap), "seam gap overlap attached panel fractional scale", true
       ));
+      const std::string barResolvedFontFamily =
+          bar.fontFamily && !bar.fontFamily->empty() ? *bar.fontFamily : cfg.shell.fontFamily;
+      {
+        SettingControl fontFamilyControl = TextSetting{
+            .value = bar.fontFamily.value_or(""), .placeholder = cfg.shell.fontFamily, .browseFileExtensions = {}
+        };
+        if (!env.fontFamilies.empty()) {
+          fontFamilyControl = SearchPickerSetting{
+              .options = env.fontFamilies,
+              .selectedValue = bar.fontFamily.value_or(""),
+              .placeholder = cfg.shell.fontFamily,
+              .emptyText = tr("ui.controls.search-picker.empty"),
+              .preferredHeight = 280.0f,
+          };
+        }
+        entries.push_back(makeEntry(
+            section, "widgets", tr("settings.schema.bar.font-family.label"),
+            tr("settings.schema.bar.font-family.description"), path("font_family"), std::move(fontFamilyControl),
+            "typeface font"
+        ));
+      }
       {
         std::vector<SelectOption> fontWeightOptions;
         const auto widgetOptions =
-            buildLabelFontWeightSelectOptions(cfg.shell.fontFamily, FontWeightSelectKind::BarDefault, bar.fontWeight);
+            buildLabelFontWeightSelectOptions(barResolvedFontFamily, FontWeightSelectKind::BarDefault, bar.fontWeight);
         fontWeightOptions.reserve(widgetOptions.size());
         for (const auto& option : widgetOptions) {
           fontWeightOptions.push_back(SelectOption{option.value, tr(option.labelKey)});
@@ -2308,6 +2329,11 @@ namespace settings {
           section, "capsules", tr("settings.schema.bar.widget-capsules.label"),
           tr("settings.schema.bar.widget-capsules.description"), path("capsule"),
           ToggleSetting{bar.widgetCapsuleDefault}, "pill"
+      ));
+      entries.push_back(makeEntry(
+          section, "capsules", tr("settings.schema.bar.capsule-thickness.label"),
+          tr("settings.schema.bar.capsule-thickness.description"), path("capsule_thickness"),
+          SliderSetting{bar.capsuleThickness, 0.1f, 1.0f, 0.01f, false}, "pill thickness size", true
       ));
       const SettingVisibility capsuleOn{path("capsule"), {"true"}};
       {
@@ -2511,6 +2537,28 @@ namespace settings {
             barPanelOverlapStepper(ovr.panelOverlap.value_or(bar.panelOverlap)),
             "seam gap overlap attached panel fractional scale", true
         ));
+        {
+          const std::string monitorInheritedFontFamily = bar.fontFamily.value_or(cfg.shell.fontFamily);
+          SettingControl fontFamilyControl = TextSetting{
+              .value = ovr.fontFamily.value_or(""),
+              .placeholder = monitorInheritedFontFamily,
+              .browseFileExtensions = {}
+          };
+          if (!env.fontFamilies.empty()) {
+            fontFamilyControl = SearchPickerSetting{
+                .options = env.fontFamilies,
+                .selectedValue = ovr.fontFamily.value_or(""),
+                .placeholder = monitorInheritedFontFamily,
+                .emptyText = tr("ui.controls.search-picker.empty"),
+                .preferredHeight = 280.0f,
+            };
+          }
+          entries.push_back(makeEntry(
+              section, "widgets", tr("settings.schema.bar.font-family.label"),
+              tr("settings.schema.bar.font-family.description"), monitorPath("font_family"),
+              std::move(fontFamilyControl), "typeface font", true
+          ));
+        }
         entries.push_back(makeEntry(
             section, "widgets", tr("settings.schema.bar.widget-spacing.label"),
             tr("settings.schema.bar.widget-spacing.description"), monitorPath("widget_spacing"),
@@ -2530,6 +2578,12 @@ namespace settings {
             section, "capsules", tr("settings.schema.bar.widget-capsules.label"),
             tr("settings.schema.bar.widget-capsules.description"), monitorPath("capsule"),
             ToggleSetting{ovr.widgetCapsuleDefault.value_or(bar.widgetCapsuleDefault)}, "pill"
+        ));
+        entries.push_back(makeEntry(
+            section, "capsules", tr("settings.schema.bar.capsule-thickness.label"),
+            tr("settings.schema.bar.capsule-thickness.description"), monitorPath("capsule_thickness"),
+            SliderSetting{ovr.capsuleThickness.value_or(bar.capsuleThickness), 0.1f, 1.0f, 0.01f, false},
+            "pill thickness size", true
         ));
         const SettingVisibility monitorCapsuleOn{monitorPath("capsule"), {"true"}};
         {

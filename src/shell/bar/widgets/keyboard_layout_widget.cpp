@@ -329,6 +329,7 @@ void KeyboardLayoutWidget::create() {
           .out = &m_label,
           .text = "--",
           .fontSize = Style::fontSizeBody * m_contentScale,
+          .fontFamily = labelFontFamily(),
           .fontWeight = labelFontWeight(),
       })
   );
@@ -370,8 +371,12 @@ void KeyboardLayoutWidget::doLayout(Renderer& renderer, float containerWidth, fl
   m_label->setVisible(m_showLabel);
   m_label->setTextAlign(m_isVertical ? TextAlign::Center : TextAlign::Start);
   if (m_showLabel) {
-    const float stableLabelWidth =
-        std::round(renderer.measureText(kVerticalStableLabel, m_label->fontSize(), labelFontWeight()).width);
+    const float stableLabelWidth = std::round(renderer
+                                                  .measureText(
+                                                      kVerticalStableLabel, m_label->fontSize(), labelFontWeight(),
+                                                      0.0f, 0, TextAlign::Start, labelFontFamily()
+                                                  )
+                                                  .width);
     m_label->setMinWidth(m_isVertical ? std::min(containerWidth, stableLabelWidth) : 0.0f);
     m_label->measure(renderer);
   }

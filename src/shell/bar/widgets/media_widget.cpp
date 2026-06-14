@@ -66,6 +66,7 @@ void MediaWidget::create() {
       ui::label({
           .out = &m_label,
           .fontSize = Style::fontSizeBody * m_contentScale,
+          .fontFamily = labelFontFamily(),
           .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
           .maxWidth = m_maxWidth * m_contentScale,
           .maxLines = 1,

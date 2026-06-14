@@ -66,6 +66,8 @@ struct BarMonitorOverride {
   std::optional<bool> shadow;                // use the global shell shadow on this bar
   std::optional<bool> contactShadow;         // dark gradient between attached panel and bar
   std::optional<std::int32_t> panelOverlap;  // logical px the attached panel overlaps the bar edge (seam tuning)
+  std::optional<float> capsuleThickness;     // capsule cross-size as a fraction of bar thickness
+  std::optional<std::string> fontFamily;     // unset = inherit shell.font_family
   std::optional<float> scale;
   std::optional<std::vector<std::string>> startWidgets;
   std::optional<std::vector<std::string>> centerWidgets;
@@ -112,8 +114,11 @@ struct BarConfig {
   // compositor and the output's fractional scale (physical-pixel rounding), so it is exposed for per-bar/per-monitor
   // tuning. Negative values pull the panel away from the bar.
   std::int32_t panelOverlap = 1;
-  float scale = 1.0f;   // content scale multiplier for glyphs and text
-  int fontWeight = 500; // primary label weight for bar widgets
+  float capsuleThickness = 0.76f; // capsule cross-size as a fraction of bar thickness
+  float scale = 1.0f;             // content scale multiplier for glyphs and text
+  int fontWeight = 500;           // primary label weight for bar widgets
+  // Typeface for this bar's widgets; unset inherits shell.font_family. Per-widget `font_family` overrides.
+  std::optional<std::string> fontFamily;
   std::vector<std::string> startWidgets = {"launcher", "wallpaper", "workspaces"};
   std::vector<std::string> centerWidgets = {"clock"};
   std::vector<std::string> endWidgets = {"media",   "tray",           "notifications", "clipboard",

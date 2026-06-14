@@ -363,7 +363,7 @@
         "description": "Description",
         "fade-when-idle": "Fade When Idle",
         "font-family": "Font",
-        "font-family-default": "System default",
+        "font-family-default": "Default",
         "format": "Format",
         "hide-when-no-media": "Hide When No Media",
         "horizontal": "Horizontal",
@@ -1248,6 +1248,10 @@
           "description": "Default corner radius for widget capsules, workspace pills, and taskbar workspace groups; leave blank for automatic pill shape, or set 0 for square corners",
           "label": "Capsule Radius"
         },
+        "capsule-thickness": {
+          "description": "Capsule size across the bar as a fraction of the bar thickness (1.0 fills the bar)",
+          "label": "Capsule Thickness"
+        },
         "center-widgets": {
           "description": "Widgets in the center of the bar",
           "label": "Center Widgets"
@@ -1290,6 +1294,10 @@
         },
         "ends-margin": {
           "description": "Inset from each end of the bar along its main axis"
+        },
+        "font-family": {
+          "description": "Typeface for this bar's widgets; leave empty to inherit the global font. Per-widget Font Family overrides this.",
+          "label": "Font Family"
         },
         "font-weight": {
           "description": "Default weight for widget labels on this bar.",
@@ -2448,6 +2456,10 @@
         "focused-color": {
           "description": "Color role used for the focused workspace; fixed hex colors are also supported",
           "label": "Focused Color"
+        },
+        "font-family": {
+          "description": "Typeface for this widget; leave empty to inherit the bar font",
+          "label": "Font Family"
         },
         "font-weight": {
           "description": "Default inherits the bar font weight",

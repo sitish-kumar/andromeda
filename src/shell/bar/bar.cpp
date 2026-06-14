@@ -51,6 +51,21 @@ namespace {
     return fallback;
   }
 
+  // `[widget.*] font_family` override; empty/whitespace or absent inherits the bar-resolved family.
+  [[nodiscard]] std::string parseWidgetLabelFontFamily(const WidgetConfig& config, const std::string& fallback) {
+    const auto it = config.settings.find("font_family");
+    if (it == config.settings.end()) {
+      return fallback;
+    }
+    if (const auto* raw = std::get_if<std::string>(&it->second)) {
+      std::string trimmed = StringUtils::trim(*raw);
+      if (!trimmed.empty()) {
+        return trimmed;
+      }
+    }
+    return fallback;
+  }
+
   [[nodiscard]] int barAutoHideEdgeGutter(const BarConfig& cfg) noexcept {
     if (!cfg.autoHide || cfg.marginEdge <= 0) {
       return 0;
@@ -534,11 +549,10 @@ namespace {
     layoutWidgets(instance.centerWidgets);
     layoutWidgets(instance.endWidgets);
 
-    // Capsules sit a small margin in from the bar edges; keyed on the bar's scale (not any per-widget
-    // scale) so every capsule keeps the same cross-size. The margin is capped to a fraction of the bar
-    // thickness so a thin bar can't collapse the capsule below its content and clip it.
-    const float capsuleCrossInset = std::round(std::min(Style::spaceXs * instance.barConfig.scale, slotCross * 0.12f));
-    auto finalizeCapsules = [isVertical, slotCross, capsuleCrossInset, &renderer](std::vector<BarCapsuleRun>& runs) {
+    // Capsule cross-size is a fraction of the bar thickness (capsule_thickness), the same for every capsule
+    // regardless of per-widget content scale. The max() guard keeps a thin bar from yielding a 0px capsule.
+    const float capsuleCross = std::max(1.0f, std::round(slotCross * instance.barConfig.capsuleThickness));
+    auto finalizeCapsules = [isVertical, capsuleCross, &renderer](std::vector<BarCapsuleRun>& runs) {
       for (auto& run : runs) {
         Node* shell = run.shell;
         Box* bg = run.bg;
@@ -574,12 +588,11 @@ namespace {
         }
         const float pad = run.spec.padding * scale;
         const float padMain = pad;
-        // Cross-size is the bar thickness minus a small edge margin, independent of per-widget content
-        // scale: scaling a widget enlarges its glyph/text inside the fixed-height pill rather than
-        // resizing the capsule (so a differently scaled member can't grow or split its capsule group).
-        // The main axis is content plus per-widget padding, so an icon-only widget reads as a
-        // near-circular pill at the default padding and widens as padding increases.
-        const float capsuleCross = std::max(1.0f, slotCross - 2.0f * capsuleCrossInset);
+        // Cross-size is the fixed capsuleCross, independent of per-widget content scale: scaling a widget
+        // enlarges its glyph/text inside the fixed-height pill rather than resizing the capsule (so a
+        // differently scaled member can't grow or split its capsule group). The main axis is content plus
+        // per-widget padding, so an icon-only widget reads as a near-circular pill at the default padding
+        // and widens as padding increases.
         const float shellMain = (isVertical ? ih : iw) + 2.0f * padMain;
         const float shellCross = capsuleCross;
         const float shellW = isVertical ? shellCross : shellMain;
@@ -1427,6 +1440,9 @@ void Bar::destroyInstance(std::uint32_t outputName) {
 void Bar::populateWidgets(BarInstance& instance) {
   const auto& widgetConfigs = m_config->config().widgets;
   const FontWeight labelFontWeight = static_cast<FontWeight>(instance.barConfig.fontWeight);
+  const std::string barFontFamily = (instance.barConfig.fontFamily && !instance.barConfig.fontFamily->empty())
+      ? *instance.barConfig.fontFamily
+      : m_config->config().shell.fontFamily;
   // Creates one widget for `name`. When `groupSpec` is set the widget is a member of a capsule group and
   // takes the group's capsule style + foreground; otherwise it resolves its own per-widget/bar capsule.
   auto createWidget = [&](const std::string& name, const WidgetBarCapsuleSpec* groupSpec,
@@ -1453,6 +1469,7 @@ void Bar::populateWidgets(BarInstance& instance) {
     widget->setLabelFontWeight(
         wcPtr != nullptr ? parseWidgetLabelFontWeight(*wcPtr, labelFontWeight) : labelFontWeight
     );
+    widget->setLabelFontFamily(wcPtr != nullptr ? parseWidgetLabelFontFamily(*wcPtr, barFontFamily) : barFontFamily);
     if (wcPtr != nullptr && wcPtr->hasSetting("color")) {
       widget->setWidgetForeground(wcPtr->getOptionalColorSpec("color", "widget." + name + ".color"));
     } else if (groupForeground != nullptr && groupForeground->has_value()) {
@@ -1501,6 +1518,7 @@ void Bar::populateWidgets(BarInstance& instance) {
   if (debugWidget != nullptr) {
     debugWidget->setConfigName("debug_indicator");
     debugWidget->setLabelFontWeight(labelFontWeight);
+    debugWidget->setLabelFontFamily(barFontFamily);
     debugWidget->create();
     instance.endWidgets.insert(instance.endWidgets.begin(), std::move(debugWidget));
   }

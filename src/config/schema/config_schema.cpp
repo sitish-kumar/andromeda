@@ -1389,6 +1389,7 @@ namespace noctalia::config::schema {
     constexpr Range<std::int64_t> kBarThicknessRange{10, 300};
     constexpr Range<std::int64_t> kBarRadiusRange{0, 500};
     constexpr Range<std::int64_t> kBarPanelOverlapRange{-2, 3};
+    constexpr Range<float> kBarCapsuleThicknessRange{0.1f, 1.0f};
     constexpr Range<float> kBarOpacityRange{0.0f, 1.0f};
     constexpr Range<float> kBarBorderWidthRange{0.0f, 20.0f};
     constexpr Range<float> kBarScaleRange{0.5f, 4.0f};
@@ -1486,6 +1487,27 @@ namespace noctalia::config::schema {
           [member, key](const toml::table& tbl, Struct& out, std::string_view, Diagnostics&) {
             if (auto v = tbl[key].value<std::string>()) {
               out.*member = *v;
+            }
+          },
+          [member, key](toml::table& tbl, const Struct& in) {
+            if ((in.*member).has_value()) {
+              tbl.insert_or_assign(key, *(in.*member));
+            }
+          }
+      );
+    }
+
+    // Like optionalStringField but trims; a present-but-empty value stays unset so it inherits the parent.
+    template <typename Struct>
+    Field<Struct> optionalTrimmedStringField(std::optional<std::string> Struct::* member, std::string_view key) {
+      return custom<Struct>(
+          key,
+          [member, key](const toml::table& tbl, Struct& out, std::string_view, Diagnostics&) {
+            if (auto v = tbl[key].value<std::string>()) {
+              std::string trimmed = StringUtils::trim(*v);
+              if (!trimmed.empty()) {
+                out.*member = std::move(trimmed);
+              }
             }
           },
           [member, key](toml::table& tbl, const Struct& in) {
@@ -1670,8 +1692,10 @@ namespace noctalia::config::schema {
         field(&BarConfig::shadow, "shadow"),
         field(&BarConfig::contactShadow, "contact_shadow"),
         field(&BarConfig::panelOverlap, "panel_overlap", kBarPanelOverlapRange),
+        field(&BarConfig::capsuleThickness, "capsule_thickness", kBarCapsuleThicknessRange),
         field(&BarConfig::scale, "scale", kBarScaleRange),
         field(&BarConfig::fontWeight, "font_weight"),
+        optionalTrimmedStringField(&BarConfig::fontFamily, "font_family"),
         field(&BarConfig::startWidgets, "start"),
         field(&BarConfig::centerWidgets, "center"),
         field(&BarConfig::endWidgets, "end"),
@@ -1734,6 +1758,8 @@ namespace noctalia::config::schema {
         optionalBoolField(&BarMonitorOverride::shadow, "shadow"),
         optionalBoolField(&BarMonitorOverride::contactShadow, "contact_shadow"),
         optionalIntField(&BarMonitorOverride::panelOverlap, "panel_overlap", kBarPanelOverlapRange),
+        optionalFloatField(&BarMonitorOverride::capsuleThickness, "capsule_thickness", kBarCapsuleThicknessRange),
+        optionalTrimmedStringField(&BarMonitorOverride::fontFamily, "font_family"),
         optionalStringVectorField(&BarMonitorOverride::startWidgets, "start"),
         optionalStringVectorField(&BarMonitorOverride::centerWidgets, "center"),
         optionalStringVectorField(&BarMonitorOverride::endWidgets, "end"),
