@@ -1584,7 +1584,7 @@ void BackgroundWidgetsEditor::flipSelectedWidgetHorizontal() {
     state->flipX = !state->flipX;
   }
   updateViewTransforms();
-  requestRedraw();
+  requestLayout();
 }
 
 void BackgroundWidgetsEditor::flipSelectedWidgetVertical() {
@@ -1599,7 +1599,7 @@ void BackgroundWidgetsEditor::flipSelectedWidgetVertical() {
     state->flipY = !state->flipY;
   }
   updateViewTransforms();
-  requestRedraw();
+  requestLayout();
 }
 
 float BackgroundWidgetsEditor::duplicateOffset() const {
