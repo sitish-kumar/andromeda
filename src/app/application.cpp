@@ -1443,6 +1443,15 @@ void Application::initUi() {
     m_launcherPanel = launcherPanel.get();
     m_panelManager.registerPanel("launcher", std::move(launcherPanel));
   }
+  m_settingsWindow.setResetLauncherUsage([this]() {
+    if (m_launcherPanel != nullptr) {
+      m_launcherPanel->clearUsage();
+    }
+    notify::info(
+        "Noctalia", i18n::tr("notifications.internal.launcher-usage-reset"),
+        i18n::tr("notifications.internal.launcher-usage-reset-success")
+    );
+  });
   reloadPluginLauncherProviders();
   m_overviewLauncherCapture.initialize(m_wayland, &m_renderContext, m_compositorPlatform, m_panelManager);
   m_overviewLauncherCapture.setEnabled(m_configService.config().shell.niriOverviewTypeToLaunchEnabled);

@@ -644,6 +644,13 @@ void LauncherPanel::onClose() {
 
 void LauncherPanel::onIconThemeChanged() { reapplyCurrentQuery(); }
 
+void LauncherPanel::clearUsage() {
+  m_usageTracker.clear();
+  if (m_input != nullptr) {
+    reapplyCurrentQuery();
+  }
+}
+
 void LauncherPanel::reapplyCurrentQuery() {
   std::string selectedProvider;
   std::string selectedId;

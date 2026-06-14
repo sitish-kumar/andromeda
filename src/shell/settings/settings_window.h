@@ -81,6 +81,7 @@ public:
   void setOpenWallpaperPanel(std::function<void()> callback) { m_openWallpaperPanel = std::move(callback); }
   void setPluginManager(scripting::PluginManager* manager) { m_pluginManager = manager; }
   void setSyncGreeterAppearance(std::function<void()> callback) { m_syncGreeterAppearance = std::move(callback); }
+  void setResetLauncherUsage(std::function<void()> callback) { m_resetLauncherUsage = std::move(callback); }
   void setSaveWallpaperPaletteAsCustom(std::function<void()> callback) {
     m_saveWallpaperPaletteAsCustom = std::move(callback);
   }
@@ -255,6 +256,7 @@ private:
   std::function<void()> m_openLockscreenWidgetEditor;
   std::function<void()> m_openWallpaperPanel;
   std::function<void()> m_syncGreeterAppearance;
+  std::function<void()> m_resetLauncherUsage;
   std::function<void()> m_saveWallpaperPaletteAsCustom;
   std::function<void(std::string, std::string)> m_connectCalendarAccount;
 };

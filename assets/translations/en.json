@@ -571,6 +571,8 @@
       "keybind-invalid-printable": "Printable keys (letters, numbers, symbols) require a modifier such as Ctrl or Alt.",
       "keybind-invalid-super": "The Super/Windows key cannot be used in shell keybinds.",
       "keybind-invalid-title": "Keybind not allowed",
+      "launcher-usage-reset": "Launcher",
+      "launcher-usage-reset-success": "Usage data cleared.",
       "lockscreen-widgets-editor": "Lockscreen widget editor",
       "lockscreen-widgets-editor-blocked-locked": "Unlock the session before editing lockscreen widgets.",
       "lockscreen-widgets-editor-enabled": "Lockscreen widget editor is on. Arrange widgets on the preview overlay, then lock the session to verify the layout.",
@@ -1744,6 +1746,11 @@
         "launcher-sort-by-usage": {
           "description": "Boost frequently used apps toward the top and show a Recently Used category filter",
           "label": "Sort by Usage"
+        },
+        "launcher-reset-usage": {
+          "button": "Reset",
+          "description": "Clear launch counts and recently used history used for launcher sorting",
+          "label": "Reset Usage Data"
         },
         "launcher-show-icons": {
           "description": "Show application icons in launcher results",

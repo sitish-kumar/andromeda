@@ -911,6 +911,33 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
     m_settingsRegistry.insert(it, std::move(btn));
   }
 
+  if (m_resetLauncherUsage) {
+    auto it = std::find_if(m_settingsRegistry.begin(), m_settingsRegistry.end(), [](const settings::SettingEntry& e) {
+      return e.section == settings::SettingsSection::Panels
+          && e.group == "launcher"
+          && e.path == std::vector<std::string>{"shell", "panel", "launcher_sort_by_usage"};
+    });
+    if (it != m_settingsRegistry.end()) {
+      ++it;
+    }
+    settings::SettingEntry btn{
+        .section = settings::SettingsSection::Panels,
+        .group = "launcher",
+        .title = i18n::tr("settings.schema.panels.launcher-reset-usage.label"),
+        .subtitle = i18n::tr("settings.schema.panels.launcher-reset-usage.description"),
+        .path = {},
+        .control =
+            settings::ButtonSetting{
+                .label = i18n::tr("settings.schema.panels.launcher-reset-usage.button"),
+                .action = m_resetLauncherUsage,
+                .glyph = "refresh",
+            },
+        .searchText = "launcher reset usage recently used launch count history clear",
+        .visibleWhen = std::nullopt,
+    };
+    m_settingsRegistry.insert(it, std::move(btn));
+  }
+
   if (m_saveWallpaperPaletteAsCustom && cfg.theme.source == PaletteSource::Wallpaper) {
     auto it = std::find_if(m_settingsRegistry.begin(), m_settingsRegistry.end(), [](const settings::SettingEntry& e) {
       return e.section == settings::SettingsSection::Appearance
