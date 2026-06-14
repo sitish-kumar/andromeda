@@ -67,6 +67,48 @@ namespace {
     return ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".webp" || ext == ".bmp" || ext == ".gif";
   }
 
+  [[nodiscard]] std::optional<std::string> resolveWallpaperPath(std::string_view path) {
+    if (path.empty()) {
+      return std::nullopt;
+    }
+    if (path.starts_with("color:")) {
+      return std::string(path);
+    }
+    const std::string resolved = FileUtils::expandUserPath(std::string(path)).string();
+    std::error_code ec;
+    if (std::filesystem::exists(resolved, ec)) {
+      return resolved;
+    }
+    return std::nullopt;
+  }
+
+  struct WallpaperSetParsed {
+    std::optional<std::string> connector;
+    std::string path;
+  };
+
+  template <typename IsConnectorFn>
+  [[nodiscard]] WallpaperSetParsed
+  parseWallpaperSetTokens(const std::vector<std::string>& tokens, IsConnectorFn&& isConnector) {
+    if (tokens.size() == 1) {
+      return {.connector = std::nullopt, .path = tokens[0]};
+    }
+
+    const std::string allJoined = StringUtils::join(tokens, " ");
+    if (resolveWallpaperPath(allJoined).has_value()) {
+      return {.connector = std::nullopt, .path = allJoined};
+    }
+
+    if (isConnector(tokens[0])) {
+      return {
+          .connector = tokens[0],
+          .path = StringUtils::join(std::vector<std::string>(tokens.begin() + 1, tokens.end()), " "),
+      };
+    }
+
+    return {.connector = std::nullopt, .path = allJoined};
+  }
+
   void
   collectWallpaperCandidates(const std::filesystem::path& directory, bool recursive, std::vector<std::string>& out) {
     out.clear();
@@ -519,29 +561,21 @@ void Wallpaper::registerIpc(IpcService& ipc) {
         if (tokens.empty()) {
           return "error: path required (wallpaper-set [<connector>] <path>)\n";
         }
-        std::optional<std::string> outputConnector;
-        std::string path;
-        if (tokens.size() == 1) {
-          path = tokens[0];
-        } else {
-          outputConnector = tokens[0];
-          std::string joined = tokens[1];
-          for (std::size_t i = 2; i < tokens.size(); ++i) {
-            joined.push_back(' ');
-            joined += tokens[i];
-          }
-          path = std::move(joined);
-        }
-        if (path.empty()) {
+
+        const auto isConnector = [&](const std::string& connector) {
+          return validateOutputConnector(connector).empty();
+        };
+        const auto parsed = parseWallpaperSetTokens(tokens, isConnector);
+        if (parsed.path.empty()) {
           return "error: path required (wallpaper-set [<connector>] <path>)\n";
         }
-        std::string resolved = path;
-        if (!path.starts_with("color:")) {
-          resolved = FileUtils::expandUserPath(path).string();
-          std::error_code ec;
-          if (!std::filesystem::exists(resolved, ec)) {
-            return "error: path does not exist\n";
-          }
+
+        std::optional<std::string> outputConnector = parsed.connector;
+        std::string resolved;
+        if (const auto path = resolveWallpaperPath(parsed.path); path.has_value()) {
+          resolved = *path;
+        } else {
+          return "error: path does not exist\n";
         }
 
         if (outputConnector.has_value()) {
