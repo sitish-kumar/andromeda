@@ -869,6 +869,7 @@ struct SystemConfig {
     static constexpr float kMaxPollSeconds = 120.0f;
 
     bool enabled = true;
+    std::string cpuTempSensorPath;
     float cpuPollSeconds = 2.0f;
     // Disabled by default so laptops with a discrete GPU are not woken just to sample it.
     float gpuPollSeconds = kDisabledPollSeconds;

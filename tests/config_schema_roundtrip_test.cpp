@@ -268,6 +268,7 @@ location = "https://example.invalid/bad"
         .blurredDesktop = true, .blurIntensity = 0.6f, .tintIntensity = 0.25f, .monitors = {"DP-1"}
     };
     c.system.monitor.enabled = false;
+    c.system.monitor.cpuTempSensorPath = "/sys/class/hwmon/hwmon3/temp1_input";
     c.system.monitor.cpuPollSeconds = 5.0f;
     c.system.monitor.gpuPollSeconds = 4.0f;
     c.system.monitor.memoryPollSeconds = 6.0f;

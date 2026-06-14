@@ -93,6 +93,7 @@ namespace noctalia::config::schema {
     const Schema<SystemConfig::MonitorConfig>& systemMonitorSchema() {
       static const Schema<SystemConfig::MonitorConfig> s = {
           field(&SystemConfig::MonitorConfig::enabled, "enabled"),
+          field(&SystemConfig::MonitorConfig::cpuTempSensorPath, "cpu_temp_sensor_path"),
           field(&SystemConfig::MonitorConfig::cpuPollSeconds, "cpu_poll_seconds"),
           field(&SystemConfig::MonitorConfig::gpuPollSeconds, "gpu_poll_seconds"),
           field(&SystemConfig::MonitorConfig::memoryPollSeconds, "memory_poll_seconds"),
