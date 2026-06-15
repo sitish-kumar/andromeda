@@ -481,16 +481,24 @@ namespace {
 
   bool isProgramStreamClass(std::string_view mediaClass) { return mediaClass == "Stream/Output/Audio"; }
 
+  // QEMU's libvirt PipeWire backend (node.name "qemu-system-<arch>") is a program stream that needs
+  // special handling: it sets target.object and never sets application.name.
+  [[nodiscard]] bool isQemuStreamNode(const PipeWireService::NodeData& nd) {
+    return isProgramStreamClass(nd.mediaClass) && nd.name.starts_with("qemu-system-");
+  }
+
   [[nodiscard]] bool isProgramOutputNode(const PipeWireService::NodeData& nd) {
     // Match wpctl "Streams": Stream/Output/Audio without node.link-group. Loopback/filter endpoints
-    // also expose node.passive and must not appear as application volumes. (target.object is NOT
-    // excluded here: virtual streams that feed another endpoint — e.g. QEMU relaying host audio
-    // into a VM's HDA codec — set target.object to identify the target, but they are still
-    // user-controllable application volumes the way pavucontrol/wpctl show them.)
+    // also expose target.object or node.passive and must not appear as application volumes. QEMU
+    // streams are the exception: they set target.object to name the VM target but are still
+    // user-controllable application volumes (as pavucontrol/wpctl show them).
     if (!isProgramStreamClass(nd.mediaClass) || !nd.streamClassificationReady) {
       return false;
     }
     if (!nd.linkGroup.empty() || nd.nodePassive) {
+      return false;
+    }
+    if (!nd.targetObject.empty() && !isQemuStreamNode(nd)) {
       return false;
     }
     return true;
@@ -1262,20 +1270,14 @@ void PipeWireService::refreshNodeIdentity(NodeData& nd) {
     nd.iconName = client.iconName;
   }
 
-  // QEMU audio (libvirt <audio type="pipewire">) sets target.object from the
-  // <input>/<output> name but never sets application.name. Surface that name
-  // (falling back to "QEMU" when absent) as the application identity. The block
-  // runs unconditionally because refreshNodeIdentity is invoked from onClientInfo
-  // (no target.object yet) and onNodeInfo (target.object populated later); without
-  // this the earlier call would pin applicationName to "QEMU" for the stream's
-  // lifetime. Matches every qemu-system-<arch> binary.
-  if (isProgramStreamClass(nd.mediaClass) && nd.name.starts_with("qemu-system-")) {
+  // QEMU sets target.object (the libvirt VM name) but never application.name. Surface that name as
+  // the identity. Runs unconditionally, not gated on applicationName: onClientInfo fires before
+  // target.object is populated and would otherwise pin applicationName to "QEMU" for the stream's
+  // lifetime; onNodeInfo fills target.object in later.
+  if (isQemuStreamNode(nd)) {
     const std::string renameTo = nd.targetObject.empty() ? std::string{"QEMU"} : nd.targetObject;
     nd.applicationName = renameTo;
-    // Sanitize target.object into a reverse-DNS-friendly applicationId suffix: the
-    // libvirt <input>/<output> name is free-form and may contain spaces or uppercase
-    // (e.g. "Windows 11"), which produces an awkward id like "org.qemu.vm.Windows 11"
-    // and breaks tools that expect a lowercase-hyphenated reverse-DNS identifier.
+    // Slugify the free-form VM name into a lowercase-hyphenated reverse-DNS suffix.
     std::string idSuffix;
     idSuffix.reserve(renameTo.size());
     bool prevDash = false;
