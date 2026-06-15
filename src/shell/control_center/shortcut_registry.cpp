@@ -530,7 +530,7 @@ std::span<const ShortcutRegistry::CatalogEntry> ShortcutRegistry::catalog() {
       const std::string_view typeView = storage.back();
       storage.push_back(entry.manifest->name.empty() ? entry.fullId() : entry.manifest->name);
       const std::string_view labelView = storage.back();
-      result.push_back(CatalogEntry{.type = typeView, .labelKey = labelView});
+      result.push_back(CatalogEntry{.type = typeView, .labelKey = labelView, .literalLabel = true});
     }
     return result;
   }();

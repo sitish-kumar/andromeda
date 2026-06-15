@@ -190,7 +190,12 @@ namespace settings {
       std::vector<SelectOption> opts;
       opts.reserve(ShortcutRegistry::catalog().size());
       for (const auto& shortcut : ShortcutRegistry::catalog()) {
-        opts.push_back(SelectOption{std::string(shortcut.type), i18n::tr(shortcut.labelKey)});
+        opts.push_back(
+            SelectOption{
+                std::string(shortcut.type),
+                shortcut.literalLabel ? std::string(shortcut.labelKey) : i18n::tr(shortcut.labelKey)
+            }
+        );
       }
       return opts;
     }
