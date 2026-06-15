@@ -230,7 +230,12 @@ void Surface::pauseFrameLoop() {
   setRunning(false);
 }
 
-void Surface::resumeFrameLoop() { setRunning(true); }
+void Surface::resumeFrameLoop() {
+  setRunning(true);
+  if (m_configured) {
+    requestLayout();
+  }
+}
 
 float Surface::effectiveBufferScale() const noexcept {
   if (m_fractionalScale != nullptr && m_viewport != nullptr) {

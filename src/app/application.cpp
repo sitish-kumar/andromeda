@@ -618,6 +618,7 @@ void Application::initServices() {
     m_lockscreenWidgetsController.onOutputChange();
     m_screenCorners.onOutputChange();
     m_lockScreen.onOutputChange();
+    resumeShellRenderingIfUnlocked();
     m_idleGraceOverlay.onOutputChange();
     m_idleInhibitor.onOutputChange();
     m_overviewLauncherCapture.onOutputChange();
@@ -2171,6 +2172,16 @@ bool Application::runUserCommandBlocking(const std::string& command) {
     return false;
   }
   return true;
+}
+
+void Application::resumeShellRenderingIfUnlocked() {
+  if (m_lockScreen.isActive()) {
+    return;
+  }
+  m_wallpaper.resumeRendering();
+  m_desktopWidgetsController.resumeAfterSessionLock();
+  m_dock.resumeAfterSessionLock();
+  m_bar.resumeAfterSessionLock();
 }
 
 bool Application::runIdleAction(const IdleActionRequest& action) {
