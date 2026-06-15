@@ -157,7 +157,8 @@
     "calendar": {
       "all-day": "All day",
       "events": "Events",
-      "no-events": "No events."
+      "no-events": "No events.",
+      "today": "Today"
     },
     "display": {
       "disabled": "Disabled",
