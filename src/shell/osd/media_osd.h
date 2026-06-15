@@ -4,19 +4,19 @@
 class MprisService;
 class OsdOverlay;
 
-struct MprisOsdData {
-  std::string Title;
-  std::string Artist;
+struct MediaOsdData {
+  std::string title;
+  std::string artist;
 
-  bool operator==(const MprisOsdData& d) const { return d.Artist == Artist && d.Title == Title; }
+  bool operator==(const MediaOsdData& d) const { return d.artist == artist && d.title == title; }
 };
 
-class MprisOsd {
+class MediaOsd {
 public:
   void bindOverlay(OsdOverlay& overlay);
   void onMprisChanged(const MprisService& service);
 
 private:
   OsdOverlay* m_overlay = nullptr;
-  MprisOsdData lastData;
+  MediaOsdData m_lastData;
 };

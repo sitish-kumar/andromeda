@@ -548,7 +548,7 @@ struct OsdKindsConfig {
   bool dnd = true;
   bool lockKeys = true;
   bool keyboardLayout = true;
-  bool mpris = true;
+  bool media= true;
   bool operator==(const OsdKindsConfig&) const = default;
 };
 

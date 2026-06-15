@@ -2024,9 +2024,9 @@
           "description": "Show an OSD popup when the input keyboard layout changes",
           "label": "Keyboard Layout"
         },
-        "osd-kinds-mpris": {
-          "description": "Show an OSD popup when the track being played changes",
-          "label": "mpris"
+        "osd-kinds-media": {
+          "description": "Show an OSD popup when a new track starts playing",
+          "label": "Now Playing"
         },
         "osd-kinds-lock-keys": {
           "description": "Show OSD popups for Caps Lock, Num Lock, and Scroll Lock changes",
