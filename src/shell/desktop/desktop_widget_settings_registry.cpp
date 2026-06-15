@@ -270,7 +270,7 @@ namespace desktop_settings {
       add(std::move(ringOpacity));
       add(doubleSpec("inner_diameter", 0.7, 0.0, 1.0, 0.05));
       add(doubleSpec("bloom_intensity", 0.5, 0.0, 1.0, 0.05));
-      add(boolSpec("fade_when_idle", false));
+      add(boolSpec("fade_when_idle", true));
       add(colorSpec("primary_color", "primary"));
       add(colorSpec("secondary_color", "secondary"));
     } else if (type == "sticker") {
