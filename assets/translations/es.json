@@ -1,5 +1,15 @@
 {
   "auth": {
+    "fingerprint": {
+      "disconnected": "Lector de huellas desconectado",
+      "error": "Error autenticacion lector de huellas ",
+      "no-match": "La huella no coincide",
+      "not-centered": "Centra tu dedo e intenta de nuevo",
+      "present": "Leyendo huella...",
+      "ready": "Situa tu dedo en el lector",
+      "remove-and-retry": "Retira tu dedo y prueba de nuevo",
+      "retry": "Por favor lee tu huella de nuevo"
+    },
     "pam": {
       "authentication-failed": "Autenticación fallida",
       "start-failed": "Inicio de PAM fallido",
@@ -153,6 +163,7 @@
       "unknown-resolution": "Resolución desconocida"
     },
     "home": {
+      "avatar-error-title": "Avatar no actualizado",
       "media": {
         "idle": "Inactivo",
         "no-active-player": "No hay ningún reproductor activo",
@@ -319,6 +330,8 @@
         "hide": "Ocultar",
         "settings": "Configuraciones",
         "show": "Mostrar",
+        "stack-back": "Apilar detras",
+        "stack-front": "Apilar al frente",
         "trash": "Borrar"
       },
       "settings": {
@@ -329,6 +342,7 @@
         "background-padding": "Relleno",
         "background-radius": "Radio",
         "background-section": "Fondo",
+        "bar-width": "Ancho de la barra",
         "bloom-intensity": "Bloom",
         "centered": "Centrado",
         "change-image": "Cambiar...",
@@ -349,6 +363,7 @@
         "format": "Formato",
         "horizontal": "Horizontal",
         "image-path": "Imagen",
+        "inner-diameter": "Diametro interior",
         "opacity": "Opacidad",
         "primary-color": "Color Primario",
         "reset-defaults": "Resetear a valores por defecto",
@@ -384,11 +399,17 @@
         "wave-thickness": "Grosor de la Ola",
         "widget-section": "Widget"
       },
+      "state": {
+        "grid-off": "Rejilla desactivada",
+        "grid-on": "Rejilla activada"
+      },
       "title": "Widgets de Escritorio",
       "types": {
         "audio-visualizer": "Visualizador de Audio",
         "clock": "Reloj",
+        "fancy-audio-visualizer": "Visualizador de audio Fancy",
         "label": "Etiqueta",
+        "media-player": "Reproductor Multimedia",
         "system-monitor": "Monitor de sistema",
         "weather": "Pronóstico"
       }
@@ -491,11 +512,14 @@
   "lockscreen": {
     "authenticating": "Autenticando...",
     "authentication-failed": "Autenticación fallida",
+    "password-placeholder": "Contraseña",
     "ready": "Ingrese su contraseña y presione Enter.",
-    "unlocked": "Desbloqueado"
+    "unlocked": "Desbloqueado",
+    "waiting": "Esperando confirmacion de bloqueo"
   },
   "notifications": {
     "actions": {
+      "fallback": "Accion",
       "open": "Abrir"
     },
     "inline-reply": {
@@ -505,6 +529,7 @@
     "internal": {
       "battery": "Bateria",
       "battery-device": "Batería del dispositivo",
+      "battery-low-body": "{device}: {percent}% restante",
       "battery-low-title": "Batería baja",
       "calendar": "Calendario",
       "calendar-google-connect-start-failed": "No se pudo empezar la autorización con Google. Revise su conexión al internet",

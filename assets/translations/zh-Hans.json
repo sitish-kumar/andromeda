@@ -157,7 +157,8 @@
     "calendar": {
       "all-day": "全天",
       "events": "事件",
-      "no-events": "无事件。"
+      "no-events": "无事件。",
+      "today": "今天"
     },
     "display": {
       "disabled": "已禁用",
@@ -1306,19 +1307,19 @@
           "label": "内容缩放"
         },
         "corner-bottom-left": {
-          "description": "状态栏左下角的圆角半径"
+          "description": "状态栏左下角的圆角半径；当该角背离屏幕边缘时，负值会形成内凹的圆角"
         },
         "corner-bottom-right": {
-          "description": "状态栏右下角的圆角半径"
+          "description": "状态栏右下角的圆角半径；当该角背离屏幕边缘时，负值会形成内凹的圆角"
         },
         "corner-radius": {
           "description": "状态栏的圆角半径"
         },
         "corner-top-left": {
-          "description": "状态栏左上角的圆角半径"
+          "description": "状态栏左上角的圆角半径；当该角背离屏幕边缘时，负值会形成内凹的圆角"
         },
         "corner-top-right": {
-          "description": "状态栏右上角的圆角半径"
+          "description": "状态栏右上角的圆角半径；当该角背离屏幕边缘时，负值会形成内凹的圆角"
         },
         "edge-margin": {
           "description": "距最近屏幕边缘的距离；正值会使状态栏悬浮并远离边缘"
@@ -1627,6 +1628,10 @@
         }
       },
       "lockscreen": {
+        "allow-empty-password": {
+          "description": "允许按 Enter 键提交空密码；适用于安全密钥或其他无密码 PAM 配置；保持关闭以避免意外按键导致锁定。",
+          "label": "允许空密码提交"
+        },
         "blur-intensity": {
           "description": "锁屏背景的模糊程度",
           "label": "模糊强度"
@@ -2029,7 +2034,7 @@
       },
       "shell": {
         "avatar-path": {
-          "description": "自定义头像图片的路径",
+          "description": "自定义头像图片的路径。大尺寸图片会自动裁剪和缩放",
           "label": "头像路径",
           "placeholder": "/path/to/avatar.png"
         },

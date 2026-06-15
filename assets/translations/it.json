@@ -157,7 +157,8 @@
     "calendar": {
       "all-day": "Tutto il giorno",
       "events": "Eventi",
-      "no-events": "Nessun evento."
+      "no-events": "Nessun evento.",
+      "today": "Oggi"
     },
     "display": {
       "disabled": "Disabilitato",
@@ -340,7 +341,7 @@
         "trash": "Cancella"
       },
       "dialogs": {
-        "select-sticker-image": "Seleziona immagine adesivo"
+        "select-sticker-image": "Seleziona immagine sticker"
       },
       "settings": {
         "aspect-ratio": "Proporzioni",
@@ -386,8 +387,8 @@
         "secondary-color": "Colore secondario",
         "sensitivity": "Sensibilità",
         "shadow": "Ombra",
-        "show-forecast": "Mostra previsioni",
-        "show-label": "Mostra etichetta",
+        "show-forecast": "Più giorni",
+        "show-label": "Mostra etichette",
         "show-login-button": "Pulsante di login",
         "show-when-idle": "Mostra quando inattivo",
         "stat": "Statistica",
@@ -426,7 +427,7 @@
         "label": "Etichetta",
         "login-box": "Casella di Login",
         "media-player": "Lettore multimediale",
-        "sticker": "Adesivo",
+        "sticker": "Sticker",
         "system-monitor": "Monitor di sistema",
         "weather": "Meteo"
       }
@@ -571,10 +572,14 @@
       "keybind-invalid-printable": "I tasti stampabili (lettere, numeri, simboli) richiedono un modificatore come Ctrl o Alt.",
       "keybind-invalid-super": "Il tasto Super/Windows non può essere usato nelle scorciatoie della shell.",
       "keybind-invalid-title": "Scorciatoia non consentita",
+      "launcher-usage-reset": "Launcher",
+      "launcher-usage-reset-success": "Dati di utilizzo cancellati.",
       "lockscreen-widgets-editor": "Editor widget blocco schermo",
       "lockscreen-widgets-editor-blocked-locked": "Sblocca la sessione prima di modificare i widget del blocco schermo.",
       "lockscreen-widgets-editor-enabled": "L'editor dei widget del blocco schermo è attivo. Disponi i widget nell'anteprima, poi blocca la sessione per verificare il layout.",
       "mpris-disabled": "MPRIS disabilitato",
+      "screen-time-reset": "Tempo schermo",
+      "screen-time-reset-success": "Cronologia utilizzo cancellata.",
       "session-bus-unavailable": "Bus di sessione non disponibile",
       "wallpaper-palette-export": "Palette personalizzata",
       "wallpaper-palette-export-success": "\"{name}\" salvata e sorgente palette cambiata in personalizzata."
@@ -653,6 +658,7 @@
       "advanced": "Avanzato",
       "inherited": "Ereditato",
       "monitor": "Monitor",
+      "official": "Ufficiale",
       "override": "Override"
     },
     "calendar-accounts": {
@@ -959,6 +965,28 @@
         "wallpaper": "Sfondo"
       }
     },
+    "notifications": {
+      "filter": {
+        "add": "Aggiungi filtro",
+        "add-title": "Aggiungi filtro notifiche",
+        "allowed-urgencies-label": "Urgenze consentite",
+        "flag": {
+          "history": "cronologia",
+          "sound": "suono",
+          "toast": "toast"
+        },
+        "flags-label": "Quando corrisponde",
+        "match-label": "App",
+        "match-placeholder": "Nome app, voce desktop o categoria...",
+        "play-sound": "Riproduci suono",
+        "save-history": "Salva nella cronologia",
+        "show-toast": "Mostra toast",
+        "summary": "{match} · {flags}",
+        "summary-blocked": "{match} · bloccate",
+        "summary-disabled": "{match} · disabilitate",
+        "unnamed": "Filtro senza nome"
+      }
+    },
     "options": {
       "clipboard": {
         "auto-paste": {
@@ -1259,6 +1287,10 @@
           "description": "Raggio angoli predefinito per capsule widget, pillole workspace e gruppi workspace della taskbar; lascia vuoto per forma pill automatica, o imposta 0 per angoli quadrati",
           "label": "Raggio capsula"
         },
+        "capsule-thickness": {
+          "description": "Dimensioni della capsula sulla barra come frazione dello spessore della barra (1.0 la riempie)",
+          "label": "Spessore capsula"
+        },
         "center-widgets": {
           "description": "Widget al centro della barra",
           "label": "Widget centrali"
@@ -1301,6 +1333,10 @@
         },
         "ends-margin": {
           "description": "Rientro da ciascuna estremità della barra lungo l'asse principale"
+        },
+        "font-family": {
+          "description": "Font per questo widget nella barra; lascia vuoto per ereditare quello globale.",
+          "label": "Famiglia font"
         },
         "font-weight": {
           "description": "Peso predefinito per le etichette widget su questa barra.",
@@ -1592,6 +1628,10 @@
         }
       },
       "lockscreen": {
+        "allow-empty-password": {
+          "description": "Permetti inserimento di una password vuota. Abilita per usare chiavi di sicurezza o altri stack PAM senza password; tenere disattivato per evitare blocchi accidentali del tasto di riattivazione.",
+          "label": "Abilita password vuota"
+        },
         "blur-intensity": {
           "description": "Quanto viene sfocato lo sfondo del blocco schermo",
           "label": "Intensità sfocatura"
@@ -1650,6 +1690,10 @@
         "daemon": {
           "description": "Abilita il demone notifiche integrato",
           "label": "Demone notifiche"
+        },
+        "filters": {
+          "description": "Regole per mittente per toast, cronologia e suoni; prevale il primo filtro corrispondente abilitato",
+          "label": "Filtri notifiche"
         },
         "layer": {
           "description": "Usa Sovrapposto per mostrare le notifiche toast sopra le app a schermo intero.",
@@ -1713,6 +1757,11 @@
           "description": "Usa icone più piccole e righe risultato più compatte",
           "label": "Righe compatte"
         },
+        "launcher-reset-usage": {
+          "button": "Reset",
+          "description": "Cancella il conteggio delle esecuzioni e la cronologia Utilizzate di recente nell'ordinamento del launcher",
+          "label": "Reimposta dati di utilizzo"
+        },
         "launcher-session-search": {
           "description": "Includere azioni di sessione (blocco, sospensione, riavvio, spegnimento, disconnessione) nelle ricerche generali del launcher, non solo attraverso l'uso del prefisso /session",
           "label": "Abilita ricerca dei comandi di sessione"
@@ -1720,6 +1769,10 @@
         "launcher-show-icons": {
           "description": "Mostra icone applicazione nei risultati del launcher",
           "label": "Mostra icone app"
+        },
+        "launcher-sort-by-usage": {
+          "description": "Metti in evidenza le app utilizzate di frequente in cima e mostra un filtro di categoria Utilizzate di recente",
+          "label": "Ordina per utilizzo"
         },
         "open-near-click-clipboard": {
           "description": "Posiziona il pannello appunti vicino al click sulla barra invece di centrarlo lungo la barra",
@@ -2110,6 +2163,11 @@
           "description": "Monitora l'uso per app e mostralo nel Centro di controllo",
           "label": "Tempo schermo"
         },
+        "screen-time-reset": {
+          "button": "Reset",
+          "description": "Cancella la cronologia di utilizzo in primo piano per app",
+          "label": "Ripristina i dati del tempo schermo"
+        },
         "screenshot-copy-to-clipboard": {
           "description": "Copia il PNG catturato negli appunti",
           "label": "Copia negli appunti"
@@ -2459,6 +2517,10 @@
           "description": "Ruolo colore usato per il workspace con focus; sono supportati anche codici colore esadecimali",
           "label": "Colore focus"
         },
+        "font-family": {
+          "description": "Font per il widget; lasciare vuoto per editare quello della barra",
+          "label": "Famiglia font"
+        },
         "font-weight": {
           "description": "Predefinito eredita il peso carattere della barra",
           "label": "Peso carattere"
@@ -2670,7 +2732,7 @@
         },
         "show-label": {
           "description": "Mostra testo accanto all'icona",
-          "label": "Mostra etichetta"
+          "label": "Mostra etichette"
         },
         "show-num-lock": {
           "description": "Mostra stato Num Lock",

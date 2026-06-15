@@ -157,7 +157,8 @@
     "calendar": {
       "all-day": "Увесь дзень",
       "events": "Падзеі",
-      "no-events": "Падзей няма."
+      "no-events": "Падзей няма.",
+      "today": "Сёння"
     },
     "display": {
       "disabled": "Адключана",
@@ -571,10 +572,13 @@
       "keybind-invalid-printable": "Клавішам-сімвалам (літарам, лічбам, пунктуацыі і інш.) патрабуецца мадыфікатары, такія як Ctrl або Alt.",
       "keybind-invalid-super": "Клавіша Super/Windows не можа быць выкарыстана ў спалучэннях клавішаў абалонкі.",
       "keybind-invalid-title": "Недапушчальнае спалучэнне клавішаў",
+      "launcher-usage-reset": "Меню запуску",
+      "launcher-usage-reset-success": "Дадзеныя аб выкарыстанні ачышчаны.",
       "lockscreen-widgets-editor": "Рэдактар віджэтаў экрана блакіроўкі",
       "lockscreen-widgets-editor-blocked-locked": "Разблакіруйце сеанс перад тым, як рэдагаваць віджэты.",
       "lockscreen-widgets-editor-enabled": "Рэдактар віджэтаў працоўнага стала ўключаны. Наладзьце віджэты на накладке папярэдняга прагляду, затым заблакіруйце сеанс, каб пацвердзіць макет.",
       "mpris-disabled": "MPRIS выключаны",
+      "screen-time-reset-success": "Гісторыя выкарыстання ачышчана.",
       "session-bus-unavailable": "Шына сеанса недаступна",
       "wallpaper-palette-export": "Уласная палітра",
       "wallpaper-palette-export-success": "«{name}» захавана, крыніца палітры пераключана на уласную."
@@ -653,6 +657,7 @@
       "advanced": "Пашыранае",
       "inherited": "Узята з іншых налад",
       "monitor": "Манітор",
+      "official": "Афіцыйны",
       "override": "Перавызначэнне"
     },
     "schema": {
