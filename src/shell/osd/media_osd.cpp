@@ -19,7 +19,6 @@ void MediaOsd::onMprisChanged(const MprisService& service) {
   if (!activePlayerOpt.has_value())
     return;
   const auto activePlayer = activePlayerOpt.value();
-  // first artist only for now
   MediaOsdData osdData = {.title = activePlayer.title, .artist = joinedArtists(activePlayer.artists)};
   if (osdData == m_lastData || m_overlay == nullptr)
     return;
