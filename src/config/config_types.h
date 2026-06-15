@@ -411,6 +411,7 @@ struct BackdropConfig {
 struct LockscreenConfig {
   bool enabled = true;
   bool fingerprint = true;
+  bool allowEmptyPassword = false;
   bool blurredDesktop = false;
   float blurIntensity = 0.5f;
   float tintIntensity = 0.3f;

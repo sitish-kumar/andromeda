@@ -1644,6 +1644,10 @@
           "description": "Unlock with a fingerprint reader via fprintd, alongside password entry",
           "label": "Fingerprint Unlock"
         },
+        "allow-empty-password": {
+          "description": "Let Enter submit an empty password. Enable for security-key or other passwordless PAM stacks; keep off to avoid accidental wake-key lockouts.",
+          "label": "Empty Password Submit"
+        },
         "monitors": {
           "description": "Choose which monitors show the lock screen; leave empty to show on all monitors",
           "label": "Monitors"

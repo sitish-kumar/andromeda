@@ -1130,6 +1130,15 @@ namespace settings {
       e.visibleWhen = lockscreenOn;
       entries.push_back(std::move(e));
     }
+    {
+      auto e = makeEntry(
+          SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.allow-empty-password.label"),
+          tr("settings.schema.lockscreen.allow-empty-password.description"), {"lockscreen", "allow_empty_password"},
+          ToggleSetting{cfg.lockscreen.allowEmptyPassword}, "lock screen empty password security key pam"
+      );
+      e.visibleWhen = lockscreenOn;
+      entries.push_back(std::move(e));
+    }
     if (env.screencopySupported) {
       auto e = makeEntry(
           SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.blurred-desktop.label"),

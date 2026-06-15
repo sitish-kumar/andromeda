@@ -678,7 +678,11 @@ void LockScreen::tryAuthenticate() {
     return;
   }
   if (m_password.empty()) {
-    return;
+    const bool allowEmptyPassword =
+        m_configService != nullptr && m_configService->config().lockscreen.allowEmptyPassword;
+    if (!allowEmptyPassword) {
+      return;
+    }
   }
 
   stopFingerprint();
