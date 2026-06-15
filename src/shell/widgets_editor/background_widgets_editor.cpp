@@ -1135,7 +1135,7 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
                       .onClick = [this]() { deferEditorMutation([this]() { bringSelectedWidgetToFront(); }); },
                   }),
                   ui::button({
-                      .glyph = "flip-horizontal",
+                      .glyph = "flip-vertical",
                       .enabled = hasSelectedWidget && !selectedIsLoginBox,
                       .selected = selectedFlipX,
                       .variant = ButtonVariant::Outline,
@@ -1143,7 +1143,7 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
                       .onClick = [this]() { deferEditorMutation([this]() { flipSelectedWidgetHorizontal(); }); },
                   }),
                   ui::button({
-                      .glyph = "flip-vertical",
+                      .glyph = "flip-horizontal",
                       .enabled = hasSelectedWidget && !selectedIsLoginBox,
                       .selected = selectedFlipY,
                       .variant = ButtonVariant::Outline,
