@@ -92,7 +92,7 @@ private:
   Graph* m_graph = nullptr;
   float m_scrollProgress = 1.0f;
   Timer m_updateTimer;
-  FrameRateLimiter m_redrawLimiter;
+  FrameRateLimiter m_redrawLimiter{std::chrono::milliseconds{200}};
 
   // Gauge mode
   ProgressBar* m_gauge = nullptr;

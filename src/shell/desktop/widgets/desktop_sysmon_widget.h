@@ -72,7 +72,7 @@ private:
 
   bool m_graphInitialized = false;
   float m_scrollProgress = 1.0f;
-  FrameRateLimiter m_redrawLimiter;
+  FrameRateLimiter m_redrawLimiter{std::chrono::milliseconds{200}};
   std::chrono::steady_clock::time_point m_lastSampleAt{};
   std::string m_lastRawValue;
 
