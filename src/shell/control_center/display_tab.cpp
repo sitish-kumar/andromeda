@@ -184,11 +184,7 @@ void DisplayTab::doUpdate(Renderer& renderer) {
         && now < m_ignoreStateUntil
         && std::abs(display->brightness - m_lastSentBrightness) > 0.02f;
 
-    float minBrightness = 0.0f;
-    if (m_configService != nullptr) {
-      minBrightness = m_configService->config().brightness.minimumBrightness;
-    }
-
+    const float minBrightness = m_configService->config().brightness.minimumBrightness;
     const float displayedBrightness = std::clamp(
         isPending ? m_pendingBrightness : (holdState ? m_lastSentBrightness : display->brightness), minBrightness, 1.0f
     );
@@ -290,10 +286,7 @@ void DisplayTab::rebuildCards(Renderer& /*renderer*/) {
     );
 
     const std::string displayId = display.id;
-    float minBrightness = 0.0f;
-    if (m_configService != nullptr) {
-      minBrightness = m_configService->config().brightness.minimumBrightness;
-    }
+    const float minBrightness = m_configService->config().brightness.minimumBrightness;
     Slider* sliderPtr = nullptr;
     auto slider = ui::slider({
         .out = &sliderPtr,
