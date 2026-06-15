@@ -154,6 +154,31 @@ namespace FileUtils {
     return data;
   }
 
+  // Expands ~ and resolves relative paths against baseDir when provided; otherwise uses the
+  // process working directory for relative paths.
+  [[nodiscard]] inline std::filesystem::path
+  resolvePath(std::string_view path, std::optional<std::string_view> baseDir = std::nullopt) {
+    if (path.empty() || path.starts_with("color:")) {
+      return std::filesystem::path(path);
+    }
+
+    std::filesystem::path resolved = expandUserPath(std::string(path));
+    if (!resolved.is_absolute()) {
+      if (baseDir.has_value() && !baseDir->empty()) {
+        resolved = std::filesystem::path(*baseDir) / resolved;
+      } else {
+        std::error_code ec;
+        resolved = std::filesystem::absolute(resolved, ec);
+        if (ec) {
+          return std::filesystem::path(path);
+        }
+      }
+    }
+
+    std::error_code ec;
+    return resolved.lexically_normal();
+  }
+
   [[nodiscard]] inline std::string normalizeWallpaperPath(std::string_view path) {
     if (path.empty() || path.starts_with("color:")) {
       return std::string(path);

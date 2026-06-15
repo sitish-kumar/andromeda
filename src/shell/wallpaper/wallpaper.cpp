@@ -67,17 +67,18 @@ namespace {
     return ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".webp" || ext == ".bmp" || ext == ".gif";
   }
 
-  [[nodiscard]] std::optional<std::string> resolveWallpaperPath(std::string_view path) {
+  [[nodiscard]] std::optional<std::string>
+  resolveWallpaperPath(std::string_view path, std::optional<std::string_view> callerCwd = std::nullopt) {
     if (path.empty()) {
       return std::nullopt;
     }
     if (path.starts_with("color:")) {
       return std::string(path);
     }
-    const std::string resolved = FileUtils::expandUserPath(std::string(path)).string();
+    const std::filesystem::path resolved = FileUtils::resolvePath(path, callerCwd);
     std::error_code ec;
     if (std::filesystem::exists(resolved, ec)) {
-      return resolved;
+      return resolved.string();
     }
     return std::nullopt;
   }
@@ -88,14 +89,15 @@ namespace {
   };
 
   template <typename IsConnectorFn>
-  [[nodiscard]] WallpaperSetParsed
-  parseWallpaperSetTokens(const std::vector<std::string>& tokens, IsConnectorFn&& isConnector) {
+  [[nodiscard]] WallpaperSetParsed parseWallpaperSetTokens(
+      const std::vector<std::string>& tokens, IsConnectorFn&& isConnector, std::optional<std::string_view> callerCwd
+  ) {
     if (tokens.size() == 1) {
       return {.connector = std::nullopt, .path = tokens[0]};
     }
 
     const std::string allJoined = StringUtils::join(tokens, " ");
-    if (resolveWallpaperPath(allJoined).has_value()) {
+    if (resolveWallpaperPath(allJoined, callerCwd).has_value()) {
       return {.connector = std::nullopt, .path = allJoined};
     }
 
@@ -553,7 +555,7 @@ void Wallpaper::registerIpc(IpcService& ipc) {
   );
   ipc.registerHandler(
       "wallpaper-set",
-      [this, validateOutputConnector](const std::string& args) -> std::string {
+      [this, &ipc, validateOutputConnector](const std::string& args) -> std::string {
         if (m_config == nullptr) {
           return "error: wallpaper service not initialized\n";
         }
@@ -562,17 +564,20 @@ void Wallpaper::registerIpc(IpcService& ipc) {
           return "error: path required (wallpaper-set [<connector>] <path>)\n";
         }
 
+        const std::optional<std::string_view> callerCwd =
+            ipc.callerCwd().has_value() ? std::optional<std::string_view>{*ipc.callerCwd()} : std::nullopt;
+
         const auto isConnector = [&](const std::string& connector) {
           return validateOutputConnector(connector).empty();
         };
-        const auto parsed = parseWallpaperSetTokens(tokens, isConnector);
+        const auto parsed = parseWallpaperSetTokens(tokens, isConnector, callerCwd);
         if (parsed.path.empty()) {
           return "error: path required (wallpaper-set [<connector>] <path>)\n";
         }
 
         std::optional<std::string> outputConnector = parsed.connector;
         std::string resolved;
-        if (const auto path = resolveWallpaperPath(parsed.path); path.has_value()) {
+        if (const auto path = resolveWallpaperPath(parsed.path, callerCwd); path.has_value()) {
           resolved = *path;
         } else {
           return "error: path does not exist\n";
