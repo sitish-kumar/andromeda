@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/frame_rate_limiter.h"
 #include "core/timer_manager.h"
 #include "shell/bar/widget.h"
 #include "ui/palette.h"
@@ -91,6 +92,7 @@ private:
   Graph* m_graph = nullptr;
   float m_scrollProgress = 1.0f;
   Timer m_updateTimer;
+  FrameRateLimiter m_redrawLimiter;
 
   // Gauge mode
   ProgressBar* m_gauge = nullptr;

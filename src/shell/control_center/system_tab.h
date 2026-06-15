@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/frame_rate_limiter.h"
 #include "shell/control_center/tab.h"
 
 #include <chrono>
@@ -37,6 +38,7 @@ private:
   bool m_gpuVisible = false;
   float m_scrollProgress = 1.0f;
   std::chrono::steady_clock::time_point m_lastSampleAt{};
+  FrameRateLimiter m_redrawLimiter;
 
   double m_cpuTempMin = 30.0;
   double m_cpuTempMax = 80.0;

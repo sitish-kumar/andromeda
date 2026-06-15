@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/frame_rate_limiter.h"
 #include "shell/desktop/desktop_widget.h"
 #include "ui/palette.h"
 
@@ -71,6 +72,7 @@ private:
 
   bool m_graphInitialized = false;
   float m_scrollProgress = 1.0f;
+  FrameRateLimiter m_redrawLimiter;
   std::chrono::steady_clock::time_point m_lastSampleAt{};
   std::string m_lastRawValue;
 

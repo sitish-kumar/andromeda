@@ -381,7 +381,12 @@ std::unique_ptr<Flex> SystemTab::create() {
   return tab;
 }
 
-void SystemTab::setActive(bool active) { m_active = active; }
+void SystemTab::setActive(bool active) {
+  m_active = active;
+  if (!active) {
+    m_redrawLimiter.reset();
+  }
+}
 
 void SystemTab::onClose() {
   m_root = nullptr;
@@ -435,6 +440,11 @@ void SystemTab::onFrameTick(float deltaMs) {
   (void)deltaMs;
 
   if (!m_active || m_monitor == nullptr || !m_monitor->isRunning()) {
+    m_redrawLimiter.reset();
+    return;
+  }
+
+  if (!m_redrawLimiter.shouldStep([]() { PanelManager::instance().requestRedraw(); })) {
     return;
   }
 

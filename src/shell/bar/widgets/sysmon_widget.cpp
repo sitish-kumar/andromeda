@@ -514,12 +514,18 @@ void SysmonWidget::doUpdate(Renderer& renderer) {
 void SysmonWidget::onFrameTick(float deltaMs) {
   (void)deltaMs;
   if (m_graph == nullptr || m_scrollProgress >= 1.0f) {
+    m_redrawLimiter.reset();
+    return;
+  }
+  if (!m_redrawLimiter.shouldStep([this]() { requestRedraw(); })) {
     return;
   }
   m_scrollProgress = scrollProgressForSample(m_lastSampleAt);
   m_graph->setScroll(m_scrollProgress);
   if (m_scrollProgress < 1.0f) {
     requestRedraw();
+  } else {
+    m_redrawLimiter.reset();
   }
 }
 
