@@ -68,6 +68,9 @@ public:
   /// Hides bars while a full-screen overlay editor (e.g. lockscreen widget layout) is active.
   void suppressDisplay();
   void unsuppressDisplay();
+  /// Stops bar surface frame loops while the session lock is active.
+  void pauseUnderSessionLock();
+  void resumeAfterSessionLock();
   [[nodiscard]] bool isVisible() const noexcept;
   void onOutputChange();
   void onSecondTick();
@@ -187,4 +190,5 @@ private:
   std::function<void(std::string, std::string)> m_openWidgetSettingsCallback;
   bool m_overlayDisplaySuppressed = false;
   bool m_wasVisibleBeforeOverlaySuppress = false;
+  bool m_sessionLockPaused = false;
 };

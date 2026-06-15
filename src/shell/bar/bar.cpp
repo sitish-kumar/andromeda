@@ -1432,6 +1432,34 @@ void Bar::unsuppressDisplay() {
   }
 }
 
+void Bar::pauseUnderSessionLock() {
+  if (m_sessionLockPaused) {
+    return;
+  }
+  m_sessionLockPaused = true;
+  for (const auto& instance : m_instances) {
+    if (instance == nullptr || instance->surface == nullptr) {
+      continue;
+    }
+    instance->animations.cancelAll();
+    instance->surface->pauseFrameLoop();
+  }
+}
+
+void Bar::resumeAfterSessionLock() {
+  if (!m_sessionLockPaused) {
+    return;
+  }
+  m_sessionLockPaused = false;
+  for (const auto& instance : m_instances) {
+    if (instance == nullptr || instance->surface == nullptr) {
+      continue;
+    }
+    instance->surface->resumeFrameLoop();
+    instance->surface->requestLayout();
+  }
+}
+
 void Bar::toggle() {
   const bool anyEffectivelyVisible = std::any_of(m_instances.begin(), m_instances.end(), [this](const auto& inst) {
     return inst != nullptr && instanceEffectivelyVisible(*inst);
@@ -1547,6 +1575,11 @@ void Bar::createInstance(const WaylandOutput& output, std::size_t barIndex, cons
 
   m_surfaceMap[instance->surface->wlSurface()] = instance.get();
   m_instances.push_back(std::move(instance));
+  if (m_sessionLockPaused) {
+    if (const auto& created = m_instances.back(); created != nullptr && created->surface != nullptr) {
+      created->surface->pauseFrameLoop();
+    }
+  }
 }
 
 void Bar::destroyInstance(std::uint32_t outputName) {

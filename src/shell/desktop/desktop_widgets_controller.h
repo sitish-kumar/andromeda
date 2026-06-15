@@ -50,6 +50,9 @@ public:
   /// Hides on-screen desktop widgets while another overlay editor (e.g. lockscreen layout) is active.
   void suppressDisplay();
   void unsuppressDisplay();
+  /// Tears down desktop widget surfaces while the session lock is active.
+  void pauseUnderSessionLock();
+  void resumeAfterSessionLock();
 
   [[nodiscard]] bool isEditing() const noexcept;
   [[nodiscard]] std::optional<LayerPopupParentContext> popupParentContextForSurface(wl_surface* surface) const;
@@ -72,6 +75,7 @@ private:
   DesktopWidgetsSnapshot m_snapshot;
   bool m_initialized = false;
   bool m_displaySuppressed = false;
+  bool m_sessionLockPaused = false;
   std::unique_ptr<DesktopWidgetsHost> m_host;
   std::unique_ptr<BackgroundWidgetsEditor> m_editor;
 };

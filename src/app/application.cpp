@@ -1259,10 +1259,18 @@ void Application::initUi() {
   });
   m_lockScreen.setSessionHooks(
       [this]() {
+        m_bar.pauseUnderSessionLock();
+        m_dock.pauseUnderSessionLock();
+        m_desktopWidgetsController.pauseUnderSessionLock();
+        m_wallpaper.pauseRendering();
         m_lockscreenWidgetsController.onLockStateChanged();
         m_hookManager.fire(HookKind::SessionLocked);
       },
       [this]() {
+        m_wallpaper.resumeRendering();
+        m_desktopWidgetsController.resumeAfterSessionLock();
+        m_dock.resumeAfterSessionLock();
+        m_bar.resumeAfterSessionLock();
         m_lockscreenWidgetsController.onLockStateChanged();
         m_hookManager.fire(HookKind::SessionUnlocked);
         if (m_logindService != nullptr) {
@@ -1771,7 +1779,9 @@ void Application::initUi() {
       if (m_pipewireSpectrum != nullptr) {
         m_pipewireSpectrum->handleAudioStateChanged();
       }
-      m_bar.refresh();
+      if (!m_lockScreen.isActive()) {
+        m_bar.refresh();
+      }
       if (shouldRefreshControlCenter()) {
         m_panelManager.refresh();
       }
