@@ -390,9 +390,9 @@ struct WallpaperConfig {
   float transitionDurationMs = 1500.0f;
   float edgeSmoothness = 0.3f;
   bool transitionOnStartup = false;
-  std::string directory;
-  std::string directoryLight;
-  std::string directoryDark;
+  std::string directory;      // empty = ~/Pictures/Wallpapers
+  std::string directoryLight; // empty = directory
+  std::string directoryDark;  // empty = directory
   bool perMonitorDirectories = false;
   WallpaperAutomationConfig automation;
   std::vector<WallpaperMonitorOverride> monitorOverrides;

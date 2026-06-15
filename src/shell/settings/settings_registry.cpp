@@ -528,7 +528,7 @@ namespace settings {
         tr("settings.schema.wallpaper.directory.description"), {"wallpaper", "directory"},
         TextSetting{
             .value = cfg.wallpaper.directory,
-            .placeholder = "~/Pictures/Wallpapers",
+            .placeholder = std::string(wallpaper::kDefaultWallpaperDirectory),
             .browseMode = TextSettingBrowseMode::SelectFolder,
             .browseFileExtensions = {}
         },
@@ -597,7 +597,7 @@ namespace settings {
             monitorPath("directory"),
             TextSetting{
                 .value = ovr != nullptr && ovr->directory.has_value() ? *ovr->directory : "",
-                .placeholder = "~/Pictures/Wallpapers",
+                .placeholder = std::string(wallpaper::kDefaultWallpaperDirectory),
                 .browseMode = TextSettingBrowseMode::SelectFolder,
                 .browseFileExtensions = {}
             },
