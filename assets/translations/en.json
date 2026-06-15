@@ -113,6 +113,8 @@
   "control-center": {
     "audio": {
       "application-volumes": "Application Volumes",
+      "choose-effects-profile": "Choose a profile",
+      "effects-profile": "Effects:",
       "input-volume": "Input Volume",
       "no-application-audio": "No application audio",
       "no-application-audio-body": "No application playback streams are currently available.",
@@ -596,6 +598,10 @@
     "dnd": {
       "off": "DND Off",
       "on": "DND On"
+    },
+    "effects": {
+      "input": "Input Effects",
+      "output": "Output Effects"
     },
     "lock-keys": {
       "caps-off": "Caps Lock Off",

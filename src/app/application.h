@@ -84,6 +84,7 @@
 #include "system/brightness_service.h"
 #include "system/dependency_service.h"
 #include "system/desktop_entry_poll_source.h"
+#include "system/easyeffects_service.h"
 #include "system/gamma_service.h"
 #include "system/icon_theme_poll_source.h"
 #include "system/location_poll_source.h"
@@ -210,6 +211,7 @@ private:
   std::unique_ptr<TrayService> m_trayService;
   std::unique_ptr<NotificationService> m_notificationDbus;
   std::unique_ptr<PipeWireService> m_pipewireService;
+  std::unique_ptr<EasyEffectsService> m_easyEffectsService;
   std::unique_ptr<PipeWireSpectrum> m_pipewireSpectrum;
   std::unique_ptr<SoundPlayer> m_soundPlayer;
 

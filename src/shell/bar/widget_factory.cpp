@@ -51,6 +51,7 @@
 #include "shell/bar/widgets/wallpaper_widget.h"
 #include "shell/bar/widgets/weather_widget.h"
 #include "shell/bar/widgets/workspaces_widget.h"
+#include "system/easyeffects_service.h"
 #include "system/lock_keys_service.h"
 #include "system/system_monitor_service.h"
 #include "system/weather_service.h"
@@ -103,19 +104,20 @@ namespace {
 
 WidgetFactory::WidgetFactory(
     CompositorPlatform& platform, ConfigService& config, NotificationManager* notifications, TrayService* tray,
-    PipeWireService* audio, UPowerService* upower, SystemMonitorService* sysmon, PowerProfilesService* powerProfiles,
-    INetworkService* network, IdleInhibitor* idleInhibitor, MprisService* mpris, PipeWireSpectrum* audioSpectrum,
-    HttpClient* httpClient, WeatherService* weather, GammaService* nightLight,
+    PipeWireService* audio, EasyEffectsService* easyEffects, UPowerService* upower, SystemMonitorService* sysmon,
+    PowerProfilesService* powerProfiles, INetworkService* network, IdleInhibitor* idleInhibitor, MprisService* mpris,
+    PipeWireSpectrum* audioSpectrum, HttpClient* httpClient, WeatherService* weather, GammaService* nightLight,
     noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth, BrightnessService* brightness,
     LockKeysService* lockKeys, ClipboardService* clipboard, FileWatcher* fileWatcher, ScreenshotService* screenshots,
     RenderContext* renderContext, scripting::ScriptApiContext* scriptApi
 )
     : m_platform(platform), m_configService(config), m_config(config.config()), m_notifications(notifications),
-      m_tray(tray), m_audio(audio), m_upower(upower), m_sysmon(sysmon), m_powerProfiles(powerProfiles),
-      m_network(network), m_idleInhibitor(idleInhibitor), m_mpris(mpris), m_audioSpectrum(audioSpectrum),
-      m_httpClient(httpClient), m_weather(weather), m_nightLight(nightLight), m_themeService(themeService),
-      m_bluetooth(bluetooth), m_brightness(brightness), m_lockKeys(lockKeys), m_clipboard(clipboard),
-      m_fileWatcher(fileWatcher), m_screenshots(screenshots), m_renderContext(renderContext), m_scriptApi(scriptApi) {
+      m_tray(tray), m_audio(audio), m_easyEffects(easyEffects), m_upower(upower), m_sysmon(sysmon),
+      m_powerProfiles(powerProfiles), m_network(network), m_idleInhibitor(idleInhibitor), m_mpris(mpris),
+      m_audioSpectrum(audioSpectrum), m_httpClient(httpClient), m_weather(weather), m_nightLight(nightLight),
+      m_themeService(themeService), m_bluetooth(bluetooth), m_brightness(brightness), m_lockKeys(lockKeys),
+      m_clipboard(clipboard), m_fileWatcher(fileWatcher), m_screenshots(screenshots), m_renderContext(renderContext),
+      m_scriptApi(scriptApi) {
   scripting::PluginRegistry::instance().ensureScanned();
 }
 
@@ -554,7 +556,8 @@ std::unique_ptr<Widget> WidgetFactory::create(
         static_cast<int>(std::clamp<std::int64_t>(wc != nullptr ? wc->getInt("scroll_step", 5) : 5, 1, 25));
     const std::string target = wc != nullptr ? wc->getString("device", "output") : std::string("output");
     const auto volumeTarget = target == "input" ? VolumeWidgetTarget::Input : VolumeWidgetTarget::Output;
-    auto widget = std::make_unique<VolumeWidget>(m_audio, &m_config, output, showLabel, volumeTarget, scrollStep);
+    auto widget =
+        std::make_unique<VolumeWidget>(m_audio, m_easyEffects, &m_config, output, showLabel, volumeTarget, scrollStep);
     widget->setContentScale(contentScale);
     return widget;
   }

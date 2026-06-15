@@ -106,6 +106,15 @@ namespace {
     };
   }
 
+  OsdContent effectsProfileOsdContent(AudioEffectsProfileKind kind, std::string_view profile) {
+    const char* labelKey = kind == AudioEffectsProfileKind::Input ? "osd.effects.input" : "osd.effects.output";
+    return OsdContent{
+        .icon = "adjustments",
+        .value = i18n::tr(labelKey) + ": " + std::string(profile),
+        .showProgress = false,
+    };
+  }
+
   OsdContent caffeineOsdContent(bool enabled) {
     return OsdContent{
         .kind = OsdKind::Caffeine,
@@ -991,6 +1000,9 @@ void Application::initServices() {
 
   try {
     m_pipewireService = std::make_unique<PipeWireService>();
+    m_easyEffectsService = std::make_unique<EasyEffectsService>();
+    m_easyEffectsService->refreshProfiles();
+    m_easyEffectsService->refreshActiveEffectsProfiles();
     m_pipewireSpectrum = std::make_unique<PipeWireSpectrum>(*m_pipewireService);
     m_soundPlayer = std::make_unique<SoundPlayer>(m_pipewireService->loop());
 
@@ -1046,6 +1058,7 @@ void Application::initServices() {
     kLog.warn("pipewire disabled: {}", e.what());
     m_soundPlayer.reset();
     m_pipewireSpectrum.reset();
+    m_easyEffectsService.reset();
     m_pipewireService.reset();
   }
 
@@ -1448,12 +1461,13 @@ void Application::initUi() {
   m_panelManager.registerPanel(
       "control-center",
       std::make_unique<ControlCenterPanel>(
-          &m_notificationManager, m_pipewireService.get(), m_mprisService.get(), &m_configService, &m_httpClient,
-          &m_weatherService, m_pipewireSpectrum.get(), m_upowerService.get(), m_powerProfilesService.get(),
-          m_networkService.get(), m_networkSecretAgent.get(), m_bluetoothService.get(), m_bluetoothAgent.get(),
-          m_brightnessService.get(), m_systemMonitor.get(), &m_screenTimeService, &m_gammaService, &m_themeService,
-          &m_idleInhibitor, &m_dependencyService, &m_compositorPlatform, &m_ipcService, &m_wallpaper,
-          &m_calendarService, &m_scriptApi, &m_clipboardService, m_accountsService.get(), &m_thumbnailService
+          &m_notificationManager, m_pipewireService.get(), m_easyEffectsService.get(), m_mprisService.get(),
+          &m_configService, &m_httpClient, &m_weatherService, m_pipewireSpectrum.get(), m_upowerService.get(),
+          m_powerProfilesService.get(), m_networkService.get(), m_networkSecretAgent.get(), m_bluetoothService.get(),
+          m_bluetoothAgent.get(), m_brightnessService.get(), m_systemMonitor.get(), &m_screenTimeService,
+          &m_gammaService, &m_themeService, &m_idleInhibitor, &m_dependencyService, &m_compositorPlatform,
+          &m_ipcService, &m_wallpaper, &m_calendarService, &m_scriptApi, &m_clipboardService, m_accountsService.get(),
+          &m_thumbnailService
       )
   );
   {
@@ -1629,11 +1643,11 @@ void Application::initUi() {
 
   m_bar.initialize(
       m_compositorPlatform, &m_configService, &m_timeService, &m_notificationManager, m_trayService.get(),
-      m_pipewireService.get(), m_upowerService.get(), m_systemMonitor.get(), m_powerProfilesService.get(),
-      m_networkService.get(), &m_idleInhibitor, m_mprisService.get(), m_pipewireSpectrum.get(), &m_httpClient,
-      &m_weatherService, &m_renderContext, &m_gammaService, &m_themeService, m_bluetoothService.get(),
-      m_brightnessService.get(), kLockKeysEnabled ? &m_lockKeysService : nullptr, &m_clipboardService, &m_fileWatcher,
-      &m_screenshotService, &m_scriptApi
+      m_pipewireService.get(), m_easyEffectsService.get(), m_upowerService.get(), m_systemMonitor.get(),
+      m_powerProfilesService.get(), m_networkService.get(), &m_idleInhibitor, m_mprisService.get(),
+      m_pipewireSpectrum.get(), &m_httpClient, &m_weatherService, &m_renderContext, &m_gammaService, &m_themeService,
+      m_bluetoothService.get(), m_brightnessService.get(), kLockKeysEnabled ? &m_lockKeysService : nullptr,
+      &m_clipboardService, &m_fileWatcher, &m_screenshotService, &m_scriptApi
   );
   m_bar.setOpenWidgetSettingsCallback([this](std::string barName, std::string widgetName) {
     if (m_panelManager.isOpen()) {
@@ -1796,6 +1810,14 @@ void Application::initUi() {
         m_audioOsd.showInput(id, volume, muted);
       } else {
         m_audioOsd.showOutput(id, volume, muted);
+      }
+    });
+  }
+  if (m_easyEffectsService != nullptr) {
+    m_easyEffectsService->setChangeCallback([this, shouldRefreshControlCenter]() {
+      m_bar.refresh();
+      if (shouldRefreshControlCenter()) {
+        m_panelManager.refresh();
       }
     });
   }
@@ -2129,6 +2151,13 @@ void Application::initIpc() {
   }
   if (m_pipewireService) {
     m_pipewireService->registerIpc(m_ipcService, m_configService);
+  }
+  if (m_easyEffectsService) {
+    m_easyEffectsService->registerIpc(
+        m_ipcService, m_configService, [this](AudioEffectsProfileKind kind, std::string_view profile) {
+          m_osdOverlay.show(effectsProfileOsdContent(kind, profile));
+        }
+    );
   }
   m_screenshotService.registerIpc(m_ipcService, m_configService);
   m_windowSwitcher.registerIpc(m_ipcService);

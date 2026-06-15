@@ -16,6 +16,7 @@
 #include "shell/panel/panel_manager.h"
 #include "shell/surface/shadow.h"
 #include "shell/tooltip/tooltip_manager.h"
+#include "system/easyeffects_service.h"
 #include "system/gamma_service.h"
 #include "system/system_monitor_service.h"
 #include "system/weather_service.h"
@@ -849,18 +850,20 @@ Bar::Bar() = default;
 
 bool Bar::initialize(
     CompositorPlatform& platform, ConfigService* config, TimeService* timeService, NotificationManager* notifications,
-    TrayService* tray, PipeWireService* audio, UPowerService* upower, SystemMonitorService* sysmon,
-    PowerProfilesService* powerProfiles, INetworkService* network, IdleInhibitor* idleInhibitor, MprisService* mpris,
-    PipeWireSpectrum* audioSpectrum, HttpClient* httpClient, WeatherService* weatherService,
-    RenderContext* renderContext, GammaService* nightLight, noctalia::theme::ThemeService* themeService,
-    BluetoothService* bluetooth, BrightnessService* brightness, LockKeysService* lockKeys, ClipboardService* clipboard,
-    FileWatcher* fileWatcher, ScreenshotService* screenshots, scripting::ScriptApiContext* scriptApi
+    TrayService* tray, PipeWireService* audio, EasyEffectsService* easyEffects, UPowerService* upower,
+    SystemMonitorService* sysmon, PowerProfilesService* powerProfiles, INetworkService* network,
+    IdleInhibitor* idleInhibitor, MprisService* mpris, PipeWireSpectrum* audioSpectrum, HttpClient* httpClient,
+    WeatherService* weatherService, RenderContext* renderContext, GammaService* nightLight,
+    noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth, BrightnessService* brightness,
+    LockKeysService* lockKeys, ClipboardService* clipboard, FileWatcher* fileWatcher, ScreenshotService* screenshots,
+    scripting::ScriptApiContext* scriptApi
 ) {
   m_platform = &platform;
   m_config = config;
   m_notifications = notifications;
   m_tray = tray;
   m_audio = audio;
+  m_easyEffects = easyEffects;
   m_upower = upower;
   m_sysmon = sysmon;
   m_powerProfiles = powerProfiles;
@@ -882,9 +885,10 @@ bool Bar::initialize(
   m_scriptApi = scriptApi;
 
   m_widgetFactory = std::make_unique<WidgetFactory>(
-      *m_platform, *m_config, m_notifications, m_tray, m_audio, m_upower, m_sysmon, m_powerProfiles, m_network,
-      m_idleInhibitor, m_mpris, m_audioSpectrum, m_httpClient, m_weatherService, m_nightLight, m_themeService,
-      m_bluetooth, m_brightness, m_lockKeys, m_clipboard, m_fileWatcher, m_screenshots, m_renderContext, m_scriptApi
+      *m_platform, *m_config, m_notifications, m_tray, m_audio, easyEffects, m_upower, m_sysmon, m_powerProfiles,
+      m_network, m_idleInhibitor, m_mpris, m_audioSpectrum, m_httpClient, m_weatherService, m_nightLight,
+      m_themeService, m_bluetooth, m_brightness, m_lockKeys, m_clipboard, m_fileWatcher, m_screenshots, m_renderContext,
+      m_scriptApi
   );
 
   (void)timeService;
@@ -930,9 +934,10 @@ void Bar::reload() {
   m_lastShadow = m_config->config().shell.shadow;
   m_lastPlugins = m_config->config().plugins;
   m_widgetFactory = std::make_unique<WidgetFactory>(
-      *m_platform, *m_config, m_notifications, m_tray, m_audio, m_upower, m_sysmon, m_powerProfiles, m_network,
-      m_idleInhibitor, m_mpris, m_audioSpectrum, m_httpClient, m_weatherService, m_nightLight, m_themeService,
-      m_bluetooth, m_brightness, m_lockKeys, m_clipboard, m_fileWatcher, m_screenshots, m_renderContext, m_scriptApi
+      *m_platform, *m_config, m_notifications, m_tray, m_audio, m_easyEffects, m_upower, m_sysmon, m_powerProfiles,
+      m_network, m_idleInhibitor, m_mpris, m_audioSpectrum, m_httpClient, m_weatherService, m_nightLight,
+      m_themeService, m_bluetooth, m_brightness, m_lockKeys, m_clipboard, m_fileWatcher, m_screenshots, m_renderContext,
+      m_scriptApi
   );
 
   if (recreateForOrder) {
