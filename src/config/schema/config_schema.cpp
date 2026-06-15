@@ -49,6 +49,7 @@ namespace noctalia::config::schema {
         field(&OsdKindsConfig::dnd, "dnd"),
         field(&OsdKindsConfig::lockKeys, "lock_keys"),
         field(&OsdKindsConfig::keyboardLayout, "keyboard_layout"),
+        field(&OsdKindsConfig::media, "media"),
     };
     return s;
   }

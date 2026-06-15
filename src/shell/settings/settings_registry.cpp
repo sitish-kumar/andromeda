@@ -5,8 +5,6 @@
 #include "core/log.h"
 #include "core/process.h"
 #include "i18n/i18n.h"
-#include "render/core/color.h"
-#include "render/core/renderer.h"
 #include "shell/control_center/shortcut_registry.h"
 #include "shell/settings/color_spec_picker.h"
 #include "shell/settings/font_weight_catalog.h"
@@ -1479,6 +1477,11 @@ namespace settings {
         SettingsSection::Osd, "kinds", tr("settings.schema.shell.osd-kinds-keyboard-layout.label"),
         tr("settings.schema.shell.osd-kinds-keyboard-layout.description"), {"osd", "kinds", "keyboard_layout"},
         ToggleSetting{cfg.osd.kinds.keyboardLayout}, "hud overlay xkb input language layout switch"
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Osd, "kinds", tr("settings.schema.shell.osd-kinds-media.label"),
+        tr("settings.schema.shell.osd-kinds-media.description"), {"osd", "kinds", "media"},
+        ToggleSetting{cfg.osd.kinds.media}, "hud overlay mpris audio music"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-monitors.label"),

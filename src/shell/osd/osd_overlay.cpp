@@ -65,6 +65,8 @@ namespace {
       return kinds.lockKeys;
     case OsdKind::KeyboardLayout:
       return kinds.keyboardLayout;
+    case OsdKind::Media:
+      return kinds.media;
     }
     return true;
   }

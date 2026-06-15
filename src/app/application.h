@@ -67,6 +67,7 @@
 #include "shell/osd/brightness_osd.h"
 #include "shell/osd/keyboard_layout_osd.h"
 #include "shell/osd/lock_keys_osd.h"
+#include "shell/osd/media_osd.h"
 #include "shell/osd/osd_overlay.h"
 #include "shell/overview/overview_launcher_capture.h"
 #include "shell/panel/panel_manager.h"
@@ -234,6 +235,7 @@ private:
   NotificationToast m_notificationToast;
   AudioOsd m_audioOsd;
   BrightnessOsd m_brightnessOsd;
+  MediaOsd m_mediaOsd;
   LockKeysOsd m_lockKeysOsd;
   KeyboardLayoutOsd m_keyboardLayoutOsd;
   OsdOverlay m_osdOverlay;
