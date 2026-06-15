@@ -124,7 +124,6 @@ namespace {
       for (Label* label : {nameLabel, value}) {
         if (label != nullptr) {
           label->setTooltip(tooltip);
-          label->setHitTestVisible(true);
         }
       }
     }
@@ -363,12 +362,7 @@ std::unique_ptr<Flex> SystemTab::create() {
                   // Ellipsize from the start so the identifying tail stays visible ("…/long/mount/point").
                   .ellipsize = TextEllipsize::Start,
                   .flexGrow = 1.0f,
-                  .configure =
-                      [mountPoint](Label& label) {
-                        label.setTooltip(mountPoint);
-                        // Labels opt out of hit-testing by default; a tooltip needs hover events.
-                        label.setHitTestVisible(true);
-                      },
+                  .configure = [mountPoint](Label& label) { label.setTooltip(mountPoint); },
               }),
               ui::label({
                   .out = &usageLabel,
