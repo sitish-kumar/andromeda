@@ -19,4 +19,5 @@ public:
 private:
   OsdOverlay* m_overlay = nullptr;
   MediaOsdData m_lastData;
+  bool m_hasData = false;
 };
