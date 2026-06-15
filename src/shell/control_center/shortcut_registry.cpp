@@ -554,7 +554,7 @@ std::unique_ptr<Shortcut> ShortcutRegistry::create(std::string_view type, const 
     }
     scripting::mergePluginSettings(*entry->manifest, *overrides, seeded);
     return std::make_unique<PluginShortcut>(
-        entry->fullId(), entry->sourcePath, std::move(seeded), *s.scriptApi, s.httpClient, s.clipboard
+        entry->fullId(), entry->sourcePath, std::move(seeded), *s.scriptApi, s.httpClient, s.clipboard, s.platform
     );
   }
   if (type == "wifi")
