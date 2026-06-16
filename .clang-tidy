@@ -1,5 +1,6 @@
 Checks: >-
   -clang-diagnostic-*,
+  modernize-make-unique,
   modernize-raw-string-literal,
   modernize-use-emplace,
   modernize-use-scoped-lock,
