@@ -335,7 +335,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   const bool isBottom = barConfig.position == "bottom";
   const bool isLeft = barConfig.position == "left";
   const bool isRight = barConfig.position == "right";
-  const std::int32_t panelGap = static_cast<std::int32_t>(Style::spaceXs);
+  const std::int32_t panelGap = m_config->config().shell.panel.floatingOffset;
   const std::int32_t screenPadding = static_cast<std::int32_t>(Style::spaceSm);
 
   std::int32_t outputWidth = static_cast<std::int32_t>(panelWidth);
