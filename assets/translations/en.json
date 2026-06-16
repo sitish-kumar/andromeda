@@ -51,6 +51,11 @@
       "network": {
         "wired": "Wired"
       },
+      "privacy": {
+        "camera": "Camera",
+        "microphone": "Microphone",
+        "screen-sharing": "Screen Sharing"
+      },
       "scripted": {
         "reload-failed": "Script reload failed",
         "reloaded": "Reloaded script"
@@ -2427,6 +2432,10 @@
           "description": "Media artwork size in pixels",
           "label": "Art Size"
         },
+        "active-color": {
+          "description": "Color used for active privacy indicators; fixed hex colors are also supported",
+          "label": "Active Color"
+        },
         "bands": {
           "description": "Number of visualizer bands",
           "label": "Bands"
@@ -2563,9 +2572,17 @@
           "description": "Tray item ids to hide",
           "label": "Hidden Items"
         },
+        "cam-filter-regex": {
+          "description": "Regular expression for camera process names to ignore",
+          "label": "Camera Filter Regex"
+        },
         "hide-empty-workspaces": {
           "description": "When grouping by workspace, omit capsules that have no running windows in the taskbar list.",
           "label": "Hide Empty Workspaces"
+        },
+        "hide-inactive": {
+          "description": "Hide inactive privacy icons and hide the widget when nothing is active",
+          "label": "Hide Inactive"
         },
         "hide-when-empty": {
           "description": "Hide workspace pills when there are no open windows",
@@ -2616,6 +2633,14 @@
           "description": "Icon size in pixels",
           "label": "Icon Size"
         },
+        "icon-spacing": {
+          "description": "Spacing between privacy indicator icons in pixels",
+          "label": "Icon Spacing"
+        },
+        "inactive-color": {
+          "description": "Color used for inactive privacy indicators; fixed hex colors are also supported",
+          "label": "Inactive Color"
+        },
         "interface": {
           "description": "Network interface to monitor; leave empty to use the total across all interfaces",
           "label": "Interface"
@@ -2657,6 +2682,10 @@
         "middle-command": {
           "description": "Shell command run when middle-clicking this button. When set, middle-click opens this command instead of widget settings.",
           "label": "Middle Click Command"
+        },
+        "mic-filter-regex": {
+          "description": "Regular expression for microphone app names to ignore",
+          "label": "Microphone Filter Regex"
         },
         "min-length": {
           "description": "Minimum widget length in pixels",
@@ -2840,6 +2869,7 @@
         "nightlight": "Night Light",
         "notifications": "Notifications",
         "power-profile": "Power Profile",
+        "privacy": "Privacy Indicator",
         "screenshot": "Screenshot",
         "scripted": "Scripted",
         "session": "Session",
