@@ -286,11 +286,19 @@ void TooltipManager::showPopup() {
   m_surface = std::make_unique<PopupSurface>(*m_wayland);
   m_surface->setRenderContext(m_renderContext);
   m_surface->setDismissedCallback([this] {
-    m_animations.cancelAll();
-    m_fadeAnimId = 0;
-    m_sceneRoot.reset();
-    m_surface.reset();
-    m_state = State::Idle;
+    // `popup_done` is delivered from Wayland dispatch; defer teardown so we don't
+    // destroy the underlying wl_proxy while the compositor still holds it in its
+    // event iteration.
+    DeferredCall::callLater([this] {
+      if (m_surface == nullptr) {
+        return;
+      }
+      m_animations.cancelAll();
+      m_fadeAnimId = 0;
+      m_sceneRoot.reset();
+      m_surface.reset();
+      m_state = State::Idle;
+    });
   });
 
   const bool initialized = m_pendingXdgParent != nullptr
