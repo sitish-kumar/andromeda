@@ -1412,8 +1412,8 @@
           "label": "焦点图标缩放"
         },
         "active-monitor-only": {
-          "description": "仅显示活动屏幕上运行的应用",
-          "label": "仅限活动屏幕"
+          "description": "仅显示当前屏幕上运行的应用",
+          "label": "仅当前屏幕应用"
         },
         "auto-hide": {
           "description": "不使用时自动隐藏 Dock"
@@ -1484,7 +1484,7 @@
           "description": "Dock 两端的内边距（图标和 Dock 两端之间）"
         },
         "monitors": {
-          "description": "选择显示 Dock 的屏幕（留空为全部）；启用“仅活动屏幕”时，仅在所选屏幕中显示",
+          "description": "选择显示 Dock 的屏幕（留空为全部）；在所选范围内应用“仅当前显示器应用”规则",
           "label": "屏幕"
         },
         "pinned-apps": {
@@ -1676,7 +1676,7 @@
           "label": "允许的紧急级别"
         },
         "blacklist": {
-          "description": "隐藏匹配发送者的通知（应用名称、桌面项或类别）",
+          "description": "隐藏匹配发送方的通知（应用名称、桌面项或类别）",
           "label": "通知黑名单"
         },
         "blacklist-allow-critical": {
@@ -1715,7 +1715,7 @@
           "label": "屏幕位置"
         },
         "scale": {
-          "description": "相对于 Shell UI 缩放比例调整 Toast 通知大小",
+          "description": "按 Shell UI 缩放比例调整 Toast 通知大小",
           "label": "大小"
         },
         "show-actions": {
@@ -2110,12 +2110,16 @@
           "description": "大写锁定、数字锁定和滚动锁定变化时显示 OSD 弹窗",
           "label": "锁定键"
         },
+        "osd-kinds-media": {
+          "description": "新曲目开始播放时显示 OSD 弹窗",
+          "label": "正在播放"
+        },
         "osd-kinds-power-profile": {
           "description": "电源配置变化时显示 OSD 弹窗",
           "label": "电源配置"
         },
         "osd-kinds-volume": {
-          "description": "音量变化时显示 OSD 弹窗；使用高级设置分别控制输出和输入音量",
+          "description": "音量变化时显示 OSD 弹窗；输出与输入可通过高级设置分别控制",
           "label": "音量"
         },
         "osd-kinds-volume-input": {
@@ -2151,7 +2155,7 @@
           "label": "屏幕位置"
         },
         "osd-scale": {
-          "description": "相对于 Shell UI 缩放比例调整 OSD 弹窗大小（1.0 为默认）",
+          "description": "按 Shell UI 缩放比例调整 OSD 弹窗大小（1.0 保持默认）",
           "label": "缩放"
         },
         "password-style": {
@@ -2339,7 +2343,7 @@
       "glyph-picker-title": "操作图标",
       "kind-section-label": "行为",
       "label-field": "标签",
-      "label-placeholder": "可选的按钮文字",
+      "label-placeholder": "可选的按钮文本",
       "shortcut-label": "快捷键",
       "variant": {
         "default": "默认",
@@ -2406,7 +2410,7 @@
         },
         "album-art-only": {
           "description": "仅显示圆形专辑封面，不显示曲目标题",
-          "label": "仅专辑封面"
+          "label": "仅显示专辑封面"
         },
         "anchor": {
           "description": "将此小组件固定为居中对齐的锚点",
@@ -2610,7 +2614,7 @@
           "label": "非焦点图标不透明度"
         },
         "label": {
-          "description": "按钮上显示的可选静态文字",
+          "description": "可选的按钮固定文本",
           "label": "标签"
         },
         "label-min-width": {
@@ -2686,7 +2690,7 @@
           "label": "右键点击命令"
         },
         "scale": {
-          "description": "相对于状态栏内容缩放比例调整小组件大小",
+          "description": "按状态栏内容缩放比例调整小组件大小",
           "label": "缩放"
         },
         "scope": {
@@ -2774,7 +2778,7 @@
           "label": "提示"
         },
         "tooltip-format": {
-          "description": "提示信息的可选格式",
+          "description": "可选的提示信息格式",
           "label": "提示格式"
         },
         "type": {

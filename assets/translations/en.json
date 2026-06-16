@@ -377,13 +377,13 @@
         "font-family-default": "System default",
         "forecast-days": "Forecast Days",
         "format": "Format",
-        "interface": "Interface",
         "hide-when-no-media": "Hide When No Media",
         "horizontal": "Horizontal",
         "image-path": "Image",
         "inner-diameter": "Inner Diameter",
         "input-opacity": "Input Opacity",
         "input-radius": "Input Radius",
+        "interface": "Interface",
         "layout": "Layout",
         "mirrored": "Mirrored",
         "opacity": "Opacity",
@@ -2416,6 +2416,10 @@
         "workspace-label-inside": "Inside pill"
       },
       "settings": {
+        "active-color": {
+          "description": "Color used for active privacy indicators; fixed hex colors are also supported",
+          "label": "Active Color"
+        },
         "active-opacity": {
           "description": "Opacity of the icon for the active (focused) window.",
           "label": "Active Icon Opacity"
@@ -2432,13 +2436,13 @@
           "description": "Media artwork size in pixels",
           "label": "Art Size"
         },
-        "active-color": {
-          "description": "Color used for active privacy indicators; fixed hex colors are also supported",
-          "label": "Active Color"
-        },
         "bands": {
           "description": "Number of visualizer bands",
           "label": "Bands"
+        },
+        "cam-filter-regex": {
+          "description": "Regular expression for camera process names to ignore",
+          "label": "Camera Filter Regex"
         },
         "capsule": {
           "description": "Draw a capsule behind this widget",
@@ -2572,10 +2576,6 @@
           "description": "Tray item ids to hide",
           "label": "Hidden Items"
         },
-        "cam-filter-regex": {
-          "description": "Regular expression for camera process names to ignore",
-          "label": "Camera Filter Regex"
-        },
         "hide-empty-workspaces": {
           "description": "When grouping by workspace, omit capsules that have no running windows in the taskbar list.",
           "label": "Hide Empty Workspaces"
@@ -2641,13 +2641,13 @@
           "description": "Color used for inactive privacy indicators; fixed hex colors are also supported",
           "label": "Inactive Color"
         },
-        "interface": {
-          "description": "Network interface to monitor; leave empty to use the total across all interfaces",
-          "label": "Interface"
-        },
         "inactive-opacity": {
           "description": "Opacity of icons for inactive (unfocused) windows.",
           "label": "Inactive Icon Opacity"
+        },
+        "interface": {
+          "description": "Network interface to monitor; leave empty to use the total across all interfaces",
+          "label": "Interface"
         },
         "label": {
           "description": "Optional static text shown on this button",
@@ -2679,13 +2679,13 @@
           "description": "Maximum widget length in pixels",
           "label": "Max Length"
         },
-        "middle-command": {
-          "description": "Shell command run when middle-clicking this button. When set, middle-click opens this command instead of widget settings.",
-          "label": "Middle Click Command"
-        },
         "mic-filter-regex": {
           "description": "Regular expression for microphone app names to ignore",
           "label": "Microphone Filter Regex"
+        },
+        "middle-command": {
+          "description": "Shell command run when middle-clicking this button. When set, middle-click opens this command instead of widget settings.",
+          "label": "Middle Click Command"
         },
         "min-length": {
           "description": "Minimum widget length in pixels",
