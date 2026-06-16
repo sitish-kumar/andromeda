@@ -612,10 +612,10 @@ bool ClipboardService::copyEntry(const ClipboardEntry& entry) {
   mimeTypes.push_back(entry.dataMimeType);
   if (isTextMimeType(entry.dataMimeType)) {
     if (std::ranges::find(mimeTypes, std::string("text/plain;charset=utf-8")) == mimeTypes.end()) {
-      mimeTypes.push_back("text/plain;charset=utf-8");
+      mimeTypes.emplace_back("text/plain;charset=utf-8");
     }
     if (std::ranges::find(mimeTypes, std::string("text/plain")) == mimeTypes.end()) {
-      mimeTypes.push_back("text/plain");
+      mimeTypes.emplace_back("text/plain");
     }
   }
   return copyData(std::move(mimeTypes), entry.data);

@@ -538,10 +538,10 @@ namespace {
   std::vector<std::string> ddcDetectArgs(const std::vector<std::string>& ignoreMmids) {
     std::vector<std::string> args{"ddcutil", "--noconfig"};
     for (const auto& mmid : ignoreMmids) {
-      args.push_back("--ignore-mmid");
+      args.emplace_back("--ignore-mmid");
       args.push_back(mmid);
     }
-    args.push_back("detect");
+    args.emplace_back("detect");
     return args;
   }
 
@@ -553,8 +553,8 @@ namespace {
   std::optional<std::pair<int, int>>
   queryDdcBrightness(int bus, std::chrono::milliseconds timeout, std::string* detailOut) {
     auto args = ddcBaseArgs(bus);
-    args.push_back("getvcp");
-    args.push_back("10");
+    args.emplace_back("getvcp");
+    args.emplace_back("10");
 
     const CommandResult result = runCommandCapture(args, timeout);
     if (detailOut != nullptr) {
@@ -1134,9 +1134,9 @@ struct BrightnessService::Impl {
         completion.displayId = writeJob->displayId;
 
         auto args = ddcBaseArgs(writeJob->bus);
-        args.push_back("--noverify");
-        args.push_back("setvcp");
-        args.push_back("10");
+        args.emplace_back("--noverify");
+        args.emplace_back("setvcp");
+        args.emplace_back("10");
         args.push_back(std::to_string(std::clamp(writeJob->targetRaw, 0, 100)));
 
         const CommandResult result = runCommandCapture(args, kDdcSetTimeout);

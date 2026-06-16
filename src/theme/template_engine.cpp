@@ -700,7 +700,7 @@ namespace noctalia::theme {
         while (pos < tokens.size()) {
           if (const auto* text = std::get_if<std::string>(&tokens[pos])) {
             if (!text->empty())
-              nodes.push_back(TextNode{*text});
+              nodes.emplace_back(TextNode{*text});
             ++pos;
             continue;
           }
@@ -715,9 +715,9 @@ namespace noctalia::theme {
           if (shouldStop)
             return nodes;
           if (cmd.starts_with("for ")) {
-            nodes.push_back(parseFor(tokens, pos));
+            nodes.emplace_back(parseFor(tokens, pos));
           } else if (cmd.starts_with("if ")) {
-            nodes.push_back(parseIf(tokens, pos));
+            nodes.emplace_back(parseIf(tokens, pos));
           } else {
             ++pos;
           }
