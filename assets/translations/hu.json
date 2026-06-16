@@ -911,6 +911,28 @@
         "wallpaper": "Háttérkép"
       }
     },
+    "notifications": {
+      "filter": {
+        "add": "Szűrő hozzáadása",
+        "add-title": "Értesítési szűrő hozzáadása",
+        "allowed-urgencies-label": "Engedélyezett sürgősségi szintek",
+        "flag": {
+          "history": "előzmények",
+          "sound": "hang",
+          "toast": "felugró értesítések"
+        },
+        "flags-label": "Egyezés esetén",
+        "match-label": "Alkalmazás",
+        "match-placeholder": "Alkalmazásnév, asztali bejegyzés vagy kategória…",
+        "play-sound": "Hang lejátszása",
+        "save-history": "Mentés az előzményekbe",
+        "show-toast": "felugró értesítés megjelenítése",
+        "summary": "{match} · {flags}",
+        "summary-blocked": "{match} · blokkolva",
+        "summary-disabled": "{match} · letiltva",
+        "unnamed": "Névtelen szűrő"
+      }
+    },
     "options": {
       "clipboard": {
         "auto-paste": {
@@ -1050,20 +1072,31 @@
       "plugins": {
         "configure": "Beállítás",
         "deprecated": "elavult",
+        "empty": "Nem találhatók bővítmények. Adj meg egy forrást vagy ellenőrizd a hálózatot.",
         "loading": "Bővítmények betöltése…",
         "refreshing": "Bővítmények frissítése…",
         "requires-newer-noctalia": "újabb Noctalia szükséges",
         "title": "Bővítmények"
+      },
+      "settings": {
+        "empty": "Nincsenek elérhető beállítások."
       },
       "sources": {
         "add": "Forrás hozzáadása",
         "add-title": "Bővítményforrás hozzáadása",
         "edit": "Forrás szerkesztése",
         "edit-title": "Bővítményforrás szerkesztése",
+        "empty": "Nincsenek beállítva források.",
+        "errors": {
+          "duplicate-name": "Már létezik forrás ezzel az azonosítóval.",
+          "invalid-name": "A forrásazonosító csak betűket, számjegyeket, „.”, „_” vagy „-” karaktereket tartalmazhat, és betűvel vagy számjeggyel kell kezdődnie.",
+          "location-required": "A forrás helyének megadása kötelező."
+        },
         "kind": {
           "git": "Git",
           "path": "Útvonal"
         },
+        "kind-label": "Típus",
         "location-label": "Hely",
         "location-placeholder-git": "https://github.com/én/noctalia-plugins",
         "location-placeholder-path": "~/dev/noctalia-plugins",
@@ -1079,7 +1112,7 @@
     "schema": {
       "appearance": {
         "animation-speed": {
-          "description": "Sebességszorzó minden animációhoz",
+          "description": "Animációk sebességszorzója",
           "label": "Animáció sebessége"
         },
         "animations": {
@@ -1087,164 +1120,172 @@
           "label": "Animációk"
         },
         "app-icon-color": {
-          "description": "Palettaszín, amelyet az alkalmazásikonok színezésekor használnak",
-          "label": "Alkalmazásikon Színe"
+          "description": "Az alkalmazásikonok színezéséhez használt palettaszín",
+          "label": "Alkalmazásikon színe"
         },
         "app-icon-colorize": {
-          "description": "Színezd át az alkalmazásikonokat az egész shellben, hogy passzoljanak az aktuális palettához",
+          "description": "Alkalmazásikonok újraszínezése a teljes felületen az aktív palettának megfelelően",
           "label": "Alkalmazásikonok színezése"
         },
         "builtin-palette": {
-          "description": "Válassz egy palettát a mellékelt katalógusból",
+          "description": "Válassz egy palettát a beépített katalógusból",
           "label": "Beépített paletta"
         },
         "community-palette": {
           "description": "Válassz egy palettát a közösségi katalógusból",
-          "label": "Közösségi Paletta",
+          "label": "Közösségi paletta",
           "search-placeholder": "Paletták keresése…"
         },
         "corner-roundness": {
-          "description": "A sarokrádiusz méretezése a shell UI tárolóin és vezérlőin",
-          "label": "Sarok Lekerekítés"
+          "description": "Sarokkerekítés méretezése a felület összes konténerén és vezérlőelemén",
+          "label": "Sarokkerekítés"
         },
         "custom-palette": {
-          "description": "Válassz egy palettát innen: ~/.config/noctalia/palettes/",
-          "label": "Egyéni Paletta",
+          "description": "Válassz egy palettát a ~/.config/noctalia/palettes/ mappából",
+          "label": "Egyéni paletta",
           "search-placeholder": "Egyéni paletták keresése…"
         },
         "export-wallpaper-palette": {
           "button": "Mentés egyéni palettaként",
-          "description": "Mentsd el az aktuális háttérképből generált palettát újrahasználható egyéni palettafájlként",
-          "label": "Háttérképpaletta Exportálása"
+          "description": "A háttérkép alapján generált jelenlegi paletta mentése újrafelhasználható egyéni palettafájlként",
+          "label": "Háttérképpaletta exportálása"
         },
         "font-family": {
-          "description": "Betűtípus család a felülethez",
-          "label": "Betűtípus család"
+          "description": "A rendszerfelület betűcsaládja",
+          "label": "Betűcsalád"
         },
         "global-shadow-alpha": {
-          "description": "Globális felületi árnyék átlátszatlanság"
+          "description": "Felületek globális árnyék-átlátszatlansága"
         },
         "global-shadow-direction": {
-          "description": "Árnyékvetés iránya a felületekről"
+          "description": "A felületek által vetett árnyék iránya"
         },
         "language": {
-          "description": "Automatikus területi beállítások észlelésének felülírása",
+          "description": "Automatikus területi beállítások felülbírálása",
           "label": "Nyelv"
         },
         "palette-source": {
-          "description": "Honnan származtassuk a színpalettát",
-          "label": "Paletta Forrás"
+          "description": "Színpaletta forrása",
+          "label": "Paletta forrása"
         },
         "theme-mode": {
-          "description": "Válaszd a sötét, világos vagy automatikus módot a napszak alapján",
-          "label": "Téma Mód"
+          "description": "Válassz sötét, világos vagy a napszakhoz igazodó automatikus témát",
+          "label": "Témamód"
         },
         "ui-scale": {
-          "description": "A teljes felület fel- vagy lekicsinyítése",
-          "label": "UI skálázás"
+          "description": "A teljes felület nagyítása vagy kicsinyítése",
+          "label": "Felület skálázása"
         },
         "wallpaper-generation-scheme": {
-          "description": "Válaszd ki, hogyan alakulnak át a háttérkép színei palettává",
-          "label": "Háttérkép Generálási Séma"
+          "description": "Válaszd ki, hogyan alakuljanak át a háttérkép színei palettává",
+          "label": "Háttérkép generálási séma"
         }
       },
       "backdrop": {
         "blur-intensity": {
-          "description": "A háttér elmosásának intenzitása",
-          "label": "Elmosás intenzitása"
+          "description": "Háttérelmosás erőssége",
+          "label": "Elmosás erőssége"
         },
         "enabled": {
-          "description": "A háttér engedélyezése"
+          "description": "Háttér engedélyezése"
         },
         "tint-intensity": {
-          "description": "A háttérréteg színezésének erőssége",
-          "label": "Színezés intenzitása"
+          "description": "Háttérszínezés erőssége",
+          "label": "Színezés erőssége"
         }
       },
       "bar": {
         "auto-hide": {
-          "description": "Automatikusan elrejti a sávot, ha nincs használatban"
+          "description": "A sáv automatikus elrejtése, ha nincs használatban"
         },
         "background-opacity": {
-          "description": "A sáv háttér átlátszósága"
+          "description": "A sáv háttér-átlátszatlansága"
         },
         "border": {
-          "description": "Színszerep a sáv körvonalához; fix hex színek is támogatottak",
+          "description": "A sávkeret színköre; fix hexadecimális színek is támogatottak",
           "label": "Szegély"
         },
         "border-width": {
-          "description": "Belső körvonal szélesség a sávhoz",
+          "description": "A sáv belső keretszélessége",
           "label": "Szegélyszélesség"
         },
         "capsule-border": {
-          "description": "Alapértelmezett kapszula körvonal színszerep; rögzített hexadecimális színek is támogatottak",
-          "label": "Kapszula Szegély"
+          "description": "Alapértelmezett kapszula körvonal színszerepe; fix hexadecimális színek is támogatottak",
+          "label": "Kapszulaszegély"
         },
         "capsule-fill": {
-          "description": "Alapértelmezett kapszula háttérszín szerepköre; fix hex színek is támogatottak",
-          "label": "Kapszula kitöltés"
+          "description": "Alapértelmezett kapszula háttérszín szerepköre; fix hexadecimális színek is támogatottak",
+          "label": "Kapszulakitöltés"
         },
         "capsule-foreground": {
-          "description": "Alapértelmezett ikon és címke színszerep a kapszulákban; rögzített hexadecimális színek is támogatottak",
-          "label": "Kapszula előtér"
+          "description": "Alapértelmezett ikon és címke színszerep a kapszulákban; fix hexadecimális színek is támogatottak",
+          "label": "Kapszula előtere"
         },
         "capsule-opacity": {
-          "description": "A widget kapszulák hátterének átlátszatlansága",
+          "description": "A widgetkapszulák hátterének átlátszatlansága",
           "label": "Kapszula átlátszatlansága"
         },
         "capsule-padding": {
-          "description": "A widget kapszulák belső kitöltése",
-          "label": "Kapszula kitöltés"
+          "description": "A widgetkapszulák belső margója",
+          "label": "Kapszula belső margója"
         },
         "capsule-radius": {
-          "description": "Alapértelmezett sarokrádiusz a widget kapszulákhoz, a munkaterület jelzőkhöz és a tálca munkaterület csoportjaihoz; hagyd üresen az automatikus lekerekített alakhoz, vagy állítsd 0-ra a szögletes sarkokhoz",
-          "label": "Kapszula Sugár"
+          "description": "Alapértelmezett kerekítési sugár a widgetkapszulák, munkaterület-pirulák és a tálca munkaterület-csoportjai számára; hagyd üresen az automatikus lekerekített alakhoz, vagy állítsd 0-ra a szögletes sarkokhoz",
+          "label": "Kapszulasugár"
+        },
+        "capsule-thickness": {
+          "description": "A kapszula mérete a sávhoz képest, a sávvastagság törtrészeként megadva (az 1.0 teljesen kitölti a sávot)",
+          "label": "Kapszulavastagság"
         },
         "center-widgets": {
           "description": "Widgetek a sáv közepén",
           "label": "Középső widgetek"
         },
         "contact-shadow": {
-          "description": "Sötét gradiens egy rögzített panel és a sáv között, hogy mélységet sugalljon az illesztésnél"
+          "description": "Sötét színátmenet a csatolt panel és a sáv között, amely mélységérzetet kelt az illesztésnél"
         },
         "content-padding": {
-          "description": "A sáv tartalomterületén belüli kitöltés",
-          "label": "Tartalompárnázás"
+          "description": "A sáv tartalomterületének belső margója",
+          "label": "Tartalom belső margója"
         },
         "content-scale": {
-          "description": "A sáv tartalmának skálázási tényezője",
-          "label": "Tartalom Méretezése"
+          "description": "A sáv tartalmának méretezési tényezője",
+          "label": "Tartalom méretezése"
         },
         "corner-bottom-left": {
-          "description": "A sáv bal alsó sarkának lekerekítése"
+          "description": "A sáv bal alsó kerekítési sugara; negatív értékek esetén a sarok konkávvá válik, ha távolabb esik a képernyő szélétől"
         },
         "corner-bottom-right": {
-          "description": "A sáv jobb alsó sarokrádiusza"
+          "description": "A sáv jobb alsó kerekítési sugara; negatív értékek esetén a sarok konkávvá válik, ha távolabb esik a képernyő szélétől"
         },
         "corner-radius": {
-          "description": "A sáv sarokrádiusza"
+          "description": "Sáv kerekítési sugara"
         },
         "corner-top-left": {
-          "description": "A sáv felső bal sarokrádiusza"
+          "description": "A sáv bal felső kerekítési sugara; negatív értékek esetén a sarok konkávvá válik, ha távolabb esik a képernyő szélétől"
         },
         "corner-top-right": {
-          "description": "A sáv jobb felső sarkának lekerekítési sugara"
+          "description": "A sáv jobb felső kerekítési sugara; negatív értékek esetén a sarok konkávvá válik, ha távolabb esik a képernyő szélétől"
         },
         "edge-margin": {
-          "description": "Távolság a legközelebbi képernyőszéltől; a pozitív értékek elúsztatják a sávot tőle"
+          "description": "Távolság a legközelebbi képernyőszéltől; a pozitív értékek lebegtetik tőle a sávot"
         },
         "enabled": {
-          "description": "Mutatja vagy elrejti ezt a sávot"
+          "description": "Sáv megjelenítése vagy elrejtése"
         },
         "end-widgets": {
-          "description": "Widgetek a Bar végén (jobb/alsó oldalon)",
+          "description": "Widgetek a sáv végén (jobb oldalon/alul)",
           "label": "Záró widgetek"
         },
         "ends-margin": {
-          "description": "Behúzás a sáv mindkét végénél, a főtengely mentén"
+          "description": "A sáv két végétől mért behúzás a főtengely mentén"
+        },
+        "font-family": {
+          "description": "A sáv widgetjeinek betűtípusa; hagyd üresen a globális betűtípus örökléséhez. Az egyes widgetek egyedi betűcsalád-beállításai felülbírálják ezt.",
+          "label": "Betűcsalád"
         },
         "font-weight": {
-          "description": "Alapértelmezett súly a sávon lévő widget címkékhez",
+          "description": "A sáv widget-feliratainak alapértelmezett betűvastagsága.",
           "label": "Betűvastagság"
         },
         "layer": {
@@ -1635,7 +1676,7 @@
           "label": "Kezdőlap Parancsikonok"
         },
         "launcher-categories": {
-          "description": "Kategóriaszűrők megjelenítése a Launcherben; válts a Tab billentyűvel, amíg a Launcher nyitva van",
+          "description": "Kategóriaszűrők megjelenítése a Launcherben; F6-tal jelenítsd meg, majd F6 és Shift+F6 billentyűvel válts",
           "label": "Kategóriák megjelenítése"
         },
         "launcher-compact": {

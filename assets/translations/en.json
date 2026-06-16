@@ -1749,7 +1749,7 @@
           "label": "Home Shortcuts"
         },
         "launcher-categories": {
-          "description": "Display category filters in the launcher; toggle with Tab while the launcher is open",
+          "description": "Display category filters in the launcher; reveal with F6, then cycle with F6 and Shift+F6",
           "label": "Show Categories"
         },
         "launcher-compact": {
@@ -2106,13 +2106,13 @@
           "description": "Show an OSD popup when the input keyboard layout changes",
           "label": "Keyboard Layout"
         },
-        "osd-kinds-media": {
-          "description": "Show an OSD popup when a new track starts playing",
-          "label": "Now Playing"
-        },
         "osd-kinds-lock-keys": {
           "description": "Show OSD popups for Caps Lock, Num Lock, and Scroll Lock changes",
           "label": "Lock Keys"
+        },
+        "osd-kinds-media": {
+          "description": "Show an OSD popup when a new track starts playing",
+          "label": "Now Playing"
         },
         "osd-kinds-power-profile": {
           "description": "Show an OSD popup when the power profile changes",

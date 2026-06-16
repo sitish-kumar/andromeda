@@ -1,5 +1,15 @@
 {
   "auth": {
+    "fingerprint": {
+      "disconnected": "Vingerafdruksensor niet aangesloten",
+      "error": "Fout bij vingerafdrukverificatie",
+      "no-match": "Vingerafdruk komt niet overeen",
+      "not-centered": "Centreer je vinger op de sensor en probeer opniew",
+      "present": "Vingerafdruk aan het lezen...",
+      "ready": "Plaats je vinger op de sensor",
+      "retry": "Scan uw vingerafdruk nogmaals",
+      "too-many-attempts": "Vingerafdruk uitgeschakeld (te veel pogingen)"
+    },
     "pam": {
       "authentication-failed": "Authenticatie mislukt",
       "start-failed": "PAM-start mislukt",
@@ -145,7 +155,8 @@
     "calendar": {
       "all-day": "Hele dag",
       "events": "Evenementen",
-      "no-events": "Geen evenementen."
+      "no-events": "Geen evenementen.",
+      "today": "Vandaag"
     },
     "display": {
       "disabled": "Uitgeschakeld",
@@ -1678,7 +1689,7 @@
           "label": "Home-snelkoppelingen"
         },
         "launcher-categories": {
-          "description": "Toon categoriefilters in Launcher; wissel met Tab terwijl Launcher open is",
+          "description": "Toon categoriefilters in Launcher; toon ze met F6 en wissel daarna met F6 en Shift+F6",
           "label": "Categorieën tonen"
         },
         "launcher-compact": {

@@ -38,7 +38,7 @@ private:
   bool m_gpuVisible = false;
   float m_scrollProgress = 1.0f;
   std::chrono::steady_clock::time_point m_lastSampleAt{};
-  FrameRateLimiter m_redrawLimiter;
+  FrameRateLimiter m_redrawLimiter{std::chrono::milliseconds{200}};
 
   double m_cpuTempMin = 30.0;
   double m_cpuTempMax = 80.0;

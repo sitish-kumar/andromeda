@@ -712,7 +712,7 @@
       "monitor-override": {
         "create": "Erstellen",
         "delete": "Löschen",
-        "delete-confirm-desc": "Diese GUI-erstellte Monitor-Überschreibung wird aus settings.toml entfernt.",
+        "delete-confirm-desc": "Die von der GUI erstellte Monitor-Überschreibung wird aus settings.toml entfernt.",
         "delete-confirm-title": "„{name}“ löschen?",
         "label": "Monitor: {name}",
         "management": "Monitor-Überschreibung",
@@ -737,7 +737,7 @@
           "clear": "Leeren",
           "edit": "Stil bearbeiten",
           "fill": "Hintergrund",
-          "fill-description": "Capsule Hintergrundfarbrolle; feste Hexadezimalfarben werden ebenfalls unterstützt",
+          "fill-description": "Kapsel Hintergrundfarbrolle; feste Hexadezimalfarben werden ebenfalls unterstützt",
           "foreground": "Vordergrund",
           "foreground-description": "Symbol- und Beschriftungs-Farbrolle für Widgets in dieser Gruppe",
           "hint": "Teil einer Kapselgruppe",
@@ -1090,7 +1090,7 @@
       "weather": {
         "unit": {
           "imperial": "Imperial",
-          "metric": "Metrik"
+          "metric": "Metrisch"
         }
       }
     },
@@ -1702,7 +1702,7 @@
           "label": "Startseiten-Kurzbefehle"
         },
         "launcher-categories": {
-          "description": "Kategoriefilter im Launcher anzeigen; mit Tab umschalten, während der Launcher geöffnet ist",
+          "description": "Kategoriefilter im Launcher anzeigen; mit F6 einblenden, danach mit F6 und Shift+F6 wechseln",
           "label": "Kategorien anzeigen"
         },
         "launcher-compact": {
@@ -2801,7 +2801,7 @@
   "setup-wizard": {
     "browse": "Durchsuchen",
     "builtin-palette": "Integrierte Palette",
-    "footer-note": "Du kannst diese später in den Einstellungen ändern.",
+    "footer-note": "Diese können später in den Einstellungen geändet werden.",
     "get-started": "Los geht's",
     "mode": "Modus",
     "no-wallpaper-selected": "Kein Hintergrundbild ausgewählt",
@@ -2911,7 +2911,7 @@
       "all-monitors": "Alle",
       "color-title": "Hintergrundbildfarbe",
       "filter-placeholder": "Filtern...",
-      "flatten": "Abflachen",
+      "flatten": "Angleichen",
       "sort-date-asc": "Nach Datum sortieren (älteste zuerst)",
       "sort-date-desc": "Nach Datum sortieren (neueste zuerst)",
       "sort-name-asc": "Nach Name sortieren (A-Z)",

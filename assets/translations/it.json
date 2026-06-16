@@ -967,8 +967,8 @@
     "notifications": {
       "filter": {
         "add": "Aggiungi filtro",
-        "add-title": "Aggiungi filtro notifiche",
-        "allowed-urgencies-label": "Livelli consentiti",
+        "add-title": "Aggiunta filtro notifiche",
+        "allowed-urgencies-label": "Livelli priorità consentiti",
         "flag": {
           "history": "cronologia",
           "sound": "suono",
@@ -1673,7 +1673,7 @@
       "notifications": {
         "allowed-urgencies": {
           "description": "Mostra solo notifiche relative ai livelli di urgenza selezionati",
-          "label": "Livelli consentiti"
+          "label": "Livelli priorità consentiti"
         },
         "blacklist": {
           "description": "Nasconde notifiche corrispondenti a (nome app, desktop entry o categoria)",
@@ -1691,7 +1691,7 @@
           "label": "Demone notifiche"
         },
         "filters": {
-          "description": "Regole per mittente per toast, cronologia e suoni; prevale il primo filtro corrispondente abilitato",
+          "description": "Regole notifiche per mittente, cronologia e suoni; ha priorità il primo filtro abilitato corrispondente",
           "label": "Filtri notifiche"
         },
         "layer": {
@@ -1749,7 +1749,7 @@
           "label": "Scorciatoie home"
         },
         "launcher-categories": {
-          "description": "Mostra filtri categoria nel launcher; alterna con Tab mentre il launcher è aperto",
+          "description": "Mostra filtri categoria nel launcher; mostra con F6, poi scorri con F6 e Shift+F6",
           "label": "Mostra categorie"
         },
         "launcher-compact": {
@@ -1878,6 +1878,10 @@
         "longitude": {
           "description": "Longitudine manuale per la programmazione alba/tramonto, usata quando auto-locate e indirizzo sono disattivati",
           "label": "Longitudine"
+        },
+        "minimum-brightness": {
+          "description": "Evita che lo schermo diventi completamente scuro",
+          "label": "Luminosità minima"
         },
         "mpris-blacklist": {
           "description": "Lettori da ignorare per controlli media e In riproduzione",
