@@ -21,6 +21,7 @@ public:
   static TooltipManager& instance();
 
   void initialize(WaylandConnection& wayland, RenderContext* renderContext);
+  void shutdown();
 
   void onHoverChange(InputArea* area, zwlr_layer_surface_v1* parentLayerSurface, wl_output* output);
   void onHoverChange(InputArea* area, xdg_surface* parentXdgSurface, wl_output* output);
@@ -40,6 +41,7 @@ private:
   void handleHoverChange(InputArea* area);
   void scheduleReshow();
   void dismissPopup();
+  void scheduleDestroyPopup();
   void destroyPopup();
   void refreshFromArea(InputArea* area);
   void refreshPopupContent();
@@ -53,6 +55,8 @@ private:
 
   State m_state = State::Idle;
   bool m_reshowQueued = false;
+  bool m_destroyScheduled = false;
+  bool m_showAfterDestroy = false;
   Timer m_showTimer;
   Timer m_refreshTimer;
 
