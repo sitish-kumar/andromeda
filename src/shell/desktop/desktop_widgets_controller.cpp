@@ -155,6 +155,70 @@ void DesktopWidgetsController::registerIpc(IpcService& ipc) {
       },
       "desktop-widgets-toggle-edit", "Toggle desktop widgets edit mode"
   );
+
+  // Ephemeral runtime show/hide override layered on top of the saved `desktop_widgets.enabled`
+  // setting (bidirectional version of bar-show/bar-hide/bar-toggle). These never touch settings.toml
+  // -- they flip a runtime override that resets on restart -- so a peek-desktop keybind can reveal
+  // widgets on demand without rewriting the user's saved preference on every keypress. `show` is a
+  // force-show: it reveals widgets even when the saved setting is disabled, so an opt-in workflow
+  // (saved default off, revealed only on demand) works without persisting transient state.
+  ipc.registerHandler(
+      "desktop-widgets-show",
+      [this](const std::string&) -> std::string {
+        setRuntimeVisibility(RuntimeVisibility::ForceShown);
+        return "ok\n";
+      },
+      "desktop-widgets-show", "Show desktop widgets now (runtime only; does not change the saved setting)"
+  );
+
+  ipc.registerHandler(
+      "desktop-widgets-hide",
+      [this](const std::string&) -> std::string {
+        setRuntimeVisibility(RuntimeVisibility::ForceHidden);
+        return "ok\n";
+      },
+      "desktop-widgets-hide", "Hide desktop widgets now (runtime only; does not change the saved setting)"
+  );
+
+  ipc.registerHandler(
+      "desktop-widgets-toggle",
+      [this](const std::string&) -> std::string {
+        toggleRuntimeVisibility();
+        return isEffectivelyVisible() ? "shown\n" : "hidden\n";
+      },
+      "desktop-widgets-toggle", "Toggle desktop widgets visibility (runtime only; does not change the saved setting)"
+  );
+}
+
+bool DesktopWidgetsController::runtimeWantsVisible() const noexcept {
+  switch (m_runtimeVisibility) {
+  case RuntimeVisibility::ForceShown:
+    return true;
+  case RuntimeVisibility::ForceHidden:
+    return false;
+  case RuntimeVisibility::FollowConfig:
+    return m_config != nullptr && m_config->config().desktopWidgets.enabled;
+  }
+  return false;
+}
+
+void DesktopWidgetsController::setRuntimeVisibility(RuntimeVisibility visibility) {
+  if (m_runtimeVisibility == visibility) {
+    return;
+  }
+  m_runtimeVisibility = visibility;
+  applyVisibility();
+}
+
+void DesktopWidgetsController::toggleRuntimeVisibility() {
+  setRuntimeVisibility(isEffectivelyVisible() ? RuntimeVisibility::ForceHidden : RuntimeVisibility::ForceShown);
+}
+
+bool DesktopWidgetsController::isEffectivelyVisible() const noexcept {
+  if (!m_initialized) {
+    return false;
+  }
+  return runtimeWantsVisible() && !m_displaySuppressed && !isEditing();
 }
 
 void DesktopWidgetsController::onOutputChange() {
@@ -327,8 +391,9 @@ void DesktopWidgetsController::applyVisibility() {
     return;
   }
 
-  const bool enabled = m_config->config().desktopWidgets.enabled;
-  if (!enabled) {
+  // The runtime override resolves against the saved setting: ForceShown reveals widgets even when the
+  // setting is disabled, ForceHidden suppresses them even when enabled, FollowConfig honors it.
+  if (!runtimeWantsVisible()) {
     if (isEditing() && m_editor != nullptr) {
       m_snapshot = m_editor->close();
       saveSnapshotToConfig();
