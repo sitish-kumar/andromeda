@@ -253,7 +253,6 @@ void PopupSurface::handlePopupDone(void* data, xdg_popup* popup) {
   }
   self->setRunning(false);
   auto callback = std::move(self->m_dismissedCallback);
-  self->destroyRoleObjects();
   if (callback) {
     callback();
   }
