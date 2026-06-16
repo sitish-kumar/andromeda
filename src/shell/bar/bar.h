@@ -24,6 +24,7 @@ class MprisService;
 class BluetoothService;
 class BrightnessService;
 class ClipboardService;
+class EasyEffectsService;
 class ScreenshotService;
 class INetworkService;
 class NotificationManager;
@@ -52,13 +53,13 @@ public:
 
   bool initialize(
       CompositorPlatform& platform, ConfigService* config, TimeService* timeService, NotificationManager* notifications,
-      TrayService* tray, PipeWireService* audio, UPowerService* upower, SystemMonitorService* sysmon,
-      PowerProfilesService* powerProfiles, INetworkService* network, IdleInhibitor* idleInhibitor, MprisService* mpris,
-      PipeWireSpectrum* audioSpectrum, HttpClient* httpClient, WeatherService* weatherService,
-      RenderContext* renderContext, GammaService* nightLight, noctalia::theme::ThemeService* themeService,
-      BluetoothService* bluetooth, BrightnessService* brightness, LockKeysService* lockKeys,
-      ClipboardService* clipboard, FileWatcher* fileWatcher = nullptr, ScreenshotService* screenshots = nullptr,
-      scripting::ScriptApiContext* scriptApi = nullptr
+      TrayService* tray, PipeWireService* audio, EasyEffectsService* easyEffects, UPowerService* upower,
+      SystemMonitorService* sysmon, PowerProfilesService* powerProfiles, INetworkService* network,
+      IdleInhibitor* idleInhibitor, MprisService* mpris, PipeWireSpectrum* audioSpectrum, HttpClient* httpClient,
+      WeatherService* weatherService, RenderContext* renderContext, GammaService* nightLight,
+      noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth, BrightnessService* brightness,
+      LockKeysService* lockKeys, ClipboardService* clipboard, FileWatcher* fileWatcher = nullptr,
+      ScreenshotService* screenshots = nullptr, scripting::ScriptApiContext* scriptApi = nullptr
   );
   void reload();
   void closeAllInstances();
@@ -152,6 +153,7 @@ private:
   NotificationManager* m_notifications = nullptr;
   TrayService* m_tray = nullptr;
   PipeWireService* m_audio = nullptr;
+  EasyEffectsService* m_easyEffects = nullptr;
   UPowerService* m_upower = nullptr;
   SystemMonitorService* m_sysmon = nullptr;
   PowerProfilesService* m_powerProfiles = nullptr;
