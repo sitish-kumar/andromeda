@@ -3,6 +3,7 @@ Checks: >-
   modernize-avoid-c-style-cast,
   modernize-make-unique,
   modernize-min-max-use-initializer-list,
+  modernize-pass-by-value,
   modernize-raw-string-literal,
   modernize-use-emplace,
   modernize-use-scoped-lock,

@@ -27,6 +27,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -593,8 +594,8 @@ namespace noctalia::theme {
 
     class EngineImpl {
     public:
-      explicit EngineImpl(const TemplateEngine::ThemeData& themeData, const TemplateEngine::Options& options)
-          : m_themeData(themeData), m_options(options) {}
+      explicit EngineImpl(TemplateEngine::ThemeData themeData, TemplateEngine::Options options)
+          : m_themeData(std::move(themeData)), m_options(std::move(options)) {}
 
       RenderResult render(std::string_view templateText) {
         m_errorCount = 0;

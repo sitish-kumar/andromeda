@@ -39,6 +39,7 @@
 #include <thread>
 #include <unistd.h>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -682,8 +683,9 @@ struct BrightnessService::Impl {
   std::unordered_map<std::string, DdcJob> pendingRefreshes;
   std::queue<WorkerCompletion> completions;
 
-  Impl(SystemBus* systemBus, CompositorPlatform& compositorPlatform, const BrightnessConfig& config)
-      : bus(systemBus), wayland(compositorPlatform.wayland()), platform(compositorPlatform), activeConfig(config) {
+  Impl(SystemBus* systemBus, CompositorPlatform& compositorPlatform, BrightnessConfig config)
+      : bus(systemBus), wayland(compositorPlatform.wayland()), platform(compositorPlatform),
+        activeConfig(std::move(config)) {
     setupPollFds();
     workerThread = std::thread([this]() { workerLoop(); });
   }
