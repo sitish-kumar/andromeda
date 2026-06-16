@@ -1,6 +1,7 @@
 Checks: >-
   -clang-diagnostic-*,
   modernize-avoid-c-style-cast,
+  modernize-loop-convert,
   modernize-make-unique,
   modernize-min-max-use-initializer-list,
   modernize-pass-by-value,

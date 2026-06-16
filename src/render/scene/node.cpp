@@ -5,6 +5,7 @@
 #include "render/core/mat3.h"
 
 #include <algorithm>
+#include <ranges>
 #include <utility>
 
 namespace {
@@ -445,8 +446,8 @@ Node* Node::hitTestImpl(Node* node, float px, float py) {
   // Traverse children in reverse (topmost first).
   // Children are allowed to overflow parent bounds (needed for menus/popovers).
   if (childrenSorted) {
-    for (auto it = children.rbegin(); it != children.rend(); ++it) {
-      auto* hit = hitTestImpl(it->get(), px, py);
+    for (const auto& child : std::views::reverse(children)) {
+      auto* hit = hitTestImpl(child.get(), px, py);
       if (hit != nullptr) {
         return hit;
       }
@@ -460,8 +461,8 @@ Node* Node::hitTestImpl(Node* node, float px, float py) {
     std::stable_sort(orderedChildren.begin(), orderedChildren.end(), [](const Node* a, const Node* b) {
       return a->zIndex() < b->zIndex();
     });
-    for (auto it = orderedChildren.rbegin(); it != orderedChildren.rend(); ++it) {
-      auto* hit = hitTestImpl(*it, px, py);
+    for (Node* child : std::views::reverse(orderedChildren)) {
+      auto* hit = hitTestImpl(child, px, py);
       if (hit != nullptr) {
         return hit;
       }

@@ -35,6 +35,7 @@
 #include <cmath>
 #include <linux/input-event-codes.h>
 #include <optional>
+#include <ranges>
 #include <system_error>
 #include <unordered_set>
 #include <wayland-client-core.h>
@@ -215,8 +216,8 @@ namespace {
   }
 
   Widget* widgetAtPoint(const std::vector<std::unique_ptr<Widget>>& widgets, float sceneX, float sceneY) {
-    for (auto it = widgets.rbegin(); it != widgets.rend(); ++it) {
-      auto* widget = it->get();
+    for (const auto& widgetPtr : std::views::reverse(widgets)) {
+      auto* widget = widgetPtr.get();
       if (widget == nullptr || widget->root() == nullptr || !widget->root()->visible()) {
         continue;
       }
@@ -224,8 +225,8 @@ namespace {
         return widget;
       }
     }
-    for (auto it = widgets.rbegin(); it != widgets.rend(); ++it) {
-      auto* widget = it->get();
+    for (const auto& widgetPtr : std::views::reverse(widgets)) {
+      auto* widget = widgetPtr.get();
       auto* root = widget != nullptr ? widget->root() : nullptr;
       auto* bounds = widget != nullptr ? widget->layoutBoundsNode() : nullptr;
       if (root == nullptr || bounds == nullptr || bounds == root || root->parent() != bounds || !bounds->visible()) {

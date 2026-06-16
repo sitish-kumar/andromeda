@@ -104,9 +104,9 @@ void VirtualGridView::notifyDataChanged() {
 }
 
 void VirtualGridView::notifyItemChanged(std::size_t index) {
-  for (std::size_t slot = 0; slot < m_slotBoundIndex.size(); ++slot) {
-    if (m_slotBoundIndex[slot].has_value() && *m_slotBoundIndex[slot] == index) {
-      m_slotBoundIndex[slot].reset();
+  for (auto& boundIndex : m_slotBoundIndex) {
+    if (boundIndex.has_value() && *boundIndex == index) {
+      boundIndex.reset();
       markLayoutDirty();
       return;
     }

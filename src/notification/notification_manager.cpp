@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <ranges>
 #include <string_view>
 
 namespace {
@@ -271,8 +272,7 @@ uint32_t NotificationManager::addOrReplace(
   }
 
   // Suppress immediate duplicate bursts. Later same-content notifications should still be visible.
-  for (auto it = m_notifications.rbegin(); it != m_notifications.rend(); ++it) {
-    const auto& existing = *it;
+  for (const auto& existing : std::views::reverse(m_notifications)) {
     if (hasSameContent(existing, origin, appName, summary, body)
         && now - existing.receivedTime < kImplicitDuplicateWindow) {
       logNotification(existing, "duplicate ignored");

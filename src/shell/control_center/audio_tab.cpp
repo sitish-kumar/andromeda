@@ -283,8 +283,8 @@ namespace {
     if (s.empty()) {
       return false;
     }
-    for (std::size_t i = 0; i < s.size(); ++i) {
-      if (isDesktopTokenDelimiter(static_cast<unsigned char>(s[i]))) {
+    for (char character : s) {
+      if (isDesktopTokenDelimiter(static_cast<unsigned char>(character))) {
         return false;
       }
     }

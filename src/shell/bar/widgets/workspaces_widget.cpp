@@ -376,8 +376,8 @@ void WorkspacesWidget::updateContainerSize() {
     return;
   }
   float total = 0.0f;
-  for (std::size_t i = 0; i < m_items.size(); ++i) {
-    total = std::max(total, m_items[i].currentX + m_items[i].currentWidth);
+  for (const auto& item : m_items) {
+    total = std::max(total, item.currentX + item.currentWidth);
   }
   if (m_isVertical) {
     m_container->setFrameSize(m_indicatorHeight, total);

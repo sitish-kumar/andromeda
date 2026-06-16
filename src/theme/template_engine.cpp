@@ -21,6 +21,7 @@
 #include <filesystem>
 #include <fstream>
 #include <optional>
+#include <ranges>
 #include <regex>
 #include <sstream>
 #include <stdexcept>
@@ -95,9 +96,9 @@ namespace noctalia::theme {
         m_scopes.back()[std::move(name)] = std::move(value);
       }
       const ScopeValue* get(std::string_view name) const {
-        for (auto it = m_scopes.rbegin(); it != m_scopes.rend(); ++it) {
-          auto found = it->find(std::string(name));
-          if (found != it->end())
+        for (const auto& scope : std::views::reverse(m_scopes)) {
+          auto found = scope.find(std::string(name));
+          if (found != scope.end())
             return &found->second;
         }
         return nullptr;

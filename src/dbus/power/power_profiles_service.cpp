@@ -206,9 +206,9 @@ void PowerProfilesService::registerIpc(IpcService& ipc, StateFeedbackCallback st
         if (!available.empty()) {
           if (std::find(available.begin(), available.end(), profile) == available.end()) {
             std::string suffix = "; available:";
-            for (std::size_t i = 0; i < available.size(); ++i) {
+            for (const auto& availableProfile : available) {
               suffix.push_back(' ');
-              suffix += available[i];
+              suffix += availableProfile;
             }
             suffix.push_back('\n');
             return "error: unknown profile \"" + profile + "\"" + suffix;
