@@ -246,7 +246,6 @@
       },
       "notification": "Não Perturbe",
       "power-profile": "Energia",
-      "screen-recorder": "Gravador de Tela",
       "screen-time": "Tempo de Tela",
       "session": "Sessão",
       "system": "Sistema",
@@ -1601,8 +1600,7 @@
           "label": "Lista Negra de Notificações"
         },
         "blacklist-allow-critical": {
-          "description": "Ainda exibe notificações críticas de remetentes na lista negra",
-          "label": "Notificações Críticas da Lista Negra"
+          "description": "Ainda exibe notificações críticas de remetentes na lista negra"
         },
         "collapse-on-dismiss": {
           "description": "Deslize as notificações flutuantes restantes para preencher as lacunas quando uma delas for descartada",
@@ -1667,7 +1665,7 @@
           "label": "Atalhos do Início"
         },
         "launcher-categories": {
-          "description": "Mostrar filtros de categoria no launcher; alterne entre eles com a tecla Tab enquanto o launcher estiver aberto.",
+          "description": "Mostrar filtros de categoria no launcher; revele com F6 e depois alterne com F6 e Shift+F6.",
           "label": "Mostrar Categorias"
         },
         "launcher-compact": {

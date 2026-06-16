@@ -124,7 +124,6 @@ namespace {
       for (Label* label : {nameLabel, value}) {
         if (label != nullptr) {
           label->setTooltip(tooltip);
-          label->setHitTestVisible(true);
         }
       }
     }
@@ -363,12 +362,7 @@ std::unique_ptr<Flex> SystemTab::create() {
                   // Ellipsize from the start so the identifying tail stays visible ("…/long/mount/point").
                   .ellipsize = TextEllipsize::Start,
                   .flexGrow = 1.0f,
-                  .configure =
-                      [mountPoint](Label& label) {
-                        label.setTooltip(mountPoint);
-                        // Labels opt out of hit-testing by default; a tooltip needs hover events.
-                        label.setHitTestVisible(true);
-                      },
+                  .configure = [mountPoint](Label& label) { label.setTooltip(mountPoint); },
               }),
               ui::label({
                   .out = &usageLabel,
@@ -387,7 +381,12 @@ std::unique_ptr<Flex> SystemTab::create() {
   return tab;
 }
 
-void SystemTab::setActive(bool active) { m_active = active; }
+void SystemTab::setActive(bool active) {
+  m_active = active;
+  if (!active) {
+    m_redrawLimiter.reset();
+  }
+}
 
 void SystemTab::onClose() {
   m_root = nullptr;
@@ -441,6 +440,11 @@ void SystemTab::onFrameTick(float deltaMs) {
   (void)deltaMs;
 
   if (!m_active || m_monitor == nullptr || !m_monitor->isRunning()) {
+    m_redrawLimiter.reset();
+    return;
+  }
+
+  if (!m_redrawLimiter.shouldStep([]() { PanelManager::instance().requestRedraw(); })) {
     return;
   }
 

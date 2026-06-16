@@ -102,6 +102,9 @@ void DesktopSysmonWidget::create() {
 
 void DesktopSysmonWidget::onFrameTick(float deltaMs, Renderer& renderer) {
   (void)deltaMs;
+  if (!m_redrawLimiter.shouldStep([this]() { requestRedraw(); })) {
+    return;
+  }
   if (m_monitor != nullptr) {
     if (m_monitor->isRunning()) {
       const auto latestSampleAt = m_monitor->latest().sampledAt;

@@ -199,10 +199,7 @@ Application::Application()
   m_notificationManager.loadPersistedHistory();
   notify::setInstance(&m_notificationManager);
 
-  auto shouldRefreshControlCenter = [this]() { return m_panelManager.isOpenPanel("control-center"); };
-
-  m_notificationManager.addEventCallback([this,
-                                          shouldRefreshControlCenter](const Notification& n, NotificationEvent event) {
+  m_notificationManager.addEventCallback([this](const Notification& n, NotificationEvent event) {
     const char* kind = "updated";
     if (event == NotificationEvent::Added) {
       kind = "added";
@@ -217,15 +214,21 @@ Application::Application()
     }
 
     // Keep bar widgets in sync with notification state changes.
-    m_bar.refresh();
-    if (shouldRefreshControlCenter()) {
-      m_panelManager.refresh();
-    }
+    scheduleNotificationShellRefresh();
   });
 
-  m_notificationManager.setStateCallback([this, shouldRefreshControlCenter]() {
+  m_notificationManager.setStateCallback([this]() { scheduleNotificationShellRefresh(); });
+}
+
+void Application::scheduleNotificationShellRefresh() {
+  if (m_notificationShellRefreshScheduled) {
+    return;
+  }
+  m_notificationShellRefreshScheduled = true;
+  DeferredCall::callLater([this]() {
+    m_notificationShellRefreshScheduled = false;
     m_bar.refresh();
-    if (shouldRefreshControlCenter()) {
+    if (m_panelManager.isOpenPanel("control-center")) {
       m_panelManager.refresh();
     }
   });
@@ -615,6 +618,7 @@ void Application::initServices() {
     m_lockscreenWidgetsController.onOutputChange();
     m_screenCorners.onOutputChange();
     m_lockScreen.onOutputChange();
+    resumeShellRenderingIfUnlocked();
     m_idleGraceOverlay.onOutputChange();
     m_idleInhibitor.onOutputChange();
     m_overviewLauncherCapture.onOutputChange();
@@ -1077,6 +1081,7 @@ void Application::initServices() {
       m_configService.addReloadCallback(applyMprisConfig);
       m_mprisService->setChangeCallback([this, shouldRefreshControlCenter]() {
         m_bar.refresh();
+        m_mediaOsd.onMprisChanged(*m_mprisService);
         if (shouldRefreshControlCenter()) {
           m_panelManager.refresh();
         }
@@ -1212,18 +1217,22 @@ void Application::initUi() {
     }
   });
   m_settingsWindow.setSyncGreeterAppearance([this]() {
-    (void)greeter::syncAppearanceToGreeterAsync(m_configService, m_themeService.resolvedMode(), [this](bool success) {
-      DeferredCall::callLater([this, success]() {
-        if (success) {
-          notify::info(
-              "Noctalia", i18n::tr("notifications.internal.greeter-sync"),
-              i18n::tr("notifications.internal.greeter-sync-success")
-          );
-          return;
-        }
-        m_settingsWindow.markSettingsWriteError(i18n::tr("settings.errors.sync-greeter"));
-      });
-    });
+    (void)greeter::syncAppearanceToGreeterAsync(
+        m_configService, m_themeService.resolvedMode(),
+        [this](bool success) {
+          DeferredCall::callLater([this, success]() {
+            if (success) {
+              notify::info(
+                  "Noctalia", i18n::tr("notifications.internal.greeter-sync"),
+                  i18n::tr("notifications.internal.greeter-sync-success")
+              );
+              return;
+            }
+            m_settingsWindow.markSettingsWriteError(i18n::tr("settings.errors.sync-greeter"));
+          });
+        },
+        &m_compositorPlatform
+    );
   });
   m_settingsWindow.setSaveWallpaperPaletteAsCustom([this]() {
     std::string paletteName;
@@ -1241,7 +1250,7 @@ void Application::initUi() {
         i18n::tr("notifications.internal.wallpaper-palette-export-success", "name", paletteName)
     );
   });
-  m_lockScreen.initialize(m_wayland, &m_renderContext, &m_configService, &m_sharedTextureCache);
+  m_lockScreen.initialize(m_wayland, &m_renderContext, &m_configService, &m_sharedTextureCache, m_systemBus.get());
   m_wallpaper.setAutomationGate([this]() { return !m_lockScreen.isActive(); });
   m_configService.addReloadCallback([this]() {
     if (m_logindService != nullptr) {
@@ -1252,10 +1261,18 @@ void Application::initUi() {
   });
   m_lockScreen.setSessionHooks(
       [this]() {
+        m_bar.pauseUnderSessionLock();
+        m_dock.pauseUnderSessionLock();
+        m_desktopWidgetsController.pauseUnderSessionLock();
+        m_wallpaper.pauseRendering();
         m_lockscreenWidgetsController.onLockStateChanged();
         m_hookManager.fire(HookKind::SessionLocked);
       },
       [this]() {
+        m_wallpaper.resumeRendering();
+        m_desktopWidgetsController.resumeAfterSessionLock();
+        m_dock.resumeAfterSessionLock();
+        m_bar.resumeAfterSessionLock();
         m_lockscreenWidgetsController.onLockStateChanged();
         m_hookManager.fire(HookKind::SessionUnlocked);
         if (m_logindService != nullptr) {
@@ -1394,7 +1411,18 @@ void Application::initUi() {
     m_panelManager.openPanel("wallpaper", PanelOpenRequest{.output = output});
   });
   m_settingsWindow.setConnectCalendarAccount([this](std::string accountId, std::string activationToken) {
-    m_calendarService.connectGoogleAccount(accountId, activationToken);
+    const auto& accounts = m_configService.config().calendar.accounts;
+    const auto it = std::find_if(accounts.begin(), accounts.end(), [&](const CalendarConfig::Account& account) {
+      return account.id == accountId;
+    });
+    if (it == accounts.end()) {
+      return;
+    }
+    if (it->type == "google") {
+      m_calendarService.connectGoogleAccount(accountId, activationToken);
+    } else if (it->type == "caldav") {
+      m_calendarService.requestRefresh();
+    }
   });
   auto clipboardPanel = std::make_unique<ClipboardPanel>(
       &m_clipboardService, &m_configService, &m_thumbnailService, &m_asyncTextureCache
@@ -1426,7 +1454,7 @@ void Application::initUi() {
           m_networkService.get(), m_networkSecretAgent.get(), m_bluetoothService.get(), m_bluetoothAgent.get(),
           m_brightnessService.get(), m_systemMonitor.get(), &m_screenTimeService, &m_gammaService, &m_themeService,
           &m_idleInhibitor, &m_dependencyService, &m_compositorPlatform, &m_ipcService, &m_wallpaper,
-          &m_calendarService, &m_scriptApi, &m_clipboardService, m_accountsService.get()
+          &m_calendarService, &m_scriptApi, &m_clipboardService, m_accountsService.get(), &m_thumbnailService
       )
   );
   {
@@ -1440,6 +1468,22 @@ void Application::initUi() {
     m_launcherPanel = launcherPanel.get();
     m_panelManager.registerPanel("launcher", std::move(launcherPanel));
   }
+  m_settingsWindow.setResetLauncherUsage([this]() {
+    if (m_launcherPanel != nullptr) {
+      m_launcherPanel->clearUsage();
+    }
+    notify::info(
+        "Noctalia", i18n::tr("notifications.internal.launcher-usage-reset"),
+        i18n::tr("notifications.internal.launcher-usage-reset-success")
+    );
+  });
+  m_settingsWindow.setResetScreenTime([this]() {
+    m_screenTimeService.clearAll();
+    notify::info(
+        "Noctalia", i18n::tr("notifications.internal.screen-time-reset"),
+        i18n::tr("notifications.internal.screen-time-reset-success")
+    );
+  });
   reloadPluginLauncherProviders();
   m_overviewLauncherCapture.initialize(m_wayland, &m_renderContext, m_compositorPlatform, m_panelManager);
   m_overviewLauncherCapture.setEnabled(m_configService.config().shell.niriOverviewTypeToLaunchEnabled);
@@ -1493,10 +1537,7 @@ void Application::initUi() {
   m_notificationToast.initialize(m_wayland, &m_configService, &m_notificationManager, &m_renderContext, &m_httpClient);
   m_configService.addReloadCallback([this]() { m_notificationToast.onConfigReload(); });
   auto applyNotificationFilterConfig = [this]() {
-    const auto& notification = m_configService.config().notification;
-    m_notificationManager.setBlacklist(notification.blacklist);
-    m_notificationManager.setBlacklistAllowCritical(notification.blacklistAllowCritical);
-    m_notificationManager.setAllowedUrgencies(notification.allowedUrgencies);
+    m_notificationManager.setFilters(m_configService.config().notification.filters);
   };
   applyNotificationFilterConfig();
   m_configService.addReloadCallback(applyNotificationFilterConfig);
@@ -1581,6 +1622,7 @@ void Application::initUi() {
   }
   m_keyboardLayoutOsd.bindOverlay(m_osdOverlay);
   m_keyboardLayoutOsd.prime(m_compositorPlatform);
+  m_mediaOsd.bindOverlay(m_osdOverlay);
   m_screenCorners.initialize(m_wayland, &m_configService, &m_renderContext);
   m_screenCorners.onConfigReload();
 
@@ -1611,6 +1653,9 @@ void Application::initUi() {
   m_panelManager.setFocusGrabBarSurfacesProvider([this]() { return m_bar.allBarSurfaces(); });
   m_panelManager.setAttachedPanelAvailabilityCallback([this](wl_output* output, std::string_view barName) {
     return m_bar.canAttachPanelToBar(output, barName);
+  });
+  m_panelManager.setAttachedPanelBarSettledCallback([this](wl_output* output, std::string_view barName) {
+    return m_bar.isAttachedPanelBarSettled(output, barName);
   });
   m_bar.setAutoHideSuppressionCallback([this](const BarInstance& instance) {
     if (m_trayMenu.isOpen()) {
@@ -1737,7 +1782,9 @@ void Application::initUi() {
       if (m_pipewireSpectrum != nullptr) {
         m_pipewireSpectrum->handleAudioStateChanged();
       }
-      m_bar.refresh();
+      if (!m_lockScreen.isActive()) {
+        m_bar.refresh();
+      }
       if (shouldRefreshControlCenter()) {
         m_panelManager.refresh();
       }
@@ -2075,7 +2122,9 @@ void Application::initIpc() {
   m_templateApplyService.registerIpc(m_ipcService);
   m_dock.registerIpc(m_ipcService);
   m_wallpaper.registerIpc(m_ipcService);
-  greeter::registerIpc(m_ipcService, m_configService, [this]() { return m_themeService.resolvedMode(); });
+  greeter::registerIpc(
+      m_ipcService, m_configService, [this]() { return m_themeService.resolvedMode(); }, &m_compositorPlatform
+  );
   if (m_mprisService) {
     m_mprisService->registerIpc(m_ipcService);
   }
@@ -2123,6 +2172,16 @@ bool Application::runUserCommandBlocking(const std::string& command) {
     return false;
   }
   return true;
+}
+
+void Application::resumeShellRenderingIfUnlocked() {
+  if (m_lockScreen.isActive()) {
+    return;
+  }
+  m_wallpaper.resumeRendering();
+  m_desktopWidgetsController.resumeAfterSessionLock();
+  m_dock.resumeAfterSessionLock();
+  m_bar.resumeAfterSessionLock();
 }
 
 bool Application::runIdleAction(const IdleActionRequest& action) {

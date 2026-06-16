@@ -66,6 +66,8 @@ struct BarMonitorOverride {
   std::optional<bool> shadow;                // use the global shell shadow on this bar
   std::optional<bool> contactShadow;         // dark gradient between attached panel and bar
   std::optional<std::int32_t> panelOverlap;  // logical px the attached panel overlaps the bar edge (seam tuning)
+  std::optional<float> capsuleThickness;     // capsule cross-size as a fraction of bar thickness
+  std::optional<std::string> fontFamily;     // unset = inherit shell.font_family
   std::optional<float> scale;
   std::optional<std::vector<std::string>> startWidgets;
   std::optional<std::vector<std::string>> centerWidgets;
@@ -112,8 +114,11 @@ struct BarConfig {
   // compositor and the output's fractional scale (physical-pixel rounding), so it is exposed for per-bar/per-monitor
   // tuning. Negative values pull the panel away from the bar.
   std::int32_t panelOverlap = 1;
-  float scale = 1.0f;   // content scale multiplier for glyphs and text
-  int fontWeight = 500; // primary label weight for bar widgets
+  float capsuleThickness = 0.76f; // capsule cross-size as a fraction of bar thickness
+  float scale = 1.0f;             // content scale multiplier for glyphs and text
+  int fontWeight = 500;           // primary label weight for bar widgets
+  // Typeface for this bar's widgets; unset inherits shell.font_family. Per-widget `font_family` overrides.
+  std::optional<std::string> fontFamily;
   std::vector<std::string> startWidgets = {"launcher", "wallpaper", "workspaces"};
   std::vector<std::string> centerWidgets = {"clock"};
   std::vector<std::string> endWidgets = {"media",   "tray",           "notifications", "clipboard",
@@ -193,6 +198,20 @@ struct IdleBehaviorConfig {
   bool operator==(const IdleBehaviorConfig&) const = default;
 };
 
+struct NotificationFilterConfig {
+  std::string name;
+  bool enabled = true;
+  /// Case-insensitive token matched against app name (exact/substring), desktop entry, or category.
+  std::string match;
+  bool showToast = true;
+  bool saveHistory = true;
+  bool playSound = true;
+  /// Empty = allow low, normal, and critical. Otherwise only listed urgencies pass this filter.
+  std::vector<std::string> allowedUrgencies;
+
+  bool operator==(const NotificationFilterConfig&) const = default;
+};
+
 struct IdleConfig {
   std::vector<IdleBehaviorConfig> behaviors;
   /// When > 0, after the compositor reports idle the shell fades a fullscreen overlay (surface color)
@@ -250,8 +269,8 @@ enum class KeybindAction : std::uint8_t {
 using WidgetSettingValue = std::variant<bool, std::int64_t, double, std::string, std::vector<std::string>>;
 using ConfigOverrideValue = std::variant<
     bool, std::int64_t, double, std::string, std::vector<std::string>, std::vector<ShortcutConfig>,
-    std::vector<SessionPanelActionConfig>, std::vector<IdleBehaviorConfig>, std::vector<KeyChord>,
-    std::vector<BarCapsuleGroupStyle>>;
+    std::vector<SessionPanelActionConfig>, std::vector<IdleBehaviorConfig>, std::vector<NotificationFilterConfig>,
+    std::vector<KeyChord>, std::vector<BarCapsuleGroupStyle>>;
 
 // Optional rounded “capsule” behind a bar widget (see `[widget.*] capsule_*` in CONFIG.md).
 // Corner shape, border width, and edge softness are fixed in the shell code; padding/radius are configurable.
@@ -371,9 +390,9 @@ struct WallpaperConfig {
   float transitionDurationMs = 1500.0f;
   float edgeSmoothness = 0.3f;
   bool transitionOnStartup = false;
-  std::string directory;
-  std::string directoryLight;
-  std::string directoryDark;
+  std::string directory;      // empty = ~/Pictures/Wallpapers
+  std::string directoryLight; // empty = directory
+  std::string directoryDark;  // empty = directory
   bool perMonitorDirectories = false;
   WallpaperAutomationConfig automation;
   std::vector<WallpaperMonitorOverride> monitorOverrides;
@@ -391,6 +410,8 @@ struct BackdropConfig {
 
 struct LockscreenConfig {
   bool enabled = true;
+  bool fingerprint = true;
+  bool allowEmptyPassword = false;
   bool blurredDesktop = false;
   float blurIntensity = 0.5f;
   float tintIntensity = 0.3f;
@@ -508,10 +529,9 @@ struct DesktopWidgetState {
   // auto-fits the content's natural size. Resizing in the editor sets explicit values.
   float boxWidth = 0.0f;
   float boxHeight = 0.0f;
-  // Migration-only (schema v1 `scale`): applied to an unsized tile so legacy widgets keep
-  // their size until the editor bakes it into an explicit box. Never written back out.
-  float legacyScale = 1.0f;
   float rotationRad = 0.0f;
+  bool flipX = false;
+  bool flipY = false;
   bool enabled = true;
   std::unordered_map<std::string, WidgetSettingValue> settings;
 
@@ -548,7 +568,7 @@ struct OsdKindsConfig {
   bool dnd = true;
   bool lockKeys = true;
   bool keyboardLayout = true;
-
+  bool media = true;
   bool operator==(const OsdKindsConfig&) const = default;
 };
 
@@ -577,10 +597,7 @@ struct NotificationConfig {
   int offsetY = 8;                 // absolute vertical margin from the screen edge
   std::vector<std::string> monitors;
   bool collapseOnDismiss = true;
-  std::vector<std::string> blacklist;
-  bool blacklistAllowCritical = true;
-  /// Empty = allow low, normal, and critical. Otherwise only listed urgencies are shown.
-  std::vector<std::string> allowedUrgencies;
+  std::vector<NotificationFilterConfig> filters;
 
   bool operator==(const NotificationConfig&) const = default;
 };
@@ -756,6 +773,7 @@ struct ShellConfig {
     bool launcherShowIcons = true;
     bool launcherCompact = false;
     bool launcherSessionSearch = false;
+    bool launcherSortByUsage = true;
 
     bool operator==(const PanelConfig&) const = default;
   };
@@ -868,6 +886,7 @@ struct SystemConfig {
     static constexpr float kMaxPollSeconds = 120.0f;
 
     bool enabled = true;
+    std::string cpuTempSensorPath;
     float cpuPollSeconds = 2.0f;
     // Disabled by default so laptops with a discrete GPU are not woken just to sample it.
     float gpuPollSeconds = kDisabledPollSeconds;
@@ -952,6 +971,7 @@ struct BrightnessConfig {
   bool enableDdcutil = false;
   std::vector<std::string> ddcutilIgnoreMmids;
   std::vector<BrightnessMonitorOverride> monitorOverrides;
+  float minimumBrightness = 0.0f;
 
   bool operator==(const BrightnessConfig&) const = default;
 };

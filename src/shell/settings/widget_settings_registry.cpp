@@ -3,6 +3,7 @@
 #include "i18n/i18n.h"
 #include "render/core/renderer.h"
 #include "scripting/plugin_registry.h"
+#include "shell/settings/font_family_catalog.h"
 #include "shell/settings/font_weight_catalog.h"
 #include "shell/settings/font_weight_i18n.h"
 #include "ui/style.h"
@@ -529,6 +530,14 @@ namespace settings {
         withGroup(selectSpec("font_weight", "", std::move(fontWeightOptions), true), WidgetSettingGroup::Presentation);
     fontWeight.integerValue = true;
 
+    // Font picker rendered as a filterable search picker but validated as a free string: a font configured
+    // elsewhere but absent here must still load. Empty value = inherit the bar/shell font.
+    auto fontFamily = baseSpec("font_family", WidgetControlKind::Select, std::string{}, true);
+    fontFamily.schema.type = schema::WidgetSettingType::String;
+    fontFamily.options = buildFontFamilySelectOptions();
+    fontFamily.literalLabels = true;
+    fontFamily = withGroup(std::move(fontFamily), WidgetSettingGroup::Presentation);
+
     auto capsuleToggle = withGroup(boolSpec("capsule", false), WidgetSettingGroup::Presentation);
     auto capsuleFill = withGroup(colorSpec("capsule_fill", "", true), WidgetSettingGroup::Presentation);
     capsuleFill.visibleWhen = capsuleOn;
@@ -551,12 +560,10 @@ namespace settings {
     capsuleOpacity.visibleWhen = capsuleOn;
 
     return {
-        std::move(anchor),         std::move(scale),
-        std::move(widgetColor),    std::move(widgetIconColor),
-        std::move(fontWeight),     std::move(capsuleToggle),
-        std::move(capsuleRadius),  std::move(capsuleFill),
-        std::move(capsuleBorder),  std::move(capsuleForeground),
-        std::move(capsulePadding), std::move(capsuleOpacity),
+        std::move(anchor),         std::move(scale),         std::move(widgetColor),       std::move(widgetIconColor),
+        std::move(fontFamily),     std::move(fontWeight),    std::move(capsuleToggle),     std::move(capsuleRadius),
+        std::move(capsuleFill),    std::move(capsuleBorder), std::move(capsuleForeground), std::move(capsulePadding),
+        std::move(capsuleOpacity),
     };
   }
 

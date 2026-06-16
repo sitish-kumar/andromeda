@@ -984,6 +984,32 @@ namespace settings {
       return settingValueAsString(settingIt->second);
     }
 
+    // Effective typeface for the widget's labels: its own font_family override, else the hosting bar's
+    // font_family, else the global shell font. Used to list only the weights the real font provides.
+    std::string widgetResolvedFontFamily(const Config& cfg, std::string_view widgetName) {
+      if (const auto widgetIt = cfg.widgets.find(std::string(widgetName)); widgetIt != cfg.widgets.end()) {
+        const auto it = widgetIt->second.settings.find("font_family");
+        if (it != widgetIt->second.settings.end()) {
+          const std::string family = settingValueAsString(it->second);
+          if (!family.empty()) {
+            return family;
+          }
+        }
+      }
+      const auto inLane = [&](const std::vector<std::string>& lane) {
+        return std::find(lane.begin(), lane.end(), widgetName) != lane.end();
+      };
+      for (const BarConfig& bar : cfg.bars) {
+        if (inLane(bar.startWidgets) || inLane(bar.centerWidgets) || inLane(bar.endWidgets)) {
+          if (bar.fontFamily && !bar.fontFamily->empty()) {
+            return *bar.fontFamily;
+          }
+          break;
+        }
+      }
+      return cfg.shell.fontFamily;
+    }
+
     std::vector<std::string> settingValueAsStringList(const WidgetSettingValue& value) {
       if (const auto* v = std::get_if<std::vector<std::string>>(&value)) {
         return *v;
@@ -1055,7 +1081,7 @@ namespace settings {
     }
 
     SelectSetting labelFontWeightSelectSetting(
-        const BarWidgetEditorContext& ctx, const WidgetSettingSpec& spec, std::string selectedValue
+        const WidgetSettingSpec& spec, std::string selectedValue, std::string_view fontFamily
     ) {
       std::optional<int> preserveWeight;
       if (!selectedValue.empty()) {
@@ -1063,9 +1089,8 @@ namespace settings {
       }
 
       std::vector<SelectOption> options;
-      const auto catalogOptions = buildLabelFontWeightSelectOptions(
-          ctx.config.shell.fontFamily, FontWeightSelectKind::WidgetInheritDefault, preserveWeight
-      );
+      const auto catalogOptions =
+          buildLabelFontWeightSelectOptions(fontFamily, FontWeightSelectKind::WidgetInheritDefault, preserveWeight);
       options.reserve(catalogOptions.size());
       for (const auto& option : catalogOptions) {
         options.push_back(SelectOption{option.value, i18n::tr(option.labelKey)});
@@ -1483,11 +1508,30 @@ namespace settings {
         case WidgetControlKind::Select: {
           SelectSetting selectSetting;
           const std::string selectedValue = settingValueAsString(value);
+          // Font family uses the filterable search picker (catalogs can hold thousands of families).
+          if (spec.schema.key == "font_family" && ctx.makeSearchPicker) {
+            std::vector<SelectOption> familyOptions;
+            familyOptions.reserve(spec.options.size());
+            for (const auto& option : spec.options) {
+              familyOptions.push_back(
+                  SelectOption{option.value, spec.literalLabels ? option.labelKey : i18n::tr(option.labelKey)}
+              );
+            }
+            SearchPickerSetting picker;
+            picker.options = std::move(familyOptions);
+            picker.selectedValue = selectedValue;
+            picker.placeholder = ctx.config.shell.fontFamily;
+            picker.emptyText = i18n::tr("ui.controls.search-picker.empty");
+            ctx.makeRow(*panel, entry, ctx.makeSearchPicker(picker, entry.title, path));
+            break;
+          }
           if (widgetType == "battery" && spec.schema.key == "device") {
             selectSetting = batteryDeviceSelectSetting(ctx, selectedValue);
           } else if (spec.schema.key == "font_weight") {
-            selectSetting =
-                labelFontWeightSelectSetting(ctx, spec, widgetLabelFontWeightSelectedValue(ctx.config, widgetName));
+            selectSetting = labelFontWeightSelectSetting(
+                spec, widgetLabelFontWeightSelectedValue(ctx.config, widgetName),
+                widgetResolvedFontFamily(ctx.config, widgetName)
+            );
           } else if (widgetType == "workspaces" && spec.schema.key == "display") {
             selectSetting = workspacesDisplaySelectSetting(ctx, widgetName, spec, specs, selectedValue);
           } else {

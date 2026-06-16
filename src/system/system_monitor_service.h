@@ -112,7 +112,7 @@ private:
     std::uint64_t swapUsedKb{0};
   };
   [[nodiscard]] static std::optional<MemData> readMemoryKb();
-  [[nodiscard]] static std::optional<double> readCpuTempCelsius();
+  [[nodiscard]] static std::optional<double> readCpuTempCelsius(const SystemConfig::MonitorConfig& config);
   [[nodiscard]] static NvidiaDisplayDeviceState detectNvidiaPciDisplayDeviceState();
   [[nodiscard]] NvidiaNvmlReader& ensureNvmlReader();
   [[nodiscard]] AmdRsmiReader& ensureAmdRsmiReader();

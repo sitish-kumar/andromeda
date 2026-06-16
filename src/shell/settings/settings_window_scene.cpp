@@ -408,6 +408,9 @@ settings::SettingsContentContext SettingsWindow::makeContentContext(
       .openSessionActionEntryEditor = [this](std::size_t entryIndex) { openSessionActionEntryEditor(entryIndex); },
       .openIdleBehaviorEntryEditor = [this](std::size_t entryIndex) { openIdleBehaviorEntryEditor(entryIndex); },
       .openIdleBehaviorCreateEditor = [this]() { openIdleBehaviorCreateEditor(); },
+      .openNotificationFilterEntryEditor =
+          [this](std::size_t entryIndex) { openNotificationFilterEntryEditor(entryIndex); },
+      .openNotificationFilterCreateEditor = [this]() { openNotificationFilterCreateEditor(); },
       .openWidgetInspectorEditor = [this](
                                        std::vector<std::string> laneListPath, std::string widgetName
                                    ) { openWidgetInspectorEditor(std::move(laneListPath), std::move(widgetName)); },
@@ -431,6 +434,7 @@ settings::SettingsContentContext SettingsWindow::makeContentContext(
                                      ) { m_sessionActionsEditState = std::move(state); },
       .afterSessionActionsCommit = {},
       .afterIdleBehaviorApply = {},
+      .afterNotificationFilterApply = {},
       .closeHostedEditor = {},
   };
 }
@@ -903,6 +907,60 @@ void SettingsWindow::buildScene(std::uint32_t width, std::uint32_t height) {
             },
         .searchText = "greeter login sync appearance wallpaper colors security",
         .visibleWhen = std::nullopt,
+    };
+    m_settingsRegistry.insert(it, std::move(btn));
+  }
+
+  if (m_resetLauncherUsage) {
+    auto it = std::find_if(m_settingsRegistry.begin(), m_settingsRegistry.end(), [](const settings::SettingEntry& e) {
+      return e.section == settings::SettingsSection::Panels
+          && e.group == "launcher"
+          && e.path == std::vector<std::string>{"shell", "panel", "launcher_sort_by_usage"};
+    });
+    if (it != m_settingsRegistry.end()) {
+      ++it;
+    }
+    settings::SettingEntry btn{
+        .section = settings::SettingsSection::Panels,
+        .group = "launcher",
+        .title = i18n::tr("settings.schema.panels.launcher-reset-usage.label"),
+        .subtitle = i18n::tr("settings.schema.panels.launcher-reset-usage.description"),
+        .path = {},
+        .control =
+            settings::ButtonSetting{
+                .label = i18n::tr("settings.schema.panels.launcher-reset-usage.button"),
+                .action = m_resetLauncherUsage,
+                .glyph = "refresh",
+            },
+        .searchText = "launcher reset usage recently used launch count history clear",
+        .visibleWhen = std::nullopt,
+    };
+    m_settingsRegistry.insert(it, std::move(btn));
+  }
+
+  if (m_resetScreenTime) {
+    auto it = std::find_if(m_settingsRegistry.begin(), m_settingsRegistry.end(), [](const settings::SettingEntry& e) {
+      return e.section == settings::SettingsSection::System
+          && e.group == "screen-time"
+          && e.path == std::vector<std::string>{"shell", "screen_time_enabled"};
+    });
+    if (it != m_settingsRegistry.end()) {
+      ++it;
+    }
+    settings::SettingEntry btn{
+        .section = settings::SettingsSection::System,
+        .group = "screen-time",
+        .title = i18n::tr("settings.schema.shell.screen-time-reset.label"),
+        .subtitle = i18n::tr("settings.schema.shell.screen-time-reset.description"),
+        .path = {},
+        .control =
+            settings::ButtonSetting{
+                .label = i18n::tr("settings.schema.shell.screen-time-reset.button"),
+                .action = m_resetScreenTime,
+                .glyph = "refresh",
+            },
+        .searchText = "screen time reset usage history clear tracking",
+        .visibleWhen = settings::SettingVisibility{{"shell", "screen_time_enabled"}, {"true"}},
     };
     m_settingsRegistry.insert(it, std::move(btn));
   }

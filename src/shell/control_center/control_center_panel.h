@@ -57,6 +57,7 @@ namespace scripting {
 }
 
 class AccountsService;
+class ThumbnailService;
 
 class ControlCenterPanel : public Panel {
 public:
@@ -72,7 +73,7 @@ public:
       DependencyService* dependencies = nullptr, CompositorPlatform* platform = nullptr, IpcService* ipc = nullptr,
       Wallpaper* wallpaper = nullptr, CalendarService* calendar = nullptr,
       scripting::ScriptApiContext* scriptApi = nullptr, ClipboardService* clipboard = nullptr,
-      AccountsService* accounts = nullptr
+      AccountsService* accounts = nullptr, ThumbnailService* thumbnails = nullptr
   );
 
   void create() override;
@@ -83,9 +84,8 @@ public:
   [[nodiscard]] bool isContextActive(std::string_view context) const override;
   [[nodiscard]] bool deferExternalRefresh() const override;
   [[nodiscard]] bool deferPointerRelayout() const override;
-
+  [[nodiscard]] LayerShellLayer layer() const override { return LayerShellLayer::Overlay; }
   [[nodiscard]] float preferredWidth() const override;
-
   [[nodiscard]] float preferredHeight() const override { return scaled(520.0f); }
   [[nodiscard]] PanelPlacement panelPlacement() const noexcept override;
 

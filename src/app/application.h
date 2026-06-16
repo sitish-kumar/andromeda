@@ -67,6 +67,7 @@
 #include "shell/osd/brightness_osd.h"
 #include "shell/osd/keyboard_layout_osd.h"
 #include "shell/osd/lock_keys_osd.h"
+#include "shell/osd/media_osd.h"
 #include "shell/osd/osd_overlay.h"
 #include "shell/overview/overview_launcher_capture.h"
 #include "shell/panel/panel_manager.h"
@@ -139,12 +140,14 @@ private:
   void reloadPluginLauncherProviders();
   void startTrayService();
   void syncNotificationDaemon();
+  void scheduleNotificationShellRefresh();
   void syncPolkitAgent();
   void syncClipboardService();
   void syncScreenTimeService();
   bool runUserCommand(const std::string& command);
   bool runUserCommandBlocking(const std::string& command);
   bool runIdleAction(const IdleActionRequest& action);
+  void resumeShellRenderingIfUnlocked();
   void onIconThemeChanged();
   void onGraphicsReset(RenderGraphicsResetStatus status);
   void requestAllSurfacesRedraw();
@@ -198,6 +201,7 @@ private:
   std::unique_ptr<UPowerService> m_upowerService;
   std::optional<bool> m_notificationDaemonEnabled;
   bool m_notificationDaemonInitFailed = false;
+  bool m_notificationShellRefreshScheduled = false;
   BatteryHookState m_batteryHookState;
   BatteryWarningMonitor m_batteryWarningMonitor;
   std::optional<bool> m_prevWirelessEnabledForEvents;
@@ -232,6 +236,7 @@ private:
   NotificationToast m_notificationToast;
   AudioOsd m_audioOsd;
   BrightnessOsd m_brightnessOsd;
+  MediaOsd m_mediaOsd;
   LockKeysOsd m_lockKeysOsd;
   KeyboardLayoutOsd m_keyboardLayoutOsd;
   OsdOverlay m_osdOverlay;

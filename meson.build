@@ -25,6 +25,11 @@ endif
 # pipewire_lsan.cpp is only needed when address sanitizer is active.
 sanitize = get_option('b_sanitize') != 'none'
 
+# Tests build by default for every non-release buildtype; release skips them
+# unless explicitly enabled (-Dtests=enabled).
+tests_opt = get_option('tests')
+build_tests = tests_opt.enabled() or (tests_opt.auto() and get_option('buildtype') != 'release')
+
 # ── Release-only optimizations ────────────────────────────────────────────────
 if get_option('buildtype') == 'release'
   add_project_arguments(
@@ -299,12 +304,12 @@ foreach _p : [
     wayland_protos_dir / 'stable/viewporter/viewporter.xml'],
   ['idle-inhibit-unstable-v1',
     wayland_protos_dir / 'unstable/idle-inhibit/idle-inhibit-unstable-v1.xml'],
+
+  # ── vendored / project-local protocols (loaded from protocols/) ───────────
   ['text-input-unstable-v3',
-    wayland_protos_dir / 'unstable/text-input/text-input-unstable-v3.xml'],
+    'protocols/text-input-unstable-v3.xml'],
   ['virtual-keyboard-unstable-v1',
     'protocols/virtual-keyboard-unstable-v1.xml'],
-
-  # ── project-local custom protocols ────────────────────────────────────────
   ['dwl-ipc-unstable-v2',
     'protocols/dwl-ipc-unstable-v2.xml'],
   ['cursor-shape-v1',
@@ -366,6 +371,7 @@ _noctalia_sources = files(
   'src/app/application.cpp',
   'src/app/main_loop.cpp',
   'src/app/single_instance_lock.cpp',
+  'src/auth/fingerprint_authenticator.cpp',
   'src/auth/pam_authenticator.cpp',
   'src/calendar/caldav_client.cpp',
   'src/calendar/caldav_discovery.cpp',
@@ -566,6 +572,7 @@ _noctalia_sources = files(
   'src/shell/lockscreen/lock_surface.cpp',
   'src/shell/notification/notification_toast.cpp',
   'src/shell/osd/audio_osd.cpp',
+  'src/shell/osd/media_osd.cpp',
   'src/shell/osd/brightness_osd.cpp',
   'src/shell/osd/lock_keys_osd.cpp',
   'src/shell/osd/keyboard_layout_osd.cpp',
@@ -591,6 +598,7 @@ _noctalia_sources = files(
   'src/shell/settings/settings_content_plugins.cpp',
   'src/shell/settings/settings_control_factory.cpp',
   'src/shell/settings/settings_content_idle_behavior.cpp',
+  'src/shell/settings/settings_content_notification_filter.cpp',
   'src/shell/settings/settings_content_session_action.cpp',
   'src/shell/settings/settings_bar_management.cpp',
   'src/shell/settings/settings_registry.cpp',
@@ -672,6 +680,7 @@ _noctalia_sources = files(
   'src/shell/bar/widgets/screenshot_widget.cpp',
   'src/system/rfkill_helper.cpp',
   'src/system/screen_time_service.cpp',
+  'src/system/cpu_temp_sensor.cpp',
   'src/system/system_monitor_service.cpp',
   'src/system/weather_service.cpp',
   'src/time/time_format.cpp',
@@ -874,6 +883,8 @@ install_subdir('assets',
   install_dir: get_option('datadir') / 'noctalia',
 )
 
+if build_tests
+
 notification_history_utf8_test = executable('notification_history_utf8_test',
   sources: files(
     'tests/notification_history_utf8_test.cpp',
@@ -963,6 +974,36 @@ string_utils_test = executable('string_utils_test',
 )
 
 test('string_utils', string_utils_test)
+
+time_format_test = executable('time_format_test',
+  sources: files(
+    'tests/time_format_test.cpp',
+    'src/time/time_format.cpp',
+    'src/i18n/i18n.cpp',
+    'src/i18n/i18n_service.cpp',
+    'src/i18n/language_tag.cpp',
+    'src/core/resource_paths.cpp',
+    'src/core/log.cpp',
+  ),
+  include_directories: _noctalia_inc,
+  cpp_args: [
+    '-DNOCTALIA_SOURCE_ASSETS_DIR="' + meson.project_source_root() / 'assets' + '"',
+    '-DNOCTALIA_INSTALL_PREFIX="' + get_option('prefix') + '"',
+    '-DNOCTALIA_INSTALL_DATADIR="' + get_option('datadir') + '"',
+  ],
+)
+
+test('time_format', time_format_test)
+
+cpu_temp_sensor_test = executable('cpu_temp_sensor_test',
+  sources: files(
+    'tests/cpu_temp_sensor_test.cpp',
+    'src/system/cpu_temp_sensor.cpp',
+  ),
+  include_directories: _noctalia_inc,
+)
+
+test('cpu_temp_sensor', cpu_temp_sensor_test)
 
 i18n_language_tag_test = executable('i18n_language_tag_test',
   sources: files(
@@ -1055,6 +1096,7 @@ ui_tree_reconciler_test = executable('ui_tree_reconciler_test',
     'src/theme/contrast.cpp',
   ) + _protocol_headers,
   dependencies: [
+    wayland_client_dep,
     cairo_dep,
     egl_dep,
     librsvg_dep,
@@ -1088,6 +1130,7 @@ config_schema_roundtrip_test = executable('config_schema_roundtrip_test',
     'src/config/schema/config_schema.cpp',
     'src/config/config_export.cpp',
     'src/config/config_types.cpp',
+    'src/notification/notification_filter.cpp',
     'src/render/core/color.cpp',
     'src/ui/palette.cpp',
     'src/theme/builtin_palettes.cpp',
@@ -1126,6 +1169,7 @@ config_path_resolution_test = executable('config_path_resolution_test',
     'tests/config_path_resolution_test.cpp',
     'src/config/schema/config_schema.cpp',
     'src/config/config_types.cpp',
+    'src/notification/notification_filter.cpp',
     'src/render/core/color.cpp',
     'src/ui/palette.cpp',
     'src/theme/builtin_palettes.cpp',
@@ -1241,3 +1285,5 @@ wayland_toplevels_identity_test = executable('wayland_toplevels_identity_test',
 )
 
 test('wayland_toplevels_identity', wayland_toplevels_identity_test)
+
+endif # build_tests

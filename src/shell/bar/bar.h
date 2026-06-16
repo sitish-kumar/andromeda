@@ -68,6 +68,9 @@ public:
   /// Hides bars while a full-screen overlay editor (e.g. lockscreen widget layout) is active.
   void suppressDisplay();
   void unsuppressDisplay();
+  /// Stops bar surface frame loops while the session lock is active.
+  void pauseUnderSessionLock();
+  void resumeAfterSessionLock();
   [[nodiscard]] bool isVisible() const noexcept;
   void onOutputChange();
   void onSecondTick();
@@ -95,6 +98,9 @@ public:
   void
   setAttachedPanelGeometry(wl_output* output, std::string_view barName, std::optional<AttachedPanelGeometry> geometry);
   [[nodiscard]] bool canAttachPanelToBar(wl_output* output, std::string_view barName) const noexcept;
+  // True when an attached panel may start its reveal animation: non-autohide bars, or autohide
+  // bars that have finished sliding into their resting position.
+  [[nodiscard]] bool isAttachedPanelBarSettled(wl_output* output, std::string_view barName) const noexcept;
   void revealAutoHideForAttachedPanel(wl_output* output, std::string_view barName);
   void beginAttachedPopup(wl_surface* surface);
   void endAttachedPopup(wl_surface* surface);
@@ -184,4 +190,5 @@ private:
   std::function<void(std::string, std::string)> m_openWidgetSettingsCallback;
   bool m_overlayDisplaySuppressed = false;
   bool m_wasVisibleBeforeOverlaySuppress = false;
+  bool m_sessionLockPaused = false;
 };

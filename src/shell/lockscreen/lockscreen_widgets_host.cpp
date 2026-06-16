@@ -201,7 +201,7 @@ void LockscreenWidgetsHost::createInstance(
   }
 
   const float baseUiScale = m_config != nullptr ? m_config->config().shell.uiScale : 1.0f;
-  auto widget = m_factory->create(state.type, state.settings, desktop_widgets::widgetContentScale(baseUiScale, state));
+  auto widget = m_factory->create(state.type, state.settings, desktop_widgets::widgetContentScale(baseUiScale));
   if (widget == nullptr) {
     return;
   }
@@ -267,22 +267,36 @@ void LockscreenWidgetsHost::attachToSurface(WidgetInstance& instance) {
   instance.transformNode = layer->addChild(std::move(transformNode));
   instance.transformNode->addChild(instance.widget->releaseRoot());
 
-  auto* surfacePtr = instance.surface;
+  syncSurfaceFrameTick(instance.surface);
+  instance.surface->requestLayout();
+}
+
+void LockscreenWidgetsHost::syncSurfaceFrameTick(LockSurface* surfacePtr) {
+  if (surfacePtr == nullptr) {
+    return;
+  }
+
+  const bool needsFrameTick = std::any_of(m_instances.begin(), m_instances.end(), [&](const auto& instance) {
+    return instance->surface == surfacePtr && instance->widget != nullptr && instance->widget->needsFrameTick();
+  });
+  if (!needsFrameTick) {
+    surfacePtr->setFrameTickCallback(nullptr);
+    return;
+  }
+
   auto* host = this;
   surfacePtr->setFrameTickCallback([host, surfacePtr](float deltaMs) {
     if (host->m_renderContext == nullptr) {
       return;
     }
     host->m_renderContext->makeCurrent(surfacePtr->renderTarget());
-    for (auto& inst : host->m_instances) {
-      if (inst->surface != surfacePtr || inst->widget == nullptr || !inst->widget->needsFrameTick()) {
+    for (auto& instance : host->m_instances) {
+      if (instance->surface != surfacePtr || instance->widget == nullptr || !instance->widget->needsFrameTick()) {
         continue;
       }
-      inst->widget->onFrameTick(deltaMs, *host->m_renderContext);
+      instance->widget->onFrameTick(deltaMs, *host->m_renderContext);
     }
   });
-
-  surfacePtr->requestLayout();
 }
 
 void LockscreenWidgetsHost::detachFromSurface(WidgetInstance& instance) {
@@ -297,12 +311,7 @@ void LockscreenWidgetsHost::detachFromSurface(WidgetInstance& instance) {
   instance.surface = nullptr;
 
   if (surface != nullptr) {
-    const bool surfaceInUse = std::any_of(m_instances.begin(), m_instances.end(), [&](const auto& other) {
-      return other.get() != &instance && other->surface == surface;
-    });
-    if (!surfaceInUse) {
-      surface->setFrameTickCallback(nullptr);
-    }
+    syncSurfaceFrameTick(surface);
   }
 }
 
@@ -328,7 +337,7 @@ void LockscreenWidgetsHost::prepareFrame(LockSurface& surface, bool needsUpdate,
       continue;
     }
 
-    instance->widget->setContentScale(desktop_widgets::widgetContentScale(baseUiScale, instance->state));
+    instance->widget->setContentScale(desktop_widgets::widgetContentScale(baseUiScale));
     instance->widget->setBox(instance->state.boxWidth, instance->state.boxHeight);
 
     if (needsUpdate) {
@@ -355,6 +364,9 @@ void LockscreenWidgetsHost::prepareFrame(LockSurface& surface, bool needsUpdate,
         instance->state.cx - instance->intrinsicWidth * 0.5f, instance->state.cy - instance->intrinsicHeight * 0.5f
     );
     instance->transformNode->setRotation(instance->state.rotationRad);
-    instance->transformNode->setScale(1.0f);
+    float flipScaleX = 1.0f;
+    float flipScaleY = 1.0f;
+    desktop_widgets::widgetNodeScale(instance->state, flipScaleX, flipScaleY);
+    instance->transformNode->setScale(flipScaleX, flipScaleY);
   }
 }

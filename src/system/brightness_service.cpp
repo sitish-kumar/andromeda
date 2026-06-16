@@ -994,7 +994,7 @@ struct BrightnessService::Impl {
       return;
     }
 
-    value = std::clamp(value, 0.0f, 1.0f);
+    value = std::clamp(value, activeConfig.minimumBrightness, 1.0f);
     switch (display->backend) {
     case RuntimeBackend::Backlight:
       setBacklightBrightness(*display, value);

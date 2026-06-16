@@ -41,6 +41,8 @@ public:
   void onClose() override;
   void onIconThemeChanged() override;
 
+  void clearUsage();
+
   [[nodiscard]] float preferredWidth() const override { return scaled(560.0f); }
   [[nodiscard]] float preferredHeight() const override { return scaled(500.0f); }
   [[nodiscard]] LayerShellLayer layer() const override { return LayerShellLayer::Overlay; }

@@ -190,6 +190,7 @@ void SysmonWidget::create() {
         ui::label({
             .out = &m_label,
             .fontSize = Style::fontSizeBody * m_contentScale,
+            .fontFamily = labelFontFamily(),
             .minWidth = m_labelMinWidth > 0.0f ? std::optional<float>{m_labelMinWidth * m_contentScale}
                                                : std::optional<float>{},
             .fontWeight = labelFontWeight(),
@@ -513,12 +514,18 @@ void SysmonWidget::doUpdate(Renderer& renderer) {
 void SysmonWidget::onFrameTick(float deltaMs) {
   (void)deltaMs;
   if (m_graph == nullptr || m_scrollProgress >= 1.0f) {
+    m_redrawLimiter.reset();
+    return;
+  }
+  if (!m_redrawLimiter.shouldStep([this]() { requestRedraw(); })) {
     return;
   }
   m_scrollProgress = scrollProgressForSample(m_lastSampleAt);
   m_graph->setScroll(m_scrollProgress);
   if (m_scrollProgress < 1.0f) {
     requestRedraw();
+  } else {
+    m_redrawLimiter.reset();
   }
 }
 
