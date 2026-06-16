@@ -182,6 +182,7 @@ void TooltipManager::shutdown() {
   m_refreshTimer.stop();
   m_pendingArea = nullptr;
   m_reshowQueued = false;
+  m_retargetQueued = false;
   m_destroyScheduled = false;
   m_showAfterDestroy = false;
   if (m_surface != nullptr) {
@@ -236,12 +237,53 @@ void TooltipManager::handleHoverChange(InputArea* area) {
       refreshFromArea(area);
       break;
     }
-    scheduleReshow();
+    if (canRetargetPopup()) {
+      scheduleRetargetPopup();
+    } else {
+      scheduleReshow();
+    }
     break;
   case State::FadingOut:
-    scheduleReshow();
+    if (canRetargetPopup()) {
+      scheduleRetargetPopup();
+    } else {
+      scheduleReshow();
+    }
     break;
   }
+}
+
+bool TooltipManager::canRetargetPopup() const {
+  return m_surface != nullptr
+      && m_activeLayerParent == m_pendingLayerParent
+      && m_activeXdgParent == m_pendingXdgParent
+      && m_activeOutput == m_pendingOutput;
+}
+
+void TooltipManager::scheduleRetargetPopup() {
+  if (m_retargetQueued) {
+    return;
+  }
+  m_retargetQueued = true;
+  DeferredCall::callLater([this] {
+    m_retargetQueued = false;
+    if (m_pendingArea == nullptr) {
+      return;
+    }
+    if (m_surface == nullptr) {
+      showPopup();
+      return;
+    }
+    if (m_fadeAnimId != 0) {
+      m_animations.cancel(m_fadeAnimId);
+      m_fadeAnimId = 0;
+    }
+    if (m_state == State::FadingOut) {
+      m_state = State::Showing;
+    }
+    refreshPopupContent();
+    scheduleProviderRefresh();
+  });
 }
 
 void TooltipManager::scheduleReshow() {
@@ -344,6 +386,9 @@ void TooltipManager::showPopup() {
   });
 
   m_state = State::Showing;
+  m_activeLayerParent = m_pendingLayerParent;
+  m_activeXdgParent = m_pendingXdgParent;
+  m_activeOutput = m_pendingOutput;
   scheduleProviderRefresh();
   m_surface->requestUpdate();
 }
@@ -351,6 +396,7 @@ void TooltipManager::showPopup() {
 void TooltipManager::dismissPopup() {
   m_refreshTimer.stop();
   m_reshowQueued = false;
+  m_retargetQueued = false;
   m_showAfterDestroy = false;
   // The hover target is gone (pointer left, area lost its tooltip, or the area was
   // destroyed). Clear it so a deferred reshow does not dereference a stale area.
@@ -428,6 +474,9 @@ void TooltipManager::destroyPopup() {
     m_surface->setSceneRoot(nullptr);
   }
   m_surface.reset();
+  m_activeLayerParent = nullptr;
+  m_activeXdgParent = nullptr;
+  m_activeOutput = nullptr;
   m_state = State::Idle;
 }
 
