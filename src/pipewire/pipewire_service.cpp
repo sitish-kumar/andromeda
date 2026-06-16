@@ -1897,7 +1897,7 @@ void PipeWireService::setDefaultNode(std::uint32_t id, const char* key) {
     return;
   }
 
-  const std::string payload = "{\"name\":\"" + escapeJsonString(it->second->name) + "\"}";
+  const std::string payload = R"({"name":")" + escapeJsonString(it->second->name) + "\"}";
   const int rc = pw_metadata_set_property(m_defaultMetadata, PW_ID_CORE, key, "Spa:String:JSON", payload.c_str());
   if (rc < 0) {
     kLog.warn("failed to set {} to \"{}\" ({})", key, it->second->name, spa_strerror(rc));
