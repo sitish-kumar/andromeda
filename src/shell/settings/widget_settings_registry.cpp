@@ -72,6 +72,7 @@ namespace settings {
         {.type = "nightlight", .labelKey = "settings.widgets.types.nightlight", .glyph = "nightlight-off"},
         {.type = "notifications", .labelKey = "settings.widgets.types.notifications", .glyph = "bell"},
         {.type = "power_profile", .labelKey = "settings.widgets.types.power-profile", .glyph = "balanced"},
+        {.type = "privacy", .labelKey = "settings.widgets.types.privacy", .glyph = "shield-lock"},
         {.type = "screenshot", .labelKey = "settings.widgets.types.screenshot", .glyph = "screenshot"},
         {.type = "session", .labelKey = "settings.widgets.types.session", .glyph = "shutdown"},
         {.type = "settings", .labelKey = "settings.widgets.types.settings", .glyph = "settings"},
@@ -738,6 +739,13 @@ namespace settings {
       add(boolSpec("show_label", true));
     } else if (type == "notifications") {
       add(boolSpec("hide_when_no_unread", false));
+    } else if (type == "privacy") {
+      add(boolSpec("hide_inactive", false));
+      add(intSpec("icon_spacing", 4, 0.0, 48.0, 1.0));
+      add(colorSpec("active_color", "primary"));
+      add(colorSpec("inactive_color", "outline"));
+      add(stringSpec("mic_filter_regex"));
+      add(stringSpec("cam_filter_regex"));
     } else if (type == "session") {
       add(glyphSpec("glyph", "shutdown"));
     } else if (type == "settings") {

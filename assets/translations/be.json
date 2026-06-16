@@ -659,6 +659,49 @@
       "official": "Афіцыйны",
       "override": "Перавызначэнне"
     },
+    "calendar-accounts": {
+      "add-title": "Дадаць уліковы запіс календара",
+      "color-label": "Колер",
+      "delete-error": "Не ўдалося выдаліць уліковы запіс календара.",
+      "edit-title": "Рэдагаваць уліковы запіс календара",
+      "id-label": "ID уліковага запісу",
+      "invalid": "Праверце вылучаныя палі уліковага запісу календара.",
+      "name-label": "Адлюстраванае імя",
+      "name-placeholder": "Асабісты каляндар",
+      "password-keep-placeholder": "Пакіньце пустым, каб захаваць бягучы пароль",
+      "password-label": "Пароль праграмы",
+      "password-placeholder": "Пароль для пэўнай праграмы",
+      "password-save-error": "Не ўдалося захаваць пароль уліковага запісу календара.",
+      "provider": {
+        "custom": "CalDAV",
+        "google": "Google",
+        "icloud": "iCloud"
+      },
+      "provider-label": "Пастаўшчык",
+      "save": "Захаваць",
+      "save-connect": "Захаваць і падлучыць",
+      "save-error": "Не ўдалося захаваць уліковы запіс календара.",
+      "server-url-label": "URL-адрас сервера",
+      "username-label": "Імя карыстальніка",
+      "username-placeholder": "imia@prykład.by"
+    },
+    "controls": {
+      "keybind": {
+        "add": "Націсніце, каб дадаць спалучэнне клавішаў",
+        "recording-placeholder": "Націсніце на спалучэнне клавішаў...",
+        "unset-placeholder": "Націсніце, каб прывязаць..."
+      },
+      "list": {
+        "add-entry-placeholder": "Дадаць запіс..."
+      },
+      "path-browse": {
+        "file-title": "Выбраць файл",
+        "folder-title": "Выбраць папку"
+      },
+      "select": {
+        "unknown-value": "Невядома: {value}"
+      }
+    },
     "schema": {
       "shell": {
         "osd-kinds-dnd": {

@@ -157,7 +157,8 @@
     "calendar": {
       "all-day": "Toute la journée",
       "events": "Événements",
-      "no-events": "Pas d'événement."
+      "no-events": "Pas d'événement.",
+      "today": "Aujourd'hui"
     },
     "display": {
       "disabled": "Désactivé",
@@ -1873,6 +1874,9 @@
           "description": "Longitude manuelle pour le calcul du lever et du coucher du soleil, utilisée lorsque la localisation automatique et l’adresse sont désactivées",
           "label": "Longitude"
         },
+        "minimum-brightness": {
+          "label": "Luminosité minimum"
+        },
         "mpris-blacklist": {
           "description": "Lecteurs à ignorer pour les contrôles multimédias et l’état de lecture",
           "label": "Liste noire des lecteurs MPRIS"
@@ -1952,6 +1956,10 @@
           "label": "Son de changement de volume",
           "placeholder": "/chemin/vers/le/son.wav"
         },
+        "weather": {
+          "description": "Active les services météo",
+          "label": "Météo"
+        },
         "weather-effects": {
           "description": "Affiche des effets visuels liés à la météo",
           "label": "Effets météo"
@@ -1959,6 +1967,56 @@
         "weather-refresh-interval": {
           "description": "Fréquence de mise à jour des données météo (en minutes)",
           "label": "Intervalle de mise à jour"
+        },
+        "weather-unit": {
+          "description": "Système d'unités pour l'affichage météo",
+          "label": "Unités"
+        }
+      },
+      "shared": {
+        "background-opacity": {
+          "label": "Opacité de l'arrière-plan"
+        },
+        "enabled": {
+          "label": "Activé"
+        },
+        "position": {
+          "label": "Position"
+        },
+        "shadow": {
+          "label": "Ombre"
+        },
+        "shadow-alpha": {
+          "label": "Opacité de l'ombre"
+        },
+        "shadow-direction": {
+          "label": "Direction de l'ombre"
+        }
+      },
+      "shell": {
+        "clipboard-enabled": {
+          "label": "Presse-papiers"
+        },
+        "clipboard-history-max-entries": {
+          "label": "Taille de l'historique"
+        },
+        "offline-mode": {
+          "label": "Mode hors ligne"
+        },
+        "osd-background-opacity": {
+          "label": "Opacité de l'arrière-plan"
+        },
+        "osd-kinds-bluetooth": {
+          "label": "Bluetooth"
+        },
+        "osd-kinds-brightness": {
+          "label": "Luminosité"
+        },
+        "osd-kinds-caffeine": {
+          "label": "Caféine"
+        },
+        "osd-kinds-dnd": {
+          "label": "Ne Pas Déranger"
         }
       }
     },

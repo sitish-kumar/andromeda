@@ -1592,12 +1592,12 @@
       },
       "idle": {
         "behaviors": {
-          "description": "Azioni di inattività con nome, con preset (blocca, schermi spenti, sospendi) o comandi personalizzati, timeout, accoppiamento di ripresa e ordine",
+          "description": "Azioni di inattività con preset (blocca, schermi spenti, sospendi) o comandi personalizzati, timeout, resume e loro ordine",
           "label": "Comportamenti"
         },
         "pre-action-fade": {
           "description": "Secondi di oscuramento a schermo intero prima del comando di inattività; usa 0 per disabilitare",
-          "label": "Oscuramento inattività"
+          "label": "Oscuramento per inattività"
         }
       },
       "keybinds": {
@@ -2075,7 +2075,7 @@
           "label": "Click centrale apre impostazioni widget"
         },
         "niri-overview-type-to-launch": {
-          "description": "Apre il launcher quando digiti nella panoramica niri (overiew)",
+          "description": "Apre il launcher quando si digita nella panoramica niri (overiew)",
           "label": "Digita per avviare launcher"
         },
         "offline-mode": {
@@ -2109,6 +2109,10 @@
         "osd-kinds-lock-keys": {
           "description": "Mostra popup OSD per cambiamenti di Caps Lock, Num Lock e Scroll Lock",
           "label": "Tasti blocco"
+        },
+        "osd-kinds-media": {
+          "description": "Mostra un popup OSD quando inizia una nuova traccia",
+          "label": "In riproduzione"
         },
         "osd-kinds-power-profile": {
           "description": "Mostra un popup OSD quando cambia il profilo energetico",

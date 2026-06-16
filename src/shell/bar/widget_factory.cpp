@@ -38,6 +38,7 @@
 #include "shell/bar/widgets/notification_widget.h"
 #include "shell/bar/widgets/plugin_widget.h"
 #include "shell/bar/widgets/power_profile_widget.h"
+#include "shell/bar/widgets/privacy_widget.h"
 #include "shell/bar/widgets/screenshot_widget.h"
 #include "shell/bar/widgets/session_widget.h"
 #include "shell/bar/widgets/settings_widget.h"
@@ -66,6 +67,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace {
   constexpr Logger kLog("shell");
@@ -356,6 +358,25 @@ std::unique_ptr<Widget> WidgetFactory::create(
 
   if (type == "power_profile") {
     auto widget = std::make_unique<PowerProfileWidget>(m_powerProfiles);
+    widget->setContentScale(contentScale);
+    return widget;
+  }
+
+  if (type == "privacy") {
+    PrivacyWidgetConfig config;
+
+    if (wc != nullptr) {
+      config.hideInactive = wc->getBool("hide_inactive", config.hideInactive);
+      config.iconSpacing =
+          static_cast<int>(std::clamp<std::int64_t>(wc->getInt("icon_spacing", config.iconSpacing), 0, 48));
+      config.activeColor = wc->getColorSpec("active_color", config.activeColor, "widget." + name + ".active_color");
+      config.inactiveColor =
+          wc->getColorSpec("inactive_color", config.inactiveColor, "widget." + name + ".inactive_color");
+      config.micFilterRegex = wc->getString("mic_filter_regex", "");
+      config.camFilterRegex = wc->getString("cam_filter_regex", "");
+    }
+
+    auto widget = std::make_unique<PrivacyWidget>(m_audio, std::move(config));
     widget->setContentScale(contentScale);
     return widget;
   }
