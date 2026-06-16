@@ -241,8 +241,9 @@ void LockscreenWidgetsHost::createInstance(
       rawInstance->surface->requestRedraw();
     }
   });
-  instance->widget->setFrameTickRequestCallback([rawInstance]() {
+  instance->widget->setFrameTickRequestCallback([this, rawInstance]() {
     if (rawInstance->surface != nullptr) {
+      syncSurfaceFrameTick(rawInstance->surface);
       rawInstance->surface->requestFrameTick();
     }
   });
@@ -296,6 +297,7 @@ void LockscreenWidgetsHost::syncSurfaceFrameTick(LockSurface* surfacePtr) {
       }
       instance->widget->onFrameTick(deltaMs, *host->m_renderContext);
     }
+    host->syncSurfaceFrameTick(surfacePtr);
   });
 }
 
