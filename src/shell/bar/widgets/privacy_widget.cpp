@@ -33,11 +33,8 @@ namespace {
     }
   }
 
-  void addUnique(std::vector<std::string>& values, std::string value) {
+  void addNonEmpty(std::vector<std::string>& values, std::string value) {
     if (value.empty()) {
-      return;
-    }
-    if (std::ranges::find(values, value) != values.end()) {
       return;
     }
     values.push_back(std::move(value));
@@ -207,14 +204,14 @@ PrivacyWidget::Snapshot PrivacyWidget::snapshot() const {
     for (const auto& capture : state.captures) {
       if (capture.kind == PrivacyCaptureKind::Microphone) {
         if (!matchesFilter(m_micFilter, capture.appName)) {
-          addUnique(out.micApps, capture.appName);
+          addNonEmpty(out.micApps, capture.appName);
         }
       } else if (capture.kind == PrivacyCaptureKind::Camera) {
         if (!matchesFilter(m_camFilter, capture.appName)) {
-          addUnique(out.cameraApps, capture.appName);
+          addNonEmpty(out.cameraApps, capture.appName);
         }
       } else if (capture.kind == PrivacyCaptureKind::Screen) {
-        addUnique(out.screenApps, capture.appName);
+        addNonEmpty(out.screenApps, capture.appName);
       }
     }
   }
