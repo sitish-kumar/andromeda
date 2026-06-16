@@ -681,7 +681,6 @@ void Wallpaper::pauseRendering() {
     if (instance == nullptr || instance->surface == nullptr) {
       continue;
     }
-    instance->animations.cancelAll();
     instance->surface->pauseFrameLoop();
   }
 }
@@ -1012,7 +1011,6 @@ void Wallpaper::createInstance(const WaylandOutput& output) {
   }
 
   if (m_renderingPaused) {
-    instance->animations.cancelAll();
     instance->surface->pauseFrameLoop();
   }
 

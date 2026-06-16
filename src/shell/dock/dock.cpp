@@ -271,7 +271,6 @@ void Dock::pauseUnderSessionLock() {
     if (instance == nullptr || instance->surface == nullptr) {
       continue;
     }
-    instance->animations.cancelAll();
     instance->surface->pauseFrameLoop();
   }
 }
