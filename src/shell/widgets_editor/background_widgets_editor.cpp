@@ -122,10 +122,10 @@ namespace {
 
   float normalizeAngle(float radians) {
     while (radians > std::numbers::pi_v<float>) {
-      radians -= static_cast<float>(M_PI * 2.0);
+      radians -= 2.0f * std::numbers::pi_v<float>;
     }
     while (radians < -std::numbers::pi_v<float>) {
-      radians += static_cast<float>(M_PI * 2.0);
+      radians += 2.0f * std::numbers::pi_v<float>;
     }
     return radians;
   }
