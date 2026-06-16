@@ -82,7 +82,7 @@ private:
   static constexpr int kSystemLines = 6;
   Label* m_systemLines[kSystemLines] = {};
 
-  // Resources card: load, memory, swap (hidden when no swap), then one line per discovered physical disk.
+  // Resources card: load, memory, swap (hidden when no swap), then up to four discovered physical disks.
   static constexpr int kResourcesLines = 2;
   Label* m_resourcesLines[kResourcesLines] = {};
   Flex* m_swapRow = nullptr;

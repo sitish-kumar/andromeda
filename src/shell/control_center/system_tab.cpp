@@ -21,6 +21,7 @@ namespace {
   constexpr float kGraphLineWidth = 0.75f;
   constexpr float kGraphFillOpacity = 0.15f;
   constexpr double kNetMinScaleBps = 10000.0;
+  constexpr std::size_t kMaxDiskRows = 4;
 
   Flex* makeHeaderRow(Flex& parent, const std::string& title, float scale) {
     Flex* ptr = nullptr;
@@ -336,8 +337,11 @@ std::unique_ptr<Flex> SystemTab::create() {
         *resourcesCard, "arrows-exchange", i18n::tr("control-center.system.labels.swap"), sc, &m_swapRow
     );
 
-    // One line per physical disk, discovered automatically (root first). Usage refreshes in doUpdate.
+    // Up to four physical disks, discovered automatically (root first). Usage refreshes in doUpdate.
     m_diskMountPoints = physicalDiskMountPoints();
+    if (m_diskMountPoints.size() > kMaxDiskRows) {
+      m_diskMountPoints.resize(kMaxDiskRows);
+    }
     m_diskLabels.clear();
     m_diskLabels.reserve(m_diskMountPoints.size());
     // Mount path and usage are separate labels: the path grows and ellipsizes when long,
