@@ -397,6 +397,9 @@ location = "https://example.invalid/bad"
             std::nullopt
         },
     };
+    c.shell.session.power.suspend = "zzz";
+    c.shell.session.power.reboot = "sudo -n reboot";
+    c.shell.session.power.shutdown = "sudo -n poweroff";
     c.theme.source = PaletteSource::Wallpaper;
     c.theme.builtinPalette = "Tokyo";
     c.theme.mode = ThemeMode::Light;

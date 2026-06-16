@@ -180,6 +180,16 @@ struct SessionPanelActionConfig {
 
 struct ShellSessionConfig {
   std::vector<SessionPanelActionConfig> actions;
+  // Optional overrides for built-in session power commands. Empty = auto-detect at runtime.
+  struct ShellSessionPowerConfig {
+    // Shell strings run with `/bin/sh -lc` (shell=True).
+    // When unset, Noctalia tries a prioritized backend list (systemd/logind/privileged helpers).
+    std::optional<std::string> suspend;
+    std::optional<std::string> reboot;
+    std::optional<std::string> shutdown;
+
+    bool operator==(const ShellSessionPowerConfig&) const = default;
+  } power;
 
   bool operator==(const ShellSessionConfig&) const = default;
 };

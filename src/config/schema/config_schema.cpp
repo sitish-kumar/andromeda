@@ -1223,12 +1223,15 @@ namespace noctalia::config::schema {
       return s;
     }
 
+    const Schema<typename ShellSessionConfig::ShellSessionPowerConfig>& shellSessionPowerSchema();
+
     const Schema<ShellSessionConfig>& shellSessionSchema() {
       static const Schema<ShellSessionConfig> s = {
           arrayOf<ShellSessionConfig, SessionPanelActionConfig>(
               &ShellSessionConfig::actions, "actions", sessionActionSchema(),
               [](const SessionPanelActionConfig& a) { return !a.action.empty(); }
           ),
+          subTable(&ShellSessionConfig::power, "power", shellSessionPowerSchema()),
       };
       return s;
     }
@@ -1671,6 +1674,16 @@ namespace noctalia::config::schema {
             }
           }
       );
+    }
+
+    const Schema<typename ShellSessionConfig::ShellSessionPowerConfig>& shellSessionPowerSchema() {
+      using Power = ShellSessionConfig::ShellSessionPowerConfig;
+      static const Schema<Power> s = {
+          optionalTrimmedStringField(&Power::suspend, "suspend"),
+          optionalTrimmedStringField(&Power::reboot, "reboot"),
+          optionalTrimmedStringField(&Power::shutdown, "shutdown"),
+      };
+      return s;
     }
 
     template <typename Struct>

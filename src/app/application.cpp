@@ -1321,6 +1321,10 @@ void Application::initUi() {
   sessionActionHooks.onReboot = [this]() { return m_hookManager.fireBlocking(HookKind::Rebooting); };
   sessionActionHooks.onShutdown = [this]() { return m_hookManager.fireBlocking(HookKind::ShuttingDown); };
   m_sessionActionRunner.setHooks(std::move(sessionActionHooks));
+  m_sessionActionRunner.setPowerConfig(m_configService.config().shell.session.power);
+  m_configService.addReloadCallback(
+      [this]() { m_sessionActionRunner.setPowerConfig(m_configService.config().shell.session.power); }, "session-power"
+  );
 
   m_wayland.setPointerEventCallback([this](const PointerEvent& event) {
     if (m_lockScreen.isActive()) {
