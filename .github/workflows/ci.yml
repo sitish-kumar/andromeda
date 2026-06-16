@@ -45,7 +45,7 @@ jobs:
             sdbus-cpp libpipewire polkit \
             pam curl libwebp librsvg \
             libqalculate libxml2 \
-            jemalloc just
+            jemalloc just clang
 
       - uses: actions/checkout@v4
 
@@ -54,3 +54,6 @@ jobs:
 
       - name: Test
         run: just test debug --print-errorlogs
+
+      - name: Lint
+        run: just lint
