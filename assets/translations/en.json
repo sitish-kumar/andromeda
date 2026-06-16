@@ -2562,7 +2562,8 @@
         },
         "glyph": {
           "description": "Icon glyph name",
-          "label": "Glyph"
+          "label": "Glyph",
+          "sysmon-description": "Custom icon glyph. Leave empty to use the icon for the selected stat."
         },
         "group-by-workspace": {
           "description": "Group taskbar icons into workspace capsules when compositor data is available",
