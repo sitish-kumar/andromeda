@@ -1,5 +1,6 @@
 #include "shell/desktop/widgets/desktop_clock_widget.h"
 
+#include "core/ui_phase.h"
 #include "render/core/color.h"
 #include "render/core/renderer.h"
 #include "render/scene/node.h"
@@ -197,7 +198,10 @@ void DesktopClockWidget::create() {
       .fontSize = clockFontSize(contentScale()),
       .color = m_color,
       .fontWeight = FontWeight::Bold,
-      .textAlign = TextAlign::Center,
+      // Left-aligned inside the widest-digit reserved width (see updateStableDigitalWidth):
+      // the box stays put AND the leading glyphs (the first colon) don't drift as digits
+      // change advance width — only the trailing edge breathes into the reserved space.
+      .textAlign = TextAlign::Start,
   });
   m_digitalRoot->addChild(std::move(label));
   rootNode->addChild(std::move(digitalRoot));
@@ -397,9 +401,11 @@ void DesktopClockWidget::layoutDigital(Renderer& renderer) {
   applyShadow();
   update(renderer);
   m_label->measure(renderer);
-  m_label->setPosition(0.0f, 0.0f);
+  // Offset the label inside a box widened by the same amount, so the widest time still fits on
+  // the trailing side while the mean rendering is centered. Offset is 0 for equal-width digits.
+  m_label->setPosition(m_digitOffsetX, 0.0f);
   if (m_digitalRoot != nullptr) {
-    m_digitalRoot->setSize(m_label->width(), m_label->height());
+    m_digitalRoot->setSize(m_label->width() + m_digitOffsetX, m_label->height());
   }
   if (root() != nullptr && m_digitalRoot != nullptr) {
     root()->setSize(m_digitalRoot->width(), m_digitalRoot->height());
@@ -521,6 +527,69 @@ void DesktopClockWidget::doLayout(Renderer& renderer) {
   layoutDigital(renderer);
 }
 
+void DesktopClockWidget::updateStableDigitalWidth(Renderer& renderer, const std::string& text) {
+  if (m_label == nullptr) {
+    return;
+  }
+
+  const float fontSize = clockFontSize(contentScale());
+
+  // Re-pick the widest digit only when the font identity (size or family) changes.
+  if (fontSize != m_metricsFontSize || m_fontFamily != m_metricsFontFamily) {
+    m_metricsFontSize = fontSize;
+    m_metricsFontFamily = m_fontFamily;
+    float widest = -1.0f;
+    float advanceSum = 0.0f;
+    for (char digit = '0'; digit <= '9'; ++digit) {
+      const std::string glyph(1, digit);
+      const float advance =
+          renderer.measureText(glyph, fontSize, FontWeight::Bold, 0.0f, 0, TextAlign::Start, m_fontFamily).width;
+      advanceSum += advance;
+      if (advance > widest) {
+        widest = advance;
+        m_widestDigit = digit;
+      }
+    }
+    m_maxDigitAdvance = widest;
+    m_meanDigitAdvance = advanceSum / 10.0f;
+    m_stableSample.clear(); // force a width recompute below
+  }
+
+  // Normalize digits to the widest glyph: the result's width is invariant across
+  // seconds (and minutes), so the box keeps a constant size and never reflows.
+  std::string sample = text;
+  int digitCount = 0;
+  for (char& ch : sample) {
+    if (ch >= '0' && ch <= '9') {
+      ch = m_widestDigit;
+      ++digitCount;
+    }
+  }
+  if (sample == m_stableSample) {
+    return;
+  }
+  m_stableSample = sample;
+
+  const float width =
+      renderer.measureText(sample, fontSize, FontWeight::Bold, 0.0f, 0, TextAlign::Start, m_fontFamily).width;
+  // Shift the start-aligned label right by half the expected widest-vs-mean slack, so the
+  // typical rendering is centered in the box; the leading glyph still sits at a fixed spot.
+  const float offset = static_cast<float>(digitCount) * (m_maxDigitAdvance - m_meanDigitAdvance);
+  if (std::abs(width - m_stableWidth) > 0.5f || std::abs(offset - m_digitOffsetX) > 0.5f) {
+    m_stableWidth = width;
+    m_digitOffsetX = offset;
+    m_label->setMinWidth(m_stableWidth);
+    m_label->setMaxWidth(m_stableWidth);
+    // Re-arm layout only when the change surfaces outside layout (a non-digit field like
+    // the date/AM-PM rolling over on the Update tick). During layout() the new width/offset
+    // already apply in this same pass, and its two box-fit passes (base then fitted scale)
+    // each measure a different width — re-arming here would loop forever.
+    if (currentUiPhase() != UiPhase::Layout) {
+      requestLayout();
+    }
+  }
+}
+
 void DesktopClockWidget::doUpdate(Renderer& renderer) {
   if (m_style == Style::Analog) {
     updateAnalogHands();
@@ -533,6 +602,7 @@ void DesktopClockWidget::doUpdate(Renderer& renderer) {
 
   m_label->setFontSize(clockFontSize(contentScale()));
   const std::string text = formatText();
+  updateStableDigitalWidth(renderer, text);
   if (text == m_lastText) {
     return;
   }

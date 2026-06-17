@@ -268,8 +268,7 @@ namespace scripting {
   }
 
   const PluginEntry* PluginManifest::findEntry(std::string_view entryId) const {
-    const auto it =
-        std::find_if(entries.begin(), entries.end(), [entryId](const PluginEntry& e) { return e.id == entryId; });
+    const auto it = std::ranges::find(entries, entryId, &PluginEntry::id);
     return it != entries.end() ? &*it : nullptr;
   }
 

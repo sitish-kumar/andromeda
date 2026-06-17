@@ -39,8 +39,7 @@ namespace settings {
       if (ctx.config == nullptr) {
         return plugin.enabled;
       }
-      return std::find(ctx.config->plugins.enabled.begin(), ctx.config->plugins.enabled.end(), plugin.id)
-          != ctx.config->plugins.enabled.end();
+      return std::ranges::contains(ctx.config->plugins.enabled, plugin.id);
     }
 
     std::string_view pluginDisplayName(const scripting::PluginStatus& plugin) { return plugin.name; }
@@ -296,9 +295,8 @@ namespace settings {
         return true;
       }
       const auto currentString = [&](const std::string& key) -> std::string {
-        const auto depIt = std::find_if(allSpecs.begin(), allSpecs.end(), [&](const WidgetSettingSpec& s) {
-          return s.schema.key == key;
-        });
+        const auto depIt =
+            std::ranges::find_if(allSpecs, [&](const WidgetSettingSpec& s) { return s.schema.key == key; });
         if (depIt == allSpecs.end()) {
           return {};
         }
@@ -306,12 +304,12 @@ namespace settings {
       };
       const auto matches = [&](const WidgetSettingVisibilityCondition& cond) {
         const std::string value = currentString(cond.key);
-        return std::find(cond.values.begin(), cond.values.end(), value) != cond.values.end();
+        return std::ranges::contains(cond.values, value);
       };
       // Visible when any `any` alternative matches (or none declared) AND every `all` condition matches.
       const auto& vis = *spec.visibleWhen;
-      const bool anyOk = vis.any.empty() || std::any_of(vis.any.begin(), vis.any.end(), matches);
-      const bool allOk = std::all_of(vis.all.begin(), vis.all.end(), matches);
+      const bool anyOk = vis.any.empty() || std::ranges::any_of(vis.any, matches);
+      const bool allOk = std::ranges::all_of(vis.all, matches);
       return anyOk && allOk;
     }
 
@@ -468,9 +466,7 @@ namespace settings {
       ));
     }
     std::vector<PluginSourceConfig> sources = ctx.sources;
-    std::stable_sort(sources.begin(), sources.end(), [](const auto& a, const auto& b) {
-      return pluginSourceLess(a.name, b.name);
-    });
+    std::ranges::stable_sort(sources, [](const auto& a, const auto& b) { return pluginSourceLess(a.name, b.name); });
     for (const auto& source : sources) {
       section->addChild(sourceRow(source, ctx, scale));
     }
@@ -493,7 +489,7 @@ namespace settings {
       ));
     }
     std::vector<scripting::PluginStatus> plugins = ctx.plugins;
-    std::sort(plugins.begin(), plugins.end(), [&](const auto& a, const auto& b) {
+    std::ranges::sort(plugins, [&](const auto& a, const auto& b) {
       const std::string_view aName = pluginDisplayName(a);
       const std::string_view bName = pluginDisplayName(b);
       if (aName != bName) {
