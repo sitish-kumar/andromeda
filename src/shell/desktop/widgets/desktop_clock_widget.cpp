@@ -184,9 +184,11 @@ DesktopClockWidget::Style DesktopClockWidget::styleFromSetting(std::string_view 
   return Style::Digital;
 }
 
-DesktopClockWidget::DesktopClockWidget(Style style, std::string format, ColorSpec color, bool shadow, bool circle)
+DesktopClockWidget::DesktopClockWidget(
+    Style style, std::string format, ColorSpec color, bool shadow, bool circle, bool centerText
+)
     : m_style(style), m_format(std::move(format)), m_color(color), m_shadow(shadow), m_showCircle(circle),
-      m_showsSeconds(m_style == Style::Analog || formatShowsSeconds(m_format)) {}
+      m_centerText(centerText), m_showsSeconds(m_style == Style::Analog || formatShowsSeconds(m_format)) {}
 
 void DesktopClockWidget::create() {
   auto rootNode = std::make_unique<Node>();
@@ -198,10 +200,6 @@ void DesktopClockWidget::create() {
       .fontSize = clockFontSize(contentScale()),
       .color = m_color,
       .fontWeight = FontWeight::Bold,
-      // Left-aligned inside the widest-digit reserved width (see updateStableDigitalWidth):
-      // the box stays put AND the leading glyphs (the first colon) don't drift as digits
-      // change advance width — only the trailing edge breathes into the reserved space.
-      .textAlign = TextAlign::Start,
   });
   m_digitalRoot->addChild(std::move(label));
   rootNode->addChild(std::move(digitalRoot));
@@ -254,6 +252,7 @@ void DesktopClockWidget::create() {
 
   rootNode->addChild(std::move(analogRoot));
   setRoot(std::move(rootNode));
+  syncDigitalTextAlign();
   syncStyleVisibility();
   syncCircleVisibility();
   applyShadow();
@@ -281,6 +280,13 @@ void DesktopClockWidget::syncCircleVisibility() {
   if (m_ticksRoot != nullptr) {
     m_ticksRoot->setVisible(m_showCircle);
   }
+}
+
+void DesktopClockWidget::syncDigitalTextAlign() {
+  if (m_label == nullptr) {
+    return;
+  }
+  m_label->setTextAlign(m_centerText ? TextAlign::Center : TextAlign::Start);
 }
 
 void DesktopClockWidget::syncAnalogColors() {
@@ -401,9 +407,9 @@ void DesktopClockWidget::layoutDigital(Renderer& renderer) {
   applyShadow();
   update(renderer);
   m_label->measure(renderer);
-  // Offset the label inside a box widened by the same amount, so the widest time still fits on
-  // the trailing side while the mean rendering is centered. Offset is 0 for equal-width digits.
-  m_label->setPosition(m_digitOffsetX, 0.0f);
+  // Start-aligned mode shifts the label right so proportional digits stay visually stable; centered
+  // mode relies on TextAlign::Center inside the reserved widest-digit width.
+  m_label->setPosition(m_centerText ? 0.0f : m_digitOffsetX, 0.0f);
   if (m_digitalRoot != nullptr) {
     m_digitalRoot->setSize(m_label->width() + m_digitOffsetX, m_label->height());
   }
@@ -502,6 +508,16 @@ bool DesktopClockWidget::applySetting(
     }
     return false;
   }
+  if (key == "center_text") {
+    if (const auto* v = std::get_if<bool>(&value)) {
+      m_centerText = *v;
+      syncDigitalTextAlign();
+      m_stableSample.clear();
+      requestLayout();
+      return true;
+    }
+    return false;
+  }
   return DesktopWidget::applySetting(key, value, allSettings, renderer);
 }
 
@@ -572,9 +588,7 @@ void DesktopClockWidget::updateStableDigitalWidth(Renderer& renderer, const std:
 
   const float width =
       renderer.measureText(sample, fontSize, FontWeight::Bold, 0.0f, 0, TextAlign::Start, m_fontFamily).width;
-  // Shift the start-aligned label right by half the expected widest-vs-mean slack, so the
-  // typical rendering is centered in the box; the leading glyph still sits at a fixed spot.
-  const float offset = static_cast<float>(digitCount) * (m_maxDigitAdvance - m_meanDigitAdvance);
+  const float offset = m_centerText ? 0.0f : static_cast<float>(digitCount) * (m_maxDigitAdvance - m_meanDigitAdvance);
   if (std::abs(width - m_stableWidth) > 0.5f || std::abs(offset - m_digitOffsetX) > 0.5f) {
     m_stableWidth = width;
     m_digitOffsetX = offset;

@@ -17,7 +17,7 @@ public:
     Analog,
   };
 
-  DesktopClockWidget(Style style, std::string format, ColorSpec color, bool shadow, bool circle);
+  DesktopClockWidget(Style style, std::string format, ColorSpec color, bool shadow, bool circle, bool centerText);
 
   void create() override;
   [[nodiscard]] bool wantsSecondTicks() const override;
@@ -34,6 +34,7 @@ private:
   void applyShadow();
   void syncStyleVisibility();
   void syncCircleVisibility();
+  void syncDigitalTextAlign();
   void syncAnalogColors();
   void layoutAnalog(Renderer& renderer, float size);
   void layoutDigital(Renderer& renderer);
@@ -48,6 +49,7 @@ private:
   ColorSpec m_color;
   bool m_shadow;
   bool m_showCircle;
+  bool m_centerText = false;
   bool m_showsSeconds = false;
   Label* m_label = nullptr;
   Node* m_digitalRoot = nullptr;

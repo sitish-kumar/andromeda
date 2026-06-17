@@ -196,7 +196,8 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
     auto widget = std::make_unique<DesktopClockWidget>(
         style, getStringSetting(settings, "format", "{:%H:%M}"),
         getColorSpecSetting(settings, "color", colorSpecFromRole(ColorRole::OnSurface)),
-        getBoolSetting(settings, "shadow", true), getBoolSetting(settings, "circle", true)
+        getBoolSetting(settings, "shadow", true), getBoolSetting(settings, "circle", true),
+        getBoolSetting(settings, "center_text", false)
     );
     applyCommonSettings(*widget, settings);
     widget->setContentScale(contentScale);
