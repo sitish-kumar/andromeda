@@ -4,6 +4,7 @@
 #include "lua.h"
 #include "lualib.h"
 #include "ui/ui_tree.h"
+#include "util/fuzzy_match.h"
 
 #include <algorithm>
 #include <optional>
@@ -310,8 +311,24 @@ namespace {
     return 0;
   }
 
+  int luau_launcher_fuzzyScore(lua_State* L) {
+    size_t patternLen = 0;
+    const char* pattern = luaL_checklstring(L, 1, &patternLen);
+    size_t textLen = 0;
+    const char* text = luaL_checklstring(L, 2, &textLen);
+
+    const double score = FuzzyMatch::score(std::string_view(pattern, patternLen), std::string_view(text, textLen));
+    if (!FuzzyMatch::isMatch(score)) {
+      lua_pushnil(L);
+      return 1;
+    }
+    lua_pushnumber(L, score);
+    return 1;
+  }
+
   const luaL_Reg kLauncherLib[] = {
       {"setResults", luau_launcher_setResults},
+      {"fuzzyScore", luau_launcher_fuzzyScore},
       {"getConfig", scripting::luau_getConfig},
       {nullptr, nullptr},
   };
