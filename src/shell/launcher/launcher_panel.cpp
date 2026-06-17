@@ -590,6 +590,7 @@ void LauncherPanel::onOpen(std::string_view context) {
   m_activeCategoryType = All;
   m_activeCategory.clear();
   m_currentCategories.clear();
+  m_categoryFilterSlots.clear();
   m_hasRecentlyUsed = false;
   if (m_categoryFilter != nullptr) {
     m_categoryFilter->clearOptions();
@@ -626,6 +627,7 @@ void LauncherPanel::onClose() {
   m_activeCategoryType = All;
   m_activeCategory.clear();
   m_currentCategories.clear();
+  m_categoryFilterSlots.clear();
   m_hasRecentlyUsed = false;
   m_selectedIndex = 0;
   m_launcherRowHeight = 0.0f;
@@ -827,48 +829,70 @@ void LauncherPanel::onInputChanged(const std::string& text) {
 
 void LauncherPanel::rebuildCategoryFilter(const std::vector<LauncherCategory>& categories) {
   m_currentCategories = categories;
+  m_categoryFilterSlots.clear();
+  if (categories.empty() && !m_hasRecentlyUsed) {
+    if (m_categoryFilter != nullptr) {
+      m_categoryFilter->clearOptions();
+      setCategoryFilterVisible(false);
+    }
+    return;
+  }
+
+  m_categoryFilterSlots.push_back({All, 0});
+  if (m_hasRecentlyUsed) {
+    m_categoryFilterSlots.push_back({RecentlyUsed, 0});
+  }
+  for (std::size_t i = 0; i < categories.size(); ++i) {
+    m_categoryFilterSlots.push_back({Category, i});
+  }
+
   if (m_categoryFilter == nullptr) {
     return;
   }
+
   m_categoryFilter->clearOptions();
-  if (categories.empty() && !m_hasRecentlyUsed) {
-    setCategoryFilterVisible(false);
-    return;
-  }
-  m_categoryFilter->addOption("", "layout-grid");
-  m_categoryFilter->setOptionTooltip(0, i18n::tr("launcher.categories.all"));
-  size_t categoryStartIndex = 1;
-  if (m_hasRecentlyUsed) {
-    m_categoryFilter->addOption("", "history");
-    m_categoryFilter->setOptionTooltip(1, i18n::tr("launcher.categories.recently-used"));
-    ++categoryStartIndex;
-  }
-  for (std::size_t i = 0; i < categories.size(); ++i) {
-    m_categoryFilter->addOption("", categories[i].glyphName);
-    m_categoryFilter->setOptionTooltip(i + categoryStartIndex, categories[i].label);
+  for (std::size_t i = 0; i < m_categoryFilterSlots.size(); ++i) {
+    const auto& slot = m_categoryFilterSlots[i];
+    switch (slot.type) {
+    case All:
+      m_categoryFilter->addOption("", "layout-grid");
+      m_categoryFilter->setOptionTooltip(i, i18n::tr("launcher.categories.all"));
+      break;
+    case RecentlyUsed:
+      m_categoryFilter->addOption("", "history");
+      m_categoryFilter->setOptionTooltip(i, i18n::tr("launcher.categories.recently-used"));
+      break;
+    case Category:
+      m_categoryFilter->addOption("", categories[slot.categoryIndex].glyphName);
+      m_categoryFilter->setOptionTooltip(i, categories[slot.categoryIndex].label);
+      break;
+    }
   }
   m_categoryFilter->setSelectedIndex(0);
-  m_categoryFilter->setOnChange([this, categoryStartIndex](std::size_t idx) {
-    if (idx == 0) {
-      m_activeCategoryType = All;
-      m_activeCategory.clear();
-    } else if (m_hasRecentlyUsed && idx == 1) {
-      m_activeCategoryType = RecentlyUsed;
-      m_activeCategory.clear();
-    } else if (idx - categoryStartIndex < m_currentCategories.size()) {
-      m_activeCategoryType = Category;
-      m_activeCategory = m_currentCategories[idx - categoryStartIndex].label;
-    }
-    applyActiveCategory();
-  });
+  m_categoryFilter->setOnChange([this](std::size_t idx) { setActiveCategorySlot(idx); });
   setCategoryFilterVisible(m_categoryFilterVisible);
+}
+
+void LauncherPanel::setActiveCategorySlot(std::size_t slotIndex) {
+  if (slotIndex >= m_categoryFilterSlots.size()) {
+    return;
+  }
+
+  const auto& slot = m_categoryFilterSlots[slotIndex];
+  m_activeCategoryType = slot.type;
+  if (slot.type == Category && slot.categoryIndex < m_currentCategories.size()) {
+    m_activeCategory = m_currentCategories[slot.categoryIndex].label;
+  } else {
+    m_activeCategory.clear();
+  }
+  applyActiveCategory();
 }
 
 void LauncherPanel::setCategoryFilterVisible(bool visible) {
   if (m_categoryFilter == nullptr) {
     return;
   }
-  const bool show = visible && (!m_currentCategories.empty() || m_hasRecentlyUsed);
+  const bool show = visible && !m_categoryFilterSlots.empty();
   m_categoryFilter->setVisible(show);
   m_categoryFilter->setParticipatesInLayout(show);
   if (m_container != nullptr) {
@@ -1197,18 +1221,11 @@ bool LauncherPanel::handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers) {
     }
   };
 
-  const auto categoryOptionCount = [this]() -> std::size_t {
-    if (m_currentCategories.empty() && !m_hasRecentlyUsed) {
-      return 0;
-    }
-    return m_currentCategories.size() + (m_hasRecentlyUsed ? 2u : 1u);
-  };
-
-  const auto cycleCategory = [this, categoryOptionCount](bool reverse) {
+  const auto cycleCategory = [this](bool reverse) {
     if (m_categoryFilter == nullptr) {
       return false;
     }
-    const std::size_t total = categoryOptionCount();
+    const std::size_t total = m_categoryFilterSlots.size();
     if (total == 0) {
       return false;
     }
