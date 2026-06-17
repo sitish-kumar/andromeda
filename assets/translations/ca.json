@@ -372,13 +372,13 @@
         "font-family-default": "Per defecte del sistema",
         "forecast-days": "Dies de previsió",
         "format": "Format",
-        "interface": "Interfície",
         "hide-when-no-media": "Amaga sense multimèdia",
         "horizontal": "Horitzontal",
         "image-path": "Imatge",
         "inner-diameter": "Diàmetre interior",
         "input-opacity": "Opacitat d'entrada",
         "input-radius": "Radi d'entrada",
+        "interface": "Interfície",
         "layout": "Disposició",
         "mirrored": "Mirall",
         "opacity": "Opacitat",
@@ -2616,13 +2616,13 @@
           "description": "Mida de la icona en píxels",
           "label": "Mida d'icona"
         },
-        "interface": {
-          "description": "Interfície de xarxa a monitoritzar; deixa buit per utilitzar el total de totes les interfícies",
-          "label": "Interfície"
-        },
         "inactive-opacity": {
           "description": "Opacitat de les icones de les finestres inactives (no enfocades).",
           "label": "Opacitat d'icona inactiva"
+        },
+        "interface": {
+          "description": "Interfície de xarxa a monitoritzar; deixa buit per utilitzar el total de totes les interfícies",
+          "label": "Interfície"
         },
         "label": {
           "description": "Text estàtic opcional mostrat en aquest botó",
