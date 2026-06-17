@@ -11,6 +11,7 @@
 #include "ipc/ipc_service.h"
 #include "render/render_context.h"
 #include "render/scene/input_area.h"
+#include "shell/bar/bar_reserved_zone.h"
 #include "shell/bar/widget.h"
 #include "shell/bar/widgets/plugin_widget.h"
 #include "shell/panel/panel_manager.h"
@@ -73,25 +74,6 @@ namespace {
       return 0;
     }
     return cfg.marginEdge;
-  }
-
-  [[nodiscard]] std::int32_t
-  reservedBarExclusiveZone(const BarConfig& barConfig, const ShellConfig::ShadowConfig& shadowConfig) {
-    const auto sb = shell::surface_shadow::bleed(barConfig.shadow, shadowConfig);
-    const std::int32_t mEdge = barConfig.marginEdge;
-    if (barConfig.position == "bottom") {
-      return barConfig.thickness + std::min(mEdge, sb.down);
-    }
-    if (barConfig.position == "top") {
-      return std::min(mEdge, sb.up) + barConfig.thickness;
-    }
-    if (barConfig.position == "right") {
-      return barConfig.thickness + std::min(mEdge, sb.right);
-    }
-    if (barConfig.position == "left") {
-      return std::min(mEdge, sb.left) + barConfig.thickness;
-    }
-    return barConfig.thickness;
   }
 
   // "Concave corners": a per-corner radius < 0 marks that corner Concave, bulging
