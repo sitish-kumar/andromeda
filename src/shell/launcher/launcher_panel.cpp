@@ -584,6 +584,8 @@ void LauncherPanel::doLayout(Renderer& renderer, float width, float height) {
 }
 
 void LauncherPanel::onOpen(std::string_view context) {
+  requestDesktopEntryRescan();
+
   m_categoryFilterVisible = m_config != nullptr && m_config->config().shell.panel.launcherCategories;
   m_activeCategoryType = All;
   m_activeCategory.clear();
