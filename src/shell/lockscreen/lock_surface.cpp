@@ -482,9 +482,30 @@ void LockSurface::layoutScene(std::uint32_t width, std::uint32_t height) {
     if (const DesktopWidgetState* loginBox =
             lockscreen_login_box::findForOutput(m_config->config().lockscreenWidgets.widgets, m_outputKey);
         loginBox != nullptr) {
-      lockscreen_login_box::panelOriginFromCenter(loginBox->cx, loginBox->cy, sw, panelX, panelY, panelWidth);
+      float cx = loginBox->cx;
+      float cy = loginBox->cy;
+      const WaylandOutput* output = m_connection.findOutputByWl(m_output);
+      if (output != nullptr) {
+        float curW = sw;
+        float curH = sh;
+        bool isRotated90or270 =
+            (output->transform == WL_OUTPUT_TRANSFORM_90
+             || output->transform == WL_OUTPUT_TRANSFORM_270
+             || output->transform == WL_OUTPUT_TRANSFORM_FLIPPED_90
+             || output->transform == WL_OUTPUT_TRANSFORM_FLIPPED_270);
+        float refW = isRotated90or270 ? curH : curW;
+        float refH = isRotated90or270 ? curW : curH;
+        if (refW > 0.0f && refH > 0.0f) {
+          cx = cx * (curW / refW);
+          cy = cy * (curH / refH);
+        }
+      }
+      lockscreen_login_box::panelOriginFromCenter(cx, cy, sw, panelX, panelY, panelWidth);
     }
   }
+
+  panelX = std::clamp(panelX, Style::spaceLg, sw - panelWidth - Style::spaceLg);
+  panelY = std::clamp(panelY, Style::spaceLg, sh - panelHeight - Style::spaceLg);
 
   m_root.setSize(sw, sh);
 
