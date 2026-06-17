@@ -13,6 +13,7 @@
 #include "ui/controls/input.h"
 #include "ui/controls/slider.h"
 #include "ui/dialogs/file_dialog.h"
+#include "ui/dialogs/glyph_picker_dialog.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "wayland/layer_surface.h"
@@ -335,6 +336,47 @@ namespace {
     return makeRow(labelText, std::move(select));
   }
 
+  std::unique_ptr<Flex> makeGlyphRow(
+      std::string_view labelText, const std::string& key, const std::string& value, BackgroundWidgetsEditor* editor
+  ) {
+    auto input = ui::input({
+        .value = value,
+        .controlHeight = Style::controlHeightSm,
+        .flexGrow = 1.0f,
+        .onChange = [editor, key](const std::string& val) { editor->applySettingChange(key, val); },
+    });
+    auto picker = ui::button({
+        .glyph = "apps",
+        .glyphSize = Style::fontSizeBody,
+        .variant = ButtonVariant::Outline,
+        .minWidth = Style::controlHeightSm,
+        .minHeight = Style::controlHeightSm,
+        .paddingV = Style::spaceXs,
+        .paddingH = Style::spaceSm,
+        .onClick = [editor, key, currentValue = value]() {
+          GlyphPickerDialogOptions options;
+          if (!currentValue.empty()) {
+            options.initialGlyph = currentValue;
+          }
+          (void)GlyphPickerDialog::open(std::move(options), [editor, key](std::optional<GlyphPickerResult> result) {
+            if (!result.has_value()) {
+              return;
+            }
+            editor->applySettingChange(key, result->name);
+          });
+        },
+    });
+    auto row = ui::row({
+        .align = FlexAlign::Center,
+        .gap = Style::spaceSm,
+        .fillWidth = true,
+        .flexGrow = 1.0f,
+    });
+    row->addChild(std::move(input));
+    row->addChild(std::move(picker));
+    return makeRow(labelText, std::move(row));
+  }
+
   std::unique_ptr<Flex> makeInputRow(
       std::string_view labelText, const std::string& key, const std::string& value, const std::string& placeholder,
       BackgroundWidgetsEditor* editor
@@ -504,6 +546,13 @@ namespace {
         break;
       }
 
+      case settings::WidgetControlKind::Glyph: {
+        const auto* defVal = std::get_if<std::string>(&spec.schema.defaultValue);
+        const std::string fallback = defVal != nullptr ? *defVal : std::string{};
+        content.addChild(makeGlyphRow(label, spec.schema.key, getStr(s, spec.schema.key, fallback), editor));
+        break;
+      }
+
       case settings::WidgetControlKind::Select: {
         const auto* defVal = std::get_if<std::string>(&spec.schema.defaultValue);
         const std::string fallback = defVal != nullptr ? *defVal : std::string{};
@@ -614,13 +663,16 @@ void BackgroundWidgetsEditor::applySettingChange(const std::string& key, WidgetS
     const bool rebuildInspector = settingChangeAffectsInspectorVisibility(state->type, key) || key == "background";
 
     if (view.widget != nullptr && view.widget->applySetting(key, value, state->settings, *m_renderContext)) {
-      view.intrinsicWidth = std::max(1.0f, view.widget->intrinsicWidth());
-      view.intrinsicHeight = std::max(1.0f, view.widget->intrinsicHeight());
-      applyViewState(view, *state, false);
+      if (state->type == "button" && (key == "label" || key == "glyph")) {
+        state->boxWidth = 0.0f;
+        state->boxHeight = 0.0f;
+      }
+      applyViewState(view, *state, true);
       updateSelectionVisuals(*surface);
       if (rebuildInspector) {
         requestLayout();
       } else if (surface->surface != nullptr) {
+        surface->surface->requestLayout();
         surface->surface->requestRedraw();
       }
       return;
@@ -640,7 +692,7 @@ void BackgroundWidgetsEditor::applySettingChange(const std::string& key, WidgetS
     }
 
     newWidget->create();
-    if (state->type == "audio_visualizer" || state->type == "fancy_audio_visualizer") {
+    if (state->type == "audio_visualizer" || state->type == "fancy_audio_visualizer" || state->type == "button") {
       newWidget->setEditorPreview(true);
     }
     newWidget->setAnimationManager(&surface->animations);

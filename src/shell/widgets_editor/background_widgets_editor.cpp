@@ -748,7 +748,9 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
     }
 
     widget->create();
-    if (widgetState.type == "audio_visualizer" || widgetState.type == "fancy_audio_visualizer") {
+    if (widgetState.type == "audio_visualizer"
+        || widgetState.type == "fancy_audio_visualizer"
+        || widgetState.type == "button") {
       widget->setEditorPreview(true);
     }
     widget->setAnimationManager(&surface.animations);
@@ -1449,6 +1451,11 @@ void BackgroundWidgetsEditor::addWidget(const std::string& outputName, const std
   }
   if (widget.type == "fancy_audio_visualizer") {
     widget.settings.emplace("background", false);
+  }
+  if (widget.type == "button") {
+    widget.settings.emplace("background", true);
+    widget.settings.emplace("glyph", std::string("heart"));
+    widget.settings.emplace("variant", std::string("default"));
   }
 
   if (widget.type == "sticker") {
