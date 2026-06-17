@@ -30,6 +30,7 @@ namespace scripting {
   struct ManifestSelectOption {
     std::string value;
     std::string label;
+    std::string labelKey;
   };
 
   struct ManifestVisibility {
@@ -40,7 +41,9 @@ namespace scripting {
   struct ManifestField {
     std::string key;
     std::string label;
+    std::string labelKey;
     std::string description;
+    std::string descriptionKey;
     ManifestFieldType type = ManifestFieldType::String;
 
     // Typed default; the active member is selected by `type`.

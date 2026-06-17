@@ -493,6 +493,7 @@ _noctalia_sources = files(
   'src/scripting/luau_host.cpp',
   'src/scripting/plugin_catalog.cpp',
   'src/scripting/plugin_git.cpp',
+  'src/scripting/plugin_i18n.cpp',
   'src/scripting/plugin_ipc.cpp',
   'src/scripting/plugin_manager.cpp',
   'src/scripting/plugin_manifest.cpp',
@@ -1137,6 +1138,25 @@ plugin_manifest_test = executable('plugin_manifest_test',
 )
 
 test('plugin_manifest', plugin_manifest_test)
+
+plugin_i18n_test = executable('plugin_i18n_test',
+  sources: files(
+    'tests/plugin_i18n_test.cpp',
+    'src/scripting/plugin_i18n.cpp',
+    'src/i18n/i18n_service.cpp',
+    'src/i18n/language_tag.cpp',
+    'src/core/resource_paths.cpp',
+    'src/core/log.cpp',
+  ),
+  include_directories: _noctalia_inc,
+  cpp_args: [
+    '-DNOCTALIA_SOURCE_ASSETS_DIR="' + meson.project_source_root() / 'assets' + '"',
+    '-DNOCTALIA_INSTALL_PREFIX="' + get_option('prefix') + '"',
+    '-DNOCTALIA_INSTALL_DATADIR="' + get_option('datadir') + '"',
+  ],
+)
+
+test('plugin_i18n', plugin_i18n_test)
 
 config_schema_roundtrip_test = executable('config_schema_roundtrip_test',
   sources: files(

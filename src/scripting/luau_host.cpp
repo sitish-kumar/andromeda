@@ -1315,76 +1315,10 @@ void LuauHost::interruptIfBudgetExceeded(lua_State* L) {
   luaL_error(L, "script callback '%s' timed out", m_currentCallName.empty() ? "(unknown)" : m_currentCallName.c_str());
 }
 
-namespace {
-  // Flatten a nested JSON object into dotted keys, e.g. {"a":{"b":"c"}} -> {"a.b":"c"}.
-  void flattenTranslations(
-      const nlohmann::json& node, const std::string& prefix, std::unordered_map<std::string, std::string>& out
-  ) {
-    if (node.is_object()) {
-      for (const auto& [key, value] : node.items()) {
-        flattenTranslations(value, prefix.empty() ? key : prefix + "." + key, out);
-      }
-    } else if (node.is_string()) {
-      out[prefix] = node.get<std::string>();
-    }
-  }
-
-  void mergeTranslationFile(const std::filesystem::path& path, std::unordered_map<std::string, std::string>& out) {
-    std::ifstream file(path);
-    if (!file) {
-      return;
-    }
-    try {
-      flattenTranslations(nlohmann::json::parse(file), {}, out);
-    } catch (const nlohmann::json::exception&) {
-      kLog.warn("failed to parse plugin translations: {}", path.string());
-    }
-  }
-} // namespace
-
-void LuauHost::loadTranslations() {
-  m_translations.clear();
-  if (m_pluginDir.empty()) {
-    return;
-  }
-  const std::filesystem::path dir = m_pluginDir / "translations";
-  // English is the fallback layer; the active language overrides it.
-  mergeTranslationFile(dir / "en.json", m_translations);
-  if (const std::string_view lang = i18n::Service::instance().language(); !lang.empty() && lang != "en") {
-    mergeTranslationFile(dir / (std::string(lang) + ".json"), m_translations);
-  }
-}
+void LuauHost::loadTranslations() { m_translations.load(m_pluginDir); }
 
 std::string LuauHost::translate(std::string_view key, const std::unordered_map<std::string, std::string>& subst) const {
-  const auto it = m_translations.find(std::string(key));
-  if (it == m_translations.end()) {
-    kLog.warn("plugin translation key '{}' not found", key);
-    return std::string(key);
-  }
-  const std::string& tmpl = it->second;
-  if (subst.empty() || !tmpl.contains('{')) {
-    return tmpl;
-  }
-  std::string out;
-  out.reserve(tmpl.size());
-  for (std::size_t i = 0; i < tmpl.size();) {
-    if (tmpl[i] == '{') {
-      const std::size_t end = tmpl.find('}', i + 1);
-      if (end != std::string::npos) {
-        const std::string name = tmpl.substr(i + 1, end - i - 1);
-        if (const auto found = subst.find(name); found != subst.end()) {
-          out += found->second;
-        } else {
-          out.append(tmpl, i, end - i + 1); // leave unknown placeholders verbatim
-        }
-        i = end + 1;
-        continue;
-      }
-    }
-    out.push_back(tmpl[i]);
-    ++i;
-  }
-  return out;
+  return m_translations.translate(key, subst);
 }
 
 void LuauHost::scriptSetUpdateInterval(int ms) {

@@ -2,6 +2,7 @@
 
 #include "config/config_types.h"
 #include "i18n/i18n.h"
+#include "scripting/plugin_i18n.h"
 #include "scripting/plugin_registry.h"
 #include "shell/settings/settings_control_factory.h"
 #include "shell/settings/settings_registry.h"
@@ -385,7 +386,11 @@ namespace settings {
       Flex& body, const Config& cfg, SettingsControlFactory& factory, const std::string& pluginId,
       const scripting::PluginManifest& manifest, bool showAdvanced, float scale
   ) {
-    const auto specs = settings::manifestSettingSpecs(manifest.settings);
+    scripting::PluginTranslationCatalog translations;
+    if (const auto pluginDir = scripting::PluginRegistry::instance().findPluginDir(pluginId)) {
+      translations.load(*pluginDir);
+    }
+    const auto specs = settings::manifestSettingSpecs(manifest.settings, &translations);
     bool rendered = false;
     for (const auto& spec : specs) {
       if (spec.advanced && !showAdvanced) {

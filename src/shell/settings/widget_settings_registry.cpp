@@ -2,6 +2,7 @@
 
 #include "i18n/i18n.h"
 #include "render/core/renderer.h"
+#include "scripting/plugin_i18n.h"
 #include "scripting/plugin_registry.h"
 #include "shell/settings/font_family_catalog.h"
 #include "shell/settings/font_weight_catalog.h"
@@ -950,14 +951,25 @@ namespace settings {
     return specs;
   }
 
-  std::vector<WidgetSettingSpec> manifestSettingSpecs(const std::vector<scripting::ManifestField>& fields) {
+  std::vector<WidgetSettingSpec> manifestSettingSpecs(
+      const std::vector<scripting::ManifestField>& fields, const scripting::PluginTranslationCatalog* translations
+  ) {
     std::vector<WidgetSettingSpec> specs;
     specs.reserve(fields.size());
     for (const auto& field : fields) {
       WidgetSettingSpec spec;
       spec.schema.key = field.key;
-      spec.literalLabel = field.label.empty() ? field.key : field.label;
-      spec.literalDescription = field.description;
+      if (!field.labelKey.empty()) {
+        spec.literalLabel = translations != nullptr ? translations->translate(field.labelKey) : field.labelKey;
+      } else {
+        spec.literalLabel = field.label.empty() ? field.key : field.label;
+      }
+      if (!field.descriptionKey.empty()) {
+        spec.literalDescription =
+            translations != nullptr ? translations->translate(field.descriptionKey) : field.descriptionKey;
+      } else {
+        spec.literalDescription = field.description;
+      }
       spec.advanced = field.advanced;
       spec.schema.minValue = field.minValue;
       spec.schema.maxValue = field.maxValue;
@@ -995,7 +1007,11 @@ namespace settings {
         spec.literalLabels = true;
         for (const auto& opt : field.options) {
           spec.schema.enumValues.push_back(opt.value);
-          spec.options.push_back(WidgetSettingSelectOption{.value = opt.value, .labelKey = opt.label});
+          std::string label = opt.label;
+          if (!opt.labelKey.empty()) {
+            label = translations != nullptr ? translations->translate(opt.labelKey) : opt.labelKey;
+          }
+          spec.options.push_back(WidgetSettingSelectOption{.value = opt.value, .labelKey = std::move(label)});
         }
         break;
       case scripting::ManifestFieldType::Color:
@@ -1026,7 +1042,9 @@ namespace settings {
   widgetSettingSpecs(std::string_view type, const WidgetConfig* config, std::string_view shellFontFamily) {
     (void)config;
     if (auto pw = resolvePluginWidget(type)) {
-      std::vector<WidgetSettingSpec> specs = manifestSettingSpecs(pw->entry->settings);
+      scripting::PluginTranslationCatalog translations;
+      translations.load(pw->sourcePath.parent_path());
+      std::vector<WidgetSettingSpec> specs = manifestSettingSpecs(pw->entry->settings, &translations);
       auto commonSpecs = commonWidgetSettingSpecs(shellFontFamily);
       specs.insert(
           specs.end(), std::make_move_iterator(commonSpecs.begin()), std::make_move_iterator(commonSpecs.end())
