@@ -63,7 +63,6 @@ namespace {
   constexpr float kIconTextGap = Style::spaceSm;
   constexpr float kActionGap = Style::spaceXs;
   constexpr float kActionRowGap = Style::spaceSm;
-  constexpr int kMaxActionButtons = 2;
   std::string fallbackActionLabel() { return i18n::tr("notifications.actions.fallback"); }
 
   bool hasInlineReplyAction(const std::vector<std::string>& actions) {
@@ -305,8 +304,7 @@ namespace {
   std::vector<std::unique_ptr<Button>>
   collectNotificationActionButtons(const std::vector<std::string>& actions, float scale) {
     std::vector<std::unique_ptr<Button>> buttons;
-    buttons.reserve(kMaxActionButtons);
-    for (std::size_t i = 0; i + 1 < actions.size() && static_cast<int>(buttons.size()) < kMaxActionButtons; i += 2) {
+    for (std::size_t i = 0; i + 1 < actions.size(); i += 2) {
       const std::string& actionKey = actions[i];
       std::string actionLabel = actions[i + 1];
       if (actionKey.empty() || actionKey == "default") {
@@ -320,56 +318,63 @@ namespace {
     return buttons;
   }
 
-  bool
-  notificationActionsPreferStack(RenderContext& rc, const std::vector<std::unique_ptr<Button>>& buttons, float scale) {
-    if (buttons.size() < 2) {
-      return false;
-    }
-    const float rowWidth = notificationTextMaxWidth(scale, true);
-    float totalWidth = 0.0f;
-    for (std::size_t i = 0; i < buttons.size(); ++i) {
-      if (i > 0) {
-        totalWidth += actionGap(scale);
-      }
-      const LayoutSize measured = buttons[i]->measure(rc, LayoutConstraints{});
-      totalWidth += measured.width;
-    }
-    return totalWidth > rowWidth + 0.5f;
-  }
-
-  void configureNotificationActionsRow(Flex& row, bool stacked, float scale) {
-    if (stacked) {
-      row.setDirection(FlexDirection::Vertical);
-      row.setAlign(FlexAlign::Start);
-      row.setJustify(FlexJustify::End);
-    } else {
-      row.setDirection(FlexDirection::Horizontal);
-      row.setAlign(FlexAlign::Center);
-      row.setJustify(FlexJustify::Start);
-    }
-    row.setGap(actionGap(scale));
-  }
-
   float layoutNotificationActionsRow(
-      RenderContext& rc, Flex& row, std::vector<std::unique_ptr<Button>>& buttons, float scale
+      RenderContext& rc, Flex& container, std::vector<std::unique_ptr<Button>>& buttons, float scale
   ) {
-    const bool stacked = notificationActionsPreferStack(rc, buttons, scale);
-    configureNotificationActionsRow(row, stacked, scale);
-    const float rowWidth = notificationTextMaxWidth(scale, true);
-    for (auto& button : buttons) {
-      if (stacked) {
-        button->setMaxWidth(0.0f);
-      } else if (buttons.size() == 1) {
-        button->setMaxWidth(rowWidth);
-      } else {
-        button->setMaxWidth(0.0f);
+    container.setDirection(FlexDirection::Vertical);
+    container.setAlign(FlexAlign::Stretch);
+    container.setJustify(FlexJustify::Start);
+    container.setGap(actionGap(scale));
+
+    const float maxRowWidth = notificationTextMaxWidth(scale, true);
+
+    std::vector<std::unique_ptr<Button>> currentRowButtons;
+    float currentRowWidth = 0.0f;
+
+    auto flushRow = [&](std::vector<std::unique_ptr<Button>>& rowButtons) {
+      if (rowButtons.empty()) {
+        return;
       }
-      row.addChild(std::move(button));
+      auto row = ui::row({
+          .align = FlexAlign::Center,
+          .gap = actionGap(scale),
+          .fillWidth = true,
+      });
+      for (auto& btn : rowButtons) {
+        if (rowButtons.size() == 1) {
+          btn->setMaxWidth(maxRowWidth);
+        } else {
+          btn->setMaxWidth(0.0f);
+        }
+        btn->setFlexGrow(1.0f);
+        row->addChild(std::move(btn));
+      }
+      rowButtons.clear();
+      container.addChild(std::move(row));
+    };
+
+    for (auto& button : buttons) {
+      const LayoutSize measured = button->measure(rc, LayoutConstraints{});
+      const float btnWidth = measured.width;
+
+      if (!currentRowButtons.empty() && currentRowWidth + actionGap(scale) + btnWidth > maxRowWidth) {
+        flushRow(currentRowButtons);
+        currentRowWidth = 0.0f;
+      }
+
+      if (currentRowButtons.empty()) {
+        currentRowWidth = btnWidth;
+      } else {
+        currentRowWidth += actionGap(scale) + btnWidth;
+      }
+      currentRowButtons.push_back(std::move(button));
     }
+    flushRow(currentRowButtons);
     buttons.clear();
-    row.setSize(rowWidth, 0.0f);
-    row.layout(rc);
-    return row.height() + actionRowGap(scale);
+
+    container.setSize(maxRowWidth, 0.0f);
+    container.layout(rc);
+    return container.height() + actionRowGap(scale);
   }
 
   float measureToastCardHeight(
@@ -443,7 +448,7 @@ namespace {
     auto buttons = shouldShowNotificationActions(config) ? collectNotificationActionButtons(actions, scale)
                                                          : std::vector<std::unique_ptr<Button>>{};
     if (!buttons.empty()) {
-      auto actionsRow = ui::row({
+      auto actionsRow = ui::column({
           .padding = Style::spaceXs * scale,
       });
       layoutNotificationActionsRow(rc, *actionsRow, buttons, scale);
@@ -2374,8 +2379,7 @@ InputArea* NotificationToast::buildCard(
     // Build action buttons row (always visible initially)
     {
       std::vector<std::unique_ptr<Button>> buttons;
-      for (std::size_t i = 0; i + 1 < entry.actions.size() && static_cast<int>(buttons.size()) < kMaxActionButtons;
-           i += 2) {
+      for (std::size_t i = 0; i + 1 < entry.actions.size(); i += 2) {
         const std::string actionKey = entry.actions[i];
         std::string actionLabel = entry.actions[i + 1];
         if (actionKey.empty() || actionKey == "default") {
@@ -2407,7 +2411,7 @@ InputArea* NotificationToast::buildCard(
       }
 
       if (!buttons.empty()) {
-        actionsRow = ui::row({
+        actionsRow = ui::column({
             .padding = Style::spaceXs * scale,
         });
         layoutNotificationActionsRow(*m_renderContext, *actionsRow, buttons, scale);

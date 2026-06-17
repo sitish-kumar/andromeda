@@ -43,8 +43,6 @@ namespace {
     const float baseRadius = Style::radiusMd * (iconSize / kHistoryIconReferenceSize);
     return std::min(iconSize * 0.5f, Style::scaledRadius(baseRadius, localScale));
   }
-  constexpr int kHistoryMaxActionButtons = 2;
-
   constexpr float kNotificationActionButtonSize = Style::controlHeightSm;
 
   std::string historyActionLabel(std::string_view actionKey, std::string_view actionLabel) {
@@ -60,34 +58,72 @@ namespace {
     return i18n::tr("notifications.actions.fallback");
   }
 
-  float measureHistoryActionsRowHeight(Renderer& renderer, const std::vector<std::string>& actions, float scale) {
+  float measureHistoryActionsRowHeight(
+      Renderer& renderer, const std::vector<std::string>& actions, float cardTextWidth, float scale
+  ) {
     if (actions.empty()) {
       return 0.0f;
     }
-    auto row = ui::row({
-        .align = FlexAlign::Center,
+    auto container = ui::column({
+        .align = FlexAlign::Stretch,
         .gap = Style::spaceXs * scale,
     });
-    int actionCount = 0;
-    for (std::size_t i = 0; i + 1 < actions.size() && actionCount < kHistoryMaxActionButtons; i += 2) {
+
+    std::vector<std::unique_ptr<Button>> currentRowButtons;
+    float currentRowWidth = 0.0f;
+
+    auto flushRow = [&](std::vector<std::unique_ptr<Button>>& rowButtons) {
+      if (rowButtons.empty()) {
+        return;
+      }
+      auto row = ui::row({
+          .align = FlexAlign::Center,
+          .gap = Style::spaceXs * scale,
+          .fillWidth = true,
+      });
+      for (auto& btn : rowButtons) {
+        btn->setFlexGrow(1.0f);
+        row->addChild(std::move(btn));
+      }
+      rowButtons.clear();
+      container->addChild(std::move(row));
+    };
+
+    for (std::size_t i = 0; i + 1 < actions.size(); i += 2) {
       const std::string& actionKey = actions[i];
       if (actionKey.empty()) {
         continue;
       }
-      row->addChild(
-          ui::button({
-              .text = historyActionLabel(actionKey, actions[i + 1]),
-              .fontSize = Style::fontSizeCaption * scale,
-              .variant = ButtonVariant::Outline,
-          })
-      );
-      ++actionCount;
+      auto button = ui::button({
+          .text = historyActionLabel(actionKey, actions[i + 1]),
+          .fontSize = Style::fontSizeCaption * scale,
+          .variant = ButtonVariant::Outline,
+      });
+
+      const LayoutSize measured = button->measure(renderer, LayoutConstraints{});
+      const float btnWidth = measured.width;
+
+      if (!currentRowButtons.empty() && currentRowWidth + Style::spaceXs * scale + btnWidth > cardTextWidth) {
+        flushRow(currentRowButtons);
+        currentRowWidth = 0.0f;
+      }
+
+      if (currentRowButtons.empty()) {
+        currentRowWidth = btnWidth;
+      } else {
+        currentRowWidth += Style::spaceXs * scale + btnWidth;
+      }
+      currentRowButtons.push_back(std::move(button));
     }
-    if (actionCount == 0) {
+    flushRow(currentRowButtons);
+
+    if (container->children().empty()) {
       return 0.0f;
     }
-    row->layout(renderer);
-    return row->height();
+
+    container->setSize(cardTextWidth, 0.0f);
+    container->layout(renderer);
+    return container->height();
   }
   constexpr int kSummaryMaxLines = 2;
   constexpr int kBodyMaxLines = 3;
@@ -264,8 +300,9 @@ namespace {
               metrics.expanded ? kExpandedMaxLines : kBodyMaxLines
           );
 
-    const float actionsRowHeight =
-        showHistoryActions ? measureHistoryActionsRowHeight(renderer, entry.notification.actions, scale) : 0.0f;
+    const float actionsRowHeight = showHistoryActions
+        ? measureHistoryActionsRowHeight(renderer, entry.notification.actions, metrics.cardTextWidth, scale)
+        : 0.0f;
 
     const float paddingY = (Style::spaceSm + Style::spaceXs) * scale * 2.0f;
     int visibleSegments = 2;
@@ -370,22 +407,13 @@ namespace {
       ));
 
       m_actionsRow = static_cast<Flex*>(addChild(
-          ui::row({
-              .align = FlexAlign::Center,
+          ui::column({
+              .align = FlexAlign::Stretch,
               .gap = Style::spaceXs * scale,
               .fillWidth = true,
               .visible = false,
           })
       ));
-      for (int i = 0; i < kHistoryMaxActionButtons; ++i) {
-        m_actionButtons[static_cast<std::size_t>(i)] = static_cast<Button*>(m_actionsRow->addChild(
-            ui::button({
-                .fontSize = Style::fontSizeCaption * scale,
-                .variant = ButtonVariant::Outline,
-                .visible = false,
-            })
-        ));
-      }
     }
 
     void bind(
@@ -435,28 +463,65 @@ namespace {
         m_body->measure(renderer);
       }
 
-      for (int ai = 0; ai < kHistoryMaxActionButtons; ++ai) {
-        m_actionButtons[static_cast<std::size_t>(ai)]->setVisible(false);
-        m_actionButtons[static_cast<std::size_t>(ai)]->setOnClick(nullptr);
+      while (!m_actionsRow->children().empty()) {
+        m_actionsRow->removeChild(m_actionsRow->children().back().get());
       }
       m_actionsRow->setVisible(false);
-      if (showHistoryActions) {
+      if (showHistoryActions && !entry.notification.actions.empty()) {
+        std::vector<std::unique_ptr<Button>> currentRowButtons;
+        float currentRowWidth = 0.0f;
         int shownActions = 0;
-        for (std::size_t i = 0; i + 1 < entry.notification.actions.size() && shownActions < kHistoryMaxActionButtons;
-             i += 2) {
+
+        auto flushRow = [&](std::vector<std::unique_ptr<Button>>& rowButtons) {
+          if (rowButtons.empty()) {
+            return;
+          }
+          auto row = ui::row({
+              .align = FlexAlign::Center,
+              .gap = Style::spaceXs * m_scale,
+              .fillWidth = true,
+          });
+          for (auto& btn : rowButtons) {
+            btn->setFlexGrow(1.0f);
+            row->addChild(std::move(btn));
+          }
+          rowButtons.clear();
+          m_actionsRow->addChild(std::move(row));
+        };
+
+        for (std::size_t i = 0; i + 1 < entry.notification.actions.size(); i += 2) {
           const std::string& actionKey = entry.notification.actions[i];
           if (actionKey.empty()) {
             continue;
           }
-          Button* btn = m_actionButtons[static_cast<std::size_t>(shownActions)];
-          btn->setText(historyActionLabel(actionKey, entry.notification.actions[i + 1]));
-          btn->setEnabled(true);
-          btn->setOnClick([onAction, id = entry.notification.id, key = std::string(actionKey)]() {
+          auto button = ui::button({
+              .text = historyActionLabel(actionKey, entry.notification.actions[i + 1]),
+              .fontSize = Style::fontSizeCaption * m_scale,
+              .variant = ButtonVariant::Outline,
+          });
+          button->setOnClick([onAction, id = entry.notification.id, key = std::string(actionKey)]() {
             onAction(id, key);
           });
-          btn->setVisible(true);
+
+          const LayoutSize measured = button->measure(renderer, LayoutConstraints{});
+          const float btnWidth = measured.width;
+
+          if (!currentRowButtons.empty()
+              && currentRowWidth + Style::spaceXs * m_scale + btnWidth > metrics.cardTextWidth) {
+            flushRow(currentRowButtons);
+            currentRowWidth = 0.0f;
+          }
+
+          if (currentRowButtons.empty()) {
+            currentRowWidth = btnWidth;
+          } else {
+            currentRowWidth += Style::spaceXs * m_scale + btnWidth;
+          }
+          currentRowButtons.push_back(std::move(button));
           ++shownActions;
         }
+        flushRow(currentRowButtons);
+
         m_actionsRow->setVisible(shownActions > 0);
       }
     }
@@ -560,7 +625,6 @@ namespace {
     Label* m_summary = nullptr;
     Label* m_body = nullptr;
     Flex* m_actionsRow = nullptr;
-    Button* m_actionButtons[kHistoryMaxActionButtons] = {};
     ImageKind m_imageKind = ImageKind::None;
     std::uint64_t m_rawImageKey = 0;
   };
