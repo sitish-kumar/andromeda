@@ -669,33 +669,6 @@ void Wallpaper::resetAutomationState() {
 
 void Wallpaper::setAutomationGate(std::function<bool()> gate) { m_automationGate = std::move(gate); }
 
-void Wallpaper::pauseRendering() {
-  if (m_renderingPaused) {
-    return;
-  }
-  m_renderingPaused = true;
-  for (const auto& instance : m_instances) {
-    if (instance == nullptr || instance->surface == nullptr) {
-      continue;
-    }
-    instance->surface->pauseFrameLoop();
-  }
-}
-
-void Wallpaper::resumeRendering() {
-  if (!m_renderingPaused) {
-    return;
-  }
-  m_renderingPaused = false;
-  for (const auto& instance : m_instances) {
-    if (instance == nullptr || instance->surface == nullptr) {
-      continue;
-    }
-    instance->surface->resumeFrameLoop();
-    instance->surface->requestLayout();
-  }
-}
-
 bool Wallpaper::automationAllowed() const noexcept { return !m_automationGate || m_automationGate(); }
 
 void Wallpaper::applyStartupAutomation(std::int64_t secondStamp) {
@@ -1005,10 +978,6 @@ void Wallpaper::createInstance(const WaylandOutput& output) {
   if (!instance->surface->initialize(output.output)) {
     kLog.warn("failed to initialize surface for output {}", output.name);
     return;
-  }
-
-  if (m_renderingPaused) {
-    instance->surface->pauseFrameLoop();
   }
 
   m_instances.push_back(std::move(instance));

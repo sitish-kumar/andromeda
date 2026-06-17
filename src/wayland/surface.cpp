@@ -225,19 +225,6 @@ Surface::~Surface() {
 
 bool Surface::isRunning() const noexcept { return m_running; }
 
-void Surface::pauseFrameLoop() {
-  cancelQueuedFrameWork();
-  cancelQueuedRender();
-  setRunning(false);
-}
-
-void Surface::resumeFrameLoop() {
-  setRunning(true);
-  if (m_configured) {
-    requestLayout();
-  }
-}
-
 float Surface::effectiveBufferScale() const noexcept {
   if (m_fractionalScale != nullptr && m_viewport != nullptr) {
     if (m_fractionalScaleNumerator > 0) {

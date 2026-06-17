@@ -263,33 +263,6 @@ void Dock::unsuppressDisplay() {
   }
 }
 
-void Dock::pauseUnderSessionLock() {
-  if (m_sessionLockPaused) {
-    return;
-  }
-  m_sessionLockPaused = true;
-  for (const auto& instance : m_instances) {
-    if (instance == nullptr || instance->surface == nullptr) {
-      continue;
-    }
-    instance->surface->pauseFrameLoop();
-  }
-}
-
-void Dock::resumeAfterSessionLock() {
-  if (!m_sessionLockPaused) {
-    return;
-  }
-  m_sessionLockPaused = false;
-  for (const auto& instance : m_instances) {
-    if (instance == nullptr || instance->surface == nullptr) {
-      continue;
-    }
-    instance->surface->resumeFrameLoop();
-    instance->surface->requestLayout();
-  }
-}
-
 void Dock::pruneCachedToplevelHandles() {
   if (m_platform == nullptr) {
     m_lastActiveHandleByAppIdLower.clear();
@@ -629,11 +602,6 @@ void Dock::createInstance(const WaylandOutput& output) {
 
   m_surfaceMap[instance->surface->wlSurface()] = instance.get();
   m_instances.push_back(std::move(instance));
-  if (m_sessionLockPaused) {
-    if (const auto& created = m_instances.back(); created != nullptr && created->surface != nullptr) {
-      created->surface->pauseFrameLoop();
-    }
-  }
 }
 
 // ── Private: scene building ───────────────────────────────────────────────────

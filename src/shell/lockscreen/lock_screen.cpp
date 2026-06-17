@@ -370,7 +370,7 @@ void LockScreen::runAfterSessionLocked(std::function<void()> fn) {
 void LockScreen::handleLocked(void* data, ext_session_lock_v1* /*lock*/) {
   auto* self = static_cast<LockScreen*>(data);
   // Ignore locked events after unlock()/handleFinished() tore down the lock object.
-  // Late events would pause background shell rendering without a matching unlock hook.
+  // A late event would re-engage the locked state with no matching unlock hook.
   if (self->m_lock == nullptr || !self->m_lockPending) {
     return;
   }
