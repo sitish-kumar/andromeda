@@ -300,6 +300,17 @@ void PanelManager::setAttachedPanelBarSettledCallback(std::function<bool(wl_outp
   m_attachedPanelBarSettledCallback = std::move(callback);
 }
 
+void PanelManager::onAttachedBarRevealSettled(wl_output* output, std::string_view barName) {
+  if (!m_attachedOpenAnimationPending || !isAttachedOpen() || m_output != output) {
+    return;
+  }
+  if (!m_sourceBarName.empty() && !barName.empty() && m_sourceBarName != barName) {
+    return;
+  }
+  startAttachedOpenAnimation();
+  requestFrameTick();
+}
+
 void PanelManager::registerPanel(const std::string& id, std::unique_ptr<Panel> content) {
   m_panels[id] = std::move(content);
 }

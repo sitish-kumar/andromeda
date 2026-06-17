@@ -2056,6 +2056,23 @@ void Bar::revealAutoHideBar(BarInstance& instance) {
   instance.ipcLayoutReleased = false;
   instance.animations.cancelForOwner(instance.slideRoot);
   const float current = instance.hideOpacity;
+  wl_output* output = instance.output;
+  const std::string barName = instance.barConfig.name;
+  const auto notifyAttachedPanel = [output, barName]() {
+    PanelManager::instance().onAttachedBarRevealSettled(output, barName);
+  };
+
+  constexpr float kSettledThreshold = 0.999f;
+  if (current >= kSettledThreshold) {
+    const int surfW = static_cast<int>(instance.surface->width());
+    const int surfH = static_cast<int>(instance.surface->height());
+    instance.surface->setInputRegion(barAutoHideSurfaceInputRegion(instance.barConfig, surfW, surfH, true));
+    syncBarSurfaceChrome(instance);
+    instance.surface->requestRedraw();
+    notifyAttachedPanel();
+    return;
+  }
+
   instance.animations.animate(
       current, 1.0f, Style::animNormal, Easing::EaseOutCubic,
       [inst = &instance, this](float v) {
@@ -2063,7 +2080,7 @@ void Bar::revealAutoHideBar(BarInstance& instance) {
         syncBarSlideLayerTransform(*inst);
         syncBarSurfaceChrome(*inst);
       },
-      {}, instance.slideRoot
+      notifyAttachedPanel, instance.slideRoot
   );
   const int surfW = static_cast<int>(instance.surface->width());
   const int surfH = static_cast<int>(instance.surface->height());
