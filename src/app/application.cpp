@@ -82,9 +82,7 @@ namespace {
   }
 
   bool widgetListHasLockKeys(const std::vector<std::string>& widgets, const Config& config) {
-    return std::any_of(widgets.begin(), widgets.end(), [&config](const std::string& name) {
-      return widgetIsLockKeys(name, config);
-    });
+    return std::ranges::any_of(widgets, [&config](const std::string& name) { return widgetIsLockKeys(name, config); });
   }
 
   std::string_view powerProfileOriginName(PowerProfilesChangeOrigin origin) {
@@ -155,13 +153,13 @@ namespace {
     if (bar.enabled) {
       return true;
     }
-    return std::any_of(bar.monitorOverrides.begin(), bar.monitorOverrides.end(), [](const BarMonitorOverride& ovr) {
+    return std::ranges::any_of(bar.monitorOverrides, [](const BarMonitorOverride& ovr) {
       return ovr.enabled.value_or(false);
     });
   }
 
   bool configHasLockKeysWidget(const Config& config) {
-    return std::any_of(config.bars.begin(), config.bars.end(), [&config](const BarConfig& bar) {
+    return std::ranges::any_of(config.bars, [&config](const BarConfig& bar) {
       return barMayRender(bar)
           && (widgetListHasLockKeys(bar.startWidgets, config)
               || widgetListHasLockKeys(bar.centerWidgets, config)
@@ -1430,9 +1428,7 @@ void Application::initUi() {
   });
   m_settingsWindow.setConnectCalendarAccount([this](std::string accountId, std::string activationToken) {
     const auto& accounts = m_configService.config().calendar.accounts;
-    const auto it = std::find_if(accounts.begin(), accounts.end(), [&](const CalendarConfig::Account& account) {
-      return account.id == accountId;
-    });
+    const auto it = std::ranges::find(accounts, accountId, &CalendarConfig::Account::id);
     if (it == accounts.end()) {
       return;
     }

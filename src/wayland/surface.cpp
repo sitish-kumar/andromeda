@@ -15,6 +15,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <format>
+#include <ranges>
 #include <string_view>
 #include <typeinfo>
 #include <unordered_map>
@@ -766,12 +767,12 @@ std::vector<InputRect> Surface::tessellateShape(
         // spike columns the match may not be the very last rect, so scan back over
         // the few rects that end at this row.
         bool merged = false;
-        for (auto it = out.rbegin(); it != out.rend(); ++it) {
-          if (it->y + it->height < ry) {
+        for (auto& rect : std::views::reverse(out)) {
+          if (rect.y + rect.height < ry) {
             break;
           }
-          if (it->x == rx && it->width == rw && it->y + it->height == ry) {
-            it->height += rowH;
+          if (rect.x == rx && rect.width == rw && rect.y + rect.height == ry) {
+            rect.height += rowH;
             merged = true;
             break;
           }
@@ -981,7 +982,7 @@ void Surface::cancelQueuedFrameWork() {
     return;
   }
   auto& queue = pendingFrameWorkQueue();
-  queue.erase(std::remove(queue.begin(), queue.end(), this), queue.end());
+  std::erase(queue, this);
   m_frameWorkQueued = false;
   m_frameTickPending = false;
   m_pendingFrameDeltaMs = 0.0f;
@@ -1059,7 +1060,7 @@ void Surface::cancelQueuedRender() {
     return;
   }
   auto& queue = pendingRenderQueue();
-  queue.erase(std::remove(queue.begin(), queue.end(), this), queue.end());
+  std::erase(queue, this);
   m_renderQueued = false;
 }
 
