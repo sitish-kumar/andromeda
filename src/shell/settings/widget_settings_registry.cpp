@@ -515,7 +515,7 @@ namespace settings {
       }
     }
 
-    std::sort(entries.begin(), entries.end(), [](const auto& a, const auto& b) {
+    std::ranges::sort(entries, [](const auto& a, const auto& b) {
       if (a.label == b.label) {
         return a.value < b.value;
       }

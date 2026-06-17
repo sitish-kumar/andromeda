@@ -78,30 +78,23 @@ namespace {
     if (id.empty()) {
       return false;
     }
-    return std::all_of(id.begin(), id.end(), [](char ch) {
+    return std::ranges::all_of(id, [](char ch) {
       return (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '_';
     });
   }
 
   bool calendarAccountIdExists(const Config& cfg, std::string_view id) {
-    return std::any_of(
-        cfg.calendar.accounts.begin(), cfg.calendar.accounts.end(),
-        [id](const CalendarConfig::Account& a) { return a.id == id; }
-    );
+    return std::ranges::contains(cfg.calendar.accounts, id, &CalendarConfig::Account::id);
   }
 
   bool pluginSourceNameExists(const Config& cfg, std::string_view name) {
-    return std::any_of(cfg.plugins.sources.begin(), cfg.plugins.sources.end(), [name](const PluginSourceConfig& src) {
-      return src.name == name;
-    });
+    return std::ranges::contains(cfg.plugins.sources, name, &PluginSourceConfig::name);
   }
 
   std::size_t pluginSourceKindIndex(PluginSourceKind kind) { return kind == PluginSourceKind::Path ? 1u : 0u; }
 
   const CalendarConfig::Account* findCalendarAccount(const Config& cfg, std::string_view id) {
-    const auto it = std::find_if(cfg.calendar.accounts.begin(), cfg.calendar.accounts.end(), [id](const auto& account) {
-      return account.id == id;
-    });
+    const auto it = std::ranges::find(cfg.calendar.accounts, id, &CalendarConfig::Account::id);
     return it != cfg.calendar.accounts.end() ? &*it : nullptr;
   }
 
@@ -181,7 +174,7 @@ namespace {
       }
 
       std::string candidate = base;
-      for (int suffix = 2; std::find(used.begin(), used.end(), candidate) != used.end(); ++suffix) {
+      for (int suffix = 2; std::ranges::contains(used, candidate); ++suffix) {
         candidate = std::format("{}-{}", base, suffix);
       }
       row.name = candidate;
@@ -596,9 +589,7 @@ void SettingsWindow::openIdleBehaviorEntryEditor(std::size_t index) {
     }
     inferIdleBehaviorActionFromLegacyFields(*rowState);
     auto next = m_config->config().idle.behaviors;
-    auto target = std::find_if(next.begin(), next.end(), [rowKey](const IdleBehaviorConfig& behavior) {
-      return behavior.name == *rowKey;
-    });
+    auto target = std::ranges::find(next, *rowKey, &IdleBehaviorConfig::name);
     if (target == next.end() && index < next.size()) {
       target = next.begin() + static_cast<std::ptrdiff_t>(index);
     }
@@ -782,9 +773,7 @@ void SettingsWindow::openNotificationFilterEntryEditor(std::size_t index) {
       return;
     }
     auto next = m_config->config().notification.filters;
-    auto target = std::find_if(next.begin(), next.end(), [rowKey](const NotificationFilterConfig& filter) {
-      return filter.name == *rowKey;
-    });
+    auto target = std::ranges::find(next, *rowKey, &NotificationFilterConfig::name);
     if (target == next.end() && index < next.size()) {
       target = next.begin() + static_cast<std::ptrdiff_t>(index);
     }

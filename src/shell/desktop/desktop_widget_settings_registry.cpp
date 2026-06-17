@@ -19,6 +19,7 @@ namespace desktop_settings {
 
     const std::vector<DesktopWidgetTypeSpec> kDesktopWidgetTypeSpecs = {
         {.type = "audio_visualizer", .labelKey = "desktop-widgets.editor.types.audio-visualizer"},
+        {.type = "button", .labelKey = "desktop-widgets.editor.types.button"},
         {.type = "clock", .labelKey = "desktop-widgets.editor.types.clock"},
         {.type = "fancy_audio_visualizer", .labelKey = "desktop-widgets.editor.types.fancy-audio-visualizer"},
         {.type = "label", .labelKey = "desktop-widgets.editor.types.label"},
@@ -70,6 +71,10 @@ namespace desktop_settings {
 
     WidgetSettingSpec stringSpec(std::string_view key, std::string defaultValue = {}) {
       return baseSpec(key, WidgetControlKind::String, std::move(defaultValue));
+    }
+
+    WidgetSettingSpec glyphSpec(std::string_view key, std::string defaultValue = {}) {
+      return baseSpec(key, WidgetControlKind::Glyph, std::move(defaultValue));
     }
 
     WidgetSettingSpec colorSpec(std::string_view key, std::string defaultValue = {}) {
@@ -136,7 +141,7 @@ namespace desktop_settings {
       options.push_back(DesktopWidgetTypeOption{.value = entryId, .label = std::move(label)});
     }
 
-    std::sort(options.begin(), options.end(), [](const auto& a, const auto& b) { return a.label < b.label; });
+    std::ranges::sort(options, {}, &DesktopWidgetTypeOption::label);
     return options;
   }
 
@@ -167,6 +172,10 @@ namespace desktop_settings {
           std::move(bgOpacity),
           std::move(bgRadius),
       };
+    }
+
+    if (type == "button") {
+      return {};
     }
 
     const WidgetSettingVisibility backgroundOn{"background", {"true"}};
@@ -229,6 +238,9 @@ namespace desktop_settings {
       auto format = stringSpec("format", "{:%H:%M}");
       format.visibleWhen = digitalOnly;
       add(std::move(format));
+      auto centerText = boolSpec("center_text", false);
+      centerText.visibleWhen = digitalOnly;
+      add(std::move(centerText));
       add(colorSpec("color", "on_surface"));
       add(fontFamilySpec());
       add(boolSpec("shadow", true));
@@ -300,6 +312,23 @@ namespace desktop_settings {
       add(colorSpec("color", "on_surface"));
       add(fontFamilySpec());
       add(boolSpec("shadow", true));
+    } else if (type == "button") {
+      add(boolSpec("background", true));
+      add(glyphSpec("glyph", "heart"));
+      add(stringSpec("label"));
+      add(stringSpec("command"));
+      add(selectSpec(
+          "variant", "default",
+          {{"default", "desktop-widgets.editor.settings.variant-default"},
+           {"primary", "desktop-widgets.editor.settings.variant-primary"},
+           {"secondary", "desktop-widgets.editor.settings.variant-secondary"},
+           {"outline", "desktop-widgets.editor.settings.variant-outline"},
+           {"ghost", "desktop-widgets.editor.settings.variant-ghost"},
+           {"destructive", "desktop-widgets.editor.settings.variant-destructive"}}
+      ));
+      add(colorSpec("color"));
+      add(colorSpec("hover_background", "hover"));
+      add(fontFamilySpec());
     } else if (type == "sysmon") {
       add(selectSpec("stat", "cpu_usage", sysmonStats));
       add(selectSpec("stat2", "", sysmonStatsWithNone));

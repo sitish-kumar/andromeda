@@ -279,7 +279,7 @@ void LockscreenWidgetsHost::syncSurfaceFrameTick(LockSurface* surfacePtr) {
     return;
   }
 
-  const bool hasWidgets = std::any_of(m_instances.begin(), m_instances.end(), [&](const auto& instance) {
+  const bool hasWidgets = std::ranges::any_of(m_instances, [&](const auto& instance) {
     return instance->surface == surfacePtr && instance->widget != nullptr;
   });
   if (!hasWidgets) {

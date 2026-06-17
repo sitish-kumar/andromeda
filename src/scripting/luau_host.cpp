@@ -982,7 +982,7 @@ bool LuauHost::startAsyncProcessMatch(std::vector<std::string> needles, int call
     return false;
   }
 
-  if (std::any_of(needles.begin(), needles.end(), [](const auto& needle) { return needle.empty(); })) {
+  if (std::ranges::any_of(needles, [](const auto& needle) { return needle.empty(); })) {
     return false;
   }
 
