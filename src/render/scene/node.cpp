@@ -355,7 +355,7 @@ Node* Node::insertChildAt(std::size_t index, std::unique_ptr<Node> child) {
 
 std::unique_ptr<Node> Node::removeChild(Node* child) {
   uiAssertSceneMutationAllowed("Node::removeChild");
-  auto it = std::find_if(m_children.begin(), m_children.end(), [child](const auto& ptr) { return ptr.get() == child; });
+  auto it = std::ranges::find_if(m_children, [child](const auto& ptr) { return ptr.get() == child; });
 
   if (it == m_children.end()) {
     return nullptr;
@@ -458,9 +458,7 @@ Node* Node::hitTestImpl(Node* node, float px, float py) {
     for (auto& child : children) {
       orderedChildren.push_back(child.get());
     }
-    std::stable_sort(orderedChildren.begin(), orderedChildren.end(), [](const Node* a, const Node* b) {
-      return a->zIndex() < b->zIndex();
-    });
+    std::ranges::stable_sort(orderedChildren, [](const Node* a, const Node* b) { return a->zIndex() < b->zIndex(); });
     for (Node* child : std::views::reverse(orderedChildren)) {
       auto* hit = hitTestImpl(child, px, py);
       if (hit != nullptr) {

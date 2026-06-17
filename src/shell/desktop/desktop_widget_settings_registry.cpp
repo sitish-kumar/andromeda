@@ -136,7 +136,7 @@ namespace desktop_settings {
       options.push_back(DesktopWidgetTypeOption{.value = entryId, .label = std::move(label)});
     }
 
-    std::sort(options.begin(), options.end(), [](const auto& a, const auto& b) { return a.label < b.label; });
+    std::ranges::sort(options, {}, &DesktopWidgetTypeOption::label);
     return options;
   }
 

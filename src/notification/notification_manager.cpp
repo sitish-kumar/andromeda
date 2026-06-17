@@ -166,9 +166,7 @@ void NotificationManager::removeEventCallback(int token) {
 }
 
 bool NotificationManager::computeHasUnreadNotificationHistory() const noexcept {
-  return std::any_of(m_history.begin(), m_history.end(), [](const NotificationHistoryEntry& entry) {
-    return !entry.seen;
-  });
+  return std::ranges::any_of(m_history, [](const NotificationHistoryEntry& entry) { return !entry.seen; });
 }
 
 void NotificationManager::notifyUnreadStateChangedIfNeeded(bool previousUnreadState) {

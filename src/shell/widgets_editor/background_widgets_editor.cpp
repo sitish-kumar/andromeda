@@ -355,9 +355,8 @@ void BackgroundWidgetsEditor::syncSurfaces() {
       continue;
     }
     const std::string key = desktop_widgets::outputKey(output);
-    const bool exists = std::any_of(m_surfaces.begin(), m_surfaces.end(), [&key](const auto& surface) {
-      return surface->outputName == key;
-    });
+    const bool exists =
+        std::ranges::any_of(m_surfaces, [&](const auto& surface) { return surface->outputName == key; });
     if (!exists) {
       createSurface(output);
     }
@@ -1010,10 +1009,7 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
   });
   auto* toolbarHandleAreaPtr = toolbarHandleArea.get();
 
-  const auto selectedWidgetIt =
-      std::find_if(m_snapshot.widgets.begin(), m_snapshot.widgets.end(), [this](const auto& widget) {
-        return widget.id == m_selectedWidgetId;
-      });
+  const auto selectedWidgetIt = std::ranges::find(m_snapshot.widgets, m_selectedWidgetId, &DesktopWidgetState::id);
   const bool hasSelectedWidget = selectedWidgetIt != m_snapshot.widgets.end();
   const bool selectedWidgetEnabled = hasSelectedWidget ? selectedWidgetIt->enabled : false;
   const bool canSendSelectedToBack =
@@ -1026,7 +1022,7 @@ void BackgroundWidgetsEditor::rebuildScene(OverlaySurface& surface) {
 
   const bool canCloneSelected = hasSelectedWidget
       && !selectedIsLoginBox
-      && std::any_of(m_selectedWidgetIds.begin(), m_selectedWidgetIds.end(), [this](const std::string& id) {
+      && std::ranges::any_of(m_selectedWidgetIds, [this](const std::string& id) {
                                   const DesktopWidgetState* state = findWidgetState(id);
                                   return state != nullptr && !lockscreen_login_box::isLoginBoxWidget(*state);
                                 });
@@ -1528,9 +1524,7 @@ void BackgroundWidgetsEditor::sendSelectedWidgetToBack() {
     return;
   }
 
-  auto it = std::find_if(m_snapshot.widgets.begin(), m_snapshot.widgets.end(), [this](const auto& widget) {
-    return widget.id == m_selectedWidgetId;
-  });
+  auto it = std::ranges::find(m_snapshot.widgets, m_selectedWidgetId, &DesktopWidgetState::id);
   if (it == m_snapshot.widgets.end() || it == m_snapshot.widgets.begin()) {
     return;
   }
@@ -1548,9 +1542,7 @@ void BackgroundWidgetsEditor::bringSelectedWidgetToFront() {
     return;
   }
 
-  auto it = std::find_if(m_snapshot.widgets.begin(), m_snapshot.widgets.end(), [this](const auto& widget) {
-    return widget.id == m_selectedWidgetId;
-  });
+  auto it = std::ranges::find(m_snapshot.widgets, m_selectedWidgetId, &DesktopWidgetState::id);
   if (it == m_snapshot.widgets.end() || std::next(it) == m_snapshot.widgets.end()) {
     return;
   }

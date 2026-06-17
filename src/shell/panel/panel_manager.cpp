@@ -2032,7 +2032,7 @@ void PanelManager::registerIpc(IpcService& ipc) {
     for (const auto& entry : m_panels) {
       ids.push_back(entry.first);
     }
-    std::sort(ids.begin(), ids.end());
+    std::ranges::sort(ids);
 
     std::string error = "error: unknown panel \"" + std::string(panelId) + "\"";
     if (!ids.empty()) {

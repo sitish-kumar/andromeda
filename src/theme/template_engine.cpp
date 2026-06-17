@@ -786,7 +786,7 @@ namespace noctalia::theme {
               names.insert(name);
         }
         std::vector<std::string> sorted(names.begin(), names.end());
-        std::sort(sorted.begin(), sorted.end());
+        std::ranges::sort(sorted);
         for (const auto& name : sorted) {
           ScopeMap modeMap;
           for (const auto& [mode, modeData] : m_themeData) {
@@ -1019,7 +1019,7 @@ namespace noctalia::theme {
           keys.reserve(colors.size());
           for (const auto& [name, _value] : colors)
             keys.push_back(name);
-          std::sort(keys.begin(), keys.end());
+          std::ranges::sort(keys);
           for (const auto& key : keys) {
             ScopeMap pair;
             pair["key"] = ScopeValue(key);
@@ -1426,10 +1426,7 @@ namespace noctalia::theme {
       if (auto entry = parseTemplateEntry(configPath, templateName.str(), *tpl, m_options.defaultMode))
         entries.push_back(std::move(*entry));
     }
-    std::stable_sort(
-        entries.begin(), entries.end(),
-        [](const ParsedTemplateEntry& lhs, const ParsedTemplateEntry& rhs) { return lhs.index < rhs.index; }
-    );
+    std::ranges::stable_sort(entries, {}, &ParsedTemplateEntry::index);
     markMultiClientGatedEntries(entries);
 
     bool ok = true;

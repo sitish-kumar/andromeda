@@ -512,9 +512,7 @@ std::vector<DesktopEntry> scanDesktopEntries() {
   }
 
   // Sort by name for consistent ordering
-  std::sort(entries.begin(), entries.end(), [](const DesktopEntry& a, const DesktopEntry& b) {
-    return a.nameLower < b.nameLower;
-  });
+  std::ranges::sort(entries, {}, &DesktopEntry::nameLower);
 
   return entries;
 }

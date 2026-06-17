@@ -214,7 +214,7 @@ NiriWorkspaceBackend::sortedWorkspaceCandidatesForOutput(const std::string& outp
     candidates.push_back(&workspace);
   }
 
-  std::sort(candidates.begin(), candidates.end(), [](const WorkspaceState* lhs, const WorkspaceState* rhs) {
+  std::ranges::sort(candidates, [](const WorkspaceState* lhs, const WorkspaceState* rhs) {
     if (lhs->idx != rhs->idx) {
       return lhs->idx < rhs->idx;
     }

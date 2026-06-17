@@ -779,9 +779,7 @@ void LauncherPanel::onInputChanged(const std::string& text) {
       }
     }
     // Stable sort by score descending — preserves provider order (e.g. alphabetical) for ties
-    std::stable_sort(m_allResults.begin(), m_allResults.end(), [](const LauncherResult& a, const LauncherResult& b) {
-      return a.score > b.score;
-    });
+    std::ranges::stable_sort(m_allResults, std::ranges::greater{}, &LauncherResult::score);
   }
 
   const int iconTargetSize =
@@ -909,9 +907,7 @@ std::vector<LauncherResult> LauncherPanel::providerOverviewResults(std::string_v
   }
 
   if (!filter.empty()) {
-    std::stable_sort(results.begin(), results.end(), [](const LauncherResult& a, const LauncherResult& b) {
-      return a.score > b.score;
-    });
+    std::ranges::stable_sort(results, std::ranges::greater{}, &LauncherResult::score);
   }
   return results;
 }
@@ -923,10 +919,10 @@ void LauncherPanel::applyActiveCategory() {
     m_results = m_allResults;
     break;
   case RecentlyUsed:
-    std::copy_if(m_allResults.begin(), m_allResults.end(), std::back_inserter(m_results), [](const LauncherResult& r) {
+    std::ranges::copy_if(m_allResults, std::back_inserter(m_results), [](const LauncherResult& r) {
       return r.recentlyUsedIndex > 0;
     });
-    std::sort(m_results.begin(), m_results.end(), [](const LauncherResult& a, const LauncherResult& b) {
+    std::ranges::sort(m_results, [](const LauncherResult& a, const LauncherResult& b) {
       return a.recentlyUsedIndex > b.recentlyUsedIndex
           || (a.recentlyUsedIndex == b.recentlyUsedIndex
               && std::tie(a.providerId, a.id) < std::tie(b.providerId, b.id));

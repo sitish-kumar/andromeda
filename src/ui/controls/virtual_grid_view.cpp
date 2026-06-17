@@ -99,7 +99,7 @@ void VirtualGridView::setAdapter(VirtualGridAdapter* adapter) {
 
 void VirtualGridView::notifyDataChanged() {
   // Force every visible slot to rebind on the next layout.
-  std::fill(m_slotBoundIndex.begin(), m_slotBoundIndex.end(), std::nullopt);
+  std::ranges::fill(m_slotBoundIndex, std::nullopt);
   markLayoutDirty();
 }
 
@@ -308,7 +308,7 @@ void VirtualGridView::doLayout(Renderer& renderer) {
   // expensive per-tile state (e.g. wallpaper thumbnails).
   if (previousLayoutColumns != columns) {
     // Column count changed (resize): existing slot→logicalIndex mapping is stale.
-    std::fill(m_slotBoundIndex.begin(), m_slotBoundIndex.end(), std::nullopt);
+    std::ranges::fill(m_slotBoundIndex, std::nullopt);
   }
   while (m_pool.size() < desiredPoolSize) {
     auto tile = m_adapter->createTile();

@@ -982,7 +982,7 @@ void Surface::cancelQueuedFrameWork() {
     return;
   }
   auto& queue = pendingFrameWorkQueue();
-  queue.erase(std::remove(queue.begin(), queue.end(), this), queue.end());
+  std::erase(queue, this);
   m_frameWorkQueued = false;
   m_frameTickPending = false;
   m_pendingFrameDeltaMs = 0.0f;
@@ -1060,7 +1060,7 @@ void Surface::cancelQueuedRender() {
     return;
   }
   auto& queue = pendingRenderQueue();
-  queue.erase(std::remove(queue.begin(), queue.end(), this), queue.end());
+  std::erase(queue, this);
   m_renderQueued = false;
 }
 
