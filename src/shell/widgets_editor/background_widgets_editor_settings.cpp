@@ -29,7 +29,8 @@ namespace {
   constexpr float kInspectorWidth = 520.0f;
   constexpr float kInspectorCloseSize = 22.0f;
   constexpr float kSettingRowHeight = 34.0f;
-  constexpr float kLabelWidth = 200.0f;
+  constexpr float kSettingLabelFlexGrow = 3.0f;
+  constexpr float kSettingControlFlexGrow = 2.0f;
 
   using Settings = std::unordered_map<std::string, WidgetSettingValue>;
 
@@ -167,7 +168,7 @@ namespace {
         .gap = Style::spaceSm,
         .minWidth = 0.0f,
         .fillWidth = true,
-        .flexGrow = 1.0f,
+        .flexGrow = kSettingControlFlexGrow,
     });
     controlSlot->addChild(std::move(control));
 
@@ -182,10 +183,10 @@ namespace {
             .text = std::string(labelText),
             .fontSize = Style::fontSizeCaption,
             .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-            .minWidth = kLabelWidth,
-            .maxWidth = kLabelWidth,
+            .minWidth = 0.0f,
             .textAlign = TextAlign::Start,
             .ellipsize = TextEllipsize::End,
+            .flexGrow = kSettingLabelFlexGrow,
         }),
         std::move(controlSlot)
     );
