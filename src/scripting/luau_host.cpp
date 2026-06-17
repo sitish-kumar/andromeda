@@ -16,6 +16,7 @@
 #include "system/terminal_launch.h"
 #include "time/time_format.h"
 #include "util/file_utils.h"
+#include "util/fuzzy_match.h"
 
 #include <algorithm>
 #include <atomic>
@@ -843,6 +844,21 @@ namespace {
       {nullptr, nullptr},
   };
 
+  int luau_fuzzyScore(lua_State* L) {
+    size_t patternLen = 0;
+    const char* pattern = luaL_checklstring(L, 1, &patternLen);
+    size_t textLen = 0;
+    const char* text = luaL_checklstring(L, 2, &textLen);
+
+    const double score = FuzzyMatch::score(std::string_view(pattern, patternLen), std::string_view(text, textLen));
+    if (!FuzzyMatch::isMatch(score)) {
+      lua_pushnil(L);
+      return 1;
+    }
+    lua_pushnumber(L, score);
+    return 1;
+  }
+
   const luaL_Reg kNoctaliaBaseLib[] = {
       {"log", luau_log},
       {"runAsync", luau_runAsync},
@@ -870,6 +886,7 @@ namespace {
       {"trp", luau_trp},
       {"http", luau_http},
       {"download", luau_download},
+      {"fuzzyScore", luau_fuzzyScore},
       {"getConfig", scripting::luau_getConfig},
       {nullptr, nullptr},
   };
