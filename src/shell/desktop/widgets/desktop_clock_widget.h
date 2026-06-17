@@ -71,4 +71,11 @@ private:
   char m_widestDigit = '0';
   float m_metricsFontSize = -1.0f;
   std::string m_metricsFontFamily;
+  // Horizontal centering for proportional digits: the label is start-aligned (leading glyph
+  // anchored) but shifted right by m_digitOffsetX so the *mean*-width rendering sits centered in
+  // the reserved box, instead of all the widest-digit slack piling up on the trailing side.
+  // m_digitOffsetX = digitCount * (widestAdvance - meanDigitAdvance); 0 for equal-width digits.
+  float m_maxDigitAdvance = 0.0f;
+  float m_meanDigitAdvance = 0.0f;
+  float m_digitOffsetX = 0.0f;
 };
