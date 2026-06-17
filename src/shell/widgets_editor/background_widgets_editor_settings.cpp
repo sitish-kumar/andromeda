@@ -434,7 +434,6 @@ namespace {
         ui::segmented({
             .options = std::move(segmentOptions),
             .selectedIndex = selectedIndex,
-            .flexGrow = 1.0f,
             .onChange = [editor, key, values = std::move(values)](std::size_t index) {
               if (index < values.size()) {
                 editor->applySettingChange(key, values[index]);
