@@ -46,6 +46,7 @@ namespace scripting {
 }
 struct PointerEvent;
 struct wl_surface;
+class InputArea;
 
 class Bar {
 public:
@@ -128,6 +129,13 @@ public:
   void requestHostedPanelLayout(wl_output* output, std::string_view barName);
   void requestHostedPanelRedraw(wl_output* output, std::string_view barName);
   void requestHostedPanelFrameTick(wl_output* output, std::string_view barName);
+  // Keyboard for a hosted panel: the content's focus areas + text inputs live in the bar's input
+  // dispatcher, so set the initial keyboard focus and route key events there.
+  void setHostedPanelFocus(wl_output* output, std::string_view barName, InputArea* area);
+  void dispatchHostedPanelKey(
+      wl_output* output, std::string_view barName, std::uint32_t sym, std::uint32_t utf32, std::uint32_t modifiers,
+      bool pressed, bool preedit
+  );
   // The AnimationManager that drives a hosted panel's content. The Panel animates against
   // this (not PanelManager's own manager) so the bar surface ticks its animations.
   [[nodiscard]] AnimationManager* hostedPanelAnimationManager(wl_output* output, std::string_view barName) const;

@@ -1319,6 +1319,32 @@ void Bar::requestHostedPanelFrameTick(wl_output* output, std::string_view barNam
   instance->surface->requestFrameTick();
 }
 
+void Bar::setHostedPanelFocus(wl_output* output, std::string_view barName, InputArea* area) {
+  BarInstance* instance = instanceForBar(output, barName);
+  if (instance == nullptr || !instance->hostedPanelOpen) {
+    return;
+  }
+  instance->inputDispatcher.setFocus(area);
+}
+
+void Bar::dispatchHostedPanelKey(
+    wl_output* output, std::string_view barName, std::uint32_t sym, std::uint32_t utf32, std::uint32_t modifiers,
+    bool pressed, bool preedit
+) {
+  BarInstance* instance = instanceForBar(output, barName);
+  if (instance == nullptr || !instance->hostedPanelOpen || instance->surface == nullptr) {
+    return;
+  }
+  instance->inputDispatcher.keyEvent(sym, utf32, modifiers, pressed, preedit);
+  if (instance->sceneRoot != nullptr && (instance->sceneRoot->paintDirty() || instance->sceneRoot->layoutDirty())) {
+    if (instance->sceneRoot->layoutDirty()) {
+      instance->surface->requestLayout();
+    } else {
+      instance->surface->requestRedraw();
+    }
+  }
+}
+
 AnimationManager* Bar::hostedPanelAnimationManager(wl_output* output, std::string_view barName) const {
   BarInstance* instance = instanceForBar(output, barName);
   if (instance == nullptr) {
@@ -3531,6 +3557,12 @@ wl_surface* Bar::openHostedAttachedPanel(
     inst->hostedPanelContent->addChild(std::move(content));
   }
 
+  // Route keyboard + IME to the hosted content via the bar's input dispatcher (its focus areas /
+  // text inputs now live in the bar's scene graph).
+  if (m_platform != nullptr) {
+    inst->inputDispatcher.setTextInputContext(inst->surface->wlSurface(), m_platform->wayland().textInputService());
+  }
+
   // Grow the surface on the inner axis to fit the panel body + shadow bleed past it.
   const auto& shadowConfig = m_config->config().shell.shadow;
   const auto base = computeBarSurfaceSpec(inst->barConfig, shadowConfig);
@@ -3609,6 +3641,9 @@ void Bar::tearDownHostedPanel(BarInstance& instance, bool invokeClosed) {
   if (invokeClosed && closedCb) {
     closedCb();
   }
+  // Defocus any hosted text input (proper focus-loss / IME deactivation) before the focus area
+  // node is destroyed by removeChild.
+  instance.inputDispatcher.setFocus(nullptr);
   if (clip != nullptr && instance.slideRoot != nullptr) {
     instance.slideRoot->removeChild(clip);
   }

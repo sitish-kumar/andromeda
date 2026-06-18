@@ -1697,6 +1697,15 @@ void Application::initUi() {
   m_panelManager.setHostedPopupParentContextQuery([this](wl_output* output, std::string_view barName) {
     return m_bar.hostedPanelPopupParentContext(output, barName);
   });
+  m_panelManager.setHostedPanelFocusCallback([this](wl_output* output, std::string_view barName, InputArea* area) {
+    m_bar.setHostedPanelFocus(output, barName, area);
+  });
+  m_panelManager.setDispatchHostedPanelKeyCallback(
+      [this](
+          wl_output* output, std::string_view barName, std::uint32_t sym, std::uint32_t utf32, std::uint32_t modifiers,
+          bool pressed, bool preedit
+      ) { m_bar.dispatchHostedPanelKey(output, barName, sym, utf32, modifiers, pressed, preedit); }
+  );
   m_bar.setHostedPanelFrameTickCallback([this](float deltaMs) { m_panelManager.onHostedPanelFrameTick(deltaMs); });
   m_bar.setHostedPanelReadyCallback([this](wl_output* output, std::string_view barName) {
     m_panelManager.onHostedPanelReady(output, barName);

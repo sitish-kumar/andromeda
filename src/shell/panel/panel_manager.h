@@ -103,6 +103,13 @@ public:
   void setHostedPopupParentContextQuery(
       std::function<std::optional<LayerPopupParentContext>(wl_output*, std::string_view)> callback
   );
+  // Keyboard routing for hosted panels: set the initial focus area and forward key events into
+  // the bar's input dispatcher (where the hosted content's focus areas / text inputs live).
+  void setHostedPanelFocusCallback(std::function<void(wl_output*, std::string_view, InputArea*)> callback);
+  void setDispatchHostedPanelKeyCallback(
+      std::function<void(wl_output*, std::string_view, std::uint32_t, std::uint32_t, std::uint32_t, bool, bool)>
+          callback
+  );
   // Called each frame by the hosting bar surface so the active hosted Panel can tick.
   void onHostedPanelFrameTick(float deltaMs);
   // Called by the bar once a hosted panel's surface has grown to its full size, so the
@@ -226,6 +233,9 @@ private:
   std::function<void(wl_output*, std::string_view)> m_requestHostedPanelFrameTickCallback;
   std::function<AnimationManager*(wl_output*, std::string_view)> m_hostedPanelAnimationManagerQuery;
   std::function<std::optional<LayerPopupParentContext>(wl_output*, std::string_view)> m_hostedPopupParentContextQuery;
+  std::function<void(wl_output*, std::string_view, InputArea*)> m_setHostedPanelFocusCallback;
+  std::function<void(wl_output*, std::string_view, std::uint32_t, std::uint32_t, std::uint32_t, bool, bool)>
+      m_dispatchHostedPanelKeyCallback;
   bool m_hosted = false;
   LayerShellLayer m_hostedPanelLayer = LayerShellLayer::Top;
   PanelClickShield m_clickShield;

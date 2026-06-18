@@ -344,6 +344,16 @@ void PanelManager::setHostedPopupParentContextQuery(
   m_hostedPopupParentContextQuery = std::move(callback);
 }
 
+void PanelManager::setHostedPanelFocusCallback(std::function<void(wl_output*, std::string_view, InputArea*)> callback) {
+  m_setHostedPanelFocusCallback = std::move(callback);
+}
+
+void PanelManager::setDispatchHostedPanelKeyCallback(
+    std::function<void(wl_output*, std::string_view, std::uint32_t, std::uint32_t, std::uint32_t, bool, bool)> callback
+) {
+  m_dispatchHostedPanelKeyCallback = std::move(callback);
+}
+
 void PanelManager::onHostedPanelFrameTick(float deltaMs) {
   if (!m_hosted || m_activePanel == nullptr) {
     return;
@@ -720,6 +730,13 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     }
     m_wlSurface = barSurface;
     activateFocusGrab(); // grabs m_wlSurface (the bar surface); outside-click dismisses
+    // Seed keyboard focus to the panel's requested focus area (e.g. a search field) inside the
+    // bar's input dispatcher so text inputs are typeable immediately.
+    if (m_setHostedPanelFocusCallback) {
+      if (auto* focusArea = m_activePanel->initialFocusArea(); focusArea != nullptr) {
+        m_setHostedPanelFocusCallback(request.output, m_sourceBarName, focusArea);
+      }
+    }
     if (m_panelOpenedCallback) {
       m_panelOpenedCallback();
     }
@@ -1634,14 +1651,28 @@ void PanelManager::onKeyboardEvent(const KeyboardEvent& event) {
   if (!isOpen() || m_inTransition) {
     return;
   }
-  // Hosted (bar-surface) panels: full keyboard nav isn't wired yet, but honor Escape to
-  // close when the bar surface holds keyboard focus.
+  // Hosted (bar-surface) panels: the content's focus areas + text inputs live in the bar's input
+  // dispatcher, so route keys there. Gate on the bar surface holding keyboard focus.
   if (m_hosted) {
-    if (m_platform != nullptr && event.pressed) {
+    if (m_platform != nullptr) {
       wl_surface* const kbSurface = m_platform->lastKeyboardSurface();
-      if (kbSurface == m_wlSurface && KeybindMatcher::matches(KeybindAction::Cancel, event.sym, event.modifiers)) {
-        closePanel();
+      if (kbSurface != m_wlSurface) {
+        return;
       }
+    }
+    if (event.pressed && KeybindMatcher::matches(KeybindAction::Cancel, event.sym, event.modifiers)) {
+      closePanel();
+      return;
+    }
+    if (m_activePanel != nullptr
+        && m_activePanel->handleGlobalKey(event.sym, event.modifiers, event.pressed, event.preedit)) {
+      requestPanelLayout();
+      return;
+    }
+    if (m_dispatchHostedPanelKeyCallback && m_output != nullptr) {
+      m_dispatchHostedPanelKeyCallback(
+          m_output, m_sourceBarName, event.sym, event.utf32, event.modifiers, event.pressed, event.preedit
+      );
     }
     return;
   }
