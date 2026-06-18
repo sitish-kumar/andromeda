@@ -210,6 +210,10 @@ namespace {
 PanelManager::PanelManager() { s_instance = this; }
 
 PanelManager::~PanelManager() {
+  // Destroy panels (and the popups they own) while the singleton is still reachable: a popup's
+  // teardown fires its onDismissed callback, which calls PanelManager::instance() to clear the
+  // active popup. Doing this before nulling s_instance avoids a null-deref during shutdown.
+  m_panels.clear();
   if (s_instance == this) {
     s_instance = nullptr;
   }
@@ -332,6 +336,12 @@ void PanelManager::setHostedPanelAnimationManagerQuery(
     std::function<AnimationManager*(wl_output*, std::string_view)> callback
 ) {
   m_hostedPanelAnimationManagerQuery = std::move(callback);
+}
+
+void PanelManager::setHostedPopupParentContextQuery(
+    std::function<std::optional<LayerPopupParentContext>(wl_output*, std::string_view)> callback
+) {
+  m_hostedPopupParentContextQuery = std::move(callback);
 }
 
 void PanelManager::onHostedPanelFrameTick(float deltaMs) {
@@ -668,6 +678,9 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     m_attachedBarPosition = std::string(barPosition);
     m_attachedRevealProgress = 1.0f; // the bar drives the reveal animation
     m_output = request.output;
+    // The pointer is over the host bar (its widget was just clicked); seed "inside" so a click
+    // without first moving onto the shield does not immediately dismiss.
+    m_pointerInside = true;
 
     const float bgOpacity = m_activePanel->inheritsBarBackgroundOpacity()
         ? barConfig.backgroundOpacity
@@ -1197,6 +1210,14 @@ void PanelManager::closePanel(bool animateClose) {
 }
 
 void PanelManager::destroyPanel(bool preserveHostedSurface) {
+  // For hosted panels the content nodes live in the bar's surface and are destroyed by the
+  // teardown callback below; run onClose() FIRST, while those nodes are still alive — onClose
+  // reads panel widgets (e.g. AudioTab flushes its sliders). Non-hosted panels keep their scene
+  // until later in this function, so they call onClose at the usual point.
+  const bool hostedOnCloseHandled = m_hosted && m_activePanel != nullptr;
+  if (hostedOnCloseHandled) {
+    m_activePanel->onClose();
+  }
   // Tear the hosted panel down immediately (no animation) — covers openPanel's preempt path
   // where a new panel opens while this one is mid-close. Idempotent: a no-op once the bar
   // has already torn down via its own animated close. When a new hosted panel will reclaim the
@@ -1216,7 +1237,7 @@ void PanelManager::destroyPanel(bool preserveHostedSurface) {
   m_pointerInside = false;
   m_attachedPopupCount = 0;
   m_inputDispatcher.setSceneRoot(nullptr);
-  if (m_activePanel != nullptr) {
+  if (!hostedOnCloseHandled && m_activePanel != nullptr) {
     m_activePanel->onClose();
   }
   m_bgNode = nullptr;
@@ -1307,30 +1328,10 @@ bool PanelManager::onPointerEvent(const PointerEvent& event) {
   if (!isOpen() || m_inTransition) {
     return false;
   }
-  // Hosted panels render in the bar's surface; the bar's input dispatcher handles content
-  // events. Here we only track whether the pointer is over the bar surface and close on an
-  // outside (click-shield) press — content routing is the bar's job, not this path.
-  if (m_hosted) {
-    switch (event.type) {
-    case PointerEvent::Type::Enter:
-      m_pointerInside = (event.surface == m_wlSurface);
-      break;
-    case PointerEvent::Type::Leave:
-      if (event.surface == m_wlSurface) {
-        m_pointerInside = false;
-      }
-      break;
-    case PointerEvent::Type::Button:
-      if (event.state == 1 && !m_pointerInside) {
-        closePanel();
-      }
-      break;
-    default:
-      break;
-    }
-    return false;
-  }
-
+  // Popups (Select dropdowns, context menus) own their own surfaces and are forwarded events
+  // here in BOTH hosted and non-hosted modes — a hosted panel still opens e.g. the audio device
+  // menu, and it must receive clicks and dismiss on an outside press. This runs before the
+  // hosted early-return below so the popup gets first crack at the event.
   if (m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen()) {
     if (m_selectPopup->onPointerEvent(event)) {
       return true;
@@ -1349,6 +1350,32 @@ bool PanelManager::onPointerEvent(const PointerEvent& event) {
       m_activePopup->close();
       return true;
     }
+  }
+
+  // Hosted panels render in the bar's surface; the bar's input dispatcher handles content
+  // events. Here we only track whether the pointer is over the bar surface and close on an
+  // outside (click-shield) press — content routing is the bar's job, not this path.
+  if (m_hosted) {
+    switch (event.type) {
+    case PointerEvent::Type::Enter:
+      // "Inside" means the pointer is over anything that is NOT the click shield: the host bar
+      // surface, a panel tooltip, a popup, another bar — all keep the panel open. Only the
+      // shield is "outside". Keying off bar-surface equality would treat a tooltip/popup over
+      // the panel as outside and dismiss on the next click.
+      m_pointerInside = !m_clickShield.ownsSurface(event.surface);
+      break;
+    case PointerEvent::Type::Leave:
+      // Inside/outside is re-evaluated on the next Enter; nothing to do on Leave.
+      break;
+    case PointerEvent::Type::Button:
+      if (event.state == 1 && !m_pointerInside) {
+        closePanel();
+      }
+      break;
+    default:
+      break;
+    }
+    return false;
   }
 
   if (m_attachedPopupCount > 0) {
@@ -1577,6 +1604,14 @@ std::optional<LayerPopupParentContext> PanelManager::popupParentContextForSurfac
 }
 
 std::optional<LayerPopupParentContext> PanelManager::fallbackPopupParentContext() const noexcept {
+  // Hosted panels have no PanelManager surface; their popups anchor to the host bar's layer
+  // surface, resolved by the bar.
+  if (m_hosted) {
+    if (!isOpen() || m_output == nullptr || !m_hostedPopupParentContextQuery) {
+      return std::nullopt;
+    }
+    return m_hostedPopupParentContextQuery(m_output, m_sourceBarName);
+  }
   if (!isOpen() || m_surface == nullptr || m_wlSurface == nullptr || m_layerSurface == nullptr) {
     return std::nullopt;
   }

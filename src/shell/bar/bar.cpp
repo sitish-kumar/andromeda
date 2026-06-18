@@ -1327,6 +1327,28 @@ AnimationManager* Bar::hostedPanelAnimationManager(wl_output* output, std::strin
   return &instance->animations;
 }
 
+std::optional<LayerPopupParentContext>
+Bar::hostedPanelPopupParentContext(wl_output* output, std::string_view barName) const {
+  const BarInstance* instance = instanceForBar(output, barName);
+  if (instance == nullptr || !instance->hostedPanelOpen || instance->surface == nullptr) {
+    return std::nullopt;
+  }
+  const std::uint32_t width = instance->surface->width();
+  const std::uint32_t height = instance->surface->height();
+  zwlr_layer_surface_v1* layerSurface = instance->surface->layerSurface();
+  wl_surface* wlSurface = instance->surface->wlSurface();
+  if (layerSurface == nullptr || wlSurface == nullptr || width == 0 || height == 0) {
+    return std::nullopt;
+  }
+  LayerPopupParentContext context;
+  context.surface = wlSurface;
+  context.layerSurface = layerSurface;
+  context.output = instance->output;
+  context.width = width;
+  context.height = height;
+  return context;
+}
+
 void Bar::reevaluateAutoHide() {
   for (const auto& instance : m_instances) {
     if (instance == nullptr
@@ -3565,9 +3587,11 @@ void Bar::tearDownHostedPanel(BarInstance& instance, bool invokeClosed) {
   instance.hostedPanelOpen = false;
   instance.hostedPanelProgress = 0.0f;
   applyHostedPanelReveal(instance, 0.0f); // clear the union from bg/shadow
-  if (instance.hostedPanelClip != nullptr && instance.slideRoot != nullptr) {
-    instance.slideRoot->removeChild(instance.hostedPanelClip);
-  }
+  // Detach the hosted-content pointers (so a re-entrant teardown from the closed callback —
+  // destroyPanel -> m_destroyHostedPanelCallback — no-ops via the early-return above) but keep
+  // the content subtree ALIVE: the Panel's onClose() reads its own widgets (e.g. audio sliders),
+  // which live in this subtree. Destroy it only AFTER the callback runs.
+  Node* clip = instance.hostedPanelClip;
   instance.hostedPanelClip = nullptr;
   instance.hostedPanelContent = nullptr;
   instance.hostedPanelLayout = nullptr;
@@ -3584,6 +3608,9 @@ void Bar::tearDownHostedPanel(BarInstance& instance, bool invokeClosed) {
   }
   if (invokeClosed && closedCb) {
     closedCb();
+  }
+  if (clip != nullptr && instance.slideRoot != nullptr) {
+    instance.slideRoot->removeChild(clip);
   }
 }
 

@@ -131,6 +131,10 @@ public:
   // The AnimationManager that drives a hosted panel's content. The Panel animates against
   // this (not PanelManager's own manager) so the bar surface ticks its animations.
   [[nodiscard]] AnimationManager* hostedPanelAnimationManager(wl_output* output, std::string_view barName) const;
+  // Popup-parent context (bar layer surface + grown size) for popups opened by a hosted panel,
+  // e.g. the audio device menu. Hosted panels have no PanelManager surface to anchor against.
+  [[nodiscard]] std::optional<LayerPopupParentContext>
+  hostedPanelPopupParentContext(wl_output* output, std::string_view barName) const;
   // Invoked each frame on the hosting bar surface so the owner can tick the hosted Panel.
   void setHostedPanelFrameTickCallback(std::function<void(float)> callback);
 

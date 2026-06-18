@@ -99,6 +99,10 @@ public:
   void setRequestHostedPanelFrameTickCallback(std::function<void(wl_output*, std::string_view)> callback);
   // Resolves the bar's AnimationManager so a hosted Panel animates in the bar's frame loop.
   void setHostedPanelAnimationManagerQuery(std::function<AnimationManager*(wl_output*, std::string_view)> callback);
+  // Resolves the bar's layer surface as the popup parent for popups opened by a hosted panel.
+  void setHostedPopupParentContextQuery(
+      std::function<std::optional<LayerPopupParentContext>(wl_output*, std::string_view)> callback
+  );
   // Called each frame by the hosting bar surface so the active hosted Panel can tick.
   void onHostedPanelFrameTick(float deltaMs);
   // Called by the bar once a hosted panel's surface has grown to its full size, so the
@@ -221,6 +225,7 @@ private:
   std::function<void(wl_output*, std::string_view)> m_requestHostedPanelRedrawCallback;
   std::function<void(wl_output*, std::string_view)> m_requestHostedPanelFrameTickCallback;
   std::function<AnimationManager*(wl_output*, std::string_view)> m_hostedPanelAnimationManagerQuery;
+  std::function<std::optional<LayerPopupParentContext>(wl_output*, std::string_view)> m_hostedPopupParentContextQuery;
   bool m_hosted = false;
   LayerShellLayer m_hostedPanelLayer = LayerShellLayer::Top;
   PanelClickShield m_clickShield;
