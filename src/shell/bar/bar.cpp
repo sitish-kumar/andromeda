@@ -2382,6 +2382,47 @@ void Bar::applyBarCompositorBlur(BarInstance& instance) const {
       px + insetL, py + insetT, pw - insetL - insetR, ph - insetT - insetB, concave.corners, concave.logicalInset,
       concave.radii
   );
+
+  // Hosted attached panel: extend the blur to the revealed panel body so bar∪panel blur as one
+  // region. The revealed rect matches the bg-union body (positionHostedPanelContent's clip window).
+  if (instance.hostedPanelOpen && m_config != nullptr) {
+    const auto& shadowConfig = m_config->config().shell.shadow;
+    const int surfW = static_cast<int>(instance.surface->width());
+    const int surfH = static_cast<int>(instance.surface->height());
+    const auto region = attachedPanelRegionRect(
+        instance.barConfig, shadowConfig, surfW, surfH, static_cast<int>(std::lround(instance.hostedPanelMainLen))
+    );
+    const float p = std::clamp(instance.hostedPanelProgress, 0.0f, 1.0f);
+    if (region.has_value() && p > 0.001f) {
+      const auto& r = *region;
+      const std::string& pos = instance.barConfig.position;
+      const bool isVertical = (pos == "left" || pos == "right");
+      const float revealed = static_cast<float>(isVertical ? r.width : r.height) * p;
+      float bx = static_cast<float>(r.x);
+      float by = static_cast<float>(r.y);
+      float bw = static_cast<float>(r.width);
+      float bh = static_cast<float>(r.height);
+      if (pos == "top") {
+        bh = revealed;
+      } else if (pos == "bottom") {
+        by = static_cast<float>(r.y + r.height) - revealed;
+        bh = revealed;
+      } else if (pos == "left") {
+        bw = revealed;
+      } else {
+        bx = static_cast<float>(r.x + r.width) - revealed;
+        bw = revealed;
+      }
+      const float radius = instance.hostedPanelRadius;
+      auto panelStrips = Surface::tessellateShape(
+          static_cast<int>(std::lround(bx)), static_cast<int>(std::lround(by)), static_cast<int>(std::lround(bw)),
+          static_cast<int>(std::lround(bh)), attached_panel::cornerShapes(pos),
+          attached_panel::logicalInset(pos, radius), attached_panel::cornerRadii(pos, radius)
+      );
+      blurStrips.insert(blurStrips.end(), panelStrips.begin(), panelStrips.end());
+    }
+  }
+
   instance.surface->setBlurRegion(blurStrips);
 }
 
@@ -3520,6 +3561,7 @@ void Bar::applyHostedPanelReveal(BarInstance& instance, float progress) {
   }
   applyBarShadowStyle(instance, shadowConfig, static_cast<float>(surfW), static_cast<float>(surfH), unionShape);
   positionHostedPanelContent(instance, progress);
+  applyBarCompositorBlur(instance); // track the revealed panel body in the blur region
   instance.surface->requestRedraw();
 }
 
