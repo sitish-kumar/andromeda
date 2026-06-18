@@ -169,7 +169,10 @@ private:
 
   void buildScene(std::uint32_t width, std::uint32_t height);
   void prepareFrame(bool needsUpdate, bool needsLayout);
-  void destroyPanel();
+  // preserveHostedSurface: skip the bar-side hosted teardown (which shrinks the surface to base)
+  // because a new hosted panel on the same bar will reclaim and resize the grown surface in place,
+  // avoiding a one-frame shrink-then-grow flicker.
+  void destroyPanel(bool preserveHostedSurface = false);
   // Surface-agnostic invalidation: target the panel's own surface, or — when the panel is
   // hosted in the bar — forward to the hosting bar surface. (Hosted update folds into layout.)
   void requestPanelLayout();

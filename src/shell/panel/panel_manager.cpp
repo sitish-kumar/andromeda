@@ -432,12 +432,34 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     return;
   }
 
+  // Hosted→hosted preempt on the same bar: hand the grown bar surface straight to the new panel
+  // (openHostedAttachedPanel swaps the content and resizes in place) instead of shrinking to base
+  // and growing again, which flickers the bar for one frame.
+  bool preserveHostedSurface = false;
+  if ((isOpen() || m_closing)
+      && m_hosted
+      && m_output != nullptr
+      && m_output == request.output
+      && m_hostAttachedPanelCallback) {
+    if (auto nextIt = m_panels.find(panelId);
+        nextIt != m_panels.end() && nextIt->second->panelPlacement() == PanelPlacement::Attached) {
+      const auto nextBarConfig = resolvePanelBarConfig(m_config, m_platform, request.output, request.sourceBarName);
+      const std::string nextBarName =
+          request.sourceBarName.empty() ? nextBarConfig.name : std::string(request.sourceBarName);
+      const bool nextHosts = !hasMultipleEnabledBarsOnEdge(m_config, m_platform, request.output, nextBarConfig.position)
+          && (m_attachedPanelAvailabilityCallback == nullptr
+              || m_attachedPanelAvailabilityCallback(request.output, nextBarName))
+          && nextBarConfig.thickness > 0;
+      preserveHostedSurface = nextBarName == m_sourceBarName && nextHosts;
+    }
+  }
+
   // If a panel is open or closing, destroy it immediately with no close animation.
   // Bump the generation first so any in-flight deferred destroyPanel is a no-op.
   if (isOpen() || m_closing) {
     ++m_destroyGeneration;
     m_closing = false;
-    destroyPanel();
+    destroyPanel(preserveHostedSurface);
   }
 
   auto it = m_panels.find(panelId);
@@ -1174,11 +1196,13 @@ void PanelManager::closePanel(bool animateClose) {
   }
 }
 
-void PanelManager::destroyPanel() {
+void PanelManager::destroyPanel(bool preserveHostedSurface) {
   // Tear the hosted panel down immediately (no animation) — covers openPanel's preempt path
   // where a new panel opens while this one is mid-close. Idempotent: a no-op once the bar
-  // has already torn down via its own animated close.
-  if (m_hosted && m_destroyHostedPanelCallback && m_output != nullptr) {
+  // has already torn down via its own animated close. When a new hosted panel will reclaim the
+  // same bar surface, skip this: openHostedAttachedPanel swaps the content and resizes the grown
+  // surface in place, so shrinking to base here would flicker the bar for one frame.
+  if (m_hosted && !preserveHostedSurface && m_destroyHostedPanelCallback && m_output != nullptr) {
     m_destroyHostedPanelCallback(m_output, m_sourceBarName);
   }
   if (m_attachedToBar && !m_hosted && m_attachedPanelGeometryCallback && m_output != nullptr) {
