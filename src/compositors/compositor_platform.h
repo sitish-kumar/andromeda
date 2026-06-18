@@ -22,7 +22,12 @@ struct zdwl_ipc_manager_v2;
 struct hyprland_toplevel_mapping_manager_v1;
 struct zwlr_foreign_toplevel_handle_v1;
 struct ext_foreign_toplevel_handle_v1;
+class SessionBus;
 class WaylandWorkspaces;
+
+namespace compositors::kde {
+  class KwinActiveWindow;
+}
 
 namespace compositors::hyprland {
   class HyprlandToplevelMapping;
@@ -57,6 +62,7 @@ public:
   CompositorPlatform& operator=(const CompositorPlatform&) = delete;
 
   void initialize();
+  void startKdeActiveWindow(SessionBus& bus);
   void cleanup();
 
   [[nodiscard]] WaylandConnection& wayland() noexcept { return m_wayland; }
@@ -89,8 +95,11 @@ public:
   windowsForApp(const std::string& idLower, const std::string& wmClassLower, wl_output* outputFilter = nullptr) const;
   [[nodiscard]] bool containsWlrToplevelHandle(zwlr_foreign_toplevel_handle_v1* handle) const;
   void activateToplevel(zwlr_foreign_toplevel_handle_v1* handle);
+  void activateToplevelInfo(const ToplevelInfo& window);
   void closeToplevel(zwlr_foreign_toplevel_handle_v1* handle);
   void focusCompositorWindow(const std::string& windowId) const;
+
+  void activateKdeWindow(const std::string& title, const std::string& appId, const std::string& uuid = {});
 
   void setToplevelChangeCallback(ChangeCallback callback);
   void bindHyprlandToplevelMappingManager(hyprland_toplevel_mapping_manager_v1* manager);
@@ -175,6 +184,7 @@ private:
   ChangeCallback m_keyboardLayoutChangeCallback;
   ChangeCallback m_toplevelChangeCallback;
   std::unique_ptr<compositors::hyprland::HyprlandToplevelMapping> m_hyprlandToplevelMapping;
+  std::unique_ptr<compositors::kde::KwinActiveWindow> m_kwinActiveWindow;
   std::vector<WorkspaceModelSnapshot> m_lastWorkspaceModelSnapshot;
   bool m_initialized = false;
 };

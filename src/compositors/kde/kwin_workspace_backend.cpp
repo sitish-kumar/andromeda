@@ -1,6 +1,5 @@
 #include "compositors/kde/kwin_workspace_backend.h"
 
-#include "core/log.h"
 #include "org-kde-plasma-virtual-desktop-client-protocol.h"
 
 #include <algorithm>
@@ -9,7 +8,6 @@
 
 namespace {
 
-  constexpr Logger kLog("workspace_kwin");
   constexpr std::uint32_t kManagementVersion = 4;
 
   [[nodiscard]] std::uint32_t proxyVersion(const void* proxy) {
@@ -107,7 +105,6 @@ void KwinWorkspaceBackend::activate(const std::string& id) {
     return;
   }
   org_kde_plasma_virtual_desktop_request_activate(desktop->handle);
-  kLog.debug("activating \"{}\"", desktop->name);
 }
 
 void KwinWorkspaceBackend::activateForOutput(wl_output* output, const std::string& id) {
@@ -121,7 +118,6 @@ void KwinWorkspaceBackend::activateForOutput(wl_output* output, const std::strin
     if (!outputName.empty()
         && proxyVersion(desktop->handle) >= ORG_KDE_PLASMA_VIRTUAL_DESKTOP_REQUEST_ENTER_OUTPUT_SINCE_VERSION) {
       org_kde_plasma_virtual_desktop_request_enter_output(desktop->handle, outputName.c_str());
-      kLog.debug("activating \"{}\" on {}", desktop->name, outputName);
       return;
     }
   }
@@ -166,7 +162,7 @@ std::vector<Workspace> KwinWorkspaceBackend::all() const {
   result.reserve(m_desktops.size());
   for (const auto& [handle, desktop] : m_desktops) {
     (void)handle;
-    if (desktop.name.empty()) {
+    if (desktop.id.empty()) {
       continue;
     }
     result.push_back(toWorkspace(desktop, {}));
@@ -185,7 +181,7 @@ std::vector<Workspace> KwinWorkspaceBackend::forOutput(wl_output* output) const 
   result.reserve(m_desktops.size());
   for (const auto& [handle, desktop] : m_desktops) {
     (void)handle;
-    if (desktop.name.empty()) {
+    if (desktop.id.empty()) {
       continue;
     }
     result.push_back(toWorkspace(desktop, outputName));
@@ -236,7 +232,6 @@ void KwinWorkspaceBackend::onDesktopNameChanged(org_kde_plasma_virtual_desktop* 
 void KwinWorkspaceBackend::onDesktopActivated(org_kde_plasma_virtual_desktop* desktop) {
   if (auto* state = findDesktop(desktop); state != nullptr) {
     state->globallyActive = true;
-    kLog.debug("active: {}", state->name.empty() ? "(unnamed)" : state->name);
     notifyChanged();
   }
 }
@@ -273,7 +268,6 @@ void KwinWorkspaceBackend::onDesktopOutputEntered(org_kde_plasma_virtual_desktop
       return;
     }
     state->activeOutputs.push_back(output);
-    kLog.debug("active on {}: {}", output, state->name.empty() ? "(unnamed)" : state->name);
     notifyChanged();
   }
 }
@@ -364,7 +358,7 @@ const KwinWorkspaceBackend::DesktopState* KwinWorkspaceBackend::findDesktopById(
 Workspace KwinWorkspaceBackend::toWorkspace(const DesktopState& desktop, const std::string& outputName) const {
   Workspace workspace;
   workspace.id = desktop.id;
-  workspace.name = desktop.name;
+  workspace.name = desktop.name.empty() ? ("Desktop " + std::to_string(desktop.position + 1)) : desktop.name;
   workspace.index = desktop.position + 1;
 
   const auto columns = gridColumns();

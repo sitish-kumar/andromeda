@@ -517,18 +517,26 @@ std::optional<ActiveToplevel> WaylandConnection::matchToplevelByTitleAndAppId(
 wl_output* WaylandConnection::activeToplevelOutput() const { return m_toplevelsHandler.currentOutput(); }
 
 std::vector<std::string> WaylandConnection::runningAppIds(wl_output* outputFilter) const {
+  if (compositors::isKde() && m_extForeignToplevels.isBound() && !m_hasForeignToplevelManagerGlobal) {
+    (void)outputFilter;
+    return m_extForeignToplevels.allAppIds();
+  }
   return m_toplevelsHandler.allAppIds(outputFilter);
 }
 
 std::vector<ToplevelInfo> WaylandConnection::windowsForApp(
     const std::string& idLower, const std::string& wmClassLower, wl_output* outputFilter
 ) const {
+  if (compositors::isKde() && m_extForeignToplevels.isBound() && !m_hasForeignToplevelManagerGlobal) {
+    (void)outputFilter;
+    return m_extForeignToplevels.windowsForApp(idLower, wmClassLower);
+  }
   return m_toplevelsHandler.windowsForApp(idLower, wmClassLower, outputFilter);
 }
 
 std::vector<ToplevelInfo>
 WaylandConnection::extWindowsForApp(const std::string& idLower, const std::string& wmClassLower) const {
-  if (!compositors::isHyprland() || !m_extForeignToplevels.isBound()) {
+  if ((!compositors::isHyprland() && !compositors::isKde()) || !m_extForeignToplevels.isBound()) {
     return {};
   }
   return m_extForeignToplevels.windowsForApp(idLower, wmClassLower);
@@ -872,8 +880,9 @@ void WaylandConnection::bindGlobal(
   }
 
   if (interfaceName == ext_foreign_toplevel_list_v1_interface.name) {
+    const auto compositor = compositors::detect();
     // Niri/Sway also expose this global; binding it duplicates every window on top of wlr foreign-toplevel.
-    if (compositors::detect() != compositors::CompositorKind::Hyprland) {
+    if (compositor != compositors::CompositorKind::Hyprland && compositor != compositors::CompositorKind::Kde) {
       return;
     }
     m_hasExtForeignToplevelListGlobal = true;
