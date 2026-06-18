@@ -94,6 +94,18 @@ struct RoundedRectStyle {
   CornerShapes shadowExclusionCorners{};
   RectInsets shadowExclusionLogicalInset{};
   Radii shadowExclusionRadius{};
+  // Optional secondary shape unioned with the primary for a single-pass, non-convex
+  // silhouette (bar body + attached panel). When enabled, the fill coverage and the
+  // outer shadow both use min(primary, secondary); offset/size are in the primary
+  // shape's local space (same origin as the rect body).
+  bool unionShape = false;
+  float unionOffsetX = 0.0f;
+  float unionOffsetY = 0.0f;
+  float unionWidth = 0.0f;
+  float unionHeight = 0.0f;
+  CornerShapes unionCorners{};
+  RectInsets unionLogicalInset{};
+  Radii unionRadius{};
 };
 
 constexpr bool operator==(const RoundedRectStyle& lhs, const RoundedRectStyle& rhs) noexcept {
@@ -119,7 +131,15 @@ constexpr bool operator==(const RoundedRectStyle& lhs, const RoundedRectStyle& r
       && lhs.shadowExclusionHeight == rhs.shadowExclusionHeight
       && lhs.shadowExclusionCorners == rhs.shadowExclusionCorners
       && lhs.shadowExclusionLogicalInset == rhs.shadowExclusionLogicalInset
-      && lhs.shadowExclusionRadius == rhs.shadowExclusionRadius;
+      && lhs.shadowExclusionRadius == rhs.shadowExclusionRadius
+      && lhs.unionShape == rhs.unionShape
+      && lhs.unionOffsetX == rhs.unionOffsetX
+      && lhs.unionOffsetY == rhs.unionOffsetY
+      && lhs.unionWidth == rhs.unionWidth
+      && lhs.unionHeight == rhs.unionHeight
+      && lhs.unionCorners == rhs.unionCorners
+      && lhs.unionLogicalInset == rhs.unionLogicalInset
+      && lhs.unionRadius == rhs.unionRadius;
 }
 
 struct SpinnerStyle {

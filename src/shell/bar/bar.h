@@ -75,6 +75,9 @@ public:
   void refresh();
   void requestLayout();
   void setAutoHideSuppressionCallback(std::function<bool(const BarInstance&)> callback);
+  // Fired once a hosted attached panel's surface has grown and laid out, so the owner can
+  // (re)arm outside-click dismissal with the grown bar surface bounds.
+  void setHostedPanelReadyCallback(std::function<void(wl_output*, std::string_view)> callback);
   // Re-run auto-hide after a panel closes so unrelated bars are not left visible.
   void reevaluateAutoHide();
   void setOpenWidgetSettingsCallback(std::function<void(std::string, std::string)> callback);
@@ -102,6 +105,24 @@ public:
   void revealAutoHideForAttachedPanel(wl_output* output, std::string_view barName);
   void beginAttachedPopup(wl_surface* surface);
   void endAttachedPopup(wl_surface* surface);
+
+  // Host an attached panel's content inside this bar's own surface. `content` is the
+  // panel's released root; `contentMainLen`/`contentInnerLen` are its logical size along
+  // the bar main / inner axes; `layout` lays the content out for a given region size.
+  // Returns the host bar's wl_surface (target for dismissal/keyboard) or nullptr if the
+  // bar cannot host. The reveal animation is driven internally.
+  [[nodiscard]] wl_surface* openHostedAttachedPanel(
+      wl_output* output, std::string_view barName, std::unique_ptr<Node> content, float contentMainLen,
+      float contentInnerLen, float radius, float contentInset, std::function<void(Renderer&, float, float)> layout,
+      std::function<void()> closed
+  );
+  void closeHostedAttachedPanel(wl_output* output, std::string_view barName);
+  // Immediate (non-animated) teardown — used when a hosted panel is preempted by another
+  // panel opening, so the reopen starts from a clean base state.
+  void tearDownHostedAttachedPanelImmediate(wl_output* output, std::string_view barName);
+  // If the hosted panel on this bar is mid-close, cancel the retract and re-reveal its
+  // existing content (no teardown/recreate). Returns true if it re-revealed.
+  [[nodiscard]] bool reopenHostedAttachedPanel(wl_output* output, std::string_view barName);
 
   void registerIpc(IpcService& ipc);
 
@@ -140,6 +161,10 @@ private:
   [[nodiscard]] std::string attachedPanelResizeTestIpc(std::string_view args);
   [[nodiscard]] std::uint32_t attachedPanelResizeTestMaxExtent(const BarInstance& instance) const;
   void setAttachedPanelResizeTestOpen(BarInstance& instance, bool open, std::uint32_t extent);
+  void applyAttachedPanelTestReveal(BarInstance& instance, float progress);
+  void applyHostedPanelReveal(BarInstance& instance, float progress);
+  void positionHostedPanelContent(BarInstance& instance, float progress);
+  void tearDownHostedPanel(BarInstance& instance, bool invokeClosed);
   [[nodiscard]] std::optional<std::string> collectBarIpcInstances(
       std::optional<std::string_view> barName, std::optional<std::string_view> monitorSelector,
       std::vector<BarInstance*>& instancesOut
@@ -189,6 +214,7 @@ private:
   std::unordered_map<wl_surface*, BarInstance*> m_surfaceMap;
   BarInstance* m_hoveredInstance = nullptr;
   std::function<bool(const BarInstance&)> m_autoHideSuppressionCallback;
+  std::function<void(wl_output*, std::string_view)> m_hostedPanelReadyCallback;
   std::function<void(std::string, std::string)> m_openWidgetSettingsCallback;
   bool m_overlayDisplaySuppressed = false;
   bool m_wasVisibleBeforeOverlaySuppress = false;

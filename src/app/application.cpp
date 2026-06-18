@@ -1663,6 +1663,28 @@ void Application::initUi() {
   m_panelManager.setAttachedPanelBarSettledCallback([this](wl_output* output, std::string_view barName) {
     return m_bar.isAttachedPanelBarSettled(output, barName);
   });
+  m_panelManager.setHostAttachedPanelCallback(
+      [this](
+          wl_output* output, std::string_view barName, std::unique_ptr<Node> content, float mainLen, float innerLen,
+          float radius, float inset, std::function<void(Renderer&, float, float)> layout, std::function<void()> closed
+      ) {
+        return m_bar.openHostedAttachedPanel(
+            output, barName, std::move(content), mainLen, innerLen, radius, inset, std::move(layout), std::move(closed)
+        );
+      }
+  );
+  m_panelManager.setCloseHostedPanelCallback([this](wl_output* output, std::string_view barName) {
+    m_bar.closeHostedAttachedPanel(output, barName);
+  });
+  m_panelManager.setDestroyHostedPanelCallback([this](wl_output* output, std::string_view barName) {
+    m_bar.tearDownHostedAttachedPanelImmediate(output, barName);
+  });
+  m_panelManager.setReopenHostedPanelCallback([this](wl_output* output, std::string_view barName) {
+    return m_bar.reopenHostedAttachedPanel(output, barName);
+  });
+  m_bar.setHostedPanelReadyCallback([this](wl_output* output, std::string_view barName) {
+    m_panelManager.onHostedPanelReady(output, barName);
+  });
   m_bar.setAutoHideSuppressionCallback([this](const BarInstance& instance) {
     if (m_trayMenu.isOpen()) {
       return true;

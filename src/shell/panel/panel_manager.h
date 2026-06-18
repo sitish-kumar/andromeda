@@ -79,6 +79,22 @@ public:
   void setPanelOpenedCallback(std::function<void()> callback);
   void setAttachedPanelAvailabilityCallback(std::function<bool(wl_output*, std::string_view)> callback);
   void setAttachedPanelBarSettledCallback(std::function<bool(wl_output*, std::string_view)> callback);
+  // Host an attached panel's content inside the bar's own surface. Returns the host bar's
+  // wl_surface (dismissal/keyboard target) or nullptr if the bar cannot host. When set and
+  // it succeeds, the panel renders in the bar surface instead of its own layer surface.
+  using HostAttachedPanelFn = std::function<wl_surface*(
+      wl_output*, std::string_view, std::unique_ptr<Node>, float mainLen, float innerLen, float radius, float inset,
+      std::function<void(Renderer&, float, float)>, std::function<void()>
+  )>;
+  void setHostAttachedPanelCallback(HostAttachedPanelFn callback);
+  void setCloseHostedPanelCallback(std::function<void(wl_output*, std::string_view)> callback);
+  // Immediate (non-animated) hosted-panel teardown, used when a hosted panel is preempted.
+  void setDestroyHostedPanelCallback(std::function<void(wl_output*, std::string_view)> callback);
+  // Re-reveal a hosted panel that is mid-close (returns true if it re-revealed its content).
+  void setReopenHostedPanelCallback(std::function<bool(wl_output*, std::string_view)> callback);
+  // Called by the bar once a hosted panel's surface has grown to its full size, so the
+  // outside-click dismissal (click shield) can be re-armed against the grown bounds.
+  void onHostedPanelReady(wl_output* output, std::string_view barName);
   // Called when an auto-hide bar finishes revealing for an attached panel open.
   void onAttachedBarRevealSettled(wl_output* output, std::string_view barName);
 
@@ -179,6 +195,12 @@ private:
   std::function<void()> m_panelOpenedCallback;
   std::function<bool(wl_output*, std::string_view)> m_attachedPanelAvailabilityCallback;
   std::function<bool(wl_output*, std::string_view)> m_attachedPanelBarSettledCallback;
+  HostAttachedPanelFn m_hostAttachedPanelCallback;
+  std::function<void(wl_output*, std::string_view)> m_closeHostedPanelCallback;
+  std::function<void(wl_output*, std::string_view)> m_destroyHostedPanelCallback;
+  std::function<bool(wl_output*, std::string_view)> m_reopenHostedPanelCallback;
+  bool m_hosted = false;
+  LayerShellLayer m_hostedPanelLayer = LayerShellLayer::Top;
   PanelClickShield m_clickShield;
   std::unique_ptr<FocusGrab> m_focusGrab;
 

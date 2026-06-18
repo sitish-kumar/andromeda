@@ -300,6 +300,33 @@ void PanelManager::setAttachedPanelBarSettledCallback(std::function<bool(wl_outp
   m_attachedPanelBarSettledCallback = std::move(callback);
 }
 
+void PanelManager::setHostAttachedPanelCallback(HostAttachedPanelFn callback) {
+  m_hostAttachedPanelCallback = std::move(callback);
+}
+
+void PanelManager::setCloseHostedPanelCallback(std::function<void(wl_output*, std::string_view)> callback) {
+  m_closeHostedPanelCallback = std::move(callback);
+}
+
+void PanelManager::setDestroyHostedPanelCallback(std::function<void(wl_output*, std::string_view)> callback) {
+  m_destroyHostedPanelCallback = std::move(callback);
+}
+
+void PanelManager::setReopenHostedPanelCallback(std::function<bool(wl_output*, std::string_view)> callback) {
+  m_reopenHostedPanelCallback = std::move(callback);
+}
+
+void PanelManager::onHostedPanelReady(wl_output* output, std::string_view barName) {
+  if (!m_hosted || !isOpen() || m_closing || m_output != output || m_sourceBarName != barName) {
+    return;
+  }
+  // The bar surface has grown to its full hosted size. Re-arm outside-click dismissal so
+  // the click shield excludes the grown bar surface (panel area) rather than the pre-grow
+  // bar strip; on Hyprland this also refreshes the focus grab whitelist.
+  activateClickShield(m_hostedPanelLayer);
+  activateFocusGrab();
+}
+
 void PanelManager::onAttachedBarRevealSettled(wl_output* output, std::string_view barName) {
   if (!m_attachedOpenAnimationPending || !isAttachedOpen() || m_output != output) {
     return;
@@ -317,6 +344,22 @@ void PanelManager::registerPanel(const std::string& id, std::unique_ptr<Panel> c
 
 void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest request) {
   if (m_inTransition) {
+    return;
+  }
+
+  // Re-opening the same hosted panel while it is still closing: re-reveal its existing content
+  // in the bar surface instead of tearing it down and recreating (no flicker, no relayout).
+  if (m_hosted
+      && m_closing
+      && m_activePanelId == panelId
+      && m_reopenHostedPanelCallback
+      && m_output != nullptr
+      && m_reopenHostedPanelCallback(m_output, m_sourceBarName)) {
+    ++m_destroyGeneration; // void any in-flight deferred destroyPanel from the close
+    m_closing = false;
+    m_pendingOpenContext = std::string(request.context);
+    activateClickShield(m_hostedPanelLayer);
+    activateFocusGrab();
     return;
   }
 
@@ -519,6 +562,60 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   // Within a single layer, wlroots stacks surfaces by mapping order.
   activateClickShield(panelLayer);
 
+  // Bar-hosted attached panel: render the content inside the bar's own surface instead of
+  // a separate layer surface. The bar owns rendering/reveal/pointer; PanelManager keeps the
+  // Panel lifecycle and dismissal (focus grab / click shield retargeted at the bar surface).
+  if (useAttachedPlacement && m_hostAttachedPanelCallback) {
+    const std::string_view barPosition = barConfig.position;
+    const bool barIsVertical = (barPosition == "left" || barPosition == "right");
+    const float scale = m_activePanel->contentScale();
+    const float cornerRadius = Style::scaledRadiusXl(scale);
+
+    m_attachedToBar = true;
+    m_hosted = true;
+    m_hostedPanelLayer = panelLayer;
+    m_attachedBarPosition = std::string(barPosition);
+    m_attachedRevealProgress = 1.0f; // the bar drives the reveal animation
+    m_output = request.output;
+
+    const float bgOpacity = m_activePanel->inheritsBarBackgroundOpacity()
+        ? barConfig.backgroundOpacity
+        : m_activePanel->attachedBackgroundOpacityOverride();
+    m_attachedBackgroundOpacity = bgOpacity;
+    m_activePanel->setPanelBordersEnabled(m_config != nullptr && m_config->config().shell.panel.borders);
+    m_activePanel->setPanelCardOpacity(resolvePanelCardOpacity(m_config, bgOpacity));
+    m_activePanel->setAnimationManager(&m_animations);
+    m_activePanel->create();
+    m_activePanel->onOpen(m_pendingOpenContext);
+    std::unique_ptr<Node> root = m_activePanel->releaseRoot();
+
+    const float mainLen = barIsVertical ? static_cast<float>(panelHeight) : static_cast<float>(panelWidth);
+    const float innerLen = barIsVertical ? static_cast<float>(panelWidth) : static_cast<float>(panelHeight);
+    const float contentInset = m_activePanel->hasDecoration() ? scale * Style::panelPadding : 0.0f;
+
+    wl_surface* barSurface = m_hostAttachedPanelCallback(
+        request.output, m_sourceBarName, std::move(root), mainLen, innerLen, cornerRadius, contentInset,
+        [this](Renderer& renderer, float w, float h) {
+          if (m_activePanel != nullptr) {
+            m_activePanel->update(renderer);
+            m_activePanel->layout(renderer, w, h);
+          }
+        },
+        [this]() { destroyPanel(); }
+    );
+    if (barSurface == nullptr) {
+      // Hosting failed (root already consumed); abort cleanly.
+      destroyPanel();
+      return;
+    }
+    m_wlSurface = barSurface;
+    activateFocusGrab(); // grabs m_wlSurface (the bar surface); outside-click dismisses
+    if (m_panelOpenedCallback) {
+      m_panelOpenedCallback();
+    }
+    return;
+  }
+
   auto surfaceConfig = LayerSurfaceConfig{
       .nameSpace = "noctalia-panel",
       .layer = m_activePanel->layer(),
@@ -576,6 +673,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     m_sourceBarName.clear();
     m_attachedPanelGeometry.reset();
     m_attachedToBar = false;
+    m_hosted = false;
     m_attachedOpenAnimationPending = false;
   };
 
@@ -953,6 +1051,17 @@ void PanelManager::closePanel(bool animateClose) {
   m_closing = true;
   m_attachedOpenAnimationPending = false;
 
+  // Hosted panels live in the bar's surface: the bar drives the retract + shrink, then
+  // fires the closed callback wired at open time (-> destroyPanel).
+  if (m_hosted) {
+    if (m_closeHostedPanelCallback && m_output != nullptr) {
+      m_closeHostedPanelCallback(m_output, m_sourceBarName);
+    } else {
+      destroyPanel();
+    }
+    return;
+  }
+
   if (animateClose && m_sceneRoot != nullptr && m_activePanel != nullptr && m_activePanel->wantsCloseAnimation()) {
     const std::uint64_t gen = ++m_destroyGeneration;
     if (m_attachedToBar && m_attachedRevealClipNode != nullptr) {
@@ -991,7 +1100,13 @@ void PanelManager::closePanel(bool animateClose) {
 }
 
 void PanelManager::destroyPanel() {
-  if (m_attachedToBar && m_attachedPanelGeometryCallback && m_output != nullptr) {
+  // Tear the hosted panel down immediately (no animation) — covers openPanel's preempt path
+  // where a new panel opens while this one is mid-close. Idempotent: a no-op once the bar
+  // has already torn down via its own animated close.
+  if (m_hosted && m_destroyHostedPanelCallback && m_output != nullptr) {
+    m_destroyHostedPanelCallback(m_output, m_sourceBarName);
+  }
+  if (m_attachedToBar && !m_hosted && m_attachedPanelGeometryCallback && m_output != nullptr) {
     m_attachedPanelGeometryCallback(m_output, m_sourceBarName, std::nullopt);
   }
   // Defensive: closePanel deactivates first, but destroyPanel can also be
@@ -1033,6 +1148,7 @@ void PanelManager::destroyPanel() {
   m_sourceBarName.clear();
   m_attachedPanelGeometry.reset();
   m_attachedToBar = false;
+  m_hosted = false;
   m_attachedOpenAnimationPending = false;
   if (m_platform != nullptr) {
     m_platform->stopKeyRepeat();
@@ -1090,6 +1206,29 @@ void PanelManager::clearClipboardHistory() {
 
 bool PanelManager::onPointerEvent(const PointerEvent& event) {
   if (!isOpen() || m_inTransition) {
+    return false;
+  }
+  // Hosted panels render in the bar's surface; the bar's input dispatcher handles content
+  // events. Here we only track whether the pointer is over the bar surface and close on an
+  // outside (click-shield) press — content routing is the bar's job, not this path.
+  if (m_hosted) {
+    switch (event.type) {
+    case PointerEvent::Type::Enter:
+      m_pointerInside = (event.surface == m_wlSurface);
+      break;
+    case PointerEvent::Type::Leave:
+      if (event.surface == m_wlSurface) {
+        m_pointerInside = false;
+      }
+      break;
+    case PointerEvent::Type::Button:
+      if (event.state == 1 && !m_pointerInside) {
+        closePanel();
+      }
+      break;
+    default:
+      break;
+    }
     return false;
   }
 
@@ -1197,7 +1336,7 @@ bool PanelManager::onPointerEvent(const PointerEvent& event) {
   return m_pointerInside;
 }
 
-bool PanelManager::isOpen() const noexcept { return m_surface != nullptr && m_activePanel != nullptr; }
+bool PanelManager::isOpen() const noexcept { return (m_surface != nullptr || m_hosted) && m_activePanel != nullptr; }
 
 bool PanelManager::isOpenPanel(std::string_view panelId) const noexcept {
   return isOpen() && m_activePanelId == panelId;
@@ -1355,6 +1494,17 @@ void PanelManager::onKeyboardEvent(const KeyboardEvent& event) {
   // m_inTransition means the surface is still initializing.
   // Keyboard events during this window must be ignored.
   if (!isOpen() || m_inTransition) {
+    return;
+  }
+  // Hosted (bar-surface) panels: full keyboard nav isn't wired yet, but honor Escape to
+  // close when the bar surface holds keyboard focus.
+  if (m_hosted) {
+    if (m_platform != nullptr && event.pressed) {
+      wl_surface* const kbSurface = m_platform->lastKeyboardSurface();
+      if (kbSurface == m_wlSurface && KeybindMatcher::matches(KeybindAction::Cancel, event.sym, event.modifiers)) {
+        closePanel();
+      }
+    }
     return;
   }
 

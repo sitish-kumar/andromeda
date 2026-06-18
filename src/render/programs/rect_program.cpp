@@ -57,6 +57,12 @@ uniform vec2 u_shadow_exclusion_size;
 uniform vec4 u_shadow_exclusion_corner_shapes;
 uniform vec4 u_shadow_exclusion_logical_inset;
 uniform vec4 u_shadow_exclusion_radii;
+uniform int u_union_shape;
+uniform vec2 u_union_offset;
+uniform vec2 u_union_size;
+uniform vec4 u_union_corner_shapes;
+uniform vec4 u_union_logical_inset;
+uniform vec4 u_union_radii;
 varying vec2 v_pixel;
 
 // Returns (signed distance, is_corner). is_corner = 1.0 when the fragment lies in
@@ -270,6 +276,36 @@ float shadow_shape_distance(vec2 point, vec2 size, vec4 radii, vec4 corner_shape
     return max(distance, visual_clip);
 }
 
+// Union of the primary shape with an optional secondary shape, for a single-pass
+// non-convex silhouette (bar body + attached panel). The union of two exterior SDFs
+// is min(); the carried is_corner flag follows whichever shape is nearer.
+vec2 union_shape_distance_with_corner(vec2 point) {
+    vec2 primary = shape_distance_with_corner(point, u_rect_size, u_radii, u_corner_shapes, u_logical_inset);
+    if (u_union_shape == 0) {
+        return primary;
+    }
+    vec2 secondary = shape_distance_with_corner(point - u_union_offset, u_union_size, u_union_radii, u_union_corner_shapes, u_union_logical_inset);
+    return (secondary.x < primary.x) ? secondary : primary;
+}
+
+float union_shape_distance(vec2 point) {
+    float primary = shape_distance(point, u_rect_size, u_radii, u_corner_shapes, u_logical_inset);
+    if (u_union_shape == 0) {
+        return primary;
+    }
+    float secondary = shape_distance(point - u_union_offset, u_union_size, u_union_radii, u_union_corner_shapes, u_union_logical_inset);
+    return min(primary, secondary);
+}
+
+float union_shadow_shape_distance(vec2 point) {
+    float primary = shadow_shape_distance(point, u_rect_size, u_radii, u_corner_shapes, u_logical_inset);
+    if (u_union_shape == 0) {
+        return primary;
+    }
+    float secondary = shadow_shape_distance(point - u_union_offset, u_union_size, u_union_radii, u_union_corner_shapes, u_union_logical_inset);
+    return min(primary, secondary);
+}
+
 // Pixel-grid-snap window for axis-aligned edges: half-coverage falls exactly on
 // the boundary so an integer-aligned edge produces 100% on the inside pixel and
 // 0% on the outside pixel, with no semi-transparent leakage.
@@ -311,16 +347,16 @@ void main() {
     vec2 local_point = v_pixel;
     vec2 uv = clamp(local_point / u_rect_size, vec2(0.0), vec2(1.0));
 
-    vec2 outer = shape_distance_with_corner(local_point, u_rect_size, u_radii, u_corner_shapes, u_logical_inset);
+    vec2 outer = union_shape_distance_with_corner(local_point);
     float outer_distance = outer.x;
     float outer_coverage = coverage_for(outer, aa);
     if (u_invert_fill == 1) outer_coverage = 1.0 - outer_coverage;
 
     if (u_outer_shadow == 1) {
         float cutout_aa = 0.85;
-        float shadow_distance = shadow_shape_distance(local_point, u_rect_size, u_radii, u_corner_shapes, u_logical_inset);
+        float shadow_distance = union_shadow_shape_distance(local_point);
         float shadow_outer_coverage = 1.0 - smoothstep(-aa, aa, shadow_distance);
-        float cutout_distance = shape_distance(local_point + u_shadow_cutout_offset, u_rect_size, u_radii, u_corner_shapes, u_logical_inset);
+        float cutout_distance = union_shape_distance(local_point + u_shadow_cutout_offset);
         float cutout_mask = 1.0 - smoothstep(-cutout_aa, cutout_aa, cutout_distance);
         float shadow_coverage = shadow_outer_coverage * (1.0 - cutout_mask);
         if (u_shadow_exclusion == 1 && u_shadow_exclusion_size.x > 0.0 && u_shadow_exclusion_size.y > 0.0) {
@@ -436,6 +472,12 @@ void RectProgram::ensureInitialized() {
   m_shadowExclusionCornerShapesLocation = glGetUniformLocation(m_program.id(), "u_shadow_exclusion_corner_shapes");
   m_shadowExclusionLogicalInsetLocation = glGetUniformLocation(m_program.id(), "u_shadow_exclusion_logical_inset");
   m_shadowExclusionRadiiLocation = glGetUniformLocation(m_program.id(), "u_shadow_exclusion_radii");
+  m_unionShapeLocation = glGetUniformLocation(m_program.id(), "u_union_shape");
+  m_unionOffsetLocation = glGetUniformLocation(m_program.id(), "u_union_offset");
+  m_unionSizeLocation = glGetUniformLocation(m_program.id(), "u_union_size");
+  m_unionCornerShapesLocation = glGetUniformLocation(m_program.id(), "u_union_corner_shapes");
+  m_unionLogicalInsetLocation = glGetUniformLocation(m_program.id(), "u_union_logical_inset");
+  m_unionRadiiLocation = glGetUniformLocation(m_program.id(), "u_union_radii");
   m_transformLocation = glGetUniformLocation(m_program.id(), "u_transform");
 
   if (m_positionLocation < 0
@@ -467,6 +509,12 @@ void RectProgram::ensureInitialized() {
       || m_shadowExclusionCornerShapesLocation < 0
       || m_shadowExclusionLogicalInsetLocation < 0
       || m_shadowExclusionRadiiLocation < 0
+      || m_unionShapeLocation < 0
+      || m_unionOffsetLocation < 0
+      || m_unionSizeLocation < 0
+      || m_unionCornerShapesLocation < 0
+      || m_unionLogicalInsetLocation < 0
+      || m_unionRadiiLocation < 0
       || m_transformLocation < 0) {
     throw std::runtime_error("failed to query rounded-rect shader locations");
   }
@@ -503,6 +551,12 @@ void RectProgram::destroy() {
   m_shadowExclusionCornerShapesLocation = -1;
   m_shadowExclusionLogicalInsetLocation = -1;
   m_shadowExclusionRadiiLocation = -1;
+  m_unionShapeLocation = -1;
+  m_unionOffsetLocation = -1;
+  m_unionSizeLocation = -1;
+  m_unionCornerShapesLocation = -1;
+  m_unionLogicalInsetLocation = -1;
+  m_unionRadiiLocation = -1;
   m_transformLocation = -1;
 }
 
@@ -519,15 +573,26 @@ void RectProgram::draw(
   };
 
   const float padding = std::max(style.borderWidth + style.softness + 2.0f, 2.0f);
-  const float quadWidth = width + padding * 2.0f;
-  const float quadHeight = height + padding * 2.0f;
-  const float rectOrigin = padding;
-  const Mat3 quadTransform = transform * Mat3::translation(-padding, -padding);
+  // The quad must cover the primary rect plus any union shape that protrudes outside
+  // it (e.g. an attached panel growing past the bar edge), expanded by the padding.
+  float minX = 0.0f;
+  float minY = 0.0f;
+  float maxX = width;
+  float maxY = height;
+  if (style.unionShape) {
+    minX = std::min(0.0f, style.unionOffsetX);
+    minY = std::min(0.0f, style.unionOffsetY);
+    maxX = std::max(width, style.unionOffsetX + style.unionWidth);
+    maxY = std::max(height, style.unionOffsetY + style.unionHeight);
+  }
+  const float quadWidth = (maxX - minX) + padding * 2.0f;
+  const float quadHeight = (maxY - minY) + padding * 2.0f;
+  const Mat3 quadTransform = transform * Mat3::translation(minX - padding, minY - padding);
 
   glUseProgram(m_program.id());
   glUniform2f(m_surfaceSizeLocation, surfaceWidth, surfaceHeight);
   glUniform2f(m_quadSizeLocation, quadWidth, quadHeight);
-  glUniform2f(m_rectOriginLocation, rectOrigin, rectOrigin);
+  glUniform2f(m_rectOriginLocation, padding - minX, padding - minY);
   glUniform2f(m_rectSizeLocation, width, height);
   glUniform4f(m_colorLocation, style.fill.r, style.fill.g, style.fill.b, style.fill.a);
   glUniform4f(m_borderColorLocation, style.border.r, style.border.g, style.border.b, style.border.a);
@@ -583,6 +648,20 @@ void RectProgram::draw(
   glUniform4f(
       m_shadowExclusionRadiiLocation, style.shadowExclusionRadius.tl, style.shadowExclusionRadius.tr,
       style.shadowExclusionRadius.br, style.shadowExclusionRadius.bl
+  );
+  glUniform1i(m_unionShapeLocation, style.unionShape ? 1 : 0);
+  glUniform2f(m_unionOffsetLocation, style.unionOffsetX, style.unionOffsetY);
+  glUniform2f(m_unionSizeLocation, style.unionWidth, style.unionHeight);
+  glUniform4f(
+      m_unionCornerShapesLocation, cornerShapeValue(style.unionCorners.tl), cornerShapeValue(style.unionCorners.tr),
+      cornerShapeValue(style.unionCorners.br), cornerShapeValue(style.unionCorners.bl)
+  );
+  glUniform4f(
+      m_unionLogicalInsetLocation, style.unionLogicalInset.left, style.unionLogicalInset.top,
+      style.unionLogicalInset.right, style.unionLogicalInset.bottom
+  );
+  glUniform4f(
+      m_unionRadiiLocation, style.unionRadius.tl, style.unionRadius.tr, style.unionRadius.br, style.unionRadius.bl
   );
   glUniformMatrix3fv(m_transformLocation, 1, GL_FALSE, quadTransform.m.data());
   const auto posAttr = static_cast<GLuint>(m_positionLocation);
