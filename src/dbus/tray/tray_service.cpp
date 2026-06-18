@@ -31,7 +31,6 @@ namespace {
   constexpr auto kMenuInterface = "com.canonical.dbusmenu";
   constexpr auto kDefaultItemPath = "/StatusNotifierItem";
   constexpr auto kAyatanaItemPath = "/org/ayatana/NotificationItem";
-  constexpr auto kHostObjectPath = "/StatusNotifierHost/Noctalia";
   constexpr auto kItemPropertyTimeout = std::chrono::milliseconds(200);
 
   bool isStatusNotifierItemBusName(std::string_view value) {
@@ -557,14 +556,95 @@ TrayService::TrayService(SessionBus& bus) : m_bus(bus) {}
 
 void TrayService::start() {
   if (m_started) {
+    kLog.info("tray start skipped: already started ({} items)", m_items.size());
     return;
+  }
+
+  kLog.info("tray starting on {} (desktop hint: {})", compositors::name(compositors::detect()), compositors::envHint());
+
+  if (compositors::isKde()) {
+    startKde();
+  } else {
+    startLegacyOwner();
+  }
+
+  m_started = true;
+  kLog.info("tray started ({} items)", m_items.size());
+}
+
+void TrayService::startLegacyOwner() {
+  m_watcherRole = WatcherRole::Owner;
+
+  m_watcherObject = sdbus::createObject(m_bus.connection(), kWatcherObjectPath);
+
+  auto regItem = sdbus::registerMethod("RegisterStatusNotifierItem").withInputParamNames("service");
+  regItem.inputSignature = "s";
+  regItem.callbackHandler = [this](sdbus::MethodCall msg) {
+    std::string serviceOrPath;
+    msg >> serviceOrPath;
+    const char* sender = msg.getSender();
+    msg.createReply().send();
+    DeferredCall::callLater([this, serviceOrPath = std::move(serviceOrPath),
+                             senderBusName = std::string(sender != nullptr ? sender : "")]() {
+      onRegisterStatusNotifierItem(serviceOrPath, senderBusName);
+    });
+  };
+
+  m_watcherObject
+      ->addVTable(
+          std::move(regItem),
+
+          sdbus::registerMethod("RegisterStatusNotifierHost")
+              .withInputParamNames("service")
+              .implementedAs([this](const std::string& host) { onRegisterStatusNotifierHost(host); }),
+
+          sdbus::registerMethod("GetRegisteredItems").withOutputParamNames("items").implementedAs([this]() {
+            return registeredItems();
+          }),
+
+          sdbus::registerProperty("RegisteredStatusNotifierItems").withGetter([this]() { return registeredItems(); }),
+          sdbus::registerProperty("IsStatusNotifierHostRegistered").withGetter([this]() { return m_hostRegistered; }),
+          sdbus::registerProperty("ProtocolVersion").withGetter([]() { return static_cast<std::int32_t>(0); }),
+
+          sdbus::registerSignal("StatusNotifierItemRegistered").withParameters<std::string>("service"),
+          sdbus::registerSignal("StatusNotifierItemUnregistered").withParameters<std::string>("service"),
+          sdbus::registerSignal("StatusNotifierHostRegistered").withParameters<>()
+      )
+      .forInterface(kWatcherInterface);
+
+  try {
+    m_bus.connection().requestName(kWatcherBusName);
+    kLog.info("tray claimed {}", std::string{kWatcherBusName});
+  } catch (const sdbus::Error& e) {
+    kLog.warn("tray failed to claim {}: {}", std::string{kWatcherBusName}, e.what());
+    throw;
   }
 
   m_dbusProxy = sdbus::createProxy(m_bus.connection(), kDbusName, kDbusPath);
   m_dbusProxy->uponSignal("NameOwnerChanged")
       .onInterface(kDbusInterface)
       .call([this](const std::string& name, const std::string& old_owner, const std::string& new_owner) {
-        if (name == std::string(kWatcherBusName)) {
+        if (old_owner.empty() && !new_owner.empty() && isStatusNotifierItemBusName(name)) {
+          DeferredCall::callLater([this, name]() { tryRegisterItemForBusName(name); });
+        }
+        if (!old_owner.empty() && new_owner.empty()) {
+          removeItemsForBusName(name);
+        }
+      });
+
+  kLog.info("tray watcher active on {} (host registered={})", std::string{kWatcherBusName}, m_hostRegistered);
+
+  m_watcherObject->emitSignal("StatusNotifierHostRegistered").onInterface(kWatcherInterface);
+  DeferredCall::callLater([this]() { discoverExistingItems(); });
+  DeferredCall::callLater([this]() { discoverExistingItems(); });
+}
+
+void TrayService::startKde() {
+  m_dbusProxy = sdbus::createProxy(m_bus.connection(), kDbusName, kDbusPath);
+  m_dbusProxy->uponSignal("NameOwnerChanged")
+      .onInterface(kDbusInterface)
+      .call([this](const std::string& name, const std::string& old_owner, const std::string& new_owner) {
+        if (name == std::string{kWatcherBusName}) {
           if (m_watcherRole == WatcherRole::Client) {
             if (old_owner.empty() && !new_owner.empty()) {
               DeferredCall::callLater([this]() { connectToExternalWatcher(); });
@@ -583,14 +663,16 @@ void TrayService::start() {
         }
       });
 
-  const bool useClientMode = compositors::isKde() || externalWatcherHasOwner();
+  const bool hasOwner = externalWatcherHasOwner();
+  kLog.info("tray external watcher owner present: {}", hasOwner);
+  const bool useClientMode = hasOwner;
   if (useClientMode) {
+    kLog.info("tray using Plasma StatusNotifierWatcher (client mode)");
     startAsWatcherClient();
   } else {
+    kLog.info("tray owning StatusNotifierWatcher on KDE (no external watcher yet)");
     startAsWatcherOwner();
   }
-
-  m_started = true;
 }
 
 bool TrayService::externalWatcherHasOwner() const {
@@ -650,9 +732,15 @@ void TrayService::startAsWatcherOwner() {
       )
       .forInterface(kWatcherInterface);
 
-  m_bus.connection().requestName(kWatcherBusName);
+  try {
+    m_bus.connection().requestName(kWatcherBusName);
+    kLog.info("tray claimed {}", std::string{kWatcherBusName});
+  } catch (const sdbus::Error& e) {
+    kLog.warn("tray failed to claim {}: {}", std::string{kWatcherBusName}, e.what());
+    throw;
+  }
 
-  kLog.debug("tray watcher active on {}", std::string(kWatcherBusName));
+  kLog.info("tray watcher active on {} (host registered={})", std::string{kWatcherBusName}, m_hostRegistered);
 
   m_watcherObject->emitSignal("StatusNotifierHostRegistered").onInterface(kWatcherInterface);
   DeferredCall::callLater([this]() { discoverExistingItems(); });
@@ -661,18 +749,23 @@ void TrayService::startAsWatcherOwner() {
 
 void TrayService::startAsWatcherClient() {
   m_watcherRole = WatcherRole::Client;
+  m_hostRegistered = false;
 
-  const std::string hostBusName = "org.kde.StatusNotifierHost-" + std::to_string(getpid());
+  m_hostBusName = "org.kde.StatusNotifierHost-" + std::to_string(getpid());
   try {
-    m_bus.connection().requestName(sdbus::ServiceName{hostBusName});
+    m_bus.connection().requestName(sdbus::ServiceName{m_hostBusName});
+    kLog.info("tray host bus name acquired: {}", m_hostBusName);
   } catch (const sdbus::Error& e) {
-    kLog.debug("tray host bus name request failed: {}", e.what());
+    kLog.warn("tray host bus name request failed for {}: {}", m_hostBusName, e.what());
+    m_hostBusName.clear();
   }
 
-  kLog.debug("tray using external StatusNotifierWatcher");
+  kLog.info("tray using external StatusNotifierWatcher");
   if (externalWatcherHasOwner()) {
     connectToExternalWatcher();
   }
+  DeferredCall::callLater([this]() { discoverExistingItems(); });
+  DeferredCall::callLater([this]() { discoverExistingItems(); });
 }
 
 void TrayService::connectToExternalWatcher() {
@@ -683,9 +776,11 @@ void TrayService::connectToExternalWatcher() {
   try {
     m_watcherProxy = sdbus::createProxy(m_bus.connection(), kWatcherBusName, kWatcherObjectPath);
 
-    m_watcherProxy->callMethod("RegisterStatusNotifierHost")
-        .onInterface(kWatcherInterface)
-        .withArguments(std::string(kHostObjectPath));
+    if (!m_hostBusName.empty()) {
+      m_watcherProxy->callMethod("RegisterStatusNotifierHost")
+          .onInterface(kWatcherInterface)
+          .withArguments(m_hostBusName);
+    }
 
     m_watcherProxy->uponSignal("StatusNotifierItemRegistered")
         .onInterface(kWatcherInterface)
@@ -703,9 +798,9 @@ void TrayService::connectToExternalWatcher() {
     }
 
     m_externalWatcherConnected = true;
-    kLog.debug("tray connected to external watcher ({} items)", registered.size());
+    kLog.info("tray connected to external watcher ({} items)", registered.size());
   } catch (const sdbus::Error& e) {
-    kLog.debug("tray external watcher connect failed: {}", e.what());
+    kLog.warn("tray external watcher connect failed: {}", e.what());
     m_watcherProxy.reset();
     m_externalWatcherConnected = false;
   }
@@ -1429,7 +1524,7 @@ bool TrayService::openContextMenu(const std::string& itemId, std::int32_t x, std
 void TrayService::onRegisterStatusNotifierItem(const std::string& serviceOrPath, const std::string& senderBusName) {
   const auto t0 = std::chrono::steady_clock::now();
   if (serviceOrPath.empty()) {
-    kLog.debug("register item ignored: empty service/path");
+    kLog.info("tray register ignored: empty service/path");
     return;
   }
 
@@ -1455,7 +1550,7 @@ void TrayService::onRegisterStatusNotifierItem(const std::string& serviceOrPath,
   }
 
   if (busName.empty() || objectPath.empty()) {
-    kLog.debug("register item ignored: invalid id ({})", serviceOrPath);
+    kLog.info("tray register ignored: invalid id ({})", serviceOrPath);
     return;
   }
 
@@ -1489,7 +1584,7 @@ void TrayService::onRegisterStatusNotifierItem(const std::string& serviceOrPath,
   registerOrRefreshItem(busName, objectPath);
   const auto elapsedMs =
       std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
-  kLog.debug(
+  kLog.info(
       "tray register service/path='{}' sender='{}' -> bus='{}' objectPath='{}' elapsed={}ms", serviceOrPath,
       senderBusName, busName, objectPath, elapsedMs
   );
@@ -1501,7 +1596,7 @@ void TrayService::onRegisterStatusNotifierHost(const std::string& host) {
   }
   m_hostRegistered = true;
 
-  kLog.debug("host registered: {}", host);
+  kLog.info("tray host registered: {}", host);
   if (m_watcherObject != nullptr) {
     m_watcherObject->emitSignal("StatusNotifierHostRegistered").onInterface(kWatcherInterface);
     m_watcherObject->emitPropertiesChangedSignal(
@@ -1519,18 +1614,21 @@ void TrayService::discoverExistingItems() {
         .withTimeout(std::chrono::milliseconds(200))
         .uponReplyInvoke([this](std::optional<sdbus::Error> error, std::vector<std::string> names) {
           if (error.has_value()) {
-            kLog.debug("tray discover failed: {}", error->what());
+            kLog.warn("tray discover failed: {}", error->what());
             return;
           }
 
+          std::size_t sniCount = 0;
           for (const auto& name : names) {
             if (isStatusNotifierItemBusName(name)) {
+              ++sniCount;
               tryRegisterItemForBusName(name);
             }
           }
+          kLog.info("tray discover scanned {} bus names, found {} sni services", names.size(), sniCount);
         });
   } catch (const sdbus::Error& e) {
-    kLog.debug("tray discover dispatch failed: {}", e.what());
+    kLog.warn("tray discover dispatch failed: {}", e.what());
   }
 }
 
@@ -1553,12 +1651,14 @@ void TrayService::tryRegisterItemForBusName(const std::string& busName, std::fun
       return;
     }
 
+    const auto elapsedMs =
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
+
     if (*registeredAny) {
+      kLog.info("tray probe registered bus='{}' elapsed={}ms", busName, elapsedMs);
       emitChanged();
     } else {
-      const auto elapsedMs =
-          std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
-      kLog.debug("tray probe exhausted bus='{}' elapsed={}ms", busName, elapsedMs);
+      kLog.info("tray probe found no item for bus='{}' elapsed={}ms", busName, elapsedMs);
     }
 
     if (callback) {
@@ -1712,7 +1812,7 @@ void TrayService::registerOrRefreshItem(const std::string& busName, const std::s
   }
 
   if (!m_items.contains(itemId)) {
-    kLog.debug("tray item registered id={} bus='{}' path='{}'", itemId, busName, objectPath);
+    kLog.info("tray item registered id={} bus='{}' path='{}'", itemId, busName, objectPath);
     m_items.emplace(
         itemId,
         TrayItemInfo{
@@ -1751,6 +1851,7 @@ void TrayService::registerOrRefreshItem(const std::string& busName, const std::s
     }
 
     notifyWatcherItemRegistered(itemId);
+    emitChanged();
   }
 
   if (looks_like_dbus_name(busName)) {
@@ -1965,8 +2066,9 @@ void TrayService::refreshItemMetadata(const std::string& itemId) {
           }
 
           if (error.has_value()) {
-            kLog.debug("metadata GetAll failed id={} err={}", itemId, error->what());
+            kLog.warn("tray metadata GetAll failed id={} err={}", itemId, error->what());
             ensureMenuCache(itemId, currentItemIt->second.busName, currentItemIt->second.menuObjectPath);
+            emitChanged();
             return;
           }
 
@@ -2011,6 +2113,10 @@ void TrayService::refreshItemMetadata(const std::string& itemId) {
 
           currentItemIt->second = std::move(next);
           ensureMenuCache(itemId, currentItemIt->second.busName, currentItemIt->second.menuObjectPath);
+          kLog.info(
+              "tray metadata ready id={} icon='{}' status='{}'", itemId, currentItemIt->second.iconName,
+              currentItemIt->second.status
+          );
           emitChanged();
         });
   } catch (const sdbus::Error& e) {
@@ -2041,6 +2147,7 @@ void TrayService::removeItemsForBusName(const std::string& busName) {
 }
 
 void TrayService::emitChanged() {
+  kLog.info("tray notifying shell ({} items)", m_items.size());
   if (m_changeCallback) {
     m_changeCallback();
   }

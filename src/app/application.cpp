@@ -1212,11 +1212,13 @@ void Application::initServices() {
 
 void Application::startTrayService() {
   if (m_bus == nullptr || m_trayService == nullptr) {
+    kLog.warn("tray start skipped: session bus or tray service unavailable");
     return;
   }
 
   try {
     m_trayService->start();
+    kLog.info("tray service startup complete ({} items)", m_trayService->itemCount());
   } catch (const std::exception& e) {
     kLog.warn("tray watcher disabled: {}", e.what());
   }

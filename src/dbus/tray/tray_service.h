@@ -107,6 +107,8 @@ private:
 
   void onRegisterStatusNotifierItem(const std::string& serviceOrPath, const std::string& senderBusName);
   void onRegisterStatusNotifierHost(const std::string& host);
+  void startLegacyOwner();
+  void startKde();
   void startAsWatcherOwner();
   void startAsWatcherClient();
   void connectToExternalWatcher();
@@ -145,6 +147,7 @@ private:
   SessionBus& m_bus;
   enum class WatcherRole { Owner, Client };
   WatcherRole m_watcherRole = WatcherRole::Owner;
+  std::string m_hostBusName;
   std::unique_ptr<sdbus::IObject> m_watcherObject;
   std::unique_ptr<sdbus::IProxy> m_watcherProxy;
   std::unique_ptr<sdbus::IProxy> m_dbusProxy;
@@ -152,7 +155,7 @@ private:
   std::unordered_map<std::string, std::unique_ptr<sdbus::IProxy>> m_itemProxies;
   std::unordered_map<std::string, MenuCache> m_menuCache;
   std::unordered_set<std::string> m_pathOnlyResolutionsInFlight;
-  bool m_hostRegistered = false;
+  bool m_hostRegistered = true;
   bool m_externalWatcherConnected = false;
   bool m_started = false;
   ChangeCallback m_changeCallback;
