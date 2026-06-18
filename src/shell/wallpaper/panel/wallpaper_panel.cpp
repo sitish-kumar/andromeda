@@ -367,7 +367,6 @@ void WallpaperPanel::create() {
       .out = &m_rootLayout,
       .align = FlexAlign::Stretch,
       .gap = Style::spaceSm * scale,
-      .padding = Style::spaceMd * scale,
   });
 
   auto toolbar = ui::row({
