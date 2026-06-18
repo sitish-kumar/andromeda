@@ -110,6 +110,9 @@ public:
       std::function<void(wl_output*, std::string_view, std::uint32_t, std::uint32_t, std::uint32_t, bool, bool)>
           callback
   );
+  // Installs the hosted panel's Select-dropdown popup context on the bar's hosted content subtree.
+  void
+  setHostedPanelPopupContextCallback(std::function<void(wl_output*, std::string_view, SelectPopupContext*)> callback);
   // Called each frame by the hosting bar surface so the active hosted Panel can tick.
   void onHostedPanelFrameTick(float deltaMs);
   // Called by the bar once a hosted panel's surface has grown to its full size, so the
@@ -236,6 +239,7 @@ private:
   std::function<void(wl_output*, std::string_view, InputArea*)> m_setHostedPanelFocusCallback;
   std::function<void(wl_output*, std::string_view, std::uint32_t, std::uint32_t, std::uint32_t, bool, bool)>
       m_dispatchHostedPanelKeyCallback;
+  std::function<void(wl_output*, std::string_view, SelectPopupContext*)> m_setHostedPanelPopupContextCallback;
   bool m_hosted = false;
   LayerShellLayer m_hostedPanelLayer = LayerShellLayer::Top;
   PanelClickShield m_clickShield;

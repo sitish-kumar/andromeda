@@ -1327,6 +1327,14 @@ void Bar::setHostedPanelFocus(wl_output* output, std::string_view barName, Input
   instance->inputDispatcher.setFocus(area);
 }
 
+void Bar::setHostedPanelPopupContext(wl_output* output, std::string_view barName, SelectPopupContext* context) {
+  BarInstance* instance = instanceForBar(output, barName);
+  if (instance == nullptr || !instance->hostedPanelOpen || instance->hostedPanelContent == nullptr) {
+    return;
+  }
+  instance->hostedPanelContent->setPopupContext(context);
+}
+
 void Bar::dispatchHostedPanelKey(
     wl_output* output, std::string_view barName, std::uint32_t sym, std::uint32_t utf32, std::uint32_t modifiers,
     bool pressed, bool preedit

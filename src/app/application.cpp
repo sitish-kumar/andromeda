@@ -1706,6 +1706,11 @@ void Application::initUi() {
           bool pressed, bool preedit
       ) { m_bar.dispatchHostedPanelKey(output, barName, sym, utf32, modifiers, pressed, preedit); }
   );
+  m_panelManager.setHostedPanelPopupContextCallback(
+      [this](wl_output* output, std::string_view barName, SelectPopupContext* context) {
+        m_bar.setHostedPanelPopupContext(output, barName, context);
+      }
+  );
   m_bar.setHostedPanelFrameTickCallback([this](float deltaMs) { m_panelManager.onHostedPanelFrameTick(deltaMs); });
   m_bar.setHostedPanelReadyCallback([this](wl_output* output, std::string_view barName) {
     m_panelManager.onHostedPanelReady(output, barName);

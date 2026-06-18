@@ -354,6 +354,12 @@ void PanelManager::setDispatchHostedPanelKeyCallback(
   m_dispatchHostedPanelKeyCallback = std::move(callback);
 }
 
+void PanelManager::setHostedPanelPopupContextCallback(
+    std::function<void(wl_output*, std::string_view, SelectPopupContext*)> callback
+) {
+  m_setHostedPanelPopupContextCallback = std::move(callback);
+}
+
 void PanelManager::onHostedPanelFrameTick(float deltaMs) {
   if (!m_hosted || m_activePanel == nullptr) {
     return;
@@ -735,6 +741,21 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     if (m_setHostedPanelFocusCallback) {
       if (auto* focusArea = m_activePanel->initialFocusArea(); focusArea != nullptr) {
         m_setHostedPanelFocusCallback(request.output, m_sourceBarName, focusArea);
+      }
+    }
+    // Select controls in hosted content open their dropdown against the bar's layer surface.
+    // Create the dropdown popup parented to the bar and install it as the content's popup context.
+    if (m_renderContext != nullptr
+        && m_platform != nullptr
+        && m_hostedPopupParentContextQuery
+        && m_setHostedPanelPopupContextCallback) {
+      if (auto ctx = m_hostedPopupParentContextQuery(request.output, m_sourceBarName); ctx.has_value()) {
+        m_selectPopup = std::make_unique<SelectDropdownPopup>(m_platform->wayland(), *m_renderContext);
+        if (m_config != nullptr) {
+          m_selectPopup->setShadowConfig(m_config->config().shell.shadow);
+        }
+        m_selectPopup->setParent(ctx->layerSurface, ctx->surface, ctx->output);
+        m_setHostedPanelPopupContextCallback(request.output, m_sourceBarName, m_selectPopup.get());
       }
     }
     if (m_panelOpenedCallback) {
@@ -1654,6 +1675,11 @@ void PanelManager::onKeyboardEvent(const KeyboardEvent& event) {
   // Hosted (bar-surface) panels: the content's focus areas + text inputs live in the bar's input
   // dispatcher, so route keys there. Gate on the bar surface holding keyboard focus.
   if (m_hosted) {
+    // An open Select dropdown (its own surface) gets keys first, regardless of focus gating.
+    if (m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen()) {
+      m_selectPopup->onKeyboardEvent(event);
+      return;
+    }
     if (m_platform != nullptr) {
       wl_surface* const kbSurface = m_platform->lastKeyboardSurface();
       if (kbSurface != m_wlSurface) {

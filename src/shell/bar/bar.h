@@ -47,6 +47,7 @@ namespace scripting {
 struct PointerEvent;
 struct wl_surface;
 class InputArea;
+class SelectPopupContext;
 
 class Bar {
 public:
@@ -136,6 +137,9 @@ public:
       wl_output* output, std::string_view barName, std::uint32_t sym, std::uint32_t utf32, std::uint32_t modifiers,
       bool pressed, bool preedit
   );
+  // Install the Select-dropdown popup context on the hosted content subtree so Select controls
+  // inside a hosted panel open their dropdown against the bar's layer surface.
+  void setHostedPanelPopupContext(wl_output* output, std::string_view barName, SelectPopupContext* context);
   // The AnimationManager that drives a hosted panel's content. The Panel animates against
   // this (not PanelManager's own manager) so the bar surface ticks its animations.
   [[nodiscard]] AnimationManager* hostedPanelAnimationManager(wl_output* output, std::string_view barName) const;
