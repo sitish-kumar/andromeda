@@ -17,6 +17,7 @@
 struct wl_output;
 struct wl_surface;
 struct ext_workspace_manager_v1;
+struct org_kde_plasma_virtual_desktop_management;
 struct zdwl_ipc_manager_v2;
 struct hyprland_toplevel_mapping_manager_v1;
 struct zwlr_foreign_toplevel_handle_v1;
@@ -149,6 +150,7 @@ private:
   };
 
   void bindExtWorkspace(ext_workspace_manager_v1* manager);
+  void bindKdeVirtualDesktop(org_kde_plasma_virtual_desktop_management* management);
   void bindDwlIpcWorkspace(zdwl_ipc_manager_v2* manager);
   void notifyToplevelsChanged();
   void onOutputAdded(wl_output* output);

@@ -298,6 +298,7 @@ namespace {
       );
     case compositors::CompositorKind::Dwl:
     case compositors::CompositorKind::Labwc:
+    case compositors::CompositorKind::Kde:
     case compositors::CompositorKind::Unknown:
       return std::make_unique<LambdaOutputPowerBackend>(&setGenericOutputPower);
     }
@@ -317,6 +318,7 @@ namespace {
       return std::make_unique<FocusedOutputAdapter<TriadOutputBackend>>(runtimeRegistry.triad());
     case compositors::CompositorKind::Dwl:
     case compositors::CompositorKind::Labwc:
+    case compositors::CompositorKind::Kde:
     case compositors::CompositorKind::Mango:
     case compositors::CompositorKind::Unknown:
       break;
@@ -336,6 +338,7 @@ namespace {
     case compositors::CompositorKind::Mango:
     case compositors::CompositorKind::Dwl:
     case compositors::CompositorKind::Labwc:
+    case compositors::CompositorKind::Kde:
     case compositors::CompositorKind::Unknown:
       break;
     }
@@ -357,6 +360,7 @@ namespace {
       return std::make_unique<KeyboardLayoutBackendAdapter<TriadKeyboardBackend>>(runtimeRegistry.triad());
     case compositors::CompositorKind::Dwl:
     case compositors::CompositorKind::Labwc:
+    case compositors::CompositorKind::Kde:
     case compositors::CompositorKind::Unknown:
       break;
     }
@@ -381,6 +385,9 @@ CompositorPlatform::CompositorPlatform(WaylandConnection& wayland)
       [this](ext_workspace_manager_v1* manager) { bindExtWorkspace(manager); },
       [this](zdwl_ipc_manager_v2* manager) { bindDwlIpcWorkspace(manager); }
   );
+  m_wayland.setKdeVirtualDesktopManagerCallback([this](org_kde_plasma_virtual_desktop_management* management) {
+    bindKdeVirtualDesktop(management);
+  });
   m_wayland.setHyprlandToplevelMappingManagerCallback([this](hyprland_toplevel_mapping_manager_v1* manager) {
     bindHyprlandToplevelMappingManager(manager);
   });
@@ -394,6 +401,7 @@ CompositorPlatform::~CompositorPlatform() {
   cleanup();
   m_wayland.setOutputLifecycleCallbacks({}, {});
   m_wayland.setWorkspaceManagerCallbacks({}, {});
+  m_wayland.setKdeVirtualDesktopManagerCallback({});
   m_wayland.setHyprlandToplevelMappingManagerCallback({});
   m_wayland.setToplevelChangeCallback({});
 }
@@ -985,6 +993,7 @@ bool CompositorPlatform::requestSessionExit() const {
       return true;
     }
     break;
+  case compositors::CompositorKind::Kde:
   case compositors::CompositorKind::Unknown:
     break;
   }
@@ -1020,6 +1029,12 @@ bool CompositorPlatform::isOverviewOpen() const noexcept {
 void CompositorPlatform::bindExtWorkspace(ext_workspace_manager_v1* manager) {
   if (m_workspaces != nullptr) {
     m_workspaces->bindExtWorkspace(manager);
+  }
+}
+
+void CompositorPlatform::bindKdeVirtualDesktop(org_kde_plasma_virtual_desktop_management* management) {
+  if (m_workspaces != nullptr) {
+    m_workspaces->bindKdeVirtualDesktop(management);
   }
 }
 

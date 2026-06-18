@@ -14,6 +14,7 @@
 #include "hyprland-focus-grab-v1-client-protocol.h"
 #include "hyprland-toplevel-mapping-v1-client-protocol.h"
 #include "idle-inhibit-unstable-v1-client-protocol.h"
+#include "org-kde-plasma-virtual-desktop-client-protocol.h"
 #include "text-input-unstable-v3-client-protocol.h"
 #include "util/string_utils.h"
 #include "viewporter-client-protocol.h"
@@ -51,6 +52,7 @@ namespace {
   constexpr std::uint32_t kXdgOutputManagerVersion = 3;
   constexpr std::uint32_t kXdgWmBaseVersion = 6;
   constexpr std::uint32_t kExtWorkspaceManagerVersion = 1;
+  constexpr std::uint32_t kKdeVirtualDesktopManagementVersion = 4;
   constexpr std::uint32_t kWlrForeignToplevelManagerVersion = 3;
   constexpr std::uint32_t kExtForeignToplevelListVersion = 1;
   constexpr std::uint32_t kCursorShapeManagerVersion = 1;
@@ -319,6 +321,12 @@ void WaylandConnection::setWorkspaceManagerCallbacks(
   m_dwlIpcManagerCallback = std::move(dwlIpc);
 }
 
+void WaylandConnection::setKdeVirtualDesktopManagerCallback(
+    std::function<void(org_kde_plasma_virtual_desktop_management*)> callback
+) {
+  m_kdeVirtualDesktopManagerCallback = std::move(callback);
+}
+
 void WaylandConnection::setToplevelChangeCallback(ChangeCallback callback) {
   m_toplevelsHandler.setChangeCallback(callback);
   m_extForeignToplevels.setChangeCallback(std::move(callback));
@@ -551,6 +559,7 @@ bool WaylandConnection::hasXdgOutputManager() const noexcept { return m_xdgOutpu
 bool WaylandConnection::hasXdgShell() const noexcept { return m_xdgWmBase != nullptr; }
 
 bool WaylandConnection::hasExtWorkspaceManager() const noexcept { return m_hasExtWorkspaceGlobal; }
+bool WaylandConnection::hasKdeVirtualDesktopManager() const noexcept { return m_hasKdeVirtualDesktopGlobal; }
 bool WaylandConnection::hasDwlIpcManager() const noexcept { return m_hasDwlIpcGlobal; }
 bool WaylandConnection::hasForeignToplevelManager() const noexcept { return m_hasForeignToplevelManagerGlobal; }
 
@@ -822,6 +831,20 @@ void WaylandConnection::bindGlobal(
       m_extWorkspaceManagerCallback(manager);
     } else {
       ext_workspace_manager_v1_destroy(manager);
+    }
+    return;
+  }
+
+  if (interfaceName == org_kde_plasma_virtual_desktop_management_interface.name) {
+    m_hasKdeVirtualDesktopGlobal = true;
+    const auto bindVersion = std::min(version, kKdeVirtualDesktopManagementVersion);
+    auto* manager = static_cast<org_kde_plasma_virtual_desktop_management*>(
+        wl_registry_bind(registry, name, &org_kde_plasma_virtual_desktop_management_interface, bindVersion)
+    );
+    if (m_kdeVirtualDesktopManagerCallback) {
+      m_kdeVirtualDesktopManagerCallback(manager);
+    } else {
+      org_kde_plasma_virtual_desktop_management_destroy(manager);
     }
     return;
   }
@@ -1214,17 +1237,19 @@ void WaylandConnection::cleanup() {
   m_outputAddedCallback = nullptr;
   m_outputRemovedCallback = nullptr;
   m_extWorkspaceManagerCallback = nullptr;
+  m_kdeVirtualDesktopManagerCallback = nullptr;
   m_dwlIpcManagerCallback = nullptr;
 }
 
 void WaylandConnection::logStartupSummary() const {
   kLog.info(
-      "connected compositor={} shm={} layer-shell={} xdg-shell={} xdg-output={} ext-workspace={} dwl-ipc={} "
+      "connected compositor={} shm={} layer-shell={} xdg-shell={} xdg-output={} ext-workspace={} kde-vd={} dwl-ipc={} "
       "session-lock={} fractional-scale={} gamma-control={} outputs={}",
       m_compositor != nullptr ? "yes" : "no", m_shm != nullptr ? "yes" : "no", hasLayerShell() ? "yes" : "no",
       hasXdgShell() ? "yes" : "no", hasXdgOutputManager() ? "yes" : "no", hasExtWorkspaceManager() ? "yes" : "no",
-      hasDwlIpcManager() ? "yes" : "no", hasSessionLockManager() ? "yes" : "no", hasFractionalScale() ? "yes" : "no",
-      hasGammaControl() ? "yes" : "no", m_outputs.size()
+      hasKdeVirtualDesktopManager() ? "yes" : "no", hasDwlIpcManager() ? "yes" : "no",
+      hasSessionLockManager() ? "yes" : "no", hasFractionalScale() ? "yes" : "no", hasGammaControl() ? "yes" : "no",
+      m_outputs.size()
   );
 
   for (const auto& output : m_outputs) {
