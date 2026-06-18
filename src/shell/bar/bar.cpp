@@ -1291,6 +1291,42 @@ void Bar::setHostedPanelReadyCallback(std::function<void(wl_output*, std::string
   m_hostedPanelReadyCallback = std::move(callback);
 }
 
+void Bar::setHostedPanelFrameTickCallback(std::function<void(float)> callback) {
+  m_hostedPanelFrameTickCallback = std::move(callback);
+}
+
+void Bar::requestHostedPanelLayout(wl_output* output, std::string_view barName) {
+  BarInstance* instance = instanceForBar(output, barName);
+  if (instance == nullptr || !instance->hostedPanelOpen || instance->surface == nullptr) {
+    return;
+  }
+  instance->surface->requestLayout();
+}
+
+void Bar::requestHostedPanelRedraw(wl_output* output, std::string_view barName) {
+  BarInstance* instance = instanceForBar(output, barName);
+  if (instance == nullptr || !instance->hostedPanelOpen || instance->surface == nullptr) {
+    return;
+  }
+  instance->surface->requestRedraw();
+}
+
+void Bar::requestHostedPanelFrameTick(wl_output* output, std::string_view barName) {
+  BarInstance* instance = instanceForBar(output, barName);
+  if (instance == nullptr || !instance->hostedPanelOpen || instance->surface == nullptr) {
+    return;
+  }
+  instance->surface->requestFrameTick();
+}
+
+AnimationManager* Bar::hostedPanelAnimationManager(wl_output* output, std::string_view barName) const {
+  BarInstance* instance = instanceForBar(output, barName);
+  if (instance == nullptr) {
+    return nullptr;
+  }
+  return &instance->animations;
+}
+
 void Bar::reevaluateAutoHide() {
   for (const auto& instance : m_instances) {
     if (instance == nullptr
@@ -1746,10 +1782,13 @@ void Bar::createInstance(const WaylandOutput& output, std::size_t barIndex, cons
   instance->surface->setPrepareFrameCallback([this, inst](bool needsUpdate, bool needsLayout) {
     prepareFrame(*inst, needsUpdate, needsLayout);
   });
-  instance->surface->setFrameTickCallback([inst](float deltaMs) {
+  instance->surface->setFrameTickCallback([this, inst](float deltaMs) {
     tickWidgets(inst->startWidgets, deltaMs);
     tickWidgets(inst->centerWidgets, deltaMs);
     tickWidgets(inst->endWidgets, deltaMs);
+    if (inst->hostedPanelOpen && m_hostedPanelFrameTickCallback) {
+      m_hostedPanelFrameTickCallback(deltaMs);
+    }
   });
 
   instance->surface->setAnimationManager(&instance->animations);
@@ -2511,30 +2550,7 @@ void Bar::buildScene(BarInstance& instance, std::uint32_t width, std::uint32_t h
   layoutBarSections(instance, *renderer, barAreaW, barAreaH, padding, isVertical);
 
   // Lay out and position bar-hosted attached panel content at the current reveal progress.
-  if (instance.hostedPanelOpen && instance.hostedPanelContent != nullptr) {
-    const auto region = attachedPanelRegionRect(
-        instance.barConfig, shadowConfig, static_cast<int>(std::lround(w)), static_cast<int>(std::lround(h)),
-        static_cast<int>(std::lround(instance.hostedPanelMainLen))
-    );
-    if (region.has_value() && instance.hostedPanelLayout) {
-      const float inset = instance.hostedPanelInset;
-      instance.hostedPanelLayout(
-          *renderer, std::max(0.0f, static_cast<float>(region->width) - inset * 2.0f),
-          std::max(0.0f, static_cast<float>(region->height) - inset * 2.0f)
-      );
-    }
-    positionHostedPanelContent(instance, instance.hostedPanelProgress);
-    // The surface grow is async: re-sync the input region now that buildScene runs at the
-    // grown size so the panel area is clickable. Once grown, tell PanelManager to (re)arm
-    // dismissal so the click shield excludes the grown bar surface.
-    if (region.has_value()) {
-      syncBarAutoHideInputRegion(instance);
-      if (!instance.hostedPanelReadyFired && m_hostedPanelReadyCallback) {
-        instance.hostedPanelReadyFired = true;
-        m_hostedPanelReadyCallback(instance.output, instance.barConfig.name);
-      }
-    }
-  }
+  layoutHostedPanelContent(instance, *renderer, w, h);
 
   if (instance.barConfig.autoHide) {
     float contentLeft = barAreaX;
@@ -2642,6 +2658,10 @@ void Bar::prepareFrame(BarInstance& instance, bool needsUpdate, bool needsLayout
     }
     layoutBarSections(instance, *m_renderContext, barAreaW, barAreaH, padding, isVertical);
   }
+
+  // Re-run the hosted attached panel's content layout so internal relayouts (tab switches,
+  // expanding sections) reflow without a surface resize. The Panel manages its own phase scopes.
+  layoutHostedPanelContent(instance, *m_renderContext, w, h);
 }
 
 bool Bar::onPointerEvent(const PointerEvent& event) {
@@ -3334,6 +3354,35 @@ void Bar::setAttachedPanelResizeTestOpen(BarInstance& instance, bool open, std::
         &instance.attachedPanelResizeTestOpen
     );
     instance.surface->requestRedraw();
+  }
+}
+
+void Bar::layoutHostedPanelContent(BarInstance& instance, Renderer& renderer, float w, float h) {
+  if (!instance.hostedPanelOpen || instance.hostedPanelContent == nullptr || m_config == nullptr) {
+    return;
+  }
+  const auto& shadowConfig = m_config->config().shell.shadow;
+  const auto region = attachedPanelRegionRect(
+      instance.barConfig, shadowConfig, static_cast<int>(std::lround(w)), static_cast<int>(std::lround(h)),
+      static_cast<int>(std::lround(instance.hostedPanelMainLen))
+  );
+  if (region.has_value() && instance.hostedPanelLayout) {
+    const float inset = instance.hostedPanelInset;
+    instance.hostedPanelLayout(
+        renderer, std::max(0.0f, static_cast<float>(region->width) - inset * 2.0f),
+        std::max(0.0f, static_cast<float>(region->height) - inset * 2.0f)
+    );
+  }
+  positionHostedPanelContent(instance, instance.hostedPanelProgress);
+  // The surface grow is async: re-sync the input region now that layout runs at the grown
+  // size so the panel area is clickable. Once grown, tell PanelManager to (re)arm dismissal
+  // so the click shield excludes the grown bar surface.
+  if (region.has_value()) {
+    syncBarAutoHideInputRegion(instance);
+    if (!instance.hostedPanelReadyFired && m_hostedPanelReadyCallback) {
+      instance.hostedPanelReadyFired = true;
+      m_hostedPanelReadyCallback(instance.output, instance.barConfig.name);
+    }
   }
 }
 

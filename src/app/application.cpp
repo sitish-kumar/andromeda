@@ -1682,6 +1682,19 @@ void Application::initUi() {
   m_panelManager.setReopenHostedPanelCallback([this](wl_output* output, std::string_view barName) {
     return m_bar.reopenHostedAttachedPanel(output, barName);
   });
+  m_panelManager.setRequestHostedPanelLayoutCallback([this](wl_output* output, std::string_view barName) {
+    m_bar.requestHostedPanelLayout(output, barName);
+  });
+  m_panelManager.setRequestHostedPanelRedrawCallback([this](wl_output* output, std::string_view barName) {
+    m_bar.requestHostedPanelRedraw(output, barName);
+  });
+  m_panelManager.setRequestHostedPanelFrameTickCallback([this](wl_output* output, std::string_view barName) {
+    m_bar.requestHostedPanelFrameTick(output, barName);
+  });
+  m_panelManager.setHostedPanelAnimationManagerQuery([this](wl_output* output, std::string_view barName) {
+    return m_bar.hostedPanelAnimationManager(output, barName);
+  });
+  m_bar.setHostedPanelFrameTickCallback([this](float deltaMs) { m_panelManager.onHostedPanelFrameTick(deltaMs); });
   m_bar.setHostedPanelReadyCallback([this](wl_output* output, std::string_view barName) {
     m_panelManager.onHostedPanelReady(output, barName);
   });

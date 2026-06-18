@@ -316,6 +316,75 @@ void PanelManager::setReopenHostedPanelCallback(std::function<bool(wl_output*, s
   m_reopenHostedPanelCallback = std::move(callback);
 }
 
+void PanelManager::setRequestHostedPanelLayoutCallback(std::function<void(wl_output*, std::string_view)> callback) {
+  m_requestHostedPanelLayoutCallback = std::move(callback);
+}
+
+void PanelManager::setRequestHostedPanelRedrawCallback(std::function<void(wl_output*, std::string_view)> callback) {
+  m_requestHostedPanelRedrawCallback = std::move(callback);
+}
+
+void PanelManager::setRequestHostedPanelFrameTickCallback(std::function<void(wl_output*, std::string_view)> callback) {
+  m_requestHostedPanelFrameTickCallback = std::move(callback);
+}
+
+void PanelManager::setHostedPanelAnimationManagerQuery(
+    std::function<AnimationManager*(wl_output*, std::string_view)> callback
+) {
+  m_hostedPanelAnimationManagerQuery = std::move(callback);
+}
+
+void PanelManager::onHostedPanelFrameTick(float deltaMs) {
+  if (!m_hosted || m_activePanel == nullptr) {
+    return;
+  }
+  // Hosted panel animations live in the bar's AnimationManager (ticked by the bar surface);
+  // here we only drive the Panel's own continuous-animation hook.
+  m_activePanel->onFrameTick(deltaMs);
+}
+
+void PanelManager::requestPanelLayout() {
+  if (m_surface != nullptr) {
+    m_surface->requestLayout();
+    return;
+  }
+  if (m_hosted && m_output != nullptr && m_requestHostedPanelLayoutCallback) {
+    m_requestHostedPanelLayoutCallback(m_output, m_sourceBarName);
+  }
+}
+
+void PanelManager::requestPanelRedraw() {
+  if (m_surface != nullptr) {
+    m_surface->requestRedraw();
+    return;
+  }
+  if (m_hosted && m_output != nullptr && m_requestHostedPanelRedrawCallback) {
+    m_requestHostedPanelRedrawCallback(m_output, m_sourceBarName);
+  }
+}
+
+void PanelManager::requestPanelUpdate() {
+  if (m_surface != nullptr) {
+    m_surface->requestUpdate();
+    return;
+  }
+  // Hosted update/layout both run from the bar's hosted-content layout callback, so a layout
+  // request covers a data refresh too.
+  if (m_hosted && m_output != nullptr && m_requestHostedPanelLayoutCallback) {
+    m_requestHostedPanelLayoutCallback(m_output, m_sourceBarName);
+  }
+}
+
+void PanelManager::requestPanelFrameTick() {
+  if (m_surface != nullptr) {
+    m_surface->requestFrameTick();
+    return;
+  }
+  if (m_hosted && m_output != nullptr && m_requestHostedPanelFrameTickCallback) {
+    m_requestHostedPanelFrameTickCallback(m_output, m_sourceBarName);
+  }
+}
+
 void PanelManager::onHostedPanelReady(wl_output* output, std::string_view barName) {
   if (!m_hosted || !isOpen() || m_closing || m_output != output || m_sourceBarName != barName) {
     return;
@@ -584,7 +653,13 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     m_attachedBackgroundOpacity = bgOpacity;
     m_activePanel->setPanelBordersEnabled(m_config != nullptr && m_config->config().shell.panel.borders);
     m_activePanel->setPanelCardOpacity(resolvePanelCardOpacity(m_config, bgOpacity));
-    m_activePanel->setAnimationManager(&m_animations);
+    // Hosted content renders in the bar's scene graph and is ticked by the bar surface, so the
+    // Panel must animate against the bar's AnimationManager (not PanelManager's, which has no
+    // surface to drive it). The bar applies the same manager to the released content subtree.
+    AnimationManager* hostAnimations = m_hostedPanelAnimationManagerQuery != nullptr
+        ? m_hostedPanelAnimationManagerQuery(request.output, m_sourceBarName)
+        : nullptr;
+    m_activePanel->setAnimationManager(hostAnimations != nullptr ? hostAnimations : &m_animations);
     m_activePanel->create();
     m_activePanel->onOpen(m_pendingOpenContext);
     std::unique_ptr<Node> root = m_activePanel->releaseRoot();
@@ -1371,23 +1446,23 @@ bool PanelManager::isActivePanelContext(std::string_view context) const noexcept
 }
 
 void PanelManager::refresh() {
-  if (!isOpen() || m_renderContext == nullptr || m_activePanel == nullptr || m_surface == nullptr) {
+  if (!isOpen() || m_renderContext == nullptr || m_activePanel == nullptr) {
     return;
   }
   if (m_activePanel->deferExternalRefresh()) {
     return;
   }
 
-  m_surface->requestUpdate();
+  requestPanelUpdate();
 }
 
 void PanelManager::onIconThemeChanged() {
-  if (!isOpen() || m_activePanel == nullptr || m_surface == nullptr) {
+  if (!isOpen() || m_activePanel == nullptr) {
     return;
   }
 
   m_activePanel->onIconThemeChanged();
-  m_surface->requestUpdate();
+  requestPanelUpdate();
 }
 
 void PanelManager::focusArea(InputArea* area) {
@@ -1398,31 +1473,35 @@ void PanelManager::focusArea(InputArea* area) {
 }
 
 void PanelManager::requestUpdateOnly() {
-  if (!isOpen() || m_surface == nullptr) {
+  if (!isOpen()) {
     return;
   }
-  m_surface->requestUpdateOnly();
+  if (m_surface != nullptr) {
+    m_surface->requestUpdateOnly();
+    return;
+  }
+  requestPanelUpdate();
 }
 
 void PanelManager::requestLayout() {
-  if (!isOpen() || m_surface == nullptr) {
+  if (!isOpen()) {
     return;
   }
-  m_surface->requestLayout();
+  requestPanelLayout();
 }
 
 void PanelManager::requestRedraw() {
-  if (!isOpen() || m_surface == nullptr) {
+  if (!isOpen()) {
     return;
   }
-  m_surface->requestRedraw();
+  requestPanelRedraw();
 }
 
 void PanelManager::requestFrameTick() {
-  if (!isOpen() || m_surface == nullptr) {
+  if (!isOpen()) {
     return;
   }
-  m_surface->requestFrameTick();
+  requestPanelFrameTick();
 }
 
 void PanelManager::close() { closePanel(); }

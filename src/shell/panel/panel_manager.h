@@ -92,6 +92,15 @@ public:
   void setDestroyHostedPanelCallback(std::function<void(wl_output*, std::string_view)> callback);
   // Re-reveal a hosted panel that is mid-close (returns true if it re-revealed its content).
   void setReopenHostedPanelCallback(std::function<bool(wl_output*, std::string_view)> callback);
+  // Hosted panel content lives in the bar's scene graph; forward the Panel's relayout/redraw/
+  // frame-tick requests to the hosting bar surface (PanelManager has no surface of its own).
+  void setRequestHostedPanelLayoutCallback(std::function<void(wl_output*, std::string_view)> callback);
+  void setRequestHostedPanelRedrawCallback(std::function<void(wl_output*, std::string_view)> callback);
+  void setRequestHostedPanelFrameTickCallback(std::function<void(wl_output*, std::string_view)> callback);
+  // Resolves the bar's AnimationManager so a hosted Panel animates in the bar's frame loop.
+  void setHostedPanelAnimationManagerQuery(std::function<AnimationManager*(wl_output*, std::string_view)> callback);
+  // Called each frame by the hosting bar surface so the active hosted Panel can tick.
+  void onHostedPanelFrameTick(float deltaMs);
   // Called by the bar once a hosted panel's surface has grown to its full size, so the
   // outside-click dismissal (click shield) can be re-armed against the grown bounds.
   void onHostedPanelReady(wl_output* output, std::string_view barName);
@@ -161,6 +170,12 @@ private:
   void buildScene(std::uint32_t width, std::uint32_t height);
   void prepareFrame(bool needsUpdate, bool needsLayout);
   void destroyPanel();
+  // Surface-agnostic invalidation: target the panel's own surface, or — when the panel is
+  // hosted in the bar — forward to the hosting bar surface. (Hosted update folds into layout.)
+  void requestPanelLayout();
+  void requestPanelRedraw();
+  void requestPanelUpdate();
+  void requestPanelFrameTick();
   // Called BEFORE the panel surface commits so shields sit below the panel
   // within the layer-shell layer. No-op when the focus-grab path is in use.
   void activateClickShield(LayerShellLayer layer);
@@ -199,6 +214,10 @@ private:
   std::function<void(wl_output*, std::string_view)> m_closeHostedPanelCallback;
   std::function<void(wl_output*, std::string_view)> m_destroyHostedPanelCallback;
   std::function<bool(wl_output*, std::string_view)> m_reopenHostedPanelCallback;
+  std::function<void(wl_output*, std::string_view)> m_requestHostedPanelLayoutCallback;
+  std::function<void(wl_output*, std::string_view)> m_requestHostedPanelRedrawCallback;
+  std::function<void(wl_output*, std::string_view)> m_requestHostedPanelFrameTickCallback;
+  std::function<AnimationManager*(wl_output*, std::string_view)> m_hostedPanelAnimationManagerQuery;
   bool m_hosted = false;
   LayerShellLayer m_hostedPanelLayer = LayerShellLayer::Top;
   PanelClickShield m_clickShield;

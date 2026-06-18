@@ -123,6 +123,16 @@ public:
   // If the hosted panel on this bar is mid-close, cancel the retract and re-reveal its
   // existing content (no teardown/recreate). Returns true if it re-revealed.
   [[nodiscard]] bool reopenHostedAttachedPanel(wl_output* output, std::string_view barName);
+  // Hosted panel content lives in the bar's scene graph, so its relayout/redraw/frame-tick
+  // requests (driven by the owning Panel) must be forwarded to the hosting bar surface.
+  void requestHostedPanelLayout(wl_output* output, std::string_view barName);
+  void requestHostedPanelRedraw(wl_output* output, std::string_view barName);
+  void requestHostedPanelFrameTick(wl_output* output, std::string_view barName);
+  // The AnimationManager that drives a hosted panel's content. The Panel animates against
+  // this (not PanelManager's own manager) so the bar surface ticks its animations.
+  [[nodiscard]] AnimationManager* hostedPanelAnimationManager(wl_output* output, std::string_view barName) const;
+  // Invoked each frame on the hosting bar surface so the owner can tick the hosted Panel.
+  void setHostedPanelFrameTickCallback(std::function<void(float)> callback);
 
   void registerIpc(IpcService& ipc);
 
@@ -164,6 +174,9 @@ private:
   void applyAttachedPanelTestReveal(BarInstance& instance, float progress);
   void applyHostedPanelReveal(BarInstance& instance, float progress);
   void positionHostedPanelContent(BarInstance& instance, float progress);
+  // Runs the hosted panel's content layout + repositions it for the current reveal. Called
+  // from buildScene (on grow) and prepareFrame (on relayout requested by the hosted Panel).
+  void layoutHostedPanelContent(BarInstance& instance, Renderer& renderer, float w, float h);
   void tearDownHostedPanel(BarInstance& instance, bool invokeClosed);
   [[nodiscard]] std::optional<std::string> collectBarIpcInstances(
       std::optional<std::string_view> barName, std::optional<std::string_view> monitorSelector,
@@ -215,6 +228,7 @@ private:
   BarInstance* m_hoveredInstance = nullptr;
   std::function<bool(const BarInstance&)> m_autoHideSuppressionCallback;
   std::function<void(wl_output*, std::string_view)> m_hostedPanelReadyCallback;
+  std::function<void(float)> m_hostedPanelFrameTickCallback;
   std::function<void(std::string, std::string)> m_openWidgetSettingsCallback;
   bool m_overlayDisplaySuppressed = false;
   bool m_wasVisibleBeforeOverlaySuppress = false;
