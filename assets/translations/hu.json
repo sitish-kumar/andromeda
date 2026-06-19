@@ -332,7 +332,10 @@
         "add": "Hozzáadás",
         "clone": "Másolat (Ctrl+C, Ctrl+V másoláshoz/beillesztéshez)",
         "done": "Kész",
-        "flip-horizontal": "Vízszintes Forgatás"
+        "flip-horizontal": "Vízszintes Forgatás",
+        "hide": "Elrejtés",
+        "settings": "Beállítások",
+        "show": "Mutat"
       },
       "dialogs": {
         "select-sticker-image": "Matricakép kiválasztása"
