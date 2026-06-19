@@ -104,7 +104,6 @@
   "control-center": {
     "audio": {
       "application-volumes": "Anwendungslautstärken",
-      "input-volume": "Eingabelautstärke",
       "no-application-audio": "Kein Anwendungsaudio",
       "no-application-audio-body": "Es sind derzeit keine Wiedergabestreams von Anwendungen verfügbar.",
       "no-input-devices": "Keine Eingabegeräte",
@@ -113,7 +112,6 @@
       "no-output-devices": "Keine Ausgabegeräte",
       "no-output-devices-body": "Aktuell sind keine Wiedergabesenken verfügbar.",
       "no-output-selected": "Kein Ausgabegerät ausgewählt",
-      "output-volume": "Ausgabelautstärke",
       "unavailable-body": "PipeWire ist nicht aktiv.",
       "unavailable-title": "Audio nicht verfügbar"
     },

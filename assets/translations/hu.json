@@ -33,6 +33,9 @@
       "region": "Terület kiválasztása"
     },
     "widgets": {
+      "active-window": {
+        "no-active-window": "Nincs aktív ablak"
+      },
       "lock-keys": {
         "caps": "Caps",
         "caps-short": "C",
@@ -47,6 +50,11 @@
       },
       "network": {
         "wired": "Vezetékes"
+      },
+      "privacy": {
+        "camera": "Kamera",
+        "microphone": "Mikrofon",
+        "screen-sharing": "Képernyőmegosztás"
       },
       "scripted": {
         "reload-failed": "Parancsfájl újratöltése sikertelen",
@@ -110,7 +118,8 @@
   "control-center": {
     "audio": {
       "application-volumes": "Alkalmazások hangereje",
-      "input-volume": "Bemeneti hangerő",
+      "choose-effects-profile": "Válassz egy profilt",
+      "effects-profile": "Effektek",
       "no-application-audio": "Nincs alkalmazáshang",
       "no-application-audio-body": "Jelenleg nincs lejátszási folyam egyetlen alkalmazásban sem.",
       "no-input-devices": "Nincsenek bemeneti eszközök",
@@ -119,7 +128,6 @@
       "no-output-devices": "Nincsenek kimeneti eszközök",
       "no-output-devices-body": "Jelenleg nincsenek elérhető lejátszási kimenetek.",
       "no-output-selected": "Nincs kimeneti eszköz kiválasztva",
-      "output-volume": "Kimeneti hangerő",
       "unavailable-body": "A PipeWire nem aktív.",
       "unavailable-title": "Hang nem érhető el"
     },
@@ -154,7 +162,8 @@
     "calendar": {
       "all-day": "Egész nap",
       "events": "Események",
-      "no-events": "Nincsenek események."
+      "no-events": "Nincsenek események.",
+      "today": "Ma"
     },
     "display": {
       "disabled": "Letiltva",
@@ -162,6 +171,7 @@
       "unknown-resolution": "Ismeretlen felbontás"
     },
     "home": {
+      "avatar-error-title": "Az avatar frissítése sikertelen",
       "media": {
         "idle": "Tétlen",
         "no-active-player": "Nincs aktív lejátszó",
@@ -263,6 +273,11 @@
       "wifi": "Wi-Fi"
     },
     "system": {
+      "labels": {
+        "load": "CPU-terhelés",
+        "ram": "RAM",
+        "swap": "Swap"
+      },
       "titles": {
         "cpu": "CPU",
         "gpu": "GPU",
@@ -314,7 +329,10 @@
   "desktop-widgets": {
     "editor": {
       "actions": {
-        "done": "Kész"
+        "add": "Hozzáadás",
+        "clone": "Másolat (Ctrl+C, Ctrl+V másoláshoz/beillesztéshez)",
+        "done": "Kész",
+        "flip-horizontal": "Vízszintes Forgatás"
       },
       "dialogs": {
         "select-sticker-image": "Matricakép kiválasztása"
@@ -1589,6 +1607,10 @@
         "blurred-desktop": {
           "description": "Használj egy pillanatképet az asztalról a képernyőzár háttereként",
           "label": "Képernyőfelvétel"
+        },
+        "fingerprint": {
+          "description": "fprintd ujjlenyomat-olvasóval történő feloldás, jelszó megadásával",
+          "label": "Ujjlenyomat-feloldás"
         },
         "monitors": {
           "description": "Válaszd ki, mely monitorokon jelenjen meg a zárolási képernyő; hagyd üresen, hogy minden monitoron megjelenjen",

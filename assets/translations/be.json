@@ -120,7 +120,6 @@
       "application-volumes": "Гучнасць праграм",
       "choose-effects-profile": "Выберыце профіль",
       "effects-profile": "Эфекты:",
-      "input-volume": "Гучнасць уводу",
       "no-application-audio": "Аўдыя не прайграваецца",
       "no-application-audio-body": "Зараз няма праграм, якія прайграваюць аўдыя.",
       "no-input-devices": "Няма прылад уводу",
@@ -129,7 +128,6 @@
       "no-output-devices": "Няма прылад вываду",
       "no-output-devices-body": "Зараз няма даступных крыніц прайгравання.",
       "no-output-selected": "Прылады вываду не выбрана",
-      "output-volume": "Гучнасць вываду",
       "unavailable-body": "PipeWire неактыўны.",
       "unavailable-title": "Аўдыя недаступна"
     },

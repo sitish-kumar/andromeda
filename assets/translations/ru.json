@@ -113,7 +113,6 @@
   "control-center": {
     "audio": {
       "application-volumes": "Громкость приложений",
-      "input-volume": "Входная громкость",
       "no-application-audio": "Нет звука приложений",
       "no-application-audio-body": "Нет доступных потоков воспроизведения из приложений.",
       "no-input-devices": "Нет устройств ввода",
@@ -122,7 +121,6 @@
       "no-output-devices": "Нет устройств вывода",
       "no-output-devices-body": "Сейчас нет устройств воспроизведения.",
       "no-output-selected": "Устройство вывода не выбрано",
-      "output-volume": "Выходная громкость ",
       "unavailable-body": "PipeWire не активен.",
       "unavailable-title": "Звук недоступен"
     },

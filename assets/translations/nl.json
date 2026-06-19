@@ -118,7 +118,6 @@
       "application-volumes": "Applicatievolumes",
       "choose-effects-profile": "Kies een profiel",
       "effects-profile": "Effecten:",
-      "input-volume": "Invoervolume",
       "no-application-audio": "Geen applicatiegeluid",
       "no-application-audio-body": "Er zijn momenteel geen applicatie-afspeelbronnen beschikbaar.",
       "no-input-devices": "Geen invoerapparaten",
@@ -127,7 +126,6 @@
       "no-output-devices": "Geen uitvoerapparaten",
       "no-output-devices-body": "Er zijn momenteel geen afspeelapparaten beschikbaar.",
       "no-output-selected": "Geen uitvoerapparaat geselecteerd",
-      "output-volume": "Uitvoervolume",
       "unavailable-body": "Pipewire is niet actief.",
       "unavailable-title": "Geluid niet beschikbaar"
     },

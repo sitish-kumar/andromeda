@@ -120,7 +120,6 @@
       "application-volumes": "Volum d'aplicacions",
       "choose-effects-profile": "Tria un perfil",
       "effects-profile": "Efectes:",
-      "input-volume": "Volum d'entrada",
       "no-application-audio": "Sense àudio d'aplicacions",
       "no-application-audio-body": "No hi ha cap flux de reproducció d'aplicació disponible.",
       "no-input-devices": "No hi ha dispositius d'entrada",
@@ -129,7 +128,6 @@
       "no-output-devices": "No hi ha dispositius de sortida",
       "no-output-devices-body": "No hi ha cap dispositiu de sortida d'àudio disponible.",
       "no-output-selected": "No s'ha seleccionat cap dispositiu de sortida",
-      "output-volume": "Volum de sortida",
       "unavailable-body": "El PipeWire no està actiu.",
       "unavailable-title": "Àudio no disponible"
     },

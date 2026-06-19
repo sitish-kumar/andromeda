@@ -101,7 +101,6 @@
   "control-center": {
     "audio": {
       "application-volumes": "Ljodstyrke på applikasjonar",
-      "input-volume": "Styrke på innljod",
       "no-application-audio": "Applikasjonen har ikkje ljod",
       "no-application-audio-body": "Ingen applikasjonar spelar ljod av no.",
       "no-input-devices": "Ingen innljodseiningar",
@@ -110,7 +109,6 @@
       "no-output-devices": "Ingen utljodseiningar",
       "no-output-devices-body": "Ingen utljodsmål er tilgjengelege no.",
       "no-output-selected": "Inga utljodseining er vald",
-      "output-volume": "Utljodsstyrke",
       "unavailable-body": "PipeWire er ikkje aktiv.",
       "unavailable-title": "Ljod utilgjengeleg"
     },
