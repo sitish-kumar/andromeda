@@ -1681,9 +1681,6 @@ void Application::initUi() {
   m_keyboardLayoutOsd.prime(m_compositorPlatform);
   m_mediaOsd.bindOverlay(m_osdOverlay);
   m_privacyOsd.bindOverlay(m_osdOverlay);
-  if (m_pipewireService != nullptr) {
-    m_privacyOsd.primeFromService(*m_pipewireService);
-  }
   m_screenCorners.initialize(m_wayland, &m_configService, &m_renderContext);
   m_screenCorners.onConfigReload();
 

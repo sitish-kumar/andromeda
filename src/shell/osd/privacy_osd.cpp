@@ -62,10 +62,6 @@ PrivacyOsd::State PrivacyOsd::fromPipewireState(const PrivacyState& privacyState
 
 void PrivacyOsd::bindOverlay(OsdOverlay& overlay) { m_overlay = &overlay; }
 
-void PrivacyOsd::primeFromService(const PipeWireService& service) {
-  m_lastState = fromPipewireState(service.privacyState());
-}
-
 void PrivacyOsd::onPrivacyStateChanged(const PipeWireService& service) {
   const State current = fromPipewireState(service.privacyState());
 
@@ -74,11 +70,15 @@ void PrivacyOsd::onPrivacyStateChanged(const PipeWireService& service) {
     return;
   }
 
+  // Surface each capture independently: multiple kinds can change in one update
+  // (e.g. mic + screen both stop on call-leave, or both already active at startup).
   if (m_lastState.mic != current.mic) {
     m_overlay->show(makePrivacyContent(PrivacyKind::Mic, current.mic));
-  } else if (m_lastState.camera != current.camera) {
+  }
+  if (m_lastState.camera != current.camera) {
     m_overlay->show(makePrivacyContent(PrivacyKind::Camera, current.camera));
-  } else if (m_lastState.screen != current.screen) {
+  }
+  if (m_lastState.screen != current.screen) {
     m_overlay->show(makePrivacyContent(PrivacyKind::Screen, current.screen));
   }
 
