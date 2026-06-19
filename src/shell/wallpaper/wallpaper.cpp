@@ -1111,7 +1111,10 @@ void Wallpaper::startTransition(WallpaperInstance& instance) {
   instance.transitionProgress = 0.0f;
 
   auto* inst = &instance;
-  instance.transitionAnimId = instance.animations.animateUnscaled(
+  // The transition runs on its own configured duration, decoupled from the global
+  // motion system: animateTimer ignores both the animation-speed multiplier and the
+  // animations-enabled toggle (disabling animations must not skip the crossfade).
+  instance.transitionAnimId = instance.animations.animateTimer(
       0.0f, 1.0f, wpConfig.transitionDurationMs, Easing::EaseInOutCubic,
       [inst](float v) { inst->transitionProgress = v; },
       [this, inst]() {
