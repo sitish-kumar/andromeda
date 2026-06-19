@@ -426,6 +426,7 @@ void Wallpaper::onOutputChange() {
 void Wallpaper::onStateChange() {
   kLog.info("state file changed, checking for updates");
 
+  bool changed = false;
   for (auto& inst : m_instances) {
     auto newPath = m_config->getWallpaperPath(inst->connectorName);
     if (inst->surface == nullptr || inst->wallpaperNode == nullptr) {
@@ -434,6 +435,7 @@ void Wallpaper::onStateChange() {
 
     if (newPath.empty()) {
       if (!inst->currentPath.empty() || inst->currentTexture.id != 0 || inst->nextTexture.id != 0) {
+        changed = true;
         if (inst->transitionAnimId != 0) {
           inst->animations.cancel(inst->transitionAnimId);
           inst->transitionAnimId = 0;
@@ -462,6 +464,7 @@ void Wallpaper::onStateChange() {
       }
 
       inst->queuedPath = newPath;
+      changed = true;
       continue;
     }
 
@@ -471,6 +474,14 @@ void Wallpaper::onStateChange() {
 
     kLog.info("changing {} → {}", inst->connectorName, newPath);
     loadWallpaper(*inst, newPath);
+    changed = true;
+  }
+
+  // Any wallpaper change (manual selection, IPC, or automation) restarts the
+  // rotation interval so the next automatic switch is a full interval away.
+  if (changed) {
+    using namespace std::chrono;
+    m_lastAutomationSwitchSecond = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
   }
 }
 
