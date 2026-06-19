@@ -1500,6 +1500,11 @@ namespace settings {
         ToggleSetting{cfg.osd.kinds.media}, "hud overlay mpris audio music"
     ));
     entries.push_back(makeEntry(
+        SettingsSection::Osd, "kinds", tr("settings.schema.shell.osd-kinds-privacy.label"),
+        tr("settings.schema.shell.osd-kinds-privacy.description"), {"osd", "kinds", "privacy"},
+        ToggleSetting{cfg.osd.kinds.privacy}, "hud overlay microphone camera screen share recording"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-monitors.label"),
         tr("settings.schema.shell.osd-monitors.description"), {"osd", "monitors"},
         ListSetting{.items = cfg.osd.monitors, .suggestedOptions = env.availableOutputs},

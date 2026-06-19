@@ -31,7 +31,8 @@ enum class OsdKind : std::uint8_t {
   Dnd,
   LockKeys,
   KeyboardLayout,
-  Media
+  Media,
+  Privacy
 };
 
 struct OsdContent {

@@ -71,6 +71,7 @@
 #include "shell/osd/lock_keys_osd.h"
 #include "shell/osd/media_osd.h"
 #include "shell/osd/osd_overlay.h"
+#include "shell/osd/privacy_osd.h"
 #include "shell/overview/overview_launcher_capture.h"
 #include "shell/panel/panel_manager.h"
 #include "shell/polkit/polkit_panel.h"
@@ -251,6 +252,7 @@ private:
   MediaOsd m_mediaOsd;
   LockKeysOsd m_lockKeysOsd;
   KeyboardLayoutOsd m_keyboardLayoutOsd;
+  PrivacyOsd m_privacyOsd;
   OsdOverlay m_osdOverlay;
   ScreenCorners m_screenCorners;
   TrayMenu m_trayMenu;

@@ -1680,6 +1680,10 @@ void Application::initUi() {
   m_keyboardLayoutOsd.bindOverlay(m_osdOverlay);
   m_keyboardLayoutOsd.prime(m_compositorPlatform);
   m_mediaOsd.bindOverlay(m_osdOverlay);
+  m_privacyOsd.bindOverlay(m_osdOverlay);
+  if (m_pipewireService != nullptr) {
+    m_privacyOsd.primeFromService(*m_pipewireService);
+  }
   m_screenCorners.initialize(m_wayland, &m_configService, &m_renderContext);
   m_screenCorners.onConfigReload();
 
@@ -1845,6 +1849,7 @@ void Application::initUi() {
       }
       if (m_pipewireService != nullptr) {
         m_audioOsd.onAudioStateChanged(*m_pipewireService);
+        m_privacyOsd.onPrivacyStateChanged(*m_pipewireService);
       }
     });
     m_pipewireService->setVolumePreviewCallback([this](bool isInput, std::uint32_t id, float volume, bool muted) {

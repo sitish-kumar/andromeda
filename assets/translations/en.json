@@ -631,6 +631,14 @@
       "scroll-off": "Scroll Lock Off",
       "scroll-on": "Scroll Lock On"
     },
+    "privacy": {
+      "camera-off": "Camera Stopped",
+      "camera-on": "Camera Active",
+      "mic-off": "Microphone Stopped",
+      "mic-on": "Microphone Active",
+      "screen-off": "Screen Sharing Stopped",
+      "screen-on": "Screen Sharing Active"
+    },
     "wifi": {
       "off": "Wi-Fi Off",
       "on": "Wi-Fi On"
@@ -2151,6 +2159,10 @@
         "osd-kinds-power-profile": {
           "description": "Show an OSD popup when the power profile changes",
           "label": "Power Profile"
+        },
+        "osd-kinds-privacy": {
+          "description": "Show an OSD popup when microphone, camera, or screen-share capture starts or stops",
+          "label": "Privacy"
         },
         "osd-kinds-volume": {
           "description": "Show OSD popups when volume changes; use advanced settings to control output and input separately",
