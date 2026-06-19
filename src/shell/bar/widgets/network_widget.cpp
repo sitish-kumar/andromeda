@@ -30,14 +30,20 @@ namespace {
     return {};
   }
 
-  std::string onOffText(bool enabled) { return enabled ? "On" : "Off"; }
+  std::string onOffText(bool enabled) {
+    return i18n::tr(enabled ? "bar.widgets.network.on" : "bar.widgets.network.off");
+  }
 
-  std::string disconnectedText(bool resolving) { return resolving ? "Connecting" : "Not connected"; }
+  std::string disconnectedText(bool resolving) {
+    return i18n::tr(resolving ? "bar.widgets.network.connecting" : "bar.widgets.network.not-connected");
+  }
 
-  std::string yesNoText(bool enabled) { return enabled ? "Yes" : "No"; }
+  std::string yesNoText(bool enabled) {
+    return i18n::tr(enabled ? "bar.widgets.network.yes" : "bar.widgets.network.no");
+  }
 
   std::string networkCountText(std::size_t count) {
-    return std::to_string(count) + (count == 1 ? " network" : " networks");
+    return i18n::trp("bar.widgets.network.networks-count", static_cast<long>(count));
   }
 
 } // namespace
@@ -201,28 +207,32 @@ std::vector<TooltipRow> NetworkWidget::buildTooltipRows() const {
   const NetworkState& s = m_network->state();
   if (s.connected) {
     if (s.kind == NetworkConnectivity::Wireless && !s.ssid.empty()) {
-      rows.push_back({"Network", s.ssid});
-      rows.push_back({"Signal", std::to_string(s.signalStrength) + "%"});
+      rows.push_back({i18n::tr("bar.widgets.network.network"), s.ssid});
+      rows.push_back({i18n::tr("bar.widgets.network.signal"), std::to_string(s.signalStrength) + "%"});
       if (!s.interfaceName.empty()) {
-        rows.push_back({"Interface", s.interfaceName});
+        rows.push_back({i18n::tr("bar.widgets.network.interface"), s.interfaceName});
       }
     } else if (s.kind == NetworkConnectivity::Wired) {
-      rows.push_back({"Network", "Wired"});
+      rows.push_back({i18n::tr("bar.widgets.network.network"), i18n::tr("bar.widgets.network.wired")});
       if (!s.interfaceName.empty()) {
-        rows.push_back({"Interface", s.interfaceName});
+        rows.push_back({i18n::tr("bar.widgets.network.interface"), s.interfaceName});
       }
     } else {
-      rows.push_back({"Network", "Connected"});
+      rows.push_back({i18n::tr("bar.widgets.network.network"), i18n::tr("bar.widgets.network.connected")});
     }
 
     if (!s.ipv4.empty()) {
-      rows.push_back({"IP", s.ipv4});
+      rows.push_back({i18n::tr("bar.widgets.network.ip"), s.ipv4});
     }
 
     if (m_monitor != nullptr && m_monitor->isRunning()) {
       const SystemStats stats = m_monitor->latest();
-      rows.push_back({"Download", FormatUnits::formatDecimalBytesPerSecond(stats.netRxBytesPerSec)});
-      rows.push_back({"Upload", FormatUnits::formatDecimalBytesPerSecond(stats.netTxBytesPerSec)});
+      rows.push_back(
+          {i18n::tr("bar.widgets.network.download"), FormatUnits::formatDecimalBytesPerSecond(stats.netRxBytesPerSec)}
+      );
+      rows.push_back(
+          {i18n::tr("bar.widgets.network.upload"), FormatUnits::formatDecimalBytesPerSecond(stats.netTxBytesPerSec)}
+      );
     }
 
     if (s.vpnActive) {
@@ -236,25 +246,27 @@ std::vector<TooltipRow> NetworkWidget::buildTooltipRows() const {
         }
         vpnLabel += vpn.name;
       }
-      rows.push_back({"VPN", vpnLabel.empty() ? "Active" : vpnLabel});
+      rows.push_back(
+          {i18n::tr("bar.widgets.network.vpn"), vpnLabel.empty() ? i18n::tr("bar.widgets.network.active") : vpnLabel}
+      );
     }
 
     if (s.kind == NetworkConnectivity::Wireless) {
-      rows.push_back({"Networks", networkCountText(m_network->accessPoints().size())});
+      rows.push_back({i18n::tr("bar.widgets.network.networks"), networkCountText(m_network->accessPoints().size())});
     }
     return rows;
   }
 
-  rows.push_back({"Network", disconnectedText(s.resolving)});
-  rows.push_back({"Wi-Fi", onOffText(s.wirelessEnabled)});
+  rows.push_back({i18n::tr("bar.widgets.network.network"), disconnectedText(s.resolving)});
+  rows.push_back({i18n::tr("bar.widgets.network.wifi"), onOffText(s.wirelessEnabled)});
   if (s.scanning) {
-    rows.push_back({"Scanning", yesNoText(s.scanning)});
+    rows.push_back({i18n::tr("bar.widgets.network.scanning"), yesNoText(s.scanning)});
   }
   if (s.wirelessEnabled) {
-    rows.push_back({"Networks", networkCountText(m_network->accessPoints().size())});
+    rows.push_back({i18n::tr("bar.widgets.network.networks"), networkCountText(m_network->accessPoints().size())});
   }
   if (s.vpnActive) {
-    rows.push_back({"VPN", "Active"});
+    rows.push_back({i18n::tr("bar.widgets.network.vpn"), i18n::tr("bar.widgets.network.active")});
   }
   return rows;
 }
