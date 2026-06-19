@@ -51,6 +51,11 @@
       "network": {
         "wired": "Проводная"
       },
+      "privacy": {
+        "camera": "Камера",
+        "microphone": "Микрофон",
+        "screen-sharing": "Трансляция экрана"
+      },
       "scripted": {
         "reload-failed": "Не удалось перезагрузить скрипт",
         "reloaded": "Скрипт перезагружен"
@@ -113,6 +118,9 @@
   "control-center": {
     "audio": {
       "application-volumes": "Громкость приложений",
+      "choose-effects-profile": "Выберите профиль",
+      "effects-profile": "Эффекты:",
+      "input-device-prefix": "Ввод:",
       "no-application-audio": "Нет звука приложений",
       "no-application-audio-body": "Нет доступных потоков воспроизведения из приложений.",
       "no-input-devices": "Нет устройств ввода",
@@ -121,6 +129,7 @@
       "no-output-devices": "Нет устройств вывода",
       "no-output-devices-body": "Сейчас нет устройств воспроизведения.",
       "no-output-selected": "Устройство вывода не выбрано",
+      "output-device-prefix": "Вывод:",
       "unavailable-body": "PipeWire не активен.",
       "unavailable-title": "Звук недоступен"
     },
@@ -164,6 +173,7 @@
       "unknown-resolution": "Неизвестное разрешение"
     },
     "home": {
+      "avatar-error-title": "Аватар не обновлён",
       "media": {
         "idle": "Ожидание",
         "no-active-player": "Нет активного плеера",
@@ -267,7 +277,8 @@
     "system": {
       "labels": {
         "load": "Загрузка ЦП",
-        "ram": "RAM"
+        "ram": "RAM",
+        "swap": "Swap"
       },
       "titles": {
         "cpu": "ЦП",
@@ -324,10 +335,15 @@
     "editor": {
       "actions": {
         "add": "Добавить",
+        "clone": "Дублировать (Ctrl+C, Ctrl+V чтобы скопировать/вставить)",
         "done": "Готово",
+        "flip-horizontal": "отразить по горизонтали",
+        "flip-vertical": "отразить по вертикали",
         "hide": "Скрыть",
         "settings": "Настройки",
         "show": "Показать",
+        "stack-back": "Переместить назад",
+        "stack-front": "Переместить вперёд",
         "trash": "Удалить"
       },
       "dialogs": {
@@ -344,6 +360,7 @@
         "bands": "Полосы",
         "bar-width": "Ширина столбцов",
         "bloom-intensity": "Свечение",
+        "center-text": "Центрировать текст",
         "centered": "Отцентрировано",
         "change-image": "Изменить…",
         "circle": "Круг",
@@ -354,18 +371,21 @@
         "color-1": "Цвет №1",
         "color-2": "Цвет №2",
         "color2": "Цвет 2",
+        "command": "Команда",
         "custom-color": "Пользовательский…",
         "description": "Описание",
         "fade-when-idle": "Затухание в режиме ожидания",
         "font-family": "Шрифт",
         "font-family-default": "По умолчанию",
         "format": "Формат",
+        "glyph": "Глифы",
         "hide-when-no-media": "Скрыть, когда нет медиа",
         "horizontal": "Горизонтальный",
         "image-path": "Изображение",
         "inner-diameter": "Внутренний диаметр",
         "input-opacity": "Непрозрачность ввода",
         "input-radius": "Радиус ввода",
+        "interface": "Интерфейс",
         "layout": "Макет",
         "mirrored": "Зеркальный",
         "opacity": "Непрозрачность",
@@ -392,6 +412,10 @@
         "stat-swap-pct": "Swap %",
         "stat2": "Показатель 2",
         "title": "Заголовок",
+        "variant": "Стиль",
+        "variant-default": "По умолчанию",
+        "variant-primary": "Основной",
+        "variant-secondary": "Вторичный",
         "vertical": "Вертикальный",
         "visualization-mode": "Режим",
         "visualization-mode-all": "Все",
@@ -410,9 +434,11 @@
       "title": "Виджеты рабочего стола",
       "types": {
         "audio-visualizer": "Аудиовизуализатор",
+        "button": "Кпнока",
         "clock": "Часы",
         "fancy-audio-visualizer": "Красивый аудиовизуализатор",
         "label": "Метка",
+        "login-box": "Поле входа",
         "media-player": "Медиаплеер",
         "sticker": "Стикер",
         "system-monitor": "Системный монитор",
@@ -559,10 +585,14 @@
       "keybind-invalid-printable": "Печатные клавиши (буквы, цифры, символы) требуют модификатор, например Ctrl или Alt.",
       "keybind-invalid-super": "Клавишу Super/Windows нельзя использовать в сочетаниях клавиш командной строки.",
       "keybind-invalid-title": "Недопустимое сочетание клавиш",
+      "launcher-usage-reset": "Лаунчер",
+      "launcher-usage-reset-success": "Данные об использовании очищены.",
       "lockscreen-widgets-editor": "Редактор виджетов экрана блокировки",
       "lockscreen-widgets-editor-blocked-locked": "Разблокируйте сессию перед редактированием виджетов экрана блокировки.",
       "lockscreen-widgets-editor-enabled": "Редактор виджетов экрана блокировки включён. Расположите виджеты в режиме предварительного просмотра, затем заблокируйте сессию, чтобы проверить правильность расположения.",
       "mpris-disabled": "MPRIS отключён",
+      "screen-time-reset": "Экранное время",
+      "screen-time-reset-success": "История использования очищена.",
       "session-bus-unavailable": "Шина сеанса недоступна",
       "wallpaper-palette-export": "Пользовательская палитра",
       "wallpaper-palette-export-success": "\"{name}\" сохранена; источник палитры переключён на пользовательский."
@@ -580,6 +610,10 @@
     "dnd": {
       "off": "Не беспокоить: выкл.",
       "on": "Не беспокоить: вкл."
+    },
+    "effects": {
+      "input": "Эффекты ввода",
+      "output": "Эффекты вывода"
     },
     "lock-keys": {
       "caps-off": "Caps Lock: выкл.",
@@ -941,6 +975,12 @@
         "system": "Система",
         "templates": "Шаблоны",
         "wallpaper": "Обои"
+      }
+    },
+    "notifications": {
+      "filter": {
+        "add": "Добавить фильтр",
+        "match-label": "Приложение"
       }
     },
     "options": {
@@ -1578,6 +1618,9 @@
         }
       },
       "lockscreen": {
+        "allow-empty-password": {
+          "label": "Ввод пустого пароля"
+        },
         "blur-intensity": {
           "description": "Насколько сильно размыт фон экрана блокировки",
           "label": "Интенсивность размытия"
@@ -1698,12 +1741,19 @@
           "description": "Использовать меньшие значки и более плотные строки результатов",
           "label": "Компактные строки"
         },
+        "launcher-reset-usage": {
+          "button": "Сбросить",
+          "label": "Сбросить данные об использовании"
+        },
         "launcher-session-search": {
           "label": "Включить поиск по сессиям"
         },
         "launcher-show-icons": {
           "description": "Показывать значки приложений в результатах лаунчера",
           "label": "Показывать значки приложений"
+        },
+        "launcher-sort-by-usage": {
+          "label": "Сортировать по использованию"
         },
         "open-near-click-clipboard": {
           "description": "Открывать панель буфера обмена рядом с кликом по панели, а не по центру панели",
@@ -1810,6 +1860,9 @@
         "longitude": {
           "description": "Долгота вручную для расписания восхода и заката, используется, когда автоопределение местоположения и адрес отключены",
           "label": "Долгота"
+        },
+        "minimum-brightness": {
+          "label": "Минимальная яркость"
         },
         "mpris-blacklist": {
           "description": "Плееры, которые нужно игнорировать в управлении медиа и блоке \"Сейчас воспроизводится\"",
