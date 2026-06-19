@@ -370,8 +370,9 @@ namespace {
           auto* event = reinterpret_cast<inotify_event*>(buf + offset);
           if ((event->mask & IN_IGNORED) != 0) {
             m_watches.erase(event->wd);
+          } else {
+            changed = true;
           }
-          changed = true;
           offset += sizeof(inotify_event) + event->len;
         }
       }
@@ -380,8 +381,6 @@ namespace {
         m_dirty = true;
       }
     }
-
-    void requestRescan() noexcept { m_dirty = true; }
 
   private:
     void setupWatchFd() {
@@ -525,5 +524,3 @@ std::uint64_t desktopEntriesVersion() { return cache().version(); }
 int desktopEntryWatchFd() noexcept { return cache().watchFd(); }
 
 void checkDesktopEntryReload() { cache().checkReload(); }
-
-void requestDesktopEntryRescan() noexcept { cache().requestRescan(); }
