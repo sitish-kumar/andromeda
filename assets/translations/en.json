@@ -3035,6 +3035,7 @@
       "color-title": "Wallpaper color",
       "filter-placeholder": "Filter...",
       "flatten": "Flatten",
+      "loading": "Loading wallpapers...",
       "sort-date-asc": "Sort by date (oldest first)",
       "sort-date-desc": "Sort by date (newest first)",
       "sort-name-asc": "Sort by name (A-Z)",

@@ -1,5 +1,17 @@
 {
   "auth": {
+    "fingerprint": {
+      "disconnected": "Az ujjlenyomat-olvasó nincs csatlakoztatva",
+      "error": "Ujjlenyomat-hitelesítési hiba",
+      "no-match": "Az ujjlenyomat nem egyezik",
+      "not-centered": "Helyezd középre az ujjad és próbáld ismét",
+      "present": "Ujjlenyomat olvasása...",
+      "ready": "Helyezd az ujjad az olvasóra",
+      "remove-and-retry": "Vedd el az ujjad és próbáld ismét",
+      "retry": "Olvasd be újra az ujjlenyomatodat",
+      "swipe-too-short": "Túl rövid érintés, próbáld ismét",
+      "too-many-attempts": "Ujjlenyomat-olvasó letiltva (túl sok próbálkozás)"
+    },
     "pam": {
       "authentication-failed": "A hitelesítés sikertelen",
       "start-failed": "PAM-indítás sikertelen",
