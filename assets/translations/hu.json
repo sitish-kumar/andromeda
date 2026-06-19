@@ -376,7 +376,7 @@
         "font-family-default": "Rendszer alapértelmezése",
         "forecast-days": "Időjárás előrejelzés",
         "format": "Formátum",
-        "glyph": "Glyph",
+        "glyph": "Szimbólum",
         "hide-when-no-media": "Elrejtés, ha nincs lejátszás",
         "horizontal": "Vízszintes",
         "hover-background": "Aktív háttér (egérmutató)",
@@ -2380,7 +2380,7 @@
       "command-placeholder": "Opcionális bash parancs, hagyd üresen a beépített viselkedéshez",
       "command-required-placeholder": "Futtatandó shell-parancs",
       "glyph-label": "Glifa",
-      "glyph-picker-title": "Művelet glifa",
+      "glyph-picker-title": "Művelet szimbólum",
       "kind-section-label": "Viselkedés",
       "label-field": "Címke",
       "label-placeholder": "Választható gomb szövege",
@@ -2413,7 +2413,7 @@
         "disk-percent": "Lemez Százalék",
         "full": "Teljes",
         "gauge": "Mérő",
-        "glyph": "Glifa",
+        "glyph": "Szimbólum",
         "gpu-temp": "GPU Hőmérséklet",
         "gpu-usage": "GPU használat",
         "gpu-vram": "GPU VRAM",
@@ -2520,7 +2520,7 @@
           "label": "Bal Kattintás Parancs"
         },
         "custom-image": {
-          "description": "Egyéni kép elérési útja. Hagyd üresen az ikon glif használatához.",
+          "description": "Egyéni kép elérési útja. Hagyd üresen az ikon szimbólum használatához.",
           "dialog-title": "Egyéni kép kiválasztása",
           "label": "Egyéni kép"
         },
@@ -2550,7 +2550,7 @@
           "label": "Kijelző"
         },
         "display-mode": {
-          "description": "Az akkumulátor megjelenítése grafikus alakzatként vagy Tabler glifaként",
+          "description": "Az akkumulátor megjelenítése grafikus alakzatként vagy Tabler szimbólumként",
           "label": "Kijelző mód"
         },
         "drawer": {
@@ -2570,6 +2570,7 @@
           "label": "Fókuszált szín"
         },
         "font-family": {
+          "description": "A widget betűtípusa: ha üresen hagyod, a sáv betűtípusát veszi át",
           "label": "Betűtípus"
         },
         "font-weight": {
@@ -2581,8 +2582,9 @@
           "label": "Formátum"
         },
         "glyph": {
-          "description": "Ikon glifa neve",
-          "label": "Jel"
+          "description": "Ikon szimbólum neve",
+          "label": "Szimbólum",
+          "sysmon-description": "Egyéni ikon szimbólum. Hagyd üresen, hogy a rendszer a kiválasztott érték ikonját használja."
         },
         "group-by-workspace": {
           "description": "Csoportosítsa az ablaklista ikonjait virtuális asztal kapszulákba, amikor a kompozitor adatok elérhetők",
@@ -2605,6 +2607,7 @@
           "label": "Üres munkaterületek elrejtése"
         },
         "hide-inactive": {
+          "description": "Az inaktív adatvédelmi ikonok és a widget elrejtése, ha semmi nincs aktív állapotban",
           "label": "Inaktív elrejtése"
         },
         "hide-when-empty": {
@@ -2649,6 +2652,7 @@
           "label": "Gyors újratöltés"
         },
         "icon-color": {
+          "description": "Felülírja a widget színét az ikonokra vonatkozóan, a fix hexadecimális színek is támogatottak",
           "label": "Ikon színe"
         },
         "icon-size": {
@@ -2660,6 +2664,7 @@
           "label": "Ikonok közötti távolság"
         },
         "inactive-color": {
+          "description": "Az inaktív adatvédelmi jelzőkhöz használt szín; fix hexadecimális színkódok is támogatottak",
           "label": "Inaktív szín"
         },
         "inactive-opacity": {
@@ -2667,6 +2672,7 @@
           "label": "Inaktív Ikon Átlátszóság"
         },
         "interface": {
+          "description": "A figyelni kívánt hálózati kapcsolat; hagyd üresen valamennyi kapcsolat használatához",
           "label": "Felület"
         },
         "label": {
@@ -2790,6 +2796,7 @@
           "label": "Megjelenítési Feltétel"
         },
         "show-empty-label": {
+          "description": "Ha nincs fókuszban lévő ablak, a widget elrejtése helyett a helyettesítő szöveget jelenítse meg",
           "label": "Üres címke mutatása"
         },
         "show-icon": {
@@ -3024,8 +3031,8 @@
       },
       "glyph-picker": {
         "all-categories": "Összes",
-        "search-placeholder": "Glifák keresése…",
-        "title": "Válassz egy glifát"
+        "search-placeholder": "Szimbólumok keresése…",
+        "title": "Válassz egy szimbólumot"
       }
     }
   },
