@@ -521,7 +521,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
 
   auto surfaceConfig = LayerSurfaceConfig{
       .nameSpace = "noctalia-panel",
-      .layer = m_activePanel->layer(),
+      .layer = panelLayer,
       .anchor = standaloneAnchor,
       .width = detachedSurfaceWidth,
       .height = detachedSurfaceHeight,
