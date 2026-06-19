@@ -1211,6 +1211,7 @@ struct ControlCenterConfig {
   std::vector<ShortcutConfig> shortcuts;
   ControlCenterSidebarMode sidebarMode = ControlCenterSidebarMode::Compact;
   ControlCenterSidebarMode sidebarSectionMode = ControlCenterSidebarMode::Compact;
+  std::int32_t width = 680; // full-sidebar logical width; compact/none modes scale down from this
   bool operator==(const ControlCenterConfig&) const = default;
 };
 

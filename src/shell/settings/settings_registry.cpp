@@ -953,6 +953,16 @@ namespace settings {
       e.visibleWhen = SettingVisibility{{"shell", "panel", "control_center_placement"}, {"attached", "floating"}};
       entries.push_back(std::move(e));
     }
+    {
+      SliderSetting width =
+          sliderFor(cfg.controlCenter.width, noctalia::config::schema::kControlCenterWidthRange, true);
+      width.valueSuffix = "px";
+      entries.push_back(makeEntry(
+          SettingsSection::Panels, "control-center", tr("settings.schema.panels.control-center-width.label"),
+          tr("settings.schema.panels.control-center-width.description"), {"control_center", "width"}, std::move(width),
+          "size dimension wide narrow"
+      ));
+    }
     entries.push_back(makeEntry(
         SettingsSection::Panels, "control-center", tr("settings.schema.panels.control-center-sidebar.label"),
         tr("settings.schema.panels.control-center-sidebar.description"), {"control_center", "sidebar"},
