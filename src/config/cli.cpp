@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <fstream>
 #include <optional>
+#include <print>
 #include <string>
 #include <string_view>
 #include <unistd.h>
@@ -139,7 +140,7 @@ namespace noctalia::config {
       for (int i = 3; i < argc; ++i) {
         const char* arg = argv[i];
         if (std::strcmp(arg, "--help") == 0) {
-          std::puts(kReplayHelpText);
+          std::println("{}", kReplayHelpText);
           return std::nullopt;
         }
         if (std::strcmp(arg, "--target") == 0) {
@@ -182,14 +183,14 @@ namespace noctalia::config {
       try {
         report = toml::parse_file(options.reportPath.string());
       } catch (const toml::parse_error& e) {
-        std::fprintf(stderr, "error: failed to parse report: %s\n", e.what());
+        std::println(stderr, "error: failed to parse report: {}", e.what());
         return 1;
       }
 
       const std::filesystem::path target = std::filesystem::absolute(options.targetDir).lexically_normal();
       std::string error;
       if (!prepareTarget(target, options.force, error)) {
-        std::fprintf(stderr, "error: %s\n", error.c_str());
+        std::println(stderr, "error: {}", error);
         return 1;
       }
 
@@ -202,12 +203,12 @@ namespace noctalia::config {
         std::error_code ec;
         std::filesystem::remove_all(configHome, ec);
         if (ec) {
-          std::fprintf(stderr, "error: failed to remove %s: %s\n", configHome.string().c_str(), ec.message().c_str());
+          std::println(stderr, "error: failed to remove {}: {}", configHome.string(), ec.message());
           return 1;
         }
         std::filesystem::remove_all(stateHome, ec);
         if (ec) {
-          std::fprintf(stderr, "error: failed to remove %s: %s\n", stateHome.string().c_str(), ec.message().c_str());
+          std::println(stderr, "error: failed to remove {}: {}", stateHome.string(), ec.message());
           return 1;
         }
       }
@@ -215,17 +216,17 @@ namespace noctalia::config {
       if (options.flattened) {
         const auto merged = report["merged_config"]["content"].value<std::string>();
         if (!merged.has_value()) {
-          std::fputs("error: report has no [merged_config].content\n", stderr);
+          std::println(stderr, "error: report has no [merged_config].content");
           return 1;
         }
         if (!writeTextFile(configDir / "config.toml", *merged, error)) {
-          std::fprintf(stderr, "error: %s\n", error.c_str());
+          std::println(stderr, "error: {}", error);
           return 1;
         }
         std::error_code ec;
         std::filesystem::create_directories(stateDir, ec);
         if (ec) {
-          std::fprintf(stderr, "error: failed to create %s: %s\n", stateDir.string().c_str(), ec.message().c_str());
+          std::println(stderr, "error: failed to create {}: {}", stateDir.string(), ec.message());
           return 1;
         }
       } else {
@@ -244,11 +245,11 @@ namespace noctalia::config {
 
             const auto relative = safeRelativePath(*source, "config_" + std::to_string(fallbackIndex++) + ".toml");
             if (!relative.has_value()) {
-              std::fputs("error: report contains an unsafe config source path\n", stderr);
+              std::println(stderr, "error: report contains an unsafe config source path");
               return 1;
             }
             if (!writeTextFile(configDir / *relative, *content, error)) {
-              std::fprintf(stderr, "error: %s\n", error.c_str());
+              std::println(stderr, "error: {}", error);
               return 1;
             }
           }
@@ -264,14 +265,14 @@ namespace noctalia::config {
         if (stateExists && state != nullptr) {
           const auto content = (*state)["content"].value<std::string>().value_or("");
           if (!writeTextFile(stateDir / "settings.toml", content, error)) {
-            std::fprintf(stderr, "error: %s\n", error.c_str());
+            std::println(stderr, "error: {}", error);
             return 1;
           }
         } else {
           std::error_code ec;
           std::filesystem::create_directories(stateDir, ec);
           if (ec) {
-            std::fprintf(stderr, "error: failed to create %s: %s\n", stateDir.string().c_str(), ec.message().c_str());
+            std::println(stderr, "error: failed to create {}: {}", stateDir.string(), ec.message());
             return 1;
           }
         }
@@ -286,19 +287,21 @@ namespace noctalia::config {
         if (appStateExists && appState != nullptr) {
           const auto content = (*appState)["content"].value<std::string>().value_or("");
           if (!writeTextFile(stateDir / "state.toml", content, error)) {
-            std::fprintf(stderr, "error: %s\n", error.c_str());
+            std::println(stderr, "error: {}", error);
             return 1;
           }
         }
       }
 
-      std::printf("Replayed support report into %s\n\n", target.string().c_str());
-      std::printf("Config home: %s\n", configHome.string().c_str());
-      std::printf("State home:  %s\n\n", stateHome.string().c_str());
-      std::printf("Run with:\n");
-      std::printf(
-          "  NOCTALIA_CONFIG_HOME=%s NOCTALIA_STATE_HOME=%s %s\n", StringUtils::shellQuote(configHome.string()).c_str(),
-          StringUtils::shellQuote(stateHome.string()).c_str(), StringUtils::shellQuote(argv0).c_str()
+      std::println("Replayed support report into {}", target.string());
+      std::println();
+      std::println("Config home: {}", configHome.string());
+      std::println("State home:  {}", stateHome.string());
+      std::println();
+      std::println("Run with:");
+      std::println(
+          "  NOCTALIA_CONFIG_HOME={} NOCTALIA_STATE_HOME={} {}", StringUtils::shellQuote(configHome.string()),
+          StringUtils::shellQuote(stateHome.string()), StringUtils::shellQuote(argv0)
       );
       return 0;
     }
@@ -314,15 +317,15 @@ namespace noctalia::config {
       std::string pathArg;
       for (int i = 3; i < argc; ++i) {
         if (std::strcmp(argv[i], "--help") == 0) {
-          std::puts(kValidateHelpText);
+          std::println("{}", kValidateHelpText);
           return 0;
         }
         if (pathArg.empty()) {
           pathArg = argv[i];
           continue;
         }
-        std::fprintf(stderr, "error: unexpected argument: %s\n", argv[i]);
-        std::fputs("Run 'noctalia config validate --help' for usage.\n", stderr);
+        std::println(stderr, "error: unexpected argument: {}", argv[i]);
+        std::println(stderr, "Run 'noctalia config validate --help' for usage.");
         return 1;
       }
 
@@ -343,7 +346,7 @@ namespace noctalia::config {
         const std::filesystem::path inputPath(pathArg);
         const auto status = std::filesystem::status(inputPath, ec);
         if (ec) {
-          std::fprintf(stderr, "error: failed to inspect %s: %s\n", pathArg.c_str(), ec.message().c_str());
+          std::println(stderr, "error: failed to inspect {}: {}", pathArg, ec.message());
           return 1;
         }
         if (std::filesystem::is_directory(status)) {
@@ -351,7 +354,7 @@ namespace noctalia::config {
         } else if (std::filesystem::is_regular_file(status)) {
           diagnostics = validateConfigFile(pathArg);
         } else {
-          std::fprintf(stderr, "error: path is not a regular file or directory: %s\n", pathArg.c_str());
+          std::println(stderr, "error: path is not a regular file or directory: {}", pathArg);
           return 1;
         }
       }
@@ -368,21 +371,23 @@ namespace noctalia::config {
         const char* tag = isError ? "ERROR" : "WARN "; // padded to align the path column
         const char* color = (isError ? colorErr : colorOut) ? (isError ? "\033[31m" : "\033[33m") : "";
         const char* reset = *color != '\0' ? "\033[0m" : "";
-        std::fprintf(out, "%s%s%s %s: %s\n", color, tag, reset, entry.path.c_str(), entry.message.c_str());
+        std::println(out, "{}{}{} {}: {}", color, tag, reset, entry.path, entry.message);
       }
 
       if (errors > 0) {
         const char* c = colorErr ? "\033[31m" : "";
         const char* r = colorErr ? "\033[0m" : "";
-        std::fprintf(stderr, "\n%s✗ Config is invalid%s (%zu error(s), %zu warning(s))\n", c, r, errors, warnings);
+        std::println(stderr);
+        std::println(stderr, "{}✗ Config is invalid{} ({} error(s), {} warning(s))", c, r, errors, warnings);
         return 1;
       }
       const char* c = colorOut ? "\033[32m" : "";
       const char* r = colorOut ? "\033[0m" : "";
       if (warnings > 0) {
-        std::printf("\n%s✓ Config is valid%s (%zu warning(s))\n", c, r, warnings);
+        std::println();
+        std::println("{}✓ Config is valid{} ({} warning(s))", c, r, warnings);
       } else {
-        std::printf("%s✓ Config is valid%s\n", c, r);
+        std::println("{}✓ Config is valid{}", c, r);
       }
       return 0;
     }
@@ -392,7 +397,7 @@ namespace noctalia::config {
       bool modeSet = false;
       for (int i = 3; i < argc; ++i) {
         if (std::strcmp(argv[i], "--help") == 0) {
-          std::puts(kExportHelpText);
+          std::println("{}", kExportHelpText);
           return 0;
         }
         if (!modeSet) {
@@ -400,8 +405,8 @@ namespace noctalia::config {
           modeSet = true;
           continue;
         }
-        std::fprintf(stderr, "error: unexpected argument: %s\n", argv[i]);
-        std::fputs("Run 'noctalia config export --help' for usage.\n", stderr);
+        std::println(stderr, "error: unexpected argument: {}", argv[i]);
+        std::println(stderr, "Run 'noctalia config export --help' for usage.");
         return 1;
       }
 
@@ -418,12 +423,12 @@ namespace noctalia::config {
       } else if (mode == "full") {
         content = ConfigService::buildEffectiveConfigFromSources(configDir, settingsPath, &error);
       } else {
-        std::fputs("error: expected merged or full\n", stderr);
+        std::println(stderr, "error: expected merged or full");
         return 1;
       }
 
       if (!error.empty()) {
-        std::fprintf(stderr, "error: %s\n", error.c_str());
+        std::println(stderr, "error: {}", error);
         return 1;
       }
 
@@ -435,7 +440,7 @@ namespace noctalia::config {
 
   int runCli(int argc, char* argv[]) {
     if (argc < 3 || std::strcmp(argv[2], "--help") == 0) {
-      std::puts(kHelpText);
+      std::println("{}", kHelpText);
       return argc < 3 ? 1 : 0;
     }
 
@@ -452,8 +457,8 @@ namespace noctalia::config {
       const auto options = parseReplayOptions(argc, argv, error);
       if (!options.has_value()) {
         if (!error.empty()) {
-          std::fprintf(stderr, "error: %s\n", error.c_str());
-          std::fputs("Run 'noctalia config replay-report --help' for usage.\n", stderr);
+          std::println(stderr, "error: {}", error);
+          std::println(stderr, "Run 'noctalia config replay-report --help' for usage.");
           return 1;
         }
         return 0;
@@ -461,8 +466,8 @@ namespace noctalia::config {
       return replayReport(*options, argv[0]);
     }
 
-    std::fprintf(stderr, "error: unknown config command: %s\n", argv[2]);
-    std::fputs("Run 'noctalia config --help' for usage.\n", stderr);
+    std::println(stderr, "error: unknown config command: {}", argv[2]);
+    std::println(stderr, "Run 'noctalia config --help' for usage.");
     return 1;
   }
 
