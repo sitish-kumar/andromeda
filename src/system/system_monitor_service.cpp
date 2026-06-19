@@ -553,6 +553,36 @@ namespace {
 
   constexpr Logger kLog("sysmon");
 
+  std::uint64_t readZfsEvictableArcKb() {
+    std::ifstream file{"/proc/spl/kstat/zfs/arcstats"};
+    if (!file.is_open()) {
+      return 0;
+    }
+
+    std::uint64_t arcSize = 0;
+    std::uint64_t arcMin = 0;
+    std::string line;
+    while (std::getline(file, line)) {
+      std::string key;
+      std::uint32_t type = 0;
+      std::uint64_t value = 0;
+
+      std::istringstream iss{line};
+      if (iss >> key >> type >> value) {
+        if (key == "size") {
+          arcSize = value;
+        } else if (key == "c_min") {
+          arcMin = value;
+        }
+      }
+    }
+
+    if (arcSize > arcMin) {
+      return (arcSize - arcMin) / 1024;
+    }
+    return 0;
+  }
+
 } // namespace
 
 struct SystemMonitorService::AmdRsmiReader {
@@ -1331,36 +1361,6 @@ std::optional<SystemMonitorService::CpuTotals> SystemMonitorService::readCpuTota
   totals.idle = idle + iowait;
   totals.total = user + nice + system + idle + iowait + irq + softirq + steal;
   return totals;
-}
-
-std::uint64_t readZfsEvictableArcKb() {
-  std::ifstream file{"/proc/spl/kstat/zfs/arcstats"};
-  if (!file.is_open()) {
-    return 0;
-  }
-
-  std::uint64_t arcSize = 0;
-  std::uint64_t arcMin = 0;
-  std::string line;
-  while (std::getline(file, line)) {
-    std::string key;
-    std::uint32_t type = 0;
-    std::uint64_t value = 0;
-
-    std::istringstream iss{line};
-    if (iss >> key >> type >> value) {
-      if (key == "size") {
-        arcSize = value;
-      } else if (key == "c_min") {
-        arcMin = value;
-      }
-    }
-  }
-
-  if (arcSize > arcMin) {
-    return (arcSize - arcMin) / 1024;
-  }
-  return 0;
 }
 
 std::optional<SystemMonitorService::MemData> SystemMonitorService::readMemoryKb() {
