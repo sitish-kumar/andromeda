@@ -1171,12 +1171,14 @@ void TaskbarWidget::updateModels() {
         if (const auto mappedId = m_platform.compositorWindowIdForToplevel(task.firstHandle); mappedId.has_value()) {
           task.workspaceWindowId = *mappedId;
         }
-      } else if (task.workspaceWindowId.empty()) {
+      } else {
         const auto mappedId = m_platform.compositorWindowIdForExtToplevel(
             reinterpret_cast<ext_foreign_toplevel_handle_v1*>(task.handleKey)
         );
         if (mappedId.has_value()) {
           task.workspaceWindowId = *mappedId;
+        } else {
+          task.workspaceWindowId.clear();
         }
       }
       if (!task.active
