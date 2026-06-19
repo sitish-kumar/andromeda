@@ -2566,16 +2566,8 @@ void Bar::buildScene(BarInstance& instance, std::uint32_t width, std::uint32_t h
       instance.slideRoot->setOpacity(1.0f);
       instance.hideOpacity = 0.0f;
     } else {
-      instance.slideRoot->setOpacity(0.0f);
+      instance.slideRoot->setOpacity(1.0f);
       instance.hideOpacity = 1.0f;
-      instance.animations.animate(
-          0.0f, 1.0f, Style::animSlow, Easing::EaseOutCubic,
-          [slide = instance.slideRoot, inst = &instance, this](float v) {
-            slide->setOpacity(v);
-            syncBarSurfaceChrome(*inst);
-          },
-          {}, instance.slideRoot
-      );
     }
 
     instance.surface->setSceneRoot(instance.sceneRoot.get());
