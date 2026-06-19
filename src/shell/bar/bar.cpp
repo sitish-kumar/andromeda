@@ -1,5 +1,6 @@
 #include "shell/bar/bar.h"
 
+#include "compositors/compositor_detect.h"
 #include "compositors/compositor_platform.h"
 #include "config/config_service.h"
 #include "core/log.h"
@@ -41,6 +42,13 @@
 #include <wayland-client-core.h>
 
 namespace {
+
+  // niri and Hyprland retain the previous buffer across a layer-surface resize; every other
+  // (wlroots-style) compositor blanks the surface for a frame on set_size. Where it blanks, we
+  // grow the bar surface to host a panel but never shrink it back — the shrink-on-close is the
+  // only resize the user can see (open's blank is masked by the reveal animation). Keeping the
+  // surface grown trades a fatter idle surface for a flicker-free close.
+  [[nodiscard]] bool barSurfaceResizeBlanks() { return !(compositors::isNiri() || compositors::isHyprland()); }
 
   constexpr std::int32_t kAutoHideTriggerPx = 3;
   constexpr float kAutoHideSlideExtraPx = 4.0f;
@@ -537,9 +545,10 @@ namespace {
   // given main-axis length. The inner-axis span runs from the bar's VISIBLE inner edge to
   // the surface edge minus shadow bleed (so the drop shadow has room past the body).
   [[nodiscard]] std::optional<InputRect> attachedPanelRegionRect(
-      const BarConfig& cfg, const ShellConfig::ShadowConfig& shadow, int surfW, int surfH, int mainExtent
+      const BarConfig& cfg, const ShellConfig::ShadowConfig& shadow, int surfW, int surfH, int mainExtent,
+      int innerExtent
   ) {
-    if (surfW <= 0 || surfH <= 0 || mainExtent <= 0) {
+    if (surfW <= 0 || surfH <= 0 || mainExtent <= 0 || innerExtent <= 0) {
       return std::nullopt;
     }
     // Anchor the panel region to the bar's VISIBLE inner edge (not the surface edge,
@@ -547,19 +556,15 @@ namespace {
     const float innerExt = barInnerSurfaceExtension(cfg, shadow, static_cast<float>(surfW), static_cast<float>(surfH));
     const auto barVisual =
         computeBarVisualGeometry(cfg, shadow, static_cast<float>(surfW), static_cast<float>(surfH), innerExt);
-    // The panel's far edge stops short of the surface edge by the shadow bleed so the
-    // drop shadow has room to render past the panel body.
-    const auto bleed = shell::surface_shadow::bleed(cfg.shadow, shadow);
+    // The panel's depth along the inner axis is its OWN length, not the distance to the surface
+    // edge: on blank-prone compositors the surface stays grown to the largest panel ever opened
+    // (grow-only), so a smaller panel must honor its preferred size instead of filling the surface.
 
     if (cfg.position == "left" || cfg.position == "right") {
       const int innerEdge = cfg.position == "right" ? static_cast<int>(std::lround(barVisual.x))
                                                     : static_cast<int>(std::lround(barVisual.x + barVisual.width));
-      const int farEdge = cfg.position == "right" ? bleed.left : surfW - bleed.right;
-      const int width = cfg.position == "right" ? innerEdge - farEdge : farEdge - innerEdge;
-      if (width <= 0) {
-        return std::nullopt;
-      }
-      const int x = cfg.position == "right" ? farEdge : innerEdge;
+      const int width = innerExtent;
+      const int x = cfg.position == "right" ? innerEdge - width : innerEdge;
       const int mainLen = std::min(surfH, mainExtent);
       const int mainPos = (surfH - mainLen) / 2;
       return InputRect{x, mainPos, width, mainLen};
@@ -567,12 +572,8 @@ namespace {
 
     const int innerEdge = cfg.position == "bottom" ? static_cast<int>(std::lround(barVisual.y))
                                                    : static_cast<int>(std::lround(barVisual.y + barVisual.height));
-    const int farEdge = cfg.position == "bottom" ? bleed.up : surfH - bleed.down;
-    const int height = cfg.position == "bottom" ? innerEdge - farEdge : farEdge - innerEdge;
-    if (height <= 0) {
-      return std::nullopt;
-    }
-    const int y = cfg.position == "bottom" ? farEdge : innerEdge;
+    const int height = innerExtent;
+    const int y = cfg.position == "bottom" ? innerEdge - height : innerEdge;
     const int mainLen = std::min(surfW, mainExtent);
     const int mainPos = (surfW - mainLen) / 2;
     return InputRect{mainPos, y, mainLen, height};
@@ -660,14 +661,14 @@ namespace {
   // the bar, 1 = fully emerged). The bar-side edge stays fixed at the bar; the far edge
   // moves outward by full_extent * progress so the tab grows out of the bar.
   [[nodiscard]] std::optional<AttachedPanelUnion> computeAttachedPanelUnion(
-      const BarConfig& cfg, const ShellConfig::ShadowConfig& shadow, int surfW, int surfH, int mainExtent, float radius,
-      float progress
+      const BarConfig& cfg, const ShellConfig::ShadowConfig& shadow, int surfW, int surfH, int mainExtent,
+      int innerExtent, float radius, float progress
   ) {
     const float p = std::clamp(progress, 0.0f, 1.0f);
     if (p <= 0.0f) {
       return std::nullopt;
     }
-    const auto rect = attachedPanelRegionRect(cfg, shadow, surfW, surfH, mainExtent);
+    const auto rect = attachedPanelRegionRect(cfg, shadow, surfW, surfH, mainExtent, innerExtent);
     if (!rect.has_value()) {
       return std::nullopt;
     }
@@ -1600,13 +1601,18 @@ std::vector<InputRect> Bar::surfaceRectsForOutput(wl_output* output) const {
       const auto barRegion = barContentInputRegion(instance->barConfig, shadowCfg, surfW, surfH);
       rects.push_back(InputRect{rectX + barRegion.x, rectY + barRegion.y, barRegion.width, barRegion.height});
       if (auto panel = attachedPanelRegionRect(
-              instance->barConfig, shadowCfg, surfW, surfH, static_cast<int>(std::lround(instance->hostedPanelMainLen))
+              instance->barConfig, shadowCfg, surfW, surfH, static_cast<int>(std::lround(instance->hostedPanelMainLen)),
+              static_cast<int>(std::lround(instance->hostedPanelInnerLen))
           );
           panel.has_value()) {
         rects.push_back(InputRect{rectX + panel->x, rectY + panel->y, panel->width, panel->height});
       }
     } else if (rectW > 0 && rectH > 0) {
-      rects.push_back(InputRect{rectX, rectY, rectW, rectH});
+      // Exclude the visible bar strip, not the whole surface: on blank-prone compositors the surface
+      // can stay grown after a hosted panel closes (grow-only), so the full-surface rect would
+      // over-cover the transparent grown area and swallow dismiss clicks there.
+      const auto barRegion = barContentInputRegion(instance->barConfig, m_config->config().shell.shadow, surfW, surfH);
+      rects.push_back(InputRect{rectX + barRegion.x, rectY + barRegion.y, barRegion.width, barRegion.height});
     }
   }
 
@@ -2274,11 +2280,14 @@ void Bar::syncBarAutoHideInputRegion(BarInstance& instance) const {
   if (instance.attachedPanelResizeTestOpen || instance.hostedPanelOpen) {
     const int mainExtent = instance.hostedPanelOpen ? static_cast<int>(std::lround(instance.hostedPanelMainLen))
                                                     : kAttachedPanelResizeTestMainExtent;
+    const int innerExtent = instance.hostedPanelOpen ? static_cast<int>(std::lround(instance.hostedPanelInnerLen))
+                                                     : static_cast<int>(instance.attachedPanelResizeTestExtent);
     std::vector<InputRect> regions{
         barContentInputRegion(instance.barConfig, m_config->config().shell.shadow, surfW, surfH)
     };
-    if (auto panelRect =
-            attachedPanelRegionRect(instance.barConfig, m_config->config().shell.shadow, surfW, surfH, mainExtent);
+    if (auto panelRect = attachedPanelRegionRect(
+            instance.barConfig, m_config->config().shell.shadow, surfW, surfH, mainExtent, innerExtent
+        );
         panelRect.has_value()) {
       regions.push_back(*panelRect);
     }
@@ -2390,7 +2399,8 @@ void Bar::applyBarCompositorBlur(BarInstance& instance) const {
     const int surfW = static_cast<int>(instance.surface->width());
     const int surfH = static_cast<int>(instance.surface->height());
     const auto region = attachedPanelRegionRect(
-        instance.barConfig, shadowConfig, surfW, surfH, static_cast<int>(std::lround(instance.hostedPanelMainLen))
+        instance.barConfig, shadowConfig, surfW, surfH, static_cast<int>(std::lround(instance.hostedPanelMainLen)),
+        static_cast<int>(std::lround(instance.hostedPanelInnerLen))
     );
     const float p = std::clamp(instance.hostedPanelProgress, 0.0f, 1.0f);
     if (region.has_value() && p > 0.001f) {
@@ -2586,13 +2596,15 @@ void Bar::buildScene(BarInstance& instance, std::uint32_t width, std::uint32_t h
   if (instance.hostedPanelOpen) {
     testPanelUnion = computeAttachedPanelUnion(
         instance.barConfig, shadowConfig, static_cast<int>(std::lround(w)), static_cast<int>(std::lround(h)),
-        static_cast<int>(std::lround(instance.hostedPanelMainLen)), instance.hostedPanelRadius,
+        static_cast<int>(std::lround(instance.hostedPanelMainLen)),
+        static_cast<int>(std::lround(instance.hostedPanelInnerLen)), instance.hostedPanelRadius,
         instance.hostedPanelProgress
     );
   } else if (instance.attachedPanelResizeTestOpen) {
     testPanelUnion = computeAttachedPanelUnion(
         instance.barConfig, shadowConfig, static_cast<int>(std::lround(w)), static_cast<int>(std::lround(h)),
-        kAttachedPanelResizeTestMainExtent, kAttachedPanelResizeTestRadius, instance.attachedPanelResizeTestProgress
+        kAttachedPanelResizeTestMainExtent, static_cast<int>(instance.attachedPanelResizeTestExtent),
+        kAttachedPanelResizeTestRadius, instance.attachedPanelResizeTestProgress
     );
   }
 
@@ -3371,7 +3383,7 @@ void Bar::applyAttachedPanelTestReveal(BarInstance& instance, float progress) {
   const int surfH = static_cast<int>(instance.surface->height());
   const auto unionShape = computeAttachedPanelUnion(
       instance.barConfig, shadowConfig, surfW, surfH, kAttachedPanelResizeTestMainExtent,
-      kAttachedPanelResizeTestRadius, progress
+      static_cast<int>(instance.attachedPanelResizeTestExtent), kAttachedPanelResizeTestRadius, progress
   );
 
   // Paint-only update: rewrite just the union fields on the bg, preserving the rest.
@@ -3453,7 +3465,8 @@ void Bar::layoutHostedPanelContent(BarInstance& instance, Renderer& renderer, fl
   const auto& shadowConfig = m_config->config().shell.shadow;
   const auto region = attachedPanelRegionRect(
       instance.barConfig, shadowConfig, static_cast<int>(std::lround(w)), static_cast<int>(std::lround(h)),
-      static_cast<int>(std::lround(instance.hostedPanelMainLen))
+      static_cast<int>(std::lround(instance.hostedPanelMainLen)),
+      static_cast<int>(std::lround(instance.hostedPanelInnerLen))
   );
   if (region.has_value() && instance.hostedPanelLayout) {
     const float inset = instance.hostedPanelInset;
@@ -3486,7 +3499,8 @@ void Bar::positionHostedPanelContent(BarInstance& instance, float progress) {
   const int surfW = static_cast<int>(instance.surface->width());
   const int surfH = static_cast<int>(instance.surface->height());
   const auto region = attachedPanelRegionRect(
-      instance.barConfig, shadowConfig, surfW, surfH, static_cast<int>(std::lround(instance.hostedPanelMainLen))
+      instance.barConfig, shadowConfig, surfW, surfH, static_cast<int>(std::lround(instance.hostedPanelMainLen)),
+      static_cast<int>(std::lround(instance.hostedPanelInnerLen))
   );
   if (!region.has_value()) {
     instance.hostedPanelClip->setVisible(false);
@@ -3541,7 +3555,7 @@ void Bar::applyHostedPanelReveal(BarInstance& instance, float progress) {
   const int surfH = static_cast<int>(instance.surface->height());
   const auto unionShape = computeAttachedPanelUnion(
       instance.barConfig, shadowConfig, surfW, surfH, static_cast<int>(std::lround(instance.hostedPanelMainLen)),
-      instance.hostedPanelRadius, progress
+      static_cast<int>(std::lround(instance.hostedPanelInnerLen)), instance.hostedPanelRadius, progress
   );
   if (instance.bg != nullptr) {
     auto bgStyle = instance.bg->style();
@@ -3633,6 +3647,12 @@ wl_surface* Bar::openHostedAttachedPanel(
   } else {
     targetH = static_cast<std::uint32_t>(std::ceil(targetAxis));
   }
+  // On blank-prone compositors the surface never shrinks (see barSurfaceResizeBlanks): reopening a
+  // panel smaller than the current grown size must not trigger a shrink-resize and its blank frame.
+  if (barSurfaceResizeBlanks()) {
+    targetW = std::max(targetW, inst->surface->width());
+    targetH = std::max(targetH, inst->surface->height());
+  }
   inst->surface->requestSize(targetW, targetH);
   // Grab keyboard while hosting so Escape (and later, full nav) works without first clicking
   // into the panel, and so the Hyprland focus grab can capture outside clicks.
@@ -3674,7 +3694,13 @@ void Bar::tearDownHostedPanel(BarInstance& instance, bool invokeClosed) {
   if (instance.surface != nullptr && m_config != nullptr) {
     const auto base = computeBarSurfaceSpec(instance.barConfig, m_config->config().shell.shadow);
     instance.surface->setKeyboardInteractivity(LayerShellKeyboard::None);
-    instance.surface->requestSize(base.surfaceWidth, base.surfaceHeight);
+    // On blank-prone compositors keep the surface grown — the shrink here is the one resize whose
+    // blank frame the user sees on close. The bar stays edge-anchored within the grown surface and
+    // the freed space is reclaimed via the exclusive zone (independent of the buffer size), so the
+    // grown area just sits transparent and click-through. niri/Hyprland shrink as before.
+    if (!barSurfaceResizeBlanks()) {
+      instance.surface->requestSize(base.surfaceWidth, base.surfaceHeight);
+    }
     syncBarAutoHideInputRegion(instance);
     syncBarSurfaceChrome(instance);
     instance.surface->requestLayout();
