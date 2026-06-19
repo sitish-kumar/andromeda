@@ -51,6 +51,11 @@
       "network": {
         "wired": "Filaire"
       },
+      "privacy": {
+        "camera": "Caméra",
+        "microphone": "Micro",
+        "screen-sharing": "Partage d'écrans"
+      },
       "scripted": {
         "reload-failed": "Échec du rechargement du script",
         "reloaded": "Script rechargé"
@@ -113,6 +118,8 @@
   "control-center": {
     "audio": {
       "application-volumes": "Volumes des applications",
+      "choose-effects-profile": "Choisir un profil",
+      "effects-profile": "Effets: ",
       "input-volume": "Volume d'entrée",
       "no-application-audio": "Aucun flux audio d’application",
       "no-application-audio-body": "Aucun flux de lecture d’application disponible.",
@@ -353,6 +360,7 @@
         "bands": "Bandes",
         "bar-width": "Épaisseur de la barre",
         "bloom-intensity": "Halo lumineux",
+        "center-text": "Centrer le texte",
         "centered": "Centré",
         "change-image": "Changer...",
         "circle": "Cercle",
@@ -363,6 +371,7 @@
         "color-1": "Première couleur",
         "color-2": "Seconde couleur",
         "color2": "Couleur 2",
+        "command": "Commande",
         "custom-color": "Personnalisé...",
         "description": "Description",
         "fade-when-idle": "Masquer en inactivité",
@@ -370,12 +379,17 @@
         "font-family-default": "Valeur système",
         "forecast-days": "Jours de prévision",
         "format": "Format",
+        "glyph": "Glyphe",
         "hide-when-no-media": "Masquer en l’absence de média",
         "horizontal": "Horizontal",
+        "hover-background": "Arrière-plan au survo",
+        "hover-foreground": "Premier plan au survol",
         "image-path": "Image",
         "inner-diameter": "Diamètre intérieur",
         "input-opacity": "Opacité du champ de saisie",
         "input-radius": "Arrondi du champ de saisie",
+        "interface": "Interface",
+        "label": "Label",
         "layout": "Disposition",
         "mirrored": "Miroir",
         "opacity": "Opacité",
@@ -403,6 +417,13 @@
         "stat-swap-pct": "Swap %",
         "stat2": "Stat 2",
         "title": "Titre",
+        "variant": "Style",
+        "variant-default": "Defaut",
+        "variant-destructive": "Destructif",
+        "variant-ghost": "Ghost",
+        "variant-outline": "Outline",
+        "variant-primary": "Principal",
+        "variant-secondary": "Secondaire",
         "vertical": "Vertical",
         "visualization-mode": "Mode",
         "visualization-mode-all": "Tout",
@@ -421,6 +442,7 @@
       "title": "Widgets du bureau",
       "types": {
         "audio-visualizer": "Visualiseur audio",
+        "button": "Bouton",
         "clock": "Horloge",
         "fancy-audio-visualizer": "Visualiseur audio stylisé",
         "label": "Label",
@@ -596,6 +618,10 @@
     "dnd": {
       "off": "NPD désactivé",
       "on": "NPD activé"
+    },
+    "effects": {
+      "input": "Effets d'entrée",
+      "output": "Effets de sortie"
     },
     "lock-keys": {
       "caps-off": "Verr. maj. désactivé",
@@ -1627,6 +1653,10 @@
         }
       },
       "lockscreen": {
+        "allow-empty-password": {
+          "description": "Permet d'utiliser la touche Entrée pour soumettre un mot de passe vide. À activer pour les clés de sécurité ou autre.",
+          "label": "Soumission de mot de passe vide"
+        },
         "blur-intensity": {
           "description": "Détermine l’intensité du flou appliqué à l’arrière-plan de l’écran de verrouillage",
           "label": "Intensité du flou"
@@ -1740,6 +1770,10 @@
           "description": "Lors de l’ouverture d’un onglet spécifique (volume, média, etc...)",
           "label": "Barre latérale lors de l’ouverture d’un onglet"
         },
+        "floating-offset": {
+          "description": "Écart en pixels entre un panel flottant (ou détaché) et le bord de la barre.",
+          "label": "Décalage flottant"
+        },
         "home-shortcuts": {
           "description": "Définit jusqu’à six boutons de raccourci pour l’onglet d'accueil",
           "label": "Raccourcis de l’accueil"
@@ -1813,6 +1847,7 @@
           "description": "Projette l’ombre globale des surfaces depuis les panneaux"
         },
         "transparency-mode": {
+          "description": "Style d'effet de verre du panel, incluant l'opacité du panel flottant/centré et des cards",
           "label": "Transparence"
         }
       },
@@ -1875,6 +1910,7 @@
           "label": "Longitude"
         },
         "minimum-brightness": {
+          "description": "Empêche l'écran de devenir complètement noir",
           "label": "Luminosité minimum"
         },
         "mpris-blacklist": {
@@ -1974,14 +2010,50 @@
         }
       },
       "shared": {
+        "auto-hide": {
+          "label": "Masquage automatique"
+        },
         "background-opacity": {
           "label": "Opacité de l'arrière-plan"
+        },
+        "contact-shadow": {
+          "label": "Ombre de contact"
+        },
+        "corner-bottom-left": {
+          "label": "Rayon inférieur gauche"
+        },
+        "corner-bottom-right": {
+          "label": "Rayon inférieur droit"
+        },
+        "corner-radius": {
+          "label": "Rayon des angles"
+        },
+        "corner-top-left": {
+          "label": "Rayon supérieur gauche"
+        },
+        "corner-top-right": {
+          "label": "Rayon supérieur droit"
+        },
+        "cross-axis-padding": {
+          "label": "Marge interne de l'axe transversal"
+        },
+        "edge-margin": {
+          "label": "Marge extérieure du bord"
         },
         "enabled": {
           "label": "Activé"
         },
+        "ends-margin": {
+          "label": "Marge extérieure des extrémités"
+        },
+        "main-axis-padding": {
+          "label": "Marge interne de l'axe principal"
+        },
         "position": {
           "label": "Position"
+        },
+        "reserve-space": {
+          "label": "Réserver l'espace"
         },
         "shadow": {
           "label": "Ombre"
@@ -1994,6 +2066,15 @@
         }
       },
       "shell": {
+        "avatar-path": {
+          "description": "Chemin vers une image d'avatar personnalisée. Les grandes images sont recadrées et redimensionnées",
+          "label": "Chemin de l'avatar",
+          "placeholder": "/path/to/avatar.png"
+        },
+        "clipboard-auto-paste": {
+          "description": "Colle automatiquement les sélections du presse-papiers",
+          "label": "Coller automatiquement le presse-papiers"
+        },
         "clipboard-enabled": {
           "label": "Presse-papiers"
         },

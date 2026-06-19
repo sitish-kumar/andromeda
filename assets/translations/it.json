@@ -360,6 +360,7 @@
         "bands": "Bande",
         "bar-width": "Larghezza barra",
         "bloom-intensity": "Bagliore",
+        "center-text": "Testo centrato",
         "centered": "Centrato",
         "change-image": "Cambia...",
         "circle": "Cerchio",
@@ -367,23 +368,28 @@
         "clock-style-analog": "Analogico",
         "clock-style-digital": "Digitale",
         "color": "Colore",
-        "color-1": "Colore uno",
-        "color-2": "Colore due",
+        "color-1": "Colore 1",
+        "color-2": "Colore 2",
         "color2": "Colore 2",
+        "command": "Comando",
         "custom-color": "Personalizzato...",
         "description": "Descrizione",
         "fade-when-idle": "Dissolvi quando inattivo",
         "font-family": "Carattere",
         "font-family-default": "Predefinito di sistema",
-        "forecast-days": "Previsioni giornaliere",
+        "forecast-days": "N. Giorni",
         "format": "Formato",
+        "glyph": "Glifo",
         "hide-when-no-media": "Nascondi senza media",
         "horizontal": "Orizzontale",
+        "hover-background": "Sfondo al passaggio del mouse",
+        "hover-foreground": "Primo piano al passaggio mouse",
         "image-path": "Immagine",
         "inner-diameter": "Diametro interno",
         "input-opacity": "Opacità input",
         "input-radius": "Raggio input",
         "interface": "Interfaccia",
+        "label": "Etichetta",
         "layout": "Layout",
         "mirrored": "Specchiato",
         "opacity": "Opacità",
@@ -411,6 +417,13 @@
         "stat-swap-pct": "Swap %",
         "stat2": "Statistica 2",
         "title": "Titolo",
+        "variant": "Stile",
+        "variant-default": "Default",
+        "variant-destructive": "Distruttivo",
+        "variant-ghost": "Trasparente",
+        "variant-outline": "Sottolinea",
+        "variant-primary": "Colore primario",
+        "variant-secondary": "Colore secondario",
         "vertical": "Verticale",
         "visualization-mode": "Modalità",
         "visualization-mode-all": "Tutto",
@@ -429,6 +442,7 @@
       "title": "Widget desktop",
       "types": {
         "audio-visualizer": "Visualizzatore audio",
+        "button": "Pulsante",
         "clock": "Orologio",
         "fancy-audio-visualizer": "Visualizzatore audio avanzato",
         "label": "Etichetta",
@@ -2366,8 +2380,8 @@
         "destructive": "Distruttivo",
         "ghost": "Fantasma",
         "outline": "Contorno",
-        "primary": "Primario",
-        "secondary": "Secondario"
+        "primary": "Colore primario",
+        "secondary": "Colore secondario"
       },
       "variant-label": "Stile pulsante"
     },
@@ -2488,11 +2502,11 @@
         },
         "color-1": {
           "description": "Primo colore sfumato nel visualizzatore",
-          "label": "Colore uno"
+          "label": "Colore 1"
         },
         "color-2": {
           "description": "Secondo colore sfumato nel visualizzatore",
-          "label": "Colore due"
+          "label": "Colore 2"
         },
         "command": {
           "description": "Comando shell eseguito al click sinistro su questo pulsante",
