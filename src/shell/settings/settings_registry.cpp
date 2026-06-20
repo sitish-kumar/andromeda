@@ -2759,8 +2759,8 @@ namespace settings {
         ));
         const auto monitorDeadZonePath = [&](std::string_view key) {
           std::vector<std::string> p = root;
-          p.push_back("dead_zone");
-          p.push_back(std::string(key));
+          p.emplace_back("dead_zone");
+          p.emplace_back(key);
           return p;
         };
         entries.push_back(makeEntry(
