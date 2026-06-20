@@ -35,9 +35,11 @@ private:
   void doUpdate(Renderer& renderer) override;
   void clearAllNotifications();
   void removeNotificationEntry(uint32_t id, bool wasActive);
+  void toggleDoNotDisturb();
   void toggleNotificationExpanded(uint32_t id);
   void invokeNotificationAction(uint32_t id, const std::string& actionKey);
   bool refreshDataSnapshot();
+  void syncDndButton();
   void updateEmptyState(bool hasHistory, bool hasFiltered);
   std::optional<std::size_t> filteredIndexForId(uint32_t id) const;
 
@@ -51,6 +53,7 @@ private:
   Label* m_emptyTitle = nullptr;
   Label* m_emptyBody = nullptr;
   Button* m_clearAllButton = nullptr;
+  Button* m_dndButton = nullptr;
   Segmented* m_filter = nullptr;
   std::size_t m_filterIndex = 0;
   std::unordered_set<uint32_t> m_expandedIds;

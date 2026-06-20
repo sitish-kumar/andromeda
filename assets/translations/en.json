@@ -264,6 +264,9 @@
       "wired-connection": "Wired connection"
     },
     "notifications": {
+      "clear-all": "Clear all notifications",
+      "dnd-off": "Turn Do Not Disturb Off",
+      "dnd-on": "Turn Do Not Disturb On",
       "empty-body": "Recent notifications will show here.",
       "empty-title": "No notifications",
       "filter": {
