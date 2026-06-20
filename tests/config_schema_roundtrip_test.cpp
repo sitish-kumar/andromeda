@@ -167,6 +167,7 @@ location = "https://example.invalid/bad"
     bar.marginOppositeEdge = 12;
     bar.deadZone.command = "notify-send bar-left";
     bar.deadZone.rightCommand = "notify-send bar-right";
+    bar.deadZone.middleCommand = "notify-send bar-middle";
     bar.deadZone.scrollUpCommand = "notify-send bar-scroll-up";
     bar.deadZone.scrollDownCommand = "notify-send bar-scroll-down";
     bar.padding = 12;
@@ -224,6 +225,7 @@ location = "https://example.invalid/bad"
     ovr.marginOppositeEdge = 4;
     ovr.deadZone.command = "notify-send bar-left";
     ovr.deadZone.rightCommand = "notify-send bar-right";
+    ovr.deadZone.middleCommand = "notify-send monitor-middle";
     ovr.deadZone.scrollUpCommand = "notify-send monitor-scroll-up";
     ovr.deadZone.scrollDownCommand = "notify-send bar-scroll-down";
     ovr.padding = 11;
@@ -533,6 +535,7 @@ widget_spacing = 8
 
     [default.dead_zone]
     command = "notify-send bar-left"
+    middle_command = "notify-send bar-middle"
     right_command = "notify-send bar-right"
     scroll_down_command = "notify-send bar-scroll-down"
     scroll_up_command = "notify-send bar-scroll-up"
@@ -580,6 +583,7 @@ widget_spacing = 8
 
         [default.monitor.DP-1.dead_zone]
         command = "notify-send bar-left"
+        middle_command = "notify-send monitor-middle"
         right_command = "notify-send bar-right"
         scroll_down_command = "notify-send bar-scroll-down"
         scroll_up_command = "notify-send monitor-scroll-up"

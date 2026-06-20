@@ -1400,6 +1400,10 @@
           "description": "Shell command to run on right-click; leave empty to open Control Center",
           "label": "Right Click"
         },
+        "dead-zone-middle-command": {
+          "description": "Shell command to run on middle-click in the bar margin outside widget sections",
+          "label": "Middle Click"
+        },
         "dead-zone-scroll-down-command": {
           "description": "Shell command to run when scrolling down",
           "label": "Scroll Down"

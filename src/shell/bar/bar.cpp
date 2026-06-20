@@ -374,6 +374,10 @@ namespace {
       openControlCenterAtBarPointer(instance, sx, sy, platform, instance.barConfig.name);
       return true;
     }
+    if (button == BTN_MIDDLE && !deadZone.middleCommand.empty()) {
+      executeDeadZoneCommand(deadZone.middleCommand);
+      return true;
+    }
     return false;
   }
 

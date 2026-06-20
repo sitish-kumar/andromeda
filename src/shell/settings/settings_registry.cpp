@@ -2479,6 +2479,14 @@ namespace settings {
           "bar empty margin click right command control center override shell"
       ));
       entries.push_back(makeEntry(
+          section, "dead-zone", tr("settings.schema.bar.dead-zone-middle-command.label"),
+          tr("settings.schema.bar.dead-zone-middle-command.description"), deadZonePath("middle_command"),
+          TextSetting{
+              .value = bar.deadZone.middleCommand, .placeholder = "", .width = 320.0f, .browseFileExtensions = {}
+          },
+          "bar empty margin click middle command shell"
+      ));
+      entries.push_back(makeEntry(
           section, "dead-zone", tr("settings.schema.bar.dead-zone-scroll-up-command.label"),
           tr("settings.schema.bar.dead-zone-scroll-up-command.description"), deadZonePath("scroll_up_command"),
           TextSetting{
@@ -2784,6 +2792,17 @@ namespace settings {
                 .browseFileExtensions = {},
             },
             "bar empty margin click right command control center override shell"
+        ));
+        entries.push_back(makeEntry(
+            section, "dead-zone", tr("settings.schema.bar.dead-zone-middle-command.label"),
+            tr("settings.schema.bar.dead-zone-middle-command.description"), monitorDeadZonePath("middle_command"),
+            TextSetting{
+                .value = ovr.deadZone.middleCommand.value_or(""),
+                .placeholder = bar.deadZone.middleCommand,
+                .width = 320.0f,
+                .browseFileExtensions = {},
+            },
+            "bar empty margin click middle command shell"
         ));
         entries.push_back(makeEntry(
             section, "dead-zone", tr("settings.schema.bar.dead-zone-scroll-up-command.label"),

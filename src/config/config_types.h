@@ -46,6 +46,7 @@ inline constexpr std::string_view kCapsuleGroupTokenPrefix = "group:";
 struct BarDeadZoneOverride {
   std::optional<std::string> command;
   std::optional<std::string> rightCommand;
+  std::optional<std::string> middleCommand;
   std::optional<std::string> scrollUpCommand;
   std::optional<std::string> scrollDownCommand;
 
@@ -101,6 +102,7 @@ struct BarMonitorOverride {
 struct BarDeadZoneConfig {
   std::string command;
   std::string rightCommand;
+  std::string middleCommand;
   std::string scrollUpCommand;
   std::string scrollDownCommand;
 

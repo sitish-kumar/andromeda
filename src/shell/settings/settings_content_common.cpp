@@ -138,6 +138,9 @@ namespace settings {
       if (key == "right_command") {
         return override->deadZone.rightCommand.has_value();
       }
+      if (key == "middle_command") {
+        return override->deadZone.middleCommand.has_value();
+      }
       if (key == "scroll_up_command") {
         return override->deadZone.scrollUpCommand.has_value();
       }

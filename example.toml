@@ -288,6 +288,7 @@ end    = ["media", "tray", "notifications", "clipboard", "network", "bluetooth",
 # [bar.main.dead_zone]
 # command = "noctalia msg launcher toggle"
 # right_command = ""               # empty = open Control Center (default)
+# middle_command = ""
 # scroll_up_command = "..."
 # scroll_down_command = "..."
 

@@ -1847,6 +1847,7 @@ namespace noctalia::config::schema {
     static const Schema<BarDeadZoneConfig> s = {
         field(&BarDeadZoneConfig::command, "command"),
         field(&BarDeadZoneConfig::rightCommand, "right_command"),
+        field(&BarDeadZoneConfig::middleCommand, "middle_command"),
         field(&BarDeadZoneConfig::scrollUpCommand, "scroll_up_command"),
         field(&BarDeadZoneConfig::scrollDownCommand, "scroll_down_command"),
     };
@@ -1857,6 +1858,7 @@ namespace noctalia::config::schema {
     static const Schema<BarDeadZoneOverride> s = {
         optionalTrimmedStringField(&BarDeadZoneOverride::command, "command"),
         optionalTrimmedStringField(&BarDeadZoneOverride::rightCommand, "right_command"),
+        optionalTrimmedStringField(&BarDeadZoneOverride::middleCommand, "middle_command"),
         optionalTrimmedStringField(&BarDeadZoneOverride::scrollUpCommand, "scroll_up_command"),
         optionalTrimmedStringField(&BarDeadZoneOverride::scrollDownCommand, "scroll_down_command"),
     };

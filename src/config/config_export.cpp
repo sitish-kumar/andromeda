@@ -174,6 +174,8 @@ namespace config_export {
         resolved.deadZone.command = *ovr.deadZone.command;
       if (ovr.deadZone.rightCommand)
         resolved.deadZone.rightCommand = *ovr.deadZone.rightCommand;
+      if (ovr.deadZone.middleCommand)
+        resolved.deadZone.middleCommand = *ovr.deadZone.middleCommand;
       if (ovr.deadZone.scrollUpCommand)
         resolved.deadZone.scrollUpCommand = *ovr.deadZone.scrollUpCommand;
       if (ovr.deadZone.scrollDownCommand)
