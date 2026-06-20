@@ -315,6 +315,7 @@ namespace desktop_settings {
       add(stringSpec("title", "Title"));
       add(stringSpec("description"));
       add(colorSpec("color", "on_surface"));
+      add(doubleSpec("opacity", 1.0, 0.0, 1.0, 0.01));
       add(fontFamilySpec());
       add(boolSpec("shadow", true));
     } else if (type == "button") {

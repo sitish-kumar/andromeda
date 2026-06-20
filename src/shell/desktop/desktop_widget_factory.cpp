@@ -286,7 +286,7 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
     auto widget = std::make_unique<DesktopLabelWidget>(
         getStringSetting(settings, "title", "Title"), getStringSetting(settings, "description"),
         getColorSpecSetting(settings, "color", colorSpecFromRole(ColorRole::OnSurface)),
-        getBoolSetting(settings, "shadow", true)
+        std::clamp(getFloatSetting(settings, "opacity", 1.0f), 0.0f, 1.0f), getBoolSetting(settings, "shadow", true)
     );
     applyCommonSettings(*widget, settings);
     widget->setContentScale(contentScale);
