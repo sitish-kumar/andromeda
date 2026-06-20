@@ -859,17 +859,19 @@ void Application::initServices() {
     try {
       m_upowerService = std::make_unique<UPowerService>(*m_systemBus);
       m_batteryHookState.reset(m_upowerService->state());
-      m_batteryWarningMonitor.reset(m_configService.config().battery, *m_upowerService);
+      m_batteryWarningMonitor.evaluate(m_configService.config().battery, *m_upowerService, m_notificationManager);
       m_upowerService->setChangeCallback([this]() {
         onUpowerStateChangedForHooks();
-        m_batteryWarningMonitor.update(m_configService.config().battery, *m_upowerService, m_notificationManager);
+        m_batteryWarningMonitor.evaluate(m_configService.config().battery, *m_upowerService, m_notificationManager);
         m_bar.refresh();
         m_settingsWindow.onExternalOptionsChanged();
       });
       m_configService.addReloadCallback(
           [this]() {
             if (m_configService.lastChange().battery && m_upowerService != nullptr) {
-              m_batteryWarningMonitor.reset(m_configService.config().battery, *m_upowerService);
+              m_batteryWarningMonitor.evaluate(
+                  m_configService.config().battery, *m_upowerService, m_notificationManager
+              );
               m_bar.refresh();
             }
           },

@@ -990,14 +990,14 @@ struct BrightnessConfig {
 struct BatteryDeviceWarningThreshold {
   std::string selector;
   // 0 disables the low-battery warning notification and widget warning state for this device.
-  std::int32_t warningThreshold = 20;
+  std::int32_t warningThreshold = 10;
 
   bool operator==(const BatteryDeviceWarningThreshold&) const = default;
 };
 
 struct BatteryConfig {
   // 0 disables the low-battery warning notification and widget warning state by default.
-  std::int32_t warningThreshold = 20;
+  std::int32_t warningThreshold = 10;
   std::vector<BatteryDeviceWarningThreshold> deviceThresholds;
 
   bool operator==(const BatteryConfig&) const = default;
