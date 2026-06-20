@@ -16,7 +16,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <string_view>
 
 namespace {
 
@@ -81,6 +80,23 @@ namespace {
   }
 
   [[nodiscard]] bool isVerticalOrientation(const std::string& orientation) { return orientation == "vertical"; }
+
+  [[nodiscard]] std::string effectiveOsdOrientation(const OsdContent& content, const std::string& configOrientation) {
+    if (!content.showProgress) {
+      return "horizontal";
+    }
+    return configOrientation.empty() ? "horizontal" : configOrientation;
+  }
+
+  [[nodiscard]] std::string effectiveOsdPosition(
+      const std::string& effectiveOrientation, const std::string& horizontalPosition,
+      const std::string& verticalPosition
+  ) {
+    if (isVerticalOrientation(effectiveOrientation)) {
+      return verticalPosition.empty() ? "top_center" : verticalPosition;
+    }
+    return horizontalPosition.empty() ? "top_center" : horizontalPosition;
+  }
 
   // Base units at ui_scale=1; passive overlay (no hit targets), between bar and old OSD size.
   [[nodiscard]] float horizontalCardLength(float s) {
@@ -167,24 +183,6 @@ namespace {
       return OsdRevealDir::FromBottom;
     }
     return OsdRevealDir::FromTop;
-  }
-
-  std::string verticalValueText(std::string_view text) {
-    std::string result;
-    result.reserve(text.size());
-    bool previousWasSpace = false;
-    for (const char c : text) {
-      if (c == ' ' || c == '\t') {
-        if (!previousWasSpace && !result.empty()) {
-          result.push_back('\n');
-        }
-        previousWasSpace = true;
-        continue;
-      }
-      result.push_back(c);
-      previousWasSpace = false;
-    }
-    return result;
   }
 
 } // namespace
@@ -304,13 +302,18 @@ void OsdOverlay::ensureSurfaces() {
     return;
   }
 
-  const std::string position = (m_config != nullptr && !m_config->config().osd.position.empty())
-      ? m_config->config().osd.position
-      : "top_center";
-  const std::string orientation = (m_config != nullptr && !m_config->config().osd.orientation.empty())
+  const std::string configOrientation = (m_config != nullptr && !m_config->config().osd.orientation.empty())
       ? m_config->config().osd.orientation
       : "horizontal";
+  const std::string horizontalPosition = (m_config != nullptr && !m_config->config().osd.position.empty())
+      ? m_config->config().osd.position
+      : "top_center";
+  const std::string verticalPosition = (m_config != nullptr && !m_config->config().osd.positionVertical.empty())
+      ? m_config->config().osd.positionVertical
+      : "top_center";
   const bool showProgress = m_content.showProgress;
+  const std::string orientation = effectiveOsdOrientation(m_content, configOrientation);
+  const std::string position = effectiveOsdPosition(orientation, horizontalPosition, verticalPosition);
   const float layoutScale = osdUiScale(m_config);
   const auto selectedMonitors = osdMonitors();
 
@@ -662,7 +665,7 @@ void OsdOverlay::updateInstanceContent(Instance& inst) {
                                              : 0.0f
   );
   inst.value->setMinWidth((!vertical && m_content.showProgress) ? inst.progressValueMinWidth : 0.0f);
-  inst.value->setText((vertical && !m_content.showProgress) ? verticalValueText(m_content.value) : m_content.value);
+  inst.value->setText(m_content.value);
   inst.progress->setRadius(osdProgressRadius(s));
   inst.progress->setProgress(m_content.progress);
   inst.row->layout(*m_renderContext);

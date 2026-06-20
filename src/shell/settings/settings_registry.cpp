@@ -1382,6 +1382,16 @@ namespace settings {
       entries.push_back(std::move(e));
     }
     entries.push_back(makeEntry(
+        SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-orientation.label"),
+        tr("settings.schema.shell.osd-orientation.description"), {"osd", "orientation"},
+        asSegmented(plainSelect(
+            {{"horizontal", "settings.options.orientation.horizontal"},
+             {"vertical", "settings.options.orientation.vertical"}},
+            cfg.osd.orientation
+        )),
+        "hud overlay volume brightness vertical"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-position.label"),
         tr("settings.schema.shell.osd-position.description"), {"osd", "position"},
         plainSelect(
@@ -1395,17 +1405,23 @@ namespace settings {
              {"center_left", "settings.options.screen-position.center-left"}},
             cfg.osd.position
         ),
-        "hud overlay volume brightness"
+        "hud overlay volume brightness horizontal text"
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-orientation.label"),
-        tr("settings.schema.shell.osd-orientation.description"), {"osd", "orientation"},
-        asSegmented(plainSelect(
-            {{"horizontal", "settings.options.orientation.horizontal"},
-             {"vertical", "settings.options.orientation.vertical"}},
-            cfg.osd.orientation
-        )),
-        "hud overlay volume brightness vertical"
+        SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-position-vertical.label"),
+        tr("settings.schema.shell.osd-position-vertical.description"), {"osd", "position_vertical"},
+        plainSelect(
+            {{"top_right", "settings.options.screen-position.top-right"},
+             {"top_left", "settings.options.screen-position.top-left"},
+             {"top_center", "settings.options.screen-position.top-center"},
+             {"bottom_right", "settings.options.screen-position.bottom-right"},
+             {"bottom_left", "settings.options.screen-position.bottom-left"},
+             {"bottom_center", "settings.options.screen-position.bottom-center"},
+             {"center_right", "settings.options.screen-position.center-right"},
+             {"center_left", "settings.options.screen-position.center-left"}},
+            cfg.osd.positionVertical
+        ),
+        "hud overlay volume brightness vertical slider"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-scale.label"),

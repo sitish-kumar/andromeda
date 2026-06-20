@@ -586,6 +586,7 @@ struct OsdKindsConfig {
 
 struct OsdConfig {
   std::string position = "top_center";
+  std::string positionVertical = "top_center";
   std::string orientation = "horizontal";
   float scale = 1.0f;
   float backgroundOpacity = 0.97f;

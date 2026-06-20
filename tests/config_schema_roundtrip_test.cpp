@@ -259,6 +259,7 @@ location = "https://example.invalid/bad"
     c.audio = AudioConfig{true, true, 0.73f, "change.ogg", "notify.ogg"};
     c.weather = WeatherConfig{false, false, 17, "imperial"};
     c.osd.position = "bottom_left";
+    c.osd.positionVertical = "top_right";
     c.osd.orientation = "vertical";
     c.osd.scale = 1.4f;
     c.osd.backgroundOpacity = 0.42f;
