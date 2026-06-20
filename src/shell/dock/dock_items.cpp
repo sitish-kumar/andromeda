@@ -478,6 +478,8 @@ namespace shell::dock {
           .entry = model.entry,
           .idLower = model.idLower,
           .startupWmClassLower = model.startupWmClassLower,
+          .windowLookupIdLower = model.windowLookupIdLower,
+          .windowLookupWmClassLower = model.windowLookupWmClassLower,
       };
 
       const float cellMain = iSize + 2.0f * kCellPad;

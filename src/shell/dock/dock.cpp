@@ -808,8 +808,8 @@ void Dock::activateOrLaunchItem(shell::dock::DockInstance& instance, const shell
 
   pruneCachedToplevelHandles();
 
-  auto windows = m_platform->windowsForApp(
-      action.idLower, action.startupWmClassLower,
+  auto windows = shell::dock::windowsForDockItem(
+      *m_platform, action.windowLookupIdLower, action.windowLookupWmClassLower,
       shell::dock::dockFilterOutput(m_config->config().dock, instance.output)
   );
 
@@ -867,8 +867,8 @@ void Dock::openItemMenu(shell::dock::DockInstance& instance, const shell::dock::
 
   m_popupOwnerInstance = &instance;
 
-  auto windows = m_platform->windowsForApp(
-      action.idLower, action.startupWmClassLower,
+  auto windows = shell::dock::windowsForDockItem(
+      *m_platform, action.windowLookupIdLower, action.windowLookupWmClassLower,
       shell::dock::dockFilterOutput(m_config->config().dock, instance.output)
   );
   const std::string entryId = action.entry.id;

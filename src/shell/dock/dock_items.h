@@ -45,6 +45,8 @@ namespace shell::dock {
     DesktopEntry entry;
     std::string idLower;
     std::string startupWmClassLower;
+    std::string windowLookupIdLower;
+    std::string windowLookupWmClassLower;
   };
 
   struct DockItemModelDependencies {
