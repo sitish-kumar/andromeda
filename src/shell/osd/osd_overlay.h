@@ -43,7 +43,7 @@ struct OsdContent {
   float progress = 0.0f;
   bool showProgress = true;
   bool overLimit = false;
-  bool muted = false;
+  bool inactive = false;
 };
 
 class OsdOverlay {

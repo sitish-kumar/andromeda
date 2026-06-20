@@ -650,7 +650,7 @@ void OsdOverlay::updateInstanceContent(Instance& inst) {
   inst.background->setFill(colorSpecFromRole(ColorRole::Surface, osdBackgroundOpacity(m_config)));
 
   const ColorRole accentRole = m_content.overLimit ? ColorRole::Error
-      : m_content.muted                            ? ColorRole::OnSurfaceVariant
+      : m_content.inactive                         ? ColorRole::OnSurfaceVariant
                                                    : ColorRole::Primary;
   inst.glyph->setGlyph(m_content.icon);
   inst.glyph->setColor(colorSpecFromRole(accentRole));
@@ -660,7 +660,7 @@ void OsdOverlay::updateInstanceContent(Instance& inst) {
   inst.row->setJustify((vertical || !m_content.showProgress) ? FlexJustify::Center : FlexJustify::Start);
   inst.value->setFontSize(valueFontSize(s));
   const ColorRole valueRole = m_content.overLimit ? ColorRole::Error
-      : m_content.muted                           ? ColorRole::OnSurfaceVariant
+      : m_content.inactive                        ? ColorRole::OnSurfaceVariant
                                                   : ColorRole::OnSurface;
   inst.value->setColor(colorSpecFromRole(valueRole));
   inst.value->setTextAlign((vertical || !m_content.showProgress) ? TextAlign::Center : TextAlign::End);

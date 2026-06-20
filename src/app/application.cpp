@@ -120,12 +120,14 @@ namespace {
         .icon = enabled ? "caffeine-on" : "caffeine-off",
         .value = i18n::tr(enabled ? "osd.caffeine.on" : "osd.caffeine.off"),
         .showProgress = false,
+        .inactive = !enabled,
     };
   }
 
   OsdContent nightLightOsdContent(const GammaService& service) {
     std::string icon;
     std::string value;
+    const bool inactive = !service.enabled() && !service.forceEnabled();
     if (service.forceEnabled()) {
       icon = "nightlight-forced";
       value = i18n::tr("osd.nightlight.forced");
@@ -144,6 +146,7 @@ namespace {
         .icon = std::move(icon),
         .value = std::move(value),
         .showProgress = false,
+        .inactive = inactive,
     };
   }
 
@@ -153,6 +156,7 @@ namespace {
         .icon = enabled ? "bell-off" : "bell",
         .value = i18n::tr(enabled ? "osd.dnd.on" : "osd.dnd.off"),
         .showProgress = false,
+        .inactive = !enabled,
     };
   }
 
@@ -162,6 +166,7 @@ namespace {
         .icon = enabled ? "wifi" : "wifi-off",
         .value = i18n::tr(enabled ? "osd.wifi.on" : "osd.wifi.off"),
         .showProgress = false,
+        .inactive = !enabled,
     };
   }
 
@@ -171,6 +176,7 @@ namespace {
         .icon = enabled ? "bluetooth" : "bluetooth-off",
         .value = i18n::tr(enabled ? "osd.bluetooth.on" : "osd.bluetooth.off"),
         .showProgress = false,
+        .inactive = !enabled,
     };
   }
 
