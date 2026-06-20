@@ -47,7 +47,6 @@
 namespace {
 
   constexpr float kToolbarY = 68.0f;
-  constexpr float kDefaultDesktopAudioVisualizerAspectRatio = 240.0f / 96.0f;
   constexpr float kSelectionStroke = 2.0f;
   constexpr float kShadowExpand = 1.0f;
   const Color kShadowColor = rgba(0.0f, 0.0f, 0.0f, 0.45f);
@@ -1437,7 +1436,6 @@ void BackgroundWidgetsEditor::addWidget(const std::string& outputName, const std
   widget.boxHeight = 0.0f;
   widget.rotationRad = 0.0f;
   if (widget.type == "audio_visualizer") {
-    widget.settings.emplace("aspect_ratio", static_cast<double>(kDefaultDesktopAudioVisualizerAspectRatio));
     widget.settings.emplace("bands", static_cast<std::int64_t>(32));
     widget.settings.emplace("show_when_idle", true);
   }
