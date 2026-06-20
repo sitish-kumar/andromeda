@@ -36,6 +36,13 @@
       "active-window": {
         "no-active-window": "Nincs aktív ablak"
       },
+      "bluetooth": {
+        "connected": "Csatlakoztatva"
+      },
+      "brightness": {
+        "brightness": "Fényerő",
+        "display": "Kijelző"
+      },
       "lock-keys": {
         "caps": "Caps",
         "caps-short": "C",
@@ -49,7 +56,27 @@
         "playing": "Lejátszás"
       },
       "network": {
-        "wired": "Vezetékes"
+        "active": "Aktív",
+        "connected": "Csatlakoztatva",
+        "connecting": "Csatlakozás",
+        "download": "Letöltés",
+        "interface": "Felület",
+        "ip": "IP",
+        "network": "Hálózat",
+        "networks": "Hálózatok",
+        "networks-count": "{szám} hálózat",
+        "networks-count-plural": "{szám} hálózatok",
+        "no": "Nem",
+        "not-connected": "Nincs csatlakoztatva",
+        "off": "Kikapcsolva",
+        "on": "Bekapcsolva",
+        "scanning": "Beolvasás",
+        "signal": "Jel",
+        "upload": "Feltöltés",
+        "vpn": "VPN",
+        "wifi": "Wi-Fi",
+        "wired": "Vezetékes",
+        "yes": "Igen"
       },
       "privacy": {
         "camera": "Kamera",
@@ -59,6 +86,24 @@
       "scripted": {
         "reload-failed": "Parancsfájl újratöltése sikertelen",
         "reloaded": "Parancsfájl újratöltve"
+      },
+      "sysmon": {
+        "cpu": "CPU",
+        "cpu-temp": "CPU-hőm.",
+        "disk": "Lemez",
+        "download": "Letöltés",
+        "gpu-temp": "GPU-hőm.",
+        "gpu-usage": "GPU-használat",
+        "gpu-vram": "GPU VRAM",
+        "ram": "RAM",
+        "swap": "Swap",
+        "system": "Rendszer",
+        "upload": "Feltöltés"
+      },
+      "volume": {
+        "device": "Eszköz",
+        "mic": "Mikrofon",
+        "volume": "Hangerő"
       },
       "weather": {
         "default": "Időjárás",
@@ -219,6 +264,9 @@
       "wired-connection": "Vezetékes kapcsolat"
     },
     "notifications": {
+      "clear-all": "Az összes értesítés törlése",
+      "dnd-off": "Ne zavarjanak funkció kikapcsolása",
+      "dnd-on": "Ne zavarjanak funkció bekapcsolása",
       "empty-body": "A legutóbbi értesítések itt jelennek meg.",
       "empty-title": "Nincs értesítés",
       "filter": {
@@ -287,6 +335,9 @@
         "network": "Hálózat",
         "resources": "Erőforrások",
         "system": "Rendszer"
+      },
+      "tooltips": {
+        "load": "Átlagos betöltés 1/5/15 perc felett"
       },
       "unknown": "ismeretlen",
       "uptime-prefix": "Fut: {uptime} · {osAge}"
@@ -385,7 +436,7 @@
         "inner-diameter": "Belső átmérő",
         "input-opacity": "Bemenet - átlátszóság",
         "input-radius": "Bemenet -átmérő",
-        "interface": "Kezelőfelület",
+        "interface": "Felület",
         "label": "Címke",
         "layout": "Elrendezés",
         "mirrored": "Tükrözött",
@@ -408,7 +459,7 @@
         "stat-gpu-usage": "GPU-használat",
         "stat-gpu-vram": "VRAM-használat",
         "stat-net-rx": "Letöltés",
-        "stat-net-tx": "Feltöltés",
+        "stat-net-tx": "Hálózati adatátvitel",
         "stat-none": "Nincs",
         "stat-ram-pct": "RAM %",
         "stat-swap-pct": "Cserehely %",
@@ -567,6 +618,8 @@
     },
     "internal": {
       "battery": "Akkumulátor",
+      "battery-critical-body": "{eszköz}: {százalék}% - a számítógép hamarosan leáll",
+      "battery-critical-title": "Az akkumulátor töltöttségi szintje rendkívül alacsony",
       "battery-device": "Akkumulátoreszköz",
       "battery-low-body": "{device}: {percent}% van hátra",
       "battery-low-title": "Alacsony akkumulátorszint",
@@ -652,11 +705,14 @@
         "plugged-in": "Csatlakoztatva"
       },
       "tooltip": {
+        "device": "Akkumulátor",
+        "device-numbered": "Akkumulátor {index}",
         "health": "Állapot",
         "rate": "Energiafogyasztás",
         "status": "Állapot",
         "time-left": "Hátralévő idő",
-        "time-to-full": "Idő a teljes töltöttségig"
+        "time-to-full": "Idő a teljes töltöttségig",
+        "unknown-device": "Ismeretlen eszköz"
       }
     },
     "profiles": {
@@ -1130,6 +1186,7 @@
           "crop": "Vágás",
           "fit": "Illesztés",
           "repeat": "Ismétlés",
+          "span": "Átnyúl",
           "stretch": "Nyújtás"
         },
         "order": {
@@ -1967,7 +2024,7 @@
           },
           "gpu-poll": {
             "description": "Másodpercek a GPU hőmérséklet és VRAM mintavételezések között. A 0 letiltja (alapértelmezett), ami elkerüli egy diszkrét GPU felébresztését; az 5 jó intervallum, ha engedélyezed",
-            "label": "GPU Lekérdezési Időköz"
+            "label": "GPU lekérdezési időköz"
           },
           "label": "Rendszerfigyelő",
           "memory-poll": {
@@ -1979,11 +2036,11 @@
             "label": "Hálózati lekérdezési időköz"
           },
           "stats": {
-            "cpu-temp": "CPU Hőmérséklet",
-            "cpu-usage": "CPU kihasználtság",
+            "cpu-temp": "CPU-hőmérséklet",
+            "cpu-usage": "CPU-használat",
             "disk-usage": "Lemezhasználat",
-            "gpu-temp": "GPU Hőm.",
-            "gpu-usage": "GPU használat",
+            "gpu-temp": "GPU-hőm.",
+            "gpu-usage": "GPU-használat",
             "gpu-vram": "GPU VRAM",
             "network-rx": "Letöltés",
             "network-tx": "Feltöltés",
@@ -2137,7 +2194,7 @@
           "label": "Ébrenlét"
         },
         "osd-kinds-dnd": {
-          "description": "OSD felugró megjelenítése DND átváltásakor",
+          "description": "OSD felugró megjelenítése a \"Ne zavarjanak\" átváltásakor",
           "label": "Ne zavarjanak"
         },
         "osd-kinds-keyboard-layout": {
@@ -2401,21 +2458,21 @@
         "date": "Dátum",
         "input-volume": "Bemeneti hangerő",
         "network-rx": "Hálózati vétel",
-        "network-tx": "Kimenő hálózat",
+        "network-tx": "Hálózati adatátvitel",
         "output-volume": "Kimeneti hangerő",
         "ram": "RAM",
         "temp": "Hőmérséklet"
       },
       "options": {
         "always": "Mindig",
-        "cpu-temp": "CPU hőmérséklet",
-        "cpu-usage": "CPU kihasználtság",
+        "cpu-temp": "CPU-hőmérséklet",
+        "cpu-usage": "CPU-használat",
         "disk-percent": "Lemez Százalék",
         "full": "Teljes",
         "gauge": "Mérő",
         "glyph": "Szimbólum",
-        "gpu-temp": "GPU Hőmérséklet",
-        "gpu-usage": "GPU használat",
+        "gpu-temp": "GPU-hőmérséklet",
+        "gpu-usage": "GPU-használat",
         "gpu-vram": "GPU VRAM",
         "graph": "Grafikon",
         "graphic": "Grafika",
@@ -2426,7 +2483,7 @@
         "instance": "Elhelyezésenként",
         "name": "Név",
         "net-rx": "Hálózati fogadás",
-        "net-tx": "Hálózati küldés",
+        "net-tx": "Hálózati adatátvitel",
         "none": "Nincs",
         "on-hover": "Rámutatásra",
         "output": "Kimenet",
@@ -2467,6 +2524,7 @@
           "label": "Sávok"
         },
         "cam-filter-regex": {
+          "description": "Szokványos kifejezés amit a kamera-folyamat nevek ignorálnak",
           "label": "Regex kamera szűrő"
         },
         "capsule": {
@@ -2706,7 +2764,7 @@
           "label": "Max. hossz"
         },
         "mic-filter-regex": {
-          "description": "Szokványos kifejezés amit a mikrofon applikációk ignorálnak",
+          "description": "Szokványos kifejezés amit a mikrofon applikáció nevek ignorálnak",
           "label": "Regex mikrofon szűrő"
         },
         "middle-command": {

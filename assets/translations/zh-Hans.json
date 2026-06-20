@@ -36,6 +36,13 @@
       "active-window": {
         "no-active-window": "无活动窗口"
       },
+      "bluetooth": {
+        "connected": "已连接"
+      },
+      "brightness": {
+        "brightness": "亮度",
+        "display": "屏幕"
+      },
       "lock-keys": {
         "caps": "大写",
         "caps-short": "C",
@@ -49,7 +56,27 @@
         "playing": "正在播放"
       },
       "network": {
-        "wired": "有线网络"
+        "active": "活动",
+        "connected": "已连接",
+        "connecting": "正在连接",
+        "download": "下载",
+        "interface": "接口",
+        "ip": "IP",
+        "network": "网络",
+        "networks": "网络",
+        "networks-count": "{count} 个网络",
+        "networks-count-plural": "{count} 个网络",
+        "no": "否",
+        "not-connected": "未连接",
+        "off": "关闭",
+        "on": "开启",
+        "scanning": "正在扫描",
+        "signal": "信号",
+        "upload": "上传",
+        "vpn": "VPN",
+        "wifi": "Wi-Fi",
+        "wired": "有线网络",
+        "yes": "是"
       },
       "privacy": {
         "camera": "摄像头",
@@ -59,6 +86,24 @@
       "scripted": {
         "reload-failed": "脚本重载失败",
         "reloaded": "已重载脚本"
+      },
+      "sysmon": {
+        "cpu": "CPU",
+        "cpu-temp": "CPU 温度",
+        "disk": "磁盘",
+        "download": "下载",
+        "gpu-temp": "GPU 温度",
+        "gpu-usage": "GPU 使用率",
+        "gpu-vram": "GPU 显存",
+        "ram": "RAM",
+        "swap": "Swap",
+        "system": "系统",
+        "upload": "上传"
+      },
+      "volume": {
+        "device": "设备",
+        "mic": "麦克风",
+        "volume": "音量"
       },
       "weather": {
         "default": "天气",
@@ -120,6 +165,7 @@
       "application-volumes": "应用音量",
       "choose-effects-profile": "选择音效预设",
       "effects-profile": "音效预设：",
+      "input-device-prefix": "输入：",
       "no-application-audio": "无应用音频",
       "no-application-audio-body": "当前没有应用正在播放音频。",
       "no-input-devices": "无输入设备",
@@ -128,6 +174,7 @@
       "no-output-devices": "无输出设备",
       "no-output-devices-body": "当前没有可用的音频输出设备。",
       "no-output-selected": "未选择输出设备",
+      "output-device-prefix": "输出：",
       "unavailable-body": "PipeWire 服务未运行。",
       "unavailable-title": "音频不可用"
     },
@@ -217,6 +264,9 @@
       "wired-connection": "有线连接"
     },
     "notifications": {
+      "clear-all": "清除所有通知",
+      "dnd-off": "关闭勿扰模式",
+      "dnd-on": "开启勿扰模式",
       "empty-body": "最近的通知将显示在此处。",
       "empty-title": "无通知",
       "filter": {
@@ -629,6 +679,14 @@
       "scroll-off": "滚动锁定关闭",
       "scroll-on": "滚动锁定开启"
     },
+    "privacy": {
+      "camera-off": "摄像头已停止",
+      "camera-on": "摄像头已激活",
+      "mic-off": "麦克风已停止",
+      "mic-on": "麦克风已激活",
+      "screen-off": "屏幕共享已停止",
+      "screen-on": "屏幕共享已激活"
+    },
     "wifi": {
       "off": "Wi-Fi 关闭",
       "on": "Wi-Fi 开启"
@@ -645,11 +703,14 @@
         "plugged-in": "已插入电源"
       },
       "tooltip": {
+        "device": "电池",
+        "device-numbered": "电池 {index}",
         "health": "健康度",
         "rate": "功率",
         "status": "状态",
         "time-left": "剩余时间",
-        "time-to-full": "距离充满"
+        "time-to-full": "距离充满",
+        "unknown-device": "未知设备"
       }
     },
     "profiles": {
@@ -1123,6 +1184,7 @@
           "crop": "裁剪",
           "fit": "适应",
           "repeat": "平铺",
+          "span": "跨越",
           "stretch": "拉伸"
         },
         "order": {
@@ -1768,6 +1830,10 @@
           "description": "打开特定选项卡时（音量、媒体等）",
           "label": "打开选项卡时的侧边栏"
         },
+        "control-center-width": {
+          "description": "控制中心面板的宽度（以像素为单位）；紧凑模式和无侧边栏模式会以此为基准按比例缩小",
+          "label": "控制中心宽度"
+        },
         "floating-offset": {
           "description": "悬浮或独立面板与状态栏边缘之间的间距（像素）",
           "label": "悬浮间距"
@@ -2145,6 +2211,10 @@
         "osd-kinds-power-profile": {
           "description": "电源配置变化时显示 OSD 弹窗",
           "label": "电源配置"
+        },
+        "osd-kinds-privacy": {
+          "description": "当麦克风、摄像头或屏幕共享捕获开始或停止时显示 OSD 弹窗",
+          "label": "隐私"
         },
         "osd-kinds-volume": {
           "description": "音量变化时显示 OSD 弹窗；输出与输入可通过高级设置分别控制",
@@ -3033,6 +3103,7 @@
       "color-title": "壁纸颜色",
       "filter-placeholder": "筛选...",
       "flatten": "展开嵌套",
+      "loading": "正在加载壁纸...",
       "sort-date-asc": "按日期排序（最旧优先）",
       "sort-date-desc": "按日期排序（最新优先）",
       "sort-name-asc": "按名称排序（A-Z）",
