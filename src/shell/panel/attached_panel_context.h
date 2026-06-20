@@ -2,15 +2,7 @@
 
 #include "render/core/render_styles.h"
 
-#include <cstdint>
 #include <string_view>
-
-enum class AttachedRevealDirection : std::uint8_t {
-  Down,
-  Up,
-  Right,
-  Left,
-};
 
 namespace attached_panel {
 
@@ -64,19 +56,6 @@ namespace attached_panel {
         .right = radius,
         .bottom = 0.0f,
     };
-  }
-
-  [[nodiscard]] inline AttachedRevealDirection revealDirection(std::string_view barPosition) {
-    if (barPosition == "bottom") {
-      return AttachedRevealDirection::Up;
-    }
-    if (barPosition == "left") {
-      return AttachedRevealDirection::Right;
-    }
-    if (barPosition == "right") {
-      return AttachedRevealDirection::Left;
-    }
-    return AttachedRevealDirection::Down;
   }
 
   [[nodiscard]] inline Radii cornerRadii(std::string_view barPosition, float radius) {

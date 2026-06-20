@@ -1606,15 +1606,6 @@ bool Bar::canAttachPanelToBar(wl_output* output, std::string_view barName) const
   return instance->barConfig.autoHide || instanceEffectivelyVisible(*instance);
 }
 
-bool Bar::isAttachedPanelBarSettled(wl_output* output, std::string_view barName) const noexcept {
-  const BarInstance* instance = instanceForBar(output, barName);
-  if (instance == nullptr || !instance->barConfig.autoHide) {
-    return true;
-  }
-  constexpr float kSettledThreshold = 0.999f;
-  return instance->hideOpacity >= kSettledThreshold;
-}
-
 void Bar::revealAutoHideForAttachedPanel(wl_output* output, std::string_view barName) {
   BarInstance* instance = instanceForBar(output, barName);
   if (instance != nullptr) {
@@ -2261,11 +2252,6 @@ void Bar::revealAutoHideBar(BarInstance& instance) {
   instance.ipcLayoutReleased = false;
   instance.animations.cancelForOwner(instance.slideRoot);
   const float current = instance.hideOpacity;
-  wl_output* output = instance.output;
-  const std::string barName = instance.barConfig.name;
-  const auto notifyAttachedPanel = [output, barName]() {
-    PanelManager::instance().onAttachedBarRevealSettled(output, barName);
-  };
 
   constexpr float kSettledThreshold = 0.999f;
   if (current >= kSettledThreshold) {
@@ -2274,7 +2260,6 @@ void Bar::revealAutoHideBar(BarInstance& instance) {
     instance.surface->setInputRegion(barAutoHideSurfaceInputRegion(instance.barConfig, surfW, surfH, true));
     syncBarSurfaceChrome(instance);
     instance.surface->requestRedraw();
-    notifyAttachedPanel();
     return;
   }
 
@@ -2285,7 +2270,7 @@ void Bar::revealAutoHideBar(BarInstance& instance) {
         syncBarSlideLayerTransform(*inst);
         syncBarSurfaceChrome(*inst);
       },
-      notifyAttachedPanel, instance.slideRoot
+      {}, instance.slideRoot
   );
   const int surfW = static_cast<int>(instance.surface->width());
   const int surfH = static_cast<int>(instance.surface->height());

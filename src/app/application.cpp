@@ -1707,9 +1707,6 @@ void Application::initUi() {
   m_panelManager.setAttachedPanelAvailabilityCallback([this](wl_output* output, std::string_view barName) {
     return m_bar.canAttachPanelToBar(output, barName);
   });
-  m_panelManager.setAttachedPanelBarSettledCallback([this](wl_output* output, std::string_view barName) {
-    return m_bar.isAttachedPanelBarSettled(output, barName);
-  });
   m_panelManager.setHostAttachedPanelCallback(
       [this](
           wl_output* output, std::string_view barName, std::unique_ptr<Node> content, float mainLen, float innerLen,
