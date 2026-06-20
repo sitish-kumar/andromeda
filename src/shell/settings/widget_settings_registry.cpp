@@ -934,6 +934,18 @@ namespace settings {
         add(std::move(pillScale));
       }
       {
+        auto activePillSize = doubleSpec("active_pill_size", 2.2, 0.25, 8.0, 0.05);
+        activePillSize.descriptionKey = "settings.widgets.settings.active-pill-size.workspaces-description";
+        activePillSize.visibleWhen = pillStyleOnly;
+        add(std::move(activePillSize));
+      }
+      {
+        auto inactivePillSize = doubleSpec("inactive_pill_size", 1.0, 0.25, 8.0, 0.05);
+        inactivePillSize.descriptionKey = "settings.widgets.settings.inactive-pill-size.workspaces-description";
+        inactivePillSize.visibleWhen = pillStyleOnly;
+        add(std::move(inactivePillSize));
+      }
+      {
         auto focusedColor = colorSpec("focused_color", "primary");
         add(std::move(focusedColor));
       }

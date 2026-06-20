@@ -636,10 +636,12 @@ std::unique_ptr<Widget> WidgetFactory::create(
     const bool labelsOnlyWhenOccupied = wc != nullptr ? wc->getBool("labels_only_when_occupied", false) : false;
     const bool hideWhenEmpty = wc != nullptr ? wc->getBool("hide_when_empty", false) : false;
     const double pillScale = wc != nullptr ? wc->getDouble("pill_scale", 1.0) : 1.0;
+    const double activePillSize = wc != nullptr ? wc->getDouble("active_pill_size", 2.2) : 2.2;
+    const double inactivePillSize = wc != nullptr ? wc->getDouble("inactive_pill_size", 1.0) : 1.0;
     const bool minimal = wc != nullptr ? wc->getBool("minimal", false) : false;
     auto widget = std::make_unique<WorkspacesWidget>(
         m_platform, output, displayMode, focusedColor, occupiedColor, emptyColor, maxLabelChars, labelsOnlyWhenOccupied,
-        hideWhenEmpty, pillScale, minimal
+        hideWhenEmpty, pillScale, static_cast<float>(activePillSize), static_cast<float>(inactivePillSize), minimal
     );
     widget->setContentScale(contentScale);
     return widget;

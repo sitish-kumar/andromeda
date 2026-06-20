@@ -22,8 +22,6 @@ namespace {
     return !workspace.occupied && !workspace.active && !workspace.urgent;
   }
 
-  constexpr float kActiveFactor = 2.2f;
-  constexpr float kInactiveFactor = 1.0f;
   constexpr float kWorkspaceGap = Style::spaceXs;
   constexpr float kWorkspacePillDefaultHeight = Style::baseGlyphSize;
   constexpr float kWorkspaceAnimDurationMs = static_cast<float>(Style::animNormal);
@@ -45,11 +43,13 @@ namespace {
 WorkspacesWidget::WorkspacesWidget(
     CompositorPlatform& platform, wl_output* output, DisplayMode displayMode, ColorSpec focusedColor,
     ColorSpec occupiedColor, ColorSpec emptyColor, std::size_t maxLabelChars, bool labelsOnlyWhenOccupied,
-    bool hideWhenEmpty, float pillScale, bool minimal
+    bool hideWhenEmpty, float pillScale, float activePillSize, float inactivePillSize, bool minimal
 )
     : m_platform(platform), m_output(output), m_displayMode(displayMode), m_maxLabelChars(maxLabelChars),
       m_labelsOnlyWhenOccupied(labelsOnlyWhenOccupied), m_hideWhenEmpty(hideWhenEmpty), m_pillScale(pillScale),
-      m_minimal(minimal), m_focusedColor(focusedColor), m_occupiedColor(occupiedColor), m_emptyColor(emptyColor) {}
+      m_activePillSize(std::clamp(activePillSize, 0.25f, 8.0f)),
+      m_inactivePillSize(std::clamp(inactivePillSize, 0.25f, 8.0f)), m_minimal(minimal), m_focusedColor(focusedColor),
+      m_occupiedColor(occupiedColor), m_emptyColor(emptyColor) {}
 
 WorkspacesWidget::DisplayMode WorkspacesWidget::effectiveDisplayMode() const noexcept {
   if (m_minimal && m_displayMode == DisplayMode::None) {
@@ -210,10 +210,8 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
     labels.push_back(workspaceLabel(workspaces[i], i));
   }
 
-  // Measure text and compute per-slot widths (v4-style: proportional to char count).
-  // Width = max(baseSize * factor, textWidth + padding)
-  //   factor: 2.2 for active, 1.0 for inactive
-  //   padding: baseSize * 0.6
+  // Measure text and compute per-slot widths along the bar main axis.
+  // Width = max(baseSize * pill_size, textWidth + padding); pill_size comes from active/inactive settings.
   struct SlotMetrics {
     std::string label;
     bool showLabel = false;
@@ -266,8 +264,8 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
       continue;
     }
 
-    const float minWidth = baseSize * kInactiveFactor;
-    const float minActiveWidth = baseSize * kActiveFactor;
+    const float minWidth = workspaceMainAxisMinWidth(baseSize, false);
+    const float minActiveWidth = workspaceMainAxisMinWidth(baseSize, true);
 
     if (!slot.showLabel) {
       slot.inactiveWidth = minWidth;
@@ -460,8 +458,8 @@ void WorkspacesWidget::recalculateItemMetrics(Renderer& renderer, std::size_t in
       item.activeWidth = item.inactiveWidth;
     }
   } else {
-    const float minWidth = baseSize * kInactiveFactor;
-    const float minActiveWidth = baseSize * kActiveFactor;
+    const float minWidth = workspaceMainAxisMinWidth(baseSize, false);
+    const float minActiveWidth = workspaceMainAxisMinWidth(baseSize, true);
     if (!item.showLabel) {
       item.inactiveWidth = minWidth;
       item.activeWidth = minActiveWidth;
@@ -612,6 +610,10 @@ void WorkspacesWidget::applyItemLayout(std::size_t i) {
 
 float WorkspacesWidget::workspacePillRadius(float width, float height) const noexcept {
   return resolvedBarCapsuleRadius(width, height);
+}
+
+float WorkspacesWidget::workspaceMainAxisMinWidth(float baseSize, bool active) const noexcept {
+  return baseSize * (active ? m_activePillSize : m_inactivePillSize);
 }
 
 WorkspacesWidget::~WorkspacesWidget() { cancelAnimation(); }

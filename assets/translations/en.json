@@ -2843,6 +2843,16 @@
           "label": "Pill Scale",
           "workspaces-description": "Adjust the scale of workspace pills"
         },
+        "active-pill-size": {
+          "description": "Minimum active workspace pill length along the bar, as a multiple of pill thickness",
+          "label": "Active Pill Size",
+          "workspaces-description": "Minimum active workspace pill length along the bar, as a multiple of pill thickness; labels may expand beyond this"
+        },
+        "inactive-pill-size": {
+          "description": "Minimum inactive workspace pill length along the bar, as a multiple of pill thickness",
+          "label": "Inactive Pill Size",
+          "workspaces-description": "Minimum inactive workspace pill length along the bar, as a multiple of pill thickness; labels may expand beyond this"
+        },
         "pinned": {
           "description": "Tray item ids that stay visible in the bar when drawer mode is enabled",
           "label": "Pinned Items"
