@@ -194,6 +194,11 @@ private:
   // from buildScene (on grow) and prepareFrame (on relayout requested by the hosted Panel).
   void layoutHostedPanelContent(BarInstance& instance, Renderer& renderer, float w, float h);
   void tearDownHostedPanel(BarInstance& instance, bool invokeClosed);
+  // While a panel is hosted the bar surface holds keyboard focus. On compositors with the
+  // Hyprland focus-grab, hold Exclusive only long enough to acquire focus, then relax to OnDemand
+  // so the grab manages focus (Exclusive otherwise fights it: keys only flow with the pointer over
+  // the bar, outside-clicks don't clear the grab, and focus isn't returned on close).
+  void armHostedPanelKeyboardRelax(BarInstance& instance);
   [[nodiscard]] std::optional<std::string> collectBarIpcInstances(
       std::optional<std::string_view> barName, std::optional<std::string_view> monitorSelector,
       std::vector<BarInstance*>& instancesOut

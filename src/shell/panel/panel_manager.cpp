@@ -1163,14 +1163,28 @@ void PanelManager::activateFocusGrab() {
     }
   });
   grabService->setPopupGrabHost(this);
+  // Commit the panel surface ALONE first. Per the protocol the compositor enters a whitelisted
+  // surface on commit only "if a whitelisted surface is not already entered" — so a lone first
+  // commit forces keyboard focus onto the panel surface. This matters for hosted panels: the
+  // panel lives in the long-lived bar surface, which (unlike a freshly mapped detached panel
+  // surface) is not reliably keyboard-entered when Exclusive is set, so without this the
+  // compositor could pick a different bar from the whitelist and keys would be dropped until the
+  // pointer entered the panel.
   m_focusGrab->addSurface(m_wlSurface);
+  m_focusGrab->commit();
   if (m_focusGrabBarSurfacesProvider) {
-    auto bars = m_focusGrabBarSurfacesProvider();
-    for (auto* surface : bars) {
+    bool addedMore = false;
+    for (auto* surface : m_focusGrabBarSurfacesProvider()) {
+      if (surface == m_wlSurface) {
+        continue; // already whitelisted and entered above
+      }
       m_focusGrab->addSurface(surface);
+      addedMore = true;
+    }
+    if (addedMore) {
+      m_focusGrab->commit();
     }
   }
-  m_focusGrab->commit();
 }
 
 void PanelManager::deactivateOutsideClickHandlers() {

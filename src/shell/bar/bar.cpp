@@ -3669,6 +3669,7 @@ wl_surface* Bar::openHostedAttachedPanel(
   // Grab keyboard while hosting so Escape (and later, full nav) works without first clicking
   // into the panel, and so the Hyprland focus grab can capture outside clicks.
   inst->surface->setKeyboardInteractivity(LayerShellKeyboard::Exclusive);
+  armHostedPanelKeyboardRelax(*inst);
   syncBarAutoHideInputRegion(*inst);
   syncBarSurfaceChrome(*inst);
   inst->surface->requestLayout();
@@ -3683,6 +3684,28 @@ wl_surface* Bar::openHostedAttachedPanel(
   );
   inst->surface->requestRedraw();
   return inst->surface->wlSurface();
+}
+
+void Bar::armHostedPanelKeyboardRelax(BarInstance& instance) {
+  if (instance.surface == nullptr || m_platform == nullptr) {
+    return;
+  }
+  auto* grabService = m_platform->focusGrabService();
+  if (grabService == nullptr || !grabService->available()) {
+    return; // no focus grab (wlroots): keep Exclusive so the bar surface holds keyboard focus itself
+  }
+  // Mirror the detached attached-panel recipe: Exclusive grabs focus for the freshly-hosting bar
+  // surface, then relax to OnDemand so the focus grab owns focus management from here.
+  BarInstance* inst = &instance;
+  inst->animations.animateTimer(
+      0.0f, 1.0f, 100.0f, Easing::Linear, [](float) {},
+      [inst]() {
+        if (inst->hostedPanelOpen && inst->surface != nullptr) {
+          inst->surface->setKeyboardInteractivity(LayerShellKeyboard::OnDemand);
+        }
+      },
+      &inst->hostedPanelOpen
+  );
 }
 
 void Bar::tearDownHostedPanel(BarInstance& instance, bool invokeClosed) {
@@ -3738,6 +3761,7 @@ bool Bar::reopenHostedAttachedPanel(wl_output* output, std::string_view barName)
   // retract and re-reveal it instead of tearing down and recreating — no flicker, no relayout.
   inst->animations.cancelForOwner(&inst->hostedPanelOpen);
   inst->surface->setKeyboardInteractivity(LayerShellKeyboard::Exclusive);
+  armHostedPanelKeyboardRelax(*inst);
   inst->animations.animate(
       inst->hostedPanelProgress, 1.0f, Style::animSlow, Easing::EaseOutCubic,
       [this, inst](float v) {
@@ -3759,6 +3783,12 @@ void Bar::closeHostedAttachedPanel(wl_output* output, std::string_view barName) 
     return;
   }
   inst->animations.cancelForOwner(&inst->hostedPanelOpen);
+  // Release keyboard interactivity now, at the START of the retract — not when teardown completes.
+  // The caller (e.g. openSettingsWindow) opens its own surface right after closePanel, so deferring
+  // the release to the end of the retract animation makes the bar flip to None ~animSlow later,
+  // which triggers a compositor focus re-evaluation that steals keyboard focus back from the surface
+  // that opened in the meantime. Releasing eagerly hands focus straight to the next surface.
+  inst->surface->setKeyboardInteractivity(LayerShellKeyboard::None);
   inst->animations.animate(
       inst->hostedPanelProgress, 0.0f, Style::animSlow, Easing::EaseInOutCubic,
       [this, inst](float v) {
