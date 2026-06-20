@@ -588,6 +588,10 @@ void LauncherPanel::doLayout(Renderer& renderer, float width, float height) {
 }
 
 void LauncherPanel::onOpen(std::string_view context) {
+  // Pick up apps installed since the last scan (notably Nix profile swaps that
+  // inotify cannot observe). Cheap stat-only check; only rescans on real change.
+  refreshDesktopEntriesIfSourcesChanged();
+
   m_categoryFilterVisible = m_config != nullptr && m_config->config().shell.panel.launcherCategories;
   m_activeCategoryType = All;
   m_activeCategory.clear();
