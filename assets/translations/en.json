@@ -36,6 +36,13 @@
       "active-window": {
         "no-active-window": "No active window"
       },
+      "bluetooth": {
+        "connected": "Connected"
+      },
+      "brightness": {
+        "brightness": "Brightness",
+        "display": "Display"
+      },
       "lock-keys": {
         "caps": "Caps",
         "caps-short": "C",
@@ -49,7 +56,27 @@
         "playing": "Playing"
       },
       "network": {
-        "wired": "Wired"
+        "active": "Active",
+        "connected": "Connected",
+        "connecting": "Connecting",
+        "download": "Download",
+        "interface": "Interface",
+        "ip": "IP",
+        "network": "Network",
+        "networks": "Networks",
+        "networks-count": "{count} network",
+        "networks-count-plural": "{count} networks",
+        "no": "No",
+        "not-connected": "Not connected",
+        "off": "Off",
+        "on": "On",
+        "scanning": "Scanning",
+        "signal": "Signal",
+        "upload": "Upload",
+        "vpn": "VPN",
+        "wifi": "Wi-Fi",
+        "wired": "Wired",
+        "yes": "Yes"
       },
       "privacy": {
         "camera": "Camera",
@@ -59,6 +86,24 @@
       "scripted": {
         "reload-failed": "Script reload failed",
         "reloaded": "Reloaded script"
+      },
+      "sysmon": {
+        "cpu": "CPU",
+        "cpu-temp": "CPU Temp",
+        "disk": "Disk",
+        "download": "Download",
+        "gpu-temp": "GPU Temp",
+        "gpu-usage": "GPU Usage",
+        "gpu-vram": "GPU VRAM",
+        "ram": "RAM",
+        "swap": "Swap",
+        "system": "System",
+        "upload": "Upload"
+      },
+      "volume": {
+        "device": "Device",
+        "mic": "Mic",
+        "volume": "Volume"
       },
       "weather": {
         "default": "Weather",
@@ -120,7 +165,7 @@
       "application-volumes": "Application Volumes",
       "choose-effects-profile": "Choose a profile",
       "effects-profile": "Effects:",
-      "input-volume": "Input Volume",
+      "input-device-prefix": "Input:",
       "no-application-audio": "No application audio",
       "no-application-audio-body": "No application playback streams are currently available.",
       "no-input-devices": "No input devices",
@@ -129,7 +174,7 @@
       "no-output-devices": "No output devices",
       "no-output-devices-body": "No playback sinks are currently available.",
       "no-output-selected": "No output device selected",
-      "output-volume": "Output Volume",
+      "output-device-prefix": "Output:",
       "unavailable-body": "PipeWire is not active.",
       "unavailable-title": "Audio unavailable"
     },
@@ -219,6 +264,9 @@
       "wired-connection": "Wired connection"
     },
     "notifications": {
+      "clear-all": "Clear all notifications",
+      "dnd-off": "Turn Do Not Disturb Off",
+      "dnd-on": "Turn Do Not Disturb On",
       "empty-body": "Recent notifications will show here.",
       "empty-title": "No notifications",
       "filter": {
@@ -631,6 +679,14 @@
       "scroll-off": "Scroll Lock Off",
       "scroll-on": "Scroll Lock On"
     },
+    "privacy": {
+      "camera-off": "Camera Stopped",
+      "camera-on": "Camera Active",
+      "mic-off": "Microphone Stopped",
+      "mic-on": "Microphone Active",
+      "screen-off": "Screen Sharing Stopped",
+      "screen-on": "Screen Sharing Active"
+    },
     "wifi": {
       "off": "Wi-Fi Off",
       "on": "Wi-Fi On"
@@ -647,11 +703,14 @@
         "plugged-in": "Plugged in"
       },
       "tooltip": {
+        "device": "Battery",
+        "device-numbered": "Battery {index}",
         "health": "Health",
         "rate": "Rate",
         "status": "Status",
         "time-left": "Time left",
-        "time-to-full": "Time to full"
+        "time-to-full": "Time to full",
+        "unknown-device": "Unknown Device"
       }
     },
     "profiles": {
@@ -1125,6 +1184,7 @@
           "crop": "Crop",
           "fit": "Fit",
           "repeat": "Repeat",
+          "span": "Span",
           "stretch": "Stretch"
         },
         "order": {
@@ -1770,6 +1830,10 @@
           "description": "When opening a specific tab (volume, media etc.)",
           "label": "Sidebar When Opening a Tab"
         },
+        "control-center-width": {
+          "description": "Width of the control center panel in pixels (compact and no-sidebar modes scale down from this)",
+          "label": "Control Center Width"
+        },
         "floating-offset": {
           "description": "Gap in pixels between a floating or detached panel and the bar edge",
           "label": "Floating Offset"
@@ -2147,6 +2211,10 @@
         "osd-kinds-power-profile": {
           "description": "Show an OSD popup when the power profile changes",
           "label": "Power Profile"
+        },
+        "osd-kinds-privacy": {
+          "description": "Show an OSD popup when microphone, camera, or screen-share capture starts or stops",
+          "label": "Privacy"
         },
         "osd-kinds-volume": {
           "description": "Show OSD popups when volume changes; use advanced settings to control output and input separately",
@@ -3035,6 +3103,7 @@
       "color-title": "Wallpaper color",
       "filter-placeholder": "Filter...",
       "flatten": "Flatten",
+      "loading": "Loading wallpapers...",
       "sort-date-asc": "Sort by date (oldest first)",
       "sort-date-desc": "Sort by date (newest first)",
       "sort-name-asc": "Sort by name (A-Z)",

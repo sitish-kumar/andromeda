@@ -1,5 +1,6 @@
 #include "shell/bar/widgets/bluetooth_widget.h"
 
+#include "i18n/i18n.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
@@ -172,7 +173,8 @@ void BluetoothWidget::syncState(Renderer& renderer) {
       std::vector<TooltipRow> rows;
       for (const auto& d : devices) {
         if (d.connected) {
-          std::string value = d.hasBattery ? std::to_string(d.batteryPercent) + "%" : "Connected";
+          std::string value =
+              d.hasBattery ? std::to_string(d.batteryPercent) + "%" : i18n::tr("bar.widgets.bluetooth.connected");
           rows.push_back({d.alias, std::move(value)});
         }
       }

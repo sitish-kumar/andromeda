@@ -50,6 +50,8 @@ namespace {
   constexpr std::size_t kHomeShortcutGridColumns = 2;
   // At or below this count the shortcuts stack in a single narrow column instead of the 2-column grid.
   constexpr std::size_t kHomeStackedShortcutMax = 2;
+  // Square tiles are trimmed slightly (height = width * trim) so the grid stays compact.
+  constexpr float kHomeShortcutSquareTrim = 0.82f;
   constexpr auto kHomeTransientPositionRegressionWindow = std::chrono::milliseconds(1500);
   constexpr std::int64_t kHomeTransientPositionRegressionFloorUs = 5'000'000;
   constexpr std::int64_t kHomeTransientPositionRegressionCeilingUs = 1'500'000;
@@ -71,6 +73,12 @@ namespace {
             / static_cast<float>(kHomeShortcutGridColumns)
     );
     return cellWidth + horizontalPadding;
+  }
+
+  // The 2-column shortcuts grid's natural width = its flex share of the bottom row.
+  float homeShortcutsGridNaturalWidth(float contentWidth, float bottomRowGap) {
+    const float totalGrow = kHomeMainColumnFlexGrow + kHomeShortcutsFlexGrow;
+    return std::max(1.0f, contentWidth - bottomRowGap) * (kHomeShortcutsFlexGrow / totalGrow);
   }
 
   std::filesystem::path avatarStartDirectory(const AccountsService* accounts, const ConfigService* config) {
@@ -645,11 +653,45 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
     m_userMain->setMinHeight(userMainHeight);
     m_userMain->setSize(m_userMain->width(), userMainHeight);
   }
-  if (m_shortcutsGrid != nullptr && m_shortcutPads.size() <= kHomeStackedShortcutMax) {
+  if (m_shortcutsGrid != nullptr && !m_shortcutPads.empty()) {
+    const float scale = contentScale();
     const float bottomRowGap = m_bottomRow != nullptr ? m_bottomRow->gap() : 0.0f;
-    m_shortcutsGrid->setSize(
-        homeStackedShortcutsWidth(contentWidth, bottomRowGap, *m_shortcutsGrid), m_shortcutsGrid->height()
-    );
+    const bool stacked = m_shortcutPads.size() <= kHomeStackedShortcutMax;
+    const std::size_t cols = stacked ? 1u : kHomeShortcutGridColumns;
+    const std::size_t rows = (m_shortcutPads.size() + cols - 1) / cols;
+    const float padH = m_shortcutsGrid->paddingLeft() + m_shortcutsGrid->paddingRight();
+    const float padV = m_shortcutsGrid->paddingTop() + m_shortcutsGrid->paddingBottom();
+    const float colGap = m_shortcutsGrid->columnGap();
+    const float rowGap = m_shortcutsGrid->rowGap();
+
+    float gridWidth = stacked ? homeStackedShortcutsWidth(contentWidth, bottomRowGap, *m_shortcutsGrid)
+                              : homeShortcutsGridNaturalWidth(contentWidth, bottomRowGap);
+
+    // A wide control center would otherwise grow the square tiles tall enough to crush the
+    // user card (which content-overflows). Reserve the user card's natural height and cap the
+    // square side to fit; cap the grid width to keep tiles square, handing the freed width to
+    // the media/clock column.
+    const float userCardReserve = homeAvatarSize(scale) + 2.0f * (Style::spaceSm + Style::spaceXs) * scale;
+    const float rootGap = m_rootLayout->gap();
+    const float availForGrid = std::max(1.0f, bodyHeight - userCardReserve - rootGap);
+    const float maxCellSide =
+        std::max(1.0f, (availForGrid - static_cast<float>(rows - 1) * rowGap - padV) / static_cast<float>(rows));
+    const float maxGridWidth = static_cast<float>(cols) * (maxCellSide / kHomeShortcutSquareTrim)
+        + static_cast<float>(cols - 1) * colGap
+        + padH;
+
+    const bool capped = gridWidth > maxGridWidth;
+    if (capped) {
+      gridWidth = maxGridWidth;
+    }
+    // Pin the width (flexGrow 0) for the stacked column or whenever capped, so the left column
+    // absorbs the slack; otherwise let the 2-column grid flex-grow normally.
+    if (stacked || capped) {
+      m_shortcutsGrid->setFlexGrow(0.0f);
+      m_shortcutsGrid->setSize(gridWidth, m_shortcutsGrid->height());
+    } else {
+      m_shortcutsGrid->setFlexGrow(kHomeShortcutsFlexGrow);
+    }
   }
   m_rootLayout->setSize(contentWidth, bodyHeight);
   m_rootLayout->layout(renderer);
@@ -756,8 +798,8 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
         1.0f, (innerGridW - static_cast<float>(cols - 1) * m_shortcutsGrid->columnGap()) / static_cast<float>(cols)
     );
     // Cells aim for square but trimmed slightly so the grid stays compact and the bottom row
-    // doesn't tower over the user card area.
-    const float cellSide = cellWidth * 0.82f;
+    // doesn't tower over the user card area. The width was capped earlier so this stays bounded.
+    const float cellSide = cellWidth * kHomeShortcutSquareTrim;
     const float gridH = static_cast<float>(rows) * cellSide
         + static_cast<float>(rows > 0 ? rows - 1 : 0) * m_shortcutsGrid->rowGap()
         + m_shortcutsGrid->paddingTop()

@@ -67,6 +67,8 @@ namespace {
       return kinds.keyboardLayout;
     case OsdKind::Media:
       return kinds.media;
+    case OsdKind::Privacy:
+      return kinds.privacy;
     }
     return true;
   }

@@ -1,6 +1,7 @@
 #include "application.h"
 
 #include "app/poll_source.h"
+#include "compositors/compositor_detect.h"
 #include "config/config_types.h"
 #include "core/build_info.h"
 #include "core/deferred_call.h"
@@ -274,8 +275,13 @@ void Application::syncNotificationDaemon() {
   }
 
   if (m_notificationDbus != nullptr) {
-    m_notificationDaemonInitFailed = false;
-    return;
+    if (m_notificationDbus->isHealthy()) {
+      m_notificationDaemonInitFailed = false;
+      return;
+    }
+    kLog.info("notification daemon connection lost; re-registering");
+    m_notificationPollSource.setDbusService(nullptr);
+    m_notificationDbus.reset();
   }
 
   if (m_notificationDaemonInitFailed && !enabledChanged) {
@@ -287,15 +293,56 @@ void Application::syncNotificationDaemon() {
     m_notificationPollSource.setDbusService(m_notificationDbus.get());
     m_notificationDaemonInitFailed = false;
     kLog.info("listening on org.freedesktop.Notifications");
-  } catch (const std::exception& e) {
-    kLog.warn("notifications disabled: {}", e.what());
+  } catch (const std::exception& ownerError) {
+    if (compositors::isKde()) {
+      try {
+        m_notificationDbus = std::make_unique<KdeNotificationClient>(*m_bus, m_notificationManager);
+        m_notificationPollSource.setDbusService(m_notificationDbus.get());
+        m_notificationDaemonInitFailed = false;
+        kLog.info("listening on KDE Plasma notifications via NotificationWatcher");
+        return;
+      } catch (const std::exception& kdeError) {
+        kLog.warn("notifications disabled: {}", kdeError.what());
+        m_notificationDbus.reset();
+        m_notificationPollSource.setDbusService(nullptr);
+        m_notificationDaemonInitFailed = true;
+        m_notificationManager.addInternal(
+            "Noctalia", i18n::tr("notifications.internal.dbus-disabled"), kdeError.what(), Urgency::Low
+        );
+        return;
+      }
+    }
+
+    kLog.warn("notifications disabled: {}", ownerError.what());
     m_notificationDbus.reset();
     m_notificationPollSource.setDbusService(nullptr);
     m_notificationDaemonInitFailed = true;
     m_notificationManager.addInternal(
-        "Noctalia", i18n::tr("notifications.internal.dbus-disabled"), e.what(), Urgency::Low
+        "Noctalia", i18n::tr("notifications.internal.dbus-disabled"), ownerError.what(), Urgency::Low
     );
   }
+}
+
+void Application::installNotificationBusNameWatch() {
+  if (m_notificationBusNameWatchInstalled || m_bus == nullptr) {
+    return;
+  }
+
+  m_notificationBusNameWatchProxy = sdbus::createProxy(
+      m_bus->connection(), sdbus::ServiceName{"org.freedesktop.DBus"}, sdbus::ObjectPath{"/org/freedesktop/DBus"}
+  );
+  m_notificationBusNameWatchProxy->uponSignal("NameOwnerChanged")
+      .onInterface("org.freedesktop.DBus")
+      .call([this](const std::string& name, const std::string& /*oldOwner*/, const std::string& /*newOwner*/) {
+        if (name != notification_dbus::kFreedesktopNotificationsBusName) {
+          return;
+        }
+        DeferredCall::callLater([this]() {
+          m_notificationDaemonInitFailed = false;
+          syncNotificationDaemon();
+        });
+      });
+  m_notificationBusNameWatchInstalled = true;
 }
 
 void Application::syncPolkitAgent() {
@@ -1106,8 +1153,11 @@ void Application::initServices() {
       );
     }
 
+    installNotificationBusNameWatch();
     syncNotificationDaemon();
     m_configService.addReloadCallback([this]() { syncNotificationDaemon(); });
+
+    m_compositorPlatform.startKdeActiveWindow(*m_bus);
 
     m_trayService = std::make_unique<TrayService>(*m_bus);
     m_trayService->setChangeCallback([this]() {
@@ -1521,7 +1571,8 @@ void Application::initUi() {
   });
   m_overviewLauncherCapture.sync();
   m_panelManager.registerPanel(
-      "wallpaper", std::make_unique<WallpaperPanel>(&m_wayland, &m_configService, &m_thumbnailService)
+      "wallpaper",
+      std::make_unique<WallpaperPanel>(&m_wayland, &m_configService, &m_thumbnailService, &m_wallpaperScanner)
   );
   std::size_t trayDrawerColumns = 3;
   if (const auto it = m_configService.config().widgets.find("tray"); it != m_configService.config().widgets.end()) {
@@ -1629,6 +1680,7 @@ void Application::initUi() {
   m_keyboardLayoutOsd.bindOverlay(m_osdOverlay);
   m_keyboardLayoutOsd.prime(m_compositorPlatform);
   m_mediaOsd.bindOverlay(m_osdOverlay);
+  m_privacyOsd.bindOverlay(m_osdOverlay);
   m_screenCorners.initialize(m_wayland, &m_configService, &m_renderContext);
   m_screenCorners.onConfigReload();
 
@@ -1846,6 +1898,7 @@ void Application::initUi() {
       }
       if (m_pipewireService != nullptr) {
         m_audioOsd.onAudioStateChanged(*m_pipewireService);
+        m_privacyOsd.onPrivacyStateChanged(*m_pipewireService);
       }
     });
     m_pipewireService->setVolumePreviewCallback([this](bool isInput, std::uint32_t id, float volume, bool muted) {
@@ -2427,6 +2480,7 @@ std::vector<PollSource*> Application::currentPollSources() {
   sources.push_back(&m_weatherPollSource);
   sources.push_back(&m_calendarPollSource);
   sources.push_back(&m_thumbnailService);
+  sources.push_back(&m_wallpaperScanner);
   sources.push_back(&m_asyncTextureCache);
   return sources;
 }

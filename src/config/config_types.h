@@ -354,6 +354,7 @@ enum class WallpaperFillMode : std::uint8_t {
   Fit = 2,
   Stretch = 3,
   Repeat = 4,
+  Span = 5,
 };
 
 enum class WallpaperTransition : std::uint8_t {
@@ -579,6 +580,7 @@ struct OsdKindsConfig {
   bool lockKeys = true;
   bool keyboardLayout = true;
   bool media = true;
+  bool privacy = true;
   bool operator==(const OsdKindsConfig&) const = default;
 };
 
@@ -734,6 +736,7 @@ constexpr EnumOption<WallpaperFillMode> kWallpaperFillModes[] = {
     {WallpaperFillMode::Fit, "fit", "settings.options.wallpaper.fill.fit"},
     {WallpaperFillMode::Stretch, "stretch", "settings.options.wallpaper.fill.stretch"},
     {WallpaperFillMode::Repeat, "repeat", "settings.options.wallpaper.fill.repeat"},
+    {WallpaperFillMode::Span, "span", "settings.options.wallpaper.fill.span"},
 };
 
 constexpr EnumOption<WallpaperAutomationConfig::Order> kWallpaperAutomationOrders[] = {
@@ -1211,6 +1214,7 @@ struct ControlCenterConfig {
   std::vector<ShortcutConfig> shortcuts;
   ControlCenterSidebarMode sidebarMode = ControlCenterSidebarMode::Compact;
   ControlCenterSidebarMode sidebarSectionMode = ControlCenterSidebarMode::Compact;
+  std::int32_t width = 680; // full-sidebar logical width; compact/none modes scale down from this
   bool operator==(const ControlCenterConfig&) const = default;
 };
 

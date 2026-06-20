@@ -26,18 +26,6 @@ using namespace control_center;
 
 namespace {
   constexpr auto kMprisRefreshMinInterval = std::chrono::milliseconds(750);
-
-  [[nodiscard]] float preferredWidthForSidebarMode(ControlCenterSidebarMode mode, float scale) {
-    switch (mode) {
-    case ControlCenterSidebarMode::Full:
-      return 780.0f * scale;
-    case ControlCenterSidebarMode::Compact:
-      return 660.0f * scale;
-    case ControlCenterSidebarMode::None:
-      return 600.0f * scale;
-    }
-    return 660.0f * scale;
-  }
 } // namespace
 
 ControlCenterPanel::ControlCenterPanel(
@@ -80,7 +68,16 @@ ControlCenterPanel::ControlCenterPanel(
 }
 
 float ControlCenterPanel::preferredWidth() const {
-  return preferredWidthForSidebarMode(sidebarModeForOpen(pendingOpenContext()), m_contentScale);
+  const float fullSize = m_config != nullptr ? static_cast<float>(m_config->config().controlCenter.width) : 680.0f;
+  switch (sidebarModeForOpen(pendingOpenContext())) {
+  case ControlCenterSidebarMode::Full:
+    return fullSize * m_contentScale;
+  case ControlCenterSidebarMode::None:
+    return fullSize * 0.75f * m_contentScale;
+  default:
+  case ControlCenterSidebarMode::Compact:
+    return fullSize * 0.85f * m_contentScale;
+  }
 }
 
 PanelPlacement ControlCenterPanel::panelPlacement() const noexcept {
