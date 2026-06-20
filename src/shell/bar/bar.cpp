@@ -1622,24 +1622,6 @@ void Bar::revealAutoHideForAttachedPanel(wl_output* output, std::string_view bar
   }
 }
 
-void Bar::setAttachedPanelGeometry(
-    wl_output* output, std::string_view barName, std::optional<AttachedPanelGeometry> geometry
-) {
-  BarInstance* instance = instanceForBar(output, barName);
-  if (instance == nullptr) {
-    return;
-  }
-
-  instance->attachedPanelGeometry = geometry;
-  if (instance->surface != nullptr && instance->surface->width() > 0 && instance->surface->height() > 0) {
-    applyBarShadowStyle(
-        *instance, m_config->config().shell.shadow, static_cast<float>(instance->surface->width()),
-        static_cast<float>(instance->surface->height())
-    );
-    instance->surface->requestRedraw();
-  }
-}
-
 void Bar::beginAttachedPopup(wl_surface* surface) {
   auto* instance = instanceForSurface(surface);
   if (instance == nullptr) {

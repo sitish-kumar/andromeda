@@ -1700,11 +1700,6 @@ void Application::initUi() {
     }
     m_settingsWindow.openToBarWidget(std::move(barName), std::move(widgetName));
   });
-  m_panelManager.setAttachedPanelGeometryCallback(
-      [this](wl_output* output, std::string_view barName, std::optional<AttachedPanelGeometry> geometry) {
-        m_bar.setAttachedPanelGeometry(output, barName, geometry);
-      }
-  );
   m_panelManager.setClickShieldExcludeRectsProvider([this](wl_output* output) {
     return m_bar.surfaceRectsForOutput(output);
   });

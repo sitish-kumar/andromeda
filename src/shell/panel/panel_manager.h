@@ -65,9 +65,6 @@ public:
   void openSettingsWindow();
   void closeSettingsWindow();
   void toggleSettingsWindow();
-  void setAttachedPanelGeometryCallback(
-      std::function<void(wl_output*, std::string_view, std::optional<AttachedPanelGeometry>)> callback
-  );
   // Callback to query the bar surface rects on a given output, in output-local
   // coordinates. The click shield's input region excludes these rects so
   // clicks on bar widgets keep flowing to the bar while a panel is open.
@@ -203,8 +200,7 @@ private:
   void applyAttachedReveal(float progress);
   void applyDetachedReveal(float progress);
   void startAttachedOpenAnimation();
-  void publishAttachedPanelGeometry(float revealProgress);
-  // Restyle the attached-panel decoration nodes (bg fill, drop shadow, contact shadow)
+  // Restyle the attached-panel decoration nodes (bg fill, drop shadow)
   // using the cached attached background opacity and bar position. Geometry/positions are not touched.
   // Safe to call any time after buildScene has run.
   void applyAttachedDecorationStyle();
@@ -219,8 +215,6 @@ private:
   std::function<void()> m_openSettingsWindow;
   std::function<void()> m_closeSettingsWindow;
   std::function<void()> m_toggleSettingsWindow;
-  std::function<void(wl_output*, std::string_view, std::optional<AttachedPanelGeometry>)>
-      m_attachedPanelGeometryCallback;
   std::function<std::vector<InputRect>(wl_output*)> m_clickShieldExcludeRectsProvider;
   std::function<std::vector<wl_surface*>()> m_focusGrabBarSurfacesProvider;
   std::function<void()> m_panelClosedCallback;
@@ -279,7 +273,6 @@ private:
   Timer m_keyboardRelaxTimer;
   std::string m_attachedBarPosition; // "top" / "bottom" / "left" / "right" while attached, empty otherwise
   std::string m_sourceBarName;       // name of the bar that opened the current panel
-  std::optional<AttachedPanelGeometry> m_attachedPanelGeometry;
   bool m_pointerInside = false;
   bool m_inTransition = false;
   bool m_closing = false;

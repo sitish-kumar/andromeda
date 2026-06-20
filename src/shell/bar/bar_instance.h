@@ -77,7 +77,6 @@ struct BarInstance {
   std::vector<BarCapsuleRun> endCapsuleRuns;
 
   Signal<>::ScopedConnection paletteConn;
-  std::optional<AttachedPanelGeometry> attachedPanelGeometry;
 
   // Bar-hosted attached panel: real panel content rendered inside this bar's surface.
   // clip/content nodes live under slideRoot (sibling of contentClip); content holds the
