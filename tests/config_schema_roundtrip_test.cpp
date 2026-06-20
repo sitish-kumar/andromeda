@@ -165,6 +165,10 @@ location = "https://example.invalid/bad"
     bar.marginEnds = 100;
     bar.marginEdge = 5;
     bar.marginOppositeEdge = 12;
+    bar.deadZone.command = "notify-send bar-left";
+    bar.deadZone.rightCommand = "notify-send bar-right";
+    bar.deadZone.scrollUpCommand = "notify-send bar-scroll-up";
+    bar.deadZone.scrollDownCommand = "notify-send bar-scroll-down";
     bar.padding = 12;
     bar.widgetSpacing = 8;
     bar.shadow = false;
@@ -218,6 +222,10 @@ location = "https://example.invalid/bad"
     ovr.marginEnds = 70;
     ovr.marginEdge = 9;
     ovr.marginOppositeEdge = 4;
+    ovr.deadZone.command = "notify-send bar-left";
+    ovr.deadZone.rightCommand = "notify-send bar-right";
+    ovr.deadZone.scrollUpCommand = "notify-send monitor-scroll-up";
+    ovr.deadZone.scrollDownCommand = "notify-send bar-scroll-down";
     ovr.padding = 11;
     ovr.widgetSpacing = 7;
     ovr.shadow = true;
@@ -506,8 +514,8 @@ font_weight = 600
 icon_color = "#0C0B0A"
 layer = "overlay"
 margin_edge = 5
-margin_opposite_edge = 12
 margin_ends = 100
+margin_opposite_edge = 12
 padding = 12
 panel_overlap = 2
 position = "bottom"
@@ -522,6 +530,12 @@ shadow = false
 start = [ "launcher" ]
 thickness = 44
 widget_spacing = 8
+
+    [default.dead_zone]
+    command = "notify-send bar-left"
+    right_command = "notify-send bar-right"
+    scroll_down_command = "notify-send bar-scroll-down"
+    scroll_up_command = "notify-send bar-scroll-up"
 
     [default.monitor.DP-1]
     auto_hide = false
@@ -546,8 +560,8 @@ widget_spacing = 8
     icon_color = "#E3E2E1"
     layer = "top"
     margin_edge = 9
-    margin_opposite_edge = 4
     margin_ends = 70
+    margin_opposite_edge = 4
     match = "DP-1"
     padding = 11
     panel_overlap = -1
@@ -563,6 +577,12 @@ widget_spacing = 8
     start = [ "tray" ]
     thickness = 50
     widget_spacing = 7
+
+        [default.monitor.DP-1.dead_zone]
+        command = "notify-send bar-left"
+        right_command = "notify-send bar-right"
+        scroll_down_command = "notify-send bar-scroll-down"
+        scroll_up_command = "notify-send monitor-scroll-up"
 
         [[default.monitor.DP-1.capsule_group]]
         border = "#0F0E0D"
