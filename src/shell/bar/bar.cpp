@@ -2727,8 +2727,20 @@ void Bar::prepareFrame(BarInstance& instance, bool needsUpdate, bool needsLayout
   m_renderContext->makeCurrent(instance.surface->renderTarget());
 
   if (needsUpdate) {
-    UiPhaseScope updatePhase(UiPhase::Update);
-    updateWidgets(instance);
+    {
+      UiPhaseScope updatePhase(UiPhase::Update);
+      updateWidgets(instance);
+    }
+    // A hosted attached panel syncs its data inside its layout pass, so an update-only refresh
+    // (e.g. Bar::refresh reacting to a service change) must still reflow it — otherwise it shows
+    // stale state until an unrelated relayout. Detached panels avoid this by owning a separate
+    // surface, so their refresh never collides with the bar's update flag.
+    if (instance.hostedPanelOpen) {
+      layoutHostedPanelContent(
+          instance, *m_renderContext, static_cast<float>(instance.surface->width()),
+          static_cast<float>(instance.surface->height())
+      );
+    }
     return;
   }
 
