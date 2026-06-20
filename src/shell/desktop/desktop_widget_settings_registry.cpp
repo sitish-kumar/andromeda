@@ -246,7 +246,10 @@ namespace desktop_settings {
       add(std::move(centerText));
       add(colorSpec("color", "on_surface"));
       add(fontFamilySpec());
-      add(boolSpec("shadow", true));
+      // Shadow is a text shadow on the digital label; analog mode has no shadow.
+      auto shadow = boolSpec("shadow", true);
+      shadow.visibleWhen = digitalOnly;
+      add(std::move(shadow));
       auto circle = boolSpec("circle", true);
       circle.visibleWhen = analogOnly;
       add(std::move(circle));
