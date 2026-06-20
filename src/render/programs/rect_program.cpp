@@ -51,12 +51,6 @@ uniform int u_invert_fill;
 uniform float u_border_width;
 uniform int u_outer_shadow;
 uniform vec2 u_shadow_cutout_offset;
-uniform int u_shadow_exclusion;
-uniform vec2 u_shadow_exclusion_offset;
-uniform vec2 u_shadow_exclusion_size;
-uniform vec4 u_shadow_exclusion_corner_shapes;
-uniform vec4 u_shadow_exclusion_logical_inset;
-uniform vec4 u_shadow_exclusion_radii;
 uniform int u_union_shape;
 uniform vec2 u_union_offset;
 uniform vec2 u_union_size;
@@ -359,11 +353,6 @@ void main() {
         float cutout_distance = union_shape_distance(local_point + u_shadow_cutout_offset);
         float cutout_mask = 1.0 - smoothstep(-cutout_aa, cutout_aa, cutout_distance);
         float shadow_coverage = shadow_outer_coverage * (1.0 - cutout_mask);
-        if (u_shadow_exclusion == 1 && u_shadow_exclusion_size.x > 0.0 && u_shadow_exclusion_size.y > 0.0) {
-            float exclusion_distance = shape_distance(local_point + u_shadow_exclusion_offset, u_shadow_exclusion_size, u_shadow_exclusion_radii, u_shadow_exclusion_corner_shapes, u_shadow_exclusion_logical_inset);
-            float exclusion_mask = 1.0 - smoothstep(-cutout_aa, cutout_aa, exclusion_distance);
-            shadow_coverage *= 1.0 - exclusion_mask;
-        }
         float out_alpha = u_color.a * shadow_coverage;
         if (out_alpha <= 0.0) {
             discard;
@@ -466,12 +455,6 @@ void RectProgram::ensureInitialized() {
   m_borderWidthLocation = glGetUniformLocation(m_program.id(), "u_border_width");
   m_outerShadowLocation = glGetUniformLocation(m_program.id(), "u_outer_shadow");
   m_shadowCutoutOffsetLocation = glGetUniformLocation(m_program.id(), "u_shadow_cutout_offset");
-  m_shadowExclusionLocation = glGetUniformLocation(m_program.id(), "u_shadow_exclusion");
-  m_shadowExclusionOffsetLocation = glGetUniformLocation(m_program.id(), "u_shadow_exclusion_offset");
-  m_shadowExclusionSizeLocation = glGetUniformLocation(m_program.id(), "u_shadow_exclusion_size");
-  m_shadowExclusionCornerShapesLocation = glGetUniformLocation(m_program.id(), "u_shadow_exclusion_corner_shapes");
-  m_shadowExclusionLogicalInsetLocation = glGetUniformLocation(m_program.id(), "u_shadow_exclusion_logical_inset");
-  m_shadowExclusionRadiiLocation = glGetUniformLocation(m_program.id(), "u_shadow_exclusion_radii");
   m_unionShapeLocation = glGetUniformLocation(m_program.id(), "u_union_shape");
   m_unionOffsetLocation = glGetUniformLocation(m_program.id(), "u_union_offset");
   m_unionSizeLocation = glGetUniformLocation(m_program.id(), "u_union_size");
@@ -503,12 +486,6 @@ void RectProgram::ensureInitialized() {
       || m_borderWidthLocation < 0
       || m_outerShadowLocation < 0
       || m_shadowCutoutOffsetLocation < 0
-      || m_shadowExclusionLocation < 0
-      || m_shadowExclusionOffsetLocation < 0
-      || m_shadowExclusionSizeLocation < 0
-      || m_shadowExclusionCornerShapesLocation < 0
-      || m_shadowExclusionLogicalInsetLocation < 0
-      || m_shadowExclusionRadiiLocation < 0
       || m_unionShapeLocation < 0
       || m_unionOffsetLocation < 0
       || m_unionSizeLocation < 0
@@ -545,12 +522,6 @@ void RectProgram::destroy() {
   m_borderWidthLocation = -1;
   m_outerShadowLocation = -1;
   m_shadowCutoutOffsetLocation = -1;
-  m_shadowExclusionLocation = -1;
-  m_shadowExclusionOffsetLocation = -1;
-  m_shadowExclusionSizeLocation = -1;
-  m_shadowExclusionCornerShapesLocation = -1;
-  m_shadowExclusionLogicalInsetLocation = -1;
-  m_shadowExclusionRadiiLocation = -1;
   m_unionShapeLocation = -1;
   m_unionOffsetLocation = -1;
   m_unionSizeLocation = -1;
@@ -632,23 +603,6 @@ void RectProgram::draw(
   glUniform1f(m_borderWidthLocation, style.borderWidth);
   glUniform1i(m_outerShadowLocation, style.outerShadow ? 1 : 0);
   glUniform2f(m_shadowCutoutOffsetLocation, style.shadowCutoutOffsetX, style.shadowCutoutOffsetY);
-  glUniform1i(m_shadowExclusionLocation, style.shadowExclusion ? 1 : 0);
-  glUniform2f(m_shadowExclusionOffsetLocation, style.shadowExclusionOffsetX, style.shadowExclusionOffsetY);
-  glUniform2f(m_shadowExclusionSizeLocation, style.shadowExclusionWidth, style.shadowExclusionHeight);
-  glUniform4f(
-      m_shadowExclusionCornerShapesLocation, cornerShapeValue(style.shadowExclusionCorners.tl),
-      cornerShapeValue(style.shadowExclusionCorners.tr), cornerShapeValue(style.shadowExclusionCorners.br),
-      cornerShapeValue(style.shadowExclusionCorners.bl)
-  );
-  glUniform4f(
-      m_shadowExclusionLogicalInsetLocation, style.shadowExclusionLogicalInset.left,
-      style.shadowExclusionLogicalInset.top, style.shadowExclusionLogicalInset.right,
-      style.shadowExclusionLogicalInset.bottom
-  );
-  glUniform4f(
-      m_shadowExclusionRadiiLocation, style.shadowExclusionRadius.tl, style.shadowExclusionRadius.tr,
-      style.shadowExclusionRadius.br, style.shadowExclusionRadius.bl
-  );
   glUniform1i(m_unionShapeLocation, style.unionShape ? 1 : 0);
   glUniform2f(m_unionOffsetLocation, style.unionOffsetX, style.unionOffsetY);
   glUniform2f(m_unionSizeLocation, style.unionWidth, style.unionHeight);

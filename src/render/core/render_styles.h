@@ -86,14 +86,6 @@ struct RoundedRectStyle {
   bool outerShadow = false;
   float shadowCutoutOffsetX = 0.0f;
   float shadowCutoutOffsetY = 0.0f;
-  bool shadowExclusion = false;
-  float shadowExclusionOffsetX = 0.0f;
-  float shadowExclusionOffsetY = 0.0f;
-  float shadowExclusionWidth = 0.0f;
-  float shadowExclusionHeight = 0.0f;
-  CornerShapes shadowExclusionCorners{};
-  RectInsets shadowExclusionLogicalInset{};
-  Radii shadowExclusionRadius{};
   // Optional secondary shape unioned with the primary for a single-pass, non-convex
   // silhouette (bar body + attached panel). When enabled, the fill coverage and the
   // outer shadow both use min(primary, secondary); offset/size are in the primary
@@ -124,14 +116,6 @@ constexpr bool operator==(const RoundedRectStyle& lhs, const RoundedRectStyle& r
       && lhs.outerShadow == rhs.outerShadow
       && lhs.shadowCutoutOffsetX == rhs.shadowCutoutOffsetX
       && lhs.shadowCutoutOffsetY == rhs.shadowCutoutOffsetY
-      && lhs.shadowExclusion == rhs.shadowExclusion
-      && lhs.shadowExclusionOffsetX == rhs.shadowExclusionOffsetX
-      && lhs.shadowExclusionOffsetY == rhs.shadowExclusionOffsetY
-      && lhs.shadowExclusionWidth == rhs.shadowExclusionWidth
-      && lhs.shadowExclusionHeight == rhs.shadowExclusionHeight
-      && lhs.shadowExclusionCorners == rhs.shadowExclusionCorners
-      && lhs.shadowExclusionLogicalInset == rhs.shadowExclusionLogicalInset
-      && lhs.shadowExclusionRadius == rhs.shadowExclusionRadius
       && lhs.unionShape == rhs.unionShape
       && lhs.unionOffsetX == rhs.unionOffsetX
       && lhs.unionOffsetY == rhs.unionOffsetY

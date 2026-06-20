@@ -78,9 +78,6 @@ struct BarInstance {
 
   Signal<>::ScopedConnection paletteConn;
   std::optional<AttachedPanelGeometry> attachedPanelGeometry;
-  bool attachedPanelResizeTestOpen = false;
-  std::uint32_t attachedPanelResizeTestExtent = 0;
-  float attachedPanelResizeTestProgress = 0.0f;
 
   // Bar-hosted attached panel: real panel content rendered inside this bar's surface.
   // clip/content nodes live under slideRoot (sibling of contentClip); content holds the

@@ -813,7 +813,6 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     m_panelVisualWidth = 0;
     m_panelVisualHeight = 0;
     m_attachedBackgroundOpacity = 1.0f;
-    m_attachedContactShadow = false;
     m_attachedRevealProgress = 1.0f;
     m_attachedRevealDirection = AttachedRevealDirection::Down;
     m_keyboardRelaxTimer.stop();
@@ -881,8 +880,6 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     );
     const auto totalStartInset = computeTotalInset(barRStart);
     const auto totalEndInset = computeTotalInset(barREnd);
-    // Logical px the attached panel overlaps the bar edge to hide the seam (per-bar/per-monitor tunable).
-    const std::int32_t panelOverlap = barConfig.panelOverlap;
     std::int32_t visualX = 0;
     std::int32_t visualY = 0;
     const bool useAnchorForAttached =
@@ -894,7 +891,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
       const auto desiredY =
           static_cast<std::int32_t>(std::lround(request.anchorY - static_cast<float>(panelHeight) * 0.5f));
       visualY = useAnchorForAttached ? std::clamp(desiredY, minY, maxY) : centeredY;
-      visualX = barIsLeft ? barRight - panelOverlap : barLeft - static_cast<std::int32_t>(panelWidth) + panelOverlap;
+      visualX = barIsLeft ? barRight : barLeft - static_cast<std::int32_t>(panelWidth);
     } else {
       const auto minX = barLeft + totalStartInset;
       const auto maxX = std::max(minX, barRight - static_cast<std::int32_t>(panelWidth) - totalEndInset);
@@ -902,7 +899,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
       const auto desiredX =
           static_cast<std::int32_t>(std::lround(request.anchorX - static_cast<float>(panelWidth) * 0.5f));
       visualX = useAnchorForAttached ? std::clamp(desiredX, minX, maxX) : centeredX;
-      visualY = barIsBottom ? barTop - static_cast<std::int32_t>(panelHeight) + panelOverlap : barBottom - panelOverlap;
+      visualY = barIsBottom ? barTop - static_cast<std::int32_t>(panelHeight) : barBottom;
     }
 
     // Surface origin: cross-axis outset on each side, main-axis bleed on the side opposite the bar.
@@ -923,7 +920,6 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     m_attachedBackgroundOpacity = m_activePanel->inheritsBarBackgroundOpacity()
         ? barConfig.backgroundOpacity
         : m_activePanel->attachedBackgroundOpacityOverride();
-    m_attachedContactShadow = barConfig.contactShadow;
     m_attachedRevealProgress = 0.0f;
     m_attachedRevealDirection = attached_panel::revealDirection(barPosition);
     m_keyboardRelaxTimer.stop();
@@ -1068,7 +1064,6 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     m_panelVisualWidth = 0;
     m_panelVisualHeight = 0;
     m_attachedBackgroundOpacity = 1.0f;
-    m_attachedContactShadow = false;
     m_attachedRevealProgress = 1.0f;
     m_attachedRevealDirection = AttachedRevealDirection::Down;
     m_keyboardRelaxTimer.stop();
@@ -1086,7 +1081,6 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   m_panelVisualWidth = panelWidth;
   m_panelVisualHeight = panelHeight;
   m_attachedBackgroundOpacity = 1.0f;
-  m_attachedContactShadow = false;
   m_attachedRevealProgress = 1.0f;
   m_attachedRevealDirection = AttachedRevealDirection::Down;
   m_attachedPanelGeometry.reset();
@@ -1304,7 +1298,6 @@ void PanelManager::destroyPanel(bool preserveHostedSurface) {
   m_attachedRevealClipNode = nullptr;
   m_attachedRevealContentNode = nullptr;
   m_panelShadowNode = nullptr;
-  m_panelContactShadowNode = nullptr;
   m_selectPopup.reset();
   m_sceneRoot.reset();
   m_surface.reset();
@@ -1319,7 +1312,6 @@ void PanelManager::destroyPanel(bool preserveHostedSurface) {
   m_panelVisualWidth = 0;
   m_panelVisualHeight = 0;
   m_attachedBackgroundOpacity = 1.0f;
-  m_attachedContactShadow = false;
   m_attachedRevealProgress = 1.0f;
   m_attachedRevealDirection = AttachedRevealDirection::Down;
   m_keyboardRelaxTimer.stop();
@@ -1814,9 +1806,6 @@ void PanelManager::applyAttachedReveal(float progress) {
   if (m_panelShadowNode != nullptr) {
     m_panelShadowNode->setOpacity(m_attachedRevealProgress);
   }
-  if (m_panelContactShadowNode != nullptr) {
-    m_panelContactShadowNode->setOpacity(m_attachedRevealProgress);
-  }
 
   publishAttachedPanelGeometry(m_attachedRevealProgress);
   applyPanelCompositorBlur();
@@ -2046,35 +2035,6 @@ void PanelManager::applyAttachedDecorationStyle() {
       m_panelShadowNode->setStyle(shadowStyle);
     }
   }
-
-  if (m_panelContactShadowNode != nullptr) {
-    const float contactAlpha = 0.16f * std::clamp(m_attachedBackgroundOpacity, 0.0f, 1.0f);
-    const bool barIsBottom = m_attachedBarPosition == "bottom";
-    const bool barIsRight = m_attachedBarPosition == "right";
-    const bool barIsVertical = m_attachedBarPosition == "left" || m_attachedBarPosition == "right";
-    // Gradient runs perpendicular to the bar edge, dark next to the bar, transparent toward
-    // the panel interior. For top/left: dark at start. For bottom/right: dark at end.
-    const bool darkAtStart = !(barIsBottom || barIsRight);
-    const Color darkColor = rgba(0.0f, 0.0f, 0.0f, contactAlpha);
-    const Color clearGradient = rgba(0.0f, 0.0f, 0.0f, 0.0f);
-    const Color startColor = darkAtStart ? darkColor : clearGradient;
-    const Color endColor = darkAtStart ? clearGradient : darkColor;
-    const RoundedRectStyle contactStyle{
-        .fill = startColor,
-        .border = clearColor(),
-        .fillMode = FillMode::LinearGradient,
-        .gradientDirection = barIsVertical ? GradientDirection::Horizontal : GradientDirection::Vertical,
-        .gradientStops =
-            {GradientStop{0.0f, startColor}, GradientStop{0.0f, startColor}, GradientStop{1.0f, endColor},
-             GradientStop{1.0f, endColor}},
-        .corners = attached_panel::cornerShapes(m_attachedBarPosition),
-        .logicalInset = attached_panel::logicalInset(m_attachedBarPosition, radius),
-        .radius = Radii{radius, radius, radius, radius},
-        .softness = 1.0f,
-        .borderWidth = 0.0f,
-    };
-    m_panelContactShadowNode->setStyle(contactStyle);
-  }
 }
 
 void PanelManager::onConfigReloaded() {
@@ -2195,11 +2155,6 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
       m_bgNode = sceneParent->addChild(std::move(bg));
     }
 
-    if (hasDecoration && m_attachedToBar && m_attachedContactShadow) {
-      auto contactShadow = std::make_unique<Box>();
-      m_panelContactShadowNode = static_cast<Box*>(sceneParent->addChild(std::move(contactShadow)));
-    }
-
     // Create panel content inside a wrapper node for staggered fade-in
     auto contentWrapper = std::make_unique<Node>();
     m_contentNode = contentWrapper.get();
@@ -2294,33 +2249,7 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
     m_bgNode->setSize(bgW, bgH);
   }
 
-  if (m_panelContactShadowNode != nullptr) {
-    constexpr float kContactShadowBaseThickness = 16.0f;
-    const float scale = m_activePanel->contentScale();
-    const float contactThickness =
-        std::min(std::max(kContactShadowBaseThickness * scale, attachedRadius * 2.0f), barIsVertical ? bgW : bgH);
-    const bool barIsBottom = m_attachedBarPosition == "bottom";
-    const bool barIsRight = m_attachedBarPosition == "right";
-    float contactX = bgX;
-    float contactY = bgY;
-    float contactW = bgW;
-    float contactH = bgH;
-    if (barIsVertical) {
-      contactW = contactThickness;
-      if (barIsRight) {
-        contactX = bgX + bgW - contactThickness;
-      }
-    } else {
-      contactH = contactThickness;
-      if (barIsBottom) {
-        contactY = bgY + bgH - contactThickness;
-      }
-    }
-    m_panelContactShadowNode->setPosition(contactX, contactY);
-    m_panelContactShadowNode->setSize(contactW, contactH);
-  }
-
-  // Re-apply opacity-dependent styling for bg, shadow, and contact-shadow.
+  // Re-apply opacity-dependent styling for bg and shadow.
   // Ensures these stay in sync if the bar config changed.
   if (m_attachedToBar) {
     applyAttachedDecorationStyle();
