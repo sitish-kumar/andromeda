@@ -136,6 +136,13 @@ void ControlCenterPanel::create() {
         },
     });
 
+    auto sidebarScrollArea = std::make_unique<InputArea>();
+    sidebarScrollArea->setParticipatesInLayout(false);
+    sidebarScrollArea->setZIndex(-1);
+    m_sidebarScrollArea = sidebarScrollArea.get();
+    wireSidebarScroll(m_sidebarScrollArea);
+    sidebar->addChild(std::move(sidebarScrollArea));
+
     for (const auto& tab : kTabs) {
       sidebar->addChild(
           ui::button({
@@ -296,6 +303,11 @@ void ControlCenterPanel::doLayout(Renderer& renderer, float width, float height)
   const float bodyWidth = m_tabBodies->width();
   const float bodyHeight = m_tabBodies->height();
 
+  if (m_sidebarScrollArea != nullptr && m_sidebar != nullptr) {
+    m_sidebarScrollArea->setPosition(0.0f, 0.0f);
+    m_sidebarScrollArea->setSize(m_sidebar->width(), m_sidebar->height());
+  }
+
   if (m_contentDismissArea != nullptr) {
     m_contentDismissArea->setPosition(0.0f, 0.0f);
     m_contentDismissArea->setFrameSize(m_content->width(), m_content->height());
@@ -379,6 +391,7 @@ void ControlCenterPanel::onClose() {
   }
   m_rootLayout = nullptr;
   m_sidebar = nullptr;
+  m_sidebarScrollArea = nullptr;
   m_content = nullptr;
   m_contentDismissArea = nullptr;
   m_contentHeader = nullptr;

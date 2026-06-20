@@ -159,6 +159,7 @@ private:
   // Panel UI structure (rebuilt each create(), nulled in onClose())
   Flex* m_rootLayout = nullptr;
   Flex* m_sidebar = nullptr;
+  InputArea* m_sidebarScrollArea = nullptr;
   Flex* m_content = nullptr;
   InputArea* m_contentDismissArea = nullptr;
   Flex* m_contentHeader = nullptr;
