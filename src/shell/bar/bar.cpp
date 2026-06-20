@@ -3692,7 +3692,7 @@ void Bar::armHostedPanelKeyboardRelax(BarInstance& instance) {
   }
   auto* grabService = m_platform->focusGrabService();
   if (grabService == nullptr || !grabService->available()) {
-    return; // no focus grab (wlroots): keep Exclusive so the bar surface holds keyboard focus itself
+    return; // no focus grab (not hyprland): keep Exclusive so the bar surface holds keyboard focus itself
   }
   // Mirror the detached attached-panel recipe: Exclusive grabs focus for the freshly-hosting bar
   // surface, then relax to OnDemand so the focus grab owns focus management from here.

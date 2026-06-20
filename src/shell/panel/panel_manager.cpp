@@ -676,7 +676,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
       useAttachedPlacement ? layerShellLayerFromConfig(barConfig.layer) : m_activePanel->layer();
 
   // Map shields BEFORE the panel surface is created or committed.
-  // Within a single layer, wlroots stacks surfaces by mapping order.
+  // Within a single layer, compositors stacks surfaces by mapping order.
   activateClickShield(panelLayer);
 
   // Bar-hosted attached panel: render the content inside the bar's own surface instead of
