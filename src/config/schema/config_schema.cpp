@@ -50,6 +50,7 @@ namespace noctalia::config::schema {
         field(&OsdKindsConfig::lockKeys, "lock_keys"),
         field(&OsdKindsConfig::keyboardLayout, "keyboard_layout"),
         field(&OsdKindsConfig::media, "media"),
+        field(&OsdKindsConfig::privacy, "privacy"),
     };
     return s;
   }
@@ -479,6 +480,7 @@ namespace noctalia::config::schema {
     static const Schema<ControlCenterConfig> s = {
         enumField(&ControlCenterConfig::sidebarMode, "sidebar", kControlCenterSidebarModes),
         enumField(&ControlCenterConfig::sidebarSectionMode, "sidebar_section", kControlCenterSidebarModes),
+        field(&ControlCenterConfig::width, "width", kControlCenterWidthRange),
         arrayOf<ControlCenterConfig, ShortcutConfig>(
             &ControlCenterConfig::shortcuts, "shortcuts", shortcutSchema(),
             [](const ShortcutConfig& sc) { return !sc.type.empty(); }
@@ -1547,7 +1549,6 @@ namespace noctalia::config::schema {
     // is the usual convex rounding. Only the two corners on the bar's inner edge
     // (away from the screen) render a concave spike.
     constexpr Range<std::int64_t> kBarRadiusRange{-500, 500};
-    constexpr Range<std::int64_t> kBarPanelOverlapRange{-2, 3};
     constexpr Range<float> kBarCapsuleThicknessRange{0.1f, 1.0f};
     constexpr Range<float> kBarOpacityRange{0.0f, 1.0f};
     constexpr Range<float> kBarBorderWidthRange{0.0f, 20.0f};
@@ -1859,8 +1860,6 @@ namespace noctalia::config::schema {
         field(&BarConfig::padding, "padding"),
         field(&BarConfig::widgetSpacing, "widget_spacing"),
         field(&BarConfig::shadow, "shadow"),
-        field(&BarConfig::contactShadow, "contact_shadow"),
-        field(&BarConfig::panelOverlap, "panel_overlap", kBarPanelOverlapRange),
         field(&BarConfig::capsuleThickness, "capsule_thickness", kBarCapsuleThicknessRange),
         field(&BarConfig::scale, "scale", kBarScaleRange),
         field(&BarConfig::fontWeight, "font_weight"),
@@ -1925,8 +1924,6 @@ namespace noctalia::config::schema {
         optionalIntField(&BarMonitorOverride::widgetSpacing, "widget_spacing"),
         optionalFloatField(&BarMonitorOverride::scale, "scale", kBarScaleRange),
         optionalBoolField(&BarMonitorOverride::shadow, "shadow"),
-        optionalBoolField(&BarMonitorOverride::contactShadow, "contact_shadow"),
-        optionalIntField(&BarMonitorOverride::panelOverlap, "panel_overlap", kBarPanelOverlapRange),
         optionalFloatField(&BarMonitorOverride::capsuleThickness, "capsule_thickness", kBarCapsuleThicknessRange),
         optionalTrimmedStringField(&BarMonitorOverride::fontFamily, "font_family"),
         optionalStringVectorField(&BarMonitorOverride::startWidgets, "start"),

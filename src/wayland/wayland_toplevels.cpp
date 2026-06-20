@@ -279,7 +279,7 @@ std::vector<std::string> WaylandToplevels::allAppIds(wl_output* outputFilter) co
     }
     ordered.push_back(&state);
   }
-  std::sort(ordered.begin(), ordered.end(), [](const ToplevelState* lhs, const ToplevelState* rhs) {
+  std::ranges::sort(ordered, [](const ToplevelState* lhs, const ToplevelState* rhs) {
     return lhs->order < rhs->order;
   });
 
@@ -324,6 +324,7 @@ std::vector<ToplevelInfo> WaylandToplevels::windowsForApp(
               .info = ToplevelInfo{
                   .title = state.title,
                   .appId = appId,
+                  .identifier = appId + ":" + state.title,
                   .order = state.order,
                   .handle = handle,
               },
@@ -331,9 +332,7 @@ std::vector<ToplevelInfo> WaylandToplevels::windowsForApp(
       );
     }
   }
-  std::sort(matched.begin(), matched.end(), [](const MatchedWindow& lhs, const MatchedWindow& rhs) {
-    return lhs.order < rhs.order;
-  });
+  std::ranges::sort(matched, {}, &MatchedWindow::order);
   out.reserve(matched.size());
   for (auto& window : matched) {
     out.push_back(std::move(window.info));

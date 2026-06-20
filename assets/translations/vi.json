@@ -120,7 +120,6 @@
       "application-volumes": "Âm lượng ứng dụng",
       "choose-effects-profile": "Chọn một cấu hình",
       "effects-profile": "Hiệu ứng:",
-      "input-volume": "Âm lượng đầu vào",
       "no-application-audio": "Không có âm thanh từ ứng dụng",
       "no-application-audio-body": "Hiện không có ứng dụng nào đang phát âm thanh.",
       "no-input-devices": "Không tìm thấy thiết bị đầu vào",
@@ -129,7 +128,6 @@
       "no-output-devices": "Không tìm thấy thiết bị đầu ra",
       "no-output-devices-body": "Không có thiết bị phát âm thanh khả dụng.",
       "no-output-selected": "Không có thiết bị đầu ra nào được chọn",
-      "output-volume": "Âm lượng đầu ra",
       "unavailable-body": "PipeWire hiện không hoạt động.",
       "unavailable-title": "Âm thanh không khả dụng"
     },

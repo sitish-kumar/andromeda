@@ -477,7 +477,7 @@ void RenderContext::renderNode(
           wallpaper->transition(), wallpaper->sourceKind1(), wallpaper->texture1(), wallpaper->sourceColor1(),
           sourceKind2, texture2, sourceColor2, sw, sh, node->width(), node->height(), wallpaper->imageWidth1(),
           wallpaper->imageHeight1(), imageWidth2, imageHeight2, progress, static_cast<float>(wallpaper->fillMode()),
-          wallpaper->transitionParams(), wallpaper->fillColor(), worldTransform
+          wallpaper->transitionParams(), wallpaper->fillColor(), worldTransform, wallpaper->spanParams()
       );
     }
     break;
@@ -506,9 +506,7 @@ void RenderContext::renderNode(
     for (const auto& child : children) {
       orderedChildren.push_back(child.get());
     }
-    std::stable_sort(orderedChildren.begin(), orderedChildren.end(), [](const Node* a, const Node* b) {
-      return a->zIndex() < b->zIndex();
-    });
+    std::ranges::stable_sort(orderedChildren, [](const Node* a, const Node* b) { return a->zIndex() < b->zIndex(); });
   }
 
   float childClipLeft = clipLeft;

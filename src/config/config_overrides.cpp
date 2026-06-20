@@ -212,12 +212,6 @@ namespace {
     if (ovr.shadow) {
       resolved.shadow = *ovr.shadow;
     }
-    if (ovr.contactShadow) {
-      resolved.contactShadow = *ovr.contactShadow;
-    }
-    if (ovr.panelOverlap) {
-      resolved.panelOverlap = *ovr.panelOverlap;
-    }
     if (ovr.capsuleThickness) {
       resolved.capsuleThickness = *ovr.capsuleThickness;
     }
@@ -663,7 +657,7 @@ namespace {
         files.push_back(entry.path());
       }
     }
-    std::sort(files.begin(), files.end());
+    std::ranges::sort(files);
     return files;
   }
 } // namespace
@@ -708,7 +702,7 @@ void ConfigService::setPluginEnabled(std::string_view pluginId, bool enabled) {
 
   const std::string id(pluginId);
   std::vector<std::string> next = m_config.plugins.enabled;
-  const bool currentlyEnabled = std::find(next.begin(), next.end(), id) != next.end();
+  const bool currentlyEnabled = std::ranges::contains(next, id);
 
   if (enabled) {
     if (currentlyEnabled) {
@@ -1167,9 +1161,7 @@ bool ConfigService::canMoveBarOverride(std::string_view name, int direction) con
     return false;
   }
 
-  const auto barIt = std::find_if(m_config.bars.begin(), m_config.bars.end(), [name](const BarConfig& bar) {
-    return bar.name == name;
-  });
+  const auto barIt = std::ranges::find(m_config.bars, name, &BarConfig::name);
   if (barIt == m_config.bars.end()) {
     return false;
   }
@@ -1253,7 +1245,7 @@ bool ConfigService::moveBarOverride(std::string_view name, int direction) {
   }
 
   auto order = barOrderNames(m_config.bars);
-  const auto currentIt = std::find(order.begin(), order.end(), std::string(name));
+  const auto currentIt = std::ranges::find(order, name);
   if (currentIt == order.end()) {
     return false;
   }
@@ -1321,9 +1313,7 @@ bool ConfigService::createMonitorOverride(std::string_view barName, std::string_
     return false;
   }
 
-  const auto barIt = std::find_if(m_config.bars.begin(), m_config.bars.end(), [barName](const BarConfig& bar) {
-    return bar.name == barName;
-  });
+  const auto barIt = std::ranges::find(m_config.bars, barName, &BarConfig::name);
   if (barIt == m_config.bars.end()) {
     return false;
   }
@@ -1373,9 +1363,7 @@ bool ConfigService::renameMonitorOverride(
     return false;
   }
 
-  const auto barIt = std::find_if(m_config.bars.begin(), m_config.bars.end(), [barName](const BarConfig& bar) {
-    return bar.name == barName;
-  });
+  const auto barIt = std::ranges::find(m_config.bars, barName, &BarConfig::name);
   if (barIt == m_config.bars.end()) {
     return false;
   }
@@ -1584,7 +1572,7 @@ std::string ConfigService::getGreeterSyncWallpaperPath() const {
       connectors.push_back(connector);
     }
   }
-  std::sort(connectors.begin(), connectors.end());
+  std::ranges::sort(connectors);
   for (const std::string& connector : connectors) {
     return m_monitorWallpaperPaths.at(connector);
   }

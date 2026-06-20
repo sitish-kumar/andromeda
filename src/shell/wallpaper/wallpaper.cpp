@@ -193,14 +193,12 @@ namespace {
     if (candidates.empty()) {
       return {};
     }
-    std::sort(candidates.begin(), candidates.end(), [](const std::string& a, const std::string& b) {
-      return lessCaseInsensitive(a, b);
-    });
+    std::ranges::sort(candidates, [](const std::string& a, const std::string& b) { return lessCaseInsensitive(a, b); });
     if (candidates.size() == 1) {
       return candidates.front();
     }
 
-    const auto it = std::find(candidates.begin(), candidates.end(), currentPath);
+    const auto it = std::ranges::find(candidates, currentPath);
     if (it == candidates.end()) {
       return candidates.front();
     }
@@ -245,6 +243,57 @@ namespace {
       return false;
     }
     return tryParseHexColor(path.substr(kPrefix.size()), out);
+  }
+
+  // Build the Span geometry for one output: the desktop bounding box across every
+  // ready output and this output's offset/size within it. Returns a zeroed result
+  // (which makes the shader fall back to Crop) when geometry is not yet available.
+  WallpaperSpanParams computeSpanParams(const std::vector<WaylandOutput>& outputs, std::uint32_t outputName) {
+    WallpaperSpanParams span;
+
+    bool haveBounds = false;
+    std::int32_t minX = 0;
+    std::int32_t minY = 0;
+    std::int32_t maxX = 0;
+    std::int32_t maxY = 0;
+    const WaylandOutput* self = nullptr;
+
+    for (const auto& out : outputs) {
+      if (!out.done || out.logicalWidth <= 0 || out.logicalHeight <= 0) {
+        continue;
+      }
+      const std::int32_t left = out.logicalX;
+      const std::int32_t top = out.logicalY;
+      const std::int32_t right = out.logicalX + out.logicalWidth;
+      const std::int32_t bottom = out.logicalY + out.logicalHeight;
+      if (!haveBounds) {
+        minX = left;
+        minY = top;
+        maxX = right;
+        maxY = bottom;
+        haveBounds = true;
+      } else {
+        minX = std::min(minX, left);
+        minY = std::min(minY, top);
+        maxX = std::max(maxX, right);
+        maxY = std::max(maxY, bottom);
+      }
+      if (out.name == outputName) {
+        self = &out;
+      }
+    }
+
+    if (!haveBounds || self == nullptr) {
+      return span;
+    }
+
+    span.offsetX = static_cast<float>(self->logicalX - minX);
+    span.offsetY = static_cast<float>(self->logicalY - minY);
+    span.monitorWidth = static_cast<float>(self->logicalWidth);
+    span.monitorHeight = static_cast<float>(self->logicalHeight);
+    span.totalWidth = static_cast<float>(maxX - minX);
+    span.totalHeight = static_cast<float>(maxY - minY);
+    return span;
   }
 
 } // namespace
@@ -423,11 +472,24 @@ void Wallpaper::onOutputChange() {
     return;
   }
   syncInstances();
+
+  // Span fill mode maps a single image across the whole desktop, so a geometry
+  // change on any output shifts the slice shown on every other output. Refresh
+  // all instances; the node setters no-op when the span geometry is unchanged.
+  if (m_config->config().wallpaper.fillMode == WallpaperFillMode::Span) {
+    for (auto& inst : m_instances) {
+      updateRendererState(*inst);
+      if (inst->surface != nullptr) {
+        inst->surface->requestRedraw();
+      }
+    }
+  }
 }
 
 void Wallpaper::onStateChange() {
   kLog.info("state file changed, checking for updates");
 
+  bool changed = false;
   for (auto& inst : m_instances) {
     auto newPath = m_config->getWallpaperPath(inst->connectorName);
     if (inst->surface == nullptr || inst->wallpaperNode == nullptr) {
@@ -436,6 +498,7 @@ void Wallpaper::onStateChange() {
 
     if (newPath.empty()) {
       if (!inst->currentPath.empty() || inst->currentTexture.id != 0 || inst->nextTexture.id != 0) {
+        changed = true;
         if (inst->transitionAnimId != 0) {
           inst->animations.cancel(inst->transitionAnimId);
           inst->transitionAnimId = 0;
@@ -464,6 +527,7 @@ void Wallpaper::onStateChange() {
       }
 
       inst->queuedPath = newPath;
+      changed = true;
       continue;
     }
 
@@ -473,6 +537,14 @@ void Wallpaper::onStateChange() {
 
     kLog.info("changing {} → {}", inst->connectorName, newPath);
     loadWallpaper(*inst, newPath);
+    changed = true;
+  }
+
+  // Any wallpaper change (manual selection, IPC, or automation) restarts the
+  // rotation interval so the next automatic switch is a full interval away.
+  if (changed) {
+    using namespace std::chrono;
+    m_lastAutomationSwitchSecond = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
   }
 }
 
@@ -496,7 +568,7 @@ void Wallpaper::registerIpc(IpcService& ipc) {
       return {};
     }
     const auto& outputs = m_wayland->outputs();
-    const bool found = std::any_of(outputs.begin(), outputs.end(), [&](const WaylandOutput& out) {
+    const bool found = std::ranges::any_of(outputs, [&](const WaylandOutput& out) {
       return !out.connectorName.empty() && out.connectorName == outputConnector;
     });
     if (found) {
@@ -644,9 +716,8 @@ void Wallpaper::syncInstances() {
       continue;
     }
 
-    bool exists = std::any_of(m_instances.begin(), m_instances.end(), [&output](const auto& inst) {
-      return inst->outputName == output.name;
-    });
+    bool exists =
+        std::ranges::any_of(m_instances, [&output](const auto& inst) { return inst->outputName == output.name; });
     if (exists) {
       continue;
     }
@@ -671,33 +742,6 @@ void Wallpaper::resetAutomationState() {
 }
 
 void Wallpaper::setAutomationGate(std::function<bool()> gate) { m_automationGate = std::move(gate); }
-
-void Wallpaper::pauseRendering() {
-  if (m_renderingPaused) {
-    return;
-  }
-  m_renderingPaused = true;
-  for (const auto& instance : m_instances) {
-    if (instance == nullptr || instance->surface == nullptr) {
-      continue;
-    }
-    instance->surface->pauseFrameLoop();
-  }
-}
-
-void Wallpaper::resumeRendering() {
-  if (!m_renderingPaused) {
-    return;
-  }
-  m_renderingPaused = false;
-  for (const auto& instance : m_instances) {
-    if (instance == nullptr || instance->surface == nullptr) {
-      continue;
-    }
-    instance->surface->resumeFrameLoop();
-    instance->surface->requestLayout();
-  }
-}
 
 bool Wallpaper::automationAllowed() const noexcept { return !m_automationGate || m_automationGate(); }
 
@@ -852,7 +896,7 @@ bool Wallpaper::switchToRandomWallpaper(std::optional<std::string_view> connecto
   if (connector.has_value()) {
     if (m_wayland != nullptr) {
       const auto& outputs = m_wayland->outputs();
-      const bool found = std::any_of(outputs.begin(), outputs.end(), [&](const WaylandOutput& out) {
+      const bool found = std::ranges::any_of(outputs, [&](const WaylandOutput& out) {
         return !out.connectorName.empty() && out.connectorName == *connector;
       });
       if (!found) {
@@ -1010,10 +1054,6 @@ void Wallpaper::createInstance(const WaylandOutput& output) {
     return;
   }
 
-  if (m_renderingPaused) {
-    instance->surface->pauseFrameLoop();
-  }
-
   m_instances.push_back(std::move(instance));
 }
 
@@ -1134,7 +1174,10 @@ void Wallpaper::startTransition(WallpaperInstance& instance) {
   instance.transitionProgress = 0.0f;
 
   auto* inst = &instance;
-  instance.transitionAnimId = instance.animations.animateUnscaled(
+  // The transition runs on its own configured duration, decoupled from the global
+  // motion system: animateTimer ignores both the animation-speed multiplier and the
+  // animations-enabled toggle (disabling animations must not skip the crossfade).
+  instance.transitionAnimId = instance.animations.animateTimer(
       0.0f, 1.0f, wpConfig.transitionDurationMs, Easing::EaseInOutCubic,
       [inst](float v) { inst->transitionProgress = v; },
       [this, inst]() {
@@ -1203,4 +1246,10 @@ void Wallpaper::updateRendererState(WallpaperInstance& instance) {
   wallpaperNode->setTransition(instance.activeTransition, instance.transitionProgress, instance.transitionParams);
   wallpaperNode->setFillMode(wpConfig.fillMode);
   wallpaperNode->setFillColor(fillColor);
+
+  if (wpConfig.fillMode == WallpaperFillMode::Span && m_wayland != nullptr) {
+    wallpaperNode->setSpan(computeSpanParams(m_wayland->outputs(), instance.outputName));
+  } else {
+    wallpaperNode->setSpan(WallpaperSpanParams{});
+  }
 }

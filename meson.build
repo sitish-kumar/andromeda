@@ -312,6 +312,8 @@ foreach _p : [
     'protocols/virtual-keyboard-unstable-v1.xml'],
   ['dwl-ipc-unstable-v2',
     'protocols/dwl-ipc-unstable-v2.xml'],
+  ['org-kde-plasma-virtual-desktop',
+    'protocols/org-kde-plasma-virtual-desktop.xml'],
   ['cursor-shape-v1',
     'protocols/cursor-shape-v1.xml'],
   ['wlr-foreign-toplevel-management-unstable-v1',
@@ -411,6 +413,7 @@ _noctalia_sources = files(
   'src/dbus/network/network_secret_agent.cpp',
   'src/dbus/network/wpa_supplicant_service.cpp',
   'src/dbus/polkit/polkit_agent.cpp',
+  'src/dbus/notification/kde_notification_client.cpp',
   'src/dbus/notification/notification_poll_source.cpp',
   'src/dbus/notification/notification_service.cpp',
   'src/dbus/power/power_profiles_service.cpp',
@@ -493,6 +496,7 @@ _noctalia_sources = files(
   'src/scripting/luau_host.cpp',
   'src/scripting/plugin_catalog.cpp',
   'src/scripting/plugin_git.cpp',
+  'src/scripting/plugin_i18n.cpp',
   'src/scripting/plugin_ipc.cpp',
   'src/scripting/plugin_manager.cpp',
   'src/scripting/plugin_manifest.cpp',
@@ -526,6 +530,7 @@ _noctalia_sources = files(
   'src/shell/lockscreen/lockscreen_widgets_controller.cpp',
   'src/shell/lockscreen/lockscreen_widgets_host.cpp',
   'src/shell/desktop/widgets/desktop_audio_visualizer_widget.cpp',
+  'src/shell/desktop/widgets/desktop_button_widget.cpp',
   'src/shell/desktop/widgets/desktop_clock_widget.cpp',
   'src/shell/desktop/widgets/desktop_fancy_audio_visualizer_widget.cpp',
   'src/shell/desktop/widgets/desktop_label_widget.cpp',
@@ -576,6 +581,7 @@ _noctalia_sources = files(
   'src/shell/osd/brightness_osd.cpp',
   'src/shell/osd/lock_keys_osd.cpp',
   'src/shell/osd/keyboard_layout_osd.cpp',
+  'src/shell/osd/privacy_osd.cpp',
   'src/shell/osd/osd_overlay.cpp',
   'src/shell/tooltip/tooltip_manager.cpp',
   'src/shell/screen_corners/screen_corners.cpp',
@@ -769,6 +775,8 @@ _noctalia_sources = files(
   'src/compositors/sway/sway_keyboard_backend.cpp',
   'src/compositors/sway/sway_output_backend.cpp',
   'src/compositors/sway/sway_workspace_backend.cpp',
+  'src/compositors/kde/kwin_active_window.cpp',
+  'src/compositors/kde/kwin_workspace_backend.cpp',
   'src/wayland/layer_surface.cpp',
   'src/wayland/popup_surface.cpp',
   'src/wayland/subsurface.cpp',
@@ -1136,6 +1144,25 @@ plugin_manifest_test = executable('plugin_manifest_test',
 )
 
 test('plugin_manifest', plugin_manifest_test)
+
+plugin_i18n_test = executable('plugin_i18n_test',
+  sources: files(
+    'tests/plugin_i18n_test.cpp',
+    'src/scripting/plugin_i18n.cpp',
+    'src/i18n/i18n_service.cpp',
+    'src/i18n/language_tag.cpp',
+    'src/core/resource_paths.cpp',
+    'src/core/log.cpp',
+  ),
+  include_directories: _noctalia_inc,
+  cpp_args: [
+    '-DNOCTALIA_SOURCE_ASSETS_DIR="' + meson.project_source_root() / 'assets' + '"',
+    '-DNOCTALIA_INSTALL_PREFIX="' + get_option('prefix') + '"',
+    '-DNOCTALIA_INSTALL_DATADIR="' + get_option('datadir') + '"',
+  ],
+)
+
+test('plugin_i18n', plugin_i18n_test)
 
 config_schema_roundtrip_test = executable('config_schema_roundtrip_test',
   sources: files(

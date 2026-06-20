@@ -20,6 +20,8 @@
 #include "dbus/mpris/mpris_service.h"
 #include "dbus/network/inetwork_service.h"
 #include "dbus/network/network_secret_agent.h"
+#include "dbus/notification/kde_notification_client.h"
+#include "dbus/notification/notification_dbus_host.h"
 #include "dbus/notification/notification_poll_source.h"
 #include "dbus/notification/notification_service.h"
 #include "dbus/polkit/polkit_agent.h"
@@ -69,6 +71,7 @@
 #include "shell/osd/lock_keys_osd.h"
 #include "shell/osd/media_osd.h"
 #include "shell/osd/osd_overlay.h"
+#include "shell/osd/privacy_osd.h"
 #include "shell/overview/overview_launcher_capture.h"
 #include "shell/panel/panel_manager.h"
 #include "shell/polkit/polkit_panel.h"
@@ -78,6 +81,7 @@
 #include "shell/settings/settings_window.h"
 #include "shell/switcher/window_switcher.h"
 #include "shell/tray/tray_menu.h"
+#include "shell/wallpaper/panel/wallpaper_scanner.h"
 #include "shell/wallpaper/wallpaper.h"
 #include "system/battery_warning_monitor.h"
 #include "system/brightness_poll_source.h"
@@ -121,6 +125,10 @@
 #include <optional>
 #include <vector>
 
+namespace sdbus {
+  class IProxy;
+}
+
 class LauncherPanel;
 
 class Application {
@@ -141,6 +149,7 @@ private:
   void reloadPluginLauncherProviders();
   void startTrayService();
   void syncNotificationDaemon();
+  void installNotificationBusNameWatch();
   void scheduleNotificationShellRefresh();
   void syncPolkitAgent();
   void syncClipboardService();
@@ -148,7 +157,6 @@ private:
   bool runUserCommand(const std::string& command);
   bool runUserCommandBlocking(const std::string& command);
   bool runIdleAction(const IdleActionRequest& action);
-  void resumeShellRenderingIfUnlocked();
   void onIconThemeChanged();
   void onGraphicsReset(RenderGraphicsResetStatus status);
   void requestAllSurfacesRedraw();
@@ -210,7 +218,9 @@ private:
   std::optional<std::string> m_prevPowerProfileActiveForEvents;
   std::unique_ptr<BrightnessService> m_brightnessService;
   std::unique_ptr<TrayService> m_trayService;
-  std::unique_ptr<NotificationService> m_notificationDbus;
+  std::unique_ptr<NotificationDBusHost> m_notificationDbus;
+  std::unique_ptr<sdbus::IProxy> m_notificationBusNameWatchProxy;
+  bool m_notificationBusNameWatchInstalled = false;
   std::unique_ptr<PipeWireService> m_pipewireService;
   std::unique_ptr<EasyEffectsService> m_easyEffectsService;
   std::unique_ptr<PipeWireSpectrum> m_pipewireSpectrum;
@@ -224,6 +234,7 @@ private:
   SharedTextureCache m_sharedTextureCache;
   RenderContext m_renderContext;
   ThumbnailService m_thumbnailService;
+  WallpaperScanner m_wallpaperScanner;
   Bar m_bar;
   Dock m_dock;
   DesktopWidgetsController m_desktopWidgetsController;
@@ -241,6 +252,7 @@ private:
   MediaOsd m_mediaOsd;
   LockKeysOsd m_lockKeysOsd;
   KeyboardLayoutOsd m_keyboardLayoutOsd;
+  PrivacyOsd m_privacyOsd;
   OsdOverlay m_osdOverlay;
   ScreenCorners m_screenCorners;
   TrayMenu m_trayMenu;

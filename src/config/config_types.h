@@ -64,8 +64,6 @@ struct BarMonitorOverride {
   std::optional<std::int32_t> padding;       // main-axis padding from bar edges to start/end sections
   std::optional<std::int32_t> widgetSpacing; // gap between widgets within a section
   std::optional<bool> shadow;                // use the global shell shadow on this bar
-  std::optional<bool> contactShadow;         // dark gradient between attached panel and bar
-  std::optional<std::int32_t> panelOverlap;  // logical px the attached panel overlaps the bar edge (seam tuning)
   std::optional<float> capsuleThickness;     // capsule cross-size as a fraction of bar thickness
   std::optional<std::string> fontFamily;     // unset = inherit shell.font_family
   std::optional<float> scale;
@@ -109,11 +107,6 @@ struct BarConfig {
   std::int32_t padding = 14;      // main-axis padding from bar edges to start/end sections
   std::int32_t widgetSpacing = 6; // gap between widgets within a section
   bool shadow = true;             // use the global shell shadow
-  bool contactShadow = false;     // dark gradient between attached panel and bar
-  // Logical px the attached panel overlaps the bar edge so their seam is hidden. The ideal value depends on the
-  // compositor and the output's fractional scale (physical-pixel rounding), so it is exposed for per-bar/per-monitor
-  // tuning. Negative values pull the panel away from the bar.
-  std::int32_t panelOverlap = 1;
   float capsuleThickness = 0.76f; // capsule cross-size as a fraction of bar thickness
   float scale = 1.0f;             // content scale multiplier for glyphs and text
   int fontWeight = 500;           // primary label weight for bar widgets
@@ -354,6 +347,7 @@ enum class WallpaperFillMode : std::uint8_t {
   Fit = 2,
   Stretch = 3,
   Repeat = 4,
+  Span = 5,
 };
 
 enum class WallpaperTransition : std::uint8_t {
@@ -579,6 +573,7 @@ struct OsdKindsConfig {
   bool lockKeys = true;
   bool keyboardLayout = true;
   bool media = true;
+  bool privacy = true;
   bool operator==(const OsdKindsConfig&) const = default;
 };
 
@@ -734,6 +729,7 @@ constexpr EnumOption<WallpaperFillMode> kWallpaperFillModes[] = {
     {WallpaperFillMode::Fit, "fit", "settings.options.wallpaper.fill.fit"},
     {WallpaperFillMode::Stretch, "stretch", "settings.options.wallpaper.fill.stretch"},
     {WallpaperFillMode::Repeat, "repeat", "settings.options.wallpaper.fill.repeat"},
+    {WallpaperFillMode::Span, "span", "settings.options.wallpaper.fill.span"},
 };
 
 constexpr EnumOption<WallpaperAutomationConfig::Order> kWallpaperAutomationOrders[] = {
@@ -1211,6 +1207,7 @@ struct ControlCenterConfig {
   std::vector<ShortcutConfig> shortcuts;
   ControlCenterSidebarMode sidebarMode = ControlCenterSidebarMode::Compact;
   ControlCenterSidebarMode sidebarSectionMode = ControlCenterSidebarMode::Compact;
+  std::int32_t width = 680; // full-sidebar logical width; compact/none modes scale down from this
   bool operator==(const ControlCenterConfig&) const = default;
 };
 

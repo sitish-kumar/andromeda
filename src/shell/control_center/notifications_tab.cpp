@@ -8,6 +8,7 @@
 #include "notification/notification_manager.h"
 #include "render/core/renderer.h"
 #include "render/core/texture_manager.h"
+#include "shell/panel/panel_button_style.h"
 #include "shell/panel/panel_manager.h"
 #include "time/time_format.h"
 #include "ui/builders.h"
@@ -23,6 +24,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <unistd.h>
@@ -719,6 +721,7 @@ std::unique_ptr<Flex> NotificationsTab::create() {
 
 std::unique_ptr<Flex> NotificationsTab::createHeaderActions() {
   const float scale = contentScale();
+  const bool dndEnabled = m_notifications != nullptr && m_notifications->doNotDisturb();
   return ui::row(
       {
           .align = FlexAlign::Center,
@@ -727,12 +730,22 @@ std::unique_ptr<Flex> NotificationsTab::createHeaderActions() {
       ui::button({
           .out = &m_clearAllButton,
           .glyph = "trash",
-          .glyphSize = Style::fontSizeBody * scale,
-          .variant = ButtonVariant::Destructive,
-          .minWidth = Style::controlHeightSm * scale,
-          .minHeight = Style::controlHeightSm * scale,
-          .padding = Style::spaceXs * scale,
+          .tooltip = i18n::tr("control-center.notifications.clear-all"),
           .onClick = [this]() { clearAllNotifications(); },
+          .configure =
+              [scale](Button& button) {
+                panel_button_style::configureHeaderIconButton(button, scale);
+                button.setVariant(ButtonVariant::Destructive);
+              },
+      }),
+      ui::button({
+          .out = &m_dndButton,
+          .glyph = dndEnabled ? "bell-off" : "bell",
+          .selected = dndEnabled,
+          .tooltip =
+              i18n::tr(dndEnabled ? "control-center.notifications.dnd-off" : "control-center.notifications.dnd-on"),
+          .onClick = [this]() { toggleDoNotDisturb(); },
+          .configure = [scale](Button& button) { panel_button_style::configureHeaderIconButton(button, scale); },
       })
   );
 }
@@ -764,6 +777,7 @@ void NotificationsTab::onClose() {
   m_emptyBody = nullptr;
   m_filter = nullptr;
   m_clearAllButton = nullptr;
+  m_dndButton = nullptr;
   m_adapter.reset();
   m_filtered.clear();
   m_expandedIds.clear();
@@ -791,6 +805,16 @@ void NotificationsTab::clearAllNotifications() {
   if (m_list != nullptr) {
     m_list->notifyDataChanged();
   }
+  PanelManager::instance().refresh();
+}
+
+void NotificationsTab::toggleDoNotDisturb() {
+  if (m_notifications == nullptr) {
+    return;
+  }
+
+  (void)m_notifications->toggleDoNotDisturb();
+  syncDndButton();
   PanelManager::instance().refresh();
 }
 
@@ -853,6 +877,7 @@ bool NotificationsTab::refreshDataSnapshot() {
   if (m_clearAllButton != nullptr) {
     m_clearAllButton->setVisible(hasHistory);
   }
+  syncDndButton();
 
   const std::uint64_t serial = m_notifications != nullptr ? m_notifications->changeSerial() : 0;
   const std::int64_t relativeSlot = currentRelativeTimeSlot();
@@ -866,9 +891,9 @@ bool NotificationsTab::refreshDataSnapshot() {
   m_filtered.clear();
   if (m_notifications != nullptr) {
     m_filtered.reserve(m_notifications->history().size());
-    for (auto it = m_notifications->history().rbegin(); it != m_notifications->history().rend(); ++it) {
-      if (matchesHistoryFilter(*it, m_filterIndex)) {
-        m_filtered.push_back(&*it);
+    for (const auto& historyEntry : std::views::reverse(m_notifications->history())) {
+      if (matchesHistoryFilter(historyEntry, m_filterIndex)) {
+        m_filtered.push_back(&historyEntry);
       }
     }
   }
@@ -882,6 +907,20 @@ bool NotificationsTab::refreshDataSnapshot() {
     m_list->notifyDataChanged();
   }
   return true;
+}
+
+void NotificationsTab::syncDndButton() {
+  if (m_dndButton == nullptr) {
+    return;
+  }
+
+  const bool enabled = m_notifications != nullptr && m_notifications->doNotDisturb();
+  m_dndButton->setEnabled(m_notifications != nullptr);
+  m_dndButton->setSelected(enabled);
+  m_dndButton->setGlyph(enabled ? "bell-off" : "bell");
+  m_dndButton->setTooltip(
+      i18n::tr(enabled ? "control-center.notifications.dnd-off" : "control-center.notifications.dnd-on")
+  );
 }
 
 void NotificationsTab::updateEmptyState(bool hasHistory, bool hasFiltered) {

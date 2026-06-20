@@ -454,9 +454,8 @@ void BatteryWidget::syncState(Renderer& renderer) {
   // Tooltip (both modes)
   if (rootNode != nullptr) {
     auto devices = m_upower->batteryDevices();
-    auto laptopEnd = std::stable_partition(devices.begin(), devices.end(), [](const UPowerDeviceInfo& d) {
-      return d.isLaptopBattery();
-    });
+    auto laptopEnd =
+        std::ranges::stable_partition(devices, [](const UPowerDeviceInfo& d) { return d.isLaptopBattery(); }).begin();
     int laptopBatteryCount = static_cast<int>(laptopEnd - devices.begin());
 
     std::vector<TooltipRow> rows;
@@ -464,9 +463,13 @@ void BatteryWidget::syncState(Renderer& renderer) {
     for (const auto& dev : devices) {
       std::string name;
       if (dev.isLaptopBattery()) {
-        name = (laptopBatteryCount > 1) ? ("Battery " + std::to_string(++laptopBatteryIndex)) : "Battery";
+        name = (laptopBatteryCount > 1)
+            ? i18n::tr("power.battery.tooltip.device-numbered", "index", ++laptopBatteryIndex)
+            : i18n::tr("power.battery.tooltip.device");
       } else {
-        name = !dev.model.empty() ? dev.model : (!dev.nativePath.empty() ? dev.nativePath : "Unknown Device");
+        name = !dev.model.empty()
+            ? dev.model
+            : (!dev.nativePath.empty() ? dev.nativePath : i18n::tr("power.battery.tooltip.unknown-device"));
       }
       int dp = static_cast<int>(std::round(dev.state.percentage));
       rows.push_back({std::move(name), std::to_string(dp) + "%"});

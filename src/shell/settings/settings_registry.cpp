@@ -52,10 +52,7 @@ namespace settings {
     }};
 
     const SettingsSectionDescriptor& descriptorFor(SettingsSection section) {
-      const auto it = std::find_if(
-          kSettingsSections.begin(), kSettingsSections.end(),
-          [section](const SettingsSectionDescriptor& descriptor) { return descriptor.section == section; }
-      );
+      const auto it = std::ranges::find(kSettingsSections, section, &SettingsSectionDescriptor::section);
       if (it == kSettingsSections.end()) {
         std::abort();
       }
@@ -84,16 +81,6 @@ namespace settings {
           .value = static_cast<int>(value),
           .minValue = 0,
           .maxValue = kBarMarginMax,
-          .step = 1,
-          .valueSuffix = "px",
-      };
-    }
-
-    StepperSetting barPanelOverlapStepper(std::int32_t value) {
-      return StepperSetting{
-          .value = static_cast<int>(value),
-          .minValue = -2,
-          .maxValue = 3,
           .step = 1,
           .valueSuffix = "px",
       };
@@ -350,10 +337,7 @@ namespace settings {
   std::string_view sectionGlyph(SettingsSection section) { return descriptorFor(section).glyph; }
 
   std::optional<SettingsSection> settingsSectionFromId(std::string_view id) {
-    const auto it = std::find_if(
-        kSettingsSections.begin(), kSettingsSections.end(),
-        [id](const SettingsSectionDescriptor& descriptor) { return descriptor.id == id; }
-    );
+    const auto it = std::ranges::find(kSettingsSections, id, &SettingsSectionDescriptor::id);
     if (it == kSettingsSections.end()) {
       return std::nullopt;
     }
@@ -959,6 +943,16 @@ namespace settings {
       e.visibleWhen = SettingVisibility{{"shell", "panel", "control_center_placement"}, {"attached", "floating"}};
       entries.push_back(std::move(e));
     }
+    {
+      SliderSetting width =
+          sliderFor(cfg.controlCenter.width, noctalia::config::schema::kControlCenterWidthRange, true);
+      width.valueSuffix = "px";
+      entries.push_back(makeEntry(
+          SettingsSection::Panels, "control-center", tr("settings.schema.panels.control-center-width.label"),
+          tr("settings.schema.panels.control-center-width.description"), {"control_center", "width"}, std::move(width),
+          "size dimension wide narrow"
+      ));
+    }
     entries.push_back(makeEntry(
         SettingsSection::Panels, "control-center", tr("settings.schema.panels.control-center-sidebar.label"),
         tr("settings.schema.panels.control-center-sidebar.description"), {"control_center", "sidebar"},
@@ -1494,6 +1488,11 @@ namespace settings {
         SettingsSection::Osd, "kinds", tr("settings.schema.shell.osd-kinds-media.label"),
         tr("settings.schema.shell.osd-kinds-media.description"), {"osd", "kinds", "media"},
         ToggleSetting{cfg.osd.kinds.media}, "hud overlay mpris audio music"
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Osd, "kinds", tr("settings.schema.shell.osd-kinds-privacy.label"),
+        tr("settings.schema.shell.osd-kinds-privacy.description"), {"osd", "kinds", "privacy"},
+        ToggleSetting{cfg.osd.kinds.privacy}, "hud overlay microphone camera screen share recording"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-monitors.label"),
@@ -2277,16 +2276,6 @@ namespace settings {
           section, "effects", tr("settings.schema.shared.shadow.label"), tr("settings.schema.bar.shadow.description"),
           path("shadow"), ToggleSetting{bar.shadow}, "shadow"
       ));
-      entries.push_back(makeEntry(
-          section, "effects", tr("settings.schema.shared.contact-shadow.label"),
-          tr("settings.schema.bar.contact-shadow.description"), path("contact_shadow"),
-          ToggleSetting{bar.contactShadow}, "shadow contact panel attached"
-      ));
-      entries.push_back(makeEntry(
-          section, "layout", tr("settings.schema.bar.panel-overlap.label"),
-          tr("settings.schema.bar.panel-overlap.description"), path("panel_overlap"),
-          barPanelOverlapStepper(bar.panelOverlap), "seam gap overlap attached panel fractional scale", true
-      ));
       const std::string barResolvedFontFamily =
           bar.fontFamily && !bar.fontFamily->empty() ? *bar.fontFamily : cfg.shell.fontFamily;
       {
@@ -2539,17 +2528,6 @@ namespace settings {
         entries.push_back(makeEntry(
             section, "effects", tr("settings.schema.shared.shadow.label"), tr("settings.schema.bar.shadow.description"),
             monitorPath("shadow"), ToggleSetting{ovr.shadow.value_or(bar.shadow)}, "shadow"
-        ));
-        entries.push_back(makeEntry(
-            section, "effects", tr("settings.schema.shared.contact-shadow.label"),
-            tr("settings.schema.bar.contact-shadow.description"), monitorPath("contact_shadow"),
-            ToggleSetting{ovr.contactShadow.value_or(bar.contactShadow)}, "shadow contact panel attached"
-        ));
-        entries.push_back(makeEntry(
-            section, "layout", tr("settings.schema.bar.panel-overlap.label"),
-            tr("settings.schema.bar.panel-overlap.description"), monitorPath("panel_overlap"),
-            barPanelOverlapStepper(ovr.panelOverlap.value_or(bar.panelOverlap)),
-            "seam gap overlap attached panel fractional scale", true
         ));
         {
           const std::string monitorInheritedFontFamily = bar.fontFamily.value_or(cfg.shell.fontFamily);

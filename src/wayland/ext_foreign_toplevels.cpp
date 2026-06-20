@@ -98,7 +98,7 @@ std::vector<std::string> WaylandExtForeignToplevels::allAppIds() const {
       ordered.push_back(&state);
     }
   }
-  std::sort(ordered.begin(), ordered.end(), [](const ToplevelState* lhs, const ToplevelState* rhs) {
+  std::ranges::sort(ordered, [](const ToplevelState* lhs, const ToplevelState* rhs) {
     return lhs->order < rhs->order;
   });
 
@@ -136,6 +136,7 @@ WaylandExtForeignToplevels::windowsForApp(const std::string& idLower, const std:
             .info = ToplevelInfo{
                 .title = state.title,
                 .appId = appId,
+                .identifier = state.identifier,
                 .order = state.order,
                 .handle = nullptr,
                 .extHandle = handle,
@@ -143,9 +144,7 @@ WaylandExtForeignToplevels::windowsForApp(const std::string& idLower, const std:
         }
     );
   }
-  std::sort(matched.begin(), matched.end(), [](const MatchedWindow& lhs, const MatchedWindow& rhs) {
-    return lhs.order < rhs.order;
-  });
+  std::ranges::sort(matched, {}, &MatchedWindow::order);
 
   std::vector<ToplevelInfo> out;
   out.reserve(matched.size());

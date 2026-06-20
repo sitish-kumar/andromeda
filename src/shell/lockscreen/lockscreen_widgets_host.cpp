@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <string>
+#include <wayland-client.h>
 
 namespace {
 
@@ -208,9 +209,12 @@ void LockscreenWidgetsHost::createInstance(
 
   widget->create();
   widget->setBox(state.boxWidth, state.boxHeight);
-  m_renderContext->makeCurrent(surface.renderTarget());
-  widget->update(*m_renderContext);
-  widget->layout(*m_renderContext);
+
+  if (surface.renderTarget().isReady()) {
+    m_renderContext->makeCurrent(surface.renderTarget());
+    widget->update(*m_renderContext);
+    widget->layout(*m_renderContext);
+  }
 
   const float intrinsicWidth = std::max(1.0f, widget->intrinsicWidth());
   const float intrinsicHeight = std::max(1.0f, widget->intrinsicHeight());
@@ -278,7 +282,7 @@ void LockscreenWidgetsHost::syncSurfaceFrameTick(LockSurface* surfacePtr) {
     return;
   }
 
-  const bool hasWidgets = std::any_of(m_instances.begin(), m_instances.end(), [&](const auto& instance) {
+  const bool hasWidgets = std::ranges::any_of(m_instances, [&](const auto& instance) {
     return instance->surface == surfacePtr && instance->widget != nullptr;
   });
   if (!hasWidgets) {
@@ -368,9 +372,30 @@ void LockscreenWidgetsHost::prepareFrame(LockSurface& surface, bool needsUpdate,
     }
 
     if (m_wayland != nullptr) {
+      DesktopWidgetState currentState = instance->state;
+      if (const DesktopWidgetState* origState = findStateById(m_snapshot, instance->state.id); origState != nullptr) {
+        currentState = *origState;
+      }
+      if (const WaylandOutput* output = desktop_widgets::resolveStateOutput(*m_wayland, currentState);
+          output != nullptr) {
+        float curW = surfaceW;
+        float curH = surfaceH;
+        bool isRotated90or270 =
+            (output->transform == WL_OUTPUT_TRANSFORM_90
+             || output->transform == WL_OUTPUT_TRANSFORM_270
+             || output->transform == WL_OUTPUT_TRANSFORM_FLIPPED_90
+             || output->transform == WL_OUTPUT_TRANSFORM_FLIPPED_270);
+        float refW = isRotated90or270 ? curH : curW;
+        float refH = isRotated90or270 ? curW : curH;
+        if (refW > 0.0f && refH > 0.0f) {
+          currentState.cx = currentState.cx * (curW / refW);
+          currentState.cy = currentState.cy * (curH / refH);
+        }
+      }
       desktop_widgets::clampStateToOutput(
-          *m_wayland, instance->state, instance->intrinsicWidth, instance->intrinsicHeight
+          *m_wayland, currentState, instance->intrinsicWidth, instance->intrinsicHeight
       );
+      instance->state = currentState;
     }
 
     if (instance->transformNode == nullptr) {
