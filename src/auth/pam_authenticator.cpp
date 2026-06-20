@@ -225,10 +225,6 @@ bool PamAuthenticator::pamServiceExists(std::string_view name) {
 
 PamAuthenticator::Result
 PamAuthenticator::authenticateCurrentUser(std::string_view password, std::string_view service) const {
-  if (password.empty()) {
-    return Result{.success = false, .message = i18n::tr("auth.pam.authentication-failed")};
-  }
-
   int pipeFds[2] = {-1, -1};
   if (::pipe2(pipeFds, O_CLOEXEC) != 0) {
     return Result{.success = false, .message = i18n::tr("auth.pam.start-failed")};
