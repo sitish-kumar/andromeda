@@ -1434,6 +1434,9 @@
         "edge-margin": {
           "description": "Distance from the nearest screen edge; positive values float the bar away from it"
         },
+        "opposite-edge-margin": {
+          "description": "Extra reserved space on the inward side of the bar, away from the screen edge; use when maximized windows ignore struts"
+        },
         "enabled": {
           "description": "Show or hide this bar"
         },
@@ -2128,6 +2131,9 @@
         },
         "edge-margin": {
           "label": "Edge Margin"
+        },
+        "opposite-edge-margin": {
+          "label": "Opposite Edge Margin"
         },
         "enabled": {
           "label": "Enabled"

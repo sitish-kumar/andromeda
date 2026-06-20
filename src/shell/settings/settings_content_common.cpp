@@ -56,6 +56,9 @@ namespace settings {
     if (key == "margin_edge") {
       return override->marginEdge.has_value();
     }
+    if (key == "margin_opposite_edge") {
+      return override->marginOppositeEdge.has_value();
+    }
     if (key == "padding") {
       return override->padding.has_value();
     }

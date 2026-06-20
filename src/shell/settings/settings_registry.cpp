@@ -2260,6 +2260,11 @@ namespace settings {
           "gap inset"
       ));
       entries.push_back(makeEntry(
+          section, "layout", tr("settings.schema.shared.opposite-edge-margin.label"),
+          tr("settings.schema.bar.opposite-edge-margin.description"), path("margin_opposite_edge"),
+          barMarginStepper(bar.marginOppositeEdge), "gap inset strut"
+      ));
+      entries.push_back(makeEntry(
           section, "layout", tr("settings.schema.bar.content-padding.label"),
           tr("settings.schema.bar.content-padding.description"), path("padding"),
           SliderSetting{bar.padding, 0.0f, 80.0f, 1.0f, true}, "inset"
@@ -2550,6 +2555,11 @@ namespace settings {
             section, "layout", tr("settings.schema.shared.edge-margin.label"),
             tr("settings.schema.bar.edge-margin.description"), monitorPath("margin_edge"),
             barMarginStepper(ovr.marginEdge.value_or(bar.marginEdge)), "gap inset"
+        ));
+        entries.push_back(makeEntry(
+            section, "layout", tr("settings.schema.shared.opposite-edge-margin.label"),
+            tr("settings.schema.bar.opposite-edge-margin.description"), monitorPath("margin_opposite_edge"),
+            barMarginStepper(ovr.marginOppositeEdge.value_or(bar.marginOppositeEdge)), "gap inset strut"
         ));
         entries.push_back(makeEntry(
             section, "layout", tr("settings.schema.bar.content-padding.label"),

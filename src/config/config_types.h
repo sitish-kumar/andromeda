@@ -68,15 +68,16 @@ struct BarMonitorOverride {
   std::optional<std::int32_t> radiusTopRight;
   std::optional<std::int32_t> radiusBottomLeft;
   std::optional<std::int32_t> radiusBottomRight;
-  std::optional<std::int32_t> marginEnds;    // inset from each end of the bar along its main axis
-  std::optional<std::int32_t> marginEdge;    // distance from the nearest screen edge (floats the bar when > 0)
-  std::optional<std::int32_t> padding;       // main-axis padding from bar edges to start/end sections
-  std::optional<std::int32_t> widgetSpacing; // gap between widgets within a section
-  std::optional<bool> shadow;                // use the global shell shadow on this bar
-  std::optional<bool> contactShadow;         // dark gradient between attached panel and bar
-  std::optional<std::int32_t> panelOverlap;  // logical px the attached panel overlaps the bar edge (seam tuning)
-  std::optional<float> capsuleThickness;     // capsule cross-size as a fraction of bar thickness
-  std::optional<std::string> fontFamily;     // unset = inherit shell.font_family
+  std::optional<std::int32_t> marginEnds;         // inset from each end of the bar along its main axis
+  std::optional<std::int32_t> marginEdge;         // distance from the nearest screen edge (floats the bar when > 0)
+  std::optional<std::int32_t> marginOppositeEdge; // extra reserved space on the inward side of the bar
+  std::optional<std::int32_t> padding;            // main-axis padding from bar edges to start/end sections
+  std::optional<std::int32_t> widgetSpacing;      // gap between widgets within a section
+  std::optional<bool> shadow;                     // use the global shell shadow on this bar
+  std::optional<bool> contactShadow;              // dark gradient between attached panel and bar
+  std::optional<std::int32_t> panelOverlap;       // logical px the attached panel overlaps the bar edge (seam tuning)
+  std::optional<float> capsuleThickness;          // capsule cross-size as a fraction of bar thickness
+  std::optional<std::string> fontFamily;          // unset = inherit shell.font_family
   std::optional<float> scale;
   std::optional<std::vector<std::string>> startWidgets;
   std::optional<std::vector<std::string>> centerWidgets;
@@ -123,12 +124,13 @@ struct BarConfig {
   std::int32_t radiusTopRight = static_cast<std::int32_t>(Style::radiusXl);
   std::int32_t radiusBottomLeft = static_cast<std::int32_t>(Style::radiusXl);
   std::int32_t radiusBottomRight = static_cast<std::int32_t>(Style::radiusXl);
-  std::int32_t marginEnds = 180;  // inset from each end of the bar along its main axis
-  std::int32_t marginEdge = 10;   // distance from the nearest screen edge (floats the bar when > 0)
-  std::int32_t padding = 14;      // main-axis padding from bar edges to start/end sections
-  std::int32_t widgetSpacing = 6; // gap between widgets within a section
-  bool shadow = true;             // use the global shell shadow
-  bool contactShadow = false;     // dark gradient between attached panel and bar
+  std::int32_t marginEnds = 180;       // inset from each end of the bar along its main axis
+  std::int32_t marginEdge = 10;        // distance from the nearest screen edge (floats the bar when > 0)
+  std::int32_t marginOppositeEdge = 0; // extra reserved space on the inward side of the bar
+  std::int32_t padding = 14;           // main-axis padding from bar edges to start/end sections
+  std::int32_t widgetSpacing = 6;      // gap between widgets within a section
+  bool shadow = true;                  // use the global shell shadow
+  bool contactShadow = false;          // dark gradient between attached panel and bar
   // Logical px the attached panel overlaps the bar edge so their seam is hidden. The ideal value depends on the
   // compositor and the output's fractional scale (physical-pixel rounding), so it is exposed for per-bar/per-monitor
   // tuning. Negative values pull the panel away from the bar.

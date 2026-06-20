@@ -123,6 +123,8 @@ namespace config_export {
         resolved.marginEnds = *ovr.marginEnds;
       if (ovr.marginEdge)
         resolved.marginEdge = *ovr.marginEdge;
+      if (ovr.marginOppositeEdge)
+        resolved.marginOppositeEdge = *ovr.marginOppositeEdge;
       if (ovr.padding)
         resolved.padding = *ovr.padding;
       if (ovr.widgetSpacing)
