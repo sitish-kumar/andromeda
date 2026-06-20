@@ -36,6 +36,13 @@
       "active-window": {
         "no-active-window": "Aucune fenêtre active"
       },
+      "bluetooth": {
+        "connected": "Connecté"
+      },
+      "brightness": {
+        "brightness": "Luminosité",
+        "display": "Écran"
+      },
       "lock-keys": {
         "caps": "Maj",
         "caps-short": "C",
@@ -49,7 +56,27 @@
         "playing": "Lecture"
       },
       "network": {
-        "wired": "Filaire"
+        "active": "Actif",
+        "connected": "Connecté",
+        "connecting": "Connexion",
+        "download": "Téléchargement",
+        "interface": "Interface",
+        "ip": "IP",
+        "network": "Réseau",
+        "networks": "Réseaux",
+        "networks-count": "{count} réseau",
+        "networks-count-plural": "{count} réseaux",
+        "no": "Non",
+        "not-connected": "Non connecté",
+        "off": "Désactivé",
+        "on": "Activé",
+        "scanning": "Recherche en cours",
+        "signal": "Signal",
+        "upload": "Envoi",
+        "vpn": "VPN",
+        "wifi": "Wi-Fi",
+        "wired": "Filaire",
+        "yes": "Oui"
       },
       "privacy": {
         "camera": "Caméra",
@@ -59,6 +86,24 @@
       "scripted": {
         "reload-failed": "Échec du rechargement du script",
         "reloaded": "Script rechargé"
+      },
+      "sysmon": {
+        "cpu": "CPU",
+        "cpu-temp": "Temp CPU",
+        "disk": "Disque",
+        "download": "Téléchargement",
+        "gpu-temp": "Temp GPU",
+        "gpu-usage": "Util GPU",
+        "gpu-vram": "VRAM GPU",
+        "ram": "RAM",
+        "swap": "Swap",
+        "system": "Système",
+        "upload": "Envoi"
+      },
+      "volume": {
+        "device": "Périphérique",
+        "mic": "Micro",
+        "volume": "Volume"
       },
       "weather": {
         "default": "Météo",
@@ -120,6 +165,7 @@
       "application-volumes": "Volumes des applications",
       "choose-effects-profile": "Choisir un profil",
       "effects-profile": "Effets: ",
+      "input-device-prefix": "Entrée:",
       "no-application-audio": "Aucun flux audio d’application",
       "no-application-audio-body": "Aucun flux de lecture d’application disponible.",
       "no-input-devices": "Aucun périphérique d’entrée",
@@ -128,6 +174,7 @@
       "no-output-devices": "Aucun périphérique de sortie",
       "no-output-devices-body": "Aucune sortie audio disponible.",
       "no-output-selected": "Aucun périphérique de sortie sélectionné",
+      "output-device-prefix": "Sortie:",
       "unavailable-body": "PipeWire n’est pas actif.",
       "unavailable-title": "Audio indisponible"
     },
@@ -217,6 +264,9 @@
       "wired-connection": "Connexion filaire"
     },
     "notifications": {
+      "clear-all": "Effacer toutes les notifications",
+      "dnd-off": "Désactiver le mode Ne Pas Déranger",
+      "dnd-on": "Activer le mode Ne Pas Déranger",
       "empty-body": "Les notifications récentes s’afficheront ici.",
       "empty-title": "Aucune notification",
       "filter": {
@@ -568,6 +618,8 @@
     },
     "internal": {
       "battery": "Batterie",
+      "battery-critical-body": "{device} : {percent}% — votre ordinateur va bientôt s’éteindre",
+      "battery-critical-title": "Batterie critique",
       "battery-device": "Batterie",
       "battery-low-body": "{device} : {percent} % restant",
       "battery-low-title": "Batterie faible",
@@ -629,6 +681,20 @@
       "scroll-off": "Arrêt défilement désactivé",
       "scroll-on": "Arrêt défilement activé"
     },
+    "nightlight": {
+      "forced": "Toujours activé",
+      "off": "Lumière nocturne désactivée",
+      "running": "Actif",
+      "scheduled": "Programmé"
+    },
+    "privacy": {
+      "camera-off": "Caméra désactivée",
+      "camera-on": "Caméra active",
+      "mic-off": "Microphone désactivé",
+      "mic-on": "Microphone actif",
+      "screen-off": "Partage d'écran désactivé",
+      "screen-on": "Partage d'écran actif"
+    },
     "wifi": {
       "off": "Wi-Fi désactivé",
       "on": "Wi-Fi activé"
@@ -645,11 +711,14 @@
         "plugged-in": "Branché"
       },
       "tooltip": {
+        "device": "Batterie",
+        "device-numbered": "Batterie {index}",
         "health": "Santé",
         "rate": "Taux",
         "status": "Status",
         "time-left": "Temps restant",
-        "time-to-full": "Temps avant charge complète"
+        "time-to-full": "Temps avant charge complète",
+        "unknown-device": "Périphérique inconnu"
       }
     },
     "profiles": {
@@ -1123,6 +1192,7 @@
           "crop": "Rogner",
           "fit": "Ajuster",
           "repeat": "Répéter",
+          "span": "Étendre",
           "stretch": "Étendre"
         },
         "order": {
@@ -2146,9 +2216,17 @@
           "description": "Affiche une notification OSD lorsqu’une nouvelle piste commence à être lue",
           "label": "Lecture en cours"
         },
+        "osd-kinds-nightlight": {
+          "description": "Affiche une notification OSD lors de l’activation ou de la désactivation de la lumière nocturne",
+          "label": "Lumière nocturne"
+        },
         "osd-kinds-power-profile": {
           "description": "Affiche une notification OSD lors d’un changement de profil d’alimentation",
           "label": "Profil d’alimentation"
+        },
+        "osd-kinds-privacy": {
+          "description": "Affiche une notification OSD lorsque la capture du microphone, de la caméra ou de l’écran démarre ou s’arrête",
+          "label": "Confidentialité"
         },
         "osd-kinds-volume": {
           "description": "Affiche des notifications OSD lors des changements de volume. Utilisez les paramètres avancés pour configurer séparément les volumes d’entrée et de sortie",
@@ -2185,6 +2263,10 @@
         "osd-position": {
           "description": "Position des notifications OSD à l’écran",
           "label": "Position à l’écran"
+        },
+        "osd-position-vertical": {
+          "description": "Position à l’écran lorsque l’orientation du curseur est verticale",
+          "label": "Position verticale"
         },
         "osd-scale": {
           "description": "Met à l’échelle les notifications OSD par rapport à l’échelle de l’interface (1,0 conserve la taille par défaut)",
@@ -2259,10 +2341,182 @@
         "battery-device-warning-threshold": {
           "description": "Remplace le seuil d’avertissement de batterie pour ce périphérique. Définissez 0 pour désactiver les avertissements associés à ce périphérique.",
           "label": "Seuil d’avertissement de {device}"
+        },
+        "battery-warning-threshold": {
+          "description": "Pourcentage de batterie système à partir duquel le shell envoie une notification de batterie faible et les widgets de batterie utilisent leur couleur d’avertissement. Définissez 0 pour désactiver.",
+          "label": "Seuil d’avertissement de batterie"
+        }
+      },
+      "templates": {
+        "builtin-ids": {
+          "description": "Active/désactive l’application des modèles intégrés à chaque changement de thème",
+          "empty": "Aucun modèle intégré disponible.",
+          "label": "Modèles intégrés"
+        },
+        "community-ids": {
+          "description": "Active/désactive l’application des modèles communautaires mis en cache à chaque changement de thème",
+          "empty": "Aucun modèle communautaire disponible pour le moment. Activez les modèles communautaires et actualisez le catalogue.",
+          "label": "Modèles communautaires"
+        },
+        "enable-builtins": {
+          "description": "Utilise le catalogue intégré de modèles de thème pour les applications",
+          "label": "Activer les modèles intégrés"
+        },
+        "enable-community-templates": {
+          "description": "Télécharge et applique les modèles du catalogue communautaire",
+          "label": "Activer les modèles communautaires"
+        }
+      },
+      "wallpaper": {
+        "automation": {
+          "description": "Change automatiquement de fond d’écran selon un intervalle de temps",
+          "label": "Rotation automatique"
+        },
+        "automation-interval": {
+          "description": "Nombre de secondes entre chaque changement de fond d’écran",
+          "label": "Intervalle de rotation"
+        },
+        "automation-order": {
+          "description": "Sélectionne les fonds d’écran de manière aléatoire ou alphabétique",
+          "label": "Ordre"
+        },
+        "automation-recursive": {
+          "description": "Recherche les fonds d’écran dans les dossiers imbriqués",
+          "label": "Inclure les sous-dossiers"
+        },
+        "directory": {
+          "description": "Dossier contenant les fonds d’écran",
+          "label": "Dossier des fonds d’écran"
+        },
+        "directory-dark": {
+          "description": "Dossier de fonds d’écran utilisé en mode sombre",
+          "label": "Dossier (mode sombre)",
+          "placeholder": "~/Pictures/Wallpapers"
+        },
+        "directory-light": {
+          "description": "Dossier de fonds d’écran utilisé en mode clair",
+          "label": "Dossier (mode clair)",
+          "placeholder": "~/Pictures/Wallpapers"
+        },
+        "edge-smoothness": {
+          "description": "Adoucissement des transitions entre les fonds d’écran",
+          "label": "Adoucissement des bords"
+        },
+        "enabled": {
+          "description": "Activer le service de fonds d’écran"
+        },
+        "fill-color": {
+          "description": "Couleur unie affichée derrière l’image dans les zones non couvertes",
+          "label": "Couleur de remplissage"
+        },
+        "fill-mode": {
+          "description": "Définit la manière dont les fonds d’écran s’adaptent à l’écran",
+          "label": "Mode de remplissage"
+        },
+        "monitor-directory": {
+          "label": "Dossier des fonds d’écran"
+        },
+        "monitor-directory-dark": {
+          "label": "Dossier (mode sombre)",
+          "placeholder": "~/Pictures/Wallpapers"
+        },
+        "monitor-directory-light": {
+          "label": "Dossier (mode clair)",
+          "placeholder": "~/Pictures/Wallpapers"
+        },
+        "panel": {
+          "button": "Ouvrir le panneau",
+          "description": "Ouvre le panneau de sélection des fonds d’écran",
+          "label": "Panneau de fonds d’écran"
+        },
+        "per-monitor-directories": {
+          "description": "Utilise des dossiers de fonds d’écran distincts pour chaque écran",
+          "label": "Dossiers par écran"
+        },
+        "transition-duration": {
+          "description": "Durée de l’animation de changement de fond d’écran en millisecondes",
+          "label": "Durée de transition"
+        },
+        "transition-on-startup": {
+          "description": "Joue une transition lors de l’affichage initial du fond d’écran par le shell",
+          "label": "Animation au démarrage"
+        },
+        "transitions": {
+          "description": "Effets disponibles lors du changement de fond d’écran (un effet est sélectionné aléatoirement à chaque changement)",
+          "label": "Effets de transition"
         }
       }
     },
+    "session-actions": {
+      "add": "Ajouter une action",
+      "clear-glyph": "Effacer",
+      "command-label": "Commande shell",
+      "command-placeholder": "Commande bash optionnelle, laisser vide pour utiliser le comportement par défaut",
+      "command-required-placeholder": "Commande shell à exécuter",
+      "glyph-label": "Glyphe",
+      "glyph-picker-title": "Glyphe de l’action",
+      "kind-section-label": "Comportement",
+      "label-field": "Libellé",
+      "label-placeholder": "Texte du bouton optionnel",
+      "shortcut-label": "Raccourci",
+      "variant": {
+        "default": "Par défaut",
+        "destructive": "Destructif",
+        "ghost": "Transparent",
+        "outline": "Contour",
+        "primary": "Principal",
+        "secondary": "Secondaire"
+      },
+      "variant-label": "Style du bouton"
+    },
     "widgets": {
+      "instances": {
+        "cpu": "CPU",
+        "date": "Date",
+        "input-volume": "Volume d’entrée",
+        "network-rx": "Réception réseau",
+        "network-tx": "Envoi réseau",
+        "output-volume": "Volume de sortie",
+        "ram": "RAM",
+        "temp": "Température"
+      },
+      "options": {
+        "always": "Toujours",
+        "cpu-temp": "Température CPU",
+        "cpu-usage": "Utilisation CPU",
+        "disk-percent": "Pourcentage disque",
+        "full": "Complet",
+        "gauge": "Jauge",
+        "glyph": "Glyphe",
+        "gpu-temp": "Température GPU",
+        "gpu-usage": "Utilisation GPU",
+        "gpu-vram": "VRAM GPU",
+        "graph": "Graphe",
+        "graphic": "Graphique",
+        "icon-and-text": "Icône et texte",
+        "icon-only": "Icône uniquement",
+        "id": "ID",
+        "input": "Entrée",
+        "instance": "Par emplacement",
+        "name": "Nom",
+        "net-rx": "Réception réseau",
+        "net-tx": "Envoi réseau",
+        "none": "Aucun",
+        "on-hover": "Au survol",
+        "output": "Sortie",
+        "ram-percent": "RAM (%)",
+        "ram-used": "RAM utilisée",
+        "screenshot-primary-fullscreen": "Plein écran",
+        "screenshot-primary-region": "Zone",
+        "shared": "Partagé",
+        "short": "Partagé",
+        "swap-percent": "Swap (%)",
+        "text": "Texte",
+        "text-only": "Texte seul",
+        "workspace-label-centered": "Centré",
+        "workspace-label-corner": "Coin",
+        "workspace-label-inside": "Dans la pastille"
+      },
       "settings": {
         "stat": {
           "label": "Stats"

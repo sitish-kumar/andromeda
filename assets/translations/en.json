@@ -665,12 +665,6 @@
       "off": "Caffeine Off",
       "on": "Caffeine On"
     },
-    "nightlight": {
-      "forced": "Always On",
-      "off": "Night Light Off",
-      "running": "Running",
-      "scheduled": "Scheduled"
-    },
     "dnd": {
       "off": "DND Off",
       "on": "DND On"
@@ -686,6 +680,12 @@
       "num-on": "Num Lock On",
       "scroll-off": "Scroll Lock Off",
       "scroll-on": "Scroll Lock On"
+    },
+    "nightlight": {
+      "forced": "Always On",
+      "off": "Night Light Off",
+      "running": "Running",
+      "scheduled": "Scheduled"
     },
     "privacy": {
       "camera-off": "Camera Stopped",
@@ -1392,26 +1392,6 @@
         "contact-shadow": {
           "description": "Dark gradient between an attached panel and the bar to suggest depth at the seam"
         },
-        "dead-zone-command": {
-          "description": "Shell command to run on left-click in the bar margin outside widget sections",
-          "label": "Left Click"
-        },
-        "dead-zone-right-command": {
-          "description": "Shell command to run on right-click; leave empty to open Control Center",
-          "label": "Right Click"
-        },
-        "dead-zone-middle-command": {
-          "description": "Shell command to run on middle-click in the bar margin outside widget sections",
-          "label": "Middle Click"
-        },
-        "dead-zone-scroll-down-command": {
-          "description": "Shell command to run when scrolling down",
-          "label": "Scroll Down"
-        },
-        "dead-zone-scroll-up-command": {
-          "description": "Shell command to run when scrolling up",
-          "label": "Scroll Up"
-        },
         "content-padding": {
           "description": "Padding inside the bar content area",
           "label": "Content Padding"
@@ -1435,11 +1415,28 @@
         "corner-top-right": {
           "description": "Top right corner radius for the bar; negative values carve a concave corner when this corner faces away from the screen edge"
         },
+        "dead-zone-command": {
+          "description": "Shell command to run on left-click in the bar margin outside widget sections",
+          "label": "Left Click"
+        },
+        "dead-zone-middle-command": {
+          "description": "Shell command to run on middle-click in the bar margin outside widget sections",
+          "label": "Middle Click"
+        },
+        "dead-zone-right-command": {
+          "description": "Shell command to run on right-click; leave empty to open Control Center",
+          "label": "Right Click"
+        },
+        "dead-zone-scroll-down-command": {
+          "description": "Shell command to run when scrolling down",
+          "label": "Scroll Down"
+        },
+        "dead-zone-scroll-up-command": {
+          "description": "Shell command to run when scrolling up",
+          "label": "Scroll Up"
+        },
         "edge-margin": {
           "description": "Distance from the nearest screen edge; positive values float the bar away from it"
-        },
-        "opposite-edge-margin": {
-          "description": "Extra reserved space on the inward side of the bar, away from the screen edge; use when maximized windows ignore struts"
         },
         "enabled": {
           "description": "Show or hide this bar"
@@ -1462,6 +1459,9 @@
         "layer": {
           "description": "Use Overlay to show the bar above fullscreen apps. Attached panels follow the bar.",
           "label": "Wayland Layer"
+        },
+        "opposite-edge-margin": {
+          "description": "Extra reserved space on the inward side of the bar, away from the screen edge; use when maximized windows ignore struts"
         },
         "panel-overlap": {
           "description": "Pixels an attached panel overlaps the bar edge to hide the seam (adjust if you see a line or gap)",
@@ -2136,9 +2136,6 @@
         "edge-margin": {
           "label": "Edge Margin"
         },
-        "opposite-edge-margin": {
-          "label": "Opposite Edge Margin"
-        },
         "enabled": {
           "label": "Enabled"
         },
@@ -2147,6 +2144,9 @@
         },
         "main-axis-padding": {
           "label": "Main Axis Padding"
+        },
+        "opposite-edge-margin": {
+          "label": "Opposite Edge Margin"
         },
         "position": {
           "label": "Position"
@@ -2227,10 +2227,6 @@
           "description": "Show an OSD popup when the caffeine (idle inhibitor) state changes",
           "label": "Caffeine"
         },
-        "osd-kinds-nightlight": {
-          "description": "Show an OSD popup when night light is toggled",
-          "label": "Night Light"
-        },
         "osd-kinds-dnd": {
           "description": "Show an OSD popup when Do Not Disturb is toggled",
           "label": "Do Not Disturb"
@@ -2246,6 +2242,10 @@
         "osd-kinds-media": {
           "description": "Show an OSD popup when a new track starts playing",
           "label": "Now Playing"
+        },
+        "osd-kinds-nightlight": {
+          "description": "Show an OSD popup when night light is toggled",
+          "label": "Night Light"
         },
         "osd-kinds-power-profile": {
           "description": "Show an OSD popup when the power profile changes",
@@ -2284,12 +2284,12 @@
           "label": "Vertical Margin"
         },
         "osd-orientation": {
-          "description": "Layout direction for volume and brightness sliders; text popups always use horizontal layout",
-          "label": "Slider Orientation"
+          "description": "Layout direction for OSD popups",
+          "label": "Orientation"
         },
         "osd-position": {
-          "description": "Screen position for horizontal OSD popups, including text-only popups",
-          "label": "Horizontal Position"
+          "description": "Screen position for OSD popups",
+          "label": "Screen Position"
         },
         "osd-position-vertical": {
           "description": "Screen position when slider orientation is vertical",
@@ -2553,6 +2553,11 @@
           "description": "Opacity of the icon for the active (focused) window.",
           "label": "Active Icon Opacity"
         },
+        "active-pill-size": {
+          "description": "Minimum active workspace pill length along the bar, as a multiple of pill thickness",
+          "label": "Active Pill Size",
+          "workspaces-description": "Minimum active workspace pill length along the bar, as a multiple of pill thickness; labels may expand beyond this"
+        },
         "album-art-only": {
           "description": "Show only the circular album artwork without the track title",
           "label": "Album Art Only"
@@ -2775,6 +2780,11 @@
           "description": "Opacity of icons for inactive (unfocused) windows.",
           "label": "Inactive Icon Opacity"
         },
+        "inactive-pill-size": {
+          "description": "Minimum inactive workspace pill length along the bar, as a multiple of pill thickness",
+          "label": "Inactive Pill Size",
+          "workspaces-description": "Minimum inactive workspace pill length along the bar, as a multiple of pill thickness; labels may expand beyond this"
+        },
         "interface": {
           "description": "Network interface to monitor; leave empty to use the total across all interfaces",
           "label": "Interface"
@@ -2850,16 +2860,6 @@
           "description": "Adjust the scale of workspace pills",
           "label": "Pill Scale",
           "workspaces-description": "Adjust the scale of workspace pills"
-        },
-        "active-pill-size": {
-          "description": "Minimum active workspace pill length along the bar, as a multiple of pill thickness",
-          "label": "Active Pill Size",
-          "workspaces-description": "Minimum active workspace pill length along the bar, as a multiple of pill thickness; labels may expand beyond this"
-        },
-        "inactive-pill-size": {
-          "description": "Minimum inactive workspace pill length along the bar, as a multiple of pill thickness",
-          "label": "Inactive Pill Size",
-          "workspaces-description": "Minimum inactive workspace pill length along the bar, as a multiple of pill thickness; labels may expand beyond this"
         },
         "pinned": {
           "description": "Tray item ids that stay visible in the bar when drawer mode is enabled",

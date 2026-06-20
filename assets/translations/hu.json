@@ -64,8 +64,8 @@
         "ip": "IP",
         "network": "Hálózat",
         "networks": "Hálózatok",
-        "networks-count": "{szám} hálózat",
-        "networks-count-plural": "{szám} hálózatok",
+        "networks-count": "{count} hálózat",
+        "networks-count-plural": "{count} hálózatok",
         "no": "Nem",
         "not-connected": "Nincs csatlakoztatva",
         "off": "Kikapcsolva",
@@ -403,7 +403,7 @@
         "background-color": "Szín",
         "background-opacity": "Átlátszatlanság",
         "background-padding": "Kitöltés",
-        "background-radius": "Sugár",
+        "background-radius": "Rádiusz",
         "background-section": "Háttér",
         "bands": "Sávok",
         "bar-width": "Sáv szélessége",
@@ -418,7 +418,7 @@
         "color": "Szín",
         "color-1": "Szín 1",
         "color-2": "Szín 2",
-        "color2": "2. szín",
+        "color2": "Szín 2",
         "command": "Parancs",
         "custom-color": "Egyéni…",
         "description": "Leírás",
@@ -435,7 +435,7 @@
         "image-path": "Kép",
         "inner-diameter": "Belső átmérő",
         "input-opacity": "Bemenet - átlátszóság",
-        "input-radius": "Bemenet -átmérő",
+        "input-radius": "Bemenet - rádiusz",
         "interface": "Felület",
         "label": "Címke",
         "layout": "Elrendezés",
@@ -462,7 +462,7 @@
         "stat-net-tx": "Hálózati adatátvitel",
         "stat-none": "Nincs",
         "stat-ram-pct": "RAM %",
-        "stat-swap-pct": "Cserehely %",
+        "stat-swap-pct": "Swap %",
         "stat2": "2. statisztika",
         "title": "Cím",
         "variant": "Megjelenés",
@@ -485,7 +485,7 @@
       },
       "state": {
         "grid-off": "Rács kikapcsolva",
-        "grid-on": "Rács be"
+        "grid-on": "Rács bekapcsolva"
       },
       "title": "Asztali vezérlők",
       "types": {
@@ -618,7 +618,7 @@
     },
     "internal": {
       "battery": "Akkumulátor",
-      "battery-critical-body": "{eszköz}: {százalék}% - a számítógép hamarosan leáll",
+      "battery-critical-body": "{device}: {percent}% - a számítógép hamarosan leáll",
       "battery-critical-title": "Az akkumulátor töltöttségi szintje rendkívül alacsony",
       "battery-device": "Akkumulátoreszköz",
       "battery-low-body": "{device}: {percent}% van hátra",
@@ -680,6 +680,12 @@
       "num-on": "Num Lock bekapcsolva",
       "scroll-off": "Scroll Lock kikapcsolva",
       "scroll-on": "Scroll Lock bekapcsolva"
+    },
+    "nightlight": {
+      "forced": "Mindig bekapcsolva",
+      "off": "Éjszakai fény kikapcsolva",
+      "running": "Fut",
+      "scheduled": "Tervezett"
     },
     "privacy": {
       "camera-off": "Kamera leállt",
@@ -848,7 +854,7 @@
           "orphan": "Ismeretlen csoport",
           "padding": "Kitöltés",
           "padding-description": "A kapszula széle és a widgetjei közötti belső margó, képpontban megadva",
-          "radius": "Sugár",
+          "radius": "Rádiusz",
           "radius-description": "A kapszula sarokkerekítése képpontban; az „Automatikus” beállítás örökli a sáv kapszulasugarát",
           "selected": "{count} kiválasztva",
           "style": "Stílus",
@@ -1292,8 +1298,8 @@
           "label": "Háttérképpaletta exportálása"
         },
         "font-family": {
-          "description": "A rendszerfelület betűcsaládja",
-          "label": "Betűcsalád"
+          "description": "A rendszerfelület betűtípusa",
+          "label": "Betűtípus"
         },
         "global-shadow-alpha": {
           "description": "Felületek globális árnyék-átlátszatlansága"
@@ -1423,7 +1429,7 @@
         },
         "font-family": {
           "description": "A sáv widgetjeinek betűtípusa; hagyd üresen a globális betűtípus örökléséhez. Az egyes widgetek egyedi betűcsalád-beállításai felülbírálják ezt.",
-          "label": "Betűcsalád"
+          "label": "Betűtípus"
         },
         "font-weight": {
           "description": "A sáv widget-feliratainak alapértelmezett betűvastagsága.",
@@ -1598,7 +1604,7 @@
         },
         "show-running": {
           "description": "Mutasd a futó alkalmazásokat, amelyek nincsenek rögzítve",
-          "label": "Futó"
+          "label": "Futó mutatása"
         }
       },
       "hooks": {
@@ -1858,11 +1864,12 @@
           "label": "Használati adatok visszaállítása"
         },
         "launcher-session-search": {
+          "description": "A munkamenet-műveletek (lezárás, felfüggesztés, újraindítás, leállítás, kijelentkezés) felvétele az általános indítóprogram-keresésekbe, ne csak a /munkamenet előtag mögött",
           "label": "Munkamenet-keresés engedélyezése"
         },
         "launcher-show-icons": {
           "description": "Alkalmazásikonok megjelenítése az indító találatokban",
-          "label": "Alkalmazásikonok Megjelenítése"
+          "label": "Alkalmazásikonok megjelenítése"
         },
         "launcher-sort-by-usage": {
           "description": "A gyakran használt alkalmazásokat helyezd el a lista elején, és jelenítsd meg a \"Legutóbb használt\" kategória szűrőt",
@@ -1955,7 +1962,7 @@
         },
         "force-night-light": {
           "description": "Mindig alkalmazza az éjszakai fényt időtől függetlenül",
-          "label": "Kékfény szűrő kényszerítése"
+          "label": "Éjszakai fény kényszerítése"
         },
         "latitude": {
           "description": "Kézi szélességi fok a napkelte/napnyugta ütemezéshez; akkor használatos, ha az automatikus helymeghatározás és a cím alapú beállítás ki van kapcsolva",
@@ -1979,7 +1986,7 @@
           "label": "Minimális fényerő"
         },
         "mpris-blacklist": {
-          "description": "Médiavezérléshez és az éppen játszott tartalomhoz figyelmen kívül hagyandó lejátszók",
+          "description": "Médiavezérléshez és a \"Lejátszás alatt\" tartalomhoz figyelmen kívül hagyandó lejátszók",
           "label": "MPRIS Lejátszó Feketelista"
         },
         "night-light": {
@@ -2191,7 +2198,7 @@
         },
         "osd-kinds-caffeine": {
           "description": "OSD felugró ablak megjelenítése, amikor a caffeine (inaktivitás-gátló) állapota megváltozik",
-          "label": "Ébrenlét"
+          "label": "Koffein"
         },
         "osd-kinds-dnd": {
           "description": "OSD felugró megjelenítése a \"Ne zavarjanak\" átváltásakor",
@@ -2206,13 +2213,19 @@
           "label": "Billentyűzárak"
         },
         "osd-kinds-media": {
-          "label": "Most szól"
+          "description": "Egy OSD-felugró ablak megjelenítése, amikor egy új szám lejátszása elkezdődik",
+          "label": "Lejátszás alatt"
+        },
+        "osd-kinds-nightlight": {
+          "description": "Az éjszakai fény bekapcsolásakor OSD-felugró ablak megjelenítése",
+          "label": "Éjszakai fény"
         },
         "osd-kinds-power-profile": {
           "description": "OSD felugró ablak megjelenítése, amikor az energiaprofil megváltozik",
           "label": "Energiaprofil"
         },
         "osd-kinds-privacy": {
+          "description": "OSD-felugró ablak megjelenítése a mikrofon, a kamera vagy a képernyőmegosztás rögzítésének elindításakor vagy leállításakor",
           "label": "Adatvédelem"
         },
         "osd-kinds-volume": {
@@ -2250,6 +2263,10 @@
         "osd-position": {
           "description": "Képernyő pozíció az OSD felugrókhoz",
           "label": "Képernyő pozíció"
+        },
+        "osd-position-vertical": {
+          "description": "A képernyő helyzete, amikor a csúszka függőleges irányú",
+          "label": "Függőleges helyzet"
         },
         "osd-scale": {
           "description": "Az OSD felugró ablakok méretezése a shell UI méretéhez képest (az 1.0 az alapértelmezett méretet tartja)",
@@ -2493,7 +2510,7 @@
         "screenshot-primary-region": "Régió",
         "shared": "Közös",
         "short": "Rövid",
-        "swap-percent": "Lapozó százalék",
+        "swap-percent": "Swap százalék",
         "text": "Szöveg",
         "text-only": "Csak szöveg",
         "workspace-label-centered": "Középen",
@@ -2502,6 +2519,7 @@
       },
       "settings": {
         "active-color": {
+          "description": "Az aktív adatvédelmi jelzőkhöz használt szín. A rögzített hexadecimális színkódok is támogatottak",
           "label": "Aktív szín"
         },
         "active-opacity": {
@@ -2509,6 +2527,7 @@
           "label": "Aktív ikon átlátszatlansága"
         },
         "album-art-only": {
+          "description": "Csak a kerek albumborító mutatása, a számcím nélkül",
           "label": "Csak az albumborító"
         },
         "anchor": {
