@@ -1204,10 +1204,6 @@ void PanelManager::closePanel(bool animateClose) {
 
   kLog.debug("panel manager: closing \"{}\"", m_activePanelId);
 
-  // Drop the outside-click handlers as soon as close starts.
-  // During the close animation we want clicks on apps to behave normally.
-  deactivateOutsideClickHandlers();
-
   // Disable input during close animation
   m_inputDispatcher.setSceneRoot(nullptr);
   m_closing = true;
@@ -1217,12 +1213,23 @@ void PanelManager::closePanel(bool animateClose) {
   // fires the closed callback wired at open time (-> destroyPanel).
   if (m_hosted) {
     if (m_closeHostedPanelCallback && m_output != nullptr) {
+      // Release the bar's keyboard interactivity (the first thing the close callback does) BEFORE
+      // tearing down the focus grab. With the bar no longer a keyboard candidate when the grab
+      // clears, the compositor restores focus to the app underneath instead of bouncing through the
+      // still-keyboard-interactive bar — mirroring the clean refocus a detached panel gets from
+      // destroying its surface.
       m_closeHostedPanelCallback(m_output, m_sourceBarName);
+      deactivateOutsideClickHandlers();
     } else {
+      deactivateOutsideClickHandlers();
       destroyPanel();
     }
     return;
   }
+
+  // Drop the outside-click handlers as soon as close starts. During the close animation we want
+  // clicks on apps to behave normally.
+  deactivateOutsideClickHandlers();
 
   if (animateClose && m_sceneRoot != nullptr && m_activePanel != nullptr && m_activePanel->wantsCloseAnimation()) {
     const std::uint64_t gen = ++m_destroyGeneration;
