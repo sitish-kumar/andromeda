@@ -235,6 +235,7 @@ void Backdrop::createInstance(const WaylandOutput& output) {
 
   inst->surface = std::make_unique<BackdropSurface>(*m_wayland, std::move(surfaceConfig));
   inst->surface->setSharedGl(m_sharedGl);
+  inst->surface->setClickThrough(true);
 
   updateRendererState(*inst);
 

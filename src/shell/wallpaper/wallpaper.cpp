@@ -1019,6 +1019,7 @@ void Wallpaper::createInstance(const WaylandOutput& output) {
 
   instance->surface = std::make_unique<LayerSurface>(*m_wayland, std::move(surfaceConfig));
   instance->surface->setRenderContext(m_renderContext);
+  instance->surface->setClickThrough(true);
 
   instance->sceneRoot = std::make_unique<Node>();
   instance->sceneRoot->setAnimationManager(&instance->animations);
