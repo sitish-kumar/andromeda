@@ -24,9 +24,7 @@ jobs:
           fetch-depth: 0
 
       - name: Fetch all branches and tags
-        run: |
-          git fetch origin '+refs/heads/*:refs/heads/*' --prune
-          git fetch origin '+refs/tags/*:refs/tags/*' --prune
+        run: git fetch origin --prune --tags
 
       - name: Setup SSH
         run: |
@@ -43,4 +41,5 @@ jobs:
       - name: Push mirror to Codeberg
         run: |
           git remote add codeberg git@codeberg.org:noctalia-dev/noctalia.git
-          git push codeberg --prune '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*'
+          branches=$(git for-each-ref --format='%(refname):refs/heads/%(refname:strip=3)' refs/remotes/origin | grep -v '/HEAD:refs/heads/')
+          git push codeberg --prune ${branches} '+refs/tags/*:refs/tags/*'
