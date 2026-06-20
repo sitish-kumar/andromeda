@@ -37,7 +37,6 @@ namespace {
   constexpr Logger kLogProgramUi{"audio_tab"};
   constexpr float kVolumeSyncEpsilon = 0.005f; // 0.5%
   constexpr auto kVolumeCommitInterval = std::chrono::milliseconds(16);
-  constexpr auto kVolumeStateHoldoff = std::chrono::milliseconds(180);
 
   // Used to resolve application icons in AudioTab.
   IconResolver g_iconResolver;
@@ -1784,9 +1783,6 @@ void AudioTab::doUpdate(Renderer& renderer) {
 
   const AudioNode* sink = m_audio != nullptr ? m_audio->defaultSink() : nullptr;
   const AudioNode* source = m_audio != nullptr ? m_audio->defaultSource() : nullptr;
-  const auto now = std::chrono::steady_clock::now();
-  const bool outputDragging = m_outputSlider != nullptr && m_outputSlider->dragging();
-  const bool inputDragging = m_inputSlider != nullptr && m_inputSlider->dragging();
 
   if (m_outputDeviceLabel != nullptr) {
     m_outputDeviceLabel->setText(
@@ -1805,23 +1801,9 @@ void AudioTab::doUpdate(Renderer& renderer) {
   const float sourceVolume = source != nullptr ? source->volume : 0.0f;
   const bool showPendingSink = sink != nullptr && m_pendingSinkVolume >= 0.0f && m_pendingSinkId == sink->id;
   const bool showPendingSource = source != nullptr && m_pendingSourceVolume >= 0.0f && m_pendingSourceId == source->id;
-  const bool holdSinkState = outputDragging
-      && sink != nullptr
-      && m_lastSentSinkVolume >= 0.0f
-      && now < m_ignoreSinkStateUntil
-      && std::abs(sink->volume - m_lastSentSinkVolume) > 0.02f;
-  const bool holdSourceState = inputDragging
-      && source != nullptr
-      && m_lastSentSourceVolume >= 0.0f
-      && now < m_ignoreSourceStateUntil
-      && std::abs(source->volume - m_lastSentSourceVolume) > 0.02f;
-  const float displayedSinkVolume = std::clamp(
-      showPendingSink ? m_pendingSinkVolume : (holdSinkState ? m_lastSentSinkVolume : sinkVolume), 0.0f, sliderMax
-  );
-  const float displayedSourceVolume = std::clamp(
-      showPendingSource ? m_pendingSourceVolume : (holdSourceState ? m_lastSentSourceVolume : sourceVolume), 0.0f,
-      sliderMax
-  );
+  const float displayedSinkVolume = std::clamp(showPendingSink ? m_pendingSinkVolume : sinkVolume, 0.0f, sliderMax);
+  const float displayedSourceVolume =
+      std::clamp(showPendingSource ? m_pendingSourceVolume : sourceVolume, 0.0f, sliderMax);
 
   if (m_outputSlider != nullptr) {
     m_outputSlider->setEnabled(sink != nullptr);
@@ -1924,8 +1906,6 @@ void AudioTab::onClose() {
   m_lastSentSourceVolume = -1.0f;
   m_lastSinkCommitAt = {};
   m_lastSourceCommitAt = {};
-  m_ignoreSinkStateUntil = {};
-  m_ignoreSourceStateUntil = {};
 }
 
 void AudioTab::syncEffectsProfileControls(Renderer& /*renderer*/) {
@@ -2332,7 +2312,6 @@ void AudioTab::flushPendingVolumes(bool force) {
       m_audio->emitVolumePreview(false, sinkId, m_pendingSinkVolume);
       m_lastSentSinkVolume = m_pendingSinkVolume;
       m_lastSinkCommitAt = std::chrono::steady_clock::now();
-      m_ignoreSinkStateUntil = m_lastSinkCommitAt + kVolumeStateHoldoff;
     }
     if (force || !outputDragging) {
       m_pendingSinkId = 0;
@@ -2362,7 +2341,6 @@ void AudioTab::flushPendingVolumes(bool force) {
       m_audio->emitVolumePreview(true, sourceId, m_pendingSourceVolume);
       m_lastSentSourceVolume = m_pendingSourceVolume;
       m_lastSourceCommitAt = std::chrono::steady_clock::now();
-      m_ignoreSourceStateUntil = m_lastSourceCommitAt + kVolumeStateHoldoff;
     }
     if (force || !inputDragging) {
       m_pendingSourceId = 0;
