@@ -665,6 +665,12 @@
       "off": "Caffeine Off",
       "on": "Caffeine On"
     },
+    "nightlight": {
+      "forced": "Always On",
+      "off": "Night Light Off",
+      "running": "Running",
+      "scheduled": "Scheduled"
+    },
     "dnd": {
       "off": "DND Off",
       "on": "DND On"
@@ -2193,6 +2199,10 @@
         "osd-kinds-caffeine": {
           "description": "Show an OSD popup when the caffeine (idle inhibitor) state changes",
           "label": "Caffeine"
+        },
+        "osd-kinds-nightlight": {
+          "description": "Show an OSD popup when night light is toggled",
+          "label": "Night Light"
         },
         "osd-kinds-dnd": {
           "description": "Show an OSD popup when Do Not Disturb is toggled",

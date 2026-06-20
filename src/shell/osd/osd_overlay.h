@@ -28,6 +28,7 @@ enum class OsdKind : std::uint8_t {
   Bluetooth,
   PowerProfile,
   Caffeine,
+  NightLight,
   Dnd,
   LockKeys,
   KeyboardLayout,

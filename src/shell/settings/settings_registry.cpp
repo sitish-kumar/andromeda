@@ -1496,6 +1496,11 @@ namespace settings {
         ToggleSetting{cfg.osd.kinds.caffeine}, "hud overlay idle inhibitor"
     ));
     entries.push_back(makeEntry(
+        SettingsSection::Osd, "kinds", tr("settings.schema.shell.osd-kinds-nightlight.label"),
+        tr("settings.schema.shell.osd-kinds-nightlight.description"), {"osd", "kinds", "nightlight"},
+        ToggleSetting{cfg.osd.kinds.nightlight}, "hud overlay night light gamma"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Osd, "kinds", tr("settings.schema.shell.osd-kinds-dnd.label"),
         tr("settings.schema.shell.osd-kinds-dnd.description"), {"osd", "kinds", "dnd"},
         ToggleSetting{cfg.osd.kinds.dnd}, "hud overlay do not disturb notifications"

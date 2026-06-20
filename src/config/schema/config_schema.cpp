@@ -46,6 +46,7 @@ namespace noctalia::config::schema {
         field(&OsdKindsConfig::bluetooth, "bluetooth"),
         field(&OsdKindsConfig::powerProfile, "power_profile"),
         field(&OsdKindsConfig::caffeine, "caffeine"),
+        field(&OsdKindsConfig::nightlight, "nightlight"),
         field(&OsdKindsConfig::dnd, "dnd"),
         field(&OsdKindsConfig::lockKeys, "lock_keys"),
         field(&OsdKindsConfig::keyboardLayout, "keyboard_layout"),

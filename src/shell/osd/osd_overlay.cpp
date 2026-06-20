@@ -58,6 +58,8 @@ namespace {
       return kinds.powerProfile;
     case OsdKind::Caffeine:
       return kinds.caffeine;
+    case OsdKind::NightLight:
+      return kinds.nightlight;
     case OsdKind::Dnd:
       return kinds.dnd;
     case OsdKind::LockKeys:

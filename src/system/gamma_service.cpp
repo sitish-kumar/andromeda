@@ -35,6 +35,14 @@ GammaService::~GammaService() { restoreAll(); }
 
 void GammaService::setChangeCallback(ChangeCallback callback) { m_changeCallback = std::move(callback); }
 
+void GammaService::setStateFeedbackCallback(StateFeedbackCallback callback) { m_stateFeedback = std::move(callback); }
+
+void GammaService::notifyStateFeedback() {
+  if (m_stateFeedback) {
+    m_stateFeedback();
+  }
+}
+
 void GammaService::reload(const NightLightConfig& config, const LocationConfig& location) {
   if (config.enabled != m_config.enabled) {
     m_enabledOverride.reset();
@@ -50,6 +58,7 @@ void GammaService::reload(const NightLightConfig& config, const LocationConfig& 
 void GammaService::setEnabled(bool enabled) {
   m_enabledOverride = enabled;
   apply();
+  notifyStateFeedback();
 }
 
 void GammaService::toggleEnabled() { setEnabled(!enabled()); }
@@ -80,6 +89,7 @@ void GammaService::setResolvedCoordinates(std::optional<double> latitude, std::o
 void GammaService::setForceEnabled(bool enabled) {
   m_forceOverride = enabled;
   apply();
+  notifyStateFeedback();
 }
 
 void GammaService::toggleForceEnabled() { setForceEnabled(!forceEnabled()); }
@@ -87,6 +97,7 @@ void GammaService::toggleForceEnabled() { setForceEnabled(!forceEnabled()); }
 void GammaService::clearForceOverride() {
   m_forceOverride.reset();
   apply();
+  notifyStateFeedback();
 }
 
 bool GammaService::enabled() const { return effectiveConfiguredEnabled(); }

@@ -19,6 +19,7 @@ struct zwlr_gamma_control_v1;
 class GammaService {
 public:
   using ChangeCallback = std::function<void()>;
+  using StateFeedbackCallback = std::function<void()>;
 
   explicit GammaService(WaylandConnection& wayland);
   ~GammaService();
@@ -35,6 +36,7 @@ public:
   void toggleForceEnabled();
   void clearForceOverride();
   void setChangeCallback(ChangeCallback callback);
+  void setStateFeedbackCallback(StateFeedbackCallback callback);
   void onOutputsChanged();
   void reevaluateSchedule();
 
@@ -78,6 +80,8 @@ private:
   void stopTransition();
   void tickTransition();
 
+  void notifyStateFeedback();
+
   struct RgbMultipliers {
     double r = 1.0;
     double g = 1.0;
@@ -95,6 +99,7 @@ private:
   std::optional<double> m_resolvedLatitude;
   std::optional<double> m_resolvedLongitude;
   ChangeCallback m_changeCallback;
+  StateFeedbackCallback m_stateFeedback;
 
   std::list<OutputGamma> m_outputs;
 

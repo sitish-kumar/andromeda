@@ -123,6 +123,30 @@ namespace {
     };
   }
 
+  OsdContent nightLightOsdContent(const GammaService& service) {
+    std::string icon;
+    std::string value;
+    if (service.forceEnabled()) {
+      icon = "nightlight-forced";
+      value = i18n::tr("osd.nightlight.forced");
+    } else if (!service.enabled()) {
+      icon = "nightlight-off";
+      value = i18n::tr("osd.nightlight.off");
+    } else if (service.active()) {
+      icon = "nightlight-on";
+      value = i18n::tr("osd.nightlight.running");
+    } else {
+      icon = "nightlight-on";
+      value = i18n::tr("osd.nightlight.scheduled");
+    }
+    return OsdContent{
+        .kind = OsdKind::NightLight,
+        .icon = std::move(icon),
+        .value = std::move(value),
+        .showProgress = false,
+    };
+  }
+
   OsdContent dndOsdContent(bool enabled) {
     return OsdContent{
         .kind = OsdKind::Dnd,
@@ -729,6 +753,9 @@ void Application::initServices() {
   }
   m_idleInhibitor.initialize(m_wayland, &m_renderContext);
   m_idleInhibitor.setChangeCallback([this, shouldRefreshControlCenter]() {
+    if (m_configService.config().osd.kinds.caffeine) {
+      m_osdOverlay.show(caffeineOsdContent(m_idleInhibitor.enabled()));
+    }
     m_bar.refresh();
     if (shouldRefreshControlCenter()) {
       m_panelManager.refresh();
@@ -753,6 +780,11 @@ void Application::initServices() {
     m_bar.refresh();
     if (shouldRefreshControlCenter()) {
       m_panelManager.refresh();
+    }
+  });
+  m_gammaService.setStateFeedbackCallback([this]() {
+    if (m_configService.config().osd.kinds.nightlight) {
+      m_osdOverlay.show(nightLightOsdContent(m_gammaService));
     }
   });
   m_configService.addReloadCallback([this]() {
@@ -2183,7 +2215,7 @@ void Application::initIpc() {
   m_desktopWidgetsController.registerIpc(m_ipcService);
   m_lockscreenWidgetsController.registerIpc(m_ipcService);
   m_panelManager.registerIpc(m_ipcService);
-  m_idleInhibitor.registerIpc(m_ipcService, [this](bool enabled) { m_osdOverlay.show(caffeineOsdContent(enabled)); });
+  m_idleInhibitor.registerIpc(m_ipcService);
   m_gammaService.registerIpc(m_ipcService);
   m_themeService.registerIpc(m_ipcService);
   m_templateApplyService.registerIpc(m_ipcService);

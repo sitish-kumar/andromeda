@@ -576,6 +576,7 @@ struct OsdKindsConfig {
   bool bluetooth = true;
   bool powerProfile = true;
   bool caffeine = true;
+  bool nightlight = true;
   bool dnd = true;
   bool lockKeys = true;
   bool keyboardLayout = true;
