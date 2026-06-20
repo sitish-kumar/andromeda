@@ -9,6 +9,7 @@
 #include "compositors/hyprland/hyprland_toplevel_mapping.h"
 #include "compositors/hyprland/hyprland_window_id.h"
 #include "compositors/kde/kwin_active_window.h"
+#include "compositors/labwc/labwc_workspace_backend.h"
 #include "compositors/mango/mango_keyboard_backend.h"
 #include "compositors/mango/mango_output_backend.h"
 #include "compositors/niri/niri_keyboard_backend.h"
@@ -335,11 +336,12 @@ namespace {
       return std::make_unique<TriadWorkspaceBackend>(runtimeRegistry.triad());
     case compositors::CompositorKind::Niri:
       return std::make_unique<NiriWorkspaceBackend>(runtimeRegistry.niri());
+    case compositors::CompositorKind::Labwc:
+      return std::make_unique<LabwcWorkspaceBackend>();
     case compositors::CompositorKind::Hyprland:
     case compositors::CompositorKind::Sway:
     case compositors::CompositorKind::Mango:
     case compositors::CompositorKind::Dwl:
-    case compositors::CompositorKind::Labwc:
     case compositors::CompositorKind::Kde:
     case compositors::CompositorKind::Unknown:
       break;
@@ -477,6 +479,11 @@ CompositorPlatform::CompositorPlatform(WaylandConnection& wayland)
     : m_wayland(wayland), m_runtimeRegistry(std::make_unique<compositors::CompositorRuntimeRegistry>()),
       m_workspaces(std::make_unique<WaylandWorkspaces>(*m_runtimeRegistry)) {
   m_workspaceMetadataBackend = createWorkspaceMetadataBackend(*m_runtimeRegistry);
+  if (auto* labwc = dynamic_cast<LabwcWorkspaceBackend*>(m_workspaceMetadataBackend.get()); labwc != nullptr) {
+    labwc->setProviders(
+        [this] { return workspaces(); }, [this](const auto& visitor) { m_wayland.visitWlrToplevels(visitor); }
+    );
+  }
   if (auto focusedOutputBackend = createFocusedOutputBackend(*m_runtimeRegistry); focusedOutputBackend != nullptr) {
     m_focusedOutputBackends.push_back(std::move(focusedOutputBackend));
   }
@@ -531,6 +538,9 @@ void CompositorPlatform::initialize() {
     if (output.output != nullptr) {
       m_workspaces->onOutputAdded(output.output);
     }
+  }
+  if (auto* labwc = dynamic_cast<LabwcWorkspaceBackend*>(m_workspaceMetadataBackend.get()); labwc != nullptr) {
+    (void)labwc->sync();
   }
 }
 
@@ -802,6 +812,15 @@ void CompositorPlatform::syncHyprlandToplevelMappings() {
 
 void CompositorPlatform::notifyToplevelsChanged() {
   syncHyprlandToplevelMappings();
+  const bool labwcAssignmentsChanged = [this]() {
+    if (auto* labwc = dynamic_cast<LabwcWorkspaceBackend*>(m_workspaceMetadataBackend.get()); labwc != nullptr) {
+      return labwc->sync();
+    }
+    return false;
+  }();
+  if (labwcAssignmentsChanged && m_workspaceChangeCallback) {
+    m_workspaceChangeCallback();
+  }
   if (m_toplevelChangeCallback) {
     m_toplevelChangeCallback();
   }
@@ -879,8 +898,14 @@ void CompositorPlatform::setWorkspaceChangeCallback(ChangeCallback callback) {
   m_workspaceChangeCallback = std::move(callback);
   m_lastWorkspaceModelSnapshot = workspaceModelSnapshot();
   auto wrapper = [this]() {
+    const bool labwcAssignmentsChanged = [this]() {
+      if (auto* labwc = dynamic_cast<LabwcWorkspaceBackend*>(m_workspaceMetadataBackend.get()); labwc != nullptr) {
+        return labwc->sync();
+      }
+      return false;
+    }();
     auto nextSnapshot = workspaceModelSnapshot();
-    if (sameWorkspaceModelSnapshot(nextSnapshot, m_lastWorkspaceModelSnapshot)) {
+    if (!labwcAssignmentsChanged && sameWorkspaceModelSnapshot(nextSnapshot, m_lastWorkspaceModelSnapshot)) {
       return;
     }
     m_lastWorkspaceModelSnapshot = std::move(nextSnapshot);

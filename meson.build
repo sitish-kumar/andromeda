@@ -777,6 +777,7 @@ _noctalia_sources = files(
   'src/compositors/sway/sway_workspace_backend.cpp',
   'src/compositors/kde/kwin_active_window.cpp',
   'src/compositors/kde/kwin_workspace_backend.cpp',
+  'src/compositors/labwc/labwc_workspace_backend.cpp',
   'src/wayland/layer_surface.cpp',
   'src/wayland/popup_surface.cpp',
   'src/wayland/subsurface.cpp',

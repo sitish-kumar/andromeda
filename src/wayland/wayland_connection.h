@@ -176,6 +176,9 @@ public:
   template <typename Fn> void visitWlrToplevelHandles(Fn&& fn) const {
     m_toplevelsHandler.visitWlrHandles(std::forward<Fn>(fn));
   }
+  template <typename Fn> void visitWlrToplevels(Fn&& fn) const {
+    m_toplevelsHandler.visitWlrToplevels(std::forward<Fn>(fn));
+  }
   [[nodiscard]] wl_output* lastPointerOutput() const noexcept;
   [[nodiscard]] wl_surface* lastPointerSurface() const noexcept;
   [[nodiscard]] wl_surface* lastKeyboardSurface() const noexcept;

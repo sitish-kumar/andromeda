@@ -189,8 +189,13 @@ void WaylandWorkspaces::initialize() {
       return;
     }
     break;
-  case compositors::CompositorKind::Niri:
   case compositors::CompositorKind::Labwc:
+    if (availableOrConnected(m_extBackend)) {
+      setActiveBackend(m_extBackend);
+      return;
+    }
+    break;
+  case compositors::CompositorKind::Niri:
   case compositors::CompositorKind::Unknown:
     break;
   }
