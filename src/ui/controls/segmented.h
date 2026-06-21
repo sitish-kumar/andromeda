@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ui/controls/flex.h"
+#include "ui/palette.h"
 
 #include <cstddef>
 #include <functional>
@@ -36,6 +37,7 @@ public:
 
   void setEnabled(bool enabled);
   void setSurfaceOpacity(float opacity);
+  void setSurfaceRole(ColorRole role);
   [[nodiscard]] bool enabled() const noexcept { return m_enabled; }
 
   // When true, each segment gets flexGrow 1 so the group fills the available width (e.g. full bar).
@@ -60,5 +62,6 @@ private:
   bool m_compact = false;
   float m_outerPadding = 0.0f;
   float m_surfaceOpacity = 1.0f;
+  ColorRole m_surfaceRole = ColorRole::SurfaceVariant;
   bool m_enabled = true;
 };

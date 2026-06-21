@@ -369,6 +369,7 @@ namespace ui {
     std::optional<bool> compact = std::nullopt;
     std::optional<bool> enabled = std::nullopt;
     std::optional<float> surfaceOpacity = std::nullopt;
+    std::optional<ColorRole> surfaceRole = std::nullopt;
     std::optional<bool> equalSegmentWidths = std::nullopt;
     std::optional<float> width = std::nullopt;
     std::optional<float> height = std::nullopt;
