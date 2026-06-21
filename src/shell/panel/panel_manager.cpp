@@ -687,8 +687,8 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     // Convert panel screen coords to bar-surface-local coords for shadow exclusion.
     // Bar surface origin sits one shadow bleed inset from the visible bar top-left.
     const auto barShadowBleed = shell::surface_shadow::bleed(barConfig.shadow, shadowConfig);
-    std::int32_t barSurfaceLocalVisualX = visualX;
-    std::int32_t barSurfaceLocalVisualY = visualY;
+    std::int32_t barSurfaceLocalVisualX;
+    std::int32_t barSurfaceLocalVisualY;
     if (barIsVertical) {
       barSurfaceLocalVisualY = visualY - (barTop - std::min(mEnds, barShadowBleed.up));
       const std::int32_t barSurfaceOriginX =
