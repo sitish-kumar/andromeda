@@ -882,6 +882,15 @@ std::vector<TrayItemInfo> TrayService::items() const {
   return out;
 }
 
+bool TrayService::itemUsesDBusMenu(const std::string& itemId) const {
+  const auto it = m_items.find(itemId);
+  if (it == m_items.end()) {
+    return false;
+  }
+  const std::string_view menuPath = it->second.menuObjectPath;
+  return !menuPath.empty() && menuPath != "/NO_DBUSMENU";
+}
+
 namespace {
 
   // Recursively decode a DbusMenuLayout into retained item + child-id maps.

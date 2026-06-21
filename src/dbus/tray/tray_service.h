@@ -72,6 +72,7 @@ public:
   void requestMenuToggle(const std::string& itemId, float contentScale = 1.0f) const;
   [[nodiscard]] std::size_t itemCount() const noexcept;
   [[nodiscard]] std::vector<TrayItemInfo> items() const;
+  [[nodiscard]] bool itemUsesDBusMenu(const std::string& itemId) const;
   [[nodiscard]] std::vector<TrayMenuEntry> menuEntries(const std::string& itemId);
   [[nodiscard]] std::vector<TrayMenuEntry> menuEntriesForParent(const std::string& itemId, std::int32_t parentId);
   // Returns true if the click event was dispatched to DBus successfully.
