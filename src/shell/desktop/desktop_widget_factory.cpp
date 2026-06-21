@@ -22,7 +22,6 @@
 namespace {
 
   constexpr Logger kLog("desktop");
-  constexpr float kDefaultDesktopAudioVisualizerAspectRatio = 240.0f / 96.0f;
 
   std::string getStringSetting(
       const std::unordered_map<std::string, WidgetSettingValue>& settings, const std::string& key,
@@ -210,8 +209,7 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
       return nullptr;
     }
     auto widget = std::make_unique<DesktopAudioVisualizerWidget>(
-        m_pipewireSpectrum, getFloatSetting(settings, "aspect_ratio", kDefaultDesktopAudioVisualizerAspectRatio),
-        getIntSetting(settings, "bands", 32), getBoolSetting(settings, "mirrored", true),
+        m_pipewireSpectrum, getIntSetting(settings, "bands", 32), getBoolSetting(settings, "mirrored", true),
         getColorSpecSetting(settings, "color_1", colorSpecFromRole(ColorRole::Primary)),
         getColorSpecSetting(settings, "color_2", colorSpecFromRole(ColorRole::Primary)),
         getBoolSetting(settings, "centered", true), getBoolSetting(settings, "show_when_idle", true)
@@ -288,7 +286,7 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
     auto widget = std::make_unique<DesktopLabelWidget>(
         getStringSetting(settings, "title", "Title"), getStringSetting(settings, "description"),
         getColorSpecSetting(settings, "color", colorSpecFromRole(ColorRole::OnSurface)),
-        getBoolSetting(settings, "shadow", true)
+        std::clamp(getFloatSetting(settings, "opacity", 1.0f), 0.0f, 1.0f), getBoolSetting(settings, "shadow", true)
     );
     applyCommonSettings(*widget, settings);
     widget->setContentScale(contentScale);

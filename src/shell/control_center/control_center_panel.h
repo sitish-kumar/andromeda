@@ -9,6 +9,7 @@
 #include "shell/control_center/media_tab.h"
 #include "shell/control_center/network_tab.h"
 #include "shell/control_center/notifications_tab.h"
+#include "shell/control_center/power_tab.h"
 #include "shell/control_center/system_tab.h"
 #include "shell/control_center/tab.h"
 #include "shell/control_center/weather_tab.h"
@@ -108,6 +109,7 @@ private:
     Calendar,
     Notifications,
     ScreenTime,
+    Power,
     Count,
   };
 
@@ -125,6 +127,7 @@ private:
       {TabId::Audio, "audio", "control-center.tabs.audio", "volume"},
       {TabId::Display, "monitor", "control-center.tabs.display", "device-desktop"},
       {TabId::System, "system", "control-center.tabs.system", "activity-heartbeat"},
+      {TabId::Power, "power", "control-center.tabs.power", "battery-charging-2"},
       {TabId::Network, "network", "control-center.tabs.network", "wifi"},
       {TabId::Bluetooth, "bluetooth", "control-center.tabs.bluetooth", "bluetooth"},
       {TabId::Weather, "weather", "control-center.tabs.weather", "weather-cloud-sun"},
@@ -134,6 +137,8 @@ private:
   }};
 
   void selectTab(TabId tab, bool animated = false);
+  void selectAdjacentVisibleTab(int direction);
+  void wireSidebarScroll(InputArea* area);
   void scheduleMprisRefreshFor(TabId tab);
   void updateTabChrome(TabId tab);
   void applyTabContainerVisibility(TabId activeTab);
@@ -157,6 +162,7 @@ private:
   // Panel UI structure (rebuilt each create(), nulled in onClose())
   Flex* m_rootLayout = nullptr;
   Flex* m_sidebar = nullptr;
+  InputArea* m_sidebarScrollArea = nullptr;
   Flex* m_content = nullptr;
   InputArea* m_contentDismissArea = nullptr;
   Flex* m_contentHeader = nullptr;
@@ -174,6 +180,7 @@ private:
   DependencyService* m_dependencies = nullptr;
   bool m_compact = false;
   bool m_showSidebar = true;
+  bool m_hasPowerServices = false;
   bool m_mprisRefreshScheduled = false;
   std::chrono::steady_clock::time_point m_lastMprisRefreshAt{};
   AnimationManager::Id m_tabTransitionAnimId = 0;

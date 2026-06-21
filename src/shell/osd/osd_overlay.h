@@ -28,10 +28,12 @@ enum class OsdKind : std::uint8_t {
   Bluetooth,
   PowerProfile,
   Caffeine,
+  NightLight,
   Dnd,
   LockKeys,
   KeyboardLayout,
-  Media
+  Media,
+  Privacy
 };
 
 struct OsdContent {
@@ -41,6 +43,7 @@ struct OsdContent {
   float progress = 0.0f;
   bool showProgress = true;
   bool overLimit = false;
+  bool inactive = false;
 };
 
 class OsdOverlay {

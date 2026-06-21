@@ -301,15 +301,6 @@ void DesktopClockWidget::syncAnalogColors() {
 
   RoundedRectStyle faceStyle = m_face->style();
   faceStyle.border = handColor;
-  faceStyle.outerShadow = m_shadow && m_showCircle;
-  if (m_shadow && m_showCircle) {
-    const float offset = kShadowOffset * scale;
-    faceStyle.shadowCutoutOffsetX = offset;
-    faceStyle.shadowCutoutOffsetY = offset;
-  } else {
-    faceStyle.shadowCutoutOffsetX = 0.0f;
-    faceStyle.shadowCutoutOffsetY = 0.0f;
-  }
   m_face->setStyle(faceStyle);
   layoutAnalogFace(*m_face, metrics, handColor);
 
@@ -343,17 +334,6 @@ void DesktopClockWidget::layoutAnalog(Renderer& /*renderer*/, float size) {
   const Color handColor = resolvedColor(m_color);
 
   layoutAnalogFace(*m_face, metrics, handColor);
-  RoundedRectStyle faceStyle = m_face->style();
-  faceStyle.outerShadow = m_shadow && m_showCircle;
-  if (m_shadow && m_showCircle) {
-    const float offset = kShadowOffset * scale;
-    faceStyle.shadowCutoutOffsetX = offset;
-    faceStyle.shadowCutoutOffsetY = offset;
-  } else {
-    faceStyle.shadowCutoutOffsetX = 0.0f;
-    faceStyle.shadowCutoutOffsetY = 0.0f;
-  }
-  m_face->setStyle(faceStyle);
 
   if (m_hourPivot != nullptr) {
     m_hourPivot->setPosition(metrics.center, metrics.center);

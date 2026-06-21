@@ -71,6 +71,10 @@ namespace {
     return id;
   }
 
+  void sortResultsByScore(std::vector<LauncherResult>& results) {
+    std::ranges::stable_sort(results, std::ranges::greater{}, &LauncherResult::score);
+  }
+
   struct LauncherListStyle {
     float scale = 1.0f;
     bool showIcons = true;
@@ -584,7 +588,9 @@ void LauncherPanel::doLayout(Renderer& renderer, float width, float height) {
 }
 
 void LauncherPanel::onOpen(std::string_view context) {
-  requestDesktopEntryRescan();
+  // Pick up apps installed since the last scan (notably Nix profile swaps that
+  // inotify cannot observe). Cheap stat-only check; only rescans on real change.
+  refreshDesktopEntriesIfSourcesChanged();
 
   m_categoryFilterVisible = m_config != nullptr && m_config->config().shell.panel.launcherCategories;
   m_activeCategoryType = All;
@@ -750,6 +756,7 @@ void LauncherPanel::onInputChanged(const std::string& text) {
     for (auto& result : m_allResults) {
       result.providerId = activeProvider->id();
     }
+    sortResultsByScore(m_allResults);
     newCategories = activeProvider->categories();
   } else if (startsWithSlash(text)) {
     m_allResults = providerOverviewResults(text);
@@ -782,8 +789,7 @@ void LauncherPanel::onInputChanged(const std::string& text) {
         newCategories.push_back(std::move(cat));
       }
     }
-    // Stable sort by score descending — preserves provider order (e.g. alphabetical) for ties
-    std::ranges::stable_sort(m_allResults, std::ranges::greater{}, &LauncherResult::score);
+    sortResultsByScore(m_allResults);
   }
 
   const int iconTargetSize =
@@ -933,7 +939,7 @@ std::vector<LauncherResult> LauncherPanel::providerOverviewResults(std::string_v
   }
 
   if (!filter.empty()) {
-    std::ranges::stable_sort(results, std::ranges::greater{}, &LauncherResult::score);
+    sortResultsByScore(results);
   }
   return results;
 }

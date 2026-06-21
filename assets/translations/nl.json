@@ -49,6 +49,11 @@
       "network": {
         "wired": "Bedraad"
       },
+      "privacy": {
+        "camera": "Camera",
+        "microphone": "Microfoon",
+        "screen-sharing": "Scherm Delen"
+      },
       "scripted": {
         "reload-failed": "Script herladen mislukt",
         "reloaded": "Script herladen"
@@ -111,7 +116,8 @@
   "control-center": {
     "audio": {
       "application-volumes": "Applicatievolumes",
-      "input-volume": "Invoervolume",
+      "choose-effects-profile": "Kies een profiel",
+      "effects-profile": "Effecten:",
       "no-application-audio": "Geen applicatiegeluid",
       "no-application-audio-body": "Er zijn momenteel geen applicatie-afspeelbronnen beschikbaar.",
       "no-input-devices": "Geen invoerapparaten",
@@ -120,7 +126,6 @@
       "no-output-devices": "Geen uitvoerapparaten",
       "no-output-devices-body": "Er zijn momenteel geen afspeelapparaten beschikbaar.",
       "no-output-selected": "Geen uitvoerapparaat geselecteerd",
-      "output-volume": "Uitvoervolume",
       "unavailable-body": "Pipewire is niet actief.",
       "unavailable-title": "Geluid niet beschikbaar"
     },
@@ -164,6 +169,7 @@
       "unknown-resolution": "Onbekende resolutie"
     },
     "home": {
+      "avatar-error-title": "Avatar niet bijgewerkt",
       "media": {
         "idle": "Inactief",
         "no-active-player": "Geen actieve speler",
@@ -325,7 +331,10 @@
     "editor": {
       "actions": {
         "add": "Toevoegen",
+        "clone": "Dupliceren (Ctrl+C, Ctrl+V om te kopiëren/plakken)",
         "done": "Gereed",
+        "flip-horizontal": "Horizontaal spiegelen",
+        "flip-vertical": "Verticaal spiegelen",
         "hide": "Verberg",
         "settings": "Instellingen",
         "show": "Toon",
@@ -347,6 +356,7 @@
         "bands": "Banden",
         "bar-width": "Balkbreedte",
         "bloom-intensity": "Bloom",
+        "center-text": "Tekst Centreren",
         "centered": "Gecentreerd",
         "change-image": "Wijzigen…",
         "circle": "Cirkel",
@@ -357,18 +367,22 @@
         "color-1": "Kleur Een",
         "color-2": "Kleur Twee",
         "color2": "Kleur 2",
+        "command": "Commando",
         "custom-color": "Aangepast…",
         "description": "Beschrijving",
         "fade-when-idle": "Vervagen bij inactiviteit",
         "font-family": "Lettertype",
         "font-family-default": "Systeemstandaard",
         "format": "Indeling",
+        "glyph": "Glyph",
         "hide-when-no-media": "Verbergen wanneer er geen media is",
         "horizontal": "Horizontaal",
         "image-path": "Afbeelding",
         "inner-diameter": "Binnendiameter",
         "input-opacity": "Transparantie van invoer",
         "input-radius": "Radius van invoer",
+        "interface": "Interface",
+        "label": "Label",
         "layout": "Indeling",
         "mirrored": "Gespiegeld",
         "opacity": "Transparantie",
@@ -395,6 +409,8 @@
         "stat-swap-pct": "Swap %",
         "stat2": "Statistiek 2",
         "title": "Titel",
+        "variant": "Stijl",
+        "variant-default": "Standaard",
         "vertical": "Verticaal",
         "visualization-mode": "Modus",
         "visualization-mode-all": "Alle",
@@ -413,6 +429,7 @@
       "title": "Bureaubladwidgets",
       "types": {
         "audio-visualizer": "Audiovisualisatie",
+        "button": "Knop",
         "clock": "Klok",
         "fancy-audio-visualizer": "Geavanceerde audiovisualisatie",
         "label": "Label",
@@ -562,6 +579,7 @@
       "keybind-invalid-printable": "Drukbare toetsen (letters, cijfers, symbolen) vereisen een modificatietoets zoals Ctrl of Alt.",
       "keybind-invalid-super": "De Super-/Windows-toets kan niet worden gebruikt in shell-sneltoetsen.",
       "keybind-invalid-title": "Sneltoets niet toegestaan",
+      "launcher-usage-reset": "Launcher",
       "lockscreen-widgets-editor": "Widget-editor voor vergrendelscherm",
       "lockscreen-widgets-editor-blocked-locked": "Ontgrendel de sessie voordat je de widgets van het vergrendelscherm bewerkt.",
       "lockscreen-widgets-editor-enabled": "Widget-editor voor vergrendelscherm staat aan. Rangschik de widgets op de voorvertoning-overlay en vergrendel vervolgens de sessie om de indeling te controleren.",
@@ -644,6 +662,7 @@
       "advanced": "Geavanceerd",
       "inherited": "Overgenomen",
       "monitor": "Monitor",
+      "official": "Officieel",
       "override": "Overschrijven"
     },
     "calendar-accounts": {
@@ -944,6 +963,17 @@
         "system": "Systeem",
         "templates": "Sjablonen",
         "wallpaper": "Achtergrond"
+      }
+    },
+    "notifications": {
+      "filter": {
+        "flag": {
+          "history": "geschiedenis",
+          "sound": "geluid"
+        },
+        "play-sound": "Speel geluid",
+        "summary": "{match} · {flags}",
+        "summary-blocked": "{match} · geblokeerd"
       }
     },
     "options": {
@@ -1634,6 +1664,9 @@
           "description": "Schakel de ingebouwde meldingsdaemon in",
           "label": "Meldingsdaemon"
         },
+        "filters": {
+          "label": "Notificatie Filters"
+        },
         "layer": {
           "description": "Gebruik Overlay om meldings-toasts boven schermvullende apps te tonen.",
           "label": "Wayland-laag"
@@ -1696,6 +1729,9 @@
           "description": "Gebruik kleinere iconen en compactere resultaatrijen",
           "label": "Compacte rijen"
         },
+        "launcher-reset-usage": {
+          "button": "Resetten"
+        },
         "launcher-session-search": {
           "description": "Neem sessieacties (vergrendelen, in de wacht zetten, opnieuw opstarten, afsluiten, uitloggen) op in algemene zoekopdrachten in het startmenu, en niet alleen achter het voorvoegsel /session",
           "label": "Sessiezoekfunctie inschakelen"
@@ -1703,6 +1739,9 @@
         "launcher-show-icons": {
           "description": "Toon app iconen in de resultaten van Launcher",
           "label": "App-iconen tonen"
+        },
+        "launcher-sort-by-usage": {
+          "label": "Sorteer op Gebruik"
         },
         "open-near-click-clipboard": {
           "description": "Positioneer het klembordpaneel dicht bij de klik op de balk in plaats van het langs de balk te centreren",
@@ -2037,6 +2076,9 @@
           "description": "Toon OSD-pop-ups bij wijzigingen van Caps Lock, Num Lock en Scroll Lock",
           "label": "Vergrendeltoetsen"
         },
+        "osd-kinds-media": {
+          "label": "Speelt nu af"
+        },
         "osd-kinds-power-profile": {
           "description": "Toon een OSD-pop-up wanneer het energieprofiel verandert",
           "label": "Energieprofiel"
@@ -2092,6 +2134,10 @@
         "screen-time-enabled": {
           "description": "Registreer het gebruik per app en toon dit in het controlecentrum",
           "label": "Schermtijd"
+        },
+        "screen-time-reset": {
+          "button": "Resetten",
+          "label": "Reset Schermtijd Data"
         },
         "screenshot-copy-to-clipboard": {
           "description": "Plaats de gemaakte PNG-afbeelding op het klembord",
@@ -2322,6 +2368,9 @@
         "workspace-label-inside": "Binnen de pill"
       },
       "settings": {
+        "active-color": {
+          "label": "Actieve Kleur"
+        },
         "active-opacity": {
           "description": "Transparantie van het icoon voor het actieve (gefocuste) venster.",
           "label": "Actieve icoontransparantie"
@@ -2526,6 +2575,9 @@
         "inactive-opacity": {
           "description": "Transparantie van iconen voor inactieve (niet-gefocuste) vensters.",
           "label": "Inactieve icoontransparantie"
+        },
+        "interface": {
+          "label": "Interface"
         },
         "label": {
           "description": "Optionele statische tekst weergegeven op deze knop",
@@ -2743,6 +2795,7 @@
         "nightlight": "Nachtlicht",
         "notifications": "Meldingen",
         "power-profile": "Energieprofiel",
+        "privacy": "Privacy Indicator",
         "screenshot": "Schermafbeelding",
         "scripted": "Gescripteerd",
         "session": "Sessie",
@@ -2811,10 +2864,7 @@
   },
   "time": {
     "duration": {
-      "days-hours-minutes": "{days}d {hours}u {minutes}m",
-      "hours-minutes": "{hours}u {minutes}m",
-      "less-than-minute": "<1m",
-      "minutes": "{minutes}m"
+      "less-than-minute": "<1m"
     },
     "file": {
       "unknown": "Onbekend"

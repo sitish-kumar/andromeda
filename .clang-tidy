@@ -11,6 +11,7 @@ Checks: >-
   modernize-use-scoped-lock,
   modernize-use-starts-ends-with,
   modernize-use-std-numbers,
+  modernize-use-std-print,
   performance-move-const-arg,
   readability-container-contains,
   readability-container-data-pointer,

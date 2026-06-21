@@ -84,6 +84,16 @@ namespace {
 
   bool isSvgPath(std::string_view path) { return path.ends_with(".svg") || path.ends_with(".SVG"); }
 
+  std::pair<std::int32_t, std::int32_t> trayPointerCoords(const InputArea& area, const InputArea::PointerData& data) {
+    float absX = 0.0f;
+    float absY = 0.0f;
+    Node::absolutePosition(&area, absX, absY);
+    return {
+        static_cast<std::int32_t>(std::lround(absX + data.localX)),
+        static_cast<std::int32_t>(std::lround(absY + data.localY)),
+    };
+  }
+
   std::optional<LoadedImageFile>
   loadSymbolicTrayIcon(const std::string& path, int targetSize, const Color& symbolicColor) {
     std::string loadError;
@@ -687,17 +697,23 @@ void TrayWidget::rebuild(Renderer& renderer) {
     iconNode->setPosition(std::round((itemSize - iconW) * 0.5f), std::round((itemSize - iconH) * 0.5f));
     auto itemId = item.id;
     area->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
-    area->setOnClick([this, itemId](const InputArea::PointerData& data) {
+    InputArea* areaPtr = area.get();
+    area->setOnClick([this, itemId, areaPtr](const InputArea::PointerData& data) {
       if (m_tray == nullptr) {
         return;
       }
+      const auto [x, y] = trayPointerCoords(*areaPtr, data);
       if (data.button == BTN_LEFT) {
-        (void)m_tray->activateItem(itemId);
+        (void)m_tray->activateItem(itemId, x, y);
         if (m_itemActivated) {
           m_itemActivated();
         }
       } else if (data.button == BTN_RIGHT) {
-        m_tray->requestMenuToggle(itemId, m_contentScale);
+        if (m_tray->itemUsesDBusMenu(itemId)) {
+          m_tray->requestMenuToggle(itemId, m_contentScale);
+        } else {
+          (void)m_tray->openContextMenu(itemId, x, y);
+        }
       }
     });
     area->addChild(std::move(iconNode));

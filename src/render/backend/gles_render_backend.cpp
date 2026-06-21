@@ -509,19 +509,9 @@ void GlesRenderBackend::drawGraph(
   m_graphProgram.draw(dataTexture, textureWidth, surfaceWidth, surfaceHeight, width, height, style, transform);
 }
 
-void GlesRenderBackend::drawWallpaper(
-    WallpaperTransition transition, WallpaperSourceKind sourceKind1, TextureId texture1, const Color& sourceColor1,
-    WallpaperSourceKind sourceKind2, TextureId texture2, const Color& sourceColor2, float surfaceWidth,
-    float surfaceHeight, float width, float height, float imageWidth1, float imageHeight1, float imageWidth2,
-    float imageHeight2, float progress, float fillMode, const TransitionParams& params, const Color& fillColor,
-    const Mat3& transform
-) {
+void GlesRenderBackend::drawWallpaper(const WallpaperDrawParams& params) {
   m_wallpaperProgram.ensureInitialized();
-  m_wallpaperProgram.draw(
-      transition, sourceKind1, texture1, sourceColor1, sourceKind2, texture2, sourceColor2, surfaceWidth, surfaceHeight,
-      width, height, imageWidth1, imageHeight1, imageWidth2, imageHeight2, progress, fillMode, params, fillColor,
-      transform
-  );
+  m_wallpaperProgram.draw(params);
 }
 
 void GlesRenderBackend::drawFullscreenTexture(TextureId texture, bool flipY) {

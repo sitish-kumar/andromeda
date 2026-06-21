@@ -39,6 +39,8 @@ namespace {
 
   constexpr float kDefaultVolumeStep = 0.05f;
   constexpr auto kVolumeApplyMinInterval = std::chrono::milliseconds(25);
+  constexpr auto kVolumeWriteGuardDuration = std::chrono::milliseconds(400);
+  constexpr float kVolumeWriteGuardEpsilon = 0.02f;
 
   // Registry events.
   void onRegistryGlobal(
@@ -419,6 +421,51 @@ namespace {
     } else if (p.hasSoft) {
       nd.volume = p.softVol;
     }
+  }
+
+  [[nodiscard]] float resolvedVolume(const ParsedPropsVolumes& p) {
+    if (p.hasChannel) {
+      return p.channelVol;
+    }
+    if (p.hasScalar) {
+      return p.scalarVol;
+    }
+    if (p.hasSoft) {
+      return p.softVol;
+    }
+    return -1.0f;
+  }
+
+  [[nodiscard]] bool shouldRejectVolumeWrite(const PipeWireService::NodeData& nd, float candidateVol) {
+    if (nd.lastWrittenVolume < 0.0f) {
+      return false;
+    }
+    const auto now = std::chrono::steady_clock::now();
+    if (now >= nd.volumeWriteGuardUntil) {
+      return false;
+    }
+    return std::abs(candidateVol - nd.lastWrittenVolume) > kVolumeWriteGuardEpsilon;
+  }
+
+  void confirmVolumeWrite(PipeWireService::NodeData& nd, float candidateVol) {
+    if (nd.lastWrittenVolume < 0.0f) {
+      return;
+    }
+    if (std::abs(candidateVol - nd.lastWrittenVolume) <= kVolumeWriteGuardEpsilon) {
+      nd.volumeWriteGuardUntil = {};
+    }
+  }
+
+  bool mergeIncomingVolumes(PipeWireService::NodeData& nd, const ParsedPropsVolumes& p) {
+    const float candidate = resolvedVolume(p);
+    if (candidate >= 0.0f && shouldRejectVolumeWrite(nd, candidate)) {
+      return false;
+    }
+    mergeParsedVolumesIntoNode(nd, p);
+    if (candidate >= 0.0f) {
+      confirmVolumeWrite(nd, candidate);
+    }
+    return true;
   }
 
   // Device ParamRoute updates are per-direction; applying every route's volume to all nodes on the same
@@ -1244,7 +1291,7 @@ void PipeWireService::onNodeParam(
         basis.channelCount = nd.channelCount;
         ParsedPropsVolumes fromRoute{};
         parsePropsObjectVolumeFields(routeProps, basis, &fromRoute);
-        mergeParsedVolumesIntoNode(nd, fromRoute);
+        mergeIncomingVolumes(nd, fromRoute);
       }
       recomputeEffectiveMute(nd);
       rebuildState();
@@ -1271,20 +1318,9 @@ void PipeWireService::onNodeParam(
     }
   }
 
-  float candidateVol = -1.0f;
-  if (parsed.hasChannel) {
-    candidateVol = parsed.channelVol;
-  } else if (parsed.hasScalar) {
-    candidateVol = parsed.scalarVol;
-  } else if (parsed.hasSoft) {
-    candidateVol = parsed.softVol;
-  }
-  const bool isAudioDeviceNode = nd.mediaClass == "Audio/Sink" || nd.mediaClass == "Audio/Source";
-  const bool rejectStaleFullScaleProps =
-      isAudioDeviceNode && candidateVol >= 0.0f && candidateVol >= 0.99f && nd.volume < 0.93f;
-
-  if (!rejectStaleFullScaleProps) {
-    mergeParsedVolumesIntoNode(nd, parsed);
+  float candidateVol = resolvedVolume(parsed);
+  if (candidateVol >= 0.0f) {
+    mergeIncomingVolumes(nd, parsed);
   }
 
   recomputeEffectiveMute(nd);
@@ -1405,7 +1441,7 @@ void PipeWireService::onDeviceParam(
       if (node != nullptr
           && node->deviceId == id
           && routeVolumeDirectionMatchesNode(node->mediaClass, routeDirection)) {
-        mergeParsedVolumesIntoNode(*node, fromRoute);
+        mergeIncomingVolumes(*node, fromRoute);
       }
     }
   }
@@ -1636,11 +1672,16 @@ void PipeWireService::applyVolumePropsFromDict(NodeData& nd, const spa_dict* pro
   }
 
   if (applyMixerFieldsFromDict) {
+    float candidate = -1.0f;
     if (const auto maybeChannelmixVolume = parseFloat(dictGet(props, "channelmix.volume"));
         maybeChannelmixVolume.has_value()) {
-      nd.volume = std::clamp(*maybeChannelmixVolume, 0.0f, 1.5f);
+      candidate = std::clamp(*maybeChannelmixVolume, 0.0f, 1.5f);
     } else if (const auto maybeVolume = parseFloat(dictGet(props, "volume")); maybeVolume.has_value()) {
-      nd.volume = std::clamp(*maybeVolume, 0.0f, 1.5f);
+      candidate = std::clamp(*maybeVolume, 0.0f, 1.5f);
+    }
+    if (candidate >= 0.0f && !shouldRejectVolumeWrite(nd, candidate)) {
+      nd.volume = candidate;
+      confirmVolumeWrite(nd, candidate);
     }
 
     if (const auto maybeChannelmixMuted = parseBool(dictGet(props, "channelmix.mute"));
@@ -1700,6 +1741,11 @@ void PipeWireService::flushPendingNodeVolumes() {
   }
 }
 
+void PipeWireService::noteVolumeWritten(NodeData& nd, float volume) {
+  nd.lastWrittenVolume = volume;
+  nd.volumeWriteGuardUntil = std::chrono::steady_clock::now() + kVolumeWriteGuardDuration;
+}
+
 bool PipeWireService::applyNodeVolumeImmediate(std::uint32_t id, float volume) {
   auto it = m_nodes.find(id);
   if (it == m_nodes.end()) {
@@ -1712,6 +1758,7 @@ bool PipeWireService::applyNodeVolumeImmediate(std::uint32_t id, float volume) {
   }
 
   volume = std::clamp(volume, 0.0f, 1.5f);
+  noteVolumeWritten(nd, volume);
 
   // Keep WirePlumber policy in sync without blocking the main loop.
   // `runAsync` is fire-and-forget, so rapid wheel/slider updates remain responsive.

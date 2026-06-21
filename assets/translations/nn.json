@@ -1,5 +1,17 @@
 {
   "auth": {
+    "fingerprint": {
+      "disconnected": "Fingeravtrykkslesar kopla frå",
+      "error": "Feil med fingeraavtrykkssanning",
+      "no-match": "Fingeravtrykk samsvara ikkje",
+      "not-centered": "Set fingeren i midten og prøv att",
+      "present": "Les av fingeravtrykk ...",
+      "ready": "Set fingeren på lesaren",
+      "remove-and-retry": "Tak fingeren av og prøv att",
+      "retry": "Les av fingeravtrykket ein gong til",
+      "swipe-too-short": "Sveipa var for kort, prøv att",
+      "too-many-attempts": "Slo av fingeravtrykk (for mange freistnader)"
+    },
     "pam": {
       "authentication-failed": "Sanning gjekk gale",
       "start-failed": "PAM-byrjing gjekk gale",
@@ -9,8 +21,8 @@
       "authenticate": "Sanna",
       "authenticating": "Sannar ...",
       "default-message": "Sanning krevst",
-      "invalid-password": "Ugildt passord",
-      "password-placeholder": "Passord",
+      "invalid-password": "Ugildt lykelord",
+      "password-placeholder": "Lykelord",
       "title": "Sanning krevst"
     }
   },
@@ -23,6 +35,13 @@
     "widgets": {
       "active-window": {
         "no-active-window": "Inga aktiv rute"
+      },
+      "bluetooth": {
+        "connected": "Kopla til"
+      },
+      "brightness": {
+        "brightness": "Ljosstyrke",
+        "display": "Skjerm"
       },
       "lock-keys": {
         "caps": "Stor",
@@ -37,11 +56,54 @@
         "playing": "Spelar"
       },
       "network": {
-        "wired": "Trådbunden"
+        "active": "Aktiv",
+        "connected": "Kopla til",
+        "connecting": "Koplar til",
+        "download": "Nedlasting",
+        "interface": "Grensesnitt",
+        "ip": "IP",
+        "network": "Nettverk",
+        "networks": "Nettverk",
+        "networks-count": "{count} nettverk",
+        "networks-count-plural": "{count} nettverk",
+        "no": "Nei",
+        "not-connected": "Ikkje kopla til",
+        "off": "Av",
+        "on": "På",
+        "scanning": "Søkjer",
+        "signal": "Dekning",
+        "upload": "Opplasting",
+        "vpn": "VPN",
+        "wifi": "Wi-Fi",
+        "wired": "Trådbunden",
+        "yes": "Ja"
+      },
+      "privacy": {
+        "camera": "Kamera",
+        "microphone": "Mikrofon",
+        "screen-sharing": "Skjermdeling"
       },
       "scripted": {
         "reload-failed": "Kunne ikkje lasta inn skript å nyo",
         "reloaded": "Lasta inn skript å nyo"
+      },
+      "sysmon": {
+        "cpu": "Prosessor",
+        "cpu-temp": "Prosessortemp",
+        "disk": "Disk",
+        "download": "Nedlasting",
+        "gpu-temp": "Skjermkorttemp",
+        "gpu-usage": "Skjermkortbruk",
+        "gpu-vram": "Skjermkort-VRAM",
+        "ram": "Minne",
+        "swap": "Swap",
+        "system": "System",
+        "upload": "Opplasting"
+      },
+      "volume": {
+        "device": "Eining",
+        "mic": "Mik",
+        "volume": "Ljodstyrke"
       },
       "weather": {
         "default": "Vêr",
@@ -101,7 +163,9 @@
   "control-center": {
     "audio": {
       "application-volumes": "Ljodstyrke på applikasjonar",
-      "input-volume": "Styrke på innljod",
+      "choose-effects-profile": "Vel profil",
+      "effects-profile": "Verknader:",
+      "input-device-prefix": "Innljod:",
       "no-application-audio": "Applikasjonen har ikkje ljod",
       "no-application-audio-body": "Ingen applikasjonar spelar ljod av no.",
       "no-input-devices": "Ingen innljodseiningar",
@@ -110,7 +174,7 @@
       "no-output-devices": "Ingen utljodseiningar",
       "no-output-devices-body": "Ingen utljodsmål er tilgjengelege no.",
       "no-output-selected": "Inga utljodseining er vald",
-      "output-volume": "Utljodsstyrke",
+      "output-device-prefix": "Utljod:",
       "unavailable-body": "PipeWire er ikkje aktiv.",
       "unavailable-title": "Ljod utilgjengeleg"
     },
@@ -145,7 +209,8 @@
     "calendar": {
       "all-day": "Hiele døgeret",
       "events": "Arrangement",
-      "no-events": "Ingen arrangement"
+      "no-events": "Ingen arrangement",
+      "today": "I dag"
     },
     "display": {
       "disabled": "Avslegen",
@@ -153,6 +218,7 @@
       "unknown-resolution": "Ukjend oppløysing"
     },
     "home": {
+      "avatar-error-title": "Brukarbiletet vart ikkje oppdatert",
       "media": {
         "idle": "Inaktiv",
         "no-active-player": "Ingen aktiv avspelar",
@@ -185,9 +251,9 @@
       "current-connection": "Koplinga no",
       "no-networks": "Inkje nettverk som er nære nok",
       "not-connected": "Ikkje tilkopla",
-      "password": "Passord",
-      "password-prompt": "Skriv inn passord",
-      "password-prompt-for": "Skriv inn passord for {ssid}",
+      "password": "Lykelord",
+      "password-prompt": "Skriv inn lykelord",
+      "password-prompt-for": "Skriv inn lykelord for {ssid}",
       "unavailable-detail": "Installer og slå på NetworkManager for å handsama nettverk herfrå.",
       "unavailable-title": "NetworkManager utilgjengeleg",
       "vpns": "VPN",
@@ -198,6 +264,9 @@
       "wired-connection": "Trådsamband"
     },
     "notifications": {
+      "clear-all": "Sletta alle varsel",
+      "dnd-off": "Slå av Ikkje uroa",
+      "dnd-on": "Slå på Ikkje uroa",
       "empty-body": "Nylege varsel viser seg her.",
       "empty-title": "Ingen varsel",
       "filter": {
@@ -254,6 +323,11 @@
       "wifi": "Wi-Fi"
     },
     "system": {
+      "labels": {
+        "load": "Prosessorlast",
+        "ram": "Minne",
+        "swap": "Swap"
+      },
       "titles": {
         "cpu": "Prosessor",
         "gpu": "Skjermkort",
@@ -309,7 +383,10 @@
     "editor": {
       "actions": {
         "add": "Legg til",
+        "clone": "Tvifalda (Ctrl+C, Ctrl+V for å rita av / lima)",
         "done": "Ferdig",
+        "flip-horizontal": "Snu vassrett",
+        "flip-vertical": "Snu loddrett",
         "hide": "Gøym",
         "settings": "Innstillingar",
         "show": "Vis",
@@ -331,6 +408,7 @@
         "bands": "Band",
         "bar-width": "Stongbreidde",
         "bloom-intensity": "Bloom",
+        "center-text": "Set tekst i midten",
         "centered": "I midten",
         "change-image": "Endra ...",
         "circle": "Ring",
@@ -341,18 +419,25 @@
         "color-1": "Let ein",
         "color-2": "Let to",
         "color2": "Let 2",
+        "command": "Kommando",
         "custom-color": "Sjølvvald ...",
         "description": "Skildring",
         "fade-when-idle": "Folna når uaktiv",
         "font-family": "Skrifttype",
         "font-family-default": "Systemstandard",
+        "forecast-days": "Varseldagar",
         "format": "Format",
+        "glyph": "Symbol",
         "hide-when-no-media": "Gøym når ingenting spelar av",
         "horizontal": "Vassrett",
+        "hover-background": "Bakgrunn ved sviv",
+        "hover-foreground": "Framgrunn ved sviv",
         "image-path": "Bilete",
         "inner-diameter": "Indre tverrmål",
         "input-opacity": "Uklårleik av inndata",
         "input-radius": "Indre radius",
+        "interface": "Grensesnitt",
+        "label": "Merkelapp",
         "layout": "Oppsett",
         "mirrored": "Spegla",
         "opacity": "Uklårleik",
@@ -363,6 +448,7 @@
         "secondary-color": "Andrelet",
         "sensitivity": "Varsemd",
         "shadow": "Skugge",
+        "show-forecast": "Vis varsel",
         "show-label": "Vis namn",
         "show-login-button": "Innskrivingsknapp",
         "show-when-idle": "Vis når inaktiv",
@@ -379,6 +465,13 @@
         "stat-swap-pct": "Swap %",
         "stat2": "Info 2",
         "title": "Namn",
+        "variant": "Stil",
+        "variant-default": "Standard",
+        "variant-destructive": "Skjemmande",
+        "variant-ghost": "Skrømt",
+        "variant-outline": "Rand",
+        "variant-primary": "Primær",
+        "variant-secondary": "Sekundær",
         "vertical": "Loddrett",
         "visualization-mode": "Modus",
         "visualization-mode-all": "Alle",
@@ -397,9 +490,11 @@
       "title": "Skrivebordsnøytlar",
       "types": {
         "audio-visualizer": "Ljodframsyning",
+        "button": "Knapp",
         "clock": "Klokke",
         "fancy-audio-visualizer": "Tøff ljodframsyning",
         "label": "Namn",
+        "login-box": "Innskrivingsfelt",
         "media-player": "Avspelar",
         "sticker": "Klistremerke",
         "system-monitor": "Systemvakt",
@@ -506,9 +601,9 @@
   "lockscreen": {
     "authenticating": "Sannar ...",
     "authentication-failed": "Sanning gjekk gale",
-    "password-cleared": "Passord rett",
-    "password-placeholder": "Passord",
-    "ready": "Skriv inn passordet ditt og trykk på Retur.",
+    "password-cleared": "Lykelord rett",
+    "password-placeholder": "Lykelord",
+    "ready": "Skriv inn lykelordet ditt og trykk på Retur.",
     "unlocked": "Låst opp",
     "waiting": "Ventar på låsestadfesting ..."
   },
@@ -523,6 +618,8 @@
     },
     "internal": {
       "battery": "Batteri",
+      "battery-critical-body": "{device}: {percent} % - datamaskina di slår seg av snart",
+      "battery-critical-title": "Batteri svært lågt",
       "battery-device": "Batterieining",
       "battery-low-body": "{device}: {percent} % att",
       "battery-low-title": "Lågt batteri",
@@ -546,10 +643,14 @@
       "keybind-invalid-printable": "Skrivande knappar (bokstavar, tal, teikn) krev ein hjelpeknapp som Ctrl eller Alt.",
       "keybind-invalid-super": "Du kan ikkje bruka Superknappen/Windowsknappen i skalsnarvegar.",
       "keybind-invalid-title": "Snarveg ikkje tillaten.",
+      "launcher-usage-reset": "Programveljar",
+      "launcher-usage-reset-success": "Bruksdata sletta.",
       "lockscreen-widgets-editor": "Låseskjermnøytelbrigdar",
       "lockscreen-widgets-editor-blocked-locked": "Lås opp øykta før du brigdar på låseskjermnøytlar.",
       "lockscreen-widgets-editor-enabled": "Låseskjermnøytelbrigdaren er på. Flytta på nøytlar på førebiletet, og lås skjermen for å sjå om oppsettet er rett.",
       "mpris-disabled": "MPRIS avslege",
+      "screen-time-reset": "Skjermtid",
+      "screen-time-reset-success": "Brukshistorikk sletta.",
       "session-bus-unavailable": "Øyktebus ikkje tilgjengeleg",
       "wallpaper-palette-export": "Sjølvvald palett",
       "wallpaper-palette-export-success": "Lagra \"{name}\" og sette palettbrunn til sjølvvald."
@@ -568,6 +669,10 @@
       "off": "Ikkje uroa av",
       "on": "Ikkje uroa på"
     },
+    "effects": {
+      "input": "Inndataverknader",
+      "output": "Utdataverknader"
+    },
     "lock-keys": {
       "caps-off": "Storlås av",
       "caps-on": "Storlås på",
@@ -575,6 +680,20 @@
       "num-on": "Tallås på",
       "scroll-off": "Bladlås av",
       "scroll-on": "Bladlås på"
+    },
+    "nightlight": {
+      "forced": "Alltid på",
+      "off": "Natteljos av",
+      "running": "Køyrer",
+      "scheduled": "Etla"
+    },
+    "privacy": {
+      "camera-off": "Kamera stogga",
+      "camera-on": "Kamera på",
+      "mic-off": "Mikrofon stogga",
+      "mic-on": "Mikrofon på",
+      "screen-off": "Skjermdeling stogga",
+      "screen-on": "Skjermdeling på"
     },
     "wifi": {
       "off": "Wi-Fi av",
@@ -592,11 +711,14 @@
         "plugged-in": "Kopla til"
       },
       "tooltip": {
+        "device": "Batteri",
+        "device-numbered": "Batteri {index}",
         "health": "Helse",
         "rate": "Rate",
         "status": "Status",
         "time-left": "Tid att",
-        "time-to-full": "Tid til fullt"
+        "time-to-full": "Tid til fullt",
+        "unknown-device": "Ukjend eining"
       }
     },
     "profiles": {
@@ -628,6 +750,7 @@
       "advanced": "Avansert",
       "inherited": "Ervd",
       "monitor": "Skjerm",
+      "official": "Offisiell",
       "override": "Overstyr"
     },
     "calendar-accounts": {
@@ -639,10 +762,10 @@
       "invalid": "Sjå etter dei merkte felta for kalenderkontoen",
       "name-label": "Visingsnamn",
       "name-placeholder": "Personleg kalender",
-      "password-keep-placeholder": "Haldt tomt for å halda fram med same passord",
-      "password-label": "App-passord",
-      "password-placeholder": "Sereige app-passord",
-      "password-save-error": "Kunne ikkje lagra passordet til kalenderkontoen.",
+      "password-keep-placeholder": "Haldt tomt for å halda fram med same lykelord",
+      "password-label": "App-lykelord",
+      "password-placeholder": "Sereige app-lykelord",
+      "password-save-error": "Kunne ikkje lagra lykelordet til kalenderkontoen.",
       "provider": {
         "custom": "CalDAV",
         "google": "Google",
@@ -784,6 +907,10 @@
       }
     },
     "errors": {
+      "avatar-accounts": "Kunne ikkje oppdatera brukarbiletet åt systemkontoen.",
+      "avatar-invalid-path": "Biletebanen du gav er ikkje ei leseleg biletefil.",
+      "avatar-load": "Kunne ikkje lasta inn biletet. Bruk PNG, JPEG, WebP, GIF, BMP, eller SVG.",
+      "avatar-write": "Kunne ikkje førebu brukarbiletet til lagring.",
       "bar": {
         "create": "Kunne ikkje skapa stong.",
         "delete": "Kunne ikkje sletta stong.",
@@ -859,6 +986,7 @@
         "clipboard": "Utklippstavle",
         "community": "Samfunn",
         "control-center": "Styrerom",
+        "dead-zone": "Daudsone",
         "directories": "Mapper",
         "effects": "Verknader",
         "filtering": "Søkjevilkår",
@@ -928,6 +1056,27 @@
         "system": "System",
         "templates": "Malar",
         "wallpaper": "Bakgrunnsbilete"
+      }
+    },
+    "notifications": {
+      "filter": {
+        "add": "Legg til søkjevilkår",
+        "add-title": "Legg til Varselvilkår",
+        "allowed-urgencies-label": "Tillatne naudnivå",
+        "flag": {
+          "history": "historikk",
+          "sound": "ljod",
+          "toast": "skjermvarsel"
+        },
+        "flags-label": "Når samsvar",
+        "match-label": "App",
+        "match-placeholder": "Appnamn, skrivebordsoppslag eller kategori ...",
+        "play-sound": "Spel av ljod",
+        "save-history": "Lagra i historikken",
+        "show-toast": "Vis skjermvarsel",
+        "summary-blocked": "{match} · sperra",
+        "summary-disabled": "{match} · avslegen",
+        "unnamed": "Søkjevilkår utan namn"
       }
     },
     "options": {
@@ -1043,6 +1192,7 @@
           "crop": "Skjer av",
           "fit": "Høve",
           "repeat": "Tile",
+          "span": "Spana",
           "stretch": "Strekk"
         },
         "order": {
@@ -1081,6 +1231,8 @@
       "sources": {
         "add": "Legg til brunn",
         "add-title": "Legg til pluginbrunn",
+        "edit": "Endra brunn",
+        "edit-title": "Endra pluginbrunn",
         "empty": "Ingen brunnar tilmåta.",
         "errors": {
           "duplicate-name": "Ein brunn med denne ID finst alt.",
@@ -1098,6 +1250,7 @@
         "name-label": "Brunn-ID",
         "name-placeholder": "plugins-mine",
         "remove": "Sletta brunn",
+        "save": "Lagra",
         "title": "Brunnar",
         "update": "Oppdater",
         "update-on-startup": "Oppdater når skalet byrjar"
@@ -1227,6 +1380,10 @@
           "description": "Standard hyrneradius for nøytelpiller, arbeidsrompiller og arbeidsgrupper på oppgåvelina; haldt tomt for automatisk pilleform, eller set 0 for rette hyrno",
           "label": "Pilleradius"
         },
+        "capsule-thickness": {
+          "description": "Pillestorleik på stonga som brøklut av stongtjukna (1.0 fyller stonga)",
+          "label": "Pilletjukn"
+        },
         "center-widgets": {
           "description": "Nøytlar midt i stonga",
           "label": "Nøytlar i midten"
@@ -1257,6 +1414,22 @@
         "corner-top-right": {
           "description": "Hyrneradius topp høgre på stonga"
         },
+        "dead-zone-command": {
+          "description": "Skalkommando som køyrer når du venstretrykkjer i stonga utanfor nøytelområde",
+          "label": "Venstretrykk"
+        },
+        "dead-zone-right-command": {
+          "description": "Skalkommando som køyrer når du høgretrykkjer; haldt dette tomt for å opna Styrerommet",
+          "label": "Høgretrykk"
+        },
+        "dead-zone-scroll-down-command": {
+          "description": "Skalkommando som køyrer når du blader nedover",
+          "label": "Blad nedover"
+        },
+        "dead-zone-scroll-up-command": {
+          "description": "Skalkommando som køyrer når du blader oppover",
+          "label": "Blad oppover"
+        },
         "edge-margin": {
           "description": "Avstand frå nærmaste skjermrand; positive tal flyttar stonga bort frå henne"
         },
@@ -1268,7 +1441,11 @@
           "label": "Endenøytlar"
         },
         "ends-margin": {
-          "description": "Innsett frå kvar ende av stonga med midtlina."
+          "description": "Innsett frå kvar ende av stonga langs med midtlina."
+        },
+        "font-family": {
+          "description": "Skrifttype for nøytlane på denne stonga; haldt dette tomt for å erva standardskrifttypen.",
+          "label": "Skrifttype"
         },
         "font-weight": {
           "description": "Standardvekt for nøyteletikettar på denne stonga.",
@@ -1277,6 +1454,9 @@
         "layer": {
           "description": "Bruk Overlag for å visa stonga over appar i fullskjerm. Bundne fjøler fylgjer stonga.",
           "label": "Wayland-lag"
+        },
+        "opposite-edge-margin": {
+          "description": "Tilleggsrom på innersida av stonga, bort frå skjermranda; bruk når fullauka vindaugo ikkje vyrder stag"
         },
         "panel-overlap": {
           "description": "Kor mykje ei bunden fjøl går inn over stongranda for å gøyma saumen, i piksel (måta til om du ser ei lina eller eit gap)",
@@ -1379,21 +1559,253 @@
           "description": "Vis eller gøym festepunktet"
         },
         "ends-margin": {
-          "description": "Innsett frå kvar ende av festepunktet med midtlina."
+          "description": "Innsett frå kvar ende av festepunktet langs med midtlina."
         },
         "icon-size": {
           "description": "Storleik på festepunktsmerke i piksel",
           "label": "Merkestorleik"
         },
         "inactive-icon-opacity": {
-          "description": "Uklårleik for festepunktsmerke utan åtgaum"
+          "description": "Uklårleik for festepunktsmerke utan åtgaum",
+          "label": "Uklårleik for inaktive merke"
         },
         "inactive-icon-scale": {
           "description": "Storleik for festepunktsmerke utan åtgaum",
-          "label": "Inaktiv merkeskala"
+          "label": "Skala for inaktive merke"
+        },
+        "item-spacing": {
+          "description": "Rom mellom ting på festepunktet",
+          "label": "Mellomrom"
+        },
+        "launcher-icon": {
+          "description": "Merket for programveljaren på festepunktet",
+          "label": "Programveljarmerke"
+        },
+        "launcher-position": {
+          "description": "Vis knappen for programveljaren i byrjinga eller enden av festepunktet",
+          "label": "Programveljarknapp"
+        },
+        "magnification": {
+          "description": "Auke merke nær peikaren, som i macOS.",
+          "label": "Auke"
         },
         "magnification-scale": {
-          "description": "Høgste aukemultiplikator for merke midt i peikaren (1.0 slår av auke)"
+          "description": "Høgste aukemultiplikator for merke midt i peikaren (1.0 slår av auke)",
+          "label": "Aukeskala"
+        },
+        "main-axis-padding": {
+          "description": "Indre utfylling på festepunktet langs med midtlina (mellom merke og dei korte endane på festepunktet)"
+        },
+        "monitors": {
+          "description": "Vel kva for skjermar viser festepunktet (haldt dette tomt for alle); aktivskjerm søkjevilkår vert brukt for desse skjermane",
+          "label": "Skjermar"
+        },
+        "pinned-apps": {
+          "description": "Skrivebordsoppslag-ID for appar på festepunktet",
+          "label": "Feste appar"
+        },
+        "position": {
+          "description": "Kva for skjermrand festepunktet sit på"
+        },
+        "reserve-space": {
+          "description": "Skyv vindaugo bort frå festepunktsranda"
+        },
+        "shadow": {
+          "description": "Kasta den ålmenne flateskuggen frå festepunktet"
+        },
+        "show-dots": {
+          "description": "Vis prikkar attmed merka for vindaugo som køyrer",
+          "label": "Vis prikkar"
+        },
+        "show-instance-count": {
+          "description": "Vis eit tal for kor mange opne tilfelle det er",
+          "label": "Vis tilfelletal"
+        },
+        "show-running": {
+          "description": "Vis køyrande applikasjonar som ikkje er feste",
+          "label": "Vis køyrande"
+        }
+      },
+      "hooks": {
+        "command-placeholder": "skalkommando eller skriftbane",
+        "events": {
+          "battery-charging": {
+            "description": "Kommandoen som køyrer når batteriet byrjar å lada opp",
+            "label": "Ved lading"
+          },
+          "battery-discharging": {
+            "description": "Kommandoen som køyrer når batteriet byrjar å lada ut",
+            "label": "Ved utlading"
+          },
+          "battery-percentage-changed": {
+            "description": "Kommandoen som køyrer når batteriprosent endrar",
+            "label": "Ved endring i batteriprosent"
+          },
+          "battery-plugged": {
+            "description": "Kommandoen som køyrer når batteriet er fullt lada eller ventar på lading ",
+            "label": "Ved batteritilkopling"
+          },
+          "bluetooth-disabled": {
+            "description": "Kommandoen som køyrer når Bluetooth er avslegen",
+            "label": "Ved Bluetooth av"
+          },
+          "bluetooth-enabled": {
+            "description": "Kommandoen som køyrer når Bluetooth er påslegen",
+            "label": "Ved Bluetooth på"
+          },
+          "colors-changed": {
+            "description": "Kommandoen som køyrer når den aktive paletten er endra",
+            "label": "Ved nye leter"
+          },
+          "logging-out": {
+            "description": "Kommandoen som køyrer før utskriving",
+            "label": "Ved utskriving"
+          },
+          "power-profile-changed": {
+            "description": "Kommandoen som køyrer når den aktive UPower / PPD straumprofilen endrar",
+            "label": "Ved endra straumprofil"
+          },
+          "rebooting": {
+            "description": "Kommandoen som køyrer for datamaskina startar å nyo",
+            "label": "Ved omstart"
+          },
+          "session-locked": {
+            "description": "Kommandoen som køyrer når øykta er låst",
+            "label": "Ved øyktelås"
+          },
+          "session-unlocked": {
+            "description": "Kommandoen som køyrer etter øykta er låst opp",
+            "label": "Ved øykteopplåsing"
+          },
+          "shutting-down": {
+            "description": "Kommandoen som køyrer før datamaskina slår av",
+            "label": "Ved avslåing"
+          },
+          "started": {
+            "description": "Kommandoen som køyrer etter Noctalia byrjar",
+            "label": "Ved byrjing"
+          },
+          "theme-mode-changed": {
+            "description": "Kommandoen som køyrer når hammodusen endrar mellom ljos og mørk",
+            "label": "Ved endra hammodus"
+          },
+          "wallpaper-changed": {
+            "description": "Kommandoen som køyrer når bakgrunnsbiletet endrar",
+            "label": "Ved nytt bakgrunnsbilete"
+          },
+          "wifi-disabled": {
+            "description": "Kommandoen som køyrer når Wi-Fi er avslegen",
+            "label": "Ved avslegen Wi-Fi"
+          },
+          "wifi-enabled": {
+            "description": "Kommandoen som køyrer når Wi-Fi er påslegen",
+            "label": "Ved påslegen Wi-Fi"
+          }
+        }
+      },
+      "idle": {
+        "behaviors": {
+          "description": "Øyktehandlingar som finst (lås, skjermar av, set i dvale) eller sjølvvlade kommandoar, timeout, attopptaksparing, og orden",
+          "label": "Åtburdar"
+        },
+        "pre-action-fade": {
+          "description": "Sekund fullskjermsmørkning før dvalekommandoen; bruk 0 for å slå av ",
+          "label": "Inaktiv mørkning"
+        }
+      },
+      "keybinds": {
+        "cancel": {
+          "description": "Lat att sprettoppar, avvis fjøler, eller avbryt handling",
+          "label": "Avbryt"
+        },
+        "down": {
+          "description": "Flytta på åtgaum eller vel ned ei rad",
+          "label": "Flytta nedover"
+        },
+        "left": {
+          "description": "Flytta på åtgaum eller vel til venstre",
+          "label": "Flytta til venstre"
+        },
+        "right": {
+          "description": "Flytta på åtgaum eller vel til høgre",
+          "label": "Flytta til høgre"
+        },
+        "up": {
+          "description": "Flytta på åtgaum eller vel opp ei rad",
+          "label": "Flytta oppover"
+        },
+        "validate": {
+          "description": "Stadfest val, send inndata, eller aktiviser tingen med åtgaum",
+          "label": "Stadfest"
+        }
+      },
+      "lockscreen": {
+        "allow-empty-password": {
+          "description": "Lat Retur senda tomt lykelord. Slå på for security-key eller andre PAM-stack utan lykelord, haldt av for å sleppa undan at vekkjingstastar vert låste ved uhell",
+          "label": "Send tome lykelord"
+        },
+        "blur-intensity": {
+          "description": "Kor mykje visking det er på låseskjermen",
+          "label": "Viskingsstyrke"
+        },
+        "blurred-desktop": {
+          "description": "Bruk eit bilete av skrivebordet som låseskjermsbakgrunn",
+          "label": "Skrivebordsopptak"
+        },
+        "enabled": {
+          "description": "Slå på øyktelås, logind-integrering og låsehandlingar",
+          "label": "Låseskjerm"
+        },
+        "fingerprint": {
+          "description": "Lås opp med fingeravtrykkslesar med fprintd, attmed lykelord",
+          "label": "Opplåsing med fingeravtrykk"
+        },
+        "monitors": {
+          "description": "Vel kva for skjermar viser låseskjermen; haldt dette tomt for å visa på alle skjermar",
+          "label": "Skjermar"
+        },
+        "tint-intensity": {
+          "description": "Flateleting på låseskjermsbakgrunnen",
+          "label": "Letingsstyrke"
+        },
+        "wallpaper": {
+          "description": "Sjølvvalt bilete for låseskjermsbakgrunnen. Haldt dette tomt for å bruka bakgrunnsbiletet på skrivebordet.",
+          "label": "Bakgrunnsbilete",
+          "placeholder": "Bruk bakgrunnsbiletet på skrivebordet"
+        },
+        "widgets": {
+          "description": "Vis nøytlar som du kan måta til på låseskjermen",
+          "label": "Låseskjermsnøytlar"
+        },
+        "widgets-editor": {
+          "button": "Slå av / på brigdaren",
+          "description": "Legg til, flytta og endra storleik på nøytlar på låseskjermen",
+          "label": "Låseskjermsnøytelbrigdar"
+        }
+      },
+      "notifications": {
+        "allowed-urgencies": {
+          "description": "Vis einast eksterne varsel på valde naudnivå",
+          "label": "Tillatne naudnivå"
+        },
+        "blacklist": {
+          "description": "Gøym desse sendarar (appnamn, skrivebordsoppslag eller kategori)",
+          "label": "Varselsvartliste"
+        },
+        "blacklist-allow-critical": {
+          "description": "Vis svært viktige varsel frå svartlista sendarar"
+        },
+        "collapse-on-dismiss": {
+          "description": "Lat skjermvarsel fyller mellomrom når eitt er avvist",
+          "label": "Fyll på avvising"
+        },
+        "daemon": {
+          "description": "Slå på den innebygde varselhandsamaren",
+          "label": "Varselhandsamar"
+        },
+        "filters": {
+          "description": "Reglar for einskilde sendarar for skjermvarsel, historikk og ljod; fyrste vilkåret som samsvarar vinn",
+          "label": "Varselvilkår"
         }
       }
     },

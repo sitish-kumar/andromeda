@@ -455,6 +455,7 @@ void RenderContext::renderNode(
       auto style = graph->style();
       style.lineColor1.a *= effectiveOpacity;
       style.lineColor2.a *= effectiveOpacity;
+      style.lineColor3.a *= effectiveOpacity;
       style.graphFillOpacity *= effectiveOpacity;
       m_backend->drawGraph(
           graph->textureId(), graph->textureWidth(), sw, sh, node->width(), node->height(), style, worldTransform
@@ -474,10 +475,31 @@ void RenderContext::renderNode(
       const float imageHeight2 = hasSource2 ? wallpaper->imageHeight2() : wallpaper->imageHeight1();
       const float progress = hasSource2 ? wallpaper->progress() : 0.0f;
       m_backend->drawWallpaper(
-          wallpaper->transition(), wallpaper->sourceKind1(), wallpaper->texture1(), wallpaper->sourceColor1(),
-          sourceKind2, texture2, sourceColor2, sw, sh, node->width(), node->height(), wallpaper->imageWidth1(),
-          wallpaper->imageHeight1(), imageWidth2, imageHeight2, progress, static_cast<float>(wallpaper->fillMode()),
-          wallpaper->transitionParams(), wallpaper->fillColor(), worldTransform
+          WallpaperDrawParams{
+              .transition = wallpaper->transition(),
+              .from =
+                  {.kind = wallpaper->sourceKind1(),
+                   .texture = wallpaper->texture1(),
+                   .color = wallpaper->sourceColor1(),
+                   .imageWidth = wallpaper->imageWidth1(),
+                   .imageHeight = wallpaper->imageHeight1()},
+              .to =
+                  {.kind = sourceKind2,
+                   .texture = texture2,
+                   .color = sourceColor2,
+                   .imageWidth = imageWidth2,
+                   .imageHeight = imageHeight2},
+              .surfaceWidth = sw,
+              .surfaceHeight = sh,
+              .quadWidth = node->width(),
+              .quadHeight = node->height(),
+              .progress = progress,
+              .fillMode = static_cast<float>(wallpaper->fillMode()),
+              .params = wallpaper->transitionParams(),
+              .fillColor = wallpaper->fillColor(),
+              .transform = worldTransform,
+              .span = wallpaper->spanParams(),
+          }
       );
     }
     break;

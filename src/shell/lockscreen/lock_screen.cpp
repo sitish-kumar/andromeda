@@ -370,7 +370,7 @@ void LockScreen::runAfterSessionLocked(std::function<void()> fn) {
 void LockScreen::handleLocked(void* data, ext_session_lock_v1* /*lock*/) {
   auto* self = static_cast<LockScreen*>(data);
   // Ignore locked events after unlock()/handleFinished() tore down the lock object.
-  // Late events would pause background shell rendering without a matching unlock hook.
+  // A late event would re-engage the locked state with no matching unlock hook.
   if (self->m_lock == nullptr || !self->m_lockPending) {
     return;
   }
@@ -699,7 +699,10 @@ void LockScreen::tryAuthenticate() {
   updatePromptOnSurfaces();
 
   const PamAuthenticator authenticator = m_authenticator;
-  const std::string pamService = passwordPamService();
+  // Authenticate against the "login" stack. If fingerprint is enabled, strip
+  // pam_fprintd from it: noctalia drives the reader itself over D-Bus and the
+  // two can't share the sensor. See docs/fingerprint.md.
+  const std::string pamService = "login";
   std::thread([this, generation, password = std::move(password), authenticator, pamService]() mutable {
     const auto result = authenticator.authenticateCurrentUser(password, pamService);
     clearSensitiveString(password);
@@ -756,15 +759,6 @@ void LockScreen::handleFingerprintStatus(const std::string& message, bool isErro
   m_status = message.empty() ? i18n::tr("lockscreen.ready") : message;
   m_statusIsError = isError;
   updatePromptOnSurfaces();
-}
-
-std::string LockScreen::passwordPamService() const {
-  if (m_configService != nullptr
-      && m_configService->config().lockscreen.fingerprint
-      && PamAuthenticator::pamServiceExists("su")) {
-    return "su";
-  }
-  return "login";
 }
 
 void LockScreen::clearSensitiveString(std::string& value) {

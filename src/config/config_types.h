@@ -43,6 +43,16 @@ inline constexpr std::string_view kCapsuleGroupTokenPrefix = "group:";
 [[nodiscard]] std::string capsuleGroupTokenId(std::string_view laneEntry);
 [[nodiscard]] std::string makeCapsuleGroupToken(std::string_view groupId);
 
+struct BarDeadZoneOverride {
+  std::optional<std::string> command;
+  std::optional<std::string> rightCommand;
+  std::optional<std::string> middleCommand;
+  std::optional<std::string> scrollUpCommand;
+  std::optional<std::string> scrollDownCommand;
+
+  bool operator==(const BarDeadZoneOverride&) const = default;
+};
+
 struct BarMonitorOverride {
   std::string match;
   std::optional<std::string> position;
@@ -59,15 +69,16 @@ struct BarMonitorOverride {
   std::optional<std::int32_t> radiusTopRight;
   std::optional<std::int32_t> radiusBottomLeft;
   std::optional<std::int32_t> radiusBottomRight;
-  std::optional<std::int32_t> marginEnds;    // inset from each end of the bar along its main axis
-  std::optional<std::int32_t> marginEdge;    // distance from the nearest screen edge (floats the bar when > 0)
-  std::optional<std::int32_t> padding;       // main-axis padding from bar edges to start/end sections
-  std::optional<std::int32_t> widgetSpacing; // gap between widgets within a section
-  std::optional<bool> shadow;                // use the global shell shadow on this bar
-  std::optional<bool> contactShadow;         // dark gradient between attached panel and bar
-  std::optional<std::int32_t> panelOverlap;  // logical px the attached panel overlaps the bar edge (seam tuning)
-  std::optional<float> capsuleThickness;     // capsule cross-size as a fraction of bar thickness
-  std::optional<std::string> fontFamily;     // unset = inherit shell.font_family
+  std::optional<std::int32_t> marginEnds;         // inset from each end of the bar along its main axis
+  std::optional<std::int32_t> marginEdge;         // distance from the nearest screen edge (floats the bar when > 0)
+  std::optional<std::int32_t> marginOppositeEdge; // extra reserved space on the inward side of the bar
+  std::optional<std::int32_t> padding;            // main-axis padding from bar edges to start/end sections
+  std::optional<std::int32_t> widgetSpacing;      // gap between widgets within a section
+  std::optional<bool> shadow;                     // use the global shell shadow on this bar
+  std::optional<bool> contactShadow;              // dark gradient between attached panel and bar
+  std::optional<std::int32_t> panelOverlap;       // logical px the attached panel overlaps the bar edge (seam tuning)
+  std::optional<float> capsuleThickness;          // capsule cross-size as a fraction of bar thickness
+  std::optional<std::string> fontFamily;          // unset = inherit shell.font_family
   std::optional<float> scale;
   std::optional<std::vector<std::string>> startWidgets;
   std::optional<std::vector<std::string>> centerWidgets;
@@ -83,8 +94,19 @@ struct BarMonitorOverride {
   std::optional<double> widgetCapsulePadding;
   std::optional<double> widgetCapsuleRadius;
   std::optional<double> widgetCapsuleOpacity;
+  BarDeadZoneOverride deadZone;
 
   bool operator==(const BarMonitorOverride&) const = default;
+};
+
+struct BarDeadZoneConfig {
+  std::string command;
+  std::string rightCommand;
+  std::string middleCommand;
+  std::string scrollUpCommand;
+  std::string scrollDownCommand;
+
+  bool operator==(const BarDeadZoneConfig&) const = default;
 };
 
 struct BarConfig {
@@ -104,12 +126,13 @@ struct BarConfig {
   std::int32_t radiusTopRight = static_cast<std::int32_t>(Style::radiusXl);
   std::int32_t radiusBottomLeft = static_cast<std::int32_t>(Style::radiusXl);
   std::int32_t radiusBottomRight = static_cast<std::int32_t>(Style::radiusXl);
-  std::int32_t marginEnds = 180;  // inset from each end of the bar along its main axis
-  std::int32_t marginEdge = 10;   // distance from the nearest screen edge (floats the bar when > 0)
-  std::int32_t padding = 14;      // main-axis padding from bar edges to start/end sections
-  std::int32_t widgetSpacing = 6; // gap between widgets within a section
-  bool shadow = true;             // use the global shell shadow
-  bool contactShadow = false;     // dark gradient between attached panel and bar
+  std::int32_t marginEnds = 180;       // inset from each end of the bar along its main axis
+  std::int32_t marginEdge = 10;        // distance from the nearest screen edge (floats the bar when > 0)
+  std::int32_t marginOppositeEdge = 0; // extra reserved space on the inward side of the bar
+  std::int32_t padding = 14;           // main-axis padding from bar edges to start/end sections
+  std::int32_t widgetSpacing = 6;      // gap between widgets within a section
+  bool shadow = true;                  // use the global shell shadow
+  bool contactShadow = false;          // dark gradient between attached panel and bar
   // Logical px the attached panel overlaps the bar edge so their seam is hidden. The ideal value depends on the
   // compositor and the output's fractional scale (physical-pixel rounding), so it is exposed for per-bar/per-monitor
   // tuning. Negative values pull the panel away from the bar.
@@ -145,6 +168,7 @@ struct BarConfig {
   // True when `capsule_border` appears under `[bar.*]` (empty value = no outline for widgets that inherit border).
   bool widgetCapsuleBorderSpecified = false;
   std::optional<ColorSpec> widgetCapsuleBorder;
+  BarDeadZoneConfig deadZone;
   std::vector<BarMonitorOverride> monitorOverrides;
 
   bool operator==(const BarConfig&) const = default;
@@ -169,11 +193,11 @@ struct SessionPanelActionConfig {
   std::string action;
   bool enabled = true;
   // When set, runs via `process::runAsync` (shell string) instead of the built-in handler.
-  std::optional<std::string> command;
-  std::optional<std::string> label;
-  std::optional<std::string> glyph;
+  std::optional<std::string> command = std::nullopt;
+  std::optional<std::string> label = std::nullopt;
+  std::optional<std::string> glyph = std::nullopt;
   SessionActionButtonVariant variant = SessionActionButtonVariant::Default;
-  std::optional<KeyChord> shortcut;
+  std::optional<KeyChord> shortcut = std::nullopt;
 
   bool operator==(const SessionPanelActionConfig&) const = default;
 };
@@ -354,6 +378,7 @@ enum class WallpaperFillMode : std::uint8_t {
   Fit = 2,
   Stretch = 3,
   Repeat = 4,
+  Span = 5,
 };
 
 enum class WallpaperTransition : std::uint8_t {
@@ -575,15 +600,18 @@ struct OsdKindsConfig {
   bool bluetooth = true;
   bool powerProfile = true;
   bool caffeine = true;
+  bool nightlight = true;
   bool dnd = true;
   bool lockKeys = true;
   bool keyboardLayout = true;
   bool media = true;
+  bool privacy = true;
   bool operator==(const OsdKindsConfig&) const = default;
 };
 
 struct OsdConfig {
   std::string position = "top_center";
+  std::string positionVertical = "top_center";
   std::string orientation = "horizontal";
   float scale = 1.0f;
   float backgroundOpacity = 0.97f;
@@ -734,6 +762,7 @@ constexpr EnumOption<WallpaperFillMode> kWallpaperFillModes[] = {
     {WallpaperFillMode::Fit, "fit", "settings.options.wallpaper.fill.fit"},
     {WallpaperFillMode::Stretch, "stretch", "settings.options.wallpaper.fill.stretch"},
     {WallpaperFillMode::Repeat, "repeat", "settings.options.wallpaper.fill.repeat"},
+    {WallpaperFillMode::Span, "span", "settings.options.wallpaper.fill.span"},
 };
 
 constexpr EnumOption<WallpaperAutomationConfig::Order> kWallpaperAutomationOrders[] = {
@@ -990,14 +1019,14 @@ struct BrightnessConfig {
 struct BatteryDeviceWarningThreshold {
   std::string selector;
   // 0 disables the low-battery warning notification and widget warning state for this device.
-  std::int32_t warningThreshold = 20;
+  std::int32_t warningThreshold = 10;
 
   bool operator==(const BatteryDeviceWarningThreshold&) const = default;
 };
 
 struct BatteryConfig {
   // 0 disables the low-battery warning notification and widget warning state by default.
-  std::int32_t warningThreshold = 20;
+  std::int32_t warningThreshold = 10;
   std::vector<BatteryDeviceWarningThreshold> deviceThresholds;
 
   bool operator==(const BatteryConfig&) const = default;
@@ -1208,9 +1237,12 @@ struct ThemeConfig {
 };
 
 struct ControlCenterConfig {
+  static constexpr std::int32_t kDefaultWidth = 700;
+
   std::vector<ShortcutConfig> shortcuts;
   ControlCenterSidebarMode sidebarMode = ControlCenterSidebarMode::Compact;
   ControlCenterSidebarMode sidebarSectionMode = ControlCenterSidebarMode::Compact;
+  std::int32_t width = kDefaultWidth; // full-sidebar logical width; compact/none modes scale down from this
   bool operator==(const ControlCenterConfig&) const = default;
 };
 

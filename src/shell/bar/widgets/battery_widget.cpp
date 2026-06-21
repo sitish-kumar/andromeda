@@ -29,31 +29,6 @@ namespace {
     return color;
   }
 
-  const char* batteryGlyphName(double percentage, BatteryState state) {
-    if (state == BatteryState::Charging) {
-      return "battery-charging";
-    }
-    if (state == BatteryState::FullyCharged || state == BatteryState::PendingCharge) {
-      return "battery-plugged";
-    }
-    if (state == BatteryState::Unknown && percentage <= 0.0) {
-      return "battery-exclamation";
-    }
-    if (percentage >= 85.0) {
-      return "battery-4";
-    }
-    if (percentage >= 55.0) {
-      return "battery-3";
-    }
-    if (percentage >= 30.0) {
-      return "battery-2";
-    }
-    if (percentage >= 10.0) {
-      return "battery-1";
-    }
-    return "battery-0";
-  }
-
   const char* batteryStateGlyph(BatteryState state) {
     if (state == BatteryState::Charging) {
       return "bolt-filled";
@@ -463,9 +438,13 @@ void BatteryWidget::syncState(Renderer& renderer) {
     for (const auto& dev : devices) {
       std::string name;
       if (dev.isLaptopBattery()) {
-        name = (laptopBatteryCount > 1) ? ("Battery " + std::to_string(++laptopBatteryIndex)) : "Battery";
+        name = (laptopBatteryCount > 1)
+            ? i18n::tr("power.battery.tooltip.device-numbered", "index", ++laptopBatteryIndex)
+            : i18n::tr("power.battery.tooltip.device");
       } else {
-        name = !dev.model.empty() ? dev.model : (!dev.nativePath.empty() ? dev.nativePath : "Unknown Device");
+        name = !dev.model.empty()
+            ? dev.model
+            : (!dev.nativePath.empty() ? dev.nativePath : i18n::tr("power.battery.tooltip.unknown-device"));
       }
       int dp = static_cast<int>(std::round(dev.state.percentage));
       rows.push_back({std::move(name), std::to_string(dp) + "%"});

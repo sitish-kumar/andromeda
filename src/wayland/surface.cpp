@@ -225,19 +225,6 @@ Surface::~Surface() {
 
 bool Surface::isRunning() const noexcept { return m_running; }
 
-void Surface::pauseFrameLoop() {
-  cancelQueuedFrameWork();
-  cancelQueuedRender();
-  setRunning(false);
-}
-
-void Surface::resumeFrameLoop() {
-  setRunning(true);
-  if (m_configured) {
-    requestLayout();
-  }
-}
-
 float Surface::effectiveBufferScale() const noexcept {
   if (m_fractionalScale != nullptr && m_viewport != nullptr) {
     if (m_fractionalScaleNumerator > 0) {
@@ -1014,7 +1001,10 @@ void Surface::processQueuedFrameWork() {
       );
     }
 
-    if (m_frameTickCallback) {
+    // Frame-tick callbacks make the surface's render target current and do GL
+    // work. Skip them until the target is ready; on wlroots compositors the
+    // surface can be configured a frame before its EGL surface exists.
+    if (m_frameTickCallback && ensureRenderTargetReady()) {
       const float callbackMs = elapsedMs([this, deltaMs] { m_frameTickCallback(deltaMs); });
       recordSurfaceProfileEvent(*this, SurfaceProfileEvent::FrameTick, callbackMs);
       logSlowSurfaceOperation(

@@ -21,23 +21,25 @@
 #include <chrono>
 #include <memory>
 #include <optional>
+#include <wayland-client-protocol.h>
 
 using namespace control_center;
 
 namespace {
+
   constexpr auto kMprisRefreshMinInterval = std::chrono::milliseconds(750);
 
-  [[nodiscard]] float preferredWidthForSidebarMode(ControlCenterSidebarMode mode, float scale) {
-    switch (mode) {
-    case ControlCenterSidebarMode::Full:
-      return 780.0f * scale;
-    case ControlCenterSidebarMode::Compact:
-      return 660.0f * scale;
-    case ControlCenterSidebarMode::None:
-      return 600.0f * scale;
+  [[nodiscard]] float normalizedScrollDelta(const InputArea::PointerData& data) {
+    float delta = data.scrollDelta(1.0f);
+    if (delta == 0.0f && data.axisValue120 != 0) {
+      delta = static_cast<float>(data.axisValue120) / 120.0f;
     }
-    return 660.0f * scale;
+    if (delta == 0.0f && data.axisDiscrete != 0) {
+      delta = static_cast<float>(data.axisDiscrete);
+    }
+    return delta;
   }
+
 } // namespace
 
 ControlCenterPanel::ControlCenterPanel(
@@ -51,7 +53,7 @@ ControlCenterPanel::ControlCenterPanel(
     CalendarService* calendar, scripting::ScriptApiContext* scriptApi, ClipboardService* clipboard,
     AccountsService* accounts, ThumbnailService* thumbnails
 ) {
-  (void)upower;
+  m_hasPowerServices = upower != nullptr || powerProfiles != nullptr;
   WaylandConnection* wayland = platform != nullptr ? &platform->wayland() : nullptr;
   m_config = config;
   m_mpris = mpris;
@@ -74,13 +76,24 @@ ControlCenterPanel::ControlCenterPanel(
   m_tabs[tabIndex(TabId::Display)] = std::make_unique<DisplayTab>(brightness, config);
   m_tabs[tabIndex(TabId::System)] = std::make_unique<SystemTab>(sysmon);
   m_tabs[tabIndex(TabId::ScreenTime)] = std::make_unique<ScreenTimeTab>(screenTime);
+  m_tabs[tabIndex(TabId::Power)] = std::make_unique<PowerTab>(upower, powerProfiles);
   m_tabButtons.fill(nullptr);
   m_tabContainers.fill(nullptr);
   m_tabHeaderActions.fill(nullptr);
 }
 
 float ControlCenterPanel::preferredWidth() const {
-  return preferredWidthForSidebarMode(sidebarModeForOpen(pendingOpenContext()), m_contentScale);
+  const float fullSize = m_config != nullptr ? static_cast<float>(m_config->config().controlCenter.width)
+                                             : static_cast<float>(ControlCenterConfig::kDefaultWidth);
+  switch (sidebarModeForOpen(pendingOpenContext())) {
+  case ControlCenterSidebarMode::Full:
+    return fullSize * m_contentScale;
+  case ControlCenterSidebarMode::None:
+    return fullSize * 0.75f * m_contentScale;
+  default:
+  case ControlCenterSidebarMode::Compact:
+    return fullSize * 0.85f * m_contentScale;
+  }
 }
 
 PanelPlacement ControlCenterPanel::panelPlacement() const noexcept {
@@ -124,6 +137,13 @@ void ControlCenterPanel::create() {
         },
     });
 
+    auto sidebarScrollArea = std::make_unique<InputArea>();
+    sidebarScrollArea->setParticipatesInLayout(false);
+    sidebarScrollArea->setZIndex(-1);
+    m_sidebarScrollArea = sidebarScrollArea.get();
+    wireSidebarScroll(m_sidebarScrollArea);
+    sidebar->addChild(std::move(sidebarScrollArea));
+
     for (const auto& tab : kTabs) {
       sidebar->addChild(
           ui::button({
@@ -133,10 +153,10 @@ void ControlCenterPanel::create() {
               .glyphSize = 21.0f * scale,
               .contentAlign = m_compact ? ButtonContentAlign::Center : ButtonContentAlign::Start,
               .variant = ButtonVariant::Tab,
-              .minWidth = m_compact ? std::optional<float>{Style::controlHeight * scale} : std::optional<float>{},
-              .minHeight = Style::controlHeight * scale,
-              .paddingV = Style::spaceSm * scale,
-              .paddingH = (m_compact ? Style::spaceSm : Style::spaceMd) * scale,
+              .minWidth = m_compact ? std::optional<float>{Style::controlHeightSm * scale} : std::optional<float>{},
+              .minHeight = Style::controlHeightSm * scale,
+              .paddingV = Style::spaceXs * scale,
+              .paddingH = (m_compact ? Style::spaceXs : Style::spaceMd) * scale,
               .gap = Style::spaceSm * scale,
               .radius = Style::scaledRadiusLg(scale),
               .onClick =
@@ -145,11 +165,12 @@ void ControlCenterPanel::create() {
                     PanelManager::instance().refresh();
                   },
               .configure =
-                  [scale](Button& button) {
+                  [this, scale](Button& button) {
                     if (button.label() != nullptr) {
                       button.label()->setFontWeight(FontWeight::Bold);
                       button.label()->setFontSize(Style::fontSizeBody * scale);
                     }
+                    wireSidebarScroll(button.inputArea());
                   },
           })
       );
@@ -283,6 +304,11 @@ void ControlCenterPanel::doLayout(Renderer& renderer, float width, float height)
   const float bodyWidth = m_tabBodies->width();
   const float bodyHeight = m_tabBodies->height();
 
+  if (m_sidebarScrollArea != nullptr && m_sidebar != nullptr) {
+    m_sidebarScrollArea->setPosition(0.0f, 0.0f);
+    m_sidebarScrollArea->setSize(m_sidebar->width(), m_sidebar->height());
+  }
+
   if (m_contentDismissArea != nullptr) {
     m_contentDismissArea->setPosition(0.0f, 0.0f);
     m_contentDismissArea->setFrameSize(m_content->width(), m_content->height());
@@ -366,6 +392,7 @@ void ControlCenterPanel::onClose() {
   }
   m_rootLayout = nullptr;
   m_sidebar = nullptr;
+  m_sidebarScrollArea = nullptr;
   m_content = nullptr;
   m_contentDismissArea = nullptr;
   m_contentHeader = nullptr;
@@ -394,6 +421,8 @@ bool ControlCenterPanel::isTabVisible(TabId tab) const {
     switch (tab) {
     case TabId::ScreenTime:
       return false;
+    case TabId::Power:
+      return m_hasPowerServices;
     default:
       return true;
     }
@@ -406,6 +435,8 @@ bool ControlCenterPanel::isTabVisible(TabId tab) const {
     return cfg.shell.screenTimeEnabled;
   case TabId::System:
     return cfg.system.monitor.enabled;
+  case TabId::Power:
+    return m_hasPowerServices;
   default:
     return true;
   }
@@ -591,6 +622,46 @@ void ControlCenterPanel::finishTabTransition() {
   m_tabTransitionActive = false;
   resetTabContainerTransforms();
   applyTabContainerVisibility(m_activeTab);
+}
+
+void ControlCenterPanel::wireSidebarScroll(InputArea* area) {
+  if (area == nullptr) {
+    return;
+  }
+  area->setOnAxis([this](const InputArea::PointerData& data) {
+    if (data.axis != WL_POINTER_AXIS_VERTICAL_SCROLL) {
+      return;
+    }
+    const float delta = normalizedScrollDelta(data);
+    if (delta == 0.0f) {
+      return;
+    }
+    selectAdjacentVisibleTab(delta > 0.0f ? 1 : -1);
+  });
+}
+
+void ControlCenterPanel::selectAdjacentVisibleTab(int direction) {
+  if (direction == 0) {
+    return;
+  }
+
+  const int activeOrdinal = visibleTabOrdinal(m_activeTab);
+  const int targetOrdinal = activeOrdinal + direction;
+
+  int ordinal = 0;
+  for (const auto& meta : kTabs) {
+    if (!isTabVisible(meta.id)) {
+      continue;
+    }
+    if (ordinal == targetOrdinal) {
+      if (meta.id != m_activeTab) {
+        selectTab(meta.id, true);
+        PanelManager::instance().refresh();
+      }
+      return;
+    }
+    ++ordinal;
+  }
 }
 
 void ControlCenterPanel::selectTab(TabId tab, bool animated) {

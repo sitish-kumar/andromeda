@@ -17,7 +17,6 @@
 namespace {
 
   constexpr std::string_view kDesktopWidgetIdPrefix = "desktop-widget-";
-  constexpr float kDefaultDesktopAudioVisualizerAspectRatio = 240.0f / 96.0f;
 
   void clampOpacitySetting(DesktopWidgetState& widget, const std::string& key, double fallback) {
     const auto it = widget.settings.find(key);
@@ -38,7 +37,7 @@ namespace {
   void normalizeDesktopWidgetSettings(DesktopWidgetState& widget) {
     clampOpacitySetting(widget, "background_opacity", 0.8);
 
-    if (widget.type == "sticker") {
+    if (widget.type == "sticker" || widget.type == "label") {
       const auto opacityIt = widget.settings.find("opacity");
       if (opacityIt == widget.settings.end()) {
         widget.settings.insert_or_assign("opacity", 1.0);
@@ -61,20 +60,7 @@ namespace {
       return;
     }
 
-    bool hasValidAspectRatio = false;
-    const auto it = widget.settings.find("aspect_ratio");
-    if (it != widget.settings.end()) {
-      if (const auto* doubleValue = std::get_if<double>(&it->second); doubleValue != nullptr && *doubleValue > 0.0) {
-        hasValidAspectRatio = true;
-      }
-      if (const auto* intValue = std::get_if<std::int64_t>(&it->second); intValue != nullptr && *intValue > 0) {
-        hasValidAspectRatio = true;
-      }
-    }
-
-    if (!hasValidAspectRatio) {
-      widget.settings.insert_or_assign("aspect_ratio", static_cast<double>(kDefaultDesktopAudioVisualizerAspectRatio));
-    }
+    widget.settings.erase("aspect_ratio"); // setting removed; drop stale key
     widget.settings.erase("min_value");
   }
 
@@ -318,24 +304,6 @@ void DesktopWidgetsController::suppressDisplay() {
 
 void DesktopWidgetsController::unsuppressDisplay() {
   m_displaySuppressed = false;
-  applyVisibility();
-}
-
-void DesktopWidgetsController::pauseUnderSessionLock() {
-  if (m_sessionLockPaused) {
-    return;
-  }
-  m_sessionLockPaused = true;
-  if (m_host != nullptr) {
-    m_host->hide();
-  }
-}
-
-void DesktopWidgetsController::resumeAfterSessionLock() {
-  if (!m_sessionLockPaused) {
-    return;
-  }
-  m_sessionLockPaused = false;
   applyVisibility();
 }
 

@@ -104,7 +104,6 @@
   "control-center": {
     "audio": {
       "application-volumes": "Anwendungslautstärken",
-      "input-volume": "Eingabelautstärke",
       "no-application-audio": "Kein Anwendungsaudio",
       "no-application-audio-body": "Es sind derzeit keine Wiedergabestreams von Anwendungen verfügbar.",
       "no-input-devices": "Keine Eingabegeräte",
@@ -113,7 +112,6 @@
       "no-output-devices": "Keine Ausgabegeräte",
       "no-output-devices-body": "Aktuell sind keine Wiedergabesenken verfügbar.",
       "no-output-selected": "Kein Ausgabegerät ausgewählt",
-      "output-volume": "Ausgabelautstärke",
       "unavailable-body": "PipeWire ist nicht aktiv.",
       "unavailable-title": "Audio nicht verfügbar"
     },
@@ -129,10 +127,10 @@
         "authorize": "Eingehende Kopplungsanfrage annehmen?",
         "authorize-service": "Zugriff auf Dienst {uuid} erlauben?",
         "confirm": "Bestätige, dass dieser Code mit dem auf dem Gerät angezeigten übereinstimmt:",
-        "display-passkey": "Gib diesen Code auf dem Gerät ein:",
-        "display-pin": "Gib diese PIN auf dem Gerät ein:",
-        "passkey": "Gib den auf dem Gerät angezeigten Passkey ein:",
-        "pin-code": "Gib die auf dem Gerät angezeigte PIN ein:"
+        "display-passkey": "Diesen Code auf dem Gerät eingeben:",
+        "display-pin": "Diese PIN auf dem Gerät eingeben:",
+        "passkey": "Diesen auf dem Gerät angezeigten Passkey eingeben:",
+        "pin-code": "Die auf dem Gerät angezeigte PIN eingeben:"
       },
       "reject": "Ablehnen",
       "rfkill-blocked": "Bluetooth wird vom System blockiert. Schalte es ein, um die Blockierung aufzuheben.",
@@ -295,7 +293,7 @@
       "configure-location": "Setze [weather].address oder aktiviere auto_locate",
       "data-unavailable": "Wetterdaten nicht verfügbar",
       "details": {
-        "elevation": "Anhebung",
+        "elevation": "Höhe",
         "sunrise": "Sonnenaufgang",
         "sunset": "Sonnenuntergang",
         "temp-max": "Maximale Temperatur",
@@ -590,6 +588,9 @@
       "num-on": "Num Lock An",
       "scroll-off": "Scroll Lock Aus",
       "scroll-on": "Scroll Lock Ein"
+    },
+    "nightlight": {
+      "scheduled": "Geplant"
     },
     "wifi": {
       "off": "Wi-Fi Aus",
@@ -2834,10 +2835,7 @@
   },
   "time": {
     "duration": {
-      "days-hours-minutes": "{days}T {hours}Std. {minutes}Min.",
-      "hours-minutes": "{hours} Std. {minutes} Min.",
-      "less-than-minute": "1m",
-      "minutes": "{minutes}m"
+      "less-than-minute": "1m"
     },
     "file": {
       "unknown": "Unbekannt"

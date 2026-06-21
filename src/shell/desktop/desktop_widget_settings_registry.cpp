@@ -1,6 +1,7 @@
 #include "shell/desktop/desktop_widget_settings_registry.h"
 
 #include "i18n/i18n.h"
+#include "scripting/plugin_i18n.h"
 #include "scripting/plugin_registry.h"
 #include "shell/settings/font_family_catalog.h"
 #include "shell/settings/widget_settings_registry.h"
@@ -204,7 +205,9 @@ namespace desktop_settings {
 
   std::vector<WidgetSettingSpec> desktopWidgetSettingSpecs(std::string_view type) {
     if (auto pluginEntry = resolvePluginDesktopWidget(type)) {
-      return settings::manifestSettingSpecs(pluginEntry->entry->settings);
+      scripting::PluginTranslationCatalog translations;
+      translations.load(pluginEntry->sourcePath.parent_path());
+      return settings::manifestSettingSpecs(pluginEntry->entry->settings, &translations);
     }
 
     const std::vector<WidgetSettingSelectOption> sysmonStats = {
@@ -243,12 +246,14 @@ namespace desktop_settings {
       add(std::move(centerText));
       add(colorSpec("color", "on_surface"));
       add(fontFamilySpec());
-      add(boolSpec("shadow", true));
+      // Shadow is a text shadow on the digital label; analog mode has no shadow.
+      auto shadow = boolSpec("shadow", true);
+      shadow.visibleWhen = digitalOnly;
+      add(std::move(shadow));
       auto circle = boolSpec("circle", true);
       circle.visibleWhen = analogOnly;
       add(std::move(circle));
     } else if (type == "audio_visualizer") {
-      add(doubleSpec("aspect_ratio", 2.5, 0.5, 6.0, 0.1));
       add(doubleSpec("bands", 32.0, 4.0, 128.0, 4.0));
       add(boolSpec("mirrored", true));
       add(boolSpec("centered", true));
@@ -310,6 +315,7 @@ namespace desktop_settings {
       add(stringSpec("title", "Title"));
       add(stringSpec("description"));
       add(colorSpec("color", "on_surface"));
+      add(doubleSpec("opacity", 1.0, 0.0, 1.0, 0.01));
       add(fontFamilySpec());
       add(boolSpec("shadow", true));
     } else if (type == "button") {

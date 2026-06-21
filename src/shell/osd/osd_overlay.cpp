@@ -16,7 +16,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <string_view>
 
 namespace {
 
@@ -59,6 +58,8 @@ namespace {
       return kinds.powerProfile;
     case OsdKind::Caffeine:
       return kinds.caffeine;
+    case OsdKind::NightLight:
+      return kinds.nightlight;
     case OsdKind::Dnd:
       return kinds.dnd;
     case OsdKind::LockKeys:
@@ -67,6 +68,8 @@ namespace {
       return kinds.keyboardLayout;
     case OsdKind::Media:
       return kinds.media;
+    case OsdKind::Privacy:
+      return kinds.privacy;
     }
     return true;
   }
@@ -79,6 +82,23 @@ namespace {
   }
 
   [[nodiscard]] bool isVerticalOrientation(const std::string& orientation) { return orientation == "vertical"; }
+
+  [[nodiscard]] std::string effectiveOsdOrientation(const OsdContent& content, const std::string& configOrientation) {
+    if (!content.showProgress) {
+      return "horizontal";
+    }
+    return configOrientation.empty() ? "horizontal" : configOrientation;
+  }
+
+  [[nodiscard]] std::string effectiveOsdPosition(
+      const std::string& effectiveOrientation, const std::string& horizontalPosition,
+      const std::string& verticalPosition
+  ) {
+    if (isVerticalOrientation(effectiveOrientation)) {
+      return verticalPosition.empty() ? "top_center" : verticalPosition;
+    }
+    return horizontalPosition.empty() ? "top_center" : horizontalPosition;
+  }
 
   // Base units at ui_scale=1; passive overlay (no hit targets), between bar and old OSD size.
   [[nodiscard]] float horizontalCardLength(float s) {
@@ -165,24 +185,6 @@ namespace {
       return OsdRevealDir::FromBottom;
     }
     return OsdRevealDir::FromTop;
-  }
-
-  std::string verticalValueText(std::string_view text) {
-    std::string result;
-    result.reserve(text.size());
-    bool previousWasSpace = false;
-    for (const char c : text) {
-      if (c == ' ' || c == '\t') {
-        if (!previousWasSpace && !result.empty()) {
-          result.push_back('\n');
-        }
-        previousWasSpace = true;
-        continue;
-      }
-      result.push_back(c);
-      previousWasSpace = false;
-    }
-    return result;
   }
 
 } // namespace
@@ -302,13 +304,18 @@ void OsdOverlay::ensureSurfaces() {
     return;
   }
 
-  const std::string position = (m_config != nullptr && !m_config->config().osd.position.empty())
-      ? m_config->config().osd.position
-      : "top_center";
-  const std::string orientation = (m_config != nullptr && !m_config->config().osd.orientation.empty())
+  const std::string configOrientation = (m_config != nullptr && !m_config->config().osd.orientation.empty())
       ? m_config->config().osd.orientation
       : "horizontal";
+  const std::string horizontalPosition = (m_config != nullptr && !m_config->config().osd.position.empty())
+      ? m_config->config().osd.position
+      : "top_center";
+  const std::string verticalPosition = (m_config != nullptr && !m_config->config().osd.positionVertical.empty())
+      ? m_config->config().osd.positionVertical
+      : "top_center";
   const bool showProgress = m_content.showProgress;
+  const std::string orientation = effectiveOsdOrientation(m_content, configOrientation);
+  const std::string position = effectiveOsdPosition(orientation, horizontalPosition, verticalPosition);
   const float layoutScale = osdUiScale(m_config);
   const auto selectedMonitors = osdMonitors();
 
@@ -642,7 +649,9 @@ void OsdOverlay::updateInstanceContent(Instance& inst) {
   const float ch = cardHeight(s, m_lastOrientation, m_lastShowProgress);
   inst.background->setFill(colorSpecFromRole(ColorRole::Surface, osdBackgroundOpacity(m_config)));
 
-  const auto accentRole = m_content.overLimit ? ColorRole::Error : ColorRole::Primary;
+  const ColorRole accentRole = m_content.overLimit ? ColorRole::Error
+      : m_content.inactive                         ? ColorRole::OnSurfaceVariant
+                                                   : ColorRole::Primary;
   inst.glyph->setGlyph(m_content.icon);
   inst.glyph->setColor(colorSpecFromRole(accentRole));
   inst.progress->setVisible(m_content.showProgress);
@@ -650,7 +659,10 @@ void OsdOverlay::updateInstanceContent(Instance& inst) {
   inst.progress->setOrientation(vertical ? ProgressBarOrientation::Vertical : ProgressBarOrientation::Horizontal);
   inst.row->setJustify((vertical || !m_content.showProgress) ? FlexJustify::Center : FlexJustify::Start);
   inst.value->setFontSize(valueFontSize(s));
-  inst.value->setColor(colorSpecFromRole(m_content.overLimit ? ColorRole::Error : ColorRole::OnSurface));
+  const ColorRole valueRole = m_content.overLimit ? ColorRole::Error
+      : m_content.inactive                        ? ColorRole::OnSurfaceVariant
+                                                  : ColorRole::OnSurface;
+  inst.value->setColor(colorSpecFromRole(valueRole));
   inst.value->setTextAlign((vertical || !m_content.showProgress) ? TextAlign::Center : TextAlign::End);
   // Media titles are arbitrary length; cap them to the card so they ellipsize instead of overflowing.
   const float horizontalValueMax = cw - cardPadding(s) * 2.0f - glyphSize(s) - innerGap(s);
@@ -660,7 +672,7 @@ void OsdOverlay::updateInstanceContent(Instance& inst) {
                                              : 0.0f
   );
   inst.value->setMinWidth((!vertical && m_content.showProgress) ? inst.progressValueMinWidth : 0.0f);
-  inst.value->setText((vertical && !m_content.showProgress) ? verticalValueText(m_content.value) : m_content.value);
+  inst.value->setText(m_content.value);
   inst.progress->setRadius(osdProgressRadius(s));
   inst.progress->setProgress(m_content.progress);
   inst.row->layout(*m_renderContext);

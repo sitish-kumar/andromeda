@@ -1,6 +1,7 @@
 #include "shell/bar/widgets/sysmon_widget.h"
 
 #include "config/config_service.h"
+#include "i18n/i18n.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
@@ -74,31 +75,31 @@ namespace {
   bool needsGpuUsage(SysmonStat stat) { return stat == SysmonStat::GpuUsage; }
   bool needsGpuVram(SysmonStat stat) { return stat == SysmonStat::GpuVram; }
 
-  const char* statDisplayName(SysmonStat stat) {
+  std::string statDisplayName(SysmonStat stat) {
     switch (stat) {
     case SysmonStat::CpuUsage:
-      return "CPU";
+      return i18n::tr("bar.widgets.sysmon.cpu");
     case SysmonStat::CpuTemp:
-      return "CPU Temp";
+      return i18n::tr("bar.widgets.sysmon.cpu-temp");
     case SysmonStat::GpuTemp:
-      return "GPU Temp";
+      return i18n::tr("bar.widgets.sysmon.gpu-temp");
     case SysmonStat::GpuUsage:
-      return "GPU Usage";
+      return i18n::tr("bar.widgets.sysmon.gpu-usage");
     case SysmonStat::GpuVram:
-      return "GPU VRAM";
+      return i18n::tr("bar.widgets.sysmon.gpu-vram");
     case SysmonStat::RamUsed:
     case SysmonStat::RamPct:
-      return "RAM";
+      return i18n::tr("bar.widgets.sysmon.ram");
     case SysmonStat::SwapPct:
-      return "Swap";
+      return i18n::tr("bar.widgets.sysmon.swap");
     case SysmonStat::DiskPct:
-      return "Disk";
+      return i18n::tr("bar.widgets.sysmon.disk");
     case SysmonStat::NetRx:
-      return "Download";
+      return i18n::tr("bar.widgets.sysmon.download");
     case SysmonStat::NetTx:
-      return "Upload";
+      return i18n::tr("bar.widgets.sysmon.upload");
     }
-    return "System";
+    return i18n::tr("bar.widgets.sysmon.system");
   }
 
 } // namespace

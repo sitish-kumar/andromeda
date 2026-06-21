@@ -11,7 +11,6 @@
 #include "util/string_utils.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -21,6 +20,7 @@
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <toml.hpp>
 #include <vector>
 
 namespace {
@@ -29,7 +29,7 @@ namespace {
 
   constexpr std::string_view kApplyHelperName = "noctalia-greeter-apply-appearance";
   constexpr std::string_view kGreeterName = "noctalia-greeter";
-  constexpr std::string_view kGreeterConfName = "greeter.conf";
+  constexpr std::string_view kGreeterTomlFileName = "greeter.toml";
   constexpr std::string_view kDefaultGreeterStateDir = "/var/lib/noctalia-greeter";
   constexpr std::string_view kGreeterStateDirEnv = "NOCTALIA_GREETER_STATE_DIR";
   constexpr std::string_view kStagedOutputLayoutFileName = "output_layout";
@@ -63,67 +63,34 @@ namespace {
     palette[std::string(key)] = formatRgbHex(color);
   }
 
-  [[nodiscard]] std::string trim(std::string_view value) {
-    std::size_t begin = 0;
-    while (begin < value.size() && std::isspace(static_cast<unsigned char>(value[begin])) != 0) {
-      ++begin;
-    }
-    std::size_t end = value.size();
-    while (end > begin && std::isspace(static_cast<unsigned char>(value[end - 1])) != 0) {
-      --end;
-    }
-    return std::string(value.substr(begin, end - begin));
-  }
-
-  [[nodiscard]] std::optional<std::string> unquoteConfValue(std::string_view raw) {
-    const std::string value = trim(raw);
-    if (value.size() >= 2) {
-      const char quote = value.front();
-      if ((quote == '"' || quote == '\'') && value.back() == quote) {
-        return value.substr(1, value.size() - 2);
-      }
-    }
-    if (!value.empty()) {
-      return value;
-    }
-    return std::nullopt;
-  }
-
-  [[nodiscard]] std::filesystem::path greeterConfPath() {
+  [[nodiscard]] std::filesystem::path greeterTomlPath() {
     const char* stateDir = std::getenv(kGreeterStateDirEnv.data());
     if (stateDir != nullptr && stateDir[0] != '\0') {
-      return std::filesystem::path(stateDir) / kGreeterConfName;
+      return std::filesystem::path(stateDir) / kGreeterTomlFileName;
     }
-    return std::filesystem::path(kDefaultGreeterStateDir) / kGreeterConfName;
+    return std::filesystem::path(kDefaultGreeterStateDir) / kGreeterTomlFileName;
   }
 
   [[nodiscard]] std::optional<std::string> readGreeterConfiguredOutput() {
-    const auto path = greeterConfPath();
-    std::ifstream in(path);
-    if (!in.is_open()) {
+    const auto path = greeterTomlPath();
+    std::error_code ec;
+    if (!std::filesystem::is_regular_file(path, ec) || ec) {
       return std::nullopt;
     }
 
-    std::string line;
-    while (std::getline(in, line)) {
-      const std::size_t hash = line.find('#');
-      if (hash != std::string::npos) {
-        line.resize(hash);
+    try {
+      const toml::table table = toml::parse_file(path.string());
+      if (const toml::table* output = table["output"].as_table()) {
+        const auto name = (*output)["name"].value<std::string>();
+        if (name.has_value() && !name->empty()) {
+          return *name;
+        }
       }
-      const std::string stripped = trim(line);
-      if (stripped.empty()) {
-        continue;
-      }
-      const std::size_t eq = stripped.find('=');
-      if (eq == std::string::npos) {
-        continue;
-      }
-      if (trim(stripped.substr(0, eq)) != "output") {
-        continue;
-      }
-      return unquoteConfValue(stripped.substr(eq + 1));
+      return std::nullopt;
+    } catch (const toml::parse_error& e) {
+      kLog.warn("failed to parse {}: {}", path.string(), e.description());
+      return std::nullopt;
     }
-    return std::nullopt;
   }
 
   [[nodiscard]] std::string resolveSyncWallpaperPath(const ConfigService& configService) {

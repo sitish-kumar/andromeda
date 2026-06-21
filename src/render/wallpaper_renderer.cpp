@@ -103,9 +103,20 @@ void WallpaperRenderer::render() {
   float progress = (m_tex2 != 0) ? m_progress : 0.0f;
 
   m_backend->drawWallpaper(
-      m_transition, WallpaperSourceKind::Image, m_tex1, rgba(0.0f, 0.0f, 0.0f, 1.0f), WallpaperSourceKind::Image, tex2,
-      rgba(0.0f, 0.0f, 0.0f, 1.0f), sw, sh, sw, sh, m_imgW1, m_imgH1, m_imgW2, m_imgH2, progress,
-      static_cast<float>(m_fillMode), m_params, m_fillColor, Mat3::identity()
+      WallpaperDrawParams{
+          .transition = m_transition,
+          .from =
+              {.kind = WallpaperSourceKind::Image, .texture = m_tex1, .imageWidth = m_imgW1, .imageHeight = m_imgH1},
+          .to = {.kind = WallpaperSourceKind::Image, .texture = tex2, .imageWidth = m_imgW2, .imageHeight = m_imgH2},
+          .surfaceWidth = sw,
+          .surfaceHeight = sh,
+          .quadWidth = sw,
+          .quadHeight = sh,
+          .progress = progress,
+          .fillMode = static_cast<float>(m_fillMode),
+          .params = m_params,
+          .fillColor = m_fillColor,
+      }
   );
 
   float ms = elapsedSince(drawStart);
@@ -147,9 +158,20 @@ void WallpaperRenderer::renderToFramebuffer(const RenderFramebuffer& target) {
   float progress = (m_tex2 != 0) ? m_progress : 0.0f;
 
   m_backend->drawWallpaper(
-      m_transition, WallpaperSourceKind::Image, m_tex1, rgba(0.0f, 0.0f, 0.0f, 1.0f), WallpaperSourceKind::Image, tex2,
-      rgba(0.0f, 0.0f, 0.0f, 1.0f), sw, sh, sw, sh, m_imgW1, m_imgH1, m_imgW2, m_imgH2, progress,
-      static_cast<float>(m_fillMode), m_params, m_fillColor, Mat3::identity()
+      WallpaperDrawParams{
+          .transition = m_transition,
+          .from =
+              {.kind = WallpaperSourceKind::Image, .texture = m_tex1, .imageWidth = m_imgW1, .imageHeight = m_imgH1},
+          .to = {.kind = WallpaperSourceKind::Image, .texture = tex2, .imageWidth = m_imgW2, .imageHeight = m_imgH2},
+          .surfaceWidth = sw,
+          .surfaceHeight = sh,
+          .quadWidth = sw,
+          .quadHeight = sh,
+          .progress = progress,
+          .fillMode = static_cast<float>(m_fillMode),
+          .params = m_params,
+          .fillColor = m_fillColor,
+      }
   );
   float ms = elapsedSince(drawStart);
   logSlowWallpaperRenderOperation(

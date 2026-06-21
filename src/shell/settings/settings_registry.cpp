@@ -953,6 +953,16 @@ namespace settings {
       e.visibleWhen = SettingVisibility{{"shell", "panel", "control_center_placement"}, {"attached", "floating"}};
       entries.push_back(std::move(e));
     }
+    {
+      SliderSetting width =
+          sliderFor(cfg.controlCenter.width, noctalia::config::schema::kControlCenterWidthRange, true);
+      width.valueSuffix = "px";
+      entries.push_back(makeEntry(
+          SettingsSection::Panels, "control-center", tr("settings.schema.panels.control-center-width.label"),
+          tr("settings.schema.panels.control-center-width.description"), {"control_center", "width"}, std::move(width),
+          "size dimension wide narrow"
+      ));
+    }
     entries.push_back(makeEntry(
         SettingsSection::Panels, "control-center", tr("settings.schema.panels.control-center-sidebar.label"),
         tr("settings.schema.panels.control-center-sidebar.description"), {"control_center", "sidebar"},
@@ -1372,6 +1382,16 @@ namespace settings {
       entries.push_back(std::move(e));
     }
     entries.push_back(makeEntry(
+        SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-orientation.label"),
+        tr("settings.schema.shell.osd-orientation.description"), {"osd", "orientation"},
+        asSegmented(plainSelect(
+            {{"horizontal", "settings.options.orientation.horizontal"},
+             {"vertical", "settings.options.orientation.vertical"}},
+            cfg.osd.orientation
+        )),
+        "hud overlay volume brightness vertical"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-position.label"),
         tr("settings.schema.shell.osd-position.description"), {"osd", "position"},
         plainSelect(
@@ -1385,17 +1405,23 @@ namespace settings {
              {"center_left", "settings.options.screen-position.center-left"}},
             cfg.osd.position
         ),
-        "hud overlay volume brightness"
+        "hud overlay volume brightness horizontal text"
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-orientation.label"),
-        tr("settings.schema.shell.osd-orientation.description"), {"osd", "orientation"},
-        asSegmented(plainSelect(
-            {{"horizontal", "settings.options.orientation.horizontal"},
-             {"vertical", "settings.options.orientation.vertical"}},
-            cfg.osd.orientation
-        )),
-        "hud overlay volume brightness vertical"
+        SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-position-vertical.label"),
+        tr("settings.schema.shell.osd-position-vertical.description"), {"osd", "position_vertical"},
+        plainSelect(
+            {{"top_right", "settings.options.screen-position.top-right"},
+             {"top_left", "settings.options.screen-position.top-left"},
+             {"top_center", "settings.options.screen-position.top-center"},
+             {"bottom_right", "settings.options.screen-position.bottom-right"},
+             {"bottom_left", "settings.options.screen-position.bottom-left"},
+             {"bottom_center", "settings.options.screen-position.bottom-center"},
+             {"center_right", "settings.options.screen-position.center-right"},
+             {"center_left", "settings.options.screen-position.center-left"}},
+            cfg.osd.positionVertical
+        ),
+        "hud overlay volume brightness vertical slider"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-scale.label"),
@@ -1470,6 +1496,11 @@ namespace settings {
         ToggleSetting{cfg.osd.kinds.caffeine}, "hud overlay idle inhibitor"
     ));
     entries.push_back(makeEntry(
+        SettingsSection::Osd, "kinds", tr("settings.schema.shell.osd-kinds-nightlight.label"),
+        tr("settings.schema.shell.osd-kinds-nightlight.description"), {"osd", "kinds", "nightlight"},
+        ToggleSetting{cfg.osd.kinds.nightlight}, "hud overlay night light gamma"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Osd, "kinds", tr("settings.schema.shell.osd-kinds-dnd.label"),
         tr("settings.schema.shell.osd-kinds-dnd.description"), {"osd", "kinds", "dnd"},
         ToggleSetting{cfg.osd.kinds.dnd}, "hud overlay do not disturb notifications"
@@ -1488,6 +1519,11 @@ namespace settings {
         SettingsSection::Osd, "kinds", tr("settings.schema.shell.osd-kinds-media.label"),
         tr("settings.schema.shell.osd-kinds-media.description"), {"osd", "kinds", "media"},
         ToggleSetting{cfg.osd.kinds.media}, "hud overlay mpris audio music"
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Osd, "kinds", tr("settings.schema.shell.osd-kinds-privacy.label"),
+        tr("settings.schema.shell.osd-kinds-privacy.description"), {"osd", "kinds", "privacy"},
+        ToggleSetting{cfg.osd.kinds.privacy}, "hud overlay microphone camera screen share recording"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-monitors.label"),
@@ -2224,6 +2260,11 @@ namespace settings {
           "gap inset"
       ));
       entries.push_back(makeEntry(
+          section, "layout", tr("settings.schema.shared.opposite-edge-margin.label"),
+          tr("settings.schema.bar.opposite-edge-margin.description"), path("margin_opposite_edge"),
+          barMarginStepper(bar.marginOppositeEdge), "gap inset strut"
+      ));
+      entries.push_back(makeEntry(
           section, "layout", tr("settings.schema.bar.content-padding.label"),
           tr("settings.schema.bar.content-padding.description"), path("padding"),
           SliderSetting{bar.padding, 0.0f, 80.0f, 1.0f, true}, "inset"
@@ -2420,6 +2461,47 @@ namespace settings {
           section, "widget-list", tr("settings.schema.bar.end-widgets.label"),
           tr("settings.schema.bar.end-widgets.description"), path("end"), ListSetting{.items = bar.endWidgets}, "right"
       ));
+      const auto deadZonePath = [&](std::string_view key) {
+        return std::vector<std::string>{"bar", bar.name, "dead_zone", std::string(key)};
+      };
+      entries.push_back(makeEntry(
+          section, "dead-zone", tr("settings.schema.bar.dead-zone-command.label"),
+          tr("settings.schema.bar.dead-zone-command.description"), deadZonePath("command"),
+          TextSetting{.value = bar.deadZone.command, .placeholder = "", .width = 320.0f, .browseFileExtensions = {}},
+          "bar empty margin click left command shell"
+      ));
+      entries.push_back(makeEntry(
+          section, "dead-zone", tr("settings.schema.bar.dead-zone-right-command.label"),
+          tr("settings.schema.bar.dead-zone-right-command.description"), deadZonePath("right_command"),
+          TextSetting{
+              .value = bar.deadZone.rightCommand, .placeholder = "", .width = 320.0f, .browseFileExtensions = {}
+          },
+          "bar empty margin click right command control center override shell"
+      ));
+      entries.push_back(makeEntry(
+          section, "dead-zone", tr("settings.schema.bar.dead-zone-middle-command.label"),
+          tr("settings.schema.bar.dead-zone-middle-command.description"), deadZonePath("middle_command"),
+          TextSetting{
+              .value = bar.deadZone.middleCommand, .placeholder = "", .width = 320.0f, .browseFileExtensions = {}
+          },
+          "bar empty margin click middle command shell"
+      ));
+      entries.push_back(makeEntry(
+          section, "dead-zone", tr("settings.schema.bar.dead-zone-scroll-up-command.label"),
+          tr("settings.schema.bar.dead-zone-scroll-up-command.description"), deadZonePath("scroll_up_command"),
+          TextSetting{
+              .value = bar.deadZone.scrollUpCommand, .placeholder = "", .width = 320.0f, .browseFileExtensions = {}
+          },
+          "bar empty margin scroll wheel up command shell"
+      ));
+      entries.push_back(makeEntry(
+          section, "dead-zone", tr("settings.schema.bar.dead-zone-scroll-down-command.label"),
+          tr("settings.schema.bar.dead-zone-scroll-down-command.description"), deadZonePath("scroll_down_command"),
+          TextSetting{
+              .value = bar.deadZone.scrollDownCommand, .placeholder = "", .width = 320.0f, .browseFileExtensions = {}
+          },
+          "bar empty margin scroll wheel down command shell"
+      ));
     }
 
     // Bar monitor overrides (all bars).
@@ -2481,6 +2563,11 @@ namespace settings {
             section, "layout", tr("settings.schema.shared.edge-margin.label"),
             tr("settings.schema.bar.edge-margin.description"), monitorPath("margin_edge"),
             barMarginStepper(ovr.marginEdge.value_or(bar.marginEdge)), "gap inset"
+        ));
+        entries.push_back(makeEntry(
+            section, "layout", tr("settings.schema.shared.opposite-edge-margin.label"),
+            tr("settings.schema.bar.opposite-edge-margin.description"), monitorPath("margin_opposite_edge"),
+            barMarginStepper(ovr.marginOppositeEdge.value_or(bar.marginOppositeEdge)), "gap inset strut"
         ));
         entries.push_back(makeEntry(
             section, "layout", tr("settings.schema.bar.content-padding.label"),
@@ -2677,6 +2764,68 @@ namespace settings {
             section, "widget-list", tr("settings.schema.bar.end-widgets.label"),
             tr("settings.schema.bar.end-widgets.description"), monitorPath("end"),
             ListSetting{.items = ovr.endWidgets.value_or(bar.endWidgets)}, "right"
+        ));
+        const auto monitorDeadZonePath = [&](std::string_view key) {
+          std::vector<std::string> p = root;
+          p.emplace_back("dead_zone");
+          p.emplace_back(key);
+          return p;
+        };
+        entries.push_back(makeEntry(
+            section, "dead-zone", tr("settings.schema.bar.dead-zone-command.label"),
+            tr("settings.schema.bar.dead-zone-command.description"), monitorDeadZonePath("command"),
+            TextSetting{
+                .value = ovr.deadZone.command.value_or(""),
+                .placeholder = bar.deadZone.command,
+                .width = 320.0f,
+                .browseFileExtensions = {},
+            },
+            "bar empty margin click left command shell"
+        ));
+        entries.push_back(makeEntry(
+            section, "dead-zone", tr("settings.schema.bar.dead-zone-right-command.label"),
+            tr("settings.schema.bar.dead-zone-right-command.description"), monitorDeadZonePath("right_command"),
+            TextSetting{
+                .value = ovr.deadZone.rightCommand.value_or(""),
+                .placeholder = bar.deadZone.rightCommand,
+                .width = 320.0f,
+                .browseFileExtensions = {},
+            },
+            "bar empty margin click right command control center override shell"
+        ));
+        entries.push_back(makeEntry(
+            section, "dead-zone", tr("settings.schema.bar.dead-zone-middle-command.label"),
+            tr("settings.schema.bar.dead-zone-middle-command.description"), monitorDeadZonePath("middle_command"),
+            TextSetting{
+                .value = ovr.deadZone.middleCommand.value_or(""),
+                .placeholder = bar.deadZone.middleCommand,
+                .width = 320.0f,
+                .browseFileExtensions = {},
+            },
+            "bar empty margin click middle command shell"
+        ));
+        entries.push_back(makeEntry(
+            section, "dead-zone", tr("settings.schema.bar.dead-zone-scroll-up-command.label"),
+            tr("settings.schema.bar.dead-zone-scroll-up-command.description"), monitorDeadZonePath("scroll_up_command"),
+            TextSetting{
+                .value = ovr.deadZone.scrollUpCommand.value_or(""),
+                .placeholder = bar.deadZone.scrollUpCommand,
+                .width = 320.0f,
+                .browseFileExtensions = {},
+            },
+            "bar empty margin scroll wheel up command shell"
+        ));
+        entries.push_back(makeEntry(
+            section, "dead-zone", tr("settings.schema.bar.dead-zone-scroll-down-command.label"),
+            tr("settings.schema.bar.dead-zone-scroll-down-command.description"),
+            monitorDeadZonePath("scroll_down_command"),
+            TextSetting{
+                .value = ovr.deadZone.scrollDownCommand.value_or(""),
+                .placeholder = bar.deadZone.scrollDownCommand,
+                .width = 320.0f,
+                .browseFileExtensions = {},
+            },
+            "bar empty margin scroll wheel down command shell"
         ));
       }
     }

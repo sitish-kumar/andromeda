@@ -2,6 +2,7 @@
 
 #include "config/config_types.h"
 #include "i18n/i18n.h"
+#include "scripting/plugin_i18n.h"
 #include "scripting/plugin_registry.h"
 #include "shell/settings/settings_control_factory.h"
 #include "shell/settings/settings_registry.h"
@@ -244,6 +245,13 @@ namespace settings {
       return {};
     }
 
+    std::vector<std::string> valueAsStringList(const WidgetSettingValue& value) {
+      if (const auto* v = std::get_if<std::vector<std::string>>(&value)) {
+        return *v;
+      }
+      return {};
+    }
+
     bool valueAsBool(const WidgetSettingValue& value) {
       if (const auto* b = std::get_if<bool>(&value)) {
         return *b;
@@ -361,6 +369,8 @@ namespace settings {
         pickerSetting.allowCustomColor = spec.allowCustomColor;
         return factory.makeColorSpecPicker(pickerSetting, path);
       }
+      case WidgetControlKind::StringList:
+        return nullptr;
       case WidgetControlKind::String:
       case WidgetControlKind::File:
       case WidgetControlKind::Folder:
@@ -376,7 +386,11 @@ namespace settings {
       Flex& body, const Config& cfg, SettingsControlFactory& factory, const std::string& pluginId,
       const scripting::PluginManifest& manifest, bool showAdvanced, float scale
   ) {
-    const auto specs = settings::manifestSettingSpecs(manifest.settings);
+    scripting::PluginTranslationCatalog translations;
+    if (const auto pluginDir = scripting::PluginRegistry::instance().findPluginDir(pluginId)) {
+      translations.load(*pluginDir);
+    }
+    const auto specs = settings::manifestSettingSpecs(manifest.settings, &translations);
     bool rendered = false;
     for (const auto& spec : specs) {
       if (spec.advanced && !showAdvanced) {
@@ -398,7 +412,11 @@ namespace settings {
           .searchText = {},
           .visibleWhen = std::nullopt,
       };
-      factory.makeRow(body, entry, pluginSettingControl(factory, spec, value, path));
+      if (spec.control == WidgetControlKind::StringList) {
+        factory.makeListBlock(body, entry, ListSetting{.items = valueAsStringList(value)});
+      } else {
+        factory.makeRow(body, entry, pluginSettingControl(factory, spec, value, path));
+      }
       rendered = true;
     }
     if (!rendered) {

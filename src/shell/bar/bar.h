@@ -69,9 +69,6 @@ public:
   /// Hides bars while a full-screen overlay editor (e.g. lockscreen widget layout) is active.
   void suppressDisplay();
   void unsuppressDisplay();
-  /// Stops bar surface frame loops while the session lock is active.
-  void pauseUnderSessionLock();
-  void resumeAfterSessionLock();
   [[nodiscard]] bool isVisible() const noexcept;
   void onOutputChange();
   void onSecondTick();
@@ -140,9 +137,6 @@ private:
   [[nodiscard]] std::string hideBarIpc(std::string_view args);
   [[nodiscard]] std::string toggleBarIpc(std::string_view args);
   [[nodiscard]] std::string setBarAutoHideIpc(std::string_view args);
-  [[nodiscard]] std::string attachedPanelResizeTestIpc(std::string_view args);
-  [[nodiscard]] std::uint32_t attachedPanelResizeTestMaxExtent(const BarInstance& instance) const;
-  void setAttachedPanelResizeTestOpen(BarInstance& instance, bool open, std::uint32_t extent);
   [[nodiscard]] std::optional<std::string> collectBarIpcInstances(
       std::optional<std::string_view> barName, std::optional<std::string_view> monitorSelector,
       std::vector<BarInstance*>& instancesOut
@@ -195,5 +189,4 @@ private:
   std::function<void(std::string, std::string)> m_openWidgetSettingsCallback;
   bool m_overlayDisplaySuppressed = false;
   bool m_wasVisibleBeforeOverlaySuppress = false;
-  bool m_sessionLockPaused = false;
 };

@@ -861,6 +861,8 @@ BarConfig ConfigService::resolveForOutput(const BarConfig& base, const WaylandOu
       resolved.marginEnds = *ovr.marginEnds;
     if (ovr.marginEdge)
       resolved.marginEdge = *ovr.marginEdge;
+    if (ovr.marginOppositeEdge)
+      resolved.marginOppositeEdge = *ovr.marginOppositeEdge;
     if (ovr.padding)
       resolved.padding = *ovr.padding;
     if (ovr.widgetSpacing)
@@ -911,6 +913,21 @@ BarConfig ConfigService::resolveForOutput(const BarConfig& base, const WaylandOu
     }
     if (ovr.widgetCapsuleOpacity) {
       resolved.widgetCapsuleOpacity = std::clamp(static_cast<float>(*ovr.widgetCapsuleOpacity), 0.0f, 1.0f);
+    }
+    if (ovr.deadZone.command) {
+      resolved.deadZone.command = *ovr.deadZone.command;
+    }
+    if (ovr.deadZone.rightCommand) {
+      resolved.deadZone.rightCommand = *ovr.deadZone.rightCommand;
+    }
+    if (ovr.deadZone.middleCommand) {
+      resolved.deadZone.middleCommand = *ovr.deadZone.middleCommand;
+    }
+    if (ovr.deadZone.scrollUpCommand) {
+      resolved.deadZone.scrollUpCommand = *ovr.deadZone.scrollUpCommand;
+    }
+    if (ovr.deadZone.scrollDownCommand) {
+      resolved.deadZone.scrollDownCommand = *ovr.deadZone.scrollDownCommand;
     }
     break; // first match wins
   }

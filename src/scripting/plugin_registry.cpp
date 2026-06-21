@@ -156,4 +156,12 @@ namespace scripting {
     return plugin != nullptr ? &plugin->manifest : nullptr;
   }
 
+  std::optional<std::filesystem::path> PluginRegistry::findPluginDir(std::string_view pluginId) const {
+    const LoadedPlugin* plugin = findPlugin(pluginId);
+    if (plugin == nullptr) {
+      return std::nullopt;
+    }
+    return plugin->dir;
+  }
+
 } // namespace scripting

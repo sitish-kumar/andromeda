@@ -140,6 +140,14 @@ void Segmented::setSurfaceOpacity(float opacity) {
   applyOuterStyle();
 }
 
+void Segmented::setSurfaceRole(ColorRole role) {
+  if (m_surfaceRole == role) {
+    return;
+  }
+  m_surfaceRole = role;
+  applyOuterStyle();
+}
+
 void Segmented::setEnabled(bool enabled) {
   if (m_enabled == enabled) {
     return;
@@ -229,7 +237,7 @@ void Segmented::refreshVariants() {
 
 void Segmented::applyOuterStyle() {
   Flex::setPadding(m_outerPadding);
-  setFill(colorSpecFromRole(ColorRole::SurfaceVariant, m_surfaceOpacity));
+  setFill(colorSpecFromRole(m_surfaceRole, m_surfaceOpacity));
   clearBorder();
   setRadius(Style::scaledRadiusMd(m_scale));
 }

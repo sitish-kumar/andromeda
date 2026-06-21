@@ -36,6 +36,13 @@
       "active-window": {
         "no-active-window": "无活动窗口"
       },
+      "bluetooth": {
+        "connected": "已连接"
+      },
+      "brightness": {
+        "brightness": "亮度",
+        "display": "屏幕"
+      },
       "lock-keys": {
         "caps": "大写",
         "caps-short": "C",
@@ -49,7 +56,27 @@
         "playing": "正在播放"
       },
       "network": {
-        "wired": "有线网络"
+        "active": "活动",
+        "connected": "已连接",
+        "connecting": "正在连接",
+        "download": "下载",
+        "interface": "接口",
+        "ip": "IP",
+        "network": "网络",
+        "networks": "网络",
+        "networks-count": "{count} 个网络",
+        "networks-count-plural": "{count} 个网络",
+        "no": "否",
+        "not-connected": "未连接",
+        "off": "关闭",
+        "on": "开启",
+        "scanning": "正在扫描",
+        "signal": "信号",
+        "upload": "上传",
+        "vpn": "VPN",
+        "wifi": "Wi-Fi",
+        "wired": "有线网络",
+        "yes": "是"
       },
       "privacy": {
         "camera": "摄像头",
@@ -59,6 +86,24 @@
       "scripted": {
         "reload-failed": "脚本重载失败",
         "reloaded": "已重载脚本"
+      },
+      "sysmon": {
+        "cpu": "CPU",
+        "cpu-temp": "CPU 温度",
+        "disk": "磁盘",
+        "download": "下载",
+        "gpu-temp": "GPU 温度",
+        "gpu-usage": "GPU 使用率",
+        "gpu-vram": "GPU 显存",
+        "ram": "内存",
+        "swap": "Swap",
+        "system": "系统",
+        "upload": "上传"
+      },
+      "volume": {
+        "device": "设备",
+        "mic": "麦克风",
+        "volume": "音量"
       },
       "weather": {
         "default": "天气",
@@ -119,8 +164,8 @@
     "audio": {
       "application-volumes": "应用音量",
       "choose-effects-profile": "选择音效预设",
-      "effects-profile": "音效预设：",
-      "input-volume": "输入音量",
+      "effects-profile": "音效：",
+      "input-device-prefix": "输入：",
       "no-application-audio": "无应用音频",
       "no-application-audio-body": "当前没有应用正在播放音频。",
       "no-input-devices": "无输入设备",
@@ -129,7 +174,7 @@
       "no-output-devices": "无输出设备",
       "no-output-devices-body": "当前没有可用的音频输出设备。",
       "no-output-selected": "未选择输出设备",
-      "output-volume": "输出音量",
+      "output-device-prefix": "输出：",
       "unavailable-body": "PipeWire 服务未运行。",
       "unavailable-title": "音频不可用"
     },
@@ -219,6 +264,9 @@
       "wired-connection": "有线连接"
     },
     "notifications": {
+      "clear-all": "清除所有通知",
+      "dnd-off": "关闭勿扰模式",
+      "dnd-on": "开启勿扰模式",
       "empty-body": "最近的通知将显示在此处。",
       "empty-title": "无通知",
       "filter": {
@@ -360,6 +408,7 @@
         "bands": "频段",
         "bar-width": "条形宽度",
         "bloom-intensity": "泛光",
+        "center-text": "文字居中",
         "centered": "居中",
         "change-image": "更改...",
         "circle": "圆形",
@@ -370,6 +419,7 @@
         "color-1": "颜色 1",
         "color-2": "颜色 2",
         "color2": "颜色 2",
+        "command": "命令",
         "custom-color": "自定义...",
         "description": "描述",
         "fade-when-idle": "空闲时淡出",
@@ -377,13 +427,17 @@
         "font-family-default": "系统默认",
         "forecast-days": "预报天数",
         "format": "格式",
+        "glyph": "图标",
         "hide-when-no-media": "无媒体时隐藏",
         "horizontal": "水平",
+        "hover-background": "悬停背景",
+        "hover-foreground": "悬停前景",
         "image-path": "图片",
         "inner-diameter": "内径",
         "input-opacity": "输入框不透明度",
         "input-radius": "输入框圆角",
         "interface": "界面",
+        "label": "标签",
         "layout": "布局",
         "mirrored": "镜像",
         "opacity": "不透明度",
@@ -411,6 +465,13 @@
         "stat-swap-pct": "Swap %",
         "stat2": "统计 2",
         "title": "标题",
+        "variant": "样式",
+        "variant-default": "默认",
+        "variant-destructive": "Destructive",
+        "variant-ghost": "Ghost",
+        "variant-outline": "Outline",
+        "variant-primary": "Primary",
+        "variant-secondary": "Secondary",
         "vertical": "垂直",
         "visualization-mode": "模式",
         "visualization-mode-all": "全部",
@@ -429,6 +490,7 @@
       "title": "桌面小组件",
       "types": {
         "audio-visualizer": "音频可视化",
+        "button": "按钮",
         "clock": "时钟",
         "fancy-audio-visualizer": "华丽音频可视化",
         "label": "标签",
@@ -541,7 +603,7 @@
     "authentication-failed": "身份验证失败",
     "password-cleared": "密码已清除",
     "password-placeholder": "密码",
-    "ready": "请输入密码并按下回车键。",
+    "ready": "请输入密码并按下 Enter 键。",
     "unlocked": "已解锁",
     "waiting": "正在等待锁定确认..."
   },
@@ -556,6 +618,8 @@
     },
     "internal": {
       "battery": "电池",
+      "battery-critical-body": "{device}: {percent}% - 电脑即将关机",
+      "battery-critical-title": "电量严重不足",
       "battery-device": "电池设备",
       "battery-low-body": "{device}：剩余 {percent}%",
       "battery-low-title": "电量低",
@@ -617,6 +681,20 @@
       "scroll-off": "滚动锁定关闭",
       "scroll-on": "滚动锁定开启"
     },
+    "nightlight": {
+      "forced": "始终开启",
+      "off": "夜间模式已关闭",
+      "running": "已开启",
+      "scheduled": "已计划"
+    },
+    "privacy": {
+      "camera-off": "摄像头已停止",
+      "camera-on": "摄像头已开启",
+      "mic-off": "麦克风已停止",
+      "mic-on": "麦克风已开启",
+      "screen-off": "屏幕共享已停止",
+      "screen-on": "屏幕共享已开启"
+    },
     "wifi": {
       "off": "Wi-Fi 关闭",
       "on": "Wi-Fi 开启"
@@ -633,11 +711,14 @@
         "plugged-in": "已插入电源"
       },
       "tooltip": {
+        "device": "电池",
+        "device-numbered": "电池 {index}",
         "health": "健康度",
         "rate": "功率",
         "status": "状态",
         "time-left": "剩余时间",
-        "time-to-full": "距离充满"
+        "time-to-full": "距离充满",
+        "unknown-device": "未知设备"
       }
     },
     "profiles": {
@@ -905,6 +986,7 @@
         "clipboard": "剪贴板",
         "community": "社区",
         "control-center": "控制中心",
+        "dead-zone": "空白区域",
         "directories": "目录",
         "effects": "效果",
         "filtering": "过滤",
@@ -1111,6 +1193,7 @@
           "crop": "裁剪",
           "fit": "适应",
           "repeat": "平铺",
+          "span": "跨屏",
           "stretch": "拉伸"
         },
         "order": {
@@ -1332,6 +1415,26 @@
         "corner-top-right": {
           "description": "状态栏右上角的圆角半径；当该角背离屏幕边缘时，负值会形成内凹的圆角"
         },
+        "dead-zone-command": {
+          "description": "在小组件区域之外的状态栏空白处，左键点击时执行的 Shell 命令",
+          "label": "左键点击"
+        },
+        "dead-zone-middle-command": {
+          "description": "在小组件区域之外的状态栏空白处，中键点击时执行的 Shell 命令",
+          "label": "中键点击"
+        },
+        "dead-zone-right-command": {
+          "description": "右键点击时执行的 Shell 命令；留空则打开控制中心",
+          "label": "右键点击"
+        },
+        "dead-zone-scroll-down-command": {
+          "description": "向下滚动时执行的 Shell 命令",
+          "label": "向下滚动"
+        },
+        "dead-zone-scroll-up-command": {
+          "description": "向上滚动时执行的 Shell 命令",
+          "label": "向上滚动"
+        },
         "edge-margin": {
           "description": "距最近屏幕边缘的距离；正值会使状态栏悬浮并远离边缘"
         },
@@ -1356,6 +1459,9 @@
         "layer": {
           "description": "选择 Overlay 可在全屏应用上方显示状态栏；选择 Top 则会在全屏时被遮挡。吸附面板会跟随状态栏。",
           "label": "Wayland 层级"
+        },
+        "opposite-edge-margin": {
+          "description": "在状态栏内侧额外预留的空间；当最大化窗口忽略 struts 时可使用此选项"
         },
         "panel-overlap": {
           "description": "吸附面板与状态栏边缘重叠的像素值，用于隐藏接缝（若看到线条或间隙可调整此值）",
@@ -1640,7 +1746,7 @@
       },
       "lockscreen": {
         "allow-empty-password": {
-          "description": "允许按 Enter 键提交空密码；适用于安全密钥或无密码 PAM 验证；保持关闭可避免误操作导致锁屏问题。",
+          "description": "允许按下 Enter 键提交空密码；适用于安全密钥或无密码 PAM 验证；保持关闭可避免误操作导致锁屏问题。",
           "label": "允许空密码提交"
         },
         "blur-intensity": {
@@ -1755,6 +1861,10 @@
         "control-center-sidebar-section": {
           "description": "打开特定选项卡时（音量、媒体等）",
           "label": "打开选项卡时的侧边栏"
+        },
+        "control-center-width": {
+          "description": "控制中心面板的宽度（像素）；紧凑模式和无侧边栏模式会以此为基准按比例缩小",
+          "label": "控制中心宽度"
         },
         "floating-offset": {
           "description": "悬浮或独立面板与状态栏边缘之间的间距（像素）",
@@ -2035,6 +2145,9 @@
         "main-axis-padding": {
           "label": "两端内边距"
         },
+        "opposite-edge-margin": {
+          "label": "内侧边缘边距"
+        },
         "position": {
           "label": "位置"
         },
@@ -2092,7 +2205,7 @@
         },
         "niri-overview-type-to-launch": {
           "description": "在 niri 概览界面键入时即可打开启动器；进入概览时，会使用一个极小的键盘焦点窗口来接收输入",
-          "label": "触键启动"
+          "label": "键入启动"
         },
         "offline-mode": {
           "description": "阻止所有出站网络请求",
@@ -2130,9 +2243,17 @@
           "description": "新曲目开始播放时显示 OSD 弹窗",
           "label": "正在播放"
         },
+        "osd-kinds-nightlight": {
+          "description": "切换夜间模式时显示 OSD 弹窗",
+          "label": "夜间模式"
+        },
         "osd-kinds-power-profile": {
           "description": "电源配置变化时显示 OSD 弹窗",
           "label": "电源配置"
+        },
+        "osd-kinds-privacy": {
+          "description": "麦克风、摄像头或屏幕共享开始或停止时显示 OSD 弹窗",
+          "label": "隐私"
         },
         "osd-kinds-volume": {
           "description": "音量变化时显示 OSD 弹窗；输出与输入可通过高级设置分别控制",
@@ -2169,6 +2290,10 @@
         "osd-position": {
           "description": "OSD 弹窗的屏幕位置",
           "label": "屏幕位置"
+        },
+        "osd-position-vertical": {
+          "description": "使用垂直布局时，OSD 弹窗的屏幕位置",
+          "label": "垂直位置"
         },
         "osd-scale": {
           "description": "按 Shell UI 缩放比例调整 OSD 弹窗大小（1.0 保持默认）",
@@ -2412,7 +2537,7 @@
         "screenshot-primary-region": "区域",
         "shared": "共享运行",
         "short": "简短",
-        "swap-percent": "交换百分比",
+        "swap-percent": "Swap 百分比",
         "text": "文字",
         "text-only": "仅文字",
         "workspace-label-centered": "居中",
@@ -2427,6 +2552,11 @@
         "active-opacity": {
           "description": "活动（焦点）窗口图标的不透明度。",
           "label": "焦点图标不透明度"
+        },
+        "active-pill-size": {
+          "description": "活动工作区胶囊沿状态栏方向的最小长度，以胶囊厚度为单位",
+          "label": "活动胶囊长度",
+          "workspaces-description": "活动工作区胶囊沿状态栏方向的最小长度，以胶囊厚度为单位；标签可能会超出此长度"
         },
         "album-art-only": {
           "description": "仅显示圆形专辑封面，不显示曲目标题",
@@ -2524,7 +2654,7 @@
           "label": "设备"
         },
         "display": {
-          "active-window-description": "水平状态栏上显示图标、标题或两者同时显示。垂直状态栏仅显示图标。",
+          "active-window-description": "在水平状态栏上显示图标、标题或两者同时显示。垂直状态栏仅显示图标。",
           "description": "小组件的显示模式",
           "label": "显示"
         },
@@ -2545,7 +2675,7 @@
           "label": "空工作区颜色"
         },
         "focused-color": {
-          "description": "当前工作区的颜色；也支持固定的十六进制颜色值",
+          "description": "焦点工作区的颜色；也支持固定的十六进制颜色值",
           "label": "焦点工作区颜色"
         },
         "font-family": {
@@ -2650,6 +2780,11 @@
           "description": "非活动（非焦点）窗口图标的不透明度。",
           "label": "非焦点图标不透明度"
         },
+        "inactive-pill-size": {
+          "description": "非活动工作区胶囊沿状态栏方向的最小长度，以胶囊厚度为单位",
+          "label": "非活动胶囊长度",
+          "workspaces-description": "非活动工作区胶囊沿状态栏方向的最小长度，以胶囊厚度为单位；标签可能会超出此长度"
+        },
         "interface": {
           "description": "需要监视的网络接口；留空则统计所有接口的总流量",
           "label": "网络接口"
@@ -2663,7 +2798,7 @@
           "label": "标签最小宽度"
         },
         "labels-only-when-occupied": {
-          "description": "在无窗口、非活动的工作区上隐藏工作区标签",
+          "description": "在无窗口、非活动工作区上隐藏工作区标签",
           "label": "仅在有窗口时显示标签",
           "workspaces-description": "在有窗口的工作区以及当前活动工作区（即使为空）上显示工作区编号或名称标签；其他空工作区不显示标签"
         },
@@ -2711,7 +2846,7 @@
         },
         "only-active-workspace": {
           "description": "隐藏非活动工作区上的窗口。",
-          "label": "仅当前工作区"
+          "label": "仅活动工作区"
         },
         "path": {
           "description": "用于磁盘统计的路径",
@@ -2723,7 +2858,7 @@
           "workspaces-description": "调整工作区胶囊的大小"
         },
         "pinned": {
-          "description": "启用抽屉模式时，仍显示在状态栏中的托盘项 ID",
+          "description": "启用抽屉模式时，仍显示在状态栏的托盘项 ID",
           "label": "固定项目"
         },
         "primary-click": {
@@ -2943,10 +3078,7 @@
   },
   "time": {
     "duration": {
-      "days-hours-minutes": "{days} 天 {hours} 小时 {minutes} 分钟",
-      "hours-minutes": "{hours} 小时 {minutes} 分钟",
-      "less-than-minute": "<1 分钟",
-      "minutes": "{minutes} 分钟"
+      "less-than-minute": "<1 分钟"
     },
     "file": {
       "unknown": "未知"
@@ -3021,6 +3153,7 @@
       "color-title": "壁纸颜色",
       "filter-placeholder": "筛选...",
       "flatten": "展开嵌套",
+      "loading": "正在加载壁纸...",
       "sort-date-asc": "按日期排序（最旧优先）",
       "sort-date-desc": "按日期排序（最新优先）",
       "sort-name-asc": "按名称排序（A-Z）",

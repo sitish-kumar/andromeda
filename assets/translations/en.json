@@ -36,6 +36,13 @@
       "active-window": {
         "no-active-window": "No active window"
       },
+      "bluetooth": {
+        "connected": "Connected"
+      },
+      "brightness": {
+        "brightness": "Brightness",
+        "display": "Display"
+      },
       "lock-keys": {
         "caps": "Caps",
         "caps-short": "C",
@@ -49,7 +56,27 @@
         "playing": "Playing"
       },
       "network": {
-        "wired": "Wired"
+        "active": "Active",
+        "connected": "Connected",
+        "connecting": "Connecting",
+        "download": "Download",
+        "interface": "Interface",
+        "ip": "IP",
+        "network": "Network",
+        "networks": "Networks",
+        "networks-count": "{count} network",
+        "networks-count-plural": "{count} networks",
+        "no": "No",
+        "not-connected": "Not connected",
+        "off": "Off",
+        "on": "On",
+        "scanning": "Scanning",
+        "signal": "Signal",
+        "upload": "Upload",
+        "vpn": "VPN",
+        "wifi": "Wi-Fi",
+        "wired": "Wired",
+        "yes": "Yes"
       },
       "privacy": {
         "camera": "Camera",
@@ -59,6 +86,24 @@
       "scripted": {
         "reload-failed": "Script reload failed",
         "reloaded": "Reloaded script"
+      },
+      "sysmon": {
+        "cpu": "CPU",
+        "cpu-temp": "CPU Temp",
+        "disk": "Disk",
+        "download": "Download",
+        "gpu-temp": "GPU Temp",
+        "gpu-usage": "GPU Usage",
+        "gpu-vram": "GPU VRAM",
+        "ram": "RAM",
+        "swap": "Swap",
+        "system": "System",
+        "upload": "Upload"
+      },
+      "volume": {
+        "device": "Device",
+        "mic": "Mic",
+        "volume": "Volume"
       },
       "weather": {
         "default": "Weather",
@@ -120,7 +165,7 @@
       "application-volumes": "Application Volumes",
       "choose-effects-profile": "Choose a profile",
       "effects-profile": "Effects:",
-      "input-volume": "Input Volume",
+      "input-device-prefix": "Input:",
       "no-application-audio": "No application audio",
       "no-application-audio-body": "No application playback streams are currently available.",
       "no-input-devices": "No input devices",
@@ -129,7 +174,7 @@
       "no-output-devices": "No output devices",
       "no-output-devices-body": "No playback sinks are currently available.",
       "no-output-selected": "No output device selected",
-      "output-volume": "Output Volume",
+      "output-device-prefix": "Output:",
       "unavailable-body": "PipeWire is not active.",
       "unavailable-title": "Audio unavailable"
     },
@@ -219,6 +264,9 @@
       "wired-connection": "Wired connection"
     },
     "notifications": {
+      "clear-all": "Clear all notifications",
+      "dnd-off": "Turn Do Not Disturb Off",
+      "dnd-on": "Turn Do Not Disturb On",
       "empty-body": "Recent notifications will show here.",
       "empty-title": "No notifications",
       "filter": {
@@ -230,6 +278,17 @@
       "filter-empty-body": "No notifications match this filter.",
       "filter-empty-title": "Nothing here",
       "untitled": "Untitled notification"
+    },
+    "power": {
+      "battery": "Battery",
+      "design-capacity": "Of design capacity",
+      "health": "Battery Health",
+      "performance-inhibited": "Performance unavailable",
+      "peripherals": "Connected Devices",
+      "power-profile": "Power Profile",
+      "time-to-empty": "{time} remaining",
+      "time-to-full": "{time} until full",
+      "unknown-device": "Unknown device"
     },
     "screen-time": {
       "disabled": "Screen time tracking is off. Enable it in Settings to record per-app usage.",
@@ -303,6 +362,7 @@
       "media": "Media",
       "network": "Network",
       "notifications": "Notifications",
+      "power": "Power",
       "screen-time": "Screen Time",
       "system": "System",
       "weather": "Weather"
@@ -570,6 +630,8 @@
     },
     "internal": {
       "battery": "Battery",
+      "battery-critical-body": "{device}: {percent}% - your computer will shut down soon",
+      "battery-critical-title": "Battery critically low",
       "battery-device": "Battery device",
       "battery-low-body": "{device}: {percent}% remaining",
       "battery-low-title": "Battery low",
@@ -631,6 +693,20 @@
       "scroll-off": "Scroll Lock Off",
       "scroll-on": "Scroll Lock On"
     },
+    "nightlight": {
+      "forced": "Always On",
+      "off": "Night Light Off",
+      "running": "Running",
+      "scheduled": "Scheduled"
+    },
+    "privacy": {
+      "camera-off": "Camera Stopped",
+      "camera-on": "Camera Active",
+      "mic-off": "Microphone Stopped",
+      "mic-on": "Microphone Active",
+      "screen-off": "Screen Sharing Stopped",
+      "screen-on": "Screen Sharing Active"
+    },
     "wifi": {
       "off": "Wi-Fi Off",
       "on": "Wi-Fi On"
@@ -647,11 +723,14 @@
         "plugged-in": "Plugged in"
       },
       "tooltip": {
+        "device": "Battery",
+        "device-numbered": "Battery {index}",
         "health": "Health",
         "rate": "Rate",
         "status": "Status",
         "time-left": "Time left",
-        "time-to-full": "Time to full"
+        "time-to-full": "Time to full",
+        "unknown-device": "Unknown Device"
       }
     },
     "profiles": {
@@ -919,6 +998,7 @@
         "clipboard": "Clipboard",
         "community": "Community",
         "control-center": "Control Center",
+        "dead-zone": "Dead Zone",
         "directories": "Directories",
         "effects": "Effects",
         "filtering": "Filtering",
@@ -1125,6 +1205,7 @@
           "crop": "Crop",
           "fit": "Fit",
           "repeat": "Repeat",
+          "span": "Span",
           "stretch": "Stretch"
         },
         "order": {
@@ -1346,6 +1427,26 @@
         "corner-top-right": {
           "description": "Top right corner radius for the bar; negative values carve a concave corner when this corner faces away from the screen edge"
         },
+        "dead-zone-command": {
+          "description": "Shell command to run on left-click in the bar margin outside widget sections",
+          "label": "Left Click"
+        },
+        "dead-zone-middle-command": {
+          "description": "Shell command to run on middle-click in the bar margin outside widget sections",
+          "label": "Middle Click"
+        },
+        "dead-zone-right-command": {
+          "description": "Shell command to run on right-click; leave empty to open Control Center",
+          "label": "Right Click"
+        },
+        "dead-zone-scroll-down-command": {
+          "description": "Shell command to run when scrolling down",
+          "label": "Scroll Down"
+        },
+        "dead-zone-scroll-up-command": {
+          "description": "Shell command to run when scrolling up",
+          "label": "Scroll Up"
+        },
         "edge-margin": {
           "description": "Distance from the nearest screen edge; positive values float the bar away from it"
         },
@@ -1370,6 +1471,9 @@
         "layer": {
           "description": "Use Overlay to show the bar above fullscreen apps. Attached panels follow the bar.",
           "label": "Wayland Layer"
+        },
+        "opposite-edge-margin": {
+          "description": "Extra reserved space on the inward side of the bar, away from the screen edge; use when maximized windows ignore struts"
         },
         "panel-overlap": {
           "description": "Pixels an attached panel overlaps the bar edge to hide the seam (adjust if you see a line or gap)",
@@ -1770,6 +1874,10 @@
           "description": "When opening a specific tab (volume, media etc.)",
           "label": "Sidebar When Opening a Tab"
         },
+        "control-center-width": {
+          "description": "Width of the control center panel in pixels (compact and no-sidebar modes scale down from this)",
+          "label": "Control Center Width"
+        },
         "floating-offset": {
           "description": "Gap in pixels between a floating or detached panel and the bar edge",
           "label": "Floating Offset"
@@ -2049,6 +2157,9 @@
         "main-axis-padding": {
           "label": "Main Axis Padding"
         },
+        "opposite-edge-margin": {
+          "label": "Opposite Edge Margin"
+        },
         "position": {
           "label": "Position"
         },
@@ -2144,9 +2255,17 @@
           "description": "Show an OSD popup when a new track starts playing",
           "label": "Now Playing"
         },
+        "osd-kinds-nightlight": {
+          "description": "Show an OSD popup when night light is toggled",
+          "label": "Night Light"
+        },
         "osd-kinds-power-profile": {
           "description": "Show an OSD popup when the power profile changes",
           "label": "Power Profile"
+        },
+        "osd-kinds-privacy": {
+          "description": "Show an OSD popup when microphone, camera, or screen-share capture starts or stops",
+          "label": "Privacy"
         },
         "osd-kinds-volume": {
           "description": "Show OSD popups when volume changes; use advanced settings to control output and input separately",
@@ -2183,6 +2302,10 @@
         "osd-position": {
           "description": "Screen position for OSD popups",
           "label": "Screen Position"
+        },
+        "osd-position-vertical": {
+          "description": "Screen position when slider orientation is vertical",
+          "label": "Vertical Position"
         },
         "osd-scale": {
           "description": "Scale OSD popups relative to the shell UI scale (1.0 keeps the default size)",
@@ -2442,6 +2565,11 @@
           "description": "Opacity of the icon for the active (focused) window.",
           "label": "Active Icon Opacity"
         },
+        "active-pill-size": {
+          "description": "Minimum active workspace pill length along the bar, as a multiple of pill thickness",
+          "label": "Active Pill Size",
+          "workspaces-description": "Minimum active workspace pill length along the bar, as a multiple of pill thickness; labels may expand beyond this"
+        },
         "album-art-only": {
           "description": "Show only the circular album artwork without the track title",
           "label": "Album Art Only"
@@ -2664,6 +2792,11 @@
           "description": "Opacity of icons for inactive (unfocused) windows.",
           "label": "Inactive Icon Opacity"
         },
+        "inactive-pill-size": {
+          "description": "Minimum inactive workspace pill length along the bar, as a multiple of pill thickness",
+          "label": "Inactive Pill Size",
+          "workspaces-description": "Minimum inactive workspace pill length along the bar, as a multiple of pill thickness; labels may expand beyond this"
+        },
         "interface": {
           "description": "Network interface to monitor; leave empty to use the total across all interfaces",
           "label": "Interface"
@@ -2718,6 +2851,10 @@
         "mirrored": {
           "description": "Mirror the visualizer around its center",
           "label": "Mirrored"
+        },
+        "mute-color": {
+          "description": "Color role used for the icon and label when muted; fixed hex colors are also supported",
+          "label": "Mute Color"
         },
         "occupied-color": {
           "description": "Color role used for occupied workspaces; fixed hex colors are also supported",
@@ -2957,10 +3094,10 @@
   },
   "time": {
     "duration": {
-      "days-hours-minutes": "{days}d {hours}h {minutes}m",
-      "hours-minutes": "{hours}h {minutes}m",
+      "less-than-day": "less than 1 day",
       "less-than-minute": "<1m",
-      "minutes": "{minutes}m"
+      "three-parts": "{first} {second} {third}",
+      "two-parts": "{first} {second}"
     },
     "file": {
       "unknown": "Unknown"
@@ -2973,6 +3110,18 @@
       "just-now": "just now",
       "minutes-ago": "{count} min ago",
       "minutes-ago-plural": "{count} min ago"
+    },
+    "units": {
+      "day": "{count} day",
+      "day-plural": "{count} days",
+      "hour": "{count} hour",
+      "hour-plural": "{count} hours",
+      "minute": "{count} minute",
+      "minute-plural": "{count} minutes",
+      "month": "{count} month",
+      "month-plural": "{count} months",
+      "year": "{count} year",
+      "year-plural": "{count} years"
     }
   },
   "tray": {
@@ -3035,6 +3184,7 @@
       "color-title": "Wallpaper color",
       "filter-placeholder": "Filter...",
       "flatten": "Flatten",
+      "loading": "Loading wallpapers...",
       "sort-date-asc": "Sort by date (oldest first)",
       "sort-date-desc": "Sort by date (newest first)",
       "sort-name-asc": "Sort by name (A-Z)",

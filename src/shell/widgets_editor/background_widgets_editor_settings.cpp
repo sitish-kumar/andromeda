@@ -26,9 +26,11 @@
 
 namespace {
 
-  constexpr float kInspectorWidth = 340.0f;
+  constexpr float kInspectorWidth = 520.0f;
+  constexpr float kInspectorCloseSize = 22.0f;
   constexpr float kSettingRowHeight = 34.0f;
-  constexpr float kLabelWidth = 100.0f;
+  constexpr float kSettingLabelFlexGrow = 3.0f;
+  constexpr float kSettingControlFlexGrow = 2.0f;
 
   using Settings = std::unordered_map<std::string, WidgetSettingValue>;
 
@@ -166,7 +168,7 @@ namespace {
         .gap = Style::spaceSm,
         .minWidth = 0.0f,
         .fillWidth = true,
-        .flexGrow = 1.0f,
+        .flexGrow = kSettingControlFlexGrow,
     });
     controlSlot->addChild(std::move(control));
 
@@ -181,10 +183,10 @@ namespace {
             .text = std::string(labelText),
             .fontSize = Style::fontSizeCaption,
             .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
-            .minWidth = kLabelWidth,
-            .maxWidth = kLabelWidth,
+            .minWidth = 0.0f,
             .textAlign = TextAlign::Start,
             .ellipsize = TextEllipsize::End,
+            .flexGrow = kSettingLabelFlexGrow,
         }),
         std::move(controlSlot)
     );
@@ -799,6 +801,7 @@ void BackgroundWidgetsEditor::buildInspector(
 
   Flex* panelPtr = nullptr;
   Flex* handlePtr = nullptr;
+  Flex* dragHandlePtr = nullptr;
   const float panelRadius = Style::scaledRadiusXl();
   auto panel = ui::column(
       {
@@ -820,8 +823,7 @@ void BackgroundWidgetsEditor::buildInspector(
           {
               .out = &handlePtr,
               .align = FlexAlign::Center,
-              .justify = FlexJustify::Center,
-              .gap = Style::spaceXs,
+              .gap = Style::spaceSm,
               .paddingV = Style::spaceXs,
               .paddingH = Style::spaceMd,
               .fill = colorSpecFromRole(ColorRole::SurfaceVariant, 0.85f),
@@ -830,14 +832,46 @@ void BackgroundWidgetsEditor::buildInspector(
               .width = kInspectorWidth,
               .configure = [panelRadius](Flex& flex) { flex.setRadii(Radii(panelRadius, panelRadius, 0.0f, 0.0f)); },
           },
-          ui::glyph({
-              .glyph = "menu-2",
-              .glyphSize = 14.0f,
-          }),
-          ui::label({
-              .text = desktop_settings::desktopWidgetTypeLabel(selectedState.type),
-              .fontSize = Style::fontSizeBody,
-              .fontWeight = FontWeight::Bold,
+          ui::row(
+              {
+                  .out = &dragHandlePtr,
+                  .align = FlexAlign::Center,
+                  .gap = Style::spaceXs,
+                  .paddingV = Style::spaceXs,
+                  .paddingH = Style::spaceSm,
+                  .minHeight = Style::controlHeightSm,
+              },
+              ui::glyph({
+                  .glyph = "menu-2",
+                  .glyphSize = 14.0f,
+              }),
+              ui::label({
+                  .text = desktop_settings::desktopWidgetTypeLabel(selectedState.type),
+                  .fontSize = Style::fontSizeBody,
+                  .fontWeight = FontWeight::Bold,
+              }),
+              std::move(handleArea)
+          ),
+          ui::spacer(),
+          ui::button({
+              .glyph = "close",
+              .glyphSize = 12.0f,
+              .variant = ButtonVariant::Ghost,
+              .minWidth = kInspectorCloseSize,
+              .minHeight = kInspectorCloseSize,
+              .maxWidth = kInspectorCloseSize,
+              .maxHeight = kInspectorCloseSize,
+              .padding = 2.0f,
+              .radius = Style::scaledRadiusSm(),
+              .width = kInspectorCloseSize,
+              .height = kInspectorCloseSize,
+              .onClick =
+                  [this]() {
+                    deferEditorMutation([this]() {
+                      m_inspectorOpen = false;
+                      requestLayout();
+                    });
+                  },
           })
       ),
       std::move(scrollView)
@@ -845,10 +879,9 @@ void BackgroundWidgetsEditor::buildInspector(
 
   surface.inspector = panelPtr;
   root.addChild(std::move(panel));
-  panelPtr->addChild(std::move(handleArea));
   panelPtr->layout(*m_renderContext);
   handleAreaPtr->setPosition(0.0f, 0.0f);
-  handleAreaPtr->setFrameSize(panelPtr->width(), handlePtr->height());
+  handleAreaPtr->setFrameSize(dragHandlePtr->width(), dragHandlePtr->height());
 
   if (!surface.inspectorPositionInitialized && surface.toolbar != nullptr) {
     surface.inspectorX = surface.toolbarX;

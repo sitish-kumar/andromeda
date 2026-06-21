@@ -972,7 +972,7 @@ void PanelManager::closePanel(bool animateClose) {
     } else {
       m_animations.cancelForOwner(m_sceneRoot.get());
       m_animations.animate(
-          m_detachedRevealProgress, 0.0f, Style::animFast, Easing::EaseInOutQuad,
+          m_detachedRevealProgress, 0.0f, Style::animNormal, Easing::EaseInOutCubic,
           [this](float v) { applyDetachedReveal(v); },
           [this, gen]() {
             DeferredCall::callLater([this, gen]() {
@@ -1462,14 +1462,12 @@ void PanelManager::applyDetachedReveal(float progress) {
     return;
   }
   // Scale the entire scene from 0.95 to 1.0 around the surface center.
-  // Opacity is not animated because the compositor blur region is not opacity-aware.
   const float s = 1.0f - 0.05f * (1.0f - m_detachedRevealProgress);
   m_sceneRoot->setScale(s);
-  // Fade only the content layer. The background must stay fully opaque so the
-  // compositor blur region is always covered by an opaque rect.
-  if (m_contentNode != nullptr) {
-    m_contentNode->setOpacity(m_detachedRevealProgress);
-  }
+  // Fade the whole panel (background + content) uniformly. The compositor blur region
+  // is not opacity-aware, so we gate it in applyPanelCompositorBlur() to stay cleared
+  // while the panel is mostly translucent.
+  m_sceneRoot->setOpacity(m_detachedRevealProgress);
   applyPanelCompositorBlur();
 }
 
@@ -1581,6 +1579,15 @@ void PanelManager::applyPanelCompositorBlur() {
   }
 
   if (!m_attachedToBar) {
+    // The blur region is not opacity-aware: while the detached panel is still mostly
+    // translucent a submitted region would show through as a blurred blob, so keep it
+    // cleared until the panel is opaque enough. This works the same during both fade in/out.
+    const float kBlurRevealThreshold = 0.6f;
+    if (m_detachedRevealProgress < kBlurRevealThreshold) {
+      m_surface->clearBlurRegion();
+      return;
+    }
+
     const float progress = std::clamp(m_detachedRevealProgress, 0.0f, 1.0f);
     const float s = 1.0f - 0.05f * (1.0f - progress);
     const int scaledW = static_cast<int>(std::lround(static_cast<float>(bw) * s));

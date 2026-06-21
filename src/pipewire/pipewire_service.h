@@ -161,6 +161,8 @@ public:
     std::int32_t routeDevice = -1;
     std::uint32_t routeDirection = 0;
     std::vector<DeviceRouteData> routes;
+    float lastWrittenVolume = -1.0f;
+    std::chrono::steady_clock::time_point volumeWriteGuardUntil{};
     struct pw_node* proxy = nullptr;
     spa_hook* listener = nullptr;
   };
@@ -214,6 +216,7 @@ private:
   void scheduleVolumeFlush();
   void flushPendingNodeVolumes();
   [[nodiscard]] bool applyNodeVolumeImmediate(std::uint32_t id, float volume);
+  void noteVolumeWritten(NodeData& nd, float volume);
 
   Timer m_volumeThrottleTimer;
   std::unordered_map<std::uint32_t, float> m_pendingNodeVolumes;

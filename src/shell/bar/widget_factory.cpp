@@ -584,8 +584,12 @@ std::unique_ptr<Widget> WidgetFactory::create(
         static_cast<int>(std::clamp<std::int64_t>(wc != nullptr ? wc->getInt("scroll_step", 5) : 5, 1, 25));
     const std::string target = wc != nullptr ? wc->getString("device", "output") : std::string("output");
     const auto volumeTarget = target == "input" ? VolumeWidgetTarget::Input : VolumeWidgetTarget::Output;
-    auto widget =
-        std::make_unique<VolumeWidget>(m_audio, m_easyEffects, &m_config, output, showLabel, volumeTarget, scrollStep);
+    const ColorSpec muteColor = wc != nullptr
+        ? wc->getColorSpec("mute_color", colorSpecFromRole(ColorRole::Error), "widget." + name + ".mute_color")
+        : colorSpecFromRole(ColorRole::Error);
+    auto widget = std::make_unique<VolumeWidget>(
+        m_audio, m_easyEffects, &m_config, output, showLabel, volumeTarget, scrollStep, muteColor
+    );
     widget->setContentScale(contentScale);
     return widget;
   }
@@ -636,10 +640,12 @@ std::unique_ptr<Widget> WidgetFactory::create(
     const bool labelsOnlyWhenOccupied = wc != nullptr ? wc->getBool("labels_only_when_occupied", false) : false;
     const bool hideWhenEmpty = wc != nullptr ? wc->getBool("hide_when_empty", false) : false;
     const double pillScale = wc != nullptr ? wc->getDouble("pill_scale", 1.0) : 1.0;
+    const double activePillSize = wc != nullptr ? wc->getDouble("active_pill_size", 2.2) : 2.2;
+    const double inactivePillSize = wc != nullptr ? wc->getDouble("inactive_pill_size", 1.0) : 1.0;
     const bool minimal = wc != nullptr ? wc->getBool("minimal", false) : false;
     auto widget = std::make_unique<WorkspacesWidget>(
         m_platform, output, displayMode, focusedColor, occupiedColor, emptyColor, maxLabelChars, labelsOnlyWhenOccupied,
-        hideWhenEmpty, pillScale, minimal
+        hideWhenEmpty, pillScale, static_cast<float>(activePillSize), static_cast<float>(inactivePillSize), minimal
     );
     widget->setContentScale(contentScale);
     return widget;

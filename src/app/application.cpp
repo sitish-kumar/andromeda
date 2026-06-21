@@ -1,6 +1,7 @@
 #include "application.h"
 
 #include "app/poll_source.h"
+#include "compositors/compositor_detect.h"
 #include "config/config_types.h"
 #include "core/build_info.h"
 #include "core/deferred_call.h"
@@ -119,6 +120,33 @@ namespace {
         .icon = enabled ? "caffeine-on" : "caffeine-off",
         .value = i18n::tr(enabled ? "osd.caffeine.on" : "osd.caffeine.off"),
         .showProgress = false,
+        .inactive = !enabled,
+    };
+  }
+
+  OsdContent nightLightOsdContent(const GammaService& service) {
+    std::string icon;
+    std::string value;
+    const bool inactive = !service.enabled() && !service.forceEnabled();
+    if (service.forceEnabled()) {
+      icon = "nightlight-forced";
+      value = i18n::tr("osd.nightlight.forced");
+    } else if (!service.enabled()) {
+      icon = "nightlight-off";
+      value = i18n::tr("osd.nightlight.off");
+    } else if (service.active()) {
+      icon = "nightlight-on";
+      value = i18n::tr("osd.nightlight.running");
+    } else {
+      icon = "nightlight-on";
+      value = i18n::tr("osd.nightlight.scheduled");
+    }
+    return OsdContent{
+        .kind = OsdKind::NightLight,
+        .icon = std::move(icon),
+        .value = std::move(value),
+        .showProgress = false,
+        .inactive = inactive,
     };
   }
 
@@ -128,6 +156,7 @@ namespace {
         .icon = enabled ? "bell-off" : "bell",
         .value = i18n::tr(enabled ? "osd.dnd.on" : "osd.dnd.off"),
         .showProgress = false,
+        .inactive = !enabled,
     };
   }
 
@@ -137,6 +166,7 @@ namespace {
         .icon = enabled ? "wifi" : "wifi-off",
         .value = i18n::tr(enabled ? "osd.wifi.on" : "osd.wifi.off"),
         .showProgress = false,
+        .inactive = !enabled,
     };
   }
 
@@ -146,6 +176,7 @@ namespace {
         .icon = enabled ? "bluetooth" : "bluetooth-off",
         .value = i18n::tr(enabled ? "osd.bluetooth.on" : "osd.bluetooth.off"),
         .showProgress = false,
+        .inactive = !enabled,
     };
   }
 
@@ -274,8 +305,13 @@ void Application::syncNotificationDaemon() {
   }
 
   if (m_notificationDbus != nullptr) {
-    m_notificationDaemonInitFailed = false;
-    return;
+    if (m_notificationDbus->isHealthy()) {
+      m_notificationDaemonInitFailed = false;
+      return;
+    }
+    kLog.info("notification daemon connection lost; re-registering");
+    m_notificationPollSource.setDbusService(nullptr);
+    m_notificationDbus.reset();
   }
 
   if (m_notificationDaemonInitFailed && !enabledChanged) {
@@ -287,15 +323,56 @@ void Application::syncNotificationDaemon() {
     m_notificationPollSource.setDbusService(m_notificationDbus.get());
     m_notificationDaemonInitFailed = false;
     kLog.info("listening on org.freedesktop.Notifications");
-  } catch (const std::exception& e) {
-    kLog.warn("notifications disabled: {}", e.what());
+  } catch (const std::exception& ownerError) {
+    if (compositors::isKde()) {
+      try {
+        m_notificationDbus = std::make_unique<KdeNotificationClient>(*m_bus, m_notificationManager);
+        m_notificationPollSource.setDbusService(m_notificationDbus.get());
+        m_notificationDaemonInitFailed = false;
+        kLog.info("listening on KDE Plasma notifications via NotificationWatcher");
+        return;
+      } catch (const std::exception& kdeError) {
+        kLog.warn("notifications disabled: {}", kdeError.what());
+        m_notificationDbus.reset();
+        m_notificationPollSource.setDbusService(nullptr);
+        m_notificationDaemonInitFailed = true;
+        m_notificationManager.addInternal(
+            "Noctalia", i18n::tr("notifications.internal.dbus-disabled"), kdeError.what(), Urgency::Low
+        );
+        return;
+      }
+    }
+
+    kLog.warn("notifications disabled: {}", ownerError.what());
     m_notificationDbus.reset();
     m_notificationPollSource.setDbusService(nullptr);
     m_notificationDaemonInitFailed = true;
     m_notificationManager.addInternal(
-        "Noctalia", i18n::tr("notifications.internal.dbus-disabled"), e.what(), Urgency::Low
+        "Noctalia", i18n::tr("notifications.internal.dbus-disabled"), ownerError.what(), Urgency::Low
     );
   }
+}
+
+void Application::installNotificationBusNameWatch() {
+  if (m_notificationBusNameWatchInstalled || m_bus == nullptr) {
+    return;
+  }
+
+  m_notificationBusNameWatchProxy = sdbus::createProxy(
+      m_bus->connection(), sdbus::ServiceName{"org.freedesktop.DBus"}, sdbus::ObjectPath{"/org/freedesktop/DBus"}
+  );
+  m_notificationBusNameWatchProxy->uponSignal("NameOwnerChanged")
+      .onInterface("org.freedesktop.DBus")
+      .call([this](const std::string& name, const std::string& /*oldOwner*/, const std::string& /*newOwner*/) {
+        if (name != notification_dbus::kFreedesktopNotificationsBusName) {
+          return;
+        }
+        DeferredCall::callLater([this]() {
+          m_notificationDaemonInitFailed = false;
+          syncNotificationDaemon();
+        });
+      });
+  m_notificationBusNameWatchInstalled = true;
 }
 
 void Application::syncPolkitAgent() {
@@ -626,7 +703,6 @@ void Application::initServices() {
     m_lockscreenWidgetsController.onOutputChange();
     m_screenCorners.onOutputChange();
     m_lockScreen.onOutputChange();
-    resumeShellRenderingIfUnlocked();
     m_idleGraceOverlay.onOutputChange();
     m_idleInhibitor.onOutputChange();
     m_overviewLauncherCapture.onOutputChange();
@@ -683,6 +759,9 @@ void Application::initServices() {
   }
   m_idleInhibitor.initialize(m_wayland, &m_renderContext);
   m_idleInhibitor.setChangeCallback([this, shouldRefreshControlCenter]() {
+    if (m_configService.config().osd.kinds.caffeine) {
+      m_osdOverlay.show(caffeineOsdContent(m_idleInhibitor.enabled()));
+    }
     m_bar.refresh();
     if (shouldRefreshControlCenter()) {
       m_panelManager.refresh();
@@ -707,6 +786,11 @@ void Application::initServices() {
     m_bar.refresh();
     if (shouldRefreshControlCenter()) {
       m_panelManager.refresh();
+    }
+  });
+  m_gammaService.setStateFeedbackCallback([this]() {
+    if (m_configService.config().osd.kinds.nightlight) {
+      m_osdOverlay.show(nightLightOsdContent(m_gammaService));
     }
   });
   m_configService.addReloadCallback([this]() {
@@ -857,17 +941,22 @@ void Application::initServices() {
     try {
       m_upowerService = std::make_unique<UPowerService>(*m_systemBus);
       m_batteryHookState.reset(m_upowerService->state());
-      m_batteryWarningMonitor.reset(m_configService.config().battery, *m_upowerService);
-      m_upowerService->setChangeCallback([this]() {
+      m_batteryWarningMonitor.evaluate(m_configService.config().battery, *m_upowerService, m_notificationManager);
+      m_upowerService->setChangeCallback([this, shouldRefreshControlCenter]() {
         onUpowerStateChangedForHooks();
-        m_batteryWarningMonitor.update(m_configService.config().battery, *m_upowerService, m_notificationManager);
+        m_batteryWarningMonitor.evaluate(m_configService.config().battery, *m_upowerService, m_notificationManager);
         m_bar.refresh();
         m_settingsWindow.onExternalOptionsChanged();
+        if (shouldRefreshControlCenter()) {
+          m_panelManager.refresh();
+        }
       });
       m_configService.addReloadCallback(
           [this]() {
             if (m_configService.lastChange().battery && m_upowerService != nullptr) {
-              m_batteryWarningMonitor.reset(m_configService.config().battery, *m_upowerService);
+              m_batteryWarningMonitor.evaluate(
+                  m_configService.config().battery, *m_upowerService, m_notificationManager
+              );
               m_bar.refresh();
             }
           },
@@ -1107,8 +1196,11 @@ void Application::initServices() {
       );
     }
 
+    installNotificationBusNameWatch();
     syncNotificationDaemon();
     m_configService.addReloadCallback([this]() { syncNotificationDaemon(); });
+
+    m_compositorPlatform.startKdeActiveWindow(*m_bus);
 
     m_trayService = std::make_unique<TrayService>(*m_bus);
     m_trayService->setChangeCallback([this]() {
@@ -1273,18 +1365,10 @@ void Application::initUi() {
   });
   m_lockScreen.setSessionHooks(
       [this]() {
-        m_bar.pauseUnderSessionLock();
-        m_dock.pauseUnderSessionLock();
-        m_desktopWidgetsController.pauseUnderSessionLock();
-        m_wallpaper.pauseRendering();
         m_lockscreenWidgetsController.onLockStateChanged();
         m_hookManager.fire(HookKind::SessionLocked);
       },
       [this]() {
-        m_wallpaper.resumeRendering();
-        m_desktopWidgetsController.resumeAfterSessionLock();
-        m_dock.resumeAfterSessionLock();
-        m_bar.resumeAfterSessionLock();
         m_lockscreenWidgetsController.onLockStateChanged();
         m_hookManager.fire(HookKind::SessionUnlocked);
         if (m_logindService != nullptr) {
@@ -1530,7 +1614,8 @@ void Application::initUi() {
   });
   m_overviewLauncherCapture.sync();
   m_panelManager.registerPanel(
-      "wallpaper", std::make_unique<WallpaperPanel>(&m_wayland, &m_configService, &m_thumbnailService)
+      "wallpaper",
+      std::make_unique<WallpaperPanel>(&m_wayland, &m_configService, &m_thumbnailService, &m_wallpaperScanner)
   );
   std::size_t trayDrawerColumns = 3;
   if (const auto it = m_configService.config().widgets.find("tray"); it != m_configService.config().widgets.end()) {
@@ -1638,6 +1723,7 @@ void Application::initUi() {
   m_keyboardLayoutOsd.bindOverlay(m_osdOverlay);
   m_keyboardLayoutOsd.prime(m_compositorPlatform);
   m_mediaOsd.bindOverlay(m_osdOverlay);
+  m_privacyOsd.bindOverlay(m_osdOverlay);
   m_screenCorners.initialize(m_wayland, &m_configService, &m_renderContext);
   m_screenCorners.onConfigReload();
 
@@ -1797,14 +1883,13 @@ void Application::initUi() {
       if (m_pipewireSpectrum != nullptr) {
         m_pipewireSpectrum->handleAudioStateChanged();
       }
-      if (!m_lockScreen.isActive()) {
-        m_bar.refresh();
-      }
+      m_bar.refresh();
       if (shouldRefreshControlCenter()) {
         m_panelManager.refresh();
       }
       if (m_pipewireService != nullptr) {
         m_audioOsd.onAudioStateChanged(*m_pipewireService);
+        m_privacyOsd.onPrivacyStateChanged(*m_pipewireService);
       }
     });
     m_pipewireService->setVolumePreviewCallback([this](bool isInput, std::uint32_t id, float volume, bool muted) {
@@ -2139,7 +2224,7 @@ void Application::initIpc() {
   m_desktopWidgetsController.registerIpc(m_ipcService);
   m_lockscreenWidgetsController.registerIpc(m_ipcService);
   m_panelManager.registerIpc(m_ipcService);
-  m_idleInhibitor.registerIpc(m_ipcService, [this](bool enabled) { m_osdOverlay.show(caffeineOsdContent(enabled)); });
+  m_idleInhibitor.registerIpc(m_ipcService);
   m_gammaService.registerIpc(m_ipcService);
   m_themeService.registerIpc(m_ipcService);
   m_templateApplyService.registerIpc(m_ipcService);
@@ -2202,16 +2287,6 @@ bool Application::runUserCommandBlocking(const std::string& command) {
     return false;
   }
   return true;
-}
-
-void Application::resumeShellRenderingIfUnlocked() {
-  if (m_lockScreen.isActive()) {
-    return;
-  }
-  m_wallpaper.resumeRendering();
-  m_desktopWidgetsController.resumeAfterSessionLock();
-  m_dock.resumeAfterSessionLock();
-  m_bar.resumeAfterSessionLock();
 }
 
 bool Application::runIdleAction(const IdleActionRequest& action) {
@@ -2396,6 +2471,7 @@ std::vector<PollSource*> Application::currentPollSources() {
   sources.push_back(&m_weatherPollSource);
   sources.push_back(&m_calendarPollSource);
   sources.push_back(&m_thumbnailService);
+  sources.push_back(&m_wallpaperScanner);
   sources.push_back(&m_asyncTextureCache);
   return sources;
 }

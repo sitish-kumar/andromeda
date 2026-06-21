@@ -676,6 +676,9 @@ namespace ui {
     if (props.surfaceOpacity.has_value()) {
       control->setSurfaceOpacity(*props.surfaceOpacity);
     }
+    if (props.surfaceRole.has_value()) {
+      control->setSurfaceRole(*props.surfaceRole);
+    }
     if (props.equalSegmentWidths.has_value()) {
       control->setEqualSegmentWidths(*props.equalSegmentWidths);
     }

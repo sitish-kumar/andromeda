@@ -46,10 +46,12 @@ namespace noctalia::config::schema {
         field(&OsdKindsConfig::bluetooth, "bluetooth"),
         field(&OsdKindsConfig::powerProfile, "power_profile"),
         field(&OsdKindsConfig::caffeine, "caffeine"),
+        field(&OsdKindsConfig::nightlight, "nightlight"),
         field(&OsdKindsConfig::dnd, "dnd"),
         field(&OsdKindsConfig::lockKeys, "lock_keys"),
         field(&OsdKindsConfig::keyboardLayout, "keyboard_layout"),
         field(&OsdKindsConfig::media, "media"),
+        field(&OsdKindsConfig::privacy, "privacy"),
     };
     return s;
   }
@@ -57,6 +59,7 @@ namespace noctalia::config::schema {
   const Schema<OsdConfig>& osdSchema() {
     static const Schema<OsdConfig> s = {
         field(&OsdConfig::position, "position"),
+        field(&OsdConfig::positionVertical, "position_vertical"),
         field(&OsdConfig::orientation, "orientation"),
         field(&OsdConfig::scale, "scale", kScaleRange),
         field(&OsdConfig::backgroundOpacity, "background_opacity", kUnitRange),
@@ -479,6 +482,7 @@ namespace noctalia::config::schema {
     static const Schema<ControlCenterConfig> s = {
         enumField(&ControlCenterConfig::sidebarMode, "sidebar", kControlCenterSidebarModes),
         enumField(&ControlCenterConfig::sidebarSectionMode, "sidebar_section", kControlCenterSidebarModes),
+        field(&ControlCenterConfig::width, "width", kControlCenterWidthRange),
         arrayOf<ControlCenterConfig, ShortcutConfig>(
             &ControlCenterConfig::shortcuts, "shortcuts", shortcutSchema(),
             [](const ShortcutConfig& sc) { return !sc.type.empty(); }
@@ -1839,6 +1843,28 @@ namespace noctalia::config::schema {
     }
   } // namespace
 
+  const Schema<BarDeadZoneConfig>& barDeadZoneSchema() {
+    static const Schema<BarDeadZoneConfig> s = {
+        field(&BarDeadZoneConfig::command, "command"),
+        field(&BarDeadZoneConfig::rightCommand, "right_command"),
+        field(&BarDeadZoneConfig::middleCommand, "middle_command"),
+        field(&BarDeadZoneConfig::scrollUpCommand, "scroll_up_command"),
+        field(&BarDeadZoneConfig::scrollDownCommand, "scroll_down_command"),
+    };
+    return s;
+  }
+
+  const Schema<BarDeadZoneOverride>& barDeadZoneOverrideSchema() {
+    static const Schema<BarDeadZoneOverride> s = {
+        optionalTrimmedStringField(&BarDeadZoneOverride::command, "command"),
+        optionalTrimmedStringField(&BarDeadZoneOverride::rightCommand, "right_command"),
+        optionalTrimmedStringField(&BarDeadZoneOverride::middleCommand, "middle_command"),
+        optionalTrimmedStringField(&BarDeadZoneOverride::scrollUpCommand, "scroll_up_command"),
+        optionalTrimmedStringField(&BarDeadZoneOverride::scrollDownCommand, "scroll_down_command"),
+    };
+    return s;
+  }
+
   const Schema<BarConfig>& barFieldsSchema() {
     static const Schema<BarConfig> s = {
         field(&BarConfig::enabled, "enabled"),
@@ -1856,6 +1882,7 @@ namespace noctalia::config::schema {
         field(&BarConfig::radiusBottomRight, "radius_bottom_right", kBarRadiusRange),
         field(&BarConfig::marginEnds, "margin_ends"),
         field(&BarConfig::marginEdge, "margin_edge"),
+        field(&BarConfig::marginOppositeEdge, "margin_opposite_edge"),
         field(&BarConfig::padding, "padding"),
         field(&BarConfig::widgetSpacing, "widget_spacing"),
         field(&BarConfig::shadow, "shadow"),
@@ -1881,6 +1908,7 @@ namespace noctalia::config::schema {
         optionalDoubleField(&BarConfig::widgetCapsuleRadius, "capsule_radius", kBarCapsuleRadiusRangeD),
         field(&BarConfig::widgetCapsuleOpacity, "capsule_opacity", kBarOpacityRange),
         capsuleBorderField(&BarConfig::widgetCapsuleBorder, &BarConfig::widgetCapsuleBorderSpecified, "capsule_border"),
+        subTable(&BarConfig::deadZone, "dead_zone", barDeadZoneSchema()),
     };
     return s;
   }
@@ -1921,6 +1949,7 @@ namespace noctalia::config::schema {
         optionalIntField(&BarMonitorOverride::radiusBottomRight, "radius_bottom_right", kBarRadiusRange),
         optionalIntField(&BarMonitorOverride::marginEnds, "margin_ends"),
         optionalIntField(&BarMonitorOverride::marginEdge, "margin_edge"),
+        optionalIntField(&BarMonitorOverride::marginOppositeEdge, "margin_opposite_edge"),
         optionalIntField(&BarMonitorOverride::padding, "padding"),
         optionalIntField(&BarMonitorOverride::widgetSpacing, "widget_spacing"),
         optionalFloatField(&BarMonitorOverride::scale, "scale", kBarScaleRange),
@@ -1968,6 +1997,7 @@ namespace noctalia::config::schema {
             },
             [](toml::table&, const BarMonitorOverride&) {}
         ),
+        subTable(&BarMonitorOverride::deadZone, "dead_zone", barDeadZoneOverrideSchema()),
     };
     return s;
   }

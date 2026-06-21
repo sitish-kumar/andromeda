@@ -60,7 +60,7 @@ blacklist = []                      # ignore MPRIS players by bus/identity/deskt
 
 [wallpaper]
 enabled             = true
-fill_mode           = "crop"        # center | crop | fit | stretch | repeat
+fill_mode           = "crop"        # center | crop | fit | stretch | repeat | span
 fill_color          = ""            # optional fallback/fill color: prefer a color role token; fixed hex also works
 transition          = ["fade", "wipe", "disc", "stripes", "zoom", "honeycomb"]
 transition_duration = 1500          # milliseconds
@@ -136,7 +136,8 @@ offset_y           = 8              # absolute vertical margin from the screen e
 
 [osd]
 position = "top_right"              # top_right | top_left | top_center | bottom_right | bottom_left | bottom_center | center_right | center_left
-orientation = "horizontal"          # horizontal | vertical
+position_vertical = "top_center"    # same options; used when orientation = "vertical"
+orientation = "horizontal"          # horizontal | vertical (volume/brightness sliders only; text popups stay horizontal)
 scale = 1.0                         # OSD size multiplier applied on top of shell.ui_scale
 background_opacity = 0.97           # background opacity of OSD popups
 offset_x = 20                       # absolute horizontal margin from the screen edge
@@ -152,9 +153,11 @@ wifi = true                         # Wi-Fi toggle
 bluetooth = true                    # Bluetooth toggle
 power_profile = true                # power profile changes
 caffeine = true                     # idle inhibitor (caffeine) toggle
+nightlight = true                   # night light toggle
 dnd = true                          # Do Not Disturb toggle
 lock_keys = true                    # Caps/Num/Scroll Lock changes; disable to stop polling when no widget uses them
 keyboard_layout = true              # input keyboard layout changes
+privacy = true                      # microphone/camera/screen-share capture changes
 
 # ── Lock Screen ───────────────────────────────────────────────────────────────
 
@@ -281,10 +284,20 @@ start  = ["launcher", "wallpaper", "workspaces"]
 center = ["clock"]
 end    = ["media", "tray", "notifications", "clipboard", "network", "bluetooth", "volume", "brightness", "battery", "control-center", "session"]
 
+# Commands for the bar margin outside widget sections (dead zone):
+# [bar.main.dead_zone]
+# command = "noctalia msg launcher toggle"
+# right_command = ""               # empty = open Control Center (default)
+# middle_command = ""
+# scroll_up_command = "..."
+# scroll_down_command = "..."
+
 # Per-monitor override example — only the fields you list are overridden:
 # [bar.main.monitor.dp1]
 # match     = "DP-1"
 # thickness = 44
+# [bar.main.monitor.dp1.dead_zone]
+# command = "noctalia msg launcher toggle"
 
 # ── Dock ──────────────────────────────────────────────────────────────────────
 
