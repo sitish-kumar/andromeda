@@ -279,6 +279,17 @@
       "filter-empty-title": "Nothing here",
       "untitled": "Untitled notification"
     },
+    "power": {
+      "battery": "Battery",
+      "design-capacity": "Of design capacity",
+      "health": "Battery Health",
+      "performance-inhibited": "Performance unavailable",
+      "peripherals": "Connected Devices",
+      "power-profile": "Power Profile",
+      "time-to-empty": "{time} remaining",
+      "time-to-full": "{time} until full",
+      "unknown-device": "Unknown device"
+    },
     "screen-time": {
       "disabled": "Screen time tracking is off. Enable it in Settings to record per-app usage.",
       "empty": "No app usage recorded yet. Focus a window to start tracking.",
@@ -341,17 +352,6 @@
       },
       "unknown": "unknown",
       "uptime-prefix": "Up {uptime} · {osAge}"
-    },
-    "power": {
-      "battery": "Battery",
-      "design-capacity": "Of design capacity",
-      "health": "Battery Health",
-      "performance-inhibited": "Performance unavailable",
-      "peripherals": "Connected Devices",
-      "power-profile": "Power Profile",
-      "time-to-empty": "{time} remaining",
-      "time-to-full": "{time} until full",
-      "unknown-device": "Unknown device"
     },
     "tabs": {
       "audio": "Audio",
