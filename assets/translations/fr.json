@@ -279,6 +279,17 @@
       "filter-empty-title": "Rien ici",
       "untitled": "Notification sans titre"
     },
+    "power": {
+      "battery": "Batterie",
+      "design-capacity": "De la capacité d'origine",
+      "health": "État de la batterie",
+      "performance-inhibited": "Performance indisponible",
+      "peripherals": "Appareils connectés",
+      "power-profile": "Mode d'alimentation",
+      "time-to-empty": "{time} restantes",
+      "time-to-full": "Plus que {time} avant la charge complète",
+      "unknown-device": "Appareil inconnu"
+    },
     "screen-time": {
       "disabled": "Le suivi du temps d’écran est désactivé. Activez-le dans les paramètres pour enregistrer l’utilisation par application.",
       "empty": "Aucune utilisation d’application enregistrée. Passez une fenêtre au premier plan pour commencer le suivi.",
@@ -351,6 +362,7 @@
       "media": "Média",
       "network": "Réseau",
       "notifications": "Notifications",
+      "power": "Alimentation",
       "screen-time": "Temps d'écran",
       "system": "Système",
       "weather": "Météo"
@@ -724,7 +736,7 @@
     "profiles": {
       "balanced": "Équilibré",
       "performance": "Performance",
-      "power-saver": "Economie d’énergie"
+      "power-saver": "Économie"
     }
   },
   "session": {
@@ -986,6 +998,7 @@
         "clipboard": "Presse-papiers",
         "community": "Communauté",
         "control-center": "Centre de contrôle",
+        "dead-zone": "Zone inactive",
         "directories": "Dossiers",
         "effects": "Effets",
         "filtering": "Filtrage",
@@ -1413,6 +1426,26 @@
         },
         "corner-top-right": {
           "description": "Rayon du coin supérieur droit de la barre"
+        },
+        "dead-zone-command": {
+          "description": "Commande shell à exécuter lors d'un clic gauche sur la marge de la barre, en dehors des widgets",
+          "label": "Clic gauche"
+        },
+        "dead-zone-middle-command": {
+          "description": "the bar margin outside widgets Commande shell à exécuter lors d'un clic du milieu sur la marge de la barre, en dehors des widgets",
+          "label": "Clic du milieu"
+        },
+        "dead-zone-right-command": {
+          "description": "Commande shell à exécuter lors d'un clic droit ; laissez vide pour ouvrir le Centre de contrôle",
+          "label": "Clic droit"
+        },
+        "dead-zone-scroll-down-command": {
+          "description": "Commande shell à exécuter lors d'un défilement vers le bas",
+          "label": "Défilement vers le bas"
+        },
+        "dead-zone-scroll-up-command": {
+          "description": "Commande shell à exécuter lors d'un défilement vers le haut",
+          "label": "Défilement vers le haut"
         },
         "edge-margin": {
           "description": "Distance par rapport au bord d’écran le plus proche ; des valeurs positives éloignent la barre du bord"
@@ -2121,6 +2154,9 @@
         "main-axis-padding": {
           "label": "Marge interne de l'axe principal"
         },
+        "opposite-edge-margin": {
+          "label": "Marge intérieure"
+        },
         "position": {
           "label": "Position"
         },
@@ -2518,6 +2554,21 @@
         "workspace-label-inside": "Dans la pastille"
       },
       "settings": {
+        "active-color": {
+          "description": "Couleur utilisée pour les indicateurs de confidentialité actifs ; les couleurs hexadécimales fixes sont également prises en charge",
+          "label": "Couleur active"
+        },
+        "active-opacity": {
+          "description": "Opacité de l'icône de la fenêtre active (ayant le focus).",
+          "label": "Couleur active"
+        },
+        "active-pill-size": {
+          "description": "Longueur minimale de la pastille de l'espace de travail actif le long de la barre, en multiple de la taille de la pastille.",
+          "label": "Taille de la pastille active"
+        },
+        "hide-when-plugged": {
+          "description": "Masquer le widget de batterie lorsqu'il est branché au secteur"
+        },
         "stat": {
           "label": "Stats"
         },

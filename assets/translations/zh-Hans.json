@@ -279,6 +279,17 @@
       "filter-empty-title": "暂无内容",
       "untitled": "无标题通知"
     },
+    "power": {
+      "battery": "电池",
+      "design-capacity": "设计容量",
+      "health": "电池健康度",
+      "performance-inhibited": "性能模式不可用",
+      "peripherals": "已连接设备",
+      "power-profile": "电源配置",
+      "time-to-empty": "剩余 {time}",
+      "time-to-full": "距离充满 {time}",
+      "unknown-device": "未知设备"
+    },
     "screen-time": {
       "disabled": "屏幕使用时间追踪已关闭。在设置中启用以记录各应用的使用情况。",
       "empty": "暂无应用使用记录。聚焦窗口以开始追踪。",
@@ -351,6 +362,7 @@
       "media": "媒体",
       "network": "网络",
       "notifications": "通知",
+      "power": "电源",
       "screen-time": "屏幕使用时间",
       "system": "系统",
       "weather": "天气"
@@ -723,7 +735,7 @@
     },
     "profiles": {
       "balanced": "平衡",
-      "performance": "高性能",
+      "performance": "性能",
       "power-saver": "省电"
     }
   },
@@ -2840,6 +2852,10 @@
           "description": "将可视化围绕其中心镜像显示",
           "label": "镜像"
         },
+        "mute-color": {
+          "description": "静音时图标和标签的颜色；也支持固定的十六进制颜色值",
+          "label": "静音颜色"
+        },
         "occupied-color": {
           "description": "非空工作区的颜色；也支持固定的十六进制颜色值",
           "label": "非空工作区颜色"
@@ -3078,7 +3094,10 @@
   },
   "time": {
     "duration": {
-      "less-than-minute": "<1 分钟"
+      "less-than-day": "不到 1 天",
+      "less-than-minute": "<1 分钟",
+      "three-parts": "{first} {second} {third}",
+      "two-parts": "{first} {second}"
     },
     "file": {
       "unknown": "未知"
@@ -3091,6 +3110,18 @@
       "just-now": "刚刚",
       "minutes-ago": "{count} 分钟前",
       "minutes-ago-plural": "{count} 分钟前"
+    },
+    "units": {
+      "day": "{count} 天",
+      "day-plural": "{count} 天",
+      "hour": "{count} 小时",
+      "hour-plural": "{count} 小时",
+      "minute": "{count} 分钟",
+      "minute-plural": "{count} 分钟",
+      "month": "{count} 个月",
+      "month-plural": "{count} 个月",
+      "year": "{count} 年",
+      "year-plural": "{count} 年"
     }
   },
   "tray": {

@@ -5,7 +5,7 @@
       "error": "Ujjlenyomat-hitelesítési hiba",
       "no-match": "Az ujjlenyomat nem egyezik",
       "not-centered": "Helyezd középre az ujjad és próbáld ismét",
-      "present": "Ujjlenyomat olvasása...",
+      "present": "Ujjlenyomat olvasása…",
       "ready": "Helyezd az ujjad az olvasóra",
       "remove-and-retry": "Vedd el az ujjad és próbáld ismét",
       "retry": "Olvasd be újra az ujjlenyomatodat",
@@ -279,6 +279,17 @@
       "filter-empty-title": "Itt nincs semmi",
       "untitled": "Cím nélküli értesítés"
     },
+    "power": {
+      "battery": "Akkumulátor",
+      "design-capacity": "Üzemi kapacitás",
+      "health": "Akkumulátor állapot",
+      "performance-inhibited": "Teljesítmény nem elérhető",
+      "peripherals": "Csatlakoztatott eszközök",
+      "power-profile": "Energiagazdálkodási mód",
+      "time-to-empty": "{time} hátralevő idő",
+      "time-to-full": "{time} teljes töltöttségig",
+      "unknown-device": "Ismeretlen eszköz"
+    },
     "screen-time": {
       "disabled": "A képernyőidő-követés ki van kapcsolva. Engedélyezd a Beállításokban az alkalmazásonkénti használat rögzítéséhez.",
       "empty": "Még nincs rögzített alkalmazáshasználat. Aktiválj egy ablakot a mérés indításához",
@@ -351,6 +362,7 @@
       "media": "Média",
       "network": "Hálózat",
       "notifications": "Értesítések",
+      "power": "Energia",
       "screen-time": "Képernyőidő",
       "system": "Rendszer",
       "weather": "Időjárás"
@@ -986,6 +998,7 @@
         "clipboard": "Vágólap",
         "community": "Közösség",
         "control-center": "Vezérlőközpont",
+        "dead-zone": "Holt zóna",
         "directories": "Könyvtárak",
         "effects": "Effektek",
         "filtering": "Szűrés",
@@ -1414,6 +1427,26 @@
         "corner-top-right": {
           "description": "A sáv jobb felső kerekítési sugara; negatív értékek esetén a sarok konkávvá válik, ha távolabb esik a képernyő szélétől"
         },
+        "dead-zone-command": {
+          "description": "Shell-parancs, amelyet a widget-szakaszokon kívüli sáv szélén, bal egérgombbal történő kattintással lehet futtatni",
+          "label": "Bal kattintás"
+        },
+        "dead-zone-middle-command": {
+          "description": "Shell-parancs, amelyet a widget-szakaszokon kívüli sáv szélén, középső egérgombbal történő kattintással lehet futtatni",
+          "label": "Középső kattintás"
+        },
+        "dead-zone-right-command": {
+          "description": "A jobb egérgombbal elindítandó shell-parancs. Ha üresen hagyod, a Vezérlőközpontot nyitja meg",
+          "label": "Jobb kattintás"
+        },
+        "dead-zone-scroll-down-command": {
+          "description": "A lefelé görgetéskor futtatandó shell-parancs",
+          "label": "Lefelé görgetés"
+        },
+        "dead-zone-scroll-up-command": {
+          "description": "A felfelé görgetéskor futtatandó shell-parancs",
+          "label": "Felfelé görgetés"
+        },
         "edge-margin": {
           "description": "Távolság a legközelebbi képernyőszéltől; a pozitív értékek lebegtetik tőle a sávot"
         },
@@ -1432,12 +1465,15 @@
           "label": "Betűtípus"
         },
         "font-weight": {
-          "description": "A sáv widget-feliratainak alapértelmezett betűvastagsága.",
+          "description": "A sáv widgetfeliratainak alapértelmezett betűvastagsága.",
           "label": "Betűvastagság"
         },
         "layer": {
           "description": "Használj Átfedést, hogy a sávot teljes képernyős alkalmazások felett jelenítsd meg. A rögzített panelek követik a sávot.",
           "label": "Wayland Réteg"
+        },
+        "opposite-edge-margin": {
+          "description": "Extra hely a sáv belső oldalán, a képernyő szélétől távol. Akkor használható, ha a maximális méretre nagyított ablakok figyelmen kívül hagyják a szegélyeket"
         },
         "panel-overlap": {
           "description": "A rögzített Panel ennyi pixellel fedi át a Sáv szélét, hogy elrejtse az illesztést (állítsd, ha vonalat vagy rést látsz)",
@@ -1885,11 +1921,11 @@
         },
         "open-near-click-launcher": {
           "description": "Helyezze el az indító panelt a sáv kattintási pontjához közel, ahelyett, hogy a sáv mentén középre igazítaná",
-          "label": "Nyitás kattintás közelében"
+          "label": "Megnyitás kattintás közelében"
         },
         "open-near-click-session": {
           "description": "Helyezd el a munkamenet menü panelt a sávon történt kattintás helyéhez közel, ahelyett, hogy a sáv mentén középre igazítanád.",
-          "label": "Kattintás közeli megnyitás"
+          "label": "Megnyitás kattintás közelében"
         },
         "open-near-click-wallpaper": {
           "description": "Helyezd el a háttérképválasztó panelt a sáv kattintási pontjához közel, ahelyett, hogy a sáv mentén középre igazítanád.",
@@ -2120,6 +2156,9 @@
         },
         "main-axis-padding": {
           "label": "Fő tengely kitöltés"
+        },
+        "opposite-edge-margin": {
+          "label": "A szemközti szél margója"
         },
         "position": {
           "label": "Pozíció"
@@ -2526,6 +2565,11 @@
           "description": "Az aktív (fókuszált) ablak ikonjának átlátszósága.",
           "label": "Aktív ikon átlátszatlansága"
         },
+        "active-pill-size": {
+          "description": "A sáv mentén az aktív munkaterületen található kapszulák minimális hossza, a kapszula vastagságának többszörösében kifejezve",
+          "label": "Aktív kapszula mérete",
+          "workspaces-description": "A sáv mentén az aktív munkaterületen a kapszulák minimális hossza, a kapszula vastagságának többszörösében kifejezve. A címkék ezen túlnyúlhatnak"
+        },
         "album-art-only": {
           "description": "Csak a kerek albumborító mutatása, a számcím nélkül",
           "label": "Csak az albumborító"
@@ -2748,6 +2792,11 @@
           "description": "Inaktív (nem fókuszált) ablakok ikonjainak átlátszósága.",
           "label": "Inaktív Ikon Átlátszóság"
         },
+        "inactive-pill-size": {
+          "description": "Az inaktív munkaterület-kapszula minimális hossza a sáv mentén a kapszula vastagságának többszörösében kifejezve",
+          "label": "Inaktív kapszula mérete",
+          "workspaces-description": "A sáv mentén az inaktív munkaterületen a kapszulák minimális hossza, a kapszula vastagságának többszörösében kifejezve. A címkék ezen túlnyúlhatnak"
+        },
         "interface": {
           "description": "A figyelni kívánt hálózati kapcsolat; hagyd üresen valamennyi kapcsolat használatához",
           "label": "Felület"
@@ -2802,6 +2851,10 @@
         "mirrored": {
           "description": "Tükrözd a vizualizálót a középpontja körül",
           "label": "Tükrözött"
+        },
+        "mute-color": {
+          "description": "A némításkor az ikonhoz és a címkéhez használt színkód. A fix hexadecimális színek is támogatottak",
+          "label": "Szín elmyomása"
         },
         "occupied-color": {
           "description": "Színszerep az elfoglalt munkaterületekhez; fix hex színek is támogatottak",
@@ -3041,7 +3094,10 @@
   },
   "time": {
     "duration": {
-      "less-than-minute": "<1p"
+      "less-than-day": "kevesebb, mint 1 nap",
+      "less-than-minute": "<1p",
+      "three-parts": "{first} {second} {third}",
+      "two-parts": "{first} {second}"
     },
     "file": {
       "unknown": "Ismeretlen"
@@ -3054,6 +3110,18 @@
       "just-now": "épp most",
       "minutes-ago": "{count} perce",
       "minutes-ago-plural": "{count} perce"
+    },
+    "units": {
+      "day": "{count} nap",
+      "day-plural": "{count} napok",
+      "hour": "{count} óra",
+      "hour-plural": "{count} órák",
+      "minute": "{count} perc",
+      "minute-plural": "{count} percek",
+      "month": "{count} hónap",
+      "month-plural": "{count} hónapok",
+      "year": "{count} év",
+      "year-plural": "{count} évek"
     }
   },
   "tray": {
@@ -3116,7 +3184,7 @@
       "color-title": "Háttérkép színe",
       "filter-placeholder": "Szűrés…",
       "flatten": "Lapít",
-      "loading": "Háttérképek betöltése...",
+      "loading": "Háttérképek betöltése…",
       "sort-date-asc": "Rendezés dátum szerint (legkorábbi elöl)",
       "sort-date-desc": "Rendezés dátum szerint (legújabb elöl)",
       "sort-name-asc": "Rendezés név szerint (A-Z)",

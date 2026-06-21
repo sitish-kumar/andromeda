@@ -7,7 +7,9 @@
       "not-centered": "Centreer je vinger op de sensor en probeer opniew",
       "present": "Vingerafdruk aan het lezen...",
       "ready": "Plaats je vinger op de sensor",
+      "remove-and-retry": "Haal je vinger weg en probeer opnieuw",
       "retry": "Scan uw vingerafdruk nogmaals",
+      "swipe-too-short": "De veegbeweging was te kort, probeer opnieuw",
       "too-many-attempts": "Vingerafdruk uitgeschakeld (te veel pogingen)"
     },
     "pam": {
@@ -34,6 +36,12 @@
       "active-window": {
         "no-active-window": "Geen actief venster"
       },
+      "bluetooth": {
+        "connected": "Verbonden"
+      },
+      "brightness": {
+        "brightness": "Helderheid"
+      },
       "lock-keys": {
         "caps": "Caps",
         "caps-short": "C",
@@ -47,7 +55,27 @@
         "playing": "Afspelen"
       },
       "network": {
-        "wired": "Bedraad"
+        "active": "Actief",
+        "connected": "Verbonden",
+        "connecting": "Verbinden",
+        "download": "Download",
+        "interface": "Interface",
+        "ip": "IP",
+        "network": "Netwerk",
+        "networks": "Netwerken",
+        "networks-count": "{count} netwerk",
+        "networks-count-plural": "{count} netwerken",
+        "no": "Nee",
+        "not-connected": "Niet verbonden",
+        "off": "Uit",
+        "on": "Aan",
+        "scanning": "Scannen",
+        "signal": "Signaal",
+        "upload": "Upload",
+        "vpn": "VPN",
+        "wifi": "WiFi",
+        "wired": "Bedraad",
+        "yes": "Ja"
       },
       "privacy": {
         "camera": "Camera",
@@ -57,6 +85,24 @@
       "scripted": {
         "reload-failed": "Script herladen mislukt",
         "reloaded": "Script herladen"
+      },
+      "sysmon": {
+        "cpu": "CPU",
+        "cpu-temp": "CPU Temp",
+        "disk": "Schijf",
+        "download": "Download",
+        "gpu-temp": "GPU Temp",
+        "gpu-usage": "GPU Gebruik",
+        "gpu-vram": "GPU VRAM",
+        "ram": "RAM",
+        "swap": "Swap",
+        "system": "Systeem",
+        "upload": "Upload"
+      },
+      "volume": {
+        "device": "Apparaat",
+        "mic": "Mic",
+        "volume": "Volume"
       },
       "weather": {
         "default": "Weer",
@@ -118,6 +164,7 @@
       "application-volumes": "Applicatievolumes",
       "choose-effects-profile": "Kies een profiel",
       "effects-profile": "Effecten:",
+      "input-device-prefix": "Invoer:",
       "no-application-audio": "Geen applicatiegeluid",
       "no-application-audio-body": "Er zijn momenteel geen applicatie-afspeelbronnen beschikbaar.",
       "no-input-devices": "Geen invoerapparaten",
@@ -126,6 +173,7 @@
       "no-output-devices": "Geen uitvoerapparaten",
       "no-output-devices-body": "Er zijn momenteel geen afspeelapparaten beschikbaar.",
       "no-output-selected": "Geen uitvoerapparaat geselecteerd",
+      "output-device-prefix": "Uitvoer:",
       "unavailable-body": "Pipewire is niet actief.",
       "unavailable-title": "Geluid niet beschikbaar"
     },
@@ -215,6 +263,8 @@
       "wired-connection": "Bekabelde verbinding"
     },
     "notifications": {
+      "dnd-off": "Schakel Niet Storen Uit",
+      "dnd-on": "Schakel Niet Storen Aan",
       "empty-body": "Recente meldingen worden hier getoond.",
       "empty-title": "Geen meldingen",
       "filter": {
@@ -226,6 +276,17 @@
       "filter-empty-body": "Geen meldingen komen overeen met dit filter.",
       "filter-empty-title": "Niets hier",
       "untitled": "Naamloze melding"
+    },
+    "power": {
+      "battery": "Batterij",
+      "design-capacity": "Van de ontwerpcapaciteit",
+      "health": "Batterijconditie",
+      "performance-inhibited": "Prestaties niet beschikbaar",
+      "peripherals": "Aangesloten apparaten",
+      "power-profile": "Energieprofiel",
+      "time-to-empty": "{time} over",
+      "time-to-full": "{time} tot opgeladen",
+      "unknown-device": "Onbekend apparaat"
     },
     "screen-time": {
       "disabled": "Schermtijdregistratie staat uit. Schakel dit in bij Instellingen om het gebruik per app vast te leggen.",
@@ -299,6 +360,7 @@
       "media": "Media",
       "network": "Netwerk",
       "notifications": "Meldingen",
+      "power": "Energie",
       "screen-time": "Schermtijd",
       "system": "Systeem",
       "weather": "Weer"
@@ -626,11 +688,14 @@
         "plugged-in": "Ingestoken"
       },
       "tooltip": {
+        "device": "Batterij",
+        "device-numbered": "Batterij {index}",
         "health": "Gezondheid",
         "rate": "Vermogen",
         "status": "Status",
         "time-left": "Tijd resterend",
-        "time-to-full": "Tijd tot vol"
+        "time-to-full": "Tijd tot vol",
+        "unknown-device": "Onbekend Apparaat"
       }
     },
     "profiles": {

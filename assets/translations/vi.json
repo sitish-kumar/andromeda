@@ -36,6 +36,13 @@
       "active-window": {
         "no-active-window": "Không có cửa sổ hoạt động"
       },
+      "bluetooth": {
+        "connected": "Đã kết nối"
+      },
+      "brightness": {
+        "brightness": "Độ sáng",
+        "display": "Hiển thị"
+      },
       "lock-keys": {
         "caps": "Caps",
         "caps-short": "C",
@@ -49,7 +56,25 @@
         "playing": "Đang phát"
       },
       "network": {
-        "wired": "Mạng có dây"
+        "active": "Hoạt động",
+        "connected": "Đã kết nối",
+        "connecting": "Đang kết nối",
+        "download": "Tải xuống",
+        "interface": "Giao diện",
+        "ip": "IP",
+        "network": "Mạng",
+        "networks-count": "{count} mạng",
+        "no": "Không",
+        "not-connected": "Chưa kết nối",
+        "off": "Tắt",
+        "on": "Bật",
+        "scanning": "Đang tìm kiếm",
+        "signal": "Tín hiệu",
+        "upload": "Tải lên",
+        "vpn": "VPN",
+        "wifi": "Wi-Fi",
+        "wired": "Mạng có dây",
+        "yes": "Có"
       },
       "privacy": {
         "camera": "Camera",
@@ -59,6 +84,24 @@
       "scripted": {
         "reload-failed": "Tải lại script thất bại",
         "reloaded": "Script đã được tải lại"
+      },
+      "sysmon": {
+        "cpu": "CPU",
+        "cpu-temp": "Nhiệt độ CPU",
+        "disk": "Ổ đĩa",
+        "download": "Tải xuống",
+        "gpu-temp": "Nhiệt độ GPU",
+        "gpu-usage": "Mức sử dụng GPU",
+        "gpu-vram": "GPU VRAM",
+        "ram": "RAM",
+        "swap": "Swap",
+        "system": "Hệ thống",
+        "upload": "Tải lên"
+      },
+      "volume": {
+        "device": "Thiết bị",
+        "mic": "Micrô",
+        "volume": "Âm lượng"
       },
       "weather": {
         "default": "Thời tiết",
@@ -120,6 +163,7 @@
       "application-volumes": "Âm lượng ứng dụng",
       "choose-effects-profile": "Chọn một cấu hình",
       "effects-profile": "Hiệu ứng:",
+      "input-device-prefix": "Đầu vào:",
       "no-application-audio": "Không có âm thanh từ ứng dụng",
       "no-application-audio-body": "Hiện không có ứng dụng nào đang phát âm thanh.",
       "no-input-devices": "Không tìm thấy thiết bị đầu vào",
@@ -128,6 +172,7 @@
       "no-output-devices": "Không tìm thấy thiết bị đầu ra",
       "no-output-devices-body": "Không có thiết bị phát âm thanh khả dụng.",
       "no-output-selected": "Không có thiết bị đầu ra nào được chọn",
+      "output-device-prefix": "Đầu ra:",
       "unavailable-body": "PipeWire hiện không hoạt động.",
       "unavailable-title": "Âm thanh không khả dụng"
     },
@@ -217,6 +262,9 @@
       "wired-connection": "Kết nối mạng có dây"
     },
     "notifications": {
+      "clear-all": "Xóa tất cả thông báo",
+      "dnd-off": "Tắt chế độ không làm phiền",
+      "dnd-on": "Bật chế độ không làm phiền",
       "empty-body": "Các thông báo gần đây sẽ được hiển thị tại đây.",
       "empty-title": "Không có thông báo",
       "filter": {
@@ -228,6 +276,11 @@
       "filter-empty-body": "Không có thông báo nào khớp với bộ lọc này.",
       "filter-empty-title": "Không có nội dung",
       "untitled": "Thông báo chưa có tiêu đề"
+    },
+    "power": {
+      "battery": "Pin",
+      "design-capacity": "Công suất thiết kế",
+      "health": "Trình trạng pin"
     },
     "screen-time": {
       "disabled": "Tính năng theo dõi thời gian sử dụng màn hình đang tắt. Bật trong Cài đặt để ghi lại dữ liệu theo từng ứng dụng.",
