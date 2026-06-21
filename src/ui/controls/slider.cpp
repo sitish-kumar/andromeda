@@ -236,7 +236,7 @@ void Slider::applyVisualState() {
   m_thumb->setVisible(m_enabled);
 
   if (!m_enabled) {
-    trackColor = resolved(ColorRole::Outline, 0.5f);
+    trackColor = resolved(ColorRole::Outline, Style::disabledOutlineAlpha);
     fillColor = resolved(ColorRole::Primary, 0.5f);
   } else if (pressing) {
     fillColor = resolved(ColorRole::Primary);

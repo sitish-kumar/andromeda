@@ -15,12 +15,12 @@ namespace {
 
   constexpr float kIconHostAspect = 16.0f / 10.0f;
   constexpr float kIconScale = 0.5f;
-  constexpr float kSelectedBorderWidth = 2.5f;
-  constexpr float kFrameSoftness = 1.0f;
 
   [[nodiscard]] float closeHitSize(float contentScale) { return Style::controlHeightSm * contentScale * 0.72f; }
 
   [[nodiscard]] float framePadding(float contentScale) { return Style::spaceXs * contentScale; }
+
+  [[nodiscard]] float captionTextInset(float contentScale) { return Style::spaceSm * contentScale; }
 
   [[nodiscard]] float captionReserve(float contentScale) {
     const float innerGap = Style::spaceXs * contentScale;
@@ -89,7 +89,6 @@ WindowSwitcherTile::WindowSwitcherTile(float contentScale, AsyncTextureCache* as
           .configure = [frameRadius](Box& box) {
             box.setRadius(frameRadius);
             box.setClipChildren(true);
-            box.setSoftness(kFrameSoftness);
           },
       })
   );
@@ -108,7 +107,6 @@ WindowSwitcherTile::WindowSwitcherTile(float contentScale, AsyncTextureCache* as
                     .configure = [iconRadius](Box& box) {
                       box.setRadius(iconRadius);
                       box.setClipChildren(true);
-                      box.setSoftness(0.65f);
                     },
                 })
             );
@@ -227,11 +225,12 @@ void WindowSwitcherTile::setCellSize(float cellWidth, float cellHeight) {
   if (m_iconHost != nullptr) {
     m_iconHost->setFrameSize(m_iconHostWidth, m_iconHostHeight);
   }
+  const float captionTextWidth = std::max(0.0f, m_iconHostWidth - captionTextInset(m_contentScale) * 2.0f);
   if (m_title != nullptr) {
-    m_title->setMaxWidth(m_iconHostWidth);
+    m_title->setMaxWidth(captionTextWidth);
   }
   if (m_subtitle != nullptr) {
-    m_subtitle->setMaxWidth(m_iconHostWidth);
+    m_subtitle->setMaxWidth(captionTextWidth);
   }
 
   markLayoutDirty();
@@ -300,23 +299,22 @@ bool WindowSwitcherTile::refreshIcon(Renderer& renderer) {
 void WindowSwitcherTile::applyVisualState() {
   const float frameRadius = Style::scaledRadiusXl(m_contentScale);
   if (m_selected) {
-    m_frame->setFill(colorSpecFromRole(ColorRole::Surface, 0.98f));
-    m_frame->setBorder(colorSpecFromRole(ColorRole::Primary), kSelectedBorderWidth);
+    m_frame->setFill(colorSpecFromRole(ColorRole::Surface));
+    m_frame->setBorder(colorSpecFromRole(ColorRole::Primary), Style::emphasizedBorderWidth);
     m_frame->setOpacity(1.0f);
   } else if (m_hovered) {
-    m_frame->setFill(colorSpecFromRole(ColorRole::Surface, 0.94f));
-    m_frame->setBorder(colorSpecFromRole(ColorRole::Outline, 0.42f), Style::borderWidth);
+    m_frame->setFill(colorSpecFromRole(ColorRole::Surface));
+    m_frame->setBorder(colorSpecFromRole(ColorRole::Hover), Style::emphasizedBorderWidth);
     m_frame->setOpacity(1.0f);
   } else {
-    m_frame->setFill(colorSpecFromRole(ColorRole::Surface, 0.84f));
-    m_frame->setBorder(colorSpecFromRole(ColorRole::Outline, 0.24f), Style::borderWidth);
-    m_frame->setOpacity(0.98f);
+    m_frame->setFill(colorSpecFromRole(ColorRole::Surface));
+    m_frame->setBorder(colorSpecFromRole(ColorRole::Outline, Style::disabledOutlineAlpha), Style::borderWidth);
+    m_frame->setOpacity(1.0f);
   }
   m_frame->setRadius(frameRadius);
 
   if (m_iconHost != nullptr) {
-    m_iconHost->setFill(colorSpecFromRole(ColorRole::SurfaceVariant, m_selected ? 1.0f : 0.9f));
-    m_iconHost->setBorder(colorSpecFromRole(ColorRole::Outline, m_selected ? 0.22f : 0.14f), Style::borderWidth);
+    m_iconHost->clearBorder();
   }
 }
 

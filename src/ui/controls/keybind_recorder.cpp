@@ -275,7 +275,7 @@ void KeybindRecorder::applyVisualState(VisualState state) {
   m_visualState = state;
   if (!m_enabled) {
     setFill(colorSpecFromRole(ColorRole::SurfaceVariant, 0.4f));
-    setBorder(colorSpecFromRole(ColorRole::Outline, 0.4f), Style::borderWidth);
+    setBorder(colorSpecFromRole(ColorRole::Outline, Style::disabledOutlineAlpha), Style::borderWidth);
     if (m_label != nullptr) {
       m_label->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant, 0.55f));
     }

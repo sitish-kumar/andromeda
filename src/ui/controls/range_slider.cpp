@@ -258,7 +258,7 @@ void RangeSlider::applyVisualState() {
   m_highThumb->setVisible(m_enabled);
 
   if (!m_enabled) {
-    trackColor = resolved(ColorRole::Outline, 0.5f);
+    trackColor = resolved(ColorRole::Outline, Style::disabledOutlineAlpha);
     fillColor = resolved(ColorRole::Primary, 0.5f);
   } else if (hovering) {
     thumbBorder = resolved(ColorRole::Hover);

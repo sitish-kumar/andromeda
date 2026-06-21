@@ -35,7 +35,7 @@ namespace {
     auto sep = std::make_unique<Separator>();
     sep->setOrientation(SeparatorOrientation::VerticalRule);
     sep->setThickness(std::max(1.0f, Style::borderWidth * scale));
-    sep->setColor(colorSpecFromRole(ColorRole::Outline, 0.5f));
+    sep->setColor(colorSpecFromRole(ColorRole::Outline));
     sep->setFlexGrow(0.0f);
     return sep;
   }

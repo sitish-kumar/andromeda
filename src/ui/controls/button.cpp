@@ -45,7 +45,7 @@ namespace {
           ),
           .disabled = makeState(
               colorSpecFromRole(ColorRole::SurfaceVariant, kDisabledAlpha),
-              colorSpecFromRole(ColorRole::Outline, kDisabledAlpha),
+              colorSpecFromRole(ColorRole::Outline, Style::disabledOutlineAlpha),
               colorSpecFromRole(ColorRole::OnSurface, kDisabledAlpha)
           ),
           .selected = selectedState(),
@@ -82,7 +82,8 @@ namespace {
           ),
           .disabled = makeState(
               colorSpecFromRole(ColorRole::Secondary, kDisabledAlpha),
-              colorSpecFromRole(ColorRole::Outline, kDisabledAlpha), colorSpecFromRole(ColorRole::OnSecondary)
+              colorSpecFromRole(ColorRole::Outline, Style::disabledOutlineAlpha),
+              colorSpecFromRole(ColorRole::OnSecondary)
           ),
           .selected = selectedState(),
       };
@@ -101,7 +102,7 @@ namespace {
           ),
           .disabled = makeState(
               colorSpecFromRole(ColorRole::Error, kDisabledAlpha),
-              colorSpecFromRole(ColorRole::Outline, kDisabledAlpha), colorSpecFromRole(ColorRole::OnError)
+              colorSpecFromRole(ColorRole::Outline, Style::disabledOutlineAlpha), colorSpecFromRole(ColorRole::OnError)
           ),
           .selected = selectedState(),
       };
@@ -120,7 +121,7 @@ namespace {
           ),
           .disabled = makeState(
               colorSpecFromRole(ColorRole::Surface, kDisabledAlpha),
-              colorSpecFromRole(ColorRole::Outline, kDisabledAlpha),
+              colorSpecFromRole(ColorRole::Outline, Style::disabledOutlineAlpha),
               colorSpecFromRole(ColorRole::OnSurface, kDisabledAlpha)
           ),
           .selected = selectedState(),

@@ -335,7 +335,7 @@ void Select::applyVisualState() {
 
   if (!m_enabled) {
     triggerBg = resolved(ColorRole::SurfaceVariant, m_surfaceOpacity * 0.75f);
-    triggerBorder = resolved(ColorRole::Outline, 0.6f);
+    triggerBorder = resolved(ColorRole::Outline, Style::disabledOutlineAlpha);
     triggerText = colorSpecFromRole(ColorRole::OnSurface, 0.55f);
   } else if (triggerHovered || triggerPressed) {
     triggerBg = resolved(ColorRole::SurfaceVariant, m_surfaceOpacity);

@@ -541,7 +541,7 @@ void WallpaperTile::applyVisualState() {
   setOpacity(m_missingFile ? 0.45f : 1.0f);
   m_thumb->setTint(active ? rgba(1.0f, 1.0f, 1.0f, 1.0f) : rgba(0.5f, 0.5f, 0.5f, 1.0f));
 
-  const float outlineWidth = Style::borderWidth * 3.0f;
+  const float outlineWidth = Style::emphasizedBorderWidth;
   ColorSpec borderColor = m_selected ? colorSpecFromRole(ColorRole::Primary)
       : m_current                    ? colorSpecFromRole(ColorRole::Secondary)
       : m_hoveredVisual              ? colorSpecFromRole(ColorRole::Hover)

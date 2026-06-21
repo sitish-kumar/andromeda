@@ -501,8 +501,8 @@ namespace settings {
                       .bg = colorSpecFromRole(
                           active ? ColorRole::Primary : ColorRole::SurfaceVariant, active ? 1.0f : 0.45f
                       ),
-                      .border =
-                          colorSpecFromRole(active ? ColorRole::Primary : ColorRole::Outline, active ? 0.9f : 0.45f),
+                      .border = active ? colorSpecFromRole(ColorRole::Primary, 0.9f)
+                                       : colorSpecFromRole(ColorRole::Outline, Style::disabledOutlineAlpha),
                       .label = colorSpecFromRole(active ? ColorRole::OnPrimary : ColorRole::OnSurface),
                   },
               .hover =
@@ -520,7 +520,7 @@ namespace settings {
               .disabled =
                   Button::ButtonStateColors{
                       .bg = colorSpecFromRole(ColorRole::SurfaceVariant, 0.35f),
-                      .border = colorSpecFromRole(ColorRole::Outline, 0.35f),
+                      .border = colorSpecFromRole(ColorRole::Outline, Style::disabledOutlineAlpha),
                       .label = colorSpecFromRole(ColorRole::OnSurfaceVariant),
                   },
               .selected = std::nullopt,
@@ -1388,7 +1388,7 @@ namespace settings {
            .padding = (Style::spaceLg * 2.0f) * scale,
            .fill = colorSpecFromRole(ColorRole::SurfaceVariant, 0.24f),
            .radius = Style::scaledRadiusMd(scale),
-           .border = colorSpecFromRole(ColorRole::Outline, 0.28f),
+           .border = colorSpecFromRole(ColorRole::Outline),
            .minWidth = 360.0f * scale,
            .minHeight = 160.0f * scale,
            .fillWidth = true,

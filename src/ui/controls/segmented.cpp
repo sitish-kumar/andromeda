@@ -22,7 +22,7 @@ std::size_t Segmented::addOption(std::string_view label) { return addOption(labe
 
 std::size_t Segmented::addOption(std::string_view label, std::string_view glyph) {
   const std::size_t index = m_buttons.size();
-  if (index > 0 && !m_compact) {
+  if (index > 0) {
     auto sep = makeSegmentSeparator();
     m_separators.push_back(sep.get());
     addChild(std::move(sep));
@@ -165,7 +165,7 @@ std::unique_ptr<Separator> Segmented::makeSegmentSeparator() {
   auto sep = std::make_unique<Separator>();
   sep->setOrientation(SeparatorOrientation::VerticalRule);
   sep->setThickness(std::max(1.0f, Style::borderWidth * m_scale));
-  sep->setColor(colorSpecFromRole(ColorRole::Outline, 0.5f));
+  sep->setColor(colorSpecFromRole(ColorRole::Outline));
   sep->setFlexGrow(0.0f);
   return sep;
 }

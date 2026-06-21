@@ -780,7 +780,7 @@ namespace settings {
       if (on) {
         card->setBorder(colorSpecFromRole(ColorRole::Primary), Style::borderWidth * 2.0f);
       } else {
-        card->setBorder(colorSpecFromRole(ColorRole::Outline, 0.22f), Style::borderWidth);
+        card->setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
       }
     }
 
@@ -2590,7 +2590,7 @@ namespace settings {
           .paddingH = Style::spaceXs * ctx.scale,
           .fill = colorSpecFromRole(ColorRole::Surface, 0.72f),
           .radius = Style::scaledRadiusSm(ctx.scale),
-          .border = isSelected ? colorSpecFromRole(ColorRole::Primary) : colorSpecFromRole(ColorRole::Outline, 0.22f),
+          .border = isSelected ? colorSpecFromRole(ColorRole::Primary) : colorSpecFromRole(ColorRole::Outline),
           .borderWidth = isSelected ? Style::borderWidth * 1.5f : Style::borderWidth,
       });
       auto* cardPtr = card.get();
@@ -2689,7 +2689,7 @@ namespace settings {
           .padding = Style::spaceSm * ctx.scale,
           .fill = colorSpecFromRole(ColorRole::SurfaceVariant, 0.45f),
           .radius = Style::scaledRadiusMd(ctx.scale),
-          .border = colorSpecFromRole(ColorRole::Outline, 0.5f),
+          .border = colorSpecFromRole(ColorRole::Outline),
           .minWidth = 160.0f * ctx.scale,
           .flexGrow = 1.0f,
       });
@@ -2877,7 +2877,7 @@ namespace settings {
                   .width = Style::fontSizeCaption * ctx.scale,
                   .height = Style::fontSizeCaption * ctx.scale,
                   .configure = [](Box& box) {
-                    box.setBorder(colorSpecFromRole(ColorRole::Outline, 0.6f), Style::borderWidth);
+                    box.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
                   },
               })
           );
@@ -3078,7 +3078,7 @@ namespace settings {
                     .paddingH = Style::spaceSm * ctx.scale,
                     .fill = colorSpecFromRole(ColorRole::SurfaceVariant, 0.25f),
                     .radius = Style::scaledRadiusSm(ctx.scale),
-                    .border = colorSpecFromRole(ColorRole::Outline, 0.18f),
+                    .border = colorSpecFromRole(ColorRole::Outline),
                 },
                 makeLabel(
                     i18n::tr("settings.entities.widget.lanes.empty"), Style::fontSizeCaption * ctx.scale,

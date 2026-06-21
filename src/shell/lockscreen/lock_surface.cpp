@@ -562,7 +562,7 @@ void LockSurface::layoutScene(std::uint32_t width, std::uint32_t height) {
   m_loginPanel->setStyle(
       RoundedRectStyle{
           .fill = resolveColorSpec(loginStyle.panelFill),
-          .border = colorForRole(ColorRole::Outline, 0.95f),
+          .border = colorForRole(ColorRole::Outline),
           .fillMode = FillMode::Solid,
           .radius = Style::scaledRadius(loginStyle.panelRadius),
           .softness = 1.0f,
