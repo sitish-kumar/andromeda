@@ -716,20 +716,26 @@ void CalendarTab::rebuild() {
     int cellMonthShift = 0;
     bool inMonth = false;
 
+    const auto mutedDayPalette = [] {
+      Button::ButtonPalette ghostPalette = Button::defaultPalette(ButtonVariant::Ghost);
+      ghostPalette.normal.label = colorSpecFromRole(ColorRole::OnSurfaceVariant, 0.75f);
+      return ghostPalette;
+    }();
+
     if (index < firstWeekdayOffset) {
       cellDay = previousMonthDays - firstWeekdayOffset + index + 1;
       cellYear = previousMonthYear;
       cellMonth = previousMonth;
       cellMonthShift = -1;
       dayButton->setText(std::to_string(cellDay));
-      dayButton->label()->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant, 0.75f));
+      dayButton->setCustomPalette(mutedDayPalette);
     } else if (day > monthDays) {
       cellDay = trailingDay;
       cellYear = nextMonthYear;
       cellMonth = nextMonth;
       cellMonthShift = 1;
       dayButton->setText(std::to_string(trailingDay));
-      dayButton->label()->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant, 0.75f));
+      dayButton->setCustomPalette(mutedDayPalette);
       ++trailingDay;
     } else {
       cellDay = day;
