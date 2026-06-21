@@ -1,6 +1,13 @@
 #pragma once
 
+#include "render/core/color.h"
+#include "render/core/mat3.h"
+#include "render/core/texture_handle.h"
+
 #include <cstdint>
+
+// Config-owned enum; forward-declared here so render/core stays independent of config_types.
+enum class WallpaperTransition : std::uint8_t;
 
 enum class WallpaperSourceKind : std::uint8_t {
   Image = 0,
@@ -33,4 +40,33 @@ struct WallpaperSpanParams {
   float totalHeight = 0.0f;
 
   bool operator==(const WallpaperSpanParams&) const = default;
+};
+
+// One wallpaper source: either an image texture or a solid color, plus the
+// source image's intrinsic size (used for aspect-correct fill modes).
+struct WallpaperLayer {
+  WallpaperSourceKind kind = WallpaperSourceKind::Image;
+  TextureId texture;
+  Color color = rgba(0.0f, 0.0f, 0.0f, 1.0f);
+  float imageWidth = 0.0f;
+  float imageHeight = 0.0f;
+};
+
+// All inputs for a single wallpaper draw: the two cross-faded layers plus
+// geometry, transition state, and fill parameters. fillMode stays a float so
+// render/core does not depend on the config-owned WallpaperFillMode enum.
+struct WallpaperDrawParams {
+  WallpaperTransition transition{};
+  WallpaperLayer from;
+  WallpaperLayer to;
+  float surfaceWidth = 0.0f;
+  float surfaceHeight = 0.0f;
+  float quadWidth = 0.0f;
+  float quadHeight = 0.0f;
+  float progress = 0.0f;
+  float fillMode = 0.0f;
+  TransitionParams params{};
+  Color fillColor = rgba(0.0f, 0.0f, 0.0f, 1.0f);
+  Mat3 transform = Mat3::identity();
+  WallpaperSpanParams span{};
 };
