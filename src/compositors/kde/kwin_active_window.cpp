@@ -23,7 +23,9 @@ namespace {
   constexpr auto kScriptLabel = "noctalia-active-window";
 
   const sdbus::ServiceName kKwinBusName{"org.kde.KWin"};
+  const sdbus::ObjectPath kKwinPath{"/KWin"};
   const sdbus::ObjectPath kKwinScriptingPath{"/Scripting"};
+  constexpr auto kKwinInterface = "org.kde.KWin";
   constexpr auto kKwinScriptingInterface = "org.kde.kwin.Scripting";
 
   constexpr char kRecordSeparator = '\x1f';
@@ -435,6 +437,25 @@ namespace compositors::kde {
       }
     }
     return windows;
+  }
+
+  std::optional<std::string> KwinActiveWindow::focusedOutputName() const {
+    if (!m_started) {
+      return std::nullopt;
+    }
+
+    try {
+      auto proxy = sdbus::createProxy(m_bus.connection(), kKwinBusName, kKwinPath);
+      std::string name;
+      proxy->callMethod("activeOutputName").onInterface(kKwinInterface).storeResultsTo(name);
+      name = StringUtils::trim(name);
+      if (!name.empty()) {
+        return name;
+      }
+    } catch (const sdbus::Error& e) {
+      kLog.debug("kwin activeOutputName unavailable: {}", e.getMessage());
+    }
+    return std::nullopt;
   }
 
   void KwinActiveWindow::activateWindow(const std::string& title, const std::string& appId, const std::string& uuid) {

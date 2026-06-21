@@ -669,6 +669,14 @@ wl_output* CompositorPlatform::preferredInteractiveOutput(std::chrono::milliseco
     }
   }
 
+  if (compositors::isKde() && m_kwinActiveWindow != nullptr) {
+    if (const auto focusedName = m_kwinActiveWindow->focusedOutputName(); focusedName.has_value()) {
+      if (wl_output* output = resolveOutputName(*focusedName); output != nullptr) {
+        return output;
+      }
+    }
+  }
+
   for (const auto& backend : m_focusedOutputBackends) {
     if (backend == nullptr) {
       continue;

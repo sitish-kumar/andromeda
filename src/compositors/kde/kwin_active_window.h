@@ -39,6 +39,7 @@ namespace compositors::kde {
     [[nodiscard]] std::vector<ToplevelInfo>
     windowsForApp(const std::string& idLower, const std::string& wmClassLower) const;
     [[nodiscard]] std::vector<WorkspaceWindow> trackedWorkspaceWindows() const;
+    [[nodiscard]] std::optional<std::string> focusedOutputName() const;
     void activateWindow(const std::string& title, const std::string& appId, const std::string& uuid = {});
     [[nodiscard]] bool isAvailable() const noexcept { return m_scriptInstalled; }
 
