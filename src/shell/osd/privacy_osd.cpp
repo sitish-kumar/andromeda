@@ -1,5 +1,6 @@
 #include "shell/osd/privacy_osd.h"
 
+#include "config/config_types.h"
 #include "i18n/i18n.h"
 #include "pipewire/pipewire_service.h"
 #include "shell/osd/osd_overlay.h"
@@ -42,15 +43,19 @@ namespace {
 
 } // namespace
 
-PrivacyOsd::State PrivacyOsd::fromPipewireState(const PrivacyState& privacyState) {
+PrivacyOsd::State PrivacyOsd::fromPipewireState(const PrivacyState& privacyState) const {
   State out;
   for (const auto& capture : privacyState.captures) {
     switch (capture.kind) {
     case PrivacyCaptureKind::Microphone:
-      out.mic = true;
+      if (!m_micFilter.matches(capture.appName)) {
+        out.mic = true;
+      }
       break;
     case PrivacyCaptureKind::Camera:
-      out.camera = true;
+      if (!m_camFilter.matches(capture.appName)) {
+        out.camera = true;
+      }
       break;
     case PrivacyCaptureKind::Screen:
       out.screen = true;
@@ -61,6 +66,18 @@ PrivacyOsd::State PrivacyOsd::fromPipewireState(const PrivacyState& privacyState
 }
 
 void PrivacyOsd::bindOverlay(OsdOverlay& overlay) { m_overlay = &overlay; }
+
+void PrivacyOsd::configure(const Config& config) {
+  m_micFilter.update("shell.privacy.mic_filter_regex", config.shell.privacy.micFilterRegex);
+  m_camFilter.update("shell.privacy.cam_filter_regex", config.shell.privacy.camFilterRegex);
+}
+
+void PrivacyOsd::onConfigReload(const Config& config, const PipeWireService* service) {
+  configure(config);
+  if (service != nullptr) {
+    m_lastState = fromPipewireState(service->privacyState());
+  }
+}
 
 void PrivacyOsd::onPrivacyStateChanged(const PipeWireService& service) {
   const State current = fromPipewireState(service.privacyState());
