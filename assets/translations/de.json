@@ -2835,10 +2835,7 @@
   },
   "time": {
     "duration": {
-      "days-hours-minutes": "{days}T {hours}Std. {minutes}Min.",
-      "hours-minutes": "{hours} Std. {minutes} Min.",
-      "less-than-minute": "1m",
-      "minutes": "{minutes}m"
+      "less-than-minute": "1m"
     },
     "file": {
       "unknown": "Unbekannt"

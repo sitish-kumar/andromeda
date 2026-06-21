@@ -3041,10 +3041,7 @@
   },
   "time": {
     "duration": {
-      "days-hours-minutes": "{days} nap {hours} óra {minutes} perc",
-      "hours-minutes": "{hours} óra {minutes} perc",
-      "less-than-minute": "<1p",
-      "minutes": "{minutes}p"
+      "less-than-minute": "<1p"
     },
     "file": {
       "unknown": "Ismeretlen"

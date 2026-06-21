@@ -3078,10 +3078,7 @@
   },
   "time": {
     "duration": {
-      "days-hours-minutes": "{days} 天 {hours} 小时 {minutes} 分钟",
-      "hours-minutes": "{hours} 小时 {minutes} 分钟",
-      "less-than-minute": "<1 分钟",
-      "minutes": "{minutes} 分钟"
+      "less-than-minute": "<1 分钟"
     },
     "file": {
       "unknown": "未知"

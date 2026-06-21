@@ -2864,10 +2864,7 @@
   },
   "time": {
     "duration": {
-      "days-hours-minutes": "{days} д {hours} ч {minutes} мин",
-      "hours-minutes": "{hours} ч {minutes} мин",
-      "less-than-minute": "<1 мин",
-      "minutes": "{minutes} мин"
+      "less-than-minute": "<1 мин"
     },
     "file": {
       "unknown": "Неизвестный"

@@ -2941,10 +2941,7 @@
   },
   "time": {
     "duration": {
-      "days-hours-minutes": "{days} ngày {hours} giờ {minutes} phút",
-      "hours-minutes": "{hours} giờ {minutes} phút",
-      "less-than-minute": "1 phút",
-      "minutes": "{minutes} phút"
+      "less-than-minute": "1 phút"
     },
     "file": {
       "unknown": "Không xác định"

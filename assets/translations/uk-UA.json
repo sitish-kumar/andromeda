@@ -2699,10 +2699,7 @@
   },
   "time": {
     "duration": {
-      "days-hours-minutes": "{days}д {hours}год {minutes}хв",
-      "hours-minutes": "{hours} год {minutes} хв",
-      "less-than-minute": "1хв",
-      "minutes": "{minutes}хв"
+      "less-than-minute": "1хв"
     },
     "file": {
       "unknown": "Невідомо"

@@ -2864,10 +2864,7 @@
   },
   "time": {
     "duration": {
-      "days-hours-minutes": "{days}d {hours}u {minutes}m",
-      "hours-minutes": "{hours}u {minutes}m",
-      "less-than-minute": "<1m",
-      "minutes": "{minutes}m"
+      "less-than-minute": "<1m"
     },
     "file": {
       "unknown": "Onbekend"

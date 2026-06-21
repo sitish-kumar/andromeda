@@ -3083,7 +3083,7 @@
   "time": {
     "duration": {
       "less-than-day": "less than 1 day",
-      "less-than-minute": "less than 1 minute",
+      "less-than-minute": "<1m",
       "three-parts": "{first} {second} {third}",
       "two-parts": "{first} {second}"
     },

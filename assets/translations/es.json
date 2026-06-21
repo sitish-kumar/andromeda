@@ -1151,9 +1151,6 @@
     }
   },
   "time": {
-    "duration": {
-      "minutes": "{minutes}m"
-    },
     "file": {
       "unknown": "Desconocido"
     },

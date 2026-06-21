@@ -3074,10 +3074,7 @@
   },
   "time": {
     "duration": {
-      "days-hours-minutes": "{days}g {hours}h {minutes}m",
-      "hours-minutes": "{hours}h {minutes}m",
-      "less-than-minute": "<1m",
-      "minutes": "{minutes}m"
+      "less-than-minute": "<1m"
     },
     "file": {
       "unknown": "Sconosciuto"
