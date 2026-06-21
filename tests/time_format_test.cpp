@@ -34,7 +34,7 @@ int main() {
        )
       && ok;
   ok = expectEqual(formatLocalUnixTime(1700000000, "%%s_%s"), "%s_1700000000", "keeps escaped percent literal") && ok;
-  ok = expectEqual(formatDuration(59s), "less than 1 minute", "formats sub-minute duration") && ok;
+  ok = expectEqual(formatDuration(59s), "<1m", "formats sub-minute duration") && ok;
   ok = expectEqual(formatDuration(1min), "1 minute", "formats singular minute") && ok;
   ok = expectEqual(formatDuration(2h + 1min), "2 hours 1 minute", "formats hours and minutes") && ok;
   ok = expectEqual(formatDuration(24h + 1h + 1min), "1 day 1 hour 1 minute", "formats days hours and minutes")
