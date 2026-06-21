@@ -455,6 +455,7 @@ void RenderContext::renderNode(
       auto style = graph->style();
       style.lineColor1.a *= effectiveOpacity;
       style.lineColor2.a *= effectiveOpacity;
+      style.lineColor3.a *= effectiveOpacity;
       style.graphFillOpacity *= effectiveOpacity;
       m_backend->drawGraph(
           graph->textureId(), graph->textureWidth(), sw, sh, node->width(), node->height(), style, worldTransform
