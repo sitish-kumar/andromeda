@@ -1,11 +1,10 @@
 #pragma once
 
+#include "pipewire/privacy_filter.h"
 #include "shell/bar/widget.h"
 #include "shell/tooltip/tooltip_content.h"
 #include "ui/palette.h"
 
-#include <optional>
-#include <regex>
 #include <string>
 #include <vector>
 
@@ -50,15 +49,12 @@ private:
   void refreshFilters() const;
   [[nodiscard]] Snapshot snapshot() const;
   [[nodiscard]] std::vector<TooltipRow> buildTooltipRows() const;
-  [[nodiscard]] bool matchesFilter(const std::optional<std::regex>& filter, const std::string& value) const;
 
   PipeWireService* m_pipewire = nullptr;
   ConfigService* m_configService = nullptr;
   PrivacyWidgetConfig m_config;
-  mutable std::string m_micFilterPattern;
-  mutable std::string m_camFilterPattern;
-  mutable std::optional<std::regex> m_micFilter;
-  mutable std::optional<std::regex> m_camFilter;
+  mutable PrivacyFilter m_micFilter;
+  mutable PrivacyFilter m_camFilter;
 
   InputArea* m_area = nullptr;
   Glyph* m_micGlyph = nullptr;

@@ -1,15 +1,11 @@
 #include "shell/osd/privacy_osd.h"
 
 #include "config/config_types.h"
-#include "core/log.h"
 #include "i18n/i18n.h"
 #include "pipewire/pipewire_service.h"
 #include "shell/osd/osd_overlay.h"
 
-#include <string_view>
-
 namespace {
-  constexpr Logger kLog("osd");
 
   enum class PrivacyKind {
     Mic,
@@ -45,18 +41,6 @@ namespace {
     return OsdContent{};
   }
 
-  [[nodiscard]] std::optional<std::regex> compileFilter(std::string_view key, const std::string& pattern) {
-    if (pattern.empty()) {
-      return std::nullopt;
-    }
-    try {
-      return std::regex(pattern);
-    } catch (const std::regex_error& e) {
-      kLog.warn("privacy osd: invalid {} '{}': {}", key, pattern, e.what());
-      return std::nullopt;
-    }
-  }
-
 } // namespace
 
 PrivacyOsd::State PrivacyOsd::fromPipewireState(const PrivacyState& privacyState) const {
@@ -64,12 +48,12 @@ PrivacyOsd::State PrivacyOsd::fromPipewireState(const PrivacyState& privacyState
   for (const auto& capture : privacyState.captures) {
     switch (capture.kind) {
     case PrivacyCaptureKind::Microphone:
-      if (!matchesFilter(m_micFilter, capture.appName)) {
+      if (!m_micFilter.matches(capture.appName)) {
         out.mic = true;
       }
       break;
     case PrivacyCaptureKind::Camera:
-      if (!matchesFilter(m_camFilter, capture.appName)) {
+      if (!m_camFilter.matches(capture.appName)) {
         out.camera = true;
       }
       break;
@@ -84,17 +68,8 @@ PrivacyOsd::State PrivacyOsd::fromPipewireState(const PrivacyState& privacyState
 void PrivacyOsd::bindOverlay(OsdOverlay& overlay) { m_overlay = &overlay; }
 
 void PrivacyOsd::configure(const Config& config) {
-  const std::string& micPattern = config.shell.privacy.micFilterRegex;
-  const std::string& camPattern = config.shell.privacy.camFilterRegex;
-
-  if (micPattern != m_micFilterPattern) {
-    m_micFilterPattern = micPattern;
-    m_micFilter = compileFilter("shell.privacy.mic_filter_regex", m_micFilterPattern);
-  }
-  if (camPattern != m_camFilterPattern) {
-    m_camFilterPattern = camPattern;
-    m_camFilter = compileFilter("shell.privacy.cam_filter_regex", m_camFilterPattern);
-  }
+  m_micFilter.update("shell.privacy.mic_filter_regex", config.shell.privacy.micFilterRegex);
+  m_camFilter.update("shell.privacy.cam_filter_regex", config.shell.privacy.camFilterRegex);
 }
 
 void PrivacyOsd::onConfigReload(const Config& config, const PipeWireService* service) {
@@ -125,8 +100,4 @@ void PrivacyOsd::onPrivacyStateChanged(const PipeWireService& service) {
   }
 
   m_lastState = current;
-}
-
-bool PrivacyOsd::matchesFilter(const std::optional<std::regex>& filter, const std::string& value) const {
-  return filter.has_value() && std::regex_search(value, *filter);
 }

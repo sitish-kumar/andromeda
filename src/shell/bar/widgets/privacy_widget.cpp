@@ -1,7 +1,6 @@
 #include "shell/bar/widgets/privacy_widget.h"
 
 #include "config/config_service.h"
-#include "core/log.h"
 #include "i18n/i18n.h"
 #include "pipewire/pipewire_service.h"
 #include "render/core/renderer.h"
@@ -19,20 +18,6 @@
 #include <utility>
 
 namespace {
-
-  constexpr Logger kLog("shell");
-
-  [[nodiscard]] std::optional<std::regex> compileFilter(std::string_view key, const std::string& pattern) {
-    if (pattern.empty()) {
-      return std::nullopt;
-    }
-    try {
-      return std::regex(pattern);
-    } catch (const std::regex_error& e) {
-      kLog.warn("privacy widget: invalid {} '{}': {}", key, pattern, e.what());
-      return std::nullopt;
-    }
-  }
 
   void addNonEmpty(std::vector<std::string>& values, std::string value) {
     if (value.empty()) {
@@ -196,19 +181,12 @@ void PrivacyWidget::syncState() {
 }
 
 void PrivacyWidget::refreshFilters() const {
-  const std::string micPattern =
-      m_configService != nullptr ? m_configService->config().shell.privacy.micFilterRegex : std::string{};
-  const std::string camPattern =
-      m_configService != nullptr ? m_configService->config().shell.privacy.camFilterRegex : std::string{};
-
-  if (micPattern != m_micFilterPattern) {
-    m_micFilterPattern = micPattern;
-    m_micFilter = compileFilter("shell.privacy.mic_filter_regex", m_micFilterPattern);
+  if (m_configService == nullptr) {
+    return;
   }
-  if (camPattern != m_camFilterPattern) {
-    m_camFilterPattern = camPattern;
-    m_camFilter = compileFilter("shell.privacy.cam_filter_regex", m_camFilterPattern);
-  }
+  const ShellConfig::PrivacyConfig& privacy = m_configService->config().shell.privacy;
+  m_micFilter.update("shell.privacy.mic_filter_regex", privacy.micFilterRegex);
+  m_camFilter.update("shell.privacy.cam_filter_regex", privacy.camFilterRegex);
 }
 
 PrivacyWidget::Snapshot PrivacyWidget::snapshot() const {
@@ -219,11 +197,11 @@ PrivacyWidget::Snapshot PrivacyWidget::snapshot() const {
     const PrivacyState& state = m_pipewire->privacyState();
     for (const auto& capture : state.captures) {
       if (capture.kind == PrivacyCaptureKind::Microphone) {
-        if (!matchesFilter(m_micFilter, capture.appName)) {
+        if (!m_micFilter.matches(capture.appName)) {
           addNonEmpty(out.micApps, capture.appName);
         }
       } else if (capture.kind == PrivacyCaptureKind::Camera) {
-        if (!matchesFilter(m_camFilter, capture.appName)) {
+        if (!m_camFilter.matches(capture.appName)) {
           addNonEmpty(out.cameraApps, capture.appName);
         }
       } else if (capture.kind == PrivacyCaptureKind::Screen) {
@@ -251,8 +229,4 @@ std::vector<TooltipRow> PrivacyWidget::buildTooltipRows() const {
     rows.push_back({i18n::tr("bar.widgets.privacy.screen-sharing"), joinApps(current.screenApps)});
   }
   return rows;
-}
-
-bool PrivacyWidget::matchesFilter(const std::optional<std::regex>& filter, const std::string& value) const {
-  return filter.has_value() && std::regex_search(value, *filter);
 }
