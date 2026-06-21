@@ -494,7 +494,6 @@ void MprisService::applyPositionSample(const std::string& busName, int64_t rawPo
       && offsetUs > 0
       && rawPositionUs + kStaleRebaseClearSlackUs < offsetUs) {
     offsetIt->second = 0;
-    offsetUs = 0;
     normalizedUs = rawPositionUs;
   }
 

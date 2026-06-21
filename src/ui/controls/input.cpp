@@ -1095,7 +1095,6 @@ void Input::handleKey(std::uint32_t sym, std::uint32_t utf32, std::uint32_t modi
     }
     if (hasSelection()) {
       deleteSelection();
-      changed = true;
     }
     const auto bytes = utf32ToUtf8(utf32);
     m_value.insert(m_cursorPos, bytes);

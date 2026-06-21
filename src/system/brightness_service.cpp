@@ -512,7 +512,6 @@ namespace {
         result.timedOut = true;
         ::kill(pid, SIGKILL);
         ::waitpid(pid, &status, 0);
-        childExited = true;
         break;
       }
 

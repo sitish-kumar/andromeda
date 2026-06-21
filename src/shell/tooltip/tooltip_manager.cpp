@@ -71,7 +71,6 @@ namespace {
     const float valueDelta = std::min(valueNeed, remainingW);
     widths.value += valueDelta;
     remainingW -= valueDelta;
-    valueNeed -= valueDelta;
 
     if (remainingW > 0.0f && keyNeed > 0.0f) {
       widths.key += std::min(keyNeed, remainingW);
