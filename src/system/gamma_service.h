@@ -59,7 +59,12 @@ private:
   void scheduleGeoTimer();
 
   void apply();
-  [[nodiscard]] int targetTemperature() const;
+
+  struct GammaTarget {
+    int kelvin = -1;            // instantaneous clock-anchored target, -1 when no schedule applies
+    bool transitioning = false; // true while inside the fade ramp window (target still drifting)
+  };
+  [[nodiscard]] GammaTarget computeTarget() const;
   [[nodiscard]] bool isNightPhase() const;
 
   struct OutputGamma {
@@ -76,9 +81,9 @@ private:
   void applyGammaToAll(int kelvin);
   void restoreAll();
 
-  void startTransition(int fromKelvin, int toKelvin);
-  void stopTransition();
-  void tickTransition();
+  void ensureTick();
+  void tickGamma();
+  bool stepToward(int targetKelvin);
 
   void notifyStateFeedback();
 
@@ -105,12 +110,9 @@ private:
 
   int m_currentKelvin = -1;
   int m_targetKelvin = -1;
-  int m_transitionFromKelvin = -1;
-  float m_transitionProgress = 0.0f;
-  std::chrono::steady_clock::time_point m_transitionStart{};
   Timer m_transitionTimer;
 
-  bool m_restoreAfterTransition = false;
+  bool m_restoreAfterFade = false;
   Timer m_scheduleTimer;
   bool m_gammaUnavailableLogged = false;
 };

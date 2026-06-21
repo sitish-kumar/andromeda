@@ -16,6 +16,9 @@ namespace day_night_schedule {
   struct Evaluation {
     bool night = false;
     std::chrono::milliseconds untilBoundary = std::chrono::hours(1);
+    // Time elapsed since the most recent day/night boundary. Used to position a clock-anchored
+    // fade ramp so the temperature depends on wall-clock time, not on when the app started.
+    std::chrono::milliseconds sinceBoundary = std::chrono::hours(1);
   };
 
   // resolvedLatitude/resolvedLongitude are the coordinates published by LocationService
