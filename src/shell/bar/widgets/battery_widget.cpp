@@ -29,31 +29,6 @@ namespace {
     return color;
   }
 
-  const char* batteryGlyphName(double percentage, BatteryState state) {
-    if (state == BatteryState::Charging) {
-      return "battery-charging";
-    }
-    if (state == BatteryState::FullyCharged || state == BatteryState::PendingCharge) {
-      return "battery-plugged";
-    }
-    if (state == BatteryState::Unknown && percentage <= 0.0) {
-      return "battery-exclamation";
-    }
-    if (percentage >= 85.0) {
-      return "battery-4";
-    }
-    if (percentage >= 55.0) {
-      return "battery-3";
-    }
-    if (percentage >= 30.0) {
-      return "battery-2";
-    }
-    if (percentage >= 10.0) {
-      return "battery-1";
-    }
-    return "battery-0";
-  }
-
   const char* batteryStateGlyph(BatteryState state) {
     if (state == BatteryState::Charging) {
       return "bolt-filled";

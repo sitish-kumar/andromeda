@@ -942,11 +942,14 @@ void Application::initServices() {
       m_upowerService = std::make_unique<UPowerService>(*m_systemBus);
       m_batteryHookState.reset(m_upowerService->state());
       m_batteryWarningMonitor.evaluate(m_configService.config().battery, *m_upowerService, m_notificationManager);
-      m_upowerService->setChangeCallback([this]() {
+      m_upowerService->setChangeCallback([this, shouldRefreshControlCenter]() {
         onUpowerStateChangedForHooks();
         m_batteryWarningMonitor.evaluate(m_configService.config().battery, *m_upowerService, m_notificationManager);
         m_bar.refresh();
         m_settingsWindow.onExternalOptionsChanged();
+        if (shouldRefreshControlCenter()) {
+          m_panelManager.refresh();
+        }
       });
       m_configService.addReloadCallback(
           [this]() {

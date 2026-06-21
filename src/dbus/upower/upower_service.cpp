@@ -44,6 +44,45 @@ std::string batteryStateLabel(BatteryState state) {
   }
 }
 
+const char* batteryGlyphName(double percentage, BatteryState state) {
+  if (state == BatteryState::Charging) {
+    return "battery-charging";
+  }
+  if (state == BatteryState::FullyCharged || state == BatteryState::PendingCharge) {
+    return "battery-plugged";
+  }
+  if (state == BatteryState::Unknown && percentage <= 0.0) {
+    return "battery-exclamation";
+  }
+  if (percentage >= 85.0) {
+    return "battery-4";
+  }
+  if (percentage >= 55.0) {
+    return "battery-3";
+  }
+  if (percentage >= 30.0) {
+    return "battery-2";
+  }
+  if (percentage >= 10.0) {
+    return "battery-1";
+  }
+  return "battery-0";
+}
+
+const char* batteryDeviceGlyphName(UPowerDeviceType type) {
+  switch (type) {
+  case UPowerDeviceType::Mouse:
+    return "mouse-2";
+  case UPowerDeviceType::Keyboard:
+    return "keyboard";
+  case UPowerDeviceType::Phone:
+  case UPowerDeviceType::Pda:
+    return "device-mobile";
+  default:
+    return "bluetooth";
+  }
+}
+
 namespace {
 
   template <typename T>

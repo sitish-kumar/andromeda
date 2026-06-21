@@ -53,7 +53,7 @@ ControlCenterPanel::ControlCenterPanel(
     CalendarService* calendar, scripting::ScriptApiContext* scriptApi, ClipboardService* clipboard,
     AccountsService* accounts, ThumbnailService* thumbnails
 ) {
-  (void)upower;
+  m_hasPowerServices = upower != nullptr || powerProfiles != nullptr;
   WaylandConnection* wayland = platform != nullptr ? &platform->wayland() : nullptr;
   m_config = config;
   m_mpris = mpris;
@@ -76,6 +76,7 @@ ControlCenterPanel::ControlCenterPanel(
   m_tabs[tabIndex(TabId::Display)] = std::make_unique<DisplayTab>(brightness, config);
   m_tabs[tabIndex(TabId::System)] = std::make_unique<SystemTab>(sysmon);
   m_tabs[tabIndex(TabId::ScreenTime)] = std::make_unique<ScreenTimeTab>(screenTime);
+  m_tabs[tabIndex(TabId::Power)] = std::make_unique<PowerTab>(upower, powerProfiles);
   m_tabButtons.fill(nullptr);
   m_tabContainers.fill(nullptr);
   m_tabHeaderActions.fill(nullptr);
@@ -420,6 +421,8 @@ bool ControlCenterPanel::isTabVisible(TabId tab) const {
     switch (tab) {
     case TabId::ScreenTime:
       return false;
+    case TabId::Power:
+      return m_hasPowerServices;
     default:
       return true;
     }
@@ -432,6 +435,8 @@ bool ControlCenterPanel::isTabVisible(TabId tab) const {
     return cfg.shell.screenTimeEnabled;
   case TabId::System:
     return cfg.system.monitor.enabled;
+  case TabId::Power:
+    return m_hasPowerServices;
   default:
     return true;
   }

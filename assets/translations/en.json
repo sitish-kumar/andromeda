@@ -342,6 +342,17 @@
       "unknown": "unknown",
       "uptime-prefix": "Up {uptime} · {osAge}"
     },
+    "power": {
+      "battery": "Battery",
+      "design-capacity": "Of design capacity",
+      "health": "Battery Health",
+      "performance-inhibited": "Performance unavailable",
+      "peripherals": "Connected Devices",
+      "power-profile": "Power Profile",
+      "time-to-empty": "{time} remaining",
+      "time-to-full": "{time} until full",
+      "unknown-device": "Unknown device"
+    },
     "tabs": {
       "audio": "Audio",
       "bluetooth": "Bluetooth",
@@ -351,6 +362,7 @@
       "media": "Media",
       "network": "Network",
       "notifications": "Notifications",
+      "power": "Power",
       "screen-time": "Screen Time",
       "system": "System",
       "weather": "Weather"
