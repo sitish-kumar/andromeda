@@ -17,7 +17,7 @@ namespace greeter {
   // Writes the current shell appearance to a staging directory, then runs
   // `pkexec|run0 noctalia-greeter-apply-appearance <staging>` so the greeter can read
   // `/var/lib/noctalia-greeter/appearance.json` on next login. When multi-monitor
-  // layout is available from xdg-output, also stages `output_layout` for greeter.conf.
+  // layout is available from xdg-output, also stages `output_layout` for greeter.toml.
   // Returns true when the privileged helper was launched; completion is asynchronous.
   [[nodiscard]] bool syncAppearanceToGreeterAsync(
       const ConfigService& config, std::string_view resolvedThemeMode, SyncCompletion onComplete = {},
