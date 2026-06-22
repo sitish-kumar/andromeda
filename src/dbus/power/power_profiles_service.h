@@ -4,6 +4,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -17,6 +18,9 @@ namespace sdbus {
 
 [[nodiscard]] std::string profileLabel(std::string_view profile);
 [[nodiscard]] std::string_view profileGlyphName(std::string_view profile);
+
+/// Canonical low-power to high-power ordering of the well-known profiles.
+[[nodiscard]] std::span<const std::string_view> powerProfileOrder();
 
 struct PowerProfilesState {
   std::string activeProfile;
@@ -48,8 +52,10 @@ public:
   [[nodiscard]] const std::vector<std::string>& profiles() const noexcept { return m_state.profiles; }
 
   [[nodiscard]] bool setActiveProfile(std::string_view profile);
-  /// Advance to the next profile in the service's ordered list (wraps). Fails if no profiles are known.
-  [[nodiscard]] bool cycleActiveProfile();
+  /// Step through profiles in canonical power order, clamping at the ends (no wrap).
+  /// direction >= 0 moves toward performance, direction < 0 toward power-saver.
+  /// Returns false if no profiles are known or already at the boundary in that direction.
+  [[nodiscard]] bool cycleActiveProfile(int direction = 1);
 
   void registerIpc(IpcService& ipc, StateFeedbackCallback stateFeedback = {});
 

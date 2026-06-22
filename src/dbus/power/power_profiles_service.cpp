@@ -7,10 +7,13 @@
 #include "util/string_utils.h"
 
 #include <algorithm>
+#include <array>
 #include <map>
 #include <optional>
 #include <sdbus-c++/IProxy.h>
 #include <sdbus-c++/Types.h>
+#include <span>
+#include <vector>
 
 std::string profileLabel(std::string_view profile) {
   if (profile == "power-saver") {
@@ -107,6 +110,11 @@ std::string_view profileGlyphName(std::string_view profile) {
     return "powersaver";
   }
   return "balanced";
+}
+
+std::span<const std::string_view> powerProfileOrder() {
+  static constexpr std::array<std::string_view, 3> kOrder = {"power-saver", "balanced", "performance"};
+  return kOrder;
 }
 
 PowerProfilesService::PowerProfilesService(SystemBus& bus) : m_bus(bus) {
@@ -224,21 +232,36 @@ bool PowerProfilesService::setActiveProfile(std::string_view profile) {
   return true;
 }
 
-bool PowerProfilesService::cycleActiveProfile() {
+bool PowerProfilesService::cycleActiveProfile(int direction) {
   const auto& profs = profiles();
   if (profs.empty()) {
     return false;
   }
-  const std::string& current = activeProfile();
-  auto it = std::ranges::find(profs, current);
-  if (it == profs.end()) {
-    return setActiveProfile(profs.front());
+
+  // Cycle through the canonical low->high power order, restricted to the profiles the daemon
+  // exposes. If none of the canonical names are present, fall back to the daemon's own order.
+  std::vector<std::string_view> seq;
+  for (const auto& candidate : powerProfileOrder()) {
+    if (std::ranges::contains(profs, candidate)) {
+      seq.push_back(candidate);
+    }
   }
-  ++it;
-  if (it == profs.end()) {
-    it = profs.begin();
+  if (seq.empty()) {
+    seq.assign(profs.begin(), profs.end());
   }
-  return setActiveProfile(*it);
+
+  const long n = static_cast<long>(seq.size());
+  const int step = direction >= 0 ? 1 : -1;
+  const auto it = std::ranges::find(seq, activeProfile());
+  if (it == seq.end()) {
+    // Current profile unknown: land on the end matching the requested direction.
+    return setActiveProfile(seq[step > 0 ? 0U : static_cast<std::size_t>(n - 1)]);
+  }
+  const long target = std::distance(seq.begin(), it) + step;
+  if (target < 0 || target >= n) {
+    return false; // already at the boundary; do not wrap
+  }
+  return setActiveProfile(seq[static_cast<std::size_t>(target)]);
 }
 
 PowerProfilesChangeOrigin PowerProfilesService::consumeActiveProfileChangeOrigin(std::string_view profile) {

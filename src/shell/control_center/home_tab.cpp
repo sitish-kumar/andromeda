@@ -13,6 +13,7 @@
 #include "net/http_client.h"
 #include "notification/notifications.h"
 #include "render/animation/animation_manager.h"
+#include "render/scene/input_area.h"
 #include "shell/control_center/shortcut_registry.h"
 #include "shell/panel/panel_button_style.h"
 #include "shell/panel/panel_manager.h"
@@ -569,6 +570,16 @@ std::unique_ptr<Flex> HomeTab::create() {
     });
 
     Button* btnPtr = btn.get();
+    if (auto* ia = btnPtr->inputArea(); ia != nullptr) {
+      ia->setOnAxisHandler([this, padIdx](const InputArea::PointerData& data) -> bool {
+        if (data.axis != WL_POINTER_AXIS_VERTICAL_SCROLL || padIdx >= m_shortcutPads.size()) {
+          return false;
+        }
+        // Scroll up moves forward (toward performance); Wayland reports up as a negative delta.
+        m_shortcutPads[padIdx].shortcut->onScroll(data.scrollDelta(1.0f) > 0 ? -1 : 1);
+        return true;
+      });
+    }
     ShortcutPad pad;
     pad.shortcut = std::move(shortcut);
     pad.button = btnPtr;

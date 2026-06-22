@@ -9,7 +9,6 @@
 #include "ui/palette.h"
 
 #include <algorithm>
-#include <array>
 #include <chrono>
 #include <cstdint>
 #include <format>
@@ -19,8 +18,6 @@
 using namespace control_center;
 
 namespace {
-
-  constexpr std::array<std::string_view, 3> kProfileDisplayOrder = {"power-saver", "balanced", "performance"};
 
   ColorRole healthRole(double health) {
     if (health >= 80.0) {
@@ -172,7 +169,7 @@ void PowerTab::buildProfilesCard(Flex& root, float scale) {
 
   m_profileOrder.clear();
   const auto& available = m_powerProfiles->profiles();
-  for (const auto& candidate : kProfileDisplayOrder) {
+  for (const auto& candidate : powerProfileOrder()) {
     if (std::ranges::find(available, candidate) != available.end()) {
       m_profileOrder.emplace_back(candidate);
     }
