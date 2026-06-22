@@ -21,12 +21,10 @@ namespace {
 
 } // namespace
 
-DesktopAudioVisualizerWidget::DesktopAudioVisualizerWidget(
-    PipeWireSpectrum* spectrum, int bands, bool mirrored, ColorSpec color1, ColorSpec color2, bool centered,
-    bool showWhenIdle
-)
-    : m_spectrum(spectrum), m_bands(std::max(1, bands)), m_mirrored(mirrored), m_centered(centered),
-      m_showWhenIdle(showWhenIdle), m_color1(color1), m_color2(color2) {}
+DesktopAudioVisualizerWidget::DesktopAudioVisualizerWidget(PipeWireSpectrum* spectrum, Options options)
+    : m_spectrum(spectrum), m_bands(std::max(1, options.bands)), m_mirrored(options.mirrored),
+      m_centered(options.centered), m_showWhenIdle(options.showWhenIdle), m_color1(options.color1),
+      m_color2(options.color2) {}
 
 DesktopAudioVisualizerWidget::~DesktopAudioVisualizerWidget() {
   cancelVisibilityAnimation();

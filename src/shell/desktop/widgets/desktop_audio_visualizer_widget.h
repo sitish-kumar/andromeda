@@ -11,10 +11,16 @@ class Renderer;
 
 class DesktopAudioVisualizerWidget : public DesktopWidget {
 public:
-  DesktopAudioVisualizerWidget(
-      PipeWireSpectrum* spectrum, int bands, bool mirrored, ColorSpec color1, ColorSpec color2, bool centered,
-      bool showWhenIdle
-  );
+  struct Options {
+    int bands = 32;
+    bool mirrored = true;
+    bool centered = true;
+    bool showWhenIdle = true;
+    ColorSpec color1 = colorSpecFromRole(ColorRole::Primary);
+    ColorSpec color2 = colorSpecFromRole(ColorRole::Primary);
+  };
+
+  DesktopAudioVisualizerWidget(PipeWireSpectrum* spectrum, Options options);
   ~DesktopAudioVisualizerWidget() override;
 
   void create() override;

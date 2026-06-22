@@ -208,10 +208,15 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
       return nullptr;
     }
     auto widget = std::make_unique<DesktopAudioVisualizerWidget>(
-        m_pipewireSpectrum, getIntSetting(settings, "bands", 32), getBoolSetting(settings, "mirrored", true),
-        getColorSpecSetting(settings, "color_1", colorSpecFromRole(ColorRole::Primary)),
-        getColorSpecSetting(settings, "color_2", colorSpecFromRole(ColorRole::Primary)),
-        getBoolSetting(settings, "centered", true), getBoolSetting(settings, "show_when_idle", true)
+        m_pipewireSpectrum,
+        DesktopAudioVisualizerWidget::Options{
+            .bands = getIntSetting(settings, "bands", 32),
+            .mirrored = getBoolSetting(settings, "mirrored", true),
+            .centered = getBoolSetting(settings, "centered", true),
+            .showWhenIdle = getBoolSetting(settings, "show_when_idle", true),
+            .color1 = getColorSpecSetting(settings, "color_1", colorSpecFromRole(ColorRole::Primary)),
+            .color2 = getColorSpecSetting(settings, "color_2", colorSpecFromRole(ColorRole::Primary)),
+        }
     );
     applyCommonSettings(*widget, settings);
     widget->setContentScale(contentScale);
