@@ -233,13 +233,20 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
       return nullptr;
     }
     auto widget = std::make_unique<DesktopFancyAudioVisualizerWidget>(
-        m_pipewireSpectrum, *mode, getFloatSetting(settings, "sensitivity", 1.5f),
-        getFloatSetting(settings, "rotation_speed", 0.5f), getFloatSetting(settings, "bar_width", 0.6f),
-        getFloatSetting(settings, "ring_opacity", 0.8f), getFloatSetting(settings, "bloom_intensity", 0.5f),
-        getFloatSetting(settings, "wave_thickness", 1.0f), getFloatSetting(settings, "inner_diameter", 0.7f),
-        getBoolSetting(settings, "fade_when_idle", true),
-        getColorSpecSetting(settings, "primary_color", colorSpecFromRole(ColorRole::Primary)),
-        getColorSpecSetting(settings, "secondary_color", colorSpecFromRole(ColorRole::Secondary))
+        m_pipewireSpectrum,
+        DesktopFancyAudioVisualizerWidget::Options{
+            .mode = *mode,
+            .sensitivity = getFloatSetting(settings, "sensitivity", 1.5f),
+            .rotationSpeed = getFloatSetting(settings, "rotation_speed", 0.5f),
+            .barWidth = getFloatSetting(settings, "bar_width", 0.6f),
+            .ringOpacity = getFloatSetting(settings, "ring_opacity", 0.8f),
+            .bloomIntensity = getFloatSetting(settings, "bloom_intensity", 0.5f),
+            .waveThickness = getFloatSetting(settings, "wave_thickness", 1.0f),
+            .innerDiameter = getFloatSetting(settings, "inner_diameter", 0.7f),
+            .fadeWhenIdle = getBoolSetting(settings, "fade_when_idle", true),
+            .primaryColor = getColorSpecSetting(settings, "primary_color", colorSpecFromRole(ColorRole::Primary)),
+            .secondaryColor = getColorSpecSetting(settings, "secondary_color", colorSpecFromRole(ColorRole::Secondary)),
+        }
     );
     applyCommonSettings(*widget, settings, false);
     widget->setContentScale(contentScale);
