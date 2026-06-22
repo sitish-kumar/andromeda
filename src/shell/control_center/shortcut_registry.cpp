@@ -358,15 +358,17 @@ namespace {
     bool active() const override {
       return m_svc != nullptr && !m_svc->activeProfile().empty() && m_svc->activeProfile() != "balanced";
     }
-    void onClick() override {
-      if (m_svc == nullptr) {
-        return;
-      }
-      (void)m_svc->cycleActiveProfile();
-    }
-    void onRightClick() override { openTab("system"); }
+    void onClick() override { cycle(1); }
+    void onRightClick() override { cycle(-1); }
+    void onScroll(int direction) override { cycle(direction); }
 
   private:
+    void cycle(int direction) {
+      if (m_svc != nullptr) {
+        (void)m_svc->cycleActiveProfile(direction);
+      }
+    }
+
     PowerProfilesService* m_svc;
   };
 

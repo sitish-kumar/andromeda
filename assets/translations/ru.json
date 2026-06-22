@@ -36,6 +36,12 @@
       "active-window": {
         "no-active-window": "Нет активных окон"
       },
+      "bluetooth": {
+        "connected": "Подключено"
+      },
+      "brightness": {
+        "brightness": "Яркость"
+      },
       "lock-keys": {
         "caps": "Caps",
         "caps-short": "C",
@@ -49,6 +55,14 @@
         "playing": "Играет"
       },
       "network": {
+        "active": "Активно",
+        "connected": "Подключено",
+        "connecting": "Подключение",
+        "download": "Загрузка",
+        "interface": "Интерфейс",
+        "ip": "IP",
+        "network": "Сеть",
+        "networks": "Сеть",
         "wired": "Проводная"
       },
       "privacy": {
