@@ -293,9 +293,13 @@ void GlesRenderBackend::endFrame(RenderTarget& target) {
   auto& surface = glesSurfaceTarget(target);
   const auto swapStart = std::chrono::steady_clock::now();
   if (eglSwapBuffers(m_display, surface.eglSurface()) != EGL_TRUE) {
-    throw std::runtime_error(
-        std::format("eglSwapBuffers failed (EGL error 0x{:04x})", static_cast<unsigned>(eglGetError()))
-    );
+    // A failed swap is not fatal: during compositor teardown (session logout,
+    // output removal) the wl_egl_window backing buffer can be invalidated and
+    // eglSwapBuffers returns EGL_FALSE, sometimes with EGL_SUCCESS. Genuine GPU
+    // context loss is detected separately via graphicsResetStatus(). Skip this
+    // frame instead of killing the shell.
+    kLog.warn("eglSwapBuffers failed (EGL error 0x{:04x}); skipping frame", static_cast<unsigned>(eglGetError()));
+    return;
   }
   const float ms = elapsedSince(swapStart);
   logSlowRenderOperation(
