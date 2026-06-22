@@ -164,7 +164,16 @@ std::unique_ptr<Widget> WidgetFactory::create(
         ? wc->getColorSpec("color_2", colorSpecFromRole(ColorRole::Primary), "widget." + name + ".color_2")
         : colorSpecFromRole(ColorRole::Primary);
     auto widget = std::make_unique<AudioVisualizerWidget>(
-        m_audioSpectrum, width, bands, mirrored, color1, color2, centered, showWhenIdle
+        m_audioSpectrum,
+        AudioVisualizerWidget::Options{
+            .width = width,
+            .bands = bands,
+            .mirrored = mirrored,
+            .centered = centered,
+            .showWhenIdle = showWhenIdle,
+            .color1 = color1,
+            .color2 = color2,
+        }
     );
     widget->setContentScale(contentScale);
     return widget;
