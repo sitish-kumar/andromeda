@@ -116,7 +116,7 @@ namespace {
     if (active.handle != nullptr && window.handle == active.handle) {
       return true;
     }
-    return !active.identifier.empty() && !window.identifier.empty() && active.identifier == window.identifier;
+    return false;
   }
 
   const ToplevelInfo* nextActivatableWindow(
