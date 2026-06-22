@@ -17,6 +17,7 @@ namespace desktop_settings {
     using settings::WidgetSettingSelectOption;
     using settings::WidgetSettingSpec;
     using settings::WidgetSettingVisibility;
+    using settings::WidgetSettingVisibilityCondition;
 
     const std::vector<DesktopWidgetTypeSpec> kDesktopWidgetTypeSpecs = {
         {.type = "audio_visualizer", .labelKey = "desktop-widgets.editor.types.audio-visualizer"},
@@ -336,18 +337,60 @@ namespace desktop_settings {
       add(colorSpec("hover_background", "hover"));
       add(fontFamilySpec());
     } else if (type == "sysmon") {
+      const std::vector<WidgetSettingSelectOption> sysmonDisplay = {
+          {"graph", "desktop-widgets.editor.settings.display-graph"},
+          {"gauge", "desktop-widgets.editor.settings.display-gauge"},
+      };
+      const WidgetSettingVisibility graphOnly{"display", {"graph"}};
+      const WidgetSettingVisibility gaugeOnly{"display", {"gauge"}};
+
       add(selectSpec("stat", "cpu_usage", sysmonStats));
-      add(selectSpec("stat2", "", sysmonStatsWithNone));
+      {
+        auto stat2 = selectSpec("stat2", "", sysmonStatsWithNone);
+        stat2.visibleWhen = graphOnly;
+        add(std::move(stat2));
+      }
       {
         auto interface = stringSpec("interface");
         interface.visibleWhen =
             WidgetSettingVisibility{{{"stat", {"net_rx", "net_tx"}}, {"stat2", {"net_rx", "net_tx"}}}};
         add(std::move(interface));
       }
+      add(segmentedSpec("display", "graph", sysmonDisplay));
+      {
+        auto gaugeLayout = segmentedSpec(
+            "gauge_layout", "horizontal",
+            {
+                {"horizontal", "desktop-widgets.editor.settings.horizontal"},
+                {"vertical", "desktop-widgets.editor.settings.vertical"},
+            }
+        );
+        gaugeLayout.visibleWhen = gaugeOnly;
+        add(std::move(gaugeLayout));
+      }
       add(colorSpec("color", "primary"));
-      add(colorSpec("color2", "secondary"));
+      {
+        auto color2 = colorSpec("color2", "secondary");
+        color2.visibleWhen = graphOnly;
+        add(std::move(color2));
+      }
+      {
+        auto highlight = colorSpec("highlight_color", "error");
+        highlight.visibleWhen = gaugeOnly;
+        add(std::move(highlight));
+      }
       add(fontFamilySpec());
       add(boolSpec("show_label", true));
+      {
+        auto minW = intSpec("label_min_width", 0, 0.0, 200.0, 1.0);
+        WidgetSettingVisibility showLabelGauge;
+        showLabelGauge.all = {
+            WidgetSettingVisibilityCondition{"display", {"gauge"}},
+            WidgetSettingVisibilityCondition{"show_label", {"true"}},
+        };
+        minW.visibleWhen = showLabelGauge;
+        add(std::move(minW));
+      }
       add(boolSpec("shadow", true));
     } else if (type == "login_box") {
       add(boolSpec("show_login_button", true));

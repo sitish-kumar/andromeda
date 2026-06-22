@@ -353,21 +353,34 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
       return DesktopSysmonStat::CpuUsage;
     };
     const DesktopSysmonStat stat = parseStat(getStringSetting(settings, "stat", "cpu_usage"));
-    const std::string stat2Str = getStringSetting(settings, "stat2");
+    const std::string displayStr = getStringSetting(settings, "display", "graph");
+    const DesktopSysmonDisplayMode displayMode =
+        displayStr == "gauge" ? DesktopSysmonDisplayMode::Gauge : DesktopSysmonDisplayMode::Graph;
+    const std::string gaugeLayoutStr = getStringSetting(settings, "gauge_layout", "horizontal");
+    const DesktopSysmonGaugeLayout gaugeLayout =
+        gaugeLayoutStr == "vertical" ? DesktopSysmonGaugeLayout::Vertical : DesktopSysmonGaugeLayout::Horizontal;
     std::optional<DesktopSysmonStat> stat2;
-    if (!stat2Str.empty()) {
-      stat2 = parseStat(stat2Str);
+    if (displayMode == DesktopSysmonDisplayMode::Graph) {
+      const std::string stat2Str = getStringSetting(settings, "stat2");
+      if (!stat2Str.empty()) {
+        stat2 = parseStat(stat2Str);
+      }
     }
     auto widget = std::make_unique<DesktopSysmonWidget>(
         m_sysmon,
         DesktopSysmonWidget::Options{
             .stat = stat,
             .stat2 = stat2,
+            .displayMode = displayMode,
+            .gaugeLayout = gaugeLayout,
             .lineColor = getColorSpecSetting(settings, "color", colorSpecFromRole(ColorRole::Primary)),
             .lineColor2 = getColorSpecSetting(settings, "color2", colorSpecFromRole(ColorRole::Secondary)),
+            .highlightColor = getColorSpecSetting(settings, "highlight_color", colorSpecFromRole(ColorRole::Error)),
             .networkInterface = getStringSetting(settings, "interface"),
             .showLabel = getBoolSetting(settings, "show_label", true),
+            .labelMinWidth = getFloatSetting(settings, "label_min_width", 0.0f),
             .shadow = getBoolSetting(settings, "shadow", true),
+            .config = m_scriptDeps.configService,
         }
     );
     applyCommonSettings(*widget, settings);
