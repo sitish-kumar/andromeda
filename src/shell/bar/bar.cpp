@@ -217,7 +217,7 @@ namespace {
   Widget* widgetAtPoint(const std::vector<std::unique_ptr<Widget>>& widgets, float sceneX, float sceneY) {
     for (const auto& widgetPtr : std::views::reverse(widgets)) {
       auto* widget = widgetPtr.get();
-      if (widget == nullptr || widget->root() == nullptr || !widget->root()->visible()) {
+      if (widget == nullptr || widget->isBarClickThrough() || widget->root() == nullptr || !widget->root()->visible()) {
         continue;
       }
       if (Node::hitTest(widget->root(), sceneX, sceneY) != nullptr || pointInsideNode(widget->root(), sceneX, sceneY)) {
@@ -226,6 +226,9 @@ namespace {
     }
     for (const auto& widgetPtr : std::views::reverse(widgets)) {
       auto* widget = widgetPtr.get();
+      if (widget == nullptr || widget->isBarClickThrough()) {
+        continue;
+      }
       auto* root = widget != nullptr ? widget->root() : nullptr;
       auto* bounds = widget != nullptr ? widget->layoutBoundsNode() : nullptr;
       if (root == nullptr || bounds == nullptr || bounds == root || root->parent() != bounds || !bounds->visible()) {
@@ -288,13 +291,13 @@ namespace {
   }
 
   bool isBarDeadZone(const BarInstance& instance, float sceneX, float sceneY) {
-    const bool insideAnySection = pointInsideNode(instance.startSection, sceneX, sceneY)
-        || pointInsideNode(instance.centerSection, sceneX, sceneY)
-        || pointInsideNode(instance.endSection, sceneX, sceneY);
-    if (insideAnySection) {
+    if (widgetAtPoint(instance, sceneX, sceneY) != nullptr) {
       return false;
     }
-    return widgetAtPoint(instance, sceneX, sceneY) == nullptr;
+    return pointInsideNode(instance.startSection, sceneX, sceneY)
+        || pointInsideNode(instance.centerSection, sceneX, sceneY)
+        || pointInsideNode(instance.endSection, sceneX, sceneY)
+        || pointInsideNode(instance.sceneRoot.get(), sceneX, sceneY);
   }
 
   void executeDeadZoneCommand(const std::string& command) {

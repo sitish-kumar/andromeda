@@ -47,6 +47,8 @@ public:
   [[nodiscard]] virtual bool reservesMiddleClick() const noexcept { return false; }
 
   [[nodiscard]] virtual bool noGapAroundMe() const noexcept { return false; }
+  // Layout-only bar widgets (spacers): clicks pass through to bar dead-zone handlers.
+  [[nodiscard]] virtual bool isBarClickThrough() const noexcept { return false; }
 
   [[nodiscard]] Node* root() const noexcept { return m_root ? m_root.get() : m_rootPtr; }
   [[nodiscard]] float width() const noexcept;
