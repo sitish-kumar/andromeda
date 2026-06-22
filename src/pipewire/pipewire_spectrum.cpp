@@ -747,16 +747,13 @@ void PipeWireSpectrum::processFrame() {
     bands[i] = std::sqrt(maxMagSq);
   }
 
-  const float invBandCount = 1.0f / static_cast<float>(std::max(1, m_analysisBandCount));
-  for (std::size_t i = 0; i < analysisBandCountSize; ++i) {
-    const float weight = 1.0f + 0.5f * (static_cast<float>(m_analysisBandCount) - static_cast<float>(i)) * invBandCount;
-    bands[i] *= weight;
-  }
-
   const float nrFactor = m_noiseReduction;
   const float noiseGate = nrFactor * static_cast<float>(kFftSize) * 0.00005f;
   for (auto& band : bands) {
     band = std::max(0.0f, band - noiseGate);
+    // Log compression keeps quiet treble visible next to loud bass: a large linear
+    // magnitude ratio collapses to a small additive offset, so one band can't crush the rest.
+    band = std::log1p(band);
     band *= m_sensitivity;
   }
 
