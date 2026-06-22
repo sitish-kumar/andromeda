@@ -268,9 +268,13 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
       return nullptr;
     }
     auto widget = std::make_unique<DesktopWeatherWidget>(
-        m_weather, getColorSpecSetting(settings, "color", colorSpecFromRole(ColorRole::OnSurface)),
-        getBoolSetting(settings, "shadow", true), getBoolSetting(settings, "show_forecast", false),
-        getIntSetting(settings, "forecast_days", 3)
+        m_weather,
+        DesktopWeatherWidget::Options{
+            .color = getColorSpecSetting(settings, "color", colorSpecFromRole(ColorRole::OnSurface)),
+            .shadow = getBoolSetting(settings, "shadow", true),
+            .showForecast = getBoolSetting(settings, "show_forecast", false),
+            .forecastDays = getIntSetting(settings, "forecast_days", 3),
+        }
     );
     applyCommonSettings(*widget, settings);
     widget->setContentScale(contentScale);
