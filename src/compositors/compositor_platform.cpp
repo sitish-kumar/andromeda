@@ -895,6 +895,20 @@ CompositorPlatform::compositorWindowIdForExtToplevel(ext_foreign_toplevel_handle
   return m_hyprlandToplevelMapping->windowIdForExtHandle(handle);
 }
 
+std::optional<std::string> CompositorPlatform::compositorWindowIdForToplevelInfo(const ToplevelInfo& info) const {
+  if (info.handle != nullptr) {
+    if (const auto id = compositorWindowIdForToplevel(info.handle); id.has_value() && !id->empty()) {
+      return id;
+    }
+  }
+  if (info.extHandle != nullptr) {
+    if (const auto id = compositorWindowIdForExtToplevel(info.extHandle); id.has_value() && !id->empty()) {
+      return id;
+    }
+  }
+  return std::nullopt;
+}
+
 zwlr_foreign_toplevel_handle_v1*
 CompositorPlatform::toplevelHandleForCompositorWindowId(const std::string_view windowId) const {
   if (m_hyprlandToplevelMapping == nullptr) {

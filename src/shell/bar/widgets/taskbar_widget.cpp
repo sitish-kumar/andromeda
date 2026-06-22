@@ -1163,19 +1163,15 @@ void TaskbarWidget::updateModels() {
   if (compositors::isHyprland()) {
     const auto focusedCompositorWindowId = m_platform.focusedCompositorWindowId();
     for (auto& task : nextTasks) {
-      if (task.firstHandle != nullptr) {
-        if (const auto mappedId = m_platform.compositorWindowIdForToplevel(task.firstHandle); mappedId.has_value()) {
-          task.workspaceWindowId = *mappedId;
-        }
-      } else {
-        const auto mappedId = m_platform.compositorWindowIdForExtToplevel(
-            reinterpret_cast<ext_foreign_toplevel_handle_v1*>(task.handleKey)
-        );
-        if (mappedId.has_value()) {
-          task.workspaceWindowId = *mappedId;
-        } else {
-          task.workspaceWindowId.clear();
-        }
+      ToplevelInfo toplevelInfo{};
+      toplevelInfo.handle = task.firstHandle;
+      if (task.firstHandle == nullptr) {
+        toplevelInfo.extHandle = reinterpret_cast<ext_foreign_toplevel_handle_v1*>(task.handleKey);
+      }
+      if (const auto mappedId = m_platform.compositorWindowIdForToplevelInfo(toplevelInfo); mappedId.has_value()) {
+        task.workspaceWindowId = *mappedId;
+      } else if (toplevelInfo.extHandle != nullptr) {
+        task.workspaceWindowId.clear();
       }
       if (!task.active
           && focusedCompositorWindowId.has_value()

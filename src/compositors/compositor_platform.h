@@ -107,6 +107,7 @@ public:
   [[nodiscard]] std::optional<std::string> compositorWindowIdForToplevel(zwlr_foreign_toplevel_handle_v1* handle) const;
   [[nodiscard]] std::optional<std::string>
   compositorWindowIdForExtToplevel(ext_foreign_toplevel_handle_v1* handle) const;
+  [[nodiscard]] std::optional<std::string> compositorWindowIdForToplevelInfo(const ToplevelInfo& info) const;
   [[nodiscard]] zwlr_foreign_toplevel_handle_v1* toplevelHandleForCompositorWindowId(std::string_view windowId) const;
   [[nodiscard]] bool isCompositorWindowIdKnown(std::string_view windowId) const;
   [[nodiscard]] std::optional<std::string> focusedCompositorWindowId() const;
