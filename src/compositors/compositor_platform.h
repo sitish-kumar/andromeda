@@ -128,6 +128,7 @@ public:
   [[nodiscard]] std::vector<WorkspaceWindowAssignment>
   workspaceWindowAssignments(wl_output* outputFilter = nullptr) const;
   [[nodiscard]] TaskbarAssignmentMode taskbarAssignmentMode() const noexcept;
+  [[nodiscard]] bool supportsTaskbarWorkspaceGrouping() const noexcept;
   [[nodiscard]] std::unordered_map<std::uintptr_t, WorkspaceWindow>
   assignTaskbarWindows(const std::vector<TaskbarWindowCandidate>& windows, wl_output* outputFilter = nullptr) const;
   [[nodiscard]] const char* workspaceBackendName() const noexcept;

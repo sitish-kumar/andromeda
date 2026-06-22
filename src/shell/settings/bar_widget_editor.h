@@ -60,6 +60,7 @@ namespace settings {
     std::function<std::unique_ptr<Node>(const ColorSpecPickerSetting&, std::vector<std::string>)> makeColorSpecPicker;
     std::function<void(Flex&, const SettingEntry&, const ListSetting&)> makeListBlock;
     std::function<void(Flex&, const SettingEntry&, const StringMapSetting&)> makeStringMapBlock;
+    bool supportsTaskbarWorkspaceGrouping = true;
   };
 
   [[nodiscard]] bool isBarWidgetListPath(const std::vector<std::string>& path);

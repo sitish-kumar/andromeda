@@ -133,6 +133,7 @@ namespace settings {
         .makeStringMapBlock = [&factory](
                                   Flex& section, const SettingEntry& entry, const StringMapSetting& map
                               ) { factory.makeStringMapBlock(section, entry, map); },
+        .supportsTaskbarWorkspaceGrouping = ctx.supportsTaskbarWorkspaceGrouping,
     };
   }
 

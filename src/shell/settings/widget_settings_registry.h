@@ -130,12 +130,15 @@ namespace settings {
   widgetReferenceInfo(const Config& cfg, std::string_view name, bool includeManifestVersion = true);
   [[nodiscard]] std::vector<WidgetPickerEntry> widgetPickerEntries(const Config& cfg);
   [[nodiscard]] std::vector<WidgetSettingSpec> commonWidgetSettingSpecs(std::string_view shellFontFamily);
-  [[nodiscard]] std::vector<WidgetSettingSpec>
-  widgetSettingSpecs(std::string_view type, std::string_view shellFontFamily);
+  [[nodiscard]] std::vector<WidgetSettingSpec> widgetSettingSpecs(
+      std::string_view type, std::string_view shellFontFamily, bool supportsTaskbarWorkspaceGrouping = true
+  );
   // Config-aware variant: for a plugin [[widget]] type, returns the manifest-driven
   // settings. Falls back to the type-only specs otherwise.
-  [[nodiscard]] std::vector<WidgetSettingSpec>
-  widgetSettingSpecs(std::string_view type, const WidgetConfig* config, std::string_view shellFontFamily);
+  [[nodiscard]] std::vector<WidgetSettingSpec> widgetSettingSpecs(
+      std::string_view type, const WidgetConfig* config, std::string_view shellFontFamily,
+      bool supportsTaskbarWorkspaceGrouping = true
+  );
   // Build settings specs from a plugin entry's declared setting schema.
   [[nodiscard]] std::vector<WidgetSettingSpec> manifestSettingSpecs(
       const std::vector<scripting::ManifestField>& fields,

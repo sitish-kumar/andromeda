@@ -29,6 +29,7 @@ class Box;
 class Button;
 class AccountsService;
 class ConfigService;
+class CompositorPlatform;
 class DependencyService;
 class Flex;
 class IdleManager;
@@ -53,7 +54,7 @@ public:
 
   void initialize(
       WaylandConnection& wayland, ConfigService* config, RenderContext* renderContext, DependencyService* dependencies,
-      UPowerService* upower, IdleManager* idleManager, AccountsService* accounts = nullptr
+      UPowerService* upower, IdleManager* idleManager, CompositorPlatform* platform, AccountsService* accounts = nullptr
   );
 
   void open();
@@ -168,6 +169,7 @@ private:
   void dismissOpenSelectDropdown();
 
   WaylandConnection* m_wayland = nullptr;
+  CompositorPlatform* m_platform = nullptr;
   IdleManager* m_idleManager = nullptr;
   ConfigService* m_config = nullptr;
   scripting::PluginManager* m_pluginManager = nullptr;

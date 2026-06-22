@@ -1316,7 +1316,9 @@ namespace settings {
 
       const auto widgetIt = ctx.config.widgets.find(widgetName);
       const WidgetConfig* widgetConfig = widgetIt != ctx.config.widgets.end() ? &widgetIt->second : nullptr;
-      auto specs = widgetSettingSpecs(widgetType, widgetConfig, ctx.config.shell.fontFamily);
+      auto specs = widgetSettingSpecs(
+          widgetType, widgetConfig, ctx.config.shell.fontFamily, ctx.supportsTaskbarWorkspaceGrouping
+      );
       if (specs.empty()) {
         return;
       }

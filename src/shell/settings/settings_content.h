@@ -83,6 +83,7 @@ namespace settings {
     std::function<void()> afterIdleBehaviorApply;
     std::function<void()> afterNotificationFilterApply;
     std::function<void()> closeHostedEditor;
+    bool supportsTaskbarWorkspaceGrouping = true;
   };
 
   std::size_t

@@ -532,15 +532,20 @@ std::unique_ptr<Widget> WidgetFactory::create(
   }
 
   if (type == "taskbar") {
+    const bool workspaceGrouping = m_platform.supportsTaskbarWorkspaceGrouping();
     TaskbarWidgetOptions options{
-        .groupByWorkspace = wc != nullptr ? wc->getBool("group_by_workspace", false) : false,
+        .groupByWorkspace = workspaceGrouping && (wc != nullptr ? wc->getBool("group_by_workspace", false) : false),
         .showAllOutputs = wc != nullptr ? wc->getBool("show_all_outputs", false) : false,
-        .onlyActiveWorkspace = wc != nullptr ? wc->getBool("only_active_workspace", false) : false,
-        .showWorkspaceLabel = wc != nullptr ? wc->getBool("show_workspace_label", true) : true,
+        .onlyActiveWorkspace =
+            workspaceGrouping && (wc != nullptr ? wc->getBool("only_active_workspace", false) : false),
+        .showWorkspaceLabel = !workspaceGrouping || (wc != nullptr ? wc->getBool("show_workspace_label", true) : true),
         .workspaceLabelPlacement = WorkspaceLabelPlacement::Corner,
-        .hideEmptyWorkspaces = wc != nullptr ? wc->getBool("hide_empty_workspaces", false) : false,
-        .workspaceGroupCapsule = wc != nullptr ? wc->getBool("workspace_group_capsule", true) : true,
-        .groupSingleIconPerApp = wc != nullptr ? wc->getBool("group_single_icon_per_app", false) : false,
+        .hideEmptyWorkspaces =
+            workspaceGrouping && (wc != nullptr ? wc->getBool("hide_empty_workspaces", false) : false),
+        .workspaceGroupCapsule =
+            !workspaceGrouping || (wc != nullptr ? wc->getBool("workspace_group_capsule", true) : true),
+        .groupSingleIconPerApp =
+            workspaceGrouping && (wc != nullptr ? wc->getBool("group_single_icon_per_app", false) : false),
         .showActiveIndicator = wc != nullptr ? wc->getBool("show_active_indicator", true) : true,
         .activeOpacity = wc != nullptr ? static_cast<float>(wc->getDouble("active_opacity", 1.0)) : 1.0f,
         .inactiveOpacity = wc != nullptr ? static_cast<float>(wc->getDouble("inactive_opacity", 1.0)) : 1.0f,
@@ -566,7 +571,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
         .barPosition = barPosition,
         .shadowConfig = m_config.shell.shadow,
     };
-    if (wc != nullptr) {
+    if (workspaceGrouping && wc != nullptr) {
       const std::string placement = wc->getString("workspace_label_placement", "corner");
       if (placement == "centered") {
         options.workspaceLabelPlacement = WorkspaceLabelPlacement::Centered;

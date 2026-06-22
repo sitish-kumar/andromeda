@@ -1,5 +1,6 @@
 #include "shell/settings/settings_window.h"
 
+#include "compositors/compositor_platform.h"
 #include "config/config_service.h"
 #include "config/config_types.h"
 #include "core/deferred_call.h"
@@ -77,9 +78,10 @@ SettingsWindow::~SettingsWindow() { destroyWindow(); }
 
 void SettingsWindow::initialize(
     WaylandConnection& wayland, ConfigService* config, RenderContext* renderContext, DependencyService* dependencies,
-    UPowerService* upower, IdleManager* idleManager, AccountsService* accounts
+    UPowerService* upower, IdleManager* idleManager, CompositorPlatform* platform, AccountsService* accounts
 ) {
   m_wayland = &wayland;
+  m_platform = platform;
   m_idleManager = idleManager;
   m_config = config;
   m_renderContext = renderContext;

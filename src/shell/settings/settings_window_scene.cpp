@@ -1,4 +1,5 @@
 #include "compositors/compositor_detect.h"
+#include "compositors/compositor_platform.h"
 #include "config/config_service.h"
 #include "core/ui_phase.h"
 #include "dbus/upower/upower_service.h"
@@ -432,6 +433,7 @@ settings::SettingsContentContext SettingsWindow::makeContentContext(
       .afterIdleBehaviorApply = {},
       .afterNotificationFilterApply = {},
       .closeHostedEditor = {},
+      .supportsTaskbarWorkspaceGrouping = m_platform != nullptr && m_platform->supportsTaskbarWorkspaceGrouping(),
   };
 }
 
