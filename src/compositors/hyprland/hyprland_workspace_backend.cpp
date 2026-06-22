@@ -135,7 +135,7 @@ HyprlandWorkspaceBackend::appIdsByWorkspace(wl_output* output) const {
     if (!seen.insert(toplevel.appId).second) {
       continue;
     }
-    byWorkspace[std::to_string(toplevel.workspaceId)].push_back(toplevel.appId);
+    byWorkspace[workspaceKeyForId(toplevel.workspaceId)].push_back(toplevel.appId);
   }
   return byWorkspace;
 }
@@ -152,15 +152,13 @@ std::vector<WorkspaceWindow> HyprlandWorkspaceBackend::workspaceWindows(wl_outpu
     if (filterByOutput && workspace.monitor != outputName) {
       continue;
     }
-    if (workspace.id >= 0) {
-      workspacesOnOutput.insert(workspace.id);
-    }
+    workspacesOnOutput.insert(workspace.id);
   }
 
   std::vector<WorkspaceWindow> result;
   result.reserve(m_toplevels.size());
   for (const auto& [address, toplevel] : m_toplevels) {
-    if (toplevel.appId.empty() || toplevel.workspaceId < 0) {
+    if (toplevel.appId.empty() || toplevel.workspaceId == -1) {
       continue;
     }
     if (filterByOutput && !m_workspaces.empty()) {
@@ -171,7 +169,7 @@ std::vector<WorkspaceWindow> HyprlandWorkspaceBackend::workspaceWindows(wl_outpu
     result.push_back(
         WorkspaceWindow{
             .windowId = compositors::hyprland::formatWindowAddress(address),
-            .workspaceKey = std::to_string(toplevel.workspaceId),
+            .workspaceKey = workspaceKeyForId(toplevel.workspaceId),
             .appId = toplevel.appId,
             .title = toplevel.title,
             .x = toplevel.x,
@@ -766,4 +764,16 @@ Workspace HyprlandWorkspaceBackend::toWorkspace(const WorkspaceState& state) {
       .urgent = state.urgent,
       .occupied = state.occupied,
   };
+}
+
+std::string HyprlandWorkspaceBackend::workspaceKeyForId(int workspaceId) const {
+  if (workspaceId >= 0) {
+    return std::to_string(workspaceId);
+  }
+  for (const auto& ws : m_workspaces) {
+    if (ws.id == workspaceId && !ws.name.empty()) {
+      return ws.name;
+    }
+  }
+  return std::to_string(workspaceId);
 }

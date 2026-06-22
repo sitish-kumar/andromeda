@@ -2056,6 +2056,9 @@ std::string TaskbarWidget::workspaceLabel(const Workspace& workspace, std::size_
   if (const auto name = parseLeadingNumber(workspace.name); name.has_value()) {
     return std::to_string(*name);
   }
+  if (!workspace.name.empty()) {
+    return workspace.name;
+  }
   if (!workspace.id.empty()) {
     return workspace.id;
   }
