@@ -184,6 +184,14 @@ uint32_t NotificationManager::addOrReplace(
     std::optional<NotificationImageData> imageData, std::optional<std::string> category,
     std::optional<std::string> desktopEntry, std::optional<uint32_t> forcedId
 ) {
+  if (actions.size() > kMaxNotificationActions * 2) {
+    kLog.warn(
+        "notification from \"{}\" supplied {} action pairs, truncating to {}", appName, actions.size() / 2,
+        kMaxNotificationActions
+    );
+    actions.resize(kMaxNotificationActions * 2);
+  }
+
   const auto now = Clock::now();
   const auto wallNow = WallClock::now();
 
