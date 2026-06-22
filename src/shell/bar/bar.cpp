@@ -9,6 +9,7 @@
 #include "dbus/power/power_profiles_service.h"
 #include "dbus/tray/tray_service.h"
 #include "dbus/upower/upower_service.h"
+#include "idle/idle_inhibitor.h"
 #include "ipc/ipc_service.h"
 #include "render/render_context.h"
 #include "render/scene/input_area.h"
@@ -1300,6 +1301,7 @@ void Bar::setInstanceIpcVisible(BarInstance& instance, bool visible) {
         if (inst->surface != nullptr) {
           inst->surface->requestRedraw();
         }
+        syncIdleInhibitorAnchors();
       },
       instance.slideRoot
   );
@@ -1315,6 +1317,13 @@ void Bar::applyIpcVisibility(bool visible) {
     }
     setInstanceIpcVisible(*instance, visible);
     syncBarSurfaceChrome(*instance);
+  }
+  syncIdleInhibitorAnchors();
+}
+
+void Bar::syncIdleInhibitorAnchors() {
+  if (m_idleInhibitor != nullptr) {
+    m_idleInhibitor->resyncAnchorSurfaces();
   }
 }
 
@@ -1459,6 +1468,23 @@ std::vector<wl_surface*> Bar::allBarSurfaces() const {
       if (wl_surface* s = instance->surface->wlSurface(); s != nullptr) {
         surfaces.push_back(s);
       }
+    }
+  }
+  return surfaces;
+}
+
+std::vector<wl_surface*> Bar::caffeineAnchorSurfaces() const {
+  std::vector<wl_surface*> surfaces;
+  surfaces.reserve(m_instances.size());
+  for (const auto& instance : m_instances) {
+    if (instance == nullptr || instance->surface == nullptr || !instanceAcceptsPointerInput(*instance)) {
+      continue;
+    }
+    if (!barContentVisuallyShown(*instance)) {
+      continue;
+    }
+    if (wl_surface* s = instance->surface->wlSurface(); s != nullptr) {
+      surfaces.push_back(s);
     }
   }
   return surfaces;
@@ -1633,6 +1659,8 @@ void Bar::syncInstances() {
       }
     }
   }
+
+  syncIdleInhibitorAnchors();
 }
 
 void Bar::createInstance(const WaylandOutput& output, std::size_t barIndex, const BarConfig& barConfig) {
@@ -2129,8 +2157,9 @@ void Bar::revealAutoHideBar(BarInstance& instance) {
   const float current = instance.hideOpacity;
   wl_output* output = instance.output;
   const std::string barName = instance.barConfig.name;
-  const auto notifyAttachedPanel = [output, barName]() {
+  const auto notifyAttachedPanel = [this, output, barName]() {
     PanelManager::instance().onAttachedBarRevealSettled(output, barName);
+    syncIdleInhibitorAnchors();
   };
 
   constexpr float kSettledThreshold = 0.999f;
@@ -2225,6 +2254,7 @@ void Bar::startHideFadeOut(BarInstance& instance) {
         syncBarAutoHideInputRegion(*inst);
         syncBarSurfaceChrome(*inst);
         inst->surface->requestRedraw();
+        syncIdleInhibitorAnchors();
       },
       instance.slideRoot
   );

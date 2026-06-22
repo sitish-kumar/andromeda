@@ -84,6 +84,8 @@ public:
   // Returns every bar wl_surface across all outputs. Used as the focus-grab
   // whitelist on Hyprland so bar widgets keep receiving clicks.
   [[nodiscard]] std::vector<wl_surface*> allBarSurfaces() const;
+  // Bar surfaces that are visually shown and can anchor a Wayland idle inhibitor.
+  [[nodiscard]] std::vector<wl_surface*> caffeineAnchorSurfaces() const;
   void
   setAttachedPanelGeometry(wl_output* output, std::string_view barName, std::optional<AttachedPanelGeometry> geometry);
   [[nodiscard]] bool canAttachPanelToBar(wl_output* output, std::string_view barName) const noexcept;
@@ -98,6 +100,7 @@ public:
 
 private:
   void applyIpcVisibility(bool visible);
+  void syncIdleInhibitorAnchors();
   void setInstanceIpcVisible(BarInstance& instance, bool visible);
   [[nodiscard]] bool instanceEffectivelyVisible(const BarInstance& instance) const noexcept;
   static void tickWidgets(std::vector<std::unique_ptr<Widget>>& widgets, float deltaMs);

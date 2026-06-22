@@ -757,7 +757,7 @@ void Application::initServices() {
         }
     );
   }
-  m_idleInhibitor.initialize(m_wayland, &m_renderContext);
+  m_idleInhibitor.initialize(m_wayland);
   m_idleInhibitor.setChangeCallback([this, shouldRefreshControlCenter]() {
     if (m_configService.config().osd.kinds.caffeine) {
       m_osdOverlay.show(caffeineOsdContent(m_idleInhibitor.enabled()));
@@ -891,6 +891,7 @@ void Application::initServices() {
           }
         });
         kLog.info("logind sleep monitor active");
+        m_idleInhibitor.setLogindService(m_logindService.get());
       } catch (const std::exception& e) {
         kLog.warn("logind sleep monitor disabled: {}", e.what());
         m_logindService.reset();
@@ -1790,6 +1791,7 @@ void Application::initUi() {
       .screenshots = &m_screenshotService,
       .scriptApi = &m_scriptApi,
   });
+  m_idleInhibitor.setAnchorSurfacesProvider([this]() { return m_bar.caffeineAnchorSurfaces(); });
   m_bar.setOpenWidgetSettingsCallback([this](std::string barName, std::string widgetName) {
     if (m_panelManager.isOpen()) {
       m_panelManager.closePanel();
