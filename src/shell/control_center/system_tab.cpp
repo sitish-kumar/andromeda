@@ -51,6 +51,20 @@ namespace {
     return ptr;
   }
 
+  // Legend row sits below the graph and centers its icon+value groups so wide
+  // stats get the full card width instead of competing with the title.
+  Flex* makeLegendRow(Flex& parent, float scale) {
+    Flex* ptr = nullptr;
+    auto row = ui::row({
+        .out = &ptr,
+        .align = FlexAlign::Center,
+        .justify = FlexJustify::Center,
+        .gap = Style::spaceMd * scale,
+    });
+    parent.addChild(std::move(row));
+    return ptr;
+  }
+
   Flex* makeIconLabel(Flex& parent, const char* glyphName, float scale, Glyph** outIcon = nullptr) {
     Flex* ptr = nullptr;
     auto group = ui::row(
@@ -221,12 +235,15 @@ std::unique_ptr<Flex> SystemTab::create() {
           },
       });
 
-      auto* header = makeHeaderRow(*card, i18n::tr("control-center.system.titles.cpu"), sc);
-      auto* cpuPctGroup = makeIconLabel(*header, "cpu-usage", sc, &m_cpuPctIcon);
-      m_cpuPctLabel = makeValueLabel(*cpuPctGroup, sc);
-      auto* cpuTempGroup = makeIconLabel(*header, "cpu-temperature", sc, &m_cpuTempIcon);
-      m_cpuTempLabel = makeValueLabel(*cpuTempGroup, sc);
+      card->setGap(Style::spaceXs * sc);
+      makeHeaderRow(*card, i18n::tr("control-center.system.titles.cpu"), sc);
       m_cpuGraph = addGraph(*card);
+      auto* legend = makeLegendRow(*card, sc);
+      m_cpuLegend = legend;
+      auto* cpuPctGroup = makeIconLabel(*legend, "cpu-usage", sc, &m_cpuPctIcon);
+      m_cpuPctLabel = makeValueLabel(*cpuPctGroup, sc);
+      auto* cpuTempGroup = makeIconLabel(*legend, "cpu-temperature", sc, &m_cpuTempIcon);
+      m_cpuTempLabel = makeValueLabel(*cpuTempGroup, sc);
 
       row->addChild(std::move(card));
     }
@@ -241,10 +258,13 @@ std::unique_ptr<Flex> SystemTab::create() {
           },
       });
 
-      auto* header = makeHeaderRow(*card, i18n::tr("control-center.system.titles.memory"), sc);
-      auto* ramGroup = makeIconLabel(*header, "memory", sc, &m_ramIcon);
-      m_ramLabel = makeValueLabel(*ramGroup, sc);
+      card->setGap(Style::spaceXs * sc);
+      makeHeaderRow(*card, i18n::tr("control-center.system.titles.memory"), sc);
       m_ramGraph = addGraph(*card);
+      auto* legend = makeLegendRow(*card, sc);
+      m_ramLegend = legend;
+      auto* ramGroup = makeIconLabel(*legend, "memory", sc, &m_ramIcon);
+      m_ramLabel = makeValueLabel(*ramGroup, sc);
 
       row->addChild(std::move(card));
     }
@@ -271,17 +291,20 @@ std::unique_ptr<Flex> SystemTab::create() {
           },
       });
 
-      auto* header = makeHeaderRow(*card, i18n::tr("control-center.system.titles.gpu"), sc);
-      m_gpuUsageGroup = makeIconLabel(*header, "gpu-usage", sc, &m_gpuUsageIcon);
+      card->setGap(Style::spaceXs * sc);
+      makeHeaderRow(*card, i18n::tr("control-center.system.titles.gpu"), sc);
+      m_gpuGraph = addGraph(*card);
+      auto* legend = makeLegendRow(*card, sc);
+      m_gpuLegend = legend;
+      m_gpuUsageGroup = makeIconLabel(*legend, "gpu-usage", sc, &m_gpuUsageIcon);
       m_gpuUsageLabel = makeValueLabel(*m_gpuUsageGroup, sc);
       m_gpuUsageGroup->setVisible(false);
-      m_gpuVramGroup = makeIconLabel(*header, "memory", sc, &m_gpuVramIcon);
+      m_gpuVramGroup = makeIconLabel(*legend, "memory", sc, &m_gpuVramIcon);
       m_gpuVramLabel = makeValueLabel(*m_gpuVramGroup, sc);
       m_gpuVramGroup->setVisible(false);
-      m_gpuTempGroup = makeIconLabel(*header, "temperature", sc, &m_gpuTempIcon);
+      m_gpuTempGroup = makeIconLabel(*legend, "temperature", sc, &m_gpuTempIcon);
       m_gpuTempLabel = makeValueLabel(*m_gpuTempGroup, sc);
       m_gpuTempGroup->setVisible(false);
-      m_gpuGraph = addGraph(*card);
 
       row->addChild(std::move(card));
     }
@@ -296,12 +319,15 @@ std::unique_ptr<Flex> SystemTab::create() {
           },
       });
 
-      auto* header = makeHeaderRow(*card, i18n::tr("control-center.system.titles.network"), sc);
-      auto* rxGroup = makeIconLabel(*header, "download-speed", sc, &m_rxIcon);
-      m_rxLabel = makeValueLabel(*rxGroup, sc);
-      auto* txGroup = makeIconLabel(*header, "upload-speed", sc, &m_txIcon);
-      m_txLabel = makeValueLabel(*txGroup, sc);
+      card->setGap(Style::spaceXs * sc);
+      makeHeaderRow(*card, i18n::tr("control-center.system.titles.network"), sc);
       m_netGraph = addGraph(*card);
+      auto* legend = makeLegendRow(*card, sc);
+      m_netLegend = legend;
+      auto* rxGroup = makeIconLabel(*legend, "download-speed", sc, &m_rxIcon);
+      m_rxLabel = makeValueLabel(*rxGroup, sc);
+      auto* txGroup = makeIconLabel(*legend, "upload-speed", sc, &m_txIcon);
+      m_txLabel = makeValueLabel(*txGroup, sc);
 
       row->addChild(std::move(card));
     }
@@ -401,6 +427,10 @@ void SystemTab::onClose() {
   m_ramCard = nullptr;
   m_gpuCard = nullptr;
   m_netCard = nullptr;
+  m_cpuLegend = nullptr;
+  m_ramLegend = nullptr;
+  m_gpuLegend = nullptr;
+  m_netLegend = nullptr;
   m_cpuPctIcon = nullptr;
   m_cpuPctLabel = nullptr;
   m_cpuTempIcon = nullptr;
@@ -486,24 +516,29 @@ void SystemTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeigh
 
   const float cardPadH = Style::spaceMd * sc * 2.0f;
 
-  auto sizeGraph = [&](Graph* g, Flex* card) {
+  auto sizeGraph = [&](Graph* g, Flex* card, Flex* legend) {
     if (g == nullptr || card == nullptr || !card->visible()) {
       return;
     }
     const float graphW = std::max(0.0f, card->width() - cardPadH);
     const float usedAbove = g->y() - card->y();
     const float bottomPad = (Style::spaceSm + Style::spaceXs) * sc;
-    const float graphH = std::max(0.0f, card->height() - usedAbove - bottomPad);
+    // Reserve room for the legend that now sits below the graph (plus the card gap above it).
+    float usedBelow = bottomPad;
+    if (legend != nullptr && legend->visible() && legend->height() > 0.0f) {
+      usedBelow += legend->height() + Style::spaceXs * sc;
+    }
+    const float graphH = std::max(0.0f, card->height() - usedAbove - usedBelow);
     g->setSize(graphW, graphH);
     g->setLineWidth(kGraphLineWidth * sc);
   };
 
-  sizeGraph(m_cpuGraph, m_cpuCard);
-  sizeGraph(m_ramGraph, m_ramCard);
+  sizeGraph(m_cpuGraph, m_cpuCard, m_cpuLegend);
+  sizeGraph(m_ramGraph, m_ramCard, m_ramLegend);
   if (m_gpuVisible) {
-    sizeGraph(m_gpuGraph, m_gpuCard);
+    sizeGraph(m_gpuGraph, m_gpuCard, m_gpuLegend);
   }
-  sizeGraph(m_netGraph, m_netCard);
+  sizeGraph(m_netGraph, m_netCard, m_netLegend);
 
   m_root->layout(renderer);
 }

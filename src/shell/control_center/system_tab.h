@@ -58,6 +58,11 @@ private:
   Flex* m_gpuCard = nullptr;
   Flex* m_netCard = nullptr;
 
+  Flex* m_cpuLegend = nullptr;
+  Flex* m_ramLegend = nullptr;
+  Flex* m_gpuLegend = nullptr;
+  Flex* m_netLegend = nullptr;
+
   Glyph* m_cpuPctIcon = nullptr;
   Label* m_cpuPctLabel = nullptr;
   Glyph* m_cpuTempIcon = nullptr;
