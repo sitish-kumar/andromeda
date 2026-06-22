@@ -348,12 +348,21 @@ namespace notification_dbus {
     const auto sanitizedActions = sanitizeNotifyActions(actions);
 
     return manager.addOrReplace(
-        replaces_id, StringUtils::truncateUtf8(app_name, kMaxStringLen),
-        StringUtils::sanitizeMarkup(StringUtils::truncateUtf8(summary, kMaxStringLen)),
-        StringUtils::sanitizeMarkup(StringUtils::truncateUtf8(body, kMaxStringLen)), notifyUrgencyFromHints(hints),
-        timeout, NotificationOrigin::External, notifyTransientFromHints(hints), sanitizedActions,
-        notifyIcon(app_name, app_icon, hints), notifyImageDataFromHints(hints), notifyCategoryFromHints(hints),
-        notifyDesktopEntryFromHints(hints)
+        NotificationRequest{
+            .replacesId = replaces_id,
+            .appName = StringUtils::truncateUtf8(app_name, kMaxStringLen),
+            .summary = StringUtils::sanitizeMarkup(StringUtils::truncateUtf8(summary, kMaxStringLen)),
+            .body = StringUtils::sanitizeMarkup(StringUtils::truncateUtf8(body, kMaxStringLen)),
+            .urgency = notifyUrgencyFromHints(hints),
+            .timeout = timeout,
+            .origin = NotificationOrigin::External,
+            .transient = notifyTransientFromHints(hints),
+            .actions = sanitizedActions,
+            .icon = notifyIcon(app_name, app_icon, hints),
+            .imageData = notifyImageDataFromHints(hints),
+            .category = notifyCategoryFromHints(hints),
+            .desktopEntry = notifyDesktopEntryFromHints(hints),
+        }
     );
   }
 

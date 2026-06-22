@@ -138,11 +138,20 @@ void KdeNotificationClient::onWatcherNotify(
   }
 
   (void)m_manager.adoptExternal(
-      id, appName, summary, body, notification_dbus::notifyUrgencyFromHints(hints),
-      normalizeNotifyExpireTimeout(timeout), notification_dbus::notifyTransientFromHints(hints),
-      notification_dbus::sanitizeNotifyActions(actions), notification_dbus::notifyIcon(appName, appIcon, hints),
-      notification_dbus::notifyImageDataFromHints(hints), notification_dbus::notifyCategoryFromHints(hints),
-      notification_dbus::notifyDesktopEntryFromHints(hints)
+      id,
+      NotificationRequest{
+          .appName = appName,
+          .summary = summary,
+          .body = body,
+          .urgency = notification_dbus::notifyUrgencyFromHints(hints),
+          .timeout = normalizeNotifyExpireTimeout(timeout),
+          .transient = notification_dbus::notifyTransientFromHints(hints),
+          .actions = notification_dbus::sanitizeNotifyActions(actions),
+          .icon = notification_dbus::notifyIcon(appName, appIcon, hints),
+          .imageData = notification_dbus::notifyImageDataFromHints(hints),
+          .category = notification_dbus::notifyCategoryFromHints(hints),
+          .desktopEntry = notification_dbus::notifyDesktopEntryFromHints(hints),
+      }
   );
 }
 

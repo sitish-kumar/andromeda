@@ -178,12 +178,22 @@ void NotificationManager::notifyUnreadStateChangedIfNeeded(bool previousUnreadSt
   }
 }
 
-uint32_t NotificationManager::addOrReplace(
-    uint32_t replacesId, std::string appName, std::string summary, std::string body, Urgency urgency, int32_t timeout,
-    NotificationOrigin origin, bool transient, std::vector<std::string> actions, std::optional<std::string> icon,
-    std::optional<NotificationImageData> imageData, std::optional<std::string> category,
-    std::optional<std::string> desktopEntry, std::optional<uint32_t> forcedId
-) {
+uint32_t NotificationManager::addOrReplace(NotificationRequest request) {
+  const uint32_t replacesId = request.replacesId;
+  auto& appName = request.appName;
+  auto& summary = request.summary;
+  auto& body = request.body;
+  const Urgency urgency = request.urgency;
+  int32_t timeout = request.timeout;
+  const NotificationOrigin origin = request.origin;
+  const bool transient = request.transient;
+  auto& actions = request.actions;
+  auto& icon = request.icon;
+  auto& imageData = request.imageData;
+  auto& category = request.category;
+  auto& desktopEntry = request.desktopEntry;
+  const auto& forcedId = request.forcedId;
+
   if (actions.size() > kMaxNotificationActions * 2) {
     kLog.warn(
         "notification from \"{}\" supplied {} action pairs, truncating to {}", appName, actions.size() / 2,
@@ -341,37 +351,28 @@ uint32_t NotificationManager::addOrReplace(
   return n.id;
 }
 
-uint32_t NotificationManager::adoptExternal(
-    uint32_t id, std::string appName, std::string summary, std::string body, Urgency urgency, int32_t timeout,
-    bool transient, std::vector<std::string> actions, std::optional<std::string> icon,
-    std::optional<NotificationImageData> imageData, std::optional<std::string> category,
-    std::optional<std::string> desktopEntry
-) {
+uint32_t NotificationManager::adoptExternal(uint32_t id, NotificationRequest request) {
+  request.origin = NotificationOrigin::External;
+
   if (id == 0) {
-    return addOrReplace(
-        0, std::move(appName), std::move(summary), std::move(body), urgency, timeout, NotificationOrigin::External,
-        transient, std::move(actions), std::move(icon), std::move(imageData), std::move(category),
-        std::move(desktopEntry)
-    );
+    request.replacesId = 0;
+    request.forcedId = std::nullopt;
+    return addOrReplace(std::move(request));
   }
 
   if (m_idToIndex.contains(id)) {
-    return addOrReplace(
-        id, std::move(appName), std::move(summary), std::move(body), urgency, timeout, NotificationOrigin::External,
-        transient, std::move(actions), std::move(icon), std::move(imageData), std::move(category),
-        std::move(desktopEntry)
-    );
+    request.replacesId = id;
+    request.forcedId = std::nullopt;
+    return addOrReplace(std::move(request));
   }
 
   if (id >= m_nextId) {
     m_nextId = id + 1;
   }
 
-  return addOrReplace(
-      0, std::move(appName), std::move(summary), std::move(body), urgency, timeout, NotificationOrigin::External,
-      transient, std::move(actions), std::move(icon), std::move(imageData), std::move(category),
-      std::move(desktopEntry), id
-  );
+  request.replacesId = 0;
+  request.forcedId = id;
+  return addOrReplace(std::move(request));
 }
 
 uint32_t NotificationManager::addInternal(
@@ -380,8 +381,18 @@ uint32_t NotificationManager::addInternal(
     std::optional<std::string> category, std::optional<std::string> desktopEntry
 ) {
   return addOrReplace(
-      0, std::move(appName), std::move(summary), std::move(body), urgency, timeout, NotificationOrigin::Internal, false,
-      {}, std::move(icon), std::move(imageData), std::move(category), std::move(desktopEntry)
+      NotificationRequest{
+          .appName = std::move(appName),
+          .summary = std::move(summary),
+          .body = std::move(body),
+          .urgency = urgency,
+          .timeout = timeout,
+          .origin = NotificationOrigin::Internal,
+          .icon = std::move(icon),
+          .imageData = std::move(imageData),
+          .category = std::move(category),
+          .desktopEntry = std::move(desktopEntry),
+      }
   );
 }
 

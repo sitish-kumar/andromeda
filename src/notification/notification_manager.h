@@ -44,6 +44,23 @@ constexpr std::size_t kMaxNotificationActions = 6;
   return expireTimeout;
 }
 
+struct NotificationRequest {
+  uint32_t replacesId = 0;
+  std::string appName;
+  std::string summary;
+  std::string body;
+  Urgency urgency = Urgency::Normal;
+  int32_t timeout = kDefaultNotificationTimeout;
+  NotificationOrigin origin = NotificationOrigin::External;
+  bool transient = false;
+  std::vector<std::string> actions = {};
+  std::optional<std::string> icon = std::nullopt;
+  std::optional<NotificationImageData> imageData = std::nullopt;
+  std::optional<std::string> category = std::nullopt;
+  std::optional<std::string> desktopEntry = std::nullopt;
+  std::optional<uint32_t> forcedId = std::nullopt;
+};
+
 class NotificationManager {
 public:
   NotificationManager() = default;
@@ -58,21 +75,10 @@ public:
   void removeEventCallback(int token);
 
   // Adds a new notification or updates an existing one.
-  uint32_t addOrReplace(
-      uint32_t replacesId, std::string appName, std::string summary, std::string body, Urgency urgency, int32_t timeout,
-      NotificationOrigin origin = NotificationOrigin::External, bool transient = false,
-      std::vector<std::string> actions = {}, std::optional<std::string> icon = std::nullopt,
-      std::optional<NotificationImageData> imageData = std::nullopt, std::optional<std::string> category = std::nullopt,
-      std::optional<std::string> desktopEntry = std::nullopt, std::optional<uint32_t> forcedId = std::nullopt
-  );
+  uint32_t addOrReplace(NotificationRequest request);
 
   // Adopts a notification id assigned by an external server (e.g. KDE Plasma).
-  uint32_t adoptExternal(
-      uint32_t id, std::string appName, std::string summary, std::string body, Urgency urgency, int32_t timeout,
-      bool transient = false, std::vector<std::string> actions = {}, std::optional<std::string> icon = std::nullopt,
-      std::optional<NotificationImageData> imageData = std::nullopt, std::optional<std::string> category = std::nullopt,
-      std::optional<std::string> desktopEntry = std::nullopt
-  );
+  uint32_t adoptExternal(uint32_t id, NotificationRequest request);
 
   // Adds an internal notification to the same store as external notifications.
   uint32_t addInternal(
