@@ -347,15 +347,21 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
     };
     const DesktopSysmonStat stat = parseStat(getStringSetting(settings, "stat", "cpu_usage"));
     const std::string stat2Str = getStringSetting(settings, "stat2");
-    const std::string networkInterface = getStringSetting(settings, "interface");
     std::optional<DesktopSysmonStat> stat2;
     if (!stat2Str.empty()) {
       stat2 = parseStat(stat2Str);
     }
     auto widget = std::make_unique<DesktopSysmonWidget>(
-        m_sysmon, stat, stat2, getColorSpecSetting(settings, "color", colorSpecFromRole(ColorRole::Primary)),
-        getColorSpecSetting(settings, "color2", colorSpecFromRole(ColorRole::Secondary)), networkInterface,
-        getBoolSetting(settings, "show_label", true), getBoolSetting(settings, "shadow", true)
+        m_sysmon,
+        DesktopSysmonWidget::Options{
+            .stat = stat,
+            .stat2 = stat2,
+            .lineColor = getColorSpecSetting(settings, "color", colorSpecFromRole(ColorRole::Primary)),
+            .lineColor2 = getColorSpecSetting(settings, "color2", colorSpecFromRole(ColorRole::Secondary)),
+            .networkInterface = getStringSetting(settings, "interface"),
+            .showLabel = getBoolSetting(settings, "show_label", true),
+            .shadow = getBoolSetting(settings, "shadow", true),
+        }
     );
     applyCommonSettings(*widget, settings);
     widget->setContentScale(contentScale);

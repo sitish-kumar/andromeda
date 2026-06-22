@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cmath>
 #include <format>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -25,12 +26,10 @@ namespace {
 
 } // namespace
 
-DesktopSysmonWidget::DesktopSysmonWidget(
-    SystemMonitorService* monitor, DesktopSysmonStat stat, std::optional<DesktopSysmonStat> stat2, ColorSpec lineColor,
-    ColorSpec lineColor2, std::string networkInterface, bool showLabel, bool shadow
-)
-    : m_monitor(monitor), m_stat(stat), m_stat2(stat2), m_lineColor(lineColor), m_lineColor2(lineColor2),
-      m_networkInterface(std::move(networkInterface)), m_showLabel(showLabel), m_shadow(shadow) {
+DesktopSysmonWidget::DesktopSysmonWidget(SystemMonitorService* monitor, Options options)
+    : m_monitor(monitor), m_stat(options.stat), m_stat2(options.stat2), m_lineColor(options.lineColor),
+      m_lineColor2(options.lineColor2), m_networkInterface(std::move(options.networkInterface)),
+      m_showLabel(options.showLabel), m_shadow(options.shadow) {
   if (m_monitor != nullptr) {
     if (needsCpuTemp(m_stat))
       m_monitor->retainCpuTemp();

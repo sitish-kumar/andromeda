@@ -31,10 +31,17 @@ enum class DesktopSysmonStat : std::uint8_t {
 
 class DesktopSysmonWidget : public DesktopWidget {
 public:
-  DesktopSysmonWidget(
-      SystemMonitorService* monitor, DesktopSysmonStat stat, std::optional<DesktopSysmonStat> stat2,
-      ColorSpec lineColor, ColorSpec lineColor2, std::string networkInterface, bool showLabel, bool shadow
-  );
+  struct Options {
+    DesktopSysmonStat stat = DesktopSysmonStat::CpuUsage;
+    std::optional<DesktopSysmonStat> stat2;
+    ColorSpec lineColor = colorSpecFromRole(ColorRole::Primary);
+    ColorSpec lineColor2 = colorSpecFromRole(ColorRole::Secondary);
+    std::string networkInterface;
+    bool showLabel = true;
+    bool shadow = true;
+  };
+
+  DesktopSysmonWidget(SystemMonitorService* monitor, Options options);
   ~DesktopSysmonWidget() override;
 
   void create() override;
