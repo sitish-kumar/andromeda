@@ -11,10 +11,17 @@ class Button;
 
 class DesktopButtonWidget : public DesktopWidget {
 public:
-  DesktopButtonWidget(
-      std::string glyph, std::string label, std::string command, ButtonVariant variant, bool showBackground,
-      std::optional<ColorSpec> labelColor, ColorSpec hoverBackground
-  );
+  struct Options {
+    std::string glyph;
+    std::string label;
+    std::string command;
+    ButtonVariant variant = ButtonVariant::Default;
+    bool showBackground = true;
+    std::optional<ColorSpec> labelColor;
+    ColorSpec hoverBackground = colorSpecFromRole(ColorRole::Hover);
+  };
+
+  explicit DesktopButtonWidget(Options options);
 
   void create() override;
   void setEditorPreview(bool enabled) noexcept override;

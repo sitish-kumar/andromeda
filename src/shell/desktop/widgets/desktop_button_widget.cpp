@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <utility>
 
 namespace {
 
@@ -21,12 +22,10 @@ namespace {
 
 } // namespace
 
-DesktopButtonWidget::DesktopButtonWidget(
-    std::string glyph, std::string label, std::string command, ButtonVariant variant, bool showBackground,
-    std::optional<ColorSpec> labelColor, ColorSpec hoverBackground
-)
-    : m_glyph(std::move(glyph)), m_label(std::move(label)), m_command(std::move(command)), m_variant(variant),
-      m_labelColor(labelColor), m_hoverBackground(hoverBackground), m_showBackground(showBackground) {}
+DesktopButtonWidget::DesktopButtonWidget(Options options)
+    : m_glyph(std::move(options.glyph)), m_label(std::move(options.label)), m_command(std::move(options.command)),
+      m_variant(options.variant), m_labelColor(options.labelColor), m_hoverBackground(options.hoverBackground),
+      m_showBackground(options.showBackground) {}
 
 void DesktopButtonWidget::create() {
   auto rootNode = std::make_unique<Node>();

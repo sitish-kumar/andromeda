@@ -307,12 +307,15 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
   }
 
   if (type == "button") {
-    auto widget = std::make_unique<DesktopButtonWidget>(
-        getStringSetting(settings, "glyph"), getStringSetting(settings, "label"), getStringSetting(settings, "command"),
-        getButtonVariant(settings), getBoolSetting(settings, "background", true),
-        getOptionalColorSpecSetting(settings, "color"),
-        getColorSpecSetting(settings, "hover_background", colorSpecFromRole(ColorRole::Hover))
-    );
+    auto widget = std::make_unique<DesktopButtonWidget>(DesktopButtonWidget::Options{
+        .glyph = getStringSetting(settings, "glyph"),
+        .label = getStringSetting(settings, "label"),
+        .command = getStringSetting(settings, "command"),
+        .variant = getButtonVariant(settings),
+        .showBackground = getBoolSetting(settings, "background", true),
+        .labelColor = getOptionalColorSpecSetting(settings, "color"),
+        .hoverBackground = getColorSpecSetting(settings, "hover_background", colorSpecFromRole(ColorRole::Hover)),
+    });
     widget->setFontFamily(getStringSetting(settings, "font_family", ""));
     widget->setContentScale(contentScale);
     return widget;
