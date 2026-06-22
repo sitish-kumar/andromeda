@@ -78,7 +78,9 @@ private:
   bool m_shadow;
 
   Glyph* m_glyph = nullptr;
+  Glyph* m_glyph2 = nullptr;
   Label* m_label = nullptr;
+  Label* m_label2 = nullptr;
   Graph* m_graph = nullptr;
 
   bool m_graphInitialized = false;
@@ -86,6 +88,7 @@ private:
   FrameRateLimiter m_redrawLimiter{std::chrono::milliseconds{200}};
   std::chrono::steady_clock::time_point m_lastSampleAt{};
   std::string m_lastRawValue;
+  std::string m_lastRawValue2;
 
   mutable double m_tempMin1 = 30.0;
   mutable double m_tempMax1 = 80.0;

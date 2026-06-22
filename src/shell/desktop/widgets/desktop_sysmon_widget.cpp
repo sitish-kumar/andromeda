@@ -85,15 +85,35 @@ void DesktopSysmonWidget::create() {
   graph->setFillOpacity(0.2f);
   m_graph = static_cast<Graph*>(rootNode->addChild(std::move(graph)));
 
+  if (m_stat2.has_value()) {
+    auto glyph2 = ui::glyph({
+        .out = &m_glyph2,
+        .glyph = glyphName(*m_stat2),
+    });
+    rootNode->addChild(std::move(glyph2));
+  }
+
   if (m_showLabel) {
+    const Color shadow{0.0f, 0.0f, 0.0f, 0.5f};
     auto label = ui::label({
         .out = &m_label,
         .fontWeight = FontWeight::Medium,
     });
     if (m_shadow) {
-      label->setShadow(Color{0.0f, 0.0f, 0.0f, 0.5f}, 0.0f, 1.0f);
+      label->setShadow(shadow, 0.0f, 1.0f);
     }
     rootNode->addChild(std::move(label));
+
+    if (m_stat2.has_value()) {
+      auto label2 = ui::label({
+          .out = &m_label2,
+          .fontWeight = FontWeight::Medium,
+      });
+      if (m_shadow) {
+        label2->setShadow(shadow, 0.0f, 1.0f);
+      }
+      rootNode->addChild(std::move(label2));
+    }
   }
 
   setRoot(std::move(rootNode));
@@ -148,17 +168,21 @@ bool DesktopSysmonWidget::applySetting(
     if (const auto* v = std::get_if<bool>(&value)) {
       m_shadow = *v;
       const Color shadow{0.0f, 0.0f, 0.0f, 0.5f};
-      if (m_glyph != nullptr) {
-        if (m_shadow)
-          m_glyph->setShadow(shadow, 0.0f, 1.0f);
-        else
-          m_glyph->clearShadow();
+      for (Glyph* glyph : {m_glyph, m_glyph2}) {
+        if (glyph != nullptr) {
+          if (m_shadow)
+            glyph->setShadow(shadow, 0.0f, 1.0f);
+          else
+            glyph->clearShadow();
+        }
       }
-      if (m_label != nullptr) {
-        if (m_shadow)
-          m_label->setShadow(shadow, 0.0f, 1.0f);
-        else
-          m_label->clearShadow();
+      for (Label* label : {m_label, m_label2}) {
+        if (label != nullptr) {
+          if (m_shadow)
+            label->setShadow(shadow, 0.0f, 1.0f);
+          else
+            label->clearShadow();
+        }
       }
       return true;
     }
@@ -168,8 +192,10 @@ bool DesktopSysmonWidget::applySetting(
 }
 
 void DesktopSysmonWidget::onFontFamilyChanged(const std::string& family, Renderer& /*renderer*/) {
-  if (m_label != nullptr) {
-    m_label->setFontFamily(family);
+  for (Label* label : {m_label, m_label2}) {
+    if (label != nullptr) {
+      label->setFontFamily(family);
+    }
   }
 }
 
@@ -181,7 +207,9 @@ void DesktopSysmonWidget::doLayout(Renderer& renderer) {
   const float scale = m_contentScale;
   const float fontSize = Style::fontSizeBody * scale;
   const float glyphSize = Style::baseGlyphSize * scale;
-  const float gap = Style::spaceSm * scale;
+  const float groupGap = Style::spaceXs * scale;
+  const float legendGap = Style::spaceMd * scale;
+  const Color shadow{0.0f, 0.0f, 0.0f, 0.5f};
 
   m_graph->setColor(m_lineColor);
   if (m_stat2.has_value()) {
@@ -189,39 +217,61 @@ void DesktopSysmonWidget::doLayout(Renderer& renderer) {
   }
   m_graph->setLineWidth(kGraphLineWidth * scale);
 
-  m_glyph->setGlyphSize(glyphSize);
-  m_glyph->setColor(colorForRole(ColorRole::OnSurface));
-  if (m_shadow) {
-    m_glyph->setShadow(Color{0.0f, 0.0f, 0.0f, 0.5f}, 0.0f, 1.0f);
+  // Measure a legend group (icon + optional value), coloring both to the stat's line color.
+  auto measureGroup = [&](Glyph* glyph, Label* label, const ColorSpec& color, float& width, float& height) {
+    glyph->setGlyphSize(glyphSize);
+    glyph->setColor(color);
+    if (m_shadow) {
+      glyph->setShadow(shadow, 0.0f, 1.0f);
+    }
+    glyph->measure(renderer);
+    width = glyph->width();
+    height = glyph->height();
+    if (label != nullptr) {
+      label->setFontSize(fontSize);
+      label->setColor(color);
+      label->measure(renderer);
+      width += groupGap + label->width();
+      height = std::max(height, label->height());
+    }
+  };
+
+  float w1 = 0.0f, h1 = 0.0f;
+  measureGroup(m_glyph, m_label, m_lineColor, w1, h1);
+
+  float w2 = 0.0f, h2 = 0.0f;
+  if (m_glyph2 != nullptr) {
+    measureGroup(m_glyph2, m_label2, m_lineColor2, w2, h2);
   }
-  m_glyph->measure(renderer);
 
   const float totalW = kBaseWidth * scale;
   const float chartH = kBaseHeight * scale;
 
-  float headerW = m_glyph->width();
-  float headerH = m_glyph->height();
-
-  if (m_label != nullptr) {
-    m_label->setFontSize(fontSize);
-    m_label->setColor(colorForRole(ColorRole::OnSurface));
-    m_label->measure(renderer);
-    headerW += gap + m_label->width();
-    headerH = std::max(headerH, m_label->height());
-  }
-
+  const float headerW = (m_glyph2 != nullptr) ? (w1 + legendGap + w2) : w1;
+  const float headerH = std::max(h1, h2);
   const float contentW = std::max(totalW, headerW);
 
   m_graph->setPosition(0.0f, 0.0f);
   m_graph->setSize(contentW, chartH);
   m_graph->sync(renderer);
 
-  const float headerY = chartH + gap;
-  const float headerX = std::round((contentW - headerW) * 0.5f);
-  m_glyph->setPosition(headerX, headerY + std::round((headerH - m_glyph->height()) * 0.5f));
+  const float headerY = chartH + Style::spaceSm * scale;
+  float x = std::round((contentW - headerW) * 0.5f);
 
-  if (m_label != nullptr) {
-    m_label->setPosition(headerX + m_glyph->width() + gap, headerY + std::round((headerH - m_label->height()) * 0.5f));
+  auto placeGroup = [&](Glyph* glyph, Label* label) {
+    glyph->setPosition(x, headerY + std::round((headerH - glyph->height()) * 0.5f));
+    x += glyph->width();
+    if (label != nullptr) {
+      x += groupGap;
+      label->setPosition(x, headerY + std::round((headerH - label->height()) * 0.5f));
+      x += label->width();
+    }
+  };
+
+  placeGroup(m_glyph, m_label);
+  if (m_glyph2 != nullptr) {
+    x += legendGap;
+    placeGroup(m_glyph2, m_label2);
   }
 
   root()->setSize(contentW, headerY + headerH);
@@ -247,13 +297,19 @@ void DesktopSysmonWidget::syncLabel() {
   }
 
   std::string text = formatValueFor(m_stat);
-  if (m_stat2.has_value()) {
-    text += " / " + formatValueFor(*m_stat2);
-  }
   if (text != m_lastRawValue) {
     m_lastRawValue = text;
     m_label->setText(text);
     requestRedraw();
+  }
+
+  if (m_label2 != nullptr && m_stat2.has_value()) {
+    std::string text2 = formatValueFor(*m_stat2);
+    if (text2 != m_lastRawValue2) {
+      m_lastRawValue2 = text2;
+      m_label2->setText(text2);
+      requestRedraw();
+    }
   }
 }
 
