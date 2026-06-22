@@ -19,7 +19,6 @@ class Label;
 class ProgressBar;
 class SystemMonitorService;
 struct SystemStats;
-struct wl_output;
 
 enum class SysmonStat {
   CpuUsage,
@@ -36,13 +35,20 @@ enum class SysmonStat {
 };
 enum class SysmonDisplayMode { Text, Graph, Gauge };
 
+struct SysmonWidgetOptions {
+  SysmonStat stat = SysmonStat::CpuUsage;
+  std::string diskPath = "/";
+  SysmonDisplayMode displayMode = SysmonDisplayMode::Gauge;
+  ColorSpec highlightColor = colorSpecFromRole(ColorRole::Error);
+  std::string networkInterface;
+  bool showLabel = true;
+  float labelMinWidth = 0.0f;
+  std::string glyph;
+};
+
 class SysmonWidget : public Widget {
 public:
-  SysmonWidget(
-      SystemMonitorService* monitor, wl_output* output, SysmonStat stat, std::string diskPath,
-      SysmonDisplayMode displayMode, ColorSpec highlightColor, ConfigService& configService,
-      std::string networkInterface = {}, bool showLabel = true, float labelMinWidth = 0.0f, std::string glyph = {}
-  );
+  SysmonWidget(SystemMonitorService* monitor, ConfigService& configService, SysmonWidgetOptions options);
   ~SysmonWidget() override;
 
   void create() override;

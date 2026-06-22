@@ -164,22 +164,18 @@ namespace {
 } // namespace
 
 TaskbarWidget::TaskbarWidget(
-    CompositorPlatform& platform, ConfigService& config, wl_output* output, bool groupByWorkspace, bool showAllOutputs,
-    bool onlyActiveWorkspace, bool showWorkspaceLabel, WorkspaceLabelPlacement workspaceLabelPlacement,
-    bool hideEmptyWorkspaces, bool workspaceGroupCapsule, bool groupSingleIconPerApp, bool showActiveIndicator,
-    float activeOpacity, float inactiveOpacity, ColorSpec focusedColor, ColorSpec occupiedColor, ColorSpec emptyColor,
-    bool showWindowTitle, float windowTitleMaxWidth, float taskbarMaxWidth, std::string barPosition,
-    ShellConfig::ShadowConfig shadowConfig
+    CompositorPlatform& platform, ConfigService& config, wl_output* output, TaskbarWidgetOptions options
 )
-    : m_platform(platform), m_configService(config), m_output(output), m_groupByWorkspace(groupByWorkspace),
-      m_showAllOutputs(showAllOutputs), m_onlyActiveWorkspace(onlyActiveWorkspace),
-      m_showWorkspaceLabel(showWorkspaceLabel), m_workspaceLabelPlacement(workspaceLabelPlacement),
-      m_hideEmptyWorkspaces(hideEmptyWorkspaces), m_workspaceGroupCapsule(workspaceGroupCapsule),
-      m_groupSingleIconPerApp(groupSingleIconPerApp), m_showActiveIndicator(showActiveIndicator),
-      m_activeOpacity(activeOpacity), m_inactiveOpacity(inactiveOpacity), m_focusedColor(focusedColor),
-      m_occupiedColor(occupiedColor), m_emptyColor(emptyColor), m_showWindowTitle(showWindowTitle),
-      m_windowTitleMaxWidth(windowTitleMaxWidth), m_taskbarMaxWidth(taskbarMaxWidth),
-      m_barPosition(std::move(barPosition)), m_shadowConfig(shadowConfig) {
+    : m_platform(platform), m_configService(config), m_output(output), m_groupByWorkspace(options.groupByWorkspace),
+      m_showAllOutputs(options.showAllOutputs), m_onlyActiveWorkspace(options.onlyActiveWorkspace),
+      m_showWorkspaceLabel(options.showWorkspaceLabel), m_workspaceLabelPlacement(options.workspaceLabelPlacement),
+      m_hideEmptyWorkspaces(options.hideEmptyWorkspaces), m_workspaceGroupCapsule(options.workspaceGroupCapsule),
+      m_groupSingleIconPerApp(options.groupSingleIconPerApp), m_showActiveIndicator(options.showActiveIndicator),
+      m_activeOpacity(options.activeOpacity), m_inactiveOpacity(options.inactiveOpacity),
+      m_focusedColor(options.focusedColor), m_occupiedColor(options.occupiedColor), m_emptyColor(options.emptyColor),
+      m_showWindowTitle(options.showWindowTitle), m_windowTitleMaxWidth(options.windowTitleMaxWidth),
+      m_taskbarMaxWidth(options.taskbarMaxWidth), m_barPosition(std::move(options.barPosition)),
+      m_shadowConfig(options.shadowConfig) {
   // Window title not implemented for vertical bars or workspace grouping.
   if (m_barPosition == "left" || m_barPosition == "right" || m_groupByWorkspace) {
     m_showWindowTitle = false;

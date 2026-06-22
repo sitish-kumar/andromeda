@@ -162,15 +162,13 @@ namespace {
 
 } // namespace
 
-TrayWidget::TrayWidget(
-    ConfigService& config, TrayService* tray, std::vector<std::string> hiddenItems,
-    std::vector<std::string> pinnedItems, bool drawerMode, std::function<void()> itemActivated, std::string barPosition,
-    bool panelGridMode, std::size_t panelGridColumns, float inlineEntryGap, bool matchAdjacentSpacing
-)
-    : m_config(config), m_tray(tray), m_hiddenItems(std::move(hiddenItems)), m_pinnedItems(std::move(pinnedItems)),
-      m_drawerMode(drawerMode), m_itemActivated(std::move(itemActivated)), m_barPosition(std::move(barPosition)),
-      m_panelGridMode(panelGridMode), m_panelGridColumns(std::clamp<std::size_t>(panelGridColumns, 1U, 5U)),
-      m_inlineEntryGap(std::max(0.0f, inlineEntryGap)), m_matchAdjacentSpacing(matchAdjacentSpacing) {
+TrayWidget::TrayWidget(ConfigService& config, TrayService* tray, TrayWidgetOptions options)
+    : m_config(config), m_tray(tray), m_hiddenItems(std::move(options.hiddenItems)),
+      m_pinnedItems(std::move(options.pinnedItems)), m_drawerMode(options.drawerMode),
+      m_itemActivated(std::move(options.itemActivated)), m_barPosition(std::move(options.barPosition)),
+      m_panelGridMode(options.panelGridMode),
+      m_panelGridColumns(std::clamp<std::size_t>(options.panelGridColumns, 1U, 5U)),
+      m_inlineEntryGap(std::max(0.0f, options.inlineEntryGap)), m_matchAdjacentSpacing(options.matchAdjacentSpacing) {
   auto normalizeTokens = [](std::vector<std::string>& tokens) {
     std::vector<std::string> normalized;
     normalized.reserve(tokens.size());

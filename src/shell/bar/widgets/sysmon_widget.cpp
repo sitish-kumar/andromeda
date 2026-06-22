@@ -104,15 +104,11 @@ namespace {
 
 } // namespace
 
-SysmonWidget::SysmonWidget(
-    SystemMonitorService* monitor, wl_output* /*output*/, SysmonStat stat, std::string diskPath,
-    SysmonDisplayMode displayMode, ColorSpec highlightColor, ConfigService& configService, std::string networkInterface,
-    bool showLabel, float labelMinWidth, std::string glyph
-)
-    : m_monitor(monitor), m_stat(stat), m_displayMode(displayMode), m_highlightColor(highlightColor),
-      m_configService(configService), m_showLabel(showLabel), m_labelMinWidth(labelMinWidth),
-      m_diskPath(std::move(diskPath)), m_networkInterface(std::move(networkInterface)),
-      m_glyphOverride(std::move(glyph)) {
+SysmonWidget::SysmonWidget(SystemMonitorService* monitor, ConfigService& configService, SysmonWidgetOptions options)
+    : m_monitor(monitor), m_stat(options.stat), m_displayMode(options.displayMode),
+      m_highlightColor(options.highlightColor), m_configService(configService), m_showLabel(options.showLabel),
+      m_labelMinWidth(options.labelMinWidth), m_diskPath(std::move(options.diskPath)),
+      m_networkInterface(std::move(options.networkInterface)), m_glyphOverride(std::move(options.glyph)) {
   if (m_monitor != nullptr) {
     if (needsCpuTemp(m_stat)) {
       m_monitor->retainCpuTemp();

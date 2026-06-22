@@ -55,8 +55,18 @@ void TrayDrawerPanel::create() {
     return;
   }
   m_drawerWidget = std::make_unique<TrayWidget>(
-      *m_config, m_tray, hiddenItems, pinnedItems, false, []() { PanelManager::instance().close(); }, "top", true,
-      drawerColumns, Style::spaceXs, false
+      *m_config, m_tray,
+      TrayWidgetOptions{
+          .hiddenItems = hiddenItems,
+          .pinnedItems = pinnedItems,
+          .drawerMode = false,
+          .itemActivated = []() { PanelManager::instance().close(); },
+          .barPosition = "top",
+          .panelGridMode = true,
+          .panelGridColumns = drawerColumns,
+          .inlineEntryGap = Style::spaceXs,
+          .matchAdjacentSpacing = false,
+      }
   );
   m_drawerWidget->setContentScale(contentScale());
   m_drawerWidget->create();

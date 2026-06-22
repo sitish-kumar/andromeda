@@ -481,18 +481,21 @@ std::unique_ptr<Widget> WidgetFactory::create(
       displayMode = SysmonDisplayMode::Text;
     else if (display == "graph")
       displayMode = SysmonDisplayMode::Graph;
-    const bool showLabel = wc != nullptr ? wc->getBool("show_label", true) : true;
-    const auto labelMinWidth = static_cast<float>(wc != nullptr ? wc->getDouble("label_min_width", 0.0) : 0.0);
-    const ColorSpec highlightColor = wc != nullptr
-        ? wc->getColorSpec(
-              "highlight_color", colorSpecFromRole(ColorRole::Error), "widget." + name + ".highlight_color"
-          )
-        : colorSpecFromRole(ColorRole::Error);
-    std::string glyph = wc != nullptr ? wc->getString("glyph", "") : std::string{};
-    auto widget = std::make_unique<SysmonWidget>(
-        m_sysmon, output, stat, std::move(path), displayMode, highlightColor, m_configService, networkInterface,
-        showLabel, labelMinWidth, std::move(glyph)
-    );
+    SysmonWidgetOptions options{
+        .stat = stat,
+        .diskPath = std::move(path),
+        .displayMode = displayMode,
+        .highlightColor = wc != nullptr
+            ? wc->getColorSpec(
+                  "highlight_color", colorSpecFromRole(ColorRole::Error), "widget." + name + ".highlight_color"
+              )
+            : colorSpecFromRole(ColorRole::Error),
+        .networkInterface = networkInterface,
+        .showLabel = wc != nullptr ? wc->getBool("show_label", true) : true,
+        .labelMinWidth = static_cast<float>(wc != nullptr ? wc->getDouble("label_min_width", 0.0) : 0.0),
+        .glyph = wc != nullptr ? wc->getString("glyph", "") : std::string{},
+    };
+    auto widget = std::make_unique<SysmonWidget>(m_sysmon, m_configService, std::move(options));
     widget->setContentScale(contentScale);
     return widget;
   }
@@ -504,47 +507,49 @@ std::unique_ptr<Widget> WidgetFactory::create(
   }
 
   if (type == "taskbar") {
-    const bool groupByWorkspace = wc != nullptr ? wc->getBool("group_by_workspace", false) : false;
-    const bool showAllOutputs = wc != nullptr ? wc->getBool("show_all_outputs", false) : false;
-    const bool onlyActiveWorkspace = wc != nullptr ? wc->getBool("only_active_workspace", false) : false;
-    const bool showWorkspaceLabel = wc != nullptr ? wc->getBool("show_workspace_label", true) : true;
-    WorkspaceLabelPlacement workspaceLabelPlacement = WorkspaceLabelPlacement::Corner;
+    TaskbarWidgetOptions options{
+        .groupByWorkspace = wc != nullptr ? wc->getBool("group_by_workspace", false) : false,
+        .showAllOutputs = wc != nullptr ? wc->getBool("show_all_outputs", false) : false,
+        .onlyActiveWorkspace = wc != nullptr ? wc->getBool("only_active_workspace", false) : false,
+        .showWorkspaceLabel = wc != nullptr ? wc->getBool("show_workspace_label", true) : true,
+        .workspaceLabelPlacement = WorkspaceLabelPlacement::Corner,
+        .hideEmptyWorkspaces = wc != nullptr ? wc->getBool("hide_empty_workspaces", false) : false,
+        .workspaceGroupCapsule = wc != nullptr ? wc->getBool("workspace_group_capsule", true) : true,
+        .groupSingleIconPerApp = wc != nullptr ? wc->getBool("group_single_icon_per_app", false) : false,
+        .showActiveIndicator = wc != nullptr ? wc->getBool("show_active_indicator", true) : true,
+        .activeOpacity = wc != nullptr ? static_cast<float>(wc->getDouble("active_opacity", 1.0)) : 1.0f,
+        .inactiveOpacity = wc != nullptr ? static_cast<float>(wc->getDouble("inactive_opacity", 1.0)) : 1.0f,
+        .focusedColor = wc != nullptr
+            ? wc->getColorSpec(
+                  "focused_color", colorSpecFromRole(ColorRole::Primary), "widget." + name + ".focused_color"
+              )
+            : colorSpecFromRole(ColorRole::Primary),
+        .occupiedColor = wc != nullptr
+            ? wc->getColorSpec(
+                  "occupied_color", colorSpecFromRole(ColorRole::Secondary), "widget." + name + ".occupied_color"
+              )
+            : colorSpecFromRole(ColorRole::Secondary),
+        .emptyColor = wc != nullptr
+            ? wc->getColorSpec(
+                  "empty_color", colorSpecFromRole(ColorRole::Secondary), "widget." + name + ".empty_color"
+              )
+            : colorSpecFromRole(ColorRole::Secondary),
+        .showWindowTitle = wc != nullptr ? wc->getBool("show_window_title", false) : false,
+        .windowTitleMaxWidth =
+            static_cast<float>(wc != nullptr ? wc->getDouble("window_title_max_width", 100.0) : 100.0),
+        .taskbarMaxWidth = static_cast<float>(wc != nullptr ? wc->getDouble("taskbar_max_width", 8192.0) : 8192.0),
+        .barPosition = barPosition,
+        .shadowConfig = m_config.shell.shadow,
+    };
     if (wc != nullptr) {
       const std::string placement = wc->getString("workspace_label_placement", "corner");
       if (placement == "centered") {
-        workspaceLabelPlacement = WorkspaceLabelPlacement::Centered;
+        options.workspaceLabelPlacement = WorkspaceLabelPlacement::Centered;
       } else if (placement == "inside") {
-        workspaceLabelPlacement = WorkspaceLabelPlacement::Inside;
+        options.workspaceLabelPlacement = WorkspaceLabelPlacement::Inside;
       }
     }
-    const bool hideEmptyWorkspaces = wc != nullptr ? wc->getBool("hide_empty_workspaces", false) : false;
-    const bool workspaceGroupCapsule = wc != nullptr ? wc->getBool("workspace_group_capsule", true) : true;
-    const bool groupSingleIconPerApp = wc != nullptr ? wc->getBool("group_single_icon_per_app", false) : false;
-    const bool showActiveIndicator = wc != nullptr ? wc->getBool("show_active_indicator", true) : true;
-    const float activeOpacity = wc != nullptr ? static_cast<float>(wc->getDouble("active_opacity", 1.0)) : 1.0f;
-    const float inactiveOpacity = wc != nullptr ? static_cast<float>(wc->getDouble("inactive_opacity", 1.0)) : 1.0f;
-    const ColorSpec focusedColor = wc != nullptr
-        ? wc->getColorSpec("focused_color", colorSpecFromRole(ColorRole::Primary), "widget." + name + ".focused_color")
-        : colorSpecFromRole(ColorRole::Primary);
-    const ColorSpec occupiedColor = wc != nullptr
-        ? wc->getColorSpec(
-              "occupied_color", colorSpecFromRole(ColorRole::Secondary), "widget." + name + ".occupied_color"
-          )
-        : colorSpecFromRole(ColorRole::Secondary);
-    const ColorSpec emptyColor = wc != nullptr
-        ? wc->getColorSpec("empty_color", colorSpecFromRole(ColorRole::Secondary), "widget." + name + ".empty_color")
-        : colorSpecFromRole(ColorRole::Secondary);
-    const bool showWindowTitle = wc != nullptr ? wc->getBool("show_window_title", false) : false;
-    const float windowTitleMaxWidth =
-        static_cast<float>(wc != nullptr ? wc->getDouble("window_title_max_width", 100.0) : 100.0);
-    const float taskbarMaxWidth =
-        static_cast<float>(wc != nullptr ? wc->getDouble("taskbar_max_width", 8192.0) : 8192.0);
-    auto widget = std::make_unique<TaskbarWidget>(
-        m_platform, m_configService, output, groupByWorkspace, showAllOutputs, onlyActiveWorkspace, showWorkspaceLabel,
-        workspaceLabelPlacement, hideEmptyWorkspaces, workspaceGroupCapsule, groupSingleIconPerApp, showActiveIndicator,
-        activeOpacity, inactiveOpacity, focusedColor, occupiedColor, emptyColor, showWindowTitle, windowTitleMaxWidth,
-        taskbarMaxWidth, barPosition, m_config.shell.shadow
-    );
+    auto widget = std::make_unique<TaskbarWidget>(m_platform, m_configService, output, std::move(options));
     widget->setContentScale(contentScale);
     return widget;
   }
@@ -556,16 +561,20 @@ std::unique_ptr<Widget> WidgetFactory::create(
   }
 
   if (type == "tray") {
-    const auto hiddenItems = wc != nullptr ? wc->getStringList("hidden") : std::vector<std::string>{};
-    const auto pinnedItems = wc != nullptr ? wc->getStringList("pinned") : std::vector<std::string>{};
-    const bool drawer = wc != nullptr ? wc->getBool("drawer", false) : false;
-    const std::size_t drawerColumns =
-        static_cast<std::size_t>(std::clamp<std::int64_t>(wc != nullptr ? wc->getInt("drawer_columns", 3) : 3, 1, 5));
-    const bool matchAdjacentSpacing = wc != nullptr ? wc->getBool("match_adjacent_spacing", false) : false;
-    auto widget = std::make_unique<TrayWidget>(
-        m_configService, m_tray, hiddenItems, pinnedItems, drawer, std::function<void()>{}, barPosition, false,
-        drawerColumns, widgetSpacing, matchAdjacentSpacing
-    );
+    TrayWidgetOptions options{
+        .hiddenItems = wc != nullptr ? wc->getStringList("hidden") : std::vector<std::string>{},
+        .pinnedItems = wc != nullptr ? wc->getStringList("pinned") : std::vector<std::string>{},
+        .drawerMode = wc != nullptr ? wc->getBool("drawer", false) : false,
+        .itemActivated = {},
+        .barPosition = barPosition,
+        .panelGridMode = false,
+        .panelGridColumns = static_cast<std::size_t>(
+            std::clamp<std::int64_t>(wc != nullptr ? wc->getInt("drawer_columns", 3) : 3, 1, 5)
+        ),
+        .inlineEntryGap = widgetSpacing,
+        .matchAdjacentSpacing = wc != nullptr ? wc->getBool("match_adjacent_spacing", false) : false,
+    };
+    auto widget = std::make_unique<TrayWidget>(m_configService, m_tray, std::move(options));
     widget->setContentScale(contentScale);
     return widget;
   }
@@ -629,16 +638,20 @@ std::unique_ptr<Widget> WidgetFactory::create(
     if (wc != nullptr && wc->hasSetting("max_label_chars")) {
       maxLabelChars = static_cast<std::size_t>(wc->getInt("max_label_chars", 1));
     }
-    const bool labelsOnlyWhenOccupied = wc != nullptr ? wc->getBool("labels_only_when_occupied", false) : false;
-    const bool hideWhenEmpty = wc != nullptr ? wc->getBool("hide_when_empty", false) : false;
-    const double pillScale = wc != nullptr ? wc->getDouble("pill_scale", 1.0) : 1.0;
-    const double activePillSize = wc != nullptr ? wc->getDouble("active_pill_size", 2.2) : 2.2;
-    const double inactivePillSize = wc != nullptr ? wc->getDouble("inactive_pill_size", 1.0) : 1.0;
-    const bool minimal = wc != nullptr ? wc->getBool("minimal", false) : false;
-    auto widget = std::make_unique<WorkspacesWidget>(
-        m_platform, output, displayMode, focusedColor, occupiedColor, emptyColor, maxLabelChars, labelsOnlyWhenOccupied,
-        hideWhenEmpty, pillScale, static_cast<float>(activePillSize), static_cast<float>(inactivePillSize), minimal
-    );
+    WorkspacesWidget::Options options{
+        .displayMode = displayMode,
+        .focusedColor = focusedColor,
+        .occupiedColor = occupiedColor,
+        .emptyColor = emptyColor,
+        .maxLabelChars = maxLabelChars,
+        .labelsOnlyWhenOccupied = wc != nullptr ? wc->getBool("labels_only_when_occupied", false) : false,
+        .hideWhenEmpty = wc != nullptr ? wc->getBool("hide_when_empty", false) : false,
+        .pillScale = static_cast<float>(wc != nullptr ? wc->getDouble("pill_scale", 1.0) : 1.0),
+        .activePillSize = static_cast<float>(wc != nullptr ? wc->getDouble("active_pill_size", 2.2) : 2.2),
+        .inactivePillSize = static_cast<float>(wc != nullptr ? wc->getDouble("inactive_pill_size", 1.0) : 1.0),
+        .minimal = wc != nullptr ? wc->getBool("minimal", false) : false,
+    };
+    auto widget = std::make_unique<WorkspacesWidget>(m_platform, output, options);
     widget->setContentScale(contentScale);
     return widget;
   }

@@ -22,14 +22,21 @@ class InputArea;
 class Glyph;
 class TrayService;
 
+struct TrayWidgetOptions {
+  std::vector<std::string> hiddenItems;
+  std::vector<std::string> pinnedItems;
+  bool drawerMode = false;
+  std::function<void()> itemActivated;
+  std::string barPosition = "top";
+  bool panelGridMode = false;
+  std::size_t panelGridColumns = 3;
+  float inlineEntryGap = Style::spaceXs;
+  bool matchAdjacentSpacing = false;
+};
+
 class TrayWidget : public Widget {
 public:
-  TrayWidget(
-      ConfigService& config, TrayService* tray, std::vector<std::string> hiddenItems = {},
-      std::vector<std::string> pinnedItems = {}, bool drawerMode = false, std::function<void()> itemActivated = {},
-      std::string barPosition = "top", bool panelGridMode = false, std::size_t panelGridColumns = 3,
-      float inlineEntryGap = Style::spaceXs, bool matchAdjacentSpacing = false
-  );
+  TrayWidget(ConfigService& config, TrayService* tray, TrayWidgetOptions options = {});
 
   void create() override;
 

@@ -40,16 +40,13 @@ namespace {
   }
 } // namespace
 
-WorkspacesWidget::WorkspacesWidget(
-    CompositorPlatform& platform, wl_output* output, DisplayMode displayMode, ColorSpec focusedColor,
-    ColorSpec occupiedColor, ColorSpec emptyColor, std::size_t maxLabelChars, bool labelsOnlyWhenOccupied,
-    bool hideWhenEmpty, float pillScale, float activePillSize, float inactivePillSize, bool minimal
-)
-    : m_platform(platform), m_output(output), m_displayMode(displayMode), m_maxLabelChars(maxLabelChars),
-      m_labelsOnlyWhenOccupied(labelsOnlyWhenOccupied), m_hideWhenEmpty(hideWhenEmpty), m_pillScale(pillScale),
-      m_activePillSize(std::clamp(activePillSize, 0.25f, 8.0f)),
-      m_inactivePillSize(std::clamp(inactivePillSize, 0.25f, 8.0f)), m_minimal(minimal), m_focusedColor(focusedColor),
-      m_occupiedColor(occupiedColor), m_emptyColor(emptyColor) {}
+WorkspacesWidget::WorkspacesWidget(CompositorPlatform& platform, wl_output* output, Options options)
+    : m_platform(platform), m_output(output), m_displayMode(options.displayMode),
+      m_maxLabelChars(options.maxLabelChars), m_labelsOnlyWhenOccupied(options.labelsOnlyWhenOccupied),
+      m_hideWhenEmpty(options.hideWhenEmpty), m_pillScale(options.pillScale),
+      m_activePillSize(std::clamp(options.activePillSize, 0.25f, 8.0f)),
+      m_inactivePillSize(std::clamp(options.inactivePillSize, 0.25f, 8.0f)), m_minimal(options.minimal),
+      m_focusedColor(options.focusedColor), m_occupiedColor(options.occupiedColor), m_emptyColor(options.emptyColor) {}
 
 WorkspacesWidget::DisplayMode WorkspacesWidget::effectiveDisplayMode() const noexcept {
   if (m_minimal && m_displayMode == DisplayMode::None) {
