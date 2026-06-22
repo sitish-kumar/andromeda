@@ -2349,6 +2349,10 @@
           "description": "Clear stored per-app foreground usage history",
           "label": "Reset Screen Time Data"
         },
+        "screenshot-confirm-region": {
+          "description": "After drawing a region, keep the overlay open until you confirm with Enter or Space",
+          "label": "Confirm Region"
+        },
         "screenshot-copy-to-clipboard": {
           "description": "Place the captured PNG on the clipboard selection",
           "label": "Copy to Clipboard"
@@ -2365,10 +2369,6 @@
         "screenshot-freeze-screen": {
           "description": "Capture the desktop before region selection so moving content stays still",
           "label": "Freeze Screen"
-        },
-        "screenshot-confirm-region": {
-          "description": "After drawing a region, keep the overlay open until you confirm with Enter or Space",
-          "label": "Confirm Region"
         },
         "screenshot-pipe-command": {
           "description": "Command run as /bin/sh -lc with the PNG on stdin; for annotators or uploaders (for example: swappy -f - or satty -f -)",

@@ -434,13 +434,18 @@
         "command": "命令",
         "custom-color": "自定义...",
         "description": "描述",
+        "display": "显示",
+        "display-gauge": "仪表",
+        "display-graph": "图表",
         "fade-when-idle": "空闲时淡出",
         "font-family": "字体",
         "font-family-default": "系统默认",
         "forecast-days": "预报天数",
         "format": "格式",
+        "gauge-layout": "仪表布局",
         "glyph": "图标",
         "hide-when-no-media": "无媒体时隐藏",
+        "highlight-color": "高亮颜色",
         "horizontal": "水平",
         "hover-background": "悬停背景",
         "hover-foreground": "悬停前景",
@@ -450,6 +455,7 @@
         "input-radius": "输入框圆角",
         "interface": "界面",
         "label": "标签",
+        "label-min-width": "标签最小宽度",
         "layout": "布局",
         "mirrored": "镜像",
         "opacity": "不透明度",
@@ -1074,9 +1080,11 @@
       "filter": {
         "add": "添加过滤器",
         "add-title": "添加通知过滤器",
+        "allow-permanent": "允许常驻通知",
         "allowed-urgencies-label": "允许的通知级别",
         "flag": {
           "history": "历史记录",
+          "permanent": "常驻",
           "sound": "提示音",
           "toast": "Toast 通知"
         },
@@ -1886,6 +1894,10 @@
           "description": "为主页选项卡选择最多六个快捷按钮",
           "label": "主页快捷方式"
         },
+        "launcher-app-grid": {
+          "description": "当搜索结果仅包含应用时，以网格形式显示应用图标并在下方附带标签",
+          "label": "应用网格视图"
+        },
         "launcher-categories": {
           "description": "在启动器中显示类别筛选；按 F6 显示，之后用 F6 和 Shift+F6 切换",
           "label": "显示类别"
@@ -2318,6 +2330,14 @@
         "polkit-agent": {
           "description": "启用内置的身份验证代理",
           "label": "Polkit 代理"
+        },
+        "privacy-cam-filter-regex": {
+          "description": "用于匹配并忽略隐私指示器和 OSD 弹窗中特定摄像头应用的正则表达式",
+          "label": "摄像头过滤正则"
+        },
+        "privacy-mic-filter-regex": {
+          "description": "用于匹配并忽略隐私指示器和 OSD 弹窗中特定麦克风应用的正则表达式",
+          "label": "麦克风过滤正则"
         },
         "screen-time-enabled": {
           "description": "追踪记录每个应用的使用时长并显示在控制中心",
