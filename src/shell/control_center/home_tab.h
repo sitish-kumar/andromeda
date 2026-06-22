@@ -57,9 +57,8 @@ private:
   void doUpdate(Renderer& renderer) override;
   void layoutWallpaperBackground(Renderer& renderer);
   // Adds a full-card click+hover overlay; returns the area so doLayout can size/position it.
-  InputArea* addCardOverlay(Flex& card, std::function<void()> onActivate, std::function<void(bool)> onHover = {});
+  InputArea* addCardOverlay(Flex& card, std::function<void()> onActivate);
   void layoutCardOverlays();
-  void applyCardHoverTextColors();
   void syncWallpaperBackground(Renderer& renderer);
   void ensureWallpaperThumbnail(const std::string& path, int targetPx);
   void startCrispFade();
@@ -102,8 +101,6 @@ private:
   InputArea* m_userCardArea = nullptr;
   InputArea* m_mediaCardArea = nullptr;
   InputArea* m_dateTimeCardArea = nullptr;
-  bool m_mediaCardHovered = false;
-  bool m_dateTimeCardHovered = false;
   std::string m_loadedAvatarPath;
   int m_loadedAvatarSize = 0;
 

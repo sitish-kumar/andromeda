@@ -126,19 +126,16 @@ namespace {
     button.setEnabled(enabled);
   }
 
-  // The whole home cards are clickable; tint fill + outline on hover. The user card's fill sits behind
-  // the wallpaper image, so the outline colour carries its hover signal.
-  void applyHomeCardHover(Flex& card, bool hovered, float fillOpacity, bool baseBorders) {
+  // The whole home cards are clickable; on hover swap the card outline to the hover colour. No fill
+  // change — the user card's fill sits behind the wallpaper, so a thin hover border is the one hover
+  // signal that reads consistently across all three cards.
+  void applyHomeCardHover(Flex& card, bool hovered, bool baseBorders) {
     if (hovered) {
-      card.setFill(colorSpecFromRole(ColorRole::Hover, fillOpacity));
       card.setBorder(colorSpecFromRole(ColorRole::Hover), Style::borderWidth);
+    } else if (baseBorders) {
+      card.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
     } else {
-      card.setFill(colorSpecFromRole(ColorRole::SurfaceVariant, fillOpacity));
-      if (baseBorders) {
-        card.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
-      } else {
-        card.clearBorder();
-      }
+      card.clearBorder();
     }
   }
 
@@ -421,14 +418,8 @@ std::unique_ptr<Flex> HomeTab::create() {
   );
   mediaCard->addChild(std::move(mediaContent));
 
-  // Clicking anywhere on the media card opens the media tab; hovering flips its text to OnHover.
-  m_mediaCardArea = addCardOverlay(
-      *m_mediaCard, []() { openControlCenterTab("media"); },
-      [this](bool hovered) {
-        m_mediaCardHovered = hovered;
-        PanelManager::instance().requestUpdateOnly();
-      }
-  );
+  // Clicking anywhere on the media card opens the media tab.
+  m_mediaCardArea = addCardOverlay(*m_mediaCard, []() { openControlCenterTab("media"); });
 
   // --- Date/Time + Weather (below media) ---
   auto dateTimeCard = ui::row(
@@ -480,14 +471,8 @@ std::unique_ptr<Flex> HomeTab::create() {
       )
   );
 
-  // Clicking anywhere on the clock/weather card opens the weather tab; hovering flips its text to OnHover.
-  m_dateTimeCardArea = addCardOverlay(
-      *m_dateTimeCard, []() { openControlCenterTab("weather"); },
-      [this](bool hovered) {
-        m_dateTimeCardHovered = hovered;
-        PanelManager::instance().requestUpdateOnly();
-      }
-  );
+  // Clicking anywhere on the clock/weather card opens the weather tab.
+  m_dateTimeCardArea = addCardOverlay(*m_dateTimeCard, []() { openControlCenterTab("weather"); });
 
   leftColumn->addChild(std::move(mediaCard));
   leftColumn->addChild(std::move(dateTimeCard));
@@ -805,27 +790,20 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
   }
 }
 
-InputArea* HomeTab::addCardOverlay(Flex& card, std::function<void()> onActivate, std::function<void(bool)> onHover) {
+InputArea* HomeTab::addCardOverlay(Flex& card, std::function<void()> onActivate) {
   auto area = std::make_unique<InputArea>();
   area->setParticipatesInLayout(false);
   area->setZIndex(3);
   area->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
 
   Flex* cardPtr = &card;
-  const float opacity = panelCardOpacity();
   const bool borders = panelBordersEnabled();
-  area->setOnEnter([cardPtr, opacity, borders, onHover](const InputArea::PointerData&) {
-    applyHomeCardHover(*cardPtr, true, opacity, borders);
-    if (onHover) {
-      onHover(true);
-    }
+  area->setOnEnter([cardPtr, borders](const InputArea::PointerData&) {
+    applyHomeCardHover(*cardPtr, true, borders);
     PanelManager::instance().requestRedraw();
   });
-  area->setOnLeave([cardPtr, opacity, borders, onHover]() {
-    applyHomeCardHover(*cardPtr, false, opacity, borders);
-    if (onHover) {
-      onHover(false);
-    }
+  area->setOnLeave([cardPtr, borders]() {
+    applyHomeCardHover(*cardPtr, false, borders);
     PanelManager::instance().requestRedraw();
   });
   area->setOnClick([onActivate = std::move(onActivate)](const InputArea::PointerData&) { onActivate(); });
@@ -1110,8 +1088,6 @@ void HomeTab::onClose() {
   m_userCardArea = nullptr;
   m_mediaCardArea = nullptr;
   m_dateTimeCardArea = nullptr;
-  m_mediaCardHovered = false;
-  m_dateTimeCardHovered = false;
   m_loadedAvatarPath.clear();
   m_loadedAvatarSize = 0;
   // The crisp fade animation is tagged with the m_wallpaperBg node as owner, so
@@ -1407,42 +1383,6 @@ void HomeTab::sync(Renderer& renderer) {
         }
       }
     }
-  }
-
-  applyCardHoverTextColors();
-}
-
-void HomeTab::applyCardHoverTextColors() {
-  // When hovered, a card's text turns OnHover so it stays legible against the Hover fill. When not, each
-  // label returns to its base role. sync() only re-colours the dynamic labels (media status, weather
-  // glyph), so the static labels MUST be restored here or they'd stay stuck on OnHover after the leave.
-  const ColorSpec onHover = colorSpecFromRole(ColorRole::OnHover);
-
-  const auto restore = [&](Label* label, bool hovered, ColorRole base) {
-    if (label != nullptr) {
-      label->setColor(hovered ? onHover : colorSpecFromRole(base));
-    }
-  };
-
-  // Media card.
-  restore(m_mediaTrack, m_mediaCardHovered, ColorRole::OnSurface);
-  restore(m_mediaArtist, m_mediaCardHovered, ColorRole::OnSurfaceVariant);
-  restore(m_mediaProgress, m_mediaCardHovered, ColorRole::Secondary);
-  if (m_mediaArtFallback != nullptr) {
-    m_mediaArtFallback->setColor(m_mediaCardHovered ? onHover : colorSpecFromRole(ColorRole::OnSurfaceVariant));
-  }
-  // Status colour is data-driven in sync(); only override it while hovered.
-  if (m_mediaCardHovered && m_mediaStatus != nullptr) {
-    m_mediaStatus->setColor(onHover);
-  }
-
-  // Clock/weather card.
-  restore(m_timeLabel, m_dateTimeCardHovered, ColorRole::Primary);
-  restore(m_dateLabel, m_dateTimeCardHovered, ColorRole::OnSurface);
-  restore(m_weatherLine, m_dateTimeCardHovered, ColorRole::OnSurfaceVariant);
-  // Weather glyph colour is data-driven in sync(); only override it while hovered.
-  if (m_dateTimeCardHovered && m_weatherGlyph != nullptr) {
-    m_weatherGlyph->setColor(onHover);
   }
 }
 
