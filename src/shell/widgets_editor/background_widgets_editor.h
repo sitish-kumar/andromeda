@@ -43,11 +43,7 @@ class BackgroundWidgetsEditor {
 public:
   explicit BackgroundWidgetsEditor(BackgroundWidgetsEditorProfile profile);
 
-  void initialize(
-      WaylandConnection& wayland, ConfigService* config, PipeWireSpectrum* pipewireSpectrum,
-      const WeatherService* weather, RenderContext* renderContext, MprisService* mpris, HttpClient* httpClient,
-      SystemMonitorService* sysmon, SharedTextureCache* textureCache = nullptr, DesktopWidgetScriptDeps scriptDeps = {}
-  );
+  void initialize(const DesktopWidgetServices& services);
   void setExitRequestedCallback(std::function<void()> callback);
 
   void open(const WidgetsEditorSnapshot& snapshot);

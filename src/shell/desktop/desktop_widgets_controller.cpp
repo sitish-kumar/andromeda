@@ -89,21 +89,15 @@ DesktopWidgetsController::DesktopWidgetsController() = default;
 
 DesktopWidgetsController::~DesktopWidgetsController() = default;
 
-void DesktopWidgetsController::initialize(
-    WaylandConnection& wayland, ConfigService* config, PipeWireSpectrum* pipewireSpectrum,
-    const WeatherService* weather, RenderContext* renderContext, MprisService* mpris, HttpClient* httpClient,
-    SystemMonitorService* sysmon, LockscreenWidgetsController* lockscreenWidgets, DesktopWidgetScriptDeps scriptDeps
-) {
-  m_wayland = &wayland;
-  m_config = config;
-  m_lockscreenWidgets = lockscreenWidgets;
-  m_renderContext = renderContext;
+void DesktopWidgetsController::initialize(const DesktopWidgetsControllerServices& services) {
+  m_wayland = &services.widgets.wayland;
+  m_config = services.widgets.config;
+  m_lockscreenWidgets = services.lockscreenWidgets;
+  m_renderContext = services.widgets.renderContext;
   m_host = std::make_unique<DesktopWidgetsHost>();
-  m_host->initialize(wayland, config, pipewireSpectrum, weather, renderContext, mpris, httpClient, sysmon, scriptDeps);
+  m_host->initialize(services.widgets);
   m_editor = std::make_unique<BackgroundWidgetsEditor>(BackgroundWidgetsEditorProfile::desktop());
-  m_editor->initialize(
-      wayland, config, pipewireSpectrum, weather, renderContext, mpris, httpClient, sysmon, nullptr, scriptDeps
-  );
+  m_editor->initialize(services.widgets);
   m_editor->setExitRequestedCallback([this]() { exitEdit(); });
   loadSnapshotFromConfig();
   m_initialized = true;

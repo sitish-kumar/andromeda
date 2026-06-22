@@ -178,12 +178,9 @@ namespace {
 
 } // namespace
 
-DesktopWidgetFactory::DesktopWidgetFactory(
-    PipeWireSpectrum* pipewireSpectrum, const WeatherService* weather, MprisService* mpris, HttpClient* httpClient,
-    SystemMonitorService* sysmon, DesktopWidgetScriptDeps scriptDeps
-)
-    : m_pipewireSpectrum(pipewireSpectrum), m_weather(weather), m_mpris(mpris), m_httpClient(httpClient),
-      m_sysmon(sysmon), m_scriptDeps(scriptDeps) {}
+DesktopWidgetFactory::DesktopWidgetFactory(DesktopWidgetRuntimeServices services)
+    : m_pipewireSpectrum(services.pipewireSpectrum), m_weather(services.weather), m_mpris(services.mpris),
+      m_httpClient(services.httpClient), m_sysmon(services.sysmon), m_scriptDeps(services.scriptDeps) {}
 
 std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
     const std::string& type, const std::unordered_map<std::string, WidgetSettingValue>& settings, float contentScale

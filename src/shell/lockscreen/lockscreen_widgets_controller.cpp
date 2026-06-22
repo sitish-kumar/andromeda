@@ -96,25 +96,18 @@ LockscreenWidgetsController::LockscreenWidgetsController() = default;
 
 LockscreenWidgetsController::~LockscreenWidgetsController() = default;
 
-void LockscreenWidgetsController::initialize(
-    WaylandConnection& wayland, ConfigService* config, LockScreen& lockScreen, Bar& bar, Dock& dock,
-    DesktopWidgetsController* desktopWidgets, PipeWireSpectrum* pipewireSpectrum, const WeatherService* weather,
-    RenderContext* renderContext, MprisService* mpris, HttpClient* httpClient, SystemMonitorService* sysmon,
-    SharedTextureCache* textureCache, DesktopWidgetScriptDeps scriptDeps
-) {
-  m_wayland = &wayland;
-  m_config = config;
-  m_lockScreen = &lockScreen;
-  m_bar = &bar;
-  m_dock = &dock;
-  m_desktopWidgets = desktopWidgets;
-  m_renderContext = renderContext;
+void LockscreenWidgetsController::initialize(const LockscreenWidgetsControllerServices& services) {
+  m_wayland = &services.widgets.wayland;
+  m_config = services.widgets.config;
+  m_lockScreen = &services.lockScreen;
+  m_bar = &services.bar;
+  m_dock = &services.dock;
+  m_desktopWidgets = services.desktopWidgets;
+  m_renderContext = services.widgets.renderContext;
   m_host = std::make_unique<LockscreenWidgetsHost>();
-  m_host->initialize(wayland, config, pipewireSpectrum, weather, renderContext, mpris, httpClient, sysmon, scriptDeps);
+  m_host->initialize(services.widgets);
   m_editor = std::make_unique<BackgroundWidgetsEditor>(BackgroundWidgetsEditorProfile::lockscreen());
-  m_editor->initialize(
-      wayland, config, pipewireSpectrum, weather, renderContext, mpris, httpClient, sysmon, textureCache, scriptDeps
-  );
+  m_editor->initialize(services.widgets);
   m_editor->setExitRequestedCallback([this]() { exitEdit(); });
   loadSnapshotFromConfig();
   m_initialized = true;

@@ -31,15 +31,11 @@ namespace {
 
 } // namespace
 
-void LockscreenWidgetsHost::initialize(
-    WaylandConnection& wayland, ConfigService* config, PipeWireSpectrum* pipewireSpectrum,
-    const WeatherService* weather, RenderContext* renderContext, MprisService* mpris, HttpClient* httpClient,
-    SystemMonitorService* sysmon, DesktopWidgetScriptDeps scriptDeps
-) {
-  m_wayland = &wayland;
-  m_config = config;
-  m_renderContext = renderContext;
-  m_factory = std::make_unique<DesktopWidgetFactory>(pipewireSpectrum, weather, mpris, httpClient, sysmon, scriptDeps);
+void LockscreenWidgetsHost::initialize(const DesktopWidgetServices& services) {
+  m_wayland = &services.wayland;
+  m_config = services.config;
+  m_renderContext = services.renderContext;
+  m_factory = std::make_unique<DesktopWidgetFactory>(services.runtime);
 }
 
 void LockscreenWidgetsHost::show(const LockscreenWidgetsSnapshot& snapshot, LockScreen& lockScreen) {

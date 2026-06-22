@@ -212,16 +212,12 @@ std::string BackgroundWidgetsEditor::nextWidgetId() const {
   return std::format("{}{:016x}", m_profile.widgetIdPrefix, nextCounter);
 }
 
-void BackgroundWidgetsEditor::initialize(
-    WaylandConnection& wayland, ConfigService* config, PipeWireSpectrum* pipewireSpectrum,
-    const WeatherService* weather, RenderContext* renderContext, MprisService* mpris, HttpClient* httpClient,
-    SystemMonitorService* sysmon, SharedTextureCache* textureCache, DesktopWidgetScriptDeps scriptDeps
-) {
-  m_wayland = &wayland;
-  m_config = config;
-  m_renderContext = renderContext;
-  m_textureCache = textureCache;
-  m_factory = std::make_unique<DesktopWidgetFactory>(pipewireSpectrum, weather, mpris, httpClient, sysmon, scriptDeps);
+void BackgroundWidgetsEditor::initialize(const DesktopWidgetServices& services) {
+  m_wayland = &services.wayland;
+  m_config = services.config;
+  m_renderContext = services.renderContext;
+  m_textureCache = services.textureCache;
+  m_factory = std::make_unique<DesktopWidgetFactory>(services.runtime);
 }
 
 void BackgroundWidgetsEditor::setExitRequestedCallback(std::function<void()> callback) {

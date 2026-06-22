@@ -23,6 +23,11 @@ struct PointerEvent;
 
 using DesktopWidgetsSnapshot = DesktopWidgetsConfig;
 
+struct DesktopWidgetsControllerServices {
+  DesktopWidgetServices widgets;
+  LockscreenWidgetsController* lockscreenWidgets = nullptr;
+};
+
 class DesktopWidgetsController {
 public:
   DesktopWidgetsController();
@@ -31,12 +36,7 @@ public:
   DesktopWidgetsController(const DesktopWidgetsController&) = delete;
   DesktopWidgetsController& operator=(const DesktopWidgetsController&) = delete;
 
-  void initialize(
-      WaylandConnection& wayland, ConfigService* config, PipeWireSpectrum* pipewireSpectrum,
-      const WeatherService* weather, RenderContext* renderContext, MprisService* mpris, HttpClient* httpClient,
-      SystemMonitorService* sysmon, LockscreenWidgetsController* lockscreenWidgets,
-      DesktopWidgetScriptDeps scriptDeps = {}
-  );
+  void initialize(const DesktopWidgetsControllerServices& services);
 
   void registerIpc(IpcService& ipc);
   void onOutputChange();

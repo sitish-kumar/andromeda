@@ -1874,15 +1874,38 @@ void Application::initUi() {
       .clipboard = &m_clipboardService,
       .configService = &m_configService,
   };
-  m_lockscreenWidgetsController.initialize(
-      m_wayland, &m_configService, m_lockScreen, m_bar, m_dock, &m_desktopWidgetsController, m_pipewireSpectrum.get(),
-      &m_weatherService, &m_renderContext, m_mprisService.get(), &m_httpClient, m_systemMonitor.get(),
-      &m_sharedTextureCache, desktopWidgetScriptDeps
-  );
-  m_desktopWidgetsController.initialize(
-      m_wayland, &m_configService, m_pipewireSpectrum.get(), &m_weatherService, &m_renderContext, m_mprisService.get(),
-      &m_httpClient, m_systemMonitor.get(), &m_lockscreenWidgetsController, desktopWidgetScriptDeps
-  );
+  const DesktopWidgetRuntimeServices desktopWidgetRuntime{
+      .pipewireSpectrum = m_pipewireSpectrum.get(),
+      .weather = &m_weatherService,
+      .mpris = m_mprisService.get(),
+      .httpClient = &m_httpClient,
+      .sysmon = m_systemMonitor.get(),
+      .scriptDeps = desktopWidgetScriptDeps,
+  };
+  const DesktopWidgetServices lockscreenWidgetServices{
+      .wayland = m_wayland,
+      .config = &m_configService,
+      .renderContext = &m_renderContext,
+      .runtime = desktopWidgetRuntime,
+      .textureCache = &m_sharedTextureCache,
+  };
+  const DesktopWidgetServices desktopWidgetServices{
+      .wayland = m_wayland,
+      .config = &m_configService,
+      .renderContext = &m_renderContext,
+      .runtime = desktopWidgetRuntime,
+  };
+  m_lockscreenWidgetsController.initialize({
+      .widgets = lockscreenWidgetServices,
+      .lockScreen = m_lockScreen,
+      .bar = m_bar,
+      .dock = m_dock,
+      .desktopWidgets = &m_desktopWidgetsController,
+  });
+  m_desktopWidgetsController.initialize({
+      .widgets = desktopWidgetServices,
+      .lockscreenWidgets = &m_lockscreenWidgetsController,
+  });
   m_iconThemePollSource.setChangeCallback([this]() { onIconThemeChanged(); });
 
   std::string lastShellFontFamily = m_configService.config().shell.fontFamily;

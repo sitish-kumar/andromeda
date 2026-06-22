@@ -26,11 +26,7 @@ class LockscreenWidgetsHost {
 public:
   LockscreenWidgetsHost() = default;
 
-  void initialize(
-      WaylandConnection& wayland, ConfigService* config, PipeWireSpectrum* pipewireSpectrum,
-      const WeatherService* weather, RenderContext* renderContext, MprisService* mpris, HttpClient* httpClient,
-      SystemMonitorService* sysmon, DesktopWidgetScriptDeps scriptDeps = {}
-  );
+  void initialize(const DesktopWidgetServices& services);
   void show(const LockscreenWidgetsSnapshot& snapshot, LockScreen& lockScreen);
   void hide();
   void rebuild(const LockscreenWidgetsSnapshot& snapshot, LockScreen& lockScreen);
