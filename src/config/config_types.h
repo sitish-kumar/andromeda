@@ -813,6 +813,7 @@ struct ShellConfig {
     bool launcherCategories = true;
     bool launcherShowIcons = true;
     bool launcherCompact = false;
+    bool launcherAppGrid = false;
     bool launcherSessionSearch = false;
     bool launcherSortByUsage = true;
 

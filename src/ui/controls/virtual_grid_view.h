@@ -86,6 +86,8 @@ public:
   [[nodiscard]] std::optional<std::size_t> selectedIndex() const noexcept { return m_selectedIndex; }
   // Items to move for a Page Up/Down step (one viewport of rows, at least one item).
   [[nodiscard]] std::size_t pageItemStride() const noexcept;
+  // Column count from the most recent layout pass (for keyboard navigation).
+  [[nodiscard]] std::size_t layoutColumnCount() const noexcept { return m_layoutColumns; }
 
   void setOnSelectionChanged(std::function<void(std::optional<std::size_t>)> callback);
 

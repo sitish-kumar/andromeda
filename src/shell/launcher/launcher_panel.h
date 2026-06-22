@@ -19,6 +19,7 @@ class Input;
 class InputArea;
 class Label;
 class LauncherResultAdapter;
+class LauncherAppGridAdapter;
 class Node;
 class Renderer;
 class Segmented;
@@ -78,6 +79,8 @@ private:
   void setActiveCategorySlot(std::size_t slotIndex);
   void applyActiveCategory();
   void syncLauncherListStyle();
+  void syncLauncherViewLayout(Renderer* renderer = nullptr);
+  [[nodiscard]] bool shouldUseAppGrid() const;
   void refreshLauncherAppIconColorization();
   void updateLauncherGridMetrics(Renderer& renderer);
 
@@ -93,7 +96,8 @@ private:
   Flex* m_body = nullptr;
   VirtualGridView* m_grid = nullptr;
   Label* m_emptyLabel = nullptr;
-  std::unique_ptr<LauncherResultAdapter> m_adapter;
+  std::unique_ptr<LauncherResultAdapter> m_listAdapter;
+  std::unique_ptr<LauncherAppGridAdapter> m_gridAdapter;
 
   std::string m_query;
   ActiveCategoryType m_activeCategoryType = All;
@@ -105,6 +109,8 @@ private:
   bool m_categoryFilterVisible = true;
   bool m_launcherShowIcons = true;
   bool m_launcherCompact = false;
+  bool m_launcherAppGrid = false;
+  bool m_usingAppGrid = false;
   float m_launcherRowHeight = 0.0f;
   ConfigService* m_config = nullptr;
   AsyncTextureCache* m_asyncTextures = nullptr;

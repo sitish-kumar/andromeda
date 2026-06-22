@@ -1909,6 +1909,10 @@
           "description": "Show application icons in launcher results",
           "label": "Show App Icons"
         },
+        "launcher-app-grid": {
+          "description": "Show a grid of application icons with labels underneath when results are apps only",
+          "label": "App Grid View"
+        },
         "launcher-sort-by-usage": {
           "description": "Boost frequently used apps toward the top and show a Recently Used category filter",
           "label": "Sort by Usage"

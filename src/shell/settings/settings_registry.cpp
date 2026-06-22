@@ -1010,6 +1010,11 @@ namespace settings {
         ToggleSetting{cfg.shell.panel.launcherShowIcons}, "launcher app icons hide"
     ));
     entries.push_back(makeEntry(
+        SettingsSection::Panels, "launcher", tr("settings.schema.panels.launcher-app-grid.label"),
+        tr("settings.schema.panels.launcher-app-grid.description"), {"shell", "panel", "launcher_app_grid"},
+        ToggleSetting{cfg.shell.panel.launcherAppGrid}, "launcher app grid icons view"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Panels, "launcher", tr("settings.schema.panels.launcher-compact.label"),
         tr("settings.schema.panels.launcher-compact.description"), {"shell", "panel", "launcher_compact"},
         ToggleSetting{cfg.shell.panel.launcherCompact}, "launcher compact rows dense"

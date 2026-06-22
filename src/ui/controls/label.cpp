@@ -502,7 +502,8 @@ LayoutSize Label::measureWithConstraints(Renderer& renderer, const LayoutConstra
     setSize(std::round(finalWidth), height);
   } else {
     m_baselineOffset = -metrics.top;
-    const float height = actualHeight;
+    const float inkSpan = inkHeight > 0.0f ? (metrics.inkBottom - metrics.inkTop) : actualHeight;
+    const float height = std::max(actualHeight, inkSpan);
     float finalWidth = 0.0f;
     if (m_autoScroll) {
       float boxW = m_fullTextWidth;

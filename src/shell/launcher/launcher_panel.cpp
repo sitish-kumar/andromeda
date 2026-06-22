@@ -40,6 +40,8 @@ namespace {
   constexpr std::size_t kGlobalOptInMinChars = 2;
   constexpr float kIconSizeDefault = 40.0f;
   constexpr float kIconSizeCompact = 28.0f;
+  constexpr std::size_t kAppGridColumns = 5;
+  constexpr std::string_view kApplicationsProviderId = "Applications";
   constexpr double kUsageScorePerCount = 0.1;
   constexpr double kTypedUsageScoreCap = 0.5;
   constexpr std::string_view kProviderOverviewProviderId = "__launcher_provider_overview__";
@@ -120,6 +122,32 @@ namespace {
       return std::ceil(textHeight + paddingY * 2.0f);
     }
     return std::ceil(std::max(launcherIconSize(style), textHeight) + paddingY * 2.0f);
+  }
+
+  [[nodiscard]] float launcherAppGridLabelHeight(Renderer& renderer, const LauncherListStyle& style, float wrapWidth) {
+    const float fontSize = Style::fontSizeCaption * style.scale;
+    const TextMetrics metrics =
+        renderer.measureText("Ag\nyg", fontSize, FontWeight::Normal, wrapWidth, 2, TextAlign::Center);
+    const float actualHeight = metrics.bottom - metrics.top;
+    const float inkSpan = std::max(0.0f, metrics.inkBottom - metrics.inkTop);
+    const float rowExtent = renderer.fontRowExtent(fontSize, FontWeight::Normal);
+    return std::ceil(std::max({actualHeight, inkSpan, rowExtent * 2.0f}));
+  }
+
+  [[nodiscard]] float launcherAppGridCellHeight(Renderer& renderer, const LauncherListStyle& style, float wrapWidth) {
+    const float paddingY = Style::spaceSm * style.scale;
+    const float gap = Style::spaceXs * style.scale;
+    const float iconSize = launcherIconSize(style);
+    const float labelHeight = launcherAppGridLabelHeight(renderer, style, wrapWidth);
+    return std::ceil(paddingY * 2.0f + iconSize + gap + labelHeight);
+  }
+
+  [[nodiscard]] float launcherAppGridCellHeightEstimate(const LauncherListStyle& style) {
+    const float paddingY = Style::spaceSm * style.scale;
+    const float gap = Style::spaceXs * style.scale;
+    const float iconSize = launcherIconSize(style);
+    const float labelHeight = Style::fontSizeCaption * style.scale * 2.4f;
+    return std::ceil(paddingY * 2.0f + iconSize + gap + labelHeight);
   }
 
   [[nodiscard]] LauncherListStyle launcherListStyleFrom(const ConfigService* config, float scale) {
@@ -354,6 +382,173 @@ namespace {
     bool m_badgeVisible = false;
   };
 
+  class LauncherAppGridTile final : public Node {
+  public:
+    LauncherAppGridTile(LauncherListStyle style, AsyncTextureCache* asyncTextures)
+        : m_style(style), m_asyncTextures(asyncTextures) {
+      const float gap = Style::spaceXs * m_style.scale;
+      const float padding = Style::spaceSm * m_style.scale;
+      auto col = ui::column({
+          .out = &m_col,
+          .align = FlexAlign::Center,
+          .gap = gap,
+          .paddingV = padding,
+          .paddingH = padding,
+          .radius = Style::scaledRadiusMd(m_style.scale),
+          .fillWidth = true,
+          .fillHeight = true,
+      });
+      addChild(std::move(col));
+
+      m_col->addChild(
+          ui::image({
+              .out = &m_image,
+              .visible = false,
+          })
+      );
+
+      m_col->addChild(
+          ui::glyph({
+              .out = &m_glyph,
+              .glyphSize = launcherIconSize(m_style),
+              .color = colorSpecFromRole(ColorRole::OnSurface),
+              .visible = false,
+          })
+      );
+
+      m_image->setAsyncReadyCallback([this]() {
+        if (!m_style.showIcons
+            || m_iconPath.empty()
+            || m_image == nullptr
+            || m_glyph == nullptr
+            || !m_image->hasImage()) {
+          return;
+        }
+        m_image->setVisible(true);
+        m_glyph->setVisible(false);
+      });
+
+      m_col->addChild(
+          ui::label({
+              .out = &m_title,
+              .fontSize = Style::fontSizeCaption * m_style.scale,
+              .color = colorSpecFromRole(ColorRole::OnSurface),
+              .maxLines = 2,
+              .fontWeight = FontWeight::Normal,
+              .configure = [](Label& label) { label.setTextAlign(TextAlign::Center); },
+          })
+      );
+    }
+
+    void setListStyle(LauncherListStyle style) { m_style = style; }
+
+    void
+    bind(Renderer& renderer, const LauncherResult& result, float width, float height, bool selected, bool hovered) {
+      m_selected = selected;
+      m_hovered = hovered;
+      m_iconPath = result.iconPath;
+      m_fallbackGlyph = result.glyphName.empty() ? "app-window" : result.glyphName;
+      const float iconSize = launcherIconSize(m_style);
+      m_iconTargetSize = static_cast<int>(std::round(iconSize));
+
+      setSize(width, height);
+      m_col->setSize(width, height);
+
+      m_image->setVisible(false);
+      m_image->setParticipatesInLayout(false);
+      m_glyph->setVisible(false);
+      m_glyph->setParticipatesInLayout(false);
+
+      if (m_style.showIcons) {
+        m_image->setParticipatesInLayout(true);
+        m_glyph->setParticipatesInLayout(true);
+        m_image->setSize(iconSize, iconSize);
+        m_glyph->setGlyphSize(iconSize);
+        if (!m_iconPath.empty()) {
+          const bool ready = refreshAsyncIcon(renderer);
+          m_image->setVisible(ready);
+          m_glyph->setGlyph(m_fallbackGlyph);
+          m_glyph->setVisible(!ready);
+        } else {
+          m_image->clear(renderer);
+          m_glyph->setGlyph(m_fallbackGlyph);
+          m_glyph->setVisible(true);
+        }
+      } else {
+        m_image->clear(renderer);
+      }
+
+      const float horizontalPad = Style::spaceSm * m_style.scale * 2.0f;
+      const float textWidth = std::max(0.0f, width - horizontalPad);
+      m_title->setText(result.title);
+      m_title->setMaxWidth(textWidth);
+
+      applyVisualState();
+    }
+
+    bool refreshAsyncIcon(Renderer& renderer) {
+      if (!m_style.showIcons || m_iconPath.empty()) {
+        m_image->setVisible(false);
+        m_glyph->setVisible(false);
+        return false;
+      }
+
+      m_image->setAppIconColorization(m_style.appIconColorizeTint);
+
+      bool ready = false;
+      if (m_asyncTextures != nullptr) {
+        ready = m_image->setSourceFileAsync(renderer, *m_asyncTextures, m_iconPath, m_iconTargetSize, true);
+      } else {
+        ready = m_image->setSourceFile(renderer, m_iconPath, m_iconTargetSize, true);
+      }
+
+      const float iconSize = launcherIconSize(m_style);
+      m_image->setSize(iconSize, iconSize);
+      m_image->setVisible(ready);
+      m_glyph->setGlyph(m_fallbackGlyph);
+      m_glyph->setVisible(!ready);
+      return ready;
+    }
+
+  protected:
+    void doLayout(Renderer& renderer) override {
+      m_col->setSize(width(), height());
+      if (m_style.showIcons && !m_iconPath.empty()) {
+        (void)refreshAsyncIcon(renderer);
+      }
+      Node::doLayout(renderer);
+    }
+
+  private:
+    void applyVisualState() {
+      if (m_selected) {
+        m_col->setFill(colorSpecFromRole(ColorRole::Primary));
+      } else if (m_hovered) {
+        m_col->setFill(colorSpecFromRole(ColorRole::Hover));
+      } else {
+        m_col->setFill(rgba(0, 0, 0, 0));
+      }
+
+      const auto activeRole = m_selected ? ColorRole::OnPrimary : ColorRole::OnHover;
+      const bool active = m_selected || m_hovered;
+      const ColorSpec foreground = colorSpecFromRole(active ? activeRole : ColorRole::OnSurface);
+      m_glyph->setColor(foreground);
+      m_title->setColor(foreground);
+    }
+
+    LauncherListStyle m_style{};
+    bool m_selected = false;
+    bool m_hovered = false;
+    Flex* m_col = nullptr;
+    Image* m_image = nullptr;
+    Glyph* m_glyph = nullptr;
+    Label* m_title = nullptr;
+    AsyncTextureCache* m_asyncTextures = nullptr;
+    std::string m_iconPath;
+    std::string m_fallbackGlyph;
+    int m_iconTargetSize = 0;
+  };
+
 } // namespace
 
 class LauncherResultAdapter final : public VirtualGridAdapter {
@@ -382,6 +577,55 @@ public:
     auto* row = static_cast<LauncherResultRow*>(&tile);
     row->setListStyle(m_style);
     row->bind(*m_renderer, (*m_results)[index], tile.width(), selected, hovered);
+  }
+
+  void onActivate(std::size_t index) override {
+    if (m_onActivate) {
+      m_onActivate(index);
+    }
+  }
+
+  void onSecondaryActivate(std::size_t index, float anchorX, float anchorY) override {
+    if (m_onSecondaryActivate) {
+      m_onSecondaryActivate(index, anchorX, anchorY);
+    }
+  }
+
+private:
+  LauncherListStyle m_style{};
+  AsyncTextureCache* m_cache = nullptr;
+  Renderer* m_renderer = nullptr;
+  const std::vector<LauncherResult>* m_results = nullptr;
+  ActivateCallback m_onActivate;
+  SecondaryActivateCallback m_onSecondaryActivate;
+};
+
+class LauncherAppGridAdapter final : public VirtualGridAdapter {
+public:
+  using ActivateCallback = std::function<void(std::size_t)>;
+  using SecondaryActivateCallback = std::function<void(std::size_t, float, float)>;
+
+  LauncherAppGridAdapter(LauncherListStyle style, AsyncTextureCache* cache) : m_style(style), m_cache(cache) {}
+
+  void setListStyle(LauncherListStyle style) { m_style = style; }
+  void setResults(const std::vector<LauncherResult>* results) { m_results = results; }
+  void setRenderer(Renderer* renderer) { m_renderer = renderer; }
+  void setOnActivate(ActivateCallback callback) { m_onActivate = std::move(callback); }
+  void setOnSecondaryActivate(SecondaryActivateCallback callback) { m_onSecondaryActivate = std::move(callback); }
+
+  [[nodiscard]] std::size_t itemCount() const override { return m_results == nullptr ? 0u : m_results->size(); }
+
+  [[nodiscard]] std::unique_ptr<Node> createTile() override {
+    return std::make_unique<LauncherAppGridTile>(m_style, m_cache);
+  }
+
+  void bindTile(Node& tile, std::size_t index, bool selected, bool hovered) override {
+    if (m_renderer == nullptr || m_results == nullptr || index >= m_results->size()) {
+      return;
+    }
+    auto* gridTile = static_cast<LauncherAppGridTile*>(&tile);
+    gridTile->setListStyle(m_style);
+    gridTile->bind(*m_renderer, (*m_results)[index], tile.width(), tile.height(), selected, hovered);
   }
 
   void onActivate(std::size_t index) override {
@@ -468,23 +712,28 @@ void LauncherPanel::create() {
       .flexGrow = 1.0f,
   });
 
-  m_adapter = std::make_unique<LauncherResultAdapter>(launcherListStyleFrom(m_config, scale), m_asyncTextures);
-  m_adapter->setResults(&m_results);
-  m_adapter->setOnActivate([this](std::size_t index) { activateAt(index); });
-  m_adapter->setOnSecondaryActivate([this](std::size_t index, float ax, float ay) {
-    openAppActionsMenu(index, ax, ay);
-  });
+  const LauncherListStyle initialStyle = launcherListStyleFrom(m_config, scale);
+  m_listAdapter = std::make_unique<LauncherResultAdapter>(initialStyle, m_asyncTextures);
+  m_gridAdapter = std::make_unique<LauncherAppGridAdapter>(initialStyle, m_asyncTextures);
+  m_listAdapter->setResults(&m_results);
+  m_gridAdapter->setResults(&m_results);
+  const auto onActivate = [this](std::size_t index) { activateAt(index); };
+  const auto onSecondaryActivate = [this](std::size_t index, float ax, float ay) { openAppActionsMenu(index, ax, ay); };
+  m_listAdapter->setOnActivate(onActivate);
+  m_listAdapter->setOnSecondaryActivate(onSecondaryActivate);
+  m_gridAdapter->setOnActivate(onActivate);
+  m_gridAdapter->setOnSecondaryActivate(onSecondaryActivate);
 
   body->addChild(
       ui::virtualGridView({
           .out = &m_grid,
           .columns = 1,
-          .cellHeight = launcherRowHeightEstimate(launcherListStyleFrom(m_config, scale)),
+          .cellHeight = launcherRowHeightEstimate(initialStyle),
           .squareCells = false,
           .columnGap = 0.0f,
           .rowGap = Style::spaceXs * scale,
           .overscanRows = kRowOverscan,
-          .adapter = m_adapter.get(),
+          .adapter = m_listAdapter.get(),
           .flexGrow = 1.0f,
           .onSelectionChanged =
               [this](std::optional<std::size_t> idx) {
@@ -520,31 +769,93 @@ void LauncherPanel::create() {
 }
 
 void LauncherPanel::refreshLauncherAppIconColorization() {
-  if (m_adapter == nullptr || m_grid == nullptr) {
+  if (m_listAdapter == nullptr || m_gridAdapter == nullptr || m_grid == nullptr) {
     return;
   }
-  m_adapter->setListStyle(launcherListStyleFrom(m_config, contentScale()));
+  const LauncherListStyle style = launcherListStyleFrom(m_config, contentScale());
+  m_listAdapter->setListStyle(style);
+  m_gridAdapter->setListStyle(style);
   m_grid->notifyDataChanged();
+}
+
+bool LauncherPanel::shouldUseAppGrid() const {
+  if (m_config == nullptr || !m_config->config().shell.panel.launcherAppGrid || !m_launcherShowIcons) {
+    return false;
+  }
+  if (m_results.empty()) {
+    return false;
+  }
+  return std::ranges::all_of(m_results, [](const LauncherResult& result) {
+    return result.providerId == kApplicationsProviderId;
+  });
+}
+
+void LauncherPanel::syncLauncherViewLayout(Renderer* renderer) {
+  if (m_grid == nullptr || m_listAdapter == nullptr || m_gridAdapter == nullptr) {
+    return;
+  }
+
+  const bool useGrid = shouldUseAppGrid();
+  const float scale = contentScale();
+  const LauncherListStyle style = launcherListStyleFrom(m_config, scale);
+  m_listAdapter->setListStyle(style);
+  m_gridAdapter->setListStyle(style);
+  if (renderer != nullptr) {
+    m_listAdapter->setRenderer(renderer);
+    m_gridAdapter->setRenderer(renderer);
+  }
+
+  const bool modeChanged = useGrid != m_usingAppGrid;
+  m_usingAppGrid = useGrid;
+  if (modeChanged) {
+    m_launcherRowHeight = 0.0f;
+  }
+
+  if (useGrid) {
+    m_grid->setColumns(kAppGridColumns);
+    m_grid->setSquareCells(false);
+    m_grid->setColumnGap(Style::spaceSm * scale);
+    m_grid->setRowGap(Style::spaceSm * scale);
+    m_grid->setCellHeight(launcherAppGridCellHeightEstimate(style));
+    if (modeChanged) {
+      m_grid->setAdapter(m_gridAdapter.get());
+    }
+  } else {
+    m_grid->setColumns(1);
+    m_grid->setColumnGap(0.0f);
+    m_grid->setRowGap(Style::spaceXs * scale);
+    m_grid->setCellHeight(launcherRowHeightEstimate(style));
+    if (modeChanged) {
+      m_grid->setAdapter(m_listAdapter.get());
+    }
+  }
+
+  if (modeChanged) {
+    if (renderer != nullptr) {
+      updateLauncherGridMetrics(*renderer);
+    }
+    m_grid->notifyDataChanged();
+  }
 }
 
 void LauncherPanel::syncLauncherListStyle() {
   const bool showIcons = m_config == nullptr || m_config->config().shell.panel.launcherShowIcons;
   const bool compact = m_config != nullptr && m_config->config().shell.panel.launcherCompact;
-  if (showIcons == m_launcherShowIcons && compact == m_launcherCompact && m_adapter != nullptr) {
+  const bool appGrid = m_config != nullptr && m_config->config().shell.panel.launcherAppGrid;
+  if (showIcons == m_launcherShowIcons
+      && compact == m_launcherCompact
+      && appGrid == m_launcherAppGrid
+      && m_listAdapter != nullptr) {
     return;
   }
   m_launcherShowIcons = showIcons;
   m_launcherCompact = compact;
+  m_launcherAppGrid = appGrid;
   m_launcherRowHeight = 0.0f;
-
-  if (m_adapter == nullptr || m_grid == nullptr) {
-    return;
+  syncLauncherViewLayout(nullptr);
+  if (m_grid != nullptr) {
+    m_grid->notifyDataChanged();
   }
-
-  const LauncherListStyle style = launcherListStyleFrom(m_config, contentScale());
-  m_adapter->setListStyle(style);
-  m_grid->setCellHeight(launcherRowHeightEstimate(style));
-  m_grid->setAdapter(m_adapter.get());
 }
 
 void LauncherPanel::updateLauncherGridMetrics(Renderer& renderer) {
@@ -553,13 +864,24 @@ void LauncherPanel::updateLauncherGridMetrics(Renderer& renderer) {
   }
 
   const LauncherListStyle style = launcherListStyleFrom(m_config, contentScale());
-  const float rowHeight = launcherRowHeight(renderer, style);
-  if (std::abs(rowHeight - m_launcherRowHeight) < 0.5f) {
+  float cellHeight = launcherRowHeight(renderer, style);
+  if (m_usingAppGrid) {
+    float wrapWidth = 0.0f;
+    const std::size_t columns = std::max<std::size_t>(1, m_grid->layoutColumnCount());
+    const float viewportW = m_grid->scrollView().contentViewportWidth();
+    const float gap = Style::spaceSm * contentScale();
+    const float cellW =
+        columns > 0 ? (viewportW - static_cast<float>(columns - 1) * gap) / static_cast<float>(columns) : viewportW;
+    const float paddingH = Style::spaceSm * contentScale() * 2.0f;
+    wrapWidth = std::max(0.0f, cellW - paddingH);
+    cellHeight = launcherAppGridCellHeight(renderer, style, wrapWidth);
+  }
+  if (std::abs(cellHeight - m_launcherRowHeight) < 0.5f) {
     return;
   }
 
-  m_launcherRowHeight = rowHeight;
-  m_grid->setCellHeight(rowHeight);
+  m_launcherRowHeight = cellHeight;
+  m_grid->setCellHeight(cellHeight);
 }
 
 void LauncherPanel::onPanelCardOpacityChanged(float opacity) {
@@ -577,10 +899,7 @@ void LauncherPanel::doLayout(Renderer& renderer, float width, float height) {
   }
 
   syncLauncherListStyle();
-
-  if (m_adapter != nullptr) {
-    m_adapter->setRenderer(&renderer);
-  }
+  syncLauncherViewLayout(&renderer);
   updateLauncherGridMetrics(renderer);
 
   m_container->setSize(width, height);
@@ -636,12 +955,14 @@ void LauncherPanel::onClose() {
   m_categoryFilterSlots.clear();
   m_hasRecentlyUsed = false;
   m_selectedIndex = 0;
+  m_usingAppGrid = false;
   m_launcherRowHeight = 0.0f;
 
   if (m_grid != nullptr) {
     m_grid->setAdapter(nullptr);
   }
-  m_adapter.reset();
+  m_listAdapter.reset();
+  m_gridAdapter.reset();
 
   // The scene tree (and all nodes) is destroyed by PanelManager after onClose().
   m_container = nullptr;
@@ -978,6 +1299,7 @@ void LauncherPanel::refreshResults() {
     return;
   }
 
+  syncLauncherViewLayout(nullptr);
   m_grid->notifyDataChanged();
   if (m_results.empty()) {
     m_grid->setSelectedIndex(std::nullopt);
@@ -1226,6 +1548,9 @@ void LauncherPanel::activateSelected() {
 }
 
 bool LauncherPanel::handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers) {
+  const bool gridNav = m_usingAppGrid && m_grid != nullptr;
+  const int columns = gridNav ? static_cast<int>(std::max<std::size_t>(1, m_grid->layoutColumnCount())) : 1;
+
   const auto moveSelection = [this](int delta) {
     if (m_results.empty()) {
       return;
@@ -1281,11 +1606,21 @@ bool LauncherPanel::handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers) {
   }
 
   if (KeybindMatcher::matches(KeybindAction::Up, sym, modifiers)) {
-    moveSelection(-1);
+    moveSelection(gridNav ? -columns : -1);
     return true;
   }
 
   if (KeybindMatcher::matches(KeybindAction::Down, sym, modifiers)) {
+    moveSelection(gridNav ? columns : 1);
+    return true;
+  }
+
+  if (gridNav && KeybindMatcher::matches(KeybindAction::Left, sym, modifiers)) {
+    moveSelection(-1);
+    return true;
+  }
+
+  if (gridNav && KeybindMatcher::matches(KeybindAction::Right, sym, modifiers)) {
     moveSelection(1);
     return true;
   }

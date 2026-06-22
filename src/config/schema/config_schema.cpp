@@ -1140,6 +1140,7 @@ namespace noctalia::config::schema {
           field(&ShellConfig::PanelConfig::launcherCategories, "launcher_categories"),
           field(&ShellConfig::PanelConfig::launcherShowIcons, "launcher_show_icons"),
           field(&ShellConfig::PanelConfig::launcherCompact, "launcher_compact"),
+          field(&ShellConfig::PanelConfig::launcherAppGrid, "launcher_app_grid"),
           field(&ShellConfig::PanelConfig::launcherSessionSearch, "launcher_session_search"),
           field(&ShellConfig::PanelConfig::launcherSortByUsage, "launcher_sort_by_usage"),
       };
