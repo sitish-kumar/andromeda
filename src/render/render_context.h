@@ -31,7 +31,9 @@ public:
   void setGraphicsResetCallback(std::function<void(RenderGraphicsResetStatus)> callback) {
     m_graphicsResetCallback = std::move(callback);
   }
-  void makeCurrent(RenderTarget& target);
+  // Returns false if the surface could not be made current (e.g. teardown);
+  // best-effort callers may ignore it, render paths must skip the frame.
+  bool makeCurrent(RenderTarget& target);
   // Sync text/glyph renderer content scale to the given target's
   // buffer-to-logical ratio. Must be called before any measureText /
   // measureGlyph performed on behalf of this target, because those

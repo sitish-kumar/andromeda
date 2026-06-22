@@ -29,9 +29,9 @@ public:
   void initialize(GlSharedContext& shared) override;
   void cleanup() override;
 
-  void makeCurrent(RenderTarget& target) override;
+  bool makeCurrent(RenderTarget& target) override;
   void makeCurrentNoSurface() override;
-  void beginFrame(RenderTarget& target) override;
+  bool beginFrame(RenderTarget& target) override;
   void endFrame(RenderTarget& target) override;
   [[nodiscard]] RenderGraphicsResetStatus graphicsResetStatus() override;
   void invalidateGpuResources() override;

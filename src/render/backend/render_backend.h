@@ -115,9 +115,12 @@ public:
   virtual void initialize(GlSharedContext& shared) = 0;
   virtual void cleanup() = 0;
 
-  virtual void makeCurrent(RenderTarget& target) = 0;
+  // Returns false if the surface could not be made current (e.g. invalidated
+  // during compositor teardown); callers must skip the frame, not treat it as fatal.
+  virtual bool makeCurrent(RenderTarget& target) = 0;
   virtual void makeCurrentNoSurface() = 0;
-  virtual void beginFrame(RenderTarget& target) = 0;
+  // Returns false if the frame could not begin; callers must skip drawing and endFrame.
+  virtual bool beginFrame(RenderTarget& target) = 0;
   virtual void endFrame(RenderTarget& target) = 0;
   [[nodiscard]] virtual RenderGraphicsResetStatus graphicsResetStatus() = 0;
   virtual void invalidateGpuResources() = 0;

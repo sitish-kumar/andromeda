@@ -26,7 +26,6 @@
 #include <cmath>
 #include <cstdint>
 #include <format>
-#include <stdexcept>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -134,11 +133,10 @@ void RenderContext::makeCurrentNoSurface() {
   m_backend->makeCurrentNoSurface();
 }
 
-void RenderContext::makeCurrent(RenderTarget& target) {
-  if (m_backend == nullptr) {
-    throw std::runtime_error("RenderContext has no initialized backend");
+bool RenderContext::makeCurrent(RenderTarget& target) {
+  if (m_backend == nullptr || !m_backend->makeCurrent(target)) {
+    return false;
   }
-  m_backend->makeCurrent(target);
   // Sync the shared text/glyph renderer to this target's buffer/logical ratio
   // unconditionally on every makeCurrent. The text and glyph renderers are
   // process-singletons; if this is left out, layout/measure on one surface can
@@ -146,6 +144,7 @@ void RenderContext::makeCurrent(RenderTarget& target) {
   // jitter on multi-monitor setups with mixed fractional scales). renderScene
   // also goes through this path indirectly via beginFrame.
   syncContentScale(target);
+  return true;
 }
 
 void RenderContext::syncContentScale(RenderTarget& target) {
@@ -179,7 +178,9 @@ void RenderContext::renderScene(RenderTarget& target, Node* sceneRoot) {
     return;
   }
   const auto totalStart = std::chrono::steady_clock::now();
-  m_backend->beginFrame(target);
+  if (!m_backend->beginFrame(target)) {
+    return;
+  }
   syncContentScale(target);
 
   if (sceneRoot != nullptr

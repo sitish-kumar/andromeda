@@ -260,13 +260,15 @@ void GlesRenderBackend::makeCurrentNoSurface() {
   }
 }
 
-void GlesRenderBackend::makeCurrent(RenderTarget& target) {
+bool GlesRenderBackend::makeCurrent(RenderTarget& target) {
   auto& surface = glesSurfaceTarget(target);
   const auto start = std::chrono::steady_clock::now();
   if (eglMakeCurrent(m_display, surface.eglSurface(), surface.eglSurface(), m_context) != EGL_TRUE) {
-    throw std::runtime_error(
-        std::format("eglMakeCurrent failed (EGL error 0x{:04x})", static_cast<unsigned>(eglGetError()))
-    );
+    // Same teardown hazard as endFrame's swap: the surface can be invalidated by
+    // the compositor and eglMakeCurrent returns EGL_FALSE. Skip the frame rather
+    // than killing the shell; genuine context loss is caught via graphicsResetStatus().
+    kLog.warn("eglMakeCurrent failed (EGL error 0x{:04x}); skipping frame", static_cast<unsigned>(eglGetError()));
+    return false;
   }
   float ms = elapsedSince(start);
   logSlowRenderOperation(ms, "eglMakeCurrent took {:.1f}ms", ms);
@@ -278,15 +280,19 @@ void GlesRenderBackend::makeCurrent(RenderTarget& target) {
   eglSwapInterval(m_display, 0);
   ms = elapsedSince(intervalStart);
   logSlowRenderOperation(ms, "eglSwapInterval(0) took {:.1f}ms", ms);
+  return true;
 }
 
-void GlesRenderBackend::beginFrame(RenderTarget& target) {
-  makeCurrent(target);
+bool GlesRenderBackend::beginFrame(RenderTarget& target) {
+  if (!makeCurrent(target)) {
+    return false;
+  }
 
   setViewport(target.bufferWidth(), target.bufferHeight());
   setBlendMode(RenderBlendMode::PremultipliedAlpha);
   disableScissor();
   clear(rgba(0.0f, 0.0f, 0.0f, 0.0f));
+  return true;
 }
 
 void GlesRenderBackend::endFrame(RenderTarget& target) {
