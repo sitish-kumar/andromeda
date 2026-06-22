@@ -435,15 +435,15 @@
         "custom-color": "Custom…",
         "description": "Description",
         "display": "Display",
-        "display-graph": "Graph",
         "display-gauge": "Gauge",
+        "display-graph": "Graph",
         "fade-when-idle": "Fade When Idle",
         "font-family": "Font",
         "font-family-default": "System default",
         "forecast-days": "Forecast Days",
         "format": "Format",
-        "glyph": "Glyph",
         "gauge-layout": "Gauge Layout",
+        "glyph": "Glyph",
         "hide-when-no-media": "Hide When No Media",
         "highlight-color": "Highlight Color",
         "horizontal": "Horizontal",
@@ -1084,9 +1084,9 @@
         "allowed-urgencies-label": "Allowed urgencies",
         "flag": {
           "history": "history",
+          "permanent": "permanent",
           "sound": "sound",
-          "toast": "toast",
-          "permanent": "permanent"
+          "toast": "toast"
         },
         "flags-label": "When matched",
         "match-label": "App",
@@ -1894,6 +1894,10 @@
           "description": "Choose up to six shortcut buttons for the home tab",
           "label": "Home Shortcuts"
         },
+        "launcher-app-grid": {
+          "description": "Show a grid of application icons with labels underneath when results are apps only",
+          "label": "App Grid View"
+        },
         "launcher-categories": {
           "description": "Display category filters in the launcher; reveal with F6, then cycle with F6 and Shift+F6",
           "label": "Show Categories"
@@ -1914,10 +1918,6 @@
         "launcher-show-icons": {
           "description": "Show application icons in launcher results",
           "label": "Show App Icons"
-        },
-        "launcher-app-grid": {
-          "description": "Show a grid of application icons with labels underneath when results are apps only",
-          "label": "App Grid View"
         },
         "launcher-sort-by-usage": {
           "description": "Boost frequently used apps toward the top and show a Recently Used category filter",

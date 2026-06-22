@@ -36,6 +36,13 @@
       "active-window": {
         "no-active-window": "Няма актыўных акон"
       },
+      "bluetooth": {
+        "connected": "Падлучана"
+      },
+      "brightness": {
+        "brightness": "Яркасць",
+        "display": "Дысплэй"
+      },
       "lock-keys": {
         "caps": "Caps",
         "caps-short": "C",
@@ -49,7 +56,27 @@
         "playing": "Грае"
       },
       "network": {
-        "wired": "Правадны"
+        "active": "Актыўная",
+        "connected": "Падлучана",
+        "connecting": "Ідзе падлучэнне",
+        "download": "Спампоўванне",
+        "interface": "Інтэрфейс",
+        "ip": "Адрас IP",
+        "network": "Сетка",
+        "networks": "Сеткі",
+        "networks-count": "{count} сетка",
+        "networks-count-plural": "{count} сеткі(-ак)",
+        "no": "Не",
+        "not-connected": "Не падлучана",
+        "off": "Выкл",
+        "on": "Укл",
+        "scanning": "Ідзе сканіраванне",
+        "signal": "Сігнал",
+        "upload": "Запампоўванне",
+        "vpn": "VPN",
+        "wifi": "Wi-Fi",
+        "wired": "Правадны",
+        "yes": "Так"
       },
       "privacy": {
         "camera": "Камера",
@@ -59,6 +86,24 @@
       "scripted": {
         "reload-failed": "Не ўдалося перазапусціць скрыпт",
         "reloaded": "Скрыпт перазапушчаны"
+      },
+      "sysmon": {
+        "cpu": "ЦП",
+        "cpu-temp": "Тэмпература ЦП",
+        "disk": "Дыск",
+        "download": "Спампоўванне",
+        "gpu-temp": "Тэмпература ГП",
+        "gpu-usage": "Выкарыстанне ГП",
+        "gpu-vram": "VRAM ГП",
+        "ram": "Аператыўная памяць",
+        "swap": "Swap",
+        "system": "Сістэма",
+        "upload": "Запампоўванне"
+      },
+      "volume": {
+        "device": "Прылада",
+        "mic": "Мікрафон",
+        "volume": "Гучнасць"
       },
       "weather": {
         "default": "Надвор'е",
@@ -120,6 +165,7 @@
       "application-volumes": "Гучнасць праграм",
       "choose-effects-profile": "Выберыце профіль",
       "effects-profile": "Эфекты:",
+      "input-device-prefix": "Увод:",
       "no-application-audio": "Аўдыя не прайграваецца",
       "no-application-audio-body": "Зараз няма праграм, якія прайграваюць аўдыя.",
       "no-input-devices": "Няма прылад уводу",
@@ -128,6 +174,7 @@
       "no-output-devices": "Няма прылад вываду",
       "no-output-devices-body": "Зараз няма даступных крыніц прайгравання.",
       "no-output-selected": "Прылады вываду не выбрана",
+      "output-device-prefix": "Вывад:",
       "unavailable-body": "PipeWire неактыўны.",
       "unavailable-title": "Аўдыя недаступна"
     },
@@ -217,6 +264,9 @@
       "wired-connection": "Правадное злучэнне"
     },
     "notifications": {
+      "clear-all": "Ачысціць усе апавяшчэнні",
+      "dnd-off": "Выключыць рэжым «Не турбаваць»",
+      "dnd-on": "Уключыць рэжым «Не турбаваць»",
       "empty-body": "Тут з'явяцца нядаўнія апавяшчэнні.",
       "empty-title": "Апавяшчэнняў няма",
       "filter": {
@@ -228,6 +278,9 @@
       "filter-empty-body": "Няма апавяшчэнняў, якія адпавядаюць гэтаму фільтру.",
       "filter-empty-title": "Тут нічога",
       "untitled": "Апавяшчэнне без назвы"
+    },
+    "power": {
+      "battery": "Батарэя"
     },
     "screen-time": {
       "disabled": "Адсочванне экраннага часу выключана. Уключыце яго ў наладах, каб запісваць выкарыстанне кожнай праграмы.",

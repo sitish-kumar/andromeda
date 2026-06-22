@@ -3113,15 +3113,15 @@
     },
     "units": {
       "day": "{count} nap",
-      "day-plural": "{count} napok",
+      "day-plural": "{count} nap",
       "hour": "{count} óra",
-      "hour-plural": "{count} órák",
+      "hour-plural": "{count} óra",
       "minute": "{count} perc",
-      "minute-plural": "{count} percek",
+      "minute-plural": "{count} perc",
       "month": "{count} hónap",
-      "month-plural": "{count} hónapok",
+      "month-plural": "{count} hónap",
       "year": "{count} év",
-      "year-plural": "{count} évek"
+      "year-plural": "{count} év"
     }
   },
   "tray": {

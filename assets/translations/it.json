@@ -279,6 +279,17 @@
       "filter-empty-title": "Nulla qui",
       "untitled": "Notifica senza titolo"
     },
+    "power": {
+      "battery": "Batteria",
+      "design-capacity": "della capacità originale",
+      "health": "Stato batteria",
+      "performance-inhibited": "Performance non disponibile",
+      "peripherals": "Dispositivi connessi",
+      "power-profile": "Profilo energetico",
+      "time-to-empty": "{time} rimanente",
+      "time-to-full": "{time} al completamento",
+      "unknown-device": "Dispositivo sconosciuto"
+    },
     "screen-time": {
       "disabled": "Monitoraggio del tempo di utilizzo disattivato. Abilitalo nelle Impostazioni per registrare l'uso per app.",
       "empty": "Nessun tempo di utilizzo app registrato. Seleziona una finestra per iniziare il monitoraggio.",
@@ -351,6 +362,7 @@
       "media": "Media",
       "network": "Rete",
       "notifications": "Notifiche",
+      "power": "Energia",
       "screen-time": "Tempo schermo",
       "system": "Sistema",
       "weather": "Meteo"
@@ -422,13 +434,18 @@
         "command": "Comando",
         "custom-color": "Personalizzato...",
         "description": "Descrizione",
+        "display": "Schermo",
+        "display-gauge": "Gauge",
+        "display-graph": "Grafico",
         "fade-when-idle": "Dissolvi quando inattivo",
         "font-family": "Carattere",
         "font-family-default": "Predefinito di sistema",
         "forecast-days": "N. Giorni",
         "format": "Formato",
+        "gauge-layout": "Layout Gauge",
         "glyph": "Glifo",
         "hide-when-no-media": "Nascondi senza media",
+        "highlight-color": "Colore evidenziato",
         "horizontal": "Orizzontale",
         "hover-background": "Sfondo al passaggio del mouse",
         "hover-foreground": "Primo piano al passaggio mouse",
@@ -438,6 +455,7 @@
         "input-radius": "Raggio input",
         "interface": "Interfaccia",
         "label": "Etichetta",
+        "label-min-width": "Larghezza minima etichetta",
         "layout": "Layout",
         "mirrored": "Specchiato",
         "opacity": "Opacità",
@@ -1062,9 +1080,11 @@
       "filter": {
         "add": "Aggiungi filtro",
         "add-title": "Aggiunta filtro notifiche",
+        "allow-permanent": "Permetti permanente",
         "allowed-urgencies-label": "Livelli priorità consentiti",
         "flag": {
           "history": "cronologia",
+          "permanent": "permanente",
           "sound": "suono",
           "toast": "toast"
         },
@@ -1418,6 +1438,10 @@
         "dead-zone-command": {
           "description": "Comando della shell da eseguire quando si fa clic con il pulsante sinistro sul margine della barra all'esterno delle sezioni del widget",
           "label": "Click sinistro"
+        },
+        "dead-zone-middle-command": {
+          "description": "Comando della shell da eseguire quando si fa clic con il pulsante centrale sul margine della barra all'esterno delle sezioni del widget",
+          "label": "Click centrale"
         },
         "dead-zone-right-command": {
           "description": "Comando da eseguire quando si fa clic con il pulsante destro; lasciare vuoto per aprire il centro di controllo",
@@ -1870,6 +1894,10 @@
           "description": "Scegli fino a sei pulsanti scorciatoia per la scheda home",
           "label": "Scorciatoie home"
         },
+        "launcher-app-grid": {
+          "description": "Mostra una griglia di icone delle applicazioni con le etichette sottostanti quando i risultati riguardano solo le app",
+          "label": "Vista app a griglia"
+        },
         "launcher-categories": {
           "description": "Mostra filtri categoria nel launcher; mostra con F6, poi scorri con F6 e Shift+F6",
           "label": "Mostra categorie"
@@ -2302,6 +2330,14 @@
         "polkit-agent": {
           "description": "Abilita l'agente di autenticazione integrato",
           "label": "Agente Polkit"
+        },
+        "privacy-cam-filter-regex": {
+          "description": "Regex per le app della fotocamera da ignorare negli indicatori di privacy e OSD",
+          "label": "Filtro Regex camera"
+        },
+        "privacy-mic-filter-regex": {
+          "description": "Regex per le app del microfono da ignorare negli indicatori di privacy e OSD",
+          "label": "Filtro Regex microfono"
         },
         "screen-time-enabled": {
           "description": "Monitora l'uso per app e mostralo nel Centro di controllo",
@@ -2836,6 +2872,10 @@
           "description": "Specchia il visualizzatore dal centro",
           "label": "Specchiato"
         },
+        "mute-color": {
+          "description": "Colore usato per l'icona e l'etichetta quando in muto; sono supportati anche i codici colore in formato esadecimale",
+          "label": "Colore muto"
+        },
         "occupied-color": {
           "description": "Ruolo colore usato per workspace occupati; sono supportati anche codici colore in formato esadecimale",
           "label": "Colore occupato"
@@ -2966,7 +3006,7 @@
           "label": "Formato verticale"
         },
         "warning-color": {
-          "description": "Colore applicato quando la carica è pari o inferiore alla soglia di avviso batteria di sistema",
+          "description": "Colore applicato quando la carica è pari o inferiore alla soglia di sistema di avviso batteria",
           "label": "Colore avviso"
         },
         "width": {
@@ -3074,7 +3114,10 @@
   },
   "time": {
     "duration": {
-      "less-than-minute": "<1m"
+      "less-than-day": "meno di 1 giorno",
+      "less-than-minute": "<1m",
+      "three-parts": "{first} {second} {third}",
+      "two-parts": "{first} {second}"
     },
     "file": {
       "unknown": "Sconosciuto"
@@ -3087,6 +3130,18 @@
       "just-now": "proprio ora",
       "minutes-ago": "{count} min fa",
       "minutes-ago-plural": "{count} min fa"
+    },
+    "units": {
+      "day": "{count} giorno",
+      "day-plural": "{count} giorni",
+      "hour": "{count} ora",
+      "hour-plural": "{count} ore",
+      "minute": "{count} minuto",
+      "minute-plural": "{count} minuti",
+      "month": "{count} mese",
+      "month-plural": "{count} mesi",
+      "year": "{count} anno",
+      "year-plural": "{count} anni"
     }
   },
   "tray": {
