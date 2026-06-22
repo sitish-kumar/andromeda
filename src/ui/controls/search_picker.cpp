@@ -27,7 +27,7 @@ namespace {
       setAlign(FlexAlign::Center);
       setGap(Style::spaceSm);
       setPadding(Style::spaceXs, Style::spaceSm);
-      setRadius(Style::scaledRadiusSm());
+      setRadius(Style::scaledRadiusMd());
       setFillWidth(true);
 
       auto preview = std::make_unique<ColorSwatchPreviewStrip>();

@@ -3103,7 +3103,7 @@ namespace settings {
                 .minHeight = Style::controlHeightSm * ctx.scale,
                 .paddingV = Style::spaceXs * ctx.scale,
                 .paddingH = Style::spaceSm * ctx.scale,
-                .radius = Style::scaledRadiusSm(ctx.scale),
+                .radius = Style::scaledRadiusMd(ctx.scale),
                 .onClick = [&editingWidgetName = ctx.editingWidgetName, &renamingWidgetName = ctx.renamingWidgetName,
                             &pendingDeleteWidgetName = ctx.pendingDeleteWidgetName,
                             &pendingDeleteWidgetSettingPath = ctx.pendingDeleteWidgetSettingPath,
