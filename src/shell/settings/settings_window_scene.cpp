@@ -396,11 +396,7 @@ settings::SettingsContentContext SettingsWindow::makeContentContext(
       .focusArea = [this](InputArea* area) { m_inputDispatcher.setFocus(area); },
       .openBarWidgetAddPopup = [this](const std::vector<std::string>& lanePath) { openBarWidgetAddPopup(lanePath); },
       .openSearchPickerPopup =
-          [this](
-              const std::string& title, const std::vector<settings::SelectOption>& options,
-              const std::string& selectedValue, const std::string& placeholder, const std::string& emptyText,
-              const std::vector<std::string>& settingPath
-          ) { openSearchPickerPopup(title, options, selectedValue, placeholder, emptyText, settingPath); },
+          [this](settings::SearchPickerOpenRequest request) { openSearchPickerPopup(std::move(request)); },
       .setOverride = setOverride,
       .setOverrides = setOverrides,
       .clearOverride = clearOverride,

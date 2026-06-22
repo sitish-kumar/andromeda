@@ -320,7 +320,16 @@ namespace settings {
                     selectedValue = setting.selectedValue, placeholder = setting.placeholder,
                     emptyText = setting.emptyText, path = std::move(path)]() {
           if (openPopup) {
-            openPopup(title, options, selectedValue, placeholder, emptyText, path);
+            openPopup(
+                SearchPickerOpenRequest{
+                    .title = title,
+                    .options = options,
+                    .selectedValue = selectedValue,
+                    .placeholder = placeholder,
+                    .emptyText = emptyText,
+                    .settingPath = path,
+                }
+            );
           }
         },
     });

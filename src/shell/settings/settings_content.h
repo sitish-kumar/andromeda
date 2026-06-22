@@ -24,6 +24,15 @@ namespace settings {
 
   [[nodiscard]] std::unique_ptr<Label> makeSettingSubtitleLabel(std::string_view text, float scale);
 
+  struct SearchPickerOpenRequest {
+    std::string title;
+    std::vector<SelectOption> options;
+    std::string selectedValue;
+    std::string placeholder;
+    std::string emptyText;
+    std::vector<std::string> settingPath;
+  };
+
   struct SettingsContentContext {
     const Config& config;
     ConfigService* configService = nullptr;
@@ -50,11 +59,7 @@ namespace settings {
     std::function<void(Node*)> setScrollTarget;
     std::function<void(InputArea*)> focusArea;
     std::function<void(const std::vector<std::string>&)> openBarWidgetAddPopup;
-    std::function<void(
-        const std::string& title, const std::vector<SelectOption>& options, const std::string& selectedValue,
-        const std::string& placeholder, const std::string& emptyText, const std::vector<std::string>& settingPath
-    )>
-        openSearchPickerPopup;
+    std::function<void(SearchPickerOpenRequest request)> openSearchPickerPopup;
     std::function<void(std::vector<std::string>, ConfigOverrideValue)> setOverride;
     std::function<void(std::vector<std::pair<std::vector<std::string>, ConfigOverrideValue>>)> setOverrides;
     std::function<void(std::vector<std::string>)> clearOverride;

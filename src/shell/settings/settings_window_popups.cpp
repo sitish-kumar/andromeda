@@ -422,16 +422,13 @@ void SettingsWindow::openBarWidgetAddPopup(const std::vector<std::string>& laneP
   );
 }
 
-void SettingsWindow::openSearchPickerPopup(
-    std::string title, std::vector<settings::SelectOption> options, std::string selectedValue, std::string placeholder,
-    std::string emptyText, std::vector<std::string> settingPath
-) {
+void SettingsWindow::openSearchPickerPopup(settings::SearchPickerOpenRequest request) {
   if (m_wayland == nullptr
       || m_renderContext == nullptr
       || m_surface == nullptr
       || m_surface->xdgSurface() == nullptr
       || m_config == nullptr
-      || options.empty()) {
+      || request.options.empty()) {
     return;
   }
 
@@ -444,7 +441,8 @@ void SettingsWindow::openSearchPickerPopup(
     m_widgetAddPopup->close();
   }
 
-  m_searchPickerPopup->setOnSelect([this, settingPath, selectedValue](const std::string& value) {
+  m_searchPickerPopup->setOnSelect([this, settingPath = request.settingPath,
+                                    selectedValue = request.selectedValue](const std::string& value) {
     if (value == selectedValue) {
       return;
     }
@@ -456,8 +454,8 @@ void SettingsWindow::openSearchPickerPopup(
   });
 
   std::vector<SearchPickerOption> pickerOptions;
-  pickerOptions.reserve(options.size());
-  for (const auto& opt : options) {
+  pickerOptions.reserve(request.options.size());
+  for (const auto& opt : request.options) {
     pickerOptions.push_back(
         SearchPickerOption{
             .value = opt.value,
@@ -486,11 +484,11 @@ void SettingsWindow::openSearchPickerPopup(
   m_searchPickerPopup->open(
       settings::SearchPickerPopupRequest{
           .parent = parent,
-          .title = std::move(title),
+          .title = std::move(request.title),
           .options = std::move(pickerOptions),
-          .selectedValue = std::move(selectedValue),
-          .placeholder = std::move(placeholder),
-          .emptyText = std::move(emptyText),
+          .selectedValue = std::move(request.selectedValue),
+          .placeholder = std::move(request.placeholder),
+          .emptyText = std::move(request.emptyText),
           .scale = uiScale(),
       }
   );
