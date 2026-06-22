@@ -884,6 +884,7 @@ void SettingsWindow::openNotificationFilterCreateEditor() {
       .showToast = true,
       .saveHistory = true,
       .playSound = true,
+      .allowPermanent = true,
       .allowedUrgencies = {},
   });
 

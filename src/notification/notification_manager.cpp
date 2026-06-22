@@ -207,6 +207,11 @@ uint32_t NotificationManager::addOrReplace(
       ? evaluateExternalDispatch(urgency, appName, category, desktopEntry, transient)
       : ExternalNotificationDispatch{};
 
+  // A matching filter with allow_permanent = false expires otherwise-permanent (timeout 0) notifications.
+  if (timeout == 0 && externalDispatch.disallowPermanent) {
+    timeout = kDefaultNotificationTimeout;
+  }
+
   if (replacesId != 0) {
     if (m_suppressedIds.contains(replacesId)) {
       if (externalDispatch.fullySuppress) {
@@ -636,6 +641,7 @@ NotificationManager::ExternalNotificationDispatch NotificationManager::evaluateE
           .desktopEntry = desktopEntry.has_value() ? std::optional<std::string_view>{*desktopEntry} : std::nullopt,
       }
   );
+  dispatch.disallowPermanent = resolved.matched && !resolved.allowPermanent;
   if (resolved.matched && !urgencyIsAllowed(resolved.allowedUrgencies, urgency)) {
     dispatch.fullySuppress = true;
     dispatch.showToast = false;

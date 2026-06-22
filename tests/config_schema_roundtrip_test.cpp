@@ -317,6 +317,7 @@ location = "https://example.invalid/bad"
             .showToast = false,
             .saveHistory = false,
             .playSound = false,
+            .allowPermanent = false,
             .allowedUrgencies = {"normal", "critical"},
         }},
     };
