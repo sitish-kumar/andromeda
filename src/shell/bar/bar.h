@@ -1,6 +1,7 @@
 #pragma once
 
 #include "shell/bar/bar_instance.h"
+#include "shell/bar/bar_services.h"
 #include "shell/bar/widget_factory.h"
 #include "shell/panel/attached_panel_context.h"
 #include "ui/dialogs/layer_popup_host.h"
@@ -34,7 +35,6 @@ class PowerProfilesService;
 class RenderContext;
 class SystemMonitorService;
 class UPowerService;
-class TimeService;
 class TrayService;
 class GammaService;
 class WeatherService;
@@ -51,16 +51,7 @@ class Bar {
 public:
   Bar();
 
-  bool initialize(
-      CompositorPlatform& platform, ConfigService* config, TimeService* timeService, NotificationManager* notifications,
-      TrayService* tray, PipeWireService* audio, EasyEffectsService* easyEffects, UPowerService* upower,
-      SystemMonitorService* sysmon, PowerProfilesService* powerProfiles, INetworkService* network,
-      IdleInhibitor* idleInhibitor, MprisService* mpris, PipeWireSpectrum* audioSpectrum, HttpClient* httpClient,
-      WeatherService* weatherService, RenderContext* renderContext, GammaService* nightLight,
-      noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth, BrightnessService* brightness,
-      LockKeysService* lockKeys, ClipboardService* clipboard, FileWatcher* fileWatcher = nullptr,
-      ScreenshotService* screenshots = nullptr, scripting::ScriptApiContext* scriptApi = nullptr
-  );
+  bool initialize(const BarServices& services);
   void reload();
   void closeAllInstances();
   void show();
@@ -118,6 +109,7 @@ private:
   void populateWidgets(BarInstance& instance);
   void attachWidgetsToSections(BarInstance& instance);
   void rebuildInstanceContents(BarInstance& instance, const BarConfig& newConfig);
+  [[nodiscard]] BarServices services() const;
   void buildScene(BarInstance& instance, std::uint32_t width, std::uint32_t height);
   void prepareFrame(BarInstance& instance, bool needsUpdate, bool needsLayout);
   void updateWidgets(BarInstance& instance);

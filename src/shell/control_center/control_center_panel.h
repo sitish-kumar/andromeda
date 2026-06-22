@@ -4,6 +4,7 @@
 #include "shell/control_center/audio_tab.h"
 #include "shell/control_center/bluetooth_tab.h"
 #include "shell/control_center/calendar_tab.h"
+#include "shell/control_center/control_center_services.h"
 #include "shell/control_center/display_tab.h"
 #include "shell/control_center/home_tab.h"
 #include "shell/control_center/media_tab.h"
@@ -63,20 +64,7 @@ class ThumbnailService;
 
 class ControlCenterPanel : public Panel {
 public:
-  ControlCenterPanel(
-      NotificationManager* notifications, PipeWireService* audio, EasyEffectsService* easyEffects, MprisService* mpris,
-      ConfigService* config = nullptr, HttpClient* httpClient = nullptr, WeatherService* weather = nullptr,
-      PipeWireSpectrum* spectrum = nullptr, UPowerService* upower = nullptr,
-      PowerProfilesService* powerProfiles = nullptr, INetworkService* network = nullptr,
-      NetworkSecretAgent* networkSecrets = nullptr, BluetoothService* bluetooth = nullptr,
-      BluetoothAgent* bluetoothAgent = nullptr, BrightnessService* brightness = nullptr,
-      SystemMonitorService* sysmon = nullptr, ScreenTimeService* screenTime = nullptr,
-      GammaService* nightLight = nullptr, noctalia::theme::ThemeService* theme = nullptr,
-      IdleInhibitor* idleInhibitor = nullptr, DependencyService* dependencies = nullptr,
-      CompositorPlatform* platform = nullptr, IpcService* ipc = nullptr, Wallpaper* wallpaper = nullptr,
-      CalendarService* calendar = nullptr, scripting::ScriptApiContext* scriptApi = nullptr,
-      ClipboardService* clipboard = nullptr, AccountsService* accounts = nullptr, ThumbnailService* thumbnails = nullptr
-  );
+  explicit ControlCenterPanel(const ControlCenterServices& services);
 
   void create() override;
   void onFrameTick(float deltaMs) override;

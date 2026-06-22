@@ -968,50 +968,34 @@ namespace {
 
 Bar::Bar() = default;
 
-bool Bar::initialize(
-    CompositorPlatform& platform, ConfigService* config, TimeService* timeService, NotificationManager* notifications,
-    TrayService* tray, PipeWireService* audio, EasyEffectsService* easyEffects, UPowerService* upower,
-    SystemMonitorService* sysmon, PowerProfilesService* powerProfiles, INetworkService* network,
-    IdleInhibitor* idleInhibitor, MprisService* mpris, PipeWireSpectrum* audioSpectrum, HttpClient* httpClient,
-    WeatherService* weatherService, RenderContext* renderContext, GammaService* nightLight,
-    noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth, BrightnessService* brightness,
-    LockKeysService* lockKeys, ClipboardService* clipboard, FileWatcher* fileWatcher, ScreenshotService* screenshots,
-    scripting::ScriptApiContext* scriptApi
-) {
-  m_platform = &platform;
-  m_config = config;
-  m_notifications = notifications;
-  m_tray = tray;
-  m_audio = audio;
-  m_easyEffects = easyEffects;
-  m_upower = upower;
-  m_sysmon = sysmon;
-  m_powerProfiles = powerProfiles;
-  m_network = network;
-  m_idleInhibitor = idleInhibitor;
-  m_mpris = mpris;
-  m_audioSpectrum = audioSpectrum;
-  m_httpClient = httpClient;
-  m_weatherService = weatherService;
-  m_renderContext = renderContext;
-  m_nightLight = nightLight;
-  m_themeService = themeService;
-  m_bluetooth = bluetooth;
-  m_brightness = brightness;
-  m_lockKeys = lockKeys;
-  m_clipboard = clipboard;
-  m_fileWatcher = fileWatcher;
-  m_screenshots = screenshots;
-  m_scriptApi = scriptApi;
+bool Bar::initialize(const BarServices& services) {
+  m_platform = &services.platform;
+  m_config = &services.config;
+  m_notifications = services.notifications;
+  m_tray = services.tray;
+  m_audio = services.audio;
+  m_easyEffects = services.easyEffects;
+  m_upower = services.upower;
+  m_sysmon = services.sysmon;
+  m_powerProfiles = services.powerProfiles;
+  m_network = services.network;
+  m_idleInhibitor = services.idleInhibitor;
+  m_mpris = services.mpris;
+  m_audioSpectrum = services.audioSpectrum;
+  m_httpClient = services.httpClient;
+  m_weatherService = services.weather;
+  m_renderContext = services.renderContext;
+  m_nightLight = services.nightLight;
+  m_themeService = services.theme;
+  m_bluetooth = services.bluetooth;
+  m_brightness = services.brightness;
+  m_lockKeys = services.lockKeys;
+  m_clipboard = services.clipboard;
+  m_fileWatcher = services.fileWatcher;
+  m_screenshots = services.screenshots;
+  m_scriptApi = services.scriptApi;
 
-  m_widgetFactory = std::make_unique<WidgetFactory>(
-      *m_platform, *m_config, m_notifications, m_tray, m_audio, easyEffects, m_upower, m_sysmon, m_powerProfiles,
-      m_network, m_idleInhibitor, m_mpris, m_audioSpectrum, m_httpClient, m_weatherService, m_nightLight,
-      m_themeService, m_bluetooth, m_brightness, m_lockKeys, m_clipboard, m_fileWatcher, m_screenshots, m_renderContext,
-      m_scriptApi
-  );
-
-  (void)timeService;
+  m_widgetFactory = std::make_unique<WidgetFactory>(services);
 
   m_lastBars = m_config->config().bars;
   m_lastWidgets = m_config->config().widgets;
@@ -1035,6 +1019,36 @@ bool Bar::initialize(
   return true;
 }
 
+BarServices Bar::services() const {
+  return {
+      .platform = *m_platform,
+      .config = *m_config,
+      .notifications = m_notifications,
+      .tray = m_tray,
+      .audio = m_audio,
+      .easyEffects = m_easyEffects,
+      .upower = m_upower,
+      .sysmon = m_sysmon,
+      .powerProfiles = m_powerProfiles,
+      .network = m_network,
+      .idleInhibitor = m_idleInhibitor,
+      .mpris = m_mpris,
+      .audioSpectrum = m_audioSpectrum,
+      .httpClient = m_httpClient,
+      .weather = m_weatherService,
+      .renderContext = m_renderContext,
+      .nightLight = m_nightLight,
+      .theme = m_themeService,
+      .bluetooth = m_bluetooth,
+      .brightness = m_brightness,
+      .lockKeys = m_lockKeys,
+      .clipboard = m_clipboard,
+      .fileWatcher = m_fileWatcher,
+      .screenshots = m_screenshots,
+      .scriptApi = m_scriptApi,
+  };
+}
+
 void Bar::onSecondTick() {
   for (auto& inst : m_instances) {
     if (inst->surface != nullptr) {
@@ -1053,12 +1067,7 @@ void Bar::reload() {
   m_lastWidgets = m_config->config().widgets;
   m_lastShadow = m_config->config().shell.shadow;
   m_lastPlugins = m_config->config().plugins;
-  m_widgetFactory = std::make_unique<WidgetFactory>(
-      *m_platform, *m_config, m_notifications, m_tray, m_audio, m_easyEffects, m_upower, m_sysmon, m_powerProfiles,
-      m_network, m_idleInhibitor, m_mpris, m_audioSpectrum, m_httpClient, m_weatherService, m_nightLight,
-      m_themeService, m_bluetooth, m_brightness, m_lockKeys, m_clipboard, m_fileWatcher, m_screenshots, m_renderContext,
-      m_scriptApi
-  );
+  m_widgetFactory = std::make_unique<WidgetFactory>(services());
 
   if (recreateForOrder) {
     kLog.info("bar order changed; recreating layer-shell surfaces");

@@ -104,22 +104,16 @@ namespace {
 
 } // namespace
 
-WidgetFactory::WidgetFactory(
-    CompositorPlatform& platform, ConfigService& config, NotificationManager* notifications, TrayService* tray,
-    PipeWireService* audio, EasyEffectsService* easyEffects, UPowerService* upower, SystemMonitorService* sysmon,
-    PowerProfilesService* powerProfiles, INetworkService* network, IdleInhibitor* idleInhibitor, MprisService* mpris,
-    PipeWireSpectrum* audioSpectrum, HttpClient* httpClient, WeatherService* weather, GammaService* nightLight,
-    noctalia::theme::ThemeService* themeService, BluetoothService* bluetooth, BrightnessService* brightness,
-    LockKeysService* lockKeys, ClipboardService* clipboard, FileWatcher* fileWatcher, ScreenshotService* screenshots,
-    RenderContext* renderContext, scripting::ScriptApiContext* scriptApi
-)
-    : m_platform(platform), m_configService(config), m_config(config.config()), m_notifications(notifications),
-      m_tray(tray), m_audio(audio), m_easyEffects(easyEffects), m_upower(upower), m_sysmon(sysmon),
-      m_powerProfiles(powerProfiles), m_network(network), m_idleInhibitor(idleInhibitor), m_mpris(mpris),
-      m_audioSpectrum(audioSpectrum), m_httpClient(httpClient), m_weather(weather), m_nightLight(nightLight),
-      m_themeService(themeService), m_bluetooth(bluetooth), m_brightness(brightness), m_lockKeys(lockKeys),
-      m_clipboard(clipboard), m_fileWatcher(fileWatcher), m_screenshots(screenshots), m_renderContext(renderContext),
-      m_scriptApi(scriptApi) {
+WidgetFactory::WidgetFactory(const BarServices& services)
+    : m_platform(services.platform), m_configService(services.config), m_config(services.config.config()),
+      m_notifications(services.notifications), m_tray(services.tray), m_audio(services.audio),
+      m_easyEffects(services.easyEffects), m_upower(services.upower), m_sysmon(services.sysmon),
+      m_powerProfiles(services.powerProfiles), m_network(services.network), m_idleInhibitor(services.idleInhibitor),
+      m_mpris(services.mpris), m_audioSpectrum(services.audioSpectrum), m_httpClient(services.httpClient),
+      m_weather(services.weather), m_nightLight(services.nightLight), m_themeService(services.theme),
+      m_bluetooth(services.bluetooth), m_brightness(services.brightness), m_lockKeys(services.lockKeys),
+      m_clipboard(services.clipboard), m_fileWatcher(services.fileWatcher), m_screenshots(services.screenshots),
+      m_renderContext(services.renderContext), m_scriptApi(services.scriptApi) {
   scripting::PluginRegistry::instance().ensureScanned();
 }
 

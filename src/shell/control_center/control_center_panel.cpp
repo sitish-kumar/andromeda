@@ -42,41 +42,31 @@ namespace {
 
 } // namespace
 
-ControlCenterPanel::ControlCenterPanel(
-    NotificationManager* notifications, PipeWireService* audio, EasyEffectsService* easyEffects, MprisService* mpris,
-    ConfigService* config, HttpClient* httpClient, WeatherService* weather, PipeWireSpectrum* spectrum,
-    UPowerService* upower, PowerProfilesService* powerProfiles, INetworkService* network,
-    NetworkSecretAgent* networkSecrets, BluetoothService* bluetooth, BluetoothAgent* bluetoothAgent,
-    BrightnessService* brightness, SystemMonitorService* sysmon, ScreenTimeService* screenTime,
-    GammaService* nightLight, noctalia::theme::ThemeService* theme, IdleInhibitor* idleInhibitor,
-    DependencyService* dependencies, CompositorPlatform* platform, IpcService* ipc, Wallpaper* wallpaper,
-    CalendarService* calendar, scripting::ScriptApiContext* scriptApi, ClipboardService* clipboard,
-    AccountsService* accounts, ThumbnailService* thumbnails
-) {
-  m_hasPowerServices = upower != nullptr || powerProfiles != nullptr;
-  WaylandConnection* wayland = platform != nullptr ? &platform->wayland() : nullptr;
-  m_config = config;
-  m_mpris = mpris;
-  m_notificationManager = notifications;
-  m_dependencies = dependencies;
-  m_tabs[tabIndex(TabId::Home)] = std::make_unique<HomeTab>(
-      mpris, httpClient, weather, audio, powerProfiles, config, network, bluetooth, nightLight, theme, notifications,
-      idleInhibitor, dependencies, platform, ipc, wallpaper, scriptApi, clipboard, accounts, thumbnails
-  );
+ControlCenterPanel::ControlCenterPanel(const ControlCenterServices& services) {
+  m_hasPowerServices = services.upower != nullptr || services.powerProfiles != nullptr;
+  WaylandConnection* wayland = services.platform != nullptr ? &services.platform->wayland() : nullptr;
+  m_config = services.config;
+  m_mpris = services.mpris;
+  m_notificationManager = services.notifications;
+  m_dependencies = services.dependencies;
+  m_tabs[tabIndex(TabId::Home)] = std::make_unique<HomeTab>(services);
   m_tabs[tabIndex(TabId::Media)] = std::make_unique<MediaTab>(
-      mpris, httpClient, spectrum, config, wayland, PanelManager::instance().renderContext()
+      services.mpris, services.httpClient, services.spectrum, services.config, wayland,
+      PanelManager::instance().renderContext()
   );
-  m_tabs[tabIndex(TabId::Audio)] =
-      std::make_unique<AudioTab>(audio, easyEffects, mpris, config, wayland, PanelManager::instance().renderContext());
-  m_tabs[tabIndex(TabId::Weather)] = std::make_unique<WeatherTab>(weather, config);
-  m_tabs[tabIndex(TabId::Calendar)] = std::make_unique<CalendarTab>(config, calendar);
-  m_tabs[tabIndex(TabId::Notifications)] = std::make_unique<NotificationsTab>(notifications);
-  m_tabs[tabIndex(TabId::Network)] = std::make_unique<NetworkTab>(network, networkSecrets);
-  m_tabs[tabIndex(TabId::Bluetooth)] = std::make_unique<BluetoothTab>(bluetooth, bluetoothAgent);
-  m_tabs[tabIndex(TabId::Display)] = std::make_unique<DisplayTab>(brightness, config);
-  m_tabs[tabIndex(TabId::System)] = std::make_unique<SystemTab>(sysmon);
-  m_tabs[tabIndex(TabId::ScreenTime)] = std::make_unique<ScreenTimeTab>(screenTime);
-  m_tabs[tabIndex(TabId::Power)] = std::make_unique<PowerTab>(upower, powerProfiles);
+  m_tabs[tabIndex(TabId::Audio)] = std::make_unique<AudioTab>(
+      services.audio, services.easyEffects, services.mpris, services.config, wayland,
+      PanelManager::instance().renderContext()
+  );
+  m_tabs[tabIndex(TabId::Weather)] = std::make_unique<WeatherTab>(services.weather, services.config);
+  m_tabs[tabIndex(TabId::Calendar)] = std::make_unique<CalendarTab>(services.config, services.calendar);
+  m_tabs[tabIndex(TabId::Notifications)] = std::make_unique<NotificationsTab>(services.notifications);
+  m_tabs[tabIndex(TabId::Network)] = std::make_unique<NetworkTab>(services.network, services.networkSecrets);
+  m_tabs[tabIndex(TabId::Bluetooth)] = std::make_unique<BluetoothTab>(services.bluetooth, services.bluetoothAgent);
+  m_tabs[tabIndex(TabId::Display)] = std::make_unique<DisplayTab>(services.brightness, services.config);
+  m_tabs[tabIndex(TabId::System)] = std::make_unique<SystemTab>(services.sysmon);
+  m_tabs[tabIndex(TabId::ScreenTime)] = std::make_unique<ScreenTimeTab>(services.screenTime);
+  m_tabs[tabIndex(TabId::Power)] = std::make_unique<PowerTab>(services.upower, services.powerProfiles);
   m_tabButtons.fill(nullptr);
   m_tabContainers.fill(nullptr);
   m_tabHeaderActions.fill(nullptr);

@@ -1548,15 +1548,37 @@ void Application::initUi() {
   m_panelManager.registerPanel("test", std::make_unique<TestPanel>());
   m_panelManager.registerPanel(
       "control-center",
-      std::make_unique<ControlCenterPanel>(
-          &m_notificationManager, m_pipewireService.get(), m_easyEffectsService.get(), m_mprisService.get(),
-          &m_configService, &m_httpClient, &m_weatherService, m_pipewireSpectrum.get(), m_upowerService.get(),
-          m_powerProfilesService.get(), m_networkService.get(), m_networkSecretAgent.get(), m_bluetoothService.get(),
-          m_bluetoothAgent.get(), m_brightnessService.get(), m_systemMonitor.get(), &m_screenTimeService,
-          &m_gammaService, &m_themeService, &m_idleInhibitor, &m_dependencyService, &m_compositorPlatform,
-          &m_ipcService, &m_wallpaper, &m_calendarService, &m_scriptApi, &m_clipboardService, m_accountsService.get(),
-          &m_thumbnailService
-      )
+      std::make_unique<ControlCenterPanel>(ControlCenterServices{
+          .notifications = &m_notificationManager,
+          .audio = m_pipewireService.get(),
+          .easyEffects = m_easyEffectsService.get(),
+          .mpris = m_mprisService.get(),
+          .config = &m_configService,
+          .httpClient = &m_httpClient,
+          .weather = &m_weatherService,
+          .spectrum = m_pipewireSpectrum.get(),
+          .upower = m_upowerService.get(),
+          .powerProfiles = m_powerProfilesService.get(),
+          .network = m_networkService.get(),
+          .networkSecrets = m_networkSecretAgent.get(),
+          .bluetooth = m_bluetoothService.get(),
+          .bluetoothAgent = m_bluetoothAgent.get(),
+          .brightness = m_brightnessService.get(),
+          .sysmon = m_systemMonitor.get(),
+          .screenTime = &m_screenTimeService,
+          .nightLight = &m_gammaService,
+          .theme = &m_themeService,
+          .idleInhibitor = &m_idleInhibitor,
+          .dependencies = &m_dependencyService,
+          .platform = &m_compositorPlatform,
+          .ipc = &m_ipcService,
+          .wallpaper = &m_wallpaper,
+          .calendar = &m_calendarService,
+          .scriptApi = &m_scriptApi,
+          .clipboard = &m_clipboardService,
+          .accounts = m_accountsService.get(),
+          .thumbnails = &m_thumbnailService,
+      })
   );
   {
     auto launcherPanel = std::make_unique<LauncherPanel>(&m_configService, &m_asyncTextureCache);
@@ -1741,14 +1763,33 @@ void Application::initUi() {
 
   m_trayMenu.initialize(m_wayland, &m_configService, m_trayService.get(), &m_renderContext);
 
-  m_bar.initialize(
-      m_compositorPlatform, &m_configService, &m_timeService, &m_notificationManager, m_trayService.get(),
-      m_pipewireService.get(), m_easyEffectsService.get(), m_upowerService.get(), m_systemMonitor.get(),
-      m_powerProfilesService.get(), m_networkService.get(), &m_idleInhibitor, m_mprisService.get(),
-      m_pipewireSpectrum.get(), &m_httpClient, &m_weatherService, &m_renderContext, &m_gammaService, &m_themeService,
-      m_bluetoothService.get(), m_brightnessService.get(), kLockKeysEnabled ? &m_lockKeysService : nullptr,
-      &m_clipboardService, &m_fileWatcher, &m_screenshotService, &m_scriptApi
-  );
+  m_bar.initialize({
+      .platform = m_compositorPlatform,
+      .config = m_configService,
+      .notifications = &m_notificationManager,
+      .tray = m_trayService.get(),
+      .audio = m_pipewireService.get(),
+      .easyEffects = m_easyEffectsService.get(),
+      .upower = m_upowerService.get(),
+      .sysmon = m_systemMonitor.get(),
+      .powerProfiles = m_powerProfilesService.get(),
+      .network = m_networkService.get(),
+      .idleInhibitor = &m_idleInhibitor,
+      .mpris = m_mprisService.get(),
+      .audioSpectrum = m_pipewireSpectrum.get(),
+      .httpClient = &m_httpClient,
+      .weather = &m_weatherService,
+      .renderContext = &m_renderContext,
+      .nightLight = &m_gammaService,
+      .theme = &m_themeService,
+      .bluetooth = m_bluetoothService.get(),
+      .brightness = m_brightnessService.get(),
+      .lockKeys = kLockKeysEnabled ? &m_lockKeysService : nullptr,
+      .clipboard = &m_clipboardService,
+      .fileWatcher = &m_fileWatcher,
+      .screenshots = &m_screenshotService,
+      .scriptApi = &m_scriptApi,
+  });
   m_bar.setOpenWidgetSettingsCallback([this](std::string barName, std::string widgetName) {
     if (m_panelManager.isOpen()) {
       m_panelManager.closePanel();

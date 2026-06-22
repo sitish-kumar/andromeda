@@ -127,34 +127,10 @@ namespace {
 
 } // namespace
 
-HomeTab::HomeTab(
-    MprisService* mpris, HttpClient* httpClient, WeatherService* weather, PipeWireService* audio,
-    PowerProfilesService* powerProfiles, ConfigService* config, INetworkService* network, BluetoothService* bluetooth,
-    GammaService* nightLight, noctalia::theme::ThemeService* theme, NotificationManager* notifications,
-    IdleInhibitor* idleInhibitor, DependencyService* dependencies, CompositorPlatform* platform, IpcService* ipc,
-    Wallpaper* wallpaper, scripting::ScriptApiContext* scriptApi, ClipboardService* clipboard,
-    AccountsService* accounts, ThumbnailService* thumbnails
-)
-    : m_mpris(mpris), m_httpClient(httpClient), m_weather(weather), m_config(config), m_accounts(accounts),
-      m_wallpaper(wallpaper), m_thumbnails(thumbnails), m_services{
-                                                            .network = network,
-                                                            .bluetooth = bluetooth,
-                                                            .nightLight = nightLight,
-                                                            .theme = theme,
-                                                            .notifications = notifications,
-                                                            .idleInhibitor = idleInhibitor,
-                                                            .audio = audio,
-                                                            .powerProfiles = powerProfiles,
-                                                            .mpris = mpris,
-                                                            .weather = weather,
-                                                            .config = config,
-                                                            .dependencies = dependencies,
-                                                            .platform = platform,
-                                                            .ipc = ipc,
-                                                            .scriptApi = scriptApi,
-                                                            .httpClient = httpClient,
-                                                            .clipboard = clipboard,
-                                                        } {
+HomeTab::HomeTab(const ControlCenterServices& services)
+    : m_mpris(services.mpris), m_httpClient(services.httpClient), m_weather(services.weather),
+      m_config(services.config), m_accounts(services.accounts), m_wallpaper(services.wallpaper),
+      m_thumbnails(services.thumbnails), m_services(services.shortcutServices()) {
   if (m_thumbnails != nullptr) {
     m_thumbnailPendingSub = m_thumbnails->subscribePendingUpload([this]() {
       if (m_wallpaperBg == nullptr) {

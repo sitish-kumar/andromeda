@@ -2,6 +2,7 @@
 
 #include "core/timer_manager.h"
 #include "render/core/thumbnail_service.h"
+#include "shell/control_center/control_center_services.h"
 #include "shell/control_center/shortcut_services.h"
 #include "shell/control_center/tab.h"
 #include "ui/signal.h"
@@ -42,14 +43,7 @@ struct ShortcutPad {
 
 class HomeTab : public Tab {
 public:
-  HomeTab(
-      MprisService* mpris, HttpClient* httpClient, WeatherService* weather, PipeWireService* audio,
-      PowerProfilesService* powerProfiles, ConfigService* config, INetworkService* network, BluetoothService* bluetooth,
-      GammaService* nightLight, noctalia::theme::ThemeService* theme, NotificationManager* notifications,
-      IdleInhibitor* idleInhibitor, DependencyService* dependencies, CompositorPlatform* platform, IpcService* ipc,
-      Wallpaper* wallpaper = nullptr, scripting::ScriptApiContext* scriptApi = nullptr,
-      ClipboardService* clipboard = nullptr, AccountsService* accounts = nullptr, ThumbnailService* thumbnails = nullptr
-  );
+  explicit HomeTab(const ControlCenterServices& services);
   ~HomeTab() override;
 
   std::unique_ptr<Flex> create() override;
