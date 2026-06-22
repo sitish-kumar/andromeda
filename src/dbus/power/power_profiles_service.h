@@ -56,6 +56,8 @@ public:
 private:
   [[nodiscard]] PowerProfilesChangeOrigin consumeActiveProfileChangeOrigin(std::string_view profile);
   void emitChangedIfNeeded(PowerProfilesState next, bool stateSnapshot);
+  void releaseHold();
+  [[nodiscard]] bool holdProfile(std::string_view profile);
 
   SystemBus& m_bus;
   std::unique_ptr<sdbus::IProxy> m_proxy;
@@ -66,4 +68,5 @@ private:
   bool m_hasStateSnapshot = false;
   bool m_refreshInFlight = false;
   bool m_refreshQueued = false;
+  uint32_t m_holdCookie = 0;
 };

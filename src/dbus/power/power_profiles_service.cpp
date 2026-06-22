@@ -140,7 +140,10 @@ PowerProfilesService::PowerProfilesService(SystemBus& bus) : m_bus(bus) {
   refresh();
 }
 
-PowerProfilesService::~PowerProfilesService() { m_lifetimeToken.reset(); }
+PowerProfilesService::~PowerProfilesService() {
+  releaseHold();
+  m_lifetimeToken.reset();
+}
 
 void PowerProfilesService::setChangeCallback(ChangeCallback callback) { m_changeCallback = std::move(callback); }
 
@@ -187,6 +190,34 @@ void PowerProfilesService::refresh() {
   }
 }
 
+void PowerProfilesService::releaseHold() {
+  if (m_holdCookie == 0) {
+    return;
+  }
+  const uint32_t cookie = m_holdCookie;
+  m_holdCookie = 0;
+  try {
+    m_proxy->callMethod("ReleaseProfile").onInterface(kPowerProfilesInterface).withArguments(cookie);
+  } catch (const sdbus::Error& e) {
+    kLog.warn("power profile release hold failed cookie={} err={}", cookie, e.what());
+  }
+}
+
+bool PowerProfilesService::holdProfile(std::string_view profile) {
+  try {
+    uint32_t cookie = 0;
+    m_proxy->callMethod("HoldProfile")
+        .onInterface(kPowerProfilesInterface)
+        .withArguments(std::string(profile), std::string("Selected in control center"), std::string("noctalia"))
+        .storeResultsTo(cookie);
+    m_holdCookie = cookie;
+    return true;
+  } catch (const sdbus::Error& e) {
+    kLog.warn("power profile hold failed profile={} err={}", profile, e.what());
+    return false;
+  }
+}
+
 bool PowerProfilesService::setActiveProfile(std::string_view profile) {
   if (profile.empty()) {
     return false;
@@ -195,6 +226,24 @@ bool PowerProfilesService::setActiveProfile(std::string_view profile) {
   const std::string requested(profile);
   if (requested != m_state.activeProfile) {
     m_pendingLocalActiveProfile = requested;
+  }
+
+  // ppd's BatteryAware auto-management reverts a manual Set to power-saver back to
+  // balanced while on AC. A hold overrides that, so power-saver goes through HoldProfile.
+  // balanced/performance keep using Set so the choice persists across shell restarts.
+  if (requested == "power-saver") {
+    releaseHold();
+    if (holdProfile(requested)) {
+      PowerProfilesState next = m_state;
+      next.activeProfile = requested;
+      emitChangedIfNeeded(std::move(next), false);
+      refresh();
+      return true;
+    }
+    // Hold failed; fall through to the Set path.
+  } else {
+    // Leaving power-saver: drop our hold so the daemon honors the Set.
+    releaseHold();
   }
 
   const std::weak_ptr<int> lifetimeToken = m_lifetimeToken;
