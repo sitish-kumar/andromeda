@@ -166,21 +166,52 @@ namespace {
 TaskbarWidget::TaskbarWidget(
     CompositorPlatform& platform, ConfigService& config, wl_output* output, TaskbarWidgetOptions options
 )
-    : m_platform(platform), m_configService(config), m_output(output), m_groupByWorkspace(options.groupByWorkspace),
-      m_showAllOutputs(options.showAllOutputs), m_onlyActiveWorkspace(options.onlyActiveWorkspace),
-      m_showWorkspaceLabel(options.showWorkspaceLabel), m_workspaceLabelPlacement(options.workspaceLabelPlacement),
-      m_hideEmptyWorkspaces(options.hideEmptyWorkspaces), m_workspaceGroupCapsule(options.workspaceGroupCapsule),
-      m_groupSingleIconPerApp(options.groupSingleIconPerApp), m_showActiveIndicator(options.showActiveIndicator),
-      m_activeOpacity(options.activeOpacity), m_inactiveOpacity(options.inactiveOpacity),
-      m_focusedColor(options.focusedColor), m_occupiedColor(options.occupiedColor), m_emptyColor(options.emptyColor),
-      m_showWindowTitle(options.showWindowTitle), m_windowTitleMaxWidth(options.windowTitleMaxWidth),
-      m_taskbarMaxWidth(options.taskbarMaxWidth), m_barPosition(std::move(options.barPosition)),
-      m_shadowConfig(options.shadowConfig) {
-  // Window title not implemented for vertical bars or workspace grouping.
-  if (m_barPosition == "left" || m_barPosition == "right" || m_groupByWorkspace) {
-    m_showWindowTitle = false;
-  }
+    : m_platform(platform), m_configService(config), m_output(output), m_configOptions(std::move(options)),
+      m_showAllOutputs(m_configOptions.showAllOutputs), m_showActiveIndicator(m_configOptions.showActiveIndicator),
+      m_activeOpacity(m_configOptions.activeOpacity), m_inactiveOpacity(m_configOptions.inactiveOpacity),
+      m_focusedColor(m_configOptions.focusedColor), m_occupiedColor(m_configOptions.occupiedColor),
+      m_emptyColor(m_configOptions.emptyColor), m_windowTitleMaxWidth(m_configOptions.windowTitleMaxWidth),
+      m_taskbarMaxWidth(m_configOptions.taskbarMaxWidth), m_barPosition(std::move(m_configOptions.barPosition)),
+      m_shadowConfig(m_configOptions.shadowConfig) {
+  syncWorkspaceGroupingCapability();
   buildDesktopIconIndex();
+}
+
+void TaskbarWidget::syncWorkspaceGroupingCapability() {
+  const bool supported = m_platform.supportsTaskbarWorkspaceGrouping();
+  const bool groupByWorkspace = supported && m_configOptions.groupByWorkspace;
+  const bool onlyActiveWorkspace = supported && m_configOptions.onlyActiveWorkspace;
+  const bool showWorkspaceLabel = !supported || m_configOptions.showWorkspaceLabel;
+  const bool hideEmptyWorkspaces = supported && m_configOptions.hideEmptyWorkspaces;
+  const bool workspaceGroupCapsule = !supported || m_configOptions.workspaceGroupCapsule;
+  const bool groupSingleIconPerApp = supported && m_configOptions.groupSingleIconPerApp;
+  const bool showWindowTitle =
+      m_configOptions.showWindowTitle && m_barPosition != "left" && m_barPosition != "right" && !groupByWorkspace;
+
+  const bool changed = groupByWorkspace != m_groupByWorkspace
+      || onlyActiveWorkspace != m_onlyActiveWorkspace
+      || showWorkspaceLabel != m_showWorkspaceLabel
+      || m_workspaceLabelPlacement != m_configOptions.workspaceLabelPlacement
+      || hideEmptyWorkspaces != m_hideEmptyWorkspaces
+      || workspaceGroupCapsule != m_workspaceGroupCapsule
+      || groupSingleIconPerApp != m_groupSingleIconPerApp
+      || showWindowTitle != m_showWindowTitle;
+
+  m_groupByWorkspace = groupByWorkspace;
+  m_onlyActiveWorkspace = onlyActiveWorkspace;
+  m_showWorkspaceLabel = showWorkspaceLabel;
+  m_workspaceLabelPlacement = supported ? m_configOptions.workspaceLabelPlacement : WorkspaceLabelPlacement::Corner;
+  m_hideEmptyWorkspaces = hideEmptyWorkspaces;
+  m_workspaceGroupCapsule = workspaceGroupCapsule;
+  m_groupSingleIconPerApp = groupSingleIconPerApp;
+  m_showWindowTitle = showWindowTitle;
+
+  if (changed) {
+    m_rebuildPending = true;
+    if (root() != nullptr) {
+      root()->markLayoutDirty();
+    }
+  }
 }
 
 TaskbarWidget::~TaskbarWidget() = default;
@@ -956,6 +987,8 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
 }
 
 void TaskbarWidget::updateModels() {
+  syncWorkspaceGroupingCapability();
+
   const auto desktopVersion = desktopEntriesVersion();
   if (desktopVersion != m_desktopEntriesVersion) {
     buildDesktopIconIndex();
@@ -1000,12 +1033,13 @@ void TaskbarWidget::updateModels() {
         WorkspaceModel item{};
         item.workspace = workspaces[i];
         item.hostOutput = wo.output;
+        const std::string fallbackLabel = workspaceLabel(item.workspace, i);
         const std::string label = compositors::isKde() && item.workspace.index > 0
             ? std::to_string(item.workspace.index)
-            : workspaceLabel(item.workspace, i);
+            : (i < displayKeys.size() && !displayKeys[i].empty() ? displayKeys[i] : fallbackLabel);
         const std::string baseKey = compositors::isKde() && !item.workspace.id.empty()
             ? item.workspace.id
-            : (i < displayKeys.size() && !displayKeys[i].empty() ? displayKeys[i] : label);
+            : (i < displayKeys.size() && !displayKeys[i].empty() ? displayKeys[i] : fallbackLabel);
         item.key = keyPrefix + baseKey;
         if (useMultiOutputWorkspaceKeys()) {
           const auto ordIt = monitorOrdinal.find(wo.output);

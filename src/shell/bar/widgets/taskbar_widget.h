@@ -94,6 +94,7 @@ private:
   void clearChildren(Flex* flex) const;
   void buildTaskButtons(Renderer& renderer);
   void updateModels();
+  void syncWorkspaceGroupingCapability();
   [[nodiscard]] static std::string toLower(std::string value);
   [[nodiscard]] static std::string workspaceLabel(const Workspace& workspace, std::size_t index);
   [[nodiscard]] bool
@@ -118,6 +119,7 @@ private:
   CompositorPlatform& m_platform;
   ConfigService& m_configService;
   wl_output* m_output = nullptr;
+  TaskbarWidgetOptions m_configOptions;
   bool m_groupByWorkspace = false;
   bool m_showAllOutputs = false;
   bool m_onlyActiveWorkspace = false;
