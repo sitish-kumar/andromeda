@@ -1,4 +1,4 @@
-#include "shell/avatar_path.h"
+#include "shell/profile/avatar_path.h"
 
 #include "config/config_service.h"
 #include "config/config_types.h"
