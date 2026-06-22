@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <utility>
 
 namespace {
 
@@ -20,11 +21,9 @@ namespace {
 
 } // namespace
 
-DesktopLabelWidget::DesktopLabelWidget(
-    std::string title, std::string description, ColorSpec color, float opacity, bool shadow
-)
-    : m_title(std::move(title)), m_description(std::move(description)), m_color(color),
-      m_opacity(std::clamp(opacity, 0.0f, 1.0f)), m_shadow(shadow) {}
+DesktopLabelWidget::DesktopLabelWidget(Options options)
+    : m_title(std::move(options.title)), m_description(std::move(options.description)), m_color(options.color),
+      m_opacity(std::clamp(options.opacity, 0.0f, 1.0f)), m_shadow(options.shadow) {}
 
 void DesktopLabelWidget::create() {
   auto rootNode = std::make_unique<Node>();

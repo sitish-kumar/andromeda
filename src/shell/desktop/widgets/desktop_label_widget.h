@@ -9,7 +9,15 @@ class Label;
 
 class DesktopLabelWidget : public DesktopWidget {
 public:
-  DesktopLabelWidget(std::string title, std::string description, ColorSpec color, float opacity, bool shadow);
+  struct Options {
+    std::string title = "Title";
+    std::string description;
+    ColorSpec color = colorSpecFromRole(ColorRole::OnSurface);
+    float opacity = 1.0f;
+    bool shadow = true;
+  };
+
+  explicit DesktopLabelWidget(Options options);
 
   void create() override;
   bool applySetting(

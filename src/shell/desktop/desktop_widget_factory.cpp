@@ -294,11 +294,13 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
   }
 
   if (type == "label") {
-    auto widget = std::make_unique<DesktopLabelWidget>(
-        getStringSetting(settings, "title", "Title"), getStringSetting(settings, "description"),
-        getColorSpecSetting(settings, "color", colorSpecFromRole(ColorRole::OnSurface)),
-        std::clamp(getFloatSetting(settings, "opacity", 1.0f), 0.0f, 1.0f), getBoolSetting(settings, "shadow", true)
-    );
+    auto widget = std::make_unique<DesktopLabelWidget>(DesktopLabelWidget::Options{
+        .title = getStringSetting(settings, "title", "Title"),
+        .description = getStringSetting(settings, "description"),
+        .color = getColorSpecSetting(settings, "color", colorSpecFromRole(ColorRole::OnSurface)),
+        .opacity = std::clamp(getFloatSetting(settings, "opacity", 1.0f), 0.0f, 1.0f),
+        .shadow = getBoolSetting(settings, "shadow", true),
+    });
     applyCommonSettings(*widget, settings);
     widget->setContentScale(contentScale);
     return widget;
