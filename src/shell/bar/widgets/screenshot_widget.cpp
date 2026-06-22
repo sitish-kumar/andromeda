@@ -255,7 +255,23 @@ void ScreenshotWidget::openCaptureMenu() {
   const float menuWidth = kMenuWidth * m_contentScale;
   const std::size_t maxVisible = std::max<std::size_t>(1, entries.size());
   m_menuPopup->open(
-      std::move(entries), menuWidth, maxVisible, menuAnchor.x, menuAnchor.y, menuAnchor.w, menuAnchor.h, layerSurface,
-      m_output, &menuAnchor.placement
+      ContextMenuPopupRequest{
+          .entries = std::move(entries),
+          .menuWidth = menuWidth,
+          .maxVisible = maxVisible,
+          .anchor =
+              PopupAnchorRect{
+                  .x = menuAnchor.x,
+                  .y = menuAnchor.y,
+                  .width = menuAnchor.w,
+                  .height = menuAnchor.h,
+              },
+          .parent =
+              PopupSurfaceParent{
+                  .layerSurface = layerSurface,
+                  .output = m_output,
+              },
+          .placement = menuAnchor.placement,
+      }
   );
 }

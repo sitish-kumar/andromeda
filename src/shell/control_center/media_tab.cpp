@@ -144,9 +144,22 @@ void MediaTab::openPlayerMenu() {
   });
 
   m_playerMenuPopup->open(
-      std::move(entries), menuWidth, 10, static_cast<std::int32_t>(anchorAbsX), static_cast<std::int32_t>(anchorAbsY),
-      static_cast<std::int32_t>(anchor->width()), static_cast<std::int32_t>(anchor->height()), parentCtx->layerSurface,
-      parentCtx->output
+      ContextMenuPopupRequest{
+          .entries = std::move(entries),
+          .menuWidth = menuWidth,
+          .maxVisible = 10,
+          .anchor =
+              PopupAnchorRect{
+                  .x = static_cast<std::int32_t>(anchorAbsX),
+                  .y = static_cast<std::int32_t>(anchorAbsY),
+                  .width = static_cast<std::int32_t>(anchor->width()),
+                  .height = static_cast<std::int32_t>(anchor->height()),
+              },
+          .parent = PopupSurfaceParent{
+              .layerSurface = parentCtx->layerSurface,
+              .output = parentCtx->output,
+          },
+      }
   );
 
   m_playerMenuOpen = true;

@@ -4,6 +4,7 @@
 #include "render/scene/input_dispatcher.h"
 #include "ui/dialogs/layer_popup_host.h"
 #include "ui/popup_chrome.h"
+#include "ui/popup_parent.h"
 #include "wayland/popup_surface.h"
 
 #include <cstdint>
@@ -86,9 +87,7 @@ protected:
   // Build the PopupSurface as a child of an xdg parent. Uses the same scene/
   // input/prepareFrame plumbing as openPopup() but bypasses LayerPopupHostRegistry
   // parent resolution.
-  [[nodiscard]] bool openPopupAsChild(
-      PopupSurfaceConfig config, xdg_surface* parentXdgSurface, wl_surface* parentWlSurface, wl_output* output
-  );
+  [[nodiscard]] bool openPopupAsChild(PopupSurfaceConfig config, const XdgPopupParent& parent);
 
   // Tear the popup down — endAttachedPopup, invoke `onSheetClose()` hook,
   // reset the scene tree, drop the PopupSurface. Safe to call repeatedly.

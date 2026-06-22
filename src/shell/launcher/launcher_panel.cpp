@@ -1158,8 +1158,22 @@ void LauncherPanel::openAppActionsMenu(std::size_t index, float anchorX, float a
   const std::int32_t ah = static_cast<std::int32_t>(std::round(inset * 2.0f));
 
   m_actionsMenu->open(
-      std::move(entries), menuWidth, 12, ax, ay, std::max(1, aw), std::max(1, ah), parentCtx->layerSurface,
-      parentCtx->output
+      ContextMenuPopupRequest{
+          .entries = std::move(entries),
+          .menuWidth = menuWidth,
+          .maxVisible = 12,
+          .anchor =
+              PopupAnchorRect{
+                  .x = ax,
+                  .y = ay,
+                  .width = std::max(1, aw),
+                  .height = std::max(1, ah),
+              },
+          .parent = PopupSurfaceParent{
+              .layerSurface = parentCtx->layerSurface,
+              .output = parentCtx->output,
+          },
+      }
   );
 }
 

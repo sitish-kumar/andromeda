@@ -1986,8 +1986,7 @@ void TaskbarWidget::openTaskContextMenu(const TaskModel& task, InputArea& area) 
   const float menuWidth = kTaskMenuWidth * m_contentScale;
   const std::int32_t gap = std::max(2, static_cast<std::int32_t>(std::lround(Style::spaceMd * m_contentScale)));
 
-  const ContextMenuPopupPlacement* placement = nullptr;
-  ContextMenuPopupPlacement bottomPlacement;
+  std::optional<ContextMenuPopupPlacement> placement;
   if (m_barPosition == "top") {
     anchorY = absY + area.height() + static_cast<float>(gap);
     anchorH = 1.0f;
@@ -1997,7 +1996,7 @@ void TaskbarWidget::openTaskContextMenu(const TaskModel& task, InputArea& area) 
     anchorY = absY;
     anchorW = area.width();
     anchorH = 1.0f;
-    bottomPlacement = ContextMenuPopupPlacement{
+    placement = ContextMenuPopupPlacement{
         .anchor = XDG_POSITIONER_ANCHOR_TOP,
         .gravity = XDG_POSITIONER_GRAVITY_TOP,
         .offsetX = 0,
@@ -2007,7 +2006,6 @@ void TaskbarWidget::openTaskContextMenu(const TaskModel& task, InputArea& area) 
             .vertical = popup_chrome::VerticalAttachment::Bottom
         },
     };
-    placement = &bottomPlacement;
   } else if (m_barPosition == "left") {
     anchorX = absX + area.width() + (menuWidth * 0.5f) + static_cast<float>(gap);
     anchorW = 1.0f;
@@ -2017,9 +2015,24 @@ void TaskbarWidget::openTaskContextMenu(const TaskModel& task, InputArea& area) 
   }
 
   m_contextMenuPopup->open(
-      std::move(entries), menuWidth, 12, static_cast<std::int32_t>(std::round(anchorX)),
-      static_cast<std::int32_t>(std::round(anchorY)), static_cast<std::int32_t>(std::round(anchorW)),
-      static_cast<std::int32_t>(std::round(anchorH)), layerSurface, m_output, placement
+      ContextMenuPopupRequest{
+          .entries = std::move(entries),
+          .menuWidth = menuWidth,
+          .maxVisible = 12,
+          .anchor =
+              PopupAnchorRect{
+                  .x = static_cast<std::int32_t>(std::round(anchorX)),
+                  .y = static_cast<std::int32_t>(std::round(anchorY)),
+                  .width = static_cast<std::int32_t>(std::round(anchorW)),
+                  .height = static_cast<std::int32_t>(std::round(anchorH)),
+              },
+          .parent =
+              PopupSurfaceParent{
+                  .layerSurface = layerSurface,
+                  .output = m_output,
+              },
+          .placement = placement,
+      }
   );
 }
 

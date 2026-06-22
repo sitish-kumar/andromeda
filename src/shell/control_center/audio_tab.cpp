@@ -1359,9 +1359,22 @@ void AudioTab::openDeviceMenu(DeviceVolumeCardState& card, const DeviceMenuModel
   });
 
   m_deviceMenuPopup->open(
-      std::move(entries), menuWidth, 10, static_cast<std::int32_t>(anchorAbsX), static_cast<std::int32_t>(anchorAbsY),
-      static_cast<std::int32_t>(card.menuAnchor->width()), static_cast<std::int32_t>(card.menuAnchor->height()),
-      parentCtx->layerSurface, parentCtx->output
+      ContextMenuPopupRequest{
+          .entries = std::move(entries),
+          .menuWidth = menuWidth,
+          .maxVisible = 10,
+          .anchor =
+              PopupAnchorRect{
+                  .x = static_cast<std::int32_t>(anchorAbsX),
+                  .y = static_cast<std::int32_t>(anchorAbsY),
+                  .width = static_cast<std::int32_t>(card.menuAnchor->width()),
+                  .height = static_cast<std::int32_t>(card.menuAnchor->height()),
+              },
+          .parent = PopupSurfaceParent{
+              .layerSurface = parentCtx->layerSurface,
+              .output = parentCtx->output,
+          },
+      }
   );
   if (m_deviceMenuPopup->isOpen()) {
     m_openDeviceMenuCard = &card;

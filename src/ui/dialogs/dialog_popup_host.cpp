@@ -142,15 +142,16 @@ bool DialogPopupHost::openPopup(std::uint32_t width, std::uint32_t height) {
   return true;
 }
 
-bool DialogPopupHost::openPopupAsChild(
-    PopupSurfaceConfig config, xdg_surface* parentXdgSurface, wl_surface* parentWlSurface, wl_output* output
-) {
-  if (m_wayland == nullptr || m_renderContext == nullptr || parentXdgSurface == nullptr || parentWlSurface == nullptr) {
+bool DialogPopupHost::openPopupAsChild(PopupSurfaceConfig config, const XdgPopupParent& parent) {
+  if (m_wayland == nullptr
+      || m_renderContext == nullptr
+      || parent.xdgSurface == nullptr
+      || parent.wlSurface == nullptr) {
     return false;
   }
 
   destroyPopup();
-  m_parentSurface = parentWlSurface;
+  m_parentSurface = parent.wlSurface;
 
   auto surface = std::make_unique<PopupSurface>(*m_wayland);
   surface->setRenderContext(m_renderContext);
@@ -175,7 +176,7 @@ bool DialogPopupHost::openPopupAsChild(
 
   m_surface = std::move(surface);
   m_openInProgress = true;
-  const bool initialized = m_surface->initializeAsChild(parentXdgSurface, output, config);
+  const bool initialized = m_surface->initializeAsChild(parent.xdgSurface, parent.output, config);
   m_openInProgress = false;
   if (!initialized) {
     destroyPopup();

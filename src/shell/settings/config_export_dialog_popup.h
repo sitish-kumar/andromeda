@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ui/dialogs/dialog_popup_host.h"
+#include "ui/popup_parent.h"
 
 #include <cstdint>
 #include <functional>
@@ -22,6 +23,12 @@ namespace settings {
     FullEffective,
   };
 
+  struct ConfigExportDialogPopupRequest {
+    XdgPopupParent parent;
+    float scale = 1.0f;
+    std::function<void(ConfigExportMode mode)> callback;
+  };
+
   class ConfigExportDialogPopup final : public DialogPopupHost {
   public:
     using ExportCallback = std::function<void(ConfigExportMode mode)>;
@@ -31,10 +38,7 @@ namespace settings {
 
     void initialize(WaylandConnection& wayland, ConfigService& config, RenderContext& renderContext);
 
-    void open(
-        xdg_surface* parentXdgSurface, wl_output* output, std::uint32_t serial, wl_surface* parentWlSurface,
-        std::uint32_t parentWidth, std::uint32_t parentHeight, float scale, ExportCallback callback
-    );
+    void open(ConfigExportDialogPopupRequest request);
     void close();
 
     [[nodiscard]] bool isOpen() const noexcept;
