@@ -282,11 +282,14 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
       kLog.warn("desktop widget factory: media_player requires MprisService");
       return nullptr;
     }
-    const bool vertical = getStringSetting(settings, "layout", "horizontal") == "vertical";
     auto widget = std::make_unique<DesktopMediaPlayerWidget>(
-        m_mpris, m_httpClient, vertical,
-        getColorSpecSetting(settings, "color", colorSpecFromRole(ColorRole::OnSurface)),
-        getBoolSetting(settings, "shadow", true), getBoolSetting(settings, "hide_when_no_media", false)
+        m_mpris, m_httpClient,
+        DesktopMediaPlayerWidget::Options{
+            .vertical = getStringSetting(settings, "layout", "horizontal") == "vertical",
+            .color = getColorSpecSetting(settings, "color", colorSpecFromRole(ColorRole::OnSurface)),
+            .shadow = getBoolSetting(settings, "shadow", true),
+            .hideWhenNoMedia = getBoolSetting(settings, "hide_when_no_media", false),
+        }
     );
     applyCommonSettings(*widget, settings);
     widget->setContentScale(contentScale);
