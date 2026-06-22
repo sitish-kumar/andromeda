@@ -112,8 +112,9 @@ _drwav_lib = static_library('dr_wav',
   'third_party/dr_wav/dr_wav.c',
   override_options: ['warning_level=0'],
 )
+# Vendored static libs use link_whole so release LTO can see all archive members.
 drwav_dep = declare_dependency(
-  link_with: _drwav_lib,
+  link_whole: _drwav_lib,
   include_directories: include_directories('third_party/dr_wav', is_system: true),
 )
 
@@ -124,7 +125,7 @@ _fzy_lib = static_library('fzy',
   override_options: ['warning_level=0'],
 )
 fzy_dep = declare_dependency(
-  link_with: _fzy_lib,
+  link_whole: _fzy_lib,
   include_directories: include_directories('third_party/fzy/src', is_system: true),
 )
 
@@ -167,7 +168,7 @@ _mcu_lib = static_library('material_color_utilities',
   override_options: ['warning_level=0'],
 )
 mcu_dep = declare_dependency(
-  link_with: _mcu_lib,
+  link_whole: _mcu_lib,
   include_directories: include_directories('third_party/material_color_utilities', is_system: true),
 )
 
@@ -257,7 +258,7 @@ _luau_lib = static_library('luau',
   override_options: ['warning_level=0'],
 )
 luau_dep = declare_dependency(
-  link_with: _luau_lib,
+  link_whole: _luau_lib,
   include_directories: _luau_inc,
 )
 
