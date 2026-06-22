@@ -37,10 +37,12 @@ public:
   using StateFeedbackCallback = std::function<void(std::string_view profile)>;
 
   explicit PowerProfilesService(SystemBus& bus);
+  ~PowerProfilesService();
 
   void setChangeCallback(ChangeCallback callback);
   void refresh();
 
+  [[nodiscard]] bool hasStateSnapshot() const noexcept { return m_hasStateSnapshot; }
   [[nodiscard]] const PowerProfilesState& state() const noexcept { return m_state; }
   [[nodiscard]] const std::string& activeProfile() const noexcept { return m_state.activeProfile; }
   [[nodiscard]] const std::vector<std::string>& profiles() const noexcept { return m_state.profiles; }
@@ -52,13 +54,16 @@ public:
   void registerIpc(IpcService& ipc, StateFeedbackCallback stateFeedback = {});
 
 private:
-  [[nodiscard]] PowerProfilesState readState() const;
   [[nodiscard]] PowerProfilesChangeOrigin consumeActiveProfileChangeOrigin(std::string_view profile);
-  void emitChangedIfNeeded(const PowerProfilesState& next);
+  void emitChangedIfNeeded(PowerProfilesState next, bool stateSnapshot);
 
   SystemBus& m_bus;
   std::unique_ptr<sdbus::IProxy> m_proxy;
+  std::shared_ptr<int> m_lifetimeToken = std::make_shared<int>(0);
   PowerProfilesState m_state;
   std::optional<std::string> m_pendingLocalActiveProfile;
   ChangeCallback m_changeCallback;
+  bool m_hasStateSnapshot = false;
+  bool m_refreshInFlight = false;
+  bool m_refreshQueued = false;
 };

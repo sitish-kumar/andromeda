@@ -927,9 +927,11 @@ void Application::initServices() {
             onPowerProfileChangedForEvents(state, origin);
           }
       );
-      if (!m_powerProfilesService->activeProfile().empty()) {
+      if (m_powerProfilesService->hasStateSnapshot() && !m_powerProfilesService->activeProfile().empty()) {
         m_prevPowerProfileActiveForEvents = m_powerProfilesService->activeProfile();
         kLog.info("power profiles active profile: {}", m_powerProfilesService->activeProfile());
+      } else if (!m_powerProfilesService->hasStateSnapshot()) {
+        kLog.info("power profiles service active (state loading asynchronously)");
       } else {
         kLog.info("power profiles service active");
       }

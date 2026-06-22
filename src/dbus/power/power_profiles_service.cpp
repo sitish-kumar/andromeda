@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <map>
+#include <optional>
 #include <sdbus-c++/IProxy.h>
 #include <sdbus-c++/Types.h>
 
@@ -32,15 +33,7 @@ namespace {
   const sdbus::ObjectPath kPowerProfilesObjectPath{"/org/freedesktop/UPower/PowerProfiles"};
   constexpr auto kPowerProfilesInterface = "org.freedesktop.UPower.PowerProfiles";
   constexpr auto kPropertiesInterface = "org.freedesktop.DBus.Properties";
-
-  template <typename T> T getPropertyOr(sdbus::IProxy& proxy, std::string_view propertyName, T fallback) {
-    try {
-      const sdbus::Variant value = proxy.getProperty(propertyName).onInterface(kPowerProfilesInterface);
-      return value.get<T>();
-    } catch (const sdbus::Error&) {
-      return fallback;
-    }
-  }
+  using VariantMap = std::map<std::string, sdbus::Variant>;
 
   std::vector<std::string> decodeProfiles(const sdbus::Variant& value) {
     std::vector<std::string> profiles;
@@ -67,6 +60,41 @@ namespace {
     std::ranges::sort(profiles);
     profiles.erase(std::ranges::unique(profiles).begin(), profiles.end());
     return profiles;
+  }
+
+  std::string stringProperty(const VariantMap& properties, std::string_view name) {
+    const auto it = properties.find(std::string{name});
+    if (it == properties.end()) {
+      return {};
+    }
+
+    try {
+      return it->second.get<std::string>();
+    } catch (const sdbus::Error&) {
+      return {};
+    }
+  }
+
+  PowerProfilesState decodeState(const VariantMap& properties) {
+    PowerProfilesState next;
+    next.activeProfile = stringProperty(properties, "ActiveProfile");
+    next.performanceInhibited = stringProperty(properties, "PerformanceInhibited");
+
+    const auto profilesIt = properties.find("Profiles");
+    if (profilesIt != properties.end()) {
+      next.profiles = decodeProfiles(profilesIt->second);
+    }
+
+    return next;
+  }
+
+  bool isTimeoutError(const sdbus::Error& error) {
+    const auto name = error.getName();
+    return (
+        name == sdbus::Error::Name{"org.freedesktop.DBus.Error.NoReply"}
+        || name == sdbus::Error::Name{"org.freedesktop.DBus.Error.Timeout"}
+        || name == sdbus::Error::Name{"org.freedesktop.DBus.Error.TimedOut"}
+    );
   }
 
 } // namespace
@@ -112,9 +140,52 @@ PowerProfilesService::PowerProfilesService(SystemBus& bus) : m_bus(bus) {
   refresh();
 }
 
+PowerProfilesService::~PowerProfilesService() { m_lifetimeToken.reset(); }
+
 void PowerProfilesService::setChangeCallback(ChangeCallback callback) { m_changeCallback = std::move(callback); }
 
-void PowerProfilesService::refresh() { emitChangedIfNeeded(readState()); }
+void PowerProfilesService::refresh() {
+  if (m_refreshInFlight) {
+    m_refreshQueued = true;
+    return;
+  }
+
+  m_refreshInFlight = true;
+  const std::weak_ptr<int> lifetimeToken = m_lifetimeToken;
+
+  try {
+    m_proxy->callMethodAsync("GetAll")
+        .onInterface(kPropertiesInterface)
+        .withArguments(std::string{kPowerProfilesInterface})
+        .uponReplyInvoke([this, lifetimeToken](std::optional<sdbus::Error> err, VariantMap properties) {
+          if (lifetimeToken.expired()) {
+            return;
+          }
+
+          if (err.has_value()) {
+            kLog.debug("power profiles refresh failed: {}", err->what());
+            if (!m_hasStateSnapshot && isTimeoutError(*err)) {
+              m_refreshQueued = true;
+            }
+          } else {
+            emitChangedIfNeeded(decodeState(properties), true);
+          }
+
+          m_refreshInFlight = false;
+          if (m_refreshQueued) {
+            m_refreshQueued = false;
+            refresh();
+          }
+        });
+  } catch (const sdbus::Error& e) {
+    kLog.debug("power profiles refresh dispatch failed: {}", e.what());
+    m_refreshInFlight = false;
+    if (m_refreshQueued) {
+      m_refreshQueued = false;
+      refresh();
+    }
+  }
+}
 
 bool PowerProfilesService::setActiveProfile(std::string_view profile) {
   if (profile.empty()) {
@@ -125,17 +196,32 @@ bool PowerProfilesService::setActiveProfile(std::string_view profile) {
   if (requested != m_state.activeProfile) {
     m_pendingLocalActiveProfile = requested;
   }
+
+  const std::weak_ptr<int> lifetimeToken = m_lifetimeToken;
   try {
-    m_proxy->setProperty("ActiveProfile").onInterface(kPowerProfilesInterface).toValue(requested);
-    refresh();
-    return true;
+    m_proxy->setPropertyAsync("ActiveProfile")
+        .onInterface(kPowerProfilesInterface)
+        .toValue(requested)
+        .uponReplyInvoke([lifetimeToken, requested](std::optional<sdbus::Error> err) {
+          if (lifetimeToken.expired() || !err.has_value()) {
+            return;
+          }
+          // The optimistic update below already reconciles via refresh(); just surface the failure.
+          kLog.warn("power profile change failed profile={} err={}", requested, err->what());
+        });
   } catch (const sdbus::Error& e) {
     if (m_pendingLocalActiveProfile.has_value() && *m_pendingLocalActiveProfile == requested) {
       m_pendingLocalActiveProfile.reset();
     }
-    kLog.warn("power profile change failed profile={} err={}", requested, e.what());
+    kLog.warn("power profile change dispatch failed profile={} err={}", requested, e.what());
     return false;
   }
+
+  PowerProfilesState next = m_state;
+  next.activeProfile = requested;
+  emitChangedIfNeeded(std::move(next), false);
+  refresh();
+  return true;
 }
 
 bool PowerProfilesService::cycleActiveProfile() {
@@ -155,21 +241,6 @@ bool PowerProfilesService::cycleActiveProfile() {
   return setActiveProfile(*it);
 }
 
-PowerProfilesState PowerProfilesService::readState() const {
-  PowerProfilesState next;
-  next.activeProfile = getPropertyOr<std::string>(*m_proxy, "ActiveProfile", "");
-  next.performanceInhibited = getPropertyOr<std::string>(*m_proxy, "PerformanceInhibited", "");
-
-  try {
-    const sdbus::Variant profilesVariant = m_proxy->getProperty("Profiles").onInterface(kPowerProfilesInterface);
-    next.profiles = decodeProfiles(profilesVariant);
-  } catch (const sdbus::Error&) {
-    next.profiles.clear();
-  }
-
-  return next;
-}
-
 PowerProfilesChangeOrigin PowerProfilesService::consumeActiveProfileChangeOrigin(std::string_view profile) {
   if (!m_pendingLocalActiveProfile.has_value()) {
     return PowerProfilesChangeOrigin::External;
@@ -179,16 +250,19 @@ PowerProfilesChangeOrigin PowerProfilesService::consumeActiveProfileChangeOrigin
   return matchesLocalRequest ? PowerProfilesChangeOrigin::Noctalia : PowerProfilesChangeOrigin::External;
 }
 
-void PowerProfilesService::emitChangedIfNeeded(const PowerProfilesState& next) {
-  if (next == m_state) {
-    return;
-  }
-
+void PowerProfilesService::emitChangedIfNeeded(PowerProfilesState next, bool stateSnapshot) {
+  const bool firstSnapshot = stateSnapshot && !m_hasStateSnapshot;
+  const bool stateChanged = next != m_state;
   const bool activeProfileChanged = next.activeProfile != m_state.activeProfile;
   const PowerProfilesChangeOrigin origin =
       activeProfileChanged ? consumeActiveProfileChangeOrigin(next.activeProfile) : PowerProfilesChangeOrigin::External;
-  m_state = next;
-  if (m_changeCallback) {
+
+  m_state = std::move(next);
+  if (stateSnapshot) {
+    m_hasStateSnapshot = true;
+  }
+
+  if ((firstSnapshot || stateChanged) && m_changeCallback) {
     m_changeCallback(m_state, origin);
   }
 }
