@@ -1442,6 +1442,10 @@ void DesktopWidgetsEditor::addWidget(const std::string& outputName, const std::s
     widget.settings.emplace("glyph", std::string("heart"));
     widget.settings.emplace("variant", std::string("default"));
   }
+  if (widget.type == "sysmon") {
+    widget.settings.emplace("stat", std::string("cpu_usage"));
+    widget.settings.emplace("stat2", std::string("cpu_temp"));
+  }
 
   if (widget.type == "sticker") {
     widget.settings.emplace("opacity", 1.0);
