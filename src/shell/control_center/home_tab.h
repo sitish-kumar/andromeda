@@ -56,7 +56,10 @@ private:
   void doLayout(Renderer& renderer, float contentWidth, float bodyHeight) override;
   void doUpdate(Renderer& renderer) override;
   void layoutWallpaperBackground(Renderer& renderer);
-  void layoutCardButton(Renderer& renderer, Flex* card, Button* button);
+  // Adds a full-card click+hover overlay; returns the area so doLayout can size/position it.
+  InputArea* addCardOverlay(Flex& card, std::function<void()> onActivate, std::function<void(bool)> onHover = {});
+  void layoutCardOverlays();
+  void applyCardHoverTextColors();
   void syncWallpaperBackground(Renderer& renderer);
   void ensureWallpaperThumbnail(const std::string& path, int targetPx);
   void startCrispFade();
@@ -96,9 +99,11 @@ private:
   Label* m_userVersion = nullptr;
   Button* m_settingsButton = nullptr;
   Button* m_sessionButton = nullptr;
-  Button* m_wallpaperButton = nullptr;
-  Button* m_mediaButton = nullptr;
-  Button* m_weatherButton = nullptr;
+  InputArea* m_userCardArea = nullptr;
+  InputArea* m_mediaCardArea = nullptr;
+  InputArea* m_dateTimeCardArea = nullptr;
+  bool m_mediaCardHovered = false;
+  bool m_dateTimeCardHovered = false;
   std::string m_loadedAvatarPath;
   int m_loadedAvatarSize = 0;
 

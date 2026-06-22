@@ -126,6 +126,22 @@ namespace {
     button.setEnabled(enabled);
   }
 
+  // The whole home cards are clickable; tint fill + outline on hover. The user card's fill sits behind
+  // the wallpaper image, so the outline colour carries its hover signal.
+  void applyHomeCardHover(Flex& card, bool hovered, float fillOpacity, bool baseBorders) {
+    if (hovered) {
+      card.setFill(colorSpecFromRole(ColorRole::Hover, fillOpacity));
+      card.setBorder(colorSpecFromRole(ColorRole::Hover), Style::borderWidth);
+    } else {
+      card.setFill(colorSpecFromRole(ColorRole::SurfaceVariant, fillOpacity));
+      if (baseBorders) {
+        card.setBorder(colorSpecFromRole(ColorRole::Outline), Style::borderWidth);
+      } else {
+        card.clearBorder();
+      }
+    }
+  }
+
 } // namespace
 
 HomeTab::HomeTab(const ControlCenterServices& services)
@@ -315,21 +331,9 @@ std::unique_ptr<Flex> HomeTab::create() {
   );
   userCard->addChild(std::move(userRow));
 
-  userCard->addChild(
-      ui::button({
-          .out = &m_wallpaperButton,
-          .glyph = "wallpaper-selector",
-          .glyphSize = Style::fontSizeBody * scale,
-          .variant = ButtonVariant::Ghost,
-          .minWidth = Style::controlHeightSm * scale,
-          .minHeight = Style::controlHeightSm * scale,
-          .padding = Style::spaceXs * scale,
-          .radius = Style::scaledRadiusMd(scale),
-          .participatesInLayout = false,
-          .onClick = []() { PanelManager::instance().togglePanel("wallpaper"); },
-          .configure = [](Button& button) { button.setZIndex(2); },
-      })
-  );
+  // Clicking the user card opens the wallpaper selector (the card background is the wallpaper). The
+  // overlay is carved around the avatar in doLayout so the avatar keeps its own change-avatar click.
+  m_userCardArea = addCardOverlay(*m_userCard, []() { PanelManager::instance().togglePanel("wallpaper"); });
 
   tab->addChild(std::move(userCard));
 
@@ -417,20 +421,13 @@ std::unique_ptr<Flex> HomeTab::create() {
   );
   mediaCard->addChild(std::move(mediaContent));
 
-  mediaCard->addChild(
-      ui::button({
-          .out = &m_mediaButton,
-          .glyph = "disc-filled",
-          .glyphSize = Style::fontSizeBody * scale,
-          .variant = ButtonVariant::Ghost,
-          .minWidth = Style::controlHeightSm * scale,
-          .minHeight = Style::controlHeightSm * scale,
-          .padding = Style::spaceXs * scale,
-          .radius = Style::scaledRadiusMd(scale),
-          .participatesInLayout = false,
-          .onClick = []() { openControlCenterTab("media"); },
-          .configure = [](Button& button) { button.setZIndex(2); },
-      })
+  // Clicking anywhere on the media card opens the media tab; hovering flips its text to OnHover.
+  m_mediaCardArea = addCardOverlay(
+      *m_mediaCard, []() { openControlCenterTab("media"); },
+      [this](bool hovered) {
+        m_mediaCardHovered = hovered;
+        PanelManager::instance().requestUpdateOnly();
+      }
   );
 
   // --- Date/Time + Weather (below media) ---
@@ -483,20 +480,13 @@ std::unique_ptr<Flex> HomeTab::create() {
       )
   );
 
-  dateTimeCard->addChild(
-      ui::button({
-          .out = &m_weatherButton,
-          .glyph = "weather-cloud-sun",
-          .glyphSize = Style::fontSizeBody * scale,
-          .variant = ButtonVariant::Ghost,
-          .minWidth = Style::controlHeightSm * scale,
-          .minHeight = Style::controlHeightSm * scale,
-          .padding = Style::spaceXs * scale,
-          .radius = Style::scaledRadiusMd(scale),
-          .participatesInLayout = false,
-          .onClick = []() { openControlCenterTab("weather"); },
-          .configure = [](Button& button) { button.setZIndex(2); },
-      })
+  // Clicking anywhere on the clock/weather card opens the weather tab; hovering flips its text to OnHover.
+  m_dateTimeCardArea = addCardOverlay(
+      *m_dateTimeCard, []() { openControlCenterTab("weather"); },
+      [this](bool hovered) {
+        m_dateTimeCardHovered = hovered;
+        PanelManager::instance().requestUpdateOnly();
+      }
   );
 
   leftColumn->addChild(std::move(mediaCard));
@@ -809,11 +799,63 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
     m_rootLayout->layout(renderer);
   }
   layoutWallpaperBackground(renderer);
-  layoutCardButton(renderer, m_userCard, m_wallpaperButton);
-  layoutCardButton(renderer, m_mediaCard, m_mediaButton);
-  layoutCardButton(renderer, m_dateTimeCard, m_weatherButton);
+  layoutCardOverlays();
   if (m_weatherGlyph != nullptr) {
     m_weatherGlyph->measure(renderer);
+  }
+}
+
+InputArea* HomeTab::addCardOverlay(Flex& card, std::function<void()> onActivate, std::function<void(bool)> onHover) {
+  auto area = std::make_unique<InputArea>();
+  area->setParticipatesInLayout(false);
+  area->setZIndex(3);
+  area->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
+
+  Flex* cardPtr = &card;
+  const float opacity = panelCardOpacity();
+  const bool borders = panelBordersEnabled();
+  area->setOnEnter([cardPtr, opacity, borders, onHover](const InputArea::PointerData&) {
+    applyHomeCardHover(*cardPtr, true, opacity, borders);
+    if (onHover) {
+      onHover(true);
+    }
+    PanelManager::instance().requestRedraw();
+  });
+  area->setOnLeave([cardPtr, opacity, borders, onHover]() {
+    applyHomeCardHover(*cardPtr, false, opacity, borders);
+    if (onHover) {
+      onHover(false);
+    }
+    PanelManager::instance().requestRedraw();
+  });
+  area->setOnClick([onActivate = std::move(onActivate)](const InputArea::PointerData&) { onActivate(); });
+
+  return static_cast<InputArea*>(card.addChild(std::move(area)));
+}
+
+void HomeTab::layoutCardOverlays() {
+  const auto cover = [](Flex* card, InputArea* area) {
+    if (card == nullptr || area == nullptr) {
+      return;
+    }
+    area->setPosition(0.0f, 0.0f);
+    area->setSize(card->width(), card->height());
+  };
+  cover(m_mediaCard, m_mediaCardArea);
+  cover(m_dateTimeCard, m_dateTimeCardArea);
+
+  // The user card's overlay must not swallow the avatar's own click, so start it just past the
+  // avatar's right edge; the avatar (a nested InputArea) keeps the carved-out left region.
+  if (m_userCard != nullptr && m_userCardArea != nullptr) {
+    float left = 0.0f;
+    if (m_userAvatar != nullptr) {
+      float ax = 0.0f, ay = 0.0f, cx = 0.0f, cy = 0.0f;
+      Node::absolutePosition(m_userAvatar, ax, ay);
+      Node::absolutePosition(m_userCard, cx, cy);
+      left = std::max(0.0f, (ax - cx) + m_userAvatar->width() + Style::spaceMd * contentScale());
+    }
+    m_userCardArea->setPosition(left, 0.0f);
+    m_userCardArea->setSize(std::max(0.0f, m_userCard->width() - left), m_userCard->height());
   }
 }
 
@@ -992,20 +1034,6 @@ void HomeTab::cancelCrispFade() {
   m_wallpaperCrispAnimId = 0;
 }
 
-void HomeTab::layoutCardButton(Renderer& renderer, Flex* card, Button* button) {
-  if (card == nullptr || button == nullptr) {
-    return;
-  }
-
-  const float scale = contentScale();
-  button->setGlyphSize(Style::fontSizeBody * scale);
-  button->layout(renderer);
-
-  const float x = std::max(0.0f, card->width() - card->paddingRight() - button->width());
-  const float y = std::max(0.0f, card->height() - card->paddingBottom() - button->height());
-  button->setPosition(x, y);
-}
-
 void HomeTab::doUpdate(Renderer& renderer) {
   if (!m_active) {
     m_progressTimer.stop();
@@ -1079,9 +1107,11 @@ void HomeTab::onClose() {
   m_userVersion = nullptr;
   m_settingsButton = nullptr;
   m_sessionButton = nullptr;
-  m_wallpaperButton = nullptr;
-  m_mediaButton = nullptr;
-  m_weatherButton = nullptr;
+  m_userCardArea = nullptr;
+  m_mediaCardArea = nullptr;
+  m_dateTimeCardArea = nullptr;
+  m_mediaCardHovered = false;
+  m_dateTimeCardHovered = false;
   m_loadedAvatarPath.clear();
   m_loadedAvatarSize = 0;
   // The crisp fade animation is tagged with the m_wallpaperBg node as owner, so
@@ -1137,15 +1167,6 @@ void HomeTab::syncScaledFonts() {
     if (label != nullptr) {
       label->setFontSize(Style::fontSizeCaption * s);
     }
-  }
-  if (m_wallpaperButton != nullptr) {
-    m_wallpaperButton->setGlyphSize(Style::fontSizeBody * s);
-  }
-  if (m_mediaButton != nullptr) {
-    m_mediaButton->setGlyphSize(Style::fontSizeBody * s);
-  }
-  if (m_weatherButton != nullptr) {
-    m_weatherButton->setGlyphSize(Style::fontSizeBody * s);
   }
   if (m_mediaTrack != nullptr) {
     m_mediaTrack->setFontSize(Style::fontSizeBody * 0.95f * s);
@@ -1386,6 +1407,42 @@ void HomeTab::sync(Renderer& renderer) {
         }
       }
     }
+  }
+
+  applyCardHoverTextColors();
+}
+
+void HomeTab::applyCardHoverTextColors() {
+  // When hovered, a card's text turns OnHover so it stays legible against the Hover fill. When not, each
+  // label returns to its base role. sync() only re-colours the dynamic labels (media status, weather
+  // glyph), so the static labels MUST be restored here or they'd stay stuck on OnHover after the leave.
+  const ColorSpec onHover = colorSpecFromRole(ColorRole::OnHover);
+
+  const auto restore = [&](Label* label, bool hovered, ColorRole base) {
+    if (label != nullptr) {
+      label->setColor(hovered ? onHover : colorSpecFromRole(base));
+    }
+  };
+
+  // Media card.
+  restore(m_mediaTrack, m_mediaCardHovered, ColorRole::OnSurface);
+  restore(m_mediaArtist, m_mediaCardHovered, ColorRole::OnSurfaceVariant);
+  restore(m_mediaProgress, m_mediaCardHovered, ColorRole::Secondary);
+  if (m_mediaArtFallback != nullptr) {
+    m_mediaArtFallback->setColor(m_mediaCardHovered ? onHover : colorSpecFromRole(ColorRole::OnSurfaceVariant));
+  }
+  // Status colour is data-driven in sync(); only override it while hovered.
+  if (m_mediaCardHovered && m_mediaStatus != nullptr) {
+    m_mediaStatus->setColor(onHover);
+  }
+
+  // Clock/weather card.
+  restore(m_timeLabel, m_dateTimeCardHovered, ColorRole::Primary);
+  restore(m_dateLabel, m_dateTimeCardHovered, ColorRole::OnSurface);
+  restore(m_weatherLine, m_dateTimeCardHovered, ColorRole::OnSurfaceVariant);
+  // Weather glyph colour is data-driven in sync(); only override it while hovered.
+  if (m_dateTimeCardHovered && m_weatherGlyph != nullptr) {
+    m_weatherGlyph->setColor(onHover);
   }
 }
 
