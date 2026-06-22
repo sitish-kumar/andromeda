@@ -894,6 +894,17 @@ noctalia_exe = executable('noctalia',
 
 install_subdir('assets',
   install_dir: get_option('datadir') / 'noctalia',
+  exclude_files: ['dev.noctalia.Noctalia.desktop'],
+)
+
+install_data(
+  'assets/dev.noctalia.Noctalia.desktop',
+  install_dir: get_option('datadir') / 'applications',
+)
+
+install_data(
+  'assets/noctalia.svg',
+  install_dir: get_option('datadir') / 'icons' / 'hicolor' / 'scalable' / 'apps',
 )
 
 if build_tests
