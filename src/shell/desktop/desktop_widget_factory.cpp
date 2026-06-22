@@ -189,12 +189,14 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
     const std::string styleSetting = getStringSetting(settings, "clock_style", "digital");
     const DesktopClockWidget::Style style =
         styleSetting == "analog" ? DesktopClockWidget::Style::Analog : DesktopClockWidget::Style::Digital;
-    auto widget = std::make_unique<DesktopClockWidget>(
-        style, getStringSetting(settings, "format", "{:%H:%M}"),
-        getColorSpecSetting(settings, "color", colorSpecFromRole(ColorRole::OnSurface)),
-        getBoolSetting(settings, "shadow", true), getBoolSetting(settings, "circle", true),
-        getBoolSetting(settings, "center_text", false)
-    );
+    auto widget = std::make_unique<DesktopClockWidget>(DesktopClockWidget::Options{
+        .style = style,
+        .format = getStringSetting(settings, "format", "{:%H:%M}"),
+        .color = getColorSpecSetting(settings, "color", colorSpecFromRole(ColorRole::OnSurface)),
+        .shadow = getBoolSetting(settings, "shadow", true),
+        .showCircle = getBoolSetting(settings, "circle", true),
+        .centerText = getBoolSetting(settings, "center_text", false),
+    });
     applyCommonSettings(*widget, settings);
     widget->setContentScale(contentScale);
     return widget;

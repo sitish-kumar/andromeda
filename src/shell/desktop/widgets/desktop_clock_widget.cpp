@@ -15,6 +15,7 @@
 #include <ctime>
 #include <memory>
 #include <numbers>
+#include <utility>
 
 namespace {
 
@@ -184,11 +185,10 @@ DesktopClockWidget::Style DesktopClockWidget::styleFromSetting(std::string_view 
   return Style::Digital;
 }
 
-DesktopClockWidget::DesktopClockWidget(
-    Style style, std::string format, ColorSpec color, bool shadow, bool circle, bool centerText
-)
-    : m_style(style), m_format(std::move(format)), m_color(color), m_shadow(shadow), m_showCircle(circle),
-      m_centerText(centerText), m_showsSeconds(m_style == Style::Analog || formatShowsSeconds(m_format)) {}
+DesktopClockWidget::DesktopClockWidget(Options options)
+    : m_style(options.style), m_format(std::move(options.format)), m_color(options.color), m_shadow(options.shadow),
+      m_showCircle(options.showCircle), m_centerText(options.centerText),
+      m_showsSeconds(m_style == Style::Analog || formatShowsSeconds(m_format)) {}
 
 void DesktopClockWidget::create() {
   auto rootNode = std::make_unique<Node>();
