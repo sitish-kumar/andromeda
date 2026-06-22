@@ -252,11 +252,16 @@ std::unique_ptr<Widget> WidgetFactory::create(
     auto trimSetting = [wc](const char* key, const char* fallback = "") {
       return wc != nullptr ? StringUtils::trim(wc->getString(key, fallback)) : std::string(fallback);
     };
-    auto widget = std::make_unique<CustomButtonWidget>(
-        trimSetting("glyph", "heart"), trimSetting("label"), trimSetting("tooltip"), trimSetting("command"),
-        trimSetting("right_command"), trimSetting("middle_command"), trimSetting("scroll_up_command"),
-        trimSetting("scroll_down_command")
-    );
+    auto widget = std::make_unique<CustomButtonWidget>(CustomButtonWidget::Options{
+        .glyph = trimSetting("glyph", "heart"),
+        .label = trimSetting("label"),
+        .tooltip = trimSetting("tooltip"),
+        .command = trimSetting("command"),
+        .rightCommand = trimSetting("right_command"),
+        .middleCommand = trimSetting("middle_command"),
+        .scrollUpCommand = trimSetting("scroll_up_command"),
+        .scrollDownCommand = trimSetting("scroll_down_command"),
+    });
     widget->setContentScale(contentScale);
     return widget;
   }
