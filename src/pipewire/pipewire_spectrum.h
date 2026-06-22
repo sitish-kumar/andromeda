@@ -93,7 +93,7 @@ private:
   std::string m_boundTargetObject;
   int m_analysisBandCount = 32;
   int m_lowerCutoff = 50;
-  int m_upperCutoff = 12000;
+  int m_upperCutoff = 20000;
   float m_noiseReduction = 0.77f;
   bool m_smoothing = true;
   std::vector<float> m_analysisBands;
