@@ -242,6 +242,10 @@ void PanelManager::setToggleSettingsWindowCallback(std::function<void()> callbac
   m_toggleSettingsWindow = std::move(callback);
 }
 
+void PanelManager::setCloseDesktopWidgetsEditorCallback(std::function<void()> callback) {
+  m_closeDesktopWidgetsEditor = std::move(callback);
+}
+
 void PanelManager::openSettingsWindow() {
   if (isOpen() && !m_closing) {
     closePanel();
@@ -318,6 +322,10 @@ void PanelManager::registerPanel(const std::string& id, std::unique_ptr<Panel> c
 void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest request) {
   if (m_inTransition) {
     return;
+  }
+
+  if (m_closeDesktopWidgetsEditor) {
+    m_closeDesktopWidgetsEditor();
   }
 
   // If a panel is open or closing, destroy it immediately with no close animation.

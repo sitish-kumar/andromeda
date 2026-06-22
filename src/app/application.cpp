@@ -1509,6 +1509,11 @@ void Application::initUi() {
     }
     m_settingsWindow.open();
   });
+  m_panelManager.setCloseDesktopWidgetsEditorCallback([this]() {
+    if (m_desktopWidgetsController.isEditing()) {
+      m_desktopWidgetsController.exitEdit();
+    }
+  });
   m_settingsWindow.setOpenWallpaperPanel([this]() {
     wl_output* output = m_compositorPlatform.preferredInteractiveOutput(std::chrono::milliseconds(1200));
     m_panelManager.openPanel("wallpaper", PanelOpenRequest{.output = output});
@@ -1907,6 +1912,11 @@ void Application::initUi() {
   m_desktopWidgetsController.initialize({
       .widgets = desktopWidgetServices,
       .lockscreenWidgets = &m_lockscreenWidgetsController,
+  });
+  m_desktopWidgetsController.setOnEnterEditCallback([this]() {
+    if (m_settingsWindow.isOpen()) {
+      m_settingsWindow.close();
+    }
   });
   m_iconThemePollSource.setChangeCallback([this]() { onIconThemeChanged(); });
 

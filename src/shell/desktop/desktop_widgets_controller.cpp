@@ -259,6 +259,9 @@ void DesktopWidgetsController::enterEdit() {
   if (m_config != nullptr && !m_config->config().desktopWidgets.enabled) {
     return;
   }
+  if (m_onEnterEdit) {
+    m_onEnterEdit();
+  }
   // Open the editor before tearing down host widgets so the PipeWire spectrum
   // listener hand-off does not briefly drop to zero listeners (which resets the
   // stream and leaves a new editor instance with empty spectrum values).
@@ -285,6 +288,10 @@ void DesktopWidgetsController::toggleEdit() {
   } else {
     enterEdit();
   }
+}
+
+void DesktopWidgetsController::setOnEnterEditCallback(std::function<void()> callback) {
+  m_onEnterEdit = std::move(callback);
 }
 
 void DesktopWidgetsController::suppressDisplay() {

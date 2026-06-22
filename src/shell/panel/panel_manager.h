@@ -62,6 +62,7 @@ public:
   void setOpenSettingsWindowCallback(std::function<void()> callback);
   void setCloseSettingsWindowCallback(std::function<void()> callback);
   void setToggleSettingsWindowCallback(std::function<void()> callback);
+  void setCloseDesktopWidgetsEditorCallback(std::function<void()> callback);
   void openSettingsWindow();
   void closeSettingsWindow();
   void toggleSettingsWindow();
@@ -171,6 +172,7 @@ private:
   std::function<void()> m_openSettingsWindow;
   std::function<void()> m_closeSettingsWindow;
   std::function<void()> m_toggleSettingsWindow;
+  std::function<void()> m_closeDesktopWidgetsEditor;
   std::function<void(wl_output*, std::string_view, std::optional<AttachedPanelGeometry>)>
       m_attachedPanelGeometryCallback;
   std::function<std::vector<InputRect>(wl_output*)> m_clickShieldExcludeRectsProvider;
