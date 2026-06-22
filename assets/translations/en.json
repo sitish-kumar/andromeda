@@ -29,6 +29,7 @@
   "bar": {
     "screenshot": {
       "choose-display": "Choose display",
+      "confirm-region": "Enter or Space to capture · Esc to cancel · drag to reselect",
       "fullscreen": "Full screen",
       "region": "Select region"
     },
@@ -2364,6 +2365,10 @@
         "screenshot-freeze-screen": {
           "description": "Capture the desktop before region selection so moving content stays still",
           "label": "Freeze Screen"
+        },
+        "screenshot-confirm-region": {
+          "description": "After drawing a region, keep the overlay open until you confirm with Enter or Space",
+          "label": "Confirm Region"
         },
         "screenshot-pipe-command": {
           "description": "Command run as /bin/sh -lc with the PNG on stdin; for annotators or uploaders (for example: swappy -f - or satty -f -)",

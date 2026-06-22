@@ -837,6 +837,7 @@ struct ShellConfig {
     bool saveToFile = true;
     bool copyToClipboard = true;
     bool freezeScreen = true;
+    bool confirmRegion = false;
     bool pipeToCommand = false;
     std::string pipeCommand;
     std::string directory;       // empty = ~/Pictures

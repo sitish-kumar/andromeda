@@ -545,6 +545,7 @@ ScreenshotService::OutputOptions ScreenshotService::outputOptionsFromConfig(cons
   options.copyToClipboard = screenshot.copyToClipboard;
   options.pipeToCommand = screenshot.pipeToCommand;
   options.freezeScreen = screenshot.freezeScreen;
+  options.confirmRegion = screenshot.confirmRegion;
   options.pipeCommand = screenshot.pipeCommand;
   options.directory = screenshot.directory;
   options.filenamePattern = screenshot.filenamePattern;
@@ -759,7 +760,7 @@ void ScreenshotService::startRegionOverlay(RenderContext& renderContext) {
   m_regionFullscreenPick = false;
   ensureRegionOverlay();
   m_regionOverlay->setFrozenScreenshots({});
-  m_regionOverlay->begin(false, false);
+  m_regionOverlay->begin(false, false, m_regionOutputOptions.confirmRegion);
 }
 
 void ScreenshotService::startFullscreenOverlay(RenderContext& renderContext) {
@@ -767,7 +768,7 @@ void ScreenshotService::startFullscreenOverlay(RenderContext& renderContext) {
   m_regionFullscreenPick = true;
   ensureRegionOverlay();
   m_regionOverlay->setFrozenScreenshots({});
-  m_regionOverlay->begin(false, true);
+  m_regionOverlay->begin(false, true, false);
 }
 
 void ScreenshotService::beginFreezeCapture() {
@@ -841,7 +842,7 @@ void ScreenshotService::finishFreezeCapture() {
 
   ensureRegionOverlay();
   m_regionOverlay->setFrozenScreenshots(std::move(m_frozenScreenshots));
-  m_regionOverlay->begin(true, m_regionFullscreenPick);
+  m_regionOverlay->begin(true, m_regionFullscreenPick, !m_regionFullscreenPick && m_regionOutputOptions.confirmRegion);
 }
 
 void ScreenshotService::abortFreezeCapture(const std::string& message) {

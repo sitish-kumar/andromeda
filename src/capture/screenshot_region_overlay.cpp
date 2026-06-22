@@ -2,6 +2,7 @@
 
 #include "config/config_types.h"
 #include "core/deferred_call.h"
+#include "core/key_symbols.h"
 #include "core/keybind_matcher.h"
 #include "core/log.h"
 #include "core/ui_phase.h"
@@ -119,6 +120,23 @@ namespace capture {
       return bar;
     }
 
+    std::unique_ptr<Flex> buildConfirmHintBar(Label*& hintOut) {
+      auto bar = std::make_unique<Flex>();
+      bar->setDirection(FlexDirection::Horizontal);
+      bar->setJustify(FlexJustify::Center);
+      bar->setAlign(FlexAlign::Center);
+      bar->setPadding(Style::spaceSm, Style::spaceMd, Style::spaceSm, Style::spaceMd);
+      bar->setCardStyle(1.0f, 0.94f, true);
+      bar->setVisible(false);
+
+      auto hint = std::make_unique<Label>();
+      hint->setFontSize(Style::fontSizeCaption);
+      hint->setColor(colorForRole(ColorRole::OnSurface));
+      hintOut = hint.get();
+      bar->addChild(std::move(hint));
+      return bar;
+    }
+
   } // namespace
 
   struct ScreenshotRegionOverlay::Instance {
@@ -134,6 +152,8 @@ namespace capture {
     Box* selection = nullptr;
     Box* dimensionsBadge = nullptr;
     Label* dimensionsLabel = nullptr;
+    Flex* confirmHint = nullptr;
+    Label* confirmHintLabel = nullptr;
     AnimationManager animations;
     InputDispatcher inputDispatcher;
     bool pointerInside = false;
@@ -160,13 +180,15 @@ namespace capture {
     return screenshots;
   }
 
-  void ScreenshotRegionOverlay::begin(bool freezeScreen, bool fullscreenPick) {
+  void ScreenshotRegionOverlay::begin(bool freezeScreen, bool fullscreenPick, bool confirmRegion) {
     if (m_wayland == nullptr || m_renderContext == nullptr) {
       return;
     }
     destroySurfaces();
     m_freezeScreen = freezeScreen;
     m_fullscreenPick = fullscreenPick;
+    m_confirmRegion = confirmRegion && !fullscreenPick;
+    m_confirming = false;
     m_active = true;
     m_dragging = false;
     ensureSurfaces();
@@ -181,8 +203,10 @@ namespace capture {
   void ScreenshotRegionOverlay::cancel() {
     m_active = false;
     m_dragging = false;
+    m_confirming = false;
     m_freezeScreen = false;
     m_fullscreenPick = false;
+    m_confirmRegion = false;
     m_frozenScreenshots.clear();
     destroySurfaces();
   }
@@ -346,6 +370,9 @@ namespace capture {
         if (!data.pressed || data.button != BTN_LEFT) {
           return;
         }
+        if (m_confirming) {
+          m_confirming = false;
+        }
         const auto* out = findOutput(*m_wayland, output);
         if (out == nullptr) {
           return;
@@ -396,6 +423,10 @@ namespace capture {
 
     input->setOnKeyDown([this](const InputArea::KeyData& key) {
       if (!key.pressed) {
+        return;
+      }
+      if (m_confirming && KeySymbol::isEnterOrSpace(key.sym)) {
+        DeferredCall::callLater([this]() { confirmPendingSelection(); });
         return;
       }
       if (KeybindMatcher::matches(KeybindAction::Cancel, key.sym, key.modifiers)) {
@@ -472,6 +503,10 @@ namespace capture {
       inst.sceneRoot->addChild(std::move(pickerBar));
       pickerBarPtr->layout(*m_renderContext);
       pickerBarPtr->setPosition((w - pickerBarPtr->width()) * 0.5f, Style::spaceMd);
+    } else if (m_confirmRegion) {
+      auto hintBar = buildConfirmHintBar(inst.confirmHintLabel);
+      inst.confirmHint = hintBar.get();
+      inst.sceneRoot->addChild(std::move(hintBar));
     }
 
     inst.surface->setSceneRoot(inst.sceneRoot.get());
@@ -584,6 +619,10 @@ namespace capture {
     }
 
     if (!KeybindMatcher::matches(KeybindAction::Cancel, event.sym, event.modifiers)) {
+      if (m_confirming && KeySymbol::isEnterOrSpace(event.sym)) {
+        confirmPendingSelection();
+        return true;
+      }
       return false;
     }
     cancelSelection();
@@ -620,7 +659,7 @@ namespace capture {
       }
     };
 
-    if (!m_dragging) {
+    if (!m_dragging && !m_confirming) {
       for (auto& inst : m_instances) {
         if (inst->surface != nullptr) {
           layoutDimFrame(
@@ -633,6 +672,9 @@ namespace capture {
         }
         if (inst->dimensionsBadge != nullptr) {
           inst->dimensionsBadge->setVisible(false);
+        }
+        if (inst->confirmHint != nullptr) {
+          inst->confirmHint->setVisible(false);
         }
       }
       return;
@@ -698,7 +740,10 @@ namespace capture {
           (holeX1 - holeX0) + (kSelectionBorderWidth * 2.0f), (holeY1 - holeY0) + (kSelectionBorderWidth * 2.0f)
       );
 
-      if (inst->dimensionsBadge != nullptr && inst->dimensionsLabel != nullptr && m_renderContext != nullptr) {
+      if (inst->dimensionsBadge != nullptr
+          && inst->dimensionsLabel != nullptr
+          && m_renderContext != nullptr
+          && m_dragging) {
         const bool cursorOnOutput = cursorGlobalX >= outLeft
             && cursorGlobalX < outRight
             && cursorGlobalY >= outTop
@@ -725,6 +770,26 @@ namespace capture {
         }
       }
     }
+
+    if (m_renderContext != nullptr) {
+      for (auto& inst : m_instances) {
+        if (inst->confirmHint == nullptr || inst->surface == nullptr) {
+          continue;
+        }
+        inst->confirmHint->setVisible(m_confirming);
+        if (!m_confirming) {
+          continue;
+        }
+        if (inst->confirmHintLabel != nullptr) {
+          inst->confirmHintLabel->setText(i18n::tr("bar.screenshot.confirm-region"));
+        }
+        const auto surfaceW = static_cast<float>(inst->surface->width());
+        const auto surfaceH = static_cast<float>(inst->surface->height());
+        inst->confirmHint->layout(*m_renderContext);
+        const float y = std::max(Style::spaceMd, surfaceH - inst->confirmHint->height() - Style::spaceMd);
+        inst->confirmHint->setPosition((surfaceW - inst->confirmHint->width()) * 0.5f, y);
+      }
+    }
   }
 
   void ScreenshotRegionOverlay::completeSelection() {
@@ -736,6 +801,57 @@ namespace capture {
     const int width = globalX1 - globalX0;
     const int height = globalY1 - globalY0;
 
+    if (width < 2 || height < 2) {
+      m_active = false;
+      destroySurfaces();
+      if (m_onComplete) {
+        m_onComplete(std::nullopt, nullptr);
+      }
+      return;
+    }
+
+    if (m_confirmRegion) {
+      m_confirming = true;
+      m_startGlobalX = static_cast<double>(globalX0);
+      m_startGlobalY = static_cast<double>(globalY0);
+      m_currentGlobalX = static_cast<double>(globalX1);
+      m_currentGlobalY = static_cast<double>(globalY1);
+      updateSelectionVisuals();
+      for (auto& instance : m_instances) {
+        if (instance->surface != nullptr) {
+          instance->surface->requestRedraw();
+        }
+      }
+      return;
+    }
+
+    m_active = false;
+    destroySurfaces();
+
+    LogicalRect region{
+        .x = globalX0,
+        .y = globalY0,
+        .width = width,
+        .height = height,
+    };
+    if (m_onComplete) {
+      m_onComplete(region, nullptr);
+    }
+  }
+
+  void ScreenshotRegionOverlay::confirmPendingSelection() {
+    if (!m_active || !m_confirming) {
+      return;
+    }
+
+    const int globalX0 = static_cast<int>(std::floor(std::min(m_startGlobalX, m_currentGlobalX)));
+    const int globalY0 = static_cast<int>(std::floor(std::min(m_startGlobalY, m_currentGlobalY)));
+    const int globalX1 = static_cast<int>(std::ceil(std::max(m_startGlobalX, m_currentGlobalX)));
+    const int globalY1 = static_cast<int>(std::ceil(std::max(m_startGlobalY, m_currentGlobalY)));
+    const int width = globalX1 - globalX0;
+    const int height = globalY1 - globalY0;
+
+    m_confirming = false;
     m_active = false;
     destroySurfaces();
 
