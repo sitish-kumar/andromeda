@@ -830,3 +830,11 @@ void LockSurface::onGpuResourcesInvalidated() {
   m_wallpaperDirty = true;
   requestLayout();
 }
+
+void LockSurface::render() {
+  Surface::render();
+  m_firstFrameRendered = true;
+  if (m_renderCallback) {
+    m_renderCallback();
+  }
+}

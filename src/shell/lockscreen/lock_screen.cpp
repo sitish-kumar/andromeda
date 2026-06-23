@@ -354,7 +354,7 @@ void LockScreen::runAfterSessionLocked(std::function<void()> fn) {
   if (fn == nullptr) {
     return;
   }
-  if (m_locked) {
+  if (m_locked && allSurfacesReady()) {
     DeferredCall::callLater(std::move(fn));
     return;
   }
@@ -388,7 +388,7 @@ void LockScreen::handleLocked(void* data, ext_session_lock_v1* /*lock*/) {
   if (self->m_onSessionLocked) {
     self->m_onSessionLocked();
   }
-  if (self->m_pendingAfterLocked) {
+  if (self->m_pendingAfterLocked && self->allSurfacesReady()) {
     auto pending = std::move(self->m_pendingAfterLocked);
     self->m_pendingAfterLocked = {};
     DeferredCall::callLater(std::move(pending));
@@ -454,6 +454,15 @@ bool LockScreen::shouldUseBlurredDesktop() const {
       && m_configService->config().lockscreen.blurredDesktop
       && m_wayland != nullptr
       && m_wayland->hasScreencopy();
+}
+
+bool LockScreen::allSurfacesReady() const {
+  for (const auto& instance : m_instances) {
+    if (instance.surface != nullptr && !instance.surface->firstFrameRendered()) {
+      return false;
+    }
+  }
+  return true;
 }
 
 void LockScreen::primeDesktopCaptures() {
@@ -609,6 +618,13 @@ void LockScreen::createInstance(const WaylandOutput& output) {
     surface->setDesktopCapture(std::move(captureIt->second));
     m_desktopCaptures.erase(captureIt);
   }
+  surface->setRenderCallback([this]() {
+    if (m_locked && m_pendingAfterLocked && allSurfacesReady()) {
+      auto pending = std::move(m_pendingAfterLocked);
+      m_pendingAfterLocked = {};
+      DeferredCall::callLater(std::move(pending));
+    }
+  });
   surface->setOnLogin([this]() { tryAuthenticate(); });
   surface->setOnPasswordChanged([this](const std::string& value) { handlePasswordEdited(value); });
   surface->setPromptState(m_user, m_password, m_status, m_statusIsError, m_authenticating);

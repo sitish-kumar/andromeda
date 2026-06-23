@@ -62,6 +62,9 @@ public:
   void setOutputKey(std::string outputKey) { m_outputKey = std::move(outputKey); }
   void setWidgetsHost(LockscreenWidgetsHost* host) noexcept { m_widgetsHost = host; }
 
+  [[nodiscard]] bool firstFrameRendered() const noexcept { return m_firstFrameRendered; }
+  void setRenderCallback(std::function<void()> callback) { m_renderCallback = std::move(callback); }
+
   static void handleConfigure(
       void* data, ext_session_lock_surface_v1* lockSurface, std::uint32_t serial, std::uint32_t width,
       std::uint32_t height
@@ -69,6 +72,7 @@ public:
 
 private:
   void prepareFrame(bool needsUpdate, bool needsLayout);
+  void render() override;
   void applyWallpaperTexture();
   void applyBlurredDesktopTexture();
   void releaseWallpaperTextureRef(const std::string& path);
@@ -119,4 +123,6 @@ private:
   bool m_authenticating = false;
   std::string m_outputKey;
   LockscreenWidgetsHost* m_widgetsHost = nullptr;
+  bool m_firstFrameRendered = false;
+  std::function<void()> m_renderCallback;
 };

@@ -81,6 +81,7 @@ private:
   void syncInstances();
   void captureDesktopSnapshots();
   [[nodiscard]] bool shouldUseBlurredDesktop() const;
+  [[nodiscard]] bool allSurfacesReady() const;
   void applyLockscreenStyle(LockSurface& surface) const;
   void applyOutputRestriction();
   void applyWallpaperStyleToSurfaces();
