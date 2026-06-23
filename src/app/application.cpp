@@ -1582,6 +1582,7 @@ void Application::initUi() {
           .wallpaper = &m_wallpaper,
           .calendar = &m_calendarService,
           .scriptApi = &m_scriptApi,
+          .fileWatcher = &m_fileWatcher,
           .clipboard = &m_clipboardService,
           .accounts = m_accountsService.get(),
           .thumbnails = &m_thumbnailService,

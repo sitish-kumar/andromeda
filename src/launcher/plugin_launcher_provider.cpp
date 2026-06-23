@@ -1,6 +1,8 @@
 #include "launcher/plugin_launcher_provider.h"
 
 #include "core/log.h"
+#include "i18n/i18n.h"
+#include "notification/notifications.h"
 
 #include <chrono>
 #include <fstream>
@@ -136,12 +138,15 @@ void PluginLauncherProvider::teardownScriptWatch() {
 
 void PluginLauncherProvider::reloadScript() {
   std::string code = readFile(m_sourcePath);
+  auto name = m_sourcePath.filename().string();
   if (code.empty()) {
     kLog.warn("launcher provider '{}': failed to reload '{}'", m_entryId, m_sourcePath.string());
+    notify::error("Noctalia", i18n::tr("bar.widgets.scripted.reload-failed"), name);
     return;
   }
   if (m_runtime == nullptr) {
     kLog.warn("launcher provider '{}': runtime unavailable for reload", m_entryId);
+    notify::error("Noctalia", i18n::tr("bar.widgets.scripted.reload-failed"), name);
     return;
   }
 
@@ -152,6 +157,7 @@ void PluginLauncherProvider::reloadScript() {
     m_onResultsChanged();
   }
   kLog.info("hot reload: reloaded launcher provider '{}'", m_entryId);
+  notify::info("Noctalia", i18n::tr("bar.widgets.scripted.reloaded"), name);
 }
 
 bool PluginLauncherProvider::activate(const LauncherResult& result) {
