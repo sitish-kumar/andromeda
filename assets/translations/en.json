@@ -1244,6 +1244,7 @@
         "empty": "No plugins found. Add a source, or check your network.",
         "loading": "Loading plugins...",
         "refreshing": "Refreshing plugins...",
+        "requires": "Requires: {dependencies}",
         "requires-newer-noctalia": "requires newer Noctalia",
         "title": "Plugins"
       },
