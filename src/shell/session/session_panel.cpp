@@ -258,8 +258,8 @@ void SessionPanel::syncCountdownOverlayColors(std::size_t index) {
   }
   ActionCountdownOverlay& overlay = m_countdownOverlays[index];
   const SessionActionButtonVariant variant = m_visibleEntries[index].variant;
-  const Button::ButtonPalette palette = Button::defaultPalette(buttonVariantFor(variant));
-  const Button::ButtonStateColors& state = palette.pressed;
+  const Button::ButtonPalette buttonPalette = Button::defaultPalette(buttonVariantFor(variant));
+  const Button::ButtonStateColors& state = buttonPalette.pressed;
 
   ColorSpec scrimFill = state.bg;
   scrimFill.alpha *= kCountdownScrimAlpha;
