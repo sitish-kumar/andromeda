@@ -833,8 +833,10 @@ void LockSurface::onGpuResourcesInvalidated() {
 
 void LockSurface::render() {
   Surface::render();
-  m_firstFrameRendered = true;
-  if (m_renderCallback) {
-    m_renderCallback();
+  if (!m_firstFrameRendered) {
+    m_firstFrameRendered = true;
+    if (m_renderCallback) {
+      m_renderCallback();
+    }
   }
 }

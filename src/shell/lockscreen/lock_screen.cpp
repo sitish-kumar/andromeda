@@ -457,6 +457,9 @@ bool LockScreen::shouldUseBlurredDesktop() const {
 }
 
 bool LockScreen::allSurfacesReady() const {
+  if (m_instances.empty()) {
+    return false;
+  }
   for (const auto& instance : m_instances) {
     if (instance.surface != nullptr && !instance.surface->firstFrameRendered()) {
       return false;
