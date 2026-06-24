@@ -489,10 +489,16 @@ namespace settings {
       section->addChild(makeLabel(
           i18n::tr("settings.plugins.sources.empty"), Style::fontSizeCaption * scale, ColorRole::OnSurfaceVariant
       ));
+    } else if (ctx.sources.size() > 1) {
+      section->addChild(makeLabel(
+          i18n::tr("settings.plugins.sources.precedence-hint"), Style::fontSizeCaption * scale,
+          ColorRole::OnSurfaceVariant
+      ));
     }
-    std::vector<PluginSourceConfig> sources = ctx.sources;
-    std::ranges::stable_sort(sources, [](const auto& a, const auto& b) { return pluginSourceLess(a.name, b.name); });
-    for (const auto& source : sources) {
+    // Render in config order so the list mirrors the file. Precedence is last-wins
+    // (the same cascade as the rest of the config), so a source lower in the list
+    // overrides the ones above it for a shared plugin id.
+    for (const auto& source : ctx.sources) {
       section->addChild(sourceRow(source, ctx, scale));
     }
 

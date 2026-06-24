@@ -1273,6 +1273,7 @@
         "location-placeholder-path": "~/dev/noctalia-plugins",
         "name-label": "Source ID",
         "name-placeholder": "my-plugins",
+        "precedence-hint": "Lower sources override higher ones when they offer the same plugin.",
         "remove": "Remove source",
         "save": "Save",
         "title": "Sources",

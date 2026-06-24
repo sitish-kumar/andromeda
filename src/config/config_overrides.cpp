@@ -778,13 +778,22 @@ void ConfigService::addPluginSource(const PluginSourceConfig& source) {
   }
 
   if (!sourceWritten) {
-    // A source name is an identity, not a duplicate key — replace any existing entry.
-    for (auto it = arr->begin(); it != arr->end();) {
+    // A source name is an identity, not a duplicate key. Replace any existing entry
+    // in place — source order is precedence, so toggling enabled must not move the
+    // source to the end. Append only when the name isn't present yet.
+    bool replaced = false;
+    for (auto it = arr->begin(); it != arr->end(); ++it) {
       const auto* tbl = it->as_table();
       const auto name = tbl != nullptr ? (*tbl)["name"].value<std::string>() : std::nullopt;
-      it = (name && *name == source.name) ? arr->erase(it) : it + 1;
+      if (name && *name == source.name) {
+        arr->replace(it, sourceTable(source));
+        replaced = true;
+        break;
+      }
     }
-    arr->push_back(sourceTable(source));
+    if (!replaced) {
+      arr->push_back(sourceTable(source));
+    }
   }
 
   if (!writeOverridesToFile()) {
