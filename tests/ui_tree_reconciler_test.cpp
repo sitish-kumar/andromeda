@@ -211,6 +211,32 @@ int main() {
     ok = expect(fired.empty(), "sink not fired before click") && ok;
   }
 
+  // Toggling a box's onClick across reconciles rebuilds it: a clickable box is
+  // wrapped in an InputArea (so it is not directly a Box), a bare box is not.
+  {
+    ui::UiTreeReconciler reconciler;
+    Flex host;
+
+    ui::UiTreeNode tree = makeNode("column");
+    tree.children.push_back(makeNode("box"));
+    (void)reconciler.reconcile(host, tree, renderer);
+    auto* column = dynamic_cast<Flex*>(host.children().front().get());
+    Node* bareBox = column != nullptr ? column->children()[0].get() : nullptr;
+    ok = expect(dynamic_cast<Box*>(bareBox) != nullptr, "bare box is an unwrapped Box") && ok;
+
+    tree.children[0].props.emplace("onClick", std::string("openDetails"));
+    (void)reconciler.reconcile(host, tree, renderer);
+    Node* clickableBox = column != nullptr ? column->children()[0].get() : nullptr;
+    ok = expect(clickableBox != bareBox, "adding onClick rebuilds the box") && ok;
+    ok = expect(dynamic_cast<Box*>(clickableBox) == nullptr, "clickable box is wrapped, not a bare Box") && ok;
+
+    tree.children[0].props.erase("onClick");
+    (void)reconciler.reconcile(host, tree, renderer);
+    Node* unwrapped = column != nullptr ? column->children()[0].get() : nullptr;
+    ok = expect(unwrapped != clickableBox, "removing onClick rebuilds the box") && ok;
+    ok = expect(dynamic_cast<Box*>(unwrapped) != nullptr, "box unwrapped after onClick removed") && ok;
+  }
+
   // Interactive controls build and apply their value props.
   {
     ui::UiTreeReconciler reconciler;

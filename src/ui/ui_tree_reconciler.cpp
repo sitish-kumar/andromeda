@@ -212,6 +212,18 @@ namespace ui {
 
     InputArea* inputAreaFromSlot(Node* node) { return dynamic_cast<InputArea*>(node); }
 
+    // box/image get an InputArea wrapper only when clickable (see createControl).
+    // If a reconcile flips that need, the existing node can't be reused — its
+    // structure no longer matches — so it must be rebuilt like a type change.
+    bool clickableWrapMismatch(const UiTreeNode& want, Node* node) {
+      if (want.type != "box" && want.type != "image") {
+        return false;
+      }
+      const bool wantsWrapper = strProp(want, "onClick") != nullptr;
+      const bool hasWrapper = inputAreaFromSlot(node) != nullptr;
+      return wantsWrapper != hasWrapper;
+    }
+
     std::unique_ptr<Node> wrapClickable(std::unique_ptr<Node> control) {
       auto inputArea = std::make_unique<InputArea>();
       inputArea->setAcceptedButtons(InputArea::buttonMask(BTN_LEFT));
@@ -420,7 +432,9 @@ namespace ui {
     bool sequenceMatches = slots.size() == desired.size();
     if (sequenceMatches) {
       for (std::size_t i = 0; i < slots.size(); ++i) {
-        if (slots[i].type != desired[i].type || slots[i].key != desired[i].key) {
+        if (slots[i].type != desired[i].type
+            || slots[i].key != desired[i].key
+            || clickableWrapMismatch(desired[i], slots[i].node)) {
           sequenceMatches = false;
           break;
         }
@@ -452,7 +466,10 @@ namespace ui {
       for (const auto& want : desired) {
         Detached* match = nullptr;
         for (auto& candidate : detached) {
-          if (candidate.used || candidate.slot.type != want.type || candidate.slot.key != want.key) {
+          if (candidate.used
+              || candidate.slot.type != want.type
+              || candidate.slot.key != want.key
+              || clickableWrapMismatch(want, candidate.node.get())) {
             continue;
           }
           match = &candidate;
