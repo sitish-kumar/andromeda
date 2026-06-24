@@ -395,6 +395,7 @@ _noctalia_sources = files(
   'src/config/cli.cpp',
   'src/core/build_info.cpp',
   'src/core/deferred_call.cpp',
+  'src/core/fd_diagnostics.cpp',
   'src/core/file_watcher.cpp',
   'src/core/key_chord.cpp',
   'src/core/log.cpp',
