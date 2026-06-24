@@ -17,6 +17,7 @@
 #include "time/time_format.h"
 #include "util/file_utils.h"
 #include "util/fuzzy_match.h"
+#include "util/string_utils.h"
 
 #include <algorithm>
 #include <atomic>
@@ -859,6 +860,37 @@ namespace {
       {nullptr, nullptr},
   };
 
+  int luau_string_trim(lua_State* L) {
+    size_t len = 0;
+    const char* str = luaL_checklstring(L, 1, &len);
+    const std::string out = StringUtils::trim(std::string_view(str, len));
+    lua_pushlstring(L, out.data(), out.size());
+    return 1;
+  }
+
+  int luau_string_urlEncode(lua_State* L) {
+    size_t len = 0;
+    const char* str = luaL_checklstring(L, 1, &len);
+    const std::string out = StringUtils::urlEncode(std::string_view(str, len));
+    lua_pushlstring(L, out.data(), out.size());
+    return 1;
+  }
+
+  int luau_string_urlDecode(lua_State* L) {
+    size_t len = 0;
+    const char* str = luaL_checklstring(L, 1, &len);
+    const std::string out = StringUtils::urlDecode(std::string_view(str, len));
+    lua_pushlstring(L, out.data(), out.size());
+    return 1;
+  }
+
+  const luaL_Reg kNoctaliaStringLib[] = {
+      {"trim", luau_string_trim},
+      {"urlEncode", luau_string_urlEncode},
+      {"urlDecode", luau_string_urlDecode},
+      {nullptr, nullptr},
+  };
+
   int luau_fuzzyScore(lua_State* L) {
     size_t patternLen = 0;
     const char* pattern = luaL_checklstring(L, 1, &patternLen);
@@ -917,6 +949,10 @@ namespace {
     lua_createtable(L, 0, 0);
     luaL_register(L, nullptr, kNoctaliaJsonLib);
     lua_setfield(L, -2, "json");
+    // noctalia.string = { trim, urlEncode, urlDecode }
+    lua_createtable(L, 0, 0);
+    luaL_register(L, nullptr, kNoctaliaStringLib);
+    lua_setfield(L, -2, "string");
     lua_pop(L, 1);
   }
 } // namespace
