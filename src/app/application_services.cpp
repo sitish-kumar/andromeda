@@ -578,7 +578,16 @@ void Application::initWaylandCallbacks() {
       m_panelManager.refresh();
     }
   });
+  m_compositorPlatform.setWorkspaceAlertService(&m_workspaceAlertService);
   m_compositorPlatform.setWorkspaceChangeCallback([this]() {
+    // Clear alerts for the workspace the user just switched to. Limit to the
+    // focused output so activity on one monitor doesn't dismiss alerts on
+    // another; fall back to all outputs when no focused output is known.
+    if (wl_output* output = m_compositorPlatform.preferredInteractiveOutput(); output != nullptr) {
+      (void)m_compositorPlatform.clearActiveWorkspaceAlerts(output);
+    } else {
+      (void)m_compositorPlatform.clearActiveWorkspaceAlerts();
+    }
     m_bar.onWorkspaceChanged();
     m_bar.refresh();
     m_windowSwitcher.onToplevelChange();
