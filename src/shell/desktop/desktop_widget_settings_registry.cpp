@@ -255,7 +255,7 @@ namespace desktop_settings {
       circle.visibleWhen = analogOnly;
       add(std::move(circle));
     } else if (type == "audio_visualizer") {
-      add(doubleSpec("bands", 32.0, 4.0, 128.0, 4.0));
+      add(intSpec("bands", 32, 4.0, 128.0, 4.0));
       add(boolSpec("mirrored", true));
       add(boolSpec("centered", true));
       add(boolSpec("show_when_idle", true));
