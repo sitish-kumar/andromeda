@@ -640,7 +640,7 @@ bool PipeWireSpectrum::processListenerView(ListenerState& state, float nrFactor,
           * (1.0 - static_cast<double>(state.fall[i]) * static_cast<double>(state.fall[i]) * gravityMod)
       );
       bands[i] = std::max(bands[i], 0.0f);
-      state.fall[i] += 0.048f;
+      state.fall[i] += 0.04f;
     } else {
       state.peak[i] = bands[i];
       state.fall[i] = 0.0f;
