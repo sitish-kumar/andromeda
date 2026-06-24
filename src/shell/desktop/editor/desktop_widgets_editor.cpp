@@ -575,6 +575,11 @@ void DesktopWidgetsEditor::prepareFrame(OverlaySurface& surface, bool needsUpdat
       if (view.widget == nullptr || view.transformNode == nullptr) {
         continue;
       }
+      // During a scale drag, re-fit only the dragged widget; the others don't change, and skipping
+      // them keeps the per-frame relayout cheap.
+      if (m_drag.mode == DragMode::Scale && id != m_drag.widgetId) {
+        continue;
+      }
       view.widget->layout(*m_renderContext);
       const float w = std::max(1.0f, view.widget->intrinsicWidth());
       const float h = std::max(1.0f, view.widget->intrinsicHeight());
@@ -1403,6 +1408,42 @@ void DesktopWidgetsEditor::updateViewTransforms(const std::string* relayoutWidge
   }
 }
 
+void DesktopWidgetsEditor::applyScaleDragPreview(const DesktopWidgetState& state) {
+  EditorWidgetView* view = findView(m_drag.widgetId);
+  if (view == nullptr || view->widget == nullptr || view->transformNode == nullptr) {
+    return;
+  }
+
+  view->intrinsicWidth = std::max(1.0f, state.boxWidth);
+  view->intrinsicHeight = std::max(1.0f, state.boxHeight);
+
+  // Handles and the tile follow the cursor immediately; the content re-fits via a real layout in
+  // prepareFrame, coalesced to one per frame from the pointer-move stream.
+  view->widget->setBox(state.boxWidth, state.boxHeight);
+
+  float flipScaleX = 1.0f;
+  float flipScaleY = 1.0f;
+  desktop_widgets::widgetNodeScale(state, flipScaleX, flipScaleY);
+
+  view->transformNode->setFrameSize(view->intrinsicWidth, view->intrinsicHeight);
+  view->transformNode->setPosition(state.cx - view->intrinsicWidth * 0.5f, state.cy - view->intrinsicHeight * 0.5f);
+  view->transformNode->setRotation(state.rotationRad);
+  view->transformNode->setScale(flipScaleX, flipScaleY);
+  view->transformNode->setOpacity(state.enabled ? 1.0f : kDisabledWidgetOpacity);
+
+  OverlaySurface* dragSurface = findSurfaceForWidget(m_drag.widgetId);
+  for (auto& surface : m_surfaces) {
+    updateSelectionVisuals(*surface);
+  }
+
+  // Request a plain relayout of the dragged surface (re-fit content) — NOT the editor's
+  // requestLayout(), which rebuilds the whole scene every frame and would destroy the captured
+  // resize-handle node, dropping the pointer grab mid-drag.
+  if (dragSurface != nullptr && dragSurface->surface != nullptr) {
+    dragSurface->surface->requestLayout();
+  }
+}
+
 void DesktopWidgetsEditor::addWidget(const std::string& outputName, const std::string& type) {
   if (!m_open || m_wayland == nullptr) {
     return;
@@ -1990,10 +2031,10 @@ void DesktopWidgetsEditor::updateDrag() {
     desktop_widgets::clampStateToOutput(*m_wayland, *state, clampWidth, clampHeight);
   }
 
-  // For a resize, re-layout the dragged widget so its content re-fits the new box; otherwise
-  // just reposition the views.
+  // For a resize, preview the new box as a cheap GPU scale of the dragged widget (its content is
+  // re-fitted crisply once, on release, in finishDrag()); otherwise just reposition the views.
   if (m_drag.mode == DragMode::Scale) {
-    updateViewTransforms(&m_drag.widgetId);
+    applyScaleDragPreview(*state);
   } else {
     updateViewTransforms();
   }
@@ -2083,6 +2124,12 @@ bool DesktopWidgetsEditor::onPointerEvent(const PointerEvent& event) {
     break;
   case PointerEvent::Type::Motion:
     surface->inputDispatcher.pointerMotion(static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial);
+    // An active drag tracks the pointer everywhere, not just while it stays over the handle's input
+    // area — otherwise dragging a scale handle outward (growing the widget) stops updating once the
+    // pointer leaves the handle.
+    if (m_drag.mode != DragMode::None) {
+      updateDrag();
+    }
     break;
   case PointerEvent::Type::Button:
     surface->inputDispatcher.pointerButton(

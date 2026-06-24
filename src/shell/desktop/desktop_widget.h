@@ -57,6 +57,9 @@ public:
     m_contentScale = scale;
   }
   [[nodiscard]] float contentScale() const noexcept { return m_contentScale; }
+  // The aspect-preserved content scale that fits the natural-size high-water mark into the given
+  // box, clamped to the fit limits.
+  [[nodiscard]] float contentScaleForBox(float boxWidth, float boxHeight) const noexcept;
   // Target box size (logical px) of the widget's grid tile. 0 means auto-fit the content's
   // natural size. When set, layout() scales the content to fill the box (aspect-preserved,
   // centered) and the background/surface take the box dimensions.
@@ -105,6 +108,9 @@ protected:
 
   [[nodiscard]] float boxInnerWidth() const noexcept;
   [[nodiscard]] float boxInnerHeight() const noexcept;
+  // True while layout() runs, including the nested update() calls a doLayout may make (which open
+  // their own Update phase scope). Subclasses use this to avoid re-arming a layout from within one.
+  [[nodiscard]] bool isLayingOut() const noexcept { return m_inLayout; }
 
   virtual void doLayout(Renderer& renderer) = 0;
   virtual void doUpdate(Renderer& renderer) { (void)renderer; }
@@ -120,6 +126,7 @@ protected:
   // Outer node released to the host: background wrapper when enabled, otherwise content.
   [[nodiscard]] Node* presentationRoot() const noexcept;
 
+  bool m_inLayout = false;
   float m_contentScale = 1.0f;
   float m_baseScale = 1.0f;
   float m_boxWidth = 0.0f;

@@ -1,6 +1,5 @@
 #include "shell/desktop/widgets/desktop_clock_widget.h"
 
-#include "core/ui_phase.h"
 #include "render/core/color.h"
 #include "render/core/renderer.h"
 #include "render/scene/node.h"
@@ -574,11 +573,12 @@ void DesktopClockWidget::updateStableDigitalWidth(Renderer& renderer, const std:
     m_digitOffsetX = offset;
     m_label->setMinWidth(m_stableWidth);
     m_label->setMaxWidth(m_stableWidth);
-    // Re-arm layout only when the change surfaces outside layout (a non-digit field like
-    // the date/AM-PM rolling over on the Update tick). During layout() the new width/offset
-    // already apply in this same pass, and its two box-fit passes (base then fitted scale)
-    // each measure a different width — re-arming here would loop forever.
-    if (currentUiPhase() != UiPhase::Layout) {
+    // Re-arm layout only when the change surfaces outside layout (a non-digit field like the
+    // date/AM-PM rolling over on the Update tick). During layout() the new width/offset already
+    // apply in this same pass, and its two box-fit passes (base then fitted scale) each measure a
+    // different width — re-arming here would loop forever. The nested update() inside doLayout opens
+    // an Update phase scope, so guard on isLayingOut() rather than the phase.
+    if (!isLayingOut()) {
       requestLayout();
     }
   }

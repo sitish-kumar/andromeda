@@ -158,6 +158,9 @@ private:
   void updateWallpaperPreview(OverlaySurface& surface);
   void applyViewState(EditorWidgetView& view, const DesktopWidgetState& state, bool refreshContent);
   void updateViewTransforms(const std::string* relayoutWidgetId = nullptr);
+  // Live resize preview: grow the box (handles/outline) and scale the content on the GPU instead
+  // of re-laying out the dragged widget every pointer move. finishDrag() does the crisp re-fit.
+  void applyScaleDragPreview(const DesktopWidgetState& state);
   void updateSelectionVisuals(OverlaySurface& surface);
   void addWidget(const std::string& outputName, const std::string& type);
   void removeSelectedWidget();
