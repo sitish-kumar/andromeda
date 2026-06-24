@@ -851,11 +851,10 @@ void DesktopWidgetsEditor::buildInspector(
           ui::button({
               .glyph = "close",
               .glyphSize = 12.0f,
+              .controlHeight = kInspectorCloseSize,
               .variant = ButtonVariant::Ghost,
               .minWidth = kInspectorCloseSize,
-              .minHeight = kInspectorCloseSize,
               .maxWidth = kInspectorCloseSize,
-              .maxHeight = kInspectorCloseSize,
               .padding = 2.0f,
               .radius = Style::scaledRadiusSm(),
               .width = kInspectorCloseSize,

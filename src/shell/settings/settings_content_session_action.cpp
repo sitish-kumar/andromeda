@@ -93,11 +93,10 @@ namespace settings {
         .text = "",
         .glyph = previewGlyph,
         .glyphSize = iconGlyphSize,
+        .controlHeight = iconSq,
         .variant = ButtonVariant::Outline,
         .minWidth = iconSq,
-        .minHeight = iconSq,
         .maxWidth = iconSq,
-        .maxHeight = iconSq,
         .padding = 0.0f,
         .radius = Style::scaledRadiusMd(scale),
     });
