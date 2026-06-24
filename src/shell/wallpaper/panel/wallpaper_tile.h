@@ -4,6 +4,7 @@
 #include "render/scene/input_area.h"
 #include "shell/wallpaper/panel/wallpaper_scanner.h"
 
+#include <cstdint>
 #include <functional>
 #include <optional>
 #include <string>
@@ -66,6 +67,9 @@ public:
 private:
   void applyVisualState();
   void applyStarVisualState();
+  void applyThumbScale(float scale);
+  void animateThumbScale(float targetScale);
+  void cancelThumbScaleAnimation();
   void layoutThumbOverlays();
   void doLayout(Renderer& renderer) override;
   void releaseThumbnail();
@@ -99,6 +103,9 @@ private:
   bool m_loadingThumbnail = false;
   std::string m_thumbPath;
   int m_thumbTargetPx = 0;
+  float m_thumbScale = 1.0f;
+  float m_thumbScaleTarget = 1.0f;
+  std::uint32_t m_thumbScaleAnimId = 0;
   ClickCallback m_onClick;
   std::function<void(const WallpaperEntry&)> m_onStarClick;
   HoverCallback m_onMotion;
