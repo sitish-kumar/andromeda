@@ -1373,6 +1373,10 @@
         "auto-hide": {
           "description": "Automatically hide the bar when not in use"
         },
+        "show-on-workspace-switch": {
+          "description": "Briefly reveal the bar when the active workspace changes",
+          "label": "Show on Workspace Switch"
+        },
         "background-opacity": {
           "description": "Background opacity of the bar"
         },

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/timer_manager.h"
 #include "shell/bar/bar_instance.h"
 #include "shell/bar/bar_services.h"
 #include "shell/bar/widget_factory.h"
@@ -12,6 +13,7 @@
 #include <optional>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 class ConfigService;
@@ -62,6 +64,7 @@ public:
   void unsuppressDisplay();
   [[nodiscard]] bool isVisible() const noexcept;
   void onOutputChange();
+  void onWorkspaceChanged();
   void onSecondTick();
   void refresh();
   void requestLayout();
@@ -127,6 +130,7 @@ private:
   [[nodiscard]] bool shouldReserveExclusiveZone(const BarInstance& instance) const noexcept;
   [[nodiscard]] bool barContentVisuallyShown(const BarInstance& instance) const noexcept;
   void revealAutoHideBar(BarInstance& instance);
+  void applyPendingWorkspaceReveal();
   void startHideFadeOut(BarInstance& instance);
   static void applyBackgroundPalette(BarInstance& instance);
   [[nodiscard]] std::string showBarIpc(std::string_view args);
@@ -184,6 +188,10 @@ private:
   BarInstance* m_hoveredInstance = nullptr;
   std::function<bool(const BarInstance&)> m_autoHideSuppressionCallback;
   std::function<void(std::string, std::string)> m_openWidgetSettingsCallback;
+  Timer m_workspaceRevealDebounce;
+  Timer m_workspacePeekHideTimer;
+  std::unordered_set<std::uint32_t> m_pendingWorkspaceRevealOutputs;
+  std::unordered_map<std::uint32_t, std::string> m_lastActiveWorkspaceByOutput;
   bool m_overlayDisplaySuppressed = false;
   bool m_wasVisibleBeforeOverlaySuppress = false;
 };

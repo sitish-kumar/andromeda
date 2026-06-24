@@ -277,6 +277,7 @@ widget_spacing     = 6
 scale              = 1.0
 shadow             = true
 auto_hide          = false
+# show_on_workspace_switch = true   # with auto_hide: briefly reveal when the active workspace changes
 reserve_space      = true
 capsule            = false
 # capsule_fill     = "surface_variant"

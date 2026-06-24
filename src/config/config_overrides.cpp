@@ -164,6 +164,9 @@ namespace {
     if (ovr.autoHide) {
       resolved.autoHide = *ovr.autoHide;
     }
+    if (ovr.showOnWorkspaceSwitch) {
+      resolved.showOnWorkspaceSwitch = *ovr.showOnWorkspaceSwitch;
+    }
     if (ovr.reserveSpace) {
       resolved.reserveSpace = *ovr.reserveSpace;
     }

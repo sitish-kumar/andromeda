@@ -5,6 +5,7 @@
 #include "core/log.h"
 #include "core/process.h"
 #include "core/scoped_timer.h"
+#include "core/timer_manager.h"
 #include "core/ui_phase.h"
 #include "dbus/power/power_profiles_service.h"
 #include "dbus/tray/tray_service.h"
@@ -44,6 +45,8 @@
 namespace {
 
   constexpr Logger kLog("bar");
+  constexpr std::chrono::milliseconds kWorkspaceRevealDebounce{80};
+  constexpr std::chrono::milliseconds kWorkspacePeekHold{450};
   constexpr std::int32_t kAutoHideTriggerPx = 3;
   constexpr float kAutoHideSlideExtraPx = 4.0f;
 
@@ -1187,6 +1190,91 @@ void Bar::closeAllInstances() {
 }
 
 void Bar::onOutputChange() { syncInstances(); }
+
+void Bar::onWorkspaceChanged() {
+  if (m_platform == nullptr || m_overlayDisplaySuppressed) {
+    return;
+  }
+
+  bool anyChanged = false;
+  for (const auto& output : m_platform->outputs()) {
+    std::string activeId;
+    for (const auto& workspace : m_platform->workspaces(output.output)) {
+      if (workspace.active) {
+        activeId = workspace.id;
+        break;
+      }
+    }
+    if (activeId.empty()) {
+      continue;
+    }
+
+    auto& last = m_lastActiveWorkspaceByOutput[output.name];
+    if (!last.empty() && last != activeId) {
+      m_pendingWorkspaceRevealOutputs.insert(output.name);
+      anyChanged = true;
+    }
+    last = activeId;
+  }
+
+  if (!anyChanged) {
+    return;
+  }
+
+  m_workspaceRevealDebounce.start(kWorkspaceRevealDebounce, [this]() { applyPendingWorkspaceReveal(); });
+}
+
+void Bar::applyPendingWorkspaceReveal() {
+  if (m_platform == nullptr) {
+    return;
+  }
+
+  const auto pendingOutputs = std::move(m_pendingWorkspaceRevealOutputs);
+  m_pendingWorkspaceRevealOutputs.clear();
+
+  std::vector<BarInstance*> peeked;
+  peeked.reserve(m_instances.size());
+  for (const std::uint32_t outputName : pendingOutputs) {
+    for (const auto& instanceUp : m_instances) {
+      auto* instance = instanceUp.get();
+      if (instance == nullptr
+          || instance->outputName != outputName
+          || !instance->barConfig.enabled
+          || !instance->barConfig.autoHide
+          || !instance->barConfig.showOnWorkspaceSwitch
+          || instance->surface == nullptr) {
+        continue;
+      }
+
+      revealAutoHideBar(*instance);
+      if (instance->pointerInside) {
+        continue;
+      }
+      const bool suppressAutoHide =
+          (m_autoHideSuppressionCallback != nullptr) ? m_autoHideSuppressionCallback(*instance) : false;
+      if (!suppressAutoHide) {
+        peeked.push_back(instance);
+      }
+    }
+  }
+
+  if (peeked.empty()) {
+    return;
+  }
+
+  m_workspacePeekHideTimer.start(kWorkspacePeekHold, [this, peeked = std::move(peeked)]() {
+    for (BarInstance* instance : peeked) {
+      if (instance == nullptr || !instance->barConfig.autoHide || instance->pointerInside) {
+        continue;
+      }
+      const bool suppressAutoHide =
+          (m_autoHideSuppressionCallback != nullptr) ? m_autoHideSuppressionCallback(*instance) : false;
+      if (!suppressAutoHide) {
+        startHideFadeOut(*instance);
+      }
+    }
+  });
+}
 
 void Bar::refresh() {
   for (auto& inst : m_instances) {

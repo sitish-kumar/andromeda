@@ -2300,6 +2300,16 @@ namespace settings {
           section, "general", tr("settings.schema.shared.auto-hide.label"),
           tr("settings.schema.bar.auto-hide.description"), path("auto_hide"), ToggleSetting{bar.autoHide}, "autohide"
       ));
+      const SettingVisibility autoHideOn{path("auto_hide"), {"true"}};
+      {
+        auto e = makeEntry(
+            section, "general", tr("settings.schema.bar.show-on-workspace-switch.label"),
+            tr("settings.schema.bar.show-on-workspace-switch.description"), path("show_on_workspace_switch"),
+            ToggleSetting{bar.showOnWorkspaceSwitch}, "workspace reveal peek autohide"
+        );
+        e.visibleWhen = autoHideOn;
+        entries.push_back(std::move(e));
+      }
       entries.push_back(makeEntry(
           section, "general", tr("settings.schema.shared.reserve-space.label"),
           tr("settings.schema.bar.reserve-space.description"), path("reserve_space"), ToggleSetting{bar.reserveSpace},
@@ -2603,6 +2613,17 @@ namespace settings {
             tr("settings.schema.bar.auto-hide.description"), monitorPath("auto_hide"),
             ToggleSetting{ovr.autoHide.value_or(bar.autoHide)}, "autohide"
         ));
+        const SettingVisibility monitorAutoHideOn{monitorPath("auto_hide"), {"true"}};
+        {
+          auto e = makeEntry(
+              section, "general", tr("settings.schema.bar.show-on-workspace-switch.label"),
+              tr("settings.schema.bar.show-on-workspace-switch.description"), monitorPath("show_on_workspace_switch"),
+              ToggleSetting{ovr.showOnWorkspaceSwitch.value_or(bar.showOnWorkspaceSwitch)},
+              "workspace reveal peek autohide"
+          );
+          e.visibleWhen = monitorAutoHideOn;
+          entries.push_back(std::move(e));
+        }
         entries.push_back(makeEntry(
             section, "general", tr("settings.schema.shared.reserve-space.label"),
             tr("settings.schema.bar.reserve-space.description"), monitorPath("reserve_space"),
