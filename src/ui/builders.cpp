@@ -278,6 +278,9 @@ namespace ui {
     if (props.glyphSize.has_value()) {
       control->setGlyphSize(*props.glyphSize);
     }
+    if (props.controlHeight.has_value()) {
+      control->setControlHeight(*props.controlHeight);
+    }
     if (props.enabled.has_value()) {
       control->setEnabled(*props.enabled);
     }

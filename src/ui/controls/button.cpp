@@ -270,6 +270,12 @@ void Button::setGlyphSize(float size) {
   m_glyph->setGlyphSize(size);
 }
 
+void Button::setControlHeight(float height) {
+  const float pinned = std::max(1.0f, height);
+  setMinHeight(pinned);
+  setMaxHeight(pinned);
+}
+
 void Button::setOnClick(std::function<void()> callback) {
   m_onClick = std::move(callback);
   refreshInputAreaEnabled();
