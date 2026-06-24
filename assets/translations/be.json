@@ -29,6 +29,7 @@
   "bar": {
     "screenshot": {
       "choose-display": "Выбраць дысплэй",
+      "confirm-region": "Enter або Прабел каб зняць · Esc каб скасаваць · перацягніце, каб выбраць зноў",
       "fullscreen": "Увесь экран",
       "region": "Выбраць рэгіён"
     },
@@ -280,7 +281,15 @@
       "untitled": "Апавяшчэнне без назвы"
     },
     "power": {
-      "battery": "Батарэя"
+      "battery": "Батарэя",
+      "design-capacity": "Ад зыходнай ёмістасці",
+      "health": "Рэсурс батарэі",
+      "performance-inhibited": "Прадукцыйнасць недаступна",
+      "peripherals": "Падключаныя прылады",
+      "power-profile": "Профіль сілкавання",
+      "time-to-empty": "Засталося {time}",
+      "time-to-full": "{time} да поўнага зараду",
+      "unknown-device": "Невядомая прылада"
     },
     "screen-time": {
       "disabled": "Адсочванне экраннага часу выключана. Уключыце яго ў наладах, каб запісваць выкарыстанне кожнай праграмы.",
@@ -354,6 +363,7 @@
       "media": "Медыя",
       "network": "Сетка",
       "notifications": "Апавяшчэнні",
+      "power": "Сілкаванне",
       "screen-time": "Экранны час",
       "system": "Сістэма",
       "weather": "Надвор'е"
@@ -425,13 +435,18 @@
         "command": "Каманда",
         "custom-color": "Уласны...",
         "description": "Апісанне",
+        "display": "Дысплэй",
+        "display-gauge": "Паказчык",
+        "display-graph": "Графік",
         "fade-when-idle": "Затухаць пры неактыўнасці",
         "font-family": "Шрыфт",
         "font-family-default": "Як у сістэме",
         "forecast-days": "Дні прагнозу",
         "format": "Фармат",
+        "gauge-layout": "Макет паказчыка",
         "glyph": "Гліф",
         "hide-when-no-media": "Хаваць, калі няма медыя",
+        "highlight-color": "Колер вылучэння",
         "horizontal": "Гарызантальна",
         "hover-background": "Фон пры навядзенні",
         "hover-foreground": "Пярэдні план пры навядзенні",
@@ -441,6 +456,7 @@
         "input-radius": "Радыус поля ўводу",
         "interface": "Інтэрфейс",
         "label": "Загаловак",
+        "label-min-width": "Мінімальная шырыня загалоўка",
         "layout": "Макет",
         "mirrored": "Адлюстраванне",
         "opacity": "Непразрыстасць",
@@ -621,6 +637,8 @@
     },
     "internal": {
       "battery": "Батарэя",
+      "battery-critical-body": "{device}: {percent}% - ваш камп'ютар хутка выключыцца",
+      "battery-critical-title": "Крытычна нізкі зарад батарэі",
       "battery-device": "Прылада з батарэяй",
       "battery-low-body": "{device}: засталося {percent}%",
       "battery-low-title": "Нізкі зарад батарэі",
@@ -682,6 +700,20 @@
       "scroll-off": "Scroll Lock выключаны",
       "scroll-on": "Scroll Lock уключаны"
     },
+    "nightlight": {
+      "forced": "Заўсёды ўключана",
+      "off": "Начное святло выключана",
+      "running": "Выконваецца",
+      "scheduled": "Запланавана"
+    },
+    "privacy": {
+      "camera-off": "Камера спынілася",
+      "camera-on": "Камера актыўна",
+      "mic-off": "Мікрафон спыніўся",
+      "mic-on": "Мікрафон актыўны",
+      "screen-off": "Абагульненне экрана спынілася",
+      "screen-on": "Абагульненне экрана актыўна"
+    },
     "wifi": {
       "off": "Wi-Fi выключаны",
       "on": "Wi-Fi уключаны"
@@ -698,11 +730,14 @@
         "plugged-in": "Падключана"
       },
       "tooltip": {
+        "device": "Батарэя",
+        "device-numbered": "Батарэя №{index}",
         "health": "Рэсурс",
         "rate": "Хуткасць",
         "status": "Стан",
         "time-left": "Часу працы засталося",
-        "time-to-full": "Часу да поўнай зарадкі"
+        "time-to-full": "Часу да поўнай зарадкі",
+        "unknown-device": "Невядомая прылада"
       }
     },
     "profiles": {
@@ -970,6 +1005,7 @@
         "clipboard": "Буфер абмену",
         "community": "Супольнасць",
         "control-center": "Цэнтр кіравання",
+        "dead-zone": "Мёртвая зона",
         "directories": "Каталогі",
         "effects": "Эфекты",
         "filtering": "Фільтрацыя",
@@ -990,6 +1026,7 @@
         "media": "Медыя",
         "monitor": "Манітор рэсурсаў",
         "monitor-polling": "Частата абнаўлення экрану",
+        "monitor-thresholds": "Вылучэнне парогаў",
         "monitors": "Маніторы",
         "motion": "Рух",
         "network": "Сетка",
@@ -1016,6 +1053,53 @@
         "weather": "Надвор'е",
         "widget-list": "Спіс віджэтаў",
         "widgets": "Віджэты"
+      },
+      "sections": {
+        "appearance": "Знешні выгляд",
+        "backdrop": "Заднік",
+        "bar": "Панэль",
+        "control-center": "Цэнтр кіравання",
+        "desktop": "Працоўны стол",
+        "dock": "Док",
+        "hooks": "Хукі",
+        "location": "Месцазнаходжанне",
+        "niri": "Niri",
+        "notifications": "Апавяшчэнні",
+        "osd": "OSD",
+        "panels": "Палосы",
+        "plugins": "Убудовы",
+        "popups": "Усплывальныя вокны",
+        "power": "Сілкаванне",
+        "security": "Бяспека",
+        "services": "Сэрвісы",
+        "shell": "Абалонка",
+        "system": "Сістэма",
+        "templates": "Шаблоны",
+        "wallpaper": "Шпалеры"
+      }
+    },
+    "notifications": {
+      "filter": {
+        "add": "Дадаць фільтр",
+        "add-title": "Дадаць фільтр апавяшчэнняў",
+        "allow-permanent": "Дазволіць пастаянны",
+        "allowed-urgencies-label": "Дазволеныя пільнасці",
+        "flag": {
+          "history": "гісторыя",
+          "permanent": "пастаянны",
+          "sound": "гук",
+          "toast": "усплывальнае акно"
+        },
+        "flags-label": "Калі ёсць супадзенне",
+        "match-label": "Праграма",
+        "match-placeholder": "Назва праграмы, запісу працоўнага стала або катэгорыі...",
+        "play-sound": "Прайграваць гук",
+        "save-history": "Захоўваць у гісторыю",
+        "show-toast": "Паказваць усплывальнае акно",
+        "summary": "{match} · {flags}",
+        "summary-blocked": "{match} · заблакіравана",
+        "summary-disabled": "{match} · выключана",
+        "unnamed": "Неназваны фільтр"
       }
     },
     "schema": {

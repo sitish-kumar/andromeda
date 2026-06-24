@@ -29,6 +29,7 @@
   "bar": {
     "screenshot": {
       "choose-display": "选择屏幕",
+      "confirm-region": "Enter 或 Space 键截图 · Esc 取消 · 拖动重新选择",
       "fullscreen": "全屏",
       "region": "选择区域"
     },
@@ -1057,6 +1058,7 @@
         "appearance": "外观",
         "backdrop": "Backdrop",
         "bar": "状态栏",
+        "control-center": "控制中心",
         "desktop": "桌面",
         "dock": "Dock",
         "hooks": "Hook",
@@ -1243,6 +1245,7 @@
         "empty": "未找到插件。请添加插件源或检查网络连接。",
         "loading": "正在加载插件…",
         "refreshing": "正在刷新插件…",
+        "requires": "依赖：{dependencies}",
         "requires-newer-noctalia": "需要更新版本的 Noctalia",
         "title": "插件"
       },
@@ -2348,6 +2351,10 @@
           "description": "清除已保存的应用前台使用记录",
           "label": "重置屏幕使用时间数据"
         },
+        "screenshot-confirm-region": {
+          "description": "绘制区域后，保持 Overlay 开启，直到按下 Enter 或 Space 键确认",
+          "label": "确认区域"
+        },
         "screenshot-copy-to-clipboard": {
           "description": "将截取的 PNG 图片复制到剪贴板",
           "label": "复制到剪贴板"
@@ -2512,6 +2519,8 @@
       "command-label": "Shell 命令",
       "command-placeholder": "可选的 Bash 命令；留空则使用内置行为",
       "command-required-placeholder": "需要执行的 Shell 命令",
+      "countdown-seconds-description": "运行前等待的秒数；再次激活可立即确认；设为 0 表示立即运行。",
+      "countdown-seconds-label": "倒计时（秒）",
       "glyph-label": "图标",
       "glyph-picker-title": "操作图标",
       "kind-section-label": "行为",

@@ -1,7 +1,14 @@
 {
   "auth": {
     "fingerprint": {
-      "no-match": "Fingerabdruck stimmt nicht überein"
+      "disconnected": "Fingerabdruckleser getrennt.",
+      "no-match": "Fingerabdruck stimmt nicht überein",
+      "not-centered": "Finger neu ausrichten und wiederholen.",
+      "present": "Lese Fingerabdruck",
+      "ready": "Finger auf den Leser legen.",
+      "remove-and-retry": "Finger anheben und neu probieren.",
+      "retry": "Bitte den Fingerabdruck neu einlesen.",
+      "swipe-too-short": "Zu schnell gestrichen, bitte wiederholen."
     },
     "pam": {
       "authentication-failed": "Authentifizierung fehlgeschlagen",
@@ -27,6 +34,12 @@
       "active-window": {
         "no-active-window": "Kein aktives Fenster"
       },
+      "bluetooth": {
+        "connected": "Verbunden"
+      },
+      "brightness": {
+        "brightness": "Helligkeit"
+      },
       "lock-keys": {
         "caps": "Caps",
         "caps-short": "C",
@@ -40,6 +53,11 @@
         "playing": "Spielt"
       },
       "network": {
+        "connected": "Verbunden",
+        "connecting": "Verbinden",
+        "ip": "IP",
+        "network": "Netzwerk",
+        "networks": "Netzwerke",
         "wired": "Kabelgebunden"
       },
       "scripted": {
@@ -212,6 +230,9 @@
       "filter-empty-body": "Keine Benachrichtigungen entsprechen diesem Filter.",
       "filter-empty-title": "Nichts hier",
       "untitled": "Unbenannte Benachrichtigung"
+    },
+    "power": {
+      "battery": "Batterie"
     },
     "screen-time": {
       "disabled": "Die Bildschirmzeit-Erfassung ist deaktiviert. Aktiviere sie in den Einstellungen, um die Nutzung pro App aufzuzeichnen.",

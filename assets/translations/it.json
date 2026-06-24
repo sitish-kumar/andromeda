@@ -29,6 +29,7 @@
   "bar": {
     "screenshot": {
       "choose-display": "Scegli monitor",
+      "confirm-region": "Invio o Spazio per catturare · Esc per annullare · Trascina per riselezionare",
       "fullscreen": "Schermo intero",
       "region": "Seleziona area"
     },
@@ -1057,6 +1058,7 @@
         "appearance": "Aspetto",
         "backdrop": "Sfondo pannelli",
         "bar": "Barra",
+        "control-center": "Centro di controllo",
         "desktop": "Desktop",
         "dock": "Dock",
         "hooks": "Hook",
@@ -1243,6 +1245,7 @@
         "empty": "Nessun plugin trovato. Aggiungi una sorgente o controlla la rete",
         "loading": "Caricamento plugin...",
         "refreshing": "Aggiornamento plugin...",
+        "requires": "Richiede: {dependencies}",
         "requires-newer-noctalia": "Richiede Noctalia aggiornato",
         "title": "Elenco plugin"
       },
@@ -2348,6 +2351,10 @@
           "description": "Cancella la cronologia di utilizzo in primo piano per app",
           "label": "Ripristina i dati del tempo schermo"
         },
+        "screenshot-confirm-region": {
+          "description": "Dopo aver selezionato un'area, mantieni aperta l'overlay finché non confermi con Invio o Spazio",
+          "label": "Conferma area selezionata"
+        },
         "screenshot-copy-to-clipboard": {
           "description": "Copia il PNG catturato negli appunti",
           "label": "Copia negli appunti"
@@ -2510,8 +2517,10 @@
       "add": "Aggiungi azione",
       "clear-glyph": "Cancella",
       "command-label": "Comando shell",
-      "command-placeholder": "Comando bash opzionale, lascia vuoto per comportamento integrato",
+      "command-placeholder": "Comando bash opzionale, lascia vuoto per comportamento di default",
       "command-required-placeholder": "Comando shell da eseguire",
+      "countdown-seconds-description": "Attendi questi secondi prima di eseguire. Seleziona di nuovo per confermare immediatamente. 0 esegue subito.",
+      "countdown-seconds-label": "Conto alla rovescia (secondi)",
       "glyph-label": "Glifo",
       "glyph-picker-title": "Glifo azione",
       "kind-section-label": "Comportamento",
