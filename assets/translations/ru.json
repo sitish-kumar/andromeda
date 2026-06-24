@@ -29,6 +29,7 @@
   "bar": {
     "screenshot": {
       "choose-display": "Выбрать монитор",
+      "confirm-region": "Нажмите Enter или пробел для захвата · Esc для отмены · перетащите для повторного выбора",
       "fullscreen": "Полноэкранный режим",
       "region": "Выбрать область"
     },
@@ -40,7 +41,8 @@
         "connected": "Подключено"
       },
       "brightness": {
-        "brightness": "Яркость"
+        "brightness": "Яркость",
+        "display": "Дисплей"
       },
       "lock-keys": {
         "caps": "Caps",
@@ -63,7 +65,19 @@
         "ip": "IP",
         "network": "Сеть",
         "networks": "Сеть",
-        "wired": "Проводная"
+        "networks-count": "{count} сеть",
+        "networks-count-plural": "{count} сети",
+        "no": "Нет",
+        "not-connected": "Не подключено",
+        "off": "Выкл",
+        "on": "Вкл",
+        "scanning": "Сканирование",
+        "signal": "Сигнал",
+        "upload": "Загрузить",
+        "vpn": "VPN",
+        "wifi": "Wi-Fi",
+        "wired": "Проводная",
+        "yes": "Да"
       },
       "privacy": {
         "camera": "Камера",
@@ -73,6 +87,21 @@
       "scripted": {
         "reload-failed": "Не удалось перезагрузить скрипт",
         "reloaded": "Скрипт перезагружен"
+      },
+      "sysmon": {
+        "cpu": "CPU",
+        "cpu-temp": "Температура CPU",
+        "disk": "Диск",
+        "download": "Скачать",
+        "gpu-temp": "Температура GPU",
+        "gpu-usage": "Загрузка GPU",
+        "gpu-vram": "GPU VRAM",
+        "ram": "RAM",
+        "system": "Система",
+        "upload": "Загрузить"
+      },
+      "volume": {
+        "device": "Устройство"
       },
       "weather": {
         "default": "Погода",
@@ -233,6 +262,9 @@
       "wired-connection": "Проводное соединение"
     },
     "notifications": {
+      "clear-all": "Очистить все уведомления",
+      "dnd-off": "Выключить режим \"Не беспокоить\"\"",
+      "dnd-on": "Включить режим \"Не беспокоить\"\"",
       "empty-body": "Здесь будут отображаться последние уведомления.",
       "empty-title": "Нет уведомлений",
       "filter": {
@@ -244,6 +276,17 @@
       "filter-empty-body": "Нет уведомлений, соответствующих этому фильтру.",
       "filter-empty-title": "Здесь ничего нет",
       "untitled": "Уведомление без названия"
+    },
+    "power": {
+      "battery": "Батарея",
+      "design-capacity": "От расчитанной мощности",
+      "health": "Состояние батареи",
+      "performance-inhibited": "Производитльность недоступна",
+      "peripherals": "Подключенные устройства",
+      "power-profile": "Режим питания",
+      "time-to-empty": "Осталось {time}",
+      "time-to-full": "Осталось до полной зарядки: {time}",
+      "unknown-device": "Неизвестное устройство"
     },
     "screen-time": {
       "disabled": "Отслеживание экранного времени отключено. Включите его в настройках, чтобы отслеживать использование каждого приложения.",
@@ -317,6 +360,7 @@
       "media": "Медиа",
       "network": "Сеть",
       "notifications": "Уведомления",
+      "power": "Питание",
       "screen-time": "Экранное время",
       "system": "Система",
       "weather": "Погода"
@@ -637,6 +681,14 @@
       "scroll-off": "Scroll Lock: выкл.",
       "scroll-on": "Scroll Lock: вкл."
     },
+    "privacy": {
+      "camera-off": "Камера неактивна",
+      "camera-on": "Камера активна",
+      "mic-off": "Микрофон неактивен",
+      "mic-on": "Микрофон активен",
+      "screen-off": "Демонстрация экрана остановлена",
+      "screen-on": "Демонстрация экрана запущена"
+    },
     "wifi": {
       "off": "Wi-Fi выключен",
       "on": "Wi-Fi включён"
@@ -653,11 +705,14 @@
         "plugged-in": "Подключено"
       },
       "tooltip": {
+        "device": "Батарея",
+        "device-numbered": "Батарея {index}",
         "health": "Состояние",
         "rate": "Скорость",
         "status": "Статус",
         "time-left": "Оставшееся время",
-        "time-to-full": "До полной зарядки"
+        "time-to-full": "До полной зарядки",
+        "unknown-device": "Неизвестное устройство"
       }
     },
     "profiles": {
@@ -972,6 +1027,7 @@
         "appearance": "Внешний вид",
         "backdrop": "Фон",
         "bar": "Панель",
+        "control-center": "Центр управления",
         "desktop": "Рабочий стол",
         "dock": "Док",
         "hooks": "Хуки",
@@ -1168,7 +1224,7 @@
         "name-placeholder": "my-plugins",
         "remove": "Удалить источник",
         "save": "Сохранить",
-        "title": "источники",
+        "title": "Источники",
         "update": "Обновить",
         "update-on-startup": "Обновить при запуске"
       }

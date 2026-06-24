@@ -233,7 +233,7 @@
       },
       "select-avatar": "Seleziona avatar",
       "unknown": "sconosciuto",
-      "uptime": "Tempo attivo - {uptime}",
+      "uptime": "Tempo di attività - {uptime}",
       "weather": {
         "configure-location": "Aggiungi [weather].address o abilita auto_locate.",
         "data-unavailable": "Dati meteo non disponibili.",
@@ -266,8 +266,8 @@
     },
     "notifications": {
       "clear-all": "Cancella tutte le notifiche",
-      "dnd-off": "Disattiva non disturbare",
-      "dnd-on": "Attiva non disturbare",
+      "dnd-off": "Disattiva DND",
+      "dnd-on": "Attiva DND",
       "empty-body": "Le notifiche recenti verranno mostrate qui.",
       "empty-title": "Nessuna notifica",
       "filter": {
@@ -325,7 +325,7 @@
         "scheduled-day": "Programmato",
         "scheduled-night": "In esecuzione"
       },
-      "notification": "Non disturbare",
+      "notification": "DND",
       "power-profile": "Energia",
       "screen-time": "Screen time",
       "session": "Sessione",
@@ -685,8 +685,8 @@
       "on": "Modalità Caffeine attivata"
     },
     "dnd": {
-      "off": "Non disturbare disattivato",
-      "on": "Non disturbare attivato"
+      "off": "DND disattivato",
+      "on": "DND attivato"
     },
     "effects": {
       "input": "Effetti input",
@@ -1273,6 +1273,7 @@
         "location-placeholder-path": "~/dev/noctalia-plugins",
         "name-label": "ID sorgente",
         "name-placeholder": "miei-plugin",
+        "precedence-hint": "Sorgenti inferiori prevalgono su quelle in alto se offrono lo stesso plugin.",
         "remove": "Rimuovi sorgente",
         "save": "Salva",
         "title": "Sorgenti",
@@ -1844,11 +1845,11 @@
           "label": "Monitor"
         },
         "offset-x": {
-          "description": "Margine orizzontale assoluto dal bordo schermo o barra",
+          "description": "Margine orizzontale assoluto da bordo schermo o barra",
           "label": "Margine orizzontale"
         },
         "offset-y": {
-          "description": "Margine verticale assoluto dal bordo schermo o barra",
+          "description": "Margine verticale assoluto da bordo schermo o barra",
           "label": "Margine verticale"
         },
         "position": {
@@ -2025,7 +2026,7 @@
           "placeholder": "Città, Paese"
         },
         "location-auto-locate": {
-          "description": "Rileva automaticamente la tua posizione dall'indirizzo IP",
+          "description": "Rileva automaticamente la tua posizione in base al tuo indirizzo IP",
           "label": "Localizzazione automatica (IP)"
         },
         "longitude": {
@@ -2255,8 +2256,8 @@
           "label": "Modalità Caffeine"
         },
         "osd-kinds-dnd": {
-          "description": "Mostra un popup OSD quando Non disturbare viene attivato/disattivato",
-          "label": "Non disturbare"
+          "description": "Mostra un popup OSD quando la modalità DND viene attivata/disattivata",
+          "label": "DND"
         },
         "osd-kinds-keyboard-layout": {
           "description": "Mostra un popup OSD quando cambia il layout della tastiera",
@@ -2303,15 +2304,15 @@
           "label": "Monitor"
         },
         "osd-offset-x": {
-          "description": "Margine orizzontale assoluto dal bordo schermo",
+          "description": "Margine orizzontale assoluto da bordo schermo",
           "label": "Margine orizzontale"
         },
         "osd-offset-y": {
-          "description": "Margine verticale assoluto dal bordo schermo",
+          "description": "Margine verticale assoluto da bordo schermo",
           "label": "Margine verticale"
         },
         "osd-orientation": {
-          "description": "Direzione layout per popup OSD",
+          "description": "Direzione layout dei popup OSD",
           "label": "Orientamento"
         },
         "osd-position": {

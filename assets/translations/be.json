@@ -1102,6 +1102,78 @@
         "unnamed": "Неназваны фільтр"
       }
     },
+    "options": {
+      "clipboard": {
+        "auto-paste": {
+          "ctrl-shift-v": "Ctrl+Shift+V",
+          "ctrl-v": "Ctrl+V",
+          "shift-insert": "Shift+Insert"
+        }
+      },
+      "control-center": {
+        "sidebar": {
+          "compact": "Кампактны",
+          "full": "Поўны",
+          "none": "Выключаны"
+        }
+      },
+      "dock-launcher-position": {
+        "end": "Канец",
+        "none": "Выключана",
+        "start": "Пачатак"
+      },
+      "edge": {
+        "bottom": "Унізе",
+        "left": "Злева",
+        "right": "Справа",
+        "top": "Наверсе"
+      },
+      "font-weight": {
+        "bold": "Тлусты",
+        "book": "Кніжны",
+        "default": "Стандартны (панэль)",
+        "heavy": "Шырокі",
+        "light": "Светлы",
+        "medium": "Сярэдні",
+        "regular": "Звычайны",
+        "semi-bold": "Паўтлусты",
+        "semi-light": "Паўсветлы",
+        "thin": "Тонкі",
+        "ultra-bold": "Ультратлусты",
+        "ultra-heavy": "Ультрашырокі",
+        "ultra-light": "Ультрасветлы"
+      },
+      "layer": {
+        "overlay": "Накладка",
+        "top": "Верх"
+      },
+      "notification-urgency": {
+        "critical": "Крытычная",
+        "low": "Нізкая",
+        "normal": "Звычайная"
+      },
+      "orientation": {
+        "horizontal": "Гарызантальна",
+        "vertical": "Вертыкальна"
+      },
+      "screen-position": {
+        "bottom-center": "Унізе па цэнтру",
+        "bottom-left": "Унізе злева",
+        "bottom-right": "Унізе справа",
+        "center-left": "Па цэнтру злева",
+        "center-right": "Па цэнтру справа",
+        "top-center": "Зверху па цэнтру",
+        "top-left": "Зверху злева",
+        "top-right": "Зверху справа"
+      },
+      "shell": {
+        "panel-placement": {
+          "attached": "Прымацавана",
+          "centered": "Па цэнтру",
+          "floating": "Нефіксаваная"
+        }
+      }
+    },
     "schema": {
       "shell": {
         "osd-kinds-dnd": {
