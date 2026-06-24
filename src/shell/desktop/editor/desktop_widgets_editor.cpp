@@ -1148,7 +1148,7 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
                   }),
                   ui::button({
                       .glyph = "settings",
-                      .enabled = hasSelectedWidget && !selectedIsLoginBox,
+                      .enabled = hasSelectedWidget,
                       .selected = m_inspectorOpen,
                       .variant = ButtonVariant::Outline,
                       .tooltip = i18n::tr("desktop-widgets.editor.actions.settings"),
