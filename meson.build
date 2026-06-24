@@ -1191,6 +1191,7 @@ plugin_manifest_test = executable('plugin_manifest_test',
   sources: files(
     'tests/plugin_manifest_test.cpp',
     'src/scripting/plugin_manifest.cpp',
+    'src/scripting/plugin_panel_shell.cpp',
     'src/core/log.cpp',
   ),
   include_directories: _noctalia_inc,
