@@ -949,7 +949,9 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   m_attachedBackgroundOpacity = 1.0f;
   m_attachedContactShadow = false;
   m_attachedRevealProgress = 1.0f;
-  m_detachedRevealProgress = 1.0f;
+  // This path publishes the compositor blur region before the first scene build.
+  // Keep detached panels hidden until buildScene applies the opening reveal.
+  m_detachedRevealProgress = 0.0f;
   m_attachedRevealDirection = AttachedRevealDirection::Down;
   m_detachedRevealDirection = detachedDirection;
   m_attachedPanelGeometry.reset();

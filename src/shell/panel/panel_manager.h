@@ -166,8 +166,7 @@ private:
   // Safe to call any time after buildScene has run.
   void applyAttachedDecorationStyle();
   // Submit a wl_region matching the visible panel body to the compositor for blur.
-  // Clips by m_attachedRevealProgress so the blur grows in lock-step with the
-  // open/close animation.
+  // Clips by the current reveal progress so blur grows in lock-step with animation.
   void applyPanelCompositorBlur();
 
   CompositorPlatform* m_platform = nullptr;
