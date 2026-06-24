@@ -220,6 +220,20 @@ namespace {
     return false;
   }
 
+  [[nodiscard]] bool
+  openNearClickEnabled(const Panel* panel, std::string_view panelId, const ConfigService* configService) {
+    if (panelId.contains(':')) {
+      if (panel == nullptr) {
+        return false;
+      }
+      const bool pinned = panel->panelPlacement() == PanelPlacement::Floating
+          && panel->panelScreenPosition() != "auto"
+          && panel->panelScreenPosition() != "center";
+      return !pinned && panel->panelOpenNearClick();
+    }
+    return openNearClickEnabledForPanel(configService, panelId);
+  }
+
 } // namespace
 
 PanelManager::PanelManager() { s_instance = this; }
@@ -414,18 +428,18 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   };
 
   const PanelPlacement activePlacement = m_activePanel->panelPlacement();
-  // A floating panel's screen position. "auto" keeps the bar-relative placement;
-  // "center" reserves the screen centre (the former Centered placement); any other
-  // token anchors the panel to a screen edge/corner independent of the bar.
-  const std::string panelPosition = resolvePanelPosition(m_config, m_activePanelId);
+  const bool pluginPanel = m_activePanelId.contains(':');
+  const std::string panelPosition =
+      pluginPanel ? m_activePanel->panelScreenPosition() : resolvePanelPosition(m_config, m_activePanelId);
   const bool useScreenPosition =
       activePlacement == PanelPlacement::Floating && panelPosition != "auto" && panelPosition != "center";
   const bool useCenteredPlacement = (activePlacement == PanelPlacement::Floating && panelPosition == "center")
       || (activePlacement == PanelPlacement::Attached
           && m_attachedPanelAvailabilityCallback != nullptr
           && !m_attachedPanelAvailabilityCallback(request.output, m_sourceBarName));
-  const bool useFloatingAnchor =
-      !useCenteredPlacement && request.hasAnchorPosition && openNearClickEnabledForPanel(m_config, m_activePanelId);
+  const bool useFloatingAnchor = !useCenteredPlacement
+      && request.hasAnchorPosition
+      && openNearClickEnabled(m_activePanel, m_activePanelId, m_config);
   const auto detachedShadowBleed =
       detachedPanelSurfaceBleed(m_activePanel->hasDecoration(), m_config->config().shell.shadow);
   const std::uint32_t detachedSurfaceWidth =
@@ -700,7 +714,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     std::int32_t visualX = 0;
     std::int32_t visualY = 0;
     const bool useAnchorForAttached =
-        request.hasAnchorPosition && openNearClickEnabledForPanel(m_config, m_activePanelId);
+        request.hasAnchorPosition && openNearClickEnabled(m_activePanel, m_activePanelId, m_config);
     if (barIsVertical) {
       const auto minY = barTop + totalStartInset;
       const auto maxY = std::max(minY, barBottom - static_cast<std::int32_t>(panelHeight) - totalEndInset);
@@ -1112,7 +1126,7 @@ void PanelManager::togglePanel(const std::string& panelId, PanelOpenRequest requ
       }
       // Panels placed near the clicked widget must fully reopen so geometry
       // and bar decoration track the new anchor.
-      if (request.hasAnchorPosition && openNearClickEnabledForPanel(m_config, panelId)) {
+      if (request.hasAnchorPosition && openNearClickEnabled(m_activePanel, panelId, m_config)) {
         openPanel(panelId, request);
         return;
       }

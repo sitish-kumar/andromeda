@@ -56,6 +56,10 @@ public:
   // exists, `Floating` opens detached near the bar, and `Centered` opens in the
   // middle of the target output.
   [[nodiscard]] virtual PanelPlacement panelPlacement() const noexcept { return PanelPlacement::Floating; }
+  // Floating screen position (one of kPanelPositions). Plugin panels override; built-in
+  // panels resolve through shell.panel.*_position in PanelManager.
+  [[nodiscard]] virtual std::string panelScreenPosition() const { return "auto"; }
+  [[nodiscard]] virtual bool panelOpenNearClick() const { return false; }
   // For attached panels: which bar edge to attach to when more than one bar exists on
   // the target output. Returned value must outlive the call (use a string literal).
   [[nodiscard]] virtual std::string_view preferredAttachedBarPosition() const noexcept { return "top"; }

@@ -3,6 +3,7 @@
 #include "core/log.h"
 #include "core/toml.h" // IWYU pragma: keep
 #include "scripting/plugin_id.h"
+#include "scripting/plugin_panel_shell.h"
 
 #include <algorithm>
 #include <array>
@@ -284,6 +285,16 @@ namespace scripting {
         if (kind == PluginEntryKind::Panel) {
           entry.panelWidth = std::max(0.0, tableNumber(*entryTable, "width").value_or(0.0));
           entry.panelHeight = std::max(0.0, tableNumber(*entryTable, "height").value_or(0.0));
+          if (const std::string placement = tableString(*entryTable, "placement"); !placement.empty()) {
+            entry.panelPlacementDefault = placement;
+          }
+          if (const std::string position = tableString(*entryTable, "position"); !position.empty()) {
+            entry.panelPositionDefault = position;
+          }
+          if (const auto* openNearClick = (*entryTable)["open_near_click"].as_boolean()) {
+            entry.panelOpenNearClickDefault = openNearClick->get();
+          }
+          injectStandardPanelShellSettings(entry);
         }
         if (kind == PluginEntryKind::LauncherProvider) {
           entry.launcherPrefix = tableString(*entryTable, "prefix");

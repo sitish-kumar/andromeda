@@ -35,7 +35,8 @@ PluginPanel::PluginPanel(scripting::PluginRuntimeContext context, PluginPanelOpt
       m_pluginDir(m_sourcePath.parent_path()), m_scriptApi(context.scriptApi), m_settings(std::move(context.settings)),
       m_fileWatcher(context.fileWatcher), m_httpClient(context.httpClient), m_clipboard(context.clipboard),
       m_preferredWidth(options.width > 0.0 ? static_cast<float>(options.width) : kDefaultPanelWidth),
-      m_preferredHeight(options.height > 0.0 ? static_cast<float>(options.height) : kDefaultPanelHeight) {
+      m_preferredHeight(options.height > 0.0 ? static_cast<float>(options.height) : kDefaultPanelHeight),
+      m_shellConfig(options.shellConfig) {
   scripting::PluginIpcRouter::instance().registerEndpoint(this);
 }
 

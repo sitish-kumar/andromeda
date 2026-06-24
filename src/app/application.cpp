@@ -27,6 +27,7 @@
 #include "render/core/texture_manager.h"
 #include "render/text/font_weight_catalog.h"
 #include "scripting/plugin_manifest.h"
+#include "scripting/plugin_panel_shell.h"
 #include "scripting/plugin_registry.h"
 #include "shell/clipboard/clipboard_panel.h"
 #include "shell/clipboard/clipboard_paste.h"
@@ -2086,12 +2087,12 @@ void Application::reloadPluginPanels() {
     if (resolved.entry == nullptr || resolved.manifest == nullptr) {
       continue;
     }
-    // Panels are singletons: only plugin-level settings, no per-instance config.
-    auto seeded = scripting::seedEntrySettings(*resolved.entry, kNoOverrides);
+    // Panels are singletons: plugin_settings holds both plugin-level and entry-level keys.
     const auto psIt = pluginSettings.find(resolved.manifest->id);
-    scripting::mergePluginSettings(
-        *resolved.manifest, psIt != pluginSettings.end() ? psIt->second : kNoOverrides, seeded
-    );
+    const auto& overrides = psIt != pluginSettings.end() ? psIt->second : kNoOverrides;
+    auto seeded = scripting::seedEntrySettings(*resolved.entry, overrides);
+    scripting::mergePluginSettings(*resolved.manifest, overrides, seeded);
+    const auto shellConfig = scripting::resolvePluginPanelShellConfig(*resolved.entry, seeded);
 
     std::string fullId = resolved.fullId();
     m_panelManager.registerPanel(
@@ -2109,6 +2110,7 @@ void Application::reloadPluginPanels() {
             PluginPanelOptions{
                 .width = resolved.entry->panelWidth,
                 .height = resolved.entry->panelHeight,
+                .shellConfig = shellConfig,
             }
         )
     );

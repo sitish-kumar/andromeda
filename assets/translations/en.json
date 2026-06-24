@@ -1255,6 +1255,20 @@
       "settings": {
         "empty": "No settings available."
       },
+      "panels": {
+        "open-near-click": {
+          "description": "Open the panel near the bar widget that toggled it",
+          "label": "Open Near Click"
+        },
+        "placement": {
+          "description": "Attach the panel to the bar or float it near the bar edge",
+          "label": "Placement"
+        },
+        "position": {
+          "description": "Screen position when the panel is floating",
+          "label": "Position"
+        }
+      },
       "sources": {
         "add": "Add source",
         "add-title": "Add plugin source",
