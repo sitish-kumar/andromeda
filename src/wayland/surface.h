@@ -137,6 +137,7 @@ protected:
   virtual void onConfigure(std::uint32_t width, std::uint32_t height);
   virtual void render();
   virtual void onScaleChanged();
+  bool prepareBlurEffect();
   void initializeSurfaceScaleProtocol();
   void applySurfaceScaleState();
   void requestFrame();

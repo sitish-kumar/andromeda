@@ -438,6 +438,7 @@ void OsdOverlay::ensureSurfaces() {
         .keyboard = LayerShellKeyboard::None,
         .defaultWidth = surfaceWidth,
         .defaultHeight = surfaceHeight,
+        .prewarmBlur = true,
     };
 
     inst->surface = std::make_unique<LayerSurface>(*m_wayland, std::move(surfaceConfig));

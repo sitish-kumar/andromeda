@@ -46,6 +46,7 @@ struct LayerSurfaceConfig {
   LayerShellKeyboard keyboard = LayerShellKeyboard::None;
   std::uint32_t defaultWidth = 1920;
   std::uint32_t defaultHeight = 0;
+  bool prewarmBlur = false;
 };
 
 class LayerSurface : public Surface {

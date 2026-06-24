@@ -1964,6 +1964,7 @@ void NotificationToast::ensureSurfaces() {
         .keyboard = LayerShellKeyboard::None,
         .defaultWidth = surfaceWidth,
         .defaultHeight = surfaceHeightForOutput(output.output),
+        .prewarmBlur = true,
     };
 
     inst->surface = std::make_unique<LayerSurface>(*m_wayland, std::move(surfaceConfig));

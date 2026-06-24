@@ -662,6 +662,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
       .keyboard = m_activePanel->keyboardMode(),
       .defaultWidth = detachedSurfaceWidth,
       .defaultHeight = detachedSurfaceHeight,
+      .prewarmBlur = true,
   };
 
   const auto configureSurfaceCallbacks = [this](Surface& surface) {
@@ -895,6 +896,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
             : LayerShellKeyboard::None,
         .defaultWidth = surfaceWidth,
         .defaultHeight = surfaceHeight,
+        .prewarmBlur = true,
     };
 
     auto layerSurfaceUnique = std::make_unique<LayerSurface>(m_platform->wayland(), std::move(attachedConfig));
@@ -912,7 +914,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
       m_surface->setInputRegion(
           {InputRect{m_panelInsetX, m_panelInsetY, static_cast<int>(panelWidth), static_cast<int>(panelHeight)}}
       );
-      m_surface->clearBlurRegion();
+      m_surface->setBlurRegion({});
       publishAttachedPanelGeometry(m_attachedRevealProgress);
       m_surface->requestRedraw();
       const bool hasFocusGrab = m_platform != nullptr
@@ -1000,7 +1002,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   m_surface->setInputRegion(
       {InputRect{m_panelInsetX, m_panelInsetY, static_cast<int>(panelWidth), static_cast<int>(panelHeight)}}
   );
-  m_surface->clearBlurRegion();
+  m_surface->setBlurRegion({});
   // Defer the focus grab to the next tick. See attached-path comment above.
   const std::uint64_t gen = m_destroyGeneration;
   DeferredCall::callLater([this, gen]() {

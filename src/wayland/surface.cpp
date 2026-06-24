@@ -589,28 +589,36 @@ void Surface::setInputRegion(const std::vector<InputRect>& rects) {
   wl_region_destroy(region);
 }
 
-void Surface::setBlurRegion(const std::vector<InputRect>& rects) {
+bool Surface::prepareBlurEffect() {
   if (m_surface == nullptr) {
-    traceSurfaceEvent(*this, "blur-set-skip-no-surface");
-    return;
+    traceSurfaceEvent(*this, "blur-effect-skip-no-surface");
+    return false;
   }
   if (!m_connection.hasBackgroundEffectBlur()) {
-    traceSurfaceEvent(*this, "blur-set-skip-no-protocol");
-    return;
+    traceSurfaceEvent(*this, "blur-effect-skip-no-protocol");
+    return false;
+  }
+  if (m_backgroundEffect != nullptr) {
+    return true;
   }
 
+  auto* manager = m_connection.backgroundEffectManager();
+  if (manager == nullptr) {
+    traceSurfaceEvent(*this, "blur-effect-skip-no-manager");
+    return false;
+  }
+  m_backgroundEffect = ext_background_effect_manager_v1_get_background_effect(manager, m_surface);
   if (m_backgroundEffect == nullptr) {
-    auto* manager = m_connection.backgroundEffectManager();
-    if (manager == nullptr) {
-      traceSurfaceEvent(*this, "blur-set-skip-no-manager");
-      return;
-    }
-    m_backgroundEffect = ext_background_effect_manager_v1_get_background_effect(manager, m_surface);
-    if (m_backgroundEffect == nullptr) {
-      traceSurfaceEvent(*this, "blur-set-skip-create-failed");
-      return;
-    }
-    traceSurfaceEvent(*this, "blur-effect-create");
+    traceSurfaceEvent(*this, "blur-effect-skip-create-failed");
+    return false;
+  }
+  traceSurfaceEvent(*this, "blur-effect-create");
+  return true;
+}
+
+void Surface::setBlurRegion(const std::vector<InputRect>& rects) {
+  if (!prepareBlurEffect()) {
+    return;
   }
 
   wl_region* region = nullptr;

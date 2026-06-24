@@ -30,11 +30,11 @@ namespace {
 
     kLog.debug(
         "blur-trace layer-commit reason={} name={} wl={} requested={}x{} default={}x{} anchor={} margins={},{},{},{} "
-        "exclusive={} layer={} keyboard={}",
+        "exclusive={} layer={} keyboard={} prewarm_blur={}",
         reason, surface.debugName(), static_cast<const void*>(surface.wlSurface()), config.width, config.height,
         config.defaultWidth, config.defaultHeight, config.anchor, config.marginTop, config.marginRight,
         config.marginBottom, config.marginLeft, config.exclusiveZone, static_cast<std::uint32_t>(config.layer),
-        static_cast<std::uint32_t>(config.keyboard)
+        static_cast<std::uint32_t>(config.keyboard), config.prewarmBlur
     );
   }
 
@@ -113,6 +113,9 @@ bool LayerSurface::initialize(wl_output* output) {
   zwlr_layer_surface_v1_set_keyboard_interactivity(m_layerSurface, static_cast<std::uint32_t>(m_config.keyboard));
   applyInputRegion();
 
+  if (m_config.prewarmBlur) {
+    prepareBlurEffect();
+  }
   traceLayerCommit(*this, m_config, "initialize");
   wl_surface_commit(m_surface);
 
