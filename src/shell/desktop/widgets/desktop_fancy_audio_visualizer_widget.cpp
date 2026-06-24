@@ -56,10 +56,11 @@ void DesktopFancyAudioVisualizerWidget::create() {
   if (m_spectrum != nullptr) {
     m_listenerId = m_spectrum->addChangeListener(kBandCount, [this]() {
       m_pendingSpectrumUpdate = true;
+      // Spectrum animation is paint-only; the frame tick pulls new values and repaints. Only a
+      // visibility change needs layout.
       if (applyVisibility()) {
         requestLayout();
       }
-      requestUpdate();
       requestFrameTick();
       requestRedraw();
     });
