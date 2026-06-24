@@ -17,8 +17,8 @@ namespace scripting {
       field.type = ManifestFieldType::Select;
       field.stringDefault = std::string(defaultValue);
       field.options = {
-          {.value = "attached"},
-          {.value = "floating"},
+          {.value = "attached", .label = {}, .labelKey = {}},
+          {.value = "floating", .label = {}, .labelKey = {}},
       };
       return field;
     }
@@ -29,7 +29,7 @@ namespace scripting {
       field.type = ManifestFieldType::Select;
       field.stringDefault = std::string(defaultValue);
       for (const std::string_view position : kPanelPositions) {
-        field.options.push_back({.value = std::string(position)});
+        field.options.push_back({.value = std::string(position), .label = {}, .labelKey = {}});
       }
       return field;
     }
