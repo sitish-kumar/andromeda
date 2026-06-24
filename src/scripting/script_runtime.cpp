@@ -162,6 +162,8 @@ namespace scripting {
     bool updateRunning = false;
     bool hasOnIpc = false;
     bool hasOnIpcKnown = false;
+    bool hasOnActivate = false;
+    bool hasOnActivateKnown = false;
     bool unhealthy = false;
     int consecutiveTimeouts = 0;
 
@@ -567,10 +569,13 @@ namespace scripting {
 
       result.hasOnIpc = host != nullptr && host->hasGlobal("onIpc");
       result.hasOnIpcKnown = true;
+      const bool onActivatePresent = host != nullptr && host->hasGlobal("onActivate");
       {
         std::scoped_lock lock(mutex);
         hasOnIpc = result.hasOnIpc;
         hasOnIpcKnown = true;
+        hasOnActivate = onActivatePresent;
+        hasOnActivateKnown = true;
       }
       return result;
     }
@@ -766,6 +771,14 @@ namespace scripting {
     }
     std::scoped_lock lock(m_state->mutex);
     return m_state->hasOnIpcKnown && m_state->hasOnIpc;
+  }
+
+  bool ScriptRuntime::hasOnActivate() const {
+    if (m_state == nullptr) {
+      return false;
+    }
+    std::scoped_lock lock(m_state->mutex);
+    return m_state->hasOnActivateKnown && m_state->hasOnActivate;
   }
 
   bool ScriptRuntime::unhealthy() const {

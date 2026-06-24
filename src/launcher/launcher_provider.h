@@ -66,6 +66,12 @@ public:
   // e.g. to implement autocomplete.
   virtual void setQueryRequestedCallback(std::function<void(std::string)> /*callback*/) {}
 
+  // Async (plugin-backed) providers defer the launcher close until their activation
+  // handler resolves: if it rewrote the query the panel stays open, otherwise the
+  // provider invokes this to close it (and record usage). The argument is the
+  // activated result id. Synchronous providers close directly via activate().
+  virtual void setActivationDoneCallback(std::function<void(std::string)> /*callback*/) {}
+
   virtual void initialize() {}
 
   // Called when the launcher panel closes. Async providers should drop any cached

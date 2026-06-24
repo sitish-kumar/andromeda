@@ -76,6 +76,8 @@ void PluginLauncherProvider::reset() {
   m_lastSentQuery.clear();
   m_pendingQuery.clear();
   m_hasSentInitial = false;
+  m_pendingActivate = false;
+  m_pendingActivateId.clear();
 }
 
 std::vector<LauncherResult> PluginLauncherProvider::query(std::string_view text) const {
@@ -167,15 +169,31 @@ bool PluginLauncherProvider::activate(const LauncherResult& result) {
     }
     return false;
   }
-  if (m_runtime != nullptr) {
+  // Defer the close until onActivate resolves: the handler may call
+  // launcher.setQuery() to rewrite the input and keep the panel open. Only defer
+  // when the plugin actually defines onActivate, otherwise no result comes back
+  // and the panel would hang open.
+  if (m_runtime != nullptr && m_runtime->hasOnActivate()) {
+    m_pendingActivate = true;
+    m_pendingActivateId = result.id;
     (void)m_runtime->enqueueCallStrings("onActivate", result.id, std::string(), {}, /*coalesce=*/false);
+    return false;
   }
-  return true; // Close the launcher; the plugin handles the action off-thread.
+  return true; // No onActivate handler — nothing to run, close immediately.
 }
 
 void PluginLauncherProvider::handleResult(const scripting::ScriptResult& result) {
   if (result.patch.launcherQuery.has_value() && m_onQueryRequested) {
     m_onQueryRequested(*result.patch.launcherQuery);
+  }
+  if (m_pendingActivate && result.callbackName == "onActivate") {
+    m_pendingActivate = false;
+    // The handler rewrote the query → stay open (already applied above). Otherwise
+    // the activation is terminal, so close the launcher and record the usage.
+    if (!result.patch.launcherQuery.has_value() && m_onActivationDone) {
+      m_onActivationDone(m_pendingActivateId);
+    }
+    m_pendingActivateId.clear();
   }
   if (!result.patch.launcherResults.has_value()) {
     return;

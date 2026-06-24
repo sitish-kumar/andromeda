@@ -662,6 +662,13 @@ void LauncherPanel::addProvider(std::unique_ptr<LauncherProvider> provider) {
   provider->initialize();
   provider->setResultsChangedCallback([this]() { onProviderResultsChanged(); });
   provider->setQueryRequestedCallback([this](std::string query) { setQuery(std::move(query)); });
+  LauncherProvider* providerPtr = provider.get();
+  provider->setActivationDoneCallback([this, providerPtr](const std::string& resultId) {
+    if (providerPtr->trackUsage()) {
+      m_usageTracker.record(providerPtr->id(), resultId);
+    }
+    PanelManager::instance().closePanel(false);
+  });
   m_providers.push_back(std::move(provider));
 }
 
