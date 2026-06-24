@@ -144,6 +144,7 @@ namespace settings {
       const std::vector<scripting::ManifestField>& fields,
       const scripting::PluginTranslationCatalog* translations = nullptr
   );
+  [[nodiscard]] std::vector<WidgetSettingSpec> pluginPanelShellSettingSpecs(const scripting::PluginEntry& entry);
 
   // Schema projection (the validity half of the specs), consumed by the config
   // layer (e.g. `config validate`). For plugin widgets the type alone resolves the

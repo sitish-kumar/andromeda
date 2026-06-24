@@ -3,6 +3,7 @@
 #include "i18n/i18n.h"
 #include "render/core/renderer.h"
 #include "scripting/plugin_i18n.h"
+#include "scripting/plugin_panel_shell.h"
 #include "scripting/plugin_registry.h"
 #include "shell/settings/font_family_catalog.h"
 #include "shell/settings/font_weight_catalog.h"
@@ -1066,6 +1067,95 @@ namespace settings {
       specs.push_back(std::move(spec));
     }
     return specs;
+  }
+
+  std::vector<WidgetSettingSpec> pluginPanelShellSettingSpecs(const scripting::PluginEntry& entry) {
+    if (entry.kind != scripting::PluginEntryKind::Panel) {
+      return {};
+    }
+    const std::string placementKey = scripting::panelShellSettingKey(entry.id, "placement");
+    const std::string positionKey = scripting::panelShellSettingKey(entry.id, "position");
+    const std::string openNearClickKey = scripting::panelShellSettingKey(entry.id, "open_near_click");
+    const std::string entryTitle = entry.id;
+    const auto entryPrefix = [&](std::string_view suffix) {
+      std::string label = entryTitle;
+      label.append(" · ");
+      label.append(suffix);
+      return label;
+    };
+
+    auto placementSpec = [&](const scripting::ManifestField* field) {
+      WidgetSettingSpec spec;
+      spec.schema.key = placementKey;
+      spec.literalLabel = entryPrefix(tr("settings.plugins.panels.placement.label"));
+      spec.literalDescription = tr("settings.plugins.panels.placement.description");
+      spec.control = WidgetControlKind::Select;
+      spec.segmented = true;
+      spec.literalLabels = true;
+      spec.schema.defaultValue = field != nullptr ? field->defaultValue() : entry.panelPlacementDefault;
+      spec.options = {
+          {"attached", tr("settings.options.shell.panel-placement.attached")},
+          {"floating", tr("settings.options.shell.panel-placement.floating")},
+      };
+      spec.schema.type = schemaTypeForControl(spec.control);
+      return spec;
+    };
+
+    auto positionSpec = [&](const scripting::ManifestField* field) {
+      WidgetSettingSpec spec;
+      spec.schema.key = positionKey;
+      spec.literalLabel = entryPrefix(tr("settings.plugins.panels.position.label"));
+      spec.literalDescription = tr("settings.plugins.panels.position.description");
+      spec.control = WidgetControlKind::Select;
+      spec.literalLabels = true;
+      spec.schema.defaultValue = field != nullptr ? field->defaultValue() : entry.panelPositionDefault;
+      spec.options = {
+          {"auto", tr("settings.options.panel-position.auto")},
+          {"center", tr("settings.options.screen-position.center")},
+          {"top_left", tr("settings.options.screen-position.top-left")},
+          {"top_center", tr("settings.options.screen-position.top-center")},
+          {"top_right", tr("settings.options.screen-position.top-right")},
+          {"center_left", tr("settings.options.screen-position.center-left")},
+          {"center_right", tr("settings.options.screen-position.center-right")},
+          {"bottom_left", tr("settings.options.screen-position.bottom-left")},
+          {"bottom_center", tr("settings.options.screen-position.bottom-center")},
+          {"bottom_right", tr("settings.options.screen-position.bottom-right")},
+      };
+      spec.schema.type = schemaTypeForControl(spec.control);
+      spec.visibleWhen = WidgetSettingVisibility{placementKey, {"floating"}};
+      return spec;
+    };
+
+    auto openNearClickSpec = [&](const scripting::ManifestField* field) {
+      WidgetSettingSpec spec;
+      spec.schema.key = openNearClickKey;
+      spec.literalLabel = entryPrefix(tr("settings.plugins.panels.open-near-click.label"));
+      spec.literalDescription = tr("settings.plugins.panels.open-near-click.description");
+      spec.control = WidgetControlKind::Bool;
+      spec.schema.defaultValue = field != nullptr ? field->defaultValue() : entry.panelOpenNearClickDefault;
+      spec.schema.type = schemaTypeForControl(spec.control);
+      spec.visibleWhen = WidgetSettingVisibility{placementKey, {"attached", "floating"}};
+      return spec;
+    };
+
+    const scripting::ManifestField* placementField = nullptr;
+    const scripting::ManifestField* positionField = nullptr;
+    const scripting::ManifestField* openNearClickField = nullptr;
+    for (const auto& field : entry.settings) {
+      if (field.key == placementKey) {
+        placementField = &field;
+      } else if (field.key == positionKey) {
+        positionField = &field;
+      } else if (field.key == openNearClickKey) {
+        openNearClickField = &field;
+      }
+    }
+
+    return {
+        placementSpec(placementField),
+        positionSpec(positionField),
+        openNearClickSpec(openNearClickField),
+    };
   }
 
   std::vector<WidgetSettingSpec> widgetSettingSpecs(

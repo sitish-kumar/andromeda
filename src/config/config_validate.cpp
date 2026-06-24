@@ -8,6 +8,7 @@
 #include "config/widget_config.h"
 #include "core/toml.h"
 #include "scripting/plugin_manager.h"
+#include "scripting/plugin_panel_shell.h"
 #include "scripting/plugin_registry.h"
 #include "shell/desktop/desktop_widget_settings_registry.h"
 #include "shell/lockscreen/lockscreen_login_box.h"
@@ -292,6 +293,20 @@ namespace noctalia::config {
         schema::WidgetSettingSchema fields;
         for (const auto& spec : settings::manifestSettingSpecs(manifest->settings)) {
           fields.push_back(spec.schema);
+        }
+        for (const auto& entry : manifest->entries) {
+          if (entry.kind != scripting::PluginEntryKind::Panel) {
+            continue;
+          }
+          for (const auto& spec : settings::pluginPanelShellSettingSpecs(entry)) {
+            fields.push_back(spec.schema);
+          }
+          for (const auto& spec : settings::manifestSettingSpecs(entry.settings)) {
+            if (scripting::isPanelShellSettingKey(entry.id, spec.schema.key)) {
+              continue;
+            }
+            fields.push_back(spec.schema);
+          }
         }
         validateSettingsMap(*perPlugin, fields, base, /*flagUnknown=*/true, diag);
       }

@@ -103,6 +103,11 @@ namespace scripting {
     // very first open (panel.render lands async). 0 = use the host default.
     double panelWidth = 0.0;
     double panelHeight = 0.0;
+    // Host-standard shell placement settings (see plugin_panel_shell.*). Parsed from
+    // optional [[panel]] keys; injected settings use "{id}_placement" etc.
+    std::string panelPlacementDefault = "floating";
+    std::string panelPositionDefault = "auto";
+    bool panelOpenNearClickDefault = false;
   };
 
   struct PluginManifest {

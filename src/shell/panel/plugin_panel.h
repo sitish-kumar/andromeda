@@ -1,9 +1,9 @@
 #pragma once
 
-#include "config/config_types.h"
 #include "core/file_watcher.h"
 #include "core/timer_manager.h"
 #include "scripting/plugin_ipc.h"
+#include "scripting/plugin_panel_shell.h"
 #include "scripting/plugin_runtime_context.h"
 #include "scripting/script_runtime.h"
 #include "shell/panel/panel.h"
@@ -29,6 +29,7 @@ namespace scripting {
 struct PluginPanelOptions {
   double width = 0.0;  // logical pixels; 0 = host default
   double height = 0.0; // logical pixels; 0 = host default
+  scripting::PluginPanelShellConfig shellConfig;
 };
 
 // A panel backed by a plugin's `[[panel]]` entry. Like PluginDesktopWidget it
@@ -47,6 +48,9 @@ public:
 
   [[nodiscard]] float preferredWidth() const override { return scaled(m_preferredWidth); }
   [[nodiscard]] float preferredHeight() const override { return scaled(m_preferredHeight); }
+  [[nodiscard]] PanelPlacement panelPlacement() const noexcept override { return m_shellConfig.placement; }
+  [[nodiscard]] std::string panelScreenPosition() const override { return m_shellConfig.position; }
+  [[nodiscard]] bool panelOpenNearClick() const override { return m_shellConfig.openNearClick; }
 
   // PluginIpcEndpoint
   [[nodiscard]] std::string_view ipcEntryId() const override { return m_entryId; }
@@ -91,5 +95,6 @@ private:
   bool m_hasOnIpcKnown = false;
   float m_preferredWidth;
   float m_preferredHeight;
+  scripting::PluginPanelShellConfig m_shellConfig;
   std::shared_ptr<bool> m_alive = std::make_shared<bool>(true);
 };

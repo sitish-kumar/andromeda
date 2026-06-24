@@ -245,17 +245,18 @@ namespace settings {
           .options = std::move(segmentedOptions),
           .selectedIndex = optionIndex(setting.options, setting.selectedValue),
           .scale = scale,
-          .onChange = [setOverride = ctx.setOverride, clearOverride = ctx.clearOverride, path, options,
-                       integerValue](std::size_t index) {
+          .onChange = [setOverride = ctx.setOverride, clearOverride = ctx.clearOverride,
+                       requestRebuild = ctx.requestRebuild, path, options, integerValue](std::size_t index) {
             if (index < options.size()) {
               if (options[index].value.empty() && integerValue) {
                 clearOverride(path);
-                return;
-              }
-              if (integerValue) {
+              } else if (integerValue) {
                 setOverride(path, static_cast<std::int64_t>(std::stoll(options[index].value)));
               } else {
                 setOverride(path, options[index].value);
+              }
+              if (requestRebuild) {
+                requestRebuild();
               }
             }
           },
