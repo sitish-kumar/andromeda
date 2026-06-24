@@ -100,7 +100,7 @@ private:
   bool m_idle = true;
 
   std::unique_ptr<Stream> m_stream;
-  std::chrono::steady_clock::time_point m_nextFrameAt{};
+  std::chrono::steady_clock::time_point m_nextFrameAt;
 
   static constexpr int kFftSize = 4096;
   std::vector<float> m_ringBuffer;
