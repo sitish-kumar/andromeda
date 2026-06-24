@@ -97,6 +97,12 @@ namespace scripting {
     // Wait this many ms after the last keystroke before running onQuery, so a
     // network-backed provider isn't hit on every character. 0 = no debounce.
     int launcherDebounceMs = 0;
+
+    // Panel size in logical pixels (parsed only for Panel entries). Geometry is
+    // host-owned and declared once here so the surface is sized correctly on the
+    // very first open (panel.render lands async). 0 = use the host default.
+    double panelWidth = 0.0;
+    double panelHeight = 0.0;
   };
 
   struct PluginManifest {

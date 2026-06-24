@@ -281,6 +281,10 @@ namespace scripting {
             }
           }
         }
+        if (kind == PluginEntryKind::Panel) {
+          entry.panelWidth = std::max(0.0, tableNumber(*entryTable, "width").value_or(0.0));
+          entry.panelHeight = std::max(0.0, tableNumber(*entryTable, "height").value_or(0.0));
+        }
         if (kind == PluginEntryKind::LauncherProvider) {
           entry.launcherPrefix = tableString(*entryTable, "prefix");
           entry.launcherGlyph = tableString(*entryTable, "glyph");

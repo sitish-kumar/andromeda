@@ -346,7 +346,8 @@ namespace {
   constexpr int kUiTreeMaxChildren = 256;
 
   // Reads the value at `index` into a UiTreeValue. A table is read as a number
-  // array (graph data); any other shape is rejected.
+  // array (graph data) or a string array (select options) — its element type is
+  // decided by the first element and must be uniform; any other shape is rejected.
   bool readUiTreeValue(lua_State* L, int index, ui::UiTreeValue& out) {
     switch (lua_type(L, index)) {
     case LUA_TBOOLEAN:
@@ -362,8 +363,29 @@ namespace {
       return true;
     }
     case LUA_TTABLE: {
-      std::vector<double> numbers;
       const int count = lua_objlen(L, index);
+      // An empty table is an empty number array (the common graph-data case).
+      lua_rawgeti(L, index, 1);
+      const bool stringArray = count > 0 && lua_type(L, -1) == LUA_TSTRING;
+      lua_pop(L, 1);
+      if (stringArray) {
+        std::vector<std::string> strings;
+        strings.reserve(static_cast<std::size_t>(count));
+        for (int i = 1; i <= count; ++i) {
+          lua_rawgeti(L, index, i);
+          if (lua_type(L, -1) != LUA_TSTRING) {
+            lua_pop(L, 1);
+            return false;
+          }
+          size_t len = 0;
+          const char* value = lua_tolstring(L, -1, &len);
+          strings.emplace_back(value, len);
+          lua_pop(L, 1);
+        }
+        out = std::move(strings);
+        return true;
+      }
+      std::vector<double> numbers;
       numbers.reserve(static_cast<std::size_t>(std::max(0, count)));
       for (int i = 1; i <= count; ++i) {
         lua_rawgeti(L, index, i);
@@ -490,6 +512,46 @@ namespace {
       {nullptr, nullptr},
   };
 
+  // ── panel.* — declarative UI tree for a [[panel]] entry ──
+
+  // panel.render(tree) — replaces the panel's declarative control tree.
+  int luau_panel_render(lua_State* L) {
+    luaL_checktype(L, 1, LUA_TTABLE);
+    auto* context = getContext(L);
+    if (context == nullptr) {
+      return 0;
+    }
+    ui::UiTreeNode tree;
+    if (readUiTreeNode(L, 1, tree, 0, context->ownerId)) {
+      context->patch.uiTree = std::move(tree);
+    }
+    return 0;
+  }
+
+  // panel.close() — request the host close this panel.
+  int luau_panel_close(lua_State* L) {
+    if (auto* context = getContext(L)) {
+      context->patch.requestClose = true;
+    }
+    return 0;
+  }
+
+  int luau_panel_setWantsSecondTicks(lua_State* L) {
+    const bool wants = lua_toboolean(L, 1) != 0;
+    if (auto* context = getContext(L)) {
+      context->patch.wantsSecondTicks = wants;
+    }
+    return 0;
+  }
+
+  const luaL_Reg kPanelLib[] = {
+      {"render", luau_panel_render},
+      {"close", luau_panel_close},
+      {"setWantsSecondTicks", luau_panel_setWantsSecondTicks},
+      {"getConfig", scripting::luau_getConfig},
+      {nullptr, nullptr},
+  };
+
 } // namespace
 
 namespace scripting {
@@ -546,6 +608,8 @@ namespace scripting {
     luaL_register(L, "launcher", kLauncherLib);
     lua_pop(L, 1);
     luaL_register(L, "desktopWidget", kDesktopWidgetLib);
+    lua_pop(L, 1);
+    luaL_register(L, "panel", kPanelLib);
     lua_pop(L, 1);
   }
 

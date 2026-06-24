@@ -147,6 +147,8 @@ private:
   void initIpc();
   // (Re)register plugin-backed launcher providers from the enabled plugin set.
   void reloadPluginLauncherProviders();
+  // (Re)register plugin-backed panels from the enabled plugin set.
+  void reloadPluginPanels();
   void startTrayService();
   void syncNotificationDaemon();
   void installNotificationBusNameWatch();
@@ -244,6 +246,9 @@ private:
   PanelManager m_panelManager;
   // Owned by m_panelManager; kept raw so plugin launcher providers can be re-applied.
   LauncherPanel* m_launcherPanel = nullptr;
+  // Ids of plugin-backed panels currently registered with m_panelManager, so a
+  // reload can retire the previous set before registering the new one.
+  std::vector<std::string> m_pluginPanelIds;
   WindowSwitcher m_windowSwitcher;
   OverviewLauncherCapture m_overviewLauncherCapture;
   NotificationToast m_notificationToast;

@@ -98,6 +98,9 @@ namespace scripting {
     std::optional<bool> wantsSecondTicks;
     std::optional<bool> needsFrameTick;
 
+    // Panel field (the `panel.*` namespace): a close request.
+    std::optional<bool> requestClose;
+
     [[nodiscard]] bool empty() const {
       return !text.has_value()
           && !glyph.has_value()
@@ -117,7 +120,8 @@ namespace scripting {
           && !launcherQuery.has_value()
           && !uiTree.has_value()
           && !wantsSecondTicks.has_value()
-          && !needsFrameTick.has_value();
+          && !needsFrameTick.has_value()
+          && !requestClose.has_value();
     }
   };
 

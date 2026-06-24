@@ -4,8 +4,13 @@
 #include "ui/controls/box.h"
 #include "ui/controls/button.h"
 #include "ui/controls/flex.h"
+#include "ui/controls/input.h"
 #include "ui/controls/label.h"
+#include "ui/controls/scroll_view.h"
+#include "ui/controls/select.h"
+#include "ui/controls/slider.h"
 #include "ui/controls/spacer.h"
+#include "ui/controls/toggle.h"
 #include "ui/ui_tree.h"
 #include "ui/ui_tree_reconciler.h"
 
@@ -85,6 +90,7 @@ int main() {
     ok = expect(column != nullptr, "root child is a Flex") && ok;
     if (column != nullptr) {
       ok = expect(column->gap() == 8.0f, "gap applied") && ok;
+      ok = expect(column->align() == FlexAlign::Stretch, "ui column defaults to stretch") && ok;
       ok = expect(column->children().size() == 3, "column has three children") && ok;
       auto* label = dynamic_cast<Label*>(column->children()[0].get());
       ok = expect(label != nullptr && label->text() == "Hello", "label text applied") && ok;
@@ -188,7 +194,7 @@ int main() {
   {
     ui::UiTreeReconciler reconciler;
     std::string fired;
-    reconciler.setCallbackSink([&fired](const std::string& name) { fired = name; });
+    reconciler.setCallbackSink([&fired](const ui::UiTreeReconciler::ControlCallback& cb) { fired = cb.fn; });
     Flex host;
 
     ui::UiTreeNode tree = makeNode("column");
@@ -203,6 +209,109 @@ int main() {
     ok = expect(control != nullptr, "button built") && ok;
     // The sink wiring is exercised via the reconciler-installed callback.
     ok = expect(fired.empty(), "sink not fired before click") && ok;
+  }
+
+  // Interactive controls build and apply their value props.
+  {
+    ui::UiTreeReconciler reconciler;
+    Flex host;
+
+    ui::UiTreeNode tree = makeNode("column");
+
+    ui::UiTreeNode toggle = makeNode("toggle");
+    toggle.props.emplace("checked", true);
+    tree.children.push_back(toggle);
+
+    ui::UiTreeNode slider = makeNode("slider");
+    slider.props.emplace("min", 0.0);
+    slider.props.emplace("max", 10.0);
+    slider.props.emplace("value", 3.0);
+    tree.children.push_back(slider);
+
+    ui::UiTreeNode select = makeNode("select");
+    select.props.emplace("options", std::vector<std::string>{"red", "green", "blue"});
+    select.props.emplace("selectedIndex", 2.0);
+    tree.children.push_back(select);
+
+    (void)reconciler.reconcile(host, tree, renderer);
+    auto* column = dynamic_cast<Flex*>(host.children().front().get());
+    ok = expect(column != nullptr && column->children().size() == 3, "interactive column built") && ok;
+    if (column != nullptr) {
+      auto* tog = dynamic_cast<Toggle*>(column->children()[0].get());
+      ok = expect(tog != nullptr && tog->checked(), "toggle checked applied") && ok;
+      auto* sld = dynamic_cast<Slider*>(column->children()[1].get());
+      ok = expect(sld != nullptr && sld->value() == 3.0 && sld->maxValue() == 10.0, "slider range+value applied") && ok;
+      auto* sel = dynamic_cast<Select*>(column->children()[2].get());
+      ok = expect(sel != nullptr && sel->selectedIndex() == 2 && sel->selectedText() == "blue",
+                  "select options+index applied") &&
+           ok;
+    }
+  }
+
+  // Input is uncontrolled: `value` seeds once and later renders never overwrite it.
+  {
+    ui::UiTreeReconciler reconciler;
+    Flex host;
+
+    ui::UiTreeNode tree = makeNode("column");
+    ui::UiTreeNode input = makeNode("input");
+    input.key = "field";
+    input.props.emplace("value", std::string("seed"));
+    tree.children.push_back(input);
+    (void)reconciler.reconcile(host, tree, renderer);
+
+    auto* column = dynamic_cast<Flex*>(host.children().front().get());
+    auto* in = column != nullptr ? dynamic_cast<Input*>(column->children()[0].get()) : nullptr;
+    ok = expect(in != nullptr && in->value() == "seed", "input seeded with initial value") && ok;
+    Node* inputBefore = in;
+
+    // Re-render with a different declared value — the host-owned buffer is kept.
+    tree.children[0].props["value"] = std::string("changed");
+    (void)reconciler.reconcile(host, tree, renderer);
+    if (column != nullptr) {
+      ok = expect(column->children()[0].get() == inputBefore, "keyed input instance reused") && ok;
+      ok = expect(in != nullptr && in->value() == "seed", "uncontrolled input not overwritten on re-render") && ok;
+    }
+  }
+
+  // reset() discards retained slots so a reconciler survives its host tree being
+  // destroyed and rebuilt (a panel reopened after close), with no use-after-free.
+  {
+    ui::UiTreeReconciler reconciler;
+    ui::UiTreeNode tree = makeNode("column");
+    tree.children.push_back(makeLabel("A"));
+    {
+      Flex host1;
+      (void)reconciler.reconcile(host1, tree, renderer);
+    } // host1 (and the controls the reconciler created in it) destroyed here
+    reconciler.reset();
+    Flex host2;
+    (void)reconciler.reconcile(host2, tree, renderer);
+    ok = expect(host2.children().size() == 1, "reset() lets the reconciler rebuild into a fresh host") && ok;
+    auto* column = dynamic_cast<Flex*>(host2.children().front().get());
+    ok = expect(column != nullptr && column->children().size() == 1, "rebuilt tree has its child") && ok;
+  }
+
+  // ScrollView hosts declared children in its inner content Flex.
+  {
+    ui::UiTreeReconciler reconciler;
+    Flex host;
+
+    ui::UiTreeNode tree = makeNode("column");
+    ui::UiTreeNode scroll = makeNode("scroll");
+    scroll.children.push_back(makeLabel("one"));
+    scroll.children.push_back(makeLabel("two"));
+    tree.children.push_back(scroll);
+    (void)reconciler.reconcile(host, tree, renderer);
+
+    auto* column = dynamic_cast<Flex*>(host.children().front().get());
+    auto* sv = column != nullptr ? dynamic_cast<ScrollView*>(column->children()[0].get()) : nullptr;
+    ok = expect(sv != nullptr, "scroll built") && ok;
+    if (sv != nullptr) {
+      ok = expect(sv->content()->children().size() == 2, "scroll children land in content flex") && ok;
+      auto* label = dynamic_cast<Label*>(sv->content()->children()[0].get());
+      ok = expect(label != nullptr && label->text() == "one", "scroll child label applied") && ok;
+    }
   }
 
   return ok ? 0 : 1;

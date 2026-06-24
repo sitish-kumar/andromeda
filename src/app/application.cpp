@@ -33,6 +33,7 @@
 #include "shell/control_center/control_center_panel.h"
 #include "shell/greeter/greeter_appearance_sync.h"
 #include "shell/launcher/launcher_panel.h"
+#include "shell/panel/plugin_panel.h"
 #include "shell/session/session_ipc.h"
 #include "shell/session/session_panel.h"
 #include "shell/setup_wizard/setup_wizard_panel.h"
@@ -501,6 +502,7 @@ void Application::run(std::function<void()> startupReadyCallback) {
       if (m_configService.lastChange().plugins) {
         m_pluginServiceHost.refresh(m_configService.config().plugins.pluginSettings);
         reloadPluginLauncherProviders();
+        reloadPluginPanels();
         m_settingsWindow.onPluginsChanged();
       }
     });
@@ -510,6 +512,7 @@ void Application::run(std::function<void()> startupReadyCallback) {
       m_pluginServiceHost.refresh(m_configService.config().plugins.pluginSettings);
       m_bar.refresh();
       reloadPluginLauncherProviders();
+      reloadPluginPanels();
       m_settingsWindow.onPluginsChanged();
     });
   });
@@ -1616,6 +1619,7 @@ void Application::initUi() {
     );
   });
   reloadPluginLauncherProviders();
+  reloadPluginPanels();
   m_overviewLauncherCapture.initialize(m_wayland, &m_renderContext, m_compositorPlatform, m_panelManager);
   m_overviewLauncherCapture.setEnabled(m_configService.config().shell.niriOverviewTypeToLaunchEnabled);
   m_overviewLauncherCapture.setOpenLauncherCallback(
@@ -2051,6 +2055,52 @@ void Application::reloadPluginLauncherProviders() {
             }
         )
     );
+  }
+}
+
+void Application::reloadPluginPanels() {
+  // Retire the previously registered plugin panels (closing any that are open),
+  // then register the current enabled set under their canonical full ids.
+  for (const auto& id : m_pluginPanelIds) {
+    m_panelManager.unregisterPanel(id);
+  }
+  m_pluginPanelIds.clear();
+
+  auto& registry = scripting::PluginRegistry::instance();
+  const auto& pluginSettings = m_configService.config().plugins.pluginSettings;
+  static const std::unordered_map<std::string, WidgetSettingValue> kNoOverrides;
+
+  for (const auto& resolved : registry.entriesOfKind(scripting::PluginEntryKind::Panel)) {
+    if (resolved.entry == nullptr || resolved.manifest == nullptr) {
+      continue;
+    }
+    // Panels are singletons: only plugin-level settings, no per-instance config.
+    auto seeded = scripting::seedEntrySettings(*resolved.entry, kNoOverrides);
+    const auto psIt = pluginSettings.find(resolved.manifest->id);
+    scripting::mergePluginSettings(
+        *resolved.manifest, psIt != pluginSettings.end() ? psIt->second : kNoOverrides, seeded
+    );
+
+    std::string fullId = resolved.fullId();
+    m_panelManager.registerPanel(
+        fullId,
+        std::make_unique<PluginPanel>(
+            scripting::PluginRuntimeContext{
+                .entryId = fullId,
+                .sourcePath = resolved.sourcePath,
+                .settings = std::move(seeded),
+                .scriptApi = m_scriptApi,
+                .fileWatcher = &m_fileWatcher,
+                .httpClient = &m_httpClient,
+                .clipboard = &m_clipboardService,
+            },
+            PluginPanelOptions{
+                .width = resolved.entry->panelWidth,
+                .height = resolved.entry->panelHeight,
+            }
+        )
+    );
+    m_pluginPanelIds.push_back(std::move(fullId));
   }
 }
 

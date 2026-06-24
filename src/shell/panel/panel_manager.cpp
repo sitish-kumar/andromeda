@@ -325,6 +325,17 @@ void PanelManager::registerPanel(const std::string& id, std::unique_ptr<Panel> c
   m_panels[id] = std::move(content);
 }
 
+void PanelManager::unregisterPanel(const std::string& id) {
+  auto it = m_panels.find(id);
+  if (it == m_panels.end()) {
+    return;
+  }
+  if (isOpenPanel(id)) {
+    closePanel(/*animateClose=*/false);
+  }
+  m_panels.erase(it);
+}
+
 void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest request) {
   if (m_inTransition) {
     return;
