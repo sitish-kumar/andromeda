@@ -660,14 +660,14 @@ void Button::doLayout(Renderer& renderer) {
   // Buttons are often sized by a parent stretch pass. Preserve that assigned
   // box instead of collapsing back to intrinsic content width.
   if (assignedWidth > 0.0f || assignedHeight > 0.0f) {
-    setSize(std::max(width(), assignedWidth), std::max(height(), assignedHeight));
+    setSizeFromLayout(std::max(width(), assignedWidth), std::max(height(), assignedHeight));
   }
 
   if (glyphOnly && m_contentAlign == ButtonContentAlign::Center) {
     const bool hasAssignedWidth = assignedWidth > 0.0f;
     if (!hasAssignedWidth) {
       const float squareSize = std::max(width(), height());
-      setSize(squareSize, squareSize);
+      setSizeFromLayout(squareSize, squareSize);
     }
   }
 
