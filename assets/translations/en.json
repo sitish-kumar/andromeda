@@ -165,7 +165,7 @@
     "audio": {
       "application-volumes": "Application Volumes",
       "choose-effects-profile": "Choose a profile",
-      "effects-profile": "Effects:",
+      "effects-profile": "Effects",
       "input-device-prefix": "Input:",
       "no-application-audio": "No application audio",
       "no-application-audio-body": "No application playback streams are currently available.",
