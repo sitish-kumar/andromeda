@@ -1191,6 +1191,7 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
                       {
                           .text = m_snapshot.grid.visible ? i18n::tr("desktop-widgets.editor.state.grid-on")
                                                           : i18n::tr("desktop-widgets.editor.state.grid-off"),
+                          .controlHeight = Style::controlHeightSm,
                           .selected = m_snapshot.grid.visible,
                           .variant = ButtonVariant::Outline,
                           .onClick =
@@ -1221,6 +1222,7 @@ void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
                   ),
                   ui::button({
                       .text = i18n::tr("desktop-widgets.editor.actions.done"),
+                      .controlHeight = Style::controlHeightSm,
                       .variant = ButtonVariant::Secondary,
                       .onClick = [this]() { requestExit(); },
                   })
@@ -1990,8 +1992,11 @@ void DesktopWidgetsEditor::updateDrag() {
     const float localX = wx * std::cos(-rot) - wy * std::sin(-rot);
     const float localY = wx * std::sin(-rot) + wy * std::cos(-rot);
 
-    float boxW = m_altHeld ? std::abs(localX) * 2.0f : std::abs(localX);
-    float boxH = m_altHeld ? std::abs(localY) * 2.0f : std::abs(localY);
+    // Corner-anchored resize uses the signed projection along the corner's direction so dragging
+    // past the fixed anchor clamps to the minimum size instead of flipping sign and growing again.
+    // Center-anchored (Alt) resize grows symmetrically in either direction, so it uses the magnitude.
+    float boxW = m_altHeld ? std::abs(localX) * 2.0f : signs.x * localX;
+    float boxH = m_altHeld ? std::abs(localY) * 2.0f : signs.y * localY;
 
     const float cell = static_cast<float>(std::max(1, m_snapshot.grid.cellSize));
     boxW = std::max(cell, boxW);
