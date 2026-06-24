@@ -48,6 +48,7 @@ namespace noctalia::theme {
         "                    Custom (HSL-space, non-M3):\n"
         "                      vibrant\n"
         "                      faithful\n"
+        "                      soft\n"
         "                      dysfunctional\n"
         "                      muted\n"
         "  --dark            Emit only the dark variant (default)\n"

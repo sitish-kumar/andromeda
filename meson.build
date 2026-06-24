@@ -1055,6 +1055,23 @@ i18n_language_tag_test = executable('i18n_language_tag_test',
 
 test('i18n_language_tag', i18n_language_tag_test)
 
+scheme_test = executable('scheme_test',
+  sources: files(
+    'tests/scheme_test.cpp',
+    'src/theme/scheme.cpp',
+    'src/theme/color.cpp',
+    'src/theme/contrast.cpp',
+    'src/theme/custom_schemes.cpp',
+    'src/theme/fixed_palette.cpp',
+  ),
+  include_directories: _noctalia_inc,
+  dependencies: [
+    mcu_dep,
+  ],
+)
+
+test('scheme', scheme_test)
+
 plugin_source_paths_test = executable('plugin_source_paths_test',
   sources: files(
     'tests/plugin_source_paths_test.cpp',

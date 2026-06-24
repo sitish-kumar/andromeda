@@ -176,6 +176,7 @@ namespace settings {
            {"m3-monochrome", "theme.scheme.m3-monochrome"},
            {"vibrant", "theme.scheme.vibrant"},
            {"faithful", "theme.scheme.faithful"},
+           {"soft", "theme.scheme.soft"},
            {"dysfunctional", "theme.scheme.dysfunctional"},
            {"muted", "theme.scheme.muted"}},
           selected
