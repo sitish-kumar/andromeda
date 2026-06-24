@@ -347,6 +347,12 @@ void GammaService::restoreAll() {
 
 // --- Smooth transitions ---
 
+void GammaService::applyStartupTarget(int kelvin) {
+  m_currentKelvin = kelvin;
+  applyGammaToAll(m_currentKelvin);
+  m_startupTargetPending = false;
+}
+
 // Move the displayed temperature toward target by one tick's worth of the fast fade rate, and push
 // to the compositor only if the rounded Kelvin changed. Returns true once target is reached.
 bool GammaService::stepToward(int targetKelvin) {
@@ -497,6 +503,7 @@ void GammaService::apply() {
 
   if (!effectiveEnabled()) {
     m_scheduleTimer.stop();
+    m_startupTargetPending = false;
     if (m_currentKelvin > 0) {
       m_restoreAfterFade = true;
       ensureTick();
@@ -515,6 +522,9 @@ void GammaService::apply() {
 
   const GammaTarget t = computeTarget();
   if (t.kelvin < 0) {
+    if (!m_locationResolving && !networkLocationConfigured()) {
+      m_startupTargetPending = false;
+    }
     restoreAll();
     if (m_changeCallback) {
       m_changeCallback();
@@ -532,6 +542,13 @@ void GammaService::apply() {
     );
   }
   m_targetKelvin = t.kelvin;
+  if (m_startupTargetPending) {
+    if (m_currentKelvin < 0) {
+      applyStartupTarget(t.kelvin);
+    } else {
+      m_startupTargetPending = false;
+    }
+  }
   if (m_currentKelvin != m_targetKelvin || t.transitioning) {
     ensureTick();
   }
