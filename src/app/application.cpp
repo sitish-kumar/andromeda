@@ -41,6 +41,7 @@
 #include "shell/tooltip/tooltip_manager.h"
 #include "shell/tray/tray_drawer_panel.h"
 #include "shell/wallpaper/panel/wallpaper_panel.h"
+#include "shell/wallpaper/wallpaper_paths.h"
 #include "system/distro_info.h"
 #include "ui/app_icon_colorization.h"
 #include "ui/controls/input.h"
@@ -621,12 +622,20 @@ void Application::initServices() {
   });
 
   // Apply theme before any UI constructs palette-dependent scene nodes.
-  m_themeService.setResolvedCallback([this, lastResolvedThemeMode = std::optional<std::string>{}](
+  auto syncScriptApiWallpaperDirectory = [this]() {
+    const ThemeMode mode = m_themeService.resolvedMode() == "light" ? ThemeMode::Light : ThemeMode::Dark;
+    m_scriptApi.setWallpaperDirectory(
+        wallpaper::resolveGlobalWallpaperDirectory(m_configService.config().wallpaper, mode)
+    );
+  };
+  m_themeService.setResolvedCallback([this, lastResolvedThemeMode = std::optional<std::string>{},
+                                      syncScriptApiWallpaperDirectory](
                                          const noctalia::theme::GeneratedPalette& generated, std::string_view mode
                                      ) mutable {
     const std::string resolvedMode(mode);
     const std::string configuredMode(enumToKey(kThemeModes, m_themeService.configuredMode()));
     m_scriptApi.setDarkMode(resolvedMode != "light");
+    syncScriptApiWallpaperDirectory();
     m_templateApplyService.apply(generated, mode);
     m_hookManager.fire(HookKind::ColorsChanged);
     if (lastResolvedThemeMode.has_value() && *lastResolvedThemeMode != resolvedMode) {
@@ -640,7 +649,9 @@ void Application::initServices() {
     lastResolvedThemeMode = resolvedMode;
   });
   m_themeService.apply();
+  syncScriptApiWallpaperDirectory();
   m_configService.addReloadCallback([this]() { m_themeService.onConfigReload(); }, "theme");
+  m_configService.addReloadCallback(syncScriptApiWallpaperDirectory, "wallpaper");
   {
     static ShellAppIconColorizationSettings lastAppIconColorization =
         shellAppIconColorizationSettings(m_configService.config().shell);

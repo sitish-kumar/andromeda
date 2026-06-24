@@ -3,6 +3,7 @@
 #include "core/log.h"
 #include "render/core/color.h"
 #include "render/core/renderer.h"
+#include "render/scene/input_area.h"
 #include "ui/controls/box.h"
 #include "ui/controls/button.h"
 #include "ui/controls/flex.h"
@@ -19,10 +20,11 @@
 #include "ui/controls/spacer.h"
 #include "ui/controls/toggle.h"
 #include "ui/palette.h"
+#include "ui/style.h"
 
-#include <algorithm>
 #include <cmath>
 #include <format>
+#include <linux/input-event-codes.h>
 #include <optional>
 #include <unordered_set>
 #include <utility>
@@ -192,6 +194,31 @@ namespace ui {
       return out;
     }
 
+    template <typename Control> Control* controlFromSlot(Node* node) {
+      if (node == nullptr) {
+        return nullptr;
+      }
+      if (auto* control = dynamic_cast<Control*>(node)) {
+        return control;
+      }
+      if (auto* inputArea = dynamic_cast<InputArea*>(node)) {
+        const auto& kids = inputArea->children();
+        if (!kids.empty()) {
+          return dynamic_cast<Control*>(kids.front().get());
+        }
+      }
+      return nullptr;
+    }
+
+    InputArea* inputAreaFromSlot(Node* node) { return dynamic_cast<InputArea*>(node); }
+
+    std::unique_ptr<Node> wrapClickable(std::unique_ptr<Node> control) {
+      auto inputArea = std::make_unique<InputArea>();
+      inputArea->setAcceptedButtons(InputArea::buttonMask(BTN_LEFT));
+      inputArea->addChild(std::move(control));
+      return inputArea;
+    }
+
     // Known prop keys per control type — an unknown prop is a loud skip, not a
     // silent no-op, so typos in plugin code surface immediately.
     const std::unordered_set<std::string>& knownProps(const std::string& type) {
@@ -200,24 +227,26 @@ namespace ui {
           "width", "height",  "flexGrow", "opacity", "visible", "gap",         "padding",  "paddingH", "paddingV",
           "align", "justify", "fill",     "radius",  "border",  "borderWidth", "minWidth", "minHeight"
       };
-      static const std::unordered_set<std::string> kBox = {"width", "height", "flexGrow", "opacity",     "visible",
-                                                           "fill",  "radius", "border",   "borderWidth", "softness"};
+      static const std::unordered_set<std::string> kBox = {"width",       "height",   "flexGrow", "opacity",
+                                                           "visible",     "fill",     "radius",   "border",
+                                                           "borderWidth", "softness", "onClick"};
       static const std::unordered_set<std::string> kLabel = {"width",      "height",   "flexGrow", "opacity",
                                                              "visible",    "text",     "fontSize", "color",
                                                              "fontWeight", "maxWidth", "maxLines", "textAlign"};
       static const std::unordered_set<std::string> kGlyph = {"width",   "height", "flexGrow", "opacity",
                                                              "visible", "name",   "size",     "color"};
-      static const std::unordered_set<std::string> kImage = {"width",   "height", "flexGrow", "opacity",
-                                                             "visible", "path",   "radius",   "fit"};
+      static const std::unordered_set<std::string> kImage = {"width",   "height",      "flexGrow", "opacity",
+                                                             "visible", "path",        "radius",   "fit",
+                                                             "border",  "borderWidth", "onClick"};
       static const std::unordered_set<std::string> kSeparator = {"width",   "height",  "flexGrow",
                                                                  "opacity", "visible", "thickness",
                                                                  "color",   "spacing", "orientation"};
       static const std::unordered_set<std::string> kProgress = {"width",    "height", "flexGrow", "opacity", "visible",
                                                                 "progress", "fill",   "track",    "radius"};
-      static const std::unordered_set<std::string> kButton = {"width",       "height",  "flexGrow", "opacity",
-                                                              "visible",     "text",    "glyph",    "fontSize",
-                                                              "glyphSize",   "variant", "enabled",  "onClick",
-                                                              "onRightClick"};
+      static const std::unordered_set<std::string> kButton = {"width",     "height",      "flexGrow", "opacity",
+                                                              "visible",   "text",        "glyph",    "fontSize",
+                                                              "glyphSize", "variant",     "enabled",  "selected",
+                                                              "onClick",   "onRightClick"};
       static const std::unordered_set<std::string> kGraph = {"width",   "height",    "flexGrow",   "opacity",
                                                              "visible", "values",    "values2",    "color",
                                                              "color2",  "lineWidth", "fillOpacity"};
@@ -331,6 +360,9 @@ namespace ui {
       return flex;
     }
     if (desired.type == "box") {
+      if (strProp(desired, "onClick") != nullptr) {
+        return wrapClickable(std::make_unique<Box>());
+      }
       return std::make_unique<Box>();
     }
     if (desired.type == "label") {
@@ -340,6 +372,9 @@ namespace ui {
       return std::make_unique<Glyph>();
     }
     if (desired.type == "image") {
+      if (strProp(desired, "onClick") != nullptr) {
+        return wrapClickable(std::make_unique<Image>());
+      }
       return std::make_unique<Image>();
     }
     if (desired.type == "separator") {
@@ -548,7 +583,10 @@ namespace ui {
     }
 
     if (desired.type == "box") {
-      auto* box = static_cast<Box*>(node);
+      auto* box = controlFromSlot<Box>(node);
+      if (box == nullptr) {
+        return;
+      }
       if (auto fill = parseColor(desired, "fill")) {
         box->setFill(*fill);
       }
@@ -562,9 +600,23 @@ namespace ui {
       if (const double* softness = numProp(desired, "softness")) {
         box->setSoftness(static_cast<float>(*softness));
       }
-      box->setSize(
-          width != nullptr ? scaled(*width) : node->width(), height != nullptr ? scaled(*height) : node->height()
-      );
+      const float boxWidth = width != nullptr ? scaled(*width) : node->width();
+      const float boxHeight = height != nullptr ? scaled(*height) : node->height();
+      box->setSize(boxWidth, boxHeight);
+      if (auto* inputArea = inputAreaFromSlot(node)) {
+        inputArea->setSize(boxWidth, boxHeight);
+      }
+      if (const std::string* onClick = strProp(desired, "onClick");
+          onClick != nullptr && *onClick != slot.callbackName) {
+        slot.callbackName = *onClick;
+        if (auto* inputArea = inputAreaFromSlot(node)) {
+          inputArea->setOnClick([this, name = slot.callbackName](const InputArea::PointerData&) {
+            if (m_sink) {
+              m_sink(ControlCallback{name});
+            }
+          });
+        }
+      }
       return;
     }
 
@@ -609,7 +661,10 @@ namespace ui {
     }
 
     if (desired.type == "image") {
-      auto* image = static_cast<Image*>(node);
+      auto* image = controlFromSlot<Image>(node);
+      if (image == nullptr) {
+        return;
+      }
       if (const double* radius = numProp(desired, "radius")) {
         image->setRadius(scaled(*radius));
       }
@@ -624,9 +679,18 @@ namespace ui {
           kLog.warn("ui tree: image has unknown fit '{}'", *fit);
         }
       }
+      if (auto border = parseColor(desired, "border")) {
+        const double* borderWidth = numProp(desired, "borderWidth");
+        image->setBorder(*border, borderWidth != nullptr ? scaled(*borderWidth) : Style::borderWidth);
+      } else {
+        image->setBorder(clearColorSpec(), 0.0f);
+      }
       const float imageWidth = width != nullptr ? scaled(*width) : node->width();
       const float imageHeight = height != nullptr ? scaled(*height) : imageWidth;
       image->setSize(imageWidth, imageHeight);
+      if (auto* inputArea = inputAreaFromSlot(node)) {
+        inputArea->setSize(imageWidth, imageHeight);
+      }
       if (const std::string* path = strProp(desired, "path")) {
         const std::string resolved = m_resolver ? m_resolver(*path) : *path;
         const float targetSize = std::max(1.0f, std::max(imageWidth, imageHeight) * 3.0f);
@@ -636,6 +700,17 @@ namespace ui {
           if (!image->setSourceFile(renderer, resolved, static_cast<int>(std::round(targetSize)), true)) {
             kLog.warn("ui tree: image failed to load '{}'", resolved);
           }
+        }
+      }
+      if (const std::string* onClick = strProp(desired, "onClick");
+          onClick != nullptr && *onClick != slot.callbackName) {
+        slot.callbackName = *onClick;
+        if (auto* inputArea = inputAreaFromSlot(node)) {
+          inputArea->setOnClick([this, name = slot.callbackName](const InputArea::PointerData&) {
+            if (m_sink) {
+              m_sink(ControlCallback{name});
+            }
+          });
         }
       }
       return;
@@ -688,11 +763,15 @@ namespace ui {
 
     if (desired.type == "button") {
       auto* button = static_cast<Button*>(node);
-      if (const std::string* text = strProp(desired, "text")) {
-        button->setText(*text);
-      }
-      if (const std::string* glyph = strProp(desired, "glyph")) {
+      const std::string* text = strProp(desired, "text");
+      const std::string* glyph = strProp(desired, "glyph");
+      if (glyph != nullptr) {
         button->setGlyph(*glyph);
+      }
+      if (text != nullptr) {
+        button->setText(*text);
+      } else if (glyph != nullptr) {
+        button->setText("");
       }
       if (const double* fontSize = numProp(desired, "fontSize")) {
         button->setFontSize(scaled(*fontSize));
@@ -705,6 +784,9 @@ namespace ui {
       }
       if (const bool* enabled = boolProp(desired, "enabled")) {
         button->setEnabled(*enabled);
+      }
+      if (const bool* selected = boolProp(desired, "selected")) {
+        button->setSelected(*selected);
       }
       if (const std::string* onClick = strProp(desired, "onClick");
           onClick != nullptr && *onClick != slot.callbackName) {
@@ -852,6 +934,16 @@ namespace ui {
             m_sink(ControlCallback{name, std::format("{}", idx), std::string(text)});
           }
         });
+      }
+      if (width != nullptr) {
+        const float w = scaled(*width);
+        select->setMinWidth(w);
+        if (const double* grow = numProp(desired, "flexGrow"); grow == nullptr || *grow <= 0.0) {
+          select->setMaxWidth(w);
+        }
+      }
+      if (height != nullptr) {
+        select->setControlHeight(scaled(*height));
       }
       return;
     }

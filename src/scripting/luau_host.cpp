@@ -299,6 +299,21 @@ namespace {
     return 1;
   }
 
+  int luau_wallpaperDirectory(lua_State* L) {
+    auto* host = hostForState(L);
+    if (host == nullptr) {
+      lua_pushnil(L);
+      return 1;
+    }
+    const std::string directory = host->api().wallpaperDirectory();
+    if (directory.empty()) {
+      lua_pushnil(L);
+      return 1;
+    }
+    lua_pushlstring(L, directory.data(), directory.size());
+    return 1;
+  }
+
   int luau_processMatches(lua_State* L) {
     const int count = lua_gettop(L);
     luaL_checktype(L, 1, LUA_TFUNCTION);
@@ -870,6 +885,7 @@ namespace {
       {"portalAvailable", luau_portalAvailable},
       {"focusedOutputName", luau_focusedOutputName},
       {"isDarkMode", luau_isDarkMode},
+      {"wallpaperDirectory", luau_wallpaperDirectory},
       {"notify", luau_notify},
       {"notifyError", luau_notifyError},
       {"copyToClipboard", luau_copyToClipboard},

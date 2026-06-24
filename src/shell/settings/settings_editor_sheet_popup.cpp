@@ -47,7 +47,7 @@ namespace settings {
   constexpr float kPopupWidth = 640.0f;    // minimum / fallback logical width
   constexpr float kPopupWidthMax = 820.0f; // absolute maximum logical width
   constexpr float kPopupWidthParentFraction = 0.75f;
-  constexpr float kInitialPopupHeight = 360.0f;
+  constexpr float kInitialPopupHeight = 480.0f;
   constexpr float kParentMargin = 48.0f;
 
   SettingsEditorSheetPopup::~SettingsEditorSheetPopup() { destroyPopup(); }
@@ -302,7 +302,10 @@ namespace settings {
     const auto naturalHeight = [&](float widthBudget) {
       const float innerCw = std::max(1.0f, widthBudget - 2.0f * popupPadding);
       LayoutConstraints c;
-      c.setMaxWidth(innerCw);
+      // Exact width so wrapped setting labels measure their full line count. Max width
+      // alone leaves cross-axis unconstrained during measure, which under-counts height
+      // for short bodies (e.g. a two-setting plugin sheet) and clips the last row.
+      c.setExactWidth(innerCw);
       const float headerH = m_header->measure(renderer, c).height;
       const float contentH = m_scrollView->content()->measure(renderer, c).height;
       return 2.0f * popupPadding + headerH + popupGap + contentH;

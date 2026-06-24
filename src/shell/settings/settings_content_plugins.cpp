@@ -397,7 +397,20 @@ namespace settings {
     if (const auto pluginDir = scripting::PluginRegistry::instance().findPluginDir(pluginId)) {
       translations.load(*pluginDir);
     }
-    const auto specs = settings::manifestSettingSpecs(manifest.settings, &translations);
+    std::vector<WidgetSettingSpec> specs = settings::manifestSettingSpecs(manifest.settings, &translations);
+    for (const auto& entry : manifest.entries) {
+      if (entry.kind != scripting::PluginEntryKind::Panel) {
+        continue;
+      }
+      for (const auto& panelSpec : settings::manifestSettingSpecs(entry.settings, &translations)) {
+        if (std::ranges::any_of(specs, [&](const WidgetSettingSpec& existing) {
+              return existing.schema.key == panelSpec.schema.key;
+            })) {
+          continue;
+        }
+        specs.push_back(panelSpec);
+      }
+    }
     bool rendered = false;
     for (const auto& spec : specs) {
       if (spec.advanced && !showAdvanced) {

@@ -130,15 +130,12 @@ void PluginPanel::doLayout(Renderer& renderer, float width, float height) {
   if (m_flex == nullptr) {
     return;
   }
-  m_flex->setMinWidth(width);
-  m_flex->setMaxWidth(width);
-  m_flex->setMinHeight(height);
-  m_flex->setMaxHeight(height);
   if (m_tree.has_value()) {
     m_reconciler.setScale(contentScale());
     (void)m_reconciler.reconcile(*m_flex, *m_tree, renderer);
     m_treeDirty = false;
   }
+  m_flex->setSize(width, height);
   m_flex->layout(renderer);
 }
 

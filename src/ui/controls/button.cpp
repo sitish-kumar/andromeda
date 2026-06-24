@@ -414,6 +414,7 @@ void Button::setSelected(bool selected) {
   }
   m_selected = selected;
   applyVisualState();
+  markPaintDirty();
 }
 
 void Button::setContentAlign(ButtonContentAlign align) { m_contentAlign = align; }
