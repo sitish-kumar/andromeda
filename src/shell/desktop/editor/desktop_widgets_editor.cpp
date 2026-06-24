@@ -341,12 +341,15 @@ void DesktopWidgetsEditor::syncSurfaces() {
   const auto& outputs = m_wayland->outputs();
   std::erase_if(m_surfaces, [&outputs](const auto& surface) {
     return std::none_of(outputs.begin(), outputs.end(), [&surface](const auto& output) {
-      return output.done && output.output != nullptr && desktop_widgets::outputKey(output) == surface->outputName;
+      return output.done
+          && output.output != nullptr
+          && output.hasUsableGeometry()
+          && desktop_widgets::outputKey(output) == surface->outputName;
     });
   });
 
   for (const auto& output : outputs) {
-    if (!output.done || output.output == nullptr) {
+    if (!output.done || output.output == nullptr || !output.hasUsableGeometry()) {
       continue;
     }
     const std::string key = desktop_widgets::outputKey(output);
@@ -367,10 +370,8 @@ void DesktopWidgetsEditor::createSurface(const WaylandOutput& output) {
       .height = 0,
       .exclusiveZone = -1,
       .keyboard = LayerShellKeyboard::OnDemand,
-      .defaultWidth = output.logicalWidth > 0 ? static_cast<std::uint32_t>(output.logicalWidth)
-                                              : static_cast<std::uint32_t>(std::max(1, output.width)),
-      .defaultHeight = output.logicalHeight > 0 ? static_cast<std::uint32_t>(output.logicalHeight)
-                                                : static_cast<std::uint32_t>(std::max(1, output.height)),
+      .defaultWidth = static_cast<std::uint32_t>(output.effectiveLogicalWidth()),
+      .defaultHeight = static_cast<std::uint32_t>(output.effectiveLogicalHeight()),
   };
 
   auto overlay = std::make_unique<OverlaySurface>();
@@ -1455,10 +1456,8 @@ void DesktopWidgetsEditor::addWidget(const std::string& outputName, const std::s
   float centerY = 240.0f;
   if (const WaylandOutput* output = desktop_widgets::resolveEffectiveOutput(*m_wayland, outputName);
       output != nullptr) {
-    const int logicalWidth =
-        output->logicalWidth > 0 ? output->logicalWidth : output->width / std::max(1, output->scale);
-    const int logicalHeight =
-        output->logicalHeight > 0 ? output->logicalHeight : output->height / std::max(1, output->scale);
+    const int logicalWidth = output->effectiveLogicalWidth();
+    const int logicalHeight = output->effectiveLogicalHeight();
     centerX = static_cast<float>(std::max(1, logicalWidth)) * 0.5f;
     centerY = static_cast<float>(std::max(1, logicalHeight)) * 0.5f;
   }

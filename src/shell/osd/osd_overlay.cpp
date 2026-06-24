@@ -349,10 +349,11 @@ void OsdOverlay::ensureSurfaces() {
   m_lastCornerRadiusScale = Style::cornerRadiusScale();
   m_lastMonitorSelectors = selectedMonitors;
 
-  const bool anyConfiguredPresent = selectedMonitors.empty()
+  const bool anyConfiguredPresent =
+      selectedMonitors.empty()
       || std::any_of(m_wayland->outputs().begin(), m_wayland->outputs().end(), [this](const WaylandOutput& output) {
-                                      return output.output != nullptr && shouldRenderOnOutput(output);
-                                    });
+           return output.done && output.output != nullptr && output.hasUsableGeometry() && shouldRenderOnOutput(output);
+         });
 
   std::erase_if(m_instances, [this, anyConfiguredPresent](const std::unique_ptr<Instance>& inst) {
     if (inst->output == nullptr) {
@@ -360,6 +361,9 @@ void OsdOverlay::ensureSurfaces() {
     }
     const WaylandOutput* wlOutput = m_wayland->findOutputByWl(inst->output);
     if (wlOutput == nullptr) {
+      return true;
+    }
+    if (!wlOutput->done || !wlOutput->hasUsableGeometry()) {
       return true;
     }
     return anyConfiguredPresent && !shouldRenderOnOutput(*wlOutput);
@@ -381,7 +385,7 @@ void OsdOverlay::ensureSurfaces() {
   }
 
   for (const auto& output : m_wayland->outputs()) {
-    if (output.output == nullptr) {
+    if (!output.done || output.output == nullptr || !output.hasUsableGeometry()) {
       continue;
     }
     if (anyConfiguredPresent && !shouldRenderOnOutput(output)) {

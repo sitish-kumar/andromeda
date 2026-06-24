@@ -384,13 +384,11 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   auto outputHeight = static_cast<std::int32_t>(panelHeight);
   if (m_platform != nullptr) {
     const auto* wlOutput = m_platform->findOutputByWl(request.output);
-    if (wlOutput != nullptr && wlOutput->width > 0) {
-      outputWidth =
-          wlOutput->logicalWidth > 0 ? wlOutput->logicalWidth : wlOutput->width / std::max(1, wlOutput->scale);
+    if (wlOutput != nullptr && wlOutput->effectiveLogicalWidth() > 0) {
+      outputWidth = wlOutput->effectiveLogicalWidth();
     }
-    if (wlOutput != nullptr && wlOutput->height > 0) {
-      outputHeight =
-          wlOutput->logicalHeight > 0 ? wlOutput->logicalHeight : wlOutput->height / std::max(1, wlOutput->scale);
+    if (wlOutput != nullptr && wlOutput->effectiveLogicalHeight() > 0) {
+      outputHeight = wlOutput->effectiveLogicalHeight();
     }
   }
 

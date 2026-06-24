@@ -267,8 +267,8 @@ namespace {
     const auto mLeft = static_cast<float>(surface->marginLeft());
     const auto surfW = static_cast<float>(surface->width());
     const auto surfH = static_cast<float>(surface->height());
-    const auto outputW = static_cast<float>(outputInfo.logicalWidth);
-    const auto outputH = static_cast<float>(outputInfo.logicalHeight);
+    const auto outputW = static_cast<float>(outputInfo.effectiveLogicalWidth());
+    const auto outputH = static_cast<float>(outputInfo.effectiveLogicalHeight());
 
     float x = 0.0f;
     float y = 0.0f;
@@ -338,8 +338,7 @@ namespace {
     float anchorX = sx;
     float anchorY = sy;
     if (platform != nullptr && instance.output != nullptr) {
-      if (const auto* out = platform->findOutputByWl(instance.output);
-          out != nullptr && out->logicalWidth > 0 && out->logicalHeight > 0) {
+      if (const auto* out = platform->findOutputByWl(instance.output); out != nullptr && out->hasUsableGeometry()) {
         const auto [surfaceX, surfaceY] = surfaceOriginForOutputLocal(instance, *out);
         anchorX += surfaceX;
         anchorY += surfaceY;
@@ -1401,13 +1400,11 @@ std::vector<InputRect> Bar::surfaceRectsForOutput(wl_output* output) const {
   if (wlOutput == nullptr) {
     return rects;
   }
-  // logicalWidth/Height become valid only after xdg_output.done; before that
-  // we cannot accurately place a bottom/right anchored bar.
-  if (wlOutput->logicalWidth <= 0 || wlOutput->logicalHeight <= 0) {
+  if (!wlOutput->hasUsableGeometry()) {
     return rects;
   }
-  const std::int32_t outputW = wlOutput->logicalWidth;
-  const std::int32_t outputH = wlOutput->logicalHeight;
+  const std::int32_t outputW = wlOutput->effectiveLogicalWidth();
+  const std::int32_t outputH = wlOutput->effectiveLogicalHeight();
 
   for (const auto& instance : m_instances) {
     if (instance == nullptr || instance->output != output || instance->surface == nullptr) {
@@ -1643,7 +1640,8 @@ void Bar::syncInstances() {
 
   // Remove instances for outputs that no longer exist
   std::erase_if(m_instances, [&outputs](const auto& inst) {
-    bool found = std::ranges::contains(outputs, inst->outputName, &WaylandOutput::name);
+    const auto it = std::ranges::find(outputs, inst->outputName, &WaylandOutput::name);
+    const bool found = it != outputs.end() && it->done && it->hasUsableGeometry();
     if (!found) {
       kLog.info("removing instance for output {}", inst->outputName);
     }
@@ -1653,7 +1651,7 @@ void Bar::syncInstances() {
   // Create instances for each bar definition × each output
   for (std::size_t barIdx = 0; barIdx < bars.size(); ++barIdx) {
     for (const auto& output : outputs) {
-      if (!output.done) {
+      if (!output.done || !output.hasUsableGeometry()) {
         continue;
       }
 
@@ -1870,8 +1868,7 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
           anchorY = *anchorSurfaceY;
         }
         if (m_platform != nullptr && inst->output != nullptr) {
-          if (const auto* out = m_platform->findOutputByWl(inst->output);
-              out != nullptr && out->logicalWidth > 0 && out->logicalHeight > 0) {
+          if (const auto* out = m_platform->findOutputByWl(inst->output); out != nullptr && out->hasUsableGeometry()) {
             const auto [surfaceX, surfaceY] = surfaceOriginForOutputLocal(*inst, *out);
             anchorX += surfaceX;
             anchorY += surfaceY;

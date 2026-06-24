@@ -256,7 +256,7 @@ namespace lockscreen_login_box {
     }
 
     for (const auto& output : wayland.outputs()) {
-      if (!output.done || output.output == nullptr) {
+      if (!output.done || output.output == nullptr || !output.hasUsableGeometry()) {
         continue;
       }
       const std::string outputKey = desktop_widgets::outputKey(output);

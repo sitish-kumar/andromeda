@@ -735,6 +735,11 @@ void Wallpaper::syncInstances() {
       releaseInstanceTextures(*inst);
       return true;
     }
+    if (!output->done || !output->hasUsableGeometry()) {
+      kLog.info("removing instance for output {} (geometry unavailable)", inst->outputName);
+      releaseInstanceTextures(*inst);
+      return true;
+    }
 
     // Check if a monitor override now disables this output
     if (const auto* ovr = wallpaper::findWallpaperMonitorOverride(m_config->config().wallpaper, *output);
@@ -749,7 +754,7 @@ void Wallpaper::syncInstances() {
 
   // Create instances for new outputs
   for (const auto& output : outputs) {
-    if (!output.done || output.connectorName.empty()) {
+    if (!output.done || output.connectorName.empty() || !output.hasUsableGeometry()) {
       continue;
     }
 
@@ -797,7 +802,10 @@ void Wallpaper::applyStartupAutomation(std::int64_t secondStamp) {
 
   if (wallpaper.perMonitorDirectories) {
     for (const auto& output : outputs) {
-      if (!output.done || output.connectorName.empty() || !wallpaperOutputEnabled(wallpaper, output)) {
+      if (!output.done
+          || output.connectorName.empty()
+          || !output.hasUsableGeometry()
+          || !wallpaperOutputEnabled(wallpaper, output)) {
         continue;
       }
 
@@ -821,7 +829,10 @@ void Wallpaper::applyStartupAutomation(std::int64_t secondStamp) {
     }
   } else {
     for (const auto& output : outputs) {
-      if (output.done && !output.connectorName.empty() && wallpaperOutputEnabled(wallpaper, output)) {
+      if (output.done
+          && !output.connectorName.empty()
+          && output.hasUsableGeometry()
+          && wallpaperOutputEnabled(wallpaper, output)) {
         attempted = true;
         break;
       }
@@ -837,7 +848,10 @@ void Wallpaper::applyStartupAutomation(std::int64_t secondStamp) {
         const std::string picked = pickAutomationWallpaperPath(automation, std::move(candidates), currentDefault);
         if (!picked.empty()) {
           for (const auto& output : outputs) {
-            if (output.done && !output.connectorName.empty() && wallpaperOutputEnabled(wallpaper, output)) {
+            if (output.done
+                && !output.connectorName.empty()
+                && output.hasUsableGeometry()
+                && wallpaperOutputEnabled(wallpaper, output)) {
               m_config->setWallpaperPath(output.connectorName, picked);
             }
           }

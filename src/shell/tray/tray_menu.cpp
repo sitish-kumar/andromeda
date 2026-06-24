@@ -1078,8 +1078,8 @@ void TrayMenu::openSubmenuAtLevel(std::size_t levelIndex, std::int32_t parentEnt
   );
 
   const auto* wlOutput = m_wayland->findOutputByWl(parentMenu->output);
-  const std::int32_t outputWidth = (wlOutput != nullptr && wlOutput->logicalWidth > 0)
-      ? wlOutput->logicalWidth
+  const std::int32_t outputWidth = (wlOutput != nullptr && wlOutput->effectiveLogicalWidth() > 0)
+      ? wlOutput->effectiveLogicalWidth()
       : static_cast<std::int32_t>(chrome.surfaceWidth);
 
   bool isRight = (parentMenu->submenuDirection == ContextSubmenuDirection::Right);

@@ -70,6 +70,32 @@ struct WaylandOutput {
   std::int32_t transform = 0;
   zxdg_output_v1* xdgOutput = nullptr;
   bool done = false;
+
+  [[nodiscard]] std::int32_t effectiveLogicalWidth() const noexcept {
+    if (logicalWidth > 0) {
+      return logicalWidth;
+    }
+    if (width <= 0 || scale <= 0) {
+      return 0;
+    }
+    const std::int32_t scaled = width / scale;
+    return scaled > 0 ? scaled : 1;
+  }
+
+  [[nodiscard]] std::int32_t effectiveLogicalHeight() const noexcept {
+    if (logicalHeight > 0) {
+      return logicalHeight;
+    }
+    if (height <= 0 || scale <= 0) {
+      return 0;
+    }
+    const std::int32_t scaled = height / scale;
+    return scaled > 0 ? scaled : 1;
+  }
+
+  [[nodiscard]] bool hasUsableGeometry() const noexcept {
+    return effectiveLogicalWidth() > 0 && effectiveLogicalHeight() > 0;
+  }
 };
 
 class WaylandConnection {

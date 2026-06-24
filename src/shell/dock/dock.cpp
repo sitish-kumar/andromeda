@@ -566,6 +566,9 @@ void Dock::syncInstances() {
       ? !m_platform->runningAppIds(nullptr).empty()
       : false;
   const auto outputAllowed = [&](const WaylandOutput& output) {
+    if (!output.done || !output.hasUsableGeometry()) {
+      return false;
+    }
     if (!selectedMonitors.empty() && std::ranges::none_of(selectedMonitors, [&output](const std::string& m) {
           return outputMatchesSelector(m, output);
         })) {
@@ -594,8 +597,6 @@ void Dock::syncInstances() {
   });
 
   for (const auto& output : outputs) {
-    if (!output.done)
-      continue;
     if (!outputAllowed(output))
       continue;
     const bool exists =

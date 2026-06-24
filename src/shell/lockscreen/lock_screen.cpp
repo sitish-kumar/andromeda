@@ -432,7 +432,8 @@ void LockScreen::syncInstances() {
   const auto& outputs = m_wayland->outputs();
 
   std::erase_if(m_instances, [&](Instance& instance) {
-    const bool exists = std::ranges::contains(outputs, instance.outputName, &WaylandOutput::name);
+    const auto it = std::ranges::find(outputs, instance.outputName, &WaylandOutput::name);
+    const bool exists = it != outputs.end() && it->done && it->output != nullptr && it->hasUsableGeometry();
     if (!exists && instance.surface != nullptr && instance.surface->wlSurface() == m_pointerSurface) {
       m_pointerSurface = nullptr;
     }
@@ -440,6 +441,9 @@ void LockScreen::syncInstances() {
   });
 
   for (const auto& output : outputs) {
+    if (!output.done || output.output == nullptr || !output.hasUsableGeometry()) {
+      continue;
+    }
     const bool exists = std::ranges::contains(m_instances, output.name, &Instance::outputName);
     if (!exists) {
       createInstance(output);
@@ -492,7 +496,7 @@ void LockScreen::captureDesktopSnapshots() {
   }
 
   for (const auto& output : m_wayland->outputs()) {
-    if (output.output == nullptr || !isInteractiveOutput(output)) {
+    if (!output.done || output.output == nullptr || !output.hasUsableGeometry() || !isInteractiveOutput(output)) {
       continue;
     }
 
