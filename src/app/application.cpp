@@ -17,6 +17,7 @@
 #include "i18n/i18n_service.h"
 #include "ipc/ipc_arg_parse.h"
 #include "launcher/app_provider.h"
+#include "launcher/dmenu_provider.h"
 #include "launcher/emoji_provider.h"
 #include "launcher/math_provider.h"
 #include "launcher/plugin_launcher_provider.h"
@@ -1744,6 +1745,7 @@ void Application::initUi() {
     );
   });
   reloadPluginLauncherProviders();
+  reloadDmenuProviders();
   reloadPluginPanels();
   m_overviewLauncherCapture.initialize(m_wayland, &m_renderContext, m_compositorPlatform, m_panelManager);
   m_overviewLauncherCapture.setEnabled(m_configService.config().shell.niriOverviewTypeToLaunchEnabled);
@@ -1961,6 +1963,11 @@ void Application::initUi() {
   // When config reloads, refresh any open panel: bar-driven attached decoration restyle and
   // shell-driven compositor blur.
   m_configService.addReloadCallback([this]() { m_panelManager.onConfigReloaded(); });
+  m_configService.addReloadCallback([this]() {
+    if (m_configService.lastChange().shell) {
+      reloadDmenuProviders();
+    }
+  });
   m_configService.addReloadCallback([this]() { m_screenCorners.onConfigReload(); });
 
   m_layerPopupHosts.registerHost(
@@ -2180,6 +2187,23 @@ void Application::reloadPluginLauncherProviders() {
             }
         )
     );
+  }
+}
+
+void Application::reloadDmenuProviders() {
+  if (m_launcherPanel == nullptr) {
+    return;
+  }
+  m_launcherPanel->clearProvidersWithIdPrefix("dmenu.");
+  for (const auto& entry : m_configService.config().shell.launcher.dmenu.entries) {
+    if (entry.command.empty()) {
+      logWarn("dmenu[{}]: missing command, skipping", entry.id);
+      continue;
+    }
+    if (entry.prefix.value_or("").empty() && !entry.global) {
+      logWarn("dmenu[{}]: no prefix and global=false; unreachable until configured", entry.id);
+    }
+    m_launcherPanel->addProvider(std::make_unique<DmenuProvider>(entry, &m_clipboardService));
   }
 }
 

@@ -1123,6 +1123,46 @@ namespace noctalia::config::schema {
       return s;
     }
 
+    // Optional strings stored trimmed-or-nullopt, always emitted (value_or("")).
+    Field<DmenuEntryConfig>
+    dmenuOptionalString(std::optional<std::string> DmenuEntryConfig::* member, std::string_view key) {
+      return custom<DmenuEntryConfig>(
+          key,
+          [member, key](const toml::table& tbl, DmenuEntryConfig& out, std::string_view, Diagnostics&) {
+            if (auto v = tbl[key].value<std::string>()) {
+              const std::string trimmed = StringUtils::trim(*v);
+              out.*member = trimmed.empty() ? std::optional<std::string>{} : std::optional<std::string>{trimmed};
+            }
+          },
+          [member, key](toml::table& tbl, const DmenuEntryConfig& in) {
+            tbl.insert_or_assign(key, (in.*member).value_or(""));
+          }
+      );
+    }
+
+    const Schema<DmenuEntryConfig>& dmenuEntrySchema() {
+      static const Schema<DmenuEntryConfig> s = {
+          field(&DmenuEntryConfig::command, "command"),
+          dmenuOptionalString(&DmenuEntryConfig::exec, "exec"),
+          dmenuOptionalString(&DmenuEntryConfig::prefix, "prefix"),
+          dmenuOptionalString(&DmenuEntryConfig::label, "label"),
+          dmenuOptionalString(&DmenuEntryConfig::glyph, "glyph"),
+          field(&DmenuEntryConfig::global, "global"),
+      };
+      return s;
+    }
+
+    const Schema<ShellConfig::LauncherConfig::DmenuConfig>& shellLauncherDmenuSchema() {
+      static const Schema<ShellConfig::LauncherConfig::DmenuConfig> s = {
+          namedMap<ShellConfig::LauncherConfig::DmenuConfig, DmenuEntryConfig>(
+              &ShellConfig::LauncherConfig::DmenuConfig::entries, "entry", dmenuEntrySchema(),
+              [](DmenuEntryConfig& e, std::string_view name) { e.id = std::string(name); },
+              [](const DmenuEntryConfig& e) { return e.id; }
+          ),
+      };
+      return s;
+    }
+
     const Schema<ShellConfig::PanelConfig>& shellPanelSchema() {
       static const Schema<ShellConfig::PanelConfig> s = {
           enumField(&ShellConfig::PanelConfig::transparencyMode, "transparency_mode", kPanelTransparencyModes),
@@ -1144,12 +1184,19 @@ namespace noctalia::config::schema {
           field(&ShellConfig::PanelConfig::openNearClickClipboard, "open_near_click_clipboard"),
           field(&ShellConfig::PanelConfig::openNearClickWallpaper, "open_near_click_wallpaper"),
           field(&ShellConfig::PanelConfig::openNearClickSession, "open_near_click_session"),
-          field(&ShellConfig::PanelConfig::launcherCategories, "launcher_categories"),
-          field(&ShellConfig::PanelConfig::launcherShowIcons, "launcher_show_icons"),
-          field(&ShellConfig::PanelConfig::launcherCompact, "launcher_compact"),
-          field(&ShellConfig::PanelConfig::launcherAppGrid, "launcher_app_grid"),
-          field(&ShellConfig::PanelConfig::launcherSessionSearch, "launcher_session_search"),
-          field(&ShellConfig::PanelConfig::launcherSortByUsage, "launcher_sort_by_usage"),
+      };
+      return s;
+    }
+
+    const Schema<ShellConfig::LauncherConfig>& shellLauncherSchema() {
+      static const Schema<ShellConfig::LauncherConfig> s = {
+          field(&ShellConfig::LauncherConfig::categories, "categories"),
+          field(&ShellConfig::LauncherConfig::showIcons, "show_icons"),
+          field(&ShellConfig::LauncherConfig::compact, "compact"),
+          field(&ShellConfig::LauncherConfig::appGrid, "app_grid"),
+          field(&ShellConfig::LauncherConfig::sessionSearch, "session_search"),
+          field(&ShellConfig::LauncherConfig::sortByUsage, "sort_by_usage"),
+          subTable(&ShellConfig::LauncherConfig::dmenu, "dmenu", shellLauncherDmenuSchema()),
       };
       return s;
     }
@@ -1326,6 +1373,7 @@ namespace noctalia::config::schema {
         subTable(&ShellConfig::animation, "animation", shellAnimationSchema()),
         subTable(&ShellConfig::shadow, "shadow", shellShadowSchema()),
         subTable(&ShellConfig::panel, "panel", shellPanelSchema()),
+        subTable(&ShellConfig::launcher, "launcher", shellLauncherSchema()),
         subTable(&ShellConfig::screenCorners, "screen_corners", shellScreenCornersSchema()),
         subTable(&ShellConfig::mpris, "mpris", shellMprisSchema()),
         subTable(&ShellConfig::screenshot, "screenshot", shellScreenshotSchema()),

@@ -148,6 +148,8 @@ private:
   void initIpc();
   // (Re)register plugin-backed launcher providers from the enabled plugin set.
   void reloadPluginLauncherProviders();
+  // (Re)register config-driven dmenu launcher providers ([shell.launcher.dmenu.entry.*]).
+  void reloadDmenuProviders();
   // (Re)register plugin-backed panels from the enabled plugin set.
   void reloadPluginPanels();
   void startTrayService();

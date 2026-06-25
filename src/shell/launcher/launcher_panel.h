@@ -36,6 +36,8 @@ public:
   // Drop every dynamically-registered (plugin-backed) provider, so the enabled
   // plugin set can be re-applied without disturbing the built-in providers.
   void clearDynamicProviders();
+  // Drop providers whose stable id starts with `prefix` (e.g. config-driven "dmenu.").
+  void clearProvidersWithIdPrefix(std::string_view prefix);
 
   void create() override;
   void onOpen(std::string_view context) override;

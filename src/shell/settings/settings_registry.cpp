@@ -1049,33 +1049,33 @@ namespace settings {
     }
     entries.push_back(makeEntry(
         SettingsSection::Panels, "launcher", tr("settings.schema.panels.launcher-categories.label"),
-        tr("settings.schema.panels.launcher-categories.description"), {"shell", "panel", "launcher_categories"},
-        ToggleSetting{cfg.shell.panel.launcherCategories}, "launcher categories filter"
+        tr("settings.schema.panels.launcher-categories.description"), {"shell", "launcher", "categories"},
+        ToggleSetting{cfg.shell.launcher.categories}, "launcher categories filter"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Panels, "launcher", tr("settings.schema.panels.launcher-show-icons.label"),
-        tr("settings.schema.panels.launcher-show-icons.description"), {"shell", "panel", "launcher_show_icons"},
-        ToggleSetting{cfg.shell.panel.launcherShowIcons}, "launcher app icons hide"
+        tr("settings.schema.panels.launcher-show-icons.description"), {"shell", "launcher", "show_icons"},
+        ToggleSetting{cfg.shell.launcher.showIcons}, "launcher app icons hide"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Panels, "launcher", tr("settings.schema.panels.launcher-app-grid.label"),
-        tr("settings.schema.panels.launcher-app-grid.description"), {"shell", "panel", "launcher_app_grid"},
-        ToggleSetting{cfg.shell.panel.launcherAppGrid}, "launcher app grid icons view"
+        tr("settings.schema.panels.launcher-app-grid.description"), {"shell", "launcher", "app_grid"},
+        ToggleSetting{cfg.shell.launcher.appGrid}, "launcher app grid icons view"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Panels, "launcher", tr("settings.schema.panels.launcher-compact.label"),
-        tr("settings.schema.panels.launcher-compact.description"), {"shell", "panel", "launcher_compact"},
-        ToggleSetting{cfg.shell.panel.launcherCompact}, "launcher compact rows dense"
+        tr("settings.schema.panels.launcher-compact.description"), {"shell", "launcher", "compact"},
+        ToggleSetting{cfg.shell.launcher.compact}, "launcher compact rows dense"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Panels, "launcher", tr("settings.schema.panels.launcher-sort-by-usage.label"),
-        tr("settings.schema.panels.launcher-sort-by-usage.description"), {"shell", "panel", "launcher_sort_by_usage"},
-        ToggleSetting{cfg.shell.panel.launcherSortByUsage}, "launcher sort usage recently used frequency"
+        tr("settings.schema.panels.launcher-sort-by-usage.description"), {"shell", "launcher", "sort_by_usage"},
+        ToggleSetting{cfg.shell.launcher.sortByUsage}, "launcher sort usage recently used frequency"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Panels, "launcher", tr("settings.schema.panels.launcher-session-search.label"),
-        tr("settings.schema.panels.launcher-session-search.description"), {"shell", "panel", "launcher_session_search"},
-        ToggleSetting{cfg.shell.panel.launcherSessionSearch},
+        tr("settings.schema.panels.launcher-session-search.description"), {"shell", "launcher", "session_search"},
+        ToggleSetting{cfg.shell.launcher.sessionSearch},
         "launcher session search power menu lock suspend reboot shutdown logout"
     ));
     entries.push_back(makeEntry(

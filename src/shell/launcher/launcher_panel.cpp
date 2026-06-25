@@ -153,9 +153,9 @@ namespace {
   [[nodiscard]] LauncherListStyle launcherListStyleFrom(const ConfigService* config, float scale) {
     LauncherListStyle style{.scale = scale, .appIconColorizeTint = std::nullopt};
     if (config != nullptr) {
-      const auto& panel = config->config().shell.panel;
-      style.showIcons = panel.launcherShowIcons;
-      style.compact = panel.launcherCompact;
+      const auto& launcher = config->config().shell.launcher;
+      style.showIcons = launcher.showIcons;
+      style.compact = launcher.compact;
       style.appIconColorizeTint = effectiveShellAppIconColorizationTint(config->config().shell);
     }
     return style;
@@ -676,6 +676,12 @@ void LauncherPanel::clearDynamicProviders() {
   std::erase_if(m_providers, [](const std::unique_ptr<LauncherProvider>& provider) { return provider->isDynamic(); });
 }
 
+void LauncherPanel::clearProvidersWithIdPrefix(std::string_view prefix) {
+  std::erase_if(m_providers, [&](const std::unique_ptr<LauncherProvider>& provider) {
+    return provider->id().starts_with(prefix);
+  });
+}
+
 void LauncherPanel::create() {
   m_launcherRowHeight = 0.0f;
   const float scale = contentScale();
@@ -787,7 +793,7 @@ void LauncherPanel::refreshLauncherAppIconColorization() {
 }
 
 bool LauncherPanel::shouldUseAppGrid() const {
-  if (m_config == nullptr || !m_config->config().shell.panel.launcherAppGrid || !m_launcherShowIcons) {
+  if (m_config == nullptr || !m_config->config().shell.launcher.appGrid || !m_launcherShowIcons) {
     return false;
   }
   if (m_results.empty()) {
@@ -847,9 +853,9 @@ void LauncherPanel::syncLauncherViewLayout(Renderer* renderer) {
 }
 
 void LauncherPanel::syncLauncherListStyle() {
-  const bool showIcons = m_config == nullptr || m_config->config().shell.panel.launcherShowIcons;
-  const bool compact = m_config != nullptr && m_config->config().shell.panel.launcherCompact;
-  const bool appGrid = m_config != nullptr && m_config->config().shell.panel.launcherAppGrid;
+  const bool showIcons = m_config == nullptr || m_config->config().shell.launcher.showIcons;
+  const bool compact = m_config != nullptr && m_config->config().shell.launcher.compact;
+  const bool appGrid = m_config != nullptr && m_config->config().shell.launcher.appGrid;
   if (showIcons == m_launcherShowIcons
       && compact == m_launcherCompact
       && appGrid == m_launcherAppGrid
@@ -919,7 +925,7 @@ void LauncherPanel::onOpen(std::string_view context) {
   // inotify cannot observe). Cheap stat-only check; only rescans on real change.
   refreshDesktopEntriesIfSourcesChanged();
 
-  m_categoryFilterVisible = m_config != nullptr && m_config->config().shell.panel.launcherCategories;
+  m_categoryFilterVisible = m_config != nullptr && m_config->config().shell.launcher.categories;
   m_activeCategoryType = All;
   m_activeCategory.clear();
   m_currentCategories.clear();
@@ -1068,7 +1074,7 @@ void LauncherPanel::onInputChanged(const std::string& text) {
   }
 
   const bool typedQuery = !queryText.empty();
-  const bool sortByUsage = m_config != nullptr && m_config->config().shell.panel.launcherSortByUsage;
+  const bool sortByUsage = m_config != nullptr && m_config->config().shell.launcher.sortByUsage;
 
   auto applyUsageBoost = [&](std::vector<LauncherResult>& results, const LauncherProvider& provider) {
     if (!sortByUsage) {

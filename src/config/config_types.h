@@ -799,6 +799,29 @@ constexpr EnumOption<WallpaperTransition> kWallpaperTransitions[] = {
     {WallpaperTransition::Zoom, "zoom", "settings.options.wallpaper.transition.zoom"},
 };
 
+// One config-driven dmenu-style launcher entry. The provider runs `command`, splits
+// its stdout into newline-separated candidates, and on activation either runs `exec`
+// (with {selection} substituted) or copies the selection to the clipboard.
+struct DmenuEntryConfig {
+  // Canonical flat identifier; the [shell.launcher.dmenu.entry.<id>] table key. Used as
+  // the provider id suffix (dmenu.<id>) and the usage-tracking key.
+  std::string id;
+  // Shell string run via /bin/sh -lc; stdout lines become candidates. A tab in a line
+  // splits it into title \t description (the raw line is still the selection value).
+  std::string command;
+  // When set, the activated line is substituted into {selection} and run detached.
+  // When unset, the selection is copied to the clipboard.
+  std::optional<std::string> exec;
+  // Launcher prefix routing (e.g. "/ssh"). Empty leaves the entry reachable only via
+  // global = true, otherwise it is unreachable (surfaced as a config warning).
+  std::optional<std::string> prefix;
+  std::optional<std::string> label; // Provider overview title; defaults to the id.
+  std::optional<std::string> glyph; // Tabler glyph name; defaults to "terminal".
+  bool global = false;              // Include results in non-prefixed search.
+
+  bool operator==(const DmenuEntryConfig&) const = default;
+};
+
 struct ShellConfig {
   struct AnimationConfig {
     bool enabled = true;
@@ -836,14 +859,28 @@ struct ShellConfig {
     bool openNearClickClipboard = false;
     bool openNearClickWallpaper = false;
     bool openNearClickSession = false;
-    bool launcherCategories = true;
-    bool launcherShowIcons = true;
-    bool launcherCompact = false;
-    bool launcherAppGrid = false;
-    bool launcherSessionSearch = false;
-    bool launcherSortByUsage = true;
 
     bool operator==(const PanelConfig&) const = default;
+  };
+
+  // Launcher behavior/appearance. Panel placement for the launcher surface stays
+  // under [shell.panel] (launcher_placement/position/open_near_click_launcher),
+  // parallel to every other surface.
+  struct LauncherConfig {
+    bool categories = true;
+    bool showIcons = true;
+    bool compact = false;
+    bool appGrid = false;
+    bool sessionSearch = false;
+    bool sortByUsage = true;
+
+    struct DmenuConfig {
+      std::vector<DmenuEntryConfig> entries;
+
+      bool operator==(const DmenuConfig&) const = default;
+    } dmenu;
+
+    bool operator==(const LauncherConfig&) const = default;
   };
 
   struct ScreenCornersConfig {
@@ -913,6 +950,7 @@ struct ShellConfig {
   std::string clipboardImageActionCommand;
   ShadowConfig shadow;
   PanelConfig panel;
+  LauncherConfig launcher;
   ScreenCornersConfig screenCorners;
   MprisConfig mpris;
   ScreenshotConfig screenshot;
