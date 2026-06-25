@@ -12,6 +12,7 @@
 #include "cursor-shape-v1-client-protocol.h"
 #include "dbus/network/network_manager_service.h"
 #include "dbus/network/wpa_supplicant_service.h"
+#include "dbus/polkit/polkit_session_support.h"
 #include "i18n/i18n.h"
 #include "i18n/i18n_service.h"
 #include "ipc/ipc_arg_parse.h"
@@ -379,6 +380,10 @@ void Application::installNotificationBusNameWatch() {
   m_notificationBusNameWatchInstalled = true;
 }
 
+bool Application::likelySupportsInSessionPolkit() const noexcept {
+  return polkit_session::likelySupportsInSessionPolkitAgent(m_logindService != nullptr);
+}
+
 void Application::syncPolkitAgent() {
   if (m_systemBus == nullptr) {
     m_polkitPollSource.reset();
@@ -417,7 +422,13 @@ void Application::syncPolkitAgent() {
   m_polkitAgent->setReadyCallback([this](bool ok, const std::string& error) {
     if (!ok) {
       kLog.warn("polkit agent disabled: {}", error);
-      DeferredCall::callLater([this]() {
+      DeferredCall::callLater([this, error]() {
+        if (polkit_session::isNoSessionForPidError(error)) {
+          notify::error(
+              "Noctalia", i18n::tr("notifications.internal.polkit-agent"),
+              i18n::tr("notifications.internal.polkit-no-session")
+          );
+        }
         m_polkitPollSource.reset();
         m_polkitAgent.reset();
       });
@@ -1387,22 +1398,72 @@ void Application::initUi() {
     }
   });
   m_settingsWindow.setSyncGreeterAppearance([this]() {
-    (void)greeter::syncAppearanceToGreeterAsync(
-        m_configService, m_themeService.resolvedMode(),
-        [this](bool success) {
-          DeferredCall::callLater([this, success]() {
-            if (success) {
-              notify::info(
-                  "Noctalia", i18n::tr("notifications.internal.greeter-sync"),
-                  i18n::tr("notifications.internal.greeter-sync-success")
-              );
-              return;
-            }
-            m_settingsWindow.markSettingsWriteError(i18n::tr("settings.errors.sync-greeter"));
-          });
-        },
-        &m_compositorPlatform
+    const std::uint64_t generation = ++m_greeterSyncGeneration;
+    m_greeterSyncTimeoutTimer.stop();
+
+    const auto complete = [this, generation](bool success) {
+      if (generation != m_greeterSyncGeneration) {
+        return;
+      }
+      m_greeterSyncTimeoutTimer.stop();
+      DeferredCall::callLater([this, success]() {
+        if (success) {
+          notify::info(
+              "Noctalia", i18n::tr("notifications.internal.greeter-sync"),
+              i18n::tr("notifications.internal.greeter-sync-success")
+          );
+          return;
+        }
+        m_settingsWindow.markSettingsWriteError(i18n::tr("settings.errors.sync-greeter"));
+      });
+    };
+
+    const auto launch = greeter::syncAppearanceToGreeterAsync(
+        m_configService, m_themeService.resolvedMode(), complete, &m_compositorPlatform, m_logindService != nullptr
     );
+    if (launch == greeter::GreeterSyncLaunch::Failed) {
+      m_settingsWindow.markSettingsWriteError(i18n::tr("settings.errors.sync-greeter"));
+      return;
+    }
+    if (launch == greeter::GreeterSyncLaunch::StagedOnly) {
+      notify::info(
+          "Noctalia", i18n::tr("notifications.internal.greeter-sync"),
+          i18n::tr("notifications.internal.greeter-sync-pending-manual")
+      );
+      return;
+    }
+
+    const bool customPrivilege =
+        !StringUtils::trim(m_configService.config().shell.greeterSync.privilegeCommand).empty();
+    const bool polkitAgentActive = m_configService.config().shell.polkitAgent && m_polkitAgent != nullptr;
+    const bool inSessionPolkit = likelySupportsInSessionPolkit();
+    const char* pendingBodyKey = "notifications.internal.greeter-sync-pending";
+    if (!customPrivilege && !polkitAgentActive && !inSessionPolkit) {
+      pendingBodyKey = "notifications.internal.greeter-sync-pending-manual";
+    } else if (!customPrivilege && !polkitAgentActive) {
+      pendingBodyKey = "notifications.internal.greeter-sync-pending-console";
+    }
+    notify::info("Noctalia", i18n::tr("notifications.internal.greeter-sync"), i18n::tr(pendingBodyKey));
+
+    m_greeterSyncTimeoutTimer.start(std::chrono::seconds(90), [this, generation, inSessionPolkit]() {
+      if (generation != m_greeterSyncGeneration) {
+        return;
+      }
+      DeferredCall::callLater([this, inSessionPolkit]() {
+        notify::error(
+            "Noctalia", i18n::tr("notifications.internal.greeter-sync"),
+            i18n::tr(
+                inSessionPolkit ? "notifications.internal.greeter-sync-timeout"
+                                : "notifications.internal.greeter-sync-timeout-manual"
+            )
+        );
+        m_settingsWindow.markSettingsWriteError(
+            i18n::tr(
+                inSessionPolkit ? "settings.errors.sync-greeter-timeout" : "settings.errors.sync-greeter-timeout-manual"
+            )
+        );
+      });
+    });
   });
   m_settingsWindow.setSaveWallpaperPaletteAsCustom([this]() {
     std::string paletteName;
@@ -2459,7 +2520,8 @@ void Application::initIpc() {
   m_dock.registerIpc(m_ipcService);
   m_wallpaper.registerIpc(m_ipcService);
   greeter::registerIpc(
-      m_ipcService, m_configService, [this]() { return m_themeService.resolvedMode(); }, &m_compositorPlatform
+      m_ipcService, m_configService, [this]() { return m_themeService.resolvedMode(); }, &m_compositorPlatform,
+      [this]() { return m_logindService != nullptr; }
   );
   if (m_mprisService) {
     m_mprisService->registerIpc(m_ipcService);

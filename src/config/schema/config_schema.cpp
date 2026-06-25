@@ -1249,6 +1249,25 @@ namespace noctalia::config::schema {
 
     const Schema<typename ShellSessionConfig::ShellSessionPowerConfig>& shellSessionPowerSchema();
 
+    const Schema<ShellGreeterSyncConfig>& shellGreeterSyncSchema() {
+      static const Schema<ShellGreeterSyncConfig> s = {
+          custom<ShellGreeterSyncConfig>(
+              "privilege_command",
+              [](const toml::table& tbl, ShellGreeterSyncConfig& out, std::string_view, Diagnostics&) {
+                if (auto v = tbl["privilege_command"].value<std::string>()) {
+                  out.privilegeCommand = StringUtils::trim(*v);
+                }
+              },
+              [](toml::table& tbl, const ShellGreeterSyncConfig& in) {
+                if (!in.privilegeCommand.empty()) {
+                  tbl.insert_or_assign("privilege_command", in.privilegeCommand);
+                }
+              }
+          ),
+      };
+      return s;
+    }
+
     const Schema<ShellSessionConfig>& shellSessionSchema() {
       static const Schema<ShellSessionConfig> s = {
           arrayOf<ShellSessionConfig, SessionPanelActionConfig>(
@@ -1312,6 +1331,7 @@ namespace noctalia::config::schema {
         subTable(&ShellConfig::screenshot, "screenshot", shellScreenshotSchema()),
         subTable(&ShellConfig::privacy, "privacy", shellPrivacySchema()),
         subTable(&ShellConfig::session, "session", shellSessionSchema()),
+        subTable(&ShellConfig::greeterSync, "greeter_sync", shellGreeterSyncSchema()),
     };
     return s;
   }

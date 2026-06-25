@@ -656,7 +656,14 @@
       "desktop-widgets-editor": "Widget editor",
       "desktop-widgets-editor-enabled": "Desktop widget editor is on. Switch to an empty workspace to see the editor overlay.",
       "greeter-sync": "Noctalia Greeter",
+      "greeter-sync-pending": "Waiting for administrator approval to write to the greeter.",
+      "greeter-sync-pending-console": "Waiting for administrator approval. Approve the polkit prompt in Noctalia, on a TTY or console, or run pkexec manually.",
+      "greeter-sync-pending-manual": "Files are staged. Run in a terminal: pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\". Or set shell.greeter_sync.privilege_command (for example ghostty -e pkexec) and sync again.",
       "greeter-sync-success": "Appearance synced. Changes apply on the next login screen.",
+      "greeter-sync-timeout": "Greeter sync is still waiting for administrator approval. Check a TTY or console for a polkit prompt, enable the polkit agent in Security settings, or run pkexec manually.",
+      "greeter-sync-timeout-manual": "Greeter sync still needs administrator approval. Run in a terminal: pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\"",
+      "polkit-agent": "Polkit Agent",
+      "polkit-no-session": "Polkit agent needs logind, elogind, or XDG_SESSION_ID. On seatd-only setups it cannot register for graphical prompts. Use terminal pkexec for greeter sync, or install elogind for in-session authentication.",
       "keybind-app": "Noctalia",
       "keybind-invalid-modifier": "This shortcut accepts a single key without modifiers.",
       "keybind-invalid-printable": "Printable keys (letters, numbers, symbols) require a modifier such as Ctrl or Alt.",
@@ -947,6 +954,8 @@
       "reset-page": "Failed to reset some settings.",
       "support-report": "Failed to save support report.",
       "sync-greeter": "Could not sync appearance to Noctalia Greeter.",
+      "sync-greeter-timeout": "Greeter sync is still waiting for administrator approval. Check a TTY or console for a polkit prompt, enable the polkit agent in Security settings, or run pkexec manually.",
+      "sync-greeter-timeout-manual": "Greeter sync still needs administrator approval. Run in a terminal: pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\"",
       "widget": {
         "rename": "Could not rename named widget."
       },
@@ -2381,8 +2390,12 @@
           "label": "Password Style"
         },
         "polkit-agent": {
-          "description": "Enable the built-in authentication agent",
+          "description": "Show polkit password prompts in Noctalia. Requires logind, elogind, or XDG_SESSION_ID; seatd alone is not enough.",
           "label": "Polkit Agent"
+        },
+        "greeter-sync-privilege-command": {
+          "description": "Replace pkexec/run0 for greeter Sync Now. The apply helper path and staging directory are appended automatically. Example: ghostty -e pkexec",
+          "label": "Greeter Sync Privilege Command"
         },
         "privacy-cam-filter-regex": {
           "description": "Regex for camera apps to ignore in privacy indicators and OSDs",
@@ -2441,7 +2454,7 @@
         },
         "sync-greeter": {
           "button": "Sync Now",
-          "description": "Copy the current wallpaper and colors to Noctalia Greeter (requires administrator approval)",
+          "description": "Copy the current wallpaper, colors, and session actions to Noctalia Greeter. Requires administrator approval through polkit. On seatd without logind, run the pkexec command shown in the notification.",
           "label": "Noctalia Greeter"
         },
         "telemetry": {

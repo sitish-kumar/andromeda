@@ -222,6 +222,14 @@ struct ShellSessionConfig {
   bool operator==(const ShellSessionConfig&) const = default;
 };
 
+struct ShellGreeterSyncConfig {
+  // Shell prefix that replaces the default pkexec/run0 escalator before the apply helper
+  // path and staging directory. Empty = pkexec or run0. Example: "ghostty -e pkexec"
+  std::string privilegeCommand;
+
+  bool operator==(const ShellGreeterSyncConfig&) const = default;
+};
+
 struct IdleBehaviorConfig {
   std::string name;
   bool enabled = true;
@@ -910,6 +918,7 @@ struct ShellConfig {
   ScreenshotConfig screenshot;
   PrivacyConfig privacy;
   ShellSessionConfig session;
+  ShellGreeterSyncConfig greeterSync;
 
   bool operator==(const ShellConfig&) const = default;
 };

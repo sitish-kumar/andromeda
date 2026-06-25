@@ -120,6 +120,7 @@
 #include "wayland/workspace_poll_source.h"
 
 #include <atomic>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -154,6 +155,7 @@ private:
   void installNotificationBusNameWatch();
   void scheduleNotificationShellRefresh();
   void syncPolkitAgent();
+  [[nodiscard]] bool likelySupportsInSessionPolkit() const noexcept;
   void syncClipboardService();
   void syncScreenTimeService();
   bool runUserCommand(const std::string& command);
@@ -302,7 +304,9 @@ private:
   CalendarPollSource m_calendarPollSource{m_calendarService};
   Timer m_trayInitTimer;
   Timer m_polkitInitTimer;
+  Timer m_greeterSyncTimeoutTimer;
   Timer m_clipboardAutoPasteTimer;
+  std::uint64_t m_greeterSyncGeneration = 0;
 
   std::unique_ptr<MainLoop> m_mainLoop;
 };

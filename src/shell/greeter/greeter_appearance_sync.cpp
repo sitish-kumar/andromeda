@@ -5,6 +5,7 @@
 #include "config/config_types.h"
 #include "core/log.h"
 #include "core/process.h"
+#include "dbus/polkit/polkit_session_support.h"
 #include "ipc/ipc_service.h"
 #include "render/core/color.h"
 #include "shell/session/session_action_meta.h"
@@ -336,19 +337,55 @@ namespace {
     return installedName;
   }
 
+  [[nodiscard]] bool hasPrivilegeCommandOverride(const ShellGreeterSyncConfig& greeterSync) {
+    return !StringUtils::trim(greeterSync.privilegeCommand).empty();
+  }
+
+  [[nodiscard]] std::string privilegeCommandPrefix(const ShellGreeterSyncConfig& greeterSync) {
+    return StringUtils::trim(greeterSync.privilegeCommand);
+  }
+
+  [[nodiscard]] std::string
+  buildPrivilegedApplyCommand(std::string_view privilegePrefix, std::string_view helper, std::string_view staging) {
+    return std::string(privilegePrefix)
+        + " "
+        + StringUtils::shellQuote(helper)
+        + " "
+        + StringUtils::shellQuote(staging);
+  }
+
+  [[nodiscard]] bool launchPrivilegedApplyHelper(
+      const ShellGreeterSyncConfig& greeterSync, std::string_view helper, const std::filesystem::path& staging,
+      process::RunCallbacks callbacks
+  ) {
+    if (hasPrivilegeCommandOverride(greeterSync)) {
+      const std::string command =
+          buildPrivilegedApplyCommand(privilegeCommandPrefix(greeterSync), helper, staging.string());
+      return process::runAsync(command, std::move(callbacks));
+    }
+
+    const std::string escalator = process::resolvePrivilegeEscalator().value_or(std::string{});
+    if (escalator.empty()) {
+      return false;
+    }
+    return process::runAsync(
+        std::vector<std::string>{escalator, std::string(helper), staging.string()}, std::move(callbacks)
+    );
+  }
+
 } // namespace
 
 namespace greeter {
 
-  bool appearanceSyncAvailable() {
+  bool appearanceSyncAvailable(const ShellGreeterSyncConfig& greeterSync) noexcept {
     return programExists(kGreeterName, {"/usr/bin/noctalia-greeter", "/usr/local/bin/noctalia-greeter"})
         && !findApplyHelper().empty()
-        && process::resolvePrivilegeEscalator().has_value();
+        && (process::resolvePrivilegeEscalator().has_value() || hasPrivilegeCommandOverride(greeterSync));
   }
 
-  bool syncAppearanceToGreeterAsync(
+  GreeterSyncLaunch syncAppearanceToGreeterAsync(
       const ConfigService& configService, std::string_view resolvedThemeMode, SyncCompletion onComplete,
-      const CompositorPlatform* platform
+      const CompositorPlatform* platform, const bool logindOnSystemBus
   ) {
     const auto completion = std::make_shared<SyncCompletion>(std::move(onComplete));
     const auto finish = [completion](bool success) {
@@ -361,20 +398,22 @@ namespace greeter {
     if (helper.empty()) {
       kLog.warn("greeter sync helper is not installed");
       finish(false);
-      return false;
+      return GreeterSyncLaunch::Failed;
     }
-    const std::string escalator = process::resolvePrivilegeEscalator().value_or(std::string{});
-    if (escalator.empty()) {
+
+    const Config& config = configService.config();
+    const ShellGreeterSyncConfig& greeterSync = config.shell.greeterSync;
+    if (!hasPrivilegeCommandOverride(greeterSync) && !process::resolvePrivilegeEscalator().has_value()) {
       kLog.warn("no privilege escalator available (pkexec or run0)");
       finish(false);
-      return false;
+      return GreeterSyncLaunch::Failed;
     }
 
     const auto staging = makeStagingDirectory();
     if (staging.empty()) {
       kLog.warn("failed to create greeter sync staging directory");
       finish(false);
-      return false;
+      return GreeterSyncLaunch::Failed;
     }
 
     if (platform != nullptr) {
@@ -382,22 +421,26 @@ namespace greeter {
       if (const auto layout = buildGreeterOutputLayout(*platform)) {
         if (!stageOutputLayout(staging, *layout)) {
           finish(false);
-          return false;
+          return GreeterSyncLaunch::Failed;
         }
       }
     } else {
       kLog.info("greeter sync: no compositor platform provided; skipping output layout sync");
     }
 
-    const Config& config = configService.config();
     const std::string wallpaperPath = resolveSyncWallpaperPath(configService);
     const std::string installedWallpaperName = stageWallpaper(staging, wallpaperPath);
     if (!writeManifest(staging, config, resolvedThemeMode, wallpaperPath, installedWallpaperName)) {
       finish(false);
-      return false;
+      return GreeterSyncLaunch::Failed;
     }
 
-    const std::vector<std::string> args = {escalator, helper, staging.string()};
+    if (!hasPrivilegeCommandOverride(greeterSync)
+        && !polkit_session::likelySupportsInSessionPolkitAgent(logindOnSystemBus)) {
+      kLog.info("greeter sync: staged; skipping background privilege escalation (no session polkit)");
+      return GreeterSyncLaunch::StagedOnly;
+    }
+
     process::RunCallbacks callbacks;
     callbacks.onExit = [finish](const process::RunResult& result) {
       if (!result) {
@@ -412,29 +455,35 @@ namespace greeter {
       kLog.info("synced shell appearance and session actions to greeter");
       finish(true);
     };
-    const bool launched = process::runAsync(args, std::move(callbacks));
-    if (!launched) {
+    if (!launchPrivilegedApplyHelper(greeterSync, helper, staging, std::move(callbacks))) {
       finish(false);
-      return false;
+      return GreeterSyncLaunch::Failed;
     }
-    return true;
+    return GreeterSyncLaunch::Launched;
   }
 
   void registerIpc(
       IpcService& ipc, const ConfigService& config, std::function<std::string_view()> resolvedThemeMode,
-      const CompositorPlatform* platform
+      const CompositorPlatform* platform, std::function<bool()> logindOnSystemBus
   ) {
     ipc.registerHandler(
         "greeter-sync",
-        [&config, resolvedThemeMode = std::move(resolvedThemeMode), platform](const std::string& args) -> std::string {
+        [&config, resolvedThemeMode = std::move(resolvedThemeMode), platform,
+         logindOnSystemBus = std::move(logindOnSystemBus)](const std::string& args) -> std::string {
           if (!StringUtils::trim(args).empty()) {
             return "error: usage: greeter-sync\n";
           }
-          if (!appearanceSyncAvailable()) {
+          if (!appearanceSyncAvailable(config.config().shell.greeterSync)) {
             return "error: noctalia greeter is not installed\n";
           }
-          if (!syncAppearanceToGreeterAsync(config, resolvedThemeMode(), {}, platform)) {
+          const bool logind = logindOnSystemBus != nullptr && logindOnSystemBus();
+          const GreeterSyncLaunch launch =
+              syncAppearanceToGreeterAsync(config, resolvedThemeMode(), {}, platform, logind);
+          if (launch == GreeterSyncLaunch::Failed) {
             return "error: failed to start greeter appearance sync\n";
+          }
+          if (launch == GreeterSyncLaunch::StagedOnly) {
+            return "ok: staged (run privilege install manually)\n";
           }
           return "ok\n";
         },

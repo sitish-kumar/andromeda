@@ -1,6 +1,7 @@
 #include "dbus/polkit/polkit_agent.h"
 
 #include "core/log.h"
+#include "dbus/polkit/polkit_session_support.h"
 #include "i18n/i18n.h"
 
 #include <algorithm>
@@ -359,6 +360,21 @@ struct PolkitAgent::Impl {
         g_object_unref(pidSubject);
       }
       return;
+    }
+
+    if (pidSubject == nullptr || error != nullptr) {
+      const bool noSession = error != nullptr && polkit_session::isNoSessionForPidError(error->message);
+      if (pidSubject != nullptr) {
+        g_object_unref(pidSubject);
+        pidSubject = nullptr;
+      }
+      if (noSession) {
+        g_clear_error(&error);
+        kLog.info("polkit: no logind session for pid; trying unix-user authentication agent");
+        PolkitSubject* userSubject = POLKIT_SUBJECT(polkit_unix_user_new(static_cast<gint>(::getuid())));
+        beginRegisterSubject(userSubject, nullptr);
+        return;
+      }
     }
 
     beginRegisterSubject(pidSubject, error);
