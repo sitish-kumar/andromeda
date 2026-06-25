@@ -4,6 +4,7 @@
 #include "ui/signal.h"
 
 #include <functional>
+#include <string>
 
 enum class ToggleSize : std::uint8_t {
   Small,
@@ -24,6 +25,7 @@ public:
   void setToggleSize(ToggleSize size);
   void setScale(float scale);
   void setOnChange(std::function<void(bool)> callback);
+  void setTabFocusKey(std::string key);
   [[nodiscard]] bool hovered() const noexcept;
   [[nodiscard]] bool pressed() const noexcept;
   [[nodiscard]] bool checked() const noexcept { return m_checked; }

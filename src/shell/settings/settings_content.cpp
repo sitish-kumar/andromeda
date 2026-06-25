@@ -951,10 +951,14 @@ namespace settings {
         auto enabledToggle = ui::toggle({
             .checked = (*state)[idx].enabled,
             .scale = scale,
-            .onChange = [state, rowIndex = idx, commit](bool v) {
-              (*state)[rowIndex].enabled = v;
-              commit();
-            },
+            .onChange =
+                [state, rowIndex = idx, commit](bool v) {
+                  (*state)[rowIndex].enabled = v;
+                  commit();
+                },
+            .configure = [idx](
+                             Toggle& toggle
+                         ) { toggle.setTabFocusKey("settings.session-actions." + std::to_string(idx) + ".enabled"); },
         });
         row->addChild(std::move(enabledToggle));
 
@@ -1077,10 +1081,14 @@ namespace settings {
         auto enabledToggle = ui::toggle({
             .checked = (*state)[idx].enabled,
             .scale = scale,
-            .onChange = [state, rowIndex = idx, commit](bool v) {
-              (*state)[rowIndex].enabled = v;
-              commit();
-            },
+            .onChange =
+                [state, rowIndex = idx, commit](bool v) {
+                  (*state)[rowIndex].enabled = v;
+                  commit();
+                },
+            .configure = [idx](
+                             Toggle& toggle
+                         ) { toggle.setTabFocusKey("settings.idle.behavior." + std::to_string(idx) + ".enabled"); },
         });
         row->addChild(std::move(enabledToggle));
 
@@ -1157,10 +1165,15 @@ namespace settings {
         auto enabledToggle = ui::toggle({
             .checked = (*state)[idx].enabled,
             .scale = scale,
-            .onChange = [state, rowIndex = idx, commit](bool v) {
-              (*state)[rowIndex].enabled = v;
-              commit();
-            },
+            .onChange =
+                [state, rowIndex = idx, commit](bool v) {
+                  (*state)[rowIndex].enabled = v;
+                  commit();
+                },
+            .configure =
+                [idx](Toggle& toggle) {
+                  toggle.setTabFocusKey("settings.notifications.filter." + std::to_string(idx) + ".enabled");
+                },
         });
         row->addChild(std::move(enabledToggle));
 

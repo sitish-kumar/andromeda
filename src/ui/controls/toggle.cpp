@@ -114,6 +114,12 @@ void Toggle::setScale(float scale) {
 
 void Toggle::setOnChange(std::function<void(bool)> callback) { m_onChange = std::move(callback); }
 
+void Toggle::setTabFocusKey(std::string key) {
+  if (m_inputArea != nullptr) {
+    m_inputArea->setTabFocusKey(std::move(key));
+  }
+}
+
 void Toggle::activateFromInput() {
   const bool next = !m_checked;
   setChecked(next);
