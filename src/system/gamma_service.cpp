@@ -18,13 +18,12 @@ namespace {
 
   constexpr Logger kLog("gamma");
 
-  // Apply cadence. Gamma uploads are not instant on every compositor (niri/smithay are slow), so we
-  // step at a fixed interval and only push when the rounded Kelvin actually changes. One upload per
-  // tick caps the rate at 5/s.
+  // Schedule-follow cadence. Gamma uploads are not instant on every compositor (niri/smithay are
+  // slow and hitch a frame per upload), so while following a sunset/sunrise ramp we re-evaluate at
+  // this interval and push only when the rounded Kelvin actually changes — one upload per tick caps
+  // the rate at 5/s. Discrete toggles (enable/disable/force/reload) snap in a single upload rather
+  // than bursting many, so they do not stutter.
   constexpr int kTickIntervalMs = 200;
-  // Time to close a discrete gap: startup catch-up, enable/disable, force toggle. Kept gentle rather
-  // than instant so the catch-up is not abrupt.
-  constexpr float kFastFadeMs = 4000.0f;
   // Clock-anchored sunset/sunrise ramp window. The displayed temperature is a function of how far
   // into this window the wall clock is, so it does not depend on when the app started.
   constexpr float kRampDurationMs = 1200000.0f; // 20 min
@@ -342,43 +341,18 @@ void GammaService::restoreAll() {
   m_outputs.clear();
   m_currentKelvin = -1;
   m_targetKelvin = -1;
-  m_restoreAfterFade = false;
 }
 
-// --- Smooth transitions ---
+// --- Schedule following ---
 
-void GammaService::applyStartupTarget(int kelvin) {
+// Upload the instantaneous target, pushing to the compositor only when the rounded Kelvin changed.
+// One upload per call caps the rate at 5/s while following a drifting schedule ramp.
+void GammaService::applyTarget(int kelvin) {
+  if (m_currentKelvin == kelvin) {
+    return;
+  }
   m_currentKelvin = kelvin;
   applyGammaToAll(m_currentKelvin);
-  m_startupTargetPending = false;
-}
-
-// Move the displayed temperature toward target by one tick's worth of the fast fade rate, and push
-// to the compositor only if the rounded Kelvin changed. Returns true once target is reached.
-bool GammaService::stepToward(int targetKelvin) {
-  const int dayTemp =
-      std::clamp(m_config.dayTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
-  const int nightTemp =
-      std::clamp(m_config.nightTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
-
-  if (m_currentKelvin < 0) {
-    m_currentKelvin = dayTemp;
-    applyGammaToAll(m_currentKelvin);
-  }
-
-  const int span = std::max(1, std::abs(dayTemp - nightTemp));
-  const int step = std::max(1, static_cast<int>(std::lround(static_cast<float>(span * kTickIntervalMs) / kFastFadeMs)));
-  const int next = (std::abs(targetKelvin - m_currentKelvin) <= step)
-      ? targetKelvin
-      : m_currentKelvin + ((targetKelvin > m_currentKelvin) ? step : -step);
-
-  // Push to the compositor only when the rounded Kelvin changes — with one upload per tick this caps
-  // the rate at 5/s, well within what slow compositors (niri/smithay) keep up with.
-  if (next != m_currentKelvin) {
-    m_currentKelvin = next;
-    applyGammaToAll(m_currentKelvin);
-  }
-  return m_currentKelvin == targetKelvin;
 }
 
 void GammaService::ensureTick() {
@@ -388,23 +362,14 @@ void GammaService::ensureTick() {
 }
 
 void GammaService::tickGamma() {
-  if (m_restoreAfterFade) {
-    const int dayTemp =
-        std::clamp(m_config.dayTemperature, NightLightConfig::kTemperatureMin, NightLightConfig::kTemperatureMax);
-    if (stepToward(dayTemp)) {
-      restoreAll(); // releases gamma control; clears m_restoreAfterFade and stops the timer
-    }
-    return;
-  }
-
   const GammaTarget t = computeTarget();
   if (t.kelvin < 0) {
     restoreAll();
     return;
   }
   m_targetKelvin = t.kelvin;
-  const bool reached = stepToward(t.kelvin);
-  if (reached && !t.transitioning) {
+  applyTarget(t.kelvin);
+  if (!t.transitioning) {
     m_transitionTimer.stop();
   }
 }
@@ -503,28 +468,17 @@ void GammaService::apply() {
 
   if (!effectiveEnabled()) {
     m_scheduleTimer.stop();
-    m_startupTargetPending = false;
-    if (m_currentKelvin > 0) {
-      m_restoreAfterFade = true;
-      ensureTick();
-    } else {
-      restoreAll();
-    }
+    restoreAll(); // instant: releasing gamma control restores the compositor's native gamma
     if (m_changeCallback) {
       m_changeCallback();
     }
     return;
   }
 
-  m_restoreAfterFade = false;
-
   syncOutputs();
 
   const GammaTarget t = computeTarget();
   if (t.kelvin < 0) {
-    if (!m_locationResolving && !networkLocationConfigured()) {
-      m_startupTargetPending = false;
-    }
     restoreAll();
     if (m_changeCallback) {
       m_changeCallback();
@@ -542,15 +496,11 @@ void GammaService::apply() {
     );
   }
   m_targetKelvin = t.kelvin;
-  if (m_startupTargetPending) {
-    if (m_currentKelvin < 0) {
-      applyStartupTarget(t.kelvin);
-    } else {
-      m_startupTargetPending = false;
-    }
-  }
-  if (m_currentKelvin != m_targetKelvin || t.transitioning) {
-    ensureTick();
+  applyTarget(t.kelvin); // discrete toggles (enable/force/reload) snap in a single upload
+  if (t.transitioning) {
+    ensureTick(); // follow the drifting clock-anchored target while inside the ramp window
+  } else {
+    m_transitionTimer.stop();
   }
 
   if (m_changeCallback) {
