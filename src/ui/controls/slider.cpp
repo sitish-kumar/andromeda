@@ -1,6 +1,7 @@
 #include "ui/controls/slider.h"
 
 #include "core/key_symbols.h"
+#include "core/keybind_matcher.h"
 #include "cursor-shape-v1-client-protocol.h"
 #include "render/core/render_styles.h"
 #include "render/scene/input_area.h"
@@ -110,12 +111,12 @@ Slider::Slider() {
     if (step <= 0.0) {
       return;
     }
-    if (KeySymbol::isLeft(key.sym) || KeySymbol::isDown(key.sym)) {
+    if (KeybindMatcher::matches(KeybindAction::Left, key.sym, key.modifiers)) {
       setValue(m_value - step);
       if (m_onDragEnd) {
         m_onDragEnd();
       }
-    } else if (KeySymbol::isRight(key.sym) || KeySymbol::isUp(key.sym)) {
+    } else if (KeybindMatcher::matches(KeybindAction::Right, key.sym, key.modifiers)) {
       setValue(m_value + step);
       if (m_onDragEnd) {
         m_onDragEnd();

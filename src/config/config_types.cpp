@@ -1,5 +1,6 @@
 #include "config/config_types.h"
 
+#include "core/key_modifiers.h"
 #include "render/core/color.h"
 #include "util/string_utils.h"
 #include "wayland/wayland_connection.h"
@@ -160,6 +161,13 @@ std::vector<KeyChord> defaultKeybindSet(KeybindAction action) {
     return {{.sym = XKB_KEY_Up, .modifiers = 0}};
   case KeybindAction::Down:
     return {{.sym = XKB_KEY_Down, .modifiers = 0}};
+  case KeybindAction::TabNext:
+    return {{.sym = XKB_KEY_Tab, .modifiers = 0}};
+  case KeybindAction::TabPrevious:
+    return {
+        {.sym = XKB_KEY_Tab, .modifiers = KeyMod::Shift},
+        {.sym = XKB_KEY_ISO_Left_Tab, .modifiers = 0},
+    };
   }
   return {};
 }

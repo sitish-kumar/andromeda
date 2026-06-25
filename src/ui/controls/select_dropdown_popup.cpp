@@ -555,15 +555,15 @@ void SelectDropdownPopup::onKeyboardEvent(const KeyboardEvent& event) {
   if (!isSelectDropdownOpen()) {
     return;
   }
-  handleKey(event.sym, event.utf32, event.pressed);
+  handleKey(event.sym, event.utf32, event.modifiers, event.pressed);
 }
 
-void SelectDropdownPopup::handleKey(std::uint32_t sym, std::uint32_t /*utf32*/, bool pressed) {
+void SelectDropdownPopup::handleKey(std::uint32_t sym, std::uint32_t /*utf32*/, std::uint32_t modifiers, bool pressed) {
   if (!pressed) {
     return;
   }
 
-  if (KeybindMatcher::matches(KeybindAction::Cancel, sym, 0)) {
+  if (KeybindMatcher::matches(KeybindAction::Cancel, sym, modifiers)) {
     auto onDismiss = m_callbacks.onDismiss;
     DeferredCall::callLater([this, onDismiss]() {
       closeSelectDropdown();
@@ -571,7 +571,7 @@ void SelectDropdownPopup::handleKey(std::uint32_t sym, std::uint32_t /*utf32*/, 
         onDismiss();
       }
     });
-  } else if (KeybindMatcher::matches(KeybindAction::Down, sym, 0)) {
+  } else if (KeybindMatcher::matches(KeybindAction::Down, sym, modifiers)) {
     if (!m_options.empty()) {
       m_hoveredIndex = (m_hoveredIndex + 1) % m_options.size();
       ensureHoveredIndexVisible();
@@ -580,7 +580,7 @@ void SelectDropdownPopup::handleKey(std::uint32_t sym, std::uint32_t /*utf32*/, 
         m_surface->requestRedraw();
       }
     }
-  } else if (KeybindMatcher::matches(KeybindAction::Up, sym, 0)) {
+  } else if (KeybindMatcher::matches(KeybindAction::Up, sym, modifiers)) {
     if (!m_options.empty()) {
       m_hoveredIndex = (m_hoveredIndex + m_options.size() - 1) % m_options.size();
       ensureHoveredIndexVisible();
@@ -589,7 +589,7 @@ void SelectDropdownPopup::handleKey(std::uint32_t sym, std::uint32_t /*utf32*/, 
         m_surface->requestRedraw();
       }
     }
-  } else if (KeybindMatcher::matches(KeybindAction::Validate, sym, 0)) {
+  } else if (KeybindMatcher::matches(KeybindAction::Validate, sym, modifiers)) {
     if (m_hoveredIndex < m_options.size()) {
       selectAndClose(m_hoveredIndex);
     }

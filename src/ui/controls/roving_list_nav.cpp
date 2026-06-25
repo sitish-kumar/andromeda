@@ -36,7 +36,7 @@ void RovingListNavController::bindFocusArea(InputArea* area) {
   m_focusArea->setOnFocusLoss([this]() { onFocusLoss(); });
   m_focusArea->setOnKeyDown([this](const InputArea::KeyData& key) {
     if (key.pressed) {
-      handleKey(key.sym);
+      handleKey(key.sym, key.modifiers);
     }
   });
 }
@@ -65,25 +65,25 @@ void RovingListNavController::onFocusGain() {
 
 void RovingListNavController::onFocusLoss() { clearKeyboardHints(); }
 
-void RovingListNavController::handleKey(std::uint32_t sym) {
+void RovingListNavController::handleKey(std::uint32_t sym, std::uint32_t modifiers) {
   if (m_items.empty()) {
     return;
   }
 
   const bool vertical = m_options.axis == RovingListNavAxis::Vertical;
-  if (vertical && KeySymbol::isUp(sym)) {
+  if (vertical && KeybindMatcher::matches(KeybindAction::Up, sym, modifiers)) {
     moveBy(-1);
     return;
   }
-  if (vertical && KeySymbol::isDown(sym)) {
+  if (vertical && KeybindMatcher::matches(KeybindAction::Down, sym, modifiers)) {
     moveBy(1);
     return;
   }
-  if (!vertical && KeybindMatcher::matches(KeybindAction::Left, sym, 0)) {
+  if (!vertical && KeybindMatcher::matches(KeybindAction::Left, sym, modifiers)) {
     moveBy(-1);
     return;
   }
-  if (!vertical && KeybindMatcher::matches(KeybindAction::Right, sym, 0)) {
+  if (!vertical && KeybindMatcher::matches(KeybindAction::Right, sym, modifiers)) {
     moveBy(1);
     return;
   }
@@ -108,7 +108,7 @@ void RovingListNavController::handleKey(std::uint32_t sym) {
     }
     return;
   }
-  if (m_options.mode == RovingListNavMode::Roving && KeySymbol::isEnterOrSpace(sym)) {
+  if (m_options.mode == RovingListNavMode::Roving && KeybindMatcher::matches(KeybindAction::Validate, sym, modifiers)) {
     activateKeyboardIndex();
   }
 }

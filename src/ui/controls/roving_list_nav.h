@@ -40,7 +40,7 @@ public:
 
   void onFocusGain();
   void onFocusLoss();
-  void handleKey(std::uint32_t sym);
+  void handleKey(std::uint32_t sym, std::uint32_t modifiers);
   void layoutOverlay(float width, float height);
 
 private:

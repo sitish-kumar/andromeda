@@ -20,6 +20,7 @@
 #include "ui/controls/scroll_view.h"
 #include "ui/controls/select_dropdown_popup.h"
 #include "ui/palette.h"
+#include "ui/split_pane_focus.h"
 #include "ui/style.h"
 #include "wayland/toplevel_surface.h"
 #include "wayland/wayland_connection.h"
@@ -396,6 +397,8 @@ void SettingsWindow::destroyWindow() {
   m_headerRow = nullptr;
   m_contentContainer = nullptr;
   m_contentScrollView = nullptr;
+  m_sidebarScrollView = nullptr;
+  m_sidebarNav = nullptr;
   m_actionsMenuButton = nullptr;
   if (m_actionsMenuPopup != nullptr) {
     m_actionsMenuPopup->close();
@@ -894,6 +897,30 @@ void SettingsWindow::onKeyboardEvent(const KeyboardEvent& event) {
       m_surface->requestRedraw();
     }
     return;
+  }
+  if (m_sidebarNav != nullptr
+      && m_sidebarScrollView != nullptr
+      && m_contentScrollView != nullptr
+      && m_contentScrollView->content() != nullptr) {
+    const SplitPaneFocusConfig panes{
+        .sidebarFocus = m_sidebarNav->focusArea(),
+        .sidebarRoot = m_sidebarScrollView,
+        .contentRoot = m_contentScrollView->content(),
+        .headerFocus = m_settingsSearchInput != nullptr ? m_settingsSearchInput->inputArea() : nullptr,
+    };
+    const SplitPaneFocusResult splitResult = handleSplitPaneFocusNavigation(
+        m_inputDispatcher, panes, event.sym, event.modifiers, event.pressed, event.preedit
+    );
+    if (splitResult == SplitPaneFocusResult::Consumed) {
+      if (m_sceneRoot != nullptr && m_surface != nullptr && (m_sceneRoot->paintDirty() || m_sceneRoot->layoutDirty())) {
+        if (m_sceneRoot->layoutDirty()) {
+          m_surface->requestLayout();
+        } else {
+          m_surface->requestRedraw();
+        }
+      }
+      return;
+    }
   }
   m_inputDispatcher.keyEvent(event.sym, event.utf32, event.modifiers, event.pressed, event.preedit);
   if (m_sceneRoot != nullptr && m_surface != nullptr && (m_sceneRoot->paintDirty() || m_sceneRoot->layoutDirty())) {

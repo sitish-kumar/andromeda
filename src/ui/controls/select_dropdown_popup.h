@@ -55,7 +55,7 @@ private:
   };
 
   void buildScene(const DropdownRequest& request);
-  void handleKey(std::uint32_t sym, std::uint32_t utf32, bool pressed);
+  void handleKey(std::uint32_t sym, std::uint32_t utf32, std::uint32_t modifiers, bool pressed);
   void invalidateScene();
   void scrollBy(float delta);
   void setScrollOffset(float offset);

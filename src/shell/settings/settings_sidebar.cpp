@@ -179,6 +179,7 @@ namespace settings {
         .axis = RovingListNavAxis::Vertical,
         .mode = RovingListNavMode::Roving,
         .scrollIntoView = std::move(ctx.scrollSidebarNodeIntoView),
+        .syncIndexFromSelection = {},
     });
     sidebarNav->setTabFocusKey("settings.sidebar");
     sidebarNav->setGap(kSidebarGap * scale);
@@ -463,6 +464,10 @@ namespace settings {
     sidebar->setDirection(FlexDirection::Vertical);
     sidebar->setAlign(FlexAlign::Stretch);
     sidebar->addChild(std::move(sidebarNav));
+
+    if (ctx.outNav != nullptr) {
+      *ctx.outNav = nav;
+    }
 
     return sidebarScroll;
   }

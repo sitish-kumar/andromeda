@@ -1,6 +1,6 @@
 #include "ui/controls/toggle.h"
 
-#include "core/key_symbols.h"
+#include "core/keybind_matcher.h"
 #include "render/animation/animation_manager.h"
 #include "render/core/color.h"
 #include "render/core/render_styles.h"
@@ -37,7 +37,7 @@ Toggle::Toggle() {
     if (!key.pressed || !m_enabled) {
       return;
     }
-    if (KeySymbol::isEnterOrSpace(key.sym)) {
+    if (KeybindMatcher::matches(KeybindAction::Validate, key.sym, key.modifiers)) {
       activateFromInput();
     }
   });

@@ -35,7 +35,6 @@ public:
   [[nodiscard]] bool hasDecoration() const override { return true; }
   [[nodiscard]] LayerShellLayer layer() const override { return LayerShellLayer::Overlay; }
   [[nodiscard]] LayerShellKeyboard keyboardMode() const override { return LayerShellKeyboard::Exclusive; }
-  [[nodiscard]] InputArea* initialFocusArea() const override;
   [[nodiscard]] PanelPlacement panelPlacement() const noexcept override;
 
 private:
@@ -62,8 +61,8 @@ private:
   void armEntry(std::size_t index);
   void executeEntry(std::size_t index);
   void cancelCountdown();
-  void activateSelected();
-  bool handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers);
+  void focusButton(std::size_t index);
+  [[nodiscard]] std::optional<std::size_t> focusedButtonIndex() const;
   void updateSelectionVisuals();
   void updateCountdownVisuals();
   void layoutCountdownOverlays(Renderer& renderer);
@@ -71,7 +70,6 @@ private:
   void hideCountdownOverlays();
   void attachCountdownOverlay(Button& button, ActionCountdownOverlay& overlay, float scale);
   void syncCountdownOverlayColors(std::size_t index);
-  void activateMouse();
   void invokeEntry(const SessionPanelActionConfig& cfg);
   [[nodiscard]] std::vector<SessionPanelActionConfig> effectiveActions() const;
   [[nodiscard]] Button* createActionButton(const SessionPanelActionConfig& cfg, std::size_t index, float scale);
@@ -80,14 +78,11 @@ private:
   [[nodiscard]] std::size_t visibleRowCount() const;
 
   GridView* m_rootLayout = nullptr;
-  InputArea* m_focusArea = nullptr;
   std::vector<SessionPanelActionConfig> m_visibleEntries;
   std::vector<Button*> m_visibleButtons;
   std::vector<ActionCountdownOverlay> m_countdownOverlays;
   std::vector<std::optional<std::string>> m_entryShortcutBadges;
-  std::optional<std::size_t> m_selectedIndex;
   std::optional<PendingCountdown> m_pendingCountdown;
-  bool m_mouseActive = false;
   ConfigService* m_config = nullptr;
   SessionActionRunner* m_actionRunner = nullptr;
 };

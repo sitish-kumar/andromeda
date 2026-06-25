@@ -799,6 +799,8 @@ namespace noctalia::config::schema {
         keybindActionField(&KeybindsConfig::right, "right", KeybindAction::Right),
         keybindActionField(&KeybindsConfig::up, "up", KeybindAction::Up),
         keybindActionField(&KeybindsConfig::down, "down", KeybindAction::Down),
+        keybindActionField(&KeybindsConfig::tabNext, "tab_next", KeybindAction::TabNext),
+        keybindActionField(&KeybindsConfig::tabPrevious, "tab_previous", KeybindAction::TabPrevious),
     };
     return s;
   }

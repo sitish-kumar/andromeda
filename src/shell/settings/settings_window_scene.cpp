@@ -841,6 +841,7 @@ std::unique_ptr<Flex> SettingsWindow::buildBody(
           .createBar = createBar,
           .createMonitorOverride = createMonitorOverride,
           .scrollSidebarNodeIntoView = [this](const Node* node) { scrollSidebarNodeIntoView(node); },
+          .outNav = &m_sidebarNav,
       }
   );
   m_sidebarScrollView = dynamic_cast<ScrollView*>(sidebar.get());

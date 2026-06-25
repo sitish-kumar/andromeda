@@ -136,16 +136,6 @@ void SessionPanel::create() {
   rootLayout->setMinCellHeight(kActionButtonMinHeight * scale);
   m_rootLayout = rootLayout.get();
 
-  auto focusArea = std::make_unique<InputArea>();
-  focusArea->setFocusable(true);
-  focusArea->setVisible(false);
-  focusArea->setOnKeyDown([this](const InputArea::KeyData& key) {
-    if (key.pressed) {
-      handleKeyEvent(key.sym, key.modifiers);
-    }
-  });
-  m_focusArea = static_cast<InputArea*>(rootLayout->addChild(std::move(focusArea)));
-
   m_visibleButtons.clear();
   m_countdownOverlays.clear();
   m_entryShortcutBadges.clear();
@@ -205,18 +195,15 @@ Button* SessionPanel::createActionButton(const SessionPanelActionConfig& cfg, st
 
   button->setOnClick([this, index]() { armEntry(index); });
   button->setOnEnter([this, index]() {
-    activateMouse();
     if (m_pendingCountdown.has_value() && m_pendingCountdown->index != index) {
       cancelCountdown();
     }
   });
   button->setOnMotion([this, index]() {
-    activateMouse();
     if (m_pendingCountdown.has_value() && m_pendingCountdown->index != index) {
       cancelCountdown();
     }
   });
-  button->setHoverSuppressed(!m_mouseActive);
 
   return button.release();
 }
@@ -280,29 +267,11 @@ void SessionPanel::onPanelCardOpacityChanged(float opacity) {
   }
 }
 
-InputArea* SessionPanel::initialFocusArea() const { return m_focusArea; }
-
 void SessionPanel::onOpen(std::string_view /*context*/) {
-  m_selectedIndex.reset();
   m_pendingCountdown.reset();
-  m_mouseActive = false;
   hideCountdownOverlays();
   restoreEntryBadges();
   updateSelectionVisuals();
-}
-
-void SessionPanel::activateMouse() {
-  const bool wasMouseActive = m_mouseActive;
-  m_mouseActive = true;
-  for (Button* button : m_visibleButtons) {
-    if (button != nullptr) {
-      button->setHoverSuppressed(false);
-    }
-  }
-  if (!wasMouseActive) {
-    updateSelectionVisuals();
-  }
-  PanelManager::instance().refresh();
 }
 
 void SessionPanel::armEntry(std::size_t index) {
@@ -327,7 +296,7 @@ void SessionPanel::armEntry(std::size_t index) {
       .remainingMs = cfg.countdownSeconds * 1000.0,
       .totalMs = cfg.countdownSeconds * 1000.0,
   };
-  m_selectedIndex = index;
+  focusButton(index);
   updateSelectionVisuals();
   updateCountdownVisuals();
   PanelManager::instance().requestLayout();
@@ -469,36 +438,15 @@ bool SessionPanel::handleGlobalKey(std::uint32_t sym, std::uint32_t modifiers, b
   if (!pressed || preedit) {
     return false;
   }
-  if (KeybindMatcher::matches(KeybindAction::Cancel, sym, modifiers) && m_pendingCountdown.has_value()) {
-    cancelCountdown();
-    return true;
-  }
-  return false;
-}
 
-void SessionPanel::activateSelected() {
-  if (!m_selectedIndex.has_value() || m_visibleButtons.empty()) {
-    return;
+  if (KeybindMatcher::matches(KeybindAction::Cancel, sym, modifiers)) {
+    if (m_pendingCountdown.has_value()) {
+      cancelCountdown();
+      return true;
+    }
+    return false;
   }
-  const std::size_t i = *m_selectedIndex;
-  if (i >= m_visibleButtons.size() || i >= m_visibleEntries.size()) {
-    return;
-  }
-  Button* button = m_visibleButtons[i];
-  if (button != nullptr && button->enabled()) {
-    armEntry(i);
-  }
-}
 
-void SessionPanel::invokeEntry(const SessionPanelActionConfig& cfg) {
-  if (m_actionRunner == nullptr) {
-    kLog.warn("session panel: action runner unavailable");
-    return;
-  }
-  m_actionRunner->invoke(cfg);
-}
-
-bool SessionPanel::handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers) {
   if (m_visibleButtons.empty()) {
     return false;
   }
@@ -512,6 +460,7 @@ bool SessionPanel::handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers) {
   }
 
   const std::size_t lastIndex = m_visibleButtons.size() - 1;
+  const std::optional<std::size_t> currentIndex = focusedButtonIndex();
 
   const auto cancelCountdownOnSelectionChange = [this](std::optional<std::size_t> nextIndex) {
     if (m_pendingCountdown.has_value() && (!nextIndex.has_value() || *nextIndex != m_pendingCountdown->index)) {
@@ -519,81 +468,100 @@ bool SessionPanel::handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers) {
     }
   };
 
-  if (KeybindMatcher::matches(KeybindAction::Left, sym, modifiers)) {
-    if (!m_selectedIndex.has_value()) {
-      m_selectedIndex = lastIndex;
-    } else if (*m_selectedIndex > 0) {
-      --(*m_selectedIndex);
-    }
-    cancelCountdownOnSelectionChange(m_selectedIndex);
+  const auto moveFocus = [this, &cancelCountdownOnSelectionChange](std::size_t index) {
+    cancelCountdownOnSelectionChange(index);
+    focusButton(index);
     updateSelectionVisuals();
     if (root() != nullptr) {
       root()->markPaintDirty();
     }
     PanelManager::instance().refresh();
     return true;
+  };
+
+  if (KeybindMatcher::matches(KeybindAction::Left, sym, modifiers)) {
+    if (!currentIndex.has_value()) {
+      return moveFocus(lastIndex);
+    }
+    if (*currentIndex > 0) {
+      return moveFocus(*currentIndex - 1);
+    }
+    return true;
   }
 
   if (KeybindMatcher::matches(KeybindAction::Right, sym, modifiers)) {
-    if (!m_selectedIndex.has_value()) {
-      m_selectedIndex = 0;
-    } else if (*m_selectedIndex < lastIndex) {
-      ++(*m_selectedIndex);
+    if (!currentIndex.has_value()) {
+      return moveFocus(0);
     }
-    cancelCountdownOnSelectionChange(m_selectedIndex);
-    updateSelectionVisuals();
-    if (root() != nullptr) {
-      root()->markPaintDirty();
+    if (*currentIndex < lastIndex) {
+      return moveFocus(*currentIndex + 1);
     }
-    PanelManager::instance().refresh();
     return true;
   }
 
   if (KeybindMatcher::matches(KeybindAction::Up, sym, modifiers)) {
     const std::size_t columns = visibleColumnCount();
-    if (!m_selectedIndex.has_value()) {
-      m_selectedIndex = lastIndex;
-    } else if (*m_selectedIndex >= columns) {
-      *m_selectedIndex -= columns;
+    if (!currentIndex.has_value()) {
+      return moveFocus(lastIndex);
     }
-    cancelCountdownOnSelectionChange(m_selectedIndex);
-    updateSelectionVisuals();
-    if (root() != nullptr) {
-      root()->markPaintDirty();
+    if (*currentIndex >= columns) {
+      return moveFocus(*currentIndex - columns);
     }
-    PanelManager::instance().refresh();
     return true;
   }
 
   if (KeybindMatcher::matches(KeybindAction::Down, sym, modifiers)) {
     const std::size_t columns = visibleColumnCount();
-    if (!m_selectedIndex.has_value()) {
-      m_selectedIndex = 0;
-    } else if (*m_selectedIndex + columns <= lastIndex) {
-      *m_selectedIndex += columns;
+    if (!currentIndex.has_value()) {
+      return moveFocus(0);
     }
-    cancelCountdownOnSelectionChange(m_selectedIndex);
-    updateSelectionVisuals();
-    if (root() != nullptr) {
-      root()->markPaintDirty();
+    if (*currentIndex + columns <= lastIndex) {
+      return moveFocus(*currentIndex + columns);
     }
-    PanelManager::instance().refresh();
     return true;
   }
 
   if (KeybindMatcher::matches(KeybindAction::Validate, sym, modifiers)) {
-    activateSelected();
-    return true;
-  }
-
-  if (KeybindMatcher::matches(KeybindAction::Cancel, sym, modifiers)) {
-    if (m_pendingCountdown.has_value()) {
-      cancelCountdown();
+    if (!currentIndex.has_value()) {
+      return false;
+    }
+    Button* button = m_visibleButtons[*currentIndex];
+    if (button != nullptr && button->enabled()) {
+      armEntry(*currentIndex);
       return true;
     }
   }
 
   return false;
+}
+
+void SessionPanel::focusButton(std::size_t index) {
+  if (index >= m_visibleButtons.size()) {
+    return;
+  }
+  Button* button = m_visibleButtons[index];
+  if (button == nullptr || button->inputArea() == nullptr) {
+    return;
+  }
+  PanelManager::instance().focusArea(button->inputArea());
+}
+
+std::optional<std::size_t> SessionPanel::focusedButtonIndex() const {
+  for (std::size_t i = 0; i < m_visibleButtons.size(); ++i) {
+    const Button* button = m_visibleButtons[i];
+    if (button != nullptr && button->inputArea() != nullptr && button->inputArea()->focused()) {
+      return i;
+    }
+  }
+  return std::nullopt;
+}
+
+void SessionPanel::invokeEntry(const SessionPanelActionConfig& cfg) {
+  if (m_actionRunner == nullptr) {
+    kLog.warn("session panel: action runner unavailable");
+    return;
+  }
+  m_actionRunner->invoke(cfg);
 }
 
 void SessionPanel::updateSelectionVisuals() {
@@ -603,18 +571,7 @@ void SessionPanel::updateSelectionVisuals() {
       continue;
     }
     const bool countdownActive = m_pendingCountdown.has_value() && m_pendingCountdown->index == i;
-
-    if (countdownActive) {
-      button->setSelected(false);
-      button->setHoveredVisual(false);
-      button->setPressedVisual(true);
-      continue;
-    }
-
-    button->setHoveredVisual(false);
-    button->setPressedVisual(false);
-    const bool keyboardSelected = !m_mouseActive && m_selectedIndex.has_value() && i == *m_selectedIndex;
-    button->setSelected(keyboardSelected);
+    button->setPressedVisual(countdownActive);
   }
 }
 
@@ -639,7 +596,6 @@ void SessionPanel::doUpdate(Renderer& /*renderer*/) {}
 void SessionPanel::onClose() {
   m_pendingCountdown.reset();
   m_rootLayout = nullptr;
-  m_focusArea = nullptr;
   m_visibleEntries.clear();
   m_visibleButtons.clear();
   m_countdownOverlays.clear();

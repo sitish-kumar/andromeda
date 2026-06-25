@@ -56,7 +56,7 @@ private:
   void syncTriggerText();
   void applyVisualState();
   void animateCaret(bool open);
-  void handleKey(std::uint32_t sym, std::uint32_t utf32, bool pressed);
+  void handleKey(std::uint32_t sym, std::uint32_t utf32, std::uint32_t modifiers, bool pressed);
   void toggleOpen();
   void closeMenu();
   void openPopupDropdown();

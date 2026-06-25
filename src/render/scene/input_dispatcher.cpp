@@ -2,6 +2,7 @@
 
 #include "core/key_modifiers.h"
 #include "core/key_symbols.h"
+#include "core/keybind_matcher.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
 #include "wayland/text_input_service.h"
@@ -264,13 +265,71 @@ bool InputDispatcher::pointerAxis(
   return consumedAny;
 }
 
+InputArea* InputDispatcher::firstTabFocusUnder(Node* subtree) const {
+  if (subtree == nullptr) {
+    return nullptr;
+  }
+  std::vector<InputArea*> order;
+  order.reserve(32);
+  collectTabFocusTargets(subtree, order);
+  return order.empty() ? nullptr : order.front();
+}
+
+InputArea* InputDispatcher::lastTabFocusUnder(Node* subtree) const {
+  if (subtree == nullptr) {
+    return nullptr;
+  }
+  std::vector<InputArea*> order;
+  order.reserve(32);
+  collectTabFocusTargets(subtree, order);
+  return order.empty() ? nullptr : order.back();
+}
+
+bool InputDispatcher::cycleTabFocusInSubtree(Node* subtree, bool reverse) {
+  if (subtree == nullptr) {
+    return false;
+  }
+  std::vector<InputArea*> order;
+  order.reserve(32);
+  collectTabFocusTargets(subtree, order);
+  if (order.empty()) {
+    return false;
+  }
+
+  auto it = std::ranges::find(order, m_focusedArea);
+  if (it == order.end()) {
+    setFocus(reverse ? order.back() : order.front());
+    return true;
+  }
+
+  if (reverse) {
+    if (it == order.begin()) {
+      setFocus(order.back());
+    } else {
+      setFocus(*std::prev(it));
+    }
+  } else if (std::next(it) == order.end()) {
+    setFocus(order.front());
+  } else {
+    setFocus(*std::next(it));
+  }
+  return true;
+}
+
 void InputDispatcher::keyEvent(
     std::uint32_t sym, std::uint32_t utf32, std::uint32_t modifiers, bool pressed, bool preedit
 ) {
   pruneDetachedAreas();
-  if (pressed && !preedit && KeySymbol::isTab(sym)) {
-    if (cycleTabFocus((modifiers & KeyMod::Shift) != 0)) {
-      return;
+  if (pressed && !preedit) {
+    if (KeybindMatcher::matches(KeybindAction::TabPrevious, sym, modifiers)) {
+      if (cycleTabFocus(true)) {
+        return;
+      }
+    }
+    if (KeybindMatcher::matches(KeybindAction::TabNext, sym, modifiers)) {
+      if (cycleTabFocus(false)) {
+        return;
+      }
     }
   }
   if (m_focusedArea != nullptr) {

@@ -126,6 +126,8 @@ public:
   void onConfigReloaded();
   void onIconThemeChanged();
   void focusArea(InputArea* area);
+  [[nodiscard]] InputDispatcher& inputDispatcher() noexcept { return m_inputDispatcher; }
+  [[nodiscard]] const InputDispatcher& inputDispatcher() const noexcept { return m_inputDispatcher; }
   void requestUpdateOnly();
   void requestLayout();
   // Requests a redraw on the active panel surface without re-running panel

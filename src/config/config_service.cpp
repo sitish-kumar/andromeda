@@ -262,6 +262,10 @@ namespace {
       return keybinds.up;
     case KeybindAction::Down:
       return keybinds.down;
+    case KeybindAction::TabNext:
+      return keybinds.tabNext;
+    case KeybindAction::TabPrevious:
+      return keybinds.tabPrevious;
     }
     return keybinds.validate;
   }

@@ -750,6 +750,7 @@ _noctalia_sources = files(
   'src/ui/palette.cpp',
   'src/ui/popup_chrome.cpp',
   'src/ui/scroll_into_view.cpp',
+  'src/ui/split_pane_focus.cpp',
   'src/ui/style.cpp',
   'src/util/checksum.cpp',
   'src/util/fuzzy_match.cpp',

@@ -21,6 +21,7 @@
 #include "ui/controls/roving_list_nav.h"
 #include "ui/controls/scroll_view.h"
 #include "ui/scroll_into_view.h"
+#include "ui/split_pane_focus.h"
 
 #include <chrono>
 #include <memory>
@@ -408,6 +409,23 @@ void ControlCenterPanel::onOpen(std::string_view context) {
 
 bool ControlCenterPanel::isContextActive(std::string_view context) const {
   return m_activeTab == tabFromContext(context);
+}
+
+bool ControlCenterPanel::handleGlobalKey(std::uint32_t sym, std::uint32_t modifiers, bool pressed, bool preedit) {
+  if (!m_showSidebar || m_sidebarNav == nullptr || m_sidebarScrollView == nullptr || m_content == nullptr) {
+    return false;
+  }
+
+  const SplitPaneFocusConfig panes{
+      .sidebarFocus = m_sidebarNav->focusArea(),
+      .sidebarRoot = m_sidebarScrollView,
+      .contentRoot = m_content,
+      .headerFocus = nullptr,
+  };
+  auto& dispatcher = PanelManager::instance().inputDispatcher();
+  const SplitPaneFocusResult splitResult =
+      handleSplitPaneFocusNavigation(dispatcher, panes, sym, modifiers, pressed, preedit);
+  return splitResult == SplitPaneFocusResult::Consumed;
 }
 
 void ControlCenterPanel::onClose() {

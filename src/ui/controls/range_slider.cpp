@@ -2,6 +2,7 @@
 
 #include "core/key_modifiers.h"
 #include "core/key_symbols.h"
+#include "core/keybind_matcher.h"
 #include "cursor-shape-v1-client-protocol.h"
 #include "render/core/render_styles.h"
 #include "render/scene/input_area.h"
@@ -121,9 +122,9 @@ RangeSlider::RangeSlider() {
         m_onDragEnd();
       }
     };
-    if (KeySymbol::isLeft(key.sym) || KeySymbol::isDown(key.sym)) {
+    if (KeybindMatcher::matches(KeybindAction::Left, key.sym, key.modifiers)) {
       nudge(-step);
-    } else if (KeySymbol::isRight(key.sym) || KeySymbol::isUp(key.sym)) {
+    } else if (KeybindMatcher::matches(KeybindAction::Right, key.sym, key.modifiers)) {
       nudge(step);
     } else if (KeySymbol::isPageDown(key.sym)) {
       nudge(-step * 10.0);

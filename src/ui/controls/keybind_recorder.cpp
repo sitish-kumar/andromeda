@@ -1,8 +1,10 @@
 #include "ui/controls/keybind_recorder.h"
 
+#include "config/config_types.h"
 #include "core/key_chord.h"
 #include "core/key_modifiers.h"
 #include "core/key_symbols.h"
+#include "core/keybind_matcher.h"
 #include "i18n/i18n.h"
 #include "notification/notifications.h"
 #include "render/core/renderer.h"
@@ -33,6 +35,9 @@ KeybindRecorder::KeybindRecorder() {
   auto label = std::make_unique<Label>();
   label->setFontSize(Style::fontSizeCaption);
   label->setColor(colorSpecFromRole(ColorRole::OnSurface));
+  label->setMaxLines(1);
+  label->setEllipsize(TextEllipsize::End);
+  label->setFlexGrow(1.0f);
   m_label = static_cast<Label*>(addChild(std::move(label)));
 
   auto glyph = std::make_unique<Glyph>();
@@ -43,7 +48,6 @@ KeybindRecorder::KeybindRecorder() {
 
   auto area = std::make_unique<InputArea>();
   area->setFocusable(true);
-  area->setOnFocusGain([this]() { enterRecording(); });
   area->setOnFocusLoss([this]() { exitRecording(false); });
   area->setOnPress([this](const InputArea::PointerData& data) {
     // Re-clicking when already focused does not refire focus gain.
@@ -53,6 +57,10 @@ KeybindRecorder::KeybindRecorder() {
   });
   area->setOnKeyDown([this](const InputArea::KeyData& data) {
     if (data.preedit) {
+      return;
+    }
+    if (!m_recording && data.pressed && KeybindMatcher::matches(KeybindAction::Validate, data.sym, data.modifiers)) {
+      enterRecording();
       return;
     }
     handleKeyDown(data.sym, data.modifiers);
@@ -122,6 +130,12 @@ void KeybindRecorder::setRecordingPlaceholder(std::string_view text) {
 void KeybindRecorder::setOnCommit(std::function<void(KeyChord)> callback) { m_onCommit = std::move(callback); }
 
 void KeybindRecorder::setModifierPolicy(ModifierPolicy policy) { m_modifierPolicy = policy; }
+
+void KeybindRecorder::setTabFocusKey(std::string key) {
+  if (m_inputArea != nullptr) {
+    m_inputArea->setTabFocusKey(std::move(key));
+  }
+}
 
 void KeybindRecorder::doLayout(Renderer& renderer) {
   if (m_label != nullptr) {

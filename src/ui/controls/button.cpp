@@ -1,6 +1,6 @@
 #include "ui/controls/button.h"
 
-#include "core/key_symbols.h"
+#include "core/keybind_matcher.h"
 #include "render/animation/animation_manager.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
@@ -230,7 +230,7 @@ Button::Button() {
     if (!key.pressed || !m_enabled || !m_onClick) {
       return;
     }
-    if (KeySymbol::isEnterOrSpace(key.sym)) {
+    if (KeybindMatcher::matches(KeybindAction::Validate, key.sym, key.modifiers)) {
       m_onClick();
     }
   });

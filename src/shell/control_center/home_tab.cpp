@@ -4,7 +4,7 @@
 #include "config/config_service.h"
 #include "core/build_info.h"
 #include "core/deferred_call.h"
-#include "core/key_symbols.h"
+#include "core/keybind_matcher.h"
 #include "core/log.h"
 #include "cursor-shape-v1-client-protocol.h"
 #include "dbus/accounts/accounts_service.h"
@@ -283,7 +283,7 @@ std::unique_ptr<Flex> HomeTab::create() {
   avatarArea->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
   avatarArea->setOnClick([openAvatarPicker](const InputArea::PointerData&) { openAvatarPicker(); });
   avatarArea->setOnKeyDown([openAvatarPicker](const InputArea::KeyData& key) {
-    if (key.pressed && KeySymbol::isEnterOrSpace(key.sym)) {
+    if (key.pressed && KeybindMatcher::matches(KeybindAction::Validate, key.sym, key.modifiers)) {
       openAvatarPicker();
     }
   });
@@ -871,7 +871,7 @@ InputArea* HomeTab::addCardOverlay(Flex& card, std::function<void()> onActivate,
       setHovered(false);
     });
     area->setOnKeyDown([activate](const InputArea::KeyData& key) {
-      if (key.pressed && KeySymbol::isEnterOrSpace(key.sym)) {
+      if (key.pressed && KeybindMatcher::matches(KeybindAction::Validate, key.sym, key.modifiers)) {
         activate();
       }
     });

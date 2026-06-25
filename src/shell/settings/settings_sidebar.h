@@ -11,6 +11,7 @@
 
 class Flex;
 class Node;
+class RovingListNavHost;
 
 namespace settings {
 
@@ -36,6 +37,7 @@ namespace settings {
     std::function<void(std::string)> createBar;
     std::function<void(std::string, std::string)> createMonitorOverride;
     std::function<void(const Node*)> scrollSidebarNodeIntoView;
+    RovingListNavHost** outNav = nullptr;
   };
 
   [[nodiscard]] std::unique_ptr<Flex> buildSettingsSidebar(SettingsSidebarContext ctx);

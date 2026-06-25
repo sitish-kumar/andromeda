@@ -47,7 +47,10 @@ public:
   void stashTabFocus();
   void restoreStashedTabFocus();
   [[nodiscard]] bool cycleTabFocus(bool reverse);
+  [[nodiscard]] bool cycleTabFocusInSubtree(Node* subtree, bool reverse);
   [[nodiscard]] InputArea* inputAreaAt(float x, float y);
+  [[nodiscard]] InputArea* firstTabFocusUnder(Node* subtree) const;
+  [[nodiscard]] InputArea* lastTabFocusUnder(Node* subtree) const;
   [[nodiscard]] InputArea* focusedArea() const noexcept { return m_focusedArea; }
   [[nodiscard]] InputArea* hoveredArea() const noexcept { return m_hoveredArea; }
   [[nodiscard]] bool pointerCaptured() const noexcept { return m_capturedArea != nullptr; }

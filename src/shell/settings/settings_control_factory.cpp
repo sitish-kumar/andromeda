@@ -742,10 +742,13 @@ namespace settings {
     }
     auto block = ui::column(std::move(blockProps));
 
-    auto titleRow = ui::row(
-        {.align = FlexAlign::Center,
-         .gap = Style::spaceSm * scale,
-         .minHeight = reserveTitleHeight ? std::optional<float>{Style::controlHeightSm * scale} : std::nullopt},
+    auto titleRow = ui::row({
+        .align = FlexAlign::Center,
+        .gap = Style::spaceSm * scale,
+        .minHeight = reserveTitleHeight ? std::optional<float>{Style::controlHeightSm * scale} : std::nullopt,
+        .fillWidth = compactTitleDescription ? std::optional<bool>{true} : std::nullopt,
+    });
+    titleRow->addChild(
         ui::label({
             .text = entry.title,
             .fontSize = Style::fontSizeBody * scale,
@@ -754,22 +757,35 @@ namespace settings {
             .fontWeight = FontWeight::Bold,
         })
     );
-    ui::FlexProps copyProps{.align = FlexAlign::Start, .flexGrow = 1.0f};
+
+    std::unique_ptr<Flex> overrideActions;
+    if (overridden && !compactTitleDescription) {
+      overrideActions = makeOverrideResetActions(entry.path);
+    }
+
+    ui::FlexProps copyProps{.align = FlexAlign::Start, .fillWidth = true};
     if (!compactTitleDescription) {
       copyProps.gap = Style::spaceXs * scale;
+      copyProps.flexGrow = 1.0f;
     }
     auto copy = ui::column(std::move(copyProps));
     copy->addChild(std::move(titleRow));
     if (!entry.subtitle.empty()) {
-      copy->addChild(makeSettingSubtitleLabel(entry.subtitle, scale));
+      auto subtitle = makeSettingSubtitleLabel(entry.subtitle, scale);
+      if (compactTitleDescription) {
+        subtitle->setFlexGrow(1.0f);
+      }
+      copy->addChild(std::move(subtitle));
     }
 
-    auto header = ui::row({.align = FlexAlign::Start, .gap = Style::spaceSm * scale, .fillWidth = true});
-    header->addChild(std::move(copy));
-    if (overridden) {
-      header->addChild(makeOverrideResetActions(entry.path));
+    if (!compactTitleDescription && overrideActions != nullptr) {
+      auto header = ui::row({.align = FlexAlign::Start, .gap = Style::spaceSm * scale, .fillWidth = true});
+      header->addChild(std::move(copy));
+      header->addChild(std::move(overrideActions));
+      block->addChild(std::move(header));
+    } else {
+      block->addChild(std::move(copy));
     }
-    block->addChild(std::move(header));
     return block;
   }
 

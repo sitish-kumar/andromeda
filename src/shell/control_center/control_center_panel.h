@@ -75,6 +75,7 @@ public:
   void onClose() override;
   [[nodiscard]] bool dismissTransientUi();
   [[nodiscard]] bool isContextActive(std::string_view context) const override;
+  [[nodiscard]] bool handleGlobalKey(std::uint32_t sym, std::uint32_t modifiers, bool pressed, bool preedit) override;
   [[nodiscard]] bool deferExternalRefresh() const override;
   [[nodiscard]] bool deferPointerRelayout() const override;
   [[nodiscard]] LayerShellLayer layer() const override { return LayerShellLayer::Overlay; }

@@ -300,6 +300,8 @@ enum class KeybindAction : std::uint8_t {
   Right = 3,
   Up = 4,
   Down = 5,
+  TabNext = 6,
+  TabPrevious = 7,
 };
 
 [[nodiscard]] std::vector<KeyChord> defaultKeybindSet(KeybindAction action);
@@ -1066,6 +1068,8 @@ struct KeybindsConfig {
   std::vector<KeyChord> right;
   std::vector<KeyChord> up;
   std::vector<KeyChord> down;
+  std::vector<KeyChord> tabNext;
+  std::vector<KeyChord> tabPrevious;
 
   bool operator==(const KeybindsConfig&) const = default;
 };
