@@ -54,7 +54,8 @@ public:
   [[nodiscard]] bool setActiveProfile(std::string_view profile);
   /// Step through profiles in canonical power order, wrapping at the ends.
   /// direction >= 0 moves toward performance, direction < 0 toward power-saver.
-  /// Returns false if no profiles are known or the set call fails.
+  /// Returns false when no active profile is known and UPower returned no profile list,
+  /// or when the D-Bus set dispatch fails synchronously.
   [[nodiscard]] bool cycleActiveProfile(int direction = 1);
 
   void registerIpc(IpcService& ipc, StateFeedbackCallback stateFeedback = {});

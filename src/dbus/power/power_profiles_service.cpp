@@ -100,6 +100,32 @@ namespace {
     );
   }
 
+  void appendCanonicalCycleSequence(std::vector<std::string_view>& seq) {
+    for (const auto& candidate : powerProfileOrder()) {
+      seq.push_back(candidate);
+    }
+  }
+
+  std::vector<std::string_view>
+  cycleSequenceFor(const std::vector<std::string>& profs, std::string_view activeProfile) {
+    std::vector<std::string_view> seq;
+    if (!profs.empty()) {
+      for (const auto& candidate : powerProfileOrder()) {
+        if (std::ranges::contains(profs, candidate)) {
+          seq.push_back(candidate);
+        }
+      }
+      if (seq.empty()) {
+        seq.assign(profs.begin(), profs.end());
+      }
+      return seq;
+    }
+    if (!activeProfile.empty()) {
+      appendCanonicalCycleSequence(seq);
+    }
+    return seq;
+  }
+
 } // namespace
 
 std::string_view profileGlyphName(std::string_view profile) {
@@ -233,21 +259,9 @@ bool PowerProfilesService::setActiveProfile(std::string_view profile) {
 }
 
 bool PowerProfilesService::cycleActiveProfile(int direction) {
-  const auto& profs = profiles();
-  if (profs.empty()) {
-    return false;
-  }
-
-  // Cycle through the canonical low->high power order, restricted to the profiles the daemon
-  // exposes. If none of the canonical names are present, fall back to the daemon's own order.
-  std::vector<std::string_view> seq;
-  for (const auto& candidate : powerProfileOrder()) {
-    if (std::ranges::contains(profs, candidate)) {
-      seq.push_back(candidate);
-    }
-  }
+  const std::vector<std::string_view> seq = cycleSequenceFor(profiles(), activeProfile());
   if (seq.empty()) {
-    seq.assign(profs.begin(), profs.end());
+    return false;
   }
 
   const long n = static_cast<long>(seq.size());
@@ -275,6 +289,10 @@ PowerProfilesChangeOrigin PowerProfilesService::consumeActiveProfileChangeOrigin
 }
 
 void PowerProfilesService::emitChangedIfNeeded(PowerProfilesState next, bool stateSnapshot) {
+  if (stateSnapshot && next.profiles.empty() && !m_state.profiles.empty()) {
+    next.profiles = m_state.profiles;
+  }
+
   const bool firstSnapshot = stateSnapshot && !m_hasStateSnapshot;
   const bool stateChanged = next != m_state;
   const bool activeProfileChanged = next.activeProfile != m_state.activeProfile;
@@ -331,7 +349,10 @@ void PowerProfilesService::registerIpc(IpcService& ipc, StateFeedbackCallback st
         }
         const std::string previous = activeProfile();
         if (!cycleActiveProfile()) {
-          return "error: could not cycle power profile (no profiles from UPower or set failed)\n";
+          if (profiles().empty() && activeProfile().empty()) {
+            return "error: could not cycle power profile (UPower profile list not loaded)\n";
+          }
+          return "error: could not cycle power profile (set failed)\n";
         }
         if (stateFeedback && previous != activeProfile() && !activeProfile().empty()) {
           stateFeedback(activeProfile());
