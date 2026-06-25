@@ -88,9 +88,9 @@ compositor, dedicated desktop applications, or system services. Display/login gr
 [Noctalia Greeter](https://github.com/noctalia-dev/noctalia-greeter) project. Noctalia may integrate with those pieces
 when useful, but it does not replace them.
 
-A v5 plugin system is planned and under active development. Features that are useful to some users but not essential to
-the core shell are intended to live there once that system is available: extra bar widgets, launcher providers, desktop
-widgets, compositor-specific extras, hardware-specific controls, and third-party service integrations.
+The plugin system is available for user-installed extensions. Features that are useful to some users but not essential
+to the core shell can live there: extra bar widgets, launcher providers, desktop widgets, panels, shortcuts, background
+services, compositor-specific extras, hardware-specific controls, and third-party service integrations.
 
 ## Dependencies
 
