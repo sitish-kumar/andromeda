@@ -1172,8 +1172,10 @@ void SystemMonitorService::samplingLoop() {
         std::scoped_lock lock{m_statsMutex};
         if (cpuTemp.has_value()) {
           m_latest.cpuTempC = cpuTemp;
+          m_latest.cpuTempAvailable = true;
         } else if (!m_latest.cpuTempC.has_value()) {
           m_latest.cpuTempC = 40.0;
+          m_latest.cpuTempAvailable = false;
         }
       }
 

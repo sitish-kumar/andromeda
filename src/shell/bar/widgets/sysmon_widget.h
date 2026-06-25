@@ -3,13 +3,16 @@
 #include "core/frame_rate_limiter.h"
 #include "core/timer_manager.h"
 #include "shell/bar/widget.h"
+#include "shell/tooltip/tooltip_content.h"
 #include "ui/palette.h"
 #include "ui/signal.h"
 
 #include <chrono>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 class Box;
 class ConfigService;
@@ -72,6 +75,9 @@ private:
   [[nodiscard]] Color currentValueColor(ColorSpec baseColor);
   [[nodiscard]] double currentGradientValue();
   [[nodiscard]] std::pair<double, double> currentThresholds() const;
+  [[nodiscard]] std::optional<std::string> formatValueFor(SysmonStat stat, const SystemStats& stats) const;
+  [[nodiscard]] bool statAvailableForTooltip(SysmonStat stat, const SystemStats& stats) const;
+  [[nodiscard]] std::vector<TooltipRow> buildTooltipRows(const std::string& currentValue) const;
   [[nodiscard]] static double normalizedFromStats(
       SysmonStat stat, const SystemStats& stats, double& tempMin, double& tempMax, std::string_view networkInterface
   );

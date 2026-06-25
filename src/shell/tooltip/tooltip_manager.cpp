@@ -647,7 +647,7 @@ void TooltipManager::buildScene(const TooltipContent& content, float w, float h,
       auto keyLabel = ui::label({
           .text = row.key,
           .fontSize = Style::fontSizeCaption,
-          .color = colorSpecFromRole(ColorRole::Primary),
+          .color = colorSpecFromRole(ColorRole::Secondary),
       });
       const auto km = m_renderContext->measureText(row.key, Style::fontSizeCaption);
       if (km.width > columns.key + 0.5f) {

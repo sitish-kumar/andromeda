@@ -30,6 +30,7 @@ struct SystemStats {
   std::uint64_t swapUsedMb{0};
   std::uint64_t swapTotalMb{0};
   std::optional<double> cpuTempC;
+  bool cpuTempAvailable{false};
   std::optional<double> gpuTempC;
   std::optional<double> gpuUsagePercent;
   std::optional<std::uint64_t> gpuVramUsedBytes;

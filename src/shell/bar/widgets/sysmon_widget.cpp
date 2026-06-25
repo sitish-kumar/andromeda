@@ -13,6 +13,7 @@
 #include "ui/style.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <format>
 #include <optional>
@@ -74,6 +75,34 @@ namespace {
   bool needsGpuTemp(SysmonStat stat) { return stat == SysmonStat::GpuTemp; }
   bool needsGpuUsage(SysmonStat stat) { return stat == SysmonStat::GpuUsage; }
   bool needsGpuVram(SysmonStat stat) { return stat == SysmonStat::GpuVram; }
+
+  constexpr std::array<SysmonStat, 11> kTooltipStats{
+      SysmonStat::CpuUsage, SysmonStat::CpuTemp, SysmonStat::GpuTemp, SysmonStat::GpuUsage,
+      SysmonStat::GpuVram,  SysmonStat::RamUsed, SysmonStat::RamPct,  SysmonStat::SwapPct,
+      SysmonStat::DiskPct,  SysmonStat::NetRx,   SysmonStat::NetTx,
+  };
+
+  [[nodiscard]] double netRxFromStats(const SystemStats& stats, std::string_view interfaceName) {
+    if (interfaceName.empty()) {
+      return stats.netRxBytesPerSec;
+    }
+    if (const auto it = stats.netThroughputByInterface.find(std::string(interfaceName));
+        it != stats.netThroughputByInterface.end()) {
+      return it->second.rxBytesPerSec;
+    }
+    return 0.0;
+  }
+
+  [[nodiscard]] double netTxFromStats(const SystemStats& stats, std::string_view interfaceName) {
+    if (interfaceName.empty()) {
+      return stats.netTxBytesPerSec;
+    }
+    if (const auto it = stats.netThroughputByInterface.find(std::string(interfaceName));
+        it != stats.netThroughputByInterface.end()) {
+      return it->second.txBytesPerSec;
+    }
+    return 0.0;
+  }
 
   std::string statDisplayName(SysmonStat stat) {
     switch (stat) {
@@ -290,7 +319,7 @@ double SysmonWidget::currentGradientValue() {
   case SysmonStat::CpuUsage:
     return std::max(stats.cpuUsagePercent, 0.0);
   case SysmonStat::CpuTemp:
-    return stats.cpuTempC.value_or(0.0);
+    return stats.cpuTempAvailable ? stats.cpuTempC.value_or(0.0) : 0.0;
   case SysmonStat::GpuTemp:
     return stats.gpuTempC.value_or(0.0);
   case SysmonStat::GpuUsage:
@@ -491,7 +520,7 @@ void SysmonWidget::doUpdate(Renderer& renderer) {
   }
 
   if (auto* rootNode = root(); rootNode != nullptr) {
-    static_cast<InputArea*>(rootNode)->setTooltip(std::vector<TooltipRow>{{statDisplayName(m_stat), value}});
+    static_cast<InputArea*>(rootNode)->setTooltip(buildTooltipRows(value));
   }
 
   if (m_displayMode == SysmonDisplayMode::Gauge) {
@@ -621,7 +650,7 @@ double SysmonWidget::normalizedFromStats(
     return stats.cpuUsagePercent / 100.0;
 
   case SysmonStat::CpuTemp:
-    if (stats.cpuTempC.has_value()) {
+    if (stats.cpuTempAvailable && stats.cpuTempC.has_value()) {
       const double temp = *stats.cpuTempC;
       tempMin = std::min(tempMin, temp);
       tempMax = std::max(tempMax, temp);
@@ -722,33 +751,39 @@ std::string SysmonWidget::formatValue() const {
     return "--";
   }
 
-  if (m_stat == SysmonStat::DiskPct) {
+  return formatValueFor(m_stat, m_monitor->latest()).value_or("--");
+}
+
+std::optional<std::string> SysmonWidget::formatValueFor(SysmonStat stat, const SystemStats& stats) const {
+  if (m_monitor == nullptr || !m_monitor->isRunning()) {
+    return std::nullopt;
+  }
+
+  if (stat == SysmonStat::DiskPct) {
     return std::format("{:.0f}%", m_monitor->diskUsagePercent(m_diskPath));
   }
 
-  const auto stats = m_monitor->latest();
-
-  switch (m_stat) {
+  switch (stat) {
   case SysmonStat::CpuUsage:
     return std::format("{:.0f}%", stats.cpuUsagePercent);
 
   case SysmonStat::CpuTemp:
-    if (stats.cpuTempC.has_value()) {
+    if (stats.cpuTempAvailable && stats.cpuTempC.has_value()) {
       return std::format("{:.0f}°C", *stats.cpuTempC);
     }
-    return "--";
+    return std::nullopt;
 
   case SysmonStat::GpuTemp:
     if (stats.gpuTempC.has_value()) {
       return std::format("{:.0f}°C", *stats.gpuTempC);
     }
-    return "--";
+    return std::nullopt;
 
   case SysmonStat::GpuUsage:
     if (stats.gpuUsagePercent.has_value()) {
       return std::format("{:.0f}%", *stats.gpuUsagePercent);
     }
-    return "--";
+    return std::nullopt;
 
   case SysmonStat::GpuVram:
     if (stats.gpuVramUsedBytes.has_value() && stats.gpuVramTotalBytes.has_value() && *stats.gpuVramTotalBytes > 0) {
@@ -757,7 +792,7 @@ std::string SysmonWidget::formatValue() const {
           100.0 * static_cast<double>(*stats.gpuVramUsedBytes) / static_cast<double>(*stats.gpuVramTotalBytes)
       );
     }
-    return "--";
+    return std::nullopt;
 
   case SysmonStat::RamUsed:
     return FormatUnits::formatBinaryMib(stats.ramUsedMb);
@@ -771,19 +806,81 @@ std::string SysmonWidget::formatValue() const {
           "{:.0f}%", 100.0 * static_cast<double>(stats.swapUsedMb) / static_cast<double>(stats.swapTotalMb)
       );
     }
-    return "--";
+    return std::nullopt;
 
   case SysmonStat::NetRx:
-    return FormatUnits::formatDecimalBytesPerSecond(m_monitor->netRxBytesPerSec(m_networkInterface));
+    return FormatUnits::formatDecimalBytesPerSecond(netRxFromStats(stats, m_networkInterface));
 
   case SysmonStat::NetTx:
-    return FormatUnits::formatDecimalBytesPerSecond(m_monitor->netTxBytesPerSec(m_networkInterface));
+    return FormatUnits::formatDecimalBytesPerSecond(netTxFromStats(stats, m_networkInterface));
 
   case SysmonStat::DiskPct:
     break; // handled above
   }
 
-  return "--";
+  return std::nullopt;
+}
+
+bool SysmonWidget::statAvailableForTooltip(SysmonStat stat, const SystemStats& stats) const {
+  const auto& monitorConfig = m_configService.config().system.monitor;
+  const bool sampled = stats.sampledAt != std::chrono::steady_clock::time_point{};
+
+  switch (stat) {
+  case SysmonStat::CpuUsage:
+    return monitorConfig.cpuPollSeconds > 0.0f && sampled;
+  case SysmonStat::CpuTemp:
+    return monitorConfig.cpuPollSeconds > 0.0f && stats.cpuTempAvailable && stats.cpuTempC.has_value();
+  case SysmonStat::GpuTemp:
+    return monitorConfig.gpuPollSeconds > 0.0f && stats.gpuTempC.has_value();
+  case SysmonStat::GpuUsage:
+    return monitorConfig.gpuPollSeconds > 0.0f && stats.gpuUsagePercent.has_value();
+  case SysmonStat::GpuVram:
+    return monitorConfig.gpuPollSeconds > 0.0f
+        && stats.gpuVramUsedBytes.has_value()
+        && stats.gpuVramTotalBytes.has_value()
+        && *stats.gpuVramTotalBytes > 0;
+  case SysmonStat::RamUsed:
+  case SysmonStat::RamPct:
+    return monitorConfig.memoryPollSeconds > 0.0f && stats.ramTotalMb > 0;
+  case SysmonStat::SwapPct:
+    return monitorConfig.diskPollSeconds > 0.0f && stats.swapTotalMb > 0;
+  case SysmonStat::DiskPct:
+    return monitorConfig.diskPollSeconds > 0.0f
+        && m_monitor != nullptr
+        && !m_diskPath.empty()
+        && !m_monitor->diskHistory(m_diskPath, 1).empty();
+  case SysmonStat::NetRx:
+  case SysmonStat::NetTx:
+    return monitorConfig.networkPollSeconds > 0.0f
+        && sampled
+        && (m_networkInterface.empty() || stats.netThroughputByInterface.contains(m_networkInterface));
+  }
+
+  return false;
+}
+
+std::vector<TooltipRow> SysmonWidget::buildTooltipRows(const std::string& currentValue) const {
+  std::vector<TooltipRow> rows;
+  rows.push_back({statDisplayName(m_stat), currentValue});
+
+  if (m_monitor == nullptr || !m_monitor->isRunning()) {
+    return rows;
+  }
+
+  const SystemStats stats = m_monitor->latest();
+  for (const SysmonStat stat : kTooltipStats) {
+    if (stat == m_stat) {
+      continue;
+    }
+    if (!statAvailableForTooltip(stat, stats)) {
+      continue;
+    }
+    if (auto value = formatValueFor(stat, stats); value.has_value()) {
+      rows.push_back({statDisplayName(stat), std::move(*value)});
+    }
+  }
+
+  return rows;
 }
 
 const char* SysmonWidget::glyphName(SysmonStat stat) {
