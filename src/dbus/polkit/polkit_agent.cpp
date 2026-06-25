@@ -109,6 +109,7 @@ namespace {
     std::string message;
     std::string iconName;
     std::string cookie;
+    bool isInternal = false;
     std::vector<IdentityRef> identities;
     GTask* task = nullptr;
     GCancellable* cancellable = nullptr;
@@ -262,6 +263,7 @@ struct PolkitAgent::Impl {
   std::thread registerThread;
   mutable std::mutex registerMutex;
   gpointer pendingRegistrationHandle = nullptr;
+  bool m_nextInternal = false;
   bool registrationComplete = false;
   bool registrationOk = false;
   bool registrationShutdown = false;
@@ -553,6 +555,9 @@ struct PolkitAgent::Impl {
       clearPending("Replaced by a newer authentication request", true);
     }
 
+    request->isInternal = m_nextInternal;
+    m_nextInternal = false;
+
     if (request->identities.empty()) {
       kLog.warn("polkit request \"{}\" has no identities", request->actionId);
       request->cancel("Authentication request has no identities");
@@ -750,6 +755,7 @@ struct PolkitAgent::Impl {
     request.message = pending->message;
     request.iconName = pending->iconName;
     request.cookie = pending->cookie;
+    request.isInternal = pending->isInternal;
     request.identities.reserve(pending->identities.size());
     for (const IdentityRef& identity : pending->identities) {
       request.identities.push_back(toRequestIdentity(identity.get()));
@@ -789,6 +795,12 @@ void PolkitAgent::submitResponse(const std::string& response) {
 void PolkitAgent::cancelRequest() {
   if (m_impl != nullptr) {
     m_impl->cancelRequest();
+  }
+}
+
+void PolkitAgent::markNextRequestInternal() {
+  if (m_impl != nullptr) {
+    m_impl->m_nextInternal = true;
   }
 }
 

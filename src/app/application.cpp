@@ -1454,6 +1454,9 @@ void Application::initUi() {
       });
     };
 
+    if (m_configService.config().shell.polkitAgent && m_polkitAgent != nullptr) {
+      m_polkitAgent->markNextRequestInternal();
+    }
     const auto launch = greeter::syncAppearanceToGreeterAsync(
         m_configService, m_themeService.resolvedMode(), complete, &m_compositorPlatform, m_logindService != nullptr
     );

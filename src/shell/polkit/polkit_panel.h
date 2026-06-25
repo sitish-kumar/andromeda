@@ -1,15 +1,21 @@
 #pragma once
 
 #include "shell/panel/panel.h"
+#include "system/icon_resolver.h"
 
 #include <functional>
 
 class Button;
 class Flex;
+class Glyph;
+class Image;
 class Input;
 class InputArea;
 class Label;
+class Node;
 class PolkitAgent;
+class PolkitRequest;
+class Renderer;
 class ConfigService;
 
 class PolkitPanel : public Panel {
@@ -33,6 +39,7 @@ private:
   void doUpdate(Renderer& renderer) override;
   void submit();
   bool handleInputKeyEvent(std::uint32_t sym, std::uint32_t modifiers);
+  void resolveIcon(Renderer& renderer, const PolkitRequest& request);
 
   ConfigService* m_config = nullptr;
   std::function<PolkitAgent*()> m_agentProvider;
@@ -45,5 +52,11 @@ private:
   Input* m_input = nullptr;
   Button* m_submitButton = nullptr;
   Button* m_cancelButton = nullptr;
+  Node* m_iconContainer = nullptr;
+  Image* m_icon = nullptr;
+  Glyph* m_fallbackIcon = nullptr;
+  IconResolver m_iconResolver;
+  std::string m_lastIconName;
+  bool m_iconResolved = false;
   bool m_lastResponseRequired = false;
 };
