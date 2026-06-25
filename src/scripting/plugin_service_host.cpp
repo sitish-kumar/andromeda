@@ -207,6 +207,14 @@ namespace scripting {
     }
   }
 
+  void PluginServiceHost::onOutputChange() {
+    for (auto& service : m_services) {
+      if (service->runtime != nullptr) {
+        (void)service->runtime->enqueueCall("onOutputsChanged", {});
+      }
+    }
+  }
+
   void PluginServiceHost::setupScriptWatch(Service& service) {
     if (service.watchId != 0 || service.sourcePath.empty() || m_fileWatcher == nullptr) {
       return;

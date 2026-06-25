@@ -45,6 +45,11 @@ namespace scripting {
     // whose effective settings changed. Called on config reload.
     void refresh(const PluginSettingsMap& pluginSettings);
 
+    // Notify every service that the set/geometry of connected outputs changed, so a
+    // service can reconcile (e.g. relaunch a per-output child). The current output
+    // list is read via noctalia.outputs() inside the callback.
+    void onOutputChange();
+
   private:
     // A service is reachable by IPC via the `all` target (it is a singleton with no
     // output): `noctalia msg plugin <author/plugin:entry> all <event> [payload]`.

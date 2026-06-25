@@ -136,6 +136,9 @@ public:
   void scriptSetUpdateInterval(int ms);
   void scriptNotifyInfo(std::string title, std::string body);
   void scriptNotifyError(std::string title, std::string body);
+  // Toggle the host wallpaper surface on an output. Queued as a side effect and
+  // applied on the main thread (Wallpaper is not worker-thread safe).
+  void scriptSetWallpaperEnabled(std::string connector, bool enabled);
   [[nodiscard]] bool scriptCopyToClipboard(std::string text, std::string mimeType);
   [[nodiscard]] std::optional<std::string> scriptFocusedOutputName() const;
 

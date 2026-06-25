@@ -497,6 +497,11 @@ void Application::run(std::function<void()> startupReadyCallback) {
   });
   runStartupPhase("initUi", [this]() { initUi(); });
   runStartupPhase("initPluginServices", [this]() {
+    // Outputs are enumerated by now (wallpaper created its surfaces in initUi); refresh
+    // the script-visible output snapshot before any service/panel reads noctalia.outputs().
+    if (m_syncScriptApiOutputs) {
+      m_syncScriptApiOutputs();
+    }
     m_pluginServiceHost.start(m_configService.config().plugins.pluginSettings);
     // Reconcile services when plugin settings change (start new, stop removed, re-seed
     // changed). Guarded by the plugins change flag so unrelated reloads don't churn.
@@ -634,6 +639,36 @@ void Application::initServices() {
         wallpaper::resolveGlobalWallpaperDirectory(m_configService.config().wallpaper, mode)
     );
   };
+
+  // Publish the connected outputs to plugin scripts (noctalia.outputs()), refreshed on every
+  // output change so the worker-thread binding reads a race-free copy.
+  m_syncScriptApiOutputs = [this]() {
+    std::vector<scripting::ScriptOutputInfo> infos;
+    wl_output* const focused = m_compositorPlatform.preferredInteractiveOutput();
+    for (const auto& out : m_wayland.outputs()) {
+      if (!out.done || out.connectorName.empty()) {
+        continue;
+      }
+      infos.push_back({
+          .name = out.connectorName,
+          .description = out.description,
+          .width = out.effectiveLogicalWidth(),
+          .height = out.effectiveLogicalHeight(),
+          .x = out.logicalX,
+          .y = out.logicalY,
+          .scale = out.scale,
+          .focused = out.output == focused,
+      });
+    }
+    m_scriptApi.setOutputs(std::move(infos));
+  };
+  m_syncScriptApiOutputs();
+
+  // Let a plugin (e.g. mpvpaper) take over an output's wallpaper surface.
+  m_scriptApi.setWallpaperEnabledHook([this](const std::string& connector, bool enabled) {
+    m_wallpaper.setOutputExternallyManaged(connector, !enabled);
+  });
+
   m_themeService.setResolvedCallback([this, lastResolvedThemeMode = std::optional<std::string>{},
                                       syncScriptApiWallpaperDirectory](
                                          const noctalia::theme::GeneratedPalette& generated, std::string_view mode
@@ -712,10 +747,14 @@ void Application::initServices() {
   });
 
   m_wayland.setOutputChangeCallback([this]() {
+    if (m_syncScriptApiOutputs) {
+      m_syncScriptApiOutputs();
+    }
     if (m_brightnessService != nullptr) {
       m_brightnessService->onOutputsChanged();
     }
     m_gammaService.onOutputsChanged();
+    m_pluginServiceHost.onOutputChange();
     m_wallpaper.onOutputChange();
     m_backdrop.onOutputChange();
     m_bar.onOutputChange();

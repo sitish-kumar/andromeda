@@ -294,6 +294,41 @@ namespace {
     return 1;
   }
 
+  int luau_outputs(lua_State* L) {
+    auto* host = hostForState(L);
+    if (host == nullptr) {
+      lua_newtable(L);
+      return 1;
+    }
+    const auto outputs = host->api().outputs();
+    lua_createtable(L, static_cast<int>(outputs.size()), 0);
+    int index = 1;
+    for (const auto& out : outputs) {
+      lua_createtable(L, 0, 8);
+      setTableString(L, "name", out.name);
+      setTableString(L, "description", out.description);
+      setTableInteger(L, "width", out.width);
+      setTableInteger(L, "height", out.height);
+      setTableInteger(L, "x", out.x);
+      setTableInteger(L, "y", out.y);
+      setTableInteger(L, "scale", out.scale);
+      setTableBool(L, "focused", out.focused);
+      lua_rawseti(L, -2, index++);
+    }
+    return 1;
+  }
+
+  int luau_setWallpaperEnabled(lua_State* L) {
+    size_t len = 0;
+    const char* connector = luaL_checklstring(L, 1, &len);
+    luaL_checktype(L, 2, LUA_TBOOLEAN);
+    const bool enabled = lua_toboolean(L, 2) != 0;
+    if (auto* host = hostForState(L)) {
+      host->scriptSetWallpaperEnabled(std::string(connector, len), enabled);
+    }
+    return 0;
+  }
+
   int luau_isDarkMode(lua_State* L) {
     auto* host = hostForState(L);
     lua_pushboolean(L, host != nullptr && host->api().isDarkMode() ? 1 : 0);
@@ -916,6 +951,8 @@ namespace {
       {"flatpakAppInstalled", luau_flatpakAppInstalled},
       {"portalAvailable", luau_portalAvailable},
       {"focusedOutputName", luau_focusedOutputName},
+      {"outputs", luau_outputs},
+      {"setWallpaperEnabled", luau_setWallpaperEnabled},
       {"isDarkMode", luau_isDarkMode},
       {"wallpaperDirectory", luau_wallpaperDirectory},
       {"notify", luau_notify},
@@ -1407,6 +1444,17 @@ void LuauHost::scriptNotifyError(std::string title, std::string body) {
     return;
   }
   notify::error("Noctalia", title, body);
+}
+
+void LuauHost::scriptSetWallpaperEnabled(std::string connector, bool enabled) {
+  if (m_scriptContext != nullptr) {
+    m_scriptContext->sideEffects.push_back(
+        {.kind = scripting::ScriptSideEffectKind::SetWallpaperEnabled,
+         .title = std::move(connector),
+         .body = {},
+         .flag = enabled}
+    );
+  }
 }
 
 bool LuauHost::scriptCopyToClipboard(std::string text, std::string mimeType) {

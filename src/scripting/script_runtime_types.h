@@ -130,12 +130,15 @@ namespace scripting {
     NotifyInfo,
     NotifyError,
     CopyToClipboard,
+    SetWallpaperEnabled,
   };
 
   struct ScriptSideEffect {
     ScriptSideEffectKind kind = ScriptSideEffectKind::Log;
     std::string title;
     std::string body;
+    // SetWallpaperEnabled: title holds the output connector, flag the enabled state.
+    bool flag = false;
   };
 
   struct ScriptSnapshot {

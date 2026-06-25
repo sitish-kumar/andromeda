@@ -749,6 +749,13 @@ void Wallpaper::syncInstances() {
       return true;
     }
 
+    // An external wallpaper source (e.g. mpvpaper plugin) now owns this output
+    if (m_externallyManagedOutputs.contains(output->connectorName)) {
+      kLog.info("removing instance for {} — managed by external source", output->connectorName);
+      releaseInstanceTextures(*inst);
+      return true;
+    }
+
     return false;
   });
 
@@ -773,8 +780,23 @@ void Wallpaper::syncInstances() {
       kLog.info("skipping {} ({}) — disabled by monitor override", output.connectorName, output.description);
       continue;
     }
+    if (m_externallyManagedOutputs.contains(output.connectorName)) {
+      kLog.info("skipping {} ({}) — managed by external source", output.connectorName, output.description);
+      continue;
+    }
 
     createInstance(output);
+  }
+}
+
+void Wallpaper::setOutputExternallyManaged(const std::string& connector, bool managed) {
+  if (connector.empty()) {
+    return;
+  }
+  const bool changed =
+      managed ? m_externallyManagedOutputs.insert(connector).second : (m_externallyManagedOutputs.erase(connector) > 0);
+  if (changed && m_wallpaperEnabled && m_wayland != nullptr) {
+    syncInstances();
   }
 }
 

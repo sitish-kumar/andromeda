@@ -8,6 +8,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 class ConfigService;
@@ -28,6 +29,10 @@ public:
       WaylandConnection& wayland, ConfigService* config, RenderContext* renderContext, SharedTextureCache* textureCache
   );
   void onOutputChange();
+  // Mark an output as driven by an external wallpaper source (e.g. an mpvpaper plugin):
+  // its Background surface is torn down so the external surface shows through. Runtime-only
+  // (not persisted) — it clears on restart and is re-asserted by the owner.
+  void setOutputExternallyManaged(const std::string& connector, bool managed);
   void onStateChange();
   void onSecondTick();
   void onGpuResourcesInvalidated();
@@ -84,4 +89,5 @@ private:
   Signal<>::ScopedConnection m_paletteConn;
   Signal<> m_changed;
   std::vector<std::unique_ptr<WallpaperInstance>> m_instances;
+  std::unordered_set<std::string> m_externallyManagedOutputs;
 };

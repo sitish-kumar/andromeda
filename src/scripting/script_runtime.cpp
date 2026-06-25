@@ -106,7 +106,9 @@ namespace scripting {
       dest.unhealthy = dest.unhealthy || src.unhealthy;
     }
 
-    void dispatchSideEffects(const std::vector<ScriptSideEffect>& effects, ClipboardService* clipboard) {
+    void dispatchSideEffects(
+        const std::vector<ScriptSideEffect>& effects, ClipboardService* clipboard, ScriptApiContext& api
+    ) {
       for (const auto& effect : effects) {
         switch (effect.kind) {
         case ScriptSideEffectKind::Log:
@@ -122,6 +124,9 @@ namespace scripting {
           if (clipboard == nullptr || !clipboard->copyText(effect.title, effect.body)) {
             kLog.warn("scripted clipboard copy failed");
           }
+          break;
+        case ScriptSideEffectKind::SetWallpaperEnabled:
+          api.invokeWallpaperEnabled(effect.title, effect.flag);
           break;
         }
       }
@@ -659,7 +664,7 @@ namespace scripting {
         }
       }
 
-      dispatchSideEffects(result.sideEffects, clipboard);
+      dispatchSideEffects(result.sideEffects, clipboard, scriptApi);
       result.sideEffects.clear();
 
       for (auto& callback : callbacks) {
