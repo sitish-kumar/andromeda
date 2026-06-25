@@ -34,6 +34,10 @@ public:
   void clearDynamicProviders();
   // Drop providers whose stable id starts with `prefix` (e.g. config-driven "dmenu.").
   void clearProvidersWithIdPrefix(std::string_view prefix);
+  // Restrict the next open to a single provider (stdin/dmenu session). When set,
+  // onInputChanged queries only that provider and skips prefix routing/overview.
+  // Cleared on close.
+  void setScopedProvider(std::string_view providerId, std::string_view placeholder = {});
 
   void create() override;
   void onOpen(std::string_view context) override;
@@ -99,6 +103,8 @@ private:
   std::unique_ptr<LauncherAppGridAdapter> m_gridAdapter;
 
   std::string m_query;
+  std::string m_scopedProviderId;
+  std::string m_scopedPlaceholder;
   ActiveCategoryType m_activeCategoryType = All;
   std::string m_activeCategory;
   std::vector<LauncherCategory> m_currentCategories;

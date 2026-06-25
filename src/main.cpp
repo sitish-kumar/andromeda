@@ -5,6 +5,7 @@
 #include "core/log.h"
 #include "core/process_fds.h"
 #include "ipc/cli.h"
+#include "launcher/dmenu_cli.h"
 #include "theme/cli.h"
 
 #include <array>
@@ -290,6 +291,8 @@ int main(int argc, char* argv[]) {
       return noctalia::ipc::runCli(argc, argv);
     if (std::strcmp(argv[1], "config") == 0)
       return noctalia::config::runCli(argc, argv);
+    if (std::strcmp(argv[1], "dmenu") == 0)
+      return noctalia::launcher::runDmenuCli(argc, argv);
   }
 
   for (int i = 1; i < argc; ++i) {
