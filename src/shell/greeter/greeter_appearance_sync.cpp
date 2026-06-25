@@ -7,6 +7,7 @@
 #include "core/process.h"
 #include "ipc/ipc_service.h"
 #include "render/core/color.h"
+#include "shell/session/session_action_meta.h"
 #include "ui/palette.h"
 #include "util/string_utils.h"
 
@@ -128,6 +129,47 @@ namespace {
     return staging;
   }
 
+  void putOptionalString(nlohmann::json& object, std::string_view key, const std::optional<std::string>& value) {
+    if (!value.has_value() || value->empty()) {
+      return;
+    }
+    object[std::string(key)] = *value;
+  }
+
+  void appendSessionManifest(nlohmann::json& root, const ShellSessionConfig& session) {
+    nlohmann::json sessionJson;
+    nlohmann::json power;
+    putOptionalString(power, "suspend", session.power.suspend);
+    putOptionalString(power, "reboot", session.power.reboot);
+    putOptionalString(power, "shutdown", session.power.shutdown);
+    if (!power.empty()) {
+      sessionJson["power"] = std::move(power);
+    }
+
+    nlohmann::json actions = nlohmann::json::array();
+    const auto& source = session.actions.empty() ? defaultSessionPanelActions() : session.actions;
+    for (const SessionPanelActionConfig& row : source) {
+      if (!row.enabled || !session_action::isKnown(row.action)) {
+        continue;
+      }
+      if (row.action == "command" && (!row.command.has_value() || StringUtils::trim(*row.command).empty())) {
+        continue;
+      }
+
+      nlohmann::json item;
+      item["action"] = row.action;
+      putOptionalString(item, "command", row.command);
+      putOptionalString(item, "label", row.label);
+      putOptionalString(item, "glyph", row.glyph);
+      if (row.variant != SessionActionButtonVariant::Default) {
+        item["variant"] = std::string(enumToKey(kSessionActionButtonVariants, row.variant));
+      }
+      actions.push_back(std::move(item));
+    }
+    sessionJson["actions"] = std::move(actions);
+    root["session"] = std::move(sessionJson);
+  }
+
   [[nodiscard]] bool writeManifest(
       const std::filesystem::path& staging, const Config& config, std::string_view resolvedMode,
       const std::string& wallpaperPath, const std::string& installedWallpaperName
@@ -168,6 +210,7 @@ namespace {
     }
     root["wallpaper"] = std::move(wallpaper);
     root["corner_radius_scale"] = config.shell.cornerRadiusScale;
+    appendSessionManifest(root, config.shell.session);
 
     const auto manifestPath = staging / "appearance.json";
     std::ofstream out(manifestPath);
@@ -366,7 +409,7 @@ namespace greeter {
         finish(false);
         return;
       }
-      kLog.info("synced shell appearance to greeter");
+      kLog.info("synced shell appearance and session actions to greeter");
       finish(true);
     };
     const bool launched = process::runAsync(args, std::move(callbacks));
