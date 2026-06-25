@@ -28,6 +28,7 @@ public:
   void rebuild(const DesktopWidgetsSnapshot& snapshot);
   void onOutputChange();
   void onSecondTick();
+  void requestUpdate();
   void requestLayout();
   void requestRedraw();
   bool onPointerEvent(const PointerEvent& event);

@@ -49,6 +49,7 @@ public:
   [[nodiscard]] std::optional<LayerPopupParentContext> fallbackPopupParentContext() const;
   void onOutputChange();
   void onSecondTick();
+  void requestUpdate();
   void requestLayout();
   void requestRedraw();
 

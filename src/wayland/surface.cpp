@@ -355,7 +355,17 @@ void Surface::handleFrameDone(void* data, wl_callback* callback, std::uint32_t c
   }
   self->m_lastFrameAt = now;
 
-  self->queueFrameWork(true, deltaMs);
+  const bool activeAnimations = self->m_animationManager != nullptr && self->m_animationManager->hasActive();
+  const bool runFrameTick = self->m_frameCallbackShouldTick || self->m_frameTickPending || activeAnimations;
+  self->m_frameCallbackShouldTick = false;
+
+  const bool invalidated =
+      self->m_sceneRoot != nullptr && (self->m_sceneRoot->paintDirty() || self->m_sceneRoot->layoutDirty());
+  const bool hasPendingWork =
+      runFrameTick || self->m_updateRequested || self->m_layoutRequested || self->m_redrawRequested || invalidated;
+  if (hasPendingWork) {
+    self->queueFrameWork(runFrameTick, deltaMs);
+  }
 }
 
 void Surface::onSurfaceOutputEnter(wl_surface* surface, wl_output* output) {
@@ -920,6 +930,9 @@ void Surface::requestLayout() {
 
 void Surface::requestRedraw() {
   recordSurfaceProfileEvent(*this, SurfaceProfileEvent::RequestRedraw);
+  if (m_frameTickCallback != nullptr) {
+    m_nextFrameCallbackShouldTick = true;
+  }
   m_redrawRequested = true;
   kickFrameLoop();
 }
@@ -979,8 +992,14 @@ void Surface::render() {
 
 void Surface::requestFrame() {
   if (m_frameCallback != nullptr) {
+    m_frameCallbackShouldTick = m_frameCallbackShouldTick || m_nextFrameCallbackShouldTick;
+    m_nextFrameCallbackShouldTick = false;
     return;
   }
+
+  const bool activeAnimations = m_animationManager != nullptr && m_animationManager->hasActive();
+  m_frameCallbackShouldTick = m_nextFrameCallbackShouldTick || activeAnimations;
+  m_nextFrameCallbackShouldTick = false;
 
   m_frameCallback = wl_surface_frame(m_surface);
   if (m_frameCallback != nullptr) {
@@ -1150,6 +1169,9 @@ void Surface::processQueuedFrameWork() {
 void Surface::queueRenderIfNeeded() {
   const bool invalidated = m_sceneRoot != nullptr && (m_sceneRoot->paintDirty() || m_sceneRoot->layoutDirty());
   const bool animating = m_animationManager != nullptr && m_animationManager->hasActive();
+  if (animating) {
+    m_nextFrameCallbackShouldTick = true;
+  }
   if (m_redrawRequested || invalidated || animating) {
     queueRender();
   }

@@ -605,6 +605,13 @@ void DesktopWidgetsEditor::prepareFrame(OverlaySurface& surface, bool needsUpdat
   if (surface.wallpaperPreviewActive) {
     updateWallpaperPreview(surface);
   }
+
+  const bool needsFrameTick = std::any_of(surface.views.begin(), surface.views.end(), [](const auto& entry) {
+    return entry.second.widget != nullptr && entry.second.widget->needsFrameTick();
+  });
+  if (needsFrameTick) {
+    surface.surface->requestFrameTick();
+  }
 }
 
 void DesktopWidgetsEditor::rebuildScene(OverlaySurface& surface) {
@@ -2292,12 +2299,13 @@ void DesktopWidgetsEditor::onSecondTick() {
     if (surface->surface == nullptr) {
       continue;
     }
-    const bool needsUpdate =
-        minuteBoundary || std::any_of(surface->views.begin(), surface->views.end(), [](const auto& entry) {
-          return entry.second.widget != nullptr && entry.second.widget->wantsSecondTicks();
-        });
-    if (needsUpdate) {
+    const bool wantsSecondTicks = std::any_of(surface->views.begin(), surface->views.end(), [](const auto& entry) {
+      return entry.second.widget != nullptr && entry.second.widget->wantsSecondTicks();
+    });
+    if (minuteBoundary) {
       surface->surface->requestUpdate();
+    } else if (wantsSecondTicks) {
+      surface->surface->requestUpdateOnly();
     }
   }
 }
@@ -2388,6 +2396,14 @@ void DesktopWidgetsEditor::requestLayout() {
     if (surface->surface != nullptr) {
       surface->sceneRebuildRequested = true;
       surface->surface->requestLayout();
+    }
+  }
+}
+
+void DesktopWidgetsEditor::requestUpdate() {
+  for (auto& surface : m_surfaces) {
+    if (surface->surface != nullptr) {
+      surface->surface->requestUpdateOnly();
     }
   }
 }

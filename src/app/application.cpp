@@ -1295,6 +1295,7 @@ void Application::initServices() {
       m_configService.addReloadCallback(applyMprisConfig);
       m_mprisService->setChangeCallback([this, shouldRefreshControlCenter]() {
         m_bar.refresh();
+        m_desktopWidgetsController.requestUpdate();
         m_mediaOsd.onMprisChanged(*m_mprisService);
         if (shouldRefreshControlCenter()) {
           m_panelManager.refresh();

@@ -82,7 +82,9 @@ void LockscreenWidgetsHost::onSecondTick() {
     if (instance->surface == nullptr || instance->widget == nullptr) {
       continue;
     }
-    if (instance->widget->wantsSecondTicks() || minuteBoundary) {
+    if (instance->widget->wantsSecondTicks()) {
+      instance->surface->requestUpdateOnly();
+    } else if (minuteBoundary) {
       instance->surface->requestUpdate();
     }
   }

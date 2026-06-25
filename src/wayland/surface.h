@@ -188,6 +188,8 @@ private:
   bool m_inPrepareFrame = false;
   bool m_frameWorkQueued = false;
   bool m_frameTickPending = false;
+  bool m_frameCallbackShouldTick = false;
+  bool m_nextFrameCallbackShouldTick = false;
   bool m_renderQueued = false;
   float m_pendingFrameDeltaMs = 0.0f;
   std::uint32_t m_width = 0;

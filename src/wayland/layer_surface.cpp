@@ -206,6 +206,12 @@ void LayerSurface::setLayer(LayerShellLayer layer) {
 }
 
 void LayerSurface::setMargins(std::int32_t top, std::int32_t right, std::int32_t bottom, std::int32_t left) {
+  if (m_config.marginTop == top
+      && m_config.marginRight == right
+      && m_config.marginBottom == bottom
+      && m_config.marginLeft == left) {
+    return;
+  }
   m_config.marginTop = top;
   m_config.marginRight = right;
   m_config.marginBottom = bottom;

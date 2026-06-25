@@ -226,6 +226,17 @@ void DesktopWidgetsController::onSecondTick() {
   }
 }
 
+void DesktopWidgetsController::requestUpdate() {
+  if (!m_initialized) {
+    return;
+  }
+  if (isEditing()) {
+    m_editor->requestUpdate();
+  } else if (m_host != nullptr) {
+    m_host->requestUpdate();
+  }
+}
+
 void DesktopWidgetsController::requestLayout() {
   if (!m_initialized) {
     return;

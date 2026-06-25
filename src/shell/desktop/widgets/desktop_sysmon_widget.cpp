@@ -194,7 +194,7 @@ bool DesktopSysmonWidget::needsFrameTick() const {
 void DesktopSysmonWidget::onFrameTick(float deltaMs, Renderer& renderer) {
   (void)deltaMs;
   if (m_displayMode == DesktopSysmonDisplayMode::Gauge) {
-    if (!m_redrawLimiter.shouldStep([this]() { requestRedraw(); })) {
+    if (!m_redrawLimiter.shouldStep([this]() { requestFrameTick(); })) {
       return;
     }
     if (m_monitor != nullptr) {
@@ -206,7 +206,7 @@ void DesktopSysmonWidget::onFrameTick(float deltaMs, Renderer& renderer) {
     return;
   }
 
-  if (!m_redrawLimiter.shouldStep([this]() { requestRedraw(); })) {
+  if (!m_redrawLimiter.shouldStep([this]() { requestFrameTick(); })) {
     return;
   }
   if (m_monitor != nullptr) {

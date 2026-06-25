@@ -37,6 +37,7 @@ public:
   void registerIpc(IpcService& ipc);
   void onOutputChange();
   void onSecondTick();
+  void requestUpdate();
   void requestLayout();
   void requestRedraw();
 
