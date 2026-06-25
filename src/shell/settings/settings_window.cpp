@@ -5,6 +5,7 @@
 #include "config/config_types.h"
 #include "core/deferred_call.h"
 #include "core/key_modifiers.h"
+#include "core/key_symbols.h"
 #include "core/keybind_matcher.h"
 #include "core/log.h"
 #include "core/ui_phase.h"
@@ -74,6 +75,40 @@ namespace {
     static constexpr std::string_view kSettingsAppId = "dev.noctalia.Noctalia.Settings";
     wayland.activateSurface(surface);
     wayland.activateToplevelForAppId(kSettingsAppId);
+  }
+
+  [[nodiscard]] bool isSettingsSearchTypingKey(const KeyboardEvent& event) {
+    if (!event.pressed || event.preedit) {
+      return false;
+    }
+    if ((event.modifiers & (KeyMod::Ctrl | KeyMod::Alt | KeyMod::Super)) != 0) {
+      return false;
+    }
+    if (KeybindMatcher::matches(KeybindAction::Cancel, event.sym, event.modifiers)
+        || KeybindMatcher::matches(KeybindAction::TabPrevious, event.sym, event.modifiers)
+        || KeybindMatcher::matches(KeybindAction::TabNext, event.sym, event.modifiers)
+        || KeybindMatcher::matches(KeybindAction::Up, event.sym, event.modifiers)
+        || KeybindMatcher::matches(KeybindAction::Down, event.sym, event.modifiers)
+        || KeybindMatcher::matches(KeybindAction::Left, event.sym, event.modifiers)
+        || KeybindMatcher::matches(KeybindAction::Right, event.sym, event.modifiers)
+        || KeybindMatcher::matches(KeybindAction::Validate, event.sym, event.modifiers)) {
+      return false;
+    }
+    if (KeySymbol::isBackspace(event.sym)) {
+      return true;
+    }
+    return event.utf32 > 0x20U && event.utf32 != 0x7FU;
+  }
+
+  void requestSceneInvalidation(Node* sceneRoot, ToplevelSurface* surface) {
+    if (sceneRoot == nullptr || surface == nullptr) {
+      return;
+    }
+    if (sceneRoot->layoutDirty()) {
+      surface->requestLayout();
+    } else if (sceneRoot->paintDirty()) {
+      surface->requestRedraw();
+    }
   }
 
 } // namespace
@@ -921,6 +956,18 @@ void SettingsWindow::onKeyboardEvent(const KeyboardEvent& event) {
       }
       return;
     }
+  }
+  if (event.pressed
+      && !event.preedit
+      && m_inputDispatcher.focusedArea() == nullptr
+      && m_settingsSearchInput != nullptr
+      && m_settingsSearchInput->inputArea() != nullptr
+      && (m_actionsMenuPopup == nullptr || !m_actionsMenuPopup->isOpen())
+      && isSettingsSearchTypingKey(event)) {
+    m_inputDispatcher.setFocus(m_settingsSearchInput->inputArea());
+    m_inputDispatcher.keyEvent(event.sym, event.utf32, event.modifiers, event.pressed, event.preedit);
+    requestSceneInvalidation(m_sceneRoot.get(), m_surface.get());
+    return;
   }
   m_inputDispatcher.keyEvent(event.sym, event.utf32, event.modifiers, event.pressed, event.preedit);
   if (m_sceneRoot != nullptr && m_surface != nullptr && (m_sceneRoot->paintDirty() || m_sceneRoot->layoutDirty())) {
