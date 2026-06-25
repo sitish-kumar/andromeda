@@ -1450,6 +1450,10 @@ bool ConfigService::setOverrides(std::vector<std::pair<std::vector<std::string>,
     }
   }
 
+  if (next == m_overridesTable) {
+    return true;
+  }
+
   toml::table previous = std::move(m_overridesTable);
   m_overridesTable = std::move(next);
   if (!writeOverridesToFile()) {
