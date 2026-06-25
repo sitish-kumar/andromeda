@@ -1156,10 +1156,14 @@
         "horizontal": "Orizzontale",
         "vertical": "Verticale"
       },
+      "panel-position": {
+        "auto": "Segui la barra"
+      },
       "screen-position": {
         "bottom-center": "Basso centro",
         "bottom-left": "Basso sinistra",
         "bottom-right": "Basso destra",
+        "center": "Centra",
         "center-left": "Centro sinistra",
         "center-right": "Centro destra",
         "top-center": "Alto centro",
@@ -1238,6 +1242,20 @@
       }
     },
     "plugins": {
+      "panels": {
+        "open-near-click": {
+          "description": "Apri il pannello vicino al widget della barra che lo ha attivato",
+          "label": "Apri vicino al click"
+        },
+        "placement": {
+          "description": "Attacca il pannello alla barra o posizionalo vicino al bordo della barra",
+          "label": "Posizione"
+        },
+        "position": {
+          "description": "Posizione dello schermo quando il pannello è mobile",
+          "label": "Posizione"
+        }
+      },
       "plugins": {
         "configure": "Configura",
         "deprecated": "deprecato",
@@ -1498,6 +1516,10 @@
         },
         "shadow": {
           "description": "Proietta l'ombra globale della superficie dalla barra"
+        },
+        "show-on-workspace-switch": {
+          "description": "Mostra brevemente la barra quando l'area di lavoro attiva cambia",
+          "label": "Mostra al cambio area di lavoro"
         },
         "start-widgets": {
           "description": "Widget sul lato iniziale (sinistra/alto) della barra",
@@ -1965,6 +1987,26 @@
         "placement-wallpaper": {
           "description": "Scegli se il selettore sfondo si attacca alla barra, fluttua vicino ad essa o si apre centrato",
           "label": "Posizionamento"
+        },
+        "position-clipboard": {
+          "description": "Dove il pannello appunti appare sullo schermo — Segui la barra lo mantiene vicino ad essa",
+          "label": "Posizione"
+        },
+        "position-control-center": {
+          "description": "Dove il centro di controllo appare sullo schermo — Segui la barra lo mantiene vicino ad essa",
+          "label": "Posizione"
+        },
+        "position-launcher": {
+          "description": "Dove il launcher appare sullo schermo — Segui la barra lo mantiene vicino ad essa",
+          "label": "Posizione"
+        },
+        "position-session": {
+          "description": "Dove il menu di sessione appare sullo schermo — Segui la barra lo mantiene vicino ad essa",
+          "label": "Posizione"
+        },
+        "position-wallpaper": {
+          "description": "Dove il selettore dello sfondo appare sullo schermo — Segui la barra lo mantiene vicino ad essa",
+          "label": "Posizione"
         },
         "shadow": {
           "description": "Proietta l'ombra globale della superficie dalle superfici pannello"
@@ -3118,6 +3160,7 @@
       "m3-rainbow": "M3 Rainbow",
       "m3-tonal-spot": "M3 Tonal Spot",
       "muted": "Tenue",
+      "soft": "Soft",
       "vibrant": "Vivace"
     }
   },

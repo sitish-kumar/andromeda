@@ -1107,10 +1107,14 @@
         "horizontal": "Горизонтальная",
         "vertical": "Вертикальная"
       },
+      "panel-position": {
+        "auto": "Следовать за панелью"
+      },
       "screen-position": {
         "bottom-center": "Внизу по центру",
         "bottom-left": "Внизу слева",
         "bottom-right": "Внизу справа",
+        "center": "По центру",
         "center-left": "По центру слева",
         "center-right": "По центру справа",
         "top-center": "Вверху по центру",

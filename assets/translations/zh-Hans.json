@@ -165,7 +165,7 @@
     "audio": {
       "application-volumes": "应用音量",
       "choose-effects-profile": "选择音效预设",
-      "effects-profile": "音效：",
+      "effects-profile": "音效",
       "input-device-prefix": "输入：",
       "no-application-audio": "无应用音频",
       "no-application-audio-body": "当前没有应用正在播放音频。",
@@ -1156,10 +1156,14 @@
         "horizontal": "水平",
         "vertical": "垂直"
       },
+      "panel-position": {
+        "auto": "跟随状态栏"
+      },
       "screen-position": {
         "bottom-center": "底部居中",
         "bottom-left": "左下角",
         "bottom-right": "右下角",
+        "center": "居中",
         "center-left": "左侧居中",
         "center-right": "右侧居中",
         "top-center": "顶部居中",
@@ -1238,6 +1242,20 @@
       }
     },
     "plugins": {
+      "panels": {
+        "open-near-click": {
+          "description": "在触发该面板的状态栏小组件附近打开",
+          "label": "在点击位置附近打开"
+        },
+        "placement": {
+          "description": "将面板附着于状态栏，或在状态栏边缘附近浮动",
+          "label": "显示位置"
+        },
+        "position": {
+          "description": "当面板浮动时的屏幕位置",
+          "label": "屏幕位置"
+        }
+      },
       "plugins": {
         "configure": "配置",
         "deprecated": "已弃用",
@@ -1498,6 +1516,10 @@
         },
         "shadow": {
           "description": "从状态栏投射全局表面阴影"
+        },
+        "show-on-workspace-switch": {
+          "description": "切换活动工作区时短暂显示状态栏",
+          "label": "切换工作区时显示"
         },
         "start-widgets": {
           "description": "状态栏起始（左侧/顶部）的小组件",
@@ -1947,30 +1969,50 @@
           "label": "在点击位置附近打开"
         },
         "placement-clipboard": {
-          "description": "选择剪贴板的显示位置：附着于状态栏、在状态栏附近浮动，或居中显示",
+          "description": "选择剪贴板是附着于状态栏，还是在指定屏幕位置浮动",
           "label": "显示位置"
         },
         "placement-control-center": {
-          "description": "选择控制中心的显示位置：附着于状态栏、在状态栏附近浮动，或居中显示",
+          "description": "选择控制中心是附着于状态栏，还是在指定屏幕位置浮动",
           "label": "显示位置"
         },
         "placement-launcher": {
-          "description": "选择启动器的显示位置：附着于状态栏、在状态栏附近浮动，或居中显示",
+          "description": "选择启动器是附着于状态栏，还是在指定屏幕位置浮动",
           "label": "显示位置"
         },
         "placement-session": {
-          "description": "选择会话菜单的显示位置：附着于状态栏、在状态栏附近浮动，或居中显示",
+          "description": "选择会话菜单是附着于状态栏，还是在指定屏幕位置浮动",
           "label": "显示位置"
         },
         "placement-wallpaper": {
-          "description": "选择壁纸选择器的显示位置：附着于状态栏、在状态栏附近浮动，或居中显示",
+          "description": "选择壁纸选择器是附着于状态栏，还是在指定屏幕位置浮动",
           "label": "显示位置"
+        },
+        "position-clipboard": {
+          "description": "剪贴板在屏幕上浮动的位置；选择“跟随状态栏”可使其保持在状态栏附近",
+          "label": "屏幕位置"
+        },
+        "position-control-center": {
+          "description": "控制中心在屏幕上浮动的位置；选择“跟随状态栏”可使其保持在状态栏附近",
+          "label": "屏幕位置"
+        },
+        "position-launcher": {
+          "description": "启动器在屏幕上浮动的位置；选择“跟随状态栏”可使其保持在状态栏附近",
+          "label": "屏幕位置"
+        },
+        "position-session": {
+          "description": "会话菜单在屏幕上浮动的位置；选择“跟随状态栏”可使其保持在状态栏附近",
+          "label": "屏幕位置"
+        },
+        "position-wallpaper": {
+          "description": "壁纸选择器在屏幕上浮动的位置；选择“跟随状态栏”可使其保持在状态栏附近",
+          "label": "屏幕位置"
         },
         "shadow": {
           "description": "从面板表面投射全局表面阴影"
         },
         "transparency-mode": {
-          "description": "面板毛玻璃样式，包括悬浮/居中面板的不透明度和卡片的半透明效果",
+          "description": "面板毛玻璃样式，包括悬浮面板的不透明度和卡片的半透明效果",
           "label": "透明度"
         }
       },
