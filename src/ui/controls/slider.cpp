@@ -1,5 +1,6 @@
 #include "ui/controls/slider.h"
 
+#include "core/key_symbols.h"
 #include "cursor-shape-v1-client-protocol.h"
 #include "render/core/render_styles.h"
 #include "render/scene/input_area.h"
@@ -91,6 +92,55 @@ Slider::Slider() {
       m_onDragEnd();
     }
     return true;
+  });
+  area->setFocusable(true);
+  area->setOnFocusGain([this]() {
+    applyVisualState();
+    markPaintDirty();
+  });
+  area->setOnFocusLoss([this]() {
+    applyVisualState();
+    markPaintDirty();
+  });
+  area->setOnKeyDown([this](const InputArea::KeyData& key) {
+    if (!key.pressed || !m_enabled) {
+      return;
+    }
+    const double step = m_step > 0.0 ? m_step : (m_max - m_min) * 0.05;
+    if (step <= 0.0) {
+      return;
+    }
+    if (KeySymbol::isLeft(key.sym) || KeySymbol::isDown(key.sym)) {
+      setValue(m_value - step);
+      if (m_onDragEnd) {
+        m_onDragEnd();
+      }
+    } else if (KeySymbol::isRight(key.sym) || KeySymbol::isUp(key.sym)) {
+      setValue(m_value + step);
+      if (m_onDragEnd) {
+        m_onDragEnd();
+      }
+    } else if (KeySymbol::isPageDown(key.sym)) {
+      setValue(m_value - step * 10.0);
+      if (m_onDragEnd) {
+        m_onDragEnd();
+      }
+    } else if (KeySymbol::isPageUp(key.sym)) {
+      setValue(m_value + step * 10.0);
+      if (m_onDragEnd) {
+        m_onDragEnd();
+      }
+    } else if (KeySymbol::isHome(key.sym)) {
+      setValue(m_min);
+      if (m_onDragEnd) {
+        m_onDragEnd();
+      }
+    } else if (KeySymbol::isEnd(key.sym)) {
+      setValue(m_max);
+      if (m_onDragEnd) {
+        m_onDragEnd();
+      }
+    }
   });
   m_inputArea = static_cast<InputArea*>(addChild(std::move(area)));
   m_inputArea->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
@@ -227,6 +277,7 @@ void Slider::updateFromLocalX(float x) {
 void Slider::applyVisualState() {
   const bool hovering = m_inputArea != nullptr && m_inputArea->hovered();
   const bool pressing = m_inputArea != nullptr && m_inputArea->pressed();
+  const bool focused = m_inputArea != nullptr && m_inputArea->focused();
 
   Color trackColor = resolved(ColorRole::Outline);
   Color fillColor = resolved(ColorRole::Primary);
@@ -240,6 +291,8 @@ void Slider::applyVisualState() {
     fillColor = resolved(ColorRole::Primary, 0.5f);
   } else if (pressing) {
     fillColor = resolved(ColorRole::Primary);
+  } else if (focused) {
+    thumbBorder = resolveColorSpec(focusRingColorSpec());
   } else if (hovering) {
     thumbBorder = resolved(ColorRole::Hover);
   }
@@ -252,7 +305,7 @@ void Slider::applyVisualState() {
 
   auto thumbStyle = solidStyle(thumbColor, m_thumbSizePx * 0.5f);
   thumbStyle.border = thumbBorder;
-  thumbStyle.borderWidth = Style::borderWidth;
+  thumbStyle.borderWidth = focused ? Style::focusRingWidth : Style::borderWidth;
   m_thumb->setStyle(thumbStyle);
 }
 

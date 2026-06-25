@@ -31,6 +31,7 @@ public:
   [[nodiscard]] ToggleSize toggleSize() const noexcept { return m_size; }
 
 private:
+  void activateFromInput();
   void applySize();
   void applyState();
   void applyAnimatedState(float t);

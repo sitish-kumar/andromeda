@@ -2,6 +2,7 @@
 
 #include "config/config_types.h"
 #include "i18n/i18n.h"
+#include "render/scene/input_area.h"
 #include "shell/settings/color_spec_picker.h"
 #include "shell/settings/settings_content_common.h"
 #include "ui/builders.h"
@@ -43,6 +44,39 @@ namespace settings {
               .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
           })
       );
+    }
+
+    std::string joinSettingPath(const std::vector<std::string>& path) {
+      std::string joined;
+      joined.reserve(64);
+      for (std::size_t i = 0; i < path.size(); ++i) {
+        if (i > 0) {
+          joined += '.';
+        }
+        joined += path[i];
+      }
+      return joined;
+    }
+
+    bool tagTabFocusKey(Node& root, const std::string& key) {
+      if (auto* segmented = dynamic_cast<Segmented*>(&root)) {
+        if (InputArea* area = segmented->focusArea(); area != nullptr) {
+          area->setTabFocusKey(key);
+          return true;
+        }
+      }
+      if (auto* area = dynamic_cast<InputArea*>(&root)) {
+        if (area->focusable() && area->tabStop()) {
+          area->setTabFocusKey(key);
+          return true;
+        }
+      }
+      for (const auto& child : root.children()) {
+        if (tagTabFocusKey(*child, key)) {
+          return true;
+        }
+      }
+      return false;
     }
   } // namespace
 
@@ -184,6 +218,7 @@ namespace settings {
         actions->addChild(makeResetButton(entry.path));
       }
     }
+    tagTabFocusKey(*control, joinSettingPath(entry.path));
     actions->addChild(std::move(control));
 
     auto row = ui::row(

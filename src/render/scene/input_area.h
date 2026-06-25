@@ -8,6 +8,8 @@
 #include <functional>
 #include <initializer_list>
 #include <linux/input-event-codes.h>
+#include <string>
+#include <string_view>
 
 class TextInputClient;
 
@@ -76,6 +78,10 @@ public:
   // Keyboard / focus
   void setFocusable(bool focusable);
   [[nodiscard]] bool focusable() const noexcept { return m_focusable; }
+  void setTabStop(bool tabStop);
+  [[nodiscard]] bool tabStop() const noexcept { return m_tabStop; }
+  void setTabFocusKey(std::string key);
+  [[nodiscard]] std::string_view tabFocusKey() const noexcept { return m_tabFocusKey; }
   [[nodiscard]] bool focused() const noexcept { return m_focused; }
   void setOnKeyDown(KeyCallback callback);
   void setOnKeyUp(KeyCallback callback);
@@ -166,6 +172,8 @@ private:
   bool m_pressed = false;
   std::uint32_t m_pressedButton = 0;
   bool m_focusable = false;
+  bool m_tabStop = true;
+  std::string m_tabFocusKey;
   bool m_focused = false;
   TextInputClient* m_textInputClient = nullptr;
 

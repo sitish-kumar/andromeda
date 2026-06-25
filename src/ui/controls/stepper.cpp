@@ -83,6 +83,7 @@ Stepper::Stepper() {
       }
     });
     btn->setOnLeave([this]() { stopStepRepeat(); });
+    btn->setTabStop(false);
     return btn;
   };
 

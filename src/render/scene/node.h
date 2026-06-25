@@ -122,6 +122,8 @@ public:
   void setHitTestVisible(bool hitTestVisible);
   void setHitTestOutset(const HitTestOutset& outset);
   void setZIndex(std::int32_t zIndex);
+  void setExcludeSubtreeFromTabOrder(bool exclude) noexcept;
+  [[nodiscard]] bool excludeSubtreeFromTabOrder() const noexcept { return m_excludeSubtreeFromTabOrder; }
 
   virtual Node* addChild(std::unique_ptr<Node> child);
   // Insert at a specific vector position to control Flex layout order (not rendering order — use zIndex for that).
@@ -181,6 +183,7 @@ private:
   bool m_paintDirty = true;
   bool m_layoutDirty = true;
   bool m_clipChildren = false;
+  bool m_excludeSubtreeFromTabOrder = false;
   bool m_hitTestVisible = true;
   HitTestOutset m_hitTestOutset{};
   bool m_sizeAssignedByLayout = false;

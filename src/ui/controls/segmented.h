@@ -6,10 +6,12 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string_view>
 #include <vector>
 
 class Button;
+class InputArea;
 class Separator;
 
 class Segmented : public Flex {
@@ -43,7 +45,13 @@ public:
   // When true, each segment gets flexGrow 1 so the group fills the available width (e.g. full bar).
   void setEqualSegmentWidths(bool equalWidths);
 
+  [[nodiscard]] InputArea* focusArea() const noexcept { return m_focusArea; }
+
+  void doLayout(Renderer& renderer) override;
+
 private:
+  void handleKey(std::uint32_t sym);
+  void syncSegmentFocusHint();
   [[nodiscard]] std::unique_ptr<Separator> makeSegmentSeparator();
   [[nodiscard]] std::unique_ptr<Button>
   makeSegmentButton(std::string_view label, std::string_view glyph, std::size_t index);
@@ -54,6 +62,7 @@ private:
 
   std::vector<Separator*> m_separators;
   std::vector<Button*> m_buttons;
+  InputArea* m_focusArea = nullptr;
   std::size_t m_selected = 0;
   std::function<void(std::size_t)> m_onChange;
   float m_fontSize = 0.0f;

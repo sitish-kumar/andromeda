@@ -141,6 +141,9 @@ void InputArea::notifyTooltipChanged() {
   }
 }
 void InputArea::setFocusable(bool focusable) { m_focusable = focusable; }
+
+void InputArea::setTabStop(bool tabStop) { m_tabStop = tabStop; }
+void InputArea::setTabFocusKey(std::string key) { m_tabFocusKey = std::move(key); }
 void InputArea::setOnKeyDown(KeyCallback callback) { m_onKeyDown = std::move(callback); }
 void InputArea::setOnKeyUp(KeyCallback callback) { m_onKeyUp = std::move(callback); }
 void InputArea::setOnFocusGain(VoidCallback callback) { m_onFocusGain = std::move(callback); }

@@ -1,10 +1,42 @@
 #include "render/scene/input_dispatcher.h"
 
+#include "core/key_modifiers.h"
+#include "core/key_symbols.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
 #include "wayland/text_input_service.h"
 
+#include <algorithm>
+#include <optional>
+#include <string>
+#include <vector>
+
 namespace {
+
+  bool nodeVisibleInScene(const Node* node) {
+    for (const Node* current = node; current != nullptr; current = current->parent()) {
+      if (!current->visible()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool isTabFocusTarget(const InputArea* area) {
+    return area != nullptr && area->enabled() && area->focusable() && area->tabStop() && nodeVisibleInScene(area);
+  }
+
+  void collectTabFocusTargets(Node* node, std::vector<InputArea*>& out) {
+    if (node == nullptr || !node->visible() || node->excludeSubtreeFromTabOrder()) {
+      return;
+    }
+    if (auto* area = dynamic_cast<InputArea*>(node); isTabFocusTarget(area)) {
+      out.push_back(area);
+    }
+    for (const auto& child : node->children()) {
+      collectTabFocusTargets(child.get(), out);
+    }
+  }
 
   bool nodeAttachedToRoot(const Node* node, const Node* root) {
     if (node == nullptr || root == nullptr) {
@@ -58,6 +90,10 @@ void InputDispatcher::setSceneRoot(Node* root) {
 
 void InputDispatcher::setHoverChangeCallback(HoverChangeCallback callback) {
   m_hoverChangeCallback = std::move(callback);
+}
+
+void InputDispatcher::setFocusChangeCallback(FocusChangeCallback callback) {
+  m_focusChangeCallback = std::move(callback);
 }
 
 void InputDispatcher::setCursorShapeCallback(CursorShapeCallback callback) {
@@ -232,15 +268,116 @@ void InputDispatcher::keyEvent(
     std::uint32_t sym, std::uint32_t utf32, std::uint32_t modifiers, bool pressed, bool preedit
 ) {
   pruneDetachedAreas();
+  if (pressed && !preedit && KeySymbol::isTab(sym)) {
+    if (cycleTabFocus((modifiers & KeyMod::Shift) != 0)) {
+      return;
+    }
+  }
   if (m_focusedArea != nullptr) {
     m_focusedArea->dispatchKey(sym, utf32, modifiers, pressed, preedit);
   }
+}
+
+bool InputDispatcher::cycleTabFocus(bool reverse) {
+  if (m_sceneRoot == nullptr) {
+    return false;
+  }
+
+  std::vector<InputArea*> order;
+  order.reserve(32);
+  collectTabFocusTargets(m_sceneRoot, order);
+  if (order.empty()) {
+    return false;
+  }
+
+  auto it = std::ranges::find(order, m_focusedArea);
+  if (it == order.end()) {
+    setFocus(reverse ? order.back() : order.front());
+    return true;
+  }
+
+  if (reverse) {
+    if (it == order.begin()) {
+      setFocus(order.back());
+    } else {
+      setFocus(*std::prev(it));
+    }
+  } else if (std::next(it) == order.end()) {
+    setFocus(order.front());
+  } else {
+    setFocus(*std::next(it));
+  }
+  return true;
+}
+
+void InputDispatcher::stashTabFocus() {
+  m_stashedTabFocusIndex.reset();
+  m_stashedTabFocusKey.reset();
+  if (m_sceneRoot == nullptr || m_focusedArea == nullptr) {
+    return;
+  }
+
+  if (!m_focusedArea->tabFocusKey().empty()) {
+    m_stashedTabFocusKey = std::string(m_focusedArea->tabFocusKey());
+    return;
+  }
+
+  std::vector<InputArea*> order;
+  order.reserve(32);
+  collectTabFocusTargets(m_sceneRoot, order);
+  if (order.empty()) {
+    return;
+  }
+
+  const auto it = std::ranges::find(order, m_focusedArea);
+  if (it == order.end()) {
+    return;
+  }
+  m_stashedTabFocusIndex = static_cast<std::size_t>(std::distance(order.begin(), it));
+}
+
+void InputDispatcher::restoreStashedTabFocus() {
+  if (m_sceneRoot == nullptr) {
+    m_stashedTabFocusIndex.reset();
+    m_stashedTabFocusKey.reset();
+    return;
+  }
+
+  std::vector<InputArea*> order;
+  order.reserve(32);
+  collectTabFocusTargets(m_sceneRoot, order);
+  if (order.empty()) {
+    m_stashedTabFocusIndex.reset();
+    m_stashedTabFocusKey.reset();
+    return;
+  }
+
+  if (m_stashedTabFocusKey.has_value()) {
+    const auto it = std::ranges::find_if(order, [key = *m_stashedTabFocusKey](const InputArea* area) {
+      return area != nullptr && area->tabFocusKey() == key;
+    });
+    if (it != order.end()) {
+      setFocus(*it);
+    }
+    m_stashedTabFocusKey.reset();
+    m_stashedTabFocusIndex.reset();
+    return;
+  }
+
+  if (!m_stashedTabFocusIndex.has_value()) {
+    return;
+  }
+
+  const std::size_t index = std::min(*m_stashedTabFocusIndex, order.size() - 1);
+  setFocus(order[index]);
+  m_stashedTabFocusIndex.reset();
 }
 
 void InputDispatcher::setFocus(InputArea* area) {
   if (area == m_focusedArea) {
     return;
   }
+  InputArea* const old = m_focusedArea;
   if (m_focusedArea != nullptr) {
     clearTextInputFocus(m_focusedArea);
     m_focusedArea->dispatchFocusLoss();
@@ -250,6 +387,9 @@ void InputDispatcher::setFocus(InputArea* area) {
     trackArea(m_focusedArea);
     m_focusedArea->dispatchFocusGain();
     syncTextInputFocus();
+  }
+  if (m_focusChangeCallback) {
+    m_focusChangeCallback(old, m_focusedArea);
   }
 }
 

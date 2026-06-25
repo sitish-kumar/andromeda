@@ -4,6 +4,7 @@
 #include "config/config_service.h"
 #include "config/config_types.h"
 #include "core/deferred_call.h"
+#include "core/key_modifiers.h"
 #include "core/keybind_matcher.h"
 #include "core/log.h"
 #include "core/ui_phase.h"
@@ -14,6 +15,7 @@
 #include "system/dependency_service.h"
 #include "ui/controls/box.h"
 #include "ui/controls/flex.h"
+#include "ui/controls/input.h"
 #include "ui/controls/label.h"
 #include "ui/controls/scroll_view.h"
 #include "ui/controls/select_dropdown_popup.h"
@@ -30,6 +32,7 @@
 #include <string>
 #include <thread>
 #include <utility>
+#include <xkbcommon/xkbcommon-keysyms.h>
 
 namespace {
 
@@ -482,7 +485,9 @@ void SettingsWindow::prepareFrame(bool /*needsUpdate*/, bool needsLayout) {
 
   if (needRebuild) {
     UiPhaseScope layoutPhase(UiPhase::Layout);
+    m_inputDispatcher.stashTabFocus();
     buildScene(width, height);
+    m_inputDispatcher.restoreStashedTabFocus();
     m_lastSceneWidth = width;
     m_lastSceneHeight = height;
     m_rebuildRequested = false;
@@ -504,7 +509,9 @@ void SettingsWindow::prepareFrame(bool /*needsUpdate*/, bool needsLayout) {
       m_mainContainer->setSize(w, h);
     }
     if (m_contentRebuildRequested) {
+      m_inputDispatcher.stashTabFocus();
       rebuildSettingsContent();
+      m_inputDispatcher.restoreStashedTabFocus();
       m_contentRebuildRequested = false;
     }
     m_sceneRoot->layout(*m_renderContext);
@@ -872,6 +879,21 @@ void SettingsWindow::onKeyboardEvent(const KeyboardEvent& event) {
       requestRebuild();
       return;
     }
+  }
+  if (event.pressed
+      && !event.preedit
+      && (event.modifiers & KeyMod::Ctrl) != 0
+      && (event.sym == XKB_KEY_f || event.sym == XKB_KEY_F)) {
+    if (m_settingsSearchInput != nullptr && m_settingsSearchInput->inputArea() != nullptr) {
+      m_inputDispatcher.setFocus(m_settingsSearchInput->inputArea());
+    } else {
+      m_focusSearchOnRebuild = true;
+      requestSceneRebuild();
+    }
+    if (m_surface != nullptr) {
+      m_surface->requestRedraw();
+    }
+    return;
   }
   m_inputDispatcher.keyEvent(event.sym, event.utf32, event.modifiers, event.pressed, event.preedit);
   if (m_sceneRoot != nullptr && m_surface != nullptr && (m_sceneRoot->paintDirty() || m_sceneRoot->layoutDirty())) {

@@ -1,6 +1,9 @@
 #include "ui/controls/segmented.h"
 
+#include "core/key_symbols.h"
+#include "core/keybind_matcher.h"
 #include "render/core/render_styles.h"
+#include "render/scene/input_area.h"
 #include "ui/controls/button.h"
 #include "ui/controls/flex.h"
 #include "ui/controls/separator.h"
@@ -16,6 +19,20 @@ Segmented::Segmented() {
   setAlign(FlexAlign::Stretch);
   setGap(0.0f);
   applyOuterStyle();
+
+  auto area = std::make_unique<InputArea>();
+  area->setFocusable(true);
+  area->setHitTestVisible(false);
+  area->setOnFocusGain([this]() { syncSegmentFocusHint(); });
+  area->setOnFocusLoss([this]() { syncSegmentFocusHint(); });
+  area->setOnKeyDown([this](const InputArea::KeyData& key) {
+    if (key.pressed) {
+      handleKey(key.sym);
+    }
+  });
+  m_focusArea = static_cast<InputArea*>(addChild(std::move(area)));
+  m_focusArea->setParticipatesInLayout(false);
+  m_focusArea->setZIndex(2);
 }
 
 std::size_t Segmented::addOption(std::string_view label) { return addOption(label, std::string_view{}); }
@@ -41,6 +58,7 @@ void Segmented::setSelectedIndex(std::size_t index) {
   }
   m_selected = index;
   refreshVariants();
+  syncSegmentFocusHint();
   if (m_onChange) {
     m_onChange(index);
   }
@@ -183,6 +201,7 @@ Segmented::makeSegmentButton(std::string_view label, std::string_view glyph, std
   }
   applyButtonMetrics(*btn);
   btn->setOnClick([this, index]() { setSelectedIndex(index); });
+  btn->setTabStop(false);
   btn->setFlexGrow(m_equalSegmentWidths ? 1.0f : 0.0f);
   btn->setContentAlign(ButtonContentAlign::Center);
   btn->setEnabled(m_enabled);
@@ -240,6 +259,43 @@ void Segmented::applyOuterStyle() {
   setFill(colorSpecFromRole(m_surfaceRole, m_surfaceOpacity));
   clearBorder();
   setRadius(Style::scaledRadiusMd(m_scale));
+}
+
+void Segmented::syncSegmentFocusHint() {
+  const bool focused = m_enabled && m_focusArea != nullptr && m_focusArea->focused();
+  for (std::size_t i = 0; i < m_buttons.size(); ++i) {
+    if (m_buttons[i] != nullptr) {
+      m_buttons[i]->setKeyboardFocusHint(focused && i == m_selected);
+    }
+  }
+}
+
+void Segmented::handleKey(std::uint32_t sym) {
+  if (!m_enabled || m_buttons.empty()) {
+    return;
+  }
+  if (KeybindMatcher::matches(KeybindAction::Left, sym, 0)) {
+    if (m_selected > 0) {
+      setSelectedIndex(m_selected - 1);
+    }
+    return;
+  }
+  if (KeybindMatcher::matches(KeybindAction::Right, sym, 0)) {
+    if (m_selected + 1 < m_buttons.size()) {
+      setSelectedIndex(m_selected + 1);
+    }
+    return;
+  }
+  if (KeySymbol::isEnterOrSpace(sym)) {
+  }
+}
+
+void Segmented::doLayout(Renderer& renderer) {
+  Flex::doLayout(renderer);
+  if (m_focusArea != nullptr) {
+    m_focusArea->setPosition(0.0f, 0.0f);
+    m_focusArea->setFrameSize(width(), height());
+  }
 }
 
 float Segmented::effectiveFontSize() const noexcept {

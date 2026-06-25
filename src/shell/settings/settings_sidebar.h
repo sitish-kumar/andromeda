@@ -10,6 +10,7 @@
 #include <vector>
 
 class Flex;
+class Node;
 
 namespace settings {
 
@@ -34,6 +35,7 @@ namespace settings {
     std::function<void()> requestRebuild;
     std::function<void(std::string)> createBar;
     std::function<void(std::string, std::string)> createMonitorOverride;
+    std::function<void(const Node*)> scrollSidebarNodeIntoView;
   };
 
   [[nodiscard]] std::unique_ptr<Flex> buildSettingsSidebar(SettingsSidebarContext ctx);

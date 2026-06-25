@@ -1204,7 +1204,7 @@ void Input::applyVisualState() {
                                : resolved(ColorRole::SurfaceVariant, m_surfaceOpacity);
     const Color border = m_invalid
         ? resolved(ColorRole::Error)
-        : (focused ? resolved(ColorRole::Primary)
+        : (focused ? resolveColorSpec(focusRingColorSpec())
                    : (inputHovered ? resolved(ColorRole::Hover) : resolved(ColorRole::Outline)));
 
     m_background->setStyle(
@@ -1214,7 +1214,7 @@ void Input::applyVisualState() {
             .fillMode = FillMode::Solid,
             .radius = Style::scaledRadius(m_frameRadius, chromeScale),
             .softness = 1.0f,
-            .borderWidth = Style::borderWidth,
+            .borderWidth = focused ? Style::focusRingWidth : Style::borderWidth,
         }
     );
   } else if (m_background != nullptr) {

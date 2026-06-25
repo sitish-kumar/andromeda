@@ -33,6 +33,7 @@ class CompositorPlatform;
 class DependencyService;
 class Flex;
 class IdleManager;
+class Input;
 class Label;
 class RenderContext;
 class UPowerService;
@@ -122,6 +123,8 @@ private:
   void refreshPluginListIfNeeded();
   void maybeOpenPendingWidgetInspector();
   void applyPendingContentScrollTarget(float margin);
+  void scrollFocusedAreaIntoView(class InputArea* area);
+  void scrollSidebarNodeIntoView(const Node* node);
   void clearStatusMessage();
   void clearTransientSettingsState();
   void openActionsMenu();
@@ -196,6 +199,7 @@ private:
   Button* m_actionsMenuButton = nullptr;
   Flex* m_contentContainer = nullptr;
   ScrollView* m_contentScrollView = nullptr;
+  ScrollView* m_sidebarScrollView = nullptr;
   std::unique_ptr<ContextMenuPopup> m_actionsMenuPopup;
   std::unique_ptr<settings::WidgetAddPopup> m_widgetAddPopup;
   std::unique_ptr<settings::ConfigExportDialogPopup> m_configExportDialogPopup;
@@ -216,6 +220,7 @@ private:
   bool m_rebuildRequested = false;
   bool m_contentRebuildRequested = false;
   bool m_focusSearchOnRebuild = false;
+  Input* m_settingsSearchInput = nullptr;
   bool m_scrollToPendingContentTarget = false;
   Node* m_pendingContentScrollTarget = nullptr;
   std::string m_searchQuery;

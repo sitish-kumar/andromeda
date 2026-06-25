@@ -61,6 +61,7 @@ private:
   void setScrollOffset(float offset);
   void applyScrollOffset();
   void clampScrollOffset();
+  void ensureHoveredIndexVisible();
   void applyHoverVisuals();
   void selectAndClose(std::size_t index);
   [[nodiscard]] bool mapPointerEvent(const PointerEvent& event, float& localX, float& localY) const noexcept;

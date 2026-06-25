@@ -341,7 +341,7 @@ void Select::applyVisualState() {
     triggerBg = resolved(ColorRole::SurfaceVariant, m_surfaceOpacity);
     triggerBorder = resolved(ColorRole::Hover);
   } else if (triggerFocused) {
-    triggerBorder = resolved(ColorRole::Primary);
+    triggerBorder = resolveColorSpec(focusRingColorSpec());
   }
 
   m_triggerLabel->setColor(triggerText);
@@ -355,7 +355,7 @@ void Select::applyVisualState() {
           .fillMode = FillMode::Solid,
           .radius = Style::scaledRadiusMd(),
           .softness = 1.0f,
-          .borderWidth = Style::borderWidth,
+          .borderWidth = triggerFocused ? Style::focusRingWidth : Style::borderWidth,
       }
   );
 }
