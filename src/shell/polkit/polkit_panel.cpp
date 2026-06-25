@@ -40,8 +40,12 @@ namespace {
 
 } // namespace
 
-PolkitPanel::PolkitPanel(ConfigService* /*config*/, std::function<PolkitAgent*()> agentProvider)
-    : m_agentProvider(std::move(agentProvider)) {}
+PolkitPanel::PolkitPanel(ConfigService* config, std::function<PolkitAgent*()> agentProvider)
+    : m_config(config), m_agentProvider(std::move(agentProvider)) {}
+
+PanelPlacement PolkitPanel::panelPlacement() const noexcept {
+  return m_config != nullptr ? m_config->config().shell.panel.polkitPlacement : PanelPlacement::Floating;
+}
 
 void PolkitPanel::create() {
   const float scale = contentScale();

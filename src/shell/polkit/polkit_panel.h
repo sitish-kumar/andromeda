@@ -9,7 +9,6 @@ class Flex;
 class Input;
 class InputArea;
 class Label;
-class Renderer;
 class PolkitAgent;
 class ConfigService;
 
@@ -23,6 +22,7 @@ public:
 
   [[nodiscard]] float preferredWidth() const override { return scaled(480.0f); }
   [[nodiscard]] float preferredHeight() const override { return scaled(240.0f); }
+  [[nodiscard]] PanelPlacement panelPlacement() const noexcept override;
   [[nodiscard]] LayerShellLayer layer() const override { return LayerShellLayer::Overlay; }
   [[nodiscard]] LayerShellKeyboard keyboardMode() const override { return LayerShellKeyboard::Exclusive; }
   [[nodiscard]] InputArea* initialFocusArea() const override;
@@ -34,6 +34,7 @@ private:
   void submit();
   bool handleInputKeyEvent(std::uint32_t sym, std::uint32_t modifiers);
 
+  ConfigService* m_config = nullptr;
   std::function<PolkitAgent*()> m_agentProvider;
   Flex* m_rootLayout = nullptr;
   InputArea* m_focusArea = nullptr;

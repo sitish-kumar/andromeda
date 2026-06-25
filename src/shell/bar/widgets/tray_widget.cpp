@@ -6,12 +6,13 @@
 #include "dbus/tray/tray_service.h"
 #include "render/core/image_file_loader.h"
 #include "render/core/image_source_log.h"
-#include "render/core/renderer.h"
+#include "render/core/texture_manager.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
 #include "render/text/glyph_registry.h"
 #include "shell/panel/panel_manager.h"
 #include "shell/tray/tray_identifier.h"
+#include "system/desktop_entry.h"
 #include "ui/app_icon_colorization.h"
 #include "ui/builders.h"
 #include "ui/palette.h"
@@ -96,10 +97,11 @@ namespace {
 
   std::optional<LoadedImageFile>
   loadSymbolicTrayIcon(const std::string& path, int targetSize, const Color& symbolicColor) {
-    std::string loadError;
-    auto loaded = loadImageFile(path, targetSize, &loadError);
+    auto loaded = loadImageFile(path, targetSize);
     if (!loaded) {
-      kLog.debug("tray widget symbolic icon decode failed path={} error={}", ImageSourceLog::describe(path), loadError);
+      kLog.debug(
+          "tray widget symbolic icon decode failed path={} error={}", ImageSourceLog::describe(path), loaded.error()
+      );
       return std::nullopt;
     }
 
@@ -155,7 +157,7 @@ namespace {
       loaded->rgba[i + 3] = static_cast<std::uint8_t>(std::lround(a * std::clamp(mask, 0.0f, 1.0f)));
     }
 
-    return loaded;
+    return std::move(*loaded);
   }
 
   bool isUniqueBusName(std::string_view value) { return !value.empty() && value.front() == ':'; }
