@@ -197,7 +197,12 @@ namespace {
 
     int rc = pam_authenticate(pamh.h, 0);
     if (rc == PAM_SUCCESS) {
-      rc = pam_acct_mgmt(pamh.h, 0);
+      // An unprivileged locker can't read /etc/shadow for the account stack, so
+      // ignore PAM_AUTHINFO_UNAVAIL; pam_authenticate already proved identity.
+      const int acctRc = pam_acct_mgmt(pamh.h, 0);
+      if (acctRc != PAM_SUCCESS && acctRc != PAM_AUTHINFO_UNAVAIL) {
+        rc = acctRc;
+      }
     }
     const char* err = pam_strerror(pamh.h, rc);
     const std::string errStr = err != nullptr ? err : i18n::tr("auth.pam.authentication-failed");
