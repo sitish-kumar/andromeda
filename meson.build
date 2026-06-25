@@ -1066,6 +1066,18 @@ i18n_language_tag_test = executable('i18n_language_tag_test',
 
 test('i18n_language_tag', i18n_language_tag_test)
 
+i18n_supported_languages_test = executable('i18n_supported_languages_test',
+  sources: files(
+    'tests/i18n_supported_languages_test.cpp',
+  ),
+  include_directories: _noctalia_inc,
+  cpp_args: [
+    '-DNOCTALIA_SOURCE_ASSETS_DIR="' + meson.project_source_root() / 'assets' + '"',
+  ],
+)
+
+test('i18n_supported_languages', i18n_supported_languages_test)
+
 scheme_test = executable('scheme_test',
   sources: files(
     'tests/scheme_test.cpp',
