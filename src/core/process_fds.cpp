@@ -42,9 +42,7 @@ namespace {
     return std::format("rlimit_nofile={}/{}", rlimitValue(limit.rlim_cur), rlimitValue(limit.rlim_max));
   }
 
-  [[nodiscard]] bool startsWith(std::string_view value, std::string_view prefix) {
-    return value.size() >= prefix.size() && value.substr(0, prefix.size()) == prefix;
-  }
+  [[nodiscard]] bool startsWith(std::string_view value, std::string_view prefix) { return value.starts_with(prefix); }
 
   [[nodiscard]] std::string bucketTarget(std::string target) {
     if (startsWith(target, "socket:")) {
@@ -136,7 +134,7 @@ std::string ProcessFds::describeOpenFileDescriptors(std::size_t maxTargets) {
   std::vector<std::pair<std::string, std::size_t>> targets;
   targets.reserve(targetCounts.size());
   for (auto& [target, targetCount] : targetCounts) {
-    targets.emplace_back(std::move(target), targetCount);
+    targets.emplace_back(target, targetCount);
   }
   std::ranges::sort(targets, [](const auto& lhs, const auto& rhs) {
     if (lhs.second != rhs.second) {
