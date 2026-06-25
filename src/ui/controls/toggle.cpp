@@ -180,12 +180,12 @@ void Toggle::applyAnimatedState(float t) {
   ColorSpec borderColor = colorSpecFromRole(ColorRole::Outline);
 
   if (m_enabled) {
-    if (m_checked) {
-      borderColor = colorSpecFromRole(ColorRole::Primary);
-    } else if (m_inputArea != nullptr && m_inputArea->focused()) {
+    if (m_inputArea != nullptr && m_inputArea->focused()) {
       borderColor = focusRingColorSpec();
     } else if (hovered()) {
       borderColor = colorSpecFromRole(ColorRole::Hover);
+    } else if (m_checked) {
+      borderColor = colorSpecFromRole(ColorRole::Primary);
     }
   }
 
