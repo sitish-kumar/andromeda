@@ -1139,6 +1139,16 @@ namespace settings {
       entries.push_back(std::move(e));
     }
     entries.push_back(makeEntry(
+        SettingsSection::Panels, "polkit", tr("settings.schema.panels.placement-polkit.label"),
+        tr("settings.schema.panels.placement-polkit.description"), {"shell", "panel", "polkit_placement"},
+        asSegmented(enumSelect(kPanelPlacements, cfg.shell.panel.polkitPlacement)),
+        "attached floating bar panel polkit auth password"
+    ));
+    entries.push_back(panelPositionEntry(
+        SettingsSection::Panels, "polkit", "polkit", "settings.schema.panels.position-polkit.label",
+        "settings.schema.panels.position-polkit.description", cfg.shell.panel.polkitPosition
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Power, "session-panel", tr("settings.schema.power.session-actions.label"),
         tr("settings.schema.power.session-actions.description"), {"shell", "session", "actions"},
         SessionPanelActionsSetting{.items = cfg.shell.session.actions},

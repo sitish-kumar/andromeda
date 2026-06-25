@@ -1045,6 +1045,7 @@
         "overview": "Overview",
         "pinned-apps": "Pinned Apps",
         "power": "Power",
+        "polkit": "Polkit",
         "privacy-security": "Privacy & Security",
         "profile": "Profile",
         "screen-corners": "Screen Corners",
@@ -2001,6 +2002,10 @@
           "description": "Choose whether the session menu attaches to the bar or floats at a chosen screen position",
           "label": "Placement"
         },
+        "placement-polkit": {
+          "description": "Choose whether the polkit prompt attaches to the bar or floats at a chosen screen position",
+          "label": "Placement"
+        },
         "placement-wallpaper": {
           "description": "Choose whether the wallpaper picker attaches to the bar or floats at a chosen screen position",
           "label": "Placement"
@@ -2019,6 +2024,10 @@
         },
         "position-session": {
           "description": "Where the session menu floats on screen — Follow Bar keeps it near the bar",
+          "label": "Position"
+        },
+        "position-polkit": {
+          "description": "Where the polkit prompt floats on screen — Follow Bar keeps it near the bar",
           "label": "Position"
         },
         "position-wallpaper": {
