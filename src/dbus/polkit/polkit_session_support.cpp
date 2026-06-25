@@ -13,8 +13,6 @@ namespace polkit_session {
     return hasXdgSessionId() || logindOnSystemBus;
   }
 
-  bool isNoSessionForPidError(const std::string_view error) noexcept {
-    return error.find("No session for pid") != std::string_view::npos;
-  }
+  bool isNoSessionForPidError(const std::string_view error) noexcept { return error.contains("No session for pid"); }
 
 } // namespace polkit_session
