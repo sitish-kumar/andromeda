@@ -1,4 +1,4 @@
-#include "core/fd_diagnostics.h"
+#include "core/process_fds.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -87,7 +87,29 @@ namespace {
 
 } // namespace
 
-std::string FdDiagnostics::describeOpenFileDescriptors(std::size_t maxTargets) {
+std::string ProcessFds::raiseOpenFileLimit() {
+  rlimit limit{};
+  if (getrlimit(RLIMIT_NOFILE, &limit) != 0) {
+    return std::format("RLIMIT_NOFILE getrlimit failed: {}", std::strerror(errno));
+  }
+
+  const rlim_t previous = limit.rlim_cur;
+  if (limit.rlim_cur >= limit.rlim_max) {
+    return std::format("RLIMIT_NOFILE already at hard limit ({})", rlimitValue(previous));
+  }
+
+  limit.rlim_cur = limit.rlim_max;
+  if (setrlimit(RLIMIT_NOFILE, &limit) != 0) {
+    return std::format(
+        "RLIMIT_NOFILE setrlimit to {} failed: {} (soft limit stays {})", rlimitValue(limit.rlim_max),
+        std::strerror(errno), rlimitValue(previous)
+    );
+  }
+
+  return std::format("RLIMIT_NOFILE soft limit raised {} -> {}", rlimitValue(previous), rlimitValue(limit.rlim_max));
+}
+
+std::string ProcessFds::describeOpenFileDescriptors(std::size_t maxTargets) {
   const std::string limit = rlimitSummary();
   DIR* dir = opendir("/proc/self/fd");
   if (dir == nullptr) {

@@ -1,8 +1,8 @@
 #include "wayland/wayland_connection.h"
 
 #include "compositors/compositor_detect.h"
-#include "core/fd_diagnostics.h"
 #include "core/log.h"
+#include "core/process_fds.h"
 #include "cursor-shape-v1-client-protocol.h"
 #include "dwl-ipc-unstable-v2-client-protocol.h"
 #include "ext-background-effect-v1-client-protocol.h"
@@ -657,7 +657,7 @@ std::string WaylandConnection::describeDisplayError(int operationErrno) const {
   }
 
   if (displayError == EMFILE || displayError == ENFILE || operationErrno == EMFILE || operationErrno == ENFILE) {
-    detail += std::format(", {}", FdDiagnostics::describeOpenFileDescriptors());
+    detail += std::format(", {}", ProcessFds::describeOpenFileDescriptors());
   }
 
   if (displayError == EPROTO) {
