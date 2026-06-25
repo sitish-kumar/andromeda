@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ui/controls/flex.h"
+#include "ui/controls/roving_list_nav.h"
 #include "ui/palette.h"
 
 #include <cstddef>
@@ -50,8 +51,6 @@ public:
   void doLayout(Renderer& renderer) override;
 
 private:
-  void handleKey(std::uint32_t sym);
-  void syncSegmentFocusHint();
   [[nodiscard]] std::unique_ptr<Separator> makeSegmentSeparator();
   [[nodiscard]] std::unique_ptr<Button>
   makeSegmentButton(std::string_view label, std::string_view glyph, std::size_t index);
@@ -60,6 +59,7 @@ private:
   void applyOuterStyle();
   [[nodiscard]] float effectiveFontSize() const noexcept;
 
+  RovingListNavController m_rovingNav;
   std::vector<Separator*> m_separators;
   std::vector<Button*> m_buttons;
   InputArea* m_focusArea = nullptr;

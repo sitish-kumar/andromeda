@@ -2054,6 +2054,11 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
         TooltipManager::instance().onHoverChange(next, m_layerSurface->layerSurface(), m_output);
       }
     });
+    m_inputDispatcher.setFocusChangeCallback([this](InputArea* /*old*/, InputArea* next) {
+      if (m_activePanel != nullptr && next != nullptr) {
+        m_activePanel->scrollFocusedInputIntoView(next);
+      }
+    });
 
     if (m_attachedToBar && m_attachedRevealClipNode != nullptr) {
       m_sceneRoot->setOpacity(1.0f);

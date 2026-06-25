@@ -56,8 +56,13 @@ private:
   void doLayout(Renderer& renderer, float contentWidth, float bodyHeight) override;
   void doUpdate(Renderer& renderer) override;
   void layoutWallpaperBackground(Renderer& renderer);
-  // Adds a full-card click+hover overlay; returns the area so doLayout can size/position it.
+  // Adds a card overlay for pointer and/or keyboard activation.
+  struct CardOverlayOptions {
+    bool keyboardFocus = true;
+    bool pointerHitTest = true;
+  };
   InputArea* addCardOverlay(Flex& card, std::function<void()> onActivate);
+  InputArea* addCardOverlay(Flex& card, std::function<void()> onActivate, CardOverlayOptions options);
   void layoutCardOverlays();
   void syncWallpaperBackground(Renderer& renderer);
   void ensureWallpaperThumbnail(const std::string& path, int targetPx);
@@ -98,6 +103,7 @@ private:
   Label* m_userVersion = nullptr;
   Button* m_settingsButton = nullptr;
   Button* m_sessionButton = nullptr;
+  InputArea* m_userCardKeyboardArea = nullptr;
   InputArea* m_userCardArea = nullptr;
   InputArea* m_mediaCardArea = nullptr;
   InputArea* m_dateTimeCardArea = nullptr;

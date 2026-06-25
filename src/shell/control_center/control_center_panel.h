@@ -15,6 +15,7 @@
 #include "shell/control_center/tab.h"
 #include "shell/control_center/weather_tab.h"
 #include "shell/panel/panel.h"
+#include "ui/controls/scroll_view.h"
 
 #include <array>
 #include <chrono>
@@ -37,6 +38,8 @@ class IpcService;
 class InputArea;
 class Label;
 class MprisService;
+class Node;
+class RovingListNavHost;
 class NetworkSecretAgent;
 class INetworkService;
 class GammaService;
@@ -127,6 +130,8 @@ private:
   void selectTab(TabId tab, bool animated = false);
   void selectAdjacentVisibleTab(int direction);
   void wireSidebarScroll(InputArea* area);
+  void scrollFocusedInputIntoView(InputArea* area) override;
+  void scrollSidebarNodeIntoView(const Node* node);
   void scheduleMprisRefreshFor(TabId tab);
   void updateTabChrome(TabId tab);
   void applyTabContainerVisibility(TabId activeTab);
@@ -150,6 +155,9 @@ private:
   // Panel UI structure (rebuilt each create(), nulled in onClose())
   Flex* m_rootLayout = nullptr;
   Flex* m_sidebar = nullptr;
+  ScrollView* m_sidebarScrollView = nullptr;
+  ScrollViewState m_sidebarScrollState{};
+  RovingListNavHost* m_sidebarNav = nullptr;
   InputArea* m_sidebarScrollArea = nullptr;
   Flex* m_content = nullptr;
   InputArea* m_contentDismissArea = nullptr;

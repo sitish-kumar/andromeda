@@ -4,6 +4,7 @@
 #include "config/config_service.h"
 #include "core/build_info.h"
 #include "core/deferred_call.h"
+#include "core/key_symbols.h"
 #include "core/log.h"
 #include "cursor-shape-v1-client-protocol.h"
 #include "dbus/accounts/accounts_service.h"
@@ -139,6 +140,18 @@ namespace {
     }
   }
 
+  void applyAvatarChrome(Image* avatar, bool highlighted) {
+    if (avatar == nullptr) {
+      return;
+    }
+    const float borderWidth = Style::borderWidth * 3.0f;
+    if (highlighted) {
+      avatar->setBorder(colorSpecFromRole(ColorRole::Hover), borderWidth);
+      return;
+    }
+    avatar->setBorder(colorSpecFromRole(ColorRole::Primary), borderWidth);
+  }
+
 } // namespace
 
 HomeTab::HomeTab(const ControlCenterServices& services)
@@ -231,11 +244,7 @@ std::unique_ptr<Flex> HomeTab::create() {
   }
 
   const float avatarSize = homeAvatarSize(scale);
-  auto avatarArea = std::make_unique<InputArea>();
-  avatarArea->setSize(avatarSize, avatarSize);
-  avatarArea->setHitShape(InputArea::HitShape::Circle);
-  avatarArea->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
-  avatarArea->setOnClick([this](const InputArea::PointerData&) {
+  const auto openAvatarPicker = [this]() {
     if (m_config == nullptr) {
       return;
     }
@@ -265,6 +274,18 @@ std::unique_ptr<Flex> HomeTab::create() {
           i18n::tr(shell::avatarApplyErrorTranslationKey(applyResult.error))
       );
     });
+  };
+
+  auto avatarArea = std::make_unique<InputArea>();
+  avatarArea->setSize(avatarSize, avatarSize);
+  avatarArea->setHitShape(InputArea::HitShape::Circle);
+  avatarArea->setFocusable(true);
+  avatarArea->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
+  avatarArea->setOnClick([openAvatarPicker](const InputArea::PointerData&) { openAvatarPicker(); });
+  avatarArea->setOnKeyDown([openAvatarPicker](const InputArea::KeyData& key) {
+    if (key.pressed && KeySymbol::isEnterOrSpace(key.sym)) {
+      openAvatarPicker();
+    }
   });
   m_userAvatarArea = avatarArea.get();
   avatarArea->addChild(
@@ -281,6 +302,16 @@ std::unique_ptr<Flex> HomeTab::create() {
           },
       })
   );
+  const auto syncAvatarChrome = [this]() {
+    const bool highlighted =
+        m_userAvatarArea != nullptr && (m_userAvatarArea->focused() || m_userAvatarArea->hovered());
+    applyAvatarChrome(m_userAvatar, highlighted);
+    PanelManager::instance().requestRedraw();
+  };
+  avatarArea->setOnEnter([syncAvatarChrome](const InputArea::PointerData&) { syncAvatarChrome(); });
+  avatarArea->setOnLeave([syncAvatarChrome]() { syncAvatarChrome(); });
+  avatarArea->setOnFocusGain(syncAvatarChrome);
+  avatarArea->setOnFocusLoss(syncAvatarChrome);
   const auto configureUserDetailLabel = [scale](Label& label) {
     label.setShadow(Color{0.0f, 0.0f, 0.0f, 0.36f}, 0.0f, 1.0f * scale);
   };
@@ -328,9 +359,11 @@ std::unique_ptr<Flex> HomeTab::create() {
   );
   userCard->addChild(std::move(userRow));
 
-  // Clicking the user card opens the wallpaper selector (the card background is the wallpaper). The
-  // overlay is carved around the avatar in doLayout so the avatar keeps its own change-avatar click.
-  m_userCardArea = addCardOverlay(*m_userCard, []() { PanelManager::instance().togglePanel("wallpaper"); });
+  // Wallpaper panel: full-card keyboard target; carved pointer target leaves the avatar clickable.
+  const auto openWallpaperPanel = []() { PanelManager::instance().togglePanel("wallpaper"); };
+  m_userCardKeyboardArea =
+      addCardOverlay(*m_userCard, openWallpaperPanel, {.keyboardFocus = true, .pointerHitTest = false});
+  m_userCardArea = addCardOverlay(*m_userCard, openWallpaperPanel, {.keyboardFocus = false, .pointerHitTest = true});
 
   tab->addChild(std::move(userCard));
 
@@ -791,22 +824,58 @@ void HomeTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight)
 }
 
 InputArea* HomeTab::addCardOverlay(Flex& card, std::function<void()> onActivate) {
+  return addCardOverlay(card, std::move(onActivate), CardOverlayOptions{});
+}
+
+InputArea* HomeTab::addCardOverlay(Flex& card, std::function<void()> onActivate, CardOverlayOptions options) {
   auto area = std::make_unique<InputArea>();
   area->setParticipatesInLayout(false);
   area->setZIndex(3);
   area->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
+  if (!options.pointerHitTest) {
+    area->setHitTestVisible(false);
+  }
+  if (options.keyboardFocus) {
+    area->setFocusable(true);
+  } else {
+    area->setFocusable(false);
+    area->setTabStop(false);
+  }
 
   Flex* cardPtr = &card;
   const bool borders = panelBordersEnabled();
-  area->setOnEnter([cardPtr, borders](const InputArea::PointerData&) {
-    applyHomeCardHover(*cardPtr, true, borders);
+  InputArea* areaPtr = area.get();
+  std::function<void()> activate = std::move(onActivate);
+
+  const auto setHovered = [cardPtr, borders](bool hovered) {
+    applyHomeCardHover(*cardPtr, hovered, borders);
     PanelManager::instance().requestRedraw();
-  });
-  area->setOnLeave([cardPtr, borders]() {
-    applyHomeCardHover(*cardPtr, false, borders);
-    PanelManager::instance().requestRedraw();
-  });
-  area->setOnClick([onActivate = std::move(onActivate)](const InputArea::PointerData&) { onActivate(); });
+  };
+
+  if (options.pointerHitTest) {
+    area->setOnEnter([setHovered](const InputArea::PointerData&) { setHovered(true); });
+    area->setOnLeave([setHovered, areaPtr]() {
+      if (areaPtr->focused()) {
+        return;
+      }
+      setHovered(false);
+    });
+    area->setOnClick([activate](const InputArea::PointerData&) { activate(); });
+  }
+  if (options.keyboardFocus) {
+    area->setOnFocusGain([setHovered]() { setHovered(true); });
+    area->setOnFocusLoss([setHovered, areaPtr]() {
+      if (areaPtr->hovered()) {
+        return;
+      }
+      setHovered(false);
+    });
+    area->setOnKeyDown([activate](const InputArea::KeyData& key) {
+      if (key.pressed && KeySymbol::isEnterOrSpace(key.sym)) {
+        activate();
+      }
+    });
+  }
 
   return static_cast<InputArea*>(card.addChild(std::move(area)));
 }
@@ -821,8 +890,9 @@ void HomeTab::layoutCardOverlays() {
   };
   cover(m_mediaCard, m_mediaCardArea);
   cover(m_dateTimeCard, m_dateTimeCardArea);
+  cover(m_userCard, m_userCardKeyboardArea);
 
-  // The user card's overlay must not swallow the avatar's own click, so start it just past the
+  // The pointer overlay must not swallow the avatar's own click, so start it just past the
   // avatar's right edge; the avatar (a nested InputArea) keeps the carved-out left region.
   if (m_userCard != nullptr && m_userCardArea != nullptr) {
     float left = 0.0f;
@@ -1085,6 +1155,7 @@ void HomeTab::onClose() {
   m_userVersion = nullptr;
   m_settingsButton = nullptr;
   m_sessionButton = nullptr;
+  m_userCardKeyboardArea = nullptr;
   m_userCardArea = nullptr;
   m_mediaCardArea = nullptr;
   m_dateTimeCardArea = nullptr;

@@ -546,15 +546,8 @@ void Button::ensureGlyph() {
 }
 
 void Button::applyColors(const Color& bg, const Color& border, const Color& label) {
-  const bool keyboardNavFocus = m_keyboardFocusHint
-      && (m_variant == ButtonVariant::TabActive
-          || m_variant == ButtonVariant::Tab
-          || m_variant == ButtonVariant::Ghost);
-  const float borderWidth = keyboardNavFocus                                      ? m_palette.borderWidth
-      : m_inputArea != nullptr && (m_inputArea->focused() || m_keyboardFocusHint) ? Style::focusRingWidth
-                                                                                  : m_palette.borderWidth;
   setFill(bg);
-  setBorder(border, borderWidth);
+  setBorder(border, m_palette.borderWidth);
   if (m_label != nullptr) {
     m_label->setColor(label);
   }
@@ -588,6 +581,9 @@ void Button::resolveVisualStateColors(Color& targetBg, Color& targetBorder, Colo
           || m_variant == ButtonVariant::Tab
           || m_variant == ButtonVariant::Ghost);
   bool isHovered = m_enabled && (m_hoveredVisual || (!m_hoverSuppressed && hovered()));
+  if (isInputFocused && !keyboardNavFocus) {
+    isHovered = true;
+  }
   bool isPressed = m_enabled && (m_pressedVisual || pressed());
   bool isSelected = m_enabled && m_selected;
 
@@ -607,14 +603,6 @@ void Button::resolveVisualStateColors(Color& targetBg, Color& targetBorder, Colo
     targetBg = resolveColorSpec(colorSpecFromRole(ColorRole::Secondary));
     targetBorder = resolveColorSpec(clearColorSpec());
     targetLabel = resolveColorSpec(colorSpecFromRole(ColorRole::OnSecondary));
-  } else if (isInputFocused) {
-    targetBg = resolveColorSpec(m_palette.normal.bg);
-    targetBorder = resolveColorSpec(focusRingColorSpec());
-    targetLabel = resolveColorSpec(m_palette.normal.label);
-  } else if (isKeyboardFocused) {
-    targetBg = resolveColorSpec(m_palette.normal.bg);
-    targetBorder = resolveColorSpec(focusRingColorSpec());
-    targetLabel = resolveColorSpec(m_palette.normal.label);
   } else if (isHovered || isSelected) {
     targetBg = resolveColorSpec(m_palette.hover.bg);
     targetBorder = resolveColorSpec(m_palette.hover.border);

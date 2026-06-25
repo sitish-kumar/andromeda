@@ -1,12 +1,12 @@
 #include "shell/settings/settings_sidebar.h"
 
-#include "core/key_symbols.h"
 #include "i18n/i18n.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
 #include "shell/settings/settings_registry.h"
 #include "ui/builders.h"
+#include "ui/controls/roving_list_nav.h"
 #include "ui/palette.h"
 #include "ui/style.h"
 #include "util/string_utils.h"
@@ -29,151 +29,9 @@ namespace settings {
     constexpr float kPrimaryNavGap = 6.0f;
     constexpr float kPrimaryNavPaddingH = 10.0f;
 
-    class SettingsSidebarNav : public Flex {
-    public:
-      explicit SettingsSidebarNav(std::function<void(const Node*)> scrollNodeIntoView)
-          : m_scrollNodeIntoView(std::move(scrollNodeIntoView)) {
-        setDirection(FlexDirection::Vertical);
-        setAlign(FlexAlign::Stretch);
-
-        auto area = std::make_unique<InputArea>();
-        area->setFocusable(true);
-        area->setHitTestVisible(false);
-        area->setTabFocusKey("settings.sidebar");
-        area->setOnFocusGain([this]() { onFocusGain(); });
-        area->setOnFocusLoss([this]() { onFocusLoss(); });
-        area->setOnKeyDown([this](const InputArea::KeyData& key) {
-          if (key.pressed) {
-            handleKey(key.sym);
-          }
-        });
-        m_focusArea = static_cast<InputArea*>(addChild(std::move(area)));
-        m_focusArea->setParticipatesInLayout(false);
-        m_focusArea->setZIndex(2);
-      }
-
-      void registerNavItem(Button* button, std::function<void()> activate) {
-        if (button == nullptr) {
-          return;
-        }
-        m_items.push_back(NavItem{button, std::move(activate)});
-      }
-
-      void doLayout(Renderer& renderer) override {
-        Flex::doLayout(renderer);
-        if (m_focusArea != nullptr) {
-          m_focusArea->setPosition(0.0f, 0.0f);
-          m_focusArea->setFrameSize(width(), height());
-        }
-      }
-
-    private:
-      struct NavItem {
-        Button* button = nullptr;
-        std::function<void()> activate;
-      };
-
-      void onFocusGain() {
-        syncKeyboardIndexToSelection();
-        applyKeyboardHints();
-        scrollKeyboardItemIntoView();
-      }
-
-      void onFocusLoss() { clearKeyboardHints(); }
-
-      void syncKeyboardIndexToSelection() {
-        for (std::size_t i = 0; i < m_items.size(); ++i) {
-          if (m_items[i].button != nullptr && m_items[i].button->variant() == ButtonVariant::TabActive) {
-            setKeyboardIndex(i, false);
-            return;
-          }
-        }
-        setKeyboardIndex(0, false);
-      }
-
-      void setKeyboardIndex(std::size_t index, bool scrollIntoView) {
-        if (m_items.empty()) {
-          return;
-        }
-        index = std::min(index, m_items.size() - 1);
-        if (m_keyboardIndex != index) {
-          if (m_keyboardIndex < m_items.size() && m_items[m_keyboardIndex].button != nullptr) {
-            m_items[m_keyboardIndex].button->setKeyboardFocusHint(false);
-          }
-          m_keyboardIndex = index;
-        }
-        applyKeyboardHints();
-        if (scrollIntoView) {
-          scrollKeyboardItemIntoView();
-        }
-      }
-
-      void applyKeyboardHints() {
-        const bool focused = m_focusArea != nullptr && m_focusArea->focused();
-        for (std::size_t i = 0; i < m_items.size(); ++i) {
-          if (m_items[i].button != nullptr) {
-            m_items[i].button->setKeyboardFocusHint(focused && i == m_keyboardIndex);
-          }
-        }
-      }
-
-      void clearKeyboardHints() {
-        for (const NavItem& item : m_items) {
-          if (item.button != nullptr) {
-            item.button->setKeyboardFocusHint(false);
-          }
-        }
-      }
-
-      void scrollKeyboardItemIntoView() {
-        if (m_keyboardIndex >= m_items.size() || m_items[m_keyboardIndex].button == nullptr) {
-          return;
-        }
-        if (m_scrollNodeIntoView) {
-          m_scrollNodeIntoView(m_items[m_keyboardIndex].button);
-        }
-      }
-
-      void handleKey(std::uint32_t sym) {
-        if (m_items.empty()) {
-          return;
-        }
-        if (KeySymbol::isUp(sym)) {
-          if (m_keyboardIndex > 0) {
-            setKeyboardIndex(m_keyboardIndex - 1, true);
-          }
-          return;
-        }
-        if (KeySymbol::isDown(sym)) {
-          if (m_keyboardIndex + 1 < m_items.size()) {
-            setKeyboardIndex(m_keyboardIndex + 1, true);
-          }
-          return;
-        }
-        if (KeySymbol::isHome(sym)) {
-          setKeyboardIndex(0, true);
-          return;
-        }
-        if (KeySymbol::isEnd(sym)) {
-          setKeyboardIndex(m_items.size() - 1, true);
-          return;
-        }
-        if (KeySymbol::isEnterOrSpace(sym)) {
-          if (m_keyboardIndex < m_items.size() && m_items[m_keyboardIndex].activate) {
-            m_items[m_keyboardIndex].activate();
-          }
-        }
-      }
-
-      InputArea* m_focusArea = nullptr;
-      std::vector<NavItem> m_items;
-      std::size_t m_keyboardIndex = 0;
-      std::function<void(const Node*)> m_scrollNodeIntoView;
-    };
-
-    void addNavButton(SettingsSidebarNav& nav, std::unique_ptr<Button> button, std::function<void()> onClick) {
+    void addNavButton(RovingListNavHost& nav, std::unique_ptr<Button> button, std::function<void()> onClick) {
       Button* raw = button.get();
-      nav.registerNavItem(raw, onClick);
+      nav.registerItem(raw, onClick);
       nav.addChild(std::move(button));
     }
 
@@ -317,10 +175,15 @@ namespace settings {
         .configure = [](ScrollView& scrollView) { scrollView.clearBorder(); },
     });
 
-    auto sidebarNav = std::make_unique<SettingsSidebarNav>(std::move(ctx.scrollSidebarNodeIntoView));
+    auto sidebarNav = std::make_unique<RovingListNavHost>(RovingListNavController::Options{
+        .axis = RovingListNavAxis::Vertical,
+        .mode = RovingListNavMode::Roving,
+        .scrollIntoView = std::move(ctx.scrollSidebarNodeIntoView),
+    });
+    sidebarNav->setTabFocusKey("settings.sidebar");
     sidebarNav->setGap(kSidebarGap * scale);
     sidebarNav->setPadding(kSidebarPadding * scale);
-    SettingsSidebarNav* nav = sidebarNav.get();
+    RovingListNavHost* nav = sidebarNav.get();
 
     for (const auto& section : ctx.sections) {
       const std::string sectionId(settingsSectionId(section));

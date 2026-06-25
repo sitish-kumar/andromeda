@@ -10,6 +10,7 @@
 #include "notification/notification_manager.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
+#include "render/scene/node.h"
 #include "shell/control_center/screen_time_tab.h"
 #include "shell/panel/panel_button_style.h"
 #include "shell/panel/panel_manager.h"
@@ -17,6 +18,9 @@
 #include "system/easyeffects_service.h"
 #include "system/screen_time_service.h"
 #include "ui/builders.h"
+#include "ui/controls/roving_list_nav.h"
+#include "ui/controls/scroll_view.h"
+#include "ui/scroll_into_view.h"
 
 #include <chrono>
 #include <memory>
@@ -117,9 +121,10 @@ void ControlCenterPanel::create() {
   if (m_showSidebar) {
     auto sidebar = ui::column({
         .out = &m_sidebar,
-        .align = FlexAlign::Stretch,
-        .gap = Style::spaceXs * scale,
+        .align = FlexAlign::Start,
+        .gap = 0.0f,
         .padding = Style::spaceSm * scale,
+        .fillWidth = false,
         .fillHeight = true,
         .configure = [this, scale](Flex& column) {
           column.setFill(colorSpecFromRole(ColorRole::SurfaceVariant, panelCardOpacity()));
@@ -134,10 +139,43 @@ void ControlCenterPanel::create() {
     wireSidebarScroll(m_sidebarScrollArea);
     sidebar->addChild(std::move(sidebarScrollArea));
 
+    const float sidebarTabWidth = m_compact ? Style::controlHeightSm * scale : 200.0f * scale;
+
+    auto sidebarScroll = ui::scrollView({
+        .out = &m_sidebarScrollView,
+        .state = &m_sidebarScrollState,
+        .scrollbarVisible = true,
+        .viewportPaddingH = 0.0f,
+        .viewportPaddingV = 0.0f,
+        .fillWidth = false,
+        .fillHeight = true,
+        .width = sidebarTabWidth,
+        .configure = [](ScrollView& scrollView) {
+          scrollView.clearFill();
+          scrollView.clearBorder();
+        },
+    });
+
+    auto sidebarNav = std::make_unique<RovingListNavHost>(RovingListNavController::Options{
+        .axis = RovingListNavAxis::Vertical,
+        .mode = RovingListNavMode::Roving,
+        .scrollIntoView = [this](const Node* node) { scrollSidebarNodeIntoView(node); },
+        .syncIndexFromSelection = {},
+    });
+    sidebarNav->setTabFocusKey("control-center.sidebar");
+    sidebarNav->setAlign(m_compact ? FlexAlign::Start : FlexAlign::Stretch);
+    sidebarNav->setGap(Style::spaceXs * scale);
+    m_sidebarNav = sidebarNav.get();
+
     for (const auto& tab : kTabs) {
-      sidebar->addChild(
+      const std::size_t idx = tabIndex(tab.id);
+      const auto onClick = [this, id = tab.id]() {
+        selectTab(id, true);
+        PanelManager::instance().refresh();
+      };
+      sidebarNav->addChild(
           ui::button({
-              .out = &m_tabButtons[tabIndex(tab.id)],
+              .out = &m_tabButtons[idx],
               .text = m_compact ? std::optional<std::string>{} : std::optional<std::string>{i18n::tr(tab.titleKey)},
               .glyph = tab.glyph,
               .glyphSize = 21.0f * scale,
@@ -149,22 +187,23 @@ void ControlCenterPanel::create() {
               .paddingH = (m_compact ? Style::spaceXs : Style::spaceMd) * scale,
               .gap = Style::spaceSm * scale,
               .radius = Style::scaledRadiusLg(scale),
-              .onClick =
-                  [this, id = tab.id]() {
-                    selectTab(id, true);
-                    PanelManager::instance().refresh();
-                  },
-              .configure =
-                  [this, scale](Button& button) {
-                    if (button.label() != nullptr) {
-                      button.label()->setFontWeight(FontWeight::Bold);
-                      button.label()->setFontSize(Style::fontSizeBody * scale);
-                    }
-                    wireSidebarScroll(button.inputArea());
-                  },
+              .onClick = onClick,
+              .configure = [this, scale](Button& button) {
+                if (button.label() != nullptr) {
+                  button.label()->setFontWeight(FontWeight::Bold);
+                  button.label()->setFontSize(Style::fontSizeBody * scale);
+                }
+                wireSidebarScroll(button.inputArea());
+              },
           })
       );
+      sidebarNav->registerItem(m_tabButtons[idx], onClick);
     }
+
+    if (sidebarScroll->content() != nullptr) {
+      sidebarScroll->content()->addChild(std::move(sidebarNav));
+    }
+    sidebar->addChild(std::move(sidebarScroll));
     rootLayout->addChild(std::move(sidebar));
   }
 
@@ -179,6 +218,8 @@ void ControlCenterPanel::create() {
   auto dismissArea = std::make_unique<InputArea>();
   dismissArea->setParticipatesInLayout(false);
   dismissArea->setZIndex(-1);
+  dismissArea->setFocusable(false);
+  dismissArea->setTabStop(false);
   dismissArea->setOnPress([this](const InputArea::PointerData&) {
     const std::size_t activeIdx = tabIndex(m_activeTab);
     if (m_tabs[activeIdx] != nullptr && m_tabs[activeIdx]->dismissTransientUi()) {
@@ -382,6 +423,9 @@ void ControlCenterPanel::onClose() {
   }
   m_rootLayout = nullptr;
   m_sidebar = nullptr;
+  m_sidebarScrollView = nullptr;
+  m_sidebarScrollState = {};
+  m_sidebarNav = nullptr;
   m_sidebarScrollArea = nullptr;
   m_content = nullptr;
   m_contentDismissArea = nullptr;
@@ -483,6 +527,9 @@ void ControlCenterPanel::updateTabChrome(TabId tab) {
   }
   if (m_contentHeaderActions != nullptr) {
     m_contentHeaderActions->setVisible(true);
+  }
+  if (m_sidebarNav != nullptr) {
+    m_sidebarNav->notifyExternalSelectionChanged();
   }
 }
 
@@ -739,3 +786,32 @@ ControlCenterPanel::TabId ControlCenterPanel::tabFromContext(std::string_view co
 }
 
 std::size_t ControlCenterPanel::tabIndex(TabId id) { return static_cast<std::size_t>(id); }
+
+void ControlCenterPanel::scrollSidebarNodeIntoView(const Node* node) {
+  if (node == nullptr || m_sidebarScrollView == nullptr) {
+    return;
+  }
+  scrollNodeIntoScrollView(*m_sidebarScrollView, &m_sidebarScrollState, *node, Style::spaceXs * contentScale());
+  PanelManager::instance().requestLayout();
+}
+
+void ControlCenterPanel::scrollFocusedInputIntoView(InputArea* area) {
+  if (area == nullptr) {
+    return;
+  }
+
+  if (m_sidebarScrollView != nullptr && m_sidebarScrollView->content() != nullptr) {
+    for (const Node* node = area; node != nullptr; node = node->parent()) {
+      if (node == m_sidebarScrollView->content()) {
+        scrollNodeIntoScrollView(*m_sidebarScrollView, &m_sidebarScrollState, *area, Style::spaceXs * contentScale());
+        PanelManager::instance().requestLayout();
+        return;
+      }
+    }
+  }
+
+  if (ScrollView* scrollView = findEnclosingScrollView(area)) {
+    scrollNodeIntoScrollView(*scrollView, nullptr, *area, Style::spaceMd * contentScale());
+    PanelManager::instance().requestLayout();
+  }
+}
