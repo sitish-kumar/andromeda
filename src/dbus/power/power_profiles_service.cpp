@@ -257,9 +257,10 @@ bool PowerProfilesService::cycleActiveProfile(int direction) {
     // Current profile unknown: land on the end matching the requested direction.
     return setActiveProfile(seq[step > 0 ? 0U : static_cast<std::size_t>(n - 1)]);
   }
-  const long target = std::distance(seq.begin(), it) + step;
-  if (target < 0 || target >= n) {
-    return false; // already at the boundary; do not wrap
+  long target = std::distance(seq.begin(), it) + step;
+  target %= n;
+  if (target < 0) {
+    target += n;
   }
   return setActiveProfile(seq[static_cast<std::size_t>(target)]);
 }

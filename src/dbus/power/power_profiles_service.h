@@ -52,9 +52,9 @@ public:
   [[nodiscard]] const std::vector<std::string>& profiles() const noexcept { return m_state.profiles; }
 
   [[nodiscard]] bool setActiveProfile(std::string_view profile);
-  /// Step through profiles in canonical power order, clamping at the ends (no wrap).
+  /// Step through profiles in canonical power order, wrapping at the ends.
   /// direction >= 0 moves toward performance, direction < 0 toward power-saver.
-  /// Returns false if no profiles are known or already at the boundary in that direction.
+  /// Returns false if no profiles are known or the set call fails.
   [[nodiscard]] bool cycleActiveProfile(int direction = 1);
 
   void registerIpc(IpcService& ipc, StateFeedbackCallback stateFeedback = {});
