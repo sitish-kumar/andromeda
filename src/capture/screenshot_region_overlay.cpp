@@ -368,7 +368,16 @@ namespace capture {
       });
     } else {
       input->setOnPress([this, output = inst.output](const InputArea::PointerData& data) {
-        if (!data.pressed || data.button != BTN_LEFT) {
+        if (data.button != BTN_LEFT) {
+          return;
+        }
+        if (!data.pressed) {
+          if (!m_dragging) {
+            return;
+          }
+          m_dragging = false;
+          // completeSelection() tears down surfaces; defer past InputDispatcher::pointerButton.
+          DeferredCall::callLater([this]() { completeSelection(); });
           return;
         }
         if (m_confirming) {
@@ -407,18 +416,6 @@ namespace capture {
             instance->surface->requestRedraw();
           }
         }
-      });
-
-      input->setOnClick([this](const InputArea::PointerData& data) {
-        if (data.pressed || data.button != BTN_LEFT) {
-          return;
-        }
-        if (!m_dragging) {
-          return;
-        }
-        m_dragging = false;
-        // completeSelection() tears down surfaces; defer past InputDispatcher::pointerButton.
-        DeferredCall::callLater([this]() { completeSelection(); });
       });
     }
 
