@@ -1556,11 +1556,16 @@ void Application::initUi() {
       &m_clipboardService, &m_configService, &m_thumbnailService, &m_asyncTextureCache
   );
   clipboardPanel->setActivateCallback([this](const ClipboardEntry& entry) {
-    m_panelManager.close();
     const ClipboardAutoPasteMode mode = m_configService.config().shell.clipboardAutoPaste;
     if (mode == ClipboardAutoPasteMode::Off) {
+      m_panelManager.close();
       return;
     }
+    // Auto-paste injects a keystroke into whatever holds keyboard focus. The animated close keeps
+    // the panel surface (and its keyboard focus) alive for the duration of the reveal animation, so
+    // the keys would land on the closing panel instead of the target window. Close without animation
+    // so focus returns to the toplevel before we paste, mirroring the launcher's app-launch close.
+    m_panelManager.closePanel(false);
     const bool isImage = entry.isImage();
     m_clipboardAutoPasteTimer.stop();
     m_clipboardAutoPasteTimer.start(std::chrono::milliseconds(Style::animFast + 30), [this, isImage]() {
