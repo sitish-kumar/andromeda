@@ -427,6 +427,10 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     return;
   }
 
+  if (request.output == nullptr && m_platform != nullptr) {
+    request.output = m_platform->preferredInteractiveOutput(std::chrono::milliseconds(1200));
+  }
+
   if (m_closeDesktopWidgetsEditor) {
     m_closeDesktopWidgetsEditor();
   }

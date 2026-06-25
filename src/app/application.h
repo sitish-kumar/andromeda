@@ -18,6 +18,7 @@
 #include "idle/idle_manager.h"
 #include "ipc/ipc_poll_source.h"
 #include "ipc/ipc_service.h"
+#include "launcher/dmenu_ipc.h"
 #include "net/http_client.h"
 #include "net/http_client_poll_source.h"
 #include "notification/notification_manager.h"
@@ -297,6 +298,7 @@ private:
   std::unique_ptr<PolkitPollSource> m_polkitPollSource;
   IpcService m_ipcService;
   IpcPollSource m_ipcPollSource{m_ipcService};
+  DmenuIpcService m_dmenuIpc;
   LocationService m_locationService;
   WeatherService m_weatherService;
   CalendarService m_calendarService;

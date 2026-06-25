@@ -2296,6 +2296,10 @@ void Application::initIpc() {
     kLog.warn("IPC disabled: could not bind socket");
   }
 
+  m_dmenuIpc.setLauncherPanel(m_launcherPanel);
+  m_dmenuIpc.setPanelManager(&m_panelManager);
+  m_dmenuIpc.start();
+
   m_ipcService.registerHandler(
       "status",
       [this](const std::string&) -> std::string {
@@ -2815,6 +2819,7 @@ std::vector<PollSource*> Application::currentPollSources() {
   }
   sources.push_back(&m_fileWatchPollSource);
   sources.push_back(&m_ipcPollSource);
+  sources.push_back(&m_dmenuIpc);
   sources.push_back(&m_httpClientPollSource);
   sources.push_back(&m_locationPollSource);
   sources.push_back(&m_weatherPollSource);
