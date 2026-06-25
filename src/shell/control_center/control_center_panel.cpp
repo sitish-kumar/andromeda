@@ -140,7 +140,8 @@ void ControlCenterPanel::create() {
     wireSidebarScroll(m_sidebarScrollArea);
     sidebar->addChild(std::move(sidebarScrollArea));
 
-    const float sidebarTabWidth = m_compact ? Style::controlHeightSm * scale : 200.0f * scale;
+    const std::optional<float> sidebarScrollWidth =
+        m_compact ? std::optional<float>{Style::controlHeightSm * scale} : std::nullopt;
 
     auto sidebarScroll = ui::scrollView({
         .out = &m_sidebarScrollView,
@@ -150,7 +151,7 @@ void ControlCenterPanel::create() {
         .viewportPaddingV = 0.0f,
         .fillWidth = false,
         .fillHeight = true,
-        .width = sidebarTabWidth,
+        .width = sidebarScrollWidth,
         .configure = [](ScrollView& scrollView) {
           scrollView.clearFill();
           scrollView.clearBorder();
@@ -164,7 +165,12 @@ void ControlCenterPanel::create() {
         .syncIndexFromSelection = {},
     });
     sidebarNav->setTabFocusKey("control-center.sidebar");
-    sidebarNav->setAlign(m_compact ? FlexAlign::Start : FlexAlign::Stretch);
+    if (!m_compact) {
+      sidebarNav->setAlign(FlexAlign::Stretch);
+      sidebarNav->setFillWidth(true);
+    } else {
+      sidebarNav->setAlign(FlexAlign::Start);
+    }
     sidebarNav->setGap(Style::spaceXs * scale);
     m_sidebarNav = sidebarNav.get();
 
@@ -185,7 +191,7 @@ void ControlCenterPanel::create() {
               .minWidth = m_compact ? std::optional<float>{Style::controlHeightSm * scale} : std::optional<float>{},
               .minHeight = Style::controlHeightSm * scale,
               .paddingV = Style::spaceXs * scale,
-              .paddingH = (m_compact ? Style::spaceXs : Style::spaceMd) * scale,
+              .paddingH = (m_compact ? Style::spaceXs : Style::spaceSm) * scale,
               .gap = Style::spaceSm * scale,
               .radius = Style::scaledRadiusLg(scale),
               .onClick = onClick,
@@ -202,6 +208,9 @@ void ControlCenterPanel::create() {
     }
 
     if (sidebarScroll->content() != nullptr) {
+      if (!m_compact) {
+        sidebarScroll->content()->setAlign(FlexAlign::Stretch);
+      }
       sidebarScroll->content()->addChild(std::move(sidebarNav));
     }
     sidebar->addChild(std::move(sidebarScroll));
@@ -326,6 +335,10 @@ void ControlCenterPanel::onPanelCardOpacityChanged(float opacity) {
 void ControlCenterPanel::doLayout(Renderer& renderer, float width, float height) {
   if (m_rootLayout == nullptr || m_content == nullptr || m_tabBodies == nullptr) {
     return;
+  }
+
+  if (!m_compact && m_showSidebar) {
+    layoutFullSidebarWidth(renderer);
   }
 
   m_rootLayout->setSize(width, height);
@@ -804,6 +817,46 @@ ControlCenterPanel::TabId ControlCenterPanel::tabFromContext(std::string_view co
 }
 
 std::size_t ControlCenterPanel::tabIndex(TabId id) { return static_cast<std::size_t>(id); }
+
+void ControlCenterPanel::layoutFullSidebarWidth(Renderer& renderer) {
+  if (m_sidebarScrollView == nullptr || m_sidebarNav == nullptr) {
+    return;
+  }
+
+  const float scale = contentScale();
+  const float fontSize = Style::fontSizeBody * scale;
+  const float paddingH = Style::spaceSm * scale * 2.0f;
+  const float gap = Style::spaceSm * scale;
+  const float glyphW = 21.0f * scale;
+
+  float maxTabWidth = 0.0f;
+  for (const auto& meta : kTabs) {
+    if (!isTabVisible(meta.id)) {
+      continue;
+    }
+    const TextMetrics text = renderer.measureText(i18n::tr(meta.titleKey), fontSize, FontWeight::Bold);
+    maxTabWidth = std::max(maxTabWidth, paddingH + glyphW + gap + text.width);
+  }
+
+  const float minWidth = Style::controlHeightSm * scale;
+  const float contentWidth = std::max(minWidth, std::ceil(maxTabWidth));
+
+  // Scrollbar gutter lives inside the scroll viewport; reserve it only when the nav overflows.
+  float targetWidth = contentWidth;
+  const float scrollHeight = m_sidebarScrollView->height();
+  if (scrollHeight > 0.0f) {
+    LayoutConstraints navConstraints;
+    navConstraints.setExactWidth(contentWidth);
+    const float navHeight = m_sidebarNav->measure(renderer, navConstraints).height;
+    if (navHeight > scrollHeight + 0.5f) {
+      targetWidth = contentWidth + Style::scrollbarWidth + Style::scrollbarGap;
+    }
+  }
+
+  if (std::abs(m_sidebarScrollView->width() - targetWidth) > 0.5f) {
+    m_sidebarScrollView->setSize(targetWidth, m_sidebarScrollView->height());
+  }
+}
 
 void ControlCenterPanel::scrollSidebarNodeIntoView(const Node* node) {
   if (node == nullptr || m_sidebarScrollView == nullptr) {

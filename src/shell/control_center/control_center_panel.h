@@ -137,6 +137,7 @@ private:
   void updateTabChrome(TabId tab);
   void applyTabContainerVisibility(TabId activeTab);
   void layoutTabContainers(float bodyWidth, float bodyHeight);
+  void layoutFullSidebarWidth(Renderer& renderer);
   void resetTabContainerTransforms();
   void startTabTransition(TabId from, TabId to);
   void finishTabTransition();
