@@ -70,9 +70,11 @@ public:
       std::uint32_t height
   );
 
+protected:
+  void render() override;
+
 private:
   void prepareFrame(bool needsUpdate, bool needsLayout);
-  void render() override;
   void applyWallpaperTexture();
   void applyBlurredDesktopTexture();
   void releaseWallpaperTextureRef(const std::string& path);

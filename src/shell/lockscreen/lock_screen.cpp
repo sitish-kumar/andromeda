@@ -152,6 +152,7 @@ void LockScreen::unlock() {
   }
 
   m_pendingAfterLocked = {};
+  m_suspendTimeoutTimer.stop();
   invalidatePendingAuthentication();
   stopFingerprint();
 
@@ -350,15 +351,25 @@ bool LockScreen::isActive() const noexcept { return m_lockPending || m_locked; }
 
 bool LockScreen::isSessionLocked() const noexcept { return m_locked; }
 
+bool LockScreen::tryFlushPendingAfterLocked() {
+  if (m_locked && m_pendingAfterLocked && allSurfacesReady()) {
+    auto pending = std::move(m_pendingAfterLocked);
+    m_pendingAfterLocked = {};
+    m_suspendTimeoutTimer.stop();
+    DeferredCall::callLater(std::move(pending));
+    return true;
+  }
+  return false;
+}
+
 void LockScreen::runAfterSessionLocked(std::function<void()> fn) {
   if (fn == nullptr) {
     return;
   }
-  if (m_locked && allSurfacesReady()) {
-    DeferredCall::callLater(std::move(fn));
+  m_pendingAfterLocked = std::move(fn);
+  if (tryFlushPendingAfterLocked()) {
     return;
   }
-  m_pendingAfterLocked = std::move(fn);
   if (isActive()) {
     return;
   }
@@ -382,17 +393,24 @@ void LockScreen::handleLocked(void* data, ext_session_lock_v1* /*lock*/) {
     instance.surface->setLockedState(true);
     instance.surface->setOnLogin([self]() { self->tryAuthenticate(); });
   }
+
+  // Start the fallback timer (3 seconds) to trigger suspend anyway if surfaces take too long to render
+  self->m_suspendTimeoutTimer.start(std::chrono::seconds(3), [self]() {
+    if (self->m_pendingAfterLocked) {
+      kLog.warn("Lock screen surfaces took too long to render; suspending fallback triggered");
+      auto pending = std::move(self->m_pendingAfterLocked);
+      self->m_pendingAfterLocked = {};
+      DeferredCall::callLater(std::move(pending));
+    }
+  });
+
   self->updatePromptOnSurfaces();
   self->startFingerprint();
   kLog.info("session is locked");
   if (self->m_onSessionLocked) {
     self->m_onSessionLocked();
   }
-  if (self->m_pendingAfterLocked && self->allSurfacesReady()) {
-    auto pending = std::move(self->m_pendingAfterLocked);
-    self->m_pendingAfterLocked = {};
-    DeferredCall::callLater(std::move(pending));
-  }
+  self->tryFlushPendingAfterLocked();
 }
 
 void LockScreen::handleFinished(void* data, ext_session_lock_v1* /*lock*/) {
@@ -621,13 +639,7 @@ void LockScreen::createInstance(const WaylandOutput& output) {
     surface->setDesktopCapture(std::move(captureIt->second));
     m_desktopCaptures.erase(captureIt);
   }
-  surface->setRenderCallback([this]() {
-    if (m_locked && m_pendingAfterLocked && allSurfacesReady()) {
-      auto pending = std::move(m_pendingAfterLocked);
-      m_pendingAfterLocked = {};
-      DeferredCall::callLater(std::move(pending));
-    }
-  });
+  surface->setRenderCallback([this]() { tryFlushPendingAfterLocked(); });
   surface->setOnLogin([this]() { tryAuthenticate(); });
   surface->setOnPasswordChanged([this](const std::string& value) { handlePasswordEdited(value); });
   surface->setPromptState(m_user, m_password, m_status, m_statusIsError, m_authenticating);
@@ -651,6 +663,7 @@ void LockScreen::createInstance(const WaylandOutput& output) {
 
 void LockScreen::resetLockState() {
   m_pendingAfterLocked = {};
+  m_suspendTimeoutTimer.stop();
   m_lockDeferred = false;
   if (m_lock == nullptr) {
     m_lockPending = false;
