@@ -128,7 +128,7 @@ public:
   virtual Node* insertChildAt(std::size_t index, std::unique_ptr<Node> child);
   virtual std::unique_ptr<Node> removeChild(Node* child);
 
-  void setAnimationManager(AnimationManager* mgr);
+  virtual void setAnimationManager(AnimationManager* mgr);
   [[nodiscard]] AnimationManager* animationManager() const noexcept { return m_animationManager; }
   void setPopupContext(SelectPopupContext* ctx);
   [[nodiscard]] SelectPopupContext* popupContext() const noexcept { return m_popupContext; }

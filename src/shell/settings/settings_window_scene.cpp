@@ -530,6 +530,7 @@ void SettingsWindow::rebuildSettingsContent() {
                   markPluginListDirty();
                   requestSceneRebuild();
                 },
+            .isEnabling = [this](const std::string& id) { return m_pluginManager->isEnabling(id); },
             .addSource = [this]() { openPluginSourceCreateEditor(); },
             .setSourceEnabled =
                 [this](PluginSourceConfig source, bool enabled) {

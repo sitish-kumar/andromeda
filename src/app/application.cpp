@@ -508,15 +508,20 @@ void Application::run(std::function<void()> startupReadyCallback) {
         m_settingsWindow.onPluginsChanged();
       }
     });
-    // A git update() advances a source without a config change, so it bypasses the
-    // reload path: rebuild the bar and reconcile services for the new revision.
+    // Plugins materialized after the bar was built (first-run clone/export) or a git
+    // update() advance a source without a config change, so they bypass the config-reload
+    // path. reload() rebuilds the bar widget tree against the now-populated registry —
+    // refresh() only repaints, leaving newly available plugin widgets uncreated.
     m_pluginManager.setOnChanged([this]() {
       m_pluginServiceHost.refresh(m_configService.config().plugins.pluginSettings);
-      m_bar.refresh();
+      m_bar.reload();
       reloadPluginLauncherProviders();
       reloadPluginPanels();
       m_settingsWindow.onPluginsChanged();
     });
+    // A git-source enable exports on a worker thread; redraw the plugins list so the
+    // row swaps between its spinner and toggle as the export starts and finishes.
+    m_pluginManager.setOnEnablingChanged([this]() { m_settingsWindow.onPluginsChanged(); });
   });
   runStartupPhase("initIpc", [this]() { initIpc(); });
   runStartupPhase("buildPollSources", [this]() { (void)buildPollSources(); });
@@ -2327,7 +2332,10 @@ void Application::initIpc() {
             return "error: plugins enable <author/plugin>\n";
           }
           const auto res = m_pluginManager.enable(parts[1]);
-          return res.ok ? "ok\n" : ("error: " + res.error + "\n");
+          if (!res.ok) {
+            return "error: " + res.error + "\n";
+          }
+          return m_pluginManager.isEnabling(parts[1]) ? "ok (exporting in background)\n" : "ok\n";
         }
         if (cmd == "disable") {
           if (parts.size() != 2) {

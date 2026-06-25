@@ -48,6 +48,19 @@ void Spinner::start() {
   startLoop();
 }
 
+void Spinner::setAnimationManager(AnimationManager* mgr) {
+  Node::setAnimationManager(mgr);
+  if (mgr == nullptr) {
+    m_animId = 0; // the old manager no longer drives us; allow a restart on re-attach
+    return;
+  }
+  // start() called before attach finds no manager and bails; pick the loop back up
+  // now that one is available so a spinner built with spinning=true animates.
+  if (m_spinning && m_animId == 0) {
+    startLoop();
+  }
+}
+
 void Spinner::stop() {
   m_spinning = false;
   if (animationManager() != nullptr && m_animId != 0) {

@@ -25,6 +25,9 @@ namespace settings {
     bool pluginsLoading = false;
 
     std::function<void(std::string id, bool enable)> setEnabled;
+    // True while a git-source plugin's runtime export runs in the background; the row
+    // shows a spinner in place of the toggle until it lands.
+    std::function<bool(const std::string& id)> isEnabling;
     std::function<void()> addSource;
     std::function<void(PluginSourceConfig source, bool enabled)> setSourceEnabled;
     std::function<void(PluginSourceConfig source)> editSource;

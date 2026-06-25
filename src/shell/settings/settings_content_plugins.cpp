@@ -231,18 +231,28 @@ namespace settings {
         );
       }
 
-      r->addChild(
-          ui::toggle({
-              .checked = enabled,
-              .enabled = enabled || plugin.compatible,
-              .scale = scale,
-              .onChange = [cb = ctx.setEnabled, id = plugin.id](bool on) {
-                if (cb) {
-                  cb(id, on);
-                }
-              },
-          })
-      );
+      const bool busy = ctx.isEnabling && ctx.isEnabling(plugin.id);
+      if (busy) {
+        r->addChild(
+            ui::spinner({
+                .spinnerSize = Style::controlHeightSm * scale * 0.7f,
+                .spinning = true,
+            })
+        );
+      } else {
+        r->addChild(
+            ui::toggle({
+                .checked = enabled,
+                .enabled = enabled || plugin.compatible,
+                .scale = scale,
+                .onChange = [cb = ctx.setEnabled, id = plugin.id](bool on) {
+                  if (cb) {
+                    cb(id, on);
+                  }
+                },
+            })
+        );
+      }
       return row;
     }
 
