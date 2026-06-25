@@ -40,6 +40,7 @@ namespace {
   constexpr float kDefaultVolumeStep = 0.05f;
   constexpr auto kVolumeApplyMinInterval = std::chrono::milliseconds(25);
   constexpr auto kVolumeWriteGuardDuration = std::chrono::milliseconds(400);
+  constexpr auto kMuteWriteGuardDuration = std::chrono::milliseconds(1200);
   constexpr float kVolumeWriteGuardEpsilon = 0.02f;
 
   // Registry events.
@@ -1663,7 +1664,51 @@ void PipeWireService::recomputeEffectiveMute(NodeData& nd) {
   }
 
   const bool deviceRouteMuted = deviceRoute != nullptr && deviceRoute->muted;
-  nd.muted = nd.swMute || routeMuted || deviceRouteMuted;
+  const bool backendMuted = nd.swMute || routeMuted || deviceRouteMuted;
+  if (nd.pendingMute.has_value() && std::chrono::steady_clock::now() >= nd.muteWriteGuardUntil) {
+    nd.pendingMute.reset();
+    nd.muteWriteGuardUntil = {};
+  }
+  nd.muted = nd.pendingMute.value_or(backendMuted);
+}
+
+void PipeWireService::scheduleMuteWriteGuard() {
+  std::optional<std::chrono::steady_clock::time_point> nextExpiry;
+  for (const auto& node : std::views::values(m_nodes)) {
+    if (node == nullptr || !node->pendingMute.has_value()) {
+      continue;
+    }
+    if (!nextExpiry.has_value() || node->muteWriteGuardUntil < *nextExpiry) {
+      nextExpiry = node->muteWriteGuardUntil;
+    }
+  }
+
+  if (!nextExpiry.has_value()) {
+    m_muteWriteGuardTimer.stop();
+    return;
+  }
+
+  const auto now = std::chrono::steady_clock::now();
+  const auto delay = *nextExpiry > now ? std::chrono::ceil<std::chrono::milliseconds>(*nextExpiry - now)
+                                       : std::chrono::milliseconds(0);
+  m_muteWriteGuardTimer.start(delay, [this]() { expireMuteWriteGuards(); });
+}
+
+void PipeWireService::expireMuteWriteGuards() {
+  bool changed = false;
+  for (auto& node : std::views::values(m_nodes)) {
+    if (node == nullptr || !node->pendingMute.has_value()) {
+      continue;
+    }
+    const bool before = node->muted;
+    recomputeEffectiveMute(*node);
+    changed = changed || before != node->muted;
+  }
+
+  if (changed) {
+    rebuildState();
+  }
+  scheduleMuteWriteGuard();
 }
 
 void PipeWireService::applyVolumePropsFromDict(NodeData& nd, const spa_dict* props, bool applyMixerFieldsFromDict) {
@@ -1832,8 +1877,10 @@ void PipeWireService::setNodeMuted(std::uint32_t id, bool muted) {
     const bool launched = process::runAsync({"wpctl", "set-mute", std::to_string(id), muted ? "1" : "0"});
     if (launched) {
       const bool before = nd.muted;
-      nd.swMute = muted;
+      nd.pendingMute = muted;
+      nd.muteWriteGuardUntil = std::chrono::steady_clock::now() + kMuteWriteGuardDuration;
       recomputeEffectiveMute(nd);
+      scheduleMuteWriteGuard();
       if (before != nd.muted) {
         if (id == m_state.defaultSinkId && m_state.defaultSinkId != 0) {
           emitVolumePreview(false, id, nd.volume);
@@ -1885,6 +1932,8 @@ void PipeWireService::setNodeMuted(std::uint32_t id, bool muted) {
   pw_node_set_param(nd.proxy, SPA_PARAM_Props, 0, pod);
 
   const bool before = nd.muted;
+  nd.pendingMute.reset();
+  nd.muteWriteGuardUntil = {};
   nd.swMute = muted;
   if (nd.hasRoute && nd.routeIndex >= 0) {
     nd.nodeRouteMute = muted;
