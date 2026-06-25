@@ -962,6 +962,22 @@ animation_manager_test = executable('animation_manager_test',
 
 test('animation_manager', animation_manager_test)
 
+input_area_test = executable('input_area_test',
+  sources: files(
+    'tests/input_area_test.cpp',
+    'src/render/scene/input_area.cpp',
+    'src/render/scene/node.cpp',
+    'src/render/animation/animation.cpp',
+    'src/render/animation/animation_manager.cpp',
+    'src/render/animation/motion_service.cpp',
+    'src/core/ui_phase.cpp',
+    'src/core/log.cpp',
+  ),
+  include_directories: _noctalia_inc,
+)
+
+test('input_area', input_area_test)
+
 log_test = executable('log_test',
   sources: files(
     'tests/log_test.cpp',

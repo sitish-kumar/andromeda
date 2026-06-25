@@ -179,7 +179,8 @@ void InputArea::dispatchPress(float localX, float localY, std::uint32_t button, 
       m_onPress({.localX = localX, .localY = localY, .button = button, .pressed = true});
     }
   } else {
-    const bool shouldClick = m_pressed && m_pressedButton == button && m_onClick;
+    const bool releasedInside = containsLocalPoint(localX, localY, true);
+    const bool shouldClick = m_pressed && m_pressedButton == button && releasedInside && m_onClick;
     m_pressed = false;
     m_pressedButton = 0;
 
@@ -187,7 +188,7 @@ void InputArea::dispatchPress(float localX, float localY, std::uint32_t button, 
       m_onPress({.localX = localX, .localY = localY, .button = button, .pressed = false});
     }
 
-    // Click: release at the same InputArea that received the press
+    // Click: release inside the same InputArea that received the press.
     if (shouldClick) {
       m_onClick({.localX = localX, .localY = localY, .button = button, .pressed = false});
     }
