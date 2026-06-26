@@ -25,6 +25,7 @@ struct LauncherResult {
   // When launching an application via AppProvider, matches DesktopAction::id (primary Exec leaves this empty).
   std::string desktopActionId;
   std::string category;
+  std::string presentation;
   std::optional<std::string> query;
   double score = 0.0;
   int recentlyUsedIndex = 0; // Higher is more recent. <=0 means no record or too old.

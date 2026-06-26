@@ -19,6 +19,7 @@ class LauncherResultAdapter;
 class LauncherAppGridAdapter;
 class Renderer;
 class Segmented;
+class ScrollView;
 class VirtualGridView;
 class ConfigService;
 class AsyncTextureCache;
@@ -75,6 +76,8 @@ private:
   void activateSelected();
   bool handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers);
   void applyEmptyState();
+  void bindDetailResult();
+  [[nodiscard]] bool shouldUseDetailPresentation() const;
   [[nodiscard]] std::vector<LauncherResult> providerOverviewResults(std::string_view text) const;
   void openAppActionsMenu(std::size_t index, float anchorX, float anchorY);
   void rebuildCategoryFilter(const std::vector<LauncherCategory>& categories);
@@ -98,6 +101,9 @@ private:
   Segmented* m_categoryFilter = nullptr;
   Flex* m_body = nullptr;
   VirtualGridView* m_grid = nullptr;
+  ScrollView* m_detailScroll = nullptr;
+  Label* m_detailSubtitle = nullptr;
+  Label* m_detailBody = nullptr;
   Label* m_emptyLabel = nullptr;
   std::unique_ptr<LauncherResultAdapter> m_listAdapter;
   std::unique_ptr<LauncherAppGridAdapter> m_gridAdapter;

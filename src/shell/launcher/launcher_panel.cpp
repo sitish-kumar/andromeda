@@ -16,6 +16,7 @@
 #include "ui/app_icon_colorization.h"
 #include "ui/builders.h"
 #include "ui/controls/context_menu_popup.h"
+#include "ui/controls/scroll_view.h"
 #include "ui/palette.h"
 #include "ui/signal.h"
 #include "ui/style.h"
@@ -63,6 +64,27 @@ namespace {
   }
 
   [[nodiscard]] bool startsWithSlash(std::string_view text) { return !text.empty() && text.front() == '/'; }
+
+  [[nodiscard]] std::string singleLinePreview(std::string_view text) {
+    std::string preview;
+    preview.reserve(text.size());
+    bool lastWasSpace = false;
+    for (const char c : text) {
+      const bool whitespace = c == '\n' || c == '\r' || c == '\t' || c == '\f' || c == '\v';
+      if (whitespace) {
+        if (!lastWasSpace) {
+          preview.push_back(' ');
+          lastWasSpace = true;
+        }
+        continue;
+      }
+      preview.push_back(c);
+      lastWasSpace = c == ' ';
+    }
+    return preview;
+  }
+
+  [[nodiscard]] bool isDetailPresentation(const LauncherResult& result) { return result.presentation == "detail"; }
 
   [[nodiscard]] std::string providerOverviewId(std::string_view prefix) {
     std::string id(kProviderOverviewResultPrefix);
@@ -267,7 +289,7 @@ namespace {
       const bool showAppIcon = m_style.showIcons && !m_badgeVisible;
       const bool showLeadingVisual = m_badgeVisible || showAppIcon;
       if (m_badgeVisible) {
-        m_badgeLabel->setText(result.badge);
+        m_badgeLabel->setText(singleLinePreview(result.badge));
         m_badgeLabel->setSize(iconSize, iconSize);
         m_badgeLabel->setVisible(true);
         m_badgeLabel->setParticipatesInLayout(true);
@@ -293,7 +315,7 @@ namespace {
       const float horizontalPad = Style::spaceSm * m_style.scale * 2.0f;
       const float leadingWidth = showLeadingVisual ? iconSize + gap : 0.0f;
       const float textWidth = std::max(0.0f, width - leadingWidth - horizontalPad);
-      m_title->setText(result.title);
+      m_title->setText(singleLinePreview(result.title));
       m_title->setMaxWidth(textWidth);
 
       const bool showSubtitle = !m_style.compact && !result.subtitle.empty();
@@ -302,7 +324,7 @@ namespace {
         m_subtitle->setText("");
       } else {
         m_subtitle->setVisible(true);
-        m_subtitle->setText(result.subtitle);
+        m_subtitle->setText(singleLinePreview(result.subtitle));
         m_subtitle->setMaxWidth(textWidth);
       }
 
@@ -477,7 +499,7 @@ namespace {
 
       const float horizontalPad = Style::spaceSm * m_style.scale * 2.0f;
       const float textWidth = std::max(0.0f, width - horizontalPad);
-      m_title->setText(result.title);
+      m_title->setText(singleLinePreview(result.title));
       m_title->setMaxWidth(textWidth);
 
       applyVisualState();
@@ -707,7 +729,17 @@ void LauncherPanel::create() {
           .horizontalPadding = Style::spaceMd * scale,
           .clearButtonEnabled = true,
           .surfaceOpacity = panelCardOpacity(),
-          .onChange = [this](const std::string& text) { onInputChanged(text); },
+          .onChange =
+              [this](const std::string& text) {
+                onInputChanged(text);
+                if (m_input == nullptr) {
+                  return;
+                }
+                const std::string preview = singleLinePreview(text);
+                if (preview != text) {
+                  m_input->setValue(preview);
+                }
+              },
           .onSubmit = [this](const std::string& /*text*/) { activateSelected(); },
           .onKeyEvent = [this](std::uint32_t sym, std::uint32_t modifiers) { return handleKeyEvent(sym, modifiers); },
       })
@@ -765,6 +797,44 @@ void LauncherPanel::create() {
           .configure = [](VirtualGridView& grid) { grid.setFillWidth(true); },
       })
   );
+
+  auto detailScroll = ui::scrollView({
+      .out = &m_detailScroll,
+      .scrollbarVisible = true,
+      .viewportPaddingH = Style::spaceSm * scale,
+      .viewportPaddingV = Style::spaceSm * scale,
+      .flexGrow = 1.0f,
+      .visible = false,
+      .participatesInLayout = false,
+      .configure = [scale, opacity = panelCardOpacity(), borders = panelBordersEnabled()](ScrollView& scrollView) {
+        scrollView.setCardStyle(scale, opacity, borders);
+      },
+  });
+  auto* detailContent = detailScroll->content();
+  detailContent->setDirection(FlexDirection::Vertical);
+  detailContent->setAlign(FlexAlign::Stretch);
+  detailContent->setGap(Style::spaceSm * scale);
+  detailContent->addChild(
+      ui::label({
+          .out = &m_detailSubtitle,
+          .fontSize = Style::fontSizeCaption * scale,
+          .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+          .maxLines = 1,
+          .ellipsize = TextEllipsize::End,
+          .visible = false,
+          .participatesInLayout = false,
+      })
+  );
+  detailContent->addChild(
+      ui::label({
+          .out = &m_detailBody,
+          .fontSize = Style::fontSizeBody * scale,
+          .color = colorSpecFromRole(ColorRole::OnSurface),
+          .maxLines = 0,
+          .flexGrow = 1.0f,
+      })
+  );
+  body->addChild(std::move(detailScroll));
 
   body->addChild(
       ui::label({
@@ -912,6 +982,9 @@ void LauncherPanel::onPanelCardOpacityChanged(float opacity) {
   if (m_categoryFilter != nullptr) {
     m_categoryFilter->setSurfaceOpacity(opacity);
   }
+  if (m_detailScroll != nullptr) {
+    m_detailScroll->setCardStyle(contentScale(), opacity, panelBordersEnabled());
+  }
 }
 
 void LauncherPanel::doLayout(Renderer& renderer, float width, float height) {
@@ -949,7 +1022,7 @@ void LauncherPanel::onOpen(std::string_view context) {
     m_input->setPlaceholder(
         m_scopedPlaceholder.empty() ? i18n::tr("launcher.search-placeholder") : m_scopedPlaceholder
     );
-    m_input->setValue(initialValue);
+    m_input->setValue(singleLinePreview(initialValue));
   }
   if (m_grid != nullptr) {
     m_grid->scrollView().setScrollOffset(0.0f);
@@ -996,6 +1069,9 @@ void LauncherPanel::onClose() {
   m_categoryFilter = nullptr;
   m_body = nullptr;
   m_grid = nullptr;
+  m_detailScroll = nullptr;
+  m_detailSubtitle = nullptr;
+  m_detailBody = nullptr;
   m_emptyLabel = nullptr;
   clearReleasedRoot();
 }
@@ -1034,7 +1110,7 @@ void LauncherPanel::setQuery(std::string query) {
   if (m_input == nullptr) {
     return;
   }
-  m_input->setValue(query);
+  m_input->setValue(singleLinePreview(query));
   if (m_grid != nullptr) {
     m_grid->scrollView().setScrollOffset(0.0f);
   }
@@ -1357,6 +1433,7 @@ void LauncherPanel::refreshResults() {
   } else {
     m_grid->setSelectedIndex(m_selectedIndex);
   }
+  bindDetailResult();
   applyEmptyState();
 }
 
@@ -1365,8 +1442,13 @@ void LauncherPanel::applyEmptyState() {
     return;
   }
   const bool empty = m_results.empty();
-  m_grid->setVisible(!empty);
-  m_grid->setParticipatesInLayout(!empty);
+  const bool detail = !empty && shouldUseDetailPresentation();
+  m_grid->setVisible(!empty && !detail);
+  m_grid->setParticipatesInLayout(!empty && !detail);
+  if (m_detailScroll != nullptr) {
+    m_detailScroll->setVisible(detail);
+    m_detailScroll->setParticipatesInLayout(detail);
+  }
   m_emptyLabel->setVisible(empty);
   m_emptyLabel->setParticipatesInLayout(empty);
   if (empty) {
@@ -1374,6 +1456,27 @@ void LauncherPanel::applyEmptyState() {
         m_query.empty() ? i18n::tr("launcher.empty.type-to-search") : i18n::tr("launcher.empty.no-results")
     );
   }
+}
+
+bool LauncherPanel::shouldUseDetailPresentation() const {
+  return m_results.size() == 1 && isDetailPresentation(m_results.front());
+}
+
+void LauncherPanel::bindDetailResult() {
+  if (!shouldUseDetailPresentation()
+      || m_detailScroll == nullptr
+      || m_detailSubtitle == nullptr
+      || m_detailBody == nullptr) {
+    return;
+  }
+
+  const LauncherResult& result = m_results.front();
+  const bool hasSubtitle = !result.subtitle.empty();
+  m_detailSubtitle->setVisible(hasSubtitle);
+  m_detailSubtitle->setParticipatesInLayout(hasSubtitle);
+  m_detailSubtitle->setText(singleLinePreview(result.subtitle));
+  m_detailBody->setText(result.title.empty() ? result.id : result.title);
+  m_detailScroll->setScrollOffset(0.0f);
 }
 
 void LauncherPanel::openAppActionsMenu(std::size_t index, float anchorX, float anchorY) {

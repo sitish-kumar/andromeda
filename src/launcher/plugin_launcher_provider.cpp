@@ -210,6 +210,7 @@ void PluginLauncherProvider::handleResult(const scripting::ScriptResult& result)
     lr.glyphName = r.glyph;
     lr.iconName = r.icon;
     lr.badge = r.badge;
+    lr.presentation = r.presentation;
     lr.query = r.query;
     lr.score = r.score;
     m_cache.push_back(std::move(lr));

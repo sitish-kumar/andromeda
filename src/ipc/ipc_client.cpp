@@ -68,15 +68,20 @@ int IpcClient::send(const std::string& command) {
     line += kCallerCwdSeparator;
   }
   line += command;
-  line += '\n';
-  const auto written = ::write(fd, line.data(), line.size());
-  if (written < 0) {
-    std::println(stderr, "error: write() failed: {}", std::strerror(errno));
-    ::close(fd);
-    return 1;
+
+  std::size_t sent = 0;
+  while (sent < line.size()) {
+    const auto written = ::write(fd, line.data() + sent, line.size() - sent);
+    if (written < 0) {
+      std::println(stderr, "error: write() failed: {}", std::strerror(errno));
+      ::close(fd);
+      return 1;
+    }
+    sent += static_cast<std::size_t>(written);
   }
-  if (static_cast<std::size_t>(written) != line.size()) {
-    std::println(stderr, "error: short write to IPC socket");
+
+  if (::shutdown(fd, SHUT_WR) < 0) {
+    std::println(stderr, "error: shutdown() failed: {}", std::strerror(errno));
     ::close(fd);
     return 1;
   }
