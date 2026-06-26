@@ -763,10 +763,16 @@ bool WindowSwitcher::matchesTrigger(const KeyboardEvent& event) const noexcept {
   if (!event.pressed || event.preedit) {
     return false;
   }
-  if (!KeySymbol::isTab(event.sym)) {
+  if (m_config == nullptr) {
     return false;
   }
-  return (event.modifiers & KeyMod::Alt) != 0 && (event.modifiers & KeyMod::Super) == 0;
+  if ((event.modifiers & KeyMod::Alt) == 0 || (event.modifiers & KeyMod::Super) != 0) {
+    return false;
+  }
+
+  const std::uint32_t normalizedModifiers = event.modifiers & ~(KeyMod::Alt | KeyMod::Super);
+  return m_config->matchesKeybind(KeybindAction::TabNext, event.sym, normalizedModifiers)
+      || m_config->matchesKeybind(KeybindAction::TabPrevious, event.sym, normalizedModifiers);
 }
 
 bool WindowSwitcher::isAltRelease(const KeyboardEvent& event) const noexcept {
@@ -812,12 +818,20 @@ bool WindowSwitcher::onKeyboardEvent(const KeyboardEvent& event) {
     return true;
   }
 
-  if (KeybindMatcher::matches(KeybindAction::TabPrevious, event.sym, event.modifiers)) {
+  const std::uint32_t normalizedModifiers = event.modifiers & ~(KeyMod::Alt | KeyMod::Super);
+  const bool tabPrevious = (m_config != nullptr)
+      ? m_config->matchesKeybind(KeybindAction::TabPrevious, event.sym, normalizedModifiers)
+      : KeybindMatcher::matches(KeybindAction::TabPrevious, event.sym, event.modifiers);
+  const bool tabNext = (m_config != nullptr)
+      ? m_config->matchesKeybind(KeybindAction::TabNext, event.sym, normalizedModifiers)
+      : KeybindMatcher::matches(KeybindAction::TabNext, event.sym, event.modifiers);
+
+  if (tabPrevious) {
     cycleSelection(-1);
     return true;
   }
 
-  if (KeybindMatcher::matches(KeybindAction::TabNext, event.sym, event.modifiers)) {
+  if (tabNext) {
     cycleSelection(1);
     return true;
   }
