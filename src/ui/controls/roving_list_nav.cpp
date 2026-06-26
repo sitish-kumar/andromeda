@@ -240,11 +240,13 @@ void RovingListNavController::activateKeyboardIndex() {
 }
 
 RovingListNavHost::RovingListNavHost(RovingListNavController::Options options) {
+  const bool keepItemsInTabOrder = options.keepItemsInTabOrder;
   setDirection(FlexDirection::Vertical);
   setAlign(FlexAlign::Stretch);
 
   auto area = std::make_unique<InputArea>();
   area->setFocusable(true);
+  area->setTabStop(!keepItemsInTabOrder);
   area->setHitTestVisible(false);
   m_focusArea = static_cast<InputArea*>(addChild(std::move(area)));
   m_focusArea->setParticipatesInLayout(false);
