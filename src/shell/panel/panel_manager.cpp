@@ -1554,10 +1554,10 @@ void PanelManager::onKeyboardEvent(const KeyboardEvent& event) {
 
   if (event.pressed && !event.preedit) {
     InputArea* focused = m_inputDispatcher.focusedArea();
-    if (focused != nullptr && focused->textInputClient() == nullptr) {
-      const bool reverse = KeybindMatcher::matches(KeybindAction::Up, event.sym, event.modifiers);
-      const bool forward = KeybindMatcher::matches(KeybindAction::Down, event.sym, event.modifiers);
-      if ((reverse || forward) && m_inputDispatcher.cycleTabFocus(reverse)) {
+    const bool reverse = KeybindMatcher::matches(KeybindAction::Up, event.sym, event.modifiers);
+    const bool forward = KeybindMatcher::matches(KeybindAction::Down, event.sym, event.modifiers);
+    if ((reverse || forward) && (focused == nullptr || focused->textInputClient() == nullptr)) {
+      if (m_inputDispatcher.cycleTabFocus(reverse)) {
         if (m_surface != nullptr
             && m_sceneRoot != nullptr
             && (m_sceneRoot->paintDirty() || m_sceneRoot->layoutDirty())) {
