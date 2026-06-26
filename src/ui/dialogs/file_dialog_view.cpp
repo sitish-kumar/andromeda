@@ -557,8 +557,13 @@ bool FileDialogView::handleGlobalKey(std::uint32_t sym, std::uint32_t modifiers,
     return true;
   }
 
-  if (sym == XKB_KEY_Tab) {
-    cycleFocus((modifiers & KeyMod::Shift) != 0);
+  if (KeybindMatcher::matches(KeybindAction::TabPrevious, sym, modifiers)) {
+    cycleFocus(true);
+    return true;
+  }
+
+  if (KeybindMatcher::matches(KeybindAction::TabNext, sym, modifiers)) {
+    cycleFocus(false);
     return true;
   }
 
