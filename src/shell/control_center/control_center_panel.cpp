@@ -158,7 +158,9 @@ void ControlCenterPanel::create() {
 
     auto sidebarNav = std::make_unique<RovingListNavHost>(RovingListNavController::Options{
         .axis = RovingListNavAxis::Vertical,
-        .mode = RovingListNavMode::Roving,
+        .mode = RovingListNavMode::FollowFocus,
+        .keepItemsInTabOrder = false,
+        .wrap = true,
         .scrollIntoView = [this](const Node* node) { scrollSidebarNodeIntoView(node); },
         .syncIndexFromSelection = {},
     });

@@ -708,6 +708,15 @@ void MediaTab::onClose() {
   m_lastRealtimeMprisPollAt = {};
 }
 
+bool MediaTab::dismissTransientUi() {
+  if (m_playerMenuPopup == nullptr || !m_playerMenuPopup->isOpen()) {
+    return false;
+  }
+  m_playerMenuPopup->close();
+  PanelManager::instance().clearActivePopup();
+  return true;
+}
+
 void MediaTab::clearArt(Renderer& renderer) {
   if (m_artwork != nullptr) {
     m_artwork->clear(renderer);

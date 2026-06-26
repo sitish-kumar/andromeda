@@ -40,6 +40,7 @@ public:
 private:
   enum class VisualState : std::uint8_t {
     Idle,
+    Focused,
     Recording,
   };
 

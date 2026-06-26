@@ -16,7 +16,6 @@ struct SplitPaneFocusConfig {
 enum class SplitPaneFocusResult : std::uint8_t {
   NotHandled,
   Consumed,
-  FocusPrimed,
 };
 
 [[nodiscard]] bool isNodeInSubtree(const Node* node, const Node* ancestor) noexcept;

@@ -44,6 +44,7 @@ public:
     (void)preedit;
     return false;
   }
+  [[nodiscard]] virtual bool dismissTransientUi() { return false; }
   [[nodiscard]] virtual bool deferExternalRefresh() const { return false; }
   [[nodiscard]] virtual bool deferPointerRelayout() const { return false; }
 

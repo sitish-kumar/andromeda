@@ -734,15 +734,13 @@ namespace settings {
             .maxHeight = Style::controlHeightSm * scale,
             .padding = Style::spaceXs * scale,
             .radius = Style::scaledRadiusSm(scale),
-            .onClick =
-                [commitItems, items = keybinds.items, i]() mutable {
-                  if (i >= items.size()) {
-                    return;
-                  }
-                  items.erase(items.begin() + static_cast<std::ptrdiff_t>(i));
-                  commitItems(std::move(items));
-                },
-            .configure = [](Button& button) { button.setTabStop(false); },
+            .onClick = [commitItems, items = keybinds.items, i]() mutable {
+              if (i >= items.size()) {
+                return;
+              }
+              items.erase(items.begin() + static_cast<std::ptrdiff_t>(i));
+              commitItems(std::move(items));
+            },
         });
         row->addChild(std::move(removeBtn));
 

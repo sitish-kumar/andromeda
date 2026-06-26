@@ -29,6 +29,7 @@ public:
     RovingListNavAxis axis = RovingListNavAxis::Vertical;
     RovingListNavMode mode = RovingListNavMode::Roving;
     bool keepItemsInTabOrder = false;
+    bool wrap = false;
     std::function<void(const Node*)> scrollIntoView;
     std::function<std::size_t()> syncIndexFromSelection;
   };

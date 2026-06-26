@@ -73,7 +73,7 @@ public:
   void onFrameTick(float deltaMs) override;
   void onOpen(std::string_view context) override;
   void onClose() override;
-  [[nodiscard]] bool dismissTransientUi();
+  [[nodiscard]] bool dismissTransientUi() override;
   [[nodiscard]] bool isContextActive(std::string_view context) const override;
   [[nodiscard]] bool handleGlobalKey(std::uint32_t sym, std::uint32_t modifiers, bool pressed, bool preedit) override;
   [[nodiscard]] bool deferExternalRefresh() const override;

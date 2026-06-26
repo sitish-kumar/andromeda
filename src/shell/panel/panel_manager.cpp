@@ -11,7 +11,6 @@
 #include "render/scene/input_area.h"
 #include "shell/bar/bar_reserved_zone.h"
 #include "shell/clipboard/clipboard_panel.h"
-#include "shell/control_center/control_center_panel.h"
 #include "shell/screen_position.h"
 #include "shell/surface/shadow.h"
 #include "shell/tooltip/tooltip_manager.h"
@@ -1305,12 +1304,8 @@ bool PanelManager::onPointerEvent(const PointerEvent& event) {
     }
 
     if (m_pointerInside) {
-      if (pressed
-          && event.surface == m_wlSurface
-          && m_activePanelId == "control-center"
-          && m_inputDispatcher.hoveredArea() == nullptr) {
-        if (auto* controlCenter = dynamic_cast<ControlCenterPanel*>(m_activePanel);
-            controlCenter != nullptr && controlCenter->dismissTransientUi()) {
+      if (pressed && event.surface == m_wlSurface && m_inputDispatcher.hoveredArea() == nullptr) {
+        if (m_activePanel != nullptr && m_activePanel->dismissTransientUi()) {
           refresh();
           return true;
         }
@@ -1536,6 +1531,20 @@ void PanelManager::onKeyboardEvent(const KeyboardEvent& event) {
       }
       return;
     }
+    if (m_activePanel != nullptr && m_activePanel->dismissTransientUi()) {
+      if (m_surface != nullptr && m_sceneRoot != nullptr && (m_sceneRoot->paintDirty() || m_sceneRoot->layoutDirty())) {
+        if (m_sceneRoot->layoutDirty()) {
+          m_surface->requestLayout();
+        } else {
+          m_surface->requestRedraw();
+        }
+      }
+      return;
+    }
+    if (m_activePopup != nullptr && m_activePopup->isOpen()) {
+      m_activePopup->close();
+      return;
+    }
     closePanel();
     return;
   }
@@ -1550,26 +1559,6 @@ void PanelManager::onKeyboardEvent(const KeyboardEvent& event) {
       }
     }
     return;
-  }
-
-  if (event.pressed && !event.preedit) {
-    InputArea* focused = m_inputDispatcher.focusedArea();
-    const bool reverse = KeybindMatcher::matches(KeybindAction::Up, event.sym, event.modifiers);
-    const bool forward = KeybindMatcher::matches(KeybindAction::Down, event.sym, event.modifiers);
-    if ((reverse || forward) && (focused == nullptr || focused->textInputClient() == nullptr)) {
-      if (m_inputDispatcher.cycleTabFocus(reverse)) {
-        if (m_surface != nullptr
-            && m_sceneRoot != nullptr
-            && (m_sceneRoot->paintDirty() || m_sceneRoot->layoutDirty())) {
-          if (m_sceneRoot->layoutDirty()) {
-            m_surface->requestLayout();
-          } else {
-            m_surface->requestRedraw();
-          }
-        }
-        return;
-      }
-    }
   }
 
   m_inputDispatcher.keyEvent(event.sym, event.utf32, event.modifiers, event.pressed, event.preedit);
