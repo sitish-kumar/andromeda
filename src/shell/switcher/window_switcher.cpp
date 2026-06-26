@@ -812,8 +812,13 @@ bool WindowSwitcher::onKeyboardEvent(const KeyboardEvent& event) {
     return true;
   }
 
-  if (KeySymbol::isTab(event.sym)) {
-    cycleSelection((event.modifiers & KeyMod::Shift) != 0 ? -1 : 1);
+  if (KeybindMatcher::matches(KeybindAction::TabPrevious, event.sym, event.modifiers)) {
+    cycleSelection(-1);
+    return true;
+  }
+
+  if (KeybindMatcher::matches(KeybindAction::TabNext, event.sym, event.modifiers)) {
+    cycleSelection(1);
     return true;
   }
 
