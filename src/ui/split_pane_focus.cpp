@@ -37,8 +37,20 @@ namespace {
 
   [[nodiscard]] SplitPaneFocusResult
   handleTab(InputDispatcher& dispatcher, const SplitPaneFocusConfig& config, bool reverse) {
-    auto focusSidebar = [&]() {
-      dispatcher.setFocus(config.sidebarFocus);
+    auto focusSidebarFirst = [&]() {
+      if (InputArea* area = dispatcher.firstTabFocusUnder(const_cast<Node*>(config.sidebarRoot))) {
+        dispatcher.setFocus(area);
+      } else {
+        dispatcher.setFocus(config.sidebarFocus);
+      }
+      return SplitPaneFocusResult::Consumed;
+    };
+    auto focusSidebarLast = [&]() {
+      if (InputArea* area = dispatcher.lastTabFocusUnder(const_cast<Node*>(config.sidebarRoot))) {
+        dispatcher.setFocus(area);
+      } else {
+        dispatcher.setFocus(config.sidebarFocus);
+      }
       return SplitPaneFocusResult::Consumed;
     };
     auto focusContentFirst = [&]() {
@@ -64,15 +76,39 @@ namespace {
 
       if (reverseInContent) {
         if (focusedArea == first) {
-          return focusSidebar();
+          return focusSidebarLast();
         }
       } else {
         if (focusedArea == last) {
-          return focusSidebar();
+          return focusSidebarFirst();
         }
       }
 
       if (dispatcher.cycleTabFocusInSubtree(const_cast<Node*>(config.contentRoot), reverseInContent)) {
+        return SplitPaneFocusResult::Consumed;
+      }
+      return SplitPaneFocusResult::NotHandled;
+    };
+
+    auto cycleSidebar = [&](bool reverseInSidebar) {
+      InputArea* const first = dispatcher.firstTabFocusUnder(const_cast<Node*>(config.sidebarRoot));
+      InputArea* const last = dispatcher.lastTabFocusUnder(const_cast<Node*>(config.sidebarRoot));
+      InputArea* const focusedArea = dispatcher.focusedArea();
+      if (focusedArea == nullptr || first == nullptr || last == nullptr) {
+        return SplitPaneFocusResult::NotHandled;
+      }
+
+      if (reverseInSidebar) {
+        if (focusedArea == first) {
+          return focusContentLast();
+        }
+      } else {
+        if (focusedArea == last) {
+          return focusContentFirst();
+        }
+      }
+
+      if (dispatcher.cycleTabFocusInSubtree(const_cast<Node*>(config.sidebarRoot), reverseInSidebar)) {
         return SplitPaneFocusResult::Consumed;
       }
       return SplitPaneFocusResult::NotHandled;
@@ -83,13 +119,10 @@ namespace {
       if (reverse) {
         return focusContentLast();
       }
-      return focusSidebar();
+      return focusSidebarFirst();
     }
     if (isInSidebar(focused, config)) {
-      if (reverse) {
-        return focusContentLast();
-      }
-      return focusContentFirst();
+      return cycleSidebar(reverse);
     }
     if (isInContent(focused, config)) {
       return cycleContent(reverse);
@@ -145,6 +178,17 @@ SplitPaneFocusResult handleSplitPaneFocusNavigation(
       return SplitPaneFocusResult::Consumed;
     }
     if (down && dispatcher.cycleTabFocusInSubtree(const_cast<Node*>(config.contentRoot), false)) {
+      return SplitPaneFocusResult::Consumed;
+    }
+  }
+
+  if (isInSidebar(focused, config)) {
+    const bool up = KeybindMatcher::matches(KeybindAction::Up, sym, modifiers);
+    const bool down = KeybindMatcher::matches(KeybindAction::Down, sym, modifiers);
+    if (up && dispatcher.cycleTabFocusInSubtree(const_cast<Node*>(config.sidebarRoot), true)) {
+      return SplitPaneFocusResult::Consumed;
+    }
+    if (down && dispatcher.cycleTabFocusInSubtree(const_cast<Node*>(config.sidebarRoot), false)) {
       return SplitPaneFocusResult::Consumed;
     }
   }
