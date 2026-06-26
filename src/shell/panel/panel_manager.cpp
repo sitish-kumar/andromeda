@@ -8,6 +8,7 @@
 #include "core/ui_phase.h"
 #include "ipc/ipc_service.h"
 #include "render/render_context.h"
+#include "render/scene/input_area.h"
 #include "shell/bar/bar_reserved_zone.h"
 #include "shell/clipboard/clipboard_panel.h"
 #include "shell/control_center/control_center_panel.h"
@@ -1549,6 +1550,26 @@ void PanelManager::onKeyboardEvent(const KeyboardEvent& event) {
       }
     }
     return;
+  }
+
+  if (event.pressed && !event.preedit) {
+    InputArea* focused = m_inputDispatcher.focusedArea();
+    if (focused != nullptr && focused->textInputClient() == nullptr) {
+      const bool reverse = KeybindMatcher::matches(KeybindAction::Up, event.sym, event.modifiers);
+      const bool forward = KeybindMatcher::matches(KeybindAction::Down, event.sym, event.modifiers);
+      if ((reverse || forward) && m_inputDispatcher.cycleTabFocus(reverse)) {
+        if (m_surface != nullptr
+            && m_sceneRoot != nullptr
+            && (m_sceneRoot->paintDirty() || m_sceneRoot->layoutDirty())) {
+          if (m_sceneRoot->layoutDirty()) {
+            m_surface->requestLayout();
+          } else {
+            m_surface->requestRedraw();
+          }
+        }
+        return;
+      }
+    }
   }
 
   m_inputDispatcher.keyEvent(event.sym, event.utf32, event.modifiers, event.pressed, event.preedit);
