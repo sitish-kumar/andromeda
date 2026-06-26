@@ -655,6 +655,7 @@ namespace settings {
       auto block = makeCollectionBlock(entry, false, true, true, true, true, true);
       block->setClipChildren(true);
       block->setMinWidth(0.0f);
+      block->setGap(Style::spaceXs * scale);
 
       auto list = ui::column({
           .align = FlexAlign::Stretch,
@@ -774,6 +775,8 @@ namespace settings {
                 },
         });
         addRow->addChild(std::move(addRecorder));
+        // Reserve the remove-button column so the add recorder lines up with the recorded ones.
+        addRow->addChild(ui::row({.width = Style::controlHeightSm * scale}));
 
         list->addChild(std::move(addRow));
       }
@@ -1273,7 +1276,7 @@ namespace settings {
     std::string activeSectionKey;
     std::string activeGroupKey;
     Flex* activeSection = nullptr;
-    constexpr std::size_t kKeybindsPerRow = 3;
+    constexpr std::size_t kKeybindsPerRow = 2;
     Flex* activeKeybindRow = nullptr;
     std::size_t activeKeybindRowCount = 0;
     std::size_t visibleEntries = 0;

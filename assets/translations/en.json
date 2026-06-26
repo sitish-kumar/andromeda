@@ -1072,6 +1072,7 @@
         "desktop": "Desktop",
         "dock": "Dock",
         "hooks": "Hooks",
+        "keybinds": "Keybinds",
         "location": "Location",
         "niri": "Niri",
         "notifications": "Notifications",

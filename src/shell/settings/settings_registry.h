@@ -33,6 +33,7 @@ namespace settings {
     Notifications,
     Osd,
     Shell,
+    Keybinds,
     Security,
     System,
     Services,

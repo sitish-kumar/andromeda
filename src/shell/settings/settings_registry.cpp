@@ -39,7 +39,7 @@ namespace settings {
       return defaultKeybindSet(action);
     }
 
-    constexpr std::array<SettingsSectionDescriptor, 19> kSettingsSections{{
+    constexpr std::array<SettingsSectionDescriptor, 20> kSettingsSections{{
         {SettingsSection::Appearance, "appearance", "adjustments-horizontal"},
         {SettingsSection::Wallpaper, "wallpaper", "paint"},
         {SettingsSection::Templates, "templates", "color-swatch"},
@@ -50,6 +50,7 @@ namespace settings {
         {SettingsSection::Notifications, "notifications", "bell"},
         {SettingsSection::Osd, "osd", "message-circle"},
         {SettingsSection::Shell, "shell", "app-window"},
+        {SettingsSection::Keybinds, "keybinds", "keyboard"},
         {SettingsSection::Security, "security", "shield-lock"},
         {SettingsSection::System, "system", "activity-heartbeat"},
         {SettingsSection::Services, "services", "stack-2"},
@@ -1638,9 +1639,9 @@ namespace settings {
         "monitor output display screen hud overlay"
     ));
 
-    // Keybinds (lives under Shell)
+    // Keybinds
     entries.push_back(makeEntry(
-        SettingsSection::Shell, "keybinds", tr("settings.schema.keybinds.validate.label"),
+        SettingsSection::Keybinds, "keybinds", tr("settings.schema.keybinds.validate.label"),
         tr("settings.schema.keybinds.validate.description"), {"keybinds", "validate"},
         KeybindListSetting{
             .items = effectiveKeybindItems(cfg.keybinds.validate, KeybindAction::Validate), .maxItems = 4
@@ -1648,48 +1649,48 @@ namespace settings {
         "keybind shortcut hotkey enter accept submit confirm"
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Shell, "keybinds", tr("settings.schema.keybinds.cancel.label"),
+        SettingsSection::Keybinds, "keybinds", tr("settings.schema.keybinds.cancel.label"),
         tr("settings.schema.keybinds.cancel.description"), {"keybinds", "cancel"},
         KeybindListSetting{.items = effectiveKeybindItems(cfg.keybinds.cancel, KeybindAction::Cancel), .maxItems = 4},
         "keybind shortcut hotkey escape close dismiss"
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Shell, "keybinds", tr("settings.schema.keybinds.left.label"),
+        SettingsSection::Keybinds, "keybinds", tr("settings.schema.keybinds.left.label"),
         tr("settings.schema.keybinds.left.description"), {"keybinds", "left"},
         KeybindListSetting{.items = effectiveKeybindItems(cfg.keybinds.left, KeybindAction::Left), .maxItems = 4},
         "keybind shortcut hotkey arrow move"
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Shell, "keybinds", tr("settings.schema.keybinds.right.label"),
+        SettingsSection::Keybinds, "keybinds", tr("settings.schema.keybinds.right.label"),
         tr("settings.schema.keybinds.right.description"), {"keybinds", "right"},
         KeybindListSetting{.items = effectiveKeybindItems(cfg.keybinds.right, KeybindAction::Right), .maxItems = 4},
         "keybind shortcut hotkey arrow move"
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Shell, "keybinds", tr("settings.schema.keybinds.up.label"),
+        SettingsSection::Keybinds, "keybinds", tr("settings.schema.keybinds.up.label"),
         tr("settings.schema.keybinds.up.description"), {"keybinds", "up"},
         KeybindListSetting{.items = effectiveKeybindItems(cfg.keybinds.up, KeybindAction::Up), .maxItems = 4},
         "keybind shortcut hotkey arrow move"
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Shell, "keybinds", tr("settings.schema.keybinds.down.label"),
+        SettingsSection::Keybinds, "keybinds", tr("settings.schema.keybinds.down.label"),
         tr("settings.schema.keybinds.down.description"), {"keybinds", "down"},
         KeybindListSetting{.items = effectiveKeybindItems(cfg.keybinds.down, KeybindAction::Down), .maxItems = 4},
         "keybind shortcut hotkey arrow move"
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Shell, "keybinds", tr("settings.schema.keybinds.tab-next.label"),
-        tr("settings.schema.keybinds.tab-next.description"), {"keybinds", "tab_next"},
-        KeybindListSetting{.items = effectiveKeybindItems(cfg.keybinds.tabNext, KeybindAction::TabNext), .maxItems = 4},
-        "keybind shortcut hotkey tab focus pane"
-    ));
-    entries.push_back(makeEntry(
-        SettingsSection::Shell, "keybinds", tr("settings.schema.keybinds.tab-previous.label"),
+        SettingsSection::Keybinds, "keybinds", tr("settings.schema.keybinds.tab-previous.label"),
         tr("settings.schema.keybinds.tab-previous.description"), {"keybinds", "tab_previous"},
         KeybindListSetting{
             .items = effectiveKeybindItems(cfg.keybinds.tabPrevious, KeybindAction::TabPrevious), .maxItems = 4
         },
         "keybind shortcut hotkey shift tab focus pane"
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Keybinds, "keybinds", tr("settings.schema.keybinds.tab-next.label"),
+        tr("settings.schema.keybinds.tab-next.description"), {"keybinds", "tab_next"},
+        KeybindListSetting{.items = effectiveKeybindItems(cfg.keybinds.tabNext, KeybindAction::TabNext), .maxItems = 4},
+        "keybind shortcut hotkey tab focus pane"
     ));
 
     // Niri-specific integrations
