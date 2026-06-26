@@ -321,7 +321,7 @@
         "scheduled-day": "Gepland",
         "scheduled-night": "Actief"
       },
-      "notification": "DND",
+      "notification": "Niet Storen",
       "power-profile": "Energie",
       "screen-time": "Schermtijd",
       "session": "Sessie",
@@ -659,8 +659,8 @@
       "on": "Caffeïne aan"
     },
     "dnd": {
-      "off": "Niet storen uit",
-      "on": "Niet storen aan"
+      "off": "Niet Storen Uit",
+      "on": "Niet Storen Aan"
     },
     "lock-keys": {
       "caps-off": "Caps Lock uit",
@@ -2128,7 +2128,7 @@
         },
         "osd-kinds-dnd": {
           "description": "Toon een OSD-pop-up wanneer Niet storen wordt in-/uitgeschakeld",
-          "label": "Niet storen"
+          "label": "Niet Storen"
         },
         "osd-kinds-keyboard-layout": {
           "description": "Toon een OSD-pop-up wanneer de toetsenbordindeling verandert",
