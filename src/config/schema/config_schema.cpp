@@ -432,6 +432,19 @@ namespace noctalia::config::schema {
       static const Schema<BrightnessMonitorOverride> s = {
           field(&BrightnessMonitorOverride::match, "match"),
           optionalEnumField(&BrightnessMonitorOverride::backend, "backend", kBrightnessBackendPreferences),
+          custom<BrightnessMonitorOverride>(
+              "backlight_device",
+              [](const toml::table& tbl, BrightnessMonitorOverride& out, std::string_view, Diagnostics&) {
+                if (auto v = tbl["backlight_device"].value<std::string>()) {
+                  out.backlightDevice = *v;
+                }
+              },
+              [](toml::table& tbl, const BrightnessMonitorOverride& in) {
+                if (in.backlightDevice.has_value()) {
+                  tbl.insert_or_assign("backlight_device", *in.backlightDevice);
+                }
+              }
+          ),
       };
       return s;
     }

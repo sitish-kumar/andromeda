@@ -211,6 +211,7 @@ enable_ddcutil = false
 # Per-monitor backend override:
 # [brightness.monitor.eDP-1]
 # backend = "backlight"             # auto | none | backlight | ddcutil
+# backlight_device = "intel_backlight"  # explicit sysfs device name or path; run: noctalia msg brightness-list-backlight-devices
 # [brightness.monitor.DP-1]
 # backend = "ddcutil"
 
