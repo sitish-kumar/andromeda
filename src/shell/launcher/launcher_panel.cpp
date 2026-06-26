@@ -65,6 +65,18 @@ namespace {
 
   [[nodiscard]] bool startsWithSlash(std::string_view text) { return !text.empty() && text.front() == '/'; }
 
+  [[nodiscard]] bool isDescendantOf(const Node* node, const Node* ancestor) {
+    if (node == nullptr || ancestor == nullptr) {
+      return false;
+    }
+    for (const Node* current = node; current != nullptr; current = current->parent()) {
+      if (current == ancestor) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   [[nodiscard]] std::string singleLinePreview(std::string_view text) {
     std::string preview;
     preview.reserve(text.size());
@@ -1133,9 +1145,18 @@ bool LauncherPanel::handleGlobalKey(std::uint32_t sym, std::uint32_t modifiers, 
     return false;
   }
 
+  auto& dispatcher = PanelManager::instance().inputDispatcher();
+  InputArea* const focused = dispatcher.focusedArea();
+  if (focused != nullptr) {
+    const bool onInput = (m_input != nullptr && focused == m_input->inputArea());
+    const bool inResults = (m_grid != nullptr && isDescendantOf(focused, m_grid));
+    if (!onInput && !inResults) {
+      return false;
+    }
+  }
+
   if (m_categoryFilter != nullptr && m_categoryFilter->visible()) {
-    auto& dispatcher = PanelManager::instance().inputDispatcher();
-    if (dispatcher.focusedArea() == m_categoryFilter->focusArea()) {
+    if (focused == m_categoryFilter->focusArea()) {
       return false;
     }
   }
