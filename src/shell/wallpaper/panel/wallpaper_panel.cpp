@@ -900,7 +900,7 @@ bool WallpaperPanel::handleGlobalKey(std::uint32_t sym, std::uint32_t modifiers,
 
   auto& dispatcher = PanelManager::instance().inputDispatcher();
   InputArea* focused = dispatcher.focusedArea();
-  if (focused != nullptr && (isDescendantOf(focused, m_toolbar) || isDescendantOf(focused, m_favoritesOptionsColumn))) {
+  if (focused != nullptr && !isDescendantOf(focused, m_grid)) {
     return false;
   }
 
