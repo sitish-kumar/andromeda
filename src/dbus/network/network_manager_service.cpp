@@ -190,7 +190,19 @@ NetworkManagerService::NetworkManagerService(SystemBus& bus) : m_bus(bus) {
   requestScan();
 }
 
-NetworkManagerService::~NetworkManagerService() { m_lifetimeToken.reset(); }
+NetworkManagerService::~NetworkManagerService() {
+  // Drop callback targets first so in-flight async replies become no-ops.
+  m_changeCallback = {};
+  m_lifetimeToken.reset();
+
+  // Release DBus proxies/signals explicitly during teardown.
+  m_pendingApActivations.clear();
+  m_wifiDevices.clear();
+  m_activeAp.reset();
+  m_activeDevice.reset();
+  m_activeConnection.reset();
+  m_nm.reset();
+}
 
 void NetworkManagerService::setChangeCallback(ChangeCallback callback) { m_changeCallback = std::move(callback); }
 
@@ -208,19 +220,28 @@ void NetworkManagerService::refresh() {
   pending->capturedSaved = m_savedSsids;
   pending->capturedWired = m_savedWiredConnectionPaths;
   pending->pendingOps = 3;
+  const std::weak_ptr<PendingRefresh> pendingWeak = pending;
 
-  pending->onAllComplete = [this, pending, lifetimeToken]() {
+  pending->onAllComplete = [this, pendingWeak, lifetimeToken]() {
+    auto pendingState = pendingWeak.lock();
+    if (!pendingState) {
+      return;
+    }
     if (lifetimeToken.expired()) {
       return;
     }
-    readStateAsync([this, pending, lifetimeToken](NetworkState next) {
+    readStateAsync([this, pendingWeak, lifetimeToken](NetworkState next) {
+      auto refreshState = pendingWeak.lock();
+      if (!refreshState) {
+        return;
+      }
       if (lifetimeToken.expired()) {
         return;
       }
-      const bool apsChanged = pending->capturedAps != m_accessPoints;
-      const bool vpnsChanged = pending->capturedVpns != m_vpnConnections;
-      const bool savedChanged = pending->capturedSaved != m_savedSsids;
-      const bool wiredChanged = pending->capturedWired != m_savedWiredConnectionPaths;
+      const bool apsChanged = refreshState->capturedAps != m_accessPoints;
+      const bool vpnsChanged = refreshState->capturedVpns != m_vpnConnections;
+      const bool savedChanged = refreshState->capturedSaved != m_savedSsids;
+      const bool wiredChanged = refreshState->capturedWired != m_savedWiredConnectionPaths;
       const bool stateChanged = next != m_state;
       const bool firstSnapshot = !m_hasStateSnapshot;
       const bool wirelessEnabledChanged = next.wirelessEnabled != m_state.wirelessEnabled;
@@ -234,7 +255,7 @@ void NetworkManagerService::refresh() {
         m_changeCallback(m_state, origin);
       }
       // Break the self-reference cycle: pending->onAllComplete captures pending.
-      pending->onAllComplete = {};
+      refreshState->onAllComplete = {};
 
       m_refreshInFlight = false;
       if (m_refreshQueued) {
