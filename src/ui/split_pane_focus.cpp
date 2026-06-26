@@ -171,6 +171,25 @@ SplitPaneFocusResult handleSplitPaneFocusNavigation(
     return SplitPaneFocusResult::FocusPrimed;
   }
 
+  if (isInHeader(focused, config)) {
+    const bool up = KeybindMatcher::matches(KeybindAction::Up, sym, modifiers);
+    const bool down = KeybindMatcher::matches(KeybindAction::Down, sym, modifiers);
+    if (up) {
+      if (InputArea* area = dispatcher.lastTabFocusUnder(const_cast<Node*>(config.contentRoot))) {
+        dispatcher.setFocus(area);
+        return SplitPaneFocusResult::Consumed;
+      }
+      return SplitPaneFocusResult::NotHandled;
+    }
+    if (down) {
+      if (InputArea* area = dispatcher.firstTabFocusUnder(const_cast<Node*>(config.contentRoot))) {
+        dispatcher.setFocus(area);
+        return SplitPaneFocusResult::Consumed;
+      }
+      return SplitPaneFocusResult::NotHandled;
+    }
+  }
+
   if (isInContent(focused, config)) {
     const bool up = KeybindMatcher::matches(KeybindAction::Up, sym, modifiers);
     const bool down = KeybindMatcher::matches(KeybindAction::Down, sym, modifiers);
