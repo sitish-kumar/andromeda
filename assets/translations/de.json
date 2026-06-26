@@ -2868,6 +2868,18 @@
       "just-now": "gerade eben",
       "minutes-ago": "{count} Min. her",
       "minutes-ago-plural": "vor {count} Min."
+    },
+    "units": {
+      "day": "{count} Tag",
+      "day-plural": "{count} Tage",
+      "hour": "{count} Stunde",
+      "hour-plural": "{count} Stunden",
+      "minute": "{count} Minute",
+      "minute-plural": "{count} Minuten",
+      "month": "{count} Monat",
+      "month-plural": "{count} Monate",
+      "year": "{count} Jahr",
+      "year-plural": "{count} Jahre"
     }
   },
   "tray": {

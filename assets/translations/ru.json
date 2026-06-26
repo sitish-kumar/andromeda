@@ -97,11 +97,14 @@
         "gpu-usage": "Загрузка GPU",
         "gpu-vram": "GPU VRAM",
         "ram": "RAM",
+        "swap": "Swap",
         "system": "Система",
         "upload": "Загрузить"
       },
       "volume": {
-        "device": "Устройство"
+        "device": "Устройство",
+        "mic": "Микрофон",
+        "volume": "Громкость"
       },
       "weather": {
         "default": "Погода",
@@ -432,6 +435,7 @@
         "command": "Команда",
         "custom-color": "Пользовательский…",
         "description": "Описание",
+        "display": "Дисплей",
         "fade-when-idle": "Затухание в режиме ожидания",
         "font-family": "Шрифт",
         "font-family-default": "По умолчанию",
@@ -649,6 +653,7 @@
       "lockscreen-widgets-editor-blocked-locked": "Разблокируйте сессию перед редактированием виджетов экрана блокировки.",
       "lockscreen-widgets-editor-enabled": "Редактор виджетов экрана блокировки включён. Расположите виджеты в режиме предварительного просмотра, затем заблокируйте сессию, чтобы проверить правильность расположения.",
       "mpris-disabled": "MPRIS отключён",
+      "polkit-agent": "Агент аутентификации",
       "screen-time-reset": "Экранное время",
       "screen-time-reset-success": "История использования очищена.",
       "session-bus-unavailable": "Шина сеанса недоступна",
@@ -1193,6 +1198,9 @@
     },
     "plugins": {
       "panels": {
+        "open-near-click": {
+          "label": "Открывать возле клика"
+        },
         "position": {
           "label": "Позиция"
         }
@@ -1203,6 +1211,7 @@
         "empty": "Плагины не найдены. Добавьте источник или проверьте соединение с интернетом",
         "loading": "Загрузка плагинов...",
         "refreshing": "Обновление плагинов...",
+        "requires": "Требуются: {dependencies}",
         "requires-newer-noctalia": "требуется более новая версия Noctalia",
         "title": "Плагины"
       },
@@ -1391,6 +1400,21 @@
         "corner-top-right": {
           "description": "Радиус верхнего правого угла панели"
         },
+        "dead-zone-command": {
+          "label": "ЛКМ"
+        },
+        "dead-zone-middle-command": {
+          "label": "СКМ"
+        },
+        "dead-zone-right-command": {
+          "label": "ПКМ"
+        },
+        "dead-zone-scroll-down-command": {
+          "label": "Прокрутить вниз"
+        },
+        "dead-zone-scroll-up-command": {
+          "label": "Прокрутить вверх"
+        },
         "edge-margin": {
           "description": "Расстояние от ближайшего края экрана; положительные значения отодвигают панель от него"
         },
@@ -1405,7 +1429,8 @@
           "description": "Отступ от каждого конца панели вдоль её главной оси"
         },
         "font-family": {
-          "description": "Шрифт для виджетов этой панели; оставьте пустым чтобы использовать глобальный шрифт."
+          "description": "Шрифт для виджетов этой панели; оставьте пустым чтобы использовать глобальный шрифт.",
+          "label": "Семейство шрифтов"
         },
         "font-weight": {
           "description": "Насыщенность шрифта по умолчанию для меток виджетов на этой панели.",
@@ -1811,6 +1836,9 @@
           "description": "Выберите до шести кнопок быстрого доступа для домашней вкладки",
           "label": "Ярлыки главной вкладки"
         },
+        "launcher-app-grid": {
+          "label": "Сетка приложений"
+        },
         "launcher-categories": {
           "description": "Показывать фильтры категорий в лаунчере; откройте их F6, затем переключайте с помощью F6 и Shift+F6",
           "label": "Показывать категории"
@@ -1865,6 +1893,9 @@
           "description": "Выберите, будет ли лаунчер прикреплён к панели, всплывать рядом с ней или открываться по центру",
           "label": "Размещение"
         },
+        "placement-polkit": {
+          "label": "Позиция"
+        },
         "placement-session": {
           "description": "Выберите, будет ли меню сеанса прикрепляться к панели, плавать рядом с ней или открываться по центру",
           "label": "Размещение"
@@ -1880,6 +1911,12 @@
           "label": "Позиция"
         },
         "position-launcher": {
+          "label": "Позиция"
+        },
+        "position-session": {
+          "label": "Позиция"
+        },
+        "position-wallpaper": {
           "label": "Позиция"
         },
         "shadow": {
@@ -2178,9 +2215,18 @@
           "description": "Показывать OSD при изменении Caps Lock, Num Lock и Scroll Lock",
           "label": "Lock-клавиши"
         },
+        "osd-kinds-media": {
+          "label": "Сейчас играет"
+        },
+        "osd-kinds-nightlight": {
+          "label": "Ночной свет"
+        },
         "osd-kinds-power-profile": {
           "description": "Показывать OSD при изменении профиля питания",
           "label": "Профиль питания"
+        },
+        "osd-kinds-privacy": {
+          "label": "Конфиденциальность"
         },
         "osd-kinds-volume": {
           "description": "Показывать OSD при изменении громкости; используйте расширенные настройки для раздельного управления выходом и входом",
@@ -2233,6 +2279,13 @@
         "screen-time-enabled": {
           "description": "Отслеживать использование по приложениям и показывать его в Центре управления",
           "label": "Экранное время"
+        },
+        "screen-time-reset": {
+          "button": "Сброс",
+          "label": "Сбросить данные об экранном времени"
+        },
+        "screenshot-confirm-region": {
+          "label": "Подтвердить регион"
         },
         "screenshot-copy-to-clipboard": {
           "description": "Помещать захваченный PNG в буфер обмена",
@@ -2398,6 +2451,7 @@
       "command-label": "Команда оболочки",
       "command-placeholder": "Необязательная команда bash, оставьте пустым для встроенного поведения",
       "command-required-placeholder": "Выполняемая терминальная команда",
+      "countdown-seconds-label": "Обратный отсчёт (секунды)",
       "glyph-label": "Глиф",
       "glyph-picker-title": "Глиф действия",
       "kind-section-label": "Поведение",
@@ -2463,6 +2517,9 @@
         "workspace-label-inside": "Внутри плашки"
       },
       "settings": {
+        "active-color": {
+          "label": "Цвет в активности"
+        },
         "active-opacity": {
           "description": "Непрозрачность значка активного (сфокусированного) окна.",
           "label": "Непрозрачность активного значка"
@@ -2614,6 +2671,9 @@
           "description": "При группировке по рабочему пространству исключать из списка панели задач капсулы без открытых окон.",
           "label": "Скрывать пустые рабочие пространства"
         },
+        "hide-inactive": {
+          "label": "Скрыть, когда неактивности"
+        },
         "hide-when-empty": {
           "description": "Скрывать плашки рабочих пространств, когда нет открытых окон",
           "label": "Скрывать, когда пусто",
@@ -2663,9 +2723,15 @@
           "description": "Размер значка в пикселях",
           "label": "Размер значка"
         },
+        "inactive-color": {
+          "label": "Цвет вне активности"
+        },
         "inactive-opacity": {
           "description": "Непрозрачность значков неактивных окон (не в фокусе).",
           "label": "Непрозрачность неактивного значка"
+        },
+        "interface": {
+          "label": "Интерфейс"
         },
         "label": {
           "description": "Необязательный статический текст, отображаемый на этой кнопке",
@@ -2883,6 +2949,7 @@
         "nightlight": "Ночной свет",
         "notifications": "Уведомления",
         "power-profile": "Профиль питания",
+        "privacy": "Индикатор конфиденциальности",
         "screenshot": "Скриншот",
         "scripted": "Скриптовый",
         "session": "Сеанс",
@@ -2946,12 +3013,16 @@
       "m3-rainbow": "M3 Rainbow",
       "m3-tonal-spot": "M3 Tonal Spot",
       "muted": "Muted",
+      "soft": "Мягкая",
       "vibrant": "Vibrant"
     }
   },
   "time": {
     "duration": {
-      "less-than-minute": "<1 мин"
+      "less-than-day": "меньше дня",
+      "less-than-minute": "<1 мин",
+      "three-parts": "{first} {second} {third}",
+      "two-parts": "{first} {second}"
     },
     "file": {
       "unknown": "Неизвестный"
@@ -2964,6 +3035,18 @@
       "just-now": "только что",
       "minutes-ago": "{count} мин назад",
       "minutes-ago-plural": "{count} мин назад"
+    },
+    "units": {
+      "day": "{count} день",
+      "day-plural": "{count} дней",
+      "hour": "{count} час",
+      "hour-plural": "{count} часов",
+      "minute": "{count} минута",
+      "minute-plural": "{count} минут",
+      "month": "{count} месяц",
+      "month-plural": "{count} месяцев",
+      "year": "{count} год",
+      "year-plural": "{count} лет"
     }
   },
   "tray": {
@@ -3026,6 +3109,7 @@
       "color-title": "Цвет обоев",
       "filter-placeholder": "Фильтр...",
       "flatten": "Сгладить",
+      "loading": "Обои загружаются",
       "sort-date-asc": "Сортировать по дате (сначала старые)",
       "sort-date-desc": "Сортировать по дате (сначала новые)",
       "sort-name-asc": "Сортировать по названию (А-Я)",

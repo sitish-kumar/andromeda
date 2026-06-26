@@ -656,7 +656,12 @@
       "desktop-widgets-editor": "Nøytelbrigdar",
       "desktop-widgets-editor-enabled": "Skrivebordsnøytelbrigdaren er på. Gå til eit tomt arbeidsrom for å sjå brigdaroverlaget.",
       "greeter-sync": "Noctaliahelsar",
+      "greeter-sync-pending": "Ventar på stjornargodkjenning for å skriva til helsaren.",
+      "greeter-sync-pending-console": "Ventar på stjornargodkjenning. Godkjenn polkit-meldinga i Noctalia, i ein TTY eller konsoll, eller køyr pkexec sjølv.",
+      "greeter-sync-pending-manual": "Filene ventar. Køyr i terminal: pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\". Eller set shell.greeter_sync.privilege_command (til dømes ghostty -e pkexec) og synkroniser å nyo.",
       "greeter-sync-success": "Utsjånad synkronisert. Brigde viser neste gong du skriv deg inn.",
+      "greeter-sync-timeout": "Helsarsynkroniseringa ventar enno på stjornargodkjenning. Sjå i ein TTY eller konsoll for polkit-leietekst, slå på polkitagenten i Tryggleiksinnstillingane, eller køyr pkexec sjølv.",
+      "greeter-sync-timeout-manual": "Helsarsynkroniseringa tarv enno stjornargodkjenning. Køyr i terminal: pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\"",
       "keybind-app": "Noctalia",
       "keybind-invalid-modifier": "Snarvegen godtek éin knapp utan hjelpeknappar.",
       "keybind-invalid-printable": "Skrivande knappar (bokstavar, tal, teikn) krev ein hjelpeknapp som Ctrl eller Alt.",
@@ -668,6 +673,8 @@
       "lockscreen-widgets-editor-blocked-locked": "Lås opp øykta før du brigdar på låseskjermnøytlar.",
       "lockscreen-widgets-editor-enabled": "Låseskjermnøytelbrigdaren er på. Flytta på nøytlar på førebiletet, og lås skjermen for å sjå om oppsettet er rett.",
       "mpris-disabled": "MPRIS avslege",
+      "polkit-agent": "Polkit-agent",
+      "polkit-no-session": "Polkit-agenten krev logind, elogind eller XDG_SESSION_ID. På oppsett med berre seatd kan han ikkje senda grafisk leietekst. Bruk pkexec i terminal for helsarsynkro, eller installer elogind for sanning i øykta.",
       "screen-time-reset": "Skjermtid",
       "screen-time-reset-success": "Brukshistorikk sletta.",
       "session-bus-unavailable": "Øyktebus ikkje tilgjengeleg",
@@ -947,6 +954,8 @@
       "reset-page": "Kunne ikkje nullstille sume innstillingar.",
       "support-report": "Kunne ikkje lagra støtterapport.",
       "sync-greeter": "Kunne ikkje synkronisera utsjånad med Noctaliahelsaren.",
+      "sync-greeter-timeout": "Helsarsynkroniseringa ventar enno på stjornargodkjenning. Sjå i ein TTY eller konsoll for polkit-leietekst, slå på polkitagenten i Tryggleiksinnstillingane, eller køyr pkexec sjølv.",
+      "sync-greeter-timeout-manual": "Helsarsynkroniseringa tarv enno stjornargodkjenning. Køyr i terminal: pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\"",
       "widget": {
         "rename": "Kunne ikkje gjeva eit nytt namn til nøytelen."
       },
@@ -1035,6 +1044,7 @@
         "osd": "Skjervising",
         "overview": "Oversyn",
         "pinned-apps": "Feste appar",
+        "polkit": "Polkit",
         "power": "Straum",
         "privacy-security": "Personvern og tryggleik",
         "profile": "Profil",
@@ -1058,6 +1068,7 @@
         "appearance": "Utsjånad",
         "backdrop": "Bakgrunn",
         "bar": "Stong",
+        "control-center": "Styrerom",
         "desktop": "Skrivebord",
         "dock": "Festepunkt",
         "hooks": "Krokar",
@@ -1155,10 +1166,14 @@
         "horizontal": "Vassrett",
         "vertical": "Loddrett"
       },
+      "panel-position": {
+        "auto": "Fylg stonga"
+      },
       "screen-position": {
         "bottom-center": "Botn i midten",
         "bottom-left": "Botn venstre",
         "bottom-right": "Botn høgre",
+        "center": "I midten",
         "center-left": "I midten venstre",
         "center-right": "I midten høgre",
         "top-center": "Topp i midten",
@@ -1237,6 +1252,20 @@
       }
     },
     "plugins": {
+      "panels": {
+        "open-near-click": {
+          "description": "Opna fjøla nær stongnøytelen som slo henne på / av",
+          "label": "Opna nær trykk"
+        },
+        "placement": {
+          "description": "Bind fjøla til stonga eller flyt henne nær stongranda",
+          "label": "Stadsetjing"
+        },
+        "position": {
+          "description": "Stad på skjermen når fjøla flyt",
+          "label": "Stad"
+        }
+      },
       "plugins": {
         "configure": "Måta til",
         "deprecated": "utgått",
@@ -1271,6 +1300,7 @@
         "location-placeholder-path": "~/dev/noctalia-plugins",
         "name-label": "Brunn-ID",
         "name-placeholder": "plugins-mine",
+        "precedence-hint": "Brunnar lægre ned på lista overstyrer høgre brunnar når dei båe byd på same plugin.",
         "remove": "Sletta brunn",
         "save": "Lagra",
         "title": "Brunnar",
@@ -1496,6 +1526,10 @@
         },
         "shadow": {
           "description": "Kasta den ålmenne flateskuggen frå stonga"
+        },
+        "show-on-workspace-switch": {
+          "description": "Openberr stonga ein augneblink når arbeidsromet med åtgaum skifter",
+          "label": "Vis når arbeidsrom skifter"
         },
         "start-widgets": {
           "description": "Nøytlar på byrjinga (venstre / topp) av stonga",
@@ -1756,6 +1790,14 @@
           "description": "Flytta på åtgaum eller vel til høgre",
           "label": "Flytta til høgre"
         },
+        "tab-next": {
+          "description": "Flytta åtgaum til neste fane eller styregruppe",
+          "label": "Åtgaum til neste fane"
+        },
+        "tab-previous": {
+          "description": "Flytta åtgaum til førre fane eller styregruppe",
+          "label": "Åtgaum til førre fane"
+        },
         "up": {
           "description": "Flytta på åtgaum eller vel opp ei rad",
           "label": "Flytta oppover"
@@ -1956,12 +1998,40 @@
           "description": "Vel om programveljaren er bunden til stonga, flyter i nærleiken, eller opnar i midten",
           "label": "Stad"
         },
+        "placement-polkit": {
+          "description": "Vel om polkitleieteksten er bunden til stonga eller flyt i ein stad du vel",
+          "label": "Stadsetjing"
+        },
         "placement-session": {
           "description": "Vel om øyktefjøla er bunden til stonga, flyter i nærleiken, eller opnar i midten",
           "label": "Stad"
         },
         "placement-wallpaper": {
           "description": "Vel om fjøla for bakgrunnsbileteval er bunden til stonga, flyter i nærleiken, eller opnar i midten",
+          "label": "Stad"
+        },
+        "position-clipboard": {
+          "description": "Det utklippstavla flyt på skjermen - Fylg stonga held henne nær stonga",
+          "label": "Stad"
+        },
+        "position-control-center": {
+          "description": "Der Styreromet flyt på skjermen - Fylg stonga held det nært stonga",
+          "label": "Stad"
+        },
+        "position-launcher": {
+          "description": "Der programveljaren flyt på skjermen - Fylg stonga held han nær stonga",
+          "label": "Stad"
+        },
+        "position-polkit": {
+          "description": "Der polkitleietekst flyt på skjermen - Fylg stonga held han nær stonga",
+          "label": "Stad"
+        },
+        "position-session": {
+          "description": "Der øyktefjøla flyt på skjermen - Fylg stonga held henne nær stonga",
+          "label": "Stad"
+        },
+        "position-wallpaper": {
+          "description": "Der veljaren for bakgrunnsbilete flyt på skjermen - Fylg stonga held han nær stonga",
           "label": "Stad"
         },
         "shadow": {
@@ -2220,6 +2290,10 @@
           "description": "Standard datoformattering for skalgrensesnittet utan eigen innstilling",
           "label": "Datoformattering"
         },
+        "greeter-sync-privilege-command": {
+          "description": "Byt ut pkexec/run0 med Synkro no i helsaren. Banen for godkjenningshjelparen og ventemappa vert lagt til automatisk. Døme: ghostty -e pkexec",
+          "label": "Helsarsynkro rettskommando"
+        },
         "launch-apps-as-systemd-services": {
           "description": "Køyrer applikasjonar i serskilde systemd-tenester slik at dei ikkje dela cgroup med Noctalia",
           "label": "Køyr appaar som systemd-tenester"
@@ -2389,8 +2463,8 @@
         },
         "sync-greeter": {
           "button": "Synkroniser no",
-          "description": "Rita av bakgrunnsbiletet og leter til Noctalia Greeter (krev adminrettar)",
-          "label": "Noctalia Greeter"
+          "description": "Rita av bakgrunnsbiletet og leter til Noctaliahelsar (krev stjornargodkjenning)",
+          "label": "Noctaliahelsar"
         },
         "telemetry": {
           "description": "Sender ein liten anonym oppstartsping med utgåve, OS, kompositor, skjermoppløysingar, minne og grensesnitttilhøve",
@@ -3116,6 +3190,7 @@
       "m3-rainbow": "M3 Rainbow",
       "m3-tonal-spot": "M3 Tonal Spot",
       "muted": "Dempa",
+      "soft": "Mjuk",
       "vibrant": "Livleg"
     }
   },

@@ -656,7 +656,12 @@
       "desktop-widgets-editor": "Рэдактар віджэтаў",
       "desktop-widgets-editor-enabled": "Рэдактар віджэтаў працоўнага стала ўключаны. Пераключыцеся на пустую працоўную прастору, каб убачыць накладку рэдактара.",
       "greeter-sync": "Noctalia Greeter",
+      "greeter-sync-pending": "Чаканне ухвалення адміністратара на запіс у Greeter.",
+      "greeter-sync-pending-console": "Чаканне ухвалення адміністратара. Ухваліце запыт polkit у Noctalia, на TTY ці кансолі, або ўласнаручна выканайце pkexec.",
+      "greeter-sync-pending-manual": "Файлы ў чаканні. Выканайце ў тэрмінале каманду: pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\". Або задайце shell.greeter_sync.privilege_command (напрыклад, ghostty -e pkexec) і сінхранізуйцеся паўторна.",
       "greeter-sync-success": "Выгляд сінхранізаваны. Змены прыменяцца на наступным экране блакіроўкі.",
+      "greeter-sync-timeout": "Сінхранізацыя Greeter усё яшчэ чакае ухвалення адміністратара. Праверце TTY або кансоль на прадмет запыту polkit, уключыце агент polkit у наладах бяспекі, або ўласнаручна выканайце pkexec.",
+      "greeter-sync-timeout-manual": "Сінхранізацыя Greeter усё яшчэ патрабуе ухвалення адміністратарам. Выканайце ў тэрмінале каманду: pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\"",
       "keybind-app": "Noctalia",
       "keybind-invalid-modifier": "Гэта спалучэнне можа быць адной клавішай без мадыфікатараў.",
       "keybind-invalid-printable": "Клавішам-сімвалам (літарам, лічбам, пунктуацыі і інш.) патрабуецца мадыфікатары, такія як Ctrl або Alt.",
@@ -668,6 +673,8 @@
       "lockscreen-widgets-editor-blocked-locked": "Разблакіруйце сеанс перад тым, як рэдагаваць віджэты.",
       "lockscreen-widgets-editor-enabled": "Рэдактар віджэтаў працоўнага стала ўключаны. Наладзьце віджэты на накладке папярэдняга прагляду, затым заблакіруйце сеанс, каб пацвердзіць макет.",
       "mpris-disabled": "MPRIS выключаны",
+      "polkit-agent": "Агент Polkit",
+      "polkit-no-session": "Агент Polkit патрабуе logind, elogind або XDG_SESSION_ID. На seatd-only сістэмах ён не можа выяўляць графічныя запыты. Скарыстайцеся pkexec праз тэрмінал, каб сінхранізаваць Greeter, або ўсталюйце elogind для праверкі сапраўднасці ў сеансе.",
       "screen-time-reset": "Экранны час",
       "screen-time-reset-success": "Гісторыя выкарыстання ачышчана.",
       "session-bus-unavailable": "Шына сеанса недаступна",
@@ -947,6 +954,8 @@
       "reset-page": "Некаторыя налады не ўдалося скінуць.",
       "support-report": "Не ўдалося захаваць справаздачу.",
       "sync-greeter": "Не ўдалося сінхранізаваць выгляд з Noctalia Greeter.",
+      "sync-greeter-timeout": "Сінхранізацыя Greeter усё яшчэ чакае ухвалення адміністратара. Праверце TTY або кансоль на прадмет запыту polkit, уключыце агент polkit у наладах бяспекі, або ўласнаручна выканайце pkexec.",
+      "sync-greeter-timeout-manual": "Сінхранізацыя Greeter усё яшчэ патрабуе ухвалення адміністратарам. Выканайце ў тэрмінале каманду: pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\"",
       "widget": {
         "rename": "Не ўдалося перайменаваць названы віджэт."
       },
@@ -1035,6 +1044,7 @@
         "osd": "OSD",
         "overview": "Агляд",
         "pinned-apps": "Замацаваныя праграмы",
+        "polkit": "Polkit",
         "power": "Сілкаванне",
         "privacy-security": "Прыватнасць і беспека",
         "profile": "Профіль",
@@ -1156,10 +1166,14 @@
         "horizontal": "Гарызантальна",
         "vertical": "Вертыкальна"
       },
+      "panel-position": {
+        "auto": "Кіравацца панэлі"
+      },
       "screen-position": {
         "bottom-center": "Унізе па цэнтру",
         "bottom-left": "Унізе злева",
         "bottom-right": "Унізе справа",
+        "center": "Па цэнтру",
         "center-left": "Па цэнтру злева",
         "center-right": "Па цэнтру справа",
         "top-center": "Зверху па цэнтру",
@@ -1170,6 +1184,11 @@
         "panel-placement": {
           "attached": "Прымацавана",
           "floating": "Нефіксаваная"
+        },
+        "panel-transparency": {
+          "glass": "Шкло",
+          "soft": "Мяккасць",
+          "solid": "Цвёрдасць"
         }
       }
     },

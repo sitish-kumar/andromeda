@@ -1792,12 +1792,12 @@
           "label": "Navigate Right"
         },
         "tab-next": {
-          "description": "Move focus to the next pane or control group",
-          "label": "Focus Next Pane"
+          "description": "Move focus to the next control",
+          "label": "Focus Next"
         },
         "tab-previous": {
-          "description": "Move focus to the previous pane or control group",
-          "label": "Focus Previous Pane"
+          "description": "Move focus to the previous control",
+          "label": "Focus Previous"
         },
         "up": {
           "description": "Move focus or selection up one row",

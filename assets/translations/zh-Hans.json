@@ -657,7 +657,7 @@
       "desktop-widgets-editor-enabled": "桌面小组件编辑器已开启。请切换到空的工作区查看编辑器图层。",
       "greeter-sync": "Noctalia Greeter",
       "greeter-sync-pending": "正在等待管理员授权以写入 greeter 配置。",
-      "greeter-sync-pending-console": "正在等待管理员授权。请在 Noctalia 的 Polkit 提示、TTY 或控制台中确认，或手动运行 pkexec。",
+      "greeter-sync-pending-console": "正在等待管理员授权。请在 Noctalia 的 Polkit 弹窗、TTY 或控制台中确认，或手动运行 pkexec。",
       "greeter-sync-pending-manual": "同步文件已就绪。请在终端运行：pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\" 或设置 shell.greeter_sync.privilege_command（例如 ghostty -e pkexec）后重新同步。",
       "greeter-sync-success": "外观已同步。更改将在下次登录时生效。",
       "greeter-sync-timeout": "Greeter 同步仍在等待管理员授权。请检查 TTY 或控制台中的 Polkit 提示，在“安全”设置中启用 Polkit 代理，或手动运行 pkexec。",
@@ -674,7 +674,7 @@
       "lockscreen-widgets-editor-enabled": "锁屏小组件编辑器已开启。请在预览层上排列小组件，随后锁定会话以验证布局。",
       "mpris-disabled": "MPRIS 已禁用",
       "polkit-agent": "Polkit 代理",
-      "polkit-no-session": "Polkit 代理需要 logind、elogind 或 XDG_SESSION_ID。在仅使用 seatd 的环境中无法注册图形化认证提示。请使用终端 pkexec 完成 greeter 同步，或安装 elogind 以支持会话内认证。",
+      "polkit-no-session": "Polkit 代理需要 logind、elogind 或 XDG_SESSION_ID。在仅使用 seatd 的环境中无法注册图形化认证提示。请使用终端 pkexec 完成 greeter 同步，或安装 elogind 以支持会话内身份验证。",
       "screen-time-reset": "屏幕使用时间",
       "screen-time-reset-success": "使用记录已清除。",
       "session-bus-unavailable": "会话总线不可用",
@@ -1191,7 +1191,7 @@
           "solid": "纯色"
         },
         "password-style": {
-          "filled-circles": "实心圆",
+          "filled-circles": "实心圆点",
           "random-icons": "随机图标"
         },
         "shadow-direction": {
@@ -1262,7 +1262,7 @@
           "label": "显示模式"
         },
         "position": {
-          "description": "当面板浮动时的屏幕位置",
+          "description": "当面板悬浮时的屏幕位置",
           "label": "屏幕位置"
         }
       },
@@ -1336,7 +1336,7 @@
           "search-placeholder": "搜索配色方案..."
         },
         "corner-roundness": {
-          "description": "缩放 Shell UI 容器与控件的圆角半径",
+          "description": "缩放 Shell UI 容器和控件的圆角半径",
           "label": "圆角缩放"
         },
         "custom-palette": {
@@ -1654,7 +1654,7 @@
           "label": "放大比例"
         },
         "main-axis-padding": {
-          "description": "Dock 两端的内边距（图标和 Dock 两端之间）"
+          "description": "Dock 两端的内边距（图标与 Dock 两端之间）"
         },
         "monitors": {
           "description": "选择显示 Dock 的屏幕（留空为全部）；“仅当前屏幕应用”设置在所选范围内生效",
@@ -1750,7 +1750,7 @@
             "label": "主题模式切换时"
           },
           "wallpaper-changed": {
-            "description": "壁纸改变时执行的命令",
+            "description": "壁纸改变时执行的命令；可使用 NOCTALIA_WALLPAPER_PATH 和 NOCTALIA_WALLPAPER_CONNECTOR 环境变量",
             "label": "壁纸改变时"
           },
           "wifi-disabled": {
@@ -1999,7 +1999,7 @@
           "label": "显示模式"
         },
         "placement-polkit": {
-          "description": "选择 polkit 提示是附着于状态栏，还是在指定屏幕位置浮动",
+          "description": "选择 Polkit 弹窗是附着于状态栏，还是在指定屏幕位置浮动",
           "label": "显示模式"
         },
         "placement-session": {
@@ -2011,35 +2011,35 @@
           "label": "显示模式"
         },
         "position-clipboard": {
-          "description": "剪贴板在屏幕上浮动的位置；选择“跟随状态栏”可使其保持在状态栏附近",
+          "description": "剪贴板在屏幕上悬浮的位置；选择“跟随状态栏”可使其保持在状态栏附近",
           "label": "屏幕位置"
         },
         "position-control-center": {
-          "description": "控制中心在屏幕上浮动的位置；选择“跟随状态栏”可使其保持在状态栏附近",
+          "description": "控制中心在屏幕上悬浮的位置；选择“跟随状态栏”可使其保持在状态栏附近",
           "label": "屏幕位置"
         },
         "position-launcher": {
-          "description": "启动器在屏幕上浮动的位置；选择“跟随状态栏”可使其保持在状态栏附近",
+          "description": "启动器在屏幕上悬浮的位置；选择“跟随状态栏”可使其保持在状态栏附近",
           "label": "屏幕位置"
         },
         "position-polkit": {
-          "description": "polkit 提示在屏幕上浮动的位置；选择“跟随状态栏”可使其保持在状态栏附近",
+          "description": "Polkit 弹窗在屏幕上悬浮的位置；选择“跟随状态栏”可使其保持在状态栏附近",
           "label": "屏幕位置"
         },
         "position-session": {
-          "description": "会话菜单在屏幕上浮动的位置；选择“跟随状态栏”可使其保持在状态栏附近",
+          "description": "会话菜单在屏幕上悬浮的位置；选择“跟随状态栏”可使其保持在状态栏附近",
           "label": "屏幕位置"
         },
         "position-wallpaper": {
-          "description": "壁纸选择器在屏幕上浮动的位置；选择“跟随状态栏”可使其保持在状态栏附近",
+          "description": "壁纸选择器在屏幕上悬浮的位置；选择“跟随状态栏”可使其保持在状态栏附近",
           "label": "屏幕位置"
         },
         "shadow": {
           "description": "从面板表面投射全局表面阴影"
         },
         "transparency-mode": {
-          "description": "面板毛玻璃样式，包括悬浮面板的不透明度和卡片的半透明效果",
-          "label": "透明度"
+          "description": "面板透明效果，包括悬浮面板的不透明度和卡片的半透明效果",
+          "label": "透明效果"
         }
       },
       "power": {
@@ -2291,7 +2291,7 @@
           "label": "日期格式"
         },
         "greeter-sync-privilege-command": {
-          "description": "用于替代 pkexec/run0 执行 greeter 同步。应用路径与暂存目录将自动追加。例如：ghostty -e pkexec",
+          "description": "用于替代 pkexec/run0 执行 greeter 同步。应用路径和暂存目录将自动追加。例如：ghostty -e pkexec",
           "label": "Greeter 同步提权命令"
         },
         "launch-apps-as-systemd-services": {
@@ -2463,7 +2463,7 @@
         },
         "sync-greeter": {
           "button": "立即同步",
-          "description": "将当前壁纸与配色同步至 Noctalia Greeter（需要管理员授权）",
+          "description": "将当前壁纸和配色同步至 Noctalia Greeter（需要管理员授权）",
           "label": "Noctalia Greeter"
         },
         "telemetry": {
