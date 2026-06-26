@@ -40,6 +40,18 @@ namespace {
   constexpr auto kFilterDebounceInterval = std::chrono::milliseconds(120);
   constexpr Logger kLog("clipboard");
 
+  [[nodiscard]] bool isDescendantOf(const Node* node, const Node* ancestor) {
+    if (node == nullptr || ancestor == nullptr) {
+      return false;
+    }
+    for (const Node* current = node; current != nullptr; current = current->parent()) {
+      if (current == ancestor) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   void replaceAll(std::string& text, std::string_view needle, std::string_view replacement) {
     if (needle.empty()) {
       return;
@@ -946,6 +958,20 @@ void ClipboardPanel::onClose() {
 
 InputArea* ClipboardPanel::initialFocusArea() const {
   return m_filterInput != nullptr ? m_filterInput->inputArea() : m_focusArea;
+}
+
+bool ClipboardPanel::handleGlobalKey(std::uint32_t sym, std::uint32_t modifiers, bool pressed, bool preedit) {
+  if (!pressed || preedit) {
+    return false;
+  }
+
+  auto& dispatcher = PanelManager::instance().inputDispatcher();
+  InputArea* focused = dispatcher.focusedArea();
+  if (focused != nullptr && !isDescendantOf(focused, m_listGrid)) {
+    return false;
+  }
+
+  return handleKeyEvent(sym, modifiers);
 }
 
 void ClipboardPanel::onPanelCardOpacityChanged(float opacity) {

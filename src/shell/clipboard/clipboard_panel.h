@@ -43,6 +43,7 @@ public:
   [[nodiscard]] float preferredHeight() const override { return scaled(560.0f); }
   [[nodiscard]] LayerShellLayer layer() const override { return LayerShellLayer::Overlay; }
   [[nodiscard]] LayerShellKeyboard keyboardMode() const override { return LayerShellKeyboard::Exclusive; }
+  [[nodiscard]] bool handleGlobalKey(std::uint32_t sym, std::uint32_t modifiers, bool pressed, bool preedit) override;
   [[nodiscard]] InputArea* initialFocusArea() const override;
   [[nodiscard]] PanelPlacement panelPlacement() const noexcept override;
 
