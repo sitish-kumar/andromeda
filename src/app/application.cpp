@@ -2326,6 +2326,8 @@ void Application::initIpc() {
         json += panelOpen ? "true" : "false";
         json += ",\n  \"activePanelId\": ";
         json += panelOpen ? ("\"" + m_panelManager.activePanelId() + "\"") : "null";
+        json += ",\n  \"locked\": ";
+        json += m_lockScreen.isActive() ? "true" : "false";
         json += "\n}\n";
         return json;
       },
