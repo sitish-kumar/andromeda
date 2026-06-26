@@ -54,6 +54,30 @@ namespace {
       return SplitPaneFocusResult::Consumed;
     };
 
+    auto cycleContent = [&](bool reverseInContent) {
+      InputArea* const first = dispatcher.firstTabFocusUnder(const_cast<Node*>(config.contentRoot));
+      InputArea* const last = dispatcher.lastTabFocusUnder(const_cast<Node*>(config.contentRoot));
+      InputArea* const focusedArea = dispatcher.focusedArea();
+      if (focusedArea == nullptr || first == nullptr || last == nullptr) {
+        return SplitPaneFocusResult::NotHandled;
+      }
+
+      if (reverseInContent) {
+        if (focusedArea == first) {
+          return focusSidebar();
+        }
+      } else {
+        if (focusedArea == last) {
+          return focusSidebar();
+        }
+      }
+
+      if (dispatcher.cycleTabFocusInSubtree(const_cast<Node*>(config.contentRoot), reverseInContent)) {
+        return SplitPaneFocusResult::Consumed;
+      }
+      return SplitPaneFocusResult::NotHandled;
+    };
+
     InputArea* const focused = dispatcher.focusedArea();
     if (focused == nullptr || isInHeader(focused, config)) {
       if (reverse) {
@@ -68,7 +92,7 @@ namespace {
       return focusContentFirst();
     }
     if (isInContent(focused, config)) {
-      return focusSidebar();
+      return cycleContent(reverse);
     }
     return SplitPaneFocusResult::NotHandled;
   }
