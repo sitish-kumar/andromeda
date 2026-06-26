@@ -95,9 +95,12 @@ std::string distroLabel() {
   return i18n::tr("system.hardware.unknown-distro");
 }
 
-std::string kernelRelease() {
+std::string kernelLabel() {
   struct utsname un{};
   if (uname(&un) == 0 && un.release[0] != '\0') {
+    if (un.sysname[0] != '\0') {
+      return std::string(un.sysname) + " " + un.release;
+    }
     return un.release;
   }
   return i18n::tr("control-center.system.unknown");

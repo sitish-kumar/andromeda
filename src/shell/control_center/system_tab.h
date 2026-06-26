@@ -37,7 +37,7 @@ private:
   bool m_graphInitialized = false;
   bool m_gpuVisible = false;
   float m_scrollProgress = 1.0f;
-  std::chrono::steady_clock::time_point m_lastSampleAt{};
+  std::chrono::steady_clock::time_point m_lastSampleAt;
   FrameRateLimiter m_redrawLimiter{std::chrono::milliseconds{200}};
 
   double m_cpuTempMin = 30.0;
@@ -83,7 +83,7 @@ private:
   Glyph* m_txIcon = nullptr;
   Label* m_txLabel = nullptr;
 
-  // System card: distro, kernel, compositor, uptime, board, cpu, gpu
+  // System card: cpu, gpu, distro, kernel, wm, uptime + os age
   static constexpr int kSystemLines = 6;
   Label* m_systemLines[kSystemLines] = {};
 
