@@ -522,6 +522,7 @@ void ClipboardPanel::create() {
 
   auto focusArea = std::make_unique<InputArea>();
   focusArea->setFocusable(true);
+  focusArea->setTabStop(false);
   focusArea->setVisible(false);
   focusArea->setOnKeyDown([this](const InputArea::KeyData& key) {
     if (key.pressed) {

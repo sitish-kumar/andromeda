@@ -35,6 +35,16 @@
 
 namespace {
 
+  [[nodiscard]] bool isDescendantOf(const Node* node, const Node* ancestor) {
+    if (node == nullptr || ancestor == nullptr)
+      return false;
+    for (const Node* p = node->parent(); p != nullptr; p = p->parent()) {
+      if (p == ancestor)
+        return true;
+    }
+    return false;
+  }
+
   constexpr Logger kLog("wp-panel");
   constexpr auto kFilterDebounceInterval = std::chrono::milliseconds(120);
   constexpr float kMinTileWidth = 180.0f;
@@ -887,6 +897,13 @@ bool WallpaperPanel::handleGlobalKey(std::uint32_t sym, std::uint32_t modifiers,
   if (!pressed || preedit) {
     return false;
   }
+
+  auto& dispatcher = PanelManager::instance().inputDispatcher();
+  InputArea* focused = dispatcher.focusedArea();
+  if (focused != nullptr && (isDescendantOf(focused, m_toolbar) || isDescendantOf(focused, m_favoritesOptionsColumn))) {
+    return false;
+  }
+
   return handleKeyEvent(sym, modifiers);
 }
 

@@ -1132,6 +1132,14 @@ bool LauncherPanel::handleGlobalKey(std::uint32_t sym, std::uint32_t modifiers, 
   if (!pressed || preedit) {
     return false;
   }
+
+  if (m_categoryFilter != nullptr && m_categoryFilter->visible()) {
+    auto& dispatcher = PanelManager::instance().inputDispatcher();
+    if (dispatcher.focusedArea() == m_categoryFilter->focusArea()) {
+      return false;
+    }
+  }
+
   return handleKeyEvent(sym, modifiers);
 }
 
