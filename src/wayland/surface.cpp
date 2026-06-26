@@ -15,6 +15,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <format>
+#include <limits>
 #include <ranges>
 #include <string>
 #include <string_view>
@@ -522,7 +523,14 @@ void Surface::applySurfaceScaleState() {
   if (m_fractionalScale != nullptr && m_viewport != nullptr) {
     wl_surface_set_buffer_scale(m_surface, 1);
     if (m_width > 0 && m_height > 0) {
-      wp_viewport_set_destination(m_viewport, static_cast<std::int32_t>(m_width), static_cast<std::int32_t>(m_height));
+      constexpr auto kMaxViewportExtent = static_cast<std::uint32_t>(std::numeric_limits<std::int32_t>::max());
+      if (m_width > kMaxViewportExtent || m_height > kMaxViewportExtent) {
+        kLog.warn("skipping viewport destination with out-of-range size {}x{}", m_width, m_height);
+      } else {
+        wp_viewport_set_destination(
+            m_viewport, static_cast<std::int32_t>(m_width), static_cast<std::int32_t>(m_height)
+        );
+      }
     }
     return;
   }
