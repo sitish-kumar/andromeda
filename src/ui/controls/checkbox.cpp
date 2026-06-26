@@ -132,16 +132,26 @@ void Checkbox::applyState() {
   ColorSpec fill = colorSpecFromRole(ColorRole::Surface);
   ColorSpec border = colorSpecFromRole(ColorRole::Outline);
   ColorSpec glyph = colorSpecFromRole(ColorRole::OnPrimary);
+  float borderWidth = Style::borderWidth * m_scale;
+  const bool focused = (m_inputArea != nullptr && m_inputArea->focused());
   if (m_checked) {
     fill = m_checkedFill.value_or(colorSpecFromRole(ColorRole::Primary));
     border = m_checkedBorder.value_or(colorSpecFromRole(ColorRole::Primary));
     glyph = m_checkedGlyph.value_or(colorSpecFromRole(ColorRole::OnPrimary));
+    if (focused) {
+      border = colorSpecFromRole(ColorRole::Secondary);
+      borderWidth = Style::emphasizedBorderWidth * m_scale;
+    }
+  } else if (focused) {
+    fill = colorSpecFromRole(ColorRole::Secondary, 0.18f);
+    border = colorSpecFromRole(ColorRole::Secondary);
+    borderWidth = Style::emphasizedBorderWidth * m_scale;
   } else if (hovered()) {
     border = colorSpecFromRole(ColorRole::Hover);
   }
 
   m_box->setFill(fill);
-  m_box->setBorder(border, Style::borderWidth * m_scale);
+  m_box->setBorder(border, borderWidth);
 
   m_checkGlyph->setColor(glyph);
   m_checkGlyph->setVisible(m_checked);

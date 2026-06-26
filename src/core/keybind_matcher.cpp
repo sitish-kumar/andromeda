@@ -18,7 +18,7 @@ namespace KeybindMatcher {
   }
 
   bool matches(KeybindAction action, std::uint32_t sym, std::uint32_t modifiers) {
-    if (isPrintableKey(sym) && modifiers == 0) {
+    if (action != KeybindAction::Validate && isPrintableKey(sym) && modifiers == 0) {
       return false;
     }
     auto idx = static_cast<std::size_t>(action);
