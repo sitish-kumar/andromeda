@@ -52,6 +52,9 @@ public:
     m_frameTickRequestCallback = std::move(callback);
   }
   void setContentScale(float scale) noexcept {
+    if (scale == m_baseScale) {
+      return;
+    }
     m_baseScale = scale;
     m_contentScale = scale;
   }
