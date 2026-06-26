@@ -623,7 +623,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   const bool useBarRelativeDetached = !useCenteredPlacement && !useScreenPosition && !useReservedEdgePlacement;
   if (useBarRelativeDetached) {
     const std::int32_t barReserved =
-        barConfig.reserveSpace ? reservedBarExclusiveZone(barConfig, m_config->config().shell.shadow) : 0;
+        barConfig.reserveSpace ? reservedBarEdgeDistance(barConfig, m_config->config().shell.shadow) : 0;
     const auto sw = static_cast<std::int32_t>(detachedSurfaceWidth);
     const auto sh = static_cast<std::int32_t>(detachedSurfaceHeight);
     if (isBottom) {
@@ -865,7 +865,7 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     // config edge; subtracting the bar's own reservation on the main axis avoids
     // double-counting it. With no other reservation this matches the old absolute
     // placement; it self-corrects by the external reservation when one exists.
-    const std::int32_t barReserved = barConfig.reserveSpace ? reservedBarExclusiveZone(barConfig, shadowConfig) : 0;
+    const std::int32_t barReserved = barConfig.reserveSpace ? reservedBarEdgeDistance(barConfig, shadowConfig) : 0;
     std::uint32_t attachedAnchor = LayerShellAnchor::Top | LayerShellAnchor::Left;
     std::int32_t attachedMarginTop = surfaceY;
     std::int32_t attachedMarginRight = 0;

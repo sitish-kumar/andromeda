@@ -448,6 +448,8 @@ namespace {
     // in addition to the shadow bleed that renders beyond the spike tips.
     const int concaveBulge = static_cast<int>(std::lround(barConcaveShape(barConfig).innerBulge));
 
+    const std::int32_t edgeMargin = barEdgeLayerMargin(barConfig, shadowConfig);
+
     BarSurfaceSpec spec;
     if (!vertical) {
       spec.marginLeft = std::max(0, mEnds - sb.left);
@@ -459,7 +461,7 @@ namespace {
           // bleed here — it lives inside the gutter, not beyond it.
           spec.surfaceHeight = static_cast<std::uint32_t>(sb.up + concaveBulge + barConfig.thickness + edgeGutter);
         } else {
-          spec.marginBottom = std::max(0, mEdge - sb.down);
+          spec.marginBottom = edgeMargin;
           spec.surfaceHeight =
               static_cast<std::uint32_t>(sb.up + concaveBulge + barConfig.thickness + std::min(mEdge, sb.down));
         }
@@ -467,7 +469,7 @@ namespace {
         if (edgeGutter > 0) {
           spec.surfaceHeight = static_cast<std::uint32_t>(sb.down + concaveBulge + barConfig.thickness + edgeGutter);
         } else {
-          spec.marginTop = std::max(0, mEdge - sb.up);
+          spec.marginTop = edgeMargin;
           spec.surfaceHeight =
               static_cast<std::uint32_t>(std::min(mEdge, sb.up) + barConfig.thickness + sb.down + concaveBulge);
         }
@@ -479,7 +481,7 @@ namespace {
         if (edgeGutter > 0) {
           spec.surfaceWidth = static_cast<std::uint32_t>(sb.left + concaveBulge + barConfig.thickness + edgeGutter);
         } else {
-          spec.marginRight = std::max(0, mEdge - sb.right);
+          spec.marginRight = edgeMargin;
           spec.surfaceWidth =
               static_cast<std::uint32_t>(sb.left + concaveBulge + barConfig.thickness + std::min(mEdge, sb.right));
         }
@@ -487,7 +489,7 @@ namespace {
         if (edgeGutter > 0) {
           spec.surfaceWidth = static_cast<std::uint32_t>(sb.right + concaveBulge + barConfig.thickness + edgeGutter);
         } else {
-          spec.marginLeft = std::max(0, mEdge - sb.left);
+          spec.marginLeft = edgeMargin;
           spec.surfaceWidth =
               static_cast<std::uint32_t>(std::min(mEdge, sb.left) + barConfig.thickness + sb.right + concaveBulge);
         }
