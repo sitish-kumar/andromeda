@@ -1,5 +1,6 @@
 #include "ui/controls/checkbox.h"
 
+#include "core/keybind_matcher.h"
 #include "render/scene/input_area.h"
 #include "ui/controls/box.h"
 #include "ui/controls/glyph.h"
@@ -19,9 +20,26 @@ Checkbox::Checkbox() {
   m_checkGlyph = static_cast<Glyph*>(addChild(std::move(checkGlyph)));
 
   auto area = std::make_unique<InputArea>();
+  area->setFocusable(true);
   area->setOnEnter([this](const InputArea::PointerData& /*data*/) { applyState(); });
   area->setOnLeave([this]() { applyState(); });
   area->setOnPress([this](const InputArea::PointerData& /*data*/) { applyState(); });
+  area->setOnFocusGain([this]() { applyState(); });
+  area->setOnFocusLoss([this]() { applyState(); });
+  area->setOnKeyDown([this](const InputArea::KeyData& key) {
+    if (!key.pressed || !m_enabled) {
+      return;
+    }
+    if (!KeybindMatcher::matches(KeybindAction::Validate, key.sym, key.modifiers)) {
+      return;
+    }
+    const bool next = !m_checked;
+    m_checked = next;
+    applyState();
+    if (m_onChange) {
+      m_onChange(next);
+    }
+  });
   area->setOnClick([this](const InputArea::PointerData& /*data*/) {
     if (!m_enabled) {
       return;
