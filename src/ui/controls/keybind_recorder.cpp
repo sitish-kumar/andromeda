@@ -5,6 +5,7 @@
 #include "core/key_modifiers.h"
 #include "core/key_symbols.h"
 #include "core/keybind_matcher.h"
+#include "cursor-shape-v1-client-protocol.h"
 #include "i18n/i18n.h"
 #include "notification/notifications.h"
 #include "render/core/renderer.h"
@@ -72,6 +73,8 @@ KeybindRecorder::KeybindRecorder() {
     handleKeyUp(data.sym, data.modifiers);
   });
   m_inputArea = static_cast<InputArea*>(addChild(std::move(area)));
+  m_inputArea->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
+  m_inputArea->setRetainsFocusOnPointerRelease(true);
   m_inputArea->setParticipatesInLayout(false);
   m_inputArea->setZIndex(1);
   m_inputArea->setPosition(0.0f, 0.0f);
@@ -86,6 +89,7 @@ KeybindRecorder::~KeybindRecorder() = default;
 void KeybindRecorder::setChord(std::optional<KeyChord> chord) {
   m_chord = chord;
   refreshLabel();
+  applyVisualState(m_visualState);
 }
 
 void KeybindRecorder::setScale(float scale) {

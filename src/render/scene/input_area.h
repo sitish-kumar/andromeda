@@ -89,6 +89,9 @@ public:
   void setOnFocusLoss(VoidCallback callback);
   void setTextInputClient(TextInputClient* client);
   [[nodiscard]] TextInputClient* textInputClient() const noexcept { return m_textInputClient; }
+  // Keyboard-capturing controls (e.g. keybind recorder) keep focus after a pointer release.
+  void setRetainsFocusOnPointerRelease(bool retain);
+  [[nodiscard]] bool retainsFocusOnPointerRelease() const noexcept { return m_retainsFocusOnPointerRelease; }
 
   // Configuration
   void setCursorShape(std::uint32_t shape);
@@ -176,6 +179,7 @@ private:
   std::string m_tabFocusKey;
   bool m_focused = false;
   TextInputClient* m_textInputClient = nullptr;
+  bool m_retainsFocusOnPointerRelease = false;
 
   TooltipContent m_tooltipContent;
   TooltipProvider m_tooltipProvider;

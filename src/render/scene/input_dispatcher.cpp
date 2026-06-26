@@ -209,7 +209,7 @@ bool InputDispatcher::pointerButton(float x, float y, std::uint32_t button, bool
       updateHover(x, y, m_lastSerial);
       // Pointer clicks on switches and buttons should not leave keyboard focus behind.
       // Settings rebuilds restore stashed focus and can land on the wrong control.
-      if (m_focusedArea == target && target->textInputClient() == nullptr) {
+      if (m_focusedArea == target && target->textInputClient() == nullptr && !target->retainsFocusOnPointerRelease()) {
         setFocus(nullptr);
       }
     }

@@ -148,6 +148,7 @@ void InputArea::setOnKeyUp(KeyCallback callback) { m_onKeyUp = std::move(callbac
 void InputArea::setOnFocusGain(VoidCallback callback) { m_onFocusGain = std::move(callback); }
 void InputArea::setOnFocusLoss(VoidCallback callback) { m_onFocusLoss = std::move(callback); }
 void InputArea::setTextInputClient(TextInputClient* client) { m_textInputClient = client; }
+void InputArea::setRetainsFocusOnPointerRelease(bool retain) { m_retainsFocusOnPointerRelease = retain; }
 
 void InputArea::dispatchEnter(float localX, float localY) {
   m_hovered = true;
