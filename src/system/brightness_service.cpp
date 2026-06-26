@@ -1665,8 +1665,7 @@ void BrightnessService::registerIpc(IpcService& ipc, std::function<void()> onBat
         ::closedir(dir);
         return result.empty() ? "error: no backlight devices available\n" : result;
       },
-      "brightness-list-backlight-devices",
-      "List available sysfs backlight device names"
+      "brightness-list-backlight-devices", "List available sysfs backlight device names"
   );
 }
 
