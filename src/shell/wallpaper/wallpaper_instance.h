@@ -28,10 +28,10 @@ struct WallpaperInstance {
   std::string description;
 
   std::unique_ptr<LayerSurface> surface;
+  AnimationManager animations;
   std::unique_ptr<Node> sceneRoot;
   Box* fillNode = nullptr;
   WallpaperNode* wallpaperNode = nullptr;
-  AnimationManager animations;
 
   // Wallpaper state
   std::string currentPath;
