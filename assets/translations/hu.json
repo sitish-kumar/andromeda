@@ -235,7 +235,6 @@
       "unknown": "ismeretlen",
       "uptime": "Rendszeridő - {uptime}",
       "weather": {
-        "configure-location": "Add meg a [weather].address értéket vagy engedélyezd az auto_locate beállítást",
         "data-unavailable": "Az időjárási adatok nem érhetők el.",
         "disabled": "Az időjárás le van tiltva a konfigurációban.",
         "fetching": "Előrejelzés lekérése…"
@@ -369,7 +368,6 @@
       "weather": "Időjárás"
     },
     "weather": {
-      "configure-location": "Állítsd be a [weather].address értéket vagy az auto_locate beállítást",
       "data-unavailable": "Az időjárási adatok nem érhetők el",
       "details": {
         "elevation": "Emelkedés",

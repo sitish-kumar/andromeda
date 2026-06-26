@@ -189,7 +189,6 @@
       "unknown": "unbekannt",
       "uptime": "Betriebszeit - {uptime}",
       "weather": {
-        "configure-location": "Füge [weather].address hinzu oder aktiviere auto_locate.",
         "data-unavailable": "Wetterdaten nicht verfügbar.",
         "disabled": "Wetter ist in der config deaktiviert.",
         "fetching": "Wettervorhersage wird abgerufen..."
@@ -311,7 +310,6 @@
       "weather": "Wetter"
     },
     "weather": {
-      "configure-location": "Setze [weather].address oder aktiviere auto_locate",
       "data-unavailable": "Wetterdaten nicht verfügbar",
       "details": {
         "elevation": "Höhe",

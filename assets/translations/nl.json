@@ -233,7 +233,6 @@
       "unknown": "onbekend",
       "uptime": "Uptime - {uptime}",
       "weather": {
-        "configure-location": "Voeg [weather].address toe of zet auto_locate aan.",
         "data-unavailable": "Weergegevens niet beschikbaar.",
         "disabled": "Weer is uitgeschakeld in de configuratie.",
         "fetching": "Weersvoorspelling ophalen..."
@@ -366,7 +365,6 @@
       "weather": "Weer"
     },
     "weather": {
-      "configure-location": "Voeg [weather].address toe of zet auto_locate aan.",
       "data-unavailable": "Weergegevens niet beschikbaar",
       "details": {
         "elevation": "Hoogte",

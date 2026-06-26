@@ -235,7 +235,6 @@
       "unknown": "neznámé",
       "uptime": "Doba běhu – {uptime}",
       "weather": {
-        "configure-location": "Přidejte [weather].address nebo povolte auto_locate.",
         "data-unavailable": "Údaje o počasí nejsou k dispozici.",
         "disabled": "Počasí je v konfiguraci vypnuto.",
         "fetching": "Načítání předpovědi…"
@@ -369,7 +368,6 @@
       "weather": "Počasí"
     },
     "weather": {
-      "configure-location": "Nastavte [weather].address nebo povolte auto_locate",
       "data-unavailable": "Údaje o počasí nejsou k dispozici",
       "details": {
         "elevation": "Nadmořská výška",
