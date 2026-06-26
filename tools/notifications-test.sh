@@ -62,8 +62,8 @@ gdbus call --session \
           "System Notifications" \
           0 \
           "" \
-          "KDE Connect Background Service Crash" \
+          "A long title that may take a bit of space" \
           "Please send a bug report to help improve this program." \
-          "['report', 'Report a bug please please report it', 'restart', 'Restart program quick before it is too late']" \
+          "['report', 'Report a bug please please please report it, we want more bugs', 'restart', 'Restart program quick before it is too late']" \
           "{}" \
           30000
