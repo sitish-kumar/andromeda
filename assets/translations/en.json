@@ -2252,7 +2252,7 @@
           "placeholder": "/path/to/sound.wav"
         },
         "weather": {
-          "description": "Enable the weather service",
+          "description": "Enable the weather service via open-meteo.com",
           "label": "Weather"
         },
         "weather-effects": {
