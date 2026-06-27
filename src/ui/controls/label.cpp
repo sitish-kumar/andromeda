@@ -472,6 +472,11 @@ LayoutSize Label::measureWithConstraints(Renderer& renderer, const LayoutConstra
       // Unrounded — the renderer snaps the glyph quad to the pixel grid.
       height = std::round(std::max(actualHeight, inkHeight));
       m_baselineOffset = -metrics.inkTop + (height - inkHeight) * 0.5f;
+    } else if (m_baselineMode == LabelBaselineMode::StableFont) {
+      const auto fontMetrics = renderer.measureFont(m_textNode->fontSize(), fontWeight);
+      height = std::round(fontMetrics.bottom - fontMetrics.top);
+      const float capHeight = fontMetrics.capHeight;
+      m_baselineOffset = capHeight > 0.0f ? height * 0.5f + capHeight * 0.5f : -fontMetrics.top;
     } else {
       height = std::round(actualHeight);
       // Center the cap band (baseline → cap-top) in the box, so a container that

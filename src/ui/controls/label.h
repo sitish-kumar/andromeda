@@ -15,6 +15,11 @@ class Renderer;
 enum class LabelBaselineMode : std::uint8_t {
   StableLogical,
   InkCentered,
+  // Cap-band centering like StableLogical, but the box height comes from the
+  // primary font's line extent (measureFont) instead of the per-string metrics.
+  // Prevents fallback fonts for unusual Unicode characters from inflating the
+  // label height — useful in lists with unpredictable content.
+  StableFont,
 };
 
 class Label : public InputArea {
