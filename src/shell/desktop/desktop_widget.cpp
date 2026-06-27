@@ -187,6 +187,8 @@ bool DesktopWidget::applySetting(
       return fb;
     if (const auto* v = std::get_if<double>(&it->second))
       return static_cast<float>(*v);
+    if (const auto* v = std::get_if<std::int64_t>(&it->second))
+      return static_cast<float>(*v);
     return fb;
   };
   auto getColorSpec = [&](const std::string& k, const ColorSpec& fb) -> ColorSpec {
