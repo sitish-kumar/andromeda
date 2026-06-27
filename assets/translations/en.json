@@ -2161,7 +2161,7 @@
           "placeholder": "City, Country"
         },
         "location-auto-locate": {
-          "description": "Detect your location automatically from your IP address",
+          "description": "Detect your location automatically from your IP address via noctalia.dev",
           "label": "Auto-Locate (IP)"
         },
         "longitude": {
