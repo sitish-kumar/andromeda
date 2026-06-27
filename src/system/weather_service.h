@@ -66,7 +66,7 @@ struct WeatherSnapshot {
   WeatherDailyUnits dailyUnits;
   WeatherCurrentConditions current;
   std::vector<WeatherForecastDay> forecastDays;
-  std::chrono::system_clock::time_point fetchedAt{};
+  std::chrono::system_clock::time_point fetchedAt;
 };
 
 struct WeatherCoordinates {
@@ -131,7 +131,7 @@ private:
   WeatherConfig m_activeConfig;
   std::vector<ChangeCallback> m_callbacks;
   WeatherSnapshot m_snapshot;
-  std::chrono::system_clock::time_point m_nextRefreshAt{};
+  std::chrono::system_clock::time_point m_nextRefreshAt;
   bool m_loading = false;
   bool m_refreshQueued = false;
   bool m_hasLocation = false;

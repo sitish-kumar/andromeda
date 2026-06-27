@@ -32,7 +32,7 @@ namespace scripting {
   void PluginFileCache::setOnReady(ReadyCallback cb) { m_onReady = std::move(cb); }
 
   void PluginFileCache::invalidateSource(const std::string& sourceName) {
-    std::lock_guard lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
     std::erase_if(m_missing, [&](const std::string& key) { return key.starts_with(sourceName + "/"); });
     std::erase_if(m_inFlight, [&](const std::string& key) { return key.starts_with(sourceName + "/"); });
   }
@@ -46,7 +46,7 @@ namespace scripting {
     const std::string key = cacheKey(source.name, pluginId, filename);
 
     {
-      std::lock_guard lock(m_mutex);
+      std::scoped_lock lock(m_mutex);
       if (m_missing.contains(key)) {
         return {};
       }
@@ -69,7 +69,7 @@ namespace scripting {
       if (std::filesystem::exists(path)) {
         return path.string();
       }
-      std::lock_guard lock(m_mutex);
+      std::scoped_lock lock(m_mutex);
       m_missing.insert(key);
       return {};
     }
@@ -81,7 +81,7 @@ namespace scripting {
     }
 
     {
-      std::lock_guard lock(m_mutex);
+      std::scoped_lock lock(m_mutex);
       if (m_inFlight.contains(key)) {
         return {};
       }
@@ -92,7 +92,7 @@ namespace scripting {
     std::thread([this, pluginId, key, repoPath = *subdir + "/" + filename, repoRoot, cached, filename]() {
       const auto result = plugin_git::showFile(repoRoot, repoPath);
       if (!result.ok || result.out.empty()) {
-        std::lock_guard lock(m_mutex);
+        std::scoped_lock lock(m_mutex);
         m_inFlight.erase(key);
         m_missing.insert(key);
         return;
@@ -109,7 +109,7 @@ namespace scripting {
 
       DeferredCall::callLater([this, pluginId, filename, resolvedPath, key]() {
         {
-          std::lock_guard lock(m_mutex);
+          std::scoped_lock lock(m_mutex);
           m_inFlight.erase(key);
         }
         if (!resolvedPath.empty() && m_onReady) {

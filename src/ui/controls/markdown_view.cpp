@@ -140,7 +140,7 @@ namespace {
     for (std::size_t i = 0; i < ctx.tableRow.size() && i < ctx.tableColumnWidths.size(); ++i) {
       ctx.tableColumnWidths[i] = std::max(ctx.tableColumnWidths[i], ctx.tableRow[i].size());
     }
-    ctx.tableRows.push_back({ctx.tableRow, ctx.inTableHeader});
+    ctx.tableRows.emplace_back(ctx.tableRow, ctx.inTableHeader);
     ctx.tableRow.clear();
   }
 

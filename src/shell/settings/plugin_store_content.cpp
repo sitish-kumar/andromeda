@@ -32,13 +32,9 @@ namespace settings {
       if (needle.empty()) {
         return true;
       }
-      return std::search(
-                 haystack.begin(), haystack.end(), needle.begin(), needle.end(),
-                 [](char a, char b) {
-                   return std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b));
-                 }
-             )
-          != haystack.end();
+      return !std::ranges::search(haystack, needle, [](char a, char b) {
+                return std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b));
+              }).empty();
     }
 
     class PluginStoreAdapter final : public VirtualGridAdapter {

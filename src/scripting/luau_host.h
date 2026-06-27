@@ -176,7 +176,7 @@ private:
   AsyncCommandResultHandler m_asyncCommandResultHandler;
   AsyncProcessMatchResultHandler m_asyncProcessMatchResultHandler;
   AsyncHttpResultHandler m_asyncHttpResultHandler;
-  std::chrono::steady_clock::time_point m_callDeadline{};
+  std::chrono::steady_clock::time_point m_callDeadline;
   std::string m_currentCallName;
   bool m_budgetActive = false;
   bool m_lastCallTimedOut = false;
