@@ -531,6 +531,11 @@
     }
   },
   "dock": {
+    "actions": {
+      "close": "Close",
+      "close-all": "Close All"
+    },
+    "launcher": "Launcher",
     "options": {
       "hot-corners": {
         "command": "Run Command",
@@ -540,12 +545,7 @@
         "overview": "Overview",
         "window-switcher": "Window Switcher"
       }
-    },
-    "actions": {
-      "close": "Close",
-      "close-all": "Close All"
-    },
-    "launcher": "Launcher"
+    }
   },
   "internal-apps": {
     "settings": {
@@ -1170,6 +1170,10 @@
         "launcher": "Launcher",
         "none": "None",
         "window-switcher": "Window Switcher"
+      },
+      "layer": {
+        "overlay": "Overlay",
+        "top": "Top"
       },
       "notification-urgency": {
         "critical": "Critical",
