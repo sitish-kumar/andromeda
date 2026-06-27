@@ -75,7 +75,11 @@ _clang_tidy m=mode *args:
     #!/usr/bin/env bash
     set -euo pipefail
     src_root="$(realpath src)"
-    run-clang-tidy -quiet -p build-{{m}} -j "$(nproc)" -header-filter="^${src_root}/.*" {{args}} "^${src_root}/.*"
+    # compile_commands.json stores build-relative paths, so clang-tidy emits header
+    # diagnostics as ../src/...; the header-filter must match that form (an absolute
+    # ^${src_root} anchor never matches, silently dropping every header diagnostic).
+    # ../src/ also excludes vendored third_party/*/src/* headers.
+    run-clang-tidy -quiet -p build-{{m}} -j "$(nproc)" -header-filter='\.\./src/.*' {{args}} "^${src_root}/.*"
 
 lint m=mode: (configure m)
     just _clang_tidy {{m}} '-warnings-as-errors=*'

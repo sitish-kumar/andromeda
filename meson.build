@@ -921,7 +921,7 @@ noctalia_exe = executable('noctalia',
   ] + jemalloc_deps + (dl_dep.found() ? [dl_dep] : []),
   include_directories: _noctalia_inc,
   cpp_args: [
-    '-Wall', '-Wextra', '-Wpedantic', '-Wconversion', '-Wshadow',
+    '-Wall', '-Wextra', '-Wno-missing-field-initializers', '-Wpedantic', '-Wconversion', '-Wshadow',
     '-DNOCTALIA_SOURCE_ASSETS_DIR="' + meson.project_source_root() / 'assets' + '"',
     '-DNOCTALIA_INSTALL_PREFIX="' + get_option('prefix') + '"',
     '-DNOCTALIA_INSTALL_DATADIR="' + get_option('datadir') + '"',
