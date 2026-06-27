@@ -10,6 +10,7 @@
 #include "ui/controls/input.h"
 #include "ui/controls/label.h"
 #include "ui/controls/markdown_view.h"
+#include "ui/controls/scroll_view.h"
 #include "ui/controls/segmented.h"
 #include "ui/controls/separator.h"
 #include "ui/controls/spinner.h"
@@ -244,7 +245,10 @@ namespace settings {
     grid->setColumnGap(Style::spaceSm * scale);
     grid->setRowGap(Style::spaceSm * scale);
     grid->setFillWidth(true);
-    grid->setMinHeight(460.0f * scale);
+    // The sheet hosts the store without an outer ScrollView, so the grid's own scroll fills the
+    // available height and scrolls the catalog. No minimum height: a floor would overflow the
+    // sheet bottom (and clip nothing) when the dialog is shorter than the floor.
+    grid->setFlexGrow(1.0f);
     grid->setAdapter(adapterPtr);
     m_grid = grid.get();
     body.addChild(std::move(grid));
@@ -269,6 +273,23 @@ namespace settings {
     const float scale = m_callbacks.scale;
     const bool onDisk = m_onDiskIds.contains(entry.id);
     const bool enabling = m_callbacks.isEnabling && m_callbacks.isEnabling(entry.id);
+
+    // The sheet hosts the store without an outer ScrollView, so the detail view scrolls its own
+    // content (header + README can exceed the sheet height).
+    auto scroll = ui::scrollView({
+        .scrollbarVisible = true,
+        .viewportPaddingH = 0.0f,
+        .viewportPaddingV = 0.0f,
+        .flexGrow = 1.0f,
+        .configure = [](ScrollView& sv) {
+          sv.clearFill();
+          sv.clearBorder();
+        },
+    });
+    Flex* dc = scroll->content();
+    dc->setDirection(FlexDirection::Vertical);
+    dc->setAlign(FlexAlign::Stretch);
+    dc->setGap(Style::spaceMd * scale);
 
     auto header = ui::row({.align = FlexAlign::Center, .gap = Style::spaceMd * scale, .fillWidth = true});
 
@@ -375,12 +396,12 @@ namespace settings {
           })
       );
     }
-    body.addChild(std::move(header));
+    dc->addChild(std::move(header));
 
-    body.addChild(ui::separator({.spacing = Style::spaceSm * scale}));
+    dc->addChild(ui::separator({.spacing = Style::spaceSm * scale}));
 
     if (m_detailReadmeLoading) {
-      body.addChild(
+      dc->addChild(
           ui::spinner({
               .spinnerSize = Style::controlHeightSm * scale,
               .spinning = true,
@@ -389,9 +410,9 @@ namespace settings {
     } else if (!m_detailReadme.empty()) {
       auto md = std::make_unique<MarkdownView>();
       md->setMarkdown(m_detailReadme, scale);
-      body.addChild(std::move(md));
+      dc->addChild(std::move(md));
     } else if (!entry.description.empty()) {
-      body.addChild(
+      dc->addChild(
           ui::label({
               .text = entry.description,
               .fontSize = Style::fontSizeBody * scale,
@@ -400,7 +421,7 @@ namespace settings {
           })
       );
     } else {
-      body.addChild(
+      dc->addChild(
           ui::label({
               .text = i18n::tr("settings.plugins.store.no-readme"),
               .fontSize = Style::fontSizeCaption * scale,
@@ -408,6 +429,8 @@ namespace settings {
           })
       );
     }
+
+    body.addChild(std::move(scroll));
   }
 
   void PluginStoreContent::openDetail(std::size_t filteredIndex) {

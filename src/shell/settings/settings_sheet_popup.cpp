@@ -67,6 +67,7 @@ namespace settings {
     m_maxWidth = request.maxWidth;
     m_parentFraction = request.parentFraction;
     m_fillParentHeight = request.fillParentHeight;
+    m_scrollableBody = request.scrollableBody;
     m_onCloseRequested = std::move(request.onCloseRequested);
     m_sheetTitle = std::move(request.sheetTitle);
     m_removeAction = std::move(request.removeAction);
@@ -227,33 +228,51 @@ namespace settings {
     );
     root->addChild(std::move(header));
 
-    // Body scrolls when its content exceeds the sheet's clamped height.
-    ScrollView* scrollPtr = nullptr;
-    auto scroll = ui::scrollView({
-        .out = &scrollPtr,
-        .state = &m_scrollState,
-        .scrollbarVisible = true,
-        .viewportPaddingH = 0.0f,
-        .viewportPaddingV = 0.0f,
-        .flexGrow = 1.0f,
-        .onScrollChanged = [this](float /*offset*/) { dismissOpenSelectDropdown(); },
-        .configure =
-            [](ScrollView& sv) {
-              sv.clearFill();
-              sv.clearBorder();
-            },
-    });
-    m_scrollView = scrollPtr;
+    if (m_scrollableBody) {
+      // Body scrolls when its content exceeds the sheet's clamped height.
+      ScrollView* scrollPtr = nullptr;
+      auto scroll = ui::scrollView({
+          .out = &scrollPtr,
+          .state = &m_scrollState,
+          .scrollbarVisible = true,
+          .viewportPaddingH = 0.0f,
+          .viewportPaddingV = 0.0f,
+          .flexGrow = 1.0f,
+          .onScrollChanged = [this](float /*offset*/) { dismissOpenSelectDropdown(); },
+          .configure =
+              [](ScrollView& sv) {
+                sv.clearFill();
+                sv.clearBorder();
+              },
+      });
+      m_scrollView = scrollPtr;
 
-    Flex* body = scrollPtr->content();
-    body->setDirection(FlexDirection::Vertical);
-    body->setAlign(FlexAlign::Stretch);
-    body->setGap(Style::spaceMd * m_scale);
-    if (m_populateSheetBody) {
-      m_populateSheetBody(*body);
+      Flex* body = scrollPtr->content();
+      body->setDirection(FlexDirection::Vertical);
+      body->setAlign(FlexAlign::Stretch);
+      body->setGap(Style::spaceMd * m_scale);
+      m_body = body;
+      if (m_populateSheetBody) {
+        m_populateSheetBody(*body);
+      }
+      root->addChild(std::move(scroll));
+    } else {
+      // Body owns its own scrolling (e.g. a VirtualGridView). Place it directly so the inner
+      // scroller is not trapped inside a sheet-level ScrollView.
+      m_scrollView = nullptr;
+      Flex* bodyPtr = nullptr;
+      auto body = ui::column({
+          .out = &bodyPtr,
+          .align = FlexAlign::Stretch,
+          .gap = Style::spaceMd * m_scale,
+          .flexGrow = 1.0f,
+      });
+      m_body = bodyPtr;
+      if (m_populateSheetBody) {
+        m_populateSheetBody(*bodyPtr);
+      }
+      root->addChild(std::move(body));
     }
-
-    root->addChild(std::move(scroll));
     contentParent->addChild(std::move(root));
 
     if (wayland() != nullptr && renderContext() != nullptr && xdgSurface() != nullptr) {
@@ -271,8 +290,7 @@ namespace settings {
   void SettingsSheetPopup::layoutSheet(float contentWidth, float contentHeight) {
     if (m_root == nullptr
         || m_header == nullptr
-        || m_scrollView == nullptr
-        || m_scrollView->content() == nullptr
+        || m_body == nullptr
         || renderContext() == nullptr
         || m_surface == nullptr) {
       return;
@@ -310,7 +328,7 @@ namespace settings {
       // for short bodies (e.g. a two-setting plugin sheet) and clips the last row.
       c.setExactWidth(innerCw);
       const float headerH = m_header->measure(renderer, c).height;
-      const float contentH = m_scrollView->content()->measure(renderer, c).height;
+      const float contentH = m_body->measure(renderer, c).height;
       return 2.0f * popupPadding + headerH + popupGap + contentH;
     };
 
@@ -354,6 +372,7 @@ namespace settings {
     m_populateSheetBody = nullptr;
     m_root = nullptr;
     m_header = nullptr;
+    m_body = nullptr;
     m_scrollView = nullptr;
     m_parentWidth = 0;
     m_parentHeight = 0;

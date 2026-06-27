@@ -1908,6 +1908,7 @@ void SettingsWindow::openPluginStore() {
             .maxWidth = 1100.0f,
             .parentFraction = 0.85f,
             .fillParentHeight = true,
+            .scrollableBody = false,
             .onCloseRequested = [storeContent]() -> bool {
               if (storeContent->isDetailView()) {
                 storeContent->closeDetail();

@@ -30,6 +30,10 @@ namespace settings {
     float maxWidth = 820.0f;
     float parentFraction = 0.75f;
     bool fillParentHeight = false;
+    // When false, the body is placed directly in the sheet without the outer ScrollView. Use this
+    // when the body provides its own scrolling (e.g. a VirtualGridView) — nesting it in the sheet
+    // scroll would trap the inner scroller. The body is then responsible for fitting/scrolling.
+    bool scrollableBody = true;
     // When set, called instead of close(). Return true to consume (prevent close).
     std::function<bool()> onCloseRequested;
   };
@@ -72,6 +76,7 @@ namespace settings {
     float m_maxWidth = 820.0f;
     float m_parentFraction = 0.75f;
     bool m_fillParentHeight = false;
+    bool m_scrollableBody = true;
     std::function<bool()> m_onCloseRequested;
     std::string m_sheetTitle;
     Label* m_sheetTitleLabel = nullptr;
@@ -80,6 +85,9 @@ namespace settings {
 
     Flex* m_root = nullptr;
     Flex* m_header = nullptr;
+    // The body content flex, whether or not it is wrapped in m_scrollView. Used by layout to
+    // measure the body. m_scrollView is null when scrollableBody is false.
+    Flex* m_body = nullptr;
     ScrollView* m_scrollView = nullptr;
     ScrollViewState m_scrollState;
     std::uint32_t m_parentWidth = 0;
