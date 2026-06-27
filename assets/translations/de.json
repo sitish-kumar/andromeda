@@ -160,7 +160,7 @@
       },
       "unavailable": "Bluetooth-Dienst nicht verfügbar",
       "unknown-device": "Unbekanntes Gerät",
-      "visible": "Sichtbar für Geräte in der Nähe"
+      "visible": "Für Geräte in der Nähe sichtbar."
     },
     "calendar": {
       "all-day": "Ganztägig",
@@ -1115,12 +1115,20 @@
       }
     },
     "plugins": {
+      "browse-store": "Plugins durchsuchen",
+      "panels": {
+        "position": {
+          "label": "Position"
+        }
+      },
       "plugins": {
         "configure": "Konfigurieren",
         "deprecated": "veraltet",
         "empty": "Es wurden keine Plugins gefunden. Füge eine Quelle hinzu oder überprüfe deine Netzwerkverbindung.",
         "loading": "Plugins werden geladen...",
         "refreshing": "Plugins werden aktualisiert...",
+        "remove": "Plugin entfernen",
+        "requires": "Erfordert: {dependencies}",
         "requires-newer-noctalia": "erfordert eine neuere Version von Noctalia",
         "title": "Plugins"
       },
@@ -1153,6 +1161,17 @@
         "title": "Quellen",
         "update": "Aktualisieren",
         "update-on-startup": "Beim Start aktualisieren"
+      },
+      "store": {
+        "add": "Zu Noctalia hinzufügen.",
+        "category-all": "Alle",
+        "empty": "Keine Plugins gefunden.",
+        "incompatible": "Inkompatibel",
+        "loading": "Lade den Katalog ...",
+        "no-readme": "Keine Beschreibung vorhanden.",
+        "results-count": "{count} Plugins",
+        "search-placeholder": "Suche Plugins ...",
+        "title": "Plugin Store"
       }
     },
     "schema": {
