@@ -535,17 +535,7 @@
       "close": "Close",
       "close-all": "Close All"
     },
-    "launcher": "Launcher",
-    "options": {
-      "hot-corners": {
-        "command": "Run Command",
-        "control-center": "Control Center",
-        "launcher": "Launcher",
-        "none": "None",
-        "overview": "Overview",
-        "window-switcher": "Window Switcher"
-      }
-    }
+    "launcher": "Launcher"
   },
   "internal-apps": {
     "settings": {
@@ -1034,6 +1024,7 @@
         "general": "General",
         "grouping": "Grouping",
         "home": "Home",
+        "hot-corners": "Hot Corners",
         "idle": "Idle",
         "interface": "Interface",
         "keybinds": "Keybinds",

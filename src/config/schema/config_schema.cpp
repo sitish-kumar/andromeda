@@ -1553,6 +1553,9 @@ namespace noctalia::config::schema {
       if (section == "desktop_widgets") {
         return chk(desktopWidgetsSchema());
       }
+      if (section == "hot_corners") {
+        return chk(hotCornersSchema());
+      }
       if (section == "lockscreen_widgets") {
         return chk(lockscreenWidgetsSchema());
       }
