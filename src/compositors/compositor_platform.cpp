@@ -835,6 +835,16 @@ void CompositorPlatform::activateToplevelInfo(const ToplevelInfo& window) {
 
 void CompositorPlatform::closeToplevel(zwlr_foreign_toplevel_handle_v1* handle) { m_wayland.closeToplevel(handle); }
 
+void CompositorPlatform::closeToplevelInfo(const ToplevelInfo& window) {
+  if (window.handle != nullptr) {
+    closeToplevel(window.handle);
+    return;
+  }
+  if (compositors::isKde() && m_kwinActiveWindow != nullptr && m_kwinActiveWindow->isAvailable()) {
+    m_kwinActiveWindow->closeWindow(window.title, window.appId, window.identifier);
+  }
+}
+
 bool CompositorPlatform::containsWlrToplevelHandle(zwlr_foreign_toplevel_handle_v1* handle) const {
   return m_wayland.containsWlrToplevelHandle(handle);
 }

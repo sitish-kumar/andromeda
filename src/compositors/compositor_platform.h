@@ -97,6 +97,7 @@ public:
   void activateToplevel(zwlr_foreign_toplevel_handle_v1* handle);
   void activateToplevelInfo(const ToplevelInfo& window);
   void closeToplevel(zwlr_foreign_toplevel_handle_v1* handle);
+  void closeToplevelInfo(const ToplevelInfo& window);
   void focusCompositorWindow(const std::string& windowId) const;
 
   void activateKdeWindow(const std::string& title, const std::string& appId, const std::string& uuid = {});
