@@ -31,7 +31,7 @@ namespace settings {
     float parentFraction = 0.75f;
     bool fillParentHeight = false;
     // When set, called instead of close(). Return true to consume (prevent close).
-    std::function<bool()> onCloseRequested;
+    std::function<bool()> onCloseRequested = {};
   };
 
   class SettingsSheetPopup final : public DialogPopupHost {
