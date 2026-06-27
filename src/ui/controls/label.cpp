@@ -133,6 +133,14 @@ void Label::setEllipsize(TextEllipsize ellipsize) {
   m_measureCached = false;
 }
 
+void Label::setUseMarkup(bool markup) {
+  if (m_textNode->useMarkup() == markup) {
+    return;
+  }
+  m_textNode->setUseMarkup(markup);
+  m_measureCached = false;
+}
+
 void Label::setBaselineMode(LabelBaselineMode mode) {
   if (m_baselineMode == mode) {
     return;
@@ -450,7 +458,7 @@ LayoutSize Label::measureWithConstraints(Renderer& renderer, const LayoutConstra
 
   auto metrics = renderer.measureText(
       m_plainText, m_textNode->fontSize(), fontWeight, measureMaxWidth, effectiveMaxLines, align,
-      m_textNode->fontFamily(), m_textNode->ellipsize()
+      m_textNode->fontFamily(), m_textNode->ellipsize(), m_textNode->useMarkup()
   );
   const float measuredWidth = measureMaxWidth > 0.0f ? std::min(metrics.width, measureMaxWidth) : metrics.width;
   m_fullTextWidth = m_autoScroll ? measuredWidth : 0.0f;

@@ -177,6 +177,16 @@ stb_dep = declare_dependency(
   include_directories: include_directories('third_party/stb', is_system: true),
 )
 
+# ── Vendored: md4c (CommonMark parser) ───────────────────────────────────────
+_md4c_lib = static_library('md4c',
+  'third_party/md4c/md4c.c',
+  override_options: ['warning_level=0'],
+)
+md4c_dep = declare_dependency(
+  link_whole: _md4c_lib,
+  include_directories: include_directories('third_party/md4c', is_system: true),
+)
+
 # ── System: libwebp (WebP decode and thumbnail encode) ───────────────────────
 libwebp_dep = dependency('libwebp', required: true)
 
@@ -512,6 +522,7 @@ _noctalia_sources = files(
   'src/render/wallpaper_renderer.cpp',
   'src/scripting/luau_host.cpp',
   'src/scripting/plugin_catalog.cpp',
+  'src/scripting/plugin_file_cache.cpp',
   'src/scripting/plugin_git.cpp',
   'src/scripting/plugin_i18n.cpp',
   'src/scripting/plugin_ipc.cpp',
@@ -622,6 +633,8 @@ _noctalia_sources = files(
   'src/shell/settings/settings_content.cpp',
   'src/shell/settings/settings_content_common.cpp',
   'src/shell/settings/settings_content_plugins.cpp',
+  'src/shell/settings/plugin_store_content.cpp',
+  'src/shell/settings/plugin_store_tile.cpp',
   'src/shell/settings/settings_control_factory.cpp',
   'src/shell/settings/settings_content_idle_behavior.cpp',
   'src/shell/settings/settings_content_notification_filter.cpp',
@@ -634,7 +647,7 @@ _noctalia_sources = files(
   'src/shell/settings/widget_settings_registry.cpp',
   'src/shell/settings/widget_add_popup.cpp',
   'src/shell/settings/search_picker_popup.cpp',
-  'src/shell/settings/settings_editor_sheet_popup.cpp',
+  'src/shell/settings/settings_sheet_popup.cpp',
   'src/shell/settings/settings_window_mutations.cpp',
   'src/shell/settings/settings_window_popups.cpp',
   'src/shell/settings/settings_window_scene.cpp',
@@ -735,6 +748,7 @@ _noctalia_sources = files(
   'src/core/keybind_matcher.cpp',
   'src/ui/controls/keybind_recorder.cpp',
   'src/ui/controls/label.cpp',
+  'src/ui/controls/markdown_view.cpp',
   'src/ui/controls/list_editor.cpp',
   'src/ui/controls/color_swatch_preview.cpp',
   'src/ui/controls/progress_bar.cpp',
@@ -900,6 +914,7 @@ noctalia_exe = executable('noctalia',
     mcu_dep,
     libxml2_dep,
     stb_dep,
+    md4c_dep,
     libwebp_dep,
     luau_dep,
   ] + jemalloc_deps + (dl_dep.found() ? [dl_dep] : []),

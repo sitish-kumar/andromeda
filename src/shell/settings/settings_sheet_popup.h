@@ -20,22 +20,28 @@ class SelectDropdownPopup;
 
 namespace settings {
 
-  struct SettingsEditorSheetPopupRequest {
+  struct SettingsSheetPopupRequest {
     XdgPopupParent parent;
     std::string sheetTitle;
     std::function<void()> removeAction;
     std::function<void(Flex& sheetBody)> populateSheetBody;
     float scale = 1.0f;
+    float minWidth = 640.0f;
+    float maxWidth = 820.0f;
+    float parentFraction = 0.75f;
+    bool fillParentHeight = false;
+    // When set, called instead of close(). Return true to consume (prevent close).
+    std::function<bool()> onCloseRequested;
   };
 
-  class SettingsEditorSheetPopup final : public DialogPopupHost {
+  class SettingsSheetPopup final : public DialogPopupHost {
   public:
-    SettingsEditorSheetPopup() = default;
-    ~SettingsEditorSheetPopup();
+    SettingsSheetPopup() = default;
+    ~SettingsSheetPopup();
 
     void initialize(WaylandConnection& wayland, ConfigService& config, RenderContext& renderContext);
 
-    void open(SettingsEditorSheetPopupRequest request);
+    void open(SettingsSheetPopupRequest request);
     void close();
 
     [[nodiscard]] bool isOpen() const noexcept;
@@ -62,6 +68,11 @@ namespace settings {
     void dismissOpenSelectDropdown();
 
     float m_scale = 1.0f;
+    float m_minWidth = 640.0f;
+    float m_maxWidth = 820.0f;
+    float m_parentFraction = 0.75f;
+    bool m_fillParentHeight = false;
+    std::function<bool()> m_onCloseRequested;
     std::string m_sheetTitle;
     Label* m_sheetTitleLabel = nullptr;
     std::function<void()> m_removeAction;

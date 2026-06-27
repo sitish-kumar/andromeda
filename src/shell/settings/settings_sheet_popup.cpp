@@ -1,4 +1,4 @@
-#include "shell/settings/settings_editor_sheet_popup.h"
+#include "shell/settings/settings_sheet_popup.h"
 
 #include "config/config_service.h"
 #include "core/deferred_call.h"
@@ -44,21 +44,16 @@ namespace settings {
 
   } // namespace
 
-  constexpr float kPopupWidth = 640.0f;    // minimum / fallback logical width
-  constexpr float kPopupWidthMax = 820.0f; // absolute maximum logical width
-  constexpr float kPopupWidthParentFraction = 0.75f;
   constexpr float kInitialPopupHeight = 480.0f;
   constexpr float kParentMargin = 48.0f;
 
-  SettingsEditorSheetPopup::~SettingsEditorSheetPopup() { destroyPopup(); }
+  SettingsSheetPopup::~SettingsSheetPopup() { destroyPopup(); }
 
-  void SettingsEditorSheetPopup::initialize(
-      WaylandConnection& wayland, ConfigService& config, RenderContext& renderContext
-  ) {
+  void SettingsSheetPopup::initialize(WaylandConnection& wayland, ConfigService& config, RenderContext& renderContext) {
     initializeBase(wayland, config, renderContext);
   }
 
-  void SettingsEditorSheetPopup::open(SettingsEditorSheetPopupRequest request) {
+  void SettingsSheetPopup::open(SettingsSheetPopupRequest request) {
     if (request.parent.xdgSurface == nullptr || request.parent.wlSurface == nullptr) {
       return;
     }
@@ -68,6 +63,11 @@ namespace settings {
     }
 
     m_scale = std::max(0.1f, request.scale);
+    m_minWidth = request.minWidth;
+    m_maxWidth = request.maxWidth;
+    m_parentFraction = request.parentFraction;
+    m_fillParentHeight = request.fillParentHeight;
+    m_onCloseRequested = std::move(request.onCloseRequested);
     m_sheetTitle = std::move(request.sheetTitle);
     m_removeAction = std::move(request.removeAction);
     m_populateSheetBody = std::move(request.populateSheetBody);
@@ -75,7 +75,7 @@ namespace settings {
     m_parentWidth = request.parent.width;
     m_parentHeight = request.parent.height;
 
-    const float popupWidth = kPopupWidth * m_scale;
+    const float popupWidth = m_minWidth * m_scale;
     const float popupHeight = kInitialPopupHeight * m_scale;
     const auto cfg = centeredPopupConfig(
         request.parent.width, request.parent.height, static_cast<std::uint32_t>(std::max(1.0f, popupWidth)),
@@ -89,16 +89,16 @@ namespace settings {
     m_parentOutput = request.parent.output;
   }
 
-  void SettingsEditorSheetPopup::close() { destroyPopup(); }
+  void SettingsSheetPopup::close() { destroyPopup(); }
 
-  void SettingsEditorSheetPopup::setSheetTitle(std::string title) {
+  void SettingsSheetPopup::setSheetTitle(std::string title) {
     m_sheetTitle = std::move(title);
     if (m_sheetTitleLabel != nullptr) {
       m_sheetTitleLabel->setText(m_sheetTitle);
     }
   }
 
-  void SettingsEditorSheetPopup::rebuildBody() {
+  void SettingsSheetPopup::rebuildBody() {
     if (!isOpen()) {
       return;
     }
@@ -118,15 +118,15 @@ namespace settings {
     });
   }
 
-  bool SettingsEditorSheetPopup::isOpen() const noexcept { return DialogPopupHost::isOpen(); }
+  bool SettingsSheetPopup::isOpen() const noexcept { return DialogPopupHost::isOpen(); }
 
-  void SettingsEditorSheetPopup::dismissOpenSelectDropdown() {
+  void SettingsSheetPopup::dismissOpenSelectDropdown() {
     if (m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen()) {
       m_selectPopup->closeSelectDropdown();
     }
   }
 
-  bool SettingsEditorSheetPopup::onPointerEvent(const PointerEvent& event) {
+  bool SettingsSheetPopup::onPointerEvent(const PointerEvent& event) {
     if (m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen()) {
       if (m_selectPopup->onPointerEvent(event)) {
         return true;
@@ -139,7 +139,7 @@ namespace settings {
     return DialogPopupHost::onPointerEvent(event);
   }
 
-  void SettingsEditorSheetPopup::onKeyboardEvent(const KeyboardEvent& event) {
+  void SettingsSheetPopup::onKeyboardEvent(const KeyboardEvent& event) {
     if (m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen()) {
       m_selectPopup->onKeyboardEvent(event);
       return;
@@ -147,18 +147,17 @@ namespace settings {
     DialogPopupHost::onKeyboardEvent(event);
   }
 
-  wl_surface* SettingsEditorSheetPopup::wlSurface() const noexcept { return DialogPopupHost::wlSurface(); }
+  wl_surface* SettingsSheetPopup::wlSurface() const noexcept { return DialogPopupHost::wlSurface(); }
 
-  bool SettingsEditorSheetPopup::ownsSelectDropdownSurface(wl_surface* surface) const noexcept {
+  bool SettingsSheetPopup::ownsSelectDropdownSurface(wl_surface* surface) const noexcept {
     return m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen() && m_selectPopup->wlSurface() == surface;
   }
 
-  bool SettingsEditorSheetPopup::isSelectDropdownOpen() const noexcept {
+  bool SettingsSheetPopup::isSelectDropdownOpen() const noexcept {
     return m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen();
   }
 
-  void
-  SettingsEditorSheetPopup::populateContent(Node* contentParent, std::uint32_t /*width*/, std::uint32_t /*height*/) {
+  void SettingsSheetPopup::populateContent(Node* contentParent, std::uint32_t /*width*/, std::uint32_t /*height*/) {
     const float popupPadding = Style::spaceSm * m_scale;
     const float popupGap = Style::spaceSm * m_scale;
 
@@ -216,7 +215,14 @@ namespace settings {
             .minHeight = Style::controlHeightSm * m_scale,
             .padding = Style::spaceXs * m_scale,
             .radius = Style::scaledRadiusMd(m_scale),
-            .onClick = [this]() { DeferredCall::callLater([this]() { close(); }); },
+            .onClick = [this]() {
+              DeferredCall::callLater([this]() {
+                if (m_onCloseRequested && m_onCloseRequested()) {
+                  return;
+                }
+                close();
+              });
+            },
         })
     );
     root->addChild(std::move(header));
@@ -262,7 +268,7 @@ namespace settings {
     }
   }
 
-  void SettingsEditorSheetPopup::layoutSheet(float contentWidth, float contentHeight) {
+  void SettingsSheetPopup::layoutSheet(float contentWidth, float contentHeight) {
     if (m_root == nullptr
         || m_header == nullptr
         || m_scrollView == nullptr
@@ -279,17 +285,14 @@ namespace settings {
     const ShellConfig::ShadowConfig shadow =
         config() != nullptr ? config()->config().shell.shadow : ShellConfig::ShadowConfig{};
 
-    // Sheet width tracks the parent (settings) window: 75% of it, floored at kPopupWidth, clamped to
-    // kPopupWidthMax, and capped so the surface (content + chrome) still fits within the parent minus
-    // the edge margin.
-    float panelW = kPopupWidth * m_scale;
+    float panelW = m_minWidth * m_scale;
     if (m_parentWidth > 0) {
       const auto probe = popup_chrome::computeGeometry(panelW, panelW, shadow);
       const float chromeW = static_cast<float>(probe.surfaceWidth) - panelW;
       const float fitPanelW = std::max(1.0f, static_cast<float>(m_parentWidth) - (kParentMargin * m_scale) - chromeW);
-      const float maxPanelW = std::min(fitPanelW, kPopupWidthMax * m_scale);
-      const float minPanelW = kPopupWidth * m_scale;
-      const float preferredW = kPopupWidthParentFraction * static_cast<float>(m_parentWidth);
+      const float maxPanelW = std::min(fitPanelW, m_maxWidth * m_scale);
+      const float minPanelW = m_minWidth * m_scale;
+      const float preferredW = m_parentFraction * static_cast<float>(m_parentWidth);
       panelW = std::min(std::max(preferredW, minPanelW), maxPanelW);
     }
 
@@ -312,6 +315,10 @@ namespace settings {
     };
 
     float rootH = naturalHeight(cw);
+    if (m_fillParentHeight && m_parentHeight > 0) {
+      const float fillH = static_cast<float>(m_parentHeight) - (kParentMargin * m_scale) - pad * 2.0f;
+      rootH = std::max(rootH, fillH);
+    }
     const float panelH = std::ceil(rootH + pad * 2.0f);
     const auto geo = popup_chrome::computeGeometry(panelW, panelH, shadow);
     const float maxOuterHeight =
@@ -332,11 +339,11 @@ namespace settings {
     m_root->arrange(renderer, LayoutRect{.x = 0.0f, .y = 0.0f, .width = cw, .height = sheetH});
   }
 
-  void SettingsEditorSheetPopup::cancelToFacade() {}
+  void SettingsSheetPopup::cancelToFacade() {}
 
-  InputArea* SettingsEditorSheetPopup::initialFocusArea() { return nullptr; }
+  InputArea* SettingsSheetPopup::initialFocusArea() { return nullptr; }
 
-  void SettingsEditorSheetPopup::onSheetClose() {
+  void SettingsSheetPopup::onSheetClose() {
     if (m_selectPopup != nullptr) {
       m_selectPopup->closeSelectDropdown();
     }

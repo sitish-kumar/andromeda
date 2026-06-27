@@ -52,7 +52,7 @@ public:
   [[nodiscard]] virtual TextMetrics measureText(
       std::string_view text, float fontSize, FontWeight fontWeight = FontWeight::Normal, float maxWidth = 0.0f,
       int maxLines = 0, TextAlign align = TextAlign::Start, std::string_view fontFamily = {},
-      TextEllipsize ellipsize = TextEllipsize::End
+      TextEllipsize ellipsize = TextEllipsize::End, bool useMarkup = false
   ) = 0;
   [[nodiscard]] virtual TextMetrics measureFont(float fontSize, FontWeight fontWeight = FontWeight::Normal) = 0;
 

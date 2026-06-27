@@ -39,6 +39,7 @@ public:
   void setTextAlign(TextAlign align);
   // Which end of an overflowing single line gets the ellipsis (Start keeps the tail, e.g. file paths).
   void setEllipsize(TextEllipsize ellipsize);
+  void setUseMarkup(bool markup);
   // StableLogical uses the resolved font line box; InkCentered centers the current glyph ink.
   void setBaselineMode(LabelBaselineMode mode);
   void setShadow(const Color& color, float offsetX, float offsetY);
