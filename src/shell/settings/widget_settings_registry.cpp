@@ -556,7 +556,7 @@ namespace settings {
     capsuleForeground.visibleWhen = capsuleOn;
 
     auto capsulePadding = withGroup(
-        doubleSpec("capsule_padding", static_cast<double>(Style::barCapsulePadding), 0.0, 48.0, 1.0),
+        intSpec("capsule_padding", static_cast<double>(Style::barCapsulePadding), 0.0, 48.0, 1.0),
         WidgetSettingGroup::Presentation
     );
     capsulePadding.visibleWhen = capsuleOn;
@@ -624,7 +624,7 @@ namespace settings {
     if (type == "active_window") {
       add(intSpec("min_length", 80, 0.0, 800.0, 1.0));
       add(intSpec("max_length", 260, 40.0, 800.0, 1.0));
-      add(doubleSpec("icon_size", static_cast<double>(Style::fontSizeBody), 8.0, 64.0, 1.0));
+      add(intSpec("icon_size", static_cast<double>(Style::fontSizeBody), 8.0, 64.0, 1.0));
       add(selectSpec("title_scroll", "none", mediaTitleScroll));
       {
         auto display = selectSpec("display", "icon_and_text", activeWindowDisplay);
@@ -633,7 +633,7 @@ namespace settings {
       }
       add(boolSpec("show_empty_label", false));
     } else if (type == "audio_visualizer") {
-      add(doubleSpec("width", 56.0, 8.0, 400.0, 1.0));
+      add(intSpec("width", 56.0, 8.0, 400.0, 1.0));
       add(intSpec("bands", 16, 2.0, 128.0, 1.0));
       add(boolSpec("mirrored", true));
       add(boolSpec("centered", true));
@@ -740,7 +740,7 @@ namespace settings {
         maxLength.visibleWhen = notAlbumArtOnly;
         add(std::move(maxLength));
       }
-      add(doubleSpec("art_size", 16.0, 8.0, 96.0, 1.0));
+      add(intSpec("art_size", 16.0, 8.0, 96.0, 1.0));
       {
         auto titleScroll = selectSpec("title_scroll", "none", mediaTitleScroll);
         titleScroll.visibleWhen = notAlbumArtOnly;
@@ -866,12 +866,12 @@ namespace settings {
           return v;
         }();
         {
-          auto windowTitleMaxWidth = doubleSpec("window_title_max_width", 100.0, 10.0, 200.0, 1.0);
+          auto windowTitleMaxWidth = intSpec("window_title_max_width", 100.0, 10.0, 200.0, 1.0);
           windowTitleMaxWidth.visibleWhen = windowTitleSettings;
           add(std::move(windowTitleMaxWidth));
         }
         {
-          auto taskbarMaxWidth = doubleSpec("taskbar_max_width", 8192.0, 10.0, 8192.0, 1.0);
+          auto taskbarMaxWidth = intSpec("taskbar_max_width", 8192.0, 10.0, 8192.0, 1.0);
           taskbarMaxWidth.visibleWhen = windowTitleSettings;
           add(std::move(taskbarMaxWidth));
         }
@@ -879,12 +879,12 @@ namespace settings {
         add(boolSpec("show_window_title", false));
         const WidgetSettingVisibility windowTitleSettings{"show_window_title", {"true"}};
         {
-          auto windowTitleMaxWidth = doubleSpec("window_title_max_width", 100.0, 10.0, 200.0, 1.0);
+          auto windowTitleMaxWidth = intSpec("window_title_max_width", 100.0, 10.0, 200.0, 1.0);
           windowTitleMaxWidth.visibleWhen = windowTitleSettings;
           add(std::move(windowTitleMaxWidth));
         }
         {
-          auto taskbarMaxWidth = doubleSpec("taskbar_max_width", 8192.0, 10.0, 8192.0, 1.0);
+          auto taskbarMaxWidth = intSpec("taskbar_max_width", 8192.0, 10.0, 8192.0, 1.0);
           taskbarMaxWidth.visibleWhen = windowTitleSettings;
           add(std::move(taskbarMaxWidth));
         }
