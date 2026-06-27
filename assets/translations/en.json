@@ -535,7 +535,17 @@
       "close": "Close",
       "close-all": "Close All"
     },
-    "launcher": "Launcher"
+    "launcher": "Launcher",
+    "options": {
+      "hot-corners": {
+        "command": "Run Command",
+        "control-center": "Control Center",
+        "launcher": "Launcher",
+        "none": "None",
+        "overview": "Overview",
+        "window-switcher": "Window Switcher"
+      }
+    }
   },
   "internal-apps": {
     "settings": {
@@ -1155,6 +1165,13 @@
         "ultra-heavy": "Ultra Heavy",
         "ultra-light": "Ultra Light"
       },
+      "hot-corners": {
+        "command": "Run Command",
+        "control-center": "Control Center",
+        "launcher": "Launcher",
+        "none": "None",
+        "window-switcher": "Window Switcher"
+      },
       "layer": {
         "overlay": "Overlay",
         "top": "Top"
@@ -1572,6 +1589,42 @@
         }
       },
       "desktop": {
+        "hot-corners-bottom-left": {
+          "description": "Action when the pointer hits the bottom left corner",
+          "label": "Bottom Left Corner"
+        },
+        "hot-corners-bottom-left-command": {
+          "description": "Shell command to run when hitting the bottom left corner",
+          "label": "Command"
+        },
+        "hot-corners-bottom-right": {
+          "description": "Action when the pointer hits the bottom right corner",
+          "label": "Bottom Right Corner"
+        },
+        "hot-corners-bottom-right-command": {
+          "description": "Shell command to run when hitting the bottom right corner",
+          "label": "Command"
+        },
+        "hot-corners-enabled": {
+          "description": "Trigger actions by pushing the mouse pointer into screen corners",
+          "label": "Hot Corners"
+        },
+        "hot-corners-top-left": {
+          "description": "Action when the pointer hits the top left corner",
+          "label": "Top Left Corner"
+        },
+        "hot-corners-top-left-command": {
+          "description": "Shell command to run when hitting the top left corner",
+          "label": "Command"
+        },
+        "hot-corners-top-right": {
+          "description": "Action when the pointer hits the top right corner",
+          "label": "Top Right Corner"
+        },
+        "hot-corners-top-right-command": {
+          "description": "Shell command to run when hitting the top right corner",
+          "label": "Command"
+        },
         "screen-corners-enabled": {
           "description": "Round the screen corners with a black overlay",
           "label": "Screen Corners"
