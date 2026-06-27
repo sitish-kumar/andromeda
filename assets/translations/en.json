@@ -1271,6 +1271,7 @@
       }
     },
     "plugins": {
+      "browse-store": "Browse Plugins",
       "panels": {
         "open-near-click": {
           "description": "Open the panel near the bar widget that toggled it",
@@ -1285,28 +1286,16 @@
           "label": "Position"
         }
       },
-      "browse-store": "Browse Plugins",
       "plugins": {
         "configure": "Configure",
         "deprecated": "deprecated",
         "empty": "No enabled plugins.",
         "loading": "Loading plugins...",
         "refreshing": "Refreshing plugins...",
-        "requires": "Requires: {dependencies}",
         "remove": "Remove plugin",
+        "requires": "Requires: {dependencies}",
         "requires-newer-noctalia": "requires newer Noctalia",
         "title": "Plugins"
-      },
-      "store": {
-        "add": "Add to Noctalia",
-        "category-all": "All",
-        "empty": "No plugins found",
-        "incompatible": "Incompatible",
-        "loading": "Loading catalog...",
-        "no-readme": "No description available.",
-        "results-count": "{count} plugins",
-        "search-placeholder": "Search plugins...",
-        "title": "Plugin Store"
       },
       "settings": {
         "empty": "No settings available."
@@ -1338,6 +1327,17 @@
         "title": "Sources",
         "update": "Update",
         "update-on-startup": "Update on startup"
+      },
+      "store": {
+        "add": "Add to Noctalia",
+        "category-all": "All",
+        "empty": "No plugins found",
+        "incompatible": "Incompatible",
+        "loading": "Loading catalog...",
+        "no-readme": "No description available.",
+        "results-count": "{count} plugins",
+        "search-placeholder": "Search plugins...",
+        "title": "Plugin Store"
       }
     },
     "schema": {
