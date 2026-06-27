@@ -716,6 +716,17 @@ void Application::initServices() {
     m_wallpaper.setOutputExternallyManaged(connector, !enabled);
   });
 
+  // Let a plugin apply a wallpaper image (e.g. wallhaven)
+  m_scriptApi.setWallpaperHook([this](const std::string& connector, const std::string& path) {
+    const std::optional<std::string> target = connector.empty() ? std::nullopt : std::optional<std::string>{connector};
+    if (!m_wallpaper.applyWallpaperImage(target, path)) {
+      kLog.warn("plugin setWallpaper failed for \"{}\"", path);
+    }
+  });
+
+  // Let a plugin toggle one of its own panels.
+  m_scriptApi.setTogglePanelHook([this](const std::string& panelId) { m_panelManager.togglePanel(panelId); });
+
   m_themeService.setResolvedCallback([this, lastResolvedThemeMode = std::optional<std::string>{},
                                       syncScriptApiWallpaperDirectory](
                                          const noctalia::theme::GeneratedPalette& generated, std::string_view mode
