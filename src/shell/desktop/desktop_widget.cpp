@@ -94,6 +94,14 @@ Node* DesktopWidget::presentationRoot() const noexcept {
   return m_contentRoot;
 }
 
+bool DesktopWidget::hasVisibleBackground() const noexcept {
+  if (!m_bgEnabled) {
+    return false;
+  }
+  const Node* node = presentationRoot();
+  return node != nullptr && node->visible() && node->opacity() > 0.001f;
+}
+
 float DesktopWidget::intrinsicWidth() const noexcept {
   if (m_boxWidth > 0.0f) {
     return m_boxWidth;
