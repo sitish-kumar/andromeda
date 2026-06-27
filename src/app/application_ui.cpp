@@ -357,6 +357,8 @@ void Application::initInputDispatch() {
       return;
     if (m_panelManager.onPointerEvent(event))
       return;
+    if (m_hotCorners.onPointerEvent(event))
+      return;
     m_notificationToast.onPointerEvent(event);
   });
 
@@ -684,6 +686,8 @@ void Application::initNotificationAndOsd() {
   );
   m_screenCorners.initialize(m_wayland, &m_configService, &m_renderContext);
   m_screenCorners.onConfigReload();
+  m_hotCorners.initialize(m_wayland, &m_configService, &m_renderContext);
+  m_hotCorners.onConfigReload();
 }
 
 void Application::initBarDockAndLayout() {
@@ -756,6 +760,7 @@ void Application::initBarDockAndLayout() {
     }
   });
   m_configService.addReloadCallback([this]() { m_screenCorners.onConfigReload(); });
+  m_configService.addReloadCallback([this]() { m_hotCorners.onConfigReload(); });
 
   m_layerPopupHosts.registerHost(
       [this](wl_surface* surface) {

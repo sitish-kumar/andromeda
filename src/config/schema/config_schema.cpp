@@ -427,6 +427,22 @@ namespace noctalia::config::schema {
     return s;
   }
 
+  const Schema<HotCornersConfig>& hotCornersSchema() {
+    static const Schema<HotCornersConfig::Corner> cornerSchema = {
+        field(&HotCornersConfig::Corner::action, "action"),
+        field(&HotCornersConfig::Corner::command, "command"),
+    };
+    static const Schema<HotCornersConfig> s = {
+        field(&HotCornersConfig::enabled, "enabled"),
+        field(&HotCornersConfig::delayMs, "delay_ms"),
+        subTable(&HotCornersConfig::topLeft, "top_left", cornerSchema),
+        subTable(&HotCornersConfig::topRight, "top_right", cornerSchema),
+        subTable(&HotCornersConfig::bottomLeft, "bottom_left", cornerSchema),
+        subTable(&HotCornersConfig::bottomRight, "bottom_right", cornerSchema),
+    };
+    return s;
+  }
+
   namespace {
     const Schema<BrightnessMonitorOverride>& brightnessMonitorSchema() {
       static const Schema<BrightnessMonitorOverride> s = {

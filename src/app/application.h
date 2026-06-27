@@ -34,6 +34,7 @@
 #include "shell/bar/bar.h"
 #include "shell/desktop/desktop_widgets_controller.h"
 #include "shell/dock/dock.h"
+#include "shell/hot_corners/hot_corners.h"
 #include "shell/lockscreen/lock_screen.h"
 #include "shell/lockscreen/lockscreen_widgets_controller.h"
 #include "shell/notification/notification_toast.h"
@@ -144,6 +145,9 @@ public:
   // Public for signal handler
   static std::atomic<bool> s_shutdownRequested;
 
+  bool runUserCommand(const std::string& command);
+  void triggerShellAction(const std::string& action, wl_output* output = nullptr);
+
 private:
   void initServices();
   // Sub-phases of initServices(), called in order.
@@ -177,7 +181,6 @@ private:
   [[nodiscard]] bool likelySupportsInSessionPolkit() const noexcept;
   void syncClipboardService();
   void syncScreenTimeService();
-  bool runUserCommand(const std::string& command);
   bool runUserCommandBlocking(const std::string& command);
   bool runIdleAction(const IdleActionRequest& action);
   void onIconThemeChanged();
@@ -281,6 +284,7 @@ private:
   KeyboardLayoutOsd m_keyboardLayoutOsd;
   PrivacyOsd m_privacyOsd;
   OsdOverlay m_osdOverlay;
+  HotCorners m_hotCorners{this};
   ScreenCorners m_screenCorners;
   TrayMenu m_trayMenu;
   Wallpaper m_wallpaper;

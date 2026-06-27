@@ -1369,6 +1369,23 @@ struct PluginsConfig {
 // Source names are stable user-facing handles and git source storage directory names.
 // Keep them flat so they can never escape the plugin source cache.
 [[nodiscard]] bool isValidPluginSourceName(std::string_view name);
+struct HotCornersConfig {
+  bool enabled = false;
+  std::int32_t delayMs = 150;
+
+  struct Corner {
+    std::string action = "none";
+    std::string command;
+    bool operator==(const Corner&) const = default;
+  };
+
+  Corner topLeft;
+  Corner topRight;
+  Corner bottomLeft;
+  Corner bottomRight;
+
+  bool operator==(const HotCornersConfig&) const = default;
+};
 
 struct Config {
   std::vector<BarConfig> bars;
@@ -1379,6 +1396,7 @@ struct Config {
   LockscreenWidgetsConfig lockscreenWidgets;
   DockConfig dock;
   DesktopWidgetsConfig desktopWidgets;
+  HotCornersConfig hotCorners;
   ShellConfig shell;
   OsdConfig osd;
   NotificationConfig notification;
@@ -1397,7 +1415,6 @@ struct Config {
   ControlCenterConfig controlCenter;
   PluginsConfig plugins;
 };
-
 // Which top-level config sections changed across a reload. Default-constructed
 // to all-true (conservative: "assume everything changed") so any path that does
 // not compute a precise diff still fans the reload out to every subscriber.
@@ -1427,6 +1444,7 @@ struct ConfigChangeSet {
   bool theme = true;
   bool controlCenter = true;
   bool plugins = true;
+  bool hotCorners = true;
 
   [[nodiscard]] bool any() const noexcept {
     return bars
@@ -1453,7 +1471,8 @@ struct ConfigChangeSet {
         || hooks
         || theme
         || controlCenter
-        || plugins;
+        || plugins
+        || hotCorners;
   }
 };
 

@@ -563,6 +563,7 @@ void Application::initWaylandCallbacks() {
     m_desktopWidgetsController.onOutputChange();
     m_lockscreenWidgetsController.onOutputChange();
     m_screenCorners.onOutputChange();
+    m_hotCorners.onOutputChange();
     m_lockScreen.onOutputChange();
     m_idleGraceOverlay.onOutputChange();
     m_idleInhibitor.onOutputChange();
@@ -1156,5 +1157,19 @@ void Application::startTrayService() {
     m_trayService->start();
   } catch (const std::exception& e) {
     kLog.warn("tray watcher disabled: {}", e.what());
+  }
+}
+
+void Application::triggerShellAction(const std::string& action, wl_output* output) {
+  if (action == "launcher") {
+    m_panelManager.togglePanel("launcher", PanelOpenRequest{.output = output});
+  } else if (action == "control_center") {
+    m_panelManager.togglePanel("control-center", PanelOpenRequest{.output = output});
+  } else if (action == "overview") {
+    // There is no public toggle for overview in OverviewLauncherCapture.
+    // Try to execute a generic compositor action, or use niri directly if using niri.
+    runUserCommand("niri msg action toggle-overview");
+  } else if (action == "window_switcher") {
+    runUserCommand("noctalia:window-switcher");
   }
 }
