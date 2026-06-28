@@ -239,7 +239,7 @@ namespace {
     if (!instanceLock.tryAcquire()) {
       std::println(stderr, "error: noctalia is already running");
       completeDaemonStartup(1);
-      return 1;
+      _exit(1);
     }
     try {
       Application app;
