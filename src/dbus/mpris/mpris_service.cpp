@@ -1689,14 +1689,14 @@ void MprisService::addOrRefreshPlayer(const std::string& busName) {
                     }
                   }
 
-                  // For a player we've never seen before, avoid creating a root-only placeholder
-                  // entry when the player interface is unavailable. Let recovery rediscover it once
-                  // we can read actual playback/metadata state.
-                  if (playerFailed && !m_players.contains(busName)) {
+                  if (playerFailed) {
                     if (rootFailed) {
                       kLog.warn("player hydration failed (both interfaces) name={}", busName);
                     } else {
                       kLog.warn("player hydration failed (player interface) name={}", busName);
+                    }
+                    if (m_players.contains(busName)) {
+                      removePlayerCacheEntry(busName);
                     }
                     scheduleRecoveryDiscovery();
                     return;
@@ -1714,7 +1714,7 @@ void MprisService::addOrRefreshPlayer(const std::string& busName) {
 
                   const MprisPlayerInfo info =
                       readPlayerInfoFromProperties(busName, effectiveRootProps, effectivePlayerProps);
-                  if (!playerFailed && !hasStrongNowPlayingMetadata(info)) {
+                  if (!hasStrongNowPlayingMetadata(info)) {
                     removePlayerCacheEntry(busName);
                     return;
                   }
