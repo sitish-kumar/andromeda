@@ -126,11 +126,11 @@ void RenderContext::initialize(GlSharedContext& shared) {
   ++m_textMetricsGeneration;
 }
 
-void RenderContext::makeCurrentNoSurface() {
+bool RenderContext::makeCurrentNoSurface() {
   if (m_backend == nullptr) {
-    return;
+    return false;
   }
-  m_backend->makeCurrentNoSurface();
+  return m_backend->makeCurrentNoSurface();
 }
 
 bool RenderContext::makeCurrent(RenderTarget& target) {

@@ -71,7 +71,7 @@ public:
   [[nodiscard]] std::uint64_t textMetricsGeneration() const noexcept override { return m_textMetricsGeneration; }
 
 private:
-  void makeCurrentNoSurface();
+  bool makeCurrentNoSurface();
   void handleGraphicsReset(RenderGraphicsResetStatus status);
   void renderNode(
       const Node* node, const Mat3& parentTransform, float parentOpacity, float sw, float sh, float bw, float bh,
