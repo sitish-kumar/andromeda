@@ -371,6 +371,7 @@
       "data-unavailable": "Weather data unavailable",
       "details": {
         "elevation": "Elevation",
+        "uv-index": "UV Index",
         "sunrise": "Sunrise",
         "sunset": "Sunset",
         "temp-max": "Temperature Max",

@@ -252,6 +252,7 @@ std::unique_ptr<Flex> WeatherTab::create() {
   addDetailRow("weather-sunrise", i18n::tr("control-center.weather.details.sunrise"), m_sunriseLabel);
   addDetailRow("weather-sunset", i18n::tr("control-center.weather.details.sunset"), m_sunsetLabel);
   addDetailRow("mountain", i18n::tr("control-center.weather.details.elevation"), m_elevationLabel);
+  addDetailRow("sun", i18n::tr("control-center.weather.details.uv-index"), m_uvIndexLabel);
   addDetailRow("clock", i18n::tr("control-center.weather.details.timezone"), m_timeZoneLabel);
 
   leftColumn->addChild(std::move(detailsCard));
@@ -366,7 +367,7 @@ void WeatherTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeig
     m_statusLabel->setMaxWidth(leftColumnWidth);
   }
   for (auto* label :
-       {m_windLabel, m_sunriseLabel, m_sunsetLabel, m_tempMaxLabel, m_tempMinLabel, m_elevationLabel,
+       {m_windLabel, m_sunriseLabel, m_sunsetLabel, m_tempMaxLabel, m_tempMinLabel, m_elevationLabel, m_uvIndexLabel,
         m_timeZoneLabel}) {
     if (label != nullptr) {
       label->setMaxWidth(leftColumnWidth);
@@ -536,6 +537,7 @@ void WeatherTab::onClose() {
   m_tempMaxLabel = nullptr;
   m_tempMinLabel = nullptr;
   m_elevationLabel = nullptr;
+  m_uvIndexLabel = nullptr;
   m_timeZoneLabel = nullptr;
   m_detailRows.fill(nullptr);
   m_dayRows.fill(nullptr);
@@ -595,6 +597,9 @@ void WeatherTab::sync(Renderer& renderer) {
     if (m_elevationLabel != nullptr) {
       m_elevationLabel->setText("--");
     }
+    if (m_uvIndexLabel != nullptr) {
+      m_uvIndexLabel->setText("--");
+    }
     if (m_timeZoneLabel != nullptr) {
       m_timeZoneLabel->setText("--");
     }
@@ -622,6 +627,9 @@ void WeatherTab::sync(Renderer& renderer) {
     }
     if (m_elevationLabel != nullptr) {
       m_elevationLabel->setText("--");
+    }
+    if (m_uvIndexLabel != nullptr) {
+      m_uvIndexLabel->setText("--");
     }
     if (m_timeZoneLabel != nullptr) {
       m_timeZoneLabel->setText("--");
@@ -665,6 +673,9 @@ void WeatherTab::sync(Renderer& renderer) {
     }
     if (m_elevationLabel != nullptr) {
       m_elevationLabel->setText("--");
+    }
+    if (m_uvIndexLabel != nullptr) {
+      m_uvIndexLabel->setText("--");
     }
     if (m_timeZoneLabel != nullptr) {
       m_timeZoneLabel->setText("--");
@@ -761,6 +772,9 @@ void WeatherTab::sync(Renderer& renderer) {
     const bool imperial = m_weather->useImperial();
     const int elevation = static_cast<int>(imperial ? snapshot.elevationM * 3.28084 : snapshot.elevationM);
     m_elevationLabel->setText(std::format("{}{}", elevation, imperial ? "ft" : "m"));
+  }
+  if (m_uvIndexLabel != nullptr) {
+    m_uvIndexLabel->setText(std::format("{:.1f}", snapshot.current.uvIndex));
   }
   if (m_timeZoneLabel != nullptr) {
     // Use the last component of the IANA path ("America/Toronto" → "Toronto") to keep

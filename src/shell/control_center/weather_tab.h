@@ -34,7 +34,7 @@ private:
   [[nodiscard]] static EffectType effectForWeatherCode(std::int32_t code, bool isDay);
 
   static constexpr std::size_t kDayCount = 7;
-  static constexpr std::size_t kDetailRowCount = 6;
+  static constexpr std::size_t kDetailRowCount = 7;
 
   WeatherService* m_weather = nullptr;
   ConfigService* m_config = nullptr;
@@ -61,6 +61,7 @@ private:
   Label* m_tempMinLabel = nullptr;
   Label* m_elevationLabel = nullptr;
   Label* m_timeZoneLabel = nullptr;
+  Label* m_uvIndexLabel = nullptr;
   std::array<Flex*, kDetailRowCount> m_detailRows{};
   std::array<Flex*, kDayCount> m_dayRows{};
   std::array<Separator*, kDayCount - 1> m_daySeparators{};

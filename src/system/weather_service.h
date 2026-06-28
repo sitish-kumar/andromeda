@@ -21,6 +21,7 @@ struct WeatherCurrentUnits {
   std::string windDirection;
   std::string isDay;
   std::string weatherCode;
+  std::string uvIndex;
 };
 
 struct WeatherDailyUnits {
@@ -40,6 +41,7 @@ struct WeatherCurrentConditions {
   std::int32_t windDirectionDeg = 0;
   bool isDay = true;
   std::int32_t weatherCode = 0;
+  double uvIndex = 0.0;
 };
 
 struct WeatherForecastDay {

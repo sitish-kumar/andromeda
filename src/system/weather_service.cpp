@@ -137,6 +137,7 @@ namespace {
         {"wind_direction", units.windDirection},
         {"is_day", units.isDay},
         {"weather_code", units.weatherCode},
+        {"uv_index", units.uvIndex},
     };
   }
 
@@ -160,6 +161,7 @@ namespace {
     units.windDirection = readString(json, "wind_direction");
     units.isDay = readString(json, "is_day");
     units.weatherCode = readString(json, "weather_code");
+    units.uvIndex = readString(json, "uv_index");
     return units;
   }
 
@@ -422,7 +424,7 @@ void WeatherService::startWeatherFetch() {
   const auto path = transportCacheDir() / "forecast.json";
   const std::string url = std::format(
       "https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}"
-      "&current_weather=true"
+      "&current=temperature_2m,wind_speed_10m,wind_direction_10m,weather_code,is_day,uv_index"
       "&daily=temperature_2m_max,temperature_2m_min,weathercode,sunrise,sunset"
       "&forecast_days={}&timezone=auto",
       formatCoordinate(m_resolvedLatitude), formatCoordinate(m_resolvedLongitude), kForecastDays
@@ -454,7 +456,7 @@ void WeatherService::handleWeatherResponse(const std::filesystem::path& path, bo
   try {
     std::ifstream file(path);
     const auto json = nlohmann::json::parse(file);
-    const auto& current = json.at("current_weather");
+    const auto& current = json.at("current");
     const auto& daily = json.at("daily");
     const auto& dates = daily.at("time");
     const auto& tempsMax = daily.at("temperature_2m_max");
@@ -474,14 +476,15 @@ void WeatherService::handleWeatherResponse(const std::filesystem::path& path, bo
     next.timezone = readString(json, "timezone");
     next.timezoneAbbreviation = readString(json, "timezone_abbreviation");
     next.elevationM = readOptionalNumber(json, "elevation");
-    if (const auto it = json.find("current_weather_units"); it != json.end() && it->is_object()) {
+    if (const auto it = json.find("current_units"); it != json.end() && it->is_object()) {
       next.currentUnits.time = readString(*it, "time");
       next.currentUnits.interval = readString(*it, "interval");
-      next.currentUnits.temperature = readString(*it, "temperature");
-      next.currentUnits.windSpeed = readString(*it, "windspeed");
-      next.currentUnits.windDirection = readString(*it, "winddirection");
+      next.currentUnits.temperature = readString(*it, "temperature_2m");
+      next.currentUnits.windSpeed = readString(*it, "wind_speed_10m");
+      next.currentUnits.windDirection = readString(*it, "wind_direction_10m");
       next.currentUnits.isDay = readString(*it, "is_day");
-      next.currentUnits.weatherCode = readString(*it, "weathercode");
+      next.currentUnits.weatherCode = readString(*it, "weather_code");
+      next.currentUnits.uvIndex = readString(*it, "uv_index");
     }
     if (const auto it = json.find("daily_units"); it != json.end() && it->is_object()) {
       next.dailyUnits.time = readString(*it, "time");
@@ -493,11 +496,12 @@ void WeatherService::handleWeatherResponse(const std::filesystem::path& path, bo
     }
     next.current.timeIso = readString(current, "time");
     next.current.intervalSeconds = readOptionalInt(current, "interval");
-    next.current.temperatureC = readNumber(current, "temperature");
-    next.current.windSpeedKmh = readOptionalNumber(current, "windspeed");
-    next.current.windDirectionDeg = readOptionalInt(current, "winddirection");
+    next.current.temperatureC = readNumber(current, "temperature_2m");
+    next.current.windSpeedKmh = readOptionalNumber(current, "wind_speed_10m");
+    next.current.windDirectionDeg = readOptionalInt(current, "wind_direction_10m");
     next.current.isDay = readBool(current, "is_day", true);
-    next.current.weatherCode = readInt(current, "weathercode");
+    next.current.weatherCode = readInt(current, "weather_code");
+    next.current.uvIndex = readOptionalNumber(current, "uv_index");
     next.fetchedAt = Clock::now();
 
     const std::size_t count = std::min(
@@ -603,6 +607,7 @@ void WeatherService::loadCache() {
       m_snapshot.current.windDirectionDeg = readOptionalInt(*it, "wind_direction_deg");
       m_snapshot.current.isDay = readBool(*it, "is_day", true);
       m_snapshot.current.weatherCode = readOptionalInt(*it, "weather_code");
+      m_snapshot.current.uvIndex = readOptionalNumber(*it, "uv_index");
     }
     if (const auto it = snapshot.find("forecast_days"); it != snapshot.end() && it->is_array()) {
       m_snapshot.forecastDays.clear();
@@ -671,6 +676,7 @@ void WeatherService::saveCache() const {
                 {"wind_direction_deg", m_snapshot.current.windDirectionDeg},
                 {"is_day", m_snapshot.current.isDay},
                 {"weather_code", m_snapshot.current.weatherCode},
+                {"uv_index", m_snapshot.current.uvIndex},
             }},
            {"forecast_days", nlohmann::json::array()},
            {"fetched_at", toUnixSeconds(m_snapshot.fetchedAt)},
