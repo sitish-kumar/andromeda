@@ -301,6 +301,7 @@ void SelectDropdownPopup::buildScene(const DropdownRequest& request) {
     auto label = std::make_unique<Label>();
     label->setText(m_options[i]);
     label->setFontSize(request.fontSize);
+    label->setMaxLines(1);
     const float labelLeft = request.horizontalPadding + leadingInset;
     label->setMaxWidth(
         std::max(0.0f, rowWidth - labelLeft - request.horizontalPadding - request.glyphSize - Style::spaceXs)

@@ -42,6 +42,7 @@ public:
     float inkLeft = 0.0f;   // visible ink left edge relative to layout origin
     float inkRight = 0.0f;  // visible ink right edge relative to layout origin
     float capHeight = 0.0f; // measured baseline-to-cap-top of 'H' (0 if unavailable)
+    int lineCount = 0;      // laid-out line count (0 for empty text)
   };
 
   CairoTextRenderer();

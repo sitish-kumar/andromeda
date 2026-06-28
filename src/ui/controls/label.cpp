@@ -414,9 +414,6 @@ LayoutSize Label::measureWithConstraints(Renderer& renderer, const LayoutConstra
     measureMaxWidth = 0.0f;
   }
   const int effectiveMaxLines = m_autoScroll ? 1 : m_userMaxLines;
-  const bool singleLine = m_autoScroll
-      || (effectiveMaxLines == 1)
-      || (effectiveMaxLines == 0 && configuredMaxWidth <= 0.0f && !m_plainText.contains('\n'));
   const TextAlign align = m_textNode->textAlign();
   const FontWeight fontWeight = m_textNode->fontWeight();
   const float renderScale = renderer.renderScale();
@@ -460,6 +457,11 @@ LayoutSize Label::measureWithConstraints(Renderer& renderer, const LayoutConstra
       m_plainText, m_textNode->fontSize(), fontWeight, measureMaxWidth, effectiveMaxLines, align,
       m_textNode->fontFamily(), m_textNode->ellipsize(), m_textNode->useMarkup()
   );
+  // Single- vs multi-line is decided by the measured layout, not by the requested
+  // width/line budget: a label with no explicit budget wraps freely, so only the
+  // measured line count tells us whether to apply single-line cap-band centering
+  // or lay out a multi-line block. Auto-scroll always renders a single marquee line.
+  const bool singleLine = m_autoScroll || metrics.lineCount <= 1;
   const float measuredWidth = measureMaxWidth > 0.0f ? std::min(metrics.width, measureMaxWidth) : metrics.width;
   m_fullTextWidth = m_autoScroll ? measuredWidth : 0.0f;
   const bool hasAssignedWidth = constraints.hasExactWidth();

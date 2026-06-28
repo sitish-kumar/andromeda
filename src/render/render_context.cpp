@@ -236,7 +236,8 @@ TextMetrics RenderContext::measureText(
       .inkTop = m.inkTop,
       .inkBottom = m.inkBottom,
       .inkLeft = m.inkLeft,
-      .inkRight = m.inkRight
+      .inkRight = m.inkRight,
+      .lineCount = m.lineCount
   };
 }
 

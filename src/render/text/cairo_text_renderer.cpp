@@ -408,14 +408,16 @@ PangoLayout* CairoTextRenderer::buildLayout(
   // into '\n'-separated lines). Leaving single_paragraph_mode off lets Pango
   // treat each '\n' as its own paragraph instead of collapsing to one line.
   //
-  // For ellipsize END to work on multi-line text, Pango needs a line budget
-  // via set_height(-N). Callers that need wrapping to >1 lines pass maxLines
-  // explicitly. Otherwise we fall back to 1 + ('\n' count) so single-line
-  // callers keep their classic truncate-with-ellipsis behavior.
+  // maxLines is the line budget: >0 caps the layout to that many lines and
+  // ellipsizes the overflow; 0 means "as many lines as the content needs" (a
+  // label box-centered in a constrained container wraps freely). The ellipsis
+  // only appears when the content exceeds an explicit budget.
   //
-  // kHardMaxLines is a safety cap so a pathological caller (or a runaway
-  // log-style payload) can't ask Pango to shape tens of thousands of lines
-  // and blow up memory / GL textures. Higher than any real UI needs.
+  // kHardMaxLines is a safety backstop so a pathological caller (or a runaway
+  // log-style payload) can't ask Pango to shape tens of thousands of lines and
+  // blow up memory / GL textures. Higher than any real UI needs, so unlimited
+  // wrap never reaches it in practice.
+  constexpr int kHardMaxLines = 500;
   if (maxWidthPxScaled > 0.0f) {
     // Avoid Pango inserting hyphens at intra-word line breaks (looks like stray "-" in wrapped UI text).
     PangoAttrList* attrs = pango_attr_list_new();
@@ -426,9 +428,7 @@ PangoLayout* CairoTextRenderer::buildLayout(
     pango_layout_set_attributes(layout, attrs);
     pango_attr_list_unref(attrs);
 
-    constexpr int kHardMaxLines = 500;
-    int lineBudget = maxLines > 0 ? maxLines : 1 + static_cast<int>(std::count(text.begin(), text.end(), '\n'));
-    lineBudget = std::min(lineBudget, kHardMaxLines);
+    const int lineBudget = maxLines > 0 ? std::min(maxLines, kHardMaxLines) : kHardMaxLines;
     pango_layout_set_width(layout, static_cast<int>(maxWidthPxScaled * PANGO_SCALE));
     pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
     pango_layout_set_height(layout, -lineBudget);
@@ -436,7 +436,6 @@ PangoLayout* CairoTextRenderer::buildLayout(
   } else {
     pango_layout_set_width(layout, -1);
     if (maxLines > 0) {
-      constexpr int kHardMaxLines = 500;
       const int lineBudget = std::min(maxLines, kHardMaxLines);
       pango_layout_set_height(layout, -lineBudget);
       pango_layout_set_ellipsize(layout, pangoEllipsize);
@@ -484,6 +483,7 @@ CairoTextRenderer::TextMetrics CairoTextRenderer::metricsFromLayout(PangoLayout*
   m.inkBottom = inkBottom;
   m.inkLeft = inkLeft;
   m.inkRight = inkRight;
+  m.lineCount = pango_layout_get_line_count(layout);
   return m;
 }
 

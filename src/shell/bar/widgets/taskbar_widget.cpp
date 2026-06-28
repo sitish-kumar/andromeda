@@ -509,6 +509,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
           .fontSize = Style::fontSizeCaption * m_contentScale,
           .fontFamily = fontFamily,
           .maxWidth = windowTitleWidth,
+          .maxLines = 1,
           .fontWeight = fontWeight,
       });
       label->measure(renderer);
