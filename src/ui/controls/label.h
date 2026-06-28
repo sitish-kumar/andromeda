@@ -20,6 +20,12 @@ enum class LabelBaselineMode : std::uint8_t {
   // Prevents fallback fonts for unusual Unicode characters from inflating the
   // label height — useful in lists with unpredictable content.
   StableFont,
+  // Centers a cap-height band anchored at the glyph's ink top instead of the
+  // baseline. For pictographic script fonts (e.g. bongocat poses) the ink top is
+  // the fixed part of the art and lower ink moves per glyph: this keeps the art
+  // vertically put (no bob, unlike InkCentered) and centered (cap-band-from-baseline
+  // sits it too high). Degrades to cap-band centering for normal text.
+  StableFontBox,
 };
 
 class Label : public InputArea {

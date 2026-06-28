@@ -485,6 +485,18 @@ LayoutSize Label::measureWithConstraints(Renderer& renderer, const LayoutConstra
       height = std::round(fontMetrics.bottom - fontMetrics.top);
       const float capHeight = fontMetrics.capHeight;
       m_baselineOffset = capHeight > 0.0f ? height * 0.5f + capHeight * 0.5f : -fontMetrics.top;
+    } else if (m_baselineMode == LabelBaselineMode::StableFontBox) {
+      // Center the cap-height band measured from the *ink top* rather than the
+      // baseline. For pictographic script fonts (e.g. bongocat poses) the ink top
+      // is the fixed part of the art while lower ink moves per glyph; anchoring the
+      // band there keeps the art vertically put (no bob) and centres it, where
+      // cap-band-from-baseline sits it too high. Degrades to cap-band centering for
+      // normal text, whose ink top coincides with the cap top. Unrounded baseline —
+      // the renderer snaps the glyph quad to the pixel grid.
+      height = std::round(actualHeight);
+      const float capHeight = renderer.measureFont(m_textNode->fontSize(), fontWeight).capHeight;
+      m_baselineOffset = capHeight > 0.0f ? height * 0.5f - (metrics.inkTop + capHeight * 0.5f)
+                                          : -metrics.inkTop + (height - inkHeight) * 0.5f;
     } else {
       height = std::round(actualHeight);
       // Center the cap band (baseline → cap-top) in the box, so a container that
