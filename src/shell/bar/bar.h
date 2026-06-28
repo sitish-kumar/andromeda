@@ -141,7 +141,7 @@ private:
   [[nodiscard]] std::string setBarAutoHideIpc(std::string_view args);
   [[nodiscard]] std::string setBarLayerIpc(std::string_view args);
   [[nodiscard]] std::optional<std::string> collectBarIpcInstances(
-      std::optional<std::string_view> barName, std::optional<std::string_view> monitorSelector,
+      std::optional<std::string> barName, std::optional<std::string> monitorSelector,
       std::vector<BarInstance*>& instancesOut
   );
   [[nodiscard]] BarInstance* instanceForSurface(wl_surface* surface) const noexcept;
