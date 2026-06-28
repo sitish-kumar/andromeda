@@ -29,6 +29,7 @@
   "bar": {
     "screenshot": {
       "choose-display": "Chọn màn hình",
+      "confirm-region": "Kéo, thả để chọn · Nhấn Esc để hủy · Nhấn Enter hoặc Space để chụp phần đã chọn",
       "fullscreen": "Toàn màn hình",
       "region": "Chọn khu vực"
     },
@@ -63,7 +64,9 @@
         "interface": "Giao diện",
         "ip": "IP",
         "network": "Mạng",
+        "networks": "Mạng",
         "networks-count": "{count} mạng",
+        "networks-count-plural": "{count} mạng",
         "no": "Không",
         "not-connected": "Chưa kết nối",
         "off": "Tắt",
@@ -279,7 +282,13 @@
     "power": {
       "battery": "Pin",
       "design-capacity": "Công suất thiết kế",
-      "health": "Trình trạng pin"
+      "health": "Trình trạng pin",
+      "performance-inhibited": "Hiệu suất không xác định",
+      "peripherals": "Thiết bị đã kết nối",
+      "power-profile": "Chế độ năng lượng",
+      "time-to-empty": "Hết pin sau {time}",
+      "time-to-full": "Đầy pin sau {time}",
+      "unknown-device": "Thiết bị không xác định"
     },
     "screen-time": {
       "disabled": "Tính năng theo dõi thời gian sử dụng màn hình đang tắt. Bật trong Cài đặt để ghi lại dữ liệu theo từng ứng dụng.",
@@ -353,11 +362,21 @@
       "media": "Trình phát",
       "network": "Mạng",
       "notifications": "Thông báo",
+      "power": "Nguồn",
       "screen-time": "Thời gian sử dụng",
       "system": "Hệ thống",
       "weather": "Thời tiết"
     },
     "weather": {
+      "daily": {
+        "tooltip": {
+          "condition": "Tình trạng",
+          "high": "Cao",
+          "low": "Thấp",
+          "sunrise": "Lúc mặt trời mọc",
+          "sunset": "Lúc mặt trời lặn"
+        }
+      },
       "data-unavailable": "Không thể tải dữ liệu thời tiết",
       "details": {
         "elevation": "Độ cao",
@@ -366,6 +385,7 @@
         "temp-max": "Nhiệt độ cao nhất",
         "temp-min": "Nhiệt độ thấp nhất",
         "timezone": "Múi giờ",
+        "uv-index": "Chỉ số UV",
         "wind": "Gió"
       },
       "disabled": "Bật [weather] trong config.toml",
@@ -375,7 +395,22 @@
         "description": "Thời tiết",
         "temperature": "10 / 4C"
       },
+      "forecast-view": {
+        "daily": "Mỗi ngày",
+        "hourly": "Mỗi giờ"
+      },
+      "hourly": {
+        "summary": "{condition} / Mưa {precip}%",
+        "tooltip": {
+          "condition": "Tình trạng ",
+          "humidity": "Độ ẩm",
+          "rain": "Mưa",
+          "wind": "Gió"
+        }
+      },
       "location-unavailable": "Không thể xác định vị trí",
+      "no-location-body": "Thêm địa chỉ hoặc bật tự động xác định vị trí",
+      "no-location-title": "Địa điểm chưa được đặt",
       "refreshing": "Đang tải lại dữ liệu thời tiết...",
       "waiting": "Đang chờ dữ liệu thời tiết"
     }
@@ -666,6 +701,12 @@
       "scroll-off": "Scroll Lock Tắt",
       "scroll-on": "Scroll Lock Bật"
     },
+    "nightlight": {
+      "forced": "Luôn bật",
+      "off": "Tắt đèn ban đêm",
+      "running": "Đang chạy",
+      "scheduled": "Hẹn giờ"
+    },
     "wifi": {
       "off": "Wi-Fi Tắt",
       "on": "Wi-Fi Bật"
@@ -682,11 +723,14 @@
         "plugged-in": "Đã cắm sạc"
       },
       "tooltip": {
+        "device": "Pin",
+        "device-numbered": "Pin {index}",
         "health": "Tình trạng",
         "rate": "Đánh giá",
         "status": "Trạng thái",
         "time-left": "Thời gian còn lại",
-        "time-to-full": "Thời gian sạc đầy"
+        "time-to-full": "Thời gian sạc đầy",
+        "unknown-device": "Thiết bị không xác định"
       }
     },
     "profiles": {
