@@ -371,12 +371,12 @@
       "data-unavailable": "Weather data unavailable",
       "details": {
         "elevation": "Elevation",
-        "uv-index": "UV Index",
         "sunrise": "Sunrise",
         "sunset": "Sunset",
         "temp-max": "Temperature Max",
         "temp-min": "Temperature Min",
         "timezone": "Timezone",
+        "uv-index": "UV Index",
         "wind": "Wind"
       },
       "disabled": "Enable [weather] in config.toml",
@@ -2884,6 +2884,10 @@
           "description": "Tray item ids to hide",
           "label": "Hidden Items"
         },
+        "hide-album-art": {
+          "description": "Hide the album artwork",
+          "label": "Hide Album Art"
+        },
         "hide-empty-workspaces": {
           "description": "When grouping by workspace, omit capsules that have no running windows in the taskbar list.",
           "label": "Hide Empty Workspaces"
@@ -2924,10 +2928,6 @@
         "hide-when-single-layout": {
           "description": "Hide the keyboard layout widget unless more than one layout is configured",
           "label": "Hide When Single Layout"
-        },
-        "hide-album-art": {
-          "description": "Hide the album artwork",
-          "label": "Hide Album Art"
         },
         "highlight-color": {
           "description": "Color reached at or above the critical threshold",

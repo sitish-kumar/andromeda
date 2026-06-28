@@ -376,6 +376,7 @@
         "temp-max": "最高温度",
         "temp-min": "最低温度",
         "timezone": "时区",
+        "uv-index": "紫外线指数",
         "wind": "风速"
       },
       "disabled": "在 config.toml 中启用 [weather]",
@@ -637,7 +638,7 @@
     },
     "internal": {
       "battery": "电池",
-      "battery-critical-body": "{device}: {percent}% - 电脑即将关机",
+      "battery-critical-body": "{device}：{percent}% - 即将关机",
       "battery-critical-title": "电量严重不足",
       "battery-device": "电池设备",
       "battery-low-body": "{device}：剩余 {percent}%",
@@ -774,6 +775,7 @@
     },
     "badges": {
       "advanced": "高级",
+      "community": "社区",
       "inherited": "已继承",
       "monitor": "屏幕",
       "official": "官方",
@@ -1023,6 +1025,7 @@
         "general": "常规",
         "grouping": "组合",
         "home": "主页",
+        "hot-corners": "触发角",
         "idle": "空闲",
         "interface": "界面",
         "keybinds": "快捷键",
@@ -1154,6 +1157,13 @@
         "ultra-heavy": "Ultra Heavy",
         "ultra-light": "Ultra Light"
       },
+      "hot-corners": {
+        "command": "运行命令",
+        "control-center": "控制中心",
+        "launcher": "启动器",
+        "none": "无",
+        "window-switcher": "窗口切换器"
+      },
       "layer": {
         "overlay": "Overlay",
         "top": "Top"
@@ -1253,6 +1263,7 @@
       }
     },
     "plugins": {
+      "browse-store": "浏览插件",
       "panels": {
         "open-near-click": {
           "description": "在触发该面板的状态栏小组件附近打开",
@@ -1270,9 +1281,10 @@
       "plugins": {
         "configure": "配置",
         "deprecated": "已弃用",
-        "empty": "未找到插件。请添加插件源或检查网络连接。",
-        "loading": "正在加载插件…",
-        "refreshing": "正在刷新插件…",
+        "empty": "未启用任何插件。",
+        "loading": "正在加载插件...",
+        "refreshing": "正在刷新插件...",
+        "remove": "移除插件",
         "requires": "依赖：{dependencies}",
         "requires-newer-noctalia": "需要更新版本的 Noctalia",
         "title": "插件"
@@ -1307,6 +1319,17 @@
         "title": "源",
         "update": "更新",
         "update-on-startup": "启动时更新"
+      },
+      "store": {
+        "add": "添加到 Noctalia",
+        "category-all": "全部",
+        "empty": "未找到插件",
+        "incompatible": "不兼容",
+        "loading": "正在加载目录...",
+        "no-readme": "没有可用的描述。",
+        "results-count": "共 {count} 个插件",
+        "search-placeholder": "搜索插件...",
+        "title": "插件商店"
       }
     },
     "schema": {
@@ -1558,6 +1581,42 @@
         }
       },
       "desktop": {
+        "hot-corners-bottom-left": {
+          "description": "鼠标指针触碰左下角时执行的操作",
+          "label": "左下角"
+        },
+        "hot-corners-bottom-left-command": {
+          "description": "触碰左下角时执行的 Shell 命令",
+          "label": "命令"
+        },
+        "hot-corners-bottom-right": {
+          "description": "鼠标指针触碰右下角时执行的操作",
+          "label": "右下角"
+        },
+        "hot-corners-bottom-right-command": {
+          "description": "触碰右下角时执行的 Shell 命令",
+          "label": "命令"
+        },
+        "hot-corners-enabled": {
+          "description": "将鼠标指针移动至屏幕角落时触发指定操作",
+          "label": "触发角"
+        },
+        "hot-corners-top-left": {
+          "description": "鼠标指针触碰左上角时执行的操作",
+          "label": "左上角"
+        },
+        "hot-corners-top-left-command": {
+          "description": "触碰左上角时执行的 Shell 命令",
+          "label": "命令"
+        },
+        "hot-corners-top-right": {
+          "description": "鼠标指针触碰右上角时执行的操作",
+          "label": "右上角"
+        },
+        "hot-corners-top-right-command": {
+          "description": "触碰右上角时执行的 Shell 命令",
+          "label": "命令"
+        },
         "screen-corners-enabled": {
           "description": "使用黑色覆盖层绘制屏幕圆角",
           "label": "屏幕圆角"
@@ -1766,7 +1825,7 @@
       },
       "idle": {
         "behaviors": {
-          "description": "包含预设（锁定、关闭屏幕、挂起）或自定义命令的具名空闲行为，支持配置超时时间、恢复命令以及执行顺序",
+          "description": "包含预设（锁定、关闭屏幕、挂起）或自定义命令的具名空闲行为，支持配置超时时间、恢复命令及排列顺序",
           "label": "行为"
         },
         "pre-action-fade": {
@@ -2094,7 +2153,7 @@
           "placeholder": "城市, 国家"
         },
         "location-auto-locate": {
-          "description": "从 IP 地址自动检测你的位置",
+          "description": "通过 noctalia.dev，根据 IP 地址自动定位",
           "label": "自动定位（IP）"
         },
         "longitude": {
@@ -2185,7 +2244,7 @@
           "placeholder": "/path/to/sound.wav"
         },
         "weather": {
-          "description": "启用天气服务",
+          "description": "启用天气服务，数据来自 open-meteo.com",
           "label": "天气"
         },
         "weather-effects": {
@@ -2825,6 +2884,10 @@
           "description": "需要隐藏的托盘项 ID",
           "label": "隐藏项目"
         },
+        "hide-album-art": {
+          "description": "隐藏专辑封面",
+          "label": "隐藏专辑封面"
+        },
         "hide-empty-workspaces": {
           "description": "按工作区分组时，隐藏任务栏中无窗口的工作区胶囊。",
           "label": "隐藏空工作区"
@@ -3320,7 +3383,7 @@
         "showers": "阵雨",
         "snow": "雪",
         "snow-showers": "阵雪",
-        "storm": "暴雨",
+        "storm": "雷阵雨",
         "weather": "天气"
       }
     },

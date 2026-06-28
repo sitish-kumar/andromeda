@@ -441,7 +441,7 @@
         "fade-when-idle": "Dissolvi quando inattivo",
         "font-family": "Carattere",
         "font-family-default": "Predefinito di sistema",
-        "forecast-days": "N. Giorni",
+        "forecast-days": "Numero di giorni",
         "format": "Formato",
         "gauge-layout": "Layout Gauge",
         "glyph": "Glifo",
@@ -774,6 +774,7 @@
     },
     "badges": {
       "advanced": "Avanzato",
+      "community": "Community",
       "inherited": "Ereditato",
       "monitor": "Monitor",
       "official": "Ufficiale",
@@ -1023,6 +1024,7 @@
         "general": "Generale",
         "grouping": "Raggruppamento",
         "home": "Home",
+        "hot-corners": "Angoli attivi",
         "idle": "Inattività",
         "interface": "Interfaccia",
         "keybinds": "Scorciatoie",
@@ -1154,6 +1156,13 @@
         "ultra-heavy": "Ultrapesante",
         "ultra-light": "Ultraleggero"
       },
+      "hot-corners": {
+        "command": "Esegui comando",
+        "control-center": "Control Center",
+        "launcher": "Launcher",
+        "none": "Nessuno",
+        "window-switcher": "Switcher finestre"
+      },
       "layer": {
         "overlay": "Sovrapposto",
         "top": "In alto"
@@ -1253,6 +1262,7 @@
       }
     },
     "plugins": {
+      "browse-store": "Sfoglia plugin",
       "panels": {
         "open-near-click": {
           "description": "Apri il pannello vicino al widget della barra che lo ha attivato",
@@ -1273,6 +1283,7 @@
         "empty": "Nessun plugin trovato. Aggiungi una sorgente o controlla la rete",
         "loading": "Caricamento plugin...",
         "refreshing": "Aggiornamento plugin...",
+        "remove": "Rimuovi plugin",
         "requires": "Richiede: {dependencies}",
         "requires-newer-noctalia": "Richiede Noctalia aggiornato",
         "title": "Elenco plugin"
@@ -1307,6 +1318,17 @@
         "title": "Sorgenti",
         "update": "Aggiorna",
         "update-on-startup": "Aggiorna all'avvio"
+      },
+      "store": {
+        "add": "Aggiungi a Noctalia",
+        "category-all": "Tutti",
+        "empty": "Nessun plugin trovato",
+        "incompatible": "Incompatibile",
+        "loading": "Caricamento catalogo...",
+        "no-readme": "Nessuna descrizione disponibile.",
+        "results-count": "{count} plugin",
+        "search-placeholder": "Ricerca plugin...",
+        "title": "Plugin Store"
       }
     },
     "schema": {
@@ -1558,6 +1580,42 @@
         }
       },
       "desktop": {
+        "hot-corners-bottom-left": {
+          "description": "Azione quando il puntatore tocca l'angolo inferiore sinistro",
+          "label": "Angolo inferiore sinistro"
+        },
+        "hot-corners-bottom-left-command": {
+          "description": "Comando shell da eseguire quando si tocca l'angolo inferiore sinistro",
+          "label": "Comando"
+        },
+        "hot-corners-bottom-right": {
+          "description": "Azione quando il puntatore tocca l'angolo inferiore destro",
+          "label": "Angolo inferiore destro"
+        },
+        "hot-corners-bottom-right-command": {
+          "description": "Comando shell da eseguire quando si tocca l'angolo superiore sinistro",
+          "label": "Comando"
+        },
+        "hot-corners-enabled": {
+          "description": "Attiva azioni portando il puntatore del mouse agli angoli dello schermo",
+          "label": "Angoli attivi"
+        },
+        "hot-corners-top-left": {
+          "description": "Azione quando il puntatore tocca l'angolo superiore sinistro",
+          "label": "Angolo superiore sinistro"
+        },
+        "hot-corners-top-left-command": {
+          "description": "Comando shell da eseguire quando si tocca l'angolo superiore sinistro",
+          "label": "Comando"
+        },
+        "hot-corners-top-right": {
+          "description": "Azione quando il puntatore tocca l'angolo superiore destro",
+          "label": "Angolo superiore destro"
+        },
+        "hot-corners-top-right-command": {
+          "description": "Comando shell da eseguire quando si tocca l'angolo superiore destro",
+          "label": "Comando"
+        },
         "screen-corners-enabled": {
           "description": "Arrotonda gli angoli dello schermo con un overlay nero",
           "label": "Angoli schermo"
@@ -2416,7 +2474,7 @@
           "label": "Filtro Regex microfono"
         },
         "screen-time-enabled": {
-          "description": "Monitora l'uso per app e mostralo nel Centro di controllo",
+          "description": "Monitora l'uso per app e lo mostra nel centro di controllo",
           "label": "Tempo schermo"
         },
         "screen-time-reset": {
