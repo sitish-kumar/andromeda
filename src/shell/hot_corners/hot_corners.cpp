@@ -28,7 +28,9 @@ void HotCorners::initialize(WaylandConnection& wayland, ConfigService* config, R
 
 void HotCorners::onConfigReload() {
   const auto& config = m_config->config().hotCorners;
-  if (config.enabled != m_lastEnabled) {
+  // Recreate whenever enabled (not just on an enabled toggle): the resolved
+  // trigger layer follows the bar's layer, which a reload may have changed.
+  if (config.enabled || config.enabled != m_lastEnabled) {
     onOutputChange();
   }
 }
@@ -80,11 +82,13 @@ void HotCorners::triggerAction(const std::string& action, const std::string& com
 }
 
 void HotCorners::buildCorner(Corner& corner, int position, wl_output* output) {
-  // Overlay layer (topmost) + created after the bar/dock so the trigger zone is
-  // never occluded by shell chrome in the corner (a Top-layer bar would otherwise
-  // swallow the pointer). Transient surfaces opened later (panels, popups, the
-  // lock screen) are created after these and still stack above them.
-  const LayerShellLayer layer = LayerShellLayer::Overlay;
+  // Sit on the highest layer any bar occupies on this output (Top or Overlay),
+  // and create after the bar/dock so the trigger zone is never occluded by shell
+  // chrome in the corner (a same-layer bar would otherwise swallow the pointer).
+  // Tracking the bar's layer rather than always Overlay keeps the corners out of
+  // the way of fullscreen/gaming surfaces when the bar is only on Top. Transient
+  // surfaces opened later (panels, popups, the lock screen) still stack above.
+  const LayerShellLayer layer = m_app->hotCornerLayerForOutput(output);
   constexpr std::int32_t size = kTriggerZoneSize;
 
   std::uint32_t anchor = 0;

@@ -1160,6 +1160,10 @@ void Application::startTrayService() {
   }
 }
 
+LayerShellLayer Application::hotCornerLayerForOutput(wl_output* output) const noexcept {
+  return m_bar.highestLayerForOutput(output);
+}
+
 void Application::triggerShellAction(const std::string& action, wl_output* output) {
   if (action == "launcher") {
     m_panelManager.togglePanel("launcher", PanelOpenRequest{.output = output});
