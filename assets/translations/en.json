@@ -368,6 +368,15 @@
       "weather": "Weather"
     },
     "weather": {
+      "daily": {
+        "tooltip": {
+          "condition": "Condition",
+          "high": "High",
+          "low": "Low",
+          "sunrise": "Sunrise",
+          "sunset": "Sunset"
+        }
+      },
       "data-unavailable": "Weather data unavailable",
       "details": {
         "elevation": "Elevation",
@@ -385,6 +394,19 @@
         "day": "Sunday",
         "description": "Weather",
         "temperature": "10 / 4C"
+      },
+      "forecast-view": {
+        "daily": "Daily",
+        "hourly": "Hourly"
+      },
+      "hourly": {
+        "summary": "{condition} / Rain {precip}%",
+        "tooltip": {
+          "condition": "Condition",
+          "humidity": "Humidity",
+          "rain": "Rain",
+          "wind": "Wind"
+        }
       },
       "location-unavailable": "Location unavailable",
       "no-location-body": "Add your address or enable auto-locate in Location settings.",

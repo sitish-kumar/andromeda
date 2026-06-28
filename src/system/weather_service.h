@@ -33,6 +33,16 @@ struct WeatherDailyUnits {
   std::string sunset;
 };
 
+struct WeatherHourlyUnits {
+  std::string time;
+  std::string temperature;
+  std::string relativeHumidity;
+  std::string precipitationProbability;
+  std::string weatherCode;
+  std::string isDay;
+  std::string windSpeed;
+};
+
 struct WeatherCurrentConditions {
   std::string timeIso;
   std::int32_t intervalSeconds = 0;
@@ -53,6 +63,16 @@ struct WeatherForecastDay {
   std::string sunsetIso;
 };
 
+struct WeatherForecastHour {
+  std::string timeIso;
+  std::int32_t weatherCode = 0;
+  double temperatureC = 0.0;
+  std::int32_t relativeHumidityPercent = 0;
+  std::int32_t precipitationProbabilityPercent = 0;
+  bool isDay = true;
+  double windSpeedKmh = 0.0;
+};
+
 struct WeatherSnapshot {
   bool valid = false;
   std::string locationName;
@@ -66,7 +86,9 @@ struct WeatherSnapshot {
   double elevationM = 0.0;
   WeatherCurrentUnits currentUnits;
   WeatherDailyUnits dailyUnits;
+  WeatherHourlyUnits hourlyUnits;
   WeatherCurrentConditions current;
+  std::vector<WeatherForecastHour> forecastHours;
   std::vector<WeatherForecastDay> forecastDays;
   std::chrono::system_clock::time_point fetchedAt;
 };
