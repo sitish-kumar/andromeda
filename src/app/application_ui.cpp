@@ -686,8 +686,6 @@ void Application::initNotificationAndOsd() {
   );
   m_screenCorners.initialize(m_wayland, &m_configService, &m_renderContext);
   m_screenCorners.onConfigReload();
-  m_hotCorners.initialize(m_wayland, &m_configService, &m_renderContext);
-  m_hotCorners.onConfigReload();
 }
 
 void Application::initBarDockAndLayout() {
@@ -933,4 +931,10 @@ void Application::initWidgetControllersAndCallbacks() {
       }
     });
   }
+
+  // Created last so the corner trigger surfaces stack above the bar and dock on
+  // their shared Overlay layer; same ordering is preserved on hot reload in
+  // initWaylandCallbacks (bar/dock onOutputChange run before hot corners').
+  m_hotCorners.initialize(m_wayland, &m_configService, &m_renderContext);
+  m_hotCorners.onConfigReload();
 }

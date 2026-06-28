@@ -5,6 +5,15 @@
 #include "render/scene/input_area.h"
 #include "wayland/wayland_connection.h"
 
+#include <cstdint>
+
+namespace {
+  // Edge length (logical px) of each corner trigger surface. The cursor pins to the
+  // exact corner pixel on a flick, so a tiny zone suffices; keep it minimal to
+  // barely intercept pointer input over surfaces beneath it.
+  constexpr std::int32_t kTriggerZoneSize = 2;
+} // namespace
+
 HotCorners::HotCorners(Application* app) : m_app(app) {}
 
 HotCorners::~HotCorners() { destroySurfaces(); }
@@ -71,7 +80,12 @@ void HotCorners::triggerAction(const std::string& action, const std::string& com
 }
 
 void HotCorners::buildCorner(Corner& corner, int position, wl_output* output) {
-  LayerShellLayer layer = LayerShellLayer::Bottom;
+  // Overlay layer (topmost) + created after the bar/dock so the trigger zone is
+  // never occluded by shell chrome in the corner (a Top-layer bar would otherwise
+  // swallow the pointer). Transient surfaces opened later (panels, popups, the
+  // lock screen) are created after these and still stack above them.
+  const LayerShellLayer layer = LayerShellLayer::Overlay;
+  constexpr std::int32_t size = kTriggerZoneSize;
 
   std::uint32_t anchor = 0;
   std::string cornerKey;
@@ -93,18 +107,19 @@ void HotCorners::buildCorner(Corner& corner, int position, wl_output* output) {
       .nameSpace = "hot_corner_" + cornerKey,
       .layer = layer,
       .anchor = anchor,
-      .width = 1,
-      .height = 1,
-      .exclusiveZone = 0,
+      .width = static_cast<std::uint32_t>(size),
+      .height = static_cast<std::uint32_t>(size),
+      // -1: ignore other surfaces' exclusive zones so the corner anchors to the
+      // absolute screen edge instead of being pushed inward by the bar's zone.
+      .exclusiveZone = -1,
   };
 
   corner.surface = std::make_unique<LayerSurface>(*m_wayland, surfaceConfig);
   corner.surface->initialize(output);
 
   auto inputArea = std::make_unique<InputArea>();
-  // 1x1 region
   inputArea->setPosition(0, 0);
-  inputArea->setSize(1, 1);
+  inputArea->setSize(static_cast<float>(size), static_cast<float>(size));
   inputArea->setOnEnter([this, position, output](const InputArea::PointerData&) {
     const auto& config = m_config->config().hotCorners;
     std::string action;

@@ -1371,7 +1371,6 @@ struct PluginsConfig {
 [[nodiscard]] bool isValidPluginSourceName(std::string_view name);
 struct HotCornersConfig {
   bool enabled = false;
-  std::int32_t delayMs = 150;
 
   struct Corner {
     std::string action = "none";
