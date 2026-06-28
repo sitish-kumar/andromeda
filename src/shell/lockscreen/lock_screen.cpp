@@ -5,6 +5,7 @@
 #include "config/config_service.h"
 #include "config/config_types.h"
 #include "core/deferred_call.h"
+#include "core/key_chord.h"
 #include "core/keybind_matcher.h"
 #include "core/log.h"
 #include "ext-session-lock-v1-client-protocol.h"
@@ -308,7 +309,10 @@ void LockScreen::onKeyboardEvent(const KeyboardEvent& event) {
     return;
   }
 
-  if (KeybindMatcher::matches(KeybindAction::Validate, event.sym, event.modifiers)) {
+  // The password field always owns plain printable keys; Space is a Validate
+  // chord but must type a space, not submit (passwords may contain spaces).
+  if (!isPlainPrintableKey(event.utf32, event.modifiers, event.preedit)
+      && KeybindMatcher::matches(KeybindAction::Validate, event.sym, event.modifiers)) {
     tryAuthenticate();
     return;
   }
