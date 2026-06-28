@@ -6,6 +6,7 @@
 #include "ui/palette.h"
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -90,6 +91,11 @@ private:
   void startSnapToZero();
   void applyScrollPosition();
   void syncHoverInteraction();
+
+  // Guard token for deferred callbacks that run on the next main-loop tick.
+  // Callbacks capture a weak_ptr so they can detect destruction without
+  // relying on a raw this pointer staying valid.
+  std::shared_ptr<void> m_aliveGuard = std::make_shared<int>(0);
 
   TextNode* m_textNode = nullptr;
   float m_minWidth = 0.0f;

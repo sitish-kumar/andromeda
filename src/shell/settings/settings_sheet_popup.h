@@ -71,6 +71,11 @@ namespace settings {
   private:
     void dismissOpenSelectDropdown();
 
+    // Guard token for deferred callbacks that run on the next main-loop tick.
+    // Callbacks capture a weak_ptr so they can detect destruction without
+    // relying on a raw this pointer staying valid.
+    std::shared_ptr<void> m_aliveGuard = std::make_shared<int>(0);
+
     float m_scale = 1.0f;
     float m_minWidth = 640.0f;
     float m_maxWidth = 820.0f;

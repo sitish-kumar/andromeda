@@ -310,7 +310,13 @@ void Label::startMarqueeLoop() {
         m_scrollOffset = 0.0f;
         applyScrollPosition();
         markPaintDirty();
-        DeferredCall::callLater([this]() { startMarqueeLoop(); });
+        const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+        DeferredCall::callLater([this, aliveGuard]() {
+          if (aliveGuard.expired()) {
+            return;
+          }
+          startMarqueeLoop();
+        });
       },
       this
   );

@@ -105,7 +105,11 @@ namespace settings {
     }
     // Defer: control callbacks fire mid-dispatch; rebuilding the body destroys the nodes being
     // dispatched. Re-run populate on the next loop tick, then re-measure/resize.
-    DeferredCall::callLater([this]() {
+    const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+    DeferredCall::callLater([this, aliveGuard]() {
+      if (aliveGuard.expired()) {
+        return;
+      }
       if (!isOpen() || m_contentNode == nullptr) {
         return;
       }
@@ -217,7 +221,11 @@ namespace settings {
             .padding = Style::spaceXs * m_scale,
             .radius = Style::scaledRadiusMd(m_scale),
             .onClick = [this]() {
-              DeferredCall::callLater([this]() {
+              const std::weak_ptr<void> aliveGuard = m_aliveGuard;
+              DeferredCall::callLater([this, aliveGuard]() {
+                if (aliveGuard.expired()) {
+                  return;
+                }
                 if (m_onCloseRequested && m_onCloseRequested()) {
                   return;
                 }
