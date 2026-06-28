@@ -725,10 +725,18 @@ namespace settings {
       add(segmentedSpec("display", "short", shortFull));
     } else if (type == "media") {
       const WidgetSettingVisibility notAlbumArtOnly{"album_art_only", {"false"}};
+      const WidgetSettingVisibility notHideAlbumArt{"hide_album_art", {"false"}};
       {
         auto albumArtOnly = boolSpec("album_art_only", false);
         albumArtOnly.horizontalBarOnly = true;
+        albumArtOnly.visibleWhen = notHideAlbumArt;
         add(std::move(albumArtOnly));
+      }
+      {
+        auto hideAlbumArt = boolSpec("hide_album_art", false);
+        hideAlbumArt.horizontalBarOnly = true;
+        hideAlbumArt.visibleWhen = notAlbumArtOnly;
+        add(std::move(hideAlbumArt));
       }
       {
         auto minLength = intSpec("min_length", 80, 0.0, 800.0, 1.0);

@@ -2924,6 +2924,10 @@
           "description": "Hide the keyboard layout widget unless more than one layout is configured",
           "label": "Hide When Single Layout"
         },
+        "hide-album-art": {
+          "description": "Hide the album artwork",
+          "label": "Hide Album Art"
+        },
         "highlight-color": {
           "description": "Color reached at or above the critical threshold",
           "label": "Highlight Color"
