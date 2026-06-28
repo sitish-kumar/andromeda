@@ -2206,6 +2206,28 @@ std::string TaskbarWidget::resolveIconPath(const std::string& appId, const std::
 }
 
 bool TaskbarWidget::activeWorkspaceIndex(std::size_t& index) const {
+  // Try to find the workspace of the globally active task first
+  for (const auto& task : m_tasks) {
+    if (task.active) {
+      for (std::size_t i = 0; i < m_workspaces.size(); ++i) {
+        if (taskInWorkspaceGroup(task, m_workspaces[i])) {
+          index = i;
+          return true;
+        }
+      }
+      break; // Found active task, but it doesn't belong to any workspace we have
+    }
+  }
+
+  // Fallback to the active workspace on the current output
+  for (std::size_t i = 0; i < m_workspaces.size(); ++i) {
+    if (m_workspaces[i].workspace.active && m_workspaces[i].hostOutput == m_output) {
+      index = i;
+      return true;
+    }
+  }
+
+  // Fallback to any active workspace
   for (std::size_t i = 0; i < m_workspaces.size(); ++i) {
     if (m_workspaces[i].workspace.active) {
       index = i;
