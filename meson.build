@@ -526,6 +526,7 @@ _noctalia_sources = files(
   'src/scripting/plugin_git.cpp',
   'src/scripting/plugin_i18n.cpp',
   'src/scripting/plugin_ipc.cpp',
+  'src/scripting/plugin_lint.cpp',
   'src/scripting/plugin_manager.cpp',
   'src/scripting/plugin_manifest.cpp',
   'src/scripting/plugin_panel_shell.cpp',
