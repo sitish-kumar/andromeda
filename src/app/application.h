@@ -147,6 +147,9 @@ public:
 
   bool runUserCommand(const std::string& command);
   void triggerShellAction(const std::string& action, wl_output* output = nullptr);
+  // Highest layer-shell layer occupied by any bar on the given output. Hot
+  // corners place their trigger surfaces on this layer.
+  [[nodiscard]] LayerShellLayer hotCornerLayerForOutput(wl_output* output) const noexcept;
 
 private:
   void initServices();

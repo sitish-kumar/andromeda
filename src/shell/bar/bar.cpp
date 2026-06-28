@@ -1586,6 +1586,20 @@ std::optional<std::string> Bar::layerForBar(wl_output* output, std::string_view 
   return instance->barConfig.layer;
 }
 
+LayerShellLayer Bar::highestLayerForOutput(wl_output* output) const noexcept {
+  LayerShellLayer highest = LayerShellLayer::Top;
+  for (const auto& instance : m_instances) {
+    if (instance->output != output || !instance->barConfig.enabled) {
+      continue;
+    }
+    const LayerShellLayer layer = layerShellLayerFromConfig(instance->barConfig.layer);
+    if (static_cast<std::uint32_t>(layer) > static_cast<std::uint32_t>(highest)) {
+      highest = layer;
+    }
+  }
+  return highest;
+}
+
 bool Bar::isAttachedPanelBarSettled(wl_output* output, std::string_view barName) const noexcept {
   const BarInstance* instance = instanceForBar(output, barName);
   if (instance == nullptr || !instance->barConfig.autoHide) {
