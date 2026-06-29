@@ -99,6 +99,7 @@
 #include <limits>
 #include <malloc.h>
 #include <optional>
+#include <ranges>
 #include <stdexcept>
 #include <string_view>
 #include <utility>
@@ -216,10 +217,10 @@ void Application::initIpc() {
         // invoke its "default" action so the source application raises/focuses its window.
         // all() stores notifications oldest-first (push_back), so iterate in reverse for newest.
         const auto& notifications = m_notificationManager.all();
-        for (auto it = notifications.rbegin(); it != notifications.rend(); ++it) {
-          const auto& actions = it->actions; // pairs: [key, label, ...]; "default" must be first.
+        for (const auto& notification : std::views::reverse(notifications)) {
+          const auto& actions = notification.actions; // pairs: [key, label, ...]; "default" must be first.
           if (actions.size() >= 2 && actions[0] == "default") {
-            if (!m_notificationManager.invokeAction(it->id, "default", true)) {
+            if (!m_notificationManager.invokeAction(notification.id, "default", true)) {
               return "error: invokeAction failed\n";
             }
             if (m_panelManager.isOpenPanel("control-center")) {
