@@ -59,7 +59,7 @@ public:
       UPowerService* upower, IdleManager* idleManager, CompositorPlatform* platform, AccountsService* accounts = nullptr
   );
 
-  void open();
+  void open(std::string context = "");
   void openToBarWidget(std::string barName, std::string widgetName);
   void close();
   [[nodiscard]] bool isOpen() const noexcept { return m_surface != nullptr && m_surface->isRunning(); }

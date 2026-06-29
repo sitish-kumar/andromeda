@@ -410,14 +410,16 @@ void Application::initInputDispatch() {
 void Application::initPanelManagerAndPanels() {
   // Panel manager must be before bar so widgets can access PanelManager::instance()
   m_panelManager.initialize(m_compositorPlatform, &m_configService, &m_renderContext);
-  m_panelManager.setOpenSettingsWindowCallback([this]() { m_settingsWindow.open(); });
+  m_panelManager.setOpenSettingsWindowCallback([this](std::string context) {
+    m_settingsWindow.open(std::move(context));
+  });
   m_panelManager.setCloseSettingsWindowCallback([this]() { m_settingsWindow.close(); });
-  m_panelManager.setToggleSettingsWindowCallback([this]() {
+  m_panelManager.setToggleSettingsWindowCallback([this](std::string context) {
     if (m_settingsWindow.isOpen()) {
       m_settingsWindow.close();
       return;
     }
-    m_settingsWindow.open();
+    m_settingsWindow.open(std::move(context));
   });
   m_panelManager.setCloseDesktopWidgetsEditorCallback([this]() {
     if (m_desktopWidgetsController.isEditing()) {

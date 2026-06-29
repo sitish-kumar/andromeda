@@ -317,7 +317,7 @@ void PanelManager::initialize(CompositorPlatform& platform, ConfigService* confi
   m_clickShield.initialize(platform.wayland());
 }
 
-void PanelManager::setOpenSettingsWindowCallback(std::function<void()> callback) {
+void PanelManager::setOpenSettingsWindowCallback(std::function<void(std::string)> callback) {
   m_openSettingsWindow = std::move(callback);
 }
 
@@ -325,7 +325,7 @@ void PanelManager::setCloseSettingsWindowCallback(std::function<void()> callback
   m_closeSettingsWindow = std::move(callback);
 }
 
-void PanelManager::setToggleSettingsWindowCallback(std::function<void()> callback) {
+void PanelManager::setToggleSettingsWindowCallback(std::function<void(std::string)> callback) {
   m_toggleSettingsWindow = std::move(callback);
 }
 
@@ -333,12 +333,12 @@ void PanelManager::setCloseDesktopWidgetsEditorCallback(std::function<void()> ca
   m_closeDesktopWidgetsEditor = std::move(callback);
 }
 
-void PanelManager::openSettingsWindow() {
+void PanelManager::openSettingsWindow(std::string context) {
   if (isOpen() && !m_closing) {
     closePanel();
   }
   if (m_openSettingsWindow) {
-    m_openSettingsWindow();
+    m_openSettingsWindow(std::move(context));
   }
 }
 
@@ -348,16 +348,16 @@ void PanelManager::closeSettingsWindow() {
   }
 }
 
-void PanelManager::toggleSettingsWindow() {
+void PanelManager::toggleSettingsWindow(std::string context) {
   if (isOpen() && !m_closing) {
     closePanel();
   }
   if (m_toggleSettingsWindow) {
-    m_toggleSettingsWindow();
+    m_toggleSettingsWindow(std::move(context));
     return;
   }
   if (m_openSettingsWindow) {
-    m_openSettingsWindow();
+    m_openSettingsWindow(std::move(context));
   }
 }
 
@@ -2366,14 +2366,12 @@ void PanelManager::registerIpc(IpcService& ipc) {
 
   ipc.registerHandler(
       "settings-open",
-      [this, rejectSettingsArgs](const std::string& args) -> std::string {
-        if (auto error = rejectSettingsArgs(args, "settings-open")) {
-          return *error;
-        }
-        openSettingsWindow();
+      [this](const std::string& args) -> std::string {
+        openSettingsWindow(std::string(StringUtils::trimLeftView(args)));
         return "ok\n";
       },
-      "settings-open", "Open the settings window, or focus it if already open"
+      "settings-open [context]",
+      "Open the settings window, or focus it if already open, optionally at a specific section"
   );
 
   ipc.registerHandler(
@@ -2390,13 +2388,10 @@ void PanelManager::registerIpc(IpcService& ipc) {
 
   ipc.registerHandler(
       "settings-toggle",
-      [this, rejectSettingsArgs](const std::string& args) -> std::string {
-        if (auto error = rejectSettingsArgs(args, "settings-toggle")) {
-          return *error;
-        }
-        toggleSettingsWindow();
+      [this](const std::string& args) -> std::string {
+        toggleSettingsWindow(std::string(StringUtils::trimLeftView(args)));
         return "ok\n";
       },
-      "settings-toggle", "Toggle the settings window"
+      "settings-toggle [context]", "Toggle the settings window, optionally at a specific section"
   );
 }
