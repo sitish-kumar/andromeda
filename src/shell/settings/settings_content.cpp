@@ -28,9 +28,11 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -1278,42 +1280,43 @@ namespace settings {
     Flex* activeKeybindRow = nullptr;
     std::size_t activeKeybindRowCount = 0;
     std::size_t visibleEntries = 0;
+    // Very short queries (one or two letters) match hundreds of entries and building the subtree for every match is
+    // costly. Cap how many results we render and hint that the list was truncated.
+    constexpr std::size_t kMaxSearchResults = 50;
+    bool truncated = false;
     const std::string normalizedSearchQuery = normalizedSettingQuery(ctx.searchQuery);
 
     BarWidgetEditorContext barWidgetEditorCtx = makeBarWidgetEditorContext(factory);
 
-    auto visibilityConditionMatches = [&](const SettingVisibilityCondition& cond) -> bool {
-      for (const auto& other : registry) {
-        if (other.path == cond.path) {
-          std::string currentValue;
-          if (const auto* toggle = std::get_if<ToggleSetting>(&other.control)) {
-            currentValue = toggle->checked ? "true" : "false";
-          } else if (const auto* select = std::get_if<SelectSetting>(&other.control)) {
-            currentValue = select->selectedValue;
-          } else if (const auto* text = std::get_if<TextSetting>(&other.control)) {
-            currentValue = text->value;
-          }
-          for (const auto& v : cond.values) {
-            if (v == currentValue) {
-              return true;
-            }
-          }
-          return false;
-        }
+    // Visibility conditions reference other settings by path. Build an index once so each
+    // visibility check is an O(1) lookup instead of full registry scan.
+    const auto joinPath = [](const std::vector<std::string>& path) {
+      return path | std::views::join_with('\x1f') | std::ranges::to<std::string>();
+    };
+    std::unordered_map<std::string, std::string> visibilityValues;
+    for (const auto& other : registry) {
+      if (const auto* toggle = std::get_if<ToggleSetting>(&other.control)) {
+        visibilityValues.emplace(joinPath(other.path), toggle->checked ? "true" : "false");
+      } else if (const auto* select = std::get_if<SelectSetting>(&other.control)) {
+        visibilityValues.emplace(joinPath(other.path), select->selectedValue);
+      } else if (const auto* text = std::get_if<TextSetting>(&other.control)) {
+        visibilityValues.emplace(joinPath(other.path), text->value);
       }
-      return true;
+    }
+
+    auto visibilityConditionMatches = [&](const SettingVisibilityCondition& cond) -> bool {
+      const auto it = visibilityValues.find(joinPath(cond.path));
+      if (it == visibilityValues.end()) {
+        return true;
+      }
+      return std::ranges::contains(cond.values, it->second);
     };
 
     auto isEntryVisible = [&](const SettingEntry& e) -> bool {
       if (!e.visibleWhen.has_value()) {
         return true;
       }
-      for (const auto& cond : e.visibleWhen->all) {
-        if (!visibilityConditionMatches(cond)) {
-          return false;
-        }
-      }
-      return true;
+      return std::ranges::all_of(e.visibleWhen->all, visibilityConditionMatches);
     };
 
     const std::string_view selectedBarName =
@@ -1332,6 +1335,10 @@ namespace settings {
 
     for (const std::size_t entryIndex : entryOrder) {
       const auto& entry = registry[entryIndex];
+      if (!ctx.searchQuery.empty() && visibleEntries >= kMaxSearchResults) {
+        truncated = true;
+        break;
+      }
       if (ctx.searchQuery.empty()
           && !ctx.selectedSection.empty()
           && ctx.selectedSection != "bar"
@@ -1465,6 +1472,18 @@ namespace settings {
           ui::row(
               {.align = FlexAlign::Center, .fillWidth = true}, ui::box({.flexGrow = 0.5f}), std::move(emptyState),
               ui::box({.flexGrow = 0.5f})
+          )
+      );
+    }
+
+    if (truncated) {
+      content.addChild(
+          ui::row(
+              {.align = FlexAlign::Center, .justify = FlexJustify::Center, .fillWidth = true},
+              makeLabel(
+                  i18n::tr("settings.window.search-truncated", "count", std::to_string(kMaxSearchResults)),
+                  Style::fontSizeBody * scale, colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal
+              )
           )
       );
     }
