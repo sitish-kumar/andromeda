@@ -2880,6 +2880,12 @@
           "description": "Color role used for the focused workspace; fixed hex colors are also supported",
           "label": "Focused Color"
         },
+        "focused-output-only": {
+          "description": "Only highlight the active workspace on the focused monitor",
+          "label": "Highlight Focused Monitor Only",
+          "taskbar-description": "Only use the focused color for the active workspace on the monitor that has keyboard or pointer focus; other monitors use the occupied color",
+          "workspaces-description": "Only highlight the active workspace on the monitor that has keyboard or pointer focus; other monitors show their active workspace as occupied instead"
+        },
         "font-family": {
           "description": "Typeface for this widget; leave empty to inherit the bar font",
           "label": "Font Family"
@@ -3041,12 +3047,6 @@
           "description": "Show workspace id or name labels only, without animated pills",
           "label": "Minimal Style",
           "workspaces-description": "Text-only workspace labels without pill backgrounds or slide animation"
-        },
-        "focused-output-only": {
-          "description": "Only highlight the active workspace on the focused monitor",
-          "label": "Highlight Focused Monitor Only",
-          "workspaces-description": "Only highlight the active workspace on the monitor that has keyboard or pointer focus; other monitors show their active workspace as occupied instead",
-          "taskbar-description": "Only use the focused color for the active workspace on the monitor that has keyboard or pointer focus; other monitors use the occupied color"
         },
         "mirrored": {
           "description": "Mirror the visualizer around its center",

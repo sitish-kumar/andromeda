@@ -444,6 +444,7 @@
         "bands": "Dải tần",
         "bar-width": "Chiều rộng thanh",
         "bloom-intensity": "Bloom",
+        "center-text": "Canh giữa chữ",
         "centered": "Canh giữa",
         "change-image": "Thay đổi…",
         "circle": "Vòng tròn",
@@ -454,20 +455,31 @@
         "color-1": "Màu thứ nhất",
         "color-2": "Màu thứ hai",
         "color2": "Màu 2",
+        "command": "Lệnh",
         "custom-color": "Tùy chỉnh…",
         "description": "Mô tả",
+        "display": "Hiển thị",
+        "display-gauge": "Đồng hồ đo",
+        "display-graph": "Biểu đồ",
         "fade-when-idle": "Làm mờ khi không hoạt động",
         "font-family": "Phông chữ",
         "font-family-default": "Mặc định hệ thống",
         "forecast-days": "Số ngày dự báo",
         "format": "Định dạng",
+        "gauge-layout": "Bố cục đồng hồ đo",
+        "glyph": "Ký tự",
         "hide-when-no-media": "Ẩn khi không có trình phát đang chạy",
+        "highlight-color": "Màu nổi bật",
         "horizontal": "Ngang",
+        "hover-background": "Phông khi di chuột lên",
+        "hover-foreground": "Màu chữ khi di chuột lên",
         "image-path": "Ảnh",
         "inner-diameter": "Đường kính trong",
         "input-opacity": "Độ mờ đầu vào",
         "input-radius": "Bo góc đầu vào",
         "interface": "Giao diện",
+        "label": "Chữ",
+        "label-min-width": "Độ rộng tối thiểu của chữ",
         "layout": "Bố cục",
         "mirrored": "Phản chiếu",
         "opacity": "Độ trong suốt",
@@ -495,6 +507,13 @@
         "stat-swap-pct": "Swap %",
         "stat2": "Chỉ số 2",
         "title": "Tiêu đề",
+        "variant": "Phong cách",
+        "variant-default": "Mặc định",
+        "variant-destructive": "Nguy hiểm",
+        "variant-ghost": "Ghost",
+        "variant-outline": "Viền",
+        "variant-primary": "Chính",
+        "variant-secondary": "Phụ",
         "vertical": "Dọc",
         "visualization-mode": "Chế độ",
         "visualization-mode-all": "Tất cả",
@@ -513,6 +532,7 @@
       "title": "Tiện ích màn hình nền",
       "types": {
         "audio-visualizer": "Trực quan hóa âm thanh",
+        "button": "Nút",
         "clock": "Đồng hồ",
         "fancy-audio-visualizer": "Trình hiển thị âm thanh đẹp mắt",
         "label": "Nhãn",
@@ -640,6 +660,8 @@
     },
     "internal": {
       "battery": "Pin",
+      "battery-critical-body": "{device}: {percent}% - máy tính của bạn sắp sập nguồn",
+      "battery-critical-title": "Pin yếu",
       "battery-device": "Thiết bị pin",
       "battery-low-body": "{device}: còn {percent}%",
       "battery-low-title": "Pin yếu",
@@ -657,6 +679,9 @@
       "desktop-widgets-editor": "Trình chỉnh sửa tiện ích",
       "desktop-widgets-editor-enabled": "Trình chỉnh sửa tiện ích màn hình nền đang bật. Chuyển sang một không gian làm việc trống để xem Overlay trình chỉnh sửa.",
       "greeter-sync": "Noctalia Màn hình chào mừng",
+      "greeter-sync-pending": "Đang chờ quyền quản trị viên để viết vào greeter.",
+      "greeter-sync-pending-console": "Đang chờ quyền quản trị viên. Chấp thuận ở thông báo polkit, trong TTY hoặc chạy pkexec thủ công.",
+      "greeter-sync-pending-manual": "Đã chuẩn bị tệp. Hãy chạy câu lệnh sau trong terminal: pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\". Hoặc đặt shell.greeter_sync.privilege_command (ví dụ như ghostty -e pkexec) và đồng bộ hóa lần nữa.",
       "greeter-sync-success": "Đã đồng bộ giao diện. Các thay đổi sẽ áp dụng vào màn hình đăng nhập tiếp theo.",
       "keybind-app": "Noctalia",
       "keybind-invalid-modifier": "Phím tắt này nhận một phím không kèm phím bổ trợ.",
@@ -669,6 +694,8 @@
       "lockscreen-widgets-editor-blocked-locked": "Mở khóa phiên trước khi chỉnh sửa các widget màn hình khóa.",
       "lockscreen-widgets-editor-enabled": "Trình chỉnh sửa Widget màn hình khóa đang bật. Sắp xếp các Widget trên Overlay xem trước, sau đó khóa phiên để kiểm tra bố cục.",
       "mpris-disabled": "MPRIS đã tắt",
+      "polkit-agent": "Polkit Agent",
+      "polkit-no-session": "Polkit agent cần logind, elogind, hoặc XDG_SESSION_ID. Với những hệ thống chỉ có seatd thì nó không thể chạy giao diện xác thực. Sử dụng pkexec để đông bộ hóa greeter, hoặc cài đặt elogind để có xác thực giữa session.",
       "screen-time-reset": "Thời gian sử dụng",
       "screen-time-reset-success": "Đã xóa toàn bộ dữ liệu sử dụng.",
       "session-bus-unavailable": "Bus phiên không khả dụng",
@@ -706,6 +733,13 @@
       "off": "Tắt đèn ban đêm",
       "running": "Đang chạy",
       "scheduled": "Hẹn giờ"
+    },
+    "privacy": {
+      "camera-off": "Camera đã dừng hoạt động",
+      "camera-on": "Camera đang hoạt động",
+      "mic-off": "Micrô đã dừng hoạt động",
+      "mic-on": "Mic đang hoạt động",
+      "screen-off": "Chia sẻ màn hình đã dừng lại"
     },
     "wifi": {
       "off": "Wi-Fi Tắt",
@@ -760,6 +794,7 @@
     },
     "badges": {
       "advanced": "Nâng cao",
+      "community": "Cộng đồng",
       "inherited": "Kế thừa",
       "monitor": "Màn hình",
       "official": "Chính thức",
@@ -998,6 +1033,7 @@
         "clipboard": "Bảng tạm",
         "community": "Cộng đồng",
         "control-center": "Trung tâm điều khiển",
+        "dead-zone": "Vùng chết",
         "directories": "Thư mục",
         "effects": "Hiệu ứng",
         "filtering": "Lọc",
@@ -1006,6 +1042,7 @@
         "general": "Chung",
         "grouping": "Nhóm",
         "home": "Trang chủ",
+        "hot-corners": "Hot corners",
         "idle": "Không hoạt động",
         "interface": "Giao diện",
         "keybinds": "Phím tắt",
@@ -1027,6 +1064,7 @@
         "osd": "OSD",
         "overview": "Tổng quan",
         "pinned-apps": "Ứng dụng đã ghim",
+        "polkit": "Polkit",
         "power": "Nguồn",
         "privacy-security": "Quyền riêng tư & Bảo mật",
         "profile": "Hồ sơ",
@@ -1050,9 +1088,11 @@
         "appearance": "Giao diện",
         "backdrop": "Nền",
         "bar": "Thanh",
+        "control-center": "Trung tâm điều khiển",
         "desktop": "Màn hình nền",
         "dock": "Dock",
         "hooks": "Hooks",
+        "keybinds": "Phím tắt",
         "location": "Vị trí",
         "niri": "Niri",
         "notifications": "Thông báo",
@@ -1131,6 +1171,10 @@
         "ultra-bold": "Siêu Đậm",
         "ultra-heavy": "Siêu nặng",
         "ultra-light": "Siêu sáng"
+      },
+      "hot-corners": {
+        "command": "Chạy lệnh",
+        "control-center": "Trung tâm điều khiển"
       },
       "layer": {
         "overlay": "Overlay",
@@ -1424,6 +1468,21 @@
         "corner-top-right": {
           "description": "Bán kính góc trên bên phải cho Bar"
         },
+        "dead-zone-command": {
+          "label": "Lệnh nhấp chuột trái"
+        },
+        "dead-zone-middle-command": {
+          "label": "Lệnh nhấp chuột giữa"
+        },
+        "dead-zone-right-command": {
+          "label": "Lệnh nhấp chuột phải"
+        },
+        "dead-zone-scroll-down-command": {
+          "label": "Kéo xuống"
+        },
+        "dead-zone-scroll-up-command": {
+          "label": "Kéo lên"
+        },
         "edge-margin": {
           "description": "Khoảng cách từ cạnh màn hình gần nhất; giá trị dương sẽ di chuyển thanh Bar ra xa khỏi cạnh đó"
         },
@@ -1488,6 +1547,18 @@
         }
       },
       "desktop": {
+        "hot-corners-bottom-left-command": {
+          "label": "Lệnh"
+        },
+        "hot-corners-bottom-right-command": {
+          "label": "Lệnh"
+        },
+        "hot-corners-top-left-command": {
+          "label": "Lệnh"
+        },
+        "hot-corners-top-right-command": {
+          "label": "Lệnh"
+        },
         "screen-corners-enabled": {
           "description": "Làm tròn các góc màn hình với một overlay màu đen",
           "label": "Các góc màn hình"
@@ -1721,6 +1792,14 @@
           "description": "Di chuyển tiêu điểm hoặc vùng chọn sang phải",
           "label": "Sang phải"
         },
+        "tab-next": {
+          "description": "Chuyển tiêu diểm sang tiêu diểm sau",
+          "label": "Tập trung vào tiêu điểm sau"
+        },
+        "tab-previous": {
+          "description": "Chuyển tiêu diểm sang tiêu diểm trước",
+          "label": "Tập trung vào tiêu điểm trước"
+        },
         "up": {
           "description": "Di chuyển tiêu điểm hoặc vùng chọn lên một hàng",
           "label": "Đi lên"
@@ -1847,6 +1926,9 @@
         "control-center-sidebar-section": {
           "description": "Khi mở một tab cụ thể (âm lượng, phương tiện, v.v.)",
           "label": "Thanh bên khi mở thẻ"
+        },
+        "control-center-width": {
+          "label": "Độ rộng trung tâm điều khiển"
         },
         "floating-offset": {
           "description": "Khoảng cách (tính bằng pixel) giữa bảng nổi hoặc bảng tách rời và mép của thanh",
@@ -2273,6 +2355,9 @@
         "polkit-agent": {
           "description": "Bật tác nhân xác thực tích hợp sẵn",
           "label": "Tác nhân Polkit"
+        },
+        "privacy-cam-filter-regex": {
+          "label": "Bộ lọc camera"
         },
         "screen-time-enabled": {
           "description": "Theo dõi mức sử dụng của từng ứng dụng và hiển thị trong Trung tâm điều khiển",
