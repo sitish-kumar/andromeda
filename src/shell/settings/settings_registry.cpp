@@ -2201,6 +2201,11 @@ namespace settings {
         sliderFor(cfg.brightness.minimumBrightness, noctalia::config::schema::kUnitRange, false), "floor clamp"
     ));
     entries.push_back(makeEntry(
+        SettingsSection::Services, "brightness", tr("settings.schema.services.sync-monitor-brightness.label"),
+        tr("settings.schema.services.sync-monitor-brightness.description"), {"brightness", "sync_all_monitors"},
+        ToggleSetting{.checked = cfg.brightness.syncBrightnessOfAllMonitors}, "monitor brightness"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Services, "media", tr("settings.schema.services.mpris-blacklist.label"),
         tr("settings.schema.services.mpris-blacklist.description"), {"shell", "mpris", "blacklist"},
         ListSetting{.items = cfg.shell.mpris.blacklist}, "mpris media player dbus session blacklist"

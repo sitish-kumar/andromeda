@@ -1,5 +1,6 @@
 #include "config/schema/config_schema.h"
 
+#include "config/config_types.h"
 #include "config/schema/engine.h"
 #include "config/schema/ranges.h"
 #include "core/key_chord.h"
@@ -462,6 +463,7 @@ namespace noctalia::config::schema {
   const Schema<BrightnessConfig>& brightnessSchema() {
     static const Schema<BrightnessConfig> s = {
         field(&BrightnessConfig::enableDdcutil, "enable_ddcutil"),
+        field(&BrightnessConfig::syncBrightnessOfAllMonitors, "sync_all_monitors"),
         field(&BrightnessConfig::ddcutilIgnoreMmids, "ignore_mmids"),
         field(&BrightnessConfig::minimumBrightness, "minimum_brightness", kUnitRange),
         // Map key seeds `match`; an explicit `match` key inside overrides it.
