@@ -3065,14 +3065,6 @@
           "description": "Mirror the visualizer around its center",
           "label": "Mirrored"
         },
-        "network-speed-compact": {
-          "description": "Use short unit suffixes such as 1.2M instead of 1.2 MB/s",
-          "label": "Compact Network Speed"
-        },
-        "network-speed-unit": {
-          "description": "Unit used for network receive and transmit speeds; Auto switches between B/s, kB/s, MB/s, and GB/s",
-          "label": "Network Speed Unit"
-        },
         "mute-color": {
           "description": "Color role used for the icon and label when muted; fixed hex colors are also supported",
           "label": "Mute Color"
@@ -3080,6 +3072,14 @@
         "mute-glyph": {
           "description": "Icon glyph used when muted or at 0% volume. Leave empty to use the built-in mute icon.",
           "label": "Mute Glyph"
+        },
+        "network-speed-compact": {
+          "description": "Use short unit suffixes such as 1.2M instead of 1.2 MB/s",
+          "label": "Compact Network Speed"
+        },
+        "network-speed-unit": {
+          "description": "Unit used for network receive and transmit speeds; Auto switches between B/s, kB/s, MB/s, and GB/s",
+          "label": "Network Speed Unit"
         },
         "occupied-color": {
           "description": "Color role used for occupied workspaces; fixed hex colors are also supported",
