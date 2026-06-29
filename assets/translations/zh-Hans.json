@@ -368,6 +368,15 @@
       "weather": "天气"
     },
     "weather": {
+      "daily": {
+        "tooltip": {
+          "condition": "天气",
+          "high": "最高",
+          "low": "最低",
+          "sunrise": "日出",
+          "sunset": "日落"
+        }
+      },
       "data-unavailable": "天气数据不可用",
       "details": {
         "elevation": "海拔",
@@ -376,15 +385,28 @@
         "temp-max": "最高温度",
         "temp-min": "最低温度",
         "timezone": "时区",
-        "uv-index": "紫外线指数",
+        "uv-index": "紫外线",
         "wind": "风速"
       },
-      "disabled": "在 config.toml 中启用 [weather]",
+      "disabled": "请在 config.toml 中启用 [weather]",
       "fetching": "正在获取天气预报...",
       "forecast-placeholder": {
         "day": "星期日",
         "description": "天气",
         "temperature": "10°C / 4°C"
+      },
+      "forecast-view": {
+        "daily": "每日",
+        "hourly": "每小时"
+      },
+      "hourly": {
+        "summary": "{condition} / 降雨 {precip}%",
+        "tooltip": {
+          "condition": "天气",
+          "humidity": "湿度",
+          "rain": "降雨",
+          "wind": "风速"
+        }
       },
       "location-unavailable": "位置不可用",
       "no-location-body": "请填写地址或启用自动定位。",
@@ -725,6 +747,13 @@
     "wifi": {
       "off": "Wi-Fi 关闭",
       "on": "Wi-Fi 开启"
+    }
+  },
+  "plugins": {
+    "auto-disabled": {
+      "body-errors": "{plugin} 错误过多，已被禁用。请修复问题后重新加载。",
+      "body-timeouts": "{plugin} 停止响应，已被禁用。请修复问题后重新加载。",
+      "title": "插件已禁用"
     }
   },
   "power": {
@@ -2153,7 +2182,7 @@
           "placeholder": "城市, 国家"
         },
         "location-auto-locate": {
-          "description": "通过 noctalia.dev，根据 IP 地址自动定位",
+          "description": "根据 IP 地址自动定位，通过 noctalia.dev 查询",
           "label": "自动定位（IP）"
         },
         "longitude": {
@@ -2850,6 +2879,12 @@
         "focused-color": {
           "description": "焦点工作区的颜色；也支持固定的十六进制颜色值",
           "label": "焦点工作区颜色"
+        },
+        "focused-output-only": {
+          "description": "仅高亮焦点屏幕上的活动工作区",
+          "label": "仅高亮焦点屏幕",
+          "taskbar-description": "仅当前聚焦屏幕上的活动工作区使用焦点颜色；其他屏幕的活动工作区使用非空颜色",
+          "workspaces-description": "仅当前聚焦屏幕上的活动工作区使用焦点颜色；其他屏幕的活动工作区使用非空颜色"
         },
         "font-family": {
           "description": "此小组件的字体；留空则继承状态栏字体",

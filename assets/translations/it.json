@@ -368,6 +368,15 @@
       "weather": "Meteo"
     },
     "weather": {
+      "daily": {
+        "tooltip": {
+          "condition": "Condizioni",
+          "high": "Massima",
+          "low": "Minima",
+          "sunrise": "Alba",
+          "sunset": "Tramonto"
+        }
+      },
       "data-unavailable": "Dati meteo non disponibili",
       "details": {
         "elevation": "Altitudine",
@@ -376,6 +385,7 @@
         "temp-max": "Temperatura max",
         "temp-min": "Temperatura min",
         "timezone": "Fuso orario",
+        "uv-index": "Indice UV",
         "wind": "Vento"
       },
       "disabled": "Abilita [weather] in config.toml",
@@ -384,6 +394,19 @@
         "day": "Domenica",
         "description": "Meteo",
         "temperature": "10 / 4C"
+      },
+      "forecast-view": {
+        "daily": "Giornaliero",
+        "hourly": "Orario"
+      },
+      "hourly": {
+        "summary": "{condition} / Pioggia {precip}%",
+        "tooltip": {
+          "condition": "Condizioni",
+          "humidity": "Umidità",
+          "rain": "Pioggia",
+          "wind": "Vento"
+        }
       },
       "location-unavailable": "Posizione non disponibile",
       "no-location-body": "Aggiungi il tuo indirizzo o attiva la localizzazione automatica nelle impostazioni di posizione.",
@@ -724,6 +747,13 @@
     "wifi": {
       "off": "Wi-Fi disattivato",
       "on": "Wi-Fi attivato"
+    }
+  },
+  "plugins": {
+    "auto-disabled": {
+      "body-errors": "{plugin} ha generato troppi errori ed è stato disabilitato. Ricaricalo dopo aver risolto il problema.",
+      "body-timeouts": "{plugin} ha smesso di rispondere ed è stato disabilitato. Ricaricalo dopo aver risolto il problema.",
+      "title": "Plugin disabilitato"
     }
   },
   "power": {
@@ -2349,6 +2379,10 @@
           "description": "Formato data predefinito per la shell UI senza impostazione propria",
           "label": "Formato data"
         },
+        "greeter-sync-auto": {
+          "description": "Sincronizza automaticamente il Greeter ogni volta che cambiano lo sfondo, i colori o la modalità del tema",
+          "label": "Sincronizza Greeter in automatico"
+        },
         "greeter-sync-privilege-command": {
           "description": "Sostituisci pkexec/run0 per la sincronizzazione del greeter. Il percorso dell'helper e la directory di staging vengono aggiunti automaticamente. Esempio: ghostty -e pkexec",
           "label": "Comando privilegiato per il sync del greeter"
@@ -2850,6 +2884,12 @@
           "description": "Ruolo colore usato per il workspace con focus; sono supportati anche codici colore in formato esadecimale",
           "label": "Colore focus"
         },
+        "focused-output-only": {
+          "description": "Evidenzia solo l'area di lavoro attiva sul monitor focalizzato",
+          "label": "Evidenzia solo il monitor focalizzato",
+          "taskbar-description": "Utilizza il colore focalizzato solo per l'area di lavoro attiva sul monitor in focus tramite tastiera o puntatore; gli altri monitor utilizzano il colore per occupato",
+          "workspaces-description": "Evidenzia solo l'area di lavoro attiva sul monitor con il focus della tastiera o del puntatore; gli altri monitor mostrano invece lo spazio di lavoro attivo come occupato"
+        },
         "font-family": {
           "description": "Font per il widget; lasciare vuoto per editare quello della barra",
           "label": "Famiglia font"
@@ -2882,6 +2922,10 @@
         "hidden": {
           "description": "ID elementi vassoio da nascondere",
           "label": "Elementi nascosti"
+        },
+        "hide-album-art": {
+          "description": "Nasconde la copertina dell'album",
+          "label": "Nascondi copertina album"
         },
         "hide-empty-workspaces": {
           "description": "Quando si raggruppa per workspace, omette le capsule senza finestre in esecuzione nell'elenco taskbar.",
