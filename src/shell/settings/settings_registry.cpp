@@ -193,10 +193,13 @@ namespace settings {
       );
     }
 
-    std::vector<SelectOption> controlCenterShortcutOptions() {
+    std::vector<SelectOption> controlCenterShortcutOptions(const Config& cfg) {
       std::vector<SelectOption> opts;
       opts.reserve(ShortcutRegistry::catalog().size());
       for (const auto& shortcut : ShortcutRegistry::catalog()) {
+        if (!ShortcutRegistry::isAvailable(shortcut.type, cfg)) {
+          continue;
+        }
         opts.push_back(
             SelectOption{
                 std::string(shortcut.type),
@@ -1024,7 +1027,7 @@ namespace settings {
         SettingsSection::ControlCenter, "general", tr("settings.schema.panels.home-shortcuts.label"),
         tr("settings.schema.panels.home-shortcuts.description"), {"control_center", "shortcuts"},
         ShortcutListSetting{
-            .items = cfg.controlCenter.shortcuts, .suggestedOptions = controlCenterShortcutOptions(), .maxItems = 6
+            .items = cfg.controlCenter.shortcuts, .suggestedOptions = controlCenterShortcutOptions(cfg), .maxItems = 6
         },
         "quick settings shortcuts toggles wifi bluetooth caffeine night light dnd power media weather clipboard"
     ));
