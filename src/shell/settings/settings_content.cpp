@@ -1335,10 +1335,6 @@ namespace settings {
 
     for (const std::size_t entryIndex : entryOrder) {
       const auto& entry = registry[entryIndex];
-      if (!ctx.searchQuery.empty() && visibleEntries >= kMaxSearchResults) {
-        truncated = true;
-        break;
-      }
       if (ctx.searchQuery.empty()
           && !ctx.selectedSection.empty()
           && ctx.selectedSection != "bar"
@@ -1363,6 +1359,12 @@ namespace settings {
       }
       if (!matchesNormalizedSettingQuery(entry, normalizedSearchQuery)) {
         continue;
+      }
+      // Cap only once a genuinely-matching entry is about to be rendered, so the truncation hint never
+      // shows when exactly kMaxSearchResults entries matched and the remainder were filtered out anyway.
+      if (!ctx.searchQuery.empty() && visibleEntries >= kMaxSearchResults) {
+        truncated = true;
+        break;
       }
 
       const std::string contentSectionKey = barSettingContentSectionKey(entry);
