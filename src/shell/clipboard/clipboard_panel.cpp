@@ -20,6 +20,9 @@
 #include "wayland/clipboard_service.h"
 
 #include <algorithm>
+#include <array>
+#include <cctype>
+#include <charconv>
 #include <chrono>
 #include <cmath>
 #include <ctime>
@@ -196,6 +199,222 @@ namespace {
     return ui::button(std::move(props));
   }
 
+  struct ParsedColor {
+    float r = 0.0f, g = 0.0f, b = 0.0f, a = 1.0f;
+  };
+
+  static std::array<float, 3> hslToRgb(float h, float s, float l) {
+    const float c = (1.0f - std::abs(2.0f * l - 1.0f)) * s;
+    const float x = c * (1.0f - std::abs(std::fmod(h / 60.0f, 2.0f) - 1.0f));
+    const float m = l - c / 2.0f;
+    float r = 0.0f, g = 0.0f, b = 0.0f;
+    if (h < 60.0f) {
+      r = c;
+      g = x;
+    } else if (h < 120.0f) {
+      r = x;
+      g = c;
+    } else if (h < 180.0f) {
+      g = c;
+      b = x;
+    } else if (h < 240.0f) {
+      g = x;
+      b = c;
+    } else if (h < 300.0f) {
+      r = x;
+      b = c;
+    } else {
+      r = c;
+      b = x;
+    }
+    return {r + m, g + m, b + m};
+  }
+
+  std::optional<ParsedColor> tryParseColor(std::string_view text) {
+    while (!text.empty() && static_cast<unsigned char>(text.front()) <= ' ') {
+      text.remove_prefix(1);
+    }
+    while (!text.empty() && static_cast<unsigned char>(text.back()) <= ' ') {
+      text.remove_suffix(1);
+    }
+    if (text.empty()) {
+      return std::nullopt;
+    }
+
+    auto toLower = [](char c) -> char { return static_cast<char>(std::tolower(static_cast<unsigned char>(c))); };
+
+    if (text[0] == '#') {
+      const std::size_t len = text.size() - 1;
+      if (len != 3 && len != 4 && len != 6 && len != 8) {
+        return std::nullopt;
+      }
+      for (std::size_t i = 1; i < text.size(); ++i) {
+        const char c = text[i];
+        if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) {
+          return std::nullopt;
+        }
+      }
+      auto hexVal = [](char c) -> std::uint32_t {
+        if (c >= '0' && c <= '9')
+          return static_cast<std::uint32_t>(c - '0');
+        if (c >= 'a' && c <= 'f')
+          return static_cast<std::uint32_t>(10 + (c - 'a'));
+        return static_cast<std::uint32_t>(10 + (c - 'A'));
+      };
+      auto byteF = [](std::uint32_t v) -> float { return static_cast<float>(v) / 255.0f; };
+      if (len == 3) {
+        const std::uint32_t r = hexVal(text[1]);
+        const std::uint32_t g = hexVal(text[2]);
+        const std::uint32_t b = hexVal(text[3]);
+        return ParsedColor{byteF(r * 17U), byteF(g * 17U), byteF(b * 17U), 1.0f};
+      }
+      if (len == 4) {
+        const std::uint32_t r = hexVal(text[1]);
+        const std::uint32_t g = hexVal(text[2]);
+        const std::uint32_t b = hexVal(text[3]);
+        const std::uint32_t a = hexVal(text[4]);
+        return ParsedColor{byteF(r * 17U), byteF(g * 17U), byteF(b * 17U), byteF(a * 17U)};
+      }
+      if (len == 6) {
+        const std::uint32_t r = (hexVal(text[1]) << 4U) | hexVal(text[2]);
+        const std::uint32_t g = (hexVal(text[3]) << 4U) | hexVal(text[4]);
+        const std::uint32_t b = (hexVal(text[5]) << 4U) | hexVal(text[6]);
+        return ParsedColor{byteF(r), byteF(g), byteF(b), 1.0f};
+      }
+      {
+        const std::uint32_t r = (hexVal(text[1]) << 4U) | hexVal(text[2]);
+        const std::uint32_t g = (hexVal(text[3]) << 4U) | hexVal(text[4]);
+        const std::uint32_t b = (hexVal(text[5]) << 4U) | hexVal(text[6]);
+        const std::uint32_t a = (hexVal(text[7]) << 4U) | hexVal(text[8]);
+        return ParsedColor{byteF(r), byteF(g), byteF(b), byteF(a)};
+      }
+    }
+
+    std::string lower;
+    lower.reserve(text.size());
+    for (char c : text) {
+      lower.push_back(toLower(c));
+    }
+    std::string_view lv(lower);
+
+    const bool isRgba = lv.starts_with("rgba(") && lv.back() == ')';
+    const bool isRgb = !isRgba && lv.starts_with("rgb(") && lv.back() == ')';
+    const bool isHsla = lv.starts_with("hsla(") && lv.back() == ')';
+    const bool isHsl = !isHsla && lv.starts_with("hsl(") && lv.back() == ')';
+
+    if (isRgb || isRgba) {
+      const std::size_t prefixLen = isRgba ? 5 : 4;
+      std::string_view inner = lv.substr(prefixLen, lv.size() - prefixLen - 1);
+      auto parseNext = [&](std::string_view& sv, float& out) -> bool {
+        while (!sv.empty() && sv.front() == ' ')
+          sv.remove_prefix(1);
+        int v = 0;
+        const auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), v);
+        if (ec != std::errc{} || v < 0 || v > 255)
+          return false;
+        out = static_cast<float>(v) / 255.0f;
+        sv.remove_prefix(static_cast<std::size_t>(ptr - sv.data()));
+        while (!sv.empty() && sv.front() == ' ')
+          sv.remove_prefix(1);
+        return true;
+      };
+      auto parseAlpha = [&](std::string_view& sv, float& out) -> bool {
+        while (!sv.empty() && sv.front() == ' ')
+          sv.remove_prefix(1);
+        float v = 0.0f;
+        const auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), v);
+        if (ec != std::errc{} || v < 0.0f || v > 1.0f)
+          return false;
+        out = v;
+        sv.remove_prefix(static_cast<std::size_t>(ptr - sv.data()));
+        while (!sv.empty() && sv.front() == ' ')
+          sv.remove_prefix(1);
+        return true;
+      };
+      ParsedColor pc;
+      if (!parseNext(inner, pc.r))
+        return std::nullopt;
+      if (inner.empty() || inner.front() != ',')
+        return std::nullopt;
+      inner.remove_prefix(1);
+      if (!parseNext(inner, pc.g))
+        return std::nullopt;
+      if (inner.empty() || inner.front() != ',')
+        return std::nullopt;
+      inner.remove_prefix(1);
+      if (!parseNext(inner, pc.b))
+        return std::nullopt;
+      if (isRgba) {
+        if (inner.empty() || inner.front() != ',')
+          return std::nullopt;
+        inner.remove_prefix(1);
+        if (!parseAlpha(inner, pc.a))
+          return std::nullopt;
+      }
+      if (!inner.empty())
+        return std::nullopt;
+      return pc;
+    }
+
+    if (isHsl || isHsla) {
+      const std::size_t prefixLen = isHsla ? 5 : 4;
+      std::string_view inner = lv.substr(prefixLen, lv.size() - prefixLen - 1);
+      auto skipSpaces = [](std::string_view& sv) {
+        while (!sv.empty() && sv.front() == ' ')
+          sv.remove_prefix(1);
+      };
+      auto parseFloatVal = [&](std::string_view& sv, float& out) -> bool {
+        skipSpaces(sv);
+        const auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), out);
+        if (ec != std::errc{})
+          return false;
+        sv.remove_prefix(static_cast<std::size_t>(ptr - sv.data()));
+        skipSpaces(sv);
+        return true;
+      };
+      auto parsePercent = [&](std::string_view& sv, float& out) -> bool {
+        if (!parseFloatVal(sv, out))
+          return false;
+        if (sv.empty() || sv.front() != '%')
+          return false;
+        sv.remove_prefix(1);
+        out /= 100.0f;
+        skipSpaces(sv);
+        return true;
+      };
+      float h = 0.0f, s = 0.0f, l = 0.0f, a = 1.0f;
+      if (!parseFloatVal(inner, h))
+        return std::nullopt;
+      if (h < 0.0f || h > 360.0f)
+        return std::nullopt;
+      if (inner.empty() || inner.front() != ',')
+        return std::nullopt;
+      inner.remove_prefix(1);
+      if (!parsePercent(inner, s))
+        return std::nullopt;
+      if (inner.empty() || inner.front() != ',')
+        return std::nullopt;
+      inner.remove_prefix(1);
+      if (!parsePercent(inner, l))
+        return std::nullopt;
+      if (isHsla) {
+        if (inner.empty() || inner.front() != ',')
+          return std::nullopt;
+        inner.remove_prefix(1);
+        if (!parseFloatVal(inner, a))
+          return std::nullopt;
+        if (a < 0.0f || a > 1.0f)
+          return std::nullopt;
+      }
+      if (!inner.empty())
+        return std::nullopt;
+      const auto rgb = hslToRgb(h, s, l);
+      return ParsedColor{rgb[0], rgb[1], rgb[2], a};
+    }
+
+    return std::nullopt;
+  }
+
   class ClipboardListRow final : public InputArea {
   public:
     ClipboardListRow(float scale, ThumbnailService* thumbnails) : m_scale(scale), m_thumbnails(thumbnails) {
@@ -238,6 +457,15 @@ namespace {
           ui::glyph({
               .out = &m_glyph,
               .glyphSize = kListGlyphSize * scale,
+          })
+      );
+
+      m_lead->addChild(
+          ui::box({
+              .out = &m_colorSwatch,
+              .radius = Style::scaledRadiusSm(scale),
+              .visible = false,
+              .participatesInLayout = false,
           })
       );
 
@@ -322,19 +550,38 @@ namespace {
       if (m_glyph != nullptr) {
         m_glyph->setGlyph(m_isImage ? "photo" : "file-text");
       }
+
+      const auto parsedColor = tryParseColor(entry.textPreview);
+      const bool isColor = !m_isImage && parsedColor.has_value();
+
+      if (m_colorSwatch != nullptr) {
+        if (isColor) {
+          const auto& pc = *parsedColor;
+          m_colorSwatch->setFill(fixedColorSpec(rgba(pc.r, pc.g, pc.b, pc.a)));
+        }
+        m_colorSwatch->setVisible(isColor);
+        m_colorSwatch->setParticipatesInLayout(isColor);
+      }
+      if (m_glyph != nullptr) {
+        m_glyph->setVisible(!isColor);
+        m_glyph->setParticipatesInLayout(!isColor);
+      }
+
       refreshThumbnail(renderer);
       applyVisualState();
       layout(renderer);
     }
 
     void refreshThumbnail(Renderer& renderer) {
-      if (m_image == nullptr || m_glyph == nullptr) {
+      if (m_image == nullptr || m_glyph == nullptr || m_colorSwatch == nullptr) {
         return;
       }
       if (!m_isImage || m_thumbnailPath.empty() || m_thumbnails == nullptr) {
         m_image->clear(renderer);
         m_image->setVisible(false);
-        m_glyph->setVisible(true);
+        const bool showGlyph = !m_colorSwatch->visible();
+        m_glyph->setVisible(showGlyph);
+        m_glyph->setParticipatesInLayout(showGlyph);
         return;
       }
 
@@ -343,12 +590,14 @@ namespace {
         m_image->clear(renderer);
         m_image->setVisible(false);
         m_glyph->setVisible(true);
+        m_glyph->setParticipatesInLayout(true);
         return;
       }
 
       m_image->setExternalTexture(renderer, handle);
       m_image->setVisible(true);
       m_glyph->setVisible(false);
+      m_glyph->setParticipatesInLayout(false);
     }
 
   private:
@@ -371,6 +620,10 @@ namespace {
       }
       if (m_image != nullptr) {
         m_image->setSize(thumbPx, thumbPx);
+      }
+      if (m_colorSwatch != nullptr && m_colorSwatch->visible()) {
+        const float swatchPx = std::round(thumbPx * 0.82f);
+        m_colorSwatch->setSize(swatchPx, swatchPx);
       }
       if (m_title != nullptr && m_meta != nullptr) {
         const float pinW = m_pinned ? kListPinGlyphSize * m_scale + Style::spaceMd * m_scale : 0.0f;
@@ -425,6 +678,7 @@ namespace {
     Flex* m_lead = nullptr;
     Image* m_image = nullptr;
     Glyph* m_glyph = nullptr;
+    Box* m_colorSwatch = nullptr;
     Glyph* m_pinGlyph = nullptr;
     Flex* m_textColumn = nullptr;
     Label* m_title = nullptr;
@@ -1193,6 +1447,21 @@ void ClipboardPanel::rebuildPreview(Renderer& renderer, float width, float heigh
     m_previewImage = image.get();
     m_previewContent->addChild(std::move(image));
   } else {
+    const auto previewColor = tryParseColor(entry.textPreview);
+    if (previewColor.has_value()) {
+      const auto& pc = *previewColor;
+      const float scale = contentScale();
+      const float swatchH = std::round(80.0f * scale);
+      m_previewContent->addChild(
+          ui::box({
+              .fill = fixedColorSpec(rgba(pc.r, pc.g, pc.b, pc.a)),
+              .radius = Style::scaledRadiusMd(scale),
+              .width = width,
+              .height = swatchH,
+          })
+      );
+    }
+
     if (m_clipboard != nullptr) {
       (void)m_clipboard->ensureEntryLoaded(historyIndex);
     }
