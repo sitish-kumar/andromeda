@@ -222,6 +222,7 @@ private:
   Timer m_volumeThrottleTimer;
   Timer m_muteWriteGuardTimer;
   std::unordered_map<std::uint32_t, float> m_pendingNodeVolumes;
+  std::unordered_map<std::string, float> m_userAppVolumes;
   std::chrono::steady_clock::time_point m_lastVolumeFlushAt;
   bool m_lastVolumeFlushValid = false;
 
