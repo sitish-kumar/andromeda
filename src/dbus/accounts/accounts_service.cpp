@@ -97,6 +97,10 @@ AccountsService::AccountsService(SystemBus& bus) : m_bus(bus) {
 void AccountsService::setChangeCallback(ChangeCallback callback) { m_changeCallback = std::move(callback); }
 
 bool AccountsService::setIconFile(std::string_view filename) {
+  if (filename.empty()) {
+    kLog.warn("SetIconFile rejected: filename is empty");
+    return false;
+  }
   if (m_userProxy == nullptr) {
     kLog.warn("SetIconFile rejected: user proxy is unavailable");
     return false;

@@ -119,14 +119,14 @@ namespace {
 namespace shell {
 
   std::string resolvedAvatarPath(const AccountsService* accounts, const Config& config) {
+    if (!config.shell.avatarPath.empty()) {
+      return config.shell.avatarPath;
+    }
     if (accounts != nullptr) {
       const std::string& iconFile = accounts->iconFile();
       if (!iconFile.empty()) {
         return iconFile;
       }
-    }
-    if (!config.shell.avatarPath.empty()) {
-      return config.shell.avatarPath;
     }
     return {};
   }
@@ -150,27 +150,21 @@ namespace shell {
     }
 
     std::string accountsPath = normalizedPath;
-    if (accounts != nullptr) {
-      if (normalizedPath.empty()) {
-        if (!accounts->setIconFile("")) {
-          kLog.warn("AccountsService setIconFile failed for clear");
-        }
-      } else {
-        const auto sourcePath = FileUtils::expandUserPath(normalizedPath);
-        AvatarPrepareError prepareError = AvatarPrepareError::LoadFailed;
-        std::string prepareDetail;
-        const auto prepared = prepareAvatarForAccounts(sourcePath, prepareError, &prepareDetail);
-        if (!prepared.has_value()) {
-          kLog.warn("failed to prepare avatar from '{}': {}", normalizedPath, prepareDetail);
-          return {
-              .error = prepareError == AvatarPrepareError::WriteFailed ? AvatarApplyError::WriteFailed
-                                                                       : AvatarApplyError::LoadFailed
-          };
-        }
-        accountsPath = prepared->string();
-        if (!accounts->setIconFile(accountsPath)) {
-          kLog.warn("AccountsService SetIconFile failed for '{}', falling back to config override", accountsPath);
-        }
+    if (accounts != nullptr && !normalizedPath.empty()) {
+      const auto sourcePath = FileUtils::expandUserPath(normalizedPath);
+      AvatarPrepareError prepareError = AvatarPrepareError::LoadFailed;
+      std::string prepareDetail;
+      const auto prepared = prepareAvatarForAccounts(sourcePath, prepareError, &prepareDetail);
+      if (!prepared.has_value()) {
+        kLog.warn("failed to prepare avatar from '{}': {}", normalizedPath, prepareDetail);
+        return {
+            .error = prepareError == AvatarPrepareError::WriteFailed ? AvatarApplyError::WriteFailed
+                                                                     : AvatarApplyError::LoadFailed
+        };
+      }
+      accountsPath = prepared->string();
+      if (!accounts->setIconFile(accountsPath)) {
+        kLog.warn("AccountsService SetIconFile failed for '{}', falling back to config override", accountsPath);
       }
     }
 

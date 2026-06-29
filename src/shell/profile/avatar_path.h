@@ -26,8 +26,8 @@ namespace shell {
 
   [[nodiscard]] std::string resolvedAvatarPath(const AccountsService* accounts, const Config& config);
 
-  // AccountsService IconFile is the canonical system avatar; shell.avatar_path is
-  // the fallback when AccountsService is unavailable or has no icon set.
+  // Prefer shell.avatar_path for rendering when set so UI updates immediately after
+  // applyAvatarPath; AccountsService IconFile keeps a stable path and updates async.
   [[nodiscard]] std::string avatarDisplayPath(const AccountsService* accounts, const Config& config);
 
   // Persists shell.avatar_path and updates AccountsService when it is connected.
