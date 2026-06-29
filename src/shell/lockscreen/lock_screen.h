@@ -84,6 +84,7 @@ private:
   [[nodiscard]] bool shouldUseBlurredDesktop() const;
   [[nodiscard]] bool allSurfacesReady() const;
   bool tryFlushPendingAfterLocked();
+  void dispatchPendingAfterLocked();
   void applyLockscreenStyle(LockSurface& surface) const;
   void applyOutputRestriction();
   void applyWallpaperStyleToSurfaces();

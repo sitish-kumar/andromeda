@@ -102,6 +102,9 @@ bool LockScreen::lock() {
   if (m_wayland->outputs().empty()) {
     m_lockDeferred = true;
     kLog.warn("no outputs available for lock screen; lock deferred until an output is connected");
+    // No output can ever show a lock surface, so run any pending post-lock action (e.g. suspend)
+    // immediately instead of holding it until a monitor reconnects.
+    dispatchPendingAfterLocked();
     return true;
   }
 
@@ -363,6 +366,15 @@ bool LockScreen::tryFlushPendingAfterLocked() {
     return true;
   }
   return false;
+}
+
+void LockScreen::dispatchPendingAfterLocked() {
+  if (m_pendingAfterLocked) {
+    auto pending = std::move(m_pendingAfterLocked);
+    m_pendingAfterLocked = {};
+    m_suspendTimeoutTimer.stop();
+    DeferredCall::callLater(std::move(pending));
+  }
 }
 
 void LockScreen::runAfterSessionLocked(std::function<void()> fn) {
