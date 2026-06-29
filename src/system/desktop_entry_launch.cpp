@@ -92,6 +92,21 @@ namespace {
     return appName.empty() ? "desktop-entry" : std::string(appName);
   }
 
+  std::string parseCustomCommand(const std::string& exec, const std::string& customCommand) {
+    if (customCommand.empty()) {
+      return exec;
+    }
+    constexpr std::string_view kPlaceholder = "$CMD";
+    if (!customCommand.contains(kPlaceholder)) {
+      kLog.warn("Custom command does not contain '$CMD': '{}'", customCommand);
+    }
+    std::string command = customCommand;
+    for (std::size_t pos = 0; (pos = command.find(kPlaceholder, pos)) != std::string::npos; pos += exec.length()) {
+      command.replace(pos, kPlaceholder.size(), exec);
+    }
+    return command;
+  }
+
 } // namespace
 
 namespace desktop_entry_launch {
@@ -123,24 +138,6 @@ namespace desktop_entry_launch {
       return std::nullopt;
     }
     return PreparedCommand{std::move(args)};
-  }
-
-  std::string parseCustomCommand(const std::string& exec, const std::string& customCommand) {
-    std::string command;
-    if (!customCommand.empty()) {
-      if (!customCommand.contains("$CMD")) {
-        kLog.warn("Custom command does not contain '$CMD': '{}'", customCommand);
-      }
-      command = customCommand;
-      size_t pos = 0;
-      while ((pos = command.find("$CMD", pos)) != std::string::npos) {
-        command.replace(pos, 4, exec);
-        pos += exec.length();
-      }
-    } else {
-      command = exec;
-    }
-    return command;
   }
 
   bool launchEntry(const DesktopEntry& entry, const LaunchOptions& options) {

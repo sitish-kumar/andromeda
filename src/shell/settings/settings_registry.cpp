@@ -1410,13 +1410,11 @@ namespace settings {
         "bar widget settings middle click configure"
     ));
     if (process::systemdAvailable()) {
-      auto e = makeEntry(
+      entries.push_back(makeEntry(
           SettingsSection::Shell, "general", tr("settings.schema.shell.launch-apps-as-systemd-services.label"),
           tr("settings.schema.shell.launch-apps-as-systemd-services.description"),
           {"shell", "launch_apps_as_systemd_services"}, ToggleSetting{cfg.shell.launchAppsAsSystemdServices}
-      );
-      e.visibleWhen = SettingVisibility{{"shell", "launch_apps_custom_command"}, {""}};
-      entries.push_back(std::move(e));
+      ));
     }
     {
       auto e = makeEntry(
