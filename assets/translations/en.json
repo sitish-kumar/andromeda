@@ -2173,10 +2173,6 @@
           "label": "DDC/CI (ddcutil)",
           "requires-ddcutil": "Install ddcutil to enable DDC/CI brightness control"
         },
-        "sync-monitor-brightness": {
-          "description": "Sync the brightness of all monitors",
-          "label": "Sync monitor brightness"
-        },
         "force-night-light": {
           "description": "Always apply night light regardless of time",
           "label": "Force Night Light"
@@ -2235,6 +2231,10 @@
         "sunset": {
           "description": "Manual sunset time in HH:MM, used when no location is set",
           "label": "Sunset"
+        },
+        "sync-monitor-brightness": {
+          "description": "Sync the brightness of all monitors",
+          "label": "Sync monitor brightness"
         },
         "system-monitor": {
           "cpu-poll": {

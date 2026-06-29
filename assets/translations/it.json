@@ -482,6 +482,11 @@
         "label-min-width": "Larghezza minima etichetta",
         "layout": "Layout",
         "mirrored": "Specchiato",
+        "network-speed-compact": "Velocità di rete compatta",
+        "network-speed-unit": "Unità di misura velocità rete",
+        "network-speed-unit-auto": "Auto",
+        "network-speed-unit-kilobytes": "kB/s",
+        "network-speed-unit-megabytes": "MB/s",
         "opacity": "Opacità",
         "primary-color": "Colore primario",
         "reset-defaults": "Ripristina predefiniti",
@@ -2715,6 +2720,7 @@
       },
       "options": {
         "always": "Sempre",
+        "auto": "Auto",
         "cpu-temp": "Temperatura CPU",
         "cpu-usage": "Uso CPU",
         "disk-percent": "Percentuale disco",
@@ -2731,6 +2737,8 @@
         "id": "ID",
         "input": "Ingresso",
         "instance": "Per posizionamento",
+        "kilobytes": "kB/s",
+        "megabytes": "MB/s",
         "name": "Nome",
         "net-rx": "Rete RX",
         "net-tx": "Rete TX",
@@ -2905,7 +2913,8 @@
         "glyph": {
           "description": "Nome glifo icona",
           "label": "Glifo",
-          "sysmon-description": "Glifo icona personalizzata. Lasciare vuoto per usare l'icona della metrica selezionata."
+          "sysmon-description": "Glifo icona personalizzata. Lasciare vuoto per usare l'icona della metrica selezionata.",
+          "volume-description": "Glifo personalizzato. Lascia vuoto per utilizzare le icone dinamiche integrate."
         },
         "group-by-workspace": {
           "description": "Raggruppa le icone della taskbar in capsule workspace quando i dati del compositor sono disponibili",
@@ -3060,6 +3069,18 @@
           "description": "Colore usato per l'icona e l'etichetta quando in muto; sono supportati anche i codici colore in formato esadecimale",
           "label": "Colore muto"
         },
+        "mute-glyph": {
+          "description": "Glifo utilizzato quando l'audio è disattivato o allo 0% del volume. Lascia vuoto per utilizzare l'icona di disattivazione dell'audio incorporata.",
+          "label": "Glifo per muto"
+        },
+        "network-speed-compact": {
+          "description": "Utilizza suffissi di unità brevi come 1.2 M invece di 1.2 MB/s",
+          "label": "Velocità di rete compatta"
+        },
+        "network-speed-unit": {
+          "description": "Unità di misura utilizzata per le velocità di ricezione e trasmissione della rete; Auto commuta automaticamente tra B/s, kB/s, MB/s e GB/s",
+          "label": "Unità di misura velocità rete"
+        },
         "occupied-color": {
           "description": "Ruolo colore usato per workspace occupati; sono supportati anche codici colore in formato esadecimale",
           "label": "Colore occupato"
@@ -3148,6 +3169,10 @@
         "show-scroll-lock": {
           "description": "Mostra stato Scroll Lock",
           "label": "Mostra Scroll Lock"
+        },
+        "show-temperature": {
+          "description": "Mostra valore attuale della temperatura",
+          "label": "Mostra temperatura"
         },
         "show-when-idle": {
           "description": "Mantiene visibile il visualizzatore anche quando nessun media è in riproduzione",
