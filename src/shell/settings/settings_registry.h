@@ -207,6 +207,7 @@ namespace settings {
     std::vector<SelectOption> options;
     std::vector<std::string> selectedValues;
     bool requireAtLeastOne = false; // disable removing the last selected entry
+    bool persistUnselected = false; // persist the unchecked complement (denylist) instead of the selection
   };
 
   struct TemplateGridSetting {

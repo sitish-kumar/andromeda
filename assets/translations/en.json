@@ -2019,6 +2019,10 @@
           "description": "When opening a specific tab (volume, media etc.)",
           "label": "Sidebar When Opening a Tab"
         },
+        "control-center-tabs": {
+          "description": "Choose which tabs appear in the control center; unchecked tabs are hidden",
+          "label": "Control Center Tabs"
+        },
         "control-center-width": {
           "description": "Width of the control center panel in pixels (compact and no-sidebar modes scale down from this)",
           "label": "Control Center Width"

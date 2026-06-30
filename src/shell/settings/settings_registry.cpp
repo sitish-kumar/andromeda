@@ -6,6 +6,7 @@
 #include "core/log.h"
 #include "core/process.h"
 #include "i18n/i18n.h"
+#include "shell/control_center/control_center_panel.h"
 #include "shell/control_center/shortcut_registry.h"
 #include "shell/settings/color_spec_picker.h"
 #include "shell/settings/font_weight_catalog.h"
@@ -1031,6 +1032,24 @@ namespace settings {
         },
         "quick settings shortcuts toggles wifi bluetooth caffeine night light dnd power media weather clipboard"
     ));
+    {
+      MultiSelectSetting tabs;
+      const auto catalog = ControlCenterPanel::hideableTabCatalog();
+      tabs.options.reserve(catalog.size());
+      tabs.selectedValues.reserve(catalog.size());
+      for (const auto& tab : catalog) {
+        tabs.options.push_back(SelectOption{std::string(tab.key), tr(tab.titleKey)});
+        if (!std::ranges::contains(cfg.controlCenter.hiddenTabs, tab.key)) {
+          tabs.selectedValues.emplace_back(tab.key);
+        }
+      }
+      tabs.persistUnselected = true;
+      entries.push_back(makeEntry(
+          SettingsSection::ControlCenter, "general", tr("settings.schema.panels.control-center-tabs.label"),
+          tr("settings.schema.panels.control-center-tabs.description"), {"control_center", "hidden_tabs"},
+          std::move(tabs), "tabs sections visible hide show display brightness media audio network power"
+      ));
+    }
     entries.push_back(makeEntry(
         SettingsSection::Panels, "launcher", tr("settings.schema.panels.placement-launcher.label"),
         tr("settings.schema.panels.placement-launcher.description"), {"shell", "panel", "launcher_placement"},

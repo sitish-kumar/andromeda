@@ -21,9 +21,11 @@
 #include "ui/scroll_into_view.h"
 #include "ui/split_pane_focus.h"
 
+#include <algorithm>
 #include <chrono>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <wayland-client-protocol.h>
 
 using namespace control_center;
@@ -481,7 +483,7 @@ bool ControlCenterPanel::deferExternalRefresh() const {
 
 bool ControlCenterPanel::deferPointerRelayout() const { return deferExternalRefresh(); }
 
-bool ControlCenterPanel::isTabVisible(TabId tab) const {
+bool ControlCenterPanel::isTabFeatureAvailable(TabId tab) const {
   if (m_config == nullptr) {
     switch (tab) {
     case TabId::ScreenTime:
@@ -505,6 +507,39 @@ bool ControlCenterPanel::isTabVisible(TabId tab) const {
   default:
     return true;
   }
+}
+
+bool ControlCenterPanel::isTabVisible(TabId tab) const {
+  if (!isTabFeatureAvailable(tab)) {
+    return false;
+  }
+  // Home is always shown so the panel never opens to an empty surface.
+  if (tab == TabId::Home || m_config == nullptr) {
+    return true;
+  }
+  const auto& hidden = m_config->config().controlCenter.hiddenTabs;
+  return !std::ranges::contains(hidden, tabKey(tab));
+}
+
+std::vector<ControlCenterPanel::TabCatalogEntry> ControlCenterPanel::hideableTabCatalog() {
+  std::vector<TabCatalogEntry> out;
+  out.reserve(kTabCount - 1);
+  for (const auto& meta : kTabs) {
+    if (meta.id == TabId::Home) {
+      continue;
+    }
+    out.push_back({.key = meta.key, .titleKey = meta.titleKey});
+  }
+  return out;
+}
+
+std::string_view ControlCenterPanel::tabKey(TabId tab) {
+  for (const auto& meta : kTabs) {
+    if (meta.id == tab) {
+      return meta.key;
+    }
+  }
+  return {};
 }
 
 ControlCenterPanel::TabId ControlCenterPanel::firstVisibleTab() const {

@@ -368,14 +368,17 @@ namespace settings {
 
       auto checkRow = ui::row(
           {.align = FlexAlign::Center,
+           .wrap = true,
            .gap = Style::spaceMd * scale,
            .paddingV = Style::spaceXs * scale,
-           .paddingH = 0.0f}
+           .paddingH = 0.0f,
+           .fillWidth = true}
       );
 
       auto options = setting.options;
       auto selected = setting.selectedValues;
       const bool requireAtLeastOne = setting.requireAtLeastOne;
+      const bool persistUnselected = setting.persistUnselected;
       auto path = entry.path;
 
       for (const auto& option : options) {
@@ -387,7 +390,7 @@ namespace settings {
             .checked = isSelected,
             .scale = scale,
             .onChange = [setOverride = ctx.setOverride, requestRebuild = ctx.requestRebuild, path, options, selected,
-                         optionValue, requireAtLeastOne](bool checked) mutable {
+                         optionValue, requireAtLeastOne, persistUnselected](bool checked) mutable {
               auto it = std::ranges::find(selected, optionValue);
               if (checked) {
                 if (it == selected.end()) {
@@ -402,11 +405,12 @@ namespace settings {
                   selected.erase(it);
                 }
               }
-              // Preserve the option order so the override file is stable.
+              // Preserve the option order so the override file is stable. When
+              // persistUnselected is set, store the unchecked complement (denylist).
               std::vector<std::string> ordered;
-              ordered.reserve(selected.size());
+              ordered.reserve(options.size());
               for (const auto& opt : options) {
-                if (std::ranges::contains(selected, opt.value)) {
+                if (std::ranges::contains(selected, opt.value) != persistUnselected) {
                   ordered.push_back(opt.value);
                 }
               }

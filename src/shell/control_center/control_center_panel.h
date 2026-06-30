@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <memory>
 #include <string_view>
+#include <vector>
 
 class BluetoothAgent;
 class BluetoothService;
@@ -68,6 +69,14 @@ class ThumbnailService;
 class ControlCenterPanel : public Panel {
 public:
   explicit ControlCenterPanel(const ControlCenterServices& services);
+
+  // Tabs the user may hide from the Settings GUI (every tab except Home).
+  // Keys match the [control_center] hidden_tabs entries.
+  struct TabCatalogEntry {
+    std::string_view key;
+    std::string_view titleKey;
+  };
+  [[nodiscard]] static std::vector<TabCatalogEntry> hideableTabCatalog();
 
   void create() override;
   void onFrameTick(float deltaMs) override;
@@ -144,7 +153,9 @@ private:
   void applyTabTransitionLayout();
   [[nodiscard]] int visibleTabOrdinal(TabId tab) const;
   void syncTabVisibility();
+  [[nodiscard]] bool isTabFeatureAvailable(TabId tab) const;
   [[nodiscard]] bool isTabVisible(TabId tab) const;
+  [[nodiscard]] static std::string_view tabKey(TabId tab);
   [[nodiscard]] TabId firstVisibleTab() const;
   [[nodiscard]] TabId tabFromContext(std::string_view context) const;
   [[nodiscard]] bool isDirectSectionOpenContext(std::string_view context) const;

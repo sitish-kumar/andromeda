@@ -501,6 +501,7 @@ namespace noctalia::config::schema {
         enumField(&ControlCenterConfig::sidebarMode, "sidebar", kControlCenterSidebarModes),
         enumField(&ControlCenterConfig::sidebarSectionMode, "sidebar_section", kControlCenterSidebarModes),
         field(&ControlCenterConfig::width, "width", kControlCenterWidthRange),
+        field(&ControlCenterConfig::hiddenTabs, "hidden_tabs"),
         arrayOf<ControlCenterConfig, ShortcutConfig>(
             &ControlCenterConfig::shortcuts, "shortcuts", shortcutSchema(),
             [](const ShortcutConfig& sc) { return !sc.type.empty(); }
