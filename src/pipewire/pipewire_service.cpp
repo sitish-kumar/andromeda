@@ -1843,6 +1843,12 @@ bool PipeWireService::applyNodeVolumeImmediate(std::uint32_t id, float volume) {
 
   pw_node_set_param(nd.proxy, SPA_PARAM_Props, 0, pod);
 
+  // Fire-and-forget for WirePlumber bookkeeping (pavucontrol / wpctl get-volume).
+  // Do not gate on this — the real write already happened above.
+  if (nd.mediaClass == "Audio/Sink" || nd.mediaClass == "Audio/Source") {
+    (void)process::runAsync({"wpctl", "set-volume", std::to_string(id), std::format("{:.4f}", volume)});
+  }
+
   // Apply optimistic local state while PipeWire publishes props.
   if (std::abs(nd.volume - volume) >= 0.0001f) {
     nd.volume = volume;
@@ -1882,7 +1888,6 @@ void PipeWireService::setNodeMuted(std::uint32_t id, bool muted) {
     return;
   }
 
-  // Program streams, and device nodes for immediate local/UI consistency.
   if (nd.hasRoute && nd.routeIndex >= 0) {
     std::uint8_t routeBuffer[512];
     spa_pod_builder routeBuilder;
@@ -1919,6 +1924,11 @@ void PipeWireService::setNodeMuted(std::uint32_t id, bool muted) {
   auto* pod = static_cast<spa_pod*>(spa_pod_builder_pop(&builder, &frame));
 
   pw_node_set_param(nd.proxy, SPA_PARAM_Props, 0, pod);
+
+  // Fire-and-forget for WirePlumber bookkeeping (pavucontrol / wpctl get-volume).
+  if (nd.mediaClass == "Audio/Sink" || nd.mediaClass == "Audio/Source") {
+    (void)process::runAsync({"wpctl", "set-mute", std::to_string(id), muted ? "1" : "0"});
+  }
 
   const bool before = nd.muted;
   nd.pendingMute.reset();
