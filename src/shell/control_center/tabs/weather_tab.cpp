@@ -1,4 +1,4 @@
-#include "shell/control_center/weather_tab.h"
+#include "shell/control_center/tabs/weather_tab.h"
 
 #include "config/config_service.h"
 #include "i18n/i18n.h"

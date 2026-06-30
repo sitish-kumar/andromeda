@@ -9,7 +9,7 @@
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
-#include "shell/control_center/screen_time_tab.h"
+#include "shell/control_center/tabs/screen_time_tab.h"
 #include "shell/panel/panel_button_style.h"
 #include "shell/panel/panel_manager.h"
 #include "system/dependency_service.h"
@@ -68,7 +68,7 @@ ControlCenterPanel::ControlCenterPanel(const ControlCenterServices& services) {
   m_tabs[tabIndex(TabId::Notifications)] = std::make_unique<NotificationsTab>(services.notifications);
   m_tabs[tabIndex(TabId::Network)] = std::make_unique<NetworkTab>(services.network, services.networkSecrets);
   m_tabs[tabIndex(TabId::Bluetooth)] = std::make_unique<BluetoothTab>(services.bluetooth, services.bluetoothAgent);
-  m_tabs[tabIndex(TabId::Display)] = std::make_unique<DisplayTab>(services.brightness, services.config);
+  m_tabs[tabIndex(TabId::Monitor)] = std::make_unique<MonitorTab>(services.brightness, services.config);
   m_tabs[tabIndex(TabId::System)] = std::make_unique<SystemTab>(services.sysmon);
   m_tabs[tabIndex(TabId::ScreenTime)] = std::make_unique<ScreenTimeTab>(services.screenTime);
   m_tabs[tabIndex(TabId::Power)] = std::make_unique<PowerTab>(services.upower, services.powerProfiles);
