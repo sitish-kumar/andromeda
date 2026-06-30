@@ -1057,6 +1057,17 @@ battery_hook_state_test = executable('battery_hook_state_test',
 
 test('battery_hook_state', battery_hook_state_test)
 
+hook_manager_test = executable('hook_manager_test',
+  sources: files(
+    'tests/hook_manager_test.cpp',
+    'src/hooks/hook_manager.cpp',
+    'src/core/log.cpp',
+  ),
+  include_directories: _noctalia_inc,
+)
+
+test('hook_manager', hook_manager_test)
+
 desktop_entry_launch_test = executable('desktop_entry_launch_test',
   sources: files(
     'tests/desktop_entry_launch_test.cpp',
