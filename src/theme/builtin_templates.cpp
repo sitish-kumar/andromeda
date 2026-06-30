@@ -62,8 +62,8 @@ namespace noctalia::theme {
             entry.outputPaths.push_back(str->get());
           } else if (const auto arr = op->as_array()) {
             for (const auto& item : *arr) {
-              if (const auto str = item.as_string()) {
-                entry.outputPaths.push_back(str->get());
+              if (const auto itemStr = item.as_string()) {
+                entry.outputPaths.push_back(itemStr->get());
               }
             }
           }
