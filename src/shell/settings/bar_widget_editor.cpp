@@ -2012,11 +2012,7 @@ namespace settings {
         return true;
       };
       valueInput->setOnChange([valueInputPtr](const std::string& /*text*/) { valueInputPtr->setInvalid(false); });
-      valueInput->setOnSubmit([commitInputText, focusArea = ctx.focusArea](const std::string& text) {
-        if (commitInputText(text) && focusArea) {
-          focusArea(nullptr);
-        }
-      });
+      valueInput->setOnSubmit([commitInputText](const std::string& text) { (void)commitInputText(text); });
       valueInput->setOnFocusLoss([commitInputText, valueInputPtr]() { (void)commitInputText(valueInputPtr->value()); });
 
       auto wrap = ui::row({.align = FlexAlign::Center, .gap = Style::spaceSm * ctx.scale});

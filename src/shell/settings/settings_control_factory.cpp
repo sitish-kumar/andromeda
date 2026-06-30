@@ -464,11 +464,7 @@ namespace settings {
     };
 
     valueInput->setOnChange([valueInputPtr](const std::string& /*text*/) { valueInputPtr->setInvalid(false); });
-    valueInput->setOnSubmit([commitInputText, focusArea = ctx.focusArea](const std::string& text) {
-      if (commitInputText(text) && focusArea) {
-        focusArea(nullptr);
-      }
-    });
+    valueInput->setOnSubmit([commitInputText](const std::string& text) { (void)commitInputText(text); });
     valueInput->setOnFocusLoss([commitInputText, valueInputPtr]() { (void)commitInputText(valueInputPtr->value()); });
 
     // Slider first, numeric value field on the right (reset from makeRow stays left of this cluster).
@@ -570,21 +566,15 @@ namespace settings {
     const double minValue = setting.minValue;
     const double maxValue = setting.maxValue;
     lowInput->setOnChange([lowInputPtr](const std::string& /*text*/) { lowInputPtr->setInvalid(false); });
-    lowInput->setOnSubmit([commitInput, lowInputPtr, lowPath, minValue, maxValue,
-                           focusArea = ctx.focusArea](const std::string& /*text*/) {
-      if (commitInput(lowInputPtr, lowPath, minValue, maxValue, true) && focusArea) {
-        focusArea(nullptr);
-      }
+    lowInput->setOnSubmit([commitInput, lowInputPtr, lowPath, minValue, maxValue](const std::string& /*text*/) {
+      (void)commitInput(lowInputPtr, lowPath, minValue, maxValue, true);
     });
     lowInput->setOnFocusLoss([commitInput, lowInputPtr, lowPath, minValue, maxValue]() {
       (void)commitInput(lowInputPtr, lowPath, minValue, maxValue, true);
     });
     highInput->setOnChange([highInputPtr](const std::string& /*text*/) { highInputPtr->setInvalid(false); });
-    highInput->setOnSubmit([commitInput, highInputPtr, highPath, minValue, maxValue,
-                            focusArea = ctx.focusArea](const std::string& /*text*/) {
-      if (commitInput(highInputPtr, highPath, minValue, maxValue, false) && focusArea) {
-        focusArea(nullptr);
-      }
+    highInput->setOnSubmit([commitInput, highInputPtr, highPath, minValue, maxValue](const std::string& /*text*/) {
+      (void)commitInput(highInputPtr, highPath, minValue, maxValue, false);
     });
     highInput->setOnFocusLoss([commitInput, highInputPtr, highPath, minValue, maxValue]() {
       (void)commitInput(highInputPtr, highPath, minValue, maxValue, false);
