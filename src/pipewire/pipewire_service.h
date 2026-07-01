@@ -34,14 +34,12 @@ struct AudioNode {
   std::uint32_t channelCount = 0;
   bool isDefault = false;
   bool available = true; // false for a device whose active route is unavailable (e.g. unplugged HDMI)
-  std::string portName;  // active route's port/profile name, when it has one
 
   bool operator==(const AudioNode&) const = default;
 };
 
-// User-facing label for a sink/source. Prefers the short active-route port/profile name
-// ("Speaker", "HDMI / DisplayPort 3") over the long full description, which shares a common prefix
-// across a card's ports and truncates to look identical. Falls back to the description, then name.
+// User-facing label for a sink/source: PipeWire's human-readable node description, falling back to
+// the node name.
 [[nodiscard]] std::string audioDeviceLabel(const AudioNode& node);
 
 struct AudioState {
@@ -136,7 +134,6 @@ public:
     std::int32_t priority = 0;
     std::uint32_t available = SPA_PARAM_AVAILABILITY_unknown;
     bool muted = false;
-    std::string description; // port/profile name, e.g. "Speaker", "HDMI / DisplayPort 3"
   };
   struct NodeData {
     PipeWireService* service = nullptr;
@@ -188,7 +185,6 @@ public:
   struct DeviceData {
     PipeWireService* service = nullptr;
     std::uint32_t id = 0;
-    std::string description; // card name, e.g. "Alder Lake ... Audio Controller"
     struct pw_device* proxy = nullptr;
     spa_hook* listener = nullptr;
     std::vector<DeviceRouteData> routes;
