@@ -244,8 +244,8 @@ namespace {
       return true;
     }
     if (auto* optionalNumber = std::get_if<settings::OptionalNumberSetting>(&entry.control)) {
-      if (const auto number = overrideNumber(value); number.has_value()) {
-        optionalNumber->value = *number;
+      if (auto number = overrideNumber(value); number.has_value()) {
+        optionalNumber->value = number;
         return true;
       }
       const auto* text = std::get_if<std::string>(&value);
@@ -256,8 +256,8 @@ namespace {
       return false;
     }
     if (auto* optionalStepper = std::get_if<settings::OptionalStepperSetting>(&entry.control)) {
-      if (const auto number = overrideInt(value); number.has_value()) {
-        optionalStepper->value = *number;
+      if (auto number = overrideInt(value); number.has_value()) {
+        optionalStepper->value = number;
         return true;
       }
       const auto* text = std::get_if<std::string>(&value);
@@ -1692,7 +1692,7 @@ void SettingsWindow::rebuildFilterRow(float scale) {
     return;
   }
 
-  const std::size_t index = static_cast<std::size_t>(std::distance(children.begin(), it));
+  const auto index = static_cast<std::size_t>(std::distance(children.begin(), it));
   (void)m_mainContainer->removeChild(m_filterRow);
   const std::string resetPageScope = pageScopeKey(m_selectedSection, m_selectedBarName, m_selectedMonitorOverride);
   m_filterRow = m_mainContainer->insertChildAt(
