@@ -324,11 +324,24 @@ namespace {
       return true;
     }
     if (auto* multi = std::get_if<settings::MultiSelectSetting>(&entry.control)) {
-      const auto* selected = std::get_if<std::vector<std::string>>(&value);
-      if (selected == nullptr) {
+      const auto* stored = std::get_if<std::vector<std::string>>(&value);
+      if (stored == nullptr) {
         return false;
       }
-      multi->selectedValues = *selected;
+      if (multi->persistUnselected) {
+        // The override stores the unchecked complement (denylist); reconstruct the
+        // selection as every option not present in it.
+        std::vector<std::string> selected;
+        selected.reserve(multi->options.size());
+        for (const auto& option : multi->options) {
+          if (!std::ranges::contains(*stored, option.value)) {
+            selected.push_back(option.value);
+          }
+        }
+        multi->selectedValues = std::move(selected);
+      } else {
+        multi->selectedValues = *stored;
+      }
       return true;
     }
     if (auto* grid = std::get_if<settings::TemplateGridSetting>(&entry.control)) {
