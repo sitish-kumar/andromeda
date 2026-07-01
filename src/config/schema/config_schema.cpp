@@ -3,7 +3,7 @@
 #include "config/config_types.h"
 #include "config/schema/engine.h"
 #include "config/schema/ranges.h"
-#include "core/key_chord.h"
+#include "core/input/key_chord.h"
 #include "notification/notification_filter.h"
 #include "scripting/plugin_id.h"
 #include "util/file_utils.h"

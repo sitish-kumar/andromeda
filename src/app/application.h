@@ -9,7 +9,7 @@
 #include "compositors/workspace_alert_service.h"
 #include "config/config_poll_source.h"
 #include "config/config_service.h"
-#include "core/file_watcher.h"
+#include "core/files/file_watcher.h"
 #include "core/timer_manager.h"
 #include "dbus/notification/notification_poll_source.h"
 #include "hooks/battery_hook_state.h"

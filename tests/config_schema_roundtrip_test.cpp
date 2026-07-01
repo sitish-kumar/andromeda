@@ -14,7 +14,7 @@
 #include "config/config_types.h"
 #include "config/schema/config_schema.h"
 #include "config/schema/engine.h"
-#include "core/key_chord.h"
+#include "core/input/key_chord.h"
 #include "core/toml.h"
 #include "scripting/plugin_id.h"
 

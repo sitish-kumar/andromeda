@@ -4,7 +4,7 @@
 #include "config/schema/config_schema.h"
 #include "config/schema/ranges.h"
 #include "core/log.h"
-#include "core/process.h"
+#include "core/process/process.h"
 #include "i18n/i18n.h"
 #include "shell/control_center/control_center_panel.h"
 #include "shell/control_center/shortcut_registry.h"

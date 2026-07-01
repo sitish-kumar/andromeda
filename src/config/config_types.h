@@ -1,7 +1,7 @@
 #pragma once
 
 #include "config/config_limits.h"
-#include "core/key_chord.h"
+#include "core/input/key_chord.h"
 #include "system/sysmon_threshold_profile.h"
 #include "ui/palette.h"
 #include "ui/style.h"

@@ -2,7 +2,7 @@
 #include "config/config_merge.h"
 #include "config/config_service.h"
 #include "config/widget_config.h"
-#include "core/key_chord.h"
+#include "core/input/key_chord.h"
 #include "core/log.h"
 #include "scripting/plugin_id.h"
 #include "shell/settings/widget_settings_registry.h"

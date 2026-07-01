@@ -1,7 +1,7 @@
 #include "shell/bar/widgets/custom_button_widget.h"
 
 #include "core/log.h"
-#include "core/process.h"
+#include "core/process/process.h"
 #include "cursor-shape-v1-client-protocol.h"
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"

@@ -3,7 +3,7 @@
 #include "compositors/compositor_platform.h"
 #include "core/deferred_call.h"
 #include "core/log.h"
-#include "core/process.h"
+#include "core/process/process.h"
 #include "lua.h"
 #include "luacode.h"
 #include "lualib.h"

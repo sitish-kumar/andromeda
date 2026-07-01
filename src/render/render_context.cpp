@@ -1,7 +1,7 @@
 #include "render/render_context.h"
 
+#include "core/files/resource_paths.h"
 #include "core/log.h"
-#include "core/resource_paths.h"
 #include "core/ui_phase.h"
 #include "render/backend/render_backend.h"
 #include "render/core/texture_handle.h"

@@ -2,9 +2,9 @@
 
 #include "config/config_service.h"
 #include "core/deferred_call.h"
-#include "core/keybind_matcher.h"
+#include "core/input/keybind_matcher.h"
 #include "core/log.h"
-#include "core/process.h"
+#include "core/process/process.h"
 #include "core/ui_phase.h"
 #include "i18n/i18n.h"
 #include "render/core/async_texture_cache.h"

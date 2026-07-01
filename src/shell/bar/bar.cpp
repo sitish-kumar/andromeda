@@ -3,7 +3,7 @@
 #include "compositors/compositor_platform.h"
 #include "config/config_service.h"
 #include "core/log.h"
-#include "core/process.h"
+#include "core/process/process.h"
 #include "core/scoped_timer.h"
 #include "core/timer_manager.h"
 #include "core/ui_phase.h"

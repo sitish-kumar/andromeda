@@ -2,9 +2,9 @@
 
 #include "config/config_service.h"
 #include "config/config_types.h"
-#include "core/key_modifiers.h"
-#include "core/keybind_matcher.h"
-#include "core/resource_paths.h"
+#include "core/files/resource_paths.h"
+#include "core/input/key_modifiers.h"
+#include "core/input/keybind_matcher.h"
 #include "dbus/polkit/polkit_agent.h"
 #include "i18n/i18n.h"
 #include "render/core/renderer.h"

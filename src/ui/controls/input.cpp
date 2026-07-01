@@ -1,8 +1,8 @@
 #include "ui/controls/input.h"
 
-#include "core/key_chord.h"
-#include "core/key_modifiers.h"
-#include "core/key_symbols.h"
+#include "core/input/key_chord.h"
+#include "core/input/key_modifiers.h"
+#include "core/input/key_symbols.h"
 #include "core/text_clipboard.h"
 #include "cursor-shape-v1-client-protocol.h"
 #include "render/core/color.h"

@@ -1,9 +1,9 @@
 #include "ui/dialogs/file_dialog_view.h"
 
 #include "core/deferred_call.h"
-#include "core/key_modifiers.h"
-#include "core/key_symbols.h"
-#include "core/keybind_matcher.h"
+#include "core/input/key_modifiers.h"
+#include "core/input/key_symbols.h"
+#include "core/input/keybind_matcher.h"
 #include "i18n/i18n.h"
 #include "render/core/renderer.h"
 #include "render/core/thumbnail_service.h"
