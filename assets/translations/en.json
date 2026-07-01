@@ -2611,6 +2611,7 @@
           "empty": "No community templates are available yet. Enable community templates and refresh the catalog first.",
           "label": "Community Templates"
         },
+        "dynamic-output": "Output path is resolved when the template is applied",
         "enable-builtins": {
           "description": "Use the bundled catalog of theme templates for apps",
           "label": "Enable Built-In Templates"
