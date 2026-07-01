@@ -1,7 +1,6 @@
 #include "core/process.h"
 
 #include "core/log.h"
-#include "core/process_fds.h"
 #include "util/string_utils.h"
 
 #include <algorithm>
@@ -406,7 +405,6 @@ namespace {
       closeFd(errPipe[1]);
 
       applyEnvOverrides(options.env);
-      ProcessFds::resetOpenFileLimitForChild();
       std::vector<char*> argv = makeArgv(args);
 
       ::execvp(argv[0], argv.data());
@@ -600,7 +598,6 @@ namespace {
     }
 
     attachStdioToDevNull();
-    ProcessFds::resetOpenFileLimitForChild();
 
     std::vector<char*> argv = makeArgv(args);
 
