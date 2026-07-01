@@ -166,7 +166,7 @@
       "application-volumes": "Application Volumes",
       "choose-effects-profile": "Choose a profile",
       "effects-profile": "Effects",
-      "input-device-prefix": "Input:",
+      "input-device-prefix": "Input",
       "no-application-audio": "No application audio",
       "no-application-audio-body": "No application playback streams are currently available.",
       "no-input-devices": "No input devices",
@@ -175,7 +175,7 @@
       "no-output-devices": "No output devices",
       "no-output-devices-body": "No playback sinks are currently available.",
       "no-output-selected": "No output device selected",
-      "output-device-prefix": "Output:",
+      "output-device-prefix": "Output",
       "unavailable-body": "PipeWire is not active.",
       "unavailable-title": "Audio unavailable"
     },

@@ -166,7 +166,7 @@
       "application-volumes": "Alkalmazások hangereje",
       "choose-effects-profile": "Válassz egy profilt",
       "effects-profile": "Effektek",
-      "input-device-prefix": "Bemenet:",
+      "input-device-prefix": "Bemenet",
       "no-application-audio": "Nincs alkalmazáshang",
       "no-application-audio-body": "Jelenleg nincs lejátszási folyam egyetlen alkalmazásban sem.",
       "no-input-devices": "Nincsenek bemeneti eszközök",
@@ -175,7 +175,7 @@
       "no-output-devices": "Nincsenek kimeneti eszközök",
       "no-output-devices-body": "Jelenleg nincsenek elérhető lejátszási kimenetek.",
       "no-output-selected": "Nincs kimeneti eszköz kiválasztva",
-      "output-device-prefix": "Kimenet:",
+      "output-device-prefix": "Kimenet",
       "unavailable-body": "A PipeWire nem aktív.",
       "unavailable-title": "Hang nem érhető el"
     },
@@ -1847,7 +1847,7 @@
           "description": "Mégis mutassa a kritikus értesítéseket a feketelistára tett küldőktől"
         },
         "collapse-on-dismiss": {
-          "description": "A megmaradt Toastok elcsúsztatása, hogy kitöltsék a helyet, ha egyet bezárnak",
+          "description": "A megmaradt felugró értesítések elcsúsztatása, hogy kitöltsék a helyet, ha egyet bezárnak",
           "label": "Összecsukás elvetéskor"
         },
         "daemon": {
@@ -1859,7 +1859,7 @@
           "label": "Értesítési szűrők"
         },
         "layer": {
-          "description": "Az Átfedés segítségével jeleníthetsz meg értesítési felugró üzeneteket a teljes képernyős alkalmazások felett",
+          "description": "Az Átfedés segítségével jeleníthetsz meg felugró értesítéseket a teljes képernyős alkalmazások felett",
           "label": "Wayland réteg"
         },
         "monitors": {
@@ -1875,23 +1875,23 @@
           "label": "Függőleges margó"
         },
         "position": {
-          "description": "Képernyő pozíció a Toast értesítésekhez",
+          "description": "Képernyőpozíció a felugró értesítésekhez",
           "label": "Képernyő pozíció"
         },
         "scale": {
-          "description": "Értesítési Toastok skálázása a shell UI skálájához képest",
+          "description": "Felugró értesítések skálázása a shell felületi skálájához képest",
           "label": "Méret"
         },
         "show-actions": {
-          "description": "Műveletgombok megjelenítése az értesítési Toast-okban; ha le van tiltva, a Toast-ra kattintás elindítja az alapértelmezett műveletét",
+          "description": "Műveletgombok megjelenítése a felugró értesítésekben; ha le van tiltva, a felugró értesítésekre kattintás elindítja az alapértelmezett műveletét",
           "label": "Műveletgombok megjelenítése"
         },
         "show-app-name": {
-          "description": "Mutasd a küldő alkalmazás nevét a gyorsértesítésekben",
+          "description": "A küldőalkalmazás nevének megjelenítése a felugró értesítésekben",
           "label": "Alkalmazás nevének megjelenítése"
         },
         "toast-opacity": {
-          "description": "Értesítési toastok háttér átlátszatlansága",
+          "description": "Felugró értesítések háttér átlátszatlansága",
           "label": "Háttér átlátszatlanság"
         }
       },

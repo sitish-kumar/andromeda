@@ -166,7 +166,7 @@
       "application-volumes": "应用音量",
       "choose-effects-profile": "选择音效预设",
       "effects-profile": "音效",
-      "input-device-prefix": "输入：",
+      "input-device-prefix": "输入",
       "no-application-audio": "无应用音频",
       "no-application-audio-body": "当前没有应用正在播放音频。",
       "no-input-devices": "无输入设备",
@@ -175,7 +175,7 @@
       "no-output-devices": "无输出设备",
       "no-output-devices-body": "当前没有可用的音频输出设备。",
       "no-output-selected": "未选择输出设备",
-      "output-device-prefix": "输出：",
+      "output-device-prefix": "输出",
       "unavailable-body": "PipeWire 服务未运行。",
       "unavailable-title": "音频不可用"
     },

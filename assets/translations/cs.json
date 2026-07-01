@@ -166,7 +166,7 @@
       "application-volumes": "Hlasitost aplikací",
       "choose-effects-profile": "Vyberte profil",
       "effects-profile": "Efekty",
-      "input-device-prefix": "Vstup:",
+      "input-device-prefix": "Vstup",
       "no-application-audio": "Žádný zvuk z aplikací",
       "no-application-audio-body": "Momentálně nejsou k dispozici žádné přehrávací streamy aplikací.",
       "no-input-devices": "Žádná vstupní zařízení",
@@ -175,7 +175,7 @@
       "no-output-devices": "Žádná výstupní zařízení",
       "no-output-devices-body": "Momentálně nejsou k dispozici žádné výstupní cíle přehrávání.",
       "no-output-selected": "Není vybráno žádné výstupní zařízení",
-      "output-device-prefix": "Výstup:",
+      "output-device-prefix": "Výstup",
       "unavailable-body": "PipeWire není aktivní.",
       "unavailable-title": "Zvuk není k dispozici"
     },
