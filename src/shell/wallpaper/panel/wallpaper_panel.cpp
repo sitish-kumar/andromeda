@@ -418,7 +418,7 @@ void WallpaperPanel::create() {
           .controlHeight = Style::controlHeightSm * scale,
           .horizontalPadding = Style::spaceMd * scale,
           .surfaceOpacity = panelCardOpacity(),
-          .width = 360.0f * scale,
+          .width = 210.0f * scale,
           .height = 0.0f,
           .onChange =
               [this](const std::string& text) {
