@@ -382,8 +382,8 @@
         "elevation": "海拔",
         "sunrise": "日出",
         "sunset": "日落",
-        "temp-max": "最高温度",
-        "temp-min": "最低温度",
+        "temp-max": "最高气温",
+        "temp-min": "最低气温",
         "timezone": "时区",
         "uv-index": "紫外线",
         "wind": "风速"
@@ -393,18 +393,18 @@
       "forecast-placeholder": {
         "day": "星期日",
         "description": "天气",
-        "temperature": "10°C / 4°C"
+        "temperature": "10 / 4°C"
       },
       "forecast-view": {
         "daily": "每日",
         "hourly": "每小时"
       },
       "hourly": {
-        "summary": "{condition} / 降雨 {precip}%",
+        "summary": "{condition} / 降水概率 {precip}%",
         "tooltip": {
           "condition": "天气",
           "humidity": "湿度",
-          "rain": "降雨",
+          "rain": "降水",
           "wind": "风速"
         }
       },
@@ -495,9 +495,12 @@
         "secondary-color": "辅助色",
         "sensitivity": "灵敏度",
         "shadow": "阴影",
+        "show-caps-lock": "大写锁定提示",
         "show-forecast": "显示天气预报",
+        "show-keyboard-layout": "键盘布局",
         "show-label": "显示标签",
         "show-login-button": "登录按钮",
+        "show-password-hint": "密码提示",
         "show-when-idle": "空闲时显示",
         "stat": "统计",
         "stat-cpu-temp": "CPU 温度",
@@ -648,6 +651,7 @@
   "lockscreen": {
     "authenticating": "正在验证身份...",
     "authentication-failed": "身份验证失败",
+    "caps-lock-on": "大写锁定已开启",
     "password-cleared": "密码已清除",
     "password-placeholder": "密码",
     "ready": "请输入密码并按下 Enter 键。",
@@ -707,7 +711,7 @@
       "screen-time-reset-success": "使用记录已清除。",
       "session-bus-unavailable": "会话总线不可用",
       "wallpaper-palette-export": "自定义配色方案",
-      "wallpaper-palette-export-success": "已保存 \"{name}\" 并将配色方案源切换为自定义。"
+      "wallpaper-palette-export-success": "已保存 \"{name}\" 并将配色方案来源更改为自定义。"
     }
   },
   "osd": {
@@ -1808,7 +1812,7 @@
             "label": "蓝牙启用时"
           },
           "colors-changed": {
-            "description": "当前配色方案变化时执行的命令",
+            "description": "当前配色方案更改时执行的命令",
             "label": "配色改变时"
           },
           "logging-out": {
@@ -1994,7 +1998,7 @@
           "label": "大小"
         },
         "show-actions": {
-          "description": "在 Toast 通知中显示操作按钮；禁用后，点击 Toast 将触发其默认操作",
+          "description": "在 Toast 通知中显示操作按钮；禁用后，点击 Toast 将触发默认操作",
           "label": "显示操作按钮"
         },
         "show-app-name": {
@@ -2446,7 +2450,7 @@
           "label": "键盘布局"
         },
         "osd-kinds-lock-keys": {
-          "description": "大写锁定、数字锁定和滚动锁定变化时显示 OSD 弹窗",
+          "description": "大写锁定、数字锁定和滚动锁定切换时显示 OSD 弹窗",
           "label": "锁定键"
         },
         "osd-kinds-media": {
@@ -3184,8 +3188,8 @@
           "label": "显示滚动锁定"
         },
         "show-temperature": {
-          "description": "显示当前温度文本",
-          "label": "显示温度"
+          "description": "显示当前气温文本",
+          "label": "显示气温"
         },
         "show-when-idle": {
           "description": "未播放媒体时保持可视化显示",
