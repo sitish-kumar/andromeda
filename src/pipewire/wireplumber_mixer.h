@@ -3,6 +3,7 @@
 #include "app/poll_source.h"
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <poll.h>
 #include <vector>
@@ -26,6 +27,12 @@ public:
   // Perceptual volume in [0, 1.5] (cubic scale), applied to a node by global id.
   void setVolume(std::uint32_t id, float volume);
   void setMuted(std::uint32_t id, bool muted);
+
+  // Authoritative read side: fires with a node's current perceptual volume + mute whenever mixer-api
+  // reports a change (including our own writes and external changes from pavucontrol/pulse), plus once
+  // per device node right after activation. This is the single source of truth for device volume/mute.
+  using ChangeCallback = std::function<void(std::uint32_t id, float volume, bool muted)>;
+  void setChangeCallback(ChangeCallback callback);
 
   // Selects the configured default device by node id, mirroring `wpctl set-default`: looks the node
   // up in our own WpCore, reads its media.class + node.name, and drives default-nodes-api. WirePlumber

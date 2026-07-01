@@ -996,6 +996,9 @@ void Application::initBrightnessAndPipewire() {
     m_pipewireService = std::make_unique<PipeWireService>();
     m_wirePlumberMixer = std::make_unique<WirePlumberMixer>();
     m_pipewireService->setWirePlumberMixer(m_wirePlumberMixer.get());
+    m_wirePlumberMixer->setChangeCallback([svc = m_pipewireService.get()](std::uint32_t id, float volume, bool muted) {
+      svc->onMixerVolumeChanged(id, volume, muted);
+    });
     m_easyEffectsService = std::make_unique<EasyEffectsService>();
     m_easyEffectsService->refreshProfiles();
     m_easyEffectsService->refreshActiveEffectsProfiles();

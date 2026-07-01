@@ -1,7 +1,5 @@
 #pragma once
 
-#include "core/timer_manager.h"
-
 #include <chrono>
 #include <cstdint>
 #include <functional>
@@ -154,13 +152,12 @@ public:
     bool streamCaptureSink = false;
     bool streamClassificationReady = false;
     float volume = 1.0f;
-    // Software / node-route mute from PipeWire props (SPA_PARAM_Props, node routes).
+    // Software / node-route mute from PipeWire props (SPA_PARAM_Props, node routes). For device nodes
+    // swMute mirrors the authoritative mixer-api mute.
     bool swMute = false;
     bool nodeRouteMute = false;
-    // Effective mute for UI (includes device-route mute and short-lived local writes).
+    // Effective mute for UI (includes device-route mute).
     bool muted = false;
-    std::optional<bool> pendingMute;
-    std::chrono::steady_clock::time_point muteWriteGuardUntil;
     std::uint32_t channelCount = 0;
     std::uint32_t deviceId = 0;
     bool hasRoute = false;
@@ -209,6 +206,9 @@ public:
   );
   void parseDefaultNodes(const struct spa_dict* props);
 
+  // Authoritative device volume/mute from WirePlumber's mixer-api (see setWirePlumberMixer).
+  void onMixerVolumeChanged(std::uint32_t id, float volume, bool muted);
+
 private:
   bool m_pendingDefaultAudioDevicePropsEnum = false;
   void enumDefaultAudioDeviceParams();
@@ -217,13 +217,8 @@ private:
   void refreshNodeIdentity(NodeData& nd);
   void applyVolumePropsFromDict(NodeData& nd, const spa_dict* props, bool applyMixerFieldsFromDict = true);
   void recomputeEffectiveMute(NodeData& nd);
-  void scheduleMuteWriteGuard();
-  void expireMuteWriteGuards();
   void setNodeVolume(std::uint32_t id, float volume);
   void setNodeMuted(std::uint32_t id, bool muted);
-  // Volume already queued for a node but not yet flushed, else `fallback`. Lets relative
-  // adjustments (volume-up/down) compound across a held key instead of capping at one step per flush.
-  [[nodiscard]] float pendingOrLiveVolume(std::uint32_t id, float fallback) const;
 
   // Volume delta for one relative-adjust event: the base step for a tap, or a repeat-rate-independent
   // velocity ramp while held. `gesture` identifies the control and direction (e.g. sink-up vs
@@ -237,17 +232,14 @@ private:
   RelativeAdjust m_relativeAdjust;
   void setDefaultNode(std::uint32_t id, const char* key);
 
-  void scheduleVolumeFlush();
-  void flushPendingNodeVolumes();
-  [[nodiscard]] bool applyNodeVolumeImmediate(std::uint32_t id, float volume);
+  // Writes a node's volume directly (device nodes via mixer-api, program streams via SPA props) and
+  // optimistically updates local state. Returns true if the local volume changed.
+  bool applyNodeVolume(std::uint32_t id, float volume);
+  // Records a program-stream write so stale SPA_PARAM_Props echoes can be rejected until the daemon
+  // confirms it. Device nodes are authoritative through mixer-api and skip this.
   void noteVolumeWritten(NodeData& nd, float volume);
 
-  Timer m_volumeThrottleTimer;
-  Timer m_muteWriteGuardTimer;
-  std::unordered_map<std::uint32_t, float> m_pendingNodeVolumes;
   std::unordered_map<std::string, float> m_userAppVolumes;
-  std::chrono::steady_clock::time_point m_lastVolumeFlushAt;
-  bool m_lastVolumeFlushValid = false;
 
   pw_loop* m_loop = nullptr;
   pw_context* m_context = nullptr;

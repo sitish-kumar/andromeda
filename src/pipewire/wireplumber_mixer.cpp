@@ -2,6 +2,7 @@
 
 #include "core/log.h"
 
+#include <functional>
 #include <glib.h>
 #include <optional>
 #include <pipewire/keys.h>
@@ -36,6 +37,9 @@ struct WirePlumberMixer::Impl {
   std::unordered_map<std::uint32_t, PendingWrite> pendingBeforeReady;
   // Default-device change requested before default-nodes-api activated, by node id.
   std::vector<std::uint32_t> pendingDefaultIds;
+
+  // Pushes device volume/mute changes back to the owner (source of truth for device nodes).
+  std::function<void(std::uint32_t, float, bool)> changeCb;
 
   // GLib poll-loop bridge state (see reference_glib_mainloop_bridge pattern).
   mutable std::vector<GPollFD> glibPollFds;
@@ -128,6 +132,8 @@ struct WirePlumberMixer::Impl {
     self->ready = true;
     kLog.info("mixer-api ready");
 
+    g_signal_connect(self->mixer, "changed", G_CALLBACK(&Impl::onMixerChanged), self);
+
     for (const auto& [id, write] : self->pendingBeforeReady) {
       if (write.volume.has_value()) {
         self->applyVolume(id, *write.volume);
@@ -137,6 +143,71 @@ struct WirePlumberMixer::Impl {
       }
     }
     self->pendingBeforeReady.clear();
+
+    self->sweepDeviceVolumes();
+  }
+
+  // mixer-api "changed" fires with the node's global id. Runs on the poll thread during dispatch().
+  static void onMixerChanged(GObject* /*mixer*/, guint id, gpointer data) noexcept {
+    static_cast<Impl*>(data)->pushVolume(static_cast<std::uint32_t>(id));
+  }
+
+  bool readVolume(std::uint32_t id, float& volume, bool& muted) {
+    if (mixer == nullptr) {
+      return false;
+    }
+    GVariant* variant = nullptr;
+    g_signal_emit_by_name(mixer, "get-volume", static_cast<guint>(id), &variant);
+    if (variant == nullptr) {
+      return false;
+    }
+    gdouble vol = 0.0;
+    gboolean mute = FALSE;
+    const gboolean hasVolume = g_variant_lookup(variant, "volume", "d", &vol);
+    g_variant_lookup(variant, "mute", "b", &mute);
+    g_variant_unref(variant);
+    if (hasVolume == FALSE) {
+      return false;
+    }
+    volume = static_cast<float>(vol);
+    muted = mute != FALSE;
+    return true;
+  }
+
+  void pushVolume(std::uint32_t id) {
+    if (!changeCb) {
+      return;
+    }
+    float volume = 0.0f;
+    bool muted = false;
+    if (readVolume(id, volume, muted)) {
+      changeCb(id, volume, muted);
+    }
+  }
+
+  // Emit an initial value for every device node the daemon already knows, so volume is correct
+  // without waiting for the first user/external change. "changed" backstops nodes mixer-api has not
+  // finished tracking yet.
+  void sweepDeviceVolumes() {
+    if (nodesOm == nullptr || !changeCb) {
+      return;
+    }
+    g_autoptr(WpIterator) it = wp_object_manager_new_iterator(nodesOm);
+    if (it == nullptr) {
+      return;
+    }
+    GValue val = G_VALUE_INIT;
+    while (wp_iterator_next(it, &val) != FALSE) {
+      auto* obj = static_cast<WpPipewireObject*>(g_value_get_object(&val));
+      if (obj != nullptr) {
+        const gchar* mediaClass = wp_pipewire_object_get_property(obj, PW_KEY_MEDIA_CLASS);
+        if (mediaClass != nullptr
+            && (g_str_has_prefix(mediaClass, "Audio/Sink") || g_str_has_prefix(mediaClass, "Audio/Source"))) {
+          pushVolume(wp_proxy_get_bound_id(WP_PROXY(obj)));
+        }
+      }
+      g_value_unset(&val);
+    }
   }
 
   static void onDefaultNodesLoaded(GObject* /*source*/, GAsyncResult* res, gpointer data) noexcept {
@@ -313,6 +384,8 @@ void WirePlumberMixer::setVolume(std::uint32_t id, float volume) { m_impl->reque
 void WirePlumberMixer::setMuted(std::uint32_t id, bool muted) { m_impl->requestMute(id, muted); }
 
 void WirePlumberMixer::setDefaultNode(std::uint32_t id) { m_impl->requestDefault(id); }
+
+void WirePlumberMixer::setChangeCallback(ChangeCallback callback) { m_impl->changeCb = std::move(callback); }
 
 int WirePlumberMixer::pollTimeoutMs() const {
   // WpCore's async connect/load/activate makes GLib vote 0 ("dispatch now") in a burst, which

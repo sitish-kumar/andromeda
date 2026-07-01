@@ -37,7 +37,6 @@
 namespace {
 
   constexpr float kDefaultVolumeStep = 0.05f;
-  constexpr auto kVolumeApplyMinInterval = std::chrono::milliseconds(25);
 
   // Held-key acceleration for relative volume adjustments. A lone tap moves the base step (fine
   // granularity). While held, we advance by velocity * wall-clock time since the last repeat, so the
@@ -49,7 +48,6 @@ namespace {
   constexpr float kVolumeHoldMaxVel = 2.5f;  // fraction/second cap
   constexpr float kVolumeHoldAccel = 2.0f;   // fraction/second added per second held
   constexpr auto kVolumeWriteGuardDuration = std::chrono::milliseconds(400);
-  constexpr auto kMuteWriteGuardDuration = std::chrono::milliseconds(1200);
   constexpr float kVolumeWriteGuardEpsilon = 0.02f;
 
   // Registry events.
@@ -759,9 +757,6 @@ PipeWireService::PipeWireService() {
 }
 
 PipeWireService::~PipeWireService() {
-  m_volumeThrottleTimer.stop();
-  m_pendingNodeVolumes.clear();
-
   // Destroy node proxies and their listeners
   for (auto& [id, nd] : m_nodes) {
     if (nd->listener != nullptr) {
@@ -1239,6 +1234,10 @@ void PipeWireService::onNodeParam(
   }
 
   auto& nd = *it->second;
+  // Device nodes get their volume/mute authoritatively from mixer-api (onMixerVolumeChanged); their
+  // SPA_PARAM_Props volume/mute echoes are ignored. Route metadata (availability, description, route
+  // mute) is still tracked for device selection and effective mute.
+  const bool isDeviceNode = nd.mediaClass == "Audio/Sink" || nd.mediaClass == "Audio/Source";
   if (paramId == SPA_PARAM_Route) {
     std::int32_t routeIndex = -1;
     std::int32_t routeDevice = -1;
@@ -1284,7 +1283,8 @@ void PipeWireService::onNodeParam(
       }
       upsertRoute(nd.routes, route);
 
-      if (routeAvailable != SPA_PARAM_AVAILABILITY_no
+      if (!isDeviceNode
+          && routeAvailable != SPA_PARAM_AVAILABILITY_no
           && routeProps != nullptr
           && routeVolumeDirectionMatchesNode(nd.mediaClass, routeDirection)) {
         ParsedPropsVolumes basis{};
@@ -1299,6 +1299,11 @@ void PipeWireService::onNodeParam(
       recomputeEffectiveMute(nd);
       rebuildState();
     }
+    return;
+  }
+
+  // Props volume/mute is authoritative only for program streams; device nodes use mixer-api.
+  if (isDeviceNode) {
     return;
   }
 
@@ -1425,18 +1430,6 @@ void PipeWireService::onDeviceParam(
     spa_pod_get_string(&descProp->value, &routeDesc);
   }
 
-  ParsedPropsVolumes fromRoute{};
-  bool parsedRouteVolume = false;
-  if (routeProps != nullptr && routeAvailable != SPA_PARAM_AVAILABILITY_no) {
-    ParsedPropsVolumes basis{};
-    basis.channelVol = 1.0f;
-    basis.scalarVol = 1.0f;
-    basis.softVol = 1.0f;
-    basis.channelCount = 0;
-    parsePropsObjectVolumeFields(routeProps, basis, &fromRoute);
-    parsedRouteVolume = fromRoute.hasChannel || fromRoute.hasScalar || fromRoute.hasSoft;
-  }
-
   bool muted = false;
   if (routeProps != nullptr) {
     spa_pod_prop* prop = nullptr;
@@ -1461,17 +1454,7 @@ void PipeWireService::onDeviceParam(
   route.description = routeDesc != nullptr ? routeDesc : "";
   upsertRoute(it->second.routes, route);
 
-  if (parsedRouteVolume) {
-    for (auto& [nid, node] : m_nodes) {
-      (void)nid;
-      if (node != nullptr
-          && node->deviceId == id
-          && routeVolumeDirectionMatchesNode(node->mediaClass, routeDirection)) {
-        mergeIncomingVolumes(*node, fromRoute);
-      }
-    }
-  }
-
+  // Device volume is authoritative through mixer-api; only route mute feeds effective mute here.
   for (auto& [nid, node] : m_nodes) {
     if (node != nullptr && node->deviceId == id) {
       recomputeEffectiveMute(*node);
@@ -1496,6 +1479,33 @@ void PipeWireService::parseDefaultNodes(const spa_dict* props) {
 
   if (changed) {
     m_pendingDefaultAudioDevicePropsEnum = true;
+    rebuildState();
+  }
+}
+
+void PipeWireService::onMixerVolumeChanged(std::uint32_t id, float volume, bool muted) {
+  const auto it = m_nodes.find(id);
+  if (it == m_nodes.end()) {
+    return;
+  }
+  auto& nd = *it->second;
+  if (nd.mediaClass != "Audio/Sink" && nd.mediaClass != "Audio/Source") {
+    return;
+  }
+
+  const float clamped = std::clamp(volume, 0.0f, 1.5f);
+  bool changed = false;
+  if (std::abs(nd.volume - clamped) >= 0.0001f) {
+    nd.volume = clamped;
+    changed = true;
+  }
+  if (nd.swMute != muted) {
+    nd.swMute = muted;
+    changed = true;
+  }
+  const bool before = nd.muted;
+  recomputeEffectiveMute(nd);
+  if (changed || before != nd.muted) {
     rebuildState();
   }
 }
@@ -1742,51 +1752,7 @@ void PipeWireService::recomputeEffectiveMute(NodeData& nd) {
   }
 
   const bool deviceRouteMuted = deviceRoute != nullptr && deviceRoute->muted;
-  const bool backendMuted = nd.swMute || routeMuted || deviceRouteMuted;
-  if (nd.pendingMute.has_value() && std::chrono::steady_clock::now() >= nd.muteWriteGuardUntil) {
-    nd.pendingMute.reset();
-    nd.muteWriteGuardUntil = {};
-  }
-  nd.muted = nd.pendingMute.value_or(backendMuted);
-}
-
-void PipeWireService::scheduleMuteWriteGuard() {
-  std::optional<std::chrono::steady_clock::time_point> nextExpiry;
-  for (const auto& node : std::views::values(m_nodes)) {
-    if (node == nullptr || !node->pendingMute.has_value()) {
-      continue;
-    }
-    if (!nextExpiry.has_value() || node->muteWriteGuardUntil < *nextExpiry) {
-      nextExpiry = node->muteWriteGuardUntil;
-    }
-  }
-
-  if (!nextExpiry.has_value()) {
-    m_muteWriteGuardTimer.stop();
-    return;
-  }
-
-  const auto now = std::chrono::steady_clock::now();
-  const auto delay = *nextExpiry > now ? std::chrono::ceil<std::chrono::milliseconds>(*nextExpiry - now)
-                                       : std::chrono::milliseconds(0);
-  m_muteWriteGuardTimer.start(delay, [this]() { expireMuteWriteGuards(); });
-}
-
-void PipeWireService::expireMuteWriteGuards() {
-  bool changed = false;
-  for (auto& node : std::views::values(m_nodes)) {
-    if (node == nullptr || !node->pendingMute.has_value()) {
-      continue;
-    }
-    const bool before = node->muted;
-    recomputeEffectiveMute(*node);
-    changed = changed || before != node->muted;
-  }
-
-  if (changed) {
-    rebuildState();
-  }
-  scheduleMuteWriteGuard();
+  nd.muted = nd.swMute || routeMuted || deviceRouteMuted;
 }
 
 void PipeWireService::applyVolumePropsFromDict(NodeData& nd, const spa_dict* props, bool applyMixerFieldsFromDict) {
@@ -1829,58 +1795,12 @@ void PipeWireService::applyVolumePropsFromDict(NodeData& nd, const spa_dict* pro
   recomputeEffectiveMute(nd);
 }
 
-void PipeWireService::scheduleVolumeFlush() {
-  const auto now = std::chrono::steady_clock::now();
-  const auto earliest = m_lastVolumeFlushValid ? (m_lastVolumeFlushAt + kVolumeApplyMinInterval)
-                                               : std::chrono::steady_clock::time_point{};
-
-  if (!m_lastVolumeFlushValid || now >= earliest) {
-    m_volumeThrottleTimer.stop();
-    flushPendingNodeVolumes();
-    m_lastVolumeFlushAt = std::chrono::steady_clock::now();
-    m_lastVolumeFlushValid = true;
-    return;
-  }
-
-  const auto delay = std::chrono::duration_cast<std::chrono::milliseconds>(earliest - now);
-  const auto wait = std::max(delay, std::chrono::milliseconds{1});
-  m_volumeThrottleTimer.start(wait, [this]() {
-    flushPendingNodeVolumes();
-    m_lastVolumeFlushAt = std::chrono::steady_clock::now();
-  });
-}
-
-void PipeWireService::flushPendingNodeVolumes() {
-  if (m_pendingNodeVolumes.empty()) {
-    return;
-  }
-
-  bool dirty = false;
-  auto pending = std::move(m_pendingNodeVolumes);
-
-  for (const auto& [id, volume] : pending) {
-    if (!applyNodeVolumeImmediate(id, volume)) {
-      continue;
-    }
-    dirty = true;
-    if (id == m_state.defaultSinkId && m_state.defaultSinkId != 0) {
-      emitVolumePreview(false, id, volume);
-    } else if (id == m_state.defaultSourceId && m_state.defaultSourceId != 0) {
-      emitVolumePreview(true, id, volume);
-    }
-  }
-
-  if (dirty) {
-    rebuildState();
-  }
-}
-
 void PipeWireService::noteVolumeWritten(NodeData& nd, float volume) {
   nd.lastWrittenVolume = volume;
   nd.volumeWriteGuardUntil = std::chrono::steady_clock::now() + kVolumeWriteGuardDuration;
 }
 
-bool PipeWireService::applyNodeVolumeImmediate(std::uint32_t id, float volume) {
+bool PipeWireService::applyNodeVolume(std::uint32_t id, float volume) {
   auto it = m_nodes.find(id);
   if (it == m_nodes.end()) {
     return false;
@@ -1892,11 +1812,11 @@ bool PipeWireService::applyNodeVolumeImmediate(std::uint32_t id, float volume) {
   }
 
   volume = std::clamp(volume, 0.0f, 1.5f);
-  noteVolumeWritten(nd, volume);
 
   // Device nodes go through WirePlumber's mixer-api so the change lands where pipewire-pulse /
   // pavucontrol read it. A raw node/route write bypasses that and desyncs pavucontrol; see
-  // project_volume_wireplumber_authority. The mixer queues writes until it is ready.
+  // project_volume_wireplumber_authority. The mixer queues writes until it is ready, then echoes the
+  // committed value back through onMixerVolumeChanged.
   const bool isDeviceNode = nd.mediaClass == "Audio/Sink" || nd.mediaClass == "Audio/Source";
   if (isDeviceNode) {
     if (m_wpMixer != nullptr) {
@@ -1908,6 +1828,10 @@ bool PipeWireService::applyNodeVolumeImmediate(std::uint32_t id, float volume) {
     }
     return false;
   }
+
+  // Program streams write SPA props directly; note the write so stale echoes are rejected until the
+  // daemon confirms.
+  noteVolumeWritten(nd, volume);
 
   // Convert linear volume to cubic (PipeWire native)
   float cubic = volume * volume * volume;
@@ -1933,13 +1857,6 @@ bool PipeWireService::applyNodeVolumeImmediate(std::uint32_t id, float volume) {
     return true;
   }
   return false;
-}
-
-float PipeWireService::pendingOrLiveVolume(std::uint32_t id, float fallback) const {
-  if (const auto it = m_pendingNodeVolumes.find(id); it != m_pendingNodeVolumes.end()) {
-    return it->second;
-  }
-  return fallback;
 }
 
 float PipeWireService::relativeAdjustDelta(int gesture, float baseStep) {
@@ -1973,12 +1890,14 @@ void PipeWireService::setNodeVolume(std::uint32_t id, float volume) {
   }
 
   const float clamped = std::clamp(volume, 0.0f, 1.5f);
-  m_pendingNodeVolumes[id] = clamped;
-  scheduleVolumeFlush();
 
   const std::string& appBinary = it->second->applicationBinary;
   if (!appBinary.empty()) {
     m_userAppVolumes[appBinary] = clamped;
+  }
+
+  if (applyNodeVolume(id, clamped)) {
+    rebuildState();
   }
 }
 
@@ -1993,15 +1912,15 @@ void PipeWireService::setNodeMuted(std::uint32_t id, bool muted) {
     return;
   }
 
-  // Device nodes go through WirePlumber's mixer-api to keep pipewire-pulse / pavucontrol in sync.
+  // Device nodes go through WirePlumber's mixer-api to keep pipewire-pulse / pavucontrol in sync. The
+  // committed mute echoes back through onMixerVolumeChanged; swMute is set optimistically for
+  // immediate UI feedback.
   const bool isDeviceNode = nd.mediaClass == "Audio/Sink" || nd.mediaClass == "Audio/Source";
   if (isDeviceNode && m_wpMixer != nullptr) {
     m_wpMixer->setMuted(id, muted);
     const bool before = nd.muted;
-    nd.pendingMute = muted;
-    nd.muteWriteGuardUntil = std::chrono::steady_clock::now() + kMuteWriteGuardDuration;
+    nd.swMute = muted;
     recomputeEffectiveMute(nd);
-    scheduleMuteWriteGuard();
     if (before != nd.muted) {
       if (id == m_state.defaultSinkId && m_state.defaultSinkId != 0) {
         emitVolumePreview(false, id, nd.volume);
@@ -2052,8 +1971,6 @@ void PipeWireService::setNodeMuted(std::uint32_t id, bool muted) {
   pw_node_set_param(nd.proxy, SPA_PARAM_Props, 0, pod);
 
   const bool before = nd.muted;
-  nd.pendingMute.reset();
-  nd.muteWriteGuardUntil = {};
   nd.swMute = muted;
   if (nd.hasRoute && nd.routeIndex >= 0) {
     nd.nodeRouteMute = muted;
@@ -2220,7 +2137,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
         }
 
         const float delta = relativeAdjustDelta(1, *step);
-        setVolume(std::clamp(pendingOrLiveVolume(sink->id, sink->volume) + delta, 0.0f, maxVolume()));
+        setVolume(std::clamp(sink->volume + delta, 0.0f, maxVolume()));
         return "ok\n";
       },
       "volume-up [step]", "Increase speaker volume"
@@ -2244,7 +2161,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
         }
 
         const float delta = relativeAdjustDelta(2, *step);
-        setVolume(std::clamp(pendingOrLiveVolume(sink->id, sink->volume) - delta, 0.0f, maxVolume()));
+        setVolume(std::clamp(sink->volume - delta, 0.0f, maxVolume()));
         return "ok\n";
       },
       "volume-down [step]", "Decrease speaker volume"
@@ -2302,7 +2219,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
         }
 
         const float delta = relativeAdjustDelta(3, *step);
-        setMicVolume(std::clamp(pendingOrLiveVolume(source->id, source->volume) + delta, 0.0f, maxVolume()));
+        setMicVolume(std::clamp(source->volume + delta, 0.0f, maxVolume()));
         return "ok\n";
       },
       "mic-volume-up [step]", "Increase microphone volume"
@@ -2326,7 +2243,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
         }
 
         const float delta = relativeAdjustDelta(4, *step);
-        setMicVolume(std::clamp(pendingOrLiveVolume(source->id, source->volume) - delta, 0.0f, maxVolume()));
+        setMicVolume(std::clamp(source->volume - delta, 0.0f, maxVolume()));
         return "ok\n";
       },
       "mic-volume-down [step]", "Decrease microphone volume"
