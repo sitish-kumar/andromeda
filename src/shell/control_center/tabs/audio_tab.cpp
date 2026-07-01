@@ -1291,8 +1291,6 @@ namespace {
       key.push_back(':');
       key += device.name;
       key.push_back(':');
-      key += device.portName;
-      key.push_back(':');
       key += device.description;
       key.push_back('\n');
     }
