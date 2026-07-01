@@ -31,6 +31,7 @@
       "choose-display": "Choose display",
       "confirm-region": "Enter or Space to capture · Esc to cancel · drag to reselect",
       "fullscreen": "Full screen",
+      "overlay-alloc-failed": "Could not display the screenshot overlay (GPU out of video memory?)",
       "region": "Select region"
     },
     "widgets": {

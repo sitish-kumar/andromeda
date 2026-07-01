@@ -718,6 +718,11 @@ void ScreenshotService::ensureRegionOverlay() {
     m_regionOverlay = std::make_unique<capture::ScreenshotRegionOverlay>();
   }
   m_regionOverlay->initialize(m_wayland, m_regionRenderContext);
+  m_regionOverlay->setFailureCallback([this](const std::string& message) {
+    m_frozenScreenshots.clear();
+    m_regionFullscreenPick = false;
+    notifyError(message);
+  });
   m_regionOverlay->setCompleteCallback([this](std::optional<LogicalRect> region, wl_output* output) {
     if (!region.has_value()) {
       m_frozenScreenshots.clear();
