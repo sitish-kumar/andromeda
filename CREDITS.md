@@ -57,7 +57,6 @@ Bundled in `third_party/` and built from source:
 External tools Noctalia integrates with at runtime when present:
 
 - **[ddcutil](https://www.ddcutil.com/)** — External display brightness control
-- **[gpu-screen-recorder](https://git.dec05eba.com/gpu-screen-recorder/about/)** — Hardware-accelerated screen recording
 
 ## Special Thanks
 
