@@ -1447,16 +1447,10 @@ std::unique_ptr<Flex> AudioTab::createDeviceVolumeCard(DeviceVolumeCardSpec card
                   .flexGrow = 1.0f,
               },
               ui::label({
-                  .text = i18n::tr(card.devicePrefixKey),
-                  .fontSize = Style::fontSizeTitle * scale,
-                  .color = colorSpecFromRole(ColorRole::OnSurface),
-                  .fontWeight = FontWeight::Bold,
-              }),
-              ui::label({
                   .out = &card.state.deviceLabel,
                   .text = i18n::tr(card.noDeviceKey),
                   .fontSize = Style::fontSizeBody * scale,
-                  .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+                  .color = colorSpecFromRole(ColorRole::OnSurface),
                   .maxLines = 1,
                   .ellipsize = TextEllipsize::Middle,
                   .flexGrow = 1.0f,
@@ -1607,7 +1601,6 @@ std::unique_ptr<Flex> AudioTab::create() {
                       .defaultDeviceId = [](const AudioState& state) { return state.defaultSinkId; },
                       .activate = [this](std::uint32_t id) { m_audio->setDefaultSink(id); },
                   },
-              .devicePrefixKey = "control-center.audio.output-device-prefix",
               .noDeviceKey = "control-center.audio.no-output-selected",
               .muteGlyph = "volume-high",
               .queueVolume =
@@ -1635,7 +1628,6 @@ std::unique_ptr<Flex> AudioTab::create() {
                       .defaultDeviceId = [](const AudioState& state) { return state.defaultSourceId; },
                       .activate = [this](std::uint32_t id) { m_audio->setDefaultSource(id); },
                   },
-              .devicePrefixKey = "control-center.audio.input-device-prefix",
               .noDeviceKey = "control-center.audio.no-input-selected",
               .muteGlyph = "microphone",
               .queueVolume =

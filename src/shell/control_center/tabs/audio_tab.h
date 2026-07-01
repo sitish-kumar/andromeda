@@ -65,7 +65,6 @@ private:
   struct DeviceVolumeCardSpec {
     DeviceVolumeCardState& state;
     DeviceMenuModel deviceMenu;
-    std::string_view devicePrefixKey;
     std::string_view noDeviceKey;
     std::string_view muteGlyph;
     std::function<void(float)> queueVolume;
