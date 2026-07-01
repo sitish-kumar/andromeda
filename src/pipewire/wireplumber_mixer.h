@@ -27,6 +27,11 @@ public:
   void setVolume(std::uint32_t id, float volume);
   void setMuted(std::uint32_t id, bool muted);
 
+  // Selects the configured default device by node id, mirroring `wpctl set-default`: looks the node
+  // up in our own WpCore, reads its media.class + node.name, and drives default-nodes-api. WirePlumber
+  // applies it live and persists it across reboots.
+  void setDefaultNode(std::uint32_t id);
+
   [[nodiscard]] int pollTimeoutMs() const override;
   void dispatch(const std::vector<pollfd>& fds, std::size_t startIdx) override;
 

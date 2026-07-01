@@ -4,14 +4,16 @@
 
 #include <glib.h>
 #include <optional>
+#include <pipewire/keys.h>
 #include <unordered_map>
+#include <vector>
 #include <wp/wp.h>
 
 namespace {
   constexpr Logger kLog("wireplumber");
 
   // wp_mixer_api_volume_scale_enum: SCALE_LINEAR = 0, SCALE_CUBIC = 1. Cubic makes the
-  // "volume" value match what pavucontrol/wpctl display, so we pass our perceptual value directly.
+  // "volume" value match what pavucontrol displays, so we pass our perceptual value directly.
   constexpr int kScaleCubic = 1;
 } // namespace
 
@@ -19,8 +21,11 @@ struct WirePlumberMixer::Impl {
   GMainContext* context = nullptr;
   GCancellable* cancellable = nullptr;
   WpCore* core = nullptr;
-  WpPlugin* mixer = nullptr;
-  bool ready = false;
+  WpObjectManager* nodesOm = nullptr; // mirrors the daemon's nodes, for id -> media.class/node.name
+  WpPlugin* mixer = nullptr;          // mixer-api: volume/mute
+  WpPlugin* defaultNodes = nullptr;   // default-nodes-api: default sink/source selection
+  bool ready = false;                 // mixer-api active (gates volume/mute)
+  bool defaultNodesReady = false;     // default-nodes-api active (gates default-device changes)
 
   // Writes requested before the mixer-api finished activating (~1s at startup). Keyed by node id,
   // latest value wins; flushed once ready so early volume/mute changes are not lost.
@@ -29,6 +34,8 @@ struct WirePlumberMixer::Impl {
     std::optional<bool> mute;
   };
   std::unordered_map<std::uint32_t, PendingWrite> pendingBeforeReady;
+  // Default-device change requested before default-nodes-api activated, by node id.
+  std::vector<std::uint32_t> pendingDefaultIds;
 
   // GLib poll-loop bridge state (see reference_glib_mainloop_bridge pattern).
   mutable std::vector<GPollFD> glibPollFds;
@@ -51,8 +58,19 @@ struct WirePlumberMixer::Impl {
       return;
     }
 
+    // Track nodes so set-default can resolve an id to its media.class / node.name from the daemon's
+    // own view (as wpctl does), rather than a possibly-divergent copy.
+    nodesOm = wp_object_manager_new();
+    wp_object_manager_add_interest(nodesOm, WP_TYPE_NODE, nullptr);
+    wp_object_manager_request_object_features(nodesOm, WP_TYPE_NODE, WP_PIPEWIRE_OBJECT_FEATURES_MINIMAL);
+    wp_core_install_object_manager(core, nodesOm);
+
     wp_core_load_component(
-        core, "libwireplumber-module-mixer-api", "module", nullptr, nullptr, cancellable, &Impl::onComponentLoaded, this
+        core, "libwireplumber-module-mixer-api", "module", nullptr, nullptr, cancellable, &Impl::onMixerLoaded, this
+    );
+    wp_core_load_component(
+        core, "libwireplumber-module-default-nodes-api", "module", nullptr, nullptr, cancellable,
+        &Impl::onDefaultNodesLoaded, this
     );
   }
 
@@ -61,8 +79,14 @@ struct WirePlumberMixer::Impl {
       g_cancellable_cancel(cancellable);
       g_object_unref(cancellable);
     }
+    if (defaultNodes != nullptr) {
+      g_object_unref(defaultNodes);
+    }
     if (mixer != nullptr) {
       g_object_unref(mixer);
+    }
+    if (nodesOm != nullptr) {
+      g_object_unref(nodesOm);
     }
     if (core != nullptr) {
       wp_core_disconnect(core);
@@ -73,7 +97,7 @@ struct WirePlumberMixer::Impl {
     }
   }
 
-  static void onComponentLoaded(GObject* /*source*/, GAsyncResult* res, gpointer data) noexcept {
+  static void onMixerLoaded(GObject* /*source*/, GAsyncResult* res, gpointer data) noexcept {
     auto* self = static_cast<Impl*>(data);
     GError* err = nullptr;
     if (wp_core_load_component_finish(self->core, res, &err) == FALSE) {
@@ -115,6 +139,44 @@ struct WirePlumberMixer::Impl {
     self->pendingBeforeReady.clear();
   }
 
+  static void onDefaultNodesLoaded(GObject* /*source*/, GAsyncResult* res, gpointer data) noexcept {
+    auto* self = static_cast<Impl*>(data);
+    GError* err = nullptr;
+    if (wp_core_load_component_finish(self->core, res, &err) == FALSE) {
+      kLog.warn("default-nodes-api load failed: {}", err != nullptr ? err->message : "unknown");
+      g_clear_error(&err);
+      return;
+    }
+
+    self->defaultNodes = wp_plugin_find(self->core, "default-nodes-api");
+    if (self->defaultNodes == nullptr) {
+      kLog.warn("default-nodes-api plugin not found after load");
+      return;
+    }
+
+    wp_object_activate(
+        WP_OBJECT(self->defaultNodes), WP_PLUGIN_FEATURE_ENABLED, nullptr, &Impl::onDefaultNodesActivated, self
+    );
+  }
+
+  static void onDefaultNodesActivated(GObject* /*source*/, GAsyncResult* res, gpointer data) noexcept {
+    auto* self = static_cast<Impl*>(data);
+    GError* err = nullptr;
+    if (wp_object_activate_finish(WP_OBJECT(self->defaultNodes), res, &err) == FALSE) {
+      kLog.warn("default-nodes-api activation failed: {}", err != nullptr ? err->message : "unknown");
+      g_clear_error(&err);
+      return;
+    }
+
+    self->defaultNodesReady = true;
+    kLog.info("default-nodes-api ready");
+
+    for (const std::uint32_t id : self->pendingDefaultIds) {
+      self->applyDefault(id);
+    }
+    self->pendingDefaultIds.clear();
+  }
+
   void requestVolume(std::uint32_t id, float volume) {
     if (ready) {
       applyVolume(id, volume);
@@ -133,6 +195,54 @@ struct WirePlumberMixer::Impl {
 
   void applyVolume(std::uint32_t id, float volume) { emit(id, "volume", g_variant_new_double(volume)); }
   void applyMute(std::uint32_t id, bool muted) { emit(id, "mute", g_variant_new_boolean(muted ? TRUE : FALSE)); }
+
+  void requestDefault(std::uint32_t id) {
+    if (defaultNodesReady) {
+      applyDefault(id);
+    } else {
+      pendingDefaultIds.push_back(id);
+    }
+  }
+
+  // Mirrors wpctl set-default: resolve the node in our own WpCore, read its media.class + node.name,
+  // and drive default-nodes-api, then sync so the write reaches the daemon.
+  void applyDefault(std::uint32_t id) {
+    if (defaultNodes == nullptr || nodesOm == nullptr) {
+      kLog.warn("set-default: WirePlumber not ready");
+      return;
+    }
+
+    auto* node = static_cast<WpPipewireObject*>(wp_object_manager_lookup(
+        nodesOm, WP_TYPE_NODE, WP_CONSTRAINT_TYPE_PW_GLOBAL_PROPERTY, "object.id", "=u", static_cast<guint32>(id),
+        nullptr
+    ));
+    if (node == nullptr) {
+      kLog.warn("set-default: node {} not found", id);
+      return;
+    }
+
+    const gchar* mediaClass = wp_pipewire_object_get_property(node, PW_KEY_MEDIA_CLASS);
+    const gchar* name = wp_pipewire_object_get_property(node, PW_KEY_NODE_NAME);
+    if (mediaClass != nullptr && name != nullptr) {
+      for (const char* cls : {"Audio/Sink", "Audio/Source", "Video/Source"}) {
+        if (g_str_has_prefix(mediaClass, cls) && !g_str_has_suffix(mediaClass, "/Internal")) {
+          gboolean res = FALSE;
+          g_signal_emit_by_name(defaultNodes, "set-default-configured-node-name", cls, name, &res);
+          if (res == FALSE) {
+            kLog.warn("set-default rejected for node {} ({})", id, name);
+          }
+          break;
+        }
+      }
+    } else {
+      kLog.warn("set-default: node {} missing media.class/node.name", id);
+    }
+
+    g_object_unref(node);
+    // wpctl calls wp_core_sync here only to flush before it exits; our persistent loop flushes the
+    // write on the next dispatch after the wakeup, so no sync is needed.
+    g_main_context_wakeup(context);
+  }
 
   void emit(std::uint32_t id, const char* key, GVariant* value) {
     if (mixer == nullptr) {
@@ -201,6 +311,8 @@ bool WirePlumberMixer::ready() const noexcept { return m_impl->ready; }
 void WirePlumberMixer::setVolume(std::uint32_t id, float volume) { m_impl->requestVolume(id, volume); }
 
 void WirePlumberMixer::setMuted(std::uint32_t id, bool muted) { m_impl->requestMute(id, muted); }
+
+void WirePlumberMixer::setDefaultNode(std::uint32_t id) { m_impl->requestDefault(id); }
 
 int WirePlumberMixer::pollTimeoutMs() const {
   // WpCore's async connect/load/activate makes GLib vote 0 ("dispatch now") in a burst, which

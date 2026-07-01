@@ -2,7 +2,6 @@
 
 #include "config/config_service.h"
 #include "core/log.h"
-#include "core/process.h"
 #include "ipc/ipc_arg_parse.h"
 #include "ipc/ipc_service.h"
 #include "pipewire/wireplumber_mixer.h"
@@ -254,20 +253,6 @@ namespace {
       }
     }
     return changed;
-  }
-
-  std::string escapeJsonString(std::string_view text) {
-    std::string escaped;
-    escaped.reserve(text.size());
-
-    for (const char ch : text) {
-      if (ch == '\\' || ch == '"') {
-        escaped.push_back('\\');
-      }
-      escaped.push_back(ch);
-    }
-
-    return escaped;
   }
 
   std::uint32_t parseUint32Or(const std::string& value, std::uint32_t fallback = 0) {
@@ -704,10 +689,10 @@ namespace {
   }
 
   [[nodiscard]] bool isProgramOutputNode(const PipeWireService::NodeData& nd) {
-    // Match wpctl "Streams": Stream/Output/Audio without node.link-group. Loopback/filter endpoints
-    // also expose target.object or node.passive and must not appear as application volumes. QEMU
-    // streams are the exception: they set target.object to name the VM target but are still
-    // user-controllable application volumes (as pavucontrol/wpctl show them).
+    // Match the "Streams" pavucontrol shows: Stream/Output/Audio without node.link-group. Loopback/
+    // filter endpoints also expose target.object or node.passive and must not appear as application
+    // volumes. QEMU streams are the exception: they set target.object to name the VM target but are
+    // still user-controllable application volumes.
     if (!isProgramStreamClass(nd.mediaClass) || !nd.streamClassificationReady) {
       return false;
     }
@@ -2037,34 +2022,23 @@ void PipeWireService::setDefaultNode(std::uint32_t id, const char* key) {
     return;
   }
 
-  // Prefer wpctl so WirePlumber persists the default. Metadata API alone often does not survive reboot.
-  if (process::runSync({"wpctl", "set-default", std::to_string(id)})) {
-    if (std::strcmp(key, "default.audio.sink") == 0) {
-      m_defaultSinkName = it->second->name;
-    } else if (std::strcmp(key, "default.audio.source") == 0) {
-      m_defaultSourceName = it->second->name;
-    }
-    rebuildState();
+  if (m_wpMixer == nullptr) {
+    kLog.warn("unable to set {} - WirePlumber unavailable", key);
     return;
   }
 
-  if (m_defaultMetadata == nullptr) {
-    kLog.warn("unable to set {} - default metadata unavailable", key);
-    return;
-  }
-
-  const std::string payload = R"({"name":")" + escapeJsonString(it->second->name) + "\"}";
-  const int rc = pw_metadata_set_property(m_defaultMetadata, PW_ID_CORE, key, "Spa:String:JSON", payload.c_str());
-  if (rc < 0) {
-    kLog.warn("failed to set {} to \"{}\" ({})", key, it->second->name, spa_strerror(rc));
-    return;
-  }
-
+  // Selects the configured default through default-nodes-api (what `wpctl set-default` does): applied
+  // live and persisted across reboots, with no subprocess. The mixer resolves media.class/node.name.
   if (std::strcmp(key, "default.audio.sink") == 0) {
     m_defaultSinkName = it->second->name;
   } else if (std::strcmp(key, "default.audio.source") == 0) {
     m_defaultSourceName = it->second->name;
+  } else {
+    kLog.warn("unable to set unknown default key {}", key);
+    return;
   }
+
+  m_wpMixer->setDefaultNode(id);
   rebuildState();
 }
 

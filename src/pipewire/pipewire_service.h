@@ -83,8 +83,8 @@ public:
   void setChangeCallback(ChangeCallback callback) { m_changeCallback = std::move(callback); }
   void setVolumePreviewCallback(VolumePreviewCallback callback) { m_volumePreviewCallback = std::move(callback); }
 
-  // Optional WirePlumber mixer used for device volume/mute (keeps pavucontrol/pulse in sync).
-  // When null or not yet ready, device writes fall back to wpctl.
+  // WirePlumber mixer used for device volume/mute (keeps pavucontrol/pulse in sync). Writes made
+  // before it finishes connecting are queued and flushed on activation.
   void setWirePlumberMixer(WirePlumberMixer* mixer) { m_wpMixer = mixer; }
 
   // Poll integration
