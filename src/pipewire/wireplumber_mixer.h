@@ -19,8 +19,8 @@ public:
   WirePlumberMixer(const WirePlumberMixer&) = delete;
   WirePlumberMixer& operator=(const WirePlumberMixer&) = delete;
 
-  // True once connected and the mixer-api plugin is active. Until then callers
-  // must use their own path (device volume falls back to wpctl).
+  // True once connected and the mixer-api plugin is active. Writes made before this are queued
+  // and flushed on activation, so callers need not gate on it.
   [[nodiscard]] bool ready() const noexcept;
 
   // Perceptual volume in [0, 1.5] (cubic scale), applied to a node by global id.

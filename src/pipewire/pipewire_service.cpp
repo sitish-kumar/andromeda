@@ -1836,25 +1836,19 @@ bool PipeWireService::applyNodeVolumeImmediate(std::uint32_t id, float volume) {
   volume = std::clamp(volume, 0.0f, 1.5f);
   noteVolumeWritten(nd, volume);
 
-  // Device nodes go through WirePlumber (in-process via mixer-api, else wpctl) so the change lands
-  // where pipewire-pulse / pavucontrol read it. A raw node/route write bypasses that and desyncs
-  // pavucontrol; see project_volume_wireplumber_authority.
+  // Device nodes go through WirePlumber's mixer-api so the change lands where pipewire-pulse /
+  // pavucontrol read it. A raw node/route write bypasses that and desyncs pavucontrol; see
+  // project_volume_wireplumber_authority. The mixer queues writes until it is ready.
   const bool isDeviceNode = nd.mediaClass == "Audio/Sink" || nd.mediaClass == "Audio/Source";
   if (isDeviceNode) {
-    bool applied = false;
-    if (m_wpMixer != nullptr && m_wpMixer->ready()) {
+    if (m_wpMixer != nullptr) {
       m_wpMixer->setVolume(id, volume);
-      applied = true;
-    } else {
-      applied = process::runAsync({"wpctl", "set-volume", std::to_string(id), std::format("{:.4f}", volume)});
     }
-    if (applied) {
-      if (std::abs(nd.volume - volume) >= 0.0001f) {
-        nd.volume = volume;
-        return true;
-      }
-      return false;
+    if (std::abs(nd.volume - volume) >= 0.0001f) {
+      nd.volume = volume;
+      return true;
     }
+    return false;
   }
 
   // Convert linear volume to cubic (PipeWire native)
@@ -1941,32 +1935,24 @@ void PipeWireService::setNodeMuted(std::uint32_t id, bool muted) {
     return;
   }
 
-  // Device nodes go through WirePlumber (in-process via mixer-api, else wpctl) to keep pulse in sync.
+  // Device nodes go through WirePlumber's mixer-api to keep pipewire-pulse / pavucontrol in sync.
   const bool isDeviceNode = nd.mediaClass == "Audio/Sink" || nd.mediaClass == "Audio/Source";
-  if (isDeviceNode) {
-    bool applied = false;
-    if (m_wpMixer != nullptr && m_wpMixer->ready()) {
-      m_wpMixer->setMuted(id, muted);
-      applied = true;
-    } else {
-      applied = process::runAsync({"wpctl", "set-mute", std::to_string(id), muted ? "1" : "0"});
-    }
-    if (applied) {
-      const bool before = nd.muted;
-      nd.pendingMute = muted;
-      nd.muteWriteGuardUntil = std::chrono::steady_clock::now() + kMuteWriteGuardDuration;
-      recomputeEffectiveMute(nd);
-      scheduleMuteWriteGuard();
-      if (before != nd.muted) {
-        if (id == m_state.defaultSinkId && m_state.defaultSinkId != 0) {
-          emitVolumePreview(false, id, nd.volume);
-        } else if (id == m_state.defaultSourceId && m_state.defaultSourceId != 0) {
-          emitVolumePreview(true, id, nd.volume);
-        }
-        rebuildState();
+  if (isDeviceNode && m_wpMixer != nullptr) {
+    m_wpMixer->setMuted(id, muted);
+    const bool before = nd.muted;
+    nd.pendingMute = muted;
+    nd.muteWriteGuardUntil = std::chrono::steady_clock::now() + kMuteWriteGuardDuration;
+    recomputeEffectiveMute(nd);
+    scheduleMuteWriteGuard();
+    if (before != nd.muted) {
+      if (id == m_state.defaultSinkId && m_state.defaultSinkId != 0) {
+        emitVolumePreview(false, id, nd.volume);
+      } else if (id == m_state.defaultSourceId && m_state.defaultSourceId != 0) {
+        emitVolumePreview(true, id, nd.volume);
       }
-      return;
+      rebuildState();
     }
+    return;
   }
 
   // Program streams, and device nodes for immediate local/UI consistency.

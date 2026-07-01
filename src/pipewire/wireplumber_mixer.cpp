@@ -3,6 +3,8 @@
 #include "core/log.h"
 
 #include <glib.h>
+#include <optional>
+#include <unordered_map>
 #include <wp/wp.h>
 
 namespace {
@@ -19,6 +21,14 @@ struct WirePlumberMixer::Impl {
   WpCore* core = nullptr;
   WpPlugin* mixer = nullptr;
   bool ready = false;
+
+  // Writes requested before the mixer-api finished activating (~1s at startup). Keyed by node id,
+  // latest value wins; flushed once ready so early volume/mute changes are not lost.
+  struct PendingWrite {
+    std::optional<float> volume;
+    std::optional<bool> mute;
+  };
+  std::unordered_map<std::uint32_t, PendingWrite> pendingBeforeReady;
 
   // GLib poll-loop bridge state (see reference_glib_mainloop_bridge pattern).
   mutable std::vector<GPollFD> glibPollFds;
@@ -37,7 +47,7 @@ struct WirePlumberMixer::Impl {
     core = wp_core_new(context, nullptr, nullptr);
 
     if (wp_core_connect(core) == FALSE) {
-      kLog.warn("could not connect to PipeWire; device volume will fall back to wpctl");
+      kLog.warn("could not connect to PipeWire; device volume control unavailable");
       return;
     }
 
@@ -93,13 +103,45 @@ struct WirePlumberMixer::Impl {
     g_object_set(self->mixer, "scale", kScaleCubic, nullptr);
     self->ready = true;
     kLog.info("mixer-api ready");
+
+    for (const auto& [id, write] : self->pendingBeforeReady) {
+      if (write.volume.has_value()) {
+        self->applyVolume(id, *write.volume);
+      }
+      if (write.mute.has_value()) {
+        self->applyMute(id, *write.mute);
+      }
+    }
+    self->pendingBeforeReady.clear();
   }
 
-  void emitSetVolume(std::uint32_t id, GVariant* vardict) {
-    if (!ready || mixer == nullptr) {
+  void requestVolume(std::uint32_t id, float volume) {
+    if (ready) {
+      applyVolume(id, volume);
+    } else {
+      pendingBeforeReady[id].volume = volume;
+    }
+  }
+
+  void requestMute(std::uint32_t id, bool muted) {
+    if (ready) {
+      applyMute(id, muted);
+    } else {
+      pendingBeforeReady[id].mute = muted;
+    }
+  }
+
+  void applyVolume(std::uint32_t id, float volume) { emit(id, "volume", g_variant_new_double(volume)); }
+  void applyMute(std::uint32_t id, bool muted) { emit(id, "mute", g_variant_new_boolean(muted ? TRUE : FALSE)); }
+
+  void emit(std::uint32_t id, const char* key, GVariant* value) {
+    if (mixer == nullptr) {
       return;
     }
-    GVariant* variant = g_variant_ref_sink(vardict);
+    GVariantBuilder builder;
+    g_variant_builder_init(&builder, G_VARIANT_TYPE_VARDICT);
+    g_variant_builder_add(&builder, "{sv}", key, value);
+    GVariant* variant = g_variant_ref_sink(g_variant_builder_end(&builder));
     gboolean res = FALSE;
     g_signal_emit_by_name(mixer, "set-volume", static_cast<guint>(id), variant, &res);
     g_variant_unref(variant);
@@ -156,19 +198,9 @@ WirePlumberMixer::~WirePlumberMixer() = default;
 
 bool WirePlumberMixer::ready() const noexcept { return m_impl->ready; }
 
-void WirePlumberMixer::setVolume(std::uint32_t id, float volume) {
-  GVariantBuilder builder;
-  g_variant_builder_init(&builder, G_VARIANT_TYPE_VARDICT);
-  g_variant_builder_add(&builder, "{sv}", "volume", g_variant_new_double(volume));
-  m_impl->emitSetVolume(id, g_variant_builder_end(&builder));
-}
+void WirePlumberMixer::setVolume(std::uint32_t id, float volume) { m_impl->requestVolume(id, volume); }
 
-void WirePlumberMixer::setMuted(std::uint32_t id, bool muted) {
-  GVariantBuilder builder;
-  g_variant_builder_init(&builder, G_VARIANT_TYPE_VARDICT);
-  g_variant_builder_add(&builder, "{sv}", "mute", g_variant_new_boolean(muted ? TRUE : FALSE));
-  m_impl->emitSetVolume(id, g_variant_builder_end(&builder));
-}
+void WirePlumberMixer::setMuted(std::uint32_t id, bool muted) { m_impl->requestMute(id, muted); }
 
 int WirePlumberMixer::pollTimeoutMs() const {
   // WpCore's async connect/load/activate makes GLib vote 0 ("dispatch now") in a burst, which
