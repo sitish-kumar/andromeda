@@ -39,6 +39,11 @@ struct AudioNode {
   bool operator==(const AudioNode&) const = default;
 };
 
+// User-facing label for a sink/source. Prefers the short active-route port/profile name
+// ("Speaker", "HDMI / DisplayPort 3") over the long full description, which shares a common prefix
+// across a card's ports and truncates to look identical. Falls back to the description, then name.
+[[nodiscard]] std::string audioDeviceLabel(const AudioNode& node);
+
 struct AudioState {
   std::vector<AudioNode> sinks;
   std::vector<AudioNode> sources;

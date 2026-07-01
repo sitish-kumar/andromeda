@@ -873,6 +873,13 @@ const AudioNode* PipeWireService::defaultSource() const noexcept {
   return nullptr;
 }
 
+std::string audioDeviceLabel(const AudioNode& node) {
+  if (!node.portName.empty()) {
+    return node.portName;
+  }
+  return !node.description.empty() ? node.description : node.name;
+}
+
 void PipeWireService::onRegistryGlobal(std::uint32_t id, const char* type, std::uint32_t, const spa_dict* props) {
   if (std::strcmp(type, PW_TYPE_INTERFACE_Client) == 0) {
     ClientData client;

@@ -726,15 +726,6 @@ namespace {
     }
   }
 
-  // Prefer the short port/profile name ("Speaker", "HDMI / DisplayPort 3") over the long full
-  // description, which shares a common prefix across a card's ports and truncates to look identical.
-  [[nodiscard]] std::string audioDeviceLabel(const AudioNode& node) {
-    if (!node.portName.empty()) {
-      return node.portName;
-    }
-    return !node.description.empty() ? node.description : node.name;
-  }
-
   // Hide devices whose active route is unavailable (e.g. an HDMI port with nothing plugged in), but
   // always keep the current default so the active selection is never hidden.
   [[nodiscard]] std::vector<AudioNode> availableDevices(std::span<const AudioNode> devices, std::uint32_t defaultId) {

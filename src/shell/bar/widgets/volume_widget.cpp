@@ -184,8 +184,8 @@ void VolumeWidget::syncState(Renderer& renderer) {
           {i18n::tr(m_target == VolumeWidgetTarget::Input ? "bar.widgets.volume.mic" : "bar.widgets.volume.volume"),
            std::to_string(pct) + "%"}
       );
-      if (!node->description.empty()) {
-        rows.push_back({i18n::tr("bar.widgets.volume.device"), node->description});
+      if (std::string deviceLabel = audioDeviceLabel(*node); !deviceLabel.empty()) {
+        rows.push_back({i18n::tr("bar.widgets.volume.device"), std::move(deviceLabel)});
       }
       if (!effectsProfile.empty()) {
         rows.push_back({i18n::tr("control-center.audio.effects-profile"), effectsProfile});
