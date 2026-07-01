@@ -5,6 +5,7 @@
 #include "core/process.h"
 #include "ipc/ipc_arg_parse.h"
 #include "ipc/ipc_service.h"
+#include "pipewire/wireplumber_mixer.h"
 #include "util/string_utils.h"
 
 #include <algorithm>
@@ -38,6 +39,16 @@ namespace {
 
   constexpr float kDefaultVolumeStep = 0.05f;
   constexpr auto kVolumeApplyMinInterval = std::chrono::milliseconds(25);
+
+  // Held-key acceleration for relative volume adjustments. A lone tap moves the base step (fine
+  // granularity). While held, we advance by velocity * wall-clock time since the last repeat, so the
+  // traversal speed is independent of the user's keyboard repeat-rate (only a single tap's size
+  // depends on their step). Velocity ramps with hold duration up to a cap; a gap longer than the
+  // window, or a direction change, restarts the gesture.
+  constexpr auto kVolumeHoldWindow = std::chrono::milliseconds(150);
+  constexpr float kVolumeHoldBaseVel = 0.6f; // fraction/second at the start of a hold
+  constexpr float kVolumeHoldMaxVel = 2.5f;  // fraction/second cap
+  constexpr float kVolumeHoldAccel = 2.0f;   // fraction/second added per second held
   constexpr auto kVolumeWriteGuardDuration = std::chrono::milliseconds(400);
   constexpr auto kMuteWriteGuardDuration = std::chrono::milliseconds(1200);
   constexpr float kVolumeWriteGuardEpsilon = 0.02f;
@@ -1825,13 +1836,19 @@ bool PipeWireService::applyNodeVolumeImmediate(std::uint32_t id, float volume) {
   volume = std::clamp(volume, 0.0f, 1.5f);
   noteVolumeWritten(nd, volume);
 
-  // Keep WirePlumber policy in sync without blocking the main loop.
-  // `runAsync` is fire-and-forget, so rapid wheel/slider updates remain responsive.
+  // Device nodes go through WirePlumber (in-process via mixer-api, else wpctl) so the change lands
+  // where pipewire-pulse / pavucontrol read it. A raw node/route write bypasses that and desyncs
+  // pavucontrol; see project_volume_wireplumber_authority.
   const bool isDeviceNode = nd.mediaClass == "Audio/Sink" || nd.mediaClass == "Audio/Source";
   if (isDeviceNode) {
-    const bool launched = process::runAsync({"wpctl", "set-volume", std::to_string(id), std::format("{:.4f}", volume)});
-    if (launched) {
-      // For devices, keep policy changes in WirePlumber path (pavu/wpctl-visible).
+    bool applied = false;
+    if (m_wpMixer != nullptr && m_wpMixer->ready()) {
+      m_wpMixer->setVolume(id, volume);
+      applied = true;
+    } else {
+      applied = process::runAsync({"wpctl", "set-volume", std::to_string(id), std::format("{:.4f}", volume)});
+    }
+    if (applied) {
       if (std::abs(nd.volume - volume) >= 0.0001f) {
         nd.volume = volume;
         return true;
@@ -1866,6 +1883,33 @@ bool PipeWireService::applyNodeVolumeImmediate(std::uint32_t id, float volume) {
   return false;
 }
 
+float PipeWireService::pendingOrLiveVolume(std::uint32_t id, float fallback) const {
+  if (const auto it = m_pendingNodeVolumes.find(id); it != m_pendingNodeVolumes.end()) {
+    return it->second;
+  }
+  return fallback;
+}
+
+float PipeWireService::relativeAdjustDelta(int gesture, float baseStep) {
+  const auto now = std::chrono::steady_clock::now();
+  const bool held = m_relativeAdjust.gesture == gesture && (now - m_relativeAdjust.lastAt) <= kVolumeHoldWindow;
+  if (!held) {
+    // Isolated tap or new gesture: a fixed, granular step.
+    m_relativeAdjust.gesture = gesture;
+    m_relativeAdjust.startAt = now;
+    m_relativeAdjust.lastAt = now;
+    return baseStep;
+  }
+
+  // Held: advance by velocity * elapsed since the previous repeat. Integrating over real time makes
+  // the traversal speed independent of the keyboard repeat-rate. dt <= window by construction.
+  const float elapsed = std::chrono::duration<float>(now - m_relativeAdjust.startAt).count();
+  const float dt = std::chrono::duration<float>(now - m_relativeAdjust.lastAt).count();
+  m_relativeAdjust.lastAt = now;
+  const float velocity = std::min(kVolumeHoldMaxVel, kVolumeHoldBaseVel + kVolumeHoldAccel * elapsed);
+  return velocity * dt;
+}
+
 void PipeWireService::setNodeVolume(std::uint32_t id, float volume) {
   auto it = m_nodes.find(id);
   if (it == m_nodes.end()) {
@@ -1897,11 +1941,17 @@ void PipeWireService::setNodeMuted(std::uint32_t id, bool muted) {
     return;
   }
 
-  // Keep WirePlumber policy in sync, but do not block the UI thread.
+  // Device nodes go through WirePlumber (in-process via mixer-api, else wpctl) to keep pulse in sync.
   const bool isDeviceNode = nd.mediaClass == "Audio/Sink" || nd.mediaClass == "Audio/Source";
   if (isDeviceNode) {
-    const bool launched = process::runAsync({"wpctl", "set-mute", std::to_string(id), muted ? "1" : "0"});
-    if (launched) {
+    bool applied = false;
+    if (m_wpMixer != nullptr && m_wpMixer->ready()) {
+      m_wpMixer->setMuted(id, muted);
+      applied = true;
+    } else {
+      applied = process::runAsync({"wpctl", "set-mute", std::to_string(id), muted ? "1" : "0"});
+    }
+    if (applied) {
       const bool before = nd.muted;
       nd.pendingMute = muted;
       nd.muteWriteGuardUntil = std::chrono::steady_clock::now() + kMuteWriteGuardDuration;
@@ -2136,7 +2186,8 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
           return parseVolumeStepError;
         }
 
-        setVolume(std::clamp(sink->volume + *step, 0.0f, maxVolume()));
+        const float delta = relativeAdjustDelta(1, *step);
+        setVolume(std::clamp(pendingOrLiveVolume(sink->id, sink->volume) + delta, 0.0f, maxVolume()));
         return "ok\n";
       },
       "volume-up [step]", "Increase speaker volume"
@@ -2159,7 +2210,8 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
           return parseVolumeStepError;
         }
 
-        setVolume(std::clamp(sink->volume - *step, 0.0f, maxVolume()));
+        const float delta = relativeAdjustDelta(2, *step);
+        setVolume(std::clamp(pendingOrLiveVolume(sink->id, sink->volume) - delta, 0.0f, maxVolume()));
         return "ok\n";
       },
       "volume-down [step]", "Decrease speaker volume"
@@ -2216,7 +2268,8 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
           return parseVolumeStepError;
         }
 
-        setMicVolume(std::clamp(source->volume + *step, 0.0f, maxVolume()));
+        const float delta = relativeAdjustDelta(3, *step);
+        setMicVolume(std::clamp(pendingOrLiveVolume(source->id, source->volume) + delta, 0.0f, maxVolume()));
         return "ok\n";
       },
       "mic-volume-up [step]", "Increase microphone volume"
@@ -2239,7 +2292,8 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
           return parseVolumeStepError;
         }
 
-        setMicVolume(std::clamp(source->volume - *step, 0.0f, maxVolume()));
+        const float delta = relativeAdjustDelta(4, *step);
+        setMicVolume(std::clamp(pendingOrLiveVolume(source->id, source->volume) - delta, 0.0f, maxVolume()));
         return "ok\n";
       },
       "mic-volume-down [step]", "Decrease microphone volume"

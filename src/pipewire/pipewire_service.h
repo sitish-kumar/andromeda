@@ -19,6 +19,7 @@ struct spa_hook;
 struct spa_dict;
 class ConfigService;
 class IpcService;
+class WirePlumberMixer;
 
 struct AudioNode {
   std::uint32_t id = 0;
@@ -81,6 +82,10 @@ public:
 
   void setChangeCallback(ChangeCallback callback) { m_changeCallback = std::move(callback); }
   void setVolumePreviewCallback(VolumePreviewCallback callback) { m_volumePreviewCallback = std::move(callback); }
+
+  // Optional WirePlumber mixer used for device volume/mute (keeps pavucontrol/pulse in sync).
+  // When null or not yet ready, device writes fall back to wpctl.
+  void setWirePlumberMixer(WirePlumberMixer* mixer) { m_wpMixer = mixer; }
 
   // Poll integration
   [[nodiscard]] int fd() const noexcept;
@@ -212,6 +217,20 @@ private:
   void expireMuteWriteGuards();
   void setNodeVolume(std::uint32_t id, float volume);
   void setNodeMuted(std::uint32_t id, bool muted);
+  // Volume already queued for a node but not yet flushed, else `fallback`. Lets relative
+  // adjustments (volume-up/down) compound across a held key instead of capping at one step per flush.
+  [[nodiscard]] float pendingOrLiveVolume(std::uint32_t id, float fallback) const;
+
+  // Volume delta for one relative-adjust event: the base step for a tap, or a repeat-rate-independent
+  // velocity ramp while held. `gesture` identifies the control and direction (e.g. sink-up vs
+  // mic-down) so switching gesture restarts the ramp.
+  [[nodiscard]] float relativeAdjustDelta(int gesture, float baseStep);
+  struct RelativeAdjust {
+    std::chrono::steady_clock::time_point startAt;
+    std::chrono::steady_clock::time_point lastAt;
+    int gesture = 0;
+  };
+  RelativeAdjust m_relativeAdjust;
   void setDefaultNode(std::uint32_t id, const char* key);
 
   void scheduleVolumeFlush();
@@ -247,6 +266,7 @@ private:
   PrivacyState m_privacyState;
   ChangeCallback m_changeCallback;
   VolumePreviewCallback m_volumePreviewCallback;
+  WirePlumberMixer* m_wpMixer = nullptr;
   std::uint64_t m_changeSerial = 0;
 
   void emitChanged();

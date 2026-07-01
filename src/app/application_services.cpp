@@ -52,6 +52,7 @@
 #include "pipewire/pipewire_spectrum.h"
 #include "pipewire/pipewire_spectrum_poll_source.h"
 #include "pipewire/sound_player.h"
+#include "pipewire/wireplumber_mixer.h"
 #include "render/animation/motion_service.h"
 #include "render/backend/render_backend.h"
 #include "render/core/texture_manager.h"
@@ -993,6 +994,8 @@ void Application::initBrightnessAndPipewire() {
 
   try {
     m_pipewireService = std::make_unique<PipeWireService>();
+    m_wirePlumberMixer = std::make_unique<WirePlumberMixer>();
+    m_pipewireService->setWirePlumberMixer(m_wirePlumberMixer.get());
     m_easyEffectsService = std::make_unique<EasyEffectsService>();
     m_easyEffectsService->refreshProfiles();
     m_easyEffectsService->refreshActiveEffectsProfiles();
@@ -1053,6 +1056,7 @@ void Application::initBrightnessAndPipewire() {
     m_pipewireSpectrum.reset();
     m_easyEffectsService.reset();
     m_pipewireService.reset();
+    m_wirePlumberMixer.reset();
   }
 }
 
