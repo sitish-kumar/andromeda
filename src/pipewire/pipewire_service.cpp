@@ -1257,12 +1257,19 @@ void PipeWireService::onNodeParam(
         spa_pod_get_id(&availProp->value, &routeAvailable);
       }
 
+      const spa_pod_prop* descProp = spa_pod_find_prop(param, nullptr, SPA_PARAM_ROUTE_description);
+      const char* routeDesc = nullptr;
+      if (descProp != nullptr) {
+        spa_pod_get_string(&descProp->value, &routeDesc);
+      }
+
       DeviceRouteData route;
       route.index = routeIndex >= 0 ? routeIndex : -1;
       route.device = routeDevice;
       route.direction = routeDirection;
       route.priority = routePriority;
       route.available = routeAvailable;
+      route.description = routeDesc != nullptr ? routeDesc : "";
       if (routeProps != nullptr) {
         spa_pod_prop* prop = nullptr;
         auto* propsObj = reinterpret_cast<spa_pod_object*>(const_cast<spa_pod*>(routeProps));
@@ -1365,6 +1372,12 @@ void PipeWireService::onDeviceInfo(std::uint32_t id, const pw_device_info* info)
     return;
   }
 
+  if (info->props != nullptr) {
+    if (const char* desc = spa_dict_lookup(info->props, PW_KEY_DEVICE_DESCRIPTION); desc != nullptr) {
+      it->second.description = desc;
+    }
+  }
+
   if ((info->change_mask & PW_DEVICE_CHANGE_MASK_PARAMS) != 0) {
     for (std::uint32_t i = 0; i < info->n_params; ++i) {
       if (info->params[i].id == SPA_PARAM_Route) {
@@ -1406,6 +1419,12 @@ void PipeWireService::onDeviceParam(
     spa_pod_get_id(&availProp->value, &routeAvailable);
   }
 
+  const spa_pod_prop* descProp = spa_pod_find_prop(param, nullptr, SPA_PARAM_ROUTE_description);
+  const char* routeDesc = nullptr;
+  if (descProp != nullptr) {
+    spa_pod_get_string(&descProp->value, &routeDesc);
+  }
+
   ParsedPropsVolumes fromRoute{};
   bool parsedRouteVolume = false;
   if (routeProps != nullptr && routeAvailable != SPA_PARAM_AVAILABILITY_no) {
@@ -1439,6 +1458,7 @@ void PipeWireService::onDeviceParam(
   route.priority = routePriority;
   route.available = routeAvailable;
   route.muted = muted;
+  route.description = routeDesc != nullptr ? routeDesc : "";
   upsertRoute(it->second.routes, route);
 
   if (parsedRouteVolume) {
@@ -1588,6 +1608,36 @@ void PipeWireService::rebuildState() {
     node.volume = nd->volume;
     node.muted = nd->muted;
     node.channelCount = nd->channelCount;
+
+    // Availability from the active output/input route: a device with a matching route that is
+    // explicitly unavailable and no available alternative is hidden. Cards that report "unknown"
+    // (many HDA/HiFi setups) stay visible.
+    const std::uint32_t wantDir = routeDirectionForMediaClass(nd->mediaClass);
+    const DeviceRouteData* activeRoute = wantDir != 0 ? activeRouteForDirection(nd->routes, wantDir) : nullptr;
+    const DeviceData* device = nullptr;
+    if (nd->deviceId != 0) {
+      if (const auto devIt = m_devices.find(nd->deviceId); devIt != m_devices.end()) {
+        device = &devIt->second;
+        if (activeRoute == nullptr && wantDir != 0) {
+          activeRoute = activeRouteForDirection(device->routes, wantDir);
+        }
+      }
+    }
+    const auto matchesDir = [&](const DeviceRouteData& r) { return r.direction == wantDir; };
+    const bool hasDirRoutes = std::ranges::any_of(nd->routes, matchesDir)
+        || (device != nullptr && std::ranges::any_of(device->routes, matchesDir));
+    node.available = activeRoute != nullptr || !hasDirRoutes;
+
+    // Port name: the node description's distinguishing suffix after the shared card name. HiFi HDA
+    // cards expose several sink nodes but only one generic device route, so routes can't tell them
+    // apart; the description can. Empty -> UI falls back to the full description.
+    if (device != nullptr && !device->description.empty() && nd->description.starts_with(device->description)) {
+      std::string_view suffix = std::string_view(nd->description).substr(device->description.size());
+      while (!suffix.empty() && (suffix.front() == ' ' || suffix.front() == '-')) {
+        suffix.remove_prefix(1);
+      }
+      node.portName = std::string(suffix);
+    }
 
     if (nd->mediaClass == "Audio/Sink") {
       node.isDefault = (nd->name == m_defaultSinkName);
