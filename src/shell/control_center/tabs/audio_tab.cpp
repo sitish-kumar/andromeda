@@ -767,7 +767,9 @@ namespace {
               .out = &m_title,
               .fontSize = Style::fontSizeBody * scale,
               .color = colorSpecFromRole(ColorRole::OnSurface),
+              .maxLines = 1,
               .fontWeight = FontWeight::Bold,
+              .ellipsize = TextEllipsize::Middle,
               .flexGrow = 1.0f,
           })
       );
@@ -1329,7 +1331,8 @@ void AudioTab::openDeviceMenu(DeviceVolumeCardState& card, const DeviceMenuModel
                        .label = std::format("{}{}", selectedPrefix, audioDeviceLabel(node)),
                        .enabled = true,
                        .separator = false,
-                       .hasSubmenu = false
+                       .hasSubmenu = false,
+                       .ellipsize = TextEllipsize::Middle,
                    };
                  })
       | std::ranges::to<std::vector>();
@@ -1455,6 +1458,7 @@ std::unique_ptr<Flex> AudioTab::createDeviceVolumeCard(DeviceVolumeCardSpec card
                   .fontSize = Style::fontSizeBody * scale,
                   .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
                   .maxLines = 1,
+                  .ellipsize = TextEllipsize::Middle,
                   .flexGrow = 1.0f,
               })
           ),
