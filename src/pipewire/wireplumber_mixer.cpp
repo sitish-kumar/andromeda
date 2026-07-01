@@ -55,10 +55,18 @@ struct WirePlumberMixer::Impl {
 
     context = g_main_context_new();
     cancellable = g_cancellable_new();
+
+    // Run all WirePlumber setup with our private context pushed as the thread-default. The GTasks that
+    // wp_core_load_component / wp_object_activate create capture whatever context is thread-default at
+    // call time; without this they capture the global default context, which the poll bridge never
+    // pumps, so their completion callbacks never fire and the mixer silently never activates.
+    g_main_context_push_thread_default(context);
+
     core = wp_core_new(context, nullptr, nullptr);
 
     if (wp_core_connect(core) == FALSE) {
       kLog.warn("could not connect to PipeWire; device volume control unavailable");
+      g_main_context_pop_thread_default(context);
       return;
     }
 
@@ -85,6 +93,8 @@ struct WirePlumberMixer::Impl {
     g_source_set_callback(watchdog, &Impl::onReadyWatchdog, this, nullptr);
     g_source_attach(watchdog, context);
     g_source_unref(watchdog);
+
+    g_main_context_pop_thread_default(context);
   }
 
   ~Impl() {
@@ -387,6 +397,9 @@ struct WirePlumberMixer::Impl {
     if (g_main_context_acquire(context) == FALSE) {
       return;
     }
+    // Keep our context thread-default while dispatching so async work started from callbacks (e.g.
+    // wp_object_activate) captures it rather than the global default context (see the constructor).
+    g_main_context_push_thread_default(context);
     for (std::size_t i = 0; i < glibPollFds.size(); ++i) {
       const std::size_t pollIndex = startIdx + i;
       glibPollFds[i].revents =
@@ -397,6 +410,7 @@ struct WirePlumberMixer::Impl {
     if (ready_ != FALSE) {
       g_main_context_dispatch(context);
     }
+    g_main_context_pop_thread_default(context);
     g_main_context_release(context);
   }
 };
