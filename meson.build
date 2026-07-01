@@ -68,6 +68,7 @@ polkit_gobject_dep  = dependency('polkit-gobject-1')
 # PipeWire/SPA headers use GCC extensions that trigger -Wpedantic/-Wconversion;
 # mark as system so the compiler suppresses those warnings.
 pipewire_dep        = dependency('libpipewire-0.3', include_type: 'system')
+wireplumber_dep     = dependency('wireplumber-0.5', include_type: 'system')
 curl_dep            = dependency('libcurl')
 libqalculate_dep    = dependency('libqalculate')
 libxml2_dep         = dependency('libxml-2.0')
@@ -483,6 +484,7 @@ _noctalia_sources = files(
   'src/notification/notification_display_name.cpp',
   'src/notification/notification_history_store.cpp',
   'src/pipewire/pipewire_service.cpp',
+  'src/pipewire/wireplumber_mixer.cpp',
   'src/pipewire/privacy_filter.cpp',
   'src/pipewire/pipewire_spectrum.cpp',
   'src/pipewire/sound_player.cpp',
@@ -917,6 +919,7 @@ noctalia_exe = executable('noctalia',
     polkit_agent_dep,
     polkit_gobject_dep,
     pipewire_dep,
+    wireplumber_dep,
     curl_dep,
     libqalculate_dep,
     pam_dep,

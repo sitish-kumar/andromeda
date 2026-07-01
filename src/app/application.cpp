@@ -52,6 +52,7 @@
 #include "pipewire/pipewire_spectrum.h"
 #include "pipewire/pipewire_spectrum_poll_source.h"
 #include "pipewire/sound_player.h"
+#include "pipewire/wireplumber_mixer.h"
 #include "render/animation/motion_service.h"
 #include "render/backend/render_backend.h"
 #include "render/core/texture_manager.h"
