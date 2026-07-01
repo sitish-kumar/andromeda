@@ -188,14 +188,18 @@ else
 endif
 
 # ── Vendored: md4c (CommonMark parser) ───────────────────────────────────────
-_md4c_lib = static_library('md4c',
-  'third_party/md4c/md4c.c',
-  override_options: ['warning_level=0'],
-)
-md4c_dep = declare_dependency(
-  link_whole: _md4c_lib,
-  include_directories: include_directories('third_party/md4c', is_system: true),
-)
+if get_option('system_md4c')
+  md4c_dep = dependency('md4c')
+else
+  _md4c_lib = static_library('md4c',
+    'third_party/md4c/md4c.c',
+    override_options: ['warning_level=0'],
+  )
+  md4c_dep = declare_dependency(
+    link_whole: _md4c_lib,
+    include_directories: include_directories('third_party/md4c', is_system: true),
+  )
+endif
 
 # ── System: libwebp (WebP decode and thumbnail encode) ───────────────────────
 libwebp_dep = dependency('libwebp', required: true)
