@@ -1594,6 +1594,21 @@ void PipeWireService::rebuildState() {
     return addCapture(PrivacyCaptureKind::Microphone, node->id, privacyAppName(*node));
   };
 
+  // Count sinks/sources per device: a device exposing several (e.g. an HDA card with HDMI + Speaker)
+  // is labelled by its distinguishing port name; a single-output device by its own name.
+  std::unordered_map<std::uint32_t, int> sinkCountByDevice;
+  std::unordered_map<std::uint32_t, int> sourceCountByDevice;
+  for (const auto& [id, nd] : m_nodes) {
+    if (nd == nullptr || nd->deviceId == 0) {
+      continue;
+    }
+    if (nd->mediaClass == "Audio/Sink") {
+      ++sinkCountByDevice[nd->deviceId];
+    } else if (nd->mediaClass == "Audio/Source") {
+      ++sourceCountByDevice[nd->deviceId];
+    }
+  }
+
   for (const auto& [id, nd] : m_nodes) {
     AudioNode node;
     node.id = id;
@@ -1628,15 +1643,23 @@ void PipeWireService::rebuildState() {
         || (device != nullptr && std::ranges::any_of(device->routes, matchesDir));
     node.available = activeRoute != nullptr || !hasDirRoutes;
 
-    // Port name: the node description's distinguishing suffix after the shared card name. HiFi HDA
-    // cards expose several sink nodes but only one generic device route, so routes can't tell them
-    // apart; the description can. Empty -> UI falls back to the full description.
-    if (device != nullptr && !device->description.empty() && nd->description.starts_with(device->description)) {
-      std::string_view suffix = std::string_view(nd->description).substr(device->description.size());
-      while (!suffix.empty() && (suffix.front() == ' ' || suffix.front() == '-')) {
-        suffix.remove_prefix(1);
+    // Concise label. A device with several sinks/sources gets its distinguishing port suffix (the
+    // node description after the shared card name), since routes can't tell HiFi HDA sinks apart; a
+    // single-output device gets its own name (the bare port like "Analog Stereo" is useless there).
+    // Empty -> UI falls back to the full description.
+    if (device != nullptr && !device->description.empty()) {
+      const auto& countByDevice = nd->mediaClass == "Audio/Source" ? sourceCountByDevice : sinkCountByDevice;
+      const auto countIt = countByDevice.find(nd->deviceId);
+      const int deviceOutputs = countIt != countByDevice.end() ? countIt->second : 0;
+      if (deviceOutputs > 1 && nd->description.starts_with(device->description)) {
+        std::string_view suffix = std::string_view(nd->description).substr(device->description.size());
+        while (!suffix.empty() && (suffix.front() == ' ' || suffix.front() == '-')) {
+          suffix.remove_prefix(1);
+        }
+        node.portName = std::string(suffix);
+      } else {
+        node.portName = device->description;
       }
-      node.portName = std::string(suffix);
     }
 
     if (nd->mediaClass == "Audio/Sink") {
