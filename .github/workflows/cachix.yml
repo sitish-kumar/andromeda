@@ -13,10 +13,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  cache-default:
+  cache:
     strategy:
       matrix:
         runner: [ubuntu-latest, ubuntu-24.04-arm]
+        target: [default, cuda]
     runs-on: ${{ matrix.runner }}
     if: ${{ github.repository == 'noctalia-dev/noctalia' }}
     steps:
@@ -26,25 +27,10 @@ jobs:
         with:
           name: "${{ secrets.CACHIX_CACHE_NAME }}"
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-      - run: nix build .#default --fallback
-
-  cache-cuda:
-    strategy:
-      matrix:
-        runner: [ubuntu-latest, ubuntu-24.04-arm]
-    runs-on: ${{ matrix.runner }}
-    if: ${{ github.repository == 'noctalia-dev/noctalia' }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: cachix/install-nix-action@v31
-      - uses: cachix/cachix-action@v17
-        with:
-          name: "${{ secrets.CACHIX_CACHE_NAME }}"
-          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-      - run: nix build .#cuda --fallback
+      - run: nix build .#${{ matrix.target }} --fallback
 
   push:
-    needs: [cache-default, cache-cuda]
+    needs: cache
     runs-on: ubuntu-latest
     permissions:
       contents: write
