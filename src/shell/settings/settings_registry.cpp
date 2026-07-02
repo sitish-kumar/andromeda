@@ -1020,76 +1020,6 @@ namespace settings {
     };
 
     entries.push_back(makeEntry(
-        SettingsSection::ControlCenter, "general", tr("settings.schema.panels.placement-control-center.label"),
-        tr("settings.schema.panels.placement-control-center.description"),
-        {"shell", "panel", "control_center_placement"},
-        asSegmented(enumSelect(kPanelPlacements, cfg.shell.panel.controlCenterPlacement)),
-        "attached floating bar panel position"
-    ));
-    entries.push_back(panelPositionEntry(
-        SettingsSection::ControlCenter, "general", "control_center",
-        "settings.schema.panels.position-control-center.label",
-        "settings.schema.panels.position-control-center.description", cfg.shell.panel.controlCenterPosition
-    ));
-    {
-      auto e = makeEntry(
-          SettingsSection::ControlCenter, "general", tr("settings.schema.panels.open-near-click-control-center.label"),
-          tr("settings.schema.panels.open-near-click-control-center.description"),
-          {"shell", "panel", "open_near_click_control_center"},
-          ToggleSetting{cfg.shell.panel.openNearClickControlCenter}, "open near click position anchor"
-      );
-      e.visibleWhen = SettingVisibility{{"shell", "panel", "control_center_placement"}, {"attached", "floating"}};
-      entries.push_back(std::move(e));
-    }
-    {
-      SliderSetting width =
-          sliderFor(cfg.controlCenter.width, noctalia::config::schema::kControlCenterWidthRange, true);
-      width.valueSuffix = "px";
-      entries.push_back(makeEntry(
-          SettingsSection::ControlCenter, "general", tr("settings.schema.panels.control-center-width.label"),
-          tr("settings.schema.panels.control-center-width.description"), {"control_center", "width"}, std::move(width),
-          "size dimension wide narrow"
-      ));
-    }
-    entries.push_back(makeEntry(
-        SettingsSection::ControlCenter, "general", tr("settings.schema.panels.control-center-sidebar.label"),
-        tr("settings.schema.panels.control-center-sidebar.description"), {"control_center", "sidebar"},
-        asSegmented(enumSelect(kControlCenterSidebarModes, cfg.controlCenter.sidebarMode)),
-        "full compact none sidebar icons narrow hidden"
-    ));
-    entries.push_back(makeEntry(
-        SettingsSection::ControlCenter, "general", tr("settings.schema.panels.control-center-sidebar-section.label"),
-        tr("settings.schema.panels.control-center-sidebar-section.description"), {"control_center", "sidebar_section"},
-        asSegmented(enumSelect(kControlCenterSidebarModes, cfg.controlCenter.sidebarSectionMode)),
-        "full compact none sidebar icons narrow hidden tab direct widget shortcut"
-    ));
-    entries.push_back(makeEntry(
-        SettingsSection::ControlCenter, "general", tr("settings.schema.panels.home-shortcuts.label"),
-        tr("settings.schema.panels.home-shortcuts.description"), {"control_center", "shortcuts"},
-        ShortcutListSetting{
-            .items = cfg.controlCenter.shortcuts, .suggestedOptions = controlCenterShortcutOptions(cfg), .maxItems = 6
-        },
-        "quick settings shortcuts toggles wifi bluetooth caffeine night light dnd power media weather clipboard"
-    ));
-    {
-      MultiSelectSetting tabs;
-      const auto catalog = ControlCenterPanel::hideableTabCatalog();
-      tabs.options.reserve(catalog.size());
-      tabs.selectedValues.reserve(catalog.size());
-      for (const auto& tab : catalog) {
-        tabs.options.push_back(SelectOption{std::string(tab.key), tr(tab.titleKey)});
-        if (!std::ranges::contains(cfg.controlCenter.hiddenTabs, tab.key)) {
-          tabs.selectedValues.emplace_back(tab.key);
-        }
-      }
-      tabs.persistUnselected = true;
-      entries.push_back(makeEntry(
-          SettingsSection::ControlCenter, "general", tr("settings.schema.panels.control-center-tabs.label"),
-          tr("settings.schema.panels.control-center-tabs.description"), {"control_center", "hidden_tabs"},
-          std::move(tabs), "tabs sections visible hide show display brightness media audio network power"
-      ));
-    }
-    entries.push_back(makeEntry(
         SettingsSection::Panels, "launcher", tr("settings.schema.panels.placement-launcher.label"),
         tr("settings.schema.panels.placement-launcher.description"), {"shell", "panel", "launcher_placement"},
         asSegmented(enumSelect(kPanelPlacements, cfg.shell.panel.launcherPlacement)),
@@ -1210,12 +1140,78 @@ namespace settings {
         SettingsSection::Panels, "polkit", "polkit", "settings.schema.panels.position-polkit.label",
         "settings.schema.panels.position-polkit.description", cfg.shell.panel.polkitPosition
     ));
+
+    // Control Center
     entries.push_back(makeEntry(
-        SettingsSection::Power, "session-panel", tr("settings.schema.power.session-actions.label"),
-        tr("settings.schema.power.session-actions.description"), {"shell", "session", "actions"},
-        SessionPanelActionsSetting{.items = cfg.shell.session.actions},
-        "session panel power menu logout reboot shutdown lock command actions order"
+        SettingsSection::ControlCenter, "general", tr("settings.schema.panels.placement-control-center.label"),
+        tr("settings.schema.panels.placement-control-center.description"),
+        {"shell", "panel", "control_center_placement"},
+        asSegmented(enumSelect(kPanelPlacements, cfg.shell.panel.controlCenterPlacement)),
+        "attached floating bar panel position"
     ));
+    entries.push_back(panelPositionEntry(
+        SettingsSection::ControlCenter, "general", "control_center",
+        "settings.schema.panels.position-control-center.label",
+        "settings.schema.panels.position-control-center.description", cfg.shell.panel.controlCenterPosition
+    ));
+    {
+      auto e = makeEntry(
+          SettingsSection::ControlCenter, "general", tr("settings.schema.panels.open-near-click-control-center.label"),
+          tr("settings.schema.panels.open-near-click-control-center.description"),
+          {"shell", "panel", "open_near_click_control_center"},
+          ToggleSetting{cfg.shell.panel.openNearClickControlCenter}, "open near click position anchor"
+      );
+      e.visibleWhen = SettingVisibility{{"shell", "panel", "control_center_placement"}, {"attached", "floating"}};
+      entries.push_back(std::move(e));
+    }
+    {
+      SliderSetting width =
+          sliderFor(cfg.controlCenter.width, noctalia::config::schema::kControlCenterWidthRange, true);
+      width.valueSuffix = "px";
+      entries.push_back(makeEntry(
+          SettingsSection::ControlCenter, "general", tr("settings.schema.panels.control-center-width.label"),
+          tr("settings.schema.panels.control-center-width.description"), {"control_center", "width"}, std::move(width),
+          "size dimension wide narrow"
+      ));
+    }
+    entries.push_back(makeEntry(
+        SettingsSection::ControlCenter, "general", tr("settings.schema.panels.control-center-sidebar.label"),
+        tr("settings.schema.panels.control-center-sidebar.description"), {"control_center", "sidebar"},
+        asSegmented(enumSelect(kControlCenterSidebarModes, cfg.controlCenter.sidebarMode)),
+        "full compact none sidebar icons narrow hidden"
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::ControlCenter, "general", tr("settings.schema.panels.control-center-sidebar-section.label"),
+        tr("settings.schema.panels.control-center-sidebar-section.description"), {"control_center", "sidebar_section"},
+        asSegmented(enumSelect(kControlCenterSidebarModes, cfg.controlCenter.sidebarSectionMode)),
+        "full compact none sidebar icons narrow hidden tab direct widget shortcut"
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::ControlCenter, "general", tr("settings.schema.panels.home-shortcuts.label"),
+        tr("settings.schema.panels.home-shortcuts.description"), {"control_center", "shortcuts"},
+        ShortcutListSetting{
+            .items = cfg.controlCenter.shortcuts, .suggestedOptions = controlCenterShortcutOptions(cfg), .maxItems = 6
+        },
+        "quick settings shortcuts toggles wifi bluetooth caffeine night light dnd power media weather clipboard"
+    ));
+    {
+      MultiSelectSetting tabs;
+      const auto catalog = ControlCenterPanel::hideableTabCatalog();
+      tabs.options.reserve(catalog.size());
+      tabs.selectedValues.reserve(catalog.size());
+      for (const auto& tab : catalog) {
+        tabs.options.push_back(SelectOption{std::string(tab.key), tr(tab.titleKey)});
+        if (!std::ranges::contains(cfg.controlCenter.hiddenTabs, tab.key)) {
+          tabs.selectedValues.emplace_back(tab.key);
+        }
+      }
+      tabs.persistUnselected = true;
+      entries.push_back(makeEntry(
+          SettingsSection::ControlCenter, "general", tr("settings.schema.panels.control-center-tabs.label"),
+          tr("settings.schema.panels.control-center-tabs.description"), {"control_center", "hidden_tabs"},
+          std::move(tabs), "tabs sections visible hide show display brightness media audio network power"
+      ));
+    }
 
     // Desktop
     entries.push_back(makeEntry(
@@ -1290,18 +1286,6 @@ namespace settings {
         cfg.hotCorners.bottomRight.command
     );
 
-    // Shell
-    entries.push_back(makeEntry(
-        SettingsSection::Shell, "general", tr("settings.schema.shell.avatar-path.label"),
-        tr("settings.schema.shell.avatar-path.description"), {"shell", "avatar_path"},
-        TextSetting{
-            .value = env.shellAvatarPath,
-            .placeholder = tr("settings.schema.shell.avatar-path.placeholder"),
-            .browseMode = TextSettingBrowseMode::OpenFile,
-            .browseFileExtensions = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".bmp", ".gif"}
-        },
-        "image picture"
-    ));
     // Security
     entries.push_back(makeEntry(
         SettingsSection::Security, "privacy-security", tr("settings.schema.shell.privacy-mic-filter-regex.label"),
@@ -1442,6 +1426,18 @@ namespace settings {
       e.visibleWhen = lockscreenOn;
       entries.push_back(std::move(e));
     }
+    // Shell
+    entries.push_back(makeEntry(
+        SettingsSection::Shell, "general", tr("settings.schema.shell.avatar-path.label"),
+        tr("settings.schema.shell.avatar-path.description"), {"shell", "avatar_path"},
+        TextSetting{
+            .value = env.shellAvatarPath,
+            .placeholder = tr("settings.schema.shell.avatar-path.placeholder"),
+            .browseMode = TextSettingBrowseMode::OpenFile,
+            .browseFileExtensions = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".bmp", ".gif"}
+        },
+        "image picture"
+    ));
     entries.push_back(makeEntry(
         SettingsSection::Shell, "general", tr("settings.schema.shell.time-format.label"),
         tr("settings.schema.shell.time-format.description"), {"shell", "time_format"},
@@ -1685,6 +1681,12 @@ namespace settings {
         sliderFor(cfg.osd.backgroundOpacity, noctalia::config::schema::kUnitRange, false), "hud overlay popup opacity"
     ));
     entries.push_back(makeEntry(
+        SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-monitors.label"),
+        tr("settings.schema.shell.osd-monitors.description"), {"osd", "monitors"},
+        ListSetting{.items = cfg.osd.monitors, .suggestedOptions = env.availableOutputs},
+        "monitor output display screen hud overlay"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Osd, "kinds", tr("settings.schema.shell.osd-kinds-volume.label"),
         tr("settings.schema.shell.osd-kinds-volume.description"), {"osd", "kinds", "volume"},
         ToggleSetting{cfg.osd.kinds.volume}, "hud overlay audio output input microphone"
@@ -1762,12 +1764,6 @@ namespace settings {
         SettingsSection::Osd, "kinds", tr("settings.schema.shell.osd-kinds-privacy.label"),
         tr("settings.schema.shell.osd-kinds-privacy.description"), {"osd", "kinds", "privacy"},
         ToggleSetting{cfg.osd.kinds.privacy}, "hud overlay microphone camera screen share recording"
-    ));
-    entries.push_back(makeEntry(
-        SettingsSection::Osd, "osd", tr("settings.schema.shell.osd-monitors.label"),
-        tr("settings.schema.shell.osd-monitors.description"), {"osd", "monitors"},
-        ListSetting{.items = cfg.osd.monitors, .suggestedOptions = env.availableOutputs},
-        "monitor output display screen hud overlay"
     ));
 
     // Keybinds
@@ -2287,6 +2283,14 @@ namespace settings {
         ListSetting{.items = cfg.shell.mpris.blacklist}, "mpris media player dbus session blacklist"
     ));
 
+    // Power
+    entries.push_back(makeEntry(
+        SettingsSection::Power, "session-panel", tr("settings.schema.power.session-actions.label"),
+        tr("settings.schema.power.session-actions.description"), {"shell", "session", "actions"},
+        SessionPanelActionsSetting{.items = cfg.shell.session.actions},
+        "session panel power menu logout reboot shutdown lock command actions order"
+    ));
+
     // Idle
     entries.push_back(makeEntry(
         SettingsSection::Power, "idle", tr("settings.schema.idle.pre-action-fade.label"),
@@ -2404,6 +2408,11 @@ namespace settings {
         ToggleSetting{cfg.notification.showActions}, "action buttons"
     ));
     entries.push_back(makeEntry(
+        SettingsSection::Notifications, "general", tr("settings.schema.notifications.collapse-on-dismiss.label"),
+        tr("settings.schema.notifications.collapse-on-dismiss.description"), {"notification", "collapse_on_dismiss"},
+        ToggleSetting{cfg.notification.collapseOnDismiss}, "reorder stack slide"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Notifications, "toasts", tr("settings.schema.notifications.layer.label"),
         tr("settings.schema.notifications.layer.description"), {"notification", "layer"},
         asSegmented(plainSelect(
@@ -2451,11 +2460,6 @@ namespace settings {
         SettingsSection::Notifications, "toasts", tr("settings.schema.notifications.toast-opacity.label"),
         tr("settings.schema.notifications.toast-opacity.description"), {"notification", "background_opacity"},
         sliderFor(cfg.notification.backgroundOpacity, noctalia::config::schema::kUnitRange, false), "popup"
-    ));
-    entries.push_back(makeEntry(
-        SettingsSection::Notifications, "general", tr("settings.schema.notifications.collapse-on-dismiss.label"),
-        tr("settings.schema.notifications.collapse-on-dismiss.description"), {"notification", "collapse_on_dismiss"},
-        ToggleSetting{cfg.notification.collapseOnDismiss}, "reorder stack slide"
     ));
     entries.push_back(makeEntry(
         SettingsSection::Notifications, "toasts", tr("settings.schema.notifications.monitors.label"),
