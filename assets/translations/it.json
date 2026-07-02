@@ -31,6 +31,7 @@
       "choose-display": "Scegli monitor",
       "confirm-region": "Invio o Spazio per catturare · Esc per annullare · Trascina per riselezionare",
       "fullscreen": "Schermo intero",
+      "overlay-alloc-failed": "Impossibile visualizzare l'overlay dello screenshot (memoria GPU esaurita?)",
       "region": "Seleziona area"
     },
     "widgets": {
@@ -382,8 +383,8 @@
         "elevation": "Altitudine",
         "sunrise": "Alba",
         "sunset": "Tramonto",
-        "temp-max": "Temperatura max",
-        "temp-min": "Temperatura min",
+        "temp-max": "Massima",
+        "temp-min": "Minima",
         "timezone": "Fuso orario",
         "uv-index": "Indice UV",
         "wind": "Vento"
@@ -2611,6 +2612,7 @@
           "empty": "Non ci sono template della community disponibili. Prima abilita i template della community e aggiorna il catalogo.",
           "label": "Template della community"
         },
+        "dynamic-output": "Il percorso di output viene risolto quando viene applicato il template",
         "enable-builtins": {
           "description": "Usa i template dei temi inclusi per le app",
           "label": "Abilita template integrati"

@@ -31,6 +31,7 @@
       "choose-display": "Выбраць дысплэй",
       "confirm-region": "Enter або Прабел каб зняць · Esc каб скасаваць · перацягніце, каб выбраць зноў",
       "fullscreen": "Увесь экран",
+      "overlay-alloc-failed": "Не ўдалося адлюстраваць накладку здымка экрана (у ГП скончылася відэапамяць?)",
       "region": "Выбраць рэгіён"
     },
     "widgets": {
@@ -370,6 +371,7 @@
     "weather": {
       "daily": {
         "tooltip": {
+          "condition": "Стан",
           "high": "Макс.",
           "low": "Мiн.",
           "sunrise": "Усход",
@@ -384,6 +386,7 @@
         "temp-max": "Максімальная тэмпература",
         "temp-min": "Мінімальная тэмпература",
         "timezone": "Часавы пояс",
+        "uv-index": "Узровень УФ",
         "wind": "Вецер"
       },
       "disabled": "Уключыце [weather] у config.toml",
@@ -393,13 +396,22 @@
         "description": "Надвор'е",
         "temperature": "10 / 4C"
       },
+      "forecast-view": {
+        "daily": "Па дням",
+        "hourly": "Па гадзінам"
+      },
       "hourly": {
+        "summary": "{condition} / Дождж {precip}%",
         "tooltip": {
+          "condition": "Стан",
           "humidity": "Вільг.",
+          "rain": "Дождж",
           "wind": "Вецер"
         }
       },
       "location-unavailable": "Месцазнаходжанне недаступна",
+      "no-location-body": "Дадайце ваш адрас або ўключыце аўтавызначэнне ў наладах месцазнаходжання.",
+      "no-location-title": "Месцазнаходжання не задана",
       "refreshing": "Абнаўленне надвор'я...",
       "waiting": "Чаканне дадзеных аб надвор'і"
     }

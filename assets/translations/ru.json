@@ -2096,7 +2096,7 @@
             "gpu-usage": "Загрузка GPU",
             "gpu-vram": "GPU VRAM",
             "network-rx": "Загрузка",
-            "network-tx": "Отдача",
+            "network-tx": "Выгрузка",
             "ram-usage": "Использование оперативной памяти",
             "swap-usage": "Использование swap"
           },
