@@ -10,7 +10,7 @@ built directly on Wayland and OpenGL ES with no Qt or GTK dependency, so the UI,
 are designed as one cohesive shell instead of a collection of unrelated panels and scripts.
 
 > [!IMPORTANT]
-> Noctalia v5 is in early/alpha development. Expect breaking configuration and behavior changes while the project is still taking shape.
+> Noctalia v5 is currently in Beta. While the core features and architecture are stabilizing, you may still encounter occasional configuration or behavior adjustments as we prepare for the final release.
 
 <p><br/></p>
 
