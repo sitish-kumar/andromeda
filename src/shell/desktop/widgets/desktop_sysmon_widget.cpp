@@ -437,7 +437,7 @@ void DesktopSysmonWidget::layoutGaugeMode(Renderer& renderer) {
 
 void DesktopSysmonWidget::layoutGraphMode(Renderer& renderer) {
   const float scale = m_contentScale;
-  const float fontSize = Style::fontSizeBody * scale;
+  const float fontSize = Style::fontSizeCaption * scale;
   const float glyphSize = Style::baseGlyphSize * scale;
   const float groupGap = Style::spaceXs * scale;
   const float legendGap = Style::spaceMd * scale;
