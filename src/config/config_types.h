@@ -552,7 +552,7 @@ struct DockConfig {
   float magnificationScale = 1.45f;    // max icon scale multiplier at the pointer center
   float activeOpacity = 1.0f;          // focused app icon opacity
   float inactiveOpacity = 0.85f;       // non-focused app icon opacity
-  bool showDots = false;               // show optional running window dots beside app icons
+  bool showDots = false;               // show optional running window dots below app icons
   bool showInstanceCount = true;       // show a badge with count when app has >1 window
   DockLauncherPosition launcherPosition = DockLauncherPosition::None;
   std::string launcherIcon = "grid-dots";   // Tabler glyph name

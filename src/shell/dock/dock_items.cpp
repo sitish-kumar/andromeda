@@ -564,10 +564,10 @@ namespace shell::dock {
                   .visible = false,
                   .configure = [verticalDots, edge, cellMain, dot](Box& box) {
                     if (verticalDots) {
-                      const float x = edge == DockEdge::Left ? std::round(cellMain - dot - 1.0f) : 1.0f;
+                      const float x = edge == DockEdge::Left ? 1.0f : std::round(cellMain - dot - 1.0f);
                       box.setPosition(x, std::round((cellMain - dot) * 0.5f));
                     } else {
-                      const float y = edge == DockEdge::Bottom ? 1.0f : std::round(cellMain - dot - 1.0f);
+                      const float y = edge == DockEdge::Bottom ? std::round(cellMain - dot - 1.0f) : 1.0f;
                       box.setPosition(std::round((cellMain - dot) * 0.5f), y);
                     }
                   },
@@ -734,10 +734,10 @@ namespace shell::dock {
           if (visible) {
             const float main = groupStart + static_cast<float>(dotIndex) * (dot + kDotGap);
             if (verticalDots) {
-              const float x = edge == DockEdge::Left ? std::round(cellMain - dot - 1.0f) : 1.0f;
+              const float x = edge == DockEdge::Left ? 1.0f : std::round(cellMain - dot - 1.0f);
               dotNode->setPosition(x, main);
             } else {
-              const float y = edge == DockEdge::Bottom ? 1.0f : std::round(cellMain - dot - 1.0f);
+              const float y = edge == DockEdge::Bottom ? std::round(cellMain - dot - 1.0f) : 1.0f;
               dotNode->setPosition(main, y);
             }
           }
