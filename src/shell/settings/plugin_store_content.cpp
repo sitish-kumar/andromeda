@@ -324,8 +324,8 @@ namespace settings {
         ui::label({
             .text = entry.name,
             .fontSize = Style::fontSizeHeader * scale,
-            .color = colorSpecFromRole(ColorRole::OnSurface),
             .fontWeight = FontWeight::Bold,
+            .color = colorSpecFromRole(ColorRole::OnSurface),
         })
     );
     if (!entry.author.empty()) {
@@ -357,8 +357,8 @@ namespace settings {
               ui::label({
                   .text = i18n::tr("settings.badges.official"),
                   .fontSize = Style::fontSizeMini * scale,
-                  .color = colorSpecFromRole(ColorRole::Primary),
                   .fontWeight = FontWeight::Bold,
+                  .color = colorSpecFromRole(ColorRole::Primary),
               })
           )
       );

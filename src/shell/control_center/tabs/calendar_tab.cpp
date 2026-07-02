@@ -199,9 +199,9 @@ std::unique_ptr<Flex> CalendarTab::create() {
           .out = &m_todayLabel,
           .text = formatShellDate(m_config),
           .fontSize = Style::fontSizeTitle * scale,
+          .fontWeight = FontWeight::Medium,
           .color = colorSpecFromRole(ColorRole::Secondary),
           .maxLines = 1,
-          .fontWeight = FontWeight::Medium,
           .configure = [this](Label& label) {
             label.setHitTestVisible(true);
             label.setOnClick([this](const InputArea::PointerData&) {
@@ -246,9 +246,9 @@ std::unique_ptr<Flex> CalendarTab::create() {
       ui::label({
           .out = &m_monthLabel,
           .fontSize = (Style::fontSizeTitle + Style::spaceXs) * scale,
+          .fontWeight = FontWeight::Bold,
           .color = colorSpecFromRole(ColorRole::OnSurface),
           .maxLines = 1,
-          .fontWeight = FontWeight::Bold,
       })
   );
   header->addChild(std::move(monthWrap));
@@ -298,9 +298,9 @@ std::unique_ptr<Flex> CalendarTab::create() {
           .out = &m_eventsTitle,
           .text = i18n::tr("control-center.calendar.events"),
           .fontSize = Style::fontSizeTitle * scale,
+          .fontWeight = FontWeight::Bold,
           .color = colorSpecFromRole(ColorRole::OnSurface),
           .maxLines = 1,
-          .fontWeight = FontWeight::Bold,
       }),
       ui::scrollView({
           .out = &m_eventsScroll,
@@ -641,8 +641,8 @@ void CalendarTab::rebuild() {
         ui::label({
             .text = weekdays[i],
             .fontSize = Style::fontSizeCaption * scale,
-            .color = colorSpecFromRole(weekend ? ColorRole::Secondary : ColorRole::OnSurfaceVariant),
             .fontWeight = FontWeight::Medium,
+            .color = colorSpecFromRole(weekend ? ColorRole::Secondary : ColorRole::OnSurfaceVariant),
         })
     );
 

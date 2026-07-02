@@ -89,8 +89,8 @@ namespace {
     return ui::label({
         .text = std::string(text),
         .fontSize = fontSize,
-        .color = color,
         .fontWeight = fontWeight,
+        .color = color,
     });
   }
 
@@ -1057,8 +1057,8 @@ std::unique_ptr<Flex> SettingsWindow::buildHeaderRow(float scale) {
       ui::label({
           .text = i18n::tr("settings.window.title"),
           .fontSize = Style::fontSizeTitle * scale,
-          .color = colorSpecFromRole(ColorRole::OnSurface),
           .fontWeight = FontWeight::Bold,
+          .color = colorSpecFromRole(ColorRole::OnSurface),
           .flexGrow = 1.0f,
       }),
       ui::button({

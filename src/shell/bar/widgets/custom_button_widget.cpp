@@ -103,10 +103,10 @@ void CustomButtonWidget::create() {
           .out = &m_label,
           .text = m_labelText,
           .fontSize = Style::fontSizeBody * m_contentScale,
+          .fontWeight = labelFontWeight(),
           .fontFamily = labelFontFamily(),
           .color = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface)),
           .maxLines = 1,
-          .fontWeight = labelFontWeight(),
           .visible = !m_labelText.empty(),
       })
   );

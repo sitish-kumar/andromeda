@@ -72,8 +72,8 @@ namespace {
             .out = &ptr,
             .text = text,
             .fontSize = Style::fontSizeCaption * scale,
-            .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
             .fontWeight = FontWeight::Bold,
+            .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
         })
     );
     return ptr;
@@ -194,8 +194,8 @@ std::unique_ptr<Flex> ScreenTimeTab::create() {
       ui::label({
           .out = &m_totalLabel,
           .fontSize = Style::fontSizeHeader * 1.6f * scale,
-          .color = colorSpecFromRole(ColorRole::OnSurface),
           .fontWeight = FontWeight::Bold,
+          .color = colorSpecFromRole(ColorRole::OnSurface),
       })
   );
 

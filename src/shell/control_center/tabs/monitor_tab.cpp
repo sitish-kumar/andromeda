@@ -263,8 +263,8 @@ void MonitorTab::rebuildCards(Renderer& /*renderer*/) {
             .out = &nameLabelPtr,
             .text = display.label,
             .fontSize = Style::fontSizeBody * scale,
-            .color = colorSpecFromRole(ColorRole::OnSurface),
             .fontWeight = FontWeight::Bold,
+            .color = colorSpecFromRole(ColorRole::OnSurface),
             .flexGrow = 1.0f,
         })
     );

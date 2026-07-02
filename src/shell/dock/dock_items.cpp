@@ -596,8 +596,8 @@ namespace shell::dock {
             ui::label({
                 .out = &item.badgeLabel,
                 .fontSize = bd * kBadgeFontRatio,
-                .maxLines = 1,
                 .fontWeight = FontWeight::Bold,
+                .maxLines = 1,
                 .visible = false,
             })
         );

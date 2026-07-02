@@ -92,8 +92,8 @@ void PolkitPanel::create() {
               .out = &m_titleLabel,
               .text = i18n::tr("auth.polkit.title"),
               .fontSize = Style::fontSizeTitle * scale,
-              .color = colorSpecFromRole(ColorRole::Primary),
               .fontWeight = FontWeight::Bold,
+              .color = colorSpecFromRole(ColorRole::Primary),
           }),
           ui::label({
               .out = &m_messageLabel,

@@ -256,9 +256,9 @@ namespace {
               ui::label({
                   .out = &m_title,
                   .fontSize = Style::fontSizeBody * m_style.scale,
+                  .fontWeight = FontWeight::Bold,
                   .color = colorSpecFromRole(ColorRole::OnSurface),
                   .maxLines = 1,
-                  .fontWeight = FontWeight::Bold,
                   .baselineMode = LabelBaselineMode::StableFont,
               }),
               ui::label({
@@ -459,9 +459,9 @@ namespace {
           ui::label({
               .out = &m_title,
               .fontSize = Style::fontSizeCaption * m_style.scale,
+              .fontWeight = FontWeight::Normal,
               .color = colorSpecFromRole(ColorRole::OnSurface),
               .maxLines = 2,
-              .fontWeight = FontWeight::Normal,
               .configure = [](Label& label) { label.setTextAlign(TextAlign::Center); },
           })
       );

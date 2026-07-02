@@ -517,10 +517,10 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       auto label = ui::label({
           .text = task.title,
           .fontSize = Style::fontSizeCaption * m_contentScale,
+          .fontWeight = fontWeight,
           .fontFamily = fontFamily,
           .maxWidth = windowTitleWidth,
           .maxLines = 1,
-          .fontWeight = fontWeight,
       });
       label->measure(renderer);
       label->setPosition(std::round(tileSize + tilePadding), 0);
@@ -645,9 +645,9 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       auto badgeText = ui::label({
           .text = ws.label,
           .fontSize = badgeFontSize,
+          .fontWeight = fontWeight,
           .fontFamily = fontFamily,
           .color = workspaceTextColor(ws.workspace),
-          .fontWeight = fontWeight,
       });
       badgeText->measure(renderer);
       badgeText->setPosition(
@@ -691,9 +691,9 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       auto badgeText = ui::label({
           .text = ws.label,
           .fontSize = badgeFontSize,
+          .fontWeight = fontWeight,
           .fontFamily = fontFamily,
           .color = workspaceTextColor(ws.workspace),
-          .fontWeight = fontWeight,
       });
       badgeText->measure(renderer);
       badgeText->setPosition(

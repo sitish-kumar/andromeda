@@ -50,9 +50,9 @@ namespace settings {
         ui::label({
             .out = &m_nameLabel,
             .fontSize = Style::fontSizeBody * scale,
+            .fontWeight = FontWeight::Medium,
             .color = colorSpecFromRole(ColorRole::OnSurface),
             .maxLines = 1,
-            .fontWeight = FontWeight::Medium,
             .ellipsize = TextEllipsize::End,
         })
     );
@@ -78,8 +78,8 @@ namespace settings {
             ui::label({
                 .out = &m_badgeLabel,
                 .fontSize = Style::fontSizeMini * scale,
-                .color = colorSpecFromRole(ColorRole::Primary),
                 .fontWeight = FontWeight::Bold,
+                .color = colorSpecFromRole(ColorRole::Primary),
             })
         )
     );

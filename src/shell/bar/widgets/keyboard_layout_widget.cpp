@@ -332,8 +332,8 @@ void KeyboardLayoutWidget::create() {
           .out = &m_label,
           .text = "--",
           .fontSize = Style::fontSizeBody * m_contentScale,
-          .fontFamily = labelFontFamily(),
           .fontWeight = labelFontWeight(),
+          .fontFamily = labelFontFamily(),
       })
   );
 

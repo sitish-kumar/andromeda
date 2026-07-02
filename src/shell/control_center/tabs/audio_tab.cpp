@@ -766,9 +766,9 @@ namespace {
           ui::label({
               .out = &m_title,
               .fontSize = Style::fontSizeBody * scale,
+              .fontWeight = FontWeight::Bold,
               .color = colorSpecFromRole(ColorRole::OnSurface),
               .maxLines = 1,
-              .fontWeight = FontWeight::Bold,
               .ellipsize = TextEllipsize::Middle,
               .flexGrow = 1.0f,
           })
@@ -918,9 +918,9 @@ namespace {
                           ui::label({
                               .out = &m_appNameLabel,
                               .fontSize = Style::fontSizeBody * scale,
+                              .fontWeight = FontWeight::Bold,
                               .color = colorSpecFromRole(ColorRole::OnSurface),
                               .maxLines = 1,
-                              .fontWeight = FontWeight::Bold,
                           }),
                           ui::label({
                               .out = &m_subtitleLabel,
@@ -934,8 +934,8 @@ namespace {
                           .out = &m_valueLabel,
                           .text = "0%",
                           .fontSize = Style::fontSizeBody * scale,
-                          .minWidth = m_valueLabelMinWidth,
                           .fontWeight = FontWeight::Bold,
+                          .minWidth = m_valueLabelMinWidth,
                           .textAlign = TextAlign::End,
                       })
                   ),
@@ -1270,8 +1270,8 @@ namespace {
             ui::label({
                 .text = title,
                 .fontSize = Style::fontSizeBody * scale,
-                .color = colorSpecFromRole(ColorRole::OnSurface),
                 .fontWeight = FontWeight::Bold,
+                .color = colorSpecFromRole(ColorRole::OnSurface),
             }),
             ui::label({
                 .text = body,
@@ -1450,9 +1450,9 @@ std::unique_ptr<Flex> AudioTab::createDeviceVolumeCard(DeviceVolumeCardSpec card
               ui::label({
                   .text = i18n::tr(card.devicePrefixKey),
                   .fontSize = Style::fontSizeTitle * scale,
+                  .fontWeight = FontWeight::Bold,
                   .color = colorSpecFromRole(ColorRole::OnSurface),
                   .maxLines = 1,
-                  .fontWeight = FontWeight::Bold,
               }),
               ui::label({
                   .out = &card.state.deviceLabel,
@@ -1531,8 +1531,8 @@ std::unique_ptr<Flex> AudioTab::createDeviceVolumeCard(DeviceVolumeCardSpec card
                   .out = &card.state.valueLabel,
                   .text = "0%",
                   .fontSize = Style::fontSizeBody * scale,
-                  .minWidth = kValueLabelWidth * scale,
                   .fontWeight = FontWeight::Bold,
+                  .minWidth = kValueLabelWidth * scale,
                   .textAlign = TextAlign::End,
               }),
               ui::button({

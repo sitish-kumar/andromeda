@@ -162,8 +162,8 @@ void DesktopSysmonWidget::create() {
     const Color shadow{0.0f, 0.0f, 0.0f, 0.5f};
     auto label = ui::label({
         .out = &m_label,
-        .minWidth = m_labelMinWidth > 0.0f ? std::optional<float>{m_labelMinWidth} : std::nullopt,
         .fontWeight = FontWeight::Medium,
+        .minWidth = m_labelMinWidth > 0.0f ? std::optional<float>{m_labelMinWidth} : std::nullopt,
     });
     if (m_shadow) {
       label->setShadow(shadow, 0.0f, 1.0f);

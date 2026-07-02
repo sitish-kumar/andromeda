@@ -148,8 +148,8 @@ void FileDialogView::create() {
           ui::label({
               .out = &m_titleLabel,
               .fontSize = Style::fontSizeTitle * scale,
-              .color = colorSpecFromRole(ColorRole::Primary),
               .fontWeight = FontWeight::Bold,
+              .color = colorSpecFromRole(ColorRole::Primary),
           }),
           ui::spacer(),
           ui::button({
