@@ -11,7 +11,9 @@
 class Glyph;
 class ConfigService;
 class InputArea;
+class InputArea;
 class PipeWireService;
+class V4l2Monitor;
 
 struct PrivacyWidgetConfig {
   bool hideInactive = false;
@@ -22,7 +24,7 @@ struct PrivacyWidgetConfig {
 
 class PrivacyWidget : public Widget {
 public:
-  PrivacyWidget(PipeWireService* pipewire, ConfigService* configService, PrivacyWidgetConfig config);
+  PrivacyWidget(PipeWireService* pipewire, V4l2Monitor* v4l2, ConfigService* configService, PrivacyWidgetConfig config);
 
   void create() override;
 
@@ -50,6 +52,7 @@ private:
   [[nodiscard]] std::vector<TooltipRow> buildTooltipRows() const;
 
   PipeWireService* m_pipewire = nullptr;
+  V4l2Monitor* m_v4l2 = nullptr;
   ConfigService* m_configService = nullptr;
   PrivacyWidgetConfig m_config;
   mutable PrivacyFilter m_micFilter;

@@ -21,6 +21,7 @@ class ScreenshotService;
 class SystemMonitorService;
 class TrayService;
 class UPowerService;
+class V4l2Monitor;
 class WeatherService;
 class GammaService;
 
@@ -45,6 +46,7 @@ struct BarServices {
   IdleInhibitor* idleInhibitor = nullptr;
   MprisService* mpris = nullptr;
   PipeWireSpectrum* audioSpectrum = nullptr;
+  V4l2Monitor* v4l2 = nullptr;
   HttpClient* httpClient = nullptr;
   WeatherService* weather = nullptr;
   RenderContext* renderContext = nullptr;

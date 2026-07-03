@@ -23,6 +23,7 @@ class RenderContext;
 class ScreenshotService;
 class INetworkService;
 class PipeWireService;
+class V4l2Monitor;
 class PipeWireSpectrum;
 class PowerProfilesService;
 class TrayService;
@@ -63,6 +64,7 @@ private:
   IdleInhibitor* m_idleInhibitor;
   MprisService* m_mpris;
   PipeWireSpectrum* m_audioSpectrum;
+  V4l2Monitor* m_v4l2;
   HttpClient* m_httpClient;
   WeatherService* m_weather;
   GammaService* m_nightLight;
