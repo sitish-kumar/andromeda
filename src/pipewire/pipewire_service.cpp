@@ -1572,7 +1572,7 @@ void PipeWireService::rebuildState() {
     nextPrivacy.captures.push_back(
         PrivacyCapture{
             .kind = kind,
-            .id = nodeId,
+            .nodeId = nodeId,
             .appName = std::move(appName),
         }
     );
@@ -1660,7 +1660,7 @@ void PipeWireService::rebuildState() {
   std::ranges::sort(next.sources, {}, &AudioNode::id);
   std::ranges::sort(next.programOutputs, {}, &AudioNode::id);
   std::ranges::sort(nextPrivacy.captures, {}, [](const PrivacyCapture& capture) {
-    return std::tie(capture.kind, capture.appName, capture.id);
+    return std::tie(capture.kind, capture.appName, capture.nodeId);
   });
 
   if (next == m_state && nextPrivacy == m_privacyState) {

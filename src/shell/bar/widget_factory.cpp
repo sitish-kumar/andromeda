@@ -95,11 +95,11 @@ WidgetFactory::WidgetFactory(const BarServices& services)
       m_notifications(services.notifications), m_tray(services.tray), m_audio(services.audio),
       m_easyEffects(services.easyEffects), m_upower(services.upower), m_sysmon(services.sysmon),
       m_powerProfiles(services.powerProfiles), m_network(services.network), m_idleInhibitor(services.idleInhibitor),
-      m_mpris(services.mpris), m_audioSpectrum(services.audioSpectrum), m_v4l2(services.v4l2),
-      m_httpClient(services.httpClient), m_weather(services.weather), m_nightLight(services.nightLight),
-      m_themeService(services.theme), m_bluetooth(services.bluetooth), m_brightness(services.brightness),
-      m_lockKeys(services.lockKeys), m_clipboard(services.clipboard), m_fileWatcher(services.fileWatcher),
-      m_screenshots(services.screenshots), m_renderContext(services.renderContext), m_scriptApi(services.scriptApi) {
+      m_mpris(services.mpris), m_audioSpectrum(services.audioSpectrum), m_httpClient(services.httpClient),
+      m_weather(services.weather), m_nightLight(services.nightLight), m_themeService(services.theme),
+      m_bluetooth(services.bluetooth), m_brightness(services.brightness), m_lockKeys(services.lockKeys),
+      m_clipboard(services.clipboard), m_fileWatcher(services.fileWatcher), m_screenshots(services.screenshots),
+      m_renderContext(services.renderContext), m_scriptApi(services.scriptApi) {
   scripting::PluginRegistry::instance().ensureScanned();
 }
 
@@ -373,7 +373,7 @@ std::unique_ptr<Widget> WidgetFactory::create(
           wc->getColorSpec("inactive_color", config.inactiveColor, "widget." + name + ".inactive_color");
     }
 
-    auto widget = std::make_unique<PrivacyWidget>(m_audio, m_v4l2, &m_configService, config);
+    auto widget = std::make_unique<PrivacyWidget>(m_audio, &m_configService, config);
     widget->setContentScale(contentScale);
     return widget;
   }

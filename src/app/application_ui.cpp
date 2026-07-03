@@ -733,9 +733,7 @@ void Application::initNotificationAndOsd() {
   m_configService.addReloadCallback(
       [this]() {
         if (m_configService.lastChange().shell) {
-          m_privacyOsd.onConfigReload(
-              m_configService.config(), m_pipewireService ? &m_pipewireService->privacyState() : nullptr
-          );
+          m_privacyOsd.onConfigReload(m_configService.config(), m_pipewireService.get());
           m_bar.refresh();
         }
       },
@@ -762,7 +760,6 @@ void Application::initBarDockAndLayout() {
       .idleInhibitor = &m_idleInhibitor,
       .mpris = m_mprisService.get(),
       .audioSpectrum = m_pipewireSpectrum.get(),
-      .v4l2 = m_v4l2Monitor.get(),
       .httpClient = &m_httpClient,
       .weather = &m_weatherService,
       .renderContext = &m_renderContext,
@@ -970,19 +967,9 @@ void Application::initWidgetControllersAndCallbacks() {
       }
       if (m_pipewireService != nullptr) {
         m_audioOsd.onAudioStateChanged(*m_pipewireService);
-        m_privacyOsd.onPrivacyStateChanged(m_pipewireService->privacyState());
+        m_privacyOsd.onPrivacyStateChanged(*m_pipewireService);
       }
     });
-
-    if (m_v4l2Monitor != nullptr) {
-      m_v4l2Monitor->setChangeCallback([this, shouldRefreshControlCenter]() {
-        m_bar.refresh();
-        if (shouldRefreshControlCenter()) {
-          m_panelManager.refresh();
-        }
-        m_privacyOsd.onPrivacyStateChanged(m_v4l2Monitor->privacyState());
-      });
-    }
     m_pipewireService->setVolumePreviewCallback([this](bool isInput, std::uint32_t id, float volume, bool muted) {
       if (isInput) {
         m_audioOsd.showInput(id, volume, muted);

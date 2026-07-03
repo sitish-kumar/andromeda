@@ -11,8 +11,8 @@ class PrivacyOsd {
 public:
   void bindOverlay(OsdOverlay& overlay);
   void configure(const Config& config);
-  void onConfigReload(const Config& config, const PrivacyState* privacyState);
-  void onPrivacyStateChanged(const PrivacyState& privacyState);
+  void onConfigReload(const Config& config, const PipeWireService* service);
+  void onPrivacyStateChanged(const PipeWireService& service);
 
 private:
   struct State {
@@ -23,7 +23,7 @@ private:
     bool operator==(const State&) const = default;
   };
 
-  [[nodiscard]] State fromPrivacyState(const PrivacyState& privacyState) const;
+  [[nodiscard]] State fromPipewireState(const PrivacyState& privacyState) const;
 
   OsdOverlay* m_overlay = nullptr;
   PrivacyFilter m_micFilter;

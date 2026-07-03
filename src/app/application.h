@@ -66,7 +66,6 @@
 #include "system/lock_keys_service.h"
 #include "system/screen_time_service.h"
 #include "system/telemetry_service.h"
-#include "system/v4l2_monitor.h"
 #include "system/weather_poll_source.h"
 #include "system/weather_service.h"
 #include "theme/community_palettes.h"
@@ -268,7 +267,6 @@ private:
   std::unique_ptr<EasyEffectsService> m_easyEffectsService;
   std::unique_ptr<PipeWireSpectrum> m_pipewireSpectrum;
   std::unique_ptr<SoundPlayer> m_soundPlayer;
-  std::unique_ptr<V4l2Monitor> m_v4l2Monitor;
 
   TelemetryService m_telemetryService;
   ScreenTimeService m_screenTimeService;

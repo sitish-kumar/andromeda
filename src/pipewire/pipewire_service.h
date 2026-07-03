@@ -52,7 +52,25 @@ struct AudioState {
   bool operator==(const AudioState&) const = default;
 };
 
-#include "system/privacy_types.h"
+enum class PrivacyCaptureKind : std::uint8_t {
+  Microphone,
+  Camera,
+  Screen,
+};
+
+struct PrivacyCapture {
+  PrivacyCaptureKind kind = PrivacyCaptureKind::Microphone;
+  std::uint32_t nodeId = 0;
+  std::string appName;
+
+  bool operator==(const PrivacyCapture&) const = default;
+};
+
+struct PrivacyState {
+  std::vector<PrivacyCapture> captures;
+
+  bool operator==(const PrivacyState&) const = default;
+};
 
 class PipeWireService {
 public:

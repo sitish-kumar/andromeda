@@ -43,7 +43,7 @@ namespace {
 
 } // namespace
 
-PrivacyOsd::State PrivacyOsd::fromPrivacyState(const PrivacyState& privacyState) const {
+PrivacyOsd::State PrivacyOsd::fromPipewireState(const PrivacyState& privacyState) const {
   State out;
   for (const auto& capture : privacyState.captures) {
     switch (capture.kind) {
@@ -72,15 +72,15 @@ void PrivacyOsd::configure(const Config& config) {
   m_camFilter.update("shell.privacy.cam_filter_regex", config.shell.privacy.camFilterRegex);
 }
 
-void PrivacyOsd::onConfigReload(const Config& config, const PrivacyState* privacyState) {
+void PrivacyOsd::onConfigReload(const Config& config, const PipeWireService* service) {
   configure(config);
-  if (privacyState != nullptr) {
-    m_lastState = fromPrivacyState(*privacyState);
+  if (service != nullptr) {
+    m_lastState = fromPipewireState(service->privacyState());
   }
 }
 
-void PrivacyOsd::onPrivacyStateChanged(const PrivacyState& privacyState) {
-  const State current = fromPrivacyState(privacyState);
+void PrivacyOsd::onPrivacyStateChanged(const PipeWireService& service) {
+  const State current = fromPipewireState(service.privacyState());
 
   if (m_overlay == nullptr) {
     m_lastState = current;

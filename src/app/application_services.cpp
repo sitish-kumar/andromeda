@@ -1027,7 +1027,6 @@ void Application::initBrightnessAndPipewire() {
 
   try {
     m_pipewireService = std::make_unique<PipeWireService>();
-    m_v4l2Monitor = std::make_unique<V4l2Monitor>();
     m_wirePlumberMixer = std::make_unique<WirePlumberMixer>();
     m_pipewireService->setWirePlumberMixer(m_wirePlumberMixer.get());
     m_wirePlumberMixer->setChangeCallback([svc = m_pipewireService.get()](std::uint32_t id, float volume, bool muted) {

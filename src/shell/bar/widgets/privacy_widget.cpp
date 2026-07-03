@@ -5,7 +5,6 @@
 #include "pipewire/pipewire_service.h"
 #include "render/scene/input_area.h"
 #include "render/scene/node.h"
-#include "system/v4l2_monitor.h"
 #include "ui/builders.h"
 #include "ui/controls/glyph.h"
 #include "ui/style.h"
@@ -39,10 +38,8 @@ namespace {
 
 } // namespace
 
-PrivacyWidget::PrivacyWidget(
-    PipeWireService* pipewire, V4l2Monitor* v4l2, ConfigService* configService, PrivacyWidgetConfig config
-)
-    : m_pipewire(pipewire), m_v4l2(v4l2), m_configService(configService), m_config(config) {
+PrivacyWidget::PrivacyWidget(PipeWireService* pipewire, ConfigService* configService, PrivacyWidgetConfig config)
+    : m_pipewire(pipewire), m_configService(configService), m_config(config) {
   m_config.iconSpacing = std::clamp(m_config.iconSpacing, 0, 48);
 }
 
@@ -195,7 +192,8 @@ PrivacyWidget::Snapshot PrivacyWidget::snapshot() const {
   Snapshot out;
   refreshFilters();
 
-  auto processState = [&](const PrivacyState& state) {
+  if (m_pipewire != nullptr) {
+    const PrivacyState& state = m_pipewire->privacyState();
     for (const auto& capture : state.captures) {
       if (capture.kind == PrivacyCaptureKind::Microphone) {
         if (!m_micFilter.matches(capture.appName)) {
@@ -209,14 +207,6 @@ PrivacyWidget::Snapshot PrivacyWidget::snapshot() const {
         addNonEmpty(out.screenApps, capture.appName);
       }
     }
-  };
-
-  if (m_pipewire != nullptr) {
-    processState(m_pipewire->privacyState());
-  }
-
-  if (m_v4l2 != nullptr) {
-    processState(m_v4l2->privacyState());
   }
 
   sortUnique(out.micApps);

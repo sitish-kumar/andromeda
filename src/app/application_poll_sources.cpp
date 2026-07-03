@@ -45,9 +45,6 @@ std::vector<PollSource*> Application::currentPollSources() {
   if (m_pipewireSpectrumPollSource != nullptr) {
     sources.push_back(m_pipewireSpectrumPollSource.get());
   }
-  if (m_v4l2Monitor != nullptr) {
-    sources.push_back(m_v4l2Monitor.get());
-  }
   if (m_wirePlumberMixer != nullptr) {
     sources.push_back(m_wirePlumberMixer.get());
   }
