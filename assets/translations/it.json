@@ -1736,6 +1736,15 @@
           "description": "Spazio tra gli elementi della dock",
           "label": "Spaziatura elementi"
         },
+        "launcher-custom-image": {
+          "description": "Utilizza un'immagine sul pulsante di avvio del dock invece di un'icona",
+          "label": "Immagine personalizzata Launcher",
+          "placeholder": "Percorso immagine"
+        },
+        "launcher-custom-image-colorize": {
+          "description": "Colora l'immagine personalizzata con il colore dell'icona",
+          "label": "Colora l'immagine personalizzata"
+        },
         "launcher-icon": {
           "description": "Icona del launcher mostrata sul pulsante della dock",
           "label": "Icona launcher"

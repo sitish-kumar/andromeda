@@ -1736,6 +1736,15 @@
           "description": "Dock 项之间的间距",
           "label": "项目间距"
         },
+        "launcher-custom-image": {
+          "description": "在 Dock 启动器按钮上使用自定义图片代替图标",
+          "label": "启动器自定义图片",
+          "placeholder": "图片路径"
+        },
+        "launcher-custom-image-colorize": {
+          "description": "使用图标颜色为自定义图片着色",
+          "label": "着色自定义图片"
+        },
         "launcher-icon": {
           "description": "在 Dock 启动器按钮上显示的 Tabler 图标",
           "label": "启动器图标"
@@ -1773,7 +1782,7 @@
           "description": "从 Dock 投射全局表面阴影"
         },
         "show-dots": {
-          "description": "在 Dock 图标旁显示运行窗口的指示点",
+          "description": "在 Dock 图标下方显示运行窗口的指示点",
           "label": "显示指示点"
         },
         "show-instance-count": {

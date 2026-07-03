@@ -1596,13 +1596,13 @@
           "description": "Belső kitöltés a dokk keresztirányú tengelye mentén (az ikonok és a képernyő széle között)"
         },
         "edge-margin": {
-          "description": "Távolság a legközelebbi képernyőszéltől; a pozitív értékek lebegtetik a Dockot tőle"
+          "description": "Távolság a legközelebbi képernyőszéltől; a pozitív értékek lebegtetik a dokkot tőle"
         },
         "enabled": {
           "description": "A dokk megjelenítése vagy elrejtése"
         },
         "ends-margin": {
-          "description": "Behúzás a Dokk mindkét végéről, a főtengelye mentén"
+          "description": "Behúzás a dokk mindkét végéről, a főtengelye mentén"
         },
         "icon-size": {
           "description": "A dokk ikonok mérete pixelben",
@@ -1610,15 +1610,19 @@
         },
         "inactive-icon-opacity": {
           "description": "Nem fókuszált dokk ikonok átlátszatlansága",
-          "label": "Inaktív Ikon Átlátszatlanság"
+          "label": "Inaktív ikon átlátszatlanság"
         },
         "inactive-icon-scale": {
           "description": "Nem fókuszált dokkikonok méretaránya",
           "label": "Inaktív Ikon Méretarány"
         },
         "item-spacing": {
-          "description": "Térköz a dokk elemek között",
+          "description": "Térköz a dokkelemek között",
           "label": "Elemtávolság"
+        },
+        "launcher-custom-image": {
+          "label": "Egyéni indító-kép",
+          "placeholder": "Útvonal a képhez"
         },
         "launcher-icon": {
           "description": "A dokkindító gombján megjelenő Tabler ikon",
@@ -1640,7 +1644,7 @@
           "description": "Belső kitöltés a dokk fő tengelye mentén (az ikonok és a kapszula rövid végei között)"
         },
         "monitors": {
-          "description": "Válaszd ki, mely monitorokon jelenjen meg a Dock (hagyd üresen az összeshez); az aktív monitor szűrése ezeken a monitorokon belül érvényesül",
+          "description": "Válaszd ki, mely monitorokon jelenjen meg a dokk (hagyd üresen az összeshez); az aktív monitor szűrése ezeken a monitorokon belül érvényesül",
           "label": "Monitorok"
         },
         "pinned-apps": {

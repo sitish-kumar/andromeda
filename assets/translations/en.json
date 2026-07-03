@@ -212,8 +212,8 @@
       "all-day": "All day",
       "events": "Events",
       "no-events": "No events.",
-      "toggle-events-card": "Toggle events card",
-      "today": "Today"
+      "today": "Today",
+      "toggle-events-card": "Toggle events card"
     },
     "display": {
       "disabled": "Disabled",
