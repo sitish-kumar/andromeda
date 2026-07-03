@@ -27,6 +27,10 @@ void HotCorners::initialize(WaylandConnection& wayland, ConfigService* config, R
 }
 
 void HotCorners::onConfigReload() {
+  if (m_config == nullptr || m_wayland == nullptr) {
+    return;
+  }
+
   const auto& config = m_config->config().hotCorners;
   // Recreate whenever enabled (not just on an enabled toggle): the resolved
   // trigger layer follows the bar's layer, which a reload may have changed.
