@@ -212,6 +212,7 @@
       "all-day": "All day",
       "events": "Events",
       "no-events": "No events.",
+      "toggle-events-card": "Toggle events card",
       "today": "Today"
     },
     "display": {
