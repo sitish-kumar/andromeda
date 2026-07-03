@@ -1626,7 +1626,7 @@ std::size_t Input::stopIndexForByte(std::size_t bytePos) const {
   if (m_stopByte.empty()) {
     return 0;
   }
-  const auto it = std::lower_bound(m_stopByte.begin(), m_stopByte.end(), bytePos);
+  const auto it = std::ranges::lower_bound(m_stopByte, bytePos);
   if (it == m_stopByte.end()) {
     return m_stopByte.size() - 1;
   }

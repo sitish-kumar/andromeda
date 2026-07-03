@@ -341,7 +341,7 @@ namespace scripting {
             entry.panelPlacementDefault = placement;
           }
           if ((entry.panelWidthFill || entry.panelHeightFill) && entry.panelPlacementDefault != "floating") {
-            error = "panel entry '" + entry.id + "': width/height \"fill\" requires placement = \"floating\"";
+            error = "panel entry '" + entry.id + R"(': width/height "fill" requires placement = "floating")";
             return false;
           }
           if (const std::string position = tableString(*entryTable, "position"); !position.empty()) {
