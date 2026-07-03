@@ -442,6 +442,7 @@ void CalendarTab::onClose() {
   m_monthLabel = nullptr;
   m_previousButton = nullptr;
   m_nextButton = nullptr;
+  m_toggleEventsCardButton = nullptr;
   m_gridViewport = nullptr;
   m_grid = nullptr;
   m_eventsCard = nullptr;
