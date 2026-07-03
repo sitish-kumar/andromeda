@@ -816,6 +816,7 @@
     "badges": {
       "advanced": "Advanced",
       "community": "Community",
+      "deprecated": "Deprecated",
       "inherited": "Inherited",
       "monitor": "Monitor",
       "official": "Official",
