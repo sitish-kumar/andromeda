@@ -76,6 +76,8 @@ void PluginPanel::create() {
     }
   });
   m_reconciler.setPathResolver([this](const std::string& path) { return resolvePluginPath(path); });
+  m_pendingFocusArea = nullptr;
+  m_reconciler.setFocusRequestSink([this](InputArea* area) { m_pendingFocusArea = area; });
 
   // The runtime and file watch are set up once and persist across open/close, so
   // plugin state survives reopening and watches aren't duplicated.

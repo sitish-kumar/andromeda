@@ -263,10 +263,10 @@ namespace ui {
       static const std::unordered_set<std::string> kGraph = {"width",   "height",    "flexGrow",   "opacity",
                                                              "visible", "values",    "values2",    "color",
                                                              "color2",  "lineWidth", "fillOpacity"};
-      static const std::unordered_set<std::string> kInput = {"width",   "height",   "flexGrow",    "opacity",
-                                                             "visible", "value",    "placeholder", "fontSize",
-                                                             "enabled", "password", "multiline",   "onChange",
-                                                             "onSubmit"};
+      static const std::unordered_set<std::string> kInput = {"width",    "height",   "flexGrow",    "opacity",
+                                                             "visible",  "value",    "placeholder", "fontSize",
+                                                             "enabled",  "password", "multiline",   "focus",
+                                                             "onChange", "onSubmit"};
       static const std::unordered_set<std::string> kSelect = {"width",       "height",  "flexGrow",      "opacity",
                                                               "visible",     "options", "selectedIndex", "enabled",
                                                               "placeholder", "onChange"};
@@ -986,6 +986,11 @@ namespace ui {
       if (!slot.seeded) {
         if (const std::string* value = strProp(desired, "value")) {
           input->setValue(*value);
+        }
+        // `focus` requests keyboard focus once, when the control is created
+        // (a fresh key makes a new control) — never on later re-renders.
+        if (const bool* focus = boolProp(desired, "focus"); focus != nullptr && *focus && m_focusSink) {
+          m_focusSink(input->inputArea());
         }
         slot.seeded = true;
       }

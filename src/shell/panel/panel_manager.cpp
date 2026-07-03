@@ -2287,8 +2287,18 @@ void PanelManager::buildScene(std::uint32_t width, std::uint32_t height) {
     m_contentNode->setPosition(panelX + kPadding, panelY + kPadding);
     m_contentNode->setSize(panelW - kPadding * 2.0f, panelH - kPadding * 2.0f);
   }
+  applyPendingPanelFocus();
   if (m_pointerInside) {
     m_inputDispatcher.syncPointerHover();
+  }
+}
+
+void PanelManager::applyPendingPanelFocus() {
+  if (m_activePanel == nullptr) {
+    return;
+  }
+  if (auto* area = m_activePanel->takePendingFocusArea(); area != nullptr) {
+    m_inputDispatcher.setFocus(area);
   }
 }
 
@@ -2324,6 +2334,9 @@ void PanelManager::prepareFrame(bool needsUpdate, bool needsLayout) {
     if (m_pointerInside) {
       m_inputDispatcher.syncPointerHover();
     }
+  }
+  if (!needsSceneBuild && (needsUpdate || needsLayout)) {
+    applyPendingPanelFocus();
   }
 }
 

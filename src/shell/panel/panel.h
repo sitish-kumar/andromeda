@@ -60,6 +60,10 @@ public:
   [[nodiscard]] virtual LayerShellLayer layer() const { return LayerShellLayer::Top; }
   [[nodiscard]] virtual LayerShellKeyboard keyboardMode() const { return LayerShellKeyboard::OnDemand; }
   [[nodiscard]] virtual InputArea* initialFocusArea() const { return nullptr; }
+  // Dynamic focus: consumed (returned once, then cleared) by PanelManager after
+  // each update/layout pass. Lets content that arrives or changes after the
+  // scene build request keyboard focus (e.g. a plugin input with focus = true).
+  [[nodiscard]] virtual InputArea* takePendingFocusArea() { return nullptr; }
   // Panel placement policy. `Attached` merges with the bar when a suitable host
   // exists, `Floating` opens detached near the bar, and `Centered` opens in the
   // middle of the target output.
