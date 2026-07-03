@@ -935,7 +935,7 @@ struct ShellConfig {
   PasswordMaskStyle passwordMaskStyle = PasswordMaskStyle::CircleFilled;
   AnimationConfig animation;
   std::string avatarPath;
-  bool settingsShowAdvanced = false;
+  bool settingsShowAdvanced = true;
   bool middleClickOpensWidgetSettings = true;
   bool showLocation = true;
   bool appIconColorize = false;
