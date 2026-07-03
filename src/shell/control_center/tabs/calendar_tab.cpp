@@ -10,6 +10,7 @@
 #include "render/core/renderer.h"
 #include "render/scene/input_area.h"
 #include "shell/control_center/tab.h"
+#include "shell/panel/panel_button_style.h"
 #include "shell/panel/panel_manager.h"
 #include "time/time_format.h"
 #include "ui/builders.h"
@@ -143,6 +144,10 @@ std::unique_ptr<Flex> CalendarTab::create() {
       m_eventsDirty = true;
       PanelManager::instance().refresh();
     });
+  }
+
+  if (m_config != nullptr) {
+    m_showEventsCard = m_config->config().controlCenter.calendarTab.showEventsCard;
   }
 
   auto tab = ui::row({
@@ -309,10 +314,32 @@ std::unique_ptr<Flex> CalendarTab::create() {
           .flexGrow = 1.0f,
       })
   );
+  eventsCard->setVisible(m_showEventsCard);
 
   tab->addChild(std::move(eventsCard));
 
   return tab;
+}
+
+std::unique_ptr<Flex> CalendarTab::createHeaderActions() {
+  const float scale = contentScale();
+  if (m_config != nullptr) {
+    m_showEventsCard = m_config->config().controlCenter.calendarTab.showEventsCard;
+  }
+  return ui::row(
+      {
+          .align = FlexAlign::Center,
+          .gap = Style::spaceSm * scale,
+      },
+      ui::button({
+          .out = &m_toggleEventsCardButton,
+          .glyph = m_showEventsCard ? "calendar-event" : "calendar-off",
+          .selected = m_showEventsCard,
+          .tooltip = i18n::tr("control-center.calendar.toggle-events-card"),
+          .onClick = [this]() { toggleEventsCard(); },
+          .configure = [scale](Button& button) { panel_button_style::configureHeaderIconButton(button, scale); },
+      })
+  );
 }
 
 void CalendarTab::doLayout(Renderer& renderer, float contentWidth, float bodyHeight) {
@@ -415,6 +442,7 @@ void CalendarTab::onClose() {
   m_monthLabel = nullptr;
   m_previousButton = nullptr;
   m_nextButton = nullptr;
+  m_toggleEventsCardButton = nullptr;
   m_gridViewport = nullptr;
   m_grid = nullptr;
   m_eventsCard = nullptr;
@@ -913,5 +941,19 @@ void CalendarTab::rebuildEventList(float scale) {
 
     auto eventRow = ui::row({.align = FlexAlign::Stretch, .gap = rowGap}, std::move(dot), std::move(details));
     content->addChild(std::move(eventRow));
+  }
+}
+
+void CalendarTab::toggleEventsCard() {
+  m_showEventsCard = !m_showEventsCard;
+  if (m_config != nullptr) {
+    m_config->setOverride({"control_center", "calendar", "show_events_card"}, m_showEventsCard);
+  }
+  if (m_toggleEventsCardButton != nullptr) {
+    m_toggleEventsCardButton->setGlyph(m_showEventsCard ? "calendar-event" : "calendar-off");
+    m_toggleEventsCardButton->setSelected(m_showEventsCard);
+  }
+  if (m_eventsCard != nullptr) {
+    m_eventsCard->setVisible(m_showEventsCard);
   }
 }

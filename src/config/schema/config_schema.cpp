@@ -496,6 +496,13 @@ namespace noctalia::config::schema {
       static const Schema<ShortcutConfig> s = {field(&ShortcutConfig::type, "type")};
       return s;
     }
+
+    const Schema<ControlCenterConfig::CalendarTabConfig>& calendarTabSchema() {
+      static const Schema<ControlCenterConfig::CalendarTabConfig> s = {
+          field(&ControlCenterConfig::CalendarTabConfig::showEventsCard, "show_events_card"),
+      };
+      return s;
+    }
   } // namespace
 
   const Schema<ControlCenterConfig>& controlCenterSchema() {
@@ -504,6 +511,7 @@ namespace noctalia::config::schema {
         enumField(&ControlCenterConfig::sidebarSectionMode, "sidebar_section", kControlCenterSidebarModes),
         field(&ControlCenterConfig::width, "width", kControlCenterWidthRange),
         field(&ControlCenterConfig::hiddenTabs, "hidden_tabs"),
+        subTable(&ControlCenterConfig::calendarTab, "calendar", calendarTabSchema()),
         arrayOf<ControlCenterConfig, ShortcutConfig>(
             &ControlCenterConfig::shortcuts, "shortcuts", shortcutSchema(),
             [](const ShortcutConfig& sc) { return !sc.type.empty(); }

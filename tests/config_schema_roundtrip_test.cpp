@@ -344,6 +344,7 @@ location = "https://example.invalid/bad"
     c.battery.deviceThresholds = {{"BAT0", 10}, {"hidpp:1", 25}};
     c.controlCenter.sidebarMode = ControlCenterSidebarMode::Full;
     c.controlCenter.sidebarSectionMode = ControlCenterSidebarMode::None;
+    c.controlCenter.calendarTab.showEventsCard = false;
     c.controlCenter.shortcuts = {{"wifi"}, {"bluetooth"}};
     c.calendar.enabled = true;
     c.calendar.refreshMinutes = 30;
