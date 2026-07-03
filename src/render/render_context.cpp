@@ -264,6 +264,13 @@ void RenderContext::measureTextCursorStops(
   m_textRenderer.measureCursorStops(text, fontSize, byteOffsets, outStops, fontWeight);
 }
 
+void RenderContext::measureTextCursorStopsWrapped(
+    std::string_view text, float fontSize, const std::vector<std::size_t>& byteOffsets, float maxWidth,
+    std::vector<TextCursorStop>& outStops, FontWeight fontWeight
+) {
+  m_textRenderer.measureCursorStopsWrapped(text, fontSize, byteOffsets, maxWidth, outStops, fontWeight);
+}
+
 TextMetrics RenderContext::measureGlyph(char32_t codepoint, float fontSize) {
   auto m = m_glyphRenderer.measureGlyph(codepoint, fontSize);
   return TextMetrics{

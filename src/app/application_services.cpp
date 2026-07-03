@@ -575,10 +575,12 @@ void Application::initWaylandCallbacks() {
     m_windowSwitcher.onOutputChange();
   });
   m_clipboardService.setChangeCallback([this]() {
+    m_scriptApi.setClipboardText(m_clipboardService.clipboardText());
     if (m_panelManager.isOpenPanel("clipboard")) {
       m_panelManager.refresh();
     }
   });
+  m_scriptApi.setClipboardText(m_clipboardService.clipboardText());
   m_compositorPlatform.setWorkspaceAlertService(&m_workspaceAlertService);
   m_compositorPlatform.setWorkspaceChangeCallback([this]() {
     // Clear alerts for the workspace the user just switched to. Limit to the

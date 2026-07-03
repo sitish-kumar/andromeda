@@ -50,6 +50,12 @@ public:
 
   [[nodiscard]] virtual float preferredWidth() const = 0;
   [[nodiscard]] virtual float preferredHeight() const = 0;
+  // Span the output's available extent on this axis (floating panels only). The
+  // surface is dual-anchored with a requested size of 0 so the compositor
+  // assigns the size, subtracting every exclusive zone on the output; the
+  // preferred size is then only the fallback if no size is ever assigned.
+  [[nodiscard]] virtual bool fillsWidth() const noexcept { return false; }
+  [[nodiscard]] virtual bool fillsHeight() const noexcept { return false; }
   [[nodiscard]] virtual bool hasDecoration() const { return true; }
   [[nodiscard]] virtual LayerShellLayer layer() const { return LayerShellLayer::Top; }
   [[nodiscard]] virtual LayerShellKeyboard keyboardMode() const { return LayerShellKeyboard::OnDemand; }

@@ -219,6 +219,12 @@ private:
   std::int32_t m_panelInsetY = 0;
   std::uint32_t m_panelVisualWidth = 0;
   std::uint32_t m_panelVisualHeight = 0;
+  // Fill axes derive their visual size from the compositor-configured surface
+  // size in buildScene; that math also needs the trailing shadow bleed.
+  bool m_panelFillWidth = false;
+  bool m_panelFillHeight = false;
+  std::int32_t m_detachedBleedRight = 0;
+  std::int32_t m_detachedBleedBottom = 0;
   float m_attachedBackgroundOpacity = 1.0f;
   bool m_attachedContactShadow = false;
   float m_attachedRevealProgress = 1.0f;

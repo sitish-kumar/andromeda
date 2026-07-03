@@ -29,6 +29,10 @@ namespace scripting {
 struct PluginPanelOptions {
   double width = 0.0;  // logical pixels; 0 = host default
   double height = 0.0; // logical pixels; 0 = host default
+  // Fill the output's available extent on this axis; the numeric size is then
+  // only the fallback if the compositor never assigns one.
+  bool widthFill = false;
+  bool heightFill = false;
   scripting::PluginPanelShellConfig shellConfig;
 };
 
@@ -48,6 +52,8 @@ public:
 
   [[nodiscard]] float preferredWidth() const override { return scaled(m_preferredWidth); }
   [[nodiscard]] float preferredHeight() const override { return scaled(m_preferredHeight); }
+  [[nodiscard]] bool fillsWidth() const noexcept override { return m_widthFill; }
+  [[nodiscard]] bool fillsHeight() const noexcept override { return m_heightFill; }
   [[nodiscard]] PanelPlacement panelPlacement() const noexcept override { return m_shellConfig.placement; }
   [[nodiscard]] std::string panelScreenPosition() const override { return m_shellConfig.position; }
   [[nodiscard]] bool panelOpenNearClick() const override { return m_shellConfig.openNearClick; }
@@ -95,6 +101,8 @@ private:
   bool m_hasOnIpcKnown = false;
   float m_preferredWidth;
   float m_preferredHeight;
+  bool m_widthFill = false;
+  bool m_heightFill = false;
   scripting::PluginPanelShellConfig m_shellConfig;
   std::shared_ptr<bool> m_alive = std::make_shared<bool>(true);
 };
