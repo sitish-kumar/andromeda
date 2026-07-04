@@ -451,6 +451,10 @@ void DialogPopupHost::buildScene(std::uint32_t width, std::uint32_t height) {
       static_cast<std::uint32_t>(std::round(m_chrome.contentHeight))
   );
 
+  if (auto* focusArea = initialFocusArea(); focusArea != nullptr) {
+    m_inputDispatcher.setFocus(focusArea);
+  }
+
   layoutScene(static_cast<float>(width), static_cast<float>(height));
   syncPointerStateFromCurrentPosition();
 
