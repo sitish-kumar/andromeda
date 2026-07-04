@@ -6,6 +6,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -70,6 +71,7 @@ private:
   void refreshAccessPoints(std::function<void()> onComplete);
   void refreshSavedConnections(std::function<void()> onComplete);
   void refreshVpnConnections(std::function<void()> onComplete);
+  void reconcileVpnActiveWatchers(const std::set<std::string>& activePaths);
   void finishSavedConnections(
       std::vector<std::string>& ssids, std::vector<std::string>& wiredConnectionPaths, std::function<void()> onComplete
   );
@@ -103,6 +105,7 @@ private:
   std::unique_ptr<sdbus::IProxy> m_activeDevice;
   std::unique_ptr<sdbus::IProxy> m_activeAp;
   std::unordered_map<std::string, std::unique_ptr<sdbus::IProxy>> m_wifiDevices;
+  std::unordered_map<std::string, std::unique_ptr<sdbus::IProxy>> m_vpnActiveWatchers;
   std::string m_activeConnectionPath;
   std::string m_activeDevicePath;
   std::string m_activeApPath;
@@ -122,6 +125,7 @@ private:
   bool m_rebindQueued = false;
   bool m_emitOnNextRefresh = false;
   bool m_scanning = false;
+  bool m_anyVpnConnected = false;
   std::int64_t m_scanBaselineLastScan = 0;
   std::optional<bool> m_pendingLocalWirelessEnabled;
   bool m_hasStateSnapshot = false;

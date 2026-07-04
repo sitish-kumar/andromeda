@@ -29,6 +29,7 @@ namespace {
   // NM80211ApSecurityFlags bits we care about.
   constexpr std::uint32_t k_nm80211ApSecNone = 0x0;
   constexpr auto kNmActiveConnectionInterface = "org.freedesktop.NetworkManager.Connection.Active";
+  constexpr auto kNmVpnConnectionInterface = "org.freedesktop.NetworkManager.VPN.Connection";
   constexpr auto kNmAccessPointInterface = "org.freedesktop.NetworkManager.AccessPoint";
   constexpr auto k_nmIp4ConfigInterface = "org.freedesktop.NetworkManager.IP4Config";
   constexpr auto kPropertiesInterface = "org.freedesktop.DBus.Properties";
@@ -91,7 +92,9 @@ namespace {
   };
 
   struct ActiveVpnState {
-    std::set<std::string> activeProfilePaths;
+    std::set<std::string> activeProfilePaths;    // profiles activating or activated
+    std::set<std::string> activatedProfilePaths; // profiles fully activated only
+    std::set<std::string> vpnActivePaths;        // active-connection object paths belonging to VPN profiles
     int pending = 0;
   };
 
@@ -312,30 +315,26 @@ bool NetworkManagerService::activateAccessPoint(const AccessPointInfo& ap) {
   // the psk overload so the current connection is not torn down just to ask for
   // credentials.
   if (hasSavedConnection(ap.ssid)) {
-    const AccessPointInfo apCopy = ap;
     const std::weak_ptr<int> lifetimeToken = m_lifetimeToken;
     try {
       m_nm->callMethodAsync("ActivateConnection")
           .onInterface(kNmInterface)
           .withArguments(sdbus::ObjectPath{"/"}, sdbus::ObjectPath{ap.devicePath}, sdbus::ObjectPath{ap.path})
-          .uponReplyInvoke([this, lifetimeToken,
-                            apCopy](std::optional<sdbus::Error> err, sdbus::ObjectPath activePath) {
+          .uponReplyInvoke([this, lifetimeToken, ap](std::optional<sdbus::Error> err, sdbus::ObjectPath activePath) {
             if (lifetimeToken.expired()) {
               return;
             }
             if (err.has_value()) {
-              kLog.debug(
-                  "ActivateConnection(/) failed for ssid={}: {}; trying AddAndActivate", apCopy.ssid, err->what()
-              );
-              if (!apCopy.secured) {
-                addAndActivateAccessPoint(apCopy, std::nullopt);
+              kLog.debug("ActivateConnection(/) failed for ssid={}: {}; trying AddAndActivate", ap.ssid, err->what());
+              if (!ap.secured) {
+                addAndActivateAccessPoint(ap, std::nullopt);
               } else {
                 m_emitOnNextRefresh = true;
                 refresh();
               }
               return;
             }
-            kLog.info("activating ap ssid={} active={}", apCopy.ssid, std::string(activePath));
+            kLog.info("activating ap ssid={} active={}", ap.ssid, std::string(activePath));
             m_emitOnNextRefresh = true;
             refresh();
           });
@@ -1181,6 +1180,8 @@ void NetworkManagerService::refreshVpnConnections(std::function<void()> onComple
 
           if (connectionPaths.empty()) {
             m_vpnConnections.clear();
+            m_anyVpnConnected = false;
+            reconcileVpnActiveWatchers({});
             onComplete();
             return;
           }
@@ -1216,6 +1217,8 @@ void NetworkManagerService::refreshVpnConnections(std::function<void()> onComple
                   }
                   if (activeListErr.has_value()) {
                     kLog.debug("refreshVpnConnections active list failed: {}", activeListErr->what());
+                    m_anyVpnConnected = false;
+                    reconcileVpnActiveWatchers({});
                     finalize();
                     return;
                   }
@@ -1224,11 +1227,15 @@ void NetworkManagerService::refreshVpnConnections(std::function<void()> onComple
                   try {
                     activePaths = activeListValue.get<std::vector<sdbus::ObjectPath>>();
                   } catch (const sdbus::Error&) {
+                    m_anyVpnConnected = false;
+                    reconcileVpnActiveWatchers({});
                     finalize();
                     return;
                   }
 
                   if (activePaths.empty()) {
+                    m_anyVpnConnected = false;
+                    reconcileVpnActiveWatchers({});
                     finalize();
                     return;
                   }
@@ -1236,16 +1243,22 @@ void NetworkManagerService::refreshVpnConnections(std::function<void()> onComple
                   auto activeState = std::make_shared<ActiveVpnState>();
                   activeState->pending = static_cast<int>(activePaths.size());
 
-                  auto onActiveComplete = [lifetimeToken, vpnState, activeState, finalize]() {
+                  auto onActiveComplete = [this, lifetimeToken, vpnState, activeState, finalize]() {
                     if (lifetimeToken.expired()) {
                       return;
                     }
                     if (--activeState->pending == 0) {
+                      bool anyConnected = false;
                       for (auto& vpn : vpnState->vpns) {
                         if (activeState->activeProfilePaths.contains(vpn.path)) {
                           vpn.active = true;
                         }
+                        if (activeState->activatedProfilePaths.contains(vpn.path)) {
+                          anyConnected = true;
+                        }
                       }
+                      m_anyVpnConnected = anyConnected;
+                      reconcileVpnActiveWatchers(activeState->vpnActivePaths);
                       finalize();
                     }
                   };
@@ -1255,10 +1268,12 @@ void NetworkManagerService::refreshVpnConnections(std::function<void()> onComple
                       auto active = std::shared_ptr<sdbus::IProxy>(
                           sdbus::createProxy(m_bus.connection(), kNmBusName, activePath)
                       );
+                      const std::string activePathStr{activePath};
                       active->callMethodAsync("GetAll")
                           .onInterface(kPropertiesInterface)
                           .withArguments(kNmActiveConnectionInterface)
-                          .uponReplyInvoke([lifetimeToken, active, activeState, onActiveComplete](
+                          .uponReplyInvoke([lifetimeToken, active, vpnState, activeState, activePathStr,
+                                            onActiveComplete](
                                                std::optional<sdbus::Error> getAllErr,
                                                std::map<std::string, sdbus::Variant> properties
                                            ) {
@@ -1275,13 +1290,23 @@ void NetworkManagerService::refreshVpnConnections(std::function<void()> onComple
                                 }
                               }
 
-                              if (state == kNmActiveConnectionStateActivating
-                                  || state == kNmActiveConnectionStateActivated) {
-                                if (auto connIt = properties.find("Connection"); connIt != properties.end()) {
-                                  try {
-                                    const auto profilePath = connIt->second.get<sdbus::ObjectPath>();
-                                    activeState->activeProfilePaths.insert(std::string(profilePath));
-                                  } catch (const sdbus::Error&) {
+                              std::string profilePath;
+                              if (auto connIt = properties.find("Connection"); connIt != properties.end()) {
+                                try {
+                                  profilePath = connIt->second.get<sdbus::ObjectPath>();
+                                } catch (const sdbus::Error&) {
+                                }
+                              }
+
+                              if (!profilePath.empty()) {
+                                if (vpnState->vpnPaths.contains(profilePath)) {
+                                  activeState->vpnActivePaths.insert(activePathStr);
+                                }
+                                if (state == kNmActiveConnectionStateActivating
+                                    || state == kNmActiveConnectionStateActivated) {
+                                  activeState->activeProfilePaths.insert(profilePath);
+                                  if (state == kNmActiveConnectionStateActivated) {
+                                    activeState->activatedProfilePaths.insert(profilePath);
                                   }
                                 }
                               }
@@ -1354,6 +1379,39 @@ void NetworkManagerService::refreshVpnConnections(std::function<void()> onComple
   } catch (const sdbus::Error& e) {
     kLog.debug("refreshVpnConnections: {}", e.what());
     onComplete();
+  }
+}
+
+void NetworkManagerService::reconcileVpnActiveWatchers(const std::set<std::string>& activePaths) {
+  // VPN state transitions (Activating -> Activated, teardown) don't always move
+  // PrimaryConnection, so watch each VPN active connection directly and refresh
+  // when its state changes. Called from async reply context only — never from a
+  // watcher's own signal handler — so erasing watchers here is safe.
+  std::erase_if(m_vpnActiveWatchers, [&activePaths](const auto& entry) { return !activePaths.contains(entry.first); });
+  for (const auto& activePath : activePaths) {
+    if (m_vpnActiveWatchers.contains(activePath)) {
+      continue;
+    }
+    try {
+      auto proxy = sdbus::createProxy(m_bus.connection(), kNmBusName, sdbus::ObjectPath{activePath});
+      proxy->uponSignal("PropertiesChanged")
+          .onInterface(kPropertiesInterface)
+          .call([this](
+                    const std::string& interfaceName, const std::map<std::string, sdbus::Variant>& changedProperties,
+                    const std::vector<std::string>& /*invalidatedProperties*/
+                ) {
+            const bool activeStateChanged =
+                interfaceName == kNmActiveConnectionInterface && changedProperties.contains("State");
+            const bool vpnStateChanged =
+                interfaceName == kNmVpnConnectionInterface && changedProperties.contains("VpnState");
+            if (activeStateChanged || vpnStateChanged) {
+              refresh();
+            }
+          });
+      m_vpnActiveWatchers.emplace(activePath, std::move(proxy));
+    } catch (const sdbus::Error& e) {
+      kLog.debug("vpn active watcher failed {}: {}", activePath, e.what());
+    }
   }
 }
 
@@ -2023,6 +2081,7 @@ void NetworkManagerService::readStateAsync(std::function<void(NetworkState)> onC
   const std::weak_ptr<int> lifetimeToken = m_lifetimeToken;
   auto next = std::make_shared<NetworkState>();
   next->scanning = m_scanning;
+  next->vpnConnected = m_anyVpnConnected;
 
   bool vpnFromList = false;
   for (const auto& vpn : m_vpnConnections) {

@@ -251,6 +251,7 @@
     "network": {
       "connect": "Connect",
       "current-connection": "Current Connection",
+      "external-ip": "WAN {ip}",
       "no-networks": "No networks in range",
       "not-connected": "Not connected",
       "password": "Password",
