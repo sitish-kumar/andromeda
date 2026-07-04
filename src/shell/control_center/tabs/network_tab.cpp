@@ -12,6 +12,7 @@
 #include "ui/style.h"
 
 #include <algorithm>
+#include <chrono>
 #include <memory>
 #include <string>
 #include <utility>
@@ -381,14 +382,16 @@ std::unique_ptr<Flex> NetworkTab::create() {
           .padding = Style::spaceXs * scale,
           .radius = Style::scaledRadiusSm(scale),
           .onClick = [this]() {
-            if (m_network == nullptr) {
+            if (m_network == nullptr || m_actionPending) {
               return;
             }
-            if (m_network->state().connected) {
+            const bool wasConnected = m_network->state().connected;
+            if (wasConnected) {
               m_network->disconnect();
-            } else {
-              m_network->activateWiredConnection();
+            } else if (!m_network->activateWiredConnection()) {
+              return;
             }
+            beginPendingAction(wasConnected);
             PanelManager::instance().refresh();
           },
       })
@@ -532,6 +535,7 @@ void NetworkTab::onClose() {
   m_lastListWidth = -1.0f;
   m_pendingAccessPoint.reset();
   m_active = false;
+  m_actionPending = false;
 }
 
 void NetworkTab::syncPasswordCard() {
@@ -625,13 +629,21 @@ void NetworkTab::syncCurrentCard() {
     return;
   }
   const NetworkState& s = m_network->state();
+  if (m_actionPending) {
+    const bool flipped = s.connected != m_actionPendingConnected;
+    const bool timedOut = std::chrono::steady_clock::now() - m_actionPendingSince > std::chrono::seconds(6);
+    if (flipped || timedOut) {
+      m_actionPending = false;
+    }
+  }
   m_currentTitle->setText(currentTitle(s));
   m_currentDetail->setText(currentDetail(s));
   if (m_disconnectButton != nullptr) {
     const bool canReconnectWired = !s.connected && m_network->canActivateWiredConnection();
-    m_disconnectButton->setVisible(s.connected || canReconnectWired);
+    m_disconnectButton->setVisible(s.connected || canReconnectWired || m_actionPending);
     m_disconnectButton->setGlyph(s.connected ? "plug-off" : "plug");
     m_disconnectButton->setVariant(s.connected ? ButtonVariant::Destructive : ButtonVariant::Default);
+    m_disconnectButton->setEnabled(!m_actionPending);
   }
   if (m_wifiToggle != nullptr) {
     m_wifiToggle->setChecked(s.wirelessEnabled);
@@ -643,6 +655,15 @@ void NetworkTab::syncCurrentCard() {
     } else if (!s.scanning && m_scanSpinner->spinning()) {
       m_scanSpinner->stop();
     }
+  }
+}
+
+void NetworkTab::beginPendingAction(bool wasConnected) {
+  m_actionPending = true;
+  m_actionPendingConnected = wasConnected;
+  m_actionPendingSince = std::chrono::steady_clock::now();
+  if (m_disconnectButton != nullptr) {
+    m_disconnectButton->setEnabled(false);
   }
 }
 

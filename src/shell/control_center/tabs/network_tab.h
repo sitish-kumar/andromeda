@@ -4,6 +4,7 @@
 #include "dbus/network/network_types.h"
 #include "shell/control_center/tab.h"
 
+#include <chrono>
 #include <optional>
 #include <string>
 #include <vector>
@@ -33,6 +34,7 @@ private:
   void onPanelCardOpacityChanged(float opacity) override;
 
   void syncCurrentCard();
+  void beginPendingAction(bool wasConnected);
   void rebuildApList(Renderer& renderer);
   void syncPasswordCard();
   void showPasswordPrompt(const NetworkSecretAgent::SecretRequest& request);
@@ -72,4 +74,10 @@ private:
   std::string m_pendingSsid;
   std::optional<AccessPointInfo> m_pendingAccessPoint;
   bool m_active = false;
+
+  // Connect/disconnect stays disabled from click until the state flips (or a
+  // timeout), so a click on stale state cannot fire the inverse action.
+  bool m_actionPending = false;
+  bool m_actionPendingConnected = false;
+  std::chrono::steady_clock::time_point m_actionPendingSince{};
 };
