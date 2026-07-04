@@ -2190,11 +2190,7 @@ std::string TaskbarWidget::resolveIconPath(const std::string& appId, const std::
   }
 
   if (appId.starts_with("steam_app_")) {
-    const app_identity::DesktopEntryLookupOptions steamLookup{
-        .includeHidden = true,
-        .includeNoDisplay = true,
-    };
-    if (const auto entry = app_identity::findDesktopEntry(appId, desktopEntries(), steamLookup);
+    if (const auto entry = app_identity::findDesktopEntry(appId, desktopEntries());
         entry.has_value() && !entry->icon.empty()) {
       if (const std::string steamIcon = resolveIconName(entry->icon); !steamIcon.empty()) {
         return steamIcon;
