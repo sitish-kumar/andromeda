@@ -123,7 +123,7 @@ namespace {
 
   [[nodiscard]] float launcherTextStackHeight(Renderer& renderer, const LauncherListStyle& style) {
     const float bodySize = Style::fontSizeBody * style.scale;
-    float textHeight = stableLabelHeight(renderer.measureFont(bodySize, FontWeight::Bold));
+    float textHeight = stableLabelHeight(renderer.measureFont(bodySize, FontWeight::SemiBold));
     if (!style.compact) {
       const float captionSize = Style::fontSizeCaption * style.scale;
       textHeight += stableLabelHeight(renderer.measureFont(captionSize, FontWeight::Normal));
@@ -256,7 +256,7 @@ namespace {
               ui::label({
                   .out = &m_title,
                   .fontSize = Style::fontSizeBody * m_style.scale,
-                  .fontWeight = FontWeight::Bold,
+                  .fontWeight = FontWeight::SemiBold,
                   .color = colorSpecFromRole(ColorRole::OnSurface),
                   .maxLines = 1,
                   .baselineMode = LabelBaselineMode::StableFont,
