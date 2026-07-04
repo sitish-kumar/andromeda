@@ -917,6 +917,7 @@ struct ShellConfig {
   struct PrivacyConfig {
     std::string micFilterRegex;
     std::string camFilterRegex;
+    std::string screenFilterRegex;
 
     bool operator==(const PrivacyConfig&) const = default;
   };
