@@ -598,6 +598,7 @@ widget_spacing = 8
 
         [[default.monitor.DP-1.capsule_group]]
         border = "#0F0E0D"
+        enabled = true
         fill = "#F1F2F3"
         foreground = "#0C0B0A"
         id = "ogrp"
@@ -608,6 +609,7 @@ widget_spacing = 8
 
     [[default.capsule_group]]
     border = "#333435"
+    enabled = true
     fill = "#222324"
     foreground = "#444546"
     id = "grp1"
