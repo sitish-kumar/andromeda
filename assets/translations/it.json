@@ -212,7 +212,8 @@
       "all-day": "Tutto il giorno",
       "events": "Eventi",
       "no-events": "Nessun evento.",
-      "today": "Oggi"
+      "today": "Oggi",
+      "toggle-events-card": "Attiva/disattiva la scheda eventi"
     },
     "display": {
       "disabled": "Disabilitato",
@@ -815,6 +816,7 @@
     "badges": {
       "advanced": "Avanzato",
       "community": "Community",
+      "deprecated": "Deprecato",
       "inherited": "Ereditato",
       "monitor": "Monitor",
       "official": "Ufficiale",
@@ -2539,6 +2541,10 @@
           "description": "Regex per le app del microfono da ignorare negli indicatori di privacy e OSD",
           "label": "Filtro Regex microfono"
         },
+        "privacy-screen-filter-regex": {
+          "description": "Regex per ignorare le app di condivisione dello schermo negli indicatori di privacy e OSD",
+          "label": "Filtro Regex condivisone schermo"
+        },
         "screen-time-enabled": {
           "description": "Monitora l'uso per app e lo mostra nel centro di controllo",
           "label": "Tempo schermo"
@@ -2911,6 +2917,10 @@
         "drawer-columns": {
           "description": "Numero di icone vassoio per riga nel pannello cassetto",
           "label": "Colonne cassetto"
+        },
+        "drawer-item-size": {
+          "description": "Dimensioni in pixel delle icone nella tray all'interno del drawer",
+          "label": "Dimensioni icona drawer"
         },
         "empty-color": {
           "description": "Ruolo colore usato per workspace vuoti; sono supportati anche codici colore in formato esadecimale",

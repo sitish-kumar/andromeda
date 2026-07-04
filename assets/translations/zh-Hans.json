@@ -212,7 +212,8 @@
       "all-day": "全天",
       "events": "事件",
       "no-events": "无事件。",
-      "today": "今天"
+      "today": "今天",
+      "toggle-events-card": "切换事件卡片"
     },
     "display": {
       "disabled": "已禁用",
@@ -315,7 +316,7 @@
         "dark": "深色模式",
         "light": "浅色模式"
       },
-      "keyboard-layout": "布局",
+      "keyboard-layout": "键盘布局",
       "media": "媒体",
       "mic-mute": "麦克风",
       "nightlight": "夜间模式",
@@ -326,7 +327,7 @@
         "scheduled-night": "已开启"
       },
       "notification": "勿扰模式",
-      "power-profile": "电源",
+      "power-profile": "电源配置",
       "screen-time": "屏幕使用时间",
       "session": "会话",
       "system": "系统",
@@ -815,6 +816,7 @@
     "badges": {
       "advanced": "高级",
       "community": "社区",
+      "deprecated": "已弃用",
       "inherited": "已继承",
       "monitor": "屏幕",
       "official": "官方",
@@ -914,6 +916,8 @@
           "fill-description": "胶囊背景的颜色；也支持固定的十六进制颜色值",
           "foreground": "前景",
           "foreground-description": "将颜色应用于组内小组件图标和标签",
+          "hide": "隐藏此分组",
+          "hide-widget": "隐藏此小组件",
           "hint": "属于胶囊组",
           "members": "{count} 个小组件",
           "opacity": "不透明度",
@@ -924,6 +928,8 @@
           "radius": "半径",
           "radius-description": "胶囊的圆角半径（像素）；“自动”将继承状态栏的胶囊圆角设置",
           "selected": "已选择 {count} 项",
+          "show": "显示此分组",
+          "show-widget": "显示此小组件",
           "style": "样式",
           "title": "胶囊组",
           "ungroup": "取消组合"
@@ -1319,6 +1325,9 @@
       },
       "plugins": {
         "configure": "配置",
+        "delete": "删除",
+        "delete-confirm-desc": "此插件将被卸载，并从磁盘中删除。",
+        "delete-confirm-title": "删除 \"{name}\"？",
         "deprecated": "已弃用",
         "empty": "未启用任何插件。",
         "loading": "正在加载插件...",
@@ -2034,8 +2043,8 @@
           "label": "打开选项卡时的侧边栏"
         },
         "control-center-tabs": {
-          "description": "选择控制中心中显示的标签页；未勾选的标签页将被隐藏",
-          "label": "控制中心标签页"
+          "description": "选择控制中心中显示的选项卡；未勾选的选项卡将被隐藏",
+          "label": "控制中心选项卡"
         },
         "control-center-width": {
           "description": "控制中心面板的宽度（像素）；紧凑模式和无侧边栏模式会以此为基准按比例缩小",
@@ -2047,7 +2056,7 @@
         },
         "home-shortcuts": {
           "description": "为主页选项卡选择最多六个快捷按钮",
-          "label": "主页快捷方式"
+          "label": "主页快捷项"
         },
         "launcher-app-grid": {
           "description": "当搜索结果仅包含应用时，以网格形式显示应用图标并在下方附带标签",
@@ -2539,6 +2548,10 @@
           "description": "用于匹配并忽略隐私指示器和 OSD 弹窗中特定麦克风应用的正则表达式",
           "label": "麦克风过滤正则"
         },
+        "privacy-screen-filter-regex": {
+          "description": "用于匹配并忽略隐私指示器和 OSD 弹窗中特定屏幕共享应用的正则表达式",
+          "label": "屏幕共享过滤正则"
+        },
         "screen-time-enabled": {
           "description": "追踪记录每个应用的使用时长并显示在控制中心",
           "label": "屏幕使用时间"
@@ -2911,6 +2924,10 @@
         "drawer-columns": {
           "description": "抽屉面板中每行显示的托盘图标数量",
           "label": "抽屉列数"
+        },
+        "drawer-item-size": {
+          "description": "抽屉面板中托盘图标的大小（像素）",
+          "label": "抽屉图标大小"
         },
         "empty-color": {
           "description": "空工作区的颜色；也支持固定的十六进制颜色值",

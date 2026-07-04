@@ -1115,7 +1115,7 @@
         "control-center": "Centro de control",
         "desktop": "Escritorio",
         "dock": "Dock",
-        "hooks": "Ganchos",
+        "hooks": "Hooks",
         "keybinds": "Atajos de teclado",
         "location": "Localizacion",
         "niri": "Niri",
@@ -1321,6 +1321,9 @@
       },
       "plugins": {
         "configure": "Configurar",
+        "delete": "Eliminar",
+        "delete-confirm-desc": "Este plugin será desinstalado y removido del disco.",
+        "delete-confirm-title": "¿Borrar \"{name}\"?",
         "deprecated": "obsoleto",
         "empty": "No hay plugins activados.",
         "loading": "Cargando plugins...",
@@ -1388,8 +1391,8 @@
           "label": "Color del icono de la aplicación"
         },
         "app-icon-colorize": {
-          "description": "Decolorar los iconos de aplicaciones en todo el shell para que coincidan con la paleta activa",
-          "label": "Decolorar iconos de apps"
+          "description": "Recolorear los iconos de aplicaciones en todo el shell para que coincidan con la paleta activa",
+          "label": "Colorear iconos de apps"
         },
         "builtin-palette": {
           "description": "Elige una paleta del catálogo incluido",
@@ -1415,8 +1418,8 @@
           "label": "Exportar paleta del fondo de pantalla"
         },
         "font-family": {
-          "description": "Familia de fuente para la interfaz del shell",
-          "label": "Familia de fuente"
+          "description": "Familia tipográfica para la interfaz del shell",
+          "label": "Familia tipográfica"
         },
         "global-shadow-alpha": {
           "description": "Opacidad de la sombra global de superficie"
@@ -2534,12 +2537,16 @@
           "label": "Agente Polkit"
         },
         "privacy-cam-filter-regex": {
-          "description": "Expresión regular para aplicaciones de cámara a ignorar en los indicadores de privacidad y OSD",
-          "label": "Expresión regular de filtro de cámara"
+          "description": "Patrón para aplicaciones de cámara a ignorar en los indicadores de privacidad y OSD",
+          "label": "Patrón para filtro de cámara"
         },
         "privacy-mic-filter-regex": {
           "description": "Expresión regular para aplicaciones de micrófono a ignorar en los indicadores de privacidad y OSD",
-          "label": "Expresión regular de filtro de micrófono"
+          "label": "Patrón de filtro de micrófono"
+        },
+        "privacy-screen-filter-regex": {
+          "description": "Patrón para ignorar apps al compartir pantalla en indicadores y OSDs",
+          "label": "Patrón de filtro de pantalla compartida"
         },
         "screen-time-enabled": {
           "description": "Rastrear el uso por aplicación y mostrarlo en el Centro de control",
@@ -2819,8 +2826,8 @@
           "label": "Bandas"
         },
         "cam-filter-regex": {
-          "description": "Expresión regular para nombres de procesos de cámara a ignorar",
-          "label": "Expresión regular de filtro de cámara"
+          "description": "Patrón para nombres de procesos de cámara a ignorar",
+          "label": "Patrón de filtro de cámara"
         },
         "capsule": {
           "description": "Dibujar una cápsula detrás de este widget",
@@ -3079,8 +3086,8 @@
           "label": "Longitud máxima"
         },
         "mic-filter-regex": {
-          "description": "Expresión regular para nombres de aplicaciones de micrófono a ignorar",
-          "label": "Expresión regular de filtro de micrófono"
+          "description": "Patrón para nombres de aplicaciones de micrófono a ignorar",
+          "label": "Patrón de filtro de micrófono"
         },
         "middle-command": {
           "description": "Comando del shell ejecutado al hacer clic central en este botón. Si se establece, el clic central abre este comando en lugar de la configuración del widget.",
@@ -3352,7 +3359,7 @@
       "m3-monochrome": "M3 Monocromo",
       "m3-rainbow": "M3 Arcoíris",
       "m3-tonal-spot": "M3 Punto tonal",
-      "muted": "Silenciado",
+      "muted": "Atenuado",
       "soft": "Suave",
       "vibrant": "Vibrante"
     }
