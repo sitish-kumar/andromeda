@@ -79,9 +79,11 @@ namespace {
   }
 
   PopupSurfaceConfig buildTooltipAnchorConfig(const InputArea* area) {
+    const Node* anchorNode = area->tooltipAnchorNode();
+    const Node* boundsNode = anchorNode != nullptr ? anchorNode : area;
     float absX = 0.0f;
     float absY = 0.0f;
-    Node::absolutePosition(area, absX, absY);
+    Node::absolutePosition(boundsNode, absX, absY);
 
     TooltipAnchorInsets inset{};
     if (area->hasTooltipAnchorInsets()) {
@@ -89,15 +91,15 @@ namespace {
     }
     const float iconX = absX + inset.left;
     const float iconY = absY + inset.top;
-    const float iconW = std::max(1.0f, area->width() - inset.left - inset.right);
-    const float iconH = std::max(1.0f, area->height() - inset.top - inset.bottom);
+    const float iconW = std::max(1.0f, boundsNode->width() - inset.left - inset.right);
+    const float iconH = std::max(1.0f, boundsNode->height() - inset.top - inset.bottom);
 
     const auto gap = static_cast<std::int32_t>(std::lround(Style::spaceSm));
 
     float anchorX = absX;
     float anchorY = absY;
-    float anchorW = area->width();
-    float anchorH = area->height();
+    float anchorW = boundsNode->width();
+    float anchorH = boundsNode->height();
     std::uint32_t anchor = XDG_POSITIONER_ANCHOR_BOTTOM;
     std::uint32_t gravity = XDG_POSITIONER_GRAVITY_BOTTOM;
     std::int32_t offsetX = 0;

@@ -2036,6 +2036,9 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
       shellPtr->addChild(std::move(capsuleBg));
       shellPtr->addChild(widget.releaseRoot());
       widget.setBarCapsuleScene(shellPtr, bgPtr);
+      if (auto* area = dynamic_cast<InputArea*>(widget.root())) {
+        area->setTooltipAnchorNode(shellPtr);
+      }
       capsuleRuns.push_back(
           BarCapsuleRun{
               .shell = shellPtr,
@@ -2144,6 +2147,9 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
         member->setBarCapsuleScene(shellPtr, bgPtr);
         run.widgets.push_back(member.get());
         auto* added = innerPtr->addChild(member->releaseRoot());
+        if (auto* area = dynamic_cast<InputArea*>(member->root())) {
+          area->setTooltipAnchorNode(shellPtr);
+        }
         if (member->noGapAroundMe()) {
           innerPtr->setChildGapExcluded(added, true);
         }
