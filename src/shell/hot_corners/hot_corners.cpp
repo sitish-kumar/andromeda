@@ -22,8 +22,6 @@ void HotCorners::initialize(WaylandConnection& wayland, ConfigService* config, R
   m_wayland = &wayland;
   m_config = config;
   m_renderContext = renderContext;
-
-  onOutputChange();
 }
 
 void HotCorners::onConfigReload() {

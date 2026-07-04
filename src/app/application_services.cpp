@@ -547,6 +547,31 @@ void Application::initStyleThemeAndWayland() {
   });
 }
 
+void Application::reconcileOutputSurfaces() {
+  // Canonical bottom-to-top (re)creation order for per-output layer surfaces.
+  // This is the ONLY place this order is defined: it runs once after initUi()
+  // wiring for first creation and again on every output change, so same-layer
+  // stacking (e.g. screen corners above the dock) is identical in both cases.
+  // Each owner's onOutputChange() reconciles idempotently against the current
+  // output set, so re-running it is safe. initialize() only wires dependencies.
+  m_backdrop.onOutputChange();
+  m_wallpaper.onOutputChange();
+  m_bar.onOutputChange();
+  m_dock.onOutputChange();
+  m_desktopWidgetsController.onOutputChange();
+  m_lockscreenWidgetsController.onOutputChange();
+  m_screenCorners.onOutputChange();
+  m_hotCorners.onOutputChange();
+  m_lockScreen.onOutputChange();
+  m_idleGraceOverlay.onOutputChange();
+  m_idleInhibitor.onOutputChange();
+  m_overviewLauncherCapture.onOutputChange();
+  m_screenshotService.onOutputChange();
+  m_notificationToast.onOutputChange();
+  m_osdOverlay.onOutputChange();
+  m_windowSwitcher.onOutputChange();
+}
+
 void Application::initWaylandCallbacks() {
   auto shouldRefreshControlCenter = [this]() { return m_panelManager.isOpenPanel("control-center"); };
 
@@ -559,22 +584,7 @@ void Application::initWaylandCallbacks() {
     }
     m_gammaService.onOutputsChanged();
     m_pluginServiceHost.onOutputChange();
-    m_wallpaper.onOutputChange();
-    m_backdrop.onOutputChange();
-    m_bar.onOutputChange();
-    m_dock.onOutputChange();
-    m_desktopWidgetsController.onOutputChange();
-    m_lockscreenWidgetsController.onOutputChange();
-    m_screenCorners.onOutputChange();
-    m_hotCorners.onOutputChange();
-    m_lockScreen.onOutputChange();
-    m_idleGraceOverlay.onOutputChange();
-    m_idleInhibitor.onOutputChange();
-    m_overviewLauncherCapture.onOutputChange();
-    m_screenshotService.onOutputChange();
-    m_notificationToast.onOutputChange();
-    m_osdOverlay.onOutputChange();
-    m_windowSwitcher.onOutputChange();
+    reconcileOutputSurfaces();
   });
   m_clipboardService.setChangeCallback([this]() {
     m_scriptApi.setClipboardText(m_clipboardService.clipboardText());

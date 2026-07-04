@@ -116,6 +116,9 @@ void Application::initUi() {
   initNotificationAndOsd();
   initBarDockAndLayout();
   initWidgetControllersAndCallbacks();
+  // Wiring is complete and outputs are enumerated; build every per-output layer
+  // surface once in canonical order. initialize() above only wired dependencies.
+  reconcileOutputSurfaces();
 }
 
 void Application::initUiRenderSurfacesAndSettings() {
@@ -739,8 +742,6 @@ void Application::initNotificationAndOsd() {
       },
       "privacy-filters"
   );
-  m_screenCorners.initialize(m_wayland, &m_configService, &m_renderContext);
-  m_screenCorners.onConfigReload();
 }
 
 void Application::initBarDockAndLayout() {
@@ -987,9 +988,10 @@ void Application::initWidgetControllersAndCallbacks() {
     });
   }
 
-  // Created last so the corner trigger surfaces stack above the bar and dock on
-  // their shared Overlay layer; same ordering is preserved on hot reload in
-  // initWaylandCallbacks (bar/dock onOutputChange run before hot corners').
+  // Wire the corner surface owners here alongside the dock. Surface creation and
+  // stacking order live entirely in reconcileOutputSurfaces(): screen corners and
+  // the hot-corner trigger zones are built after the bar and dock so they are
+  // never occluded by shell chrome on their shared layer.
+  m_screenCorners.initialize(m_wayland, &m_configService, &m_renderContext);
   m_hotCorners.initialize(m_wayland, &m_configService, &m_renderContext);
-  m_hotCorners.onConfigReload();
 }

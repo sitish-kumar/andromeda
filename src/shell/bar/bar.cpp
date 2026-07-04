@@ -1015,7 +1015,6 @@ bool Bar::initialize(const BarServices& services) {
       "bar"
   );
 
-  syncInstances();
   return true;
 }
 

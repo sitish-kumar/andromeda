@@ -172,6 +172,10 @@ private:
   void initNotificationAndOsd();
   void initBarDockAndLayout();
   void initWidgetControllersAndCallbacks();
+  // Single source of truth for surface (re)creation order: (re)builds every
+  // per-output layer surface bottom-to-top. Called once after initUi() wiring
+  // and on every output change so first-run stacking matches hot reload.
+  void reconcileOutputSurfaces();
   void initIpc();
   // (Re)register plugin-backed launcher providers from the enabled plugin set.
   void reloadPluginLauncherProviders();

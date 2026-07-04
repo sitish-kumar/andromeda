@@ -340,8 +340,7 @@ namespace settings {
     // Right side: plugin info (name, author, version/license/badges, description, tags, action),
     // left-aligned and filling the space next to the thumbnail.
     auto info = ui::column(
-        {.align = FlexAlign::Start, .gap = Style::spaceXs * scale, .paddingV = Style::spaceSm * scale,
-         .flexGrow = 1.0f}
+        {.align = FlexAlign::Start, .gap = Style::spaceXs * scale, .paddingV = Style::spaceSm * scale, .flexGrow = 1.0f}
     );
     info->addChild(
         ui::label({
