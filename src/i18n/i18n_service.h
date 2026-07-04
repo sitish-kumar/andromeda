@@ -31,26 +31,16 @@ namespace i18n {
   };
 
   inline constexpr std::array<LanguageOption, 20> kSupportedLanguages = {{
-      {"be", "Беларуская"},
-      {"be-Latn", "Biełaruskaja (Łacinka)"},
-      {"ca", "Català"},
-      {"cs", "Čeština"},
-      {"de", "Deutsch"},
-      {"en", "English"},
-      {"es", "Español"},
-      {"fr", "Français"},
-      {"gl-ES", "Galego"},
-      {"hu", "Magyar"},
-      {"it", "Italiano"},
-      {"ku", "Kurdî"},
-      {"nl", "Nederlands"},
-      {"nn", "Norsk nynorsk"},
-      {"pl", "Polski"},
-      {"pt-BR", "Português (Brasil)"},
-      {"ru", "Русский"},
-      {"uk-UA", "Українська"},
-      {"vi", "Tiếng Việt"},
-      {"zh-Hans", "简体中文"},
+      {"be", "Беларуская"}, {"be-Latn", "Biełaruskaja (Łacinka)"},
+      {"ca", "Català"},     {"cs", "Čeština"},
+      {"de", "Deutsch"},    {"en", "English"},
+      {"es", "Español"},    {"fr", "Français"},
+      {"gl-ES", "Galego"},  {"hu", "Magyar"},
+      {"it", "Italiano"},   {"ku", "Kurdî"},
+      {"nl", "Nederlands"}, {"nn", "Norsk nynorsk"},
+      {"pl", "Polski"},     {"pt-BR", "Português (Brasil)"},
+      {"ru", "Русский"},    {"uk-UA", "Українська"},
+      {"vi", "Tiếng Việt"}, {"zh-Hans", "简体中文"},
   }};
 
   // Loads translation catalogs and resolves dotted keys against them.
