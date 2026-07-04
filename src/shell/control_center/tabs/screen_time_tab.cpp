@@ -1070,8 +1070,7 @@ std::string ScreenTimeTab::resolveIconPath(const std::string& appKey) const {
 
   const int targetPx = static_cast<int>(std::round(kAppIconSize * contentScale()));
   const auto lookupOptions = baseKey.starts_with("steam_app_")
-      ? app_identity::
-            DesktopEntryLookupOptions{.includeHidden = true, .includeNoDisplay = true, .includeHiddenOnCurrentDesktop = true}
+      ? app_identity::DesktopEntryLookupOptions{.includeHidden = true, .includeNoDisplay = true}
       : app_identity::DesktopEntryLookupOptions{};
   std::string iconName;
   if (const auto entry = app_identity::findDesktopEntry(baseKey, desktopEntries(), lookupOptions);

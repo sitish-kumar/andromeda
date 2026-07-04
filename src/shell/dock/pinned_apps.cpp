@@ -62,7 +62,7 @@ namespace shell::dock::pinned_apps {
     for (const auto& pinnedId : pinned) {
       const std::string pinnedLower = StringUtils::toLower(pinnedId);
       const auto match = std::ranges::find_if(entries, [&](const DesktopEntry& entry) {
-        return !entry.hidden && !entry.noDisplay && entry.showOnCurrentDesktop && matchesEntryLower(entry, pinnedLower);
+        return !entry.hidden && !entry.noDisplay && matchesEntryLower(entry, pinnedLower);
       });
 
       DesktopEntry entry = match != entries.end() ? *match : [&]() {

@@ -127,10 +127,6 @@ int main() {
   noDisplay.noDisplay = true;
   assert(app_identity::resolveRunningDesktopEntry("Sample.ChatDesktop", {noDisplay}).id == "Sample.ChatDesktop");
 
-  DesktopEntry showOnCurrentDesktop = sampleChatEntry();
-  showOnCurrentDesktop.showOnCurrentDesktop = false;
-  assert(app_identity::resolveRunningDesktopEntry("Sample.ChatDesktop", {showOnCurrentDesktop}).id == "Sample.ChatDesktop");
-
   const std::vector<DesktopEntry> multipleEntries = {sampleChatEntry(), sampleMailEntry()};
   const auto resolvedApps =
       app_identity::resolveRunningApps({"Sample.ChatDesktop", "sample-chat-desktop", "SampleMail"}, multipleEntries);

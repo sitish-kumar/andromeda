@@ -15,7 +15,6 @@ namespace {
   constexpr app_identity::DesktopEntryLookupOptions kLookupOptions{
       .includeHidden = true,
       .includeNoDisplay = true,
-      .includeHiddenOnCurrentDesktop = true,
   };
 
   std::string normalizeDesktopKey(std::string_view key) {

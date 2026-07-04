@@ -25,8 +25,6 @@ struct DesktopEntry {
   bool noDisplay = false;
   bool hidden = false;
   bool terminal = false;
-  std::vector<std::string> onlyShowIn;
-  std::vector<std::string> notShowIn;
 
   // Pre-lowercased for matching
   std::string nameLower;
@@ -36,9 +34,6 @@ struct DesktopEntry {
   std::string startupWmClassLower;
   std::string idLower;
   std::string execLower;
-
-  // Pre-calculated for caching, based on XDG_CURRENT_DESKTOP and OnlyShowIn/NotShowIn
-  bool showOnCurrentDesktop = true;
 
   // Desktop file actions (e.g. "New Window", "New Private Window")
   std::vector<DesktopAction> actions;

@@ -264,8 +264,7 @@ std::string ActiveWindowWidget::resolveIconPath(const std::string& appId) {
   }
 
   const app_identity::DesktopEntryLookupOptions lookupOptions = appId.starts_with("steam_app_")
-      ? app_identity::
-            DesktopEntryLookupOptions{.includeHidden = true, .includeNoDisplay = true, .includeHiddenOnCurrentDesktop = true}
+      ? app_identity::DesktopEntryLookupOptions{.includeHidden = true, .includeNoDisplay = true}
       : app_identity::DesktopEntryLookupOptions{};
   if (const auto entry = app_identity::findDesktopEntry(appId, desktopEntries(), lookupOptions);
       entry.has_value() && !entry->icon.empty()) {

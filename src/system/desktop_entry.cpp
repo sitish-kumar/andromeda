@@ -42,8 +42,9 @@ namespace {
     }
   }
 
-  bool shouldShowOnCurrentDesktop(const DesktopEntry& entry) {
-    const auto visibleByDefault = entry.onlyShowIn.empty();
+  bool
+  shouldShowOnCurrentDesktop(const std::vector<std::string>& onlyShowIn, const std::vector<std::string>& notShowIn) {
+    const auto visibleByDefault = onlyShowIn.empty();
     const char* currentDesktop = std::getenv("XDG_CURRENT_DESKTOP");
     if (currentDesktop == nullptr || currentDesktop[0] == '\0') {
       return visibleByDefault;
@@ -55,9 +56,9 @@ namespace {
       const auto token =
           (delimiter == std::string_view::npos) ? desktops.substr(start) : desktops.substr(start, delimiter - start);
       if (!token.empty()) {
-        if (std::ranges::find(entry.onlyShowIn, token) != entry.onlyShowIn.end()) {
+        if (std::ranges::find(onlyShowIn, token) != onlyShowIn.end()) {
           return true;
-        } else if (std::ranges::find(entry.notShowIn, token) != entry.notShowIn.end()) {
+        } else if (std::ranges::find(notShowIn, token) != notShowIn.end()) {
           return false;
         }
       }
@@ -145,6 +146,10 @@ namespace {
     std::string localizedGenericName;
     std::string localizedComment;
     std::string type;
+
+    // Desktop-environment visibility lists (OnlyShowIn/NotShowIn)
+    std::vector<std::string> onlyShowIn;
+    std::vector<std::string> notShowIn;
 
     // Action parsing state
     std::vector<std::string> actionOrder;
@@ -270,9 +275,9 @@ namespace {
       } else if (key == "Terminal") {
         entry.terminal = parseDesktopBool(value);
       } else if (key == "OnlyShowIn") {
-        splitMultipleDesktopStrings(entry.onlyShowIn, value);
+        splitMultipleDesktopStrings(onlyShowIn, value);
       } else if (key == "NotShowIn") {
-        splitMultipleDesktopStrings(entry.notShowIn, value);
+        splitMultipleDesktopStrings(notShowIn, value);
       } else if (key == "Actions") {
         splitMultipleDesktopStrings(actionOrder, value);
       }
@@ -281,10 +286,11 @@ namespace {
     // Flush any trailing action section.
     flushCurrentAction();
 
-    // Pre-calculate for caching
-    entry.showOnCurrentDesktop = shouldShowOnCurrentDesktop(entry);
-
-    if (type != "Application" || entry.noDisplay || entry.hidden || !entry.showOnCurrentDesktop || entry.name.empty()) {
+    if (type != "Application"
+        || entry.noDisplay
+        || entry.hidden
+        || entry.name.empty()
+        || !shouldShowOnCurrentDesktop(onlyShowIn, notShowIn)) {
       return;
     }
 

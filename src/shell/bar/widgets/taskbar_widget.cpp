@@ -2193,7 +2193,6 @@ std::string TaskbarWidget::resolveIconPath(const std::string& appId, const std::
     const app_identity::DesktopEntryLookupOptions steamLookup{
         .includeHidden = true,
         .includeNoDisplay = true,
-        .includeHiddenOnCurrentDesktop = true,
     };
     if (const auto entry = app_identity::findDesktopEntry(appId, desktopEntries(), steamLookup);
         entry.has_value() && !entry->icon.empty()) {
