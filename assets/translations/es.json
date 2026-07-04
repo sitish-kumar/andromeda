@@ -2,13 +2,13 @@
   "auth": {
     "fingerprint": {
       "disconnected": "Lector de huellas desconectado",
-      "error": "Error autenticacion lector de huellas ",
+      "error": "Error de autenticación de huella dactilar",
       "no-match": "La huella no coincide",
       "not-centered": "Centra tu dedo e intenta de nuevo",
-      "present": "Leyendo huella...",
+      "present": "Leyendo tu huella...",
       "ready": "Situa tu dedo en el lector",
       "remove-and-retry": "Retira tu dedo y prueba de nuevo",
-      "retry": "Por favor lee tu huella de nuevo",
+      "retry": "Por favor escanea tu huella de nuevo",
       "swipe-too-short": "El deslizamiento fue demasiado corto, inténtalo de nuevo",
       "too-many-attempts": "Lector de huellas deshabilitado (demasiados intentos)"
     },
@@ -20,19 +20,19 @@
     "polkit": {
       "authenticate": "Autenticar",
       "authenticating": "Autenticando...",
-      "default-message": "Autorización requerida",
+      "default-message": "Autenticación requerida",
       "invalid-password": "Contraseña incorrecta",
       "password-placeholder": "Contraseña",
-      "title": "Autorización requerida"
+      "title": "Autenticación requerida"
     }
   },
   "bar": {
     "screenshot": {
-      "choose-display": "Elige pantalla",
-      "confirm-region": "Intro o Espacio para capturar · Esc para cancelar · arrastra para reseleccionar",
+      "choose-display": "Elige el monitor",
+      "confirm-region": "Intro o Espacio para capturar · Esc para cancelar · arrastra para volver a seleccionar",
       "fullscreen": "Pantalla completa",
       "overlay-alloc-failed": "No se pudo mostrar la superposición de captura de pantalla (¿la GPU se quedó sin memoria de vídeo?)",
-      "region": "Seleccione región"
+      "region": "Seleccione la región"
     },
     "widgets": {
       "active-window": {
@@ -77,24 +77,24 @@
         "upload": "Subida",
         "vpn": "VPN",
         "wifi": "Wi-Fi",
-        "wired": "Cableado",
+        "wired": "Cable (Ethernet)",
         "yes": "Sí"
       },
       "privacy": {
-        "camera": "Camara",
-        "microphone": "Microfono",
+        "camera": "Cámara",
+        "microphone": "Micrófono",
         "screen-sharing": "Compartir pantalla"
       },
       "scripted": {
-        "reload-failed": "Recarga del script fallida",
+        "reload-failed": "Fallo al recargar el script",
         "reloaded": "Script recargado"
       },
       "sysmon": {
         "cpu": "CPU",
-        "cpu-temp": "Temp. CPU",
+        "cpu-temp": "Temp. de CPU",
         "disk": "Disco",
         "download": "Descarga",
-        "gpu-temp": "Temp. GPU",
+        "gpu-temp": "Temp. de GPU",
         "gpu-usage": "Uso de GPU",
         "gpu-vram": "VRAM de GPU",
         "ram": "RAM",
@@ -108,11 +108,11 @@
         "volume": "Volumen"
       },
       "weather": {
-        "default": "Pronóstico",
-        "error": "Error de Pronóstico",
-        "loading": "Pronóstico...",
+        "default": "Clima",
+        "error": "Error de Clima",
+        "loading": "Clima...",
         "no-location": "Sin ubicación",
-        "off": "Pronóstico apagado"
+        "off": "Clima apagado"
       }
     }
   },
@@ -124,7 +124,7 @@
     },
     "confirm": {
       "clear-desc": "Elegir si los elementos fijados deben mantenerse.",
-      "clear-desc-all-pinned": "Todas las entradas estan fijadas. Use Borrar todo para eliminar todas.",
+      "clear-desc-all-pinned": "Todas las entradas estan fijadas. Use Borrar todo para eliminarlas todas.",
       "clear-desc-no-pinned": "Esto elimina todas las entradas del portapapeles.",
       "clear-title": "¿Borrar el historial del portapepeles?",
       "delete-desc": "Esto elimina el elemento seleccionado del historial del portapapeles.",
@@ -169,27 +169,27 @@
       "effects-profile": "Efectos",
       "input-device-prefix": "Entrada",
       "no-application-audio": "Sin aplicacion de audio",
-      "no-application-audio-body": "No hay ninguna aplicación reproduciendo audio en este momento.",
+      "no-application-audio-body": "Ninguna aplicación está reproduciendo audio en este momento.",
       "no-input-devices": "No hay dispositivos de entrada",
       "no-input-devices-body": "No hay ningún dispositivo de grabación disponible en este momento.",
-      "no-input-selected": "No se ha seleccionado ningún dispositivo de entrada",
+      "no-input-selected": "Dispositivo de entrada no seleccionado",
       "no-output-devices": "No hay dispositivos de salida",
-      "no-output-devices-body": "No hay ningún dispositivo de salida de audio disponible en este momento.",
+      "no-output-devices-body": "Sin audio disponible",
       "no-output-selected": "No se ha seleccionado ningún dispositivo de salida",
       "output-device-prefix": "Salida",
       "unavailable-body": "PipeWire no está activado.",
-      "unavailable-title": "Sonido no está disponible"
+      "unavailable-title": "Audio no disponible"
     },
     "bluetooth": {
       "accept": "Aceptar",
       "auto-reconnect": "Reconectar automáticamente",
       "bluetooth": "Bluetooth",
       "enter-code": "Ingrese el código",
-      "no-devices": "No se han encontrado dispositivos. Inicia la búsqueda para detectar dispositivos Bluetooth cercanos",
+      "no-devices": "No se han encontrado dispositivos. Inicia la búsqueda para encontrar dispositivos cercanos.",
       "off": "Bluetooth apagado",
       "pair-title": "Emparejar con {device}",
       "pairing-detail": {
-        "authorize": "Aceptar la solicitud de emparejamiento entrante?",
+        "authorize": "Aceptas la solicitud de emparejamiento entrante?",
         "authorize-service": "Permitir acceso a servicio {uuid}?",
         "confirm": "Verifica que este código coincida con el que aparece en el dispositivo:",
         "display-passkey": "Ingresa este código en el dispositivo:",
@@ -198,13 +198,13 @@
         "pin-code": "Introduce el PIN que aparece en el dispositivo:"
       },
       "reject": "Rechazar",
-      "rfkill-blocked": "El sistema ha bloqueado el Bluetooth. Actívalo para desactivar el bloqueo.",
+      "rfkill-blocked": "El sistema ha bloqueado el Bluetooth. Actívalo para remover el bloqueo.",
       "sections": {
         "available": "Disponible",
         "connected": "Conectado",
         "paired": "Emparejado"
       },
-      "unavailable": "El servicio de Bluetooth no está disponible",
+      "unavailable": "Servicio Bluetooth no disponible",
       "unknown-device": "Dispositivo desconocido",
       "visible": "Visible para los dispositivos cercanos"
     },
@@ -212,10 +212,11 @@
       "all-day": "Todo el día",
       "events": "Eventos",
       "no-events": "No hay eventos.",
-      "today": "Hoy"
+      "today": "Hoy",
+      "toggle-events-card": "Alternar Eventos"
     },
     "display": {
-      "disabled": "Desabilitado",
+      "disabled": "Deshabilitado",
       "no-displays": "No hay monitores disponibles",
       "unknown-resolution": "Resolución desconocida"
     },
@@ -234,7 +235,7 @@
       },
       "select-avatar": "Selecciona Avatar",
       "unknown": "Desconocido",
-      "uptime": "Tiempo de actividad",
+      "uptime": "Tiempo de actividad  - {uptime}",
       "weather": {
         "data-unavailable": "Datos meteorológicos no disponibles",
         "disabled": "Pronóstico desabilitado en la configuracion.",
@@ -245,7 +246,7 @@
       "active-player": "Reproductor activo",
       "nothing-playing": "Nada reproduciéndose",
       "now-playing": "Ahora sonando",
-      "start-playback": "Comenzar reproducción en una aplicación MPRIS"
+      "start-playback": "Comienza reproducción en una aplicación MPRIS"
     },
     "network": {
       "connect": "Conectar",
@@ -255,13 +256,13 @@
       "password": "Contraseña",
       "password-prompt": "Introduzca contraseña",
       "password-prompt-for": "Introduzca contraseña para {ssid}",
-      "unavailable-detail": "Instala y habilita NetworkManager para gestionar redes desde allí",
-      "unavailable-title": "NetworkManager no disponible",
+      "unavailable-detail": "Instala y habilita tu servicio de red para gestionar redes desde allí",
+      "unavailable-title": "Servicio de Red no disponible",
       "vpns": "VPNs",
       "wi-fi": "Wi-Fi",
       "wifi": "Wi-Fi",
-      "wifi-off": "Wi-Fi apagada",
-      "wifi-on": "Wi-Fi encendida",
+      "wifi-off": "Wi-Fi apagado",
+      "wifi-on": "Wi-Fi encendido",
       "wired-connection": "Conexión por cable"
     },
     "notifications": {
@@ -269,7 +270,7 @@
       "dnd-off": "Desactivar No molestar",
       "dnd-on": "Activar No molestar",
       "empty-body": "Las notificaciones recientes se mostrarán aquí",
-      "empty-title": "Sin notifiaciones",
+      "empty-title": "Sin notificaciones",
       "filter": {
         "all": "Todo",
         "older": "Antiguo",
@@ -282,8 +283,8 @@
     },
     "power": {
       "battery": "Batería",
-      "design-capacity": "De la capacidad de diseño",
-      "health": "Estado de la batería",
+      "design-capacity": "Capacidad de diseño",
+      "health": "Salud de la bateria",
       "performance-inhibited": "Rendimiento no disponible",
       "peripherals": "Dispositivos conectados",
       "power-profile": "Perfil de energía",
@@ -292,7 +293,7 @@
       "unknown-device": "Dispositivo desconocido"
     },
     "screen-time": {
-      "disabled": "El tiempo de pantalla está desactivado. Actívalo en Ajustes para registrar el uso de cada aplicación.",
+      "disabled": "El seguimiento del monitor está apagado. Habilítalo en configuraciones para registrar el tiempo en pantalla.",
       "empty": "Aún no se ha registrado el uso de ninguna aplicación. Selecciona una ventana para empezar el seguimiento.",
       "hour-0": "12 AM",
       "hour-12": "12 PM",
@@ -308,7 +309,7 @@
     "shortcuts": {
       "audio": "Audio",
       "bluetooth": "Bluetooth",
-      "caffeine": "Caffeine",
+      "caffeine": "Cafeína",
       "clipboard": "Portapapeles",
       "dark-mode": {
         "auto": "Modo Auto",
@@ -327,7 +328,7 @@
       },
       "notification": "DND",
       "power-profile": "Energía",
-      "screen-time": "Tiempo de pantalla",
+      "screen-time": "Tiempo en pantalla",
       "session": "Sesión",
       "system": "Sistema",
       "wallpaper": "Fondo de Pantalla",
@@ -349,7 +350,7 @@
         "system": "Sistema"
       },
       "tooltips": {
-        "load": "Carga media en 1 /5/15 minutos"
+        "load": "Carga promedio durante 1 / 5 / 15 minutos"
       },
       "unknown": "Desconocido",
       "uptime-prefix": "Encendido {uptime} · {osAge}"
@@ -364,9 +365,9 @@
       "network": "Red",
       "notifications": "Notificaciones",
       "power": "Energía",
-      "screen-time": "Tiempo de pantalla",
+      "screen-time": "Tiempo en pantalla",
       "system": "Sistema",
-      "weather": "Pronóstico"
+      "weather": "Clima"
     },
     "weather": {
       "daily": {
@@ -411,7 +412,7 @@
       },
       "location-unavailable": "Ubicación no disponible",
       "no-location-body": "Añade tu dirección o activa la localización automática en la configuración de ubicación.",
-      "no-location-title": "Sin ubicación configurada",
+      "no-location-title": "Ubicación no establecida",
       "refreshing": "Actualizando el tiempo",
       "waiting": "Esperando por la información del pronóstico"
     }
@@ -420,7 +421,7 @@
     "editor": {
       "actions": {
         "add": "Añadir",
-        "clone": "Duplicar )Ctrl+C, Ctrl+V para copiar/pegar)",
+        "clone": "Duplicar (Ctrl+C, Ctrl+V para copiar/pegar)",
         "done": "Hecho",
         "flip-horizontal": "Girar horizontalmente",
         "flip-vertical": "Girar verticalmente",
@@ -473,7 +474,7 @@
         "highlight-color": "Color de resaltado",
         "horizontal": "Horizontal",
         "hover-background": "Fondo al pasar el cursor",
-        "hover-foreground": "Al pasar el cursor por encima del primer plano",
+        "hover-foreground": "Color del primer plano al pasar el cursor",
         "image-path": "Imagen",
         "inner-diameter": "Diametro interior",
         "input-opacity": "Opacidad de entrada",
@@ -490,7 +491,7 @@
         "network-speed-unit-megabytes": "MB/s",
         "opacity": "Opacidad",
         "primary-color": "Color Primario",
-        "reset-defaults": "Resetear a valores por defecto",
+        "reset-defaults": "Restablecer valores por defecto",
         "ring-opacity": "Opacidad del anillo",
         "rotation-speed": "Velocidad de rotación",
         "secondary-color": "Color Secundario",
@@ -502,12 +503,12 @@
         "show-label": "Mostrar Etiqueta",
         "show-login-button": "Botón de login",
         "show-password-hint": "Sugerencia de contraseña",
-        "show-when-idle": "Mostrar cuándo inactivo",
+        "show-when-idle": "Mostrar cuando este inactivo",
         "stat": "Estadistica",
-        "stat-cpu-temp": "Temperatura CPU",
-        "stat-cpu-usage": "Utilización de CPU",
-        "stat-gpu-temp": "Temperatura GPU",
-        "stat-gpu-usage": "Utilización de GPU",
+        "stat-cpu-temp": "Temp. de CPU",
+        "stat-cpu-usage": "Uso de CPU",
+        "stat-gpu-temp": "Temp. de GPU",
+        "stat-gpu-usage": "Uso de GPU",
         "stat-gpu-vram": "GPU VRAM",
         "stat-net-rx": "Red Rx",
         "stat-net-tx": "Red Tx",
@@ -567,7 +568,7 @@
       "close": "Cerrar",
       "close-all": "Cerrar todo"
     },
-    "launcher": "Launcher"
+    "launcher": "Lanzador"
   },
   "internal-apps": {
     "settings": {
@@ -676,15 +677,15 @@
       "battery-low-body": "{device}: {percent}% restante",
       "battery-low-title": "Batería baja",
       "calendar": "Calendario",
-      "calendar-google-connect-browser-failed": "No se ha podido iniciar ningún programa para abrir la página de autorización de Google. Comprueba tu navegador predeterminado o la configuración de xdg-open.",
-      "calendar-google-connect-expired": "La autorización de Google caducó antes de finalizar el inicio de sesión. Inicia la conexión de nuevo.",
-      "calendar-google-connect-failed-title": "Conexion fallida con Calendario Google",
+      "calendar-google-connect-browser-failed": "No se pudo iniciar ningún navegador para la autorización de Google. Compruebe su navegador predeterminado o la configuración de xdg-open.",
+      "calendar-google-connect-expired": "La autorización de Google caducó antes de que finalizara el inicio de sesión. Vuelva a iniciar la conexión.",
+      "calendar-google-connect-failed-title": "Conexion fallida con Google Calendar",
       "calendar-google-connect-missing-account": "Ninguna cuenta de Google Calendar configurada coincide con «{account}».",
-      "calendar-google-connect-rate-limited": "La autorización de Google está temporalmente limitada por frecuencia. Espera un poco y vuelve a intentarlo.",
+      "calendar-google-connect-rate-limited": "La autorización de Google está temporalmente limitada. Espera un poco y vuelve a intentarlo.",
       "calendar-google-connect-result-failed": "No se pudo completar la autorización de Google. Inicia la conexión de nuevo.",
-      "calendar-google-connect-start-failed": "No se pudo empezar la autorización con Google. Revise su conexión al internet",
+      "calendar-google-connect-start-failed": "No se pudo iniciar la autorización de Google. Comprueba tu conexión a internet e inténtalo de nuevo.",
       "calendar-google-connect-start-http": "No se pudo iniciar la autorización de Google. El intermediario de OAuth devolvió HTTP {status}.",
-      "calendar-google-connect-timeout": "La autorización de Google agotó el tiempo de espera. Inicia la conexión de nuevo cuando estés listo para iniciar sesión.",
+      "calendar-google-connect-timeout": "La autorización de Google expiró. Inicie la conexión nuevamente cuando esté listo para iniciar sesión.",
       "dbus-disabled": "Notificaciones DBus deshabilitada",
       "desktop-widgets-editor": "Editor de Widget",
       "desktop-widgets-editor-enabled": "El editor de widgets del escritorio está activado. Cambia a un espacio de trabajo vacío para ver el panel del editor.",
@@ -692,7 +693,7 @@
       "greeter-sync-pending": "Esperando la aprobación del administrador para escribir en la pantalla de inicio.",
       "greeter-sync-pending-console": "Esperando la aprobación del administrador. Aprueba el aviso de polkit en Noctalia, en una TTY o consola, o ejecuta pkexec manualmente.",
       "greeter-sync-pending-manual": "Los archivos están preparados. Ejecuta en una terminal: pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\". O configura shell.greeter_sync.privilege_command (por ejemplo ghostty -e pkexec) y sincroniza de nuevo.",
-      "greeter-sync-success": "Apariencia sincronizada. Los cambios se aplican en el siguiente login",
+      "greeter-sync-success": "Apariencia sincronizada. Los cambios se aplicarán en la siguiente pantalla de inicio de sesión.",
       "greeter-sync-timeout": "La sincronización de la pantalla de inicio sigue esperando la aprobación del administrador. Revisa una TTY o consola en busca de un aviso de polkit, activa el agente de polkit en la configuración de seguridad, o ejecuta pkexec manualmente.",
       "greeter-sync-timeout-manual": "La sincronización de la pantalla de inicio aún necesita la aprobación del administrador. Ejecuta en una terminal: pkexec noctalia-greeter-apply-appearance \"$XDG_RUNTIME_DIR/noctalia-greeter-sync\"",
       "keybind-app": "Noctalia",
@@ -712,7 +713,7 @@
       "screen-time-reset-success": "Historial de uso borrado.",
       "session-bus-unavailable": "Bus de sesión no disponible",
       "wallpaper-palette-export": "Paleta Personalizada",
-      "wallpaper-palette-export-success": "Se guardó «{name}» y se cambió la fuente de la paleta a personalizada."
+      "wallpaper-palette-export-success": "Se guardó \"{name}\" y se cambió la fuente de la paleta a personalizada."
     }
   },
   "osd": {
@@ -815,6 +816,7 @@
     "badges": {
       "advanced": "Avanzado",
       "community": "Comunidad",
+      "deprecated": "Obsoleto",
       "inherited": "Heredado",
       "monitor": "Monitor",
       "official": "Oficial",
@@ -848,7 +850,7 @@
     },
     "controls": {
       "keybind": {
-        "add": "Clave específica de aplicación",
+        "add": "Clic para añadir una combinacion",
         "recording-placeholder": "Presione una combinación de teclas.",
         "unset-placeholder": "Haz clic para asignar…"
       },
@@ -860,12 +862,12 @@
         "folder-title": "Seleccione carpeta"
       },
       "select": {
-        "unknown-value": "{} desconocido "
+        "unknown-value": "Desconocido: {value}"
       }
     },
     "dialogs": {
       "color-picker": {
-        "title": "Seleccione un Color"
+        "title": "Selecciona un Color"
       }
     },
     "entities": {
@@ -886,7 +888,7 @@
       "monitor-override": {
         "create": "Crear",
         "delete": "Eliminar",
-        "delete-confirm-desc": "Esta sobrescripción de monitor sera elimina de settings.toml.",
+        "delete-confirm-desc": "Este monitor de sobreescritura creado en el interfaz grafico sera eliminado de settings.toml.",
         "delete-confirm-title": "Eliminar \"{name}\"?",
         "label": "Monitor: {name}",
         "management": "Sobrescribir Monitor",
@@ -937,7 +939,7 @@
           "create-save": "Crear",
           "delete": "Borrar",
           "delete-confirm-desc": "Este widget con nombre se eliminará de todas las barras y su configuración se descartará.",
-          "delete-confirm-title": "¿Eliminar «{name}»?",
+          "delete-confirm-title": "¿Eliminar \"{name}\"?",
           "id-description": "Usa solo letras, números, guiones bajos o guiones. Sin espacios; debe ser único.",
           "id-placeholder": "ID del widget",
           "rename": "Renombrar",
@@ -953,7 +955,7 @@
         },
         "picker": {
           "empty": "No se encontraron widgets",
-          "instance-description": "Widget con nombre para el tipo «{type}»",
+          "instance-description": "Widget con nombre para el tipo \"{type}\"",
           "instance-toggle": "Widget con nombre",
           "placeholder": "Buscar widgets..."
         },
@@ -1069,7 +1071,7 @@
         "interface": "Interfaz",
         "keybinds": "Atajos de teclado",
         "kinds": "Tipos",
-        "launcher": "Launcher",
+        "launcher": "Lanzador",
         "layout": "Disposición",
         "lifecycle": "Ciclo de vida",
         "location": "Ubicación",
@@ -1186,12 +1188,12 @@
         "book": "Libro",
         "default": "Predeterminado (barra)",
         "heavy": "Grueso",
-        "light": "Claro",
+        "light": "Ligera",
         "medium": "Medio",
         "regular": "Regular",
         "semi-bold": "Seminegrita",
         "semi-light": "Semiligera",
-        "thin": "Fino",
+        "thin": "Fina",
         "ultra-bold": "Ultra negrita",
         "ultra-heavy": "Ultra gruesa",
         "ultra-light": "Ultra ligera"
@@ -1325,7 +1327,7 @@
         "refreshing": "Actualizando plugins...",
         "remove": "Eliminar plugin",
         "requires": "Requiere: {dependencies}",
-        "requires-newer-noctalia": "requiere una versión más nueva de Noctalia",
+        "requires-newer-noctalia": "requiere una versión más reciente de Noctalia",
         "title": "Plugins"
       },
       "settings": {
@@ -1339,7 +1341,7 @@
         "empty": "No hay fuentes configuradas.",
         "errors": {
           "duplicate-name": "Ya existe una fuente con este ID.",
-          "invalid-name": "El ID de fuente debe usar letras, dígitos, «.», «_» o «-», comenzando con una letra o dígito.",
+          "invalid-name": "El ID de fuente debe usar letras, dígitos, '.', '_' o '-', comenzando con una letra o dígito.",
           "location-required": "Se requiere la ubicación de la fuente."
         },
         "kind": {
@@ -1386,8 +1388,8 @@
           "label": "Color del icono de la aplicación"
         },
         "app-icon-colorize": {
-          "description": "Recolorear los iconos de aplicaciones en todo el shell para que coincidan con la paleta activa",
-          "label": "Colorear iconos de apps"
+          "description": "Decolorar los iconos de aplicaciones en todo el shell para que coincidan con la paleta activa",
+          "label": "Decolorar iconos de apps"
         },
         "builtin-palette": {
           "description": "Elige una paleta del catálogo incluido",
@@ -1400,7 +1402,7 @@
         },
         "corner-roundness": {
           "description": "Escalar el radio de esquina en los contenedores y controles de la interfaz del shell",
-          "label": "Redondez de esquina"
+          "label": "Radio de las esquinas"
         },
         "custom-palette": {
           "description": "Elige una paleta de ~/.config/noctalia/palettes/",
@@ -1410,7 +1412,7 @@
         "export-wallpaper-palette": {
           "button": "Guardar como paleta personalizada",
           "description": "Guardar la paleta generada por el fondo de pantalla actual como un archivo de paleta personalizada reutilizable",
-          "label": "Exportar paleta de fondo de pantalla"
+          "label": "Exportar paleta del fondo de pantalla"
         },
         "font-family": {
           "description": "Familia de fuente para la interfaz del shell",
@@ -1427,7 +1429,7 @@
           "label": "Idioma"
         },
         "palette-source": {
-          "description": "De dónde derivar la paleta de colores",
+          "description": "Dónde obtener la paleta de colores",
           "label": "Fuente de la paleta"
         },
         "theme-mode": {
@@ -1435,7 +1437,7 @@
           "label": "Modo de tema"
         },
         "ui-scale": {
-          "description": "Escalar toda la interfaz hacia arriba o hacia abajo",
+          "description": "Aumentar o disminuir la escala de la interfaz",
           "label": "Escala de la interfaz"
         },
         "wallpaper-generation-scheme": {
@@ -1603,7 +1605,7 @@
           "label": "Grosor"
         },
         "widget-capsules": {
-          "description": "Envolver widgets en fondos de cápsula",
+          "description": "Envolver widgets en cápsula de fondo",
           "label": "Cápsulas de widget"
         },
         "widget-color": {
@@ -1743,7 +1745,7 @@
         },
         "launcher-custom-image-colorize": {
           "description": "Teñir la imagen personalizada con el color del icono",
-          "label": "Colorear imagen personalizada"
+          "label": "Decolorar imagen personalizada"
         },
         "launcher-icon": {
           "description": "Icono de Tabler mostrado en el botón de lanzador del dock",
@@ -2172,7 +2174,7 @@
         "calendar-add": {
           "button": "Añadir cuenta",
           "description": "Añadir cuentas de iCloud, CalDAV o Google",
-          "label": "Cuentas de calendario"
+          "label": "Cuentas del calendario"
         },
         "calendar-edit": {
           "button": "Editar",
@@ -2297,7 +2299,7 @@
         "volume-change-sound": {
           "description": "Archivo de sonido usado para la respuesta de volumen",
           "label": "Sonido de cambio de volumen",
-          "placeholder": "/ruta/al/sonido.wav"
+          "placeholder": "/path/to/sound.wav"
         },
         "weather": {
           "description": "Habilitar el servicio de pronóstico",
@@ -2309,7 +2311,7 @@
         },
         "weather-refresh-interval": {
           "description": "Con qué frecuencia actualizar los datos meteorológicos (minutos)",
-          "label": ""
+          "label": "Intervalo de actualizacion"
         },
         "weather-unit": {
           "description": "Sistema de unidades utilizado en el pronóstico",
@@ -2379,7 +2381,7 @@
         "avatar-path": {
           "description": "Ruta a una imagen de avatar personalizada. Las imágenes grandes se recortan y redimensionan automáticamente.",
           "label": "Ruta del avatar",
-          "placeholder": "/ruta/al/avatar.png"
+          "placeholder": "/path/to/avatar.png"
         },
         "clipboard-auto-paste": {
           "description": "Pegar automáticamente las selecciones del portapapeles",
@@ -2449,7 +2451,7 @@
         },
         "osd-kinds-caffeine": {
           "description": "Mostrar una ventana emergente OSD cuando cambie el estado de cafeína (inhibidor de inactividad)",
-          "label": "Cafeína"
+          "label": "Caffeine"
         },
         "osd-kinds-dnd": {
           "description": "Mostrar una ventana emergente OSD al alternar No molestar",
@@ -2675,7 +2677,7 @@
         },
         "fill-mode": {
           "description": "Cómo se ajustan los fondos de pantalla a la pantalla",
-          "label": "Modo de relleno"
+          "label": "Modo de ajuste"
         },
         "monitor-directory": {
           "label": "Directorio con fondos de pantalla"
@@ -2877,7 +2879,7 @@
         },
         "custom-image-colorize": {
           "description": "Teñir la imagen personalizada con la configuración de color de icono del widget",
-          "label": "Colorear imagen personalizada"
+          "label": "Decolorar imagen personalizada"
         },
         "custom-labels": {
           "description": "Asignar nombres de distribución de teclado a etiquetas personalizadas",
@@ -2888,7 +2890,7 @@
           "label": "Comando de ciclo"
         },
         "detached-panel": {
-          "description": "Abrir el cajón como un panel flotante con fondo propio en lugar de fusionarse con la barra",
+          "description": "Abrir bandeja desplegable como un panel flotante con fondo propio en lugar de fusionarse con la barra",
           "label": "Panel desanclado"
         },
         "device": {
@@ -2906,11 +2908,15 @@
         },
         "drawer": {
           "description": "Mostrar un botón de bandeja en la barra y abrir elementos en un panel",
-          "label": "Usar panel de cajón"
+          "label": "Usar bandeja desplegable"
         },
         "drawer-columns": {
-          "description": "Número de iconos de bandeja por fila en el panel de cajón",
-          "label": "Columnas del cajón"
+          "description": "Número de iconos de bandeja por fila en la bandeja desplegable",
+          "label": "Columnas en la bandeja desplegable"
+        },
+        "drawer-item-size": {
+          "description": "Tamaño de los iconos en la bandeja desplegable en pixeles",
+          "label": "Tamaño de icono en la bandeja desplegable"
         },
         "empty-color": {
           "description": "Rol de color usado para espacios de trabajo vacíos; también se admiten colores hexadecimales fijos",
@@ -3127,7 +3133,7 @@
           "workspaces-description": "Ajustar la escala de las píldoras de espacio de trabajo"
         },
         "pinned": {
-          "description": "IDs de elementos de bandeja que permanecen visibles en la barra cuando el modo cajón está activado",
+          "description": "IDs de elementos de bandeja que permanecen visibles en la barra cuando el modo bandeja desplegable está activado",
           "label": "Elementos fijados"
         },
         "primary-click": {
@@ -3269,7 +3275,7 @@
         "battery": "Batería",
         "bluetooth": "Bluetooth",
         "brightness": "Brillo",
-        "caffeine": "Caffeina",
+        "caffeine": "Caffeine",
         "clipboard": "Portapapeles",
         "clock": "Reloj",
         "control-center": "Centro de Control",
@@ -3365,7 +3371,7 @@
       "days-ago": "hace {count} día",
       "days-ago-plural": "hace {count} días",
       "hours-ago": "hace {count} h",
-      "hours-ago-plural": "hace {count} hora",
+      "hours-ago-plural": "hace {count} horas",
       "just-now": "justo ahora",
       "minutes-ago": "hace {count} minuto",
       "minutes-ago-plural": "hace {count} minutos"
