@@ -39,14 +39,18 @@ namespace {
   constexpr float kDefaultVolumeStep = 0.05f;
 
   // Held-key acceleration for relative volume adjustments. A lone tap moves the base step (fine
-  // granularity). While held, we advance by velocity * wall-clock time since the last repeat, so the
-  // traversal speed is independent of the user's keyboard repeat-rate (only a single tap's size
-  // depends on their step). Velocity ramps with hold duration up to a cap; a gap longer than the
-  // window, or a direction change, restarts the gesture.
-  constexpr auto kVolumeHoldWindow = std::chrono::milliseconds(150);
-  constexpr float kVolumeHoldBaseVel = 0.6f; // fraction/second at the start of a hold
-  constexpr float kVolumeHoldMaxVel = 2.5f;  // fraction/second cap
-  constexpr float kVolumeHoldAccel = 2.0f;   // fraction/second added per second held
+  // granularity). While held, a gesture-local target volume advances by velocity * event-time
+  // credit, where each event's credit is capped at kVolumeHoldMaxDt: keyboard repeat delays and IPC
+  // spawn jitter then cost about one base step instead of restarting the gesture, and traversal
+  // speed stays independent of the keyboard repeat-rate. Velocity starts at one base step per
+  // credit cap and ramps with accumulated credit, but no single event ever moves more than one base
+  // step — a rotary knob emitting many events stays proportional to its ticks instead of
+  // compounding. A gap longer than the window, or a direction change, restarts the gesture from the
+  // live volume.
+  constexpr auto kVolumeHoldWindow = std::chrono::milliseconds(800);
+  constexpr float kVolumeHoldMaxDt = 0.08f; // seconds of time credit per event
+  constexpr float kVolumeHoldMaxVel = 2.5f; // fraction/second cap
+  constexpr float kVolumeHoldAccel = 2.0f;  // fraction/second added per second of credit
   constexpr auto kVolumeWriteGuardDuration = std::chrono::milliseconds(400);
   constexpr float kVolumeWriteGuardEpsilon = 0.02f;
 
@@ -1807,24 +1811,35 @@ bool PipeWireService::applyNodeVolume(std::uint32_t id, float volume) {
   return false;
 }
 
-float PipeWireService::relativeAdjustDelta(int gesture, float baseStep) {
+float PipeWireService::relativeAdjustTarget(
+    int gesture, float baseStep, float direction, float current, float maxVolume
+) {
   const auto now = std::chrono::steady_clock::now();
   const bool held = m_relativeAdjust.gesture == gesture && (now - m_relativeAdjust.lastAt) <= kVolumeHoldWindow;
+  const float dt =
+      held ? std::min(std::chrono::duration<float>(now - m_relativeAdjust.lastAt).count(), kVolumeHoldMaxDt) : 0.0f;
+  m_relativeAdjust.gesture = gesture;
+  m_relativeAdjust.lastAt = now;
+
   if (!held) {
-    // Isolated tap or new gesture: a fixed, granular step.
-    m_relativeAdjust.gesture = gesture;
-    m_relativeAdjust.startAt = now;
-    m_relativeAdjust.lastAt = now;
-    return baseStep;
+    // Isolated tap or new gesture: a fixed, granular step from the live volume.
+    m_relativeAdjust.heldSeconds = 0.0f;
+    m_relativeAdjust.target = std::clamp(current + direction * baseStep, 0.0f, maxVolume);
+    return m_relativeAdjust.target;
   }
 
-  // Held: advance by velocity * elapsed since the previous repeat. Integrating over real time makes
-  // the traversal speed independent of the keyboard repeat-rate. dt <= window by construction.
-  const float elapsed = std::chrono::duration<float>(now - m_relativeAdjust.startAt).count();
-  const float dt = std::chrono::duration<float>(now - m_relativeAdjust.lastAt).count();
-  m_relativeAdjust.lastAt = now;
-  const float velocity = std::min(kVolumeHoldMaxVel, kVolumeHoldBaseVel + kVolumeHoldAccel * elapsed);
-  return velocity * dt;
+  // Held: advance the gesture-local target by velocity * capped event-time credit. Accumulating the
+  // target across the gesture keeps stale daemon echoes in the read-back volume from rubber-banding
+  // the ramp, and capping dt makes an arrival gap (keyboard repeat delay, IPC spawn jitter) worth
+  // about one base step instead of a jump. The velocity ramp advances by the same capped credit, so
+  // acceleration follows the event flow rather than the wall clock. The per-event cap of one base
+  // step keeps burst sources (rotary knobs) proportional to their tick count.
+  const float baseVel = baseStep / kVolumeHoldMaxDt;
+  const float velocity = std::min(kVolumeHoldMaxVel, baseVel + kVolumeHoldAccel * m_relativeAdjust.heldSeconds);
+  m_relativeAdjust.heldSeconds += dt;
+  const float delta = std::min(velocity * dt, baseStep);
+  m_relativeAdjust.target = std::clamp(m_relativeAdjust.target + direction * delta, 0.0f, maxVolume);
+  return m_relativeAdjust.target;
 }
 
 void PipeWireService::setNodeVolume(std::uint32_t id, float volume) {
@@ -2084,8 +2099,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
           return parseVolumeStepError;
         }
 
-        const float delta = relativeAdjustDelta(1, *step);
-        setVolume(std::clamp(sink->volume + delta, 0.0f, maxVolume()));
+        setVolume(relativeAdjustTarget(1, *step, 1.0f, sink->volume, maxVolume()));
         return "ok\n";
       },
       "volume-up [step]", "Increase speaker volume"
@@ -2108,8 +2122,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
           return parseVolumeStepError;
         }
 
-        const float delta = relativeAdjustDelta(2, *step);
-        setVolume(std::clamp(sink->volume - delta, 0.0f, maxVolume()));
+        setVolume(relativeAdjustTarget(2, *step, -1.0f, sink->volume, maxVolume()));
         return "ok\n";
       },
       "volume-down [step]", "Decrease speaker volume"
@@ -2166,8 +2179,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
           return parseVolumeStepError;
         }
 
-        const float delta = relativeAdjustDelta(3, *step);
-        setMicVolume(std::clamp(source->volume + delta, 0.0f, maxVolume()));
+        setMicVolume(relativeAdjustTarget(3, *step, 1.0f, source->volume, maxVolume()));
         return "ok\n";
       },
       "mic-volume-up [step]", "Increase microphone volume"
@@ -2190,8 +2202,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
           return parseVolumeStepError;
         }
 
-        const float delta = relativeAdjustDelta(4, *step);
-        setMicVolume(std::clamp(source->volume - delta, 0.0f, maxVolume()));
+        setMicVolume(relativeAdjustTarget(4, *step, -1.0f, source->volume, maxVolume()));
         return "ok\n";
       },
       "mic-volume-down [step]", "Decrease microphone volume"

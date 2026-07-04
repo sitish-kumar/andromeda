@@ -221,13 +221,16 @@ private:
   void setNodeVolume(std::uint32_t id, float volume);
   void setNodeMuted(std::uint32_t id, bool muted);
 
-  // Volume delta for one relative-adjust event: the base step for a tap, or a repeat-rate-independent
-  // velocity ramp while held. `gesture` identifies the control and direction (e.g. sink-up vs
-  // mic-down) so switching gesture restarts the ramp.
-  [[nodiscard]] float relativeAdjustDelta(int gesture, float baseStep);
+  // Target volume for one relative-adjust event: current + base step for a tap, or a
+  // repeat-rate-independent velocity ramp accumulated on a gesture-local target while held.
+  // `gesture` identifies the control and direction (e.g. sink-up vs mic-down) so switching gesture
+  // restarts the ramp from `current`.
+  [[nodiscard]] float
+  relativeAdjustTarget(int gesture, float baseStep, float direction, float current, float maxVolume);
   struct RelativeAdjust {
-    std::chrono::steady_clock::time_point startAt;
     std::chrono::steady_clock::time_point lastAt;
+    float heldSeconds = 0.0f;
+    float target = 0.0f;
     int gesture = 0;
   };
   RelativeAdjust m_relativeAdjust;
