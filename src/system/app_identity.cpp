@@ -58,6 +58,9 @@ namespace app_identity {
         if (!options.includeNoDisplay && entry.noDisplay) {
           continue;
         }
+        if (!options.includeHiddenOnCurrentDesktop && !entry.showOnCurrentDesktop) {
+          continue;
+        }
         if (StringUtils::toLower(std::string(appIdTail(entry.id))) == tailLower) {
           candidates.push_back(&entry);
         }
@@ -94,7 +97,7 @@ namespace app_identity {
       const std::string runningLower = StringUtils::toLower(std::string(runningAppId));
 
       for (const auto& entry : allEntries) {
-        if (entry.hidden || entry.noDisplay) {
+        if (entry.hidden || entry.noDisplay || !entry.showOnCurrentDesktop) {
           continue;
         }
         if (desktopEntryMatchesLower(entry, runningLower)) {
@@ -109,6 +112,7 @@ namespace app_identity {
       if (runningAppId.starts_with("steam_app_")) {
         extendedLookup.includeHidden = true;
         extendedLookup.includeNoDisplay = true;
+        extendedLookup.includeHiddenOnCurrentDesktop = true;
       }
       if (auto matched = findDesktopEntry(runningAppId, allEntries, extendedLookup)) {
         if (runningAppId.starts_with("steam_app_") && matched->startupWmClass.empty()) {
@@ -170,6 +174,9 @@ namespace app_identity {
       if (!options.includeNoDisplay && entry.noDisplay) {
         continue;
       }
+      if (!options.includeHiddenOnCurrentDesktop && !entry.showOnCurrentDesktop) {
+        continue;
+      }
       if (desktopEntryMatchesLower(entry, appLower)) {
         return entry;
       }
@@ -194,6 +201,9 @@ namespace app_identity {
         continue;
       }
       if (!options.includeNoDisplay && entry.noDisplay) {
+        continue;
+      }
+      if (!options.includeHiddenOnCurrentDesktop && !entry.showOnCurrentDesktop) {
         continue;
       }
       if (StringUtils::toLower(entry.startupWmClass) == appLower) {
