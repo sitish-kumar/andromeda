@@ -478,6 +478,7 @@ namespace {
               }
               toml::table row;
               row.insert_or_assign("id", item.id);
+              row.insert_or_assign("enabled", item.enabled);
               toml::array members;
               for (const auto& member : item.members) {
                 members.push_back(member);

@@ -24,6 +24,7 @@ struct WaylandOutput;
 struct BarCapsuleGroupStyle {
   std::string id;
   std::vector<std::string> members; // ordered member widget references
+  bool enabled = true;
   ColorSpec fill = colorSpecFromRole(ColorRole::SurfaceVariant);
   // True when `border` is explicitly present (empty value = no outline); mirrors bar/widget border semantics.
   bool borderSpecified = false;

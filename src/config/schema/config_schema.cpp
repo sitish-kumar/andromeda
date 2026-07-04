@@ -1918,6 +1918,7 @@ namespace noctalia::config::schema {
               },
               [](toml::table& tbl, const BarCapsuleGroupStyle& in) { tbl.insert_or_assign("id", in.id); }
           ),
+          field(&BarCapsuleGroupStyle::enabled, "enabled"),
           field(&BarCapsuleGroupStyle::members, "members"),
           colorField(&BarCapsuleGroupStyle::fill, "fill"),
           capsuleBorderField(&BarCapsuleGroupStyle::border, &BarCapsuleGroupStyle::borderSpecified, "border"),
