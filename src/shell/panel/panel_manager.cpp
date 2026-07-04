@@ -694,7 +694,6 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   }
 
   const bool useAttachedPlacement = activePlacement == PanelPlacement::Attached
-      && !multipleBarsOnEdge
       && (m_attachedPanelAvailabilityCallback == nullptr
           || m_attachedPanelAvailabilityCallback(request.output, m_sourceBarName))
       && barConfig.thickness > 0
