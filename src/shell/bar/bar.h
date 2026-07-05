@@ -117,6 +117,8 @@ private:
   void destroyInstance(std::uint32_t outputName);
   void populateWidgets(BarInstance& instance);
   void attachWidgetsToSections(BarInstance& instance);
+  void updateWidgetHoverHighlight(BarInstance& instance, InputArea* hoveredArea);
+  void animateWidgetHoverHighlight(BarInstance& instance, Widget& widget, bool hovered);
   void rebuildInstanceContents(BarInstance& instance, const BarConfig& newConfig);
   [[nodiscard]] BarServices services() const;
   void buildScene(BarInstance& instance, std::uint32_t width, std::uint32_t height);

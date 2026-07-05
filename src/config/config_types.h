@@ -96,6 +96,7 @@ struct BarMonitorOverride {
   std::optional<double> widgetCapsulePadding;
   std::optional<double> widgetCapsuleRadius;
   std::optional<double> widgetCapsuleOpacity;
+  std::optional<bool> hoverHighlight;
   BarDeadZoneOverride deadZone;
 
   bool operator==(const BarMonitorOverride&) const = default;
@@ -171,6 +172,8 @@ struct BarConfig {
   // True when `capsule_border` appears under `[bar.*]` (empty value = no outline for widgets that inherit border).
   bool widgetCapsuleBorderSpecified = false;
   std::optional<ColorSpec> widgetCapsuleBorder;
+  // Soft tint of a widget's foreground color over the widget under the pointer (per member in capsule groups).
+  bool hoverHighlight = true;
   BarDeadZoneConfig deadZone;
   std::vector<BarMonitorOverride> monitorOverrides;
 

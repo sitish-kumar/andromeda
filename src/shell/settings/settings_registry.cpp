@@ -2685,6 +2685,11 @@ namespace settings {
           colorSpecPicker(bar.widgetIconColor, true), "color icon", true
       ));
       entries.push_back(makeEntry(
+          section, "widgets", tr("settings.schema.bar.hover-highlight.label"),
+          tr("settings.schema.bar.hover-highlight.description"), path("hover_highlight"),
+          ToggleSetting{bar.hoverHighlight}, "hover highlight mouse pointer"
+      ));
+      entries.push_back(makeEntry(
           section, "capsules", tr("settings.schema.bar.widget-capsules.label"),
           tr("settings.schema.bar.widget-capsules.description"), path("capsule"),
           ToggleSetting{bar.widgetCapsuleDefault}, "pill"

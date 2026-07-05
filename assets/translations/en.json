@@ -1582,6 +1582,10 @@
           "description": "Default weight for widget labels on this bar.",
           "label": "Font Weight"
         },
+        "hover-highlight": {
+          "description": "Softly tint the widget under the mouse pointer with its own foreground color",
+          "label": "Hover Highlight"
+        },
         "layer": {
           "description": "Use Overlay to show the bar above fullscreen apps. Attached panels follow the bar.",
           "label": "Wayland Layer"
