@@ -1050,6 +1050,7 @@
     "navigation": {
       "groups": {
         "audio": "Sonido",
+        "authentication": "Autenticacion",
         "automation": "Automatizacion",
         "backdrop": "Fondo",
         "background": "Fondo",
@@ -1069,6 +1070,7 @@
         "focus-styling": "Estilo de enfoque",
         "formats": "Formatos",
         "general": "General",
+        "greeter": "Greeter",
         "grouping": "Agrupación",
         "home": "Inicio",
         "hot-corners": "Esquinas activas",
@@ -1095,6 +1097,7 @@
         "pinned-apps": "Aplicaciones fijadas",
         "polkit": "Polkit",
         "power": "Energía",
+        "privacy": "Privacidad",
         "profile": "Perfil",
         "screen-corners": "Esquinas de pantalla",
         "screen-time": "Tiempo de pantalla",
@@ -2414,6 +2417,10 @@
         "date-format": {
           "description": "Formato de fecha predeterminado para la interfaz del shell sin configuración propia",
           "label": "Formato de fecha"
+        },
+        "external-ip": {
+          "description": "Resuelve IP publica WAN (via api.noctalia.dev) y se muestra en el panel de Red del Panel de Control",
+          "label": "Mostrar IP WAN"
         },
         "greeter-sync-auto": {
           "description": "Sincronizar automáticamente la pantalla de inicio cuando cambien el fondo de pantalla, los colores o el modo de tema",
