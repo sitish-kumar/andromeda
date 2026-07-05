@@ -251,6 +251,7 @@
     "network": {
       "connect": "连接",
       "current-connection": "当前连接",
+      "external-ip": "WAN {ip}",
       "no-networks": "范围内无网络",
       "not-connected": "未连接",
       "password": "密码",
@@ -680,7 +681,7 @@
       "calendar-google-connect-browser-failed": "未找到可用于 Google 授权的浏览器。请检查默认浏览器或 xdg-open 设置。",
       "calendar-google-connect-expired": "Google 授权在登录完成前已过期。请重新发起连接。",
       "calendar-google-connect-failed-title": "Google 日历连接失败",
-      "calendar-google-connect-missing-account": "未找到与 \"{account}\" 匹配的已配置 Google 日历账户。",
+      "calendar-google-connect-missing-account": "未找到与 “{account}” 匹配的已配置 Google 日历账户。",
       "calendar-google-connect-rate-limited": "Google 授权暂时受到频率限制。请稍等片刻后重试。",
       "calendar-google-connect-result-failed": "无法完成 Google 授权。请重新发起连接。",
       "calendar-google-connect-start-failed": "无法启动 Google 授权。请检查网络连接并重试。",
@@ -713,7 +714,7 @@
       "screen-time-reset-success": "使用记录已清除。",
       "session-bus-unavailable": "会话总线不可用",
       "wallpaper-palette-export": "自定义配色方案",
-      "wallpaper-palette-export-success": "已保存 \"{name}\" 并将配色方案来源更改为自定义。"
+      "wallpaper-palette-export-success": "已保存 “{name}” 并将配色方案来源更改为自定义。"
     }
   },
   "osd": {
@@ -875,7 +876,7 @@
         "create": "创建",
         "delete": "删除",
         "delete-confirm-desc": "此状态栏由 GUI 创建，将从 settings.toml 中移除。",
-        "delete-confirm-title": "删除 \"{name}\"？",
+        "delete-confirm-title": "删除 “{name}”？",
         "id-placeholder": "状态栏 ID",
         "label": "状态栏：{name}",
         "management": "状态栏",
@@ -889,7 +890,7 @@
         "create": "创建",
         "delete": "删除",
         "delete-confirm-desc": "此屏幕设置由 GUI 创建，将从 settings.toml 中移除。",
-        "delete-confirm-title": "删除 \"{name}\"？",
+        "delete-confirm-title": "删除 “{name}”？",
         "label": "屏幕：{name}",
         "management": "屏幕设置",
         "match-placeholder": "屏幕标识（如 \"DP-1\"）",
@@ -943,7 +944,7 @@
           "create-save": "创建",
           "delete": "删除",
           "delete-confirm-desc": "具名小组件将从所有状态栏中移除，且不再保留其配置项。",
-          "delete-confirm-title": "删除 \"{name}\"？",
+          "delete-confirm-title": "删除 “{name}”？",
           "id-description": "仅限字母、数字、下划线或连字符；不能包含空格；必须唯一",
           "id-placeholder": "小组件 ID",
           "rename": "重命名",
@@ -1049,6 +1050,7 @@
     "navigation": {
       "groups": {
         "audio": "音频",
+        "authentication": "身份验证",
         "automation": "自动",
         "backdrop": "Backdrop",
         "background": "背景",
@@ -1068,6 +1070,7 @@
         "focus-styling": "焦点样式",
         "formats": "格式",
         "general": "常规",
+        "greeter": "Greeter",
         "grouping": "组合",
         "home": "主页",
         "hot-corners": "触发角",
@@ -1094,6 +1097,7 @@
         "pinned-apps": "固定应用",
         "polkit": "Polkit",
         "power": "电源",
+        "privacy": "隐私",
         "profile": "个人资料",
         "screen-corners": "屏幕圆角",
         "screen-time": "屏幕使用时间",
@@ -1326,7 +1330,7 @@
         "configure": "配置",
         "delete": "删除",
         "delete-confirm-desc": "此插件将被卸载，并从磁盘中删除。",
-        "delete-confirm-title": "删除 \"{name}\"？",
+        "delete-confirm-title": "删除 “{name}”？",
         "deprecated": "已弃用",
         "empty": "未启用任何插件。",
         "loading": "正在加载插件...",
@@ -1523,19 +1527,19 @@
           "label": "内容缩放"
         },
         "corner-bottom-left": {
-          "description": "状态栏左下角的圆角半径；当该角背离屏幕边缘时，负值会形成内凹的圆角"
+          "description": "状态栏左下角的圆角半径；当该角背离屏幕边缘时，可启用反转以形成内凹圆角"
         },
         "corner-bottom-right": {
-          "description": "状态栏右下角的圆角半径；当该角背离屏幕边缘时，负值会形成内凹的圆角"
+          "description": "状态栏右下角的圆角半径；当该角背离屏幕边缘时，可启用反转以形成内凹圆角"
         },
         "corner-radius": {
           "description": "状态栏的圆角半径"
         },
         "corner-top-left": {
-          "description": "状态栏左上角的圆角半径；当该角背离屏幕边缘时，负值会形成内凹的圆角"
+          "description": "状态栏左上角的圆角半径；当该角背离屏幕边缘时，可启用反转以形成内凹圆角"
         },
         "corner-top-right": {
-          "description": "状态栏右上角的圆角半径；当该角背离屏幕边缘时，负值会形成内凹的圆角"
+          "description": "状态栏右上角的圆角半径；当该角背离屏幕边缘时，可启用反转以形成内凹圆角"
         },
         "dead-zone-command": {
           "description": "在小组件区域之外的状态栏空白处，左键点击时执行的 Shell 命令",
@@ -2413,6 +2417,10 @@
         "date-format": {
           "description": "Shell UI 默认日期格式",
           "label": "日期格式"
+        },
+        "external-ip": {
+          "description": "解析当前连接的公网 WAN IP（通过 api.noctalia.dev），并显示在控制中心的网络选项卡中",
+          "label": "显示 WAN IP"
         },
         "greeter-sync-auto": {
           "description": "每当壁纸、配色或主题模式改变时，自动同步 Greeter",
