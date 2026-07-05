@@ -331,7 +331,7 @@ namespace {
     return span;
   }
 
-  void notifyKdePlasmaWallpaper(const std::string& imagePath) {
+  void notifyKdePlasmaWallpaper(const std::string& imagePath, const std::string& connector) {
     if (!compositors::isKde()) {
       return;
     }
@@ -339,10 +339,19 @@ namespace {
       return;
     }
 
-    kLog.info("syncing wallpaper to KDE Plasma: {}", imagePath);
-    const bool launched = process::runAsync({"plasma-apply-wallpaperimage", imagePath.c_str()});
-    if (!launched) {
-      kLog.warn("failed to launch plasma-apply-wallpaperimage");
+    kLog.info("syncing wallpaper to KDE Plasma: {} (connector: {})", imagePath, connector);
+    if (connector.empty()) {
+      const bool launched = process::runAsync({"plasma-apply-wallpaperimage", imagePath.c_str()});
+      if (!launched) {
+        kLog.warn("failed to launch plasma-apply-wallpaperimage");
+      }
+    } else {
+      const std::string screenArg = "--screen";
+      const bool launched =
+          process::runAsync({"plasma-apply-wallpaperimage", screenArg.c_str(), connector.c_str(), imagePath.c_str()});
+      if (!launched) {
+        kLog.warn("failed to launch plasma-apply-wallpaperimage");
+      }
     }
   }
 
@@ -539,7 +548,6 @@ std::vector<WallpaperChange> Wallpaper::onStateChange() {
   kLog.info("state file changed, checking for updates");
 
   std::vector<WallpaperChange> changes;
-  std::unordered_set<std::string> knotifiedPaths;
   for (auto& inst : m_instances) {
     auto newPath = m_config->getWallpaperPath(inst->connectorName);
     if (inst->surface == nullptr || inst->wallpaperNode == nullptr) {
@@ -595,9 +603,7 @@ std::vector<WallpaperChange> Wallpaper::onStateChange() {
     kLog.info("changing {} → {}", inst->connectorName, newPath);
     loadWallpaper(*inst, newPath);
     changes.push_back({.path = newPath, .connector = inst->connectorName});
-    if (knotifiedPaths.insert(newPath).second) {
-      notifyKdePlasmaWallpaper(newPath);
-    }
+    notifyKdePlasmaWallpaper(newPath, inst->connectorName);
   }
 
   // Any wallpaper change (manual selection, IPC, or automation) restarts the
@@ -633,7 +639,7 @@ bool Wallpaper::isConnectorKnown(std::string_view connector) const {
 }
 
 void Wallpaper::applyResolvedWallpaper(const std::optional<std::string>& connector, const std::string& resolvedPath) {
-  notifyKdePlasmaWallpaper(resolvedPath);
+  notifyKdePlasmaWallpaper(resolvedPath, connector.value_or(""));
 
   if (connector.has_value()) {
     m_config->setWallpaperPath(connector, resolvedPath);
