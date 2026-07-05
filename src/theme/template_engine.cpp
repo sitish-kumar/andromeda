@@ -1357,40 +1357,52 @@ namespace noctalia::theme {
 
     if (const toml::table* config = root["config"].as_table()) {
       if (const toml::table* customColors = (*config)["custom_colors"].as_table()) {
-        std::string sourceHex;
-        if (auto modeIt = m_themeData.find(m_options.defaultMode); modeIt != m_themeData.end()) {
-          if (auto it = modeIt->second.find("primary"); it != modeIt->second.end())
-            sourceHex = it->second;
-          else if (auto it2 = modeIt->second.find("source_color"); it2 != modeIt->second.end())
-            sourceHex = it2->second;
+        std::unordered_map<std::string_view, std::string> sourceHexes;
+        for (std::string_view mode : kTemplateModes) {
+          if (auto modeIt = m_themeData.find(std::string(mode)); modeIt != m_themeData.end()) {
+            if (auto it = modeIt->second.find("primary"); it != modeIt->second.end())
+              sourceHexes[mode] = it->second;
+            else if (auto it2 = modeIt->second.find("source_color"); it2 != modeIt->second.end())
+              sourceHexes[mode] = it2->second;
+          }
         }
 
         for (const auto& [nameNode, valueNode] : *customColors) {
           const std::string name = std::string(nameNode.str());
-          std::string colorHex;
+          std::unordered_map<std::string_view, std::string> colorHexes;
           bool blend = true;
 
           if (const auto* str = valueNode.as_string()) {
-            colorHex = str->get();
+            colorHexes["dark"] = str->get();
+            colorHexes["light"] = str->get();
           } else if (const auto* tbl = valueNode.as_table()) {
-            if (auto color = tbl->get_as<std::string>("color"))
-              colorHex = color->get();
+            if (auto colorDark = tbl->get_as<std::string>("color_dark"),
+                colorLight = tbl->get_as<std::string>("color_light");
+                colorDark && colorLight) {
+              colorHexes["dark"] = colorDark->get();
+              colorHexes["light"] = colorLight->get();
+            } else if (auto color = tbl->get_as<std::string>("color")) {
+              colorHexes["dark"] = color->get();
+              colorHexes["light"] = color->get();
+            }
             if (auto blendValue = tbl->get_as<bool>("blend"))
               blend = blendValue->get();
           } else {
             continue;
           }
 
-          if (colorHex.empty())
+          if (colorHexes.empty())
             continue;
 
-          const std::string paletteHex = (blend && !sourceHex.empty()) ? harmonizeHex(colorHex, sourceHex) : colorHex;
-          const auto scheme = makeCustomColorScheme(
-              m_options.schemeType, material_color_utilities::Hct(Color::fromHex(paletteHex).toArgb())
-          );
-          const auto& palette = scheme.primary_palette;
-
           for (std::string_view mode : kTemplateModes) {
+            const std::string sourceHex = sourceHexes[mode];
+            const std::string colorHex = colorHexes[mode];
+            const std::string paletteHex = (blend && !sourceHex.empty()) ? harmonizeHex(colorHex, sourceHex) : colorHex;
+            const auto scheme = makeCustomColorScheme(
+                m_options.schemeType, material_color_utilities::Hct(Color::fromHex(paletteHex).toArgb())
+            );
+            const auto& palette = scheme.primary_palette;
+
             auto& modeData = m_themeData[std::string(mode)];
             modeData[name + "_source"] = colorHex;
             modeData[name + "_value"] = colorHex;

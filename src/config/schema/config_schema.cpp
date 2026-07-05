@@ -944,8 +944,9 @@ namespace noctalia::config::schema {
     using CompareColor = ThemeConfig::TemplateCompareColorConfig;
 
     // [theme.templates.custom_colors]: a name-keyed map whose value is either a
-    // bare color string or a { color, blend } table. Kept only when name+color
-    // are non-empty; emitted only when the list is non-empty.
+    // bare color string or a { color, color_dark, color_light, blend } table.
+    // Kept only when name+color or name+color_dark+color_light are non-empty;
+    // emitted only when the list is non-empty.
     Field<ThemeConfig::TemplatesConfig> customColorsField() {
       return custom<ThemeConfig::TemplatesConfig>(
           "custom_colors",
@@ -961,14 +962,25 @@ namespace noctalia::config::schema {
               if (const auto* str = value.as_string()) {
                 color.color = str->get();
               } else if (const auto* t = value.as_table()) {
+                if (auto c = t->get_as<std::string>("color_dark")) {
+                  color.color_dark = c->get();
+                }
+                if (auto c = t->get_as<std::string>("color_light")) {
+                  color.color_light = c->get();
+                }
                 if (auto c = t->get_as<std::string>("color")) {
                   color.color = c->get();
+                } else {
+                  color.color = color.color_dark;
                 }
                 if (auto b = t->get_as<bool>("blend")) {
                   color.blend = b->get();
                 }
               }
-              if (!StringUtils::trim(color.name).empty() && !StringUtils::trim(color.color).empty()) {
+              if (!StringUtils::trim(color.name).empty()
+                  && (!StringUtils::trim(color.color).empty()
+                      || (!StringUtils::trim(color.color_dark).empty()
+                          && !StringUtils::trim(color.color_light).empty()))) {
                 out.customColors.push_back(std::move(color));
               }
             }
@@ -981,6 +993,8 @@ namespace noctalia::config::schema {
             for (const auto& color : in.customColors) {
               toml::table colorTable;
               colorTable.insert_or_assign("color", color.color);
+              colorTable.insert_or_assign("color_dark", color.color_dark);
+              colorTable.insert_or_assign("color_light", color.color_light);
               colorTable.insert_or_assign("blend", color.blend);
               map.insert_or_assign(color.name, std::move(colorTable));
             }

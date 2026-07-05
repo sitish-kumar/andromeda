@@ -424,7 +424,8 @@ location = "https://example.invalid/bad"
     c.theme.mode = ThemeMode::Light;
     c.theme.templates.enableBuiltinTemplates = false;
     c.theme.templates.builtinIds = {"a", "b"};
-    c.theme.templates.customColors = {{"accent", "#112233", true}, {"bg", "#000000", false}};
+    c.theme.templates.customColors = {{"accent", "#112233", "#112233", "#332211", true},
+        {"bg", "#000000", "#000000", "#000000", false}};
     c.theme.templates.userTemplates = {
         ThemeConfig::UserTemplateConfig{
             "tmpl1",

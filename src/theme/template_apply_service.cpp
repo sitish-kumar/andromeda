@@ -63,6 +63,8 @@ namespace noctalia::theme {
         for (const auto& color : templatesConfig.customColors) {
           toml::table colorTable;
           colorTable.insert_or_assign("color", color.color);
+          colorTable.insert_or_assign("color_dark", color.color_dark);
+          colorTable.insert_or_assign("color_light", color.color_light);
           colorTable.insert_or_assign("blend", color.blend);
           customColors.insert_or_assign(color.name, std::move(colorTable));
         }
