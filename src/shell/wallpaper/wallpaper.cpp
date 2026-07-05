@@ -331,7 +331,8 @@ namespace {
     return span;
   }
 
-  void notifyKdePlasmaWallpaper(const std::string& imagePath) {
+  void
+  notifyKdePlasmaWallpaper(const std::string& imagePath, const std::string& connector, const WaylandOutput* output) {
     if (!compositors::isKde()) {
       return;
     }
@@ -339,10 +340,47 @@ namespace {
       return;
     }
 
-    kLog.info("syncing wallpaper to KDE Plasma: {}", imagePath);
-    const bool launched = process::runAsync({"plasma-apply-wallpaperimage", imagePath.c_str()});
+    kLog.info("syncing wallpaper to KDE Plasma: {} (connector: {})", imagePath, connector);
+
+    std::string script;
+    if (output == nullptr) {
+      script = "var d = desktops();"
+               "for (var i = 0; i < d.length; i++) {"
+               "  d[i].wallpaperPlugin = 'org.kde.image';"
+               "  d[i].currentConfigGroup = ['Wallpaper', 'org.kde.image', 'General'];"
+               "  d[i].writeConfig('Image', 'file://"
+          + imagePath
+          + "');"
+            "}";
+    } else {
+      script = "var d = desktops();"
+               "for (var i = 0; i < d.length; i++) {"
+               "  var g = screenGeometry(d[i].screen);"
+               "  if (g.x == "
+          + std::to_string(output->logicalX)
+          + " && g.y == "
+          + std::to_string(output->logicalY)
+          + " && g.width == "
+          + std::to_string(output->logicalWidth)
+          + " && g.height == "
+          + std::to_string(output->logicalHeight)
+          + ") {"
+            "    d[i].wallpaperPlugin = 'org.kde.image';"
+            "    d[i].currentConfigGroup = ['Wallpaper', 'org.kde.image', 'General'];"
+            "    d[i].writeConfig('Image', 'file://"
+          + imagePath
+          + "');"
+            "  }"
+            "}";
+    }
+
+    const bool launched = process::runAsync(
+        {"dbus-send", "--session", "--dest=org.kde.plasmashell", "--type=method_call", "/PlasmaShell",
+         "org.kde.PlasmaShell.evaluateScript", "string:" + script}
+    );
+
     if (!launched) {
-      kLog.warn("failed to launch plasma-apply-wallpaperimage");
+      kLog.warn("failed to launch dbus-send to sync plasma wallpaper");
     }
   }
 
@@ -539,7 +577,6 @@ std::vector<WallpaperChange> Wallpaper::onStateChange() {
   kLog.info("state file changed, checking for updates");
 
   std::vector<WallpaperChange> changes;
-  std::unordered_set<std::string> knotifiedPaths;
   for (auto& inst : m_instances) {
     auto newPath = m_config->getWallpaperPath(inst->connectorName);
     if (inst->surface == nullptr || inst->wallpaperNode == nullptr) {
@@ -595,9 +632,17 @@ std::vector<WallpaperChange> Wallpaper::onStateChange() {
     kLog.info("changing {} → {}", inst->connectorName, newPath);
     loadWallpaper(*inst, newPath);
     changes.push_back({.path = newPath, .connector = inst->connectorName});
-    if (knotifiedPaths.insert(newPath).second) {
-      notifyKdePlasmaWallpaper(newPath);
+
+    const WaylandOutput* output = nullptr;
+    if (m_wayland != nullptr) {
+      for (const auto& out : m_wayland->outputs()) {
+        if (out.name == inst->outputName) {
+          output = &out;
+          break;
+        }
+      }
     }
+    notifyKdePlasmaWallpaper(newPath, inst->connectorName, output);
   }
 
   // Any wallpaper change (manual selection, IPC, or automation) restarts the
@@ -633,7 +678,16 @@ bool Wallpaper::isConnectorKnown(std::string_view connector) const {
 }
 
 void Wallpaper::applyResolvedWallpaper(const std::optional<std::string>& connector, const std::string& resolvedPath) {
-  notifyKdePlasmaWallpaper(resolvedPath);
+  const WaylandOutput* output = nullptr;
+  if (connector.has_value() && m_wayland != nullptr) {
+    for (const auto& out : m_wayland->outputs()) {
+      if (out.connectorName == *connector) {
+        output = &out;
+        break;
+      }
+    }
+  }
+  notifyKdePlasmaWallpaper(resolvedPath, connector.value_or(""), output);
 
   if (connector.has_value()) {
     m_config->setWallpaperPath(connector, resolvedPath);
