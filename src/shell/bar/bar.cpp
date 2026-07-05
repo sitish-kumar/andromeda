@@ -3340,6 +3340,27 @@ std::string Bar::toggleBarIpc(std::string_view args) {
   return "ok\n";
 }
 
+std::string Bar::toggleBarReserveSpaceIpc(std::string_view args) {
+  std::optional<std::string> barName;
+  std::optional<std::string> monitorSelector;
+  if (const auto parseError = parseBarVisibilityIpcArgs("bar-reserve-toggle", args, barName, monitorSelector)) {
+    return *parseError;
+  }
+
+  std::vector<BarInstance*> targets;
+  if (const auto collectError = collectBarIpcInstances(barName, monitorSelector, targets)) {
+    return *collectError;
+  }
+
+  for (BarInstance* instance : targets) {
+    if (instance != nullptr) {
+      instance->barConfig.reserveSpace = !instance->barConfig.reserveSpace;
+      syncBarExclusiveZone(*instance);
+    }
+  }
+  return "ok\n";
+}
+
 std::string Bar::setBarAutoHideIpc(std::string_view args) {
   if (m_config == nullptr) {
     return "error: config service not initialized\n";
@@ -3505,6 +3526,11 @@ void Bar::registerIpc(IpcService& ipc) {
   ipc.registerHandler(
       "bar-toggle", [this](const std::string& args) -> std::string { return toggleBarIpc(args); },
       "bar-toggle [bar-name] [monitor-selector]", "Toggle visibility for one or all bars"
+  );
+
+  ipc.registerHandler(
+      "bar-reserve-toggle", [this](const std::string& args) -> std::string { return toggleBarReserveSpaceIpc(args); },
+      "bar-reserve-toggle [bar-name] [monitor-selector]", "Toggle reserve space for one or all bars"
   );
 
   ipc.registerHandler(
