@@ -1,7 +1,9 @@
 #include "shell/wallpaper/wallpaper.h"
 
+#include "compositors/compositor_detect.h"
 #include "config/config_service.h"
 #include "core/log.h"
+#include "core/process/process.h"
 #include "core/random.h"
 #include "cursor-shape-v1-client-protocol.h"
 #include "ipc/ipc_service.h"
@@ -329,6 +331,21 @@ namespace {
     return span;
   }
 
+  void notifyKdePlasmaWallpaper(const std::string& imagePath) {
+    if (!compositors::isKde()) {
+      return;
+    }
+    if (imagePath.starts_with("color:")) {
+      return;
+    }
+
+    kLog.info("syncing wallpaper to KDE Plasma: {}", imagePath);
+    const bool launched = process::runAsync({"plasma-apply-wallpaperimage", imagePath.c_str()});
+    if (!launched) {
+      kLog.warn("failed to launch plasma-apply-wallpaperimage");
+    }
+  }
+
 } // namespace
 
 Wallpaper::Wallpaper() = default;
@@ -522,6 +539,7 @@ std::vector<WallpaperChange> Wallpaper::onStateChange() {
   kLog.info("state file changed, checking for updates");
 
   std::vector<WallpaperChange> changes;
+  std::unordered_set<std::string> knotifiedPaths;
   for (auto& inst : m_instances) {
     auto newPath = m_config->getWallpaperPath(inst->connectorName);
     if (inst->surface == nullptr || inst->wallpaperNode == nullptr) {
@@ -577,6 +595,9 @@ std::vector<WallpaperChange> Wallpaper::onStateChange() {
     kLog.info("changing {} → {}", inst->connectorName, newPath);
     loadWallpaper(*inst, newPath);
     changes.push_back({.path = newPath, .connector = inst->connectorName});
+    if (knotifiedPaths.insert(newPath).second) {
+      notifyKdePlasmaWallpaper(newPath);
+    }
   }
 
   // Any wallpaper change (manual selection, IPC, or automation) restarts the
@@ -612,6 +633,8 @@ bool Wallpaper::isConnectorKnown(std::string_view connector) const {
 }
 
 void Wallpaper::applyResolvedWallpaper(const std::optional<std::string>& connector, const std::string& resolvedPath) {
+  notifyKdePlasmaWallpaper(resolvedPath);
+
   if (connector.has_value()) {
     m_config->setWallpaperPath(connector, resolvedPath);
     return;
