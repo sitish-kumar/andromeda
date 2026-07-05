@@ -12,6 +12,7 @@
 #include "ipc/ipc_service.h"
 #include "render/render_context.h"
 #include "render/scene/input_area.h"
+#include "shell/bar/bar_corner_shape.h"
 #include "shell/bar/bar_reserved_zone.h"
 #include "shell/bar/widget.h"
 #include "shell/bar/widgets/plugin_widget.h"
@@ -104,29 +105,23 @@ namespace {
         Radii{mag(cfg.radiusTopLeft), mag(cfg.radiusTopRight), mag(cfg.radiusBottomRight), mag(cfg.radiusBottomLeft)};
 
     const float cap = static_cast<float>(cfg.thickness) * 0.5f;
-    const auto innerBulge = [&](std::int32_t a, std::int32_t b) {
-      float r = 0.0f;
-      if (a < 0) {
-        r = std::max(r, mag(a));
-      }
-      if (b < 0) {
-        r = std::max(r, mag(b));
-      }
-      return std::min(r, cap);
-    };
+    const BarConcaveCorners inner = barInnerEdgeCorners(cfg.position);
+    const auto innerContribution = [&](bool flagged, std::int32_t v) { return (flagged && v < 0) ? mag(v) : 0.0f; };
+    float bulge = 0.0f;
+    bulge = std::max(bulge, innerContribution(inner.topLeft, cfg.radiusTopLeft));
+    bulge = std::max(bulge, innerContribution(inner.topRight, cfg.radiusTopRight));
+    bulge = std::max(bulge, innerContribution(inner.bottomLeft, cfg.radiusBottomLeft));
+    bulge = std::max(bulge, innerContribution(inner.bottomRight, cfg.radiusBottomRight));
+    g.innerBulge = std::min(bulge, cap);
 
     const std::string_view pos = cfg.position;
     if (pos == "bottom") {
-      g.innerBulge = innerBulge(cfg.radiusTopLeft, cfg.radiusTopRight);
       g.logicalInset.top = g.innerBulge;
     } else if (pos == "left") {
-      g.innerBulge = innerBulge(cfg.radiusTopRight, cfg.radiusBottomRight);
       g.logicalInset.right = g.innerBulge;
     } else if (pos == "right") {
-      g.innerBulge = innerBulge(cfg.radiusTopLeft, cfg.radiusBottomLeft);
       g.logicalInset.left = g.innerBulge;
     } else { // top
-      g.innerBulge = innerBulge(cfg.radiusBottomLeft, cfg.radiusBottomRight);
       g.logicalInset.bottom = g.innerBulge;
     }
     return g;

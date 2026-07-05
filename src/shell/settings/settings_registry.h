@@ -97,11 +97,18 @@ namespace settings {
         : value(static_cast<double>(valueIn)), minValue(static_cast<double>(minValueIn)),
           maxValue(static_cast<double>(maxValueIn)), step(static_cast<double>(stepIn)), integerValue(integerValueIn) {}
 
+    // Trailing invert control for signed radius-style sliders: the slider shows the
+    // magnitude (0..max) and an inline toggle carries the sign (negative = concave).
+    // Reserve renders an equal-width empty slot so sibling sliders stay column-aligned.
+    enum class InvertSlot : std::uint8_t { None, Reserve, Toggle };
+
     double value = 0.0;
     double minValue = 0.0;
     double maxValue = 1.0;
     double step = 0.01;
     bool integerValue = false;
+    InvertSlot invertSlot = InvertSlot::None;
+    bool invertEnabled = true; // only meaningful when invertSlot == Toggle
     std::string valueSuffix;
     // Optional: when set, called with the user's just-committed value and returns extra overrides
     // to commit atomically alongside it. Use for cross-field constraints (e.g. linked sliders).

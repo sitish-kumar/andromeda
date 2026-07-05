@@ -7,6 +7,7 @@
 #include "core/log.h"
 #include "core/process/process.h"
 #include "i18n/i18n.h"
+#include "shell/bar/bar_corner_shape.h"
 #include "shell/control_center/control_center_panel.h"
 #include "shell/control_center/shortcut_registry.h"
 #include "shell/settings/color_spec_picker.h"
@@ -32,6 +33,25 @@ namespace settings {
   namespace {
 
     constexpr int kBarMarginMax = 4096;
+    constexpr float kBarCornerRadiusMax = 80.0f;
+
+    // Per-corner bar radius slider: shows magnitude (0..max) with an inline invert toggle carrying
+    // the sign (negative = concave). `enabled` reflects whether this corner faces away from the
+    // docked screen edge and can render a meaningful concave notch.
+    [[nodiscard]] SliderSetting barCornerSlider(std::int32_t value, bool enabled) {
+      SliderSetting s{value, 0.0f, kBarCornerRadiusMax, 1.0f, true};
+      s.invertSlot = SliderSetting::InvertSlot::Toggle;
+      s.invertEnabled = enabled;
+      return s;
+    }
+
+    // Slider that reserves an empty invert slot so its value box stays column-aligned with sibling
+    // corner sliders in the same group.
+    [[nodiscard]] SliderSetting barReservedSlider(double value, double maxValue, double step, bool integer) {
+      SliderSetting s{value, 0.0f, maxValue, step, integer};
+      s.invertSlot = SliderSetting::InvertSlot::Reserve;
+      return s;
+    }
 
     [[nodiscard]] std::vector<KeyChord>
     effectiveKeybindItems(const std::vector<KeyChord>& configured, KeybindAction action) {
@@ -2558,30 +2578,31 @@ namespace settings {
           tr("settings.schema.bar.content-padding.description"), path("padding"),
           SliderSetting{bar.padding, 0.0f, 80.0f, 1.0f, true}, "inset"
       ));
+      const BarConcaveCorners barInner = barInnerEdgeCorners(bar.position);
       entries.push_back(makeEntry(
           section, "shape", tr("settings.schema.shared.corner-radius.label"),
           tr("settings.schema.bar.corner-radius.description"), path("radius"),
-          SliderSetting{bar.radius, 0.0f, 80.0f, 1.0f, true}, "rounded"
+          barReservedSlider(bar.radius, 80.0f, 1.0f, true), "rounded"
       ));
       entries.push_back(makeEntry(
           section, "shape", tr("settings.schema.shared.corner-top-left.label"),
           tr("settings.schema.bar.corner-top-left.description"), path("radius_top_left"),
-          SliderSetting{bar.radiusTopLeft, -80.0f, 80.0f, 1.0f, true}, "rounded corner", true
+          barCornerSlider(bar.radiusTopLeft, barInner.topLeft), "rounded corner", true
       ));
       entries.push_back(makeEntry(
           section, "shape", tr("settings.schema.shared.corner-top-right.label"),
           tr("settings.schema.bar.corner-top-right.description"), path("radius_top_right"),
-          SliderSetting{bar.radiusTopRight, -80.0f, 80.0f, 1.0f, true}, "rounded corner", true
+          barCornerSlider(bar.radiusTopRight, barInner.topRight), "rounded corner", true
       ));
       entries.push_back(makeEntry(
           section, "shape", tr("settings.schema.shared.corner-bottom-left.label"),
           tr("settings.schema.bar.corner-bottom-left.description"), path("radius_bottom_left"),
-          SliderSetting{bar.radiusBottomLeft, -80.0f, 80.0f, 1.0f, true}, "rounded corner", true
+          barCornerSlider(bar.radiusBottomLeft, barInner.bottomLeft), "rounded corner", true
       ));
       entries.push_back(makeEntry(
           section, "shape", tr("settings.schema.shared.corner-bottom-right.label"),
           tr("settings.schema.bar.corner-bottom-right.description"), path("radius_bottom_right"),
-          SliderSetting{bar.radiusBottomRight, -80.0f, 80.0f, 1.0f, true}, "rounded corner", true
+          barCornerSlider(bar.radiusBottomRight, barInner.bottomRight), "rounded corner", true
       ));
       entries.push_back(makeEntry(
           section, "shape", tr("settings.schema.bar.border.label"), tr("settings.schema.bar.border.description"),
@@ -2590,7 +2611,7 @@ namespace settings {
       entries.push_back(makeEntry(
           section, "shape", tr("settings.schema.bar.border-width.label"),
           tr("settings.schema.bar.border-width.description"), path("border_width"),
-          SliderSetting{bar.borderWidth, 0.0f, 20.0f, 0.5f, false}, "outline stroke", true
+          barReservedSlider(bar.borderWidth, 20.0f, 0.5f, false), "outline stroke", true
       ));
       entries.push_back(makeEntry(
           section, "effects", tr("settings.schema.shared.background-opacity.label"),
@@ -2874,33 +2895,32 @@ namespace settings {
             tr("settings.schema.bar.content-padding.description"), monitorPath("padding"),
             SliderSetting{ovr.padding.value_or(bar.padding), 0.0f, 80.0f, 1.0f, true}, "inset"
         ));
+        const BarConcaveCorners ovrInner = barInnerEdgeCorners(ovr.position.value_or(bar.position));
         entries.push_back(makeEntry(
             section, "shape", tr("settings.schema.shared.corner-radius.label"),
             tr("settings.schema.bar.corner-radius.description"), monitorPath("radius"),
-            SliderSetting{ovr.radius.value_or(bar.radius), 0.0f, 80.0f, 1.0f, true}, "rounded"
+            barReservedSlider(ovr.radius.value_or(bar.radius), 80.0f, 1.0f, true), "rounded"
         ));
         entries.push_back(makeEntry(
             section, "shape", tr("settings.schema.shared.corner-top-left.label"),
             tr("settings.schema.bar.corner-top-left.description"), monitorPath("radius_top_left"),
-            SliderSetting{ovr.radiusTopLeft.value_or(bar.radiusTopLeft), -80.0f, 80.0f, 1.0f, true}, "rounded corner",
-            true
+            barCornerSlider(ovr.radiusTopLeft.value_or(bar.radiusTopLeft), ovrInner.topLeft), "rounded corner", true
         ));
         entries.push_back(makeEntry(
             section, "shape", tr("settings.schema.shared.corner-top-right.label"),
             tr("settings.schema.bar.corner-top-right.description"), monitorPath("radius_top_right"),
-            SliderSetting{ovr.radiusTopRight.value_or(bar.radiusTopRight), -80.0f, 80.0f, 1.0f, true}, "rounded corner",
-            true
+            barCornerSlider(ovr.radiusTopRight.value_or(bar.radiusTopRight), ovrInner.topRight), "rounded corner", true
         ));
         entries.push_back(makeEntry(
             section, "shape", tr("settings.schema.shared.corner-bottom-left.label"),
             tr("settings.schema.bar.corner-bottom-left.description"), monitorPath("radius_bottom_left"),
-            SliderSetting{ovr.radiusBottomLeft.value_or(bar.radiusBottomLeft), -80.0f, 80.0f, 1.0f, true},
-            "rounded corner", true
+            barCornerSlider(ovr.radiusBottomLeft.value_or(bar.radiusBottomLeft), ovrInner.bottomLeft), "rounded corner",
+            true
         ));
         entries.push_back(makeEntry(
             section, "shape", tr("settings.schema.shared.corner-bottom-right.label"),
             tr("settings.schema.bar.corner-bottom-right.description"), monitorPath("radius_bottom_right"),
-            SliderSetting{ovr.radiusBottomRight.value_or(bar.radiusBottomRight), -80.0f, 80.0f, 1.0f, true},
+            barCornerSlider(ovr.radiusBottomRight.value_or(bar.radiusBottomRight), ovrInner.bottomRight),
             "rounded corner", true
         ));
         entries.push_back(makeEntry(
@@ -2910,7 +2930,7 @@ namespace settings {
         entries.push_back(makeEntry(
             section, "shape", tr("settings.schema.bar.border-width.label"),
             tr("settings.schema.bar.border-width.description"), monitorPath("border_width"),
-            SliderSetting{ovr.borderWidth.value_or(bar.borderWidth), 0.0f, 20.0f, 0.5f, false}, "outline stroke", true
+            barReservedSlider(ovr.borderWidth.value_or(bar.borderWidth), 20.0f, 0.5f, false), "outline stroke", true
         ));
         entries.push_back(makeEntry(
             section, "effects", tr("settings.schema.shared.background-opacity.label"),

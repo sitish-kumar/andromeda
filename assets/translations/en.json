@@ -1527,19 +1527,19 @@
           "label": "Content Scale"
         },
         "corner-bottom-left": {
-          "description": "Bottom left corner radius for the bar; negative values carve a concave corner when this corner faces away from the screen edge"
+          "description": "Bottom left corner radius for the bar. Enable invert to carve a concave corner, available only when this corner faces away from the screen edge"
         },
         "corner-bottom-right": {
-          "description": "Bottom right corner radius for the bar; negative values carve a concave corner when this corner faces away from the screen edge"
+          "description": "Bottom right corner radius for the bar. Enable invert to carve a concave corner, available only when this corner faces away from the screen edge"
         },
         "corner-radius": {
           "description": "Corner radius of the bar"
         },
         "corner-top-left": {
-          "description": "Top left corner radius for the bar; negative values carve a concave corner when this corner faces away from the screen edge"
+          "description": "Top left corner radius for the bar. Enable invert to carve a concave corner, available only when this corner faces away from the screen edge"
         },
         "corner-top-right": {
-          "description": "Top right corner radius for the bar; negative values carve a concave corner when this corner faces away from the screen edge"
+          "description": "Top right corner radius for the bar. Enable invert to carve a concave corner, available only when this corner faces away from the screen edge"
         },
         "dead-zone-command": {
           "description": "Shell command to run on left-click in the bar margin outside widget sections",
