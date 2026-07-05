@@ -1288,55 +1288,27 @@ namespace settings {
 
     // Security
     entries.push_back(makeEntry(
-        SettingsSection::Security, "privacy-security", tr("settings.schema.shell.privacy-mic-filter-regex.label"),
-        tr("settings.schema.shell.privacy-mic-filter-regex.description"), {"shell", "privacy", "mic_filter_regex"},
-        TextSetting{.value = cfg.shell.privacy.micFilterRegex, .placeholder = "", .browseFileExtensions = {}},
-        "privacy microphone mic app process regex filter ignore"
-    ));
-    entries.push_back(makeEntry(
-        SettingsSection::Security, "privacy-security", tr("settings.schema.shell.privacy-cam-filter-regex.label"),
-        tr("settings.schema.shell.privacy-cam-filter-regex.description"), {"shell", "privacy", "cam_filter_regex"},
-        TextSetting{.value = cfg.shell.privacy.camFilterRegex, .placeholder = "", .browseFileExtensions = {}},
-        "privacy camera webcam app process regex filter ignore"
-    ));
-    entries.push_back(makeEntry(
-        SettingsSection::Security, "privacy-security", tr("settings.schema.shell.privacy-screen-filter-regex.label"),
-        tr("settings.schema.shell.privacy-screen-filter-regex.description"),
-        {"shell", "privacy", "screen_filter_regex"},
-        TextSetting{.value = cfg.shell.privacy.screenFilterRegex, .placeholder = "", .browseFileExtensions = {}},
-        "privacy screen share screenshare app process regex filter ignore"
-    ));
-    entries.push_back(makeEntry(
-        SettingsSection::Security, "privacy-security", tr("settings.schema.shell.offline-mode.label"),
+        SettingsSection::Security, "network", tr("settings.schema.shell.offline-mode.label"),
         tr("settings.schema.shell.offline-mode.description"), {"shell", "offline_mode"},
         ToggleSetting{cfg.shell.offlineMode}, "network http fetch download"
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Security, "privacy-security", tr("settings.schema.shell.telemetry.label"),
+        SettingsSection::Security, "network", tr("settings.schema.shell.external-ip.label"),
+        tr("settings.schema.shell.external-ip.description"), {"shell", "external_ip_enabled"},
+        ToggleSetting{cfg.shell.externalIpEnabled}, "wan external ip public address network resolve"
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Security, "network", tr("settings.schema.shell.telemetry.label"),
         tr("settings.schema.shell.telemetry.description"), {"shell", "telemetry_enabled"},
         ToggleSetting{cfg.shell.telemetryEnabled}, "analytics ping privacy"
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Security, "privacy-security", tr("settings.schema.shell.polkit-agent.label"),
+        SettingsSection::Security, "authentication", tr("settings.schema.shell.polkit-agent.label"),
         tr("settings.schema.shell.polkit-agent.description"), {"shell", "polkit_agent"},
         ToggleSetting{cfg.shell.polkitAgent}, "auth password"
     ));
-    if (env.greeterSyncAvailable) {
-      entries.push_back(makeEntry(
-          SettingsSection::Security, "privacy-security",
-          tr("settings.schema.shell.greeter-sync-privilege-command.label"),
-          tr("settings.schema.shell.greeter-sync-privilege-command.description"),
-          {"shell", "greeter_sync", "privilege_command"},
-          TextSetting{
-              .value = cfg.shell.greeterSync.privilegeCommand,
-              .placeholder = "pkexec",
-              .browseFileExtensions = {},
-          },
-          "greeter sync pkexec run0 ghostty terminal sudo"
-      ));
-    }
     entries.push_back(makeEntry(
-        SettingsSection::Security, "privacy-security", tr("settings.schema.shell.password-style.label"),
+        SettingsSection::Security, "authentication", tr("settings.schema.shell.password-style.label"),
         tr("settings.schema.shell.password-style.description"), {"shell", "password_style"},
         asSegmented(enumSelect(kPasswordMaskStyles, cfg.shell.passwordMaskStyle)), "polkit lock mask"
     ));
@@ -1377,6 +1349,26 @@ namespace settings {
       entries.push_back(std::move(e));
     }
     {
+      const SettingVisibility lockscreenWallpaperOn{std::vector<SettingVisibilityCondition>{
+          {{"lockscreen", "enabled"}, {"true"}},
+          {{"lockscreen", "blurred_desktop"}, {"false"}},
+      }};
+      auto e = makeEntry(
+          SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.wallpaper.label"),
+          tr("settings.schema.lockscreen.wallpaper.description"), {"lockscreen", "wallpaper"},
+          TextSetting{
+              .value = cfg.lockscreen.wallpaper,
+              .placeholder = tr("settings.schema.lockscreen.wallpaper.placeholder"),
+              .browseMode = TextSettingBrowseMode::OpenFile,
+              .browseFileExtensions = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".bmp", ".gif"},
+              .browseFallbackDirectory = wallpaper::resolveGlobalWallpaperDirectory(cfg.wallpaper, cfg.theme.mode),
+          },
+          "lock screen background image custom"
+      );
+      e.visibleWhen = lockscreenWallpaperOn;
+      entries.push_back(std::move(e));
+    }
+    {
       auto e = makeEntry(
           SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.blur-intensity.label"),
           tr("settings.schema.lockscreen.blur-intensity.description"), {"lockscreen", "blur_intensity"},
@@ -1405,26 +1397,6 @@ namespace settings {
       entries.push_back(std::move(e));
     }
     {
-      const SettingVisibility lockscreenWallpaperOn{std::vector<SettingVisibilityCondition>{
-          {{"lockscreen", "enabled"}, {"true"}},
-          {{"lockscreen", "blurred_desktop"}, {"false"}},
-      }};
-      auto e = makeEntry(
-          SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.wallpaper.label"),
-          tr("settings.schema.lockscreen.wallpaper.description"), {"lockscreen", "wallpaper"},
-          TextSetting{
-              .value = cfg.lockscreen.wallpaper,
-              .placeholder = tr("settings.schema.lockscreen.wallpaper.placeholder"),
-              .browseMode = TextSettingBrowseMode::OpenFile,
-              .browseFileExtensions = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".bmp", ".gif"},
-              .browseFallbackDirectory = wallpaper::resolveGlobalWallpaperDirectory(cfg.wallpaper, cfg.theme.mode),
-          },
-          "lock screen background image custom"
-      );
-      e.visibleWhen = lockscreenWallpaperOn;
-      entries.push_back(std::move(e));
-    }
-    {
       auto e = makeEntry(
           SettingsSection::Security, "lock-screen", tr("settings.schema.lockscreen.widgets.label"),
           tr("settings.schema.lockscreen.widgets.description"), {"lockscreen_widgets", "enabled"},
@@ -1432,6 +1404,38 @@ namespace settings {
       );
       e.visibleWhen = lockscreenOn;
       entries.push_back(std::move(e));
+    }
+    entries.push_back(makeEntry(
+        SettingsSection::Security, "privacy", tr("settings.schema.shell.privacy-mic-filter-regex.label"),
+        tr("settings.schema.shell.privacy-mic-filter-regex.description"), {"shell", "privacy", "mic_filter_regex"},
+        TextSetting{.value = cfg.shell.privacy.micFilterRegex, .placeholder = "", .browseFileExtensions = {}},
+        "privacy microphone mic app process regex filter ignore"
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Security, "privacy", tr("settings.schema.shell.privacy-cam-filter-regex.label"),
+        tr("settings.schema.shell.privacy-cam-filter-regex.description"), {"shell", "privacy", "cam_filter_regex"},
+        TextSetting{.value = cfg.shell.privacy.camFilterRegex, .placeholder = "", .browseFileExtensions = {}},
+        "privacy camera webcam app process regex filter ignore"
+    ));
+    entries.push_back(makeEntry(
+        SettingsSection::Security, "privacy", tr("settings.schema.shell.privacy-screen-filter-regex.label"),
+        tr("settings.schema.shell.privacy-screen-filter-regex.description"),
+        {"shell", "privacy", "screen_filter_regex"},
+        TextSetting{.value = cfg.shell.privacy.screenFilterRegex, .placeholder = "", .browseFileExtensions = {}},
+        "privacy screen share screenshare app process regex filter ignore"
+    ));
+    if (env.greeterSyncAvailable) {
+      entries.push_back(makeEntry(
+          SettingsSection::Security, "greeter", tr("settings.schema.shell.greeter-sync-privilege-command.label"),
+          tr("settings.schema.shell.greeter-sync-privilege-command.description"),
+          {"shell", "greeter_sync", "privilege_command"},
+          TextSetting{
+              .value = cfg.shell.greeterSync.privilegeCommand,
+              .placeholder = "pkexec",
+              .browseFileExtensions = {},
+          },
+          "greeter sync pkexec run0 ghostty terminal sudo"
+      ));
     }
     // Shell
     entries.push_back(makeEntry(

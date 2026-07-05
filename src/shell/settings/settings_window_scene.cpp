@@ -1388,16 +1388,13 @@ void SettingsWindow::refreshSettingsRegistry(const Config& cfg) {
 
   if (m_syncGreeterAppearance && env.greeterSyncAvailable) {
     auto it = std::ranges::find_if(m_settingsRegistry, [](const settings::SettingEntry& e) {
-      return e.section == settings::SettingsSection::Shell
-          && e.group == "privacy-security"
-          && e.path == std::vector<std::string>{"shell", "password_style"};
+      return e.section == settings::SettingsSection::Security
+          && e.group == "greeter"
+          && e.path == std::vector<std::string>{"shell", "greeter_sync", "privilege_command"};
     });
-    if (it != m_settingsRegistry.end()) {
-      ++it;
-    }
     settings::SettingEntry btn{
         .section = settings::SettingsSection::Security,
-        .group = "privacy-security",
+        .group = "greeter",
         .title = i18n::tr("settings.schema.shell.sync-greeter.label"),
         .subtitle = i18n::tr("settings.schema.shell.sync-greeter.description"),
         .path = {},
@@ -1414,7 +1411,7 @@ void SettingsWindow::refreshSettingsRegistry(const Config& cfg) {
     ++insertedIt;
     settings::SettingEntry toggle{
         .section = settings::SettingsSection::Security,
-        .group = "privacy-security",
+        .group = "greeter",
         .title = i18n::tr("settings.schema.shell.greeter-sync-auto.label"),
         .subtitle = i18n::tr("settings.schema.shell.greeter-sync-auto.description"),
         .path = {"shell", "greeter_sync", "auto_sync"},

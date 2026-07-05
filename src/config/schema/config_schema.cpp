@@ -1380,6 +1380,7 @@ namespace noctalia::config::schema {
         field(&ShellConfig::timeFormat, "time_format"),
         field(&ShellConfig::dateFormat, "date_format"),
         field(&ShellConfig::offlineMode, "offline_mode"),
+        field(&ShellConfig::externalIpEnabled, "external_ip_enabled"),
         field(&ShellConfig::telemetryEnabled, "telemetry_enabled"),
         field(&ShellConfig::setupWizardEnabled, "setup_wizard_enabled"),
         field(&ShellConfig::niriOverviewTypeToLaunchEnabled, "niri_overview_type_to_launch_enabled"),

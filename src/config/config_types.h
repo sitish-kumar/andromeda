@@ -930,6 +930,8 @@ struct ShellConfig {
   std::string timeFormat = "{:%H:%M}";
   std::string dateFormat = "%A, %x";
   bool offlineMode = false;
+  /// Resolve and show the connection's external (WAN) IP in the Control Center network tab.
+  bool externalIpEnabled = false;
   bool telemetryEnabled = false;
   bool setupWizardEnabled = true;
   bool niriOverviewTypeToLaunchEnabled = false;
