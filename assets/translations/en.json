@@ -1709,6 +1709,10 @@
         "background-opacity": {
           "description": "Background opacity of the dock"
         },
+        "concave-edge-corners": {
+          "description": "Carve inward corners on the side that touches the screen edge",
+          "label": "Concave Edge Corners"
+        },
         "corner-bottom-left": {
           "description": "Bottom left corner radius for the dock"
         },

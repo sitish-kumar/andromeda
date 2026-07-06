@@ -377,6 +377,7 @@ namespace noctalia::config::schema {
         field(&DockConfig::radiusTopRight, "radius_top_right", kDockRadiusRange),
         field(&DockConfig::radiusBottomLeft, "radius_bottom_left", kDockRadiusRange),
         field(&DockConfig::radiusBottomRight, "radius_bottom_right", kDockRadiusRange),
+        field(&DockConfig::concaveEdgeCorners, "concave_edge_corners"),
         field(&DockConfig::marginEnds, "margin_ends", kDockMarginEndsRange),
         field(&DockConfig::marginEdge, "margin_edge", kDockMarginEdgeRange),
         field(&DockConfig::shadow, "shadow"),

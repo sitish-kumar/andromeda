@@ -941,6 +941,11 @@ namespace settings {
         sliderFor(cfg.dock.radiusBottomRight, noctalia::config::schema::kDockRadiusRange, true), "rounded corner", true
     ));
     entries.push_back(makeEntry(
+        SettingsSection::Dock, "shape", tr("settings.schema.dock.concave-edge-corners.label"),
+        tr("settings.schema.dock.concave-edge-corners.description"), {"dock", "concave_edge_corners"},
+        ToggleSetting{cfg.dock.concaveEdgeCorners}, "rounded corner carve"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Dock, "effects", tr("settings.schema.shared.background-opacity.label"),
         tr("settings.schema.dock.background-opacity.description"), {"dock", "background_opacity"},
         sliderFor(cfg.dock.backgroundOpacity, noctalia::config::schema::kUnitRange, false), "alpha"
