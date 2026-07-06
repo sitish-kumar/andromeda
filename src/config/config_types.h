@@ -1265,8 +1265,8 @@ struct ThemeConfig {
   struct TemplateColorConfig {
     std::string name;
     std::string color;
-    std::string color_dark;
-    std::string color_light;
+    std::string color_dark = "";
+    std::string color_light = "";
     bool blend = true;
 
     bool operator==(const TemplateColorConfig&) const = default;

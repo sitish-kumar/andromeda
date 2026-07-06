@@ -945,7 +945,7 @@ namespace noctalia::config::schema {
 
     // [theme.templates.custom_colors]: a name-keyed map whose value is either a
     // bare color string or a { color, color_dark, color_light, blend } table.
-    // Kept only when name+color or name+color_dark+color_light are non-empty;
+    // Kept only when name+color are non-empty (color is set to color_dark if not provided);
     // emitted only when the list is non-empty.
     Field<ThemeConfig::TemplatesConfig> customColorsField() {
       return custom<ThemeConfig::TemplatesConfig>(
@@ -977,10 +977,7 @@ namespace noctalia::config::schema {
                   color.blend = b->get();
                 }
               }
-              if (!StringUtils::trim(color.name).empty()
-                  && (!StringUtils::trim(color.color).empty()
-                      || (!StringUtils::trim(color.color_dark).empty()
-                          && !StringUtils::trim(color.color_light).empty()))) {
+              if (!StringUtils::trim(color.name).empty() && !StringUtils::trim(color.color).empty()) {
                 out.customColors.push_back(std::move(color));
               }
             }
@@ -993,9 +990,13 @@ namespace noctalia::config::schema {
             for (const auto& color : in.customColors) {
               toml::table colorTable;
               colorTable.insert_or_assign("color", color.color);
-              colorTable.insert_or_assign("color_dark", color.color_dark);
-              colorTable.insert_or_assign("color_light", color.color_light);
               colorTable.insert_or_assign("blend", color.blend);
+              if (!color.color_dark.empty()) {
+                colorTable.insert_or_assign("color_dark", color.color_dark);
+              }
+              if (!color.color_light.empty()) {
+                colorTable.insert_or_assign("color_light", color.color_light);
+              }
               map.insert_or_assign(color.name, std::move(colorTable));
             }
             tbl.insert_or_assign("custom_colors", std::move(map));
