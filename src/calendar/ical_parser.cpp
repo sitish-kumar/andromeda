@@ -483,24 +483,24 @@ namespace calendar {
       } else if (prop.name == "LOCATION") {
         event.location = unescapeText(prop.value);
       } else if (prop.name == "DTSTART") {
-        if (auto parsed = parseDateTime(prop)) {
-          event.start = parsed->instant;
-          startAllDay = parsed->allDay;
+        if (auto dt = parseDateTime(prop)) {
+          event.start = dt->instant;
+          startAllDay = dt->allDay;
           haveStart = true;
-          if (!parsed->allDay && parsed->zone != nullptr) {
-            recurrenceZone = RecurrenceZone{parsed->zone, parsed->civilDay, parsed->timeOfDay};
+          if (!dt->allDay && dt->zone != nullptr) {
+            recurrenceZone = RecurrenceZone{dt->zone, dt->civilDay, dt->timeOfDay};
           }
         }
       } else if (prop.name == "DTEND") {
-        if (auto parsed = parseDateTime(prop)) {
-          event.end = parsed->instant;
+        if (auto dt = parseDateTime(prop)) {
+          event.end = dt->instant;
           haveEnd = true;
         }
       } else if (prop.name == "RRULE") {
         rrule = prop.value;
       } else if (prop.name == "RECURRENCE-ID") {
-        if (auto parsed = parseDateTime(prop)) {
-          recurrenceId = parsed->instant;
+        if (auto dt = parseDateTime(prop)) {
+          recurrenceId = dt->instant;
         }
       } else if (prop.name == "EXDATE") {
         // May be a comma-separated list; each shares the line's TZID/VALUE params.
@@ -510,8 +510,8 @@ namespace calendar {
           const std::size_t comma = v.find(',', p);
           PropertyLine ex = prop;
           ex.value = comma == std::string_view::npos ? v.substr(p) : v.substr(p, comma - p);
-          if (auto parsed = parseDateTime(ex)) {
-            exdates.push_back(parsed->instant);
+          if (auto dt = parseDateTime(ex)) {
+            exdates.push_back(dt->instant);
           }
           p = comma == std::string_view::npos ? v.size() : comma + 1;
         }
