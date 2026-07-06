@@ -36,23 +36,18 @@
 
 namespace {
 
-  constexpr float kDefaultVolumeStep = 0.05f;
+  // Volume change thresholds.
+  constexpr auto kVolumeStepDefault = 0.05f;
+  constexpr auto kVolumeChangeEpsilon = 0.0001f;
 
-  // Held-key acceleration for relative volume adjustments. A lone tap moves the base step (fine
-  // granularity). While held, a gesture-local target volume advances by velocity * event-time
-  // credit, where each event's credit is capped at kVolumeHoldMaxDt: keyboard repeat delays and IPC
-  // spawn jitter then cost about one base step instead of restarting the gesture, and traversal
-  // speed stays independent of the keyboard repeat-rate. Velocity starts at one base step per
-  // credit cap and ramps with accumulated credit, but no single event ever moves more than one base
-  // step — a rotary knob emitting many events stays proportional to its ticks instead of
-  // compounding. A gap longer than the window, or a direction change, restarts the gesture from the
-  // live volume.
+  // Held-key relative adjustment: accumulate a gesture-local target so async read-back echoes
+  // can't rubber-band the ramp; a gap past the window or a direction change restarts the gesture.
   constexpr auto kVolumeHoldWindow = std::chrono::milliseconds(800);
-  constexpr float kVolumeHoldMaxDt = 0.08f; // seconds of time credit per event
-  constexpr float kVolumeHoldMaxVel = 2.5f; // fraction/second cap
-  constexpr float kVolumeHoldAccel = 2.0f;  // fraction/second added per second of credit
+  constexpr auto kVolumeHoldMinIpcInterval = std::chrono::milliseconds(50);
+
+  // Write guard: keep optimistic local volume briefly and ignore echoes within epsilon.
   constexpr auto kVolumeWriteGuardDuration = std::chrono::milliseconds(400);
-  constexpr float kVolumeWriteGuardEpsilon = 0.02f;
+  constexpr auto kVolumeWriteGuardEpsilon = 0.02f;
 
   // Registry events.
   void onRegistryGlobal(
@@ -1481,7 +1476,7 @@ void PipeWireService::onMixerVolumeChanged(std::uint32_t id, float volume, bool 
 
   const float clamped = std::clamp(volume, 0.0f, 1.5f);
   bool changed = false;
-  if (std::abs(nd.volume - clamped) >= 0.0001f) {
+  if (std::abs(nd.volume - clamped) >= kVolumeChangeEpsilon) {
     nd.volume = clamped;
     changed = true;
   }
@@ -1771,7 +1766,7 @@ bool PipeWireService::applyNodeVolume(std::uint32_t id, float volume) {
   // committed value back through onMixerVolumeChanged.
   const bool isDeviceNode = nd.mediaClass == "Audio/Sink" || nd.mediaClass == "Audio/Source";
   if (isDeviceNode) {
-    if (std::abs(nd.volume - volume) >= 0.0001f) {
+    if (std::abs(nd.volume - volume) >= kVolumeChangeEpsilon) {
       if (m_wpMixer != nullptr) {
         m_wpMixer->setVolume(id, volume);
       }
@@ -1804,7 +1799,7 @@ bool PipeWireService::applyNodeVolume(std::uint32_t id, float volume) {
   pw_node_set_param(nd.proxy, SPA_PARAM_Props, 0, pod);
 
   // Apply optimistic local state while PipeWire publishes props.
-  if (std::abs(nd.volume - volume) >= 0.0001f) {
+  if (std::abs(nd.volume - volume) >= kVolumeChangeEpsilon) {
     nd.volume = volume;
     return true;
   }
@@ -1817,9 +1812,7 @@ float PipeWireService::relativeAdjustTarget(
   const auto now = std::chrono::steady_clock::now();
   const bool held = m_relativeAdjust.gesture == gesture && (now - m_relativeAdjust.lastAt) <= kVolumeHoldWindow;
 
-  // Rate-limit: return the last target if repeat events arrive faster than once every 80ms
-  constexpr auto kMinIpcInterval = std::chrono::milliseconds(80);
-  if (held && (now - m_relativeAdjust.lastAt) < kMinIpcInterval) {
+  if (held && (now - m_relativeAdjust.lastAt) < kVolumeHoldMinIpcInterval) {
     return m_relativeAdjust.target;
   }
 
@@ -2089,7 +2082,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
         if (!sink)
           return "error: no default output\n";
 
-        const auto step = parts.empty() ? std::optional<float>(kDefaultVolumeStep)
+        const auto step = parts.empty() ? std::optional<float>(kVolumeStepDefault)
                                         : noctalia::ipc::parseNormalizedOrPercent(parts[0], maxVolume() * 100.0f);
         if (!step.has_value()) {
           return parseVolumeStepError;
@@ -2112,7 +2105,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
         if (!sink)
           return "error: no default output\n";
 
-        const auto step = parts.empty() ? std::optional<float>(kDefaultVolumeStep)
+        const auto step = parts.empty() ? std::optional<float>(kVolumeStepDefault)
                                         : noctalia::ipc::parseNormalizedOrPercent(parts[0], maxVolume() * 100.0f);
         if (!step.has_value()) {
           return parseVolumeStepError;
@@ -2169,7 +2162,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
         if (!source)
           return "error: no default input\n";
 
-        const auto step = parts.empty() ? std::optional<float>(kDefaultVolumeStep)
+        const auto step = parts.empty() ? std::optional<float>(kVolumeStepDefault)
                                         : noctalia::ipc::parseNormalizedOrPercent(parts[0], maxVolume() * 100.0f);
         if (!step.has_value()) {
           return parseVolumeStepError;
@@ -2192,7 +2185,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
         if (!source)
           return "error: no default input\n";
 
-        const auto step = parts.empty() ? std::optional<float>(kDefaultVolumeStep)
+        const auto step = parts.empty() ? std::optional<float>(kVolumeStepDefault)
                                         : noctalia::ipc::parseNormalizedOrPercent(parts[0], maxVolume() * 100.0f);
         if (!step.has_value()) {
           return parseVolumeStepError;
