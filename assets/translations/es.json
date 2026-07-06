@@ -190,7 +190,7 @@
       "pair-title": "Emparejar con {device}",
       "pairing-detail": {
         "authorize": "Aceptas la solicitud de emparejamiento entrante?",
-        "authorize-service": "Permitir acceso a servicio {uuid}?",
+        "authorize-service": "Permitir acceso al servicio {uuid}?",
         "confirm": "Verifica que este código coincida con el que aparece en el dispositivo:",
         "display-passkey": "Ingresa este código en el dispositivo:",
         "display-pin": "Ingresa este PIN en el dispositivo:",
@@ -1709,6 +1709,10 @@
         "background-opacity": {
           "description": "Opacidad de fondo del dock"
         },
+        "concave-edge-corners": {
+          "description": "Interior concavo en el lado que toca el limite de pantalla; requiere que el margen del borde de pantalla sea 0",
+          "label": "Esquinas concavas"
+        },
         "corner-bottom-left": {
           "description": "Radio de la esquina inferior izquierda del dock"
         },
@@ -2280,7 +2284,7 @@
         },
         "system-monitor": {
           "cpu-poll": {
-            "description": "Segundos entre muestras de uso de CPU, temperatura de CPU y carga media (0 desactiva)",
+            "description": "Segundos entre muestras de uso de CPU, temperatura de CPU y carga promedio (0 desactiva)",
             "label": "Intervalo de consulta de CPU"
           },
           "description": "Muestrear estadísticas de CPU, memoria, red, carga, temperatura y disco",
@@ -2453,7 +2457,7 @@
         },
         "middle-click-opens-widget-settings": {
           "description": "Abrir la configuración de un widget de la barra desde la barra con clic central",
-          "label": "El clic central abre la configuración del widget"
+          "label": "El clic central (click en tu rueda de mouse)  abre la configuración del widget"
         },
         "niri-overview-type-to-launch": {
           "description": "Abrir el lanzador al escribir en la vista general de niri; usa una pequeña superficie de foco de teclado mientras la vista general está abierta",
@@ -2477,7 +2481,7 @@
         },
         "osd-kinds-caffeine": {
           "description": "Mostrar una ventana emergente OSD cuando cambie el estado de cafeína (inhibidor de inactividad)",
-          "label": "Caffeine"
+          "label": "Cafeína"
         },
         "osd-kinds-dnd": {
           "description": "Mostrar una ventana emergente OSD al alternar No molestar",

@@ -1124,6 +1124,7 @@
         "dock": "Dock",
         "hooks": "Hook",
         "keybinds": "Scorciatoie",
+        "launcher": "Launcher",
         "location": "Posizione",
         "niri": "Niri",
         "notifications": "Notifiche",
@@ -1582,6 +1583,10 @@
           "description": "Peso predefinito per le etichette widget su questa barra.",
           "label": "Peso carattere"
         },
+        "hover-highlight": {
+          "description": "Colora leggermente il widget sotto il puntatore del mouse con il proprio colore di primo piano",
+          "label": "Evidenzia al passaggio del mouse"
+        },
         "layer": {
           "description": "Usa Sovrapposto per mostrare la barra sopra le app a schermo intero. I pannelli attaccati seguono la barra.",
           "label": "Layer Wayland"
@@ -1704,6 +1709,10 @@
         },
         "background-opacity": {
           "description": "Opacità dello sfondo della dock"
+        },
+        "concave-edge-corners": {
+          "description": "Scolpisci gli angoli verso l'interno sul lato che tocca il bordo dello schermo; richiede che il margine rispetto al bordo dello schermo sia 0",
+          "label": "Bordo angoli concavo"
         },
         "corner-bottom-left": {
           "description": "Raggio angolo in basso a sinistra della dock"
@@ -2170,6 +2179,14 @@
         "session-actions": {
           "description": "Voci del menu energia, ordine, comandi personalizzati e icone",
           "label": "Voci"
+        },
+        "session-grid": {
+          "description": "Visualizza le azioni del pannello sessione in un layout a griglia",
+          "label": "Layout griglia"
+        },
+        "session-grid-columns": {
+          "description": "Numero di colonne per il layout a griglia",
+          "label": "Colonne"
         }
       },
       "services": {

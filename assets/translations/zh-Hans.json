@@ -763,8 +763,8 @@
   },
   "plugins": {
     "auto-disabled": {
-      "body-errors": "{plugin} 错误过多，已被禁用。请修复问题后重新加载。",
-      "body-timeouts": "{plugin} 停止响应，已被禁用。请修复问题后重新加载。",
+      "body-errors": "{plugin} 因错误过多已被禁用。请修复问题后重新加载。",
+      "body-timeouts": "{plugin} 因停止响应已被禁用。请修复问题后重新加载。",
       "title": "插件已禁用"
     }
   },
@@ -1582,6 +1582,10 @@
           "description": "状态栏上小组件标签的默认字重。",
           "label": "字重"
         },
+        "hover-highlight": {
+          "description": "鼠标悬停时，使用小组件自身的前景色为其轻微着色",
+          "label": "悬停高亮"
+        },
         "layer": {
           "description": "使用 Overlay 可让状态栏显示在全屏应用上方；Top 则在全屏时被覆盖。吸附面板会跟随状态栏。",
           "label": "Wayland 层级"
@@ -1600,7 +1604,7 @@
           "description": "为状态栏预留屏幕空间"
         },
         "shadow": {
-          "description": "从状态栏投射全局表面阴影"
+          "description": "为状态栏投射全局表面阴影"
         },
         "show-on-workspace-switch": {
           "description": "切换活动工作区时短暂显示状态栏",
@@ -1705,6 +1709,10 @@
         "background-opacity": {
           "description": "Dock 的背景不透明度"
         },
+        "concave-edge-corners": {
+          "description": "在贴近屏幕边缘的一侧形成内凹圆角；要求与屏幕边缘的间距为 0",
+          "label": "边缘内凹圆角"
+        },
         "corner-bottom-left": {
           "description": "Dock 左下角的圆角半径"
         },
@@ -1721,7 +1729,7 @@
           "description": "Dock 右上角的圆角半径"
         },
         "cross-axis-padding": {
-          "description": "Dock 侧边的内边距（图标与侧边之间）"
+          "description": "Dock 侧边的内边距（图标与 Dock 侧边之间）"
         },
         "edge-margin": {
           "description": "距最近屏幕边缘的距离；正值会使 Dock 悬浮并远离边缘"
@@ -1791,7 +1799,7 @@
           "description": "为 Dock 预留屏幕空间"
         },
         "shadow": {
-          "description": "从 Dock 投射全局表面阴影"
+          "description": "为 Dock 投射全局表面阴影"
         },
         "show-dots": {
           "description": "在 Dock 图标下方显示运行窗口的指示点",
@@ -1953,7 +1961,7 @@
           "label": "屏幕"
         },
         "tint-intensity": {
-          "description": "锁屏背景上的表面颜色着色强度",
+          "description": "在锁屏背景上叠加 surface 色调",
           "label": "着色强度"
         },
         "wallpaper": {
@@ -2159,7 +2167,7 @@
           "label": "屏幕位置"
         },
         "shadow": {
-          "description": "从面板表面投射全局表面阴影"
+          "description": "为面板表面投射全局表面阴影"
         },
         "transparency-mode": {
           "description": "面板透明效果，包括悬浮面板的不透明度和卡片的半透明效果",
@@ -2170,6 +2178,14 @@
         "session-actions": {
           "description": "电源菜单项、排列顺序、自定义命令及图标配置",
           "label": "项目"
+        },
+        "session-grid": {
+          "description": "以网格布局显示会话面板操作",
+          "label": "网格布局"
+        },
+        "session-grid-columns": {
+          "description": "网格布局的列数",
+          "label": "列数"
         }
       },
       "services": {
