@@ -35,8 +35,10 @@ namespace shell::dock {
       return g;
     }
 
+    // Ceil so logicalInset is integral: surface sizing, panel placement, and blur
+    // tessellation all consume it and must agree on whole pixels.
     const float cap = static_cast<float>(dockThickness(cfg)) * 0.5f;
-    const auto capped = [&](float v) { return std::min(cap, v); };
+    const auto capped = [&](float v) { return std::ceil(std::min(cap, v)); };
 
     // Carve concavity only on corners facing the screen edge.
     switch (cfg.position) {
@@ -131,10 +133,10 @@ namespace shell::dock {
     const bool vertical = isVerticalEdge(edge);
     const auto sb = shell::surface_shadow::bleed(cfg.shadow, shadow);
     const auto concave = dockConcaveShape(cfg);
-    const int insetL = static_cast<int>(std::ceil(std::max(0.0f, concave.logicalInset.left)));
-    const int insetT = static_cast<int>(std::ceil(std::max(0.0f, concave.logicalInset.top)));
-    const int insetR = static_cast<int>(std::ceil(std::max(0.0f, concave.logicalInset.right)));
-    const int insetB = static_cast<int>(std::ceil(std::max(0.0f, concave.logicalInset.bottom)));
+    const int insetL = static_cast<int>(concave.logicalInset.left);
+    const int insetT = static_cast<int>(concave.logicalInset.top);
+    const int insetR = static_cast<int>(concave.logicalInset.right);
+    const int insetB = static_cast<int>(concave.logicalInset.bottom);
     const auto panelW = dockContentSize(cfg, itemCount);
     const auto panelH = dockThickness(cfg);
     const std::int32_t zoomPad = dockHoverZoomCrossPad(cfg);
@@ -216,10 +218,10 @@ namespace shell::dock {
     const bool vertical = isVerticalEdge(edge);
     const auto sb = shell::surface_shadow::bleed(cfg.shadow, shadow);
     const auto concave = dockConcaveShape(cfg);
-    const float insetL = std::ceil(std::max(0.0f, concave.logicalInset.left));
-    const float insetT = std::ceil(std::max(0.0f, concave.logicalInset.top));
-    const float insetR = std::ceil(std::max(0.0f, concave.logicalInset.right));
-    const float insetB = std::ceil(std::max(0.0f, concave.logicalInset.bottom));
+    const float insetL = concave.logicalInset.left;
+    const float insetT = concave.logicalInset.top;
+    const float insetR = concave.logicalInset.right;
+    const float insetB = concave.logicalInset.bottom;
     const auto bleedL = static_cast<float>(sb.left);
     const auto bleedR = static_cast<float>(sb.right);
     const auto bleedU = static_cast<float>(sb.up);

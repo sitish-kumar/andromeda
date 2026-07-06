@@ -940,11 +940,15 @@ namespace settings {
         tr("settings.schema.dock.corner-bottom-right.description"), {"dock", "radius_bottom_right"},
         sliderFor(cfg.dock.radiusBottomRight, noctalia::config::schema::kDockRadiusRange, true), "rounded corner", true
     ));
-    entries.push_back(makeEntry(
-        SettingsSection::Dock, "shape", tr("settings.schema.dock.concave-edge-corners.label"),
-        tr("settings.schema.dock.concave-edge-corners.description"), {"dock", "concave_edge_corners"},
-        ToggleSetting{cfg.dock.concaveEdgeCorners}, "rounded corner carve"
-    ));
+    {
+      auto e = makeEntry(
+          SettingsSection::Dock, "shape", tr("settings.schema.dock.concave-edge-corners.label"),
+          tr("settings.schema.dock.concave-edge-corners.description"), {"dock", "concave_edge_corners"},
+          ToggleSetting{cfg.dock.concaveEdgeCorners}, "rounded corner carve"
+      );
+      e.visibleWhen = [](const Config& c) { return c.dock.marginEdge == 0; };
+      entries.push_back(std::move(e));
+    }
     entries.push_back(makeEntry(
         SettingsSection::Dock, "effects", tr("settings.schema.shared.background-opacity.label"),
         tr("settings.schema.dock.background-opacity.description"), {"dock", "background_opacity"},
