@@ -830,7 +830,8 @@ struct DmenuEntryConfig {
   // When set, the activated line is substituted into {selection} and run detached.
   // When unset, the selection is copied to the clipboard.
   std::optional<std::string> exec;
-  // Launcher prefix routing (e.g. "/ssh"). Empty leaves the entry reachable only via
+  // Launcher trigger word (e.g. "ssh"), combined with shell.launcher.provider_prefix like
+  // the built-in providers (-> "/ssh"). Empty leaves the entry reachable only via
   // global = true, otherwise it is unreachable (surfaced as a config warning).
   std::optional<std::string> prefix;
   std::optional<std::string> label; // Provider overview title; defaults to the id.

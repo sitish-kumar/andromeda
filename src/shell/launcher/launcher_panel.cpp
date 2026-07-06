@@ -63,8 +63,6 @@ namespace {
     return std::min(rawBoost, kTypedUsageScoreCap);
   }
 
-  [[nodiscard]] bool startsWithSlash(std::string_view text) { return !text.empty() && text.front() == '/'; }
-
   [[nodiscard]] bool isDescendantOf(const Node* node, const Node* ancestor) {
     if (node == nullptr || ancestor == nullptr) {
       return false;
@@ -687,6 +685,26 @@ PanelPlacement LauncherPanel::panelPlacement() const noexcept {
 }
 
 void LauncherPanel::addProvider(std::unique_ptr<LauncherProvider> provider) {
+  std::string triggerWord = std::string(provider->defaultPrefix());
+  std::string prefix = "/";
+  if (m_config != nullptr) {
+    prefix = m_config->config().shell.launcher.providerPrefix;
+    if (provider->allowCustomPrefix()) {
+      const auto& providerConfigs = m_config->config().shell.launcher.providers;
+      std::string key = StringUtils::toLower(std::string(provider->id()));
+      auto it = std::ranges::find(providerConfigs, key, &LauncherProviderConfig::name);
+      if (it != providerConfigs.end()) {
+        triggerWord = it->prefix;
+      }
+    }
+  }
+
+  if (triggerWord.empty()) {
+    provider->setCustomPrefix("");
+  } else {
+    provider->setCustomPrefix(prefix + triggerWord);
+  }
+
   provider->initialize();
   provider->setResultsChangedCallback([this]() { onProviderResultsChanged(); });
   provider->setQueryRequestedCallback([this](std::string query) { setQuery(std::move(query)); });
@@ -1015,6 +1033,27 @@ void LauncherPanel::doLayout(Renderer& renderer, float width, float height) {
 }
 
 void LauncherPanel::onOpen(std::string_view context) {
+  if (m_config != nullptr) {
+    const auto& launcherCfg = m_config->config().shell.launcher;
+    const auto& providerConfigs = launcherCfg.providers;
+    for (auto& provider : m_providers) {
+      std::string triggerWord = std::string(provider->defaultPrefix());
+      if (provider->allowCustomPrefix()) {
+        std::string key = StringUtils::toLower(std::string(provider->id()));
+        auto it = std::ranges::find(providerConfigs, key, &LauncherProviderConfig::name);
+        if (it != providerConfigs.end()) {
+          triggerWord = it->prefix;
+        }
+      }
+
+      if (triggerWord.empty()) {
+        provider->setCustomPrefix("");
+      } else {
+        provider->setCustomPrefix(launcherCfg.providerPrefix + triggerWord);
+      }
+    }
+  }
+
   // Pick up apps installed since the last scan (notably Nix profile swaps that
   // inotify cannot observe). Cheap stat-only check; only rescans on real change.
   refreshDesktopEntriesIfSourcesChanged();
@@ -1235,7 +1274,7 @@ void LauncherPanel::onInputChanged(const std::string& text) {
       }
       sortResultsByScore(m_allResults);
       newCategories = activeProvider->categories();
-    } else if (startsWithSlash(text)) {
+    } else if (startsWithLauncherPrefix(text)) {
       m_allResults = providerOverviewResults(text);
     } else {
       // Query default providers (empty prefix), plus prefixed providers that opt into global search.
@@ -1384,10 +1423,16 @@ void LauncherPanel::setCategoryFilterVisible(bool visible) {
   }
 }
 
+bool LauncherPanel::startsWithLauncherPrefix(std::string_view text) const {
+  const std::string& prefix = m_config != nullptr ? m_config->config().shell.launcher.providerPrefix : "/";
+  return text.starts_with(prefix);
+}
+
 std::vector<LauncherResult> LauncherPanel::providerOverviewResults(std::string_view text) const {
   std::string filter;
-  if (startsWithSlash(text)) {
-    filter = StringUtils::toLower(StringUtils::trim(text.substr(1)));
+  if (startsWithLauncherPrefix(text)) {
+    const std::string& prefix = m_config != nullptr ? m_config->config().shell.launcher.providerPrefix : "/";
+    filter = StringUtils::toLower(StringUtils::trim(text.substr(prefix.size())));
   }
 
   std::vector<LauncherResult> results;
