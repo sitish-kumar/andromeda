@@ -20,6 +20,7 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -592,6 +593,43 @@ namespace noctalia::config {
     void appendMergedConfigDiagnostics(const toml::table& merged, schema::Diagnostics& diag) {
       checkSection(merged, "shell", schema::shellSchema(), diag);
       checkSection(merged, "accessibility", schema::accessibilitySchema(), diag);
+      if (const auto* shellTbl = merged["shell"].as_table()) {
+        if (const auto* launcherTbl = (*shellTbl)["launcher"].as_table()) {
+          if (const auto* prefixVal = (*launcherTbl)["provider_prefix"].as_string()) {
+            if (prefixVal->get().empty()) {
+              diag.warn("shell.launcher.provider_prefix", "is empty, falling back to '/'");
+            }
+          }
+          if (const auto* providersTbl = (*launcherTbl)["providers"].as_table()) {
+            std::unordered_map<std::string, std::string> seenPrefixes;
+            for (const auto& [key, node] : *providersTbl) {
+              const auto* provTbl = node.as_table();
+              if (provTbl == nullptr) {
+                continue;
+              }
+              std::string providerName = StringUtils::toLower(std::string(key.str()));
+              if (providerName == "applications") {
+                diag.warn(
+                    "shell.launcher.providers.applications",
+                    "custom settings are not allowed (Applications is always global)"
+                );
+                continue;
+              }
+              const auto* prefixVal = (*provTbl)["prefix"].as_string();
+              if (prefixVal == nullptr || prefixVal->get().empty()) {
+                continue;
+              }
+              auto [it, inserted] = seenPrefixes.emplace(prefixVal->get(), std::string(key.str()));
+              if (!inserted) {
+                diag.warn(
+                    "shell.launcher.providers." + std::string(key.str()) + ".prefix",
+                    "duplicates the prefix of '" + it->second + "'; only one provider will be reachable by it"
+                );
+              }
+            }
+          }
+        }
+      }
       checkSection(
           merged, "wallpaper", schema::wallpaperSchema(), diag,
           {"wallpaper.default", "wallpaper.last", "wallpaper.monitors", "wallpaper.favorite"}

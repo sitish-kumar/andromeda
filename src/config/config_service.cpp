@@ -1654,6 +1654,19 @@ void ConfigService::parseConfigTable(
       return sessionTbl != nullptr && (*sessionTbl)["actions"].as_array() != nullptr;
     }();
     readConfigSection(*shellTbl, config.shell, schema::shellSchema(), "shell", schemaDiag);
+    if (config.shell.launcher.providerPrefix.empty()) {
+      schemaDiag.warn("shell.launcher.provider_prefix", "is empty, falling back to '/'");
+      config.shell.launcher.providerPrefix = "/";
+    }
+    std::erase_if(config.shell.launcher.providers, [&](const LauncherProviderConfig& provider) {
+      if (provider.name == "applications") {
+        schemaDiag.warn(
+            "shell.launcher.providers.applications", "custom settings are not allowed (Applications is always global)"
+        );
+        return true;
+      }
+      return false;
+    });
   }
   if (!sessionActionsConfigured && config.shell.session.actions.empty()) {
     config.shell.session.actions = defaultSessionPanelActions();

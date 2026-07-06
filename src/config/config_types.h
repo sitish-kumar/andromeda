@@ -841,6 +841,13 @@ struct DmenuEntryConfig {
   bool operator==(const DmenuEntryConfig&) const = default;
 };
 
+struct LauncherProviderConfig {
+  std::string name;
+  std::string prefix;
+
+  bool operator==(const LauncherProviderConfig&) const = default;
+};
+
 struct ShellConfig {
   struct AnimationConfig {
     bool enabled = true;
@@ -892,14 +899,16 @@ struct ShellConfig {
     bool showIcons = true;
     bool compact = false;
     bool appGrid = false;
-    bool sessionSearch = false;
     bool sortByUsage = true;
+    std::string providerPrefix = "/";
 
     struct DmenuConfig {
       std::vector<DmenuEntryConfig> entries;
 
       bool operator==(const DmenuConfig&) const = default;
     } dmenu;
+
+    std::vector<LauncherProviderConfig> providers;
 
     bool operator==(const LauncherConfig&) const = default;
   };
