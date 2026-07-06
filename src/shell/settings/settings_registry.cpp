@@ -1059,10 +1059,7 @@ namespace settings {
           {"shell", "panel", "open_near_click_launcher"}, ToggleSetting{cfg.shell.panel.openNearClickLauncher},
           "open near click position anchor"
       );
-      e.visibleWhen = [](const Config& c) {
-        return c.shell.panel.launcherPlacement == PanelPlacement::Attached
-            || c.shell.panel.launcherPlacement == PanelPlacement::Floating;
-      };
+      e.visibleWhen = [](const Config& c) { return c.shell.panel.launcherPlacement == PanelPlacement::Attached; };
       entries.push_back(std::move(e));
     }
     entries.push_back(makeEntry(
@@ -1114,10 +1111,7 @@ namespace settings {
           {"shell", "panel", "open_near_click_clipboard"}, ToggleSetting{cfg.shell.panel.openNearClickClipboard},
           "open near click position anchor"
       );
-      e.visibleWhen = [](const Config& c) {
-        return c.shell.panel.clipboardPlacement == PanelPlacement::Attached
-            || c.shell.panel.clipboardPlacement == PanelPlacement::Floating;
-      };
+      e.visibleWhen = [](const Config& c) { return c.shell.panel.clipboardPlacement == PanelPlacement::Attached; };
       entries.push_back(std::move(e));
     }
     entries.push_back(makeEntry(
@@ -1138,10 +1132,7 @@ namespace settings {
           {"shell", "panel", "open_near_click_wallpaper"}, ToggleSetting{cfg.shell.panel.openNearClickWallpaper},
           "open near click position anchor"
       );
-      e.visibleWhen = [](const Config& c) {
-        return c.shell.panel.wallpaperPlacement == PanelPlacement::Attached
-            || c.shell.panel.wallpaperPlacement == PanelPlacement::Floating;
-      };
+      e.visibleWhen = [](const Config& c) { return c.shell.panel.wallpaperPlacement == PanelPlacement::Attached; };
       entries.push_back(std::move(e));
     }
     entries.push_back(makeEntry(
@@ -1162,10 +1153,7 @@ namespace settings {
           {"shell", "panel", "open_near_click_session"}, ToggleSetting{cfg.shell.panel.openNearClickSession},
           "open near click position anchor"
       );
-      e.visibleWhen = [](const Config& c) {
-        return c.shell.panel.sessionPlacement == PanelPlacement::Attached
-            || c.shell.panel.sessionPlacement == PanelPlacement::Floating;
-      };
+      e.visibleWhen = [](const Config& c) { return c.shell.panel.sessionPlacement == PanelPlacement::Attached; };
       entries.push_back(std::move(e));
     }
     entries.push_back(makeEntry(
@@ -1201,10 +1189,7 @@ namespace settings {
           {"shell", "panel", "open_near_click_control_center"},
           ToggleSetting{cfg.shell.panel.openNearClickControlCenter}, "open near click position anchor"
       );
-      e.visibleWhen = [](const Config& c) {
-        return c.shell.panel.controlCenterPlacement == PanelPlacement::Attached
-            || c.shell.panel.controlCenterPlacement == PanelPlacement::Floating;
-      };
+      e.visibleWhen = [](const Config& c) { return c.shell.panel.controlCenterPlacement == PanelPlacement::Attached; };
       entries.push_back(std::move(e));
     }
     {
