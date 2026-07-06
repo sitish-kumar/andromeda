@@ -1422,15 +1422,15 @@ void SettingsWindow::refreshSettingsRegistry(const Config& cfg) {
 
   if (m_resetLauncherUsage) {
     auto it = std::ranges::find_if(m_settingsRegistry, [](const settings::SettingEntry& e) {
-      return e.section == settings::SettingsSection::Panels
+      return e.section == settings::SettingsSection::Launcher
           && e.group == "launcher"
-          && e.path == std::vector<std::string>{"shell", "panel", "launcher_sort_by_usage"};
+          && e.path == std::vector<std::string>{"shell", "launcher", "sort_by_usage"};
     });
     if (it != m_settingsRegistry.end()) {
       ++it;
     }
     settings::SettingEntry btn{
-        .section = settings::SettingsSection::Panels,
+        .section = settings::SettingsSection::Launcher,
         .group = "launcher",
         .title = i18n::tr("settings.schema.panels.launcher-reset-usage.label"),
         .subtitle = i18n::tr("settings.schema.panels.launcher-reset-usage.description"),

@@ -61,13 +61,14 @@ namespace settings {
       return defaultKeybindSet(action);
     }
 
-    constexpr std::array<SettingsSectionDescriptor, 20> kSettingsSections{{
+    constexpr std::array<SettingsSectionDescriptor, 21> kSettingsSections{{
         {SettingsSection::Appearance, "appearance", "adjustments-horizontal"},
         {SettingsSection::Wallpaper, "wallpaper", "paint"},
         {SettingsSection::Templates, "templates", "color-swatch"},
         {SettingsSection::Desktop, "desktop", "layout-board"},
         {SettingsSection::Dock, "dock", "layout-bottombar-inactive"},
         {SettingsSection::Panels, "panels", "layout-bottombar"},
+        {SettingsSection::Launcher, "launcher", "rocket"},
         {SettingsSection::ControlCenter, "control-center", "adjustments"},
         {SettingsSection::Notifications, "notifications", "bell"},
         {SettingsSection::Osd, "osd", "message-circle"},
@@ -1051,19 +1052,19 @@ namespace settings {
     };
 
     entries.push_back(makeEntry(
-        SettingsSection::Panels, "launcher", tr("settings.schema.panels.placement-launcher.label"),
+        SettingsSection::Launcher, "launcher", tr("settings.schema.panels.placement-launcher.label"),
         tr("settings.schema.panels.placement-launcher.description"), {"shell", "panel", "launcher_placement"},
         asSegmented(enumSelect(kPanelPlacements, cfg.shell.panel.launcherPlacement)),
         "attached floating bar panel position"
     ));
     entries.push_back(panelPositionEntry(
-        SettingsSection::Panels, "launcher", "launcher", "settings.schema.panels.position-launcher.label",
+        SettingsSection::Launcher, "launcher", "launcher", "settings.schema.panels.position-launcher.label",
         "settings.schema.panels.position-launcher.description", cfg.shell.panel.launcherPosition,
         &ShellConfig::PanelConfig::launcherPlacement
     ));
     {
       auto e = makeEntry(
-          SettingsSection::Panels, "launcher", tr("settings.schema.panels.open-near-click-launcher.label"),
+          SettingsSection::Launcher, "launcher", tr("settings.schema.panels.open-near-click-launcher.label"),
           tr("settings.schema.panels.open-near-click-launcher.description"),
           {"shell", "panel", "open_near_click_launcher"}, ToggleSetting{cfg.shell.panel.openNearClickLauncher},
           "open near click position anchor"
@@ -1072,32 +1073,32 @@ namespace settings {
       entries.push_back(std::move(e));
     }
     entries.push_back(makeEntry(
-        SettingsSection::Panels, "launcher", tr("settings.schema.panels.launcher-categories.label"),
+        SettingsSection::Launcher, "launcher", tr("settings.schema.panels.launcher-categories.label"),
         tr("settings.schema.panels.launcher-categories.description"), {"shell", "launcher", "categories"},
         ToggleSetting{cfg.shell.launcher.categories}, "launcher categories filter"
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Panels, "launcher", tr("settings.schema.panels.launcher-show-icons.label"),
+        SettingsSection::Launcher, "launcher", tr("settings.schema.panels.launcher-show-icons.label"),
         tr("settings.schema.panels.launcher-show-icons.description"), {"shell", "launcher", "show_icons"},
         ToggleSetting{cfg.shell.launcher.showIcons}, "launcher app icons hide"
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Panels, "launcher", tr("settings.schema.panels.launcher-app-grid.label"),
+        SettingsSection::Launcher, "launcher", tr("settings.schema.panels.launcher-app-grid.label"),
         tr("settings.schema.panels.launcher-app-grid.description"), {"shell", "launcher", "app_grid"},
         ToggleSetting{cfg.shell.launcher.appGrid}, "launcher app grid icons view"
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Panels, "launcher", tr("settings.schema.panels.launcher-compact.label"),
+        SettingsSection::Launcher, "launcher", tr("settings.schema.panels.launcher-compact.label"),
         tr("settings.schema.panels.launcher-compact.description"), {"shell", "launcher", "compact"},
         ToggleSetting{cfg.shell.launcher.compact}, "launcher compact rows dense"
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Panels, "launcher", tr("settings.schema.panels.launcher-sort-by-usage.label"),
+        SettingsSection::Launcher, "launcher", tr("settings.schema.panels.launcher-sort-by-usage.label"),
         tr("settings.schema.panels.launcher-sort-by-usage.description"), {"shell", "launcher", "sort_by_usage"},
         ToggleSetting{cfg.shell.launcher.sortByUsage}, "launcher sort usage recently used frequency"
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Panels, "launcher", tr("settings.schema.panels.launcher-session-search.label"),
+        SettingsSection::Launcher, "launcher", tr("settings.schema.panels.launcher-session-search.label"),
         tr("settings.schema.panels.launcher-session-search.description"), {"shell", "launcher", "session_search"},
         ToggleSetting{cfg.shell.launcher.sessionSearch},
         "launcher session search power menu lock suspend reboot shutdown logout"
@@ -1124,26 +1125,16 @@ namespace settings {
       entries.push_back(std::move(e));
     }
     entries.push_back(makeEntry(
-        SettingsSection::Panels, "wallpaper", tr("settings.schema.panels.placement-wallpaper.label"),
-        tr("settings.schema.panels.placement-wallpaper.description"), {"shell", "panel", "wallpaper_placement"},
-        asSegmented(enumSelect(kPanelPlacements, cfg.shell.panel.wallpaperPlacement)),
-        "attached floating bar panel position"
+        SettingsSection::Panels, "polkit", tr("settings.schema.panels.placement-polkit.label"),
+        tr("settings.schema.panels.placement-polkit.description"), {"shell", "panel", "polkit_placement"},
+        asSegmented(enumSelect(kPanelPlacements, cfg.shell.panel.polkitPlacement)),
+        "attached floating bar panel polkit auth password"
     ));
     entries.push_back(panelPositionEntry(
-        SettingsSection::Panels, "wallpaper", "wallpaper", "settings.schema.panels.position-wallpaper.label",
-        "settings.schema.panels.position-wallpaper.description", cfg.shell.panel.wallpaperPosition,
-        &ShellConfig::PanelConfig::wallpaperPlacement
+        SettingsSection::Panels, "polkit", "polkit", "settings.schema.panels.position-polkit.label",
+        "settings.schema.panels.position-polkit.description", cfg.shell.panel.polkitPosition,
+        &ShellConfig::PanelConfig::polkitPlacement
     ));
-    {
-      auto e = makeEntry(
-          SettingsSection::Panels, "wallpaper", tr("settings.schema.panels.open-near-click-wallpaper.label"),
-          tr("settings.schema.panels.open-near-click-wallpaper.description"),
-          {"shell", "panel", "open_near_click_wallpaper"}, ToggleSetting{cfg.shell.panel.openNearClickWallpaper},
-          "open near click position anchor"
-      );
-      e.visibleWhen = [](const Config& c) { return c.shell.panel.wallpaperPlacement == PanelPlacement::Attached; };
-      entries.push_back(std::move(e));
-    }
     entries.push_back(makeEntry(
         SettingsSection::Panels, "session-panel", tr("settings.schema.panels.placement-session.label"),
         tr("settings.schema.panels.placement-session.description"), {"shell", "panel", "session_placement"},
@@ -1166,16 +1157,26 @@ namespace settings {
       entries.push_back(std::move(e));
     }
     entries.push_back(makeEntry(
-        SettingsSection::Panels, "polkit", tr("settings.schema.panels.placement-polkit.label"),
-        tr("settings.schema.panels.placement-polkit.description"), {"shell", "panel", "polkit_placement"},
-        asSegmented(enumSelect(kPanelPlacements, cfg.shell.panel.polkitPlacement)),
-        "attached floating bar panel polkit auth password"
+        SettingsSection::Panels, "wallpaper", tr("settings.schema.panels.placement-wallpaper.label"),
+        tr("settings.schema.panels.placement-wallpaper.description"), {"shell", "panel", "wallpaper_placement"},
+        asSegmented(enumSelect(kPanelPlacements, cfg.shell.panel.wallpaperPlacement)),
+        "attached floating bar panel position"
     ));
     entries.push_back(panelPositionEntry(
-        SettingsSection::Panels, "polkit", "polkit", "settings.schema.panels.position-polkit.label",
-        "settings.schema.panels.position-polkit.description", cfg.shell.panel.polkitPosition,
-        &ShellConfig::PanelConfig::polkitPlacement
+        SettingsSection::Panels, "wallpaper", "wallpaper", "settings.schema.panels.position-wallpaper.label",
+        "settings.schema.panels.position-wallpaper.description", cfg.shell.panel.wallpaperPosition,
+        &ShellConfig::PanelConfig::wallpaperPlacement
     ));
+    {
+      auto e = makeEntry(
+          SettingsSection::Panels, "wallpaper", tr("settings.schema.panels.open-near-click-wallpaper.label"),
+          tr("settings.schema.panels.open-near-click-wallpaper.description"),
+          {"shell", "panel", "open_near_click_wallpaper"}, ToggleSetting{cfg.shell.panel.openNearClickWallpaper},
+          "open near click position anchor"
+      );
+      e.visibleWhen = [](const Config& c) { return c.shell.panel.wallpaperPlacement == PanelPlacement::Attached; };
+      entries.push_back(std::move(e));
+    }
 
     // Control Center
     entries.push_back(makeEntry(

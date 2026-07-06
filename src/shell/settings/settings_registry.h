@@ -29,6 +29,7 @@ namespace settings {
     Desktop,
     Dock,
     Panels,
+    Launcher,
     ControlCenter,
     Notifications,
     Osd,
