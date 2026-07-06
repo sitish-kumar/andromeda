@@ -1582,6 +1582,10 @@
           "description": "Grosor predeterminado para las etiquetas de widgets en esta barra.",
           "label": "Grosor de fuente"
         },
+        "hover-highlight": {
+          "description": "Suave decoloracion del widget bajo el puntero del raton con su  propio color de fondo",
+          "label": "Destacar al pasar el cursor"
+        },
         "layer": {
           "description": "Usar superposición para mostrar la barra por encima de aplicaciones a pantalla completa. Los paneles anclados siguen a la barra.",
           "label": "Capa de Wayland"
@@ -2170,6 +2174,14 @@
         "session-actions": {
           "description": "Entradas del menú de energía, orden, comandos personalizados e iconos",
           "label": "Entradas"
+        },
+        "session-grid": {
+          "description": "Mostrar acciones del panel de sesion en una rejilla",
+          "label": "Plantilla de la rejilla"
+        },
+        "session-grid-columns": {
+          "description": "Numero de columnas para la disposicion de la rejilla",
+          "label": "Columnas"
         }
       },
       "services": {

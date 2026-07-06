@@ -1710,7 +1710,7 @@
           "description": "Background opacity of the dock"
         },
         "concave-edge-corners": {
-          "description": "Carve inward corners on the side that touches the screen edge",
+          "description": "Carve inward corners on the side that touches the screen edge; requires the margin to the screen edge to be 0",
           "label": "Concave Edge Corners"
         },
         "corner-bottom-left": {
@@ -2178,6 +2178,14 @@
         "session-actions": {
           "description": "Power menu entries, order, custom commands, and icons",
           "label": "Entries"
+        },
+        "session-grid": {
+          "description": "Display session panel actions in a grid layout",
+          "label": "Grid Layout"
+        },
+        "session-grid-columns": {
+          "description": "Number of columns for the grid layout",
+          "label": "Columns"
         }
       },
       "services": {
