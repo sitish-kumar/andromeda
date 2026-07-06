@@ -244,19 +244,10 @@ namespace settings {
       SessionPanelActionsSetting, IdleBehaviorsSetting, NotificationFiltersSetting, MultiSelectSetting,
       TemplateGridSetting, ButtonSetting, ColorSpecPickerSetting, SearchPickerSetting>;
 
-  struct SettingVisibilityCondition {
-    std::vector<std::string> path;
-    std::vector<std::string> values;
-  };
-
-  struct SettingVisibility {
-    SettingVisibility() = default;
-    SettingVisibility(std::vector<std::string> pathIn, std::vector<std::string> valuesIn)
-        : all{SettingVisibilityCondition{std::move(pathIn), std::move(valuesIn)}} {}
-    explicit SettingVisibility(std::vector<SettingVisibilityCondition> conditions) : all(std::move(conditions)) {}
-
-    std::vector<SettingVisibilityCondition> all;
-  };
+  // Visibility predicate, evaluated against the same Config the registry was built from
+  // (the registry rebuilds on every config change). Capture snapshot values or read the
+  // passed Config; never capture references.
+  using SettingVisibility = std::function<bool(const Config&)>;
 
   struct SettingEntry {
     SettingsSection section = SettingsSection::Appearance;
@@ -267,7 +258,7 @@ namespace settings {
     SettingControl control;
     bool advanced = false;
     std::string searchText;
-    std::optional<SettingVisibility> visibleWhen;
+    SettingVisibility visibleWhen; // empty = always visible
   };
 
   // Runtime conditions that gate optional sections (e.g. compositor-specific features).
