@@ -290,7 +290,14 @@ namespace calendar {
         return civilDay + tod;
       };
 
-      const auto excluded = [&](system_clock::time_point t) { return std::ranges::find(exdates, t) != exdates.end(); };
+      // Our occurrences hold a constant UTC instant, but the server's EXDATE/RECURRENCE-ID carries the
+      // true local wall time, so the two drift by up to the DST offset. Occurrences are always >= 1 day
+      // apart, so a 12h tolerance matches the intended one across that drift without catching a neighbour.
+      const auto excluded = [&](system_clock::time_point t) {
+        return std::ranges::any_of(exdates, [&](system_clock::time_point ex) {
+          return std::chrono::abs(t - ex) < hours{12};
+        });
+      };
       int occurrenceNo = 0; // counts every occurrence (in or out of window) toward COUNT
       const auto step = [&](sys_days occDay) -> bool {
         const system_clock::time_point occ = occInstant(occDay);
@@ -314,12 +321,15 @@ namespace calendar {
 
       switch (rule.freq) {
       case RRule::Freq::Daily: {
-        // Without COUNT there's nothing to tally, so skip straight to the window rather than stepping day
-        // by day from a possibly years-old DTSTART and exhausting kMaxIterations before reaching it.
+        // Skip straight to the window rather than stepping day by day from a possibly years-old DTSTART
+        // and exhausting kMaxIterations before reaching it. The i0 skipped occurrences still count toward
+        // COUNT, so seed occurrenceNo with them — otherwise a bounded old series would either be miscounted
+        // or (without the skip) truncated to nothing.
         int i0 = 0;
-        if (rule.count == 0 && base.start < windowStart) {
+        if (base.start < windowStart) {
           i0 = static_cast<int>(duration_cast<days>(windowStart - base.start).count() / rule.interval);
         }
+        occurrenceNo = i0;
         for (int i = i0; i < i0 + kMaxIterations; ++i) {
           if (!step(startDay + days{i * rule.interval}))
             break;
@@ -329,7 +339,7 @@ namespace calendar {
       case RRule::Freq::Weekly: {
         std::vector<weekday> byDay = rule.byDay;
         if (byDay.empty()) {
-          byDay.push_back(weekday{startDay});
+          byDay.emplace_back(startDay);
         }
         std::ranges::sort(byDay, {}, [](weekday w) { return w.iso_encoding(); });
         const unsigned fromMonday = weekday{startDay}.iso_encoding() - 1;
