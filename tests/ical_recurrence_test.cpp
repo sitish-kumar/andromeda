@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
-#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -13,6 +12,18 @@ namespace {
 
   system_clock::time_point utc(int y, int mo, int d, int h = 0) {
     return sys_days{year{y} / month{static_cast<unsigned>(mo)} / day{static_cast<unsigned>(d)}} + hours{h};
+  }
+
+  // Local midnight of a civil date in the system zone, matching how the parser anchors all-day
+  // occurrences. current_zone() reads /etc/localtime and ignores TZ, so all-day expectations must be
+  // computed from it rather than hardcoded to a single zone.
+  system_clock::time_point localMidnight(int y, int mo, int d) {
+    const local_days ld{year{y} / month{static_cast<unsigned>(mo)} / day{static_cast<unsigned>(d)}};
+    try {
+      return time_point_cast<system_clock::duration>(time_point_cast<seconds>(current_zone()->to_sys(ld)));
+    } catch (...) {
+      return sys_days{year{y} / month{static_cast<unsigned>(mo)} / day{static_cast<unsigned>(d)}};
+    }
   }
 
   // Assert the parsed occurrences' start instants exactly match `expected` (order-independent).
@@ -85,8 +96,6 @@ namespace {
 } // namespace
 
 int main() {
-  setenv("TZ", "Europe/Kyiv", 1);
-
   const auto start = utc(2024, 1, 1);
   const auto end = utc(2024, 2, 1);
   bool ok = true;
@@ -128,6 +137,15 @@ int main() {
     ok = expectCount(ics, start, end, 31, "old unbounded daily reaches window") && ok;
   }
 
+  // An explicit COUNT must not disable the skip-ahead: a bounded daily series whose DTSTART is many
+  // years (>4000 days) before the window still has to reach it. COUNT=6000 from 2013 spans past 2024,
+  // so the whole Jan window shows = 31 days. Guards against COUNT truncating an old series to nothing.
+  {
+    const std::string ics = "BEGIN:VEVENT\r\nUID:cnt\r\nDTSTART:20130101T090000Z\r\nDTEND:20130101T100000Z\r\n"
+                            "RRULE:FREQ=DAILY;COUNT=6000\r\nEND:VEVENT\r\n";
+    ok = expectCount(ics, start, end, 31, "old daily with count reaches window") && ok;
+  }
+
   // All-day (VALUE=DATE) MONTHLY on the 1st, over a one-year window, is exactly 12 - one per month.
   // The old code derived the day-of-month from floor<days> of the UTC instant, which for a zone east
   // of UTC rolls back to the previous civil day (the 31st of Dec), so months without a 31st were
@@ -140,16 +158,29 @@ int main() {
   }
 
   // Multi-day all-day recurrences must preserve their civil-day span, not a fixed UTC duration.
-  // 2024-03-30..2024-04-01 in Europe/Kyiv is 47 UTC hours because DST starts on Mar 31; applying
-  // that duration to the May occurrence would end it at 23:00 local on May 31 instead of midnight Jun 1.
+  // The May occurrence must span its own local midnights (May 30 -> Jun 1), computed against the
+  // running zone. In a zone whose DST starts on Mar 31 (e.g. Europe/Kyiv), the Mar 30->Apr 1 master
+  // is 47 UTC hours, so applying that fixed duration would end the May instance an hour early; the
+  // civil-day span keeps it correct. Expectations track current_zone() so this holds in any zone.
   {
     const std::string ics = "BEGIN:VEVENT\r\nUID:dst\r\nSUMMARY:s\r\nDTSTART;VALUE=DATE:20240330\r\n"
                             "DTEND;VALUE=DATE:20240401\r\nRRULE:FREQ=MONTHLY;COUNT=3\r\nEND:VEVENT\r\n";
     ok = expectRanges(
-             ics, utc(2024, 5, 1), utc(2024, 6, 15), {{utc(2024, 5, 29, 21), utc(2024, 5, 31, 21)}},
+             ics, utc(2024, 5, 1), utc(2024, 6, 15), {{localMidnight(2024, 5, 30), localMidnight(2024, 6, 1)}},
              "all-day monthly preserves civil end across dst"
          )
         && ok;
+  }
+
+  // EXDATE must still exclude across a DST boundary. Occurrences hold a constant UTC instant (drifting
+  // ~1h vs local wall time across DST), while the server's EXDATE carries the true local wall time - a
+  // different instant. TZID makes the drift zone-independent: New York DST starts Mar 10 2024, so a
+  // daily noon event with an EXDATE on Mar 15 (post-DST) must drop exactly that day: 20 - 1 = 19.
+  {
+    const std::string ics = "BEGIN:VEVENT\r\nUID:dstx\r\nDTSTART;TZID=America/New_York:20240301T120000\r\n"
+                            "DTEND;TZID=America/New_York:20240301T130000\r\nRRULE:FREQ=DAILY;COUNT=20\r\n"
+                            "EXDATE;TZID=America/New_York:20240315T120000\r\nEND:VEVENT\r\n";
+    ok = expectCount(ics, utc(2024, 3, 1), utc(2024, 4, 1), 19, "exdate excludes across dst") && ok;
   }
 
   // RECURRENCE-ID override: a modified instance replaces the master's occurrence at that instant,
