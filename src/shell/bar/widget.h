@@ -49,6 +49,9 @@ public:
   [[nodiscard]] virtual bool noGapAroundMe() const noexcept { return false; }
   // Layout-only bar widgets (spacers): clicks pass through to bar dead-zone handlers.
   [[nodiscard]] virtual bool isBarClickThrough() const noexcept { return false; }
+  // Widgets with interactive sub-items (workspaces, taskbar, tray) manage hover per item and
+  // opt out of the bar's generic whole-widget hover highlight.
+  [[nodiscard]] virtual bool wantsBarHoverHighlight() const noexcept { return true; }
 
   [[nodiscard]] Node* root() const noexcept { return m_root ? m_root.get() : m_rootPtr; }
   [[nodiscard]] float width() const noexcept;

@@ -2122,7 +2122,7 @@ void Bar::attachWidgetsToSections(BarInstance& instance) {
   // Hover overlay: sits above the capsule fill (same zIndex, later sibling) and below the
   // content; fill/visibility are driven by the hover animation.
   auto addHoverBox = [hoverHighlight](Widget& widget, Node& shell) -> Box* {
-    if (!hoverHighlight) {
+    if (!hoverHighlight || !widget.wantsBarHoverHighlight()) {
       return nullptr;
     }
     Box* boxPtr = nullptr;
