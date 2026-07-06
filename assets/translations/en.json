@@ -1109,6 +1109,7 @@
         "keybinds": "Keybinds",
         "kinds": "Kinds",
         "launcher": "Launcher",
+        "providers": "Providers",
         "layout": "Layout",
         "lifecycle": "Lifecycle",
         "location": "Location",
@@ -2131,14 +2132,34 @@
           "description": "Use smaller icons and tighter result rows",
           "label": "Compact Rows"
         },
+        "launcher-prefix-calculator": {
+          "description": "Trigger prefix for calculator calculations",
+          "label": "Calculator Prefix"
+        },
+        "launcher-prefix-character": {
+          "description": "Common prefix character used to trigger all provider prefixes (e.g. /)",
+          "label": "Common Prefix Character"
+        },
+        "launcher-prefix-emoji": {
+          "description": "Trigger prefix for emoji search",
+          "label": "Emoji Prefix"
+        },
+        "launcher-prefix-session": {
+          "description": "Trigger prefix for session power actions",
+          "label": "Session Prefix"
+        },
+        "launcher-prefix-wallpaper": {
+          "description": "Trigger prefix for wallpaper selector",
+          "label": "Wallpaper Prefix"
+        },
+        "launcher-prefix-windows": {
+          "description": "Trigger prefix for window search",
+          "label": "Windows Prefix"
+        },
         "launcher-reset-usage": {
           "button": "Reset",
           "description": "Clear launch counts and recently used history used for launcher sorting",
           "label": "Reset Usage Data"
-        },
-        "launcher-session-search": {
-          "description": "Include session actions (lock, suspend, reboot, shutdown, logout) in general launcher searches, not only behind the /session prefix",
-          "label": "Enable Session Search"
         },
         "launcher-show-icons": {
           "description": "Show application icons in launcher results",

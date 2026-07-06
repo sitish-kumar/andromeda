@@ -61,6 +61,29 @@ open_near_click_clipboard      = false # for attached/floating placement, follow
 open_near_click_wallpaper      = false # for attached/floating placement, follow the bar click instead of bar-center
 open_near_click_session        = false # for attached/floating placement, follow the bar click instead of bar-center
 
+[shell.launcher]
+categories    = true                    # show category filters in the launcher
+show_icons    = true                    # show application icons in launcher results
+compact       = false                   # use smaller icons and tighter result rows
+app_grid      = false                   # show app icon grid view when results are apps only
+sort_by_usage = true                    # sort apps by usage frequency
+provider_prefix = "/"                     # common prefix character for provider trigger words (e.g. "/" or ".")
+
+[shell.launcher.providers.calculator]
+prefix = ""                             # trigger word for calculator (empty for always global search)
+
+[shell.launcher.providers.emoji]
+prefix = "emo"                          # trigger word for emoji (triggers on prefix + trigger, e.g. "/emo")
+
+[shell.launcher.providers.session]
+prefix = "session"                      # trigger word for session actions (triggers on prefix + trigger, e.g. "/session")
+
+[shell.launcher.providers.wallpaper]
+prefix = "wall"                         # trigger word for wallpaper selector (triggers on prefix + trigger, e.g. "/wall")
+
+[shell.launcher.providers.windows]
+prefix = "win"                          # trigger word for windows (triggers on prefix + trigger, e.g. "/win")
+
 [shell.mpris]
 blacklist = []                      # ignore MPRIS players by bus/identity/desktop entry token
 

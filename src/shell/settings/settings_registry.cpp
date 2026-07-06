@@ -1098,11 +1098,49 @@ namespace settings {
         ToggleSetting{cfg.shell.launcher.sortByUsage}, "launcher sort usage recently used frequency"
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Launcher, "launcher", tr("settings.schema.panels.launcher-session-search.label"),
-        tr("settings.schema.panels.launcher-session-search.description"), {"shell", "launcher", "session_search"},
-        ToggleSetting{cfg.shell.launcher.sessionSearch},
-        "launcher session search power menu lock suspend reboot shutdown logout"
+        SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-character.label"),
+        tr("settings.schema.panels.launcher-prefix-character.description"), {"shell", "launcher", "provider_prefix"},
+        TextSetting{.value = cfg.shell.launcher.providerPrefix, .placeholder = "/"}, "launcher common prefix character"
     ));
+    {
+      auto findPrefix = [&](std::string_view name, std::string_view defaultValue) -> std::string {
+        auto it = std::ranges::find(cfg.shell.launcher.providers, name, &LauncherProviderConfig::name);
+        return it != cfg.shell.launcher.providers.end() ? it->prefix : std::string(defaultValue);
+      };
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-calculator.label"),
+          tr("settings.schema.panels.launcher-prefix-calculator.description"),
+          {"shell", "launcher", "providers", "calculator", "prefix"},
+          TextSetting{.value = findPrefix("calculator", ""), .placeholder = "calc"},
+          "launcher calculator prefix trigger"
+      ));
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-emoji.label"),
+          tr("settings.schema.panels.launcher-prefix-emoji.description"),
+          {"shell", "launcher", "providers", "emoji", "prefix"},
+          TextSetting{.value = findPrefix("emoji", "emo"), .placeholder = "emo"}, "launcher emoji prefix trigger"
+      ));
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-session.label"),
+          tr("settings.schema.panels.launcher-prefix-session.description"),
+          {"shell", "launcher", "providers", "session", "prefix"},
+          TextSetting{.value = findPrefix("session", "session"), .placeholder = "session"},
+          "launcher session prefix trigger"
+      ));
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-wallpaper.label"),
+          tr("settings.schema.panels.launcher-prefix-wallpaper.description"),
+          {"shell", "launcher", "providers", "wallpaper", "prefix"},
+          TextSetting{.value = findPrefix("wallpaper", "wall"), .placeholder = "wall"},
+          "launcher wallpaper prefix trigger"
+      ));
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-windows.label"),
+          tr("settings.schema.panels.launcher-prefix-windows.description"),
+          {"shell", "launcher", "providers", "windows", "prefix"},
+          TextSetting{.value = findPrefix("windows", "win"), .placeholder = "win"}, "launcher windows prefix trigger"
+      ));
+    }
     entries.push_back(makeEntry(
         SettingsSection::Panels, "clipboard", tr("settings.schema.panels.placement-clipboard.label"),
         tr("settings.schema.panels.placement-clipboard.description"), {"shell", "panel", "clipboard_placement"},
