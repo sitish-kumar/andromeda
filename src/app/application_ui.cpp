@@ -315,6 +315,7 @@ void Application::initLockScreenAndSession() {
   });
   m_lockScreen.setSessionHooks(
       [this]() {
+        m_idleGraceOverlay.hide();
         m_lockscreenWidgetsController.onLockStateChanged();
         m_hookManager.fire(HookKind::SessionLocked);
       },
@@ -675,9 +676,11 @@ void Application::initNotificationAndOsd() {
           m_idleGraceOverlay.show(fadeIn, std::move(done));
         });
       },
-      [this](bool userCancelled) {
-        DeferredCall::callLater([this, userCancelled]() {
-          m_idleGraceOverlay.hide();
+      [this](bool userCancelled, bool willLockSession) {
+        DeferredCall::callLater([this, userCancelled, willLockSession]() {
+          if (userCancelled || !willLockSession) {
+            m_idleGraceOverlay.hide();
+          }
           if (userCancelled) {
             m_lockScreen.clearPrimedDesktopCaptures();
           }
