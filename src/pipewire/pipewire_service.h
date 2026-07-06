@@ -42,6 +42,11 @@ struct AudioNode {
 // the node name.
 [[nodiscard]] std::string audioDeviceLabel(const AudioNode& node);
 
+// Canonical bar/OSD glyph for a sink (isInput == false) or source (isInput == true) given its
+// volume and effective mute. Single source of the mute->slashed-icon rule and the volume-level
+// thresholds so the bar widget and the OSD can never map the same state to different icons.
+[[nodiscard]] const char* audioVolumeGlyph(float volume, bool muted, bool isInput);
+
 struct AudioState {
   std::vector<AudioNode> sinks;
   std::vector<AudioNode> sources;
