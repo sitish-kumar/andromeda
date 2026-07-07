@@ -489,7 +489,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       });
       image->setPosition(iconInsetX, iconInsetY);
       image->setAppIconColorization(effectiveShellAppIconColorizationTint(m_configService.config().shell));
-      image->setSourceFile(renderer, task.iconPath, static_cast<int>(std::round(48.0f * m_contentScale)), true);
+      image->setSourceFile(renderer, task.iconPath, static_cast<int>(std::round(iconSize)), true);
       if (image->hasImage()) {
         area->addChild(std::move(image));
       } else {
@@ -2174,7 +2174,7 @@ void TaskbarWidget::buildDesktopIconIndex() {
 }
 
 std::string TaskbarWidget::resolveIconPath(const std::string& appId, const std::string& iconNameOrPath) {
-  const int iconTargetSize = static_cast<int>(std::round(48.0f * m_contentScale));
+  const int iconTargetSize = std::max(1, static_cast<int>(std::round(Style::baseGlyphSize * m_contentScale)));
 
   auto resolveIconName = [this, iconTargetSize](const std::string& name) -> std::string {
     if (name.empty()) {
