@@ -766,6 +766,12 @@
       "body-errors": "{plugin} hit too many errors and was disabled. Reload it after fixing the issue.",
       "body-timeouts": "{plugin} stopped responding and was disabled. Reload it after fixing the issue.",
       "title": "Plugin disabled"
+    },
+    "enable-failed": {
+      "body-error": "{plugin}: {error}",
+      "body-incompatible": "{plugin} requires Noctalia {version} or newer.",
+      "body-timeout": "{plugin} took too long to install.",
+      "title": "Plugin not enabled"
     }
   },
   "power": {
