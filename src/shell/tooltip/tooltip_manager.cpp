@@ -1,5 +1,6 @@
 #include "shell/tooltip/tooltip_manager.h"
 
+#include "config/config_service.h"
 #include "core/deferred_call.h"
 #include "core/log.h"
 #include "core/ui_phase.h"
@@ -172,8 +173,9 @@ TooltipManager& TooltipManager::instance() {
   return inst;
 }
 
-void TooltipManager::initialize(WaylandConnection& wayland, RenderContext* renderContext) {
+void TooltipManager::initialize(WaylandConnection& wayland, ConfigService* config, RenderContext* renderContext) {
   m_wayland = &wayland;
+  m_config = config;
   m_renderContext = renderContext;
 }
 
@@ -554,12 +556,18 @@ TooltipManager::Size TooltipManager::measureContent(const TooltipContent& conten
     return {};
   }
 
+  const float scale = (m_config != nullptr) ? std::max(0.1f, m_config->config().shell.uiScale) : 1.0f;
+  const float maxContentWidth = kMaxContentWidth * scale;
+  const float fontSize = Style::fontSizeCaption * scale;
+  const float padH = kPadH * scale;
+  const float padV = kPadV * scale;
+  const float tableGap = kTableGap * scale;
+  const float tableColumnGap = kTableColumnGap * scale;
+
   if (const auto* text = std::get_if<std::string>(&content)) {
-    auto metrics = m_renderContext->measureText(
-        *text, Style::fontSizeCaption, FontWeight::Normal, kMaxContentWidth, kMaxTextLines
-    );
-    auto w = static_cast<std::uint32_t>(std::ceil(metrics.width + kPadH * 2.0f + kBorder * 2.0f));
-    auto h = static_cast<std::uint32_t>(std::ceil((metrics.bottom - metrics.top) + kPadV * 2.0f + kBorder * 2.0f));
+    auto metrics = m_renderContext->measureText(*text, fontSize, FontWeight::Normal, maxContentWidth, kMaxTextLines);
+    auto w = static_cast<std::uint32_t>(std::ceil(metrics.width + padH * 2.0f + kBorder * 2.0f));
+    auto h = static_cast<std::uint32_t>(std::ceil((metrics.bottom - metrics.top) + padV * 2.0f + kBorder * 2.0f));
     return {std::max(w, 1u), std::max(h, 1u)};
   }
 
@@ -571,17 +579,17 @@ TooltipManager::Size TooltipManager::measureContent(const TooltipContent& conten
     float maxValW = 0.0f;
     float rowH = 0.0f;
     for (const auto& row : *rows) {
-      auto km = m_renderContext->measureText(row.key, Style::fontSizeCaption);
-      const auto vm = m_renderContext->measureText(row.value, Style::fontSizeCaption);
+      auto km = m_renderContext->measureText(row.key, fontSize);
+      const auto vm = m_renderContext->measureText(row.value, fontSize);
       maxKeyW = std::max(maxKeyW, km.width);
       maxValW = std::max(maxValW, vm.width);
       rowH = std::max({rowH, km.bottom - km.top, vm.bottom - vm.top});
     }
     const TableColumnWidths columns = fitTableColumns(maxKeyW, maxValW);
-    float contentW = columns.key + kTableColumnGap + columns.value;
-    float contentH = static_cast<float>(rows->size()) * rowH + static_cast<float>(rows->size() - 1) * kTableGap;
-    auto w = static_cast<std::uint32_t>(std::ceil(contentW + kPadH * 2.0f + kBorder * 2.0f));
-    auto h = static_cast<std::uint32_t>(std::ceil(contentH + kPadV * 2.0f + kBorder * 2.0f));
+    float contentW = columns.key + tableColumnGap + columns.value;
+    float contentH = static_cast<float>(rows->size()) * rowH + static_cast<float>(rows->size() - 1) * tableGap;
+    auto w = static_cast<std::uint32_t>(std::ceil(contentW + padH * 2.0f + kBorder * 2.0f));
+    auto h = static_cast<std::uint32_t>(std::ceil(contentH + padV * 2.0f + kBorder * 2.0f));
     return {std::max(w, 1u), std::max(h, 1u)};
   }
 
@@ -610,48 +618,56 @@ void TooltipManager::buildScene(const TooltipContent& content, float w, float h,
       })
   );
 
+  const float scale = (m_config != nullptr) ? std::max(0.1f, m_config->config().shell.uiScale) : 1.0f;
+  const float maxContentWidth = kMaxContentWidth * scale;
+  const float fontSize = Style::fontSizeCaption * scale;
+  const float padH = kPadH * scale;
+  const float padV = kPadV * scale;
+  const float tableGap = kTableGap * scale;
+  const float tableColumnGap = kTableColumnGap * scale;
+
   if (const auto* text = std::get_if<std::string>(&content)) {
     auto label = ui::label({
         .text = *text,
-        .fontSize = Style::fontSizeCaption,
+        .fontSize = fontSize,
         .color = colorSpecFromRole(ColorRole::OnSurface),
-        .maxWidth = kMaxContentWidth,
+        .maxWidth = maxContentWidth,
         .maxLines = kMaxTextLines,
     });
     label->measure(*m_renderContext);
-    label->setPosition(kPadH + kBorder, kPadV + kBorder);
+    label->setPosition(padH + kBorder, padV + kBorder);
     m_sceneRoot->addChild(std::move(label));
     return;
   }
 
   if (const auto* rows = std::get_if<std::vector<TooltipRow>>(&content)) {
-    const float containerW = w - (kPadH + kBorder) * 2.0f;
+    const float containerW = w - (padH + kBorder) * 2.0f;
 
     float maxKeyW = 0.0f;
     float maxValW = 0.0f;
     for (const auto& row : *rows) {
-      auto km = m_renderContext->measureText(row.key, Style::fontSizeCaption);
-      const auto vm = m_renderContext->measureText(row.value, Style::fontSizeCaption);
+      auto km = m_renderContext->measureText(row.key, fontSize);
+      const auto vm = m_renderContext->measureText(row.value, fontSize);
       maxKeyW = std::max(maxKeyW, km.width);
       maxValW = std::max(maxValW, vm.width);
     }
     const TableColumnWidths columns = fitTableColumns(maxKeyW, maxValW);
 
     auto container = ui::column({
-        .gap = kTableGap,
+        .gap = tableGap,
         .width = containerW,
-        .height = h - (kPadV + kBorder) * 2.0f,
-        .configure = [](Flex& flex) { flex.setPosition(kPadH + kBorder, kPadV + kBorder); },
+        .height = h - (padV + kBorder) * 2.0f,
+        .configure = [padH, padV](Flex& flex) { flex.setPosition(padH + kBorder, padV + kBorder); },
     });
 
     for (const auto& row : *rows) {
       auto keyLabel = ui::label({
           .text = row.key,
-          .fontSize = Style::fontSizeCaption,
+          .fontSize = fontSize,
           .color = colorSpecFromRole(ColorRole::Secondary),
           .maxLines = 1,
       });
-      const auto km = m_renderContext->measureText(row.key, Style::fontSizeCaption);
+      const auto km = m_renderContext->measureText(row.key, fontSize);
       if (km.width > columns.key + 0.5f) {
         keyLabel->setMaxWidth(columns.key);
       }
@@ -659,13 +675,13 @@ void TooltipManager::buildScene(const TooltipContent& content, float w, float h,
 
       auto valLabel = ui::label({
           .text = row.value,
-          .fontSize = Style::fontSizeCaption,
+          .fontSize = fontSize,
           .color = colorSpecFromRole(ColorRole::OnSurface),
           .maxLines = 1,
           .textAlign = TextAlign::End,
           .ellipsize = row.valueEllipsize,
       });
-      const auto vm = m_renderContext->measureText(row.value, Style::fontSizeCaption);
+      const auto vm = m_renderContext->measureText(row.value, fontSize);
       if (vm.width > columns.value + 0.5f) {
         valLabel->setMaxWidth(columns.value);
       }
@@ -675,7 +691,7 @@ void TooltipManager::buildScene(const TooltipContent& content, float w, float h,
           ui::row(
               {
                   .justify = FlexJustify::SpaceBetween,
-                  .gap = kTableColumnGap,
+                  .gap = tableColumnGap,
                   .widthPolicy = FlexSizePolicy::Fill,
               },
               std::move(keyLabel), std::move(valLabel)
