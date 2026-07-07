@@ -77,8 +77,10 @@ namespace ui {
         const auto* end = alphaText.data() + alphaText.size();
         if (const auto res = std::from_chars(alphaText.data(), end, alpha);
             res.ec != std::errc{} || res.ptr != end || alpha < 0.0f || alpha > 1.0f) {
-          kLog.warn("ui node '{}': invalid alpha '{}' in color '{}' for prop '{}' (expected 0.0-1.0)", node.type,
-                    alphaText, *token, key);
+          kLog.warn(
+              "ui node '{}': invalid alpha '{}' in color '{}' for prop '{}' (expected 0.0-1.0)", node.type, alphaText,
+              *token, key
+          );
           return std::nullopt;
         }
       }
