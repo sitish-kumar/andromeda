@@ -274,6 +274,7 @@ void PluginWidget::create() {
     }
   });
   m_reconciler.setPathResolver([this](const std::string& path) { return resolvePluginPath(path).string(); });
+  m_reconciler.setCompactControls(true);
 
   m_area = area.get();
   setRoot(std::move(area));

@@ -66,6 +66,9 @@ namespace ui {
       m_defaultFontFamily = std::move(fontFamily);
       m_defaultFontWeight = fontWeight;
     }
+    // Compact control chrome for space-tight hosts (bar widgets): buttons drop
+    // the settings-tier min-height/padding and hug their content instead.
+    void setCompactControls(bool compact) { m_compactControls = compact; }
 
     // Reconciles `tree` as the single child of `host`. Props are (re)applied on
     // every call — setters are change-checked, and the scale may differ between
@@ -92,6 +95,7 @@ namespace ui {
     float m_scale = 1.0f;
     std::string m_defaultFontFamily;
     FontWeight m_defaultFontWeight; // initialized in the ctor (opaque enum here)
+    bool m_compactControls = false;
     std::vector<Slot> m_rootSlots;
   };
 

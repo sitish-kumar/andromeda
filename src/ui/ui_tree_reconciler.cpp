@@ -823,9 +823,15 @@ namespace ui {
       }
       if (const double* fontSize = numProp(desired, "fontSize")) {
         button->setFontSize(scaled(*fontSize));
+      } else if (text != nullptr && !text->empty()) {
+        // Guarded on non-empty text: setFontSize creates the label, which
+        // would flip a glyph-only button to the taller text chrome tier.
+        button->setFontSize(Style::fontSizeBody * m_scale);
       }
       if (const double* glyphSize = numProp(desired, "glyphSize")) {
         button->setGlyphSize(scaled(*glyphSize));
+      } else if (glyph != nullptr) {
+        button->setGlyphSize(Style::fontSizeBody * m_scale);
       }
       if (auto variant = parseButtonVariant(desired)) {
         button->setVariant(*variant);
@@ -864,6 +870,15 @@ namespace ui {
             m_sink(ControlCallback{name});
           }
         });
+      }
+      // Compact hosts (bar widgets): drop the settings-tier control chrome
+      // (min-height, wide padding) and hug the content — a bar capsule is
+      // barely one control height tall. Applied after setText/setGlyph, whose
+      // label creation re-applies the text-tier chrome. Explicit width/height
+      // below still override.
+      if (m_compactControls) {
+        button->setMinHeight(0.0f);
+        button->setPadding(Style::spaceXs * m_scale);
       }
       if (width != nullptr) {
         button->setMinWidth(scaled(*width));
