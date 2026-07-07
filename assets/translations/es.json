@@ -766,6 +766,12 @@
       "body-errors": "{plugin} alcanzó demasiados errores y se desactivó. Recárgalo después de solucionar el problema.",
       "body-timeouts": "{plugin} dejó de responder y se desactivó. Recárgalo después de solucionar el problema.",
       "title": "Plugin desactivado"
+    },
+    "enable-failed": {
+      "body-error": "{plugin}: {error}",
+      "body-incompatible": "{plugin} requiere Noctalia {version} o más reciente",
+      "body-timeout": "{plugin} tardó demasiado en instalarse.",
+      "title": "Complemento no habilitado"
     }
   },
   "power": {
@@ -1124,6 +1130,7 @@
         "dock": "Dock",
         "hooks": "Hooks",
         "keybinds": "Atajos de teclado",
+        "launcher": "Lanzador",
         "location": "Localizacion",
         "niri": "Niri",
         "notifications": "Notificaciones",
@@ -1762,7 +1769,7 @@
           "placeholder": "Ruta a una imagen"
         },
         "launcher-custom-image-colorize": {
-          "description": "Teñir la imagen personalizada con el color del icono",
+          "description": "Decolorar la imagen personalizada con el color del icono",
           "label": "Decolorar imagen personalizada"
         },
         "launcher-icon": {
@@ -2582,7 +2589,7 @@
         "screen-time-reset": {
           "button": "Restablecer",
           "description": "Borrar el historial de uso en primer plano almacenado por aplicación",
-          "label": "Restablecer datos de tiempo de pantalla"
+          "label": "Restablecer datos de tiempo en pantalla"
         },
         "screenshot-confirm-region": {
           "description": "Después de dibujar una región, mantén la superposición abierta hasta confirmar con Intro o Espacio",
@@ -2907,13 +2914,13 @@
           "label": "Comando de clic izquierdo"
         },
         "custom-image": {
-          "description": "Ruta a una imagen personalizada. Deja vacío para usar el glifo del icono.",
+          "description": "Ruta a una imagen personalizada. Déjela en blanco para usar el glifo del icono.",
           "dialog-title": "Seleccionar imagen personalizada",
           "label": "Imagen personalizada"
         },
         "custom-image-colorize": {
           "description": "Teñir la imagen personalizada con la configuración de color de icono del widget",
-          "label": "Decolorar imagen personalizada"
+          "label": "Colorear imagen personalizada"
         },
         "custom-labels": {
           "description": "Asignar nombres de distribución de teclado a etiquetas personalizadas",
