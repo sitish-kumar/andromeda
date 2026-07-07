@@ -1103,42 +1103,73 @@ namespace settings {
         TextSetting{.value = cfg.shell.launcher.providerPrefix, .placeholder = "/"}, "launcher common prefix character"
     ));
     {
-      auto findPrefix = [&](std::string_view name, std::string_view defaultValue) -> std::string {
+      auto storedPrefix = [&](std::string_view name) -> std::string {
         auto it = std::ranges::find(cfg.shell.launcher.providers, name, &LauncherProviderConfig::name);
-        return it != cfg.shell.launcher.providers.end() ? it->prefix : std::string(defaultValue);
+        return it != cfg.shell.launcher.providers.end() ? it->prefix : std::string();
+      };
+      auto storedGlobal = [&](std::string_view name, bool defaultValue) -> bool {
+        auto it = std::ranges::find(cfg.shell.launcher.providers, name, &LauncherProviderConfig::name);
+        return it != cfg.shell.launcher.providers.end() ? it->global.value_or(defaultValue) : defaultValue;
       };
       entries.push_back(makeEntry(
           SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-calculator.label"),
           tr("settings.schema.panels.launcher-prefix-calculator.description"),
           {"shell", "launcher", "providers", "calculator", "prefix"},
-          TextSetting{.value = findPrefix("calculator", ""), .placeholder = "calc"},
-          "launcher calculator prefix trigger"
+          TextSetting{.value = storedPrefix("calculator"), .placeholder = ""}, "launcher calculator prefix trigger"
+      ));
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-global-calculator.label"),
+          tr("settings.schema.panels.launcher-global-calculator.description"),
+          {"shell", "launcher", "providers", "calculator", "global"}, ToggleSetting{storedGlobal("calculator", true)},
+          "launcher calculator global search unprefixed"
       ));
       entries.push_back(makeEntry(
           SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-emoji.label"),
           tr("settings.schema.panels.launcher-prefix-emoji.description"),
           {"shell", "launcher", "providers", "emoji", "prefix"},
-          TextSetting{.value = findPrefix("emoji", "emo"), .placeholder = "emo"}, "launcher emoji prefix trigger"
+          TextSetting{.value = storedPrefix("emoji"), .placeholder = "emo"}, "launcher emoji prefix trigger"
+      ));
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-global-emoji.label"),
+          tr("settings.schema.panels.launcher-global-emoji.description"),
+          {"shell", "launcher", "providers", "emoji", "global"}, ToggleSetting{storedGlobal("emoji", false)},
+          "launcher emoji global search unprefixed"
       ));
       entries.push_back(makeEntry(
           SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-session.label"),
           tr("settings.schema.panels.launcher-prefix-session.description"),
           {"shell", "launcher", "providers", "session", "prefix"},
-          TextSetting{.value = findPrefix("session", "session"), .placeholder = "session"},
-          "launcher session prefix trigger"
+          TextSetting{.value = storedPrefix("session"), .placeholder = "session"}, "launcher session prefix trigger"
+      ));
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-global-session.label"),
+          tr("settings.schema.panels.launcher-global-session.description"),
+          {"shell", "launcher", "providers", "session", "global"}, ToggleSetting{storedGlobal("session", false)},
+          "launcher session global search unprefixed"
       ));
       entries.push_back(makeEntry(
           SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-wallpaper.label"),
           tr("settings.schema.panels.launcher-prefix-wallpaper.description"),
           {"shell", "launcher", "providers", "wallpaper", "prefix"},
-          TextSetting{.value = findPrefix("wallpaper", "wall"), .placeholder = "wall"},
-          "launcher wallpaper prefix trigger"
+          TextSetting{.value = storedPrefix("wallpaper"), .placeholder = "wall"}, "launcher wallpaper prefix trigger"
+      ));
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-global-wallpaper.label"),
+          tr("settings.schema.panels.launcher-global-wallpaper.description"),
+          {"shell", "launcher", "providers", "wallpaper", "global"}, ToggleSetting{storedGlobal("wallpaper", false)},
+          "launcher wallpaper global search unprefixed"
       ));
       entries.push_back(makeEntry(
           SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-prefix-windows.label"),
           tr("settings.schema.panels.launcher-prefix-windows.description"),
           {"shell", "launcher", "providers", "windows", "prefix"},
-          TextSetting{.value = findPrefix("windows", "win"), .placeholder = "win"}, "launcher windows prefix trigger"
+          TextSetting{.value = storedPrefix("windows"), .placeholder = "win"}, "launcher windows prefix trigger"
+      ));
+      entries.push_back(makeEntry(
+          SettingsSection::Launcher, "providers", tr("settings.schema.panels.launcher-global-windows.label"),
+          tr("settings.schema.panels.launcher-global-windows.description"),
+          {"shell", "launcher", "providers", "windows", "global"}, ToggleSetting{storedGlobal("windows", false)},
+          "launcher windows global search unprefixed"
       ));
     }
     entries.push_back(makeEntry(

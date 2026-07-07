@@ -2132,6 +2132,26 @@
           "description": "Use smaller icons and tighter result rows",
           "label": "Compact Rows"
         },
+        "launcher-global-calculator": {
+          "description": "Also show calculator results in unprefixed search",
+          "label": "Calculator in Global Search"
+        },
+        "launcher-global-emoji": {
+          "description": "Also show emoji results in unprefixed search",
+          "label": "Emoji in Global Search"
+        },
+        "launcher-global-session": {
+          "description": "Also show session actions in unprefixed search",
+          "label": "Session in Global Search"
+        },
+        "launcher-global-wallpaper": {
+          "description": "Also show wallpapers in unprefixed search",
+          "label": "Wallpaper in Global Search"
+        },
+        "launcher-global-windows": {
+          "description": "Also show open windows in unprefixed search",
+          "label": "Windows in Global Search"
+        },
         "launcher-prefix-calculator": {
           "description": "Trigger prefix for calculator calculations",
           "label": "Calculator Prefix"
