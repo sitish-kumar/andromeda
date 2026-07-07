@@ -353,6 +353,7 @@ void PluginWidget::doLayout(Renderer& renderer, float containerWidth, float cont
   if (m_tree.has_value() && m_uiHost != nullptr) {
     m_uiHost->setDirection(m_isVertical ? FlexDirection::Vertical : FlexDirection::Horizontal);
     m_reconciler.setScale(contentScale());
+    m_reconciler.setTextDefaults(labelFontFamily(), labelFontWeight());
     (void)m_reconciler.reconcile(*m_uiHost, *m_tree, renderer);
     m_uiHost->layout(renderer);
     if (m_area)

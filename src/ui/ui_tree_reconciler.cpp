@@ -367,7 +367,7 @@ namespace ui {
     std::vector<Slot> children;
   };
 
-  UiTreeReconciler::UiTreeReconciler() = default;
+  UiTreeReconciler::UiTreeReconciler() : m_defaultFontWeight(FontWeight::Normal) {}
   UiTreeReconciler::~UiTreeReconciler() = default;
 
   bool UiTreeReconciler::reconcile(Flex& host, const UiTreeNode& tree, Renderer& renderer) {
@@ -663,17 +663,22 @@ namespace ui {
 
     if (desired.type == "label") {
       auto* label = static_cast<Label*>(node);
+      label->setFontFamily(m_defaultFontFamily);
       if (const std::string* text = strProp(desired, "text")) {
         label->setText(*text);
       }
       if (const double* fontSize = numProp(desired, "fontSize")) {
         label->setFontSize(scaled(*fontSize));
+      } else {
+        label->setFontSize(Style::fontSizeBody * m_scale);
       }
       if (auto color = parseColor(desired, "color")) {
         label->setColor(*color);
       }
       if (auto weight = parseFontWeight(desired)) {
         label->setFontWeight(*weight);
+      } else {
+        label->setFontWeight(m_defaultFontWeight);
       }
       if (const double* maxWidth = numProp(desired, "maxWidth")) {
         label->setMaxWidth(scaled(*maxWidth));
@@ -694,6 +699,8 @@ namespace ui {
       }
       if (const double* size = numProp(desired, "size")) {
         glyph->setGlyphSize(scaled(*size));
+      } else {
+        glyph->setGlyphSize(Style::baseGlyphSize * m_scale);
       }
       if (auto color = parseColor(desired, "color")) {
         glyph->setColor(*color);
