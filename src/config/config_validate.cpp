@@ -7,6 +7,8 @@
 #include "config/schema/config_schema.h"
 #include "config/schema/engine.h"
 #include "config/widget_config.h"
+#include "launcher/launcher_provider.h"
+#include "scripting/plugin_id.h"
 #include "scripting/plugin_manager.h"
 #include "scripting/plugin_panel_shell.h"
 #include "scripting/plugin_registry.h"
@@ -602,6 +604,17 @@ namespace noctalia::config {
           }
           if (const auto* providersTbl = (*launcherTbl)["providers"].as_table()) {
             std::unordered_map<std::string, std::string> seenPrefixes;
+            std::unordered_set<std::string> enabledPlugins;
+            if (const auto* pluginsTbl = merged["plugins"].as_table()) {
+              if (const auto* enabledArr = (*pluginsTbl)["enabled"].as_array()) {
+                for (const auto& node : *enabledArr) {
+                  if (const auto* strVal = node.as_string()) {
+                    enabledPlugins.insert(StringUtils::toLower(strVal->get()));
+                  }
+                }
+              }
+            }
+
             for (const auto& [key, node] : *providersTbl) {
               const auto* provTbl = node.as_table();
               if (provTbl == nullptr) {
@@ -614,6 +627,28 @@ namespace noctalia::config {
                     "custom settings are not allowed (Applications is always global)"
                 );
                 continue;
+              }
+              const auto isBuiltin = std::ranges::contains(launcher::kBuiltinProviders, providerName);
+              if (!isBuiltin) {
+                const std::size_t colon = providerName.find(':');
+                bool isPlugin = false;
+                std::string pluginIdStr;
+                if (colon != std::string::npos) {
+                  std::string_view pluginId = std::string_view(providerName).substr(0, colon);
+                  std::string_view entryName = std::string_view(providerName).substr(colon + 1);
+                  if (scripting::isValidPluginId(pluginId) && scripting::isValidPluginIdSegment(entryName)) {
+                    isPlugin = true;
+                    pluginIdStr = std::string(pluginId);
+                  }
+                }
+                if (!isPlugin) {
+                  diag.warn("shell.launcher.providers." + providerName, "provider is nonexistent");
+                  continue;
+                }
+                if (!enabledPlugins.contains(pluginIdStr)) {
+                  diag.warn("shell.launcher.providers." + providerName, "plugin '" + pluginIdStr + "' is not enabled");
+                  continue;
+                }
               }
               const auto* prefixVal = (*provTbl)["prefix"].as_string();
               if (prefixVal == nullptr || prefixVal->get().empty()) {
