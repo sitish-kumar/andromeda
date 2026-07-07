@@ -412,7 +412,15 @@ void Label::measure(Renderer& renderer) {
 LayoutSize Label::measureWithConstraints(Renderer& renderer, const LayoutConstraints& constraints, bool fromArrange) {
   const float configuredMaxWidth = m_userMaxWidth;
   float measureMaxWidth = configuredMaxWidth;
-  if (constraints.hasMaxWidth) {
+  if (fromArrange) {
+    // Measure with the wrap budget paint will use (the text node's budget from
+    // the measure pass), not the arrange width. The arrange width is our own
+    // measured width rounded, which can be a fraction of a pixel narrower than
+    // the text — feeding it to Pango as a wrap budget can split a single-line
+    // string into two lines, flipping the baseline mode and bouncing the
+    // rendered baseline by a pixel per string.
+    measureMaxWidth = m_textNode->maxWidth();
+  } else if (constraints.hasMaxWidth) {
     measureMaxWidth =
         configuredMaxWidth > 0.0f ? std::min(configuredMaxWidth, constraints.maxWidth) : constraints.maxWidth;
   }
