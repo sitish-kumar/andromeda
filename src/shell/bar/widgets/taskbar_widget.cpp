@@ -221,7 +221,10 @@ bool TaskbarWidget::taskInWorkspaceGroup(const TaskModel& task, const WorkspaceM
   if (task.workspaceKey == ws.key) {
     return true;
   }
-  return !ws.workspace.id.empty() && task.workspaceKey == ws.workspace.id;
+  if (!ws.workspace.id.empty() && task.workspaceKey == ws.workspace.id) {
+    return true;
+  }
+  return !ws.workspace.name.empty() && task.workspaceKey == ws.workspace.name;
 }
 
 void TaskbarWidget::activateTaskModel(const TaskModel& task) {
@@ -1820,10 +1823,16 @@ void TaskbarWidget::updateModels() {
 
   if (m_onlyActiveWorkspace && !nextWorkspaces.empty()) {
     std::unordered_set<std::string> activeKeys;
-    activeKeys.reserve(nextWorkspaces.size());
+    activeKeys.reserve(nextWorkspaces.size() * 3);
     for (const auto& wsm : nextWorkspaces) {
       if (wsm.workspace.active) {
         activeKeys.insert(wsm.key);
+        if (!wsm.workspace.id.empty()) {
+          activeKeys.insert(wsm.workspace.id);
+        }
+        if (!wsm.workspace.name.empty()) {
+          activeKeys.insert(wsm.workspace.name);
+        }
       }
     }
     if (!activeKeys.empty()) {
