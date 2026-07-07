@@ -69,20 +69,24 @@ app_grid      = false                   # show app icon grid view when results a
 sort_by_usage = true                    # sort apps by usage frequency
 provider_prefix = "/"                     # common prefix character for provider trigger words (e.g. "/" or ".")
 
+# For each provider: prefix = trigger word (empty falls back to its built-in default; triggers on
+# provider_prefix + trigger, e.g. "/emo"). global = true also surfaces it in unprefixed search.
 [shell.launcher.providers.calculator]
-prefix = ""                             # trigger word for calculator (empty for always global search)
+prefix = ""                             # calculator has no default trigger, so it stays in global search
+global = true                           # set false to only show calculator results behind a custom prefix
 
 [shell.launcher.providers.emoji]
-prefix = "emo"                          # trigger word for emoji (triggers on prefix + trigger, e.g. "/emo")
+prefix = "emo"
 
 [shell.launcher.providers.session]
-prefix = "session"                      # trigger word for session actions (triggers on prefix + trigger, e.g. "/session")
+prefix = "session"
+global = false                          # set true to include session actions in unprefixed search
 
 [shell.launcher.providers.wallpaper]
-prefix = "wall"                         # trigger word for wallpaper selector (triggers on prefix + trigger, e.g. "/wall")
+prefix = "wall"
 
 [shell.launcher.providers.windows]
-prefix = "win"                          # trigger word for windows (triggers on prefix + trigger, e.g. "/win")
+prefix = "win"
 
 [shell.mpris]
 blacklist = []                      # ignore MPRIS players by bus/identity/desktop entry token

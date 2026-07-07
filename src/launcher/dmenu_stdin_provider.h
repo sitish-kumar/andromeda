@@ -21,7 +21,6 @@ public:
   [[nodiscard]] std::string_view defaultPrefix() const override { return ""; }
   [[nodiscard]] std::string_view id() const override { return m_id; }
   [[nodiscard]] std::string_view defaultGlyphName() const override { return "terminal"; }
-  [[nodiscard]] bool includeInGlobalSearch() const override { return false; }
 
   [[nodiscard]] std::vector<LauncherResult> query(std::string_view text) const override;
 

@@ -845,6 +845,7 @@ struct DmenuEntryConfig {
 struct LauncherProviderConfig {
   std::string name;
   std::string prefix;
+  std::optional<bool> global;
 
   bool operator==(const LauncherProviderConfig&) const = default;
 };

@@ -1226,6 +1226,7 @@ namespace noctalia::config::schema {
     const Schema<LauncherProviderConfig>& launcherProviderSchema() {
       static const Schema<LauncherProviderConfig> s = {
           field(&LauncherProviderConfig::prefix, "prefix"),
+          optionalBoolField(&LauncherProviderConfig::global, "global"),
       };
       return s;
     }

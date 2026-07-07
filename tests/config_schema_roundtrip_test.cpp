@@ -407,7 +407,7 @@ location = "https://example.invalid/bad"
     c.shell.launcher.dmenu.entries = {notifyDmenu};
     c.shell.launcher.providerPrefix = ".";
     c.shell.launcher.providers = {
-        LauncherProviderConfig{"session", "s"},
+        LauncherProviderConfig{"session", "s", true},
         LauncherProviderConfig{"wallpaper", "w"}
     };
     c.shell.screenCorners.enabled = true;

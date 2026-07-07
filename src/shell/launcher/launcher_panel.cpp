@@ -684,27 +684,31 @@ PanelPlacement LauncherPanel::panelPlacement() const noexcept {
   return m_config != nullptr ? m_config->config().shell.panel.launcherPlacement : PanelPlacement::Floating;
 }
 
-void LauncherPanel::addProvider(std::unique_ptr<LauncherProvider> provider) {
-  std::string triggerWord = std::string(provider->defaultPrefix());
+void LauncherPanel::applyProviderConfig(LauncherProvider& provider) const {
+  std::string triggerWord = std::string(provider.defaultPrefix());
   std::string prefix = "/";
+  std::optional<bool> global;
   if (m_config != nullptr) {
-    prefix = m_config->config().shell.launcher.providerPrefix;
-    if (provider->allowCustomPrefix()) {
-      const auto& providerConfigs = m_config->config().shell.launcher.providers;
-      std::string key = StringUtils::toLower(std::string(provider->id()));
-      auto it = std::ranges::find(providerConfigs, key, &LauncherProviderConfig::name);
-      if (it != providerConfigs.end()) {
-        triggerWord = it->prefix;
+    const auto& launcherCfg = m_config->config().shell.launcher;
+    prefix = launcherCfg.providerPrefix;
+    if (provider.allowCustomPrefix()) {
+      std::string key = StringUtils::toLower(std::string(provider.id()));
+      auto it = std::ranges::find(launcherCfg.providers, key, &LauncherProviderConfig::name);
+      if (it != launcherCfg.providers.end()) {
+        if (!it->prefix.empty()) {
+          triggerWord = it->prefix;
+        }
+        global = it->global;
       }
     }
   }
 
-  if (triggerWord.empty()) {
-    provider->setCustomPrefix("");
-  } else {
-    provider->setCustomPrefix(prefix + triggerWord);
-  }
+  provider.setCustomPrefix(triggerWord.empty() ? std::string() : prefix + triggerWord);
+  provider.setCustomIncludeInGlobalSearch(global);
+}
 
+void LauncherPanel::addProvider(std::unique_ptr<LauncherProvider> provider) {
+  applyProviderConfig(*provider);
   provider->initialize();
   provider->setResultsChangedCallback([this]() { onProviderResultsChanged(); });
   provider->setQueryRequestedCallback([this](std::string query) { setQuery(std::move(query)); });
@@ -1033,25 +1037,8 @@ void LauncherPanel::doLayout(Renderer& renderer, float width, float height) {
 }
 
 void LauncherPanel::onOpen(std::string_view context) {
-  if (m_config != nullptr) {
-    const auto& launcherCfg = m_config->config().shell.launcher;
-    const auto& providerConfigs = launcherCfg.providers;
-    for (auto& provider : m_providers) {
-      std::string triggerWord = std::string(provider->defaultPrefix());
-      if (provider->allowCustomPrefix()) {
-        std::string key = StringUtils::toLower(std::string(provider->id()));
-        auto it = std::ranges::find(providerConfigs, key, &LauncherProviderConfig::name);
-        if (it != providerConfigs.end()) {
-          triggerWord = it->prefix;
-        }
-      }
-
-      if (triggerWord.empty()) {
-        provider->setCustomPrefix("");
-      } else {
-        provider->setCustomPrefix(launcherCfg.providerPrefix + triggerWord);
-      }
-    }
+  for (auto& provider : m_providers) {
+    applyProviderConfig(*provider);
   }
 
   // Pick up apps installed since the last scan (notably Nix profile swaps that

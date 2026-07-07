@@ -47,7 +47,7 @@ public:
   [[nodiscard]] std::string_view defaultGlyphName() const override {
     return m_glyph.empty() ? std::string_view("search") : std::string_view(m_glyph);
   }
-  [[nodiscard]] bool includeInGlobalSearch() const override { return m_globalSearch; }
+  [[nodiscard]] bool defaultIncludeInGlobalSearch() const override { return m_globalSearch; }
   [[nodiscard]] std::vector<LauncherCategory> categories() const override { return m_categories; }
   [[nodiscard]] bool isDynamic() const override { return true; }
   void setResultsChangedCallback(std::function<void()> callback) override { m_onResultsChanged = std::move(callback); }
