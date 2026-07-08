@@ -93,8 +93,8 @@ void TrayDrawerPanel::create() {
     PanelManager::instance().togglePanel(
         std::string(id),
         PanelOpenRequest{
-            .anchorX = ax.has_value() ? static_cast<float>(std::round(*ax)) : 0.0f,
-            .anchorY = ay.has_value() ? static_cast<float>(std::round(*ay)) : 0.0f,
+            .anchorX = ax.has_value() ? std::round(*ax) : 0.0f,
+            .anchorY = ay.has_value() ? std::round(*ay) : 0.0f,
             .hasAnchorPosition = ax.has_value() && ay.has_value(),
             .context = std::string(context),
         }
