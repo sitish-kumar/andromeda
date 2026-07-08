@@ -429,7 +429,32 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
   }
 
   if (request.output == nullptr && m_platform != nullptr) {
-    request.output = m_platform->preferredInteractiveOutput(std::chrono::milliseconds(1200));
+    request.output = m_platform->focusedInteractiveOutput(std::chrono::milliseconds(1200));
+    if (request.output == nullptr) {
+      // No focus source resolved an output (e.g. a compositor with no focus
+      // IPC/backend). Ask the compositor which output an unpinned surface lands
+      // on — the focused one — then reopen with that concrete output so all the
+      // normal placement (attached, bar-relative, per-output config) applies.
+      // Falls back to the arbitrary first output if the probe times out.
+      //
+      // The open is deferred past this call, so the request's string_view fields
+      // are copied into owned storage the continuation keeps alive.
+      m_platform->probeFocusedOutput(
+          [this, panelId, request, context = std::string(request.context),
+           sourceBarName = std::string(request.sourceBarName)](wl_output* probed) mutable {
+            request.output =
+                probed != nullptr ? probed : m_platform->preferredInteractiveOutput(std::chrono::milliseconds(1200));
+            if (request.output == nullptr) {
+              return; // no usable output at all — nothing to open on.
+            }
+            request.context = context;
+            request.sourceBarName = sourceBarName;
+            openPanel(panelId, request);
+          },
+          std::chrono::milliseconds(250)
+      );
+      return;
+    }
   }
 
   if (m_closeDesktopWidgetsEditor) {
@@ -1294,9 +1319,8 @@ void PanelManager::togglePanel(const std::string& panelId) {
     closePanel();
     return;
   }
-  wl_output* output =
-      m_platform != nullptr ? m_platform->preferredInteractiveOutput(std::chrono::milliseconds(1200)) : nullptr;
-  openPanel(panelId, PanelOpenRequest{.output = output});
+  // Output left unset: openPanel resolves it (focus source, else compositor probe).
+  openPanel(panelId, PanelOpenRequest{});
 }
 
 void PanelManager::clearClipboardHistory() {
@@ -2387,13 +2411,9 @@ void PanelManager::registerIpc(IpcService& ipc) {
     return error;
   };
 
-  auto preferredOutput = [this]() -> wl_output* {
-    return m_platform != nullptr ? m_platform->preferredInteractiveOutput(std::chrono::milliseconds(1200)) : nullptr;
-  };
-
   ipc.registerHandler(
       "panel-toggle",
-      [this, parseOpenArgs, unknownPanelError, preferredOutput](const std::string& args) -> std::string {
+      [this, parseOpenArgs, unknownPanelError](const std::string& args) -> std::string {
         std::string panelId;
         std::string context;
         if (auto error = parseOpenArgs(args, "panel-toggle", panelId, context)) {
@@ -2402,10 +2422,11 @@ void PanelManager::registerIpc(IpcService& ipc) {
         if (!m_panels.contains(panelId)) {
           return unknownPanelError(panelId);
         }
+        // Output left unset: openPanel resolves it (focus source, else compositor probe).
         if (context.empty()) {
           togglePanel(panelId);
         } else {
-          togglePanel(panelId, PanelOpenRequest{.output = preferredOutput(), .context = context});
+          togglePanel(panelId, PanelOpenRequest{.context = context});
         }
         return "ok\n";
       },
@@ -2415,7 +2436,7 @@ void PanelManager::registerIpc(IpcService& ipc) {
 
   ipc.registerHandler(
       "panel-open",
-      [this, parseOpenArgs, unknownPanelError, preferredOutput](const std::string& args) -> std::string {
+      [this, parseOpenArgs, unknownPanelError](const std::string& args) -> std::string {
         std::string panelId;
         std::string context;
         if (auto error = parseOpenArgs(args, "panel-open", panelId, context)) {
@@ -2433,7 +2454,8 @@ void PanelManager::registerIpc(IpcService& ipc) {
           return "ok\n";
         }
 
-        openPanel(panelId, PanelOpenRequest{.output = preferredOutput(), .context = context});
+        // Output left unset: openPanel resolves it (focus source, else compositor probe).
+        openPanel(panelId, PanelOpenRequest{.context = context});
         return "ok\n";
       },
       "panel-open <id> [context]",
