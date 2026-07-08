@@ -16,6 +16,7 @@ pkgs.mkShell {
     gnugrep
     gnused
     findutils
+    python3
 
     # Debugging
     gdb

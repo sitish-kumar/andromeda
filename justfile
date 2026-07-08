@@ -90,10 +90,10 @@ _clang_tidy m=mode *args:
     # ../src/ also excludes vendored third_party/*/src/* headers.
     run-clang-tidy -quiet -use-color -p "$cdb_dir" -j "$(nproc)" -header-filter='\.\./src/.*' {{args}} "^${src_root}/.*"
 
-lint m=mode: (configure m)
+lint m=mode: (_ensure-configured m)
     just _clang_tidy {{m}} '-warnings-as-errors=*'
 
-fix m=mode: (configure m)
+fix m=mode: (_ensure-configured m)
     just _clang_tidy {{m}} -fix
     just format
 
