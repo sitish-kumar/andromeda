@@ -73,6 +73,12 @@ private:
     Next,
   };
 
+  enum class SwitchOutcome {
+    Changed,     // at least one output was switched to a new wallpaper
+    NoChange,    // wallpapers were found but there was nothing new to switch to
+    Unavailable, // wallpaper disabled, target unknown, or no candidate images
+  };
+
   [[nodiscard]] bool isConnectorKnown(std::string_view connector) const;
   // Persist a resolved image path to a single connector, or to every connected
   // output plus the default when no connector is given.
@@ -83,7 +89,8 @@ private:
   void resetAutomationState();
   void runAutomation(std::int64_t secondStamp);
   [[nodiscard]] bool automationAllowed() const noexcept;
-  [[nodiscard]] bool switchWallpaperTo(PickWallpaper action, std::optional<std::string_view> connector = std::nullopt);
+  [[nodiscard]] SwitchOutcome
+  switchWallpaperTo(PickWallpaper action, std::optional<std::string_view> connector = std::nullopt);
   void createInstance(const WaylandOutput& output);
   [[nodiscard]] TextureHandle acquireTexture(const std::string& path);
   void releaseTexture(TextureHandle& handle, const std::string& path);

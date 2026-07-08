@@ -744,50 +744,53 @@ void Wallpaper::registerIpc(IpcService& ipc) {
     return "error: unknown output \"" + std::string(outputConnector) + "\"" + suffix + "\n";
   };
 
+  // Map a switch outcome to an IPC response. NoChange (e.g. a single wallpaper in
+  // the directory) is not an error, so it does not use the "error:" prefix.
+  const auto switchResponse = [](SwitchOutcome outcome) -> std::string {
+    switch (outcome) {
+    case SwitchOutcome::Changed:
+      return "ok\n";
+    case SwitchOutcome::NoChange:
+      return "no other wallpaper available to switch to\n";
+    case SwitchOutcome::Unavailable:
+      return "error: no wallpapers available or wallpaper disabled\n";
+    }
+    return "error: failed to switch wallpaper\n";
+  };
+
+  const auto switchWallpaperHandler = [this, validateOutputConnector,
+                                       switchResponse](PickWallpaper action, const std::string& args) -> std::string {
+    const auto trimmed = StringUtils::trim(args);
+    std::optional<std::string_view> connector;
+    if (!trimmed.empty()) {
+      if (const std::string err = validateOutputConnector(trimmed); !err.empty()) {
+        return err;
+      }
+      connector = trimmed;
+    }
+    return switchResponse(switchWallpaperTo(action, connector));
+  };
+
   ipc.registerHandler(
       "wallpaper-random",
-      [this](const std::string& args) -> std::string {
-        const auto trimmed = StringUtils::trim(args);
-        std::optional<std::string_view> connector;
-        if (!trimmed.empty()) {
-          connector = trimmed;
-        }
-        if (!switchWallpaperTo(PickWallpaper::Random, connector)) {
-          return "error: failed to pick a random wallpaper\n";
-        }
-        return "ok\n";
+      [switchWallpaperHandler](const std::string& args) -> std::string {
+        return switchWallpaperHandler(PickWallpaper::Random, args);
       },
       "wallpaper-random [<connector>]", "Switch to a random wallpaper immediately"
   );
 
   ipc.registerHandler(
       "wallpaper-next",
-      [this](const std::string& args) -> std::string {
-        const auto trimmed = StringUtils::trim(args);
-        std::optional<std::string_view> connector;
-        if (!trimmed.empty()) {
-          connector = trimmed;
-        }
-        if (!switchWallpaperTo(PickWallpaper::Next, connector)) {
-          return "error: failed to pick next wallpaper\n";
-        }
-        return "ok\n";
+      [switchWallpaperHandler](const std::string& args) -> std::string {
+        return switchWallpaperHandler(PickWallpaper::Next, args);
       },
       "wallpaper-next [<connector>]", "Switch to the next wallpaper immediately"
   );
 
   ipc.registerHandler(
       "wallpaper-previous",
-      [this](const std::string& args) -> std::string {
-        const auto trimmed = StringUtils::trim(args);
-        std::optional<std::string_view> connector;
-        if (!trimmed.empty()) {
-          connector = trimmed;
-        }
-        if (!switchWallpaperTo(PickWallpaper::Previous, connector)) {
-          return "error: failed to pick previous wallpaper\n";
-        }
-        return "ok\n";
+      [switchWallpaperHandler](const std::string& args) -> std::string {
+        return switchWallpaperHandler(PickWallpaper::Previous, args);
       },
       "wallpaper-previous [<connector>]", "Switch to the previous wallpaper immediately"
   );
@@ -1097,9 +1100,9 @@ void Wallpaper::runAutomation(std::int64_t secondStamp) {
   m_lastAutomationSwitchSecond = secondStamp;
 }
 
-bool Wallpaper::switchWallpaperTo(PickWallpaper action, std::optional<std::string_view> connector) {
+Wallpaper::SwitchOutcome Wallpaper::switchWallpaperTo(PickWallpaper action, std::optional<std::string_view> connector) {
   if (m_config == nullptr || !m_config->config().wallpaper.enabled || m_instances.empty()) {
-    return false;
+    return SwitchOutcome::Unavailable;
   }
 
   const auto& wallpaper = m_config->config().wallpaper;
@@ -1126,7 +1129,7 @@ bool Wallpaper::switchWallpaperTo(PickWallpaper action, std::optional<std::strin
         return !out.connectorName.empty() && out.connectorName == *connector;
       });
       if (!found) {
-        return false;
+        return SwitchOutcome::Unavailable;
       }
     }
 
@@ -1138,7 +1141,7 @@ bool Wallpaper::switchWallpaperTo(PickWallpaper action, std::optional<std::strin
       }
     }
     if (targetInst == nullptr) {
-      return false;
+      return SwitchOutcome::Unavailable;
     }
 
     const WaylandOutput* output = nullptr;
@@ -1155,20 +1158,21 @@ bool Wallpaper::switchWallpaperTo(PickWallpaper action, std::optional<std::strin
                                               : wallpaper::resolveGlobalWallpaperDirectory(wallpaper, mode);
     collectWallpaperCandidates(dir, wallpaper.automation.recursive, candidates);
     if (candidates.empty()) {
-      return false;
+      return SwitchOutcome::Unavailable;
     }
     const std::string currentPath = m_config->getWallpaperPath(std::string(*connector));
     const std::string picked = pick(std::move(candidates), currentPath);
     if (picked.empty() || picked == currentPath) {
-      return false;
+      return SwitchOutcome::NoChange;
     }
     m_config->setWallpaperPath(std::string(*connector), picked);
     kLog.info("ipc set {} → {}", *connector, picked);
-    return true;
+    return SwitchOutcome::Changed;
   }
 
   ConfigService::WallpaperBatch batch(*m_config);
   bool anyChanged = false;
+  bool sawCandidates = false;
 
   if (wallpaper.perMonitorDirectories) {
     for (const auto& inst : m_instances) {
@@ -1191,6 +1195,7 @@ bool Wallpaper::switchWallpaperTo(PickWallpaper action, std::optional<std::strin
       if (candidates.empty()) {
         continue;
       }
+      sawCandidates = true;
       const std::string currentPath = m_config->getWallpaperPath(inst->connectorName);
       const std::string picked = pick(std::move(candidates), currentPath);
       if (picked.empty() || picked == currentPath) {
@@ -1205,9 +1210,10 @@ bool Wallpaper::switchWallpaperTo(PickWallpaper action, std::optional<std::strin
     const std::string dir = wallpaper::resolveGlobalWallpaperDirectory(wallpaper, mode);
     collectWallpaperCandidates(dir, wallpaper.automation.recursive, candidates);
     if (!candidates.empty()) {
+      sawCandidates = true;
       const std::string currentDefault = m_config->getDefaultWallpaperPath();
       const std::string picked = pick(std::move(candidates), currentDefault);
-      if (!picked.empty()) {
+      if (!picked.empty() && picked != currentDefault) {
         for (const auto& inst : m_instances) {
           if (!inst->connectorName.empty()) {
             m_config->setWallpaperPath(inst->connectorName, picked);
@@ -1220,7 +1226,10 @@ bool Wallpaper::switchWallpaperTo(PickWallpaper action, std::optional<std::strin
     }
   }
 
-  return anyChanged;
+  if (anyChanged) {
+    return SwitchOutcome::Changed;
+  }
+  return sawCandidates ? SwitchOutcome::NoChange : SwitchOutcome::Unavailable;
 }
 
 void Wallpaper::createInstance(const WaylandOutput& output) {
