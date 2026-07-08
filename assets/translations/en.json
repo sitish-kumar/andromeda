@@ -3012,6 +3012,10 @@
           "description": "Hide the album artwork",
           "label": "Hide Album Art"
         },
+        "hide-artist": {
+          "description": "Hide the artist name and only show the track title",
+          "label": "Hide Artist"
+        },
         "hide-empty-workspaces": {
           "description": "When grouping by workspace, omit capsules that have no running windows in the taskbar list.",
           "label": "Hide Empty Workspaces"
