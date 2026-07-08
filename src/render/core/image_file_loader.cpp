@@ -499,8 +499,8 @@ loadImageFile(const std::string& path, int targetSize, bool centerSquareCrop) {
   }
 
   std::error_code ec;
-  if(!std::filesystem::is_regular_file(path, ec)) {
-     return std::unexpected("path is not a regular file");
+  if (!std::filesystem::is_regular_file(path, ec)) {
+    return std::unexpected("path is not a regular file");
   }
 
   auto fileData = FileUtils::readBinaryFile(path);
