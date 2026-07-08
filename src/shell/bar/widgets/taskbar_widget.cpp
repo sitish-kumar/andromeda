@@ -414,6 +414,59 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     activateAdjacentWorkspace(delta > 0.0f ? 1 : -1);
     return true;
   };
+
+  auto attachHover = [this](InputArea& area, float width, float height) {
+    auto hoverBox = ui::box({
+        .radius = resolvedBarCapsuleRadius(width, height),
+        .width = width,
+        .height = height,
+        .configure = [](Box& box) { box.setZIndex(-1); },
+    });
+    hoverBox->setHitTestVisible(false);
+    hoverBox->setVisible(false);
+    auto* hoverBoxPtr = static_cast<Box*>(area.addChild(std::move(hoverBox)));
+
+    auto progress = std::make_shared<float>(0.0f);
+    area.setOnEnter([this, hoverBoxPtr, progress](const InputArea::PointerData&) {
+      if (m_animations == nullptr)
+        return;
+      m_animations->cancelForOwner(hoverBoxPtr);
+      const ColorSpec fill = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface));
+      m_animations->animate(
+          *progress, 1.0f, Style::animFast, Easing::EaseOutCubic,
+          [this, hoverBoxPtr, fill, progress](float p) {
+            *progress = p;
+            hoverBoxPtr->setVisible(p > 0.001f);
+            ColorSpec c = fill;
+            c.alpha = 0.1f * p;
+            hoverBoxPtr->setFill(c);
+            requestRedraw();
+          },
+          {}, hoverBoxPtr
+      );
+      requestFrameTick();
+    });
+    area.setOnLeave([this, hoverBoxPtr, progress]() {
+      if (m_animations == nullptr)
+        return;
+      m_animations->cancelForOwner(hoverBoxPtr);
+      const ColorSpec fill = widgetForegroundOr(colorSpecFromRole(ColorRole::OnSurface));
+      m_animations->animate(
+          *progress, 0.0f, Style::animFast, Easing::EaseOutCubic,
+          [this, hoverBoxPtr, fill, progress](float p) {
+            *progress = p;
+            hoverBoxPtr->setVisible(p > 0.001f);
+            ColorSpec c = fill;
+            c.alpha = 0.1f * p;
+            hoverBoxPtr->setFill(c);
+            requestRedraw();
+          },
+          {}, hoverBoxPtr
+      );
+      requestFrameTick();
+    });
+  };
+
   auto createTaskTile = [&](const TaskModel& task, std::vector<TaskModel> cycleCandidates = {},
                             std::string cycleKey = {}, std::size_t badgeCount = 1) {
     auto area = std::make_unique<InputArea>();
@@ -580,6 +633,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
     if (!task.title.empty()) {
       area->setTooltip(task.title);
     }
+    attachHover(*area, tileWidthWithTitle, tileSize);
     return area;
   };
 
@@ -657,6 +711,7 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
           std::round((disc.width - badgeText->width()) * 0.5f), std::round((disc.height - badgeText->height()) * 0.5f)
       );
       badgePtr->addChild(std::move(badgeText));
+      attachHover(*area, tileSize, tileSize);
       return area;
     };
 
@@ -705,6 +760,8 @@ void TaskbarWidget::buildTaskButtons(Renderer& renderer) {
       badgePtr->addChild(std::move(badgeText));
       if (emptyWorkspace) {
         badgeHit->setHitTestVisible(false);
+      } else {
+        attachHover(*badgeHit, disc.width, disc.height);
       }
       badgeParent->addChild(std::move(badgeHit));
     };
