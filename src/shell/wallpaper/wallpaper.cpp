@@ -112,7 +112,7 @@ namespace {
     }
     const std::filesystem::path resolved = FileUtils::resolvePath(path, callerCwd);
     std::error_code ec;
-    if (std::filesystem::exists(resolved, ec)) {
+    if (std::filesystem::is_regular_file(resolved, ec)) {
       return resolved.string();
     }
     return std::nullopt;
@@ -806,7 +806,7 @@ void Wallpaper::registerIpc(IpcService& ipc) {
         if (const auto path = resolveWallpaperPath(parsed.path, callerCwd); path.has_value()) {
           resolved = *path;
         } else {
-          return "error: path does not exist\n";
+          return "error: path does not exist or is not a regular file\n";
         }
 
         if (outputConnector.has_value()) {
