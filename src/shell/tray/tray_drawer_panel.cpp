@@ -84,6 +84,22 @@ void TrayDrawerPanel::create() {
       }
   );
   m_drawerWidget->setContentScale(contentScale());
+  m_drawerWidget->setAnimationManager(m_animations);
+  m_drawerWidget->setUpdateCallback([]() { PanelManager::instance().requestUpdateOnly(); });
+  m_drawerWidget->setRedrawCallback([]() { PanelManager::instance().requestRedraw(); });
+  m_drawerWidget->setFrameTickRequestCallback([]() { PanelManager::instance().requestFrameTick(); });
+  m_drawerWidget->setPanelToggleCallback([](std::string_view id, std::string_view context, std::optional<float> ax,
+                                            std::optional<float> ay) {
+    PanelManager::instance().togglePanel(
+        std::string(id),
+        PanelOpenRequest{
+            .anchorX = ax.has_value() ? static_cast<float>(std::round(*ax)) : 0.0f,
+            .anchorY = ay.has_value() ? static_cast<float>(std::round(*ay)) : 0.0f,
+            .hasAnchorPosition = ax.has_value() && ay.has_value(),
+            .context = std::string(context),
+        }
+    );
+  });
   m_drawerWidget->create();
   setRoot(m_drawerWidget->releaseRoot());
 }
@@ -91,6 +107,13 @@ void TrayDrawerPanel::create() {
 void TrayDrawerPanel::onClose() {
   m_drawerWidget.reset();
   clearReleasedRoot();
+}
+
+void TrayDrawerPanel::setAnimationManager(AnimationManager* mgr) noexcept {
+  Panel::setAnimationManager(mgr);
+  if (m_drawerWidget != nullptr) {
+    m_drawerWidget->setAnimationManager(mgr);
+  }
 }
 
 void TrayDrawerPanel::doLayout(Renderer& renderer, float width, float height) {
