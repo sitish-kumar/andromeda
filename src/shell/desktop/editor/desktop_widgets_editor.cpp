@@ -201,10 +201,10 @@ namespace {
       if (!output.done || output.output == nullptr || !output.hasUsableGeometry()) {
         continue;
       }
-      const double left = static_cast<double>(output.logicalX);
-      const double top = static_cast<double>(output.logicalY);
-      const double right = left + static_cast<double>(output.effectiveLogicalWidth());
-      const double bottom = top + static_cast<double>(output.effectiveLogicalHeight());
+      const auto left = static_cast<double>(output.logicalX);
+      const auto top = static_cast<double>(output.logicalY);
+      const auto right = left + static_cast<double>(output.effectiveLogicalWidth());
+      const auto bottom = top + static_cast<double>(output.effectiveLogicalHeight());
       if (globalX >= left && globalX < right && globalY >= top && globalY < bottom) {
         return &output;
       }
