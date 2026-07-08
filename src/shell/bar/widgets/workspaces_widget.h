@@ -68,6 +68,7 @@ private:
   void recalculateItemMetrics(Renderer& renderer, std::size_t index);
   void updateAllItemMetrics(Renderer& renderer);
   void ensureItemLabel(Renderer& renderer, std::size_t index);
+  void updateHoverOverlay();
 
   struct Item {
     InputArea* area = nullptr;
@@ -113,6 +114,9 @@ private:
 
   float m_gap = 0.0f;
   float m_indicatorHeight = 0.0f;
+  Box* m_hoverOverlay = nullptr;
+  float m_hoverProgress = 0.0f;
+  std::size_t m_hoveredIndex = SIZE_MAX;
   bool m_isVertical = false;
 
   AnimationManager::Id m_animId = 0;
