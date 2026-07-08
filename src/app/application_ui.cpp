@@ -322,6 +322,7 @@ void Application::initLockScreenAndSession() {
       [this]() {
         m_lockscreenWidgetsController.onLockStateChanged();
         m_hookManager.fire(HookKind::SessionUnlocked);
+        requestAllSurfacesRedraw();
         if (m_logindService != nullptr) {
           m_logindService->syncSessionUnlocked();
         }
