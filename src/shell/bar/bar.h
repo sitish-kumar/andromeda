@@ -102,6 +102,8 @@ public:
   void beginAttachedPopup(wl_surface* surface);
   void endAttachedPopup(wl_surface* surface);
 
+  [[nodiscard]] WidgetFactory* widgetFactory() const noexcept { return m_widgetFactory.get(); }
+
   void registerIpc(IpcService& ipc);
 
 private:

@@ -504,6 +504,11 @@ namespace {
                 row.insert_or_assign("radius", static_cast<double>(*item.radius));
               }
               row.insert_or_assign("opacity", static_cast<double>(item.opacity));
+              row.insert_or_assign("drawer_enabled", item.drawerEnabled);
+              row.insert_or_assign("drawer_detached", item.drawerDetached);
+              row.insert_or_assign("drawer_glyph_closed", item.drawerGlyphClosed);
+              row.insert_or_assign("drawer_glyph_opened", item.drawerGlyphOpened);
+              row.insert_or_assign("drawer_columns", static_cast<std::int64_t>(item.drawerColumns));
               array.push_back(std::move(row));
             }
             table.insert_or_assign(key, std::move(array));

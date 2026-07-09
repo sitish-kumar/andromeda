@@ -33,6 +33,11 @@ struct BarCapsuleGroupStyle {
   float padding = Style::barCapsulePadding;
   std::optional<float> radius;
   float opacity = 1.0f;
+  bool drawerEnabled = false;
+  bool drawerDetached = false;
+  std::string drawerGlyphClosed = "chevron-down";
+  std::string drawerGlyphOpened = "chevron-up";
+  std::int32_t drawerColumns = 3;
 
   bool operator==(const BarCapsuleGroupStyle&) const = default;
 };

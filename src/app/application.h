@@ -183,6 +183,7 @@ private:
   void reloadDmenuProviders();
   // (Re)register plugin-backed panels from the enabled plugin set.
   void reloadPluginPanels();
+  void reloadGroupDrawerPanels();
   // Pull every git source flagged auto_update. Run once at startup and on a 6h
   // repeating timer so long-lived sessions pick up new plugin versions.
   void runPluginAutoUpdate();
@@ -292,6 +293,7 @@ private:
   // Ids of plugin-backed panels currently registered with m_panelManager, so a
   // reload can retire the previous set before registering the new one.
   std::vector<std::string> m_pluginPanelIds;
+  std::vector<std::string> m_groupDrawerPanelIds;
   WindowSwitcher m_windowSwitcher;
   OverviewLauncherCapture m_overviewLauncherCapture;
   NotificationToast m_notificationToast;

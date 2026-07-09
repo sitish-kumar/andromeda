@@ -1927,6 +1927,11 @@ namespace noctalia::config::schema {
           field(&BarCapsuleGroupStyle::padding, "padding", kBarCapsulePaddingRange),
           optionalFloatField(&BarCapsuleGroupStyle::radius, "radius", kBarCapsuleRadiusRangeF),
           field(&BarCapsuleGroupStyle::opacity, "opacity", kBarOpacityRange),
+          field(&BarCapsuleGroupStyle::drawerEnabled, "drawer_enabled"),
+          field(&BarCapsuleGroupStyle::drawerDetached, "drawer_detached"),
+          field(&BarCapsuleGroupStyle::drawerGlyphClosed, "drawer_glyph_closed"),
+          field(&BarCapsuleGroupStyle::drawerGlyphOpened, "drawer_glyph_opened"),
+          field(&BarCapsuleGroupStyle::drawerColumns, "drawer_columns", Range<std::int64_t>{1, 5}),
       };
       return s;
     }

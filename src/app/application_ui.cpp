@@ -66,6 +66,8 @@
 #include "shell/control_center/control_center_panel.h"
 #include "shell/greeter/greeter_appearance_sync.h"
 #include "shell/launcher/launcher_panel.h"
+#include "shell/panel/group_drawer_panel.h"
+#include "shell/panel/panel_manager.h"
 #include "shell/panel/plugin_panel.h"
 #include "shell/polkit/polkit_panel.h"
 #include "shell/session/session_ipc.h"
@@ -779,6 +781,7 @@ void Application::initBarDockAndLayout() {
       .screenshots = &m_screenshotService,
       .scriptApi = &m_scriptApi,
   });
+  reloadGroupDrawerPanels();
   m_idleInhibitor.setAnchorSurfacesProvider([this]() { return m_bar.caffeineAnchorSurfaces(); });
   m_bar.setOpenWidgetSettingsCallback([this](std::string barName, std::string widgetName) {
     if (m_panelManager.isOpen()) {
@@ -813,6 +816,7 @@ void Application::initBarDockAndLayout() {
   // When config reloads, refresh any open panel: bar-driven attached decoration restyle and
   // shell-driven compositor blur.
   m_configService.addReloadCallback([this]() { m_panelManager.onConfigReloaded(); });
+  m_configService.addReloadCallback([this]() { reloadGroupDrawerPanels(); });
   m_configService.addReloadCallback([this]() {
     if (m_configService.lastChange().shell) {
       reloadDmenuProviders();
@@ -999,4 +1003,23 @@ void Application::initWidgetControllersAndCallbacks() {
   // never occluded by shell chrome on their shared layer.
   m_screenCorners.initialize(m_wayland, &m_configService, &m_renderContext);
   m_hotCorners.initialize(m_wayland, &m_configService, &m_renderContext);
+}
+
+void Application::reloadGroupDrawerPanels() {
+  for (const auto& id : m_groupDrawerPanelIds) {
+    m_panelManager.unregisterPanel(id);
+  }
+  m_groupDrawerPanelIds.clear();
+
+  for (const auto& bar : m_configService.config().bars) {
+    for (const auto& group : bar.widgetCapsuleGroups) {
+      if (group.drawerEnabled) {
+        const std::string panelId = "group-drawer:" + group.id;
+        m_panelManager.registerPanel(
+            panelId, std::make_unique<GroupDrawerPanel>(&m_configService, m_bar.widgetFactory(), group.id)
+        );
+        m_groupDrawerPanelIds.push_back(panelId);
+      }
+    }
+  }
 }

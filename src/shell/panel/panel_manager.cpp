@@ -250,7 +250,7 @@ namespace {
   }
 
   [[nodiscard]] bool openNearClickEnabledForPanel(const ConfigService* configService, std::string_view panelId) {
-    if (panelId == "tray-drawer") {
+    if (panelId == "tray-drawer" || panelId.starts_with("group-drawer:")) {
       return true;
     }
     if (configService == nullptr) {

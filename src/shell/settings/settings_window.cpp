@@ -72,6 +72,26 @@ namespace {
     return {"bar", barName, std::string(lane)};
   }
 
+  std::vector<std::string>
+  barCapsuleGroupLanePath(const Config& cfg, const std::string& barName, std::string_view groupToken) {
+    std::string_view lane = "center";
+    for (const auto& bar : cfg.bars) {
+      if (bar.name != barName) {
+        continue;
+      }
+      const auto inLane = [&](const std::vector<std::string>& widgets) {
+        return std::ranges::contains(widgets, groupToken);
+      };
+      if (inLane(bar.startWidgets)) {
+        lane = "start";
+      } else if (inLane(bar.endWidgets)) {
+        lane = "end";
+      }
+      break;
+    }
+    return {"bar", barName, std::string(lane)};
+  }
+
   void focusExistingSettingsWindow(WaylandConnection& wayland, wl_surface* surface) {
     static constexpr std::string_view kSettingsAppId = "dev.noctalia.Noctalia";
     wayland.activateSurface(surface);
@@ -645,9 +665,14 @@ void SettingsWindow::maybeOpenPendingWidgetInspector() {
   m_pendingEditorSheetNoGrab = true;
   // The inspector takes a per-lane path {"bar", name, <lane>} (same shape the lane-card gear passes);
   // resolve which lane this widget lives in so it isn't a 2-element path that mislocates the bar name.
-  openWidgetInspectorEditor(
-      barWidgetLanePath(m_config->config(), m_selectedBarName, widgetName), std::move(widgetName)
-  );
+  const Config& cfg = m_config->config();
+  if (isCapsuleGroupToken(widgetName)) {
+    openCapsuleGroupEditor(
+        barCapsuleGroupLanePath(cfg, m_selectedBarName, widgetName), capsuleGroupTokenId(widgetName)
+    );
+    return;
+  }
+  openWidgetInspectorEditor(barWidgetLanePath(cfg, m_selectedBarName, widgetName), std::move(widgetName));
 }
 
 void SettingsWindow::requestSceneRebuild() {
