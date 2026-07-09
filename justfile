@@ -31,7 +31,7 @@ _ensure-configured m=mode:
         just configure {{m}}
         exit 0
     fi
-    current_cpp_std="$(meson configure "build-{{m}}" | awk '$1 == "cpp_std" { print $2; exit }')"
+    current_cpp_std="$(meson configure "build-{{m}}" | awk '$1 == "cpp_std" { print $2; found=1 } END { if (!found) exit 1 }')"
     if [[ "$current_cpp_std" != "{{cpp-std}}" ]]; then
         meson configure "build-{{m}}" -Dcpp_std={{cpp-std}}
     fi

@@ -27,6 +27,11 @@
   librsvg,
   libqalculate,
   libxml2,
+  md4c,
+  stb,
+  fetchFromGitHub,
+  nlohmann_json,
+  tomlplusplus,
   wireplumber,
   jemalloc,
   autoAddDriverRunpath,
@@ -35,6 +40,15 @@
 let
   inherit (builtins) head match readFile;
   version = head (match ".*version: '([^']+)'.*" (readFile ../meson.build));
+  stbHeaders = stb.overrideAttrs (_: {
+    version = "unstable-2026-07-09";
+    src = fetchFromGitHub {
+      owner = "nothings";
+      repo = "stb";
+      rev = "31c1ad37456438565541f4919958214b6e762fb4";
+      hash = "sha256-m2yNUlA37hDkKQVrQ+R8nufHfW/cXLnMo+n1X1Cyun0=";
+    };
+  });
 in
 stdenv.mkDerivation {
   pname = "noctalia";
@@ -79,6 +93,10 @@ stdenv.mkDerivation {
     librsvg
     libqalculate
     libxml2
+    md4c
+    stbHeaders
+    nlohmann_json
+    tomlplusplus
   ];
 
   mesonBuildType = "release";
