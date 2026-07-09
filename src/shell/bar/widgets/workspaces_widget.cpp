@@ -84,6 +84,7 @@ void WorkspacesWidget::create() {
     // as moving to the next workspace and negative as previous.
     activateAdjacentWorkspace(delta > 0.0f ? 1 : -1);
   });
+  container->setClipChildren(true);
   m_container = container.get();
   setRoot(std::move(container));
 }
@@ -477,7 +478,7 @@ void WorkspacesWidget::updateContainerSize() {
         targetTotal = std::max(targetTotal, item.targetX + item.targetWidth);
       }
     }
-    total = std::max(total, targetTotal);
+    total = targetTotal;
   }
 
   if (total <= 0.0f) {
