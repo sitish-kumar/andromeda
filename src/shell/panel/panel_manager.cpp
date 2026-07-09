@@ -10,6 +10,7 @@
 #include "ipc/ipc_service.h"
 #include "render/render_context.h"
 #include "render/scene/input_area.h"
+#include "shell/bar/bar_corner_shape.h"
 #include "shell/bar/bar_reserved_zone.h"
 #include "shell/clipboard/clipboard_panel.h"
 #include "shell/screen_position.h"
@@ -910,17 +911,24 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
     m_attachedToBar = true;
 
     // Convert panel screen coords to bar-surface-local coords for shadow exclusion.
-    // Bar surface origin sits one shadow bleed inset from the visible bar top-left.
+    // Bar surface origin sits one shadow bleed inset from the visible bar top-left,
+    // plus the screen-edge concave flare: those corners push the surface further into
+    // the end margin, and computeBarSurfaceSpec folds the same inset into its start
+    // margin. Omitting it here drifts the exclusion rect along the main axis.
     const auto barShadowBleed = shell::surface_shadow::bleed(barConfig.shadow, shadowConfig);
+    const auto barConcave = barConcaveShape(barConfig);
+    const auto concaveStartInset = static_cast<std::int32_t>(
+        std::ceil(std::max(0.0f, barIsVertical ? barConcave.logicalInset.top : barConcave.logicalInset.left))
+    );
     std::int32_t barSurfaceLocalVisualX;
     std::int32_t barSurfaceLocalVisualY;
     if (barIsVertical) {
-      barSurfaceLocalVisualY = visualY - (barTop - std::min(mEnds, barShadowBleed.up));
+      barSurfaceLocalVisualY = visualY - (barTop - std::min(mEnds, barShadowBleed.up + concaveStartInset));
       const std::int32_t barSurfaceOriginX =
           barIsLeft ? std::max(0, barLeft - barShadowBleed.left) : barLeft - barShadowBleed.left;
       barSurfaceLocalVisualX = visualX - barSurfaceOriginX;
     } else {
-      barSurfaceLocalVisualX = visualX - (barLeft - std::min(mEnds, barShadowBleed.left));
+      barSurfaceLocalVisualX = visualX - (barLeft - std::min(mEnds, barShadowBleed.left + concaveStartInset));
       const std::int32_t barSurfaceOriginY =
           barIsBottom ? barTop - barShadowBleed.up : std::max(0, barTop - barShadowBleed.up);
       barSurfaceLocalVisualY = visualY - barSurfaceOriginY;
