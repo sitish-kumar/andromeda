@@ -604,7 +604,9 @@ void SettingsWindow::prepareFrame(bool /*needsUpdate*/, bool needsLayout) {
         m_filterRowRefreshRequested = false;
       }
       rebuildSettingsContent();
+      m_deferFocusScrollToLayout = true;
       m_inputDispatcher.restoreStashedTabFocus();
+      m_deferFocusScrollToLayout = false;
       m_contentRebuildRequested = false;
     }
     logSettingsProfile("prepareFrame rebuildContent", phaseProfileWatch);

@@ -708,7 +708,9 @@ void SettingsWindow::scrollFocusedAreaIntoView(InputArea* area) {
       if (node == m_contentScrollView->content()) {
         m_pendingContentScrollTarget = area;
         m_scrollToPendingContentTarget = true;
-        applyPendingContentScrollTarget(Style::spaceMd * uiScale());
+        if (!m_deferFocusScrollToLayout) {
+          applyPendingContentScrollTarget(Style::spaceMd * uiScale());
+        }
         return;
       }
     }
