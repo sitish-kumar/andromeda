@@ -2138,7 +2138,7 @@ namespace settings {
       Flex* panelPtr = panel.get();
 
       const auto groupEntry = [&](std::string_view field) {
-        const std::string base = std::string("settings.entities.widget.group.") + std::string(field);
+        const std::string base = std::string("settings.entities.widget.group.") + i18n::keySegment(field);
         std::vector<std::string> fieldPath = groupPath;
         fieldPath.push_back(groupId);
         fieldPath.emplace_back(field);
