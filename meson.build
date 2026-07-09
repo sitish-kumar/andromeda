@@ -473,6 +473,7 @@ _noctalia_sources = files(
   'src/notification/notification_display_name.cpp',
   'src/notification/notification_history_store.cpp',
   'src/pipewire/pipewire_service.cpp',
+  'src/pipewire/audio_glyphs.cpp',
   'src/pipewire/wireplumber_mixer.cpp',
   'src/pipewire/privacy_filter.cpp',
   'src/pipewire/pipewire_spectrum.cpp',
@@ -1058,6 +1059,16 @@ battery_hook_state_test = executable('battery_hook_state_test',
 )
 
 test('battery_hook_state', battery_hook_state_test)
+
+audio_glyphs_test = executable('audio_glyphs_test',
+  sources: files(
+    'tests/audio_glyphs_test.cpp',
+    'src/pipewire/audio_glyphs.cpp',
+  ),
+  include_directories: _noctalia_inc,
+)
+
+test('audio_glyphs', audio_glyphs_test)
 
 hook_manager_test = executable('hook_manager_test',
   sources: files(

@@ -874,19 +874,6 @@ const AudioNode* PipeWireService::defaultSource() const noexcept {
 
 std::string audioDeviceLabel(const AudioNode& node) { return !node.description.empty() ? node.description : node.name; }
 
-const char* audioVolumeGlyph(float volume, bool muted, bool isInput) {
-  if (isInput) {
-    return muted ? "microphone-mute" : "microphone";
-  }
-  if (muted || volume <= 0.0f) {
-    return "volume-mute";
-  }
-  if (volume < 0.4f) {
-    return "volume-low";
-  }
-  return "volume-high";
-}
-
 void PipeWireService::onRegistryGlobal(std::uint32_t id, const char* type, std::uint32_t, const spa_dict* props) {
   if (std::strcmp(type, PW_TYPE_INTERFACE_Client) == 0) {
     ClientData client;

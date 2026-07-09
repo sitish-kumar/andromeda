@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cmath>
 #include <string>
+#include <string_view>
 #include <utility>
 
 VolumeWidget::VolumeWidget(
@@ -203,13 +204,14 @@ void VolumeWidget::syncState(Renderer& renderer) {
 }
 
 std::string VolumeWidget::glyphName(float volume, bool muted) const {
-  if (muted || volume <= 0.0f) {
-    if (!m_muteGlyphOverride.empty()) {
-      return m_muteGlyphOverride;
-    }
-  } else if (!m_glyphOverride.empty()) {
+  const char* dynamicGlyph = audioVolumeGlyph(volume, muted, m_target == VolumeWidgetTarget::Input);
+  const std::string_view muteGlyph = m_target == VolumeWidgetTarget::Input ? "microphone-mute" : "volume-mute";
+  const bool usingMuteGlyph = std::string_view{dynamicGlyph} == muteGlyph;
+  if (usingMuteGlyph && !m_muteGlyphOverride.empty()) {
+    return m_muteGlyphOverride;
+  }
+  if (!usingMuteGlyph && !m_glyphOverride.empty()) {
     return m_glyphOverride;
   }
-
-  return audioVolumeGlyph(volume, muted, m_target == VolumeWidgetTarget::Input);
+  return dynamicGlyph;
 }
