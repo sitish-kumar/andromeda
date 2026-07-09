@@ -25,6 +25,21 @@ endif
 # pipewire_lsan.cpp is only needed when address sanitizer is active.
 sanitize = get_option('b_sanitize') != 'none'
 
+# Hardened standard-library assertions in debug builds only. A std::clamp(v, lo, hi)
+# with hi < lo aborts here (distro packagers enable this in release, so users see
+# the same abort) — surfacing inverted-bound bugs loudly during development so they
+# can be routed through util::clampOrdered. Release stays unhardened on purpose: a
+# not-yet-converted raw std::clamp there should degrade to a wrong-but-non-fatal
+# value rather than abort a user's session (converted sites log and return lo via
+# clampOrdered). The cost is a few precondition branches (not the heavy _GLIBCXX_DEBUG).
+if get_option('buildtype') != 'release'
+  if is_libcxx
+    add_project_arguments('-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE', language: 'cpp')
+  else
+    add_project_arguments('-D_GLIBCXX_ASSERTIONS', language: 'cpp')
+  endif
+endif
+
 # Tests build by default only for unsanitized debug builds; all other build
 # types skip them unless explicitly enabled (-Dtests=enabled).
 tests_opt = get_option('tests')
@@ -783,6 +798,7 @@ _noctalia_sources = files(
   'src/ui/split_pane_focus.cpp',
   'src/ui/style.cpp',
   'src/util/checksum.cpp',
+  'src/util/clamp.cpp',
   'src/util/fuzzy_match.cpp',
   'src/wayland/clipboard_service.cpp',
   'src/wayland/text_input_service.cpp',
@@ -1250,6 +1266,7 @@ ui_tree_reconciler_test = executable('ui_tree_reconciler_test',
     'src/ui/app_icon_colorization.cpp',
     'src/ui/palette.cpp',
     'src/ui/style.cpp',
+    'src/util/clamp.cpp',
     'src/core/timer_manager.cpp',
     'src/core/input/keybind_matcher.cpp',
     'src/core/input/key_chord.cpp',

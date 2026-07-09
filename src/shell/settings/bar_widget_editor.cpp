@@ -1451,8 +1451,12 @@ namespace settings {
           break;
         }
         case WidgetControlKind::Int: {
-          const double minValue = spec.schema.minValue.value_or(0.0);
-          const double maxValue = spec.schema.maxValue.value_or(100.0);
+          // A plugin manifest may declare minValue > maxValue; order the range so
+          // the clamp, stepper, and slider below all get a valid [min, max].
+          const double rawMin = spec.schema.minValue.value_or(0.0);
+          const double rawMax = spec.schema.maxValue.value_or(100.0);
+          const double minValue = std::min(rawMin, rawMax);
+          const double maxValue = std::max(rawMin, rawMax);
           if (spec.stepper) {
             const int minStep = static_cast<int>(std::lround(minValue));
             const int maxStep = static_cast<int>(std::lround(maxValue));
