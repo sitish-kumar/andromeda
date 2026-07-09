@@ -204,6 +204,7 @@ namespace noctalia::config::schema {
             [](toml::table&, const NotificationFilterConfig&) {}
         ),
         field(&NotificationFilterConfig::match, "match"),
+        field(&NotificationFilterConfig::matchContent, "match_content"),
         field(&NotificationFilterConfig::showToast, "show_toast"),
         field(&NotificationFilterConfig::saveHistory, "save_history"),
         field(&NotificationFilterConfig::playSound, "play_sound"),

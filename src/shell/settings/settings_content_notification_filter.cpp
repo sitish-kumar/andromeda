@@ -11,6 +11,7 @@
 #include "ui/controls/stepper.h"
 #include "ui/palette.h"
 #include "ui/style.h"
+#include "util/string_utils.h"
 
 #include <algorithm>
 #include <functional>
@@ -87,6 +88,32 @@ namespace settings {
     matchInput->setOnFocusLoss(commitMatch);
     matchBlock->addChild(std::move(matchInput));
     body->addChild(std::move(matchBlock));
+
+    auto matchContentBlock = ui::column(
+        {.align = FlexAlign::Stretch, .gap = Style::spaceXs * scale},
+        makeLabel(
+            i18n::tr("settings.notifications.filter.match-content-label"), Style::fontSizeCaption * scale,
+            colorSpecFromRole(ColorRole::OnSurfaceVariant), FontWeight::Normal
+        )
+    );
+    Input* matchContentPtr = nullptr;
+    auto matchContentInput = ui::input({
+        .out = &matchContentPtr,
+        .value = row.matchContent,
+        .placeholder = i18n::tr("settings.notifications.filter.match-content-placeholder"),
+        .fontSize = Style::fontSizeBody * scale,
+        .controlHeight = Style::controlHeight * scale,
+        .horizontalPadding = Style::spaceSm * scale,
+    });
+    const auto commitMatchContent = [&row, persist, matchContentPtr]() {
+      row.matchContent = StringUtils::trim(matchContentPtr->value());
+      matchContentPtr->setValue(row.matchContent);
+      persist();
+    };
+    matchContentInput->setOnSubmit([commitMatchContent](const std::string& /*text*/) { commitMatchContent(); });
+    matchContentInput->setOnFocusLoss(commitMatchContent);
+    matchContentBlock->addChild(std::move(matchContentInput));
+    body->addChild(std::move(matchContentBlock));
 
     auto flagsBlock = ui::column(
         {.align = FlexAlign::Stretch, .gap = Style::spaceSm * scale},

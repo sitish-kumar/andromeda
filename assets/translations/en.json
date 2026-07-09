@@ -1163,6 +1163,8 @@
         "flags-label": "When matched",
         "match-label": "App",
         "match-placeholder": "App name, desktop entry, or category…",
+        "match-content-label": "Content Regex",
+        "match-content-placeholder": "Regex pattern to match summary or body…",
         "play-sound": "Play sound",
         "save-history": "Save to history",
         "show-toast": "Show toast",

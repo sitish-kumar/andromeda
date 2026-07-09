@@ -157,7 +157,7 @@ private:
   };
   [[nodiscard]] ExternalNotificationDispatch evaluateExternalDispatch(
       Urgency urgency, std::string_view appName, const std::optional<std::string>& category,
-      const std::optional<std::string>& desktopEntry, bool transient
+      const std::optional<std::string>& desktopEntry, std::string_view summary, std::string_view body, bool transient
   ) const;
   uint32_t suppressExternal(std::string_view appName, Urgency urgency);
 

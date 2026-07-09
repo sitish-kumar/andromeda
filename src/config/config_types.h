@@ -256,6 +256,8 @@ struct NotificationFilterConfig {
   bool enabled = true;
   /// Case-insensitive token matched against app name (exact/substring), desktop entry, or category.
   std::string match;
+  /// Optional regular expression matched against the notification summary or body.
+  std::string matchContent;
   bool showToast = true;
   bool saveHistory = true;
   bool playSound = true;

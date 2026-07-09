@@ -550,6 +550,9 @@ namespace {
               if (!item.match.empty()) {
                 row.insert_or_assign("match", item.match);
               }
+              if (!item.matchContent.empty()) {
+                row.insert_or_assign("match_content", item.matchContent);
+              }
               row.insert_or_assign("show_toast", item.showToast);
               row.insert_or_assign("save_history", item.saveHistory);
               row.insert_or_assign("play_sound", item.playSound);
