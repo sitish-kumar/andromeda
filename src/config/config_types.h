@@ -131,9 +131,9 @@ struct BarConfig {
   std::int32_t radiusTopRight = static_cast<std::int32_t>(Style::radiusXl);
   std::int32_t radiusBottomLeft = static_cast<std::int32_t>(Style::radiusXl);
   std::int32_t radiusBottomRight = static_cast<std::int32_t>(Style::radiusXl);
-  bool concaveEdgeCorners = false;
-  std::int32_t marginEnds = 180;       // inset from each end of the bar along its main axis
-  std::int32_t marginEdge = 10;        // distance from the nearest screen edge (floats the bar when > 0)
+  bool concaveEdgeCorners = true;
+  std::int32_t marginEnds = 100;       // inset from each end of the bar along its main axis
+  std::int32_t marginEdge = 0;         // distance from the nearest screen edge (floats the bar when > 0)
   std::int32_t marginOppositeEdge = 0; // extra reserved space on the inward side of the bar
   std::int32_t padding = 14;           // main-axis padding from bar edges to start/end sections
   std::int32_t widgetSpacing = 6;      // gap between widgets within a section
@@ -546,9 +546,9 @@ struct DockConfig {
   std::int32_t radiusTopRight = 16;    // dock background top-right corner radius
   std::int32_t radiusBottomLeft = 16;  // dock background bottom-left corner radius
   std::int32_t radiusBottomRight = 16; // dock background bottom-right corner radius
-  bool concaveEdgeCorners = false;     // carve concave corners on the side that touches the screen edge
+  bool concaveEdgeCorners = true;      // carve concave corners on the side that touches the screen edge
   std::int32_t marginEnds = 0;         // inset from each end of the dock along its main axis
-  std::int32_t marginEdge = 8;         // distance from the nearest screen edge (floats the dock when > 0)
+  std::int32_t marginEdge = 0;         // distance from the nearest screen edge (floats the dock when > 0)
   bool shadow = true;                  // use the global shell shadow
   bool showRunning = true;             // also show running apps not in pinned list
   bool autoHide = false;               // fade out when not hovered (overlay mode)
