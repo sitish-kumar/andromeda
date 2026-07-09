@@ -40,13 +40,13 @@
 let
   inherit (builtins) head match readFile;
   version = head (match ".*version: '([^']+)'.*" (readFile ../meson.build));
-  stbHeaders = stb.overrideAttrs (_: {
-    version = "unstable-2026-07-09";
+  stb' = stb.overrideAttrs (_: {
+    version = "unstable-2025-10-26";
     src = fetchFromGitHub {
       owner = "nothings";
       repo = "stb";
-      rev = "31c1ad37456438565541f4919958214b6e762fb4";
-      hash = "sha256-m2yNUlA37hDkKQVrQ+R8nufHfW/cXLnMo+n1X1Cyun0=";
+      rev = "f1c79c02822848a9bed4315b12c8c8f3761e1296";
+      hash = "sha256-BlyXJtAI7WqXCTT3ylww8zoG0hBxaojJnQDvdQOXJPE=";
     };
   });
 in
@@ -94,7 +94,7 @@ stdenv.mkDerivation {
     libqalculate
     libxml2
     md4c
-    stbHeaders
+    stb'
     nlohmann_json
     tomlplusplus
   ];
