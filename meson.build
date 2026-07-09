@@ -543,6 +543,7 @@ _noctalia_sources = files(
   'src/render/scene/graph_node.cpp',
   'src/render/scene/node.cpp',
   'src/render/text/cairo_text_renderer.cpp',
+  'src/render/text/font_registry.cpp',
   'src/render/text/font_weight_catalog.cpp',
   'src/render/text/cairo_glyph_renderer.cpp',
   'src/render/wallpaper_renderer.cpp',

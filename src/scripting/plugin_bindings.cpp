@@ -173,6 +173,10 @@ namespace {
     const char* family = luaL_checklstring(L, 1, &len);
     if (auto* context = getContext(L)) {
       context->patch.fontFamily = std::string(family, len);
+      const std::string_view baseline = optionalStringArg(L, 2);
+      if (!baseline.empty()) {
+        context->patch.fontBaseline = std::string(baseline);
+      }
     }
     return 0;
   }

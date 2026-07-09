@@ -9,6 +9,7 @@
 #include "lualib.h"
 #include "net/http_client.h"
 #include "notification/notifications.h"
+#include "render/text/font_registry.h"
 #include "scripting/plugin_bindings.h"
 #include "scripting/plugin_state_store.h"
 #include "scripting/script_api_context.h"
@@ -547,6 +548,25 @@ namespace {
     ss << file.rdbuf();
     const std::string contents = ss.str();
     lua_pushlstring(L, contents.data(), contents.size());
+    return 1;
+  }
+
+  int luau_loadFont(lua_State* L) {
+    size_t len = 0;
+    const char* path = luaL_checklstring(L, 1, &len);
+    auto* host = hostForState(L);
+    if (host == nullptr) {
+      lua_pushnil(L);
+      lua_pushstring(L, "no host");
+      return 2;
+    }
+    const std::string family = text::registerFontFile(resolveHostPath(host, std::string_view(path, len)));
+    if (family.empty()) {
+      lua_pushnil(L);
+      lua_pushstring(L, "failed to load font");
+      return 2;
+    }
+    lua_pushlstring(L, family.data(), family.size());
     return 1;
   }
 
@@ -1131,6 +1151,7 @@ namespace {
       {"formatTime", luau_formatTime},
       {"setUpdateInterval", luau_setUpdateInterval},
       {"readFile", luau_readFile},
+      {"loadFont", luau_loadFont},
       {"writeFile", luau_writeFile},
       {"mkdirAll", luau_mkdirAll},
       {"removeFile", luau_removeFile},

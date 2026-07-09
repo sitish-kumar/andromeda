@@ -335,7 +335,7 @@ void WorkspacesWidget::rebuild(Renderer& renderer) {
               .fontWeight = workspaceFontWeight(configuredFontWeight, m_minimal, ws.active),
               .fontFamily = labelFontFamily(),
               .color = workspaceTextColor(ws),
-              .baselineMode = LabelBaselineMode::StableLogical,
+              .baselineMode = LabelBaselineMode::Text,
           })
       ));
       item.text->measure(renderer);
@@ -518,7 +518,7 @@ void WorkspacesWidget::ensureItemLabel(Renderer& renderer, std::size_t index) {
           .fontWeight = workspaceFontWeight(labelFontWeight(), m_minimal, workspace.active),
           .fontFamily = labelFontFamily(),
           .color = workspaceTextColor(workspace),
-          .baselineMode = LabelBaselineMode::StableLogical,
+          .baselineMode = LabelBaselineMode::Text,
       })
   ));
   item.text->measure(renderer);
