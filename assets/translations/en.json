@@ -1722,7 +1722,7 @@
           "description": "Background opacity of the dock"
         },
         "concave-edge-corners": {
-          "description": "Carve concave (inward-curving) notches into two of the bar's corners. Requires Edge Margin to be 0. With Ends Margin at 0, the corners on the bar's inner edge are carved; otherwise the corners touching the screen edge are carved.",
+          "description": "Carve inward corners on the side that touches the screen edge; requires the margin to the screen edge to be 0",
           "label": "Concave Edge Corners"
         },
         "corner-bottom-left": {

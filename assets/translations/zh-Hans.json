@@ -1523,6 +1523,10 @@
           "description": "状态栏中央的小组件",
           "label": "中央小组件"
         },
+        "concave-edge-corners": {
+          "description": "在状态栏的其中两个角切出凹型缺口；需要“边缘间距”为 0；当“两端间距”为 0 时，将切出状态栏内侧边缘的角，否则将切出贴近屏幕边缘的角",
+          "label": "边缘内凹圆角"
+        },
         "contact-shadow": {
           "description": "在吸附面板与状态栏之间添加深色渐变，增强层次感"
         },
@@ -1535,19 +1539,19 @@
           "label": "内容缩放"
         },
         "corner-bottom-left": {
-          "description": "状态栏左下角的圆角半径；当该角背离屏幕边缘时，可启用反转以形成内凹圆角"
+          "description": "状态栏左下角的圆角半径"
         },
         "corner-bottom-right": {
-          "description": "状态栏右下角的圆角半径；当该角背离屏幕边缘时，可启用反转以形成内凹圆角"
+          "description": "状态栏右下角的圆角半径"
         },
         "corner-radius": {
           "description": "状态栏的圆角半径"
         },
         "corner-top-left": {
-          "description": "状态栏左上角的圆角半径；当该角背离屏幕边缘时，可启用反转以形成内凹圆角"
+          "description": "状态栏左上角的圆角半径"
         },
         "corner-top-right": {
-          "description": "状态栏右上角的圆角半径；当该角背离屏幕边缘时，可启用反转以形成内凹圆角"
+          "description": "状态栏右上角的圆角半径"
         },
         "dead-zone-command": {
           "description": "在小组件区域之外的状态栏空白处，左键点击时执行的 Shell 命令",
@@ -1718,7 +1722,7 @@
           "description": "Dock 的背景不透明度"
         },
         "concave-edge-corners": {
-          "description": "在贴近屏幕边缘的一侧形成内凹圆角；要求与屏幕边缘的间距为 0",
+          "description": "在 Dock 的其中两个角切出凹型（向内弯曲的）缺口；需要“边缘间距”为 0；当“两端间距”为 0 时，将切出 Dock 内侧边缘的角，否则将切出贴近屏幕边缘的角",
           "label": "边缘内凹圆角"
         },
         "corner-bottom-left": {
@@ -3011,6 +3015,10 @@
         "hide-album-art": {
           "description": "隐藏专辑封面",
           "label": "隐藏专辑封面"
+        },
+        "hide-artist": {
+          "description": "隐藏艺术家名称，仅显示曲目标题",
+          "label": "隐藏艺术家"
         },
         "hide-empty-workspaces": {
           "description": "按工作区分组时，隐藏任务栏中无窗口的工作区胶囊。",
