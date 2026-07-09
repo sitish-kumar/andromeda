@@ -2,6 +2,7 @@
 
 #include "config/config_service.h"
 #include "shell/bar/widget_factory.h"
+#include "shell/bar/widgets/tray_widget.h"
 #include "shell/panel/panel_manager.h"
 #include "ui/controls/flex.h"
 #include "ui/style.h"
@@ -124,6 +125,11 @@ void GroupDrawerPanel::create() {
         continue;
       }
       widget->setConfigName(member);
+      if (member == "tray") {
+        if (auto* trayWidget = dynamic_cast<TrayWidget*>(widget.get()); trayWidget != nullptr) {
+          trayWidget->setDrawerMode(false);
+        }
+      }
       widget->create();
 
       if (currentRow == nullptr || colCount >= columns) {

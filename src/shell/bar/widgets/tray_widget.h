@@ -37,6 +37,7 @@ public:
   TrayWidget(ConfigService& config, TrayService* tray, TrayWidgetOptions options = {});
 
   void create() override;
+  void setDrawerMode(bool drawerMode) noexcept { m_drawerMode = drawerMode; }
   [[nodiscard]] bool wantsBarHoverHighlight() const noexcept override { return false; }
 
 private:
