@@ -554,6 +554,9 @@ namespace {
               row.insert_or_assign("save_history", item.saveHistory);
               row.insert_or_assign("play_sound", item.playSound);
               row.insert_or_assign("allow_permanent", item.allowPermanent);
+              if (item.overrideDuration.has_value()) {
+                row.insert_or_assign("override_duration", static_cast<std::int64_t>(*item.overrideDuration));
+              }
               if (!item.allowedUrgencies.empty()) {
                 toml::array urgencies;
                 for (const auto& urgency : item.allowedUrgencies) {

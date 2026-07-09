@@ -153,6 +153,7 @@ private:
     bool saveHistory = true;
     bool playSound = true;
     bool disallowPermanent = false;
+    std::optional<std::int32_t> overrideDuration;
   };
   [[nodiscard]] ExternalNotificationDispatch evaluateExternalDispatch(
       Urgency urgency, std::string_view appName, const std::optional<std::string>& category,

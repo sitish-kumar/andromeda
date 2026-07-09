@@ -260,6 +260,7 @@ struct NotificationFilterConfig {
   bool saveHistory = true;
   bool playSound = true;
   bool allowPermanent = true;
+  std::optional<std::int32_t> overrideDuration;
   /// Empty = allow low, normal, and critical. Otherwise only listed urgencies pass this filter.
   std::vector<std::string> allowedUrgencies;
 

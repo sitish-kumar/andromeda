@@ -1152,6 +1152,7 @@
         "add": "Add filter",
         "add-title": "Add Notification Filter",
         "allow-permanent": "Allow permanent",
+        "override-duration": "Override duration",
         "allowed-urgencies-label": "Allowed urgencies",
         "flag": {
           "history": "history",

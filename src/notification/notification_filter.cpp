@@ -138,6 +138,7 @@ ResolvedNotificationFilter resolveNotificationFilter(
         .saveHistory = filter.saveHistory,
         .playSound = filter.playSound,
         .allowPermanent = filter.allowPermanent,
+        .overrideDuration = filter.overrideDuration,
         .allowedUrgencies = normalizeAllowedUrgencies(filter.allowedUrgencies),
         .matched = true,
     };

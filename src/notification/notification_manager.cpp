@@ -217,6 +217,10 @@ uint32_t NotificationManager::addOrReplace(NotificationRequest request) {
       ? evaluateExternalDispatch(urgency, appName, category, desktopEntry, transient)
       : ExternalNotificationDispatch{};
 
+  if (externalDispatch.overrideDuration.has_value()) {
+    timeout = normalizeNotifyExpireTimeout(*externalDispatch.overrideDuration);
+  }
+
   // A matching filter with allow_permanent = false expires otherwise-permanent (timeout 0) notifications.
   if (timeout == 0 && externalDispatch.disallowPermanent) {
     timeout = kDefaultNotificationTimeout;
@@ -664,6 +668,7 @@ NotificationManager::ExternalNotificationDispatch NotificationManager::evaluateE
   dispatch.saveHistory = resolved.saveHistory && shouldTrackHistory(NotificationOrigin::External, urgency, transient);
   dispatch.playSound = resolved.playSound && dispatch.showToast;
   dispatch.fullySuppress = !dispatch.showToast && !dispatch.saveHistory;
+  dispatch.overrideDuration = resolved.overrideDuration;
   return dispatch;
 }
 

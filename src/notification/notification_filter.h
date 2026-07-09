@@ -20,6 +20,7 @@ struct ResolvedNotificationFilter {
   bool saveHistory = true;
   bool playSound = true;
   bool allowPermanent = true;
+  std::optional<std::int32_t> overrideDuration;
   /// Empty = all urgencies allowed for this filter.
   std::unordered_set<Urgency> allowedUrgencies;
   bool matched = false;
