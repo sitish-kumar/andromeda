@@ -2057,40 +2057,6 @@ namespace settings {
       return wrap;
     }
 
-    std::unique_ptr<Node> makeGroupGlyphControl(
-        const BarWidgetEditorContext& ctx, std::string currentValue, std::function<void(std::string)> onChange
-    ) {
-      auto textNode = ctx.makeText(currentValue, {}, {});
-      return ui::row(
-          {
-              .align = FlexAlign::Center,
-              .gap = Style::spaceSm * ctx.scale,
-          },
-          std::move(textNode),
-          ui::button({
-              .glyph = currentValue.empty() ? "image" : currentValue,
-              .glyphSize = Style::fontSizeBody * ctx.scale,
-              .variant = ButtonVariant::Outline,
-              .minWidth = Style::controlHeight * ctx.scale,
-              .minHeight = Style::controlHeight * ctx.scale,
-              .paddingV = Style::spaceXs * ctx.scale,
-              .paddingH = Style::spaceSm * ctx.scale,
-              .radius = Style::scaledRadiusMd(ctx.scale),
-              .onClick = [onChange, currentValue]() {
-                GlyphPickerDialogOptions options;
-                if (!currentValue.empty()) {
-                  options.initialGlyph = currentValue;
-                }
-                (void)GlyphPickerDialog::open(std::move(options), [onChange](std::optional<GlyphPickerResult> result) {
-                  if (result.has_value()) {
-                    onChange(std::move(result->name));
-                  }
-                });
-              },
-          })
-      );
-    }
-
     void addCapsuleGroupInspector(
         Flex& body, const std::vector<std::string>& laneListPath, const BarWidgetEditorContext& ctx
     ) {
@@ -2138,7 +2104,7 @@ namespace settings {
       Flex* panelPtr = panel.get();
 
       const auto groupEntry = [&](std::string_view field) {
-        const std::string base = std::string("settings.entities.widget.group.") + i18n::keySegment(field);
+        const std::string base = std::string("settings.entities.widget.group.") + std::string(field);
         std::vector<std::string> fieldPath = groupPath;
         fieldPath.push_back(groupId);
         fieldPath.emplace_back(field);
@@ -2206,46 +2172,6 @@ namespace settings {
             mutateGroup([&](BarCapsuleGroupStyle& g) { g.radius = r; });
           })
       );
-      ctx.makeRow(
-          *panelPtr, groupEntry("drawer_enabled"),
-          ui::toggle({
-              .checked = style.drawerEnabled,
-              .onChange = [mutateGroup](bool checked) {
-                mutateGroup([&](BarCapsuleGroupStyle& g) { g.drawerEnabled = checked; });
-              },
-          })
-      );
-      if (style.drawerEnabled) {
-        ctx.makeRow(
-            *panelPtr, groupEntry("drawer_detached"),
-            ui::toggle({
-                .checked = style.drawerDetached,
-                .onChange = [mutateGroup](bool checked) {
-                  mutateGroup([&](BarCapsuleGroupStyle& g) { g.drawerDetached = checked; });
-                },
-            })
-        );
-        ctx.makeRow(
-            *panelPtr, groupEntry("drawer_glyph_closed"),
-            makeGroupGlyphControl(ctx, style.drawerGlyphClosed, [mutateGroup](std::string glyph) {
-              mutateGroup([&](BarCapsuleGroupStyle& g) { g.drawerGlyphClosed = std::move(glyph); });
-            })
-        );
-        ctx.makeRow(
-            *panelPtr, groupEntry("drawer_glyph_opened"),
-            makeGroupGlyphControl(ctx, style.drawerGlyphOpened, [mutateGroup](std::string glyph) {
-              mutateGroup([&](BarCapsuleGroupStyle& g) { g.drawerGlyphOpened = std::move(glyph); });
-            })
-        );
-        ctx.makeRow(
-            *panelPtr, groupEntry("drawer_columns"),
-            makeGroupSliderControl(
-                ctx, static_cast<double>(style.drawerColumns), 1.0, 5.0, 1.0, true, [mutateGroup](double v) {
-                  mutateGroup([&](BarCapsuleGroupStyle& g) { g.drawerColumns = static_cast<std::int32_t>(v); });
-                }
-            )
-        );
-      }
 
       body.addChild(std::move(panel));
       body.addChild(

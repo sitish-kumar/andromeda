@@ -14,7 +14,7 @@
 #include "render/scene/input_area.h"
 #include "shell/bar/bar_corner_shape.h"
 #include "shell/bar/bar_reserved_zone.h"
-#include "shell/bar/widgets/group_drawer_widget.h"
+#include "shell/bar/widget.h"
 #include "shell/bar/widgets/plugin_widget.h"
 #include "shell/panel/panel_manager.h"
 #include "shell/surface/shadow.h"
@@ -2038,28 +2038,8 @@ void Bar::populateWidgets(BarInstance& instance) {
           continue;
         }
         const WidgetBarCapsuleSpec groupSpec = capsuleSpecFromGroup(instance.barConfig, *group);
-        if (group->drawerEnabled) {
-          auto drawerWidget =
-              std::make_unique<GroupDrawerWidget>(group->id, group->drawerGlyphClosed, group->drawerGlyphOpened);
-          drawerWidget->setConfigName("group:" + group->id);
-
-          WidgetBarCapsuleSpec drawerSpec = groupSpec;
-          drawerWidget->setBarCapsuleSpec(drawerSpec);
-          drawerWidget->setLabelFontWeight(labelFontWeight);
-          drawerWidget->setLabelFontFamily(barFontFamily);
-          if (group->foreground.has_value()) {
-            drawerWidget->setWidgetForeground(*group->foreground);
-            drawerWidget->setWidgetIconColor(*group->foreground);
-          } else if (instance.barConfig.widgetColor.has_value()) {
-            drawerWidget->setWidgetForeground(instance.barConfig.widgetColor);
-            drawerWidget->setWidgetIconColor(instance.barConfig.widgetIconColor);
-          }
-          drawerWidget->setContentScale(resolveWidgetContentScale(instance.barConfig.scale, nullptr, ""));
-          dest.push_back(std::move(drawerWidget));
-        } else {
-          for (const auto& member : group->members) {
-            createWidget(member, &groupSpec, &group->foreground, dest);
-          }
+        for (const auto& member : group->members) {
+          createWidget(member, &groupSpec, &group->foreground, dest);
         }
         continue;
       }
