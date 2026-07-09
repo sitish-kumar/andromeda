@@ -22,7 +22,14 @@
     },
     "widgets": {
       "active-window": {
-        "no-active-window": "Çarçoveya çalak tine ye "
+        "no-active-window": "Çarçoveya çalak tune ye "
+      },
+      "bluetooth": {
+        "connected": "Girêdayî"
+      },
+      "brightness": {
+        "brightness": "Ronahî",
+        "display": "Dîmender"
       },
       "lock-keys": {
         "caps": "CAPS",
@@ -37,13 +44,60 @@
         "playing": "Tê lîstin"
       },
       "network": {
-        "wired": "Bi têl"
+        "active": "Çalak",
+        "connected": "Girêdayî",
+        "connecting": "Tê girêdan",
+        "download": "Daxistin",
+        "interface": "Navrû",
+        "ip": "IP",
+        "network": "Tor",
+        "networks": "Tor",
+        "networks-count": "{count} tor",
+        "networks-count-plural": "{count} tor",
+        "no": "Na",
+        "not-connected": "Ne girêdayî ye",
+        "off": "Vemirî",
+        "on": "Vêketî",
+        "scanning": "Tê dîtin",
+        "signal": "Nîşan",
+        "upload": "Barkirin",
+        "vpn": "VPN",
+        "wifi": "Wi-Fi",
+        "wired": "Bi têl",
+        "yes": "Erê"
+      },
+      "privacy": {
+        "camera": "Kamîra",
+        "microphone": "Mîkrofon",
+        "screen-sharing": "Parvekirina dîmenderê"
       },
       "scripted": {
         "reload-failed": "Ji nû ve barkirina skrîptê têk çû"
       },
+      "sysmon": {
+        "cpu": "YKN",
+        "cpu-temp": "Germahiya YKN",
+        "disk": "Dîsk",
+        "download": "Daxistin",
+        "gpu-temp": "Germahiya YKG",
+        "gpu-usage": "Bikaranîna YKG",
+        "gpu-vram": "GPU VRAM",
+        "ram": "RAM",
+        "swap": "Swap",
+        "system": "Pergal",
+        "upload": "Barkriin"
+      },
+      "volume": {
+        "device": "Amûr",
+        "mic": "Mîk",
+        "volume": "Bilindahiya dengê"
+      },
       "weather": {
-        "no-location": "Cih tine ye"
+        "default": "Rewşa bayê",
+        "error": "Şaşetiya rewşa bayê",
+        "loading": "Rewşa bayê...",
+        "no-location": "Cih tune ye",
+        "off": "Rewşa bayê vemirî ye"
       }
     }
   },
@@ -76,8 +130,13 @@
     }
   },
   "control-center": {
+    "audio": {
+      "input-device-prefix": "Ketan",
+      "output-device-prefix": "Deran"
+    },
     "bluetooth": {
       "accept": "Bipejirîne",
+      "auto-reconnect": "Xweber girê bide",
       "bluetooth": "Bluetooth",
       "enter-code": "Kodê têxîne",
       "off": "Bluetooth vemirî ye",
@@ -87,13 +146,16 @@
         "display-pin": "Vê PINê li ser amûrê binivîse:"
       },
       "sections": {
+        "available": "Heyî",
         "connected": "Girêdayî "
-      }
+      },
+      "unknown-device": "Amûrên nenas"
     },
     "calendar": {
       "all-day": "Tevahiya rojê",
       "events": "Çalakî",
-      "no-events": "Çalakî tine ne."
+      "no-events": "Çalakî tune ne.",
+      "today": "Îro"
     },
     "display": {
       "disabled": "Neçalakkirî"
@@ -106,6 +168,7 @@
     },
     "network": {
       "connect": "girê bide",
+      "current-connection": "Girêdanên heyî",
       "not-connected": "Ne girêdayî ye",
       "password": "Borînpyev",
       "password-prompt": "Borînpyevê têxîne",
@@ -122,6 +185,14 @@
         "today": "Îro",
         "yesterday": "Duh"
       }
+    },
+    "power": {
+      "battery": "Betarî",
+      "health": "Tenduristiya betariyê",
+      "peripherals": "Amûrên girêdayî",
+      "time-to-empty": "{time} maye",
+      "time-to-full": "{time} heya tijî dibe",
+      "unknown-device": "Amûrên nenas"
     },
     "screen-time": {
       "hour-0": "12 BN",
@@ -148,7 +219,9 @@
       "power-profile": "Hêz",
       "session": "Danaşîn",
       "system": "Pergal",
-      "wallpaper": "Paşrû"
+      "wallpaper": "Paşrû",
+      "weather": "Rewşa bayê",
+      "wifi": "Wi-Fi"
     },
     "system": {
       "labels": {
@@ -161,6 +234,7 @@
         "gpu": "YKG",
         "memory": "Bîrdank",
         "network": "Tor",
+        "resources": "Çavkanî",
         "system": "Pergal"
       },
       "unknown": "nenas"
@@ -172,10 +246,20 @@
       "media": "Medya ",
       "monitor": "Dîmender",
       "network": "Tor",
+      "notifications": "Agahdarî",
+      "power": "Hêz",
       "screen-time": "Agahdarî",
-      "system": "Pergal"
+      "system": "Pergal",
+      "weather": "Rewşa bayê"
     },
     "weather": {
+      "daily": {
+        "tooltip": {
+          "condition": "Rewş",
+          "high": "Bilind",
+          "low": "Nizm"
+        }
+      },
       "details": {
         "wind": "Ba"
       },
@@ -198,6 +282,7 @@
         "background-color": "Reng",
         "background-opacity": "Zelalî",
         "color": "Reng",
+        "color2": "Reng 2",
         "custom-color": "Kesane...",
         "description": "Danasîn",
         "font-family": "Cûrenivîs",
@@ -227,7 +312,7 @@
     "weather": {
       "error": "Şaşetî",
       "loading": "Tê barkirin...",
-      "no-location": "Ti cih tine ye"
+      "no-location": "Tu cih tune ye"
     }
   },
   "dock": {
@@ -259,13 +344,17 @@
       "open": "Vekirî"
     },
     "providers": {
+      "session": {
+        "title": "Danaşîn"
+      },
       "wallpaper": {
         "title": "Paşrû"
       },
       "window": {
         "title": "Çarçove"
       }
-    }
+    },
+    "search-placeholder": "Li sepanan bigere..."
   },
   "location": {
     "locations": {
@@ -290,6 +379,7 @@
     },
     "internal": {
       "battery": "Betarî",
+      "battery-critical-body": "{device}: {percent}% - kombersê te wê di nêzîk de were vemirandin",
       "battery-device": "Amûrê betariyê",
       "battery-low-title": "Betarî kêm e",
       "greeter-sync": "Silavkarê Noctalia",
@@ -325,6 +415,8 @@
         "plugged-in": "Girêdayî ye"
       },
       "tooltip": {
+        "device": "Betarî",
+        "device-numbered": "Betarî {index}",
         "health": "Tenduristî ",
         "rate": "Nirx",
         "status": "Rewş",
@@ -340,7 +432,13 @@
   },
   "session": {
     "actions": {
-      "custom": "Kesane"
+      "custom": "Kesane",
+      "lock": "Kilît bike",
+      "lock-and-suspend": "Kilît bike & Rawestîne",
+      "logout": "Derkeve",
+      "reboot": "Ji nû ve dest pê bike",
+      "shutdown": "Vemrîne",
+      "suspend": "Kilît bike"
     }
   },
   "settings": {
@@ -362,6 +460,10 @@
     "entities": {
       "bar": {
         "create": "Biafrîne",
+        "delete": "Jê bibe",
+        "move-down": "Bilivîne jêr",
+        "move-up": "Bilivîne jor",
+        "rename": "Navê biguhêrîne",
         "rename-save": "Tomar bike"
       },
       "monitor-override": {
@@ -392,25 +494,110 @@
         }
       }
     },
+    "idle": {
+      "behavior": {
+        "kind": {
+          "lock-and-suspend": "Kilît bike & Rawestîne"
+        }
+      }
+    },
     "navigation": {
       "groups": {
         "monitor": "Dîmenerê pergalê",
         "power": "Hêz",
-        "system": "Pergal"
+        "session-panel": "Danaşîn",
+        "system": "Pergal",
+        "theme": "Rûkar"
       },
       "sections": {
+        "appearance": "Xuyang",
+        "plugins": "Pêvek",
         "power": "Hêz",
         "system": "Pergal "
       }
     },
     "options": {
+      "clipboard": {
+        "auto-paste": {
+          "ctrl-shift-v": "Ctrl+Shift+V",
+          "ctrl-v": "Ctrl+V",
+          "shift-insert": "Shift+Insert"
+        }
+      },
       "dock-launcher-position": {
         "end": "Dawî",
         "none": "Ne yek",
         "start": "Destpêk"
+      },
+      "hot-corners": {
+        "window-switcher": "Guhêrkerê çarçoveyê"
+      },
+      "theme": {
+        "mode": {
+          "dark": "Tarî",
+          "light": "Ronî"
+        },
+        "source": {
+          "built-in": "Xwecih",
+          "community": "Cîvat",
+          "custom": "Kesane",
+          "wallpaper": "Wêneyê dîwêr"
+        }
+      },
+      "theme-role": {
+        "custom": "Kesane...",
+        "default": "Berdest"
+      }
+    },
+    "plugins": {
+      "plugins": {
+        "delete": "Jê bibe",
+        "title": "Pêvek"
+      },
+      "sources": {
+        "kind": {
+          "git": "Git",
+          "path": "Rêgeh"
+        },
+        "kind-label": "Kind",
+        "location-placeholder-git": "https://github.com/me/noctalia-plugins",
+        "location-placeholder-path": "~/dev/noctalia-plugins",
+        "name-label": "Çavkaniya NB",
+        "save": "Tomar bike",
+        "title": "Çavkanî",
+        "update": "Rojane bike",
+        "update-on-startup": "Li ser destpêkê rojane bike"
+      },
+      "store": {
+        "add": "Tevlî Noctalia bike",
+        "categories": "Beş",
+        "category-all": "Hemû",
+        "title": "Markêta pêvekan"
       }
     },
     "schema": {
+      "appearance": {
+        "animation-speed": {
+          "label": "Leza anîmasyonê"
+        },
+        "animations": {
+          "label": "Anîmasyon"
+        },
+        "language": {
+          "label": "Ziman"
+        },
+        "theme-mode": {
+          "label": "Awaya rûkarê"
+        },
+        "ui-scale": {
+          "label": "Pîvana NB"
+        }
+      },
+      "bar": {
+        "border": {
+          "label": "Sînor"
+        }
+      },
       "dock": {
         "active-icon-opacity": {
           "label": "Zelaliya îkonê çalak"
@@ -457,6 +644,13 @@
         }
       }
     },
+    "session-actions": {
+      "clear-glyph": "Pak bike",
+      "shortcut-label": "Kurterê",
+      "variant": {
+        "default": "Berdest"
+      }
+    },
     "widgets": {
       "settings": {
         "color": {
@@ -467,6 +661,7 @@
         }
       },
       "types": {
+        "active-window": "Çarçoveyê çalak",
         "battery": "Betarî",
         "bluetooth": "Bluetooth",
         "brightness": "Ronahî",
@@ -482,6 +677,7 @@
         "settings": "Sazkarî",
         "sysmon": "Dîmenerê pergalê",
         "test": "Test",
+        "theme-mode": "Awaya rûkarê",
         "volume": "Deng"
       }
     },
@@ -512,6 +708,7 @@
       "m3-rainbow": "M3 Rainbow",
       "m3-tonal-spot": "M3 Tonal Spot",
       "muted": "Muted",
+      "soft": "Soft",
       "vibrant": "Vibrant"
     }
   },
@@ -534,7 +731,7 @@
   },
   "tray": {
     "menu": {
-      "empty": "Ti hêman menuyê tine ne...",
+      "empty": "Ti hêman menuyê tune ne...",
       "pin": "Bi dar bixe",
       "unpin": "Bi dar nexe"
     }
@@ -542,7 +739,7 @@
   "ui": {
     "controls": {
       "search-picker": {
-        "empty": "Encam tine ne",
+        "empty": "Encam tune ne",
         "placeholder": "Bigere..."
       }
     },
@@ -595,7 +792,7 @@
     }
   },
   "window-switcher": {
-    "empty": "Çarçoveyên vekirî tine ne",
+    "empty": "Çarçoveyên vekirî tune ne",
     "hint": "Tab · Shift+Tab · Bişkokên tîrê · Ji bo guhertinê Alt berde· Ji bo têkbirinê Esc",
     "title": "Çarçove"
   }

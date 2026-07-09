@@ -2767,6 +2767,10 @@
           "description": "Scroll Lock-Zustand anzeigen",
           "label": "Scroll Lock anzeigen"
         },
+        "show-temperature": {
+          "description": "Tempearatur als Text anzeigen",
+          "label": "Temperatur anzeigen"
+        },
         "show-when-idle": {
           "description": "Visualizer sichtbar lassen, auch wenn keine Medien abgespielt werden",
           "label": "Anzeigen, wenn inaktiv"
@@ -2917,7 +2921,9 @@
   "time": {
     "duration": {
       "less-than-day": "Weniger als ein Tag",
-      "less-than-minute": "1m"
+      "less-than-minute": "1m",
+      "three-parts": "{first} {second} {third}",
+      "two-parts": "{first} {second}"
     },
     "file": {
       "unknown": "Unbekannt"

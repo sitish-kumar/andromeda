@@ -1523,6 +1523,10 @@
           "description": "Widgets in the center of the bar",
           "label": "Center Widgets"
         },
+        "concave-edge-corners": {
+          "description": "Carve concave notches into two of the bar's corners. Requires Edge Margin to be 0. With Ends Margin at 0, the corners on the bar's inner edge are carved; otherwise the corners touching the screen edge are carved.",
+          "label": "Concave Edge Corners"
+        },
         "contact-shadow": {
           "description": "Dark gradient between an attached panel and the bar to suggest depth at the seam"
         },
@@ -1539,10 +1543,6 @@
         },
         "corner-bottom-right": {
           "description": "Bottom right corner radius for the bar"
-        },
-        "concave-edge-corners": {
-          "description": "Carve concave notches into two of the bar's corners. Requires Edge Margin to be 0. With Ends Margin at 0, the corners on the bar's inner edge are carved; otherwise the corners touching the screen edge are carved.",
-          "label": "Concave Edge Corners"
         },
         "corner-radius": {
           "description": "Corner radius of the bar"
