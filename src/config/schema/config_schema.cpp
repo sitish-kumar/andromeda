@@ -1179,6 +1179,7 @@ namespace noctalia::config::schema {
           dmenuOptionalString(&DmenuEntryConfig::label, "label"),
           dmenuOptionalString(&DmenuEntryConfig::glyph, "glyph"),
           field(&DmenuEntryConfig::global, "global"),
+          field(&DmenuEntryConfig::freeform, "freeform"),
       };
       return s;
     }

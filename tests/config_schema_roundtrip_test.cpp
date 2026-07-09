@@ -18,7 +18,7 @@
 #include "core/toml.h"
 #include "scripting/plugin_id.h"
 
-#include <cstdio>
+#include <print>
 #include <sstream>
 #include <string>
 
@@ -29,7 +29,7 @@ namespace {
   int g_failures = 0;
 
   void fail(const std::string& message) {
-    std::fprintf(stderr, "config_schema_roundtrip: FAIL: %s\n", message.c_str());
+    std::println(stderr, "config_schema_roundtrip: FAIL: {}", message);
     ++g_failures;
   }
 
@@ -398,6 +398,14 @@ location = "https://example.invalid/bad"
     c.shell.launcher.compact = true;
     c.shell.launcher.sessionSearch = true;
     c.shell.launcher.sortByUsage = false;
+    DmenuEntryConfig notifyDmenu;
+    notifyDmenu.id = "notify";
+    notifyDmenu.exec = std::string("notify-send \"{query}\"");
+    notifyDmenu.prefix = std::string("/notify");
+    notifyDmenu.label = std::string("Notify");
+    notifyDmenu.glyph = std::string("bell");
+    notifyDmenu.freeform = true;
+    c.shell.launcher.dmenu.entries = {notifyDmenu};
     c.shell.screenCorners.enabled = true;
     c.shell.screenCorners.size = 24;
     c.shell.mpris.blacklist = {"firefox"};
@@ -690,9 +698,9 @@ widget_spacing = 8
   checkClamps();
 
   if (g_failures == 0) {
-    std::puts("config_schema_roundtrip: all checks passed");
+    std::println("config_schema_roundtrip: all checks passed");
     return 0;
   }
-  std::fprintf(stderr, "config_schema_roundtrip: %d failure(s)\n", g_failures);
+  std::println(stderr, "config_schema_roundtrip: {} failure(s)", g_failures);
   return 1;
 }

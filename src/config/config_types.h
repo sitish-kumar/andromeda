@@ -814,7 +814,7 @@ constexpr EnumOption<WallpaperTransition> kWallpaperTransitions[] = {
 
 // One config-driven dmenu-style launcher entry. The provider runs `command`, splits
 // its stdout into newline-separated candidates, and on activation either runs `exec`
-// (with {selection} substituted) or copies the selection to the clipboard.
+// (with {selection}/{query} substituted) or copies the selection to the clipboard.
 struct DmenuEntryConfig {
   // Canonical flat identifier; the [shell.launcher.dmenu.entry.<id>] table key. Used as
   // the provider id suffix (dmenu.<id>) and the usage-tracking key.
@@ -831,6 +831,7 @@ struct DmenuEntryConfig {
   std::optional<std::string> label; // Provider overview title; defaults to the id.
   std::optional<std::string> glyph; // Tabler glyph name; defaults to "terminal".
   bool global = false;              // Include results in non-prefixed search.
+  bool freeform = false;            // Let typed query text become an activatable result.
 
   bool operator==(const DmenuEntryConfig&) const = default;
 };
