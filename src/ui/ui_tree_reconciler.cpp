@@ -265,9 +265,10 @@ namespace ui {
       static const std::unordered_set<std::string> kBox = {"width",       "height",   "flexGrow", "opacity",
                                                            "visible",     "fill",     "radius",   "border",
                                                            "borderWidth", "softness", "onClick"};
-      static const std::unordered_set<std::string> kLabel = {
-          "width",    "height",   "flexGrow",   "opacity",    "visible",  "text",      "fontSize",
-          "color",    "fontWeight", "maxWidth", "maxLines",   "textAlign", "fontFamily", "baseline"};
+      static const std::unordered_set<std::string> kLabel = {"width",      "height",   "flexGrow", "opacity",
+                                                             "visible",    "text",     "fontSize", "color",
+                                                             "fontWeight", "maxWidth", "maxLines", "textAlign",
+                                                             "fontFamily", "baseline"};
       static const std::unordered_set<std::string> kGlyph = {"width",   "height", "flexGrow", "opacity",
                                                              "visible", "name",   "size",     "color"};
       static const std::unordered_set<std::string> kImage = {"width",   "height",      "flexGrow", "opacity",

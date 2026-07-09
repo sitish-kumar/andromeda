@@ -63,8 +63,6 @@ namespace text {
     return result;
   }
 
-  std::uint64_t fontConfigGeneration() {
-    return generation().load(std::memory_order_relaxed);
-  }
+  std::uint64_t fontConfigGeneration() { return generation().load(std::memory_order_relaxed); }
 
 } // namespace text
