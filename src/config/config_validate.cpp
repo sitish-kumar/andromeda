@@ -13,6 +13,7 @@
 #include "shell/desktop/desktop_widget_settings_registry.h"
 #include "shell/lockscreen/lockscreen_login_box.h"
 #include "shell/settings/widget_settings_registry.h"
+#include "time/time_format.h"
 
 #include <algorithm>
 #include <cmath>
@@ -347,6 +348,12 @@ namespace noctalia::config {
         // Plugin widgets resolve their settings from a static plugin.toml manifest, so
         // unknown keys are flagged like any other widget.
         validateSettingsMap(*tbl, fields, base, /*flagUnknown=*/true, diag, /*ignoreKeys=*/{"type"});
+        if (type == "clock") {
+          if (const auto timezone = (*tbl)["timezone"].value<std::string>();
+              timezone.has_value() && !isValidTimezone(*timezone)) {
+            diag.error(base + ".timezone", "unknown timezone \"" + *timezone + "\"");
+          }
+        }
         resolvedConfig.widgets[nameStr] = std::move(wc);
       }
     }
@@ -413,6 +420,12 @@ namespace noctalia::config {
             *settingsTbl, desktop_settings::desktopWidgetSettingSchema(type), base + ".settings",
             /*flagUnknown=*/true, diag
         );
+        if (type == "clock") {
+          if (const auto timezone = (*settingsTbl)["timezone"].value<std::string>();
+              timezone.has_value() && !isValidTimezone(*timezone)) {
+            diag.error(base + ".settings.timezone", "unknown timezone \"" + *timezone + "\"");
+          }
+        }
       }
     }
 
@@ -476,6 +489,12 @@ namespace noctalia::config {
             *settingsTbl, desktop_settings::desktopWidgetSettingSchema(type), base + ".settings",
             /*flagUnknown=*/true, diag
         );
+        if (type == "clock") {
+          if (const auto timezone = (*settingsTbl)["timezone"].value<std::string>();
+              timezone.has_value() && !isValidTimezone(*timezone)) {
+            diag.error(base + ".settings.timezone", "unknown timezone \"" + *timezone + "\"");
+          }
+        }
       }
     }
 

@@ -29,3 +29,10 @@ case "$syntax_output" in
   *"ERROR syntax: tests/config_validate/syntax-error.toml:"*) ;;
   *) fail "syntax-error config did not report the source path" ;;
 esac
+
+timezone_output=$("$noctalia_bin" config validate tests/config_validate/invalid-timezone.toml 2>&1) \
+  && fail "invalid timezone config should fail"
+case "$timezone_output" in
+  *'ERROR widget.world-clock.timezone: unknown timezone "Europe/Berln"'*) ;;
+  *) fail "invalid timezone config did not report the widget setting path" ;;
+esac

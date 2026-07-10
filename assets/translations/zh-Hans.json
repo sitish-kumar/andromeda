@@ -918,12 +918,22 @@
           "border": "边框",
           "border-description": "将颜色应用于胶囊轮廓；保持“默认”则不显示轮廓",
           "clear": "清除",
+          "drawer-columns": "抽屉列数",
+          "drawer-columns-description": "抽屉面板中每行显示的小组件数量",
+          "drawer-detached": "独立面板",
+          "drawer-detached-description": "以带有独立背景的悬浮面板打开抽屉，而非吸附状态栏",
+          "drawer-enabled": "抽屉",
+          "drawer-enabled-description": "将组内小组件移入由按钮切换的抽屉面板",
+          "drawer-glyph-closed": "关闭图标",
+          "drawer-glyph-closed-description": "面板关闭时显示在抽屉切换按钮上的图标",
+          "drawer-glyph-opened": "打开图标",
+          "drawer-glyph-opened-description": "面板打开时显示在抽屉切换按钮上的图标",
           "edit": "编辑样式",
           "fill": "背景",
           "fill-description": "胶囊背景的颜色；也支持固定的十六进制颜色值",
           "foreground": "前景",
           "foreground-description": "将颜色应用于组内小组件图标和标签",
-          "hide": "隐藏此分组",
+          "hide": "隐藏此组合",
           "hide-widget": "隐藏此小组件",
           "hint": "属于胶囊组",
           "members": "{count} 个小组件",
@@ -935,7 +945,7 @@
           "radius": "半径",
           "radius-description": "胶囊的圆角半径（像素）；“自动”将继承状态栏的胶囊圆角设置",
           "selected": "已选择 {count} 项",
-          "show": "显示此分组",
+          "show": "显示此组合",
           "show-widget": "显示此小组件",
           "style": "样式",
           "title": "胶囊组",
@@ -1160,8 +1170,11 @@
           "toast": "Toast 通知"
         },
         "flags-label": "当匹配时",
+        "match-content-label": "内容正则",
+        "match-content-placeholder": "用于匹配通知标题或正文的正则表达式...",
         "match-label": "应用",
         "match-placeholder": "应用名称、桌面项或类别...",
+        "override-duration": "自定义持续时间",
         "play-sound": "播放提示音",
         "save-history": "保存到历史记录",
         "show-toast": "显示 Toast 通知",
@@ -1524,7 +1537,7 @@
           "label": "中央小组件"
         },
         "concave-edge-corners": {
-          "description": "在状态栏的其中两个角切出凹型缺口；需要“边缘间距”为 0；当“两端间距”为 0 时，将切出状态栏内侧边缘的角，否则将切出贴近屏幕边缘的角",
+          "description": "将状态栏的两个角转为内凹圆角。要求“边缘边距”为 0。当“两端边距”为 0 时，将状态栏内侧边缘的两个角转为内凹；非 0 时，将外侧边缘（贴近屏幕边缘）的两个角转为内凹",
           "label": "边缘内凹圆角"
         },
         "contact-shadow": {
@@ -1722,7 +1735,7 @@
           "description": "Dock 的背景不透明度"
         },
         "concave-edge-corners": {
-          "description": "在 Dock 的其中两个角切出凹型（向内弯曲的）缺口；需要“边缘间距”为 0；当“两端间距”为 0 时，将切出 Dock 内侧边缘的角，否则将切出贴近屏幕边缘的角",
+          "description": "在贴近屏幕边缘的一侧形成内凹圆角；要求“边缘边距”为 0",
           "label": "边缘内凹圆角"
         },
         "corner-bottom-left": {
@@ -2936,7 +2949,7 @@
           "label": "切换命令"
         },
         "detached-panel": {
-          "description": "以带独立背景的悬浮面板打开抽屉，而非吸附状态栏",
+          "description": "以带有独立背景的悬浮面板打开抽屉，而非吸附状态栏",
           "label": "独立面板"
         },
         "device": {

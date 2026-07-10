@@ -19,6 +19,7 @@
 #include "shell/settings/widget_settings_registry.h"
 #include "system/distro_info.h"
 #include "system/hardware_info.h"
+#include "time/time_format.h"
 #include "util/file_utils.h"
 #include "util/string_utils.h"
 #include "wayland/wayland_connection.h"
@@ -161,10 +162,31 @@ namespace {
     }
   }
 
+  void validateTimezoneSetting(const WidgetSettingValue& value, const std::string& context) {
+    const auto* timezone = std::get_if<std::string>(&value);
+    if (timezone == nullptr) {
+      throw std::runtime_error(context + ": expected a string");
+    }
+    if (!isValidTimezone(*timezone)) {
+      throw std::runtime_error(context + ": unknown timezone \"" + *timezone + "\"");
+    }
+  }
+
+  void validateClockTimezoneSetting(std::string_view widgetName, const WidgetConfig& widget) {
+    if (widget.type != "clock") {
+      return;
+    }
+    const auto timezone = widget.settings.find("timezone");
+    if (timezone != widget.settings.end()) {
+      validateTimezoneSetting(timezone->second, "widget." + std::string(widgetName) + ".timezone");
+    }
+  }
+
   void validateWidgetSettings(std::string_view widgetName, const WidgetConfig& widget) {
     validateWidgetColorSettings(widgetName, widget);
     validateWidgetScaleSetting(widgetName, widget);
     validateKeyboardLayoutWidgetSettings(widgetName, widget);
+    validateClockTimezoneSetting(widgetName, widget);
   }
 
   void validateDesktopWidgetColorSettings(const DesktopWidgetState& widget, std::string_view section) {
@@ -222,6 +244,14 @@ namespace {
       }
     }
     validateDesktopWidgetColorSettings(widget, colorSection);
+    if (widget.type == "clock") {
+      const auto timezone = widget.settings.find("timezone");
+      if (timezone != widget.settings.end()) {
+        validateTimezoneSetting(
+            timezone->second, std::string(colorSection) + ".widget." + std::string(id) + ".settings.timezone"
+        );
+      }
+    }
     return widget;
   }
 

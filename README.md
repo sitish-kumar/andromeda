@@ -1,5 +1,4 @@
-Noctalia
-===
+# Noctalia
 
 Noctalia is a native Wayland desktop shell for people who want a polished, configurable Linux desktop without stitching
 together a separate bar, launcher, notification daemon, lock screen, wallpaper tool, and settings UI.
@@ -44,7 +43,6 @@ are designed as one cohesive shell instead of a collection of unrelated panels a
     <img src="https://img.shields.io/badge/discord-FFF59B?style=for-the-badge&labelColor=FFF59B&logo=discord&logoColor=070722" alt="Discord" />
   </a>
 </p>
-
 
 ## Why Noctalia?
 
@@ -111,6 +109,7 @@ sudo pacman -S meson gcc just \
 ```
 
 ### Fedora
+
 ```sh
 sudo dnf install meson gcc-c++ just \
   wayland-devel wayland-protocols-devel \
@@ -127,6 +126,7 @@ sudo dnf install meson gcc-c++ just \
 ```
 
 ### openSUSE Tumbleweed / Slowroll
+
 ```sh
 sudo zypper install meson gcc-c++ just \
   wayland-devel wayland-protocols-devel \
@@ -143,6 +143,7 @@ sudo zypper install meson gcc-c++ just \
 ```
 
 ### Debian / Ubuntu
+
 ```sh
 sudo apt install meson g++ just \
   libwayland-dev wayland-protocols \
@@ -160,6 +161,7 @@ sudo apt install meson g++ just \
 ```
 
 ### Void Linux
+
 ```sh
 sudo xbps-install meson ninja pkg-config git \
   wayland-devel wayland-protocols libepoxy-devel \
@@ -169,7 +171,7 @@ sudo xbps-install meson ninja pkg-config git \
   libcurl-devel pam-devel libwebp-devel \
   basu-devel sdbus-c++-devel \
   libmd4c-devel tomlplusplus-devel \
-  nlohmann-json-devel stb \
+  json-c++ stb \
   polkit-devel librsvg-devel libqalculate-devel libxml2-devel jemalloc-devel
 ```
 
@@ -185,7 +187,7 @@ modules. Some distros ship these in the runtime `polkit` package, while split-pa
 `polkit-devel`, `polkit-dev`, or `libpolkit-agent-1-dev` / `libpolkit-gobject-1-dev`.
 
 Pipewire libraries/headers are sufficient to build Noctalia, but there is also a runtime requirement for the pipewire
-daemon.  Noctalia will abort startup if it can't connect to the daemon.  If your distro splits the pipewire libraries
+daemon. Noctalia will abort startup if it can't connect to the daemon. If your distro splits the pipewire libraries
 and daemon into separate packages, make sure you have both installed.
 
 `upower` is an optional dependency used for battery and power device integration.
@@ -209,6 +211,7 @@ and point Meson at it (e.g. `CXX=g++-13 just configure`).
 Requires [just](https://github.com/casey/just) and [meson](https://mesonbuild.com/).
 
 #### Release build
+
 ```sh
 # Optimized release build in build-release/
 just configure release
@@ -230,6 +233,7 @@ To remove files installed from a build directory, run `just uninstall release`. 
 require an explicit build mode so debug builds are not installed by accident.
 
 #### Debug build
+
 ```sh
 # Debug build in build-debug/ for local development and troubleshooting.
 just configure
