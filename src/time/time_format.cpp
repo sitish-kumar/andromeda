@@ -233,6 +233,7 @@ std::string formatTimezoneTime(const char* fmt, std::string_view tzName) {
   const auto now = floor<seconds>(system_clock::now());
   const auto unixSeconds = duration_cast<seconds>(now.time_since_epoch()).count();
   const auto local = tz->to_local(now);
+  const auto zoneInfo = tz->get_info(now);
 
   std::tm tm{};
   const auto localDays = floor<days>(local);
@@ -241,10 +242,16 @@ std::string formatTimezoneTime(const char* fmt, std::string_view tzName) {
   tm.tm_year = static_cast<int>(ymd.year()) - 1900;
   tm.tm_mon = static_cast<unsigned>(ymd.month()) - 1;
   tm.tm_mday = static_cast<unsigned>(ymd.day());
-  tm.tm_hour = time.hours().count();
-  tm.tm_min = time.minutes().count();
-  tm.tm_sec = time.seconds().count();
+  tm.tm_hour = static_cast<int>(time.hours().count());
+  tm.tm_min = static_cast<int>(time.minutes().count());
+  tm.tm_sec = static_cast<int>(time.seconds().count());
   tm.tm_wday = weekday(localDays).c_encoding();
+  tm.tm_yday = static_cast<int>((localDays - local_days{ymd.year() / January / 1}).count());
+  tm.tm_isdst = zoneInfo.save != minutes::zero();
+#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+  tm.tm_gmtoff = static_cast<long>(zoneInfo.offset.count());
+  tm.tm_zone = zoneInfo.abbrev.c_str();
+#endif
 
   if (auto compat = formatStrftimeCompat(normalizedFmt, tm, unixSeconds)) {
     return *compat;
