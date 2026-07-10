@@ -55,6 +55,7 @@ namespace {
   constexpr float kNotificationIconGlyphSizeCompact = 20.0f;
   constexpr float kNotificationIconReferenceSize = 36.0f;
   constexpr float kTopProgressInset = Style::spaceMd;
+  constexpr auto kExitFallbackGrace = std::chrono::milliseconds(50);
 
   float notificationIconRadius(float iconSize, float localScale = 1.0f) {
     const float baseRadius = Style::radiusMd * (iconSize / kNotificationIconReferenceSize);
@@ -886,6 +887,14 @@ void NotificationToast::dismissPopup(std::size_t index) {
     return;
   }
   entry.exiting = true;
+  entry.exitFallbackTimer.start(
+      std::chrono::milliseconds(Style::animNormal) + kExitFallbackGrace,
+      [this, notificationId = entry.notificationId]() {
+        if (findEntry(notificationId) != nullptr) {
+          finishRemoval(notificationId);
+        }
+      }
+  );
 
   bool hadVisibleCard = false;
   for (auto& inst : m_instances) {
