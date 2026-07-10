@@ -502,6 +502,7 @@
         "show-forecast": "Show Forecast",
         "show-keyboard-layout": "Keyboard Layout",
         "show-label": "Show Label",
+        "show-vpn-label": "Show VPN Label",
         "show-login-button": "Login Button",
         "show-password-hint": "Password Hint",
         "show-when-idle": "Show When Idle",
@@ -3248,6 +3249,10 @@
         "show-label": {
           "description": "Show text next to the icon",
           "label": "Show Label"
+        },
+        "show-vpn-label": {
+          "description": "Show VPN label instead of interface label next to the icon",
+          "label": "Show VPN Label"
         },
         "show-num-lock": {
           "description": "Show Num Lock state",

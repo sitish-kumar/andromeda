@@ -49,9 +49,9 @@ namespace {
 } // namespace
 
 NetworkWidget::NetworkWidget(
-    INetworkService* network, SystemMonitorService* monitor, wl_output* /*output*/, bool showLabel
+    INetworkService* network, SystemMonitorService* monitor, wl_output* /*output*/, bool showLabel, bool showVpnLabel
 )
-    : m_network(network), m_monitor(monitor), m_showLabel(showLabel) {}
+    : m_network(network), m_monitor(monitor), m_showLabel(showLabel), m_showVpnLabel(showVpnLabel) {}
 
 void NetworkWidget::create() {
   auto area = std::make_unique<InputArea>();
@@ -203,6 +203,14 @@ void NetworkWidget::syncState(Renderer& renderer) {
     m_label->setVisible(showLabel);
     if (showLabel) {
       std::string text = labelForState(s);
+      if (m_showVpnLabel && s.vpnActive) {
+        for (const auto& vpn : m_network->vpnConnections()) {
+          if (vpn.active && !vpn.name.empty()) {
+            text = vpn.name;
+            break;
+          }
+        }
+      }
       if (m_isVertical && text.size() > 3) {
         text = text.substr(0, 3);
       }
