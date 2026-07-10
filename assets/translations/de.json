@@ -424,9 +424,9 @@
         "add": "Hinzufügen",
         "clone": "Duplizieren (Ctrl+C, Ctrl+V für kopieren/einfügen)",
         "done": "Fertig",
-        "hide": "Ausblenden",
         "flip-horizontal": "Horizontal spiegeln",
         "flip-vertical": "Vertikal spiegeln",
+        "hide": "Ausblenden",
         "settings": "Einstellungen",
         "show": "Anzeigen",
         "stack-back": "Im Hintergrund stapeln",
@@ -1160,10 +1160,10 @@
           "toast": "Toast"
         },
         "flags-label": "Bei Übereinstimmung",
-        "match-label": "App",
-        "match-placeholder": "App-Name, Desktop-Eintrag oder Kategorie…",
         "match-content-label": "Inhalts-Regex",
         "match-content-placeholder": "Regex-Muster für Übereinstimmung mit Titel oder Inhalt…",
+        "match-label": "App",
+        "match-placeholder": "App-Name, Desktop-Eintrag oder Kategorie…",
         "override-duration": "Dauer überschreiben",
         "play-sound": "Ton abspielen",
         "save-history": "Im Verlauf speichern",
@@ -1235,7 +1235,7 @@
         "horizontal": "Horizontal",
         "vertical": "Vertikal"
       },
-       "panel-position": {
+      "panel-position": {
         "auto": "Leiste folgen"
       },
       "screen-position": {
@@ -1526,6 +1526,10 @@
           "description": "Widgets in der Mitte der Leiste",
           "label": "Mittlere Widgets"
         },
+        "concave-edge-corners": {
+          "description": "Erzeuge konkave Aussparungen in zwei Ecken der Leiste (erfordert einen Randabstand von 0); bei einem Endabstand von 0 werden die Ecken der inneren Leistenkante ausgespart, andernfalls werden die Ecken, die den Bildschirmrand berühren, ausgespart",
+          "label": "Konkave Randecken"
+        },
         "contact-shadow": {
           "description": "Dunkler Farbverlauf zwischen einem angedockten Panel und der Leiste, um Tiefe an der Nahtstelle anzudeuten"
         },
@@ -1543,10 +1547,6 @@
         "corner-bottom-right": {
           "description": "Eckenradius unten rechts für die Leiste"
         },
-        "concave-edge-corners": {
-          "description": "Erzeuge konkave Aussparungen in zwei Ecken der Leiste (erfordert einen Randabstand von 0); bei einem Endabstand von 0 werden die Ecken der inneren Leistenkante ausgespart, andernfalls werden die Ecken, die den Bildschirmrand berühren, ausgespart",
-          "label": "Konkave Randecken"
-        },
         "corner-radius": {
           "description": "Eckenradius der Leiste"
         },
@@ -1560,13 +1560,13 @@
           "description": "Shell-Befehl, der bei Linksklick im leeren Bereich der Leiste außerhalb der Widget-Bereiche ausgeführt wird",
           "label": "Linksklick"
         },
-        "dead-zone-right-command": {
-          "description": "Shell-Befehl, der bei Rechtsklick ausgeführt wird; leer lassen, um das Kontrollzentrum zu öffnen",
-          "label": "Rechtsklick"
-        },
         "dead-zone-middle-command": {
           "description": "Shell-Befehl, der bei Mittelklick im leeren Bereich der Leiste außerhalb der Widget-Bereiche ausgeführt wird",
           "label": "Mittelklick"
+        },
+        "dead-zone-right-command": {
+          "description": "Shell-Befehl, der bei Rechtsklick ausgeführt wird; leer lassen, um das Kontrollzentrum zu öffnen",
+          "label": "Rechtsklick"
         },
         "dead-zone-scroll-down-command": {
           "description": "Shell-Befehl, der beim Herunterscrollen ausgeführt wird",
@@ -2939,7 +2939,7 @@
           "label": "Wechselbefehl"
         },
         "detached-panel": {
-            "description": "Öffne den Drawer als schwebendes Panel mit eigenem Hintergrund, statt ihn mit der Leiste zu verbinden",
+          "description": "Öffne den Drawer als schwebendes Panel mit eigenem Hintergrund, statt ihn mit der Leiste zu verbinden",
           "label": "Losgelöstes Panel"
         },
         "device": {
@@ -3097,13 +3097,13 @@
           "label": "Inaktive Pill-Größe",
           "workspaces-description": "Mindestlänge der inaktiven Arbeitsbereichs-Pills entlang der Leiste, als Vielfaches der Pill-Dicke; Beschriftungen können darüber hinaus erweitert werden"
         },
-        "interface": {
-          "description": "Netzwerkschnittstelle zum Überwachen; leer lassen, um die Gesamtsumme über alle Schnittstellen zu verwenden",
-          "label": "Schnittstelle"
-        },
         "interactive": {
           "description": "Erlaube Zeiger-Hover, Klicks, Scrollen und Tooltips für dieses Widget",
           "label": "Interaktiv"
+        },
+        "interface": {
+          "description": "Netzwerkschnittstelle zum Überwachen; leer lassen, um die Gesamtsumme über alle Schnittstellen zu verwenden",
+          "label": "Schnittstelle"
         },
         "label": {
           "description": "Optionaler statischer Text, der auf diesem Button angezeigt wird",
@@ -3285,13 +3285,13 @@
           "description": "Gesamtbreite in Pixeln; Fenstertitel werden verkleinert und ausgeblendet, wenn der Platz zu gering ist",
           "label": "Maximale Taskleistenbreite"
         },
-        "title-scroll": {
-          "description": "Wann der Widget-Titel scrollen soll",
-          "label": "Titel-Scroll"
-        },
         "timezone": {
           "description": "Zeitzonenkennung (z. B. Europe/Berlin) für diese Uhr; leer lassen, um die lokale Systemzeit zu verwenden",
           "label": "Zeitzone"
+        },
+        "title-scroll": {
+          "description": "Wann der Widget-Titel scrollen soll",
+          "label": "Titel-Scroll"
         },
         "tooltip": {
           "description": "Tooltip, der beim Hovern über diesen Button angezeigt wird",
