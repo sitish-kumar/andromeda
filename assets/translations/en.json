@@ -918,6 +918,16 @@
           "border": "Border",
           "border-description": "Capsule outline color role; leave on Default for no outline",
           "clear": "Clear",
+          "drawer-columns": "Drawer Columns",
+          "drawer-columns-description": "Number of widgets per row in the drawer panel",
+          "drawer-detached": "Detached Panel",
+          "drawer-detached-description": "Open the drawer as a floating panel with its own background instead of merging with the bar",
+          "drawer-enabled": "Drawer",
+          "drawer-enabled-description": "Move group widgets into a drawer panel toggled by a button",
+          "drawer-glyph-closed": "Closed Icon",
+          "drawer-glyph-closed-description": "Glyph shown on the drawer toggle button when the panel is closed",
+          "drawer-glyph-opened": "Opened Icon",
+          "drawer-glyph-opened-description": "Glyph shown on the drawer toggle button when the panel is open",
           "edit": "Edit style",
           "fill": "Background",
           "fill-description": "Capsule background color role; fixed hex colors are also supported",
@@ -1152,7 +1162,6 @@
         "add": "Add filter",
         "add-title": "Add Notification Filter",
         "allow-permanent": "Allow permanent",
-        "override-duration": "Override duration",
         "allowed-urgencies-label": "Allowed urgencies",
         "flag": {
           "history": "history",
@@ -1161,10 +1170,11 @@
           "toast": "toast"
         },
         "flags-label": "When matched",
-        "match-label": "App",
-        "match-placeholder": "App name, desktop entry, or category…",
         "match-content-label": "Content Regex",
         "match-content-placeholder": "Regex pattern to match summary or body…",
+        "match-label": "App",
+        "match-placeholder": "App name, desktop entry, or category…",
+        "override-duration": "Override duration",
         "play-sound": "Play sound",
         "save-history": "Save to history",
         "show-toast": "Show toast",
@@ -3097,13 +3107,13 @@
           "label": "Inactive Pill Size",
           "workspaces-description": "Minimum inactive workspace pill length along the bar, as a multiple of pill thickness; labels may expand beyond this"
         },
-        "interface": {
-          "description": "Network interface to monitor; leave empty to use the total across all interfaces",
-          "label": "Interface"
-        },
         "interactive": {
           "description": "Allow pointer hover, clicks, scrolls, and tooltips for this widget",
           "label": "Interactive"
+        },
+        "interface": {
+          "description": "Network interface to monitor; leave empty to use the total across all interfaces",
+          "label": "Interface"
         },
         "label": {
           "description": "Optional static text shown on this button",
@@ -3285,13 +3295,13 @@
           "description": "Total width budget in pixels; window titles shrink to fit and hide when too narrow",
           "label": "Taskbar Max Width"
         },
-        "title-scroll": {
-          "description": "When the widget title should scroll",
-          "label": "Title Scroll"
-        },
         "timezone": {
           "description": "Timezone identifier (e.g. Europe/Berlin) to use for this clock. Leave empty to use system local time.",
           "label": "Timezone"
+        },
+        "title-scroll": {
+          "description": "When the widget title should scroll",
+          "label": "Title Scroll"
         },
         "tooltip": {
           "description": "Tooltip shown when hovering this button",
