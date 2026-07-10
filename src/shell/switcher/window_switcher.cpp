@@ -188,6 +188,10 @@ namespace {
         return;
       }
     }
+    if (compositors::isNiri() && !entry.windowId.empty()) {
+      platform.focusCompositorWindow(entry.windowId);
+      return;
+    }
     if (entry.closeHandle != 0) {
       auto* handle = reinterpret_cast<zwlr_foreign_toplevel_handle_v1*>(entry.closeHandle);
       if (platform.containsWlrToplevelHandle(handle)) {
