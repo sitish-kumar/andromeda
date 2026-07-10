@@ -3289,6 +3289,10 @@
           "description": "When the widget title should scroll",
           "label": "Title Scroll"
         },
+        "timezone": {
+          "description": "Timezone identifier (e.g. Europe/Berlin) to use for this clock. Leave empty to use system local time.",
+          "label": "Timezone"
+        },
         "tooltip": {
           "description": "Tooltip shown when hovering this button",
           "label": "Tooltip"

@@ -698,6 +698,7 @@ namespace settings {
       add(stringSpec("format", "{:%H:%M}"));
       add(stringSpec("vertical_format"));
       add(stringSpec("tooltip_format"));
+      add(stringSpec("timezone", ""));
     } else if (type == "clipboard") {
       add(glyphSpec("glyph", "clipboard"));
       add(stringSpec("custom_image", ""));

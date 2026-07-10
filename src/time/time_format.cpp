@@ -212,6 +212,51 @@ std::string formatLocalTime(const char* fmt) {
   }
 }
 
+std::string formatTimezoneTime(const char* fmt, std::string_view tzName) {
+  if (tzName.empty()) {
+    return formatLocalTime(fmt);
+  }
+
+  using namespace std::chrono;
+  const time_zone* tz = nullptr;
+  try {
+    tz = locate_zone(tzName);
+  } catch (...) {
+    return formatLocalTime(fmt);
+  }
+
+  if (tz == nullptr) {
+    return formatLocalTime(fmt);
+  }
+
+  const std::string normalizedFmt = normalizeFormatEscapes(fmt);
+  const auto now = floor<seconds>(system_clock::now());
+  const auto unixSeconds = duration_cast<seconds>(now.time_since_epoch()).count();
+  const auto local = tz->to_local(now);
+
+  std::tm tm{};
+  const auto localDays = floor<days>(local);
+  year_month_day ymd{localDays};
+  hh_mm_ss time{floor<seconds>(local - localDays)};
+  tm.tm_year = static_cast<int>(ymd.year()) - 1900;
+  tm.tm_mon = static_cast<unsigned>(ymd.month()) - 1;
+  tm.tm_mday = static_cast<unsigned>(ymd.day());
+  tm.tm_hour = time.hours().count();
+  tm.tm_min = time.minutes().count();
+  tm.tm_sec = time.seconds().count();
+  tm.tm_wday = weekday(localDays).c_encoding();
+
+  if (auto compat = formatStrftimeCompat(normalizedFmt, tm, unixSeconds)) {
+    return *compat;
+  }
+
+  try {
+    return std::vformat(std::locale(""), normalizedFmt, std::make_format_args(local));
+  } catch (...) {
+    return normalizedFmt;
+  }
+}
+
 std::string formatLocalUnixTime(std::int64_t unixSeconds, std::string_view fmt) {
   using namespace std::chrono;
   const std::string normalizedFmt = normalizeFormatEscapes(fmt);

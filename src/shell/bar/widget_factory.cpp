@@ -217,8 +217,10 @@ std::unique_ptr<Widget> WidgetFactory::create(
     std::string format = wc != nullptr ? wc->getString("format", "{:%H:%M}") : std::string("{:%H:%M}");
     std::string verticalFormat = wc != nullptr ? wc->getString("vertical_format", "") : std::string{};
     std::string tooltipFormat = wc != nullptr ? wc->getString("tooltip_format", "") : std::string{};
-    auto widget =
-        std::make_unique<ClockWidget>(output, std::move(format), std::move(verticalFormat), std::move(tooltipFormat));
+    auto widget = std::make_unique<ClockWidget>(
+        output, std::move(format), std::move(verticalFormat), std::move(tooltipFormat),
+        wc != nullptr ? wc->getString("timezone", "") : std::string{}
+    );
     widget->setContentScale(contentScale);
     return widget;
   }
