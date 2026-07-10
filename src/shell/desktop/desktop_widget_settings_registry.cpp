@@ -251,6 +251,10 @@ namespace desktop_settings {
       auto centerText = boolSpec("center_text", false);
       centerText.visibleWhen = digitalOnly;
       add(std::move(centerText));
+      auto timezone = stringSpec("timezone", "");
+      timezone.labelKey = "settings.widgets.settings.timezone.label";
+      timezone.descriptionKey = "settings.widgets.settings.timezone.description";
+      add(std::move(timezone));
       add(colorSpec("color", "on_surface"));
       add(fontFamilySpec());
       // Shadow is a text shadow on the digital label; analog mode has no shadow.
