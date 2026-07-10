@@ -212,6 +212,17 @@ std::string formatLocalTime(const char* fmt) {
   }
 }
 
+bool isValidTimezone(std::string_view tzName) {
+  if (tzName.empty()) {
+    return true;
+  }
+  try {
+    return std::chrono::locate_zone(tzName) != nullptr;
+  } catch (...) {
+    return false;
+  }
+}
+
 std::string formatTimezoneTime(const char* fmt, std::string_view tzName) {
   if (tzName.empty()) {
     return formatLocalTime(fmt);
