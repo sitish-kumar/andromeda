@@ -297,6 +297,10 @@ namespace {
     }
   }
 
+  bool showToastProgressAccent(Urgency urgency, int displayDurationMs) {
+    return displayDurationMs >= 0 || urgency == Urgency::Critical;
+  }
+
   std::vector<std::unique_ptr<Button>>
   collectNotificationActionButtons(const std::vector<std::string>& actions, float scale) {
     std::vector<std::unique_ptr<Button>> buttons;
@@ -355,8 +359,8 @@ namespace {
             .orientation = ProgressBarOrientation::HorizontalCentered,
             .width = std::max(0.0f, cardW - topProgressInset(scale) * 2.0f),
             .height = progressHeight(scale),
-            .visible = displayDurationMs >= 0,
-            .participatesInLayout = displayDurationMs >= 0,
+            .visible = showToastProgressAccent(urgency, displayDurationMs),
+            .participatesInLayout = showToastProgressAccent(urgency, displayDurationMs),
             .configure = [scale](ProgressBar& progress) { progress.setPosition(topProgressInset(scale), 0.0f); },
         })
     );
@@ -725,7 +729,7 @@ void NotificationToast::onNotificationEvent(const Notification& n, NotificationE
           m_entries[i].displayDurationMs = newDuration;
           m_entries[i].remainingProgress = 1.0f;
           if (newDuration < 0) {
-            cs.progressBar->setOpacity(0.0f);
+            cs.progressBar->setOpacity(n.urgency == Urgency::Critical ? 1.0f : 0.0f);
             cs.progressBar->setProgress(1.0f);
             cs.countdownAnimId = 0;
           } else {
@@ -991,7 +995,8 @@ void NotificationToast::addCardToInstance(Instance& inst, std::size_t entryIndex
   // whose surface can't fit the card, so the nominal driver may never have a card at all.
   if (entry.displayDurationMs < 0) {
     // Persistent — no countdown, no auto-dismiss
-    cs.progressBar->setOpacity(0.0f);
+    cs.progressBar->setOpacity(entry.urgency == Urgency::Critical ? 1.0f : 0.0f);
+    cs.progressBar->setProgress(1.0f);
     cs.countdownAnimId = 0;
   } else {
     const float startProgress = std::clamp(entry.remainingProgress, 0.0f, 1.0f);
@@ -2208,8 +2213,8 @@ InputArea* NotificationToast::buildCard(
           .orientation = ProgressBarOrientation::HorizontalCentered,
           .width = std::max(0.0f, cardW - topProgressInset(scale) * 2.0f),
           .height = progressHeight(scale),
-          .visible = entry.displayDurationMs >= 0,
-          .participatesInLayout = entry.displayDurationMs >= 0,
+          .visible = showToastProgressAccent(entry.urgency, entry.displayDurationMs),
+          .participatesInLayout = showToastProgressAccent(entry.urgency, entry.displayDurationMs),
           .configure = [scale](ProgressBar& progress) { progress.setPosition(topProgressInset(scale), 0.0f); },
       })
   );
