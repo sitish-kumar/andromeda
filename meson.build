@@ -413,6 +413,7 @@ _noctalia_sources = files(
   'src/config/atomic_file.cpp',
   'src/config/config_export.cpp',
   'src/config/config_merge.cpp',
+  'src/config/config_migrations.cpp',
   'src/config/config_overrides.cpp',
   'src/config/config_service.cpp',
   'src/config/config_types.cpp',
@@ -1375,6 +1376,19 @@ config_schema_roundtrip_test = executable('config_schema_roundtrip_test',
 )
 
 test('config_schema_roundtrip', config_schema_roundtrip_test)
+
+config_migration_test = executable('config_migration_test',
+  sources: files(
+    'tests/config_migration_test.cpp',
+    'src/config/config_migrations.cpp',
+  ),
+  include_directories: _noctalia_inc,
+  dependencies: [
+    tomlplusplus_dep,
+  ],
+)
+
+test('config_migration', config_migration_test)
 
 config_widget_test = executable('config_widget_test',
   sources: files(

@@ -1,7 +1,9 @@
 #pragma once
 
+#include "config/config_migrations.h"
 #include "config/config_types.h"
 #include "config/state_store.h"
+#include "core/timer_manager.h"
 #include "core/toml.h"
 
 #include <cstdint>
@@ -62,6 +64,9 @@ public:
   [[nodiscard]] bool shouldRunSetupWizard() const;
   [[nodiscard]] std::optional<bool> stateBool(std::string_view owner, std::string_view key) const;
   [[nodiscard]] std::optional<std::string> stateString(std::string_view owner, std::string_view key) const;
+  [[nodiscard]] const noctalia::config::LegacyConfigIssues& legacyConfigIssues() const noexcept {
+    return m_legacyConfigIssues;
+  }
 
   // The optional label is used only for opt-in reload profiling (NOCTALIA_PROFILE);
   // unlabeled subscribers are reported by registration index.
@@ -165,6 +170,8 @@ private:
   void fireReloadCallbacks();
   void loadOverridesFromFile();
   void setConfigParseError(std::string parseError);
+  void updateLegacyConfigIssues(noctalia::config::LegacyConfigIssues issues);
+  void notifyLegacyConfigIssues();
   bool writeOverridesToFile();
   void extractWallpaperFromOverrides();
   void extractWallpaperFromTable(const toml::table& table);
@@ -198,6 +205,10 @@ private:
   std::string m_overridesParseError;
   std::string m_pendingError; // parse error from initial load, sent as notification once manager is wired up
   uint32_t m_configErrorNotificationId = 0; // ID of the active config-error notification, 0 if none
+  noctalia::config::LegacyConfigIssues m_legacyConfigIssues;
+  std::string m_loggedLegacyIssueFingerprint;
+  bool m_legacyReminderPending = false;
+  Timer m_legacyReminderTimer;
   NotificationManager* m_notificationManager = nullptr;
 
   // Single inotify fd, two watch descriptors (config dir + state dir).

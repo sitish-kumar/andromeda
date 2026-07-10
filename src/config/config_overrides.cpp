@@ -1099,7 +1099,22 @@ std::optional<Config> ConfigService::configForOverrides(const toml::table& overr
     kLog.warn("skipping config error in effective override comparison: {}", mergeResult.firstError);
   }
 
-  deepMerge(merged, overrides);
+  toml::table effectiveOverrides = overrides;
+  noctalia::config::schema::Diagnostics migrationDiag;
+  if (!effectiveOverrides.empty()) {
+    const auto storedVersion = noctalia::config::storedConfigVersion(effectiveOverrides, migrationDiag);
+    if (storedVersion.has_value()) {
+      (void)noctalia::config::applyPendingConfigMigrations(effectiveOverrides, *storedVersion, migrationDiag);
+    }
+  }
+  if (migrationDiag.hasErrors()) {
+    kLog.warn("effective override comparison rejected invalid config_version");
+    return std::nullopt;
+  }
+  deepMerge(merged, effectiveOverrides);
+  merged.erase(noctalia::config::kConfigVersionKey);
+  noctalia::config::LegacyConfigIssues issues;
+  noctalia::config::normalizeLegacyConfig(merged, issues);
   if (mergeResult.loadedFiles.empty() && overrides.empty()) {
     parsed.idle.behaviors = defaultIdleBehaviors();
     parsed.bars.push_back(BarConfig{});

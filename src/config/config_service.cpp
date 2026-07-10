@@ -4,6 +4,7 @@
 #include "config/atomic_file.h"
 #include "config/config_export.h"
 #include "config/config_merge.h"
+#include "config/config_migrations.h"
 #include "config/schema/config_schema.h"
 #include "config/schema/engine.h"
 #include "config/widget_config.h"
@@ -11,6 +12,7 @@
 #include "core/deferred_call.h"
 #include "core/log.h"
 #include "core/scoped_timer.h"
+#include "i18n/i18n.h"
 #include "ipc/ipc_service.h"
 #include "notification/notification_manager.h"
 #include "shell/desktop/desktop_widget_settings_registry.h"
@@ -22,6 +24,7 @@
 #include "wayland/wayland_connection.h"
 
 #include <algorithm>
+#include <charconv>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -36,6 +39,7 @@
 #include <stdexcept>
 #include <string_view>
 #include <sys/inotify.h>
+#include <tuple>
 #include <unistd.h>
 #include <unordered_map>
 #include <vector>
@@ -43,6 +47,37 @@
 namespace schema = noctalia::config::schema;
 
 namespace {
+
+  constexpr std::string_view kMigrationReminderOwner = "config_migration_reminders";
+  constexpr std::string_view kMigrationReminderKey = "last_notification";
+  struct MigrationReminderState {
+    std::int64_t epochSeconds = 0;
+    std::string issueFingerprint;
+  };
+
+  std::optional<MigrationReminderState> parseMigrationReminderState(std::string_view value) {
+    const std::size_t separator = value.find('\n');
+    if (separator == std::string_view::npos) {
+      return std::nullopt;
+    }
+
+    std::int64_t epochSeconds = 0;
+    const std::string_view encodedEpoch = value.substr(0, separator);
+    const auto [end, error] =
+        std::from_chars(encodedEpoch.data(), encodedEpoch.data() + encodedEpoch.size(), epochSeconds);
+    if (error != std::errc{} || end != encodedEpoch.data() + encodedEpoch.size() || epochSeconds < 0) {
+      return std::nullopt;
+    }
+    return MigrationReminderState{
+        .epochSeconds = epochSeconds,
+        .issueFingerprint = std::string(value.substr(separator + 1)),
+    };
+  }
+
+  std::int64_t currentEpochSeconds() {
+    return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch())
+        .count();
+  }
 
   std::optional<double> finiteDouble(const toml::node_view<const toml::node>& node) {
     if (auto v = node.value<double>()) {
@@ -392,8 +427,22 @@ namespace {
 
     if (!settingsPath.empty() && std::filesystem::exists(std::filesystem::path(std::string(settingsPath)))) {
       try {
-        auto table = toml::parse_file(std::string(settingsPath));
-        ConfigService::deepMerge(merged, table);
+        toml::table sidecar = toml::parse_file(std::string(settingsPath));
+        schema::Diagnostics migrationDiag;
+        const auto storedVersion = noctalia::config::storedConfigVersion(sidecar, migrationDiag);
+        if (storedVersion.has_value()) {
+          (void)noctalia::config::applyPendingConfigMigrations(sidecar, *storedVersion, migrationDiag);
+        }
+        for (const auto& entry : migrationDiag.entries) {
+          if (entry.severity == schema::Diagnostics::Severity::Error) {
+            if (error != nullptr) {
+              *error = entry.path + ": " + entry.message;
+            }
+            return std::nullopt;
+          }
+          kLog.warn("{}: {}", entry.path, entry.message);
+        }
+        ConfigService::deepMerge(merged, sidecar);
       } catch (const toml::parse_error& e) {
         if (error != nullptr) {
           *error = parseErrorMessage(std::filesystem::path(std::string(settingsPath)), e);
@@ -488,6 +537,9 @@ void ConfigService::setNotificationManager(NotificationManager* manager) {
       m_configErrorNotificationId =
           m_notificationManager->addInternal("Noctalia", "Config parse error", pendingError, Urgency::Critical, 0);
     });
+  }
+  if (m_notificationManager != nullptr && m_legacyReminderPending) {
+    DeferredCall::callLater([this]() { notifyLegacyConfigIssues(); });
   }
 }
 
@@ -688,7 +740,11 @@ std::string ConfigService::buildMergedUserConfigFromSources(
   if (!merged.has_value()) {
     return {};
   }
-  return formatToml(*merged) + "\n";
+  toml::table normalized = *merged;
+  normalized.erase(noctalia::config::kConfigVersionKey);
+  noctalia::config::LegacyConfigIssues issues;
+  noctalia::config::normalizeLegacyConfig(normalized, issues);
+  return formatToml(normalized) + "\n";
 }
 
 std::string ConfigService::buildEffectiveConfigFromSources(
@@ -699,13 +755,18 @@ std::string ConfigService::buildEffectiveConfigFromSources(
     return {};
   }
 
+  toml::table normalized = *merged;
+  normalized.erase(noctalia::config::kConfigVersionKey);
+  noctalia::config::LegacyConfigIssues issues;
+  noctalia::config::normalizeLegacyConfig(normalized, issues);
+
   Config config;
   noctalia::config::seedBuiltinWidgets(config);
-  if (merged->empty()) {
+  if (normalized.empty()) {
     config = makeDefaultConfig();
   } else {
     try {
-      parseConfigTable(*merged, config, false, false);
+      parseConfigTable(normalized, config, false, false);
     } catch (const std::exception& e) {
       if (error != nullptr) {
         *error = e.what();
@@ -1152,6 +1213,78 @@ void ConfigService::setConfigParseError(std::string parseError) {
   }
 }
 
+void ConfigService::updateLegacyConfigIssues(noctalia::config::LegacyConfigIssues issues) {
+  std::ranges::sort(issues, [](const auto& lhs, const auto& rhs) {
+    return std::tie(lhs.migrationVersion, lhs.path) < std::tie(rhs.migrationVersion, rhs.path);
+  });
+  issues.erase(
+      std::ranges::unique(
+          issues, {}, [](const auto& issue) { return std::tie(issue.migrationVersion, issue.path); }
+      ).begin(),
+      issues.end()
+  );
+
+  const std::string fingerprint = noctalia::config::legacyConfigIssueFingerprint(issues);
+  if (fingerprint != m_loggedLegacyIssueFingerprint) {
+    for (const auto& issue : issues) {
+      kLog.warn("{}: {} (migrated in memory)", issue.path, issue.message);
+    }
+    m_loggedLegacyIssueFingerprint = fingerprint;
+  }
+  m_legacyConfigIssues = std::move(issues);
+
+  if (m_legacyConfigIssues.empty()) {
+    m_legacyReminderPending = false;
+    m_legacyReminderTimer.stop();
+    if (m_stateStore.stringValue(kMigrationReminderOwner, kMigrationReminderKey).has_value()) {
+      (void)m_stateStore.clearOwner(kMigrationReminderOwner);
+    }
+    return;
+  }
+
+  const std::int64_t now = currentEpochSeconds();
+  const auto encodedState = m_stateStore.stringValue(kMigrationReminderOwner, kMigrationReminderKey);
+  const auto reminderState = encodedState.has_value() ? parseMigrationReminderState(*encodedState) : std::nullopt;
+  const bool hasNewIssues = !reminderState.has_value()
+      || noctalia::config::legacyConfigFingerprintHasNewIssues(fingerprint, reminderState->issueFingerprint);
+  const bool intervalElapsed = !reminderState.has_value()
+      || noctalia::config::legacyConfigReminderIntervalElapsed(now, reminderState->epochSeconds);
+  m_legacyReminderPending = hasNewIssues || intervalElapsed;
+  if (m_legacyReminderPending) {
+    notifyLegacyConfigIssues();
+    return;
+  }
+
+  const auto elapsed = std::chrono::seconds(now - reminderState->epochSeconds);
+  const auto remaining = std::chrono::seconds(noctalia::config::kLegacyConfigReminderIntervalSeconds) - elapsed;
+  m_legacyReminderTimer.start(std::chrono::duration_cast<std::chrono::milliseconds>(remaining), [this]() {
+    m_legacyReminderPending = true;
+    notifyLegacyConfigIssues();
+  });
+}
+
+void ConfigService::notifyLegacyConfigIssues() {
+  if (!m_legacyReminderPending || m_notificationManager == nullptr || m_legacyConfigIssues.empty()) {
+    return;
+  }
+
+  const std::string fingerprint = noctalia::config::legacyConfigIssueFingerprint(m_legacyConfigIssues);
+  const std::int64_t now = currentEpochSeconds();
+  (void)m_notificationManager->addInternal(
+      "Noctalia", i18n::tr("notifications.internal.config-migration-title"),
+      i18n::tr("notifications.internal.config-migration-body", "path", m_legacyConfigIssues.front().path),
+      Urgency::Normal
+  );
+  (void)m_stateStore.setString(kMigrationReminderOwner, kMigrationReminderKey, std::format("{}\n{}", now, fingerprint));
+  m_legacyReminderPending = false;
+  m_legacyReminderTimer.start(
+      std::chrono::milliseconds(noctalia::config::kLegacyConfigReminderIntervalSeconds * 1000), [this]() {
+        m_legacyReminderPending = true;
+        notifyLegacyConfigIssues();
+      }
+  );
+}
+
 void ConfigService::deepMerge(toml::table& base, const toml::table& overlay) {
   for (const auto& [k, v] : overlay) {
     if (const auto* overlayTbl = v.as_table()) {
@@ -1217,8 +1350,39 @@ void ConfigService::loadAll() {
     }
   }
 
-  // Apply the app-writable overrides overlay last — sidecar wins.
-  deepMerge(merged, m_overridesTable);
+  toml::table effectiveOverrides = m_overridesTable;
+  schema::Diagnostics migrationDiag;
+  std::string migrationError;
+  int storedVersion = noctalia::config::currentConfigVersion();
+  int appliedVersion = storedVersion;
+  bool sidecarNeedsPersist = false;
+  if (!m_overridesTable.empty()) {
+    const auto parsedVersion = noctalia::config::storedConfigVersion(effectiveOverrides, migrationDiag);
+    if (parsedVersion.has_value()) {
+      storedVersion = *parsedVersion;
+      appliedVersion = noctalia::config::applyPendingConfigMigrations(effectiveOverrides, storedVersion, migrationDiag);
+      sidecarNeedsPersist = appliedVersion != storedVersion;
+      effectiveOverrides.insert_or_assign(
+          noctalia::config::kConfigVersionKey, static_cast<std::int64_t>(appliedVersion)
+      );
+    }
+  }
+  for (const auto& entry : migrationDiag.entries) {
+    if (entry.severity == schema::Diagnostics::Severity::Error) {
+      if (migrationError.empty()) {
+        migrationError = entry.path + ": " + entry.message;
+      }
+    } else {
+      kLog.warn("{}: {}", entry.path, entry.message);
+    }
+  }
+
+  // Apply the app-writable overrides overlay last; sidecar wins. Compatibility
+  // normalization must see the final effective values to preserve overlay intent.
+  deepMerge(merged, effectiveOverrides);
+  merged.erase(noctalia::config::kConfigVersionKey);
+  noctalia::config::LegacyConfigIssues legacyIssues;
+  noctalia::config::normalizeLegacyConfig(merged, legacyIssues);
 
   if (m_includeLoadedFiles.empty() && m_overridesTable.empty()) {
     kLog.info("no config files found, using defaults");
@@ -1230,17 +1394,20 @@ void ConfigService::loadAll() {
     m_defaultWallpaperPath.clear();
     m_lastWallpaperPath.clear();
     m_monitorWallpaperPaths.clear();
+    updateLegacyConfigIssues({});
     setConfigParseError(m_overridesParseError);
     refreshIncludeWatches();
     return;
   }
 
-  std::string semanticError;
-  try {
-    parseConfigTable(merged, nextConfig, true);
-  } catch (const std::exception& e) {
-    semanticError = e.what();
-    kLog.warn("config parse error: {}", semanticError);
+  std::string semanticError = migrationError;
+  if (semanticError.empty()) {
+    try {
+      parseConfigTable(merged, nextConfig, true);
+    } catch (const std::exception& e) {
+      semanticError = e.what();
+      kLog.warn("config parse error: {}", semanticError);
+    }
   }
 
   if (semanticError.empty()) {
@@ -1250,6 +1417,19 @@ void ConfigService::loadAll() {
     m_configFileMonitorOverrideNames = std::move(configFileMonitorOverrideNames);
     m_configFileCalendarAccountNames = std::move(configFileCalendarAccountNames);
     extractWallpaperFromTable(merged);
+    updateLegacyConfigIssues(std::move(legacyIssues));
+
+    if (sidecarNeedsPersist) {
+      toml::table previousOverrides = m_overridesTable;
+      m_overridesTable = std::move(effectiveOverrides);
+      if (writeOverridesToFile()) {
+        m_ownOverridesWritePending = m_inotifyFd >= 0 && m_overridesWatchWd >= 0;
+        extractWallpaperFromOverrides();
+      } else {
+        kLog.warn("failed to persist migrated config overrides to {}", m_overridesPath);
+        m_overridesTable = std::move(previousOverrides);
+      }
+    }
   } else if (m_config.bars.empty()) {
     m_lastChange = ConfigChangeSet{};
     m_config = makeDefaultConfig();

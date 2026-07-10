@@ -77,6 +77,8 @@ namespace {
     reloaded.load();
     ok = expect(!reloaded.boolValue("wallpaper_panel", "flatten").value_or(true), "updated bool did not reload") && ok;
     ok = expect(!reloaded.setBool("wallpaper.panel", "flatten", true), "invalid owner was accepted") && ok;
+    ok = expect(reloaded.clearOwner("wallpaper_panel"), "failed to clear owner table") && ok;
+    ok = expect(!reloaded.boolValue("wallpaper_panel", "flatten").has_value(), "cleared owner remained visible") && ok;
 
     std::filesystem::remove_all(dir);
     return ok;

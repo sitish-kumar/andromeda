@@ -1,6 +1,7 @@
 #include "config/config_validate.h"
 
 #include "config/config_merge.h"
+#include "config/config_migrations.h"
 #include "config/config_service.h"
 #include "config/config_types.h"
 #include "config/schema/config_schema.h"
@@ -58,11 +59,21 @@ namespace noctalia::config {
       }
       if (!settingsTomlPath.empty() && std::filesystem::exists(settingsTomlPath)) {
         try {
-          toml::table parsed = toml::parse_file(std::string(settingsTomlPath));
-          ConfigService::deepMerge(merged, parsed);
+          toml::table sidecar = toml::parse_file(std::string(settingsTomlPath));
+          if (const auto version = storedConfigVersion(sidecar, diag); version.has_value()) {
+            const int appliedVersion = applyPendingConfigMigrations(sidecar, *version, diag);
+            sidecar.insert_or_assign(kConfigVersionKey, static_cast<std::int64_t>(appliedVersion));
+          }
+          ConfigService::deepMerge(merged, sidecar);
         } catch (const toml::parse_error& e) {
           diag.error("syntax", formatParseError(settingsTomlPath, e));
         }
+      }
+      merged.erase(kConfigVersionKey);
+      LegacyConfigIssues issues;
+      normalizeLegacyConfig(merged, issues);
+      for (const LegacyConfigIssue& issue : issues) {
+        diag.warn(issue.path, issue.message);
       }
       return merged;
     }
@@ -602,6 +613,7 @@ namespace noctalia::config {
           "plugin_settings",
           "hooks",
           "include",
+          "config_version",
       };
       for (const auto& [key, node] : merged) {
         (void)node;
@@ -641,6 +653,11 @@ namespace noctalia::config {
       return diag;
     }
 
+    LegacyConfigIssues issues;
+    normalizeLegacyConfig(parsed, issues);
+    for (const LegacyConfigIssue& issue : issues) {
+      diag.warn(issue.path, issue.message);
+    }
     validateMergedConfig(parsed, diag);
     return diag;
   }

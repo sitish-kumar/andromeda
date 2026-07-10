@@ -191,6 +191,28 @@ bool StateStore::setString(std::string_view owner, std::string_view key, std::st
   return true;
 }
 
+bool StateStore::clearOwner(std::string_view owner) {
+  if (m_path.empty()) {
+    return false;
+  }
+  if (!validStateIdentifier(owner)) {
+    kLog.warn("invalid state owner {}", owner);
+    return false;
+  }
+  if (!m_state.contains(owner)) {
+    return true;
+  }
+
+  m_state.erase(owner);
+  if (!write()) {
+    kLog.warn("failed to write {}", m_path.string());
+    return false;
+  }
+
+  m_parseError.clear();
+  return true;
+}
+
 bool StateStore::write() {
   if (m_path.empty()) {
     return false;
